@@ -1,0 +1,1 @@
+{"version":3,"file":"ascii_85_stream.d.ts","sourceRoot":"","sources":["../../../../src/pdf/pdf.ts-src/core/ascii_85_stream.ts"],"names":[],"mappings":"AAmBA,OAAO,EAAE,YAAY,EAAE,MAAM,oBAAoB,CAAC;AAElD,OAAO,EAAE,UAAU,EAAE,MAAM,kBAAkB,CAAC;AAG9C,qBAAa,aAAc,SAAQ,YAAY;IAE7C,KAAK,aAAqB;gBAEb,GAAG,EAAC,UAAU,EAAE,WAAW,EAAC,MAAM;IAa/C,kBAAkB;IAClB,SAAS,CAAC,SAAS;CAiEpB"}

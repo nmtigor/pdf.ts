@@ -1,0 +1,60 @@
+{
+  "compilerOptions": {
+    "baseUrl": "/data/cod/premsys/pdf.ts",
+    "outDir": "/data/cod/premsys/pdf.ts/gen",
+
+    "target": "ESNext",
+    "module": "ESNext",
+
+    "strict": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitReturns": true,
+    "noImplicitOverride": true,
+    "useDefineForClassFields": true,
+    
+    "downlevelIteration": true,
+
+    "declarationDir": "gen",
+    "declaration": true,
+    "declarationMap": true,
+
+    "sourceMap": true,
+
+    "lib": [
+      "ESNext",
+      "DOM",
+      "DOM.Iterable",
+      "WebWorker"
+    ],
+    "skipLibCheck": true,
+
+    "preprocessor": [
+      "INOUT",
+      "DEV",
+        "INFO",
+          // "RESIZ",
+          "PDFTS",
+            "PDFTS_v", // verbose
+              // "PDFTS_vv", // very verbose
+      // "APP",
+      "TESTING",
+        "TEST_ALL",
+
+      "GENERIC",
+      // "MOZCENTRAL",
+      // "CHROME",
+      // "PRODUCTION",
+      // "LIB",
+      // "SKIP_BABEL",
+      // "IMAGE_DECODERS",
+      // "COMPONENTS"
+    ],
+  },
+
+  "files": [
+    "src/pdf/pdf.ts-web/viewer.ts",
+    "src/pdf/pdf.ts-src/pdf.worker.ts",
+
+    "src/test/pdf_test.ts",
+  ],
+}
