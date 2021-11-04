@@ -1,0 +1,13 @@
+{
+  "name": "pdf.ts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://gitlab.com/nmtigor/pdf.ts.git"
+  },
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@types/css-font-loading-module": "^0.0.4",
+    "@types/resize-observer-browser": "^0.1.4",
+    "@types/wicg-file-system-access": "^2020.9.1"
+  }
+}
