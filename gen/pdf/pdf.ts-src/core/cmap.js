@@ -344,16 +344,13 @@ export class CMap {
     }
     get length() { return this._map.length; }
     get isIdentityCMap() {
-        if (!(this.name === "Identity-H" || this.name === "Identity-V")) {
+        if (!(this.name === "Identity-H" || this.name === "Identity-V"))
             return false;
-        }
-        if (this._map.length !== 0x10000) {
+        if (this._map.length !== 0x10000)
             return false;
-        }
         for (let i = 0; i < 0x10000; i++) {
-            if (this._map[i] !== i) {
+            if (this._map[i] !== i)
                 return false;
-            }
         }
         return true;
     }

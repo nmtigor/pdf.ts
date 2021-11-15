@@ -44,11 +44,11 @@ export declare class Dict {
     /**
      * Same as get(), but returns a promise and uses fetchIfRefAsync().
      */
-    getAsync<T extends NoRef = NoRef>(key1: string, key2?: string, key3?: string): Promise<T>;
+    getAsync<T extends ObjNoRef = ObjNoRef>(key1: string, key2?: string, key3?: string): Promise<T>;
     /**
      * Same as get(), but dereferences all elements if the result is an Array.
      */
-    getArray(key1: string, key2?: string, key3?: string): NoRefNoRefAry | undefined;
+    getArray(key1: string, key2?: string, key3?: string): NoRef | undefined;
     forEach(callback: (k: string, v: any) => any): void;
     static get empty(): Dict;
     static merge({ xref, dictArray, mergeSubDicts }: {
@@ -105,10 +105,11 @@ export declare function isCmd(v: any, cmd?: string): boolean;
 export declare function isDict(v: any, type: string): boolean;
 export declare function isRefsEqual(v1: Ref, v2: Ref): boolean;
 export declare function clearPrimitiveCaches(): void;
-export declare type Obj = boolean | number | string | null | Name | Cmd | EOF | Obj[] | TypedArray | Dict | BaseStream | Ref;
-export declare type NoCmd = Exclude<Obj, Cmd>;
-export declare type NoRef = Exclude<Obj, Ref>;
-export declare type NoRefNoAry = Exclude<NoRef, Obj[]>;
-export declare type NoRefNoRefAry = NoRefNoAry | NoRef[];
+declare type Prm = boolean | number | string | null | Name | Cmd | EOF | Dict | TypedArray | BaseStream | Ref;
+export declare type Obj = Prm | (Obj | undefined)[];
+export declare type ObjNoCmd = Exclude<Obj, Cmd>;
+export declare type ObjNoRef = Exclude<Obj, Ref>;
+export declare type PrmNoRef = Exclude<Prm, Ref>;
+export declare type NoRef = PrmNoRef | (ObjNoRef | undefined)[];
 export {};
 //# sourceMappingURL=primitives.d.ts.map

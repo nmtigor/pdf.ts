@@ -3,7 +3,7 @@
 ** -------- */
 import { css_1, css_2 } from "../../../test/alias.js";
 import "../../../lib/jslang.js";
-import { buildGetDocumentParams, TEST_PDFS_PATH } from "../test_lib.js";
+import { buildGetDocumentParams, TEST_PDFS_PATH } from "../../test_utils.js";
 import { DefaultCanvasFactory } from "./api.js";
 import { GlobalWorkerOptions } from "./worker_options.js";
 const strttime = performance.now();

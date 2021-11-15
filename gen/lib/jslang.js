@@ -45,7 +45,10 @@ function eq_impl(lhs_x, rhs_x) {
             return true;
         let ret = false;
         for (const key of keys_lhs) {
-            ret ||= rhs_x.hasOwnProperty(key);
+            if (rhs_x.hasOwnProperty)
+                ret ||= rhs_x.hasOwnProperty(key);
+            else
+                ret ||= key in rhs_x; //! rhs_x could be Object without proto.
             ret &&= eq_impl(lhs_x[key], rhs_x[key]);
             if (!ret)
                 break;
@@ -53,6 +56,10 @@ function eq_impl(lhs_x, rhs_x) {
         return ret;
     }
     return false;
+}
+export function eq(lhs_x, rhs_x, valve_x = 100) {
+    valve = valve_x;
+    return eq_impl(lhs_x, rhs_x);
 }
 /**
  * @param { headconst } rhs
@@ -100,7 +107,7 @@ Reflect.defineProperty(Array.prototype, "fillArrayBack", {
 });
 /*81---------------------------------------------------------------------------*/
 /**
- * @param { const } cp - Code Point returned by `string.charCodeAt()`
+ * @param { const } cp Code Point returned by `string.charCodeAt()`
  */
 export function isDecimalDigit(cp) {
     return 0x30 <= cp && cp <= 0x39;

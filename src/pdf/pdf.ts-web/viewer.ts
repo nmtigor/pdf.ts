@@ -34,7 +34,8 @@ import { AppOptions } from "./app_options.js";
 // #if CHROME
   let defaultUrl:string; // eslint-disable-line no-var
   
-  (function rewriteUrlClosure() {
+  (function rewriteUrlClosure() 
+  {
     // Run this code outside DOMContentLoaded to make sure that the URL
     // is rewritten as soon as possible.
     const queryString = document.location.search.slice(1);
@@ -44,7 +45,8 @@ import { AppOptions } from "./app_options.js";
     // Example: chrome-extension://.../http://example.com/file.pdf
     const humanReadableUrl = "/" + defaultUrl + location.hash;
     history.replaceState(history.state, "", humanReadableUrl);
-    if (top === window) {
+    if (top === window) 
+    {
       // eslint-disable-next-line no-undef
       chrome.runtime.sendMessage("showPageAction");
     }
@@ -65,7 +67,8 @@ import { AppOptions } from "./app_options.js";
   import("./pdf_print_service.js");
 // #endif
 
-function getViewerConfiguration() {
+function getViewerConfiguration() 
+{
   let errorWrapper = undefined;
   // #if !MOZCENTRAL
   // if (typeof PDFJSDev === "undefined" || !PDFJSDev.test("MOZCENTRAL")) {

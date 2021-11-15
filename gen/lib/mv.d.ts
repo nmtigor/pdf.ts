@@ -1,5 +1,6 @@
 import { Constructor } from "./alias.js";
-import { vuu_sy, Vuu_sym_t } from "./symbols.js";
+import { $vuu, $Vuu } from "./symbols.js";
+import { ReportedError } from "./util/trace.js";
 /**
  * Inwards API, i.e., API called from outside of `Coo`.
  */
@@ -17,8 +18,8 @@ export declare abstract class Coo<CI extends CooInterface = CooInterface> {
 }
 declare global {
     interface Node {
-        [vuu_sy]?: Vuu;
-        [Vuu_sym_t]?: Constructor<Vuu>;
+        [$vuu]?: Vuu;
+        [$Vuu]?: Constructor<Vuu>;
     }
 }
 /**
@@ -58,7 +59,7 @@ export declare class HTMLVuu<C extends Coo = Coo, E extends HTMLElement = HTMLEl
 export declare class SVGVuu<C extends Coo = Coo, E extends SVGElement = SVGElement> extends Vuu<C, E> {
 }
 /**
- * It is a `Coo` tfunctionally.
+ * It is a `Coo` functionally.
  */
 export interface HTMLVCoo<CI extends CooInterface = CooInterface, E extends HTMLElement = HTMLElement> extends HTMLVuu<Coo<CI>, E>, Coo<CI> {
 }
@@ -71,7 +72,7 @@ export declare abstract class HTMLVCoo<CI extends CooInterface, E extends HTMLEl
      * @param { headconst } el_x
      */
     constructor(el_x: E);
-    showReportedError?(str: string): void;
+    showReportedError?(re_x: ReportedError): void;
 }
 /**
  * It is a Coo functionally.

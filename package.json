@@ -6,7 +6,7 @@
   },
   "license": "Apache-2.0",
   "dependencies": {
-    "@types/css-font-loading-module": "^0.0.4",
+    "@types/css-font-loading-module": "^0.0.6",
     "@types/resize-observer-browser": "^0.1.4",
     "@types/wicg-file-system-access": "^2020.9.1"
   }

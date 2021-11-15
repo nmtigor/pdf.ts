@@ -20,9 +20,7 @@ export declare const lnum_MAX: lnum_t;
 export declare type ts_t = int64;
 /** Recommand [0,1] */
 export declare type Ratio = number;
-export interface Style {
-    [key: string]: string;
-}
+export declare type Style = Record<string, string>;
 export interface Runr {
     run(): void | Promise<void>;
 }

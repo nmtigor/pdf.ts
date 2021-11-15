@@ -1,6 +1,6 @@
 import { ImageKind, matrix_t, OPS, rect_t, TextRenderingMode } from "../shared/util.js";
 import { CMap } from "./cmap.js";
-import { Dict, FontDict, Name, NoCmd, Obj, Ref, RefSet, RefSetCache } from "./primitives.js";
+import { Dict, FontDict, Name, ObjNoCmd, Obj, Ref, RefSet, RefSetCache } from "./primitives.js";
 import { ErrorFont, Font, Glyph, Seac } from "./fonts.js";
 import { PDFFunctionFactory } from "./function.js";
 import { Parser } from "./parser.js";
@@ -230,7 +230,7 @@ export declare class PartialEvaluator {
     parseColorSpace({ cs, resources, localColorSpaceCache }: ParseColorSpaceParms): Promise<ColorSpace | undefined>;
     parseShading({ shading, resources, localColorSpaceCache, localShadingPatternCache, }: ParseShadingParms): string;
     handleColorN(operatorList: OperatorList, fn: OPS, args: [Name, ...number[]], cs: ColorSpace, patterns: Dict, resources: Dict, task: WorkerTask, localColorSpaceCache: LocalColorSpaceCache, localTilingPatternCache: LocalTilingPatternCache, localShadingPatternCache: Map<Dict | BaseStream, string>): Promise<void> | undefined;
-    _parseVisibilityExpression(array: Obj[], nestingCounter: number, currentResult: VisibilityExpressionResult): void;
+    _parseVisibilityExpression(array: (Obj | undefined)[], nestingCounter: number, currentResult: VisibilityExpressionResult): void;
     parseMarkedContentProps(contentProperties: Dict | Name, resources: Dict): Promise<MarkedContentProps | undefined>;
     getOperatorList({ stream, task, resources, operatorList, initialState, fallbackFontDict, }: GetOperatorListParms): Promise<void>;
     getTextContent({ stream, task, resources, stateManager, normalizeWhitespace, combineTextItems, includeMarkedContent, sink, seenStyles, }: GetTextContentParms): Promise<void>;
@@ -322,7 +322,7 @@ interface OpInfo {
     variableArgs: boolean;
 }
 export declare type OpMap = Record<string, OpInfo | null>;
-export declare type OpArgs = NoCmd[] | null;
+export declare type OpArgs = ObjNoCmd[] | null;
 export interface Operation {
     fn: OPS;
     args: OpArgs | null;
@@ -333,7 +333,7 @@ export declare class EvaluatorPreprocessor {
     static get MAX_INVALID_PATH_OPS(): number;
     parser: Parser;
     stateManager: StateManager<EvalState | TextState>;
-    nonProcessedArgs: NoCmd[];
+    nonProcessedArgs: ObjNoCmd[];
     constructor(stream: BaseStream, xref?: XRef, stateManager?: StateManager<EvalState | TextState>);
     get savedStatesDepth(): number;
     read(operation: Operation): boolean;

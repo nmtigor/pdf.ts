@@ -5,8 +5,8 @@
 import { Constructor } from "./alias.js";
 import { mix } from "./jslang.js";
 import { svg } from "./dom.js";
-import { vuu_sy, Vuu_sym_t } from "./symbols.js";
-import { assert } from "./util/trace.js";
+import { $vuu, $Vuu } from "./symbols.js";
+import { assert, ReportedError } from "./util/trace.js";
 /*81---------------------------------------------------------------------------*/
 
 /**
@@ -23,7 +23,7 @@ export interface CooInterface
  * 
  * @final
  */
-export abstract class Coo< CI extends CooInterface=CooInterface >
+export abstract class Coo<CI extends CooInterface=CooInterface>
 {
   abstract get ci():CI;
 }
@@ -51,16 +51,16 @@ declare global
 {
   interface Node
   {
-    [vuu_sy]?:Vuu;
-    [Vuu_sym_t]?:Constructor<Vuu>;
-    // [Vuu_sym_t]?:new ( ...args:any ) => Vuu;
+    [$vuu]?:Vuu;
+    [$Vuu]?:Constructor<Vuu>;
+    // [$Vuu]?:new ( ...args:any ) => Vuu;
   }
 }
 
 /**
  * Wrapper of DOM
  */
-export abstract class Vuu< C extends Coo=Coo, E extends Element=Element >
+export abstract class Vuu<C extends Coo=Coo, E extends Element=Element>
 {
   protected coo$;
   get coo() { return this.coo$; }
@@ -78,15 +78,15 @@ export abstract class Vuu< C extends Coo=Coo, E extends Element=Element >
 
     this.el$ = el_x;
     //jjjj is this not always Vuu? check!
-    this.el$[ vuu_sy ] = this;
-    this.el$[ Vuu_sym_t ] = < Constructor<Vuu> >this.constructor;
+    this.el$[ $vuu ] = this;
+    this.el$[ $Vuu ] = <Constructor< Vuu >>this.constructor;
   }
 
   get parentvuu1():Vuu | undefined
   {
     let node = this.el$.parentNode;
-    while( node && !node[vuu_sy] ) node = node.parentNode;
-    return node ? <Vuu>node[vuu_sy] : undefined;
+    while( node && !node[$vuu] ) node = node.parentNode;
+    return node ? <Vuu>node[$vuu] : undefined;
   }
 
   /**
@@ -95,8 +95,8 @@ export abstract class Vuu< C extends Coo=Coo, E extends Element=Element >
   static vuuOf( node_x:Node )
   {
     let node:Node | null = node_x;
-    while( node && !node[vuu_sy] ) node = node.parentNode;
-    return node ? <Vuu>node[vuu_sy] : undefined;
+    while( node && !node[$vuu] ) node = node.parentNode;
+    return node ? <Vuu>node[$vuu] : undefined;
   }
 
   // /**
@@ -177,8 +177,8 @@ export abstract class Vuu< C extends Coo=Coo, E extends Element=Element >
 }
 // Vuu.def = "def";
 
-export class HTMLVuu< C extends Coo=Coo, E extends HTMLElement=HTMLElement >
-  extends Vuu< C, E >
+export class HTMLVuu<C extends Coo=Coo, E extends HTMLElement=HTMLElement>
+  extends Vuu<C, E>
 {  
   // /**
   //  * @param { headconst } coo_x 
@@ -204,17 +204,17 @@ export class SVGVuu< C extends Coo=Coo, E extends SVGElement=SVGElement >
 }
 
 /**
- * It is a `Coo` tfunctionally.
+ * It is a `Coo` functionally.
  */
 export interface HTMLVCoo< 
   CI extends CooInterface=CooInterface, 
   E extends HTMLElement=HTMLElement
-> extends HTMLVuu< Coo<CI>, E >, Coo<CI>
+> extends HTMLVuu<Coo<CI>, E>, Coo<CI>
 {}
-export abstract class HTMLVCoo< CI extends CooInterface, E extends HTMLElement > 
+export abstract class HTMLVCoo<CI extends CooInterface, E extends HTMLElement> 
   extends mix( HTMLVuu, Coo )
 {
-  readonly #ci:CI= Object.create(null);
+  readonly #ci:CI = Object.create(null);
   /** @implements */
   get ci() { return this.#ci; }
 
@@ -227,7 +227,7 @@ export abstract class HTMLVCoo< CI extends CooInterface, E extends HTMLElement >
     this.coo$ = this;
   }
 
-  showReportedError?( str:string ):void;
+  showReportedError?( re_x:ReportedError ):void;
 }
 
 /**
@@ -263,7 +263,7 @@ export abstract class SVGVCoo< CI extends CooInterface, E extends SVGElement >
 // console.log( vcoo instanceof Coo1 ); // false
 // console.log( vcoo instanceof Coo ); // false
 
-export class SVGViewbox< CI extends CooInterface=CooInterface > extends SVGVCoo<CI>
+export class SVGViewbox<CI extends CooInterface=CooInterface> extends SVGVCoo<CI>
 {
   /**
    * @param { headconst } coo_x 
@@ -273,9 +273,7 @@ export class SVGViewbox< CI extends CooInterface=CooInterface > extends SVGVCoo<
   {
     super( svg("svg") );
     
-    this.el$.setAttrs({
-      viewBox: viewBox_x,
-    });
+    this.el$.setAttribute( "viewBox", viewBox_x );
   }
 }
 /*81---------------------------------------------------------------------------*/

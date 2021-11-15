@@ -893,7 +893,9 @@ var NsCFFParser;
     NsCFFParser.CFFParser = CFFParser;
 })(NsCFFParser || (NsCFFParser = {}));
 export var CFFParser = NsCFFParser.CFFParser;
-// Compact Font Format
+/**
+ * Compact Font Format
+ */
 export class CFF {
     header;
     names = [];

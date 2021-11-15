@@ -1,5 +1,6 @@
 import { AbstractConstructor, Constructor, uint, uint8 } from "./alias.js";
-export declare function isObjectLike(value: unknown): boolean;
+export declare function isObjectLike(value: unknown): value is object;
+export declare function eq(lhs_x: unknown, rhs_x: unknown, valve_x?: number): boolean;
 declare global {
     interface Object {
         eq(rhs_x: unknown, valve_x?: uint): boolean;
@@ -8,13 +9,13 @@ declare global {
 declare global {
     interface Array<T> {
         last: T | undefined;
-        eq(rhs_x: any, valve_x?: uint): boolean;
+        eq(rhs_x: unknown, valve_x?: uint): boolean;
         fillArray(ary: []): this;
         fillArrayBack(ary: any[]): this;
     }
 }
 /**
- * @param { const } cp - Code Point returned by `string.charCodeAt()`
+ * @param { const } cp Code Point returned by `string.charCodeAt()`
  */
 export declare function isDecimalDigit(cp: uint): boolean;
 export declare function isHexDigit(cp: uint): boolean;

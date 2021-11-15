@@ -435,11 +435,10 @@ var NsType1Parser;
     }
     // eslint-disable-next-line no-shadow
     class Type1Parser {
-        stream;
         seacAnalysisEnabled;
+        stream;
         currentChar;
         constructor(stream, encrypted, seacAnalysisEnabled) {
-            this.stream = stream;
             if (encrypted) {
                 const data = stream.getBytes();
                 const isBinary = !((isHexDigit(data[0]) || isWhiteSpace(data[0])) &&
@@ -455,6 +454,7 @@ var NsType1Parser;
                     : decryptAscii(data, EEXEC_ENCRYPT_KEY, 4));
             }
             this.seacAnalysisEnabled = !!seacAnalysisEnabled;
+            this.stream = stream;
             this.nextChar();
         }
         readNumberArray() {

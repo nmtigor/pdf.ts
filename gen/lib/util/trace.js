@@ -24,18 +24,20 @@ export const warn = (msg, meta) => {
             msg += ` (${match[1]})`;
     }
 };
-let reporting_ = null;
+let reporting_;
 let count_reported_ = 0;
 const MAX_reported_ = 2;
-Error.prototype.toJ = function () {
-    return {
-        ts: Date.now(),
-        name: this.name,
-        message: this.message,
-        // actionlist: actionlist_.toval(),
-        stack: computeStackTrace_(this),
-    };
-};
+Reflect.defineProperty(Error.prototype, "toJ", {
+    value() {
+        return {
+            ts: Date.now(),
+            name: this.name,
+            message: this.message,
+            // actionlist: actionlist_.toval(),
+            stack: computeStackTrace_(this),
+        };
+    }
+});
 /**
  * @param { headconst } err_x
  */
@@ -46,35 +48,39 @@ export const reportError = async (err_x) => {
     // const trace_js = JSON.stringify( computeStackTrace_(err_x) );
     // console.log( trace_js );
     const err_j = err_x?.toJ(); //! `err_x` seems still  could be `null` at runtime
-    console.log(err_j);
-    const url = new URL(`/logerr`, window.location.toString());
-    if (url.hostname === "localhost")
-        url.port = "7272";
-    else
-        url.host = "datni.nmtigor.org";
-    const data_be = {
-        data_fe: JSON.stringify(err_j),
+    // console.log(err_j);
+    global.globalhvc?.showReportedError?.({
+        err_j,
         ts: err_j?.ts ?? Date.now(),
-    };
-    const res = await fetch(url.toString(), {
-        method: "PUT",
-        body: JSON.stringify(data_be),
-        headers: {
-            "Content-Type": "application/json",
-            // "X-PReMSys-Report": "",
-        },
     });
-    if (res.ok) {
-        global.globalhvc?.showReportedError?.(data_be.data_fe);
-        count_reported_++;
-        if (count_reported_ > MAX_reported_)
-            console.warn(`Has reported ${count_reported_} errors. Please pause and wait for debugging.`);
-        // actionlist_.reset();
-        console.assert(reporting_ === err_x);
-        reporting_ = null;
-    }
-    else
-        console.error(res);
+    reporting_ = undefined;
+    // const url = new URL( `/logerr`, window.location.toString() );
+    // if( url.hostname === "localhost" )
+    //      url.port = "7272";
+    // else url.host = "datni.nmtigor.org";
+    // const data_be = {
+    //   data_fe: JSON.stringify( err_j ),
+    //   ts: err_j?.ts ?? Date.now(), 
+    // };
+    // const res = await fetch( url.toString(), {
+    //   method: "PUT",
+    //   body: JSON.stringify( data_be ),
+    //   headers: {
+    //     "Content-Type": "application/json",
+    //     // "X-PReMSys-Report": "",
+    //   },
+    // });
+    // if( res.ok ) 
+    // {
+    //   global.globalhvc?.showReportedError?.( data_be.data_fe );
+    //   count_reported_++;
+    //   if( count_reported_ > MAX_reported_ )
+    //     console.warn( `Has reported ${count_reported_} errors. Please pause and wait for debugging.` );
+    //   // actionlist_.reset();
+    //   console.assert( reporting_ === err_x );
+    //   reporting_ = undefined;
+    // }
+    // else console.error( res );
 };
 /*81---------------------------------------------------------------------------*/
 /**

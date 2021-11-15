@@ -63,9 +63,8 @@ async function fetchData(url, asTypedArray = false) {
             request.responseType = "arraybuffer";
         }
         request.onreadystatechange = () => {
-            if (request.readyState !== XMLHttpRequest.DONE) {
+            if (request.readyState !== XMLHttpRequest.DONE)
                 return;
-            }
             if (request.status === 200 || request.status === 0) {
                 let data;
                 if (asTypedArray && request.response) {

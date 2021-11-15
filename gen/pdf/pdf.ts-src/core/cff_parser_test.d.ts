@@ -1,2 +1,2 @@
-import "../../../lib/jslang.js";
+export {};
 //# sourceMappingURL=cff_parser_test.d.ts.map

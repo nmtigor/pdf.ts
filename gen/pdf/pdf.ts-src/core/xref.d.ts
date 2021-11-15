@@ -1,11 +1,10 @@
-import { Cmd, Dict, NoRef, Obj, Ref } from "./primitives.js";
+import { Dict, ObjNoRef, Obj, Ref } from "./primitives.js";
 import { Parser } from "./parser.js";
 import { CipherTransformFactory } from "./crypto.js";
 import { Stream } from "./stream.js";
 import { ChunkedStream } from "./chunked_stream.js";
 import { PDFDocumentStats } from "../display/api.js";
 import { BasePdfManager } from "./pdf_manager.js";
-import { BaseStream } from "./base_stream.js";
 interface XRefEntry {
     offset: number;
     gen: number;
@@ -52,11 +51,11 @@ export declare class XRef {
     indexObjects(): Dict;
     readXRef(recoveryMode?: boolean): Dict | undefined;
     getEntry(i: number): XRefEntry | null;
-    fetchIfRef(obj: Obj, suppressEncryption?: boolean): NoRef | undefined;
-    fetch(ref: Ref, suppressEncryption?: boolean): NoRef;
-    fetchUncompressed(ref: Ref, xrefEntry: XRefEntry, suppressEncryption?: boolean): NoRef;
-    fetchCompressed(ref: Ref, xrefEntry: XRefEntry, suppressEncryption?: boolean): NoRef;
-    fetchIfRefAsync(obj: Obj, suppressEncryption?: boolean): Promise<string | number | boolean | Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint16Array | Int32Array | Uint32Array | Float32Array | Float64Array | BaseStream | Dict | XFANsName.Name | Cmd | typeof import("./primitives.js").EOF | Obj[] | Ref | null>;
+    fetchIfRef(obj: Obj | undefined, suppressEncryption?: boolean): ObjNoRef | undefined;
+    fetch(ref: Ref, suppressEncryption?: boolean): ObjNoRef;
+    fetchUncompressed(ref: Ref, xrefEntry: XRefEntry, suppressEncryption?: boolean): ObjNoRef;
+    fetchCompressed(ref: Ref, xrefEntry: XRefEntry, suppressEncryption?: boolean): ObjNoRef;
+    fetchIfRefAsync(obj: Obj, suppressEncryption?: boolean): Promise<Obj>;
     fetchAsync<T extends Obj = Obj>(ref: Ref, suppressEncryption?: boolean): Promise<T>;
     getCatalogObj(): Dict;
 }

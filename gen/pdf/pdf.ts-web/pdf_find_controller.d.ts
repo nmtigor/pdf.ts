@@ -18,7 +18,7 @@ interface PDFFindControllerOptions {
      */
     eventBus: EventBus;
 }
-interface FindCtrlrState {
+export interface FindCtrlrState {
     type: string;
     query: string;
     phraseSearch: boolean;

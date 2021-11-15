@@ -169,7 +169,6 @@ export class Type1Font {
         for (const key in data.properties) {
             properties[key] = data.properties[key];
         }
-        Object.assign(properties, data.properties);
         const charstrings = data.charstrings;
         const type2Charstrings = this.getType2Charstrings(charstrings);
         const subrs = this.getType2Subrs(data.subrs);

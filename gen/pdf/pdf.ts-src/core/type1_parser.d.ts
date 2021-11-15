@@ -34,8 +34,8 @@ declare namespace NsType1Parser {
         properties: FontProgramProp;
     }
     export class Type1Parser {
-        stream: Stream;
         seacAnalysisEnabled: boolean;
+        stream: Stream;
         currentChar: number;
         constructor(stream: Stream, encrypted: boolean, seacAnalysisEnabled: boolean);
         readNumberArray(): number[];

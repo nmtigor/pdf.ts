@@ -538,11 +538,13 @@ namespace NsType1Parser
   // eslint-disable-next-line no-shadow
   export class Type1Parser
   {
-    seacAnalysisEnabled:boolean
+    seacAnalysisEnabled;
+    
+    stream;
 
     currentChar!:number;
 
-    constructor( public stream:Stream, encrypted:boolean, seacAnalysisEnabled:boolean ) 
+    constructor( stream:Stream, encrypted:boolean, seacAnalysisEnabled:boolean ) 
     {
       if( encrypted ) 
       {
@@ -565,6 +567,7 @@ namespace NsType1Parser
       }
       this.seacAnalysisEnabled = !!seacAnalysisEnabled;
   
+      this.stream = stream;
       this.nextChar();
     }
   

@@ -820,11 +820,11 @@ export function isDestArraysEqual( firstDest:ExplicitDest | undefined, secondDes
     }
     if( isObjectLike(first) && second !== null )
     {
-      if( Object.keys(<{}>first).length !== Object.keys(<{}>second).length )
+      if( Object.keys(first).length !== Object.keys(<{}>second).length )
       {
         return false;
       }
-      for( const key in <object>first )
+      for( const key in first )
       {
         if( !isEntryEqual((<any>first)[key], (<any>second)[key]) )
         {

@@ -2246,9 +2246,8 @@ class InkAnnotation extends MarkupAnnotation {
         this.data.annotationType = 15 /* INK */;
         this.data.inkLists = [];
         const rawInkLists = parameters.dict.getArray("InkList");
-        if (!Array.isArray(rawInkLists)) {
+        if (!Array.isArray(rawInkLists))
             return;
-        }
         const xref = parameters.xref;
         for (let i = 0, ii = rawInkLists.length; i < ii; ++i) {
             // The raw ink lists array contains arrays of numbers representing

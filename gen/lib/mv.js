@@ -3,7 +3,7 @@
  * -- */
 import { mix } from "./jslang.js";
 import { svg } from "./dom.js";
-import { vuu_sy, Vuu_sym_t } from "./symbols.js";
+import { $vuu, $Vuu } from "./symbols.js";
 import { assert } from "./util/trace.js";
 /**
  * Only has access to other Coo's through `ci`.
@@ -30,23 +30,23 @@ export class Vuu {
         this.coo$ = coo_x;
         this.el$ = el_x;
         //jjjj is this not always Vuu? check!
-        this.el$[vuu_sy] = this;
-        this.el$[Vuu_sym_t] = this.constructor;
+        this.el$[$vuu] = this;
+        this.el$[$Vuu] = this.constructor;
     }
     get parentvuu1() {
         let node = this.el$.parentNode;
-        while (node && !node[vuu_sy])
+        while (node && !node[$vuu])
             node = node.parentNode;
-        return node ? node[vuu_sy] : undefined;
+        return node ? node[$vuu] : undefined;
     }
     /**
      * @param { headconst } node_x
      */
     static vuuOf(node_x) {
         let node = node_x;
-        while (node && !node[vuu_sy])
+        while (node && !node[$vuu])
             node = node.parentNode;
-        return node ? node[vuu_sy] : undefined;
+        return node ? node[$vuu] : undefined;
     }
     // /**
     //  * @deprecated - use DOM's `append()` directly
@@ -155,9 +155,7 @@ export class SVGViewbox extends SVGVCoo {
      */
     constructor(viewBox_x = "0 0 100 100") {
         super(svg("svg"));
-        this.el$.setAttrs({
-            viewBox: viewBox_x,
-        });
+        this.el$.setAttribute("viewBox", viewBox_x);
     }
 }
 class MooHandlerDB {

@@ -46,8 +46,9 @@ const defaultOptions = {
     },
     defaultUrl: {
         /** @type {string} */
-        value: `${D_base}/res/pdf/test/pdfs/pattern_text_embedded_font.pdf`,
-        // value: "/res/pdf/test/pdfs/basicapi.pdf",
+        // value: `${D_base}/res/pdf/test/pdfs/pattern_text_embedded_font.pdf`,
+        // value: `${D_base}/res/pdf/test/pdfs/basicapi.pdf`,
+        value: `${D_base}/res/pdf/test/pdfs/tracemonkey.pdf`,
         // value: "compressed.tracemonkey-pldi-09.pdf",
         kind: 2 /* VIEWER */,
     },

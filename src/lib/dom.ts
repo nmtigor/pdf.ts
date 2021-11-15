@@ -3,7 +3,7 @@
 ** --- */
 
 import { loff_t } from "./alias.js";
-import { tail_ignored_sy, loff_sym, ovlap_sy } from "./symbols.js";
+import { $tail_ignored, $loff, $ovlap } from "./symbols.js";
 /*81---------------------------------------------------------------------------*/
 
 declare global 
@@ -101,9 +101,9 @@ Node.prototype.removeAllChild = function()
  */
 Node.prototype.assert_eq = function( rhs )
 {
-  // if( rhs && rhs[ref_test_sym] )
+  // if( rhs && rhs[$ref_test] )
   // {
-  //   console.assert( this === rhs[ref_test_sym] );
+  //   console.assert( this === rhs[$ref_test] );
   //   return;
   // }
   
@@ -128,7 +128,7 @@ Node.prototype.assert_eq = function( rhs )
       this.childNodes[i].assert_eq( childNodes[i] );
   }
 
-  // if( rhs && rhs[test_ref_sym] ) rhs[ ref_test_sym ] = this;
+  // if( rhs && rhs[test_ref_sym] ) rhs[ $ref_test ] = this;
 }
 /*64----------------------------------------------------------*/
 
@@ -136,7 +136,7 @@ declare global
 {
   interface Element
   {
-    setAttrs( attrs_o:{ [key:string]:string } ):this;
+    setAttrs( attrs_o:Record<string, string> ):this;
 
     readonly scrollRight:number;
     readonly scrollBottom:number;
@@ -251,7 +251,7 @@ declare global
 {
   interface DOMRect
   {
-    [ovlap_sy]:boolean;
+    [$ovlap]:boolean;
   }
 
   interface Range
@@ -275,14 +275,14 @@ Range.prototype.getReca = function( rec_a:DOMRect[], ovlap=false )
     {
       const rec = recs[i];
       if( rec.width === 0 ) rec.width = rec.height * .1;
-      rec[ ovlap_sy ] = ovlap;
+      rec[ $ovlap ] = ovlap;
       rec_a.push( rec );
     }
   }
   else {
     const rec = this.getBoundingClientRect();
     rec.width = rec.height * .1
-    rec[ ovlap_sy ] = ovlap;
+    rec[ $ovlap ] = ovlap;
     rec_a.push( rec );
   }
 }
@@ -298,8 +298,8 @@ declare global
 {
   interface Text
   {
-    [loff_sym]:loff_t;
-    [tail_ignored_sy]:boolean;
+    [$loff]:loff_t;
+    [$tail_ignored]:boolean;
   }
 }
 
@@ -311,8 +311,8 @@ declare global
 export function textnode( text_x:string, loff_x?:loff_t, tail_ignored_x?:boolean )
 {
   const ret = document.createTextNode( text_x );
-  if( loff_x !== undefined ) ret[ loff_sym ] = loff_x;
-  if( tail_ignored_x !== undefined ) ret[ tail_ignored_sy ] = tail_ignored_x;
+  if( loff_x !== undefined ) ret[ $loff ] = loff_x;
+  if( tail_ignored_x !== undefined ) ret[ $tail_ignored ] = tail_ignored_x;
   return ret;
 }
 /*64----------------------------------------------------------*/

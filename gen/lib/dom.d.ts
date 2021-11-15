@@ -1,5 +1,5 @@
 import { loff_t } from "./alias.js";
-import { tail_ignored_sy, loff_sym, ovlap_sy } from "./symbols.js";
+import { $tail_ignored, $loff, $ovlap } from "./symbols.js";
 declare global {
     interface EventTarget {
         on(type: string, listener: any, options?: any): void;
@@ -22,9 +22,7 @@ declare global {
 }
 declare global {
     interface Element {
-        setAttrs(attrs_o: {
-            [key: string]: string;
-        }): this;
+        setAttrs(attrs_o: Record<string, string>): this;
         readonly scrollRight: number;
         readonly scrollBottom: number;
     }
@@ -47,7 +45,7 @@ declare global {
 export declare type HSElement = HTMLElement | SVGElement;
 declare global {
     interface DOMRect {
-        [ovlap_sy]: boolean;
+        [$ovlap]: boolean;
     }
     interface Range {
         /**
@@ -60,8 +58,8 @@ declare global {
 }
 declare global {
     interface Text {
-        [loff_sym]: loff_t;
-        [tail_ignored_sy]: boolean;
+        [$loff]: loff_t;
+        [$tail_ignored]: boolean;
     }
 }
 /**

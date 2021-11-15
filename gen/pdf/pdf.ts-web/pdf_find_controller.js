@@ -43,15 +43,13 @@ function normalize(text) {
 // search results is correct in the `textLayer` for strings containing e.g. "½"
 // characters; essentially "inverting" the result of the `normalize` function.
 function getOriginalIndex(matchIndex, diffs) {
-    if (!diffs) {
+    if (!diffs)
         return matchIndex;
-    }
     let totalDiff = 0;
     for (const [index, diff] of diffs) {
         const currentIndex = index + totalDiff;
-        if (currentIndex >= matchIndex) {
+        if (currentIndex >= matchIndex)
             break;
-        }
         if (currentIndex + diff > matchIndex) {
             totalDiff += matchIndex - currentIndex;
             break;

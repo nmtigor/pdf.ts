@@ -1,7 +1,7 @@
 /*81*****************************************************************************
  * dom
 ** --- */
-import { tail_ignored_sy, loff_sym, ovlap_sy } from "./symbols.js";
+import { $tail_ignored, $loff, $ovlap } from "./symbols.js";
 EventTarget.prototype.on = function (type, listener, options) {
     this.addEventListener(type, listener, options);
 };
@@ -53,9 +53,9 @@ Node.prototype.removeAllChild = function () {
  * @param { headconst } rhs
  */
 Node.prototype.assert_eq = function (rhs) {
-    // if( rhs && rhs[ref_test_sym] )
+    // if( rhs && rhs[$ref_test] )
     // {
-    //   console.assert( this === rhs[ref_test_sym] );
+    //   console.assert( this === rhs[$ref_test] );
     //   return;
     // }
     if (this === rhs)
@@ -76,7 +76,7 @@ Node.prototype.assert_eq = function (rhs) {
         for (let i = childNodes.length; i--;)
             this.childNodes[i].assert_eq(childNodes[i]);
     }
-    // if( rhs && rhs[test_ref_sym] ) rhs[ ref_test_sym ] = this;
+    // if( rhs && rhs[test_ref_sym] ) rhs[ $ref_test ] = this;
 };
 Element.prototype.setAttrs = function (attrs_o) {
     for (const key in attrs_o) {
@@ -146,14 +146,14 @@ Range.prototype.getReca = function (rec_a, ovlap = false) {
             const rec = recs[i];
             if (rec.width === 0)
                 rec.width = rec.height * .1;
-            rec[ovlap_sy] = ovlap;
+            rec[$ovlap] = ovlap;
             rec_a.push(rec);
         }
     }
     else {
         const rec = this.getBoundingClientRect();
         rec.width = rec.height * .1;
-        rec[ovlap_sy] = ovlap;
+        rec[$ovlap] = ovlap;
         rec_a.push(rec);
     }
 };
@@ -169,9 +169,9 @@ Range.prototype.reset = function () {
 export function textnode(text_x, loff_x, tail_ignored_x) {
     const ret = document.createTextNode(text_x);
     if (loff_x !== undefined)
-        ret[loff_sym] = loff_x;
+        ret[$loff] = loff_x;
     if (tail_ignored_x !== undefined)
-        ret[tail_ignored_sy] = tail_ignored_x;
+        ret[$tail_ignored] = tail_ignored_x;
     return ret;
 }
 export function html(nodeName, innerHTML, doc = document) {

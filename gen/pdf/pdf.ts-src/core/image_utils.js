@@ -74,9 +74,8 @@ export class LocalColorSpaceCache extends BaseLocalCache {
             throw new Error('LocalColorSpaceCache.set - expected "name" and/or "ref" argument.');
         }
         if (ref) {
-            if (this.imageCache$.has(ref)) {
+            if (this.imageCache$.has(ref))
                 return;
-            }
             if (name !== null) {
                 // Optional when `ref` is defined.
                 this.nameRefMap$.set(name, ref);
@@ -85,9 +84,8 @@ export class LocalColorSpaceCache extends BaseLocalCache {
             return;
         }
         // name
-        if (this.imageMap$.has(name)) {
+        if (this.imageMap$.has(name))
             return;
-        }
         this.imageMap$.set(name, data);
     }
 }

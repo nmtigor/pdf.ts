@@ -1184,7 +1184,7 @@ export class Font extends FontExpotDataEx
     {
       info(
         "Inconsistent font file Type/SubType, expected: " +
-          `${this.type}/${this.subtype} but found: ${type}/${subtype}.`
+        `${this.type}/${this.subtype} but found: ${type}/${subtype}.`
       );
     }
 

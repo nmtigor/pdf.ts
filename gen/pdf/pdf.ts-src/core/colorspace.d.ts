@@ -2,10 +2,16 @@ import { LocalColorSpaceCache } from "./image_utils.js";
 import { Dict, Name, Ref } from "./primitives.js";
 import { PDFFunctionFactory } from "./function.js";
 import { XRef } from "./xref.js";
+export declare type CS = Ref | Name | Dict | number | [
+    Ref | Name,
+    Ref | Name | Dict,
+    (undefined | Ref | Name | Dict | number)?,
+    (undefined | Ref | BaseStream | string)?
+];
 interface ParseParms {
-    cs: Name | Ref;
+    cs: CS;
     xref: XRef;
-    resources?: Dict | undefined;
+    resources: Dict | undefined;
     pdfFunctionFactory: PDFFunctionFactory;
     localColorSpaceCache: LocalColorSpaceCache;
 }
@@ -53,7 +59,7 @@ export declare abstract class ColorSpace {
     /**
      * Refer to the static `ColorSpace.isDefaultDecode` method below.
      */
-    isDefaultDecode(decodeMap: unknown, bpc: number): boolean;
+    isDefaultDecode(decodeMap: unknown, bpc?: number): boolean;
     /**
      * Fills in the RGB colors in the destination buffer.  alpha01 indicates
      * how many alpha components there are in the dest array; it will be either
@@ -69,7 +75,7 @@ export declare abstract class ColorSpace {
      */
     get usesZeroToOneRange(): boolean;
     private static _cache;
-    static getCached(cacheKey: Name | Ref, xref: XRef, localColorSpaceCache: LocalColorSpaceCache): ColorSpace | null;
+    static getCached(cacheKey: unknown, xref: XRef, localColorSpaceCache: LocalColorSpaceCache): ColorSpace | undefined;
     static parseAsync({ cs, xref, resources, pdfFunctionFactory, localColorSpaceCache, }: ParseParms): Promise<ColorSpace>;
     static parse({ cs, xref, resources, pdfFunctionFactory, localColorSpaceCache, }: ParseParms): ColorSpace;
     private static _parse;
@@ -79,8 +85,8 @@ export declare abstract class ColorSpace {
      * component, e.g. [0, 1, 0, 1, 0, 1] for a RGB color.
      * This does not handle Lab, Indexed, or Pattern decode maps since they are
      * slightly different.
-     * @param decode - Decode map (usually from an image).
-     * @param numComps - Number of components the color space has.
+     * @param decode Decode map (usually from an image).
+     * @param numComps Number of components the color space has.
      */
     static isDefaultDecode(decode: unknown, numComps: number): boolean;
     static get singletons(): {
@@ -126,5 +132,6 @@ declare namespace NsDeviceCmykCS {
     }
 }
 import DeviceCmykCS = NsDeviceCmykCS.DeviceCmykCS;
+import { BaseStream } from "./base_stream.js";
 export {};
 //# sourceMappingURL=colorspace.d.ts.map

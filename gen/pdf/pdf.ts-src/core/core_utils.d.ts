@@ -52,7 +52,7 @@ interface GetInheritablePropertyParms {
  * the value for the key is returned or, if `stopWhenFound` is `false`, a list
  * of values is returned.
  */
-export declare function getInheritableProperty({ dict, key, getArray, stopWhenFound, }: GetInheritablePropertyParms): string | number | boolean | Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint16Array | Int32Array | Uint32Array | Float32Array | Float64Array | BaseStream | Dict | XFANsName.Name | NsCmd.Cmd | typeof import("./primitives.js").EOF | Obj[] | null | undefined;
+export declare function getInheritableProperty({ dict, key, getArray, stopWhenFound, }: GetInheritablePropertyParms): string | number | boolean | Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint16Array | Int32Array | Uint32Array | Float32Array | Float64Array | BaseStream | Dict | XFANsName.Name | NsCmd.Cmd | typeof import("./primitives.js").EOF | (Obj | undefined)[] | null | undefined;
 /**
  * Converts positive integers to (upper case) Roman numerals.
  * @param number The number that should be converted.

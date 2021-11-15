@@ -1,4 +1,4 @@
-import { Dict, NoRef, Ref } from "./primitives.js";
+import { Dict, ObjNoRef, Ref } from "./primitives.js";
 export declare class PDFFunctionFactory {
     #private;
     xref: XRef;
@@ -32,7 +32,7 @@ declare namespace NsPDFFunction {
         parseArray({ xref, isEvalSupported, fnObj }: {
             xref: XRef;
             isEvalSupported: boolean;
-            fnObj: NoRef;
+            fnObj: ObjNoRef;
         }): ParsedFunction;
         /**
          * 7.10.2

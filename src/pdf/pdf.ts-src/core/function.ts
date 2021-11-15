@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-import { Dict, NoRef, Obj, Ref } from "./primitives.js";
+import { Dict, ObjNoRef, Obj, Ref } from "./primitives.js";
 import {
   FormatError,
   info,
@@ -99,7 +99,8 @@ export class PDFFunctionFactory
 
   #cache( cacheKey:Ref | BaseStream | Dict, parsedFunction:ParsedFunction )
   {
-    if (!parsedFunction) {
+    if (!parsedFunction) 
+    {
       throw new Error(
         'PDFFunctionFactory.#cache - expected "parsedFunction" argument.'
       );
@@ -267,7 +268,7 @@ namespace NsPDFFunction
     parseArray({ xref, isEvalSupported, fnObj }:{
       xref:XRef;
       isEvalSupported:boolean;
-      fnObj:NoRef;
+      fnObj:ObjNoRef;
     }):ParsedFunction {
       if( !Array.isArray(fnObj) )
       {

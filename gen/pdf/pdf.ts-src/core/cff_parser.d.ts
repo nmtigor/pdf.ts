@@ -72,6 +72,9 @@ declare namespace NsCFFParser {
     export {};
 }
 export import CFFParser = NsCFFParser.CFFParser;
+/**
+ * Compact Font Format
+ */
 export declare class CFF {
     header?: CFFHeader;
     names: string[];

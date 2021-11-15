@@ -1417,7 +1417,7 @@ export class PDFWorker {
                     }
                 };
                 const onWorkerError = (evt) => {
-                    console.log(evt);
+                    // console.log(evt);
                     if (!this.#webWorker) {
                         // Worker failed to initialize due to an error. Clean up and fall
                         // back to the fake worker.

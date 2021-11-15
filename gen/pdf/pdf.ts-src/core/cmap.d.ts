@@ -1,4 +1,4 @@
-import { Name, NoCmd } from "./primitives.js";
+import { Name, ObjNoCmd } from "./primitives.js";
 import { TupleOf } from "../../../lib/alias.js";
 export interface CharCodeOut {
     charcode: number;
@@ -50,7 +50,7 @@ export declare class IdentityCMap extends CMap {
     constructor(vertical: boolean, n: number);
     mapCidRange(low: number, high: number, dstLow: number): void;
     mapBfRange(low: number, high: number, dstLow: string): void;
-    mapBfRangeToArray(low: number, high: number, array: NoCmd[]): void;
+    mapBfRangeToArray(low: number, high: number, array: ObjNoCmd[]): void;
     mapOne(src: number, dst: number | string): void;
     lookup(code: number): number | undefined;
     contains(code: number): boolean;

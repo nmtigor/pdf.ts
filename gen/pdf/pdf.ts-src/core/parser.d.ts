@@ -96,7 +96,7 @@ export declare class Lexer {
     getName(): Name;
     getHexString(): string;
     getObj(): Obj;
-    peekObj(): string | number | boolean | import("../../../lib/alias.js").TypedArray | BaseStream | Dict | Name | Cmd | typeof EOF | Obj[] | Ref;
+    peekObj(): string | number | boolean | Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint16Array | Int32Array | Uint32Array | Float32Array | Float64Array | BaseStream | Dict | Name | Cmd | typeof EOF | Ref | (Obj | undefined)[];
     skipToNextLine(): void;
 }
 export declare class Linearization {

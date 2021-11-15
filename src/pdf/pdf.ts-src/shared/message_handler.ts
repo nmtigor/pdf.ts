@@ -511,7 +511,7 @@ export const enum Thread {
   worker,
 }
 
-export type ActionName< Ta extends Thread > = Ta extends Thread.main ? MActionName : WActionName;
+export type ActionName<Ta extends Thread> = Ta extends Thread.main ? MActionName : WActionName;
 // export type ActionDataMap< Ta extends Thread > = Ta extends Thread.main ? MActionMap : WActionMap;
 
 export interface StreamSink< 
@@ -631,7 +631,7 @@ export class MessageHandler<
     comObj.addEventListener( "message", this.#onComObjOnMessage );
   }
 
-  #onComObjOnMessage = ( event:MessageEvent< Message<Tn> > ) => 
+  #onComObjOnMessage = ( event:MessageEvent<Message<Tn>> ) => 
   {
     const data = event.data;
     if( data.targetName !== this.sourceName ) return;
@@ -720,7 +720,7 @@ export class MessageHandler<
     // #endif
   };
 
-  on< AN extends ActionName<Tn> >( actionName:AN, handler:ActionHandler<Tn,AN> ) 
+  on<AN extends ActionName<Tn>>( actionName:AN, handler:ActionHandler<Tn,AN> ) 
   {
     // #if !PRODUCTION || TESTING
       assert( typeof handler === "function",
@@ -741,7 +741,7 @@ export class MessageHandler<
    * @param data - JSON data to send.
    * @param transfers - List of transfers/ArrayBuffers.
    */
-  send< AN extends ActionName<Ta> >( 
+  send<AN extends ActionName<Ta>>( 
     actionName:AN, data:ActionData<Ta,AN>, transfers?:Transferable[]
   ) {
     this.#postMessage(
@@ -763,7 +763,7 @@ export class MessageHandler<
    * @param transfers List of transfers/ArrayBuffers.
    * @return Promise to be resolved with response data.
    */
-  sendWithPromise< AN extends ActionName<Ta> >( 
+  sendWithPromise<AN extends ActionName<Ta>>( 
     actionName:AN, data:ActionData<Ta,AN>, transfers?:Transferable[] 
   ):Promise< ActionReturn<Ta,AN> > {
     const callbackId = this.callbackId++;
@@ -797,7 +797,7 @@ export class MessageHandler<
    */
   sendWithStream<AN extends ActionName<Ta>>( 
     actionName:AN, data:ActionData<Ta,AN>,
-    queueingStrategy?:QueuingStrategy< ActionSinkchunk<Ta,AN> >, 
+    queueingStrategy?:QueuingStrategy<ActionSinkchunk<Ta,AN>>, 
     transfers?:Transferable[] 
   ) {
     const streamId = this.streamId++,
@@ -805,7 +805,7 @@ export class MessageHandler<
       targetName = this.targetName,
       comObj = this.comObj;
 
-    return new ReadableStream< ActionSinkchunk<Ta,AN> >(
+    return new ReadableStream<ActionSinkchunk<Ta,AN>>(
       {
         start: ( controller:ReadableStreamDefaultController ) => 
         {
