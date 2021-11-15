@@ -2,17 +2,18 @@
  * test_lib
 ** -------- */
 
-import { isObjectLike } from "../../lib/jslang.js";
-import { assert } from "../../lib/util/trace.js";
-import { Dict, Obj, Ref } from "./core/primitives.js";
-import { StringStream } from "./core/stream.js";
-import { Page, PDFDocument } from "./core/document.js";
-import { PDFWorker } from "./pdf.js";
-import { BasePdfManager } from "./core/pdf_manager.js";
+import { isObjectLike } from "../lib/jslang.js";
+import { assert } from "../lib/util/trace.js";
+import { Dict, Name, Obj, Ref } from "./pdf.ts-src/core/primitives.js";
+import { StringStream } from "./pdf.ts-src/core/stream.js";
+import { Page, PDFDocument } from "./pdf.ts-src/core/document.js";
+import { GlobalWorkerOptions, PDFWorker } from "./pdf.ts-src/pdf.js";
+import { BasePdfManager } from "./pdf.ts-src/core/pdf_manager.js";
+import { BaseStream } from "./pdf.ts-src/core/base_stream.js";
 /*81---------------------------------------------------------------------------*/
 
-const D_root = "";
-const D_pdf = `${D_root}/res/pdf`;
+const D_base = "";
+const D_pdf = `${D_base}/res/pdf`;
 const D_external = `${D_pdf}/pdf.ts-external`;
 
 export const TEST_PDFS_PATH = `${D_pdf}/test/pdfs/`;
@@ -96,7 +97,7 @@ export function buildGetDocumentParams( filename:string, options?:BuildGetDocume
 interface XRefMockCtorParms
 {
   ref:Ref;
-  data:string | Dict;
+  data:string | Name | Dict | BaseStream | [Name, Dict];
 }
 
 export class XRefMock
@@ -187,4 +188,6 @@ export function isEmptyObj( obj:object )
   );
   return Object.keys(obj).length === 0;
 }
+
+GlobalWorkerOptions.workerSrc = `${D_base}/gen/pdf/pdf.ts-src/pdf.worker.js`;
 /*81---------------------------------------------------------------------------*/

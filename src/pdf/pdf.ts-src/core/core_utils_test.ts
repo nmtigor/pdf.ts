@@ -7,7 +7,7 @@ import "../../../lib/jslang.js";
 import { css_1, css_2 } from "../../../test/alias.js";
 import { encodeToXmlString, escapePDFName, getInheritableProperty, isWhiteSpace, log2, parseXFAPath, toRomanNumerals, validateCSSFont } from "./core_utils.js";
 import { Dict, Ref } from "./primitives.js";
-import { XRefMock } from "../test_lib.js";
+import { XRefMock } from "../../test_utils.js";
 import { CssFontInfo } from "./document.js";
 
 const strttime = performance.now();
@@ -190,10 +190,10 @@ console.log("%c>>>>>>> test isWhiteSpace() >>>>>>>",`color:${css_1}`);
 {
   console.log("it handles space characters...");
   {
-    console.assert( isWhiteSpace(0x20) === true );
-    console.assert( isWhiteSpace(0x09) === true );
-    console.assert( isWhiteSpace(0x0d) === true );
-    console.assert( isWhiteSpace(0x0a) === true );
+    console.assert( isWhiteSpace(0x20) );
+    console.assert( isWhiteSpace(0x09) );
+    console.assert( isWhiteSpace(0x0d) );
+    console.assert( isWhiteSpace(0x0a) );
   }
 
   console.log("it handles non-space characters...");

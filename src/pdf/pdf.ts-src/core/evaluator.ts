@@ -47,7 +47,7 @@ import {
   FontDict,
   isName,
   Name,
-  NoCmd,
+  ObjNoCmd,
   Obj,
   Ref,
   RefSet,
@@ -1848,7 +1848,7 @@ export class PartialEvaluator
     throw new FormatError(`Unknown PatternName: ${patternName}`);
   }
 
-  _parseVisibilityExpression( array:Obj[], nestingCounter:number, 
+  _parseVisibilityExpression( array:(Obj | undefined)[], nestingCounter:number, 
     currentResult:VisibilityExpressionResult )
   {
     const MAX_NESTING = 10;
@@ -1884,7 +1884,7 @@ export class PartialEvaluator
         const nestedResult:VisibilityExpressionResult = [];
         currentResult.push(nestedResult);
         // Recursively parse a subarray.
-        this._parseVisibilityExpression(object, nestingCounter, nestedResult);
+        this._parseVisibilityExpression( object, nestingCounter, nestedResult );
       }
       else if( (raw instanceof Ref) )
       {
@@ -1982,7 +1982,7 @@ export class PartialEvaluator
     resources = resources || Dict.empty;
     initialState = initialState || new EvalState();
 
-    if (!operatorList) 
+    if( !operatorList )
     {
       throw new Error('getOperatorList: missing "operatorList" parameter');
     }
@@ -2565,7 +2565,7 @@ export class PartialEvaluator
               return;
             }
             // Other marked content types aren't supported yet.
-            args = <NoCmd[]>[
+            args = <ObjNoCmd[]>[
               (<Name>args![0]).name,
               args![1] instanceof Dict ? args![1].get("MCID") : null,
             ];
@@ -3247,7 +3247,7 @@ export class PartialEvaluator
 
       const operation = <Operation>{};
       let stop,
-        args:NoCmd[] = [];
+        args:ObjNoCmd[] = [];
       while( !(stop = timeSlotManager.check()) )
       {
         // The arguments parsed by read() are not used beyond this loop, so
@@ -5140,7 +5140,7 @@ interface OpInfo
 // }
 export type OpMap = Record<string, OpInfo | null>;
 
-export type OpArgs = NoCmd[] | null;
+export type OpArgs = ObjNoCmd[] | null;
 export interface Operation
 {
   fn:OPS;
@@ -5281,7 +5281,7 @@ export class EvaluatorPreprocessor
   parser:Parser;
   stateManager;
 
-  nonProcessedArgs:NoCmd[] = [];
+  nonProcessedArgs:ObjNoCmd[] = [];
   #numInvalidPathOPS = 0;
 
   constructor( stream:BaseStream, xref?:XRef, 
@@ -5410,7 +5410,7 @@ export class EvaluatorPreprocessor
         {
           args = [];
         }
-        args.push( <NoCmd>obj );
+        args.push( <ObjNoCmd>obj );
         if (args.length > 33) 
         {
           throw new FormatError("Too many arguments");

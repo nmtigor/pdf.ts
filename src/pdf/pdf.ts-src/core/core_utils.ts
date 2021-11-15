@@ -28,7 +28,7 @@ import {
 } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
 import { CssFontInfo } from "./document.js";
-import { Dict, isName, NoRef, Obj, Ref, RefSet } from "./primitives.js";
+import { Dict, isName, ObjNoRef, Obj, Ref, RefSet } from "./primitives.js";
 import { XRef } from "./xref.js";
 /*81---------------------------------------------------------------------------*/
 
@@ -142,7 +142,7 @@ export function getInheritableProperty({
   stopWhenFound=true,
 }:GetInheritablePropertyParms )
 {
-  let values:NoRef[] | undefined;;
+  let values:ObjNoRef[] | undefined;;
   const visited = new RefSet();
 
   while( dict instanceof Dict && !(dict.objId && visited.has(dict.objId)) )
@@ -151,7 +151,7 @@ export function getInheritableProperty({
     {
       visited.put( dict.objId );
     }
-    const value = getArray ? dict.getArray(key) : <NoRef | undefined>dict.get(key);
+    const value = getArray ? dict.getArray(key) : <ObjNoRef | undefined>dict.get(key);
     if (value !== undefined) 
     {
       if( stopWhenFound ) return value;

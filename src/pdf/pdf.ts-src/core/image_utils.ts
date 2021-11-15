@@ -81,7 +81,7 @@ interface ImageMask_LI_CData
 
 export type LI_CData = Image_LI_CData | ImageMask_LI_CData;
 type LI_CData_B = LI_CData | boolean;
-export class LocalImageCache extends BaseLocalCache< LI_CData_B >
+export class LocalImageCache extends BaseLocalCache<LI_CData_B>
 {
   /** @implements */
   set( name:string, ref:Ref | string | null=null, data:LI_CData_B )
@@ -106,21 +106,23 @@ export class LocalImageCache extends BaseLocalCache< LI_CData_B >
 }
 
 type LCS_CData = ColorSpace;
-export class LocalColorSpaceCache extends BaseLocalCache< LCS_CData >
+export class LocalColorSpaceCache extends BaseLocalCache<LCS_CData>
 {
   /** @implements */
   set( name:string | null=null, ref:Ref | string | null=null, data:LCS_CData ) 
   {
-    if (typeof name !== "string" && !ref) {
+    if( typeof name !== "string" && !ref )
+    {
       throw new Error(
         'LocalColorSpaceCache.set - expected "name" and/or "ref" argument.'
       );
     }
-    if (ref) {
-      if (this.imageCache$.has(ref)) {
-        return;
-      }
-      if (name !== null) {
+    if (ref) 
+    {
+      if( this.imageCache$.has(ref) ) return;
+
+      if (name !== null) 
+      {
         // Optional when `ref` is defined.
         this.nameRefMap$!.set(name, ref);
       }
@@ -128,15 +130,14 @@ export class LocalColorSpaceCache extends BaseLocalCache< LCS_CData >
       return;
     }
     // name
-    if (this.imageMap$!.has(name!)) {
-      return;
-    }
+    if( this.imageMap$!.has(name!) ) return;
+
     this.imageMap$!.set(name!, data);
   }
 }
 
 type LF_CData = ParsedFunction;
-export class LocalFunctionCache extends BaseLocalCache< LF_CData >
+export class LocalFunctionCache extends BaseLocalCache<LF_CData>
 {
   constructor() 
   {
@@ -158,7 +159,7 @@ export class LocalFunctionCache extends BaseLocalCache< LF_CData >
 
 export type LGS_CData = [string,Obj][];
 type LGS_CData_B = LGS_CData | boolean;
-export class LocalGStateCache extends BaseLocalCache< LGS_CData_B >
+export class LocalGStateCache extends BaseLocalCache<LGS_CData_B>
 {
   /** @implements */
   set( name:string, ref:Ref | string | null=null, data:LGS_CData_B ) 

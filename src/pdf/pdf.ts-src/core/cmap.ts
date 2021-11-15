@@ -23,7 +23,7 @@ import {
   FormatError,
   warn,
 } from "../shared/util.js";
-import { Cmd, EOF, isCmd, Name, NoCmd } from "./primitives.js";
+import { Cmd, EOF, isCmd, Name, ObjNoCmd } from "./primitives.js";
 import { Lexer } from "./parser.js";
 import { MissingDataException } from "./core_utils.js";
 import { Stream } from "./stream.js";
@@ -354,14 +354,17 @@ export class CMap
     const codespaceRanges = this.codespaceRanges;
     // 9.7.6.2 CMap Mapping
     // The code length is at most 4.
-    for (let n = 0, nn = codespaceRanges.length; n < nn; n++) {
+    for (let n = 0, nn = codespaceRanges.length; n < nn; n++) 
+    {
       c = ((c << 8) | str.charCodeAt(offset + n)) >>> 0;
       // Check each codespace range to see if it falls within.
       const codespaceRange = codespaceRanges[n];
-      for (let k = 0, kk = codespaceRange.length; k < kk; ) {
+      for (let k = 0, kk = codespaceRange.length; k < kk; ) 
+      {
         const low = codespaceRange[k++];
         const high = codespaceRange[k++];
-        if (c >= low && c <= high) {
+        if (c >= low && c <= high) 
+        {
           out.charcode = c;
           out.length = n + 1;
           return;
@@ -393,16 +396,14 @@ export class CMap
 
   get isIdentityCMap()
   {
-    if (!(this.name === "Identity-H" || this.name === "Identity-V")) {
+    if( !(this.name === "Identity-H" || this.name === "Identity-V") )
       return false;
-    }
-    if (this._map.length !== 0x10000) {
-      return false;
-    }
-    for (let i = 0; i < 0x10000; i++) {
-      if (this._map[i] !== i) {
-        return false;
-      }
+
+    if (this._map.length !== 0x10000) return false;
+
+    for (let i = 0; i < 0x10000; i++) 
+    {
+      if( this._map[i] !== i ) return false;
     }
     return true;
   }
@@ -432,7 +433,7 @@ export class IdentityCMap extends CMap
     assert( 0, "should not call mapBfRange" );
   }
 
-  override mapBfRangeToArray( low:number, high:number, array:NoCmd[] ) 
+  override mapBfRangeToArray( low:number, high:number, array:ObjNoCmd[] ) 
   {
     assert( 0, "should not call mapBfRangeToArray" );
   }

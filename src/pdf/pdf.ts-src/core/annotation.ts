@@ -3265,18 +3265,19 @@ class InkAnnotation extends MarkupAnnotation
     this.data.annotationType = AnnotationType.INK;
     this.data.inkLists = [];
 
-    const rawInkLists = <(number|Ref)[][]>parameters.dict.getArray("InkList");
-    if (!Array.isArray(rawInkLists)) {
-      return;
-    }
+    const rawInkLists = <(number | Ref)[][]>parameters.dict.getArray("InkList");
+    if( !Array.isArray(rawInkLists) ) return; 
+
     const xref = parameters.xref;
-    for (let i = 0, ii = rawInkLists.length; i < ii; ++i) {
+    for (let i = 0, ii = rawInkLists.length; i < ii; ++i) 
+    {
       // The raw ink lists array contains arrays of numbers representing
       // the alternating horizontal and vertical coordinates, respectively,
       // of each vertex. Convert this to an array of objects with x and y
       // coordinates.
       this.data.inkLists.push([]);
-      for (let j = 0, jj = rawInkLists[i].length; j < jj; j += 2) {
+      for (let j = 0, jj = rawInkLists[i].length; j < jj; j += 2) 
+      {
         this.data.inkLists[i].push({
           x: <number>xref.fetchIfRef(rawInkLists[i][j]),
           y: <number>xref.fetchIfRef(rawInkLists[i][j + 1]),

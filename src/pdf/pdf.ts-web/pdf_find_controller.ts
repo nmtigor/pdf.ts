@@ -83,18 +83,17 @@ type Diffs = [number,number][];
 // characters; essentially "inverting" the result of the `normalize` function.
 function getOriginalIndex( matchIndex:number, diffs?:Diffs )
 {
-  if (!diffs) {
-    return matchIndex;
-  }
+  if( !diffs ) return matchIndex;
+
   let totalDiff = 0;
   for( const [index, diff] of diffs )
   {
     const currentIndex = index + totalDiff;
 
-    if (currentIndex >= matchIndex) {
-      break;
-    }
-    if (currentIndex + diff > matchIndex) {
+    if( currentIndex >= matchIndex ) break;
+
+    if (currentIndex + diff > matchIndex) 
+    {
       totalDiff += matchIndex - currentIndex;
       break;
     }
@@ -123,7 +122,7 @@ interface FindCtrlrOffset
   wrapped:boolean;
 }
 
-interface FindCtrlrState
+/* #if TESTING */export /* #endif */interface FindCtrlrState
 {
   type:string;
   query:string;

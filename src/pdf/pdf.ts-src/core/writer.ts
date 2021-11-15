@@ -50,7 +50,7 @@ function writeStream( stream:BaseStream, buffer:string[], transform:CipherTransf
   buffer.push(string, "\nendstream\n");
 }
 
-function writeArray( array:Obj[], buffer:string[], transform:CipherTransform | null )
+function writeArray( array:(Obj | undefined)[], buffer:string[], transform:CipherTransform | null )
 {
   buffer.push("[");
   let first = true;

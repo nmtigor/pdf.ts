@@ -3,24 +3,24 @@
 ** ------- */
 
 /**
- * document[ cssstylesheet_sy ] { Function }
- * Getter of document[ cssstylesheet_sy_ ]
+ * document[ $cssstylesheet ] { Function }
+ * Getter of document[ $cssstylesheet_ ]
  */
-export const cssstylesheet_sy = Symbol("cssstylesheet_sy");
+export const $cssstylesheet = Symbol("$cssstylesheet");
 /**
- * document[ cssstylesheet_sy_ ] { CSSStyleSheet }
+ * document[ $cssstylesheet_ ] { CSSStyleSheet }
  */
-export const cssstylesheet_sy_ = Symbol("cssstylesheet_sy_");
+export const $cssstylesheet_ = Symbol("$cssstylesheet_");
 
 /**
- * Text[ tail_ignored_sy ]:boolean
+ * Text[ $tail_ignored ]:boolean
  */
-export const tail_ignored_sy = Symbol( "tail_ignored_sy" );
+export const $tail_ignored = Symbol( "$tail_ignored" );
 
 /**
- * Node[ facil_node_sy ] { boolean }
+ * Node[ $facil_node ] { boolean }
  */
-export const facil_node_sy = Symbol( "facil_node_sy" );
+export const $facil_node = Symbol( "$facil_node" );
 
 /**
  * Window[ features_sym ] { Object } - ref. detector.js
@@ -28,91 +28,91 @@ export const facil_node_sy = Symbol( "facil_node_sy" );
 // export const features_sym = Symbol("features_sym");
 
 /**
- * indent_el[ indent_blockline_sym ] { BlockLine }
+ * indent_el[ $indent_blockline ] { BlockLine }
  */
-export const indent_blockline_sym = Symbol( "indent_blockline_sym" );
+export const $indent_blockline = Symbol( "$indent_blockline" );
 
 /**
  * General usage
  */
-export const inuse_sym = Symbol( "inuse_sym" );
+export const $inuse = Symbol( "$inuse" );
 
 /**
- * BlockVuu.el[ lidx_sym ] { lnum_t }
+ * BlockVuu.el[ $lidx ] { lnum_t }
  * First line index of the `Element`
  */
-export const lidx_sym = Symbol( "lidx_sym" );
+export const $lidx = Symbol( "$lidx" );
 /**
- * BlockVuu.el[ lidx1_sym ] { lnum_t }
+ * BlockVuu.el[ $lidx1 ] { lnum_t }
  * Last line index of the `Element`
  */
-export const lidx1_sym = Symbol( "lidx1_sym" );
+export const $lidx1 = Symbol( "$lidx1" );
 /**
- * SpanVuu.el[ loff_sym ]:loff_t
+ * SpanVuu.el[ $loff ]:loff_t
  * Start offset of the `Element` or `Text` in the `Line`
  */
-export const loff_sym = Symbol( "loff_sym" );
+export const $loff = Symbol( "$loff" );
 /**
- * SpanVuu.el[ loff1_sym ] { loff_t }
+ * SpanVuu.el[ $loff1 ] { loff_t }
  * Stop offset of the `Element` in the `Line`
  */
-export const loff1_sym = Symbol( "loff1_sym" );
+export const $loff1 = Symbol( "$loff1" );
 
 /**
- * document[ theme_modified_sym ] { {} }
+ * document[ $theme_modified ] { {} }
  */
-export const theme_modified_sym = Symbol( "theme_modified_sym" );
+export const $theme_modified = Symbol( "$theme_modified" );
 
 /**
- * DOMRect[ ovlap_sy ] { boolean }
- * Node[ ovlap_sy ] { boolean }
+ * DOMRect[ $ovlap ] { boolean }
+ * Node[ $ovlap ] { boolean }
  */
-export const ovlap_sy = Symbol( "ovlap_sy" );
+export const $ovlap = Symbol( "$ovlap" );
 
 /**
- * document[ palename_sym ] { {} }
+ * document[ $palename ] { {} }
  */
-export const palename_sym = Symbol( "palename_sym" );
+export const $palename = Symbol( "$palename" );
 
 /**
  * Where focus is redirected for `Node` should not getting focused
  */
-export const redirect_focus_sym = Symbol("redirect_focus_sym");
+export const $redirect_focus = Symbol("$redirect_focus");
 
 /**
  * Array of DOMRect with unix timestamp
  */
-export const rec_utx_a_sy = Symbol("rec_utx_a_sy");
+export const $rec_utx_a = Symbol("$rec_utx_a");
 
 /**
- * document[ selectionvu_sy ] { HTMLVuu }
+ * document[ $selectionvu ] { HTMLVuu }
  * Used in document.onSelectionchange callback
  */
-export const selectionvu_sy = Symbol( "selectionvu_sy" );
+export const $selectionvu = Symbol( "$selectionvu" );
 
 /**
  * For test only
- * HTMLImageElement[ src_sym ] { String }
+ * HTMLImageElement[ $src ] { String }
  * To replace `src` to prevent console error messages
  */
-export const src_sym = Symbol("src_sym");
+export const $src = Symbol("$src");
 
 /**
- * Selection[ sync_eran_sym ] { boolean }
+ * Selection[ $sync_eran ] { boolean }
  * @deprecated
  */
-export const sync_eran_sym = Symbol( "sync_eran_sym" );
+export const $sync_eran = Symbol( "$sync_eran" );
 
 /**
- * document[ theme_sym ] { Object }
+ * document[ $theme ] { Object }
  */
-export const theme_sym = Symbol( "theme_sym" );
+export const $theme = Symbol( "$theme" );
 
 /**
  * Reference to test `===`
  * For test only
  */
-// export const ref_test_sym = Symbol("ref_test_sym");
+// export const $ref_test = Symbol("$ref_test");
 /**
  * Test reference?
  * For test only
@@ -122,15 +122,15 @@ export const theme_sym = Symbol( "theme_sym" );
 // export const valve_selectionchange_sym = Symbol("valve_selectionchange_sym");
 
 /**
- * DOMRect[ uts_sy ] { boolean }
+ * DOMRect[ $uts ] { boolean }
  */
-export const uts_sy = Symbol("uts_sy");
+export const $uts = Symbol("$uts");
 
 /**
- * this.el$[ vuu_sy ] { Vuu }
+ * this.el$[ $vuu ] { Vuu }
  */
-export const vuu_sy:unique symbol = Symbol( "vuu_sy" );
+export const $vuu = Symbol( "$vuu" );
 /**
- * this.el$[ Vuu_sym_t ] { constructor }
+ * this.el$[ $Vuu ] { typeof Vuu }
  */
-export const Vuu_sym_t = Symbol("Vuu_sym_t");
+export const $Vuu = Symbol("$Vuu");

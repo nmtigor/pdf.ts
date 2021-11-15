@@ -78,7 +78,8 @@ async function fetchData( url:string, asTypedArray=false )
 {
   const rn_ = async() => {
     const response = await fetch(url);
-    if (!response.ok) {
+    if( !response.ok )
+    {
       throw new Error(response.statusText);
     }
     return asTypedArray
@@ -88,7 +89,8 @@ async function fetchData( url:string, asTypedArray=false )
   // #if MOZCENTRAL
     return await rn_();
   // #endif
-  if( isValidFetchUrl(url, document.baseURI) ) return await rn_();
+  if( isValidFetchUrl(url, document.baseURI) ) 
+    return await rn_();
 
   // The Fetch API is not supported.
   return new Promise<Uint8Array>( (resolve, reject) => {
@@ -99,18 +101,21 @@ async function fetchData( url:string, asTypedArray=false )
       request.responseType = "arraybuffer";
     }
     request.onreadystatechange = () => {
-      if (request.readyState !== XMLHttpRequest.DONE) {
-        return;
-      }
-      if (request.status === 200 || request.status === 0) {
+      if( request.readyState !== XMLHttpRequest.DONE ) return;
+
+      if (request.status === 200 || request.status === 0) 
+      {
         let data;
-        if (asTypedArray && request.response) {
+        if (asTypedArray && request.response) 
+        {
           data = new Uint8Array(request.response);
         } 
-        else if (!asTypedArray && request.responseText) {
+        else if (!asTypedArray && request.responseText) 
+        {
           data = stringToBytes(request.responseText);
         }
-        if (data) {
+        if (data) 
+        {
           resolve(data);
           return;
         }

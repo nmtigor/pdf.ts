@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-import { Name, NoCmd } from "./primitives.js";
+import { Name, ObjNoCmd } from "./primitives.js";
 import { OPS, warn } from "../shared/util.js";
 import { ColorSpace } from "./colorspace.js";
 import { escapePDFName } from "./core_utils.js";
@@ -35,7 +35,7 @@ class DefaultAppearanceEvaluator extends EvaluatorPreprocessor
   parse() {
     const operation = {
       fn: 0,
-      args: <NoCmd[]>[],
+      args: <ObjNoCmd[]>[],
     };
     const result = {
       fontSize: 0,

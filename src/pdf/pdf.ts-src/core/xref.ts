@@ -28,7 +28,7 @@ import {
   Cmd,
   Dict,
   isCmd,
-  NoRef,
+  ObjNoRef,
   Obj,
   Ref,
 } from "./primitives.js";
@@ -78,7 +78,7 @@ export class XRef
 {
   entries:XRefEntry[] = [];
   xrefstms:number[] = Object.create(null);
-  #cacheMap = new Map< number, NoRef >(); // Prepare the XRef cache.
+  #cacheMap = new Map< number, ObjNoRef >(); // Prepare the XRef cache.
   stats:PDFDocumentStats = {
     streamTypes: Object.create(null),
     fontTypes: Object.create(null),
@@ -783,7 +783,7 @@ export class XRef
     return null;
   }
 
-  fetchIfRef( obj:Obj, suppressEncryption=false ):NoRef | undefined
+  fetchIfRef( obj:Obj | undefined, suppressEncryption=false ):ObjNoRef | undefined
   {
     if( !(obj instanceof Ref) ) return obj;
 
@@ -821,7 +821,7 @@ export class XRef
       return xrefEntry;
     }
 
-    let obj1:NoRef;
+    let obj1:ObjNoRef;
     if( xrefEntry.uncompressed )
          obj1 = this.fetchUncompressed( ref, xrefEntry, suppressEncryption );
     else obj1 = this.fetchCompressed( ref, xrefEntry, suppressEncryption );
@@ -851,7 +851,7 @@ export class XRef
       xref: this,
       allowStreams: true,
     });
-    let obj1 = <NoRef>parser.getObj();
+    let obj1 = <ObjNoRef>parser.getObj();
     const obj2 = parser.getObj();
     const obj3 = parser.getObj();
 
@@ -872,10 +872,10 @@ export class XRef
     }
     if( this.encrypt && !suppressEncryption )
     {
-      obj1 = <NoRef>parser.getObj(this.encrypt.createCipherTransform(num, gen));
+      obj1 = <ObjNoRef>parser.getObj(this.encrypt.createCipherTransform(num, gen));
     } 
     else {
-      obj1 = <NoRef>parser.getObj();
+      obj1 = <ObjNoRef>parser.getObj();
     }
     if( !(obj1 instanceof BaseStream) )
     {
@@ -932,7 +932,7 @@ export class XRef
     }
 
     const start = ((<any>stream).start || 0) + first;
-    const entries = new Array<NoRef>(n);
+    const entries = new Array<ObjNoRef>(n);
     // read stream objects for cache
     for( let i = 0; i < n; ++i )
     {
@@ -949,7 +949,7 @@ export class XRef
         allowStreams: true,
       });
 
-      const obj = <NoRef>parser.getObj();
+      const obj = <ObjNoRef>parser.getObj();
       entries[i] = obj;
       if( obj instanceof BaseStream ) continue;
 

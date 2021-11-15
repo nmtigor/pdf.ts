@@ -29,7 +29,6 @@ import {
 } from "../shared/util.js";
 import { FontExpotDataEx } from "../core/fonts.js";
 import { CmdArgs } from "../core/font_renderer.js";
-import { FontFaceDescriptors } from "css-font-loading-module";
 import { PDFObjects } from "./api.js";
 /*81---------------------------------------------------------------------------*/
 

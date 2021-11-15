@@ -952,21 +952,24 @@ namespace NsCFFParser
 
     parseCharsets( pos:number, length:number, strings:CFFStrings, cid:boolean ) 
     {
-      if (pos === 0) {
+      if (pos === 0) 
+      {
         return new CFFCharset(
           true,
           CFFCharsetPredefinedTypes.ISO_ADOBE,
           ISOAdobeCharset
         );
       } 
-      else if (pos === 1) {
+      else if (pos === 1) 
+      {
         return new CFFCharset(
           true,
           CFFCharsetPredefinedTypes.EXPERT,
           ExpertCharset
         );
       } 
-      else if (pos === 2) {
+      else if (pos === 2) 
+      {
         return new CFFCharset(
           true,
           CFFCharsetPredefinedTypes.EXPERT_SUBSET,
@@ -1150,7 +1153,9 @@ namespace NsCFFParser
 }
 export import CFFParser = NsCFFParser.CFFParser;
 
-// Compact Font Format
+/**
+ * Compact Font Format
+ */
 export class CFF 
 {
   header?:CFFHeader;

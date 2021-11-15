@@ -9,7 +9,7 @@ It is
 
 ### Current States - TODO
 
-* Tests just begin.
+* Sync tests.
 * `GENERIC` build.
 * On browsers.
 * `enableScripting` is `false`.

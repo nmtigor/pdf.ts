@@ -30,7 +30,7 @@ import {
   Util,
   warn,
 } from "../shared/util.js";
-import { ColorSpace } from "./colorspace.js";
+import { ColorSpace, CS } from "./colorspace.js";
 import { Dict, Name, Ref } from "./primitives.js";
 import { MissingDataException } from "./core_utils.js";
 import { MessageHandler, Thread } from '../shared/message_handler.js';
@@ -197,7 +197,7 @@ class RadialAxialShading extends BaseShading
     this.coordsArr = < TupleOf<number,4|6> >dict.getArray("Coords");
     this.shadingType = <ShadingType>dict.get("ShadingType");
     const cs = ColorSpace.parse({
-      cs: <Name|Ref>(dict.getRaw("ColorSpace") || dict.getRaw("CS")),
+      cs: <CS>(dict.getRaw("ColorSpace") || dict.getRaw("CS")),
       xref,
       resources,
       pdfFunctionFactory,
@@ -566,7 +566,7 @@ export class MeshShading extends BaseShading
       this.bbox = undefined;
     }
     const cs = ColorSpace.parse({
-      cs: <Name | Ref>(dict.getRaw("ColorSpace") || dict.getRaw("CS")),
+      cs: <CS>(dict.getRaw("ColorSpace") || dict.getRaw("CS")),
       xref,
       resources,
       pdfFunctionFactory,

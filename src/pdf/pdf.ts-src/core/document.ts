@@ -1449,7 +1449,7 @@ export class PDFDocument
 
   get fingerprints()
   {
-    function validate( data:Obj ) 
+    function validate( data:Obj | undefined ) 
     {
       return (
         typeof data === "string" &&

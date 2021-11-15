@@ -6,7 +6,12 @@
 import "../../../lib/jslang.js";
 import { css_1, css_2 } from "../../../test/alias.js";
 import { Dict, Name, Ref, RefSetCache } from "./primitives.js";
-import { CMAP_PARAMS, createIdFactory, STANDARD_FONT_DATA_URL, XRefMock } from "../test_lib.js";
+import { 
+  CMAP_PARAMS, 
+  createIdFactory, 
+  STANDARD_FONT_DATA_URL, 
+  XRefMock 
+} from "../../test_utils.js";
 import { DefaultCMapReaderFactory, DefaultStandardFontDataFactory } from "../display/api.js";
 import { PartialEvaluator } from "./evaluator.js";
 import { CMapData } from "../display/base_factory.js";

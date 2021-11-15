@@ -471,9 +471,9 @@ export function getDocument(
         {
           params[key] = stringToBytes(value);
         }
-        else if( isObjectLike(value) && !isNaN(value.length) )
+        else if( isObjectLike(value) && !isNaN((<any>value).length) )
         {
-          params[key] = new Uint8Array(value);
+          params[key] = new Uint8Array( <any>value );
         }
         else if (isArrayBuffer(value)) 
         {
@@ -2348,10 +2348,10 @@ export class LoopbackPort
 
         if( !isObjectLike(value) ) return value;
 
-        if( cloned.has(<object>value) )
+        if( cloned.has(value) )
         {
           // already cloned the object
-          return cloned.get (<object>value );
+          return cloned.get( value );
         }
         let buffer;
         if( (buffer = (<DataView>value).buffer) && isArrayBuffer(buffer) )

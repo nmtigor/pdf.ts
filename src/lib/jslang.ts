@@ -7,7 +7,7 @@ import { assert } from "./util/trace.js";
 /*81---------------------------------------------------------------------------*/
 
 // Ref. https://lodash.com/docs/4.17.15#isObjectLike
-export function isObjectLike( value:unknown )
+export function isObjectLike( value:unknown ):value is object
 {
   return value != null && typeof value == "object";
 }
@@ -50,15 +50,17 @@ function eq_impl( lhs_x:unknown, rhs_x:unknown ):boolean
   {
     if( !isObjectLike(rhs_x) || Array.isArray(rhs_x) ) return false;
 
-    const keys_lhs = Object.keys( <object>lhs_x );
-    const keys_rhs = Object.keys( <object>rhs_x );
+    const keys_lhs = Object.keys( lhs_x );
+    const keys_rhs = Object.keys( rhs_x );
     if( keys_lhs.length !== keys_rhs.length ) return false;
     if( !keys_lhs.length && !keys_rhs.length ) return true;
 
     let ret = false;
     for( const key of keys_lhs )
     {
-      ret ||= (<Object>rhs_x).hasOwnProperty( key );
+      if( rhs_x.hasOwnProperty )
+           ret ||= rhs_x.hasOwnProperty(key);
+      else ret ||= key in rhs_x; //! rhs_x could be Object without proto.
       ret &&= eq_impl( (<any>lhs_x)[key], (<any>rhs_x)[key] );
 
       if( !ret ) break;
@@ -67,6 +69,12 @@ function eq_impl( lhs_x:unknown, rhs_x:unknown ):boolean
   }
   
   return false;
+}
+export function eq( lhs_x:unknown, rhs_x:unknown, valve_x=100 ):boolean
+{
+  valve = valve_x;
+  return eq_impl( lhs_x, rhs_x );
+
 }
 
 declare global 
@@ -106,7 +114,7 @@ declare global
   {
     last:T | undefined;
 
-    eq( rhs_x:any, valve_x?:uint ):boolean;
+    eq( rhs_x:unknown, valve_x?:uint ):boolean;
 
     fillArray( ary:[] ):this;
     fillArrayBack( ary:any[] ):this;
@@ -161,7 +169,7 @@ Reflect.defineProperty( Array.prototype, "fillArrayBack", {
 /*81---------------------------------------------------------------------------*/
 
 /**
- * @param { const } cp - Code Point returned by `string.charCodeAt()`
+ * @param { const } cp Code Point returned by `string.charCodeAt()`
  */
 export function isDecimalDigit( cp:uint ):boolean
 {

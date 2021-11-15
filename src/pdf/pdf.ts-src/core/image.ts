@@ -20,7 +20,7 @@
 import { assert }      from "../../../lib/util/trace.js";
 import { FormatError, ImageKind, info, warn } from "../shared/util.js";
 import { Dict, Name, Ref } from "./primitives.js";
-import { ColorSpace } from "./colorspace.js";
+import { ColorSpace, CS } from "./colorspace.js";
 import { DecodeStream, ImageStream } from "./decode_stream.js";
 import { JpegStream } from "./jpeg_stream.js";
 import { JpxImage } from "./jpx.js";
@@ -275,7 +275,7 @@ export class PDFImage
         }
       }
       this.colorSpace = ColorSpace.parse({
-        cs: <Name | Ref>colorSpace,
+        cs: <CS>colorSpace,
         xref,
         resources: isInline ? res : undefined,
         pdfFunctionFactory,

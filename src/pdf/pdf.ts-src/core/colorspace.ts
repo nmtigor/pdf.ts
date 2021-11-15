@@ -70,11 +70,20 @@ function resizeRgbImage( src:Uint8ClampedArray | Uint8Array | Uint16Array | Uint
   }
 }
 
+export type CS = Ref | Name | Dict | number 
+  | [
+    Ref | Name, 
+    Ref | Name | Dict, 
+    (undefined | Ref | Name | Dict | number)?,
+    (undefined | Ref | BaseStream | string)?,
+  ]
+;
+
 interface ParseParms
 {
-  cs:Name | Ref;
+  cs:CS;
   xref:XRef;
-  resources?:Dict | undefined;
+  resources:Dict | undefined;
   pdfFunctionFactory:PDFFunctionFactory;
   localColorSpaceCache:LocalColorSpaceCache;
 }
@@ -149,7 +158,7 @@ export abstract class ColorSpace
   /**
    * Refer to the static `ColorSpace.isDefaultDecode` method below.
    */
-  isDefaultDecode( decodeMap:unknown, bpc:number ):boolean
+  isDefaultDecode( decodeMap:unknown, bpc?:number ):boolean
   {
     return ColorSpace.isDefaultDecode(decodeMap, this.numComps! );
   }
@@ -300,64 +309,66 @@ export abstract class ColorSpace
     return shadow(this, "usesZeroToOneRange", true);
   }
 
-  private static _cache( cacheKey:Name | Ref, xref:XRef, 
+  private static _cache( cacheKey:CS, xref:XRef, 
     localColorSpaceCache:LocalColorSpaceCache, parsedColorSpace:ColorSpace
   ) {
-    // if (!localColorSpaceCache) {
-    //   throw new Error(
-    //     'ColorSpace._cache - expected "localColorSpaceCache" argument.'
-    //   );
-    // }
-    if (!parsedColorSpace) {
+    if( !localColorSpaceCache )
+    {
+      throw new Error(
+        'ColorSpace._cache - expected "localColorSpaceCache" argument.'
+      );
+    }
+    if( !parsedColorSpace )
+    {
       throw new Error(
         'ColorSpace._cache - expected "parsedColorSpace" argument.'
       );
     }
     let csName, csRef;
-    if (cacheKey instanceof Ref) {
+    if( cacheKey instanceof Ref )
+    {
       csRef = cacheKey;
 
       // If parsing succeeded, we know that this call cannot throw.
       cacheKey = <Name>xref.fetch(cacheKey);
     }
-    if (cacheKey instanceof Name) {
+    if (cacheKey instanceof Name) 
+    {
       csName = cacheKey.name;
     }
-    if (csName || csRef) {
+    if (csName || csRef) 
+    {
       localColorSpaceCache.set(csName, csRef, parsedColorSpace);
     }
   }
 
-  static getCached( cacheKey:Name | Ref, xref:XRef, localColorSpaceCache:LocalColorSpaceCache )
-  {
-    // if (!localColorSpaceCache) {
-    //   throw new Error(
-    //     'ColorSpace.getCached - expected "localColorSpaceCache" argument.'
-    //   );
-    // }
-    if (cacheKey instanceof Ref) {
+  static getCached( cacheKey:unknown, 
+    xref:XRef, localColorSpaceCache:LocalColorSpaceCache 
+  ) {
+    if( !localColorSpaceCache )
+    {
+      throw new Error(
+        'ColorSpace.getCached - expected "localColorSpaceCache" argument.'
+      );
+    }
+    if (cacheKey instanceof Ref) 
+    {
       const localColorSpace = localColorSpaceCache.getByRef(cacheKey);
-      if (localColorSpace) {
-        return localColorSpace;
-      }
+      if( localColorSpace ) return localColorSpace;
 
       try {
         cacheKey = <Name>xref.fetch(cacheKey);
-      }
-      catch (ex) {
-        if (ex instanceof MissingDataException) {
-          throw ex;
-        }
+      } catch (ex) {
+        if( ex instanceof MissingDataException ) throw ex;
         // Any errors should be handled during parsing, rather than here.
       }
     }
-    if (cacheKey instanceof Name) {
+    if (cacheKey instanceof Name) 
+    {
       const localColorSpace = localColorSpaceCache.getByName(cacheKey.name);
-      if (localColorSpace) {
-        return localColorSpace;
-      }
+      if( localColorSpace ) return localColorSpace;
     }
-    return null;
+    return undefined;
   }
 
   static async parseAsync({
@@ -368,15 +379,10 @@ export abstract class ColorSpace
     localColorSpaceCache,
   }:ParseParms ) {
     // #if !PRODUCTION || TESTING
-    // if (
-    //   typeof PDFJSDev === "undefined" ||
-    //   PDFJSDev.test("!PRODUCTION || TESTING")
-    // ) {
-    assert( !this.getCached(cs, xref, localColorSpaceCache),
-      "Expected `ColorSpace.getCached` to have been manually checked " +
+      assert( !this.getCached(<any>cs, xref, localColorSpaceCache),
+        "Expected `ColorSpace.getCached` to have been manually checked " +
         "before calling `ColorSpace.parseAsync`."
-    );
-    // }
+      );
     // #endif
     const parsedColorSpace = this._parse(
       cs,
@@ -399,9 +405,8 @@ export abstract class ColorSpace
     localColorSpaceCache,
   }:ParseParms ) {
     const cachedColorSpace = this.getCached(cs, xref, localColorSpaceCache);
-    if (cachedColorSpace) {
-      return cachedColorSpace;
-    }
+    if( cachedColorSpace ) return cachedColorSpace;
+
     const parsedColorSpace = this._parse(
       cs,
       xref,
@@ -415,13 +420,13 @@ export abstract class ColorSpace
     return parsedColorSpace;
   }
 
-  private static _parse( cs:Name | Ref, xref:XRef, 
+  private static _parse( cs:CS, xref:XRef, 
     resources:Dict | undefined, pdfFunctionFactory:PDFFunctionFactory 
   ):ColorSpace {
-    let cs_ = <Name | (Name|Ref)[]>xref.fetchIfRef(cs);
-    if( cs_ instanceof Name )
+    cs = <Exclude<CS, Ref>>xref.fetchIfRef(cs);
+    if( cs instanceof Name )
     {
-      switch( cs_.name )
+      switch( cs.name )
       {
         case "DeviceGray":
         case "G":
@@ -440,7 +445,7 @@ export abstract class ColorSpace
             const colorSpaces = resources.get("ColorSpace");
             if( colorSpaces instanceof Dict )
             {
-              const resourcesCS = colorSpaces.get( (<Name>cs_).name );
+              const resourcesCS = <CS | undefined>colorSpaces.get( cs.name );
               if( resourcesCS )
               {
                 if( resourcesCS instanceof Name )
@@ -452,17 +457,17 @@ export abstract class ColorSpace
                     pdfFunctionFactory
                   );
                 }
-                cs_ = <(Name | Ref)[]>resourcesCS;
+                cs = resourcesCS;
                 break;
               }
             }
           }
-          throw new FormatError(`Unrecognized ColorSpace: ${(<Name>cs_).name}`);
+          throw new FormatError(`Unrecognized ColorSpace: ${cs.name}`);
       }
     }
-    if( Array.isArray(cs_) )
+    if( Array.isArray(cs) )
     {
-      const mode = (<Name>xref.fetchIfRef(cs_[0])).name;
+      const mode = (<Name>xref.fetchIfRef(cs[0])).name;
       let params, numComps, baseCS, whitePoint, blackPoint, gamma;
 
       switch( mode )
@@ -477,31 +482,30 @@ export abstract class ColorSpace
         case "CMYK":
           return this.singletons.cmyk;
         case "CalGray":
-          params = <Dict>xref.fetchIfRef( cs_[1] );
+          params = <Dict>xref.fetchIfRef( cs[1] );
           whitePoint = <Float32Array>params.getArray("WhitePoint");
-          blackPoint = <Float32Array|undefined>params.getArray("BlackPoint");
-          gamma = <number|undefined>params.get("Gamma");
-          return new CalGrayCS(whitePoint, blackPoint, gamma);
+          blackPoint = <Float32Array | undefined>params.getArray("BlackPoint");
+          gamma = <number | undefined>params.get("Gamma");
+          return new CalGrayCS( whitePoint, blackPoint, gamma );
         case "CalRGB":
-          params = <Dict>xref.fetchIfRef( cs_[1] );
+          params = <Dict>xref.fetchIfRef( cs[1] );
           whitePoint = <Float32Array>params.getArray("WhitePoint");
-          blackPoint = <Float32Array|undefined>params.getArray("BlackPoint");
-          gamma = <Float32Array|undefined>params.getArray("Gamma");
-          const matrix = <Float32Array|undefined>params.getArray("Matrix");
+          blackPoint = <Float32Array | undefined>params.getArray("BlackPoint");
+          gamma = <Float32Array | undefined>params.getArray("Gamma");
+          const matrix = <Float32Array | undefined>params.getArray("Matrix");
           return new CalRGBCS(whitePoint, blackPoint, gamma, matrix);
         case "ICCBased":
-          const stream = <BaseStream>xref.fetchIfRef(cs_[1]);
+          const stream = <BaseStream>xref.fetchIfRef(cs[1]);
           const dict = stream.dict!;
           numComps = dict.get("N");
-          const alt = <Name | Ref | undefined>dict.get("Alternate");
+          const alt = <CS | undefined>dict.get("Alternate");
           if( alt )
           {
             const altCS = this._parse( alt, xref, resources, pdfFunctionFactory );
             // Ensure that the number of components are correct,
             // and also (indirectly) that it is not a PatternCS.
-            if (altCS.numComps === numComps) {
-              return altCS;
-            }
+            if( altCS.numComps === numComps ) return altCS;
+
             warn("ICCBased color space: Ignoring incorrect /Alternate entry.");
           }
           if( numComps === 1 ) return this.singletons.gray;
@@ -509,26 +513,27 @@ export abstract class ColorSpace
           else if( numComps === 4 ) return this.singletons.cmyk;
           break;
         case "Pattern":
-          baseCS = cs_[1] || null;
-          if (baseCS) {
+          baseCS = cs[1] || undefined;
+          if (baseCS) 
+          {
             baseCS = this._parse(baseCS, xref, resources, pdfFunctionFactory);
           }
           return new PatternCS(baseCS);
         case "Indexed":
         case "I":
-          baseCS = this._parse(cs_[1], xref, resources, pdfFunctionFactory);
-          const hiVal = <number>xref.fetchIfRef(cs_[2]) + 1;
-          const lookup = <BaseStream | string>xref.fetchIfRef(cs_[3]);
+          baseCS = this._parse(cs[1], xref, resources, pdfFunctionFactory);
+          const hiVal = <number>xref.fetchIfRef(cs[2]) + 1;
+          const lookup = <BaseStream | string>xref.fetchIfRef(cs[3]);
           return new IndexedCS(baseCS, hiVal, lookup);
         case "Separation":
         case "DeviceN":
-          const name = xref.fetchIfRef(cs_[1]);
+          const name = xref.fetchIfRef(cs[1]);
           numComps = Array.isArray(name) ? name.length : 1;
-          baseCS = this._parse(cs_[2], xref, resources, pdfFunctionFactory);
-          const tintFn = pdfFunctionFactory.create( <Ref>cs_[3] );
+          baseCS = this._parse(cs[2]!, xref, resources, pdfFunctionFactory);
+          const tintFn = pdfFunctionFactory.create( <Ref>cs[3] );
           return new AlternateCS( numComps, baseCS, tintFn );
         case "Lab":
-          params = <Dict>xref.fetchIfRef( cs_[1] );
+          params = <Dict>xref.fetchIfRef( cs[1] );
           whitePoint = <Float32Array>params.getArray("WhitePoint");
           blackPoint = <Float32Array|undefined>params.getArray("BlackPoint");
           const range = <rect_t|undefined>params.getArray("Range");
@@ -537,7 +542,7 @@ export abstract class ColorSpace
           throw new FormatError(`Unimplemented ColorSpace object: ${mode}`);
       }
     }
-    throw new FormatError(`Unrecognized ColorSpace object: ${cs_}`);
+    throw new FormatError(`Unrecognized ColorSpace object: ${cs}`);
   }
 
   /**
@@ -546,22 +551,22 @@ export abstract class ColorSpace
    * component, e.g. [0, 1, 0, 1, 0, 1] for a RGB color.
    * This does not handle Lab, Indexed, or Pattern decode maps since they are
    * slightly different.
-   * @param decode - Decode map (usually from an image).
-   * @param numComps - Number of components the color space has.
+   * @param decode Decode map (usually from an image).
+   * @param numComps Number of components the color space has.
    */
   static isDefaultDecode( decode:unknown, numComps:number ) 
   {
-    if (!Array.isArray(decode)) {
-      return true;
-    }
-    if (numComps * 2 !== decode.length) {
+    if( !Array.isArray(decode) ) return true;
+
+    if( numComps * 2 !== decode.length )
+    {
       warn("The decode map is not the correct length");
       return true;
     }
-    for (let i = 0, ii = decode.length; i < ii; i += 2) {
-      if (decode[i] !== 0 || decode[i + 1] !== 1) {
+    for (let i = 0, ii = decode.length; i < ii; i += 2) 
+    {
+      if (decode[i] !== 0 || decode[i + 1] !== 1) 
         return false;
-      }
     }
     return true;
   }
@@ -709,7 +714,7 @@ class PatternCS extends ColorSpace
     return 0;
   }
 
-  override isDefaultDecode( decodeMap:unknown, bpc:number ) 
+  override isDefaultDecode( decodeMap:unknown, bpc?:number ) 
   {
     assert(0,"Should not call PatternCS.isDefaultDecode");
     return false;
@@ -799,20 +804,23 @@ class IndexedCS extends ColorSpace
     return this.base!.getOutputLength(inputLength * this.base!.numComps!, alpha01);
   }
 
-  override isDefaultDecode( decodeMap:unknown, bpc:number ) 
+  override isDefaultDecode( decodeMap:unknown, bpc?:number ) 
   {
-    if (!Array.isArray(decodeMap)) {
+    if (!Array.isArray(decodeMap)) 
+    {
       return true;
     }
-    if (decodeMap.length !== 2) {
+    if (decodeMap.length !== 2) 
+    {
       warn("Decode map length is not correct");
       return true;
     }
-    if (!Number.isInteger(bpc) || bpc < 1) {
+    if( !Number.isInteger(bpc) || bpc! < 1 )
+    {
       warn("Bits per component is not correct");
       return true;
     }
-    return decodeMap[0] === 0 && decodeMap[1] === (1 << bpc) - 1;
+    return decodeMap[0] === 0 && decodeMap[1] === (1 << bpc!) - 1;
   }
 }
 
@@ -831,14 +839,9 @@ export class DeviceGrayCS extends ColorSpace
     dest:Uint8ClampedArray, destOffset:number 
   ) {
     // #if !PRODUCTION || TESTING
-    // if (
-    //   typeof PDFJSDev === "undefined" ||
-    //   PDFJSDev.test("!PRODUCTION || TESTING")
-    // ) {
-    assert( dest instanceof Uint8ClampedArray,
-      'DeviceGrayCS.getRgbItem: Unsupported "dest" type.'
-    );
-    // }
+      assert( dest instanceof Uint8ClampedArray,
+        'DeviceGrayCS.getRgbItem: Unsupported "dest" type.'
+      );
     // #endif
     const c = src[srcOffset] * 255;
     dest[destOffset] = dest[destOffset + 1] = dest[destOffset + 2] = c;
@@ -892,14 +895,9 @@ class DeviceRgbCS extends ColorSpace
     dest:Uint8ClampedArray, destOffset:number 
   ) {
     // #if !PRODUCTION || TESTING
-    // if (
-    //   typeof PDFJSDev === "undefined" ||
-    //   PDFJSDev.test("!PRODUCTION || TESTING")
-    // ) {
-    assert( dest instanceof Uint8ClampedArray,
-      'DeviceRgbCS.getRgbItem: Unsupported "dest" type.'
-    );
-    // }
+      assert( dest instanceof Uint8ClampedArray,
+        'DeviceRgbCS.getRgbItem: Unsupported "dest" type.'
+      );
     // #endif
     dest[destOffset] = src[srcOffset] * 255;
     dest[destOffset + 1] = src[srcOffset + 1] * 255;
@@ -1033,14 +1031,9 @@ namespace NsDeviceCmykCS
       dest:Uint8ClampedArray, destOffset:number 
     ) {
       // #if !PRODUCTION || TESTING
-      // if (
-      //   typeof PDFJSDev === "undefined" ||
-      //   PDFJSDev.test("!PRODUCTION || TESTING")
-      // ) {
-      assert( dest instanceof Uint8ClampedArray,
-        'DeviceCmykCS.getRgbItem: Unsupported "dest" type.'
-      );
-      // }
+        assert( dest instanceof Uint8ClampedArray,
+          'DeviceCmykCS.getRgbItem: Unsupported "dest" type.'
+        );
       // #endif
       convertToRgb(src, srcOffset, 1, dest, destOffset);
     }
@@ -1174,14 +1167,9 @@ namespace NsCalGrayCS
       dest:Uint8ClampedArray, destOffset:number 
     ) {
       // #if !PRODUCTION || TESTING
-      // if (
-      //   typeof PDFJSDev === "undefined" ||
-      //   PDFJSDev.test("!PRODUCTION || TESTING")
-      // ) {
-      assert( dest instanceof Uint8ClampedArray,
-        'CalGrayCS.getRgbItem: Unsupported "dest" type.'
-      );
-      // }
+        assert( dest instanceof Uint8ClampedArray,
+          'CalGrayCS.getRgbItem: Unsupported "dest" type.'
+        );
       // #endif
       convertToRgb(this, src, srcOffset, dest, destOffset, 1);
     }
@@ -1525,14 +1513,9 @@ namespace NsCalRGBCS
       dest:Uint8ClampedArray, destOffset:number
     ) {
       // #if !PRODUCTION || TESTING
-      // if (
-      //   typeof PDFJSDev === "undefined" ||
-      //   PDFJSDev.test("!PRODUCTION || TESTING")
-      // ) {
-      assert( dest instanceof Uint8ClampedArray,
-        'CalRGBCS.getRgbItem: Unsupported "dest" type.'
-      );
-      // }
+        assert( dest instanceof Uint8ClampedArray,
+          'CalRGBCS.getRgbItem: Unsupported "dest" type.'
+        );
       // #endif
       convertToRgb(this, src, srcOffset, dest, destOffset, 1);
     }
@@ -1725,14 +1708,9 @@ namespace NsLabCS
       dest:Uint8ClampedArray, destOffset:number 
     ) {
       // #if !PRODUCTION || TESTING
-      // if (
-      //   typeof PDFJSDev === "undefined" ||
-      //   PDFJSDev.test("!PRODUCTION || TESTING")
-      // ) {
-      assert( dest instanceof Uint8ClampedArray,
-        'LabCS.getRgbItem: Unsupported "dest" type.'
-      );
-      // }
+        assert( dest instanceof Uint8ClampedArray,
+          'LabCS.getRgbItem: Unsupported "dest" type.'
+        );
       // #endif
       convertToRgb(this, src, srcOffset, false, dest, destOffset);
     }
@@ -1765,7 +1743,7 @@ namespace NsLabCS
       return ((inputLength * (3 + alpha01)) / 3) | 0;
     }
 
-    override isDefaultDecode( decodeMap:unknown, bpc:number ) 
+    override isDefaultDecode( decodeMap:unknown, bpc?:number ) 
     {
       // XXX: Decoding is handled with the lab conversion because of the strange
       // ranges that are used.

@@ -142,7 +142,7 @@ export class Dict
   /**
    * Same as get(), but returns a promise and uses fetchIfRefAsync().
    */
-  async getAsync<T extends NoRef=NoRef>( key1:string, key2?:string, key3?:string )
+  async getAsync<T extends ObjNoRef=ObjNoRef>( key1:string, key2?:string, key3?:string )
   {
     let value = this.#map[key1];
     if (value === undefined && key2 !== undefined) 
@@ -175,10 +175,10 @@ export class Dict
   /**
    * Same as get(), but dereferences all elements if the result is an Array.
    */
-  getArray( key1:string, key2?:string, key3?:string ):NoRefNoRefAry | undefined
+  getArray( key1:string, key2?:string, key3?:string ):NoRef | undefined
   {
     let value = this.get( key1, key2, key3 );
-    if( !Array.isArray(value) || !this.xref ) return <NoRefNoAry | undefined>value;
+    if( !Array.isArray(value) || !this.xref ) return <PrmNoRef | undefined>value;
 
     value = value.slice(); // Ensure that we don't modify the Dict data.
     for( let i = 0, ii = value.length; i < ii; ++i ) 
@@ -187,7 +187,7 @@ export class Dict
 
       value[i] = this.xref.fetch( <Ref>value[i], this.suppressEncryption );
     }
-    return <NoRefNoRefAry>value;
+    return <(ObjNoRef | undefined)[]>value;
   }
 
   forEach( callback:(k:string,v:any)=>any ) 
@@ -412,27 +412,26 @@ export function clearPrimitiveCaches()
   Ref._clearCache();
 }
 
-export type Obj =
+type Prm =
   | boolean 
   | number 
   | string 
   | null
 
   | Name // 7.3.5
-
   | Cmd 
-    | EOF
+  | EOF
 
-  | Obj[]// 7.3.6
-    | TypedArray
   | Dict // 7.3.7
   
+  | TypedArray
   | BaseStream // 7.3.8
 
   | Ref
 ;
-export type NoCmd = Exclude< Obj, Cmd >;
-export type NoRef = Exclude< Obj, Ref >;
-export type NoRefNoAry = Exclude< NoRef, Obj[] >;
-export type NoRefNoRefAry = NoRefNoAry | NoRef[]
+export type Obj = Prm | (Obj | undefined)[];
+export type ObjNoCmd = Exclude<Obj, Cmd>;
+export type ObjNoRef = Exclude<Obj, Ref>;
+export type PrmNoRef = Exclude<Prm, Ref>;
+export type NoRef = PrmNoRef | (ObjNoRef | undefined)[];
 /*81---------------------------------------------------------------------------*/

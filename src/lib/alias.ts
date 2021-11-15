@@ -18,7 +18,7 @@ export type uint16= uint;
 
 export type int8 = int;
 export type uint8 = uint;
-/*81---------------------------------------------------------------------------*/
+/*49-------------------------------------------*/
 
 export type id_t = uint32;
 
@@ -43,10 +43,7 @@ export type ts_t = int64;
 export type Ratio = number; 
 /*81---------------------------------------------------------------------------*/
 
-export interface Style
-{ 
-  [key:string]:string;
-}
+export type Style = Record<string, string>;
 
 export interface Runr
 {
