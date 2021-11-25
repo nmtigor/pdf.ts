@@ -18,8 +18,8 @@
  */
 
 import { IL10n } from "./interfaces.js";
-import { FindState } from "./pdf_find_controller.js";
-import { EventBus, MatchesCount } from "./ui_utils.js";
+import { FindState, FindType, MatchesCount } from "./pdf_find_controller.js";
+import { EventBus } from "./ui_utils.js";
 import { ViewerConfiguration } from "./viewer.js";
 /*81---------------------------------------------------------------------------*/
 
@@ -108,7 +108,7 @@ export class PDFFindBar
 
   reset() { this.updateUIState(); }
 
-  dispatchEvent( type:string, findPrev=false )
+  dispatchEvent( type:FindType | "", findPrev=false )
   {
     this.eventBus.dispatch("find", {
       source: this,

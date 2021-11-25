@@ -278,20 +278,20 @@ export class SVGViewbox<CI extends CooInterface=CooInterface> extends SVGVCoo<CI
 }
 /*81---------------------------------------------------------------------------*/
 
-export type MooEq< T > = ( a:T, b:T ) => boolean;
-export type MooHandler< T, D=any > = ( newval:T, oldval?:T, data?:D ) => void;
+export type MooEq<T> = ( a:T, b:T ) => boolean;
+export type MooHandler<T, D=any> = ( newval:T, oldval?:T, data?:D ) => void;
 
 // type IndexedMooHandler< T > = [ uint, MooHandler<T> ];
 // type SortedIndexedMooHandler< T > = SortedArray< IndexedMooHandler<T> >;
-interface MooHandlerExt< T, D=any > 
+interface MooHandlerExt<T, D=any> 
 {
-  handler:MooHandler< T, D >;
+  handler:MooHandler<T, D>;
   newval:T | undefined;
   oldval:T | undefined;
   force:boolean;
   index:number;
 }
-class MooHandlerDB< T, D=any >
+class MooHandlerDB<T, D=any>
 {
   readonly #eq:MooEq<T>;
 

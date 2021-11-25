@@ -2,7 +2,6 @@
  * cff_parser_test
 ** --------------- */
 
-// #if TESTING && TEST_ALL
 import { eq } from "../../../lib/jslang.js";
 import { css_1, css_2 } from "../../../test/alias.js";
 import { Stream } from "./stream.js";
@@ -570,6 +569,5 @@ console.log("%c>>>>>>> test CFFCompiler >>>>>>>",`color:${css_1}`);
 }
 /*81---------------------------------------------------------------------------*/
 
-console.log(`%cpdf/pdf.ts-src/core/cff_parser_test: ${(performance.now()-strttime).toFixed(2)} ms`,`color:${css_2}`);
+console.log(`%c:pdf/pdf.ts-src/core/cff_parser_test ${(performance.now()-strttime).toFixed(2)} ms`,`color:${css_2}`);
 globalThis.ntestfile = globalThis.ntestfile ? globalThis.ntestfile+1 : 1;
-// #endif

@@ -60,7 +60,7 @@ import { SaveData, SaveReturn } from "./annotation.js";
 export interface IWorker
 {
   postMessage(message: any, transfer: Transferable[]): void;
-  postMessage(message: any, options?: PostMessageOptions): void;
+  postMessage(message: any, options?: StructuredSerializeOptions): void;
 
   addEventListener<K extends keyof WorkerEventMap>(type: K, listener: (this: Worker, ev: WorkerEventMap[K]) => any, options?: boolean | AddEventListenerOptions): void;
   addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void;
@@ -94,8 +94,8 @@ export interface XRefInfo
   encryptRef?:Ref;
   newRef:Ref;
   infoRef?:Ref;
-  info:Record<string,string>;
-  fileIds?:[string,string];
+  info:Record<string, string>;
+  fileIds?:[string, string];
   startXRef:number;
   filename:string | undefined;
 }

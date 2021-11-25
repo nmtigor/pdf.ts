@@ -236,7 +236,8 @@ namespace NsJbig2Image
 
     getContexts( id:string ):Int8Array
     {
-      if (id in this) {
+      if( id in this )
+      {
         return <Int8Array>this[id];
       }
       return (this[id] = new Int8Array(1 << 16));

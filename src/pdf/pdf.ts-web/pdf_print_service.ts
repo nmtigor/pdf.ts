@@ -71,6 +71,9 @@ function renderPage(
 
 export class PDFPrintService
 {
+  pdfDocument;
+  pagesOverview;
+  printContainer;
   _printResolution;
   _optionalContentConfigPromise;
   l10n;
@@ -84,13 +87,16 @@ export class PDFPrintService
   scratchCanvas:HTMLCanvasElement | undefined = html("canvas");
 
   constructor(
-    public pdfDocument:PDFDocumentProxy,
-    public pagesOverview:PageOverview[],
-    public printContainer:HTMLDivElement,
+    pdfDocument:PDFDocumentProxy,
+    pagesOverview:PageOverview[],
+    printContainer:HTMLDivElement,
     printResolution:number | undefined,
     optionalContentConfigPromise:Promise<OptionalContentConfig | undefined> | undefined,
     l10n:IL10n
   ) {
+    this.pdfDocument = pdfDocument;
+    this.pagesOverview = pagesOverview;
+    this.printContainer = printContainer;
     this._printResolution = printResolution || 150;
     this._optionalContentConfigPromise =
       optionalContentConfigPromise || pdfDocument.getOptionalContentConfig();
@@ -204,8 +210,8 @@ export class PDFPrintService
     if( "toBlob" in scratchCanvas 
      && !compatibilityParams.disableCreateObjectURL
     ) {
-      scratchCanvas.toBlob(function (blob) {
-        img.src = URL.createObjectURL(blob);
+      scratchCanvas.toBlob( blob => {
+        img.src = URL.createObjectURL(blob!);
       });
     } else {
       img.src = scratchCanvas.toDataURL();
@@ -330,14 +336,13 @@ function renderProgress( index:number, total:number, l10n:IL10n )
 
 window.addEventListener(
   "keydown",
-  function (event) {
+  (event) => {
     // Intercept Cmd/Ctrl + P in all browsers.
     // Also intercept Cmd/Ctrl + Shift + P in Chrome and Opera
-    if (
-      event.keyCode === /* P= */ 80 &&
-      (event.ctrlKey || event.metaKey) &&
-      !event.altKey &&
-      (!event.shiftKey || (<any>window).chrome || (<any>window).opera)
+    if( event.keyCode === /* P= */ 80
+     && (event.ctrlKey || event.metaKey)
+     && !event.altKey
+     && (!event.shiftKey || (<any>window).chrome || (<any>window).opera)
     ) {
       window.print();
 
@@ -354,10 +359,11 @@ window.addEventListener(
   true
 );
 
-if ("onbeforeprint" in window) {
+if ("onbeforeprint" in window) 
+{
   // Do not propagate before/afterprint events when they are not triggered
   // from within this polyfill. (FF / Chrome 63+).
-  const stopPropagationIfNeeded = function ( event:Event ) {
+  const stopPropagationIfNeeded = ( event:Event ) => {
     if( (<any>event).detail !== "custom" && event.stopImmediatePropagation )
     {
       event.stopImmediatePropagation();
@@ -398,7 +404,8 @@ PDFPrintServiceFactory.instance = {
     optionalContentConfigPromise,
     l10n
   ) {
-    if (activeService) {
+    if (activeService) 
+    {
       throw new Error("The print service is created and active.");
     }
     activeService = new PDFPrintService(

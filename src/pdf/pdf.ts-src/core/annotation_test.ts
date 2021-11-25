@@ -2,9 +2,8 @@
  * annotation_test
 ** --------------- */
 
-// #if TESTING && TEST_ALL
-import "../../../lib/jslang.js";
 import { css_1, css_2 } from "../../../test/alias.js";
+import "../../../lib/jslang.js";
 import { Dict, Name, Ref, RefSetCache } from "./primitives.js";
 import { 
   CMAP_PARAMS, 
@@ -306,6 +305,5 @@ idFactoryMock = <any>undefined;
 partialEvaluator = <any>undefined;
 /*81---------------------------------------------------------------------------*/
 
-console.log(`%cpdf/pdf.ts-src/core/annotation_test: ${(performance.now()-strttime).toFixed(2)} ms`,`color:${css_2}`);
+console.log(`%c:pdf/pdf.ts-src/core/annotation_test ${(performance.now()-strttime).toFixed(2)} ms`,`color:${css_2}`);
 globalThis.ntestfile = globalThis.ntestfile ? globalThis.ntestfile+1 : 1;
-// #endif

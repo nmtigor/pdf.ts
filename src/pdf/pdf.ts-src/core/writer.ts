@@ -169,8 +169,7 @@ function computeMD5( filesize:number, xrefInfo:XRefInfo )
     writeString(str, offset, array);
     offset += str.length;
   }
-  return bytesToString( calculateMD5(array,0,md5BufferLen) );
-  // return bytesToString( calculateMD5(array) ); //kkkk bug?
+  return bytesToString( calculateMD5(array) );
 }
 
 function writeXFADataForAcroform( str:string, newRefs:SaveData[] )
@@ -288,12 +287,15 @@ interface IncrementalUpdateParms
   xrefInfo:XRefInfo;
   newRefs:SaveData[];
   xref?:XRef;
+
+  acroForm?:Dict | undefined;
+  acroFormRef?:Ref | undefined;
+
   hasXfa?:boolean;
-  xfaDatasetsRef:Ref | undefined;
   hasXfaDatasetsEntry?:boolean;
-  acroFormRef:Ref | undefined;
-  acroForm:Dict | undefined;
-  xfaData:string | undefined;
+
+  xfaData?:string | undefined;
+  xfaDatasetsRef?:Ref | undefined;
 }
 export function incrementalUpdate({
   originalData,
@@ -411,7 +413,7 @@ export function incrementalUpdate({
   }
 
   // New xref table
-  for (const [type, objOffset, gen] of xrefTableData) 
+  for( const [type, objOffset, gen] of xrefTableData )
   {
     offset = writeInt(type, sizes[0], offset, array);
     offset = writeInt(objOffset, sizes[1], offset, array);

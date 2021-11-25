@@ -71,16 +71,14 @@ function getViewerConfiguration()
 {
   let errorWrapper = undefined;
   // #if !MOZCENTRAL
-  // if (typeof PDFJSDev === "undefined" || !PDFJSDev.test("MOZCENTRAL")) {
-  errorWrapper = {
-    container: <HTMLDivElement>document.getElementById("errorWrapper"),
-    errorMessage: <HTMLSpanElement>document.getElementById("errorMessage"),
-    closeButton: <HTMLButtonElement>document.getElementById("errorClose"),
-    errorMoreInfo: <HTMLTextAreaElement>document.getElementById("errorMoreInfo"),
-    moreInfoButton: <HTMLButtonElement>document.getElementById("errorShowMore"),
-    lessInfoButton: <HTMLButtonElement>document.getElementById("errorShowLess"),
-  };
-  // }
+    errorWrapper = {
+      container: <HTMLDivElement>document.getElementById("errorWrapper"),
+      errorMessage: <HTMLSpanElement>document.getElementById("errorMessage"),
+      closeButton: <HTMLButtonElement>document.getElementById("errorClose"),
+      errorMoreInfo: <HTMLTextAreaElement>document.getElementById("errorMoreInfo"),
+      moreInfoButton: <HTMLButtonElement>document.getElementById("errorShowMore"),
+      lessInfoButton: <HTMLButtonElement>document.getElementById("errorShowLess"),
+    };
   // #endif
 
   return {

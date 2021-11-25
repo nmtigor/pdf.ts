@@ -46,10 +46,9 @@ function isWhitespace( s:string, index:number )
 
 function isWhitespaceString( s:string )
 {
-  for (let i = 0, ii = s.length; i < ii; i++) {
-    if (!isWhitespace(s, i)) {
-      return false;
-    }
+  for (let i = 0, ii = s.length; i < ii; i++) 
+  {
+    if( !isWhitespace(s, i) ) return false;
   }
   return true;
 }
@@ -73,7 +72,8 @@ export abstract class XMLParserBase
       {
         return String.fromCodePoint(parseInt(entity.substring(1), 10));
       }
-      switch (entity) {
+      switch (entity) 
+      {
         case "lt":
           return "<";
         case "gt":
@@ -94,49 +94,47 @@ export abstract class XMLParserBase
     const attributes:XMLAttr[] = [];
     let pos = start;
 
-    function skipWs() {
-      while (pos < s.length && isWhitespace(s, pos)) {
+    function skipWs() 
+    {
+      while (pos < s.length && isWhitespace(s, pos)) 
+      {
         ++pos;
       }
     }
 
-    while (
-      pos < s.length &&
-      !isWhitespace(s, pos) &&
-      s[pos] !== ">" &&
-      s[pos] !== "/"
+    while( pos < s.length
+     && !isWhitespace(s, pos)
+     && s[pos] !== ">"
+     && s[pos] !== "/"
     ) {
       ++pos;
     }
     const name = s.substring(start, pos);
     skipWs();
-    while (
-      pos < s.length &&
-      s[pos] !== ">" &&
-      s[pos] !== "/" &&
-      s[pos] !== "?"
+    while( pos < s.length
+     && s[pos] !== ">"
+     && s[pos] !== "/"
+     && s[pos] !== "?"
     ) {
       skipWs();
       let attrName = "",
         attrValue = "";
-      while (pos < s.length && !isWhitespace(s, pos) && s[pos] !== "=") {
+      while (pos < s.length && !isWhitespace(s, pos) && s[pos] !== "=") 
+      {
         attrName += s[pos];
         ++pos;
       }
       skipWs();
-      if (s[pos] !== "=") {
-        return null;
-      }
+      if( s[pos] !== "=" ) return null;
+
       ++pos;
       skipWs();
       const attrEndChar = s[pos];
-      if (attrEndChar !== '"' && attrEndChar !== "'") {
-        return null;
-      }
+      if( attrEndChar !== '"' && attrEndChar !== "'" ) return null;
+
       const attrEndIndex = s.indexOf(attrEndChar, ++pos);
-      if (attrEndIndex < 0) {
-        return null;
-      }
+      if( attrEndIndex < 0 ) return null;
+
       attrValue = s.substring(pos, attrEndIndex);
       attributes.push({
         name: attrName,
@@ -156,25 +154,27 @@ export abstract class XMLParserBase
   {
     let pos = start;
 
-    function skipWs() {
-      while (pos < s.length && isWhitespace(s, pos)) {
+    function skipWs() 
+    {
+      while (pos < s.length && isWhitespace(s, pos)) 
+      {
         ++pos;
       }
     }
 
-    while (
-      pos < s.length &&
-      !isWhitespace(s, pos) &&
-      s[pos] !== ">" &&
-      s[pos] !== "?" &&
-      s[pos] !== "/"
+    while( pos < s.length
+     && !isWhitespace(s, pos)
+     && s[pos] !== ">"
+     && s[pos] !== "?"
+     && s[pos] !== "/"
     ) {
       ++pos;
     }
     const name = s.substring(start, pos);
     skipWs();
     const attrStart = pos;
-    while (pos < s.length && (s[pos] !== "?" || s[pos + 1] !== ">")) {
+    while (pos < s.length && (s[pos] !== "?" || s[pos + 1] !== ">")) 
+    {
       ++pos;
     }
     const value = s.substring(attrStart, pos);
@@ -303,7 +303,8 @@ export abstract class XMLParserBase
         }
       } 
       else {
-        while (j < s.length && s[j] !== "<") {
+        while (j < s.length && s[j] !== "<") 
+        {
           j++;
         }
         const text = s.substring(i, j);
@@ -365,9 +366,8 @@ export class SimpleDOMNode
 
   get textContent():string
   {
-    if (!this.childNodes) {
-      return this.nodeValue || "";
-    }
+    if( !this.childNodes ) return this.nodeValue || "";
+
     return this.childNodes
       .map( child => child.textContent )
       .join("");
@@ -384,21 +384,20 @@ export class SimpleDOMNode
    */
   searchNode( paths:XFAPath, pos:number ):SimpleDOMNode | null
   {
-    if (pos >= paths.length) {
-      return this;
-    }
+    if( pos >= paths.length ) return this;
 
     const component = paths[pos];
     const stack:[SimpleDOMNode,number][] = [];
     let node:SimpleDOMNode = this;
 
-    while (true) {
-      if (component.name === node.nodeName) {
-        if (component.pos === 0) {
+    while (true) 
+    {
+      if (component.name === node.nodeName) 
+      {
+        if (component.pos === 0) 
+        {
           const res = node.searchNode(paths, pos + 1);
-          if (res !== null) {
-            return res;
-          }
+          if( res !== null ) return res;
         } 
         else if( stack.length === 0 )
         {
@@ -429,7 +428,8 @@ export class SimpleDOMNode
         stack.push([node, 0]);
         node = node.childNodes[0];
       }
-      else if (stack.length === 0) {
+      else if (stack.length === 0) 
+      {
         return null;
       } 
       else {
@@ -437,15 +437,14 @@ export class SimpleDOMNode
         {
           const [parent, currentPos] = stack.pop()!;
           const newPos = currentPos + 1;
-          if (newPos < parent.childNodes!.length) {
+          if (newPos < parent.childNodes!.length) 
+          {
             stack.push([parent, newPos]);
             node = parent.childNodes![newPos];
             break;
           }
         }
-        if (stack.length === 0) {
-          return null;
-        }
+        if( stack.length === 0 ) return null;
       }
     }
   }
@@ -459,8 +458,10 @@ export class SimpleDOMNode
     }
 
     buffer.push(`<${this.nodeName}`);
-    if (this.attributes) {
-      for (const attribute of this.attributes) {
+    if (this.attributes) 
+    {
+      for (const attribute of this.attributes) 
+      {
         buffer.push(
           ` ${attribute.name}="${encodeToXmlString(attribute.value)}"`
         );
@@ -475,7 +476,8 @@ export class SimpleDOMNode
       }
       buffer.push(`</${this.nodeName}>`);
     } 
-    else if (this.nodeValue) {
+    else if (this.nodeValue) 
+    {
       buffer.push(`>${encodeToXmlString(this.nodeValue)}</${this.nodeName}>`);
     }
     else {
@@ -515,7 +517,8 @@ export class SimpleXMLParser extends XMLParserBase
 
     // We should only have one root.
     const [documentElement] = this._currentFragment;
-    if (!documentElement) {
+    if (!documentElement) 
+    {
       return undefined; // Return undefined if no root was found.
     }
     return { documentElement };
@@ -526,7 +529,7 @@ export class SimpleXMLParser extends XMLParserBase
   {
     if( isWhitespaceString(text) )
     {
-      return;
+    return;
     }
     const node = new SimpleDOMNode("#text", text);
     this._currentFragment!.push(node);
@@ -563,9 +566,8 @@ export class SimpleXMLParser extends XMLParserBase
   {
     this._currentFragment = this._stack!.pop() || [];
     const lastElement = this._currentFragment[this._currentFragment.length - 1];
-    if (!lastElement) {
-      return;
-    }
+    if( !lastElement ) return;
+
     for( let i = 0, ii = lastElement.childNodes!.length; i < ii; i++ )
     {
       lastElement.childNodes![i].parentNode = lastElement;

@@ -2,9 +2,8 @@
  * annotation_storage_test
 ** ----------------------- */
 
-// #if TESTING && TEST_ALL
-import "../../../lib/jslang.js";
 import { css_1, css_2 } from "../../../test/alias.js";
+import "../../../lib/jslang.js";
 import { AnnotationStorage } from "./annotation_storage.js";
 
 const strttime = performance.now();
@@ -109,6 +108,5 @@ console.log("%c>>>>>>> test reset modified >>>>>>>",`color:${css_1}`);
 }
 /*81---------------------------------------------------------------------------*/
 
-console.log(`%cpdf/pdf.ts-src/display/annotation_storage_test: ${(performance.now()-strttime).toFixed(2)} ms`,`color:${css_2}`);
+console.log(`%c:pdf/pdf.ts-src/display/annotation_storage_test ${(performance.now()-strttime).toFixed(2)} ms`,`color:${css_2}`);
 globalThis.ntestfile = globalThis.ntestfile ? globalThis.ntestfile+1 : 1;
-// #endif

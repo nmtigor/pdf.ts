@@ -56,7 +56,6 @@ import { StructTree } from "../core/struct_tree.js";
 import { AnnotActions } from "../core/core_utils.js";
 import { ShadingPatternIR } from "../core/pattern.js";
 import { XFAElObj } from "../core/xfa/alias.js";
-import { HTMLResult } from "../core/xfa/utils.js";
 /*81---------------------------------------------------------------------------*/
 
 enum CallbackKind {
@@ -236,7 +235,7 @@ export interface MActionMap
   }
   GetMarkInfo:{
     Data:null;
-    Return:MarkInfo | null;
+    Return:MarkInfo | undefined;
     Sinkchunk:undefined;
   }
   GetMetadata:{
@@ -261,7 +260,7 @@ export interface MActionMap
   }
   GetOutline:{
     Data:null;
-    Return:OutlineNode[] | null
+    Return:OutlineNode[] | undefined
     Sinkchunk:undefined;
   }
   GetPage:{
@@ -309,7 +308,7 @@ export interface MActionMap
   }
   GetPermissions:{
     Data:null;
-    Return:PermissionFlag[] | null;
+    Return:PermissionFlag[] | undefined;
     Sinkchunk:undefined;
   }
   GetStats:{

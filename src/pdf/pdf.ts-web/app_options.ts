@@ -19,6 +19,7 @@
 
 import { Locale } from "../../lib/Locale.js";
 import { RendererType, ScrollMode, SpreadMode } from "./ui_utils.js";
+import { VerbosityLevel } from "../pdf.ts-src/shared/util.js";
 /*81---------------------------------------------------------------------------*/
 
 export const compatibilityParams = Object.create(null);
@@ -41,7 +42,8 @@ export const compatibilityParams = Object.create(null);
   (function checkOnBlobSupport() {
     // Sometimes Chrome on iOS loses data created with createObjectURL(),
     // see issue 8081.
-    if (isIOSChrome) {
+    if (isIOSChrome) 
+    {
       compatibilityParams.disableCreateObjectURL = true;
     }
   })();
@@ -49,7 +51,8 @@ export const compatibilityParams = Object.create(null);
   // Limit canvas size to 5 mega-pixels on mobile.
   // Support: Android, iOS
   (function checkCanvasSizeLimitation() {
-    if (isIOS || isAndroid) {
+    if (isIOS || isAndroid) 
+    {
       compatibilityParams.maxCanvasPixels = 5242880;
     }
   })();
@@ -85,6 +88,7 @@ const defaultOptions = {
     // value: `${D_base}/res/pdf/test/pdfs/pattern_text_embedded_font.pdf`,
     // value: `${D_base}/res/pdf/test/pdfs/basicapi.pdf`,
     value: `${D_base}/res/pdf/test/pdfs/tracemonkey.pdf`,
+    // value: `${D_base}/res/pdf/test/pdfs-1/math.pdf`,
     // value: "compressed.tracemonkey-pldi-09.pdf",
     kind: OptionKind.VIEWER,
   },
@@ -307,8 +311,9 @@ const defaultOptions = {
     kind: OptionKind.API,
   },
   verbosity: {
-    /** @type {number} */
-    value: 1,
+    /** @type {VerbosityLevel} */
+    // value: VerbosityLevel.INFOS,
+    value: VerbosityLevel.WARNINGS,
     kind: OptionKind.API,
   },
 

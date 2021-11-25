@@ -32,7 +32,6 @@ import {
   isValidRotation,
   isValidScrollMode,
   isValidSpreadMode,
-  MatchesCount,
   noContextMenuHandler,
   normalizeWheelEventDirection,
   parseQueryString,
@@ -68,7 +67,7 @@ import { PasswordPrompt } from "./password_prompt.js";
 import { PDFAttachmentViewer } from "./pdf_attachment_viewer.js";
 import { PDFDocumentProperties } from "./pdf_document_properties.js";
 import { PDFFindBar } from "./pdf_find_bar.js";
-import { FindState, PDFFindController } from "./pdf_find_controller.js";
+import { FindState, MatchesCount, PDFFindController } from "./pdf_find_controller.js";
 import { PDFHistory } from "./pdf_history.js";
 import { PDFLayerViewer } from "./pdf_layer_viewer.js";
 import { PDFLinkService } from "./pdf_link_service.js";
@@ -850,20 +849,24 @@ export class PDFViewerApplication
     );
   }
 
-  get supportsIntegratedFind() {
+  get supportsIntegratedFind() 
+  {
     return this.externalServices.supportsIntegratedFind;
   }
 
-  get supportsDocumentFonts() {
+  get supportsDocumentFonts() 
+  {
     return this.externalServices.supportsDocumentFonts;
   }
 
-  get loadingBar() {
+  get loadingBar() 
+  {
     const bar = new ProgressBar("#loadingBar");
     return shadow(this, "loadingBar", bar);
   }
 
-  get supportedMouseWheelZoomModifierKeys() {
+  get supportedMouseWheelZoomModifierKeys() 
+  {
     return this.externalServices.supportedMouseWheelZoomModifierKeys;
   }
 
@@ -1127,18 +1130,22 @@ export class PDFViewerApplication
         this.load(pdfDocument);
       },
       exception => {
-        if (loadingTask !== this.pdfLoadingTask) {
+        if (loadingTask !== this.pdfLoadingTask) 
+        {
           return undefined; // Ignore errors for previously opened PDF files.
         }
 
         let key = "loading_error";
-        if (exception instanceof InvalidPDFException) {
+        if (exception instanceof InvalidPDFException) 
+        {
           key = "invalid_file_error";
         }
-        else if (exception instanceof MissingPDFException) {
+        else if (exception instanceof MissingPDFException) 
+        {
           key = "missing_file_error";
         }
-        else if (exception instanceof UnexpectedResponseException) {
+        else if (exception instanceof UnexpectedResponseException) 
+        {
           key = "unexpected_response_error";
         }
         return this.l10n.get(key).then(msg => {
@@ -1151,9 +1158,8 @@ export class PDFViewerApplication
 
   #ensureDownloadComplete()
   {
-    if (this.pdfDocument && this.downloadComplete) {
-      return;
-    }
+    if( this.pdfDocument && this.downloadComplete ) return;
+
     throw new Error("PDF document not downloaded.");
   }
 
@@ -1223,9 +1229,8 @@ export class PDFViewerApplication
 
     // Only trigger the fallback once so we don't spam the user with messages
     // for one PDF.
-    if (this._fellback) {
-      return;
-    }
+    if( this._fellback ) return;
+
     this._fellback = true;
 
     this.externalServices
@@ -2518,7 +2523,8 @@ function webViewerInitialized()
   appConfig.mainContainer.addEventListener(
     "transitionend",
     function( evt:TransitionEvent ) {
-      if (evt.target === /* mainContainer */ this) {
+      if (evt.target === /* mainContainer */ this) 
+      {
         viewerapp.eventBus.dispatch("resize", { source: this });
       }
     },
@@ -2736,15 +2742,15 @@ function webViewerResize()
   const { pdfDocument, pdfViewer } = viewerapp;
   if( !pdfDocument ) return;
 
-  const currentScaleValue = pdfViewer!.currentScaleValue;
+  const currentScaleValue = pdfViewer.currentScaleValue;
   if( currentScaleValue === "auto"
    || currentScaleValue === "page-fit"
    || currentScaleValue === "page-width"
   ) {
     // Note: the scale is constant for 'page-actual'.
-    pdfViewer!.currentScaleValue = currentScaleValue;
+    pdfViewer.currentScaleValue = currentScaleValue;
   }
-  pdfViewer!.update();
+  pdfViewer.update();
 }
 
 function webViewerHashchange( evt:EventMap['hashchange'] ) 
@@ -2763,7 +2769,7 @@ function webViewerHashchange( evt:EventMap['hashchange'] )
 }
 
 let webViewerFileInputChange:( evt:EventMap['fileinputchange'] ) => void;
-let webViewerOpenFile:( evt:EventMap['openfile'] ) => void;
+let webViewerOpenFile:( evt:EventMap["openfile"] ) => void;
 // #if GENERIC
   webViewerFileInputChange = ( evt:EventMap['fileinputchange'] ) =>
   {
@@ -2794,9 +2800,9 @@ let webViewerOpenFile:( evt:EventMap['openfile'] ) => void;
     }
   };
 
-  webViewerOpenFile = ( evt:EventMap['openfile'] ) =>
+  webViewerOpenFile = ( evt:EventMap["openfile"] ) =>
   {
-    const openFileInputName = viewerapp.appConfig!.openFileInputName;
+    const openFileInputName = viewerapp.appConfig.openFileInputName;
     document.getElementById(openFileInputName)!.click();
   };
 // #endif
@@ -3297,9 +3303,8 @@ function webViewerKeyDown( evt:KeyboardEvent )
           viewerapp.secondaryToolbar!.close();
           handled = true;
         }
-        if (
-          !viewerapp.supportsIntegratedFind &&
-          viewerapp.findBar!.opened
+        if( !viewerapp.supportsIntegratedFind
+         && viewerapp.findBar!.opened
         ) {
           viewerapp.findBar!.close();
           handled = true;

@@ -11,8 +11,6 @@
     "noImplicitReturns": true,
     "noImplicitOverride": true,
     "useDefineForClassFields": true,
-    
-    "downlevelIteration": true,
 
     "declarationDir": "gen",
     "declaration": true,
