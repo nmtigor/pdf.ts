@@ -239,9 +239,8 @@ export interface DocumentInitParms {
  * XHR as fallback) is used, which means it must follow same origin rules,
  * e.g. no cross-domain requests without CORS.
  *
- * @param src
- *   src - Can be a URL where a PDF file is located, a typed array (Uint8Array)
- *         already populated with data, or a parameter object.
+ * @param src Can be a URL where a PDF file is located, a typed array (Uint8Array)
+ *  already populated with data, or a parameter object.
  */
 export declare function getDocument(src: string | URL | TypedArray | DocumentInitParms | PDFDataRangeTransport): PDFDocumentLoadingTask;
 /**
@@ -384,7 +383,7 @@ export declare class PDFDocumentProxy {
      * @param pageNumber The page number to get. The first page is 1.
      * @return A promise that is resolved with a {@link PDFPageProxy} object.
      */
-    getPage(pageNumber: number): Promise<PDFPageProxy>;
+    getPage(pageNumber: unknown): Promise<PDFPageProxy>;
     /**
      * @param ref The page reference.
      * @return A promise that is resolved with the page index,
@@ -456,7 +455,7 @@ export declare class PDFDocumentProxy {
      * @return A promise that is resolved with an
      *   {Array} that is a tree outline (if it has one) of the PDF file.
      */
-    getOutline(): Promise<OutlineNode[] | null>;
+    getOutline(): Promise<OutlineNode[] | undefined>;
     /**
      * @return A promise that is resolved with
      *   an {@link OptionalContentConfig} that contains all the optional content
@@ -468,7 +467,7 @@ export declare class PDFDocumentProxy {
      *   an {Array} that contains the permission flags for the PDF document, or
      *   `null` when no permissions are present in the PDF file.
      */
-    getPermissions(): Promise<import("../shared/util.js").PermissionFlag[] | null>;
+    getPermissions(): Promise<import("../shared/util.js").PermissionFlag[] | undefined>;
     /**
      * @return A promise that is
      *   resolved with an {Object} that has `info` and `metadata` properties.
@@ -487,7 +486,7 @@ export declare class PDFDocumentProxy {
      *   a {MarkInfo} object that contains the MarkInfo flags for the PDF
      *   document, or `null` when no MarkInfo values are present in the PDF file.
      */
-    getMarkInfo(): Promise<import("../core/catalog.js").MarkInfo | null>;
+    getMarkInfo(): Promise<import("../core/catalog.js").MarkInfo | undefined>;
     /**
      * @return A promise that is resolved with a
      *   {TypedArray} that has the raw data from the PDF.
@@ -937,7 +936,7 @@ export declare class PDFPageProxy {
 }
 export declare class LoopbackPort {
     #private;
-    postMessage(obj: any, transfers?: Transferable[] | PostMessageOptions): void;
+    postMessage(obj: any, transfers?: Transferable[] | StructuredSerializeOptions): void;
     addEventListener(name: string, listener: EventListener): void;
     removeEventListener(name: string, listener: EventListener): void;
     terminate(): void;
@@ -978,6 +977,7 @@ export declare class PDFWorker {
      * The current `workerPort`, when it exists.
      */
     get port(): IWorker;
+    get _webWorker(): Worker | undefined;
     /**
      * The current MessageHandler-instance.
      */
@@ -1038,7 +1038,7 @@ declare class WorkerTransport {
     destroy(): Promise<void>;
     setupMessageHandler(): void;
     getData(): Promise<Uint8Array>;
-    getPage(pageNumber: number): Promise<PDFPageProxy>;
+    getPage(pageNumber: unknown): Promise<PDFPageProxy>;
     getPageIndex(ref: Ref): Promise<number>;
     getAnnotations(pageIndex: number, intent: RenderingIntentFlag): Promise<AnnotationData[]>;
     saveDocument(): Promise<Uint8Array>;
@@ -1057,16 +1057,16 @@ declare class WorkerTransport {
     getDocJSActions(): Promise<AnnotActions | undefined>;
     getPageJSActions(pageIndex: number): Promise<AnnotActions | undefined>;
     getStructTree(pageIndex: number): Promise<StructTree | undefined>;
-    getOutline(): Promise<OutlineNode[] | null>;
+    getOutline(): Promise<OutlineNode[] | undefined>;
     getOptionalContentConfig(): Promise<OptionalContentConfig>;
-    getPermissions(): Promise<import("../shared/util.js").PermissionFlag[] | null>;
+    getPermissions(): Promise<import("../shared/util.js").PermissionFlag[] | undefined>;
     getMetadata(): Promise<{
         info: import("../core/document.js").DocumentInfo;
         metadata: Metadata | undefined;
         contentDispositionFilename: string | undefined;
         contentLength: number | undefined;
     }>;
-    getMarkInfo(): Promise<import("../core/catalog.js").MarkInfo | null>;
+    getMarkInfo(): Promise<import("../core/catalog.js").MarkInfo | undefined>;
     getStats(): Promise<PDFDocumentStats>;
     startCleanup(keepLoadedFonts?: boolean): Promise<void>;
     get loadingParams(): {

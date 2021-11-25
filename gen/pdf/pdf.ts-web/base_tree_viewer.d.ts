@@ -14,9 +14,7 @@ export declare abstract class BaseTreeViewer {
     #private;
     container: HTMLDivElement;
     eventBus: EventBus;
-    _pdfDocument?: PDFDocumentProxy | undefined;
-    _lastToggleIsShow: boolean;
-    _currentTreeItem: HTMLElement | null;
+    protected _pdfDocument: PDFDocumentProxy | undefined;
     constructor(options: BaseTreeViewerCtorParms);
     reset(): void;
     protected abstract _dispatchEvent(count?: number): void;

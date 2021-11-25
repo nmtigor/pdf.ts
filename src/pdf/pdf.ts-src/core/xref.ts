@@ -196,7 +196,8 @@ export class XRef
     const obj = this.readXRefTable( parser );
 
     // Sanity check
-    if (!isCmd(obj, "trailer")) {
+    if (!isCmd(obj, "trailer")) 
+    {
       throw new FormatError(
         "Invalid XRef table: could not find trailer dictionary"
       );
@@ -327,13 +328,16 @@ export class XRef
 
   processXRefStream( stream:Stream )
   {
-    if (!("streamState" in this)) {
+    if( !this.streamState ) 
+    // if( !("streamState" in this) ) 
+    {
       // Stores state of the stream as we process it so we can resume
       // from middle of stream in case of missing data error
       const streamParameters = stream.dict!;
       const byteWidths = <number[]>streamParameters.get("W");
       let range = <number[]>streamParameters.get("Index");
-      if (!range) {
+      if (!range) 
+      {
         range = [ 0, <number>streamParameters.get("Size") ];
       }
 
@@ -378,7 +382,8 @@ export class XRef
           `Invalid XRef entry fields length: ${first}, ${n}`
         );
       }
-      for (i = streamState.entryNum; i < n; ++i) {
+      for (i = streamState.entryNum; i < n; ++i) 
+      {
         streamState.entryNum = i;
         streamState.streamPos = stream.pos;
 

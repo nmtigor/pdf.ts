@@ -102,11 +102,11 @@ export declare class Catalog {
     get acroForm(): Dict | undefined;
     get acroFormRef(): Ref | undefined;
     get metadata(): import("./metadata_parser.js").SerializedMetadata | undefined;
-    get markInfo(): MarkInfo | null;
+    get markInfo(): MarkInfo | undefined;
     get structTreeRoot(): StructTreeRoot | undefined;
     get toplevelPagesDict(): Dict;
-    get documentOutline(): OutlineNode[] | null;
-    get permissions(): PermissionFlag[] | null;
+    get documentOutline(): OutlineNode[] | undefined;
+    get permissions(): PermissionFlag[] | undefined;
     /**
      * Table 100
      */

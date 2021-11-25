@@ -34,6 +34,16 @@ function eq_impl(lhs_x, rhs_x) {
         }
         return ret;
     }
+    if (lhs_x instanceof Int8Array
+        || lhs_x instanceof Uint8Array
+        || lhs_x instanceof Uint8ClampedArray
+        || lhs_x instanceof Int16Array
+        || lhs_x instanceof Uint16Array
+        || lhs_x instanceof Int32Array
+        || lhs_x instanceof Uint32Array
+        || lhs_x instanceof Float32Array
+        || lhs_x instanceof Float64Array)
+        return lhs_x.eq(rhs_x);
     if (isObjectLike(lhs_x)) {
         if (!isObjectLike(rhs_x) || Array.isArray(rhs_x))
             return false;
@@ -74,10 +84,6 @@ Reflect.defineProperty(Object.prototype, "eq", {
 Reflect.defineProperty(Array.prototype, "last", {
     get() { return this[this.length - 1]; }
 });
-/**
- * @param { headconst } rhs
- * @param { const } valve_x
- */
 Reflect.defineProperty(Array.prototype, "eq", {
     value(rhs_x, valve_x = 100) {
         valve = valve_x;
@@ -141,6 +147,90 @@ Number.prototype.fixTo = function (digits = 0) {
     const mul = 10 ** digits;
     return Math.round(this.valueOf() * mul) / mul;
 };
+/*81-----------------------------------------------------------------------------
+ * TypedArray
+** ---------- */
+function iaEq_impl(lhs_x, rhs_x) {
+    if (rhs_x.length !== lhs_x.length)
+        return false;
+    for (let i = lhs_x.length; i--;) {
+        if (rhs_x[i] !== lhs_x[i])
+            return false;
+    }
+    return true;
+}
+function faEq_impl(lhs_x, rhs_x) {
+    if (rhs_x.length !== lhs_x.length)
+        return false;
+    for (let i = lhs_x.length; i--;) {
+        if (!Number.apxE(rhs_x[i], lhs_x[i]))
+            return false;
+    }
+    return true;
+}
+Reflect.defineProperty(Int8Array.prototype, "eq", {
+    value(rhs_x) {
+        if (!(rhs_x instanceof Int8Array))
+            return false;
+        return iaEq_impl(this, rhs_x);
+    }
+});
+Reflect.defineProperty(Uint8Array.prototype, "eq", {
+    value(rhs_x) {
+        if (!(rhs_x instanceof Uint8Array))
+            return false;
+        return iaEq_impl(this, rhs_x);
+    }
+});
+Reflect.defineProperty(Uint8ClampedArray.prototype, "eq", {
+    value(rhs_x) {
+        if (!(rhs_x instanceof Uint8ClampedArray))
+            return false;
+        return iaEq_impl(this, rhs_x);
+    }
+});
+Reflect.defineProperty(Int16Array.prototype, "eq", {
+    value(rhs_x) {
+        if (!(rhs_x instanceof Int16Array))
+            return false;
+        return iaEq_impl(this, rhs_x);
+    }
+});
+Reflect.defineProperty(Uint16Array.prototype, "eq", {
+    value(rhs_x) {
+        if (!(rhs_x instanceof Uint16Array))
+            return false;
+        return iaEq_impl(this, rhs_x);
+    }
+});
+Reflect.defineProperty(Int32Array.prototype, "eq", {
+    value(rhs_x) {
+        if (!(rhs_x instanceof Int32Array))
+            return false;
+        return iaEq_impl(this, rhs_x);
+    }
+});
+Reflect.defineProperty(Uint32Array.prototype, "eq", {
+    value(rhs_x) {
+        if (!(rhs_x instanceof Uint32Array))
+            return false;
+        return iaEq_impl(this, rhs_x);
+    }
+});
+Reflect.defineProperty(Float32Array.prototype, "eq", {
+    value(rhs_x) {
+        if (!(rhs_x instanceof Float32Array))
+            return false;
+        return faEq_impl(this, rhs_x);
+    }
+});
+Reflect.defineProperty(Float64Array.prototype, "eq", {
+    value(rhs_x) {
+        if (!(rhs_x instanceof Float64Array))
+            return false;
+        return faEq_impl(this, rhs_x);
+    }
+});
 Date.prototype.myformat = function () {
     // let month_s;
     // switch( this.getMonth() )

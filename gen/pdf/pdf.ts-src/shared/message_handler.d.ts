@@ -138,7 +138,7 @@ export interface MActionMap {
     };
     GetMarkInfo: {
         Data: null;
-        Return: MarkInfo | null;
+        Return: MarkInfo | undefined;
         Sinkchunk: undefined;
     };
     GetMetadata: {
@@ -163,7 +163,7 @@ export interface MActionMap {
     };
     GetOutline: {
         Data: null;
-        Return: OutlineNode[] | null;
+        Return: OutlineNode[] | undefined;
         Sinkchunk: undefined;
     };
     GetPage: {
@@ -211,7 +211,7 @@ export interface MActionMap {
     };
     GetPermissions: {
         Data: null;
-        Return: PermissionFlag[] | null;
+        Return: PermissionFlag[] | undefined;
         Sinkchunk: undefined;
     };
     GetStats: {

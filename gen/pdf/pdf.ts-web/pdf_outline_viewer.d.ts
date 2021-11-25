@@ -1,6 +1,5 @@
 import { ExplicitDest } from "../pdf.ts-src/core/catalog.js";
 import { OutlineNode, PDFDocumentProxy } from "../pdf.ts-src/display/api.js";
-import { PromiseCapability } from "../pdf.ts-src/shared/util.js";
 import { BaseTreeViewer, BaseTreeViewerCtorParms } from "./base_tree_viewer.js";
 import { PDFLinkService } from "./pdf_link_service.js";
 import { SidebarView } from "./ui_utils.js";
@@ -11,7 +10,7 @@ interface PDFOutlineViewerRenderParms {
     /**
      * An array of outline objects.
      */
-    outline: OutlineNode[] | null;
+    outline: OutlineNode[] | undefined;
     /**
      * A {PDFDocument} instance.
      */
@@ -19,8 +18,6 @@ interface PDFOutlineViewerRenderParms {
 }
 export declare class PDFOutlineViewer extends BaseTreeViewer {
     #private;
-    _outline: OutlineNode[] | null;
-    _pageNumberToDestHashCapability: PromiseCapability<Map<number, string> | null> | null;
     _currentPageNumber: number;
     _sidebarView?: SidebarView;
     _isPagesLoaded: boolean;

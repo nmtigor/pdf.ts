@@ -1,5 +1,5 @@
 import "../../lib/jslang.js";
-import { EventBus, MatchesCount, ProgressBar, ScrollMode, SidebarView, SpreadMode } from "./ui_utils.js";
+import { EventBus, ProgressBar, ScrollMode, SidebarView, SpreadMode } from "./ui_utils.js";
 import { UNSUPPORTED_FEATURES } from "../pdf.ts-src/pdf.js";
 import { PDFCursorTools } from "./pdf_cursor_tools.js";
 import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
@@ -8,7 +8,7 @@ import { PasswordPrompt } from "./password_prompt.js";
 import { PDFAttachmentViewer } from "./pdf_attachment_viewer.js";
 import { PDFDocumentProperties } from "./pdf_document_properties.js";
 import { PDFFindBar } from "./pdf_find_bar.js";
-import { FindState, PDFFindController } from "./pdf_find_controller.js";
+import { FindState, MatchesCount, PDFFindController } from "./pdf_find_controller.js";
 import { PDFHistory } from "./pdf_history.js";
 import { PDFLayerViewer } from "./pdf_layer_viewer.js";
 import { PDFLinkService } from "./pdf_link_service.js";

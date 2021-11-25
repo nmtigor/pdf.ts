@@ -8,9 +8,8 @@ function isWhitespace(s, index) {
 }
 function isWhitespaceString(s) {
     for (let i = 0, ii = s.length; i < ii; i++) {
-        if (!isWhitespace(s, i)) {
+        if (!isWhitespace(s, i))
             return false;
-        }
     }
     return true;
 }
@@ -46,18 +45,18 @@ export class XMLParserBase {
                 ++pos;
             }
         }
-        while (pos < s.length &&
-            !isWhitespace(s, pos) &&
-            s[pos] !== ">" &&
-            s[pos] !== "/") {
+        while (pos < s.length
+            && !isWhitespace(s, pos)
+            && s[pos] !== ">"
+            && s[pos] !== "/") {
             ++pos;
         }
         const name = s.substring(start, pos);
         skipWs();
-        while (pos < s.length &&
-            s[pos] !== ">" &&
-            s[pos] !== "/" &&
-            s[pos] !== "?") {
+        while (pos < s.length
+            && s[pos] !== ">"
+            && s[pos] !== "/"
+            && s[pos] !== "?") {
             skipWs();
             let attrName = "", attrValue = "";
             while (pos < s.length && !isWhitespace(s, pos) && s[pos] !== "=") {
@@ -65,19 +64,16 @@ export class XMLParserBase {
                 ++pos;
             }
             skipWs();
-            if (s[pos] !== "=") {
+            if (s[pos] !== "=")
                 return null;
-            }
             ++pos;
             skipWs();
             const attrEndChar = s[pos];
-            if (attrEndChar !== '"' && attrEndChar !== "'") {
+            if (attrEndChar !== '"' && attrEndChar !== "'")
                 return null;
-            }
             const attrEndIndex = s.indexOf(attrEndChar, ++pos);
-            if (attrEndIndex < 0) {
+            if (attrEndIndex < 0)
                 return null;
-            }
             attrValue = s.substring(pos, attrEndIndex);
             attributes.push({
                 name: attrName,
@@ -99,11 +95,11 @@ export class XMLParserBase {
                 ++pos;
             }
         }
-        while (pos < s.length &&
-            !isWhitespace(s, pos) &&
-            s[pos] !== ">" &&
-            s[pos] !== "?" &&
-            s[pos] !== "/") {
+        while (pos < s.length
+            && !isWhitespace(s, pos)
+            && s[pos] !== ">"
+            && s[pos] !== "?"
+            && s[pos] !== "/") {
             ++pos;
         }
         const name = s.substring(start, pos);
@@ -255,9 +251,8 @@ export class SimpleDOMNode {
         return childNodes[index + 1];
     }
     get textContent() {
-        if (!this.childNodes) {
+        if (!this.childNodes)
             return this.nodeValue || "";
-        }
         return this.childNodes
             .map(child => child.textContent)
             .join("");
@@ -272,9 +267,8 @@ export class SimpleDOMNode {
      * @return The node corresponding to the path or null if not found.
      */
     searchNode(paths, pos) {
-        if (pos >= paths.length) {
+        if (pos >= paths.length)
             return this;
-        }
         const component = paths[pos];
         const stack = [];
         let node = this;
@@ -282,9 +276,8 @@ export class SimpleDOMNode {
             if (component.name === node.nodeName) {
                 if (component.pos === 0) {
                     const res = node.searchNode(paths, pos + 1);
-                    if (res !== null) {
+                    if (res !== null)
                         return res;
-                    }
                 }
                 else if (stack.length === 0) {
                     return null;
@@ -322,9 +315,8 @@ export class SimpleDOMNode {
                         break;
                     }
                 }
-                if (stack.length === 0) {
+                if (stack.length === 0)
                     return null;
-                }
             }
         }
     }
@@ -412,9 +404,8 @@ export class SimpleXMLParser extends XMLParserBase {
     onEndElement(name) {
         this._currentFragment = this._stack.pop() || [];
         const lastElement = this._currentFragment[this._currentFragment.length - 1];
-        if (!lastElement) {
+        if (!lastElement)
             return;
-        }
         for (let i = 0, ii = lastElement.childNodes.length; i < ii; i++) {
             lastElement.childNodes[i].parentNode = lastElement;
         }

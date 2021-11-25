@@ -1,3 +1,2 @@
-import "./core/test.js";
-import "./display/test.js";
+export {};
 //# sourceMappingURL=test.d.ts.map

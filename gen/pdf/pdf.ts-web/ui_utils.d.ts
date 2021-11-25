@@ -6,7 +6,7 @@ import { IVisibleView } from "./interfaces.js";
 import { PDFAttachmentViewer } from "./pdf_attachment_viewer.js";
 import { CursorTool, PDFCursorTools } from "./pdf_cursor_tools.js";
 import { PDFFindBar } from "./pdf_find_bar.js";
-import { FindState } from "./pdf_find_controller.js";
+import { FindCtrlrState, FindState, MatchesCount } from "./pdf_find_controller.js";
 import { PDFLayerViewer } from "./pdf_layer_viewer.js";
 import { PDFOutlineViewer } from "./pdf_outline_viewer.js";
 import { PDFPresentationMode } from "./pdf_presentation_mode.js";
@@ -284,10 +284,6 @@ export declare function waitOnEventOrTimeout({ target, name, delay }: WaitOnEven
  * Promise that is resolved when DOM window becomes visible.
  */
 export declare const animationStarted: Promise<unknown>;
-export interface MatchesCount {
-    current: number;
-    total: number;
-}
 export interface EventMap {
     afterprint: {};
     annotationlayerrendered: {
@@ -340,15 +336,8 @@ export interface EventMap {
     download: {
         source: typeof window;
     };
-    find: {
+    find: FindCtrlrState & {
         source: typeof window | PDFFindBar | PDFLinkService;
-        type: string;
-        query: string;
-        phraseSearch: boolean;
-        caseSensitive: boolean;
-        entireWord: boolean;
-        highlightAll: boolean;
-        findPrevious?: boolean | undefined;
     };
     findbarclose: {
         source: PDFFindBar;

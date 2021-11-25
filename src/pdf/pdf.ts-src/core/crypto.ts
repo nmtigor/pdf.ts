@@ -108,37 +108,39 @@ namespace Ns_calculateMD5
     -145523070, -1120210379, 718787259, -343485551,
   ]);
 
-  export function hash( data:Uint8Array, offset:number, length:number ) 
+  export function hash( data:Uint8Array, offset?:number, length?:number ) 
   {
     let h0 = 1732584193,
       h1 = -271733879,
       h2 = -1732584194,
       h3 = 271733878;
     // pre-processing
-    const paddedLength = (length + 72) & ~63; // data + 9 extra bytes
+    const paddedLength = (length! + 72) & ~63; // data + 9 extra bytes
     const padded = new Uint8Array(paddedLength);
     let i, j;
-    for( i = 0; i < length; ++i )
+    for( i = 0; i < length!; ++i )
     {
-      padded[i] = data[offset++];
+      padded[i] = data[offset!++];
     }
     padded[i++] = 0x80;
     const n = paddedLength - 8;
-    while (i < n) {
+    while (i < n) 
+    {
       padded[i++] = 0;
     }
-    padded[i++] = (length << 3) & 0xff;
-    padded[i++] = (length >> 5) & 0xff;
-    padded[i++] = (length >> 13) & 0xff;
-    padded[i++] = (length >> 21) & 0xff;
-    padded[i++] = (length >>> 29) & 0xff;
+    padded[i++] = (length! << 3) & 0xff;
+    padded[i++] = (length! >> 5) & 0xff;
+    padded[i++] = (length! >> 13) & 0xff;
+    padded[i++] = (length! >> 21) & 0xff;
+    padded[i++] = (length! >>> 29) & 0xff;
     padded[i++] = 0;
     padded[i++] = 0;
     padded[i++] = 0;
     const w = new Int32Array(16);
     for( i = 0; i < paddedLength; )
     {
-      for( j = 0; j < 16; ++j, i += 4 ){
+      for( j = 0; j < 16; ++j, i += 4 )
+      {
         w[j] =
           padded[i] |
           (padded[i + 1] << 8) |
@@ -153,15 +155,18 @@ namespace Ns_calculateMD5
         g;
       for( j = 0; j < 64; ++j )
       {
-        if (j < 16) {
+        if (j < 16) 
+        {
           f = (b & c) | (~b & d);
           g = j;
         } 
-        else if (j < 32) {
+        else if (j < 32) 
+        {
           f = (d & b) | (~d & c);
           g = (5 * j + 1) & 15;
         } 
-        else if (j < 48) {
+        else if (j < 48) 
+        {
           f = b ^ c ^ d;
           g = (3 * j + 5) & 15;
         } 

@@ -1,8 +1,8 @@
 /*81*****************************************************************************
  * annotation_test
 ** --------------- */
-import "../../../lib/jslang.js";
 import { css_1, css_2 } from "../../../test/alias.js";
+import "../../../lib/jslang.js";
 import { Dict, Name, Ref, RefSetCache } from "./primitives.js";
 import { CMAP_PARAMS, createIdFactory, STANDARD_FONT_DATA_URL, XRefMock } from "../../test_utils.js";
 import { DefaultCMapReaderFactory, DefaultStandardFontDataFactory } from "../display/api.js";
@@ -215,6 +215,6 @@ pdfManagerMock = undefined;
 idFactoryMock = undefined;
 partialEvaluator = undefined;
 /*81---------------------------------------------------------------------------*/
-console.log(`%cpdf/pdf.ts-src/core/annotation_test: ${(performance.now() - strttime).toFixed(2)} ms`, `color:${css_2}`);
+console.log(`%c:pdf/pdf.ts-src/core/annotation_test ${(performance.now() - strttime).toFixed(2)} ms`, `color:${css_2}`);
 globalThis.ntestfile = globalThis.ntestfile ? globalThis.ntestfile + 1 : 1;
 //# sourceMappingURL=annotation_test.js.map

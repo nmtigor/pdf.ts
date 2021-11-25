@@ -9,12 +9,12 @@ interface IncrementalUpdateParms {
     xrefInfo: XRefInfo;
     newRefs: SaveData[];
     xref?: XRef;
+    acroForm?: Dict | undefined;
+    acroFormRef?: Ref | undefined;
     hasXfa?: boolean;
-    xfaDatasetsRef: Ref | undefined;
     hasXfaDatasetsEntry?: boolean;
-    acroFormRef: Ref | undefined;
-    acroForm: Dict | undefined;
-    xfaData: string | undefined;
+    xfaData?: string | undefined;
+    xfaDatasetsRef?: Ref | undefined;
 }
 export declare function incrementalUpdate({ originalData, xrefInfo, newRefs, xref, hasXfa, xfaDatasetsRef, hasXfaDatasetsEntry, acroFormRef, acroForm, xfaData, }: IncrementalUpdateParms): Uint8Array;
 export {};

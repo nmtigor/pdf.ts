@@ -1,4 +1,5 @@
 import { RendererType, ScrollMode, SpreadMode } from "./ui_utils.js";
+import { VerbosityLevel } from "../pdf.ts-src/shared/util.js";
 export declare const compatibilityParams: any;
 export declare const enum OptionKind {
     VIEWER = 2,
@@ -219,8 +220,8 @@ declare const defaultOptions: {
         kind: OptionKind;
     };
     verbosity: {
-        /** @type {number} */
-        value: number;
+        /** @type {VerbosityLevel} */
+        value: VerbosityLevel;
         kind: OptionKind;
     };
     workerPort: {

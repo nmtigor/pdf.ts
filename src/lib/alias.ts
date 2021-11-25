@@ -61,7 +61,7 @@ export type Constructor<T=object> = new(...args: any[]) => T;
 export type AbstractConstructor<T=object> = abstract new(...args: any[]) => T;
 export type Func<This=any> = (this:This, ...args:any[]) => any;
 
-export type TypedArray = 
+export type IntegerArray = 
   | Int8Array
   | Uint8Array
   | Uint8ClampedArray
@@ -69,9 +69,12 @@ export type TypedArray =
   | Uint16Array
   | Int32Array
   | Uint32Array
+;
+export type FloatArray = 
   | Float32Array
   | Float64Array
 ;
+export type TypedArray = IntegerArray | FloatArray;
 
 //#region TupleOf<>
 // Ref: TSConf 2020: Keynote - Anders Hejlsberg (https://youtu.be/IGw2MRI0YV8)

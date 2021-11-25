@@ -12,7 +12,7 @@ export interface ARCFourCipher {
     encrypt(data: Uint8Array): Uint8Array;
 }
 declare namespace Ns_calculateMD5 {
-    function hash(data: Uint8Array, offset: number, length: number): Uint8Array;
+    function hash(data: Uint8Array, offset?: number, length?: number): Uint8Array;
 }
 export import calculateMD5 = Ns_calculateMD5.hash;
 declare namespace Ns_calculateSHA256 {

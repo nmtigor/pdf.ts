@@ -1,8 +1,8 @@
 /*81*****************************************************************************
  * core_utils_test
 ** --------------- */
-import "../../../lib/jslang.js";
 import { css_1, css_2 } from "../../../test/alias.js";
+import "../../../lib/jslang.js";
 import { encodeToXmlString, escapePDFName, getInheritableProperty, isWhiteSpace, log2, parseXFAPath, toRomanNumerals, validateCSSFont } from "./core_utils.js";
 import { Dict, Ref } from "./primitives.js";
 import { XRefMock } from "../../test_utils.js";
@@ -277,6 +277,6 @@ console.log("%c>>>>>>> test validateCSSFont() >>>>>>>", `color:${css_1}`);
     }
 }
 /*81---------------------------------------------------------------------------*/
-console.log(`%cpdf/pdf.ts-src/core/core_utils_test: ${(performance.now() - strttime).toFixed(2)} ms`, `color:${css_2}`);
+console.log(`%c:pdf/pdf.ts-src/core/core_utils_test ${(performance.now() - strttime).toFixed(2)} ms`, `color:${css_2}`);
 globalThis.ntestfile = globalThis.ntestfile ? globalThis.ntestfile + 1 : 1;
 //# sourceMappingURL=core_utils_test.js.map

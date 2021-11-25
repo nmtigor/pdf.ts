@@ -308,8 +308,9 @@ export class Catalog
     return shadow(this, "metadata", metadata);
   }
 
-  get markInfo() {
-    let markInfo = null;
+  get markInfo() 
+  {
+    let markInfo:MarkInfo | undefined;
     try {
       markInfo = this.#readMarkInfo();
     } catch (ex) {
@@ -324,7 +325,7 @@ export class Catalog
   #readMarkInfo()
   { 
     const obj = <Dict>this.#catDict.get("MarkInfo");
-    if( !(obj instanceof Dict) ) return null;
+    if( !(obj instanceof Dict) ) return undefined;
 
     const markInfo:MarkInfo = Object.assign(Object.create(null), {
       Marked: false,
@@ -333,9 +334,8 @@ export class Catalog
     });
     for( const key in markInfo )
     {
-      if (!obj.has(key)) {
-        continue;
-      }
+      if( !obj.has(key) ) continue;
+
       const value = obj.get(key);
       if( !(typeof value === "boolean") ) continue;
 
@@ -381,13 +381,12 @@ export class Catalog
 
   get documentOutline() 
   {
-    let obj = null;
+    let obj:OutlineNode[] | undefined;
     try {
       obj = this.#readDocumentOutline();
     } catch (ex) {
-      if (ex instanceof MissingDataException) {
-        throw ex;
-      }
+      if( ex instanceof MissingDataException ) throw ex;
+
       warn("Unable to read document outline.");
     }
     return shadow(this, "documentOutline", obj);
@@ -396,10 +395,10 @@ export class Catalog
   #readDocumentOutline()
   {
     let obj = this.#catDict.get("Outlines");
-    if( !(obj instanceof Dict) ) return null;
+    if( !(obj instanceof Dict) ) return undefined;
 
     obj = obj.getRaw("First");
-    if( !(obj instanceof Ref) ) return null;
+    if( !(obj instanceof Ref) ) return undefined;
 
     const root:{ items:OutlineNode[] } = { items: [] };
     const queue = [{ obj: obj, parent: root }];
@@ -413,9 +412,8 @@ export class Catalog
     {
       const i = queue.shift()!;
       const outlineDict = <Dict>xref.fetchIfRef( i.obj );
-      if (outlineDict === null) {
-        continue;
-      }
+      if( outlineDict === null || outlineDict === undefined ) continue;
+
       if( !outlineDict.has("Title") )
       {
         throw new FormatError("Invalid outline item encountered.");
@@ -434,10 +432,9 @@ export class Catalog
       let rgbColor = blackColor;
 
       // We only need to parse the color when it's valid, and non-default.
-      if (
-        Array.isArray(color) &&
-        color.length === 3 &&
-        (color[0] !== 0 || color[1] !== 0 || color[2] !== 0)
+      if( Array.isArray(color)
+       && color.length === 3
+       && (color[0] !== 0 || color[1] !== 0 || color[2] !== 0)
       ) {
         rgbColor = ColorSpace.singletons.rgb.getRgb(color, 0);
       }
@@ -469,18 +466,17 @@ export class Catalog
         processed.put( obj );
       }
     }
-    return root.items.length > 0 ? root.items : null;
+    return root.items.length > 0 ? root.items : undefined;
   }
 
   get permissions()
   {
-    let permissions = null;
+    let permissions:PermissionFlag[] | undefined;
     try {
       permissions = this.#readPermissions();
     } catch (ex) {
-      if (ex instanceof MissingDataException) {
-        throw ex;
-      }
+      if (ex instanceof MissingDataException) throw ex;
+
       warn("Unable to read permissions.");
     }
     return shadow(this, "permissions", permissions);
@@ -489,10 +485,10 @@ export class Catalog
   #readPermissions()
   {
     const encrypt = <Dict>this.xref.trailer!.get("Encrypt");
-    if( !(encrypt instanceof Dict) ) return null;
+    if( !(encrypt instanceof Dict) ) return undefined;
 
     let flags = encrypt.get("P");
-    if( !(typeof flags === "number") ) return null;
+    if( !(typeof flags === "number") ) return undefined;
 
     // PDF integer objects are represented internally in signed 2's complement
     // form. Therefore, convert the signed decimal integer to a signed 2's
@@ -503,7 +499,8 @@ export class Catalog
     for( const key in PermissionFlag )
     {
       const value = PermissionFlag[ <keyof typeof PermissionFlag>key ];
-      if (flags & value) {
+      if (flags & value) 
+      {
         permissions.push(value);
       }
     }

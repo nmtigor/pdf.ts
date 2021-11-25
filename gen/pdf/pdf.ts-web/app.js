@@ -732,9 +732,8 @@ export class PDFViewerApplication {
         });
     }
     #ensureDownloadComplete() {
-        if (this.pdfDocument && this.downloadComplete) {
+        if (this.pdfDocument && this.downloadComplete)
             return;
-        }
         throw new Error("PDF document not downloaded.");
     }
     async download({ sourceEventType = "download" } = {}) {
@@ -789,9 +788,8 @@ export class PDFViewerApplication {
         });
         // Only trigger the fallback once so we don't spam the user with messages
         // for one PDF.
-        if (this._fellback) {
+        if (this._fellback)
             return;
-        }
         this._fellback = true;
         this.externalServices
             .fallback({
@@ -2356,8 +2354,8 @@ function webViewerKeyDown(evt) {
                     viewerapp.secondaryToolbar.close();
                     handled = true;
                 }
-                if (!viewerapp.supportsIntegratedFind &&
-                    viewerapp.findBar.opened) {
+                if (!viewerapp.supportsIntegratedFind
+                    && viewerapp.findBar.opened) {
                     viewerapp.findBar.close();
                     handled = true;
                 }

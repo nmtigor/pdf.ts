@@ -25,7 +25,7 @@ import { IVisibleView } from "./interfaces.js";
 import { PDFAttachmentViewer } from "./pdf_attachment_viewer.js";
 import { CursorTool, PDFCursorTools } from "./pdf_cursor_tools.js";
 import { PDFFindBar } from "./pdf_find_bar.js";
-import { FindState } from "./pdf_find_controller.js";
+import { FindCtrlrState, FindState, MatchesCount } from "./pdf_find_controller.js";
 import { PDFLayerViewer } from "./pdf_layer_viewer.js";
 import { PDFOutlineViewer } from "./pdf_outline_viewer.js";
 import { PDFPresentationMode } from "./pdf_presentation_mode.js";
@@ -190,9 +190,7 @@ export function scrollIntoView( element:HTMLElement,
     offsetX += parent.offsetLeft;
 
     parent = <HTMLElement|null>parent.offsetParent;
-    if (!parent) {
-      return; // no need to scroll
-    }
+    if( !parent ) return; // no need to scroll
   }
   if (spot) {
     if (spot.top !== undefined) {
@@ -858,12 +856,6 @@ export const animationStarted = new Promise( resolve => {
 });
 /*64----------------------------------------------------------*/
 
-export interface MatchesCount 
-{
-  current:number;
-  total:number;
-}
-
 export interface EventMap
 {
   afterprint:{}
@@ -920,15 +912,8 @@ export interface EventMap
   download:{
     source:typeof window;
   }
-  find:{
+  find:FindCtrlrState & {
     source:typeof window | PDFFindBar | PDFLinkService;
-    type:string;
-    query:string;
-    phraseSearch:boolean;
-    caseSensitive:boolean;
-    entireWord:boolean;
-    highlightAll:boolean;
-    findPrevious?:boolean | undefined;
   }
   findbarclose:{
     source:PDFFindBar;
@@ -1239,11 +1224,12 @@ export class EventBus
   _off< EN extends EventName >( eventName:EN, listener:ListenerMap[EN] ) 
   {
     const eventListeners = this.#listeners[eventName];
-    if (!eventListeners) {
-      return;
-    }
-    for (let i = 0, ii = eventListeners.length; i < ii; i++) {
-      if (eventListeners[i].listener === listener) {
+    if( !eventListeners ) return;
+
+    for (let i = 0, ii = eventListeners.length; i < ii; i++) 
+    {
+      if (eventListeners[i].listener === listener) 
+      {
         eventListeners.splice(i, 1);
         return;
       }

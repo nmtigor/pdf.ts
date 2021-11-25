@@ -66,9 +66,8 @@ export function setPDFNetworkStreamFactory(pdfNetworkStreamFactory) {
  * XHR as fallback) is used, which means it must follow same origin rules,
  * e.g. no cross-domain requests without CORS.
  *
- * @param src
- *   src - Can be a URL where a PDF file is located, a typed array (Uint8Array)
- *         already populated with data, or a parameter object.
+ * @param src Can be a URL where a PDF file is located, a typed array (Uint8Array)
+ *  already populated with data, or a parameter object.
  */
 export function getDocument(src) {
     const task = new PDFDocumentLoadingTask();
@@ -670,13 +669,10 @@ export class PDFDocumentProxy {
      *   {Uint8Array} containing the full data of the saved document.
      */
     saveDocument() {
-        // if (
-        //   (typeof PDFJSDev === "undefined" || PDFJSDev.test("GENERIC")) &&
-        //   this._transport.annotationStorage.size <= 0
-        // ) {
-        deprecated("saveDocument called while `annotationStorage` is empty, " +
-            "please use the getData-method instead.");
-        // }
+        if (this._transport.annotationStorage.size <= 0) {
+            deprecated("saveDocument called while `annotationStorage` is empty, " +
+                "please use the getData-method instead.");
+        }
         return this._transport.saveDocument();
     }
     /**
@@ -1356,6 +1352,7 @@ export class PDFWorker {
      */
     get port() { return this.#port; }
     #webWorker;
+    get _webWorker() { return this.#webWorker; }
     #messageHandler;
     /**
      * The current MessageHandler-instance.

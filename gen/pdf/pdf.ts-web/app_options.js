@@ -49,6 +49,7 @@ const defaultOptions = {
         // value: `${D_base}/res/pdf/test/pdfs/pattern_text_embedded_font.pdf`,
         // value: `${D_base}/res/pdf/test/pdfs/basicapi.pdf`,
         value: `${D_base}/res/pdf/test/pdfs/tracemonkey.pdf`,
+        // value: `${D_base}/res/pdf/test/pdfs-1/math.pdf`,
         // value: "compressed.tracemonkey-pldi-09.pdf",
         kind: 2 /* VIEWER */,
     },
@@ -257,8 +258,9 @@ const defaultOptions = {
         kind: 4 /* API */,
     },
     verbosity: {
-        /** @type {number} */
-        value: 1,
+        /** @type {VerbosityLevel} */
+        // value: VerbosityLevel.INFOS,
+        value: 1 /* WARNINGS */,
         kind: 4 /* API */,
     },
     workerPort: {

@@ -71,7 +71,7 @@ export declare class PDFHistory {
      */
     get popStateInProgress(): boolean;
 }
-export declare function isDestHashesEqual(destHash: string, pushHash: string): boolean;
-export declare function isDestArraysEqual(firstDest: ExplicitDest | undefined, secondDest: ExplicitDest): boolean;
+export declare function isDestHashesEqual(destHash: unknown, pushHash: unknown): boolean;
+export declare function isDestArraysEqual(firstDest: ExplicitDest | undefined, secondDest: ExplicitDest | undefined): boolean;
 export {};
 //# sourceMappingURL=pdf_history.d.ts.map

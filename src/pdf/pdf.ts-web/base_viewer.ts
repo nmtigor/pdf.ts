@@ -1358,7 +1358,7 @@ export abstract class BaseViewer implements
   {
     const visible = this.getVisiblePages$();
     const visiblePages = visible.views,
-     numVisiblePages = visiblePages.length;
+      numVisiblePages = visiblePages.length;
 
     if( numVisiblePages === 0 ) return;
 

@@ -10,6 +10,7 @@ import { Page, PDFDocument } from "./pdf.ts-src/core/document.js";
 import { GlobalWorkerOptions, PDFWorker } from "./pdf.ts-src/pdf.js";
 import { BasePdfManager } from "./pdf.ts-src/core/pdf_manager.js";
 import { BaseStream } from "./pdf.ts-src/core/base_stream.js";
+import { DocumentInitParms } from "./pdf.ts-src/display/api.js";
 /*81---------------------------------------------------------------------------*/
 
 const D_base = "/pdf.ts";
@@ -91,7 +92,7 @@ export function buildGetDocumentParams( filename:string, options?:BuildGetDocume
   {
     params[option] = options[<keyof BuildGetDocumentParamsOptions>option];
   }
-  return params;
+  return <DocumentInitParms>params;
 }
 
 interface XRefMockCtorParms

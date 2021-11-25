@@ -20,8 +20,8 @@ import { html } from "../../lib/dom.js";
 import { createPromiseCapability } from "../pdf.ts-src/pdf.js";
 import { BaseTreeViewer } from "./base_tree_viewer.js";
 export class PDFOutlineViewer extends BaseTreeViewer {
-    _outline;
-    _pageNumberToDestHashCapability;
+    #outline;
+    #pageNumberToDestHashCapability;
     _currentPageNumber;
     _sidebarView;
     _isPagesLoaded;
@@ -56,8 +56,8 @@ export class PDFOutlineViewer extends BaseTreeViewer {
     }
     reset() {
         super.reset();
-        this._outline = null;
-        this._pageNumberToDestHashCapability = null;
+        this.#outline = undefined;
+        this.#pageNumberToDestHashCapability = undefined;
         this._currentPageNumber = 1;
         this._isPagesLoaded = false;
         if (this.#currentOutlineItemCapability
@@ -69,8 +69,8 @@ export class PDFOutlineViewer extends BaseTreeViewer {
     /** @implements */
     _dispatchEvent(outlineCount) {
         this.#currentOutlineItemCapability = createPromiseCapability();
-        if (outlineCount === 0 ||
-            this._pdfDocument?.loadingParams.disableAutoFetch) {
+        if (outlineCount === 0
+            || this._pdfDocument?.loadingParams.disableAutoFetch) {
             this.#currentOutlineItemCapability.resolve(/* enabled = */ false);
         }
         else if (this._isPagesLoaded) {
@@ -98,15 +98,15 @@ export class PDFOutlineViewer extends BaseTreeViewer {
             return false;
         };
     }
-    #setStyles = (element, { bold, italic }) => {
+    #setStyles(element, { bold, italic }) {
         if (bold) {
             element.style.fontWeight = "bold";
         }
         if (italic) {
             element.style.fontStyle = "italic";
         }
-    };
-    #addToggleButton = (div, { count, items }) => {
+    }
+    #addToggleButton(div, { count, items }) {
         let hidden = false;
         if (count < 0) {
             let totalCount = items.length;
@@ -125,20 +125,19 @@ export class PDFOutlineViewer extends BaseTreeViewer {
             }
         }
         super._addToggleButton(div, hidden);
-    };
+    }
     toggleAllTreeItems$() {
-        if (!this._outline) {
+        if (!this.#outline)
             return;
-        }
         super.toggleAllTreeItems$();
     }
     /** @implements */
     render({ outline, pdfDocument }) {
-        if (this._outline) {
+        if (this.#outline) {
             this.reset();
         }
-        this._outline = outline || null;
-        this._pdfDocument = pdfDocument || null;
+        this.#outline = outline || undefined;
+        this._pdfDocument = pdfDocument || undefined;
         if (!outline) {
             this._dispatchEvent(/* outlineCount = */ 0);
             return;
@@ -177,13 +176,11 @@ export class PDFOutlineViewer extends BaseTreeViewer {
         if (!this._isPagesLoaded) {
             throw new Error("#currentOutlineItem: All pages have not been loaded.");
         }
-        if (!this._outline || !this._pdfDocument) {
+        if (!this.#outline || !this._pdfDocument)
             return;
-        }
         const pageNumberToDestHash = await this.#getPageNumberToDestHash(this._pdfDocument);
-        if (!pageNumberToDestHash) {
+        if (!pageNumberToDestHash)
             return;
-        }
         this._updateCurrentTreeItem(/* treeItem = */ null);
         if (this._sidebarView !== 2 /* OUTLINE */) {
             return; // The outline view is no longer visible, hence do nothing.
@@ -192,13 +189,11 @@ export class PDFOutlineViewer extends BaseTreeViewer {
         // previous ones in (reverse) order.
         for (let i = this._currentPageNumber; i > 0; i--) {
             const destHash = pageNumberToDestHash.get(i);
-            if (!destHash) {
+            if (!destHash)
                 continue;
-            }
             const linkElement = this.container.querySelector(`a[href="${destHash}"]`);
-            if (!linkElement) {
+            if (!linkElement)
                 continue;
-            }
             this._scrollToCurrentTreeItem(linkElement.parentNode);
             break;
         }
@@ -209,13 +204,13 @@ export class PDFOutlineViewer extends BaseTreeViewer {
      * outline item (similar to e.g. Adobe Reader); more specifically, we choose
      * the *first* outline item at the *lowest* level of the outline tree.
      */
-    #getPageNumberToDestHash = async (pdfDocument) => {
-        if (this._pageNumberToDestHashCapability) {
-            return this._pageNumberToDestHashCapability.promise;
+    async #getPageNumberToDestHash(pdfDocument) {
+        if (this.#pageNumberToDestHashCapability) {
+            return this.#pageNumberToDestHashCapability.promise;
         }
-        this._pageNumberToDestHashCapability = createPromiseCapability();
+        this.#pageNumberToDestHashCapability = createPromiseCapability();
         const pageNumberToDestHash = new Map(), pageNumberNesting = new Map();
-        const queue = [{ nesting: 0, items: this._outline }];
+        const queue = [{ nesting: 0, items: this.#outline }];
         while (queue.length > 0) {
             const levelData = queue.shift(), currentNesting = levelData.nesting;
             for (const { dest, items } of levelData.items) {
@@ -223,7 +218,7 @@ export class PDFOutlineViewer extends BaseTreeViewer {
                 if (typeof dest === "string") {
                     explicitDest = await pdfDocument.getDestination(dest);
                     if (pdfDocument !== this._pdfDocument) {
-                        return null; // The document was closed while the data resolved.
+                        return undefined; // The document was closed while the data resolved.
                     }
                 }
                 else {
@@ -237,7 +232,7 @@ export class PDFOutlineViewer extends BaseTreeViewer {
                             try {
                                 pageNumber = (await pdfDocument.getPageIndex(destRef)) + 1;
                                 if (pdfDocument !== this._pdfDocument) {
-                                    return null; // The document was closed while the data resolved.
+                                    return undefined; // The document was closed while the data resolved.
                                 }
                                 this.linkService.cachePageRef(pageNumber, destRef);
                             }
@@ -262,9 +257,9 @@ export class PDFOutlineViewer extends BaseTreeViewer {
                 }
             }
         }
-        this._pageNumberToDestHashCapability.resolve(pageNumberToDestHash.size > 0 ? pageNumberToDestHash : null);
-        return this._pageNumberToDestHashCapability.promise;
-    };
+        this.#pageNumberToDestHashCapability.resolve(pageNumberToDestHash.size > 0 ? pageNumberToDestHash : undefined);
+        return this.#pageNumberToDestHashCapability.promise;
+    }
 }
 /*81---------------------------------------------------------------------------*/
 //# sourceMappingURL=pdf_outline_viewer.js.map

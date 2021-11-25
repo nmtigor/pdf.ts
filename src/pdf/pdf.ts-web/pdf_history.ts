@@ -790,7 +790,7 @@ export class PDFHistory
   }
 }
 
-export function isDestHashesEqual( destHash:string, pushHash:string ) 
+export function isDestHashesEqual( destHash:unknown, pushHash:unknown ) 
 {
   if (typeof destHash !== "string" || typeof pushHash !== "string") 
   {
@@ -808,44 +808,38 @@ export function isDestHashesEqual( destHash:string, pushHash:string )
   return false;
 }
 
-export function isDestArraysEqual( firstDest:ExplicitDest | undefined, secondDest:ExplicitDest )
-{
+export function isDestArraysEqual( 
+  firstDest:ExplicitDest | undefined, 
+  secondDest:ExplicitDest | undefined 
+) {
   function isEntryEqual( first:unknown, second:unknown )
   {
-    if (typeof first !== typeof second) {
-      return false;
-    }
-    if (Array.isArray(first) || Array.isArray(second)) {
-      return false;
-    }
+    if( typeof first !== typeof second ) return false;
+
+    if( Array.isArray(first) || Array.isArray(second) ) return false;
+
     if( isObjectLike(first) && second !== null )
     {
       if( Object.keys(first).length !== Object.keys(<{}>second).length )
-      {
         return false;
-      }
+
       for( const key in first )
       {
-        if( !isEntryEqual((<any>first)[key], (<any>second)[key]) )
-        {
+        if( !isEntryEqual((<any>first)[key], (<any>second)[key]) ) 
           return false;
-        }
       }
       return true;
     }
     return first === second || (Number.isNaN(first) && Number.isNaN(second));
   }
 
-  if (!(Array.isArray(firstDest) && Array.isArray(secondDest))) {
-    return false;
-  }
-  if (firstDest.length !== secondDest.length) {
-    return false;
-  }
-  for (let i = 0, ii = firstDest.length; i < ii; i++) {
-    if (!isEntryEqual(firstDest[i], secondDest[i])) {
-      return false;
-    }
+  if( !(Array.isArray(firstDest) && Array.isArray(secondDest)) ) return false;
+
+  if( firstDest.length !== secondDest.length ) return false;
+
+  for (let i = 0, ii = firstDest.length; i < ii; i++) 
+  {
+    if( !isEntryEqual(firstDest[i], secondDest[i]) ) return false;
   }
   return true;
 }

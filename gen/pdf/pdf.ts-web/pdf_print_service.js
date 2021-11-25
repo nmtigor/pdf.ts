@@ -151,7 +151,7 @@ export class PDFPrintService {
         const scratchCanvas = this.scratchCanvas;
         if ("toBlob" in scratchCanvas
             && !compatibilityParams.disableCreateObjectURL) {
-            scratchCanvas.toBlob(function (blob) {
+            scratchCanvas.toBlob(blob => {
                 img.src = URL.createObjectURL(blob);
             });
         }
@@ -262,13 +262,13 @@ function renderProgress(index, total, l10n) {
         progressPerc.textContent = msg;
     });
 }
-window.addEventListener("keydown", function (event) {
+window.addEventListener("keydown", (event) => {
     // Intercept Cmd/Ctrl + P in all browsers.
     // Also intercept Cmd/Ctrl + Shift + P in Chrome and Opera
-    if (event.keyCode === /* P= */ 80 &&
-        (event.ctrlKey || event.metaKey) &&
-        !event.altKey &&
-        (!event.shiftKey || window.chrome || window.opera)) {
+    if (event.keyCode === /* P= */ 80
+        && (event.ctrlKey || event.metaKey)
+        && !event.altKey
+        && (!event.shiftKey || window.chrome || window.opera)) {
         window.print();
         // The (browser) print dialog cannot be prevented from being shown in
         // IE11.
@@ -284,7 +284,7 @@ window.addEventListener("keydown", function (event) {
 if ("onbeforeprint" in window) {
     // Do not propagate before/afterprint events when they are not triggered
     // from within this polyfill. (FF / Chrome 63+).
-    const stopPropagationIfNeeded = function (event) {
+    const stopPropagationIfNeeded = (event) => {
         if (event.detail !== "custom" && event.stopImmediatePropagation) {
             event.stopImmediatePropagation();
         }

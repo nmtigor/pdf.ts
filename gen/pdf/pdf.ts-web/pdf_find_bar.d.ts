@@ -1,6 +1,6 @@
 import { IL10n } from "./interfaces.js";
-import { FindState } from "./pdf_find_controller.js";
-import { EventBus, MatchesCount } from "./ui_utils.js";
+import { FindState, FindType, MatchesCount } from "./pdf_find_controller.js";
+import { EventBus } from "./ui_utils.js";
 import { ViewerConfiguration } from "./viewer.js";
 /**
  * Creates a "search bar" given a set of DOM elements that act as controls
@@ -25,7 +25,7 @@ export declare class PDFFindBar {
     findNextButton: HTMLButtonElement;
     constructor(options: ViewerConfiguration['findBar'], eventBus: EventBus, l10n: IL10n);
     reset(): void;
-    dispatchEvent(type: string, findPrev?: boolean): void;
+    dispatchEvent(type: FindType | "", findPrev?: boolean): void;
     updateUIState(state?: FindState, previous?: boolean, matchesCount?: MatchesCount): void;
     updateResultsCount({ current, total }?: {
         current?: number | undefined;

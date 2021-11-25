@@ -174,13 +174,14 @@ export declare abstract class BaseViewer implements IPDFAnnotationLayerFactory, 
     renderingQueue?: PDFRenderingQueue | undefined;
     _doc: HTMLElement;
     scroll: {
-        right: boolean; /**
-         * Allow negative page offsets.
-         * The default value is `false`.
-         */
+        right: boolean;
         down: boolean;
         lastX: number;
         lastY: number;
+        /**
+         * Ignore the zoom argument in
+         * the destination array. The default value is `false`.
+         */
         _eventHandler: (evt: unknown) => void;
     };
     presentationModeState: PresentationModeState;

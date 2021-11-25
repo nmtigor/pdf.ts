@@ -2,7 +2,14 @@
  * jslang
 ** ------ */
 
-import { AbstractConstructor, Constructor, uint, uint8 } from "./alias.js";
+import { 
+  AbstractConstructor, 
+  Constructor, 
+  FloatArray, 
+  IntegerArray, 
+  uint, 
+  uint8 
+} from "./alias.js";
 import { assert } from "./util/trace.js";
 /*81---------------------------------------------------------------------------*/
 
@@ -45,6 +52,17 @@ function eq_impl( lhs_x:unknown, rhs_x:unknown ):boolean
     }
     return ret;  
   }
+
+  if( lhs_x instanceof Int8Array 
+   || lhs_x instanceof Uint8Array
+   || lhs_x instanceof Uint8ClampedArray
+   || lhs_x instanceof Int16Array
+   || lhs_x instanceof Uint16Array
+   || lhs_x instanceof Int32Array
+   || lhs_x instanceof Uint32Array
+   || lhs_x instanceof Float32Array
+   || lhs_x instanceof Float64Array
+  ) return lhs_x.eq( rhs_x );
   
   if( isObjectLike(lhs_x) )
   {
@@ -114,6 +132,10 @@ declare global
   {
     last:T | undefined;
 
+    /**
+     * @param { headconst } rhs
+     * @param { const } valve_x
+     */
     eq( rhs_x:unknown, valve_x?:uint ):boolean;
 
     fillArray( ary:[] ):this;
@@ -125,10 +147,6 @@ Reflect.defineProperty( Array.prototype, "last", {
   get( this:Array<any> ) { return this[ this.length - 1 ]; }
 });
 
-/**
- * @param { headconst } rhs
- * @param { const } valve_x
- */
 Reflect.defineProperty( Array.prototype, "eq", {
   value( this:Array<any>, rhs_x:unknown, valve_x=100 )
   {
@@ -240,6 +258,170 @@ Number.prototype.fixTo = function( digits=0 )
   const mul = 10 ** digits;
   return Math.round( this.valueOf() * mul ) / mul;
 }
+/*81-----------------------------------------------------------------------------
+ * TypedArray
+** ---------- */
+
+function iaEq_impl<TA extends IntegerArray>( lhs_x:TA, rhs_x:TA )
+{
+  if( rhs_x.length !== lhs_x.length ) return false;
+
+  for( let i = lhs_x.length; i--; )
+  {
+    if( rhs_x[i] !== lhs_x[i] ) return false;
+  }
+  return true;
+}
+function faEq_impl<TA extends FloatArray>( lhs_x:TA, rhs_x:TA )
+{
+  if( rhs_x.length !== lhs_x.length ) return false;
+
+  for( let i = lhs_x.length; i--; )
+  {
+    if( !Number.apxE(rhs_x[i], lhs_x[i]) ) return false;
+  }
+  return true;
+}
+
+declare global 
+{
+  interface Int8Array
+  {
+    /**
+     * @param { const } rhs_x
+     */
+    eq( rhs_x:unknown ):boolean;
+  }
+  interface Uint8Array
+  {
+    /**
+     * @param { const } rhs_x
+     */
+    eq( rhs_x:unknown ):boolean;
+  }
+  interface Uint8ClampedArray
+  {
+    /**
+     * @param { const } rhs_x
+     */
+    eq( rhs_x:unknown ):boolean;
+  }
+  interface Int16Array
+  {
+    /**
+     * @param { const } rhs_x
+     */
+    eq( rhs_x:unknown ):boolean;
+  }
+  interface Uint16Array
+  {
+    /**
+     * @param { const } rhs_x
+     */
+    eq( rhs_x:unknown ):boolean;
+  }
+  interface Int32Array
+  {
+    /**
+     * @param { const } rhs_x
+     */
+    eq( rhs_x:unknown ):boolean;
+  }
+  interface Uint32Array
+  {
+    /**
+     * @param { const } rhs_x
+     */
+    eq( rhs_x:unknown ):boolean;
+  }
+  interface Float32Array
+  {
+    /**
+     * @param { const } rhs_x
+     */
+    eq( rhs_x:unknown ):boolean;
+  }
+  interface Float64Array
+  {
+    /**
+     * @param { const } rhs_x
+     */
+    eq( rhs_x:unknown ):boolean;
+  }
+}
+
+Reflect.defineProperty( Int8Array.prototype, "eq", {
+  value( this:Int8Array, rhs_x:unknown )
+  {
+    if( !(rhs_x instanceof Int8Array) ) return false;
+
+    return iaEq_impl( this, rhs_x );
+  }
+});
+Reflect.defineProperty( Uint8Array.prototype, "eq", {
+  value( this:Uint8Array, rhs_x:unknown )
+  {
+    if( !(rhs_x instanceof Uint8Array) ) return false;
+
+    return iaEq_impl( this, rhs_x );
+  }
+});
+Reflect.defineProperty( Uint8ClampedArray.prototype, "eq", {
+  value( this:Uint8ClampedArray, rhs_x:unknown )
+  {
+    if( !(rhs_x instanceof Uint8ClampedArray) ) return false;
+
+    return iaEq_impl( this, rhs_x );
+  }
+});
+Reflect.defineProperty( Int16Array.prototype, "eq", {
+  value( this:Int16Array, rhs_x:unknown )
+  {
+    if( !(rhs_x instanceof Int16Array) ) return false;
+
+    return iaEq_impl( this, rhs_x );
+  }
+});
+Reflect.defineProperty( Uint16Array.prototype, "eq", {
+  value( this:Uint16Array, rhs_x:unknown )
+  {
+    if( !(rhs_x instanceof Uint16Array) ) return false;
+
+    return iaEq_impl( this, rhs_x );
+  }
+});
+Reflect.defineProperty( Int32Array.prototype, "eq", {
+  value( this:Int32Array, rhs_x:unknown )
+  {
+    if( !(rhs_x instanceof Int32Array) ) return false;
+
+    return iaEq_impl( this, rhs_x );
+  }
+});
+Reflect.defineProperty( Uint32Array.prototype, "eq", {
+  value( this:Uint32Array, rhs_x:unknown )
+  {
+    if( !(rhs_x instanceof Uint32Array) ) return false;
+
+    return iaEq_impl( this, rhs_x );
+  }
+});
+Reflect.defineProperty( Float32Array.prototype, "eq", {
+  value( this:Float32Array, rhs_x:unknown )
+  {
+    if( !(rhs_x instanceof Float32Array) ) return false;
+
+    return faEq_impl( this, rhs_x );
+  }
+});
+Reflect.defineProperty( Float64Array.prototype, "eq", {
+  value( this:Float64Array, rhs_x:unknown )
+  {
+    if( !(rhs_x instanceof Float64Array) ) return false;
+
+    return faEq_impl( this, rhs_x );
+  }
+});
 /*81---------------------------------------------------------------------------*/
 
 declare global 

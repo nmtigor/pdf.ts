@@ -88,9 +88,8 @@ export function scrollIntoView(element, spot, scrollMatches = false) {
         offsetY += parent.offsetTop;
         offsetX += parent.offsetLeft;
         parent = parent.offsetParent;
-        if (!parent) {
+        if (!parent)
             return; // no need to scroll
-        }
     }
     if (spot) {
         if (spot.top !== undefined) {
@@ -596,9 +595,8 @@ export class EventBus {
      */
     _off(eventName, listener) {
         const eventListeners = this.#listeners[eventName];
-        if (!eventListeners) {
+        if (!eventListeners)
             return;
-        }
         for (let i = 0, ii = eventListeners.length; i < ii; i++) {
             if (eventListeners[i].listener === listener) {
                 eventListeners.splice(i, 1);

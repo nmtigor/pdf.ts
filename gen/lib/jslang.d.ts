@@ -9,6 +9,10 @@ declare global {
 declare global {
     interface Array<T> {
         last: T | undefined;
+        /**
+         * @param { headconst } rhs
+         * @param { const } valve_x
+         */
         eq(rhs_x: unknown, valve_x?: uint): boolean;
         fillArray(ary: []): this;
         fillArrayBack(ary: any[]): this;
@@ -41,6 +45,62 @@ declare global {
          * ! [min,max) normaally, but could achieve `max` because of `Math.round()`.
          */
         getRandom: (max: number, min?: number, fixt?: uint) => number;
+    }
+}
+declare global {
+    interface Int8Array {
+        /**
+         * @param { const } rhs_x
+         */
+        eq(rhs_x: unknown): boolean;
+    }
+    interface Uint8Array {
+        /**
+         * @param { const } rhs_x
+         */
+        eq(rhs_x: unknown): boolean;
+    }
+    interface Uint8ClampedArray {
+        /**
+         * @param { const } rhs_x
+         */
+        eq(rhs_x: unknown): boolean;
+    }
+    interface Int16Array {
+        /**
+         * @param { const } rhs_x
+         */
+        eq(rhs_x: unknown): boolean;
+    }
+    interface Uint16Array {
+        /**
+         * @param { const } rhs_x
+         */
+        eq(rhs_x: unknown): boolean;
+    }
+    interface Int32Array {
+        /**
+         * @param { const } rhs_x
+         */
+        eq(rhs_x: unknown): boolean;
+    }
+    interface Uint32Array {
+        /**
+         * @param { const } rhs_x
+         */
+        eq(rhs_x: unknown): boolean;
+    }
+    interface Float32Array {
+        /**
+         * @param { const } rhs_x
+         */
+        eq(rhs_x: unknown): boolean;
+    }
+    interface Float64Array {
+        /**
+         * @param { const } rhs_x
+         */
+        eq(rhs_x: unknown): boolean;
     }
 }
 declare global {

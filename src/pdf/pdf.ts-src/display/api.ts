@@ -378,9 +378,8 @@ export interface DocumentInitParms {
  * XHR as fallback) is used, which means it must follow same origin rules,
  * e.g. no cross-domain requests without CORS.
  *
- * @param src
- *   src - Can be a URL where a PDF file is located, a typed array (Uint8Array)
- *         already populated with data, or a parameter object.
+ * @param src Can be a URL where a PDF file is located, a typed array (Uint8Array)
+ *  already populated with data, or a parameter object.
  */
 export function getDocument( 
   src:string | URL | TypedArray | DocumentInitParms | PDFDataRangeTransport 
@@ -401,7 +400,8 @@ export function getDocument(
     source = { range: src };
   } 
   else {
-    if (typeof src !== "object") {
+    if (typeof src !== "object") 
+    {
       throw new Error(
         "Invalid parameter in getDocument, " +
           "need either string, URL, Uint8Array, or parameter object."
@@ -668,7 +668,7 @@ async function _fetchDocument( worker:PDFWorker, source:DocumentInitParms,
     source.contentDispositionFilename =
       pdfDataRangeTransport.contentDispositionFilename;
   }
-  const workerId = await worker.messageHandler!.sendWithPromise(
+  const workerId = await worker.messageHandler.sendWithPromise(
     "GetDocRequest",
     {
       docId,
@@ -765,7 +765,7 @@ export class PDFDocumentLoadingTask
   /**
    * Promise for document loading task completion.
    */
-  get promise():Promise< PDFDocumentProxy >
+  get promise():Promise<PDFDocumentProxy>
   {
     return this._capability.promise;
   }
@@ -897,7 +897,7 @@ export interface PDFDocumentStats
    * document (an item is set to true if specific stream ID was used in the
    * document).
    */
-  streamTypes:Record< StreamType, boolean >;
+  streamTypes:Record<StreamType, boolean>;
 
   /**
    * Used font types in the
@@ -962,7 +962,7 @@ export class PDFDocumentProxy
    * @param pageNumber The page number to get. The first page is 1.
    * @return A promise that is resolved with a {@link PDFPageProxy} object.
    */
-  getPage( pageNumber:number )
+  getPage( pageNumber:unknown )
   {
     return this._transport.getPage(pageNumber);
   }
@@ -1082,7 +1082,7 @@ export class PDFDocumentProxy
    * @return A promise that is resolved with an
    *   {Array} that is a tree outline (if it has one) of the PDF file.
    */
-  getOutline():Promise< OutlineNode[] | null >
+  getOutline()
   {
     return this._transport.getOutline();
   }
@@ -1205,15 +1205,13 @@ export class PDFDocumentProxy
   saveDocument()
   {
     // #if GENERIC
-      // if (
-      //   (typeof PDFJSDev === "undefined" || PDFJSDev.test("GENERIC")) &&
-      //   this._transport.annotationStorage.size <= 0
-      // ) {
-      deprecated(
-        "saveDocument called while `annotationStorage` is empty, " +
+      if( this._transport.annotationStorage.size <= 0 )
+      {
+        deprecated(
+          "saveDocument called while `annotationStorage` is empty, " +
           "please use the getData-method instead."
-      );
-      // }
+        );
+      }
     // #endif
     return this._transport.saveDocument();
   }
@@ -2323,7 +2321,7 @@ export class LoopbackPort
   #listeners:EventListener[] = [];
   #deferred = Promise.resolve();
 
-  postMessage( obj:any, transfers?:Transferable[] | PostMessageOptions ) 
+  postMessage( obj:any, transfers?:Transferable[] | StructuredSerializeOptions ) 
   {
     function cloneValue( object:any ) 
     {
@@ -2541,6 +2539,9 @@ export class PDFWorker
   get port() { return this.#port; }
 
   #webWorker:Worker | undefined;
+  // #if TESTING
+    get _webWorker() { return this.#webWorker; }
+  // #endif
 
   #messageHandler!:MessageHandler<Thread.main>;
   /**
@@ -3409,16 +3410,16 @@ class WorkerTransport
     return this.messageHandler.sendWithPromise("GetData", null);
   }
 
-  getPage( pageNumber:number ) 
+  getPage( pageNumber:unknown ) 
   {
     if( !Number.isInteger(pageNumber)
-     || pageNumber <= 0
-     || pageNumber > this.#numPages!
+     || <number>pageNumber <= 0
+     || <number>pageNumber > this.#numPages!
     ) {
       return Promise.reject(new Error("Invalid page request"));
     }
 
-    const pageIndex = pageNumber - 1;
+    const pageIndex = <number>pageNumber - 1;
     if( pageIndex in this.pagePromises  ) return this.pagePromises[pageIndex];
 
     const promise = this.messageHandler

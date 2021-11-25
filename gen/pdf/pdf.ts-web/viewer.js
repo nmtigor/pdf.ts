@@ -29,7 +29,6 @@ import("./genericcom.js");
 import("./pdf_print_service.js");
 function getViewerConfiguration() {
     let errorWrapper = undefined;
-    // if (typeof PDFJSDev === "undefined" || !PDFJSDev.test("MOZCENTRAL")) {
     errorWrapper = {
         container: document.getElementById("errorWrapper"),
         errorMessage: document.getElementById("errorMessage"),
@@ -38,7 +37,6 @@ function getViewerConfiguration() {
         moreInfoButton: document.getElementById("errorShowMore"),
         lessInfoButton: document.getElementById("errorShowLess"),
     };
-    // }
     return {
         appContainer: document.body,
         mainContainer: document.getElementById("viewerContainer"),

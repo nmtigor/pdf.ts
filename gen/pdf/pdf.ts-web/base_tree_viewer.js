@@ -21,8 +21,8 @@ export class BaseTreeViewer {
     container;
     eventBus;
     _pdfDocument;
-    _lastToggleIsShow;
-    _currentTreeItem;
+    #lastToggleIsShow;
+    #currentTreeItem;
     constructor(options) {
         this.container = options.container;
         this.eventBus = options.eventBus;
@@ -32,8 +32,8 @@ export class BaseTreeViewer {
     }
     reset() {
         this._pdfDocument = undefined;
-        this._lastToggleIsShow = true;
-        this._currentTreeItem = null;
+        this.#lastToggleIsShow = true;
+        this.#currentTreeItem = null;
         // Remove the tree from the DOM.
         this.container.textContent = "";
         // Ensure that the left (right in RTL locales) margin is always reset,
@@ -66,12 +66,12 @@ export class BaseTreeViewer {
     /**
      * Collapse or expand the subtree of a tree item.
      *
-     * @param root - the root of the item (sub)tree.
-     * @param show - whether to show the item (sub)tree. If false,
+     * @param root the root of the item (sub)tree.
+     * @param show whether to show the item (sub)tree. If false,
      *   the item subtree rooted at `root` will be collapsed.
      */
     #toggleTreeItem(root, show = false) {
-        this._lastToggleIsShow = show;
+        this.#lastToggleIsShow = show;
         root.querySelectorAll(".treeItemToggler").forEach(toggler => {
             toggler.classList.toggle("treeItemsHidden", !show);
         });
@@ -80,32 +80,31 @@ export class BaseTreeViewer {
      * Collapse or expand all subtrees of the `container`.
      */
     toggleAllTreeItems$() {
-        this.#toggleTreeItem(this.container, !this._lastToggleIsShow);
+        this.#toggleTreeItem(this.container, !this.#lastToggleIsShow);
     }
     /** @final */
     finishRendering$(fragment, count, hasAnyNesting = false) {
         if (hasAnyNesting) {
             this.container.classList.add("treeWithDeepNesting");
-            this._lastToggleIsShow = !fragment.querySelector(".treeItemsHidden");
+            this.#lastToggleIsShow = !fragment.querySelector(".treeItemsHidden");
         }
         this.container.appendChild(fragment);
         this._dispatchEvent(count);
     }
     _updateCurrentTreeItem(treeItem = null) {
-        if (this._currentTreeItem) {
+        if (this.#currentTreeItem) {
             // Ensure that the current treeItem-selection is always removed.
-            this._currentTreeItem.classList.remove(TREEITEM_SELECTED_CLASS);
-            this._currentTreeItem = null;
+            this.#currentTreeItem.classList.remove(TREEITEM_SELECTED_CLASS);
+            this.#currentTreeItem = null;
         }
         if (treeItem) {
             treeItem.classList.add(TREEITEM_SELECTED_CLASS);
-            this._currentTreeItem = treeItem;
+            this.#currentTreeItem = treeItem;
         }
     }
     _scrollToCurrentTreeItem(treeItem) {
-        if (!treeItem) {
+        if (!treeItem)
             return;
-        }
         // Ensure that the treeItem is *fully* expanded, such that it will first of
         // all be visible and secondly that scrolling it into view works correctly.
         let currentNode = treeItem.parentNode;

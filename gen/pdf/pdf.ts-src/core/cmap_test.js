@@ -229,6 +229,6 @@ console.log("%c>>>>>>> test cmap >>>>>>>", `color:${css_1}`);
     fetchBuiltInCMap = undefined;
 }
 /*81---------------------------------------------------------------------------*/
-console.log(`%cpdf/pdf.ts-src/core/cmap_test: ${(performance.now() - strttime).toFixed(2)} ms`, `color:${css_2}`);
+console.log(`%c:pdf/pdf.ts-src/core/cmap_test ${(performance.now() - strttime).toFixed(2)} ms`, `color:${css_2}`);
 globalThis.ntestfile = globalThis.ntestfile ? globalThis.ntestfile + 1 : 1;
 //# sourceMappingURL=cmap_test.js.map

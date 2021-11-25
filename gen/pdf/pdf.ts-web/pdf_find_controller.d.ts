@@ -18,14 +18,19 @@ interface PDFFindControllerOptions {
      */
     eventBus: EventBus;
 }
-export interface FindCtrlrState {
-    type: string;
+export declare type FindType = "again" | "casesensitivitychange" | "entirewordchange" | "findagain" | "findhighlightallchange" | "highlightallchange";
+export declare type FindCtrlrState = {
+    type: FindType | "";
     query: string;
     phraseSearch: boolean;
     caseSensitive: boolean;
     entireWord: boolean;
     highlightAll: boolean;
     findPrevious?: boolean | undefined;
+};
+export interface MatchesCount {
+    current: number;
+    total: number;
 }
 /**
  * Provides search functionality to find a given string in a PDF document.
@@ -36,7 +41,6 @@ export declare class PDFFindController {
     _scrollMatches: boolean;
     _pdfDocument?: PDFDocumentProxy | undefined;
     get pageMatches(): number[][];
-    _pageMatchesLength: number[][];
     get pageMatchesLength(): number[][];
     get selected(): {
         pageIdx: number;
@@ -64,10 +68,7 @@ export declare class PDFFindController {
     _updateAllPages(): void;
     _nextMatch(): void;
     _nextPageMatch(): void;
-    _requestMatchesCount(): {
-        current: number;
-        total: number;
-    };
+    _requestMatchesCount(): MatchesCount;
     _updateUIResultsCount(): void;
     _updateUIState(state: FindState, previous?: boolean): void;
 }

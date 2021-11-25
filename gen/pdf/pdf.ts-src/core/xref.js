@@ -225,7 +225,9 @@ export class XRef {
         return obj;
     }
     processXRefStream(stream) {
-        if (!("streamState" in this)) {
+        if (!this.streamState) 
+        // if( !("streamState" in this) ) 
+        {
             // Stores state of the stream as we process it so we can resume
             // from middle of stream in case of missing data error
             const streamParameters = stream.dict;

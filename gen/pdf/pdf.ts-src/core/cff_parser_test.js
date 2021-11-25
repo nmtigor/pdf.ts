@@ -497,6 +497,6 @@ console.log("%c>>>>>>> test CFFCompiler >>>>>>>", `color:${css_1}`);
     // TODO a lot more compiler tests
 }
 /*81---------------------------------------------------------------------------*/
-console.log(`%cpdf/pdf.ts-src/core/cff_parser_test: ${(performance.now() - strttime).toFixed(2)} ms`, `color:${css_2}`);
+console.log(`%c:pdf/pdf.ts-src/core/cff_parser_test ${(performance.now() - strttime).toFixed(2)} ms`, `color:${css_2}`);
 globalThis.ntestfile = globalThis.ntestfile ? globalThis.ntestfile + 1 : 1;
 //# sourceMappingURL=cff_parser_test.js.map

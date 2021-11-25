@@ -2,8 +2,18 @@
  * display/test
 ** ------------ */
 
-import "./annotation_storage_test.js"
-import "./api_test.js" //! unsynchronized
+import { css_3 } from "../../../test/alias.js";
 /*81---------------------------------------------------------------------------*/
 
-console.log(`pdf/pdf.ts-src/display/test:`);
+// #if TESTING
+  // #if TEST_ALL
+    import "./annotation_storage_test.js"
+    await import( "./api_test.js" ); //! unsynchronized
+  // #else
+  // #endif
+// #endif
+
+export {}; // this file needs to be a module
+/*81---------------------------------------------------------------------------*/
+
+console.log(`%c:pdf/pdf.ts-src/display/test`,`color:${css_3}`);

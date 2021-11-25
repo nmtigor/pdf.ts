@@ -122,9 +122,16 @@ interface FindCtrlrOffset
   wrapped:boolean;
 }
 
-/* #if TESTING */export /* #endif */interface FindCtrlrState
-{
-  type:string;
+export type FindType = 
+  | "again" 
+  | "casesensitivitychange"
+  | "entirewordchange"
+  | "findagain" 
+  | "findhighlightallchange" 
+  | "highlightallchange"
+;
+export type FindCtrlrState = {
+  type:FindType | "";
   query:string;
   phraseSearch:boolean;
   caseSensitive:boolean;
@@ -138,6 +145,12 @@ interface MatchWithLength
   match:number;
   matchLength:number;
   skipped:boolean;
+}
+
+export interface MatchesCount 
+{
+  current:number;
+  total:number;
 }
 
 /**
@@ -157,8 +170,8 @@ export class PDFFindController
   #pageMatches!:number[][];
   get pageMatches() { return this.#pageMatches; }
 
-  _pageMatchesLength!:number[][];
-  get pageMatchesLength() { return this._pageMatchesLength; }
+  #pageMatchesLength!:number[][];
+  get pageMatchesLength() { return this.#pageMatchesLength; }
 
   #selected!:{
     pageIdx:number;
@@ -174,9 +187,9 @@ export class PDFFindController
   #pageContents!:string[]; // Stores the normalized text for each page.
   #pageDiffs!:(Diffs|undefined)[];
   #matchesCountTotal!:number;
-  #pagesToSearch!:number | null;
+  #pagesToSearch:number | undefined;
   #pendingFindMatches!:Set<number>;
-  #resumePageIdx!:number | null;
+  #resumePageIdx:number | undefined;
   #dirtyMatch!:boolean;
   #findTimeout?:number | undefined;
 
@@ -235,9 +248,8 @@ export class PDFFindController
     this._firstPageCapability.promise.then(() => {
       // If the document was closed before searching began, or if the search
       // operation was relevant for a previously opened document, do nothing.
-      if (
-        !this._pdfDocument ||
-        (pdfDocument && this._pdfDocument !== pdfDocument)
+      if( !this._pdfDocument
+       || (pdfDocument && this._pdfDocument !== pdfDocument)
       ) {
         return;
       }
@@ -251,7 +263,7 @@ export class PDFFindController
         clearTimeout(this.#findTimeout);
         this.#findTimeout = undefined;
       }
-      if (!type) 
+      if( !type )
       {
         // Trigger the find action with a small delay to avoid starting the
         // search when the user is still typing (saving resources).
@@ -260,13 +272,13 @@ export class PDFFindController
           this.#findTimeout = undefined;
         }, FIND_TIMEOUT);
       } 
-      else if (this.#dirtyMatch) 
+      else if( this.#dirtyMatch )
       {
         // Immediately trigger searching for non-'find' operations, when the
         // current state needs to be reset and matches re-calculated.
         this._nextMatch();
       } 
-      else if (type === "findagain") 
+      else if( type === "findagain" )
       {
         this._nextMatch();
 
@@ -327,7 +339,7 @@ export class PDFFindController
     this._scrollMatches = false;
     this._pdfDocument = undefined;
     this.#pageMatches = [];
-    this._pageMatchesLength = [];
+    this.#pageMatchesLength = [];
     this.#state = undefined;
     // Currently selected match.
     this.#selected = {
@@ -344,9 +356,9 @@ export class PDFFindController
     this.#pageContents = []; // Stores the normalized text for each page.
     this.#pageDiffs = [];
     this.#matchesCountTotal = 0;
-    this.#pagesToSearch = null;
+    this.#pagesToSearch = undefined;
     this.#pendingFindMatches = new Set<number>();
-    this.#resumePageIdx = null;
+    this.#resumePageIdx = undefined;
     this.#dirtyMatch = false;
     clearTimeout(this.#findTimeout);
     this.#findTimeout = undefined;
@@ -483,21 +495,22 @@ export class PDFFindController
     return true;
   }
 
-  #calculatePhraseMatch = ( query:string, pageIndex:number, pageContent:string, pageDiffs:Diffs | undefined, entireWord:boolean ) =>
-  {
+  #calculatePhraseMatch( query:string, 
+    pageIndex:number, pageContent:string, pageDiffs:Diffs | undefined, entireWord:boolean 
+  ) {
     const matches = [],
       matchesLength = [];
     const queryLen = query.length;
 
     let matchIdx = -queryLen;
-    while (true) {
+    while (true) 
+    {
       matchIdx = pageContent.indexOf(query, matchIdx + queryLen);
-      if (matchIdx === -1) {
-        break;
-      }
-      if (entireWord && !this.#isEntireWord(pageContent, matchIdx, queryLen)) {
+      if (matchIdx === -1) break;
+
+      if( entireWord && !this.#isEntireWord(pageContent, matchIdx, queryLen) )
         continue;
-      }
+
       const originalMatchIdx = getOriginalIndex(matchIdx, pageDiffs),
         matchEnd = matchIdx + queryLen - 1,
         originalQueryLen =
@@ -507,11 +520,12 @@ export class PDFFindController
       matchesLength.push(originalQueryLen);
     }
     this.#pageMatches[pageIndex] = matches;
-    this._pageMatchesLength[pageIndex] = matchesLength;
+    this.#pageMatchesLength[pageIndex] = matchesLength;
   }
 
-  #calculateWordMatch = ( query:string, pageIndex:number, pageContent:string, pageDiffs:Diffs | undefined, entireWord:boolean ) =>
-  {
+  #calculateWordMatch( query:string, 
+    pageIndex:number, pageContent:string, pageDiffs:Diffs | undefined, entireWord:boolean 
+  ) {
     const matchesWithLength:MatchWithLength[] = [];
 
     // Divide the query into pieces and search for text in each piece.
@@ -522,14 +536,13 @@ export class PDFFindController
       const subqueryLen = subquery.length;
 
       let matchIdx = -subqueryLen;
-      while (true) {
+      while( true )
+      {
         matchIdx = pageContent.indexOf(subquery, matchIdx + subqueryLen);
-        if (matchIdx === -1) {
-          break;
-        }
-        if (
-          entireWord &&
-          !this.#isEntireWord(pageContent, matchIdx, subqueryLen)
+        if( matchIdx === -1 ) break;
+
+        if( entireWord
+         && !this.#isEntireWord(pageContent, matchIdx, subqueryLen)
         ) {
           continue;
         }
@@ -548,7 +561,7 @@ export class PDFFindController
     }
 
     // Prepare arrays for storing the matches.
-    this._pageMatchesLength[pageIndex] = [];
+    this.#pageMatchesLength[pageIndex] = [];
     this.#pageMatches[pageIndex] = [];
 
     // Sort `matchesWithLength`, remove intersecting terms and put the result
@@ -556,28 +569,31 @@ export class PDFFindController
     this.#prepareMatches(
       matchesWithLength,
       this.#pageMatches[pageIndex],
-      this._pageMatchesLength[pageIndex]
+      this.#pageMatchesLength[pageIndex]
     );
   }
 
-  #calculateMatch = ( pageIndex:number ) =>
+  #calculateMatch( pageIndex:number )
   {
     let pageContent = this.#pageContents[pageIndex];
     const pageDiffs = this.#pageDiffs[pageIndex];
     let query = this.#query!;
     const { caseSensitive, entireWord, phraseSearch } = this.#state!;
 
-    if (query!.length === 0) {
+    if (query.length === 0) 
+    {
       // Do nothing: the matches should be wiped out already.
       return;
     }
 
-    if (!caseSensitive) {
+    if (!caseSensitive) 
+    {
       pageContent = pageContent.toLowerCase();
-      query = query!.toLowerCase();
+      query = query.toLowerCase();
     }
 
-    if (phraseSearch) {
+    if (phraseSearch) 
+    {
       this.#calculatePhraseMatch(
         query,
         pageIndex,
@@ -598,27 +614,29 @@ export class PDFFindController
 
     // When `highlightAll` is set, ensure that the matches on previously
     // rendered (and still active) pages are correctly highlighted.
-    if (this.#state!.highlightAll) {
+    if (this.#state!.highlightAll) 
+    {
       this.#updatePage(pageIndex);
     }
-    if (this.#resumePageIdx === pageIndex) {
-      this.#resumePageIdx = null;
+    if (this.#resumePageIdx === pageIndex) 
+    {
+      this.#resumePageIdx = undefined;
       this._nextPageMatch();
     }
 
     // Update the match count.
     const pageMatchesCount = this.#pageMatches[pageIndex].length;
-    if (pageMatchesCount > 0) {
+    if (pageMatchesCount > 0) 
+    {
       this.#matchesCountTotal += pageMatchesCount;
       this._updateUIResultsCount();
     }
   }
 
-  _extractText() {
+  _extractText() 
+  {
     // Perform text extraction once if this method is called multiple times.
-    if (this.#extractTextPromises.length > 0) {
-      return;
-    }
+    if( this.#extractTextPromises.length > 0 ) return;
 
     let promise = Promise.resolve();
     for (let i = 0, ii = this.#linkService.pagesCount; i < ii; i++) 
@@ -664,7 +682,7 @@ export class PDFFindController
     }
   }
 
-  #updatePage = ( index:number ) =>
+  #updatePage( index:number )
   {
     if (this._scrollMatches && this.#selected.pageIdx === index) 
     {
@@ -680,39 +698,42 @@ export class PDFFindController
     });
   }
 
-  _updateAllPages() {
+  _updateAllPages() 
+  {
     this.#eventBus.dispatch("updatetextlayermatches", {
       source: this,
       pageIndex: -1,
     });
   }
 
-  _nextMatch() {
+  _nextMatch() 
+  {
     const previous = this.#state!.findPrevious;
     const currentPageIndex = this.#linkService.page - 1;
     const numPages = this.#linkService.pagesCount;
 
     this.#highlightMatches = true;
 
-    if (this.#dirtyMatch) {
+    if (this.#dirtyMatch) 
+    {
       // Need to recalculate the matches, reset everything.
       this.#dirtyMatch = false;
       this.#selected.pageIdx = this.#selected.matchIdx = -1;
       this.#offset.pageIdx = currentPageIndex;
       this.#offset.matchIdx = null;
       this.#offset.wrapped = false;
-      this.#resumePageIdx = null;
+      this.#resumePageIdx = undefined;
       this.#pageMatches.length = 0;
-      this._pageMatchesLength.length = 0;
+      this.#pageMatchesLength.length = 0;
       this.#matchesCountTotal = 0;
 
       this._updateAllPages(); // Wipe out any previously highlighted matches.
 
-      for (let i = 0; i < numPages; i++) {
+      for (let i = 0; i < numPages; i++) 
+      {
         // Start finding the matches as soon as the text is extracted.
-        if (this.#pendingFindMatches.has(i)) {
-          continue;
-        }
+        if( this.#pendingFindMatches.has(i) ) continue;
+
         this.#pendingFindMatches.add(i);
         this.#extractTextPromises[i].then(pageIdx => {
           this.#pendingFindMatches.delete(pageIdx);
@@ -722,25 +743,24 @@ export class PDFFindController
     }
 
     // If there's no query there's no point in searching.
-    if (this.#query === "") {
+    if (this.#query === "") 
+    {
       this._updateUIState(FindState.FOUND);
       return;
     }
     // If we're waiting on a page, we return since we can't do anything else.
-    if (this.#resumePageIdx) {
-      return;
-    }
+    if( this.#resumePageIdx ) return;
 
     const offset = this.#offset;
     // Keep track of how many pages we should maximally iterate through.
     this.#pagesToSearch = numPages;
     // If there's already a `matchIdx` that means we are iterating through a
     // page's matches.
-    if (offset.matchIdx !== null) {
+    if( offset.matchIdx !== null )
+    {
       const numPageMatches = this.#pageMatches[offset.pageIdx!].length;
-      if (
-        (!previous && offset.matchIdx + 1 < numPageMatches) ||
-        (previous && offset.matchIdx > 0)
+      if( (!previous && offset.matchIdx + 1 < numPageMatches)
+       || (previous && offset.matchIdx > 0)
       ) {
         // The simple case; we just have advance the matchIdx to select
         // the next match on the page.
@@ -756,13 +776,14 @@ export class PDFFindController
     this._nextPageMatch();
   }
 
-  #matchesReady = ( matches:number[] ) =>
+  #matchesReady( matches:number[] )
   {
     const offset = this.#offset;
     const numMatches = matches.length;
     const previous = this.#state!.findPrevious;
 
-    if (numMatches) {
+    if (numMatches) 
+    {
       // There were matches for the page, so initialize `matchIdx`.
       offset.matchIdx = previous ? numMatches - 1 : 0;
       this.#updateMatch(/* found = */ true);
@@ -770,9 +791,11 @@ export class PDFFindController
     }
     // No matches, so attempt to search the next page.
     this.#advanceOffsetPage(previous);
-    if (offset.wrapped) {
+    if (offset.wrapped) 
+    {
       offset.matchIdx = null;
-      if (this.#pagesToSearch! < 0) {
+      if (this.#pagesToSearch! < 0) 
+      {
         // No point in wrapping again, there were no matches.
         this.#updateMatch(/* found = */ false);
         // While matches were not found, searching for a page
@@ -784,8 +807,10 @@ export class PDFFindController
     return false;
   }
 
-  _nextPageMatch() {
-    if (this.#resumePageIdx !== null) {
+  _nextPageMatch() 
+  {
+    if (this.#resumePageIdx !== undefined) 
+    {
       console.error("There can only be one pending page.");
     }
 
@@ -793,13 +818,14 @@ export class PDFFindController
     do {
       const pageIdx = this.#offset.pageIdx!;
       matches = this.#pageMatches[pageIdx];
-      if (!matches) {
+      if (!matches) 
+      {
         // The matches don't exist yet for processing by `#matchesReady`,
         // so set a resume point for when they do exist.
         this.#resumePageIdx = pageIdx;
         break;
       }
-    } while (!this.#matchesReady(matches));
+    } while( !this.#matchesReady(matches) );
   }
 
   #advanceOffsetPage = ( previous?:boolean ) =>
@@ -811,13 +837,14 @@ export class PDFFindController
 
     this.#pagesToSearch!--;
 
-    if (offset.pageIdx >= numPages || offset.pageIdx < 0) {
+    if (offset.pageIdx >= numPages || offset.pageIdx < 0) 
+    {
       offset.pageIdx = previous ? numPages - 1 : 0;
       offset.wrapped = true;
     }
   }
 
-  #updateMatch = ( found=false ) =>
+  #updateMatch( found=false )
   {
     let state = FindState.NOT_FOUND;
     const wrapped = this.#offset.wrapped;
@@ -830,13 +857,15 @@ export class PDFFindController
       state = wrapped ? FindState.WRAPPED : FindState.FOUND;
 
       // Update the currently selected page to wipe out any selected matches.
-      if (previousPage !== -1 && previousPage !== this.#selected.pageIdx) {
+      if (previousPage !== -1 && previousPage !== this.#selected.pageIdx) 
+      {
         this.#updatePage(previousPage);
       }
     }
 
     this._updateUIState(state, this.#state!.findPrevious);
-    if (this.#selected.pageIdx !== -1) {
+    if (this.#selected.pageIdx !== -1) 
+    {
       // Ensure that the match will be scrolled into view.
       this._scrollMatches = true;
 
@@ -859,7 +888,8 @@ export class PDFFindController
         return;
       }
       // Ensure that a pending, not yet started, search operation is aborted.
-      if (this.#findTimeout) {
+      if (this.#findTimeout) 
+      {
         clearTimeout(this.#findTimeout);
         this.#findTimeout = undefined;
       }
@@ -867,8 +897,9 @@ export class PDFFindController
       // view *after* the findbar has been closed. In this case `this.#offset`
       // will most likely differ from `this.#selected`, hence we also ensure
       // that any new search operation will always start with a clean slate.
-      if (this.#resumePageIdx) {
-        this.#resumePageIdx = null;
+      if (this.#resumePageIdx) 
+      {
+        this.#resumePageIdx = undefined;
         this.#dirtyMatch = true;
       }
       // Avoid the UI being in a pending state when the findbar is re-opened.
@@ -879,13 +910,15 @@ export class PDFFindController
     });
   }
 
-  _requestMatchesCount() 
+  _requestMatchesCount():MatchesCount
   {
     const { pageIdx, matchIdx } = this.#selected;
     let current = 0,
       total = this.#matchesCountTotal;
-    if (matchIdx !== -1) {
-      for (let i = 0; i < pageIdx; i++) {
+    if (matchIdx !== -1) 
+    {
+      for (let i = 0; i < pageIdx; i++) 
+      {
         current += this.#pageMatches[i]?.length || 0;
       }
       current += matchIdx + 1;
@@ -893,13 +926,15 @@ export class PDFFindController
     // When searching starts, this method may be called before the `pageMatches`
     // have been counted (in `#calculateMatch`). Ensure that the UI won't show
     // temporarily broken state when the active find result doesn't make sense.
-    if (current < 1 || current > total) {
+    if (current < 1 || current > total) 
+    {
       current = total = 0;
     }
     return { current, total };
   }
 
-  _updateUIResultsCount() {
+  _updateUIResultsCount() 
+  {
     this.#eventBus.dispatch("updatefindmatchescount", {
       source: this,
       matchesCount: this._requestMatchesCount(),

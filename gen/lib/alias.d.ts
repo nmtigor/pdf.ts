@@ -34,7 +34,9 @@ export declare const enum Sortart {
 export declare type Constructor<T = object> = new (...args: any[]) => T;
 export declare type AbstractConstructor<T = object> = abstract new (...args: any[]) => T;
 export declare type Func<This = any> = (this: This, ...args: any[]) => any;
-export declare type TypedArray = Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint16Array | Int32Array | Uint32Array | Float32Array | Float64Array;
+export declare type IntegerArray = Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint16Array | Int32Array | Uint32Array;
+export declare type FloatArray = Float32Array | Float64Array;
+export declare type TypedArray = IntegerArray | FloatArray;
 declare type _TupleOf<T, N extends number, R extends unknown[]> = R["length"] extends N ? R : _TupleOf<T, N, [...R, T]>;
 export declare type TupleOf<T, N extends number> = N extends N ? number extends N ? T[] : _TupleOf<T, N, []> : never;
 declare type Without<T, U> = {

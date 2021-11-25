@@ -128,8 +128,7 @@ function computeMD5(filesize, xrefInfo) {
         writeString(str, offset, array);
         offset += str.length;
     }
-    return bytesToString(calculateMD5(array, 0, md5BufferLen));
-    // return bytesToString( calculateMD5(array) ); //kkkk bug?
+    return bytesToString(calculateMD5(array));
 }
 function writeXFADataForAcroform(str, newRefs) {
     const xml = new SimpleXMLParser({ hasAttributes: true }).parseFromString(str);
