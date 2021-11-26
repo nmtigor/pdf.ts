@@ -17,15 +17,15 @@
  * limitations under the License.
  */
 
-import { div, html, span, HSElement, svg as createSVG, textnode } from "../../../lib/dom.js";
+import { div, html, span, type HSElement, svg as createSVG, textnode } from "../../../lib/dom.js";
 import { assert }          from "../../../lib/util/trace.js";
 import { DownloadManager } from "../../pdf.ts-web/download_manager.js";
-import { IPDFLinkService, MouseState } from "../../pdf.ts-web/interfaces.js";
+import { type IPDFLinkService, type MouseState } from "../../pdf.ts-web/interfaces.js";
 import {
   DOMSVGFactory, getFilenameFromUrl, PageViewport, PDFDateString,
 } from "./display_utils.js";
 import {
-  ActionEventType,
+  type ActionEventType,
   AnnotationBorderStyleType,
   AnnotationType,
   shadow,
@@ -35,10 +35,10 @@ import {
 } from "../shared/util.js";
 import { AnnotationStorage } from "./annotation_storage.js";
 import { PDFPageProxy } from "./api.js";
-import { AnnotationData, FieldObject, RichText } from "../core/annotation.js";
-import { ColorConverters, CSTag } from "../shared/scripting_utils.js";
-import { Destination } from "../core/catalog.js";
-import { BidiText } from "../core/bidi.js";
+import { type AnnotationData, type FieldObject, type RichText } from "../core/annotation.js";
+import { ColorConverters, type CSTag } from "../shared/scripting_utils.js";
+import { type Destination } from "../core/catalog.js";
+import { type BidiText } from "../core/bidi.js";
 import { XfaLayer } from "./xfa_layer.js";
 /*81---------------------------------------------------------------------------*/
 

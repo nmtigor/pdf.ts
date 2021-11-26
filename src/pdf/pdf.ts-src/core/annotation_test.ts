@@ -13,9 +13,9 @@ import {
 } from "../../test_utils.js";
 import { DefaultCMapReaderFactory, DefaultStandardFontDataFactory } from "../display/api.js";
 import { PartialEvaluator } from "./evaluator.js";
-import { CMapData } from "../display/base_factory.js";
+import { type CMapData } from "../display/base_factory.js";
 import { AnnotationFactory, getQuadPoints } from "./annotation.js";
-import { AnnotationType, rect_t } from "../shared/util.js";
+import { AnnotationType, type rect_t } from "../shared/util.js";
 
 const strttime = performance.now();
 /*81---------------------------------------------------------------------------*/

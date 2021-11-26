@@ -20,8 +20,8 @@
 import { getEncoding } from "./encodings.js";
 import { isWhiteSpace } from "./core_utils.js";
 import { Stream } from "./stream.js";
-import { matrix_t, rect_t, warn } from "../shared/util.js";
-import { FontProps } from "./evaluator.js";
+import { type matrix_t, type rect_t, warn } from "../shared/util.js";
+import { type FontProps } from "./evaluator.js";
 /*81---------------------------------------------------------------------------*/
 
 // Hinting is currently disabled due to unknown problems on windows
@@ -890,7 +890,7 @@ namespace NsType1Parser
   }
 }
 export import Type1Parser = NsType1Parser.Type1Parser;
-export import PrivateData = NsType1Parser.PrivateData;
-export import CharStringObject = NsType1Parser.CharStringObject;
-export import FontProgram = NsType1Parser.FontProgram;
+export type PrivateData = NsType1Parser.PrivateData;
+export type CharStringObject = NsType1Parser.CharStringObject;
+export type FontProgram = NsType1Parser.FontProgram;
 /*81---------------------------------------------------------------------------*/

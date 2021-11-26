@@ -3,12 +3,11 @@
 ** ------------------------ */
 
 import { css_1, css_2 } from "../../test/alias.js";
-import { eq } from "../../lib/jslang.js";
-import { FindCtrlrState, PDFFindController } from "./pdf_find_controller.js";
+import { type FindCtrlrState, PDFFindController } from "./pdf_find_controller.js";
 import { SimpleLinkService } from "./pdf_link_service.js";
 import { getDocument, PDFDocumentProxy } from "../pdf.ts-src/display/api.js";
 import { buildGetDocumentParams } from "../test_utils.js";
-import { EventBus, EventMap } from "./ui_utils.js";
+import { EventBus, type EventMap } from "./ui_utils.js";
 
 const strttime = performance.now();
 /*81---------------------------------------------------------------------------*/

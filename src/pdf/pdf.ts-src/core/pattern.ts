@@ -17,26 +17,26 @@
  * limitations under the License.
  */
 
-import { TupleOf } from '../../../lib/alias.js';
+import { type TupleOf } from '../../../lib/alias.js';
 import { assert } from '../../../lib/util/trace.js';
 import {
   FormatError,
   info,
-  matrix_t,
-  point_t,
-  rect_t,
+  type matrix_t,
+  type point_t,
+  type rect_t,
   shadow,
   UNSUPPORTED_FEATURES,
   Util,
   warn,
 } from "../shared/util.js";
-import { ColorSpace, CS } from "./colorspace.js";
-import { Dict, Name, Ref } from "./primitives.js";
+import { ColorSpace, type CS } from "./colorspace.js";
+import { Dict, Ref } from "./primitives.js";
 import { MissingDataException } from "./core_utils.js";
 import { MessageHandler, Thread } from '../shared/message_handler.js';
-import { ParsedFunction, PDFFunctionFactory } from './function.js';
+import { type ParsedFunction, PDFFunctionFactory } from './function.js';
 import { LocalColorSpaceCache } from './image_utils.js';
-import { OpListIR } from './operator_list.js';
+import { type OpListIR } from './operator_list.js';
 import { TilingPaintType, TilingType } from '../display/pattern_helper.js';
 import { XRef } from './xref.js';
 import { BaseStream } from './base_stream.js';
@@ -1111,8 +1111,8 @@ class DummyShading extends BaseShading
 /**
  * Table 75
  */
-export function getTilingPatternIR( operatorList:OpListIR, dict:Dict, color?:Uint8ClampedArray )
-{
+export function getTilingPatternIR( operatorList:OpListIR, dict:Dict, color?:Uint8ClampedArray 
+):TilingPatternIR {
   const matrix = <matrix_t|undefined>dict.getArray("Matrix");
   const bbox = Util.normalizeRect( <rect_t>dict.getArray("BBox") );
   const xstep = <number>dict.get("XStep");
@@ -1126,7 +1126,7 @@ export function getTilingPatternIR( operatorList:OpListIR, dict:Dict, color?:Uin
     throw new FormatError(`Invalid getTilingPatternIR /BBox array: [${bbox}].`);
   }
 
-  return <TilingPatternIR>[
+  return [
     "TilingPattern",
     color,
     operatorList,

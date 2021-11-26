@@ -24,14 +24,14 @@ import { RenderingStates } from "./pdf_rendering_queue.js";
 import { TextLayerBuilder } from "./text_layer_builder.js";
 import { EventBus } from "./ui_utils.js";
 import { AnnotationLayerBuilder } from "./annotation_layer_builder.js";
-import { PDFPageProxy, RefProxy } from "../pdf.ts-src/display/api.js";
-import { Locale_1, WebL10nArgs } from "../../lib/l10n.js";
+import { PDFPageProxy, type RefProxy } from "../pdf.ts-src/display/api.js";
+import { type Locale_1, type WebL10nArgs } from "../../lib/l10n.js";
 import { XfaLayerBuilder } from "./xfa_layer_builder.js";
-import { Destination, ExplicitDest } from "../pdf.ts-src/core/catalog.js";
+import { type Destination, type ExplicitDest } from "../pdf.ts-src/core/catalog.js";
 import { StructTreeLayerBuilder } from "./struct_tree_layer_builder.js";
-import { XFAElData } from "../pdf.ts-src/core/xfa/alias.js";
+import { type XFAElData } from "../pdf.ts-src/core/xfa/alias.js";
 import { TextHighlighter } from "./text_highlighter.js";
-import { FieldObject } from "../pdf.ts-src/core/annotation.js";
+import { type FieldObject } from "../pdf.ts-src/core/annotation.js";
 /*81---------------------------------------------------------------------------*/
 
 export interface IPDFLinkService 

@@ -24,7 +24,7 @@
  *              unexpected/unnecessary size increase of the *built* files.
  */
  
-import { TupleOf } from "../../../lib/alias";
+import { type TupleOf } from "../../../lib/alias";
 /*81---------------------------------------------------------------------------*/
 
 function makeColorComp( n:number )

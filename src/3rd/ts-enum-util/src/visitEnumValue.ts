@@ -2,7 +2,7 @@ import {
     EnumValueVisitee,
     EnumValueVisiteeWithNull,
     EnumValueVisiteeWithUndefined,
-    EnumValueVisiteeWithNullAndUndefined
+    type EnumValueVisiteeWithNullAndUndefined
 } from "./EnumValueVisitee.js";  
 
 /**

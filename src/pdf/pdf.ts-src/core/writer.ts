@@ -18,11 +18,11 @@
  */
 
 import { bytesToString, escapeString, warn } from "../shared/util.js";
-import { Dict, Name, Obj, Ref } from "./primitives.js";
+import { Dict, Name, type Obj, Ref } from "./primitives.js";
 import { calculateMD5, CipherTransform } from "./crypto.js";
 import { escapePDFName, parseXFAPath } from "./core_utils.js";
-import { XRefInfo } from "./worker.js";
-import { SaveData } from "./annotation.js";
+import { type XRefInfo } from "./worker.js";
+import { type SaveData } from "./annotation.js";
 import { SimpleDOMNode, SimpleXMLParser } from "./xml_parser.js";
 import { XRef } from "./xref.js";
 import { BaseStream } from "./base_stream.js";

@@ -20,7 +20,7 @@
 /** @typedef {import("./interfaces").IRenderableView} IRenderableView */
 
 import { AnnotationStorage } from "../pdf.ts-src/display/annotation_storage.js";
-import { PDFPageProxy, RenderParms, TextItem } from "../pdf.ts-src/display/api.js";
+import { PDFPageProxy, type RenderParms, type TextItem } from "../pdf.ts-src/display/api.js";
 import { PageViewport, StatTimer } from "../pdf.ts-src/display/display_utils.js";
 import { OptionalContentConfig } from "../pdf.ts-src/display/optional_content_config.js";
 import {
@@ -29,9 +29,16 @@ import {
   RenderingCancelledException,
   SVGGraphics
 } from "../pdf.ts-src/pdf.js";
-import { AnnotationMode, matrix_t, point_t } from "../pdf.ts-src/shared/util.js";
-import { ErrorMoreInfo } from "./app.js";
-import { IL10n, IPDFAnnotationLayerFactory, IPDFStructTreeLayerFactory, IPDFTextLayerFactory, IPDFXfaLayerFactory, IVisibleView } from "./interfaces.js";
+import { AnnotationMode, type matrix_t, type point_t } from "../pdf.ts-src/shared/util.js";
+import { type ErrorMoreInfo } from "./app.js";
+import { 
+  type IL10n, 
+  type IPDFAnnotationLayerFactory, 
+  type IPDFStructTreeLayerFactory, 
+  type IPDFTextLayerFactory, 
+  type IPDFXfaLayerFactory, 
+  type IVisibleView 
+} from "./interfaces.js";
 import { NullL10n } from "./l10n_utils.js";
 import { PDFRenderingQueue, RenderingStates } from "./pdf_rendering_queue.js";
 import { AnnotationLayerBuilder } from "./annotation_layer_builder.js";
@@ -40,16 +47,16 @@ import {
   approximateFraction,
   DEFAULT_SCALE,
   EventBus,
-  EventMap,
+  type EventMap,
   getOutputScale,
-  OutputScale,
+  type  OutputScale,
   RendererType,
   roundToDivide,
   TextLayerMode
 } from "./ui_utils.js";
 import { StructTreeLayerBuilder } from "./struct_tree_layer_builder.js";
 import { XfaLayerBuilder } from "./xfa_layer_builder.js";
-import { html, HSElement } from "../../lib/dom.js";
+import { html, type HSElement } from "../../lib/dom.js";
 import { compatibilityParams } from "./app_options.js";
 import { BaseViewer } from "./base_viewer.js";
 /*81---------------------------------------------------------------------------*/

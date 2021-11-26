@@ -17,7 +17,12 @@
  * limitations under the License.
  */
 
-import { AppOptions, OptionKind, OptionName, UserOptions } from "./app_options.js";
+import { 
+  AppOptions, 
+  OptionKind, 
+  type OptionName, 
+  type UserOptions 
+} from "./app_options.js";
 /*81---------------------------------------------------------------------------*/
 
 /**

@@ -32,10 +32,10 @@ import {
 import { SEAC_ANALYSIS_ENABLED, type1FontGlyphMapping } from "./fonts_utils.js";
 import { isWhiteSpace } from "./core_utils.js";
 import { Stream } from "./stream.js";
-import { CharStringObject, FontProgram, PrivateData, Type1Parser } from "./type1_parser.js";
+import { type CharStringObject, type FontProgram, type PrivateData, Type1Parser } from "./type1_parser.js";
 import { warn } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
-import { FontProps } from "./evaluator.js";
+import { type FontProps } from "./evaluator.js";
 /*81---------------------------------------------------------------------------*/
 
 function findBlock( streamBytes:Uint8Array | Uint8ClampedArray, signature:number[], startIndex:number )

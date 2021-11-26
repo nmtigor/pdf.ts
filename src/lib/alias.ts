@@ -92,11 +92,11 @@ type Without<T, U> = { [P in Exclude<keyof T, keyof U>]?: never };
 export type XOR<T, U> = (T | U) extends object ? (Without<T, U> & U) | (Without<U, T> & T) : T | U;
 //#endregion
 
-//#region UnPromisify<>
-// Ref. https://stackoverflow.com/questions/48944552/typescript-how-to-unwrap-remove-promise-from-a-type/
+// //#region UnPromisify<>
+// // Ref. https://stackoverflow.com/questions/48944552/typescript-how-to-unwrap-remove-promise-from-a-type/
 
-export type UnPromisify<T> = T extends Promise<infer U> ? UnPromisify<U> : T;
-//#endregion
+// export type UnPromisify<T> = T extends Promise<infer U> ? UnPromisify<U> : T;
+// //#endregion
 
 //#region IndexOf<>
 // Ref. https://youtu.be/nNse0r0aRT8

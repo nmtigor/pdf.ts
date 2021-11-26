@@ -19,9 +19,9 @@
 
 import { 
   Thread,
-  GetDocRequestData,
+  type GetDocRequestData,
   MessageHandler,
-  PDFInfo, 
+  type PDFInfo, 
 } from "../shared/message_handler.js";
 import {
   AbortException,
@@ -45,7 +45,7 @@ import {
 import { XRefParseException } from "./core_utils.js";
 import { 
   BasePdfManager,
-  EvaluatorOptions,
+  type EvaluatorOptions,
   LocalPdfManager, 
   NetworkPdfManager,
 } from "./pdf_manager.js";
@@ -53,8 +53,8 @@ import { clearPrimitiveCaches, Dict, Ref } from "./primitives.js";
 import { PDFWorkerStream } from "./worker_stream.js";
 import { incrementalUpdate } from "./writer.js";
 import { Page } from "./document.js";
-import { ReadValue } from "../interfaces.js";
-import { SaveData, SaveReturn } from "./annotation.js";
+import { type ReadValue } from "../interfaces.js";
+import { type SaveData, type SaveReturn } from "./annotation.js";
 /*81---------------------------------------------------------------------------*/
 
 export interface IWorker

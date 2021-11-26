@@ -19,13 +19,13 @@
 
 import { AnnotationElement, FileAttachmentAnnotationElement } from "../pdf.ts-src/display/annotation_layer.js";
 import { OptionalContentConfig } from "../pdf.ts-src/display/optional_content_config.js";
-import { ErrorMoreInfo, PDFViewerApplication } from "./app.js";
-import { BaseViewer, PDFLocation } from "./base_viewer.js";
-import { IVisibleView } from "./interfaces.js";
+import { type ErrorMoreInfo, PDFViewerApplication } from "./app.js";
+import { BaseViewer, type PDFLocation } from "./base_viewer.js";
+import { type IVisibleView } from "./interfaces.js";
 import { PDFAttachmentViewer } from "./pdf_attachment_viewer.js";
 import { CursorTool, PDFCursorTools } from "./pdf_cursor_tools.js";
 import { PDFFindBar } from "./pdf_find_bar.js";
-import { FindCtrlrState, FindState, MatchesCount } from "./pdf_find_controller.js";
+import { type FindCtrlrState, FindState, type MatchesCount } from "./pdf_find_controller.js";
 import { PDFLayerViewer } from "./pdf_layer_viewer.js";
 import { PDFOutlineViewer } from "./pdf_outline_viewer.js";
 import { PDFPresentationMode } from "./pdf_presentation_mode.js";
@@ -143,7 +143,7 @@ export interface OutputScale
  */
 export function getOutputScale( ctx:CanvasRenderingContext2D ):OutputScale 
 {
-  const devicePixelRatio = window.devicePixelRatio || 1;
+  const devicePixelRatio = globalThis.devicePixelRatio || 1;
   const backingStoreRatio =
     (<any>ctx).webkitBackingStorePixelRatio ||
     (<any>ctx).mozBackingStorePixelRatio ||
@@ -215,7 +215,7 @@ export function watchScroll( viewAreaElement:HTMLDivElement, callback:(state?:un
       return;
     }
     // schedule an invocation of scroll for next animation frame.
-    rAF = window.requestAnimationFrame(function viewAreaElementScrolled() {
+    rAF = globalThis.requestAnimationFrame(function viewAreaElementScrolled() {
       rAF = null;
 
       const currentX = viewAreaElement.scrollLeft;
@@ -852,7 +852,7 @@ export const animationStarted = new Promise( resolve => {
       return;
     }
   // #endif
-  window.requestAnimationFrame(resolve);
+  globalThis.requestAnimationFrame(resolve);
 });
 /*64----------------------------------------------------------*/
 

@@ -20,10 +20,10 @@
 import { EventBus, getPageSizeInches, isPortraitOrientation } from "./ui_utils.js";
 import { getPdfFilenameFromUrl, PDFDateString } from "../pdf.ts-src/display/display_utils.js";
 import { PDFDocumentProxy } from "../pdf.ts-src/display/api.js";
-import { createPromiseCapability, PromiseCapability } from "../pdf.ts-src/shared/util.js";
-import { IL10n } from "./interfaces.js";
+import { createPromiseCapability, type PromiseCapability } from "../pdf.ts-src/shared/util.js";
+import { type IL10n } from "./interfaces.js";
 import { OverlayManager } from "./overlay_manager.js";
-import { ViewerConfiguration } from "./viewer.js";
+import { type ViewerConfiguration } from "./viewer.js";
 /*81---------------------------------------------------------------------------*/
 
 const DEFAULT_FIELD_CONTENT = "-";

@@ -19,9 +19,8 @@
 
 import { objectFromMap } from "../shared/util.js";
 import { 
-  ASVKey,
-  AnnotStorageValue,
-  AnnotStorageRecord,
+  type ASVKey,
+  type AnnotStorageValue,
 } from "./annotation_layer.js";
 /*81---------------------------------------------------------------------------*/
 

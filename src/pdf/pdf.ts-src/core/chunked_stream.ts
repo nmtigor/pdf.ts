@@ -17,14 +17,14 @@
  * limitations under the License.
  */
 
-import { ReadValue } from "../interfaces.js";
+import { type ReadValue } from "../interfaces.js";
 import { Thread, MessageHandler } from "../shared/message_handler.js";
 import {
   AbortException,
   arrayByteLength,
   arraysToBytes,
   createPromiseCapability,
-  PromiseCapability,
+  type PromiseCapability,
 } from "../shared/util.js";
 import { MissingDataException } from "./core_utils.js";
 import { Dict } from "./primitives.js";

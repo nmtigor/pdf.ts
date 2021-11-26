@@ -18,7 +18,7 @@
  */
 
 import { Dict } from "./primitives.js";
-import { JpegImage, JpegOptions } from "./jpg.js";
+import { JpegImage, type JpegOptions } from "./jpg.js";
 import { shadow } from "../shared/util.js";
 import { BaseStream } from './base_stream.js';
 import { ImageStream } from './decode_stream.js';

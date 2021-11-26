@@ -18,9 +18,14 @@
  */
 
 import { assert }      from "../../../lib/util/trace.js";
-import { IPDFStream, IPDFStreamRangeReader, IPDFStreamReader, ReadValue } from "../interfaces.js";
+import { 
+  type IPDFStream, 
+  type IPDFStreamRangeReader, 
+  type IPDFStreamReader, 
+  type ReadValue 
+} from "../interfaces.js";
 import { PDFDataRangeTransport } from "../pdf.js";
-import { AbortException, createPromiseCapability, PromiseCapability } from "../shared/util.js";
+import { AbortException, createPromiseCapability, type PromiseCapability } from "../shared/util.js";
 import { isPdfFile } from "./display_utils.js";
 /*81---------------------------------------------------------------------------*/
 

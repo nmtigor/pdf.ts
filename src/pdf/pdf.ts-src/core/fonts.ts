@@ -27,8 +27,8 @@ import {
   shadow,
   string32,
   warn,
-  rect_t,
-  matrix_t,
+  type rect_t,
+  type matrix_t,
 } from "../shared/util.js";
 import { getDingbatsGlyphsUnicode, getGlyphsUnicode } from "./glyphlist.js";
 import {
@@ -51,16 +51,16 @@ import {
   getUnicodeRangeFor,
   mapSpecialUnicodeValues,
 } from "./unicode.js";
-import { CharCodeOut, CMap, IdentityCMap } from "./cmap.js";
+import { type CharCodeOut, CMap, IdentityCMap } from "./cmap.js";
 import { Stream } from "./stream.js";
-import { FontfileType, FontProps, VMetric } from './evaluator.js';
-import { OpListIR } from './operator_list.js';
-import { CssFontInfo } from "./document.js";
+import { type FontfileType, type FontProps, type VMetric } from './evaluator.js';
+import { type OpListIR } from './operator_list.js';
+import { type CssFontInfo } from "./document.js";
 import { BaseStream } from "./base_stream.js";
 import { FontFlags, getFontType, MacStandardGlyphOrdering, recoverGlyphName, SEAC_ANALYSIS_ENABLED } from "./fonts_utils.js";
 import { readUint32 } from "./core_utils.js";
 import { IdentityToUnicodeMap, ToUnicodeMap } from "./to_unicode_map.js";
-import { OpenTypeFileBuilder, OTTable, OTTag, VALID_TABLES } from "./opentype_file_builder.js";
+import { OpenTypeFileBuilder, type OTTable, type OTTag, VALID_TABLES } from "./opentype_file_builder.js";
 import { CFFCompiler, CFFParser } from "./cff_parser.js";
 import { CFFFont } from "./cff_font.js";
 import { Type1Font } from "./type1_font.js";

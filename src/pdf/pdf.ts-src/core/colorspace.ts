@@ -17,19 +17,19 @@
  * limitations under the License.
  */
 
-import { TypedArray } from "../../../lib/alias.js";
+import { type TypedArray } from "../../../lib/alias.js";
 import { LocalColorSpaceCache } from "./image_utils.js";
 import { assert } from "../../../lib/util/trace.js";
 import {
   FormatError,
   info,
-  rect_t,
+  type rect_t,
   shadow,
   warn,
 } from "../shared/util.js";
 import { Dict, Name, Ref } from "./primitives.js";
 import { MissingDataException } from "./core_utils.js";
-import { ParsedFunction, PDFFunctionFactory } from "./function.js";
+import { type ParsedFunction, PDFFunctionFactory } from "./function.js";
 import { XRef } from "./xref.js";
 /*81---------------------------------------------------------------------------*/
 

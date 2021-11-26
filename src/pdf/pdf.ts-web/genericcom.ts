@@ -19,7 +19,7 @@ import { viewerapp, DefaultExternalServices } from "./app.js";
 import { BasePreferences } from "./preferences.js";
 import { DownloadManager } from "./download_manager.js";
 import { GenericL10n } from "./genericl10n.js";
-import { UserOptions } from "./app_options.js";
+import { type UserOptions } from "./app_options.js";
 // import { GenericScripting } from "./generic_scripting.js";
 /*81---------------------------------------------------------------------------*/
 

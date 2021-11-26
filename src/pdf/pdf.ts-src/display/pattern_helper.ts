@@ -17,8 +17,24 @@
  * limitations under the License.
  */
 
-import { MeshFigure, MeshIR, RadialAxialIR, ShadingPatternIR, ShadingType, TilingPatternIR } from "../core/pattern.js";
-import { FormatError, info, matrix_t, OPS, rect_t, Util, warn } from "../shared/util.js";
+import type { OpListIR } from "../core/operator_list.js";
+import { 
+  type MeshFigure, 
+  type MeshIR, 
+  type RadialAxialIR, 
+  type ShadingPatternIR, 
+  ShadingType, 
+  type TilingPatternIR 
+} from "../core/pattern.js";
+import { 
+  FormatError, 
+  info, 
+  type matrix_t, 
+  OPS, 
+  type rect_t, 
+  Util, 
+  warn 
+} from "../shared/util.js";
 import { CachedCanvases, CanvasGraphics, LRUCache } from "./canvas.js";
 /*81---------------------------------------------------------------------------*/
 
@@ -536,7 +552,7 @@ namespace NsTilingPattern
 
   export class TilingPattern implements STPattern
   {
-    operatorList;
+    operatorList:OpListIR;
     matrix:matrix_t;
     bbox;
     xstep;

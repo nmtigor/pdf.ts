@@ -17,13 +17,13 @@
  * limitations under the License.
  */
 
-import { createPromiseCapability, PromiseCapability, shadow } from "../pdf.ts-src/shared/util.js";
-import { apiPageLayoutToViewerModes, EventBus, EventMap, PageLayout, SpreadMode } from "./ui_utils.js";
+import { createPromiseCapability, type PromiseCapability, shadow } from "../pdf.ts-src/shared/util.js";
+import { apiPageLayoutToViewerModes, EventBus, type EventMap, PageLayout } from "./ui_utils.js";
 import { RenderingStates } from "./pdf_rendering_queue.js";
 import { PDFDocumentProxy } from "../pdf.ts-src/display/api.js";
 import { PDFViewer } from "./pdf_viewer.js";
-import { IScripting, MouseState } from "./interfaces.js";
-import { DefaultExternalServices, ScriptingDocProperties } from "./app.js";
+import { IScripting, type MouseState } from "./interfaces.js";
+import { DefaultExternalServices, type ScriptingDocProperties } from "./app.js";
 /*81---------------------------------------------------------------------------*/
 
 interface PDFScriptingManagerOptions

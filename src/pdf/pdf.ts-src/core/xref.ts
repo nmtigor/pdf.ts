@@ -28,8 +28,8 @@ import {
   Cmd,
   Dict,
   isCmd,
-  ObjNoRef,
-  Obj,
+  type ObjNoRef,
+  type Obj,
   Ref,
 } from "./primitives.js";
 import { Lexer, Parser } from "./parser.js";
@@ -42,7 +42,7 @@ import {
 import { CipherTransformFactory } from "./crypto.js";
 import { Stream } from "./stream.js";
 import { ChunkedStream } from "./chunked_stream.js";
-import { PDFDocumentStats } from "../display/api.js";
+import { type PDFDocumentStats } from "../display/api.js";
 import { BasePdfManager } from "./pdf_manager.js";
 import { assert } from "../../../lib/util/trace.js";
 import { BaseStream } from "./base_stream.js";

@@ -27,7 +27,7 @@ import {
   XmlObject,
 } from "./xfa_object.js";
 import { $buildXFAObject, NamespaceIds } from "./namespaces.js";
-import { XFAAttrs } from "./alias.js";
+import { type XFAAttrs } from "./alias.js";
 /*81---------------------------------------------------------------------------*/
 
 const DATASETS_NS_ID = NamespaceIds.datasets.id;

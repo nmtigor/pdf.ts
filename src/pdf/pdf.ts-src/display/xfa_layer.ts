@@ -17,14 +17,14 @@
  * limitations under the License.
  */
 
-import { HSElement, html as createHTML, textnode } from "../../../lib/dom.js";
+import { type HSElement, html as createHTML, textnode } from "../../../lib/dom.js";
 import { warn } from "../shared/util.js";
-import { XFAElObj, XFAHTMLObj } from "../core/xfa/alias.js";
+import { type XFAElObj, type XFAHTMLObj } from "../core/xfa/alias.js";
 import { AnnotationStorage } from "./annotation_storage.js";
-import { AnnotIntent, PDFPageProxy } from "./api.js";
+import { type AnnotIntent, PDFPageProxy } from "./api.js";
 import { PageViewport } from "./display_utils.js";
 import { XfaText } from "./xfa_text.js";
-import { IPDFLinkService } from "src/pdf/pdf.ts-web/interfaces.js";
+import { type IPDFLinkService } from "src/pdf/pdf.ts-web/interfaces.js";
 /*81---------------------------------------------------------------------------*/
 
 interface XfaLayerParms

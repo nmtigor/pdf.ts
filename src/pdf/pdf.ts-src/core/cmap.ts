@@ -23,11 +23,13 @@ import {
   FormatError,
   warn,
 } from "../shared/util.js";
-import { Cmd, EOF, isCmd, Name, ObjNoCmd } from "./primitives.js";
+import { Cmd, EOF, isCmd, Name, type ObjNoCmd } from "./primitives.js";
 import { Lexer } from "./parser.js";
 import { MissingDataException } from "./core_utils.js";
 import { Stream } from "./stream.js";
-import { TupleOf } from "../../../lib/alias.js";
+import { type TupleOf } from "../../../lib/alias.js";
+import { BaseStream } from "./base_stream.js";
+import { type FetchBuiltInCMap } from "../display/base_factory.js";
 /*81---------------------------------------------------------------------------*/
 
 const BUILT_IN_CMAPS = [
@@ -1150,6 +1152,4 @@ namespace NsCMapFactory
   };
 }
 export import CMapFactory = NsCMapFactory.CMapFactory;
-import { BaseStream } from "./base_stream.js";
-import { FetchBuiltInCMap } from "../display/base_factory.js";
 /*81---------------------------------------------------------------------------*/

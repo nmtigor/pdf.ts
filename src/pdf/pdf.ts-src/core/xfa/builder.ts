@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-import { $buildXFAObject, NamespaceIds, XFANsName } from "./namespaces.js";
+import { $buildXFAObject, NamespaceIds, type XFANsName } from "./namespaces.js";
 import {
   $cleanup,
   $finalize,
@@ -29,11 +29,17 @@ import {
   $root,
   XFAObject,
 } from "./xfa_object.js";
-import { NamespaceSetUp, XFAKnownNs } from "./setup.js";
+import { NamespaceSetUp, type XFAKnownNs } from "./setup.js";
 import { Template } from "./template.js";
 import { UnknownNamespace } from "./unknown.js";
 import { warn } from "../../shared/util.js";
-import { XFAAttrs, XFACleanup, XFAIds, XFANsAttrs, XFAPrefix } from "./alias.js";
+import { 
+  type XFAAttrs, 
+  type XFACleanup, 
+  type XFAIds, 
+  type XFANsAttrs, 
+  type XFAPrefix 
+} from "./alias.js";
 /*81---------------------------------------------------------------------------*/
 
 export class Root extends XFAObject

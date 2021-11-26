@@ -20,14 +20,14 @@
 /** @typedef {import("./interfaces").IPDFXfaLayerFactory} IPDFXfaLayerFactory */
 
 import { html } from "../../lib/dom.js";
-import { XFAData } from "../pdf.ts-src/core/document.js";
-import { XFAElData, XFAElObj } from "../pdf.ts-src/core/xfa/alias.js";
+import { type XFAData } from "../pdf.ts-src/core/document.js";
+import { type XFAElData, type XFAElObj } from "../pdf.ts-src/core/xfa/alias.js";
 import { AnnotationStorage } from "../pdf.ts-src/display/annotation_storage.js";
-import { AnnotIntent, PDFPageProxy } from "../pdf.ts-src/display/api.js";
+import { type AnnotIntent, PDFPageProxy } from "../pdf.ts-src/display/api.js";
 import { PageViewport } from "../pdf.ts-src/display/display_utils.js";
 import { SimpleLinkService } from "./pdf_link_service.js";
 import { XfaLayer } from "../pdf.ts-src/display/xfa_layer.js";
-import { IPDFLinkService, IPDFXfaLayerFactory } from "./interfaces.js";
+import { type IPDFLinkService, type IPDFXfaLayerFactory } from "./interfaces.js";
 /*81---------------------------------------------------------------------------*/
 
 interface XfaLayerBuilderOptions

@@ -7,9 +7,9 @@ import "../../../lib/jslang.js";
 import { Dict, Name, Ref } from "./primitives.js";
 import { incrementalUpdate, writeDict } from "./writer.js";
 import { bytesToString } from "../shared/util.js";
-import { XRefInfo } from "./worker.js";
+import { type XRefInfo } from "./worker.js";
 import { StringStream } from "./stream.js";
-import { SaveData } from "./annotation.js";
+import { type SaveData } from "./annotation.js";
 import { XRef } from "./xref.js";
 
 const strttime = performance.now();

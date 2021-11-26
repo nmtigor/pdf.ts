@@ -19,8 +19,8 @@
 
 import { warn } from "../../shared/util.js";
 import { ErrorFont, Font } from "../fonts.js";
-import { XFAFontMetrics } from "../xfa_fonts.js";
-import { XFAFontBase } from "./alias.js";
+import { type XFAFontMetrics } from "../xfa_fonts.js";
+import { type XFAFontBase } from "./alias.js";
 import { Font as XFAFont } from "./template.js";
 import { stripQuotes } from "./utils.js";
 import { $globalData } from "./xfa_object.js";

@@ -19,7 +19,7 @@
 
 import { FontType, info } from "../shared/util.js";
 import { getEncoding, StandardEncoding } from "./encodings.js";
-import { FontProps } from "./evaluator.js";
+import { type FontProps } from "./evaluator.js";
 import { getGlyphsUnicode } from "./glyphlist.js";
 import { getUnicodeForGlyph } from "./unicode.js";
 /*81---------------------------------------------------------------------------*/

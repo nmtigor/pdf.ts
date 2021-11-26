@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-import { XFAElObj } from "../pdf.ts-src/core/xfa/alias.js";
+import { type XFAElObj } from "../pdf.ts-src/core/xfa/alias.js";
 import { PDFDocumentProxy } from "../pdf.ts-src/display/api.js";
 import { getXfaPageViewport, PixelsPerInch } from "../pdf.ts-src/display/display_utils.js";
 import { DefaultXfaLayerFactory } from "./xfa_layer_builder.js";

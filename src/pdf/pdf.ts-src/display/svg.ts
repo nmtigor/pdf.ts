@@ -23,20 +23,20 @@ import {
   FONT_IDENTITY_MATRIX,
   IDENTITY_MATRIX,
   ImageKind,
-  matrix_t,
+  type matrix_t,
   OPS,
-  rect_t,
+  type rect_t,
   TextRenderingMode,
   Util,
   warn,
 } from "../shared/util.js";
 import { DOMSVGFactory, PageViewport } from "./display_utils.js";
-import { PDFCommonObjs, PDFObjects, PDFObjs } from "./api.js";
-import { ImgData, OpArgs } from "../core/evaluator.js";
+import { type PDFCommonObjs, PDFObjects, type PDFObjs } from "./api.js";
+import { type ImgData } from "../core/evaluator.js";
 import { FontExpotData, Glyph } from "../core/fonts.js";
-import { OpListIR } from "../core/operator_list.js";
+import { type OpListIR } from "../core/operator_list.js";
 import { svg as createSVG } from "../../../lib/dom.js";
-import { ShadingPatternIR, ShadingType, TilingPatternIR } from "../core/pattern.js";
+import { type ShadingPatternIR, ShadingType, type TilingPatternIR } from "../core/pattern.js";
 /*81---------------------------------------------------------------------------*/
 
 // export let SVGGraphics = ():any => 

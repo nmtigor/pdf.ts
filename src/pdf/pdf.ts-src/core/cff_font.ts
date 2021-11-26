@@ -21,7 +21,7 @@ import { CFF, CFFCompiler, CFFParser } from "./cff_parser.js";
 import { SEAC_ANALYSIS_ENABLED, type1FontGlyphMapping } from "./fonts_utils.js";
 import { warn } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
-import { FontProps } from "./evaluator.js";
+import { type FontProps } from "./evaluator.js";
 /*81---------------------------------------------------------------------------*/
 
 export class CFFFont

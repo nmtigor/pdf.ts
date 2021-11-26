@@ -19,21 +19,21 @@
 
 import { isObjectLike } from "../../../../lib/jslang.js";
 import { 
-  AvailableSpace, 
-  XFAAttrs, 
-  XFAExtra, 
-  XFAGlobalData, 
-  XFAElData, 
-  XFAHTMLObj, 
-  XFAIds, 
-  XFAStyleData,
-  XFAValue,
-  XFANsAttrs,
-  XFACleanup, 
+  type AvailableSpace, 
+  type XFAAttrs, 
+  type XFAExtra, 
+  type XFAGlobalData, 
+  type XFAElData, 
+  type XFAHTMLObj, 
+  type XFAIds, 
+  type XFAStyleData,
+  type XFAValue,
+  type XFANsAttrs,
+  type XFACleanup, 
 } from "./alias.js";
 import { getInteger, getKeyword, HTMLResult } from "./utils.js";
-import { rect_t, shadow, warn } from "../../shared/util.js";
-import { NamespaceIds, XFANsId } from "./namespaces.js";
+import { type rect_t, shadow, warn } from "../../shared/util.js";
+import { NamespaceIds, type XFANsId } from "./namespaces.js";
 import { Builder } from "./builder.js";
 import { searchNode } from "./som.js";
 import { encodeToXmlString } from "../core_utils.js";

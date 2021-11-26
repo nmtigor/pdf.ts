@@ -29,9 +29,9 @@ import {
   ImageKind,
   info,
   isArrayEqual,
-  matrix_t,
+  type matrix_t,
   OPS,
-  rect_t,
+  type rect_t,
   shadow,
   stringToPDFString,
   TextRenderingMode,
@@ -47,8 +47,8 @@ import {
   FontDict,
   isName,
   Name,
-  ObjNoCmd,
-  Obj,
+  type ObjNoCmd,
+  type Obj,
   Ref,
   RefSet,
   RefSetCache,
@@ -57,7 +57,7 @@ import {
   ErrorFont,
   Font,
   Glyph,
-  Seac,
+  type Seac,
 } from "./fonts.js";
 import {
   getEncoding,
@@ -79,13 +79,13 @@ import {
   getStdFontMap,
   getSymbolsFonts,
 } from "./standard_fonts.js";
-import { getTilingPatternIR, Pattern, ShadingPatternIR } from "./pattern.js";
+import { getTilingPatternIR, Pattern, type ShadingPatternIR } from "./pattern.js";
 import { isPDFFunction, PDFFunctionFactory } from "./function.js";
 import { Lexer, Parser } from "./parser.js";
 import {
   GlobalImageCache,
-  LGS_CData,
-  LI_CData,
+  type LGS_CData,
+  type LI_CData,
   LocalColorSpaceCache,
   LocalGStateCache,
   LocalImageCache,
@@ -99,19 +99,19 @@ import { getMetrics } from "./metrics.js";
 import { MurmurHash3_64 } from "./murmurhash3.js";
 import { OperatorList } from "./operator_list.js";
 import { PDFImage } from "./image.js";
-import { Thread, MessageHandler, StreamSink, MActionMap } from "../shared/message_handler.js";
-import { CssFontInfo, GlobalIdFactory } from "./document.js";
-import { EvaluatorOptions } from "./pdf_manager.js";
+import { Thread, MessageHandler, type StreamSink, type MActionMap } from "../shared/message_handler.js";
+import { type CssFontInfo, type GlobalIdFactory } from "./document.js";
+import { type EvaluatorOptions } from "./pdf_manager.js";
 import { WorkerTask } from "./worker.js";
-import { PrivateData } from "./type1_parser.js";
+import { type PrivateData } from "./type1_parser.js";
 import { XRef } from "./xref.js";
 import { getLookupTableFactory, MissingDataException } from "./core_utils.js";
-import { GroupOptions } from "../display/canvas.js";
+import { type GroupOptions } from "../display/canvas.js";
 import { BaseStream } from "./base_stream.js";
 import { DecodeStream, ImageStream } from "./decode_stream.js";
 import { FontFlags, getFontType } from "./fonts_utils.js";
 import { IdentityToUnicodeMap, ToUnicodeMap } from "./to_unicode_map.js";
-import { CMapData } from "../display/base_factory.js";
+import { type CMapData } from "../display/base_factory.js";
 import { getXfaFontDict, getXfaFontName } from "./xfa_fonts.js";
 /*81---------------------------------------------------------------------------*/
 

@@ -3,12 +3,12 @@
 ** ------ */
 
 import { 
-  AbstractConstructor, 
-  Constructor, 
-  FloatArray, 
-  IntegerArray, 
-  uint, 
-  uint8 
+  type AbstractConstructor, 
+  type Constructor, 
+  type FloatArray, 
+  type IntegerArray, 
+  type uint, 
+  type uint8 
 } from "./alias.js";
 import { assert } from "./util/trace.js";
 /*81---------------------------------------------------------------------------*/

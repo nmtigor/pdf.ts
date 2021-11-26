@@ -2,7 +2,7 @@ import {
     EnumValueMappee,
     EnumValueMappeeWithNull,
     EnumValueMappeeWithUndefined,
-    EnumValueMappeeWithNullAndUndefined
+    type EnumValueMappeeWithNullAndUndefined
 } from "./EnumValueMappee.js";
 
 /**

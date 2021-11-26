@@ -1,4 +1,4 @@
-import { StringKeyOf } from "./types.js";
+import { type StringKeyOf } from "./types.js";
 import {
     isNonNumericKey,
     getOwnEnumerableNonNumericKeys

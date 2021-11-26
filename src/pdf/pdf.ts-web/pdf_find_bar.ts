@@ -17,10 +17,10 @@
  * limitations under the License.
  */
 
-import { IL10n } from "./interfaces.js";
-import { FindState, FindType, MatchesCount } from "./pdf_find_controller.js";
+import { type IL10n } from "./interfaces.js";
+import { FindState, type FindType, type MatchesCount } from "./pdf_find_controller.js";
 import { EventBus } from "./ui_utils.js";
-import { ViewerConfiguration } from "./viewer.js";
+import { type ViewerConfiguration } from "./viewer.js";
 /*81---------------------------------------------------------------------------*/
 
 const MATCHES_COUNT_LIMIT = 1000;

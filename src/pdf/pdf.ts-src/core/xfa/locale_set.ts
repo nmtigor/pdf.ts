@@ -24,7 +24,7 @@ import {
   XFAObject,
   XFAObjectArray,
 } from "./xfa_object.js";
-import { XFAAttrs } from "./alias.js";
+import { type XFAAttrs } from "./alias.js";
 import { getInteger, getStringOption } from "./utils.js";
 /*81---------------------------------------------------------------------------*/
 

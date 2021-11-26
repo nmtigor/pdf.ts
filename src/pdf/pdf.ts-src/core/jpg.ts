@@ -1646,5 +1646,5 @@ namespace NsJpegImage
   }
 }
 export import JpegImage = NsJpegImage.JpegImage;
-export import JpegOptions = NsJpegImage.JpegOptions;
+export type JpegOptions = NsJpegImage.JpegOptions;
 /*81---------------------------------------------------------------------------*/

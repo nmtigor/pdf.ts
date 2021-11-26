@@ -19,12 +19,12 @@
 
 import { html } from "../../lib/dom.js";
 import { viewerapp, PDFPrintServiceFactory } from "./app.js";
-import { IL10n } from "./interfaces.js";
+import { type IL10n } from "./interfaces.js";
 import { OptionalContentConfig } from "../pdf.ts-src/display/optional_content_config.js";
-import { Intent, PDFDocumentProxy } from "../pdf.ts-src/display/api.js";
-import { PageOverview } from "./base_viewer.js";
+import { type Intent, PDFDocumentProxy } from "../pdf.ts-src/display/api.js";
+import { type PageOverview } from "./base_viewer.js";
 import { OverlayManager } from "./overlay_manager.js";
-import { AnnotationMode, matrix_t } from "../pdf.ts-src/shared/util.js";
+import { AnnotationMode, type matrix_t } from "../pdf.ts-src/shared/util.js";
 import { getXfaHtmlForPrinting } from "./print_utils.js";
 import { PixelsPerInch } from "../pdf.ts-src/display/display_utils.js";
 import { compatibilityParams } from "./app_options.js";

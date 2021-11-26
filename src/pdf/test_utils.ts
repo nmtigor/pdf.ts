@@ -4,7 +4,7 @@
 
 import { isObjectLike } from "../lib/jslang.js";
 import { assert } from "../lib/util/trace.js";
-import { Dict, Name, Obj, Ref } from "./pdf.ts-src/core/primitives.js";
+import { Dict, Name, type Obj, Ref } from "./pdf.ts-src/core/primitives.js";
 import { StringStream } from "./pdf.ts-src/core/stream.js";
 import { Page, PDFDocument } from "./pdf.ts-src/core/document.js";
 import { GlobalWorkerOptions, PDFWorker } from "./pdf.ts-src/pdf.js";

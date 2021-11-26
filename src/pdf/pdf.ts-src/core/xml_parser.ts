@@ -20,7 +20,7 @@
 // The code for XMLParserBase copied from
 // https://github.com/mozilla/shumway/blob/16451d8836fa85f4b16eeda8b4bda2fa9e2b22b0/src/avm2/natives/xml.ts
 
-import { XFAPath } from "../core/core_utils.js";
+import { type XFAPath } from "../core/core_utils.js";
 import { encodeToXmlString } from "./core_utils.js";
 /*81---------------------------------------------------------------------------*/
 

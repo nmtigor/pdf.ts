@@ -21,13 +21,13 @@
 /** @typedef {import("./interfaces").IPDFTextLayerFactory} IPDFTextLayerFactory */
 
 import { html } from "../../lib/dom.js";
-import { TextContent } from "../pdf.ts-src/display/api.js";
+import { type TextContent } from "../pdf.ts-src/display/api.js";
 import { PageViewport } from "../pdf.ts-src/display/display_utils.js";
 import { TextLayerRenderTask } from "../pdf.ts-src/display/text_layer.js";
 import { renderTextLayer } from "../pdf.ts-src/pdf.js";
-import { IPDFTextLayerFactory } from "./interfaces.js";
+import { type IPDFTextLayerFactory } from "./interfaces.js";
 import { TextHighlighter } from "./text_highlighter.js";
-import { EventBus, EventMap } from "./ui_utils.js";
+import { EventBus } from "./ui_utils.js";
 /*81---------------------------------------------------------------------------*/
 
 const EXPAND_DIVS_TIMEOUT = 300; // ms

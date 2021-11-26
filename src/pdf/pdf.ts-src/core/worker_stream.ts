@@ -15,10 +15,10 @@
 
 import { assert } from "../../../lib/util/trace.js";
 import { 
-  IPDFStream, 
-  IPDFStreamRangeReader, 
-  IPDFStreamReader, 
-  ReadValue
+  type IPDFStream, 
+  type IPDFStreamRangeReader, 
+  type IPDFStreamReader, 
+  type ReadValue
 } from "../interfaces.js";
 import { Thread, MessageHandler } from "../shared/message_handler.js";
 import { AbortException } from "../shared/util.js";

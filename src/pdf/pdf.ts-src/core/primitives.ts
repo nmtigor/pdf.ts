@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-import { TypedArray } from "../../../lib/alias.js";
+import { type TypedArray } from "../../../lib/alias.js";
 import { assert } from "../../../lib/util/trace.js";
 import { shadow } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";

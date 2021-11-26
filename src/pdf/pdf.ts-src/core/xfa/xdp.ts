@@ -19,9 +19,9 @@
 
 import { ConnectionSet } from "./connection_set.js";
 import { Datasets } from "./datasets.js";
-import { $buildXFAObject, NamespaceIds, XFANsName } from "./namespaces.js";
+import { $buildXFAObject, NamespaceIds, type XFANsName } from "./namespaces.js";
 import { Template } from "./template.js";
-import { XFAAttrs } from "./alias.js";
+import { type XFAAttrs } from "./alias.js";
 import {
   $namespaceId,
   $nodeName,

@@ -18,11 +18,11 @@
  */
 
 import { html } from "../../lib/dom.js";
-import { Order } from "../pdf.ts-src/core/catalog.js";
+import { type Order } from "../pdf.ts-src/core/catalog.js";
 import { PDFDocumentProxy } from "../pdf.ts-src/display/api.js";
 import { OptionalContentConfig } from "../pdf.ts-src/display/optional_content_config.js";
-import { BaseTreeViewer, BaseTreeViewerCtorParms } from "./base_tree_viewer.js";
-import { IL10n } from "./interfaces.js";
+import { BaseTreeViewer, type BaseTreeViewerCtorParms } from "./base_tree_viewer.js";
+import { type IL10n } from "./interfaces.js";
 /*81---------------------------------------------------------------------------*/
 
 interface PDFLayerViewerOptions extends BaseTreeViewerCtorParms

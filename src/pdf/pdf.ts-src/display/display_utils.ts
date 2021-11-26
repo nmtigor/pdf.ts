@@ -19,13 +19,13 @@
 
 import { html } from "../../../lib/dom.js";
 import { assert } from "../../../lib/util/trace.js";
-import { XFAElObj } from "../core/xfa/alias.js";
+import { type XFAElObj } from "../core/xfa/alias.js";
 import {
   BaseException,
   CMapCompressionType,
-  matrix_t,
-  point_t,
-  rect_t,
+  type matrix_t,
+  type point_t,
+  type rect_t,
   removeNullCharacters,
   shadow,
   stringToBytes,

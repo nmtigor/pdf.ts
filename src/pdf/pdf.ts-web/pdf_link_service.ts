@@ -21,13 +21,13 @@
 
 import { isObjectLike } from "../../lib/jslang.js";
 import { Ref } from "../pdf.ts-src/core/primitives.js";
-import { PDFDocumentProxy, RefProxy } from "../pdf.ts-src/display/api.js";
-import { IPDFLinkService } from "./interfaces.js";
+import { PDFDocumentProxy, type RefProxy } from "../pdf.ts-src/display/api.js";
+import { type IPDFLinkService } from "./interfaces.js";
 import { PDFViewer } from "./pdf_viewer.js";
 import { PDFHistory } from "./pdf_history.js";
 import { EventBus, parseQueryString } from "./ui_utils.js";
 import { addLinkAttributes, LinkTarget } from "../pdf.ts-src/display/display_utils.js";
-import { Destination, ExplicitDest } from "../pdf.ts-src/core/catalog.js";
+import { type Destination, type ExplicitDest } from "../pdf.ts-src/core/catalog.js";
 /*81---------------------------------------------------------------------------*/
 
 interface PDFLinkServiceOptions

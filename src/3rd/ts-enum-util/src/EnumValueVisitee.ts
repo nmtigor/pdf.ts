@@ -6,13 +6,13 @@ import {
 } from "./symbols.js";
 import { createUnhandledEntryError } from "./createUnhandledEntryError.js";
 import {
-    WidenEnumType,
-    EnumValueVisitorHandler,
-    EnumValueVisitorCore,
-    EnumValueVisitor,
-    EnumValueVisitorWithNull,
-    EnumValueVisitorWithUndefined,
-    EnumValueVisitorWithNullAndUndefined
+    type WidenEnumType,
+    type EnumValueVisitorHandler,
+    type EnumValueVisitorCore,
+    type EnumValueVisitor,
+    type EnumValueVisitorWithNull,
+    type EnumValueVisitorWithUndefined,
+    type EnumValueVisitorWithNullAndUndefined
 } from "./EnumValueVisitor.js";
 
 /**

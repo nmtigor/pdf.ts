@@ -19,10 +19,10 @@
 
 import { html } from "../../lib/dom.js";
 import { createPromiseCapability, getFilenameFromUrl } from "../pdf.ts-src/pdf.js";
-import { PromiseCapability } from "../pdf.ts-src/shared/util.js";
-import { BaseTreeViewer, BaseTreeViewerCtorParms } from "./base_tree_viewer.js";
+import { type PromiseCapability } from "../pdf.ts-src/shared/util.js";
+import { BaseTreeViewer, type BaseTreeViewerCtorParms } from "./base_tree_viewer.js";
 import { DownloadManager } from "./download_manager.js";
-import { EventMap } from "./ui_utils.js";
+import { type EventMap } from "./ui_utils.js";
 /*81---------------------------------------------------------------------------*/
 
 interface PDFAttachmentViewerOptions extends BaseTreeViewerCtorParms

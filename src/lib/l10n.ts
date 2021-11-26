@@ -36,7 +36,6 @@
 */
 /*jshint browser: true, devel: true, es5: true, globalstrict: true */
 
-import { global } from "../global.js";
 import { Locale } from "./Locale.js";
 /*81---------------------------------------------------------------------------*/
 
@@ -1180,5 +1179,5 @@ namespace Ns_webL10n
   }
 }
 export import webL10n = Ns_webL10n.webL10n;
-export import WebL10nArgs = Ns_webL10n.L10nArgs;
+export type WebL10nArgs = Ns_webL10n.L10nArgs;
 /*81---------------------------------------------------------------------------*/

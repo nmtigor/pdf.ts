@@ -31,18 +31,18 @@ import {
   XFAObject,
 } from "./xfa_object.js";
 import { 
-  AvailableSpace, 
-  XFAFontBase, 
-  XFAHTMLObj, 
-  XFAStyleData, 
-  XFAMargin, 
-  XFAElObj, 
-  XFAExtra
+  type AvailableSpace, 
+  type XFAFontBase, 
+  type XFAHTMLObj, 
+  type XFAStyleData, 
+  type XFAMargin, 
+  type XFAElObj, 
+  type XFAExtra
 } from "./alias.js";
 import { getMeasurement, stripQuotes } from "./utils.js";
 import { FontFinder, selectFont } from "./fonts.js";
 import { TextMeasure } from "./text.js";
-import { createValidAbsoluteUrl, rect_t, warn } from "../../shared/util.js";
+import { createValidAbsoluteUrl, type rect_t, warn } from "../../shared/util.js";
 import { 
   Area, 
   Border,

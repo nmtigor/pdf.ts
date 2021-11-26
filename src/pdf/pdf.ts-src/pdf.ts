@@ -36,7 +36,7 @@ import {
 } from "./display/display_utils.js";
 import {
   build,
-  DocumentInitParms,
+  type DocumentInitParms,
   getDocument,
   LoopbackPort,
   PDFDataRangeTransport,

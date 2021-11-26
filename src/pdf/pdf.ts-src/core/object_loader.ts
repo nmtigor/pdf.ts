@@ -17,11 +17,11 @@
  * limitations under the License.
  */
 
-import { Dict, Obj, Ref, RefSet } from "./primitives.js";
+import { Dict, type Obj, Ref, RefSet } from "./primitives.js";
 import { MissingDataException } from "./core_utils.js";
 import { warn } from "../shared/util.js";
 import { XRef } from "./xref.js";
-import { ChunkedStream, ChunkRange } from "./chunked_stream.js";
+import { ChunkedStream, type ChunkRange } from "./chunked_stream.js";
 import { BaseStream } from "./base_stream.js";
 /*81---------------------------------------------------------------------------*/
 
