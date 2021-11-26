@@ -17,9 +17,9 @@
  * limitations under the License.
  */
 
-import { rect_t, shadow } from "../../shared/util.js";
+import { type rect_t, shadow } from "../../shared/util.js";
 import { BreakAfter, BreakBefore, Template } from "./template.js";
-import { XFAElData } from "./alias.js";
+import { type XFAElData } from "./alias.js";
 /*81---------------------------------------------------------------------------*/
 
 const dimConverters = {

@@ -1,9 +1,9 @@
-import { EventBus, EventMap, PresentationModeState, RendererType, ScrollMode, SpreadMode, TextLayerMode, VisibleElement, VisibleElements } from "./ui_utils.js";
+import { EventBus, type EventMap, PresentationModeState, RendererType, ScrollMode, SpreadMode, TextLayerMode, type VisibleElement, type VisibleElements } from "./ui_utils.js";
 import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
 import { AnnotationLayerBuilder } from "./annotation_layer_builder.js";
 import { PDFPageView } from "./pdf_page_view.js";
 import { TextLayerBuilder } from "./text_layer_builder.js";
-import { IL10n, IPDFAnnotationLayerFactory, IPDFLinkService, IPDFStructTreeLayerFactory, IPDFTextLayerFactory, IPDFXfaLayerFactory, MouseState } from "./interfaces.js";
+import { type IL10n, type IPDFAnnotationLayerFactory, type IPDFLinkService, type IPDFStructTreeLayerFactory, type IPDFTextLayerFactory, type IPDFXfaLayerFactory, type MouseState } from "./interfaces.js";
 import { DownloadManager } from "./download_manager.js";
 import { PDFFindController } from "./pdf_find_controller.js";
 import { AnnotationMode } from "../pdf.ts-src/shared/util.js";
@@ -13,10 +13,10 @@ import { PageViewport } from "../pdf.ts-src/display/display_utils.js";
 import { AnnotationStorage } from "../pdf.ts-src/display/annotation_storage.js";
 import { XfaLayerBuilder } from "./xfa_layer_builder.js";
 import { PDFScriptingManager } from "./pdf_scripting_manager.js";
-import { ExplicitDest } from "../pdf.ts-src/core/catalog.js";
+import { type ExplicitDest } from "../pdf.ts-src/core/catalog.js";
 import { StructTreeLayerBuilder } from "./struct_tree_layer_builder.js";
 import { TextHighlighter } from "./text_highlighter.js";
-import { FieldObject } from "../pdf.ts-src/core/annotation.js";
+import { type FieldObject } from "../pdf.ts-src/core/annotation.js";
 export interface PDFViewerOptions {
     /**
      * The container for the viewer element.
@@ -178,10 +178,6 @@ export declare abstract class BaseViewer implements IPDFAnnotationLayerFactory, 
         down: boolean;
         lastX: number;
         lastY: number;
-        /**
-         * Ignore the zoom argument in
-         * the destination array. The default value is `false`.
-         */
         _eventHandler: (evt: unknown) => void;
     };
     presentationModeState: PresentationModeState;

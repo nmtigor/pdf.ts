@@ -3,7 +3,7 @@ import { ColorSpace } from "./colorspace.js";
 import { ImageStream } from "./decode_stream.js";
 import { PDFFunctionFactory } from "./function.js";
 import { LocalColorSpaceCache } from "./image_utils.js";
-import { ImgData } from "./evaluator.js";
+import { type ImgData } from "./evaluator.js";
 import { XRef } from "./xref.js";
 import { BaseStream } from "./base_stream.js";
 interface PDFImageCtorParms {

@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-import { AnnotStorageRecord } from "../../display/annotation_layer.js";
+import { type AnnotStorageRecord } from "../../display/annotation_layer.js";
 import { Datasets } from "./datasets.js";
 import {
   $getAttributes,

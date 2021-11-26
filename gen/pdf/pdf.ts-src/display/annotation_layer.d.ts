@@ -1,9 +1,9 @@
 import { DownloadManager } from "../../pdf.ts-web/download_manager.js";
-import { IPDFLinkService, MouseState } from "../../pdf.ts-web/interfaces.js";
+import { type IPDFLinkService, type MouseState } from "../../pdf.ts-web/interfaces.js";
 import { DOMSVGFactory, PageViewport } from "./display_utils.js";
 import { AnnotationStorage } from "./annotation_storage.js";
 import { PDFPageProxy } from "./api.js";
-import { AnnotationData, FieldObject } from "../core/annotation.js";
+import { type AnnotationData, type FieldObject } from "../core/annotation.js";
 declare type HTMLSectionElement = HTMLElement;
 interface AnnotationElementParms {
     data: AnnotationData;

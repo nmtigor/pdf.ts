@@ -17,8 +17,7 @@
  * limitations under the License.
  */
 
-import { UnPromisify } from "../../../lib/alias.js";
-import { AnnotStorageRecord } from "../display/annotation_layer.js";
+import { type AnnotStorageRecord } from "../display/annotation_layer.js";
 import { Thread, MessageHandler } from "../shared/message_handler.js";
 import {
   AbortException,
@@ -152,7 +151,7 @@ export abstract class BasePdfManager
     P extends keyof O,
     A=O[P] extends (...args:any) => any ? Parameters< O[P] > : undefined,
     R=O[P] extends (...args:any) => any ? ReturnType< O[P] > : O[P]
-  >( obj:O, prop:P, args?:A ):Promise< UnPromisify<R> >;
+  >( obj:O, prop:P, args?:A ):Promise< Awaited<R> >;
 
   abstract requestRange( begin:number, end:number ):Promise<void>;
 
@@ -196,7 +195,7 @@ export class LocalPdfManager extends BasePdfManager
     P extends keyof O,
     A=O[P] extends (...args:any) => any ? Parameters< O[P] > : undefined,
     R=O[P] extends (...args:any) => any ? ReturnType< O[P] > : O[P]
-  >( obj:O, prop:P, args:A ):Promise< UnPromisify<R> >
+  >( obj:O, prop:P, args:A ):Promise< Awaited<R> >
   {
     const value = obj[prop];
     if (typeof value === "function") 
@@ -278,7 +277,7 @@ export class NetworkPdfManager extends BasePdfManager
     P extends keyof O,
     A=O[P] extends (...args:any) => any ? Parameters< O[P] > : undefined,
     R=O[P] extends (...args:any) => any ? ReturnType< O[P] > : O[P]
-  >( obj:O, prop:P, args:A ):Promise< UnPromisify<R> >
+  >( obj:O, prop:P, args:A ):Promise< Awaited<R> >
   {
     try {
       const value = obj[prop];

@@ -1,5 +1,6 @@
-import { RadialAxialIR, ShadingPatternIR, ShadingType, TilingPatternIR } from "../core/pattern.js";
-import { matrix_t } from "../shared/util.js";
+import type { OpListIR } from "../core/operator_list.js";
+import { type RadialAxialIR, type ShadingPatternIR, ShadingType, type TilingPatternIR } from "../core/pattern.js";
+import { type matrix_t } from "../shared/util.js";
 import { CanvasGraphics, LRUCache } from "./canvas.js";
 export interface STPattern {
     getPattern(ctx: CanvasRenderingContext2D, owner: CanvasGraphics, inverse: matrix_t, shadingFill?: boolean): CanvasPattern | CanvasGradient | string | null;
@@ -44,7 +45,7 @@ declare namespace NsTilingPattern {
         ConstantSpacingFasterTiling = 3
     }
     class TilingPattern implements STPattern {
-        operatorList: NsOperatorList.OpListIR;
+        operatorList: OpListIR;
         matrix: matrix_t;
         bbox: [number, number, number, number];
         xstep: number;

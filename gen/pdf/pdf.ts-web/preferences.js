@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { AppOptions } from "./app_options.js";
+import { AppOptions, OptionKind } from "./app_options.js";
 /*81---------------------------------------------------------------------------*/
 /**
  * BasePreferences - Abstract base class for storing persistent settings.
@@ -28,7 +28,7 @@ export class BasePreferences {
     _initializedPromise;
     constructor() {
         Object.defineProperty(this, "defaults", {
-            value: Object.freeze(AppOptions.getAll(128 /* PREFERENCE */)),
+            value: Object.freeze(AppOptions.getAll(OptionKind.PREFERENCE)),
             writable: false,
             enumerable: true,
             configurable: false,

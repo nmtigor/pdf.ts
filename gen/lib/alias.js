@@ -10,6 +10,11 @@ export const lnum_MAX = 1_000_000_000;
 export class DumRuhr {
     run() { }
 }
+export var Sortart;
+(function (Sortart) {
+    Sortart[Sortart["asc"] = 0] = "asc";
+    Sortart[Sortart["desc"] = 1] = "desc";
+})(Sortart || (Sortart = {}));
 // const a = <const>["abc","123"];
 // type T = IndexOf<typeof a>;
 //#endregion

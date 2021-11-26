@@ -17,10 +17,10 @@
  * limitations under the License.
  */
 
-import { PDFDocumentProxy, TextItem } from "../pdf.ts-src/display/api.js";
+import { PDFDocumentProxy, type TextItem } from "../pdf.ts-src/display/api.js";
 import { createPromiseCapability } from "../pdf.ts-src/pdf.js";
-import { PromiseCapability } from "../pdf.ts-src/shared/util.js";
-import { IPDFLinkService } from "./interfaces.js";
+import { type PromiseCapability } from "../pdf.ts-src/shared/util.js";
+import { type IPDFLinkService } from "./interfaces.js";
 import { getCharacterType } from "./pdf_find_utils.js";
 import { EventBus, scrollIntoView } from "./ui_utils.js";
 /*81---------------------------------------------------------------------------*/

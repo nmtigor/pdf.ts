@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 import { Name } from "./primitives.js";
-import { warn } from "../shared/util.js";
+import { OPS, warn } from "../shared/util.js";
 import { ColorSpace } from "./colorspace.js";
 import { escapePDFName } from "./core_utils.js";
 import { StringStream } from "./stream.js";
@@ -47,7 +47,7 @@ class DefaultAppearanceEvaluator extends EvaluatorPreprocessor {
                 }
                 const { fn, args } = operation;
                 switch (fn | 0) {
-                    case 37 /* setFont */:
+                    case OPS.setFont:
                         const [fontName, fontSize] = args;
                         if (fontName instanceof Name) {
                             result.fontName = fontName.name;
@@ -56,13 +56,13 @@ class DefaultAppearanceEvaluator extends EvaluatorPreprocessor {
                             result.fontSize = fontSize;
                         }
                         break;
-                    case 59 /* setFillRGBColor */:
+                    case OPS.setFillRGBColor:
                         ColorSpace.singletons.rgb.getRgbItem(args, 0, result.fontColor, 0);
                         break;
-                    case 57 /* setFillGray */:
+                    case OPS.setFillGray:
                         ColorSpace.singletons.gray.getRgbItem(args, 0, result.fontColor, 0);
                         break;
-                    case 51 /* setFillColorSpace */:
+                    case OPS.setFillColorSpace:
                         ColorSpace.singletons.cmyk.getRgbItem(args, 0, result.fontColor, 0);
                         break;
                 }

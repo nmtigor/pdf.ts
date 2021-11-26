@@ -1,9 +1,9 @@
 import { AnnotationStorage } from "../pdf.ts-src/display/annotation_storage.js";
-import { IL10n, IPDFAnnotationLayerFactory, IPDFLinkService, MouseState } from "./interfaces.js";
+import { type IL10n, type IPDFAnnotationLayerFactory, type IPDFLinkService, type MouseState } from "./interfaces.js";
 import { DownloadManager } from "./download_manager.js";
 import { PageViewport } from '../pdf.ts-src/display/display_utils.js';
-import { AnnotIntent, PDFPageProxy } from '../pdf.ts-src/display/api.js';
-import { FieldObject } from "../pdf.ts-src/core/annotation.js";
+import { type AnnotIntent, PDFPageProxy } from '../pdf.ts-src/display/api.js';
+import { type FieldObject } from "../pdf.ts-src/core/annotation.js";
 interface AnnotationLayerBuilderOptions {
     pageDiv: HTMLDivElement;
     pdfPage: PDFPageProxy;

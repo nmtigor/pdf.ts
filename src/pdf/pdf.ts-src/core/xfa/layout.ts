@@ -26,8 +26,14 @@ import {
   $isThereMoreWidth,
 } from "./xfa_object.js";
 import { measureToString } from "./html_utils.js";
-import { rect_t } from "../../shared/util.js";
-import { AvailableSpace, XFAElData, XFAElObj, XFAExtra, XFAHTMLObj } from "./alias.js";
+import { type rect_t } from "../../shared/util.js";
+import { 
+  type AvailableSpace, 
+  type XFAElData, 
+  type XFAElObj, 
+  type XFAExtra, 
+  type XFAHTMLObj 
+} from "./alias.js";
 import { Draw, ExclGroup, Field, Subform } from "./template.js";
 /*81---------------------------------------------------------------------------*/
 

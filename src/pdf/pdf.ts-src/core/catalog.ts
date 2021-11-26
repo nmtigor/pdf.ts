@@ -24,7 +24,7 @@ import {
   isName,
   isRefsEqual,
   Name,
-  Obj,
+  type Obj,
   Ref,
   RefSet,
   RefSetCache,
@@ -36,7 +36,7 @@ import {
   toRomanNumerals,
 } from "./core_utils.js";
 import {
-  ActionEventType,
+  type ActionEventType,
   createPromiseCapability,
   createValidAbsoluteUrl,
   DocumentActionEventType,
@@ -45,7 +45,7 @@ import {
   isBool,
   objectSize,
   PermissionFlag,
-  rect_t,
+  type rect_t,
   shadow,
   stringToPDFString,
   stringToUTF8String,
@@ -59,13 +59,13 @@ import { MetadataParser } from "./metadata_parser.js";
 import { StructTreeRoot } from "./struct_tree.js";
 import { MessageHandler, Thread } from "../shared/message_handler.js";
 import { TranslatedFont } from "./evaluator.js";
-import { CMapData } from "../display/base_factory.js";
+import { type CMapData } from "../display/base_factory.js";
 import { BasePdfManager } from "./pdf_manager.js";
 import { XRef } from "./xref.js";
-import { OutlineNode } from "../display/api.js";
+import { type OutlineNode } from "../display/api.js";
 import { PageLayout, PageMode } from "../../../pdf/pdf.ts-web/ui_utils.js";
 import { BaseStream } from "./base_stream.js";
-import { ResetForm } from "../display/annotation_layer.js";
+import { type ResetForm } from "../display/annotation_layer.js";
 /*81---------------------------------------------------------------------------*/
 
 type DestPage = Ref | number | null;

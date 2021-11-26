@@ -19,16 +19,16 @@
 
 import { assert } from "../../../lib/util/trace.js";
 import { 
-  ActionEventType,
-  ActionEventTypesType,
+  type ActionEventType,
+  type ActionEventTypesType,
   BaseException, 
   objectSize, 
   stringToPDFString,
   warn, 
 } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
-import { CssFontInfo } from "./document.js";
-import { Dict, isName, ObjNoRef, Obj, Ref, RefSet } from "./primitives.js";
+import { type CssFontInfo } from "./document.js";
+import { Dict, isName, type ObjNoRef, type Obj, Ref, RefSet } from "./primitives.js";
 import { XRef } from "./xref.js";
 /*81---------------------------------------------------------------------------*/
 

@@ -91,23 +91,23 @@ import {
   setMinMaxDimensions,
   setPara,
   toStyle,
-  XFALayoutMode,
+  type XFALayoutMode,
 } from "./html_utils.js";
 import {
-  AvailableSpace,
-  XFAHTMLAttrs,
-  XFASVGAttrs,
-  XFAAttrs,
-  XFAFontBase,
-  XFAElData,
-  XFAHTMLObj,
-  XFAStyleData,
-  XFAValue,
-  XFASVGObj,
-  XFAIds,
-  XFAElObjBase,
-  XFAElObj,
-  XFAExtra,
+  type AvailableSpace,
+  type XFAHTMLAttrs,
+  type XFASVGAttrs,
+  type XFAAttrs,
+  type XFAFontBase,
+  type XFAElData,
+  type XFAHTMLObj,
+  type XFAStyleData,
+  type XFAValue,
+  type XFASVGObj,
+  type XFAIds,
+  type XFAElObjBase,
+  type XFAElObj,
+  type XFAExtra,
 } from "./alias.js";
 import {
   getBBox,
@@ -119,10 +119,10 @@ import {
   getRatio,
   getRelevant,
   getStringOption,
-  XFAColor,
+  type XFAColor,
   HTMLResult,
 } from "./utils.js";
-import { rect_t, stringToBytes, Util, warn } from "../../shared/util.js";
+import { type rect_t, stringToBytes, Util, warn } from "../../shared/util.js";
 import { getMetrics } from "./fonts.js";
 import { searchNode } from "./som.js";
 import { Builder } from "./builder.js";

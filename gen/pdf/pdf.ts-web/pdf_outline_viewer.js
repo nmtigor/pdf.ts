@@ -19,6 +19,7 @@ import { isObjectLike } from "../../lib/jslang.js";
 import { html } from "../../lib/dom.js";
 import { createPromiseCapability } from "../pdf.ts-src/pdf.js";
 import { BaseTreeViewer } from "./base_tree_viewer.js";
+import { SidebarView } from "./ui_utils.js";
 export class PDFOutlineViewer extends BaseTreeViewer {
     #outline;
     #pageNumberToDestHashCapability;
@@ -182,7 +183,7 @@ export class PDFOutlineViewer extends BaseTreeViewer {
         if (!pageNumberToDestHash)
             return;
         this._updateCurrentTreeItem(/* treeItem = */ null);
-        if (this._sidebarView !== 2 /* OUTLINE */) {
+        if (this._sidebarView !== SidebarView.OUTLINE) {
             return; // The outline view is no longer visible, hence do nothing.
         }
         // When there is no destination on the current page, always check the

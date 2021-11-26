@@ -1,7 +1,7 @@
 import { HttpStatusCode } from "../../../lib/HttpStatusCode.js";
-import { IPDFStream, IPDFStreamRangeReader, IPDFStreamReader, ReadValue } from "../interfaces.js";
+import { type IPDFStream, type IPDFStreamRangeReader, type IPDFStreamReader, type ReadValue } from "../interfaces.js";
 import { AbortException, MissingPDFException, UnexpectedResponseException } from "../shared/util.js";
-import { DocumentInitParms } from "./api.js";
+import { type DocumentInitParms } from "./api.js";
 interface Listeners {
     onHeadersReceived?: (() => void) | undefined;
     onDone?: ((data: {

@@ -2,7 +2,7 @@
  * pdf_find_utils_test
 ** ------------------- */
 import { css_1, css_2 } from "../../test/alias.js";
-import { getCharacterType } from "./pdf_find_utils.js";
+import { CharacterType, getCharacterType } from "./pdf_find_utils.js";
 const strttime = performance.now();
 /*81---------------------------------------------------------------------------*/
 console.log("%c>>>>>>> test getCharacterType >>>>>>>", `color:${css_1}`);
@@ -10,30 +10,30 @@ console.log("%c>>>>>>> test getCharacterType >>>>>>>", `color:${css_1}`);
     console.log("it gets expected character types...");
     {
         const characters = {
-            A: 1 /* ALPHA_LETTER */,
-            a: 1 /* ALPHA_LETTER */,
-            0: 1 /* ALPHA_LETTER */,
-            5: 1 /* ALPHA_LETTER */,
-            "\xC4": 1 /* ALPHA_LETTER */,
-            "\xE4": 1 /* ALPHA_LETTER */,
-            _: 1 /* ALPHA_LETTER */,
-            " ": 0 /* SPACE */,
-            "\t": 0 /* SPACE */,
-            "\r": 0 /* SPACE */,
-            "\n": 0 /* SPACE */,
-            "\xA0": 0 /* SPACE */,
-            "-": 2 /* PUNCT */,
-            ",": 2 /* PUNCT */,
-            ".": 2 /* PUNCT */,
-            ";": 2 /* PUNCT */,
-            ":": 2 /* PUNCT */,
-            "\u2122": 1 /* ALPHA_LETTER */,
-            "\u0E25": 7 /* THAI_LETTER */,
-            "\u4000": 3 /* HAN_LETTER */,
-            "\uF950": 3 /* HAN_LETTER */,
-            "\u30C0": 4 /* KATAKANA_LETTER */,
-            "\u3050": 5 /* HIRAGANA_LETTER */,
-            "\uFF80": 6 /* HALFWIDTH_KATAKANA_LETTER */,
+            A: CharacterType.ALPHA_LETTER,
+            a: CharacterType.ALPHA_LETTER,
+            0: CharacterType.ALPHA_LETTER,
+            5: CharacterType.ALPHA_LETTER,
+            "\xC4": CharacterType.ALPHA_LETTER,
+            "\xE4": CharacterType.ALPHA_LETTER,
+            _: CharacterType.ALPHA_LETTER,
+            " ": CharacterType.SPACE,
+            "\t": CharacterType.SPACE,
+            "\r": CharacterType.SPACE,
+            "\n": CharacterType.SPACE,
+            "\xA0": CharacterType.SPACE,
+            "-": CharacterType.PUNCT,
+            ",": CharacterType.PUNCT,
+            ".": CharacterType.PUNCT,
+            ";": CharacterType.PUNCT,
+            ":": CharacterType.PUNCT,
+            "\u2122": CharacterType.ALPHA_LETTER,
+            "\u0E25": CharacterType.THAI_LETTER,
+            "\u4000": CharacterType.HAN_LETTER,
+            "\uF950": CharacterType.HAN_LETTER,
+            "\u30C0": CharacterType.KATAKANA_LETTER,
+            "\u3050": CharacterType.HIRAGANA_LETTER,
+            "\uFF80": CharacterType.HALFWIDTH_KATAKANA_LETTER,
         };
         for (const character in characters) {
             const charCode = character.charCodeAt(0);

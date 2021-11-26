@@ -1,4 +1,4 @@
-import { EnumValueMappee, EnumValueMappeeWithNull, EnumValueMappeeWithUndefined, EnumValueMappeeWithNullAndUndefined } from "./EnumValueMappee.js";
+import { EnumValueMappee, EnumValueMappeeWithNull, EnumValueMappeeWithUndefined, type EnumValueMappeeWithNullAndUndefined } from "./EnumValueMappee.js";
 /**
  * The first step to mapping the value of an enum or string/number literal type.
  * This method creates a "mappee" wrapper object, whose "with()" method must be

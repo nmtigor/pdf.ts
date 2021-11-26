@@ -19,16 +19,21 @@
 
 import { HttpStatusCode } from "../../../lib/HttpStatusCode.js";
 import { assert } from "../../../lib/util/trace.js";
-import { IPDFStream, IPDFStreamRangeReader, IPDFStreamReader, ReadValue } from "../interfaces.js";
+import { 
+  type IPDFStream, 
+  type IPDFStreamRangeReader, 
+  type IPDFStreamReader, 
+  type ReadValue 
+} from "../interfaces.js";
 import {
   AbortException,
   createPromiseCapability,
   MissingPDFException,
-  PromiseCapability,
+  type PromiseCapability,
   stringToBytes,
   UnexpectedResponseException,
 } from "../shared/util.js";
-import { DocumentInitParms } from "./api.js";
+import { type DocumentInitParms } from "./api.js";
 import {
   createResponseStatusError,
   extractFilenameFromHeader,

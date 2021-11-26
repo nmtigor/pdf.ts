@@ -20,7 +20,7 @@
 import { BaseException, shadow } from "../shared/util.js";
 import { log2, readInt8, readUint16, readUint32 } from "./core_utils.js";
 import { ArithmeticDecoder } from "./arithmetic_decoder.js";
-import { CCITTFaxDecoder, CCITTFaxDecoderOptions } from "./ccitt.js";
+import { CCITTFaxDecoder, type CCITTFaxDecoderOptions } from "./ccitt.js";
 /*81---------------------------------------------------------------------------*/
 
 class Jbig2Error extends BaseException 

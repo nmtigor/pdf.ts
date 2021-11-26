@@ -8,6 +8,7 @@ import { CMAP_PARAMS, createIdFactory, STANDARD_FONT_DATA_URL, XRefMock } from "
 import { DefaultCMapReaderFactory, DefaultStandardFontDataFactory } from "../display/api.js";
 import { PartialEvaluator } from "./evaluator.js";
 import { AnnotationFactory, getQuadPoints } from "./annotation.js";
+import { AnnotationType } from "../shared/util.js";
 const strttime = performance.now();
 /*81---------------------------------------------------------------------------*/
 class PDFManagerMock {
@@ -84,7 +85,7 @@ console.log("%c>>>>>>> test AnnotationFactory >>>>>>>", `color:${css_1}`);
         const annotationRef = Ref.get(10, 0);
         const xref = new XRefMock([{ ref: annotationRef, data: annotationDict }]);
         const { data } = (await AnnotationFactory.create(xref, annotationRef, pdfManagerMock, idFactoryMock));
-        console.assert(data.annotationType === 2 /* LINK */);
+        console.assert(data.annotationType === AnnotationType.LINK);
         console.assert(data.id === "10R");
     }
     console.log("it should handle, and get fallback IDs for, annotations that are not indirect objects (issue 7569)...");
@@ -95,11 +96,11 @@ console.log("%c>>>>>>> test AnnotationFactory >>>>>>>", `color:${css_1}`);
         const xref = new XRefMock();
         const idFactory = createIdFactory(/* pageIndex = */ 0);
         const annotation1 = AnnotationFactory.create(xref, annotationDict, pdfManagerMock, idFactory).then(({ data }) => {
-            console.assert(data.annotationType === 2 /* LINK */);
+            console.assert(data.annotationType === AnnotationType.LINK);
             console.assert(data.id === "annot_p0_1");
         });
         const annotation2 = AnnotationFactory.create(xref, annotationDict, pdfManagerMock, idFactory).then(({ data }) => {
-            console.assert(data.annotationType === 2 /* LINK */);
+            console.assert(data.annotationType === AnnotationType.LINK);
             console.assert(data.id === "annot_p0_2");
         });
         await Promise.all([annotation1, annotation2]);

@@ -1,4 +1,4 @@
-import { Thread, GetDocRequestData, MessageHandler } from "../shared/message_handler.js";
+import { Thread, type GetDocRequestData, MessageHandler } from "../shared/message_handler.js";
 import { Ref } from "./primitives.js";
 export interface IWorker {
     postMessage(message: any, transfer: Transferable[]): void;

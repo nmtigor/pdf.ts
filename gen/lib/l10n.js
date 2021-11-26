@@ -8,7 +8,13 @@ var Ns_webL10n;
     const gTextProp = "textContent";
     let gLanguage = "";
     const gMacros = Object.create(null);
-    let gReadyState = 0 /* loading */;
+    let ReadyState;
+    (function (ReadyState) {
+        ReadyState[ReadyState["loading"] = 0] = "loading";
+        ReadyState[ReadyState["complete"] = 1] = "complete";
+        ReadyState[ReadyState["interactive"] = 2] = "interactive";
+    })(ReadyState || (ReadyState = {}));
+    let gReadyState = ReadyState.loading;
     /**
      * Synchronously loading l10n resources significantly minimizes flickering
      * from displaying the app with non-localized strings and then updating the
@@ -292,7 +298,7 @@ var Ns_webL10n;
                 console.log('no resource to load, early way out');
             }
             // early way out
-            gReadyState = 1 /* complete */;
+            gReadyState = ReadyState.complete;
             // // #if DEV && INFO
             //   global.outdent;
             // // #endif
@@ -304,7 +310,7 @@ var Ns_webL10n;
             gResourceCount++;
             if (gResourceCount >= langCount) {
                 callback();
-                gReadyState = 1 /* complete */;
+                gReadyState = ReadyState.complete;
             }
         };
         for (let i = 0; i < langCount; i++) {
@@ -966,8 +972,8 @@ var Ns_webL10n;
             if (!callback) {
                 return;
             }
-            else if (gReadyState === 1 /* complete */
-                || gReadyState === 2 /* interactive */) {
+            else if (gReadyState === ReadyState.complete
+                || gReadyState === ReadyState.interactive) {
                 window.setTimeout(function () {
                     callback();
                 });

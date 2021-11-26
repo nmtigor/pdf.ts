@@ -1,6 +1,6 @@
 import { EventBus } from "./ui_utils.js";
 import { PDFThumbnailView } from "./pdf_thumbnail_view.js";
-import { IL10n, IPDFLinkService } from "./interfaces.js";
+import { type IL10n, type IPDFLinkService } from "./interfaces.js";
 import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
 import { PDFDocumentProxy, PDFPageProxy } from '../pdf.ts-src/display/api.js';
 import { OptionalContentConfig } from '../pdf.ts-src/display/optional_content_config.js';

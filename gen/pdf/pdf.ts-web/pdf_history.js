@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 import { isObjectLike } from "../../lib/jslang.js";
-import { isValidRotation, parseQueryString, waitOnEventOrTimeout, } from "./ui_utils.js";
+import { isValidRotation, parseQueryString, PresentationModeState, waitOnEventOrTimeout, } from "./ui_utils.js";
 /*81---------------------------------------------------------------------------*/
 // Heuristic value used when force-resetting `this.#blockHashChange`.
 const HASH_CHANGE_TIMEOUT = 1000; // milliseconds
@@ -57,7 +57,7 @@ export class PDFHistory {
         // 'pagesinit' event, by registering the listeners immediately.
         this.eventBus._on("presentationmodechanged", evt => {
             this._isViewerInPresentationMode =
-                evt.state !== 1 /* NORMAL */;
+                evt.state !== PresentationModeState.NORMAL;
         });
         this.eventBus._on("pagesinit", () => {
             this._isPagesLoaded = false;

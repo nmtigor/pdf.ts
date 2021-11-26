@@ -1,5 +1,5 @@
-import { XFAElObj } from "../core/xfa/alias.js";
-import { TextContent } from "./api.js";
+import { type XFAElObj } from "../core/xfa/alias.js";
+import { type TextContent } from "./api.js";
 export declare abstract class XfaText {
     /**
      * Walk an XFA tree and create an array of text nodes that is compatible

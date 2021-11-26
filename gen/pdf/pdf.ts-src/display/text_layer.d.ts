@@ -1,5 +1,5 @@
-import { matrix_t } from "../shared/util.js";
-import { TextContent } from "./api.js";
+import { type matrix_t } from "../shared/util.js";
+import { type TextContent } from "./api.js";
 import { PageViewport } from "./display_utils.js";
 /**
  * Text layer render parameters.

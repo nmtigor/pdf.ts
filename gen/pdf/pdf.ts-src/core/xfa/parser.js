@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 import { $acceptWhitespace, $clean, $content, $finalize, $globalData, $isCDATAXml, $nsAttributes, $onChild, $onText, $setId, } from "./xfa_object.js";
-import { XMLParserBase } from "../xml_parser.js";
+import { XMLParserBase, XMLParserErrorCode } from "../xml_parser.js";
 import { Builder } from "./builder.js";
 import { warn } from "../../shared/util.js";
 /*81---------------------------------------------------------------------------*/
@@ -28,7 +28,7 @@ export class XFAParser extends XMLParserBase {
     };
     _ids = new Map();
     _current;
-    _errorCode = 0 /* NoError */;
+    _errorCode = XMLParserErrorCode.NoError;
     _whiteRegex = /^\s+$/;
     _nbsps = /\xa0+/g;
     _richText;
@@ -40,7 +40,7 @@ export class XFAParser extends XMLParserBase {
     }
     parse(data) {
         this.parseXml(data);
-        if (this._errorCode !== 0 /* NoError */) {
+        if (this._errorCode !== XMLParserErrorCode.NoError) {
             return undefined;
         }
         this._current[$finalize]();

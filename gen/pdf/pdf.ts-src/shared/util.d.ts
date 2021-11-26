@@ -1,4 +1,4 @@
-import { TupleOf } from "../../../lib/alias.js";
+import { type TupleOf } from "../../../lib/alias.js";
 import { HttpStatusCode } from "../../../lib/HttpStatusCode.js";
 export declare const IDENTITY_MATRIX: matrix_t;
 export declare const FONT_IDENTITY_MATRIX: matrix_t;

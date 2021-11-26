@@ -1,6 +1,6 @@
-import { IL10n } from "./interfaces.js";
+import { type IL10n } from "./interfaces.js";
 import { EventBus } from "./ui_utils.js";
-import { ViewerConfiguration } from "./viewer.js";
+import { type ViewerConfiguration } from "./viewer.js";
 export declare class PDFSidebarResizer {
     #private;
     eventBus: EventBus;

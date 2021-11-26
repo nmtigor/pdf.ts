@@ -18,7 +18,7 @@
 /** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
 import { isObjectLike } from "../../lib/jslang.js";
 import { parseQueryString } from "./ui_utils.js";
-import { addLinkAttributes } from "../pdf.ts-src/display/display_utils.js";
+import { addLinkAttributes, LinkTarget } from "../pdf.ts-src/display/display_utils.js";
 /**
  * Performs navigation functions inside PDF, such as opening specified page,
  * or destination.
@@ -171,7 +171,7 @@ export class PDFLinkService {
     addLinkAttributes(link, url, newWindow = false) {
         addLinkAttributes(link, {
             url,
-            target: newWindow ? 2 /* BLANK */ : this.externalLinkTarget,
+            target: newWindow ? LinkTarget.BLANK : this.externalLinkTarget,
             rel: this.externalLinkRel,
             enabled: this.externalLinkEnabled,
         });

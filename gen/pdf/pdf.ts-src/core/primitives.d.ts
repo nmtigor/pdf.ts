@@ -1,4 +1,4 @@
-import { TypedArray } from "../../../lib/alias.js";
+import { type TypedArray } from "../../../lib/alias.js";
 import { BaseStream } from "./base_stream.js";
 import { TranslatedFont } from "./evaluator.js";
 import { XRef } from "./xref.js";

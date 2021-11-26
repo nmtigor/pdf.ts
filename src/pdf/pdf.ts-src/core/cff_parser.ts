@@ -17,13 +17,13 @@
  * limitations under the License.
  */
 
-import { Constructor } from "../../../lib/alias.js";
+import { type Constructor } from "../../../lib/alias.js";
 import {
   bytesToString,
   FormatError,
   info,
-  matrix_t,
-  rect_t,
+  type matrix_t,
+  type rect_t,
   shadow,
   stringToBytes,
   Util,
@@ -36,7 +36,7 @@ import {
   ISOAdobeCharset,
 } from "./charsets.js";
 import { ExpertEncoding, StandardEncoding } from "./encodings.js";
-import { FontProps } from "./evaluator.js";
+import { type FontProps } from "./evaluator.js";
 /*81---------------------------------------------------------------------------*/
 
 // Maximum subroutine call depth of type 2 chartrings. Matches OTS.

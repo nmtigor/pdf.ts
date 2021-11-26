@@ -1,10 +1,10 @@
-import { XFAData } from "../document.js";
+import { type XFAData } from "../document.js";
 import { DataHandler } from "./data.js";
-import { XFAHTMLObj } from "./alias.js";
+import { type XFAHTMLObj } from "./alias.js";
 import { HTMLResult } from "./utils.js";
-import { rect_t } from "../../shared/util.js";
+import { type rect_t } from "../../shared/util.js";
 import { ErrorFont, Font } from "../fonts.js";
-import { AnnotStorageRecord } from "../../display/annotation_layer.js";
+import { type AnnotStorageRecord } from "../../display/annotation_layer.js";
 import { Subform, Template } from "./template.js";
 export declare class XFAFactory {
     root: import("./xfa_object.js").XFAObject | undefined;

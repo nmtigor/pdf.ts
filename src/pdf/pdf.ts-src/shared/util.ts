@@ -19,7 +19,7 @@
 
 import { assert, warn as warn_0 } from "../../../lib/util/trace.js";
 import { isObjectLike } from "../../../lib/jslang.js";
-import { TupleOf } from "../../../lib/alias.js";
+import { type TupleOf } from "../../../lib/alias.js";
 import { HttpStatusCode } from "../../../lib/HttpStatusCode.js";
 /*81---------------------------------------------------------------------------*/
 

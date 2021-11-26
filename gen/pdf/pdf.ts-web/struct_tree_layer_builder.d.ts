@@ -1,6 +1,6 @@
-import { StructTree } from "../pdf.ts-src/core/struct_tree.js";
+import { type StructTree } from "../pdf.ts-src/core/struct_tree.js";
 import { PDFPageProxy } from "../pdf.ts-src/display/api.js";
-import { IPDFStructTreeLayerFactory } from "./interfaces.js";
+import { type IPDFStructTreeLayerFactory } from "./interfaces.js";
 interface StructTreeLayerBuilderOptions {
     pdfPage: PDFPageProxy;
 }

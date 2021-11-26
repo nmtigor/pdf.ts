@@ -1,4 +1,4 @@
-import { SerializedMetadata } from "../core/metadata_parser.js";
+import { type SerializedMetadata } from "../core/metadata_parser.js";
 export declare class Metadata {
     #private;
     getRaw(): string;

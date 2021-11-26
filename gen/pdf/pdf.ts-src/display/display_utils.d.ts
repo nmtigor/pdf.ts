@@ -1,5 +1,5 @@
-import { XFAElObj } from "../core/xfa/alias.js";
-import { BaseException, CMapCompressionType, matrix_t, point_t, rect_t } from "../shared/util.js";
+import { type XFAElObj } from "../core/xfa/alias.js";
+import { BaseException, CMapCompressionType, type matrix_t, type point_t, type rect_t } from "../shared/util.js";
 import { BaseCanvasFactory, BaseCMapReaderFactory, BaseStandardFontDataFactory, BaseSVGFactory } from "./base_factory.js";
 export declare const DEFAULT_LINK_REL = "noopener noreferrer nofollow";
 export declare const PixelsPerInch: {

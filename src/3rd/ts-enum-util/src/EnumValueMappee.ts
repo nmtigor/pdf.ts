@@ -1,10 +1,10 @@
 import { createUnhandledEntryError } from "./createUnhandledEntryError.js";
 import {
-    EnumValueMapperCore,
-    EnumValueMapper,
-    EnumValueMapperWithNull,
-    EnumValueMapperWithUndefined,
-    EnumValueMapperWithNullAndUndefined
+    type EnumValueMapperCore,
+    type EnumValueMapper,
+    type EnumValueMapperWithNull,
+    type EnumValueMapperWithUndefined,
+    type EnumValueMapperWithNullAndUndefined
 } from "./EnumValueMapper.js";
 import {
     handleUnexpected,

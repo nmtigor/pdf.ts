@@ -4,9 +4,10 @@
 import { css_1, css_2 } from "../../../test/alias.js";
 import "../../../lib/jslang.js";
 import { buildGetDocumentParams, DefaultFileReaderFactory, TEST_PDFS_PATH } from "../../test_utils.js";
-import { DefaultCanvasFactory, getDocument, PDFDocumentLoadingTask, PDFDocumentProxy, PDFPageProxy, PDFWorker } from "./api.js";
+import { DefaultCanvasFactory, getDocument, PDFDocumentLoadingTask, PDFDocumentProxy, PDFPageProxy, PDFWorker, } from "./api.js";
 import { GlobalWorkerOptions } from "./worker_options.js";
 import { createPromiseCapability, PermissionFlag } from "../../pdf.ts-src/shared/util.js";
+import { PageLayout, PageMode } from "../../pdf.ts-web/ui_utils.js";
 import { $enum } from "../../../3rd/ts-enum-util/src/$enum.js";
 import { Metadata } from "./metadata.js";
 const strttime = performance.now();
@@ -603,20 +604,20 @@ console.log("%c>>>>>>> test PDFDocument >>>>>>>", `color:${css_1}`);
     console.log("it gets non-default page layout...");
     {
         const pageLayout = await pdfDocument.getPageLayout();
-        console.assert(pageLayout === 1 /* SinglePage */);
+        console.assert(pageLayout === PageLayout.SinglePage);
     }
     console.log("it gets default page mode...");
     {
         const loadingTask = getDocument(buildGetDocumentParams("tracemonkey.pdf"));
         const pdfDoc = await loadingTask.promise;
         const pageMode = await pdfDoc.getPageMode();
-        console.assert(pageMode === 1 /* UseNone */);
+        console.assert(pageMode === PageMode.UseNone);
         await loadingTask.destroy();
     }
     console.log("it gets non-default page mode...");
     {
         const pageMode = await pdfDocument.getPageMode();
-        console.assert(pageMode === 2 /* UseOutlines */);
+        console.assert(pageMode === PageMode.UseOutlines);
     }
     console.log("it gets default viewer preferences...");
     {

@@ -17,16 +17,16 @@
  * limitations under the License.
  */
 
-import { ConfigNamespace, XFANsConfig } from "./config.js";
-import { ConnectionSetNamespace, XFANsConnectionSet } from "./connection_set.js";
-import { DatasetsNamespace, XFANsDatasets } from "./datasets.js";
-import { LocaleSetNamespace, XFANsLocaleSet } from "./locale_set.js";
-import { XFANsName } from "./namespaces.js";
-import { SignatureNamespace, XFANsSignature } from "./signature.js";
-import { StylesheetNamespace, XFANsStylesheet } from "./stylesheet.js";
-import { TemplateNamespace, XFANsTemplate } from "./template.js";
-import { XdpNamespace, XFANsXdp } from "./xdp.js";
-import { XFANsXhtml, XhtmlNamespace } from "./xhtml.js";
+import { ConfigNamespace, type XFANsConfig } from "./config.js";
+import { ConnectionSetNamespace, type XFANsConnectionSet } from "./connection_set.js";
+import { DatasetsNamespace, type XFANsDatasets } from "./datasets.js";
+import { LocaleSetNamespace, type XFANsLocaleSet } from "./locale_set.js";
+import { type XFANsName } from "./namespaces.js";
+import { SignatureNamespace, type XFANsSignature } from "./signature.js";
+import { StylesheetNamespace, type XFANsStylesheet } from "./stylesheet.js";
+import { TemplateNamespace, type XFANsTemplate } from "./template.js";
+import { XdpNamespace, type XFANsXdp } from "./xdp.js";
+import { type XFANsXhtml, XhtmlNamespace } from "./xhtml.js";
 /*81---------------------------------------------------------------------------*/
 
 export type XFAKnownNs =

@@ -20,6 +20,35 @@ import { isObjectLike } from "../../../lib/jslang.js";
 /*81---------------------------------------------------------------------------*/
 export const IDENTITY_MATRIX = [1, 0, 0, 1, 0, 0];
 export const FONT_IDENTITY_MATRIX = [0.001, 0, 0, 0.001, 0, 0];
+/**
+ * Refer to the `WorkerTransport.getRenderingIntent`-method in the API, to see
+ * how these flags are being used:
+ *  - ANY, DISPLAY, and PRINT are the normal rendering intents, note the
+ *    `PDFPageProxy.{render, getOperatorList, getAnnotations}`-methods.
+ *  - ANNOTATIONS_FORMS, ANNOTATIONS_STORAGE, ANNOTATIONS_DISABLE control which
+ *    annotations are rendered onto the canvas (i.e. by being included in the
+ *    operatorList), note the `PDFPageProxy.{render, getOperatorList}`-methods
+ *    and their `annotationMode`-option.
+ *  - OPLIST is used with the `PDFPageProxy.getOperatorList`-method, note the
+ *    `OperatorList`-constructor (on the worker-thread).
+ */
+export var RenderingIntentFlag;
+(function (RenderingIntentFlag) {
+    RenderingIntentFlag[RenderingIntentFlag["ANY"] = 1] = "ANY";
+    RenderingIntentFlag[RenderingIntentFlag["DISPLAY"] = 2] = "DISPLAY";
+    RenderingIntentFlag[RenderingIntentFlag["PRINT"] = 4] = "PRINT";
+    RenderingIntentFlag[RenderingIntentFlag["ANNOTATIONS_FORMS"] = 16] = "ANNOTATIONS_FORMS";
+    RenderingIntentFlag[RenderingIntentFlag["ANNOTATIONS_STORAGE"] = 32] = "ANNOTATIONS_STORAGE";
+    RenderingIntentFlag[RenderingIntentFlag["ANNOTATIONS_DISABLE"] = 64] = "ANNOTATIONS_DISABLE";
+    RenderingIntentFlag[RenderingIntentFlag["OPLIST"] = 256] = "OPLIST";
+})(RenderingIntentFlag || (RenderingIntentFlag = {}));
+export var AnnotationMode;
+(function (AnnotationMode) {
+    AnnotationMode[AnnotationMode["DISABLE"] = 0] = "DISABLE";
+    AnnotationMode[AnnotationMode["ENABLE"] = 1] = "ENABLE";
+    AnnotationMode[AnnotationMode["ENABLE_FORMS"] = 2] = "ENABLE_FORMS";
+    AnnotationMode[AnnotationMode["ENABLE_STORAGE"] = 3] = "ENABLE_STORAGE";
+})(AnnotationMode || (AnnotationMode = {}));
 // Permission flags from Table 22, Section 7.6.3.2 of the PDF specification.
 export var PermissionFlag;
 (function (PermissionFlag) {
@@ -32,9 +61,124 @@ export var PermissionFlag;
     PermissionFlag[PermissionFlag["ASSEMBLE"] = 1024] = "ASSEMBLE";
     PermissionFlag[PermissionFlag["PRINT_HIGH_QUALITY"] = 2048] = "PRINT_HIGH_QUALITY";
 })(PermissionFlag || (PermissionFlag = {}));
+export var TextRenderingMode;
+(function (TextRenderingMode) {
+    TextRenderingMode[TextRenderingMode["FILL"] = 0] = "FILL";
+    TextRenderingMode[TextRenderingMode["STROKE"] = 1] = "STROKE";
+    TextRenderingMode[TextRenderingMode["FILL_STROKE"] = 2] = "FILL_STROKE";
+    TextRenderingMode[TextRenderingMode["INVISIBLE"] = 3] = "INVISIBLE";
+    TextRenderingMode[TextRenderingMode["FILL_ADD_TO_PATH"] = 4] = "FILL_ADD_TO_PATH";
+    TextRenderingMode[TextRenderingMode["STROKE_ADD_TO_PATH"] = 5] = "STROKE_ADD_TO_PATH";
+    TextRenderingMode[TextRenderingMode["FILL_STROKE_ADD_TO_PATH"] = 6] = "FILL_STROKE_ADD_TO_PATH";
+    TextRenderingMode[TextRenderingMode["ADD_TO_PATH"] = 7] = "ADD_TO_PATH";
+    TextRenderingMode[TextRenderingMode["FILL_STROKE_MASK"] = 3] = "FILL_STROKE_MASK";
+    TextRenderingMode[TextRenderingMode["ADD_TO_PATH_FLAG"] = 4] = "ADD_TO_PATH_FLAG";
+})(TextRenderingMode || (TextRenderingMode = {}));
+export var ImageKind;
+(function (ImageKind) {
+    ImageKind[ImageKind["GRAYSCALE_1BPP"] = 1] = "GRAYSCALE_1BPP";
+    ImageKind[ImageKind["RGB_24BPP"] = 2] = "RGB_24BPP";
+    ImageKind[ImageKind["RGBA_32BPP"] = 3] = "RGBA_32BPP";
+})(ImageKind || (ImageKind = {}));
+export var AnnotationType;
+(function (AnnotationType) {
+    AnnotationType[AnnotationType["TEXT"] = 1] = "TEXT";
+    AnnotationType[AnnotationType["LINK"] = 2] = "LINK";
+    AnnotationType[AnnotationType["FREETEXT"] = 3] = "FREETEXT";
+    AnnotationType[AnnotationType["LINE"] = 4] = "LINE";
+    AnnotationType[AnnotationType["SQUARE"] = 5] = "SQUARE";
+    AnnotationType[AnnotationType["CIRCLE"] = 6] = "CIRCLE";
+    AnnotationType[AnnotationType["POLYGON"] = 7] = "POLYGON";
+    AnnotationType[AnnotationType["POLYLINE"] = 8] = "POLYLINE";
+    AnnotationType[AnnotationType["HIGHLIGHT"] = 9] = "HIGHLIGHT";
+    AnnotationType[AnnotationType["UNDERLINE"] = 10] = "UNDERLINE";
+    AnnotationType[AnnotationType["SQUIGGLY"] = 11] = "SQUIGGLY";
+    AnnotationType[AnnotationType["STRIKEOUT"] = 12] = "STRIKEOUT";
+    AnnotationType[AnnotationType["STAMP"] = 13] = "STAMP";
+    AnnotationType[AnnotationType["CARET"] = 14] = "CARET";
+    AnnotationType[AnnotationType["INK"] = 15] = "INK";
+    AnnotationType[AnnotationType["POPUP"] = 16] = "POPUP";
+    AnnotationType[AnnotationType["FILEATTACHMENT"] = 17] = "FILEATTACHMENT";
+    AnnotationType[AnnotationType["SOUND"] = 18] = "SOUND";
+    AnnotationType[AnnotationType["MOVIE"] = 19] = "MOVIE";
+    AnnotationType[AnnotationType["WIDGET"] = 20] = "WIDGET";
+    AnnotationType[AnnotationType["SCREEN"] = 21] = "SCREEN";
+    AnnotationType[AnnotationType["PRINTERMARK"] = 22] = "PRINTERMARK";
+    AnnotationType[AnnotationType["TRAPNET"] = 23] = "TRAPNET";
+    AnnotationType[AnnotationType["WATERMARK"] = 24] = "WATERMARK";
+    AnnotationType[AnnotationType["THREED"] = 25] = "THREED";
+    AnnotationType[AnnotationType["REDACT"] = 26] = "REDACT";
+})(AnnotationType || (AnnotationType = {}));
 ;
+// const AnnotationStateModelType = {
+//   MARKED: "Marked",
+//   REVIEW: "Review",
+// };
+// const AnnotationMarkedState = {
+//   MARKED: "Marked",
+//   UNMARKED: "Unmarked",
+// };
+// const AnnotationReviewState = {
+//   ACCEPTED: "Accepted",
+//   REJECTED: "Rejected",
+//   CANCELLED: "Cancelled",
+//   COMPLETED: "Completed",
+//   NONE: "None",
+// };
+export var AnnotationReplyType;
+(function (AnnotationReplyType) {
+    AnnotationReplyType["GROUP"] = "Group";
+    AnnotationReplyType["REPLY"] = "R";
+})(AnnotationReplyType || (AnnotationReplyType = {}));
 ;
+// PDF 1.7 Table 165
+export var AnnotationFlag;
+(function (AnnotationFlag) {
+    AnnotationFlag[AnnotationFlag["INVISIBLE"] = 1] = "INVISIBLE";
+    AnnotationFlag[AnnotationFlag["HIDDEN"] = 2] = "HIDDEN";
+    AnnotationFlag[AnnotationFlag["PRINT"] = 4] = "PRINT";
+    AnnotationFlag[AnnotationFlag["NOZOOM"] = 8] = "NOZOOM";
+    AnnotationFlag[AnnotationFlag["NOROTATE"] = 16] = "NOROTATE";
+    AnnotationFlag[AnnotationFlag["NOVIEW"] = 32] = "NOVIEW";
+    AnnotationFlag[AnnotationFlag["READONLY"] = 64] = "READONLY";
+    AnnotationFlag[AnnotationFlag["LOCKED"] = 128] = "LOCKED";
+    AnnotationFlag[AnnotationFlag["TOGGLENOVIEW"] = 256] = "TOGGLENOVIEW";
+    AnnotationFlag[AnnotationFlag["LOCKEDCONTENTS"] = 512] = "LOCKEDCONTENTS";
+})(AnnotationFlag || (AnnotationFlag = {}));
 ;
+export var AnnotationFieldFlag;
+(function (AnnotationFieldFlag) {
+    AnnotationFieldFlag[AnnotationFieldFlag["READONLY"] = 1] = "READONLY";
+    AnnotationFieldFlag[AnnotationFieldFlag["REQUIRED"] = 2] = "REQUIRED";
+    AnnotationFieldFlag[AnnotationFieldFlag["NOEXPORT"] = 4] = "NOEXPORT";
+    AnnotationFieldFlag[AnnotationFieldFlag["MULTILINE"] = 4096] = "MULTILINE";
+    AnnotationFieldFlag[AnnotationFieldFlag["PASSWORD"] = 8192] = "PASSWORD";
+    AnnotationFieldFlag[AnnotationFieldFlag["NOTOGGLETOOFF"] = 16384] = "NOTOGGLETOOFF";
+    AnnotationFieldFlag[AnnotationFieldFlag["RADIO"] = 32768] = "RADIO";
+    AnnotationFieldFlag[AnnotationFieldFlag["PUSHBUTTON"] = 65536] = "PUSHBUTTON";
+    AnnotationFieldFlag[AnnotationFieldFlag["COMBO"] = 131072] = "COMBO";
+    AnnotationFieldFlag[AnnotationFieldFlag["EDIT"] = 262144] = "EDIT";
+    AnnotationFieldFlag[AnnotationFieldFlag["SORT"] = 524288] = "SORT";
+    AnnotationFieldFlag[AnnotationFieldFlag["FILESELECT"] = 1048576] = "FILESELECT";
+    AnnotationFieldFlag[AnnotationFieldFlag["MULTISELECT"] = 2097152] = "MULTISELECT";
+    AnnotationFieldFlag[AnnotationFieldFlag["DONOTSPELLCHECK"] = 4194304] = "DONOTSPELLCHECK";
+    AnnotationFieldFlag[AnnotationFieldFlag["DONOTSCROLL"] = 8388608] = "DONOTSCROLL";
+    AnnotationFieldFlag[AnnotationFieldFlag["COMB"] = 16777216] = "COMB";
+    AnnotationFieldFlag[AnnotationFieldFlag["RICHTEXT"] = 33554432] = "RICHTEXT";
+    AnnotationFieldFlag[AnnotationFieldFlag["RADIOSINUNISON"] = 33554432] = "RADIOSINUNISON";
+    AnnotationFieldFlag[AnnotationFieldFlag["COMMITONSELCHANGE"] = 67108864] = "COMMITONSELCHANGE";
+})(AnnotationFieldFlag || (AnnotationFieldFlag = {}));
+/**
+ * PDF 1.7 Table 166 S
+ */
+export var AnnotationBorderStyleType;
+(function (AnnotationBorderStyleType) {
+    AnnotationBorderStyleType[AnnotationBorderStyleType["SOLID"] = 1] = "SOLID";
+    AnnotationBorderStyleType[AnnotationBorderStyleType["DASHED"] = 2] = "DASHED";
+    AnnotationBorderStyleType[AnnotationBorderStyleType["BEVELED"] = 3] = "BEVELED";
+    AnnotationBorderStyleType[AnnotationBorderStyleType["INSET"] = 4] = "INSET";
+    AnnotationBorderStyleType[AnnotationBorderStyleType["UNDERLINE"] = 5] = "UNDERLINE";
+})(AnnotationBorderStyleType || (AnnotationBorderStyleType = {}));
 export var AnnotationActionEventType;
 (function (AnnotationActionEventType) {
     AnnotationActionEventType["E"] = "Mouse Enter";
@@ -65,10 +209,183 @@ export var PageActionEventType;
     PageActionEventType["O"] = "PageOpen";
     PageActionEventType["C"] = "PageClose";
 })(PageActionEventType || (PageActionEventType = {}));
+export var StreamType;
+(function (StreamType) {
+    StreamType["UNKNOWN"] = "UNKNOWN";
+    StreamType["FLATE"] = "FLATE";
+    StreamType["LZW"] = "LZW";
+    StreamType["DCT"] = "DCT";
+    StreamType["JPX"] = "JPX";
+    StreamType["JBIG"] = "JBIG";
+    StreamType["A85"] = "A85";
+    StreamType["AHX"] = "AHX";
+    StreamType["CCF"] = "CCF";
+    StreamType["RLX"] = "RLX";
+})(StreamType || (StreamType = {}));
+export var FontType;
+(function (FontType) {
+    FontType["UNKNOWN"] = "UNKNOWN";
+    FontType["TYPE1"] = "TYPE1";
+    FontType["TYPE1STANDARD"] = "TYPE1STANDARD";
+    FontType["TYPE1C"] = "TYPE1C";
+    FontType["CIDFONTTYPE0"] = "CIDFONTTYPE0";
+    FontType["CIDFONTTYPE0C"] = "CIDFONTTYPE0C";
+    FontType["TRUETYPE"] = "TRUETYPE";
+    FontType["CIDFONTTYPE2"] = "CIDFONTTYPE2";
+    FontType["TYPE3"] = "TYPE3";
+    FontType["OPENTYPE"] = "OPENTYPE";
+    FontType["TYPE0"] = "TYPE0";
+    FontType["MMTYPE1"] = "MMTYPE1";
+})(FontType || (FontType = {}));
+export var VerbosityLevel;
+(function (VerbosityLevel) {
+    VerbosityLevel[VerbosityLevel["ERRORS"] = 0] = "ERRORS";
+    VerbosityLevel[VerbosityLevel["WARNINGS"] = 1] = "WARNINGS";
+    VerbosityLevel[VerbosityLevel["INFOS"] = 5] = "INFOS";
+})(VerbosityLevel || (VerbosityLevel = {}));
+export var CMapCompressionType;
+(function (CMapCompressionType) {
+    CMapCompressionType[CMapCompressionType["NONE"] = 0] = "NONE";
+    CMapCompressionType[CMapCompressionType["BINARY"] = 1] = "BINARY";
+    CMapCompressionType[CMapCompressionType["STREAM"] = 2] = "STREAM";
+})(CMapCompressionType || (CMapCompressionType = {}));
 ;
+// All the possible operations for an operator list.
+export var OPS;
+(function (OPS) {
+    // Intentionally start from 1 so it is easy to spot bad operators that will be
+    // 0's.
+    OPS[OPS["dependency"] = 1] = "dependency";
+    OPS[OPS["setLineWidth"] = 2] = "setLineWidth";
+    OPS[OPS["setLineCap"] = 3] = "setLineCap";
+    OPS[OPS["setLineJoin"] = 4] = "setLineJoin";
+    OPS[OPS["setMiterLimit"] = 5] = "setMiterLimit";
+    OPS[OPS["setDash"] = 6] = "setDash";
+    OPS[OPS["setRenderingIntent"] = 7] = "setRenderingIntent";
+    OPS[OPS["setFlatness"] = 8] = "setFlatness";
+    OPS[OPS["setGState"] = 9] = "setGState";
+    OPS[OPS["save"] = 10] = "save";
+    OPS[OPS["restore"] = 11] = "restore";
+    OPS[OPS["transform"] = 12] = "transform";
+    OPS[OPS["moveTo"] = 13] = "moveTo";
+    OPS[OPS["lineTo"] = 14] = "lineTo";
+    OPS[OPS["curveTo"] = 15] = "curveTo";
+    OPS[OPS["curveTo2"] = 16] = "curveTo2";
+    OPS[OPS["curveTo3"] = 17] = "curveTo3";
+    OPS[OPS["closePath"] = 18] = "closePath";
+    OPS[OPS["rectangle"] = 19] = "rectangle";
+    OPS[OPS["stroke"] = 20] = "stroke";
+    OPS[OPS["closeStroke"] = 21] = "closeStroke";
+    OPS[OPS["fill"] = 22] = "fill";
+    OPS[OPS["eoFill"] = 23] = "eoFill";
+    OPS[OPS["fillStroke"] = 24] = "fillStroke";
+    OPS[OPS["eoFillStroke"] = 25] = "eoFillStroke";
+    OPS[OPS["closeFillStroke"] = 26] = "closeFillStroke";
+    OPS[OPS["closeEOFillStroke"] = 27] = "closeEOFillStroke";
+    OPS[OPS["endPath"] = 28] = "endPath";
+    OPS[OPS["clip"] = 29] = "clip";
+    OPS[OPS["eoClip"] = 30] = "eoClip";
+    OPS[OPS["beginText"] = 31] = "beginText";
+    OPS[OPS["endText"] = 32] = "endText";
+    OPS[OPS["setCharSpacing"] = 33] = "setCharSpacing";
+    OPS[OPS["setWordSpacing"] = 34] = "setWordSpacing";
+    OPS[OPS["setHScale"] = 35] = "setHScale";
+    OPS[OPS["setLeading"] = 36] = "setLeading";
+    OPS[OPS["setFont"] = 37] = "setFont";
+    OPS[OPS["setTextRenderingMode"] = 38] = "setTextRenderingMode";
+    OPS[OPS["setTextRise"] = 39] = "setTextRise";
+    OPS[OPS["moveText"] = 40] = "moveText";
+    OPS[OPS["setLeadingMoveText"] = 41] = "setLeadingMoveText";
+    OPS[OPS["setTextMatrix"] = 42] = "setTextMatrix";
+    OPS[OPS["nextLine"] = 43] = "nextLine";
+    OPS[OPS["showText"] = 44] = "showText";
+    OPS[OPS["showSpacedText"] = 45] = "showSpacedText";
+    OPS[OPS["nextLineShowText"] = 46] = "nextLineShowText";
+    OPS[OPS["nextLineSetSpacingShowText"] = 47] = "nextLineSetSpacingShowText";
+    OPS[OPS["setCharWidth"] = 48] = "setCharWidth";
+    OPS[OPS["setCharWidthAndBounds"] = 49] = "setCharWidthAndBounds";
+    OPS[OPS["setStrokeColorSpace"] = 50] = "setStrokeColorSpace";
+    OPS[OPS["setFillColorSpace"] = 51] = "setFillColorSpace";
+    OPS[OPS["setStrokeColor"] = 52] = "setStrokeColor";
+    OPS[OPS["setStrokeColorN"] = 53] = "setStrokeColorN";
+    OPS[OPS["setFillColor"] = 54] = "setFillColor";
+    OPS[OPS["setFillColorN"] = 55] = "setFillColorN";
+    OPS[OPS["setStrokeGray"] = 56] = "setStrokeGray";
+    OPS[OPS["setFillGray"] = 57] = "setFillGray";
+    OPS[OPS["setStrokeRGBColor"] = 58] = "setStrokeRGBColor";
+    OPS[OPS["setFillRGBColor"] = 59] = "setFillRGBColor";
+    OPS[OPS["setStrokeCMYKColor"] = 60] = "setStrokeCMYKColor";
+    OPS[OPS["setFillCMYKColor"] = 61] = "setFillCMYKColor";
+    OPS[OPS["shadingFill"] = 62] = "shadingFill";
+    OPS[OPS["beginInlineImage"] = 63] = "beginInlineImage";
+    OPS[OPS["beginImageData"] = 64] = "beginImageData";
+    OPS[OPS["endInlineImage"] = 65] = "endInlineImage";
+    OPS[OPS["paintXObject"] = 66] = "paintXObject";
+    OPS[OPS["markPoint"] = 67] = "markPoint";
+    OPS[OPS["markPointProps"] = 68] = "markPointProps";
+    OPS[OPS["beginMarkedContent"] = 69] = "beginMarkedContent";
+    OPS[OPS["beginMarkedContentProps"] = 70] = "beginMarkedContentProps";
+    OPS[OPS["endMarkedContent"] = 71] = "endMarkedContent";
+    OPS[OPS["beginCompat"] = 72] = "beginCompat";
+    OPS[OPS["endCompat"] = 73] = "endCompat";
+    OPS[OPS["paintFormXObjectBegin"] = 74] = "paintFormXObjectBegin";
+    OPS[OPS["paintFormXObjectEnd"] = 75] = "paintFormXObjectEnd";
+    OPS[OPS["beginGroup"] = 76] = "beginGroup";
+    OPS[OPS["endGroup"] = 77] = "endGroup";
+    OPS[OPS["beginAnnotations"] = 78] = "beginAnnotations";
+    OPS[OPS["endAnnotations"] = 79] = "endAnnotations";
+    OPS[OPS["beginAnnotation"] = 80] = "beginAnnotation";
+    OPS[OPS["endAnnotation"] = 81] = "endAnnotation";
+    /** @deprecated unused */
+    OPS[OPS["paintJpegXObject"] = 82] = "paintJpegXObject";
+    OPS[OPS["paintImageMaskXObject"] = 83] = "paintImageMaskXObject";
+    OPS[OPS["paintImageMaskXObjectGroup"] = 84] = "paintImageMaskXObjectGroup";
+    OPS[OPS["paintImageXObject"] = 85] = "paintImageXObject";
+    OPS[OPS["paintInlineImageXObject"] = 86] = "paintInlineImageXObject";
+    OPS[OPS["paintInlineImageXObjectGroup"] = 87] = "paintInlineImageXObjectGroup";
+    OPS[OPS["paintImageXObjectRepeat"] = 88] = "paintImageXObjectRepeat";
+    OPS[OPS["paintImageMaskXObjectRepeat"] = 89] = "paintImageMaskXObjectRepeat";
+    OPS[OPS["paintSolidColorImageMask"] = 90] = "paintSolidColorImageMask";
+    OPS[OPS["constructPath"] = 91] = "constructPath";
+    OPS[OPS["group"] = 92] = "group";
+})(OPS || (OPS = {}));
+// export type OPSName = keyof typeof OPS;
+// export type OPSValu = (typeof OPS)[OPSName];
+export var UNSUPPORTED_FEATURES;
+(function (UNSUPPORTED_FEATURES) {
+    /** @deprecated unused */
+    UNSUPPORTED_FEATURES["unknown"] = "unknown";
+    UNSUPPORTED_FEATURES["forms"] = "forms";
+    UNSUPPORTED_FEATURES["javaScript"] = "javaScript";
+    UNSUPPORTED_FEATURES["signatures"] = "signatures";
+    UNSUPPORTED_FEATURES["smask"] = "smask";
+    UNSUPPORTED_FEATURES["shadingPattern"] = "shadingPattern";
+    /** @deprecated unused */
+    UNSUPPORTED_FEATURES["font"] = "font";
+    UNSUPPORTED_FEATURES["errorTilingPattern"] = "errorTilingPattern";
+    UNSUPPORTED_FEATURES["errorExtGState"] = "errorExtGState";
+    UNSUPPORTED_FEATURES["errorXObject"] = "errorXObject";
+    UNSUPPORTED_FEATURES["errorFontLoadType3"] = "errorFontLoadType3";
+    UNSUPPORTED_FEATURES["errorFontState"] = "errorFontState";
+    UNSUPPORTED_FEATURES["errorFontMissing"] = "errorFontMissing";
+    UNSUPPORTED_FEATURES["errorFontTranslate"] = "errorFontTranslate";
+    UNSUPPORTED_FEATURES["errorColorSpace"] = "errorColorSpace";
+    UNSUPPORTED_FEATURES["errorOperatorList"] = "errorOperatorList";
+    UNSUPPORTED_FEATURES["errorFontToUnicode"] = "errorFontToUnicode";
+    UNSUPPORTED_FEATURES["errorFontLoadNative"] = "errorFontLoadNative";
+    UNSUPPORTED_FEATURES["errorFontBuildPath"] = "errorFontBuildPath";
+    UNSUPPORTED_FEATURES["errorFontGetPath"] = "errorFontGetPath";
+    UNSUPPORTED_FEATURES["errorMarkedContent"] = "errorMarkedContent";
+    UNSUPPORTED_FEATURES["errorContentSubStream"] = "errorContentSubStream";
+})(UNSUPPORTED_FEATURES || (UNSUPPORTED_FEATURES = {}));
 ;
+export var PasswordResponses;
+(function (PasswordResponses) {
+    PasswordResponses[PasswordResponses["NEED_PASSWORD"] = 1] = "NEED_PASSWORD";
+    PasswordResponses[PasswordResponses["INCORRECT_PASSWORD"] = 2] = "INCORRECT_PASSWORD";
+})(PasswordResponses || (PasswordResponses = {}));
 ;
-let verbosity = 1 /* WARNINGS */;
+let verbosity = VerbosityLevel.WARNINGS;
 export function setVerbosityLevel(level) { verbosity = level; }
 export function getVerbosityLevel() { return verbosity; }
 /**
@@ -77,7 +394,7 @@ export function getVerbosityLevel() { return verbosity; }
  * end users.
  */
 export function info(msg) {
-    if (verbosity >= 5 /* INFOS */) {
+    if (verbosity >= VerbosityLevel.INFOS) {
         console.log(`Info: ${msg}`);
     }
 }
@@ -85,7 +402,7 @@ export function info(msg) {
  * Non-fatal warnings.
  */
 export function warn(msg, meta) {
-    if (verbosity >= 1 /* WARNINGS */) {
+    if (verbosity >= VerbosityLevel.WARNINGS) {
         warn_0(`Warning: ${msg}`, meta);
     }
 }

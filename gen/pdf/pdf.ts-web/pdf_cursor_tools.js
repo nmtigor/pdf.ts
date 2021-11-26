@@ -16,13 +16,21 @@
  * limitations under the License.
  */
 import { GrabToPan } from "./grab_to_pan.js";
+import { PresentationModeState } from "./ui_utils.js";
+/*81---------------------------------------------------------------------------*/
+export var CursorTool;
+(function (CursorTool) {
+    CursorTool[CursorTool["SELECT"] = 0] = "SELECT";
+    CursorTool[CursorTool["HAND"] = 1] = "HAND";
+    CursorTool[CursorTool["ZOOM"] = 2] = "ZOOM";
+})(CursorTool || (CursorTool = {}));
 export class PDFCursorTools {
     container;
     eventBus;
-    active = 0 /* SELECT */;
+    active = CursorTool.SELECT;
     activeBeforePresentationMode;
     handTool;
-    constructor({ container, eventBus, cursorToolOnLoad = 0 /* SELECT */ }) {
+    constructor({ container, eventBus, cursorToolOnLoad = CursorTool.SELECT }) {
         this.container = container;
         this.eventBus = eventBus;
         // this.active = CursorTool.SELECT;
@@ -57,25 +65,25 @@ export class PDFCursorTools {
         }
         const disableActiveTool = () => {
             switch (this.active) {
-                case 0 /* SELECT */:
+                case CursorTool.SELECT:
                     break;
-                case 1 /* HAND */:
+                case CursorTool.HAND:
                     this.handTool.deactivate();
                     break;
-                case 2 /* ZOOM */:
+                case CursorTool.ZOOM:
                 /* falls through */
             }
         };
         // Enable the new cursor tool.
         switch (tool) {
-            case 0 /* SELECT */:
+            case CursorTool.SELECT:
                 disableActiveTool();
                 break;
-            case 1 /* HAND */:
+            case CursorTool.HAND:
                 disableActiveTool();
                 this.handTool.activate();
                 break;
-            case 2 /* ZOOM */:
+            case CursorTool.ZOOM:
             /* falls through */
             default:
                 console.error(`switchTool: "${tool}" is an unsupported value.`);
@@ -99,13 +107,13 @@ export class PDFCursorTools {
         });
         this.eventBus._on("presentationmodechanged", evt => {
             switch (evt.state) {
-                case 3 /* FULLSCREEN */: {
+                case PresentationModeState.FULLSCREEN: {
                     const previouslyActive = this.active;
-                    this.switchTool(0 /* SELECT */);
+                    this.switchTool(CursorTool.SELECT);
                     this.activeBeforePresentationMode = previouslyActive;
                     break;
                 }
-                case 1 /* NORMAL */: {
+                case PresentationModeState.NORMAL: {
                     const previouslyActive = this.activeBeforePresentationMode;
                     this.activeBeforePresentationMode = undefined;
                     this.switchTool(previouslyActive);

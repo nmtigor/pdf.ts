@@ -1,4 +1,4 @@
-import { ScrollMode, SidebarView, SpreadMode } from "./ui_utils";
+import { ScrollMode, SidebarView, SpreadMode } from "./ui_utils.js";
 export interface MultipleStored {
     page: number | undefined;
     zoom?: string | number | undefined;

@@ -1,7 +1,7 @@
 import { Dict, Ref } from "./primitives.js";
 import { CipherTransform } from "./crypto.js";
-import { XRefInfo } from "./worker.js";
-import { SaveData } from "./annotation.js";
+import { type XRefInfo } from "./worker.js";
+import { type SaveData } from "./annotation.js";
 import { XRef } from "./xref.js";
 export declare function writeDict(dict: Dict, buffer: string[], transform: CipherTransform | null): void;
 interface IncrementalUpdateParms {

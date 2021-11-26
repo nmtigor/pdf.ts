@@ -1,5 +1,7 @@
-import { Name, ObjNoCmd } from "./primitives.js";
-import { TupleOf } from "../../../lib/alias.js";
+import { Name, type ObjNoCmd } from "./primitives.js";
+import { type TupleOf } from "../../../lib/alias.js";
+import { BaseStream } from "./base_stream.js";
+import { type FetchBuiltInCMap } from "../display/base_factory.js";
 export interface CharCodeOut {
     charcode: number;
     length: number;
@@ -71,7 +73,5 @@ declare namespace NsCMapFactory {
     };
 }
 export import CMapFactory = NsCMapFactory.CMapFactory;
-import { BaseStream } from "./base_stream.js";
-import { FetchBuiltInCMap } from "../display/base_factory.js";
 export {};
 //# sourceMappingURL=cmap.d.ts.map

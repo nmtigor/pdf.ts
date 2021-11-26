@@ -23,6 +23,7 @@ export const warn = (msg, meta) => {
         if (match)
             msg += ` (${match[1]})`;
     }
+    console.warn(msg);
 };
 let reporting_;
 let count_reported_ = 0;

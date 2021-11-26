@@ -1,8 +1,8 @@
 import { EventBus } from "./ui_utils.js";
 import { PDFDocumentProxy } from "../pdf.ts-src/display/api.js";
 import { PDFViewer } from "./pdf_viewer.js";
-import { IScripting, MouseState } from "./interfaces.js";
-import { DefaultExternalServices, ScriptingDocProperties } from "./app.js";
+import { IScripting, type MouseState } from "./interfaces.js";
+import { DefaultExternalServices, type ScriptingDocProperties } from "./app.js";
 interface PDFScriptingManagerOptions {
     /**
      * The application event bus.

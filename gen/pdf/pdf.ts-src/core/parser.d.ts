@@ -1,10 +1,10 @@
-import { Cmd, Dict, EOF, Name, Obj, Ref } from "./primitives.js";
+import { Cmd, Dict, EOF, Name, type Obj, Ref } from "./primitives.js";
 import { CCITTFaxStream } from "./ccitt_stream.js";
 import { Jbig2Stream } from "./jbig2_stream.js";
 import { JpegStream } from "./jpeg_stream.js";
 import { JpxStream } from "./jpx_stream.js";
 import { CipherTransform } from "./crypto.js";
-import { OpMap } from "./evaluator.js";
+import { type OpMap } from "./evaluator.js";
 import { XRef } from "./xref.js";
 import { LZWStream } from "./lzw_stream.js";
 import { PredictorStream } from "./predictor_stream.js";

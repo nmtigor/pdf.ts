@@ -1,5 +1,5 @@
 import { FontFinder } from "./fonts.js";
-import { XFAFontBase, XFAMargin } from "./alias.js";
+import { type XFAFontBase, type XFAMargin } from "./alias.js";
 declare class FontInfo {
     lineHeight: string | number | undefined;
     paraMargin: XFAMargin;

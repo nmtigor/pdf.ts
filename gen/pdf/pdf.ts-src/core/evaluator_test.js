@@ -8,7 +8,7 @@ import { createIdFactory, XRefMock } from "../../test_utils.js";
 import { WorkerTask } from "./worker.js";
 import { OperatorList } from "./operator_list.js";
 import { PartialEvaluator } from "./evaluator.js";
-import { FormatError } from "../shared/util.js";
+import { FormatError, OPS } from "../shared/util.js";
 import { Dict, Name } from "./primitives.js";
 const strttime = performance.now();
 /*81---------------------------------------------------------------------------*/
@@ -48,7 +48,7 @@ console.log("%c>>>>>>> test splitCombinedOperations >>>>>>>", `color:${css_1}`);
         const result = await runOperatorListCheck(partialEvaluator, stream, new ResourcesMock());
         console.assert(!!result.fnArray && !!result.argsArray);
         console.assert(result.fnArray.length === 1);
-        console.assert(result.fnArray[0] === 22 /* fill */);
+        console.assert(result.fnArray[0] === OPS.fill);
         console.assert(result.argsArray[0] === null);
     }
     console.log("it should handle one operation...");
@@ -57,7 +57,7 @@ console.log("%c>>>>>>> test splitCombinedOperations >>>>>>>", `color:${css_1}`);
         const result = await runOperatorListCheck(partialEvaluator, stream, new ResourcesMock());
         console.assert(!!result.fnArray && !!result.argsArray);
         console.assert(result.fnArray.length === 1);
-        console.assert(result.fnArray[0] === 11 /* restore */);
+        console.assert(result.fnArray[0] === OPS.restore);
     }
     console.log("it should handle two glued operations...");
     {
@@ -74,9 +74,9 @@ console.log("%c>>>>>>> test splitCombinedOperations >>>>>>>", `color:${css_1}`);
         const stream = new StringStream("/Res1 DoQ");
         const result = await runOperatorListCheck(partialEvaluator, stream, resources);
         console.assert(result.fnArray.length === 3);
-        console.assert(result.fnArray[0] === 1 /* dependency */);
-        console.assert(result.fnArray[1] === 85 /* paintImageXObject */);
-        console.assert(result.fnArray[2] === 11 /* restore */);
+        console.assert(result.fnArray[0] === OPS.dependency);
+        console.assert(result.fnArray[1] === OPS.paintImageXObject);
+        console.assert(result.fnArray[2] === OPS.restore);
         console.assert(result.argsArray.length === 3);
         console.assert(eq(result.argsArray[0], ["img_p0_1"]));
         console.assert(eq(result.argsArray[1], ["img_p0_1", 1, 1]));
@@ -88,9 +88,9 @@ console.log("%c>>>>>>> test splitCombinedOperations >>>>>>>", `color:${css_1}`);
         const result = await runOperatorListCheck(partialEvaluator, stream, new ResourcesMock());
         console.assert(!!result.fnArray && !!result.argsArray);
         console.assert(result.fnArray.length === 3);
-        console.assert(result.fnArray[0] === 22 /* fill */);
-        console.assert(result.fnArray[1] === 22 /* fill */);
-        console.assert(result.fnArray[2] === 22 /* fill */);
+        console.assert(result.fnArray[0] === OPS.fill);
+        console.assert(result.fnArray[1] === OPS.fill);
+        console.assert(result.fnArray[2] === OPS.fill);
     }
     console.log("it should handle three glued operations #2...");
     {
@@ -100,9 +100,9 @@ console.log("%c>>>>>>> test splitCombinedOperations >>>>>>>", `color:${css_1}`);
         const result = await runOperatorListCheck(partialEvaluator, stream, resources);
         console.assert(!!result.fnArray && !!result.argsArray);
         console.assert(result.fnArray.length === 3);
-        console.assert(result.fnArray[0] === 25 /* eoFillStroke */);
-        console.assert(result.fnArray[1] === 24 /* fillStroke */);
-        console.assert(result.fnArray[2] === 23 /* eoFill */);
+        console.assert(result.fnArray[0] === OPS.eoFillStroke);
+        console.assert(result.fnArray[1] === OPS.fillStroke);
+        console.assert(result.fnArray[2] === OPS.eoFill);
     }
     console.log("it should handle glued operations and operands...");
     {
@@ -110,8 +110,8 @@ console.log("%c>>>>>>> test splitCombinedOperations >>>>>>>", `color:${css_1}`);
         const result = await runOperatorListCheck(partialEvaluator, stream, new ResourcesMock());
         console.assert(!!result.fnArray && !!result.argsArray);
         console.assert(result.fnArray.length === 2);
-        console.assert(result.fnArray[0] === 22 /* fill */);
-        console.assert(result.fnArray[1] === 39 /* setTextRise */);
+        console.assert(result.fnArray[0] === OPS.fill);
+        console.assert(result.fnArray[1] === OPS.setTextRise);
         console.assert(result.argsArray.length === 2);
         console.assert(eq(result.argsArray[1], [5]));
         // console.assert( (<any>result.argsArray[1]).length === 1 );
@@ -123,9 +123,9 @@ console.log("%c>>>>>>> test splitCombinedOperations >>>>>>>", `color:${css_1}`);
         const result = await runOperatorListCheck(partialEvaluator, stream, new ResourcesMock());
         console.assert(!!result.fnArray && !!result.argsArray);
         console.assert(result.fnArray.length === 3);
-        console.assert(result.fnArray[0] === 8 /* setFlatness */);
-        console.assert(result.fnArray[1] === 7 /* setRenderingIntent */);
-        console.assert(result.fnArray[2] === 28 /* endPath */);
+        console.assert(result.fnArray[0] === OPS.setFlatness);
+        console.assert(result.fnArray[1] === OPS.setRenderingIntent);
+        console.assert(result.fnArray[2] === OPS.endPath);
         console.assert(result.argsArray.length === 3);
         console.assert(eq(result.argsArray[0], [true]));
         // console.assert( result.argsArray[0].length).toEqual(1);
@@ -145,7 +145,7 @@ console.log("%c>>>>>>> test validateNumberOfArgs >>>>>>>", `color:${css_1}`);
         console.assert(eq(result.argsArray[0], [5, 1]));
         // console.assert( result.argsArray[0][0] === 5 );
         // console.assert( result.argsArray[0][1] === 1 );
-        console.assert(result.fnArray[0] === 48 /* setCharWidth */);
+        console.assert(result.fnArray[0] === OPS.setCharWidth);
     }
     console.log("it should execute if too many arguments...");
     {
@@ -154,7 +154,7 @@ console.log("%c>>>>>>> test validateNumberOfArgs >>>>>>>", `color:${css_1}`);
         console.assert(eq(result.argsArray[0], [1, 4]));
         // console.assert( result.argsArray[0][0]).toEqual(1);
         // console.assert( result.argsArray[0][1]).toEqual(4);
-        console.assert(result.fnArray[0] === 48 /* setCharWidth */);
+        console.assert(result.fnArray[0] === OPS.setCharWidth);
     }
     console.log("it should execute if nested commands...");
     {
@@ -168,9 +168,9 @@ console.log("%c>>>>>>> test validateNumberOfArgs >>>>>>>", `color:${css_1}`);
         const stream = new StringStream("/F2 /GS2 gs 5.711 Tf");
         const result = await runOperatorListCheck(partialEvaluator, stream, resources);
         console.assert(result.fnArray.length === 3);
-        console.assert(result.fnArray[0] === 9 /* setGState */);
-        console.assert(result.fnArray[1] === 1 /* dependency */);
-        console.assert(result.fnArray[2] === 37 /* setFont */);
+        console.assert(result.fnArray[0] === OPS.setGState);
+        console.assert(result.fnArray[1] === OPS.dependency);
+        console.assert(result.fnArray[2] === OPS.setFont);
         console.assert(result.argsArray.length === 3);
         console.assert(eq(result.argsArray[0], [
             [
@@ -217,10 +217,10 @@ console.log("%c>>>>>>> test validateNumberOfArgs >>>>>>>", `color:${css_1}`);
         const result = await runOperatorListCheck(partialEvaluator, stream, new ResourcesMock());
         console.assert(!!result.fnArray && !!result.argsArray);
         console.assert(result.fnArray.length === 4);
-        console.assert(result.fnArray[0] === 10 /* save */);
-        console.assert(result.fnArray[1] === 10 /* save */);
-        console.assert(result.fnArray[2] === 11 /* restore */);
-        console.assert(result.fnArray[3] === 11 /* restore */);
+        console.assert(result.fnArray[0] === OPS.save);
+        console.assert(result.fnArray[1] === OPS.save);
+        console.assert(result.fnArray[2] === OPS.restore);
+        console.assert(result.fnArray[3] === OPS.restore);
     }
     console.log("it should error on paintXObject if name is missing...");
     {
@@ -297,8 +297,8 @@ console.log("%c>>>>>>> test operator list >>>>>>>", `color:${css_1}`);
     console.log("it should get correct total length after flushing...");
     {
         const operatorList = new OperatorList(undefined, new StreamSinkMock());
-        operatorList.addOp(10 /* save */, null);
-        operatorList.addOp(11 /* restore */, null);
+        operatorList.addOp(OPS.save, null);
+        operatorList.addOp(OPS.restore, null);
         console.assert(operatorList.totalLength === 2);
         console.assert(operatorList.length === 2);
         operatorList.flush();

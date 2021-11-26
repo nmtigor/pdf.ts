@@ -17,6 +17,7 @@
  */
 import { html } from "../../lib/dom.js";
 import { viewerapp, PDFPrintServiceFactory } from "./app.js";
+import { AnnotationMode } from "../pdf.ts-src/shared/util.js";
 import { getXfaHtmlForPrinting } from "./print_utils.js";
 import { PixelsPerInch } from "../pdf.ts-src/display/display_utils.js";
 import { compatibilityParams } from "./app_options.js";
@@ -42,7 +43,7 @@ function renderPage(activeServiceOnEntry, pdfDocument, pageNumber, size, printRe
             transform: [PRINT_UNITS, 0, 0, PRINT_UNITS, 0, 0],
             viewport: pdfPage.getViewport({ scale: 1, rotation: size.rotation }),
             intent: "print",
-            annotationMode: 3 /* ENABLE_STORAGE */,
+            annotationMode: AnnotationMode.ENABLE_STORAGE,
             optionalContentConfigPromise,
         };
         return pdfPage.render(renderContext).promise;

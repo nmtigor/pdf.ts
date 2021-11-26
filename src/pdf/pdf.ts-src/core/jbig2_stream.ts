@@ -18,7 +18,7 @@
  */
 
 import { Dict } from "./primitives.js";
-import { Chunk, Jbig2Image } from "./jbig2.js";
+import { type Chunk, Jbig2Image } from "./jbig2.js";
 import { shadow } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
 import { ImageStream } from "./decode_stream.js";

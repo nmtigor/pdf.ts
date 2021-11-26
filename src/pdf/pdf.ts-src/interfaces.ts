@@ -1,3 +1,7 @@
+/* Converted from JavaScript to TypeScript by
+ * nmtigor (https://github.com/nmtigor) @2021
+ */
+
 /* Copyright 2018 Mozilla Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,6 +18,7 @@
  */
 
 import { AbortException } from "./shared/util";
+/*81---------------------------------------------------------------------------*/
 
 /**
  * Interface that represents PDF data transport. If possible, it allows
@@ -40,7 +45,7 @@ export interface IPDFStream
   cancelAllRequests( reason:AbortException ):void
 }
 
-export type ReadValue = ReadableStreamDefaultReadResult< ArrayBufferLike >
+export type ReadValue = ReadableStreamDefaultReadResult<ArrayBufferLike>
 
 /**
  * Interface for a PDF binary data reader.

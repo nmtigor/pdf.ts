@@ -22,7 +22,7 @@ import {
   DEFAULT_SCALE_DELTA,
   DEFAULT_SCALE_VALUE,
   EventBus,
-  EventMap,
+  type EventMap,
   getVisibleElements,
   isPortraitOrientation,
   isValidRotation,
@@ -41,8 +41,8 @@ import {
   TextLayerMode,
   UNKNOWN_SCALE,
   VERTICAL_PADDING,
-  VisibleElement,
-  VisibleElements,
+  type VisibleElement,
+  type VisibleElements,
   watchScroll,
 } from "./ui_utils.js";
 import { PDFRenderingQueue, RenderingStates } from "./pdf_rendering_queue.js";
@@ -51,10 +51,18 @@ import { createPromiseCapability, PixelsPerInch } from "../pdf.ts-src/pdf.js";
 import { PDFPageView } from "./pdf_page_view.js";
 import { SimpleLinkService } from "./pdf_link_service.js";
 import { TextLayerBuilder } from "./text_layer_builder.js";
-import { IL10n, IPDFAnnotationLayerFactory, IPDFLinkService, IPDFStructTreeLayerFactory, IPDFTextLayerFactory, IPDFXfaLayerFactory, MouseState } from "./interfaces.js";
+import { 
+  type IL10n, 
+  type IPDFAnnotationLayerFactory, 
+  type IPDFLinkService, 
+  type IPDFStructTreeLayerFactory, 
+  type IPDFTextLayerFactory, 
+  type IPDFXfaLayerFactory, 
+  type MouseState 
+} from "./interfaces.js";
 import { DownloadManager } from "./download_manager.js";
 import { PDFFindController } from "./pdf_find_controller.js";
-import { AnnotationMode, PromiseCapability } from "../pdf.ts-src/shared/util.js";
+import { AnnotationMode, type PromiseCapability } from "../pdf.ts-src/shared/util.js";
 import { PDFDocumentProxy, PDFPageProxy, version } from "../pdf.ts-src/display/api.js";
 import { OptionalContentConfig } from "../pdf.ts-src/display/optional_content_config.js";
 import { PageViewport } from "../pdf.ts-src/display/display_utils.js";
@@ -62,11 +70,11 @@ import { AnnotationStorage } from "../pdf.ts-src/display/annotation_storage.js";
 import { NullL10n } from "./l10n_utils.js";
 import { XfaLayerBuilder } from "./xfa_layer_builder.js";
 import { PDFScriptingManager } from "./pdf_scripting_manager.js";
-import { ExplicitDest } from "../pdf.ts-src/core/catalog.js";
+import { type ExplicitDest } from "../pdf.ts-src/core/catalog.js";
 import { StructTreeLayerBuilder } from "./struct_tree_layer_builder.js";
 import { html } from "../../lib/dom.js";
 import { TextHighlighter } from "./text_highlighter.js";
-import { FieldObject } from "../pdf.ts-src/core/annotation.js";
+import { type FieldObject } from "../pdf.ts-src/core/annotation.js";
 /*81---------------------------------------------------------------------------*/
 
 const DEFAULT_CACHE_SIZE = 10;

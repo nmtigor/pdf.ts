@@ -4,6 +4,14 @@
 import { createPromiseCapability } from "../pdf.ts-src/pdf.js";
 import { getCharacterType } from "./pdf_find_utils.js";
 import { scrollIntoView } from "./ui_utils.js";
+/*81---------------------------------------------------------------------------*/
+export var FindState;
+(function (FindState) {
+    FindState[FindState["FOUND"] = 0] = "FOUND";
+    FindState[FindState["NOT_FOUND"] = 1] = "NOT_FOUND";
+    FindState[FindState["WRAPPED"] = 2] = "WRAPPED";
+    FindState[FindState["PENDING"] = 3] = "PENDING";
+})(FindState || (FindState = {}));
 const FIND_TIMEOUT = 250; // ms
 const MATCH_SCROLL_OFFSET_TOP = -50; // px
 const MATCH_SCROLL_OFFSET_LEFT = -400; // px
@@ -121,7 +129,7 @@ export class PDFFindController {
         }
         this.#state = state;
         if (type !== "findhighlightallchange") {
-            this._updateUIState(3 /* PENDING */);
+            this._updateUIState(FindState.PENDING);
         }
         this._firstPageCapability.promise.then(() => {
             // If the document was closed before searching began, or if the search
@@ -497,7 +505,7 @@ export class PDFFindController {
         }
         // If there's no query there's no point in searching.
         if (this.#query === "") {
-            this._updateUIState(0 /* FOUND */);
+            this._updateUIState(FindState.FOUND);
             return;
         }
         // If we're waiting on a page, we return since we can't do anything else.
@@ -578,14 +586,14 @@ export class PDFFindController {
         }
     };
     #updateMatch(found = false) {
-        let state = 1 /* NOT_FOUND */;
+        let state = FindState.NOT_FOUND;
         const wrapped = this.#offset.wrapped;
         this.#offset.wrapped = false;
         if (found) {
             const previousPage = this.#selected.pageIdx;
             this.#selected.pageIdx = this.#offset.pageIdx;
             this.#selected.matchIdx = this.#offset.matchIdx;
-            state = wrapped ? 2 /* WRAPPED */ : 0 /* FOUND */;
+            state = wrapped ? FindState.WRAPPED : FindState.FOUND;
             // Update the currently selected page to wipe out any selected matches.
             if (previousPage !== -1 && previousPage !== this.#selected.pageIdx) {
                 this.#updatePage(previousPage);
@@ -623,7 +631,7 @@ export class PDFFindController {
                 this.#dirtyMatch = true;
             }
             // Avoid the UI being in a pending state when the findbar is re-opened.
-            this._updateUIState(0 /* FOUND */);
+            this._updateUIState(FindState.FOUND);
             this.#highlightMatches = false;
             this._updateAllPages(); // Wipe out any previously highlighted matches.
         });

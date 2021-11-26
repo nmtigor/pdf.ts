@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 import { MessageHandler, } from "../shared/message_handler.js";
-import { AbortException, arrayByteLength, arraysToBytes, createPromiseCapability, getVerbosityLevel, info, InvalidPDFException, MissingPDFException, PasswordException, setVerbosityLevel, stringToPDFString, UnexpectedResponseException, UnknownErrorException, warn, } from "../shared/util.js";
+import { AbortException, arrayByteLength, arraysToBytes, createPromiseCapability, getVerbosityLevel, info, InvalidPDFException, MissingPDFException, PasswordException, setVerbosityLevel, stringToPDFString, UnexpectedResponseException, UnknownErrorException, UNSUPPORTED_FEATURES, VerbosityLevel, warn, } from "../shared/util.js";
 import { XRefParseException } from "./core_utils.js";
 import { LocalPdfManager, NetworkPdfManager, } from "./pdf_manager.js";
 import { clearPrimitiveCaches, Dict, Ref } from "./primitives.js";
@@ -527,7 +527,7 @@ export const WorkerMessageHandler = {
                 const task = new WorkerTask(`GetOperatorList: page ${pageIndex}`);
                 startWorkerTask(task);
                 // NOTE: Keep this condition in sync with the `info` helper function.
-                const start = verbosity >= 5 /* INFOS */ ? Date.now() : 0;
+                const start = verbosity >= VerbosityLevel.INFOS ? Date.now() : 0;
                 // Pre compile the pdf page and fetch the fonts/images.
                 page
                     .getOperatorList({
@@ -552,7 +552,7 @@ export const WorkerMessageHandler = {
                     // For compatibility with older behavior, generating unknown
                     // unsupported feature notification on errors.
                     handler.send("UnsupportedFeature", {
-                        featureId: "errorOperatorList" /* errorOperatorList */,
+                        featureId: UNSUPPORTED_FEATURES.errorOperatorList,
                     });
                     sink.error(reason);
                     // TODO: Should `reason` be re-thrown here (currently that casues
@@ -566,7 +566,7 @@ export const WorkerMessageHandler = {
                 const task = new WorkerTask("GetTextContent: page " + pageIndex);
                 startWorkerTask(task);
                 // NOTE: Keep this condition in sync with the `info` helper function.
-                const start = verbosity >= 5 /* INFOS */ ? Date.now() : 0;
+                const start = verbosity >= VerbosityLevel.INFOS ? Date.now() : 0;
                 page
                     .extractTextContent({
                     handler,

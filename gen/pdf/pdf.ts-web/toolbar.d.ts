@@ -1,6 +1,6 @@
-import { IL10n } from "./interfaces.js";
-import { EventBus, EventName } from "./ui_utils.js";
-import { ViewerConfiguration } from "./viewer.js";
+import { type IL10n } from "./interfaces.js";
+import { EventBus, type EventName } from "./ui_utils.js";
+import { type ViewerConfiguration } from "./viewer.js";
 interface ToolbarButton {
     element: HTMLElement;
     eventName: EventName | null;

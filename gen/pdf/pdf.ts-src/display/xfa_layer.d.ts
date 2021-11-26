@@ -1,8 +1,8 @@
-import { XFAElObj } from "../core/xfa/alias.js";
+import { type XFAElObj } from "../core/xfa/alias.js";
 import { AnnotationStorage } from "./annotation_storage.js";
-import { AnnotIntent, PDFPageProxy } from "./api.js";
+import { type AnnotIntent, PDFPageProxy } from "./api.js";
 import { PageViewport } from "./display_utils.js";
-import { IPDFLinkService } from "src/pdf/pdf.ts-web/interfaces.js";
+import { type IPDFLinkService } from "src/pdf/pdf.ts-web/interfaces.js";
 interface XfaLayerParms {
     viewport?: PageViewport;
     div: HTMLDivElement;

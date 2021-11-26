@@ -17,9 +17,9 @@
  * limitations under the License.
  */
 
-import { webL10n, WebL10nArgs } from "../../lib/l10n.js";
+import { webL10n, type WebL10nArgs } from "../../lib/l10n.js";
 import { Locale } from "../../lib/Locale.js";
-import { IL10n } from "./interfaces.js";
+import { type IL10n } from "./interfaces.js";
 import { fixupLangCode, getL10nFallback } from "./l10n_utils.js";
 /*81---------------------------------------------------------------------------*/
 

@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-import { Dict, ObjNoRef, Obj, Ref } from "./primitives.js";
+import { Dict, type ObjNoRef, type Obj, Ref } from "./primitives.js";
 import {
   FormatError,
   info,
@@ -760,7 +760,7 @@ namespace NsPDFFunction
     // },
   };
 }
-export import ParsedFunction = NsPDFFunction.ParsedFunction;
+export type ParsedFunction = NsPDFFunction.ParsedFunction;
 import PDFFunction = NsPDFFunction.PDFFunction;
 
 export function isPDFFunction( v:unknown ) 

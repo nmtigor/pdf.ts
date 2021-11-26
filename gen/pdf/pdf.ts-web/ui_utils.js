@@ -12,6 +12,33 @@ export const MAX_AUTO_SCALE = 1.25;
 export const SCROLLBAR_PADDING = 40;
 export const VERTICAL_PADDING = 5;
 const LOADINGBAR_END_OFFSET_VAR = "--loadingBar-end-offset";
+export var PresentationModeState;
+(function (PresentationModeState) {
+    PresentationModeState[PresentationModeState["UNKNOWN"] = 0] = "UNKNOWN";
+    PresentationModeState[PresentationModeState["NORMAL"] = 1] = "NORMAL";
+    PresentationModeState[PresentationModeState["CHANGING"] = 2] = "CHANGING";
+    PresentationModeState[PresentationModeState["FULLSCREEN"] = 3] = "FULLSCREEN";
+})(PresentationModeState || (PresentationModeState = {}));
+export var SidebarView;
+(function (SidebarView) {
+    SidebarView[SidebarView["UNKNOWN"] = -1] = "UNKNOWN";
+    SidebarView[SidebarView["NONE"] = 0] = "NONE";
+    SidebarView[SidebarView["THUMBS"] = 1] = "THUMBS";
+    SidebarView[SidebarView["OUTLINE"] = 2] = "OUTLINE";
+    SidebarView[SidebarView["ATTACHMENTS"] = 3] = "ATTACHMENTS";
+    SidebarView[SidebarView["LAYERS"] = 4] = "LAYERS";
+})(SidebarView || (SidebarView = {}));
+export var RendererType;
+(function (RendererType) {
+    RendererType["CANVAS"] = "canvas";
+    RendererType["SVG"] = "svg";
+})(RendererType || (RendererType = {}));
+export var TextLayerMode;
+(function (TextLayerMode) {
+    TextLayerMode[TextLayerMode["DISABLE"] = 0] = "DISABLE";
+    TextLayerMode[TextLayerMode["ENABLE"] = 1] = "ENABLE";
+    TextLayerMode[TextLayerMode["ENABLE_ENHANCE"] = 2] = "ENABLE_ENHANCE";
+})(TextLayerMode || (TextLayerMode = {}));
 export var ScrollMode;
 (function (ScrollMode) {
     ScrollMode[ScrollMode["UNKNOWN"] = -1] = "UNKNOWN";
@@ -27,6 +54,24 @@ export var SpreadMode;
     SpreadMode[SpreadMode["ODD"] = 1] = "ODD";
     SpreadMode[SpreadMode["EVEN"] = 2] = "EVEN";
 })(SpreadMode || (SpreadMode = {}));
+export var PageMode;
+(function (PageMode) {
+    PageMode[PageMode["UseNone"] = 1] = "UseNone";
+    PageMode[PageMode["UseOutlines"] = 2] = "UseOutlines";
+    PageMode[PageMode["UseThumbs"] = 3] = "UseThumbs";
+    PageMode[PageMode["FullScreen"] = 4] = "FullScreen";
+    PageMode[PageMode["UseOC"] = 5] = "UseOC";
+    PageMode[PageMode["UseAttachments"] = 6] = "UseAttachments";
+})(PageMode || (PageMode = {}));
+export var PageLayout;
+(function (PageLayout) {
+    PageLayout[PageLayout["SinglePage"] = 1] = "SinglePage";
+    PageLayout[PageLayout["OneColumn"] = 2] = "OneColumn";
+    PageLayout[PageLayout["TwoColumnLeft"] = 3] = "TwoColumnLeft";
+    PageLayout[PageLayout["TwoColumnRight"] = 4] = "TwoColumnRight";
+    PageLayout[PageLayout["TwoPageLeft"] = 5] = "TwoPageLeft";
+    PageLayout[PageLayout["TwoPageRight"] = 6] = "TwoPageRight";
+})(PageLayout || (PageLayout = {}));
 /**
  * Used by `PDFViewerApplication`, and by the API unit-tests.
  */
@@ -47,7 +92,7 @@ function xxxx_formatL10nValue(text, args) {
  *  not required, true otherwise.
  */
 export function getOutputScale(ctx) {
-    const devicePixelRatio = window.devicePixelRatio || 1;
+    const devicePixelRatio = globalThis.devicePixelRatio || 1;
     const backingStoreRatio = ctx.webkitBackingStorePixelRatio ||
         ctx.mozBackingStorePixelRatio ||
         ctx.backingStorePixelRatio ||
@@ -112,7 +157,7 @@ export function watchScroll(viewAreaElement, callback) {
             return;
         }
         // schedule an invocation of scroll for next animation frame.
-        rAF = window.requestAnimationFrame(function viewAreaElementScrolled() {
+        rAF = globalThis.requestAnimationFrame(function viewAreaElementScrolled() {
             rAF = null;
             const currentX = viewAreaElement.scrollLeft;
             const lastX = state.lastX;
@@ -494,6 +539,11 @@ export function isValidSpreadMode(mode) {
 export function isPortraitOrientation(size) {
     return size.width <= size.height;
 }
+export var WaitOnType;
+(function (WaitOnType) {
+    WaitOnType["EVENT"] = "event";
+    WaitOnType["TIMEOUT"] = "timeout";
+})(WaitOnType || (WaitOnType = {}));
 /**
  * Allows waiting for an event or a timeout, whichever occurs first.
  * Can be used to ensure that an action always occurs, even when an event
@@ -520,14 +570,14 @@ export function waitOnEventOrTimeout({ target, name, delay = 0 }) {
             }
             resolve(type);
         }
-        const eventHandler = handler.bind(null, "event" /* EVENT */);
+        const eventHandler = handler.bind(null, WaitOnType.EVENT);
         if (target instanceof EventBus) {
             target._on(name, eventHandler);
         }
         else {
             target.addEventListener(name, eventHandler);
         }
-        const timeoutHandler = handler.bind(null, "timeout" /* TIMEOUT */);
+        const timeoutHandler = handler.bind(null, WaitOnType.TIMEOUT);
         const timeout = setTimeout(timeoutHandler, delay);
     });
 }
@@ -535,7 +585,7 @@ export function waitOnEventOrTimeout({ target, name, delay = 0 }) {
  * Promise that is resolved when DOM window becomes visible.
  */
 export const animationStarted = new Promise(resolve => {
-    window.requestAnimationFrame(resolve);
+    globalThis.requestAnimationFrame(resolve);
 });
 /*49-------------------------------------------*/
 /**
@@ -746,16 +796,16 @@ export function getActiveOrFocusedElement() {
 export function apiPageLayoutToViewerModes(layout) {
     let scrollMode = ScrollMode.VERTICAL, spreadMode = SpreadMode.NONE;
     switch (layout) {
-        case 1 /* SinglePage */:
+        case PageLayout.SinglePage:
             scrollMode = ScrollMode.PAGE;
             break;
-        case 2 /* OneColumn */: break;
-        case 5 /* TwoPageLeft */: scrollMode = ScrollMode.PAGE; /* falls through */
-        case 3 /* TwoColumnLeft */:
+        case PageLayout.OneColumn: break;
+        case PageLayout.TwoPageLeft: scrollMode = ScrollMode.PAGE; /* falls through */
+        case PageLayout.TwoColumnLeft:
             spreadMode = SpreadMode.ODD;
             break;
-        case 6 /* TwoPageRight */: scrollMode = ScrollMode.PAGE; /* falls through */
-        case 4 /* TwoColumnRight */:
+        case PageLayout.TwoPageRight: scrollMode = ScrollMode.PAGE; /* falls through */
+        case PageLayout.TwoColumnRight:
             spreadMode = SpreadMode.EVEN;
             break;
     }
@@ -771,13 +821,13 @@ export function apiPageLayoutToViewerModes(layout) {
  */
 export function apiPageModeToSidebarView(mode) {
     switch (mode) {
-        case 1 /* UseNone */: return 0 /* NONE */;
-        case 3 /* UseThumbs */: return 1 /* THUMBS */;
-        case 2 /* UseOutlines */: return 2 /* OUTLINE */;
-        case 6 /* UseAttachments */: return 3 /* ATTACHMENTS */;
-        case 5 /* UseOC */: return 4 /* LAYERS */;
+        case PageMode.UseNone: return SidebarView.NONE;
+        case PageMode.UseThumbs: return SidebarView.THUMBS;
+        case PageMode.UseOutlines: return SidebarView.OUTLINE;
+        case PageMode.UseAttachments: return SidebarView.ATTACHMENTS;
+        case PageMode.UseOC: return SidebarView.LAYERS;
     }
-    return 0 /* NONE */; // Default value.
+    return SidebarView.NONE; // Default value.
 }
 /*81---------------------------------------------------------------------------*/
 //# sourceMappingURL=ui_utils.js.map

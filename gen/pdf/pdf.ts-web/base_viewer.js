@@ -15,13 +15,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { DEFAULT_SCALE, DEFAULT_SCALE_DELTA, DEFAULT_SCALE_VALUE, getVisibleElements, isPortraitOrientation, isValidRotation, isValidScrollMode, isValidSpreadMode, MAX_AUTO_SCALE, MAX_SCALE, MIN_SCALE, moveToEndOfArray, SCROLLBAR_PADDING, scrollIntoView, ScrollMode, SpreadMode, UNKNOWN_SCALE, VERTICAL_PADDING, watchScroll, } from "./ui_utils.js";
+import { DEFAULT_SCALE, DEFAULT_SCALE_DELTA, DEFAULT_SCALE_VALUE, getVisibleElements, isPortraitOrientation, isValidRotation, isValidScrollMode, isValidSpreadMode, MAX_AUTO_SCALE, MAX_SCALE, MIN_SCALE, moveToEndOfArray, PresentationModeState, RendererType, SCROLLBAR_PADDING, scrollIntoView, ScrollMode, SpreadMode, TextLayerMode, UNKNOWN_SCALE, VERTICAL_PADDING, watchScroll, } from "./ui_utils.js";
 import { PDFRenderingQueue, RenderingStates } from "./pdf_rendering_queue.js";
 import { AnnotationLayerBuilder } from "./annotation_layer_builder.js";
 import { createPromiseCapability, PixelsPerInch } from "../pdf.ts-src/pdf.js";
 import { PDFPageView } from "./pdf_page_view.js";
 import { SimpleLinkService } from "./pdf_link_service.js";
 import { TextLayerBuilder } from "./text_layer_builder.js";
+import { AnnotationMode } from "../pdf.ts-src/shared/util.js";
 import { version } from "../pdf.ts-src/display/api.js";
 import { NullL10n } from "./l10n_utils.js";
 import { XfaLayerBuilder } from "./xfa_layer_builder.js";
@@ -96,7 +97,7 @@ export class BaseViewer {
     removePageBorders;
     textLayerMode;
     _annotationMode;
-    get renderForms() { return this._annotationMode === 2 /* ENABLE_FORMS */; }
+    get renderForms() { return this._annotationMode === AnnotationMode.ENABLE_FORMS; }
     imageResourcesPath;
     enablePrintAutoRotate;
     renderer;
@@ -108,7 +109,7 @@ export class BaseViewer {
     renderingQueue;
     _doc;
     scroll;
-    presentationModeState = 0 /* UNKNOWN */;
+    presentationModeState = PresentationModeState.UNKNOWN;
     _onBeforeDraw;
     _onAfterDraw;
     _pages;
@@ -233,12 +234,12 @@ export class BaseViewer {
         this.findController = options.findController;
         this._scriptingManager = options.scriptingManager || null;
         this.removePageBorders = options.removePageBorders || false;
-        this.textLayerMode = options.textLayerMode ?? 1 /* ENABLE */;
+        this.textLayerMode = options.textLayerMode ?? TextLayerMode.ENABLE;
         this._annotationMode =
-            options.annotationMode ?? 2 /* ENABLE_FORMS */;
+            options.annotationMode ?? AnnotationMode.ENABLE_FORMS;
         this.imageResourcesPath = options.imageResourcesPath || "";
         this.enablePrintAutoRotate = options.enablePrintAutoRotate || false;
-        this.renderer = options.renderer ?? "canvas" /* CANVAS */;
+        this.renderer = options.renderer ?? RendererType.CANVAS;
         this.useOnlyCssZoom = options.useOnlyCssZoom || false;
         this.maxCanvasPixels = options.maxCanvasPixels;
         this.l10n = options.l10n || NullL10n;
@@ -407,10 +408,10 @@ export class BaseViewer {
             const viewport = firstPdfPage.getViewport({
                 scale: scale * PixelsPerInch.PDF_TO_CSS_UNITS,
             });
-            const textLayerFactory = this.textLayerMode !== 0 /* DISABLE */ && !isPureXfa
+            const textLayerFactory = this.textLayerMode !== TextLayerMode.DISABLE && !isPureXfa
                 ? this
                 : undefined;
-            const annotationLayerFactory = this._annotationMode !== 0 /* DISABLE */ ? this : undefined;
+            const annotationLayerFactory = this._annotationMode !== AnnotationMode.DISABLE ? this : undefined;
             const xfaLayerFactory = isPureXfa ? this : undefined;
             for (let pageNum = 1; pageNum <= pagesCount; ++pageNum) {
                 const pageView = new PDFPageView({
@@ -942,10 +943,10 @@ export class BaseViewer {
         return getComputedStyle(this.container).direction === "rtl";
     }
     get isInPresentationMode() {
-        return this.presentationModeState === 3 /* FULLSCREEN */;
+        return this.presentationModeState === PresentationModeState.FULLSCREEN;
     }
     get isChangingPresentationMode() {
-        return this.presentationModeState === 2 /* CHANGING */;
+        return this.presentationModeState === PresentationModeState.CHANGING;
     }
     get isHorizontalScrollbarEnabled() {
         return this.isInPresentationMode

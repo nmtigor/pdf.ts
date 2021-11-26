@@ -1,4 +1,4 @@
-import { EnumValueVisitor, EnumValueVisitorWithNull, EnumValueVisitorWithUndefined, EnumValueVisitorWithNullAndUndefined } from "./EnumValueVisitor.js";
+import { type EnumValueVisitor, type EnumValueVisitorWithNull, type EnumValueVisitorWithUndefined, type EnumValueVisitorWithNullAndUndefined } from "./EnumValueVisitor.js";
 /**
  * A wrapper around a string literal or string enum value to be visited.
  * Do not use this class directly. Use the {@link visitString} function to get an instance of this class.

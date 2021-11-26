@@ -28,41 +28,41 @@ import {
   escapeString,
   getModificationDate,
   isAscii,
-  matrix_t,
+  type matrix_t,
   OPS,
-  rect_t,
+  type rect_t,
   shadow,
   stringToPDFString,
   stringToUTF16BEString,
   Util,
   warn,
 } from "../shared/util.js";
-import { Dict, Name, Obj, Ref, RefSet } from "./primitives.js";
+import { Dict, Name, type Obj, Ref, RefSet } from "./primitives.js";
 import { ColorSpace } from "./colorspace.js";
 import { OperatorList } from "./operator_list.js";
 import { StringStream } from "./stream.js";
 import { writeDict } from "./writer.js";
 import { BasePdfManager } from "./pdf_manager.js";
-import { LocalIdFactory } from "./document.js";
+import { type LocalIdFactory } from "./document.js";
 import { EvalState, PartialEvaluator } from "./evaluator.js";
 import { WorkerTask } from "./worker.js";
-import { TupleOf } from "../../../lib/alias.js";
+import { type TupleOf } from "../../../lib/alias.js";
 import { ErrorFont, Font } from "./fonts.js";
-import { AnnotActions, collectActions, getInheritableProperty } from "./core_utils.js";
+import { type AnnotActions, collectActions, getInheritableProperty } from "./core_utils.js";
 import { 
   createDefaultAppearance,
-  DefaultAppearanceData, 
+  type DefaultAppearanceData, 
   parseDefaultAppearance,
 } from "./default_appearance.js";
-import { AnnotStorageRecord } from "../display/annotation_layer.js";
-import { Catalog, CatParseDestDictRes } from "./catalog.js";
-import { FileSpec, Serializable } from "./file_spec.js";
+import { type AnnotStorageRecord } from "../display/annotation_layer.js";
+import { Catalog, type CatParseDestDictRes } from "./catalog.js";
+import { FileSpec, type Serializable } from "./file_spec.js";
 import { ObjectLoader } from "./object_loader.js";
 import { XRef } from "./xref.js";
 import { BaseStream } from "./base_stream.js";
-import { bidi, BidiText } from "./bidi.js";
+import { bidi, type BidiText } from "./bidi.js";
 import { XFAFactory } from "./xfa/factory.js";
-import { XFAElObj, XFAHTMLObj } from "./xfa/alias.js";
+import { type XFAHTMLObj } from "./xfa/alias.js";
 /*81---------------------------------------------------------------------------*/
 
 type AnnotType =

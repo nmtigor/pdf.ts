@@ -17,12 +17,11 @@
  * limitations under the License.
  */
 
-import { global } from "../../../global.js";
 import { isObjectLike } from "../../../lib/jslang.js";
 import { HttpStatusCode } from "../../../lib/HttpStatusCode.js";
 import { assert }         from "../../../lib/util/trace.js";
 import { Ref } from "../core/primitives.js";
-import { IWorker } from "../core/worker.js";
+import { type IWorker } from "../core/worker.js";
 import { VerbosityLevel } from "../pdf.js";
 import {
   AbortException,
@@ -32,30 +31,41 @@ import {
   PasswordException,
   PasswordResponses,
   PermissionFlag,
-  PromiseCapability,
-  rect_t,
+  type PromiseCapability,
+  type rect_t,
   RenderingIntentFlag,
   UnexpectedResponseException,
   UnknownErrorException,
   UNSUPPORTED_FEATURES,
   warn,
 } from "./util.js";
-import { Intent, OutlineNode, PDFDocumentStats, RefProxy } from "../display/api.js";
-import { AnnotStorageRecord } from "../display/annotation_layer.js";
-import { DocumentInfo, XFAData } from "../core/document.js";
-import { TypeTextContentItem, BidiTextContentItem, FontStyle, ImgData } from "../core/evaluator.js";
+import { type OutlineNode, type PDFDocumentStats, type RefProxy } from "../display/api.js";
+import { type AnnotStorageRecord } from "../display/annotation_layer.js";
+import { type DocumentInfo, type XFAData } from "../core/document.js";
+import { 
+  type TypeTextContentItem, 
+  type BidiTextContentItem, 
+  type FontStyle, 
+  type ImgData 
+} from "../core/evaluator.js";
 import { FontExpotDataEx } from "../core/fonts.js";
-import { OpListIR } from "../core/operator_list.js";
-import { CmdArgs } from "../core/font_renderer.js";
-import { AnnotationData, FieldObject } from "../core/annotation.js";
+import { type OpListIR } from "../core/operator_list.js";
+import { type CmdArgs } from "../core/font_renderer.js";
+import { type AnnotationData, type FieldObject } from "../core/annotation.js";
 import { PageLayout, PageMode } from "../../pdf.ts-web/ui_utils.js";
-import { CMapData } from "../display/base_factory.js";
-import { ExplicitDest, MarkInfo, OpenAction, OptionalContentConfigData, ViewerPref } from "../core/catalog.js";
-import { SerializedMetadata } from "../core/metadata_parser.js";
-import { StructTree } from "../core/struct_tree.js";
-import { AnnotActions } from "../core/core_utils.js";
-import { ShadingPatternIR } from "../core/pattern.js";
-import { XFAElObj } from "../core/xfa/alias.js";
+import { type CMapData } from "../display/base_factory.js";
+import { 
+  type ExplicitDest, 
+  type MarkInfo, 
+  type OpenAction, 
+  type OptionalContentConfigData, 
+  type ViewerPref 
+} from "../core/catalog.js";
+import { type SerializedMetadata } from "../core/metadata_parser.js";
+import { type StructTree } from "../core/struct_tree.js";
+import { type AnnotActions } from "../core/core_utils.js";
+import { type ShadingPatternIR } from "../core/pattern.js";
+import { type XFAElObj } from "../core/xfa/alias.js";
 /*81---------------------------------------------------------------------------*/
 
 enum CallbackKind {

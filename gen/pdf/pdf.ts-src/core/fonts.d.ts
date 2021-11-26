@@ -1,8 +1,8 @@
-import { FontType, rect_t, matrix_t } from "../shared/util.js";
+import { FontType, type rect_t, type matrix_t } from "../shared/util.js";
 import { CMap } from "./cmap.js";
-import { FontProps, VMetric } from './evaluator.js';
-import { OpListIR } from './operator_list.js';
-import { CssFontInfo } from "./document.js";
+import { type FontProps, type VMetric } from './evaluator.js';
+import { type OpListIR } from './operator_list.js';
+import { type CssFontInfo } from "./document.js";
 import { BaseStream } from "./base_stream.js";
 import { IdentityToUnicodeMap, ToUnicodeMap } from "./to_unicode_map.js";
 import { CFFFont } from "./cff_font.js";

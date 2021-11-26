@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 import { assert } from '../../lib/util/trace.js';
+import { Locale } from '../../lib/Locale.js';
 import { viewerapp, DefaultExternalServices } from "./app.js";
 import { BasePreferences } from "./preferences.js";
 import { DownloadManager } from "./download_manager.js";
@@ -40,7 +41,7 @@ class GenericExternalServices extends DefaultExternalServices {
     }
     createDownloadManager() { return new DownloadManager(); }
     createPreferences() { return new GenericPreferences(); }
-    createL10n({ locale = "en-US" /* en_US */ } = {}) {
+    createL10n({ locale = Locale.en_US } = {}) {
         return new GenericL10n(locale);
     }
 }

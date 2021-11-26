@@ -737,13 +737,13 @@ var NsCFFParser;
         }
         parseCharsets(pos, length, strings, cid) {
             if (pos === 0) {
-                return new CFFCharset(true, 0 /* ISO_ADOBE */, ISOAdobeCharset);
+                return new CFFCharset(true, CFFCharsetPredefinedTypes.ISO_ADOBE, ISOAdobeCharset);
             }
             else if (pos === 1) {
-                return new CFFCharset(true, 1 /* EXPERT */, ExpertCharset);
+                return new CFFCharset(true, CFFCharsetPredefinedTypes.EXPERT, ExpertCharset);
             }
             else if (pos === 2) {
-                return new CFFCharset(true, 2 /* EXPERT_SUBSET */, ExpertSubsetCharset);
+                return new CFFCharset(true, CFFCharsetPredefinedTypes.EXPERT_SUBSET, ExpertSubsetCharset);
             }
             const bytes = this.bytes;
             const start = pos;
@@ -754,13 +754,13 @@ var NsCFFParser;
             length -= 1;
             // [CFF] 13 Charsets
             switch (format) {
-                case 0 /* ISO_ADOBE */:
+                case CFFCharsetPredefinedTypes.ISO_ADOBE:
                     for (i = 0; i < length; i++) {
                         id = (bytes[pos++] << 8) | bytes[pos++];
                         charset.push(cid ? id : strings.get(id));
                     }
                     break;
-                case 1 /* EXPERT */:
+                case CFFCharsetPredefinedTypes.EXPERT:
                     while (charset.length <= length) {
                         id = (bytes[pos++] << 8) | bytes[pos++];
                         count = bytes[pos++];
@@ -769,7 +769,7 @@ var NsCFFParser;
                         }
                     }
                     break;
-                case 2 /* EXPERT_SUBSET */:
+                case CFFCharsetPredefinedTypes.EXPERT_SUBSET:
                     while (charset.length <= length) {
                         id = (bytes[pos++] << 8) | bytes[pos++];
                         count = (bytes[pos++] << 8) | bytes[pos++];
@@ -1173,6 +1173,12 @@ var NsCFFPrivateDict;
     NsCFFPrivateDict.CFFPrivateDict = CFFPrivateDict;
 })(NsCFFPrivateDict || (NsCFFPrivateDict = {}));
 export var CFFPrivateDict = NsCFFPrivateDict.CFFPrivateDict;
+export var CFFCharsetPredefinedTypes;
+(function (CFFCharsetPredefinedTypes) {
+    CFFCharsetPredefinedTypes[CFFCharsetPredefinedTypes["ISO_ADOBE"] = 0] = "ISO_ADOBE";
+    CFFCharsetPredefinedTypes[CFFCharsetPredefinedTypes["EXPERT"] = 1] = "EXPERT";
+    CFFCharsetPredefinedTypes[CFFCharsetPredefinedTypes["EXPERT_SUBSET"] = 2] = "EXPERT_SUBSET";
+})(CFFCharsetPredefinedTypes || (CFFCharsetPredefinedTypes = {}));
 export class CFFCharset {
     predefined;
     format;

@@ -16,6 +16,7 @@
  * limitations under the License.
  */
 import { SCROLLBAR_PADDING, ScrollMode, SpreadMode } from "./ui_utils.js";
+import { CursorTool } from "./pdf_cursor_tools.js";
 import { PDFSinglePageViewer } from "./pdf_viewer.js";
 export class SecondaryToolbar {
     toolbar;
@@ -59,13 +60,13 @@ export class SecondaryToolbar {
             {
                 element: options.cursorSelectToolButton,
                 eventName: "switchcursortool",
-                eventDetails: { tool: 0 /* SELECT */ },
+                eventDetails: { tool: CursorTool.SELECT },
                 close: true,
             },
             {
                 element: options.cursorHandToolButton,
                 eventName: "switchcursortool",
-                eventDetails: { tool: 1 /* HAND */ },
+                eventDetails: { tool: CursorTool.HAND },
                 close: true,
             },
             {
@@ -189,8 +190,8 @@ export class SecondaryToolbar {
     }
     _bindCursorToolsListener(buttons) {
         this.eventBus._on("cursortoolchanged", function ({ tool }) {
-            buttons.cursorSelectToolButton.classList.toggle("toggled", tool === 0 /* SELECT */);
-            buttons.cursorHandToolButton.classList.toggle("toggled", tool === 1 /* HAND */);
+            buttons.cursorSelectToolButton.classList.toggle("toggled", tool === CursorTool.SELECT);
+            buttons.cursorHandToolButton.classList.toggle("toggled", tool === CursorTool.HAND);
         });
     }
     _bindScrollModeListener(buttons) {

@@ -15,7 +15,7 @@ import { encodeToXmlString,
 } from "./core_utils.js";
 import { Dict, Ref } from "./primitives.js";
 import { XRefMock } from "../../test_utils.js";
-import { CssFontInfo } from "./document.js";
+import { type CssFontInfo } from "./document.js";
 
 const strttime = performance.now();
 /*81---------------------------------------------------------------------------*/

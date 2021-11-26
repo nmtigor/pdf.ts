@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-import { OptionalContentConfigData, Order } from "../core/catalog.js";
-import { MarkedContentProps, VisibilityExpressionResult } from "../core/evaluator.js";
+import { type OptionalContentConfigData, type Order } from "../core/catalog.js";
+import { type MarkedContentProps, type VisibilityExpressionResult } from "../core/evaluator.js";
 import { objectFromMap, warn } from "../shared/util.js";
 /*81---------------------------------------------------------------------------*/
 

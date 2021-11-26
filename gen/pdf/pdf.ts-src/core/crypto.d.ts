@@ -1,5 +1,6 @@
 import { Dict, Name } from "./primitives.js";
 import { DecryptStream } from "./decrypt_stream.js";
+import { BaseStream } from "./base_stream.js";
 export declare class ARCFourCipher {
     a: number;
     b: number;
@@ -96,6 +97,5 @@ declare namespace NsCipherTransformFactory {
     }
 }
 export import CipherTransformFactory = NsCipherTransformFactory.CipherTransformFactory;
-import { BaseStream } from "./base_stream.js";
 export {};
 //# sourceMappingURL=crypto.d.ts.map

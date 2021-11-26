@@ -31,9 +31,7 @@ export const warn = ( msg:string, meta?:{url:string} ) =>
     const match = meta.url.match(/\/([^\/]+\.js)/);
     if( match ) msg += ` (${match[1]})`;
   }
-  // #if !TESTING
-    console.warn( msg );
-  // #endif
+  console.warn( msg );
 }
 
 let reporting_:Error | undefined;

@@ -27,7 +27,7 @@ import {
   AutoPrintRegExp,
   DEFAULT_SCALE_VALUE,
   EventBus,
-  EventMap,
+  type EventMap,
   getActiveOrFocusedElement,
   isValidRotation,
   isValidScrollMode,
@@ -42,7 +42,12 @@ import {
   SpreadMode,
   TextLayerMode,
 } from "./ui_utils.js";
-import { AppOptions, compatibilityParams, OptionKind, OptionName } from "./app_options.js";
+import { 
+  AppOptions, 
+  compatibilityParams, 
+  OptionKind, 
+  type OptionName 
+} from "./app_options.js";
 import {
   build,
   createPromiseCapability,
@@ -67,7 +72,7 @@ import { PasswordPrompt } from "./password_prompt.js";
 import { PDFAttachmentViewer } from "./pdf_attachment_viewer.js";
 import { PDFDocumentProperties } from "./pdf_document_properties.js";
 import { PDFFindBar } from "./pdf_find_bar.js";
-import { FindState, MatchesCount, PDFFindController } from "./pdf_find_controller.js";
+import { FindState, type MatchesCount, PDFFindController } from "./pdf_find_controller.js";
 import { PDFHistory } from "./pdf_history.js";
 import { PDFLayerViewer } from "./pdf_layer_viewer.js";
 import { PDFLinkService } from "./pdf_link_service.js";
@@ -78,29 +83,29 @@ import { PDFThumbnailViewer } from "./pdf_thumbnail_viewer.js";
 import { PDFViewer } from "./pdf_viewer.js";
 import { SecondaryToolbar } from "./secondary_toolbar.js";
 import { Toolbar } from "./toolbar.js";
-import { MultipleStored, ViewHistory } from "./view_history.js";
+import { type MultipleStored, ViewHistory } from "./view_history.js";
 import { PasswordResponses } from "../pdf.ts-src/shared/util.js";
 import { DownloadManager } from "./download_manager.js";
-import { ViewerConfiguration } from "./viewer.js";
+import { type ViewerConfiguration } from "./viewer.js";
 import { BasePreferences } from "./preferences.js";
 import { Locale } from "../../lib/Locale.js";
 import { 
-  DocumentInitParms, 
+  type DocumentInitParms, 
   PDFDataRangeTransport, 
   PDFDocumentLoadingTask, 
   PDFDocumentProxy, 
-  PDFDocumentStats
+  type PDFDocumentStats
 } from "../pdf.ts-src/display/api.js";
 import { Metadata } from "../pdf.ts-src/display/metadata.js";
-import { PageOverview } from "./base_viewer.js";
+import { type PageOverview } from "./base_viewer.js";
 import { OptionalContentConfig } from "../pdf.ts-src/display/optional_content_config.js";
 import { PDFPrintService } from "./pdf_print_service.js";
 import { PDFSidebar } from "./pdf_sidebar.js";
 import { assert } from "../../lib/util/trace.js";
-import { DocumentInfo } from "../pdf.ts-src/core/document.js";
-import { IL10n, IScripting } from "./interfaces.js";
+import { type DocumentInfo } from "../pdf.ts-src/core/document.js";
+import { type IL10n, IScripting } from "./interfaces.js";
 import { getPdfFilenameFromUrl, isPdfFile } from "../pdf.ts-src/display/display_utils.js";
-import { ExplicitDest, OpenAction } from "../pdf.ts-src/core/catalog.js";
+import { type ExplicitDest, type OpenAction } from "../pdf.ts-src/core/catalog.js";
 import { PDFScriptingManager } from "./pdf_scripting_manager.js";
 import { WorkerMessageHandler } from "../pdf.ts-src/core/worker.js";
 import { html } from "../../lib/dom.js";

@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-import { SerializedMetadata } from "../core/metadata_parser.js";
+import { type SerializedMetadata } from "../core/metadata_parser.js";
 import { objectFromMap } from "../shared/util.js";
 /*81---------------------------------------------------------------------------*/
 

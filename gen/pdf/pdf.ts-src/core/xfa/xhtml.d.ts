@@ -1,6 +1,6 @@
 import { $acceptWhitespace, $clean, $content, $onText, $pushGlyphs, $text, $toHTML, XmlObject } from "./xfa_object.js";
 import { $buildXFAObject } from "./namespaces.js";
-import { AvailableSpace, XFAAttrs } from "./alias.js";
+import { type AvailableSpace, type XFAAttrs } from "./alias.js";
 import { HTMLResult } from "./utils.js";
 import { TextMeasure } from "./text.js";
 import { Builder } from "./builder.js";

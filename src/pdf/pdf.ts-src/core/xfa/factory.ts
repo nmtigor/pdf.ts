@@ -20,14 +20,14 @@
 import { $appendChild, $globalData, $nodeName, $text, $toHTML } from "./xfa_object.js";
 import { Binder } from "./bind.js";
 import { XFAParser } from "./parser.js";
-import { XFAData } from "../document.js";
+import { type XFAData } from "../document.js";
 import { DataHandler } from "./data.js";
 import { FontFinder } from "./fonts.js";
-import { XFAElObj, XFAHTMLObj } from "./alias.js";
+import { type XFAElObj, type XFAHTMLObj } from "./alias.js";
 import { HTMLResult, stripQuotes } from "./utils.js";
-import { rect_t, warn } from "../../shared/util.js";
+import { type rect_t, warn } from "../../shared/util.js";
 import { ErrorFont, Font } from "../fonts.js";
-import { AnnotStorageRecord } from "../../display/annotation_layer.js";
+import { type AnnotStorageRecord } from "../../display/annotation_layer.js";
 import { Subform, Template } from "./template.js";
 import { XhtmlNamespace } from "./xhtml.js";
 /*81---------------------------------------------------------------------------*/

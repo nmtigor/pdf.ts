@@ -1,4 +1,4 @@
-import { EnumValueMapper, EnumValueMapperWithNull, EnumValueMapperWithUndefined, EnumValueMapperWithNullAndUndefined } from "./EnumValueMapper.js";
+import { type EnumValueMapper, type EnumValueMapperWithNull, type EnumValueMapperWithUndefined, type EnumValueMapperWithNullAndUndefined } from "./EnumValueMapper.js";
 /**
  * A wrapper around an enum or string/number literal value to be mapped.
  * Do not use this class directly. Use the {@link $enum.mapValue} function to

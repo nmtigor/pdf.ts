@@ -1,5 +1,4 @@
-import { UnPromisify } from "../../../lib/alias.js";
-import { AnnotStorageRecord } from "../display/annotation_layer.js";
+import { type AnnotStorageRecord } from "../display/annotation_layer.js";
 import { Thread, MessageHandler } from "../shared/message_handler.js";
 import { AbortException } from "../shared/util.js";
 import { AnnotationFactory } from "./annotation.js";
@@ -35,18 +34,18 @@ export declare abstract class BasePdfManager {
     constructor(docId: string, docBaseUrl?: string);
     abstract onLoadedStream(): Promise<Stream>;
     /** @fianl */
-    ensureDoc<P extends keyof PDFDocument, A = PDFDocument[P] extends (...args: any) => any ? Parameters<PDFDocument[P]> : undefined>(prop: P, args?: A): Promise<UnPromisify<PDFDocument[P] extends (...args: any) => any ? ReturnType<PDFDocument[P]> : PDFDocument[P]>>;
+    ensureDoc<P extends keyof PDFDocument, A = PDFDocument[P] extends (...args: any) => any ? Parameters<PDFDocument[P]> : undefined>(prop: P, args?: A): Promise<Awaited<PDFDocument[P] extends (...args: any) => any ? ReturnType<PDFDocument[P]> : PDFDocument[P]>>;
     /** @fianl */
-    ensureXRef<P extends keyof XRef, A = XRef[P] extends (...args: any) => any ? Parameters<XRef[P]> : undefined>(prop: P, args?: A): Promise<UnPromisify<XRef[P] extends (...args: any) => any ? ReturnType<XRef[P]> : XRef[P]>>;
+    ensureXRef<P extends keyof XRef, A = XRef[P] extends (...args: any) => any ? Parameters<XRef[P]> : undefined>(prop: P, args?: A): Promise<Awaited<XRef[P] extends (...args: any) => any ? ReturnType<XRef[P]> : XRef[P]>>;
     /** @fianl */
-    ensureCatalog<P extends keyof Catalog, A = Catalog[P] extends (...args: any) => any ? Parameters<Catalog[P]> : undefined>(prop: P, args?: A): Promise<UnPromisify<Catalog[P] extends (...args: any) => any ? ReturnType<Catalog[P]> : Catalog[P]>>;
+    ensureCatalog<P extends keyof Catalog, A = Catalog[P] extends (...args: any) => any ? Parameters<Catalog[P]> : undefined>(prop: P, args?: A): Promise<Awaited<Catalog[P] extends (...args: any) => any ? ReturnType<Catalog[P]> : Catalog[P]>>;
     getPage(pageIndex: number): Promise<Page>;
     fontFallback(id: string, handler: MessageHandler<Thread.worker>): Promise<void>;
     loadXfaFonts(handler: MessageHandler<Thread.worker>, task: WorkerTask): Promise<void>;
     loadXfaImages(): Promise<void>;
     serializeXfaData(annotationStorage: AnnotStorageRecord | undefined): Promise<string | undefined>;
     cleanup(manuallyTriggered?: boolean): Promise<void>;
-    abstract ensure<O extends PDFDocument | Page | XRef | Catalog | AnnotationFactory, P extends keyof O, A = O[P] extends (...args: any) => any ? Parameters<O[P]> : undefined, R = O[P] extends (...args: any) => any ? ReturnType<O[P]> : O[P]>(obj: O, prop: P, args?: A): Promise<UnPromisify<R>>;
+    abstract ensure<O extends PDFDocument | Page | XRef | Catalog | AnnotationFactory, P extends keyof O, A = O[P] extends (...args: any) => any ? Parameters<O[P]> : undefined, R = O[P] extends (...args: any) => any ? ReturnType<O[P]> : O[P]>(obj: O, prop: P, args?: A): Promise<Awaited<R>>;
     abstract requestRange(begin: number, end: number): Promise<void>;
     abstract requestLoadedStream(): void;
     sendProgressiveData?(chunk: ArrayBufferLike): void;
@@ -57,7 +56,7 @@ export declare class LocalPdfManager extends BasePdfManager {
     #private;
     constructor(docId: string, data: Uint8Array | number[], evaluatorOptions: EvaluatorOptions, password?: string, enableXfa?: boolean, docBaseUrl?: string);
     /** @implements */
-    ensure<O extends PDFDocument | Page | XRef | Catalog | AnnotationFactory, P extends keyof O, A = O[P] extends (...args: any) => any ? Parameters<O[P]> : undefined, R = O[P] extends (...args: any) => any ? ReturnType<O[P]> : O[P]>(obj: O, prop: P, args: A): Promise<UnPromisify<R>>;
+    ensure<O extends PDFDocument | Page | XRef | Catalog | AnnotationFactory, P extends keyof O, A = O[P] extends (...args: any) => any ? Parameters<O[P]> : undefined, R = O[P] extends (...args: any) => any ? ReturnType<O[P]> : O[P]>(obj: O, prop: P, args: A): Promise<Awaited<R>>;
     /** @override */
     requestRange(begin: number, end: number): Promise<void>;
     /** @override */
@@ -79,7 +78,7 @@ export declare class NetworkPdfManager extends BasePdfManager {
     streamManager: ChunkedStreamManager;
     constructor(docId: string, pdfNetworkStream: PDFWorkerStream, args: NetworkPdfManagerCtorParms, evaluatorOptions: EvaluatorOptions, enableXfa?: boolean, docBaseUrl?: string);
     /** @implements */
-    ensure<O extends PDFDocument | Page | XRef | Catalog | AnnotationFactory, P extends keyof O, A = O[P] extends (...args: any) => any ? Parameters<O[P]> : undefined, R = O[P] extends (...args: any) => any ? ReturnType<O[P]> : O[P]>(obj: O, prop: P, args: A): Promise<UnPromisify<R>>;
+    ensure<O extends PDFDocument | Page | XRef | Catalog | AnnotationFactory, P extends keyof O, A = O[P] extends (...args: any) => any ? Parameters<O[P]> : undefined, R = O[P] extends (...args: any) => any ? ReturnType<O[P]> : O[P]>(obj: O, prop: P, args: A): Promise<Awaited<R>>;
     /** @override */
     requestRange(begin: number, end: number): Promise<void>;
     /** @override */

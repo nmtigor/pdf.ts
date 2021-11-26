@@ -1,6 +1,21 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2021
  */
+/* Copyright 2012 Mozilla Foundation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import { HttpStatusCode } from "../../../lib/HttpStatusCode.js";
 import { assert } from "../../../lib/util/trace.js";
 import { createPromiseCapability, stringToBytes, } from "../shared/util.js";
 import { createResponseStatusError, extractFilenameFromHeader, validateRangeRequestCapabilities, } from "./network_utils.js";
@@ -53,10 +68,10 @@ class NetworkManager {
         }
         if (this.isHttp && "begin" in args && "end" in args) {
             xhr.setRequestHeader("Range", `bytes=${args.begin}-${args.end - 1}`);
-            pendingRequest.expectedStatus = 206 /* PARTIAL_CONTENT */;
+            pendingRequest.expectedStatus = HttpStatusCode.PARTIAL_CONTENT;
         }
         else {
-            pendingRequest.expectedStatus = 200 /* OK */;
+            pendingRequest.expectedStatus = HttpStatusCode.OK;
         }
         xhr.responseType = "arraybuffer";
         if (args.onError) {
@@ -104,19 +119,19 @@ class NetworkManager {
             pendingRequest.onError?.(xhr.status);
             return;
         }
-        const xhrStatus = xhr.status || 200 /* OK */;
+        const xhrStatus = xhr.status || HttpStatusCode.OK;
         // From http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html#sec14.35.2:
         // "A server MAY ignore the Range header". This means it's possible to
         // get a 200 rather than a 206 response from a range request.
-        const ok_response_on_range_request = xhrStatus === 200 /* OK */ &&
-            pendingRequest.expectedStatus === 206 /* PARTIAL_CONTENT */;
+        const ok_response_on_range_request = xhrStatus === HttpStatusCode.OK &&
+            pendingRequest.expectedStatus === HttpStatusCode.PARTIAL_CONTENT;
         if (!ok_response_on_range_request
             && xhrStatus !== pendingRequest.expectedStatus) {
             pendingRequest.onError?.(xhr.status);
             return;
         }
         const chunk = getArrayBuffer(xhr);
-        if (xhrStatus === 206 /* PARTIAL_CONTENT */) {
+        if (xhrStatus === HttpStatusCode.PARTIAL_CONTENT) {
             const rangeHeader = xhr.getResponseHeader("Content-Range");
             const matches = /bytes (\d+)-(\d+)\/(\d+)/.exec(rangeHeader);
             pendingRequest.onDone({

@@ -1,22 +1,22 @@
 import { RenderingIntentFlag } from "../shared/util.js";
 import { Dict, Name, Ref, RefSet, RefSetCache } from "./primitives.js";
-import { XFAFontMetrics } from "./xfa_fonts.js";
+import { type XFAFontMetrics } from "./xfa_fonts.js";
 import { Stream } from "./stream.js";
-import { Annotation, AnnotationData, FieldObject, SaveReturn } from "./annotation.js";
+import { Annotation, type AnnotationData, type FieldObject, type SaveReturn } from "./annotation.js";
 import { Linearization } from "./parser.js";
 import { TranslatedFont } from "./evaluator.js";
 import { BasePdfManager } from "./pdf_manager.js";
-import { Thread, MessageHandler, StreamSink } from "../shared/message_handler.js";
+import { Thread, MessageHandler, type StreamSink } from "../shared/message_handler.js";
 import { WorkerTask } from "./worker.js";
 import { GlobalImageCache } from "./image_utils.js";
-import { AnnotStorageRecord } from "../display/annotation_layer.js";
-import { CMapData } from "../display/base_factory.js";
+import { type AnnotStorageRecord } from "../display/annotation_layer.js";
+import { type CMapData } from "../display/base_factory.js";
 import { Catalog } from "./catalog.js";
 import { XRef } from "./xref.js";
 import { StructTreePage, StructTreeRoot } from "./struct_tree.js";
 import { BaseStream } from "./base_stream.js";
 import { XFAFactory } from "./xfa/factory.js";
-import { XFAElObj } from "./xfa/alias.js";
+import { type XFAElObj } from "./xfa/alias.js";
 export interface LocalIdFactory extends GlobalIdFactory {
     createObjId(): string;
 }

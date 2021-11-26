@@ -17,7 +17,7 @@
  */
 import { html } from "../../../lib/dom.js";
 import { assert } from "../../../lib/util/trace.js";
-import { bytesToString, IsEvalSupportedCached, shadow, string32, warn, } from "../shared/util.js";
+import { bytesToString, IsEvalSupportedCached, shadow, string32, UNSUPPORTED_FEATURES, warn, } from "../shared/util.js";
 import { FontExpotDataEx } from "../core/fonts.js";
 class BaseFontLoader {
     docId;
@@ -74,7 +74,7 @@ class BaseFontLoader {
                 }
                 catch (ex) {
                     this._onUnsupportedFeature({
-                        featureId: "errorFontLoadNative" /* errorFontLoadNative */,
+                        featureId: UNSUPPORTED_FEATURES.errorFontLoadNative,
                     });
                     warn(`Failed to load font '${nativeFontFace.family}': '${ex}'.`);
                     // When font loading failed, fall back to the built-in font renderer.
@@ -351,7 +351,7 @@ export class FontFaceObject extends FontExpotDataEx {
                 throw ex;
             }
             this._onUnsupportedFeature({
-                featureId: "errorFontGetPath" /* errorFontGetPath */,
+                featureId: UNSUPPORTED_FEATURES.errorFontGetPath,
             });
             warn(`getPathGenerator - ignoring character: "${ex}".`);
             return (this.compiledGlyphs[character] = function (c, size) {

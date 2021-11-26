@@ -1,20 +1,20 @@
-import { AnnotationBorderStyleType, AnnotationFieldFlag, AnnotationFlag, AnnotationReplyType, AnnotationType, rect_t } from "../shared/util.js";
+import { AnnotationBorderStyleType, AnnotationFieldFlag, AnnotationFlag, AnnotationReplyType, AnnotationType, type rect_t } from "../shared/util.js";
 import { Dict, Name, Ref } from "./primitives.js";
 import { OperatorList } from "./operator_list.js";
 import { BasePdfManager } from "./pdf_manager.js";
-import { LocalIdFactory } from "./document.js";
+import { type LocalIdFactory } from "./document.js";
 import { PartialEvaluator } from "./evaluator.js";
 import { WorkerTask } from "./worker.js";
-import { TupleOf } from "../../../lib/alias.js";
-import { AnnotActions } from "./core_utils.js";
-import { DefaultAppearanceData } from "./default_appearance.js";
-import { AnnotStorageRecord } from "../display/annotation_layer.js";
-import { CatParseDestDictRes } from "./catalog.js";
-import { Serializable } from "./file_spec.js";
+import { type TupleOf } from "../../../lib/alias.js";
+import { type AnnotActions } from "./core_utils.js";
+import { type DefaultAppearanceData } from "./default_appearance.js";
+import { type AnnotStorageRecord } from "../display/annotation_layer.js";
+import { type CatParseDestDictRes } from "./catalog.js";
+import { type Serializable } from "./file_spec.js";
 import { XRef } from "./xref.js";
 import { BaseStream } from "./base_stream.js";
-import { BidiText } from "./bidi.js";
-import { XFAHTMLObj } from "./xfa/alias.js";
+import { type BidiText } from "./bidi.js";
+import { type XFAHTMLObj } from "./xfa/alias.js";
 declare type AnnotType = "Caret" | "Circle" | "FileAttachment" | "FreeText" | "Ink" | "Line" | "Link" | "Highlight" | "Polygon" | "PolyLine" | "Popup" | "Stamp" | "Square" | "Squiggly" | "StrikeOut" | "Text" | "Underline" | "Widget";
 export declare class AnnotationFactory {
     /**

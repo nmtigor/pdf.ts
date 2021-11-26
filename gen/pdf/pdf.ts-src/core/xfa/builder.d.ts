@@ -1,7 +1,7 @@
 import { $finalize, $ids, $onChild, XFAObject } from "./xfa_object.js";
-import { XFAKnownNs } from "./setup.js";
+import { type XFAKnownNs } from "./setup.js";
 import { UnknownNamespace } from "./unknown.js";
-import { XFACleanup, XFAIds, XFANsAttrs, XFAPrefix } from "./alias.js";
+import { type XFACleanup, type XFAIds, type XFANsAttrs, type XFAPrefix } from "./alias.js";
 export declare class Root extends XFAObject {
     element?: XFAObject;
     [$ids]: XFAIds;

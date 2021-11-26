@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { info } from "../shared/util.js";
+import { FontType, info } from "../shared/util.js";
 import { getEncoding, StandardEncoding } from "./encodings.js";
 import { getGlyphsUnicode } from "./glyphlist.js";
 import { getUnicodeForGlyph } from "./unicode.js";
@@ -28,6 +28,18 @@ import { getUnicodeForGlyph } from "./unicode.js";
 // that the charset must be a predefined one, however we build a
 // custom one. Windows just refuses to draw glyphs with seac operators.
 export const SEAC_ANALYSIS_ENABLED = true;
+export var FontFlags;
+(function (FontFlags) {
+    FontFlags[FontFlags["FixedPitch"] = 1] = "FixedPitch";
+    FontFlags[FontFlags["Serif"] = 2] = "Serif";
+    FontFlags[FontFlags["Symbolic"] = 4] = "Symbolic";
+    FontFlags[FontFlags["Script"] = 8] = "Script";
+    FontFlags[FontFlags["Nonsymbolic"] = 32] = "Nonsymbolic";
+    FontFlags[FontFlags["Italic"] = 64] = "Italic";
+    FontFlags[FontFlags["AllCap"] = 65536] = "AllCap";
+    FontFlags[FontFlags["SmallCap"] = 131072] = "SmallCap";
+    FontFlags[FontFlags["ForceBold"] = 262144] = "ForceBold";
+})(FontFlags || (FontFlags = {}));
 // prettier-ignore
 export const MacStandardGlyphOrdering = [
     ".notdef", ".null", "nonmarkingreturn", "space", "exclam", "quotedbl",
@@ -71,18 +83,18 @@ export function getFontType(type, subtype, isStandardFont = false) {
     switch (type) {
         case "Type1":
             if (isStandardFont)
-                return "TYPE1STANDARD" /* TYPE1STANDARD */;
-            return subtype === "Type1C" ? "TYPE1C" /* TYPE1C */ : "TYPE1" /* TYPE1 */;
+                return FontType.TYPE1STANDARD;
+            return subtype === "Type1C" ? FontType.TYPE1C : FontType.TYPE1;
         case "CIDFontType0":
             return subtype === "CIDFontType0C"
-                ? "CIDFONTTYPE0C" /* CIDFONTTYPE0C */
-                : "CIDFONTTYPE0" /* CIDFONTTYPE0 */;
-        case "OpenType": return "OPENTYPE" /* OPENTYPE */;
-        case "TrueType": return "TRUETYPE" /* TRUETYPE */;
-        case "CIDFontType2": return "CIDFONTTYPE2" /* CIDFONTTYPE2 */;
-        case "MMType1": return "MMTYPE1" /* MMTYPE1 */;
-        case "Type0": return "TYPE0" /* TYPE0 */;
-        default: return "UNKNOWN" /* UNKNOWN */;
+                ? FontType.CIDFONTTYPE0C
+                : FontType.CIDFONTTYPE0;
+        case "OpenType": return FontType.OPENTYPE;
+        case "TrueType": return FontType.TRUETYPE;
+        case "CIDFontType2": return FontType.CIDFONTTYPE2;
+        case "MMType1": return FontType.MMTYPE1;
+        case "Type0": return FontType.TYPE0;
+        default: return FontType.UNKNOWN;
     }
 }
 // Some bad PDF generators, e.g. Scribus PDF, include glyph names
@@ -114,7 +126,7 @@ export function recoverGlyphName(name, glyphsUnicodeMap) {
 export function type1FontGlyphMapping(properties, builtInEncoding, glyphNames) {
     const charCodeToGlyphId = Object.create(null);
     let glyphId, charCode, baseEncoding;
-    const isSymbolicFont = !!(properties.flags & 4 /* Symbolic */);
+    const isSymbolicFont = !!(properties.flags & FontFlags.Symbolic);
     if (properties.isInternalFont) {
         baseEncoding = builtInEncoding;
         for (charCode = 0; charCode < baseEncoding.length; charCode++) {

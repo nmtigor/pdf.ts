@@ -1,14 +1,14 @@
-import { ImageLayer, PDFCommonObjs, PDFObjects, PDFObjs } from "./api.js";
-import { matrix_t, OPS, rect_t, TextRenderingMode } from "../shared/util.js";
+import { type ImageLayer, type PDFCommonObjs, PDFObjects, type PDFObjs } from "./api.js";
+import { type matrix_t, OPS, type rect_t, TextRenderingMode } from "../shared/util.js";
 import { PageViewport } from "./display_utils.js";
-import { RadialAxialShadingPattern, ShadingPattern, TilingPattern } from "./pattern_helper.js";
+import { RadialAxialShadingPattern, type ShadingPattern, TilingPattern } from "./pattern_helper.js";
 import { OptionalContentConfig } from "./optional_content_config.js";
-import { ImgData, MarkedContentProps, SmaskOptions } from "../core/evaluator.js";
+import { type ImgData, type MarkedContentProps, type SmaskOptions } from "../core/evaluator.js";
 import { Glyph } from "../core/fonts.js";
-import { AddToPath, FontFaceObject } from "./font_loader.js";
-import { PatternIR, ShadingType } from "../core/pattern.js";
-import { OpListIR } from "../core/operator_list.js";
-import { BaseCanvasFactory, CanvasEntry } from "./base_factory.js";
+import { type AddToPath, FontFaceObject } from "./font_loader.js";
+import { type PatternIR, ShadingType } from "../core/pattern.js";
+import { type OpListIR } from "../core/operator_list.js";
+import { BaseCanvasFactory, type CanvasEntry } from "./base_factory.js";
 declare type C2D = CanvasRenderingContext2D;
 declare global {
     interface CanvasRenderingContext2D {

@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 import { assert } from "../../../lib/util/trace.js";
-import { AnnotationActionEventType, escapeString, getModificationDate, isAscii, shadow, stringToPDFString, stringToUTF16BEString, Util, warn, } from "../shared/util.js";
+import { AnnotationActionEventType, AnnotationBorderStyleType, AnnotationFieldFlag, AnnotationFlag, AnnotationReplyType, AnnotationType, escapeString, getModificationDate, isAscii, OPS, shadow, stringToPDFString, stringToUTF16BEString, Util, warn, } from "../shared/util.js";
 import { Dict, Name, Ref, RefSet } from "./primitives.js";
 import { ColorSpace } from "./colorspace.js";
 import { OperatorList } from "./operator_list.js";
@@ -283,8 +283,8 @@ export class Annotation {
         return this._hasFlag(this.flags, flag);
     }
     _isViewable(flags) {
-        return !this._hasFlag(flags, 1 /* INVISIBLE */)
-            && !this._hasFlag(flags, 32 /* NOVIEW */);
+        return !this._hasFlag(flags, AnnotationFlag.INVISIBLE)
+            && !this._hasFlag(flags, AnnotationFlag.NOVIEW);
     }
     get viewable() {
         if (this.data.quadPoints === undefined) {
@@ -307,11 +307,11 @@ export class Annotation {
         if (storageEntry && storageEntry.hidden !== undefined) {
             return !storageEntry.hidden;
         }
-        return this.viewable && !this._hasFlag(this.flags, 2 /* HIDDEN */);
+        return this.viewable && !this._hasFlag(this.flags, AnnotationFlag.HIDDEN);
     }
     #isPrintable(flags) {
-        return this._hasFlag(flags, 4 /* PRINT */)
-            && !this._hasFlag(flags, 1 /* INVISIBLE */);
+        return this._hasFlag(flags, AnnotationFlag.PRINT)
+            && !this._hasFlag(flags, AnnotationFlag.INVISIBLE);
     }
     get printable() {
         if (this.data.quadPoints === undefined)
@@ -575,7 +575,7 @@ export class Annotation {
         const transform = getTransformMatrix(data.rect, bbox, matrix);
         return resourcesPromise.then(resources => {
             const opList = new OperatorList();
-            opList.addOp(80 /* beginAnnotation */, [
+            opList.addOp(OPS.beginAnnotation, [
                 data.id,
                 data.rect,
                 transform,
@@ -590,7 +590,7 @@ export class Annotation {
                 fallbackFontDict: this._fallbackFontDict,
             })
                 .then(() => {
-                opList.addOp(81 /* endAnnotation */, []);
+                opList.addOp(OPS.endAnnotation, []);
                 this.reset();
                 return opList;
             });
@@ -696,7 +696,7 @@ export class Annotation {
  */
 export class AnnotationBorderStyle {
     width = 1;
-    style = 1 /* SOLID */;
+    style = AnnotationBorderStyleType.SOLID;
     dashArray = [3];
     horizontalCornerRadius = 0;
     verticalCornerRadius = 0;
@@ -742,19 +742,19 @@ export class AnnotationBorderStyle {
             return;
         switch (style.name) {
             case "S":
-                this.style = 1 /* SOLID */;
+                this.style = AnnotationBorderStyleType.SOLID;
                 break;
             case "D":
-                this.style = 2 /* DASHED */;
+                this.style = AnnotationBorderStyleType.DASHED;
                 break;
             case "B":
-                this.style = 3 /* BEVELED */;
+                this.style = AnnotationBorderStyleType.BEVELED;
                 break;
             case "I":
-                this.style = 4 /* INSET */;
+                this.style = AnnotationBorderStyleType.INSET;
                 break;
             case "U":
-                this.style = 5 /* UNDERLINE */;
+                this.style = AnnotationBorderStyleType.UNDERLINE;
                 break;
             default:
                 break;
@@ -846,9 +846,9 @@ export class MarkupAnnotation extends Annotation {
             const rawIRT = dict.getRaw("IRT");
             this.data.inReplyTo = (rawIRT instanceof Ref) ? rawIRT.toString() : undefined;
             const rt = dict.get("RT");
-            this.data.replyType = (rt instanceof Name) ? rt.name : "R" /* REPLY */;
+            this.data.replyType = (rt instanceof Name) ? rt.name : AnnotationReplyType.REPLY;
         }
-        if (this.data.replyType === "Group" /* GROUP */) {
+        if (this.data.replyType === AnnotationReplyType.GROUP) {
             // Subordinate annotations in a group should inherit
             // the group attributes from the primary annotation.
             const parent = dict.get("IRT");
@@ -974,7 +974,7 @@ class WidgetAnnotation extends Annotation {
         const dict = params.dict;
         const data = this.data;
         this.ref = params.ref;
-        data.annotationType = 20 /* WIDGET */;
+        data.annotationType = AnnotationType.WIDGET;
         if (data.fieldName === undefined) {
             data.fieldName = this.constructFieldName$(dict);
         }
@@ -1023,8 +1023,8 @@ class WidgetAnnotation extends Annotation {
         if (!Number.isInteger(data.fieldFlags) || data.fieldFlags < 0) {
             data.fieldFlags = 0;
         }
-        data.readOnly = this.hasFieldFlag(1 /* READONLY */);
-        data.hidden = this._hasFlag(data.annotationFlags, 2 /* HIDDEN */);
+        data.readOnly = this.hasFieldFlag(AnnotationFieldFlag.READONLY);
+        data.hidden = this._hasFlag(data.annotationFlags, AnnotationFlag.HIDDEN);
     }
     /**
      * Decode the given form value.
@@ -1081,7 +1081,7 @@ class WidgetAnnotation extends Annotation {
                 this.data.rect[3] - this.data.rect[1],
             ];
             const transform = getTransformMatrix(this.data.rect, bbox, matrix);
-            operatorList.addOp(80 /* beginAnnotation */, [
+            operatorList.addOp(OPS.beginAnnotation, [
                 this.data.id,
                 this.data.rect,
                 transform,
@@ -1096,7 +1096,7 @@ class WidgetAnnotation extends Annotation {
                 operatorList,
             })
                 .then(function () {
-                operatorList.addOp(81 /* endAnnotation */, []);
+                operatorList.addOp(OPS.endAnnotation, []);
                 return operatorList;
             });
         });
@@ -1167,7 +1167,7 @@ class WidgetAnnotation extends Annotation {
         return "";
     }
     async _getAppearance(evaluator, task, annotationStorage) {
-        const isPassword = this.hasFieldFlag(8192 /* PASSWORD */);
+        const isPassword = this.hasFieldFlag(AnnotationFieldFlag.PASSWORD);
         if (!annotationStorage || isPassword)
             return undefined;
         const storageEntry = annotationStorage.get(this.data.id);
@@ -1360,12 +1360,12 @@ class TextWidgetAnnotation extends WidgetAnnotation {
         }
         this.data.maxLen = maximumLength;
         // Process field flags for the display layer.
-        this.data.multiLine = this.hasFieldFlag(4096 /* MULTILINE */);
+        this.data.multiLine = this.hasFieldFlag(AnnotationFieldFlag.MULTILINE);
         this.data.comb =
-            this.hasFieldFlag(16777216 /* COMB */) &&
-                !this.hasFieldFlag(4096 /* MULTILINE */) &&
-                !this.hasFieldFlag(8192 /* PASSWORD */) &&
-                !this.hasFieldFlag(1048576 /* FILESELECT */) &&
+            this.hasFieldFlag(AnnotationFieldFlag.COMB) &&
+                !this.hasFieldFlag(AnnotationFieldFlag.MULTILINE) &&
+                !this.hasFieldFlag(AnnotationFieldFlag.PASSWORD) &&
+                !this.hasFieldFlag(AnnotationFieldFlag.FILESELECT) &&
                 this.data.maxLen !== null;
     }
     _getCombAppearance(defaultAppearance, font, text, width, hPadding, vPadding) {
@@ -1464,7 +1464,7 @@ class TextWidgetAnnotation extends WidgetAnnotation {
             value: this.data.fieldValue,
             defaultValue: this.data.defaultFieldValue,
             multiline: this.data.multiLine,
-            password: this.hasFieldFlag(8192 /* PASSWORD */),
+            password: this.hasFieldFlag(AnnotationFieldFlag.PASSWORD),
             charLimit: this.data.maxLen,
             comb: this.data.comb,
             editable: !this.data.readOnly,
@@ -1486,12 +1486,12 @@ class ButtonWidgetAnnotation extends WidgetAnnotation {
     constructor(params) {
         super(params);
         this.data.checkBox =
-            !this.hasFieldFlag(32768 /* RADIO */) &&
-                !this.hasFieldFlag(65536 /* PUSHBUTTON */);
+            !this.hasFieldFlag(AnnotationFieldFlag.RADIO) &&
+                !this.hasFieldFlag(AnnotationFieldFlag.PUSHBUTTON);
         this.data.radioButton =
-            this.hasFieldFlag(32768 /* RADIO */) &&
-                !this.hasFieldFlag(65536 /* PUSHBUTTON */);
-        this.data.pushButton = this.hasFieldFlag(65536 /* PUSHBUTTON */);
+            this.hasFieldFlag(AnnotationFieldFlag.RADIO) &&
+                !this.hasFieldFlag(AnnotationFieldFlag.PUSHBUTTON);
+        this.data.pushButton = this.hasFieldFlag(AnnotationFieldFlag.PUSHBUTTON);
         this.data.isTooltipOnly = false;
         if (this.data.checkBox)
             this._processCheckBox(params);
@@ -1868,8 +1868,8 @@ class ChoiceWidgetAnnotation extends WidgetAnnotation {
             this.data.fieldValue = [];
         }
         // Process field flags for the display layer.
-        this.data.combo = this.hasFieldFlag(131072 /* COMBO */);
-        this.data.multiSelect = this.hasFieldFlag(2097152 /* MULTISELECT */);
+        this.data.combo = this.hasFieldFlag(AnnotationFieldFlag.COMBO);
+        this.data.multiSelect = this.hasFieldFlag(AnnotationFieldFlag.MULTISELECT);
         this._hasText = true;
     }
     getFieldObject() {
@@ -1915,7 +1915,7 @@ class TextAnnotation extends MarkupAnnotation {
         const DEFAULT_ICON_SIZE = 22; // px
         super(parameters);
         const dict = parameters.dict;
-        this.data.annotationType = 1 /* TEXT */;
+        this.data.annotationType = AnnotationType.TEXT;
         if (this.data.hasAppearance) {
             this.data.name = "NoIcon";
         }
@@ -1937,7 +1937,7 @@ class TextAnnotation extends MarkupAnnotation {
 class LinkAnnotation extends Annotation {
     constructor(params) {
         super(params);
-        this.data.annotationType = 2 /* LINK */;
+        this.data.annotationType = AnnotationType.LINK;
         const quadPoints = getQuadPoints(params.dict, this.rectangle);
         if (quadPoints) {
             this.data.quadPoints = quadPoints;
@@ -1952,7 +1952,7 @@ class LinkAnnotation extends Annotation {
 class PopupAnnotation extends Annotation {
     constructor(parameters) {
         super(parameters);
-        this.data.annotationType = 16 /* POPUP */;
+        this.data.annotationType = AnnotationType.POPUP;
         let parentItem = parameters.dict.get("Parent");
         if (!parentItem) {
             warn("Popup annotation has a missing or invalid parent annotation.");
@@ -1970,7 +1970,7 @@ class PopupAnnotation extends Annotation {
             this.data.parentRect = [0, 0, 0, 0];
         }
         const rt = parentItem.get("RT");
-        if (rt instanceof Name && rt.name === "Group" /* GROUP */) {
+        if (rt instanceof Name && rt.name === AnnotationReplyType.GROUP) {
             // Subordinate annotations in a group should inherit
             // the group attributes from the primary annotation.
             parentItem = parentItem.get("IRT");
@@ -2011,13 +2011,13 @@ class PopupAnnotation extends Annotation {
 class FreeTextAnnotation extends MarkupAnnotation {
     constructor(parameters) {
         super(parameters);
-        this.data.annotationType = 3 /* FREETEXT */;
+        this.data.annotationType = AnnotationType.FREETEXT;
     }
 }
 class LineAnnotation extends MarkupAnnotation {
     constructor(parameters) {
         super(parameters);
-        this.data.annotationType = 4 /* LINE */;
+        this.data.annotationType = AnnotationType.LINE;
         const lineCoordinates = parameters.dict.getArray("L");
         this.data.lineCoordinates = Util.normalizeRect(lineCoordinates);
         if (!this.appearance) {
@@ -2071,7 +2071,7 @@ class LineAnnotation extends MarkupAnnotation {
 class SquareAnnotation extends MarkupAnnotation {
     constructor(parameters) {
         super(parameters);
-        this.data.annotationType = 5 /* SQUARE */;
+        this.data.annotationType = AnnotationType.SQUARE;
         if (!this.appearance) {
             // The default stroke color is black.
             const strokeColor = this.color
@@ -2119,7 +2119,7 @@ class SquareAnnotation extends MarkupAnnotation {
 class CircleAnnotation extends MarkupAnnotation {
     constructor(parameters) {
         super(parameters);
-        this.data.annotationType = 6 /* CIRCLE */;
+        this.data.annotationType = AnnotationType.CIRCLE;
         if (!this.appearance) {
             // The default stroke color is black.
             const strokeColor = this.color
@@ -2176,7 +2176,7 @@ class CircleAnnotation extends MarkupAnnotation {
 class PolylineAnnotation extends MarkupAnnotation {
     constructor(parameters) {
         super(parameters);
-        this.data.annotationType = 8 /* POLYLINE */;
+        this.data.annotationType = AnnotationType.POLYLINE;
         this.data.vertices = [];
         // The vertices array is an array of numbers representing the alternating
         // horizontal and vertical coordinates, respectively, of each vertex.
@@ -2231,19 +2231,19 @@ class PolygonAnnotation extends PolylineAnnotation {
     constructor(parameters) {
         // Polygons are specific forms of polylines, so reuse their logic.
         super(parameters);
-        this.data.annotationType = 7 /* POLYGON */;
+        this.data.annotationType = AnnotationType.POLYGON;
     }
 }
 class CaretAnnotation extends MarkupAnnotation {
     constructor(parameters) {
         super(parameters);
-        this.data.annotationType = 14 /* CARET */;
+        this.data.annotationType = AnnotationType.CARET;
     }
 }
 class InkAnnotation extends MarkupAnnotation {
     constructor(parameters) {
         super(parameters);
-        this.data.annotationType = 15 /* INK */;
+        this.data.annotationType = AnnotationType.INK;
         this.data.inkLists = [];
         const rawInkLists = parameters.dict.getArray("InkList");
         if (!Array.isArray(rawInkLists))
@@ -2308,7 +2308,7 @@ class InkAnnotation extends MarkupAnnotation {
 class HighlightAnnotation extends MarkupAnnotation {
     constructor(parameters) {
         super(parameters);
-        this.data.annotationType = 9 /* HIGHLIGHT */;
+        this.data.annotationType = AnnotationType.HIGHLIGHT;
         const quadPoints = (this.data.quadPoints = getQuadPoints(parameters.dict));
         if (quadPoints) {
             const resources = this.appearance?.dict.get("Resources");
@@ -2345,7 +2345,7 @@ class HighlightAnnotation extends MarkupAnnotation {
 class UnderlineAnnotation extends MarkupAnnotation {
     constructor(parameters) {
         super(parameters);
-        this.data.annotationType = 10 /* UNDERLINE */;
+        this.data.annotationType = AnnotationType.UNDERLINE;
         const quadPoints = (this.data.quadPoints = getQuadPoints(parameters.dict));
         if (quadPoints) {
             if (!this.appearance) {
@@ -2374,7 +2374,7 @@ class UnderlineAnnotation extends MarkupAnnotation {
 class SquigglyAnnotation extends MarkupAnnotation {
     constructor(parameters) {
         super(parameters);
-        this.data.annotationType = 11 /* SQUIGGLY */;
+        this.data.annotationType = AnnotationType.SQUIGGLY;
         const quadPoints = (this.data.quadPoints = getQuadPoints(parameters.dict));
         if (quadPoints) {
             if (!this.appearance) {
@@ -2414,7 +2414,7 @@ class SquigglyAnnotation extends MarkupAnnotation {
 class StrikeOutAnnotation extends MarkupAnnotation {
     constructor(parameters) {
         super(parameters);
-        this.data.annotationType = 12 /* STRIKEOUT */;
+        this.data.annotationType = AnnotationType.STRIKEOUT;
         const quadPoints = (this.data.quadPoints = getQuadPoints(parameters.dict));
         if (quadPoints) {
             if (!this.appearance) {
@@ -2445,14 +2445,14 @@ class StrikeOutAnnotation extends MarkupAnnotation {
 class StampAnnotation extends MarkupAnnotation {
     constructor(parameters) {
         super(parameters);
-        this.data.annotationType = 13 /* STAMP */;
+        this.data.annotationType = AnnotationType.STAMP;
     }
 }
 class FileAttachmentAnnotation extends MarkupAnnotation {
     constructor(parameters) {
         super(parameters);
         const file = new FileSpec(parameters.dict.get("FS"), parameters.xref);
-        this.data.annotationType = 17 /* FILEATTACHMENT */;
+        this.data.annotationType = AnnotationType.FILEATTACHMENT;
         this.data.file = file.serializable;
     }
 }

@@ -1,6 +1,6 @@
 import { PDFDocumentProxy } from "../pdf.ts-src/display/api.js";
-import { PromiseCapability } from "../pdf.ts-src/shared/util.js";
-import { IPDFLinkService } from "./interfaces.js";
+import { type PromiseCapability } from "../pdf.ts-src/shared/util.js";
+import { type IPDFLinkService } from "./interfaces.js";
 import { EventBus } from "./ui_utils.js";
 export declare const enum FindState {
     FOUND = 0,

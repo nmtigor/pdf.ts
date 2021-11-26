@@ -1,8 +1,8 @@
 import { XFAObject } from "./xfa_object.js";
-import { XMLAttr, XMLParserBase, XMLParserErrorCode } from "../xml_parser.js";
+import { type XMLAttr, XMLParserBase, XMLParserErrorCode } from "../xml_parser.js";
 import { Builder } from "./builder.js";
-import { XFANsAttrs, XFAPrefix } from "./alias.js";
-import { XFANsXhtml } from "./xhtml.js";
+import { type XFANsAttrs, type XFAPrefix } from "./alias.js";
+import { type XFANsXhtml } from "./xhtml.js";
 export declare class XFAParser extends XMLParserBase {
     _builder: Builder;
     _stack: XFAObject[];

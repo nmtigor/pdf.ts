@@ -1,7 +1,7 @@
-import { ActionEventType, ActionEventTypesType, BaseException } from "../shared/util.js";
+import { type ActionEventType, type ActionEventTypesType, BaseException } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
-import { CssFontInfo } from "./document.js";
-import { Dict, Obj } from "./primitives.js";
+import { type CssFontInfo } from "./document.js";
+import { Dict, type Obj } from "./primitives.js";
 import { XRef } from "./xref.js";
 export declare function getLookupTableFactory<T extends object = Record<string, number>>(initializer?: (lookup: T) => void): () => T;
 export declare function getArrayLookupTableFactory(initializer?: () => (string | number)[]): () => Record<string, number>;

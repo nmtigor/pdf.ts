@@ -20,7 +20,7 @@
  */
 import { isObjectLike } from "../../../lib/jslang.js";
 import { assert } from "../../../lib/util/trace.js";
-import { AbortException, createPromiseCapability, getVerbosityLevel, info, InvalidPDFException, isArrayBuffer, isSameOrigin, MissingPDFException, PasswordException, setVerbosityLevel, shadow, stringToBytes, UnexpectedResponseException, UnknownErrorException, warn, } from "../shared/util.js";
+import { AbortException, AnnotationMode, createPromiseCapability, getVerbosityLevel, info, InvalidPDFException, isArrayBuffer, isSameOrigin, MissingPDFException, PasswordException, RenderingIntentFlag, setVerbosityLevel, shadow, stringToBytes, UnexpectedResponseException, UnknownErrorException, warn, } from "../shared/util.js";
 import { deprecated, DOMCanvasFactory, DOMCMapReaderFactory, DOMStandardFontDataFactory, isDataScheme, loadScript, PageViewport, RenderingCancelledException, StatTimer, } from "./display_utils.js";
 import { FontFaceObject, FontLoader } from "./font_loader.js";
 import { AnnotationStorage } from "./annotation_storage.js";
@@ -830,7 +830,7 @@ export class PDFPageProxy {
      * @return An object that contains a promise that is
      *   resolved when the page finishes rendering.
      */
-    render({ canvasContext, viewport, intent = "display", annotationMode = 1 /* ENABLE */, transform = undefined, imageLayer, canvasFactory, background, optionalContentConfigPromise, }) {
+    render({ canvasContext, viewport, intent = "display", annotationMode = AnnotationMode.ENABLE, transform = undefined, imageLayer, canvasFactory, background, optionalContentConfigPromise, }) {
         if (this._stats)
             this._stats.time("Overall");
         const intentArgs = this._transport.getRenderingIntent(intent, annotationMode);
@@ -852,7 +852,7 @@ export class PDFPageProxy {
         }
         const canvasFactoryInstance = canvasFactory ||
             new DefaultCanvasFactory({ ownerDocument: this._ownerDocument });
-        const intentPrint = !!(intentArgs.renderingIntent & 4 /* PRINT */);
+        const intentPrint = !!(intentArgs.renderingIntent & RenderingIntentFlag.PRINT);
         // If there's no displayReadyCapability yet, then the operatorList
         // was never requested before. Make the request and create the promise.
         if (!intentState.displayReadyCapability) {
@@ -936,7 +936,7 @@ export class PDFPageProxy {
      * @return A promise resolved with an
      *   {@link PDFOperatorList} object that represents the page's operator list.
      */
-    getOperatorList({ intent = "display", annotationMode = 1 /* ENABLE */, } = {}) {
+    getOperatorList({ intent = "display", annotationMode = AnnotationMode.ENABLE, } = {}) {
         function operatorListChanged() {
             if (intentState.operatorList.lastChunk) {
                 intentState.opListReadCapability.resolve(intentState.operatorList);
@@ -1125,7 +1125,7 @@ export class PDFPageProxy {
             pageIndex: this._pageIndex,
             intent: renderingIntent,
             cacheKey,
-            annotationStorage: renderingIntent & 32 /* ANNOTATIONS_STORAGE */
+            annotationStorage: renderingIntent & RenderingIntentFlag.ANNOTATIONS_STORAGE
                 ? this._transport.annotationStorage.serializable
                 : undefined,
         });
@@ -1662,39 +1662,39 @@ class WorkerTransport {
     get annotationStorage() {
         return shadow(this, "annotationStorage", new AnnotationStorage());
     }
-    getRenderingIntent(intent, annotationMode = 1 /* ENABLE */, isOpList = false) {
-        let renderingIntent = 2 /* DISPLAY */; // Default value.
+    getRenderingIntent(intent, annotationMode = AnnotationMode.ENABLE, isOpList = false) {
+        let renderingIntent = RenderingIntentFlag.DISPLAY; // Default value.
         let lastModified = "";
         switch (intent) {
             case "any":
-                renderingIntent = 1 /* ANY */;
+                renderingIntent = RenderingIntentFlag.ANY;
                 break;
             case "display":
                 break;
             case "print":
-                renderingIntent = 4 /* PRINT */;
+                renderingIntent = RenderingIntentFlag.PRINT;
                 break;
             default:
                 warn(`getRenderingIntent - invalid intent: ${intent}`);
         }
         switch (annotationMode) {
-            case 0 /* DISABLE */:
-                renderingIntent += 64 /* ANNOTATIONS_DISABLE */;
+            case AnnotationMode.DISABLE:
+                renderingIntent += RenderingIntentFlag.ANNOTATIONS_DISABLE;
                 break;
-            case 1 /* ENABLE */:
+            case AnnotationMode.ENABLE:
                 break;
-            case 2 /* ENABLE_FORMS */:
-                renderingIntent += 16 /* ANNOTATIONS_FORMS */;
+            case AnnotationMode.ENABLE_FORMS:
+                renderingIntent += RenderingIntentFlag.ANNOTATIONS_FORMS;
                 break;
-            case 3 /* ENABLE_STORAGE */:
-                renderingIntent += 32 /* ANNOTATIONS_STORAGE */;
+            case AnnotationMode.ENABLE_STORAGE:
+                renderingIntent += RenderingIntentFlag.ANNOTATIONS_STORAGE;
                 lastModified = this.annotationStorage.lastModified;
                 break;
             default:
                 warn(`getRenderingIntent - invalid annotationMode: ${annotationMode}`);
         }
         if (isOpList) {
-            renderingIntent += 256 /* OPLIST */;
+            renderingIntent += RenderingIntentFlag.OPLIST;
         }
         return {
             renderingIntent,

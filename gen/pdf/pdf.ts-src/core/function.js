@@ -112,6 +112,13 @@ function toNumberArray(arr) {
 }
 var NsPDFFunction;
 (function (NsPDFFunction) {
+    let FunctionType;
+    (function (FunctionType) {
+        FunctionType[FunctionType["CONSTRUCT_SAMPLED"] = 0] = "CONSTRUCT_SAMPLED";
+        FunctionType[FunctionType["CONSTRUCT_INTERPOLATED"] = 2] = "CONSTRUCT_INTERPOLATED";
+        FunctionType[FunctionType["CONSTRUCT_STICHED"] = 3] = "CONSTRUCT_STICHED";
+        FunctionType[FunctionType["CONSTRUCT_POSTSCRIPT"] = 4] = "CONSTRUCT_POSTSCRIPT";
+    })(FunctionType || (FunctionType = {}));
     NsPDFFunction.PDFFunction = {
         getSampleArray(size, outputSize, bps, stream) {
             let i, ii;
@@ -143,15 +150,15 @@ var NsPDFFunction;
             const dict = fn.dict || fn;
             const typeNum = dict.get("FunctionType");
             switch (typeNum) {
-                case 0 /* CONSTRUCT_SAMPLED */:
+                case FunctionType.CONSTRUCT_SAMPLED:
                     return NsPDFFunction.PDFFunction.constructSampled({ xref, isEvalSupported, fn: fn, dict });
                 case 1:
                     break;
-                case 2 /* CONSTRUCT_INTERPOLATED */:
+                case FunctionType.CONSTRUCT_INTERPOLATED:
                     return NsPDFFunction.PDFFunction.constructInterpolated({ xref, isEvalSupported, dict });
-                case 3 /* CONSTRUCT_STICHED */:
+                case FunctionType.CONSTRUCT_STICHED:
                     return NsPDFFunction.PDFFunction.constructStiched({ xref, isEvalSupported, dict });
-                case 4 /* CONSTRUCT_POSTSCRIPT */:
+                case FunctionType.CONSTRUCT_POSTSCRIPT:
                     return NsPDFFunction.PDFFunction.constructPostScript({ xref, isEvalSupported, fn: fn, dict });
             }
             throw new FormatError("Unknown type of function");
@@ -848,6 +855,15 @@ export class PostScriptEvaluator {
 // min/max values will allow us to avoid extra Math.min/Math.max calls.
 var NsPostScriptCompiler;
 (function (NsPostScriptCompiler) {
+    let AstNodeType;
+    (function (AstNodeType) {
+        AstNodeType[AstNodeType["args"] = 0] = "args";
+        AstNodeType[AstNodeType["binary"] = 1] = "binary";
+        AstNodeType[AstNodeType["definition"] = 2] = "definition";
+        AstNodeType[AstNodeType["literal"] = 3] = "literal";
+        AstNodeType[AstNodeType["max"] = 4] = "max";
+        AstNodeType[AstNodeType["var"] = 5] = "var";
+    })(AstNodeType || (AstNodeType = {}));
     class AstNode {
         type;
         constructor(type) {
@@ -859,7 +875,7 @@ var NsPostScriptCompiler;
         min;
         max;
         constructor(index, min, max) {
-            super(0 /* args */);
+            super(AstNodeType.args);
             this.index = index;
             this.min = min;
             this.max = max;
@@ -874,7 +890,7 @@ var NsPostScriptCompiler;
         min;
         max;
         constructor(number) {
-            super(3 /* literal */);
+            super(AstNodeType.literal);
             this.number = number;
             this.min = number;
             this.max = number;
@@ -891,7 +907,7 @@ var NsPostScriptCompiler;
         min;
         max;
         constructor(op, arg1, arg2, min, max) {
-            super(1 /* binary */);
+            super(AstNodeType.binary);
             this.op = op;
             this.arg1 = arg1;
             this.arg2 = arg2;
@@ -908,7 +924,7 @@ var NsPostScriptCompiler;
         max;
         min;
         constructor(arg, max) {
-            super(4 /* max */);
+            super(AstNodeType.max);
             this.arg = arg;
             this.max = max;
             this.min = arg.min;
@@ -923,7 +939,7 @@ var NsPostScriptCompiler;
         min;
         max;
         constructor(index, min, max) {
-            super(5 /* var */);
+            super(AstNodeType.var);
             this.index = index;
             this.min = min;
             this.max = max;
@@ -937,7 +953,7 @@ var NsPostScriptCompiler;
         variable;
         arg;
         constructor(variable, arg) {
-            super(2 /* definition */);
+            super(AstNodeType.definition);
             this.variable = variable;
             this.arg = arg;
         }
@@ -981,22 +997,22 @@ var NsPostScriptCompiler;
         }
     }
     function buildAddOperation(num1, num2) {
-        if (num2.type === 3 /* literal */ && num2.number === 0) {
+        if (num2.type === AstNodeType.literal && num2.number === 0) {
             // optimization: second operand is 0
             return num1;
         }
-        if (num1.type === 3 /* literal */ && num1.number === 0) {
+        if (num1.type === AstNodeType.literal && num1.number === 0) {
             // optimization: first operand is 0
             return num2;
         }
-        if (num2.type === 3 /* literal */ && num1.type === 3 /* literal */) {
+        if (num2.type === AstNodeType.literal && num1.type === AstNodeType.literal) {
             // optimization: operands operand are literals
             return new AstLiteral(num1.number + num2.number);
         }
         return new AstBinaryOperation("+", num1, num2, num1.min + num2.min, num1.max + num2.max);
     }
     function buildMulOperation(num1, num2) {
-        if (num2.type === 3 /* literal */) {
+        if (num2.type === AstNodeType.literal) {
             // optimization: second operands is a literal...
             if (num2.number === 0) {
                 return new AstLiteral(0); // and it's 0
@@ -1004,12 +1020,12 @@ var NsPostScriptCompiler;
             else if (num2.number === 1) {
                 return num1; // and it's 1
             }
-            else if (num1.type === 3 /* literal */) {
+            else if (num1.type === AstNodeType.literal) {
                 // ... and first operands is a literal too
                 return new AstLiteral(num1.number * num2.number);
             }
         }
-        if (num1.type === 3 /* literal */) {
+        if (num1.type === AstNodeType.literal) {
             // optimization: first operands is a literal...
             if (num1.number === 0) {
                 return new AstLiteral(0); // and it's 0
@@ -1023,19 +1039,19 @@ var NsPostScriptCompiler;
         return new AstBinaryOperation("*", num1, num2, min, max);
     }
     function buildSubOperation(num1, num2) {
-        if (num2.type === 3 /* literal */) {
+        if (num2.type === AstNodeType.literal) {
             // optimization: second operands is a literal...
             if (num2.number === 0) {
                 return num1; // ... and it's 0
             }
-            else if (num1.type === 3 /* literal */) {
+            else if (num1.type === AstNodeType.literal) {
                 // ... and first operands is a literal too
                 return new AstLiteral(num1.number - num2.number);
             }
         }
-        if (num2.type === 1 /* binary */ && num2.op === "-"
-            && num1.type === 3 /* literal */ && num1.number === 1
-            && num2.arg1.type === 3 /* literal */
+        if (num2.type === AstNodeType.binary && num2.op === "-"
+            && num1.type === AstNodeType.literal && num1.number === 1
+            && num2.arg1.type === AstNodeType.literal
             && num2.arg1.number === 1) {
             // optimization for case: 1 - (1 - x)
             return num2.arg2;
@@ -1120,7 +1136,7 @@ var NsPostScriptCompiler;
                             return null;
                         }
                         num1 = stack.pop();
-                        if (num1.type !== 3 /* literal */) {
+                        if (num1.type !== AstNodeType.literal) {
                             return null;
                         }
                         n = num1.number;
@@ -1128,7 +1144,7 @@ var NsPostScriptCompiler;
                             return null;
                         }
                         ast1 = stack[stack.length - n - 1];
-                        if (ast1.type === 3 /* literal */ || ast1.type === 5 /* var */) {
+                        if (ast1.type === AstNodeType.literal || ast1.type === AstNodeType.var) {
                             stack.push(ast1);
                             break;
                         }
@@ -1154,7 +1170,7 @@ var NsPostScriptCompiler;
                             break;
                         }
                         ast1 = stack[stack.length - 1];
-                        if (ast1.type === 3 /* literal */ || ast1.type === 5 /* var */) {
+                        if (ast1.type === AstNodeType.literal || ast1.type === AstNodeType.var) {
                             // we don't have to save into intermediate variable a literal or
                             // variable.
                             stack.push(ast1);
@@ -1171,7 +1187,7 @@ var NsPostScriptCompiler;
                         }
                         num2 = stack.pop();
                         num1 = stack.pop();
-                        if (num2.type !== 3 /* literal */ || num1.type !== 3 /* literal */) {
+                        if (num2.type !== AstNodeType.literal || num1.type !== AstNodeType.literal) {
                             // both roll operands must be numbers
                             return null;
                         }

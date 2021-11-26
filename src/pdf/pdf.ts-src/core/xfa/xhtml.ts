@@ -41,14 +41,13 @@ import {
   setFontFamily 
 } from "./html_utils.js";
 import { 
-  AvailableSpace, 
-  XFAHTMLAttrs, 
-  XFAAttrs, 
-  XFAFontBase, 
-  XFAElData, 
-  XFAHTMLObj, 
-  XFAMargin, 
-  XFAStyleData 
+  type AvailableSpace, 
+  type XFAAttrs, 
+  type XFAFontBase, 
+  type XFAElData, 
+  type XFAHTMLObj, 
+  type XFAMargin, 
+  type XFAStyleData 
 } from "./alias.js";
 import { 
   getMeasurement, 

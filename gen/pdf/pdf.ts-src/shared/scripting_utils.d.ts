@@ -4,7 +4,7 @@
  *              introducing any dependencies here since that can lead to an
  *              unexpected/unnecessary size increase of the *built* files.
  */
-import { TupleOf } from "../../../lib/alias";
+import { type TupleOf } from "../../../lib/alias";
 declare type RGB = TupleOf<number, 3>;
 declare type CYMK = TupleOf<number, 4>;
 export declare type CSTag = "G" | "RGB" | "T" | "CMYK";

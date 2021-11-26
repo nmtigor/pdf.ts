@@ -17,12 +17,11 @@
  * limitations under the License.
  */
 
-import { global } from "../../global.js";
 import { RenderingCancelledException } from "../pdf.ts-src/display/display_utils.js";
 import { BaseViewer } from "./base_viewer.js";
-import { IRenderableView, IVisibleView } from "./interfaces.js";
+import { type IRenderableView, type IVisibleView } from "./interfaces.js";
 import { PDFThumbnailViewer } from "./pdf_thumbnail_viewer.js";
-import { VisibleElements } from "./ui_utils.js";
+import { type VisibleElements } from "./ui_utils.js";
 /*81---------------------------------------------------------------------------*/
 
 const CLEANUP_TIMEOUT = 30000;

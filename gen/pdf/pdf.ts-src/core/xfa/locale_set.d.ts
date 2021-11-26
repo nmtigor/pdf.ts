@@ -1,6 +1,6 @@
 import { $buildXFAObject } from "./namespaces.js";
 import { ContentObject, StringObject, XFAObject, XFAObjectArray } from "./xfa_object.js";
-import { XFAAttrs } from "./alias.js";
+import { type XFAAttrs } from "./alias.js";
 declare class CalendarSymbols extends XFAObject {
     dayNames: XFAObjectArray;
     eraNames: unknown;

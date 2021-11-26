@@ -18,10 +18,9 @@
  */
 
 import { assert }     from "../../../lib/util/trace.js";
-import { Intent } from "../display/api.js";
-import { Thread, StreamSink } from "../shared/message_handler.js";
-import { ImageKind, matrix_t, OPS, RenderingIntentFlag, warn } from "../shared/util.js";
-import { ImgData } from "./evaluator.js";
+import { Thread, type StreamSink } from "../shared/message_handler.js";
+import { ImageKind, type matrix_t, OPS, RenderingIntentFlag, warn } from "../shared/util.js";
+import { type ImgData } from "./evaluator.js";
 /*81---------------------------------------------------------------------------*/
 
 namespace NsQueueOptimizer
@@ -863,5 +862,5 @@ namespace NsOperatorList
   }
 }
 export import OperatorList = NsOperatorList.OperatorList;
-export import OpListIR = NsOperatorList.OpListIR;
+export type OpListIR = NsOperatorList.OpListIR;
 /*81---------------------------------------------------------------------------*/

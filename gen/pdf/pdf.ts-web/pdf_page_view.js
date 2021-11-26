@@ -2,9 +2,10 @@
  * nmtigor (https://github.com/nmtigor) @2021
  */
 import { createPromiseCapability, PixelsPerInch, RenderingCancelledException, SVGGraphics } from "../pdf.ts-src/pdf.js";
+import { AnnotationMode } from "../pdf.ts-src/shared/util.js";
 import { NullL10n } from "./l10n_utils.js";
 import { RenderingStates } from "./pdf_rendering_queue.js";
-import { approximateFraction, DEFAULT_SCALE, getOutputScale, roundToDivide } from "./ui_utils.js";
+import { approximateFraction, DEFAULT_SCALE, getOutputScale, RendererType, roundToDivide, TextLayerMode } from "./ui_utils.js";
 import { html } from "../../lib/dom.js";
 import { compatibilityParams } from "./app_options.js";
 const MAX_CANVAS_PIXELS = compatibilityParams.maxCanvasPixels || 16777216;
@@ -63,9 +64,9 @@ export class PDFPageView {
         this.viewport = defaultViewport;
         this.pdfPageRotate = defaultViewport.rotation;
         this._optionalContentConfigPromise = options.optionalContentConfigPromise;
-        this.textLayerMode = options.textLayerMode ?? 1 /* ENABLE */;
+        this.textLayerMode = options.textLayerMode ?? TextLayerMode.ENABLE;
         this._annotationMode =
-            options.annotationMode ?? 2 /* ENABLE_FORMS */;
+            options.annotationMode ?? AnnotationMode.ENABLE_FORMS;
         this.imageResourcesPath = options.imageResourcesPath || "";
         this.useOnlyCssZoom = options.useOnlyCssZoom || false;
         this.maxCanvasPixels = options.maxCanvasPixels || MAX_CANVAS_PIXELS;
@@ -77,7 +78,7 @@ export class PDFPageView {
         this.textHighlighter =
             options.textHighlighterFactory?.createTextHighlighter(this.id - 1, this.eventBus);
         this.structTreeLayerFactory = options.structTreeLayerFactory;
-        this.renderer = options.renderer || "canvas" /* CANVAS */;
+        this.renderer = options.renderer || RendererType.CANVAS;
         this.l10n = options.l10n || NullL10n;
         this._isStandalone = !this.renderingQueue?.hasViewer();
         const div = html("div");
@@ -421,7 +422,7 @@ export class PDFPageView {
             div.appendChild(canvasWrapper);
         }
         let textLayer;
-        if (this.textLayerMode !== 0 /* DISABLE */ && this.textLayerFactory) {
+        if (this.textLayerMode !== TextLayerMode.DISABLE && this.textLayerFactory) {
             const textLayerDiv = html("div");
             textLayerDiv.className = "textLayer";
             textLayerDiv.style.width = canvasWrapper.style.width;
@@ -433,7 +434,7 @@ export class PDFPageView {
             else {
                 div.appendChild(textLayerDiv);
             }
-            textLayer = this.textLayerFactory.createTextLayerBuilder(textLayerDiv, this.id - 1, this.viewport, this.textLayerMode === 2 /* ENABLE_ENHANCE */, this.eventBus, this.textHighlighter);
+            textLayer = this.textLayerFactory.createTextLayerBuilder(textLayerDiv, this.id - 1, this.viewport, this.textLayerMode === TextLayerMode.ENABLE_ENHANCE, this.eventBus, this.textHighlighter);
         }
         this.textLayer = textLayer;
         if (this.xfaLayer?.div) {
@@ -482,7 +483,7 @@ export class PDFPageView {
             if (error)
                 throw error;
         };
-        const paintTask = this.renderer === "svg" /* SVG */
+        const paintTask = this.renderer === RendererType.SVG
             ? this.paintOnSvg(canvasWrapper)
             : this.paintOnCanvas(canvasWrapper);
         paintTask.onRenderContinue = renderContinueCallback;
@@ -499,12 +500,12 @@ export class PDFPageView {
                 }
             });
         }, (reason) => finishPaintTask(reason));
-        if (this._annotationMode !== 0 /* DISABLE */
+        if (this._annotationMode !== AnnotationMode.DISABLE
             && this.annotationLayerFactory) {
             if (!this.annotationLayer) {
                 this.annotationLayer =
                     this.annotationLayerFactory.createAnnotationLayerBuilder(div, pdfPage, 
-                    /* annotationStorage = */ undefined, this.imageResourcesPath, this._annotationMode === 2 /* ENABLE_FORMS */, this.l10n);
+                    /* annotationStorage = */ undefined, this.imageResourcesPath, this._annotationMode === AnnotationMode.ENABLE_FORMS, this.l10n);
             }
             this.#renderAnnotationLayer();
         }

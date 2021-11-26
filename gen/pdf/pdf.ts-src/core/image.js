@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 import { assert } from "../../../lib/util/trace.js";
-import { FormatError, info, warn } from "../shared/util.js";
+import { FormatError, ImageKind, info, warn } from "../shared/util.js";
 import { Name } from "./primitives.js";
 import { ColorSpace } from "./colorspace.js";
 import { DecodeStream } from "./decode_stream.js";
@@ -553,11 +553,11 @@ export class PDFImage {
             // complications, we avoid expanding by 1.333x to RGBA form.
             let kind;
             if (this.colorSpace.name === "DeviceGray" && bpc === 1) {
-                kind = 1 /* GRAYSCALE_1BPP */;
+                kind = ImageKind.GRAYSCALE_1BPP;
             }
             else if (this.colorSpace.name === "DeviceRGB"
                 && bpc === 8 && !this.needsDecode) {
-                kind = 2 /* RGB_24BPP */;
+                kind = ImageKind.RGB_24BPP;
             }
             if (kind
                 && !this.smask
@@ -581,7 +581,7 @@ export class PDFImage {
                 }
                 if (this.needsDecode) {
                     // Invert the buffer (which must be grayscale if we reached here).
-                    assert(kind === 1 /* GRAYSCALE_1BPP */, "PDFImage.createImageData: The image must be grayscale.");
+                    assert(kind === ImageKind.GRAYSCALE_1BPP, "PDFImage.createImageData: The image must be grayscale.");
                     const buffer = imgData.data;
                     for (let i = 0, ii = buffer.length; i < ii; i++) {
                         buffer[i] ^= 0xff;
@@ -599,7 +599,7 @@ export class PDFImage {
                     /* falls through */
                     case "DeviceRGB":
                     case "DeviceCMYK":
-                        imgData.kind = 2 /* RGB_24BPP */;
+                        imgData.kind = ImageKind.RGB_24BPP;
                         imgData.data = this.getImageBytes(imageLength, drawWidth, drawHeight, 
                         /* forceRGB = */ true);
                         return imgData;
@@ -614,13 +614,13 @@ export class PDFImage {
         // more compact RGB_24BPP form if allowable.
         let alpha01, maybeUndoPreblend;
         if (!forceRGBA && !this.smask && !this.mask) {
-            imgData.kind = 2 /* RGB_24BPP */;
+            imgData.kind = ImageKind.RGB_24BPP;
             imgData.data = new Uint8ClampedArray(drawWidth * drawHeight * 3);
             alpha01 = 0;
             maybeUndoPreblend = false;
         }
         else {
-            imgData.kind = 3 /* RGBA_32BPP */;
+            imgData.kind = ImageKind.RGBA_32BPP;
             imgData.data = new Uint8ClampedArray(drawWidth * drawHeight * 4);
             alpha01 = 1;
             maybeUndoPreblend = true;

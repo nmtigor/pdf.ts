@@ -1,6 +1,7 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2021
  */
+import { Locale } from "../../lib/Locale.js";
 /*81---------------------------------------------------------------------------*/
 /**
  * A subset of the l10n strings in the `l10n/en-US/viewer.properties` file.
@@ -100,7 +101,7 @@ export function formatL10nValue(text, args) {
  * No-op implementation of the localization service.
  */
 export const NullL10n = {
-    async getLanguage() { return "en-US" /* en_US */.toLowerCase(); },
+    async getLanguage() { return Locale.en_US.toLowerCase(); },
     async getDirection() { return "ltr"; },
     async get(key, args, fallback = getL10nFallback(key, args)) {
         return formatL10nValue(fallback, args);

@@ -19,12 +19,12 @@
 
 import { getOutputScale } from "./ui_utils.js";
 import { PDFRenderingQueue, RenderingStates } from "./pdf_rendering_queue.js";
-import { IL10n, IPDFLinkService, IVisibleView } from "./interfaces.js";
+import { type IL10n, type IPDFLinkService, type IVisibleView } from "./interfaces.js";
 import { PageViewport, RenderingCancelledException } from "../pdf.ts-src/display/display_utils.js";
 import { OptionalContentConfig } from "../pdf.ts-src/display/optional_content_config.js";
 import { PDFPageView } from "./pdf_page_view.js";
 import { PDFPageProxy, RenderTask } from "../pdf.ts-src/display/api.js";
-import { matrix_t } from "../pdf.ts-src/shared/util.js";
+import { type matrix_t } from "../pdf.ts-src/shared/util.js";
 import { html } from "../../lib/dom.js";
 /*81---------------------------------------------------------------------------*/
 

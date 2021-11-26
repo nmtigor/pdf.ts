@@ -1,4 +1,4 @@
-import { OptionName, UserOptions } from "./app_options.js";
+import { type OptionName, type UserOptions } from "./app_options.js";
 /**
  * BasePreferences - Abstract base class for storing persistent settings.
  *   Used for settings that should be applied to all opened documents,

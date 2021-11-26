@@ -21,9 +21,9 @@
 /** @typedef {import("./interfaces").IPDFStructTreeLayerFactory} IPDFStructTreeLayerFactory */
 
 import { html } from "../../lib/dom.js";
-import { StructTree } from "../pdf.ts-src/core/struct_tree.js";
+import { type StructTree } from "../pdf.ts-src/core/struct_tree.js";
 import { PDFPageProxy } from "../pdf.ts-src/display/api.js";
-import { IPDFStructTreeLayerFactory } from "./interfaces.js";
+import { type IPDFStructTreeLayerFactory } from "./interfaces.js";
 /*81---------------------------------------------------------------------------*/
 
 const PDF_ROLE_TO_HTML_ROLE = {

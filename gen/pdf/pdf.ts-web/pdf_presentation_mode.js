@@ -1,7 +1,7 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2021
  */
-import { normalizeWheelEventDelta, ScrollMode, SpreadMode, } from "./ui_utils.js";
+import { normalizeWheelEventDelta, PresentationModeState, ScrollMode, SpreadMode, } from "./ui_utils.js";
 /*81---------------------------------------------------------------------------*/
 const DELAY_BEFORE_RESETTING_SWITCH_IN_PROGRESS = 1500; // in ms
 const DELAY_BEFORE_HIDING_CONTROLS = 3000; // in ms
@@ -99,12 +99,12 @@ export class PDFPresentationMode {
             document.webkitIsFullScreen);
     }
     #notifyStateChange = () => {
-        let state = 1 /* NORMAL */;
+        let state = PresentationModeState.NORMAL;
         if (this.switchInProgress) {
-            state = 2 /* CHANGING */;
+            state = PresentationModeState.CHANGING;
         }
         else if (this.active) {
-            state = 3 /* FULLSCREEN */;
+            state = PresentationModeState.FULLSCREEN;
         }
         this.eventBus.dispatch("presentationmodechanged", {
             source: this,

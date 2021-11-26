@@ -1,10 +1,10 @@
-import { matrix_t, point_t, rect_t } from "../shared/util.js";
+import { type matrix_t, type point_t, type rect_t } from "../shared/util.js";
 import { ColorSpace } from "./colorspace.js";
 import { Dict } from "./primitives.js";
 import { MessageHandler, Thread } from '../shared/message_handler.js';
-import { ParsedFunction, PDFFunctionFactory } from './function.js';
+import { type ParsedFunction, PDFFunctionFactory } from './function.js';
 import { LocalColorSpaceCache } from './image_utils.js';
-import { OpListIR } from './operator_list.js';
+import { type OpListIR } from './operator_list.js';
 import { TilingPaintType, TilingType } from '../display/pattern_helper.js';
 import { XRef } from './xref.js';
 import { BaseStream } from './base_stream.js';
@@ -152,6 +152,6 @@ declare class DummyShading extends BaseShading {
 /**
  * Table 75
  */
-export declare function getTilingPatternIR(operatorList: OpListIR, dict: Dict, color?: Uint8ClampedArray): ["TilingPattern", Uint8ClampedArray | undefined, OpListIR, [number, number, number, number, number, number] | undefined, [number, number, number, number], number, number, TilingPaintType, TilingType];
+export declare function getTilingPatternIR(operatorList: OpListIR, dict: Dict, color?: Uint8ClampedArray): TilingPatternIR;
 export {};
 //# sourceMappingURL=pattern.d.ts.map

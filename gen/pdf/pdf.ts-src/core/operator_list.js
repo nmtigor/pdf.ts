@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 import { assert } from "../../../lib/util/trace.js";
-import { warn } from "../shared/util.js";
+import { ImageKind, OPS, RenderingIntentFlag, warn } from "../shared/util.js";
 /*81---------------------------------------------------------------------------*/
 var NsQueueOptimizer;
 (function (NsQueueOptimizer) {
@@ -47,7 +47,7 @@ var NsQueueOptimizer;
                 && imageMask.height === 1
                 && (!imageMask.data.length
                     || (imageMask.data.length === 1 && imageMask.data[0] === 0))) {
-                fnArray[iFirstPIMXO + 4 * i] = 90 /* paintSolidColorImageMask */;
+                fnArray[iFirstPIMXO + 4 * i] = OPS.paintSolidColorImageMask;
                 continue;
             }
             break;
@@ -57,19 +57,19 @@ var NsQueueOptimizer;
     const InitialState = [];
     // This replaces (save, transform, paintInlineImageXObject, restore)+
     // sequences with one |paintInlineImageXObjectGroup| operation.
-    addState(InitialState, [10 /* save */, 12 /* transform */, 86 /* paintInlineImageXObject */, 11 /* restore */], null, function iterateInlineImageGroup(context, i) {
+    addState(InitialState, [OPS.save, OPS.transform, OPS.paintInlineImageXObject, OPS.restore], null, function iterateInlineImageGroup(context, i) {
         const fnArray = context.fnArray;
         const iFirstSave = context.iCurr - 3;
         const pos = (i - iFirstSave) % 4;
         switch (pos) {
             case 0:
-                return fnArray[i] === 10 /* save */;
+                return fnArray[i] === OPS.save;
             case 1:
-                return fnArray[i] === 12 /* transform */;
+                return fnArray[i] === OPS.transform;
             case 2:
-                return fnArray[i] === 86 /* paintInlineImageXObject */;
+                return fnArray[i] === OPS.paintInlineImageXObject;
             case 3:
-                return fnArray[i] === 11 /* restore */;
+                return fnArray[i] === OPS.restore;
         }
         throw new Error(`iterateInlineImageGroup - invalid pos: ${pos}`);
     }, function foundInlineImageGroup(context, i) {
@@ -143,12 +143,12 @@ var NsQueueOptimizer;
             }
         }
         // Replace queue items.
-        fnArray.splice(iFirstSave, count * 4, 87 /* paintInlineImageXObjectGroup */);
+        fnArray.splice(iFirstSave, count * 4, OPS.paintInlineImageXObjectGroup);
         argsArray.splice(iFirstSave, count * 4, [
             {
                 width: imgWidth,
                 height: imgHeight,
-                kind: 3 /* RGBA_32BPP */,
+                kind: ImageKind.RGBA_32BPP,
                 data: imgData,
             },
             map,
@@ -158,19 +158,19 @@ var NsQueueOptimizer;
     // This replaces (save, transform, paintImageMaskXObject, restore)+
     // sequences with one |paintImageMaskXObjectGroup| or one
     // |paintImageMaskXObjectRepeat| operation.
-    addState(InitialState, [10 /* save */, 12 /* transform */, 83 /* paintImageMaskXObject */, 11 /* restore */], null, function iterateImageMaskGroup(context, i) {
+    addState(InitialState, [OPS.save, OPS.transform, OPS.paintImageMaskXObject, OPS.restore], null, function iterateImageMaskGroup(context, i) {
         const fnArray = context.fnArray;
         const iFirstSave = context.iCurr - 3;
         const pos = (i - iFirstSave) % 4;
         switch (pos) {
             case 0:
-                return fnArray[i] === 10 /* save */;
+                return fnArray[i] === OPS.save;
             case 1:
-                return fnArray[i] === 12 /* transform */;
+                return fnArray[i] === OPS.transform;
             case 2:
-                return fnArray[i] === 83 /* paintImageMaskXObject */;
+                return fnArray[i] === OPS.paintImageMaskXObject;
             case 3:
-                return fnArray[i] === 11 /* restore */;
+                return fnArray[i] === OPS.restore;
         }
         throw new Error(`iterateImageMaskGroup - invalid pos: ${pos}`);
     }, function foundImageMaskGroup(context, i) {
@@ -225,7 +225,7 @@ var NsQueueOptimizer;
                 positions[(q << 1) + 1] = transformArgs[5];
             }
             // Replace queue items.
-            fnArray.splice(iFirstSave, count * 4, 89 /* paintImageMaskXObjectRepeat */);
+            fnArray.splice(iFirstSave, count * 4, OPS.paintImageMaskXObjectRepeat);
             argsArray.splice(iFirstSave, count * 4, [
                 firstPIMXOArg0,
                 firstTransformArg0,
@@ -249,7 +249,7 @@ var NsQueueOptimizer;
                 });
             }
             // Replace queue items.
-            fnArray.splice(iFirstSave, count * 4, 84 /* paintImageMaskXObjectGroup */);
+            fnArray.splice(iFirstSave, count * 4, OPS.paintImageMaskXObjectGroup);
             argsArray.splice(iFirstSave, count * 4, [images]);
         }
         return iFirstSave + 1;
@@ -257,7 +257,7 @@ var NsQueueOptimizer;
     // This replaces (save, transform, paintImageXObject, restore)+ sequences
     // with one paintImageXObjectRepeat operation, if the |transform| and
     // |paintImageXObjectRepeat| ops are appropriate.
-    addState(InitialState, [10 /* save */, 12 /* transform */, 85 /* paintImageXObject */, 11 /* restore */], function (context) {
+    addState(InitialState, [OPS.save, OPS.transform, OPS.paintImageXObject, OPS.restore], function (context) {
         const argsArray = context.argsArray;
         const iFirstTransform = context.iCurr - 2;
         return (argsArray[iFirstTransform][1] === 0
@@ -269,9 +269,9 @@ var NsQueueOptimizer;
         const pos = (i - iFirstSave) % 4;
         switch (pos) {
             case 0:
-                return fnArray[i] === 10 /* save */;
+                return fnArray[i] === OPS.save;
             case 1:
-                if (fnArray[i] !== 12 /* transform */) {
+                if (fnArray[i] !== OPS.transform) {
                     return false;
                 }
                 const iFirstTransform = context.iCurr - 2;
@@ -285,7 +285,7 @@ var NsQueueOptimizer;
                 }
                 return true;
             case 2:
-                if (fnArray[i] !== 85 /* paintImageXObject */) {
+                if (fnArray[i] !== OPS.paintImageXObject) {
                     return false;
                 }
                 const iFirstPIXO = context.iCurr - 1;
@@ -295,7 +295,7 @@ var NsQueueOptimizer;
                 }
                 return true;
             case 3:
-                return fnArray[i] === 11 /* restore */;
+                return fnArray[i] === OPS.restore;
         }
         throw new Error(`iterateImageGroup - invalid pos: ${pos}`);
     }, function (context, i) {
@@ -330,26 +330,26 @@ var NsQueueOptimizer;
             firstTransformArg3,
             positions,
         ];
-        fnArray.splice(iFirstSave, count * 4, 88 /* paintImageXObjectRepeat */);
+        fnArray.splice(iFirstSave, count * 4, OPS.paintImageXObjectRepeat);
         argsArray.splice(iFirstSave, count * 4, args);
         return iFirstSave + 1;
     });
     // This replaces (beginText, setFont, setTextMatrix, showText, endText)+
     // sequences with (beginText, setFont, (setTextMatrix, showText)+, endText)+
     // sequences, if the font for each one is the same.
-    addState(InitialState, [31 /* beginText */, 37 /* setFont */, 42 /* setTextMatrix */, 44 /* showText */, 32 /* endText */], null, function iterateShowTextGroup(context, i) {
+    addState(InitialState, [OPS.beginText, OPS.setFont, OPS.setTextMatrix, OPS.showText, OPS.endText], null, function iterateShowTextGroup(context, i) {
         const fnArray = context.fnArray, argsArray = context.argsArray;
         const iFirstSave = context.iCurr - 4;
         const pos = (i - iFirstSave) % 5;
         switch (pos) {
             case 0:
-                return fnArray[i] === 31 /* beginText */;
+                return fnArray[i] === OPS.beginText;
             case 1:
-                return fnArray[i] === 37 /* setFont */;
+                return fnArray[i] === OPS.setFont;
             case 2:
-                return fnArray[i] === 42 /* setTextMatrix */;
+                return fnArray[i] === OPS.setTextMatrix;
             case 3:
-                if (fnArray[i] !== 44 /* showText */) {
+                if (fnArray[i] !== OPS.showText) {
                     return false;
                 }
                 const iFirstSetFont = context.iCurr - 3;
@@ -361,7 +361,7 @@ var NsQueueOptimizer;
                 }
                 return true;
             case 4:
-                return fnArray[i] === 32 /* endText */;
+                return fnArray[i] === OPS.endText;
         }
         throw new Error(`iterateShowTextGroup - invalid pos: ${pos}`);
     }, function (context, i) {
@@ -529,7 +529,7 @@ var NsOperatorList;
         #resolved;
         constructor(intent = 0, streamSink) {
             this.#streamSink = streamSink;
-            if (streamSink && !(intent & 256 /* OPLIST */))
+            if (streamSink && !(intent & RenderingIntentFlag.OPLIST))
                 this.optimizer = new QueueOptimizer(this);
             else
                 this.optimizer = new NullOptimizer(this);
@@ -547,7 +547,7 @@ var NsOperatorList;
                     this.flush();
                 }
                 else if (this.weight >= CHUNK_SIZE_ABOUT
-                    && (fn === 11 /* restore */ || fn === 32 /* endText */)) {
+                    && (fn === OPS.restore || fn === OPS.endText)) {
                     // Heuristic to flush on boundary of restore or endText.
                     this.flush();
                 }
@@ -558,7 +558,7 @@ var NsOperatorList;
                 return;
             }
             this.dependencies.add(dependency);
-            this.addOp(1 /* dependency */, [dependency]);
+            this.addOp(OPS.dependency, [dependency]);
         }
         addDependencies(dependencies) {
             for (const dependency of dependencies) {
@@ -589,9 +589,9 @@ var NsOperatorList;
             const { fnArray, argsArray, length } = this;
             for (let i = 0; i < length; i++) {
                 switch (fnArray[i]) {
-                    case 86 /* paintInlineImageXObject */:
-                    case 87 /* paintInlineImageXObjectGroup */:
-                    case 83 /* paintImageMaskXObject */:
+                    case OPS.paintInlineImageXObject:
+                    case OPS.paintInlineImageXObjectGroup:
+                    case OPS.paintImageMaskXObject:
                         const arg = argsArray[i][0]; // First parameter in imgData.
                         // if (
                         //   typeof PDFJSDev === "undefined" ||

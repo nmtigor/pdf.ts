@@ -1,9 +1,9 @@
 import { OPS } from "../shared/util.js";
-import { Dict, Obj, Ref, RefSetCache } from "./primitives.js";
-import { ImgData } from "./evaluator.js";
+import { Dict, type Obj, Ref, RefSetCache } from "./primitives.js";
+import { type ImgData } from "./evaluator.js";
 import { ColorSpace } from "./colorspace.js";
-import { OpListIR } from "./operator_list.js";
-import { ParsedFunction } from "./function.js";
+import { type OpListIR } from "./operator_list.js";
+import { type ParsedFunction } from "./function.js";
 declare abstract class BaseLocalCache<CD> {
     _onlyRefs: boolean;
     protected nameRefMap$: Map<string, string | Ref> | undefined;

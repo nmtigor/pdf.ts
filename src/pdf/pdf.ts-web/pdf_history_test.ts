@@ -3,11 +3,8 @@
 ** ------------------- */
 
 import { css_1, css_2 } from "../../test/alias.js";
-import { eq } from "../../lib/jslang.js";
-import { CharacterType, getCharacterType } from "./pdf_find_utils.js";
 import { isDestArraysEqual, isDestHashesEqual } from "./pdf_history.js";
-import { RefProxy } from "../pdf.ts-src/display/api.js";
-import { ExplicitDest } from "../pdf.ts-src/core/catalog.js";
+import { type ExplicitDest } from "../pdf.ts-src/core/catalog.js";
 
 const strttime = performance.now();
 /*81---------------------------------------------------------------------------*/

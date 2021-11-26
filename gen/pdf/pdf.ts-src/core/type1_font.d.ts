@@ -1,6 +1,6 @@
-import { CharStringObject } from "./type1_parser.js";
+import { type CharStringObject } from "./type1_parser.js";
 import { BaseStream } from "./base_stream.js";
-import { FontProps } from "./evaluator.js";
+import { type FontProps } from "./evaluator.js";
 /**
  * Type1Font is also a CIDFontType0.
  */

@@ -1,4 +1,4 @@
-import { BaseTreeViewer, BaseTreeViewerCtorParms } from "./base_tree_viewer.js";
+import { BaseTreeViewer, type BaseTreeViewerCtorParms } from "./base_tree_viewer.js";
 import { DownloadManager } from "./download_manager.js";
 interface PDFAttachmentViewerOptions extends BaseTreeViewerCtorParms {
     /**

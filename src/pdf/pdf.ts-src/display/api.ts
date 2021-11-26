@@ -22,7 +22,7 @@
  */
 
 import { isObjectLike } from "../../../lib/jslang.js";
-import { TypedArray } from "../../../lib/alias.js";
+import { type TypedArray } from "../../../lib/alias.js";
 import { assert } from "../../../lib/util/trace.js";
 import {
   AbortException,
@@ -34,11 +34,11 @@ import {
   InvalidPDFException,
   isArrayBuffer,
   isSameOrigin,
-  matrix_t,
+  type matrix_t,
   MissingPDFException,
   PasswordException,
   PasswordResponses,
-  PromiseCapability,
+  type PromiseCapability,
   RenderingIntentFlag,
   setVerbosityLevel,
   shadow,
@@ -67,30 +67,30 @@ import { CanvasGraphics } from "./canvas.js";
 import { GlobalWorkerOptions } from "./worker_options.js";
 import { 
   Thread, 
-  ActionSinkchunk, 
+  type ActionSinkchunk, 
   MessageHandler, 
-  PageInfo, 
-  PDFInfo, 
-  ReaderHeaders 
+  type PageInfo, 
+  type PDFInfo, 
+  type ReaderHeaders 
 } from "../shared/message_handler.js";
 import { Metadata } from "./metadata.js";
 import { OptionalContentConfig } from "./optional_content_config.js";
 import { PDFDataTransportStream } from "./transport_stream.js";
-import { IPDFStream, IPDFStreamReader } from "../interfaces.js";
+import { type IPDFStream, type IPDFStreamReader } from "../interfaces.js";
 import { Ref } from "../core/primitives.js";
-import { ImgData } from "../core/evaluator.js";
+import { type ImgData } from "../core/evaluator.js";
 import { FontExpotDataEx } from "../core/fonts.js";
-import { CmdArgs } from "../core/font_renderer.js";
-import { OpListIR } from "../core/operator_list.js";
-import { ExplicitDest } from "../core/catalog.js";
-import { IWorker, WorkerMessageHandler } from "../core/worker.js";
-import { AnnotationData, FieldObject } from "../core/annotation.js";
-import { StructTree } from "../core/struct_tree.js";
-import { XFAData } from "../core/document.js"
-import { AnnotActions } from "../core/core_utils.js";
-import { BaseCanvasFactory, CMapData } from "./base_factory.js";
-import { XFAElObj } from "../core/xfa/alias.js";
-import { ShadingPatternIR } from "../core/pattern.js";
+import { type CmdArgs } from "../core/font_renderer.js";
+import { type OpListIR } from "../core/operator_list.js";
+import { type ExplicitDest } from "../core/catalog.js";
+import { type IWorker, WorkerMessageHandler } from "../core/worker.js";
+import { type AnnotationData, type FieldObject } from "../core/annotation.js";
+import { type StructTree } from "../core/struct_tree.js";
+import { type XFAData } from "../core/document.js"
+import { type AnnotActions } from "../core/core_utils.js";
+import { BaseCanvasFactory, type CMapData } from "./base_factory.js";
+import { type XFAElObj } from "../core/xfa/alias.js";
+import { type ShadingPatternIR } from "../core/pattern.js";
 import { XfaText } from "./xfa_text.js";
 /*81---------------------------------------------------------------------------*/
 
@@ -1941,7 +1941,7 @@ export class PDFPageProxy
   getOperatorList({ 
     intent="display",
     annotationMode = AnnotationMode.ENABLE,
-  }:GetOperatorListParms={}) {
+  }:GetOperatorListParms={}):Promise<OpListIR> {
     function operatorListChanged() {
       if( intentState!.operatorList!.lastChunk )
       {
@@ -3805,7 +3805,7 @@ export class InternalRenderTask
   objs;
   commonObjs;
   operatorListIdx?:number;
-  operatorList;
+  operatorList:OpListIR;
   _pageIndex;
   canvasFactory;
   _pdfBug;

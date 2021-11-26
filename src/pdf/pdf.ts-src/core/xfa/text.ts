@@ -18,7 +18,7 @@
  */
 
 import { FontFinder, selectFont } from "./fonts.js";
-import { XFAFontBase, XFAMargin } from "./alias.js";
+import { type XFAFontBase, type XFAMargin } from "./alias.js";
 /*81---------------------------------------------------------------------------*/
 
 const WIDTH_FACTOR = 1.02;

@@ -17,9 +17,9 @@
  * limitations under the License.
  */
 
-import { IL10n } from "./interfaces.js";
+import { type IL10n } from "./interfaces.js";
 import { EventBus } from "./ui_utils.js";
-import { ViewerConfiguration } from "./viewer.js";
+import { type ViewerConfiguration } from "./viewer.js";
 /*81---------------------------------------------------------------------------*/
 
 const SIDEBAR_WIDTH_VAR = "--sidebar-width";

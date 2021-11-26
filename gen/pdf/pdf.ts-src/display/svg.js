@@ -16,9 +16,10 @@
  * limitations under the License.
  */
 /* globals __non_webpack_require__ */
-import { createObjectURL, FONT_IDENTITY_MATRIX, IDENTITY_MATRIX, Util, warn, } from "../shared/util.js";
+import { createObjectURL, FONT_IDENTITY_MATRIX, IDENTITY_MATRIX, ImageKind, OPS, TextRenderingMode, Util, warn, } from "../shared/util.js";
 import { DOMSVGFactory } from "./display_utils.js";
 import { svg as createSVG } from "../../../lib/dom.js";
+import { ShadingType } from "../core/pattern.js";
 /*81---------------------------------------------------------------------------*/
 // export let SVGGraphics = ():any => 
 // {
@@ -176,17 +177,17 @@ const convertImgDataToPng = (function () {
         let bitDepth, colorType, lineSize;
         const bytes = imgData.data;
         switch (kind) {
-            case 1 /* GRAYSCALE_1BPP */:
+            case ImageKind.GRAYSCALE_1BPP:
                 colorType = 0;
                 bitDepth = 1;
                 lineSize = (width + 7) >> 3;
                 break;
-            case 2 /* RGB_24BPP */:
+            case ImageKind.RGB_24BPP:
                 colorType = 2;
                 bitDepth = 8;
                 lineSize = width * 3;
                 break;
-            case 3 /* RGBA_32BPP */:
+            case ImageKind.RGBA_32BPP:
                 colorType = 6;
                 bitDepth = 8;
                 lineSize = width * 4;
@@ -203,7 +204,7 @@ const convertImgDataToPng = (function () {
             offsetBytes += lineSize;
             offsetLiterals += lineSize;
         }
-        if (kind === 1 /* GRAYSCALE_1BPP */ && isMask) {
+        if (kind === ImageKind.GRAYSCALE_1BPP && isMask) {
             // inverting for image masks
             offsetLiterals = 0;
             for (let y = 0; y < height; y++) {
@@ -244,7 +245,7 @@ const convertImgDataToPng = (function () {
     }
     // eslint-disable-next-line no-shadow
     return function convertImgDataToPng(imgData, forceDataSchema, isMask) {
-        const kind = imgData.kind === undefined ? 1 /* GRAYSCALE_1BPP */ : imgData.kind;
+        const kind = imgData.kind === undefined ? ImageKind.GRAYSCALE_1BPP : imgData.kind;
         return encode(imgData, kind, forceDataSchema, isMask);
     };
 })();
@@ -259,7 +260,7 @@ class SVGExtraState {
     lineMatrix;
     fontMatrix = FONT_IDENTITY_MATRIX;
     leading = 0;
-    textRenderingMode = 0 /* FILL */;
+    textRenderingMode = TextRenderingMode.FILL;
     textMatrixScale = 1;
     // Current point (in user coordinates)
     x = 0;
@@ -309,13 +310,13 @@ function opListToTree(opList) {
     let opTree = [];
     const tmp = [];
     for (const opListElement of opList) {
-        if (opListElement.fnId === 10 /* save */) {
-            opTree.push({ fnId: 92 /* group */, items: [] });
+        if (opListElement.fnId === OPS.save) {
+            opTree.push({ fnId: OPS.group, items: [] });
             tmp.push(opTree);
             opTree = opTree[opTree.length - 1].items;
             continue;
         }
-        if (opListElement.fnId === 11 /* restore */) {
+        if (opListElement.fnId === OPS.restore) {
             opTree = tmp.pop();
         }
         else {
@@ -412,28 +413,28 @@ export class SVGGraphics {
         //   this._operatorIdMapping[ OPS[<OPSName>op] ] = <OPSName>op;
         // }
     }
-    [10 /* save */]() {
+    [OPS.save]() {
         this.transformStack.push(this.transformMatrix);
         const old = this.current;
         this.extraStack.push(old);
         this.current = old.clone();
     }
-    [11 /* restore */]() {
+    [OPS.restore]() {
         this.transformMatrix = this.transformStack.pop();
         this.current = this.extraStack.pop();
         this.pendingClip = undefined;
         this.tgrp = undefined;
     }
-    [92 /* group */](items) {
-        this[10 /* save */]();
+    [OPS.group](items) {
+        this[OPS.save]();
         this.executeOpTree(items);
-        this[11 /* restore */]();
+        this[OPS.restore]();
     }
     loadDependencies(operatorList) {
         const fnArray = operatorList.fnArray;
         const argsArray = operatorList.argsArray;
         for (let i = 0, ii = fnArray.length; i < ii; i++) {
-            if (fnArray[i] !== 1 /* dependency */) {
+            if (fnArray[i] !== OPS.dependency) {
                 continue;
             }
             for (const obj of argsArray[i]) {
@@ -446,7 +447,7 @@ export class SVGGraphics {
         }
         return Promise.all(this.current.dependencies);
     }
-    [12 /* transform */](a, b, c, d, e, f) {
+    [OPS.transform](a, b, c, d, e, f) {
         const transformMatrix = [a, b, c, d, e, f];
         this.transformMatrix = Util.transform(this.transformMatrix, transformMatrix);
         this.tgrp = undefined;
@@ -481,46 +482,46 @@ export class SVGGraphics {
             const fnId = opTreeElement.fnId;
             const args = opTreeElement.args;
             switch (fnId | 0) {
-                case 31 /* beginText */:
-                    this[31 /* beginText */]();
+                case OPS.beginText:
+                    this[OPS.beginText]();
                     break;
-                case 1 /* dependency */:
+                case OPS.dependency:
                     // Handled in `loadDependencies`, so no warning should be shown.
                     break;
-                case 36 /* setLeading */:
-                    this[36 /* setLeading */](args[0]);
+                case OPS.setLeading:
+                    this[OPS.setLeading](args[0]);
                     break;
-                case 41 /* setLeadingMoveText */:
-                    this[41 /* setLeadingMoveText */](...args);
+                case OPS.setLeadingMoveText:
+                    this[OPS.setLeadingMoveText](...args);
                     // this.setLeadingMoveText(args[0], args[1]);
                     break;
-                case 37 /* setFont */:
-                    this[37 /* setFont */](args);
+                case OPS.setFont:
+                    this[OPS.setFont](args);
                     break;
-                case 44 /* showText */:
-                    this[44 /* showText */](args[0]);
+                case OPS.showText:
+                    this[OPS.showText](args[0]);
                     break;
-                case 45 /* showSpacedText */:
-                    this[44 /* showText */](args[0]);
+                case OPS.showSpacedText:
+                    this[OPS.showText](args[0]);
                     break;
-                case 32 /* endText */:
-                    this[32 /* endText */]();
+                case OPS.endText:
+                    this[OPS.endText]();
                     break;
-                case 40 /* moveText */:
-                    this[40 /* moveText */](...args);
+                case OPS.moveText:
+                    this[OPS.moveText](...args);
                     // this.moveText(args[0], args[1]);
                     break;
-                case 33 /* setCharSpacing */:
-                    this[33 /* setCharSpacing */](args[0]);
+                case OPS.setCharSpacing:
+                    this[OPS.setCharSpacing](args[0]);
                     break;
-                case 34 /* setWordSpacing */:
-                    this[34 /* setWordSpacing */](args[0]);
+                case OPS.setWordSpacing:
+                    this[OPS.setWordSpacing](args[0]);
                     break;
-                case 35 /* setHScale */:
-                    this[35 /* setHScale */](args[0]);
+                case OPS.setHScale:
+                    this[OPS.setHScale](args[0]);
                     break;
-                case 42 /* setTextMatrix */:
-                    this[42 /* setTextMatrix */](...args);
+                case OPS.setTextMatrix:
+                    this[OPS.setTextMatrix](...args);
                     // this.setTextMatrix(
                     //   args[0],
                     //   args[1],
@@ -530,111 +531,111 @@ export class SVGGraphics {
                     //   args[5]
                     // );
                     break;
-                case 39 /* setTextRise */:
-                    this[39 /* setTextRise */](args[0]);
+                case OPS.setTextRise:
+                    this[OPS.setTextRise](args[0]);
                     break;
-                case 38 /* setTextRenderingMode */:
-                    this[38 /* setTextRenderingMode */](args[0]);
+                case OPS.setTextRenderingMode:
+                    this[OPS.setTextRenderingMode](args[0]);
                     break;
-                case 2 /* setLineWidth */:
-                    this[2 /* setLineWidth */](args[0]);
+                case OPS.setLineWidth:
+                    this[OPS.setLineWidth](args[0]);
                     break;
-                case 4 /* setLineJoin */:
-                    this[4 /* setLineJoin */](args[0]);
+                case OPS.setLineJoin:
+                    this[OPS.setLineJoin](args[0]);
                     break;
-                case 3 /* setLineCap */:
-                    this[3 /* setLineCap */](args[0]);
+                case OPS.setLineCap:
+                    this[OPS.setLineCap](args[0]);
                     break;
-                case 5 /* setMiterLimit */:
-                    this[5 /* setMiterLimit */](args[0]);
+                case OPS.setMiterLimit:
+                    this[OPS.setMiterLimit](args[0]);
                     break;
-                case 59 /* setFillRGBColor */:
-                    this[59 /* setFillRGBColor */](...args);
+                case OPS.setFillRGBColor:
+                    this[OPS.setFillRGBColor](...args);
                     // this.setFillRGBColor(args[0], args[1], args[2]);
                     break;
-                case 58 /* setStrokeRGBColor */:
-                    this[58 /* setStrokeRGBColor */](...args);
+                case OPS.setStrokeRGBColor:
+                    this[OPS.setStrokeRGBColor](...args);
                     // this.setStrokeRGBColor(args[0], args[1], args[2]);
                     break;
-                case 53 /* setStrokeColorN */:
-                    this[53 /* setStrokeColorN */](args);
+                case OPS.setStrokeColorN:
+                    this[OPS.setStrokeColorN](args);
                     break;
-                case 55 /* setFillColorN */:
-                    this[55 /* setFillColorN */](args);
+                case OPS.setFillColorN:
+                    this[OPS.setFillColorN](args);
                     break;
-                case 62 /* shadingFill */:
-                    this[62 /* shadingFill */](args[0]);
+                case OPS.shadingFill:
+                    this[OPS.shadingFill](args[0]);
                     break;
-                case 6 /* setDash */:
-                    this[6 /* setDash */](...args);
+                case OPS.setDash:
+                    this[OPS.setDash](...args);
                     // this.setDash(args[0], args[1]);
                     break;
-                case 7 /* setRenderingIntent */:
-                    this[7 /* setRenderingIntent */](args[0]);
+                case OPS.setRenderingIntent:
+                    this[OPS.setRenderingIntent](args[0]);
                     break;
-                case 8 /* setFlatness */:
-                    this[8 /* setFlatness */](args[0]);
+                case OPS.setFlatness:
+                    this[OPS.setFlatness](args[0]);
                     break;
-                case 9 /* setGState */:
-                    this[9 /* setGState */](args[0]);
+                case OPS.setGState:
+                    this[OPS.setGState](args[0]);
                     break;
-                case 22 /* fill */:
-                    this[22 /* fill */]();
+                case OPS.fill:
+                    this[OPS.fill]();
                     break;
-                case 23 /* eoFill */:
-                    this[23 /* eoFill */]();
+                case OPS.eoFill:
+                    this[OPS.eoFill]();
                     break;
-                case 20 /* stroke */:
-                    this[20 /* stroke */]();
+                case OPS.stroke:
+                    this[OPS.stroke]();
                     break;
-                case 24 /* fillStroke */:
-                    this[24 /* fillStroke */]();
+                case OPS.fillStroke:
+                    this[OPS.fillStroke]();
                     break;
-                case 25 /* eoFillStroke */:
-                    this[25 /* eoFillStroke */]();
+                case OPS.eoFillStroke:
+                    this[OPS.eoFillStroke]();
                     break;
-                case 29 /* clip */:
-                    this[29 /* clip */]("nonzero");
+                case OPS.clip:
+                    this[OPS.clip]("nonzero");
                     break;
-                case 30 /* eoClip */:
-                    this[29 /* clip */]("evenodd");
+                case OPS.eoClip:
+                    this[OPS.clip]("evenodd");
                     break;
-                case 90 /* paintSolidColorImageMask */:
-                    this[90 /* paintSolidColorImageMask */]();
+                case OPS.paintSolidColorImageMask:
+                    this[OPS.paintSolidColorImageMask]();
                     break;
-                case 85 /* paintImageXObject */:
-                    this[85 /* paintImageXObject */](args[0]);
+                case OPS.paintImageXObject:
+                    this[OPS.paintImageXObject](args[0]);
                     break;
-                case 86 /* paintInlineImageXObject */:
-                    this[86 /* paintInlineImageXObject */](args[0]);
+                case OPS.paintInlineImageXObject:
+                    this[OPS.paintInlineImageXObject](args[0]);
                     break;
-                case 83 /* paintImageMaskXObject */:
-                    this[83 /* paintImageMaskXObject */](args[0]);
+                case OPS.paintImageMaskXObject:
+                    this[OPS.paintImageMaskXObject](args[0]);
                     break;
-                case 74 /* paintFormXObjectBegin */:
-                    this[74 /* paintFormXObjectBegin */](...args);
+                case OPS.paintFormXObjectBegin:
+                    this[OPS.paintFormXObjectBegin](...args);
                     // this.paintFormXObjectBegin(args[0], args[1]);
                     break;
-                case 75 /* paintFormXObjectEnd */:
-                    this[75 /* paintFormXObjectEnd */]();
+                case OPS.paintFormXObjectEnd:
+                    this[OPS.paintFormXObjectEnd]();
                     break;
-                case 18 /* closePath */:
-                    this[18 /* closePath */]();
+                case OPS.closePath:
+                    this[OPS.closePath]();
                     break;
-                case 21 /* closeStroke */:
-                    this[21 /* closeStroke */]();
+                case OPS.closeStroke:
+                    this[OPS.closeStroke]();
                     break;
-                case 26 /* closeFillStroke */:
-                    this[26 /* closeFillStroke */]();
+                case OPS.closeFillStroke:
+                    this[OPS.closeFillStroke]();
                     break;
-                case 27 /* closeEOFillStroke */:
-                    this[27 /* closeEOFillStroke */]();
+                case OPS.closeEOFillStroke:
+                    this[OPS.closeEOFillStroke]();
                     break;
-                case 43 /* nextLine */:
-                    this[43 /* nextLine */]();
+                case OPS.nextLine:
+                    this[OPS.nextLine]();
                     break;
-                case 12 /* transform */:
-                    this[12 /* transform */](...args);
+                case OPS.transform:
+                    this[OPS.transform](...args);
                     // this.transform(
                     //   args[0],
                     //   args[1],
@@ -644,15 +645,15 @@ export class SVGGraphics {
                     //   args[5]
                     // );
                     break;
-                case 91 /* constructPath */:
-                    this[91 /* constructPath */](...args);
+                case OPS.constructPath:
+                    this[OPS.constructPath](...args);
                     // this.constructPath(args[0], args[1]);
                     break;
-                case 28 /* endPath */:
-                    this[28 /* endPath */]();
+                case OPS.endPath:
+                    this[OPS.endPath]();
                     break;
                 case 92:
-                    this[92 /* group */](opTreeElement.items);
+                    this[OPS.group](opTreeElement.items);
                     break;
                 default:
                     warn(`Unimplemented operator ${fn}`);
@@ -660,16 +661,16 @@ export class SVGGraphics {
             }
         }
     }
-    [34 /* setWordSpacing */](wordSpacing) {
+    [OPS.setWordSpacing](wordSpacing) {
         this.current.wordSpacing = wordSpacing;
     }
-    [33 /* setCharSpacing */](charSpacing) {
+    [OPS.setCharSpacing](charSpacing) {
         this.current.charSpacing = charSpacing;
     }
-    [43 /* nextLine */]() {
-        this[40 /* moveText */](0, this.current.leading);
+    [OPS.nextLine]() {
+        this[OPS.moveText](0, this.current.leading);
     }
-    [42 /* setTextMatrix */](a, b, c, d, e, f) {
+    [OPS.setTextMatrix](a, b, c, d, e, f) {
         const current = this.current;
         current.textMatrix = current.lineMatrix = [a, b, c, d, e, f];
         current.textMatrixScale = Math.hypot(a, b);
@@ -684,7 +685,7 @@ export class SVGGraphics {
         current.txtElement = createSVG("text");
         current.txtElement.appendChild(current.tspan);
     }
-    [31 /* beginText */]() {
+    [OPS.beginText]() {
         const current = this.current;
         current.x = current.lineX = 0;
         current.y = current.lineY = 0;
@@ -697,7 +698,7 @@ export class SVGGraphics {
         current.xcoords = [];
         current.ycoords = [];
     }
-    [40 /* moveText */](x, y) {
+    [OPS.moveText](x, y) {
         const current = this.current;
         current.x = current.lineX += x;
         current.y = current.lineY += y;
@@ -708,7 +709,7 @@ export class SVGGraphics {
         current.tspan.setAttributeNS(null, "font-size", `${pf(current.fontSize)}px`);
         current.tspan.setAttributeNS(null, "y", pf(-current.y));
     }
-    [44 /* showText */](glyphs) {
+    [OPS.showText](glyphs) {
         const current = this.current;
         const font = current.font;
         const fontSize = current.fontSize;
@@ -795,9 +796,9 @@ export class SVGGraphics {
         if (current.fontWeight !== SVG_DEFAULTS.fontWeight) {
             current.tspan.setAttributeNS(null, "font-weight", current.fontWeight);
         }
-        const fillStrokeMode = current.textRenderingMode & 3 /* FILL_STROKE_MASK */;
-        if (fillStrokeMode === 0 /* FILL */
-            || fillStrokeMode === 2 /* FILL_STROKE */) {
+        const fillStrokeMode = current.textRenderingMode & TextRenderingMode.FILL_STROKE_MASK;
+        if (fillStrokeMode === TextRenderingMode.FILL
+            || fillStrokeMode === TextRenderingMode.FILL_STROKE) {
             if (current.fillColor !== SVG_DEFAULTS.fillColor) {
                 current.tspan.setAttributeNS(null, "fill", current.fillColor);
             }
@@ -805,7 +806,7 @@ export class SVGGraphics {
                 current.tspan.setAttributeNS(null, "fill-opacity", current.fillAlpha);
             }
         }
-        else if (current.textRenderingMode === 7 /* ADD_TO_PATH */) {
+        else if (current.textRenderingMode === TextRenderingMode.ADD_TO_PATH) {
             // Workaround for Firefox: We must set fill="transparent" because
             // fill="none" would generate an empty clipping path.
             current.tspan.setAttributeNS(null, "fill", "transparent");
@@ -813,8 +814,8 @@ export class SVGGraphics {
         else {
             current.tspan.setAttributeNS(null, "fill", "none");
         }
-        if (fillStrokeMode === 1 /* STROKE */
-            || fillStrokeMode === 2 /* FILL_STROKE */) {
+        if (fillStrokeMode === TextRenderingMode.STROKE
+            || fillStrokeMode === TextRenderingMode.FILL_STROKE) {
             const lineWidthScale = 1 / (current.textMatrixScale || 1);
             this.#setStrokeAttributes(current.tspan, lineWidthScale);
         }
@@ -832,9 +833,9 @@ export class SVGGraphics {
         current.txtgrp.appendChild(current.txtElement);
         this.#ensureTransformGroup().appendChild(current.txtElement);
     }
-    [41 /* setLeadingMoveText */](x, y) {
-        this[36 /* setLeading */](-y);
-        this[40 /* moveText */](x, y);
+    [OPS.setLeadingMoveText](x, y) {
+        this[OPS.setLeading](-y);
+        this[OPS.moveText](x, y);
     }
     addFontStyle(fontObj) {
         if (!fontObj.data) {
@@ -851,7 +852,7 @@ export class SVGGraphics {
             `@font-face { font-family: "${fontObj.loadedName}";` +
                 ` src: url(${url}); }\n`;
     }
-    [37 /* setFont */](details) {
+    [OPS.setFont](details) {
         const current = this.current;
         const fontObj = this.commonObjs.get(details[0]);
         let size = details[1];
@@ -887,53 +888,53 @@ export class SVGGraphics {
         current.xcoords = [];
         current.ycoords = [];
     }
-    [32 /* endText */]() {
+    [OPS.endText]() {
         const current = this.current;
-        if (current.textRenderingMode & 4 /* ADD_TO_PATH_FLAG */ &&
+        if (current.textRenderingMode & TextRenderingMode.ADD_TO_PATH_FLAG &&
             current.txtElement?.hasChildNodes()) {
             // If no glyphs are shown (i.e. no child nodes), no clipping occurs.
             current.element = current.txtElement;
-            this[29 /* clip */]("nonzero");
-            this[28 /* endPath */]();
+            this[OPS.clip]("nonzero");
+            this[OPS.endPath]();
         }
     }
     // Path properties
-    [2 /* setLineWidth */](width) {
+    [OPS.setLineWidth](width) {
         if (width > 0) {
             this.current.lineWidth = width;
         }
     }
-    [3 /* setLineCap */](style) {
+    [OPS.setLineCap](style) {
         this.current.lineCap = LINE_CAP_STYLES[style];
     }
-    [4 /* setLineJoin */](style) {
+    [OPS.setLineJoin](style) {
         this.current.lineJoin = LINE_JOIN_STYLES[style];
     }
-    [5 /* setMiterLimit */](limit) {
+    [OPS.setMiterLimit](limit) {
         this.current.miterLimit = limit;
     }
     setStrokeAlpha(strokeAlpha) {
         this.current.strokeAlpha = strokeAlpha;
     }
-    [58 /* setStrokeRGBColor */](r, g, b) {
+    [OPS.setStrokeRGBColor](r, g, b) {
         this.current.strokeColor = Util.makeHexColor(r, g, b);
     }
     setFillAlpha(fillAlpha) {
         this.current.fillAlpha = fillAlpha;
     }
-    [59 /* setFillRGBColor */](r, g, b) {
+    [OPS.setFillRGBColor](r, g, b) {
         this.current.fillColor = Util.makeHexColor(r, g, b);
         this.current.tspan = createSVG("tspan");
         this.current.xcoords = [];
         this.current.ycoords = [];
     }
-    [53 /* setStrokeColorN */](args) {
+    [OPS.setStrokeColorN](args) {
         this.current.strokeColor = this.#makeColorN_Pattern(args);
     }
-    [55 /* setFillColorN */](args) {
+    [OPS.setFillColorN](args) {
         this.current.fillColor = this.#makeColorN_Pattern(args);
     }
-    [62 /* shadingFill */](args) {
+    [OPS.shadingFill](args) {
         const width = this.viewport.width;
         const height = this.viewport.height;
         const inv = Util.inverseTransform(this.transformMatrix);
@@ -1019,7 +1020,7 @@ export class SVGGraphics {
                 const colorStops = args[3];
                 let gradient;
                 switch (args[1]) {
-                    case 2 /* AXIAL */:
+                    case ShadingType.AXIAL:
                         const point0 = args[4];
                         const point1 = args[5];
                         gradient = createSVG("linearGradient");
@@ -1030,7 +1031,7 @@ export class SVGGraphics {
                         gradient.setAttributeNS(null, "x2", point1[0].toString());
                         gradient.setAttributeNS(null, "y2", point1[1].toString());
                         break;
-                    case 3 /* RADIAL */:
+                    case ShadingType.RADIAL:
                         const focalPoint = args[4];
                         const circlePoint = args[5];
                         const focalRadius = args[6];
@@ -1065,18 +1066,18 @@ export class SVGGraphics {
                 throw new Error(`Unknown IR type: ${args[0]}`);
         }
     }
-    [6 /* setDash */](dashArray, dashPhase) {
+    [OPS.setDash](dashArray, dashPhase) {
         this.current.dashArray = dashArray;
         this.current.dashPhase = dashPhase;
     }
-    [91 /* constructPath */](ops, args) {
+    [OPS.constructPath](ops, args) {
         const current = this.current;
         let x = current.x, y = current.y;
         let d = [];
         let j = 0;
         for (const op of ops) {
             switch (op | 0) {
-                case 19 /* rectangle */:
+                case OPS.rectangle:
                     x = args[j++];
                     y = args[j++];
                     const width = args[j++];
@@ -1085,35 +1086,35 @@ export class SVGGraphics {
                     const yh = y + height;
                     d.push("M", pf(x), pf(y), "L", pf(xw), pf(y), "L", pf(xw), pf(yh), "L", pf(x), pf(yh), "Z");
                     break;
-                case 13 /* moveTo */:
+                case OPS.moveTo:
                     x = args[j++];
                     y = args[j++];
                     d.push("M", pf(x), pf(y));
                     break;
-                case 14 /* lineTo */:
+                case OPS.lineTo:
                     x = args[j++];
                     y = args[j++];
                     d.push("L", pf(x), pf(y));
                     break;
-                case 15 /* curveTo */:
+                case OPS.curveTo:
                     x = args[j + 4];
                     y = args[j + 5];
                     d.push("C", pf(args[j]), pf(args[j + 1]), pf(args[j + 2]), pf(args[j + 3]), pf(x), pf(y));
                     j += 6;
                     break;
-                case 16 /* curveTo2 */:
+                case OPS.curveTo2:
                     d.push("C", pf(x), pf(y), pf(args[j]), pf(args[j + 1]), pf(args[j + 2]), pf(args[j + 3]));
                     x = args[j + 2];
                     y = args[j + 3];
                     j += 4;
                     break;
-                case 17 /* curveTo3 */:
+                case OPS.curveTo3:
                     x = args[j + 2];
                     y = args[j + 3];
                     d.push("C", pf(args[j]), pf(args[j + 1]), pf(x), pf(y), pf(x), pf(y));
                     j += 4;
                     break;
-                case 18 /* closePath */:
+                case OPS.closePath:
                     d.push("Z");
                     break;
             }
@@ -1121,8 +1122,8 @@ export class SVGGraphics {
         d = d.join(" ");
         if (current.path
             && ops.length > 0
-            && ops[0] !== 19 /* rectangle */
-            && ops[0] !== 13 /* moveTo */) {
+            && ops[0] !== OPS.rectangle
+            && ops[0] !== OPS.moveTo) {
             // If a path does not start with an OPS.rectangle or OPS.moveTo, it has
             // probably been divided into two OPS.constructPath operators by
             // OperatorList. Append the commands to the previous path element.
@@ -1139,7 +1140,7 @@ export class SVGGraphics {
         current.element = current.path;
         current.setCurrentPoint(x, y);
     }
-    [28 /* endPath */]() {
+    [OPS.endPath]() {
         const current = this.current;
         // Painting operators end a path.
         current.path = undefined;
@@ -1179,60 +1180,60 @@ export class SVGGraphics {
         current.activeClipUrl = `url(#${clipId})`;
         this.tgrp = undefined;
     }
-    [29 /* clip */](type) {
+    [OPS.clip](type) {
         this.pendingClip = type;
     }
-    [18 /* closePath */]() {
+    [OPS.closePath]() {
         const current = this.current;
         if (current.path) {
             const d = `${current.path.getAttributeNS(null, "d")}Z`;
             current.path.setAttributeNS(null, "d", d);
         }
     }
-    [36 /* setLeading */](leading) {
+    [OPS.setLeading](leading) {
         this.current.leading = -leading;
     }
-    [39 /* setTextRise */](textRise) {
+    [OPS.setTextRise](textRise) {
         this.current.textRise = textRise;
     }
-    [38 /* setTextRenderingMode */](textRenderingMode) {
+    [OPS.setTextRenderingMode](textRenderingMode) {
         this.current.textRenderingMode = textRenderingMode;
     }
-    [35 /* setHScale */](scale) {
+    [OPS.setHScale](scale) {
         this.current.textHScale = scale / 100;
     }
-    [7 /* setRenderingIntent */](intent) {
+    [OPS.setRenderingIntent](intent) {
         // This operation is ignored since we haven't found a use case for it yet.
     }
-    [8 /* setFlatness */](flatness) {
+    [OPS.setFlatness](flatness) {
         // This operation is ignored since we haven't found a use case for it yet.
     }
-    [9 /* setGState */](states) {
+    [OPS.setGState](states) {
         for (const [key, value] of states) {
             switch (key) {
                 case "LW":
-                    this[2 /* setLineWidth */](value);
+                    this[OPS.setLineWidth](value);
                     break;
                 case "LC":
-                    this[3 /* setLineCap */](value);
+                    this[OPS.setLineCap](value);
                     break;
                 case "LJ":
-                    this[4 /* setLineJoin */](value);
+                    this[OPS.setLineJoin](value);
                     break;
                 case "ML":
-                    this[5 /* setMiterLimit */](value);
+                    this[OPS.setMiterLimit](value);
                     break;
                 case "D":
-                    this[6 /* setDash */](value[0], value[1]);
+                    this[OPS.setDash](value[0], value[1]);
                     break;
                 case "RI":
-                    this[7 /* setRenderingIntent */](value);
+                    this[OPS.setRenderingIntent](value);
                     break;
                 case "FL":
-                    this[8 /* setFlatness */](value);
+                    this[OPS.setFlatness](value);
                     break;
                 case "Font":
-                    this[37 /* setFont */](value);
+                    this[OPS.setFont](value);
                     break;
                 case "CA":
                     this.setStrokeAlpha(value);
@@ -1246,20 +1247,20 @@ export class SVGGraphics {
             }
         }
     }
-    [22 /* fill */]() {
+    [OPS.fill]() {
         const current = this.current;
         if (current.element) {
             current.element.setAttributeNS(null, "fill", current.fillColor);
             current.element.setAttributeNS(null, "fill-opacity", current.fillAlpha.toString());
-            this[28 /* endPath */]();
+            this[OPS.endPath]();
         }
     }
-    [20 /* stroke */]() {
+    [OPS.stroke]() {
         const current = this.current;
         if (current.element) {
             this.#setStrokeAttributes(current.element);
             current.element.setAttributeNS(null, "fill", "none");
-            this[28 /* endPath */]();
+            this[OPS.endPath]();
         }
     }
     #setStrokeAttributes = (element, lineWidthScale = 1) => {
@@ -1279,37 +1280,37 @@ export class SVGGraphics {
         element.setAttributeNS(null, "stroke-dasharray", dashArray.map(pf).join(" "));
         element.setAttributeNS(null, "stroke-dashoffset", pf(lineWidthScale * current.dashPhase) + "px");
     };
-    [23 /* eoFill */]() {
+    [OPS.eoFill]() {
         if (this.current.element) {
             this.current.element.setAttributeNS(null, "fill-rule", "evenodd");
         }
-        this[22 /* fill */]();
+        this[OPS.fill]();
     }
-    [24 /* fillStroke */]() {
+    [OPS.fillStroke]() {
         // Order is important since stroke wants fill to be none.
         // First stroke, then if fill needed, it will be overwritten.
-        this[20 /* stroke */]();
-        this[22 /* fill */]();
+        this[OPS.stroke]();
+        this[OPS.fill]();
     }
-    [25 /* eoFillStroke */]() {
+    [OPS.eoFillStroke]() {
         if (this.current.element) {
             this.current.element.setAttributeNS(null, "fill-rule", "evenodd");
         }
-        this[24 /* fillStroke */]();
+        this[OPS.fillStroke]();
     }
-    [21 /* closeStroke */]() {
-        this[18 /* closePath */]();
-        this[20 /* stroke */]();
+    [OPS.closeStroke]() {
+        this[OPS.closePath]();
+        this[OPS.stroke]();
     }
-    [26 /* closeFillStroke */]() {
-        this[18 /* closePath */]();
-        this[24 /* fillStroke */]();
+    [OPS.closeFillStroke]() {
+        this[OPS.closePath]();
+        this[OPS.fillStroke]();
     }
-    [27 /* closeEOFillStroke */]() {
-        this[18 /* closePath */]();
-        this[25 /* eoFillStroke */]();
+    [OPS.closeEOFillStroke]() {
+        this[OPS.closePath]();
+        this[OPS.eoFillStroke]();
     }
-    [90 /* paintSolidColorImageMask */]() {
+    [OPS.paintSolidColorImageMask]() {
         const rect = createSVG("rect");
         rect.setAttributeNS(null, "x", "0");
         rect.setAttributeNS(null, "y", "0");
@@ -1318,7 +1319,7 @@ export class SVGGraphics {
         rect.setAttributeNS(null, "fill", this.current.fillColor);
         this.#ensureTransformGroup().appendChild(rect);
     }
-    [85 /* paintImageXObject */](objId) {
+    [OPS.paintImageXObject](objId) {
         const imgData = objId.startsWith("g_")
             ? this.commonObjs.get(objId)
             : this.objs.get(objId);
@@ -1326,9 +1327,9 @@ export class SVGGraphics {
             warn(`Dependent image with object ID ${objId} is not ready yet`);
             return;
         }
-        this[86 /* paintInlineImageXObject */](imgData);
+        this[OPS.paintInlineImageXObject](imgData);
     }
-    [86 /* paintInlineImageXObject */](imgData, mask) {
+    [OPS.paintInlineImageXObject](imgData, mask) {
         const width = imgData.width;
         const height = imgData.height;
         const imgSrc = convertImgDataToPng(imgData, this.forceDataSchema, !!mask);
@@ -1338,7 +1339,7 @@ export class SVGGraphics {
         cliprect.setAttributeNS(null, "width", pf(width));
         cliprect.setAttributeNS(null, "height", pf(height));
         this.current.element = cliprect;
-        this[29 /* clip */]("nonzero");
+        this[OPS.clip]("nonzero");
         const imgEl = createSVG("image");
         imgEl.setAttributeNS(XLINK_NS, "xlink:href", imgSrc);
         imgEl.setAttributeNS(null, "x", "0");
@@ -1353,7 +1354,7 @@ export class SVGGraphics {
             this.#ensureTransformGroup().appendChild(imgEl);
         }
     }
-    [83 /* paintImageMaskXObject */](imgData) {
+    [OPS.paintImageMaskXObject](imgData) {
         const current = this.current;
         const width = imgData.width;
         const height = imgData.height;
@@ -1370,11 +1371,11 @@ export class SVGGraphics {
         rect.setAttributeNS(null, "mask", `url(#${current.maskId})`);
         this.defs.appendChild(mask);
         this.#ensureTransformGroup().appendChild(rect);
-        this[86 /* paintInlineImageXObject */](imgData, mask);
+        this[OPS.paintInlineImageXObject](imgData, mask);
     }
-    [74 /* paintFormXObjectBegin */](matrix, bbox) {
+    [OPS.paintFormXObjectBegin](matrix, bbox) {
         if (Array.isArray(matrix) && matrix.length === 6) {
-            this[12 /* transform */](matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
+            this[OPS.transform](matrix[0], matrix[1], matrix[2], matrix[3], matrix[4], matrix[5]);
         }
         if (bbox) {
             const width = bbox[2] - bbox[0];
@@ -1385,11 +1386,11 @@ export class SVGGraphics {
             cliprect.setAttributeNS(null, "width", pf(width));
             cliprect.setAttributeNS(null, "height", pf(height));
             this.current.element = cliprect;
-            this[29 /* clip */]("nonzero");
-            this[28 /* endPath */]();
+            this[OPS.clip]("nonzero");
+            this[OPS.endPath]();
         }
     }
-    [75 /* paintFormXObjectEnd */]() { }
+    [OPS.paintFormXObjectEnd]() { }
     #initialize(viewport) {
         const svg = this.svgFactory.create(viewport.width, viewport.height);
         // Create the definitions element.

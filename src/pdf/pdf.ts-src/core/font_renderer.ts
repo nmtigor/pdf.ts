@@ -21,7 +21,7 @@ import {
   bytesToString,
   FONT_IDENTITY_MATRIX,
   FormatError,
-  matrix_t,
+  type matrix_t,
   warn,
 } from "../shared/util.js";
 import { CFFFDSelect, CFFParser, CFFTopDict } from "./cff_parser.js";
@@ -29,7 +29,7 @@ import { getGlyphsUnicode } from "./glyphlist.js";
 import { StandardEncoding } from "./encodings.js";
 import { Font } from "./fonts.js";
 import { Stream } from "./stream.js";
-import { FontProps } from "./evaluator.js";
+import { type FontProps } from "./evaluator.js";
 /*81---------------------------------------------------------------------------*/
 
 function getLong( data:Uint8Array, offset:number )

@@ -1,4 +1,4 @@
-import { AnnotStorageValue } from "./annotation_layer.js";
+import { type AnnotStorageValue } from "./annotation_layer.js";
 /**
  * Key/value storage for annotation data in forms.
  */

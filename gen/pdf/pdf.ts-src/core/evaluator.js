@@ -17,7 +17,7 @@
  */
 /* eslint-disable no-var */
 import { assert } from "../../../lib/util/trace.js";
-import { AbortException, createPromiseCapability, FONT_IDENTITY_MATRIX, FormatError, IDENTITY_MATRIX, info, isArrayEqual, shadow, stringToPDFString, Util, warn, } from "../shared/util.js";
+import { AbortException, CMapCompressionType, createPromiseCapability, FONT_IDENTITY_MATRIX, FormatError, IDENTITY_MATRIX, info, isArrayEqual, OPS, shadow, stringToPDFString, TextRenderingMode, UNSUPPORTED_FEATURES, Util, warn, } from "../shared/util.js";
 import { CMapFactory, IdentityCMap } from "./cmap.js";
 import { Cmd, Dict, EOF, FontDict, isName, Name, Ref, RefSet, } from "./primitives.js";
 import { ErrorFont, Font, } from "./fonts.js";
@@ -39,7 +39,7 @@ import { PDFImage } from "./image.js";
 import { getLookupTableFactory, MissingDataException } from "./core_utils.js";
 import { BaseStream } from "./base_stream.js";
 import { DecodeStream } from "./decode_stream.js";
-import { getFontType } from "./fonts_utils.js";
+import { FontFlags, getFontType } from "./fonts_utils.js";
 import { IdentityToUnicodeMap, ToUnicodeMap } from "./to_unicode_map.js";
 import { getXfaFontDict, getXfaFontName } from "./xfa_fonts.js";
 /*81---------------------------------------------------------------------------*/
@@ -53,6 +53,11 @@ const DefaultPartialEvaluatorOptions = Object.freeze({
     cMapUrl: undefined,
     standardFontDataUrl: undefined,
 });
+var PatternType;
+(function (PatternType) {
+    PatternType[PatternType["TILING"] = 1] = "TILING";
+    PatternType[PatternType["SHADING"] = 2] = "SHADING";
+})(PatternType || (PatternType = {}));
 // Optionally avoid sending individual, or very few, text chunks to reduce
 // `postMessage` overhead with ReadableStream (see issue 13962).
 //
@@ -284,14 +289,14 @@ export class PartialEvaluator {
             }
             data = {
                 cMapData: new Uint8Array(await response.arrayBuffer()),
-                compressionType: 1 /* BINARY */,
+                compressionType: CMapCompressionType.BINARY,
             };
         }
         else {
             // Get the data on the main-thread instead.
             data = await this.handler.sendWithPromise("FetchBuiltInCMap", { name });
         }
-        if (data.compressionType !== 0 /* NONE */) {
+        if (data.compressionType !== CMapCompressionType.NONE) {
             // Given the size of uncompressed CMaps, only cache compressed ones.
             this.builtInCMapCache.set(name, data);
         }
@@ -353,7 +358,7 @@ export class PartialEvaluator {
             optionalContent = await this.parseMarkedContentProps(dict.get("OC"), resources);
         }
         if (optionalContent !== undefined) {
-            operatorList.addOp(70 /* beginMarkedContentProps */, ["OC", optionalContent]);
+            operatorList.addOp(OPS.beginMarkedContentProps, ["OC", optionalContent]);
         }
         const group = dict.get("Group");
         if (group) {
@@ -388,9 +393,9 @@ export class PartialEvaluator {
                 colorSpace = colorSpace || ColorSpace.singletons.rgb;
                 smask.backdrop = colorSpace.getRgb(smask.backdrop, 0);
             }
-            operatorList.addOp(76 /* beginGroup */, [groupOptions]);
+            operatorList.addOp(OPS.beginGroup, [groupOptions]);
         }
-        operatorList.addOp(74 /* paintFormXObjectBegin */, [matrix, bbox]);
+        operatorList.addOp(OPS.paintFormXObjectBegin, [matrix, bbox]);
         return this.getOperatorList({
             stream: xobj,
             task,
@@ -398,12 +403,12 @@ export class PartialEvaluator {
             operatorList,
             initialState: initialState,
         }).then(() => {
-            operatorList.addOp(75 /* paintFormXObjectEnd */, []);
+            operatorList.addOp(OPS.paintFormXObjectEnd, []);
             if (group) {
-                operatorList.addOp(77 /* endGroup */, [groupOptions]);
+                operatorList.addOp(OPS.endGroup, [groupOptions]);
             }
             if (optionalContent !== undefined) {
-                operatorList.addOp(71 /* endMarkedContent */, []);
+                operatorList.addOp(OPS.endMarkedContent, []);
             }
         });
     }
@@ -434,7 +439,7 @@ export class PartialEvaluator {
             optionalContent = await this.parseMarkedContentProps(dict.get("OC"), resources);
         }
         if (optionalContent !== undefined) {
-            operatorList.addOp(70 /* beginMarkedContentProps */, ["OC", optionalContent]);
+            operatorList.addOp(OPS.beginMarkedContentProps, ["OC", optionalContent]);
         }
         const imageMask = dict.get("ImageMask", "IM") || false;
         const interpolate = dict.get("Interpolate", "I");
@@ -462,15 +467,15 @@ export class PartialEvaluator {
             });
             imgData.cached = !!cacheKey;
             args = [imgData];
-            operatorList.addOp(83 /* paintImageMaskXObject */, args);
+            operatorList.addOp(OPS.paintImageMaskXObject, args);
             if (cacheKey) {
                 localImageCache.set(cacheKey, imageRef, {
-                    fn: 83 /* paintImageMaskXObject */,
+                    fn: OPS.paintImageMaskXObject,
                     args,
                 });
             }
             if (optionalContent !== undefined) {
-                operatorList.addOp(71 /* endMarkedContent */, []);
+                operatorList.addOp(OPS.endMarkedContent, []);
             }
             return;
         }
@@ -490,9 +495,9 @@ export class PartialEvaluator {
             // We force the use of RGBA_32BPP images here, because we can't handle
             // any other kind.
             imgData = imageObj.createImageData(/* forceRGBA = */ true);
-            operatorList.addOp(86 /* paintInlineImageXObject */, [imgData]);
+            operatorList.addOp(OPS.paintInlineImageXObject, [imgData]);
             if (optionalContent !== undefined) {
-                operatorList.addOp(71 /* endMarkedContent */, []);
+                operatorList.addOp(OPS.endMarkedContent, []);
             }
             return;
         }
@@ -531,10 +536,10 @@ export class PartialEvaluator {
             warn(`Unable to decode image "${objId}": "${reason}".`);
             return this.#sendImgData(objId, /* imgData = */ undefined, cacheGlobally);
         });
-        operatorList.addOp(85 /* paintImageXObject */, args);
+        operatorList.addOp(OPS.paintImageXObject, args);
         if (cacheKey) {
             localImageCache.set(cacheKey, imageRef, {
-                fn: 85 /* paintImageXObject */,
+                fn: OPS.paintImageXObject,
                 args,
             });
             if (imageRef) {
@@ -543,7 +548,7 @@ export class PartialEvaluator {
                 if (cacheGlobally) {
                     this.globalImageCache.setData(imageRef, {
                         objId,
-                        fn: 85 /* paintImageXObject */,
+                        fn: OPS.paintImageXObject,
                         args,
                         byteSize: 0, // Temporary entry, note `addByteSize` above.
                     });
@@ -551,7 +556,7 @@ export class PartialEvaluator {
             }
         }
         if (optionalContent !== undefined) {
-            operatorList.addOp(71 /* endMarkedContent */, []);
+            operatorList.addOp(OPS.endMarkedContent, []);
         }
     }
     handleSMask(smask, resources, operatorList, task, stateManager, localColorSpaceCache) {
@@ -654,7 +659,7 @@ export class PartialEvaluator {
                 // Error(s) in the TilingPattern -- sending unsupported feature
                 // notification and allow rendering to continue.
                 this.handler.send("UnsupportedFeature", {
-                    featureId: "errorTilingPattern" /* errorTilingPattern */,
+                    featureId: UNSUPPORTED_FEATURES.errorTilingPattern,
                 });
                 warn(`handleTilingType - ignoring pattern: "${reason}".`);
                 return;
@@ -680,7 +685,7 @@ export class PartialEvaluator {
                 // Error in the font data -- sending unsupported feature
                 // notification.
                 this.handler.send("UnsupportedFeature", {
-                    featureId: "errorFontLoadType3" /* errorFontLoadType3 */,
+                    featureId: UNSUPPORTED_FEATURES.errorFontLoadType3,
                 });
                 return new TranslatedFont({
                     loadedName: "g_font_error",
@@ -701,7 +706,7 @@ export class PartialEvaluator {
         const font = state.font;
         const glyphs = font.charsToGlyphs(chars);
         if (font.data) {
-            const isAddToPathSet = !!(state.textRenderingMode & 4 /* ADD_TO_PATH_FLAG */);
+            const isAddToPathSet = !!(state.textRenderingMode & TextRenderingMode.ADD_TO_PATH_FLAG);
             if (isAddToPathSet
                 || state.fillColorSpace.name === "Pattern"
                 || font.disableFontFace
@@ -719,7 +724,7 @@ export class PartialEvaluator {
             // Missing setFont operator before text rendering operator -- sending
             // unsupported feature notification and allow rendering to continue.
             this.handler.send("UnsupportedFeature", {
-                featureId: "errorFontState" /* errorFontState */,
+                featureId: UNSUPPORTED_FEATURES.errorFontState,
             });
             warn(`ensureStateFont: "${reason}".`);
             return;
@@ -807,7 +812,7 @@ export class PartialEvaluator {
         }
         return promise.then(() => {
             if (gStateObj.length > 0) {
-                operatorList.addOp(9 /* setGState */, [gStateObj]);
+                operatorList.addOp(OPS.setGState, [gStateObj]);
             }
             if (isSimpleGState) {
                 localGStateCache.set(cacheKey, gStateRef, gStateObj);
@@ -847,7 +852,7 @@ export class PartialEvaluator {
             }
             // Font not found -- sending unsupported feature notification.
             this.handler.send("UnsupportedFeature", {
-                featureId: "errorFontMissing" /* errorFontMissing */,
+                featureId: UNSUPPORTED_FEATURES.errorFontMissing,
             });
             warn(`${partialMsg} -- attempting to fallback to a default font.`);
             // Falling back to a default font to avoid completely broken rendering,
@@ -954,7 +959,7 @@ export class PartialEvaluator {
             // TODO fontCapability.reject?
             // Error in the font data -- sending unsupported feature notification.
             this.handler.send("UnsupportedFeature", {
-                featureId: "errorFontTranslate" /* errorFontTranslate */,
+                featureId: UNSUPPORTED_FEATURES.errorFontTranslate,
             });
             warn(`loadFont - translateFont failed: "${reason}".`);
             try {
@@ -980,7 +985,7 @@ export class PartialEvaluator {
         if (!args)
             args = [];
         if (lastIndex < 0
-            || operatorList.fnArray[lastIndex] !== 91 /* constructPath */) {
+            || operatorList.fnArray[lastIndex] !== OPS.constructPath) {
             // Handle corrupt PDF documents that contains path operators inside of
             // text objects, which may shift subsequent text, by enclosing the path
             // operator in save/restore operators (fixes issue10542_reduced.pdf).
@@ -990,11 +995,11 @@ export class PartialEvaluator {
             // *extremely* rare that shouldn't really matter much in practice.
             if (parsingText) {
                 warn(`Encountered path operator "${fn}" inside of a text object.`);
-                operatorList.addOp(10 /* save */, null);
+                operatorList.addOp(OPS.save, null);
             }
-            operatorList.addOp(91 /* constructPath */, [[fn], args]);
+            operatorList.addOp(OPS.constructPath, [[fn], args]);
             if (parsingText) {
-                operatorList.addOp(11 /* restore */, null);
+                operatorList.addOp(OPS.restore, null);
             }
         }
         else {
@@ -1017,7 +1022,7 @@ export class PartialEvaluator {
                 // Error(s) in the ColorSpace -- sending unsupported feature
                 // notification and allow rendering to continue.
                 this.handler.send("UnsupportedFeature", {
-                    featureId: "errorColorSpace" /* errorColorSpace */,
+                    featureId: UNSUPPORTED_FEATURES.errorColorSpace,
                 });
                 warn(`parseColorSpace - ignoring ColorSpace: "${reason}".`);
                 return undefined;
@@ -1061,11 +1066,11 @@ export class PartialEvaluator {
             if (pattern) {
                 const dict = (pattern instanceof BaseStream) ? pattern.dict : pattern;
                 const typeNum = dict.get("PatternType");
-                if (typeNum === 1 /* TILING */) {
+                if (typeNum === PatternType.TILING) {
                     const color = cs.base ? cs.base.getRgb(args, 0) : undefined;
                     return this.handleTilingType(fn, color, resources, pattern, dict, operatorList, task, localTilingPatternCache);
                 }
-                else if (typeNum === 2 /* SHADING */) {
+                else if (typeNum === PatternType.SHADING) {
                     const shading = dict.get("Shading"); // Table 76
                     const matrix = dict.getArray("Matrix");
                     const objId = this.parseShading({
@@ -1202,7 +1207,7 @@ export class PartialEvaluator {
         const timeSlotManager = new TimeSlotManager();
         function closePendingRestoreOPS() {
             for (let i = 0, ii = preprocessor.savedStatesDepth; i < ii; i++) {
-                operatorList.addOp(11 /* restore */, []);
+                operatorList.addOp(OPS.restore, []);
             }
         }
         return new Promise(function promiseBody(resolve, reject) {
@@ -1231,7 +1236,7 @@ export class PartialEvaluator {
                 let args = operation.args;
                 let fn = operation.fn;
                 switch (fn | 0) {
-                    case 66 /* paintXObject */:
+                    case OPS.paintXObject:
                         // eagerly compile XForm objects
                         isValidName = args[0] instanceof Name;
                         name = args[0].name;
@@ -1310,7 +1315,7 @@ export class PartialEvaluator {
                                 // Error(s) in the XObject -- sending unsupported feature
                                 // notification and allow rendering to continue.
                                 self.handler.send("UnsupportedFeature", {
-                                    featureId: "errorXObject" /* errorXObject */,
+                                    featureId: UNSUPPORTED_FEATURES.errorXObject,
                                 });
                                 warn(`getOperatorList - ignoring XObject: "${reason}".`);
                                 return;
@@ -1318,23 +1323,23 @@ export class PartialEvaluator {
                             throw reason;
                         }));
                         return;
-                    case 37 /* setFont */:
+                    case OPS.setFont:
                         const fontSize = args[1];
                         // eagerly collect all fonts
                         next(self
                             .handleSetFont(resources, args, undefined, operatorList, task, stateManager.state, fallbackFontDict)
                             .then(loadedName => {
                             operatorList.addDependency(loadedName);
-                            operatorList.addOp(37 /* setFont */, [loadedName, fontSize]);
+                            operatorList.addOp(OPS.setFont, [loadedName, fontSize]);
                         }));
                         return;
-                    case 31 /* beginText */:
+                    case OPS.beginText:
                         parsingText = true;
                         break;
-                    case 32 /* endText */:
+                    case OPS.endText:
                         parsingText = false;
                         break;
-                    case 65 /* endInlineImage */:
+                    case OPS.endInlineImage:
                         const cacheKey = args[0].cacheKey;
                         if (cacheKey) {
                             const localImage = localImageCache.getByName(cacheKey);
@@ -1354,14 +1359,14 @@ export class PartialEvaluator {
                             localColorSpaceCache,
                         }));
                         return;
-                    case 44 /* showText */:
+                    case OPS.showText:
                         if (!stateManager.state.font) {
                             self.ensureStateFont(stateManager.state);
                             continue;
                         }
                         args[0] = self.handleText(args[0], stateManager.state);
                         break;
-                    case 45 /* showSpacedText */:
+                    case OPS.showSpacedText:
                         if (!stateManager.state.font) {
                             self.ensureStateFont(stateManager.state);
                             continue;
@@ -1380,32 +1385,32 @@ export class PartialEvaluator {
                             }
                         }
                         args[0] = combinedGlyphs;
-                        fn = 44 /* showText */;
+                        fn = OPS.showText;
                         break;
-                    case 46 /* nextLineShowText */:
+                    case OPS.nextLineShowText:
                         if (!stateManager.state.font) {
                             self.ensureStateFont(stateManager.state);
                             continue;
                         }
-                        operatorList.addOp(43 /* nextLine */);
+                        operatorList.addOp(OPS.nextLine);
                         args[0] = self.handleText(args[0], stateManager.state);
-                        fn = 44 /* showText */;
+                        fn = OPS.showText;
                         break;
-                    case 47 /* nextLineSetSpacingShowText */:
+                    case OPS.nextLineSetSpacingShowText:
                         if (!stateManager.state.font) {
                             self.ensureStateFont(stateManager.state);
                             continue;
                         }
-                        operatorList.addOp(43 /* nextLine */);
-                        operatorList.addOp(34 /* setWordSpacing */, [args.shift()]);
-                        operatorList.addOp(33 /* setCharSpacing */, [args.shift()]);
+                        operatorList.addOp(OPS.nextLine);
+                        operatorList.addOp(OPS.setWordSpacing, [args.shift()]);
+                        operatorList.addOp(OPS.setCharSpacing, [args.shift()]);
                         args[0] = self.handleText(args[0], stateManager.state);
-                        fn = 44 /* showText */;
+                        fn = OPS.showText;
                         break;
-                    case 38 /* setTextRenderingMode */:
+                    case OPS.setTextRenderingMode:
                         stateManager.state.textRenderingMode = args[0];
                         break;
-                    case 51 /* setFillColorSpace */: {
+                    case OPS.setFillColorSpace: {
                         const cachedColorSpace = ColorSpace.getCached(args[0], xref, localColorSpaceCache);
                         if (cachedColorSpace) {
                             stateManager.state.fillColorSpace = cachedColorSpace;
@@ -1424,7 +1429,7 @@ export class PartialEvaluator {
                         }));
                         return;
                     }
-                    case 50 /* setStrokeColorSpace */: {
+                    case OPS.setStrokeColorSpace: {
                         const cachedColorSpace = ColorSpace.getCached(args[0], xref, localColorSpaceCache);
                         if (cachedColorSpace) {
                             stateManager.state.strokeColorSpace = cachedColorSpace;
@@ -1443,63 +1448,63 @@ export class PartialEvaluator {
                         }));
                         return;
                     }
-                    case 54 /* setFillColor */:
+                    case OPS.setFillColor:
                         cs = stateManager.state.fillColorSpace;
                         args = cs.getRgb(args, 0);
-                        fn = 59 /* setFillRGBColor */;
+                        fn = OPS.setFillRGBColor;
                         break;
-                    case 52 /* setStrokeColor */:
+                    case OPS.setStrokeColor:
                         cs = stateManager.state.strokeColorSpace;
                         args = cs.getRgb(args, 0);
-                        fn = 58 /* setStrokeRGBColor */;
+                        fn = OPS.setStrokeRGBColor;
                         break;
-                    case 57 /* setFillGray */:
+                    case OPS.setFillGray:
                         stateManager.state.fillColorSpace = ColorSpace.singletons.gray;
                         args = ColorSpace.singletons.gray.getRgb(args, 0);
-                        fn = 59 /* setFillRGBColor */;
+                        fn = OPS.setFillRGBColor;
                         break;
-                    case 56 /* setStrokeGray */:
+                    case OPS.setStrokeGray:
                         stateManager.state.strokeColorSpace = ColorSpace.singletons.gray;
                         args = ColorSpace.singletons.gray.getRgb(args, 0);
-                        fn = 58 /* setStrokeRGBColor */;
+                        fn = OPS.setStrokeRGBColor;
                         break;
-                    case 61 /* setFillCMYKColor */:
+                    case OPS.setFillCMYKColor:
                         stateManager.state.fillColorSpace = ColorSpace.singletons.cmyk;
                         args = ColorSpace.singletons.cmyk.getRgb(args, 0);
-                        fn = 59 /* setFillRGBColor */;
+                        fn = OPS.setFillRGBColor;
                         break;
-                    case 60 /* setStrokeCMYKColor */:
+                    case OPS.setStrokeCMYKColor:
                         stateManager.state.strokeColorSpace = ColorSpace.singletons.cmyk;
                         args = ColorSpace.singletons.cmyk.getRgb(args, 0);
-                        fn = 58 /* setStrokeRGBColor */;
+                        fn = OPS.setStrokeRGBColor;
                         break;
-                    case 59 /* setFillRGBColor */:
+                    case OPS.setFillRGBColor:
                         stateManager.state.fillColorSpace = ColorSpace.singletons.rgb;
                         args = ColorSpace.singletons.rgb.getRgb(args, 0);
                         break;
-                    case 58 /* setStrokeRGBColor */:
+                    case OPS.setStrokeRGBColor:
                         stateManager.state.strokeColorSpace = ColorSpace.singletons.rgb;
                         args = ColorSpace.singletons.rgb.getRgb(args, 0);
                         break;
-                    case 55 /* setFillColorN */:
+                    case OPS.setFillColorN:
                         cs = stateManager.state.fillColorSpace;
                         if (cs.name === "Pattern") {
-                            next(self.handleColorN(operatorList, 55 /* setFillColorN */, args, cs, patterns, resources, task, localColorSpaceCache, localTilingPatternCache, localShadingPatternCache));
+                            next(self.handleColorN(operatorList, OPS.setFillColorN, args, cs, patterns, resources, task, localColorSpaceCache, localTilingPatternCache, localShadingPatternCache));
                             return;
                         }
                         args = cs.getRgb(args, 0);
-                        fn = 59 /* setFillRGBColor */;
+                        fn = OPS.setFillRGBColor;
                         break;
-                    case 53 /* setStrokeColorN */:
+                    case OPS.setStrokeColorN:
                         cs = stateManager.state.strokeColorSpace;
                         if (cs.name === "Pattern") {
-                            next(self.handleColorN(operatorList, 53 /* setStrokeColorN */, args, cs, patterns, resources, task, localColorSpaceCache, localTilingPatternCache, localShadingPatternCache));
+                            next(self.handleColorN(operatorList, OPS.setStrokeColorN, args, cs, patterns, resources, task, localColorSpaceCache, localTilingPatternCache, localShadingPatternCache));
                             return;
                         }
                         args = cs.getRgb(args, 0);
-                        fn = 58 /* setStrokeRGBColor */;
+                        fn = OPS.setStrokeRGBColor;
                         break;
-                    case 62 /* shadingFill */:
+                    case OPS.shadingFill:
                         const shadingRes = resources.get("Shading");
                         if (!shadingRes) {
                             throw new FormatError("No shading resource found");
@@ -1515,16 +1520,16 @@ export class PartialEvaluator {
                             localShadingPatternCache,
                         });
                         args = [patternId];
-                        fn = 62 /* shadingFill */;
+                        fn = OPS.shadingFill;
                         break;
-                    case 9 /* setGState */:
+                    case OPS.setGState:
                         isValidName = args[0] instanceof Name;
                         name = args[0].name;
                         if (isValidName) {
                             const localGStateObj = localGStateCache.getByName(name);
                             if (localGStateObj) {
                                 if (localGStateObj.length > 0) {
-                                    operatorList.addOp(9 /* setGState */, [localGStateObj]);
+                                    operatorList.addOp(OPS.setGState, [localGStateObj]);
                                 }
                                 args = null;
                                 continue;
@@ -1564,7 +1569,7 @@ export class PartialEvaluator {
                                 // Error(s) in the ExtGState -- sending unsupported feature
                                 // notification and allow parsing/rendering to continue.
                                 self.handler.send("UnsupportedFeature", {
-                                    featureId: "errorExtGState" /* errorExtGState */,
+                                    featureId: UNSUPPORTED_FEATURES.errorExtGState,
                                 });
                                 warn(`getOperatorList - ignoring ExtGState: "${reason}".`);
                                 return;
@@ -1572,19 +1577,19 @@ export class PartialEvaluator {
                             throw reason;
                         }));
                         return;
-                    case 13 /* moveTo */:
-                    case 14 /* lineTo */:
-                    case 15 /* curveTo */:
-                    case 16 /* curveTo2 */:
-                    case 17 /* curveTo3 */:
-                    case 18 /* closePath */:
-                    case 19 /* rectangle */:
+                    case OPS.moveTo:
+                    case OPS.lineTo:
+                    case OPS.curveTo:
+                    case OPS.curveTo2:
+                    case OPS.curveTo3:
+                    case OPS.closePath:
+                    case OPS.rectangle:
                         self.buildPath(operatorList, fn, args, parsingText);
                         continue;
-                    case 67 /* markPoint */:
-                    case 68 /* markPointProps */:
-                    case 72 /* beginCompat */:
-                    case 73 /* endCompat */:
+                    case OPS.markPoint:
+                    case OPS.markPointProps:
+                    case OPS.beginCompat:
+                    case OPS.endCompat:
                         // Ignore operators where the corresponding handlers are known to
                         // be no-op in CanvasGraphics (display/canvas.js). This prevents
                         // serialization errors and is also a bit more efficient.
@@ -1592,7 +1597,7 @@ export class PartialEvaluator {
                         // e.g. as done in https://github.com/mozilla/pdf.js/pull/6266,
                         // but doing so is meaningless without knowing the semantics.
                         continue;
-                    case 70 /* beginMarkedContentProps */:
+                    case OPS.beginMarkedContentProps:
                         if (!(args[0] instanceof Name)) {
                             warn(`Expected name for beginMarkedContentProps arg0=${args[0]}`);
                             continue;
@@ -1601,7 +1606,7 @@ export class PartialEvaluator {
                             next(self
                                 .parseMarkedContentProps(args[1], resources)
                                 .then(data => {
-                                operatorList.addOp(70 /* beginMarkedContentProps */, [
+                                operatorList.addOp(OPS.beginMarkedContentProps, [
                                     "OC",
                                     data,
                                 ]);
@@ -1611,7 +1616,7 @@ export class PartialEvaluator {
                                     return;
                                 if (self.options.ignoreErrors) {
                                     self.handler.send("UnsupportedFeature", {
-                                        featureId: "errorMarkedContent" /* errorMarkedContent */,
+                                        featureId: UNSUPPORTED_FEATURES.errorMarkedContent,
                                     });
                                     warn(`getOperatorList - ignoring beginMarkedContentProps: "${reason}".`);
                                     return;
@@ -1626,8 +1631,8 @@ export class PartialEvaluator {
                             args[1] instanceof Dict ? args[1].get("MCID") : null,
                         ];
                         break;
-                    case 69 /* beginMarkedContent */:
-                    case 71 /* endMarkedContent */:
+                    case OPS.beginMarkedContent:
+                    case OPS.endMarkedContent:
                     default:
                         // Note: Ignore the operator if it has `Dict` arguments, since
                         // those are non-serializable, otherwise postMessage will throw
@@ -1660,7 +1665,7 @@ export class PartialEvaluator {
                 // Error(s) in the OperatorList -- sending unsupported feature
                 // notification and allow rendering to continue.
                 this.handler.send("UnsupportedFeature", {
-                    featureId: "errorOperatorList" /* errorOperatorList */,
+                    featureId: UNSUPPORTED_FEATURES.errorOperatorList,
                 });
                 warn(`getOperatorList - ignoring errors during "${task.name}" ` +
                     `task: "${reason}".`);
@@ -2154,7 +2159,7 @@ export class PartialEvaluator {
                 const fn = operation.fn;
                 args = operation.args;
                 switch (fn | 0) {
-                    case 37 /* setFont */:
+                    case OPS.setFont:
                         // Optimization to ignore multiple identical Tf commands.
                         const fontNameArg = args[0].name, fontSizeArg = args[1];
                         if (textState.font &&
@@ -2167,43 +2172,43 @@ export class PartialEvaluator {
                         textState.fontSize = fontSizeArg;
                         next(handleSetFont(fontNameArg));
                         return;
-                    case 39 /* setTextRise */:
+                    case OPS.setTextRise:
                         textState.textRise = args[0];
                         break;
-                    case 35 /* setHScale */:
+                    case OPS.setHScale:
                         textState.textHScale = args[0] / 100;
                         break;
-                    case 36 /* setLeading */:
+                    case OPS.setLeading:
                         textState.leading = args[0];
                         break;
-                    case 40 /* moveText */:
+                    case OPS.moveText:
                         textState.translateTextLineMatrix(args[0], args[1]);
                         textState.textMatrix = textState.textLineMatrix.slice();
                         break;
-                    case 41 /* setLeadingMoveText */:
+                    case OPS.setLeadingMoveText:
                         textState.leading = -args[1];
                         textState.translateTextLineMatrix(args[0], args[1]);
                         textState.textMatrix = textState.textLineMatrix.slice();
                         break;
-                    case 43 /* nextLine */:
+                    case OPS.nextLine:
                         textState.carriageReturn();
                         break;
-                    case 42 /* setTextMatrix */:
+                    case OPS.setTextMatrix:
                         textState.setTextMatrix(args[0], args[1], args[2], args[3], args[4], args[5]);
                         textState.setTextLineMatrix(args[0], args[1], args[2], args[3], args[4], args[5]);
                         updateAdvanceScale();
                         break;
-                    case 33 /* setCharSpacing */:
+                    case OPS.setCharSpacing:
                         textState.charSpacing = args[0];
                         break;
-                    case 34 /* setWordSpacing */:
+                    case OPS.setWordSpacing:
                         textState.wordSpacing = args[0];
                         break;
-                    case 31 /* beginText */:
+                    case OPS.beginText:
                         textState.textMatrix = IDENTITY_MATRIX.slice();
                         textState.textLineMatrix = IDENTITY_MATRIX.slice();
                         break;
-                    case 45 /* showSpacedText */:
+                    case OPS.showSpacedText:
                         if (!stateManager.state.font) {
                             self.ensureStateFont(stateManager.state);
                             continue;
@@ -2245,7 +2250,7 @@ export class PartialEvaluator {
                             });
                         }
                         break;
-                    case 44 /* showText */:
+                    case OPS.showText:
                         if (!stateManager.state.font) {
                             self.ensureStateFont(stateManager.state);
                             continue;
@@ -2255,7 +2260,7 @@ export class PartialEvaluator {
                             extraSpacing: 0,
                         });
                         break;
-                    case 46 /* nextLineShowText */:
+                    case OPS.nextLineShowText:
                         if (!stateManager.state.font) {
                             self.ensureStateFont(stateManager.state);
                             continue;
@@ -2266,7 +2271,7 @@ export class PartialEvaluator {
                             extraSpacing: 0,
                         });
                         break;
-                    case 47 /* nextLineSetSpacingShowText */:
+                    case OPS.nextLineSetSpacingShowText:
                         if (!stateManager.state.font) {
                             self.ensureStateFont(stateManager.state);
                             continue;
@@ -2279,7 +2284,7 @@ export class PartialEvaluator {
                             extraSpacing: 0,
                         });
                         break;
-                    case 66 /* paintXObject */:
+                    case OPS.paintXObject:
                         flushTextContentItem();
                         if (!xobjs) {
                             xobjs = resources.get("XObject") ?? Dict.empty;
@@ -2374,7 +2379,7 @@ export class PartialEvaluator {
                             throw reason;
                         }));
                         return;
-                    case 9 /* setGState */:
+                    case OPS.setGState:
                         isValidName = args[0] instanceof Name;
                         name = args[0].name;
                         if (isValidName && emptyGStateCache.getByName(name)) {
@@ -2417,7 +2422,7 @@ export class PartialEvaluator {
                             throw reason;
                         }));
                         return;
-                    case 69 /* beginMarkedContent */:
+                    case OPS.beginMarkedContent:
                         if (includeMarkedContent) {
                             textContent.items.push({
                                 type: "beginMarkedContent",
@@ -2425,7 +2430,7 @@ export class PartialEvaluator {
                             });
                         }
                         break;
-                    case 70 /* beginMarkedContentProps */:
+                    case OPS.beginMarkedContentProps:
                         if (includeMarkedContent) {
                             flushTextContentItem();
                             let mcid = null;
@@ -2441,7 +2446,7 @@ export class PartialEvaluator {
                             });
                         }
                         break;
-                    case 71 /* endMarkedContent */:
+                    case OPS.endMarkedContent:
                         if (includeMarkedContent) {
                             flushTextContentItem();
                             textContent.items.push({
@@ -2548,8 +2553,8 @@ export class PartialEvaluator {
             properties.defaultEncoding = getEncoding(baseEncodingName);
         }
         else {
-            const isSymbolicFont = !!(properties.flags & 4 /* Symbolic */);
-            const isNonsymbolicFont = !!(properties.flags & 32 /* Nonsymbolic */);
+            const isSymbolicFont = !!(properties.flags & FontFlags.Symbolic);
+            const isNonsymbolicFont = !!(properties.flags & FontFlags.Nonsymbolic);
             // According to "Table 114" in section "9.6.6.1 General" (under
             // "9.6.6 Character Encoding") of the PDF specification, a Nonsymbolic
             // font should use the `StandardEncoding` if no encoding is specified.
@@ -2809,7 +2814,7 @@ export class PartialEvaluator {
                     // Error in the ToUnicode data -- sending unsupported feature
                     // notification and allow font parsing to continue.
                     this.handler.send("UnsupportedFeature", {
-                        featureId: "errorFontToUnicode" /* errorFontToUnicode */,
+                        featureId: UNSUPPORTED_FEATURES.errorFontToUnicode,
                     });
                     warn(`readToUnicode - ignoring ToUnicode data: "${reason}".`);
                     return undefined;
@@ -2928,7 +2933,7 @@ export class PartialEvaluator {
             }
         }
         if (isMonospace) {
-            properties.flags |= 1 /* FixedPitch */;
+            properties.flags |= FontFlags.FixedPitch;
         }
         properties.defaultWidth = defaultWidth;
         properties.widths = glyphsWidths;
@@ -3143,11 +3148,11 @@ export class PartialEvaluator {
                 const metrics = this.getBaseFontMetrics(baseFontName);
                 // Simulating descriptor flags attribute
                 const fontNameWoStyle = baseFontName.split("-")[0];
-                const flags = (this.isSerifFont(fontNameWoStyle) ? 2 /* Serif */ : 0) |
-                    (metrics.monospace ? 1 /* FixedPitch */ : 0) |
+                const flags = (this.isSerifFont(fontNameWoStyle) ? FontFlags.Serif : 0) |
+                    (metrics.monospace ? FontFlags.FixedPitch : 0) |
                     (getSymbolsFonts()[fontNameWoStyle]
-                        ? 4 /* Symbolic */
-                        : 32 /* Nonsymbolic */);
+                        ? FontFlags.Symbolic
+                        : FontFlags.Nonsymbolic);
                 properties = {
                     type,
                     name: baseFontName,
@@ -3334,7 +3339,7 @@ export class PartialEvaluator {
                     // Error in the font data -- sending unsupported feature notification
                     // and allow glyph path building to continue.
                     handler.send("UnsupportedFeature", {
-                        featureId: "errorFontBuildPath" /* errorFontBuildPath */,
+                        featureId: UNSUPPORTED_FEATURES.errorFontBuildPath,
                     });
                     warn(`buildFontPaths - ignoring ${glyphName} glyph: "${reason}".`);
                     return;
@@ -3438,7 +3443,7 @@ export class TranslatedFont {
                     //   not execute any operators that set the colour (or other
                     //   colour-related parameters) in the graphics state;
                     //   any use of such operators shall be ignored."
-                    if (operatorList.fnArray[0] === 49 /* setCharWidthAndBounds */) {
+                    if (operatorList.fnArray[0] === OPS.setCharWidthAndBounds) {
                         this.#removeType3ColorOperators(operatorList, isEmptyBBox);
                     }
                     charProcOperatorList[key] = operatorList.getIR();
@@ -3463,7 +3468,7 @@ export class TranslatedFont {
         return this.type3Loaded;
     }
     #removeType3ColorOperators(operatorList, isEmptyBBox = false) {
-        assert(operatorList.fnArray[0] === 49 /* setCharWidthAndBounds */, "Type3 glyph shall start with the d1 operator.");
+        assert(operatorList.fnArray[0] === OPS.setCharWidthAndBounds, "Type3 glyph shall start with the d1 operator.");
         if (isEmptyBBox) {
             if (!this._bbox) {
                 this._bbox = [Infinity, Infinity, -Infinity, -Infinity];
@@ -3477,25 +3482,25 @@ export class TranslatedFont {
         let i = 1, ii = operatorList.length;
         while (i < ii) {
             switch (operatorList.fnArray[i]) {
-                case 50 /* setStrokeColorSpace */:
-                case 51 /* setFillColorSpace */:
-                case 52 /* setStrokeColor */:
-                case 53 /* setStrokeColorN */:
-                case 54 /* setFillColor */:
-                case 55 /* setFillColorN */:
-                case 56 /* setStrokeGray */:
-                case 57 /* setFillGray */:
-                case 58 /* setStrokeRGBColor */:
-                case 59 /* setFillRGBColor */:
-                case 60 /* setStrokeCMYKColor */:
-                case 61 /* setFillCMYKColor */:
-                case 62 /* shadingFill */:
-                case 7 /* setRenderingIntent */:
+                case OPS.setStrokeColorSpace:
+                case OPS.setFillColorSpace:
+                case OPS.setStrokeColor:
+                case OPS.setStrokeColorN:
+                case OPS.setFillColor:
+                case OPS.setFillColorN:
+                case OPS.setStrokeGray:
+                case OPS.setFillGray:
+                case OPS.setStrokeRGBColor:
+                case OPS.setFillRGBColor:
+                case OPS.setStrokeCMYKColor:
+                case OPS.setFillCMYKColor:
+                case OPS.shadingFill:
+                case OPS.setRenderingIntent:
                     operatorList.fnArray.splice(i, 1);
                     operatorList.argsArray.splice(i, 1);
                     ii--;
                     continue;
-                case 9 /* setGState */:
+                case OPS.setGState:
                     const [gStateObj] = operatorList.argsArray[i];
                     let j = 0;
                     let jj = gStateObj.length;
@@ -3601,7 +3606,7 @@ export class EvalState {
     font;
     fontSize = 0;
     fontName;
-    textRenderingMode = 0 /* FILL */;
+    textRenderingMode = TextRenderingMode.FILL;
     fillColorSpace = ColorSpace.singletons.gray;
     strokeColorSpace = ColorSpace.singletons.gray;
     clone() {
@@ -3616,96 +3621,96 @@ export class EvaluatorPreprocessor {
         // If variableArgs === false: exactly `numArgs` expected
         const getOPMap = getLookupTableFactory((t) => {
             // Graphic state
-            t.w = { id: 2 /* setLineWidth */, numArgs: 1, variableArgs: false };
-            t.J = { id: 3 /* setLineCap */, numArgs: 1, variableArgs: false };
-            t.j = { id: 4 /* setLineJoin */, numArgs: 1, variableArgs: false };
-            t.M = { id: 5 /* setMiterLimit */, numArgs: 1, variableArgs: false };
-            t.d = { id: 6 /* setDash */, numArgs: 2, variableArgs: false };
-            t.ri = { id: 7 /* setRenderingIntent */, numArgs: 1, variableArgs: false };
-            t.i = { id: 8 /* setFlatness */, numArgs: 1, variableArgs: false };
-            t.gs = { id: 9 /* setGState */, numArgs: 1, variableArgs: false };
-            t.q = { id: 10 /* save */, numArgs: 0, variableArgs: false };
-            t.Q = { id: 11 /* restore */, numArgs: 0, variableArgs: false };
-            t.cm = { id: 12 /* transform */, numArgs: 6, variableArgs: false };
+            t.w = { id: OPS.setLineWidth, numArgs: 1, variableArgs: false };
+            t.J = { id: OPS.setLineCap, numArgs: 1, variableArgs: false };
+            t.j = { id: OPS.setLineJoin, numArgs: 1, variableArgs: false };
+            t.M = { id: OPS.setMiterLimit, numArgs: 1, variableArgs: false };
+            t.d = { id: OPS.setDash, numArgs: 2, variableArgs: false };
+            t.ri = { id: OPS.setRenderingIntent, numArgs: 1, variableArgs: false };
+            t.i = { id: OPS.setFlatness, numArgs: 1, variableArgs: false };
+            t.gs = { id: OPS.setGState, numArgs: 1, variableArgs: false };
+            t.q = { id: OPS.save, numArgs: 0, variableArgs: false };
+            t.Q = { id: OPS.restore, numArgs: 0, variableArgs: false };
+            t.cm = { id: OPS.transform, numArgs: 6, variableArgs: false };
             // Path
-            t.m = { id: 13 /* moveTo */, numArgs: 2, variableArgs: false };
-            t.l = { id: 14 /* lineTo */, numArgs: 2, variableArgs: false };
-            t.c = { id: 15 /* curveTo */, numArgs: 6, variableArgs: false };
-            t.v = { id: 16 /* curveTo2 */, numArgs: 4, variableArgs: false };
-            t.y = { id: 17 /* curveTo3 */, numArgs: 4, variableArgs: false };
-            t.h = { id: 18 /* closePath */, numArgs: 0, variableArgs: false };
-            t.re = { id: 19 /* rectangle */, numArgs: 4, variableArgs: false };
-            t.S = { id: 20 /* stroke */, numArgs: 0, variableArgs: false };
-            t.s = { id: 21 /* closeStroke */, numArgs: 0, variableArgs: false };
-            t.f = { id: 22 /* fill */, numArgs: 0, variableArgs: false };
-            t.F = { id: 22 /* fill */, numArgs: 0, variableArgs: false };
-            t["f*"] = { id: 23 /* eoFill */, numArgs: 0, variableArgs: false };
-            t.B = { id: 24 /* fillStroke */, numArgs: 0, variableArgs: false };
-            t["B*"] = { id: 25 /* eoFillStroke */, numArgs: 0, variableArgs: false };
-            t.b = { id: 26 /* closeFillStroke */, numArgs: 0, variableArgs: false };
-            t["b*"] = { id: 27 /* closeEOFillStroke */, numArgs: 0, variableArgs: false };
-            t.n = { id: 28 /* endPath */, numArgs: 0, variableArgs: false };
+            t.m = { id: OPS.moveTo, numArgs: 2, variableArgs: false };
+            t.l = { id: OPS.lineTo, numArgs: 2, variableArgs: false };
+            t.c = { id: OPS.curveTo, numArgs: 6, variableArgs: false };
+            t.v = { id: OPS.curveTo2, numArgs: 4, variableArgs: false };
+            t.y = { id: OPS.curveTo3, numArgs: 4, variableArgs: false };
+            t.h = { id: OPS.closePath, numArgs: 0, variableArgs: false };
+            t.re = { id: OPS.rectangle, numArgs: 4, variableArgs: false };
+            t.S = { id: OPS.stroke, numArgs: 0, variableArgs: false };
+            t.s = { id: OPS.closeStroke, numArgs: 0, variableArgs: false };
+            t.f = { id: OPS.fill, numArgs: 0, variableArgs: false };
+            t.F = { id: OPS.fill, numArgs: 0, variableArgs: false };
+            t["f*"] = { id: OPS.eoFill, numArgs: 0, variableArgs: false };
+            t.B = { id: OPS.fillStroke, numArgs: 0, variableArgs: false };
+            t["B*"] = { id: OPS.eoFillStroke, numArgs: 0, variableArgs: false };
+            t.b = { id: OPS.closeFillStroke, numArgs: 0, variableArgs: false };
+            t["b*"] = { id: OPS.closeEOFillStroke, numArgs: 0, variableArgs: false };
+            t.n = { id: OPS.endPath, numArgs: 0, variableArgs: false };
             // Clipping
-            t.W = { id: 29 /* clip */, numArgs: 0, variableArgs: false };
-            t["W*"] = { id: 30 /* eoClip */, numArgs: 0, variableArgs: false };
+            t.W = { id: OPS.clip, numArgs: 0, variableArgs: false };
+            t["W*"] = { id: OPS.eoClip, numArgs: 0, variableArgs: false };
             // Text
-            t.BT = { id: 31 /* beginText */, numArgs: 0, variableArgs: false };
-            t.ET = { id: 32 /* endText */, numArgs: 0, variableArgs: false };
-            t.Tc = { id: 33 /* setCharSpacing */, numArgs: 1, variableArgs: false };
-            t.Tw = { id: 34 /* setWordSpacing */, numArgs: 1, variableArgs: false };
-            t.Tz = { id: 35 /* setHScale */, numArgs: 1, variableArgs: false };
-            t.TL = { id: 36 /* setLeading */, numArgs: 1, variableArgs: false };
-            t.Tf = { id: 37 /* setFont */, numArgs: 2, variableArgs: false };
-            t.Tr = { id: 38 /* setTextRenderingMode */, numArgs: 1, variableArgs: false };
-            t.Ts = { id: 39 /* setTextRise */, numArgs: 1, variableArgs: false };
-            t.Td = { id: 40 /* moveText */, numArgs: 2, variableArgs: false };
-            t.TD = { id: 41 /* setLeadingMoveText */, numArgs: 2, variableArgs: false };
-            t.Tm = { id: 42 /* setTextMatrix */, numArgs: 6, variableArgs: false };
-            t["T*"] = { id: 43 /* nextLine */, numArgs: 0, variableArgs: false };
-            t.Tj = { id: 44 /* showText */, numArgs: 1, variableArgs: false };
-            t.TJ = { id: 45 /* showSpacedText */, numArgs: 1, variableArgs: false };
-            t["'"] = { id: 46 /* nextLineShowText */, numArgs: 1, variableArgs: false };
+            t.BT = { id: OPS.beginText, numArgs: 0, variableArgs: false };
+            t.ET = { id: OPS.endText, numArgs: 0, variableArgs: false };
+            t.Tc = { id: OPS.setCharSpacing, numArgs: 1, variableArgs: false };
+            t.Tw = { id: OPS.setWordSpacing, numArgs: 1, variableArgs: false };
+            t.Tz = { id: OPS.setHScale, numArgs: 1, variableArgs: false };
+            t.TL = { id: OPS.setLeading, numArgs: 1, variableArgs: false };
+            t.Tf = { id: OPS.setFont, numArgs: 2, variableArgs: false };
+            t.Tr = { id: OPS.setTextRenderingMode, numArgs: 1, variableArgs: false };
+            t.Ts = { id: OPS.setTextRise, numArgs: 1, variableArgs: false };
+            t.Td = { id: OPS.moveText, numArgs: 2, variableArgs: false };
+            t.TD = { id: OPS.setLeadingMoveText, numArgs: 2, variableArgs: false };
+            t.Tm = { id: OPS.setTextMatrix, numArgs: 6, variableArgs: false };
+            t["T*"] = { id: OPS.nextLine, numArgs: 0, variableArgs: false };
+            t.Tj = { id: OPS.showText, numArgs: 1, variableArgs: false };
+            t.TJ = { id: OPS.showSpacedText, numArgs: 1, variableArgs: false };
+            t["'"] = { id: OPS.nextLineShowText, numArgs: 1, variableArgs: false };
             t['"'] = {
-                id: 47 /* nextLineSetSpacingShowText */,
+                id: OPS.nextLineSetSpacingShowText,
                 numArgs: 3,
                 variableArgs: false,
             };
             // Type3 fonts
-            t.d0 = { id: 48 /* setCharWidth */, numArgs: 2, variableArgs: false };
-            t.d1 = { id: 49 /* setCharWidthAndBounds */, numArgs: 6, variableArgs: false };
+            t.d0 = { id: OPS.setCharWidth, numArgs: 2, variableArgs: false };
+            t.d1 = { id: OPS.setCharWidthAndBounds, numArgs: 6, variableArgs: false };
             // Color
-            t.CS = { id: 50 /* setStrokeColorSpace */, numArgs: 1, variableArgs: false };
-            t.cs = { id: 51 /* setFillColorSpace */, numArgs: 1, variableArgs: false };
-            t.SC = { id: 52 /* setStrokeColor */, numArgs: 4, variableArgs: true };
-            t.SCN = { id: 53 /* setStrokeColorN */, numArgs: 33, variableArgs: true };
-            t.sc = { id: 54 /* setFillColor */, numArgs: 4, variableArgs: true };
-            t.scn = { id: 55 /* setFillColorN */, numArgs: 33, variableArgs: true };
-            t.G = { id: 56 /* setStrokeGray */, numArgs: 1, variableArgs: false };
-            t.g = { id: 57 /* setFillGray */, numArgs: 1, variableArgs: false };
-            t.RG = { id: 58 /* setStrokeRGBColor */, numArgs: 3, variableArgs: false };
-            t.rg = { id: 59 /* setFillRGBColor */, numArgs: 3, variableArgs: false };
-            t.K = { id: 60 /* setStrokeCMYKColor */, numArgs: 4, variableArgs: false };
-            t.k = { id: 61 /* setFillCMYKColor */, numArgs: 4, variableArgs: false };
+            t.CS = { id: OPS.setStrokeColorSpace, numArgs: 1, variableArgs: false };
+            t.cs = { id: OPS.setFillColorSpace, numArgs: 1, variableArgs: false };
+            t.SC = { id: OPS.setStrokeColor, numArgs: 4, variableArgs: true };
+            t.SCN = { id: OPS.setStrokeColorN, numArgs: 33, variableArgs: true };
+            t.sc = { id: OPS.setFillColor, numArgs: 4, variableArgs: true };
+            t.scn = { id: OPS.setFillColorN, numArgs: 33, variableArgs: true };
+            t.G = { id: OPS.setStrokeGray, numArgs: 1, variableArgs: false };
+            t.g = { id: OPS.setFillGray, numArgs: 1, variableArgs: false };
+            t.RG = { id: OPS.setStrokeRGBColor, numArgs: 3, variableArgs: false };
+            t.rg = { id: OPS.setFillRGBColor, numArgs: 3, variableArgs: false };
+            t.K = { id: OPS.setStrokeCMYKColor, numArgs: 4, variableArgs: false };
+            t.k = { id: OPS.setFillCMYKColor, numArgs: 4, variableArgs: false };
             // Shading
-            t.sh = { id: 62 /* shadingFill */, numArgs: 1, variableArgs: false };
+            t.sh = { id: OPS.shadingFill, numArgs: 1, variableArgs: false };
             // Images
-            t.BI = { id: 63 /* beginInlineImage */, numArgs: 0, variableArgs: false };
-            t.ID = { id: 64 /* beginImageData */, numArgs: 0, variableArgs: false };
-            t.EI = { id: 65 /* endInlineImage */, numArgs: 1, variableArgs: false };
+            t.BI = { id: OPS.beginInlineImage, numArgs: 0, variableArgs: false };
+            t.ID = { id: OPS.beginImageData, numArgs: 0, variableArgs: false };
+            t.EI = { id: OPS.endInlineImage, numArgs: 1, variableArgs: false };
             // XObjects
-            t.Do = { id: 66 /* paintXObject */, numArgs: 1, variableArgs: false };
-            t.MP = { id: 67 /* markPoint */, numArgs: 1, variableArgs: false };
-            t.DP = { id: 68 /* markPointProps */, numArgs: 2, variableArgs: false };
-            t.BMC = { id: 69 /* beginMarkedContent */, numArgs: 1, variableArgs: false };
+            t.Do = { id: OPS.paintXObject, numArgs: 1, variableArgs: false };
+            t.MP = { id: OPS.markPoint, numArgs: 1, variableArgs: false };
+            t.DP = { id: OPS.markPointProps, numArgs: 2, variableArgs: false };
+            t.BMC = { id: OPS.beginMarkedContent, numArgs: 1, variableArgs: false };
             t.BDC = {
-                id: 70 /* beginMarkedContentProps */,
+                id: OPS.beginMarkedContentProps,
                 numArgs: 2,
                 variableArgs: false,
             };
-            t.EMC = { id: 71 /* endMarkedContent */, numArgs: 0, variableArgs: false };
+            t.EMC = { id: OPS.endMarkedContent, numArgs: 0, variableArgs: false };
             // Compatibility
-            t.BX = { id: 72 /* beginCompat */, numArgs: 0, variableArgs: false };
-            t.EX = { id: 73 /* endCompat */, numArgs: 0, variableArgs: false };
+            t.BX = { id: OPS.beginCompat, numArgs: 0, variableArgs: false };
+            t.EX = { id: OPS.endCompat, numArgs: 0, variableArgs: false };
             // (reserved partial commands for the lexer)
             t.BM = null;
             t.BD = null;
@@ -3795,8 +3800,8 @@ export class EvaluatorPreprocessor {
                         // chaotic rendering artifacts. Hence the following heuristics is
                         // used to error, rather than just warn, once a number of invalid
                         // path operators have been encountered (fixes bug1443140.pdf).
-                        if (fn >= 13 /* moveTo */
-                            && fn <= 28 /* endPath */ // Path operator
+                        if (fn >= OPS.moveTo
+                            && fn <= OPS.endPath // Path operator
                             && ++this.#numInvalidPathOPS > EvaluatorPreprocessor.MAX_INVALID_PATH_OPS) {
                             throw new FormatError(`Invalid ${partialMsg}`);
                         }
@@ -3835,13 +3840,13 @@ export class EvaluatorPreprocessor {
     }
     preprocessCommand(fn, args) {
         switch (fn | 0) {
-            case 10 /* save */:
+            case OPS.save:
                 this.stateManager.save();
                 break;
-            case 11 /* restore */:
+            case OPS.restore:
                 this.stateManager.restore();
                 break;
-            case 12 /* transform */:
+            case OPS.transform:
                 this.stateManager.transform(args);
                 break;
         }

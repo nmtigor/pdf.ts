@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 import { assert } from "../../../lib/util/trace.js";
-import { bytesToString, FormatError, info, warn, } from "../shared/util.js";
+import { bytesToString, FormatError, info, StreamType, warn, } from "../shared/util.js";
 import { Cmd, Dict, EOF, isCmd, Name, Ref, } from "./primitives.js";
 import { isWhiteSpace, MissingDataException, ParserEOFException } from "./core_utils.js";
 import { CCITTFaxStream } from "./ccitt_stream.js";
@@ -647,14 +647,14 @@ export class Parser {
         try {
             const xrefStreamStats = this.xref.stats.streamTypes;
             if (name === "FlateDecode" || name === "Fl") {
-                xrefStreamStats["FLATE" /* FLATE */] = true;
+                xrefStreamStats[StreamType.FLATE] = true;
                 if (params) {
                     return new PredictorStream(new FlateStream(stream, maybeLength), maybeLength, params);
                 }
                 return new FlateStream(stream, maybeLength);
             }
             if (name === "LZWDecode" || name === "LZW") {
-                xrefStreamStats["LZW" /* LZW */] = true;
+                xrefStreamStats[StreamType.LZW] = true;
                 let earlyChange = 1;
                 if (params) {
                     if (params.has("EarlyChange")) {
@@ -665,31 +665,31 @@ export class Parser {
                 return new LZWStream(stream, maybeLength, earlyChange);
             }
             if (name === "DCTDecode" || name === "DCT") {
-                xrefStreamStats["DCT" /* DCT */] = true;
+                xrefStreamStats[StreamType.DCT] = true;
                 return new JpegStream(stream, maybeLength, params);
             }
             if (name === "JPXDecode" || name === "JPX") {
-                xrefStreamStats["JPX" /* JPX */] = true;
+                xrefStreamStats[StreamType.JPX] = true;
                 return new JpxStream(stream, maybeLength, params);
             }
             if (name === "ASCII85Decode" || name === "A85") {
-                xrefStreamStats["A85" /* A85 */] = true;
+                xrefStreamStats[StreamType.A85] = true;
                 return new Ascii85Stream(stream, maybeLength);
             }
             if (name === "ASCIIHexDecode" || name === "AHx") {
-                xrefStreamStats["AHX" /* AHX */] = true;
+                xrefStreamStats[StreamType.AHX] = true;
                 return new AsciiHexStream(stream, maybeLength);
             }
             if (name === "CCITTFaxDecode" || name === "CCF") {
-                xrefStreamStats["CCF" /* CCF */] = true;
+                xrefStreamStats[StreamType.CCF] = true;
                 return new CCITTFaxStream(stream, maybeLength, params);
             }
             if (name === "RunLengthDecode" || name === "RL") {
-                xrefStreamStats["RLX" /* RLX */] = true;
+                xrefStreamStats[StreamType.RLX] = true;
                 return new RunLengthStream(stream, maybeLength);
             }
             if (name === "JBIG2Decode") {
-                xrefStreamStats["JBIG" /* JBIG */] = true;
+                xrefStreamStats[StreamType.JBIG] = true;
                 return new Jbig2Stream(stream, maybeLength, params);
             }
             warn(`Filter "${name}" is not supported.`);

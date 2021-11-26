@@ -1,6 +1,6 @@
 import { CFF } from "./cff_parser.js";
 import { BaseStream } from "./base_stream.js";
-import { FontProps } from "./evaluator.js";
+import { type FontProps } from "./evaluator.js";
 export declare class CFFFont {
     properties: FontProps;
     cff: CFF;

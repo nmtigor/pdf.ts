@@ -2,6 +2,21 @@
  * nmtigor (https://github.com/nmtigor) @2021
  */
 import { encodeToXmlString } from "./core_utils.js";
+/*81---------------------------------------------------------------------------*/
+export var XMLParserErrorCode;
+(function (XMLParserErrorCode) {
+    XMLParserErrorCode[XMLParserErrorCode["NoError"] = 0] = "NoError";
+    XMLParserErrorCode[XMLParserErrorCode["EndOfDocument"] = -1] = "EndOfDocument";
+    XMLParserErrorCode[XMLParserErrorCode["UnterminatedCdat"] = -2] = "UnterminatedCdat";
+    XMLParserErrorCode[XMLParserErrorCode["UnterminatedXmlDeclaration"] = -3] = "UnterminatedXmlDeclaration";
+    XMLParserErrorCode[XMLParserErrorCode["UnterminatedDoctypeDeclaration"] = -4] = "UnterminatedDoctypeDeclaration";
+    XMLParserErrorCode[XMLParserErrorCode["UnterminatedComment"] = -5] = "UnterminatedComment";
+    XMLParserErrorCode[XMLParserErrorCode["MalformedElement"] = -6] = "MalformedElement";
+    XMLParserErrorCode[XMLParserErrorCode["OutOfMemory"] = -7] = "OutOfMemory";
+    XMLParserErrorCode[XMLParserErrorCode["UnterminatedAttributeValue"] = -8] = "UnterminatedAttributeValue";
+    XMLParserErrorCode[XMLParserErrorCode["UnterminatedElement"] = -9] = "UnterminatedElement";
+    XMLParserErrorCode[XMLParserErrorCode["ElementNeverBegun"] = -10] = "ElementNeverBegun";
+})(XMLParserErrorCode || (XMLParserErrorCode = {}));
 function isWhitespace(s, index) {
     const ch = s[index];
     return ch === " " || ch === "\n" || ch === "\r" || ch === "\t";
@@ -129,7 +144,7 @@ export class XMLParserBase {
                         ++j;
                         q = s.indexOf(">", j);
                         if (q < 0) {
-                            this.onError(-9 /* UnterminatedElement */);
+                            this.onError(XMLParserErrorCode.UnterminatedElement);
                             return;
                         }
                         this.onEndElement(s.substring(j, q));
@@ -139,7 +154,7 @@ export class XMLParserBase {
                         ++j;
                         const pi = this.#parseProcessingInstruction(s, j);
                         if (s.substring(j + pi.parsed, j + pi.parsed + 2) !== "?>") {
-                            this.onError(-3 /* UnterminatedXmlDeclaration */);
+                            this.onError(XMLParserErrorCode.UnterminatedXmlDeclaration);
                             return;
                         }
                         this.onPi(pi.name, pi.value);
@@ -149,7 +164,7 @@ export class XMLParserBase {
                         if (s.substring(j + 1, j + 3) === "--") {
                             q = s.indexOf("-->", j + 3);
                             if (q < 0) {
-                                this.onError(-5 /* UnterminatedComment */);
+                                this.onError(XMLParserErrorCode.UnterminatedComment);
                                 return;
                             }
                             this.onComment(s.substring(j + 3, q));
@@ -158,7 +173,7 @@ export class XMLParserBase {
                         else if (s.substring(j + 1, j + 8) === "[CDATA[") {
                             q = s.indexOf("]]>", j + 8);
                             if (q < 0) {
-                                this.onError(-2 /* UnterminatedCdat */);
+                                this.onError(XMLParserErrorCode.UnterminatedCdat);
                                 return;
                             }
                             this.onCdata(s.substring(j + 8, q));
@@ -169,13 +184,13 @@ export class XMLParserBase {
                             let complexDoctype = false;
                             q = s.indexOf(">", j + 8);
                             if (q < 0) {
-                                this.onError(-4 /* UnterminatedDoctypeDeclaration */);
+                                this.onError(XMLParserErrorCode.UnterminatedDoctypeDeclaration);
                                 return;
                             }
                             if (q2 > 0 && q > q2) {
                                 q = s.indexOf("]>", j + 8);
                                 if (q < 0) {
-                                    this.onError(-4 /* UnterminatedDoctypeDeclaration */);
+                                    this.onError(XMLParserErrorCode.UnterminatedDoctypeDeclaration);
                                     return;
                                 }
                                 complexDoctype = true;
@@ -185,14 +200,14 @@ export class XMLParserBase {
                             j = q + (complexDoctype ? 2 : 1);
                         }
                         else {
-                            this.onError(-6 /* MalformedElement */);
+                            this.onError(XMLParserErrorCode.MalformedElement);
                             return;
                         }
                         break;
                     default:
                         const content = this.#parseContent(s, j);
                         if (content === null) {
-                            this.onError(-6 /* MalformedElement */);
+                            this.onError(XMLParserErrorCode.MalformedElement);
                             return;
                         }
                         let isClosed = false;
@@ -200,7 +215,7 @@ export class XMLParserBase {
                             isClosed = true;
                         }
                         else if (s.substring(j + content.parsed, j + content.parsed + 1) !== ">") {
-                            this.onError(-9 /* UnterminatedElement */);
+                            this.onError(XMLParserErrorCode.UnterminatedElement);
                             return;
                         }
                         this.onBeginElement(content.name, content.attributes, isClosed);
@@ -349,7 +364,7 @@ export class SimpleDOMNode {
 export class SimpleXMLParser extends XMLParserBase {
     _currentFragment = null;
     _stack = null;
-    _errorCode = 0 /* NoError */;
+    _errorCode = XMLParserErrorCode.NoError;
     _hasAttributes;
     _lowerCaseName;
     constructor({ hasAttributes = false, lowerCaseName = false }) {
@@ -360,9 +375,9 @@ export class SimpleXMLParser extends XMLParserBase {
     parseFromString(data) {
         this._currentFragment = [];
         this._stack = [];
-        this._errorCode = 0 /* NoError */;
+        this._errorCode = XMLParserErrorCode.NoError;
         this.parseXml(data);
-        if (this._errorCode !== 0 /* NoError */) {
+        if (this._errorCode !== XMLParserErrorCode.NoError) {
             return undefined; // return undefined on error
         }
         // We should only have one root.

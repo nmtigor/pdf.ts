@@ -1,6 +1,6 @@
-import { rect_t } from "../../shared/util.js";
+import { type rect_t } from "../../shared/util.js";
 import { BreakAfter, BreakBefore, Template } from "./template.js";
-import { XFAElData } from "./alias.js";
+import { type XFAElData } from "./alias.js";
 export declare function stripQuotes(str: string): string;
 interface GetIntegerParms {
     data?: string;

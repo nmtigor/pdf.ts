@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { bytesToString, FormatError, isArrayEqual, PasswordException, stringToBytes, utf8StringToString, warn, } from "../shared/util.js";
+import { bytesToString, FormatError, isArrayEqual, PasswordException, PasswordResponses, stringToBytes, utf8StringToString, warn, } from "../shared/util.js";
 import { Dict, isName, Name } from "./primitives.js";
 import { DecryptStream } from "./decrypt_stream.js";
 /*81---------------------------------------------------------------------------*/
@@ -1591,7 +1591,7 @@ var NsCipherTransformFactory;
                 encryptionKey = createEncryptionKey20(revision, passwordBytes, ownerPassword, ownerValidationSalt, ownerKeySalt, uBytes, userPassword, userValidationSalt, userKeySalt, ownerEncryption, userEncryption, perms);
             }
             if (!encryptionKey && !password) {
-                throw new PasswordException("No password given", 1 /* NEED_PASSWORD */);
+                throw new PasswordException("No password given", PasswordResponses.NEED_PASSWORD);
             }
             else if (!encryptionKey && password) {
                 // Attempting use the password as an owner password
@@ -1599,7 +1599,7 @@ var NsCipherTransformFactory;
                 encryptionKey = prepareKeyData(fileIdBytes, decodedPassword, ownerPassword, userPassword, flags, revision, keyLength, encryptMetadata);
             }
             if (!encryptionKey) {
-                throw new PasswordException("Incorrect Password", 2 /* INCORRECT_PASSWORD */);
+                throw new PasswordException("Incorrect Password", PasswordResponses.INCORRECT_PASSWORD);
             }
             this.encryptionKey = encryptionKey;
             if (algorithm >= 4) {

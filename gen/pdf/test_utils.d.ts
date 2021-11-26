@@ -1,4 +1,4 @@
-import { Dict, Name, Obj, Ref } from "./pdf.ts-src/core/primitives.js";
+import { Dict, Name, type Obj, Ref } from "./pdf.ts-src/core/primitives.js";
 import { PDFWorker } from "./pdf.ts-src/pdf.js";
 import { BaseStream } from "./pdf.ts-src/core/base_stream.js";
 import { DocumentInitParms } from "./pdf.ts-src/display/api.js";

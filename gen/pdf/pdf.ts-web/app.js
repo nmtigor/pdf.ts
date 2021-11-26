@@ -17,10 +17,10 @@
  */
 /* globals PDFBug, Stats */
 import "../../lib/jslang.js";
-import { animationStarted, apiPageLayoutToViewerModes, apiPageModeToSidebarView, AutomationEventBus, AutoPrintRegExp, DEFAULT_SCALE_VALUE, EventBus, getActiveOrFocusedElement, isValidRotation, isValidScrollMode, isValidSpreadMode, noContextMenuHandler, normalizeWheelEventDirection, parseQueryString, ProgressBar, ScrollMode, SpreadMode, } from "./ui_utils.js";
-import { AppOptions, compatibilityParams } from "./app_options.js";
-import { build, createPromiseCapability, getDocument, getFilenameFromUrl, GlobalWorkerOptions, InvalidPDFException, loadScript, MissingPDFException, PDFWorker, PermissionFlag, shadow, UnexpectedResponseException, version, } from "../pdf.ts-src/pdf.js";
-import { PDFCursorTools } from "./pdf_cursor_tools.js";
+import { animationStarted, apiPageLayoutToViewerModes, apiPageModeToSidebarView, AutomationEventBus, AutoPrintRegExp, DEFAULT_SCALE_VALUE, EventBus, getActiveOrFocusedElement, isValidRotation, isValidScrollMode, isValidSpreadMode, noContextMenuHandler, normalizeWheelEventDirection, parseQueryString, ProgressBar, RendererType, ScrollMode, SidebarView, SpreadMode, TextLayerMode, } from "./ui_utils.js";
+import { AppOptions, compatibilityParams, OptionKind } from "./app_options.js";
+import { build, createPromiseCapability, getDocument, getFilenameFromUrl, GlobalWorkerOptions, InvalidPDFException, LinkTarget, loadScript, MissingPDFException, PDFWorker, PermissionFlag, shadow, UnexpectedResponseException, UNSUPPORTED_FEATURES, version, } from "../pdf.ts-src/pdf.js";
+import { CursorTool, PDFCursorTools } from "./pdf_cursor_tools.js";
 import { PDFRenderingQueue, RenderingStates } from "./pdf_rendering_queue.js";
 import { OverlayManager } from "./overlay_manager.js";
 import { PasswordPrompt } from "./password_prompt.js";
@@ -39,6 +39,7 @@ import { PDFViewer } from "./pdf_viewer.js";
 import { SecondaryToolbar } from "./secondary_toolbar.js";
 import { Toolbar } from "./toolbar.js";
 import { ViewHistory } from "./view_history.js";
+import { Locale } from "../../lib/Locale.js";
 import { PDFSidebar } from "./pdf_sidebar.js";
 import { assert } from "../../lib/util/trace.js";
 import { getPdfFilenameFromUrl, isPdfFile } from "../pdf.ts-src/display/display_utils.js";
@@ -49,6 +50,12 @@ const DISABLE_AUTO_FETCH_LOADING_BAR_TIMEOUT = 5000; // ms
 const FORCE_PAGES_LOADED_TIMEOUT = 10000; // ms
 const WHEEL_ZOOM_DISABLED_TIMEOUT = 1000; // ms
 const ENABLE_PERMISSIONS_CLASS = "enablePermissions";
+var ViewOnLoad;
+(function (ViewOnLoad) {
+    ViewOnLoad[ViewOnLoad["UNKNOWN"] = -1] = "UNKNOWN";
+    ViewOnLoad[ViewOnLoad["PREVIOUS"] = 0] = "PREVIOUS";
+    ViewOnLoad[ViewOnLoad["INITIAL"] = 1] = "INITIAL";
+})(ViewOnLoad || (ViewOnLoad = {}));
 const ViewerCssTheme = {
     AUTOMATIC: 0,
     LIGHT: 1,
@@ -112,7 +119,7 @@ export class DefaultExternalServices {
     createPreferences() {
         throw new Error("Not implemented: createPreferences");
     }
-    createL10n({ locale = "en-US" /* en_US */ } = {}) {
+    createL10n({ locale = Locale.en_US } = {}) {
         throw new Error("Not implemented: createL10n");
     }
     createScripting(options) {
@@ -201,10 +208,10 @@ export class PDFViewerApplication {
         this.#forceCssTheme();
         await this.#initializeL10n();
         if (this.isViewerEmbedded
-            && AppOptions.get("externalLinkTarget") === 0 /* NONE */) {
+            && AppOptions.get("externalLinkTarget") === LinkTarget.NONE) {
             // Prevent external links from "replacing" the viewer,
             // when it's embedded in e.g. an <iframe> or an <object>.
-            AppOptions.set("externalLinkTarget", 4 /* TOP */);
+            AppOptions.set("externalLinkTarget", LinkTarget.TOP);
         }
         await this.#initializeViewerComponents();
         // Bind the various event handlers *after* the viewer has been
@@ -271,7 +278,7 @@ export class PDFViewerApplication {
         if (params.has("textlayer")) {
             switch (params.get("textlayer")) {
                 case "off":
-                    AppOptions.set("textLayerMode", 0 /* DISABLE */);
+                    AppOptions.set("textLayerMode", TextLayerMode.DISABLE);
                     break;
                 case "visible":
                 case "shadow":
@@ -664,7 +671,7 @@ export class PDFViewerApplication {
             await this.close();
         }
         // Set the necessary global worker parameters, using the available options.
-        const workerParameters = AppOptions.getAll(8 /* WORKER */);
+        const workerParameters = AppOptions.getAll(OptionKind.WORKER);
         for (const key in workerParameters) {
             GlobalWorkerOptions[key] = workerParameters[key];
         }
@@ -683,7 +690,7 @@ export class PDFViewerApplication {
             parameters.url = file.url;
         }
         // Set the necessary API parameters, using the available options.
-        const apiParameters = AppOptions.getAll(4 /* API */);
+        const apiParameters = AppOptions.getAll(OptionKind.API);
         for (const key in apiParameters) {
             let value = apiParameters[key];
             if (key === "docBaseUrl" && !value) {
@@ -945,7 +952,7 @@ export class PDFViewerApplication {
             scrollLeft: 0,
             scrollTop: 0,
             rotation: undefined,
-            sidebarView: -1 /* UNKNOWN */,
+            sidebarView: SidebarView.UNKNOWN,
             scrollMode: ScrollMode.UNKNOWN,
             spreadMode: SpreadMode.UNKNOWN,
         })
@@ -978,13 +985,13 @@ export class PDFViewerApplication {
                 let sidebarView = AppOptions.get("sidebarViewOnLoad");
                 let scrollMode = AppOptions.get("scrollModeOnLoad");
                 let spreadMode = AppOptions.get("spreadModeOnLoad");
-                if (stored.page && viewOnLoad !== 1 /* INITIAL */) {
+                if (stored.page && viewOnLoad !== ViewOnLoad.INITIAL) {
                     hash =
                         `page=${stored.page}&zoom=${zoom || stored.zoom},` +
                             `${stored.scrollLeft},${stored.scrollTop}`;
                     rotation = parseInt(stored.rotation, 10);
                     // Always let user preference take precedence over the view history.
-                    if (sidebarView === -1 /* UNKNOWN */) {
+                    if (sidebarView === SidebarView.UNKNOWN) {
                         sidebarView = stored.sidebarView | 0;
                     }
                     if (scrollMode === ScrollMode.UNKNOWN) {
@@ -995,7 +1002,7 @@ export class PDFViewerApplication {
                     }
                 }
                 // Always let the user preference/view history take precedence.
-                if (pageMode && sidebarView === -1 /* UNKNOWN */) {
+                if (pageMode && sidebarView === SidebarView.UNKNOWN) {
                     sidebarView = apiPageModeToSidebarView(pageMode);
                 }
                 if (pageLayout
@@ -1163,7 +1170,7 @@ export class PDFViewerApplication {
                     return false;
                 }
                 console.warn("Warning: JavaScript support is not enabled");
-                this.fallback("javaScript" /* javaScript */);
+                this.fallback(UNSUPPORTED_FEATURES.javaScript);
                 return true;
             });
             if (!triggerAutoPrint) {
@@ -1225,16 +1232,16 @@ export class PDFViewerApplication {
             else {
                 console.warn("Warning: XFA support is not enabled");
             }
-            this.fallback("forms" /* forms */);
+            this.fallback(UNSUPPORTED_FEATURES.forms);
         }
         else if ((info.IsAcroFormPresent || info.IsXFAPresent)
             && !this.pdfViewer.renderForms) {
             console.warn("Warning: Interactive form support is not enabled");
-            this.fallback("forms" /* forms */);
+            this.fallback(UNSUPPORTED_FEATURES.forms);
         }
         if (info.IsSignaturesPresent) {
             console.warn("Warning: Digital signatures validation is not supported");
-            this.fallback("signatures" /* signatures */);
+            this.fallback(UNSUPPORTED_FEATURES.signatures);
         }
         // Telemetry labels must be C++ variable friendly.
         let versionId = "other";
@@ -1301,7 +1308,7 @@ export class PDFViewerApplication {
             return;
         this.pdfHistory.initialize({
             fingerprint,
-            resetHistory: viewOnLoad === 1 /* INITIAL */,
+            resetHistory: viewOnLoad === ViewOnLoad.INITIAL,
             updateUrl: AppOptions.get("historyUpdateUrl"),
         });
         if (this.pdfHistory.initialBookmark) {
@@ -1311,7 +1318,7 @@ export class PDFViewerApplication {
         // Always let the browser history/document hash take precedence.
         if (initialDest
             && !this.initialBookmark
-            && viewOnLoad === -1 /* UNKNOWN */) {
+            && viewOnLoad === ViewOnLoad.UNKNOWN) {
             this.initialBookmark = JSON.stringify(initialDest);
             // TODO: Re-factor the `PDFHistory` initialization to remove this hack
             // that's currently necessary to prevent weird initial history state.
@@ -1389,7 +1396,7 @@ export class PDFViewerApplication {
         this.pdfThumbnailViewer.cleanup();
         // We don't want to remove fonts used by active page SVGs.
         this.pdfDocument.cleanup(
-        /* keepLoadedFonts = */ this.pdfViewer.renderer === "svg" /* SVG */);
+        /* keepLoadedFonts = */ this.pdfViewer.renderer === RendererType.SVG);
     };
     forceRendering = () => {
         this.pdfRenderingQueue.printing = !!this.printService;
@@ -1833,20 +1840,20 @@ function webViewerPageMode({ mode }) {
     let view;
     switch (mode) {
         case "thumbs":
-            view = 1 /* THUMBS */;
+            view = SidebarView.THUMBS;
             break;
         case "bookmarks":
         case "outline": // non-standard
-            view = 2 /* OUTLINE */;
+            view = SidebarView.OUTLINE;
             break;
         case "attachments": // non-standard
-            view = 3 /* ATTACHMENTS */;
+            view = SidebarView.ATTACHMENTS;
             break;
         case "layers": // non-standard
-            view = 4 /* LAYERS */;
+            view = SidebarView.LAYERS;
             break;
         case "none":
-            view = 0 /* NONE */;
+            view = SidebarView.NONE;
             break;
         default:
             console.error('Invalid "pagemode" hash parameter: ' + mode);
@@ -2401,10 +2408,10 @@ function webViewerKeyDown(evt) {
                 }
                 break;
             case 83: // 's'
-                viewerapp.pdfCursorTools.switchTool(0 /* SELECT */);
+                viewerapp.pdfCursorTools.switchTool(CursorTool.SELECT);
                 break;
             case 72: // 'h'
-                viewerapp.pdfCursorTools.switchTool(1 /* HAND */);
+                viewerapp.pdfCursorTools.switchTool(CursorTool.HAND);
                 break;
             case 82: // 'r'
                 viewerapp.rotatePages(90);

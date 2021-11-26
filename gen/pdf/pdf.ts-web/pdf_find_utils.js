@@ -13,6 +13,17 @@
  * limitations under the License.
  */
 /*81---------------------------------------------------------------------------*/
+export var CharacterType;
+(function (CharacterType) {
+    CharacterType[CharacterType["SPACE"] = 0] = "SPACE";
+    CharacterType[CharacterType["ALPHA_LETTER"] = 1] = "ALPHA_LETTER";
+    CharacterType[CharacterType["PUNCT"] = 2] = "PUNCT";
+    CharacterType[CharacterType["HAN_LETTER"] = 3] = "HAN_LETTER";
+    CharacterType[CharacterType["KATAKANA_LETTER"] = 4] = "KATAKANA_LETTER";
+    CharacterType[CharacterType["HIRAGANA_LETTER"] = 5] = "HIRAGANA_LETTER";
+    CharacterType[CharacterType["HALFWIDTH_KATAKANA_LETTER"] = 6] = "HALFWIDTH_KATAKANA_LETTER";
+    CharacterType[CharacterType["THAI_LETTER"] = 7] = "THAI_LETTER";
+})(CharacterType || (CharacterType = {}));
 function isAlphabeticalScript(charCode) {
     return charCode < 0x2e80;
 }
@@ -56,36 +67,36 @@ export function getCharacterType(charCode) {
     if (isAlphabeticalScript(charCode)) {
         if (isAscii(charCode)) {
             if (isAsciiSpace(charCode)) {
-                return 0 /* SPACE */;
+                return CharacterType.SPACE;
             }
             else if (isAsciiAlpha(charCode) ||
                 isAsciiDigit(charCode) ||
                 charCode === /* UNDERSCORE = */ 0x5f) {
-                return 1 /* ALPHA_LETTER */;
+                return CharacterType.ALPHA_LETTER;
             }
-            return 2 /* PUNCT */;
+            return CharacterType.PUNCT;
         }
         else if (isThai(charCode)) {
-            return 7 /* THAI_LETTER */;
+            return CharacterType.THAI_LETTER;
         }
         else if (charCode === /* NBSP = */ 0xa0) {
-            return 0 /* SPACE */;
+            return CharacterType.SPACE;
         }
-        return 1 /* ALPHA_LETTER */;
+        return CharacterType.ALPHA_LETTER;
     }
     if (isHan(charCode)) {
-        return 3 /* HAN_LETTER */;
+        return CharacterType.HAN_LETTER;
     }
     else if (isKatakana(charCode)) {
-        return 4 /* KATAKANA_LETTER */;
+        return CharacterType.KATAKANA_LETTER;
     }
     else if (isHiragana(charCode)) {
-        return 5 /* HIRAGANA_LETTER */;
+        return CharacterType.HIRAGANA_LETTER;
     }
     else if (isHalfwidthKatakana(charCode)) {
-        return 6 /* HALFWIDTH_KATAKANA_LETTER */;
+        return CharacterType.HALFWIDTH_KATAKANA_LETTER;
     }
-    return 1 /* ALPHA_LETTER */;
+    return CharacterType.ALPHA_LETTER;
 }
 /*81---------------------------------------------------------------------------*/
 //# sourceMappingURL=pdf_find_utils.js.map

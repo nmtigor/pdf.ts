@@ -19,12 +19,12 @@
 
 import { isObjectLike } from "../../lib/jslang.js";
 import { html } from "../../lib/dom.js";
-import { ExplicitDest } from "../pdf.ts-src/core/catalog.js";
+import { type ExplicitDest } from "../pdf.ts-src/core/catalog.js";
 import { Ref } from "../pdf.ts-src/core/primitives.js";
-import { OutlineNode, PDFDocumentProxy } from "../pdf.ts-src/display/api.js";
+import { type OutlineNode, PDFDocumentProxy } from "../pdf.ts-src/display/api.js";
 import { createPromiseCapability } from "../pdf.ts-src/pdf.js";
-import { PromiseCapability } from "../pdf.ts-src/shared/util.js";
-import { BaseTreeViewer, BaseTreeViewerCtorParms } from "./base_tree_viewer.js";
+import { type PromiseCapability } from "../pdf.ts-src/shared/util.js";
+import { BaseTreeViewer, type BaseTreeViewerCtorParms } from "./base_tree_viewer.js";
 import { PDFLinkService } from "./pdf_link_service.js";
 import { SidebarView } from "./ui_utils.js";
 /*81---------------------------------------------------------------------------*/

@@ -1,7 +1,8 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2021
  */
-import { FormatError, info, Util, warn } from "../shared/util.js";
+import { ShadingType } from "../core/pattern.js";
+import { FormatError, info, OPS, Util, warn } from "../shared/util.js";
 /*81---------------------------------------------------------------------------*/
 function applyBoundingBox(ctx, bbox) {
     if (!bbox || typeof Path2D === "undefined")
@@ -34,10 +35,10 @@ export class RadialAxialShadingPattern {
     }
     _createGradient(ctx) {
         let grad = null;
-        if (this._type === 2 /* AXIAL */) {
+        if (this._type === ShadingType.AXIAL) {
             grad = ctx.createLinearGradient(this._p0[0], this._p0[1], this._p1[0], this._p1[1]);
         }
-        else if (this._type === 3 /* RADIAL */) {
+        else if (this._type === ShadingType.RADIAL) {
             grad = ctx.createRadialGradient(this._p0[0], this._p0[1], this._r0, this._p1[0], this._p1[1], this._r1);
         }
         for (const colorStop of this._colorStops) {
@@ -336,6 +337,17 @@ export function getShadingPattern(IR, cachedCanvasPatterns) {
 }
 var NsTilingPattern;
 (function (NsTilingPattern) {
+    let PaintType;
+    (function (PaintType) {
+        PaintType[PaintType["COLORED"] = 1] = "COLORED";
+        PaintType[PaintType["UNCOLORED"] = 2] = "UNCOLORED";
+    })(PaintType = NsTilingPattern.PaintType || (NsTilingPattern.PaintType = {}));
+    let TilingType;
+    (function (TilingType) {
+        TilingType[TilingType["ConstantSpacing"] = 1] = "ConstantSpacing";
+        TilingType[TilingType["NoDistortion"] = 2] = "NoDistortion";
+        TilingType[TilingType["ConstantSpacingFasterTiling"] = 3] = "ConstantSpacingFasterTiling";
+    })(TilingType = NsTilingPattern.TilingType || (NsTilingPattern.TilingType = {}));
     const MAX_PATTERN_SIZE = 3000; // 10in @ 300dpi shall be enough
     class TilingPattern {
         operatorList;
@@ -428,7 +440,7 @@ var NsTilingPattern;
                 adjustedY1 += Math.abs(y0);
             }
             tmpCtx.translate(-(dimx.scale * adjustedX0), -(dimy.scale * adjustedY0));
-            graphics[12 /* transform */](dimx.scale, 0, 0, dimy.scale, 0, 0);
+            graphics[OPS.transform](dimx.scale, 0, 0, dimy.scale, 0, 0);
             this.clipBbox(graphics, adjustedX0, adjustedY0, adjustedX1, adjustedY1);
             graphics.baseTransform = graphics.ctx.mozCurrentTransform.slice();
             graphics.executeOperatorList(operatorList);
@@ -462,21 +474,21 @@ var NsTilingPattern;
             const bboxWidth = x1 - x0;
             const bboxHeight = y1 - y0;
             graphics.ctx.rect(x0, y0, bboxWidth, bboxHeight);
-            graphics[29 /* clip */]();
-            graphics[28 /* endPath */]();
+            graphics[OPS.clip]();
+            graphics[OPS.endPath]();
         }
         setFillAndStrokeStyleToContext(graphics, paintType, color) {
             const context = graphics.ctx;
             const current = graphics.current;
             switch (paintType) {
-                case 1 /* COLORED */:
+                case PaintType.COLORED:
                     const ctx = this.ctx;
                     context.fillStyle = ctx.fillStyle;
                     context.strokeStyle = ctx.strokeStyle;
                     current.fillColor = ctx.fillStyle;
                     current.strokeColor = ctx.strokeStyle;
                     break;
-                case 2 /* UNCOLORED */:
+                case PaintType.UNCOLORED:
                     const cssColor = Util.makeHexColor(color[0], color[1], color[2]);
                     context.fillStyle = cssColor;
                     context.strokeStyle = cssColor;
@@ -518,5 +530,7 @@ var NsTilingPattern;
     NsTilingPattern.TilingPattern = TilingPattern;
 })(NsTilingPattern || (NsTilingPattern = {}));
 export var TilingPattern = NsTilingPattern.TilingPattern;
+export var TilingPaintType = NsTilingPattern.PaintType;
+export var TilingType = NsTilingPattern.TilingType;
 /*81---------------------------------------------------------------------------*/
 //# sourceMappingURL=pattern_helper.js.map

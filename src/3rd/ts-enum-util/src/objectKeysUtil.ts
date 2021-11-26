@@ -1,4 +1,4 @@
-import { StringKeyOf } from "./types";
+import { type StringKeyOf } from "./types.js";
 
 /**
  * Return true if the specified object key value is NOT a numeric key.

@@ -19,16 +19,16 @@
 
 import { assert }      from "../../../lib/util/trace.js";
 import { FormatError, ImageKind, info, warn } from "../shared/util.js";
-import { Dict, Name, Ref } from "./primitives.js";
-import { ColorSpace, CS } from "./colorspace.js";
+import { Dict, Name } from "./primitives.js";
+import { ColorSpace, type CS } from "./colorspace.js";
 import { DecodeStream, ImageStream } from "./decode_stream.js";
 import { JpegStream } from "./jpeg_stream.js";
 import { JpxImage } from "./jpx.js";
-import { TypedArray } from "../../../lib/alias.js";
+import { type TypedArray } from "../../../lib/alias.js";
 import { PDFFunctionFactory } from "./function.js";
 import { LocalColorSpaceCache } from "./image_utils.js";
 import { JpxStream } from "./jpx_stream.js";
-import { ImgData } from "./evaluator.js";
+import { type ImgData } from "./evaluator.js";
 import { XRef } from "./xref.js";
 import { BaseStream } from "./base_stream.js";
 /*81---------------------------------------------------------------------------*/

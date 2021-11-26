@@ -1,6 +1,7 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2021
  */
+import { FindState } from "./pdf_find_controller.js";
 /*81---------------------------------------------------------------------------*/
 const MATCHES_COUNT_LIMIT = 1000;
 /**
@@ -89,16 +90,16 @@ export class PDFFindBar {
         let findMsg = Promise.resolve("");
         let status = "";
         switch (state) {
-            case 0 /* FOUND */:
+            case FindState.FOUND:
                 break;
-            case 3 /* PENDING */:
+            case FindState.PENDING:
                 status = "pending";
                 break;
-            case 1 /* NOT_FOUND */:
+            case FindState.NOT_FOUND:
                 findMsg = this.l10n.get("find_not_found");
                 status = "notFound";
                 break;
-            case 2 /* WRAPPED */:
+            case FindState.WRAPPED:
                 findMsg = this.l10n.get(`find_reached_${previous ? "top" : "bottom"}`);
                 break;
         }

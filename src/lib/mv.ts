@@ -2,11 +2,11 @@
  * mv
  * -- */
 
-import { Constructor } from "./alias.js";
+import { type Constructor } from "./alias.js";
 import { mix } from "./jslang.js";
 import { svg } from "./dom.js";
 import { $vuu, $Vuu } from "./symbols.js";
-import { assert, ReportedError } from "./util/trace.js";
+import { assert, type ReportedError } from "./util/trace.js";
 /*81---------------------------------------------------------------------------*/
 
 /**

@@ -2,7 +2,7 @@
  * nmtigor (https://github.com/nmtigor) @2021
  */
 import { assert } from "../../../lib/util/trace.js";
-import { FONT_IDENTITY_MATRIX, IDENTITY_MATRIX, info, IsLittleEndianCached, shadow, Util, warn, } from "../shared/util.js";
+import { FONT_IDENTITY_MATRIX, IDENTITY_MATRIX, ImageKind, info, IsLittleEndianCached, OPS, shadow, TextRenderingMode, Util, warn, } from "../shared/util.js";
 import { PixelsPerInch } from "./display_utils.js";
 import { getShadingPattern, TilingPattern } from "./pattern_helper.js";
 // <canvas> contexts store most of the state we need natively.
@@ -496,7 +496,7 @@ class CanvasExtraState {
     charSpacing = 0;
     wordSpacing = 0;
     textHScale = 1;
-    textRenderingMode = 0 /* FILL */;
+    textRenderingMode = TextRenderingMode.FILL;
     textRise = 0;
     // Default fore and background colors
     fillColor = "#000000";
@@ -601,7 +601,7 @@ function putBinaryImageData(ctx, imgData, transferMaps) {
     }
     // There are multiple forms in which the pixel data can be passed, and
     // imgData.kind tells us which one this is.
-    if (imgData.kind === 1 /* GRAYSCALE_1BPP */) {
+    if (imgData.kind === ImageKind.GRAYSCALE_1BPP) {
         // Grayscale, 1 bit per pixel (i.e. black-and-white).
         const srcLength = src.byteLength;
         const dest32 = new Uint32Array(dest.buffer, 0, dest.byteLength >> 2);
@@ -651,7 +651,7 @@ function putBinaryImageData(ctx, imgData, transferMaps) {
             ctx.putImageData(chunkImgData, 0, i * FULL_CHUNK_HEIGHT);
         }
     }
-    else if (imgData.kind === 3 /* RGBA_32BPP */) {
+    else if (imgData.kind === ImageKind.RGBA_32BPP) {
         // RGBA, 32-bits per pixel.
         const hasTransferMaps = !!(transferMapRed ||
             transferMapGreen ||
@@ -696,7 +696,7 @@ function putBinaryImageData(ctx, imgData, transferMaps) {
             ctx.putImageData(chunkImgData, 0, j);
         }
     }
-    else if (imgData.kind === 2 /* RGB_24BPP */) {
+    else if (imgData.kind === ImageKind.RGB_24BPP) {
         // RGB, 24-bits per pixel.
         const hasTransferMaps = !!(transferMapRed ||
             transferMapGreen ||
@@ -903,6 +903,13 @@ function getImageSmoothingEnabled(transform, interpolate) {
 }
 const LINE_CAP_STYLES = ["butt", "round", "square"];
 const LINE_JOIN_STYLES = ["miter", "round", "bevel"];
+// const NORMAL_CLIP = {};
+// const EO_CLIP = {};
+var ClipType;
+(function (ClipType) {
+    ClipType[ClipType["NORMAL_CLIP"] = 0] = "NORMAL_CLIP";
+    ClipType[ClipType["EO_CLIP"] = 1] = "EO_CLIP";
+})(ClipType || (ClipType = {}));
 export class CanvasGraphics {
     ctx;
     compositeCtx;
@@ -1008,7 +1015,7 @@ export class CanvasGraphics {
             //   return i;
             // }
             fnId = fnArray[i];
-            if (fnId !== 1 /* dependency */) {
+            if (fnId !== OPS.dependency) {
                 this[fnId].apply(this, argsArray[i]);
             }
             else {
@@ -1042,7 +1049,7 @@ export class CanvasGraphics {
     endDrawing() {
         // Finishing all opened operations such as SMask group painting.
         while (this.stateStack.length || this.current.activeSMask !== undefined) {
-            this[11 /* restore */]();
+            this[OPS.restore]();
         }
         this.ctx.restore();
         if (this.transparentCanvas) {
@@ -1154,61 +1161,61 @@ export class CanvasGraphics {
         };
     }
     // Graphics state
-    [2 /* setLineWidth */](width) {
+    [OPS.setLineWidth](width) {
         this.current.lineWidth = width;
         this.ctx.lineWidth = width;
     }
-    [3 /* setLineCap */](style) {
+    [OPS.setLineCap](style) {
         this.ctx.lineCap = LINE_CAP_STYLES[style];
     }
-    [4 /* setLineJoin */](style) {
+    [OPS.setLineJoin](style) {
         this.ctx.lineJoin = LINE_JOIN_STYLES[style];
     }
-    [5 /* setMiterLimit */](limit) {
+    [OPS.setMiterLimit](limit) {
         this.ctx.miterLimit = limit;
     }
-    [6 /* setDash */](dashArray, dashPhase) {
+    [OPS.setDash](dashArray, dashPhase) {
         const ctx = this.ctx;
         if (ctx.setLineDash !== undefined) {
             ctx.setLineDash(dashArray);
             ctx.lineDashOffset = dashPhase;
         }
     }
-    [7 /* setRenderingIntent */](intent) {
+    [OPS.setRenderingIntent](intent) {
         // This operation is ignored since we haven't found a use case for it yet.
     }
-    [8 /* setFlatness */](flatness) {
+    [OPS.setFlatness](flatness) {
         // This operation is ignored since we haven't found a use case for it yet.
     }
-    [9 /* setGState */](states) {
+    [OPS.setGState](states) {
         for (let i = 0, ii = states.length; i < ii; i++) {
             const state = states[i];
             const key = state[0];
             const value = state[1];
             switch (key) {
                 case "LW":
-                    this[2 /* setLineWidth */](value);
+                    this[OPS.setLineWidth](value);
                     break;
                 case "LC":
-                    this[3 /* setLineCap */](value);
+                    this[OPS.setLineCap](value);
                     break;
                 case "LJ":
-                    this[4 /* setLineJoin */](value);
+                    this[OPS.setLineJoin](value);
                     break;
                 case "ML":
-                    this[5 /* setMiterLimit */](value);
+                    this[OPS.setMiterLimit](value);
                     break;
                 case "D":
-                    this[6 /* setDash */](value[0], value[1]);
+                    this[OPS.setDash](value[0], value[1]);
                     break;
                 case "RI":
-                    this[7 /* setRenderingIntent */](value);
+                    this[OPS.setRenderingIntent](value);
                     break;
                 case "FL":
-                    this[8 /* setFlatness */](value);
+                    this[OPS.setFlatness](value);
                     break;
                 case "Font":
-                    this[37 /* setFont */](value[0], value[1]);
+                    this[OPS.setFont](value[0], value[1]);
                     break;
                 case "CA":
                     this.current.strokeAlpha = value;
@@ -1263,7 +1270,7 @@ export class CanvasGraphics {
         ctx.setTransform.apply(ctx, this.suspendedCtx.mozCurrentTransform);
         copyCtxState(this.suspendedCtx, ctx);
         mirrorContextOperations(ctx, this.suspendedCtx);
-        this[9 /* setGState */]([
+        this[OPS.setGState]([
             ["BM", "source-over"],
             ["ca", 1],
             ["CA", 1],
@@ -1303,13 +1310,13 @@ export class CanvasGraphics {
         this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
         this.ctx.restore();
     }
-    [10 /* save */]() {
+    [OPS.save]() {
         this.ctx.save();
         const old = this.current;
         this.stateStack.push(old);
         this.current = old.clone();
     }
-    [11 /* restore */]() {
+    [OPS.restore]() {
         if (this.stateStack.length === 0 && this.current.activeSMask) {
             this.endSMaskMode();
         }
@@ -1322,19 +1329,19 @@ export class CanvasGraphics {
             this.#cachedGetSinglePixelWidth = undefined;
         }
     }
-    [12 /* transform */](a, b, c, d, e, f) {
+    [OPS.transform](a, b, c, d, e, f) {
         this.ctx.transform(a, b, c, d, e, f);
         this.#cachedGetSinglePixelWidth = undefined;
     }
     // Path
-    [91 /* constructPath */](ops, args) {
+    [OPS.constructPath](ops, args) {
         const ctx = this.ctx;
         const current = this.current;
         let x = current.x, y = current.y;
         let startX, startY;
         for (let i = 0, j = 0, ii = ops.length; i < ii; i++) {
             switch (ops[i] | 0) {
-                case 19 /* rectangle */:
+                case OPS.rectangle:
                     x = args[j++];
                     y = args[j++];
                     const width = args[j++];
@@ -1354,19 +1361,19 @@ export class CanvasGraphics {
                     current.updatePathMinMax(ctx.mozCurrentTransform, xw, yh);
                     ctx.closePath();
                     break;
-                case 13 /* moveTo */:
+                case OPS.moveTo:
                     x = args[j++];
                     y = args[j++];
                     ctx.moveTo(x, y);
                     current.updatePathMinMax(ctx.mozCurrentTransform, x, y);
                     break;
-                case 14 /* lineTo */:
+                case OPS.lineTo:
                     x = args[j++];
                     y = args[j++];
                     ctx.lineTo(x, y);
                     current.updatePathMinMax(ctx.mozCurrentTransform, x, y);
                     break;
-                case 15 /* curveTo */:
+                case OPS.curveTo:
                     startX = x;
                     startY = y;
                     x = args[j + 4];
@@ -1375,7 +1382,7 @@ export class CanvasGraphics {
                     current.updateCurvePathMinMax(ctx.mozCurrentTransform, startX, startY, args[j], args[j + 1], args[j + 2], args[j + 3], x, y);
                     j += 6;
                     break;
-                case 16 /* curveTo2 */:
+                case OPS.curveTo2:
                     startX = x;
                     startY = y;
                     ctx.bezierCurveTo(x, y, args[j], args[j + 1], args[j + 2], args[j + 3]);
@@ -1384,7 +1391,7 @@ export class CanvasGraphics {
                     y = args[j + 3];
                     j += 4;
                     break;
-                case 17 /* curveTo3 */:
+                case OPS.curveTo3:
                     startX = x;
                     startY = y;
                     x = args[j + 2];
@@ -1393,17 +1400,17 @@ export class CanvasGraphics {
                     current.updateCurvePathMinMax(ctx.mozCurrentTransform, startX, startY, args[j], args[j + 1], x, y, x, y);
                     j += 4;
                     break;
-                case 18 /* closePath */:
+                case OPS.closePath:
                     ctx.closePath();
                     break;
             }
         }
         current.setCurrentPoint(x, y);
     }
-    [18 /* closePath */]() {
+    [OPS.closePath]() {
         this.ctx.closePath();
     }
-    [20 /* stroke */](consumePath = true) {
+    [OPS.stroke](consumePath = true) {
         // consumePath = typeof consumePath !== "undefined" ? consumePath : true;
         const ctx = this.ctx;
         const strokeColor = this.current.strokeColor;
@@ -1444,11 +1451,11 @@ export class CanvasGraphics {
         // Restore the global alpha to the fill alpha
         ctx.globalAlpha = this.current.fillAlpha;
     }
-    [21 /* closeStroke */]() {
-        this[18 /* closePath */]();
-        this[20 /* stroke */]();
+    [OPS.closeStroke]() {
+        this[OPS.closePath]();
+        this[OPS.stroke]();
     }
-    [22 /* fill */](consumePath) {
+    [OPS.fill](consumePath) {
         consumePath = typeof consumePath !== "undefined" ? consumePath : true;
         const ctx = this.ctx;
         const fillColor = this.current.fillColor;
@@ -1476,46 +1483,46 @@ export class CanvasGraphics {
             this.consumePath(intersect);
         }
     }
-    [23 /* eoFill */]() {
+    [OPS.eoFill]() {
         this.pendingEOFill = true;
-        this[22 /* fill */]();
+        this[OPS.fill]();
     }
-    [24 /* fillStroke */]() {
-        this[22 /* fill */](false);
-        this[20 /* stroke */](false);
+    [OPS.fillStroke]() {
+        this[OPS.fill](false);
+        this[OPS.stroke](false);
         this.consumePath();
     }
-    [25 /* eoFillStroke */]() {
+    [OPS.eoFillStroke]() {
         this.pendingEOFill = true;
-        this[24 /* fillStroke */]();
+        this[OPS.fillStroke]();
     }
-    [26 /* closeFillStroke */]() {
-        this[18 /* closePath */]();
-        this[24 /* fillStroke */]();
+    [OPS.closeFillStroke]() {
+        this[OPS.closePath]();
+        this[OPS.fillStroke]();
     }
-    [27 /* closeEOFillStroke */]() {
+    [OPS.closeEOFillStroke]() {
         this.pendingEOFill = true;
-        this[18 /* closePath */]();
-        this[24 /* fillStroke */]();
+        this[OPS.closePath]();
+        this[OPS.fillStroke]();
     }
-    [28 /* endPath */]() {
+    [OPS.endPath]() {
         this.consumePath();
     }
     // Clipping
-    [29 /* clip */]() {
-        this.pendingClip = 0 /* NORMAL_CLIP */;
+    [OPS.clip]() {
+        this.pendingClip = ClipType.NORMAL_CLIP;
     }
-    [30 /* eoClip */]() {
-        this.pendingClip = 1 /* EO_CLIP */;
+    [OPS.eoClip]() {
+        this.pendingClip = ClipType.EO_CLIP;
     }
     // Text
-    [31 /* beginText */]() {
+    [OPS.beginText]() {
         this.current.textMatrix = IDENTITY_MATRIX;
         this.current.textMatrixScale = 1;
         this.current.x = this.current.lineX = 0;
         this.current.y = this.current.lineY = 0;
     }
-    [32 /* endText */]() {
+    [OPS.endText]() {
         const paths = this.pendingTextPaths;
         const ctx = this.ctx;
         if (paths === undefined) {
@@ -1535,19 +1542,19 @@ export class CanvasGraphics {
         ctx.beginPath();
         delete this.pendingTextPaths;
     }
-    [33 /* setCharSpacing */](spacing) {
+    [OPS.setCharSpacing](spacing) {
         this.current.charSpacing = spacing;
     }
-    [34 /* setWordSpacing */](spacing) {
+    [OPS.setWordSpacing](spacing) {
         this.current.wordSpacing = spacing;
     }
-    [35 /* setHScale */](scale) {
+    [OPS.setHScale](scale) {
         this.current.textHScale = scale / 100;
     }
-    [36 /* setLeading */](leading) {
+    [OPS.setLeading](leading) {
         this.current.leading = -leading;
     }
-    [37 /* setFont */](fontRefName, size) {
+    [OPS.setFont](fontRefName, size) {
         const fontObj = this.commonObjs.get(fontRefName);
         const current = this.current;
         if (!fontObj) {
@@ -1597,28 +1604,28 @@ export class CanvasGraphics {
         this.current.fontSizeScale = size / browserFontSize;
         this.ctx.font = `${italic} ${bold} ${browserFontSize}px ${typeface}`;
     }
-    [38 /* setTextRenderingMode */](mode) {
+    [OPS.setTextRenderingMode](mode) {
         this.current.textRenderingMode = mode;
     }
-    [39 /* setTextRise */](rise) {
+    [OPS.setTextRise](rise) {
         this.current.textRise = rise;
     }
-    [40 /* moveText */](x, y) {
+    [OPS.moveText](x, y) {
         this.current.x = this.current.lineX += x;
         this.current.y = this.current.lineY += y;
     }
-    [41 /* setLeadingMoveText */](x, y) {
-        this[36 /* setLeading */](-y);
-        this[40 /* moveText */](x, y);
+    [OPS.setLeadingMoveText](x, y) {
+        this[OPS.setLeading](-y);
+        this[OPS.moveText](x, y);
     }
-    [42 /* setTextMatrix */](a, b, c, d, e, f) {
+    [OPS.setTextMatrix](a, b, c, d, e, f) {
         this.current.textMatrix = [a, b, c, d, e, f];
         this.current.textMatrixScale = Math.hypot(a, b);
         this.current.x = this.current.lineX = 0;
         this.current.y = this.current.lineY = 0;
     }
-    [43 /* nextLine */]() {
-        this[40 /* moveText */](0, this.current.leading);
+    [OPS.nextLine]() {
+        this[OPS.moveText](0, this.current.leading);
     }
     paintChar(character, x, y, patternTransform, resetLineWidthToOne) {
         const ctx = this.ctx;
@@ -1626,8 +1633,8 @@ export class CanvasGraphics {
         const font = current.font;
         const textRenderingMode = current.textRenderingMode;
         const fontSize = current.fontSize / current.fontSizeScale;
-        const fillStrokeMode = textRenderingMode & 3 /* FILL_STROKE_MASK */;
-        const isAddToPathSet = !!(textRenderingMode & 4 /* ADD_TO_PATH_FLAG */);
+        const fillStrokeMode = textRenderingMode & TextRenderingMode.FILL_STROKE_MASK;
+        const isAddToPathSet = !!(textRenderingMode & TextRenderingMode.ADD_TO_PATH_FLAG);
         const patternFill = current.patternFill && !font.missingFile;
         let addToPath;
         if (font.disableFontFace || isAddToPathSet || patternFill) {
@@ -1641,12 +1648,12 @@ export class CanvasGraphics {
             if (patternTransform) {
                 ctx.setTransform(...patternTransform);
             }
-            if (fillStrokeMode === 0 /* FILL */
-                || fillStrokeMode === 2 /* FILL_STROKE */) {
+            if (fillStrokeMode === TextRenderingMode.FILL
+                || fillStrokeMode === TextRenderingMode.FILL_STROKE) {
                 ctx.fill();
             }
-            if (fillStrokeMode === 1 /* STROKE */
-                || fillStrokeMode === 2 /* FILL_STROKE */) {
+            if (fillStrokeMode === TextRenderingMode.STROKE
+                || fillStrokeMode === TextRenderingMode.FILL_STROKE) {
                 if (resetLineWidthToOne) {
                     ctx.resetTransform();
                     ctx.lineWidth = Math.round(this.#combinedScaleFactor);
@@ -1656,12 +1663,12 @@ export class CanvasGraphics {
             ctx.restore();
         }
         else {
-            if (fillStrokeMode === 0 /* FILL */
-                || fillStrokeMode === 2 /* FILL_STROKE */) {
+            if (fillStrokeMode === TextRenderingMode.FILL
+                || fillStrokeMode === TextRenderingMode.FILL_STROKE) {
                 ctx.fillText(character, x, y);
             }
-            if (fillStrokeMode === 1 /* STROKE */
-                || fillStrokeMode === 2 /* FILL_STROKE */) {
+            if (fillStrokeMode === TextRenderingMode.STROKE
+                || fillStrokeMode === TextRenderingMode.FILL_STROKE) {
                 if (resetLineWidthToOne) {
                     ctx.save();
                     ctx.moveTo(x, y);
@@ -1702,7 +1709,7 @@ export class CanvasGraphics {
         }
         return shadow(this, "isFontSubpixelAAEnabled", enabled);
     }
-    [44 /* showText */](glyphs) {
+    [OPS.showText](glyphs) {
         const current = this.current;
         const font = current.font;
         if (font.isType3Font) {
@@ -1723,7 +1730,7 @@ export class CanvasGraphics {
         const spacingDir = vertical ? 1 : -1;
         const defaultVMetrics = font.defaultVMetrics;
         const widthAdvanceScale = fontSize * current.fontMatrix[0];
-        const simpleFillText = current.textRenderingMode === 0 /* FILL */ &&
+        const simpleFillText = current.textRenderingMode === TextRenderingMode.FILL &&
             !font.disableFontFace &&
             !current.patternFill;
         ctx.save();
@@ -1749,9 +1756,9 @@ export class CanvasGraphics {
         let resetLineWidthToOne = false;
         const scale = current.textMatrixScale;
         if (scale === 0 || lineWidth === 0) {
-            const fillStrokeMode = current.textRenderingMode & 3 /* FILL_STROKE_MASK */;
-            if (fillStrokeMode === 1 /* STROKE */
-                || fillStrokeMode === 2 /* FILL_STROKE */) {
+            const fillStrokeMode = current.textRenderingMode & TextRenderingMode.FILL_STROKE_MASK;
+            if (fillStrokeMode === TextRenderingMode.STROKE
+                || fillStrokeMode === TextRenderingMode.FILL_STROKE) {
                 this.#cachedGetSinglePixelWidth = undefined;
                 lineWidth = this.getSinglePixelWidth();
                 resetLineWidthToOne = lineWidth < 0;
@@ -1860,7 +1867,7 @@ export class CanvasGraphics {
         const textHScale = current.textHScale * fontDirection;
         const fontMatrix = current.fontMatrix || FONT_IDENTITY_MATRIX;
         const glyphsLength = glyphs.length;
-        const isTextInvisible = current.textRenderingMode === 3 /* INVISIBLE */;
+        const isTextInvisible = current.textRenderingMode === TextRenderingMode.INVISIBLE;
         let i, glyph, width, spacingLength;
         if (isTextInvisible || fontSize === 0) {
             return;
@@ -1886,11 +1893,11 @@ export class CanvasGraphics {
             }
             if (this.contentVisible) {
                 this.processingType3 = glyph;
-                this[10 /* save */]();
+                this[OPS.save]();
                 ctx.scale(fontSize, fontSize);
                 ctx.transform.apply(ctx, fontMatrix);
                 this.executeOperatorList(operatorList);
-                this[11 /* restore */]();
+                this[OPS.restore]();
             }
             const transformed = Util.applyTransform([glyph.width, 0], fontMatrix);
             width = transformed[0] * fontSize + spacing;
@@ -1901,16 +1908,16 @@ export class CanvasGraphics {
         this.processingType3 = undefined;
     }
     // Type3 fonts
-    [48 /* setCharWidth */](xWidth, yWidth) {
+    [OPS.setCharWidth](xWidth, yWidth) {
         // We can safely ignore this since the width should be the same
         // as the width in the Widths array.
     }
-    [49 /* setCharWidthAndBounds */](xWidth, yWidth, llx, lly, urx, ury) {
+    [OPS.setCharWidthAndBounds](xWidth, yWidth, llx, lly, urx, ury) {
         // TODO According to the spec we're also suppose to ignore any operators
         // that set color or include images while processing this type3 font.
         this.ctx.rect(llx, lly, urx - llx, ury - lly);
-        this[29 /* clip */]();
-        this[28 /* endPath */]();
+        this[OPS.clip]();
+        this[OPS.endPath]();
     }
     // Color
     getColorN_Pattern(IR) {
@@ -1930,19 +1937,19 @@ export class CanvasGraphics {
         }
         return pattern;
     }
-    [53 /* setStrokeColorN */](...IR) {
+    [OPS.setStrokeColorN](...IR) {
         this.current.strokeColor = this.getColorN_Pattern(IR);
     }
-    [55 /* setFillColorN */](...IR) {
+    [OPS.setFillColorN](...IR) {
         this.current.fillColor = this.getColorN_Pattern(IR);
         this.current.patternFill = true;
     }
-    [58 /* setStrokeRGBColor */](r, g, b) {
+    [OPS.setStrokeRGBColor](r, g, b) {
         const color = Util.makeHexColor(r, g, b);
         this.ctx.strokeStyle = color;
         this.current.strokeColor = color;
     }
-    [59 /* setFillRGBColor */](r, g, b) {
+    [OPS.setFillRGBColor](r, g, b) {
         const color = Util.makeHexColor(r, g, b);
         this.ctx.fillStyle = color;
         this.current.fillColor = color;
@@ -1962,11 +1969,11 @@ export class CanvasGraphics {
         }
         return pattern;
     }
-    [62 /* shadingFill */](objId) {
+    [OPS.shadingFill](objId) {
         if (!this.contentVisible)
             return;
         const ctx = this.ctx;
-        this[10 /* save */]();
+        this[OPS.save]();
         const pattern = this._getPattern(objId);
         ctx.fillStyle = pattern.getPattern(ctx, this, ctx.mozCurrentTransformInverse, true);
         const inv = ctx.mozCurrentTransformInverse;
@@ -1993,23 +2000,23 @@ export class CanvasGraphics {
             this.ctx.fillRect(-1e10, -1e10, 2e10, 2e10);
         }
         this.compose(this.current.getClippedPathBoundingBox());
-        this[11 /* restore */]();
+        this[OPS.restore]();
     }
     // Images
-    [63 /* beginInlineImage */]() {
+    [OPS.beginInlineImage]() {
         assert(0, "Should not call beginInlineImage");
     }
-    [64 /* beginImageData */]() {
+    [OPS.beginImageData]() {
         assert(0, "Should not call beginImageData");
     }
-    [74 /* paintFormXObjectBegin */](matrix, bbox) {
+    [OPS.paintFormXObjectBegin](matrix, bbox) {
         if (!this.contentVisible) {
             return;
         }
-        this[10 /* save */]();
+        this[OPS.save]();
         this.baseTransformStack.push(this.baseTransform);
         if (Array.isArray(matrix) && matrix.length === 6) {
-            this[12 /* transform */].apply(this, matrix);
+            this[OPS.transform].apply(this, matrix);
         }
         this.baseTransform = this.ctx.mozCurrentTransform;
         if (bbox) {
@@ -2018,21 +2025,21 @@ export class CanvasGraphics {
             this.ctx.rect(bbox[0], bbox[1], width, height);
             this.current.updatePathMinMax(this.ctx.mozCurrentTransform, bbox[0], bbox[1]);
             this.current.updatePathMinMax(this.ctx.mozCurrentTransform, bbox[2], bbox[3]);
-            this[29 /* clip */]();
-            this[28 /* endPath */]();
+            this[OPS.clip]();
+            this[OPS.endPath]();
         }
     }
-    [75 /* paintFormXObjectEnd */]() {
+    [OPS.paintFormXObjectEnd]() {
         if (!this.contentVisible) {
             return;
         }
-        this[11 /* restore */]();
+        this[OPS.restore]();
         this.baseTransform = this.baseTransformStack.pop();
     }
-    [76 /* beginGroup */](group) {
+    [OPS.beginGroup](group) {
         if (!this.contentVisible)
             return;
-        this[10 /* save */]();
+        this[OPS.save]();
         // If there's an active soft mask we don't want it enabled for the group, so
         // clear it out. The mask and suspended canvas will be restored in endGroup.
         const suspendedCtx = this.suspendedCtx;
@@ -2135,7 +2142,7 @@ export class CanvasGraphics {
         // except the blend mode, soft mask, and alpha constants.
         copyCtxState(currentCtx, groupCtx);
         this.ctx = groupCtx;
-        this[9 /* setGState */]([
+        this[OPS.setGState]([
             ["BM", "source-over"],
             ["ca", 1],
             ["CA", 1],
@@ -2146,7 +2153,7 @@ export class CanvasGraphics {
         });
         this.groupLevel++;
     }
-    [77 /* endGroup */](group) {
+    [OPS.endGroup](group) {
         if (!this.contentVisible)
             return;
         this.groupLevel--;
@@ -2161,12 +2168,12 @@ export class CanvasGraphics {
         }
         if (group.smask) {
             this.tempSMask = this.smaskStack.pop();
-            this[11 /* restore */]();
+            this[OPS.restore]();
         }
         else {
             this.ctx.restore();
             const currentMtx = this.ctx.mozCurrentTransform;
-            this[11 /* restore */]();
+            this[OPS.restore]();
             this.ctx.save();
             this.ctx.setTransform.apply(this.ctx, currentMtx);
             const dirtyBox = Util.getAxialAlignedBoundingBox([0, 0, groupCtx.canvas.width, groupCtx.canvas.height], currentMtx);
@@ -2175,33 +2182,33 @@ export class CanvasGraphics {
             this.compose(dirtyBox);
         }
     }
-    [78 /* beginAnnotations */]() {
-        this[10 /* save */]();
+    [OPS.beginAnnotations]() {
+        this[OPS.save]();
         if (this.baseTransform) {
             this.ctx.setTransform.apply(this.ctx, this.baseTransform);
         }
     }
-    [79 /* endAnnotations */]() {
-        this[11 /* restore */]();
+    [OPS.endAnnotations]() {
+        this[OPS.restore]();
     }
-    [80 /* beginAnnotation */](id, rect, transform, matrix) {
-        this[10 /* save */]();
+    [OPS.beginAnnotation](id, rect, transform, matrix) {
+        this[OPS.save]();
         resetCtxToDefault(this.ctx);
         this.current = new CanvasExtraState(this.ctx.canvas.width, this.ctx.canvas.height);
         if (Array.isArray(rect) && rect.length === 4) {
             const width = rect[2] - rect[0];
             const height = rect[3] - rect[1];
             this.ctx.rect(rect[0], rect[1], width, height);
-            this[29 /* clip */]();
-            this[28 /* endPath */]();
+            this[OPS.clip]();
+            this[OPS.endPath]();
         }
-        this[12 /* transform */].apply(this, transform);
-        this[12 /* transform */].apply(this, matrix);
+        this[OPS.transform].apply(this, transform);
+        this[OPS.transform].apply(this, matrix);
     }
-    [81 /* endAnnotation */]() {
-        this[11 /* restore */]();
+    [OPS.endAnnotation]() {
+        this[OPS.restore]();
     }
-    [83 /* paintImageMaskXObject */](img) {
+    [OPS.paintImageMaskXObject](img) {
         if (!this.contentVisible)
             return;
         const ctx = this.ctx;
@@ -2229,7 +2236,7 @@ export class CanvasGraphics {
         ctx.restore();
         this.compose();
     }
-    [89 /* paintImageMaskXObjectRepeat */](imgData, scaleX, skewX = 0, skewY = 0, scaleY, positions) {
+    [OPS.paintImageMaskXObjectRepeat](imgData, scaleX, skewX = 0, skewY = 0, scaleY, positions) {
         if (!this.contentVisible)
             return;
         const ctx = this.ctx;
@@ -2253,7 +2260,7 @@ export class CanvasGraphics {
         ctx.restore();
         this.compose();
     }
-    [84 /* paintImageMaskXObjectGroup */](images) {
+    [OPS.paintImageMaskXObjectGroup](images) {
         if (!this.contentVisible)
             return;
         const ctx = this.ctx;
@@ -2280,7 +2287,7 @@ export class CanvasGraphics {
         }
         this.compose();
     }
-    [85 /* paintImageXObject */](objId) {
+    [OPS.paintImageXObject](objId) {
         if (!this.contentVisible)
             return;
         const imgData = objId.startsWith("g_")
@@ -2290,9 +2297,9 @@ export class CanvasGraphics {
             warn("Dependent image isn't ready yet");
             return;
         }
-        this[86 /* paintInlineImageXObject */](imgData);
+        this[OPS.paintInlineImageXObject](imgData);
     }
-    [88 /* paintImageXObjectRepeat */](objId, scaleX, scaleY, positions) {
+    [OPS.paintImageXObjectRepeat](objId, scaleX, scaleY, positions) {
         if (!this.contentVisible) {
             return;
         }
@@ -2315,15 +2322,15 @@ export class CanvasGraphics {
                 h: height,
             });
         }
-        this[87 /* paintInlineImageXObjectGroup */](imgData, map);
+        this[OPS.paintInlineImageXObjectGroup](imgData, map);
     }
-    [86 /* paintInlineImageXObject */](imgData) {
+    [OPS.paintInlineImageXObject](imgData) {
         if (!this.contentVisible)
             return;
         const width = imgData.width;
         const height = imgData.height;
         const ctx = this.ctx;
-        this[10 /* save */]();
+        this[OPS.save]();
         // scale the image to the unit square
         ctx.scale(1 / width, -1 / height);
         let imgToPaint;
@@ -2352,9 +2359,9 @@ export class CanvasGraphics {
             });
         }
         this.compose();
-        this[11 /* restore */]();
+        this[OPS.restore]();
     }
-    [87 /* paintInlineImageXObjectGroup */](imgData, map) {
+    [OPS.paintInlineImageXObjectGroup](imgData, map) {
         if (!this.contentVisible) {
             return;
         }
@@ -2384,7 +2391,7 @@ export class CanvasGraphics {
         }
         this.compose();
     }
-    [90 /* paintSolidColorImageMask */]() {
+    [OPS.paintSolidColorImageMask]() {
         if (!this.contentVisible) {
             return;
         }
@@ -2392,18 +2399,18 @@ export class CanvasGraphics {
         this.compose();
     }
     // Marked content
-    [67 /* markPoint */](tag) {
+    [OPS.markPoint](tag) {
         // TODO Marked content.
     }
-    [68 /* markPointProps */](tag, properties) {
+    [OPS.markPointProps](tag, properties) {
         // TODO Marked content.
     }
-    [69 /* beginMarkedContent */](tag) {
+    [OPS.beginMarkedContent](tag) {
         this.markedContentStack.push({
             visible: true,
         });
     }
-    [70 /* beginMarkedContentProps */](tag, properties) {
+    [OPS.beginMarkedContentProps](tag, properties) {
         if (tag === "OC") {
             this.markedContentStack.push({
                 visible: this.optionalContentConfig.isVisible(properties),
@@ -2416,15 +2423,15 @@ export class CanvasGraphics {
         }
         this.contentVisible = this.isContentVisible();
     }
-    [71 /* endMarkedContent */]() {
+    [OPS.endMarkedContent]() {
         this.markedContentStack.pop();
         this.contentVisible = this.isContentVisible();
     }
     // Compatibility
-    [72 /* beginCompat */]() {
+    [OPS.beginCompat]() {
         // TODO ignore undefined operators (should we do that anyway?)
     }
-    [73 /* endCompat */]() {
+    [OPS.endCompat]() {
         // TODO stop ignoring undefined operators
     }
     // Helper functions
@@ -2437,7 +2444,7 @@ export class CanvasGraphics {
         }
         const ctx = this.ctx;
         if (this.pendingClip) {
-            if (this.pendingClip === 1 /* EO_CLIP */) {
+            if (this.pendingClip === ClipType.EO_CLIP) {
                 ctx.clip("evenodd");
             }
             else {

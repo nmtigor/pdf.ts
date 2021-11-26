@@ -45,7 +45,16 @@ import {
   XFAObjectArray,
   XmlObject,
 } from "./xfa_object.js";
-import { BindItems, ExclGroup, Field, Items, SetProperty, Subform, Template, Text } from "./template.js";
+import { 
+  BindItems, 
+  ExclGroup, 
+  Field, 
+  Items, 
+  SetProperty, 
+  Subform, 
+  Template, 
+  Text 
+} from "./template.js";
 import { createDataNode, searchNode } from "./som.js";
 import { NamespaceIds } from "./namespaces.js";
 import { warn } from "../../shared/util.js";

@@ -2,7 +2,7 @@
  * dom
 ** --- */
 
-import { loff_t } from "./alias.js";
+import { type loff_t } from "./alias.js";
 import { $tail_ignored, $loff, $ovlap } from "./symbols.js";
 /*81---------------------------------------------------------------------------*/
 

@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-import { ScrollMode, SidebarView, SpreadMode } from "./ui_utils";
+import { ScrollMode, SidebarView, SpreadMode } from "./ui_utils.js";
 /*81---------------------------------------------------------------------------*/
 
 const DEFAULT_VIEW_HISTORY_CACHE_SIZE = 20;

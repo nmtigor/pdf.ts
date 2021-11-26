@@ -1,6 +1,6 @@
-import { ExplicitDest } from "../pdf.ts-src/core/catalog.js";
-import { OutlineNode, PDFDocumentProxy } from "../pdf.ts-src/display/api.js";
-import { BaseTreeViewer, BaseTreeViewerCtorParms } from "./base_tree_viewer.js";
+import { type ExplicitDest } from "../pdf.ts-src/core/catalog.js";
+import { type OutlineNode, PDFDocumentProxy } from "../pdf.ts-src/display/api.js";
+import { BaseTreeViewer, type BaseTreeViewerCtorParms } from "./base_tree_viewer.js";
 import { PDFLinkService } from "./pdf_link_service.js";
 import { SidebarView } from "./ui_utils.js";
 interface PDFOutlineViewerOptions extends BaseTreeViewerCtorParms {

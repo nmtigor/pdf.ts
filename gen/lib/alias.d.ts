@@ -43,7 +43,6 @@ declare type Without<T, U> = {
     [P in Exclude<keyof T, keyof U>]?: never;
 };
 export declare type XOR<T, U> = (T | U) extends object ? (Without<T, U> & U) | (Without<U, T> & T) : T | U;
-export declare type UnPromisify<T> = T extends Promise<infer U> ? UnPromisify<U> : T;
 export declare type IndexOf<T extends readonly any[], S extends number[] = []> = T["length"] extends S["length"] ? S[number] : IndexOf<T, [S["length"], ...S]>;
 export {};
 //# sourceMappingURL=alias.d.ts.map

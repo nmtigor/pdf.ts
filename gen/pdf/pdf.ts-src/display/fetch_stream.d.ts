@@ -1,6 +1,6 @@
-import { IPDFStream, IPDFStreamRangeReader, IPDFStreamReader, ReadValue } from "../interfaces.js";
+import { type IPDFStream, type IPDFStreamRangeReader, type IPDFStreamReader, type ReadValue } from "../interfaces.js";
 import { AbortException } from "../shared/util.js";
-import { DocumentInitParms } from "./api.js";
+import { type DocumentInitParms } from "./api.js";
 export declare class PDFFetchStream implements IPDFStream {
     #private;
     source: DocumentInitParms;

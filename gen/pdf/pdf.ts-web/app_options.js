@@ -1,7 +1,23 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2021
  */
-import { ScrollMode, SpreadMode } from "./ui_utils.js";
+/* Copyright 2018 Mozilla Foundation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import { Locale } from "../../lib/Locale.js";
+import { RendererType, ScrollMode, SpreadMode } from "./ui_utils.js";
+import { VerbosityLevel } from "../pdf.ts-src/shared/util.js";
 /*81---------------------------------------------------------------------------*/
 export const compatibilityParams = Object.create(null);
 const userAgent = (typeof navigator !== "undefined" && navigator.userAgent) || "";
@@ -27,6 +43,13 @@ const isIOSChrome = /CriOS/.test(userAgent);
         compatibilityParams.maxCanvasPixels = 5242880;
     }
 })();
+export var OptionKind;
+(function (OptionKind) {
+    OptionKind[OptionKind["VIEWER"] = 2] = "VIEWER";
+    OptionKind[OptionKind["API"] = 4] = "API";
+    OptionKind[OptionKind["WORKER"] = 8] = "WORKER";
+    OptionKind[OptionKind["PREFERENCE"] = 128] = "PREFERENCE";
+})(OptionKind || (OptionKind = {}));
 const D_base = "/pdf.ts";
 /**
  * NOTE: These options are used to generate the `default_preferences.json` file,
@@ -37,12 +60,12 @@ const defaultOptions = {
     annotationMode: {
         /** @type {number} */
         value: 2,
-        kind: 2 /* VIEWER */ + 128 /* PREFERENCE */,
+        kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
     },
     cursorToolOnLoad: {
         /** @type {number} */
         value: 0,
-        kind: 2 /* VIEWER */ + 128 /* PREFERENCE */,
+        kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
     },
     defaultUrl: {
         /** @type {string} */
@@ -51,22 +74,22 @@ const defaultOptions = {
         value: `${D_base}/res/pdf/test/pdfs/tracemonkey.pdf`,
         // value: `${D_base}/res/pdf/test/pdfs-1/math.pdf`,
         // value: "compressed.tracemonkey-pldi-09.pdf",
-        kind: 2 /* VIEWER */,
+        kind: OptionKind.VIEWER,
     },
     defaultZoomValue: {
         /** @type {string} */
         value: "",
-        kind: 2 /* VIEWER */ + 128 /* PREFERENCE */,
+        kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
     },
     disableHistory: {
         /** @type {boolean} */
         value: false,
-        kind: 2 /* VIEWER */,
+        kind: OptionKind.VIEWER,
     },
     disablePageLabels: {
         /** @type {boolean} */
         value: false,
-        kind: 2 /* VIEWER */ + 128 /* PREFERENCE */,
+        kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
     },
     disablePreferences: {
         /** @type {boolean} */
@@ -76,44 +99,44 @@ const defaultOptions = {
     enablePermissions: {
         /** @type {boolean} */
         value: false,
-        kind: 2 /* VIEWER */ + 128 /* PREFERENCE */,
+        kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
     },
     enablePrintAutoRotate: {
         /** @type {boolean} */
         value: true,
-        kind: 2 /* VIEWER */ + 128 /* PREFERENCE */,
+        kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
     },
     enableScripting: {
         /** @type {boolean} */
         value: false,
         // value: /* #if CHROME */false/* #else */true/* #endif */,
-        kind: 2 /* VIEWER */ + 128 /* PREFERENCE */,
+        kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
     },
     externalLinkRel: {
         /** @type {string} */
         value: "noopener noreferrer nofollow",
-        kind: 2 /* VIEWER */,
+        kind: OptionKind.VIEWER,
     },
     externalLinkTarget: {
         /** @type {number} */
         value: 0,
-        kind: 2 /* VIEWER */ + 128 /* PREFERENCE */,
+        kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
     },
     historyUpdateUrl: {
         /** @type {boolean} */
         value: false,
-        kind: 2 /* VIEWER */ + 128 /* PREFERENCE */,
+        kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
     },
     ignoreDestinationZoom: {
         /** @type {boolean} */
         value: false,
-        kind: 2 /* VIEWER */ + 128 /* PREFERENCE */,
+        kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
     },
     imageResourcesPath: {
         /** @type {string} */
         value: `${D_base}/res/pdf/pdf.ts-web/images/`,
         // value: "./images/",
-        kind: 2 /* VIEWER */,
+        kind: OptionKind.VIEWER,
     },
     locale: {
         /** @type {string} */
@@ -124,63 +147,63 @@ const defaultOptions = {
         /** @type {number} */
         value: 16777216,
         compatibility: compatibilityParams.maxCanvasPixels,
-        kind: 2 /* VIEWER */,
+        kind: OptionKind.VIEWER,
     },
     pdfBugEnabled: {
         /** @type {boolean} */
         value: true,
         // typeof PDFJSDev === "undefined" || !PDFJSDev.test("PRODUCTION"),
-        kind: 2 /* VIEWER */ + 128 /* PREFERENCE */,
+        kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
     },
     printResolution: {
         /** @type {number} */
         value: 150,
-        kind: 2 /* VIEWER */,
+        kind: OptionKind.VIEWER,
     },
     renderer: {
         /** @type {RendererType} */
-        value: "canvas" /* CANVAS */,
-        kind: 2 /* VIEWER */,
+        value: RendererType.CANVAS,
+        kind: OptionKind.VIEWER,
     },
     sidebarViewOnLoad: {
         /** @type {number} */
         value: -1,
-        kind: 2 /* VIEWER */ + 128 /* PREFERENCE */,
+        kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
     },
     scrollModeOnLoad: {
         /** @type {ScrollMode} */
         value: ScrollMode.UNKNOWN,
-        kind: 2 /* VIEWER */ + 128 /* PREFERENCE */,
+        kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
     },
     spreadModeOnLoad: {
         /** @type {SpreadMode} */
         value: SpreadMode.UNKNOWN,
-        kind: 2 /* VIEWER */ + 128 /* PREFERENCE */,
+        kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
     },
     textLayerMode: {
         /** @type {number} */
         value: 1,
-        kind: 2 /* VIEWER */ + 128 /* PREFERENCE */,
+        kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
     },
     useOnlyCssZoom: {
         /** @type {boolean} */
         value: false,
-        kind: 2 /* VIEWER */ + 128 /* PREFERENCE */,
+        kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
     },
     viewerCssTheme: {
         /** @type {number} */
         value: 0,
-        kind: 2 /* VIEWER */ + 128 /* PREFERENCE */,
+        kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
     },
     viewOnLoad: {
         /** @type {boolean} */
         value: 0,
-        kind: 2 /* VIEWER */ + 128 /* PREFERENCE */,
+        kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
     },
     cMapPacked: {
         /** @type {boolean} */
         value: true,
-        kind: 4 /* API */,
+        kind: OptionKind.API,
     },
     cMapUrl: {
         /** @type {string} */
@@ -190,27 +213,27 @@ const defaultOptions = {
         // typeof PDFJSDev === "undefined" || !PDFJSDev.test("PRODUCTION")
         //   ? "../external/bcmaps/"
         //   : "../web/cmaps/",
-        kind: 4 /* API */,
+        kind: OptionKind.API,
     },
     disableAutoFetch: {
         /** @type {boolean} */
         value: false,
-        kind: 4 /* API */ + 128 /* PREFERENCE */,
+        kind: OptionKind.API + OptionKind.PREFERENCE,
     },
     disableFontFace: {
         /** @type {boolean} */
         value: false,
-        kind: 4 /* API */ + 128 /* PREFERENCE */,
+        kind: OptionKind.API + OptionKind.PREFERENCE,
     },
     disableRange: {
         /** @type {boolean} */
         value: false,
-        kind: 4 /* API */ + 128 /* PREFERENCE */,
+        kind: OptionKind.API + OptionKind.PREFERENCE,
     },
     disableStream: {
         /** @type {boolean} */
         value: false,
-        kind: 4 /* API */ + 128 /* PREFERENCE */,
+        kind: OptionKind.API + OptionKind.PREFERENCE,
     },
     disableTelemetry: {
         /** @type {boolean} */
@@ -220,32 +243,32 @@ const defaultOptions = {
     docBaseUrl: {
         /** @type {string} */
         value: "",
-        kind: 4 /* API */,
+        kind: OptionKind.API,
     },
     enableXfa: {
         /** @type {boolean} */
         value: true,
-        kind: 4 /* API */ + 128 /* PREFERENCE */,
+        kind: OptionKind.API + OptionKind.PREFERENCE,
     },
     fontExtraProperties: {
         /** @type {boolean} */
         value: false,
-        kind: 4 /* API */,
+        kind: OptionKind.API,
     },
     isEvalSupported: {
         /** @type {boolean} */
         value: true,
-        kind: 4 /* API */,
+        kind: OptionKind.API,
     },
     maxImageSize: {
         /** @type {number} */
         value: -1,
-        kind: 4 /* API */,
+        kind: OptionKind.API,
     },
     pdfBug: {
         /** @type {boolean} */
         value: false,
-        kind: 4 /* API */,
+        kind: OptionKind.API,
     },
     standardFontDataUrl: {
         /** @type {string} */
@@ -255,18 +278,18 @@ const defaultOptions = {
         // typeof PDFJSDev === "undefined" || !PDFJSDev.test("PRODUCTION")
         //   ? "../external/standard_fonts/"
         //   : "../web/standard_fonts/",
-        kind: 4 /* API */,
+        kind: OptionKind.API,
     },
     verbosity: {
         /** @type {VerbosityLevel} */
         // value: VerbosityLevel.INFOS,
-        value: 1 /* WARNINGS */,
-        kind: 4 /* API */,
+        value: VerbosityLevel.WARNINGS,
+        kind: OptionKind.API,
     },
     workerPort: {
         /** @type {Object} */
         value: undefined,
-        kind: 8 /* WORKER */,
+        kind: OptionKind.WORKER,
     },
     workerSrc: {
         /** @type {string} */
@@ -276,7 +299,7 @@ const defaultOptions = {
         // typeof PDFJSDev === "undefined" || !PDFJSDev.test("PRODUCTION")
         //   ? "../src/worker_loader.js"
         //   : "../build/pdf.worker.js",
-        kind: 8 /* WORKER */,
+        kind: OptionKind.WORKER,
     },
     sandboxBundleSrc: {
         /** @type {string} */
@@ -288,12 +311,12 @@ defaultOptions.disablePreferences = {
     /** @type {boolean} */
     value: true,
     // typeof PDFJSDev !== "undefined" && PDFJSDev.test("TESTING"),
-    kind: 2 /* VIEWER */,
+    kind: OptionKind.VIEWER,
 };
 defaultOptions.locale = {
     /** @type {string} */
-    value: typeof navigator !== "undefined" ? navigator.language : "en-US" /* en_US */,
-    kind: 2 /* VIEWER */,
+    value: typeof navigator !== "undefined" ? navigator.language : Locale.en_US,
+    kind: OptionKind.VIEWER,
 };
 defaultOptions.sandboxBundleSrc = {
     /** @type {string} */
@@ -302,9 +325,9 @@ defaultOptions.sandboxBundleSrc = {
     // typeof PDFJSDev === "undefined" || !PDFJSDev.test("PRODUCTION")
     //   ? "../build/dev-sandbox/pdf.sandbox.js"
     //   : "../build/pdf.sandbox.js",
-    kind: 2 /* VIEWER */,
+    kind: OptionKind.VIEWER,
 };
-defaultOptions.renderer.kind += 128 /* PREFERENCE */;
+defaultOptions.renderer.kind += OptionKind.PREFERENCE;
 const userOptions = Object.create(null);
 export class AppOptions {
     static get(name) {
@@ -325,7 +348,7 @@ export class AppOptions {
             if (kind) {
                 if ((kind & defaultOption.kind) === 0)
                     continue;
-                if (kind === 128 /* PREFERENCE */) {
+                if (kind === OptionKind.PREFERENCE) {
                     const value = defaultOption.value;
                     const valueType = typeof value;
                     if (valueType === "boolean"

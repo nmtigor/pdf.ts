@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-import { Name, ObjNoCmd } from "./primitives.js";
+import { Name, type ObjNoCmd } from "./primitives.js";
 import { OPS, warn } from "../shared/util.js";
 import { ColorSpace } from "./colorspace.js";
 import { escapePDFName } from "./core_utils.js";

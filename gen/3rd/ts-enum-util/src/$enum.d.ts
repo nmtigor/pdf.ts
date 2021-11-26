@@ -1,5 +1,5 @@
 import { EnumWrapper } from "./EnumWrapper.js";
-import { StringKeyOf } from "./types.js";
+import { type StringKeyOf } from "./types.js";
 import * as symbols from "./symbols.js";
 import { visitEnumValue } from "./visitEnumValue.js";
 import { mapEnumValue } from "./mapEnumValue.js";

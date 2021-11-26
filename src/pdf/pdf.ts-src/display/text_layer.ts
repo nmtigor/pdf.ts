@@ -21,12 +21,17 @@ import { html, span } from "../../../lib/dom.js";
 import {
   AbortException,
   createPromiseCapability,
-  matrix_t,
-  point_t,
-  rect_t,
+  type matrix_t,
+  type point_t,
+  type rect_t,
   Util,
 } from "../shared/util.js";
-import { TextContent, TextItem, TextMarkedContent, TextStyle } from "./api.js";
+import { 
+  type TextContent, 
+  type TextItem, 
+  type TextMarkedContent, 
+  type TextStyle 
+} from "./api.js";
 import { PageViewport } from "./display_utils.js";
 /*81---------------------------------------------------------------------------*/
 

@@ -1,4 +1,4 @@
-import { StringKeyOf } from "./types.js";
+import { type StringKeyOf } from "./types.js";
 /**
  * A generic wrapper for any enum-like object.
  * Provides utilities for runtime processing of an enum's values and keys, with strict compile-time

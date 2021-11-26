@@ -1,5 +1,5 @@
 import { Stream } from "./stream.js";
-import { FontProps } from "./evaluator.js";
+import { type FontProps } from "./evaluator.js";
 declare namespace NsType1Parser {
     export interface PrivateData {
         BlueValues: number[];
@@ -51,8 +51,8 @@ declare namespace NsType1Parser {
     export {};
 }
 export import Type1Parser = NsType1Parser.Type1Parser;
-export import PrivateData = NsType1Parser.PrivateData;
-export import CharStringObject = NsType1Parser.CharStringObject;
-export import FontProgram = NsType1Parser.FontProgram;
+export declare type PrivateData = NsType1Parser.PrivateData;
+export declare type CharStringObject = NsType1Parser.CharStringObject;
+export declare type FontProgram = NsType1Parser.FontProgram;
 export {};
 //# sourceMappingURL=type1_parser.d.ts.map

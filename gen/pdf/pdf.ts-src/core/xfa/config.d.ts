@@ -1,6 +1,6 @@
 import { $buildXFAObject } from "./namespaces.js";
 import { $content, $finalize, ContentObject, IntegerObject, Option01, Option10, OptionObject, StringObject, XFAObject, XFAObjectArray } from "./xfa_object.js";
-import { XFAAttrs } from "./alias.js";
+import { type XFAAttrs } from "./alias.js";
 declare class Acrobat extends XFAObject {
     acrobat7: unknown;
     autoSave: unknown;

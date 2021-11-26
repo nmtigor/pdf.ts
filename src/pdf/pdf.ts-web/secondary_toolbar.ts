@@ -17,10 +17,16 @@
  * limitations under the License.
  */
 
-import { EventBus, EventMap, SCROLLBAR_PADDING, ScrollMode, SpreadMode } from "./ui_utils.js";
+import { 
+  EventBus, 
+  type EventMap, 
+  SCROLLBAR_PADDING, 
+  ScrollMode, 
+  SpreadMode 
+} from "./ui_utils.js";
 import { CursorTool } from "./pdf_cursor_tools.js";
 import { PDFSinglePageViewer } from "./pdf_viewer.js";
-import { ViewerConfiguration } from "./viewer.js";
+import { type ViewerConfiguration } from "./viewer.js";
 /*81---------------------------------------------------------------------------*/
 
 interface Anchor

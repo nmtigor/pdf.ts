@@ -249,6 +249,14 @@ export class RenderingCancelledException extends BaseException {
         this.type = type;
     }
 }
+export var LinkTarget;
+(function (LinkTarget) {
+    LinkTarget[LinkTarget["NONE"] = 0] = "NONE";
+    LinkTarget[LinkTarget["SELF"] = 1] = "SELF";
+    LinkTarget[LinkTarget["BLANK"] = 2] = "BLANK";
+    LinkTarget[LinkTarget["PARENT"] = 3] = "PARENT";
+    LinkTarget[LinkTarget["TOP"] = 4] = "TOP";
+})(LinkTarget || (LinkTarget = {}));
 /**
  * Adds various attributes (href, title, target, rel) to hyperlinks.
  * @param link The link element.
@@ -268,18 +276,18 @@ export function addLinkAttributes(link, { url, target, rel, enabled = true } = {
     }
     let targetStr = ""; // LinkTarget.NONE
     switch (target) {
-        case 0 /* NONE */:
+        case LinkTarget.NONE:
             break;
-        case 1 /* SELF */:
+        case LinkTarget.SELF:
             targetStr = "_self";
             break;
-        case 2 /* BLANK */:
+        case LinkTarget.BLANK:
             targetStr = "_blank";
             break;
-        case 3 /* PARENT */:
+        case LinkTarget.PARENT:
             targetStr = "_parent";
             break;
-        case 4 /* TOP */:
+        case LinkTarget.TOP:
             targetStr = "_top";
             break;
     }

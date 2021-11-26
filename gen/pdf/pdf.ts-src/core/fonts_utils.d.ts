@@ -1,5 +1,5 @@
 import { FontType } from "../shared/util.js";
-import { FontProps } from "./evaluator.js";
+import { type FontProps } from "./evaluator.js";
 export declare const SEAC_ANALYSIS_ENABLED = true;
 export declare const enum FontFlags {
     FixedPitch = 1,

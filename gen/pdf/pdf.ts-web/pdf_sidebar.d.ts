@@ -1,8 +1,8 @@
 import { EventBus, SidebarView } from "./ui_utils.js";
 import { PDFThumbnailViewer } from "./pdf_thumbnail_viewer.js";
 import { PDFViewer } from "./pdf_viewer.js";
-import { IL10n } from "./interfaces.js";
-import { ViewerConfiguration } from "./viewer.js";
+import { type IL10n } from "./interfaces.js";
+import { type ViewerConfiguration } from "./viewer.js";
 interface PDFSidebarOptions {
     /**
      * The DOM elements.

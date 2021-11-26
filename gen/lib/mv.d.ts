@@ -1,6 +1,6 @@
-import { Constructor } from "./alias.js";
+import { type Constructor } from "./alias.js";
 import { $vuu, $Vuu } from "./symbols.js";
-import { ReportedError } from "./util/trace.js";
+import { type ReportedError } from "./util/trace.js";
 /**
  * Inwards API, i.e., API called from outside of `Coo`.
  */

@@ -1,5 +1,5 @@
-import { OptionalContentConfigData, Order } from "../core/catalog.js";
-import { MarkedContentProps } from "../core/evaluator.js";
+import { type OptionalContentConfigData, type Order } from "../core/catalog.js";
+import { type MarkedContentProps } from "../core/evaluator.js";
 declare class OptionalContentGroup {
     name: string | null;
     intent: string | null;

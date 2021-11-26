@@ -12,15 +12,11 @@ import {
   PDFDocumentProxy, 
   PDFPageProxy, 
   PDFWorker, 
-  TextItem,
-  TextMarkedContent
+  type TextItem,
 } from "./api.js";
 import { GlobalWorkerOptions } from "./worker_options.js";
 import { 
   createPromiseCapability, 
-  InvalidPDFException, 
-  PasswordException, 
-  PasswordResponses, 
   PermissionFlag
 } from "../../pdf.ts-src/shared/util.js";
 import { PageLayout, PageMode } from "../../pdf.ts-web/ui_utils.js";

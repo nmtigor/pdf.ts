@@ -2,23 +2,34 @@
  * nmtigor (https://github.com/nmtigor) @2021
  */
 import { assert } from '../../../lib/util/trace.js';
-import { FormatError, info, shadow, Util, warn, } from "../shared/util.js";
+import { FormatError, info, shadow, UNSUPPORTED_FEATURES, Util, warn, } from "../shared/util.js";
 import { ColorSpace } from "./colorspace.js";
 import { MissingDataException } from "./core_utils.js";
 import { BaseStream } from './base_stream.js';
+/*81---------------------------------------------------------------------------*/
+export var ShadingType;
+(function (ShadingType) {
+    ShadingType[ShadingType["FUNCTION_BASED"] = 1] = "FUNCTION_BASED";
+    ShadingType[ShadingType["AXIAL"] = 2] = "AXIAL";
+    ShadingType[ShadingType["RADIAL"] = 3] = "RADIAL";
+    ShadingType[ShadingType["FREE_FORM_MESH"] = 4] = "FREE_FORM_MESH";
+    ShadingType[ShadingType["LATTICE_FORM_MESH"] = 5] = "LATTICE_FORM_MESH";
+    ShadingType[ShadingType["COONS_PATCH_MESH"] = 6] = "COONS_PATCH_MESH";
+    ShadingType[ShadingType["TENSOR_PATCH_MESH"] = 7] = "TENSOR_PATCH_MESH";
+})(ShadingType || (ShadingType = {}));
 export class Pattern {
     static parseShading(shading, xref, res, handler, pdfFunctionFactory, localColorSpaceCache) {
         const dict = shading instanceof BaseStream ? shading.dict : shading; // Table 75
         const type = dict.get("ShadingType");
         try {
             switch (type) {
-                case 2 /* AXIAL */:
-                case 3 /* RADIAL */:
+                case ShadingType.AXIAL:
+                case ShadingType.RADIAL:
                     return new RadialAxialShading(dict, xref, res, pdfFunctionFactory, localColorSpaceCache);
-                case 4 /* FREE_FORM_MESH */:
-                case 5 /* LATTICE_FORM_MESH */:
-                case 6 /* COONS_PATCH_MESH */:
-                case 7 /* TENSOR_PATCH_MESH */:
+                case ShadingType.FREE_FORM_MESH:
+                case ShadingType.LATTICE_FORM_MESH:
+                case ShadingType.COONS_PATCH_MESH:
+                case ShadingType.TENSOR_PATCH_MESH:
                     return new MeshShading(shading, xref, res, pdfFunctionFactory, localColorSpaceCache);
                 default:
                     throw new FormatError("Unsupported ShadingType: " + type);
@@ -29,7 +40,7 @@ export class Pattern {
                 throw ex;
             }
             handler.send("UnsupportedFeature", {
-                featureId: "shadingPattern" /* shadingPattern */,
+                featureId: UNSUPPORTED_FEATURES.shadingPattern,
             });
             warn(ex);
             return new DummyShading();
@@ -88,7 +99,7 @@ class RadialAxialShading extends BaseShading {
             extendStart = extendArr[0];
             extendEnd = extendArr[1];
         }
-        if (this.shadingType === 3 /* RADIAL */
+        if (this.shadingType === ShadingType.RADIAL
             && (!extendStart || !extendEnd)) {
             // Radial gradient only currently works if either circle is fully within
             // the other circle.
@@ -152,19 +163,19 @@ class RadialAxialShading extends BaseShading {
         let p1;
         let r0;
         let r1;
-        if (shadingType === 2 /* AXIAL */) {
+        if (shadingType === ShadingType.AXIAL) {
             p0 = [coordsArr[0], coordsArr[1]];
             p1 = [coordsArr[2], coordsArr[3]];
             r0 = undefined;
             r1 = undefined;
-            type = 2 /* AXIAL */;
+            type = ShadingType.AXIAL;
         }
-        else if (shadingType === 3 /* RADIAL */) {
+        else if (shadingType === ShadingType.RADIAL) {
             p0 = [coordsArr[0], coordsArr[1]];
             p1 = [coordsArr[3], coordsArr[4]];
             r0 = coordsArr[2];
             r1 = coordsArr[5];
-            type = 3 /* RADIAL */;
+            type = ShadingType.RADIAL;
         }
         else {
             assert(0, `getPattern type unknown: ${shadingType}`);
@@ -365,21 +376,21 @@ export class MeshShading extends BaseShading {
         const reader = new MeshStreamReader(stream, decodeContext);
         let patchMesh = false;
         switch (this.shadingType) {
-            case 4 /* FREE_FORM_MESH */:
+            case ShadingType.FREE_FORM_MESH:
                 this._decodeType4Shading(reader);
                 break;
-            case 5 /* LATTICE_FORM_MESH */:
+            case ShadingType.LATTICE_FORM_MESH:
                 const verticesPerRow = dict.get("VerticesPerRow") | 0;
                 if (verticesPerRow < 2) {
                     throw new FormatError("Invalid VerticesPerRow");
                 }
                 this._decodeType5Shading(reader, verticesPerRow);
                 break;
-            case 6 /* COONS_PATCH_MESH */:
+            case ShadingType.COONS_PATCH_MESH:
                 this._decodeType6Shading(reader);
                 patchMesh = true;
                 break;
-            case 7 /* TENSOR_PATCH_MESH */:
+            case ShadingType.TENSOR_PATCH_MESH:
                 this._decodeType7Shading(reader);
                 patchMesh = true;
                 break;

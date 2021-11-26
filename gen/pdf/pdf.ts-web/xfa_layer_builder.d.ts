@@ -1,9 +1,9 @@
-import { XFAData } from "../pdf.ts-src/core/document.js";
-import { XFAElData } from "../pdf.ts-src/core/xfa/alias.js";
+import { type XFAData } from "../pdf.ts-src/core/document.js";
+import { type XFAElData } from "../pdf.ts-src/core/xfa/alias.js";
 import { AnnotationStorage } from "../pdf.ts-src/display/annotation_storage.js";
-import { AnnotIntent, PDFPageProxy } from "../pdf.ts-src/display/api.js";
+import { type AnnotIntent, PDFPageProxy } from "../pdf.ts-src/display/api.js";
 import { PageViewport } from "../pdf.ts-src/display/display_utils.js";
-import { IPDFLinkService, IPDFXfaLayerFactory } from "./interfaces.js";
+import { type IPDFLinkService, type IPDFXfaLayerFactory } from "./interfaces.js";
 interface XfaLayerBuilderOptions {
     pageDiv: HTMLDivElement;
     pdfPage: PDFPageProxy | undefined;

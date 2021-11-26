@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 import { assert } from "../../../lib/util/trace.js";
-import { FormatError, info, InvalidPDFException, isArrayBuffer, isArrayEqual, isString, PageActionEventType, shadow, stringToBytes, stringToPDFString, stringToUTF8String, Util, warn, } from "../shared/util.js";
+import { FormatError, info, InvalidPDFException, isArrayBuffer, isArrayEqual, isString, OPS, PageActionEventType, RenderingIntentFlag, shadow, stringToBytes, stringToPDFString, stringToUTF8String, UNSUPPORTED_FEATURES, Util, warn, } from "../shared/util.js";
 import { clearPrimitiveCaches, Dict, isDict, isName, Name, Ref, } from "./primitives.js";
 import { collectActions, getInheritableProperty, isWhiteSpace, MissingDataException, validateCSSFont, XRefEntryException, XRefParseException, } from "./core_utils.js";
 import { getXfaFontDict, getXfaFontName } from "./xfa_fonts.js";
@@ -171,7 +171,7 @@ export class Page {
             // Error(s) when reading one of the /Contents sub-streams -- sending
             // unsupported feature notification and allow parsing to continue.
             handler.send("UnsupportedFeature", {
-                featureId: "errorContentSubStream" /* errorContentSubStream */,
+                featureId: UNSUPPORTED_FEATURES.errorContentSubStream,
             });
             warn(`getContentStream - ignoring sub-stream (${objId}): "${reason}".`);
             return;
@@ -279,11 +279,11 @@ export class Page {
         // page's operator list to render them.
         return Promise.all([pageListPromise, this._parsedAnnotations]).then(([pageOpList, annotations]) => {
             if (annotations.length === 0
-                || intent & 64 /* ANNOTATIONS_DISABLE */) {
+                || intent & RenderingIntentFlag.ANNOTATIONS_DISABLE) {
                 pageOpList.flush(true);
                 return { length: pageOpList.totalLength };
             }
-            const renderForms = !!(intent & 16 /* ANNOTATIONS_FORMS */), intentAny = !!(intent & 1 /* ANY */), intentDisplay = !!(intent & 2 /* DISPLAY */), intentPrint = !!(intent & 4 /* PRINT */);
+            const renderForms = !!(intent & RenderingIntentFlag.ANNOTATIONS_FORMS), intentAny = !!(intent & RenderingIntentFlag.ANY), intentDisplay = !!(intent & RenderingIntentFlag.DISPLAY), intentPrint = !!(intent & RenderingIntentFlag.PRINT);
             // Collect the operator list promises for the annotations. Each promise
             // is resolved with the complete operator list for a single annotation.
             const opListPromises = [];
@@ -300,11 +300,11 @@ export class Page {
                 }
             }
             return Promise.all(opListPromises).then(opLists => {
-                pageOpList.addOp(78 /* beginAnnotations */, []);
+                pageOpList.addOp(OPS.beginAnnotations, []);
                 for (const opList of opLists) {
                     pageOpList.addOpList(opList);
                 }
-                pageOpList.addOp(79 /* endAnnotations */, []);
+                pageOpList.addOp(OPS.endAnnotations, []);
                 pageOpList.flush(true);
                 return { length: pageOpList.totalLength };
             });
@@ -364,7 +364,7 @@ export class Page {
             const annotationsData = [];
             if (annotations.length === 0)
                 return annotationsData;
-            const intentAny = !!(intent & 1 /* ANY */), intentDisplay = !!(intent & 2 /* DISPLAY */), intentPrint = !!(intent & 4 /* PRINT */);
+            const intentAny = !!(intent & RenderingIntentFlag.ANY), intentDisplay = !!(intent & RenderingIntentFlag.DISPLAY), intentPrint = !!(intent & RenderingIntentFlag.PRINT);
             for (const annotation of annotations) {
                 // Get the annotation even if it's hidden because
                 // JS can change its display.

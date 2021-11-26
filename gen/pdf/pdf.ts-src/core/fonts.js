@@ -16,14 +16,14 @@
  * limitations under the License.
  */
 import { assert } from "../../../lib/util/trace.js";
-import { bytesToString, FONT_IDENTITY_MATRIX, FormatError, info, shadow, string32, warn, } from "../shared/util.js";
+import { bytesToString, FONT_IDENTITY_MATRIX, FontType, FormatError, info, shadow, string32, warn, } from "../shared/util.js";
 import { getDingbatsGlyphsUnicode, getGlyphsUnicode } from "./glyphlist.js";
 import { getEncoding, MacRomanEncoding, StandardEncoding, SymbolSetEncoding, ZapfDingbatsEncoding, } from "./encodings.js";
 import { getGlyphMapForStandardFonts, getNonStdFontMap, getSerifFonts, getStdFontMap, getSupplementalGlyphMapForArialBlack, getSupplementalGlyphMapForCalibri, } from "./standard_fonts.js";
 import { getUnicodeForGlyph, getUnicodeRangeFor, mapSpecialUnicodeValues, } from "./unicode.js";
 import { IdentityCMap } from "./cmap.js";
 import { Stream } from "./stream.js";
-import { getFontType, MacStandardGlyphOrdering, recoverGlyphName, SEAC_ANALYSIS_ENABLED } from "./fonts_utils.js";
+import { FontFlags, getFontType, MacStandardGlyphOrdering, recoverGlyphName, SEAC_ANALYSIS_ENABLED } from "./fonts_utils.js";
 import { readUint32 } from "./core_utils.js";
 import { IdentityToUnicodeMap, ToUnicodeMap } from "./to_unicode_map.js";
 import { OpenTypeFileBuilder, VALID_TABLES } from "./opentype_file_builder.js";
@@ -806,7 +806,7 @@ export class Font extends FontExpotDataEx {
         this.loadedName = properties.loadedName;
         this.isType3Font = properties.isType3Font;
         this.cssFontInfo = properties.cssFontInfo;
-        let isSerifFont = !!(properties.flags & 2 /* Serif */);
+        let isSerifFont = !!(properties.flags & FontFlags.Serif);
         // Fallback to checking the font name, in order to improve text-selection,
         // since the /Flags-entry is often wrong (fixes issue13845.pdf).
         if (!isSerifFont && !properties.isSimulatedFlags) {
@@ -819,8 +819,8 @@ export class Font extends FontExpotDataEx {
             }
         }
         this.isSerifFont = isSerifFont;
-        this.isSymbolicFont = !!(properties.flags & 4 /* Symbolic */);
-        this.isMonospace = !!(properties.flags & 1 /* FixedPitch */);
+        this.isSymbolicFont = !!(properties.flags & FontFlags.Symbolic);
+        this.isMonospace = !!(properties.flags & FontFlags.FixedPitch);
         let type = properties.type;
         let subtype = properties.subtype;
         this.type = type;
@@ -848,7 +848,7 @@ export class Font extends FontExpotDataEx {
             for (let charCode = 0; charCode < 256; charCode++) {
                 this.toFontChar[charCode] = (this.differences[charCode] || properties.defaultEncoding[charCode]);
             }
-            this.fontType = "TYPE3" /* TYPE3 */;
+            this.fontType = FontType.TYPE3;
             return;
         }
         this.cidEncoding = properties.cidEncoding || "";

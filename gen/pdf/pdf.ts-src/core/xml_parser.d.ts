@@ -1,4 +1,4 @@
-import { XFAPath } from "../core/core_utils.js";
+import { type XFAPath } from "../core/core_utils.js";
 export declare const enum XMLParserErrorCode {
     NoError = 0,
     EndOfDocument = -1,

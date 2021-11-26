@@ -1,4 +1,4 @@
-import { Thread, StreamSink } from "../shared/message_handler.js";
+import { Thread, type StreamSink } from "../shared/message_handler.js";
 import { OPS, RenderingIntentFlag } from "../shared/util.js";
 declare namespace NsQueueOptimizer {
     interface QueueOptimizerContext {
@@ -81,6 +81,6 @@ declare namespace NsOperatorList {
     }
 }
 export import OperatorList = NsOperatorList.OperatorList;
-export import OpListIR = NsOperatorList.OpListIR;
+export declare type OpListIR = NsOperatorList.OpListIR;
 export {};
 //# sourceMappingURL=operator_list.d.ts.map

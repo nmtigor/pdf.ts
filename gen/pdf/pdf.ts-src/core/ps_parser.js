@@ -43,20 +43,20 @@ export class PostScriptParser {
     }
     parse() {
         this.nextToken();
-        this.expect(0 /* LBRACE */);
+        this.expect(PostScriptTokenTypes.LBRACE);
         this.parseBlock();
-        this.expect(1 /* RBRACE */);
+        this.expect(PostScriptTokenTypes.RBRACE);
         return this.operators;
     }
     parseBlock() {
         while (true) {
-            if (this.accept(2 /* NUMBER */)) {
+            if (this.accept(PostScriptTokenTypes.NUMBER)) {
                 this.operators.push(this.prev.value);
             }
-            else if (this.accept(3 /* OPERATOR */)) {
+            else if (this.accept(PostScriptTokenTypes.OPERATOR)) {
                 this.operators.push(this.prev.value);
             }
-            else if (this.accept(0 /* LBRACE */)) {
+            else if (this.accept(PostScriptTokenTypes.LBRACE)) {
                 this.parseCondition();
             }
             else {
@@ -69,20 +69,20 @@ export class PostScriptParser {
         const conditionLocation = this.operators.length;
         this.operators.push(null, null);
         this.parseBlock();
-        this.expect(1 /* RBRACE */);
-        if (this.accept(4 /* IF */)) {
+        this.expect(PostScriptTokenTypes.RBRACE);
+        if (this.accept(PostScriptTokenTypes.IF)) {
             // The true block is right after the 'if' so it just falls through on true
             // else it jumps and skips the true block.
             this.operators[conditionLocation] = this.operators.length;
             this.operators[conditionLocation + 1] = "jz";
         }
-        else if (this.accept(0 /* LBRACE */)) {
+        else if (this.accept(PostScriptTokenTypes.LBRACE)) {
             const jumpLocation = this.operators.length;
             this.operators.push(null, null);
             const endOfTrue = this.operators.length;
             this.parseBlock();
-            this.expect(1 /* RBRACE */);
-            this.expect(5 /* IFELSE */);
+            this.expect(PostScriptTokenTypes.RBRACE);
+            this.expect(PostScriptTokenTypes.IFELSE);
             // The jump is added at the end of the true block to skip the false block.
             this.operators[jumpLocation] = this.operators.length;
             this.operators[jumpLocation + 1] = "j";
@@ -94,6 +94,15 @@ export class PostScriptParser {
         }
     }
 }
+var PostScriptTokenTypes;
+(function (PostScriptTokenTypes) {
+    PostScriptTokenTypes[PostScriptTokenTypes["LBRACE"] = 0] = "LBRACE";
+    PostScriptTokenTypes[PostScriptTokenTypes["RBRACE"] = 1] = "RBRACE";
+    PostScriptTokenTypes[PostScriptTokenTypes["NUMBER"] = 2] = "NUMBER";
+    PostScriptTokenTypes[PostScriptTokenTypes["OPERATOR"] = 3] = "OPERATOR";
+    PostScriptTokenTypes[PostScriptTokenTypes["IF"] = 4] = "IF";
+    PostScriptTokenTypes[PostScriptTokenTypes["IFELSE"] = 5] = "IFELSE";
+})(PostScriptTokenTypes || (PostScriptTokenTypes = {}));
 var NsPostScriptToken;
 (function (NsPostScriptToken) {
     const opCache = Object.create(null);
@@ -110,19 +119,19 @@ var NsPostScriptToken;
             if (opValue) {
                 return opValue;
             }
-            return (opCache[op] = new PostScriptToken(3 /* OPERATOR */, op));
+            return (opCache[op] = new PostScriptToken(PostScriptTokenTypes.OPERATOR, op));
         }
         static get LBRACE() {
-            return shadow(this, "LBRACE", new PostScriptToken(0 /* LBRACE */, "{"));
+            return shadow(this, "LBRACE", new PostScriptToken(PostScriptTokenTypes.LBRACE, "{"));
         }
         static get RBRACE() {
-            return shadow(this, "RBRACE", new PostScriptToken(1 /* RBRACE */, "}"));
+            return shadow(this, "RBRACE", new PostScriptToken(PostScriptTokenTypes.RBRACE, "}"));
         }
         static get IF() {
-            return shadow(this, "IF", new PostScriptToken(4 /* IF */, "IF"));
+            return shadow(this, "IF", new PostScriptToken(PostScriptTokenTypes.IF, "IF"));
         }
         static get IFELSE() {
-            return shadow(this, "IFELSE", new PostScriptToken(5 /* IFELSE */, "IFELSE"));
+            return shadow(this, "IFELSE", new PostScriptToken(PostScriptTokenTypes.IFELSE, "IFELSE"));
         }
     }
     NsPostScriptToken.PostScriptToken = PostScriptToken;
@@ -174,7 +183,7 @@ export class PostScriptLexer {
             case 0x2b: // '+'
             case 0x2d: // '-'
             case 0x2e: // '.'
-                return new PostScriptToken(2 /* NUMBER */, this.getNumber());
+                return new PostScriptToken(PostScriptTokenTypes.NUMBER, this.getNumber());
             case 0x7b: // '{'
                 this.nextChar();
                 return PostScriptToken.LBRACE;

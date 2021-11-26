@@ -1,5 +1,5 @@
 import { $buildXFAObject } from "./namespaces.js";
-import { XFAAttrs } from "./alias.js";
+import { type XFAAttrs } from "./alias.js";
 import { StringObject, XFAObject, XFAObjectArray } from "./xfa_object.js";
 export declare class ConnectionSet extends XFAObject {
     wsdlConnection: XFAObjectArray;

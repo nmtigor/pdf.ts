@@ -18,18 +18,18 @@
  */
 
 import { html } from "../../lib/dom.js";
-import { IL10n } from "./interfaces.js";
+import { type IL10n } from "./interfaces.js";
 import {
   animationStarted,
   DEFAULT_SCALE,
   DEFAULT_SCALE_VALUE,
   EventBus,
-  EventName,
+  type EventName,
   MAX_SCALE,
   MIN_SCALE,
   noContextMenuHandler,
 } from "./ui_utils.js";
-import { ViewerConfiguration } from "./viewer.js";
+import { type ViewerConfiguration } from "./viewer.js";
 /*81---------------------------------------------------------------------------*/
 
 const PAGE_NUMBER_LOADING_INDICATOR = "visiblePageIsLoading";

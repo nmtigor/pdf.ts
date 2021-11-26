@@ -27,7 +27,7 @@ import {
   isString,
   OPS,
   PageActionEventType,
-  rect_t,
+  type rect_t,
   RenderingIntentFlag,
   shadow,
   stringToBytes,
@@ -43,7 +43,7 @@ import {
   isDict,
   isName,
   Name,
-  Obj,
+  type Obj,
   Ref,
   RefSet,
   RefSetCache,
@@ -57,20 +57,24 @@ import {
   XRefEntryException,
   XRefParseException,
 } from "./core_utils.js";
-import { XFAFontMetrics, getXfaFontDict, getXfaFontName } from "./xfa_fonts.js";
+import { type XFAFontMetrics, getXfaFontDict, getXfaFontName } from "./xfa_fonts.js";
 import { NullStream, Stream } from "./stream.js";
-import { Annotation, AnnotationData, AnnotationFactory, FieldObject, SaveReturn } from "./annotation.js";
+import { Annotation, 
+  type AnnotationData, 
+  AnnotationFactory, 
+  type FieldObject, 
+  type SaveReturn 
+} from "./annotation.js";
 import { calculateMD5 } from "./crypto.js";
 import { Linearization } from "./parser.js";
 import { OperatorList } from "./operator_list.js";
 import { PartialEvaluator, TranslatedFont } from "./evaluator.js";
 import { BasePdfManager } from "./pdf_manager.js";
-import { Thread, MessageHandler, StreamSink } from "../shared/message_handler.js";
+import { Thread, MessageHandler, type StreamSink } from "../shared/message_handler.js";
 import { WorkerTask } from "./worker.js";
 import { GlobalImageCache } from "./image_utils.js";
-import { AnnotStorageRecord } from "../display/annotation_layer.js";
-import { AnnotIntent, Intent } from "../display/api.js";
-import { CMapData } from "../display/base_factory.js";
+import { type AnnotStorageRecord } from "../display/annotation_layer.js";
+import { type CMapData } from "../display/base_factory.js";
 import { Catalog } from "./catalog.js";
 import { XRef } from "./xref.js";
 import { ObjectLoader } from "./object_loader.js";
@@ -79,7 +83,7 @@ import { BaseStream } from "./base_stream.js";
 import { XFAFactory } from "./xfa/factory.js";
 import { ErrorFont, Font } from "./fonts.js";
 import { StreamsSequenceStream } from "./decode_stream.js";
-import { XFAElObj } from "./xfa/alias.js";
+import { type XFAElObj } from "./xfa/alias.js";
 /*81---------------------------------------------------------------------------*/
 
 const DEFAULT_USER_UNIT = 1.0;

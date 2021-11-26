@@ -24,6 +24,7 @@ import { FileSpec } from "./file_spec.js";
 import { GlobalImageCache } from "./image_utils.js";
 import { MetadataParser } from "./metadata_parser.js";
 import { StructTreeRoot } from "./struct_tree.js";
+import { PageLayout, PageMode } from "../../../pdf/pdf.ts-web/ui_utils.js";
 import { BaseStream } from "./base_stream.js";
 function fetchDestination(dest) {
     if (dest instanceof Dict) {
@@ -606,22 +607,22 @@ export class Catalog {
         if (obj instanceof Name) {
             switch (obj.name) {
                 case "SinglePage":
-                    pageLayout = 1 /* SinglePage */;
+                    pageLayout = PageLayout.SinglePage;
                     break;
                 case "OneColumn":
-                    pageLayout = 2 /* OneColumn */;
+                    pageLayout = PageLayout.OneColumn;
                     break;
                 case "TwoColumnLeft":
-                    pageLayout = 3 /* TwoColumnLeft */;
+                    pageLayout = PageLayout.TwoColumnLeft;
                     break;
                 case "TwoColumnRight":
-                    pageLayout = 4 /* TwoColumnRight */;
+                    pageLayout = PageLayout.TwoColumnRight;
                     break;
                 case "TwoPageLeft":
-                    pageLayout = 5 /* TwoPageLeft */;
+                    pageLayout = PageLayout.TwoPageLeft;
                     break;
                 case "TwoPageRight":
-                    pageLayout = 6 /* TwoPageRight */;
+                    pageLayout = PageLayout.TwoPageRight;
                     break;
             }
         }
@@ -629,26 +630,26 @@ export class Catalog {
     }
     get pageMode() {
         const obj = this.#catDict.get("PageMode");
-        let pageMode = 1 /* UseNone */; // Default value.
+        let pageMode = PageMode.UseNone; // Default value.
         if (obj instanceof Name) {
             switch (obj.name) {
                 case "UseNone":
-                    pageMode = 1 /* UseNone */;
+                    pageMode = PageMode.UseNone;
                     break;
                 case "UseOutlines":
-                    pageMode = 2 /* UseOutlines */;
+                    pageMode = PageMode.UseOutlines;
                     break;
                 case "UseThumbs":
-                    pageMode = 3 /* UseThumbs */;
+                    pageMode = PageMode.UseThumbs;
                     break;
                 case "FullScreen":
-                    pageMode = 4 /* FullScreen */;
+                    pageMode = PageMode.FullScreen;
                     break;
                 case "UseOC":
-                    pageMode = 5 /* UseOC */;
+                    pageMode = PageMode.UseOC;
                     break;
                 case "UseAttachments":
-                    pageMode = 6 /* UseAttachments */;
+                    pageMode = PageMode.UseAttachments;
                     break;
             }
         }

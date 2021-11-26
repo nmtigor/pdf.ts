@@ -1,6 +1,6 @@
 import { EventBus, ScrollMode, SpreadMode } from "./ui_utils.js";
 import { CursorTool } from "./pdf_cursor_tools.js";
-import { ViewerConfiguration } from "./viewer.js";
+import { type ViewerConfiguration } from "./viewer.js";
 interface Anchor {
     element: HTMLAnchorElement;
     eventName?: undefined;

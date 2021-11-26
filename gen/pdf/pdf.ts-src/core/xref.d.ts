@@ -1,9 +1,9 @@
-import { Dict, ObjNoRef, Obj, Ref } from "./primitives.js";
+import { Dict, type ObjNoRef, type Obj, Ref } from "./primitives.js";
 import { Parser } from "./parser.js";
 import { CipherTransformFactory } from "./crypto.js";
 import { Stream } from "./stream.js";
 import { ChunkedStream } from "./chunked_stream.js";
-import { PDFDocumentStats } from "../display/api.js";
+import { type PDFDocumentStats } from "../display/api.js";
 import { BasePdfManager } from "./pdf_manager.js";
 interface XRefEntry {
     offset: number;

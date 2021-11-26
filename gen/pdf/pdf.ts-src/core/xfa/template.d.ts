@@ -1,9 +1,9 @@
 import { $acceptWhitespace, $addHTML, $clean, $cleanPage, $content, $data, $extra, $finalize, $flushHTML, $getAvailableSpace, $getContainedChildren, $getExtra, $getNextPage, $getSubformParent, $hasSettableValue, $ids, $isBindable, $isCDATAXml, $isSplittable, $isThereMoreWidth, $isTransparent, $isUsable, $onChild, $onText, $searchNode, $setValue, $text, $toHTML, $toStyle, ContentObject, Option01, OptionObject, StringObject, XFAObject, XFAObjectArray, XmlObject } from "./xfa_object.js";
 import { $buildXFAObject } from "./namespaces.js";
-import { XFALayoutMode } from "./html_utils.js";
-import { AvailableSpace, XFAAttrs, XFAFontBase, XFAElData, XFAHTMLObj, XFAStyleData, XFAValue, XFAIds, XFAExtra } from "./alias.js";
-import { XFAColor, HTMLResult } from "./utils.js";
-import { rect_t } from "../../shared/util.js";
+import { type XFALayoutMode } from "./html_utils.js";
+import { type AvailableSpace, type XFAAttrs, type XFAFontBase, type XFAElData, type XFAHTMLObj, type XFAStyleData, type XFAValue, type XFAIds, type XFAExtra } from "./alias.js";
+import { type XFAColor, HTMLResult } from "./utils.js";
+import { type rect_t } from "../../shared/util.js";
 import { Builder } from "./builder.js";
 import { XhtmlObject } from "./xhtml.js";
 declare class AppearanceFilter extends StringObject {

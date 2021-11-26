@@ -18,7 +18,7 @@
  */
 
 import { $buildXFAObject, NamespaceIds } from "./namespaces.js";
-import { XFAAttrs } from "./alias.js";
+import { type XFAAttrs } from "./alias.js";
 import { XFAObject } from "./xfa_object.js";
 /*81---------------------------------------------------------------------------*/
 

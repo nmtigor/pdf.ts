@@ -1,5 +1,5 @@
-import { rect_t } from "../../shared/util.js";
-import { AvailableSpace, XFAElData, XFAHTMLObj } from "./alias.js";
+import { type rect_t } from "../../shared/util.js";
+import { type AvailableSpace, type XFAElData, type XFAHTMLObj } from "./alias.js";
 import { Draw, ExclGroup, Field, Subform } from "./template.js";
 export declare function flushHTML(node: ExclGroup | Subform): XFAHTMLObj | undefined;
 export declare function addHTML(node: ExclGroup | Subform, html: XFAElData, bbox: rect_t): void;

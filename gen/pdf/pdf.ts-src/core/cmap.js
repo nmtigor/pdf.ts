@@ -16,11 +16,12 @@
  * limitations under the License.
  */
 import { assert } from "../../../lib/util/trace.js";
-import { FormatError, warn, } from "../shared/util.js";
+import { CMapCompressionType, FormatError, warn, } from "../shared/util.js";
 import { Cmd, EOF, isCmd, Name } from "./primitives.js";
 import { Lexer } from "./parser.js";
 import { MissingDataException } from "./core_utils.js";
 import { Stream } from "./stream.js";
+import { BaseStream } from "./base_stream.js";
 /*81---------------------------------------------------------------------------*/
 const BUILT_IN_CMAPS = [
     // << Start unicode maps.
@@ -904,12 +905,12 @@ var NsCMapFactory;
         }
         const { cMapData, compressionType } = await fetchBuiltInCMap(name);
         const cMap = new CMap(true);
-        if (compressionType === 1 /* BINARY */) {
+        if (compressionType === CMapCompressionType.BINARY) {
             return new BinaryCMapReader().process(cMapData, cMap, useCMap => {
                 return extendCMap(cMap, fetchBuiltInCMap, useCMap);
             });
         }
-        if (compressionType === 0 /* NONE */) {
+        if (compressionType === CMapCompressionType.NONE) {
             const lexer = new Lexer(new Stream(cMapData));
             return parseCMap(cMap, lexer, fetchBuiltInCMap);
         }
@@ -937,6 +938,5 @@ var NsCMapFactory;
     };
 })(NsCMapFactory || (NsCMapFactory = {}));
 export var CMapFactory = NsCMapFactory.CMapFactory;
-import { BaseStream } from "./base_stream.js";
 /*81---------------------------------------------------------------------------*/
 //# sourceMappingURL=cmap.js.map

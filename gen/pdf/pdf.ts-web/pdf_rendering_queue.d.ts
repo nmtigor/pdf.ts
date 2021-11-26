@@ -1,7 +1,7 @@
 import { BaseViewer } from "./base_viewer.js";
-import { IRenderableView, IVisibleView } from "./interfaces.js";
+import { type IRenderableView, type IVisibleView } from "./interfaces.js";
 import { PDFThumbnailViewer } from "./pdf_thumbnail_viewer.js";
-import { VisibleElements } from "./ui_utils.js";
+import { type VisibleElements } from "./ui_utils.js";
 export declare enum RenderingStates {
     INITIAL = 0,
     RUNNING = 1,

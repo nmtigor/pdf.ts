@@ -18,9 +18,9 @@
  */
 
 import { PasswordResponses } from "../pdf.ts-src/pdf.js";
-import { IL10n } from "./interfaces.js";
+import { type IL10n } from "./interfaces.js";
 import { OverlayManager } from "./overlay_manager.js";
-import { ViewerConfiguration } from "./viewer.js";
+import { type ViewerConfiguration } from "./viewer.js";
 /*81---------------------------------------------------------------------------*/
 
 export class PasswordPrompt 

@@ -18,7 +18,7 @@
 import { div, html, span, svg as createSVG, textnode } from "../../../lib/dom.js";
 import { assert } from "../../../lib/util/trace.js";
 import { DOMSVGFactory, getFilenameFromUrl, PDFDateString, } from "./display_utils.js";
-import { shadow, stringToPDFString, Util, warn, } from "../shared/util.js";
+import { AnnotationBorderStyleType, AnnotationType, shadow, stringToPDFString, Util, warn, } from "../shared/util.js";
 import { AnnotationStorage } from "./annotation_storage.js";
 import { ColorConverters } from "../shared/scripting_utils.js";
 import { XfaLayer } from "./xfa_layer.js";
@@ -29,11 +29,11 @@ class AnnotationElementFactory {
     static create(parameters) {
         const subtype = parameters.data.annotationType;
         switch (subtype) {
-            case 2 /* LINK */:
+            case AnnotationType.LINK:
                 return new LinkAnnotationElement(parameters);
-            case 1 /* TEXT */:
+            case AnnotationType.TEXT:
                 return new TextAnnotationElement(parameters);
-            case 20 /* WIDGET */:
+            case AnnotationType.WIDGET:
                 const fieldType = parameters.data.fieldType;
                 switch (fieldType) {
                     case "Tx":
@@ -50,35 +50,35 @@ class AnnotationElementFactory {
                         return new ChoiceWidgetAnnotationElement(parameters);
                 }
                 return new WidgetAnnotationElement(parameters);
-            case 16 /* POPUP */:
+            case AnnotationType.POPUP:
                 return new PopupAnnotationElement(parameters);
-            case 3 /* FREETEXT */:
+            case AnnotationType.FREETEXT:
                 return new FreeTextAnnotationElement(parameters);
-            case 4 /* LINE */:
+            case AnnotationType.LINE:
                 return new LineAnnotationElement(parameters);
-            case 5 /* SQUARE */:
+            case AnnotationType.SQUARE:
                 return new SquareAnnotationElement(parameters);
-            case 6 /* CIRCLE */:
+            case AnnotationType.CIRCLE:
                 return new CircleAnnotationElement(parameters);
-            case 8 /* POLYLINE */:
+            case AnnotationType.POLYLINE:
                 return new PolylineAnnotationElement(parameters);
-            case 14 /* CARET */:
+            case AnnotationType.CARET:
                 return new CaretAnnotationElement(parameters);
-            case 15 /* INK */:
+            case AnnotationType.INK:
                 return new InkAnnotationElement(parameters);
-            case 7 /* POLYGON */:
+            case AnnotationType.POLYGON:
                 return new PolygonAnnotationElement(parameters);
-            case 9 /* HIGHLIGHT */:
+            case AnnotationType.HIGHLIGHT:
                 return new HighlightAnnotationElement(parameters);
-            case 10 /* UNDERLINE */:
+            case AnnotationType.UNDERLINE:
                 return new UnderlineAnnotationElement(parameters);
-            case 11 /* SQUIGGLY */:
+            case AnnotationType.SQUIGGLY:
                 return new SquigglyAnnotationElement(parameters);
-            case 12 /* STRIKEOUT */:
+            case AnnotationType.STRIKEOUT:
                 return new StrikeOutAnnotationElement(parameters);
-            case 13 /* STAMP */:
+            case AnnotationType.STAMP:
                 return new StampAnnotationElement(parameters);
-            case 17 /* FILEATTACHMENT */:
+            case AnnotationType.FILEATTACHMENT:
                 return new FileAttachmentAnnotationElement(parameters);
             default:
                 return new AnnotationElement(parameters);
@@ -149,7 +149,7 @@ export class AnnotationElement {
         container.style.transformOrigin = `${-rect[0]}px ${-rect[1]}px`;
         if (!ignoreBorder && data.borderStyle.width > 0) {
             container.style.borderWidth = `${data.borderStyle.width}px`;
-            if (data.borderStyle.style !== 5 /* UNDERLINE */) {
+            if (data.borderStyle.style !== AnnotationBorderStyleType.UNDERLINE) {
                 // Underline styles only have a bottom border, so we do not need
                 // to adjust for all borders. This yields a similar result as
                 // Adobe Acrobat/Reader.
@@ -163,19 +163,19 @@ export class AnnotationElement {
                 container.style.borderRadius = radius;
             }
             switch (data.borderStyle.style) {
-                case 1 /* SOLID */:
+                case AnnotationBorderStyleType.SOLID:
                     container.style.borderStyle = "solid";
                     break;
-                case 2 /* DASHED */:
+                case AnnotationBorderStyleType.DASHED:
                     container.style.borderStyle = "dashed";
                     break;
-                case 3 /* BEVELED */:
+                case AnnotationBorderStyleType.BEVELED:
                     warn("Unimplemented border style: beveled");
                     break;
-                case 4 /* INSET */:
+                case AnnotationBorderStyleType.INSET:
                     warn("Unimplemented border style: inset");
                     break;
-                case 5 /* UNDERLINE */:
+                case AnnotationBorderStyleType.UNDERLINE:
                     container.style.borderBottomStyle = "solid";
                     break;
                 default:
@@ -1885,7 +1885,7 @@ export class AnnotationLayer {
         for (const data of parameters.annotations) {
             if (!data)
                 continue;
-            if (data.annotationType === 16 /* POPUP */) {
+            if (data.annotationType === AnnotationType.POPUP) {
                 popupAnnotations.push(data);
                 continue;
             }

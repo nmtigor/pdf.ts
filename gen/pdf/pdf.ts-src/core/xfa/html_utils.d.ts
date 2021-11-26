@@ -1,5 +1,5 @@
 import { XFAObject } from "./xfa_object.js";
-import { AvailableSpace, XFAFontBase, XFAHTMLObj, XFAStyleData, XFAElObj } from "./alias.js";
+import { type AvailableSpace, type XFAFontBase, type XFAHTMLObj, type XFAStyleData, type XFAElObj } from "./alias.js";
 import { FontFinder } from "./fonts.js";
 import { Area, Border, Caption, ContentArea, Draw, ExclGroup, Field, Subform } from "./template.js";
 export declare function measureToString(m: string | number): string;

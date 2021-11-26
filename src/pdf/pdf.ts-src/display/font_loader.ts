@@ -28,7 +28,7 @@ import {
   warn,
 } from "../shared/util.js";
 import { FontExpotDataEx } from "../core/fonts.js";
-import { CmdArgs } from "../core/font_renderer.js";
+import { type CmdArgs } from "../core/font_renderer.js";
 import { PDFObjects } from "./api.js";
 /*81---------------------------------------------------------------------------*/
 

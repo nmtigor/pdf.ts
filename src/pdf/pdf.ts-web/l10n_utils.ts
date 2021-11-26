@@ -17,9 +17,9 @@
  * limitations under the License.
  */
 
-import { Locale_1, WebL10nArgs } from "../../lib/l10n";
-import { Locale } from "../../lib/Locale";
-import { IL10n } from "./interfaces";
+import { type Locale_1, type WebL10nArgs } from "../../lib/l10n.js";
+import { Locale } from "../../lib/Locale.js";
+import { type IL10n } from "./interfaces.js";
 /*81---------------------------------------------------------------------------*/
 
 /**

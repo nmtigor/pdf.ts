@@ -20,6 +20,13 @@ import { stringToPDFString, warn } from "../shared/util.js";
 import { NumberTree } from "./name_number_tree.js";
 /*81---------------------------------------------------------------------------*/
 const MAX_DEPTH = 40;
+var StructElementType;
+(function (StructElementType) {
+    StructElementType["PAGE_CONTENT"] = "PAGE_CONTENT";
+    StructElementType["STREAM_CONTENT"] = "STREAM_CONTENT";
+    StructElementType["OBJECT"] = "OBJECT";
+    StructElementType["ELEMENT"] = "ELEMENT";
+})(StructElementType || (StructElementType = {}));
 export class StructTreeRoot {
     dict;
     roleMap = new Map();
@@ -91,7 +98,7 @@ class StructElementNode {
                 return null;
             }
             return new StructElement({
-                type: "PAGE_CONTENT" /* PAGE_CONTENT */,
+                type: StructElementType.PAGE_CONTENT,
                 mcid: kid,
                 pageObjId,
             });
@@ -118,7 +125,7 @@ class StructElementNode {
                 return null;
             }
             return new StructElement({
-                type: "STREAM_CONTENT" /* STREAM_CONTENT */,
+                type: StructElementType.STREAM_CONTENT,
                 refObjId: (kidDict.getRaw("Stm") instanceof Ref)
                     ? kidDict.getRaw("Stm").toString()
                     : undefined,
@@ -131,7 +138,7 @@ class StructElementNode {
                 return null;
             }
             return new StructElement({
-                type: "OBJECT" /* OBJECT */,
+                type: StructElementType.OBJECT,
                 refObjId: (kidDict.getRaw("Obj") instanceof Ref)
                     ? kidDict.getRaw("Obj").toString()
                     : undefined,
@@ -139,7 +146,7 @@ class StructElementNode {
             });
         }
         return new StructElement({
-            type: "ELEMENT" /* ELEMENT */,
+            type: StructElementType.ELEMENT,
             dict: kidDict,
         });
     }
@@ -214,7 +221,7 @@ export class StructTreePage {
             return element;
         let save = false;
         for (const kid of parentNode.kids) {
-            if (kid.type === "ELEMENT" /* ELEMENT */ && kid.dict === dict) {
+            if (kid.type === StructElementType.ELEMENT && kid.dict === dict) {
                 kid.parentNode = element;
                 save = true;
             }
@@ -267,19 +274,19 @@ export class StructTreePage {
                 obj.alt = stringToPDFString(alt);
             }
             for (const kid of node.kids) {
-                const kidElement = kid.type === "ELEMENT" /* ELEMENT */ ? kid.parentNode : null;
+                const kidElement = kid.type === StructElementType.ELEMENT ? kid.parentNode : null;
                 if (kidElement) {
                     nodeToSerializable(kidElement, obj, level + 1);
                     continue;
                 }
-                else if (kid.type === "PAGE_CONTENT" /* PAGE_CONTENT */ ||
-                    kid.type === "STREAM_CONTENT" /* STREAM_CONTENT */) {
+                else if (kid.type === StructElementType.PAGE_CONTENT ||
+                    kid.type === StructElementType.STREAM_CONTENT) {
                     obj.children.push({
                         type: "content",
                         id: `page${kid.pageObjId}_mcid${kid.mcid}`,
                     });
                 }
-                else if (kid.type === "OBJECT" /* OBJECT */) {
+                else if (kid.type === StructElementType.OBJECT) {
                     obj.children.push({
                         type: "object",
                         id: kid.refObjId,

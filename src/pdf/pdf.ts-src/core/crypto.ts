@@ -29,6 +29,7 @@ import {
 } from "../shared/util.js";
 import { Dict, isName, Name } from "./primitives.js";
 import { DecryptStream } from "./decrypt_stream.js";
+import { BaseStream } from "./base_stream.js";
 /*81---------------------------------------------------------------------------*/
 
 export class ARCFourCipher
@@ -2060,5 +2061,4 @@ namespace NsCipherTransformFactory
   }
 }
 export import CipherTransformFactory = NsCipherTransformFactory.CipherTransformFactory;
-import { BaseStream } from "./base_stream.js";
 /*81---------------------------------------------------------------------------*/

@@ -1,7 +1,7 @@
-import { TextContent } from "../pdf.ts-src/display/api.js";
+import { type TextContent } from "../pdf.ts-src/display/api.js";
 import { PageViewport } from "../pdf.ts-src/display/display_utils.js";
 import { TextLayerRenderTask } from "../pdf.ts-src/display/text_layer.js";
-import { IPDFTextLayerFactory } from "./interfaces.js";
+import { type IPDFTextLayerFactory } from "./interfaces.js";
 import { TextHighlighter } from "./text_highlighter.js";
 import { EventBus } from "./ui_utils.js";
 interface TextLayerBuilderOptions {

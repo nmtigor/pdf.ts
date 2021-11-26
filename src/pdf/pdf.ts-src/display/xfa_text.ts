@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-import { XFAElObj } from "../core/xfa/alias.js";
-import { TextContent, TextItem, TextMarkedContent } from "./api.js";
+import { type XFAElObj } from "../core/xfa/alias.js";
+import { type TextContent, type TextItem, type TextMarkedContent } from "./api.js";
 /*81---------------------------------------------------------------------------*/
 
 export abstract class XfaText 
