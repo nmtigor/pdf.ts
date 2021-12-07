@@ -477,7 +477,7 @@ export class FontFaceObject extends FontExpotDataEx
     }
     else {
       const css:FontFaceDescriptors = {
-        weight: this.cssFontInfo.fontWeight+"",
+        weight: <any>this.cssFontInfo.fontWeight,
       };
       if( this.cssFontInfo.italicAngle)
       {

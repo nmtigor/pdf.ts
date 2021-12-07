@@ -17,10 +17,10 @@
  * limitations under the License.
  */
 
+import { createPromiseCap } from "../../../lib/promisecap.js";
 import { html, span } from "../../../lib/dom.js";
 import {
   AbortException,
-  createPromiseCapability,
   type matrix_t,
   type point_t,
   type rect_t,
@@ -709,7 +709,7 @@ namespace Ns_renderTextLayer
     _textDivProperties:WeakMap<HTMLSpanElement, TextDivProps> | undefined = new WeakMap();
     _renderingDone = false;
     _canceled = false;
-    _capability = createPromiseCapability();
+    _capability = createPromiseCap();
     #renderTimer?:number | undefined;
     _bounds:TLRTBound[] | undefined = [];
 
@@ -877,7 +877,7 @@ namespace Ns_renderTextLayer
      */
     _render( timeout?:number ) 
     {
-      const capability = createPromiseCapability();
+      const capability = createPromiseCap();
       let styleCache = Object.create(null);
 
       // The temporary canvas is used to measure text length in the DOM.

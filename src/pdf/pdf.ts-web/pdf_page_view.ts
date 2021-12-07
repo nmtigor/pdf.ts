@@ -19,12 +19,12 @@
 
 /** @typedef {import("./interfaces").IRenderableView} IRenderableView */
 
+import { createPromiseCap } from "../../lib/promisecap.js";
 import { AnnotationStorage } from "../pdf.ts-src/display/annotation_storage.js";
 import { PDFPageProxy, type RenderParms, type TextItem } from "../pdf.ts-src/display/api.js";
 import { PageViewport, StatTimer } from "../pdf.ts-src/display/display_utils.js";
 import { OptionalContentConfig } from "../pdf.ts-src/display/optional_content_config.js";
 import {
-  createPromiseCapability,
   PixelsPerInch,
   RenderingCancelledException,
   SVGGraphics
@@ -121,7 +121,7 @@ interface PDFPageViewOptions
   annotationLayerFactory:IPDFAnnotationLayerFactory | undefined;
   xfaLayerFactory?:IPDFXfaLayerFactory | undefined;
   structTreeLayerFactory:IPDFStructTreeLayerFactory;
-  textHighlighterFactory?:BaseViewer;
+  textHighlighterFactory:BaseViewer;
 
   /**
    * Path for image resources, mainly 
@@ -260,7 +260,7 @@ export class PDFPageView implements IVisibleView
     this.annotationLayerFactory = options.annotationLayerFactory;
     this.xfaLayerFactory = options.xfaLayerFactory;
     this.textHighlighter =
-      options.textHighlighterFactory?.createTextHighlighter(
+      options.textHighlighterFactory.createTextHighlighter(
         this.id - 1,
         this.eventBus
       );
@@ -276,7 +276,7 @@ export class PDFPageView implements IVisibleView
     div.style.height = Math.floor(this.viewport.height) + "px";
     div.setAttribute( "data-page-number", <any>this.id );
     div.setAttribute("role", "region");
-    this.l10n.get("page_landmark", { page: this.id+"" }).then(msg => {
+    this.l10n.get("page_landmark", { page: <any>this.id }).then(msg => {
       div.setAttribute("aria-label", msg);
     });
     this.div = div;
@@ -392,7 +392,7 @@ export class PDFPageView implements IVisibleView
       annotationLayerNode =
         (keepAnnotationLayer && this.annotationLayer?.div) || null,
       xfaLayerNode = (keepXfaLayer && this.xfaLayer?.div) || null;
-    for (let i = childNodes.length - 1; i >= 0; i--) 
+    for( let i = childNodes.length; i--; ) 
     {
       const node = childNodes[i];
       switch (node) 
@@ -892,7 +892,7 @@ export class PDFPageView implements IVisibleView
 
   paintOnCanvas( canvasWrapper:HTMLDivElement ):PaintTask
   {
-    const renderCapability = createPromiseCapability();
+    const renderCapability = createPromiseCap();
     const result = {
       promise: renderCapability.promise,
       onRenderContinue( cont:()=>void ) 

@@ -17,14 +17,13 @@
  * limitations under the License.
  */
 
+import { createPromiseCap, PromiseCap } from "../../../lib/promisecap.js";
 import { type ReadValue } from "../interfaces.js";
 import { Thread, MessageHandler } from "../shared/message_handler.js";
 import {
   AbortException,
   arrayByteLength,
   arraysToBytes,
-  createPromiseCapability,
-  type PromiseCapability,
 } from "../shared/util.js";
 import { MissingDataException } from "./core_utils.js";
 import { Dict } from "./primitives.js";
@@ -306,11 +305,11 @@ export class ChunkedStreamManager
 
   #chunksNeededByRequest = new Map< number, Set<number> >();
   #requestsByChunk = new Map< number, number[] >();
-  #promisesByRequest = new Map< number, PromiseCapability >();
+  #promisesByRequest = new Map< number, PromiseCap >();
   progressiveDataLength = 0;
   aborted = false;
 
-  #loadedStreamCapability = createPromiseCapability<ChunkedStream>();
+  #loadedStreamCapability = createPromiseCap<ChunkedStream>();
   onLoadedStream():Promise<ChunkedStream> 
   { 
     return this.#loadedStreamCapability.promise; 
@@ -396,7 +395,7 @@ export class ChunkedStreamManager
       return Promise.resolve();
     }
 
-    const capability = createPromiseCapability();
+    const capability = createPromiseCap();
     this.#promisesByRequest.set(requestId, capability);
 
     const chunksToRequest:number[] = [];

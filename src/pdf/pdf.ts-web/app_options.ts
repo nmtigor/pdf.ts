@@ -65,6 +65,12 @@ export const enum OptionKind {
   PREFERENCE = 0x80,
 }
 
+export const enum ViewOnLoad {
+  UNKNOWN = -1,
+  PREVIOUS = 0, // Default value.
+  INITIAL = 1,
+}
+
 const D_base = "";
 
 /**
@@ -213,8 +219,8 @@ const defaultOptions = {
     kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
   },
   viewOnLoad: {
-    /** @type {boolean} */
-    value: 0,
+    /** @type {ViewOnLoad} */
+    value: ViewOnLoad.PREVIOUS,
     kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
   },
 

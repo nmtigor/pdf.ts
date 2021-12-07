@@ -106,7 +106,8 @@ class StructElementNode
     }
     else {
       const element = this.parseKid( pageObjId, <number | Dict | Ref>kids );
-      if (element) {
+      if( element ) 
+      {
         this.kids.push(element);
       }
     }
@@ -117,9 +118,7 @@ class StructElementNode
     // A direct link to content, the integer is an mcid.
     if( Number.isInteger(kid) )
     {
-      if (this.tree.pageDict.objId !== pageObjId) {
-        return null;
-      }
+      if( this.tree.pageDict.objId !== pageObjId ) return null;
 
       return new StructElement({
         type: StructElementType.PAGE_CONTENT,
@@ -130,7 +129,7 @@ class StructElementNode
 
     // Find the dictionary for the kid.
     let kidDict; // Table 324
-    if( (kid instanceof Ref) )
+    if( kid instanceof Ref )
     {
       kidDict = <Dict>this.dict.xref!.fetch( kid );
     }
@@ -141,7 +140,7 @@ class StructElementNode
     if( !kidDict ) return null;
 
     const pageRef = kidDict.getRaw("Pg");
-    if( (pageRef instanceof Ref) )
+    if( pageRef instanceof Ref )
     {
       pageObjId = pageRef.toString();
     }
@@ -151,10 +150,8 @@ class StructElementNode
       : null;
     if (type === "MCR") 
     {
-      if (this.tree.pageDict.objId !== pageObjId) 
-      {
-        return null;
-      }
+      if( this.tree.pageDict.objId !== pageObjId ) return null;
+
       return new StructElement({
         type: StructElementType.STREAM_CONTENT,
         refObjId: (kidDict.getRaw("Stm") instanceof Ref)
@@ -167,12 +164,11 @@ class StructElementNode
 
     if( type === "OBJR" )
     {
-      if (this.tree.pageDict.objId !== pageObjId) {
-        return null;
-      }
+      if( this.tree.pageDict.objId !== pageObjId ) return null;
+
       return new StructElement({
         type: StructElementType.OBJECT,
-        refObjId: (kidDict.getRaw("Obj") instanceof Ref)
+        refObjId: kidDict.getRaw("Obj") instanceof Ref
           ? kidDict.getRaw("Obj")!.toString()
           : undefined,
         pageObjId,
@@ -271,20 +267,18 @@ export class StructTreePage
 
   addNode( dict:Dict, map:Map<Dict,StructElementNode>, level=0 )
   {
-    if (level > MAX_DEPTH) {
+    if (level > MAX_DEPTH) 
+    {
       warn("StructTree MAX_DEPTH reached.");
-      return null;
+      return undefined;
     }
 
-    if( map.has(dict) )
-    {
-      return map.get(dict);
-    }
+    if( map.has(dict) ) return map.get(dict);
 
     const element = new StructElementNode(this, dict);
     map.set(dict, element);
 
-    const parent = <Dict|undefined>dict.get("P");
+    const parent = <Dict | undefined>dict.get("P");
 
     if( !parent || isName(parent.get("Type"), "StructTreeRoot") )
     {
@@ -327,14 +321,14 @@ export class StructTreePage
       return true;
     }
 
-    if (!Array.isArray(obj)) {
-      return true;
-    }
+    if( !Array.isArray(obj) ) return true;
+
     let save = false;
     for( let i = 0; i < obj.length; i++ )
     {
       const kidRef = obj[i];
-      if (kidRef && kidRef.toString() === dict.objId) {
+      if (kidRef && kidRef.toString() === dict.objId) 
+      {
         this.nodes[i] = element;
         save = true;
       }
@@ -345,13 +339,13 @@ export class StructTreePage
   /**
    * Convert the tree structure into a simplifed object literal that can
    * be sent to the main thread.
-   * @return {Object}
    */
   get serializable()
   {
     function nodeToSerializable( node:StructElementNode, parent:StructTree, level=0 )
     {
-      if (level > MAX_DEPTH) {
+      if (level > MAX_DEPTH) 
+      {
         warn("StructTree too deep to be fully serialized.");
         return;
       }
@@ -369,20 +363,21 @@ export class StructTreePage
       {
         const kidElement =
           kid.type === StructElementType.ELEMENT ? kid.parentNode : null;
-        if (kidElement) {
+        if (kidElement) 
+        {
           nodeToSerializable(kidElement, obj, level + 1);
           continue;
         }
-        else if (
-          kid.type === StructElementType.PAGE_CONTENT ||
-          kid.type === StructElementType.STREAM_CONTENT
+        else if( kid.type === StructElementType.PAGE_CONTENT
+         || kid.type === StructElementType.STREAM_CONTENT
         ) {
           obj.children.push({
             type: "content",
             id: `page${kid.pageObjId}_mcid${kid.mcid}`,
           });
         }
-        else if (kid.type === StructElementType.OBJECT) {
+        else if( kid.type === StructElementType.OBJECT )
+        {
           obj.children.push({
             type: "object",
             id: kid.refObjId,

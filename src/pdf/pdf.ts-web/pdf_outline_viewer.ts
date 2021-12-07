@@ -17,13 +17,12 @@
  * limitations under the License.
  */
 
+import { createPromiseCap, PromiseCap } from "../../lib/promisecap.js";
 import { isObjectLike } from "../../lib/jslang.js";
 import { html } from "../../lib/dom.js";
 import { type ExplicitDest } from "../pdf.ts-src/core/catalog.js";
 import { Ref } from "../pdf.ts-src/core/primitives.js";
 import { type OutlineNode, PDFDocumentProxy } from "../pdf.ts-src/display/api.js";
-import { createPromiseCapability } from "../pdf.ts-src/pdf.js";
-import { type PromiseCapability } from "../pdf.ts-src/shared/util.js";
 import { BaseTreeViewer, type BaseTreeViewerCtorParms } from "./base_tree_viewer.js";
 import { PDFLinkService } from "./pdf_link_service.js";
 import { SidebarView } from "./ui_utils.js";
@@ -51,12 +50,12 @@ export class PDFOutlineViewer extends BaseTreeViewer
 {
   #outline:OutlineNode[] | undefined;
 
-  #pageNumberToDestHashCapability:PromiseCapability<Map<number, string> | undefined> | undefined;
+  #pageNumberToDestHashCapability:PromiseCap<Map<number, string> | undefined> | undefined;
   _currentPageNumber!:number;
   _sidebarView?:SidebarView;
   
   _isPagesLoaded!:boolean;
-  #currentOutlineItemCapability?:PromiseCapability<boolean> | undefined;
+  #currentOutlineItemCapability?:PromiseCap<boolean> | undefined;
 
   linkService:PDFLinkService;
 
@@ -117,7 +116,7 @@ export class PDFOutlineViewer extends BaseTreeViewer
   /** @implements */
   protected _dispatchEvent( outlineCount:number ) 
   {
-    this.#currentOutlineItemCapability = createPromiseCapability();
+    this.#currentOutlineItemCapability = createPromiseCap();
     if( outlineCount === 0
      || this._pdfDocument?.loadingParams.disableAutoFetch
     ) {
@@ -268,7 +267,7 @@ export class PDFOutlineViewer extends BaseTreeViewer
   /**
    * Find/highlight the current outline item, corresponding to the active page.
    */
-  #currentOutlineItem = async () =>
+  #currentOutlineItem = async() =>
   {
     if (!this._isPagesLoaded) 
     {
@@ -314,7 +313,7 @@ export class PDFOutlineViewer extends BaseTreeViewer
     {
       return this.#pageNumberToDestHashCapability.promise;
     }
-    this.#pageNumberToDestHashCapability = createPromiseCapability();
+    this.#pageNumberToDestHashCapability = createPromiseCap();
 
     const pageNumberToDestHash = new Map< number, string >(),
       pageNumberNesting = new Map();

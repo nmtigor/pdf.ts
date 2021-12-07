@@ -127,7 +127,8 @@ export class Toolbar
     this.#updateUIState(false);
   }
 
-  reset() {
+  reset() 
+  {
     this.pageNumber = 0;
     this.pageLabel = undefined;
     this.hasPageLabels = false;
@@ -138,15 +139,17 @@ export class Toolbar
     this.updateLoadingIndicatorState();
   }
 
-  #bindListeners = () =>
+  #bindListeners()
   {
     const { pageNumber, scaleSelect } = this.items;
     const self = this;
 
     // The buttons within the toolbar.
-    for (const { element, eventName } of this.buttons) {
+    for (const { element, eventName } of this.buttons) 
+    {
       element.addEventListener("click", evt => {
-        if (eventName !== null) {
+        if (eventName !== null) 
+        {
           this.eventBus.dispatch(eventName, { source: this });
         }
       });
@@ -163,9 +166,8 @@ export class Toolbar
     });
 
     scaleSelect.addEventListener("change", function () {
-      if (this.value === "custom") {
-        return;
-      }
+      if( this.value === "custom" ) return;
+
       self.eventBus.dispatch("scalechanged", {
         source: self,
         value: this.value,
@@ -195,31 +197,32 @@ export class Toolbar
 
   #updateUIState = ( resetNumPages=false ) =>
   {
-    if (!this._wasLocalized) {
-      // Don't update the UI state until we localize the toolbar.
-      return;
-    }
+    // Don't update the UI state until we localize the toolbar.
+    if( !this._wasLocalized ) return;
+
     const { pageNumber, pagesCount, pageScaleValue, pageScale, items } = this;
 
-    if (resetNumPages) {
-      if (this.hasPageLabels) {
+    if (resetNumPages) 
+    {
+      if (this.hasPageLabels) 
+      {
         items.pageNumber.type = "text";
       } 
       else {
         items.pageNumber.type = "number";
-        this.l10n.get("of_pages", { pagesCount: pagesCount+"" }).then(msg => {
+        this.l10n.get("of_pages", { pagesCount: <any>pagesCount }).then(msg => {
           items.numPages.textContent = msg;
         });
       }
-      items.pageNumber.max = pagesCount+"";
+      items.pageNumber.max = <any>pagesCount;
     }
 
     if( this.hasPageLabels )
     {
       items.pageNumber.value = this.pageLabel!;
       this.l10n.get("page_of_pages", { 
-        pageNumber: pageNumber+"",
-        pagesCount: pagesCount+"" 
+        pageNumber: <any>pageNumber,
+        pagesCount: <any>pagesCount 
       }).then(msg => {
         items.numPages.textContent = msg;
       });
@@ -235,7 +238,7 @@ export class Toolbar
     items.zoomIn.disabled = pageScale >= MAX_SCALE;
 
     this.l10n
-      .get("page_scale_percent", { scale: (Math.round(pageScale * 10000) / 100)+"" })
+      .get("page_scale_percent", { scale: <any>(Math.round(pageScale * 10000) / 100) })
       .then(msg => {
         let predefinedValueFound = false;
         const options = items.scaleSelect.options;
@@ -250,7 +253,8 @@ export class Toolbar
           options[i].selected = true;
           predefinedValueFound = true;
         }
-        if (!predefinedValueFound) {
+        if (!predefinedValueFound) 
+        {
           items.customScaleOption.textContent = msg;
           items.customScaleOption.selected = true;
         }

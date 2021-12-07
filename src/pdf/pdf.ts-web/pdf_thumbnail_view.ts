@@ -518,13 +518,13 @@ export class PDFThumbnailView implements IVisibleView
   get _thumbPageTitle()
   {
     return this.l10n.get("thumb_page_title", {
-      page: this.pageLabel ?? this.id+"",
+      page: this.pageLabel ?? <any>this.id,
     });
   }
 
   get _thumbPageCanvas() {
     return this.l10n.get("thumb_page_canvas", {
-      page: this.pageLabel ?? this.id+"",
+      page: this.pageLabel ?? <any>this.id,
     });
   }
 

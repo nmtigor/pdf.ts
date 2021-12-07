@@ -186,10 +186,8 @@ export class PDFImage
       {
         case "JPXDecode":
           const jpxImage = new JpxImage();
-          jpxImage.parseImageProperties( <JpxStream>image );
-          // jpxImage.parseImageProperties( image.stream );//kkkk bug?
-          image.reset();
-          // image.stream.reset();//kkkk bug?
+          jpxImage.parseImageProperties( <JpxStream>image.stream );
+          (<JpxStream>image.stream).reset();
 
           image.width = jpxImage.width;
           image.height = jpxImage.height;
@@ -213,7 +211,7 @@ export class PDFImage
     ) {
       warn(
         "PDFImage - using the Width/Height of the image data, " +
-          "rather than the image dictionary."
+        "rather than the image dictionary."
       );
       width = image.width!;
       height = image.height!;
@@ -269,8 +267,7 @@ export class PDFImage
             break;
           default:
             throw new Error(
-              `JPX images with ${image.numComps} ` +
-                "color components not supported."
+              `JPX images with ${image.numComps} color components not supported.`
             );
         }
       }
@@ -314,9 +311,7 @@ export class PDFImage
       this.smask = new PDFImage({
         xref,
         res,
-        image,
-        smask,
-        // image: smask,//kkkk bug?
+        image: <ImageStream>smask,
         isInline,
         pdfFunctionFactory,
         localColorSpaceCache,
@@ -336,9 +331,7 @@ export class PDFImage
           this.mask = new PDFImage({
             xref,
             res,
-            image,
-            mask,
-            // image: mask,//kkkk bug?
+            image: <ImageStream>mask,
             isInline,
             isMask: true,
             pdfFunctionFactory,
@@ -466,8 +459,8 @@ export class PDFImage
   {
     return Math.max(
       this.width,
-      this.smask?.width || 0,
-      (<PDFImage>this.mask).width || 0
+      (this.smask && this.smask.width) || 0,
+      (this.mask && (<PDFImage>this.mask).width) || 0
     );
   }
 
@@ -475,8 +468,8 @@ export class PDFImage
   {
     return Math.max(
       this.height,
-      this.smask?.height || 0,
-      (<PDFImage>this.mask).height || 0
+      (this.smask && this.smask.height) || 0,
+      (this.mask && (<PDFImage>this.mask).height) || 0
     );
   }
 

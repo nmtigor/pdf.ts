@@ -63,6 +63,7 @@ import { BaseStream } from "./base_stream.js";
 import { bidi, type BidiText } from "./bidi.js";
 import { XFAFactory } from "./xfa/factory.js";
 import { type XFAHTMLObj } from "./xfa/alias.js";
+import { CipherTransform } from "./crypto.js";
 /*81---------------------------------------------------------------------------*/
 
 type AnnotType =
@@ -100,7 +101,7 @@ export class AnnotationFactory
   ) {
     return Promise.all([
       pdfManager.ensureCatalog("acroForm"),
-      collectFields ? this._getPageIndex(xref, ref, pdfManager) : -1,
+      collectFields ? this.#getPageIndex(xref, ref, pdfManager) : -1,
     ]).then(([ acroForm, pageIndex ]) =>
       pdfManager.ensure(this, "_create", [
         xref,
@@ -167,7 +168,7 @@ export class AnnotationFactory
         }
         warn(
           `Unimplemented widget field type "${fieldType}", ` +
-            "falling back to base field type."
+          "falling back to base field type."
         );
         return new WidgetAnnotation(parameters);
 
@@ -233,7 +234,7 @@ export class AnnotationFactory
     }
   }
 
-  static async _getPageIndex( xref:XRef, ref:Ref, pdfManager:BasePdfManager )
+  static async #getPageIndex( xref:XRef, ref:Ref, pdfManager:BasePdfManager )
   {
     try {
       const annotDict = await xref.fetchIfRefAsync(ref);
@@ -247,7 +248,7 @@ export class AnnotationFactory
       ]);
       return pageIndex;
     } catch (ex) {
-      warn(`_getPageIndex: "${ex}".`);
+      warn(`#getPageIndex: "${ex}".`);
       return -1;
     }
   }
@@ -281,8 +282,8 @@ function getRgbColor( color:number[], defaultColor=new Uint8ClampedArray(3) )
 }
 
 export function getQuadPoints( dict:Dict, rect?:rect_t
-):TupleOf<AnnotPoint,4>[] | undefined {
-  if( !dict.has("QuadPoints") ) return undefined;
+):TupleOf<AnnotPoint,4>[] | null {
+  if( !dict.has("QuadPoints") ) return null;
 
   // The region is described as a number of quadrilaterals.
   // Each quadrilateral must consist of eight coordinates.
@@ -291,7 +292,7 @@ export function getQuadPoints( dict:Dict, rect?:rect_t
    || quadPoints.length === 0 
    || quadPoints.length % 8 > 0
   ) {
-    return undefined;
+    return null;
   }
 
   const quadPointsLists:AnnotPoint[][] = [];
@@ -313,7 +314,7 @@ export function getQuadPoints( dict:Dict, rect?:rect_t
       if( rect !== undefined 
        && (x < rect[0] || x > rect[2] || y < rect[1] || y > rect[3])
       ) {
-        return undefined;
+        return null;
       }
       quadPointsLists[i].push({ x, y });
     }
@@ -419,7 +420,7 @@ export type AnnotationData = {
   state?:string | undefined;
   stateModel?:string | undefined;
 
-  quadPoints?:TupleOf<AnnotPoint,4>[] | undefined;
+  quadPoints?:TupleOf<AnnotPoint,4>[] | null;
 
   /* WidgetAnnotation */
   fieldValue?:string | string[] | undefined;
@@ -497,7 +498,7 @@ export type SaveData = {
     value:string;
   }
 }
-export type SaveReturn = null | TupleOf<SaveData, 1|2>;
+export type SaveReturn = TupleOf<SaveData, 1|2>;
 
 export interface FieldObject
 {
@@ -554,7 +555,7 @@ export class Annotation
   /**
    * Check if a provided flag is set.
    *
-   * @param flag - Hexadecimal representation for an annotation characteristic
+   * @param flag Hexadecimal representation for an annotation characteristic
    * @see {@link shared/util.js}
    */
   hasFlag( flag:AnnotationFlag ) 
@@ -567,16 +568,13 @@ export class Annotation
     return !this._hasFlag(flags, AnnotationFlag.INVISIBLE)
         && !this._hasFlag(flags, AnnotationFlag.NOVIEW);
   }
-  get viewable() {
-    if( this.data.quadPoints === undefined )
-    {
-      return false;
-    }
-    if( <number>this.flags === 0 )
-    {
-      return true;
-    }
-    return this._isViewable(this.flags);
+  get viewable() 
+  {
+    if( this.data.quadPoints === null ) return false;
+
+    if( <number>this.flags === 0 ) return true;
+
+    return this._isViewable( this.flags );
   }
   /**
    * Check if the annotation must be displayed by taking into account
@@ -603,7 +601,7 @@ export class Annotation
   }
   get printable()
   {
-    if( this.data.quadPoints === undefined ) return false;
+    if( this.data.quadPoints === null ) return false;
 
     if( <number>this.flags === 0 ) return false;
 
@@ -614,6 +612,7 @@ export class Annotation
    * the value found in the annotationStorage which may have been set
    * through JS.
    *
+   * @final
    * @param annotationStorage Storage for annotation
    */
   mustBePrinted( annotationStorage?:AnnotStorageRecord )
@@ -925,8 +924,8 @@ export class Annotation
       "XObject",
       "Font",
     ]);
-    const bbox = <rect_t>appearanceDict.getArray("BBox") ?? [0, 0, 1, 1];
-    const matrix = <matrix_t>appearanceDict.getArray("Matrix") ?? [1, 0, 0, 1, 0, 0];
+    const bbox = <rect_t>appearanceDict.getArray("BBox") || [0, 0, 1, 1];
+    const matrix = <matrix_t>appearanceDict.getArray("Matrix") || [1, 0, 0, 1, 0, 0];
     const transform = getTransformMatrix(data.rect, bbox, matrix);
 
     return resourcesPromise.then(resources => {
@@ -955,7 +954,7 @@ export class Annotation
 
   async save( evaluator:PartialEvaluator, task:WorkerTask, 
     annotationStorage?:AnnotStorageRecord
-  ):Promise<SaveReturn> 
+  ):Promise<SaveReturn | null> 
   {
     return null;
   }
@@ -1015,6 +1014,7 @@ export class Annotation
    * Construct the (fully qualified) field name from the (partial) field
    * names of the field and its ancestors.
    *
+   * @final
    * @param dict Complete widget annotation dictionary
    */
    protected constructFieldName$( dict:Dict )
@@ -1036,7 +1036,8 @@ export class Annotation
     // Form the fully qualified field name by appending the partial name to
     // the parent's fully qualified name, separated by a period.
     const fieldName = [];
-    if (dict.has("T")) {
+    if (dict.has("T")) 
+    {
       fieldName.unshift(stringToPDFString( <string>dict.get("T")) );
     }
 
@@ -1060,11 +1061,13 @@ export class Annotation
         // in an infinite loop.
         break;
       }
-      if (loopDict.objId) {
+      if (loopDict.objId) 
+      {
         visited.put(loopDict.objId);
       }
 
-      if (loopDict.has("T")) {
+      if (loopDict.has("T")) 
+      {
         fieldName.unshift(stringToPDFString( <string>loopDict.get("T")) );
       }
     }
@@ -1512,7 +1515,7 @@ class WidgetAnnotation extends Annotation
       data.fieldValue = data.defaultFieldValue;
     }
 
-    data.alternativeText = stringToPDFString( <string>dict.get("TU") ?? "" );
+    data.alternativeText = stringToPDFString( <string>dict.get("TU") || "" );
 
     const defaultAppearance =
       getInheritableProperty({ dict, key: "DA" }) || params.acroForm.get("DA");
@@ -1660,23 +1663,21 @@ class WidgetAnnotation extends Annotation
 
   override async save( evaluator:PartialEvaluator, task:WorkerTask, 
     annotationStorage?:AnnotStorageRecord
-  ):Promise<SaveReturn> {
+  ):Promise<SaveReturn | null> {
     if( !annotationStorage ) return null;
 
-    const storageEntry = annotationStorage.get(this.data.id);
+    const storageEntry = annotationStorage.get( this.data.id );
     const value = storageEntry?.value;
-    if (value === this.data.fieldValue || value === undefined) {
+    if( value === this.data.fieldValue || value === null || value === undefined )
       return null;
-    }
 
     let appearance = await this._getAppearance(
       evaluator,
       task,
       annotationStorage
     );
-    if (appearance === undefined) {
-      return null;
-    }
+    if( appearance === undefined ) return null;
+
     const { xref } = evaluator;
 
     const dict = <Dict>xref.fetchIfRef(this.ref);
@@ -1690,7 +1691,7 @@ class WidgetAnnotation extends Annotation
     ];
 
     const xfa = {
-      path: stringToPDFString( <string>dict.get("T") ?? "" ),
+      path: stringToPDFString( <string>dict.get("T") || "" ),
       value: <string>value,
     };
 
@@ -1699,9 +1700,10 @@ class WidgetAnnotation extends Annotation
     AP.set("N", newRef);
 
     const encrypt = xref.encrypt;
-    let originalTransform = null;
-    let newTransform = null;
-    if (encrypt) {
+    let originalTransform:CipherTransform | undefined;
+    let newTransform:CipherTransform | undefined;
+    if( encrypt )
+    {
       originalTransform = encrypt.createCipherTransform(
         this.ref.num,
         this.ref.gen
@@ -2042,7 +2044,7 @@ class TextWidgetAnnotation extends WidgetAnnotation
     const dict = params.dict;
 
     // The field value is always a string.
-    if( !(typeof this.data.fieldValue === "string") ) 
+    if( typeof this.data.fieldValue !== "string" ) 
     {
       this.data.fieldValue = "";
     }
@@ -2070,7 +2072,7 @@ class TextWidgetAnnotation extends WidgetAnnotation
       !this.hasFieldFlag(AnnotationFieldFlag.MULTILINE) &&
       !this.hasFieldFlag(AnnotationFieldFlag.PASSWORD) &&
       !this.hasFieldFlag(AnnotationFieldFlag.FILESELECT) &&
-      this.data.maxLen !== null;
+      this.data.maxLen !== undefined;
   }
 
   override _getCombAppearance( defaultAppearance:string, font:Font | ErrorFont, 
@@ -2327,7 +2329,7 @@ class ButtonWidgetAnnotation extends WidgetAnnotation
 
   override async save( evaluator:PartialEvaluator, task:WorkerTask, 
     annotationStorage?:AnnotStorageRecord
-  ):Promise<SaveReturn> {
+  ):Promise<SaveReturn | null> {
     if( this.data.checkBox )
     {
       return this._saveCheckbox(evaluator, task, annotationStorage);
@@ -2342,9 +2344,9 @@ class ButtonWidgetAnnotation extends WidgetAnnotation
     return null;
   }
 
-  async _saveCheckbox( evaluator:PartialEvaluator, task:WorkerTask, 
+  _saveCheckbox( evaluator:PartialEvaluator, task:WorkerTask, 
     annotationStorage?:AnnotStorageRecord
-  ):Promise<SaveReturn> {
+  ):SaveReturn | null {
     if( !annotationStorage ) return null;
 
     const storageEntry = annotationStorage.get( this.data.id );
@@ -2352,16 +2354,13 @@ class ButtonWidgetAnnotation extends WidgetAnnotation
     if( value === undefined ) return null;
 
     const defaultValue = this.data.fieldValue === this.data.exportValue;
-    if (defaultValue === value) 
-    {
-      return null;
-    }
+    if( defaultValue === value ) return null;
 
     const dict = evaluator.xref.fetchIfRef(this.ref);
     if( !(dict instanceof Dict) ) return null;
 
     const xfa = {
-      path: stringToPDFString( <string>dict.get("T") ?? "" ),
+      path: stringToPDFString( <string>dict.get("T") || "" ),
       value: value ? this.data.exportValue! : "",
     };
 
@@ -2371,7 +2370,7 @@ class ButtonWidgetAnnotation extends WidgetAnnotation
     dict.set("M", `D:${getModificationDate()}`);
 
     const encrypt = evaluator.xref.encrypt;
-    let originalTransform = null;
+    let originalTransform:CipherTransform | undefined;
     if (encrypt) 
     {
       originalTransform = encrypt.createCipherTransform(
@@ -2387,9 +2386,9 @@ class ButtonWidgetAnnotation extends WidgetAnnotation
     return [{ ref: this.ref, data: buffer.join(""), xfa }];
   }
 
-  async _saveRadioButton( evaluator:PartialEvaluator, task:WorkerTask, 
+  _saveRadioButton( evaluator:PartialEvaluator, task:WorkerTask, 
     annotationStorage?:AnnotStorageRecord
-  ):Promise<SaveReturn> {
+  ):SaveReturn | null {
     if( !annotationStorage ) return null;
 
     const storageEntry = annotationStorage.get( this.data.id );
@@ -2403,12 +2402,12 @@ class ButtonWidgetAnnotation extends WidgetAnnotation
     if( !(dict instanceof Dict) ) return null;
 
     const xfa = {
-      path: stringToPDFString( <string>dict.get("T") ?? "" ),
+      path: stringToPDFString( <string>dict.get("T") || "" ),
       value: value ? this.data.buttonValue! : "",
     };
 
     const name = Name.get(value ? this.data.buttonValue! : "Off");
-    let parentBuffer = null;
+    let parentBuffer:string[] | undefined;
     const encrypt = evaluator.xref.encrypt;
 
     if( value )
@@ -2416,7 +2415,7 @@ class ButtonWidgetAnnotation extends WidgetAnnotation
       if( (this.parent instanceof Ref) )
       {
         const parent = <Dict>evaluator.xref.fetch( this.parent );
-        let parentTransform = null;
+        let parentTransform:CipherTransform | undefined;
         if (encrypt) 
         {
           parentTransform = encrypt.createCipherTransform(
@@ -2438,7 +2437,7 @@ class ButtonWidgetAnnotation extends WidgetAnnotation
     dict.set("AS", name);
     dict.set("M", `D:${getModificationDate()}`);
 
-    let originalTransform = null;
+    let originalTransform:CipherTransform | undefined;
     if (encrypt) 
     {
       originalTransform = encrypt.createCipherTransform(
@@ -2452,7 +2451,7 @@ class ButtonWidgetAnnotation extends WidgetAnnotation
     buffer.push("\nendobj\n");
 
     const newRefs:SaveReturn = [{ ref: this.ref, data: buffer.join(""), xfa }];
-    if( parentBuffer !== null )
+    if( parentBuffer !== undefined )
     {
       newRefs!.push({
         ref: <Ref>this.parent,
@@ -2545,7 +2544,7 @@ class ButtonWidgetAnnotation extends WidgetAnnotation
     }
 
     const yes =
-      this.data.fieldValue !== null && this.data.fieldValue !== "Off"
+      this.data.fieldValue !== undefined && this.data.fieldValue !== "Off"
         ? <string>this.data.fieldValue
         : "Yes";
 

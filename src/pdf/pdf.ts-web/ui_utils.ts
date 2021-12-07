@@ -173,7 +173,8 @@ export function scrollIntoView( element:HTMLElement,
   // hidden iframe or object). We have to scroll: if the offsetParent is not set
   // producing the error. See also animationStarted.
   let parent = <HTMLElement|null>element.offsetParent;
-  if (!parent) {
+  if (!parent) 
+  {
     console.error("offsetParent is not set -- cannot scroll");
     return;
   }
@@ -185,18 +186,21 @@ export function scrollIntoView( element:HTMLElement,
    (scrollMatches &&
     (parent.classList.contains("markedContent") ||
       getComputedStyle(parent).overflow === "hidden"))
-) {
+  ) {
     offsetY += parent.offsetTop;
     offsetX += parent.offsetLeft;
 
     parent = <HTMLElement|null>parent.offsetParent;
     if( !parent ) return; // no need to scroll
   }
-  if (spot) {
-    if (spot.top !== undefined) {
+  if (spot) 
+  {
+    if (spot.top !== undefined) 
+    {
       offsetY += spot.top;
     }
-    if (spot.left !== undefined) {
+    if (spot.left !== undefined) 
+    {
       offsetX += spot.left;
       parent.scrollLeft = offsetX;
     }

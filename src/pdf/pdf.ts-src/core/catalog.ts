@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+import { createPromiseCap } from "../../../lib/promisecap.js";
 import {
   clearPrimitiveCaches,
   Dict,
@@ -37,7 +38,6 @@ import {
 } from "./core_utils.js";
 import {
   type ActionEventType,
-  createPromiseCapability,
   createValidAbsoluteUrl,
   DocumentActionEventType,
   FormatError,
@@ -871,7 +871,8 @@ export class Catalog
     return pageLabels;
   }
 
-  get pageLayout() {
+  get pageLayout() 
+  {
     const obj = this.#catDict.get("PageLayout");
     // Purposely use a non-standard default value, rather than 'SinglePage', to
     // allow differentiating between `undefined` and /SinglePage since that does
@@ -1275,7 +1276,7 @@ export class Catalog
    */
   getPageDict( pageIndex:number ):Promise<[ Dict, Ref | undefined ]>
   {
-    const capability = createPromiseCapability<[Dict, Ref | undefined]>();
+    const capability = createPromiseCap<[Dict, Ref | undefined]>();
     const nodesToVisit = [ <Dict | Ref>this.#catDict.getRaw("Pages") ];
     const visitedNodes = new RefSet();
     const xref = this.xref;

@@ -383,32 +383,33 @@ export function collectActions( xref:XRef, dict:Dict, eventType:ActionEventTypes
     for( let i = additionalActionsDicts.length - 1; i >= 0; i-- )
     {
       const additionalActions = additionalActionsDicts[i];
-      if (!(additionalActions instanceof Dict)) {
-        continue;
-      }
+      if( !(additionalActions instanceof Dict) ) continue;
+
       for( const key of additionalActions.getKeys() )
       {
         const action = < ActionEventType >(<any>eventType)[key];
-        if (!action) {
-          continue;
-        }
+        if( !action ) continue;
+
         const actionDict = additionalActions.getRaw(key);
         const parents = new RefSet();
         const list:string[] = [];
         _collectJS(actionDict, xref, list, parents);
-        if (list.length > 0) {
+        if( list.length > 0 ) 
+        {
           actions[action] = list;
         }
       }
     }
   }
   // Collect the Action if any (we may have one on pushbutton).
-  if (dict.has("A")) {
+  if( dict.has("A") )
+  {
     const actionDict = dict.get("A");
     const parents = new RefSet();
     const list:string[] = [];
     _collectJS(actionDict, xref, list, parents);
-    if (list.length > 0) {
+    if( list.length > 0 )
+    {
       actions.Action = list;
     }
   }

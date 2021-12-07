@@ -22,12 +22,12 @@
  */
 
 import { isObjectLike } from "../../../lib/jslang.js";
-import { type TypedArray } from "../../../lib/alias.js";
+import { createPromiseCap, PromiseCap } from "../../../lib/promisecap.js";
+import { TypedArray } from "../../../lib/alias.js";
 import { assert } from "../../../lib/util/trace.js";
 import {
   AbortException,
   AnnotationMode,
-  createPromiseCapability,
   FontType,
   getVerbosityLevel,
   info,
@@ -38,7 +38,6 @@ import {
   MissingPDFException,
   PasswordException,
   PasswordResponses,
-  type PromiseCapability,
   RenderingIntentFlag,
   setVerbosityLevel,
   shadow,
@@ -404,7 +403,7 @@ export function getDocument(
     {
       throw new Error(
         "Invalid parameter in getDocument, " +
-          "need either string, URL, Uint8Array, or parameter object."
+        "need either string, URL, Uint8Array, or parameter object."
       );
     }
     if( !(<any>src).url && !(<any>src).data && !(<any>src).range ) 
@@ -430,7 +429,7 @@ export function getDocument(
         {
           try {
             // The full path is required in the 'url' field.
-            params[key] = new URL( value, window.location.toString() ).href;
+            params[key] = new URL( value, <any>window.location ).href;
             continue;
           } catch (ex) {
             warn(`Cannot create valid URL: "${ex}".`);
@@ -720,7 +719,7 @@ export class PDFDocumentLoadingTask
     return shadow(this, "idCounters", { doc: 0 });
   }
 
-  _capability = createPromiseCapability<PDFDocumentProxy>();
+  _capability = createPromiseCap<PDFDocumentProxy>();
   _transport:WorkerTransport | undefined;
   _worker:PDFWorker | undefined;
 
@@ -796,7 +795,7 @@ type ProgressiveDoneListener = () => void;
 /**
  * Abstract class to support range requests file loading.
  */
-export abstract class PDFDataRangeTransport 
+export class PDFDataRangeTransport 
 {
   #rangeListeners:RangeListener[] = [];
   addRangeListener( listener:RangeListener ) { this.#rangeListeners.push(listener); }
@@ -810,7 +809,7 @@ export abstract class PDFDataRangeTransport
   #progressiveDoneListeners:ProgressiveDoneListener[] = [];
   addProgressiveDoneListener( listener:ProgressiveDoneListener ) { this.#progressiveDoneListeners.push(listener); }
 
-  #readyCapability = createPromiseCapability();
+  #readyCapability = createPromiseCap();
 
   constructor( 
     public length:number, 
@@ -859,7 +858,10 @@ export abstract class PDFDataRangeTransport
     this.#readyCapability.resolve();
   }
 
-  abstract requestDataRange( begin:number, end:number ):void;
+  requestDataRange( begin:number, end:number ):void
+  {
+    assert(0,"Abstract method PDFDataRangeTransport.requestDataRange");
+  }
 
   abort() {}
 }
@@ -1253,6 +1255,7 @@ interface GetViewportParms
 {
   /**
    * The desired scale of the viewport.
+   * In CSS unit.
    */
   scale:number;
 
@@ -1418,7 +1421,7 @@ interface GetAnnotationsParms
    * can be 'display' (viewable annotations), 'print' (printable annotations),
    * or 'any' (all annotations). The default value is 'display'.
    */
-  intent:AnnotIntent | undefined;
+  intent:Intent | undefined;
 }
 
 export interface ImageLayer
@@ -1579,8 +1582,8 @@ interface StructTreeContent
 interface IntentState
 {
   streamReaderCancelTimeout:number | undefined;
-  displayReadyCapability?:PromiseCapability<boolean>;
-  opListReadCapability?:PromiseCapability<OpListIR>;
+  displayReadyCapability?:PromiseCap<boolean>;
+  opListReadCapability?:PromiseCap<OpListIR>;
   operatorList?:OpListIR;
   streamReader:ReadableStreamDefaultReader< 
     ActionSinkchunk<Thread.main> 
@@ -1601,13 +1604,13 @@ interface AbortOperatorListParms
 export type PDFObjs =
  | ImgData
  | ShadingPatternIR
- | undefined
 ;
 
 interface IntentArgs
 {
   renderingIntent:RenderingIntentFlag;
   cacheKey:string;
+  isOpList?:boolean;
 }
 
 /**
@@ -1629,7 +1632,7 @@ export class PDFPageProxy
 
   _pdfBug:boolean;
   commonObjs:PDFObjects<PDFCommonObjs>;
-  objs = new PDFObjects<PDFObjs>();
+  objs = new PDFObjects<PDFObjs | undefined>();
 
   cleanupAfterRender = false;
   _structTreePromise:Promise< StructTree | undefined > | undefined;
@@ -1710,7 +1713,7 @@ export class PDFPageProxy
   }
 
   /**
-   * @param params - Annotation parameters.
+   * @param params Annotation parameters.
    * @return A promise that is resolved with an
    *   {Array} of the annotation objects.
    */
@@ -1842,7 +1845,7 @@ export class PDFPageProxy
     // was never requested before. Make the request and create the promise.
     if( !intentState.displayReadyCapability )
     {
-      intentState.displayReadyCapability = createPromiseCapability<boolean>();
+      intentState.displayReadyCapability = createPromiseCap<boolean>();
       intentState.operatorList = {
         fnArray: [],
         argsArray: [],
@@ -1968,7 +1971,7 @@ export class PDFPageProxy
     {
       opListTask = Object.create(null);
       opListTask.operatorListChanged = operatorListChanged;
-      intentState!.opListReadCapability = createPromiseCapability();
+      intentState!.opListReadCapability = createPromiseCap();
       (intentState!.renderTasks ||= new Set()).add(opListTask);
       intentState!.operatorList = {
         fnArray: [],
@@ -2526,7 +2529,7 @@ export class PDFWorker
   postMessageTransfers = true;
   verbosity:VerbosityLevel;
 
-  #readyCapability = createPromiseCapability();
+  #readyCapability = createPromiseCap();
   /**
    * Promise for worker initialization completion.
    */
@@ -2602,7 +2605,7 @@ export class PDFWorker
           if( !isSameOrigin(window.location.href, workerSrc) )
           {
             workerSrc = PDFWorkerUtil.createCDNWrapper!(
-              new URL( workerSrc, window.location.toString() ).href
+              new URL( workerSrc, <any>window.location ).href
             );
           }
         // #endif
@@ -2627,7 +2630,7 @@ export class PDFWorker
         };
 
         const onWorkerError = ( evt:Event ) => {
-          // console.log(evt);
+          console.error(evt);
           if( !this.#webWorker )
           {
             // Worker failed to initialize due to an error. Clean up and fall
@@ -2821,7 +2824,7 @@ export class PDFWorker
   // Loads worker code into the main-thread.
   static get _setupFakeWorkerGlobal() 
   {
-    const loader = async ():Promise<typeof WorkerMessageHandler> => {
+    const loader = async():Promise<typeof WorkerMessageHandler> => {
       const mainWorkerMessageHandler = this._mainThreadWorkerMessageHandler;
 
       if (mainWorkerMessageHandler) 
@@ -2890,8 +2893,8 @@ class WorkerTransport
   StandardFontDataFactory;
 
   destroyed = false;
-  destroyCapability?:PromiseCapability;
-  _passwordCapability?:PromiseCapability<{password:string}>;
+  destroyCapability?:PromiseCap;
+  _passwordCapability?:PromiseCap<{password:string}>;
 
   #networkStream:IPDFStream | undefined;
   #fullReader?:IPDFStreamReader;
@@ -2899,7 +2902,7 @@ class WorkerTransport
 
   pageCache:(PDFPageProxy | undefined)[] = [];
   pagePromises:Promise<PDFPageProxy>[] = [];
-  downloadInfoCapability = createPromiseCapability<{length:number}>();
+  downloadInfoCapability = createPromiseCap<{length:number}>();
 
   #numPages?:number;
 
@@ -3001,7 +3004,7 @@ class WorkerTransport
     }
 
     this.destroyed = true;
-    this.destroyCapability = createPromiseCapability();
+    this.destroyCapability = createPromiseCap();
 
     if (this._passwordCapability) 
     {
@@ -3103,7 +3106,7 @@ class WorkerTransport
     });
 
     messageHandler.on("ReaderHeadersReady", () => {
-      const headersCapability = createPromiseCapability<ReaderHeaders>();
+      const headersCapability = createPromiseCap<ReaderHeaders>();
       const fullReader = this.#fullReader!;
       fullReader.headersReady.then(() => {
         // If stream or range are disabled, it's our only way to report
@@ -3220,7 +3223,7 @@ class WorkerTransport
     });
 
     messageHandler.on("PasswordRequest", exception => {
-      this._passwordCapability = createPromiseCapability<{password:string}>();
+      this._passwordCapability = createPromiseCap<{password:string}>();
 
       if (loadingTask.onPassword) {
         const updatePassword = ( password:string ) => {
@@ -3639,7 +3642,7 @@ class WorkerTransport
 
 interface Objs_<T>
 {
-  capability:PromiseCapability<T>;
+  capability:PromiseCap<T>;
   data?:T;
   resolved:boolean;
 }
@@ -3664,7 +3667,7 @@ export class PDFObjects<T>
       return this.#objs[objId];
     }
     return (this.#objs[objId] = {
-      capability: createPromiseCapability(),
+      capability: createPromiseCap(),
       // data: null,
       resolved: false,
     });
@@ -3774,7 +3777,7 @@ interface InternalRenderTaskCtorParms
 {
   callback:( error?:unknown ) => void;
   params:Params_IRTCtorParms;
-  objs:PDFObjects<PDFObjs>;
+  objs:PDFObjects<PDFObjs | undefined>;
   commonObjs:PDFObjects< PDFCommonObjs >;
   operatorList:OpListIR;
   pageIndex:number;
@@ -3815,7 +3818,7 @@ export class InternalRenderTask
   graphicsReady = false;
   _useRequestAnimationFrame;
   cancelled = false;
-  capability = createPromiseCapability();
+  capability = createPromiseCap();
   task;
   _canvas;
 
@@ -3851,7 +3854,7 @@ export class InternalRenderTask
     this._useRequestAnimationFrame =
       useRequestAnimationFrame === true && typeof window !== "undefined";
     // this.cancelled = false;
-    // this.capability = createPromiseCapability();
+    // this.capability = createPromiseCap();
     this.task = new RenderTask(this);
     this._canvas = params.canvasContext.canvas;
   }
@@ -3976,7 +3979,7 @@ export class InternalRenderTask
     }
   }
 
-  _next = async () =>
+  _next = async() =>
   {
     if( this.cancelled ) return;
 

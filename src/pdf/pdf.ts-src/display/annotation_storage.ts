@@ -21,6 +21,7 @@ import { objectFromMap } from "../shared/util.js";
 import { 
   type ASVKey,
   type AnnotStorageValue,
+  AnnotStorageRecord,
 } from "./annotation_layer.js";
 /*81---------------------------------------------------------------------------*/
 
@@ -29,7 +30,7 @@ import {
  */
 export class AnnotationStorage 
 {
-  _storage = new Map<string, AnnotStorageValue>();
+  _storage:AnnotStorageRecord = new Map<string, AnnotStorageValue>();
   get size() { return this._storage.size; }
 
   _timeStamp = Date.now();

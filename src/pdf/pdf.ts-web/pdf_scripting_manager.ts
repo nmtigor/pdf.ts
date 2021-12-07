@@ -17,7 +17,8 @@
  * limitations under the License.
  */
 
-import { createPromiseCapability, type PromiseCapability, shadow } from "../pdf.ts-src/shared/util.js";
+import { createPromiseCap, PromiseCap } from "../../lib/promisecap.js";
+import { shadow } from "../pdf.ts-src/shared/util.js";
 import { apiPageLayoutToViewerModes, EventBus, type EventMap, PageLayout } from "./ui_utils.js";
 import { RenderingStates } from "./pdf_rendering_queue.js";
 import { PDFDocumentProxy } from "../pdf.ts-src/display/api.js";
@@ -71,9 +72,9 @@ export class PDFScriptingManager
   #pdfViewer?:PDFViewer;
   setViewer( pdfViewer:PDFViewer ) { this.#pdfViewer = pdfViewer; }
   
-  #closeCapability?:PromiseCapability | undefined;
+  #closeCapability?:PromiseCap | undefined;
 
-  #destroyCapability?:PromiseCapability;
+  #destroyCapability?:PromiseCap;
   get destroyPromise() { return this.#destroyCapability?.promise || undefined; }
 
   _scripting:IScripting | undefined;
@@ -102,11 +103,6 @@ export class PDFScriptingManager
     // The default viewer already handles adding/removing of DOM events,
     // hence limit this to only the viewer components.
     // #if COMPONENTS
-      // if (
-      //   typeof PDFJSDev !== "undefined" &&
-      //   PDFJSDev.test("COMPONENTS") &&
-      //   !this.#scriptingFactory
-      // ) {
       if( !this.#scriptingFactory )
       {
         window.addEventListener("updatefromsandbox", event => {
@@ -141,9 +137,10 @@ export class PDFScriptingManager
       await this.#destroyScripting();
       return;
     }
-    if (pdfDocument !== this.#pdfDocument) {
-      return; // The document was closed while the data resolved.
-    }
+
+    // The document was closed while the data resolved.
+    if( pdfDocument !== this.#pdfDocument ) return; 
+
     try {
       this._scripting = this.#createScripting();
     } catch (error) {
@@ -196,16 +193,19 @@ export class PDFScriptingManager
       this.#mouseState.isDown = false;
     });
 
-    for (const [name, listener] of this.#internalEvents) {
+    for (const [name, listener] of this.#internalEvents) 
+    {
       this.#eventBus._on(name, listener);
     }
-    for (const [name, listener] of this.#domEvents) {
+    for (const [name, listener] of this.#domEvents) 
+    {
       window.addEventListener(name, listener);
     }
 
     try {
       const docProperties = await this.#getDocProperties();
-      if (pdfDocument !== this.#pdfDocument) {
+      if (pdfDocument !== this.#pdfDocument) 
+      {
         return; // The document was closed while the properties resolved.
       }
 
@@ -241,7 +241,8 @@ export class PDFScriptingManager
 
     // Defer this slightly, to ensure that scripting is *fully* initialized.
     Promise.resolve().then(() => {
-      if (pdfDocument === this.#pdfDocument) {
+      if (pdfDocument === this.#pdfDocument) 
+      {
         this._ready = true;
       }
     });
@@ -279,29 +280,30 @@ export class PDFScriptingManager
     });
   }
 
-  get ready() {
-    return this._ready;
-  }
+  get ready() { return this._ready; }
 
-  get #internalEvents() {
+  get #internalEvents() 
+  {
     return shadow( this, "#internalEvents", 
-      new Map< InternalEventName, InternalListenerMap[InternalEventName] >()
+      new Map<InternalEventName, InternalListenerMap[InternalEventName]>()
     );
   }
 
-  get #domEvents() {
+  get #domEvents() 
+  {
     return shadow( this, "#domEvents", 
-      new Map< "mousedown"|"mouseup", ( event:MouseEvent ) => void >()
+      new Map<"mousedown"|"mouseup", ( event:MouseEvent ) => void>()
     );
   }
 
-  get #pageOpenPending() {
+  get #pageOpenPending() 
+  {
     return shadow(this, "#pageOpenPending", new Set<number>());
   }
 
   get #visitedPages()
   {
-    return shadow( this, "#visitedPages", new Map< number, Promise<void> | null >() );
+    return shadow( this, "#visitedPages", new Map<number, Promise<void> | null>() );
   }
 
   async #updateFromSandbox( detail:EventMap["updatefromsandbox"]["detail"] )
@@ -399,28 +401,31 @@ export class PDFScriptingManager
     const pdfDocument = this.#pdfDocument,
       visitedPages = this.#visitedPages;
 
-    if (initialize) {
-      this.#closeCapability = createPromiseCapability();
+    if (initialize) 
+    {
+      this.#closeCapability = createPromiseCap();
     }
-    if (!this.#closeCapability) {
-      return; // Scripting isn't fully initialized yet.
-    }
+
+    // Scripting isn't fully initialized yet.
+    if( !this.#closeCapability ) return; 
+
     const pageView = this.#pdfViewer!.getPageView( /* index = */ pageNumber - 1 );
 
-    if (pageView?.renderingState !== RenderingStates.FINISHED) {
+    if (pageView?.renderingState !== RenderingStates.FINISHED) 
+    {
       this.#pageOpenPending.add(pageNumber);
       return; // Wait for the page to finish rendering.
     }
     this.#pageOpenPending.delete(pageNumber);
 
-    const actionsPromise = (async () => {
+    const actionsPromise = (async() => {
       // Avoid sending, and thus serializing, the `actions` data more than once.
       const actions = await (!visitedPages.has(pageNumber)
         ? pageView.pdfPage?.getJSActions()
         : null);
-      if (pdfDocument !== this.#pdfDocument) {
-        return; // The document was closed while the actions resolved.
-      }
+
+      // The document was closed while the actions resolved.
+      if( pdfDocument !== this.#pdfDocument ) return; 
 
       await this._scripting?.dispatchEventInSandbox({
         id: "page",
@@ -437,23 +442,22 @@ export class PDFScriptingManager
     const pdfDocument = this.#pdfDocument,
       visitedPages = this.#visitedPages;
 
-    if (!this.#closeCapability) {
-      return; // Scripting isn't fully initialized yet.
-    }
-    if (this.#pageOpenPending.has(pageNumber)) {
-      return; // The page is still rendering; no "PageOpen" event dispatched.
-    }
+    // Scripting isn't fully initialized yet.
+    if( !this.#closeCapability ) return; 
+
+    // The page is still rendering; no "PageOpen" event dispatched.
+    if( this.#pageOpenPending.has(pageNumber) ) return; 
+
     const actionsPromise = visitedPages.get(pageNumber);
-    if (!actionsPromise) {
-      return; // The "PageClose" event must be preceded by a "PageOpen" event.
-    }
+    // The "PageClose" event must be preceded by a "PageOpen" event.
+    if( !actionsPromise ) return; 
+
     visitedPages.set(pageNumber, null);
 
     // Ensure that the "PageOpen" event is dispatched first.
     await actionsPromise;
-    if (pdfDocument !== this.#pdfDocument) {
-      return; // The document was closed while the actions resolved.
-    }
+    // The document was closed while the actions resolved.
+    if( pdfDocument !== this.#pdfDocument ) return; 
 
     await this._scripting?.dispatchEventInSandbox({
       id: "page",
@@ -468,7 +472,7 @@ export class PDFScriptingManager
    *   format in `PDFViewerApplication._scriptingDocProperties`.
    * @private
    */
-  #getDocProperties = async () =>
+  #getDocProperties = async() =>
   {
     if( this.#docPropertiesLookup )
     {
@@ -484,9 +488,10 @@ export class PDFScriptingManager
 
   #createScripting = () =>
   {
-    this.#destroyCapability = createPromiseCapability();
+    this.#destroyCapability = createPromiseCap();
 
-    if (this._scripting) {
+    if (this._scripting) 
+    {
       throw new Error("#createScripting: Scripting already exists.");
     }
     if( this.#scriptingFactory )
@@ -505,7 +510,8 @@ export class PDFScriptingManager
 
   async #destroyScripting()
   {
-    if (!this._scripting) {
+    if (!this._scripting) 
+    {
       this.#pdfDocument = undefined;
 
       this.#destroyCapability?.resolve();
@@ -530,12 +536,14 @@ export class PDFScriptingManager
       await this._scripting.destroySandbox();
     } catch (ex) {}
 
-    for (const [name, listener] of this.#internalEvents) {
+    for (const [name, listener] of this.#internalEvents) 
+    {
       this.#eventBus._off(name, listener);
     }
     this.#internalEvents.clear();
 
-    for (const [name, listener] of this.#domEvents) {
+    for (const [name, listener] of this.#domEvents) 
+    {
       window.removeEventListener(name, listener);
     }
     this.#domEvents.clear();

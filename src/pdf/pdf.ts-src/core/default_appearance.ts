@@ -32,7 +32,8 @@ class DefaultAppearanceEvaluator extends EvaluatorPreprocessor
     super( new StringStream(str) );
   }
 
-  parse() {
+  parse() 
+  {
     const operation = {
       fn: 0,
       args: <ObjNoCmd[]>[],
@@ -44,13 +45,14 @@ class DefaultAppearanceEvaluator extends EvaluatorPreprocessor
     };
 
     try {
-      while (true) {
+      while( true )
+      {
         operation.args.length = 0; // Ensure that `args` it's always reset.
 
-        if (!this.read(operation)) {
-          break;
-        }
-        if (this.savedStatesDepth !== 0) {
+        if( !this.read(operation) ) break;
+
+        if (this.savedStatesDepth !== 0) 
+        {
           continue; // Don't get info in save/restore sections.
         }
         const { fn, args } = operation;
@@ -63,7 +65,8 @@ class DefaultAppearanceEvaluator extends EvaluatorPreprocessor
             {
               result.fontName = fontName.name;
             }
-            if (typeof fontSize === "number" && fontSize > 0) {
+            if (typeof fontSize === "number" && fontSize > 0) 
+            {
               result.fontSize = fontSize;
             }
             break;

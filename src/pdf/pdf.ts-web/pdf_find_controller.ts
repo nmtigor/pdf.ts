@@ -17,9 +17,8 @@
  * limitations under the License.
  */
 
+import { createPromiseCap, PromiseCap } from "../../lib/promisecap.js";
 import { PDFDocumentProxy, type TextItem } from "../pdf.ts-src/display/api.js";
-import { createPromiseCapability } from "../pdf.ts-src/pdf.js";
-import { type PromiseCapability } from "../pdf.ts-src/shared/util.js";
 import { type IPDFLinkService } from "./interfaces.js";
 import { getCharacterType } from "./pdf_find_utils.js";
 import { EventBus, scrollIntoView } from "./ui_utils.js";
@@ -193,7 +192,7 @@ export class PDFFindController
   #dirtyMatch!:boolean;
   #findTimeout?:number | undefined;
 
-  _firstPageCapability!:PromiseCapability;
+  _firstPageCapability!:PromiseCap;
 
   _rawQuery?:string;
   #normalizedQuery?:string;
@@ -363,7 +362,7 @@ export class PDFFindController
     clearTimeout(this.#findTimeout);
     this.#findTimeout = undefined;
 
-    this._firstPageCapability = createPromiseCapability();
+    this._firstPageCapability = createPromiseCap();
   }
 
   /**
@@ -641,7 +640,7 @@ export class PDFFindController
     let promise = Promise.resolve();
     for (let i = 0, ii = this.#linkService.pagesCount; i < ii; i++) 
     {
-      const extractTextCapability = createPromiseCapability<number>();
+      const extractTextCapability = createPromiseCap<number>();
       this.#extractTextPromises[i] = extractTextCapability.promise;
 
       promise = promise.then(() => {

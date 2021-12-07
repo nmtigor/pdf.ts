@@ -204,7 +204,7 @@ export class PDFLayerViewer extends BaseTreeViewer
     this.finishRendering$(fragment, layersCount, hasAnyNesting);
   }
 
-  #resetLayers = async () =>
+  #resetLayers = async() =>
   {
     if( !this.#optionalContentConfig ) return;
 

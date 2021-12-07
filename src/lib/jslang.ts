@@ -34,7 +34,9 @@ function eq_impl( lhs_x:unknown, rhs_x:unknown ):boolean
       "There is element referencing its ancestor.", import.meta
     );
   // #endif
-  if( lhs_x === rhs_x ) return true;
+  if( lhs_x === rhs_x
+   || Number.isNaN(<any>lhs_x) && Number.isNaN(<any>rhs_x) //! Notice, `NaN === NaN` is false.
+  ) return true;
 
   if( Array.isArray(lhs_x) )
   {

@@ -68,7 +68,7 @@ export const DefaultFileReaderFactory = DOMFileReaderFactory;
 //   ? NodeFileReaderFactory
 //   : DOMFileReaderFactory;
 
-interface BuildGetDocumentParamsOptions
+export interface BuildGetDocumentParamsOptions
 {
   disableFontFace?:boolean;
   docBaseUrl?:string;
@@ -77,6 +77,8 @@ interface BuildGetDocumentParamsOptions
   pdfBug?:boolean;
   stopAtErrors?:boolean;
   worker?:PDFWorker;
+
+  withCredentials?:boolean;
 }
 
 export function buildGetDocumentParams( filename:string, options?:BuildGetDocumentParamsOptions )

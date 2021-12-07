@@ -56,9 +56,9 @@ export abstract class XfaLayer
     switch (element.name) 
     {
       case "textarea":
-        if( storedData.value !== undefined ) 
+        if( storedData.value !== null && storedData.value !== undefined ) 
         {
-          html.textContent = storedData.value+"";
+          html.textContent = <any>storedData.value;
         }
         if( intent === "print" ) break;
 
@@ -72,7 +72,7 @@ export abstract class XfaLayer
         ) {
           if (storedData.value === element.attributes!.xfaOn) 
           {
-            html.setAttribute( "checked", true+"" );
+            html.setAttribute( "checked", <any>true );
           }
           else if( storedData.value === element.attributes!.xfaOff )
           {
@@ -94,9 +94,9 @@ export abstract class XfaLayer
           });
         } 
         else {
-          if( storedData.value !== undefined ) 
+          if( storedData.value !== null && storedData.value !== undefined ) 
           {
-            html.setAttribute( "value", storedData.value+"" );
+            html.setAttribute( "value", <any>storedData.value );
           }
           if( intent === "print" ) break;
 
@@ -106,7 +106,7 @@ export abstract class XfaLayer
         }
         break;
       case "select":
-        if( storedData.value !== undefined ) 
+        if( storedData.value !== null && storedData.value !== undefined ) 
         {
           for( const option of element.children! ) 
           {
@@ -309,7 +309,7 @@ export abstract class XfaLayer
     for (const el of rootDiv.querySelectorAll(
       ".xfaNonInteractive input, .xfaNonInteractive textarea"
     )) {
-      el.setAttribute( "readOnly", true+"" );
+      el.setAttribute( "readOnly", <any>true );
     }
 
     return {

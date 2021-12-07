@@ -19,7 +19,7 @@
 
 import { type Func } from "../../../lib/alias.js";
 import { assert } from "../../../lib/util/trace.js";
-import { type ImageLayer, type PDFCommonObjs, PDFObjects, type PDFObjs }  from "./api.js";
+import { ImageLayer, PDFCommonObjs, PDFObjects, PDFObjs }  from "./api.js";
 import {
   FONT_IDENTITY_MATRIX,
   IDENTITY_MATRIX,
@@ -1350,7 +1350,7 @@ export class CanvasGraphics
   constructor(
     canvasCtx:C2D,
     commonObjs:PDFObjects<PDFCommonObjs>,
-    objs:PDFObjects<PDFObjs>,
+    objs:PDFObjects<PDFObjs | undefined>,
     canvasFactory:BaseCanvasFactory,
     imageLayer?:ImageLayer,
     optionalContentConfig?:OptionalContentConfig,

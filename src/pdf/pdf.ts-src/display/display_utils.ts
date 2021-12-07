@@ -161,7 +161,7 @@ interface PageViewportParms
   /**
    * The xMin, yMin, xMax and yMax coordinates.
    */
-  viewBox:number[];
+  viewBox:rect_t;
 
   /**
    * The scale of the viewport.
@@ -230,9 +230,21 @@ interface PageViewportCloneParms
  */
 export class PageViewport 
 {
-  viewBox:number[];
+  /**
+   * In PDF unit.
+   */
+  viewBox:rect_t;
+
+  /**
+   * To CSS unit.
+   */
   scale:number;
+
   rotation:number;
+  
+  /**
+   * In CSS unit.
+   */
   offsetX:number;
   offsetY:number;
 
@@ -264,7 +276,7 @@ export class PageViewport
     // Normalize the rotation, by clamping it to the [0, 360) range.
     rotation %= 360;
     if( rotation < 0 ) rotation += 360;
-    switch (rotation) 
+    switch (rotation) // clockwise, with flip first
     {
       case 180:
         rotateA = -1;
@@ -346,7 +358,7 @@ export class PageViewport
   }:PageViewportCloneParms={}
   ):PageViewport {
     return new PageViewport({
-      viewBox: this.viewBox.slice(),
+      viewBox: <rect_t>this.viewBox.slice(),
       scale,
       rotation,
       offsetX,
@@ -741,7 +753,7 @@ export class PDFDateString
 export function getXfaPageViewport( xfaPage:XFAElObj, { scale = 1, rotation = 0 }) 
 {
   const { width, height } = <{width:string;height:string;}>xfaPage.attributes!.style;
-  const viewBox = [0, 0, parseInt(width), parseInt(height)];
+  const viewBox:rect_t = [0, 0, parseInt(width), parseInt(height)];
 
   return new PageViewport({
     viewBox,

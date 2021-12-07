@@ -28,7 +28,7 @@ import { XRef } from "./xref.js";
 import { BaseStream } from "./base_stream.js";
 /*81---------------------------------------------------------------------------*/
 
-export function writeDict( dict:Dict, buffer:string[], transform:CipherTransform | null )
+export function writeDict( dict:Dict, buffer:string[], transform?:CipherTransform )
 {
   buffer.push("<<");
   for( const key of dict.getKeys() )
@@ -39,18 +39,19 @@ export function writeDict( dict:Dict, buffer:string[], transform:CipherTransform
   buffer.push(">>");
 }
 
-function writeStream( stream:BaseStream, buffer:string[], transform:CipherTransform | null )
+function writeStream( stream:BaseStream, buffer:string[], transform?:CipherTransform )
 {
   writeDict( stream.dict!, buffer, transform );
   buffer.push(" stream\n");
   let string = stream.getString();
-  if (transform !== null) {
+  if( transform !== undefined ) 
+  {
     string = transform.encryptString(string);
   }
   buffer.push(string, "\nendstream\n");
 }
 
-function writeArray( array:(Obj | undefined)[], buffer:string[], transform:CipherTransform | null )
+function writeArray( array:(Obj | undefined)[], buffer:string[], transform?:CipherTransform )
 {
   buffer.push("[");
   let first = true;
@@ -86,7 +87,7 @@ function numberToString( value:number )
   return value.toFixed(2);
 }
 
-function writeValue( value:Obj | undefined, buffer:string[], transform:CipherTransform | null )
+function writeValue( value:Obj | undefined, buffer:string[], transform?:CipherTransform )
 {
   if( value instanceof Name )
   {
@@ -102,7 +103,8 @@ function writeValue( value:Obj | undefined, buffer:string[], transform:CipherTra
   }
   else if( typeof value === "string" )
   {
-    if (transform !== null) {
+    if( transform !== undefined ) 
+    {
       value = transform.encryptString(value);
     }
     buffer.push(`(${escapeString(value)})`);
@@ -123,7 +125,7 @@ function writeValue( value:Obj | undefined, buffer:string[], transform:CipherTra
   {
     writeStream( value, buffer, transform );
   }
-  else if (value === null) 
+  else if( value === null || value === undefined )
   {
     buffer.push("null");
   } 
@@ -239,7 +241,7 @@ function updateXFA({
     acroForm!.set("XFA", newXfa);
 
     const encrypt = xref.encrypt;
-    let transform = null;
+    let transform:CipherTransform | undefined;
     if (encrypt) 
     {
       transform = encrypt.createCipherTransform(
@@ -392,7 +394,7 @@ export function incrementalUpdate({
   newXref.set("Length", tableLength);
 
   buffer.push(`${refForXrefTable.num} ${refForXrefTable.gen} obj\n`);
-  writeDict(newXref, buffer, null);
+  writeDict( newXref, buffer );
   buffer.push(" stream\n");
 
   const bufferLen = buffer.reduce((a, str) => a + str.length, 0);

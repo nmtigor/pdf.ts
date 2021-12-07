@@ -123,7 +123,7 @@ console.log("%c>>>>>>> test writeDict() >>>>>>>",`color:${css_1}`);
     dict.set("NullVal", null);
 
     const buffer:string[] = [];
-    writeDict(dict, buffer, null);
+    writeDict( dict, buffer );
 
     const expected =
       "<< /A /B /B 123 456 R /C 789 /D (hello world) " +
@@ -144,7 +144,7 @@ console.log("%c>>>>>>> test writeDict() >>>>>>>",`color:${css_1}`);
     dict.set("C", Name.get("he\xfello\xff"));
 
     const buffer:string[] = [];
-    writeDict(dict, buffer, null);
+    writeDict( dict, buffer );
 
     const expected = "<< /#feA#23 /hello /B /#23hello /C /he#fello#ff>>";
 

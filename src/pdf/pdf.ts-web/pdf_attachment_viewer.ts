@@ -17,9 +17,9 @@
  * limitations under the License.
  */
 
+import { createPromiseCap, PromiseCap } from "../../lib/promisecap.js";
 import { html } from "../../lib/dom.js";
-import { createPromiseCapability, getFilenameFromUrl } from "../pdf.ts-src/pdf.js";
-import { type PromiseCapability } from "../pdf.ts-src/shared/util.js";
+import { getFilenameFromUrl } from "../pdf.ts-src/pdf.js";
 import { BaseTreeViewer, type BaseTreeViewerCtorParms } from "./base_tree_viewer.js";
 import { DownloadManager } from "./download_manager.js";
 import { type EventMap } from "./ui_utils.js";
@@ -52,7 +52,7 @@ interface Attachment
 export class PDFAttachmentViewer extends BaseTreeViewer 
 {
   _attachments?:Record<string, Attachment> | undefined;
-  #renderedCapability?:PromiseCapability<void>;
+  #renderedCapability?:PromiseCap<void>;
   _pendingDispatchEvent?:number | undefined;
 
   downloadManager:DownloadManager;
@@ -82,7 +82,7 @@ export class PDFAttachmentViewer extends BaseTreeViewer
     {
       // The only situation in which the `#renderedCapability` should *not* be
       // replaced is when appending FileAttachment annotations.
-      this.#renderedCapability = createPromiseCapability();
+      this.#renderedCapability = createPromiseCap();
     }
     if( this._pendingDispatchEvent )
     {

@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+import { createPromiseCap, PromiseCap } from "../../../lib/promisecap.js";
 import { HttpStatusCode } from "../../../lib/HttpStatusCode.js";
 import { assert } from "../../../lib/util/trace.js";
 import { 
@@ -27,9 +28,7 @@ import {
 } from "../interfaces.js";
 import {
   AbortException,
-  createPromiseCapability,
   MissingPDFException,
-  type PromiseCapability,
   stringToBytes,
   UnexpectedResponseException,
 } from "../shared/util.js";
@@ -330,7 +329,7 @@ class PDFNetworkStreamFullRequestReader implements IPDFStreamReader
   #url;
   #fullRequestId;
 
-  #headersReceivedCapability = createPromiseCapability();
+  #headersReceivedCapability = createPromiseCap();
   get headersReady() { return this.#headersReceivedCapability.promise; }
 
   #disableRange:boolean;
@@ -347,7 +346,7 @@ class PDFNetworkStreamFullRequestReader implements IPDFStreamReader
   get isRangeSupported() { return this.#isRangeSupported; }
 
   _cachedChunks:ArrayBufferLike[] = [];
-  #requests:PromiseCapability< ReadValue >[] = [];
+  #requests:PromiseCap< ReadValue >[] = [];
   #done = false;
   _storedError?:MissingPDFException | UnexpectedResponseException;
 
@@ -369,7 +368,7 @@ class PDFNetworkStreamFullRequestReader implements IPDFStreamReader
     };
     this.#url = source.url!;
     this.#fullRequestId = manager.requestFull( args );
-    // this.#headersReceivedCapability = createPromiseCapability();
+    // this.#headersReceivedCapability = createPromiseCap();
     this.#disableRange = source.disableRange || false;
     this.#contentLength = source.length; // Optional
     this.#rangeChunkSize = source.rangeChunkSize;
@@ -475,7 +474,7 @@ class PDFNetworkStreamFullRequestReader implements IPDFStreamReader
     if (this.#done) {
       return { value: undefined, done: true } as ReadValue;
     }
-    const requestCapability = createPromiseCapability< ReadValue >();
+    const requestCapability = createPromiseCap< ReadValue >();
     this.#requests.push(requestCapability);
     return requestCapability.promise;
   }
@@ -502,7 +501,7 @@ class PDFNetworkStreamRangeRequestReader implements IPDFStreamRangeReader
 
   _url;
   #requestId:number;
-  #requests:PromiseCapability< ReadValue >[] = [];
+  #requests:PromiseCap< ReadValue >[] = [];
   #queuedChunk:ArrayBufferLike | null = null;
   #done = false;
   _storedError:MissingPDFException | UnexpectedResponseException | undefined;
@@ -584,7 +583,7 @@ class PDFNetworkStreamRangeRequestReader implements IPDFStreamRangeReader
     {
       return { value: undefined, done: true } as ReadValue;
     }
-    const requestCapability = createPromiseCapability< ReadValue >();
+    const requestCapability = createPromiseCap< ReadValue >();
     this.#requests.push(requestCapability);
     return requestCapability.promise;
   }

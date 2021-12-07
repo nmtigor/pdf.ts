@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+import { createPromiseCap, PromiseCap } from "../../lib/promisecap.js";
 import {
   DEFAULT_SCALE,
   DEFAULT_SCALE_DELTA,
@@ -47,7 +48,7 @@ import {
 } from "./ui_utils.js";
 import { PDFRenderingQueue, RenderingStates } from "./pdf_rendering_queue.js";
 import { AnnotationLayerBuilder } from "./annotation_layer_builder.js";
-import { createPromiseCapability, PixelsPerInch } from "../pdf.ts-src/pdf.js";
+import { PixelsPerInch } from "../pdf.ts-src/pdf.js";
 import { PDFPageView } from "./pdf_page_view.js";
 import { SimpleLinkService } from "./pdf_link_service.js";
 import { TextLayerBuilder } from "./text_layer_builder.js";
@@ -62,7 +63,7 @@ import {
 } from "./interfaces.js";
 import { DownloadManager } from "./download_manager.js";
 import { PDFFindController } from "./pdf_find_controller.js";
-import { AnnotationMode, type PromiseCapability } from "../pdf.ts-src/shared/util.js";
+import { AnnotationMode } from "../pdf.ts-src/shared/util.js";
 import { PDFDocumentProxy, PDFPageProxy, version } from "../pdf.ts-src/display/api.js";
 import { OptionalContentConfig } from "../pdf.ts-src/display/optional_content_config.js";
 import { PageViewport } from "../pdf.ts-src/display/display_utils.js";
@@ -368,6 +369,9 @@ export abstract class BaseViewer implements
     }
   }
 
+  /**
+   * In PDF unit.
+   */
   _currentScale!:number;
   get currentScale() 
   {
@@ -443,22 +447,22 @@ export abstract class BaseViewer implements
   _optionalContentConfigPromise?:Promise<OptionalContentConfig | undefined> | undefined;
   _pagesRequests!:WeakMap<PDFPageView, Promise<PDFPageProxy | void>>;
 
-  #firstPageCapability!:PromiseCapability<PDFPageProxy >;
+  #firstPageCapability!:PromiseCap<PDFPageProxy >;
   get firstPagePromise():Promise<PDFPageProxy> | null
   {
     return this.pdfDocument ? this.#firstPageCapability.promise : null;
   }
 
-  #onePageRenderedCapability!:PromiseCapability;
+  #onePageRenderedCapability!:PromiseCap;
   get onePageRendered()
   {
     return this.pdfDocument ? this.#onePageRenderedCapability.promise : null;
   }
 
-  #pagesCapability!:PromiseCapability;
+  #pagesCapability!:PromiseCap;
   get pagesPromise()
   {
-    return this.pdfDocument ? this.#pagesCapability.promise : null;
+    return this.pdfDocument ? this.#pagesCapability.promise : undefined;
   }
 
   _scrollMode!:ScrollMode;
@@ -556,6 +560,7 @@ export abstract class BaseViewer implements
   }
 
   /**
+   * @final
    * @return Whether the pageNumber is valid (within bounds).
    */
   protected setCurrentPageNumber$( val:number, resetCurrentPageView=false) 
@@ -605,10 +610,9 @@ export abstract class BaseViewer implements
     {
       rotation += 360;
     }
-    if( this._pagesRotation === rotation )
-    {
-      return; // The rotation didn't change.
-    }
+    // The rotation didn't change.
+    if( this._pagesRotation === rotation ) return; 
+
     this._pagesRotation = rotation;
 
     const pageNumber = this._currentPageNumber;
@@ -631,7 +635,7 @@ export abstract class BaseViewer implements
       pageNumber,
     });
 
-    if (this.defaultRenderingQueue) 
+    if( this.defaultRenderingQueue )
     {
       this.update();
     }
@@ -884,9 +888,9 @@ export abstract class BaseViewer implements
     this._pagesRotation = 0;
     this._optionalContentConfigPromise = undefined;
     this._pagesRequests = new WeakMap();
-    this.#firstPageCapability = createPromiseCapability();
-    this.#onePageRenderedCapability = createPromiseCapability();
-    this.#pagesCapability = createPromiseCapability();
+    this.#firstPageCapability = createPromiseCap();
+    this.#onePageRenderedCapability = createPromiseCap();
+    this.#pagesCapability = createPromiseCap();
     this._scrollMode = ScrollMode.VERTICAL;
     this._previousScrollMode = ScrollMode.UNKNOWN;
     this._spreadMode = SpreadMode.NONE;
@@ -937,7 +941,7 @@ export abstract class BaseViewer implements
       state.pages.push(pageView);
     } 
     else {
-      const pageIndexSet = new Set(),
+      const pageIndexSet = new Set<number>(),
         parity = this._spreadMode - 1;
 
       // Determine the pageIndices in the new spread.
@@ -957,10 +961,8 @@ export abstract class BaseViewer implements
       let spread = null;
       for (let i = 0, ii = this._pages.length; i < ii; ++i) 
       {
-        if (!pageIndexSet.has(i)) 
-        {
-          continue;
-        }
+        if( !pageIndexSet.has(i) ) continue;
+
         if (spread === null) 
         {
           spread = document.createElement("div");
@@ -1467,6 +1469,7 @@ export abstract class BaseViewer implements
     return { first: view, last: view, views: [view] } as VisibleElements;
   }
 
+  /** @final */
   protected getVisiblePages$()
   {
     if (this.isInPresentationMode) 
@@ -1526,9 +1529,8 @@ export abstract class BaseViewer implements
   {
     for (let i = 0, ii = this._pages.length; i < ii; i++) 
     {
-      if (
-        this._pages[i] &&
-        this._pages[i].renderingState !== RenderingStates.FINISHED
+      if( this._pages[i]
+       && this._pages[i].renderingState !== RenderingStates.FINISHED
       ) {
         this._pages[i].reset();
       }
@@ -1864,7 +1866,7 @@ export abstract class BaseViewer implements
   get spreadMode():SpreadMode { return this._spreadMode; }
 
   /**
-   * @param mode - Group the pages in spreads, starting with odd- or
+   * @param mode Group the pages in spreads, starting with odd- or
    *   even-number pages (unless `SpreadMode.NONE` is used).
    *   The constants from {SpreadMode} should be used.
    */
