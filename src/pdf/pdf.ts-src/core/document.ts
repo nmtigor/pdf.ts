@@ -23,7 +23,6 @@ import {
   info,
   InvalidPDFException,
   isArrayBuffer,
-  isArrayEqual,
   isString,
   OPS,
   PageActionEventType,
@@ -189,7 +188,7 @@ export class Page
     });
   }
 
-  #getInheritableProperty = ( key:string, getArray=false ) =>
+  #getInheritableProperty( key:string, getArray=false )
   {
     const value = getInheritableProperty({
       dict: this.pageDict,
@@ -224,7 +223,7 @@ export class Page
     return shadow(
       this,
       "resources",
-      <Dict>this.#getInheritableProperty("Resources") ?? Dict.empty
+      <Dict>this.#getInheritableProperty("Resources") || Dict.empty
     );
   }
 
@@ -287,7 +286,7 @@ export class Page
     // effectively reduced to their intersection with the media box."
     const { cropBox, mediaBox } = this;
     let view;
-    if( cropBox === mediaBox || isArrayEqual(cropBox, mediaBox) )
+    if( cropBox.eq(mediaBox) )
     {
       view = mediaBox;
     } 
@@ -388,21 +387,19 @@ export class Page
 
     // Fetch the page's annotations and save the content
     // in case of interactive form fields.
-    return this._parsedAnnotations.then( annotations => {
-      const newRefsPromises:Promise<SaveReturn>[] = [];
+    return this.#parsedAnnotations.then( annotations => {
+      const newRefsPromises:Promise<SaveReturn | null>[] = [];
       for( const annotation of annotations )
       {
-        if( !annotation!.mustBePrinted(annotationStorage) )
-        {
-          continue;
-        }
+        if( !annotation.mustBePrinted(annotationStorage) ) continue;
+
         newRefsPromises.push(
-          annotation!
+          annotation
             .save( partialEvaluator, task, annotationStorage )
             .catch( reason => {
               warn(
                 "save - ignoring annotation data during " +
-                  `"${task.name}" task: "${reason}".`
+                `"${task.name}" task: "${reason}".`
               );
               return null;
             })
@@ -484,7 +481,7 @@ export class Page
 
     // Fetch the page's annotations and add their operator lists to the
     // page's operator list to render them.
-    return Promise.all([pageListPromise, this._parsedAnnotations]).then(
+    return Promise.all([pageListPromise, this.#parsedAnnotations]).then(
       ([pageOpList, annotations]) => {
         if( annotations.length === 0
          || intent & RenderingIntentFlag.ANNOTATIONS_DISABLE
@@ -603,7 +600,7 @@ export class Page
 
   getAnnotationsData( intent:RenderingIntentFlag ) 
   {
-    return this._parsedAnnotations.then( annotations => {
+    return this.#parsedAnnotations.then( annotations => {
       const annotationsData:AnnotationData[] = [];
 
       if (annotations.length === 0) return annotationsData;
@@ -633,12 +630,12 @@ export class Page
     return shadow(this, "annotations", Array.isArray(annots) ? <Ref[]>annots : []);
   }
 
-  get _parsedAnnotations() 
+  get #parsedAnnotations() 
   {
     const parsedAnnotations = this.pdfManager
       .ensure(this, "annotations")
       .then(() => {
-        const annotationPromises:Promise<Annotation|undefined>[] = [];
+        const annotationPromises:Promise<Annotation | undefined>[] = [];
         for( const annotationRef of this.annotations )
         {
           annotationPromises.push(
@@ -649,7 +646,7 @@ export class Page
               this.#localIdFactory,
               /* collectFields */ false
             ).catch( reason => {
-              warn(`_parsedAnnotations: "${reason}".`);
+              warn(`#parsedAnnotations: "${reason}".`);
               return undefined;
             })
           );
@@ -660,7 +657,7 @@ export class Page
         });
       });
 
-    return shadow(this, "_parsedAnnotations", parsedAnnotations);
+    return shadow(this, "#parsedAnnotations", parsedAnnotations);
   }
 
   get jsActions()

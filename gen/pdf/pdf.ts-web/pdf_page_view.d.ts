@@ -1,4 +1,3 @@
-/** @typedef {import("./interfaces").IRenderableView} IRenderableView */
 import { AnnotationStorage } from "../pdf.ts-src/display/annotation_storage.js";
 import { PDFPageProxy } from "../pdf.ts-src/display/api.js";
 import { PageViewport, StatTimer } from "../pdf.ts-src/display/display_utils.js";
@@ -62,7 +61,7 @@ interface PDFPageViewOptions {
     annotationLayerFactory: IPDFAnnotationLayerFactory | undefined;
     xfaLayerFactory?: IPDFXfaLayerFactory | undefined;
     structTreeLayerFactory: IPDFStructTreeLayerFactory;
-    textHighlighterFactory?: BaseViewer;
+    textHighlighterFactory: BaseViewer;
     /**
      * Path for image resources, mainly
      * for annotation icons. Include trailing slash.
@@ -127,7 +126,7 @@ export declare class PDFPageView implements IVisibleView {
     textLayerFactory: IPDFTextLayerFactory | undefined;
     annotationLayerFactory: IPDFAnnotationLayerFactory | undefined;
     xfaLayerFactory: IPDFXfaLayerFactory | undefined;
-    textHighlighter: import("./text_highlighter.js").TextHighlighter | undefined;
+    textHighlighter: import("./text_highlighter.js").TextHighlighter;
     structTreeLayerFactory: IPDFStructTreeLayerFactory;
     renderer: RendererType;
     l10n: IL10n;

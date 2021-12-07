@@ -192,6 +192,9 @@ export declare abstract class BaseViewer implements IPDFAnnotationLayerFactory, 
      * @param val The page number.
      */
     set currentPageNumber(val: number);
+    /**
+     * In PDF unit.
+     */
     _currentScale: number;
     get currentScale(): number;
     /**
@@ -221,7 +224,7 @@ export declare abstract class BaseViewer implements IPDFAnnotationLayerFactory, 
     _pagesRequests: WeakMap<PDFPageView, Promise<PDFPageProxy | void>>;
     get firstPagePromise(): Promise<PDFPageProxy> | null;
     get onePageRendered(): Promise<void> | null;
-    get pagesPromise(): Promise<void> | null;
+    get pagesPromise(): Promise<void> | undefined;
     _scrollMode: ScrollMode;
     _previousScrollMode: ScrollMode;
     _spreadMode: SpreadMode;
@@ -232,6 +235,7 @@ export declare abstract class BaseViewer implements IPDFAnnotationLayerFactory, 
      */
     get pageViewsReady(): boolean;
     /**
+     * @final
      * @return Whether the pageNumber is valid (within bounds).
      */
     protected setCurrentPageNumber$(val: number, resetCurrentPageView?: boolean): boolean;
@@ -272,6 +276,7 @@ export declare abstract class BaseViewer implements IPDFAnnotationLayerFactory, 
      *  - When PresentationMode is active.
      */
     protected getCurrentVisiblePage$(): VisibleElements;
+    /** @final */
     protected getVisiblePages$(): VisibleElements;
     isPageVisible(pageNumber: number): boolean;
     isPageCached(pageNumber: number): boolean;
@@ -325,7 +330,7 @@ export declare abstract class BaseViewer implements IPDFAnnotationLayerFactory, 
      */
     get spreadMode(): SpreadMode;
     /**
-     * @param mode - Group the pages in spreads, starting with odd- or
+     * @param mode Group the pages in spreads, starting with odd- or
      *   even-number pages (unless `SpreadMode.NONE` is used).
      *   The constants from {SpreadMode} should be used.
      */

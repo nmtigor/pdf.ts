@@ -15,8 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { createPromiseCap } from "../../../lib/promisecap.js";
 import { assert } from "../../../lib/util/trace.js";
-import { AbortException, createPromiseCapability, } from "../shared/util.js";
+import { AbortException, } from "../shared/util.js";
 import { createResponseStatusError, extractFilenameFromHeader, validateRangeRequestCapabilities, validateResponseStatus, } from "./network_utils.js";
 /*81---------------------------------------------------------------------------*/
 function createFetchOptions(headers, withCredentials, abortController) {
@@ -89,7 +90,7 @@ class PDFFetchStreamReader {
     #contentLength;
     /** @implements */
     get contentLength() { return this.#contentLength; }
-    #headersCapability = createPromiseCapability();
+    #headersCapability = createPromiseCap();
     get headersReady() { return this.#headersCapability.promise; }
     #disableRange;
     #rangeChunkSize;
@@ -178,7 +179,7 @@ class PDFFetchStreamRangeReader {
     #reader;
     _loaded = 0;
     #withCredentials;
-    #readCapability = createPromiseCapability();
+    #readCapability = createPromiseCap();
     #isStreamingSupported;
     /** @implements */
     get isStreamingSupported() { return this.#isStreamingSupported; }

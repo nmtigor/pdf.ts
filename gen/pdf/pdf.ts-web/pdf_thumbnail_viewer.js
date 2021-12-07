@@ -32,9 +32,28 @@ export class PDFThumbnailViewer // implements IRenderableView
     l10n;
     scroll;
     _thumbnails;
+    getThumbnail(index) { return this._thumbnails[index]; }
     _currentPageNumber;
     _pageLabels;
-    _pagesRotation;
+    /* #pagesRotation */
+    #pagesRotation;
+    get pagesRotation() { return this.#pagesRotation; }
+    set pagesRotation(rotation) {
+        if (!isValidRotation(rotation)) {
+            throw new Error("Invalid thumbnails rotation angle.");
+        }
+        if (!this.pdfDocument)
+            return;
+        // The rotation didn't change.
+        if (this.#pagesRotation === rotation)
+            return;
+        this.#pagesRotation = rotation;
+        const updateArgs = { rotation };
+        for (const thumbnail of this._thumbnails) {
+            thumbnail.update(updateArgs);
+        }
+    }
+    /* ~ */
     _optionalContentConfigPromise;
     _pagesRequests;
     _setImageDisabled;
@@ -55,19 +74,15 @@ export class PDFThumbnailViewer // implements IRenderableView
     #scrollUpdated = () => {
         this.renderingQueue.renderHighestPriority();
     };
-    getThumbnail(index) {
-        return this._thumbnails[index];
-    }
-    #getVisibleThumbs = () => {
+    #getVisibleThumbs() {
         return getVisibleElements({
             scrollEl: this.container,
             views: this._thumbnails,
         });
-    };
+    }
     scrollThumbnailIntoView(pageNumber) {
-        if (!this.pdfDocument) {
+        if (!this.pdfDocument)
             return;
-        }
         const thumbnailView = this._thumbnails[pageNumber - 1];
         if (!thumbnailView) {
             console.error('scrollThumbnailIntoView: Invalid "pageNumber" parameter.');
@@ -92,10 +107,9 @@ export class PDFThumbnailViewer // implements IRenderableView
                 shouldScroll = true;
             }
             else {
-                visibleThumbs.views.some(function (view) {
-                    if (view.id !== pageNumber) {
+                visibleThumbs.views.some(view => {
+                    if (view.id !== pageNumber)
                         return false;
-                    }
                     shouldScroll = view.percent < 100;
                     return true;
                 });
@@ -106,29 +120,10 @@ export class PDFThumbnailViewer // implements IRenderableView
         }
         this._currentPageNumber = pageNumber;
     }
-    get pagesRotation() {
-        return this._pagesRotation;
-    }
-    set pagesRotation(rotation) {
-        if (!isValidRotation(rotation)) {
-            throw new Error("Invalid thumbnails rotation angle.");
-        }
-        if (!this.pdfDocument) {
-            return;
-        }
-        if (this._pagesRotation === rotation) {
-            return; // The rotation didn't change.
-        }
-        this._pagesRotation = rotation;
-        const updateArgs = { rotation };
-        for (const thumbnail of this._thumbnails) {
-            thumbnail.update(updateArgs);
-        }
-    }
     cleanup() {
         for (let i = 0, ii = this._thumbnails.length; i < ii; i++) {
-            if (this._thumbnails[i] &&
-                this._thumbnails[i].renderingState !== RenderingStates.FINISHED) {
+            if (this._thumbnails[i]
+                && this._thumbnails[i].renderingState !== RenderingStates.FINISHED) {
                 this._thumbnails[i].reset();
             }
         }
@@ -138,7 +133,7 @@ export class PDFThumbnailViewer // implements IRenderableView
         this._thumbnails = [];
         this._currentPageNumber = 1;
         this._pageLabels = undefined;
-        this._pagesRotation = 0;
+        this.#pagesRotation = 0;
         this._optionalContentConfigPromise = undefined;
         this._pagesRequests = new WeakMap();
         this._setImageDisabled = false;
@@ -151,9 +146,8 @@ export class PDFThumbnailViewer // implements IRenderableView
             this._resetView();
         }
         this.pdfDocument = pdfDocument;
-        if (!pdfDocument) {
+        if (!pdfDocument)
             return;
-        }
         const firstPagePromise = pdfDocument.getPage(1);
         const optionalContentConfigPromise = pdfDocument.getOptionalContentConfig();
         firstPagePromise
@@ -192,7 +186,6 @@ export class PDFThumbnailViewer // implements IRenderableView
             console.error("Unable to initialize thumbnail viewer", reason);
         });
     }
-    /** @override */
     _cancelRendering() {
         for (let i = 0, ii = this._thumbnails.length; i < ii; i++) {
             if (this._thumbnails[i]) {
@@ -201,9 +194,8 @@ export class PDFThumbnailViewer // implements IRenderableView
         }
     }
     setPageLabels(labels) {
-        if (!this.pdfDocument) {
+        if (!this.pdfDocument)
             return;
-        }
         if (!labels) {
             this._pageLabels = undefined;
         }
@@ -219,7 +211,7 @@ export class PDFThumbnailViewer // implements IRenderableView
             this._thumbnails[i].setPageLabel(this._pageLabels?.[i] ?? null);
         }
     }
-    #ensurePdfPageLoaded = (thumbView) => {
+    #ensurePdfPageLoaded(thumbView) {
         if (thumbView.pdfPage) {
             return Promise.resolve(thumbView.pdfPage);
         }
@@ -242,7 +234,7 @@ export class PDFThumbnailViewer // implements IRenderableView
         });
         this._pagesRequests.set(thumbView, promise);
         return promise;
-    };
+    }
     #getScrollAhead(visible) {
         if (visible.first?.id === 1)
             return true;

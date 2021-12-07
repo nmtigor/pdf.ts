@@ -1,4 +1,4 @@
-import { type ImageLayer, type PDFCommonObjs, PDFObjects, type PDFObjs } from "./api.js";
+import { ImageLayer, PDFCommonObjs, PDFObjects, PDFObjs } from "./api.js";
 import { type matrix_t, OPS, type rect_t, TextRenderingMode } from "../shared/util.js";
 import { PageViewport } from "./display_utils.js";
 import { RadialAxialShadingPattern, type ShadingPattern, TilingPattern } from "./pattern_helper.js";
@@ -160,7 +160,7 @@ export declare class CanvasGraphics {
     res?: unknown;
     xobjs?: unknown;
     commonObjs: PDFObjects<PDFCommonObjs>;
-    objs: PDFObjects<PDFObjs>;
+    objs: PDFObjects<PDFObjs | undefined>;
     canvasFactory: BaseCanvasFactory;
     imageLayer: ImageLayer | undefined;
     groupStack: {
@@ -189,7 +189,7 @@ export declare class CanvasGraphics {
     cachedPatterns: Map<ShadingType, ShadingPattern>;
     transparentCanvas: HTMLCanvasElement | undefined;
     pendingTextPaths?: TextPath[];
-    constructor(canvasCtx: C2D, commonObjs: PDFObjects<PDFCommonObjs>, objs: PDFObjects<PDFObjs>, canvasFactory: BaseCanvasFactory, imageLayer?: ImageLayer, optionalContentConfig?: OptionalContentConfig);
+    constructor(canvasCtx: C2D, commonObjs: PDFObjects<PDFCommonObjs>, objs: PDFObjects<PDFObjs | undefined>, canvasFactory: BaseCanvasFactory, imageLayer?: ImageLayer, optionalContentConfig?: OptionalContentConfig);
     beginDrawing({ transform, viewport, transparency, background, }: BeginDrawingParms): void;
     executeOperatorList(operatorList: OpListIR, executionStartIdx?: number, continueCallback?: () => void): number;
     endDrawing(): void;

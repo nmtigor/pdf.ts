@@ -57,13 +57,13 @@ export declare class LocalPdfManager extends BasePdfManager {
     constructor(docId: string, data: Uint8Array | number[], evaluatorOptions: EvaluatorOptions, password?: string, enableXfa?: boolean, docBaseUrl?: string);
     /** @implements */
     ensure<O extends PDFDocument | Page | XRef | Catalog | AnnotationFactory, P extends keyof O, A = O[P] extends (...args: any) => any ? Parameters<O[P]> : undefined, R = O[P] extends (...args: any) => any ? ReturnType<O[P]> : O[P]>(obj: O, prop: P, args: A): Promise<Awaited<R>>;
-    /** @override */
+    /** @implements */
     requestRange(begin: number, end: number): Promise<void>;
-    /** @override */
+    /** @implements */
     requestLoadedStream(): void;
     /** @implements */
     onLoadedStream(): Promise<Stream>;
-    /** @override */
+    /** @implements */
     terminate(reason: AbortException): void;
 }
 interface NetworkPdfManagerCtorParms {
@@ -79,14 +79,14 @@ export declare class NetworkPdfManager extends BasePdfManager {
     constructor(docId: string, pdfNetworkStream: PDFWorkerStream, args: NetworkPdfManagerCtorParms, evaluatorOptions: EvaluatorOptions, enableXfa?: boolean, docBaseUrl?: string);
     /** @implements */
     ensure<O extends PDFDocument | Page | XRef | Catalog | AnnotationFactory, P extends keyof O, A = O[P] extends (...args: any) => any ? Parameters<O[P]> : undefined, R = O[P] extends (...args: any) => any ? ReturnType<O[P]> : O[P]>(obj: O, prop: P, args: A): Promise<Awaited<R>>;
-    /** @override */
+    /** @implements */
     requestRange(begin: number, end: number): Promise<void>;
-    /** @override */
+    /** @implements */
     requestLoadedStream(): void;
     sendProgressiveData(chunk: ArrayBufferLike): void;
     /** @implements */
     onLoadedStream(): Promise<import("./chunked_stream.js").ChunkedStream>;
-    /** @override */
+    /** @implements */
     terminate(reason: AbortException): void;
 }
 export {};

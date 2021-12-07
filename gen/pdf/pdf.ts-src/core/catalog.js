@@ -15,9 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { createPromiseCap } from "../../../lib/promisecap.js";
 import { clearPrimitiveCaches, Dict, isDict, isName, isRefsEqual, Name, Ref, RefSet, RefSetCache, } from "./primitives.js";
 import { collectActions, MissingDataException, recoverJsURL, toRomanNumerals, } from "./core_utils.js";
-import { createPromiseCapability, createValidAbsoluteUrl, DocumentActionEventType, FormatError, info, isBool, objectSize, PermissionFlag, shadow, stringToPDFString, stringToUTF8String, warn, } from "../shared/util.js";
+import { createValidAbsoluteUrl, DocumentActionEventType, FormatError, info, isBool, objectSize, PermissionFlag, shadow, stringToPDFString, stringToUTF8String, warn, } from "../shared/util.js";
 import { NameTree, NumberTree } from "./name_number_tree.js";
 import { ColorSpace } from "./colorspace.js";
 import { FileSpec } from "./file_spec.js";
@@ -932,7 +933,7 @@ export class Catalog {
      * Dict: Ref. 7.7.3.3 Page Objects
      */
     getPageDict(pageIndex) {
-        const capability = createPromiseCapability();
+        const capability = createPromiseCap();
         const nodesToVisit = [this.#catDict.getRaw("Pages")];
         const visitedNodes = new RefSet();
         const xref = this.xref;

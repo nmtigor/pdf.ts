@@ -50,6 +50,12 @@ export var OptionKind;
     OptionKind[OptionKind["WORKER"] = 8] = "WORKER";
     OptionKind[OptionKind["PREFERENCE"] = 128] = "PREFERENCE";
 })(OptionKind || (OptionKind = {}));
+export var ViewOnLoad;
+(function (ViewOnLoad) {
+    ViewOnLoad[ViewOnLoad["UNKNOWN"] = -1] = "UNKNOWN";
+    ViewOnLoad[ViewOnLoad["PREVIOUS"] = 0] = "PREVIOUS";
+    ViewOnLoad[ViewOnLoad["INITIAL"] = 1] = "INITIAL";
+})(ViewOnLoad || (ViewOnLoad = {}));
 const D_base = "/pdf.ts";
 /**
  * NOTE: These options are used to generate the `default_preferences.json` file,
@@ -196,8 +202,8 @@ const defaultOptions = {
         kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
     },
     viewOnLoad: {
-        /** @type {boolean} */
-        value: 0,
+        /** @type {ViewOnLoad} */
+        value: ViewOnLoad.PREVIOUS,
         kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
     },
     cMapPacked: {

@@ -507,7 +507,7 @@ export function createValidAbsoluteUrl( url:URL | string, baseUrl?:URL | string,
       }
     }
 
-    const absoluteUrl = baseUrl ? new URL(url+"", baseUrl) : new URL(url.toString());
+    const absoluteUrl = baseUrl ? new URL(url, baseUrl) : new URL(url);
     if (_isValidProtocol(absoluteUrl)) 
     {
       return absoluteUrl;
@@ -1104,19 +1104,6 @@ export function isArrayBuffer( v:any )
   return typeof v === "object" && v?.byteLength !== undefined;
 }
 
-export function isArrayEqual( arr1:unknown[] | Uint8Array, arr2:unknown[] | Uint8Array ) 
-{
-  if( arr1.length !== arr2.length ) return false;
-
-  for( let i = 0, ii = arr1.length; i < ii; i++ )
-  {
-    if (arr1[i] !== arr2[i]) {
-      return false;
-    }
-  }
-  return true;
-}
-
 export function getModificationDate( date=new Date )
 {
   const buffer = [
@@ -1129,66 +1116,6 @@ export function getModificationDate( date=new Date )
   ];
 
   return buffer.join("");
-}
-
-/**
- * Promise Capability object.
- */
-export interface PromiseCapability< T=void >
-{
-  id:number;
-  
-  /**
-   * A Promise object.
-   */
-  promise:Promise<T>;
-  
-  /**
-   * If the Promise has been fulfilled/rejected.
-   */
-  settled:boolean;
-
-  /**
-   * Fulfills the Promise.
-   */
-  resolve:( data:T ) => void;
-
-  /**
-   * Rejects the Promise.
-   */
-  reject:( reason:any ) => void;
-}
-let PromiseCapability_ID = 0;
-
-/**
- * Creates a promise capability object.
- * @alias createPromiseCapability
- */
-export function createPromiseCapability<T=void>():PromiseCapability<T> 
-{
-  const capability:PromiseCapability<T> = Object.create(null);
-  capability.id = ++PromiseCapability_ID;
-  let isSettled = false;
-
-  Object.defineProperty(capability, "settled", {
-    get() {
-      return isSettled;
-    },
-  });
-  capability.promise = new Promise<T>( (resolve,reject) => 
-  {
-    capability.resolve = ( data:T ) => 
-    {
-      isSettled = true;
-      resolve( data );
-    };
-    capability.reject = ( reason:any ) =>
-    {
-      isSettled = true;
-      reject( reason );
-    };
-  });
-  return capability;
 }
 
 export function createObjectURL( data:Uint8Array | Uint8ClampedArray, 

@@ -1,6 +1,6 @@
 import { type matrix_t, OPS, type rect_t, TextRenderingMode } from "../shared/util.js";
 import { DOMSVGFactory, PageViewport } from "./display_utils.js";
-import { type PDFCommonObjs, PDFObjects, type PDFObjs } from "./api.js";
+import { PDFCommonObjs, PDFObjects, PDFObjs } from "./api.js";
 import { type ImgData } from "../core/evaluator.js";
 import { FontExpotData, Glyph } from "../core/fonts.js";
 import { type OpListIR } from "../core/operator_list.js";
@@ -65,7 +65,7 @@ export declare class SVGGraphics {
     transformStack: matrix_t[];
     extraStack: SVGExtraState[];
     commonObjs: PDFObjects<PDFCommonObjs>;
-    objs: PDFObjects<PDFObjs>;
+    objs: PDFObjects<PDFObjs | undefined>;
     pendingClip?: string | undefined;
     pendingEOFill: boolean;
     embedFonts: boolean;
@@ -81,7 +81,7 @@ export declare class SVGGraphics {
     defs?: SVGDefsElement;
     svg?: SVGElement | undefined;
     tgrp?: SVGGElement | undefined;
-    constructor(commonObjs: PDFObjects<PDFCommonObjs>, objs: PDFObjects<PDFObjs>, forceDataSchema?: boolean);
+    constructor(commonObjs: PDFObjects<PDFCommonObjs>, objs: PDFObjects<PDFObjs | undefined>, forceDataSchema?: boolean);
     [OPS.save](): void;
     [OPS.restore](): void;
     [OPS.group](items: OpTree): void;

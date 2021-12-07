@@ -17,10 +17,10 @@
  * limitations under the License.
  */
 
+import { createPromiseCap, PromiseCap } from "../../lib/promisecap.js";
 import { EventBus, getPageSizeInches, isPortraitOrientation } from "./ui_utils.js";
 import { getPdfFilenameFromUrl, PDFDateString } from "../pdf.ts-src/display/display_utils.js";
 import { PDFDocumentProxy } from "../pdf.ts-src/display/api.js";
-import { createPromiseCapability, type PromiseCapability } from "../pdf.ts-src/shared/util.js";
 import { type IL10n } from "./interfaces.js";
 import { OverlayManager } from "./overlay_manager.js";
 import { type ViewerConfiguration } from "./viewer.js";
@@ -93,7 +93,7 @@ export class PDFDocumentProperties
   url?:string | undefined;
 
   maybeFileSize!:number;
-  #dataAvailableCapability!:PromiseCapability;
+  #dataAvailableCapability!:PromiseCap;
   _currentPageNumber!:number;
   _pagesRotation!:number;
 
@@ -268,7 +268,7 @@ export class PDFDocumentProperties
     this.url = undefined;
 
     delete this.fieldData;
-    this.#dataAvailableCapability = createPromiseCapability();
+    this.#dataAvailableCapability = createPromiseCap();
     this._currentPageNumber = 1;
     this._pagesRotation = 0;
   }
@@ -308,8 +308,8 @@ export class PDFDocumentProperties
       return undefined;
     }
     return this.l10n.get(`document_properties_${mb >= 1 ? "mb" : "kb"}`, {
-      size_mb: (mb >= 1 && (+mb.toPrecision(3)).toLocaleString())+"",
-      size_kb: (mb < 1 && (+kb.toPrecision(3)).toLocaleString())+"",
+      size_mb: <any>(mb >= 1 && (+mb.toPrecision(3)).toLocaleString()),
+      size_kb: <any>(mb < 1 && (+kb.toPrecision(3)).toLocaleString()),
       size_b: fileSize.toLocaleString(),
     });
   }

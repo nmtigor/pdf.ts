@@ -3,13 +3,15 @@
 ** -------- */
 import { css_1, css_2 } from "../../../test/alias.js";
 import "../../../lib/jslang.js";
+import { createPromiseCap } from "../../../lib/promisecap.js";
 import { buildGetDocumentParams, DefaultFileReaderFactory, TEST_PDFS_PATH } from "../../test_utils.js";
-import { DefaultCanvasFactory, getDocument, PDFDocumentLoadingTask, PDFDocumentProxy, PDFPageProxy, PDFWorker, } from "./api.js";
+import { DefaultCanvasFactory, getDocument, PDFDataRangeTransport, PDFDocumentLoadingTask, PDFDocumentProxy, PDFPageProxy, PDFWorker, RenderTask, } from "./api.js";
 import { GlobalWorkerOptions } from "./worker_options.js";
-import { createPromiseCapability, PermissionFlag } from "../../pdf.ts-src/shared/util.js";
+import { AnnotationMode, FontType, OPS, PermissionFlag, StreamType } from "../../pdf.ts-src/shared/util.js";
 import { PageLayout, PageMode } from "../../pdf.ts-web/ui_utils.js";
 import { $enum } from "../../../3rd/ts-enum-util/src/$enum.js";
 import { Metadata } from "./metadata.js";
+import { RenderingCancelledException } from "./display_utils.js";
 const strttime = performance.now();
 /*81---------------------------------------------------------------------------*/
 const basicApiFileName = "basicapi.pdf";
@@ -26,7 +28,8 @@ function mergeText(items) {
 //! unsynchronized
 console.log("%c>>>>>>> test getDocument() >>>>>>>", `color:${css_1}`);
 {
-    console.log("it creates pdf doc from URL-string...");
+    let i = 0; // 13
+    console.log(`${++i}: it creates pdf doc from URL-string...`);
     {
         const urlStr = TEST_PDFS_PATH + basicApiFileName;
         const loadingTask = getDocument(urlStr);
@@ -37,12 +40,12 @@ console.log("%c>>>>>>> test getDocument() >>>>>>>", `color:${css_1}`);
         console.assert(pdfDocument.numPages === 3);
         await loadingTask.destroy();
     }
-    console.log("it creates pdf doc from URL-object...");
+    console.log(`${++i}: it creates pdf doc from URL-object...`);
     {
         // if (isNodeJS) {
         //   pending("window.location is not supported in Node.js.");
         // }
-        const urlObj = new URL(TEST_PDFS_PATH + basicApiFileName, window.location.toString());
+        const urlObj = new URL(TEST_PDFS_PATH + basicApiFileName, window.location);
         const loadingTask = getDocument(urlObj);
         console.assert(loadingTask instanceof PDFDocumentLoadingTask);
         const pdfDocument = await loadingTask.promise;
@@ -51,11 +54,11 @@ console.log("%c>>>>>>> test getDocument() >>>>>>>", `color:${css_1}`);
         console.assert(pdfDocument.numPages === 3);
         await loadingTask.destroy();
     }
-    console.log("it creates pdf doc from URL...");
+    console.log(`${++i}: it creates pdf doc from URL...`);
     {
         const loadingTask = getDocument(basicApiGetDocumentParams);
         console.assert(loadingTask instanceof PDFDocumentLoadingTask);
-        const progressReportedCapability = createPromiseCapability();
+        const progressReportedCapability = createPromiseCap();
         // Attach the callback that is used to report loading progress;
         // similarly to how viewer.js works.
         loadingTask.onProgress = progressData => {
@@ -72,7 +75,7 @@ console.log("%c>>>>>>> test getDocument() >>>>>>>", `color:${css_1}`);
         console.assert(loadingTask === data[1].loadingTask);
         await loadingTask.destroy();
     }
-    console.log("it creates pdf doc from URL and aborts before worker initialized...");
+    console.log(`${++i}: it creates pdf doc from URL and aborts before worker initialized...`);
     {
         const loadingTask = getDocument(basicApiGetDocumentParams);
         console.assert(loadingTask instanceof PDFDocumentLoadingTask);
@@ -85,7 +88,7 @@ console.log("%c>>>>>>> test getDocument() >>>>>>>", `color:${css_1}`);
             await destroyed;
         }
     }
-    console.log("it creates pdf doc from URL and aborts loading after worker initialized...");
+    console.log(`${++i}: it creates pdf doc from URL and aborts loading after worker initialized...`);
     {
         const loadingTask = getDocument(basicApiGetDocumentParams);
         console.assert(loadingTask instanceof PDFDocumentLoadingTask);
@@ -94,7 +97,7 @@ console.log("%c>>>>>>> test getDocument() >>>>>>>", `color:${css_1}`);
         const destroyed = loadingTask._worker.promise.then(() => loadingTask.destroy());
         await destroyed;
     }
-    console.log("it creates pdf doc from typed array...");
+    console.log(`${++i}: it creates pdf doc from typed array...`);
     {
         const typedArrayPdf = await DefaultFileReaderFactory.fetch({
             path: TEST_PDFS_PATH + basicApiFileName,
@@ -103,7 +106,7 @@ console.log("%c>>>>>>> test getDocument() >>>>>>>", `color:${css_1}`);
         console.assert(typedArrayPdf.length === basicApiFileLength);
         const loadingTask = getDocument(typedArrayPdf);
         console.assert(loadingTask instanceof PDFDocumentLoadingTask);
-        const progressReportedCapability = createPromiseCapability();
+        const progressReportedCapability = createPromiseCap();
         loadingTask.onProgress = data => {
             progressReportedCapability.resolve(data);
         };
@@ -115,7 +118,7 @@ console.log("%c>>>>>>> test getDocument() >>>>>>>", `color:${css_1}`);
         console.assert(data[1].loaded / data[1].total === 1);
         await loadingTask.destroy();
     }
-    // console.log("it creates pdf doc from invalid PDF file...");
+    // console.log(`${++i}: it creates pdf doc from invalid PDF file...`);
     // {
     //   // A severely corrupt PDF file (even Adobe Reader fails to open it).
     //   const loadingTask = getDocument(buildGetDocumentParams("bug1020226.pdf"));
@@ -129,7 +132,7 @@ console.log("%c>>>>>>> test getDocument() >>>>>>>", `color:${css_1}`);
     //   }
     //   await loadingTask.destroy();
     // }
-    // console.log("it creates pdf doc from non-existent URL...");
+    // console.log(`${++i}: it creates pdf doc from non-existent URL...`);
     // {
     //   if (!isNodeJS) {
     //     // Re-enable in https://github.com/mozilla/pdf.js/issues/13061.
@@ -148,12 +151,12 @@ console.log("%c>>>>>>> test getDocument() >>>>>>>", `color:${css_1}`);
     //   }
     //   await loadingTask.destroy();
     // }
-    // console.log("it creates pdf doc from PDF file protected with user and owner password...");
+    // console.log(`${++i}: it creates pdf doc from PDF file protected with user and owner password...`);
     // {
     //   const loadingTask = getDocument(buildGetDocumentParams("pr6531_1.pdf"));
     //   console.assert( loadingTask instanceof PDFDocumentLoadingTask );
-    //   const passwordNeededCapability = createPromiseCapability();
-    //   const passwordIncorrectCapability = createPromiseCapability();
+    //   const passwordNeededCapability = createPromiseCap();
+    //   const passwordIncorrectCapability = createPromiseCap();
     //   // Attach the callback that is used to request a password;
     //   // similarly to how viewer.js handles passwords.
     //   loadingTask.onPassword = (updatePassword, reason) => {
@@ -181,7 +184,7 @@ console.log("%c>>>>>>> test getDocument() >>>>>>>", `color:${css_1}`);
     //   console.assert( data[2] instanceof PDFDocumentProxy );
     //   await loadingTask.destroy();
     // }
-    // console.log("it creates pdf doc from PDF file protected with only a user password...");
+    // console.log(`${++i}: it creates pdf doc from PDF file protected with only a user password...`);
     // {
     //   const filename = "pr6531_2.pdf";
     //   const passwordNeededLoadingTask = getDocument(
@@ -230,10 +233,10 @@ console.log("%c>>>>>>> test getDocument() >>>>>>>", `color:${css_1}`);
     //   });
     //   await Promise.all([result1, result2, result3]);
     // }
-    // console.log("it creates pdf doc from password protected PDF file and aborts/throws in the onPassword callback (issue 7806)...");
+    // console.log(`${++i}: it creates pdf doc from password protected PDF file and aborts/throws in the onPassword callback (issue 7806)...`);
     // {
     // }
-    // console.log("it creates pdf doc from empty typed array...");
+    // console.log(`${++i}: it creates pdf doc from empty typed array...`);
     // {
     //   const loadingTask = getDocument(new Uint8Array(0));
     //   console.assert( loadingTask instanceof PDFDocumentLoadingTask );
@@ -248,7 +251,7 @@ console.log("%c>>>>>>> test getDocument() >>>>>>>", `color:${css_1}`);
     //   }
     //   await loadingTask.destroy();
     // }
-    console.log("it checks that `docId`s are unique and increasing...");
+    console.log(`${++i}: it checks that ${"`docId`"}s are unique and increasing...`);
     {
         const loadingTask1 = getDocument(basicApiGetDocumentParams);
         console.assert(loadingTask1 instanceof PDFDocumentLoadingTask);
@@ -351,18 +354,19 @@ console.log("%c>>>>>>> test PDFDocument >>>>>>>", `color:${css_1}`);
 {
     let pdfLoadingTask = getDocument(basicApiGetDocumentParams);
     let pdfDocument = await pdfLoadingTask.promise;
-    console.log("it gets number of pages...");
+    let i = 0; // 50
+    console.log(`${++i}: it gets number of pages...`);
     {
         console.assert(pdfDocument.numPages === 3);
     }
-    console.log("it gets fingerprints...");
+    console.log(`${++i}: it gets fingerprints...`);
     {
         console.assert(pdfDocument.fingerprints.eq([
             "ea8b35919d6279a369e835bde778611b",
             undefined,
         ]));
     }
-    console.log("it gets fingerprints, from modified document...");
+    console.log(`${++i}: it gets fingerprints, from modified document...`);
     {
         const loadingTask = getDocument(buildGetDocumentParams("annotation-tx.pdf"));
         const pdfDoc = await loadingTask.promise;
@@ -372,13 +376,13 @@ console.log("%c>>>>>>> test PDFDocument >>>>>>>", `color:${css_1}`);
         ]));
         await loadingTask.destroy();
     }
-    console.log("it gets page...");
+    console.log(`${++i}: it gets page...`);
     {
         const data = await pdfDocument.getPage(1);
         console.assert(data instanceof PDFPageProxy);
         console.assert(data.pageNumber === 1);
     }
-    console.log("it gets non-existent page...");
+    console.log(`${++i}: it gets non-existent page...`);
     {
         let outOfRangePromise = pdfDocument.getPage(100);
         let nonIntegerPromise = pdfDocument.getPage(2.5);
@@ -404,7 +408,7 @@ console.log("%c>>>>>>> test PDFDocument >>>>>>>", `color:${css_1}`);
             nonNumberPromise,
         ]);
     }
-    console.log("it gets page, from /Pages tree with circular reference...");
+    console.log(`${++i}: it gets page, from /Pages tree with circular reference...`);
     {
         const loadingTask = getDocument(buildGetDocumentParams("Pages-tree-refs.pdf"));
         const page1 = loadingTask.promise.then(pdfDoc => {
@@ -426,13 +430,13 @@ console.log("%c>>>>>>> test PDFDocument >>>>>>>", `color:${css_1}`);
         await Promise.all([page1, page2]);
         await loadingTask.destroy();
     }
-    // console.log("it gets page index...");
+    // console.log(`${++i}: it gets page index...`);
     // {
     //   const ref = { num: 17, gen: 0 }; // Reference to second page.
     //   const pageIndex = await pdfDocument.getPageIndex(ref);
     //   console.assert( pageIndex === 1 );
     // }
-    console.log("it gets invalid page index...");
+    console.log(`${++i}: it gets invalid page index...`);
     {
         const ref = { num: 3, gen: 0 }; // Reference to a font dictionary.
         try {
@@ -443,14 +447,14 @@ console.log("%c>>>>>>> test PDFDocument >>>>>>>", `color:${css_1}`);
             console.assert(reason instanceof Error);
         }
     }
-    console.log("it gets destinations, from /Dests dictionary...");
+    console.log(`${++i}: it gets destinations, from /Dests dictionary...`);
     {
         const destinations = await pdfDocument.getDestinations();
         console.assert(destinations.eq({
             chapter1: [{ gen: 0, num: 17 }, { name: "XYZ" }, 0, 841.89, null],
         }));
     }
-    console.log("it gets a destination, from /Dests dictionary...");
+    console.log(`${++i}: it gets a destination, from /Dests dictionary...`);
     {
         const destination = await pdfDocument.getDestination("chapter1");
         console.assert(destination.eq([
@@ -461,12 +465,12 @@ console.log("%c>>>>>>> test PDFDocument >>>>>>>", `color:${css_1}`);
             null,
         ]));
     }
-    console.log("it gets a non-existent destination, from /Dests dictionary...");
+    console.log(`${++i}: it gets a non-existent destination, from /Dests dictionary...`);
     {
         const destination = await pdfDocument.getDestination("non-existent-named-destination");
         console.assert(destination === undefined);
     }
-    console.log("it gets destinations, from /Names (NameTree) dictionary...");
+    console.log(`${++i}: it gets destinations, from /Names (NameTree) dictionary...`);
     {
         const loadingTask = getDocument(buildGetDocumentParams("issue6204.pdf"));
         const pdfDoc = await loadingTask.promise;
@@ -477,11 +481,12 @@ console.log("%c>>>>>>> test PDFDocument >>>>>>>", `color:${css_1}`);
         }));
         await loadingTask.destroy();
     }
-    // console.log("it gets a destination, from /Names (NameTree) dictionary...");
+    // console.log(`${++i}: it gets a destination, from /Names (NameTree) dictionary...`);
     // {
     //   const loadingTask = getDocument(buildGetDocumentParams("issue6204.pdf"));
     //   const pdfDoc = await loadingTask.promise;
     //   const destination = await pdfDoc.getDestination("Page.1");
+    //   console.log(destination);
     //   console.assert( destination!.eq([
     //     { num: 1, gen: 0 },
     //     { name: "XYZ" },
@@ -491,7 +496,7 @@ console.log("%c>>>>>>> test PDFDocument >>>>>>>", `color:${css_1}`);
     //   ]));
     //   await loadingTask.destroy();
     // }
-    // console.log("it gets a non-existent destination, from /Names (NameTree) dictionary...");
+    // console.log(`${++i}: it gets a non-existent destination, from /Names (NameTree) dictionary...`);
     // {
     //   const loadingTask = getDocument(buildGetDocumentParams("issue6204.pdf"));
     //   const pdfDoc = await loadingTask.promise;
@@ -501,7 +506,7 @@ console.log("%c>>>>>>> test PDFDocument >>>>>>>", `color:${css_1}`);
     //   console.assert( destination === undefined );
     //   await loadingTask.destroy();
     // }
-    // console.log("it gets a destination, from out-of-order /Names (NameTree) dictionary (issue 10272)...");
+    // console.log(`${++i}: it gets a destination, from out-of-order /Names (NameTree) dictionary (issue 10272)...`);
     // {
     //   // if (isNodeJS) {
     //   //   pending("Linked test-cases are not supported in Node.js.");
@@ -518,7 +523,7 @@ console.log("%c>>>>>>> test PDFDocument >>>>>>>", `color:${css_1}`);
     //   ]));
     //   await loadingTask.destroy();
     // }
-    // console.log("it gets non-string destination...");
+    // console.log(`${++i}: it gets non-string destination...`);
     // {
     //   let numberPromise:Promise<any> = pdfDocument.getDestination(<any>4.3);
     //   let booleanPromise:Promise<any> = pdfDocument.getDestination(<any>true);
@@ -555,12 +560,12 @@ console.log("%c>>>>>>> test PDFDocument >>>>>>>", `color:${css_1}`);
     //   );
     //   await Promise.all([numberPromise, booleanPromise, arrayPromise]);
     // }
-    console.log("it gets non-existent page labels...");
+    console.log(`${++i}: it gets non-existent page labels...`);
     {
         const pageLabels = await pdfDocument.getPageLabels();
         console.assert(pageLabels === null);
     }
-    // console.log("it gets page labels...");
+    // console.log(`${++i}: it gets page labels...`);
     // {
     //   // PageLabels with Roman/Arabic numerals.
     //   const loadingTask0 = getDocument(buildGetDocumentParams("bug793632.pdf"));
@@ -593,7 +598,7 @@ console.log("%c>>>>>>> test PDFDocument >>>>>>>", `color:${css_1}`);
     //     loadingTask3.destroy(),
     //   ]);
     // }
-    console.log("it gets default page layout...");
+    console.log(`${++i}: it gets default page layout...`);
     {
         const loadingTask = getDocument(buildGetDocumentParams("tracemonkey.pdf"));
         const pdfDoc = await loadingTask.promise;
@@ -601,12 +606,12 @@ console.log("%c>>>>>>> test PDFDocument >>>>>>>", `color:${css_1}`);
         console.assert(pageLayout === undefined);
         await loadingTask.destroy();
     }
-    console.log("it gets non-default page layout...");
+    console.log(`${++i}: it gets non-default page layout...`);
     {
         const pageLayout = await pdfDocument.getPageLayout();
         console.assert(pageLayout === PageLayout.SinglePage);
     }
-    console.log("it gets default page mode...");
+    console.log(`${++i}: it gets default page mode...`);
     {
         const loadingTask = getDocument(buildGetDocumentParams("tracemonkey.pdf"));
         const pdfDoc = await loadingTask.promise;
@@ -614,12 +619,12 @@ console.log("%c>>>>>>> test PDFDocument >>>>>>>", `color:${css_1}`);
         console.assert(pageMode === PageMode.UseNone);
         await loadingTask.destroy();
     }
-    console.log("it gets non-default page mode...");
+    console.log(`${++i}: it gets non-default page mode...`);
     {
         const pageMode = await pdfDocument.getPageMode();
         console.assert(pageMode === PageMode.UseOutlines);
     }
-    console.log("it gets default viewer preferences...");
+    console.log(`${++i}: it gets default viewer preferences...`);
     {
         const loadingTask = getDocument(buildGetDocumentParams("tracemonkey.pdf"));
         const pdfDoc = await loadingTask.promise;
@@ -627,12 +632,12 @@ console.log("%c>>>>>>> test PDFDocument >>>>>>>", `color:${css_1}`);
         console.assert(prefs === undefined);
         await loadingTask.destroy();
     }
-    console.log("it gets non-default viewer preferences...");
+    console.log(`${++i}: it gets non-default viewer preferences...`);
     {
         const prefs = await pdfDocument.getViewerPreferences();
         console.assert(prefs.eq({ Direction: "L2R" }));
     }
-    console.log("it gets default open action...");
+    console.log(`${++i}: it gets default open action...`);
     {
         const loadingTask = getDocument(buildGetDocumentParams("tracemonkey.pdf"));
         const pdfDoc = await loadingTask.promise;
@@ -640,7 +645,7 @@ console.log("%c>>>>>>> test PDFDocument >>>>>>>", `color:${css_1}`);
         console.assert(openAction === undefined);
         await loadingTask.destroy();
     }
-    console.log("it gets non-default open action (with destination)...");
+    console.log(`${++i}: it gets non-default open action (with destination)...`);
     {
         const openAction = await pdfDocument.getOpenAction();
         console.assert(openAction.dest.eq([
@@ -650,7 +655,7 @@ console.log("%c>>>>>>> test PDFDocument >>>>>>>", `color:${css_1}`);
         ]));
         console.assert(openAction.action === undefined);
     }
-    console.log("it gets non-default open action (with Print action)...");
+    console.log(`${++i}: it gets non-default open action (with Print action)...`);
     {
         // PDF document with "Print" Named action in the OpenAction dictionary.
         const loadingTask1 = getDocument(buildGetDocumentParams("bug1001080.pdf"));
@@ -673,12 +678,12 @@ console.log("%c>>>>>>> test PDFDocument >>>>>>>", `color:${css_1}`);
         });
         await Promise.all([promise1, promise2]);
     }
-    // console.log("it gets non-existent attachments...");
+    // console.log(`${++i}: it gets non-existent attachments...`);
     // {
     //   const attachments = await pdfDocument.getAttachments();
     //   console.assert( attachments === undefined );
     // }
-    // console.log("it gets attachments...");
+    // console.log(`${++i}: it gets attachments...`);
     // {
     //   const loadingTask = getDocument(buildGetDocumentParams("attachment.pdf"));
     //   const pdfDoc = await loadingTask.promise;
@@ -690,27 +695,27 @@ console.log("%c>>>>>>> test PDFDocument >>>>>>>", `color:${css_1}`);
     //   );
     //   await loadingTask.destroy();
     // }
-    console.log("it gets javascript...");
+    console.log(`${++i}: it gets javascript...`);
     {
         const javascript = await pdfDocument.getJavaScript();
         console.assert(javascript === undefined);
     }
-    // console.log("it gets javascript with printing instructions (JS action)...");
+    // console.log(`${++i}: it gets javascript with printing instructions (JS action)...`);
     // {
     // }
-    // console.log("it gets hasJSActions, in document without javaScript...");
+    // console.log(`${++i}: it gets hasJSActions, in document without javaScript...`);
     // {
     // }
-    // console.log("it gets hasJSActions, in document with javaScript...");
+    // console.log(`${++i}: it gets hasJSActions, in document with javaScript...`);
     // {
     // }
-    // console.log("it gets non-existent JSActions...");
+    // console.log(`${++i}: it gets non-existent JSActions...`);
     // {
     // }
-    // console.log("it gets JSActions...");
+    // console.log(`${++i}: it gets JSActions...`);
     // {
     // }
-    console.log("it gets non-existent outline...");
+    console.log(`${++i}: it gets non-existent outline...`);
     {
         const loadingTask = getDocument(buildGetDocumentParams("tracemonkey.pdf"));
         const pdfDoc = await loadingTask.promise;
@@ -718,7 +723,7 @@ console.log("%c>>>>>>> test PDFDocument >>>>>>>", `color:${css_1}`);
         console.assert(outline === undefined);
         await loadingTask.destroy();
     }
-    console.log("it gets outline...");
+    console.log(`${++i}: it gets outline...`);
     {
         const outline = await pdfDocument.getOutline();
         // Two top level entries.
@@ -737,7 +742,7 @@ console.log("%c>>>>>>> test PDFDocument >>>>>>>", `color:${css_1}`);
         console.assert(outlineItem.items.length === 1);
         console.assert(outlineItem.items[0].title === "Paragraph 1.1");
     }
-    console.log("it gets outline containing a URL...");
+    console.log(`${++i}: it gets outline containing a URL...`);
     {
         const loadingTask = getDocument(buildGetDocumentParams("issue3214.pdf"));
         const pdfDoc = await loadingTask.promise;
@@ -756,12 +761,12 @@ console.log("%c>>>>>>> test PDFDocument >>>>>>>", `color:${css_1}`);
         console.assert(outlineItemOne.color.eq(new Uint8ClampedArray([0, 0, 0])));
         await loadingTask.destroy();
     }
-    console.log("it gets non-existent permissions...");
+    console.log(`${++i}: it gets non-existent permissions...`);
     {
         const permissions = await pdfDocument.getPermissions();
         console.assert(permissions === undefined);
     }
-    console.log("it gets permissions...");
+    console.log(`${++i}: it gets permissions...`);
     {
         // Editing not allowed.
         const loadingTask0 = getDocument(buildGetDocumentParams("issue9972-1.pdf"));
@@ -787,7 +792,7 @@ console.log("%c>>>>>>> test PDFDocument >>>>>>>", `color:${css_1}`);
             loadingTask2.destroy(),
         ]);
     }
-    console.log("it gets metadata...");
+    console.log(`${++i}: it gets metadata...`);
     {
         const { info, metadata, contentDispositionFilename, contentLength } = await pdfDocument.getMetadata();
         console.assert(info.Title === "Basic API Test");
@@ -807,7 +812,7 @@ console.log("%c>>>>>>> test PDFDocument >>>>>>>", `color:${css_1}`);
         console.assert(contentDispositionFilename === undefined);
         console.assert(contentLength === basicApiFileLength);
     }
-    console.log("it gets metadata, with custom info dict entries...");
+    console.log(`${++i}: it gets metadata, with custom info dict entries...`);
     {
         const loadingTask = getDocument(buildGetDocumentParams("tracemonkey.pdf"));
         const pdfDoc = await loadingTask.promise;
@@ -835,7 +840,7 @@ console.log("%c>>>>>>> test PDFDocument >>>>>>>", `color:${css_1}`);
         console.assert(contentLength === 1016315);
         await loadingTask.destroy();
     }
-    console.log("it gets metadata, with missing PDF header (bug 1606566)...");
+    console.log(`${++i}: it gets metadata, with missing PDF header (bug 1606566)...`);
     {
         const loadingTask = getDocument(buildGetDocumentParams("bug1606566.pdf"));
         const pdfDoc = await loadingTask.promise;
@@ -854,7 +859,7 @@ console.log("%c>>>>>>> test PDFDocument >>>>>>>", `color:${css_1}`);
         console.assert(contentLength === 624);
         await loadingTask.destroy();
     }
-    console.log("it gets markInfo...");
+    console.log(`${++i}: it gets markInfo...`);
     {
         const loadingTask = getDocument(buildGetDocumentParams("annotation-line.pdf"));
         const pdfDoc = await loadingTask.promise;
@@ -864,27 +869,27 @@ console.log("%c>>>>>>> test PDFDocument >>>>>>>", `color:${css_1}`);
         console.assert(markInfo.Suspects === false);
         await loadingTask.destroy();
     }
-    console.log("it gets data...");
+    console.log(`${++i}: it gets data...`);
     {
         const data = await pdfDocument.getData();
         console.assert(data instanceof Uint8Array);
         console.assert(data.length === basicApiFileLength);
     }
-    console.log("it gets download info...");
+    console.log(`${++i}: it gets download info...`);
     {
         const downloadInfo = await pdfDocument.getDownloadInfo();
         console.assert(downloadInfo.eq({ length: basicApiFileLength }));
     }
-    console.log("it gets document stats...");
+    console.log(`${++i}: it gets document stats...`);
     {
         const stats = await pdfDocument.getStats();
         console.assert(stats.eq({ streamTypes: {}, fontTypes: {} }));
     }
-    console.log("it cleans up document resources...");
+    console.log(`${++i}: it cleans up document resources...`);
     {
         await pdfDocument.cleanup();
     }
-    console.log("it checks that fingerprints are unique...");
+    console.log(`${++i}: it checks that fingerprints are unique...`);
     {
         const loadingTask1 = getDocument(buildGetDocumentParams("issue4436r.pdf"));
         const loadingTask2 = getDocument(buildGetDocumentParams("issue4575.pdf"));
@@ -899,26 +904,87 @@ console.log("%c>>>>>>> test PDFDocument >>>>>>>", `color:${css_1}`);
         console.assert(fingerprints2.eq(["04c7126b34a46b6d4d6e7a1eff7edcb6", undefined]));
         await Promise.all([loadingTask1.destroy(), loadingTask2.destroy()]);
     }
-    // console.log("it writes a value in an annotation, save the pdf and load it...");
-    // {
-    //   let loadingTask = getDocument(buildGetDocumentParams("evaljs.pdf"));
-    //   let pdfDoc = await loadingTask.promise;
-    //   const value = "Hello World";
-    //   pdfDoc.annotationStorage.setValue("55R", { value });
-    //   const data = await pdfDoc.saveDocument();
-    //   await loadingTask.destroy();
-    //   loadingTask = getDocument(data);
-    //   pdfDoc = await loadingTask.promise;
-    //   const pdfPage = await pdfDoc.getPage(1);
-    //   const annotations = await pdfPage.getAnnotations();
-    //   const field = annotations.find(annotation => annotation.id === "55R");
-    //   console.assert( !!field );
-    //   console.assert( field!.fieldValue === value );
-    //   await loadingTask.destroy();
-    // }
+    console.log(`${++i}: it writes a value in an annotation, save the pdf and load it...`);
+    {
+        let loadingTask = getDocument(buildGetDocumentParams("evaljs.pdf"));
+        let pdfDoc = await loadingTask.promise;
+        const value = "Hello World";
+        pdfDoc.annotationStorage.setValue("55R", { value });
+        const data = await pdfDoc.saveDocument();
+        await loadingTask.destroy();
+        loadingTask = getDocument(data);
+        pdfDoc = await loadingTask.promise;
+        const pdfPage = await pdfDoc.getPage(1);
+        const annotations = await pdfPage.getAnnotations();
+        const field = annotations.find(annotation => annotation.id === "55R");
+        console.assert(!!field);
+        console.assert(field.fieldValue === value);
+        await loadingTask.destroy();
+    }
     // console.log("%c>>>>>>> test Cross-origin >>>>>>>",`color:${css_1}`);
     // {
-    //   //
+    //   interface Options
+    //   {
+    //     withCredentials?:boolean;
+    //   }
+    //   let loadingTask:PDFDocumentLoadingTask | undefined;
+    //   function _checkCanLoad(
+    //      expectSuccess:boolean, filename:string , options?:BuildGetDocumentParamsOptions ) 
+    //   {
+    //     // if (isNodeJS) {
+    //     //   pending("Cannot simulate cross-origin requests in Node.js");
+    //     // }
+    //     const params = buildGetDocumentParams(filename, options);
+    //     const url = new URL( <any>params.url );
+    //     if( url.hostname === "localhost" )
+    //     {
+    //       url.hostname = "127.0.0.1";
+    //     } 
+    //     else if( (<URL>params.url).hostname === "127.0.0.1" )
+    //     {
+    //       url.hostname = "localhost";
+    //     } 
+    //     else {
+    //       console.warn("Can only run cross-origin test on localhost!");
+    //     }
+    //     params.url = url.href;
+    //     loadingTask = getDocument(params);
+    //     return loadingTask.promise
+    //       .then( pdf => pdf.destroy() )
+    //       .then(
+    //         () => {
+    //           console.assert( expectSuccess === true );
+    //         },
+    //         error => {
+    //           if (expectSuccess) 
+    //           {
+    //             // For ease of debugging.
+    //             console.assert( error === "There should not be any error" );
+    //           }
+    //           console.assert( expectSuccess === false );
+    //         }
+    //       );
+    //   }
+    //   function testCanLoad( filename:string, options?:BuildGetDocumentParamsOptions ) 
+    //   {
+    //     return _checkCanLoad(true, filename, options);
+    //   }
+    //   function testCannotLoad( filename:string, options?:BuildGetDocumentParamsOptions ) 
+    //   {
+    //     return _checkCanLoad(false, filename, options);
+    //   }
+    //   async function afterEach() 
+    //   {
+    //     if( loadingTask && !loadingTask.destroyed ) 
+    //     {
+    //       await loadingTask.destroy();
+    //     }
+    //   }
+    //   console.log("server disallows cors...");
+    //   {
+    //     await testCannotLoad("basicapi.pdf");
+    //   }
+    //   await afterEach();
     // }
     await pdfLoadingTask.destroy();
 }
@@ -928,30 +994,833 @@ console.log("%c>>>>>>> test Page >>>>>>>", `color:${css_1}`);
     let pdfLoadingTask = getDocument(basicApiGetDocumentParams);
     let pdfDocument = await pdfLoadingTask.promise;
     let page = await pdfDocument.getPage(1);
-    console.log("it gets page number...");
+    let i = 0; // 37
+    console.log(`${++i}: it gets page number...`);
     {
         console.assert(page.pageNumber === 1);
     }
-    console.log("it gets rotate...");
+    console.log(`${++i}: it gets rotate...`);
     {
         console.assert(page.rotate === 0);
     }
-    console.log("it gets ref...");
+    console.log(`${++i}: it gets ref...`);
     {
         console.assert(page.ref.eq({ num: 15, gen: 0 }));
     }
-    //
+    console.log(`${++i}: it gets userUnit...`);
+    {
+        console.assert(Number.apxE(page.userUnit, 1.0));
+    }
+    console.log(`${++i}: it gets view...`);
+    {
+        console.assert(page.view.eq([0, 0, 595.28, 841.89]));
+    }
+    console.log(`${++i}: it gets view, with empty/invalid bounding boxes...`);
+    {
+        const viewLoadingTask = getDocument(buildGetDocumentParams("boundingBox_invalid.pdf"));
+        const pdfDoc = await viewLoadingTask.promise;
+        const numPages = pdfDoc.numPages;
+        console.assert(numPages === 3);
+        const viewPromises = [];
+        for (let i = 0; i < numPages; i++) {
+            viewPromises[i] = pdfDoc.getPage(i + 1).then(pdfPage => {
+                return pdfPage.view;
+            });
+        }
+        const [page1, page2, page3] = await Promise.all(viewPromises);
+        console.assert(page1.eq([0, 0, 612, 792]));
+        console.assert(page2.eq([0, 0, 800, 600]));
+        console.assert(page3.eq([0, 0, 600, 800]));
+        await viewLoadingTask.destroy();
+    }
+    console.log(`${++i}: it gets viewport...`);
+    {
+        const viewport = page.getViewport({ scale: 1.5, rotation: 90 });
+        console.assert(viewport.viewBox.eq(page.view));
+        console.assert(viewport.scale === 1.5);
+        console.assert(viewport.rotation === 90);
+        console.assert(viewport.transform.eq([0, 1.5, 1.5, 0, 0, 0]));
+        console.assert(viewport.width === 1262.835);
+        console.assert(viewport.height === 892.92);
+    }
+    console.log(`${++i}: it gets viewport with "offsetX/offsetY" arguments...`);
+    {
+        const viewport = page.getViewport({
+            scale: 1,
+            rotation: 0,
+            offsetX: 100,
+            offsetY: -100,
+        });
+        console.assert(viewport.transform.eq([1, 0, 0, -1, 100, 741.89]));
+    }
+    console.log(`${++i}: it gets viewport respecting "dontFlip" argument...`);
+    {
+        const scale = 1, rotation = 0;
+        const viewport = page.getViewport({ scale, rotation });
+        const dontFlipViewport = page.getViewport({
+            scale,
+            rotation,
+            dontFlip: true,
+        });
+        console.assert(!dontFlipViewport.eq(viewport));
+        console.assert(dontFlipViewport.eq(viewport.clone({ dontFlip: true })));
+        console.assert(viewport.transform.eq([1, 0, 0, -1, 0, 841.89]));
+        console.assert(dontFlipViewport.transform.eq([1, 0, -0, 1, 0, 0]));
+    }
+    console.log(`${++i}: it gets viewport with invalid rotation...`);
+    {
+        try {
+            page.getViewport({ scale: 1, rotation: 45 });
+            console.assert(!!0, "Shouldn't get here.");
+        }
+        catch (reason) {
+            console.assert(reason.message ===
+                "PageViewport: Invalid rotation, must be a multiple of 90 degrees.");
+        }
+    }
+    console.log(`${++i}: it gets annotations...`);
+    {
+        const defaultPromise = page.getAnnotations().then(data => {
+            console.assert(data.length === 4);
+        });
+        const anyPromise = page
+            .getAnnotations({ intent: "any" })
+            .then(data => {
+            console.assert(data.length === 4);
+        });
+        const displayPromise = page
+            .getAnnotations({ intent: "display" })
+            .then(data => {
+            console.assert(data.length === 4);
+        });
+        const printPromise = page
+            .getAnnotations({ intent: "print" })
+            .then(data => {
+            console.assert(data.length === 4);
+        });
+        await Promise.all([
+            defaultPromise,
+            anyPromise,
+            displayPromise,
+            printPromise,
+        ]);
+    }
+    console.log(`${++i}: it gets annotations containing relative URLs (bug 766086)...`);
+    {
+        const filename = "bug766086.pdf";
+        const defaultLoadingTask = getDocument(buildGetDocumentParams(filename));
+        const defaultPromise = defaultLoadingTask.promise.then(pdfDoc => pdfDoc.getPage(1).then(pdfPage => pdfPage.getAnnotations()));
+        const docBaseUrlLoadingTask = getDocument(buildGetDocumentParams(filename, {
+            docBaseUrl: "http://www.example.com/test/pdfs/qwerty.pdf",
+        }));
+        const docBaseUrlPromise = docBaseUrlLoadingTask.promise.then(pdfDoc => pdfDoc.getPage(1).then(pdfPage => pdfPage.getAnnotations()));
+        const invalidDocBaseUrlLoadingTask = getDocument(buildGetDocumentParams(filename, {
+            docBaseUrl: "qwerty.pdf",
+        }));
+        const invalidDocBaseUrlPromise = invalidDocBaseUrlLoadingTask.promise.then(pdfDoc => pdfDoc.getPage(1).then(pdfPage => pdfPage.getAnnotations()));
+        const [defaultAnnotations, docBaseUrlAnnotations, invalidDocBaseUrlAnnotations,] = await Promise.all([
+            defaultPromise,
+            docBaseUrlPromise,
+            invalidDocBaseUrlPromise,
+        ]);
+        console.assert(defaultAnnotations[0].url === undefined);
+        console.assert(defaultAnnotations[0].unsafeUrl ===
+            "../../0021/002156/215675E.pdf#15");
+        console.assert(docBaseUrlAnnotations[0].url ===
+            "http://www.example.com/0021/002156/215675E.pdf#15");
+        console.assert(docBaseUrlAnnotations[0].unsafeUrl ===
+            "../../0021/002156/215675E.pdf#15");
+        console.assert(invalidDocBaseUrlAnnotations[0].url === undefined);
+        console.assert(invalidDocBaseUrlAnnotations[0].unsafeUrl ===
+            "../../0021/002156/215675E.pdf#15");
+        await Promise.all([
+            defaultLoadingTask.destroy(),
+            docBaseUrlLoadingTask.destroy(),
+            invalidDocBaseUrlLoadingTask.destroy(),
+        ]);
+    }
+    console.log(`${++i}: it gets text content...`);
+    {
+        const defaultPromise = page.getTextContent();
+        const parametersPromise = page.getTextContent({
+            normalizeWhitespace: true,
+            disableCombineTextItems: true,
+        });
+        const data = await Promise.all([defaultPromise, parametersPromise]);
+        console.assert(!!data[0].items);
+        console.assert(data[0].items.length === 11);
+        console.assert(!!data[0].styles);
+        const page1 = mergeText(data[0].items);
+        console.assert(page1 === `Table Of Content
+Chapter 1 .......................................................... 2
+Paragraph 1.1 ...................................................... 3
+page 1 / 3`);
+        console.assert(!!data[1].items);
+        console.assert(data[1].items.length === 6);
+        console.assert(!!data[1].styles);
+    }
+    console.log(`${++i}: it gets text content, with correct properties (issue 8276)...`);
+    {
+        const loadingTask = getDocument(buildGetDocumentParams("issue8276_reduced.pdf"));
+        const pdfDoc = await loadingTask.promise;
+        const pdfPage = await pdfDoc.getPage(1);
+        const { items, styles } = await pdfPage.getTextContent();
+        console.assert(items.length === 1);
+        // Font name will a random object id.
+        const fontName = items[0].fontName;
+        console.assert(Object.keys(styles).eq([fontName]));
+        console.assert(items[0].eq({
+            dir: "ltr",
+            fontName,
+            height: 18,
+            str: "Issue 8276",
+            transform: [18, 0, 0, 18, 441.81, 708.4499999999999],
+            width: 77.49,
+            hasEOL: false,
+        }));
+        console.assert(styles[fontName].eq({
+            fontFamily: "serif",
+            ascent: NaN,
+            descent: NaN,
+            vertical: false,
+        }));
+        await loadingTask.destroy();
+    }
+    console.log(`${++i}: it gets text content, with no extra spaces (issue 13226)...`);
+    {
+        const loadingTask = getDocument(buildGetDocumentParams("issue13226.pdf"));
+        const pdfDoc = await loadingTask.promise;
+        const pdfPage = await pdfDoc.getPage(1);
+        const { items } = await pdfPage.getTextContent();
+        const text = mergeText(items);
+        console.assert(text ===
+            "Mitarbeiterinnen und Mitarbeiter arbeiten in über 100 Ländern engagiert im Dienste");
+        await loadingTask.destroy();
+    }
+    console.log(`${++i}: it gets text content, with merged spaces (issue 13201)...`);
+    {
+        const loadingTask = getDocument(buildGetDocumentParams("issue13201.pdf"));
+        const pdfDoc = await loadingTask.promise;
+        const pdfPage = await pdfDoc.getPage(1);
+        const { items } = await pdfPage.getTextContent();
+        const text = mergeText(items);
+        console.assert(text.includes("Abstract. A purely peer-to-peer version of electronic cash would allow online"));
+        console.assert(text.includes("avoid mediating disputes. The cost of mediation increases transaction costs, limiting the"));
+        console.assert(text.includes("system is secure as long as honest nodes collectively control more CPU power than any"));
+        await loadingTask.destroy();
+    }
+    //   console.log(`${++i}: it gets text content, with no spaces between letters of words (issue 11913)...`);
+    //   {
+    //     const loadingTask = getDocument(buildGetDocumentParams("issue11913.pdf"));
+    //     const pdfDoc = await loadingTask.promise;
+    //     const pdfPage = await pdfDoc.getPage(1);
+    //     const { items } = await pdfPage.getTextContent();
+    //     const text = mergeText( <TextItem[]>items );
+    //     console.assert(
+    //       text.includes(
+    //         "1. The first of these cases arises from the tragic handicap which has blighted the life of the Plaintiff, and from the response of the"
+    //       )
+    //     );
+    //     console.assert(
+    //       text.includes(
+    //         "argued in this Court the appeal raises narrower, but important, issues which may be summarised as follows:-"
+    //       )
+    //     );
+    //     await loadingTask.destroy();
+    //   }
+    //   console.log(`${++i}: it gets text content, with merged spaces (issue 10900)...`);
+    //   {
+    //     const loadingTask = getDocument(buildGetDocumentParams("issue10900.pdf"));
+    //     const pdfDoc = await loadingTask.promise;
+    //     const pdfPage = await pdfDoc.getPage(1);
+    //     const { items } = await pdfPage.getTextContent();
+    //     const text = mergeText( <TextItem[]>items );
+    //     console.assert(
+    //       text.includes(`3 3 3 3
+    // 851.5 854.9 839.3 837.5
+    // 633.6 727.8 789.9 796.2
+    // 1,485.1 1,582.7 1,629.2 1,633.7
+    // 114.2 121.7 125.3 130.7
+    // 13.0x 13.0x 13.0x 12.5x`)
+    //     );
+    //     await loadingTask.destroy();
+    //   }
+    console.log(`${++i}: it gets text content, with spaces (issue 10640)...`);
+    {
+        const loadingTask = getDocument(buildGetDocumentParams("issue10640.pdf"));
+        const pdfDoc = await loadingTask.promise;
+        const pdfPage = await pdfDoc.getPage(1);
+        const { items } = await pdfPage.getTextContent();
+        const text = mergeText(items);
+        console.assert(text.includes(`Open Sans is a humanist sans serif typeface designed by Steve Matteson.
+Open Sans was designed with an upright stress, open forms and a neu-
+tral, yet friendly appearance. It was optimized for print, web, and mobile
+interfaces, and has excellent legibility characteristics in its letterforms (see
+figure \x81 on the following page). This font is available from the Google Font
+Directory [\x81] as TrueType files licensed under the Apache License version \x82.\x80.
+This package provides support for this font in LATEX. It includes Type \x81
+versions of the fonts, converted for this package using FontForge from its
+sources, for full support with Dvips.`));
+        await loadingTask.destroy();
+    }
+    console.log(`${++i}: it gets text content, with beginbfrange operator handled correctly (bug 1627427)...`);
+    {
+        const loadingTask = getDocument(buildGetDocumentParams("bug1627427_reduced.pdf"));
+        const pdfDoc = await loadingTask.promise;
+        const pdfPage = await pdfDoc.getPage(1);
+        const { items } = await pdfPage.getTextContent();
+        const text = mergeText(items);
+        console.assert(text ===
+            "침하게 흐린 품이 눈이 올 듯하더니 눈은 아니 오고 얼다가 만 비가 추");
+        await loadingTask.destroy();
+    }
+    console.log(`${++i}: it gets empty structure tree...`);
+    {
+        const tree = await page.getStructTree();
+        console.assert(tree === undefined);
+    }
+    console.log(`${++i}: it gets simple structure tree...`);
+    {
+        const loadingTask = getDocument(buildGetDocumentParams("structure_simple.pdf"));
+        const pdfDoc = await loadingTask.promise;
+        const pdfPage = await pdfDoc.getPage(1);
+        const tree = await pdfPage.getStructTree();
+        console.assert(tree.eq({
+            role: "Root",
+            children: [
+                {
+                    role: "Document",
+                    children: [
+                        {
+                            role: "H1",
+                            children: [
+                                {
+                                    role: "NonStruct",
+                                    children: [{ type: "content", id: "page2R_mcid0" }],
+                                },
+                            ],
+                        },
+                        {
+                            role: "P",
+                            children: [
+                                {
+                                    role: "NonStruct",
+                                    children: [{ type: "content", id: "page2R_mcid1" }],
+                                },
+                            ],
+                        },
+                        {
+                            role: "H2",
+                            children: [
+                                {
+                                    role: "NonStruct",
+                                    children: [{ type: "content", id: "page2R_mcid2" }],
+                                },
+                            ],
+                        },
+                        {
+                            role: "P",
+                            children: [
+                                {
+                                    role: "NonStruct",
+                                    children: [{ type: "content", id: "page2R_mcid3" }],
+                                },
+                            ],
+                        },
+                    ],
+                },
+            ],
+        }));
+        await loadingTask.destroy();
+    }
+    console.log(`${++i}: it gets operator list...`);
+    {
+        const operatorList = await page.getOperatorList();
+        console.assert(operatorList.fnArray.length > 100);
+        console.assert(operatorList.argsArray.length > 100);
+        console.assert(operatorList.lastChunk === true);
+    }
+    // console.log(`${++i}: it gets operatorList with JPEG image (issue 4888)...`);
+    // {
+    //   const loadingTask = getDocument(buildGetDocumentParams("cmykjpeg.pdf"));
+    //   const pdfDoc = await loadingTask.promise;
+    //   const pdfPage = await pdfDoc.getPage(1);
+    //   const operatorList = await pdfPage.getOperatorList();
+    //   const imgIndex = operatorList.fnArray.indexOf(OPS.paintImageXObject);
+    //   const imgArgs = operatorList.argsArray[imgIndex];
+    //   const { data } = <ImgData>pdfPage.objs.get( (<any>imgArgs)[0] );
+    //   console.assert( data instanceof Uint8ClampedArray );
+    //   console.assert( data!.length > 90000 );
+    //   await loadingTask.destroy();
+    // }
+    console.log(`${++i}: it gets operatorList, from corrupt PDF file (issue 8702), with/without ${"`stopAtErrors`"} set...`);
+    {
+        const loadingTask1 = getDocument(buildGetDocumentParams("issue8702.pdf", {
+            stopAtErrors: false, // The default value.
+        }));
+        const loadingTask2 = getDocument(buildGetDocumentParams("issue8702.pdf", {
+            stopAtErrors: true,
+        }));
+        const result1 = loadingTask1.promise.then(pdfDoc => pdfDoc.getPage(1).then(pdfPage => pdfPage.getOperatorList().then(opList => {
+            console.assert(opList.fnArray.length > 100);
+            console.assert(opList.argsArray.length > 100);
+            console.assert(opList.lastChunk === true);
+            return loadingTask1.destroy();
+        })));
+        const result2 = loadingTask2.promise.then(pdfDoc => pdfDoc.getPage(1).then(pdfPage => pdfPage.getOperatorList().then(opList => {
+            console.assert(opList.fnArray.length === 0);
+            console.assert(opList.argsArray.length === 0);
+            console.assert(opList.lastChunk === true);
+            return loadingTask2.destroy();
+        })));
+        await Promise.all([result1, result2]);
+    }
+    console.log(`${++i}: it gets operator list, containing Annotation-operatorLists...`);
+    {
+        const loadingTask = getDocument(buildGetDocumentParams("annotation-line.pdf"));
+        const pdfDoc = await loadingTask.promise;
+        const pdfPage = await pdfDoc.getPage(1);
+        const operatorList = await pdfPage.getOperatorList();
+        console.assert(operatorList.fnArray.length > 20);
+        console.assert(operatorList.argsArray.length > 20);
+        console.assert(operatorList.lastChunk === true);
+        // The `getOperatorList` method, similar to the `render` method,
+        // is supposed to include any existing Annotation-operatorLists.
+        console.assert(operatorList.fnArray.includes(OPS.beginAnnotation));
+        console.assert(operatorList.fnArray.includes(OPS.endAnnotation));
+        await loadingTask.destroy();
+    }
+    console.log(`${++i}: it gets operator list, with ${"`annotationMode`"}-option...`);
+    {
+        const loadingTask = getDocument(buildGetDocumentParams("evaljs.pdf"));
+        const pdfDoc = await loadingTask.promise;
+        const pdfPage = await pdfDoc.getPage(2);
+        pdfDoc.annotationStorage.setValue("30R", { value: "test" });
+        pdfDoc.annotationStorage.setValue("31R", { value: true });
+        const opListAnnotDisable = await pdfPage.getOperatorList({
+            annotationMode: AnnotationMode.DISABLE,
+        });
+        console.assert(opListAnnotDisable.fnArray.length === 0);
+        console.assert(opListAnnotDisable.argsArray.length === 0);
+        console.assert(opListAnnotDisable.lastChunk === true);
+        const opListAnnotEnable = await pdfPage.getOperatorList({
+            annotationMode: AnnotationMode.ENABLE,
+        });
+        console.assert(opListAnnotEnable.fnArray.length > 150);
+        console.assert(opListAnnotEnable.argsArray.length > 150);
+        console.assert(opListAnnotEnable.lastChunk === true);
+        const opListAnnotEnableForms = await pdfPage.getOperatorList({
+            annotationMode: AnnotationMode.ENABLE_FORMS,
+        });
+        console.assert(opListAnnotEnableForms.fnArray.length > 40);
+        console.assert(opListAnnotEnableForms.argsArray.length > 40);
+        console.assert(opListAnnotEnableForms.lastChunk === true);
+        const opListAnnotEnableStorage = await pdfPage.getOperatorList({
+            annotationMode: AnnotationMode.ENABLE_STORAGE,
+        });
+        console.assert(opListAnnotEnableStorage.fnArray.length > 170);
+        console.assert(opListAnnotEnableStorage.argsArray.length > 170);
+        console.assert(opListAnnotEnableStorage.lastChunk === true);
+        // Sanity check to ensure that the `annotationMode` is correctly applied.
+        console.assert(opListAnnotDisable.fnArray.length < opListAnnotEnableForms.fnArray.length);
+        console.assert(opListAnnotEnableForms.fnArray.length < opListAnnotEnable.fnArray.length);
+        console.assert(opListAnnotEnable.fnArray.length < opListAnnotEnableStorage.fnArray.length);
+        await loadingTask.destroy();
+    }
+    console.log(`${++i}: it gets document stats after parsing page...`);
+    {
+        const stats = await page.getOperatorList().then(() => pdfDocument.getStats());
+        const expectedStreamTypes = {};
+        expectedStreamTypes[StreamType.FLATE] = true;
+        const expectedFontTypes = {};
+        expectedFontTypes[FontType.TYPE1STANDARD] = true;
+        expectedFontTypes[FontType.CIDFONTTYPE2] = true;
+        console.assert(stats.eq({
+            streamTypes: expectedStreamTypes,
+            fontTypes: expectedFontTypes,
+        }));
+    }
+    console.log(`${++i}: it gets page stats after parsing page, without ${"`pdfBug`"} set...`);
+    {
+        await page.getOperatorList();
+        console.assert(page.stats === null);
+    }
+    // console.log(`${++i}: it gets page stats after parsing page, with ${"`pdfBug`"} set...`);
+    // {
+    //   const loadingTask = getDocument(
+    //     buildGetDocumentParams(basicApiFileName, { pdfBug: true })
+    //   );
+    //   const pdfDoc = await loadingTask.promise;
+    //   const pdfPage = await pdfDoc.getPage(1);
+    //   await pdfPage.getOperatorList();
+    //   const stats = pdfPage.stats;
+    //   console.assert( stats instanceof StatTimer );
+    //   console.assert( stats!.times.length === 1 );
+    //   const [statEntry] = stats!.times;
+    //   console.assert( statEntry.name === "Page Request" );
+    //   console.assert( statEntry.end - statEntry.start >= 0 );
+    //   await loadingTask.destroy();
+    // }
+    // console.log(`${++i}: it gets page stats after rendering page, with ${"`pdfBug`"} set...`);
+    // {
+    //   const loadingTask = getDocument(
+    //     buildGetDocumentParams(basicApiFileName, { pdfBug: true })
+    //   );
+    //   const pdfDoc = await loadingTask.promise;
+    //   const pdfPage = await pdfDoc.getPage(1);
+    //   const viewport = pdfPage.getViewport({ scale: 1 });
+    //   const canvasAndCtx = CanvasFactory.create(
+    //     viewport.width,
+    //     viewport.height
+    //   );
+    //   const renderTask = pdfPage.render({
+    //     canvasContext: canvasAndCtx.context,
+    //     canvasFactory: CanvasFactory,
+    //     viewport,
+    //   });
+    //   console.assert( renderTask instanceof RenderTask );
+    //   await renderTask.promise;
+    //   const stats = pdfPage.stats;
+    //   console.assert( stats instanceof StatTimer );
+    //   console.assert( stats!.times.length === 3 );
+    //   const [statEntryOne, statEntryTwo, statEntryThree] = stats!.times;
+    //   console.assert( statEntryOne.name === "Page Request" );
+    //   console.assert( statEntryOne.end - statEntryOne.start >= 0 );
+    //   console.assert( statEntryTwo.name === "Rendering" );
+    //   console.assert( statEntryTwo.end - statEntryTwo.start > 0 );
+    //   console.assert( statEntryThree.name === "Overall" );
+    //   console.assert( statEntryThree.end - statEntryThree.start > 0 );
+    //   CanvasFactory.destroy(canvasAndCtx);
+    //   await loadingTask.destroy();
+    // }
+    console.log(`${++i}: it cancels rendering of page...`);
+    {
+        const viewport = page.getViewport({ scale: 1 });
+        const canvasAndCtx = CanvasFactory.create(viewport.width, viewport.height);
+        const renderTask = page.render({
+            canvasContext: canvasAndCtx.context,
+            canvasFactory: CanvasFactory,
+            viewport,
+        });
+        console.assert(renderTask instanceof RenderTask);
+        renderTask.cancel();
+        try {
+            await renderTask.promise;
+            console.assert(!!0, "Shouldn't get here.");
+        }
+        catch (reason) {
+            console.assert(reason instanceof RenderingCancelledException);
+            console.assert(reason.message === "Rendering cancelled, page 1");
+            console.assert(reason.type === "canvas");
+        }
+        CanvasFactory.destroy(canvasAndCtx);
+    }
+    console.log(`${++i}: it re-renders page, using the same canvas, after cancelling rendering...`);
+    {
+        const viewport = page.getViewport({ scale: 1 });
+        const canvasAndCtx = CanvasFactory.create(viewport.width, viewport.height);
+        const renderTask = page.render({
+            canvasContext: canvasAndCtx.context,
+            canvasFactory: CanvasFactory,
+            viewport,
+        });
+        console.assert(renderTask instanceof RenderTask);
+        renderTask.cancel();
+        try {
+            await renderTask.promise;
+            console.assert(!!0, "Shouldn't get here.");
+        }
+        catch (reason) {
+            console.assert(reason instanceof RenderingCancelledException);
+        }
+        const reRenderTask = page.render({
+            canvasContext: canvasAndCtx.context,
+            canvasFactory: CanvasFactory,
+            viewport,
+        });
+        console.assert(reRenderTask instanceof RenderTask);
+        await reRenderTask.promise;
+        CanvasFactory.destroy(canvasAndCtx);
+    }
+    console.log(`${++i}: multiple render() on the same canvas...`);
+    {
+        const optionalContentConfigPromise = pdfDocument.getOptionalContentConfig();
+        const viewport = page.getViewport({ scale: 1 });
+        const canvasAndCtx = CanvasFactory.create(viewport.width, viewport.height);
+        const renderTask1 = page.render({
+            canvasContext: canvasAndCtx.context,
+            canvasFactory: CanvasFactory,
+            viewport,
+            optionalContentConfigPromise,
+        });
+        console.assert(renderTask1 instanceof RenderTask);
+        const renderTask2 = page.render({
+            canvasContext: canvasAndCtx.context,
+            canvasFactory: CanvasFactory,
+            viewport,
+            optionalContentConfigPromise,
+        });
+        console.assert(renderTask2 instanceof RenderTask);
+        await Promise.all([
+            renderTask1.promise,
+            renderTask2.promise.then(() => {
+                console.assert(!!0, "Shouldn't get here.");
+            }, reason => {
+                // It fails because we are already using this canvas.
+                console.assert(/multiple render\(\)/.test(reason.message));
+            }),
+        ]);
+    }
+    console.log(`${++i}: it cleans up document resources after rendering of page...`);
+    {
+        const loadingTask = getDocument(buildGetDocumentParams(basicApiFileName));
+        const pdfDoc = await loadingTask.promise;
+        const pdfPage = await pdfDoc.getPage(1);
+        const viewport = pdfPage.getViewport({ scale: 1 });
+        const canvasAndCtx = CanvasFactory.create(viewport.width, viewport.height);
+        const renderTask = pdfPage.render({
+            canvasContext: canvasAndCtx.context,
+            canvasFactory: CanvasFactory,
+            viewport,
+        });
+        console.assert(renderTask instanceof RenderTask);
+        await renderTask.promise;
+        await pdfDoc.cleanup();
+        CanvasFactory.destroy(canvasAndCtx);
+        await loadingTask.destroy();
+    }
+    console.log(`${++i}: it cleans up document resources during rendering of page...`);
+    {
+        const loadingTask = getDocument(buildGetDocumentParams("tracemonkey.pdf"));
+        const pdfDoc = await loadingTask.promise;
+        const pdfPage = await pdfDoc.getPage(1);
+        const viewport = pdfPage.getViewport({ scale: 1 });
+        const canvasAndCtx = CanvasFactory.create(viewport.width, viewport.height);
+        const renderTask = pdfPage.render({
+            canvasContext: canvasAndCtx.context,
+            canvasFactory: CanvasFactory,
+            viewport,
+        });
+        console.assert(renderTask instanceof RenderTask);
+        // Ensure that clean-up runs during rendering.
+        renderTask.onContinue = function (cont) {
+            waitSome(cont);
+        };
+        try {
+            await pdfDoc.cleanup();
+            console.assert(!!0, "Shouldn't get here.");
+        }
+        catch (reason) {
+            console.assert(reason instanceof Error);
+            console.assert(reason.message ===
+                "startCleanup: Page 1 is currently rendering.");
+        }
+        await renderTask.promise;
+        CanvasFactory.destroy(canvasAndCtx);
+        await loadingTask.destroy();
+    }
+    // console.log(`${++i}: it caches image resources at the document/page level as expected (issue 11878)...`);
+    // {
+    //   const { NUM_PAGES_THRESHOLD } = GlobalImageCache,
+    //     EXPECTED_WIDTH = 2550,
+    //     EXPECTED_HEIGHT = 3300;
+    //   const loadingTask = getDocument(buildGetDocumentParams("issue11878.pdf"));
+    //   const pdfDoc = await loadingTask.promise;
+    //   let firstImgData:ImgData | undefined;
+    //   for (let i = 1; i <= pdfDoc.numPages; i++) 
+    //   {
+    //     const pdfPage = await pdfDoc.getPage(i);
+    //     const opList = await pdfPage.getOperatorList();
+    //     const { commonObjs, objs } = pdfPage;
+    //     const imgIndex = opList.fnArray.indexOf(OPS.paintImageXObject);
+    //     const [objId, width, height] = <[string,number,number]>opList.argsArray[imgIndex];
+    //     if (i < NUM_PAGES_THRESHOLD) 
+    //     {
+    //       console.assert( objId === `img_p${i - 1}_1` );
+    //       console.assert( objs.has(objId) );
+    //       console.assert( !commonObjs.has(objId) );
+    //     } 
+    //     else {
+    //       console.assert( objId ===
+    //         `g_${loadingTask.docId}_img_p${NUM_PAGES_THRESHOLD - 1}_1`
+    //       );
+    //       console.assert( objs.has(objId) );
+    //       console.assert( commonObjs.has(objId) );
+    //     }
+    //     console.assert( width === EXPECTED_WIDTH );
+    //     console.assert( height === EXPECTED_HEIGHT );
+    //     // Ensure that the actual image data is identical for all pages.
+    //     if (i === 1) 
+    //     {
+    //       firstImgData = <ImgData>objs.get(objId);
+    //       console.assert( firstImgData.width === EXPECTED_WIDTH );
+    //       console.assert( firstImgData.height === EXPECTED_HEIGHT );
+    //       console.assert( firstImgData.kind === ImageKind.RGB_24BPP );
+    //       console.assert( firstImgData.data instanceof Uint8ClampedArray );
+    //       console.assert( firstImgData.data!.length === 25245000 );
+    //     } 
+    //     else {
+    //       const objsPool = i >= NUM_PAGES_THRESHOLD ? commonObjs : objs;
+    //       const currentImgData = <ImgData>objsPool.get(objId);
+    //       console.assert( currentImgData.width === firstImgData!.width );
+    //       console.assert( currentImgData.height === firstImgData!.height );
+    //       console.assert( currentImgData.kind === firstImgData!.kind );
+    //       console.assert( currentImgData.data instanceof Uint8ClampedArray );
+    //       console.assert( 
+    //         currentImgData.data!.every(
+    //           (value, index) => value === firstImgData!.data![index]
+    //         )
+    //       );
+    //     }
+    //   }
+    //   await loadingTask.destroy();
+    //   firstImgData = undefined;
+    // }
     await pdfLoadingTask.destroy();
 }
-//! unsynchronized
 console.log("%c>>>>>>> test Multiple `getDocument` instances >>>>>>>", `color:${css_1}`);
 {
-    //
+    // Regression test for https://github.com/mozilla/pdf.js/issues/6205
+    // A PDF using the Helvetica font.
+    const pdf1 = buildGetDocumentParams("tracemonkey.pdf");
+    // A PDF using the Times font.
+    const pdf2 = buildGetDocumentParams("TAMReview.pdf");
+    // A PDF using the Arial font.
+    const pdf3 = buildGetDocumentParams("issue6068.pdf");
+    const loadingTasks = [];
+    // Render the first page of the given PDF file.
+    // Fulfills the promise with the base64-encoded version of the PDF.
+    async function renderPDF(filename) {
+        const loadingTask = getDocument(filename);
+        loadingTasks.push(loadingTask);
+        const pdf = await loadingTask.promise;
+        const page = await pdf.getPage(1);
+        const viewport = page.getViewport({ scale: 1.2 });
+        const canvasAndCtx = CanvasFactory.create(viewport.width, viewport.height);
+        const renderTask = page.render({
+            canvasContext: canvasAndCtx.context,
+            canvasFactory: CanvasFactory,
+            viewport,
+        });
+        await renderTask.promise;
+        const data = canvasAndCtx.canvas.toDataURL();
+        CanvasFactory.destroy(canvasAndCtx);
+        return data;
+    }
+    async function afterEach() {
+        // Issue 6205 reported an issue with font rendering, so clear the loaded
+        // fonts so that we can see whether loading PDFs in parallel does not
+        // cause any issues with the rendered fonts.
+        const destroyPromises = loadingTasks.map(loadingTask => loadingTask.destroy());
+        await Promise.all(destroyPromises);
+    }
+    console.log(`it should correctly render PDFs in parallel...`);
+    {
+        let baseline1, baseline2, baseline3;
+        const promiseDone = renderPDF(pdf1)
+            .then(data1 => {
+            baseline1 = data1;
+            return renderPDF(pdf2);
+        })
+            .then(data2 => {
+            baseline2 = data2;
+            return renderPDF(pdf3);
+        })
+            .then(data3 => {
+            baseline3 = data3;
+            return Promise.all([
+                renderPDF(pdf1),
+                renderPDF(pdf2),
+                renderPDF(pdf3),
+            ]);
+        })
+            .then(dataUrls => {
+            console.assert(dataUrls[0] === baseline1);
+            console.assert(dataUrls[1] === baseline2);
+            console.assert(dataUrls[2] === baseline3);
+            return true;
+        });
+        await promiseDone;
+    }
+    await afterEach();
 }
-//! unsynchronized
 console.log("%c>>>>>>> test PDFDataRangeTransport >>>>>>>", `color:${css_1}`);
 {
-    //
+    const fileName = "tracemonkey.pdf";
+    let dataPromise = DefaultFileReaderFactory.fetch({
+        path: TEST_PDFS_PATH + fileName,
+    });
+    console.log(`it should fetch document info and page using ranges...`);
+    {
+        const initialDataLength = 4000;
+        let fetches = 0;
+        const data = await dataPromise;
+        const initialData = data.subarray(0, initialDataLength);
+        const transport = new PDFDataRangeTransport(data.length, initialData);
+        transport.requestDataRange = (begin, end) => {
+            fetches++;
+            waitSome(() => {
+                transport.onDataProgress(4000, undefined);
+                transport.onDataRange(begin, data.subarray(begin, end));
+            });
+        };
+        const loadingTask = getDocument(transport);
+        const pdfDocument = await loadingTask.promise;
+        console.assert(pdfDocument.numPages === 14);
+        const pdfPage = await pdfDocument.getPage(10);
+        console.assert(pdfPage.rotate === 0);
+        console.assert(fetches > 2);
+        await loadingTask.destroy();
+    }
+    console.log(`it should fetch document info and page using range and streaming...`);
+    {
+        const initialDataLength = 4000;
+        let fetches = 0;
+        const data = await dataPromise;
+        const initialData = data.subarray(0, initialDataLength);
+        const transport = new PDFDataRangeTransport(data.length, initialData);
+        transport.requestDataRange = function (begin, end) {
+            fetches++;
+            if (fetches === 1) {
+                // Send rest of the data on first range request.
+                transport.onDataProgressiveRead(data.subarray(initialDataLength));
+            }
+            waitSome(function () {
+                transport.onDataRange(begin, data.subarray(begin, end));
+            });
+        };
+        const loadingTask = getDocument(transport);
+        const pdfDocument = await loadingTask.promise;
+        console.assert(pdfDocument.numPages === 14);
+        const pdfPage = await pdfDocument.getPage(10);
+        console.assert(pdfPage.rotate === 0);
+        console.assert(fetches === 1);
+        await new Promise(resolve => {
+            waitSome(resolve);
+        });
+        await loadingTask.destroy();
+    }
+    console.log(`it should fetch document info and page, without range, using complete initialData...`);
+    {
+        let fetches = 0;
+        const data = await dataPromise;
+        const transport = new PDFDataRangeTransport(data.length, data, 
+        /* progressiveDone = */ true);
+        transport.requestDataRange = function (begin, end) {
+            fetches++;
+        };
+        const loadingTask = getDocument({
+            disableRange: true,
+            range: transport,
+        });
+        const pdfDocument = await loadingTask.promise;
+        console.assert(pdfDocument.numPages === 14);
+        const pdfPage = await pdfDocument.getPage(10);
+        console.assert(pdfPage.rotate === 0);
+        console.assert(fetches === 0);
+        await loadingTask.destroy();
+    }
+    dataPromise = undefined;
 }
 CanvasFactory = undefined;
 /*81---------------------------------------------------------------------------*/

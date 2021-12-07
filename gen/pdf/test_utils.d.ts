@@ -14,7 +14,7 @@ declare class DOMFileReaderFactory {
     }): Promise<Uint8Array>;
 }
 export declare const DefaultFileReaderFactory: typeof DOMFileReaderFactory;
-interface BuildGetDocumentParamsOptions {
+export interface BuildGetDocumentParamsOptions {
     disableFontFace?: boolean;
     docBaseUrl?: string;
     ownerDocument?: unknown;
@@ -22,6 +22,7 @@ interface BuildGetDocumentParamsOptions {
     pdfBug?: boolean;
     stopAtErrors?: boolean;
     worker?: PDFWorker;
+    withCredentials?: boolean;
 }
 export declare function buildGetDocumentParams(filename: string, options?: BuildGetDocumentParamsOptions): DocumentInitParms;
 interface XRefMockCtorParms {

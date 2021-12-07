@@ -1,5 +1,5 @@
+import { PromiseCap } from "../../lib/promisecap.js";
 import { PDFDocumentProxy } from "../pdf.ts-src/display/api.js";
-import { type PromiseCapability } from "../pdf.ts-src/shared/util.js";
 import { type IPDFLinkService } from "./interfaces.js";
 import { EventBus } from "./ui_utils.js";
 export declare const enum FindState {
@@ -47,7 +47,7 @@ export declare class PDFFindController {
         matchIdx: number;
     };
     get state(): FindCtrlrState | undefined;
-    _firstPageCapability: PromiseCapability;
+    _firstPageCapability: PromiseCap;
     _rawQuery?: string;
     constructor({ linkService, eventBus }: PDFFindControllerOptions);
     /**

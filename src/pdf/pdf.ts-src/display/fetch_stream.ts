@@ -17,16 +17,14 @@
  * limitations under the License.
  */
 
+import { createPromiseCap } from "../../../lib/promisecap.js";
 import { assert } from "../../../lib/util/trace.js";
 import { 
   type IPDFStream, 
   type IPDFStreamRangeReader, 
   type IPDFStreamReader, 
   type ReadValue } from "../interfaces.js";
-import {
-  AbortException,
-  createPromiseCapability,
-} from "../shared/util.js";
+import { AbortException, } from "../shared/util.js";
 import { type DocumentInitParms } from "./api.js";
 import {
   createResponseStatusError,
@@ -139,7 +137,7 @@ class PDFFetchStreamReader implements IPDFStreamReader
   /** @implements */
   get contentLength() { return this.#contentLength!; }
 
-  #headersCapability = createPromiseCapability();
+  #headersCapability = createPromiseCap();
   get headersReady() { return this.#headersCapability.promise; }
 
   #disableRange:boolean;
@@ -263,7 +261,7 @@ class PDFFetchStreamRangeReader implements IPDFStreamRangeReader
   #reader:ReadableStreamDefaultReader<Uint8Array> | undefined
   _loaded = 0;
   #withCredentials:boolean;
-  #readCapability = createPromiseCapability();
+  #readCapability = createPromiseCap();
 
   #isStreamingSupported:boolean;
   /** @implements */

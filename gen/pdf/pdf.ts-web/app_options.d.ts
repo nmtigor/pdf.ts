@@ -7,6 +7,11 @@ export declare const enum OptionKind {
     WORKER = 8,
     PREFERENCE = 128
 }
+export declare const enum ViewOnLoad {
+    UNKNOWN = -1,
+    PREVIOUS = 0,
+    INITIAL = 1
+}
 /**
  * NOTE: These options are used to generate the `default_preferences.json` file,
  *       see `OptionKind.PREFERENCE`, hence the values below must use only
@@ -145,8 +150,8 @@ declare const defaultOptions: {
         kind: number;
     };
     viewOnLoad: {
-        /** @type {boolean} */
-        value: number;
+        /** @type {ViewOnLoad} */
+        value: ViewOnLoad;
         kind: number;
     };
     cMapPacked: {

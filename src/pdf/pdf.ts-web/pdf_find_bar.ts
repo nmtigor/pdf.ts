@@ -162,25 +162,21 @@ export class PDFFindBar
         let key = "find_match_count_limit";
 
         // #if MOZCENTRAL
-        // if (typeof PDFJSDev !== "undefined" && PDFJSDev.test("MOZCENTRAL")) {
-        // TODO: Remove this hard-coded `[other]` form once plural support has
-        // been implemented in the mozilla-central specific `l10n.js` file.
-        key += "[other]";
-        // }
+          // TODO: Remove this hard-coded `[other]` form once plural support has
+          // been implemented in the mozilla-central specific `l10n.js` file.
+          key += "[other]";
         // #endif
-        matchCountMsg = this.l10n.get(key, { limit: limit+"" });
+        matchCountMsg = this.l10n.get(key, { limit: <any>limit });
       }
       else {
         let key = "find_match_count";
 
         // #if MOZCENTRAL
-        // if (typeof PDFJSDev !== "undefined" && PDFJSDev.test("MOZCENTRAL")) {
-        // TODO: Remove this hard-coded `[other]` form once plural support has
-        // been implemented in the mozilla-central specific `l10n.js` file.
-        key += "[other]";
-        // }
+          // TODO: Remove this hard-coded `[other]` form once plural support has
+          // been implemented in the mozilla-central specific `l10n.js` file.
+          key += "[other]";
         // #endif
-        matchCountMsg = this.l10n.get(key, { current: current+"", total: total+"" });
+        matchCountMsg = this.l10n.get(key, { current: <any>current, total: <any>total });
       }
     }
     matchCountMsg.then(msg => {

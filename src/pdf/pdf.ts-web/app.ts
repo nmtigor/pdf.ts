@@ -18,6 +18,7 @@
  */
 /* globals PDFBug, Stats */
 
+import { createPromiseCap } from "../../lib/promisecap.js";
 import "../../lib/jslang.js";
 import {
   animationStarted,
@@ -46,11 +47,11 @@ import {
   AppOptions, 
   compatibilityParams, 
   OptionKind, 
+  ViewOnLoad, 
   type OptionName 
 } from "./app_options.js";
 import {
   build,
-  createPromiseCapability,
   getDocument,
   getFilenameFromUrl,
   GlobalWorkerOptions,
@@ -115,12 +116,6 @@ const DISABLE_AUTO_FETCH_LOADING_BAR_TIMEOUT = 5000; // ms
 const FORCE_PAGES_LOADED_TIMEOUT = 10000; // ms
 const WHEEL_ZOOM_DISABLED_TIMEOUT = 1000; // ms
 const ENABLE_PERMISSIONS_CLASS = "enablePermissions";
-
-const enum ViewOnLoad {
-  UNKNOWN = -1,
-  PREVIOUS = 0, // Default value.
-  INITIAL = 1,
-}
 
 const ViewerCssTheme = {
   AUTOMATIC: 0, // Default value.
@@ -341,7 +336,7 @@ export class PDFViewerApplication
   initialBookmark:string | undefined = document.location.hash.substring(1);
   initialRotation?:number | undefined;
   
-  #initializedCapability = createPromiseCapability();
+  #initializedCapability = createPromiseCap();
   _fellback = false;
   appConfig!:ViewerConfiguration;
   pdfDocument:PDFDocumentProxy | undefined;
@@ -1135,10 +1130,8 @@ export class PDFViewerApplication
         this.load(pdfDocument);
       },
       exception => {
-        if (loadingTask !== this.pdfLoadingTask) 
-        {
-          return undefined; // Ignore errors for previously opened PDF files.
-        }
+        // Ignore errors for previously opened PDF files.
+        if( loadingTask !== this.pdfLoadingTask ) return undefined; 
 
         let key = "loading_error";
         if (exception instanceof InvalidPDFException) 
@@ -1295,7 +1288,7 @@ export class PDFViewerApplication
         }
         if (moreInfo.lineNumber) {
           moreInfoText.push(
-            this.l10n.get("error_line", { line: moreInfo.lineNumber+"" })
+            this.l10n.get("error_line", { line: <any>moreInfo.lineNumber })
           );
         }
       }
@@ -1411,8 +1404,8 @@ export class PDFViewerApplication
       undefined
     );
 
-    this.toolbar!.setPagesCount(pdfDocument.numPages, false);
-    this.secondaryToolbar!.setPagesCount(pdfDocument.numPages);
+    this.toolbar.setPagesCount(pdfDocument.numPages, false);
+    this.secondaryToolbar.setPagesCount(pdfDocument.numPages);
 
     let baseDocumentUrl;
     // #if GENERIC
@@ -1453,7 +1446,7 @@ export class PDFViewerApplication
       });
 
     firstPagePromise!.then( pdfPage => {
-      this.loadingBar.setWidth( this.appConfig!.viewerContainer );
+      this.loadingBar.setWidth( this.appConfig.viewerContainer );
       this.#initializeAnnotationStorageCallbacks( pdfDocument );
 
       Promise.all([
@@ -1580,11 +1573,10 @@ export class PDFViewerApplication
 
     onePageRendered!.then(() => {
       pdfDocument.getOutline().then(outline => {
-        if (pdfDocument !== this.pdfDocument) 
-        {
-          return; // The document was closed while the outline resolved.
-        }
-        this.pdfOutlineViewer!.render({ outline, pdfDocument });
+        // The document was closed while the outline resolved.
+        if( pdfDocument !== this.pdfDocument ) return; 
+
+        this.pdfOutlineViewer.render({ outline, pdfDocument });
       });
       pdfDocument.getAttachments().then(attachments => {
         if (pdfDocument !== this.pdfDocument) 
@@ -2708,18 +2700,18 @@ function webViewerUpdateViewarea( evt:EventMap['updateviewarea'] )
         /* unable to write to storage */
       });
   }
-  const href = viewerapp.pdfLinkService!.getAnchorUrl(
+  const href = viewerapp.pdfLinkService.getAnchorUrl(
     location.pdfOpenParams
   );
-  viewerapp.appConfig!.toolbar.viewBookmark.href = href;
-  viewerapp.appConfig!.secondaryToolbar.viewBookmarkButton.href = href;
+  viewerapp.appConfig.toolbar.viewBookmark.href = href;
+  viewerapp.appConfig.secondaryToolbar.viewBookmarkButton.href = href;
 
   // Show/hide the loading indicator in the page number input element.
-  const currentPage = viewerapp.pdfViewer!.getPageView(
+  const currentPage = viewerapp.pdfViewer.getPageView(
     /* index = */ viewerapp.page - 1
   );
   const loading = currentPage?.renderingState !== RenderingStates.FINISHED;
-  viewerapp.toolbar!.updateLoadingIndicatorState(loading);
+  viewerapp.toolbar.updateLoadingIndicatorState(loading);
 }
 
 function webViewerScrollModeChanged( evt:EventMap['scrollmodechanged'] )

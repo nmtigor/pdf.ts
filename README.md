@@ -9,7 +9,7 @@ It is
 
 ### Current States - TODO
 
-* Sync [tests](https://nmtigor.github.io/pdf.ts/src/test/pdf_test.html). (~45s)
+* Sync [tests](https://nmtigor.github.io/pdf.ts/src/test/pdf_test.html). (~60s)
 * `GENERIC` build.
 * On browsers.
 * `enableScripting` is `false`.

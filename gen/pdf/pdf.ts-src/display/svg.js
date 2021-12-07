@@ -996,7 +996,6 @@ export class SVGGraphics {
         this.transformMatrix = matrix;
         if (paintType === 2) {
             const cssColor = Util.makeHexColor(color[0], color[1], color[2]);
-            // const cssColor = Util.makeHexColor(...color); //kkkk bug?
             this.current.fillColor = cssColor;
             this.current.strokeColor = cssColor;
         }
@@ -1041,10 +1040,10 @@ export class SVGGraphics {
                         gradient.setAttributeNS(null, "gradientUnits", "userSpaceOnUse");
                         gradient.setAttributeNS(null, "cx", circlePoint[0].toString());
                         gradient.setAttributeNS(null, "cy", circlePoint[1].toString());
-                        gradient.setAttributeNS(null, "r", circleRadius + "");
+                        gradient.setAttributeNS(null, "r", circleRadius);
                         gradient.setAttributeNS(null, "fx", focalPoint[0].toString());
                         gradient.setAttributeNS(null, "fy", focalPoint[1].toString());
-                        gradient.setAttributeNS(null, "fr", focalRadius + "");
+                        gradient.setAttributeNS(null, "fr", focalRadius);
                         break;
                     default:
                         throw new Error(`Unknown RadialAxial type: ${args[1]}`);

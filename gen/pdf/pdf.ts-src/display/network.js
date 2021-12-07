@@ -15,9 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { createPromiseCap } from "../../../lib/promisecap.js";
 import { HttpStatusCode } from "../../../lib/HttpStatusCode.js";
 import { assert } from "../../../lib/util/trace.js";
-import { createPromiseCapability, stringToBytes, } from "../shared/util.js";
+import { stringToBytes, } from "../shared/util.js";
 import { createResponseStatusError, extractFilenameFromHeader, validateRangeRequestCapabilities, } from "./network_utils.js";
 /*81---------------------------------------------------------------------------*/
 function getArrayBuffer(xhr) {
@@ -206,7 +207,7 @@ class PDFNetworkStreamFullRequestReader {
     #manager;
     #url;
     #fullRequestId;
-    #headersReceivedCapability = createPromiseCapability();
+    #headersReceivedCapability = createPromiseCap();
     get headersReady() { return this.#headersReceivedCapability.promise; }
     #disableRange;
     #contentLength;
@@ -234,7 +235,7 @@ class PDFNetworkStreamFullRequestReader {
         };
         this.#url = source.url;
         this.#fullRequestId = manager.requestFull(args);
-        // this.#headersReceivedCapability = createPromiseCapability();
+        // this.#headersReceivedCapability = createPromiseCap();
         this.#disableRange = source.disableRange || false;
         this.#contentLength = source.length; // Optional
         this.#rangeChunkSize = source.rangeChunkSize;
@@ -314,7 +315,7 @@ class PDFNetworkStreamFullRequestReader {
         if (this.#done) {
             return { value: undefined, done: true };
         }
-        const requestCapability = createPromiseCapability();
+        const requestCapability = createPromiseCap();
         this.#requests.push(requestCapability);
         return requestCapability.promise;
     }
@@ -397,7 +398,7 @@ class PDFNetworkStreamRangeRequestReader {
         if (this.#done) {
             return { value: undefined, done: true };
         }
-        const requestCapability = createPromiseCapability();
+        const requestCapability = createPromiseCap();
         this.#requests.push(requestCapability);
         return requestCapability.promise;
     }

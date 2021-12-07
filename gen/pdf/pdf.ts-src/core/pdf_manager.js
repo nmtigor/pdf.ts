@@ -96,17 +96,17 @@ export class LocalPdfManager extends BasePdfManager {
     //   }
     //   return value;
     // }
-    /** @override */
+    /** @implements */
     requestRange(begin, end) {
         return Promise.resolve();
     }
-    /** @override */
+    /** @implements */
     requestLoadedStream() { }
     /** @implements */
     onLoadedStream() {
         return this.#loadedStreamPromise;
     }
-    /** @override */
+    /** @implements */
     terminate(reason) { }
 }
 export class NetworkPdfManager extends BasePdfManager {
@@ -143,11 +143,11 @@ export class NetworkPdfManager extends BasePdfManager {
             return this.ensure(obj, prop, args);
         }
     }
-    /** @override */
+    /** @implements */
     requestRange(begin, end) {
         return this.streamManager.requestRange(begin, end);
     }
-    /** @override */
+    /** @implements */
     requestLoadedStream() {
         this.streamManager.requestAllChunks();
     }
@@ -158,7 +158,7 @@ export class NetworkPdfManager extends BasePdfManager {
     onLoadedStream() {
         return this.streamManager.onLoadedStream();
     }
-    /** @override */
+    /** @implements */
     terminate(reason) {
         this.streamManager.abort(reason);
     }

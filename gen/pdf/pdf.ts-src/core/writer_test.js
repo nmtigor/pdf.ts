@@ -102,7 +102,7 @@ console.log("%c>>>>>>> test writeDict() >>>>>>>", `color:${css_1}`);
         dict.set("NullArr", [null, 10]);
         dict.set("NullVal", null);
         const buffer = [];
-        writeDict(dict, buffer, null);
+        writeDict(dict, buffer);
         const expected = "<< /A /B /B 123 456 R /C 789 /D (hello world) " +
             "/E (\\(hello\\\\world\\)) /F [1.23 4.5 6] " +
             "/G << /H 123 /I << /Length 8>> stream\n" +
@@ -118,7 +118,7 @@ console.log("%c>>>>>>> test writeDict() >>>>>>>", `color:${css_1}`);
         dict.set("B", Name.get("#hello"));
         dict.set("C", Name.get("he\xfello\xff"));
         const buffer = [];
-        writeDict(dict, buffer, null);
+        writeDict(dict, buffer);
         const expected = "<< /#feA#23 /hello /B /#23hello /C /he#fello#ff>>";
         console.assert(buffer.join("") === expected);
     }

@@ -28,13 +28,12 @@ export class PDFCursorTools {
     container;
     eventBus;
     active = CursorTool.SELECT;
+    get activeTool() { return this.active; }
     activeBeforePresentationMode;
     handTool;
     constructor({ container, eventBus, cursorToolOnLoad = CursorTool.SELECT }) {
         this.container = container;
         this.eventBus = eventBus;
-        // this.active = CursorTool.SELECT;
-        // this.activeBeforePresentationMode = null;
         this.handTool = new GrabToPan({
             element: this.container,
         });
@@ -46,23 +45,17 @@ export class PDFCursorTools {
         });
     }
     /**
-     * @return One of the values in {CursorTool}.
-     */
-    get activeTool() {
-        return this.active;
-    }
-    /**
      * NOTE: This method is ignored while Presentation Mode is active.
      * @param tool - The cursor mode that should be switched to,
      *   must be one of the values in {CursorTool}.
      */
     switchTool(tool) {
-        if (this.activeBeforePresentationMode !== undefined) {
-            return; // Cursor tools cannot be used in Presentation Mode.
-        }
-        if (tool === this.active) {
-            return; // The requested tool is already active.
-        }
+        // Cursor tools cannot be used in Presentation Mode.
+        if (this.activeBeforePresentationMode !== undefined)
+            return;
+        // The requested tool is already active.
+        if (tool === this.active)
+            return;
         const disableActiveTool = () => {
             switch (this.active) {
                 case CursorTool.SELECT:
@@ -94,14 +87,13 @@ export class PDFCursorTools {
         this.active = tool;
         this._dispatchEvent();
     }
-    /** @override */
     _dispatchEvent() {
         this.eventBus.dispatch("cursortoolchanged", {
             source: this,
             tool: this.active,
         });
     }
-    #addEventListeners = () => {
+    #addEventListeners() {
         this.eventBus._on("switchcursortool", evt => {
             this.switchTool(evt.tool);
         });
@@ -121,7 +113,7 @@ export class PDFCursorTools {
                 }
             }
         });
-    };
+    }
 }
 /*81---------------------------------------------------------------------------*/
 //# sourceMappingURL=pdf_cursor_tools.js.map

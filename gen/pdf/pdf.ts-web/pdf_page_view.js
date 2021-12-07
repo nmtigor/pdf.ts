@@ -1,7 +1,23 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2021
  */
-import { createPromiseCapability, PixelsPerInch, RenderingCancelledException, SVGGraphics } from "../pdf.ts-src/pdf.js";
+/* Copyright 2012 Mozilla Foundation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/** @typedef {import("./interfaces").IRenderableView} IRenderableView */
+import { createPromiseCap } from "../../lib/promisecap.js";
+import { PixelsPerInch, RenderingCancelledException, SVGGraphics } from "../pdf.ts-src/pdf.js";
 import { AnnotationMode } from "../pdf.ts-src/shared/util.js";
 import { NullL10n } from "./l10n_utils.js";
 import { RenderingStates } from "./pdf_rendering_queue.js";
@@ -76,7 +92,7 @@ export class PDFPageView {
         this.annotationLayerFactory = options.annotationLayerFactory;
         this.xfaLayerFactory = options.xfaLayerFactory;
         this.textHighlighter =
-            options.textHighlighterFactory?.createTextHighlighter(this.id - 1, this.eventBus);
+            options.textHighlighterFactory.createTextHighlighter(this.id - 1, this.eventBus);
         this.structTreeLayerFactory = options.structTreeLayerFactory;
         this.renderer = options.renderer || RendererType.CANVAS;
         this.l10n = options.l10n || NullL10n;
@@ -87,7 +103,7 @@ export class PDFPageView {
         div.style.height = Math.floor(this.viewport.height) + "px";
         div.setAttribute("data-page-number", this.id);
         div.setAttribute("role", "region");
-        this.l10n.get("page_landmark", { page: this.id + "" }).then(msg => {
+        this.l10n.get("page_landmark", { page: this.id }).then(msg => {
             div.setAttribute("aria-label", msg);
         });
         this.div = div;
@@ -175,7 +191,7 @@ export class PDFPageView {
         div.style.width = Math.floor(this.viewport.width) + "px";
         div.style.height = Math.floor(this.viewport.height) + "px";
         const childNodes = div.childNodes, zoomLayerNode = (keepZoomLayer && this.zoomLayer) || null, annotationLayerNode = (keepAnnotationLayer && this.annotationLayer?.div) || null, xfaLayerNode = (keepXfaLayer && this.xfaLayer?.div) || null;
-        for (let i = childNodes.length - 1; i >= 0; i--) {
+        for (let i = childNodes.length; i--;) {
             const node = childNodes[i];
             switch (node) {
                 case zoomLayerNode:
@@ -551,7 +567,7 @@ export class PDFPageView {
         return resultPromise;
     }
     paintOnCanvas(canvasWrapper) {
-        const renderCapability = createPromiseCapability();
+        const renderCapability = createPromiseCap();
         const result = {
             promise: renderCapability.promise,
             onRenderContinue(cont) {

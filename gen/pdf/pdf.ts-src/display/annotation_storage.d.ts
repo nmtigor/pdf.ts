@@ -1,10 +1,10 @@
-import { type AnnotStorageValue } from "./annotation_layer.js";
+import { type AnnotStorageValue, AnnotStorageRecord } from "./annotation_layer.js";
 /**
  * Key/value storage for annotation data in forms.
  */
 export declare class AnnotationStorage {
     #private;
-    _storage: Map<string, AnnotStorageValue>;
+    _storage: AnnotStorageRecord;
     get size(): number;
     _timeStamp: number;
     /**
@@ -29,6 +29,6 @@ export declare class AnnotationStorage {
      * PLEASE NOTE: Only intended for usage within the API itself.
      * @ignore
      */
-    get serializable(): Map<string, AnnotStorageValue> | undefined;
+    get serializable(): AnnotStorageRecord | undefined;
 }
 //# sourceMappingURL=annotation_storage.d.ts.map

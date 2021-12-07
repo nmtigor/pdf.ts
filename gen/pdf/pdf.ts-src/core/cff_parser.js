@@ -347,13 +347,11 @@ var NsCFFParser;
                     const b = dict[pos++];
                     const b1 = b >> 4;
                     const b2 = b & 15;
-                    if (b1 === eof) {
+                    if (b1 === eof)
                         break;
-                    }
                     str += lookup[b1];
-                    if (b2 === eof) {
+                    if (b2 === eof)
                         break;
-                    }
                     str += lookup[b2];
                 }
                 return parseFloat(str);
@@ -436,9 +434,8 @@ var NsCFFParser;
             return cffDict;
         }
         parseCharString(state, data, localSubrIndex, globalSubrIndex) {
-            if (!data || state.callDepth > MAX_SUBR_NESTING) {
+            if (!data || state.callDepth > MAX_SUBR_NESTING)
                 return false;
-            }
             let stackSize = state.stackSize;
             const stack = state.stack;
             const length = data.length;
@@ -531,9 +528,9 @@ var NsCFFParser;
                         bias = 1131;
                     }
                     const subrNumber = stack[--stackSize] + bias;
-                    if (subrNumber < 0 ||
-                        subrNumber >= subrsIndex.count ||
-                        isNaN(subrNumber)) {
+                    if (subrNumber < 0
+                        || subrNumber >= subrsIndex.count
+                        || isNaN(subrNumber)) {
                         validationCommand = CharstringValidationData[value];
                         warn("Out of bounds subrIndex for " + validationCommand.id);
                         return false;
@@ -541,9 +538,8 @@ var NsCFFParser;
                     state.stackSize = stackSize;
                     state.callDepth++;
                     const valid = this.parseCharString(state, subrsIndex.get(subrNumber), localSubrIndex, globalSubrIndex);
-                    if (!valid) {
+                    if (!valid)
                         return false;
-                    }
                     state.callDepth--;
                     stackSize = state.stackSize;
                     continue;
@@ -722,9 +718,8 @@ var NsCFFParser;
             const privateDict = this.createDict(CFFPrivateDict, dict, parentDict.strings);
             parentDict.privateDict = privateDict;
             // Parse the Subrs index also since it's relative to the private dict.
-            if (!privateDict.getByName("Subrs")) {
+            if (!privateDict.getByName("Subrs"))
                 return;
-            }
             const subrsOffset = privateDict.getByName("Subrs");
             const relativeOffset = offset + subrsOffset;
             // Validate the offset.
@@ -959,13 +954,11 @@ export class CFFStrings {
     }
     getSID(str) {
         let index = CFFStandardStrings.indexOf(str);
-        if (index !== -1) {
+        if (index !== -1)
             return index;
-        }
         index = this.strings.indexOf(str);
-        if (index !== -1) {
+        if (index !== -1)
             return index + NUM_STANDARD_CFF_STRINGS;
-        }
         return -1;
     }
     add(value) {
@@ -1008,14 +1001,12 @@ class CFFDict {
     }
     // value should always be an array
     setByKey(key, value) {
-        if (!(key in this.keyToNameMap)) {
+        if (!(key in this.keyToNameMap))
             return false;
-        }
         const valueLength = value.length;
         // ignore empty values
-        if (valueLength === 0) {
+        if (valueLength === 0)
             return true;
-        }
         // Ignore invalid values (fixes bug1068432.pdf and bug1308536.pdf).
         for (let i = 0; i < valueLength; i++) {
             if (isNaN(value[i])) {
@@ -1045,9 +1036,8 @@ class CFFDict {
             throw new FormatError(`Invalid dictionary name ${name}"`);
         }
         const key = this.nameToKeyMap[name];
-        if (!(key in this.values)) {
+        if (!(key in this.values))
             return this.defaults[key];
-        }
         return this.values[key];
     }
     removeByName(name) {
@@ -1211,9 +1201,8 @@ export class CFFFDSelect {
         this.fdSelect = fdSelect;
     }
     getFDIndex(glyphIndex) {
-        if (glyphIndex < 0 || glyphIndex >= this.fdSelect.length) {
+        if (glyphIndex < 0 || glyphIndex >= this.fdSelect.length)
             return -1;
-        }
         return this.fdSelect[glyphIndex];
     }
 }
@@ -1249,11 +1238,11 @@ class CFFOffsetTracker {
             const offset3 = offset0 + 3;
             const offset4 = offset0 + 4;
             // It's easy to screw up offsets so perform this sanity check.
-            if (data[offset0] !== 0x1d ||
-                data[offset1] !== 0 ||
-                data[offset2] !== 0 ||
-                data[offset3] !== 0 ||
-                data[offset4] !== 0) {
+            if (data[offset0] !== 0x1d
+                || data[offset1] !== 0
+                || data[offset2] !== 0
+                || data[offset3] !== 0
+                || data[offset4] !== 0) {
                 throw new FormatError("writing to an offset that is not empty");
             }
             const value = values[i];
@@ -1364,9 +1353,8 @@ export class CFFCompiler {
         return output.data;
     }
     encodeNumber(value) {
-        if (Number.isInteger(value)) {
+        if (Number.isInteger(value))
             return this.encodeInteger(value);
-        }
         return this.encodeFloat(value);
     }
     static get EncodeFloatRegExp() {
@@ -1384,18 +1372,14 @@ export class CFFCompiler {
         let i, ii;
         for (i = 0, ii = value.length; i < ii; ++i) {
             const a = value[i];
-            if (a === "e") {
+            if (a === "e")
                 nibbles += value[++i] === "-" ? "c" : "b";
-            }
-            else if (a === ".") {
+            else if (a === ".")
                 nibbles += "a";
-            }
-            else if (a === "-") {
+            else if (a === "-")
                 nibbles += "e";
-            }
-            else {
+            else
                 nibbles += a;
-            }
         }
         nibbles += nibbles.length & 1 ? "f" : "ff";
         const out = [30];
@@ -1527,9 +1511,8 @@ export class CFFCompiler {
         const order = dict.order;
         for (let i = 0; i < order.length; ++i) {
             const key = order[i];
-            if (!(key in dict.values)) {
+            if (!(key in dict.values))
                 continue;
-            }
             let values = dict.values[key];
             let types = dict.types[key];
             if (!Array.isArray(types)) {
@@ -1539,9 +1522,8 @@ export class CFFCompiler {
                 values = [values];
             }
             // Remove any empty dict values.
-            if (values.length === 0) {
+            if (values.length === 0)
                 continue;
-            }
             for (let j = 0, jj = types.length; j < jj; ++j) {
                 const type = types[j];
                 const value = values[j];
@@ -1701,9 +1683,8 @@ export class CFFCompiler {
         const count = objects.length;
         // If there is no object, just create an index. This technically
         // should just be [0, 0] but OTS has an issue with that.
-        if (count === 0) {
+        if (count === 0)
             return [0, 0, 0];
-        }
         const data = [(count >> 8) & 0xff, count & 0xff];
         let lastOffset = 1;
         let i;
@@ -1711,18 +1692,14 @@ export class CFFCompiler {
             lastOffset += objects[i].length;
         }
         let offsetSize;
-        if (lastOffset < 0x100) {
+        if (lastOffset < 0x100)
             offsetSize = 1;
-        }
-        else if (lastOffset < 0x10000) {
+        else if (lastOffset < 0x10000)
             offsetSize = 2;
-        }
-        else if (lastOffset < 0x1000000) {
+        else if (lastOffset < 0x1000000)
             offsetSize = 3;
-        }
-        else {
+        else
             offsetSize = 4;
-        }
         // Next byte contains the offset size use to reference object in the file
         data.push(offsetSize);
         // Add another offset after this one because we need a new offset

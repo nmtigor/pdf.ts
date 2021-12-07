@@ -214,13 +214,13 @@ export class LocalPdfManager extends BasePdfManager
   //   return value;
   // }
 
-  /** @override */
+  /** @implements */
   requestRange( begin:number, end:number ) 
   {
     return Promise.resolve();
   }
 
-  /** @override */
+  /** @implements */
   requestLoadedStream() {}
 
   /** @implements */
@@ -229,7 +229,7 @@ export class LocalPdfManager extends BasePdfManager
     return this.#loadedStreamPromise;
   }
 
-  /** @override */
+  /** @implements */
   terminate( reason:AbortException ) {}
 }
 
@@ -295,13 +295,13 @@ export class NetworkPdfManager extends BasePdfManager
     }
   }
 
-  /** @override */
+  /** @implements */
   requestRange( begin:number, end:number ) 
   {
     return this.streamManager.requestRange(begin, end);
   }
 
-  /** @override */
+  /** @implements */
   requestLoadedStream() 
   {
     this.streamManager.requestAllChunks();
@@ -318,7 +318,7 @@ export class NetworkPdfManager extends BasePdfManager
     return this.streamManager.onLoadedStream();
   }
 
-  /** @override */
+  /** @implements */
   terminate( reason:AbortException ) 
   {
     this.streamManager.abort(reason);

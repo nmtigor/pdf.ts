@@ -1,8 +1,9 @@
+import { PromiseCap } from "../../../lib/promisecap.js";
 import { HttpStatusCode } from "../../../lib/HttpStatusCode.js";
 import { Ref } from "../core/primitives.js";
 import { type IWorker } from "../core/worker.js";
 import { VerbosityLevel } from "../pdf.js";
-import { InvalidPDFException, MissingPDFException, PasswordException, PasswordResponses, PermissionFlag, type PromiseCapability, type rect_t, RenderingIntentFlag, UnexpectedResponseException, UnknownErrorException, UNSUPPORTED_FEATURES } from "./util.js";
+import { InvalidPDFException, MissingPDFException, PasswordException, PasswordResponses, PermissionFlag, type rect_t, RenderingIntentFlag, UnexpectedResponseException, UnknownErrorException, UNSUPPORTED_FEATURES } from "./util.js";
 import { type OutlineNode, type PDFDocumentStats, type RefProxy } from "../display/api.js";
 import { type AnnotStorageRecord } from "../display/annotation_layer.js";
 import { type DocumentInfo, type XFAData } from "../core/document.js";
@@ -405,7 +406,7 @@ export interface StreamSink<Ta extends Thread, AN extends ActionName<Ta> = Actio
     enqueue(chunk: ActionSinkchunk<Ta, AN>, size?: number, transfers?: Transferable[]): void;
     close?(): void;
     error?(reason: reason_t): void;
-    sinkCapability?: PromiseCapability;
+    sinkCapability?: PromiseCap;
     onPull?(desiredSize?: number): void;
     onCancel?(reason: object): void;
     isCancelled?: boolean;
@@ -420,9 +421,9 @@ export declare type ActionReturn<Ta extends Thread, AN extends ActionName<Ta> = 
 export declare type ActionSinkchunk<Ta extends Thread, AN extends ActionName<Ta> = ActionName<Ta>> = Ta extends Thread.main ? MActionMap[AN & MActionName]["Sinkchunk"] : WActionMap[AN & WActionName]["Sinkchunk"];
 interface StreamController<Ta extends Thread, AN extends ActionName<Ta> = ActionName<Ta>> {
     controller: ReadableStreamDefaultController<ActionSinkchunk<Ta, AN>>;
-    startCall: PromiseCapability;
-    pullCall?: PromiseCapability;
-    cancelCall?: PromiseCapability;
+    startCall: PromiseCap;
+    pullCall?: PromiseCap;
+    cancelCall?: PromiseCap;
     isClosed: boolean;
 }
 export declare class MessageHandler<Ta extends Thread, Tn extends Thread = Ta extends Thread.main ? Thread.worker : Thread.main> {
@@ -436,7 +437,7 @@ export declare class MessageHandler<Ta extends Thread, Tn extends Thread = Ta ex
     postMessageTransfers: boolean;
     streamSinks: StreamSink<Ta>[];
     streamControllers: StreamController<Tn>[];
-    callbackCapabilities: PromiseCapability<unknown>[];
+    callbackCapabilities: PromiseCap<unknown>[];
     actionHandler: Record<ActionName<Tn>, ActionHandler<Tn>>;
     constructor(sourceName: string, targetName: string, comObj: IWorker);
     on<AN extends ActionName<Tn>>(actionName: AN, handler: ActionHandler<Tn, AN>): void;

@@ -17,7 +17,9 @@ let valve = 0;
  */
 function eq_impl(lhs_x, rhs_x) {
     assert(valve--, "There is element referencing its ancestor.", import.meta);
-    if (lhs_x === rhs_x)
+    if (lhs_x === rhs_x
+        || Number.isNaN(lhs_x) && Number.isNaN(rhs_x) //! Notice, `NaN === NaN` is false.
+    )
         return true;
     if (Array.isArray(lhs_x)) {
         if (!Array.isArray(rhs_x))

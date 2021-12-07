@@ -15,10 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { createPromiseCap } from "../../lib/promisecap.js";
 import { DEFAULT_SCALE, DEFAULT_SCALE_DELTA, DEFAULT_SCALE_VALUE, getVisibleElements, isPortraitOrientation, isValidRotation, isValidScrollMode, isValidSpreadMode, MAX_AUTO_SCALE, MAX_SCALE, MIN_SCALE, moveToEndOfArray, PresentationModeState, RendererType, SCROLLBAR_PADDING, scrollIntoView, ScrollMode, SpreadMode, TextLayerMode, UNKNOWN_SCALE, VERTICAL_PADDING, watchScroll, } from "./ui_utils.js";
 import { PDFRenderingQueue, RenderingStates } from "./pdf_rendering_queue.js";
 import { AnnotationLayerBuilder } from "./annotation_layer_builder.js";
-import { createPromiseCapability, PixelsPerInch } from "../pdf.ts-src/pdf.js";
+import { PixelsPerInch } from "../pdf.ts-src/pdf.js";
 import { PDFPageView } from "./pdf_page_view.js";
 import { SimpleLinkService } from "./pdf_link_service.js";
 import { TextLayerBuilder } from "./text_layer_builder.js";
@@ -131,6 +132,9 @@ export class BaseViewer {
             console.error(`currentPageNumber: "${val}" is not a valid page.`);
         }
     }
+    /**
+     * In PDF unit.
+     */
     _currentScale;
     get currentScale() {
         return this._currentScale !== UNKNOWN_SCALE
@@ -201,7 +205,7 @@ export class BaseViewer {
     }
     #pagesCapability;
     get pagesPromise() {
-        return this.pdfDocument ? this.#pagesCapability.promise : null;
+        return this.pdfDocument ? this.#pagesCapability.promise : undefined;
     }
     _scrollMode;
     _previousScrollMode;
@@ -277,6 +281,7 @@ export class BaseViewer {
         return this._pages.every(pageView => pageView?.pdfPage);
     }
     /**
+     * @final
      * @return Whether the pageNumber is valid (within bounds).
      */
     setCurrentPageNumber$(val, resetCurrentPageView = false) {
@@ -315,9 +320,9 @@ export class BaseViewer {
         if (rotation < 0) {
             rotation += 360;
         }
-        if (this._pagesRotation === rotation) {
-            return; // The rotation didn't change.
-        }
+        // The rotation didn't change.
+        if (this._pagesRotation === rotation)
+            return;
         this._pagesRotation = rotation;
         const pageNumber = this._currentPageNumber;
         const updateArgs = { rotation };
@@ -531,9 +536,9 @@ export class BaseViewer {
         this._pagesRotation = 0;
         this._optionalContentConfigPromise = undefined;
         this._pagesRequests = new WeakMap();
-        this.#firstPageCapability = createPromiseCapability();
-        this.#onePageRenderedCapability = createPromiseCapability();
-        this.#pagesCapability = createPromiseCapability();
+        this.#firstPageCapability = createPromiseCap();
+        this.#onePageRenderedCapability = createPromiseCap();
+        this.#pagesCapability = createPromiseCap();
         this._scrollMode = ScrollMode.VERTICAL;
         this._previousScrollMode = ScrollMode.UNKNOWN;
         this._spreadMode = SpreadMode.NONE;
@@ -586,9 +591,8 @@ export class BaseViewer {
             // Finally, append the new pages to the viewer and apply the spreadMode.
             let spread = null;
             for (let i = 0, ii = this._pages.length; i < ii; ++i) {
-                if (!pageIndexSet.has(i)) {
+                if (!pageIndexSet.has(i))
                     continue;
-                }
                 if (spread === null) {
                     spread = document.createElement("div");
                     spread.className = "spread";
@@ -978,6 +982,7 @@ export class BaseViewer {
         };
         return { first: view, last: view, views: [view] };
     }
+    /** @final */
     getVisiblePages$() {
         if (this.isInPresentationMode) {
             // The algorithm in `getVisibleElements` doesn't work in all browsers and
@@ -1022,8 +1027,8 @@ export class BaseViewer {
     }
     cleanup() {
         for (let i = 0, ii = this._pages.length; i < ii; i++) {
-            if (this._pages[i] &&
-                this._pages[i].renderingState !== RenderingStates.FINISHED) {
+            if (this._pages[i]
+                && this._pages[i].renderingState !== RenderingStates.FINISHED) {
                 this._pages[i].reset();
             }
         }
@@ -1268,7 +1273,7 @@ export class BaseViewer {
      */
     get spreadMode() { return this._spreadMode; }
     /**
-     * @param mode - Group the pages in spreads, starting with odd- or
+     * @param mode Group the pages in spreads, starting with odd- or
      *   even-number pages (unless `SpreadMode.NONE` is used).
      *   The constants from {SpreadMode} should be used.
      */

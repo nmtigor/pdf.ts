@@ -24,6 +24,7 @@
 /** @typedef {import("./display/api").PDFPageProxy} PDFPageProxy */
 /** @typedef {import("./display/api").RenderTask} RenderTask */
 
+import { createPromiseCap } from "../../lib/promisecap.js";
 import {
   addLinkAttributes,
   getFilenameFromUrl,
@@ -48,7 +49,6 @@ import {
   AnnotationMode,
   CMapCompressionType,
   createObjectURL,
-  createPromiseCapability,
   createValidAbsoluteUrl,
   InvalidPDFException,
   MissingPDFException,
@@ -117,7 +117,7 @@ export {
   AnnotationMode,
   CMapCompressionType,
   createObjectURL,
-  createPromiseCapability,
+  createPromiseCap,
   createValidAbsoluteUrl,
   InvalidPDFException,
   MissingPDFException,

@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 import { assert } from "../../../lib/util/trace.js";
-import { FormatError, info, InvalidPDFException, isArrayBuffer, isArrayEqual, isString, OPS, PageActionEventType, RenderingIntentFlag, shadow, stringToBytes, stringToPDFString, stringToUTF8String, UNSUPPORTED_FEATURES, Util, warn, } from "../shared/util.js";
+import { FormatError, info, InvalidPDFException, isArrayBuffer, isString, OPS, PageActionEventType, RenderingIntentFlag, shadow, stringToBytes, stringToPDFString, stringToUTF8String, UNSUPPORTED_FEATURES, Util, warn, } from "../shared/util.js";
 import { clearPrimitiveCaches, Dict, isDict, isName, Name, Ref, } from "./primitives.js";
 import { collectActions, getInheritableProperty, isWhiteSpace, MissingDataException, validateCSSFont, XRefEntryException, XRefParseException, } from "./core_utils.js";
 import { getXfaFontDict, getXfaFontName } from "./xfa_fonts.js";
@@ -73,7 +73,7 @@ export class Page {
             getPageObjId: () => `page${ref.toString()}`,
         });
     }
-    #getInheritableProperty = (key, getArray = false) => {
+    #getInheritableProperty(key, getArray = false) {
         const value = getInheritableProperty({
             dict: this.pageDict,
             key,
@@ -87,7 +87,7 @@ export class Page {
             return value[0];
         }
         return Dict.merge({ xref: this.xref, dictArray: value });
-    };
+    }
     get content() {
         return this.pageDict.getArray("Contents");
     }
@@ -98,7 +98,7 @@ export class Page {
         // For robustness: The spec states that a \Resources entry has to be
         // present, but can be empty. Some documents still omit it; in this case
         // we return an empty dictionary.
-        return shadow(this, "resources", this.#getInheritableProperty("Resources") ?? Dict.empty);
+        return shadow(this, "resources", this.#getInheritableProperty("Resources") || Dict.empty);
     }
     _getBoundingBox(name) {
         if (this.xfaData) {
@@ -136,7 +136,7 @@ export class Page {
         // effectively reduced to their intersection with the media box."
         const { cropBox, mediaBox } = this;
         let view;
-        if (cropBox === mediaBox || isArrayEqual(cropBox, mediaBox)) {
+        if (cropBox.eq(mediaBox)) {
             view = mediaBox;
         }
         else {
@@ -209,12 +209,11 @@ export class Page {
         });
         // Fetch the page's annotations and save the content
         // in case of interactive form fields.
-        return this._parsedAnnotations.then(annotations => {
+        return this.#parsedAnnotations.then(annotations => {
             const newRefsPromises = [];
             for (const annotation of annotations) {
-                if (!annotation.mustBePrinted(annotationStorage)) {
+                if (!annotation.mustBePrinted(annotationStorage))
                     continue;
-                }
                 newRefsPromises.push(annotation
                     .save(partialEvaluator, task, annotationStorage)
                     .catch(reason => {
@@ -277,7 +276,7 @@ export class Page {
         });
         // Fetch the page's annotations and add their operator lists to the
         // page's operator list to render them.
-        return Promise.all([pageListPromise, this._parsedAnnotations]).then(([pageOpList, annotations]) => {
+        return Promise.all([pageListPromise, this.#parsedAnnotations]).then(([pageOpList, annotations]) => {
             if (annotations.length === 0
                 || intent & RenderingIntentFlag.ANNOTATIONS_DISABLE) {
                 pageOpList.flush(true);
@@ -360,7 +359,7 @@ export class Page {
         return tree;
     }
     getAnnotationsData(intent) {
-        return this._parsedAnnotations.then(annotations => {
+        return this.#parsedAnnotations.then(annotations => {
             const annotationsData = [];
             if (annotations.length === 0)
                 return annotationsData;
@@ -381,7 +380,7 @@ export class Page {
         const annots = this.#getInheritableProperty("Annots");
         return shadow(this, "annotations", Array.isArray(annots) ? annots : []);
     }
-    get _parsedAnnotations() {
+    get #parsedAnnotations() {
         const parsedAnnotations = this.pdfManager
             .ensure(this, "annotations")
             .then(() => {
@@ -389,7 +388,7 @@ export class Page {
             for (const annotationRef of this.annotations) {
                 annotationPromises.push(AnnotationFactory.create(this.xref, annotationRef, this.pdfManager, this.#localIdFactory, 
                 /* collectFields */ false).catch(reason => {
-                    warn(`_parsedAnnotations: "${reason}".`);
+                    warn(`#parsedAnnotations: "${reason}".`);
                     return undefined;
                 }));
             }
@@ -397,7 +396,7 @@ export class Page {
                 return annotations.filter(annotation => !!annotation);
             });
         });
-        return shadow(this, "_parsedAnnotations", parsedAnnotations);
+        return shadow(this, "#parsedAnnotations", parsedAnnotations);
     }
     get jsActions() {
         const actions = collectActions(this.xref, this.pageDict, PageActionEventType);

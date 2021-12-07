@@ -268,14 +268,12 @@ export function collectActions(xref, dict, eventType) {
         // by ones from younger ancestors.
         for (let i = additionalActionsDicts.length - 1; i >= 0; i--) {
             const additionalActions = additionalActionsDicts[i];
-            if (!(additionalActions instanceof Dict)) {
+            if (!(additionalActions instanceof Dict))
                 continue;
-            }
             for (const key of additionalActions.getKeys()) {
                 const action = eventType[key];
-                if (!action) {
+                if (!action)
                     continue;
-                }
                 const actionDict = additionalActions.getRaw(key);
                 const parents = new RefSet();
                 const list = [];

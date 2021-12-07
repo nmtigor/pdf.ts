@@ -34,7 +34,7 @@ interface PageViewportParms {
     /**
      * The xMin, yMin, xMax and yMax coordinates.
      */
-    viewBox: number[];
+    viewBox: rect_t;
     /**
      * The scale of the viewport.
      */
@@ -90,9 +90,18 @@ interface PageViewportCloneParms {
  * PDF page viewport created based on scale, rotation and offset.
  */
 export declare class PageViewport {
-    viewBox: number[];
+    /**
+     * In PDF unit.
+     */
+    viewBox: rect_t;
+    /**
+     * To CSS unit.
+     */
     scale: number;
     rotation: number;
+    /**
+     * In CSS unit.
+     */
     offsetX: number;
     offsetY: number;
     transform: matrix_t;

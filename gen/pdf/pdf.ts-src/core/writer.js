@@ -34,7 +34,7 @@ function writeStream(stream, buffer, transform) {
     writeDict(stream.dict, buffer, transform);
     buffer.push(" stream\n");
     let string = stream.getString();
-    if (transform !== null) {
+    if (transform !== undefined) {
         string = transform.encryptString(string);
     }
     buffer.push(string, "\nendstream\n");
@@ -77,7 +77,7 @@ function writeValue(value, buffer, transform) {
         writeArray(value, buffer, transform);
     }
     else if (typeof value === "string") {
-        if (transform !== null) {
+        if (transform !== undefined) {
             value = transform.encryptString(value);
         }
         buffer.push(`(${escapeString(value)})`);
@@ -94,7 +94,7 @@ function writeValue(value, buffer, transform) {
     else if (value instanceof BaseStream) {
         writeStream(value, buffer, transform);
     }
-    else if (value === null) {
+    else if (value === null || value === undefined) {
         buffer.push("null");
     }
     else {
@@ -167,7 +167,7 @@ function updateXFA({ xfaData, xfaDatasetsRef, hasXfaDatasetsEntry, acroFormRef, 
         newXfa.splice(3, 0, xfaDatasetsRef);
         acroForm.set("XFA", newXfa);
         const encrypt = xref.encrypt;
-        let transform = null;
+        let transform;
         if (encrypt) {
             transform = encrypt.createCipherTransform(acroFormRef.num, acroFormRef.gen);
         }
@@ -258,7 +258,7 @@ export function incrementalUpdate({ originalData, xrefInfo, newRefs, xref, hasXf
     newXref.set("W", sizes);
     newXref.set("Length", tableLength);
     buffer.push(`${refForXrefTable.num} ${refForXrefTable.gen} obj\n`);
-    writeDict(newXref, buffer, null);
+    writeDict(newXref, buffer);
     buffer.push(" stream\n");
     const bufferLen = buffer.reduce((a, str) => a + str.length, 0);
     const footer = `\nendstream\nendobj\nstartxref\n${baseOffset}\n%%EOF\n`;

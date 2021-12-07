@@ -131,9 +131,9 @@ export class PDFLinkService implements IPDFLinkService
     this.pdfViewer!.pagesRotation = value;
   }
 
-  #goToDestinationHelper =( rawDest:string | ExplicitDest, 
+  #goToDestinationHelper( rawDest:string | ExplicitDest, 
     namedDest:string | undefined, explicitDest:ExplicitDest
-  ) => {
+  ) {
     // Dest array looks like that: <page-ref> </XYZ|/FitXXX> <args..>
     const destRef = explicitDest[0];
     let pageNumber;
@@ -155,7 +155,7 @@ export class PDFLinkService implements IPDFLinkService
           .catch(() => {
             console.error(
               `PDFLinkService.#goToDestinationHelper: "${destRef}" is not ` +
-                `a valid page reference, for dest="${rawDest}".`
+              `a valid page reference, for dest="${rawDest}".`
             );
           });
         return;
@@ -168,7 +168,7 @@ export class PDFLinkService implements IPDFLinkService
     else {
       console.error(
         `PDFLinkService.#goToDestinationHelper: "${destRef}" is not ` +
-          `a valid destination reference, for dest="${rawDest}".`
+        `a valid destination reference, for dest="${rawDest}".`
       );
       return;
     }
@@ -176,7 +176,7 @@ export class PDFLinkService implements IPDFLinkService
     {
       console.error(
         `PDFLinkService.#goToDestinationHelper: "${pageNumber}" is not ` +
-          `a valid page number, for dest="${rawDest}".`
+        `a valid page number, for dest="${rawDest}".`
       );
       return;
     }
@@ -536,18 +536,14 @@ function isValidExplicitDestination( dest:unknown )
     return false;
   }
   const zoom = dest[1];
-  if( !(typeof zoom === "object" && typeof zoom.name === "string") )
-  {
+  if( !(typeof zoom === "object" && typeof zoom.name === "string") ) 
     return false;
-  }
+  
   let allowNull = true;
   switch (zoom.name) 
   {
     case "XYZ":
-      if (destLength !== 5) 
-      {
-        return false;
-      }
+      if( destLength !== 5 ) return false;
       break;
     case "Fit":
     case "FitB":
@@ -556,16 +552,11 @@ function isValidExplicitDestination( dest:unknown )
     case "FitBH":
     case "FitV":
     case "FitBV":
-      if (destLength !== 3) 
-      {
-        return false;
-      }
+      if( destLength !== 3 ) return false;
       break;
     case "FitR":
-      if (destLength !== 6) 
-      {
-        return false;
-      }
+      if( destLength !== 6 ) return false;
+
       allowNull = false;
       break;
     default:
@@ -575,9 +566,7 @@ function isValidExplicitDestination( dest:unknown )
   {
     const param = dest[i];
     if (!(typeof param === "number" || (allowNull && param === null))) 
-    {
       return false;
-    }
   }
   return true;
 }

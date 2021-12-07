@@ -43,22 +43,20 @@ export declare class PDFThumbnailViewer {
         _eventHandler: (evt: unknown) => void;
     };
     _thumbnails: PDFThumbnailView[];
+    getThumbnail(index: number): PDFThumbnailView;
     _currentPageNumber: number;
     _pageLabels?: string[] | undefined;
-    _pagesRotation: number;
+    get pagesRotation(): number;
+    set pagesRotation(rotation: number);
     _optionalContentConfigPromise?: Promise<OptionalContentConfig> | undefined;
     _pagesRequests: WeakMap<PDFThumbnailView, Promise<void | PDFPageProxy>>;
     _setImageDisabled: boolean;
     pdfDocument?: PDFDocumentProxy | undefined;
     constructor({ container, eventBus, linkService, renderingQueue, l10n, }: PDFThumbnailViewerOptions);
-    getThumbnail(index: number): PDFThumbnailView;
     scrollThumbnailIntoView(pageNumber: number): void;
-    get pagesRotation(): number;
-    set pagesRotation(rotation: number);
     cleanup(): void;
     protected _resetView(): void;
     setDocument(pdfDocument?: PDFDocumentProxy): void;
-    /** @override */
     protected _cancelRendering(): void;
     setPageLabels(labels: string[] | null): void;
     forceRendering(): boolean;

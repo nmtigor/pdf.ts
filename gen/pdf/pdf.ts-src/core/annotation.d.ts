@@ -17,6 +17,7 @@ import { type BidiText } from "./bidi.js";
 import { type XFAHTMLObj } from "./xfa/alias.js";
 declare type AnnotType = "Caret" | "Circle" | "FileAttachment" | "FreeText" | "Ink" | "Line" | "Link" | "Highlight" | "Polygon" | "PolyLine" | "Popup" | "Stamp" | "Square" | "Squiggly" | "StrikeOut" | "Text" | "Underline" | "Widget";
 export declare class AnnotationFactory {
+    #private;
     /**
      * Create an `Annotation` object of the correct type for the given reference
      * to an annotation dictionary. This yields a promise that is resolved when
@@ -29,9 +30,8 @@ export declare class AnnotationFactory {
      * @private
      */
     static _create(xref: XRef, ref: Ref, pdfManager: BasePdfManager, idFactory: LocalIdFactory, acroForm: Dict | undefined, collectFields: boolean, pageIndex?: number): Annotation | undefined;
-    static _getPageIndex(xref: XRef, ref: Ref, pdfManager: BasePdfManager): Promise<number>;
 }
-export declare function getQuadPoints(dict: Dict, rect?: rect_t): TupleOf<AnnotPoint, 4>[] | undefined;
+export declare function getQuadPoints(dict: Dict, rect?: rect_t): TupleOf<AnnotPoint, 4>[] | null;
 interface AnnotationCtorParms {
     xref: XRef;
     ref: Ref;
@@ -68,7 +68,7 @@ export declare type AnnotationData = {
     name?: string;
     state?: string | undefined;
     stateModel?: string | undefined;
-    quadPoints?: TupleOf<AnnotPoint, 4>[] | undefined;
+    quadPoints?: TupleOf<AnnotPoint, 4>[] | null;
     fieldValue?: string | string[] | undefined;
     defaultFieldValue?: string | string[] | undefined;
     alternativeText?: string;
@@ -119,7 +119,7 @@ export declare type SaveData = {
         value: string;
     };
 };
-export declare type SaveReturn = null | TupleOf<SaveData, 1 | 2>;
+export declare type SaveReturn = TupleOf<SaveData, 1 | 2>;
 export interface FieldObject {
     id: string;
     type: string;
@@ -157,7 +157,7 @@ export declare class Annotation {
     /**
      * Check if a provided flag is set.
      *
-     * @param flag - Hexadecimal representation for an annotation characteristic
+     * @param flag Hexadecimal representation for an annotation characteristic
      * @see {@link shared/util.js}
      */
     hasFlag(flag: AnnotationFlag): boolean;
@@ -177,6 +177,7 @@ export declare class Annotation {
      * the value found in the annotationStorage which may have been set
      * through JS.
      *
+     * @final
      * @param annotationStorage Storage for annotation
      */
     mustBePrinted(annotationStorage?: AnnotStorageRecord): boolean;
@@ -248,7 +249,7 @@ export declare class Annotation {
     setBorderAndBackgroundColors(mk: unknown): void;
     loadResources(keys: string[]): Promise<Dict | undefined>;
     getOperatorList(evaluator: PartialEvaluator, task: WorkerTask, renderForms?: boolean, annotationStorage?: AnnotStorageRecord): Promise<OperatorList>;
-    save(evaluator: PartialEvaluator, task: WorkerTask, annotationStorage?: AnnotStorageRecord): Promise<SaveReturn>;
+    save(evaluator: PartialEvaluator, task: WorkerTask, annotationStorage?: AnnotStorageRecord): Promise<SaveReturn | null>;
     /**
      * Get field data for usage in JS sandbox.
      *
@@ -267,6 +268,7 @@ export declare class Annotation {
      * Construct the (fully qualified) field name from the (partial) field
      * names of the field and its ancestors.
      *
+     * @final
      * @param dict Complete widget annotation dictionary
      */
     protected constructFieldName$(dict: Dict): string;

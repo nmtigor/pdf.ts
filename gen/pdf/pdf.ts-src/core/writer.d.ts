@@ -3,7 +3,7 @@ import { CipherTransform } from "./crypto.js";
 import { type XRefInfo } from "./worker.js";
 import { type SaveData } from "./annotation.js";
 import { XRef } from "./xref.js";
-export declare function writeDict(dict: Dict, buffer: string[], transform: CipherTransform | null): void;
+export declare function writeDict(dict: Dict, buffer: string[], transform?: CipherTransform): void;
 interface IncrementalUpdateParms {
     originalData: Uint8Array;
     xrefInfo: XRefInfo;

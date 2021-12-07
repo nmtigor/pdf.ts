@@ -15,9 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { createPromiseCap } from "../../../lib/promisecap.js";
 import { isObjectLike } from "../../../lib/jslang.js";
 import { assert } from "../../../lib/util/trace.js";
-import { AbortException, createPromiseCapability, MissingPDFException, PasswordException, UnexpectedResponseException, UnknownErrorException, warn, } from "./util.js";
+import { AbortException, MissingPDFException, PasswordException, UnexpectedResponseException, UnknownErrorException, warn, } from "./util.js";
 /*81---------------------------------------------------------------------------*/
 var CallbackKind;
 (function (CallbackKind) {
@@ -57,7 +58,7 @@ function wrapReason(reason) {
         case "UnknownErrorException":
             return new UnknownErrorException(reason.message, reason.details);
         default:
-            return new UnknownErrorException(reason.message, reason + "");
+            return new UnknownErrorException(reason.message, reason.toString());
     }
 }
 /*25-------------------*/
@@ -182,7 +183,7 @@ export class MessageHandler {
      */
     sendWithPromise(actionName, data, transfers) {
         const callbackId = this.callbackId++;
-        const capability = createPromiseCapability();
+        const capability = createPromiseCap();
         this.callbackCapabilities[callbackId] = capability;
         try {
             this.#postMessage({
@@ -211,7 +212,7 @@ export class MessageHandler {
         const streamId = this.streamId++, sourceName = this.sourceName, targetName = this.targetName, comObj = this.comObj;
         return new ReadableStream({
             start: (controller) => {
-                const startCapability = createPromiseCapability();
+                const startCapability = createPromiseCap();
                 this.streamControllers[streamId] = {
                     controller,
                     startCall: startCapability,
@@ -229,7 +230,7 @@ export class MessageHandler {
                 return startCapability.promise;
             },
             pull: (controller) => {
-                const pullCapability = createPromiseCapability();
+                const pullCapability = createPromiseCap();
                 this.streamControllers[streamId].pullCall = pullCapability;
                 comObj.postMessage({
                     sourceName,
@@ -244,7 +245,7 @@ export class MessageHandler {
             },
             cancel: (reason) => {
                 // assert(reason instanceof Error, "cancel must have a valid reason");
-                const cancelCapability = createPromiseCapability();
+                const cancelCapability = createPromiseCap();
                 this.streamControllers[streamId].cancelCall = cancelCapability;
                 this.streamControllers[streamId].isClosed = true;
                 comObj.postMessage({
@@ -262,7 +263,7 @@ export class MessageHandler {
     #createStreamSink(data) {
         const streamId = data.streamId, sourceName = this.sourceName, targetName = data.sourceName, comObj = this.comObj;
         const self = this, action = this.actionHandler[data.action];
-        const sinkCapability = createPromiseCapability();
+        const sinkCapability = createPromiseCap();
         const streamSink = {
             enqueue(chunk, size = 1, transfers) {
                 if (this.isCancelled)
@@ -273,7 +274,7 @@ export class MessageHandler {
                 // so when it changes from positive to negative,
                 // set ready as unresolved promise.
                 if (lastDesiredSize > 0 && this.desiredSize <= 0) {
-                    this.sinkCapability = createPromiseCapability();
+                    this.sinkCapability = createPromiseCap();
                     this.ready = this.sinkCapability.promise;
                 }
                 self.#postMessage({

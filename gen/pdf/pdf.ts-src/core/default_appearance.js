@@ -39,9 +39,8 @@ class DefaultAppearanceEvaluator extends EvaluatorPreprocessor {
         try {
             while (true) {
                 operation.args.length = 0; // Ensure that `args` it's always reset.
-                if (!this.read(operation)) {
+                if (!this.read(operation))
                     break;
-                }
                 if (this.savedStatesDepth !== 0) {
                     continue; // Don't get info in save/restore sections.
                 }

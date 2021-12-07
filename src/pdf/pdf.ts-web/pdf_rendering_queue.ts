@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+import { global } from "../../global.js";
 import { RenderingCancelledException } from "../pdf.ts-src/display/display_utils.js";
 import { BaseViewer } from "./base_viewer.js";
 import { type IRenderableView, type IVisibleView } from "./interfaces.js";

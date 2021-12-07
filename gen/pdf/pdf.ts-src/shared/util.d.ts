@@ -430,35 +430,7 @@ export declare function utf8StringToString(str: string): string;
 export declare function isBool(v: unknown): boolean;
 export declare function isString(v: unknown): boolean;
 export declare function isArrayBuffer(v: any): boolean;
-export declare function isArrayEqual(arr1: unknown[] | Uint8Array, arr2: unknown[] | Uint8Array): boolean;
 export declare function getModificationDate(date?: Date): string;
-/**
- * Promise Capability object.
- */
-export interface PromiseCapability<T = void> {
-    id: number;
-    /**
-     * A Promise object.
-     */
-    promise: Promise<T>;
-    /**
-     * If the Promise has been fulfilled/rejected.
-     */
-    settled: boolean;
-    /**
-     * Fulfills the Promise.
-     */
-    resolve: (data: T) => void;
-    /**
-     * Rejects the Promise.
-     */
-    reject: (reason: any) => void;
-}
-/**
- * Creates a promise capability object.
- * @alias createPromiseCapability
- */
-export declare function createPromiseCapability<T = void>(): PromiseCapability<T>;
 export declare function createObjectURL(data: Uint8Array | Uint8ClampedArray, contentType?: string, forceDataSchema?: boolean): string;
 export {};
 //# sourceMappingURL=util.d.ts.map

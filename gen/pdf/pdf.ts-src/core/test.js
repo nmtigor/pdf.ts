@@ -3,6 +3,7 @@
 ** --------- */
 import { css_3 } from "../../../test/alias.js";
 /*81---------------------------------------------------------------------------*/
+// await import( "./test_1.js" );
 await import("./annotation_test.js"); //! unsynchronized
 import "./bidi_test.js";
 import "./cff_parser_test.js";

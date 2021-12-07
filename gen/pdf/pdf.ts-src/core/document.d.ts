@@ -2,7 +2,7 @@ import { RenderingIntentFlag } from "../shared/util.js";
 import { Dict, Name, Ref, RefSet, RefSetCache } from "./primitives.js";
 import { type XFAFontMetrics } from "./xfa_fonts.js";
 import { Stream } from "./stream.js";
-import { Annotation, type AnnotationData, type FieldObject, type SaveReturn } from "./annotation.js";
+import { type AnnotationData, type FieldObject, type SaveReturn } from "./annotation.js";
 import { Linearization } from "./parser.js";
 import { TranslatedFont } from "./evaluator.js";
 import { BasePdfManager } from "./pdf_manager.js";
@@ -82,7 +82,7 @@ export declare class Page {
     get xfaData(): {
         bbox: [number, number, number, number];
     } | null;
-    save(handler: MessageHandler<Thread.worker>, task: WorkerTask, annotationStorage?: AnnotStorageRecord): Promise<SaveReturn[]>;
+    save(handler: MessageHandler<Thread.worker>, task: WorkerTask, annotationStorage?: AnnotStorageRecord): Promise<(SaveReturn | null)[]>;
     loadResources(keys: string[]): Promise<import("./chunked_stream.js").ChunkedStream | undefined>;
     getOperatorList({ handler, sink, task, intent, cacheKey, annotationStorage, }: PageGetOperatorListParms): Promise<{
         length: number;
@@ -95,7 +95,6 @@ export declare class Page {
     _parseStructTree(structTreeRoot: StructTreeRoot): StructTreePage;
     getAnnotationsData(intent: RenderingIntentFlag): Promise<AnnotationData[]>;
     get annotations(): Ref[];
-    get _parsedAnnotations(): Promise<Annotation[]>;
     get jsActions(): import("./core_utils.js").AnnotActions | undefined;
 }
 export interface GlobalIdFactory {

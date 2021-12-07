@@ -116,17 +116,15 @@ export class PDFFindBar {
         if (total > 0) {
             if (total > limit) {
                 let key = "find_match_count_limit";
-                // if (typeof PDFJSDev !== "undefined" && PDFJSDev.test("MOZCENTRAL")) {
                 // TODO: Remove this hard-coded `[other]` form once plural support has
                 // been implemented in the mozilla-central specific `l10n.js` file.
-                matchCountMsg = this.l10n.get(key, { limit: limit + "" });
+                matchCountMsg = this.l10n.get(key, { limit: limit });
             }
             else {
                 let key = "find_match_count";
-                // if (typeof PDFJSDev !== "undefined" && PDFJSDev.test("MOZCENTRAL")) {
                 // TODO: Remove this hard-coded `[other]` form once plural support has
                 // been implemented in the mozilla-central specific `l10n.js` file.
-                matchCountMsg = this.l10n.get(key, { current: current + "", total: total + "" });
+                matchCountMsg = this.l10n.get(key, { current: current, total: total });
             }
         }
         matchCountMsg.then(msg => {

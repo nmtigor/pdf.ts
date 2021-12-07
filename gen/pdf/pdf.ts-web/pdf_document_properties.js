@@ -15,9 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { createPromiseCap } from "../../lib/promisecap.js";
 import { getPageSizeInches, isPortraitOrientation } from "./ui_utils.js";
 import { getPdfFilenameFromUrl, PDFDateString } from "../pdf.ts-src/display/display_utils.js";
-import { createPromiseCapability } from "../pdf.ts-src/shared/util.js";
 /*81---------------------------------------------------------------------------*/
 const DEFAULT_FIELD_CONTENT = "-";
 // See https://en.wikibooks.org/wiki/Lentis/Conversion_to_the_Metric_Standard_in_the_United_States
@@ -179,7 +179,7 @@ export class PDFDocumentProperties {
         this.pdfDocument = undefined;
         this.url = undefined;
         delete this.fieldData;
-        this.#dataAvailableCapability = createPromiseCapability();
+        this.#dataAvailableCapability = createPromiseCap();
         this._currentPageNumber = 1;
         this._pagesRotation = 0;
     }
@@ -212,8 +212,8 @@ export class PDFDocumentProperties {
             return undefined;
         }
         return this.l10n.get(`document_properties_${mb >= 1 ? "mb" : "kb"}`, {
-            size_mb: (mb >= 1 && (+mb.toPrecision(3)).toLocaleString()) + "",
-            size_kb: (mb < 1 && (+kb.toPrecision(3)).toLocaleString()) + "",
+            size_mb: (mb >= 1 && (+mb.toPrecision(3)).toLocaleString()),
+            size_kb: (mb < 1 && (+kb.toPrecision(3)).toLocaleString()),
             size_b: fileSize.toLocaleString(),
         });
     }

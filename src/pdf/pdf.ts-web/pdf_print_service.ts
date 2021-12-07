@@ -329,7 +329,7 @@ function renderProgress( index:number, total:number, l10n:IL10n )
   const progressBar = progressContainer.querySelector("progress")!;
   const progressPerc = progressContainer.querySelector(".relative-progress")!;
   progressBar.value = progress;
-  l10n.get("print_progress_percent", { progress: progress+"" }).then(msg => {
+  l10n.get("print_progress_percent", { progress: <any>progress }).then(msg => {
     progressPerc.textContent = msg;
   });
 }

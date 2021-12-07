@@ -18,17 +18,16 @@
  */
 /* eslint-disable no-var */
 
+import { createPromiseCap } from "../../../lib/promisecap.js";
 import { assert } from "../../../lib/util/trace.js";
 import {
   AbortException,
   CMapCompressionType,
-  createPromiseCapability,
   FONT_IDENTITY_MATRIX,
   FormatError,
   IDENTITY_MATRIX,
   ImageKind,
   info,
-  isArrayEqual,
   type matrix_t,
   OPS,
   type rect_t,
@@ -1292,8 +1291,7 @@ export class PartialEvaluator
             return new TranslatedFont({
               loadedName: "g_font_error",
               font: new ErrorFont(`Type3 font load error: ${reason}`),
-              dict: <any>translated.font, //kkkk bug?
-              // dict: null,
+              dict: <any>translated.font,
               evaluatorOptions: this.options,
             });
           });
@@ -1547,7 +1545,7 @@ export class PartialEvaluator
       return this.fontCache.get( fontDict.cacheKey )!;
     }
 
-    const fontCapability = createPromiseCapability<TranslatedFont>();
+    const fontCapability = createPromiseCap<TranslatedFont>();
 
     let preEvaluatedFont:PreEvaluatedFont;
     try {
@@ -2716,7 +2714,7 @@ export class PartialEvaluator
 
       if( font.isType3Font 
        && (textState.fontSize <= 1 || (<Font>font).isCharBBox) 
-       && !isArrayEqual(textState.fontMatrix, FONT_IDENTITY_MATRIX)
+       && !textState.fontMatrix.eq( FONT_IDENTITY_MATRIX )
       ) {
         const glyphHeight = font.bbox![3] - font.bbox![1];
         if (glyphHeight > 0) 
@@ -3595,7 +3593,7 @@ export class PartialEvaluator
                   resolveGState,
                   rejectGState
                 );
-              }).catch(function (reason) {
+              }).catch( reason => {
                 if( reason instanceof AbortException ) return;
 
                 if (self.options.ignoreErrors) 
@@ -4890,7 +4888,7 @@ export class TranslatedFont
     const charProcOperatorList = Object.create(null);
 
     const isEmptyBBox =
-      !translatedFont.bbox || isArrayEqual(translatedFont.bbox, [0, 0, 0, 0]);
+      !translatedFont.bbox || translatedFont.bbox.eq([0, 0, 0, 0]);
 
     for( const key of charProcs.getKeys() )
     {

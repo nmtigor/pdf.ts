@@ -418,7 +418,7 @@ class MooHandlerDB<T, D=any>
   }
 }
 
-export class Moo< T, D=any >
+export class Moo<T, D=any>
 {
   readonly #initval:T;
   readonly #eq:MooEq<T>;

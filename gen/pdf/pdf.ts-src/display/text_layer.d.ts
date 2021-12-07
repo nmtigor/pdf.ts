@@ -96,7 +96,7 @@ declare namespace Ns_renderTextLayer {
         _textDivProperties: WeakMap<HTMLSpanElement, TextDivProps> | undefined;
         _renderingDone: boolean;
         _canceled: boolean;
-        _capability: import("../shared/util.js").PromiseCapability<void>;
+        _capability: import("../../../lib/promisecap.js").PromiseCap<void>;
         _bounds: TLRTBound[] | undefined;
         constructor({ textContent, textContentStream, container, viewport, textDivs, textContentItemsStr, enhanceTextSelection, }: TLRTCtorParms);
         /**

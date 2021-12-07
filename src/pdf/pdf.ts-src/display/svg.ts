@@ -31,7 +31,7 @@ import {
   warn,
 } from "../shared/util.js";
 import { DOMSVGFactory, PageViewport } from "./display_utils.js";
-import { type PDFCommonObjs, PDFObjects, type PDFObjs } from "./api.js";
+import { PDFCommonObjs, PDFObjects, PDFObjs } from "./api.js";
 import { type ImgData } from "../core/evaluator.js";
 import { FontExpotData, Glyph } from "../core/fonts.js";
 import { type OpListIR } from "../core/operator_list.js";
@@ -510,7 +510,8 @@ import { type ShadingPatternIR, ShadingType, type TilingPatternIR } from "../cor
     svg?:SVGElement  | undefined;
     tgrp?:SVGGElement | undefined;
 
-    constructor( commonObjs:PDFObjects<PDFCommonObjs>, objs:PDFObjects<PDFObjs>, forceDataSchema=false ) 
+    constructor( commonObjs:PDFObjects<PDFCommonObjs>, 
+      objs:PDFObjects<PDFObjs | undefined>, forceDataSchema=false ) 
     {
       this.commonObjs = commonObjs;
       this.objs = objs;
@@ -1259,7 +1260,6 @@ import { type ShadingPatternIR, ShadingType, type TilingPatternIR } from "../cor
       if (paintType === 2) 
       {
         const cssColor = Util.makeHexColor( color[0], color[1], color[2] );
-        // const cssColor = Util.makeHexColor(...color); //kkkk bug?
         this.current.fillColor = cssColor;
         this.current.strokeColor = cssColor;
       }
@@ -1312,10 +1312,10 @@ import { type ShadingPatternIR, ShadingType, type TilingPatternIR } from "../cor
               gradient.setAttributeNS( null, "gradientUnits", "userSpaceOnUse" );
               gradient.setAttributeNS( null, "cx", circlePoint[0].toString() );
               gradient.setAttributeNS( null, "cy", circlePoint[1].toString() );
-              gradient.setAttributeNS( null, "r", circleRadius+"" );
+              gradient.setAttributeNS( null, "r", <any>circleRadius );
               gradient.setAttributeNS( null, "fx", focalPoint[0].toString() );
               gradient.setAttributeNS( null, "fy", focalPoint[1].toString() );
-              gradient.setAttributeNS( null, "fr", focalRadius+"" );
+              gradient.setAttributeNS( null, "fr", <any>focalRadius );
               break;
             default:
               throw new Error(`Unknown RadialAxial type: ${args[1]}`);

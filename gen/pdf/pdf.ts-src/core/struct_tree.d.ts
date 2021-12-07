@@ -58,12 +58,11 @@ export declare class StructTreePage {
      * Table 322
      */
     parse(): void;
-    addNode(dict: Dict, map: Map<Dict, StructElementNode>, level?: number): StructElementNode | null | undefined;
+    addNode(dict: Dict, map: Map<Dict, StructElementNode>, level?: number): StructElementNode | undefined;
     addTopLevelNode(dict: Dict, element: StructElementNode): boolean;
     /**
      * Convert the tree structure into a simplifed object literal that can
      * be sent to the main thread.
-     * @return {Object}
      */
     get serializable(): StructTree;
 }

@@ -23,8 +23,8 @@ export class XfaLayer {
         const storedData = storage.getValue(id, { value: null });
         switch (element.name) {
             case "textarea":
-                if (storedData.value !== undefined) {
-                    html.textContent = storedData.value + "";
+                if (storedData.value !== null && storedData.value !== undefined) {
+                    html.textContent = storedData.value;
                 }
                 if (intent === "print")
                     break;
@@ -36,7 +36,7 @@ export class XfaLayer {
                 if (element.attributes.type === "radio"
                     || element.attributes.type === "checkbox") {
                     if (storedData.value === element.attributes.xfaOn) {
-                        html.setAttribute("checked", true + "");
+                        html.setAttribute("checked", true);
                     }
                     else if (storedData.value === element.attributes.xfaOff) {
                         // The checked attribute may have been set when opening the file,
@@ -57,8 +57,8 @@ export class XfaLayer {
                     });
                 }
                 else {
-                    if (storedData.value !== undefined) {
-                        html.setAttribute("value", storedData.value + "");
+                    if (storedData.value !== null && storedData.value !== undefined) {
+                        html.setAttribute("value", storedData.value);
                     }
                     if (intent === "print")
                         break;
@@ -68,7 +68,7 @@ export class XfaLayer {
                 }
                 break;
             case "select":
-                if (storedData.value !== undefined) {
+                if (storedData.value !== null && storedData.value !== undefined) {
                     for (const option of element.children) {
                         if (option.attributes.value === storedData.value) {
                             option.attributes.selected = true;
@@ -218,7 +218,7 @@ export class XfaLayer {
          * }
          */
         for (const el of rootDiv.querySelectorAll(".xfaNonInteractive input, .xfaNonInteractive textarea")) {
-            el.setAttribute("readOnly", true + "");
+            el.setAttribute("readOnly", true);
         }
         return {
             textDivs,

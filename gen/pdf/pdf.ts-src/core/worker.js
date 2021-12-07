@@ -15,8 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { createPromiseCap } from "../../../lib/promisecap.js";
 import { MessageHandler, } from "../shared/message_handler.js";
-import { AbortException, arrayByteLength, arraysToBytes, createPromiseCapability, getVerbosityLevel, info, InvalidPDFException, MissingPDFException, PasswordException, setVerbosityLevel, stringToPDFString, UnexpectedResponseException, UnknownErrorException, UNSUPPORTED_FEATURES, VerbosityLevel, warn, } from "../shared/util.js";
+import { AbortException, arrayByteLength, arraysToBytes, getVerbosityLevel, info, InvalidPDFException, MissingPDFException, PasswordException, setVerbosityLevel, stringToPDFString, UnexpectedResponseException, UnknownErrorException, UNSUPPORTED_FEATURES, VerbosityLevel, warn, } from "../shared/util.js";
 import { XRefParseException } from "./core_utils.js";
 import { LocalPdfManager, NetworkPdfManager, } from "./pdf_manager.js";
 import { clearPrimitiveCaches, Dict, Ref } from "./primitives.js";
@@ -26,7 +27,7 @@ export class WorkerTask {
     name;
     terminated = false;
     terminate() { this.terminated = true; }
-    #capability = createPromiseCapability();
+    #capability = createPromiseCap();
     get finished() { return this.#capability.promise; }
     finish() { this.#capability.resolve(); }
     constructor(name) {
@@ -152,7 +153,7 @@ export const WorkerMessageHandler = {
             return { numPages, fingerprints, htmlForXfa };
         }
         function getPdfManager(data, evaluatorOptions, enableXfa) {
-            const pdfManagerCapability = createPromiseCapability();
+            const pdfManagerCapability = createPromiseCap();
             let newPdfManager;
             const source = data.source;
             if (source.data) {
@@ -454,7 +455,7 @@ export const WorkerMessageHandler = {
                 else {
                     for (const ref of refs) {
                         newRefs = ref
-                            .filter(x => x !== undefined)
+                            .filter(x => x !== null)
                             .reduce((a, b) => a.concat(b), newRefs);
                     }
                     if (newRefs.length === 0) {

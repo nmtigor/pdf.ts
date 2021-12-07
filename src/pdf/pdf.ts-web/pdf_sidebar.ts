@@ -354,13 +354,14 @@ export class PDFSidebar
     }
   }
 
-  #updateThumbnailViewer = () =>
+  #updateThumbnailViewer()
   {
     const { pdfViewer, pdfThumbnailViewer } = this;
 
     // Use the rendered pages to set the corresponding thumbnail images.
     const pagesCount = pdfViewer.pagesCount;
-    for (let pageIndex = 0; pageIndex < pagesCount; pageIndex++) {
+    for (let pageIndex = 0; pageIndex < pagesCount; pageIndex++) 
+    {
       const pageView = pdfViewer.getPageView(pageIndex);
       if( pageView?.renderingState === RenderingStates.FINISHED )
       {
@@ -371,7 +372,7 @@ export class PDFSidebar
     pdfThumbnailViewer.scrollThumbnailIntoView(pdfViewer.currentPageNumber);
   }
 
-  #showUINotification = () =>
+  #showUINotification()
   {
     this.l10n.get("toggle_sidebar_notification2.title").then(msg => {
       this.toggleButton.title = msg;
@@ -402,7 +403,7 @@ export class PDFSidebar
     }
   }
 
-  #addEventListeners = () =>
+  #addEventListeners()
   {
     this.viewerContainer.addEventListener("transitionend", evt => {
       if (evt.target === this.viewerContainer) {
@@ -447,10 +448,12 @@ export class PDFSidebar
     {
       button.disabled = !count;
 
-      if (count) {
+      if (count) 
+      {
         this.#showUINotification();
       } 
-      else if (this.active === view) {
+      else if (this.active === view) 
+      {
         // If the `view` was opened by the user during document load,
         // switch away from it if it turns out to be empty.
         this.switchView(SidebarView.THUMBS);
@@ -461,9 +464,8 @@ export class PDFSidebar
       onTreeLoaded(evt.outlineCount, this.outlineButton, SidebarView.OUTLINE);
 
       evt.currentOutlineItemPromise.then(enabled => {
-        if (!this.isInitialViewSet) {
-          return;
-        }
+        if( !this.isInitialViewSet ) return;
+
         this._currentOutlineItemButton.disabled = !enabled;
       });
     });

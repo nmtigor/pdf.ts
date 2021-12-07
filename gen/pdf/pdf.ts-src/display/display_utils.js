@@ -107,9 +107,18 @@ export class DOMSVGFactory extends BaseSVGFactory {
  * PDF page viewport created based on scale, rotation and offset.
  */
 export class PageViewport {
+    /**
+     * In PDF unit.
+     */
     viewBox;
+    /**
+     * To CSS unit.
+     */
     scale;
     rotation;
+    /**
+     * In CSS unit.
+     */
     offsetX;
     offsetY;
     transform;
@@ -130,7 +139,8 @@ export class PageViewport {
         rotation %= 360;
         if (rotation < 0)
             rotation += 360;
-        switch (rotation) {
+        switch (rotation) // clockwise, with flip first
+         {
             case 180:
                 rotateA = -1;
                 rotateB = 0;

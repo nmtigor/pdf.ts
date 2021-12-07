@@ -1,5 +1,6 @@
-import { type TypedArray } from "../../../lib/alias.js";
-import { AnnotationMode, FontType, type matrix_t, PasswordResponses, type PromiseCapability, RenderingIntentFlag, StreamType, UNSUPPORTED_FEATURES, VerbosityLevel } from "../shared/util.js";
+import { PromiseCap } from "../../../lib/promisecap.js";
+import { TypedArray } from "../../../lib/alias.js";
+import { AnnotationMode, FontType, type matrix_t, PasswordResponses, RenderingIntentFlag, StreamType, UNSUPPORTED_FEATURES, VerbosityLevel } from "../shared/util.js";
 import { DOMCanvasFactory, DOMCMapReaderFactory, DOMStandardFontDataFactory, PageViewport, StatTimer } from "./display_utils.js";
 import { FontFaceObject, FontLoader } from "./font_loader.js";
 import { AnnotationStorage } from "./annotation_storage.js";
@@ -252,7 +253,7 @@ export declare class PDFDocumentLoadingTask {
     static get idCounters(): {
         doc: number;
     };
-    _capability: PromiseCapability<PDFDocumentProxy>;
+    _capability: PromiseCap<PDFDocumentProxy>;
     _transport: WorkerTransport | undefined;
     _worker: PDFWorker | undefined;
     /**
@@ -298,7 +299,7 @@ declare type ProgressiveDoneListener = () => void;
 /**
  * Abstract class to support range requests file loading.
  */
-export declare abstract class PDFDataRangeTransport {
+export declare class PDFDataRangeTransport {
     #private;
     length: number;
     initialData: Uint8Array;
@@ -314,7 +315,7 @@ export declare abstract class PDFDataRangeTransport {
     onDataProgressiveRead(chunk: ArrayBufferLike): void;
     onDataProgressiveDone(): void;
     transportReady(): void;
-    abstract requestDataRange(begin: number, end: number): void;
+    requestDataRange(begin: number, end: number): void;
     abort(): void;
 }
 export interface OutlineNode {
@@ -564,6 +565,7 @@ export declare class PDFDocumentProxy {
 interface GetViewportParms {
     /**
      * The desired scale of the viewport.
+     * In CSS unit.
      */
     scale: number;
     /**
@@ -701,7 +703,7 @@ interface GetAnnotationsParms {
      * can be 'display' (viewable annotations), 'print' (printable annotations),
      * or 'any' (all annotations). The default value is 'display'.
      */
-    intent: AnnotIntent | undefined;
+    intent: Intent | undefined;
 }
 export interface ImageLayer {
     beginLayout(): void;
@@ -811,10 +813,11 @@ interface GetOperatorListParms {
 }
 export declare type AnnotIntent = "display" | "print" | "richText";
 export declare type Intent = AnnotIntent | "any";
-export declare type PDFObjs = ImgData | ShadingPatternIR | undefined;
+export declare type PDFObjs = ImgData | ShadingPatternIR;
 interface IntentArgs {
     renderingIntent: RenderingIntentFlag;
     cacheKey: string;
+    isOpList?: boolean;
 }
 /**
  * Proxy to a `PDFPage` in the worker thread.
@@ -832,7 +835,7 @@ export declare class PDFPageProxy {
     get stats(): StatTimer | null;
     _pdfBug: boolean;
     commonObjs: PDFObjects<PDFCommonObjs>;
-    objs: PDFObjects<PDFObjs>;
+    objs: PDFObjects<PDFObjs | undefined>;
     cleanupAfterRender: boolean;
     _structTreePromise: Promise<StructTree | undefined> | undefined;
     pendingCleanup: boolean;
@@ -871,7 +874,7 @@ export declare class PDFPageProxy {
      */
     getViewport({ scale, rotation, offsetX, offsetY, dontFlip, }: GetViewportParms): PageViewport;
     /**
-     * @param params - Annotation parameters.
+     * @param params Annotation parameters.
      * @return A promise that is resolved with an
      *   {Array} of the annotation objects.
      */
@@ -1022,13 +1025,13 @@ declare class WorkerTransport {
     CMapReaderFactory: DOMCMapReaderFactory | undefined;
     StandardFontDataFactory: DOMStandardFontDataFactory | undefined;
     destroyed: boolean;
-    destroyCapability?: PromiseCapability;
-    _passwordCapability?: PromiseCapability<{
+    destroyCapability?: PromiseCap;
+    _passwordCapability?: PromiseCap<{
         password: string;
     }>;
     pageCache: (PDFPageProxy | undefined)[];
     pagePromises: Promise<PDFPageProxy>[];
-    downloadInfoCapability: PromiseCapability<{
+    downloadInfoCapability: PromiseCap<{
         length: number;
     }>;
     _htmlForXfa: XFAElObj | undefined;
@@ -1131,7 +1134,7 @@ interface Params_IRTCtorParms {
 interface InternalRenderTaskCtorParms {
     callback: (error?: unknown) => void;
     params: Params_IRTCtorParms;
-    objs: PDFObjects<PDFObjs>;
+    objs: PDFObjects<PDFObjs | undefined>;
     commonObjs: PDFObjects<PDFCommonObjs>;
     operatorList: OpListIR;
     pageIndex: number;
@@ -1151,7 +1154,7 @@ export declare class InternalRenderTask {
     static get canvasInUse(): WeakSet<object>;
     callback: (error?: unknown) => void;
     params: Params_IRTCtorParms;
-    objs: PDFObjects<PDFObjs>;
+    objs: PDFObjects<PDFObjs | undefined>;
     commonObjs: PDFObjects<PDFCommonObjs>;
     operatorListIdx?: number;
     operatorList: OpListIR;
@@ -1163,7 +1166,7 @@ export declare class InternalRenderTask {
     graphicsReady: boolean;
     _useRequestAnimationFrame: boolean;
     cancelled: boolean;
-    capability: PromiseCapability<void>;
+    capability: PromiseCap<void>;
     task: RenderTask;
     _canvas: HTMLCanvasElement;
     gfx?: CanvasGraphics;

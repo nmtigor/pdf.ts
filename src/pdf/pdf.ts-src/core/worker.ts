@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+import { createPromiseCap } from "../../../lib/promisecap.js";
 import { 
   Thread,
   type GetDocRequestData,
@@ -28,7 +29,6 @@ import {
   arrayByteLength,
   arraysToBytes,
   BaseException,
-  createPromiseCapability,
   getVerbosityLevel,
   info,
   InvalidPDFException,
@@ -73,7 +73,7 @@ export class WorkerTask
   terminated = false;
   terminate() { this.terminated = true; }
 
-  #capability = createPromiseCapability();
+  #capability = createPromiseCap();
   get finished() { return this.#capability.promise; }
   finish() { this.#capability.resolve(); }
 
@@ -223,7 +223,7 @@ export const WorkerMessageHandler =
       WorkerTasks.splice(i, 1);
     }
 
-    async function loadDocument( recoveryMode:boolean ) 
+    async function loadDocument( recoveryMode:boolean ):Promise<PDFInfo>
     {
       await pdfManager.ensureDoc("checkHeader");
       await pdfManager.ensureDoc("parseStartXRef");
@@ -268,7 +268,7 @@ export const WorkerMessageHandler =
     function getPdfManager( data:GetDocRequestData, evaluatorOptions:EvaluatorOptions,
       enableXfa?:boolean
     ) {
-      const pdfManagerCapability = createPromiseCapability<BasePdfManager>();
+      const pdfManagerCapability = createPromiseCap<BasePdfManager>();
       let newPdfManager:BasePdfManager;
 
       const source = data.source;
@@ -656,7 +656,7 @@ export const WorkerMessageHandler =
           pdfManager.ensureDoc("startXRef"),
         ];
 
-        const promises_1:Promise<SaveReturn[] | string | undefined>[] = [];
+        const promises_1:Promise<(SaveReturn | null)[] | string | undefined>[] = [];
         if( isPureXfa )
         {
           promises_1.push( pdfManager.serializeXfaData(annotationStorage) );
@@ -693,7 +693,7 @@ export const WorkerMessageHandler =
             for( const ref of <(SaveReturn[])[]>refs )
             {
               newRefs = ref
-                .filter( x => x !== undefined )
+                .filter( x => x !== null )
                 .reduce( (a, b) => a.concat(b!), newRefs );
             }
 

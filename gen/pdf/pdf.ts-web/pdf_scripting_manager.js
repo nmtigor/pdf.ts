@@ -15,7 +15,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { createPromiseCapability, shadow } from "../pdf.ts-src/shared/util.js";
+import { createPromiseCap } from "../../lib/promisecap.js";
+import { shadow } from "../pdf.ts-src/shared/util.js";
 import { apiPageLayoutToViewerModes } from "./ui_utils.js";
 import { RenderingStates } from "./pdf_rendering_queue.js";
 export class PDFScriptingManager {
@@ -40,11 +41,6 @@ export class PDFScriptingManager {
         this.#docPropertiesLookup = docPropertiesLookup;
         // The default viewer already handles adding/removing of DOM events,
         // hence limit this to only the viewer components.
-        // if (
-        //   typeof PDFJSDev !== "undefined" &&
-        //   PDFJSDev.test("COMPONENTS") &&
-        //   !this.#scriptingFactory
-        // ) {
     }
     async setDocument(pdfDocument) {
         if (this.#pdfDocument) {
@@ -63,9 +59,9 @@ export class PDFScriptingManager {
             await this.#destroyScripting();
             return;
         }
-        if (pdfDocument !== this.#pdfDocument) {
-            return; // The document was closed while the data resolved.
-        }
+        // The document was closed while the data resolved.
+        if (pdfDocument !== this.#pdfDocument)
+            return;
         try {
             this._scripting = this.#createScripting();
         }
@@ -179,9 +175,7 @@ export class PDFScriptingManager {
             name: "DidPrint",
         });
     }
-    get ready() {
-        return this._ready;
-    }
+    get ready() { return this._ready; }
     get #internalEvents() {
         return shadow(this, "#internalEvents", new Map());
     }
@@ -277,11 +271,11 @@ export class PDFScriptingManager {
     async #dispatchPageOpen(pageNumber, initialize = false) {
         const pdfDocument = this.#pdfDocument, visitedPages = this.#visitedPages;
         if (initialize) {
-            this.#closeCapability = createPromiseCapability();
+            this.#closeCapability = createPromiseCap();
         }
-        if (!this.#closeCapability) {
-            return; // Scripting isn't fully initialized yet.
-        }
+        // Scripting isn't fully initialized yet.
+        if (!this.#closeCapability)
+            return;
         const pageView = this.#pdfViewer.getPageView(/* index = */ pageNumber - 1);
         if (pageView?.renderingState !== RenderingStates.FINISHED) {
             this.#pageOpenPending.add(pageNumber);
@@ -293,9 +287,9 @@ export class PDFScriptingManager {
             const actions = await (!visitedPages.has(pageNumber)
                 ? pageView.pdfPage?.getJSActions()
                 : null);
-            if (pdfDocument !== this.#pdfDocument) {
-                return; // The document was closed while the actions resolved.
-            }
+            // The document was closed while the actions resolved.
+            if (pdfDocument !== this.#pdfDocument)
+                return;
             await this._scripting?.dispatchEventInSandbox({
                 id: "page",
                 name: "PageOpen",
@@ -307,22 +301,22 @@ export class PDFScriptingManager {
     }
     async #dispatchPageClose(pageNumber) {
         const pdfDocument = this.#pdfDocument, visitedPages = this.#visitedPages;
-        if (!this.#closeCapability) {
-            return; // Scripting isn't fully initialized yet.
-        }
-        if (this.#pageOpenPending.has(pageNumber)) {
-            return; // The page is still rendering; no "PageOpen" event dispatched.
-        }
+        // Scripting isn't fully initialized yet.
+        if (!this.#closeCapability)
+            return;
+        // The page is still rendering; no "PageOpen" event dispatched.
+        if (this.#pageOpenPending.has(pageNumber))
+            return;
         const actionsPromise = visitedPages.get(pageNumber);
-        if (!actionsPromise) {
-            return; // The "PageClose" event must be preceded by a "PageOpen" event.
-        }
+        // The "PageClose" event must be preceded by a "PageOpen" event.
+        if (!actionsPromise)
+            return;
         visitedPages.set(pageNumber, null);
         // Ensure that the "PageOpen" event is dispatched first.
         await actionsPromise;
-        if (pdfDocument !== this.#pdfDocument) {
-            return; // The document was closed while the actions resolved.
-        }
+        // The document was closed while the actions resolved.
+        if (pdfDocument !== this.#pdfDocument)
+            return;
         await this._scripting?.dispatchEventInSandbox({
             id: "page",
             name: "PageClose",
@@ -342,7 +336,7 @@ export class PDFScriptingManager {
         throw new Error("#getDocProperties: Unable to lookup properties.");
     };
     #createScripting = () => {
-        this.#destroyCapability = createPromiseCapability();
+        this.#destroyCapability = createPromiseCap();
         if (this._scripting) {
             throw new Error("#createScripting: Scripting already exists.");
         }

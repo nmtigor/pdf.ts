@@ -17,7 +17,8 @@
  * limitations under the License.
  */
 
-import { assert }      from "../../../lib/util/trace.js";
+import { createPromiseCap, PromiseCap } from "../../../lib/promisecap.js";
+import { assert } from "../../../lib/util/trace.js";
 import { 
   type IPDFStream, 
   type IPDFStreamRangeReader, 
@@ -25,7 +26,7 @@ import {
   type ReadValue 
 } from "../interfaces.js";
 import { PDFDataRangeTransport } from "../pdf.js";
-import { AbortException, createPromiseCapability, type PromiseCapability } from "../shared/util.js";
+import { AbortException } from "../shared/util.js";
 import { isPdfFile } from "./display_utils.js";
 /*81---------------------------------------------------------------------------*/
 
@@ -211,7 +212,7 @@ class PDFDataTransportStreamReader implements IPDFStreamReader
 
   #queuedChunks:ArrayBufferLike[]
   _loaded = 0;
-  #requests:PromiseCapability< ReadValue >[] = [];
+  #requests:PromiseCap< ReadValue >[] = [];
 
   #headersReady = Promise.resolve();
   get headersReady() { return this.#headersReady; }
@@ -271,7 +272,7 @@ class PDFDataTransportStreamReader implements IPDFStreamReader
     if (this.#done) {
       return { value: undefined, done: true } as ReadValue;
     }
-    const requestCapability = createPromiseCapability< ReadValue >();
+    const requestCapability = createPromiseCap< ReadValue >();
     this.#requests.push(requestCapability);
     return requestCapability.promise;
   }
@@ -300,7 +301,7 @@ class PDFDataTransportStreamRangeReader implements IPDFStreamRangeReader
   _begin:number;
   _end:number;
   #queuedChunk:ArrayBufferLike | null = null;
-  #requests:PromiseCapability< ReadValue >[] = [];
+  #requests:PromiseCap< ReadValue >[] = [];
   #done = false;
 
   /** @implements */
@@ -345,7 +346,7 @@ class PDFDataTransportStreamRangeReader implements IPDFStreamRangeReader
     if (this.#done) {
       return { value: undefined, done: true } as ReadValue;
     }
-    const requestCapability = createPromiseCapability< ReadValue >();
+    const requestCapability = createPromiseCap< ReadValue >();
     this.#requests.push(requestCapability);
     return requestCapability.promise;
   }

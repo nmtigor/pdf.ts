@@ -234,7 +234,7 @@ export class PDFSidebar {
             this.pdfThumbnailViewer.forceRendering();
         }
     }
-    #updateThumbnailViewer = () => {
+    #updateThumbnailViewer() {
         const { pdfViewer, pdfThumbnailViewer } = this;
         // Use the rendered pages to set the corresponding thumbnail images.
         const pagesCount = pdfViewer.pagesCount;
@@ -246,8 +246,8 @@ export class PDFSidebar {
             }
         }
         pdfThumbnailViewer.scrollThumbnailIntoView(pdfViewer.currentPageNumber);
-    };
-    #showUINotification = () => {
+    }
+    #showUINotification() {
         this.l10n.get("toggle_sidebar_notification2.title").then(msg => {
             this.toggleButton.title = msg;
         });
@@ -256,7 +256,7 @@ export class PDFSidebar {
             // currently closed, to avoid unnecessarily bothering the user.
             this.toggleButton.classList.add(UI_NOTIFICATION_CLASS);
         }
-    };
+    }
     #hideUINotification(reset = false) {
         if (this.isOpen || reset) {
             // Only hide the notification on the `toggleButton` if the sidebar is
@@ -269,7 +269,7 @@ export class PDFSidebar {
             });
         }
     }
-    #addEventListeners = () => {
+    #addEventListeners() {
         this.viewerContainer.addEventListener("transitionend", evt => {
             if (evt.target === this.viewerContainer) {
                 this.outerContainer.classList.remove("sidebarMoving");
@@ -316,9 +316,8 @@ export class PDFSidebar {
         this.eventBus._on("outlineloaded", evt => {
             onTreeLoaded(evt.outlineCount, this.outlineButton, SidebarView.OUTLINE);
             evt.currentOutlineItemPromise.then(enabled => {
-                if (!this.isInitialViewSet) {
+                if (!this.isInitialViewSet)
                     return;
-                }
                 this._currentOutlineItemButton.disabled = !enabled;
             });
         });
@@ -335,7 +334,7 @@ export class PDFSidebar {
                 this.#updateThumbnailViewer();
             }
         });
-    };
+    }
 }
 /*81---------------------------------------------------------------------------*/
 //# sourceMappingURL=pdf_sidebar.js.map

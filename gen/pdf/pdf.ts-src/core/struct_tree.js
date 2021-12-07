@@ -94,9 +94,8 @@ class StructElementNode {
     parseKid(pageObjId, kid) {
         // A direct link to content, the integer is an mcid.
         if (Number.isInteger(kid)) {
-            if (this.tree.pageDict.objId !== pageObjId) {
+            if (this.tree.pageDict.objId !== pageObjId)
                 return null;
-            }
             return new StructElement({
                 type: StructElementType.PAGE_CONTENT,
                 mcid: kid,
@@ -105,7 +104,7 @@ class StructElementNode {
         }
         // Find the dictionary for the kid.
         let kidDict; // Table 324
-        if ((kid instanceof Ref)) {
+        if (kid instanceof Ref) {
             kidDict = this.dict.xref.fetch(kid);
         }
         else if (kid instanceof Dict) {
@@ -114,16 +113,15 @@ class StructElementNode {
         if (!kidDict)
             return null;
         const pageRef = kidDict.getRaw("Pg");
-        if ((pageRef instanceof Ref)) {
+        if (pageRef instanceof Ref) {
             pageObjId = pageRef.toString();
         }
         const type = (kidDict.get("Type") instanceof Name)
             ? kidDict.get("Type").name
             : null;
         if (type === "MCR") {
-            if (this.tree.pageDict.objId !== pageObjId) {
+            if (this.tree.pageDict.objId !== pageObjId)
                 return null;
-            }
             return new StructElement({
                 type: StructElementType.STREAM_CONTENT,
                 refObjId: (kidDict.getRaw("Stm") instanceof Ref)
@@ -134,12 +132,11 @@ class StructElementNode {
             });
         }
         if (type === "OBJR") {
-            if (this.tree.pageDict.objId !== pageObjId) {
+            if (this.tree.pageDict.objId !== pageObjId)
                 return null;
-            }
             return new StructElement({
                 type: StructElementType.OBJECT,
-                refObjId: (kidDict.getRaw("Obj") instanceof Ref)
+                refObjId: kidDict.getRaw("Obj") instanceof Ref
                     ? kidDict.getRaw("Obj").toString()
                     : undefined,
                 pageObjId,
@@ -202,11 +199,10 @@ export class StructTreePage {
     addNode(dict, map, level = 0) {
         if (level > MAX_DEPTH) {
             warn("StructTree MAX_DEPTH reached.");
-            return null;
+            return undefined;
         }
-        if (map.has(dict)) {
+        if (map.has(dict))
             return map.get(dict);
-        }
         const element = new StructElementNode(this, dict);
         map.set(dict, element);
         const parent = dict.get("P");
@@ -241,9 +237,8 @@ export class StructTreePage {
             this.nodes[0] = element;
             return true;
         }
-        if (!Array.isArray(obj)) {
+        if (!Array.isArray(obj))
             return true;
-        }
         let save = false;
         for (let i = 0; i < obj.length; i++) {
             const kidRef = obj[i];
@@ -257,7 +252,6 @@ export class StructTreePage {
     /**
      * Convert the tree structure into a simplifed object literal that can
      * be sent to the main thread.
-     * @return {Object}
      */
     get serializable() {
         function nodeToSerializable(node, parent, level = 0) {
@@ -279,8 +273,8 @@ export class StructTreePage {
                     nodeToSerializable(kidElement, obj, level + 1);
                     continue;
                 }
-                else if (kid.type === StructElementType.PAGE_CONTENT ||
-                    kid.type === StructElementType.STREAM_CONTENT) {
+                else if (kid.type === StructElementType.PAGE_CONTENT
+                    || kid.type === StructElementType.STREAM_CONTENT) {
                     obj.children.push({
                         type: "content",
                         id: `page${kid.pageObjId}_mcid${kid.mcid}`,

@@ -20,7 +20,6 @@
 import {
   bytesToString,
   FormatError,
-  isArrayEqual,
   PasswordException,
   PasswordResponses,
   stringToBytes,
@@ -1340,7 +1339,7 @@ export class PDF17
     hashData.set(ownerValidationSalt, password.length);
     hashData.set(userBytes, password.length + ownerValidationSalt.length);
     const result = calculateSHA256(hashData, 0, hashData.length);
-    return isArrayEqual(result, ownerPassword);
+    return result.eq( ownerPassword );
   }
 
   checkUserPassword(
@@ -1352,7 +1351,7 @@ export class PDF17
     hashData.set(password, 0);
     hashData.set(userValidationSalt, password.length);
     const result = calculateSHA256(hashData, 0, hashData.length);
-    return isArrayEqual(result, userPassword);
+    return result.eq( userPassword );
   }
 
   getOwnerKey(
@@ -1458,7 +1457,7 @@ namespace NsPDF20
       hashData.set(ownerValidationSalt, password.length);
       hashData.set(userBytes, password.length + ownerValidationSalt.length);
       const result = calculatePDF20Hash(password, hashData, userBytes);
-      return isArrayEqual(result, ownerPassword);
+      return result.eq( ownerPassword );
     }
 
     checkUserPassword(
@@ -1470,7 +1469,7 @@ namespace NsPDF20
       hashData.set(password, 0);
       hashData.set(userValidationSalt, password.length);
       const result = calculatePDF20Hash(password, hashData, new Uint8Array());
-      return isArrayEqual(result, userPassword);
+      return result.eq( userPassword );
     }
 
     getOwnerKey(

@@ -470,7 +470,7 @@ export function createValidAbsoluteUrl(url, baseUrl, options) {
                 catch (ex) { }
             }
         }
-        const absoluteUrl = baseUrl ? new URL(url + "", baseUrl) : new URL(url.toString());
+        const absoluteUrl = baseUrl ? new URL(url, baseUrl) : new URL(url);
         if (_isValidProtocol(absoluteUrl)) {
             return absoluteUrl;
         }
@@ -930,16 +930,6 @@ export function isString(v) {
 export function isArrayBuffer(v) {
     return typeof v === "object" && v?.byteLength !== undefined;
 }
-export function isArrayEqual(arr1, arr2) {
-    if (arr1.length !== arr2.length)
-        return false;
-    for (let i = 0, ii = arr1.length; i < ii; i++) {
-        if (arr1[i] !== arr2[i]) {
-            return false;
-        }
-    }
-    return true;
-}
 export function getModificationDate(date = new Date) {
     const buffer = [
         date.getUTCFullYear().toString(),
@@ -950,32 +940,6 @@ export function getModificationDate(date = new Date) {
         date.getUTCSeconds().toString().padStart(2, "0"),
     ];
     return buffer.join("");
-}
-let PromiseCapability_ID = 0;
-/**
- * Creates a promise capability object.
- * @alias createPromiseCapability
- */
-export function createPromiseCapability() {
-    const capability = Object.create(null);
-    capability.id = ++PromiseCapability_ID;
-    let isSettled = false;
-    Object.defineProperty(capability, "settled", {
-        get() {
-            return isSettled;
-        },
-    });
-    capability.promise = new Promise((resolve, reject) => {
-        capability.resolve = (data) => {
-            isSettled = true;
-            resolve(data);
-        };
-        capability.reject = (reason) => {
-            isSettled = true;
-            reject(reason);
-        };
-    });
-    return capability;
 }
 export function createObjectURL(data, contentType = "", forceDataSchema = false) {
     if (URL.createObjectURL && typeof Blob !== "undefined" && !forceDataSchema) {

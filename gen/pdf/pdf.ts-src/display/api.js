@@ -19,8 +19,9 @@
  * @module pdfjsLib
  */
 import { isObjectLike } from "../../../lib/jslang.js";
+import { createPromiseCap } from "../../../lib/promisecap.js";
 import { assert } from "../../../lib/util/trace.js";
-import { AbortException, AnnotationMode, createPromiseCapability, getVerbosityLevel, info, InvalidPDFException, isArrayBuffer, isSameOrigin, MissingPDFException, PasswordException, RenderingIntentFlag, setVerbosityLevel, shadow, stringToBytes, UnexpectedResponseException, UnknownErrorException, warn, } from "../shared/util.js";
+import { AbortException, AnnotationMode, getVerbosityLevel, info, InvalidPDFException, isArrayBuffer, isSameOrigin, MissingPDFException, PasswordException, RenderingIntentFlag, setVerbosityLevel, shadow, stringToBytes, UnexpectedResponseException, UnknownErrorException, warn, } from "../shared/util.js";
 import { deprecated, DOMCanvasFactory, DOMCMapReaderFactory, DOMStandardFontDataFactory, isDataScheme, loadScript, PageViewport, RenderingCancelledException, StatTimer, } from "./display_utils.js";
 import { FontFaceObject, FontLoader } from "./font_loader.js";
 import { AnnotationStorage } from "./annotation_storage.js";
@@ -101,7 +102,7 @@ export function getDocument(src) {
                 if (typeof window !== "undefined") {
                     try {
                         // The full path is required in the 'url' field.
-                        params[key] = new URL(value, window.location.toString()).href;
+                        params[key] = new URL(value, window.location).href;
                         continue;
                     }
                     catch (ex) {
@@ -325,7 +326,7 @@ export class PDFDocumentLoadingTask {
     static get idCounters() {
         return shadow(this, "idCounters", { doc: 0 });
     }
-    _capability = createPromiseCapability();
+    _capability = createPromiseCap();
     _transport;
     _worker;
     /**
@@ -392,7 +393,7 @@ export class PDFDataRangeTransport {
     addProgressiveReadListener(listener) { this.#progressiveReadListeners.push(listener); }
     #progressiveDoneListeners = [];
     addProgressiveDoneListener(listener) { this.#progressiveDoneListeners.push(listener); }
-    #readyCapability = createPromiseCapability();
+    #readyCapability = createPromiseCap();
     constructor(length, initialData, progressiveDone = false, contentDispositionFilename) {
         this.length = length;
         this.initialData = initialData;
@@ -427,6 +428,9 @@ export class PDFDataRangeTransport {
     }
     transportReady() {
         this.#readyCapability.resolve();
+    }
+    requestDataRange(begin, end) {
+        assert(0, "Abstract method PDFDataRangeTransport.requestDataRange");
     }
     abort() { }
 }
@@ -773,7 +777,7 @@ export class PDFPageProxy {
         });
     }
     /**
-     * @param params - Annotation parameters.
+     * @param params Annotation parameters.
      * @return A promise that is resolved with an
      *   {Array} of the annotation objects.
      */
@@ -856,7 +860,7 @@ export class PDFPageProxy {
         // If there's no displayReadyCapability yet, then the operatorList
         // was never requested before. Make the request and create the promise.
         if (!intentState.displayReadyCapability) {
-            intentState.displayReadyCapability = createPromiseCapability();
+            intentState.displayReadyCapability = createPromiseCap();
             intentState.operatorList = {
                 fnArray: [],
                 argsArray: [],
@@ -954,7 +958,7 @@ export class PDFPageProxy {
         if (!intentState.opListReadCapability) {
             opListTask = Object.create(null);
             opListTask.operatorListChanged = operatorListChanged;
-            intentState.opListReadCapability = createPromiseCapability();
+            intentState.opListReadCapability = createPromiseCap();
             (intentState.renderTasks ||= new Set()).add(opListTask);
             intentState.operatorList = {
                 fnArray: [],
@@ -1341,7 +1345,7 @@ export class PDFWorker {
     destroyed = false;
     postMessageTransfers = true;
     verbosity;
-    #readyCapability = createPromiseCapability();
+    #readyCapability = createPromiseCap();
     /**
      * Promise for worker initialization completion.
      */
@@ -1394,7 +1398,7 @@ export class PDFWorker {
                 // Wraps workerSrc path into blob URL, if the former does not belong
                 // to the same origin.
                 if (!isSameOrigin(window.location.href, workerSrc)) {
-                    workerSrc = PDFWorkerUtil.createCDNWrapper(new URL(workerSrc, window.location.toString()).href);
+                    workerSrc = PDFWorkerUtil.createCDNWrapper(new URL(workerSrc, window.location).href);
                 }
                 // Some versions of FF can't create a worker on localhost, see:
                 // https://bugzilla.mozilla.org/show_bug.cgi?id=683280
@@ -1414,7 +1418,7 @@ export class PDFWorker {
                     }
                 };
                 const onWorkerError = (evt) => {
-                    // console.log(evt);
+                    console.error(evt);
                     if (!this.#webWorker) {
                         // Worker failed to initialize due to an error. Clean up and fall
                         // back to the fake worker.
@@ -1634,7 +1638,7 @@ class WorkerTransport {
     #lastProgress;
     pageCache = [];
     pagePromises = [];
-    downloadInfoCapability = createPromiseCapability();
+    downloadInfoCapability = createPromiseCap();
     #numPages;
     _htmlForXfa;
     constructor(messageHandler, loadingTask, networkStream, params) {
@@ -1706,7 +1710,7 @@ class WorkerTransport {
             return this.destroyCapability.promise;
         }
         this.destroyed = true;
-        this.destroyCapability = createPromiseCapability();
+        this.destroyCapability = createPromiseCap();
         if (this._passwordCapability) {
             this._passwordCapability.reject(new Error("Worker was destroyed during onPassword callback"));
         }
@@ -1782,7 +1786,7 @@ class WorkerTransport {
             };
         });
         messageHandler.on("ReaderHeadersReady", () => {
-            const headersCapability = createPromiseCapability();
+            const headersCapability = createPromiseCap();
             const fullReader = this.#fullReader;
             fullReader.headersReady.then(() => {
                 // If stream or range are disabled, it's our only way to report
@@ -1878,7 +1882,7 @@ class WorkerTransport {
             loadingTask._capability.reject(reason);
         });
         messageHandler.on("PasswordRequest", exception => {
-            this._passwordCapability = createPromiseCapability();
+            this._passwordCapability = createPromiseCap();
             if (loadingTask.onPassword) {
                 const updatePassword = (password) => {
                     this._passwordCapability.resolve({
@@ -2206,7 +2210,7 @@ export class PDFObjects {
             return this.#objs[objId];
         }
         return (this.#objs[objId] = {
-            capability: createPromiseCapability(),
+            capability: createPromiseCap(),
             // data: null,
             resolved: false,
         });
@@ -2304,7 +2308,7 @@ export class InternalRenderTask {
     graphicsReady = false;
     _useRequestAnimationFrame;
     cancelled = false;
-    capability = createPromiseCapability();
+    capability = createPromiseCap();
     task;
     _canvas;
     // stepper?;
@@ -2325,7 +2329,7 @@ export class InternalRenderTask {
         this._useRequestAnimationFrame =
             useRequestAnimationFrame === true && typeof window !== "undefined";
         // this.cancelled = false;
-        // this.capability = createPromiseCapability();
+        // this.capability = createPromiseCap();
         this.task = new RenderTask(this);
         this._canvas = params.canvasContext.canvas;
     }

@@ -201,7 +201,7 @@ console.log("%c>>>>>>> test getQuadPoints() >>>>>>>",`color:${css_1}`);
   console.log("it should ignore missing quadpoints...");
   beforeEach();
   {
-    console.assert( getQuadPoints(dict, <any>[]) === undefined );
+    console.assert( getQuadPoints(dict, <any>[]) === null );
   }
   afterEach()
 
@@ -209,7 +209,7 @@ console.log("%c>>>>>>> test getQuadPoints() >>>>>>>",`color:${css_1}`);
   beforeEach();
   {
     dict.set("QuadPoints", "foo");
-    console.assert( getQuadPoints(dict, <any>[]) === undefined );
+    console.assert( getQuadPoints(dict, <any>[]) === null );
   }
   afterEach();
 
@@ -217,7 +217,7 @@ console.log("%c>>>>>>> test getQuadPoints() >>>>>>>",`color:${css_1}`);
   beforeEach();
   {
     dict.set("QuadPoints", [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
-    console.assert( getQuadPoints(dict, <any>[]) === undefined );
+    console.assert( getQuadPoints(dict, <any>[]) === null );
   }
   afterEach();
 
@@ -234,7 +234,7 @@ console.log("%c>>>>>>> test getQuadPoints() >>>>>>>",`color:${css_1}`);
     for( const input of inputs )
     {
       dict.set("QuadPoints", input);
-      console.assert( getQuadPoints(dict, rect) === undefined );
+      console.assert( getQuadPoints(dict, rect) === null );
     }
   }
   afterEach();

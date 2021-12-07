@@ -15,8 +15,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { createPromiseCap } from "../../../lib/promisecap.js";
 import { assert } from "../../../lib/util/trace.js";
-import { createPromiseCapability } from "../shared/util.js";
 import { isPdfFile } from "./display_utils.js";
 export class PDFDataTransportStream {
     #queuedChunks = [];
@@ -188,7 +188,7 @@ class PDFDataTransportStreamReader {
         if (this.#done) {
             return { value: undefined, done: true };
         }
-        const requestCapability = createPromiseCapability();
+        const requestCapability = createPromiseCap();
         this.#requests.push(requestCapability);
         return requestCapability.promise;
     }
@@ -251,7 +251,7 @@ class PDFDataTransportStreamRangeReader {
         if (this.#done) {
             return { value: undefined, done: true };
         }
-        const requestCapability = createPromiseCapability();
+        const requestCapability = createPromiseCap();
         this.#requests.push(requestCapability);
         return requestCapability.promise;
     }

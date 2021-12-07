@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { bytesToString, FormatError, isArrayEqual, PasswordException, PasswordResponses, stringToBytes, utf8StringToString, warn, } from "../shared/util.js";
+import { bytesToString, FormatError, PasswordException, PasswordResponses, stringToBytes, utf8StringToString, warn, } from "../shared/util.js";
 import { Dict, isName, Name } from "./primitives.js";
 import { DecryptStream } from "./decrypt_stream.js";
 /*81---------------------------------------------------------------------------*/
@@ -1130,14 +1130,14 @@ export class PDF17 {
         hashData.set(ownerValidationSalt, password.length);
         hashData.set(userBytes, password.length + ownerValidationSalt.length);
         const result = calculateSHA256(hashData, 0, hashData.length);
-        return isArrayEqual(result, ownerPassword);
+        return result.eq(ownerPassword);
     }
     checkUserPassword(password, userValidationSalt, userPassword) {
         const hashData = new Uint8Array(password.length + 8);
         hashData.set(password, 0);
         hashData.set(userValidationSalt, password.length);
         const result = calculateSHA256(hashData, 0, hashData.length);
-        return isArrayEqual(result, userPassword);
+        return result.eq(userPassword);
     }
     getOwnerKey(password, ownerKeySalt, userBytes, ownerEncryption) {
         const hashData = new Uint8Array(password.length + 56);
@@ -1216,14 +1216,14 @@ var NsPDF20;
             hashData.set(ownerValidationSalt, password.length);
             hashData.set(userBytes, password.length + ownerValidationSalt.length);
             const result = calculatePDF20Hash(password, hashData, userBytes);
-            return isArrayEqual(result, ownerPassword);
+            return result.eq(ownerPassword);
         }
         checkUserPassword(password, userValidationSalt, userPassword) {
             const hashData = new Uint8Array(password.length + 8);
             hashData.set(password, 0);
             hashData.set(userValidationSalt, password.length);
             const result = calculatePDF20Hash(password, hashData, new Uint8Array());
-            return isArrayEqual(result, userPassword);
+            return result.eq(userPassword);
         }
         getOwnerKey(password, ownerKeySalt, userBytes, ownerEncryption) {
             const hashData = new Uint8Array(password.length + 56);

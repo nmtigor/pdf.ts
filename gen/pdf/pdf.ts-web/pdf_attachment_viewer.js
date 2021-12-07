@@ -15,8 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { createPromiseCap } from "../../lib/promisecap.js";
 import { html } from "../../lib/dom.js";
-import { createPromiseCapability, getFilenameFromUrl } from "../pdf.ts-src/pdf.js";
+import { getFilenameFromUrl } from "../pdf.ts-src/pdf.js";
 import { BaseTreeViewer } from "./base_tree_viewer.js";
 export class PDFAttachmentViewer extends BaseTreeViewer {
     _attachments;
@@ -39,7 +40,7 @@ export class PDFAttachmentViewer extends BaseTreeViewer {
         if (!keepRenderedCapability) {
             // The only situation in which the `#renderedCapability` should *not* be
             // replaced is when appending FileAttachment annotations.
-            this.#renderedCapability = createPromiseCapability();
+            this.#renderedCapability = createPromiseCap();
         }
         if (this._pendingDispatchEvent) {
             clearTimeout(this._pendingDispatchEvent);

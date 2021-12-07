@@ -3,7 +3,6 @@ import { EventBus } from "./ui_utils.js";
 import { type ViewerConfiguration } from "./viewer.js";
 export declare class PDFSidebarResizer {
     #private;
-    eventBus: EventBus;
     isRTL: boolean;
     sidebarOpen: boolean;
     doc: HTMLElement;
@@ -12,6 +11,7 @@ export declare class PDFSidebarResizer {
     _boundEvents: any;
     outerContainer: HTMLDivElement;
     resizer: HTMLDivElement;
+    eventBus: EventBus;
     /**
      * @param eventBus The application event bus.
      * @param l10n Localization service.

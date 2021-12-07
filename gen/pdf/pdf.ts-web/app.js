@@ -16,10 +16,11 @@
  * limitations under the License.
  */
 /* globals PDFBug, Stats */
+import { createPromiseCap } from "../../lib/promisecap.js";
 import "../../lib/jslang.js";
 import { animationStarted, apiPageLayoutToViewerModes, apiPageModeToSidebarView, AutomationEventBus, AutoPrintRegExp, DEFAULT_SCALE_VALUE, EventBus, getActiveOrFocusedElement, isValidRotation, isValidScrollMode, isValidSpreadMode, noContextMenuHandler, normalizeWheelEventDirection, parseQueryString, ProgressBar, RendererType, ScrollMode, SidebarView, SpreadMode, TextLayerMode, } from "./ui_utils.js";
-import { AppOptions, compatibilityParams, OptionKind } from "./app_options.js";
-import { build, createPromiseCapability, getDocument, getFilenameFromUrl, GlobalWorkerOptions, InvalidPDFException, LinkTarget, loadScript, MissingPDFException, PDFWorker, PermissionFlag, shadow, UnexpectedResponseException, UNSUPPORTED_FEATURES, version, } from "../pdf.ts-src/pdf.js";
+import { AppOptions, compatibilityParams, OptionKind, ViewOnLoad } from "./app_options.js";
+import { build, getDocument, getFilenameFromUrl, GlobalWorkerOptions, InvalidPDFException, LinkTarget, loadScript, MissingPDFException, PDFWorker, PermissionFlag, shadow, UnexpectedResponseException, UNSUPPORTED_FEATURES, version, } from "../pdf.ts-src/pdf.js";
 import { CursorTool, PDFCursorTools } from "./pdf_cursor_tools.js";
 import { PDFRenderingQueue, RenderingStates } from "./pdf_rendering_queue.js";
 import { OverlayManager } from "./overlay_manager.js";
@@ -50,12 +51,6 @@ const DISABLE_AUTO_FETCH_LOADING_BAR_TIMEOUT = 5000; // ms
 const FORCE_PAGES_LOADED_TIMEOUT = 10000; // ms
 const WHEEL_ZOOM_DISABLED_TIMEOUT = 1000; // ms
 const ENABLE_PERMISSIONS_CLASS = "enablePermissions";
-var ViewOnLoad;
-(function (ViewOnLoad) {
-    ViewOnLoad[ViewOnLoad["UNKNOWN"] = -1] = "UNKNOWN";
-    ViewOnLoad[ViewOnLoad["PREVIOUS"] = 0] = "PREVIOUS";
-    ViewOnLoad[ViewOnLoad["INITIAL"] = 1] = "INITIAL";
-})(ViewOnLoad || (ViewOnLoad = {}));
 const ViewerCssTheme = {
     AUTOMATIC: 0,
     LIGHT: 1,
@@ -144,7 +139,7 @@ export class DefaultExternalServices {
 export class PDFViewerApplication {
     initialBookmark = document.location.hash.substring(1);
     initialRotation;
-    #initializedCapability = createPromiseCapability();
+    #initializedCapability = createPromiseCap();
     _fellback = false;
     appConfig;
     pdfDocument;
@@ -719,9 +714,9 @@ export class PDFViewerApplication {
         return loadingTask.promise.then(pdfDocument => {
             this.load(pdfDocument);
         }, exception => {
-            if (loadingTask !== this.pdfLoadingTask) {
-                return undefined; // Ignore errors for previously opened PDF files.
-            }
+            // Ignore errors for previously opened PDF files.
+            if (loadingTask !== this.pdfLoadingTask)
+                return undefined;
             let key = "loading_error";
             if (exception instanceof InvalidPDFException) {
                 key = "invalid_file_error";
@@ -843,7 +838,7 @@ export class PDFViewerApplication {
                     moreInfoText.push(this.l10n.get("error_file", { file: moreInfo.filename }));
                 }
                 if (moreInfo.lineNumber) {
-                    moreInfoText.push(this.l10n.get("error_line", { line: moreInfo.lineNumber + "" }));
+                    moreInfoText.push(this.l10n.get("error_line", { line: moreInfo.lineNumber }));
                 }
             }
         }
@@ -1069,9 +1064,9 @@ export class PDFViewerApplication {
         });
         onePageRendered.then(() => {
             pdfDocument.getOutline().then(outline => {
-                if (pdfDocument !== this.pdfDocument) {
-                    return; // The document was closed while the outline resolved.
-                }
+                // The document was closed while the outline resolved.
+                if (pdfDocument !== this.pdfDocument)
+                    return;
                 this.pdfOutlineViewer.render({ outline, pdfDocument });
             });
             pdfDocument.getAttachments().then(attachments => {

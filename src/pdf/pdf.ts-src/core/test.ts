@@ -5,6 +5,8 @@
 import { css_3 } from "../../../test/alias.js";
 /*81---------------------------------------------------------------------------*/
 
+// await import( "./test_1.js" );
+
 // #if TESTING
   // #if TEST_ALL
     await import( "./annotation_test.js" ); //! unsynchronized

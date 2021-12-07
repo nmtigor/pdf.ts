@@ -88,7 +88,7 @@ function testSearch({ eventBus, pdfFindController, state, matchesPerPage, select
 console.log("%c>>>>>>> test pdf_find_controller >>>>>>>", `color:${css_1}`);
 {
     console.log("it performs a normal search...");
-    {
+    await (async () => {
         const { eventBus, pdfFindController, loadingTask } = await initPdfFindController();
         await testSearch({
             eventBus,
@@ -103,9 +103,9 @@ console.log("%c>>>>>>> test pdf_find_controller >>>>>>>", `color:${css_1}`);
             },
         });
         await loadingTask.destroy();
-    }
+    })();
     console.log("it performs a normal search and finds the previous result...");
-    {
+    await (async () => {
         // Page 14 (with page index 13) contains five results. By default, the
         // first result (match index 0) is selected, so the previous result
         // should be the fifth result (match index 4).
@@ -124,9 +124,9 @@ console.log("%c>>>>>>> test pdf_find_controller >>>>>>>", `color:${css_1}`);
             },
         });
         await loadingTask.destroy();
-    }
+    })();
     console.log("it performs a case sensitive search...");
-    {
+    await (async () => {
         const { eventBus, pdfFindController, loadingTask } = await initPdfFindController();
         await testSearch({
             eventBus,
@@ -142,9 +142,9 @@ console.log("%c>>>>>>> test pdf_find_controller >>>>>>>", `color:${css_1}`);
             },
         });
         await loadingTask.destroy();
-    }
+    })();
     console.log("it performs an entire word search...");
-    {
+    await (async () => {
         // Page 13 contains both 'Government' and 'Governmental', so the latter
         // should not be found with entire word search.
         const { eventBus, pdfFindController, loadingTask } = await initPdfFindController();
@@ -162,9 +162,9 @@ console.log("%c>>>>>>> test pdf_find_controller >>>>>>>", `color:${css_1}`);
             },
         });
         await loadingTask.destroy();
-    }
+    })();
     console.log("it performs a multiple term (no phrase) search...");
-    {
+    await (async () => {
         // Page 9 contains 'alternate' and pages 6 and 9 contain 'solution'.
         // Both should be found for multiple term (no phrase) search.
         const { eventBus, pdfFindController, loadingTask } = await initPdfFindController();
@@ -182,28 +182,32 @@ console.log("%c>>>>>>> test pdf_find_controller >>>>>>>", `color:${css_1}`);
             },
         });
         await loadingTask.destroy();
-    }
+    })();
     // console.log("it performs a normal search, where the text is normalized...");
-    // {
+    // await (async() => {
     //   const { eventBus, pdfFindController, loadingTask } = await initPdfFindController(
     //     "fraction-highlight.pdf"
     //   );
-    //   await testSearch({
-    //     eventBus,
-    //     pdfFindController,
-    //     state: {
-    //       query: "fraction",
-    //     },
-    //     matchesPerPage: [3],
-    //     selectedMatch: {
-    //       pageIndex: 0,
-    //       matchIndex: 0,
-    //     },
-    //     pageMatches: [[19, 46, 62]],
-    //     pageMatchesLength: [[8, 8, 8]],
-    //   });
-    //   // await loadingTask.destroy();
-    // }
+    //   try {
+    //     await testSearch({
+    //       eventBus,
+    //       pdfFindController,
+    //       state: {
+    //         query: "fraction",
+    //       },
+    //       matchesPerPage: [3],
+    //       selectedMatch: {
+    //         pageIndex: 0,
+    //         matchIndex: 0,
+    //       },
+    //       pageMatches: [[19, 46, 62]],
+    //       pageMatchesLength: [[8, 8, 8]],
+    //     });
+    //   } catch( err ){
+    //     console.log(err);
+    //   }
+    //   await loadingTask.destroy();
+    // })();
 }
 /*81---------------------------------------------------------------------------*/
 console.log(`%c:pdf/pdf.ts-web/pdf_find_controller_test ${(performance.now() - strttime).toFixed(2)} ms`, `color:${css_2}`);

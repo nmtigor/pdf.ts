@@ -105,10 +105,8 @@ export class PDFImage {
             switch (filter.name) {
                 case "JPXDecode":
                     const jpxImage = new JpxImage();
-                    jpxImage.parseImageProperties(image);
-                    // jpxImage.parseImageProperties( image.stream );//kkkk bug?
-                    image.reset();
-                    // image.stream.reset();//kkkk bug?
+                    jpxImage.parseImageProperties(image.stream);
+                    image.stream.reset();
                     image.width = jpxImage.width;
                     image.height = jpxImage.height;
                     image.bitsPerComponent = jpxImage.bitsPerComponent;
@@ -167,8 +165,7 @@ export class PDFImage {
                         colorSpace = Name.get("DeviceCMYK");
                         break;
                     default:
-                        throw new Error(`JPX images with ${image.numComps} ` +
-                            "color components not supported.");
+                        throw new Error(`JPX images with ${image.numComps} color components not supported.`);
                 }
             }
             this.colorSpace = ColorSpace.parse({
@@ -206,9 +203,7 @@ export class PDFImage {
             this.smask = new PDFImage({
                 xref,
                 res,
-                image,
-                smask,
-                // image: smask,//kkkk bug?
+                image: smask,
                 isInline,
                 pdfFunctionFactory,
                 localColorSpaceCache,
@@ -225,9 +220,7 @@ export class PDFImage {
                     this.mask = new PDFImage({
                         xref,
                         res,
-                        image,
-                        mask,
-                        // image: mask,//kkkk bug?
+                        image: mask,
                         isInline,
                         isMask: true,
                         pdfFunctionFactory,
@@ -316,10 +309,10 @@ export class PDFImage {
         return { data, width, height, interpolate };
     }
     get drawWidth() {
-        return Math.max(this.width, this.smask?.width || 0, this.mask.width || 0);
+        return Math.max(this.width, (this.smask && this.smask.width) || 0, (this.mask && this.mask.width) || 0);
     }
     get drawHeight() {
-        return Math.max(this.height, this.smask?.height || 0, this.mask.height || 0);
+        return Math.max(this.height, (this.smask && this.smask.height) || 0, (this.mask && this.mask.height) || 0);
     }
     decodeBuffer(buffer) {
         const bpc = this.bpc;

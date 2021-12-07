@@ -16,8 +16,9 @@
  * limitations under the License.
  */
 /* eslint-disable no-var */
+import { createPromiseCap } from "../../../lib/promisecap.js";
 import { assert } from "../../../lib/util/trace.js";
-import { AbortException, CMapCompressionType, createPromiseCapability, FONT_IDENTITY_MATRIX, FormatError, IDENTITY_MATRIX, info, isArrayEqual, OPS, shadow, stringToPDFString, TextRenderingMode, UNSUPPORTED_FEATURES, Util, warn, } from "../shared/util.js";
+import { AbortException, CMapCompressionType, FONT_IDENTITY_MATRIX, FormatError, IDENTITY_MATRIX, info, OPS, shadow, stringToPDFString, TextRenderingMode, UNSUPPORTED_FEATURES, Util, warn, } from "../shared/util.js";
 import { CMapFactory, IdentityCMap } from "./cmap.js";
 import { Cmd, Dict, EOF, FontDict, isName, Name, Ref, RefSet, } from "./primitives.js";
 import { ErrorFont, Font, } from "./fonts.js";
@@ -691,7 +692,6 @@ export class PartialEvaluator {
                     loadedName: "g_font_error",
                     font: new ErrorFont(`Type3 font load error: ${reason}`),
                     dict: translated.font,
-                    // dict: null,
                     evaluatorOptions: this.options,
                 });
             });
@@ -875,7 +875,7 @@ export class PartialEvaluator {
             && this.fontCache.has(fontDict.cacheKey)) {
             return this.fontCache.get(fontDict.cacheKey);
         }
-        const fontCapability = createPromiseCapability();
+        const fontCapability = createPromiseCap();
         let preEvaluatedFont;
         try {
             preEvaluatedFont = this.preEvaluateFont(fontDict);
@@ -1744,7 +1744,7 @@ export class PartialEvaluator {
             ];
             if (font.isType3Font
                 && (textState.fontSize <= 1 || font.isCharBBox)
-                && !isArrayEqual(textState.fontMatrix, FONT_IDENTITY_MATRIX)) {
+                && !textState.fontMatrix.eq(FONT_IDENTITY_MATRIX)) {
                 const glyphHeight = font.bbox[3] - font.bbox[1];
                 if (glyphHeight > 0) {
                     tsm[3] *= glyphHeight * textState.fontMatrix[3];
@@ -2410,7 +2410,7 @@ export class PartialEvaluator {
                             textState.fontName = undefined;
                             textState.fontSize = gStateFont[1];
                             handleSetFont(undefined, gStateFont[0]).then(resolveGState, rejectGState);
-                        }).catch(function (reason) {
+                        }).catch(reason => {
                             if (reason instanceof AbortException)
                                 return;
                             if (self.options.ignoreErrors) {
@@ -3424,7 +3424,7 @@ export class TranslatedFont {
         const charProcs = this.dict.get("CharProcs");
         const fontResources = this.dict.get("Resources") || resources;
         const charProcOperatorList = Object.create(null);
-        const isEmptyBBox = !translatedFont.bbox || isArrayEqual(translatedFont.bbox, [0, 0, 0, 0]);
+        const isEmptyBBox = !translatedFont.bbox || translatedFont.bbox.eq([0, 0, 0, 0]);
         for (const key of charProcs.getKeys()) {
             loadCharProcsPromise = loadCharProcsPromise.then(() => {
                 const glyphStream = charProcs.get(key);

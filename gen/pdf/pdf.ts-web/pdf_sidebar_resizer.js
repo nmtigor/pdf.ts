@@ -6,7 +6,6 @@ const SIDEBAR_WIDTH_VAR = "--sidebar-width";
 const SIDEBAR_MIN_WIDTH = 200; // pixels
 const SIDEBAR_RESIZING_CLASS = "sidebarResizing";
 export class PDFSidebarResizer {
-    eventBus;
     isRTL = false;
     sidebarOpen = false;
     doc;
@@ -15,15 +14,16 @@ export class PDFSidebarResizer {
     _boundEvents = Object.create(null);
     outerContainer;
     resizer;
+    eventBus;
     /**
      * @param eventBus The application event bus.
      * @param l10n Localization service.
      */
     constructor(options, eventBus, l10n) {
-        this.eventBus = eventBus;
         this.doc = document.documentElement;
         this.outerContainer = options.outerContainer;
         this.resizer = options.resizer;
+        this.eventBus = eventBus;
         l10n.getDirection().then(dir => {
             this.isRTL = dir === "rtl";
         });
@@ -35,7 +35,7 @@ export class PDFSidebarResizer {
     /**
      * @return Indicating if the sidebar width was updated.
      */
-    #updateWidth = (width = 0) => {
+    #updateWidth(width = 0) {
         // Prevent the sidebar from becoming too narrow, or from occupying more
         // than half of the available viewer width.
         const maxWidth = Math.floor(this.outerContainerWidth / 2);
@@ -46,13 +46,12 @@ export class PDFSidebarResizer {
             width = SIDEBAR_MIN_WIDTH;
         }
         // Only update the UI when the sidebar width did in fact change.
-        if (width === this._width) {
+        if (width === this._width)
             return false;
-        }
         this._width = width;
         this.doc.style.setProperty(SIDEBAR_WIDTH_VAR, `${width}px`);
         return true;
-    };
+    }
     #mouseMove = (evt) => {
         let width = evt.clientX;
         // For sidebar resizing to work correctly in RTL mode, invert the width.
@@ -70,14 +69,13 @@ export class PDFSidebarResizer {
         window.removeEventListener("mousemove", _boundEvents.mouseMove);
         window.removeEventListener("mouseup", _boundEvents.mouseUp);
     };
-    #addEventListeners = () => {
+    #addEventListeners() {
         const _boundEvents = this._boundEvents;
-        _boundEvents.mouseMove = this.#mouseMove.bind(this);
+        _boundEvents.mouseMove = this.#mouseMove;
         _boundEvents.mouseUp = this.#mouseUp;
         this.resizer.addEventListener("mousedown", evt => {
-            if (evt.button !== 0) {
+            if (evt.button !== 0)
                 return;
-            }
             // Disable the `transition-duration` rules when sidebar resizing begins,
             // in order to improve responsiveness and to avoid visual glitches.
             this.outerContainer.classList.add(SIDEBAR_RESIZING_CLASS);
@@ -94,10 +92,9 @@ export class PDFSidebarResizer {
                 return;
             // Always reset the cached width when the viewer is resized.
             this._outerContainerWidth = undefined;
-            if (!this._width) {
-                // The sidebar hasn't been resized, hence no need to adjust its width.
+            // The sidebar hasn't been resized, hence no need to adjust its width.
+            if (!this._width)
                 return;
-            }
             // NOTE: If the sidebar is closed, we don't need to worry about
             //       visual glitches nor ensure that rendering is triggered.
             if (!this.sidebarOpen) {
@@ -115,7 +112,7 @@ export class PDFSidebarResizer {
                 }
             });
         });
-    };
+    }
 }
 /*81---------------------------------------------------------------------------*/
 //# sourceMappingURL=pdf_sidebar_resizer.js.map

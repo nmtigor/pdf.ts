@@ -308,7 +308,7 @@ export class FontFaceObject extends FontExpotDataEx {
         }
         else {
             const css = {
-                weight: this.cssFontInfo.fontWeight + "",
+                weight: this.cssFontInfo.fontWeight,
             };
             if (this.cssFontInfo.italicAngle) {
                 css.style = `oblique ${this.cssFontInfo.italicAngle}deg`;

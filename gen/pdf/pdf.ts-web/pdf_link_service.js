@@ -68,7 +68,7 @@ export class PDFLinkService {
     set rotation(value) {
         this.pdfViewer.pagesRotation = value;
     }
-    #goToDestinationHelper = (rawDest, namedDest, explicitDest) => {
+    #goToDestinationHelper(rawDest, namedDest, explicitDest) {
         // Dest array looks like that: <page-ref> </XYZ|/FitXXX> <args..>
         const destRef = explicitDest[0];
         let pageNumber;
@@ -114,7 +114,7 @@ export class PDFLinkService {
             destArray: explicitDest,
             ignoreDestinationZoom: this.#ignoreDestinationZoom,
         });
-    };
+    }
     /**
      * This method will, when available, also update the browser history.
      * @implements
@@ -382,15 +382,13 @@ function isValidExplicitDestination(dest) {
         return false;
     }
     const zoom = dest[1];
-    if (!(typeof zoom === "object" && typeof zoom.name === "string")) {
+    if (!(typeof zoom === "object" && typeof zoom.name === "string"))
         return false;
-    }
     let allowNull = true;
     switch (zoom.name) {
         case "XYZ":
-            if (destLength !== 5) {
+            if (destLength !== 5)
                 return false;
-            }
             break;
         case "Fit":
         case "FitB":
@@ -399,14 +397,12 @@ function isValidExplicitDestination(dest) {
         case "FitBH":
         case "FitV":
         case "FitBV":
-            if (destLength !== 3) {
+            if (destLength !== 3)
                 return false;
-            }
             break;
         case "FitR":
-            if (destLength !== 6) {
+            if (destLength !== 6)
                 return false;
-            }
             allowNull = false;
             break;
         default:
@@ -414,9 +410,8 @@ function isValidExplicitDestination(dest) {
     }
     for (let i = 2; i < destLength; i++) {
         const param = dest[i];
-        if (!(typeof param === "number" || (allowNull && param === null))) {
+        if (!(typeof param === "number" || (allowNull && param === null)))
             return false;
-        }
     }
     return true;
 }

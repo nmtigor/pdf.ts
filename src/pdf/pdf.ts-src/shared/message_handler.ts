@@ -17,6 +17,8 @@
  * limitations under the License.
  */
 
+import { createPromiseCap, PromiseCap } from "../../../lib/promisecap.js";
+import { global } from "../../../global.js";
 import { isObjectLike } from "../../../lib/jslang.js";
 import { HttpStatusCode } from "../../../lib/HttpStatusCode.js";
 import { assert }         from "../../../lib/util/trace.js";
@@ -25,13 +27,11 @@ import { type IWorker } from "../core/worker.js";
 import { VerbosityLevel } from "../pdf.js";
 import {
   AbortException,
-  createPromiseCapability,
   InvalidPDFException,
   MissingPDFException,
   PasswordException,
   PasswordResponses,
   PermissionFlag,
-  type PromiseCapability,
   type rect_t,
   RenderingIntentFlag,
   UnexpectedResponseException,
@@ -121,7 +121,7 @@ function wrapReason( reason:reason_t )
     case "UnknownErrorException":
       return new UnknownErrorException(reason.message, reason.details);
     default:
-      return new UnknownErrorException(reason.message, reason+"");
+      return new UnknownErrorException( reason.message, reason.toString() );
   }
 }
 /*49-------------------------------------------*/
@@ -531,7 +531,7 @@ export interface StreamSink<
   close?():void;
   error?( reason:reason_t ):void;
 
-  sinkCapability?:PromiseCapability;
+  sinkCapability?:PromiseCap;
   onPull?( desiredSize?:number ):void;
   onCancel?( reason:object ):void;
   isCancelled?:boolean;
@@ -611,9 +611,9 @@ interface StreamController<
   AN extends ActionName<Ta>=ActionName<Ta> 
 > {
   controller:ReadableStreamDefaultController< ActionSinkchunk<Ta,AN> >;
-  startCall:PromiseCapability;
-  pullCall?:PromiseCapability;
-  cancelCall?:PromiseCapability;
+  startCall:PromiseCap;
+  pullCall?:PromiseCap;
+  cancelCall?:PromiseCap;
   isClosed:boolean,
 }
 
@@ -629,7 +629,7 @@ export class MessageHandler<
   postMessageTransfers = true;
   streamSinks:StreamSink<Ta>[] = Object.create(null);
   streamControllers:StreamController<Tn>[] = Object.create(null);
-  callbackCapabilities:PromiseCapability<unknown>[] = Object.create(null);
+  callbackCapabilities:PromiseCap<unknown>[] = Object.create(null);
   actionHandler:Record< ActionName<Tn>, ActionHandler<Tn> > = Object.create(null);
 
   constructor( 
@@ -776,8 +776,8 @@ export class MessageHandler<
     actionName:AN, data:ActionData<Ta,AN>, transfers?:Transferable[] 
   ):Promise< ActionReturn<Ta,AN> > {
     const callbackId = this.callbackId++;
-    const capability = createPromiseCapability<ActionReturn<Ta, AN>>();
-    this.callbackCapabilities[callbackId] = <PromiseCapability< unknown >>capability;
+    const capability = createPromiseCap<ActionReturn<Ta, AN>>();
+    this.callbackCapabilities[callbackId] = <PromiseCap< unknown >>capability;
     try {
       this.#postMessage(
         {
@@ -818,7 +818,7 @@ export class MessageHandler<
       {
         start: ( controller:ReadableStreamDefaultController ) => 
         {
-          const startCapability = createPromiseCapability();
+          const startCapability = createPromiseCap();
           this.streamControllers[streamId] = {
             controller,
             startCall: startCapability,
@@ -841,7 +841,7 @@ export class MessageHandler<
 
         pull: ( controller:ReadableStreamDefaultController ) => 
         {
-          const pullCapability = createPromiseCapability();
+          const pullCapability = createPromiseCap();
           this.streamControllers[streamId].pullCall = pullCapability;
           comObj.postMessage({
             sourceName,
@@ -858,7 +858,7 @@ export class MessageHandler<
         cancel: ( reason:reason_t ) => 
         {
           // assert(reason instanceof Error, "cancel must have a valid reason");
-          const cancelCapability = createPromiseCapability();
+          const cancelCapability = createPromiseCap();
           this.streamControllers[streamId].cancelCall = cancelCapability;
           this.streamControllers[streamId].isClosed = true;
           comObj.postMessage({
@@ -885,7 +885,7 @@ export class MessageHandler<
     const self = this,
       action = this.actionHandler[data.action!];
 
-    const sinkCapability = createPromiseCapability();
+    const sinkCapability = createPromiseCap();
     const streamSink:StreamSink<Ta> = {
       enqueue( chunk, size=1, transfers ) 
       {
@@ -898,7 +898,7 @@ export class MessageHandler<
         // set ready as unresolved promise.
         if( lastDesiredSize > 0 && this.desiredSize! <= 0 )
         {
-          this.sinkCapability = createPromiseCapability();
+          this.sinkCapability = createPromiseCap();
           this.ready = this.sinkCapability.promise;
         }
         self.#postMessage(
