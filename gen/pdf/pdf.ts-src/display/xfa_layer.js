@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 /* Copyright 2021 Mozilla Foundation
  *
@@ -15,6 +15,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/** @typedef {import("./display_utils").PageViewport} PageViewport */
+/** @typedef {import("../../web/interfaces").IPDFLinkService} IPDFLinkService */
 import { html as createHTML, textnode } from "../../../lib/dom.js";
 import { warn } from "../shared/util.js";
 import { XfaText } from "./xfa_text.js";
@@ -131,10 +133,13 @@ export class XfaLayer {
             this.setupStorage(html, attributes.dataId, element, storage);
         }
     }
+    /**
+     * Render the XFA layer.
+     */
     static render(parameters) {
         const storage = parameters.annotationStorage;
         const linkService = parameters.linkService;
-        const root = parameters.xfa;
+        const root = parameters.xfaHtml;
         const intent = parameters.intent || "display";
         const rootHtml = createHTML(root.name);
         if (root.attributes) {
@@ -225,7 +230,7 @@ export class XfaLayer {
         };
     }
     /**
-     * Update the xfa layer.
+     * Update the XFA layer.
      */
     static update(parameters) {
         const transform = `matrix(${parameters.viewport.transform.join(",")})`;

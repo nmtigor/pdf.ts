@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 /* Copyright 2021 Mozilla Foundation
  *
@@ -15,8 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-// eslint-disable-next-line max-len
-/** @typedef {import("./interfaces").IPDFStructTreeLayerFactory} IPDFStructTreeLayerFactory */
+/** @typedef {import("../src/display/api").PDFPageProxy} PDFPageProxy */
 import { html } from "../../lib/dom.js";
 /*81---------------------------------------------------------------------------*/
 const PDF_ROLE_TO_HTML_ROLE = {
@@ -90,6 +89,9 @@ export class StructTreeLayerBuilder {
         if (structElement.id !== undefined) {
             htmlElement.setAttribute("aria-owns", structElement.id);
         }
+        if (structElement.lang !== undefined) {
+            htmlElement.setAttribute("lang", structElement.lang);
+        }
     }
     _walk(node) {
         if (!node)
@@ -120,13 +122,6 @@ export class StructTreeLayerBuilder {
             }
         }
         return element;
-    }
-}
-export class DefaultStructTreeLayerFactory {
-    createStructTreeLayerBuilder(pdfPage) {
-        return new StructTreeLayerBuilder({
-            pdfPage,
-        });
     }
 }
 /*81---------------------------------------------------------------------------*/

@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 
 /* Copyright 2012 Mozilla Foundation
@@ -17,11 +17,16 @@
  * limitations under the License.
  */
 
+/** @typedef {import("../src/display/api").PDFDocumentProxy} PDFDocumentProxy */
+/** @typedef {import("./event_utils").EventBus} EventBus */
+/** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
+
 import { createPromiseCap, PromiseCap } from "../../lib/promisecap.js";
 import { PDFDocumentProxy, type TextItem } from "../pdf.ts-src/display/api.js";
+import { EventBus } from "./event_utils.js";
 import { type IPDFLinkService } from "./interfaces.js";
 import { getCharacterType } from "./pdf_find_utils.js";
-import { EventBus, scrollIntoView } from "./ui_utils.js";
+import { scrollIntoView } from "./ui_utils.js";
 /*81---------------------------------------------------------------------------*/
 
 export const enum FindState {

@@ -2,12 +2,6 @@ import { BaseViewer } from "./base_viewer.js";
 import { type IRenderableView, type IVisibleView } from "./interfaces.js";
 import { PDFThumbnailViewer } from "./pdf_thumbnail_viewer.js";
 import { type VisibleElements } from "./ui_utils.js";
-export declare enum RenderingStates {
-    INITIAL = 0,
-    RUNNING = 1,
-    PAUSED = 2,
-    FINISHED = 3
-}
 /**
  * Controls rendering of the views for pages and thumbnails.
  */

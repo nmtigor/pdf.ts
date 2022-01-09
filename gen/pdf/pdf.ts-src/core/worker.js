@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 /* Copyright 2012 Mozilla Foundation
  *
@@ -43,19 +43,13 @@ export const WorkerMessageHandler = {
     setup(handler, port) {
         let testMessageProcessed = false;
         handler.on("test", data => {
-            if (testMessageProcessed) {
-                return; // we already processed 'test' message once
-            }
-            testMessageProcessed = true;
-            // check if Uint8Array can be sent to worker
-            if (!(data instanceof Uint8Array)) {
-                handler.send("test", null);
+            // we already processed 'test' message once
+            if (testMessageProcessed)
                 return;
-            }
-            // making sure postMessage transfers are working
-            const supportTransfers = data[0] === 255;
-            handler.postMessageTransfers = supportTransfers;
-            handler.send("test", { supportTransfers });
+            testMessageProcessed = true;
+            // Ensure that `TypedArray`s can be sent to the worker,
+            // and that `postMessage` transfers are supported.
+            handler.send("test", data instanceof Uint8Array && data[0] === 255);
         });
         handler.on("configure", data => {
             setVerbosityLevel(data.verbosity);
@@ -103,9 +97,6 @@ export const WorkerMessageHandler = {
         const docBaseUrl = docParms.docBaseUrl;
         const workerHandlerName = docParms.docId + "_worker";
         let handler = new MessageHandler(workerHandlerName, docId, port);
-        // Ensure that postMessage transfers are always correctly enabled/disabled,
-        // to prevent "DataCloneError" in browsers without transfers support.
-        handler.postMessageTransfers = docParms.postMessageTransfers;
         function ensureNotTerminated() {
             if (terminated) {
                 throw new Error("Worker was terminated");
@@ -123,11 +114,12 @@ export const WorkerMessageHandler = {
             await pdfManager.ensureDoc("checkHeader");
             await pdfManager.ensureDoc("parseStartXRef");
             await pdfManager.ensureDoc("parse", [recoveryMode]);
-            if (!recoveryMode) {
-                // Check that at least the first page can be successfully loaded,
-                // since otherwise the XRef table is definitely not valid.
-                await pdfManager.ensureDoc("checkFirstPage");
-            }
+            // Check that at least the first page can be successfully loaded,
+            // since otherwise the XRef table is definitely not valid.
+            await pdfManager.ensureDoc("checkFirstPage", [recoveryMode]);
+            // Check that the last page can be sucessfully loaded, to ensure that
+            // `numPages` is correct, and fallback to walking the entire /Pages-tree.
+            await pdfManager.ensureDoc("checkLastPage", [recoveryMode]);
             const isPureXfa = await pdfManager.ensureDoc("isPureXfa");
             if (isPureXfa) {
                 const task = new WorkerTask("loadXfaFonts");
@@ -158,7 +150,7 @@ export const WorkerMessageHandler = {
             const source = data.source;
             if (source.data) {
                 try {
-                    newPdfManager = new LocalPdfManager(docId, source.data, evaluatorOptions, source.password, enableXfa, docBaseUrl);
+                    newPdfManager = new LocalPdfManager(docId, source.data, source.password, handler, evaluatorOptions, enableXfa, docBaseUrl);
                     pdfManagerCapability.resolve(newPdfManager);
                 }
                 catch (ex) {
@@ -210,7 +202,7 @@ export const WorkerMessageHandler = {
                 }
                 // the data is array, instantiating directly from it
                 try {
-                    newPdfManager = new LocalPdfManager(docId, pdfFile, evaluatorOptions, source.password, enableXfa, docBaseUrl);
+                    newPdfManager = new LocalPdfManager(docId, pdfFile, source.password, handler, evaluatorOptions, enableXfa, docBaseUrl);
                     pdfManagerCapability.resolve(newPdfManager);
                 }
                 catch (ex) {
@@ -404,9 +396,6 @@ export const WorkerMessageHandler = {
         handler.on("GetData", () => {
             pdfManager.requestLoadedStream();
             return pdfManager.onLoadedStream().then(stream => stream.bytes);
-        });
-        handler.on("GetStats", () => {
-            return pdfManager.ensureXRef("stats");
         });
         handler.on("GetAnnotations", ({ pageIndex, intent }) => {
             return pdfManager.getPage(pageIndex)

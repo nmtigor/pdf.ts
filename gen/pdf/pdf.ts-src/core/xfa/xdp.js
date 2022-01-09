@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 import { $buildXFAObject, NamespaceIds } from "./namespaces.js";
 import { $namespaceId, $nodeName, $onChildCheck, XFAObject, XFAObjectArray, } from "./xfa_object.js";

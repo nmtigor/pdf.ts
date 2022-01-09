@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 import { assert } from "../../../lib/util/trace.js";
 import { FormatError, info, shadow, warn, } from "../shared/util.js";
@@ -236,14 +236,14 @@ export class ColorSpace {
         cs = xref.fetchIfRef(cs);
         if (cs instanceof Name) {
             switch (cs.name) {
-                case "DeviceGray":
                 case "G":
+                case "DeviceGray":
                     return this.singletons.gray;
-                case "DeviceRGB":
                 case "RGB":
+                case "DeviceRGB":
                     return this.singletons.rgb;
-                case "DeviceCMYK":
                 case "CMYK":
+                case "DeviceCMYK":
                     return this.singletons.cmyk;
                 case "Pattern":
                     return new PatternCS( /* baseCS = */);
@@ -268,14 +268,14 @@ export class ColorSpace {
             const mode = xref.fetchIfRef(cs[0]).name;
             let params, numComps, baseCS, whitePoint, blackPoint, gamma;
             switch (mode) {
-                case "DeviceGray":
                 case "G":
+                case "DeviceGray":
                     return this.singletons.gray;
-                case "DeviceRGB":
                 case "RGB":
+                case "DeviceRGB":
                     return this.singletons.rgb;
-                case "DeviceCMYK":
                 case "CMYK":
+                case "DeviceCMYK":
                     return this.singletons.cmyk;
                 case "CalGray":
                     params = xref.fetchIfRef(cs[1]);
@@ -316,8 +316,8 @@ export class ColorSpace {
                         baseCS = this._parse(baseCS, xref, resources, pdfFunctionFactory);
                     }
                     return new PatternCS(baseCS);
-                case "Indexed":
                 case "I":
+                case "Indexed":
                     baseCS = this._parse(cs[1], xref, resources, pdfFunctionFactory);
                     const hiVal = xref.fetchIfRef(cs[2]) + 1;
                     const lookup = xref.fetchIfRef(cs[3]);
@@ -735,7 +735,7 @@ var NsCalGrayCS;
         const L = cs.YW * AG;
         // http://www.poynton.com/notes/colour_and_gamma/ColorFAQ.html, Ch 4.
         // Convert values to rgb range [0, 255].
-        const val = Math.max(295.8 * L ** 0.333333333333333333 - 40.8, 0);
+        const val = Math.max(295.8 * L ** 0.3333333333333333 - 40.8, 0);
         dest[destOffset] = val;
         dest[destOffset + 1] = val;
         dest[destOffset + 2] = val;

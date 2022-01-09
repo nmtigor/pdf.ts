@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 /* Copyright 2021 Mozilla Foundation
  *
@@ -266,6 +266,10 @@ export class StructTreePage {
             const alt = node.dict.get("Alt");
             if (typeof alt === "string") {
                 obj.alt = stringToPDFString(alt);
+            }
+            const lang = node.dict.get("Lang");
+            if (typeof lang === "string") {
+                obj.lang = stringToPDFString(lang);
             }
             for (const kid of node.kids) {
                 const kidElement = kid.type === StructElementType.ELEMENT ? kid.parentNode : null;

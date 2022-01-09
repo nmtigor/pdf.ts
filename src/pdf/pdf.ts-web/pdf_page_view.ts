@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 
 /* Copyright 2012 Mozilla Foundation
@@ -17,7 +17,22 @@
  * limitations under the License.
  */
 
+// eslint-disable-next-line max-len
+/** @typedef {import("../src/display/display_utils").PageViewport} PageViewport */
+// eslint-disable-next-line max-len
+/** @typedef {import("../src/display/optional_content_config").OptionalContentConfig} OptionalContentConfig */
+/** @typedef {import("./event_utils").EventBus} EventBus */
+/** @typedef {import("./interfaces").IL10n} IL10n */
+// eslint-disable-next-line max-len
+/** @typedef {import("./interfaces").IPDFAnnotationLayerFactory} IPDFAnnotationLayerFactory */
+// eslint-disable-next-line max-len
+/** @typedef {import("./interfaces").IPDFStructTreeLayerFactory} IPDFStructTreeLayerFactory */
+// eslint-disable-next-line max-len
+/** @typedef {import("./interfaces").IPDFTextLayerFactory} IPDFTextLayerFactory */
+/** @typedef {import("./interfaces").IL10n} IPDFXfaLayerFactory */
 /** @typedef {import("./interfaces").IRenderableView} IRenderableView */
+// eslint-disable-next-line max-len
+/** @typedef {import("./pdf_rendering_queue").PDFRenderingQueue} PDFRenderingQueue */
 
 import { createPromiseCap } from "../../lib/promisecap.js";
 import { AnnotationStorage } from "../pdf.ts-src/display/annotation_storage.js";
@@ -40,25 +55,25 @@ import {
   type IVisibleView 
 } from "./interfaces.js";
 import { NullL10n } from "./l10n_utils.js";
-import { PDFRenderingQueue, RenderingStates } from "./pdf_rendering_queue.js";
+import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
 import { AnnotationLayerBuilder } from "./annotation_layer_builder.js";
 import { TextLayerBuilder } from "./text_layer_builder.js";
 import {
   approximateFraction,
   DEFAULT_SCALE,
-  EventBus,
-  type EventMap,
   getOutputScale,
   type  OutputScale,
   RendererType,
   roundToDivide,
-  TextLayerMode
+  TextLayerMode,
+  RenderingStates
 } from "./ui_utils.js";
 import { StructTreeLayerBuilder } from "./struct_tree_layer_builder.js";
 import { XfaLayerBuilder } from "./xfa_layer_builder.js";
 import { html, type HSElement } from "../../lib/dom.js";
 import { compatibilityParams } from "./app_options.js";
 import { BaseViewer } from "./base_viewer.js";
+import { EventBus, EventMap } from "./event_utils.js";
 /*81---------------------------------------------------------------------------*/
 
 interface PDFPageViewOptions
@@ -177,8 +192,10 @@ interface PDFPageViewUpdateParms
 
 export class PDFPageView implements IVisibleView
 {
-  readonly id:number; /** @implements */
-  readonly renderingId:string; /** @implements */
+  /** @implements */
+  readonly id:number;
+  /** @implements */
+  readonly renderingId:string;
 
   pdfPage?:PDFPageProxy;
   pageLabel?:string | undefined;
@@ -194,7 +211,7 @@ export class PDFPageView implements IVisibleView
   _optionalContentConfigPromise:Promise<OptionalContentConfig | undefined> | undefined;
   hasRestrictedScaling = false;
   textLayerMode;
-  _annotationMode;
+  #annotationMode;
   imageResourcesPath:string;
   useOnlyCssZoom:boolean;
   maxCanvasPixels:number;
@@ -215,6 +232,8 @@ export class PDFPageView implements IVisibleView
   resume?:(() => void) | undefined; /** @implements */
   _renderError?:ErrorMoreInfo | undefined;
   _isStandalone;
+
+  _annotationCanvasMap:Map<string, HTMLCanvasElement> | undefined;
 
   annotationLayer:AnnotationLayerBuilder | undefined;
   textLayer:TextLayerBuilder | undefined;
@@ -248,7 +267,7 @@ export class PDFPageView implements IVisibleView
     this.pdfPageRotate = defaultViewport.rotation;
     this._optionalContentConfigPromise = options.optionalContentConfigPromise;
     this.textLayerMode = options.textLayerMode ?? TextLayerMode.ENABLE;
-    this._annotationMode =
+    this.#annotationMode =
       options.annotationMode ?? AnnotationMode.ENABLE_FORMS;
     this.imageResourcesPath = options.imageResourcesPath || "";
     this.useOnlyCssZoom = options.useOnlyCssZoom || false;
@@ -402,7 +421,7 @@ export class PDFPageView implements IVisibleView
         case xfaLayerNode:
           continue;
       }
-      div.removeChild(node);
+      node.remove();
     }
     div.removeAttribute("data-loaded");
 
@@ -439,7 +458,11 @@ export class PDFPageView implements IVisibleView
     }
 
     this.loadingIconDiv = html("div");
-    this.loadingIconDiv.className = "loadingIcon";
+    this.loadingIconDiv.className = "loadingIcon notVisible";
+    if (this._isStandalone) 
+    {
+      this.toggleLoadingIconSpinner(/* viewVisible = */ true);
+    }
     this.loadingIconDiv.setAttribute("role", "img");
     this.l10n.get("loading").then( msg => {
       this.loadingIconDiv?.setAttribute("aria-label", msg);
@@ -458,17 +481,20 @@ export class PDFPageView implements IVisibleView
     {
       this._optionalContentConfigPromise = optionalContentConfigPromise;
     }
-    if (this._isStandalone) 
-    {
-      const doc = document.documentElement;
-      doc.style.setProperty("--zoom-factor", <any>this.scale );
-    }
 
     const totalRotation = (this.rotation + this.pdfPageRotate) % 360;
+    const viewportScale = this.scale * PixelsPerInch.PDF_TO_CSS_UNITS;
     this.viewport = this.viewport.clone({
-      scale: this.scale * PixelsPerInch.PDF_TO_CSS_UNITS,
+      scale: viewportScale,
       rotation: totalRotation,
     });
+
+    if( this._isStandalone )
+    {
+      const { style } = document.documentElement;
+      style.setProperty("--zoom-factor", String(this.scale));
+      style.setProperty("--viewport-scale-factor", String(viewportScale));
+    }
 
     if( this.svg )
     {
@@ -561,6 +587,7 @@ export class PDFPageView implements IVisibleView
     ) {
       this.annotationLayer.cancel();
       this.annotationLayer = undefined;
+      this._annotationCanvasMap = undefined;
     }
     if (this.xfaLayer && (!keepXfaLayer || !this.xfaLayer.div)) 
     {
@@ -668,6 +695,14 @@ export class PDFPageView implements IVisibleView
     return this.viewport.convertToPdfPoint(x, y);
   }
 
+  /**
+   * @ignore
+   */
+  toggleLoadingIconSpinner( viewVisible=false )
+  {
+    this.loadingIconDiv?.classList.toggle("notVisible", !viewVisible);
+  }
+
   draw() 
   {
     if (this.renderingState !== RenderingStates.INITIAL) 
@@ -683,7 +718,7 @@ export class PDFPageView implements IVisibleView
 
       if (this.loadingIconDiv) 
       {
-        div.removeChild(this.loadingIconDiv);
+        this.loadingIconDiv.remove();
         delete this.loadingIconDiv;
       }
       return Promise.reject(new Error("pdfPage is not loaded"));
@@ -734,6 +769,26 @@ export class PDFPageView implements IVisibleView
     }
     this.textLayer = textLayer;
 
+    if( this.#annotationMode !== AnnotationMode.DISABLE
+     && this.annotationLayerFactory
+    ) {
+      this._annotationCanvasMap ||= new Map();
+      this.annotationLayer ||=
+        this.annotationLayerFactory.createAnnotationLayerBuilder(
+          div,
+          pdfPage,
+          /* annotationStorage = */ undefined,
+          this.imageResourcesPath,
+          this.#annotationMode === AnnotationMode.ENABLE_FORMS,
+          this.l10n,
+          /* enableScripting = */ undefined,
+          /* hasJSActionsPromise = */ undefined,
+          /* mouseState = */ undefined,
+          /* fieldObjectsPromise = */ undefined,
+          /* annotationCanvasMap */ this._annotationCanvasMap
+        );
+    }
+
     if (this.xfaLayer?.div) 
     {
       // The xfa layer needs to stay on top.
@@ -777,7 +832,7 @@ export class PDFPageView implements IVisibleView
 
       if (this.loadingIconDiv) 
       {
-        div.removeChild(this.loadingIconDiv);
+        this.loadingIconDiv.remove();
         delete this.loadingIconDiv;
       }
       this.#resetZoomLayer(/* removeFromDOM = */ true);
@@ -811,36 +866,19 @@ export class PDFPageView implements IVisibleView
             textLayer.setTextContentStream(readableStream);
             textLayer.render();
           }
+
+          if( this.annotationLayer )
+          {
+            this.#renderAnnotationLayer();
+          }
         });
       },
       ( reason?:ErrorMoreInfo ) => finishPaintTask(reason)
     );
 
-    if( this._annotationMode !== AnnotationMode.DISABLE
-     && this.annotationLayerFactory
-    ) {
-      if( !this.annotationLayer )
-      {
-        this.annotationLayer =
-          this.annotationLayerFactory.createAnnotationLayerBuilder(
-          div,
-          pdfPage,
-          /* annotationStorage = */ undefined,
-          this.imageResourcesPath,
-          this._annotationMode === AnnotationMode.ENABLE_FORMS,
-          this.l10n,
-            // /* enableScripting = */ null,
-            // /* hasJSActionsPromise = */ null,
-            // /* mouseState = */ null,
-            // /* fieldObjectsPromise = */ null
-        );
-      }
-      this.#renderAnnotationLayer();
-    }
-
     if (this.xfaLayerFactory) 
     {
-      if (!this.xfaLayer)
+      if( !this.xfaLayer )
       {
         this.xfaLayer = this.xfaLayerFactory.createXfaLayerBuilder(
           div,
@@ -965,6 +1003,7 @@ export class PDFPageView implements IVisibleView
     canvas.height = roundToDivide(viewport.height * outputScale.sy, sfy[0]);
     canvas.style.width = roundToDivide(viewport.width, sfx[1]) + "px";
     canvas.style.height = roundToDivide(viewport.height, sfy[1]) + "px";
+
     // Add the viewport so it's known what it was originally drawn with.
     this.paintedViewportMap.set(canvas, viewport);
 
@@ -976,8 +1015,9 @@ export class PDFPageView implements IVisibleView
       canvasContext: ctx,
       transform,
       viewport: this.viewport,
-      annotationMode: this._annotationMode,
+      annotationMode: this.#annotationMode,
       optionalContentConfigPromise: this._optionalContentConfigPromise,
+      annotationCanvasMap: this._annotationCanvasMap,
     };
     const renderTask = this.pdfPage!.render( renderContext );
     renderTask.onContinue = ( cont:()=>void ) => {
@@ -1029,7 +1069,7 @@ export class PDFPageView implements IVisibleView
     });
     const promise = pdfPage
       .getOperatorList({
-        annotationMode: this._annotationMode,
+        annotationMode: this.#annotationMode,
       })
       .then(opList => {
         ensureNotCancelled();

@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 /* Copyright 2012 Mozilla Foundation
  *
@@ -147,14 +147,15 @@ export function bidi(str, startLevel = -1, vertical = false) {
     }
     // Detect the bidi method
     // - If there are no rtl characters then no bidi needed
-    // - If less than 30% chars are rtl then string is primarily ltr
+    // - If less than 30% chars are rtl then string is primarily ltr,
+    //   unless the string is very short.
     // - If more than 30% chars are rtl then string is primarily rtl
     if (numBidi === 0) {
         isLTR = true;
         return createBidiText(str, isLTR);
     }
     if (startLevel === -1) {
-        if (numBidi / strLength < 0.3) {
+        if (numBidi / strLength < 0.3 && strLength > 4) {
             isLTR = true;
             startLevel = 0;
         }

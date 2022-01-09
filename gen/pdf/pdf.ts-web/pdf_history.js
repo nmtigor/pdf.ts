@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 /* Copyright 2017 Mozilla Foundation
  *
@@ -15,8 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/** @typedef {import("./event_utils").EventBus} EventBus */
+/** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
 import { isObjectLike } from "../../lib/jslang.js";
-import { isValidRotation, parseQueryString, PresentationModeState, waitOnEventOrTimeout, } from "./ui_utils.js";
+import { waitOnEventOrTimeout } from "./event_utils.js";
+import { isValidRotation, parseQueryString, PresentationModeState, } from "./ui_utils.js";
 /*81---------------------------------------------------------------------------*/
 // Heuristic value used when force-resetting `this.#blockHashChange`.
 const HASH_CHANGE_TIMEOUT = 1000; // milliseconds

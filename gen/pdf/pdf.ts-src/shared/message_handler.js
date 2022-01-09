@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 /* Copyright 2018 Mozilla Foundation
  *
@@ -81,7 +81,6 @@ export class MessageHandler {
     id = ++MessageHandler.#ID;
     callbackId = 1;
     streamId = 1;
-    postMessageTransfers = true;
     streamSinks = Object.create(null);
     streamControllers = Object.create(null);
     callbackCapabilities = Object.create(null);
@@ -166,7 +165,7 @@ export class MessageHandler {
      * @param transfers - List of transfers/ArrayBuffers.
      */
     send(actionName, data, transfers) {
-        this.#postMessage({
+        this.comObj.postMessage({
             sourceName: this.sourceName,
             targetName: this.targetName,
             action: actionName,
@@ -186,7 +185,7 @@ export class MessageHandler {
         const capability = createPromiseCap();
         this.callbackCapabilities[callbackId] = capability;
         try {
-            this.#postMessage({
+            this.comObj.postMessage({
                 sourceName: this.sourceName,
                 targetName: this.targetName,
                 action: actionName,
@@ -218,7 +217,7 @@ export class MessageHandler {
                     startCall: startCapability,
                     isClosed: false,
                 };
-                this.#postMessage({
+                comObj.postMessage({
                     sourceName,
                     targetName,
                     action: actionName,
@@ -277,7 +276,7 @@ export class MessageHandler {
                     this.sinkCapability = createPromiseCap();
                     this.ready = this.sinkCapability.promise;
                 }
-                self.#postMessage({
+                comObj.postMessage({
                     sourceName,
                     targetName,
                     stream: StreamKind.ENQUEUE,
@@ -463,17 +462,6 @@ export class MessageHandler {
             streamController.cancelCall && streamController.cancelCall.promise,
         ]);
         delete this.streamControllers[streamId];
-    }
-    /**
-     * Sends raw message to the comObj.
-     * @param message Raw message.
-     * @param transfers List of transfers/ArrayBuffers, or undefined.
-     */
-    #postMessage(message, transfers) {
-        if (transfers && this.postMessageTransfers)
-            this.comObj.postMessage(message, transfers);
-        else
-            this.comObj.postMessage(message);
     }
     destroy() {
         this.comObj.removeEventListener("message", this.#onComObjOnMessage);

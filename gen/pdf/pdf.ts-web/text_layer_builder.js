@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 /* Copyright 2012 Mozilla Foundation
  *
@@ -16,7 +16,9 @@
  * limitations under the License.
  */
 // eslint-disable-next-line max-len
-/** @typedef {import("./interfaces").IPDFTextLayerFactory} IPDFTextLayerFactory */
+/** @typedef {import("../src/display/display_utils").PageViewport} PageViewport */
+/** @typedef {import("./event_utils").EventBus} EventBus */
+/** @typedef {import("./text_highlighter").TextHighlighter} TextHighlighter */
 import { html } from "../../lib/dom.js";
 import { renderTextLayer } from "../pdf.ts-src/pdf.js";
 /*81---------------------------------------------------------------------------*/
@@ -166,18 +168,6 @@ export class TextLayerBuilder {
                 return;
             end.style.top = "";
             end.classList.remove("active");
-        });
-    }
-}
-export class DefaultTextLayerFactory {
-    createTextLayerBuilder(textLayerDiv, pageIndex, viewport, enhanceTextSelection = false, eventBus, highlighter) {
-        return new TextLayerBuilder({
-            textLayerDiv,
-            eventBus,
-            pageIndex,
-            viewport,
-            highlighter,
-            enhanceTextSelection,
         });
     }
 }

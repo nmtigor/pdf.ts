@@ -326,15 +326,7 @@ Date.setFullYear = function (refdate, year, month, date) {
     else
         return Date.date.setFullYear(year);
 };
-/*81---------------------------------------------------------------------------*/
-// declare global 
-// {
-//   interface Math
-//   {
-//     minn( ...values:(number|bigint)[] ):number|bigint;
-//     maxn( ...values:(number|bigint)[] ):number|bigint;
-//   }
-// }
+Math.clamp = (min_x, val_x, max_x) => Math.max(min_x, Math.min(val_x, max_x));
 // Math.minn = ( ...values ) =>
 // {
 //   let ret:number|bigint = Infinity;

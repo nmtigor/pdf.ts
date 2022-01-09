@@ -4,6 +4,7 @@
 
 import { HTMLVCoo } from "./lib/mv.js";
 import { assert } from "./lib/util/trace.js";
+import { HoldIndicatr } from "./lib/widget/progressbar.js";
 /*81---------------------------------------------------------------------------*/
 
 /**
@@ -19,6 +20,7 @@ class Global
   readonly LASTUPDATE_DEV = "2021-05-22 05:04:21 +0200";
 
   globalhvc?:HTMLVCoo;
+  holdindicatr?:[HoldIndicatr, HoldIndicatr, HoldIndicatr];
 
   has_ResizeObserver = false;
   can_touchstart = false;

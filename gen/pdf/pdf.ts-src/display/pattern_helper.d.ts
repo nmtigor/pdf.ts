@@ -1,14 +1,19 @@
 import type { OpListIR } from "../core/operator_list.js";
 import { type RadialAxialIR, type ShadingPatternIR, ShadingType, type TilingPatternIR } from "../core/pattern.js";
 import { type matrix_t } from "../shared/util.js";
-import { CanvasGraphics, LRUCache } from "./canvas.js";
+import { CanvasGraphics } from "./canvas.js";
+export declare const enum PathType {
+    FILL = "Fill",
+    STROKE = "Stroke",
+    SHADING = "Shading"
+}
 export interface STPattern {
-    getPattern(ctx: CanvasRenderingContext2D, owner: CanvasGraphics, inverse: matrix_t, shadingFill?: boolean): CanvasPattern | CanvasGradient | string | null;
+    getPattern(ctx: CanvasRenderingContext2D, owner: CanvasGraphics, inverse: matrix_t, pathType: PathType): CanvasPattern | CanvasGradient | string | null;
 }
 export interface ShadingPattern extends STPattern {
 }
 interface RadialAxialPattern extends ShadingPattern {
-    getPattern(ctx: CanvasRenderingContext2D, owner: CanvasGraphics, inverse: matrix_t, shadingFill?: boolean): CanvasPattern | CanvasGradient | null;
+    getPattern(ctx: CanvasRenderingContext2D, owner: CanvasGraphics, inverse: matrix_t, pathType: PathType): CanvasPattern | CanvasGradient | null;
 }
 export declare class RadialAxialShadingPattern implements RadialAxialPattern {
     _type: ShadingType.AXIAL | ShadingType.RADIAL;
@@ -19,11 +24,10 @@ export declare class RadialAxialShadingPattern implements RadialAxialPattern {
     _r0: number;
     _r1: number;
     matrix: matrix_t | undefined;
-    cachedCanvasPatterns: LRUCache;
-    constructor(IR: RadialAxialIR, cachedCanvasPatterns: LRUCache);
+    constructor(IR: RadialAxialIR);
     _createGradient(ctx: CanvasRenderingContext2D): CanvasGradient | null;
     /** @implements */
-    getPattern(ctx: CanvasRenderingContext2D, owner: CanvasGraphics, inverse: matrix_t, shadingFill?: boolean): CanvasPattern | CanvasGradient | null;
+    getPattern(ctx: CanvasRenderingContext2D, owner: CanvasGraphics, inverse: matrix_t, pathType: PathType): CanvasGradient | CanvasPattern | null;
 }
 export interface MeshCanvasContext {
     coords: Float32Array;
@@ -33,7 +37,7 @@ export interface MeshCanvasContext {
     scaleX: number;
     scaleY: number;
 }
-export declare function getShadingPattern(IR: ShadingPatternIR, cachedCanvasPatterns: LRUCache): ShadingPattern;
+export declare function getShadingPattern(IR: ShadingPatternIR): ShadingPattern;
 declare namespace NsTilingPattern {
     const enum PaintType {
         COLORED = 1,
@@ -74,7 +78,7 @@ declare namespace NsTilingPattern {
         };
         clipBbox(graphics: CanvasGraphics, x0: number, y0: number, x1: number, y1: number): void;
         setFillAndStrokeStyleToContext(graphics: CanvasGraphics, paintType: PaintType, color?: Uint8ClampedArray): void;
-        getPattern(ctx: CanvasRenderingContext2D, owner: CanvasGraphics, inverse: matrix_t, shadingFill?: boolean): CanvasPattern | null;
+        getPattern(ctx: CanvasRenderingContext2D, owner: CanvasGraphics, inverse: matrix_t, pathType: PathType): CanvasPattern | null;
     }
 }
 export import TilingPattern = NsTilingPattern.TilingPattern;

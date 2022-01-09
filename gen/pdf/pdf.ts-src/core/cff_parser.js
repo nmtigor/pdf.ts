@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 import { bytesToString, FormatError, info, shadow, stringToBytes, Util, warn, } from "../shared/util.js";
 import { ExpertCharset, ExpertSubsetCharset, ISOAdobeCharset, } from "./charsets.js";

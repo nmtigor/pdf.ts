@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 
 /* Copyright 2015 Mozilla Foundation
@@ -24,12 +24,13 @@ export interface CanvasEntry
 {
   canvas:HTMLCanvasElement;
   context:CanvasRenderingContext2D;
+  savedCtx?:CanvasRenderingContext2D;
 }
 
 export abstract class BaseCanvasFactory
 {
   /** @final */
-  create( width:number, height:number )
+  create( width:number, height:number ):CanvasEntry
   {
     if (width <= 0 || height <= 0) 
     {

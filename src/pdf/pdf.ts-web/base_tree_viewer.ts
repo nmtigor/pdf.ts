@@ -16,7 +16,7 @@
 import { html } from "../../lib/dom.js";
 import { PDFDocumentProxy } from "../pdf.ts-src/display/api.js";
 import { removeNullCharacters } from "../pdf.ts-src/pdf.js";
-import { EventBus } from "./ui_utils.js";
+import { EventBus } from "./event_utils.js";
 /*81---------------------------------------------------------------------------*/
 
 const TREEITEM_OFFSET_TOP = -100; // px
@@ -73,7 +73,12 @@ export abstract class BaseTreeViewer
 
   protected _normalizeTextContent( str:string ):string
   {
-    return removeNullCharacters(str) || /* en dash = */ "\u2013";
+    // Chars in range [0x01-0x1F] will be replaced with a white space
+    // and 0x00 by "".
+    return (
+      removeNullCharacters(str, /* replaceInvisible */ true) ||
+      /* en dash = */ "\u2013"
+    );
   }
 
   /**

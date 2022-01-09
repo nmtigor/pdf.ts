@@ -1,5 +1,6 @@
+import { EventBus } from "./event_utils.js";
 import { PDFViewer } from "./pdf_viewer.js";
-import { EventBus, ScrollMode, SpreadMode } from "./ui_utils.js";
+import { ScrollMode, SpreadMode } from "./ui_utils.js";
 interface PDFPresentationModeOptions {
     /**
      * The container for the viewer element.

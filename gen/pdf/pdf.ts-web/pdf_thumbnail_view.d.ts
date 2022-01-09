@@ -1,4 +1,9 @@
-import { PDFRenderingQueue, RenderingStates } from "./pdf_rendering_queue.js";
+/** @typedef {import("./interfaces").IL10n} IL10n */
+/** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
+/** @typedef {import("./interfaces").IRenderableView} IRenderableView */
+/** @typedef {import("./pdf_rendering_queue").PDFRenderingQueue} PDFRenderingQueue */
+import { RenderingStates } from "./ui_utils.js";
+import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
 import { type IL10n, type IPDFLinkService, type IVisibleView } from "./interfaces.js";
 import { PageViewport } from "../pdf.ts-src/display/display_utils.js";
 import { OptionalContentConfig } from "../pdf.ts-src/display/optional_content_config.js";

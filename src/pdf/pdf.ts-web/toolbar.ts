@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 
 /* Copyright 2016 Mozilla Foundation
@@ -18,13 +18,12 @@
  */
 
 import { html } from "../../lib/dom.js";
+import { EventBus, EventName } from "./event_utils.js";
 import { type IL10n } from "./interfaces.js";
 import {
   animationStarted,
   DEFAULT_SCALE,
   DEFAULT_SCALE_VALUE,
-  EventBus,
-  type EventName,
   MAX_SCALE,
   MIN_SCALE,
   noContextMenuHandler,

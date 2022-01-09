@@ -76,6 +76,7 @@ export interface MarkInfo {
     UserProperties: boolean;
     Suspects: boolean;
 }
+declare type AllPageDicts = Map<number, [Dict, Ref | undefined] | [Error, undefined]>;
 /**
  * Table 28
  */
@@ -83,6 +84,7 @@ export declare class Catalog {
     #private;
     pdfManager: BasePdfManager;
     xref: XRef;
+    _actualNumPages: number | undefined;
     fontCache: RefSetCache<Promise<TranslatedFont>>;
     builtInCMapCache: Map<string, CMapData>;
     standardFontDataCache: Map<string, Uint8Array | ArrayBuffer>;
@@ -111,10 +113,13 @@ export declare class Catalog {
      * Table 100
      */
     get optionalContentConfig(): OptionalContentConfigData | undefined;
+    setActualNumPages(num?: number): void;
+    get hasActualNumPages(): boolean;
+    get _pagesCount(): number;
     get numPages(): number;
     get destinations(): Record<string, ExplicitDest>;
     getDestination(id: string): ExplicitDest | undefined;
-    get pageLabels(): string[] | null;
+    get pageLabels(): string[] | undefined;
     get pageLayout(): PageLayout | undefined;
     get pageMode(): PageMode;
     get viewerPreferences(): ViewerPref | undefined;
@@ -129,6 +134,10 @@ export declare class Catalog {
      * Dict: Ref. 7.7.3.3 Page Objects
      */
     getPageDict(pageIndex: number): Promise<[Dict, Ref | undefined]>;
+    /**
+     * Eagerly fetches the entire /Pages-tree; should ONLY be used as a fallback.
+     */
+    getAllPageDicts(recoveryMode?: boolean): AllPageDicts;
     getPageIndex(pageRef: Ref): Promise<number>;
     /**
      * @typedef ParseDestDictionaryParameters

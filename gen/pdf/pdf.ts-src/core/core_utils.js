@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 /* Copyright 2019 Mozilla Foundation
  *
@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 import { assert } from "../../../lib/util/trace.js";
-import { BaseException, objectSize, stringToPDFString, warn, } from "../shared/util.js";
+import { BaseException, objectSize, stringToPDFString, warn, StreamType, FontType, } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
 import { Dict, isName, Ref, RefSet } from "./primitives.js";
 /*81---------------------------------------------------------------------------*/
@@ -68,6 +68,38 @@ export class XRefEntryException extends BaseException {
 export class XRefParseException extends BaseException {
     constructor(msg) {
         super(msg, "XRefParseException");
+    }
+}
+export class DocStats {
+    #handler;
+    #streamTypes = new Set();
+    #fontTypes = new Set();
+    constructor(handler) {
+        this.#handler = handler;
+    }
+    _send() {
+        const streamTypes = Object.create(null), fontTypes = Object.create(null);
+        for (const type of this.#streamTypes) {
+            streamTypes[type] = true;
+        }
+        for (const type of this.#fontTypes) {
+            fontTypes[type] = true;
+        }
+        this.#handler.send("DocStats", { streamTypes, fontTypes });
+    }
+    addStreamType(type) {
+        assert(StreamType[type] === type, 'addStreamType: Invalid "type" value.');
+        if (this.#streamTypes.has(type))
+            return;
+        this.#streamTypes.add(type);
+        this._send();
+    }
+    addFontType(type) {
+        assert(FontType[type] === type, 'addFontType: Invalid "type" value.');
+        if (this.#fontTypes.has(type))
+            return;
+        this.#fontTypes.add(type);
+        this._send();
     }
 }
 /**

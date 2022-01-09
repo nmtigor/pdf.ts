@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 /* Copyright 2021 Mozilla Foundation
  *
@@ -85,11 +85,12 @@ const StyleMapping = new Map([
     ["margin-top", (value) => measureToString(getMeasurement(value))],
     ["text-indent", (value) => measureToString(getMeasurement(value))],
     ["font-family", (value) => value],
+    ["vertical-align", (value) => measureToString(getMeasurement(value))],
 ]);
 const spacesRegExp = /\s+/g;
 const crlfRegExp = /[\r\n]+/g;
 const crlfForRichTextRegExp = /\r\n?/g;
-function mapStyle(styleStr, node) {
+function mapStyle(styleStr, node, richText) {
     const style = Object.create(null);
     if (!styleStr)
         return style;
@@ -127,6 +128,24 @@ function mapStyle(styleStr, node) {
             posture: style.fontStyle || "normal",
             size: original.fontSize || 0,
         }, node, node[$globalData].fontFinder, style);
+    }
+    if (richText
+        && style.verticalAlign
+        && style.verticalAlign !== "0px"
+        && style.fontSize) {
+        // A non-zero verticalAlign means that we've a sub/super-script and
+        // consequently the font size must be decreased.
+        // https://www.adobe.com/content/dam/acom/en/devnet/pdf/pdfs/PDF32000_2008.pdf#G11.2097514
+        // And the two following factors to position the scripts have been
+        // found here:
+        // https://en.wikipedia.org/wiki/Subscript_and_superscript#Desktop_publishing
+        const SUB_SUPER_SCRIPT_FACTOR = 0.583;
+        const VERTICAL_FACTOR = 0.333;
+        const fontSize = getMeasurement(style.fontSize);
+        style.fontSize = measureToString(fontSize * SUB_SUPER_SCRIPT_FACTOR);
+        style.verticalAlign = measureToString(Math.sign(getMeasurement(style.verticalAlign)) *
+            fontSize *
+            VERTICAL_FACTOR);
     }
     fixTextIndent(style);
     return style;
@@ -290,7 +309,7 @@ export class XhtmlObject extends XmlObject {
             name: this[$nodeName],
             attributes: {
                 href: this.href,
-                style: mapStyle(this.style, this),
+                style: mapStyle(this.style, this, this[$richText]),
             },
             children,
             value,

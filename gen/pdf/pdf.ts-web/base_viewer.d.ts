@@ -1,10 +1,8 @@
-import { EventBus, type EventMap, PresentationModeState, RendererType, ScrollMode, SpreadMode, TextLayerMode, type VisibleElement, type VisibleElements } from "./ui_utils.js";
-import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
+import { PresentationModeState, RendererType, ScrollMode, SpreadMode, TextLayerMode, type VisibleElements } from "./ui_utils.js";
 import { AnnotationLayerBuilder } from "./annotation_layer_builder.js";
 import { PDFPageView } from "./pdf_page_view.js";
 import { TextLayerBuilder } from "./text_layer_builder.js";
-import { type IL10n, type IPDFAnnotationLayerFactory, type IPDFLinkService, type IPDFStructTreeLayerFactory, type IPDFTextLayerFactory, type IPDFXfaLayerFactory, type MouseState } from "./interfaces.js";
-import { DownloadManager } from "./download_manager.js";
+import { IDownloadManager, type IL10n, type IPDFAnnotationLayerFactory, type IPDFLinkService, type IPDFStructTreeLayerFactory, type IPDFTextLayerFactory, type IPDFXfaLayerFactory, type MouseState } from "./interfaces.js";
 import { PDFFindController } from "./pdf_find_controller.js";
 import { AnnotationMode } from "../pdf.ts-src/shared/util.js";
 import { PDFDocumentProxy, PDFPageProxy } from "../pdf.ts-src/display/api.js";
@@ -17,6 +15,13 @@ import { type ExplicitDest } from "../pdf.ts-src/core/catalog.js";
 import { StructTreeLayerBuilder } from "./struct_tree_layer_builder.js";
 import { TextHighlighter } from "./text_highlighter.js";
 import { type FieldObject } from "../pdf.ts-src/core/annotation.js";
+import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
+import { EventBus, EventMap } from "./event_utils.js";
+export declare const enum PagesCountLimit {
+    FORCE_SCROLL_MODE_PAGE = 15000,
+    FORCE_LAZY_PAGE_INIT = 7500,
+    PAUSE_EAGER_PAGE_INIT = 500
+}
 export interface PDFViewerOptions {
     /**
      * The container for the viewer element.
@@ -37,7 +42,7 @@ export interface PDFViewerOptions {
     /**
      * The download manager component.
      */
-    downloadManager?: DownloadManager;
+    downloadManager?: IDownloadManager;
     /**
      * The find controller component.
      */
@@ -97,12 +102,26 @@ export interface PDFViewerOptions {
      * Localization service.
      */
     l10n?: IL10n;
+    /**
+     * Enables PDF document permissions,
+     * when they exist. The default value is `false`.
+     */
+    enablePermissions?: boolean;
 }
-declare class PDFPageViewBuffer {
-    push: (view: PDFPageView) => void;
-    resize: (newSize: number, pagesToKeep: VisibleElement[]) => void;
-    has: (view: PDFPageView) => boolean;
+export declare class PDFPageViewBuffer {
+    #private;
+    has(view: PDFPageView): boolean;
+    [Symbol.iterator](): IterableIterator<PDFPageView>;
     constructor(size: number);
+    push(view: PDFPageView): void;
+    /**
+     * After calling resize, the size of the buffer will be `newSize`.
+     * The optional parameter `idsToKeep` is, if present, a Set of page-ids to
+     * push to the back of the buffer, delaying their destruction. The size of
+     * `idsToKeep` has no impact on the final size of the buffer; if `idsToKeep`
+     * is larger than `newSize`, some of those pages will be destroyed anyway.
+     */
+    resize(newSize: number, idsToKeep?: Set<number>): void;
 }
 interface ScrollPageIntoViewParms {
     /**
@@ -149,19 +168,18 @@ export interface PageOverview {
 /**
  * Simple viewer control to display PDF content/pages.
  */
-export declare abstract class BaseViewer implements IPDFAnnotationLayerFactory, IPDFTextLayerFactory, IPDFXfaLayerFactory, IPDFStructTreeLayerFactory {
+export declare abstract class BaseViewer implements IPDFAnnotationLayerFactory, IPDFStructTreeLayerFactory, IPDFTextLayerFactory, IPDFXfaLayerFactory {
     #private;
     container: HTMLDivElement;
     viewer: HTMLDivElement;
     eventBus: EventBus;
     linkService: IPDFLinkService;
-    downloadManager: DownloadManager | undefined;
+    downloadManager: IDownloadManager | undefined;
     findController: PDFFindController | undefined;
     _scriptingManager: PDFScriptingManager | null;
     get enableScripting(): boolean;
     removePageBorders: boolean;
     textLayerMode: TextLayerMode;
-    _annotationMode: AnnotationMode;
     get renderForms(): boolean;
     imageResourcesPath: string;
     enablePrintAutoRotate: boolean;
@@ -217,13 +235,13 @@ export declare abstract class BaseViewer implements IPDFAnnotationLayerFactory, 
      * @param val The page label.
      */
     set currentPageLabel(val: string | undefined);
-    _buffer: PDFPageViewBuffer;
     _pagesRotation: number;
     get pagesRotation(): number;
     _optionalContentConfigPromise?: Promise<OptionalContentConfig | undefined> | undefined;
-    _pagesRequests: WeakMap<PDFPageView, Promise<PDFPageProxy | void>>;
     get firstPagePromise(): Promise<PDFPageProxy> | null;
-    get onePageRendered(): Promise<void> | null;
+    get onePageRendered(): Promise<{
+        timestamp: number;
+    }> | null;
     get pagesPromise(): Promise<void> | undefined;
     _scrollMode: ScrollMode;
     _previousScrollMode: ScrollMode;
@@ -247,7 +265,6 @@ export declare abstract class BaseViewer implements IPDFAnnotationLayerFactory, 
     setDocument(pdfDocument?: PDFDocumentProxy): void;
     setPageLabels(labels: string[] | null): void;
     protected _resetView(): void;
-    _ensurePageViewVisible(): void;
     _scrollUpdate(): void;
     protected _scrollIntoView({ pageDiv, pageSpot }: ScrollIntoViewParms, pageNumber?: number): void;
     protected get _pageWidthScaleFactor(): 1 | 2;
@@ -288,14 +305,16 @@ export declare abstract class BaseViewer implements IPDFAnnotationLayerFactory, 
     createTextHighlighter(pageIndex: number, eventBus: EventBus): TextHighlighter;
     /**
      * @implements
+     *
+     * @param annotationStorage Storage for annotation data in forms.
      * @param imageResourcesPath Path for image resources, mainly
      *   for annotation icons. Include trailing slash.
      */
-    createAnnotationLayerBuilder(pageDiv: HTMLDivElement, pdfPage: PDFPageProxy, annotationStorage?: AnnotationStorage, imageResourcesPath?: string, renderForms?: boolean, l10n?: IL10n, enableScripting?: boolean, hasJSActionsPromise?: Promise<boolean>, mouseState?: MouseState, fieldObjectsPromise?: Promise<Record<string, FieldObject[]> | undefined>): AnnotationLayerBuilder;
+    createAnnotationLayerBuilder(pageDiv: HTMLDivElement, pdfPage: PDFPageProxy, annotationStorage?: AnnotationStorage, imageResourcesPath?: string, renderForms?: boolean, l10n?: IL10n, enableScripting?: boolean, hasJSActionsPromise?: Promise<boolean>, mouseState?: MouseState, fieldObjectsPromise?: Promise<Record<string, FieldObject[]> | undefined>, annotationCanvasMap?: Map<string, HTMLCanvasElement>): AnnotationLayerBuilder;
     /**
      * @param annotationStorage Storage for annotation data in forms.
      */
-    createXfaLayerBuilder(pageDiv: HTMLDivElement, pdfPage: PDFPageProxy | undefined, annotationStorage?: AnnotationStorage): XfaLayerBuilder;
+    createXfaLayerBuilder(pageDiv: HTMLDivElement, pdfPage: PDFPageProxy, annotationStorage?: AnnotationStorage): XfaLayerBuilder;
     /** @implements */
     createStructTreeLayerBuilder(pdfPage: PDFPageProxy): StructTreeLayerBuilder;
     /**

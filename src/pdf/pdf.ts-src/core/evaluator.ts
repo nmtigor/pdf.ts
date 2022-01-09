@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 
 /* Copyright 2012 Mozilla Foundation
@@ -850,7 +850,11 @@ export class PartialEvaluator
       operatorList.addOp(OPS.beginGroup, [groupOptions]);
     }
 
-    operatorList.addOp(OPS.paintFormXObjectBegin, [matrix, bbox]);
+    // If it's a group, a new canvas will be created that is the size of the
+    // bounding box and translated to the correct position so we don't need to
+    // apply the bounding box to it.
+    const args = group ? [matrix, null] : [matrix, bbox];
+    operatorList.addOp(OPS.paintFormXObjectBegin, args);
 
     return this.getOperatorList({
       stream: xobj,
@@ -904,8 +908,8 @@ export class PartialEvaluator
   {
     const dict = image.dict!; // Table 89
     const imageRef = dict.objId;
-    const w = dict.get("Width", "W");
-    const h = dict.get("Height", "H");
+    const w = dict.get("W", "Width");
+    const h = dict.get("H", "Height");
 
     if( !(w && (typeof w === "number")) 
      || !(h && (typeof h === "number")) 
@@ -933,8 +937,8 @@ export class PartialEvaluator
       operatorList.addOp(OPS.beginMarkedContentProps, ["OC", optionalContent]);
     }
 
-    const imageMask = <boolean>dict.get("ImageMask", "IM") || false;
-    const interpolate = <boolean | undefined>dict.get("Interpolate", "I");
+    const imageMask = <boolean>dict.get("IM", "ImageMask") || false;
+    const interpolate = <boolean | undefined>dict.get("I", "Interpolate");
     let imgData,
       args;
     // let args:[string,number,number] | [ImgData];
@@ -945,20 +949,17 @@ export class PartialEvaluator
       // data can't be done here. Instead of creating a
       // complete PDFImage, only read the information needed
       // for later.
-
-      const width = <number>dict.get("Width", "W");
-      const height = <number>dict.get("Height", "H");
-      const bitStrideLength = (width + 7) >> 3;
+      const bitStrideLength = (w + 7) >> 3;
       const imgArray = <Uint8ClampedArray>image.getBytes(
-        bitStrideLength * height,
+        bitStrideLength * h,
         /* forceClamped = */ true
       );
-      const decode = <number[] | undefined>dict.getArray("Decode", "D");
+      const decode = <number[] | undefined>dict.getArray("D", "Decode");
 
       imgData = <ImgData>PDFImage.createMask({
         imgArray,
-        width,
-        height,
+        width: w,
+        height: h,
         imageIsFromDecodeStream: image instanceof DecodeStream,
         inverseDecode: !!decode && decode![0] > 0,
         interpolate,
@@ -982,7 +983,7 @@ export class PartialEvaluator
       return;
     }
 
-    const softMask = <boolean>dict.get("SMask", "SM") || false;
+    const softMask = <boolean>dict.get("SM", "SMask") || false;
     const mask = <boolean>dict.get("Mask") || false;
 
     const SMALL_IMAGE_DIMENSIONS = 200;
@@ -1631,8 +1632,7 @@ export class PartialEvaluator
       .then( translatedFont => {
         if( translatedFont.fontType !== undefined )
         {
-          const xrefFontStats = xref.stats.fontTypes;
-          xrefFontStats[translatedFont.fontType] = true;
+          xref.stats.addFontType(translatedFont.fontType);
         }
 
         fontCapability.resolve(
@@ -1660,8 +1660,10 @@ export class PartialEvaluator
             preEvaluatedFont.type,
             subtype && subtype.name
           );
-          const xrefFontStats = xref.stats.fontTypes;
-          xrefFontStats[fontType] = true;
+          if (fontType !== undefined) 
+          {
+            xref.stats.addFontType(fontType);
+          }
         } catch (ex) {}
 
         fontCapability.resolve(
@@ -3068,7 +3070,8 @@ export class PartialEvaluator
           (i === 0 ||
             i + 1 === ii ||
             glyphs[i - 1].unicode === " " ||
-            glyphs[i + 1].unicode === " ")
+            glyphs[i + 1].unicode === " " ||
+            extraSpacing)
         ) {
           // Don't push a " " in the textContentItem
           // (except when it's between two non-spaces chars),

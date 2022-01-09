@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 /*81---------------------------------------------------------------------------*/
 export const DEFAULT_SCALE_VALUE = "auto";
@@ -12,6 +12,13 @@ export const MAX_AUTO_SCALE = 1.25;
 export const SCROLLBAR_PADDING = 40;
 export const VERTICAL_PADDING = 5;
 const LOADINGBAR_END_OFFSET_VAR = "--loadingBar-end-offset";
+export var RenderingStates;
+(function (RenderingStates) {
+    RenderingStates[RenderingStates["INITIAL"] = 0] = "INITIAL";
+    RenderingStates[RenderingStates["RUNNING"] = 1] = "RUNNING";
+    RenderingStates[RenderingStates["PAUSED"] = 2] = "PAUSED";
+    RenderingStates[RenderingStates["FINISHED"] = 3] = "FINISHED";
+})(RenderingStates || (RenderingStates = {}));
 export var PresentationModeState;
 (function (PresentationModeState) {
     PresentationModeState[PresentationModeState["UNKNOWN"] = 0] = "UNKNOWN";
@@ -190,9 +197,8 @@ export function watchScroll(viewAreaElement, callback) {
  */
 export function parseQueryString(query) {
     const params = new Map();
-    for (const part of query.split("&")) {
-        const param = part.split("="), key = param[0].toLowerCase(), value = param.length > 1 ? param[1] : "";
-        params.set(decodeURIComponent(key), decodeURIComponent(value));
+    for (const [key, value] of new URLSearchParams(query)) {
+        params.set(key.toLowerCase(), value);
     }
     return params;
 }
@@ -419,15 +425,15 @@ export function getVisibleElements({ scrollEl, views, sortByVisibility = false, 
         const elementRight = elementLeft + element.clientWidth;
         return rtl ? elementLeft < right : elementRight > left;
     }
-    const visible = [], numViews = views.length;
+    const visible = [], ids = new Set(), numViews = views.length;
     let firstVisibleElementInd = binarySearchFirstItem(views, horizontal
         ? isElementNextAfterViewHorizontally
         : isElementBottomAfterViewTop);
     // Please note the return value of the `binarySearchFirstItem` function when
     // no valid element is found (hence the `firstVisibleElementInd` check below).
-    if (firstVisibleElementInd > 0 &&
-        firstVisibleElementInd < numViews &&
-        !horizontal) {
+    if (firstVisibleElementInd > 0
+        && firstVisibleElementInd < numViews
+        && !horizontal) {
         // In wrapped scrolling (or vertical scrolling with spreads), with some page
         // sizes, isElementBottomAfterViewTop doesn't satisfy the binary search
         // condition: there can be pages with bottoms above the view top between
@@ -463,10 +469,10 @@ export function getVisibleElements({ scrollEl, views, sortByVisibility = false, 
         else if ((horizontal ? currentWidth : currentHeight) > lastEdge) {
             break;
         }
-        if (viewBottom <= top ||
-            currentHeight >= bottom ||
-            viewRight <= left ||
-            currentWidth >= right) {
+        if (viewBottom <= top
+            || currentHeight >= bottom
+            || viewRight <= left
+            || currentWidth >= right) {
             continue;
         }
         const hiddenHeight = Math.max(0, top - currentHeight) + Math.max(0, viewBottom - bottom);
@@ -481,6 +487,7 @@ export function getVisibleElements({ scrollEl, views, sortByVisibility = false, 
             percent,
             widthPercent: (fractionWidth * 100) | 0,
         });
+        ids.add(view.id);
     }
     const first = visible[0], last = visible[visible.length - 1];
     if (sortByVisibility) {
@@ -491,7 +498,7 @@ export function getVisibleElements({ scrollEl, views, sortByVisibility = false, 
             return a.id - b.id; // ensure stability
         });
     }
-    return { first, last, views: visible };
+    return { first, last, views: visible, ids };
 }
 /**
  * Event handler to suppress context menu.
@@ -545,141 +552,11 @@ export var WaitOnType;
     WaitOnType["TIMEOUT"] = "timeout";
 })(WaitOnType || (WaitOnType = {}));
 /**
- * Allows waiting for an event or a timeout, whichever occurs first.
- * Can be used to ensure that an action always occurs, even when an event
- * arrives late or not at all.
- *
- * @return A promise that is resolved with a {WaitOnType} value.
- */
-export function waitOnEventOrTimeout({ target, name, delay = 0 }) {
-    return new Promise(function (resolve, reject) {
-        if (typeof target !== "object" ||
-            !(name && typeof name === "string") ||
-            !(Number.isInteger(delay) && delay >= 0)) {
-            throw new Error("waitOnEventOrTimeout - invalid parameters.");
-        }
-        function handler(type) {
-            if (target instanceof EventBus) {
-                target._off(name, eventHandler);
-            }
-            else {
-                target.removeEventListener(name, eventHandler);
-            }
-            if (timeout) {
-                clearTimeout(timeout);
-            }
-            resolve(type);
-        }
-        const eventHandler = handler.bind(null, WaitOnType.EVENT);
-        if (target instanceof EventBus) {
-            target._on(name, eventHandler);
-        }
-        else {
-            target.addEventListener(name, eventHandler);
-        }
-        const timeoutHandler = handler.bind(null, WaitOnType.TIMEOUT);
-        const timeout = setTimeout(timeoutHandler, delay);
-    });
-}
-/**
  * Promise that is resolved when DOM window becomes visible.
  */
 export const animationStarted = new Promise(resolve => {
     globalThis.requestAnimationFrame(resolve);
 });
-/*49-------------------------------------------*/
-/**
- * Simple event bus for an application. Listeners are attached using the `on`
- * and `off` methods. To raise an event, the `dispatch` method shall be used.
- */
-export class EventBus {
-    #listeners = Object.create(null);
-    #isInAutomation;
-    constructor() {
-    }
-    on(eventName, listener, options) {
-        this._on(eventName, listener, { external: true, once: options?.once, });
-    }
-    off(eventName, listener) {
-        this._off(eventName, listener);
-    }
-    dispatch(eventName, data) {
-        const eventListeners = this.#listeners[eventName];
-        if (!eventListeners || eventListeners.length === 0)
-            return;
-        let externalListeners;
-        // Making copy of the listeners array in case if it will be modified
-        // during dispatch.
-        for (const { listener, external, once } of eventListeners.slice(0)) {
-            if (once) {
-                this._off(eventName, listener);
-            }
-            if (external) {
-                (externalListeners ||= []).push(listener);
-                continue;
-            }
-            listener(data);
-        }
-        // Dispatch any "external" listeners *after* the internal ones, to give the
-        // viewer components time to handle events and update their state first.
-        if (externalListeners) {
-            for (const listener of externalListeners) {
-                listener(data);
-            }
-            externalListeners = null;
-        }
-    }
-    /**
-     * @ignore
-     */
-    _on(eventName, listener, options) {
-        const eventListeners = (this.#listeners[eventName] ||= []);
-        eventListeners.push({
-            listener,
-            external: options?.external === true,
-            once: options?.once === true,
-        });
-    }
-    /**
-     * @ignore
-     */
-    _off(eventName, listener) {
-        const eventListeners = this.#listeners[eventName];
-        if (!eventListeners)
-            return;
-        for (let i = 0, ii = eventListeners.length; i < ii; i++) {
-            if (eventListeners[i].listener === listener) {
-                eventListeners.splice(i, 1);
-                return;
-            }
-        }
-    }
-}
-/**
- * NOTE: Only used to support various PDF viewer tests in `mozilla-central`.
- */
-export class AutomationEventBus extends EventBus {
-    dispatch(eventName, data) {
-        throw new Error("Not implemented: AutomationEventBus.dispatch");
-        super.dispatch(eventName, data);
-        const details = Object.create(null);
-        if (data) {
-            for (const key in data) {
-                const value = data[key];
-                if (key === "source") {
-                    if (value === window || value === document) {
-                        return; // No need to re-dispatch (already) global events.
-                    }
-                    continue; // Ignore the `source` property.
-                }
-                details[key] = value;
-            }
-        }
-        const event = document.createEvent("CustomEvent");
-        event.initCustomEvent(eventName, true, true, details);
-        document.dispatchEvent(event);
-    }
-}
 /*64----------------------------------------------------------*/
 export function clamp(v, min, max) {
     return Math.min(Math.max(v, min), max);
@@ -745,26 +622,6 @@ export class ProgressBar {
         }
         this.visible = true;
         this.bar.classList.remove("hidden");
-    }
-}
-/**
- * Moves all elements of an array that satisfy condition to the end of the
- * array, preserving the order of the rest.
- */
-export function moveToEndOfArray(arr, condition) {
-    const moved = [], len = arr.length;
-    let write = 0;
-    for (let read = 0; read < len; ++read) {
-        if (condition(arr[read])) {
-            moved.push(arr[read]);
-        }
-        else {
-            arr[write] = arr[read];
-            ++write;
-        }
-    }
-    for (let read = 0; write < len; ++read, ++write) {
-        arr[write] = moved[read];
     }
 }
 /**

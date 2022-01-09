@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 /* Copyright 2016 Mozilla Foundation
  *
@@ -15,8 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { PresentationModeState, SidebarView } from "./ui_utils.js";
-import { RenderingStates } from "./pdf_rendering_queue.js";
+import { PresentationModeState, RenderingStates, SidebarView } from "./ui_utils.js";
 /*81---------------------------------------------------------------------------*/
 const UI_NOTIFICATION_CLASS = "pdfSidebarNotification";
 export class PDFSidebar {

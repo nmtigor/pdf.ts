@@ -44,6 +44,7 @@ declare class StructElement {
 export interface StructTree {
     type?: string;
     id?: string | undefined;
+    lang?: string;
     role?: string;
     children?: StructTree[];
     alt?: string;

@@ -1,7 +1,7 @@
 import { type ExplicitDest } from "../pdf.ts-src/core/catalog.js";
 import { type PDFLocation } from "./base_viewer.js";
 import { type HistoryInitParms, type HistoryPushParms, type IPDFLinkService } from "./interfaces.js";
-import { EventBus } from "./ui_utils.js";
+import { EventBus } from "./event_utils.js";
 interface PDFHistoryOptions {
     /**
      * The navigation/linking service.

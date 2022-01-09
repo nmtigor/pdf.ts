@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 /* Copyright 2012 Mozilla Foundation
  *
@@ -209,7 +209,7 @@ export class Page {
         });
         // Fetch the page's annotations and save the content
         // in case of interactive form fields.
-        return this.#parsedAnnotations.then(annotations => {
+        return this._parsedAnnotations.then(annotations => {
             const newRefsPromises = [];
             for (const annotation of annotations) {
                 if (!annotation.mustBePrinted(annotationStorage))
@@ -276,7 +276,7 @@ export class Page {
         });
         // Fetch the page's annotations and add their operator lists to the
         // page's operator list to render them.
-        return Promise.all([pageListPromise, this.#parsedAnnotations]).then(([pageOpList, annotations]) => {
+        return Promise.all([pageListPromise, this._parsedAnnotations]).then(([pageOpList, annotations]) => {
             if (annotations.length === 0
                 || intent & RenderingIntentFlag.ANNOTATIONS_DISABLE) {
                 pageOpList.flush(true);
@@ -291,8 +291,8 @@ export class Page {
                     || (intentDisplay && annotation.mustBeViewed(annotationStorage))
                     || (intentPrint && annotation.mustBePrinted(annotationStorage))) {
                     opListPromises.push(annotation
-                        .getOperatorList(partialEvaluator, task, renderForms, annotationStorage)
-                        .catch(reason => {
+                        .getOperatorList(partialEvaluator, task, intent, renderForms, annotationStorage)
+                        .catch((reason) => {
                         warn(`getOperatorList - ignoring annotation data during "${task.name}" task: "${reason}".`);
                         return null;
                     }));
@@ -359,7 +359,7 @@ export class Page {
         return tree;
     }
     getAnnotationsData(intent) {
-        return this.#parsedAnnotations.then(annotations => {
+        return this._parsedAnnotations.then(annotations => {
             const annotationsData = [];
             if (annotations.length === 0)
                 return annotationsData;
@@ -380,7 +380,7 @@ export class Page {
         const annots = this.#getInheritableProperty("Annots");
         return shadow(this, "annotations", Array.isArray(annots) ? annots : []);
     }
-    get #parsedAnnotations() {
+    get _parsedAnnotations() {
         const parsedAnnotations = this.pdfManager
             .ensure(this, "annotations")
             .then(() => {
@@ -388,7 +388,7 @@ export class Page {
             for (const annotationRef of this.annotations) {
                 annotationPromises.push(AnnotationFactory.create(this.xref, annotationRef, this.pdfManager, this.#localIdFactory, 
                 /* collectFields */ false).catch(reason => {
-                    warn(`#parsedAnnotations: "${reason}".`);
+                    warn(`_parsedAnnotations: "${reason}".`);
                     return undefined;
                 }));
             }
@@ -396,7 +396,7 @@ export class Page {
                 return annotations.filter(annotation => !!annotation);
             });
         });
-        return shadow(this, "#parsedAnnotations", parsedAnnotations);
+        return shadow(this, "_parsedAnnotations", parsedAnnotations);
     }
     get jsActions() {
         const actions = collectActions(this.xref, this.pageDict, PageActionEventType);
@@ -461,7 +461,7 @@ export class PDFDocument {
     stream;
     xref;
     catalog;
-    #pagePromises = [];
+    #pagePromises = new Map();
     #version;
     #globalIdFactory;
     get _globalIdFactory() { return this.#globalIdFactory; }
@@ -591,8 +591,12 @@ export class PDFDocument {
     }
     get numPages() {
         let num = 0;
-        if (this.xfaFactory) {
-            num = this.xfaFactory.numPages;
+        if (this.catalog.hasActualNumPages) {
+            num = this.catalog.numPages;
+        }
+        else if (this.xfaFactory) {
+            // num is a Promise.
+            num = this.xfaFactory.getNumPages();
         }
         else if (this.linearization) {
             num = this.linearization.numPages;
@@ -692,10 +696,7 @@ export class PDFDocument {
         return this.xfaFactory ? this.xfaFactory.isValid() : false;
     }
     get htmlForXfa() {
-        return this.xfaFactory
-            ? this.xfaFactory.getPages().html
-            : undefined;
-        // return this.xfaFactory ? this.xfaFactory.getPages() : undefined;
+        return this.xfaFactory ? this.xfaFactory.getPages() : undefined;
     }
     async loadXfaImages() {
         const xfaImagesDict = await this.pdfManager.ensureCatalog("xfaImages");
@@ -978,13 +979,12 @@ export class PDFDocument {
             hashModified ? hexString(hashModified) : undefined,
         ]);
     }
-    #getLinearizationPage(pageIndex) {
+    async #getLinearizationPage(pageIndex) {
         const { catalog, linearization } = this;
         assert(linearization && linearization.pageFirst === pageIndex, "#getLinearizationPage - invalid pageIndex argument.");
         const ref = Ref.get(linearization.objectNumberFirst, 0);
-        return this.xref
-            .fetchAsync(ref)
-            .then(obj => {
+        try {
+            const obj = await this.xref.fetchAsync(ref);
             // Ensure that the object that was found is actually a Page dictionary.
             if (isDict(obj, "Page")
                 || ((obj instanceof Dict) && !obj.has("Type") && obj.has("Contents"))) {
@@ -993,66 +993,137 @@ export class PDFDocument {
                 }
                 return [obj, ref];
             }
-            throw new FormatError("The Linearization dictionary doesn't point " +
-                "to a valid Page dictionary.");
-        })
-            .catch(reason => {
+            throw new FormatError("The Linearization dictionary doesn't point to a valid Page dictionary.");
+        }
+        catch (reason) {
             info(reason);
             return catalog.getPageDict(pageIndex);
-        });
+        }
     }
     getPage(pageIndex) {
-        if (this.#pagePromises[pageIndex] !== undefined) {
-            return this.#pagePromises[pageIndex];
+        const cachedPromise = this.#pagePromises.get(pageIndex);
+        if (cachedPromise)
+            return cachedPromise;
+        const { catalog, linearization, xfaFactory } = this;
+        let promise;
+        if (xfaFactory) {
+            promise = Promise.resolve([Dict.empty, undefined]);
         }
-        const { catalog, linearization } = this;
-        if (this.xfaFactory) {
-            return Promise.resolve(new Page({
-                pdfManager: this.pdfManager,
-                xref: this.xref,
-                pageIndex,
-                pageDict: Dict.empty,
-                ref: undefined,
-                globalIdFactory: this.#globalIdFactory,
-                fontCache: catalog.fontCache,
-                builtInCMapCache: catalog.builtInCMapCache,
-                standardFontDataCache: catalog.standardFontDataCache,
-                globalImageCache: catalog.globalImageCache,
-                nonBlendModesSet: catalog.nonBlendModesSet,
-                xfaFactory: this.xfaFactory,
-            }));
+        else if (linearization && linearization.pageFirst === pageIndex) {
+            promise = this.#getLinearizationPage(pageIndex);
         }
-        const promise = linearization && linearization.pageFirst === pageIndex
-            ? this.#getLinearizationPage(pageIndex)
-            : catalog.getPageDict(pageIndex);
-        return (this.#pagePromises[pageIndex] = promise.then(([pageDict, ref]) => {
+        else {
+            promise = catalog.getPageDict(pageIndex);
+        }
+        promise = promise.then(([pageDict, ref]) => {
             return new Page({
                 pdfManager: this.pdfManager,
                 xref: this.xref,
                 pageIndex,
                 pageDict,
                 ref,
-                globalIdFactory: this.#globalIdFactory,
+                globalIdFactory: this._globalIdFactory,
                 fontCache: catalog.fontCache,
                 builtInCMapCache: catalog.builtInCMapCache,
                 standardFontDataCache: catalog.standardFontDataCache,
                 globalImageCache: catalog.globalImageCache,
                 nonBlendModesSet: catalog.nonBlendModesSet,
-                xfaFactory: undefined,
+                xfaFactory,
             });
-        }));
+        });
+        this.#pagePromises.set(pageIndex, promise);
+        return promise;
     }
-    checkFirstPage() {
-        return this.getPage(0).catch(async (reason) => {
+    async checkFirstPage(recoveryMode = false) {
+        if (recoveryMode)
+            return;
+        try {
+            await this.getPage(0);
+        }
+        catch (reason) {
             if (reason instanceof XRefEntryException) {
                 // Clear out the various caches to ensure that we haven't stored any
                 // inconsistent and/or incorrect state, since that could easily break
                 // subsequent `this.getPage` calls.
-                this.#pagePromises.length = 0;
+                this.#pagePromises.delete(0);
                 await this.cleanup();
-                throw new XRefParseException("");
+                throw new XRefParseException();
             }
-        });
+        }
+    }
+    async checkLastPage(recoveryMode = false) {
+        const { catalog, pdfManager } = this;
+        catalog.setActualNumPages(); // Ensure that it's always reset.
+        let numPages;
+        try {
+            await Promise.all([
+                pdfManager.ensureDoc("xfaFactory"),
+                pdfManager.ensureDoc("linearization"),
+                pdfManager.ensureCatalog("numPages"),
+            ]);
+            // The Page count is always calculated for XFA-documents.
+            if (this.xfaFactory)
+                return;
+            if (this.linearization) {
+                numPages = this.linearization.numPages;
+            }
+            else {
+                numPages = catalog.numPages;
+            }
+            if (!Number.isInteger(numPages))
+                throw new FormatError("Page count is not an integer.");
+            if (numPages <= 1)
+                return;
+            await this.getPage(numPages - 1);
+        }
+        catch (reason) {
+            // Clear out the various caches to ensure that we haven't stored any
+            // inconsistent and/or incorrect state, since that could easily break
+            // subsequent `this.getPage` calls.
+            this.#pagePromises.delete(numPages - 1);
+            await this.cleanup();
+            if (reason instanceof XRefEntryException && !recoveryMode)
+                throw new XRefParseException();
+            warn(`checkLastPage - invalid /Pages tree /Count: ${numPages}.`);
+            let pagesTree;
+            try {
+                pagesTree = await pdfManager.ensureCatalog("getAllPageDicts", [
+                    recoveryMode,
+                ]);
+            }
+            catch (reasonAll) {
+                if (reasonAll instanceof XRefEntryException && !recoveryMode)
+                    throw new XRefParseException();
+                catalog.setActualNumPages(1);
+                return;
+            }
+            for (const [pageIndex, [pageDict, ref]] of pagesTree) {
+                let promise;
+                if (pageDict instanceof Error) {
+                    promise = Promise.reject(pageDict);
+                    // Prevent "uncaught exception: Object"-messages in the console.
+                    promise.catch(() => { });
+                }
+                else {
+                    promise = Promise.resolve(new Page({
+                        pdfManager,
+                        xref: this.xref,
+                        pageIndex,
+                        pageDict,
+                        ref,
+                        globalIdFactory: this._globalIdFactory,
+                        fontCache: catalog.fontCache,
+                        builtInCMapCache: catalog.builtInCMapCache,
+                        standardFontDataCache: catalog.standardFontDataCache,
+                        globalImageCache: catalog.globalImageCache,
+                        nonBlendModesSet: catalog.nonBlendModesSet,
+                        xfaFactory: undefined,
+                    }));
+                }
+                this.#pagePromises.set(pageIndex, promise);
+            }
+            catalog.setActualNumPages(pagesTree.size);
+        }
     }
     fontFallback(id, handler) {
         return this.catalog.fontFallback(id, handler);

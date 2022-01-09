@@ -160,7 +160,7 @@ export declare enum PageActionEventType {
 }
 export declare type ActionEventType = AnnotationActionEventType | DocumentActionEventType | PageActionEventType;
 export declare type ActionEventTypesType = typeof AnnotationActionEventType | typeof DocumentActionEventType | typeof PageActionEventType;
-export declare const enum StreamType {
+export declare enum StreamType {
     UNKNOWN = "UNKNOWN",
     FLATE = "FLATE",
     LZW = "LZW",
@@ -172,7 +172,7 @@ export declare const enum StreamType {
     CCF = "CCF",
     RLX = "RLX"
 }
-export declare const enum FontType {
+export declare enum FontType {
     UNKNOWN = "UNKNOWN",
     TYPE1 = "TYPE1",
     TYPE1STANDARD = "TYPE1STANDARD",
@@ -350,7 +350,7 @@ interface CreateValidAbsoluteUrlOptions {
 export declare function createValidAbsoluteUrl(url: URL | string, baseUrl?: URL | string, options?: CreateValidAbsoluteUrlOptions): URL | null;
 export declare function shadow<T>(obj: any, prop: string | symbol, value: T): T;
 export declare abstract class BaseException extends Error {
-    constructor(message: string, name: string);
+    constructor(message: string | undefined, name: string);
 }
 export declare class PasswordException extends BaseException {
     code: number;
@@ -382,7 +382,7 @@ export declare class FormatError extends BaseException {
 export declare class AbortException extends BaseException {
     constructor(msg: string);
 }
-export declare function removeNullCharacters(str: string): string;
+export declare function removeNullCharacters(str: string, replaceInvisible?: boolean): string;
 export declare function bytesToString(bytes: Uint8Array | Uint8ClampedArray): string;
 export declare function stringToBytes(str: string): Uint8Array;
 /**

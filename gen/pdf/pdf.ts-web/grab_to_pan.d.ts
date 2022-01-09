@@ -5,20 +5,12 @@ interface GrabToPanCtorParms {
      */
     ignoreTarget?: (node: Element) => boolean;
     /**
-     * Called
-     * when grab-to-pan is (de)activated. The first argument is a boolean that
+     * Called when
+     * grab-to-pan is (de)activated. The first argument is a boolean that
      * shows whether grab-to-pan is activated.
      */
     onActiveChanged?: (_: boolean) => unknown;
 }
-/**
- *
- * @param options.element {Element}
- * @param options.ignoreTarget {function} optional.
- * @param options.onActiveChanged {function(boolean)} optional.
- *
- *
- */
 export declare class GrabToPan {
     #private;
     element: HTMLDivElement;
@@ -47,7 +39,7 @@ export declare class GrabToPan {
      * Whether to not pan if the target element is clicked.
      * Override this method to change the default behaviour.
      *
-     * @param node The target of the event
+     * @param node The target of the event.
      * @return Whether to not react to the click event.
      */
     ignoreTarget: (node: Element) => boolean;

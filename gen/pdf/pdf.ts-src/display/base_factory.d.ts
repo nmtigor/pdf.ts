@@ -2,13 +2,11 @@ import { CMapCompressionType } from "../shared/util.js";
 export interface CanvasEntry {
     canvas: HTMLCanvasElement;
     context: CanvasRenderingContext2D;
+    savedCtx?: CanvasRenderingContext2D;
 }
 export declare abstract class BaseCanvasFactory {
     /** @final */
-    create(width: number, height: number): {
-        canvas: HTMLCanvasElement;
-        context: CanvasRenderingContext2D;
-    };
+    create(width: number, height: number): CanvasEntry;
     /** @final */
     reset(canvasAndContext: CanvasEntry, width: number, height: number): void;
     /** @final */

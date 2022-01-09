@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 
 /* Copyright 2012 Mozilla Foundation
@@ -18,12 +18,13 @@
  */
 
 import { createPromiseCap, PromiseCap } from "../../lib/promisecap.js";
-import { EventBus, getPageSizeInches, isPortraitOrientation } from "./ui_utils.js";
+import { getPageSizeInches, isPortraitOrientation } from "./ui_utils.js";
 import { getPdfFilenameFromUrl, PDFDateString } from "../pdf.ts-src/display/display_utils.js";
 import { PDFDocumentProxy } from "../pdf.ts-src/display/api.js";
 import { type IL10n } from "./interfaces.js";
 import { OverlayManager } from "./overlay_manager.js";
 import { type ViewerConfiguration } from "./viewer.js";
+import { EventBus } from "./event_utils.js";
 /*81---------------------------------------------------------------------------*/
 
 const DEFAULT_FIELD_CONTENT = "-";

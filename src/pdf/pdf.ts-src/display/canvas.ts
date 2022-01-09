@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 
 /* Copyright 2012 Mozilla Foundation
@@ -40,7 +40,8 @@ import {
   RadialAxialShadingPattern, 
   type ShadingPattern, 
   type STPattern, 
-  TilingPattern 
+  TilingPattern, 
+  PathType
 } from "./pattern_helper.js";
 import { OptionalContentConfig } from "./optional_content_config.js";
 import { type ImgData, type MarkedContentProps, type SmaskOptions } from "../core/evaluator.js";
@@ -103,10 +104,6 @@ const MIN_FONT_SIZE = 16;
 // Maximum font size that would be used during canvas fillText operations.
 const MAX_FONT_SIZE = 100;
 const MAX_GROUP_SIZE = 4096;
-
-// This value comes from sampling a few PDFs that re-use patterns, there doesn't
-// seem to be any that benefit from caching more than 2 patterns.
-const MAX_CACHED_CANVAS_PATTERNS = 2;
 
 // Defines the time the `executeOperatorList`-method is going to be executing
 // before it stops and shedules a continue of execution.
@@ -466,49 +463,6 @@ export class CachedCanvases
   }
 }
 
-/**
- * Least recently used cache implemented with a JS Map. JS Map keys are ordered
- * by last insertion.
- */
-export class LRUCache 
-{
-  _cache = new Map<RadialAxialShadingPattern, CanvasPattern | null>();
-  has( key:RadialAxialShadingPattern ) {return this._cache.has(key); }
-  clear() { this._cache.clear(); }
-
-  _maxSize;
-
-  constructor( maxSize=0 ) 
-  {
-
-    this._maxSize = maxSize;
-  }
-
-  get( key:RadialAxialShadingPattern ) 
-  {
-    if (this._cache.has(key)) 
-    {
-      // Delete and set the value so it's moved to the end of the map iteration.
-      const value = this._cache.get(key)!;
-      this._cache.delete(key);
-      this._cache.set(key, value);
-    }
-    return this._cache.get(key);
-  }
-
-  set( key:RadialAxialShadingPattern, value:CanvasPattern | null ) 
-  {
-    if (this._maxSize <= 0) return;
-
-    if (this._cache.size + 1 > this._maxSize) 
-    {
-      // Delete the least recently used.
-      this._cache.delete(this._cache.keys().next().value);
-    }
-    this._cache.set(key, value);
-  }
-}
-
 function compileType3Glyph( imgData:ImgData )
 {
   const POINT_TO_PROCESS_LIMIT = 1000;
@@ -777,9 +731,26 @@ class CanvasExtraState
     this.updatePathMinMax(transform, box[2], box[3]);
   }
 
-  getPathBoundingBox():rect_t
+  getPathBoundingBox( pathType=PathType.FILL, transform?:matrix_t ):rect_t
   {
-    return [this.minX, this.minY, this.maxX, this.maxY];
+    const box:rect_t = [this.minX, this.minY, this.maxX, this.maxY];
+    if (pathType === PathType.STROKE) 
+    {
+      if (!transform) 
+      {
+        assert(0,"Stroke bounding box must include transform.");
+      }
+      // Stroked paths can be outside of the path bounding box by 1/2 the line
+      // width.
+      const scale = Util.singularValueDecompose2dScale(transform!);
+      const xStrokePad = (scale[0] * this.lineWidth) / 2;
+      const yStrokePad = (scale[1] * this.lineWidth) / 2;
+      box[0] -= xStrokePad;
+      box[1] -= yStrokePad;
+      box[2] += xStrokePad;
+      box[3] += yStrokePad;
+    }
+    return box;
   }
 
   updateClipFromPath() 
@@ -797,9 +768,12 @@ class CanvasExtraState
     this.maxY = 0;
   }
 
-  getClippedPathBoundingBox() 
+  getClippedPathBoundingBox( pathType=PathType.FILL, transform?:matrix_t ) 
   {
-    return Util.intersect(this.clipBox, this.getPathBoundingBox());
+    return Util.intersect(
+      this.clipBox,
+      this.getPathBoundingBox(pathType, transform)
+    );
   }
 }
 
@@ -1337,8 +1311,12 @@ export class CanvasGraphics
   markedContentStack:{ visible:boolean; }[] = [];
   optionalContentConfig;
   cachedCanvases;
-  cachedCanvasPatterns;
   cachedPatterns = new Map<ShadingType, ShadingPattern>();
+  annotationCanvas?:CanvasEntry;
+  annotationCanvasMap;
+  viewportScale = 1;
+  outputScaleX = 1;
+  outputScaleY = 1;
 
   #cachedGetSinglePixelWidth:number | undefined;
 
@@ -1354,6 +1332,7 @@ export class CanvasGraphics
     canvasFactory:BaseCanvasFactory,
     imageLayer?:ImageLayer,
     optionalContentConfig?:OptionalContentConfig,
+    annotationCanvasMap?:Map<string, HTMLCanvasElement>
   ) {
     this.ctx = canvasCtx;
     this.current = new CanvasExtraState(
@@ -1366,8 +1345,9 @@ export class CanvasGraphics
     this.imageLayer = imageLayer;
     this.optionalContentConfig = optionalContentConfig;
     this.cachedCanvases = new CachedCanvases( this.canvasFactory );
-    this.cachedCanvasPatterns = new LRUCache(MAX_CACHED_CANVAS_PATTERNS);
-    if (canvasCtx) 
+
+    this.annotationCanvasMap = annotationCanvasMap;
+    if( canvasCtx )
     {
       // NOTE: if mozCurrentTransform is polyfilled, then the current state of
       // the transformation must already be set in canvasCtx._transformMatrix.
@@ -1416,8 +1396,12 @@ export class CanvasGraphics
     if( transform )
     {
       this.ctx.transform.apply(this.ctx, transform);
+      this.outputScaleX = transform[0];
+      this.outputScaleY = transform[0];
     }
     this.ctx.transform.apply(this.ctx, viewport.transform);
+    this.viewportScale = viewport.scale;
+
     this.baseTransform = <matrix_t>this.ctx.mozCurrentTransform.slice();
     this.#combinedScaleFactor = Math.hypot(
       this.baseTransform![0],
@@ -1521,7 +1505,6 @@ export class CanvasGraphics
     }
 
     this.cachedCanvases.clear();
-    this.cachedCanvasPatterns.clear();
     this.cachedPatterns.clear();
 
     this.imageLayer?.endLayout();
@@ -1668,7 +1651,7 @@ export class CanvasGraphics
       -offsetY,
     ]);
     fillCtx.fillStyle = isPatternFill
-      ? (<STPattern>fillColor).getPattern( ctx, this, inverse, false )!
+      ? (<STPattern>fillColor).getPattern(ctx, this, inverse, PathType.FILL)!
       : <string | CanvasGradient | CanvasPattern>fillColor;
 
     fillCtx.fillRect(0, 0, width, height);
@@ -2040,7 +2023,8 @@ export class CanvasGraphics
         ctx.strokeStyle = strokeColor.getPattern(
           ctx,
           this,
-          ctx.mozCurrentTransformInverse
+          ctx.mozCurrentTransformInverse,
+          PathType.STROKE
         )!;
         // Prevent drawing too thin lines by enforcing a minimum line width.
         ctx.lineWidth = Math.max(lineWidth, this.current.lineWidth);
@@ -2092,7 +2076,8 @@ export class CanvasGraphics
       ctx.fillStyle = (<STPattern>fillColor).getPattern(
         ctx,
         this,
-        ctx.mozCurrentTransformInverse
+        ctx.mozCurrentTransformInverse,
+        PathType.FILL
       )!;
       needRestore = true;
     }
@@ -2439,29 +2424,30 @@ export class CanvasGraphics
       !current.patternFill;
 
     ctx.save();
-    let patternTransform:matrix_t;
-    if( current.patternFill )
-    {
-      // TODO: Patterns are not applied correctly to text if a non-embedded
-      // font is used. E.g. issue 8111 and ShowText-ShadingPattern.pdf.
-      ctx.save();
-      const pattern = (<TilingPattern>current.fillColor).getPattern(
-        ctx,
-        this,
-        ctx.mozCurrentTransformInverse
-      );
-      patternTransform = ctx.mozCurrentTransform;
-      ctx.restore();
-      ctx.fillStyle = pattern!;
-    }
     ctx.transform.apply(ctx, current.textMatrix);
     ctx.translate(current.x, current.y + current.textRise);
 
-    if (fontDirection > 0) {
+    if (fontDirection > 0) 
+    {
       ctx.scale(textHScale, -1);
     } 
     else {
       ctx.scale(textHScale, 1);
+    }
+
+    let patternTransform:matrix_t;
+    if( current.patternFill )
+    {
+      ctx.save();
+      const pattern = (<TilingPattern>current.fillColor).getPattern(
+        ctx,
+        this,
+        ctx.mozCurrentTransformInverse,
+        PathType.FILL
+      );
+      patternTransform = ctx.mozCurrentTransform;
+      ctx.restore();
+      ctx.fillStyle = pattern!;
     }
 
     let lineWidth = current.lineWidth;
@@ -2755,10 +2741,7 @@ export class CanvasGraphics
       pattern = this.cachedPatterns.get(objId)!;
     } 
     else {
-      pattern = getShadingPattern(
-        <ShadingPatternIR>this.objs.get(<any>objId),
-        this.cachedCanvasPatterns
-      );
+      pattern = getShadingPattern(<ShadingPatternIR>this.objs.get( String(objId) ));
       this.cachedPatterns.set(objId, pattern);
     }
     if (matrix) 
@@ -2780,7 +2763,7 @@ export class CanvasGraphics
       ctx,
       this,
       ctx.mozCurrentTransformInverse,
-      true
+      PathType.SHADING
     )!;
 
     const inv = ctx.mozCurrentTransformInverse;
@@ -3065,26 +3048,69 @@ export class CanvasGraphics
   }
 
   [ OPS.beginAnnotation ](
-    id:unknown,
+    id:string,
     rect:rect_t,
     transform:matrix_t,
-    matrix:matrix_t
+    matrix:matrix_t,
+    hasOwnCanvas:boolean
   ) {
     this[ OPS.save ]();
-    resetCtxToDefault(this.ctx);
+
+    if( Array.isArray(rect) && rect.length === 4 )
+    {
+      const width = rect[2] - rect[0];
+      const height = rect[3] - rect[1];
+
+      if( hasOwnCanvas && this.annotationCanvasMap )
+      {
+        transform = <matrix_t>transform.slice();
+        transform[4] -= rect[0];
+        transform[5] -= rect[1];
+
+        rect = <rect_t>rect.slice();
+        rect[0] = rect[1] = 0;
+        rect[2] = width;
+        rect[3] = height;
+
+        const [scaleX, scaleY] = Util.singularValueDecompose2dScale(
+          this.ctx.mozCurrentTransform
+        );
+        const { viewportScale } = this;
+        const canvasWidth = Math.ceil(
+          width * this.outputScaleX * viewportScale
+        );
+        const canvasHeight = Math.ceil(
+          height * this.outputScaleY * viewportScale
+        );
+
+        this.annotationCanvas = this.canvasFactory.create(
+          canvasWidth,
+          canvasHeight
+        );
+        const { canvas, context } = this.annotationCanvas;
+        canvas.style.width = `calc(${width}px * var(--viewport-scale-factor))`;
+        canvas.style.height = `calc(${height}px * var(--viewport-scale-factor))`;
+        this.annotationCanvasMap.set(id, canvas);
+        this.annotationCanvas.savedCtx = this.ctx;
+        this.ctx = context;
+        this.ctx.setTransform(scaleX, 0, 0, -scaleY, 0, height * scaleY);
+        addContextCurrentTransform(this.ctx);
+
+        resetCtxToDefault(this.ctx);
+      } 
+      else {
+        resetCtxToDefault(this.ctx);
+
+        this.ctx.rect(rect[0], rect[1], width, height);
+        this[ OPS.clip ]();
+        this[ OPS.endPath ]();
+      }
+    }
+
     this.current = new CanvasExtraState(
       this.ctx.canvas.width,
       this.ctx.canvas.height
     );
-
-    if (Array.isArray(rect) && rect.length === 4) 
-    {
-      const width = rect[2] - rect[0];
-      const height = rect[3] - rect[1];
-      this.ctx.rect(rect[0], rect[1], width, height);
-      this[ OPS.clip ]();
-      this[ OPS.endPath ]();
-    }
 
     this[ OPS.transform ].apply(this, transform);
     this[ OPS.transform ].apply(this, matrix);
@@ -3092,6 +3118,12 @@ export class CanvasGraphics
 
   [ OPS.endAnnotation ]()
   {
+    if( this.annotationCanvas )
+    {
+      this.ctx = this.annotationCanvas.savedCtx!;
+      delete this.annotationCanvas.savedCtx;
+      delete this.annotationCanvas;
+    }
     this[ OPS.restore ]();
   }
 
@@ -3197,7 +3229,7 @@ export class CanvasGraphics
             maskCtx,
             this,
             ctx.mozCurrentTransformInverse,
-            false
+            PathType.FILL
           )!
         : <string | CanvasGradient | CanvasPattern>fillColor;
       maskCtx.fillRect(0, 0, width, height);
@@ -3454,6 +3486,7 @@ export class CanvasGraphics
       }
       this.pendingClip = undefined;
     }
+    this.current.startNewPathAndClipBox(this.current.clipBox);
     ctx.beginPath();
   }
 

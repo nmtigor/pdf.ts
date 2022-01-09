@@ -1,26 +1,34 @@
 import { type XFAData } from "../document.js";
 import { DataHandler } from "./data.js";
-import { type XFAHTMLObj } from "./alias.js";
-import { HTMLResult } from "./utils.js";
+import { type XFAElObj, type XFAHTMLObj } from "./alias.js";
 import { type rect_t } from "../../shared/util.js";
 import { ErrorFont, Font } from "../fonts.js";
 import { type AnnotStorageRecord } from "../../display/annotation_layer.js";
-import { Subform, Template } from "./template.js";
+import { Template } from "./template.js";
+export interface XFAPages {
+    name: string;
+    children: XFAElObj[];
+}
 export declare class XFAFactory {
     root: import("./xfa_object.js").XFAObject | undefined;
-    form: Subform | Template;
+    form: Template;
     dataHandler: DataHandler | undefined;
-    pages: HTMLResult | undefined;
+    pages: XFAPages | undefined;
     dims: rect_t[];
     constructor(data: XFAData);
     isValid(): boolean;
-    _createPages(): void;
+    /**
+     * In order to avoid to block the event loop, the conversion
+     * into pages is made asynchronously.
+     */
+    _createPagesHelper(): Promise<XFAPages>;
+    _createPages(): Promise<void>;
     getBoundingBox(pageIndex: number): [number, number, number, number];
-    get numPages(): number;
+    getNumPages(): Promise<number>;
     setImages(images: Map<string, Uint8Array | Uint8ClampedArray>): void;
     setFonts(fonts: (Font | ErrorFont)[]): string[] | undefined;
     appendFonts(fonts: (Font | ErrorFont)[], reallyMissingFonts: Set<string>): void;
-    getPages(): HTMLResult;
+    getPages(): Promise<XFAPages>;
     serializeData(storage: AnnotStorageRecord | undefined): string;
     static _createDocument(data: XFAData): string;
     static getRichTextAsHtml(rc: string): {

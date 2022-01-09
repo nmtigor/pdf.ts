@@ -1,2 +1,2 @@
-import "../../../lib/jslang.js";
+export {};
 //# sourceMappingURL=api_test.d.ts.map

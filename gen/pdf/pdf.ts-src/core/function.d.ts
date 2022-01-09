@@ -1,4 +1,5 @@
 import { Dict, type ObjNoRef, Ref } from "./primitives.js";
+import { LocalFunctionCache } from "./image_utils.js";
 export declare class PDFFunctionFactory {
     #private;
     xref: XRef;
@@ -10,6 +11,7 @@ export declare class PDFFunctionFactory {
     create(fn: Ref | BaseStream | Dict): NsPDFFunction.ParsedFunction;
     createFromArray(fnObj: Ref | Dict | BaseStream): NsPDFFunction.ParsedFunction;
     getCached(cacheKey: Ref | Dict | BaseStream): NsPDFFunction.ParsedFunction | null;
+    get _localFunctionCache(): LocalFunctionCache;
 }
 declare namespace NsPDFFunction {
     const enum FunctionType {

@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 /* Copyright 2012 Mozilla Foundation
  *
@@ -49,9 +49,9 @@ export class JpegStream extends ImageStream {
         }
         const jpegOptions = {};
         // Checking if values need to be transformed before conversion.
-        const decodeArr = this.dict.getArray("Decode", "D");
+        const decodeArr = this.dict.getArray("D", "Decode");
         if (this.forceRGB && Array.isArray(decodeArr)) {
-            const bitsPerComponent = this.dict.get("BitsPerComponent") || 8;
+            const bitsPerComponent = this.dict.get("BPC", "BitsPerComponent") || 8;
             const decodeArrLength = decodeArr.length;
             const transform = new Int32Array(decodeArrLength);
             let transformNeeded = false;

@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 
 /* Copyright 2021 Mozilla Foundation
@@ -17,7 +17,10 @@
  * limitations under the License.
  */
 
-/** @typedef {import("./interfaces").IPDFXfaLayerFactory} IPDFXfaLayerFactory */
+/** @typedef {import("../src/display/api").PDFPageProxy} PDFPageProxy */
+// eslint-disable-next-line max-len
+/** @typedef {import("../src/display/display_utils").PageViewport} PageViewport */
+/** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
 
 import { html } from "../../lib/dom.js";
 import { type XFAData } from "../pdf.ts-src/core/document.js";
@@ -25,7 +28,6 @@ import { type XFAElData, type XFAElObj } from "../pdf.ts-src/core/xfa/alias.js";
 import { AnnotationStorage } from "../pdf.ts-src/display/annotation_storage.js";
 import { type AnnotIntent, PDFPageProxy } from "../pdf.ts-src/display/api.js";
 import { PageViewport } from "../pdf.ts-src/display/display_utils.js";
-import { SimpleLinkService } from "./pdf_link_service.js";
 import { XfaLayer } from "../pdf.ts-src/display/xfa_layer.js";
 import { type IPDFLinkService, type IPDFXfaLayerFactory } from "./interfaces.js";
 /*81---------------------------------------------------------------------------*/
@@ -63,9 +65,9 @@ export class XfaLayerBuilder
   constructor({ 
     pageDiv, 
     pdfPage, 
-    annotationStorage, 
+    annotationStorage=undefined, 
     linkService, 
-    xfaHtml 
+    xfaHtml=undefined 
   }:XfaLayerBuilderOptions ) {
     this.pageDiv = pageDiv;
     this.pdfPage = pdfPage;
@@ -86,8 +88,7 @@ export class XfaLayerBuilder
       const parameters = {
         viewport: viewport.clone({ dontFlip: true }),
         div: this.div!,
-        xfa: <XFAElObj | undefined>this.xfaHtml,
-        page: undefined,
+        xfaHtml: <XFAElObj>this.xfaHtml,
         annotationStorage: this.annotationStorage,
         linkService: this.linkService,
         intent,
@@ -105,13 +106,13 @@ export class XfaLayerBuilder
     // intent === "display"
     return this.pdfPage!
       .getXfa()!
-      .then( xfa => {
-        if (this.#cancelled || !xfa) return { textDivs: [] };
+      .then( xfaHtml => {
+        if (this.#cancelled || !xfaHtml) return { textDivs: [] };
 
         const parameters = {
           viewport: viewport.clone({ dontFlip: true }),
           div: this.div!,
-          xfa: <XFAElObj | undefined>xfa,
+          xfaHtml: <XFAElObj>xfaHtml,
           page: this.pdfPage,
           annotationStorage: this.annotationStorage,
           linkService: this.linkService,
@@ -138,24 +139,6 @@ export class XfaLayerBuilder
     if( !this.div ) return;
     
     this.div.hidden = true;
-  }
-}
-
-export class DefaultXfaLayerFactory implements IPDFXfaLayerFactory
-{
-  createXfaLayerBuilder( 
-    pageDiv:HTMLDivElement, 
-    pdfPage?:PDFPageProxy,
-    annotationStorage?:AnnotationStorage,
-    xfaHtml?:XFAElData
-  ) {
-    return new XfaLayerBuilder({
-      pageDiv,
-      pdfPage,
-      annotationStorage,
-      linkService: new SimpleLinkService(),
-      xfaHtml,
-    });
   }
 }
 /*81---------------------------------------------------------------------------*/

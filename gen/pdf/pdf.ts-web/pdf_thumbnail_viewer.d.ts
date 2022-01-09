@@ -1,9 +1,9 @@
-import { EventBus } from "./ui_utils.js";
 import { PDFThumbnailView } from "./pdf_thumbnail_view.js";
 import { type IL10n, type IPDFLinkService } from "./interfaces.js";
 import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
 import { PDFDocumentProxy, PDFPageProxy } from '../pdf.ts-src/display/api.js';
 import { OptionalContentConfig } from '../pdf.ts-src/display/optional_content_config.js';
+import { EventBus } from "./event_utils.js";
 interface PDFThumbnailViewerOptions {
     /**
      * The container for the thumbnail elements.

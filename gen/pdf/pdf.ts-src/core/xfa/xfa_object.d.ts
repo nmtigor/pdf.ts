@@ -66,6 +66,7 @@ export declare const $setSetAttributes: unique symbol;
 export declare const $setValue: unique symbol;
 export declare const $tabIndex: unique symbol;
 export declare const $text: unique symbol;
+export declare const $toPages: unique symbol;
 export declare const $toHTML: unique symbol;
 export declare const $toString: unique symbol;
 export declare const $toStyle: unique symbol;

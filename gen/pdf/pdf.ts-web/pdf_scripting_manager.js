@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 /* Copyright 2021 Mozilla Foundation
  *
@@ -15,10 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/** @typedef {import("./event_utils").EventBus} EventBus */
 import { createPromiseCap } from "../../lib/promisecap.js";
 import { shadow } from "../pdf.ts-src/shared/util.js";
-import { apiPageLayoutToViewerModes } from "./ui_utils.js";
-import { RenderingStates } from "./pdf_rendering_queue.js";
+import { apiPageLayoutToViewerModes, RenderingStates } from "./ui_utils.js";
 export class PDFScriptingManager {
     #pdfDocument;
     #pdfViewer;

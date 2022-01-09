@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 import { assert } from "../../../lib/util/trace.js";
 import { MissingPDFException, UnexpectedResponseException, } from "../shared/util.js";

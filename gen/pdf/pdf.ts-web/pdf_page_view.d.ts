@@ -5,13 +5,14 @@ import { OptionalContentConfig } from "../pdf.ts-src/display/optional_content_co
 import { AnnotationMode, type point_t } from "../pdf.ts-src/shared/util.js";
 import { type ErrorMoreInfo } from "./app.js";
 import { type IL10n, type IPDFAnnotationLayerFactory, type IPDFStructTreeLayerFactory, type IPDFTextLayerFactory, type IPDFXfaLayerFactory, type IVisibleView } from "./interfaces.js";
-import { PDFRenderingQueue, RenderingStates } from "./pdf_rendering_queue.js";
+import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
 import { AnnotationLayerBuilder } from "./annotation_layer_builder.js";
 import { TextLayerBuilder } from "./text_layer_builder.js";
-import { EventBus, type EventMap, type OutputScale, RendererType, TextLayerMode } from "./ui_utils.js";
+import { type OutputScale, RendererType, TextLayerMode, RenderingStates } from "./ui_utils.js";
 import { StructTreeLayerBuilder } from "./struct_tree_layer_builder.js";
 import { XfaLayerBuilder } from "./xfa_layer_builder.js";
 import { BaseViewer } from "./base_viewer.js";
+import { EventBus, EventMap } from "./event_utils.js";
 interface PDFPageViewOptions {
     /**
      * The viewer element.
@@ -103,8 +104,10 @@ interface PDFPageViewUpdateParms {
 }
 export declare class PDFPageView implements IVisibleView {
     #private;
-    readonly id: number; /** @implements */
-    readonly renderingId: string; /** @implements */
+    /** @implements */
+    readonly id: number;
+    /** @implements */
+    readonly renderingId: string;
     pdfPage?: PDFPageProxy;
     pageLabel?: string | undefined;
     rotation: number;
@@ -117,7 +120,6 @@ export declare class PDFPageView implements IVisibleView {
     _optionalContentConfigPromise: Promise<OptionalContentConfig | undefined> | undefined;
     hasRestrictedScaling: boolean;
     textLayerMode: TextLayerMode;
-    _annotationMode: AnnotationMode;
     imageResourcesPath: string;
     useOnlyCssZoom: boolean;
     maxCanvasPixels: number;
@@ -136,6 +138,7 @@ export declare class PDFPageView implements IVisibleView {
     resume?: (() => void) | undefined; /** @implements */
     _renderError?: ErrorMoreInfo | undefined;
     _isStandalone: boolean;
+    _annotationCanvasMap: Map<string, HTMLCanvasElement> | undefined;
     annotationLayer: AnnotationLayerBuilder | undefined;
     textLayer: TextLayerBuilder | undefined;
     zoomLayer: HTMLElement | undefined;
@@ -168,6 +171,10 @@ export declare class PDFPageView implements IVisibleView {
     }): void;
     cssTransform({ target, redrawAnnotationLayer, redrawXfaLayer, }: CssTransformParms): void;
     getPagePoint(x: number, y: number): point_t;
+    /**
+     * @ignore
+     */
+    toggleLoadingIconSpinner(viewVisible?: boolean): void;
     draw(): Promise<void>;
     paintOnCanvas(canvasWrapper: HTMLDivElement): PaintTask;
     paintOnSvg(wrapper: HTMLDivElement): PaintTask;

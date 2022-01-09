@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 
 /* Copyright 2021 Mozilla Foundation
@@ -17,8 +17,7 @@
  * limitations under the License.
  */
 
-// eslint-disable-next-line max-len
-/** @typedef {import("./interfaces").IPDFStructTreeLayerFactory} IPDFStructTreeLayerFactory */
+/** @typedef {import("../src/display/api").PDFPageProxy} PDFPageProxy */
 
 import { html } from "../../lib/dom.js";
 import { type StructTree } from "../pdf.ts-src/core/struct_tree.js";
@@ -106,13 +105,17 @@ export class StructTreeLayerBuilder
 
   #setAttributes( structElement:StructTree, htmlElement:HTMLSpanElement )
   {
-    if (structElement.alt !== undefined) 
+    if( structElement.alt !== undefined )
     {
       htmlElement.setAttribute("aria-label", structElement.alt);
     }
-    if (structElement.id !== undefined) 
+    if( structElement.id !== undefined )
     {
       htmlElement.setAttribute("aria-owns", structElement.id);
+    }
+    if( structElement.lang !== undefined )
+    {
+      htmlElement.setAttribute("lang", structElement.lang);
     }
   }
 
@@ -154,16 +157,6 @@ export class StructTreeLayerBuilder
       }
     }
     return element;
-  }
-}
-
-export class DefaultStructTreeLayerFactory implements IPDFStructTreeLayerFactory
-{
-  createStructTreeLayerBuilder( pdfPage:PDFPageProxy )
-  {
-    return new StructTreeLayerBuilder({
-      pdfPage,
-    });
   }
 }
 /*81---------------------------------------------------------------------------*/

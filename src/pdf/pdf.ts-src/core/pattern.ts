@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 
 /* Copyright 2012 Mozilla Foundation
@@ -197,7 +197,7 @@ class RadialAxialShading extends BaseShading
     this.coordsArr = < TupleOf<number,4|6> >dict.getArray("Coords");
     this.shadingType = <ShadingType>dict.get("ShadingType");
     const cs = ColorSpace.parse({
-      cs: <CS>(dict.getRaw("ColorSpace") || dict.getRaw("CS")),
+      cs: <CS>(dict.getRaw("CS") || dict.getRaw("ColorSpace")),
       xref,
       resources,
       pdfFunctionFactory,
@@ -566,7 +566,7 @@ export class MeshShading extends BaseShading
       this.bbox = undefined;
     }
     const cs = ColorSpace.parse({
-      cs: <CS>(dict.getRaw("ColorSpace") || dict.getRaw("CS")),
+      cs: <CS>(dict.getRaw("CS") || dict.getRaw("ColorSpace")),
       xref,
       resources,
       pdfFunctionFactory,

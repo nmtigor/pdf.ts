@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 /* Copyright 2012 Mozilla Foundation
  *
@@ -17,7 +17,7 @@
  */
 import { SCROLLBAR_PADDING, ScrollMode, SpreadMode } from "./ui_utils.js";
 import { CursorTool } from "./pdf_cursor_tools.js";
-import { PDFSinglePageViewer } from "./pdf_viewer.js";
+import { PagesCountLimit } from "./base_viewer.js";
 export class SecondaryToolbar {
     toolbar;
     toggleButton;
@@ -134,16 +134,6 @@ export class SecondaryToolbar {
         this._bindSpreadModeListener(options);
         // Bind the event listener for adjusting the 'max-height' of the toolbar.
         this.eventBus._on("resize", this.#setMaxHeight);
-        // Hide the Scroll/Spread mode buttons, when they're not applicable to the
-        // current `BaseViewer` instance (in particular `PDFSinglePageViewer`).
-        this.eventBus._on("baseviewerinit", evt => {
-            if (evt.source instanceof PDFSinglePageViewer) {
-                this.toolbarButtonContainer.classList.add("hiddenScrollModeButtons", "hiddenSpreadModeButtons");
-            }
-            else {
-                this.toolbarButtonContainer.classList.remove("hiddenScrollModeButtons", "hiddenSpreadModeButtons");
-            }
-        });
     }
     get isOpen() {
         return this.opened;
@@ -195,18 +185,25 @@ export class SecondaryToolbar {
         });
     }
     _bindScrollModeListener(buttons) {
-        function scrollModeChanged({ mode }) {
+        const scrollModeChanged = ({ mode }) => {
             buttons.scrollPageButton.classList.toggle("toggled", mode === ScrollMode.PAGE);
             buttons.scrollVerticalButton.classList.toggle("toggled", mode === ScrollMode.VERTICAL);
             buttons.scrollHorizontalButton.classList.toggle("toggled", mode === ScrollMode.HORIZONTAL);
             buttons.scrollWrappedButton.classList.toggle("toggled", mode === ScrollMode.WRAPPED);
+            // Permanently *disable* the Scroll buttons when PAGE-scrolling is being
+            // enforced for *very* long/large documents; please see the `BaseViewer`.
+            const forceScrollModePage = this.pagesCount > PagesCountLimit.FORCE_SCROLL_MODE_PAGE;
+            buttons.scrollPageButton.disabled = forceScrollModePage;
+            buttons.scrollVerticalButton.disabled = forceScrollModePage;
+            buttons.scrollHorizontalButton.disabled = forceScrollModePage;
+            buttons.scrollWrappedButton.disabled = forceScrollModePage;
             // Temporarily *disable* the Spread buttons when horizontal scrolling is
             // enabled, since the non-default Spread modes doesn't affect the layout.
             const isScrollModeHorizontal = mode === ScrollMode.HORIZONTAL;
             buttons.spreadNoneButton.disabled = isScrollModeHorizontal;
             buttons.spreadOddButton.disabled = isScrollModeHorizontal;
             buttons.spreadEvenButton.disabled = isScrollModeHorizontal;
-        }
+        };
         this.eventBus._on("scrollmodechanged", scrollModeChanged);
         this.eventBus._on("secondarytoolbarreset", (evt) => {
             if (evt.source === this) {

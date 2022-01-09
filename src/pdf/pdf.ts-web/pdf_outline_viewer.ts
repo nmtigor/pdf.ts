@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 
 /* Copyright 2012 Mozilla Foundation
@@ -54,7 +54,7 @@ export class PDFOutlineViewer extends BaseTreeViewer
   _currentPageNumber!:number;
   _sidebarView?:SidebarView;
   
-  _isPagesLoaded!:boolean;
+  _isPagesLoaded!:boolean | undefined;
   #currentOutlineItemCapability?:PromiseCap<boolean> | undefined;
 
   linkService:PDFLinkService;
@@ -98,12 +98,11 @@ export class PDFOutlineViewer extends BaseTreeViewer
   override reset()
   {
     super.reset();
-
     this.#outline = undefined;
 
     this.#pageNumberToDestHashCapability = undefined;
     this._currentPageNumber = 1;
-    this._isPagesLoaded = false;
+    this._isPagesLoaded = undefined;
 
     if( this.#currentOutlineItemCapability
      && !this.#currentOutlineItemCapability.settled
@@ -122,9 +121,11 @@ export class PDFOutlineViewer extends BaseTreeViewer
     ) {
       this.#currentOutlineItemCapability.resolve(/* enabled = */ false);
     } 
-    else if (this._isPagesLoaded) 
+    else if (this._isPagesLoaded !== undefined ) 
     {
-      this.#currentOutlineItemCapability.resolve(/* enabled = */ true);
+      this.#currentOutlineItemCapability.resolve(
+        /* enabled = */ this._isPagesLoaded
+      );
     }
 
     this.eventBus.dispatch("outlineloaded", {
@@ -343,12 +344,12 @@ export class PDFOutlineViewer extends BaseTreeViewer
 
           if( isObjectLike(destRef) ) 
           {
-            pageNumber = this.linkService._cachedPageNumber( <Ref>destRef );
+            pageNumber = this.linkService._cachedPageNumber( destRef );
 
             if( !pageNumber )
             {
               try {
-                pageNumber = (await pdfDocument.getPageIndex( <Ref>destRef )) + 1;
+                pageNumber = (await pdfDocument.getPageIndex( destRef )) + 1;
 
                 if (pdfDocument !== this._pdfDocument) 
                 {

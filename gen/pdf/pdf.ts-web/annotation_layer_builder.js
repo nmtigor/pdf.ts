@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 /* Copyright 2014 Mozilla Foundation
  *
@@ -15,10 +15,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/** @typedef {import("../src/display/api").PDFPageProxy} PDFPageProxy */
 // eslint-disable-next-line max-len
-/** @typedef {import("./interfaces").IPDFAnnotationLayerFactory} IPDFAnnotationLayerFactory */
+/** @typedef {import("../src/display/display_utils").PageViewport} PageViewport */
+/** @typedef {import("./interfaces").IDownloadManager} IDownloadManager */
+/** @typedef {import("./interfaces").IL10n} IL10n */
+/** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
 import { AnnotationLayer } from "../pdf.ts-src/pdf.js";
-import { SimpleLinkService } from "./pdf_link_service.js";
 import { NullL10n } from "./l10n_utils.js";
 import { html } from "../../lib/dom.js";
 export class AnnotationLayerBuilder {
@@ -34,9 +37,10 @@ export class AnnotationLayerBuilder {
     _hasJSActionsPromise;
     _fieldObjectsPromise;
     _mouseState;
+    _annotationCanvasMap;
     div;
     _cancelled = false;
-    constructor({ pageDiv, pdfPage, linkService, downloadManager, annotationStorage, imageResourcesPath = "", renderForms = true, l10n = NullL10n, enableScripting = false, hasJSActionsPromise, fieldObjectsPromise, mouseState, }) {
+    constructor({ pageDiv, pdfPage, linkService, downloadManager, annotationStorage, imageResourcesPath = "", renderForms = true, l10n = NullL10n, enableScripting = false, hasJSActionsPromise, fieldObjectsPromise, mouseState, annotationCanvasMap = undefined, }) {
         this.pageDiv = pageDiv;
         this.pdfPage = pdfPage;
         this.linkService = linkService;
@@ -49,6 +53,7 @@ export class AnnotationLayerBuilder {
         this._hasJSActionsPromise = hasJSActionsPromise;
         this._fieldObjectsPromise = fieldObjectsPromise;
         this._mouseState = mouseState;
+        this._annotationCanvasMap = annotationCanvasMap;
     }
     /**
      * @param viewport
@@ -102,24 +107,6 @@ export class AnnotationLayerBuilder {
         if (!this.div)
             return;
         this.div.hidden = true;
-    }
-}
-export class DefaultAnnotationLayerFactory {
-    /** @implements */
-    createAnnotationLayerBuilder(pageDiv, pdfPage, annotationStorage, imageResourcesPath = "", renderForms = true, l10n = NullL10n, enableScripting = false, hasJSActionsPromise, mouseState, fieldObjectsPromise) {
-        return new AnnotationLayerBuilder({
-            pageDiv,
-            pdfPage,
-            imageResourcesPath,
-            renderForms,
-            linkService: new SimpleLinkService(),
-            l10n,
-            annotationStorage,
-            enableScripting,
-            hasJSActionsPromise,
-            fieldObjectsPromise,
-            mouseState,
-        });
     }
 }
 /*81---------------------------------------------------------------------------*/

@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 
 /* Copyright 2012 Mozilla Foundation
@@ -223,7 +223,7 @@ export type ActionEventTypesType =
   | typeof PageActionEventType
 ;
 
-export const enum StreamType {
+export enum StreamType {
   UNKNOWN = "UNKNOWN",
   FLATE = "FLATE",
   LZW = "LZW",
@@ -236,7 +236,7 @@ export const enum StreamType {
   RLX = "RLX", // PDF short name is 'RL', but telemetry requires three chars.
 }
 
-export const enum FontType {
+export enum FontType {
   UNKNOWN = "UNKNOWN",
   TYPE1 = "TYPE1",
   TYPE1STANDARD = "TYPE1STANDARD",
@@ -520,6 +520,9 @@ export function createValidAbsoluteUrl( url:URL | string, baseUrl?:URL | string,
 
 export function shadow<T>( obj:any, prop:string | symbol, value:T ):T
 {
+  // #if !PRODUCTION || TESTING
+    assert(  prop in obj, `shadow: Property "${prop && prop.toString()}" not found in object.` );
+  // #endif
   Object.defineProperty( obj, prop, {
     value,
     enumerable: true,
@@ -531,7 +534,7 @@ export function shadow<T>( obj:any, prop:string | symbol, value:T ):T
 
 export abstract class BaseException extends Error
 {
-  constructor( message:string, name:string )
+  constructor( message:string | undefined, name:string )
   {
     super( message );
     this.name = name;
@@ -600,13 +603,19 @@ export class AbortException extends BaseException
   }
 }
 
-const NullCharactersRegExp = /\x00/g;
+const NullCharactersRegExp = /\x00+/g;
+const InvisibleCharactersRegExp = /[\x01-\x1F]/g;
 
-export function removeNullCharacters( str:string ) 
+export function removeNullCharacters( str:string, replaceInvisible=false ) 
 {
-  if (typeof str !== "string") {
+  if (typeof str !== "string") 
+  {
     warn("The argument for removeNullCharacters must be a string.");
     return str;
+  }
+  if (replaceInvisible) 
+  {
+    str = str.replace(InvisibleCharactersRegExp, " ");
   }
   return str.replace(NullCharactersRegExp, "");
 }

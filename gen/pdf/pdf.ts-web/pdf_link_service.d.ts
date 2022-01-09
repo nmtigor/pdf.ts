@@ -1,11 +1,10 @@
-import { Ref } from "../pdf.ts-src/core/primitives.js";
 import { PDFDocumentProxy, type RefProxy } from "../pdf.ts-src/display/api.js";
 import { type IPDFLinkService } from "./interfaces.js";
 import { PDFViewer } from "./pdf_viewer.js";
 import { PDFHistory } from "./pdf_history.js";
-import { EventBus } from "./ui_utils.js";
 import { LinkTarget } from "../pdf.ts-src/display/display_utils.js";
 import { type Destination, type ExplicitDest } from "../pdf.ts-src/core/catalog.js";
+import { EventBus } from "./event_utils.js";
 interface PDFLinkServiceOptions {
     /**
      * The application event bus.
@@ -96,7 +95,8 @@ export declare class PDFLinkService implements IPDFLinkService {
      * @param pageRef reference to the page.
      */
     cachePageRef(pageNum: number, pageRef: RefProxy | undefined): void;
-    _cachedPageNumber(pageRef: Ref): number | null;
+    /** @implements */
+    _cachedPageNumber(pageRef: RefProxy | undefined): number | undefined;
     /** @implements */
     isPageVisible(pageNumber: number): boolean;
     isPageCached(pageNumber: number): boolean;
@@ -147,6 +147,8 @@ export declare class SimpleLinkService implements IPDFLinkService {
      * @param pageRef reference to the page.
      */
     cachePageRef(pageNum: number, pageRef: RefProxy | undefined): void;
+    /** @implements */
+    _cachedPageNumber(pageRef: RefProxy): undefined;
     /** @implements */
     isPageVisible(pageNumber: number): boolean;
     /**

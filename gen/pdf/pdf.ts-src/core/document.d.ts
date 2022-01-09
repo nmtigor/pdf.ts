@@ -2,7 +2,7 @@ import { RenderingIntentFlag } from "../shared/util.js";
 import { Dict, Name, Ref, RefSet, RefSetCache } from "./primitives.js";
 import { type XFAFontMetrics } from "./xfa_fonts.js";
 import { Stream } from "./stream.js";
-import { type AnnotationData, type FieldObject, type SaveReturn } from "./annotation.js";
+import { Annotation, type AnnotationData, type FieldObject, type SaveReturn } from "./annotation.js";
 import { Linearization } from "./parser.js";
 import { TranslatedFont } from "./evaluator.js";
 import { BasePdfManager } from "./pdf_manager.js";
@@ -16,7 +16,6 @@ import { XRef } from "./xref.js";
 import { StructTreePage, StructTreeRoot } from "./struct_tree.js";
 import { BaseStream } from "./base_stream.js";
 import { XFAFactory } from "./xfa/factory.js";
-import { type XFAElObj } from "./xfa/alias.js";
 export interface LocalIdFactory extends GlobalIdFactory {
     createObjId(): string;
 }
@@ -95,6 +94,7 @@ export declare class Page {
     _parseStructTree(structTreeRoot: StructTreeRoot): StructTreePage;
     getAnnotationsData(intent: RenderingIntentFlag): Promise<AnnotationData[]>;
     get annotations(): Ref[];
+    get _parsedAnnotations(): Promise<Annotation[]>;
     get jsActions(): import("./core_utils.js").AnnotActions | undefined;
 }
 export interface GlobalIdFactory {
@@ -169,11 +169,11 @@ export declare class PDFDocument {
      */
     checkHeader(): void;
     parseStartXRef(): void;
-    get numPages(): number;
+    get numPages(): number | Promise<number>;
     get xfaData(): XFAData | undefined;
     get xfaFactory(): XFAFactory | undefined;
     get isPureXfa(): boolean;
-    get htmlForXfa(): XFAElObj | undefined;
+    get htmlForXfa(): Promise<import("./xfa/factory.js").XFAPages> | undefined;
     loadXfaImages(): Promise<void>;
     loadXfaFonts(handler: MessageHandler<Thread.worker>, task: WorkerTask): Promise<void>;
     serializeXfaData(annotationStorage: AnnotStorageRecord | undefined): Promise<string | undefined>;
@@ -181,7 +181,8 @@ export declare class PDFDocument {
     get documentInfo(): DocumentInfo;
     get fingerprints(): [string, string | undefined];
     getPage(pageIndex: number): Promise<Page>;
-    checkFirstPage(): Promise<void | Page>;
+    checkFirstPage(recoveryMode?: boolean): Promise<void>;
+    checkLastPage(recoveryMode?: boolean): Promise<void>;
     fontFallback(id: string, handler: MessageHandler<Thread.worker>): Promise<void>;
     cleanup(manuallyTriggered?: boolean): Promise<void>;
     get fieldObjects(): Promise<undefined> | Promise<Record<string, FieldObject[]>>;

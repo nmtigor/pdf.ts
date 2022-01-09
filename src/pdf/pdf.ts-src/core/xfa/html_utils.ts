@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 
 /* Copyright 2021 Mozilla Foundation
@@ -314,7 +314,7 @@ export function layoutNode( node:Caption | Draw | Field, availableSpace:Availabl
     {
       const root = node[$getTemplateRoot]();
       let parent = node[$getParent]();
-      while (parent !== root) 
+      while( parent && parent !== root )
       {
         if( (<any>parent).font ) 
         {

@@ -1,5 +1,5 @@
 import { PDFDocumentProxy } from "../pdf.ts-src/display/api.js";
-import { EventBus } from "./ui_utils.js";
+import { EventBus } from "./event_utils.js";
 export interface BaseTreeViewerCtorParms {
     /**
      * The viewer element.

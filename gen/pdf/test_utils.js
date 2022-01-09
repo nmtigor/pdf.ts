@@ -7,6 +7,7 @@ import { Ref } from "./pdf.ts-src/core/primitives.js";
 import { StringStream } from "./pdf.ts-src/core/stream.js";
 import { Page, PDFDocument } from "./pdf.ts-src/core/document.js";
 import { GlobalWorkerOptions } from "./pdf.ts-src/pdf.js";
+import { DocStats } from "./pdf.ts-src/core/core_utils.js";
 /*81---------------------------------------------------------------------------*/
 const D_base = "/pdf.ts";
 const D_pdf = `${D_base}/res/pdf`;
@@ -63,10 +64,7 @@ export function buildGetDocumentParams(filename, options) {
 }
 export class XRefMock {
     #map = Object.create(null);
-    stats = {
-        streamTypes: Object.create(null),
-        fontTypes: Object.create(null),
-    };
+    stats = new DocStats({ send: () => { } });
     #newRefNum;
     newRef;
     constructor(array) {

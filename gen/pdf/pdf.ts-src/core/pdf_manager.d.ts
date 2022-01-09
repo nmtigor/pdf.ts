@@ -26,6 +26,7 @@ export declare abstract class BasePdfManager {
     protected _password?: string | undefined;
     /** @final */
     get password(): string | undefined;
+    msgHandler: MessageHandler<Thread.worker>;
     protected _docBaseUrl: URL | string | undefined;
     get docBaseUrl(): string | URL | undefined;
     evaluatorOptions: EvaluatorOptions;
@@ -54,7 +55,7 @@ export declare abstract class BasePdfManager {
 }
 export declare class LocalPdfManager extends BasePdfManager {
     #private;
-    constructor(docId: string, data: Uint8Array | number[], evaluatorOptions: EvaluatorOptions, password?: string, enableXfa?: boolean, docBaseUrl?: string);
+    constructor(docId: string, data: Uint8Array | number[], password: string | undefined, msgHandler: MessageHandler<Thread.worker>, evaluatorOptions: EvaluatorOptions, enableXfa?: boolean, docBaseUrl?: string);
     /** @implements */
     ensure<O extends PDFDocument | Page | XRef | Catalog | AnnotationFactory, P extends keyof O, A = O[P] extends (...args: any) => any ? Parameters<O[P]> : undefined, R = O[P] extends (...args: any) => any ? ReturnType<O[P]> : O[P]>(obj: O, prop: P, args: A): Promise<Awaited<R>>;
     /** @implements */
@@ -74,7 +75,6 @@ interface NetworkPdfManagerCtorParms {
     rangeChunkSize: number;
 }
 export declare class NetworkPdfManager extends BasePdfManager {
-    msgHandler: MessageHandler<Thread.worker>;
     streamManager: ChunkedStreamManager;
     constructor(docId: string, pdfNetworkStream: PDFWorkerStream, args: NetworkPdfManagerCtorParms, evaluatorOptions: EvaluatorOptions, enableXfa?: boolean, docBaseUrl?: string);
     /** @implements */

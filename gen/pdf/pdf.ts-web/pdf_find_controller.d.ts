@@ -1,7 +1,10 @@
+/** @typedef {import("../src/display/api").PDFDocumentProxy} PDFDocumentProxy */
+/** @typedef {import("./event_utils").EventBus} EventBus */
+/** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
 import { PromiseCap } from "../../lib/promisecap.js";
 import { PDFDocumentProxy } from "../pdf.ts-src/display/api.js";
+import { EventBus } from "./event_utils.js";
 import { type IPDFLinkService } from "./interfaces.js";
-import { EventBus } from "./ui_utils.js";
 export declare const enum FindState {
     FOUND = 0,
     NOT_FOUND = 1,

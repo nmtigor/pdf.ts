@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 
 /* Copyright 2014 Mozilla Foundation
@@ -17,19 +17,21 @@
  * limitations under the License.
  */
 
+/** @typedef {import("../src/display/api").PDFPageProxy} PDFPageProxy */
 // eslint-disable-next-line max-len
-/** @typedef {import("./interfaces").IPDFAnnotationLayerFactory} IPDFAnnotationLayerFactory */
+/** @typedef {import("../src/display/display_utils").PageViewport} PageViewport */
+/** @typedef {import("./interfaces").IDownloadManager} IDownloadManager */
+/** @typedef {import("./interfaces").IL10n} IL10n */
+/** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
 
 import { AnnotationLayer } from "../pdf.ts-src/pdf.js";
-import { SimpleLinkService } from "./pdf_link_service.js";
 import { AnnotationStorage } from "../pdf.ts-src/display/annotation_storage.js";
 import { 
+  IDownloadManager,
   type IL10n, 
-  type IPDFAnnotationLayerFactory, 
   type IPDFLinkService, 
   type MouseState 
 } from "./interfaces.js";
-import { DownloadManager } from "./download_manager.js";
 import { PageViewport } from '../pdf.ts-src/display/display_utils.js';
 import { type AnnotIntent, PDFPageProxy } from '../pdf.ts-src/display/api.js';
 import { NullL10n } from "./l10n_utils.js";
@@ -50,7 +52,7 @@ interface AnnotationLayerBuilderOptions
 
   renderForms:boolean;
   linkService:IPDFLinkService;
-  downloadManager?:DownloadManager | undefined;
+  downloadManager?:IDownloadManager | undefined;
 
   /**
    * Localization service.
@@ -61,22 +63,24 @@ interface AnnotationLayerBuilderOptions
   hasJSActionsPromise?:Promise<boolean> | undefined;
   fieldObjectsPromise:Promise< Record<string, FieldObject[]> | undefined > | undefined;
   mouseState?:MouseState | undefined;
+  annotationCanvasMap:Map<string, HTMLCanvasElement> | undefined;
 }
 
 export class AnnotationLayerBuilder
 {
-  pageDiv:HTMLDivElement;
-  pdfPage:PDFPageProxy;
-  linkService:IPDFLinkService;
-  downloadManager?:DownloadManager | undefined;
-  imageResourcesPath?:string;
-  renderForms:boolean;
-  l10n:IL10n;
-  annotationStorage?:AnnotationStorage | undefined;
-  enableScripting:boolean;
+  pageDiv;
+  pdfPage;
+  linkService;
+  downloadManager;
+  imageResourcesPath;
+  renderForms;
+  l10n;
+  annotationStorage;
+  enableScripting;
   _hasJSActionsPromise;
   _fieldObjectsPromise;
   _mouseState;
+  _annotationCanvasMap;
 
   div?:HTMLDivElement;
   _cancelled = false;
@@ -94,6 +98,7 @@ export class AnnotationLayerBuilder
     hasJSActionsPromise,
     fieldObjectsPromise,
     mouseState,
+    annotationCanvasMap=undefined,
   }:AnnotationLayerBuilderOptions ) 
   {
     this.pageDiv = pageDiv;
@@ -108,6 +113,7 @@ export class AnnotationLayerBuilder
     this._hasJSActionsPromise = hasJSActionsPromise;
     this._fieldObjectsPromise = fieldObjectsPromise;
     this._mouseState = mouseState;
+    this._annotationCanvasMap = annotationCanvasMap;
   }
 
   /**
@@ -171,37 +177,6 @@ export class AnnotationLayerBuilder
     if( !this.div ) return;
 
     this.div.hidden = true;
-  }
-}
-
-export class DefaultAnnotationLayerFactory implements IPDFAnnotationLayerFactory
-{
-  /** @implements */
-  createAnnotationLayerBuilder(
-    pageDiv:HTMLDivElement,
-    pdfPage:PDFPageProxy,
-    annotationStorage?:AnnotationStorage,
-    imageResourcesPath="",
-    renderForms=true,
-    l10n=NullL10n,
-    enableScripting=false,
-    hasJSActionsPromise?:Promise<boolean>,
-    mouseState?:MouseState,
-    fieldObjectsPromise?:Promise< Record<string, FieldObject[]> | undefined >,
-  ) {
-    return new AnnotationLayerBuilder({
-      pageDiv,
-      pdfPage,
-      imageResourcesPath,
-      renderForms,
-      linkService: new SimpleLinkService(),
-      l10n,
-      annotationStorage,
-      enableScripting,
-      hasJSActionsPromise,
-      fieldObjectsPromise,
-      mouseState,
-    });
   }
 }
 /*81---------------------------------------------------------------------------*/

@@ -296,6 +296,7 @@ class MooHandlerDB<T, D=any>
   readonly #eq:MooEq<T>;
 
   #_a:MooHandlerExt<T,D>[] = [];
+  get len_$() { return this.#_a.length; }
   get empty() { return this.#_a.length === 0; }
   #nforce = 0;
   get force() { return this.#nforce > 0; }
@@ -430,6 +431,7 @@ export class Moo<T, D=any>
   get newval() { return this.#newval; }
   // #handler_db = new Set< MooHandler<T> >();
   #handler_db!:MooHandlerDB<T,D>;
+  get _len() { return this.#handler_db.len_$; }
   #forceOnce = false;
 
   #data:D | undefined;
@@ -476,27 +478,44 @@ export class Moo<T, D=any>
   set( val:T ) { this.#val = this.#newval = val; }
   
   /** @final */
-  registHandler( handler_x:MooHandler<T,D>, newval?:T, oldval?:T, force?:"force", index=0 )
-  {
-    this.#handler_db.add( handler_x, newval, oldval, force!==undefined, index );
+  registHandler( handler_x:MooHandler<T,D>, 
+    newval_x?:T, oldval_x?:T, force_x?:"force", index_x=0 
+  ) {
+    this.#handler_db.add( 
+      handler_x, newval_x, oldval_x, force_x!==undefined, index_x );
     // console.log( `this.#handler_db.size=${this.#handler_db.size}` );
   }
   /** @final */
-  removeHandler( handler_x:MooHandler<T,D>, newval?:T, oldval?:T )
+  removeHandler( handler_x:MooHandler<T,D>, newval_x?:T, oldval_x?:T )
   {
-    this.#handler_db.del( handler_x, newval, oldval );
+    this.#handler_db.del( handler_x, newval_x, oldval_x );
     // console.log( `this.#handler_db.size=${this.#handler_db.size}` );
+  }
+  /** @final */
+  registOnceHandler( handler_x:MooHandler<T,D>, 
+    newval_x?:T, oldval_x?:T, force_x?:"force", index_x=0 
+  ) {
+    const wrap = ( newval_y:T, oldval_y?:T, data_y?:D ) => {
+      handler_x( newval_y, oldval_y, data_y );
+      this.removeHandler( wrap, newval_x, oldval_x );
+    }
+    this.registHandler( wrap, newval_x, oldval_x, force_x, index_x );
   }
 
   /** @final */
-  on( newval:T, handler_x:MooHandler<T,D>, force?:"force", index=0 ) 
+  on( newval_x:T, handler_x:MooHandler<T,D>, force_x?:"force", index_x=0 ) 
   { 
-    this.registHandler( handler_x, newval, undefined, force, index ); 
+    this.registHandler( handler_x, newval_x, undefined, force_x, index_x ); 
   }
   /** @final */
-  off( newval:T, handler_x:MooHandler<T,D> ) 
+  off( newval_x:T, handler_x:MooHandler<T,D> ) 
   { 
-    this.removeHandler( handler_x, newval ); 
+    this.removeHandler( handler_x, newval_x ); 
+  }
+  /** @final */
+  once( newval_x:T, handler_x:MooHandler<T,D>, force_x?:"force", index_x=0 ) 
+  {
+    this.registOnceHandler( handler_x, newval_x, undefined, force_x, index_x ); 
   }
 
   shareHandlerTo( rhs:Moo<T> ) 

@@ -35,16 +35,16 @@ declare global {
         fixTo(digits?: uint8): number;
     }
     interface NumberConstructor {
-        apxE: (f0: number, f1: number) => boolean;
-        apxS: (f0: number, f1: number) => boolean;
-        apxSE: (f0: number, f1: number) => boolean;
-        apxG: (f0: number, f1: number) => boolean;
-        apxGE: (f0: number, f1: number) => boolean;
+        apxE(f0: number, f1: number): boolean;
+        apxS(f0: number, f1: number): boolean;
+        apxSE(f0: number, f1: number): boolean;
+        apxG(f0: number, f1: number): boolean;
+        apxGE(f0: number, f1: number): boolean;
         /**
          * [min,max]
          * ! [min,max) normaally, but could achieve `max` because of `Math.round()`.
          */
-        getRandom: (max: number, min?: number, fixt?: uint) => number;
+        getRandom(max: number, min?: number, fixt?: uint): number;
     }
 }
 declare global {
@@ -114,6 +114,11 @@ declare global {
         setDate(refdate: Date, date: number): number;
         setMonth(refdate: Date, month: number, date?: number): number;
         setFullYear(refdate: Date, year: number, month?: number, date?: number): number;
+    }
+}
+declare global {
+    interface Math {
+        clamp(min: number, val: number, max: number): number;
     }
 }
 /**

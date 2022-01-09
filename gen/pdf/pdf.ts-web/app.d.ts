@@ -1,8 +1,8 @@
 import "../../lib/jslang.js";
-import { EventBus, ProgressBar, ScrollMode, SidebarView, SpreadMode } from "./ui_utils.js";
+import { ProgressBar, ScrollMode, SidebarView, SpreadMode } from "./ui_utils.js";
+import { EventBus } from "./event_utils.js";
 import { UNSUPPORTED_FEATURES } from "../pdf.ts-src/pdf.js";
 import { PDFCursorTools } from "./pdf_cursor_tools.js";
-import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
 import { OverlayManager } from "./overlay_manager.js";
 import { PasswordPrompt } from "./password_prompt.js";
 import { PDFAttachmentViewer } from "./pdf_attachment_viewer.js";
@@ -14,6 +14,7 @@ import { PDFLayerViewer } from "./pdf_layer_viewer.js";
 import { PDFLinkService } from "./pdf_link_service.js";
 import { PDFOutlineViewer } from "./pdf_outline_viewer.js";
 import { PDFPresentationMode } from "./pdf_presentation_mode.js";
+import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
 import { PDFSidebarResizer } from "./pdf_sidebar_resizer.js";
 import { PDFThumbnailViewer } from "./pdf_thumbnail_viewer.js";
 import { PDFViewer } from "./pdf_viewer.js";
@@ -47,13 +48,13 @@ export interface PassiveLoadingCbs {
     onError(err?: ErrorMoreInfo): void;
     onProgress(loaded: number, total: number): void;
 }
-declare type TelemetryType = 'documentInfo' | 'documentStats' | 'pageInfo' | 'print' | 'tagged' | 'unsupportedFeature';
+declare type TelemetryType = "documentInfo" | "documentStats" | "pageInfo" | "print" | "tagged" | "unsupportedFeature";
 interface TelemetryData {
     type: TelemetryType;
     featureId?: UNSUPPORTED_FEATURES | undefined;
     formType?: string;
     generator?: string;
-    stats?: PDFDocumentStats;
+    stats?: PDFDocumentStats | undefined;
     tagged?: boolean;
     timestamp?: number;
     version?: string;
@@ -159,6 +160,7 @@ export declare class PDFViewerApplication {
     metadata: Metadata | undefined;
     _contentLength: number | undefined;
     _saveInProgress: boolean;
+    _docStats: PDFDocumentStats | undefined;
     _wheelUnusedTicks: number;
     _idleCallbacks: Set<unknown>;
     disableAutoFetchLoadingBarTimeout: number | undefined;
@@ -247,6 +249,10 @@ export declare class PDFViewerApplication {
     unbindEvents(): void;
     unbindWindowEvents(): void;
     accumulateWheelTicks(ticks: number): number;
+    /**
+     * @ignore
+     */
+    _reportDocumentStatsTelemetry(): void;
     /**
      * Used together with the integration-tests, to enable awaiting full
      * initialization of the scripting/sandbox.

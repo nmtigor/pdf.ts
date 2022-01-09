@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 
 /* Copyright 2012 Mozilla Foundation
@@ -179,7 +179,7 @@ export class PDFImage
     this.image = image;
     const dict = image.dict!;
 
-    const filter = dict.get("Filter");
+    const filter = dict.get("F", "Filter");
     if( filter instanceof Name )
     {
       switch( filter.name )
@@ -202,8 +202,8 @@ export class PDFImage
     }
     // TODO cache rendered images?
 
-    let width = <number>dict.get("Width", "W");
-    let height = <number>dict.get("Height", "H");
+    let width = <number>dict.get("W", "Width");
+    let height = <number>dict.get("H", "Height");
 
     if( Number.isInteger(image.width) && image.width! > 0
      && Number.isInteger(image.height) && image.height! > 0
@@ -225,14 +225,14 @@ export class PDFImage
     this.width = width;
     this.height = height;
 
-    this.interpolate = <boolean>dict.get("Interpolate", "I");
-    this.imageMask = <boolean>dict.get("ImageMask", "IM") || false;
+    this.interpolate = <boolean>dict.get("I", "Interpolate");
+    this.imageMask = <boolean>dict.get("IM", "ImageMask") || false;
     this.matte = <number[] | undefined>dict.get("Matte") || false;
 
     let bitsPerComponent = image.bitsPerComponent;
     if( !bitsPerComponent )
     {
-      bitsPerComponent = <number|undefined>dict.get("BitsPerComponent", "BPC");
+      bitsPerComponent = <number | undefined>dict.get("BPC", "BitsPerComponent");
       if( !bitsPerComponent )
       {
         if( this.imageMask )
@@ -250,7 +250,7 @@ export class PDFImage
 
     if( !this.imageMask )
     {
-      let colorSpace = dict.getRaw("ColorSpace") || dict.getRaw("CS");
+      let colorSpace = dict.getRaw("CS") || dict.getRaw("ColorSpace");
       if( !colorSpace )
       {
         info("JPX images (which do not require color spaces)");
@@ -281,7 +281,7 @@ export class PDFImage
       this.numComps = this.colorSpace.numComps;
     }
 
-    this.decode = <number[] | undefined>dict.getArray("Decode", "D");
+    this.decode = <number[] | undefined>dict.getArray("D", "Decode");
     this.needsDecode = false;
     if( this.decode
      && ((this.colorSpace &&
@@ -321,8 +321,8 @@ export class PDFImage
     {
       if( mask instanceof BaseStream )
       {
-        const maskDict = mask.dict!;
-        const imageMask = maskDict.get("ImageMask", "IM");
+        const maskDict = mask.dict!,
+          imageMask = maskDict.get("IM", "ImageMask");
         if( !imageMask )
         {
           warn("Ignoring /Mask in image without /ImageMask.");

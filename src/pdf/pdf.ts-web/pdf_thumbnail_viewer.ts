@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 
 /* Copyright 2012 Mozilla Foundation
@@ -17,19 +17,27 @@
  * limitations under the License.
  */
 
+/** @typedef {import("../src/display/api").PDFDocumentProxy} PDFDocumentProxy */
+/** @typedef {import("./event_utils").EventBus} EventBus */
+/** @typedef {import("./interfaces").IL10n} IL10n */
+/** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
+// eslint-disable-next-line max-len
+/** @typedef {import("./pdf_rendering_queue").PDFRenderingQueue} PDFRenderingQueue */
+
 import {
-  EventBus,
   getVisibleElements,
   isValidRotation,
   scrollIntoView,
   type VisibleElements,
   watchScroll,
+  RenderingStates,
 } from "./ui_utils.js";
 import { PDFThumbnailView, TempImageFactory } from "./pdf_thumbnail_view.js";
 import { type IL10n, type IPDFLinkService } from "./interfaces.js";
-import { PDFRenderingQueue, RenderingStates } from "./pdf_rendering_queue.js";
+import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
 import { PDFDocumentProxy, PDFPageProxy } from '../pdf.ts-src/display/api.js';
 import { OptionalContentConfig } from '../pdf.ts-src/display/optional_content_config.js';
+import { EventBus } from "./event_utils.js";
 /*81---------------------------------------------------------------------------*/
 
 const THUMBNAIL_SCROLL_MARGIN = -19;
@@ -66,7 +74,7 @@ interface PDFThumbnailViewerOptions
 /**
  * Viewer control to display thumbnails for pages in a PDF document.
  */
-export class PDFThumbnailViewer// implements IRenderableView
+export class PDFThumbnailViewer
 {
   container;
   linkService;
@@ -166,30 +174,26 @@ export class PDFThumbnailViewer// implements IRenderableView
       // ... and add the highlight to the new thumbnail.
       thumbnailView.div.classList.add(THUMBNAIL_SELECTED_CLASS);
     }
-    const visibleThumbs = this.#getVisibleThumbs();
-    const numVisibleThumbs = visibleThumbs.views.length;
+    const { first, last, views } = this.#getVisibleThumbs();
 
     // If the thumbnail isn't currently visible, scroll it into view.
-    if( numVisibleThumbs > 0 )
+    if (views.length > 0) 
     {
-      const first = visibleThumbs.first!.id;
-      // Account for only one thumbnail being visible.
-      const last = numVisibleThumbs > 1 ? visibleThumbs.last!.id : first;
-
       let shouldScroll = false;
-      if (pageNumber <= first || pageNumber >= last) 
+      if (pageNumber <= first!.id || pageNumber >= last!.id) 
       {
         shouldScroll = true;
       } 
       else {
-        visibleThumbs.views.some( view => {
-          if( view.id !== pageNumber ) return false;
+        for (const { id, percent } of views) 
+        {
+          if( id !== pageNumber ) continue;
 
-          shouldScroll = view.percent! < 100;
-          return true;
-        });
+          shouldScroll = percent! < 100;
+          break;
+        }
       }
-      if (shouldScroll) 
+      if( shouldScroll )
       {
         scrollIntoView(thumbnailView.div, { top: THUMBNAIL_SCROLL_MARGIN });
       }
@@ -218,7 +222,6 @@ export class PDFThumbnailViewer// implements IRenderableView
     this._pageLabels = undefined;
     this.#pagesRotation = 0;
     this._optionalContentConfigPromise = undefined;
-    this._pagesRequests = new WeakMap();
     this._setImageDisabled = false;
 
     // Remove the thumbnails from the DOM.
@@ -316,33 +319,21 @@ export class PDFThumbnailViewer// implements IRenderableView
     }
   }
 
-  #ensurePdfPageLoaded( thumbView:PDFThumbnailView )
+  async #ensurePdfPageLoaded( thumbView:PDFThumbnailView )
   {
-    if( thumbView.pdfPage )
-    {
-      return Promise.resolve(thumbView.pdfPage);
+    if( thumbView.pdfPage ) return thumbView.pdfPage;
+
+    try {
+      const pdfPage = await this.pdfDocument!.getPage(thumbView.id);
+      if (!thumbView.pdfPage) 
+      {
+        thumbView.setPdfPage(pdfPage);
+      }
+      return pdfPage;
+    } catch (reason) {
+      console.error("Unable to get page for thumb view", reason);
+      return null; // Page error -- there is nothing that can be done.
     }
-    if( this._pagesRequests.has(thumbView) )
-    {
-      return this._pagesRequests.get(thumbView)!;
-    }
-    const promise = this.pdfDocument!
-      .getPage( thumbView.id )
-      .then(pdfPage => {
-        if (!thumbView.pdfPage) 
-        {
-          thumbView.setPdfPage(pdfPage);
-        }
-        this._pagesRequests.delete(thumbView);
-        return pdfPage;
-      })
-      .catch(reason => {
-        console.error("Unable to get page for thumb view", reason);
-        // Page error -- there is nothing that can be done.
-        this._pagesRequests.delete(thumbView);
-      });
-    this._pagesRequests.set(thumbView, promise);
-    return promise;
   }
 
   #getScrollAhead( visible:VisibleElements ) 

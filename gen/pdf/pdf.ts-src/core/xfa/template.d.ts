@@ -1,4 +1,4 @@
-import { $acceptWhitespace, $addHTML, $clean, $cleanPage, $content, $data, $extra, $finalize, $flushHTML, $getAvailableSpace, $getContainedChildren, $getExtra, $getNextPage, $getSubformParent, $hasSettableValue, $ids, $isBindable, $isCDATAXml, $isSplittable, $isThereMoreWidth, $isTransparent, $isUsable, $onChild, $onText, $searchNode, $setValue, $text, $toHTML, $toStyle, ContentObject, Option01, OptionObject, StringObject, XFAObject, XFAObjectArray, XmlObject } from "./xfa_object.js";
+import { $acceptWhitespace, $addHTML, $clean, $cleanPage, $content, $data, $extra, $finalize, $flushHTML, $getAvailableSpace, $getContainedChildren, $getExtra, $getNextPage, $getSubformParent, $hasSettableValue, $ids, $isBindable, $isCDATAXml, $isSplittable, $isThereMoreWidth, $isTransparent, $isUsable, $onChild, $onText, $searchNode, $setValue, $text, $toHTML, $toPages, $toStyle, ContentObject, Option01, OptionObject, StringObject, XFAObject, XFAObjectArray, XmlObject } from "./xfa_object.js";
 import { $buildXFAObject } from "./namespaces.js";
 import { type XFALayoutMode } from "./html_utils.js";
 import { type AvailableSpace, type XFAAttrs, type XFAFontBase, type XFAElData, type XFAHTMLObj, type XFAStyleData, type XFAValue, type XFAIds, type XFAExtra } from "./alias.js";
@@ -1201,7 +1201,15 @@ export declare class Template extends XFAObject {
     [$finalize](): void;
     [$isSplittable](): boolean;
     [$searchNode](expr: string, container?: XFAObject): XFAObject[] | undefined;
-    [$toHTML](availableSpace?: AvailableSpace): HTMLResult;
+    /**
+     * This function is a generator because the conversion into
+     * pages is done asynchronously and we want to save the state
+     * of the function where we were in the previous iteration.
+     */
+    [$toPages](): Generator<null, HTMLResult | {
+        name: string;
+        children: XFAElData[];
+    }, unknown>;
 }
 export declare class Text extends ContentObject implements XFAValue {
     [$content]: string | XFAObject;

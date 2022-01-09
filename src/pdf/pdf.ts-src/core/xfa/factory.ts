@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 
 /* Copyright 2021 Mozilla Foundation
@@ -17,7 +17,14 @@
  * limitations under the License.
  */
 
-import { $appendChild, $globalData, $nodeName, $text, $toHTML } from "./xfa_object.js";
+import { 
+  $appendChild, 
+  $globalData, 
+  $nodeName, 
+  $text, 
+  $toHTML,
+  $toPages,
+} from "./xfa_object.js";
 import { Binder } from "./bind.js";
 import { XFAParser } from "./parser.js";
 import { type XFAData } from "../document.js";
@@ -32,13 +39,19 @@ import { Subform, Template } from "./template.js";
 import { XhtmlNamespace } from "./xhtml.js";
 /*81---------------------------------------------------------------------------*/
 
+export interface XFAPages
+{
+  name:string;
+  children:XFAElObj[];
+}
+
 export class XFAFactory
 {
   root;
-  form!:Subform | Template;
+  form!:Template;
   dataHandler;
 
-  pages:HTMLResult | undefined;
+  pages:XFAPages | undefined;
   dims!:rect_t[];
 
   constructor( data:XFAData )
@@ -59,12 +72,38 @@ export class XFAFactory
     return !!this.root && !!this.form;
   }
 
-  _createPages()
+  /**
+   * In order to avoid to block the event loop, the conversion
+   * into pages is made asynchronously.
+   */
+  _createPagesHelper() 
+  {
+    const iterator = this.form[$toPages]();
+    return new Promise<XFAPages>(( resolve, reject ) => {
+      const nextIteration = () => {
+        try {
+          const value = iterator.next();
+          if (value.done) 
+          {
+            resolve( <XFAPages>value.value );
+          } 
+          else {
+            setTimeout(nextIteration, 0);
+          }
+        } catch (e) {
+          reject(e);
+        }
+      };
+      setTimeout(nextIteration, 0);
+    });
+  }
+
+  async _createPages()
   {
     try {
-      this.pages = this.form![$toHTML]();
-      this.dims = (<XFAElObj>this.pages.html).children!.map( c => {
-        const { width, height } = (<XFAElObj>c).attributes!.style!;
+      this.pages = await this._createPagesHelper();
+      this.dims = this.pages!.children!.map( c => {
+        const { width, height } = c.attributes!.style!;
         return <rect_t>[0, 0, parseInt(width!), parseInt(height!)];
       });
     } catch (e) {
@@ -77,11 +116,11 @@ export class XFAFactory
     return this.dims[pageIndex];
   }
 
-  get numPages() 
+  async getNumPages() 
   {
     if( !this.pages )
     {
-      this._createPages();
+      await this._createPages();
     }
     return this.dims.length;
   }
@@ -118,11 +157,11 @@ export class XFAFactory
     this.form![$globalData].fontFinder!.add( fonts, reallyMissingFonts );
   }
 
-  getPages()
+  async getPages()
   {
     if( !this.pages )
     {
-      this._createPages();
+      await this._createPages();
     }
     const pages = this.pages!;
     this.pages = undefined;

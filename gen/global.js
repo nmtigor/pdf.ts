@@ -13,6 +13,7 @@ class Global {
     LASTUPDATE_DATNI = "2020-07-24 01:59:51 +0200";
     LASTUPDATE_DEV = "2021-05-22 05:04:21 +0200";
     globalhvc;
+    holdindicatr;
     has_ResizeObserver = false;
     can_touchstart = false;
     #tabsize = 2;

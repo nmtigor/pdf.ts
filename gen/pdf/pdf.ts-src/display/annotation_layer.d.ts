@@ -1,5 +1,4 @@
-import { DownloadManager } from "../../pdf.ts-web/download_manager.js";
-import { type IPDFLinkService, type MouseState } from "../../pdf.ts-web/interfaces.js";
+import { IDownloadManager, type IPDFLinkService, type MouseState } from "../../pdf.ts-web/interfaces.js";
 import { DOMSVGFactory, PageViewport } from "./display_utils.js";
 import { AnnotationStorage } from "./annotation_storage.js";
 import { PDFPageProxy } from "./api.js";
@@ -11,7 +10,7 @@ interface AnnotationElementParms {
     page: PDFPageProxy;
     viewport: PageViewport;
     linkService: IPDFLinkService;
-    downloadManager?: DownloadManager | undefined;
+    downloadManager: IDownloadManager | undefined;
     /**
      * Path for image resources, mainly
      * for annotation icons. Include trailing slash.
@@ -33,7 +32,7 @@ export declare class AnnotationElement {
     page: PDFPageProxy;
     viewport: PageViewport;
     linkService: IPDFLinkService;
-    downloadManager: DownloadManager | undefined;
+    downloadManager: IDownloadManager | undefined;
     imageResourcesPath: string | undefined;
     renderForms: boolean;
     svgFactory: DOMSVGFactory;
@@ -109,7 +108,7 @@ interface AnnotationLayerParms {
     imageResourcesPath?: string | undefined;
     renderForms: boolean;
     linkService: IPDFLinkService;
-    downloadManager?: DownloadManager | undefined;
+    downloadManager: IDownloadManager | undefined;
     annotationStorage?: AnnotationStorage | undefined;
     /**
      * Enable embedded script execution.
@@ -122,6 +121,7 @@ interface AnnotationLayerParms {
     hasJSActions: boolean;
     fieldObjects: Record<string, FieldObject[]> | undefined;
     mouseState?: MouseState | undefined;
+    annotationCanvasMap?: Map<string, HTMLCanvasElement>;
 }
 export interface AnnotStorageValue {
     value?: string | string[] | number | boolean | null | undefined;
@@ -134,6 +134,7 @@ export interface AnnotStorageValue {
 export declare type ASVKey = keyof AnnotStorageValue;
 export declare type AnnotStorageRecord = Map<string, AnnotStorageValue>;
 export declare class AnnotationLayer {
+    #private;
     /**
      * Render a new annotation layer with all annotation elements.
      */

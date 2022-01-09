@@ -6,7 +6,7 @@ import { PDFFindController } from "./pdf_find_controller.js";
 import { SimpleLinkService } from "./pdf_link_service.js";
 import { getDocument } from "../pdf.ts-src/display/api.js";
 import { buildGetDocumentParams } from "../test_utils.js";
-import { EventBus } from "./ui_utils.js";
+import { EventBus } from "./event_utils.js";
 const strttime = performance.now();
 /*81---------------------------------------------------------------------------*/
 const tracemonkeyFileName = "tracemonkey.pdf";

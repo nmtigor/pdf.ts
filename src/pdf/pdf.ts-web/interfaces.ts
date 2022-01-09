@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 
 /* Copyright 2018 Mozilla Foundation
@@ -18,11 +18,23 @@
  */
 /* eslint-disable getter-return */
 
+/** @typedef {import("../src/display/api").PDFPageProxy} PDFPageProxy */
+// eslint-disable-next-line max-len
+/** @typedef {import("../src/display/display_utils").PageViewport} PageViewport */
+// eslint-disable-next-line max-len
+/** @typedef {import("./annotation_layer_builder").AnnotationLayerBuilder} AnnotationLayerBuilder */
+/** @typedef {import("./event_utils").EventBus} EventBus */
+// eslint-disable-next-line max-len
+/** @typedef {import("./struct_tree_builder").StructTreeLayerBuilder} StructTreeLayerBuilder */
+/** @typedef {import("./text_highlighter").TextHighlighter} TextHighlighter */
+// eslint-disable-next-line max-len
+/** @typedef {import("./text_layer_builder").TextLayerBuilder} TextLayerBuilder */
+/** @typedef {import("./ui_utils").RenderingStates} RenderingStates */
+/** @typedef {import("./xfa_layer_builder").XfaLayerBuilder} XfaLayerBuilder */
+
 import { LinkTarget, PageViewport } from "../pdf.ts-src/display/display_utils.js";
 import { AnnotationStorage } from "../pdf.ts-src/display/annotation_storage.js";
-import { RenderingStates } from "./pdf_rendering_queue.js";
 import { TextLayerBuilder } from "./text_layer_builder.js";
-import { EventBus } from "./ui_utils.js";
 import { AnnotationLayerBuilder } from "./annotation_layer_builder.js";
 import { PDFPageProxy, type RefProxy } from "../pdf.ts-src/display/api.js";
 import { type Locale_1, type WebL10nArgs } from "../../lib/l10n.js";
@@ -32,6 +44,8 @@ import { StructTreeLayerBuilder } from "./struct_tree_layer_builder.js";
 import { type XFAElData } from "../pdf.ts-src/core/xfa/alias.js";
 import { TextHighlighter } from "./text_highlighter.js";
 import { type FieldObject } from "../pdf.ts-src/core/annotation.js";
+import { EventBus } from "./event_utils.js";
+import { RenderingStates } from "./ui_utils.js";
 /*81---------------------------------------------------------------------------*/
 
 export interface IPDFLinkService 
@@ -85,6 +99,8 @@ export interface IPDFLinkService
    */
   cachePageRef( pageNum:number, pageRef:RefProxy | undefined ):void;
   
+  _cachedPageNumber( pageRef:RefProxy | undefined ):number | undefined;
+
   isPageVisible( pageNumber:number ):boolean;
 
   isPageCached( pageNumber:number ):boolean;
@@ -182,6 +198,8 @@ export interface IPDFAnnotationLayerFactory
    * @param imageResourcesPath="" Path for image resources, mainly
    *   for annotation icons. Include trailing slash.
    * @param renderForms=true
+   * @param annotationCanvasMap Map some
+   *   annotation ids with canvases used to render them.
    */
   createAnnotationLayerBuilder(
     pageDiv:HTMLDivElement,
@@ -193,7 +211,8 @@ export interface IPDFAnnotationLayerFactory
     enableScripting?:boolean,
     hasJSActionsPromise?:Promise<boolean>,
     mouseState?:MouseState,
-    fieldObjectsPromise?:Promise< Record<string, FieldObject[]> | undefined >,
+    fieldObjectsPromise?:Promise<Record<string, FieldObject[]> | undefined>,
+    annotationCanvasMap?:Map<string, HTMLCanvasElement>
   ):AnnotationLayerBuilder;
 }
 
@@ -210,6 +229,24 @@ export interface IPDFXfaLayerFactory
 export interface  IPDFStructTreeLayerFactory
 {
   createStructTreeLayerBuilder( pdfPage:PDFPageProxy ):StructTreeLayerBuilder;
+}
+
+export interface IDownloadManager 
+{
+  downloadUrl( url:string, filename:string ):void;
+
+  downloadData( data:Uint8Array, filename:string, contentType:string ):void;
+
+  /**
+   * @return Indicating if the data was opened.
+   */
+  openOrDownloadData( element:HTMLElement, 
+    data:Uint8Array | Uint8ClampedArray | undefined, filename:string ):boolean;
+
+  /**
+   * @param sourceEventType="download"
+   */
+  download( blob:Blob, url:string, filename:string, sourceEventType?:string ):void;
 }
 
 export interface IL10n 

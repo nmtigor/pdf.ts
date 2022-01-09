@@ -1,6 +1,5 @@
 import { PromiseCap } from "../../../lib/promisecap.js";
 import { HttpStatusCode } from "../../../lib/HttpStatusCode.js";
-import { Ref } from "../core/primitives.js";
 import { type IWorker } from "../core/worker.js";
 import { VerbosityLevel } from "../pdf.js";
 import { InvalidPDFException, MissingPDFException, PasswordException, PasswordResponses, PermissionFlag, type rect_t, RenderingIntentFlag, UnexpectedResponseException, UnknownErrorException, UNSUPPORTED_FEATURES } from "./util.js";
@@ -40,7 +39,6 @@ export interface GetDocRequestData {
     };
     maxImageSize: number | undefined;
     disableFontFace: boolean | undefined;
-    postMessageTransfers: boolean;
     docBaseUrl: string | undefined;
     ignoreErrors: boolean | undefined;
     isEvalSupported: boolean | undefined;
@@ -176,7 +174,7 @@ export interface MActionMap {
     };
     GetPageIndex: {
         Data: {
-            ref: Ref;
+            ref: RefProxy;
         };
         Return: number;
         Sinkchunk: undefined;
@@ -190,7 +188,7 @@ export interface MActionMap {
     };
     GetPageLabels: {
         Data: null;
-        Return: string[] | null;
+        Return: string[] | undefined;
         Sinkchunk: undefined;
     };
     GetPageLayout: {
@@ -312,6 +310,11 @@ export interface WActionMap {
         Return: void;
         Sinkchunk: undefined;
     };
+    DocStats: {
+        Data: PDFDocumentStats;
+        Return: void;
+        Sinkchunk: undefined;
+    };
     FetchBuiltInCMap: {
         Data: {
             name: string;
@@ -382,9 +385,7 @@ export interface WActionMap {
         Sinkchunk: undefined;
     };
     test: {
-        Data: null | {
-            supportTransfers: boolean;
-        };
+        Data: boolean;
         Return: void;
         Sinkchunk: undefined;
     };
@@ -434,7 +435,6 @@ export declare class MessageHandler<Ta extends Thread, Tn extends Thread = Ta ex
     readonly id: number;
     callbackId: number;
     streamId: number;
-    postMessageTransfers: boolean;
     streamSinks: StreamSink<Ta>[];
     streamControllers: StreamController<Tn>[];
     callbackCapabilities: PromiseCap<unknown>[];

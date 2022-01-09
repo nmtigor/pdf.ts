@@ -1,4 +1,5 @@
-import { type ActionEventType, type ActionEventTypesType, BaseException } from "../shared/util.js";
+import { MessageHandler, Thread } from "../shared/message_handler.js";
+import { type ActionEventType, type ActionEventTypesType, BaseException, StreamType, FontType } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
 import { type CssFontInfo } from "./document.js";
 import { Dict, type Obj } from "./primitives.js";
@@ -14,10 +15,17 @@ export declare class ParserEOFException extends BaseException {
     constructor(msg: string);
 }
 export declare class XRefEntryException extends BaseException {
-    constructor(msg: string);
+    constructor(msg?: string);
 }
 export declare class XRefParseException extends BaseException {
-    constructor(msg: string);
+    constructor(msg?: string);
+}
+export declare class DocStats {
+    #private;
+    constructor(handler: MessageHandler<Thread.worker>);
+    _send(): void;
+    addStreamType(type: StreamType): void;
+    addFontType(type: FontType): void;
 }
 interface GetInheritablePropertyParms {
     /**
@@ -52,7 +60,7 @@ interface GetInheritablePropertyParms {
  * the value for the key is returned or, if `stopWhenFound` is `false`, a list
  * of values is returned.
  */
-export declare function getInheritableProperty({ dict, key, getArray, stopWhenFound, }: GetInheritablePropertyParms): string | number | boolean | Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint16Array | Int32Array | Uint32Array | Float32Array | Float64Array | BaseStream | Dict | XFANsName.Name | NsCmd.Cmd | typeof import("./primitives.js").EOF | (Obj | undefined)[] | null | undefined;
+export declare function getInheritableProperty({ dict, key, getArray, stopWhenFound, }: GetInheritablePropertyParms): string | number | boolean | Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint16Array | Int32Array | Uint32Array | Float32Array | Float64Array | BaseStream | Dict | XFANsName.Name | NsCmd.Cmd | typeof import("./primitives.js").CIRCULAR_REF | typeof import("./primitives.js").EOF | (Obj | undefined)[] | null | undefined;
 /**
  * Converts positive integers to (upper case) Roman numerals.
  * @param number The number that should be converted.

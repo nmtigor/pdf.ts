@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 
 /* Copyright 2021 Mozilla Foundation
@@ -219,6 +219,7 @@ export interface StructTree
 {
   type?:string;
   id?:string | undefined;
+  lang?:string;
   role?:string;
   children?:StructTree[];
   alt?:string;
@@ -357,6 +358,11 @@ export class StructTreePage
       if( typeof alt === "string" )
       {
         obj.alt = stringToPDFString( alt );
+      }
+      const lang = node.dict.get("Lang");
+      if( typeof lang === "string" )
+      {
+        obj.lang = stringToPDFString(lang);
       }
 
       for( const kid of node.kids )

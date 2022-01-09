@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 /* Copyright 2017 Mozilla Foundation
  *
@@ -15,6 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/** @typedef {import("./interfaces").IL10n} IL10n */
 import { webL10n } from "../../lib/l10n.js";
 import { fixupLangCode, getL10nFallback } from "./l10n_utils.js";
 /*81---------------------------------------------------------------------------*/

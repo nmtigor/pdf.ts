@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 import { createValidAbsoluteUrl, warn, } from "../shared/util.js";
 import { ChunkedStreamManager } from "./chunked_stream.js";
@@ -24,6 +24,7 @@ export class BasePdfManager {
     _password;
     /** @final */
     get password() { return this._password; }
+    msgHandler;
     _docBaseUrl;
     get docBaseUrl() {
         return this._docBaseUrl;
@@ -71,9 +72,10 @@ export class BasePdfManager {
 }
 export class LocalPdfManager extends BasePdfManager {
     #loadedStreamPromise;
-    constructor(docId, data, evaluatorOptions, password, enableXfa, docBaseUrl) {
+    constructor(docId, data, password, msgHandler, evaluatorOptions, enableXfa, docBaseUrl) {
         super(docId, docBaseUrl);
         this._password = password;
+        this.msgHandler = msgHandler;
         this.evaluatorOptions = evaluatorOptions;
         this.enableXfa = enableXfa;
         const stream = new Stream(data);
@@ -110,7 +112,6 @@ export class LocalPdfManager extends BasePdfManager {
     terminate(reason) { }
 }
 export class NetworkPdfManager extends BasePdfManager {
-    msgHandler;
     streamManager;
     constructor(docId, pdfNetworkStream, args, evaluatorOptions, enableXfa, docBaseUrl) {
         super(docId, docBaseUrl);

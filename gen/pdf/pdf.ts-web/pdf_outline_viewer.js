@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 /* Copyright 2012 Mozilla Foundation
  *
@@ -60,7 +60,7 @@ export class PDFOutlineViewer extends BaseTreeViewer {
         this.#outline = undefined;
         this.#pageNumberToDestHashCapability = undefined;
         this._currentPageNumber = 1;
-        this._isPagesLoaded = false;
+        this._isPagesLoaded = undefined;
         if (this.#currentOutlineItemCapability
             && !this.#currentOutlineItemCapability.settled) {
             this.#currentOutlineItemCapability.resolve(/* enabled = */ false);
@@ -74,8 +74,9 @@ export class PDFOutlineViewer extends BaseTreeViewer {
             || this._pdfDocument?.loadingParams.disableAutoFetch) {
             this.#currentOutlineItemCapability.resolve(/* enabled = */ false);
         }
-        else if (this._isPagesLoaded) {
-            this.#currentOutlineItemCapability.resolve(/* enabled = */ true);
+        else if (this._isPagesLoaded !== undefined) {
+            this.#currentOutlineItemCapability.resolve(
+            /* enabled = */ this._isPagesLoaded);
         }
         this.eventBus.dispatch("outlineloaded", {
             source: this,

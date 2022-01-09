@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 /* Copyright 2012 Mozilla Foundation
  *
@@ -21,7 +21,7 @@
  * of XPDF's implementation, made available under the Apache 2.0 open source
  * license.
  */
-import { info } from "../shared/util.js";
+import { FormatError, info } from "../shared/util.js";
 /*49-------------------------------------------*/
 var NsCCITTFaxDecoder;
 (function (NsCCITTFaxDecoder) {
@@ -563,8 +563,8 @@ var NsCCITTFaxDecoder;
                                 if (codingLine[this.codingPos] < columns) {
                                     this.#addPixels(codingLine[this.codingPos] + code2, blackPixels ^ 1);
                                 }
-                                while (refLine[refPos] <= codingLine[this.codingPos] &&
-                                    refLine[refPos] < columns) {
+                                while (refLine[refPos] <= codingLine[this.codingPos]
+                                    && refLine[refPos] < columns) {
                                     refPos += 2;
                                 }
                                 break;
@@ -573,8 +573,8 @@ var NsCCITTFaxDecoder;
                                 blackPixels ^= 1;
                                 if (codingLine[this.codingPos] < columns) {
                                     ++refPos;
-                                    while (refLine[refPos] <= codingLine[this.codingPos] &&
-                                        refLine[refPos] < columns) {
+                                    while (refLine[refPos] <= codingLine[this.codingPos]
+                                        && refLine[refPos] < columns) {
                                         refPos += 2;
                                     }
                                 }
@@ -584,8 +584,8 @@ var NsCCITTFaxDecoder;
                                 blackPixels ^= 1;
                                 if (codingLine[this.codingPos] < columns) {
                                     ++refPos;
-                                    while (refLine[refPos] <= codingLine[this.codingPos] &&
-                                        refLine[refPos] < columns) {
+                                    while (refLine[refPos] <= codingLine[this.codingPos]
+                                        && refLine[refPos] < columns) {
                                         refPos += 2;
                                     }
                                 }
@@ -595,8 +595,8 @@ var NsCCITTFaxDecoder;
                                 blackPixels ^= 1;
                                 if (codingLine[this.codingPos] < columns) {
                                     ++refPos;
-                                    while (refLine[refPos] <= codingLine[this.codingPos] &&
-                                        refLine[refPos] < columns) {
+                                    while (refLine[refPos] <= codingLine[this.codingPos]
+                                        && refLine[refPos] < columns) {
                                         refPos += 2;
                                     }
                                 }
@@ -606,8 +606,8 @@ var NsCCITTFaxDecoder;
                                 blackPixels ^= 1;
                                 if (codingLine[this.codingPos] < columns) {
                                     ++refPos;
-                                    while (refLine[refPos] <= codingLine[this.codingPos] &&
-                                        refLine[refPos] < columns) {
+                                    while (refLine[refPos] <= codingLine[this.codingPos]
+                                        && refLine[refPos] < columns) {
                                         refPos += 2;
                                     }
                                 }
@@ -622,8 +622,8 @@ var NsCCITTFaxDecoder;
                                     else {
                                         ++refPos;
                                     }
-                                    while (refLine[refPos] <= codingLine[this.codingPos] &&
-                                        refLine[refPos] < columns) {
+                                    while (refLine[refPos] <= codingLine[this.codingPos]
+                                        && refLine[refPos] < columns) {
                                         refPos += 2;
                                     }
                                 }
@@ -638,8 +638,8 @@ var NsCCITTFaxDecoder;
                                     else {
                                         ++refPos;
                                     }
-                                    while (refLine[refPos] <= codingLine[this.codingPos] &&
-                                        refLine[refPos] < columns) {
+                                    while (refLine[refPos] <= codingLine[this.codingPos]
+                                        && refLine[refPos] < columns) {
                                         refPos += 2;
                                     }
                                 }
@@ -654,8 +654,8 @@ var NsCCITTFaxDecoder;
                                     else {
                                         ++refPos;
                                     }
-                                    while (refLine[refPos] <= codingLine[this.codingPos] &&
-                                        refLine[refPos] < columns) {
+                                    while (refLine[refPos] <= codingLine[this.codingPos]
+                                        && refLine[refPos] < columns) {
                                         refPos += 2;
                                     }
                                 }
@@ -788,6 +788,9 @@ var NsCCITTFaxDecoder;
                 bits = 8;
                 c = 0;
                 do {
+                    if (typeof this.outputBits !== "number") {
+                        throw new FormatError('Invalid /CCITTFaxDecode data, "outputBits" must be a number.');
+                    }
                     if (this.outputBits > bits) {
                         c <<= bits;
                         if (!(this.codingPos & 1)) {
@@ -891,7 +894,7 @@ var NsCCITTFaxDecoder;
             }
             return [false, 0, false];
         };
-        #getTwoDimCode = () => {
+        #getTwoDimCode() {
             let code = 0;
             let p;
             if (this.eoblock) {
@@ -910,7 +913,7 @@ var NsCCITTFaxDecoder;
             }
             info("Bad two dim code");
             return ccittEOF;
-        };
+        }
         #getWhiteCode = () => {
             let code = 0;
             let p;

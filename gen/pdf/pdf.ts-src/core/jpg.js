@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 /* Copyright 2014 Mozilla Foundation
  *
@@ -1229,7 +1229,7 @@ var NsJpegImage;
                             (0.00006834815998235662 * y +
                                 0.00015168452363460973 * k -
                                 0.09751927774728933) -
-                        k * (0.00031891311758832814 * k + 0.7364883807733168);
+                        k * (0.0003189131175883281 * k + 0.7364883807733168);
                 data[offset++] =
                     255 +
                         c *

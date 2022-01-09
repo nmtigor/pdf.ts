@@ -1,4 +1,4 @@
-import { AnnotationBorderStyleType, AnnotationFieldFlag, AnnotationFlag, AnnotationReplyType, AnnotationType, type rect_t } from "../shared/util.js";
+import { AnnotationBorderStyleType, AnnotationFieldFlag, AnnotationFlag, AnnotationReplyType, AnnotationType, type rect_t, RenderingIntentFlag } from "../shared/util.js";
 import { Dict, Name, Ref } from "./primitives.js";
 import { OperatorList } from "./operator_list.js";
 import { BasePdfManager } from "./pdf_manager.js";
@@ -60,6 +60,7 @@ export declare type AnnotationData = {
     modificationDate: string | undefined;
     rect: rect_t;
     subtype?: AnnotType | undefined;
+    hasOwnCanvas: boolean;
     kidIds?: string[];
     actions?: AnnotActions | undefined;
     fieldName?: string;
@@ -110,7 +111,7 @@ export declare type AnnotationData = {
 /**
  * PDF 1.7 Table 56
  */
-export declare type DashArray = [number, number] | [number] | [];
+export declare type DashArray = [number, number, number] | [number, number] | [number] | [];
 export declare type SaveData = {
     ref: Ref;
     data: string;
@@ -235,20 +236,20 @@ export declare class Annotation {
      */
     setColor(color: number[]): void;
     /**
-     * Set the (normal) appearance.
-     *
-     * @param dict The annotation's data dictionary
-     */
-    setAppearance(dict: Dict): void;
-    /**
      * Set the color for background and border if any.
      * The default values are transparent.
      *
      * @param mk The MK dictionary
      */
     setBorderAndBackgroundColors(mk: unknown): void;
-    loadResources(keys: string[]): Promise<Dict | undefined>;
-    getOperatorList(evaluator: PartialEvaluator, task: WorkerTask, renderForms?: boolean, annotationStorage?: AnnotStorageRecord): Promise<OperatorList>;
+    /**
+     * Set the (normal) appearance.
+     *
+     * @param dict The annotation's data dictionary
+     */
+    setAppearance(dict: Dict): void;
+    loadResources(keys: string[], appearance: BaseStream): Promise<Dict | undefined>;
+    getOperatorList(evaluator: PartialEvaluator, task: WorkerTask, intent: RenderingIntentFlag, renderForms?: boolean, annotationStorage?: AnnotStorageRecord): Promise<OperatorList>;
     save(evaluator: PartialEvaluator, task: WorkerTask, annotationStorage?: AnnotStorageRecord): Promise<SaveReturn | null>;
     /**
      * Get field data for usage in JS sandbox.

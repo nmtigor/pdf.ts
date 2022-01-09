@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 
 /* Copyright 2012 Mozilla Foundation
@@ -73,9 +73,9 @@ export class PredictorStream extends DecodeStream
     this.str = str;
     this.dict = str.dict;
 
-    const colors = (this.colors = <number>params!.get("Colors") || 1);
-    const bits = (this.bits = <number>params!.get("BitsPerComponent") || 8);
-    const columns = (this.columns = <number>params!.get("Columns") || 1);
+    const colors = (this.colors = <number>params.get("Colors") || 1);
+    const bits = (this.bits = <number>params.get("BPC", "BitsPerComponent") || 8);
+    const columns = (this.columns = <number>params.get("Columns") || 1);
 
     this.pixBytes = (colors * bits + 7) >> 3;
     this.rowBytes = (columns * colors * bits + 7) >> 3;

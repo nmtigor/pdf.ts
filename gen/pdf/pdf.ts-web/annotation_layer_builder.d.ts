@@ -1,6 +1,5 @@
 import { AnnotationStorage } from "../pdf.ts-src/display/annotation_storage.js";
-import { type IL10n, type IPDFAnnotationLayerFactory, type IPDFLinkService, type MouseState } from "./interfaces.js";
-import { DownloadManager } from "./download_manager.js";
+import { IDownloadManager, type IL10n, type IPDFLinkService, type MouseState } from "./interfaces.js";
 import { PageViewport } from '../pdf.ts-src/display/display_utils.js';
 import { type AnnotIntent, PDFPageProxy } from '../pdf.ts-src/display/api.js';
 import { type FieldObject } from "../pdf.ts-src/core/annotation.js";
@@ -14,7 +13,7 @@ interface AnnotationLayerBuilderOptions {
     imageResourcesPath?: string;
     renderForms: boolean;
     linkService: IPDFLinkService;
-    downloadManager?: DownloadManager | undefined;
+    downloadManager?: IDownloadManager | undefined;
     /**
      * Localization service.
      */
@@ -23,23 +22,25 @@ interface AnnotationLayerBuilderOptions {
     hasJSActionsPromise?: Promise<boolean> | undefined;
     fieldObjectsPromise: Promise<Record<string, FieldObject[]> | undefined> | undefined;
     mouseState?: MouseState | undefined;
+    annotationCanvasMap: Map<string, HTMLCanvasElement> | undefined;
 }
 export declare class AnnotationLayerBuilder {
     pageDiv: HTMLDivElement;
     pdfPage: PDFPageProxy;
     linkService: IPDFLinkService;
-    downloadManager?: DownloadManager | undefined;
-    imageResourcesPath?: string;
+    downloadManager: IDownloadManager | undefined;
+    imageResourcesPath: string;
     renderForms: boolean;
     l10n: IL10n;
-    annotationStorage?: AnnotationStorage | undefined;
+    annotationStorage: AnnotationStorage | undefined;
     enableScripting: boolean;
     _hasJSActionsPromise: Promise<boolean> | undefined;
     _fieldObjectsPromise: Promise<Record<string, FieldObject[]> | undefined> | undefined;
     _mouseState: MouseState | undefined;
+    _annotationCanvasMap: Map<string, HTMLCanvasElement> | undefined;
     div?: HTMLDivElement;
     _cancelled: boolean;
-    constructor({ pageDiv, pdfPage, linkService, downloadManager, annotationStorage, imageResourcesPath, renderForms, l10n, enableScripting, hasJSActionsPromise, fieldObjectsPromise, mouseState, }: AnnotationLayerBuilderOptions);
+    constructor({ pageDiv, pdfPage, linkService, downloadManager, annotationStorage, imageResourcesPath, renderForms, l10n, enableScripting, hasJSActionsPromise, fieldObjectsPromise, mouseState, annotationCanvasMap, }: AnnotationLayerBuilderOptions);
     /**
      * @param viewport
      * @param intent (default value is 'display')
@@ -49,10 +50,6 @@ export declare class AnnotationLayerBuilder {
     render(viewport: PageViewport, intent?: AnnotIntent): Promise<void>;
     cancel(): void;
     hide(): void;
-}
-export declare class DefaultAnnotationLayerFactory implements IPDFAnnotationLayerFactory {
-    /** @implements */
-    createAnnotationLayerBuilder(pageDiv: HTMLDivElement, pdfPage: PDFPageProxy, annotationStorage?: AnnotationStorage, imageResourcesPath?: string, renderForms?: boolean, l10n?: IL10n, enableScripting?: boolean, hasJSActionsPromise?: Promise<boolean>, mouseState?: MouseState, fieldObjectsPromise?: Promise<Record<string, FieldObject[]> | undefined>): AnnotationLayerBuilder;
 }
 export {};
 //# sourceMappingURL=annotation_layer_builder.d.ts.map

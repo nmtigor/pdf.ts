@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 /*81---------------------------------------------------------------------------*/
 const DEFAULT_VIEW_HISTORY_CACHE_SIZE = 20;

@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 /* Copyright 2015 Mozilla Foundation
  *
@@ -15,10 +15,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/** @typedef {import("./event_utils").EventBus} EventBus */
 /** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
+import { assert } from "../../lib/util/trace.js";
 import { isObjectLike } from "../../lib/jslang.js";
-import { parseQueryString } from "./ui_utils.js";
 import { addLinkAttributes, LinkTarget } from "../pdf.ts-src/display/display_utils.js";
+import { parseQueryString } from "./ui_utils.js";
 /**
  * Performs navigation functions inside PDF, such as opening specified page,
  * or destination.
@@ -74,7 +76,7 @@ export class PDFLinkService {
         let pageNumber;
         if (isObjectLike(destRef)) {
             pageNumber = this._cachedPageNumber(destRef);
-            if (pageNumber === null) {
+            if (pageNumber) {
                 // Fetch the page reference if it's not yet available. This could
                 // only occur during loading, before all pages have been resolved.
                 this.pdfDocument
@@ -356,9 +358,12 @@ export class PDFLinkService {
         const refStr = pageRef.gen === 0 ? `${pageRef.num}R` : `${pageRef.num}R${pageRef.gen}`;
         this.#pagesRefCache[refStr] = pageNum;
     }
+    /** @implements */
     _cachedPageNumber(pageRef) {
+        if (!pageRef)
+            return undefined;
         const refStr = pageRef.gen === 0 ? `${pageRef.num}R` : `${pageRef.num}R${pageRef.gen}`;
-        return this.#pagesRefCache?.[refStr] || null;
+        return this.#pagesRefCache?.[refStr] || undefined;
     }
     /** @implements */
     isPageVisible(pageNumber) {
@@ -463,6 +468,8 @@ export class SimpleLinkService {
      * @param pageRef reference to the page.
      */
     cachePageRef(pageNum, pageRef) { }
+    /** @implements */
+    _cachedPageNumber(pageRef) { assert(0); return undefined; }
     /** @implements */
     isPageVisible(pageNumber) { return true; }
     /**

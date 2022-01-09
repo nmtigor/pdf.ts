@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 /* Copyright 2012 Mozilla Foundation
  *
@@ -15,8 +15,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { getOutputScale } from "./ui_utils.js";
-import { RenderingStates } from "./pdf_rendering_queue.js";
+/** @typedef {import("./interfaces").IL10n} IL10n */
+/** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
+/** @typedef {import("./interfaces").IRenderableView} IRenderableView */
+// eslint-disable-next-line max-len
+/** @typedef {import("./pdf_rendering_queue").PDFRenderingQueue} PDFRenderingQueue */
+import { getOutputScale, RenderingStates } from "./ui_utils.js";
 import { RenderingCancelledException } from "../pdf.ts-src/display/display_utils.js";
 import { html } from "../../lib/dom.js";
 /*81---------------------------------------------------------------------------*/

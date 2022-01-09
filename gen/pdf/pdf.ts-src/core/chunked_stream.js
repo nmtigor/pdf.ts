@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 /* Copyright 2012 Mozilla Foundation
  *
@@ -82,28 +82,27 @@ export class ChunkedStream extends Stream {
         }
     }
     ensureByte(pos) {
-        if (pos < this.progressiveDataLength) {
+        if (pos < this.progressiveDataLength)
             return;
-        }
         const chunk = Math.floor(pos / this.chunkSize);
-        if (chunk === this.lastSuccessfulEnsureByteChunk) {
+        if (chunk > this.numChunks)
             return;
-        }
+        if (chunk === this.lastSuccessfulEnsureByteChunk)
+            return;
         if (!this.#loadedChunks.has(chunk)) {
             throw new MissingDataException(pos, pos + 1);
         }
         this.lastSuccessfulEnsureByteChunk = chunk;
     }
     ensureRange(begin, end) {
-        if (begin >= end) {
+        if (begin >= end)
             return;
-        }
-        if (end <= this.progressiveDataLength) {
+        if (end <= this.progressiveDataLength)
             return;
-        }
-        const chunkSize = this.chunkSize;
-        const beginChunk = Math.floor(begin / chunkSize);
-        const endChunk = Math.floor((end - 1) / chunkSize) + 1;
+        const beginChunk = Math.floor(begin / this.chunkSize);
+        if (beginChunk > this.numChunks)
+            return;
+        const endChunk = Math.min(Math.floor((end - 1) / this.chunkSize) + 1, this.numChunks);
         for (let chunk = beginChunk; chunk < endChunk; ++chunk) {
             if (!this.#loadedChunks.has(chunk)) {
                 throw new MissingDataException(begin, end);

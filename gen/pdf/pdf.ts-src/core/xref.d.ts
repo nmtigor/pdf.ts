@@ -1,9 +1,9 @@
-import { Dict, type ObjNoRef, type Obj, Ref } from "./primitives.js";
+import { Dict, type ObjNoRef, type Obj, Ref, RefSet } from "./primitives.js";
 import { Parser } from "./parser.js";
+import { DocStats } from "./core_utils.js";
 import { CipherTransformFactory } from "./crypto.js";
 import { Stream } from "./stream.js";
 import { ChunkedStream } from "./chunked_stream.js";
-import { type PDFDocumentStats } from "../display/api.js";
 import { BasePdfManager } from "./pdf_manager.js";
 interface XRefEntry {
     offset: number;
@@ -31,10 +31,11 @@ export declare class XRef {
     pdfManager: BasePdfManager;
     entries: XRefEntry[];
     xrefstms: number[];
-    stats: PDFDocumentStats;
+    _pendingRefs: RefSet;
+    stats: DocStats;
     getNewRef(): Ref;
     resetNewRef(): void;
-    startXRefQueue?: number[];
+    startXRefQueue: number[];
     setStartXRef(startXRef: number): void;
     trailer?: Dict;
     encrypt?: CipherTransformFactory;

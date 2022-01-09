@@ -1,7 +1,7 @@
 import { ImageLayer, PDFCommonObjs, PDFObjects, PDFObjs } from "./api.js";
 import { type matrix_t, OPS, type rect_t, TextRenderingMode } from "../shared/util.js";
 import { PageViewport } from "./display_utils.js";
-import { RadialAxialShadingPattern, type ShadingPattern, TilingPattern } from "./pattern_helper.js";
+import { type ShadingPattern, TilingPattern, PathType } from "./pattern_helper.js";
 import { OptionalContentConfig } from "./optional_content_config.js";
 import { type ImgData, type MarkedContentProps, type SmaskOptions } from "../core/evaluator.js";
 import { Glyph } from "../core/fonts.js";
@@ -50,19 +50,6 @@ export declare class CachedCanvases {
     constructor(canvasFactory: BaseCanvasFactory);
     getCanvas(id: string, width: number, height: number, trackTransform?: boolean): CanvasEntry;
     clear(): void;
-}
-/**
- * Least recently used cache implemented with a JS Map. JS Map keys are ordered
- * by last insertion.
- */
-export declare class LRUCache {
-    _cache: Map<RadialAxialShadingPattern, CanvasPattern | null>;
-    has(key: RadialAxialShadingPattern): boolean;
-    clear(): void;
-    _maxSize: number;
-    constructor(maxSize?: number);
-    get(key: RadialAxialShadingPattern): CanvasPattern | null | undefined;
-    set(key: RadialAxialShadingPattern, value: CanvasPattern | null): void;
 }
 interface SMask {
     canvas: HTMLCanvasElement;
@@ -113,10 +100,10 @@ declare class CanvasExtraState {
     setCurrentPoint(x: number, y: number): void;
     updatePathMinMax(transform: matrix_t, x: number, y: number): void;
     updateCurvePathMinMax(transform: matrix_t, x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, x3: number, y3: number): void;
-    getPathBoundingBox(): rect_t;
+    getPathBoundingBox(pathType?: PathType, transform?: matrix_t): rect_t;
     updateClipFromPath(): void;
     startNewPathAndClipBox(box: rect_t): void;
-    getClippedPathBoundingBox(): [number, number, number, number] | undefined;
+    getClippedPathBoundingBox(pathType?: PathType, transform?: matrix_t): [number, number, number, number] | undefined;
 }
 export interface GroupOptions {
     matrix: matrix_t | undefined;
@@ -185,11 +172,15 @@ export declare class CanvasGraphics {
     }[];
     optionalContentConfig: OptionalContentConfig | undefined;
     cachedCanvases: CachedCanvases;
-    cachedCanvasPatterns: LRUCache;
     cachedPatterns: Map<ShadingType, ShadingPattern>;
+    annotationCanvas?: CanvasEntry;
+    annotationCanvasMap: Map<string, HTMLCanvasElement> | undefined;
+    viewportScale: number;
+    outputScaleX: number;
+    outputScaleY: number;
     transparentCanvas: HTMLCanvasElement | undefined;
     pendingTextPaths?: TextPath[];
-    constructor(canvasCtx: C2D, commonObjs: PDFObjects<PDFCommonObjs>, objs: PDFObjects<PDFObjs | undefined>, canvasFactory: BaseCanvasFactory, imageLayer?: ImageLayer, optionalContentConfig?: OptionalContentConfig);
+    constructor(canvasCtx: C2D, commonObjs: PDFObjects<PDFCommonObjs>, objs: PDFObjects<PDFObjs | undefined>, canvasFactory: BaseCanvasFactory, imageLayer?: ImageLayer, optionalContentConfig?: OptionalContentConfig, annotationCanvasMap?: Map<string, HTMLCanvasElement>);
     beginDrawing({ transform, viewport, transparency, background, }: BeginDrawingParms): void;
     executeOperatorList(operatorList: OpListIR, executionStartIdx?: number, continueCallback?: () => void): number;
     endDrawing(): void;
@@ -274,7 +265,7 @@ export declare class CanvasGraphics {
     [OPS.endGroup](group: GroupOptions): void;
     [OPS.beginAnnotations](): void;
     [OPS.endAnnotations](): void;
-    [OPS.beginAnnotation](id: unknown, rect: rect_t, transform: matrix_t, matrix: matrix_t): void;
+    [OPS.beginAnnotation](id: string, rect: rect_t, transform: matrix_t, matrix: matrix_t, hasOwnCanvas: boolean): void;
     [OPS.endAnnotation](): void;
     [OPS.paintImageMaskXObject](img: ImgData): void;
     [OPS.paintImageMaskXObjectRepeat](imgData: ImgData, scaleX: number, skewX: number | undefined, skewY: number | undefined, scaleY: number, positions: Float32Array): void;

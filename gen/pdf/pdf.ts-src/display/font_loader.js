@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 /* Copyright 2012 Mozilla Foundation
  *
@@ -273,7 +273,7 @@ export class FontLoader extends BaseFontLoader {
         }
         this._document.body.appendChild(div);
         isFontReady(loadTestFontId, () => {
-            this._document.body.removeChild(div);
+            div.remove();
             request.complete();
         });
         /** Hack end */

@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 
 /* Copyright 2017 Mozilla Foundation
@@ -17,17 +17,22 @@
  * limitations under the License.
  */
 
+/** @typedef {import("./event_utils").EventBus} EventBus */
+/** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
+
 import { isObjectLike } from "../../lib/jslang.js";
 import { type ExplicitDest } from "../pdf.ts-src/core/catalog.js";
 import { type PDFLocation } from "./base_viewer.js";
-import { type HistoryInitParms, type HistoryPushParms, type IPDFLinkService } from "./interfaces.js";
+import { 
+  type HistoryInitParms, 
+  type HistoryPushParms, 
+  type IPDFLinkService 
+} from "./interfaces.js";
+import { EventBus, EventMap, waitOnEventOrTimeout } from "./event_utils.js";
 import {
-  EventBus,
-  type EventMap,
   isValidRotation,
   parseQueryString,
   PresentationModeState,
-  waitOnEventOrTimeout,
 } from "./ui_utils.js";
 /*81---------------------------------------------------------------------------*/
 

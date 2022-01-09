@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 /* Copyright 2021 Mozilla Foundation
  *
@@ -474,6 +474,13 @@ export class Binder {
                     /* allTransparent = */ false, 
                     /* skipConsumed = */ this.emptyMerge).next().value;
                     if (!match) {
+                        // If there is no match (no data) and `min === 0` then
+                        // the container is entirely excluded.
+                        // https://www.pdfa.org/norm-refs/XFA-3_3.pdf#G12.1428332
+                        if (min === 0) {
+                            uselessNodes.push(child);
+                            continue;
+                        }
                         // We're in matchTemplate mode so create a node in data to reflect
                         // what we've in template.
                         const nsId = dataNode[$namespaceId] === NS_DATASETS

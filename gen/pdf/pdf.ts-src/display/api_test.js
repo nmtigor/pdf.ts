@@ -2,12 +2,12 @@
  * api_test
 ** -------- */
 import { css_1, css_2 } from "../../../test/alias.js";
-import "../../../lib/jslang.js";
+import { eq } from "../../../lib/jslang.js";
 import { createPromiseCap } from "../../../lib/promisecap.js";
 import { buildGetDocumentParams, DefaultFileReaderFactory, TEST_PDFS_PATH } from "../../test_utils.js";
 import { DefaultCanvasFactory, getDocument, PDFDataRangeTransport, PDFDocumentLoadingTask, PDFDocumentProxy, PDFPageProxy, PDFWorker, RenderTask, } from "./api.js";
 import { GlobalWorkerOptions } from "./worker_options.js";
-import { AnnotationMode, FontType, OPS, PermissionFlag, StreamType } from "../../pdf.ts-src/shared/util.js";
+import { AnnotationMode, FontType, OPS, PermissionFlag, StreamType, UnknownErrorException } from "../../pdf.ts-src/shared/util.js";
 import { PageLayout, PageMode } from "../../pdf.ts-web/ui_utils.js";
 import { $enum } from "../../../3rd/ts-enum-util/src/$enum.js";
 import { Metadata } from "./metadata.js";
@@ -266,6 +266,154 @@ console.log("%c>>>>>>> test getDocument() >>>>>>>", `color:${css_1}`);
         console.assert(+docNum1 < +docNum2);
         await Promise.all([loadingTask1.destroy(), loadingTask2.destroy()]);
     }
+    console.log(`${++i}: it creates pdf doc from PDF file with bad XRef entry...`);
+    {
+        // A corrupt PDF file, where the XRef table have (some) bogus entries.
+        const loadingTask = getDocument(buildGetDocumentParams("PDFBOX-4352-0.pdf", {
+            rangeChunkSize: 100,
+        }));
+        console.assert(loadingTask instanceof PDFDocumentLoadingTask);
+        const pdfDocument = await loadingTask.promise;
+        console.assert(pdfDocument.numPages === 1);
+        const page = await pdfDocument.getPage(1);
+        console.assert(page instanceof PDFPageProxy);
+        const opList = await page.getOperatorList();
+        console.assert(opList.fnArray.length === 0);
+        console.assert(opList.argsArray.length === 0);
+        console.assert(opList.lastChunk === true);
+        await loadingTask.destroy();
+    }
+    console.log(`${++i}: it creates pdf doc from PDF file with bad XRef header...`);
+    {
+        const loadingTask = getDocument(buildGetDocumentParams("GHOSTSCRIPT-698804-1-fuzzed.pdf"));
+        console.assert(loadingTask instanceof PDFDocumentLoadingTask);
+        const pdfDocument = await loadingTask.promise;
+        console.assert(pdfDocument.numPages === 1);
+        const page = await pdfDocument.getPage(1);
+        console.assert(page instanceof PDFPageProxy);
+        const opList = await page.getOperatorList();
+        console.assert(opList.fnArray.length === 0);
+        console.assert(opList.argsArray.length === 0);
+        console.assert(opList.lastChunk === true);
+        await loadingTask.destroy();
+    }
+    // console.log(`${++i}: it creates pdf doc from PDF file with bad XRef byteWidths...`);
+    // {
+    //   // A corrupt PDF file, where the XRef /W-array have (some) bogus entries.
+    //   const loadingTask = getDocument(
+    //     buildGetDocumentParams("REDHAT-1531897-0.pdf")
+    //   );
+    //   console.assert( loadingTask instanceof PDFDocumentLoadingTask );
+    //   try {
+    //     await loadingTask.promise;
+    //     console.assert( !!0, "Shouldn't get here.");
+    //   } catch (reason) {
+    //     console.assert( reason instanceof InvalidPDFException );
+    //     console.assert( (<any>reason).message === "Invalid PDF structure." );
+    //   }
+    //   await loadingTask.destroy();
+    // }
+    // console.log(`${++i}: it creates pdf doc from PDF file with inaccessible /Pages tree...`);
+    // {
+    //   const loadingTask = getDocument(
+    //     buildGetDocumentParams("poppler-395-0-fuzzed.pdf")
+    //   );
+    //   console.assert( loadingTask instanceof PDFDocumentLoadingTask );
+    //   try {
+    //     await loadingTask.promise;
+    //     console.assert( !!0, "Shouldn't get here.");
+    //   } catch (reason) {
+    //     console.assert( reason instanceof InvalidPDFException );
+    //     console.assert( (<any>reason).message === "Invalid Root reference." );
+    //   }
+    //   await loadingTask.destroy();
+    // }
+    console.log(`${++i}: it creates pdf doc from PDF files, with bad /Pages tree /Count...`);
+    {
+        const loadingTask1 = getDocument(buildGetDocumentParams("poppler-67295-0.pdf"));
+        const loadingTask2 = getDocument(buildGetDocumentParams("poppler-85140-0.pdf"));
+        console.assert(loadingTask1 instanceof PDFDocumentLoadingTask);
+        console.assert(loadingTask2 instanceof PDFDocumentLoadingTask);
+        const pdfDocument1 = await loadingTask1.promise;
+        const pdfDocument2 = await loadingTask2.promise;
+        console.assert(pdfDocument1.numPages === 1);
+        console.assert(pdfDocument2.numPages === 1);
+        const page = await pdfDocument1.getPage(1);
+        console.assert(page instanceof PDFPageProxy);
+        const opList = await page.getOperatorList();
+        console.assert(opList.fnArray.length > 5);
+        console.assert(opList.argsArray.length > 5);
+        console.assert(opList.lastChunk === true);
+        try {
+            await pdfDocument2.getPage(1);
+            console.assert(!!0, "Shouldn't get here.");
+        }
+        catch (reason) {
+            console.assert(reason instanceof UnknownErrorException);
+            console.assert(reason.message === "Bad (uncompressed) XRef entry: 3R");
+        }
+        await Promise.all([loadingTask1.destroy(), loadingTask2.destroy()]);
+    }
+    console.log(`${++i}: it creates pdf doc from PDF files, with circular references...`);
+    {
+        const loadingTask1 = getDocument(buildGetDocumentParams("poppler-91414-0-53.pdf"));
+        const loadingTask2 = getDocument(buildGetDocumentParams("poppler-91414-0-54.pdf"));
+        console.assert(loadingTask1 instanceof PDFDocumentLoadingTask);
+        console.assert(loadingTask2 instanceof PDFDocumentLoadingTask);
+        const pdfDocument1 = await loadingTask1.promise;
+        const pdfDocument2 = await loadingTask2.promise;
+        console.assert(pdfDocument1.numPages === 1);
+        console.assert(pdfDocument2.numPages === 1);
+        const pageA = await pdfDocument1.getPage(1);
+        const pageB = await pdfDocument2.getPage(1);
+        console.assert(pageA instanceof PDFPageProxy);
+        console.assert(pageB instanceof PDFPageProxy);
+        for (const opList of [
+            await pageA.getOperatorList(),
+            await pageB.getOperatorList(),
+        ]) {
+            console.assert(opList.fnArray.length > 5);
+            console.assert(opList.argsArray.length > 5);
+            console.assert(opList.lastChunk === true);
+        }
+        await Promise.all([loadingTask1.destroy(), loadingTask2.destroy()]);
+    }
+    // console.log(`${++i}: it creates pdf doc from PDF files, with bad /Pages tree /Kids entries...`);
+    // {
+    //   const loadingTask1 = getDocument(
+    //     buildGetDocumentParams("poppler-742-0-fuzzed.pdf")
+    //   );
+    //   const loadingTask2 = getDocument(
+    //     buildGetDocumentParams("poppler-937-0-fuzzed.pdf")
+    //   );
+    //   console.assert( loadingTask1 instanceof PDFDocumentLoadingTask );
+    //   console.assert( loadingTask2 instanceof PDFDocumentLoadingTask );
+    //   const pdfDocument1 = await loadingTask1.promise;
+    //   const pdfDocument2 = await loadingTask2.promise;
+    //   console.assert( pdfDocument1.numPages === 1 );
+    //   console.assert( pdfDocument2.numPages === 1 );
+    //   try {
+    //     await pdfDocument1.getPage(1);
+    //     console.assert( !!0, "Shouldn't get here.");
+    //   } catch (reason) {
+    //     console.assert( reason instanceof UnknownErrorException );
+    //     // console.log((<any>reason).message);
+    //     console.assert( (<any>reason).message ===
+    //       "Page dictionary kids object is not an array."
+    //     );
+    //   }
+    //   try {
+    //     await pdfDocument2.getPage(1);
+    //     console.assert( !!0, "Shouldn't get here.");
+    //   } catch (reason) {
+    //     console.assert( reason instanceof UnknownErrorException );
+    //     // console.log((<any>reason).message);
+    //     console.assert( (<any>reason).message ===
+    //       "Page dictionary kids object is not an array."
+    //     );
+    //   }
+    //   await Promise.all([loadingTask1.destroy(), loadingTask2.destroy()]);
+    // }
 }
 console.log("%c>>>>>>> test PDFWorker >>>>>>>", `color:${css_1}`);
 {
@@ -423,12 +571,23 @@ console.log("%c>>>>>>> test PDFDocument >>>>>>>", `color:${css_1}`);
             return pdfDoc.getPage(2).then(pdfPage => {
                 throw new Error("shall fail for invalid page");
             }, reason => {
-                console.assert(reason instanceof Error);
+                console.assert(reason instanceof UnknownErrorException);
                 console.assert(reason.message === "Pages tree contains circular reference.");
             });
         });
         await Promise.all([page1, page2]);
         await loadingTask.destroy();
+    }
+    console.log(`${++i}: it gets page multiple time, with working caches...`);
+    {
+        const promiseA = pdfDocument.getPage(1);
+        const promiseB = pdfDocument.getPage(1);
+        console.assert(promiseA instanceof Promise);
+        console.assert(promiseA === promiseB);
+        const pageA = await promiseA;
+        const pageB = await promiseB;
+        console.assert(pageA instanceof PDFPageProxy);
+        console.assert(pageA === pageB);
     }
     // console.log(`${++i}: it gets page index...`);
     // {
@@ -444,7 +603,9 @@ console.log("%c>>>>>>> test PDFDocument >>>>>>>", `color:${css_1}`);
             console.assert(!!0, "Shouldn't get here.");
         }
         catch (reason) {
-            console.assert(reason instanceof Error);
+            console.assert(reason instanceof UnknownErrorException);
+            console.assert(reason.message ===
+                "The reference does not point to a /Page dictionary.");
         }
     }
     console.log(`${++i}: it gets destinations, from /Dests dictionary...`);
@@ -563,41 +724,39 @@ console.log("%c>>>>>>> test PDFDocument >>>>>>>", `color:${css_1}`);
     console.log(`${++i}: it gets non-existent page labels...`);
     {
         const pageLabels = await pdfDocument.getPageLabels();
-        console.assert(pageLabels === null);
+        console.assert(pageLabels === undefined);
     }
-    // console.log(`${++i}: it gets page labels...`);
-    // {
-    //   // PageLabels with Roman/Arabic numerals.
-    //   const loadingTask0 = getDocument(buildGetDocumentParams("bug793632.pdf"));
-    //   const promise0 = loadingTask0.promise.then( pdfDoc => pdfDoc.getPageLabels() );
-    //   // PageLabels with only a label prefix.
-    //   const loadingTask1 = getDocument(buildGetDocumentParams("issue1453.pdf"));
-    //   const promise1 = loadingTask1.promise.then( pdfDoc => pdfDoc.getPageLabels() );
-    //   // PageLabels identical to standard page numbering.
-    //   const loadingTask2 = getDocument(buildGetDocumentParams("rotation.pdf"));
-    //   const promise2 = loadingTask2.promise.then( pdfDoc => pdfDoc.getPageLabels() );
-    //   // PageLabels with bad "Prefix" entries.
-    //   const loadingTask3 = getDocument(
-    //     buildGetDocumentParams("bad-PageLabels.pdf")
-    //   );
-    //   const promise3 = loadingTask3.promise.then( pdfDoc => pdfDoc.getPageLabels() );
-    //   const pageLabels = await Promise.all([
-    //     promise0,
-    //     promise1,
-    //     promise2,
-    //     promise3,
-    //   ]);
-    //   console.assert( pageLabels[0]!.eq(["i", "ii", "iii", "1"]));
-    //   console.assert( pageLabels[1]!.eq(["Front Page1"]));
-    //   console.assert( pageLabels[2]!.eq(["1", "2"]));
-    //   console.assert( pageLabels[3]!.eq(["X3"]));
-    //   await Promise.all([
-    //     loadingTask0.destroy(),
-    //     loadingTask1.destroy(),
-    //     loadingTask2.destroy(),
-    //     loadingTask3.destroy(),
-    //   ]);
-    // }
+    console.log(`${++i}: it gets page labels...`);
+    {
+        // PageLabels with Roman/Arabic numerals.
+        const loadingTask0 = getDocument(buildGetDocumentParams("bug793632.pdf"));
+        const promise0 = loadingTask0.promise.then(pdfDoc => pdfDoc.getPageLabels());
+        // PageLabels with only a label prefix.
+        const loadingTask1 = getDocument(buildGetDocumentParams("issue1453.pdf"));
+        const promise1 = loadingTask1.promise.then(pdfDoc => pdfDoc.getPageLabels());
+        // PageLabels identical to standard page numbering.
+        const loadingTask2 = getDocument(buildGetDocumentParams("rotation.pdf"));
+        const promise2 = loadingTask2.promise.then(pdfDoc => pdfDoc.getPageLabels());
+        // PageLabels with bad "Prefix" entries.
+        const loadingTask3 = getDocument(buildGetDocumentParams("bad-PageLabels.pdf"));
+        const promise3 = loadingTask3.promise.then(pdfDoc => pdfDoc.getPageLabels());
+        const pageLabels = await Promise.all([
+            promise0,
+            promise1,
+            promise2,
+            promise3,
+        ]);
+        console.assert(pageLabels[0].eq(["i", "ii", "iii", "1"]));
+        console.assert(pageLabels[1].eq(["Front Page1"]));
+        console.assert(pageLabels[2].eq(["1", "2"]));
+        console.assert(pageLabels[3].eq(["X3"]));
+        await Promise.all([
+            loadingTask0.destroy(),
+            loadingTask1.destroy(),
+            loadingTask2.destroy(),
+            loadingTask3.destroy(),
+        ]);
+    }
     console.log(`${++i}: it gets default page layout...`);
     {
         const loadingTask = getDocument(buildGetDocumentParams("tracemonkey.pdf"));
@@ -761,6 +920,17 @@ console.log("%c>>>>>>> test PDFDocument >>>>>>>", `color:${css_1}`);
         console.assert(outlineItemOne.color.eq(new Uint8ClampedArray([0, 0, 0])));
         await loadingTask.destroy();
     }
+    console.log(`${++i}: it gets outline with non-displayable chars...`);
+    {
+        const loadingTask = getDocument(buildGetDocumentParams("issue14267.pdf"));
+        const pdfDoc = await loadingTask.promise;
+        const outline = await pdfDoc.getOutline();
+        console.assert(Array.isArray(outline));
+        console.assert(outline.length === 1);
+        const outlineItem = outline[0];
+        console.assert(outlineItem.title === "hello\x11world");
+        await loadingTask.destroy();
+    }
     console.log(`${++i}: it gets non-existent permissions...`);
     {
         const permissions = await pdfDocument.getPermissions();
@@ -845,6 +1015,8 @@ console.log("%c>>>>>>> test PDFDocument >>>>>>>", `color:${css_1}`);
         const loadingTask = getDocument(buildGetDocumentParams("bug1606566.pdf"));
         const pdfDoc = await loadingTask.promise;
         const { info, metadata, contentDispositionFilename, contentLength } = await pdfDoc.getMetadata();
+        // Custom, non-standard, information dictionary entries.
+        console.assert(info.Custom === undefined);
         // The following are PDF.js specific, non-standard, properties.
         console.assert(info.PDFFormatVersion === undefined);
         console.assert(info.Language === undefined);
@@ -857,6 +1029,27 @@ console.log("%c>>>>>>> test PDFDocument >>>>>>>", `color:${css_1}`);
         console.assert(metadata === undefined);
         console.assert(contentDispositionFilename === undefined);
         console.assert(contentLength === 624);
+        await loadingTask.destroy();
+    }
+    console.log(`${++i}: it gets metadata, with corrupt /Metadata XRef entry...`);
+    {
+        const loadingTask = getDocument(buildGetDocumentParams("PDFBOX-3148-2-fuzzed.pdf"));
+        const pdfDoc = await loadingTask.promise;
+        const { info, metadata, contentDispositionFilename, contentLength } = await pdfDoc.getMetadata();
+        // Custom, non-standard, information dictionary entries.
+        console.assert(info.Custom === undefined);
+        // The following are PDF.js specific, non-standard, properties.
+        console.assert(info.PDFFormatVersion === "1.6");
+        console.assert(info.Language === undefined);
+        console.assert(info.EncryptFilterName === undefined);
+        console.assert(!info.IsLinearized);
+        console.assert(info.IsAcroFormPresent);
+        console.assert(!info.IsXFAPresent);
+        console.assert(!info.IsCollectionPresent);
+        console.assert(!info.IsSignaturesPresent);
+        console.assert(metadata === undefined);
+        console.assert(contentDispositionFilename === undefined);
+        console.assert(contentLength === 244351);
         await loadingTask.destroy();
     }
     console.log(`${++i}: it gets markInfo...`);
@@ -882,8 +1075,8 @@ console.log("%c>>>>>>> test PDFDocument >>>>>>>", `color:${css_1}`);
     }
     console.log(`${++i}: it gets document stats...`);
     {
-        const stats = await pdfDocument.getStats();
-        console.assert(stats.eq({ streamTypes: {}, fontTypes: {} }));
+        const stats = pdfDocument.stats;
+        console.assert(stats === undefined);
     }
     console.log(`${++i}: it cleans up document resources...`);
     {
@@ -1263,6 +1456,31 @@ versions of the fonts, converted for this package using FontForge from its
 sources, for full support with Dvips.`));
         await loadingTask.destroy();
     }
+    //   console.log(`${++i}: it gets text content, with negative spaces (bug 931481)...`);
+    //   {
+    //     // if (isNodeJS) {
+    //     //   pending("Linked test-cases are not supported in Node.js.");
+    //     // }
+    //     const loadingTask = getDocument(buildGetDocumentParams("bug931481.pdf"));
+    //     const pdfDoc = await loadingTask.promise;
+    //     const pdfPage = await pdfDoc.getPage(1);
+    //     const { items } = await pdfPage.getTextContent();
+    //     const text = mergeText( <TextItem[]>items );
+    //     console.assert(
+    //       text.includes(`Kathrin Nachbaur
+    // Die promovierte Juristin ist 1979 in Graz geboren und aufgewachsen. Nach
+    // erfolgreichem Studienabschluss mit Fokus auf Europarecht absolvierte sie ein
+    // Praktikum bei Magna International in Kanada in der Human Resources Abteilung.
+    // Anschliessend wurde sie geschult in Human Resources, Arbeitsrecht und
+    // Kommunikation, währenddessen sie auch an ihrem Doktorat im Wirtschaftsrecht
+    // arbeitete. Seither arbeitete sie bei Magna International als Projekt Manager in der
+    // Innovationsabteilung. Seit 2009 ist sie Frank Stronachs Büroleiterin in Österreich und
+    // Kanada. Zusätzlich ist sie seit 2012 Vice President, Business Development der
+    // Stronach Group und Vizepräsidentin und Institutsleiterin des Stronach Institut für
+    // sozialökonomische Gerechtigkeit.`)
+    //     );
+    //     await loadingTask.destroy();
+    //   }
     console.log(`${++i}: it gets text content, with beginbfrange operator handled correctly (bug 1627427)...`);
     {
         const loadingTask = getDocument(buildGetDocumentParams("bug1627427_reduced.pdf"));
@@ -1290,6 +1508,7 @@ sources, for full support with Dvips.`));
             children: [
                 {
                     role: "Document",
+                    lang: "en-US",
                     children: [
                         {
                             role: "H1",
@@ -1427,15 +1646,32 @@ sources, for full support with Dvips.`));
         console.assert(opListAnnotEnable.fnArray.length < opListAnnotEnableStorage.fnArray.length);
         await loadingTask.destroy();
     }
+    console.log(`${++i}: it gets operatorList, with page resources containing corrupt /CCITTFaxDecode data...`);
+    {
+        const loadingTask = getDocument(buildGetDocumentParams("poppler-90-0-fuzzed.pdf"));
+        console.assert(loadingTask instanceof PDFDocumentLoadingTask);
+        const pdfDoc = await loadingTask.promise;
+        console.assert(pdfDoc.numPages === 16);
+        const pdfPage = await pdfDoc.getPage(6);
+        console.assert(pdfPage instanceof PDFPageProxy);
+        const opList = await pdfPage.getOperatorList();
+        console.assert(opList.fnArray.length > 25);
+        console.assert(opList.argsArray.length > 25);
+        console.assert(opList.lastChunk === true);
+        await loadingTask.destroy();
+    }
     console.log(`${++i}: it gets document stats after parsing page...`);
     {
-        const stats = await page.getOperatorList().then(() => pdfDocument.getStats());
-        const expectedStreamTypes = {};
-        expectedStreamTypes[StreamType.FLATE] = true;
-        const expectedFontTypes = {};
-        expectedFontTypes[FontType.TYPE1STANDARD] = true;
-        expectedFontTypes[FontType.CIDFONTTYPE2] = true;
-        console.assert(stats.eq({
+        await page.getOperatorList();
+        const stats = pdfDocument.stats;
+        const expectedStreamTypes = {
+            [StreamType.FLATE]: true,
+        };
+        const expectedFontTypes = {
+            [FontType.TYPE1STANDARD]: true,
+            [FontType.CIDFONTTYPE2]: true,
+        };
+        console.assert(eq(stats, {
             streamTypes: expectedStreamTypes,
             fontTypes: expectedFontTypes,
         }));

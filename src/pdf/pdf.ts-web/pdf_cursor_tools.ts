@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 
 /* Copyright 2017 Mozilla Foundation
@@ -17,8 +17,9 @@
  * limitations under the License.
  */
 
+import { EventBus } from "./event_utils.js";
 import { GrabToPan } from "./grab_to_pan.js";
-import { EventBus, PresentationModeState } from "./ui_utils.js";
+import { PresentationModeState } from "./ui_utils.js";
 /*81---------------------------------------------------------------------------*/
 
 export const enum CursorTool {

@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 /* Copyright 2012 Mozilla Foundation
  *
@@ -450,7 +450,7 @@ export class Parser {
             dictLength = stream.pos - lexer.beginInlineImagePos;
         }
         // Extract the name of the first (i.e. the current) image filter.
-        const filter = dict.get("Filter", "F");
+        const filter = dict.get("F", "Filter");
         let filterName;
         if (filter instanceof Name) {
             filterName = filter.name;
@@ -464,17 +464,21 @@ export class Parser {
         // Parse image stream.
         const startPos = stream.pos;
         let length;
-        if (filterName === "DCTDecode" || filterName === "DCT") {
-            length = this.findDCTDecodeInlineStreamEnd(stream);
-        }
-        else if (filterName === "ASCII85Decode" || filterName === "A85") {
-            length = this.findASCII85DecodeInlineStreamEnd(stream);
-        }
-        else if (filterName === "ASCIIHexDecode" || filterName === "AHx") {
-            length = this.findASCIIHexDecodeInlineStreamEnd(stream);
-        }
-        else {
-            length = this.findDefaultInlineStreamEnd(stream);
+        switch (filterName) {
+            case "DCT":
+            case "DCTDecode":
+                length = this.findDCTDecodeInlineStreamEnd(stream);
+                break;
+            case "A85":
+            case "ASCII85Decode":
+                length = this.findASCII85DecodeInlineStreamEnd(stream);
+                break;
+            case "AHx":
+            case "ASCIIHexDecode":
+                length = this.findASCIIHexDecodeInlineStreamEnd(stream);
+                break;
+            default:
+                length = this.findDefaultInlineStreamEnd(stream);
         }
         let imageStream = stream.makeSubStream(startPos, length, dict);
         // Cache all images below the MAX_LENGTH_TO_CACHE threshold by their
@@ -549,7 +553,7 @@ export class Parser {
         // Get the length.
         let length = dict.get("Length");
         if (!Number.isInteger(length)) {
-            info(`Bad length "${length}" in stream`);
+            info(`Bad length "${length && length.toString()}" in stream.`);
             length = 0;
         }
         // Skip over the stream data.
@@ -607,12 +611,11 @@ export class Parser {
         return stream;
     }
     filter(stream, dict, length) {
-        let filter = dict.get("Filter", "F");
-        let params = dict.get("DecodeParms", "DP");
+        let filter = dict.get("F", "Filter");
+        let params = dict.get("DP", "DecodeParms");
         if (filter instanceof Name) {
             if (Array.isArray(params)) {
-                warn("/DecodeParms should not contain an Array, " +
-                    "when /Filter contains a Name.");
+                warn("/DecodeParms should not be an Array, when /Filter is a Name.");
             }
             return this.makeFilter(stream, filter.name, length, params);
         }
@@ -644,61 +647,61 @@ export class Parser {
             warn(`Empty "${name}" stream.`);
             return new NullStream();
         }
+        const xrefStats = this.xref.stats;
         try {
-            const xrefStreamStats = this.xref.stats.streamTypes;
-            if (name === "FlateDecode" || name === "Fl") {
-                xrefStreamStats[StreamType.FLATE] = true;
-                if (params) {
-                    return new PredictorStream(new FlateStream(stream, maybeLength), maybeLength, params);
-                }
-                return new FlateStream(stream, maybeLength);
-            }
-            if (name === "LZWDecode" || name === "LZW") {
-                xrefStreamStats[StreamType.LZW] = true;
-                let earlyChange = 1;
-                if (params) {
-                    if (params.has("EarlyChange")) {
-                        earlyChange = params.get("EarlyChange");
+            switch (name) {
+                case "Fl":
+                case "FlateDecode":
+                    xrefStats.addStreamType(StreamType.FLATE);
+                    if (params) {
+                        return new PredictorStream(new FlateStream(stream, maybeLength), maybeLength, params);
                     }
-                    return new PredictorStream(new LZWStream(stream, maybeLength, earlyChange), maybeLength, params);
-                }
-                return new LZWStream(stream, maybeLength, earlyChange);
-            }
-            if (name === "DCTDecode" || name === "DCT") {
-                xrefStreamStats[StreamType.DCT] = true;
-                return new JpegStream(stream, maybeLength, params);
-            }
-            if (name === "JPXDecode" || name === "JPX") {
-                xrefStreamStats[StreamType.JPX] = true;
-                return new JpxStream(stream, maybeLength, params);
-            }
-            if (name === "ASCII85Decode" || name === "A85") {
-                xrefStreamStats[StreamType.A85] = true;
-                return new Ascii85Stream(stream, maybeLength);
-            }
-            if (name === "ASCIIHexDecode" || name === "AHx") {
-                xrefStreamStats[StreamType.AHX] = true;
-                return new AsciiHexStream(stream, maybeLength);
-            }
-            if (name === "CCITTFaxDecode" || name === "CCF") {
-                xrefStreamStats[StreamType.CCF] = true;
-                return new CCITTFaxStream(stream, maybeLength, params);
-            }
-            if (name === "RunLengthDecode" || name === "RL") {
-                xrefStreamStats[StreamType.RLX] = true;
-                return new RunLengthStream(stream, maybeLength);
-            }
-            if (name === "JBIG2Decode") {
-                xrefStreamStats[StreamType.JBIG] = true;
-                return new Jbig2Stream(stream, maybeLength, params);
+                    return new FlateStream(stream, maybeLength);
+                case "LZW":
+                case "LZWDecode":
+                    xrefStats.addStreamType(StreamType.LZW);
+                    let earlyChange = 1;
+                    if (params) {
+                        if (params.has("EarlyChange")) {
+                            earlyChange = params.get("EarlyChange");
+                        }
+                        return new PredictorStream(new LZWStream(stream, maybeLength, earlyChange), maybeLength, params);
+                    }
+                    return new LZWStream(stream, maybeLength, earlyChange);
+                case "DCT":
+                case "DCTDecode":
+                    xrefStats.addStreamType(StreamType.DCT);
+                    return new JpegStream(stream, maybeLength, params);
+                case "JPX":
+                case "JPXDecode":
+                    xrefStats.addStreamType(StreamType.JPX);
+                    return new JpxStream(stream, maybeLength, params);
+                case "A85":
+                case "ASCII85Decode":
+                    xrefStats.addStreamType(StreamType.A85);
+                    return new Ascii85Stream(stream, maybeLength);
+                case "AHx":
+                case "ASCIIHexDecode":
+                    xrefStats.addStreamType(StreamType.AHX);
+                    return new AsciiHexStream(stream, maybeLength);
+                case "CCF":
+                case "CCITTFaxDecode":
+                    xrefStats.addStreamType(StreamType.CCF);
+                    return new CCITTFaxStream(stream, maybeLength, params);
+                case "RL":
+                case "RunLengthDecode":
+                    xrefStats.addStreamType(StreamType.RLX);
+                    return new RunLengthStream(stream, maybeLength);
+                case "JBIG2Decode":
+                    xrefStats.addStreamType(StreamType.JBIG);
+                    return new Jbig2Stream(stream, maybeLength, params);
             }
             warn(`Filter "${name}" is not supported.`);
             return stream;
         }
         catch (ex) {
-            if (ex instanceof MissingDataException) {
+            if (ex instanceof MissingDataException)
                 throw ex;
-            }
             warn(`Invalid stream: "${ex}"`);
             return new NullStream();
         }

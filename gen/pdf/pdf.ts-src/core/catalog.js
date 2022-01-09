@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 /* Copyright 2012 Mozilla Foundation
  *
@@ -17,7 +17,7 @@
  */
 import { createPromiseCap } from "../../../lib/promisecap.js";
 import { clearPrimitiveCaches, Dict, isDict, isName, isRefsEqual, Name, Ref, RefSet, RefSetCache, } from "./primitives.js";
-import { collectActions, MissingDataException, recoverJsURL, toRomanNumerals, } from "./core_utils.js";
+import { collectActions, MissingDataException, recoverJsURL, toRomanNumerals, XRefEntryException, } from "./core_utils.js";
 import { createValidAbsoluteUrl, DocumentActionEventType, FormatError, info, isBool, objectSize, PermissionFlag, shadow, stringToPDFString, stringToUTF8String, warn, } from "../shared/util.js";
 import { NameTree, NumberTree } from "./name_number_tree.js";
 import { ColorSpace } from "./colorspace.js";
@@ -40,6 +40,7 @@ export class Catalog {
     pdfManager;
     xref;
     #catDict; // Table 28
+    _actualNumPages;
     fontCache = new RefSetCache();
     builtInCMapCache = new Map();
     standardFontDataCache = new Map();
@@ -54,6 +55,9 @@ export class Catalog {
         if (!(this.#catDict instanceof Dict)) {
             throw new FormatError("Catalog object is not a dictionary.");
         }
+        // Given that `XRef.parse` will both fetch *and* validate the /Pages-entry,
+        // the following call must always succeed here:
+        this.toplevelPagesDict; // eslint-disable-line no-unused-expressions
     }
     get version() {
         const version = this.#catDict.get("Version");
@@ -111,31 +115,30 @@ export class Catalog {
         const streamRef = this.#catDict.getRaw("Metadata");
         if (!(streamRef instanceof Ref))
             return shadow(this, "metadata", undefined);
-        const suppressEncryption = !(this.xref.encrypt && this.xref.encrypt.encryptMetadata);
-        const stream = this.xref.fetch(streamRef, suppressEncryption);
         let metadata;
-        if ((stream instanceof BaseStream)
-            && (stream.dict instanceof Dict)) {
-            const type = stream.dict.get("Type");
-            const subtype = stream.dict.get("Subtype");
-            if (isName(type, "Metadata") && isName(subtype, "XML")) {
-                // XXX: This should examine the charset the XML document defines,
-                // however since there are currently no real means to decode arbitrary
-                // charsets, let's just hope that the author of the PDF was reasonable
-                // enough to stick with the XML default charset, which is UTF-8.
-                try {
+        try {
+            const suppressEncryption = !(this.xref.encrypt && this.xref.encrypt.encryptMetadata);
+            const stream = this.xref.fetch(streamRef, suppressEncryption);
+            if ((stream instanceof BaseStream)
+                && (stream.dict instanceof Dict)) {
+                const type = stream.dict.get("Type");
+                const subtype = stream.dict.get("Subtype");
+                if (isName(type, "Metadata") && isName(subtype, "XML")) {
+                    // XXX: This should examine the charset the XML document defines,
+                    // however since there are currently no real means to decode arbitrary
+                    // charsets, let's just hope that the author of the PDF was reasonable
+                    // enough to stick with the XML default charset, which is UTF-8.
                     const data = stringToUTF8String(stream.getString());
                     if (data) {
                         metadata = new MetadataParser(data).serializable;
                     }
                 }
-                catch (e) {
-                    if (e instanceof MissingDataException) {
-                        throw e;
-                    }
-                    info("Skipping invalid metadata.");
-                }
             }
+        }
+        catch (ex) {
+            if (ex instanceof MissingDataException)
+                throw ex;
+            info(`Skipping invalid Metadata: "${ex}".`);
         }
         return shadow(this, "metadata", metadata);
     }
@@ -441,12 +444,21 @@ export class Catalog {
             order: parseOrder(config.get("Order")),
         };
     }
-    get numPages() {
+    setActualNumPages(num) {
+        this._actualNumPages = num;
+    }
+    get hasActualNumPages() {
+        return this._actualNumPages !== undefined;
+    }
+    get _pagesCount() {
         const obj = this.toplevelPagesDict.get("Count");
         if (!Number.isInteger(obj)) {
             throw new FormatError("Page count in top-level pages dictionary is not an integer.");
         }
-        return shadow(this, "numPages", obj);
+        return shadow(this, "_pagesCount", obj);
+    }
+    get numPages() {
+        return this.hasActualNumPages ? this._actualNumPages : this._pagesCount;
     }
     get destinations() {
         const obj = this.#readDests();
@@ -502,14 +514,13 @@ export class Catalog {
         return undefined;
     }
     get pageLabels() {
-        let obj = null;
+        let obj;
         try {
             obj = this.#readPageLabels();
         }
         catch (ex) {
-            if (ex instanceof MissingDataException) {
+            if (ex instanceof MissingDataException)
                 throw ex;
-            }
             warn("Unable to read page labels.");
         }
         return shadow(this, "pageLabels", obj);
@@ -517,9 +528,9 @@ export class Catalog {
     #readPageLabels() {
         const obj = this.#catDict.getRaw("PageLabels");
         if (!obj)
-            return null;
+            return undefined;
         const pageLabels = new Array(this.numPages);
-        let style = null;
+        let style;
         let prefix = "";
         const numberTree = new NumberTree(obj, this.xref);
         const nums = numberTree.getAll();
@@ -544,7 +555,7 @@ export class Catalog {
                     style = s.name;
                 }
                 else {
-                    style = null;
+                    style = undefined;
                 }
                 if (labelDict.has("P")) {
                     const p = labelDict.get("P");
@@ -793,7 +804,7 @@ export class Catalog {
     get openAction() {
         const obj = this.#catDict.get("OpenAction");
         const openAction = Object.create(null);
-        if ((obj instanceof Dict)) {
+        if (obj instanceof Dict) {
             // Convert the OpenAction dictionary into a format that works with
             // `parseDestDictionary`, to avoid having to re-implement those checks.
             const destDict = new Dict(this.xref);
@@ -934,19 +945,22 @@ export class Catalog {
      */
     getPageDict(pageIndex) {
         const capability = createPromiseCap();
-        const nodesToVisit = [this.#catDict.getRaw("Pages")];
+        const nodesToVisit = [this.toplevelPagesDict];
         const visitedNodes = new RefSet();
+        const pagesRef = this.#catDict.getRaw("Pages");
+        if (pagesRef instanceof Ref) {
+            visitedNodes.put(pagesRef);
+        }
         const xref = this.xref;
         const pageKidsCountCache = this.pageKidsCountCache;
-        let count;
         let currentPageIndex = 0;
         function next() {
             while (nodesToVisit.length) {
                 const currentNode = nodesToVisit.pop();
                 if ((currentNode instanceof Ref)) {
-                    count = pageKidsCountCache.get(currentNode);
+                    const count = pageKidsCountCache.get(currentNode);
                     // Skip nodes where the page can't be.
-                    if (count > 0 && currentPageIndex + count < pageIndex) {
+                    if (count >= 0 && currentPageIndex + count <= pageIndex) {
                         currentPageIndex += count;
                         continue;
                     }
@@ -958,13 +972,13 @@ export class Catalog {
                     visitedNodes.put(currentNode);
                     xref.fetchAsync(currentNode).then(obj => {
                         if (isDict(obj, "Page") || ((obj instanceof Dict) && !obj.has("Kids"))) {
+                            // Cache the Page reference, since it can *greatly* improve
+                            // performance by reducing redundant lookups in long documents
+                            // where all nodes are found at *one* level of the tree.
+                            if (currentNode && !pageKidsCountCache.has(currentNode)) {
+                                pageKidsCountCache.put(currentNode, 1);
+                            }
                             if (pageIndex === currentPageIndex) {
-                                // Cache the Page reference, since it can *greatly* improve
-                                // performance by reducing redundant lookups in long documents
-                                // where all nodes are found at *one* level of the tree.
-                                if (currentNode && !pageKidsCountCache.has(currentNode)) {
-                                    pageKidsCountCache.put(currentNode, 1);
-                                }
                                 capability.resolve([obj, currentNode]);
                             }
                             else {
@@ -983,7 +997,14 @@ export class Catalog {
                     capability.reject(new FormatError("Page dictionary kid reference points to wrong type of object."));
                     return;
                 }
-                count = currentNode.get("Count");
+                let count;
+                try {
+                    count = currentNode.get("Count");
+                }
+                catch (ex) {
+                    if (ex instanceof MissingDataException)
+                        throw ex;
+                }
                 if (Number.isInteger(count) && count >= 0) {
                     // Cache the Kids count, since it can reduce redundant lookups in
                     // documents where all nodes are found at *one* level of the tree.
@@ -1002,7 +1023,15 @@ export class Catalog {
                     // Prevent errors in corrupt PDF documents that violate the
                     // specification by *inlining* Page dicts directly in the Kids
                     // array, rather than using indirect objects (fixes issue9540.pdf).
-                    if (isName(currentNode.get("Type"), "Page")
+                    let type;
+                    try {
+                        type = currentNode.get("Type");
+                    }
+                    catch (ex) {
+                        if (ex instanceof MissingDataException)
+                            throw ex;
+                    }
+                    if (isName(type, "Page")
                         || (!currentNode.has("Type") && currentNode.has("Contents"))) {
                         if (currentPageIndex === pageIndex) {
                             capability.resolve([currentNode, undefined]);
@@ -1026,6 +1055,88 @@ export class Catalog {
         next();
         return capability.promise;
     }
+    /**
+     * Eagerly fetches the entire /Pages-tree; should ONLY be used as a fallback.
+     */
+    getAllPageDicts(recoveryMode = false) {
+        const queue = [{ currentNode: this.toplevelPagesDict, posInKids: 0 }];
+        const visitedNodes = new RefSet();
+        const pagesRef = this.#catDict.getRaw("Pages");
+        if (pagesRef instanceof Ref) {
+            visitedNodes.put(pagesRef);
+        }
+        const map = new Map();
+        let pageIndex = 0;
+        function addPageDict(pageDict, pageRef) {
+            map.set(pageIndex++, [pageDict, pageRef]);
+        }
+        function addPageError(error) {
+            map.set(pageIndex++, [error, undefined]);
+        }
+        while (queue.length > 0) {
+            const queueItem = queue[queue.length - 1];
+            const { currentNode, posInKids } = queueItem;
+            let kids;
+            try {
+                kids = currentNode.get("Kids");
+            }
+            catch (ex) {
+                if (ex instanceof MissingDataException)
+                    throw ex;
+                if (ex instanceof XRefEntryException && !recoveryMode)
+                    throw ex;
+                addPageError(ex);
+                break;
+            }
+            if (!Array.isArray(kids)) {
+                addPageError(new FormatError("Page dictionary kids object is not an array."));
+                break;
+            }
+            if (posInKids >= kids.length) {
+                queue.pop();
+                continue;
+            }
+            const kidObj = kids[posInKids];
+            let obj;
+            if (kidObj instanceof Ref) {
+                try {
+                    obj = this.xref.fetch(kidObj);
+                }
+                catch (ex) {
+                    if (ex instanceof MissingDataException)
+                        throw ex;
+                    if (ex instanceof XRefEntryException && !recoveryMode)
+                        throw ex;
+                    addPageError(ex);
+                    break;
+                }
+                // Prevent circular references in the /Pages tree.
+                if (visitedNodes.has(kidObj)) {
+                    addPageError(new FormatError("Pages tree contains circular reference."));
+                    break;
+                }
+                visitedNodes.put(kidObj);
+            }
+            else {
+                // Prevent errors in corrupt PDF documents that violate the
+                // specification by *inlining* Page dicts directly in the Kids
+                // array, rather than using indirect objects (see issue9540.pdf).
+                obj = kidObj;
+            }
+            if (!(obj instanceof Dict)) {
+                addPageError(new FormatError("Page dictionary kid reference points to wrong type of object."));
+                break;
+            }
+            if (isDict(obj, "Page") || !obj.has("Kids")) {
+                addPageDict(obj, kidObj instanceof Ref ? kidObj : undefined);
+            }
+            else {
+                queue.push({ currentNode: obj, posInKids: 0 });
+            }
+            queueItem.posInKids++;
+        }
+        return map;
+    }
     getPageIndex(pageRef) {
         const cachedPageIndex = this.pageIndexCache.get(pageRef);
         if (cachedPageIndex !== undefined) {
@@ -1040,9 +1151,9 @@ export class Catalog {
             return xref
                 .fetchAsync(kidRef)
                 .then(node => {
-                if (isRefsEqual(kidRef, pageRef) &&
-                    !isDict(node, "Page") &&
-                    !((node instanceof Dict) && !node.has("Type") && node.has("Contents"))) {
+                if (isRefsEqual(kidRef, pageRef)
+                    && !isDict(node, "Page")
+                    && !((node instanceof Dict) && !node.has("Type") && node.has("Contents"))) {
                     throw new FormatError("The reference does not point to a /Page dictionary.");
                 }
                 if (!node) {
@@ -1055,18 +1166,16 @@ export class Catalog {
                 return node.getAsync("Parent");
             })
                 .then(parent => {
-                if (!parent) {
+                if (!parent)
                     return null;
-                }
                 if (!(parent instanceof Dict)) {
                     throw new FormatError("Parent must be a dictionary.");
                 }
                 return parent.getAsync("Kids");
             })
                 .then(kids => {
-                if (!kids) {
+                if (!kids)
                     return null;
-                }
                 const kidPromises = [];
                 let found = false;
                 for (let i = 0, ii = kids.length; i < ii; i++) {
@@ -1094,7 +1203,7 @@ export class Catalog {
                 if (!found) {
                     throw new FormatError("Kid reference not found in parent's kids.");
                 }
-                return Promise.all(kidPromises).then(function () {
+                return Promise.all(kidPromises).then(() => {
                     return [total, parentRef];
                 });
             });

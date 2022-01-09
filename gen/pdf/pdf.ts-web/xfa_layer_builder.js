@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 /* Copyright 2021 Mozilla Foundation
  *
@@ -15,9 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/** @typedef {import("./interfaces").IPDFXfaLayerFactory} IPDFXfaLayerFactory */
+/** @typedef {import("../src/display/api").PDFPageProxy} PDFPageProxy */
+// eslint-disable-next-line max-len
+/** @typedef {import("../src/display/display_utils").PageViewport} PageViewport */
+/** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
 import { html } from "../../lib/dom.js";
-import { SimpleLinkService } from "./pdf_link_service.js";
 import { XfaLayer } from "../pdf.ts-src/display/xfa_layer.js";
 export class XfaLayerBuilder {
     pageDiv;
@@ -28,7 +30,7 @@ export class XfaLayerBuilder {
     div;
     #cancelled = false;
     cancel() { this.#cancelled = true; }
-    constructor({ pageDiv, pdfPage, annotationStorage, linkService, xfaHtml }) {
+    constructor({ pageDiv, pdfPage, annotationStorage = undefined, linkService, xfaHtml = undefined }) {
         this.pageDiv = pageDiv;
         this.pdfPage = pdfPage;
         this.annotationStorage = annotationStorage;
@@ -45,8 +47,7 @@ export class XfaLayerBuilder {
             const parameters = {
                 viewport: viewport.clone({ dontFlip: true }),
                 div: this.div,
-                xfa: this.xfaHtml,
-                page: undefined,
+                xfaHtml: this.xfaHtml,
                 annotationStorage: this.annotationStorage,
                 linkService: this.linkService,
                 intent,
@@ -61,13 +62,13 @@ export class XfaLayerBuilder {
         // intent === "display"
         return this.pdfPage
             .getXfa()
-            .then(xfa => {
-            if (this.#cancelled || !xfa)
+            .then(xfaHtml => {
+            if (this.#cancelled || !xfaHtml)
                 return { textDivs: [] };
             const parameters = {
                 viewport: viewport.clone({ dontFlip: true }),
                 div: this.div,
-                xfa: xfa,
+                xfaHtml: xfaHtml,
                 page: this.pdfPage,
                 annotationStorage: this.annotationStorage,
                 linkService: this.linkService,
@@ -90,17 +91,6 @@ export class XfaLayerBuilder {
         if (!this.div)
             return;
         this.div.hidden = true;
-    }
-}
-export class DefaultXfaLayerFactory {
-    createXfaLayerBuilder(pageDiv, pdfPage, annotationStorage, xfaHtml) {
-        return new XfaLayerBuilder({
-            pageDiv,
-            pdfPage,
-            annotationStorage,
-            linkService: new SimpleLinkService(),
-            xfaHtml,
-        });
     }
 }
 /*81---------------------------------------------------------------------------*/

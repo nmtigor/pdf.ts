@@ -1,8 +1,15 @@
+/** @typedef {import("../src/display/api").PDFPageProxy} PDFPageProxy */
+/** @typedef {import("../src/display/display_utils").PageViewport} PageViewport */
+/** @typedef {import("./annotation_layer_builder").AnnotationLayerBuilder} AnnotationLayerBuilder */
+/** @typedef {import("./event_utils").EventBus} EventBus */
+/** @typedef {import("./struct_tree_builder").StructTreeLayerBuilder} StructTreeLayerBuilder */
+/** @typedef {import("./text_highlighter").TextHighlighter} TextHighlighter */
+/** @typedef {import("./text_layer_builder").TextLayerBuilder} TextLayerBuilder */
+/** @typedef {import("./ui_utils").RenderingStates} RenderingStates */
+/** @typedef {import("./xfa_layer_builder").XfaLayerBuilder} XfaLayerBuilder */
 import { LinkTarget, PageViewport } from "../pdf.ts-src/display/display_utils.js";
 import { AnnotationStorage } from "../pdf.ts-src/display/annotation_storage.js";
-import { RenderingStates } from "./pdf_rendering_queue.js";
 import { TextLayerBuilder } from "./text_layer_builder.js";
-import { EventBus } from "./ui_utils.js";
 import { AnnotationLayerBuilder } from "./annotation_layer_builder.js";
 import { PDFPageProxy, type RefProxy } from "../pdf.ts-src/display/api.js";
 import { type Locale_1, type WebL10nArgs } from "../../lib/l10n.js";
@@ -12,6 +19,8 @@ import { StructTreeLayerBuilder } from "./struct_tree_layer_builder.js";
 import { type XFAElData } from "../pdf.ts-src/core/xfa/alias.js";
 import { TextHighlighter } from "./text_highlighter.js";
 import { type FieldObject } from "../pdf.ts-src/core/annotation.js";
+import { EventBus } from "./event_utils.js";
+import { RenderingStates } from "./ui_utils.js";
 export interface IPDFLinkService {
     readonly pagesCount: number;
     page: number;
@@ -48,6 +57,7 @@ export interface IPDFLinkService {
      * @param pageRef reference to the page.
      */
     cachePageRef(pageNum: number, pageRef: RefProxy | undefined): void;
+    _cachedPageNumber(pageRef: RefProxy | undefined): number | undefined;
     isPageVisible(pageNumber: number): boolean;
     isPageCached(pageNumber: number): boolean;
     eventBus?: EventBus;
@@ -113,14 +123,28 @@ export interface IPDFAnnotationLayerFactory {
      * @param imageResourcesPath="" Path for image resources, mainly
      *   for annotation icons. Include trailing slash.
      * @param renderForms=true
+     * @param annotationCanvasMap Map some
+     *   annotation ids with canvases used to render them.
      */
-    createAnnotationLayerBuilder(pageDiv: HTMLDivElement, pdfPage: PDFPageProxy, annotationStorage?: AnnotationStorage, imageResourcesPath?: string, renderForms?: boolean, l10n?: IL10n, enableScripting?: boolean, hasJSActionsPromise?: Promise<boolean>, mouseState?: MouseState, fieldObjectsPromise?: Promise<Record<string, FieldObject[]> | undefined>): AnnotationLayerBuilder;
+    createAnnotationLayerBuilder(pageDiv: HTMLDivElement, pdfPage: PDFPageProxy, annotationStorage?: AnnotationStorage, imageResourcesPath?: string, renderForms?: boolean, l10n?: IL10n, enableScripting?: boolean, hasJSActionsPromise?: Promise<boolean>, mouseState?: MouseState, fieldObjectsPromise?: Promise<Record<string, FieldObject[]> | undefined>, annotationCanvasMap?: Map<string, HTMLCanvasElement>): AnnotationLayerBuilder;
 }
 export interface IPDFXfaLayerFactory {
     createXfaLayerBuilder(pageDiv: HTMLDivElement, pdfPage: PDFPageProxy, annotationStorage?: AnnotationStorage, xfaHtml?: XFAElData): XfaLayerBuilder;
 }
 export interface IPDFStructTreeLayerFactory {
     createStructTreeLayerBuilder(pdfPage: PDFPageProxy): StructTreeLayerBuilder;
+}
+export interface IDownloadManager {
+    downloadUrl(url: string, filename: string): void;
+    downloadData(data: Uint8Array, filename: string, contentType: string): void;
+    /**
+     * @return Indicating if the data was opened.
+     */
+    openOrDownloadData(element: HTMLElement, data: Uint8Array | Uint8ClampedArray | undefined, filename: string): boolean;
+    /**
+     * @param sourceEventType="download"
+     */
+    download(blob: Blob, url: string, filename: string, sourceEventType?: string): void;
 }
 export interface IL10n {
     getLanguage(): Promise<Lowercase<Locale_1> | "">;

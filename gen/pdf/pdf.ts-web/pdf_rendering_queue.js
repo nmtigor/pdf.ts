@@ -1,16 +1,28 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
+/* Copyright 2012 Mozilla Foundation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/** @typedef {import("./interfaces").IRenderableView} IRenderableView */
+/** @typedef {import("./pdf_viewer").PDFViewer} PDFViewer */
+// eslint-disable-next-line max-len
+/** @typedef {import("./pdf_thumbnail_viewer").PDFThumbnailViewer} PDFThumbnailViewer */
 import { RenderingCancelledException } from "../pdf.ts-src/display/display_utils.js";
+import { RenderingStates } from "./ui_utils.js";
 /*81---------------------------------------------------------------------------*/
 const CLEANUP_TIMEOUT = 30000;
-export var RenderingStates;
-(function (RenderingStates) {
-    RenderingStates[RenderingStates["INITIAL"] = 0] = "INITIAL";
-    RenderingStates[RenderingStates["RUNNING"] = 1] = "RUNNING";
-    RenderingStates[RenderingStates["PAUSED"] = 2] = "PAUSED";
-    RenderingStates[RenderingStates["FINISHED"] = 3] = "FINISHED";
-})(RenderingStates || (RenderingStates = {}));
 /**
  * Controls rendering of the views for pages and thumbnails.
  */
@@ -61,11 +73,10 @@ export class PDFRenderingQueue {
          * 2. if last scrolled down, the page after the visible pages, or
          *    if last scrolled up, the page before the visible pages
          */
-        const visibleViews = visible.views;
-        const numVisible = visibleViews.length;
+        const visibleViews = visible.views, numVisible = visibleViews.length;
         if (numVisible === 0)
             return undefined;
-        for (let i = 0; i < numVisible; ++i) {
+        for (let i = 0; i < numVisible; i++) {
             const view = visibleViews[i].view;
             if (!this.isViewFinished(view))
                 return view;
@@ -73,9 +84,13 @@ export class PDFRenderingQueue {
         const firstId = visible.first.id, lastId = visible.last.id;
         // All the visible views have rendered; try to handle any "holes" in the
         // page layout (can happen e.g. with spreadModes at higher zoom levels).
-        if (lastId - firstId > 1) {
+        if (lastId - firstId + 1 > numVisible) {
+            const visibleIds = visible.ids;
             for (let i = 1, ii = lastId - firstId; i < ii; i++) {
-                const holeId = scrolledDown ? firstId + i : lastId - i, holeView = views[holeId - 1];
+                const holeId = scrolledDown ? firstId + i : lastId - i;
+                if (visibleIds.has(holeId))
+                    continue;
+                const holeView = views[holeId - 1];
                 if (!this.isViewFinished(holeView))
                     return holeView;
             }

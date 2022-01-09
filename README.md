@@ -2,14 +2,14 @@ The purpose of [this project](https://nmtigor.github.io/pdf.ts/) is to help lear
 
 It is
 
-* based on [pdf.js@v2.12.64](https://github.com/mozilla/pdf.js/tree/60ab751bb6f4814ef71f16c7d9f466d2eb7c6b1e),
+* based on [pdf.js@v2.12.313](https://github.com/mozilla/pdf.js/tree/v2.12.313),
 
 * **transpiled using [TypeScript@b-preprocessor@v4.5.2](https://github.com/nmtigor/TypeScript/blob/b-preprocessor%40v4.5.2/PR.md)!**
 ---
 
 ### Current States - TODO
 
-* Sync [tests](https://nmtigor.github.io/pdf.ts/src/test/pdf_test.html). (~60s)
+* Sync [tests](https://nmtigor.github.io/pdf.ts/src/test/pdf_test.html). (~75s)
 * `GENERIC` build.
 * On browsers.
 * `enableScripting` is `false`.

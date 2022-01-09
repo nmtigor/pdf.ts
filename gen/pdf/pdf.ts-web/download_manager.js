@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 /* Copyright 2013 Mozilla Foundation
  *
@@ -15,6 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/** @typedef {import("./interfaces").IDownloadManager} IDownloadManager */
 import { html } from "../../lib/dom.js";
 import { isPdfFile } from "../pdf.ts-src/display/display_utils.js";
 import { createObjectURL, createValidAbsoluteUrl } from "../pdf.ts-src/pdf.js";

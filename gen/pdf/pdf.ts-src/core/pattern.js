@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 import { assert } from '../../../lib/util/trace.js';
 import { FormatError, info, shadow, UNSUPPORTED_FEATURES, Util, warn, } from "../shared/util.js";
@@ -72,7 +72,7 @@ class RadialAxialShading extends BaseShading {
         this.coordsArr = dict.getArray("Coords");
         this.shadingType = dict.get("ShadingType");
         const cs = ColorSpace.parse({
-            cs: (dict.getRaw("ColorSpace") || dict.getRaw("CS")),
+            cs: (dict.getRaw("CS") || dict.getRaw("ColorSpace")),
             xref,
             resources,
             pdfFunctionFactory,
@@ -352,7 +352,7 @@ export class MeshShading extends BaseShading {
             this.bbox = undefined;
         }
         const cs = ColorSpace.parse({
-            cs: (dict.getRaw("ColorSpace") || dict.getRaw("CS")),
+            cs: (dict.getRaw("CS") || dict.getRaw("ColorSpace")),
             xref,
             resources,
             pdfFunctionFactory,

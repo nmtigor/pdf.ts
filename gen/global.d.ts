@@ -1,4 +1,5 @@
 import { HTMLVCoo } from "./lib/mv.js";
+import { HoldIndicatr } from "./lib/widget/progressbar.js";
 /**
  * Singleton
  * @final
@@ -10,6 +11,7 @@ declare class Global {
     readonly LASTUPDATE_DATNI = "2020-07-24 01:59:51 +0200";
     readonly LASTUPDATE_DEV = "2021-05-22 05:04:21 +0200";
     globalhvc?: HTMLVCoo;
+    holdindicatr?: [HoldIndicatr, HoldIndicatr, HoldIndicatr];
     has_ResizeObserver: boolean;
     can_touchstart: boolean;
     get dent(): string;

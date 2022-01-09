@@ -20,7 +20,7 @@ export declare class PDFOutlineViewer extends BaseTreeViewer {
     #private;
     _currentPageNumber: number;
     _sidebarView?: SidebarView;
-    _isPagesLoaded: boolean;
+    _isPagesLoaded: boolean | undefined;
     linkService: PDFLinkService;
     static create(options: PDFOutlineViewerOptions): PDFOutlineViewer;
     private constructor();

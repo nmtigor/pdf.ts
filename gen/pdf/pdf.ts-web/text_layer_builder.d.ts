@@ -1,9 +1,8 @@
 import { type TextContent } from "../pdf.ts-src/display/api.js";
 import { PageViewport } from "../pdf.ts-src/display/display_utils.js";
 import { TextLayerRenderTask } from "../pdf.ts-src/display/text_layer.js";
-import { type IPDFTextLayerFactory } from "./interfaces.js";
+import { EventBus } from "./event_utils.js";
 import { TextHighlighter } from "./text_highlighter.js";
-import { EventBus } from "./ui_utils.js";
 interface TextLayerBuilderOptions {
     /**
      * The text layer container.
@@ -72,9 +71,6 @@ export declare class TextLayerBuilder {
     cancel(): void;
     setTextContentStream(readableStream: ReadableStream): void;
     setTextContent(textContent?: TextContent): void;
-}
-export declare class DefaultTextLayerFactory implements IPDFTextLayerFactory {
-    createTextLayerBuilder(textLayerDiv: HTMLDivElement, pageIndex: number, viewport: PageViewport, enhanceTextSelection: boolean | undefined, eventBus: EventBus, highlighter: TextHighlighter): TextLayerBuilder;
 }
 export {};
 //# sourceMappingURL=text_layer_builder.d.ts.map

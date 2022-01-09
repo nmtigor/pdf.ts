@@ -3,7 +3,7 @@ import { type XFAElData } from "../pdf.ts-src/core/xfa/alias.js";
 import { AnnotationStorage } from "../pdf.ts-src/display/annotation_storage.js";
 import { type AnnotIntent, PDFPageProxy } from "../pdf.ts-src/display/api.js";
 import { PageViewport } from "../pdf.ts-src/display/display_utils.js";
-import { type IPDFLinkService, type IPDFXfaLayerFactory } from "./interfaces.js";
+import { type IPDFLinkService } from "./interfaces.js";
 interface XfaLayerBuilderOptions {
     pageDiv: HTMLDivElement;
     pdfPage: PDFPageProxy | undefined;
@@ -36,9 +36,6 @@ export declare class XfaLayerBuilder {
         textDivs: Text[];
     }>;
     hide(): void;
-}
-export declare class DefaultXfaLayerFactory implements IPDFXfaLayerFactory {
-    createXfaLayerBuilder(pageDiv: HTMLDivElement, pdfPage?: PDFPageProxy, annotationStorage?: AnnotationStorage, xfaHtml?: XFAElData): XfaLayerBuilder;
 }
 export {};
 //# sourceMappingURL=xfa_layer_builder.d.ts.map

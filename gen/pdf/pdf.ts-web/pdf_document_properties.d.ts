@@ -1,8 +1,8 @@
-import { EventBus } from "./ui_utils.js";
 import { PDFDocumentProxy } from "../pdf.ts-src/display/api.js";
 import { type IL10n } from "./interfaces.js";
 import { OverlayManager } from "./overlay_manager.js";
 import { type ViewerConfiguration } from "./viewer.js";
+import { EventBus } from "./event_utils.js";
 interface FreezeFieldDataParms {
     fileName: string;
     fileSize?: string | undefined;

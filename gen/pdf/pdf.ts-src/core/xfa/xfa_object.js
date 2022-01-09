@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 /* Copyright 2021 Mozilla Foundation
  *
@@ -17,7 +17,7 @@
  */
 import { isObjectLike } from "../../../../lib/jslang.js";
 import { getInteger, getKeyword, HTMLResult } from "./utils.js";
-import { shadow, warn } from "../../shared/util.js";
+import { shadow, warn, utf8StringToString } from "../../shared/util.js";
 import { NamespaceIds } from "./namespaces.js";
 import { searchNode } from "./som.js";
 import { encodeToXmlString } from "../core_utils.js";
@@ -87,6 +87,7 @@ export const $setSetAttributes = Symbol();
 export const $setValue = Symbol();
 export const $tabIndex = Symbol();
 export const $text = Symbol();
+export const $toPages = Symbol();
 export const $toHTML = Symbol();
 export const $toString = Symbol();
 export const $toStyle = Symbol();
@@ -740,10 +741,12 @@ export class XmlObject extends XFAObject {
             buf.push(encodeToXmlString(this[$content]));
             return;
         }
+        const utf8TagName = utf8StringToString(tagName);
         const prefix = this[$namespaceId] === NS_DATASETS ? "xfa:" : "";
-        buf.push(`<${prefix}${tagName}`);
+        buf.push(`<${prefix}${utf8TagName}`);
         for (const [name, value] of this[_attributes].entries()) {
-            buf.push(` ${name}="${encodeToXmlString(value[$content])}"`);
+            const utf8Name = utf8StringToString(name);
+            buf.push(` ${utf8Name}="${encodeToXmlString(value[$content])}"`);
         }
         if (this[_dataValue] !== undefined) {
             if (this[_dataValue])
@@ -769,7 +772,7 @@ export class XmlObject extends XFAObject {
                 child[$toString](buf);
             }
         }
-        buf.push(`</${prefix}${tagName}>`);
+        buf.push(`</${prefix}${utf8TagName}>`);
     }
     [$onChild](child) {
         if (this[$content]) {

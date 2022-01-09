@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 /* Copyright 2021 Mozilla Foundation
  *
@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { $acceptWhitespace, $addHTML, $appendChild, $childrenToHTML, $clean, $cleanPage, $content, $data, $extra, $finalize, $flushHTML, $getAvailableSpace, $getChildren, $getContainedChildren, $getExtra, $getNextPage, $getParent, $getSubformParent, $getTemplateRoot, $globalData, $hasSettableValue, $ids, $isBindable, $isCDATAXml, $isSplittable, $isThereMoreWidth, $isTransparent, $isUsable, $namespaceId, $nodeName, $onChild, $onText, $popPara, $pushPara, $removeChild, $searchNode, $setSetAttributes, $setValue, $tabIndex, $text, $toHTML, $toStyle, $uid, ContentObject, Option01, OptionObject, StringObject, XFAObject, XFAObjectArray, } from "./xfa_object.js";
+import { $acceptWhitespace, $addHTML, $appendChild, $childrenToHTML, $clean, $cleanPage, $content, $data, $extra, $finalize, $flushHTML, $getAvailableSpace, $getChildren, $getContainedChildren, $getExtra, $getNextPage, $getParent, $getSubformParent, $getTemplateRoot, $globalData, $hasSettableValue, $ids, $isBindable, $isCDATAXml, $isSplittable, $isThereMoreWidth, $isTransparent, $isUsable, $namespaceId, $nodeName, $onChild, $onText, $popPara, $pushPara, $removeChild, $searchNode, $setSetAttributes, $setValue, $tabIndex, $text, $toHTML, $toPages, $toStyle, $uid, ContentObject, Option01, OptionObject, StringObject, XFAObject, XFAObjectArray, } from "./xfa_object.js";
 import { $buildXFAObject, NamespaceIds } from "./namespaces.js";
 import { addHTML, checkDimensions, flushHTML, getAvailableSpace, } from "./layout.js";
 import { computeBbox, createWrapper, fixDimensions, fixTextIndent, fixURL, isPrintOnly, layoutClass, layoutNode, measureToString, setAccess, setFontFamily, setMinMaxDimensions, setPara, toStyle, } from "./html_utils.js";
@@ -249,23 +249,34 @@ function handleBreak(node) {
     }
     const pageArea = target?.[$getParent]();
     let index;
+    let nextPageArea = pageArea;
     if (node.startNew) {
+        // startNew === 1 so we must create a new container (pageArea or
+        // contentArea).
         if (target) {
             const contentAreas = pageArea.contentArea.children;
-            index = contentAreas.findIndex(e => e === target) - 1;
+            const indexForCurrent = contentAreas.indexOf(currentContentArea);
+            const indexForTarget = contentAreas.indexOf(target);
+            if (indexForCurrent !== -1 && indexForCurrent < indexForTarget) {
+                // The next container is after the current container so
+                // we can stay on the same page.
+                nextPageArea = undefined;
+            }
+            index = indexForTarget - 1;
         }
         else {
-            index = currentPageArea.contentArea.children.findIndex(e => e === currentContentArea);
+            index = currentPageArea.contentArea.children.indexOf(currentContentArea);
         }
     }
     else if (target && target !== currentContentArea) {
         const contentAreas = pageArea.contentArea.children;
-        index = contentAreas.findIndex(e => e === target) - 1;
+        index = contentAreas.indexOf(target) - 1;
+        nextPageArea = pageArea === currentPageArea ? undefined : pageArea;
     }
     else {
         return false;
     }
-    node[$extra].target = pageArea === currentPageArea ? undefined : pageArea;
+    node[$extra].target = nextPageArea;
     node[$extra].index = index;
     return true;
 }
@@ -342,7 +353,7 @@ class Arc extends XFAObject {
                 overflow: "visible",
             },
         };
-        if (this.startAngle === 0 && this.sweepAngle === 360) {
+        if (this.sweepAngle === 360) {
             arc = {
                 name: "ellipse",
                 attributes: {
@@ -358,12 +369,12 @@ class Arc extends XFAObject {
         else {
             const startAngle = (this.startAngle * Math.PI) / 180;
             const sweepAngle = (this.sweepAngle * Math.PI) / 180;
-            const largeArc = this.sweepAngle - this.startAngle > 180 ? 1 : 0;
+            const largeArc = this.sweepAngle > 180 ? 1 : 0;
             const [x1, y1, x2, y2] = [
                 50 * (1 + Math.cos(startAngle)),
                 50 * (1 - Math.sin(startAngle)),
-                50 * (1 + Math.cos(sweepAngle)),
-                50 * (1 - Math.sin(sweepAngle)),
+                50 * (1 + Math.cos(startAngle + sweepAngle)),
+                50 * (1 - Math.sin(startAngle + sweepAngle)),
             ];
             arc = {
                 name: "path",
@@ -4836,6 +4847,10 @@ export class Subform extends XFAObject {
         if (this.h === "") {
             style.height = measureToString(height);
         }
+        if ((style.width === "0px" || style.height === "0px")
+            && children.length === 0) {
+            return HTMLResult.EMPTY;
+        }
         const html = {
             name: "div",
             attributes,
@@ -5014,7 +5029,12 @@ export class Template extends XFAObject {
         }
         return searchNode(this, container, expr, true, true);
     }
-    [$toHTML](availableSpace) {
+    /**
+     * This function is a generator because the conversion into
+     * pages is done asynchronously and we want to save the state
+     * of the function where we were in the previous iteration.
+     */
+    *[$toPages]() {
         if (!this.subform.children.length) {
             return HTMLResult.success({
                 name: "div",
@@ -5093,8 +5113,8 @@ export class Template extends XFAObject {
                 // Nothing has been added in the previous page
                 if (++hasSomethingCounter === MAX_EMPTY_PAGES) {
                     warn("XFA - Something goes wrong: please file a bug.");
-                    return new HTMLResult(false, mainHtml, undefined, this);
-                    // return mainHtml;
+                    // return new HTMLResult( false, mainHtml, undefined, this );
+                    return mainHtml;
                 }
             }
             else {
@@ -5148,11 +5168,11 @@ export class Template extends XFAObject {
                                     && html.html.children.length !== 0);
                         htmlContentAreas[i].children.push(html.html);
                     }
-                    else if (!hasSomething) {
+                    else if (!hasSomething && mainHtml.children.length > 1) {
                         mainHtml.children.pop();
                     }
-                    return HTMLResult.success(mainHtml);
-                    // return mainHtml;
+                    // return HTMLResult.success( mainHtml );
+                    return mainHtml;
                 }
                 if (html.isBreak()) {
                     const node = html.breakNode;
@@ -5229,6 +5249,7 @@ export class Template extends XFAObject {
                 }
             }
             pageArea = targetPageArea || pageArea[$getNextPage]();
+            yield null;
         }
     }
 }

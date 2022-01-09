@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 
 /* Copyright 2012 Mozilla Foundation
@@ -76,7 +76,6 @@ import { Metadata } from "./metadata.js";
 import { OptionalContentConfig } from "./optional_content_config.js";
 import { PDFDataTransportStream } from "./transport_stream.js";
 import { type IPDFStream, type IPDFStreamReader } from "../interfaces.js";
-import { Ref } from "../core/primitives.js";
 import { type ImgData } from "../core/evaluator.js";
 import { FontExpotDataEx } from "../core/fonts.js";
 import { type CmdArgs } from "../core/font_renderer.js";
@@ -85,7 +84,7 @@ import { type ExplicitDest } from "../core/catalog.js";
 import { type IWorker, WorkerMessageHandler } from "../core/worker.js";
 import { type AnnotationData, type FieldObject } from "../core/annotation.js";
 import { type StructTree } from "../core/struct_tree.js";
-import { type XFAData } from "../core/document.js"
+import { DocumentInfo, type XFAData } from "../core/document.js"
 import { type AnnotActions } from "../core/core_utils.js";
 import { BaseCanvasFactory, type CMapData } from "./base_factory.js";
 import { type XFAElObj } from "../core/xfa/alias.js";
@@ -573,10 +572,7 @@ export function getDocument(
   const docId = task.docId;
   worker.promise
     .then( () => {
-      if (task.destroyed) 
-      {
-        throw new Error("Loading aborted");
-      }
+      if( task.destroyed ) throw new Error("Loading aborted");
 
       const workerIdPromise = _fetchDocument(
         worker!,
@@ -619,17 +615,13 @@ export function getDocument(
 
       return Promise.all([ workerIdPromise, networkStreamPromise ]).then(
         ([workerId, networkStream]) => {
-          if (task.destroyed) 
-          {
-            throw new Error("Loading aborted");
-          }
+          if( task.destroyed ) throw new Error("Loading aborted");
 
           const messageHandler = new MessageHandler<Thread.main>(
             docId,
             workerId,
             worker!.port
           );
-          messageHandler.postMessageTransfers = worker!.postMessageTransfers;
           const transport = new WorkerTransport(
             messageHandler,
             task,
@@ -686,7 +678,6 @@ async function _fetchDocument( worker:PDFWorker, source:DocumentInitParms,
       },
       maxImageSize: source.maxImageSize,
       disableFontFace: source.disableFontFace,
-      postMessageTransfers: worker.postMessageTransfers,
       docBaseUrl: source.docBaseUrl,
       ignoreErrors: source.ignoreErrors,
       isEvalSupported: source.isEvalSupported,
@@ -948,6 +939,15 @@ export class PDFDocumentProxy
   get fingerprints() { return this.#pdfInfo.fingerprints; }
 
   /**
+   * The current statistics about document
+   * structures, or `null` when no statistics exists.
+   */
+  get stats():PDFDocumentStats | undefined 
+  {
+    return this._transport.stats;
+  }
+
+  /**
    * @return True if only XFA form.
    */
   get isPureXfa() { return !!this._transport._htmlForXfa; }
@@ -1148,16 +1148,6 @@ export class PDFDocumentProxy
   getDownloadInfo():Promise<{ length: number }> 
   {
     return this._transport.downloadInfoCapability.promise;
-  }
-  
-  /**
-   * @return A promise this is resolved with
-   *   current statistics about document structures (see
-   *   {@link PDFDocumentStats}).
-   */
-  getStats()
-  {
-    return this._transport.getStats();
   }
 
   /**
@@ -1516,6 +1506,11 @@ export interface RenderParms
    * states set.
    */
   optionalContentConfigPromise?:Promise<OptionalContentConfig | undefined> | undefined;
+  
+  /**
+   * Map some annotation ids with canvases used to render them.
+   */
+  annotationCanvasMap?:Map<string, HTMLCanvasElement> | undefined;
 }
 
 /**
@@ -1803,6 +1798,7 @@ export class PDFPageProxy
     canvasFactory,
     background,
     optionalContentConfigPromise,
+    annotationCanvasMap=undefined,
   }:RenderParms 
   ) {
     if( this._stats ) this._stats.time("Overall");
@@ -1901,6 +1897,7 @@ export class PDFPageProxy
       },
       objs: this.objs,
       commonObjs: this.commonObjs,
+      annotationCanvasMap,
       operatorList: intentState.operatorList!,
       pageIndex: this._pageIndex,
       canvasFactory: canvasFactoryInstance,
@@ -2075,7 +2072,6 @@ export class PDFPageProxy
   _destroy()
   {
     this.destroyed = true;
-    this._transport.pageCache[this._pageIndex] = undefined;
 
     const waitOn = [];
     for( const intentState of this.#intentStates.values() )
@@ -2526,7 +2522,6 @@ export class PDFWorker
 
   name:string | undefined;
   destroyed = false;
-  postMessageTransfers = true;
   verbosity:VerbosityLevel;
 
   #readyCapability = createPromiseCap();
@@ -2648,16 +2643,12 @@ export class PDFWorker
             terminateEarly();
             return; // worker was destroyed
           }
-          if (data) 
+          if( data )
           {
-            // supportTypedArray
             this.#messageHandler = messageHandler;
             this.#port = worker;
             this.#webWorker = worker;
-            if (!data.supportTransfers) 
-            {
-              this.postMessageTransfers = false;
-            }
+
             this.#readyCapability.resolve();
             // Send global setting, e.g. verbosity level.
             messageHandler.send("configure", {
@@ -2687,7 +2678,7 @@ export class PDFWorker
         });
 
         const sendTest = () => {
-          const testObj = new Uint8Array([this.postMessageTransfers ? 255 : 0]);
+          const testObj = new Uint8Array([255]);
           // Some versions of Opera throw a DATA_CLONE_ERR on serializing the
           // typed array. Also, checking if we can use transfers.
           try {
@@ -2875,6 +2866,14 @@ export type PDFCommonObjs =
   | ImgData
 ;
 
+interface PDFMetadata
+{
+  info:DocumentInfo;
+  metadata:Metadata | undefined;
+  contentDispositionFilename:string | undefined,
+  contentLength:number | undefined,
+}
+
 /**
  * For internal use only.
  * @ignore
@@ -2886,6 +2885,7 @@ class WorkerTransport
   loadingTask;
   commonObjs = new PDFObjects<PDFCommonObjs>();
   fontLoader;
+  #metadataPromise?:Promise<PDFMetadata> | undefined;
   _getFieldObjectsPromise:Promise< Record<string, FieldObject[]> | undefined > | undefined;
   _hasJSActionsPromise:Promise<boolean> | undefined;
   _params;
@@ -2900,8 +2900,11 @@ class WorkerTransport
   #fullReader?:IPDFStreamReader;
   #lastProgress?:OnProgressParms;
 
-  pageCache:(PDFPageProxy | undefined)[] = [];
-  pagePromises:Promise<PDFPageProxy>[] = [];
+  #docStats?:PDFDocumentStats;
+  get stats() { return this.#docStats; }
+
+  #pageCache = new Map<number, PDFPageProxy>();
+  #pagePromises = new Map<number, Promise<PDFPageProxy>>();
   downloadInfoCapability = createPromiseCap<{length:number}>();
 
   #numPages?:number;
@@ -3016,15 +3019,12 @@ class WorkerTransport
     const waitOn:Promise<any>[] = [];
     // We need to wait for all renderings to be completed, e.g.
     // timeout/rAF can take a long time.
-    for (const page of this.pageCache) 
+    for (const page of this.#pageCache.values()) 
     {
-      if (page) 
-      {
-        waitOn.push( page._destroy() );
-      }
+      waitOn.push(page._destroy());
     }
-    this.pageCache.length = 0;
-    this.pagePromises.length = 0;
+    this.#pageCache.clear();
+    this.#pagePromises.clear();
     // Allow `AnnotationStorage`-related clean-up when destroying the document.
     if (this.hasOwnProperty("annotationStorage")) 
     {
@@ -3037,6 +3037,7 @@ class WorkerTransport
     Promise.all( waitOn ).then( () => {
       this.commonObjs.clear();
       this.fontLoader.clear();
+      this.#metadataPromise = undefined;
       this._getFieldObjectsPromise = undefined;
       this._hasJSActionsPromise = undefined;
 
@@ -3260,15 +3261,14 @@ class WorkerTransport
       // Ignore any pending requests if the worker was terminated.
       if( this.destroyed ) return; 
 
-      const page = this.pageCache[ data.pageIndex ]!;
+      const page = this.#pageCache.get(data.pageIndex)!;
       page._startRenderPage(data.transparency, data.cacheKey);
     });
 
-    messageHandler.on("commonobj", data => {
+    messageHandler.on("commonobj", ([ id, type, exportedData ]) => {
       // Ignore any pending requests if the worker was terminated.
       if( this.destroyed ) return; 
 
-      const [id, type, exportedData] = data;
       if( this.commonObjs.has(id) ) return;
 
       switch( type )
@@ -3329,12 +3329,11 @@ class WorkerTransport
       }
     });
 
-    messageHandler.on("obj", data => {
+    messageHandler.on("obj", ([ id, pageIndex, type, imageData ]) => {
       // Ignore any pending requests if the worker was terminated.
       if( this.destroyed ) return;
 
-      const [id, pageIndex, type, imageData] = data;
-      const pageProxy = this.pageCache[pageIndex]!;
+      const pageProxy = this.#pageCache.get(pageIndex)!;
       if( pageProxy.objs.has(id) ) return;
 
       switch( type )
@@ -3364,6 +3363,18 @@ class WorkerTransport
       loadingTask.onProgress?.({
         loaded: data.loaded,
         total: data.total,
+      });
+    });
+
+    messageHandler.on("DocStats", data => {
+      // Ignore any pending requests if the worker was terminated.
+      if( this.destroyed ) return;
+
+      // Ensure that a `PDFDocumentProxy.stats` call-site cannot accidentally
+      // modify this internal data.
+      this.#docStats = Object.freeze({
+        streamTypes: Object.freeze(data.streamTypes),
+        fontTypes: Object.freeze(data.fontTypes),
       });
     });
 
@@ -3422,8 +3433,9 @@ class WorkerTransport
       return Promise.reject(new Error("Invalid page request"));
     }
 
-    const pageIndex = <number>pageNumber - 1;
-    if( pageIndex in this.pagePromises  ) return this.pagePromises[pageIndex];
+    const pageIndex = <number>pageNumber - 1,
+      cachedPromise = this.#pagePromises.get(pageIndex);
+    if( cachedPromise  ) return cachedPromise;
 
     const promise = this.messageHandler
       .sendWithPromise("GetPage", {
@@ -3440,14 +3452,14 @@ class WorkerTransport
           this._params.ownerDocument,
           // this._params.pdfBug
         );
-        this.pageCache[pageIndex] = page;
+        this.#pageCache.set(pageIndex, page);
         return page;
       });
-    this.pagePromises[pageIndex] = promise;
+    this.#pagePromises.set(pageIndex, promise);
     return promise;
   }
 
-  getPageIndex( ref:Ref ) 
+  getPageIndex( ref:RefProxy ) 
   {
     return this.messageHandler.sendWithPromise("GetPageIndex", {
       ref,
@@ -3580,7 +3592,7 @@ class WorkerTransport
 
   getMetadata() 
   {
-    return this.messageHandler
+    return (this.#metadataPromise ||= this.messageHandler
       .sendWithPromise("GetMetadata", null)
       .then(results => {
         return {
@@ -3589,17 +3601,12 @@ class WorkerTransport
           contentDispositionFilename: this.#fullReader?.filename ?? undefined,
           contentLength: this.#fullReader?.contentLength ?? undefined,
         };
-      });
+      }));
   }
 
   getMarkInfo() 
   {
     return this.messageHandler.sendWithPromise("GetMarkInfo", null);
-  }
-
-  getStats()
-  {
-    return this.messageHandler.sendWithPromise("GetStats", null);
   }
 
   async startCleanup( keepLoadedFonts=false )
@@ -3609,16 +3616,15 @@ class WorkerTransport
     // No need to manually clean-up when destruction has started.
     if( this.destroyed ) return; 
 
-    for( let i = 0, ii = this.pageCache.length; i < ii; i++ )
+    for( const page of this.#pageCache.values() )
     {
-      const page = this.pageCache[i];
-      if( !page ) continue;
-
       const cleanupSuccessful = page.cleanup();
 
-      if (!cleanupSuccessful) 
+      if( !cleanupSuccessful )
       {
-        throw new Error(`startCleanup: Page ${i + 1} is currently rendering.`);
+        throw new Error(
+          `startCleanup: Page ${page.pageNumber} is currently rendering.`
+        );
       }
     }
     this.commonObjs.clear();
@@ -3626,6 +3632,7 @@ class WorkerTransport
     {
       this.fontLoader.clear();
     }
+    this.#metadataPromise = undefined;
     this._getFieldObjectsPromise = undefined;
     this._hasJSActionsPromise = undefined;
   }
@@ -3778,7 +3785,8 @@ interface InternalRenderTaskCtorParms
   callback:( error?:unknown ) => void;
   params:Params_IRTCtorParms;
   objs:PDFObjects<PDFObjs | undefined>;
-  commonObjs:PDFObjects< PDFCommonObjs >;
+  commonObjs:PDFObjects<PDFCommonObjs>;
+  annotationCanvasMap:Map<string, HTMLCanvasElement> | undefined;
   operatorList:OpListIR;
   pageIndex:number;
   canvasFactory:BaseCanvasFactory;
@@ -3807,6 +3815,7 @@ export class InternalRenderTask
   params;
   objs;
   commonObjs;
+  annotationCanvasMap;
   operatorListIdx?:number;
   operatorList:OpListIR;
   _pageIndex;
@@ -3831,6 +3840,7 @@ export class InternalRenderTask
     params,
     objs,
     commonObjs,
+    annotationCanvasMap,
     operatorList,
     pageIndex,
     canvasFactory,
@@ -3842,6 +3852,7 @@ export class InternalRenderTask
     this.params = params;
     this.objs = objs;
     this.commonObjs = commonObjs;
+    this.annotationCanvasMap = annotationCanvasMap;
     // this.operatorListIdx = null;
     this.operatorList = operatorList;
     this._pageIndex = pageIndex;
@@ -3899,7 +3910,8 @@ export class InternalRenderTask
       this.objs,
       this.canvasFactory,
       imageLayer,
-      optionalContentConfig
+      optionalContentConfig,
+      this.annotationCanvasMap
     );
     this.gfx.beginDrawing({
       transform,

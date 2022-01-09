@@ -161,6 +161,7 @@ export class SVGViewbox extends SVGVCoo {
 class MooHandlerDB {
     #eq;
     #_a = [];
+    get len_$() { return this.#_a.length; }
     get empty() { return this.#_a.length === 0; }
     #nforce = 0;
     get force() { return this.#nforce > 0; }
@@ -270,6 +271,7 @@ export class Moo {
     get newval() { return this.#newval; }
     // #handler_db = new Set< MooHandler<T> >();
     #handler_db;
+    get _len() { return this.#handler_db.len_$; }
     #forceOnce = false;
     #data;
     set data(data_x) {
@@ -305,22 +307,34 @@ export class Moo {
      */
     set(val) { this.#val = this.#newval = val; }
     /** @final */
-    registHandler(handler_x, newval, oldval, force, index = 0) {
-        this.#handler_db.add(handler_x, newval, oldval, force !== undefined, index);
+    registHandler(handler_x, newval_x, oldval_x, force_x, index_x = 0) {
+        this.#handler_db.add(handler_x, newval_x, oldval_x, force_x !== undefined, index_x);
         // console.log( `this.#handler_db.size=${this.#handler_db.size}` );
     }
     /** @final */
-    removeHandler(handler_x, newval, oldval) {
-        this.#handler_db.del(handler_x, newval, oldval);
+    removeHandler(handler_x, newval_x, oldval_x) {
+        this.#handler_db.del(handler_x, newval_x, oldval_x);
         // console.log( `this.#handler_db.size=${this.#handler_db.size}` );
     }
     /** @final */
-    on(newval, handler_x, force, index = 0) {
-        this.registHandler(handler_x, newval, undefined, force, index);
+    registOnceHandler(handler_x, newval_x, oldval_x, force_x, index_x = 0) {
+        const wrap = (newval_y, oldval_y, data_y) => {
+            handler_x(newval_y, oldval_y, data_y);
+            this.removeHandler(wrap, newval_x, oldval_x);
+        };
+        this.registHandler(wrap, newval_x, oldval_x, force_x, index_x);
     }
     /** @final */
-    off(newval, handler_x) {
-        this.removeHandler(handler_x, newval);
+    on(newval_x, handler_x, force_x, index_x = 0) {
+        this.registHandler(handler_x, newval_x, undefined, force_x, index_x);
+    }
+    /** @final */
+    off(newval_x, handler_x) {
+        this.removeHandler(handler_x, newval_x);
+    }
+    /** @final */
+    once(newval_x, handler_x, force_x, index_x = 0) {
+        this.registOnceHandler(handler_x, newval_x, undefined, force_x, index_x);
     }
     shareHandlerTo(rhs) {
         assert(rhs.#handler_db.empty || rhs.#handler_db === this.#handler_db);

@@ -9,7 +9,6 @@ import { Thread, MessageHandler, type PageInfo, type PDFInfo } from "../shared/m
 import { Metadata } from "./metadata.js";
 import { OptionalContentConfig } from "./optional_content_config.js";
 import { type IPDFStream } from "../interfaces.js";
-import { Ref } from "../core/primitives.js";
 import { type ImgData } from "../core/evaluator.js";
 import { FontExpotDataEx } from "../core/fonts.js";
 import { type CmdArgs } from "../core/font_renderer.js";
@@ -18,7 +17,7 @@ import { type ExplicitDest } from "../core/catalog.js";
 import { type IWorker } from "../core/worker.js";
 import { type AnnotationData, type FieldObject } from "../core/annotation.js";
 import { type StructTree } from "../core/struct_tree.js";
-import { type XFAData } from "../core/document.js";
+import { DocumentInfo, type XFAData } from "../core/document.js";
 import { type AnnotActions } from "../core/core_utils.js";
 import { BaseCanvasFactory } from "./base_factory.js";
 import { type XFAElObj } from "../core/xfa/alias.js";
@@ -370,6 +369,11 @@ export declare class PDFDocumentProxy {
      */
     get fingerprints(): [string, string | undefined];
     /**
+     * The current statistics about document
+     * structures, or `null` when no statistics exists.
+     */
+    get stats(): PDFDocumentStats | undefined;
+    /**
      * @return True if only XFA form.
      */
     get isPureXfa(): boolean;
@@ -410,7 +414,7 @@ export declare class PDFDocumentProxy {
      *   an {Array} containing the page labels that correspond to the page
      *   indexes, or `null` when no page labels are present in the PDF file.
      */
-    getPageLabels(): Promise<string[] | null>;
+    getPageLabels(): Promise<string[] | undefined>;
     /**
      * @return A promise that is resolved with a {string}
      *   containing the page layout name.
@@ -476,12 +480,7 @@ export declare class PDFDocumentProxy {
      *   dictionary and similarly `metadata` is a {Metadata} object with
      *   information from the metadata section of the PDF.
      */
-    getMetadata(): Promise<{
-        info: import("../core/document.js").DocumentInfo;
-        metadata: Metadata | undefined;
-        contentDispositionFilename: string | undefined;
-        contentLength: number | undefined;
-    }>;
+    getMetadata(): Promise<PDFMetadata>;
     /**
      * @return A promise that is resolved with
      *   a {MarkInfo} object that contains the MarkInfo flags for the PDF
@@ -501,12 +500,6 @@ export declare class PDFDocumentProxy {
     getDownloadInfo(): Promise<{
         length: number;
     }>;
-    /**
-     * @return A promise this is resolved with
-     *   current statistics about document structures (see
-     *   {@link PDFDocumentStats}).
-     */
-    getStats(): Promise<PDFDocumentStats>;
     /**
      * Cleans up resources allocated by the document on both the main and worker
      * threads.
@@ -785,6 +778,10 @@ export interface RenderParms {
      * states set.
      */
     optionalContentConfigPromise?: Promise<OptionalContentConfig | undefined> | undefined;
+    /**
+     * Map some annotation ids with canvases used to render them.
+     */
+    annotationCanvasMap?: Map<string, HTMLCanvasElement> | undefined;
 }
 /**
  * Page getOperatorList parameters.
@@ -898,7 +895,7 @@ export declare class PDFPageProxy {
      * @return An object that contains a promise that is
      *   resolved when the page finishes rendering.
      */
-    render({ canvasContext, viewport, intent, annotationMode, transform, imageLayer, canvasFactory, background, optionalContentConfigPromise, }: RenderParms): RenderTask;
+    render({ canvasContext, viewport, intent, annotationMode, transform, imageLayer, canvasFactory, background, optionalContentConfigPromise, annotationCanvasMap, }: RenderParms): RenderTask;
     /**
      * @param params Page getOperatorList parameters.
      * @return A promise resolved with an
@@ -970,7 +967,6 @@ export declare class PDFWorker {
     static get _workerPorts(): WeakMap<IWorker, PDFWorker>;
     name: string | undefined;
     destroyed: boolean;
-    postMessageTransfers: boolean;
     verbosity: VerbosityLevel;
     /**
      * Promise for worker initialization completion.
@@ -1008,6 +1004,12 @@ export declare class PDFWorker {
 export declare type PDFCommonObjs = string | FontFaceObject | FontExpotDataEx | {
     error: string;
 } | CmdArgs[] | ImgData;
+interface PDFMetadata {
+    info: DocumentInfo;
+    metadata: Metadata | undefined;
+    contentDispositionFilename: string | undefined;
+    contentLength: number | undefined;
+}
 /**
  * For internal use only.
  * @ignore
@@ -1029,8 +1031,7 @@ declare class WorkerTransport {
     _passwordCapability?: PromiseCap<{
         password: string;
     }>;
-    pageCache: (PDFPageProxy | undefined)[];
-    pagePromises: Promise<PDFPageProxy>[];
+    get stats(): PDFDocumentStats | undefined;
     downloadInfoCapability: PromiseCap<{
         length: number;
     }>;
@@ -1042,7 +1043,7 @@ declare class WorkerTransport {
     setupMessageHandler(): void;
     getData(): Promise<Uint8Array>;
     getPage(pageNumber: unknown): Promise<PDFPageProxy>;
-    getPageIndex(ref: Ref): Promise<number>;
+    getPageIndex(ref: RefProxy): Promise<number>;
     getAnnotations(pageIndex: number, intent: RenderingIntentFlag): Promise<AnnotationData[]>;
     saveDocument(): Promise<Uint8Array>;
     getFieldObjects(): Promise<Record<string, FieldObject[]> | undefined>;
@@ -1050,7 +1051,7 @@ declare class WorkerTransport {
     getCalculationOrderIds(): Promise<string[] | undefined>;
     getDestinations(): Promise<Record<string, ExplicitDest>>;
     getDestination(id: string): Promise<ExplicitDest | undefined>;
-    getPageLabels(): Promise<string[] | null>;
+    getPageLabels(): Promise<string[] | undefined>;
     getPageLayout(): Promise<import("../../pdf.ts-web/ui_utils.js").PageLayout | undefined>;
     getPageMode(): Promise<import("../../pdf.ts-web/ui_utils.js").PageMode>;
     getViewerPreferences(): Promise<import("../core/catalog.js").ViewerPref | undefined>;
@@ -1063,14 +1064,8 @@ declare class WorkerTransport {
     getOutline(): Promise<OutlineNode[] | undefined>;
     getOptionalContentConfig(): Promise<OptionalContentConfig>;
     getPermissions(): Promise<import("../shared/util.js").PermissionFlag[] | undefined>;
-    getMetadata(): Promise<{
-        info: import("../core/document.js").DocumentInfo;
-        metadata: Metadata | undefined;
-        contentDispositionFilename: string | undefined;
-        contentLength: number | undefined;
-    }>;
+    getMetadata(): Promise<PDFMetadata>;
     getMarkInfo(): Promise<import("../core/catalog.js").MarkInfo | undefined>;
-    getStats(): Promise<PDFDocumentStats>;
     startCleanup(keepLoadedFonts?: boolean): Promise<void>;
     get loadingParams(): {
         disableAutoFetch: boolean | undefined;
@@ -1136,6 +1131,7 @@ interface InternalRenderTaskCtorParms {
     params: Params_IRTCtorParms;
     objs: PDFObjects<PDFObjs | undefined>;
     commonObjs: PDFObjects<PDFCommonObjs>;
+    annotationCanvasMap: Map<string, HTMLCanvasElement> | undefined;
     operatorList: OpListIR;
     pageIndex: number;
     canvasFactory: BaseCanvasFactory;
@@ -1156,6 +1152,7 @@ export declare class InternalRenderTask {
     params: Params_IRTCtorParms;
     objs: PDFObjects<PDFObjs | undefined>;
     commonObjs: PDFObjects<PDFCommonObjs>;
+    annotationCanvasMap: Map<string, HTMLCanvasElement> | undefined;
     operatorListIdx?: number;
     operatorList: OpListIR;
     _pageIndex: number;
@@ -1170,7 +1167,7 @@ export declare class InternalRenderTask {
     task: RenderTask;
     _canvas: HTMLCanvasElement;
     gfx?: CanvasGraphics;
-    constructor({ callback, params, objs, commonObjs, operatorList, pageIndex, canvasFactory, useRequestAnimationFrame, pdfBug, }: InternalRenderTaskCtorParms);
+    constructor({ callback, params, objs, commonObjs, annotationCanvasMap, operatorList, pageIndex, canvasFactory, useRequestAnimationFrame, pdfBug, }: InternalRenderTaskCtorParms);
     get completed(): Promise<void>;
     initializeGraphics({ transparency, optionalContentConfig }: InitializeGraphicsParms): void;
     cancel: (error?: any) => void;

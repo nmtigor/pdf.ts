@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 import { normalizeWheelEventDelta, PresentationModeState, ScrollMode, SpreadMode, } from "./ui_utils.js";
 /*81---------------------------------------------------------------------------*/

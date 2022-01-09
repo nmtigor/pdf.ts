@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 
 /* Copyright 2012 Mozilla Foundation
@@ -22,7 +22,7 @@ import { html } from "../../lib/dom.js";
 import { getFilenameFromUrl } from "../pdf.ts-src/pdf.js";
 import { BaseTreeViewer, type BaseTreeViewerCtorParms } from "./base_tree_viewer.js";
 import { DownloadManager } from "./download_manager.js";
-import { type EventMap } from "./ui_utils.js";
+import { EventMap } from "./event_utils.js";
 /*81---------------------------------------------------------------------------*/
 
 interface PDFAttachmentViewerOptions extends BaseTreeViewerCtorParms

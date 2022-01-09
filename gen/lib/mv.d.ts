@@ -102,6 +102,7 @@ export declare class Moo<T, D = any> {
     #private;
     get val(): T;
     get newval(): T;
+    get _len(): number;
     set data(data_x: D);
     /**
      * @param { headconst } val_x
@@ -115,13 +116,17 @@ export declare class Moo<T, D = any> {
      */
     set(val: T): void;
     /** @final */
-    registHandler(handler_x: MooHandler<T, D>, newval?: T, oldval?: T, force?: "force", index?: number): void;
+    registHandler(handler_x: MooHandler<T, D>, newval_x?: T, oldval_x?: T, force_x?: "force", index_x?: number): void;
     /** @final */
-    removeHandler(handler_x: MooHandler<T, D>, newval?: T, oldval?: T): void;
+    removeHandler(handler_x: MooHandler<T, D>, newval_x?: T, oldval_x?: T): void;
     /** @final */
-    on(newval: T, handler_x: MooHandler<T, D>, force?: "force", index?: number): void;
+    registOnceHandler(handler_x: MooHandler<T, D>, newval_x?: T, oldval_x?: T, force_x?: "force", index_x?: number): void;
     /** @final */
-    off(newval: T, handler_x: MooHandler<T, D>): void;
+    on(newval_x: T, handler_x: MooHandler<T, D>, force_x?: "force", index_x?: number): void;
+    /** @final */
+    off(newval_x: T, handler_x: MooHandler<T, D>): void;
+    /** @final */
+    once(newval_x: T, handler_x: MooHandler<T, D>, force_x?: "force", index_x?: number): void;
     shareHandlerTo(rhs: Moo<T>): void;
     set forceOnce(force: boolean);
     force(): this;

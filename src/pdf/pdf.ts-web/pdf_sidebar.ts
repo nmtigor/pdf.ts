@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 
 /* Copyright 2016 Mozilla Foundation
@@ -17,12 +17,16 @@
  * limitations under the License.
  */
 
-import { EventBus, PresentationModeState, SidebarView } from "./ui_utils.js";
-import { RenderingStates } from "./pdf_rendering_queue.js";
+import { 
+  PresentationModeState, 
+  RenderingStates, 
+  SidebarView 
+} from "./ui_utils.js";
 import { PDFThumbnailViewer } from "./pdf_thumbnail_viewer.js";
 import { PDFViewer } from "./pdf_viewer.js";
 import { type IL10n } from "./interfaces.js";
 import { type ViewerConfiguration } from "./viewer.js";
+import { EventBus } from "./event_utils.js";
 /*81---------------------------------------------------------------------------*/
 
 const UI_NOTIFICATION_CLASS = "pdfSidebarNotification";

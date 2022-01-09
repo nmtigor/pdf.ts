@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 
 /* Copyright 2021 Mozilla Foundation
@@ -20,14 +20,15 @@
 import { type XFAElObj } from "../pdf.ts-src/core/xfa/alias.js";
 import { PDFDocumentProxy } from "../pdf.ts-src/display/api.js";
 import { getXfaPageViewport, PixelsPerInch } from "../pdf.ts-src/display/display_utils.js";
-import { DefaultXfaLayerFactory } from "./xfa_layer_builder.js";
+import { SimpleLinkService } from "./pdf_link_service.js";
+import { XfaLayerBuilder } from "./xfa_layer_builder.js";
 /*81---------------------------------------------------------------------------*/
 
 export function getXfaHtmlForPrinting( 
   printContainer:HTMLDivElement, pdfDocument:PDFDocumentProxy
 ) {
   const xfaHtml = pdfDocument.allXfaHtml!;
-  const factory = new DefaultXfaLayerFactory();
+  const linkService = new SimpleLinkService();
   const scale = Math.round(PixelsPerInch.PDF_TO_CSS_UNITS * 100) / 100;
 
   for( const xfaPage of xfaHtml.children! )
@@ -36,12 +37,13 @@ export function getXfaHtmlForPrinting(
     page.className = "xfaPrintedPage";
     printContainer.appendChild(page);
 
-    const builder = factory.createXfaLayerBuilder(
-      page,
-      undefined,
-      pdfDocument.annotationStorage,
-      xfaPage
-    );
+    const builder = new XfaLayerBuilder({
+      pageDiv: page,
+      pdfPage: undefined,
+      annotationStorage: pdfDocument.annotationStorage,
+      linkService,
+      xfaHtml: xfaPage,
+    });
     const viewport = getXfaPageViewport( <XFAElObj>xfaPage, { scale });
 
     builder.render(viewport, "print");

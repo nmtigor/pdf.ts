@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 /* Copyright 2012 Mozilla Foundation
  *
@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 import { assert } from "../../../lib/util/trace.js";
-import { AnnotationActionEventType, AnnotationBorderStyleType, AnnotationFieldFlag, AnnotationFlag, AnnotationReplyType, AnnotationType, escapeString, getModificationDate, isAscii, OPS, shadow, stringToPDFString, stringToUTF16BEString, Util, warn, } from "../shared/util.js";
+import { AnnotationActionEventType, AnnotationBorderStyleType, AnnotationFieldFlag, AnnotationFlag, AnnotationReplyType, AnnotationType, escapeString, getModificationDate, isAscii, OPS, shadow, stringToPDFString, stringToUTF16BEString, Util, warn, RenderingIntentFlag, } from "../shared/util.js";
 import { Dict, Name, Ref, RefSet } from "./primitives.js";
 import { ColorSpace } from "./colorspace.js";
 import { OperatorList } from "./operator_list.js";
@@ -422,6 +422,7 @@ export class Annotation {
             modificationDate: this.modificationDate,
             rect: this.rectangle,
             subtype: params.subtype,
+            hasOwnCanvas: false,
         };
         if (params.collectFields) {
             // Fields can act as container for other fields and have
@@ -455,12 +456,7 @@ export class Annotation {
      * @param borderStyle - The border style dictionary
      */
     setBorderStyle(borderStyle) {
-        // if (
-        //   typeof PDFJSDev === "undefined" ||
-        //   PDFJSDev.test("!PRODUCTION || TESTING")
-        // ) {
         assert(this.rectangle, "setRectangle must have been called previously.");
-        // }
         this.borderStyle = new AnnotationBorderStyle();
         if (!(borderStyle instanceof Dict))
             return;
@@ -505,6 +501,21 @@ export class Annotation {
         this.color = getRgbColor(color);
     }
     /**
+     * Set the color for background and border if any.
+     * The default values are transparent.
+     *
+     * @param mk The MK dictionary
+     */
+    setBorderAndBackgroundColors(mk) {
+        if (mk instanceof Dict) {
+            this.borderColor = getRgbColor(mk.getArray("BC"));
+            this.backgroundColor = getRgbColor(mk.getArray("BG"));
+        }
+        else {
+            this.borderColor = this.backgroundColor = undefined;
+        }
+    }
+    /**
      * Set the (normal) appearance.
      *
      * @param dict The annotation's data dictionary
@@ -529,23 +540,8 @@ export class Annotation {
             return;
         this.appearance = normalAppearanceState.get(as.name);
     }
-    /**
-     * Set the color for background and border if any.
-     * The default values are transparent.
-     *
-     * @param mk The MK dictionary
-     */
-    setBorderAndBackgroundColors(mk) {
-        if (mk instanceof Dict) {
-            this.borderColor = getRgbColor(mk.getArray("BC"));
-            this.backgroundColor = getRgbColor(mk.getArray("BG"));
-        }
-        else {
-            this.borderColor = this.backgroundColor = undefined;
-        }
-    }
-    loadResources(keys) {
-        return this.appearance.dict.getAsync("Resources").then(resources => {
+    loadResources(keys, appearance) {
+        return appearance.dict.getAsync("Resources").then(resources => {
             if (!resources)
                 return undefined;
             const objectLoader = new ObjectLoader(resources, keys, resources.xref);
@@ -554,21 +550,19 @@ export class Annotation {
             });
         });
     }
-    getOperatorList(evaluator, task, renderForms, annotationStorage) {
-        if (!this.appearance) {
-            return Promise.resolve(new OperatorList());
-        }
-        const appearance = this.appearance;
+    getOperatorList(evaluator, task, intent, renderForms, annotationStorage) {
         const data = this.data;
+        let appearance = this.appearance;
+        const isUsingOwnCanvas = data.hasOwnCanvas && intent & RenderingIntentFlag.DISPLAY;
+        if (!appearance) {
+            if (!isUsingOwnCanvas) {
+                return Promise.resolve(new OperatorList());
+            }
+            appearance = new StringStream("");
+            appearance.dict = new Dict();
+        }
         const appearanceDict = appearance.dict;
-        const resourcesPromise = this.loadResources([
-            "ExtGState",
-            "ColorSpace",
-            "Pattern",
-            "Shading",
-            "XObject",
-            "Font",
-        ]);
+        const resourcesPromise = this.loadResources(["ExtGState", "ColorSpace", "Pattern", "Shading", "XObject", "Font"], appearance);
         const bbox = appearanceDict.getArray("BBox") || [0, 0, 1, 1];
         const matrix = appearanceDict.getArray("Matrix") || [1, 0, 0, 1, 0, 0];
         const transform = getTransformMatrix(data.rect, bbox, matrix);
@@ -579,6 +573,7 @@ export class Annotation {
                 data.rect,
                 transform,
                 matrix,
+                isUsingOwnCanvas,
             ]);
             return evaluator
                 .getOperatorList({
@@ -721,9 +716,9 @@ export class AnnotationBorderStyle {
                 // Ignore large `width`s, since they lead to the Annotation overflowing
                 // the size set by the `Rect` entry thus causing the `annotationLayer`
                 // to render it over the surrounding document (fixes bug1552113.pdf).
-                if (maxWidth > 0 &&
-                    maxHeight > 0 &&
-                    (width > maxWidth || width > maxHeight)) {
+                if (maxWidth > 0
+                    && maxHeight > 0
+                    && (width > maxWidth || width > maxHeight)) {
                     warn(`AnnotationBorderStyle.setWidth - ignoring width: ${width}`);
                     width = 1;
                 }
@@ -1054,18 +1049,18 @@ class WidgetAnnotation extends Annotation {
     hasFieldFlag(flag) {
         return !!(this.data.fieldFlags & flag);
     }
-    getOperatorList(evaluator, task, renderForms, annotationStorage) {
+    getOperatorList(evaluator, task, intent, renderForms, annotationStorage) {
         // Do not render form elements on the canvas when interactive forms are
         // enabled. The display layer is responsible for rendering them instead.
         if (renderForms && !(this instanceof SignatureWidgetAnnotation)) {
             return Promise.resolve(new OperatorList());
         }
         if (!this._hasText) {
-            return super.getOperatorList(evaluator, task, renderForms, annotationStorage);
+            return super.getOperatorList(evaluator, task, intent, renderForms, annotationStorage);
         }
         return this._getAppearance(evaluator, task, annotationStorage).then(content => {
             if (this.appearance && content === undefined) {
-                return super.getOperatorList(evaluator, task, renderForms, annotationStorage);
+                return super.getOperatorList(evaluator, task, intent, renderForms, annotationStorage);
             }
             const operatorList = new OperatorList();
             // Even if there is an appearance stream, ignore it. This is the
@@ -1495,14 +1490,16 @@ class ButtonWidgetAnnotation extends WidgetAnnotation {
             this._processCheckBox(params);
         else if (this.data.radioButton)
             this._processRadioButton(params);
-        else if (this.data.pushButton)
+        else if (this.data.pushButton) {
+            this.data.hasOwnCanvas = true;
             this._processPushButton(params);
+        }
         else
             warn("Invalid field flags for button widget annotation");
     }
-    async getOperatorList(evaluator, task, renderForms, annotationStorage) {
+    async getOperatorList(evaluator, task, intent, renderForms, annotationStorage) {
         if (this.data.pushButton) {
-            return super.getOperatorList(evaluator, task, false, // we use normalAppearance to render the button
+            return super.getOperatorList(evaluator, task, intent, false, // we use normalAppearance to render the button
             annotationStorage);
         }
         let value;
@@ -1514,7 +1511,7 @@ class ButtonWidgetAnnotation extends WidgetAnnotation {
             // Nothing in the annotationStorage.
             if (this.appearance) {
                 // But we've a default appearance so use it.
-                return super.getOperatorList(evaluator, task, renderForms, annotationStorage);
+                return super.getOperatorList(evaluator, task, intent, renderForms, annotationStorage);
             }
             // There is no default appearance so use the one derived
             // from the field value.
@@ -1531,7 +1528,7 @@ class ButtonWidgetAnnotation extends WidgetAnnotation {
         if (appearance) {
             const savedAppearance = this.appearance;
             this.appearance = appearance;
-            const operatorList = super.getOperatorList(evaluator, task, renderForms, annotationStorage);
+            const operatorList = super.getOperatorList(evaluator, task, intent, renderForms, annotationStorage);
             this.appearance = savedAppearance;
             return operatorList;
         }

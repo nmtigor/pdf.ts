@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 
 /* Copyright 2021 Mozilla Foundation
@@ -171,7 +171,10 @@ export function addHTML( node:ExclGroup | Subform, html:XFAElData, bbox:rect_t )
       break;
     }
     case "tb": {
-      extra.width = availableSpace.width;
+      // Even if the subform can possibly take all the available width,
+      // we must compute the final width as it is in order to be able
+      // for example to center the subform within its parent.
+      extra.width = Math.min(availableSpace.width, Math.max(extra.width!, w));
       extra.height! += h;
       extra.children!.push(html);
       break;
