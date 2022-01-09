@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 
 /* Copyright 2012 Mozilla Foundation
@@ -91,7 +91,7 @@ export class PDFFunctionFactory
     }
     if( fnRef )
     {
-      const localFunction = this.#localFunctionCache.getByRef(fnRef);
+      const localFunction = this._localFunctionCache.getByRef(fnRef);
       if( localFunction ) return localFunction;
     }
     return null;
@@ -119,13 +119,13 @@ export class PDFFunctionFactory
       fnRef = cacheKey.dict && cacheKey.dict.objId;
     }
     if (fnRef) {
-      this.#localFunctionCache.set(/* name = */ null, fnRef, parsedFunction);
+      this._localFunctionCache.set(/* name = */ null, fnRef, parsedFunction);
     }
   }
 
-  get #localFunctionCache()
+  get _localFunctionCache()
   {
-    return shadow(this, "#localFunctionCache", new LocalFunctionCache());
+    return shadow(this, "_localFunctionCache", new LocalFunctionCache());
   }
 }
 

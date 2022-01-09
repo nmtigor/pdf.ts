@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 
 /* Copyright 2021 Mozilla Foundation
@@ -17,6 +17,9 @@
  * limitations under the License.
  */
 
+/** @typedef {import("./display_utils").PageViewport} PageViewport */
+/** @typedef {import("../../web/interfaces").IPDFLinkService} IPDFLinkService */
+
 import { type HSElement, html as createHTML, textnode } from "../../../lib/dom.js";
 import { warn } from "../shared/util.js";
 import { type XFAElObj, type XFAHTMLObj } from "../core/xfa/alias.js";
@@ -24,17 +27,22 @@ import { AnnotationStorage } from "./annotation_storage.js";
 import { type AnnotIntent, PDFPageProxy } from "./api.js";
 import { PageViewport } from "./display_utils.js";
 import { XfaText } from "./xfa_text.js";
-import { type IPDFLinkService } from "src/pdf/pdf.ts-web/interfaces.js";
+import { type IPDFLinkService } from "../../pdf.ts-web/interfaces.js";
 /*81---------------------------------------------------------------------------*/
 
 interface XfaLayerParms
 {
   viewport?:PageViewport;
   div:HTMLDivElement;
-  xfa:XFAElObj | undefined;
+  xfaHtml:XFAElObj;
+  // xfaHtml:XFAElObj | undefined;
   page?:PDFPageProxy | undefined;
   annotationStorage?:AnnotationStorage | undefined;
   linkService?:IPDFLinkService;
+
+  /**
+   * (default value is 'display').
+   */
   intent:AnnotIntent;
 }
 
@@ -197,13 +205,16 @@ export abstract class XfaLayer
     }
   }
 
+  /**
+   * Render the XFA layer.
+   */
   static render( parameters:XfaLayerParms ) 
   {
     const storage = parameters.annotationStorage;
     const linkService = parameters.linkService!;
-    const root = parameters.xfa!;
+    const root = parameters.xfaHtml;
     const intent = parameters.intent || "display";
-    const rootHtml = createHTML( root!.name );
+    const rootHtml = createHTML( root.name );
     if( root.attributes ) 
     {
       this.setAttributes({
@@ -318,7 +329,7 @@ export abstract class XfaLayer
   }
 
   /**
-   * Update the xfa layer.
+   * Update the XFA layer.
    */
   static update( parameters:XfaLayerParms ) 
   {

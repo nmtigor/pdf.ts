@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 
 /* Copyright 2013 Mozilla Foundation
@@ -17,10 +17,13 @@
  * limitations under the License.
  */
 
+/** @typedef {import("./interfaces").IDownloadManager} IDownloadManager */
+
 import { html } from "../../lib/dom.js";
 import { isPdfFile } from "../pdf.ts-src/display/display_utils.js";
 import { createObjectURL, createValidAbsoluteUrl } from "../pdf.ts-src/pdf.js";
 import { compatibilityParams } from "./app_options.js";
+import { IDownloadManager } from "./interfaces.js";
 /*81---------------------------------------------------------------------------*/
 
 // #if !(CHROME || GENERIC)
@@ -52,7 +55,7 @@ function download( blobUrl:string, filename:string )
   a.remove();
 }
 
-export class DownloadManager 
+export class DownloadManager implements IDownloadManager
 {
   _openBlobUrls = new WeakMap();
 

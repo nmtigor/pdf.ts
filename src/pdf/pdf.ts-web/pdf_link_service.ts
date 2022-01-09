@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 
 /* Copyright 2015 Mozilla Foundation
@@ -17,17 +17,20 @@
  * limitations under the License.
  */
 
+/** @typedef {import("./event_utils").EventBus} EventBus */
 /** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
 
+import { assert } from "../../lib/util/trace.js";
 import { isObjectLike } from "../../lib/jslang.js";
 import { Ref } from "../pdf.ts-src/core/primitives.js";
 import { PDFDocumentProxy, type RefProxy } from "../pdf.ts-src/display/api.js";
 import { type IPDFLinkService } from "./interfaces.js";
 import { PDFViewer } from "./pdf_viewer.js";
 import { PDFHistory } from "./pdf_history.js";
-import { EventBus, parseQueryString } from "./ui_utils.js";
 import { addLinkAttributes, LinkTarget } from "../pdf.ts-src/display/display_utils.js";
 import { type Destination, type ExplicitDest } from "../pdf.ts-src/core/catalog.js";
+import { EventBus } from "./event_utils.js";
+import { parseQueryString } from "./ui_utils.js";
 /*81---------------------------------------------------------------------------*/
 
 interface PDFLinkServiceOptions
@@ -140,9 +143,9 @@ export class PDFLinkService implements IPDFLinkService
 
     if( isObjectLike(destRef) ) 
     {
-      pageNumber = this._cachedPageNumber( <Ref>destRef );
+      pageNumber = this._cachedPageNumber( destRef );
 
-      if (pageNumber === null) 
+      if( pageNumber ) 
       {
         // Fetch the page reference if it's not yet available. This could
         // only occur during loading, before all pages have been resolved.
@@ -498,11 +501,14 @@ export class PDFLinkService implements IPDFLinkService
     this.#pagesRefCache![refStr] = pageNum;
   }
 
-  _cachedPageNumber( pageRef:Ref )
+  /** @implements */
+  _cachedPageNumber( pageRef:RefProxy | undefined )
   {
+    if( !pageRef ) return undefined;
+
     const refStr =
       pageRef.gen === 0 ? `${pageRef.num}R` : `${pageRef.num}R${pageRef.gen}`;
-    return this.#pagesRefCache?.[refStr] || null;
+    return this.#pagesRefCache?.[refStr] || undefined;
   }
 
   /** @implements */
@@ -632,6 +638,9 @@ export class SimpleLinkService implements IPDFLinkService
    * @param pageRef reference to the page.
    */
   cachePageRef( pageNum:number, pageRef:RefProxy | undefined ) {}
+
+  /** @implements */
+  _cachedPageNumber( pageRef:RefProxy ) { assert(0); return undefined; }
 
   /** @implements */
   isPageVisible( pageNumber:number ) { return true; }

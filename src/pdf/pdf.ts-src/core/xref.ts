@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 
 /* Copyright 2021 Mozilla Foundation
@@ -31,9 +31,12 @@ import {
   type ObjNoRef,
   type Obj,
   Ref,
+  RefSet,
+  CIRCULAR_REF,
 } from "./primitives.js";
 import { Lexer, Parser } from "./parser.js";
 import {
+  DocStats,
   MissingDataException,
   ParserEOFException,
   XRefEntryException,
@@ -76,13 +79,13 @@ interface XRefStreamState
 
 export class XRef
 {
+  stream;
+  pdfManager;
   entries:XRefEntry[] = [];
   xrefstms:number[] = Object.create(null);
-  #cacheMap = new Map< number, ObjNoRef >(); // Prepare the XRef cache.
-  stats:PDFDocumentStats = {
-    streamTypes: Object.create(null),
-    fontTypes: Object.create(null),
-  };
+  #cacheMap = new Map<number, ObjNoRef>(); // Prepare the XRef cache.
+  _pendingRefs = new RefSet();
+  stats;
 
   #newRefNum:number | null = null;
   getNewRef() 
@@ -94,7 +97,7 @@ export class XRef
   }
   resetNewRef() { this.#newRefNum = null; }
 
-  startXRefQueue?:number[];
+  startXRefQueue!:number[];
   setStartXRef( startXRef:number ) 
   {
     // Store the starting positions of xref tables as we process them
@@ -111,10 +114,12 @@ export class XRef
 
   topDict?:Dict;
 
-  constructor( 
-    public stream:Stream | ChunkedStream, 
-    public pdfManager:BasePdfManager 
-  ) {}
+  constructor( stream:Stream | ChunkedStream, pdfManager:BasePdfManager ) 
+  {
+    this.stream = stream;
+    this.pdfManager = pdfManager;
+    this.stats = new DocStats(pdfManager.msgHandler);
+  }
 
   parse( recoveryMode=false ) 
   {
@@ -166,16 +171,25 @@ export class XRef
       }
       warn(`XRef.parse - Invalid "Root" reference: "${ex}".`);
     }
-    if( (root! instanceof Dict) && root.has("Pages") )
+    if( root! instanceof Dict )
     {
-      this.root = root!;
-    } 
-    else {
-      if (!recoveryMode) {
-        throw new XRefParseException("");
+      try {
+        const pages = root.get("Pages");
+        if (pages instanceof Dict) 
+        {
+          this.root = root;
+          return;
+        }
+      } catch (ex) {
+        if( ex instanceof MissingDataException ) throw ex;        
+        
+        warn(`XRef.parse - Invalid "Pages" reference: "${ex}".`);
       }
-      throw new FormatError("Invalid root reference");
     }
+    if( !recoveryMode ) throw new XRefParseException();
+
+    // Even recovery failed, there's nothing more we can do here.
+    throw new InvalidPDFException("Invalid Root reference.");
   }
 
   processXRefTable( parser:Parser )
@@ -356,21 +370,19 @@ export class XRef
 
   readXRefStream( stream:Stream ) 
   {
-    let i, j;
     const streamState = this.streamState!;
     stream.pos = streamState.streamPos;
 
-    const byteWidths = streamState.byteWidths;
-    const typeFieldWidth = byteWidths[0];
-    const offsetFieldWidth = byteWidths[1];
-    const generationFieldWidth = byteWidths[2];
+    const [typeFieldWidth, offsetFieldWidth, generationFieldWidth] =
+      streamState.byteWidths;
 
     const entryRanges = streamState.entryRanges;
-    while (entryRanges.length > 0) {
-      const first = entryRanges[0];
-      const n = entryRanges[1];
+    while (entryRanges.length > 0) 
+    {
+      const [first, n] = entryRanges;
 
-      if (!Number.isInteger(first) || !Number.isInteger(n)) {
+      if (!Number.isInteger(first) || !Number.isInteger(n)) 
+      {
         throw new FormatError(`Invalid XRef range fields: ${first}, ${n}`);
       }
       if (
@@ -382,26 +394,45 @@ export class XRef
           `Invalid XRef entry fields length: ${first}, ${n}`
         );
       }
-      for (i = streamState.entryNum; i < n; ++i) 
+      for (let i = streamState.entryNum; i < n; ++i) 
       {
         streamState.entryNum = i;
         streamState.streamPos = stream.pos;
 
-        let type = 0;
-        let offset = 0;
-        let generation = 0;
-        for (j = 0; j < typeFieldWidth; ++j) {
-          type = (type << 8) | stream.getByte();
+        let type = 0,
+         offset = 0,
+         generation = 0;
+        for (let j = 0; j < typeFieldWidth; ++j) 
+        {
+          const typeByte = stream.getByte();
+          if (typeByte === -1) 
+          {
+            throw new FormatError("Invalid XRef byteWidths 'type'.");
+          }
+          type = (type << 8) | typeByte;
         }
         // if type field is absent, its default value is 1
-        if (typeFieldWidth === 0) {
+        if (typeFieldWidth === 0) 
+        {
           type = 1;
         }
-        for (j = 0; j < offsetFieldWidth; ++j) {
-          offset = (offset << 8) | stream.getByte();
+        for (let j = 0; j < offsetFieldWidth; ++j) 
+        {
+          const offsetByte = stream.getByte();
+          if (offsetByte === -1) 
+          {
+            throw new FormatError("Invalid XRef byteWidths 'offset'.");
+          }
+          offset = (offset << 8) | offsetByte;
         }
-        for (j = 0; j < generationFieldWidth; ++j) {
-          generation = (generation << 8) | stream.getByte();
+        for (let j = 0; j < generationFieldWidth; ++j) 
+        {
+          const generationByte = stream.getByte();
+          if (generationByte === -1) 
+          {
+            throw new FormatError("Invalid XRef byteWidths 'generation'.");
+          }
+          generation = (generation << 8) | generationByte;
         }
         const entry = <XRefEntry>{};
         entry.offset = offset;
@@ -488,6 +519,7 @@ export class XRef
 
     // Clear out any existing entries, since they may be bogus.
     this.entries.length = 0;
+    this.#cacheMap.clear();
 
     const stream = this.stream;
     stream.pos = 0;
@@ -620,7 +652,7 @@ export class XRef
     // reading XRef streams
     for( let i = 0, ii = xrefStms.length; i < ii; ++i )
     {
-      this.startXRefQueue!.push(xrefStms[i]);
+      this.startXRefQueue.push(xrefStms[i]);
       this.readXRef(/* recoveryMode */ true);
     }
     // finding main trailer
@@ -635,7 +667,8 @@ export class XRef
         recoveryMode: true,
       });
       const obj = parser.getObj();
-      if (!isCmd(obj, "trailer")) {
+      if (!isCmd(obj, "trailer")) 
+      {
         continue;
       }
       // read the trailer dictionary
@@ -667,9 +700,12 @@ export class XRef
       trailerDict = dict;
     }
     // No trailer with 'ID', taking last one (if exists).
-    if( trailerDict! ) 
+    if( trailerDict! ) return trailerDict;
+
+    // No trailer dictionary found, taking the "top"-dictionary (if exists).
+    if (this.topDict) 
     {
-      return trailerDict;
+      return this.topDict;
     }
     // nothing helps
     throw new InvalidPDFException("Invalid PDF structure.");
@@ -684,14 +720,14 @@ export class XRef
     const startXRefParsedCache = new Set<number>();
 
     try {
-      while( this.startXRefQueue!.length )
+      while( this.startXRefQueue.length )
       {
-        const startXRef = this.startXRefQueue![0];
+        const startXRef = this.startXRefQueue[0];
 
         if( startXRefParsedCache.has(startXRef) )
         {
           warn("readXRef - skipping XRef table since it was already parsed.");
-          this.startXRefQueue!.shift();
+          this.startXRefQueue.shift();
           continue;
         }
         startXRefParsedCache.add(startXRef);
@@ -722,9 +758,10 @@ export class XRef
             const pos = <number>obj;
             // ignore previously loaded xref streams
             // (possible infinite recursion)
-            if (!(pos in this.xrefstms)) {
+            if (!(pos in this.xrefstms)) 
+            {
               this.xrefstms[pos] = 1;
-              this.startXRefQueue!.push(pos);
+              this.startXRefQueue.push(pos);
             }
           }
         } 
@@ -738,10 +775,12 @@ export class XRef
             throw new FormatError("Invalid XRef stream");
           }
           dict = this.processXRefStream( <Stream>obj );
-          if (!this.topDict) {
+          if (!this.topDict) 
+          {
             this.topDict = dict;
           }
-          if (!dict) {
+          if (!dict) 
+          {
             throw new FormatError("Failed to read XRef stream");
           }
         } 
@@ -753,36 +792,37 @@ export class XRef
         obj = dict.get("Prev");
         if( Number.isInteger(obj) )
         {
-          this.startXRefQueue!.push( <number>obj );
+          this.startXRefQueue.push( <number>obj );
         } 
-        else if( (obj instanceof Ref) )
+        else if( obj instanceof Ref )
         {
           // The spec says Prev must not be a reference, i.e. "/Prev NNN"
           // This is a fallback for non-compliant PDFs, i.e. "/Prev NNN 0 R"
-          this.startXRefQueue!.push( obj.num );
+          this.startXRefQueue.push( obj.num );
         }
 
-        this.startXRefQueue!.shift();
+        this.startXRefQueue.shift();
       }
 
       return this.topDict!;
     } catch (e) {
-      if (e instanceof MissingDataException) {
-        throw e;
-      }
+      if( e instanceof MissingDataException ) throw e;
+
       info("(while reading XRef): " + e);
+
+      this.startXRefQueue.shift();
     }
 
-    if (recoveryMode) {
-      return undefined;
-    }
-    throw new XRefParseException("");
+    if( recoveryMode ) return undefined;
+
+    throw new XRefParseException();
   }
 
   getEntry( i:number ) 
   {
     const xrefEntry = this.entries[i];
-    if (xrefEntry && !xrefEntry.free && xrefEntry.offset) {
+    if( xrefEntry && !xrefEntry.free && xrefEntry.offset )
+    {
       return xrefEntry;
     }
     return null;
@@ -822,19 +862,35 @@ export class XRef
     if( xrefEntry === null )
     {
       // The referenced entry can be free.
-      this.#cacheMap.set(num, null);
+      this.#cacheMap.set( num, xrefEntry );
       return xrefEntry;
     }
+    // Prevent circular references, in corrupt PDF documents, from hanging the
+    // worker-thread. This relies, implicitly, on the parsing being synchronous.
+    if( this._pendingRefs.has(ref) ) 
+    {
+      this._pendingRefs.remove(ref);
+
+      warn(`Ignoring circular reference: ${ref}.`);
+      return CIRCULAR_REF;
+    }
+    this._pendingRefs.put(ref);
 
     let obj1:ObjNoRef;
-    if( xrefEntry.uncompressed )
-         obj1 = this.fetchUncompressed( ref, xrefEntry, suppressEncryption );
-    else obj1 = this.fetchCompressed( ref, xrefEntry, suppressEncryption );
+    try {
+      if( xrefEntry.uncompressed )
+           obj1 = this.fetchUncompressed( ref, xrefEntry, suppressEncryption );
+      else obj1 = this.fetchCompressed( ref, xrefEntry, suppressEncryption );
+      this._pendingRefs.remove(ref);
+    } catch (ex) {
+      this._pendingRefs.remove(ref);
+      throw ex;
+    }
     if( obj1 instanceof Dict )
     {
       obj1.objId = ref.toString();
     } 
-    else if( (obj1 instanceof BaseStream) )
+    else if( obj1 instanceof BaseStream )
     {
       obj1.dict!.objId = ref.toString();
     }
@@ -867,9 +923,11 @@ export class XRef
     if( obj3.cmd !== "obj" )
     {
       // some bad PDFs use "obj1234" and really mean 1234
-      if (obj3.cmd.startsWith("obj")) {
+      if (obj3.cmd.startsWith("obj")) 
+      {
         num = parseInt(obj3.cmd.substring(3), 10);
-        if (!Number.isNaN(num)) {
+        if (!Number.isNaN(num)) 
+        {
           return num;
         }
       }
@@ -885,9 +943,7 @@ export class XRef
     if( !(obj1 instanceof BaseStream) )
     {
       // #if !PRODUCTION || TESTING
-        assert( obj1 !== undefined, 
-          'fetchUncompressed: The "obj1" cannot be undefined.'
-        );
+        assert( obj1 !== undefined, 'fetchUncompressed: The "obj1" cannot be undefined.' );
       // #endif
       this.#cacheMap.set( num, obj1 );
     }

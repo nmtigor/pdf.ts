@@ -11,6 +11,7 @@ import { GlobalWorkerOptions, PDFWorker } from "./pdf.ts-src/pdf.js";
 import { BasePdfManager } from "./pdf.ts-src/core/pdf_manager.js";
 import { BaseStream } from "./pdf.ts-src/core/base_stream.js";
 import { DocumentInitParms } from "./pdf.ts-src/display/api.js";
+import { DocStats } from "./pdf.ts-src/core/core_utils.js";
 /*81---------------------------------------------------------------------------*/
 
 const D_base = "";
@@ -76,9 +77,9 @@ export interface BuildGetDocumentParamsOptions
   password?:string;
   pdfBug?:boolean;
   stopAtErrors?:boolean;
-  worker?:PDFWorker;
-
+  rangeChunkSize?:number;
   withCredentials?:boolean;
+  worker?:PDFWorker;
 }
 
 export function buildGetDocumentParams( filename:string, options?:BuildGetDocumentParamsOptions )
@@ -106,10 +107,7 @@ interface XRefMockCtorParms
 export class XRefMock
 {
   #map:Record<string, XRefMockCtorParms["data"]> = Object.create(null);
-  stats = {
-    streamTypes: Object.create(null),
-    fontTypes: Object.create(null),
-  };
+  stats = new DocStats( <any>{ send: () => {} });
   #newRefNum?:number;
 
   newRef?:Ref | undefined;

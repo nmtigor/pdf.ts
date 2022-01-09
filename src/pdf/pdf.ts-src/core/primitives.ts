@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 
 /* Copyright 2012 Mozilla Foundation
@@ -25,8 +25,9 @@ import { TranslatedFont } from "./evaluator.js";
 import { XRef } from "./xref.js";
 /*81---------------------------------------------------------------------------*/
 
+export const CIRCULAR_REF = Symbol("CIRCULAR_REF");
+export type CIRCULAR_REF = typeof CIRCULAR_REF;
 export const EOF = Symbol("EOF");
-// export const EOF = { cmd:"" };
 export type EOF = typeof EOF;
 
 namespace XFANsName
@@ -126,9 +127,17 @@ export class Dict
     let value = this.#map[key1];
     if( value === undefined && key2 !== undefined ) 
     {
+      // #if !PRODUCTION || TESTING
+        if( key2.length < key1.length )
+          assert(0,"Dict.get: Expected keys to be ordered by length.");
+      // #endif
       value = this.#map[key2];
       if( value === undefined && key3 !== undefined ) 
       {
+        // #if !PRODUCTION || TESTING
+          if( key3.length < key2.length )
+            assert(0,"Dict.get: Expected keys to be ordered by length.");
+        // #endif
         value = this.#map[key3];
       }
     }
@@ -142,14 +151,52 @@ export class Dict
   /**
    * Same as get(), but returns a promise and uses fetchIfRefAsync().
    */
-  async getAsync<T extends ObjNoRef=ObjNoRef>( key1:string, key2?:string, key3?:string )
+  async getAsync<T extends ObjNoRef=ObjNoRef>( 
+    key1:string, key2?:string, key3?:string ):Promise<T>
   {
     let value = this.#map[key1];
     if (value === undefined && key2 !== undefined) 
     {
+      // #if !PRODUCTION || TESTING
+        if( key2.length < key1.length )
+          assert(0,"Dict.getAsync: Expected keys to be ordered by length.");
+      // #endif
       value = this.#map[key2];
       if (value === undefined && key3 !== undefined) 
       {
+        // #if !PRODUCTION || TESTING
+          if( key3.length < key2.length )
+            assert(0,"Dict.getAsync: Expected keys to be ordered by length.");
+        // #endif
+        value = this.#map[key3];
+      }
+    }
+    if (value instanceof Ref && this.xref) 
+    {
+      return this.xref.fetchAsync(value, this.suppressEncryption);
+    }
+    return <T>value;
+  }
+
+  /**
+   * Same as get(), but dereferences all elements if the result is an Array.
+   */
+  getArray( key1:string, key2?:string, key3?:string ):NoRef | undefined
+  {
+    let value = this.#map[key1];
+    if (value === undefined && key2 !== undefined) 
+    {
+      // #if !PRODUCTION || TESTING
+        if( key2.length < key1.length )
+          assert(0,"Dict.getArray: Expected keys to be ordered by length.");
+      // #endif
+      value = this.#map[key2];
+      if (value === undefined && key3 !== undefined) 
+      {
+        // #if !PRODUCTION || TESTING
+          if( key3.length < key2.length )
+            assert(0,"Dict.getArray: Expected keys to be ordered by length.");
+        // #endif
         value = this.#map[key3];
       }
     }
@@ -168,24 +215,6 @@ export class Dict
           value[i] = this.xref.fetch( <Ref>value[i], this.suppressEncryption );
         }
       }
-    }
-    return <T>value;
-  }
-
-  /**
-   * Same as get(), but dereferences all elements if the result is an Array.
-   */
-  getArray( key1:string, key2?:string, key3?:string ):NoRef | undefined
-  {
-    let value = this.get( key1, key2, key3 );
-    if( !Array.isArray(value) || !this.xref ) return <PrmNoRef | undefined>value;
-
-    value = value.slice(); // Ensure that we don't modify the Dict data.
-    for( let i = 0, ii = value.length; i < ii; ++i ) 
-    {
-      if( !(value[i] instanceof Ref) ) continue;
-
-      value[i] = this.xref.fetch( <Ref>value[i], this.suppressEncryption );
     }
     return <(ObjNoRef | undefined)[]>value;
   }
@@ -420,6 +449,7 @@ type Prm =
 
   | Name // 7.3.5
   | Cmd 
+  | CIRCULAR_REF
   | EOF
 
   | Dict // 7.3.7

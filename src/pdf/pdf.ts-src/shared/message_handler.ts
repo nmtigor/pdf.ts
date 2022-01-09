@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 
 /* Copyright 2018 Mozilla Foundation
@@ -22,7 +22,6 @@ import { global } from "../../../global.js";
 import { isObjectLike } from "../../../lib/jslang.js";
 import { HttpStatusCode } from "../../../lib/HttpStatusCode.js";
 import { assert }         from "../../../lib/util/trace.js";
-import { Ref } from "../core/primitives.js";
 import { type IWorker } from "../core/worker.js";
 import { VerbosityLevel } from "../pdf.js";
 import {
@@ -140,7 +139,6 @@ export interface GetDocRequestData
   };
   maxImageSize:number | undefined;
   disableFontFace:boolean | undefined;
-  postMessageTransfers:boolean;
   docBaseUrl:string | undefined;
   ignoreErrors:boolean | undefined;
   isEvalSupported:boolean | undefined;
@@ -282,7 +280,7 @@ export interface MActionMap
   }
   GetPageIndex:{
     Data:{
-      ref:Ref;
+      ref:RefProxy;
     }
     Return:number;
     Sinkchunk:undefined;
@@ -296,7 +294,7 @@ export interface MActionMap
   }
   GetPageLabels:{
     Data:null;
-    Return:string[] | null;
+    Return:string[] | undefined;
     Sinkchunk:undefined;
   }
   GetPageLayout:{
@@ -430,6 +428,11 @@ export interface WActionMap
     Return:void;
     Sinkchunk:undefined;
   }
+  DocStats:{
+    Data:PDFDocumentStats;
+    Return:void;
+    Sinkchunk:undefined;
+  }
   FetchBuiltInCMap:{
     Data:{
       name:string;
@@ -497,9 +500,7 @@ export interface WActionMap
     Sinkchunk:undefined;
   }
   test:{
-    Data:null | {
-      supportTransfers:boolean;
-    }
+    Data:boolean;
     Return:void;
     Sinkchunk:undefined;
   }
@@ -626,7 +627,6 @@ export class MessageHandler<
 
   callbackId = 1;
   streamId = 1;
-  postMessageTransfers = true;
   streamSinks:StreamSink<Ta>[] = Object.create(null);
   streamControllers:StreamController<Tn>[] = Object.create(null);
   callbackCapabilities:PromiseCap<unknown>[] = Object.create(null);
@@ -753,14 +753,14 @@ export class MessageHandler<
   send<AN extends ActionName<Ta>>( 
     actionName:AN, data:ActionData<Ta,AN>, transfers?:Transferable[]
   ) {
-    this.#postMessage(
+    this.comObj.postMessage(
       {
         sourceName: this.sourceName,
         targetName: this.targetName,
         action: actionName,
         data,
       },
-      transfers
+      <any>transfers
     );
   }
 
@@ -774,12 +774,12 @@ export class MessageHandler<
    */
   sendWithPromise<AN extends ActionName<Ta>>( 
     actionName:AN, data:ActionData<Ta,AN>, transfers?:Transferable[] 
-  ):Promise< ActionReturn<Ta,AN> > {
+  ):Promise< ActionReturn<Ta,AN>> {
     const callbackId = this.callbackId++;
     const capability = createPromiseCap<ActionReturn<Ta, AN>>();
     this.callbackCapabilities[callbackId] = <PromiseCap< unknown >>capability;
     try {
-      this.#postMessage(
+      this.comObj.postMessage(
         {
           sourceName: this.sourceName,
           targetName: this.targetName,
@@ -787,7 +787,7 @@ export class MessageHandler<
           callbackId,
           data,
         },
-        transfers
+        <any>transfers
       );
     } catch (ex) {
       capability.reject(ex);
@@ -824,7 +824,7 @@ export class MessageHandler<
             startCall: startCapability,
             isClosed: false,
           };
-          this.#postMessage(
+          comObj.postMessage(
             {
               sourceName,
               targetName,
@@ -833,7 +833,7 @@ export class MessageHandler<
               data,
               desiredSize: controller.desiredSize,
             },
-            transfers
+            <any>transfers
           );
           // Return Promise for Async process, to signal success/failure.
           return startCapability.promise;
@@ -901,7 +901,7 @@ export class MessageHandler<
           this.sinkCapability = createPromiseCap();
           this.ready = this.sinkCapability.promise;
         }
-        self.#postMessage(
+        comObj.postMessage(
           {
             sourceName,
             targetName,
@@ -909,7 +909,7 @@ export class MessageHandler<
             streamId,
             chunk,
           },
-          transfers
+          <any>transfers
         );
       },
 
@@ -1124,19 +1124,6 @@ export class MessageHandler<
       streamController.cancelCall && streamController.cancelCall.promise,
     ]);
     delete this.streamControllers[streamId];
-  }
-
-  /**
-   * Sends raw message to the comObj.
-   * @param message Raw message.
-   * @param transfers List of transfers/ArrayBuffers, or undefined.
-   */
-  #postMessage< AN extends ActionName<Ta> >( 
-    message:Message<Ta,AN>, transfers?:Transferable[] 
-  ) {
-    if( transfers && this.postMessageTransfers ) 
-         this.comObj.postMessage( message, transfers );
-    else this.comObj.postMessage( message );
   }
 
   destroy() 

@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 
 /* Copyright 2021 Mozilla Foundation
@@ -17,14 +17,16 @@
  * limitations under the License.
  */
 
+/** @typedef {import("./event_utils").EventBus} EventBus */
+
 import { createPromiseCap, PromiseCap } from "../../lib/promisecap.js";
 import { shadow } from "../pdf.ts-src/shared/util.js";
-import { apiPageLayoutToViewerModes, EventBus, type EventMap, PageLayout } from "./ui_utils.js";
-import { RenderingStates } from "./pdf_rendering_queue.js";
+import { apiPageLayoutToViewerModes, PageLayout, RenderingStates } from "./ui_utils.js";
 import { PDFDocumentProxy } from "../pdf.ts-src/display/api.js";
 import { PDFViewer } from "./pdf_viewer.js";
 import { IScripting, type MouseState } from "./interfaces.js";
 import { DefaultExternalServices, type ScriptingDocProperties } from "./app.js";
+import { EventBus, EventMap } from "./event_utils.js";
 /*81---------------------------------------------------------------------------*/
 
 interface PDFScriptingManagerOptions

@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 
 /* Copyright 2019 Mozilla Foundation
@@ -18,13 +18,16 @@
  */
 
 import { assert } from "../../../lib/util/trace.js";
+import { MessageHandler, Thread } from "../shared/message_handler.js";
 import { 
   type ActionEventType,
   type ActionEventTypesType,
   BaseException, 
   objectSize, 
   stringToPDFString,
-  warn, 
+  warn,
+  StreamType,
+  FontType, 
 } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
 import { type CssFontInfo } from "./document.js";
@@ -84,17 +87,67 @@ export class ParserEOFException extends BaseException
 
 export class XRefEntryException extends BaseException 
 {
-  constructor( msg:string ) 
+  constructor( msg?:string ) 
   {
-    super(msg, "XRefEntryException");
+    super( msg, "XRefEntryException" );
   }
 }
 
 export class XRefParseException extends BaseException 
 {
-  constructor( msg:string ) 
+  constructor( msg?:string ) 
   {
     super(msg, "XRefParseException");
+  }
+}
+
+export class DocStats 
+{
+  #handler;
+
+  #streamTypes = new Set<StreamType>();
+  #fontTypes = new Set<FontType>();
+
+  constructor( handler:MessageHandler<Thread.worker> )
+  {
+    this.#handler = handler;
+  }
+
+  _send() 
+  {
+    const streamTypes = Object.create(null),
+      fontTypes = Object.create(null);
+    for( const type of this.#streamTypes )
+    {
+      streamTypes[type] = true;
+    }
+    for( const type of this.#fontTypes )
+    {
+      fontTypes[type] = true;
+    }
+    this.#handler.send("DocStats", { streamTypes, fontTypes });
+  }
+
+  addStreamType( type:StreamType )
+  {
+    // #if !PRODUCTION || TESTING
+      assert(StreamType[type] === type, 'addStreamType: Invalid "type" value.');
+    // #endif
+    if( this.#streamTypes.has( type ) ) return;
+
+    this.#streamTypes.add( type );
+    this._send();
+  }
+
+  addFontType( type:FontType )
+  {
+    // #if !PRODUCTION || TESTING
+      assert(FontType[type] === type, 'addFontType: Invalid "type" value.');
+    // #endif
+    if( this.#fontTypes.has( type) ) return;
+
+    this.#fontTypes.add( type );
+    this._send();
   }
 }
 

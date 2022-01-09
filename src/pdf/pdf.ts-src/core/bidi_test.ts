@@ -11,6 +11,26 @@ const strttime = performance.now();
 
 console.log("%c>>>>>>> test bidi() >>>>>>>",`color:${css_1}`);
 {
+  console.log("it should mark text as LTR if there's only LTR-characters, when the string is very short...");
+  {
+    const str = "foo";
+    const bidiText = bidi(str, -1, false);
+
+    console.assert( bidiText.str === "foo" );
+    console.assert( bidiText.dir === "ltr" );
+  }
+
+  console.log("it should mark text as LTR if there's only LTR-characters...");
+  {
+    const str = "Lorem ipsum dolor sit amet, consectetur adipisicing elit.";
+    const bidiText = bidi(str, -1, false);
+
+    console.assert( bidiText.str ===
+      "Lorem ipsum dolor sit amet, consectetur adipisicing elit."
+    );
+    console.assert( bidiText.dir ==="ltr" );
+  }
+
   console.log("it should mark text as RTL if more than 30% of text is RTL...");
   {
     // 33% of test text are RTL characters
@@ -30,6 +50,15 @@ console.log("%c>>>>>>> test bidi() >>>>>>>",`color:${css_1}`);
 
     console.assert( bidiText.str === result );
     console.assert( bidiText.dir === "ltr" );
+  }
+
+  console.log("it should mark text as RTL if less than 30% of text is RTL, when the string is very short (issue 11656)...");
+  {
+    const str = "()\u05d1("; // 25% of the string is RTL characters.
+    const bidiText = bidi(str, -1, false);
+
+    console.assert( bidiText.str === "(\u05d1)(" );
+    console.assert( bidiText.dir === "rtl" );
   }
 }
 /*81---------------------------------------------------------------------------*/

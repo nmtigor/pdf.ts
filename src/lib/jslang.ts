@@ -232,17 +232,17 @@ declare global
 
   interface NumberConstructor
   {
-    apxE:( f0:number, f1:number ) => boolean;
-    apxS:( f0:number, f1:number ) => boolean;
-    apxSE:( f0:number, f1:number ) => boolean;
-    apxG:( f0:number, f1:number ) => boolean;
-    apxGE:( f0:number, f1:number ) => boolean;
+    apxE( f0:number, f1:number ):boolean;
+    apxS( f0:number, f1:number ):boolean;
+    apxSE( f0:number, f1:number ):boolean;
+    apxG( f0:number, f1:number ):boolean;
+    apxGE( f0:number, f1:number ):boolean;
 
     /**
      * [min,max]
      * ! [min,max) normaally, but could achieve `max` because of `Math.round()`.
      */
-    getRandom:( max:number, min?:number, fixt?:uint ) => number;
+    getRandom( max:number, min?:number, fixt?:uint ):number;
   }
 }
 
@@ -540,14 +540,19 @@ Date.setFullYear = function( refdate, year, month, date )
 }
 /*81---------------------------------------------------------------------------*/
 
-// declare global 
-// {
-//   interface Math
-//   {
-//     minn( ...values:(number|bigint)[] ):number|bigint;
-//     maxn( ...values:(number|bigint)[] ):number|bigint;
-//   }
-// }
+declare global 
+{
+  interface Math
+  {
+    clamp( min:number, val:number, max:number ):number;
+
+    // minn( ...values:(number|bigint)[] ):number|bigint;
+    // maxn( ...values:(number|bigint)[] ):number|bigint;
+  }
+}
+
+Math.clamp = ( min_x:number, val_x:number, max_x:number ) =>
+  Math.max( min_x, Math.min( val_x, max_x ));
 
 // Math.minn = ( ...values ) =>
 // {

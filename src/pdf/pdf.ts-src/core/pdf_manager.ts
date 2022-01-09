@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 
 /* Copyright 2012 Mozilla Foundation
@@ -70,6 +70,8 @@ export abstract class BasePdfManager
   protected _password?:string | undefined;
   /** @final */
   get password() { return this._password; }
+
+  msgHandler!:MessageHandler<Thread.worker>;
 
   protected _docBaseUrl:URL | string | undefined;
   get docBaseUrl() 
@@ -173,14 +175,16 @@ export class LocalPdfManager extends BasePdfManager
 
   constructor( docId:string, 
     data:Uint8Array | number[], 
+    password:string  | undefined, 
+    msgHandler:MessageHandler<Thread.worker>,
     evaluatorOptions:EvaluatorOptions, 
-    password?:string, 
     enableXfa?:boolean,
     docBaseUrl?:string
   ) {
     super( docId, docBaseUrl );
 
     this._password = password;
+    this.msgHandler = msgHandler;
     this.evaluatorOptions = evaluatorOptions;
     this.enableXfa = enableXfa;
 
@@ -244,8 +248,6 @@ interface NetworkPdfManagerCtorParms
 
 export class NetworkPdfManager extends BasePdfManager 
 {
-  msgHandler:MessageHandler< Thread.worker >;
-
   streamManager:ChunkedStreamManager;
 
   constructor( docId:string, 

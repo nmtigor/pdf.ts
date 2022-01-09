@@ -1,4 +1,4 @@
-*.pdf
+# *.pdf
 *.error
 
 !boundingBox_invalid.pdf

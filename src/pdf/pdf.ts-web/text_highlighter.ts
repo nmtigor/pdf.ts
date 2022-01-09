@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 
 /* Copyright 2021 Mozilla Foundation
@@ -17,9 +17,13 @@
  * limitations under the License.
  */
 
+/** @typedef {import("./event_utils").EventBus} EventBus */
+// eslint-disable-next-line max-len
+/** @typedef {import("./pdf_find_controller").PDFFindController} PDFFindController */
+
 import { textnode } from "../../lib/dom.js";
+import { EventBus, EventMap } from "./event_utils.js";
 import { PDFFindController } from "./pdf_find_controller.js";
-import { EventBus, type EventMap } from "./ui_utils.js";
 /*81---------------------------------------------------------------------------*/
 
 interface TextHighlighterOptions

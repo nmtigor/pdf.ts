@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 
 /* Copyright 2012 Mozilla Foundation
@@ -23,7 +23,7 @@
  * license.
  */
 
-import { info } from "../shared/util.js";
+import { FormatError, info } from "../shared/util.js";
 /*81---------------------------------------------------------------------------*/
 
 interface CCITTFaxDecoderSource
@@ -580,25 +580,30 @@ namespace NsCCITTFaxDecoder
           refPos = 0;
           blackPixels = 0;
 
-          while (codingLine[this.codingPos] < columns) {
+          while (codingLine[this.codingPos] < columns) 
+          {
             code1 = this.#getTwoDimCode();
-            switch (code1) {
+            switch (code1) 
+            {
               case twoDimPass:
                 this.#addPixels(refLine[refPos + 1], blackPixels);
-                if (refLine[refPos + 1] < columns) {
+                if (refLine[refPos + 1] < columns) 
+                {
                   refPos += 2;
                 }
                 break;
               case twoDimHoriz:
                 code1 = code2 = 0;
-                if (blackPixels) {
+                if (blackPixels) 
+                {
                   do {
                     code1 += (code3 = this.#getBlackCode());
                   } while (code3 >= 64);
                   do {
                     code2 += (code3 = this.#getWhiteCode());
                   } while (code3 >= 64);
-                } else {
+                } 
+                else {
                   do {
                     code1 += (code3 = this.#getWhiteCode());
                   } while (code3 >= 64);
@@ -607,15 +612,15 @@ namespace NsCCITTFaxDecoder
                   } while (code3 >= 64);
                 }
                 this.#addPixels( codingLine[this.codingPos] + code1, blackPixels );
-                if (codingLine[this.codingPos] < columns) {
+                if (codingLine[this.codingPos] < columns) 
+                {
                   this.#addPixels(
                     codingLine[this.codingPos] + code2,
                     blackPixels ^ 1
                   );
                 }
-                while (
-                  refLine[refPos] <= codingLine[this.codingPos] &&
-                  refLine[refPos] < columns
+                while( refLine[refPos] <= codingLine[this.codingPos] 
+                 && refLine[refPos] < columns
                 ) {
                   refPos += 2;
                 }
@@ -623,11 +628,11 @@ namespace NsCCITTFaxDecoder
               case twoDimVertR3:
                 this.#addPixels(refLine[refPos] + 3, blackPixels);
                 blackPixels ^= 1;
-                if (codingLine[this.codingPos] < columns) {
+                if (codingLine[this.codingPos] < columns) 
+                {
                   ++refPos;
-                  while (
-                    refLine[refPos] <= codingLine[this.codingPos] &&
-                    refLine[refPos] < columns
+                  while( refLine[refPos] <= codingLine[this.codingPos]
+                   && refLine[refPos] < columns
                   ) {
                     refPos += 2;
                   }
@@ -636,11 +641,11 @@ namespace NsCCITTFaxDecoder
               case twoDimVertR2:
                 this.#addPixels(refLine[refPos] + 2, blackPixels);
                 blackPixels ^= 1;
-                if (codingLine[this.codingPos] < columns) {
+                if (codingLine[this.codingPos] < columns) 
+                {
                   ++refPos;
-                  while (
-                    refLine[refPos] <= codingLine[this.codingPos] &&
-                    refLine[refPos] < columns
+                  while( refLine[refPos] <= codingLine[this.codingPos] 
+                   && refLine[refPos] < columns
                   ) {
                     refPos += 2;
                   }
@@ -649,11 +654,11 @@ namespace NsCCITTFaxDecoder
               case twoDimVertR1:
                 this.#addPixels(refLine[refPos] + 1, blackPixels);
                 blackPixels ^= 1;
-                if (codingLine[this.codingPos] < columns) {
+                if (codingLine[this.codingPos] < columns) 
+                {
                   ++refPos;
-                  while (
-                    refLine[refPos] <= codingLine[this.codingPos] &&
-                    refLine[refPos] < columns
+                  while( refLine[refPos] <= codingLine[this.codingPos]
+                   && refLine[refPos] < columns
                   ) {
                     refPos += 2;
                   }
@@ -662,11 +667,11 @@ namespace NsCCITTFaxDecoder
               case twoDimVert0:
                 this.#addPixels(refLine[refPos], blackPixels);
                 blackPixels ^= 1;
-                if (codingLine[this.codingPos] < columns) {
+                if (codingLine[this.codingPos] < columns) 
+                {
                   ++refPos;
-                  while (
-                    refLine[refPos] <= codingLine[this.codingPos] &&
-                    refLine[refPos] < columns
+                  while( refLine[refPos] <= codingLine[this.codingPos] 
+                   && refLine[refPos] < columns
                   ) {
                     refPos += 2;
                   }
@@ -675,15 +680,17 @@ namespace NsCCITTFaxDecoder
               case twoDimVertL3:
                 this.#addPixelsNeg(refLine[refPos] - 3, blackPixels);
                 blackPixels ^= 1;
-                if (codingLine[this.codingPos] < columns) {
-                  if (refPos > 0) {
+                if (codingLine[this.codingPos] < columns) 
+                {
+                  if (refPos > 0) 
+                  {
                     --refPos;
-                  } else {
+                  } 
+                  else {
                     ++refPos;
                   }
-                  while (
-                    refLine[refPos] <= codingLine[this.codingPos] &&
-                    refLine[refPos] < columns
+                  while( refLine[refPos] <= codingLine[this.codingPos] 
+                   && refLine[refPos] < columns
                   ) {
                     refPos += 2;
                   }
@@ -692,15 +699,17 @@ namespace NsCCITTFaxDecoder
               case twoDimVertL2:
                 this.#addPixelsNeg(refLine[refPos] - 2, blackPixels);
                 blackPixels ^= 1;
-                if (codingLine[this.codingPos] < columns) {
-                  if (refPos > 0) {
+                if (codingLine[this.codingPos] < columns) 
+                {
+                  if (refPos > 0) 
+                  {
                     --refPos;
-                  } else {
+                  } 
+                  else {
                     ++refPos;
                   }
-                  while (
-                    refLine[refPos] <= codingLine[this.codingPos] &&
-                    refLine[refPos] < columns
+                  while( refLine[refPos] <= codingLine[this.codingPos]
+                   && refLine[refPos] < columns
                   ) {
                     refPos += 2;
                   }
@@ -709,15 +718,17 @@ namespace NsCCITTFaxDecoder
               case twoDimVertL1:
                 this.#addPixelsNeg(refLine[refPos] - 1, blackPixels);
                 blackPixels ^= 1;
-                if (codingLine[this.codingPos] < columns) {
-                  if (refPos > 0) {
+                if (codingLine[this.codingPos] < columns) 
+                {
+                  if (refPos > 0) 
+                  {
                     --refPos;
-                  } else {
+                  } 
+                  else {
                     ++refPos;
                   }
-                  while (
-                    refLine[refPos] <= codingLine[this.codingPos] &&
-                    refLine[refPos] < columns
+                  while( refLine[refPos] <= codingLine[this.codingPos] 
+                   && refLine[refPos] < columns
                   ) {
                     refPos += 2;
                   }
@@ -733,17 +744,21 @@ namespace NsCCITTFaxDecoder
                 this.err = true;
             }
           }
-        } else {
+        } 
+        else {
           codingLine[0] = 0;
           this.codingPos = 0;
           blackPixels = 0;
-          while (codingLine[this.codingPos] < columns) {
+          while (codingLine[this.codingPos] < columns) 
+          {
             code1 = 0;
-            if (blackPixels) {
+            if (blackPixels) 
+            {
               do {
                 code1 += code3 = this.#getBlackCode();
               } while (code3 >= 64);
-            } else {
+            } 
+            else {
               do {
                 code1 += code3 = this.#getWhiteCode();
               } while (code3 >= 64);
@@ -755,54 +770,72 @@ namespace NsCCITTFaxDecoder
 
         let gotEOL = false;
 
-        if (this.byteAlign) {
+        if (this.byteAlign) 
+        {
           this.inputBits &= ~7;
         }
 
-        if (!this.eoblock && this.row === this.rows - 1) {
+        if (!this.eoblock && this.row === this.rows - 1) 
+        {
           this.rowsDone = true;
-        } else {
+        } 
+        else {
           code1 = this.#lookBits(12);
-          if (this.eoline) {
-            while (code1 !== ccittEOF && code1 !== 1) {
+          if (this.eoline) 
+          {
+            while (code1 !== ccittEOF && code1 !== 1) 
+            {
               this.#eatBits(1);
               code1 = this.#lookBits(12);
             }
-          } else {
-            while (code1 === 0) {
+          } 
+          else {
+            while (code1 === 0) 
+            {
               this.#eatBits(1);
               code1 = this.#lookBits(12);
             }
           }
-          if (code1 === 1) {
+          if (code1 === 1) 
+          {
             this.#eatBits(12);
             gotEOL = true;
-          } else if (code1 === ccittEOF) {
+          } 
+          else if (code1 === ccittEOF) 
+          {
             this.eof = true;
           }
         }
 
-        if (!this.eof && this.encoding > 0 && !this.rowsDone) {
+        if (!this.eof && this.encoding > 0 && !this.rowsDone) 
+        {
           this.nextLine2D = !this.#lookBits(1);
           this.#eatBits(1);
         }
 
-        if (this.eoblock && gotEOL && this.byteAlign) {
+        if (this.eoblock && gotEOL && this.byteAlign) 
+        {
           code1 = this.#lookBits(12);
-          if (code1 === 1) {
+          if (code1 === 1) 
+          {
             this.#eatBits(12);
-            if (this.encoding > 0) {
+            if (this.encoding > 0) 
+            {
               this.#lookBits(1);
               this.#eatBits(1);
             }
-            if (this.encoding >= 0) {
-              for (i = 0; i < 4; ++i) {
+            if (this.encoding >= 0) 
+            {
+              for (i = 0; i < 4; ++i) 
+              {
                 code1 = this.#lookBits(12);
-                if (code1 !== 1) {
+                if (code1 !== 1) 
+                {
                   info("bad rtc code: " + code1);
                 }
                 this.#eatBits(12);
-                if (this.encoding > 0) {
+                if (this.encoding > 0) 
+                {
                   this.#lookBits(1);
                   this.#eatBits(1);
                 }
@@ -810,72 +843,98 @@ namespace NsCCITTFaxDecoder
             }
             this.eof = true;
           }
-        } else if (this.err && this.eoline) {
-          while (true) {
+        } 
+        else if (this.err && this.eoline) 
+        {
+          while (true) 
+          {
             code1 = this.#lookBits(13);
-            if (code1 === ccittEOF) {
+            if (code1 === ccittEOF) 
+            {
               this.eof = true;
               return -1;
             }
-            if (code1 >> 1 === 1) {
+            if (code1 >> 1 === 1) 
+            {
               break;
             }
             this.#eatBits(1);
           }
           this.#eatBits(12);
-          if (this.encoding > 0) {
+          if (this.encoding > 0) 
+          {
             this.#eatBits(1);
             this.nextLine2D = !(code1 & 1);
           }
         }
 
-        if (codingLine[0] > 0) {
+        if (codingLine[0] > 0) 
+        {
           this.outputBits = codingLine[(this.codingPos = 0)];
-        } else {
+        } 
+        else {
           this.outputBits = codingLine[(this.codingPos = 1)];
         }
         this.row++;
       }
 
       let c;
-      if (this.outputBits >= 8) {
+      if (this.outputBits >= 8) 
+      {
         c = this.codingPos & 1 ? 0 : 0xff;
         this.outputBits -= 8;
-        if (this.outputBits === 0 && codingLine[this.codingPos] < columns) {
+        if (this.outputBits === 0 && codingLine[this.codingPos] < columns) 
+        {
           this.codingPos++;
           this.outputBits =
             codingLine[this.codingPos] - codingLine[this.codingPos - 1];
         }
-      } else {
+      } 
+      else {
         bits = 8;
         c = 0;
         do {
-          if (this.outputBits > bits) {
+          if (typeof this.outputBits !== "number") 
+          {
+            throw new FormatError(
+              'Invalid /CCITTFaxDecode data, "outputBits" must be a number.'
+            );
+          }
+
+          if (this.outputBits > bits) 
+          {
             c <<= bits;
-            if (!(this.codingPos & 1)) {
+            if (!(this.codingPos & 1)) 
+            {
               c |= 0xff >> (8 - bits);
             }
             this.outputBits -= bits;
             bits = 0;
-          } else {
+          } 
+          else {
             c <<= this.outputBits;
-            if (!(this.codingPos & 1)) {
+            if (!(this.codingPos & 1)) 
+            {
               c |= 0xff >> (8 - this.outputBits);
             }
             bits -= this.outputBits;
             this.outputBits = 0;
-            if (codingLine[this.codingPos] < columns) {
+            if (codingLine[this.codingPos] < columns) 
+            {
               this.codingPos++;
               this.outputBits =
                 codingLine[this.codingPos] - codingLine[this.codingPos - 1];
-            } else if (bits > 0) {
+            } 
+            else if (bits > 0) 
+            {
               c <<= bits;
               bits = 0;
             }
           }
         } while (bits);
       }
-      if (this.black) {
+      if (this.black) 
+      {
         c ^= 0xff;
       }
       return c;
@@ -886,13 +945,16 @@ namespace NsCCITTFaxDecoder
       const codingLine = this.codingLine;
       let codingPos = this.codingPos;
 
-      if (a1 > codingLine[codingPos]) {
-        if (a1 > this.columns) {
+      if (a1 > codingLine[codingPos]) 
+      {
+        if (a1 > this.columns) 
+        {
           info("row is wrong length");
           this.err = true;
           a1 = this.columns;
         }
-        if ((codingPos & 1) ^ blackPixels) {
+        if ((codingPos & 1) ^ blackPixels) 
+        {
           ++codingPos;
         }
 
@@ -906,24 +968,31 @@ namespace NsCCITTFaxDecoder
       const codingLine = this.codingLine;
       let codingPos = this.codingPos;
 
-      if (a1 > codingLine[codingPos]) {
-        if (a1 > this.columns) {
+      if (a1 > codingLine[codingPos]) 
+      {
+        if (a1 > this.columns) 
+        {
           info("row is wrong length");
           this.err = true;
           a1 = this.columns;
         }
-        if ((codingPos & 1) ^ blackPixels) {
+        if ((codingPos & 1) ^ blackPixels) 
+        {
           ++codingPos;
         }
 
         codingLine[codingPos] = a1;
-      } else if (a1 < codingLine[codingPos]) {
-        if (a1 < 0) {
+      } 
+      else if (a1 < codingLine[codingPos]) 
+      {
+        if (a1 < 0) 
+        {
           info("invalid code");
           this.err = true;
           a1 = 0;
         }
-        while (codingPos > 0 && a1 < codingLine[codingPos - 1]) {
+        while (codingPos > 0 && a1 < codingLine[codingPos - 1]) 
+        {
           --codingPos;
         }
         codingLine[codingPos] = a1;
@@ -944,15 +1013,19 @@ namespace NsCCITTFaxDecoder
     ):[ boolean, number, boolean ] =>
     {
       const limitValue = limit || 0;
-      for (let i = start; i <= end; ++i) {
+      for (let i = start; i <= end; ++i) 
+      {
         let code = this.#lookBits(i);
-        if (code === ccittEOF) {
+        if (code === ccittEOF) 
+        {
           return [true, 1, false];
         }
-        if (i < end) {
+        if (i < end) 
+        {
           code <<= end - i;
         }
-        if (!limitValue || code >= limitValue) {
+        if (!limitValue || code >= limitValue) 
+        {
           const p = table[code - limitValue];
           if (p[0] === i) {
             this.#eatBits(i);
@@ -963,7 +1036,7 @@ namespace NsCCITTFaxDecoder
       return [false, 0, false];
     }
 
-    #getTwoDimCode = () => 
+    #getTwoDimCode()
     {
       let code = 0;
       let p;
@@ -974,7 +1047,8 @@ namespace NsCCITTFaxDecoder
           this.#eatBits(p[0]);
           return p[1];
         }
-      } else {
+      } 
+      else {
         const result = this.#findTableCode(1, 7, twoDimTable);
         if (result[0] && result[2]) {
           return result[1];
@@ -996,7 +1070,8 @@ namespace NsCCITTFaxDecoder
 
         if (code >> 5 === 0) {
           p = whiteTable1[code];
-        } else {
+        } 
+        else {
           p = whiteTable2[code >> 3];
         }
 
@@ -1004,7 +1079,8 @@ namespace NsCCITTFaxDecoder
           this.#eatBits(p[0]);
           return p[1];
         }
-      } else {
+      } 
+      else {
         let result = this.#findTableCode(1, 9, whiteTable2);
         if (result[0]) {
           return result[1];
@@ -1030,9 +1106,11 @@ namespace NsCCITTFaxDecoder
         }
         if (code >> 7 === 0) {
           p = blackTable1[code];
-        } else if (code >> 9 === 0 && code >> 7 !== 0) {
+        } 
+        else if (code >> 9 === 0 && code >> 7 !== 0) {
           p = blackTable2[(code >> 1) - 64];
-        } else {
+        } 
+        else {
           p = blackTable3[code >> 7];
         }
 
@@ -1040,7 +1118,8 @@ namespace NsCCITTFaxDecoder
           this.#eatBits(p[0]);
           return p[1];
         }
-      } else {
+      } 
+      else {
         let result = this.#findTableCode(2, 6, blackTable3);
         if (result[0]) {
           return result[1];

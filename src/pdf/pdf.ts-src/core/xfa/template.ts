@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 
 /* Copyright 2021 Mozilla Foundation
@@ -59,6 +59,7 @@ import {
   $tabIndex,
   $text,
   $toHTML,
+  $toPages,
   $toStyle,
   $uid,
   ContentObject,
@@ -433,29 +434,39 @@ function handleBreak( node:BreakAfter | BreakBefore )
   const pageArea = <PageArea | undefined>target?.[$getParent]();
 
   let index;
+  let nextPageArea = pageArea;
   if (node.startNew) 
   {
+    // startNew === 1 so we must create a new container (pageArea or
+    // contentArea).
     if (target) 
     {
       const contentAreas = pageArea!.contentArea.children;
-      index = contentAreas.findIndex(e => e === target) - 1;
+      const indexForCurrent = contentAreas.indexOf( currentContentArea! );
+      const indexForTarget = contentAreas.indexOf(target);
+      if (indexForCurrent !== -1 && indexForCurrent < indexForTarget) 
+      {
+        // The next container is after the current container so
+        // we can stay on the same page.
+        nextPageArea = undefined;
+      }
+      index = indexForTarget - 1;
     } 
     else {
-      index = currentPageArea!.contentArea.children.findIndex(
-        e => e === currentContentArea
-      );
+      index = currentPageArea!.contentArea.children.indexOf( currentContentArea! );
     }
   } 
   else if( target && target !== currentContentArea )
   {
     const contentAreas = pageArea!.contentArea.children;
-    index = contentAreas.findIndex(e => e === target) - 1;
+    index = contentAreas.indexOf(target) - 1;
+    nextPageArea = pageArea === currentPageArea ? undefined : pageArea;
   } 
   else {
     return false;
   }
 
-  (<XFAExtra>node[$extra]).target = pageArea === currentPageArea ? undefined : pageArea;
+  (<XFAExtra>node[$extra]).target = nextPageArea;
   (<XFAExtra>node[$extra]).index = index;
   return true;
 }
@@ -549,7 +560,8 @@ class Arc extends XFAObject
       },
     };
 
-    if (this.startAngle === 0 && this.sweepAngle === 360) {
+    if (this.sweepAngle === 360) 
+    {
       arc = {
         name: "ellipse",
         attributes: <XFASVGAttrs>{
@@ -565,12 +577,12 @@ class Arc extends XFAObject
     else {
       const startAngle = (this.startAngle * Math.PI) / 180;
       const sweepAngle = (this.sweepAngle * Math.PI) / 180;
-      const largeArc = this.sweepAngle - this.startAngle > 180 ? 1 : 0;
+      const largeArc = this.sweepAngle > 180 ? 1 : 0;
       const [x1, y1, x2, y2] = [
         50 * (1 + Math.cos(startAngle)),
         50 * (1 - Math.sin(startAngle)),
-        50 * (1 + Math.cos(sweepAngle)),
-        50 * (1 - Math.sin(sweepAngle)),
+        50 * (1 + Math.cos(startAngle + sweepAngle)),
+        50 * (1 - Math.sin(startAngle + sweepAngle)),
       ];
 
       arc = {
@@ -6123,6 +6135,12 @@ export class Subform extends XFAObject
       style.height = measureToString(height);
     }
 
+    if( (style.width === "0px" || style.height === "0px")
+     && children.length === 0
+    ) {
+      return HTMLResult.EMPTY;
+    }
+
     const html = {
       name: "div",
       attributes,
@@ -6352,7 +6370,12 @@ export class Template extends XFAObject
     return <XFAObject[] | undefined>searchNode( this, container, expr, true, true );
   }
 
-  override [$toHTML]( availableSpace?:AvailableSpace )
+  /**
+   * This function is a generator because the conversion into
+   * pages is done asynchronously and we want to save the state
+   * of the function where we were in the previous iteration.
+   */
+  *[$toPages]()
   {
     if( !this.subform.children.length )
     {
@@ -6392,7 +6415,7 @@ export class Template extends XFAObject
       breakBeforeTarget = breakBefore.target;
     } 
     else if( root.subform.children.length >= 1 
-      && (<Subform | SubformSet>root.subform.children[0]).breakBefore.children.length >= 1
+     && (<Subform | SubformSet>root.subform.children[0]).breakBefore.children.length >= 1
     ) {
       breakBefore = <BreakBefore>(<Subform | SubformSet>root.subform.children[0]).breakBefore.children[0];
       breakBeforeTarget = breakBefore.target;
@@ -6455,8 +6478,8 @@ export class Template extends XFAObject
         if( ++hasSomethingCounter === MAX_EMPTY_PAGES )
         {
           warn("XFA - Something goes wrong: please file a bug.");
-          return new HTMLResult( false, mainHtml, undefined, this );
-          // return mainHtml;
+          // return new HTMLResult( false, mainHtml, undefined, this );
+          return mainHtml;
         }
       } 
       else {
@@ -6493,14 +6516,15 @@ export class Template extends XFAObject
 
       const flush = ( index:number ) => {
         const html = root[$flushHTML]();
-        if (html) {
+        if( html )
+        {
           hasSomething =
             hasSomething || !!(html.children && html.children.length !== 0);
           htmlContentAreas[index].children!.push(html);
         }
       };
 
-      for (let i = startIndex, ii = contentAreas.length; i < ii; i++) 
+      for( let i = startIndex, ii = contentAreas.length; i < ii; i++ )
       {
         const contentArea = (this[$extra].currentContentArea = contentAreas[i]);
         const space = <AvailableSpace>{ width: contentArea.w, height: contentArea.h };
@@ -6529,12 +6553,12 @@ export class Template extends XFAObject
               && (<XFAElObj>html.html).children!.length !== 0);
             htmlContentAreas[i].children!.push(html.html);
           } 
-          else if (!hasSomething) 
+          else if (!hasSomething && mainHtml.children.length > 1) 
           {
             mainHtml.children.pop();
           }
-          return HTMLResult.success( mainHtml );
-          // return mainHtml;
+          // return HTMLResult.success( mainHtml );
+          return mainHtml;
         }
 
         if (html.isBreak()) 
@@ -6590,17 +6614,17 @@ export class Template extends XFAObject
           const currentIndex = i;
 
           i = Infinity;
-          if (target instanceof PageArea) 
+          if( target instanceof PageArea )
           {
             // We must stop the contentAreas filling and go to the next page.
             targetPageArea = target;
           } 
-          else if (target instanceof ContentArea) 
+          else if( target instanceof ContentArea )
           {
             const index = contentAreas.findIndex(e => e === target);
-            if (index !== -1) 
+            if( index !== -1 )
             {
-              if (index > currentIndex) 
+              if( index > currentIndex )
               {
                 // In the next loop iteration `i` will be incremented, note the
                 // `continue` just below, hence we need to subtract one here.
@@ -6637,6 +6661,7 @@ export class Template extends XFAObject
         }
       }
       pageArea = <PageArea | undefined>targetPageArea || pageArea![$getNextPage]();
+      yield null;
     }
   }
 }

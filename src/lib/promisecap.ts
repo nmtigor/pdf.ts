@@ -54,7 +54,7 @@ export function createPromiseCap<T=void>():PromiseCap<T>
       return isSettled;
     },
   });
-  cap.promise = new Promise<T>( (resolve,reject) => 
+  cap.promise = new Promise<T>( (resolve, reject) => 
   {
     cap.resolve = ( data:T ) => 
     {

@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 
 /* Copyright 2017 Mozilla Foundation
@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
+import { EventBus } from "./event_utils.js";
 import { type IL10n } from "./interfaces.js";
-import { EventBus } from "./ui_utils.js";
 import { type ViewerConfiguration } from "./viewer.js";
 /*81---------------------------------------------------------------------------*/
 

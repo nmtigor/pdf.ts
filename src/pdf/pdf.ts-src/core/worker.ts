@@ -1,5 +1,5 @@
 /* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2021
+ * nmtigor (https://github.com/nmtigor) @2022
  */
 
 /* Copyright 2012 Mozilla Foundation
@@ -107,23 +107,14 @@ export const WorkerMessageHandler =
     let testMessageProcessed = false;
     handler.on("test", data => 
     {
-      if (testMessageProcessed) 
-      {
-        return; // we already processed 'test' message once
-      }
+      // we already processed 'test' message once
+      if( testMessageProcessed ) return;
+
       testMessageProcessed = true;
 
-      // check if Uint8Array can be sent to worker
-      if (!(data instanceof Uint8Array)) 
-      {
-        handler.send( "test", null );
-        return;
-      }
-      // making sure postMessage transfers are working
-      const supportTransfers = data[0] === 255;
-      handler.postMessageTransfers = supportTransfers;
-
-      handler.send("test", { supportTransfers });
+      // Ensure that `TypedArray`s can be sent to the worker,
+      // and that `postMessage` transfers are supported.
+      handler.send("test", data instanceof Uint8Array && data[0] === 255);
     });
 
     handler.on("configure", data => 
@@ -200,10 +191,6 @@ export const WorkerMessageHandler =
     const workerHandlerName = docParms.docId + "_worker";
     let handler = new MessageHandler<Thread.worker>( workerHandlerName, docId, port );
 
-    // Ensure that postMessage transfers are always correctly enabled/disabled,
-    // to prevent "DataCloneError" in browsers without transfers support.
-    handler.postMessageTransfers = docParms.postMessageTransfers;
-
     function ensureNotTerminated() 
     {
       if (terminated) {
@@ -229,13 +216,13 @@ export const WorkerMessageHandler =
       await pdfManager.ensureDoc("parseStartXRef");
       await pdfManager.ensureDoc("parse", [recoveryMode]);
 
-      if( !recoveryMode )
-      {
-        // Check that at least the first page can be successfully loaded,
-        // since otherwise the XRef table is definitely not valid.
-        await pdfManager.ensureDoc("checkFirstPage");
-      }
-
+      // Check that at least the first page can be successfully loaded,
+      // since otherwise the XRef table is definitely not valid.
+      await pdfManager.ensureDoc("checkFirstPage", [recoveryMode]);
+      // Check that the last page can be sucessfully loaded, to ensure that
+      // `numPages` is correct, and fallback to walking the entire /Pages-tree.
+      await pdfManager.ensureDoc("checkLastPage", [recoveryMode]);
+  
       const isPureXfa = await pdfManager.ensureDoc("isPureXfa");
       if( isPureXfa )
       {
@@ -278,8 +265,9 @@ export const WorkerMessageHandler =
           newPdfManager = new LocalPdfManager(
             docId,
             source.data,
-            evaluatorOptions,
             source.password,
+            handler,
+            evaluatorOptions,
             enableXfa,
             docBaseUrl
           );
@@ -350,8 +338,9 @@ export const WorkerMessageHandler =
           newPdfManager = new LocalPdfManager(
             docId,
             pdfFile,
-            evaluatorOptions,
             source.password,
+            handler,
+            evaluatorOptions,
             enableXfa,
             docBaseUrl
           );
@@ -619,11 +608,6 @@ export const WorkerMessageHandler =
     {
       pdfManager.requestLoadedStream();
       return pdfManager.onLoadedStream().then( stream => stream.bytes );
-    });
-
-    handler.on("GetStats", () => 
-    {
-      return pdfManager.ensureXRef("stats");
     });
 
     handler.on("GetAnnotations", ({ pageIndex, intent }) => 
