@@ -11,7 +11,7 @@ import { AnnotationMode, FontType, OPS, PermissionFlag, StreamType, UnknownError
 import { PageLayout, PageMode } from "../../pdf.ts-web/ui_utils.js";
 import { $enum } from "../../../3rd/ts-enum-util/src/$enum.js";
 import { Metadata } from "./metadata.js";
-import { RenderingCancelledException } from "./display_utils.js";
+import { PageViewport, RenderingCancelledException } from "./display_utils.js";
 const strttime = performance.now();
 /*81---------------------------------------------------------------------------*/
 const basicApiFileName = "basicapi.pdf";
@@ -158,7 +158,7 @@ console.log("%c>>>>>>> test getDocument() >>>>>>>", `color:${css_1}`);
     //   const passwordNeededCapability = createPromiseCap();
     //   const passwordIncorrectCapability = createPromiseCap();
     //   // Attach the callback that is used to request a password;
-    //   // similarly to how viewer.js handles passwords.
+    //   // similarly to how the default viewer handles passwords.
     //   loadingTask.onPassword = (updatePassword, reason) => {
     //     if( reason === PasswordResponses.NEED_PASSWORD
     //      && !passwordNeededCapability.settled
@@ -234,6 +234,9 @@ console.log("%c>>>>>>> test getDocument() >>>>>>>", `color:${css_1}`);
     //   await Promise.all([result1, result2, result3]);
     // }
     // console.log(`${++i}: it creates pdf doc from password protected PDF file and aborts/throws in the onPassword callback (issue 7806)...`);
+    // {
+    // }
+    // console.log(`${++i}: it creates pdf doc from password protected PDF file and passes an Error (asynchronously) to the onPassword callback (bug 1754421)...`);
     // {
     // }
     // console.log(`${++i}: it creates pdf doc from empty typed array...`);
@@ -399,7 +402,7 @@ console.log("%c>>>>>>> test getDocument() >>>>>>>", `color:${css_1}`);
     //     console.assert( reason instanceof UnknownErrorException );
     //     // console.log((<any>reason).message);
     //     console.assert( (<any>reason).message ===
-    //       "Page dictionary kids object is not an array."
+    //       "Illegal character: 41"
     //     );
     //   }
     //   try {
@@ -409,7 +412,7 @@ console.log("%c>>>>>>> test getDocument() >>>>>>>", `color:${css_1}`);
     //     console.assert( reason instanceof UnknownErrorException );
     //     // console.log((<any>reason).message);
     //     console.assert( (<any>reason).message ===
-    //       "Page dictionary kids object is not an array."
+    //       "End of file inside array."
     //     );
     //   }
     //   await Promise.all([loadingTask1.destroy(), loadingTask2.destroy()]);
@@ -532,29 +535,21 @@ console.log("%c>>>>>>> test PDFDocument >>>>>>>", `color:${css_1}`);
     }
     console.log(`${++i}: it gets non-existent page...`);
     {
-        let outOfRangePromise = pdfDocument.getPage(100);
-        let nonIntegerPromise = pdfDocument.getPage(2.5);
-        let nonNumberPromise = pdfDocument.getPage("1");
-        outOfRangePromise = outOfRangePromise.then(() => {
-            throw new Error("shall fail for out-of-range pageNumber parameter");
-        }, reason => {
-            console.assert(reason instanceof Error);
-        });
-        nonIntegerPromise = nonIntegerPromise.then(() => {
-            throw new Error("shall fail for non-integer pageNumber parameter");
-        }, reason => {
-            console.assert(reason instanceof Error);
-        });
-        nonNumberPromise = nonNumberPromise.then(() => {
-            throw new Error("shall fail for non-number pageNumber parameter");
-        }, reason => {
-            console.assert(reason instanceof Error);
-        });
-        await Promise.all([
-            outOfRangePromise,
-            nonIntegerPromise,
-            nonNumberPromise,
-        ]);
+        const pageNumbers = [
+            /* outOfRange = */ 100,
+            /* nonInteger = */ 2.5,
+            /* nonNumber = */ "1",
+        ];
+        for (const pageNumber of pageNumbers) {
+            try {
+                await pdfDocument.getPage(pageNumber);
+                console.assert(!!0, "Shouldn't get here.");
+            }
+            catch (reason) {
+                console.assert(reason instanceof Error);
+                console.assert(reason.message === "Invalid page request.");
+            }
+        }
     }
     console.log(`${++i}: it gets page, from /Pages tree with circular reference...`);
     {
@@ -597,15 +592,31 @@ console.log("%c>>>>>>> test PDFDocument >>>>>>>", `color:${css_1}`);
     // }
     console.log(`${++i}: it gets invalid page index...`);
     {
-        const ref = { num: 3, gen: 0 }; // Reference to a font dictionary.
-        try {
-            await pdfDocument.getPageIndex(ref);
-            console.assert(!!0, "Shouldn't get here.");
-        }
-        catch (reason) {
-            console.assert(reason instanceof UnknownErrorException);
-            console.assert(reason.message ===
-                "The reference does not point to a /Page dictionary.");
+        const pageRefs = [
+            /* fontRef = */ { num: 3, gen: 0 },
+            /* invalidRef = */ { num: -1, gen: 0 },
+            /* nonRef = */ "qwerty",
+            /* nullRef = */ null,
+        ];
+        const expectedErrors = [
+            {
+                exception: UnknownErrorException,
+                message: "The reference does not point to a /Page dictionary.",
+            },
+            { exception: Error, message: "Invalid pageIndex request." },
+            { exception: Error, message: "Invalid pageIndex request." },
+            { exception: Error, message: "Invalid pageIndex request." },
+        ];
+        for (let i = 0, ii = pageRefs.length; i < ii; i++) {
+            try {
+                await pdfDocument.getPageIndex(pageRefs[i]);
+                console.assert(!!0, "Shouldn't get here.");
+            }
+            catch (reason) {
+                const { exception, message } = expectedErrors[i];
+                console.assert(reason instanceof exception);
+                console.assert(reason.message === message);
+            }
         }
     }
     console.log(`${++i}: it gets destinations, from /Dests dictionary...`);
@@ -872,6 +883,18 @@ console.log("%c>>>>>>> test PDFDocument >>>>>>>", `color:${css_1}`);
     // {
     // }
     // console.log(`${++i}: it gets JSActions...`);
+    // {
+    // }
+    // console.log(`${++i}: it gets non-existent fieldObjects...`);
+    // {
+    // }
+    // console.log(`${++i}: it gets fieldObjects...`);
+    // {
+    // }
+    // console.log(`${++i}: it gets non-existent calculationOrder...`);
+    // {
+    // }
+    // console.log(`${++i}: it gets calculationOrder...`);
     // {
     // }
     console.log(`${++i}: it gets non-existent outline...`);
@@ -1229,6 +1252,7 @@ console.log("%c>>>>>>> test Page >>>>>>>", `color:${css_1}`);
     console.log(`${++i}: it gets viewport...`);
     {
         const viewport = page.getViewport({ scale: 1.5, rotation: 90 });
+        console.assert(viewport instanceof PageViewport);
         console.assert(viewport.viewBox.eq(page.view));
         console.assert(viewport.scale === 1.5);
         console.assert(viewport.rotation === 90);
@@ -1244,17 +1268,20 @@ console.log("%c>>>>>>> test Page >>>>>>>", `color:${css_1}`);
             offsetX: 100,
             offsetY: -100,
         });
+        console.assert(viewport instanceof PageViewport);
         console.assert(viewport.transform.eq([1, 0, 0, -1, 100, 741.89]));
     }
     console.log(`${++i}: it gets viewport respecting "dontFlip" argument...`);
     {
         const scale = 1, rotation = 0;
         const viewport = page.getViewport({ scale, rotation });
+        console.assert(viewport instanceof PageViewport);
         const dontFlipViewport = page.getViewport({
             scale,
             rotation,
             dontFlip: true,
         });
+        console.assert(dontFlipViewport instanceof PageViewport);
         console.assert(!dontFlipViewport.eq(viewport));
         console.assert(dontFlipViewport.eq(viewport.clone({ dontFlip: true })));
         console.assert(viewport.transform.eq([1, 0, 0, -1, 0, 841.89]));
@@ -1336,7 +1363,6 @@ console.log("%c>>>>>>> test Page >>>>>>>", `color:${css_1}`);
     {
         const defaultPromise = page.getTextContent();
         const parametersPromise = page.getTextContent({
-            normalizeWhitespace: true,
             disableCombineTextItems: true,
         });
         const data = await Promise.all([defaultPromise, parametersPromise]);
@@ -1373,8 +1399,10 @@ page 1 / 3`);
         }));
         console.assert(styles[fontName].eq({
             fontFamily: "serif",
-            ascent: NaN,
-            descent: NaN,
+            // `useSystemFonts` has a different value in web environments
+            // and in Node.js.
+            ascent: 0.683,
+            descent: -0.217,
             vertical: false,
         }));
         await loadingTask.destroy();
@@ -1481,6 +1509,10 @@ sources, for full support with Dvips.`));
     //     );
     //     await loadingTask.destroy();
     //   }
+    console.log(`${++i}: it gets text content, with invisible text marks (issue 9186)...`);
+    {
+        //
+    }
     console.log(`${++i}: it gets text content, with beginbfrange operator handled correctly (bug 1627427)...`);
     {
         const loadingTask = getDocument(buildGetDocumentParams("bug1627427_reduced.pdf"));
@@ -1491,6 +1523,10 @@ sources, for full support with Dvips.`));
         console.assert(text ===
             "침하게 흐린 품이 눈이 올 듯하더니 눈은 아니 오고 얼다가 만 비가 추");
         await loadingTask.destroy();
+    }
+    console.log(`${++i}: it gets text content, and check that out-of-page text is not present (bug 1755201)...`);
+    {
+        //
     }
     console.log(`${++i}: it gets empty structure tree...`);
     {
@@ -1705,6 +1741,7 @@ sources, for full support with Dvips.`));
     //   const pdfDoc = await loadingTask.promise;
     //   const pdfPage = await pdfDoc.getPage(1);
     //   const viewport = pdfPage.getViewport({ scale: 1 });
+    //   console.assert( viewport instanceof PageViewport );
     //   const canvasAndCtx = CanvasFactory.create(
     //     viewport.width,
     //     viewport.height
@@ -1732,6 +1769,7 @@ sources, for full support with Dvips.`));
     console.log(`${++i}: it cancels rendering of page...`);
     {
         const viewport = page.getViewport({ scale: 1 });
+        console.assert(viewport instanceof PageViewport);
         const canvasAndCtx = CanvasFactory.create(viewport.width, viewport.height);
         const renderTask = page.render({
             canvasContext: canvasAndCtx.context,
@@ -1754,6 +1792,7 @@ sources, for full support with Dvips.`));
     console.log(`${++i}: it re-renders page, using the same canvas, after cancelling rendering...`);
     {
         const viewport = page.getViewport({ scale: 1 });
+        console.assert(viewport instanceof PageViewport);
         const canvasAndCtx = CanvasFactory.create(viewport.width, viewport.height);
         const renderTask = page.render({
             canvasContext: canvasAndCtx.context,
@@ -1782,6 +1821,7 @@ sources, for full support with Dvips.`));
     {
         const optionalContentConfigPromise = pdfDocument.getOptionalContentConfig();
         const viewport = page.getViewport({ scale: 1 });
+        console.assert(viewport instanceof PageViewport);
         const canvasAndCtx = CanvasFactory.create(viewport.width, viewport.height);
         const renderTask1 = page.render({
             canvasContext: canvasAndCtx.context,
@@ -1813,6 +1853,7 @@ sources, for full support with Dvips.`));
         const pdfDoc = await loadingTask.promise;
         const pdfPage = await pdfDoc.getPage(1);
         const viewport = pdfPage.getViewport({ scale: 1 });
+        console.assert(viewport instanceof PageViewport);
         const canvasAndCtx = CanvasFactory.create(viewport.width, viewport.height);
         const renderTask = pdfPage.render({
             canvasContext: canvasAndCtx.context,
@@ -1831,6 +1872,7 @@ sources, for full support with Dvips.`));
         const pdfDoc = await loadingTask.promise;
         const pdfPage = await pdfDoc.getPage(1);
         const viewport = pdfPage.getViewport({ scale: 1 });
+        console.assert(viewport instanceof PageViewport);
         const canvasAndCtx = CanvasFactory.create(viewport.width, viewport.height);
         const renderTask = pdfPage.render({
             canvasContext: canvasAndCtx.context,
@@ -1932,6 +1974,7 @@ console.log("%c>>>>>>> test Multiple `getDocument` instances >>>>>>>", `color:${
         const pdf = await loadingTask.promise;
         const page = await pdf.getPage(1);
         const viewport = page.getViewport({ scale: 1.2 });
+        console.assert(viewport instanceof PageViewport);
         const canvasAndCtx = CanvasFactory.create(viewport.width, viewport.height);
         const renderTask = page.render({
             canvasContext: canvasAndCtx.context,

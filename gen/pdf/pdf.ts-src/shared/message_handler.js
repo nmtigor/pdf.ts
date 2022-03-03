@@ -18,7 +18,7 @@
 import { createPromiseCap } from "../../../lib/promisecap.js";
 import { isObjectLike } from "../../../lib/jslang.js";
 import { assert } from "../../../lib/util/trace.js";
-import { AbortException, MissingPDFException, PasswordException, UnexpectedResponseException, UnknownErrorException, warn, } from "./util.js";
+import { AbortException, MissingPDFException, PasswordException, UnexpectedResponseException, UnknownErrorException, } from "./util.js";
 /*81---------------------------------------------------------------------------*/
 var CallbackKind;
 (function (CallbackKind) {
@@ -42,9 +42,7 @@ var StreamKind;
 ;
 function wrapReason(reason) {
     if (!(reason instanceof Error || isObjectLike(reason))) {
-        throw new Error('wrapReason: Expected "reason" to be a (possibly cloned) Error.');
-        warn('wrapReason: Expected "reason" to be a (possibly cloned) Error.');
-        return reason;
+        assert(0, 'wrapReason: Expected "reason" to be a (possibly cloned) Error.');
     }
     switch (reason.name) {
         case "AbortException":

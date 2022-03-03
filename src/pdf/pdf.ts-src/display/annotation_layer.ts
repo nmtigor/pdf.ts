@@ -48,6 +48,7 @@ import {
   Util,
   warn,
   matrix_t,
+  rect_t,
 } from "../shared/util.js";
 import { AnnotationStorage } from "./annotation_storage.js";
 import { PDFPageProxy } from "./api.js";
@@ -62,6 +63,14 @@ const DEFAULT_TAB_INDEX = 1000;
 const GetElementsByNameSet = new WeakSet();
 
 type HTMLSectionElement = HTMLElement;
+
+function getRectDims( rect:rect_t )
+{
+  return {
+    width: rect[2] - rect[0],
+    height: rect[3] - rect[1],
+  };
+}
 
 interface AnnotationElementParms 
 {
@@ -240,8 +249,7 @@ export class AnnotationElement
     const page = this.page;
     const viewport = this.viewport;
     const container = html( "section" );
-    let width = data.rect[2] - data.rect[0];
-    let height = data.rect[3] - data.rect[1];
+    let { width, height } = getRectDims(data.rect);
 
     container.setAttribute("data-annotation-id", data.id);
 
@@ -881,7 +889,7 @@ class WidgetAnnotationElement extends AnnotationElement
           detail: {
             id: this.data.id,
             name: eventName,
-            value: (<HTMLInputElement>event.target).checked,
+            value: valueGetter(event),
           },
         });
       });
@@ -1044,8 +1052,6 @@ class TextWidgetAnnotationElement extends WidgetAnnotationElement
       const elementData:{
         userValue:string;
         formattedValue:string;
-        beforeInputSelectionRange:[number,number] | undefined;
-        beforeInputValue:string;
       } = Object.create(null);
 
       if( this.data.multiLine )
@@ -1089,7 +1095,6 @@ class TextWidgetAnnotationElement extends WidgetAnnotationElement
         }
         // Reset the cursor position to the start of the field (issue 12359).
         (<El>event.target).scrollLeft = 0;
-        elementData.beforeInputSelectionRange = undefined;
       };
 
       if( this.enableScripting && this.hasJSActions )
@@ -1135,7 +1140,6 @@ class TextWidgetAnnotationElement extends WidgetAnnotationElement
         // Even if the field hasn't any actions
         // leaving it can still trigger some actions with Calculate
         element.addEventListener("keydown", event => {
-          elementData.beforeInputValue = (<El>event.target).value;
           // if the key is one of Escape, Enter or Tab
           // then the data are committed
           let commitKey = -1;
@@ -1171,9 +1175,10 @@ class TextWidgetAnnotationElement extends WidgetAnnotationElement
         const _blurListener = blurListener;
         blurListener = <any>undefined;
         element.addEventListener("blur", event => {
-          if (this._mouseState!.isDown) {
+          elementData.userValue = (<El>event.target).value;
+          if( this._mouseState!.isDown )
+          {
             // Focus out using the mouse: data are committed
-            elementData.userValue = (<El>event.target).value;
             this.linkService.eventBus?.dispatch("dispatcheventinsandbox", {
               source: this,
               detail: {
@@ -1189,44 +1194,23 @@ class TextWidgetAnnotationElement extends WidgetAnnotationElement
           }
           _blurListener(event);
         });
-        element.addEventListener("mousedown", event => {
-          elementData.beforeInputValue = (<El>event.target).value;
-          elementData.beforeInputSelectionRange = undefined;
-        });
-        element.addEventListener("keyup", event => {
-          // keyup is triggered after input
-          if( (<El>event.target).selectionStart === (<El>event.target).selectionEnd )
-          {
-            elementData.beforeInputSelectionRange = undefined;
-          }
-        });
-        element.addEventListener("select", event => {
-          elementData.beforeInputSelectionRange = [
-            (<El>event.target).selectionStart!,
-            (<El>event.target).selectionEnd!,
-          ];
-        });
 
-        if (this.data.actions?.Keystroke) {
-          // We should use beforeinput but this
-          // event isn't available in Firefox
-          element.addEventListener("input", event => {
-            let selStart = -1;
-            let selEnd = -1;
-            if( elementData.beforeInputSelectionRange )
-            {
-              [selStart, selEnd] = elementData.beforeInputSelectionRange;
-            }
+        if( this.data.actions?.Keystroke )
+        {
+          element.addEventListener("beforeinput", event => {
+            elementData.formattedValue = "";
+            const { data, target } = event;
+            const { value, selectionStart, selectionEnd } = <El>target;
             this.linkService.eventBus?.dispatch("dispatcheventinsandbox", {
               source: this,
               detail: {
                 id,
                 name: "Keystroke",
-                value: elementData.beforeInputValue,
-                change: (<any>event).data,
+                value,
+                change: data,
                 willCommit: false,
-                selStart,
-                selEnd,
+                selStart: selectionStart,
+                selEnd: selectionEnd,
               },
             });
           });
@@ -2073,8 +2057,7 @@ class LineAnnotationElement extends AnnotationElement
     // that acts as the trigger for the popup. Only the line itself should
     // trigger the popup, not the entire container.
     const data = this.data;
-    const width = data.rect[2] - data.rect[0];
-    const height = data.rect[3] - data.rect[1];
+    const { width, height } = getRectDims(data.rect);
     const svg = this.svgFactory.create(width, height);
 
     // PDF coordinates are calculated from a bottom left origin, so transform
@@ -2122,8 +2105,7 @@ class SquareAnnotationElement extends AnnotationElement
     // trigger for the popup. Only the square itself should trigger the
     // popup, not the entire container.
     const data = this.data;
-    const width = data.rect[2] - data.rect[0];
-    const height = data.rect[3] - data.rect[1];
+    const { width, height } = getRectDims(data.rect);
     const svg = this.svgFactory.create(width, height);
 
     // The browser draws half of the borders inside the square and half of
@@ -2173,8 +2155,7 @@ class CircleAnnotationElement extends AnnotationElement
     // trigger for the popup. Only the circle itself should trigger the
     // popup, not the entire container.
     const data = this.data;
-    const width = data.rect[2] - data.rect[0];
-    const height = data.rect[3] - data.rect[1];
+    const { width, height } = getRectDims(data.rect);
     const svg = this.svgFactory.create(width, height);
 
     // The browser draws half of the borders inside the circle and half of
@@ -2227,8 +2208,7 @@ class PolylineAnnotationElement extends AnnotationElement
     // trigger for the popup. Only the polyline itself should trigger the
     // popup, not the entire container.
     const data = this.data;
-    const width = data.rect[2] - data.rect[0];
-    const height = data.rect[3] - data.rect[1];
+    const { width, height } = getRectDims(data.rect);
     const svg = this.svgFactory.create(width, height);
 
     // Convert the vertices array to a single points string that the SVG
@@ -2327,8 +2307,7 @@ class InkAnnotationElement extends AnnotationElement
     // Create an invisible polyline with the same points that acts as the
     // trigger for the popup.
     const data = this.data;
-    const width = data.rect[2] - data.rect[0];
-    const height = data.rect[3] - data.rect[1];
+    const { width, height } = getRectDims(data.rect);
     const svg = this.svgFactory.create(width, height);
 
     for( const inkList of data.inkLists! )
@@ -2642,6 +2621,9 @@ export class AnnotationLayer
     for( const data of parameters.annotations )
     {
       if( !data ) continue;
+
+      const { width, height } = getRectDims(data.rect);
+      if( width <= 0 || height <= 0 ) continue;
 
       if( data.annotationType === AnnotationType.POPUP )
       {

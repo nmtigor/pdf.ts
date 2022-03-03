@@ -23,7 +23,6 @@ import {
   info,
   InvalidPDFException,
   isArrayBuffer,
-  isString,
   OPS,
   PageActionEventType,
   type rect_t,
@@ -37,9 +36,7 @@ import {
   warn,
 } from "../shared/util.js";
 import {
-  clearPrimitiveCaches,
   Dict,
-  isDict,
   isName,
   Name,
   type Obj,
@@ -75,6 +72,7 @@ import { GlobalImageCache } from "./image_utils.js";
 import { type AnnotStorageRecord } from "../display/annotation_layer.js";
 import { type CMapData } from "../display/base_factory.js";
 import { Catalog } from "./catalog.js";
+import { clearGlobalCaches } from "./cleanup_helper.js";
 import { XRef } from "./xref.js";
 import { ObjectLoader } from "./object_loader.js";
 import { StructTreePage, StructTreeRoot } from "./struct_tree.js";
@@ -82,7 +80,6 @@ import { BaseStream } from "./base_stream.js";
 import { XFAFactory } from "./xfa/factory.js";
 import { ErrorFont, Font } from "./fonts.js";
 import { StreamsSequenceStream } from "./decode_stream.js";
-import { type XFAElObj } from "./xfa/alias.js";
 /*81---------------------------------------------------------------------------*/
 
 const DEFAULT_USER_UNIT = 1.0;
@@ -124,7 +121,6 @@ interface ExtractTextContentParms
   handler:MessageHandler< Thread.worker >;
   task:WorkerTask;
   sink:StreamSink< Thread.main, "GetTextContent" >;
-  normalizeWhitespace:boolean;
   includeMarkedContent:boolean;
   combineTextItems:boolean;
 }
@@ -537,7 +533,6 @@ export class Page
   extractTextContent({
     handler,
     task,
-    normalizeWhitespace,
     includeMarkedContent,
     sink,
     combineTextItems,
@@ -568,10 +563,10 @@ export class Page
         stream: contentStream,
         task,
         resources: this.resources,
-        normalizeWhitespace,
         includeMarkedContent,
         combineTextItems,
         sink,
+        viewBox: this.view,
       });
     });
   }
@@ -763,6 +758,7 @@ export interface DocumentInfo
 
   CreationDate?:string;
   ModDate?:string;
+  Trapped?:Name;
 
   IsAcroFormPresent:boolean;
   IsCollectionPresent:boolean;
@@ -1059,7 +1055,7 @@ export class PDFDocument
       stylesheet: "",
       "/xdp:xdp": "",
     };
-    if( (xfa instanceof BaseStream) && !xfa.isEmpty )
+    if( xfa instanceof BaseStream && !xfa.isEmpty )
     {
       try {
         entries["xdp:xdp"] = stringToUTF8String( xfa.getString() );
@@ -1090,10 +1086,8 @@ export class PDFDocument
         name = <string>xfa[i];
       }
 
-      if( !entries.hasOwnProperty(name) )
-      {
-        continue;
-      }
+      if( !entries.hasOwnProperty(name) ) continue;
+
       const data = this.xref.fetchIfRef(xfa[i + 1]);
       if( !(data instanceof BaseStream) || data.isEmpty ) continue;
 
@@ -1143,9 +1137,10 @@ export class PDFDocument
     for( const key of keys )
     {
       const stream = xfaImagesDict.get(key);
-      if( !(stream instanceof BaseStream) ) continue;
-
-      xfaImages.set(key, stream.getBytes());
+      if( stream instanceof BaseStream )
+      {
+        xfaImages.set(key, stream.getBytes());
+      }
     }
 
     this.xfaFactory!.setImages( xfaImages );
@@ -1328,7 +1323,7 @@ export class PDFDocument
       const xfa = acroForm.get("XFA");
       formInfo.hasXfa =
         (Array.isArray(xfa) && xfa.length > 0) ||
-        ((xfa instanceof BaseStream) && !xfa.isEmpty);
+        (xfa instanceof BaseStream && !xfa.isEmpty);
 
       // The document contains AcroForm data if the `Fields` entry is a
       // non-empty array and it doesn't consist of only document signatures.
@@ -1355,17 +1350,17 @@ export class PDFDocument
 
   get documentInfo()
   {
-    const DocumentInfoValidators = {
-      Title: isString,
-      Author: isString,
-      Subject: isString,
-      Keywords: isString,
-      Creator: isString,
-      Producer: isString,
-      CreationDate: isString,
-      ModDate: isString,
-      Trapped: isName,
-    };
+    // const DocumentInfoValidators = {
+    //   Title: isString,
+    //   Author: isString,
+    //   Subject: isString,
+    //   Keywords: isString,
+    //   Creator: isString,
+    //   Producer: isString,
+    //   CreationDate: isString,
+    //   ModDate: isString,
+    //   Trapped: isName,
+    // };
 
     let version = this.#version;
     if( typeof version !== "string"
@@ -1398,55 +1393,72 @@ export class PDFDocument
       }
       info("The document information dictionary is invalid.");
     }
+    if (!(infoDict instanceof Dict)) {
+      return shadow(this, "documentInfo", docInfo);
+    }
 
-    if( infoDict instanceof Dict )
+    for( const key of infoDict.getKeys() )
     {
-      // Fill the document info with valid entries from the specification,
-      // as well as any existing well-formed custom entries.
-      for( const key of infoDict.getKeys() )
-      {
-        const value = infoDict.get(key);
+      const value = infoDict.get(key);
 
-        if( (<any>DocumentInfoValidators)[key] )
-        {
-          // Make sure the (standard) value conforms to the specification.
-          if( (<any>DocumentInfoValidators)[key](value) )
+      switch( key )
+      {
+        case "Title":
+        case "Author":
+        case "Subject":
+        case "Keywords":
+        case "Creator":
+        case "Producer":
+        case "CreationDate":
+        case "ModDate":
+          if( typeof value === "string" )
           {
-            (<any>docInfo)[key] =
-              typeof value !== "string" ? value : stringToPDFString(value);
-          } 
-          else {
-            info(`Bad value in document info for "${key}".`);
+            docInfo[key] = stringToPDFString(value);
+            continue;
           }
-        } 
-        else if( typeof key === "string" )
-        {
+          break;
+        case "Trapped":
+          if( value instanceof Name )
+          {
+            docInfo[key] = value;
+            continue;
+          }
+          break;
+        default:
           // For custom values, only accept white-listed types to prevent
           // errors that would occur when trying to send non-serializable
           // objects to the main-thread (for example `Dict` or `Stream`).
           let customValue;
-          if( typeof value === "string" )
+          switch( typeof value )
           {
-            customValue = stringToPDFString( value );
-          } 
-          else if( (value instanceof Name) 
-            || (typeof value === "number") 
-            || (typeof value === "boolean") 
-          ) {
-            customValue = value;
-          } 
-          else {
-            info(`Unsupported value in document info for (custom) "${key}".`);
-            continue;
+            case "string":
+              customValue = stringToPDFString(value);
+              break;
+            case "number":
+            case "boolean":
+              customValue = value;
+              break;
+            default:
+              if( value instanceof Name )
+              {
+                customValue = value;
+              }
+              break;
           }
 
-          if( !docInfo.Custom )
-          {
-            docInfo.Custom = Object.create(null);
-          }
-          docInfo.Custom![key] = customValue;
+        if( customValue === undefined )
+        {
+          warn(`Bad value, for custom key "${key}", in Info: ${String(value)}.`);
+          continue;
         }
+        if( !docInfo.Custom )
+        {
+          docInfo.Custom = Object.create(null);
+        }
+        docInfo.Custom![key] = customValue;
+        continue;
       }
+      warn(`Bad value, for key "${key}", in Info: ${String(value)}.`);
     }
     return shadow(this, "documentInfo", docInfo);
   }
@@ -1500,7 +1512,7 @@ export class PDFDocument
 
   async #getLinearizationPage( pageIndex:number )
   {
-    const { catalog, linearization } = this;
+    const { catalog, linearization, xref } = this;
     // #if !PRODUCTION || TESTING
       assert( linearization && linearization.pageFirst === pageIndex,
         "#getLinearizationPage - invalid pageIndex argument."
@@ -1509,22 +1521,35 @@ export class PDFDocument
 
     const ref = Ref.get(linearization!.objectNumberFirst, 0);
     try {
-      const obj = await this.xref.fetchAsync<Dict>(ref);
+      const obj = await xref.fetchAsync<Dict>(ref);
       // Ensure that the object that was found is actually a Page dictionary.
-      if( isDict(obj, "Page")
-       || ((obj instanceof Dict) && !obj.has("Type") && obj.has("Contents"))
-      ) {
-        if( ref && !catalog!.pageKidsCountCache.has(ref) )
+      if( obj instanceof Dict )
+      {
+        let type = obj.getRaw("Type");
+        if( type instanceof Ref )
         {
-          catalog!.pageKidsCountCache.put(ref, 1); // Cache the Page reference.
+          type = await xref.fetchAsync(type);
         }
-        return <const>[obj, ref];
+        if( isName(type, "Page") || (!obj.has("Type") && !obj.has("Kids")) )
+        {
+          if( !catalog!.pageKidsCountCache.has(ref) )
+          {
+            catalog!.pageKidsCountCache.put(ref, 1); // Cache the Page reference.
+          }
+          // Help improve performance of the `Catalog.getPageIndex` method.
+          if (!catalog!.pageIndexCache.has(ref))
+          {
+            catalog!.pageIndexCache.put(ref, 0);
+          }
+
+          return <const>[obj, ref];
+        }
       }
       throw new FormatError(
         "The Linearization dictionary doesn't point to a valid Page dictionary."
       );
-    } catch(reason) {
-      info( <string>reason );
+    } catch (reason) {
+      warn(`_getLinearizationPage: "${ (<Error>reason).message}".`);
       return catalog!.getPageDict(pageIndex);
     }
   }
@@ -1633,9 +1658,7 @@ export class PDFDocument
 
       let pagesTree;
       try {
-        pagesTree = await pdfManager.ensureCatalog("getAllPageDicts", [
-          recoveryMode,
-        ]);
+        pagesTree = await catalog!.getAllPageDicts(recoveryMode);
       } catch (reasonAll) {
         if( reasonAll instanceof XRefEntryException && !recoveryMode )
           throw new XRefParseException();
@@ -1688,7 +1711,7 @@ export class PDFDocument
   {
     return this.catalog
       ? this.catalog.cleanup(manuallyTriggered)
-      : clearPrimitiveCaches();
+      : clearGlobalCaches();
   }
 
   #collectFieldObjects( name:string, fieldRef:Ref, promises:FieldPromises )
@@ -1812,9 +1835,14 @@ export class PDFDocument
       return shadow(this, "calculationOrderIds", undefined);
     }
 
-    const ids = calculationOrder
-      .filter( obj => obj instanceof Ref )
-      .map( ref => (<Ref>ref).toString() );
+    const ids = [];
+    for( const id of calculationOrder )
+    {
+      if( id instanceof Ref )
+      {
+        ids.push(id.toString());
+      }
+    }
     if (ids.length === 0) 
     {
       return shadow(this, "calculationOrderIds", undefined);

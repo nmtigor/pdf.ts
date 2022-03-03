@@ -42,10 +42,10 @@ export class Jbig2Stream extends ImageStream
   }
 
   /** @implements */
-  readBlock() {
-    if (this.eof) {
-      return;
-    }
+  readBlock()
+  {
+    if( this.eof ) return;
+
     const jbig2Image = new Jbig2Image();
 
     const chunks:Chunk[] = [];

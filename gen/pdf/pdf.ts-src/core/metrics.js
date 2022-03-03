@@ -2968,5 +2968,91 @@ export const getMetrics = getLookupTableFactory((t) => {
         t.a191 = 918;
     });
 });
+export const getFontBasicMetrics = getLookupTableFactory(function (t) {
+    t.Courier = {
+        ascent: 629,
+        descent: -157,
+        capHeight: 562,
+        xHeight: -426,
+    };
+    t["Courier-Bold"] = {
+        ascent: 629,
+        descent: -157,
+        capHeight: 562,
+        xHeight: 439,
+    };
+    t["Courier-Oblique"] = {
+        ascent: 629,
+        descent: -157,
+        capHeight: 562,
+        xHeight: 426,
+    };
+    t["Courier-BoldOblique"] = {
+        ascent: 629,
+        descent: -157,
+        capHeight: 562,
+        xHeight: 426,
+    };
+    t.Helvetica = {
+        ascent: 718,
+        descent: -207,
+        capHeight: 718,
+        xHeight: 523,
+    };
+    t["Helvetica-Bold"] = {
+        ascent: 718,
+        descent: -207,
+        capHeight: 718,
+        xHeight: 532,
+    };
+    t["Helvetica-Oblique"] = {
+        ascent: 718,
+        descent: -207,
+        capHeight: 718,
+        xHeight: 523,
+    };
+    t["Helvetica-BoldOblique"] = {
+        ascent: 718,
+        descent: -207,
+        capHeight: 718,
+        xHeight: 532,
+    };
+    t["Times-Roman"] = {
+        ascent: 683,
+        descent: -217,
+        capHeight: 662,
+        xHeight: 450,
+    };
+    t["Times-Bold"] = {
+        ascent: 683,
+        descent: -217,
+        capHeight: 676,
+        xHeight: 461,
+    };
+    t["Times-Italic"] = {
+        ascent: 683,
+        descent: -217,
+        capHeight: 653,
+        xHeight: 441,
+    };
+    t["Times-BoldItalic"] = {
+        ascent: 683,
+        descent: -217,
+        capHeight: 669,
+        xHeight: 462,
+    };
+    t.Symbol = {
+        ascent: NaN,
+        descent: NaN,
+        capHeight: NaN,
+        xHeight: NaN,
+    };
+    t.ZapfDingbats = {
+        ascent: NaN,
+        descent: NaN,
+        capHeight: NaN,
+        xHeight: NaN,
+    };
+});
 /*81---------------------------------------------------------------------------*/
 //# sourceMappingURL=metrics.js.map

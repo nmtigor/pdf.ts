@@ -969,14 +969,16 @@ export class PDFPageProxy {
         return intentState.opListReadCapability.promise;
     }
     /**
+     * NOTE: All occurrences of whitespace will be replaced by
+     * standard spaces (0x20).
+     *
      * @param params getTextContent parameters.
      * @return Stream for reading text content chunks.
      */
-    streamTextContent({ normalizeWhitespace = false, disableCombineTextItems = false, includeMarkedContent = false, } = {}) {
+    streamTextContent({ disableCombineTextItems = false, includeMarkedContent = false, } = {}) {
         const TEXT_CONTENT_CHUNK_SIZE = 100;
         return this._transport.messageHandler.sendWithStream("GetTextContent", {
             pageIndex: this._pageIndex,
-            normalizeWhitespace: normalizeWhitespace === true,
             combineTextItems: disableCombineTextItems !== true,
             includeMarkedContent: includeMarkedContent === true,
         }, {
@@ -987,6 +989,9 @@ export class PDFPageProxy {
         });
     }
     /**
+     * NOTE: All occurrences of whitespace will be replaced by
+     * standard spaces (0x20).
+     *
      * @param params - getTextContent parameters.
      * @return A promise that is resolved with a
      *   {@link TextContent} object that represents the page's text content.
@@ -1213,75 +1218,14 @@ export class LoopbackPort {
     #listeners = [];
     #deferred = Promise.resolve();
     postMessage(obj, transfers) {
-        function cloneValue(object) {
-            const rn_ = () => globalThis.structuredClone(object, transfers);
-            if (globalThis.structuredClone)
-                return rn_();
-            // Trying to perform a structured clone close to the spec, including
-            // transfers.
-            function fallbackCloneValue(value) {
-                if (typeof value === "function"
-                    || typeof value === "symbol"
-                    || value instanceof URL) {
-                    throw new Error(`LoopbackPort.postMessage - cannot clone: ${value?.toString()}`);
-                }
-                if (!isObjectLike(value))
-                    return value;
-                if (cloned.has(value)) {
-                    // already cloned the object
-                    return cloned.get(value);
-                }
-                let buffer;
-                if ((buffer = value.buffer) && isArrayBuffer(buffer)) {
-                    // We found object with ArrayBuffer (typed array).
-                    let result;
-                    if (transfers?.includes(buffer)) {
-                        result = new value.constructor(buffer, value.byteOffset, value.byteLength);
-                    }
-                    else {
-                        result = new value.constructor(value);
-                    }
-                    cloned.set(value, result);
-                    return result;
-                }
-                if (value instanceof Map) {
-                    const result = new Map();
-                    cloned.set(value, result); // Adding to cache now for cyclic references.
-                    for (const [key, val] of value) {
-                        result.set(key, fallbackCloneValue(val));
-                    }
-                    return result;
-                }
-                if (value instanceof Set) {
-                    const result = new Set();
-                    cloned.set(value, result); // Adding to cache now for cyclic references.
-                    for (const val of value) {
-                        result.add(fallbackCloneValue(val));
-                    }
-                    return result;
-                }
-                const result = Array.isArray(value) ? [] : Object.create(null);
-                cloned.set(value, result); // Adding to cache now for cyclic references.
-                // Cloning all value and object properties, however ignoring properties
-                // defined via getter.
-                for (const i in value) {
-                    let desc, p = value;
-                    while (!(desc = Object.getOwnPropertyDescriptor(p, i))) {
-                        p = Object.getPrototypeOf(p);
-                    }
-                    if (typeof desc.value === "undefined")
-                        continue;
-                    if (typeof desc.value === "function" && !value.hasOwnProperty?.(i)) {
-                        continue;
-                    }
-                    result[i] = fallbackCloneValue(desc.value);
-                }
-                return result;
-            }
-            const cloned = new WeakMap();
-            return fallbackCloneValue(object);
-        }
-        const event = { data: cloneValue(obj) };
+        const event = {
+            data: 
+            // typeof PDFJSDev === "undefined" ||
+            // PDFJSDev.test("SKIP_BABEL") ||
+            transfers
+                ? globalThis.structuredClone(obj, transfers)
+                : globalThis.structuredClone(obj),
+        };
         this.#deferred.then(() => {
             for (const listener of this.#listeners) {
                 listener.call(this, event);
@@ -1877,9 +1821,12 @@ class WorkerTransport {
             this._passwordCapability = createPromiseCap();
             if (loadingTask.onPassword) {
                 const updatePassword = (password) => {
-                    this._passwordCapability.resolve({
-                        password,
-                    });
+                    if (password instanceof Error) {
+                        this._passwordCapability.reject(password);
+                    }
+                    else {
+                        this._passwordCapability.resolve({ password });
+                    }
                 };
                 try {
                     loadingTask.onPassword(updatePassword, exception.code);
@@ -2042,7 +1989,7 @@ class WorkerTransport {
         if (!Number.isInteger(pageNumber)
             || pageNumber <= 0
             || pageNumber > this.#numPages) {
-            return Promise.reject(new Error("Invalid page request"));
+            return Promise.reject(new Error("Invalid page request."));
         }
         const pageIndex = pageNumber - 1, cachedPromise = this.#pagePromises.get(pageIndex);
         if (cachedPromise)
@@ -2063,8 +2010,17 @@ class WorkerTransport {
         return promise;
     }
     getPageIndex(ref) {
+        if (typeof ref !== "object"
+            || ref === null
+            || !Number.isInteger(ref.num)
+            || ref.num < 0
+            || !Number.isInteger(ref.gen)
+            || ref.gen < 0) {
+            return Promise.reject(new Error("Invalid pageIndex request."));
+        }
         return this.messageHandler.sendWithPromise("GetPageIndex", {
-            ref,
+            num: ref.num,
+            gen: ref.gen,
         });
     }
     getAnnotations(pageIndex, intent) {
@@ -2194,7 +2150,6 @@ class WorkerTransport {
  * A PDF document and page is built of many objects. E.g. there are objects for
  * fonts, images, rendering code, etc. These objects may get processed inside of
  * a worker. This class implements some basic methods to manage these objects.
- * @ignore
  */
 export class PDFObjects {
     #objs = Object.create(null);
@@ -2202,13 +2157,12 @@ export class PDFObjects {
      * Ensures there is an object defined for `objId`.
      */
     #ensureObj(objId) {
-        if (this.#objs[objId]) {
-            return this.#objs[objId];
-        }
+        const obj = this.#objs[objId];
+        if (obj)
+            return obj;
         return (this.#objs[objId] = {
             capability: createPromiseCap(),
-            // data: null,
-            resolved: false,
+            data: undefined,
         });
     }
     /**
@@ -2223,7 +2177,8 @@ export class PDFObjects {
         // If there is a callback, then the get can be async and the object is
         // not required to be resolved right now.
         if (callback) {
-            this.#ensureObj(objId).capability.promise.then(callback);
+            const obj = this.#ensureObj(objId);
+            obj.capability.promise.then(() => callback(obj.data));
             return undefined;
         }
         // If there isn't a callback, the user expects to get the resolved data
@@ -2231,23 +2186,22 @@ export class PDFObjects {
         const obj = this.#objs[objId];
         // If there isn't an object yet or the object isn't resolved, then the
         // data isn't ready yet!
-        if (!obj || !obj.resolved) {
+        if (!obj?.capability.settled) {
             throw new Error(`Requesting object that isn't resolved yet ${objId}.`);
         }
         return obj.data;
     }
     has(objId) {
         const obj = this.#objs[objId];
-        return obj?.resolved || false;
+        return obj?.capability.settled || false;
     }
     /**
      * Resolves the object `objId` with optional `data`.
      */
-    resolve(objId, data) {
+    resolve(objId, data = undefined) {
         const obj = this.#ensureObj(objId);
-        obj.resolved = true;
         obj.data = data;
-        obj.capability.resolve(data);
+        obj.capability.resolve(undefined);
     }
     clear() {
         this.#objs = Object.create(null);

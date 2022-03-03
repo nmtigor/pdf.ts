@@ -180,7 +180,7 @@ export declare class PDFViewerApplication {
     get page(): number;
     set page(val: number);
     get supportsPrinting(): boolean;
-    get supportsFullscreen(): any;
+    get supportsFullscreen(): boolean;
     get supportsIntegratedFind(): boolean;
     get supportsDocumentFonts(): boolean;
     get loadingBar(): ProgressBar;

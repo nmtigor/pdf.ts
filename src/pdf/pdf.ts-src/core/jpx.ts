@@ -659,26 +659,29 @@ namespace NsJpxImage
                 cod.precinctsSizes = precinctsSizes;
               }
               const unsupported = [];
-              if (cod.selectiveArithmeticCodingBypass) {
+              if( cod.selectiveArithmeticCodingBypass )
+              {
                 unsupported.push("selectiveArithmeticCodingBypass");
               }
-              if (cod.resetContextProbabilities) {
-                unsupported.push("resetContextProbabilities");
-              }
-              if (cod.terminationOnEachCodingPass) {
+              if( cod.terminationOnEachCodingPass )
+              {
                 unsupported.push("terminationOnEachCodingPass");
               }
-              if (cod.verticallyStripe) {
+              if( cod.verticallyStripe )
+              {
                 unsupported.push("verticallyStripe");
               }
-              if (cod.predictableTermination) {
+              if( cod.predictableTermination )
+              {
                 unsupported.push("predictableTermination");
               }
-              if (unsupported.length > 0) {
+              if( unsupported.length > 0 )
+              {
                 doNotRecover = true;
                 warn(`JPX: Unsupported COD options (${unsupported.join(", ")}).`);
               }
-              if (context.mainHeader) {
+              if( context.mainHeader )
+              {
                 context.COD = cod;
               } 
               else {
@@ -1707,8 +1710,9 @@ namespace NsJpxImage
     delta:number,
     mb:number,
     reversible:number,
-    segmentationSymbolUsed:boolean
-  ) {
+    segmentationSymbolUsed:boolean,
+    resetContextProbabilities:boolean
+    ) {
     const x0 = subband.tbx0;
     const y0 = subband.tby0;
     const width = subband.tbx1 - subband.tbx0;
@@ -1761,8 +1765,10 @@ namespace NsJpxImage
       const decoder = new ArithmeticDecoder(encodedData, 0, totalLength);
       bitModel.setDecoder(decoder);
 
-      for (j = 0; j < codingpasses; j++) {
-        switch (currentCodingpassType) {
+      for( j = 0; j < codingpasses; j++ )
+      {
+        switch( currentCodingpassType )
+        {
           case 0:
             bitModel.runSignificancePropagationPass();
             break;
@@ -1771,11 +1777,18 @@ namespace NsJpxImage
             break;
           case 2:
             bitModel.runCleanupPass();
-            if (segmentationSymbolUsed) {
+            if( segmentationSymbolUsed )
+            {
               bitModel.checkSegmentationSymbol();
             }
             break;
         }
+
+        if( resetContextProbabilities )
+        {
+          bitModel.reset();
+        }
+
         currentCodingpassType = (currentCodingpassType + 1) % 3;
       }
 
@@ -1831,6 +1844,8 @@ namespace NsJpxImage
     const scalarExpounded = quantizationParameters.scalarExpounded;
     const guardBits = quantizationParameters.guardBits;
     const segmentationSymbolUsed = codingStyleParameters.segmentationSymbolUsed;
+    const resetContextProbabilities =
+      codingStyleParameters.resetContextProbabilities;
     const precision = context.components[c].precision;
 
     const reversible = codingStyleParameters.reversibleTransformation;
@@ -1885,7 +1900,8 @@ namespace NsJpxImage
           delta,
           mb,
           reversible,
-          segmentationSymbolUsed
+          segmentationSymbolUsed,
+          resetContextProbabilities
         );
       }
       subbandCoefficients.push({

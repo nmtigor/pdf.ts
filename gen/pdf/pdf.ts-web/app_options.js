@@ -20,22 +20,12 @@ import { RendererType, ScrollMode, SpreadMode } from "./ui_utils.js";
 import { VerbosityLevel } from "../pdf.ts-src/shared/util.js";
 /*81---------------------------------------------------------------------------*/
 export const compatibilityParams = Object.create(null);
-const userAgent = (typeof navigator !== "undefined" && navigator.userAgent) || "";
-const platform = (typeof navigator !== "undefined" && navigator.platform) || "";
-const maxTouchPoints = (typeof navigator !== "undefined" && navigator.maxTouchPoints) || 1;
+const userAgent = navigator.userAgent || "";
+const platform = navigator.platform || "";
+const maxTouchPoints = navigator.maxTouchPoints || 1;
 const isAndroid = /Android/.test(userAgent);
 const isIOS = /\b(iPad|iPhone|iPod)(?=;)/.test(userAgent) ||
     (platform === "MacIntel" && maxTouchPoints > 1);
-const isIOSChrome = /CriOS/.test(userAgent);
-// Disables URL.createObjectURL() usage in some environments.
-// Support: Chrome on iOS
-(function checkOnBlobSupport() {
-    // Sometimes Chrome on iOS loses data created with createObjectURL(),
-    // see issue 8081.
-    if (isIOSChrome) {
-        compatibilityParams.disableCreateObjectURL = true;
-    }
-})();
 // Limit canvas size to 5 mega-pixels on mobile.
 // Support: Android, iOS
 (function checkCanvasSizeLimitation() {
@@ -321,7 +311,7 @@ defaultOptions.disablePreferences = {
 };
 defaultOptions.locale = {
     /** @type {string} */
-    value: typeof navigator !== "undefined" ? navigator.language : Locale.en_US,
+    value: navigator.language || Locale.en_US,
     kind: OptionKind.VIEWER,
 };
 defaultOptions.sandboxBundleSrc = {

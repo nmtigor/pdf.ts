@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 /* globals __non_webpack_require__ */
-import { createObjectURL, FONT_IDENTITY_MATRIX, IDENTITY_MATRIX, ImageKind, OPS, TextRenderingMode, Util, warn, } from "../shared/util.js";
+import { FONT_IDENTITY_MATRIX, IDENTITY_MATRIX, ImageKind, OPS, TextRenderingMode, Util, warn, } from "../shared/util.js";
 import { DOMSVGFactory } from "./display_utils.js";
 import { svg as createSVG } from "../../../lib/dom.js";
 import { ShadingType } from "../core/pattern.js";
@@ -34,6 +34,26 @@ const XML_NS = "http://www.w3.org/XML/1998/namespace";
 const XLINK_NS = "http://www.w3.org/1999/xlink";
 const LINE_CAP_STYLES = ["butt", "round", "square"];
 const LINE_JOIN_STYLES = ["miter", "round", "bevel"];
+const createObjectURL = function (data, contentType = "", forceDataSchema = false) {
+    if (URL.createObjectURL
+        && typeof Blob !== "undefined"
+        && !forceDataSchema) {
+        return URL.createObjectURL(new Blob([data], { type: contentType }));
+    }
+    // Blob/createObjectURL is not available, falling back to data schema.
+    const digits = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+    let buffer = `data:${contentType};base64,`;
+    for (let i = 0, ii = data.length; i < ii; i += 3) {
+        const b1 = data[i] & 0xff;
+        const b2 = data[i + 1] & 0xff;
+        const b3 = data[i + 2] & 0xff;
+        const d1 = b1 >> 2, d2 = ((b1 & 3) << 4) | (b2 >> 4);
+        const d3 = i + 1 < ii ? ((b2 & 0xf) << 2) | (b3 >> 6) : 64;
+        const d4 = i + 2 < ii ? b3 & 0x3f : 64;
+        buffer += digits[d1] + digits[d2] + digits[d3] + digits[d4];
+    }
+    return buffer;
+};
 const convertImgDataToPng = (function () {
     const PNG_HEADER = new Uint8Array([
         0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,

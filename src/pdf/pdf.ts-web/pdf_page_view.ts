@@ -61,8 +61,7 @@ import { TextLayerBuilder } from "./text_layer_builder.js";
 import {
   approximateFraction,
   DEFAULT_SCALE,
-  getOutputScale,
-  type  OutputScale,
+  OutputScale,
   RendererType,
   roundToDivide,
   TextLayerMode,
@@ -860,7 +859,6 @@ export class PDFPageView implements IVisibleView
           if( textLayer ) 
           {
             const readableStream = pdfPage.streamTextContent({
-              normalizeWhitespace: true,
               includeMarkedContent: true,
             });
             textLayer.setTextContentStream(readableStream);
@@ -966,8 +964,7 @@ export class PDFPageView implements IVisibleView
     // #endif
 
     const ctx = canvas.getContext( "2d", {alpha:false} )!;
-    const outputScale = getOutputScale( ctx );
-    this.outputScale = outputScale;
+    const outputScale = (this.outputScale = new OutputScale());
 
     if( this.useOnlyCssZoom )
     {
@@ -978,7 +975,6 @@ export class PDFPageView implements IVisibleView
       // of the page.
       outputScale.sx *= actualSizeViewport.width / viewport.width;
       outputScale.sy *= actualSizeViewport.height / viewport.height;
-      outputScale.scaled = true;
     }
 
     if( this.maxCanvasPixels > 0 )
@@ -989,7 +985,6 @@ export class PDFPageView implements IVisibleView
       {
         outputScale.sx = maxScale;
         outputScale.sy = maxScale;
-        outputScale.scaled = true;
         this.hasRestrictedScaling = true;
       } 
       else {
@@ -1008,9 +1003,9 @@ export class PDFPageView implements IVisibleView
     this.paintedViewportMap.set(canvas, viewport);
 
     // Rendering area
-    const transform = !outputScale.scaled
-      ? undefined
-      : <matrix_t>[outputScale.sx, 0, 0, outputScale.sy, 0, 0];
+    const transform = outputScale.scaled
+      ? <matrix_t>[outputScale.sx, 0, 0, outputScale.sy, 0, 0]
+      : undefined;
     const renderContext:RenderParms = {
       canvasContext: ctx,
       transform,
@@ -1073,11 +1068,7 @@ export class PDFPageView implements IVisibleView
       })
       .then(opList => {
         ensureNotCancelled();
-        const svgGfx = new SVGGraphics(
-          pdfPage.commonObjs,
-          pdfPage.objs,
-            /* forceDataSchema = */ compatibilityParams.disableCreateObjectURL
-        );
+        const svgGfx = new SVGGraphics(pdfPage.commonObjs, pdfPage.objs);
         return svgGfx.getSVG(opList, actualSizeViewport).then( 
           ( svg:SVGElement ) => {
             ensureNotCancelled();

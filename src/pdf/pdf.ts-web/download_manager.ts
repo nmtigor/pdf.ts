@@ -21,8 +21,7 @@
 
 import { html } from "../../lib/dom.js";
 import { isPdfFile } from "../pdf.ts-src/display/display_utils.js";
-import { createObjectURL, createValidAbsoluteUrl } from "../pdf.ts-src/pdf.js";
-import { compatibilityParams } from "./app_options.js";
+import { createValidAbsoluteUrl } from "../pdf.ts-src/pdf.js";
 import { IDownloadManager } from "./interfaces.js";
 /*81---------------------------------------------------------------------------*/
 
@@ -76,12 +75,10 @@ export class DownloadManager implements IDownloadManager
     filename:string, 
     contentType:string
   ) {
-    const blobUrl = createObjectURL(
-      data,
-      contentType,
-      compatibilityParams.disableCreateObjectURL
+    const blobUrl = URL.createObjectURL(
+      new Blob([data], { type: contentType })
     );
-    download(blobUrl, filename);
+    download( blobUrl, filename );
   }
 
   /**
@@ -95,7 +92,7 @@ export class DownloadManager implements IDownloadManager
     const isPdfData = isPdfFile(filename);
     const contentType = isPdfData ? "application/pdf" : "";
 
-    if (isPdfData && !compatibilityParams.disableCreateObjectURL) 
+    if( isPdfData ) 
     {
       let blobUrl = this._openBlobUrls.get(element);
       if( !blobUrl )
@@ -142,12 +139,6 @@ export class DownloadManager implements IDownloadManager
    */
   download( blob:Blob, url:string, filename:string, sourceEventType="download" )
   {
-    if( compatibilityParams.disableCreateObjectURL )
-    {
-      // URL.createObjectURL is not supported
-      this.downloadUrl(url, filename);
-      return;
-    }
     const blobUrl = URL.createObjectURL(blob);
     download(blobUrl, filename);
   }

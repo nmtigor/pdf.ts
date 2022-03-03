@@ -18,6 +18,7 @@ export declare class PDFFindBar {
     findField: HTMLInputElement;
     highlightAll: HTMLInputElement;
     caseSensitive: HTMLInputElement;
+    matchDiacritics: HTMLInputElement;
     entireWord: HTMLInputElement;
     findMsg: HTMLSpanElement;
     findResultsCount: HTMLSpanElement;

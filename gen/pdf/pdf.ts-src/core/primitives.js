@@ -12,6 +12,9 @@ var XFANsName;
     class Name {
         name;
         constructor(name) {
+            if (typeof name !== "string") {
+                assert(0, 'Name: The "name" must be a string.');
+            }
             this.name = name;
         }
         static get(name) {
@@ -32,6 +35,9 @@ var NsCmd;
     class Cmd {
         cmd;
         constructor(cmd) {
+            if (typeof cmd !== "string") {
+                assert(0, 'Cmd: The "cmd" must be a string.');
+            }
             this.cmd = cmd;
         }
         static get(cmd) {
@@ -57,8 +63,12 @@ export class Dict {
     /** No dereferencing. */
     getRawValues() { return Object.values(this.#map); }
     set(key, value) {
-        if (value === undefined)
+        if (typeof key !== "string") {
+            assert(0, 'Dict.set: The "key" must be a string.');
+        }
+        else if (value === undefined) {
             assert(0, 'Dict.set: The "value" cannot be undefined.');
+        }
         this.#map[key] = value;
     }
     has(key) { return this.#map[key] !== undefined; }

@@ -20,7 +20,7 @@ import { bytesToString, FONT_IDENTITY_MATRIX, FontType, FormatError, info, shado
 import { getDingbatsGlyphsUnicode, getGlyphsUnicode } from "./glyphlist.js";
 import { getEncoding, MacRomanEncoding, StandardEncoding, SymbolSetEncoding, ZapfDingbatsEncoding, } from "./encodings.js";
 import { getGlyphMapForStandardFonts, getNonStdFontMap, getSerifFonts, getStdFontMap, getSupplementalGlyphMapForArialBlack, getSupplementalGlyphMapForCalibri, } from "./standard_fonts.js";
-import { getUnicodeForGlyph, getUnicodeRangeFor, mapSpecialUnicodeValues, } from "./unicode.js";
+import { getCharUnicodeCategory, getUnicodeForGlyph, getUnicodeRangeFor, mapSpecialUnicodeValues, } from "./unicode.js";
 import { IdentityCMap } from "./cmap.js";
 import { Stream } from "./stream.js";
 import { FontFlags, getFontType, MacStandardGlyphOrdering, recoverGlyphName, SEAC_ANALYSIS_ENABLED } from "./fonts_utils.js";
@@ -31,6 +31,7 @@ import { CFFCompiler, CFFParser } from "./cff_parser.js";
 import { CFFFont } from "./cff_font.js";
 import { Type1Font } from "./type1_font.js";
 import { FontRendererFactory } from "./font_renderer.js";
+import { getFontBasicMetrics } from "./metrics.js";
 import { GlyfTable } from "./glyf.js";
 /*81---------------------------------------------------------------------------*/
 // Unicode Private Use Areas:
@@ -201,6 +202,9 @@ export class Glyph {
     operatorListId;
     isSpace;
     isInFont;
+    isWhitespace;
+    isZeroWidthDiacritic;
+    isInvisibleFormatMark;
     compiled;
     constructor(originalCharCode, fontChar, unicode, accent, width, vmetric, operatorListId, isSpace, isInFont) {
         this.originalCharCode = originalCharCode;
@@ -212,6 +216,10 @@ export class Glyph {
         this.operatorListId = operatorListId;
         this.isSpace = isSpace;
         this.isInFont = isInFont;
+        const category = getCharUnicodeCategory(unicode);
+        this.isWhitespace = category.isWhitespace;
+        this.isZeroWidthDiacritic = category.isZeroWidthDiacritic;
+        this.isInvisibleFormatMark = category.isInvisibleFormatMark;
     }
     matchesForCache(originalCharCode, fontChar, unicode, accent, width, vmetric, operatorListId, isSpace, isInFont) {
         return (this.originalCharCode === originalCharCode &&
@@ -952,6 +960,19 @@ export class Font extends FontExpotDataEx {
         const isStandardFont = !!stdFontMap[fontName];
         const isMappedToStandardFont = !!(nonStdFontMap[fontName] && stdFontMap[nonStdFontMap[fontName]]);
         fontName = stdFontMap[fontName] || nonStdFontMap[fontName] || fontName;
+        const fontBasicMetricsMap = getFontBasicMetrics();
+        const metrics = fontBasicMetricsMap[fontName];
+        if (metrics) {
+            if (isNaN(this.ascent)) {
+                this.ascent = metrics.ascent / PDF_GLYPH_SPACE_UNITS;
+            }
+            if (isNaN(this.descent)) {
+                this.descent = metrics.descent / PDF_GLYPH_SPACE_UNITS;
+            }
+            if (isNaN(this.capHeight)) {
+                this.capHeight = metrics.capHeight / PDF_GLYPH_SPACE_UNITS;
+            }
+        }
         this.bold = fontName.search(/bold/gi) !== -1;
         this.italic =
             fontName.search(/oblique/gi) !== -1 || fontName.search(/italic/gi) !== -1;
@@ -2749,7 +2770,9 @@ export class Font extends FontExpotDataEx {
             }
         }
         width = this.widths[widthCode];
-        width = (typeof width === "number") ? width : this.defaultWidth;
+        if (typeof width !== "number") {
+            width = this.defaultWidth;
+        }
         const vmetric = this.vmetrics?.[+widthCode];
         let unicode = this.toUnicode.get(charcode) || charcode;
         if (typeof unicode === "number") {

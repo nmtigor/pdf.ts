@@ -1,12 +1,11 @@
 import { type XFAElObj } from "../core/xfa/alias.js";
 import { BaseException, CMapCompressionType, type matrix_t, type point_t, type rect_t } from "../shared/util.js";
 import { BaseCanvasFactory, BaseCMapReaderFactory, BaseStandardFontDataFactory, BaseSVGFactory } from "./base_factory.js";
-export declare const DEFAULT_LINK_REL = "noopener noreferrer nofollow";
-export declare const PixelsPerInch: {
-    CSS: number;
-    PDF: number;
-    readonly PDF_TO_CSS_UNITS: number;
-};
+export declare class PixelsPerInch {
+    static CSS: number;
+    static PDF: number;
+    static PDF_TO_CSS_UNITS: number;
+}
 export declare class DOMCanvasFactory extends BaseCanvasFactory {
     _document: Document;
     constructor({ ownerDocument }?: {
@@ -147,36 +146,6 @@ export declare class RenderingCancelledException extends BaseException {
     type: string;
     constructor(msg: string, type: string);
 }
-export declare const enum LinkTarget {
-    NONE = 0,
-    SELF = 1,
-    BLANK = 2,
-    PARENT = 3,
-    TOP = 4
-}
-interface ExternalLinkParms {
-    /**
-     * An absolute URL.
-     */
-    url: string;
-    /**
-     * The link target. The default value is `LinkTarget.NONE`.
-     */
-    target?: LinkTarget | undefined;
-    /**
-     * The link relationship. The default value is `DEFAULT_LINK_REL`.
-     */
-    rel?: string | undefined;
-    /**
-     * Whether the link should be enabled. The default value is true.
-     */
-    enabled?: boolean;
-}
-/**
- * Adds various attributes (href, title, target, rel) to hyperlinks.
- * @param link The link element.
- */
-export declare function addLinkAttributes(link: HTMLAnchorElement, { url, target, rel, enabled }?: ExternalLinkParms): void;
 export declare function isDataScheme(url: string): boolean;
 export declare function isPdfFile(filename: unknown): boolean;
 /**

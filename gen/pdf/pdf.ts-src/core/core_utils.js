@@ -265,16 +265,16 @@ function _collectJS(entry, xref, list, parents) {
         }
     }
     else if (entry instanceof Dict) {
-        if (isName(entry.get("S"), "JavaScript") && entry.has("JS")) {
+        if (isName(entry.get("S"), "JavaScript")) {
             const js = entry.get("JS");
             let code;
             if (js instanceof BaseStream) {
                 code = js.getString();
             }
-            else {
+            else if (typeof js === "string") {
                 code = js;
             }
-            code = stringToPDFString(code);
+            code = code && stringToPDFString(code);
             if (code) {
                 list.push(code);
             }

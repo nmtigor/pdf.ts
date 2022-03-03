@@ -44,6 +44,7 @@ function testSearch({ eventBus, pdfFindController, state, matchesPerPage, select
             entireWord: false,
             phraseSearch: true,
             findPrevious: false,
+            matchDiacritics: false,
         }, state);
         eventBus.dispatch("find", eventState);
         // The `updatefindmatchescount` event is only emitted if the page contains

@@ -88,6 +88,11 @@ export interface EventMap {
             keyDown?: boolean;
         };
     };
+    documenterror: {
+        source: PDFViewerApplication;
+        message: string;
+        reason: string | undefined;
+    };
     documentinit: {
         source: PDFViewerApplication;
     };

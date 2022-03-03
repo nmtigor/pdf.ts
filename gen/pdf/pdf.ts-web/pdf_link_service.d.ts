@@ -2,9 +2,15 @@ import { PDFDocumentProxy, type RefProxy } from "../pdf.ts-src/display/api.js";
 import { type IPDFLinkService } from "./interfaces.js";
 import { PDFViewer } from "./pdf_viewer.js";
 import { PDFHistory } from "./pdf_history.js";
-import { LinkTarget } from "../pdf.ts-src/display/display_utils.js";
 import { type Destination, type ExplicitDest } from "../pdf.ts-src/core/catalog.js";
 import { EventBus } from "./event_utils.js";
+export declare const enum LinkTarget {
+    NONE = 0,
+    SELF = 1,
+    BLANK = 2,
+    PARENT = 3,
+    TOP = 4
+}
 interface PDFLinkServiceOptions {
     /**
      * The application event bus.
@@ -67,7 +73,7 @@ export declare class PDFLinkService implements IPDFLinkService {
      */
     goToPage(val: number | string): void;
     /**
-     * Wrapper around the `addLinkAttributes`-function in the API.
+     * Wrapper around the `addLinkAttributes` helper function.
      * @implements
      */
     addLinkAttributes(link: HTMLAnchorElement, url: string, newWindow?: boolean): void;

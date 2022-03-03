@@ -1,5 +1,7 @@
 import { Dict, type ObjNoRef, Ref } from "./primitives.js";
+import { BaseStream } from "./base_stream.js";
 import { LocalFunctionCache } from "./image_utils.js";
+import { XRef } from "./xref.js";
 export declare class PDFFunctionFactory {
     #private;
     xref: XRef;
@@ -422,7 +424,5 @@ declare namespace NsPostScriptCompiler {
     }
 }
 export import PostScriptCompiler = NsPostScriptCompiler.PostScriptCompiler;
-import { XRef } from "./xref.js";
-import { BaseStream } from "./base_stream.js";
 export {};
 //# sourceMappingURL=function.d.ts.map

@@ -36,24 +36,16 @@ export class PDFPresentationMode {
      * @return Indicating if the request was successful.
      */
     request() {
-        if (this.switchInProgress || this.active || !this.pdfViewer.pagesCount) {
+        if (this.switchInProgress
+            || this.active
+            || !this.pdfViewer.pagesCount
+            || !this.container.requestFullscreen) {
             return false;
         }
         this.#addFullscreenChangeListeners();
         this.#setSwitchInProgress();
         this.#notifyStateChange();
-        if (this.container.requestFullscreen) {
-            this.container.requestFullscreen();
-        }
-        else if (this.container.mozRequestFullScreen) {
-            this.container.mozRequestFullScreen();
-        }
-        else if (this.container.webkitRequestFullscreen) {
-            this.container.webkitRequestFullscreen(Element.ALLOW_KEYBOARD_INPUT);
-        }
-        else {
-            return false;
-        }
+        this.container.requestFullscreen();
         this.args = {
             pageNumber: this.pdfViewer.currentPageNumber,
             scaleValue: this.pdfViewer.currentScaleValue,
@@ -63,9 +55,8 @@ export class PDFPresentationMode {
         return true;
     }
     #mouseWheel = (evt) => {
-        if (!this.active) {
+        if (!this.active)
             return;
-        }
         evt.preventDefault();
         const delta = normalizeWheelEventDelta(evt);
         const currentTime = Date.now();
@@ -92,12 +83,6 @@ export class PDFPresentationMode {
             }
         }
     };
-    get isFullscreen() {
-        // if (typeof PDFJSDev !== "undefined" && PDFJSDev.test("MOZCENTRAL")) {
-        return !!(document.fullscreenElement ||
-            document.mozFullScreen ||
-            document.webkitIsFullScreen);
-    }
     #notifyStateChange = () => {
         let state = PresentationModeState.NORMAL;
         if (this.switchInProgress) {
@@ -213,9 +198,8 @@ export class PDFPresentationMode {
         }, DELAY_BEFORE_HIDING_CONTROLS);
     };
     #hideControls = () => {
-        if (!this.controlsTimeout) {
+        if (!this.controlsTimeout)
             return;
-        }
         clearTimeout(this.controlsTimeout);
         this.container.classList.remove(CONTROLS_SELECTOR);
         delete this.controlsTimeout;
@@ -315,7 +299,7 @@ export class PDFPresentationMode {
         delete this.touchSwipeBind;
     };
     #fullscreenChange = () => {
-        if (this.isFullscreen) {
+        if ( /* isFullscreen = */document.fullscreenElement) {
             this.#enter();
         }
         else {
@@ -325,17 +309,9 @@ export class PDFPresentationMode {
     #addFullscreenChangeListeners() {
         // this.fullscreenChangeBind = this._fullscreenChange.bind(this);
         window.addEventListener("fullscreenchange", this.#fullscreenChange);
-        // if (typeof PDFJSDev === "undefined" || !PDFJSDev.test("MOZCENTRAL")) {
-        window.addEventListener("mozfullscreenchange", this.#fullscreenChange);
-        window.addEventListener("webkitfullscreenchange", this.#fullscreenChange);
-        // }
     }
     #removeFullscreenChangeListeners = () => {
         window.removeEventListener("fullscreenchange", this.#fullscreenChange);
-        // if (typeof PDFJSDev === "undefined" || !PDFJSDev.test("MOZCENTRAL")) {
-        window.removeEventListener("mozfullscreenchange", this.#fullscreenChange);
-        window.removeEventListener("webkitfullscreenchange", this.#fullscreenChange);
-        // }
         // delete this.fullscreenChangeBind;
     };
 }

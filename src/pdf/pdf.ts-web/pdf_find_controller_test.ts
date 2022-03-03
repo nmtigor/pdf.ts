@@ -85,6 +85,7 @@ function testSearch({
         entireWord: false,
         phraseSearch: true,
         findPrevious: false,
+        matchDiacritics: false,
       },
       state
     );

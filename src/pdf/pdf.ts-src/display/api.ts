@@ -730,7 +730,7 @@ export class PDFDocumentLoadingTask
    * with the new password, and a reason (see {@link PasswordResponses}).
    */
   onPassword?:(
-    updateCallback:( password:string ) => void, 
+    updateCallback:( password:string | Error ) => void, 
     reason:PasswordResponses
   ) => void;
 
@@ -1278,12 +1278,6 @@ interface GetViewportParms
  * Page getTextContent parameters.
  */
 interface GetTextContentParms {
-  /**
-   * Replaces all occurrences of
-   * whitespace with standard spaces (0x20). The default value is `false`.
-   */
-  normalizeWhitespace:boolean;
-
   /**
    * Do not attempt to combine
    * same line {@link TextItem}'s. The default value is `false`.
@@ -1986,11 +1980,13 @@ export class PDFPageProxy
   }
 
   /**
+   * NOTE: All occurrences of whitespace will be replaced by
+   * standard spaces (0x20).
+   *
    * @param params getTextContent parameters.
    * @return Stream for reading text content chunks.
    */
   streamTextContent({
-    normalizeWhitespace=false,
     disableCombineTextItems=false,
     includeMarkedContent= false,
   }=<GetTextContentParms>{} ):ReadableStream 
@@ -2001,7 +1997,6 @@ export class PDFPageProxy
       "GetTextContent",
       {
         pageIndex: this._pageIndex,
-        normalizeWhitespace: normalizeWhitespace === true,
         combineTextItems: disableCombineTextItems !== true,
         includeMarkedContent: includeMarkedContent === true,
       },
@@ -2016,6 +2011,9 @@ export class PDFPageProxy
   }
 
   /**
+   * NOTE: All occurrences of whitespace will be replaced by
+   * standard spaces (0x20).
+   *
    * @param params - getTextContent parameters.
    * @return A promise that is resolved with a
    *   {@link TextContent} object that represents the page's text content.
@@ -2322,103 +2320,14 @@ export class LoopbackPort
 
   postMessage( obj:any, transfers?:Transferable[] | StructuredSerializeOptions ) 
   {
-    function cloneValue( object:any ) 
-    {
-      const rn_ = () => (<any>globalThis).structuredClone(object, transfers);
-      // #if MOZCENTRAL
-        return rn_();
-      // #endif
-      if( (<any>globalThis).structuredClone ) return rn_();
-
-      // Trying to perform a structured clone close to the spec, including
-      // transfers.
-      function fallbackCloneValue( value:unknown ) 
-      {
-        if( typeof value === "function" 
-         || typeof value === "symbol" 
-         || value instanceof URL
-        ) {
-          throw new Error(
-            `LoopbackPort.postMessage - cannot clone: ${value?.toString()}`
-          );
-        }
-
-        if( !isObjectLike(value) ) return value;
-
-        if( cloned.has(value) )
-        {
-          // already cloned the object
-          return cloned.get( value );
-        }
-        let buffer;
-        if( (buffer = (<DataView>value).buffer) && isArrayBuffer(buffer) )
-        {
-          // We found object with ArrayBuffer (typed array).
-          let result:DataView;
-          if( (<Transferable[]>transfers)?.includes(buffer) )
-          {
-            result = new (<DataViewConstructor>(<DataView>value).constructor)(
-              buffer,
-              (<DataView>value).byteOffset,
-              (<DataView>value).byteLength
-            );
-          } 
-          else {
-            result = new (<DataViewConstructor>(<DataView>value).constructor)(
-              <ArrayBufferLike>value
-            );
-          }
-          cloned.set( <DataView>value, result );
-          return result;
-        }
-        if( value instanceof Map )
-        {
-          const result = new Map<string, unknown>();
-          cloned.set( value, result ); // Adding to cache now for cyclic references.
-          for( const [key, val] of value )
-          {
-            result.set(key, fallbackCloneValue(val));
-          }
-          return result;
-        }
-        if( value instanceof Set )
-        {
-          const result = new Set<unknown>();
-          cloned.set(value, result); // Adding to cache now for cyclic references.
-          for (const val of value) 
-          {
-            result.add( fallbackCloneValue(val) );
-          }
-          return result;
-        }
-        const result = Array.isArray(value) ? [] : Object.create(null);
-        cloned.set( <object>value, result ); // Adding to cache now for cyclic references.
-        // Cloning all value and object properties, however ignoring properties
-        // defined via getter.
-        for( const i in <object>value )
-        {
-          let desc,
-            p = <object>value;
-          while( !(desc = Object.getOwnPropertyDescriptor(p, i)) )
-          {
-            p = Object.getPrototypeOf(p);
-          }
-          if( typeof desc.value === "undefined" ) continue;
-
-          if (typeof desc.value === "function" && !(<object>value).hasOwnProperty?.(i)) 
-          {
-            continue;
-          }
-          result[i] = fallbackCloneValue( desc.value );
-        }
-        return result;
-      }
-
-      const cloned = new WeakMap<object, object>();
-      return fallbackCloneValue(object);
-    }
-
-    const event:any = { data: cloneValue(obj) };
+    const event:any = {
+      data:
+        // typeof PDFJSDev === "undefined" ||
+        // PDFJSDev.test("SKIP_BABEL") ||
+        transfers
+          ? (<any>globalThis).structuredClone(obj, transfers)
+          : (<any>globalThis).structuredClone(obj),
+    };
 
     this.#deferred.then(() => {
       for( const listener of this.#listeners )
@@ -3226,11 +3135,16 @@ class WorkerTransport
     messageHandler.on("PasswordRequest", exception => {
       this._passwordCapability = createPromiseCap<{password:string}>();
 
-      if (loadingTask.onPassword) {
-        const updatePassword = ( password:string ) => {
-          this._passwordCapability!.resolve({
-            password,
-          });
+      if (loadingTask.onPassword)
+      {
+        const updatePassword = ( password:string | Error ) => {
+          if( password instanceof Error )
+          {
+            this._passwordCapability!.reject( password );
+          } 
+          else {
+            this._passwordCapability!.resolve({ password });
+          }
         };
         try {
           loadingTask.onPassword( updatePassword, exception.code );
@@ -3430,7 +3344,7 @@ class WorkerTransport
      || <number>pageNumber <= 0
      || <number>pageNumber > this.#numPages!
     ) {
-      return Promise.reject(new Error("Invalid page request"));
+      return Promise.reject(new Error("Invalid page request."));
     }
 
     const pageIndex = <number>pageNumber - 1,
@@ -3461,8 +3375,18 @@ class WorkerTransport
 
   getPageIndex( ref:RefProxy ) 
   {
+    if( typeof ref !== "object"
+     || ref === null
+     || !Number.isInteger(ref.num)
+     || ref.num < 0
+     || !Number.isInteger(ref.gen)
+     || ref.gen < 0
+    ) {
+      return Promise.reject(new Error("Invalid pageIndex request."));
+    }
     return this.messageHandler.sendWithPromise("GetPageIndex", {
-      ref,
+      num: ref.num,
+      gen: ref.gen,
     });
   }
 
@@ -3649,16 +3573,15 @@ class WorkerTransport
 
 interface Objs_<T>
 {
-  capability:PromiseCap<T>;
-  data?:T;
-  resolved:boolean;
+  capability:PromiseCap<T | undefined>;
+  data:T | undefined;
+  // resolved:boolean;
 }
 
 /**
  * A PDF document and page is built of many objects. E.g. there are objects for
  * fonts, images, rendering code, etc. These objects may get processed inside of
  * a worker. This class implements some basic methods to manage these objects.
- * @ignore
  */
 export class PDFObjects<T>
 {
@@ -3669,14 +3592,12 @@ export class PDFObjects<T>
    */
   #ensureObj( objId:string )
   {
-    if( this.#objs[objId] )
-    {
-      return this.#objs[objId];
-    }
+    const obj = this.#objs[objId];
+    if( obj ) return obj;
+
     return (this.#objs[objId] = {
       capability: createPromiseCap(),
-      // data: null,
-      resolved: false,
+      data: undefined,
     });
   }
 
@@ -3694,7 +3615,8 @@ export class PDFObjects<T>
     // not required to be resolved right now.
     if (callback) 
     {
-      this.#ensureObj(objId).capability.promise.then(callback);
+      const obj = this.#ensureObj(objId);
+      obj.capability.promise.then(() => callback(obj.data));
       return undefined;
     }
     // If there isn't a callback, the user expects to get the resolved data
@@ -3702,7 +3624,7 @@ export class PDFObjects<T>
     const obj = this.#objs[objId];
     // If there isn't an object yet or the object isn't resolved, then the
     // data isn't ready yet!
-    if (!obj || !obj.resolved) 
+    if( !obj?.capability.settled ) 
     {
       throw new Error(`Requesting object that isn't resolved yet ${objId}.`);
     }
@@ -3712,19 +3634,18 @@ export class PDFObjects<T>
   has( objId:string )
   {
     const obj = this.#objs[objId];
-    return obj?.resolved || false;
+    return obj?.capability.settled || false;
   }
 
   /**
    * Resolves the object `objId` with optional `data`.
    */
-  resolve( objId:string, data:T )
+  resolve( objId:string, data:T | undefined=undefined )
   {
     const obj = this.#ensureObj(objId);
 
-    obj.resolved = true;
     obj.data = data;
-    obj.capability.resolve(data);
+    obj.capability.resolve( undefined );
   }
 
   clear() 
@@ -4019,6 +3940,7 @@ export class InternalRenderTask
 
 export const version = 0;
 export const build = 0;
+
 // export const version:string =
 //   typeof PDFJSDev !== "undefined" ? PDFJSDev.eval("BUNDLE_VERSION") : null;
 // export const build:string =

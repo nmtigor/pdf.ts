@@ -8,7 +8,7 @@ import { type IL10n, type IPDFAnnotationLayerFactory, type IPDFStructTreeLayerFa
 import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
 import { AnnotationLayerBuilder } from "./annotation_layer_builder.js";
 import { TextLayerBuilder } from "./text_layer_builder.js";
-import { type OutputScale, RendererType, TextLayerMode, RenderingStates } from "./ui_utils.js";
+import { OutputScale, RendererType, TextLayerMode, RenderingStates } from "./ui_utils.js";
 import { StructTreeLayerBuilder } from "./struct_tree_layer_builder.js";
 import { XfaLayerBuilder } from "./xfa_layer_builder.js";
 import { BaseViewer } from "./base_viewer.js";

@@ -21,7 +21,7 @@ interface PDFFindControllerOptions {
      */
     eventBus: EventBus;
 }
-export declare type FindType = "again" | "casesensitivitychange" | "entirewordchange" | "findagain" | "findhighlightallchange" | "highlightallchange";
+export declare type FindType = "again" | "casesensitivitychange" | "diacriticmatchingchange" | "entirewordchange" | "findagain" | "findhighlightallchange" | "highlightallchange";
 export declare type FindCtrlrState = {
     type: FindType | "";
     query: string;
@@ -30,6 +30,7 @@ export declare type FindCtrlrState = {
     entireWord: boolean;
     highlightAll: boolean;
     findPrevious?: boolean | undefined;
+    matchDiacritics: boolean;
 };
 export interface MatchesCount {
     current: number;
@@ -67,12 +68,10 @@ export declare class PDFFindController {
         matchIndex?: number;
     }): void;
     _shouldDirtyMatch(state: FindCtrlrState): boolean;
-    _extractText(): void;
     _updateAllPages(): void;
     _nextMatch(): void;
     _nextPageMatch(): void;
     _requestMatchesCount(): MatchesCount;
-    _updateUIResultsCount(): void;
     _updateUIState(state: FindState, previous?: boolean): void;
 }
 export {};

@@ -62,7 +62,7 @@ class StructElementNode {
     }
     get role() {
         const nameObj = this.dict.get("S");
-        const name = (nameObj instanceof Name) ? nameObj.name : "";
+        const name = nameObj instanceof Name ? nameObj.name : "";
         const { root } = this.tree;
         if (root.roleMap.has(name)) {
             return root.roleMap.get(name);
@@ -72,7 +72,7 @@ class StructElementNode {
     parseKids() {
         let pageObjId;
         const objRef = this.dict.getRaw("Pg");
-        if ((objRef instanceof Ref)) {
+        if (objRef instanceof Ref) {
             pageObjId = objRef.toString();
         }
         const kids = this.dict.get("K");
@@ -116,7 +116,7 @@ class StructElementNode {
         if (pageRef instanceof Ref) {
             pageObjId = pageRef.toString();
         }
-        const type = (kidDict.get("Type") instanceof Name)
+        const type = kidDict.get("Type") instanceof Name
             ? kidDict.get("Type").name
             : null;
         if (type === "MCR") {
@@ -124,7 +124,7 @@ class StructElementNode {
                 return null;
             return new StructElement({
                 type: StructElementType.STREAM_CONTENT,
-                refObjId: (kidDict.getRaw("Stm") instanceof Ref)
+                refObjId: kidDict.getRaw("Stm") instanceof Ref
                     ? kidDict.getRaw("Stm").toString()
                     : undefined,
                 pageObjId,
@@ -191,7 +191,7 @@ export class StructTreePage {
             return;
         const map = new Map();
         for (const ref of parentArray) {
-            if ((ref instanceof Ref)) {
+            if (ref instanceof Ref) {
                 this.addNode(this.rootDict.xref.fetch(ref), map);
             }
         }

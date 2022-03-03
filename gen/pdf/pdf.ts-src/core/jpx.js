@@ -336,9 +336,6 @@ var NsJpxImage;
                             if (cod.selectiveArithmeticCodingBypass) {
                                 unsupported.push("selectiveArithmeticCodingBypass");
                             }
-                            if (cod.resetContextProbabilities) {
-                                unsupported.push("resetContextProbabilities");
-                            }
                             if (cod.terminationOnEachCodingPass) {
                                 unsupported.push("terminationOnEachCodingPass");
                             }
@@ -1198,7 +1195,7 @@ var NsJpxImage;
         }
         return position;
     }
-    function copyCoefficients(coefficients, levelWidth, levelHeight, subband, delta, mb, reversible, segmentationSymbolUsed) {
+    function copyCoefficients(coefficients, levelWidth, levelHeight, subband, delta, mb, reversible, segmentationSymbolUsed, resetContextProbabilities) {
         const x0 = subband.tbx0;
         const y0 = subband.tby0;
         const width = subband.tbx1 - subband.tbx0;
@@ -1252,6 +1249,9 @@ var NsJpxImage;
                         }
                         break;
                 }
+                if (resetContextProbabilities) {
+                    bitModel.reset();
+                }
                 currentCodingpassType = (currentCodingpassType + 1) % 3;
             }
             let offset = codeblock.tbx0_ - x0 + (codeblock.tby0_ - y0) * width;
@@ -1299,6 +1299,7 @@ var NsJpxImage;
         const scalarExpounded = quantizationParameters.scalarExpounded;
         const guardBits = quantizationParameters.guardBits;
         const segmentationSymbolUsed = codingStyleParameters.segmentationSymbolUsed;
+        const resetContextProbabilities = codingStyleParameters.resetContextProbabilities;
         const precision = context.components[c].precision;
         const reversible = codingStyleParameters.reversibleTransformation;
         const transform = reversible
@@ -1336,7 +1337,7 @@ var NsJpxImage;
                 // copyCoefficients will consecutively fill in the values that belong
                 // to the interleaved positions of the HL, LH, and HH coefficients.
                 // The LL coefficients will then be interleaved in Transform.iterate().
-                copyCoefficients(coefficients, width, height, subband, delta, mb, reversible, segmentationSymbolUsed);
+                copyCoefficients(coefficients, width, height, subband, delta, mb, reversible, segmentationSymbolUsed, resetContextProbabilities);
             }
             subbandCoefficients.push({
                 width,

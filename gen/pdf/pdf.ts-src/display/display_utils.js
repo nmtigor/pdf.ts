@@ -16,19 +16,15 @@
  * limitations under the License.
  */
 import { html } from "../../../lib/dom.js";
-import { assert } from "../../../lib/util/trace.js";
-import { BaseException, removeNullCharacters, shadow, stringToBytes, Util, warn, } from "../shared/util.js";
+import { BaseException, stringToBytes, Util, warn, } from "../shared/util.js";
 import { BaseCanvasFactory, BaseCMapReaderFactory, BaseStandardFontDataFactory, BaseSVGFactory } from "./base_factory.js";
 /*81---------------------------------------------------------------------------*/
-export const DEFAULT_LINK_REL = "noopener noreferrer nofollow";
 const SVG_NS = "http://www.w3.org/2000/svg";
-export const PixelsPerInch = {
-    CSS: 96.0,
-    PDF: 72.0,
-    get PDF_TO_CSS_UNITS() {
-        return shadow(this, "PDF_TO_CSS_UNITS", this.CSS / this.PDF);
-    },
-};
+export class PixelsPerInch {
+    static CSS = 96.0;
+    static PDF = 72.0;
+    static PDF_TO_CSS_UNITS = this.CSS / this.PDF;
+}
 export class DOMCanvasFactory extends BaseCanvasFactory {
     _document;
     constructor({ ownerDocument = globalThis.document } = {}) {
@@ -258,51 +254,6 @@ export class RenderingCancelledException extends BaseException {
         super(msg, "RenderingCancelledException");
         this.type = type;
     }
-}
-export var LinkTarget;
-(function (LinkTarget) {
-    LinkTarget[LinkTarget["NONE"] = 0] = "NONE";
-    LinkTarget[LinkTarget["SELF"] = 1] = "SELF";
-    LinkTarget[LinkTarget["BLANK"] = 2] = "BLANK";
-    LinkTarget[LinkTarget["PARENT"] = 3] = "PARENT";
-    LinkTarget[LinkTarget["TOP"] = 4] = "TOP";
-})(LinkTarget || (LinkTarget = {}));
-/**
- * Adds various attributes (href, title, target, rel) to hyperlinks.
- * @param link The link element.
- */
-export function addLinkAttributes(link, { url, target, rel, enabled = true } = {}) {
-    assert(url && typeof url === "string", 'addLinkAttributes: A valid "url" parameter must provided.');
-    const urlNullRemoved = removeNullCharacters(url);
-    if (enabled) {
-        link.href = link.title = urlNullRemoved;
-    }
-    else {
-        link.href = "";
-        link.title = `Disabled: ${urlNullRemoved}`;
-        link.onclick = () => {
-            return false;
-        };
-    }
-    let targetStr = ""; // LinkTarget.NONE
-    switch (target) {
-        case LinkTarget.NONE:
-            break;
-        case LinkTarget.SELF:
-            targetStr = "_self";
-            break;
-        case LinkTarget.BLANK:
-            targetStr = "_blank";
-            break;
-        case LinkTarget.PARENT:
-            targetStr = "_parent";
-            break;
-        case LinkTarget.TOP:
-            targetStr = "_top";
-            break;
-    }
-    link.target = targetStr;
-    link.rel = typeof rel === "string" ? rel : DEFAULT_LINK_REL;
 }
 export function isDataScheme(url) {
     const ii = url.length;

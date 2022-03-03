@@ -32,7 +32,7 @@
 /** @typedef {import("./ui_utils").RenderingStates} RenderingStates */
 /** @typedef {import("./xfa_layer_builder").XfaLayerBuilder} XfaLayerBuilder */
 
-import { LinkTarget, PageViewport } from "../pdf.ts-src/display/display_utils.js";
+import { PageViewport } from "../pdf.ts-src/display/display_utils.js";
 import { AnnotationStorage } from "../pdf.ts-src/display/annotation_storage.js";
 import { TextLayerBuilder } from "./text_layer_builder.js";
 import { AnnotationLayerBuilder } from "./annotation_layer_builder.js";
@@ -46,6 +46,7 @@ import { TextHighlighter } from "./text_highlighter.js";
 import { type FieldObject } from "../pdf.ts-src/core/annotation.js";
 import { EventBus } from "./event_utils.js";
 import { RenderingStates } from "./ui_utils.js";
+import { LinkTarget } from "./pdf_link_service.js";
 /*81---------------------------------------------------------------------------*/
 
 export interface IPDFLinkService 

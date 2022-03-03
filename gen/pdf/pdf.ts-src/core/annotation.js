@@ -59,10 +59,10 @@ export class AnnotationFactory {
         const dict = xref.fetchIfRef(ref); // Table 164
         if (!(dict instanceof Dict))
             return undefined;
-        const id = (ref instanceof Ref) ? ref.toString() : `annot_${idFactory.createObjId()}`;
+        const id = ref instanceof Ref ? ref.toString() : `annot_${idFactory.createObjId()}`;
         // Determine the annotation's subtype.
         const subtypename = dict.get("Subtype");
-        const subtype = (subtypename instanceof Name) ? subtypename.name : undefined;
+        const subtype = subtypename instanceof Name ? subtypename.name : undefined;
         // Return the right annotation object based on the subtype and field type.
         const parameters = {
             xref,
@@ -82,7 +82,7 @@ export class AnnotationFactory {
                 return new TextAnnotation(parameters);
             case "Widget":
                 let fieldType = getInheritableProperty({ dict, key: "FT" });
-                fieldType = (fieldType instanceof Name) ? fieldType.name : undefined;
+                fieldType = fieldType instanceof Name ? fieldType.name : undefined;
                 switch (fieldType) {
                     case "Tx":
                         return new TextWidgetAnnotation(parameters);
@@ -374,9 +374,8 @@ export class Annotation {
      *  annotation was last modified
      */
     setModificationDate(modificationDate) {
-        this.modificationDate = (typeof modificationDate === "string")
-            ? modificationDate
-            : undefined;
+        this.modificationDate =
+            typeof modificationDate === "string" ? modificationDate : undefined;
     }
     /* ~ */
     /* rectangle */
@@ -432,7 +431,7 @@ export class Annotation {
             if (Array.isArray(kids)) {
                 const kidIds = [];
                 for (const kid of kids) {
-                    if ((kid instanceof Ref)) {
+                    if (kid instanceof Ref) {
                         kidIds.push(kid.toString());
                     }
                 }
@@ -709,7 +708,7 @@ export class AnnotationBorderStyle {
             this.width = 0; // This is consistent with the behaviour in Adobe Reader.
             return;
         }
-        if (Number.isInteger(width)) {
+        if (typeof width === "number") {
             if (width > 0) {
                 const maxWidth = (rect[2] - rect[0]) / 2;
                 const maxHeight = (rect[3] - rect[1]) / 2;
@@ -829,9 +828,8 @@ export class MarkupAnnotation extends Annotation {
      *  annotation was originally created
      */
     setCreationDate(creationDate) {
-        this.creationDate = (typeof creationDate === "string")
-            ? creationDate
-            : undefined;
+        this.creationDate =
+            typeof creationDate === "string" ? creationDate : undefined;
     }
     /* ~ */
     constructor(parameters) {
@@ -839,9 +837,10 @@ export class MarkupAnnotation extends Annotation {
         const dict = parameters.dict; // Table 170
         if (dict.has("IRT")) {
             const rawIRT = dict.getRaw("IRT");
-            this.data.inReplyTo = (rawIRT instanceof Ref) ? rawIRT.toString() : undefined;
+            this.data.inReplyTo = rawIRT instanceof Ref ? rawIRT.toString() : undefined;
             const rt = dict.get("RT");
-            this.data.replyType = (rt instanceof Name) ? rt.name : AnnotationReplyType.REPLY;
+            this.data.replyType =
+                rt instanceof Name ? rt.name : AnnotationReplyType.REPLY;
         }
         if (this.data.replyType === AnnotationReplyType.GROUP) {
             // Subordinate annotations in a group should inherit
@@ -995,12 +994,11 @@ class WidgetAnnotation extends Annotation {
         }
         data.alternativeText = stringToPDFString(dict.get("TU") || "");
         const defaultAppearance = getInheritableProperty({ dict, key: "DA" }) || params.acroForm.get("DA");
-        this._defaultAppearance = (typeof defaultAppearance === "string")
-            ? defaultAppearance
-            : "";
+        this._defaultAppearance =
+            typeof defaultAppearance === "string" ? defaultAppearance : "";
         data.defaultAppearanceData = parseDefaultAppearance(this._defaultAppearance);
         const fieldType = getInheritableProperty({ dict, key: "FT" });
-        data.fieldType = (fieldType instanceof Name) ? fieldType.name : undefined;
+        data.fieldType = fieldType instanceof Name ? fieldType.name : undefined;
         const localResources = getInheritableProperty({ dict, key: "DR" });
         const acroFormResources = params.acroForm.get("DR");
         const appearanceResources = this.appearance?.dict.get("Resources");
@@ -1159,6 +1157,65 @@ class WidgetAnnotation extends Annotation {
     _getMultilineAppearance(defaultAppearance, text, font, fontSize, width, height, alignment, hPadding, vPadding) {
         return "";
     }
+    _splitLine(line, font, fontSize, width, cache = {}) {
+        // TODO: need to handle chars which are not in the font.
+        line = cache.line || font.encodeString(line).join("");
+        const glyphs = cache.glyphs || font.charsToGlyphs(line);
+        if (glyphs.length <= 1) {
+            // Nothing to split
+            return [line];
+        }
+        const positions = cache.positions || font.getCharPositions(line);
+        const scale = fontSize / 1000;
+        const chunks = [];
+        let lastSpacePosInStringStart = -1, lastSpacePosInStringEnd = -1, lastSpacePos = -1, startChunk = 0, currentWidth = 0;
+        for (let i = 0, ii = glyphs.length; i < ii; i++) {
+            const [start, end] = positions[i];
+            const glyph = glyphs[i];
+            const glyphWidth = glyph.width * scale;
+            if (glyph.unicode === " ") {
+                if (currentWidth + glyphWidth > width) {
+                    // We can break here
+                    chunks.push(line.substring(startChunk, start));
+                    startChunk = start;
+                    currentWidth = glyphWidth;
+                    lastSpacePosInStringStart = -1;
+                    lastSpacePos = -1;
+                }
+                else {
+                    currentWidth += glyphWidth;
+                    lastSpacePosInStringStart = start;
+                    lastSpacePosInStringEnd = end;
+                    lastSpacePos = i;
+                }
+            }
+            else {
+                if (currentWidth + glyphWidth > width) {
+                    // We must break to the last white position (if available)
+                    if (lastSpacePosInStringStart !== -1) {
+                        chunks.push(line.substring(startChunk, lastSpacePosInStringEnd));
+                        startChunk = lastSpacePosInStringEnd;
+                        i = lastSpacePos + 1;
+                        lastSpacePosInStringStart = -1;
+                        currentWidth = 0;
+                    }
+                    else {
+                        // Just break in the middle of the word
+                        chunks.push(line.substring(startChunk, start));
+                        startChunk = start;
+                        currentWidth = glyphWidth;
+                    }
+                }
+                else {
+                    currentWidth += glyphWidth;
+                }
+            }
+        }
+        if (startChunk < line.length) {
+            chunks.push(line.substring(startChunk, line.length));
+        }
+        return chunks;
+    }
     async _getAppearance(evaluator, task, annotationStorage) {
         const isPassword = this.hasFieldFlag(AnnotationFieldFlag.PASSWORD);
         if (!annotationStorage || isPassword)
@@ -1190,8 +1247,8 @@ class WidgetAnnotation extends Annotation {
             // the file as expected.
             this.data.defaultAppearanceData = parseDefaultAppearance((this._defaultAppearance = "/Helvetica 0 Tf 0 g"));
         }
-        const [defaultAppearance, fontSize] = this.#computeFontSize(totalHeight, lineCount);
-        const font = await this._getFontData(evaluator, task);
+        const font = await this.#getFontData(evaluator, task);
+        const [defaultAppearance, fontSize] = this.#computeFontSize(totalHeight - defaultPadding, totalWidth - 2 * hPadding, value, font, lineCount);
         let descent = font.descent;
         if (isNaN(descent)) {
             descent = 0;
@@ -1219,7 +1276,7 @@ class WidgetAnnotation extends Annotation {
             ` 1 0 0 1 0 0 Tm ${renderedText}` +
             " ET Q EMC");
     }
-    async _getFontData(evaluator, task) {
+    async #getFontData(evaluator, task) {
         const operatorList = new OperatorList();
         const initialState = {
             clone() { return this; },
@@ -1229,33 +1286,72 @@ class WidgetAnnotation extends Annotation {
         /* fontRef = */ undefined, operatorList, task, initialState);
         return initialState.font;
     }
-    #computeFontSize(height, lineCount) {
+    #getTextWidth(text, font) {
+        return (font
+            .charsToGlyphs(text)
+            .reduce((width, glyph) => width + glyph.width, 0) / 1000);
+    }
+    #computeFontSize(height, width, text, font, lineCount) {
         let { fontSize } = this.data.defaultAppearanceData;
         if (!fontSize) {
             // A zero value for size means that the font shall be auto-sized:
             // its size shall be computed as a function of the height of the
             // annotation rectangle (see 12.7.3.3).
-            const roundWithOneDigit = (x) => Math.round(x * 10) / 10;
-            // Represent the percentage of the font size over the height
-            // of a single-line field.
-            const FONT_FACTOR = 0.8;
+            const roundWithTwoDigits = (x) => Math.floor(x * 100) / 100;
+            // Represent the percentage of the height of a single-line field over
+            // the font size.
+            // Acrobat seems to use this value.
+            const LINE_FACTOR = 1.35;
             if (lineCount === -1) {
-                fontSize = roundWithOneDigit(FONT_FACTOR * height);
+                const textWidth = this.#getTextWidth(text, font);
+                fontSize = roundWithTwoDigits(Math.min(height / LINE_FACTOR, width / textWidth));
             }
             else {
+                const lines = text.split(/\r\n?|\n/);
+                const cachedLines = [];
+                for (const line of lines) {
+                    const encoded = font.encodeString(line).join("");
+                    const glyphs = font.charsToGlyphs(encoded);
+                    const positions = font.getCharPositions(encoded);
+                    cachedLines.push({
+                        line: encoded,
+                        glyphs,
+                        positions,
+                    });
+                }
+                const isTooBig = (fsize) => {
+                    // Return true when the text doesn't fit the given height.
+                    let totalHeight = 0;
+                    for (const cache of cachedLines) {
+                        const chunks = this._splitLine(undefined, font, fsize, width, cache);
+                        totalHeight += chunks.length * fsize;
+                        if (totalHeight > height) {
+                            return true;
+                        }
+                    }
+                    return false;
+                };
                 // Hard to guess how many lines there are.
                 // The field may have been sized to have 10 lines
                 // and the user entered only 1 so if we get font size from
                 // height and number of lines then we'll get something too big.
                 // So we compute a fake number of lines based on height and
-                // a font size equal to 10.
+                // a font size equal to 12 (this is the default font size in
+                // Acrobat).
                 // Then we'll adjust font size to what we have really.
-                fontSize = 10;
-                let lineHeight = fontSize / FONT_FACTOR;
+                fontSize = 12;
+                let lineHeight = fontSize * LINE_FACTOR;
                 let numberOfLines = Math.round(height / lineHeight);
                 numberOfLines = Math.max(numberOfLines, lineCount);
-                lineHeight = height / numberOfLines;
-                fontSize = roundWithOneDigit(FONT_FACTOR * lineHeight);
+                while (true) {
+                    lineHeight = height / numberOfLines;
+                    fontSize = roundWithTwoDigits(lineHeight / LINE_FACTOR);
+                    if (isTooBig(fontSize)) {
+                        numberOfLines++;
+                        continue;
+                    }
+                    break;
+                }
             }
             const { fontName, fontColor } = this.data.defaultAppearanceData;
             this._defaultAppearance = createDefaultAppearance({
@@ -1268,12 +1364,7 @@ class WidgetAnnotation extends Annotation {
     }
     _renderText(text, font, fontSize, totalWidth, alignment, hPadding, vPadding) {
         // We need to get the width of the text in order to align it correctly
-        const glyphs = font.charsToGlyphs(text);
-        const scale = fontSize / 1000;
-        let width = 0;
-        for (const glyph of glyphs) {
-            width += glyph.width * scale;
-        }
+        const width = this.#getTextWidth(text, font) * fontSize;
         let shift;
         if (alignment === 1) {
             // Center
@@ -1375,7 +1466,7 @@ class TextWidgetAnnotation extends WidgetAnnotation {
             " ET Q EMC");
     }
     _getMultilineAppearance(defaultAppearance, text, font, fontSize, width, height, alignment, hPadding, vPadding) {
-        const lines = text.split(/\r\n|\r|\n/);
+        const lines = text.split(/\r\n?|\n/);
         const buf = [];
         const totalWidth = width - 2 * hPadding;
         for (const line of lines) {
@@ -1391,65 +1482,6 @@ class TextWidgetAnnotation extends WidgetAnnotation {
             defaultAppearance +
             ` 1 0 0 1 0 ${height} Tm ${renderedText}` +
             " ET Q EMC");
-    }
-    _splitLine(line, font, fontSize, width) {
-        // TODO: need to handle chars which are not in the font.
-        line = font.encodeString(line).join("");
-        const glyphs = font.charsToGlyphs(line);
-        if (glyphs.length <= 1) {
-            // Nothing to split
-            return [line];
-        }
-        const positions = font.getCharPositions(line);
-        const scale = fontSize / 1000;
-        const chunks = [];
-        let lastSpacePosInStringStart = -1, lastSpacePosInStringEnd = -1, lastSpacePos = -1, startChunk = 0, currentWidth = 0;
-        for (let i = 0, ii = glyphs.length; i < ii; i++) {
-            const [start, end] = positions[i];
-            const glyph = glyphs[i];
-            const glyphWidth = glyph.width * scale;
-            if (glyph.unicode === " ") {
-                if (currentWidth + glyphWidth > width) {
-                    // We can break here
-                    chunks.push(line.substring(startChunk, start));
-                    startChunk = start;
-                    currentWidth = glyphWidth;
-                    lastSpacePosInStringStart = -1;
-                    lastSpacePos = -1;
-                }
-                else {
-                    currentWidth += glyphWidth;
-                    lastSpacePosInStringStart = start;
-                    lastSpacePosInStringEnd = end;
-                    lastSpacePos = i;
-                }
-            }
-            else {
-                if (currentWidth + glyphWidth > width) {
-                    // We must break to the last white position (if available)
-                    if (lastSpacePosInStringStart !== -1) {
-                        chunks.push(line.substring(startChunk, lastSpacePosInStringEnd));
-                        startChunk = lastSpacePosInStringEnd;
-                        i = lastSpacePos + 1;
-                        lastSpacePosInStringStart = -1;
-                        currentWidth = 0;
-                    }
-                    else {
-                        // Just break in the middle of the word
-                        chunks.push(line.substring(startChunk, start));
-                        startChunk = start;
-                        currentWidth = glyphWidth;
-                    }
-                }
-                else {
-                    currentWidth += glyphWidth;
-                }
-            }
-        }
-        if (startChunk < line.length) {
-            chunks.push(line.substring(startChunk, line.length));
-        }
-        return chunks;
     }
     getFieldObject() {
         return {
@@ -1597,7 +1629,7 @@ class ButtonWidgetAnnotation extends WidgetAnnotation {
         let parentBuffer;
         const encrypt = evaluator.xref.encrypt;
         if (value) {
-            if ((this.parent instanceof Ref)) {
+            if (this.parent instanceof Ref) {
                 const parent = evaluator.xref.fetch(this.parent);
                 let parentTransform;
                 if (encrypt) {
@@ -1608,7 +1640,7 @@ class ButtonWidgetAnnotation extends WidgetAnnotation {
                 writeDict(parent, parentBuffer, parentTransform);
                 parentBuffer.push("\nendobj\n");
             }
-            else if ((this.parent instanceof Dict)) {
+            else if (this.parent instanceof Dict) {
                 this.parent.set("V", name);
             }
         }
@@ -1743,7 +1775,7 @@ class ButtonWidgetAnnotation extends WidgetAnnotation {
         // The parent field's `V` entry holds a `Name` object with the appearance
         // state of whichever child field is currently in the "on" state.
         const fieldParent = params.dict.get("Parent");
-        if ((fieldParent instanceof Dict)) {
+        if (fieldParent instanceof Dict) {
             this.parent = params.dict.getRaw("Parent");
             const fieldParentValue = fieldParent.get("V");
             if (fieldParentValue instanceof Name) {
@@ -1953,9 +1985,10 @@ class PopupAnnotation extends Annotation {
             return;
         }
         const parentSubtype = parentItem.get("Subtype");
-        this.data.parentType = (parentSubtype instanceof Name) ? parentSubtype.name : undefined;
+        this.data.parentType =
+            parentSubtype instanceof Name ? parentSubtype.name : undefined;
         const rawParent = parameters.dict.getRaw("Parent");
-        this.data.parentId = (rawParent instanceof Ref) ? rawParent.toString() : undefined;
+        this.data.parentId = rawParent instanceof Ref ? rawParent.toString() : undefined;
         const parentRect = parentItem.getArray("Rect");
         if (Array.isArray(parentRect) && parentRect.length === 4) {
             this.data.parentRect = Util.normalizeRect(parentRect);

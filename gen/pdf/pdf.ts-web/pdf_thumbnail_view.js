@@ -20,7 +20,7 @@
 /** @typedef {import("./interfaces").IRenderableView} IRenderableView */
 // eslint-disable-next-line max-len
 /** @typedef {import("./pdf_rendering_queue").PDFRenderingQueue} PDFRenderingQueue */
-import { getOutputScale, RenderingStates } from "./ui_utils.js";
+import { OutputScale, RenderingStates } from "./ui_utils.js";
 import { RenderingCancelledException } from "../pdf.ts-src/display/display_utils.js";
 import { html } from "../../lib/dom.js";
 /*81---------------------------------------------------------------------------*/
@@ -187,7 +187,7 @@ export class PDFThumbnailView {
         canvas.mozOpaque = true;
         // }
         const ctx = canvas.getContext("2d", { alpha: false });
-        const outputScale = getOutputScale(ctx);
+        const outputScale = new OutputScale();
         canvas.width = (upscaleFactor * this.canvasWidth * outputScale.sx) | 0;
         canvas.height = (upscaleFactor * this.canvasHeight * outputScale.sy) | 0;
         const transform = outputScale.scaled

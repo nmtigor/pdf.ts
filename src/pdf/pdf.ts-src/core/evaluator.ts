@@ -298,6 +298,7 @@ interface GetTextContentParms
   includeMarkedContent?:boolean;
   sink:StreamSink<Thread.main, "GetTextContent">;
   seenStyles?:Set<string>;
+  viewBox:rect_t;
 }
 
 interface CIDSystemInfo
@@ -511,6 +512,7 @@ export class PartialEvaluator
   globalImageCache;
   options;
   parsingType3Font = false;
+  type3FontRefs?:RefSet;
 
   constructor({
     xref,
@@ -1479,7 +1481,7 @@ export class PartialEvaluator
     fallbackFontDict?:FontDict,
     cssFontInfo?:CssFontInfo
   ) {
-    const errorFont = async ( font_y:FontDict | null ) => {
+    const errorFont = async ( font_y?:FontDict ) => {
       return new TranslatedFont({
         loadedName: "g_font_error",
         font: new ErrorFont(`Font "${fontName}" is not available.`),
@@ -1514,7 +1516,7 @@ export class PartialEvaluator
       if (!this.options.ignoreErrors && !this.parsingType3Font) 
       {
         warn(`${partialMsg}.`);
-        return errorFont( null );
+        return errorFont();
       }
       // Font not found -- sending unsupported feature notification.
       this.handler.send("UnsupportedFeature", {
@@ -1527,6 +1529,11 @@ export class PartialEvaluator
       if( fallbackFontDict )
            fontRef = fallbackFontDict;
       else fontRef = PartialEvaluator.fallbackFontDict;
+    }
+
+    if( this.parsingType3Font && this.type3FontRefs!.has(<Ref>fontRef) )
+    {
+      return errorFont();
     }
 
     if( this.fontCache.has(<Ref>fontRef) )
@@ -1558,14 +1565,14 @@ export class PartialEvaluator
     }
     const { descriptor, hash } = preEvaluatedFont;
 
-    const fontRefIsRef = (fontRef instanceof Ref);
+    const fontRefIsRef = fontRef instanceof Ref;
     let fontID:string | undefined;
     if( fontRefIsRef )
     {
       fontID = `f${fontRef!.toString()}`;
     }
 
-    if( hash && (descriptor instanceof Dict) )
+    if( hash && descriptor instanceof Dict )
     {
       if( !descriptor.fontAliases )
       {
@@ -1812,7 +1819,7 @@ export class PartialEvaluator
       const pattern = <BaseStream | Dict | undefined>this.xref.fetchIfRef( rawPattern! );
       if( pattern )
       {
-        const dict = (pattern instanceof BaseStream) ? pattern.dict! : pattern;
+        const dict = pattern instanceof BaseStream ? pattern.dict! : pattern;
         const typeNum = <PatternType>dict.get("PatternType");
 
         if( typeNum === PatternType.TILING )
@@ -1886,7 +1893,7 @@ export class PartialEvaluator
         // Recursively parse a subarray.
         this._parseVisibilityExpression( object, nestingCounter, nestedResult );
       }
-      else if( (raw instanceof Ref) )
+      else if( raw instanceof Ref )
       {
         // Reference to an OCG dictionary.
         currentResult.push( (<Ref>raw).toString() );
@@ -1936,7 +1943,7 @@ export class PartialEvaluator
 
       const optionalContentGroups = optionalContent.get("OCGs");
       if( Array.isArray(optionalContentGroups)
-       || (optionalContentGroups instanceof Dict)
+       || optionalContentGroups instanceof Dict
       ) {
         const groupIds:(string | undefined)[] = [];
         if( Array.isArray(optionalContentGroups) )
@@ -1955,10 +1962,10 @@ export class PartialEvaluator
         return {
           type: optionalContentType,
           ids: groupIds,
-          policy: (v instanceof Name) ? v.name : undefined,
+          policy: v instanceof Name ? v.name : undefined,
         };
       } 
-      else if( (optionalContentGroups instanceof Ref) )
+      else if( optionalContentGroups instanceof Ref )
       {
         return {
           type: optionalContentType,
@@ -2628,11 +2635,11 @@ export class PartialEvaluator
     task,
     resources,
     stateManager,
-    normalizeWhitespace=false,
     combineTextItems=false,
     includeMarkedContent=false,
     sink,
     seenStyles=new Set(),
+    viewBox,
   }:GetTextContentParms ) 
   {
     // Ensure that `resources`/`stateManager` is correctly initialized,
@@ -2640,8 +2647,6 @@ export class PartialEvaluator
     resources = resources || Dict.empty;
     stateManager = stateManager || new StateManager( new TextState() );
 
-    const WhitespaceRegexp = /\s/g;
-    const DiacriticRegExp = new RegExp("^\\p{Mn}$", "u");
     const NormalizedUnicodes = getNormalizedUnicodes();
 
     const textContent = {
@@ -2818,33 +2823,15 @@ export class PartialEvaluator
       textContentItem.textAdvanceScale = scaleFactor;
     }
 
-    function replaceWhitespace( str:string )
-    {
-      // Replaces all whitespaces with standard spaces (0x20), to avoid
-      // alignment issues between the textLayer and the canvas if the text
-      // contains e.g. tabs (fixes issue6612.pdf).
-      const ii = str.length;
-      let i = 0,
-        code;
-      while( i < ii && (code = str.charCodeAt(i)) >= 0x20 && code <= 0x7f )
-      {
-        i++;
-      }
-      return i < ii ? str.replace(WhitespaceRegexp, " ") : str;
-    }
-
     function runBidiTransform( textChunk:TextContentItem ):BidiTextContentItem
     {
       const text = textChunk.str.join("");
       const bidiResult = bidi(text, -1, textChunk.vertical);
-      const str = normalizeWhitespace
-        ? replaceWhitespace(bidiResult.str)
-        : bidiResult.str;
       return {
-        str,
+        str: bidiResult.str,
         dir: bidiResult.dir,
-        width: textChunk.totalWidth,
-        height: textChunk.totalHeight,
+        width: Math.abs(textChunk.totalWidth),
+        height: Math.abs(textChunk.totalHeight),
         transform: textChunk.transform,
         fontName: textChunk.fontName,
         hasEOL: textChunk.hasEOL,
@@ -2875,26 +2862,46 @@ export class PartialEvaluator
         });
     }
 
+    function applyInverseRotation( x:number, y:number, matrix:matrix_t )
+    {
+      const scale = Math.hypot(matrix[0], matrix[1]);
+      return [
+        (matrix[0] * x + matrix[1] * y) / scale,
+        (matrix[2] * x + matrix[3] * y) / scale,
+      ];
+    }
+
     function compareWithLastPosition()
     {
+      const currentTransform = getCurrentTextTransform();
+      let posX = currentTransform[4];
+      let posY = currentTransform[5];
+
+      const shiftedX = posX - viewBox[0];
+      const shiftedY = posY - viewBox[1];
+
+      if( shiftedX < 0
+       || shiftedX > viewBox[2]
+       || shiftedY < 0
+       || shiftedY > viewBox[3]
+      ) {
+        return false;
+      }
+
       if( !combineTextItems
        || !textState.font
        || !textContentItem.prevTransform
       ) {
-        return;
+        return true;
       }
 
-      const currentTransform = getCurrentTextTransform();
-      let posX = currentTransform[4];
-      let posY = currentTransform[5];
       let lastPosX = textContentItem.prevTransform[4];
       let lastPosY = textContentItem.prevTransform[5];
 
-      if( lastPosX === posX && lastPosY === posY ) return;
+      if( lastPosX === posX && lastPosY === posY ) return true;
 
-      let rotate = 0;
+      let rotate = -1;
       // Take into account the rotation is the current transform.
-      // Only rotations with an angle of 0, 90, 180 or 270 are considered.
       if( currentTransform[0]
        && currentTransform[1] === 0
        && currentTransform[2] === 0
@@ -2905,68 +2912,88 @@ export class PartialEvaluator
        && currentTransform[0] === 0
        && currentTransform[3] === 0
       ) {
-        rotate += currentTransform[1] > 0 ? 90 : 270;
+        rotate = currentTransform[1] > 0 ? 90 : 270;
       }
 
-      if (rotate !== 0) 
+      switch( rotate )
       {
-        switch (rotate) 
-        {
-          case 90:
-            [posX, posY] = [posY, posX];
-            [lastPosX, lastPosY] = [lastPosY, lastPosX];
-            break;
-          case 180:
-            [posX, posY, lastPosX, lastPosY] = [
-              -posX,
-              -posY,
-              -lastPosX,
-              -lastPosY,
-            ];
-            break;
-          case 270:
-            [posX, posY] = [-posY, -posX];
-            [lastPosX, lastPosY] = [-lastPosY, -lastPosX];
-            break;
-        }
+        case 0:
+          break;
+        case 90:
+          [posX, posY] = [posY, posX];
+          [lastPosX, lastPosY] = [lastPosY, lastPosX];
+          break;
+        case 180:
+          [posX, posY, lastPosX, lastPosY] = [
+            -posX,
+            -posY,
+            -lastPosX,
+            -lastPosY,
+          ];
+          break;
+        case 270:
+          [posX, posY] = [-posY, -posX];
+          [lastPosX, lastPosY] = [-lastPosY, -lastPosX];
+          break;
+        default:
+          // This is not a 0, 90, 180, 270 rotation so:
+          //  - remove the scale factor from the matrix to get a rotation matrix
+          //  - apply the inverse (which is the transposed) to the positions
+          // and we can then compare positions of the glyphes to detect
+          // a whitespace.
+          [posX, posY] = applyInverseRotation(posX, posY, currentTransform);
+          [lastPosX, lastPosY] = applyInverseRotation(
+            lastPosX,
+            lastPosY,
+            textContentItem.prevTransform
+          );
       }
 
       if( textState.font.vertical ) 
       {
         const advanceY = (lastPosY - posY) / textContentItem.textAdvanceScale;
         const advanceX = posX - lastPosX;
-        if (advanceY < textContentItem.negativeSpaceMax) 
+
+        // When the total height of the current chunk is negative
+        // then we're writing from bottom to top.
+        const textOrientation = Math.sign(textContentItem.height);
+        if( advanceY < textOrientation * textContentItem.negativeSpaceMax )
         {
           if (
             Math.abs(advanceX) >
             0.5 * textContentItem.width /* not the same column */
           ) {
             appendEOL();
-            return;
+            return true;
           }
 
           flushTextContentItem();
-          return;
+          return true;
         }
 
-        if (Math.abs(advanceX) > textContentItem.height) 
+        if( Math.abs(advanceX) > textContentItem.width )
         {
           appendEOL();
-          return;
+          return true;
         }
-        if (advanceY <= textContentItem.trackingSpaceMin) 
+        if( advanceY <= textOrientation * textContentItem.trackingSpaceMin )
         {
           textContentItem.height += advanceY;
         } 
-        else if (!addFakeSpaces(advanceY, textContentItem.prevTransform)) 
-        {
+        else if(
+          !addFakeSpaces(
+            advanceY,
+            textContentItem.prevTransform,
+            textOrientation
+          )
+        ) {
           if (textContentItem.str.length === 0) 
           {
             textContent.items.push({
               str: " ",
               dir: "ltr",
               width: 0,
-              height: advanceY,
+              height: Math.abs(advanceY),
               transform: textContentItem.prevTransform,
               fontName: textContentItem.fontName,
               hasEOL: false,
@@ -2977,42 +3004,47 @@ export class PartialEvaluator
           }
         }
 
-        return;
+        return true;
       }
 
       const advanceX = (posX - lastPosX) / textContentItem.textAdvanceScale;
       const advanceY = posY - lastPosY;
-      if (advanceX < textContentItem.negativeSpaceMax) 
+
+      // When the total width of the current chunk is negative
+      // then we're writing from right to left.
+      const textOrientation = Math.sign(textContentItem.width);
+      if( advanceX < textOrientation * textContentItem.negativeSpaceMax )
       {
         if (
           Math.abs(advanceY) >
           0.5 * textContentItem.height /* not the same line */
         ) {
           appendEOL();
-          return;
+          return true;
         }
         flushTextContentItem();
-        return;
+        return true;
       }
 
       if (Math.abs(advanceY) > textContentItem.height) 
       {
         appendEOL();
-        return;
+        return true;
       }
 
-      if (advanceX <= textContentItem.trackingSpaceMin) 
+      if( advanceX <= textOrientation * textContentItem.trackingSpaceMin )
       {
         textContentItem.width += advanceX;
       } 
-      else if (!addFakeSpaces(advanceX, textContentItem.prevTransform)) 
-      {
-        if (textContentItem.str.length === 0) 
+      else if (
+        !addFakeSpaces(advanceX, textContentItem.prevTransform, textOrientation)
+      ) {
+        if( textContentItem.str.length === 0 )
         {
           textContent.items.push({
             str: " ",
             dir: "ltr",
-            width: advanceX,
+            width: Math.abs(advanceX),
             height: 0,
             transform: textContentItem.prevTransform,
             fontName: textContentItem.fontName,
@@ -3023,6 +3055,8 @@ export class PartialEvaluator
           textContentItem.width += advanceX;
         }
       }
+
+      return true;
     }
 
     function buildTextContentItem({ chars, extraSpacing }:BuildTextContentItemParms )
@@ -3051,9 +3085,12 @@ export class PartialEvaluator
 
       const glyphs = font.charsToGlyphs(chars);
       const scale = textState.fontMatrix[0] * textState.fontSize;
+
       for( let i = 0, ii = glyphs.length; i < ii; i++ )
       {
         const glyph = glyphs[i];
+        if( glyph.isInvisibleFormatMark ) continue;
+
         let charSpacing =
           textState.charSpacing + (i + 1 === ii ? extraSpacing : 0);
 
@@ -3064,13 +3101,12 @@ export class PartialEvaluator
         }
         let scaledDim = glyphWidth! * scale;
 
-        let glyphUnicode = glyph.unicode;
         if (
-          glyphUnicode === " " &&
+          glyph.isWhitespace &&
           (i === 0 ||
             i + 1 === ii ||
-            glyphs[i - 1].unicode === " " ||
-            glyphs[i + 1].unicode === " " ||
+            glyphs[i - 1].isWhitespace ||
+            glyphs[i + 1].isWhitespace ||
             extraSpacing)
         ) {
           // Don't push a " " in the textContentItem
@@ -3093,17 +3129,21 @@ export class PartialEvaluator
           continue;
         }
 
-        compareWithLastPosition();
+        if( !compareWithLastPosition() )
+        {
+          // The glyph is not in page so just skip it.
+          continue;
+        }
 
         // Must be called after compareWithLastPosition because
         // the textContentItem could have been flushed.
         const textChunk = ensureTextContentItem();
-        if (DiacriticRegExp.test(glyph.unicode)) 
+        if( glyph.isZeroWidthDiacritic )
         {
           scaledDim = 0;
         }
 
-        if (!font.vertical) 
+        if( !font.vertical )
         {
           scaledDim *= textState.textHScale;
           textState.translateTextMatrix(scaledDim, 0);
@@ -3121,13 +3161,23 @@ export class PartialEvaluator
           textChunk.prevTransform = getCurrentTextTransform();
         }
 
-        glyphUnicode = <any>NormalizedUnicodes[glyphUnicode] || glyphUnicode;
-        glyphUnicode = reverseIfRtl(glyphUnicode);
-        textChunk.str.push(glyphUnicode);
-
-        if (charSpacing) 
+        if( glyph.isWhitespace )
         {
-          if (!font.vertical) 
+          // Replaces all whitespaces with standard spaces (0x20), to avoid
+          // alignment issues between the textLayer and the canvas if the text
+          // contains e.g. tabs (fixes issue6612.pdf).
+          textChunk.str.push(" ");
+        }
+        else {
+            let glyphUnicode = glyph.unicode;
+          glyphUnicode = <any>NormalizedUnicodes[glyphUnicode] || glyphUnicode;
+          glyphUnicode = reverseIfRtl(glyphUnicode);
+          textChunk.str.push(glyphUnicode);
+        }
+
+        if( charSpacing )
+        {
+          if( !font.vertical )
           {
             textState.translateTextMatrix(
               charSpacing * textState.textHScale,
@@ -3143,7 +3193,7 @@ export class PartialEvaluator
 
     function appendEOL()
     {
-      if (textContentItem.initialized) 
+      if( textContentItem.initialized )
       {
         textContentItem.hasEOL = true;
         flushTextContentItem();
@@ -3161,12 +3211,13 @@ export class PartialEvaluator
       }
     }
 
-    function addFakeSpaces( width:number, transf?:matrix_t )
+    function addFakeSpaces( width:number, transf:matrix_t | undefined, 
+      textOrientation:number )
     {
-      if( textContentItem.spaceInFlowMin <= width 
-       && width <= textContentItem.spaceInFlowMax
+      if( textOrientation * textContentItem.spaceInFlowMin <= width
+       && width <= textOrientation * textContentItem.spaceInFlowMax
       ) {
-        if (textContentItem.initialized) 
+        if( textContentItem.initialized )
         {
           textContentItem.str.push(" ");
         }
@@ -3188,8 +3239,8 @@ export class PartialEvaluator
         // TODO: check if using the orientation from last chunk is
         // better or not.
         dir: "ltr",
-        width,
-        height,
+        width: Math.abs(width),
+        height: Math.abs(height),
         transform: transf || getCurrentTextTransform(),
         fontName,
         hasEOL: false,
@@ -3523,11 +3574,11 @@ export class PartialEvaluator
                     task,
                     resources: <Dict>xobj.dict!.get("Resources") || resources,
                     stateManager: xObjStateManager,
-                    normalizeWhitespace,
                     combineTextItems,
                     includeMarkedContent,
                     sink: sinkWrapper,
                     seenStyles,
+                    viewBox,
                   })
                   .then( () => {
                     if( !sinkWrapper.enqueueInvoked )
@@ -3615,7 +3666,7 @@ export class PartialEvaluator
             {
               textContent.items.push({
                 type: "beginMarkedContent",
-                tag: (args[0] instanceof Name) ? args[0].name : undefined,
+                tag: args[0] instanceof Name ? args[0].name : undefined,
               });
             }
             break;
@@ -3633,7 +3684,7 @@ export class PartialEvaluator
                 id: Number.isInteger(mcid)
                   ? `${self.idFactory.getPageObjId()}_mcid${<number>mcid}`
                   : undefined,
-                tag: (args[0] instanceof Name) ? args[0].name : undefined,
+                tag: args[0] instanceof Name ? args[0].name : undefined,
               });
             }
             break;
@@ -3725,9 +3776,8 @@ export class PartialEvaluator
       if( encoding instanceof Dict )
       {
         baseEncodingName = <Name | undefined>encoding.get("BaseEncoding");
-        baseEncodingName = (baseEncodingName instanceof Name)
-          ? baseEncodingName.name
-          : undefined;
+        baseEncodingName =
+          baseEncodingName instanceof Name ? baseEncodingName.name : undefined;
         // Load the differences between the base and original
         if( encoding.has("Differences") ) 
         {
@@ -4282,7 +4332,7 @@ export class PartialEvaluator
       monospace = true;
     } 
     else {
-      widths = (<() => Record<string, number>>glyphWidths)(); // expand lazy widths array
+      widths = glyphWidths(); // expand lazy widths array
     }
 
     return {
@@ -4363,7 +4413,7 @@ export class PartialEvaluator
       {
         hash.update( encoding.name );
       } 
-      else if( (encoding instanceof Ref) )
+      else if( encoding instanceof Ref )
       {
         hash.update( encoding.toString() );
       } 
@@ -4375,7 +4425,7 @@ export class PartialEvaluator
           {
             hash.update( entry.name );
           } 
-          else if( (entry instanceof Ref) )
+          else if( entry instanceof Ref )
           {
             hash.update( entry.toString() );
           } 
@@ -4392,8 +4442,8 @@ export class PartialEvaluator
               {
                 diffBuf[j] = diffEntry.name;
               } 
-              else if( (typeof diffEntry === "number") 
-               || (diffEntry instanceof Ref) 
+              else if( typeof diffEntry === "number"
+               || diffEntry instanceof Ref
               ) {
                 diffBuf[j] = diffEntry.toString();
               }
@@ -4429,7 +4479,7 @@ export class PartialEvaluator
         const widthsBuf = [];
         for( const entry of widths )
         {
-          if( (typeof entry === "number") || (entry instanceof Ref) ) 
+          if( typeof entry === "number" || entry instanceof Ref )
           {
             widthsBuf.push( entry.toString() );
           }
@@ -4437,7 +4487,7 @@ export class PartialEvaluator
         hash.update( widthsBuf.join() );
       }
 
-      if (composite) 
+      if( composite )
       {
         hash.update("compositeFont");
 
@@ -4447,16 +4497,16 @@ export class PartialEvaluator
           const widthsBuf = [];
           for (const entry of compositeWidths) 
           {
-            if( (typeof entry === "number") || (entry instanceof Ref) ) 
+            if( typeof entry === "number" || entry instanceof Ref ) 
             {
               widthsBuf.push( (<number | Ref>entry).toString() );
             } 
-            else if (Array.isArray(entry)) 
+            else if( Array.isArray(entry) )
             {
               const subWidthsBuf = [];
-              for (const element of entry) 
+              for( const element of entry )
               {
-                if( (typeof element === "number") || (element instanceof Ref) ) 
+                if( typeof element === "number" || element instanceof Ref )
                 {
                   subWidthsBuf.push( element.toString() );
                 }
@@ -4810,7 +4860,7 @@ interface TranslatedFontCtorParms
 {
   loadedName:string;
   font:Font | ErrorFont;
-  dict:FontDict | null;
+  dict:FontDict | undefined;
   evaluatorOptions:EvaluatorOptions | undefined;
 }
 
@@ -4871,10 +4921,10 @@ export class TranslatedFont
 
   loadType3Data( evaluator:PartialEvaluator, resources:Dict, task:WorkerTask )
   {
-    if (this.type3Loaded) {
-      return this.type3Loaded;
-    }
-    if (!this.font.isType3Font) {
+    if( this.type3Loaded ) return this.type3Loaded;
+
+    if( !this.font.isType3Font )
+    {
       throw new Error("Must be a Type3 font.");
     }
     // When parsing Type3 glyphs, always ignore them if there are errors.
@@ -4882,6 +4932,13 @@ export class TranslatedFont
     // make sense to only be able to render a Type3 glyph partially.
     const type3Evaluator = evaluator.clone({ ignoreErrors: false });
     type3Evaluator.parsingType3Font = true;
+    // Prevent circular references in Type3 fonts.
+    const type3FontRefs = new RefSet(evaluator.type3FontRefs);
+    if( this.dict!.objId && !type3FontRefs.has(this.dict!.objId) )
+    {
+      type3FontRefs.put(this.dict!.objId);
+    }
+    type3Evaluator.type3FontRefs = type3FontRefs;
 
     const translatedFont = this.font,
       type3Dependencies = this.type3Dependencies;
@@ -5276,7 +5333,7 @@ export class EvaluatorPreprocessor
 
   static get MAX_INVALID_PATH_OPS() 
   {
-    return shadow(this, "MAX_INVALID_PATH_OPS", 20);
+    return shadow(this, "MAX_INVALID_PATH_OPS", 10);
   }
 
   parser:Parser;

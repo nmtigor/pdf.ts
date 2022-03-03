@@ -20,7 +20,7 @@ import { EventBus, EventMap } from "./event_utils.js";
 export declare const enum PagesCountLimit {
     FORCE_SCROLL_MODE_PAGE = 15000,
     FORCE_LAZY_PAGE_INIT = 7500,
-    PAUSE_EAGER_PAGE_INIT = 500
+    PAUSE_EAGER_PAGE_INIT = 250
 }
 export interface PDFViewerOptions {
     /**

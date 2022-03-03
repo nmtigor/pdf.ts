@@ -35,9 +35,8 @@ export class Jbig2Stream extends ImageStream {
     }
     /** @implements */
     readBlock() {
-        if (this.eof) {
+        if (this.eof)
             return;
-        }
         const jbig2Image = new Jbig2Image();
         const chunks = [];
         if (this.params instanceof Dict) {

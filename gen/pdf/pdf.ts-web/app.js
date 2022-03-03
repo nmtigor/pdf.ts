@@ -19,9 +19,9 @@
 import { createPromiseCap } from "../../lib/promisecap.js";
 import "../../lib/jslang.js";
 import { animationStarted, apiPageLayoutToViewerModes, apiPageModeToSidebarView, AutoPrintRegExp, DEFAULT_SCALE_VALUE, getActiveOrFocusedElement, isValidRotation, isValidScrollMode, isValidSpreadMode, noContextMenuHandler, normalizeWheelEventDirection, parseQueryString, ProgressBar, RendererType, RenderingStates, ScrollMode, SidebarView, SpreadMode, TextLayerMode, } from "./ui_utils.js";
-import { AppOptions, compatibilityParams, OptionKind, ViewOnLoad } from "./app_options.js";
+import { AppOptions, OptionKind, ViewOnLoad } from "./app_options.js";
 import { AutomationEventBus, EventBus } from "./event_utils.js";
-import { build, getDocument, getFilenameFromUrl, GlobalWorkerOptions, InvalidPDFException, LinkTarget, loadScript, MissingPDFException, PDFWorker, shadow, UnexpectedResponseException, UNSUPPORTED_FEATURES, version, } from "../pdf.ts-src/pdf.js";
+import { build, getDocument, getFilenameFromUrl, GlobalWorkerOptions, InvalidPDFException, loadScript, MissingPDFException, PDFWorker, shadow, UnexpectedResponseException, UNSUPPORTED_FEATURES, version, } from "../pdf.ts-src/pdf.js";
 import { CursorTool, PDFCursorTools } from "./pdf_cursor_tools.js";
 import { OverlayManager } from "./overlay_manager.js";
 import { PasswordPrompt } from "./password_prompt.js";
@@ -31,7 +31,7 @@ import { PDFFindBar } from "./pdf_find_bar.js";
 import { PDFFindController } from "./pdf_find_controller.js";
 import { PDFHistory } from "./pdf_history.js";
 import { PDFLayerViewer } from "./pdf_layer_viewer.js";
-import { PDFLinkService } from "./pdf_link_service.js";
+import { LinkTarget, PDFLinkService } from "./pdf_link_service.js";
 import { PDFOutlineViewer } from "./pdf_outline_viewer.js";
 import { PDFPresentationMode } from "./pdf_presentation_mode.js";
 import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
@@ -341,16 +341,9 @@ export class PDFViewerApplication {
     }
     async #initializeViewerComponents() {
         const { appConfig, externalServices } = this;
-        let eventBus;
-        if (appConfig.eventBus) {
-            eventBus = appConfig.eventBus;
-        }
-        else if (externalServices.isInAutomation) {
-            eventBus = new AutomationEventBus();
-        }
-        else {
-            eventBus = new EventBus();
-        }
+        const eventBus = externalServices.isInAutomation
+            ? new AutomationEventBus()
+            : new EventBus();
         this.eventBus = eventBus;
         this.overlayManager = new OverlayManager();
         const pdfRenderingQueue = new PDFRenderingQueue();
@@ -499,9 +492,7 @@ export class PDFViewerApplication {
         return PDFPrintServiceFactory.instance.supportsPrinting;
     }
     get supportsFullscreen() {
-        return shadow(this, "supportsFullscreen", document.fullscreenEnabled ||
-            document.mozFullScreenEnabled ||
-            document.webkitFullscreenEnabled);
+        return shadow(this, "supportsFullscreen", document.fullscreenEnabled);
     }
     get supportsIntegratedFind() {
         return this.externalServices.supportsIntegratedFind;
@@ -800,9 +791,8 @@ export class PDFViewerApplication {
             url: this.baseUrl,
         })
             .then(download => {
-            if (!download) {
+            if (!download)
                 return;
-            }
             this.download({ sourceEventType: "download" });
         });
     };
@@ -813,6 +803,11 @@ export class PDFViewerApplication {
     _documentError(message, moreInfo) {
         this.#unblockDocumentLoadEvent();
         this._otherError(message, moreInfo);
+        this.eventBus.dispatch("documenterror", {
+            source: this,
+            message,
+            reason: moreInfo?.message ?? undefined,
+        });
     }
     /**
      * Show the error box; used for errors affecting e.g. only a single page.
@@ -1661,14 +1656,11 @@ validateFileURL = function (file) {
             // Hosted or local viewer, allow for any file locations
             return;
         }
-        const { origin, protocol } = new URL(file, window.location.href);
+        const fileOrigin = new URL(file, window.location.href).origin;
         // Removing of the following line will not guarantee that the viewer will
         // start accepting URLs from foreign origin -- CORS headers on the remote
         // server must be properly configured.
-        // IE10 / IE11 does not include an origin in `blob:`-URLs. So don't block
-        // any blob:-URL. The browser's same-origin policy will block requests to
-        // blob:-URLs from other origins, so this is safe.
-        if (origin !== viewerOrigin && protocol !== "blob:") {
+        if (fileOrigin !== viewerOrigin) {
             throw new Error("file origin does not match viewer's");
         }
     }
@@ -1944,27 +1936,15 @@ function webViewerHashchange(evt) {
 let webViewerFileInputChange;
 let webViewerOpenFile;
 webViewerFileInputChange = (evt) => {
-    if (viewerapp.pdfViewer?.isInPresentationMode) {
-        return; // Opening a new PDF file isn't supported in Presentation Mode.
-    }
+    // Opening a new PDF file isn't supported in Presentation Mode.
+    if (viewerapp.pdfViewer?.isInPresentationMode)
+        return;
     const file = evt.fileInput.files[0];
-    if (!compatibilityParams.disableCreateObjectURL) {
-        let url = URL.createObjectURL(file);
-        if (file.name) {
-            url = { url, originalUrl: file.name };
-        }
-        viewerapp.open(url);
+    let url = URL.createObjectURL(file);
+    if (file.name) {
+        url = { url, originalUrl: file.name };
     }
-    else {
-        viewerapp.setTitleUsingUrl(file.name);
-        // Read the local file into a Uint8Array.
-        const fileReader = new FileReader();
-        fileReader.onload = event => {
-            const buffer = event.target.result;
-            viewerapp.open(new Uint8Array(buffer));
-        };
-        fileReader.readAsArrayBuffer(file);
-    }
+    viewerapp.open(url);
 };
 webViewerOpenFile = (evt) => {
     const openFileInputName = viewerapp.appConfig.openFileInputName;
@@ -2052,6 +2032,7 @@ function webViewerFindFromUrlHash(evt) {
         entireWord: false,
         highlightAll: true,
         findPrevious: false,
+        matchDiacritics: true,
     });
 }
 function webViewerUpdateFindMatchesCount({ matchesCount }) {
@@ -2118,11 +2099,15 @@ function webViewerWheel(evt) {
         // NOTE: this check must be placed *after* preventDefault.
         if (zoomDisabledTimeout || document.visibilityState === "hidden")
             return;
-        const previousScale = pdfViewer.currentScale;
+        // It is important that we query deltaMode before delta{X,Y}, so that
+        // Firefox doesn't switch to DOM_DELTA_PIXEL mode for compat with other
+        // browsers, see https://bugzilla.mozilla.org/show_bug.cgi?id=1392460.
+        const deltaMode = evt.deltaMode;
         const delta = normalizeWheelEventDirection(evt);
+        const previousScale = pdfViewer.currentScale;
         let ticks = 0;
-        if (evt.deltaMode === WheelEvent.DOM_DELTA_LINE ||
-            evt.deltaMode === WheelEvent.DOM_DELTA_PAGE) {
+        if (deltaMode === WheelEvent.DOM_DELTA_LINE
+            || deltaMode === WheelEvent.DOM_DELTA_PAGE) {
             // For line-based devices, use one tick per event, because different
             // OSs have different defaults for the number lines. But we generally
             // want one "clicky" roll of the wheel (which produces one event) to

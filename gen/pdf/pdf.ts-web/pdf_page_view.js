@@ -35,7 +35,7 @@ import { createPromiseCap } from "../../lib/promisecap.js";
 import { PixelsPerInch, RenderingCancelledException, SVGGraphics } from "../pdf.ts-src/pdf.js";
 import { AnnotationMode } from "../pdf.ts-src/shared/util.js";
 import { NullL10n } from "./l10n_utils.js";
-import { approximateFraction, DEFAULT_SCALE, getOutputScale, RendererType, roundToDivide, TextLayerMode, RenderingStates } from "./ui_utils.js";
+import { approximateFraction, DEFAULT_SCALE, OutputScale, RendererType, roundToDivide, TextLayerMode, RenderingStates } from "./ui_utils.js";
 import { html } from "../../lib/dom.js";
 import { compatibilityParams } from "./app_options.js";
 const MAX_CANVAS_PIXELS = compatibilityParams.maxCanvasPixels || 16777216;
@@ -549,7 +549,6 @@ export class PDFPageView {
             return finishPaintTask().then(() => {
                 if (textLayer) {
                     const readableStream = pdfPage.streamTextContent({
-                        normalizeWhitespace: true,
                         includeMarkedContent: true,
                     });
                     textLayer.setTextContentStream(readableStream);
@@ -628,8 +627,7 @@ export class PDFPageView {
         this.canvas = canvas;
         canvas.mozOpaque = true;
         const ctx = canvas.getContext("2d", { alpha: false });
-        const outputScale = getOutputScale(ctx);
-        this.outputScale = outputScale;
+        const outputScale = (this.outputScale = new OutputScale());
         if (this.useOnlyCssZoom) {
             const actualSizeViewport = viewport.clone({
                 scale: PixelsPerInch.PDF_TO_CSS_UNITS,
@@ -638,7 +636,6 @@ export class PDFPageView {
             // of the page.
             outputScale.sx *= actualSizeViewport.width / viewport.width;
             outputScale.sy *= actualSizeViewport.height / viewport.height;
-            outputScale.scaled = true;
         }
         if (this.maxCanvasPixels > 0) {
             const pixelsInViewport = viewport.width * viewport.height;
@@ -646,7 +643,6 @@ export class PDFPageView {
             if (outputScale.sx > maxScale || outputScale.sy > maxScale) {
                 outputScale.sx = maxScale;
                 outputScale.sy = maxScale;
-                outputScale.scaled = true;
                 this.hasRestrictedScaling = true;
             }
             else {
@@ -662,9 +658,9 @@ export class PDFPageView {
         // Add the viewport so it's known what it was originally drawn with.
         this.paintedViewportMap.set(canvas, viewport);
         // Rendering area
-        const transform = !outputScale.scaled
-            ? undefined
-            : [outputScale.sx, 0, 0, outputScale.sy, 0, 0];
+        const transform = outputScale.scaled
+            ? [outputScale.sx, 0, 0, outputScale.sy, 0, 0]
+            : undefined;
         const renderContext = {
             canvasContext: ctx,
             transform,
@@ -709,8 +705,7 @@ export class PDFPageView {
         })
             .then(opList => {
             ensureNotCancelled();
-            const svgGfx = new SVGGraphics(pdfPage.commonObjs, pdfPage.objs, 
-            /* forceDataSchema = */ compatibilityParams.disableCreateObjectURL);
+            const svgGfx = new SVGGraphics(pdfPage.commonObjs, pdfPage.objs);
             return svgGfx.getSVG(opList, actualSizeViewport).then((svg) => {
                 ensureNotCancelled();
                 this.svg = svg;

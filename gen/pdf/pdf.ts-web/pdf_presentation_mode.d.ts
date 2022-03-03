@@ -46,7 +46,6 @@ export declare class PDFPresentationMode {
      * @return Indicating if the request was successful.
      */
     request(): boolean;
-    get isFullscreen(): boolean;
 }
 export {};
 //# sourceMappingURL=pdf_presentation_mode.d.ts.map

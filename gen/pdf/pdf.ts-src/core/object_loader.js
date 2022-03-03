@@ -23,15 +23,15 @@ import { BaseStream } from "./base_stream.js";
 function mayHaveChildren(value) {
     return (value instanceof Ref
         || value instanceof Dict
-        || Array.isArray(value)
-        || (value instanceof BaseStream));
+        || value instanceof BaseStream
+        || Array.isArray(value));
 }
 function addChildren(node, nodesToVisit) {
     let node_;
     if (node instanceof Dict) {
         node_ = node.getRawValues();
     }
-    else if ((node instanceof BaseStream)) {
+    else if (node instanceof BaseStream) {
         node_ = node.dict.getRawValues();
     }
     else if (!Array.isArray(node)) {

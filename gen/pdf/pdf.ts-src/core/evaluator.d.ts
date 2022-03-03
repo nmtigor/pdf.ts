@@ -76,6 +76,7 @@ interface GetTextContentParms {
     includeMarkedContent?: boolean;
     sink: StreamSink<Thread.main, "GetTextContent">;
     seenStyles?: Set<string>;
+    viewBox: rect_t;
 }
 interface CIDSystemInfo {
     registry: string;
@@ -206,6 +207,7 @@ export declare class PartialEvaluator {
     globalImageCache: GlobalImageCache | undefined;
     options: EvaluatorOptions;
     parsingType3Font: boolean;
+    type3FontRefs?: RefSet;
     constructor({ xref, handler, pageIndex, idFactory, fontCache, builtInCMapCache, standardFontDataCache, globalImageCache, options, }: PartialEvaluatorCtorParms);
     /**
      * Since Functions are only cached (locally) by reference, we can share one
@@ -233,7 +235,7 @@ export declare class PartialEvaluator {
     _parseVisibilityExpression(array: (Obj | undefined)[], nestingCounter: number, currentResult: VisibilityExpressionResult): void;
     parseMarkedContentProps(contentProperties: Dict | Name, resources: Dict): Promise<MarkedContentProps | undefined>;
     getOperatorList({ stream, task, resources, operatorList, initialState, fallbackFontDict, }: GetOperatorListParms): Promise<void>;
-    getTextContent({ stream, task, resources, stateManager, normalizeWhitespace, combineTextItems, includeMarkedContent, sink, seenStyles, }: GetTextContentParms): Promise<void>;
+    getTextContent({ stream, task, resources, stateManager, combineTextItems, includeMarkedContent, sink, seenStyles, viewBox, }: GetTextContentParms): Promise<void>;
     extractDataStructures(dict: FontDict, baseDict: FontDict, properties: FontProps): Promise<FontProps>;
     /**
      * Builds a char code to unicode map based on section 9.10 of the spec.
@@ -260,14 +262,14 @@ export declare class PartialEvaluator {
 interface TranslatedFontCtorParms {
     loadedName: string;
     font: Font | ErrorFont;
-    dict: FontDict | null;
+    dict: FontDict | undefined;
     evaluatorOptions: EvaluatorOptions | undefined;
 }
 export declare class TranslatedFont {
     #private;
     loadedName: string;
     font: Font | ErrorFont;
-    dict: FontDict | null;
+    dict: FontDict | undefined;
     _evaluatorOptions: EvaluatorOptions;
     type3Loaded?: Promise<void>;
     type3Dependencies: Set<string> | undefined;

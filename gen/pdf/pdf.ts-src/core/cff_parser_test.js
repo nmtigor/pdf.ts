@@ -362,7 +362,7 @@ console.log("%c>>>>>>> test CFFParser >>>>>>>", `color:${css_1}`);
         ]);
         parser.bytes = bytes.slice();
         const fdSelect = parser.parseFDSelect(0, 4);
-        console.assert(fdSelect.fdSelect.eq([9, 9, 0xa, 0xa]));
+        console.assert(eq(fdSelect.fdSelect, [9, 9, 0xa, 0xa]));
         console.assert(fdSelect.format === 3);
     }
     afterEach();

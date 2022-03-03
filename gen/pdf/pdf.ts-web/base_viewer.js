@@ -52,7 +52,7 @@ export var PagesCountLimit;
 (function (PagesCountLimit) {
     PagesCountLimit[PagesCountLimit["FORCE_SCROLL_MODE_PAGE"] = 15000] = "FORCE_SCROLL_MODE_PAGE";
     PagesCountLimit[PagesCountLimit["FORCE_LAZY_PAGE_INIT"] = 7500] = "FORCE_LAZY_PAGE_INIT";
-    PagesCountLimit[PagesCountLimit["PAUSE_EAGER_PAGE_INIT"] = 500] = "PAUSE_EAGER_PAGE_INIT";
+    PagesCountLimit[PagesCountLimit["PAUSE_EAGER_PAGE_INIT"] = 250] = "PAUSE_EAGER_PAGE_INIT";
 })(PagesCountLimit || (PagesCountLimit = {}));
 ;
 export class PDFPageViewBuffer {
@@ -236,6 +236,7 @@ export class BaseViewer {
     _previousScrollMode;
     _spreadMode;
     #scrollModePageState;
+    #onVisibilityChange;
     pdfDocument;
     constructor(options) {
         // if (this.constructor === BaseViewer) {
@@ -389,15 +390,33 @@ export class BaseViewer {
         // `this.#onePageRenderedCapability` thus won't be resolved.
         // To ensure that automatic printing, on document load, still works even in
         // those cases we force-allow fetching of all pages when:
+        //  - The current window/tab is inactive, which will prevent rendering since
+        //    `requestAnimationFrame` is being used; fixes bug 1746213.
         //  - The viewer is hidden in the DOM, e.g. in a `display: none` <iframe>
         //    element; fixes bug 1618621.
         //  - The viewer is visible, but none of the pages are (e.g. if the
         //    viewer is very small); fixes bug 1618955.
-        if (!this.container.offsetParent
+        if (document.visibilityState === "hidden"
+            || !this.container.offsetParent
             || this.getVisiblePages$().views.length === 0) {
             return Promise.resolve();
         }
-        return this.#onePageRenderedCapability.promise;
+        // Handle the window/tab becoming inactive *after* rendering has started;
+        // fixes (another part of) bug 1746213.
+        const visibilityChangePromise = new Promise(resolve => {
+            this.#onVisibilityChange = () => {
+                if (document.visibilityState !== "hidden")
+                    return;
+                resolve();
+                document.removeEventListener("visibilitychange", this.#onVisibilityChange);
+                this.#onVisibilityChange = undefined;
+            };
+            document.addEventListener("visibilitychange", this.#onVisibilityChange);
+        });
+        return Promise.race([
+            this.#onePageRenderedCapability.promise,
+            visibilityChangePromise,
+        ]);
     }
     /** @final */
     setDocument(pdfDocument) {
@@ -450,6 +469,10 @@ export class BaseViewer {
             this.#onePageRenderedCapability.resolve({ timestamp: evt.timestamp });
             this.eventBus._off("pagerendered", this._onAfterDraw);
             this._onAfterDraw = undefined;
+            if (this.#onVisibilityChange) {
+                document.removeEventListener("visibilitychange", this.#onVisibilityChange);
+                this.#onVisibilityChange = undefined;
+            }
         };
         this.eventBus._on("pagerendered", this._onAfterDraw);
         // Fetch a single page so we can get a viewport that will be the default
@@ -619,6 +642,10 @@ export class BaseViewer {
         if (this._onAfterDraw) {
             this.eventBus._off("pagerendered", this._onAfterDraw);
             this._onAfterDraw = undefined;
+        }
+        if (this.#onVisibilityChange) {
+            document.removeEventListener("visibilitychange", this.#onVisibilityChange);
+            this.#onVisibilityChange = undefined;
         }
         // Remove the pages from the DOM...
         this.viewer.textContent = "";
@@ -1151,7 +1178,7 @@ export class BaseViewer {
             if (!pageView.pdfPage) {
                 pageView.setPdfPage(pdfPage);
             }
-            if (!this.linkService._cachedPageNumber(pdfPage.ref)) {
+            if (!this.linkService._cachedPageNumber?.(pdfPage.ref)) {
                 this.linkService.cachePageRef(pageView.id, pdfPage.ref);
             }
             return pdfPage;

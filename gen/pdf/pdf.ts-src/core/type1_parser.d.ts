@@ -43,6 +43,7 @@ declare namespace NsType1Parser {
         readInt(): number;
         readBoolean(): 0 | 1;
         nextChar(): number;
+        prevChar(): number;
         getToken(): string | null;
         readCharStrings(bytes: Uint8Array | Uint8ClampedArray, lenIV: number): Uint8Array | Uint8ClampedArray;
         extractFontProgram(properties: FontProps): FontProgram;

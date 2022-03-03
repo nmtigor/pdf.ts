@@ -99,13 +99,9 @@ function wrapReason( reason:reason_t )
 {
   if( !( reason instanceof Error || isObjectLike(reason) ) )
   {
-    // #if !PRODUCTION || TESTING
-      throw new Error(
-        'wrapReason: Expected "reason" to be a (possibly cloned) Error.'
-      );
-    // #endif
-    warn('wrapReason: Expected "reason" to be a (possibly cloned) Error.');
-    return reason;
+    assert(0,
+      'wrapReason: Expected "reason" to be a (possibly cloned) Error.'
+    );
   }
   switch (reason.name) 
   {
@@ -279,9 +275,7 @@ export interface MActionMap
     Sinkchunk:undefined;
   }
   GetPageIndex:{
-    Data:{
-      ref:RefProxy;
-    }
+    Data:RefProxy;
     Return:number;
     Sinkchunk:undefined;
   }
@@ -334,7 +328,6 @@ export interface MActionMap
   GetTextContent:{
     Data:{
       pageIndex:number;
-      normalizeWhitespace:boolean;
       combineTextItems:boolean;
       includeMarkedContent:boolean
     }

@@ -20,7 +20,6 @@ import { viewerapp, PDFPrintServiceFactory } from "./app.js";
 import { AnnotationMode } from "../pdf.ts-src/shared/util.js";
 import { getXfaHtmlForPrinting } from "./print_utils.js";
 import { PixelsPerInch } from "../pdf.ts-src/display/display_utils.js";
-import { compatibilityParams } from "./app_options.js";
 /*81---------------------------------------------------------------------------*/
 let activeService;
 let overlayManager;
@@ -150,8 +149,7 @@ export class PDFPrintService {
         this.throwIfInactive();
         const img = html("img");
         const scratchCanvas = this.scratchCanvas;
-        if ("toBlob" in scratchCanvas
-            && !compatibilityParams.disableCreateObjectURL) {
+        if ("toBlob" in scratchCanvas) {
             scratchCanvas.toBlob(blob => {
                 img.src = URL.createObjectURL(blob);
             });

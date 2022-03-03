@@ -48,14 +48,14 @@ export class PasswordPrompt {
         // this.updateCallback = null;
         // this.reason = null;
         // Attach the event listeners.
-        this.submitButton.addEventListener("click", this.verify.bind(this));
-        this.cancelButton.addEventListener("click", this.close.bind(this));
+        this.submitButton.addEventListener("click", this.#verify.bind(this));
+        this.cancelButton.addEventListener("click", this.#cancel.bind(this));
         this.input.addEventListener("keydown", e => {
             if (e.keyCode === /* Enter = */ 13) {
-                this.verify();
+                this.#verify();
             }
         });
-        this.overlayManager.register(this.overlayName, this.container, this.close.bind(this), true);
+        this.overlayManager.register(this.overlayName, this.container, this.#cancel.bind(this), true);
     }
     async open() {
         await this.overlayManager.open(this.overlayName);
@@ -65,17 +65,20 @@ export class PasswordPrompt {
         }
         this.label.textContent = await this.l10n.get(`password_${passwordIncorrect ? "invalid" : "label"}`);
     }
-    close() {
-        this.overlayManager.close(this.overlayName).then(() => {
-            this.input.value = "";
-        });
+    async close() {
+        await this.overlayManager.close(this.overlayName);
+        this.input.value = "";
     }
-    verify() {
+    #verify() {
         const password = this.input.value;
         if (password?.length > 0) {
             this.close();
             this.updateCallback(password);
         }
+    }
+    #cancel() {
+        this.close();
+        this.updateCallback(new Error("PasswordPrompt cancelled."));
     }
     setUpdateCallback(updateCallback, reason) {
         this.updateCallback = updateCallback;

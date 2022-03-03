@@ -89,9 +89,9 @@ export class XRefMock {
         return this.fetch(ref);
     }
     fetchIfRef(obj) {
-        if (!(obj instanceof Ref))
-            return obj;
-        return this.fetch(obj);
+        if (obj instanceof Ref)
+            return this.fetch(obj);
+        return obj;
     }
     async fetchIfRefAsync(obj) {
         return this.fetchIfRef(obj);

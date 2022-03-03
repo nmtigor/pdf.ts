@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 import { html } from "../../lib/dom.js";
-import { removeNullCharacters } from "../pdf.ts-src/pdf.js";
+import { removeNullCharacters } from "./ui_utils.js";
 /*81---------------------------------------------------------------------------*/
 const TREEITEM_OFFSET_TOP = -100; // px
 const TREEITEM_SELECTED_CLASS = "selected";

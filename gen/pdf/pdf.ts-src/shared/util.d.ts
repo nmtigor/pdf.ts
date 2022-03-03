@@ -382,7 +382,6 @@ export declare class FormatError extends BaseException {
 export declare class AbortException extends BaseException {
     constructor(msg: string);
 }
-export declare function removeNullCharacters(str: string, replaceInvisible?: boolean): string;
 export declare function bytesToString(bytes: Uint8Array | Uint8ClampedArray): string;
 export declare function stringToBytes(str: string): Uint8Array;
 /**
@@ -427,10 +426,7 @@ export declare function isAscii(str: string): boolean;
 export declare function stringToUTF16BEString(str: string): string;
 export declare function stringToUTF8String(str: string): string;
 export declare function utf8StringToString(str: string): string;
-export declare function isBool(v: unknown): boolean;
-export declare function isString(v: unknown): boolean;
 export declare function isArrayBuffer(v: any): boolean;
 export declare function getModificationDate(date?: Date): string;
-export declare function createObjectURL(data: Uint8Array | Uint8ClampedArray, contentType?: string, forceDataSchema?: boolean): string;
 export {};
 //# sourceMappingURL=util.d.ts.map

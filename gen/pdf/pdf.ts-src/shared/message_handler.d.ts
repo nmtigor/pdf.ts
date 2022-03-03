@@ -173,9 +173,7 @@ export interface MActionMap {
         Sinkchunk: undefined;
     };
     GetPageIndex: {
-        Data: {
-            ref: RefProxy;
-        };
+        Data: RefProxy;
         Return: number;
         Sinkchunk: undefined;
     };
@@ -228,7 +226,6 @@ export interface MActionMap {
     GetTextContent: {
         Data: {
             pageIndex: number;
-            normalizeWhitespace: boolean;
             combineTextItems: boolean;
             includeMarkedContent: boolean;
         };

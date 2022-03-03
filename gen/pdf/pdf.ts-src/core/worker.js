@@ -20,8 +20,9 @@ import { MessageHandler, } from "../shared/message_handler.js";
 import { AbortException, arrayByteLength, arraysToBytes, getVerbosityLevel, info, InvalidPDFException, MissingPDFException, PasswordException, setVerbosityLevel, stringToPDFString, UnexpectedResponseException, UnknownErrorException, UNSUPPORTED_FEATURES, VerbosityLevel, warn, } from "../shared/util.js";
 import { XRefParseException } from "./core_utils.js";
 import { LocalPdfManager, NetworkPdfManager, } from "./pdf_manager.js";
-import { clearPrimitiveCaches, Dict, Ref } from "./primitives.js";
+import { Dict, Ref } from "./primitives.js";
 import { PDFWorkerStream } from "./worker_stream.js";
+import { clearGlobalCaches } from "./cleanup_helper.js";
 import { incrementalUpdate } from "./writer.js";
 export class WorkerTask {
     name;
@@ -93,6 +94,14 @@ export const WorkerMessageHandler = {
         // Ensure that (primarily) Node.js users won't accidentally attempt to use
         // a non-translated/non-polyfilled build of the library, since that would
         // quickly fail anyway because of missing functionality.
+        if (typeof ReadableStream === "undefined") {
+            const partialMsg = "The browser/environment lacks native support for critical " +
+                "functionality used by the PDF.js library (e.g. `ReadableStream`); ";
+            // if (isNodeJS) {
+            //   throw new Error(partialMsg + "please use a `legacy`-build instead.");
+            // }
+            throw new Error(partialMsg + "please update to a supported browser.");
+        }
         const docId = docParms.docId;
         const docBaseUrl = docParms.docBaseUrl;
         const workerHandlerName = docParms.docId + "_worker";
@@ -336,8 +345,8 @@ export const WorkerMessageHandler = {
             userUnit,
             view,
         }))));
-        handler.on("GetPageIndex", ({ ref }) => {
-            const pageRef = Ref.get(ref.num, ref.gen);
+        handler.on("GetPageIndex", (data) => {
+            const pageRef = Ref.get(data.num, data.gen);
             return pdfManager.ensureCatalog("getPageIndex", [pageRef]);
         });
         handler.on("GetDestinations", () => {
@@ -479,8 +488,7 @@ export const WorkerMessageHandler = {
                     const xrefInfo = xref.trailer.get("Info") || undefined;
                     if (xrefInfo instanceof Dict) {
                         xrefInfo.forEach((key, value) => {
-                            if ((typeof key === "string")
-                                && (typeof value === "string")) {
+                            if (typeof value === "string") {
                                 infoObj[key] = stringToPDFString(value);
                             }
                         });
@@ -562,7 +570,6 @@ export const WorkerMessageHandler = {
                     handler,
                     task,
                     sink,
-                    normalizeWhitespace: data.normalizeWhitespace,
                     includeMarkedContent: data.includeMarkedContent,
                     combineTextItems: data.combineTextItems,
                 })
@@ -603,7 +610,7 @@ export const WorkerMessageHandler = {
                 pdfManager = undefined;
             }
             else {
-                clearPrimitiveCaches();
+                clearGlobalCaches();
             }
             if (cancelXHRs) {
                 cancelXHRs(new AbortException("Worker was terminated."));

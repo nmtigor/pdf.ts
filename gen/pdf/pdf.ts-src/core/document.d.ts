@@ -45,7 +45,6 @@ interface ExtractTextContentParms {
     handler: MessageHandler<Thread.worker>;
     task: WorkerTask;
     sink: StreamSink<Thread.main, "GetTextContent">;
-    normalizeWhitespace: boolean;
     includeMarkedContent: boolean;
     combineTextItems: boolean;
 }
@@ -86,7 +85,7 @@ export declare class Page {
     getOperatorList({ handler, sink, task, intent, cacheKey, annotationStorage, }: PageGetOperatorListParms): Promise<{
         length: number;
     }>;
-    extractTextContent({ handler, task, normalizeWhitespace, includeMarkedContent, sink, combineTextItems, }: ExtractTextContentParms): Promise<void>;
+    extractTextContent({ handler, task, includeMarkedContent, sink, combineTextItems, }: ExtractTextContentParms): Promise<void>;
     getStructTree(): Promise<import("./struct_tree.js").StructTree | undefined>;
     /**
      * @private
@@ -115,6 +114,7 @@ export interface DocumentInfo {
     EncryptFilterName: string | undefined;
     CreationDate?: string;
     ModDate?: string;
+    Trapped?: Name;
     IsAcroFormPresent: boolean;
     IsCollectionPresent: boolean;
     IsLinearized: boolean;

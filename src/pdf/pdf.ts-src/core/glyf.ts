@@ -714,32 +714,31 @@ class CompositeGlyph
       flags ^= ARG_1_AND_2_ARE_WORDS;
     } 
     else {
-      argument1 = glyf.getUint8(pos);
-      argument2 = glyf.getUint8(pos + 1);
-      if (flags & ARGS_ARE_XY_VALUES) 
+      if( flags & ARGS_ARE_XY_VALUES )
       {
-        const abs1 = argument1 & 0x7f;
-        argument1 = argument1 & 0x80 ? -abs1 : abs1;
-
-        const abs2 = argument2 & 0x7f;
-        argument2 = argument2 & 0x80 ? -abs2 : abs2;
+        argument1 = glyf.getInt8(pos);
+        argument2 = glyf.getInt8(pos + 1);
+      } 
+      else {
+        argument1 = glyf.getUint8(pos);
+        argument2 = glyf.getUint8(pos + 1);
       }
       pos += 2;
     }
 
-    if (flags & WE_HAVE_A_SCALE) 
+    if( flags & WE_HAVE_A_SCALE )
     {
       // Single F2.14.
       transf.push( glyf.getUint16(pos) );
       pos += 2;
     } 
-    else if (flags & WE_HAVE_AN_X_AND_Y_SCALE) 
+    else if( flags & WE_HAVE_AN_X_AND_Y_SCALE )
     {
       // Two F2.14.
       transf.push(glyf.getUint16(pos), glyf.getUint16(pos + 2));
       pos += 4;
     } 
-    else if (flags & WE_HAVE_A_TWO_BY_TWO) 
+    else if( flags & WE_HAVE_A_TWO_BY_TWO )
     {
       // Four F2.14.
       transf.push(

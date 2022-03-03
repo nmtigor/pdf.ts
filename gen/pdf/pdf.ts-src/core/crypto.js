@@ -1535,7 +1535,7 @@ var NsCipherTransformFactory;
                     // Trying to find default handler -- it usually has Length.
                     const cfDict = dict.get("CF");
                     const streamCryptoName = dict.get("StmF");
-                    if ((cfDict instanceof Dict) && (streamCryptoName instanceof Name)) {
+                    if (cfDict instanceof Dict && (streamCryptoName instanceof Name)) {
                         cfDict.suppressEncryption = true; // See comment below.
                         const handlerDict = cfDict.get(streamCryptoName.name);
                         keyLength = handlerDict.get("Length") || 128;

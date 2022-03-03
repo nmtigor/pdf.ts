@@ -3,6 +3,7 @@ import { type IL10n } from "./interfaces.js";
 import { OverlayManager } from "./overlay_manager.js";
 import { type ViewerConfiguration } from "./viewer.js";
 export declare class PasswordPrompt {
+    #private;
     overlayName: string;
     container: HTMLDivElement;
     label: HTMLParagraphElement;
@@ -12,7 +13,7 @@ export declare class PasswordPrompt {
     overlayManager: OverlayManager;
     l10n: IL10n;
     _isViewerEmbedded: boolean;
-    updateCallback?: (password: string) => void;
+    updateCallback: (password: string | Error) => void;
     reason?: PasswordResponses;
     /**
      * @param overlayManager Manager for the viewer overlays.
@@ -22,8 +23,7 @@ export declare class PasswordPrompt {
      */
     constructor(options: ViewerConfiguration['passwordOverlay'], overlayManager: OverlayManager, l10n: IL10n, isViewerEmbedded?: boolean);
     open(): Promise<void>;
-    close(): void;
-    verify(): void;
-    setUpdateCallback(updateCallback: (password: string) => void, reason: PasswordResponses): void;
+    close(): Promise<void>;
+    setUpdateCallback(updateCallback: (password: string | Error) => void, reason: PasswordResponses): void;
 }
 //# sourceMappingURL=password_prompt.d.ts.map

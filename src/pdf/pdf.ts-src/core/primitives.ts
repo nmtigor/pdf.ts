@@ -40,6 +40,12 @@ namespace XFANsName
 
     constructor( name:string ) 
     {
+      // #if !PRODUCTION || TESTING
+        if( typeof name !== "string" )
+        {
+          assert(0,'Name: The "name" must be a string.');
+        }
+      // #endif
       this.name = name;
     }
 
@@ -68,6 +74,12 @@ namespace NsCmd
 
     constructor( cmd:string ) 
     {
+      // #if !PRODUCTION || TESTING
+        if( typeof cmd !== "string" )
+        {
+          assert(0,'Cmd: The "cmd" must be a string.');
+        }
+      // #endif
       this.cmd = cmd;
     }
 
@@ -100,8 +112,14 @@ export class Dict
   set( key:string, value:Obj | undefined ) 
   {
     // #if !PRODUCTION || TESTING
-      if( value === undefined )
-        assert( 0, 'Dict.set: The "value" cannot be undefined.' );
+      if( typeof key !== "string" )
+      {
+        assert(0,'Dict.set: The "key" must be a string.');
+      } 
+      else if( value === undefined )
+      {
+        assert(0,'Dict.set: The "value" cannot be undefined.');
+      }
     // #endif
     this.#map[key] = value;
   }

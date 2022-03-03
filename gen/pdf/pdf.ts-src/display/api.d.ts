@@ -268,7 +268,7 @@ export declare class PDFDocumentLoadingTask {
      * The callback receives two parameters: a function that should be called
      * with the new password, and a reason (see {@link PasswordResponses}).
      */
-    onPassword?: (updateCallback: (password: string) => void, reason: PasswordResponses) => void;
+    onPassword?: (updateCallback: (password: string | Error) => void, reason: PasswordResponses) => void;
     /**
      * Callback to be able to monitor the loading progress of the PDF file
      * (necessary to implement e.g. a loading bar).
@@ -587,11 +587,6 @@ interface GetViewportParms {
  */
 interface GetTextContentParms {
     /**
-     * Replaces all occurrences of
-     * whitespace with standard spaces (0x20). The default value is `false`.
-     */
-    normalizeWhitespace: boolean;
-    /**
      * Do not attempt to combine
      * same line {@link TextItem}'s. The default value is `false`.
      */
@@ -903,11 +898,17 @@ export declare class PDFPageProxy {
      */
     getOperatorList({ intent, annotationMode, }?: GetOperatorListParms): Promise<OpListIR>;
     /**
+     * NOTE: All occurrences of whitespace will be replaced by
+     * standard spaces (0x20).
+     *
      * @param params getTextContent parameters.
      * @return Stream for reading text content chunks.
      */
-    streamTextContent({ normalizeWhitespace, disableCombineTextItems, includeMarkedContent, }?: GetTextContentParms): ReadableStream;
+    streamTextContent({ disableCombineTextItems, includeMarkedContent, }?: GetTextContentParms): ReadableStream;
     /**
+     * NOTE: All occurrences of whitespace will be replaced by
+     * standard spaces (0x20).
+     *
      * @param params - getTextContent parameters.
      * @return A promise that is resolved with a
      *   {@link TextContent} object that represents the page's text content.
@@ -1076,7 +1077,6 @@ declare class WorkerTransport {
  * A PDF document and page is built of many objects. E.g. there are objects for
  * fonts, images, rendering code, etc. These objects may get processed inside of
  * a worker. This class implements some basic methods to manage these objects.
- * @ignore
  */
 export declare class PDFObjects<T> {
     #private;
@@ -1093,7 +1093,7 @@ export declare class PDFObjects<T> {
     /**
      * Resolves the object `objId` with optional `data`.
      */
-    resolve(objId: string, data: T): void;
+    resolve(objId: string, data?: T | undefined): void;
     clear(): void;
 }
 /**

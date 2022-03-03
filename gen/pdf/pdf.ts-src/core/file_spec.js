@@ -1,6 +1,21 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
+/* Copyright 2021 Mozilla Foundation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import { Dict } from "./primitives.js";
 import { stringToPDFString, warn } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
 /*81---------------------------------------------------------------------------*/
@@ -45,9 +60,8 @@ export class FileSpec {
     }
     contentRef;
     constructor(root, xref) {
-        // if (!root || !isDict(root)) {
-        //   return;
-        // }
+        if (!(root instanceof Dict))
+            return;
         this.xref = xref;
         this.root = root;
         if (root.has("FS")) {
@@ -73,9 +87,8 @@ export class FileSpec {
         }
         let content = undefined;
         if (this.contentRef) {
-            const xref = this.xref;
-            const fileObj = xref.fetchIfRef(this.contentRef);
-            if (fileObj && (fileObj instanceof BaseStream)) {
+            const fileObj = this.xref.fetchIfRef(this.contentRef);
+            if (fileObj instanceof BaseStream) {
                 content = fileObj.getBytes();
             }
             else {

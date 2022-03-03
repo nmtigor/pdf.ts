@@ -1,1 +1,1 @@
-{"version":3,"file":"metrics.d.ts","sourceRoot":"","sources":["../../../../src/pdf/pdf.ts-src/core/metrics.ts"],"names":[],"mappings":"AAyBA,eAAO,MAAM,UAAU,uCACa,OAAO,MAAM,EAAC,MAAM,CAAC,EAo4FvD,CAAC"}
+{"version":3,"file":"metrics.d.ts","sourceRoot":"","sources":["../../../../src/pdf/pdf.ts-src/core/metrics.ts"],"names":[],"mappings":"AAyBA,eAAO,MAAM,UAAU,uCACY,OAAO,MAAM,EAAC,MAAM,CAAC,EAo4FtD,CAAC;AAEH,eAAO,MAAM,mBAAmB;YAErB,MAAM;aACL,MAAM;eACJ,MAAM;aACR,MAAM;EAsFhB,CAAC"}

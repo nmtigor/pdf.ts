@@ -41,7 +41,6 @@ function getViewerConfiguration() {
         appContainer: document.body,
         mainContainer: document.getElementById("viewerContainer"),
         viewerContainer: document.getElementById("viewer"),
-        eventBus: null,
         toolbar: {
             /**
              * Container for the secondary toolbar.
@@ -242,6 +241,7 @@ function getViewerConfiguration() {
             findField: document.getElementById("findInput"),
             highlightAllCheckbox: document.getElementById("findHighlightAll"),
             caseSensitiveCheckbox: document.getElementById("findMatchCase"),
+            matchDiacriticsCheckbox: document.getElementById("findMatchDiacritics"),
             entireWordCheckbox: document.getElementById("findEntireWord"),
             findMsg: document.getElementById("findMsg"),
             findResultsCount: document.getElementById("findResultsCount"),

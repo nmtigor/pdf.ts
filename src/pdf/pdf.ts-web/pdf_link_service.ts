@@ -27,11 +27,88 @@ import { PDFDocumentProxy, type RefProxy } from "../pdf.ts-src/display/api.js";
 import { type IPDFLinkService } from "./interfaces.js";
 import { PDFViewer } from "./pdf_viewer.js";
 import { PDFHistory } from "./pdf_history.js";
-import { addLinkAttributes, LinkTarget } from "../pdf.ts-src/display/display_utils.js";
 import { type Destination, type ExplicitDest } from "../pdf.ts-src/core/catalog.js";
 import { EventBus } from "./event_utils.js";
-import { parseQueryString } from "./ui_utils.js";
+import { parseQueryString, removeNullCharacters } from "./ui_utils.js";
 /*81---------------------------------------------------------------------------*/
+
+const DEFAULT_LINK_REL = "noopener noreferrer nofollow";
+
+export const enum LinkTarget {
+  NONE = 0, // Default value.
+  SELF = 1,
+  BLANK = 2,
+  PARENT = 3,
+  TOP = 4,
+};
+
+interface ExternalLinkParms
+{
+  /**
+   * An absolute URL.
+   */
+  url:string;
+
+  /**
+   * The link target. The default value is `LinkTarget.NONE`.
+   */
+  target?:LinkTarget | undefined;
+
+  /**
+   * The link relationship. The default value is `DEFAULT_LINK_REL`.
+   */
+  rel?:string | undefined;
+
+  /**
+   * Whether the link should be enabled. The default value is true.
+   */
+  enabled?:boolean;
+}
+
+/**
+ * Adds various attributes (href, title, target, rel) to hyperlinks.
+ * @param link The link element.
+ */
+function addLinkAttributes( link:HTMLAnchorElement, 
+  { url, target, rel, enabled=true }:ExternalLinkParms = <ExternalLinkParms>{})
+{
+  if( !url || typeof url !== "string" )
+  {
+    throw new Error('A valid "url" parameter must provided.');
+  }
+
+  const urlNullRemoved = removeNullCharacters(url);
+  if (enabled) {
+    link.href = link.title = urlNullRemoved;
+  } else {
+    link.href = "";
+    link.title = `Disabled: ${urlNullRemoved}`;
+    link.onclick = () => {
+      return false;
+    };
+  }
+
+  let targetStr = ""; // LinkTarget.NONE
+  switch (target) {
+    case LinkTarget.NONE:
+      break;
+    case LinkTarget.SELF:
+      targetStr = "_self";
+      break;
+    case LinkTarget.BLANK:
+      targetStr = "_blank";
+      break;
+    case LinkTarget.PARENT:
+      targetStr = "_parent";
+      break;
+    case LinkTarget.TOP:
+      targetStr = "_top";
+      break;
+  }
+  link.target = targetStr;
+
+  link.rel = typeof rel === "string" ? rel : DEFAULT_LINK_REL;
+}
 
 interface PDFLinkServiceOptions
 {
@@ -78,7 +155,7 @@ export class PDFLinkService implements IPDFLinkService
   pdfViewer?:PDFViewer;
   pdfHistory?:PDFHistory;
 
-  #pagesRefCache?:Record< string, number >;
+  #pagesRefCache = new Map<string, number>();
 
   constructor({
     eventBus,
@@ -96,7 +173,7 @@ export class PDFLinkService implements IPDFLinkService
   {
     this.baseUrl = baseUrl;
     this.pdfDocument = pdfDocument;
-    this.#pagesRefCache = Object.create(null);
+    this.#pagesRefCache.clear();
   }
 
   setViewer( pdfViewer:PDFViewer ) 
@@ -262,7 +339,7 @@ export class PDFLinkService implements IPDFLinkService
   }
 
   /**
-   * Wrapper around the `addLinkAttributes`-function in the API.
+   * Wrapper around the `addLinkAttributes` helper function.
    * @implements
    */
   addLinkAttributes( link:HTMLAnchorElement, url:string, newWindow=false ) 
@@ -427,7 +504,7 @@ export class PDFLinkService implements IPDFLinkService
       try {
         dest = JSON.parse(dest);
 
-        if (!Array.isArray(dest)) 
+        if( !Array.isArray(dest) )
         {
           // Avoid incorrectly rejecting a valid named destination, such as
           // e.g. "4.3" or "true", because `JSON.parse` converted its type.
@@ -435,14 +512,14 @@ export class PDFLinkService implements IPDFLinkService
         }
       } catch (ex) {}
 
-      if (typeof dest === "string" || isValidExplicitDestination(dest)) 
-      {
+      if( typeof dest === "string" 
+       || PDFLinkService.#isValidExplicitDestination(dest)
+      ) {
         this.goToDestination(dest);
         return;
       }
       console.error(
-        `PDFLinkService.setHash: "${unescape(hash)}" is not ` +
-        "a valid destination."
+        `PDFLinkService.setHash: "${unescape(hash)}" is not a valid destination.`
       );
     }
   }
@@ -498,7 +575,7 @@ export class PDFLinkService implements IPDFLinkService
 
     const refStr =
       pageRef.gen === 0 ? `${pageRef.num}R` : `${pageRef.num}R${pageRef.gen}`;
-    this.#pagesRefCache![refStr] = pageNum;
+    this.#pagesRefCache.set( refStr, pageNum );
   }
 
   /** @implements */
@@ -508,7 +585,7 @@ export class PDFLinkService implements IPDFLinkService
 
     const refStr =
       pageRef.gen === 0 ? `${pageRef.num}R` : `${pageRef.num}R${pageRef.gen}`;
-    return this.#pagesRefCache?.[refStr] || undefined;
+    return this.#pagesRefCache.get(refStr) || undefined;
   }
 
   /** @implements */
@@ -521,60 +598,60 @@ export class PDFLinkService implements IPDFLinkService
   {
     return this.pdfViewer!.isPageCached(pageNumber);
   }
-}
 
-function isValidExplicitDestination( dest:unknown )
-{
-  if( !Array.isArray(dest) ) return false;
-
-  const destLength = dest.length;
-  if( destLength < 2 ) return false;
-
-  const page = dest[0];
-  if (
-    !(
-      typeof page === "object"
-     && Number.isInteger(page.num)
-     && Number.isInteger(page.gen)
-    ) &&
-    !(Number.isInteger(page) && page >= 0)
-  ) {
-    return false;
-  }
-  const zoom = dest[1];
-  if( !(typeof zoom === "object" && typeof zoom.name === "string") ) 
-    return false;
-  
-  let allowNull = true;
-  switch (zoom.name) 
+  static #isValidExplicitDestination( dest:unknown )
   {
-    case "XYZ":
-      if( destLength !== 5 ) return false;
-      break;
-    case "Fit":
-    case "FitB":
-      return destLength === 2;
-    case "FitH":
-    case "FitBH":
-    case "FitV":
-    case "FitBV":
-      if( destLength !== 3 ) return false;
-      break;
-    case "FitR":
-      if( destLength !== 6 ) return false;
+    if( !Array.isArray(dest) ) return false;
 
-      allowNull = false;
-      break;
-    default:
+    const destLength = dest.length;
+    if( destLength < 2 ) return false;
+
+    const page = dest[0];
+    if (
+      !(
+        typeof page === "object"
+      && Number.isInteger(page.num)
+      && Number.isInteger(page.gen)
+      ) &&
+      !(Number.isInteger(page) && page >= 0)
+    ) {
       return false;
-  }
-  for (let i = 2; i < destLength; i++) 
-  {
-    const param = dest[i];
-    if (!(typeof param === "number" || (allowNull && param === null))) 
+    }
+    const zoom = dest[1];
+    if( !(typeof zoom === "object" && typeof zoom.name === "string") ) 
       return false;
+    
+    let allowNull = true;
+    switch (zoom.name) 
+    {
+      case "XYZ":
+        if( destLength !== 5 ) return false;
+        break;
+      case "Fit":
+      case "FitB":
+        return destLength === 2;
+      case "FitH":
+      case "FitBH":
+      case "FitV":
+      case "FitBV":
+        if( destLength !== 3 ) return false;
+        break;
+      case "FitR":
+        if( destLength !== 6 ) return false;
+
+        allowNull = false;
+        break;
+      default:
+        return false;
+    }
+    for (let i = 2; i < destLength; i++) 
+    {
+      const param = dest[i];
+      if (!(typeof param === "number" || (allowNull && param === null))) 
+        return false;
+    }
+    return true;
   }
-  return true;
 }
 
 export class SimpleLinkService implements IPDFLinkService

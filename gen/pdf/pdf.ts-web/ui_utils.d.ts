@@ -70,18 +70,21 @@ export declare const enum PageLayout {
  * Used by `PDFViewerApplication`, and by the API unit-tests.
  */
 export declare const AutoPrintRegExp: RegExp;
-export interface OutputScale {
+export declare class OutputScale {
+    /**
+     * @type {number} Horizontal scale.
+     */
     sx: number;
+    /**
+     * @type {number} Vertical scale.
+     */
     sy: number;
-    scaled: boolean;
+    constructor();
+    /**
+     * @type {boolean} Returns `true` when scaling is required, `false` otherwise.
+     */
+    get scaled(): boolean;
 }
-/**
- * Returns scale factor for the canvas. It makes sense for the HiDPI displays.
- * @return The object with horizontal (sx) and vertical (sy)
- *  scales. The scaled property is set to false if scaling is
- *  not required, true otherwise.
- */
-export declare function getOutputScale(ctx: CanvasRenderingContext2D): OutputScale;
 /**
  * Scrolls specified element into view of its parent.
  * @param element The element to be visible.
@@ -110,6 +113,7 @@ export declare function watchScroll(viewAreaElement: HTMLDivElement, callback: (
  * Helper function to parse query string (e.g. ?param1=value&param2=...).
  */
 export declare function parseQueryString(query: string): Map<string, string>;
+export declare function removeNullCharacters(str: string, replaceInvisible?: boolean): string;
 /**
  * Use binary search to find the index of the first item in a given array which
  * passes a given condition. The items are expected to be sorted in the sense
@@ -119,7 +123,7 @@ export declare function parseQueryString(query: string): Map<string, string>;
  * @return Index of the first array element to pass the test,
  *  or |items.length| if no such element exists.
  */
-export declare function binarySearchFirstItem<T>(items: T[], condition: (view: T) => boolean): number;
+export declare function binarySearchFirstItem<T>(items: T[], condition: (view: T) => boolean, start?: number): number;
 /**
  * Approximates float number as a fraction using Farey sequence (max order
  * of 8).

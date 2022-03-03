@@ -15,16 +15,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/* eslint-disable sort-exports/sort-exports */
 // eslint-disable-next-line max-len
 /** @typedef {import("./display/api").PDFDocumentLoadingTask} PDFDocumentLoadingTask */
 /** @typedef {import("./display/api").PDFDocumentProxy} PDFDocumentProxy */
 /** @typedef {import("./display/api").PDFPageProxy} PDFPageProxy */
 /** @typedef {import("./display/api").RenderTask} RenderTask */
+/** @typedef {import("./display/display_utils").PageViewport} PageViewport */
 import { createPromiseCap } from "../../lib/promisecap.js";
-import { addLinkAttributes, getFilenameFromUrl, isValidFetchUrl, LinkTarget, loadScript, PDFDateString, PixelsPerInch, RenderingCancelledException, } from "./display/display_utils.js";
 import { build, getDocument, LoopbackPort, PDFDataRangeTransport, PDFWorker, setPDFNetworkStreamFactory, version } from "./display/api.js";
-import { AnnotationMode, CMapCompressionType, createObjectURL, createValidAbsoluteUrl, InvalidPDFException, MissingPDFException, OPS, PasswordResponses, PermissionFlag, removeNullCharacters, shadow, UnexpectedResponseException, UNSUPPORTED_FEATURES, Util, VerbosityLevel, } from "./shared/util.js";
+import { AnnotationMode, CMapCompressionType, createValidAbsoluteUrl, InvalidPDFException, MissingPDFException, OPS, PasswordResponses, PermissionFlag, shadow, UnexpectedResponseException, UNSUPPORTED_FEATURES, Util, VerbosityLevel, } from "./shared/util.js";
+import { getFilenameFromUrl, getPdfFilenameFromUrl, getXfaPageViewport, isPdfFile, isValidFetchUrl, loadScript, PDFDateString, PixelsPerInch, RenderingCancelledException, } from "./display/display_utils.js";
 import { AnnotationLayer } from "./display/annotation_layer.js";
 import { GlobalWorkerOptions } from "./display/worker_options.js";
 import { renderTextLayer } from "./display/text_layer.js";
@@ -48,21 +48,5 @@ setPDFNetworkStreamFactory(async (params) => {
     }
     return new PDFNetworkStream(params);
 });
-export { 
-// From "./display/display_utils.js":
-addLinkAttributes, getFilenameFromUrl, LinkTarget, loadScript, PDFDateString, PixelsPerInch, RenderingCancelledException, 
-// From "./shared/util.js":
-AnnotationMode, CMapCompressionType, createObjectURL, createPromiseCap, createValidAbsoluteUrl, InvalidPDFException, MissingPDFException, OPS, PasswordResponses, PermissionFlag, removeNullCharacters, shadow, UnexpectedResponseException, UNSUPPORTED_FEATURES, Util, VerbosityLevel, 
-// From "./display/api.js":
-build, getDocument, LoopbackPort, PDFDataRangeTransport, PDFWorker, version, 
-// From "./display/annotation_layer.js":
-AnnotationLayer, 
-// From "./display/worker_options.js":
-GlobalWorkerOptions, 
-// From "./display/text_layer.js":
-renderTextLayer, 
-// From "./display/svg.js":
-SVGGraphics, 
-// From "./display/xfa_layer.js":
-XfaLayer, };
+export { AnnotationLayer, AnnotationMode, build, CMapCompressionType, createPromiseCap, createValidAbsoluteUrl, getDocument, getFilenameFromUrl, getPdfFilenameFromUrl, getXfaPageViewport, GlobalWorkerOptions, InvalidPDFException, isPdfFile, loadScript, LoopbackPort, MissingPDFException, OPS, PasswordResponses, PDFDataRangeTransport, PDFDateString, PDFWorker, PermissionFlag, PixelsPerInch, RenderingCancelledException, renderTextLayer, shadow, SVGGraphics, UnexpectedResponseException, UNSUPPORTED_FEATURES, Util, VerbosityLevel, version, XfaLayer, };
 //# sourceMappingURL=pdf.js.map

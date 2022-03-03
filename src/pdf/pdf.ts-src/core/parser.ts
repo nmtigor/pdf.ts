@@ -983,37 +983,50 @@ export class Lexer
     let divideBy = 0; // Different from 0 if it's a floating point value.
     let sign = 0;
 
-    if (ch === /* '-' = */ 0x2d) {
+    if( ch === /* '-' = */ 0x2d )
+    {
       sign = -1;
       ch = this.nextChar();
 
-      if (ch === /* '-' = */ 0x2d) {
+      if( ch === /* '-' = */ 0x2d )
+      {
         // Ignore double negative (this is consistent with Adobe Reader).
         ch = this.nextChar();
       }
     } 
-    else if (ch === /* '+' = */ 0x2b) {
+    else if( ch === /* '+' = */ 0x2b )
+    {
       sign = 1;
       ch = this.nextChar();
     }
-    if (ch === /* LF = */ 0x0a || ch === /* CR = */ 0x0d) {
+    if( ch === /* LF = */ 0x0a || ch === /* CR = */ 0x0d )
+    {
       // Ignore line-breaks (this is consistent with Adobe Reader).
       do {
         ch = this.nextChar();
       } while (ch === 0x0a || ch === 0x0d);
     }
-    if (ch === /* '.' = */ 0x2e) {
+    if( ch === /* '.' = */ 0x2e )
+    {
       divideBy = 10;
       ch = this.nextChar();
     }
-    if (ch < /* '0' = */ 0x30 || ch > /* '9' = */ 0x39) {
-      if( divideBy === 10
-       && sign === 0
-       && (isWhiteSpace(ch) || ch === /* EOF = */ -1)
-      ) {
+    if( ch < /* '0' = */ 0x30 || ch > /* '9' = */ 0x39 )
+    {
+      if( isWhiteSpace(ch) || ch === /* EOF = */ -1 )
+      {
         // This is consistent with Adobe Reader (fixes issue9252.pdf).
-        warn("Lexer.getNumber - treating a single decimal point as zero.");
-        return 0;
+        if( divideBy === 10 && sign === 0 )
+        {
+          warn("Lexer.getNumber - treating a single decimal point as zero.");
+          return 0;
+        }
+        // This is consistent with Adobe Reader (fixes bug1753983.pdf).
+        if( divideBy === 0 && sign === -1 )
+        {
+          warn("Lexer.getNumber - treating a single minus sign as zero.");
+          return 0;
+        }
       }
       throw new FormatError(
         `Invalid number: ${String.fromCharCode(ch)} (charCode ${ch})`
@@ -1025,23 +1038,29 @@ export class Lexer
     let powerValue = 0;
     let powerValueSign = 1;
 
-    while ((ch = this.nextChar()) >= 0) {
-      if (ch >= /* '0' = */ 0x30 && ch <= /* '9' = */ 0x39) {
+    while( (ch = this.nextChar()) >= 0 )
+    {
+      if( ch >= /* '0' = */ 0x30 && ch <= /* '9' = */ 0x39 )
+      {
         const currentDigit = ch - 0x30; // '0'
-        if (eNotation) {
+        if( eNotation )
+        {
           // We are after an 'e' or 'E'.
           powerValue = powerValue * 10 + currentDigit;
         } 
         else {
-          if (divideBy !== 0) {
+          if( divideBy !== 0 )
+          {
             // We are after a point.
             divideBy *= 10;
           }
           baseValue = baseValue * 10 + currentDigit;
         }
       } 
-      else if (ch === /* '.' = */ 0x2e) {
-        if (divideBy === 0) {
+      else if( ch === /* '.' = */ 0x2e )
+      {
+        if( divideBy === 0 )
+        {
           divideBy = 1;
         } 
         else {
@@ -1049,20 +1068,24 @@ export class Lexer
           break;
         }
       } 
-      else if (ch === /* '-' = */ 0x2d) {
+      else if( ch === /* '-' = */ 0x2d )
+      {
         // Ignore minus signs in the middle of numbers to match
         // Adobe's behavior.
         warn("Badly formatted number: minus sign in the middle");
       } 
-      else if (ch === /* 'E' = */ 0x45 || ch === /* 'e' = */ 0x65) {
+      else if( ch === /* 'E' = */ 0x45 || ch === /* 'e' = */ 0x65 )
+      {
         // 'E' can be either a scientific notation or the beginning of a new
         // operator.
         ch = this.peekChar();
-        if (ch === /* '+' = */ 0x2b || ch === /* '-' = */ 0x2d) {
+        if( ch === /* '+' = */ 0x2b || ch === /* '-' = */ 0x2d )
+        {
           powerValueSign = ch === 0x2d ? -1 : 1;
           this.nextChar(); // Consume the sign character.
         } 
-        else if (ch < /* '0' = */ 0x30 || ch > /* '9' = */ 0x39) {
+        else if( ch < /* '0' = */ 0x30 || ch > /* '9' = */ 0x39 )
+        {
           // The 'E' must be the beginning of a new operator.
           break;
         }
@@ -1074,10 +1097,12 @@ export class Lexer
       }
     }
 
-    if (divideBy !== 0) {
+    if (divideBy !== 0)
+    {
       baseValue /= divideBy;
     }
-    if (eNotation) {
+    if (eNotation)
+    {
       baseValue *= 10 ** (powerValueSign * powerValue);
     }
     return sign * baseValue;
@@ -1535,8 +1560,8 @@ export class Linearization
         Number.isInteger(obj1)
      && Number.isInteger(obj2)
      && isCmd(obj3, "obj")
-     && (linDict instanceof Dict)
-     && (typeof (obj = linDict.get("Linearized")) === "number")
+     && linDict instanceof Dict
+     && typeof (obj = linDict.get("Linearized")) === "number"
      && obj > 0
     ) ) {
       return null; // No valid linearization dictionary found.

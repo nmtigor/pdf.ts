@@ -137,7 +137,7 @@ export declare class Catalog {
     /**
      * Eagerly fetches the entire /Pages-tree; should ONLY be used as a fallback.
      */
-    getAllPageDicts(recoveryMode?: boolean): AllPageDicts;
+    getAllPageDicts(recoveryMode?: boolean): Promise<AllPageDicts>;
     getPageIndex(pageRef: Ref): Promise<number>;
     /**
      * @typedef ParseDestDictionaryParameters

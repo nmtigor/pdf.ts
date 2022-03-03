@@ -92,24 +92,26 @@ function xxxx_formatL10nValue(text, args) {
         return name in args ? args[name] : `{{${name}}}`;
     });
 }
-/**
- * Returns scale factor for the canvas. It makes sense for the HiDPI displays.
- * @return The object with horizontal (sx) and vertical (sy)
- *  scales. The scaled property is set to false if scaling is
- *  not required, true otherwise.
- */
-export function getOutputScale(ctx) {
-    const devicePixelRatio = globalThis.devicePixelRatio || 1;
-    const backingStoreRatio = ctx.webkitBackingStorePixelRatio ||
-        ctx.mozBackingStorePixelRatio ||
-        ctx.backingStorePixelRatio ||
-        1;
-    const pixelRatio = devicePixelRatio / backingStoreRatio;
-    return {
-        sx: pixelRatio,
-        sy: pixelRatio,
-        scaled: pixelRatio !== 1,
-    };
+export class OutputScale {
+    /**
+     * @type {number} Horizontal scale.
+     */
+    sx;
+    /**
+     * @type {number} Vertical scale.
+     */
+    sy;
+    constructor() {
+        const pixelRatio = window.devicePixelRatio || 1;
+        this.sx = pixelRatio;
+        this.sy = pixelRatio;
+    }
+    /**
+     * @type {boolean} Returns `true` when scaling is required, `false` otherwise.
+     */
+    get scaled() {
+        return this.sx !== 1 || this.sy !== 1;
+    }
 }
 /**
  * Scrolls specified element into view of its parent.
@@ -202,6 +204,18 @@ export function parseQueryString(query) {
     }
     return params;
 }
+const NullCharactersRegExp = /\x00/g;
+const InvisibleCharactersRegExp = /[\x01-\x1F]/g;
+export function removeNullCharacters(str, replaceInvisible = false) {
+    if (typeof str !== "string") {
+        console.error(`The argument must be a string.`);
+        return str;
+    }
+    if (replaceInvisible) {
+        str = str.replace(InvisibleCharactersRegExp, " ");
+    }
+    return str.replace(NullCharactersRegExp, "");
+}
 /**
  * Use binary search to find the index of the first item in a given array which
  * passes a given condition. The items are expected to be sorted in the sense
@@ -211,8 +225,8 @@ export function parseQueryString(query) {
  * @return Index of the first array element to pass the test,
  *  or |items.length| if no such element exists.
  */
-export function binarySearchFirstItem(items, condition) {
-    let minIndex = 0;
+export function binarySearchFirstItem(items, condition, start = 0) {
+    let minIndex = start;
     let maxIndex = items.length - 1;
     if (maxIndex < 0 || !condition(items[maxIndex])) {
         return items.length;

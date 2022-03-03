@@ -838,7 +838,7 @@ namespace NsCMapFactory
 
   function expectString( obj:unknown ) 
   {
-    if( !(typeof obj === "string") )
+    if( typeof obj !== "string" )
     {
       throw new FormatError("Malformed CMap: expected string.");
     }
@@ -884,7 +884,7 @@ namespace NsCMapFactory
       expectString(obj);
       const high = strToInt( <string>obj );
       obj = lexer.getObj();
-      if( Number.isInteger(obj) || (typeof obj === "string") )
+      if( Number.isInteger(obj) || typeof obj === "string" )
       {
         const dstLow = Number.isInteger(obj) ? String.fromCharCode(<number>obj) : <string>obj;
         cMap.mapBfRange(low, high, dstLow);
@@ -948,18 +948,18 @@ namespace NsCMapFactory
 
   function parseCodespaceRange( cMap:CMap, lexer:Lexer )
   {
-    while (true) 
+    while( true )
     {
       let obj = lexer.getObj();
       if( obj === EOF ) break;
 
       if( isCmd(obj, "endcodespacerange") ) return;
 
-      if( !(typeof obj === "string") ) break;
+      if( typeof obj !== "string" ) break;
 
       const low = strToInt( obj );
       obj = lexer.getObj();
-      if( !(typeof obj === "string") ) break;
+      if( typeof obj !== "string" ) break;
 
       const high = strToInt( obj );
       cMap.addCodespaceRange( obj.length, low, high);
@@ -979,7 +979,7 @@ namespace NsCMapFactory
   function parseCMapName( cMap:CMap, lexer:Lexer )
   {
     const obj = lexer.getObj();
-    if( (obj instanceof Name) && (typeof obj.name === "string") )
+    if( obj instanceof Name )
     {
       cMap.name = obj.name;
     }

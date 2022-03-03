@@ -13,11 +13,11 @@ export interface Serializable {
  */
 export declare class FileSpec {
     #private;
-    xref: XRef;
-    root: Dict;
+    xref: XRef | undefined;
+    root: Dict | undefined;
     fs: import("./primitives.js").Obj | undefined;
-    description: string;
-    contentAvailable: boolean;
+    description: string | undefined;
+    contentAvailable: boolean | undefined;
     get filename(): string;
     contentRef?: string | undefined;
     constructor(root: Dict, xref: XRef);

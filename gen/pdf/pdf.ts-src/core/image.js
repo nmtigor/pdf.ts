@@ -247,7 +247,7 @@ export class PDFImage {
             smaskData = smask;
         }
         else if (mask) {
-            if ((mask instanceof BaseStream) || Array.isArray(mask)) {
+            if (mask instanceof BaseStream || Array.isArray(mask)) {
                 maskData = mask;
             }
             else {

@@ -35,7 +35,7 @@ export class PasswordPrompt
   l10n;
   _isViewerEmbedded;
 
-  updateCallback?:( password:string ) => void;
+  updateCallback!:( password:string | Error ) => void;
   reason?:PasswordResponses;
 
   /**
@@ -61,23 +61,25 @@ export class PasswordPrompt
     // this.reason = null;
 
     // Attach the event listeners.
-    this.submitButton.addEventListener("click", this.verify.bind(this));
-    this.cancelButton.addEventListener("click", this.close.bind(this));
+    this.submitButton.addEventListener("click", this.#verify.bind(this));
+    this.cancelButton.addEventListener("click", this.#cancel.bind(this));
     this.input.addEventListener("keydown", e => {
-      if (e.keyCode === /* Enter = */ 13) {
-        this.verify();
+      if( e.keyCode === /* Enter = */ 13 )
+      {
+        this.#verify();
       }
     });
 
     this.overlayManager.register(
       this.overlayName,
       this.container,
-      this.close.bind(this),
+      this.#cancel.bind(this),
       true
     );
   }
 
-  async open() {
+  async open()
+  {
     await this.overlayManager.open(this.overlayName);
 
     const passwordIncorrect =
@@ -91,23 +93,28 @@ export class PasswordPrompt
     );
   }
 
-  close() {
-    this.overlayManager.close(this.overlayName).then(() => {
-      this.input.value = "";
-    });
+  async close()
+  {
+    await this.overlayManager.close(this.overlayName);
+    this.input.value = "";
   }
 
-  verify() {
+  #verify() {
     const password = this.input.value;
     if( password?.length > 0 )
     {
       this.close();
-      this.updateCallback!(password);
+      this.updateCallback( password );
     }
   }
 
+  #cancel() {
+    this.close();
+    this.updateCallback( new Error("PasswordPrompt cancelled.") );
+  }
+
   setUpdateCallback( 
-    updateCallback:( password:string ) => void, 
+    updateCallback:( password:string | Error ) => void, 
     reason:PasswordResponses
   ) {
     this.updateCallback = updateCallback;

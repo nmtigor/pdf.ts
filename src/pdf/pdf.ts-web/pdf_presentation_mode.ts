@@ -107,28 +107,18 @@ export class PDFPresentationMode
    */
   request():boolean 
   {
-    if (this.switchInProgress || this.active || !this.pdfViewer.pagesCount) {
+    if( this.switchInProgress
+     || this.active
+     || !this.pdfViewer.pagesCount
+     || !this.container.requestFullscreen
+    ) {
       return false;
     }
     this.#addFullscreenChangeListeners();
     this.#setSwitchInProgress();
     this.#notifyStateChange();
 
-    if( this.container.requestFullscreen )
-    {
-      this.container.requestFullscreen();
-    } 
-    else if( (<any>this.container).mozRequestFullScreen )
-    {
-      (<any>this.container).mozRequestFullScreen();
-    } 
-    else if( (<any>this.container).webkitRequestFullscreen )
-    {
-      (<any>this.container).webkitRequestFullscreen( (<any>Element).ALLOW_KEYBOARD_INPUT );
-    } 
-    else {
-      return false;
-    }
+    this.container.requestFullscreen();
 
     this.args = {
       pageNumber: this.pdfViewer.currentPageNumber,
@@ -136,15 +126,12 @@ export class PDFPresentationMode
       scrollMode: this.pdfViewer.scrollMode,
       spreadMode: this.pdfViewer.spreadMode,
     };
-
     return true;
   }
 
   #mouseWheel = ( evt:WheelEvent ) =>
   {
-    if (!this.active) {
-      return;
-    }
+    if( !this.active ) return;
 
     evt.preventDefault();
 
@@ -166,7 +153,8 @@ export class PDFPresentationMode
     }
     this.mouseScrollDelta += delta;
 
-    if (Math.abs(this.mouseScrollDelta) >= PAGE_SWITCH_THRESHOLD) {
+    if( Math.abs(this.mouseScrollDelta) >= PAGE_SWITCH_THRESHOLD )
+    {
       const totalDelta = this.mouseScrollDelta;
       this.#resetMouseScrollState();
       const success =
@@ -177,20 +165,6 @@ export class PDFPresentationMode
         this.mouseScrollTimeStamp = currentTime;
       }
     }
-  }
-
-  get isFullscreen()
-  {
-    // #if MOZCENTRAL
-    // if (typeof PDFJSDev !== "undefined" && PDFJSDev.test("MOZCENTRAL")) {
-    return !!document.fullscreenElement;
-    // }
-    // #endif
-    return !!(
-      document.fullscreenElement ||
-      (<any>document).mozFullScreen ||
-      (<any>document).webkitIsFullScreen
-    );
   }
 
   #notifyStateChange = () =>
@@ -231,7 +205,8 @@ export class PDFPresentationMode
 
   #resetSwitchInProgress = () =>
   {
-    if (this.switchInProgress) {
+    if( this.switchInProgress )
+    {
       clearTimeout(this.switchInProgress);
       delete this.switchInProgress;
     }
@@ -290,7 +265,8 @@ export class PDFPresentationMode
 
   #mouseDown = ( evt:MouseEvent ) =>
   {
-    if (this.contextMenuOpen) {
+    if( this.contextMenuOpen )
+    {
       this.contextMenuOpen = false;
       evt.preventDefault();
       return;
@@ -322,7 +298,8 @@ export class PDFPresentationMode
 
   #showControls = () =>
   {
-    if (this.controlsTimeout) {
+    if( this.controlsTimeout )
+    {
       clearTimeout(this.controlsTimeout);
     } 
     else {
@@ -336,9 +313,8 @@ export class PDFPresentationMode
 
   #hideControls = () =>
   {
-    if (!this.controlsTimeout) {
-      return;
-    }
+    if( !this.controlsTimeout ) return;
+
     clearTimeout(this.controlsTimeout);
     this.container.classList.remove(CONTROLS_SELECTOR);
     delete this.controlsTimeout;
@@ -455,7 +431,7 @@ export class PDFPresentationMode
 
   #fullscreenChange = () =>
   {
-    if (this.isFullscreen) 
+    if( /* isFullscreen = */ document.fullscreenElement )
     {
       this.#enter();
     } 
@@ -469,23 +445,11 @@ export class PDFPresentationMode
     // this.fullscreenChangeBind = this._fullscreenChange.bind(this);
 
     window.addEventListener( "fullscreenchange", this.#fullscreenChange );
-    // #if !MOZCENTRAL
-    // if (typeof PDFJSDev === "undefined" || !PDFJSDev.test("MOZCENTRAL")) {
-    window.addEventListener( "mozfullscreenchange", this.#fullscreenChange );
-    window.addEventListener( "webkitfullscreenchange", this.#fullscreenChange );
-    // }
-    // #endif
   }
 
   #removeFullscreenChangeListeners = () =>
   {
     window.removeEventListener( "fullscreenchange", this.#fullscreenChange );
-    // #if !MOZCENTRAL
-    // if (typeof PDFJSDev === "undefined" || !PDFJSDev.test("MOZCENTRAL")) {
-    window.removeEventListener( "mozfullscreenchange", this.#fullscreenChange );
-    window.removeEventListener( "webkitfullscreenchange", this.#fullscreenChange );
-    // }
-    // #endif
     
     // delete this.fullscreenChangeBind;
   }

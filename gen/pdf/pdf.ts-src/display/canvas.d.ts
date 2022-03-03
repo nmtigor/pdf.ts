@@ -150,10 +150,7 @@ export declare class CanvasGraphics {
     objs: PDFObjects<PDFObjs | undefined>;
     canvasFactory: BaseCanvasFactory;
     imageLayer: ImageLayer | undefined;
-    groupStack: {
-        ctx: C2D;
-        suspendedCtx: C2D | undefined;
-    }[];
+    groupStack: C2D[];
     processingType3: Glyph | undefined;
     /**
      * Patterns are painted relative to the initial page/form transform, see pdf
@@ -166,6 +163,7 @@ export declare class CanvasGraphics {
     smaskCounter: number;
     tempSMask: SMask | undefined;
     suspendedCtx: C2D | undefined;
+    get inSMaskMode(): boolean;
     contentVisible: boolean;
     markedContentStack: {
         visible: boolean;

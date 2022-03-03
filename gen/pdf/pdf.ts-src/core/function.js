@@ -18,6 +18,7 @@
 import { Dict, Ref } from "./primitives.js";
 import { FormatError, info, IsEvalSupportedCached, shadow, } from "../shared/util.js";
 import { PostScriptLexer, PostScriptParser } from "./ps_parser.js";
+import { BaseStream } from "./base_stream.js";
 import { LocalFunctionCache } from "./image_utils.js";
 /*81---------------------------------------------------------------------------*/
 export class PDFFunctionFactory {
@@ -94,9 +95,8 @@ export class PDFFunctionFactory {
     }
 }
 function toNumberArray(arr) {
-    if (!Array.isArray(arr)) {
+    if (!Array.isArray(arr))
         return null;
-    }
     const length = arr.length;
     for (let i = 0; i < length; i++) {
         if (typeof arr[i] !== "number") {
@@ -1242,6 +1242,5 @@ var NsPostScriptCompiler;
     NsPostScriptCompiler.PostScriptCompiler = PostScriptCompiler;
 })(NsPostScriptCompiler || (NsPostScriptCompiler = {}));
 export var PostScriptCompiler = NsPostScriptCompiler.PostScriptCompiler;
-import { BaseStream } from "./base_stream.js";
 /*81---------------------------------------------------------------------------*/
 //# sourceMappingURL=function.js.map

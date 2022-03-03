@@ -1,4 +1,4 @@
-import { FontType, type rect_t, type matrix_t } from "../shared/util.js";
+import { FontType, type rect_t, type matrix_t, point_t } from "../shared/util.js";
 import { CMap } from "./cmap.js";
 import { type FontProps, type VMetric } from './evaluator.js';
 import { type OpListIR } from './operator_list.js';
@@ -66,6 +66,9 @@ export declare class Glyph {
     operatorListId: number | undefined;
     isSpace: boolean;
     isInFont: boolean;
+    isWhitespace: any;
+    isZeroWidthDiacritic: any;
+    isInvisibleFormatMark: any;
     compiled?: ((c: CanvasRenderingContext2D) => void) | undefined;
     constructor(originalCharCode: number, fontChar: string, unicode: string, accent: Accent | undefined, width: number | undefined, vmetric: VMetric | undefined, operatorListId: number | undefined, isSpace: boolean, isInFont: boolean);
     matchesForCache(originalCharCode: number, fontChar: string, unicode: string, accent: Accent | undefined, width: number | undefined, vmetric: VMetric | undefined, operatorListId: number | undefined, isSpace: boolean, isInFont: boolean): boolean;
@@ -102,7 +105,7 @@ export declare class Font extends FontExpotDataEx {
      * @param a string encoded with font encoding.
      * @return the positions of each char in the string.
      */
-    getCharPositions(chars: string): (readonly [number, number])[];
+    getCharPositions(chars: string): point_t[];
     get glyphCacheValues(): Glyph[];
     /**
      * Encode a js string using font encoding.

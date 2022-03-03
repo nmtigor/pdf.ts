@@ -21,7 +21,6 @@ import { stringToBytes } from "../shared/util.js";
 // https://github.com/Rob--W/open-in-browser/blob/7e2e35a38b8b4e981b11da7b2f01df0149049e92/extension/content-disposition.js
 // with the following changes:
 // - Modified to conform to PDF.js's coding style.
-// - Support UTF-8 decoding when TextDecoder is unsupported.
 // - Move return to the end of the function to prevent Babel from dropping the
 //   function declarations.
 /**
@@ -86,15 +85,6 @@ export function getFilenameFromContentDispositionHeader(contentDisposition) {
             }
             catch (e) {
                 // TextDecoder constructor threw - unrecognized encoding.
-                // Or TextDecoder API is not available (in IE / Edge).
-                if (/^utf-?8$/i.test(encoding)) {
-                    // UTF-8 is commonly used, try to support it in another way:
-                    try {
-                        value = decodeURIComponent(escape(value));
-                        needsEncodingFixup = false;
-                    }
-                    catch (err) { }
-                }
             }
         }
         return value;

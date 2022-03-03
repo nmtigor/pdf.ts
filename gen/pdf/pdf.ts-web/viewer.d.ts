@@ -2,7 +2,6 @@ declare function getViewerConfiguration(): {
     appContainer: HTMLElement;
     mainContainer: HTMLDivElement;
     viewerContainer: HTMLDivElement;
-    eventBus: null;
     toolbar: {
         /**
          * Container for the secondary toolbar.
@@ -199,6 +198,7 @@ declare function getViewerConfiguration(): {
         findField: HTMLInputElement;
         highlightAllCheckbox: HTMLInputElement;
         caseSensitiveCheckbox: HTMLInputElement;
+        matchDiacriticsCheckbox: HTMLInputElement;
         entireWordCheckbox: HTMLInputElement;
         findMsg: HTMLSpanElement;
         findResultsCount: HTMLSpanElement;

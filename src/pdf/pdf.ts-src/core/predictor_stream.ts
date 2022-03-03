@@ -47,22 +47,22 @@ export class PredictorStream extends DecodeStream
   {
     super( maybeLength );
 
-    if (!(params instanceof Dict)) 
+    if( !(params instanceof Dict) )
     {
       return <any>str; // no prediction
     }
     const predictor = (this.predictor = <number | undefined>params.get("Predictor") || 1);
 
-    if (predictor <= 1) 
+    if( predictor <= 1 )
     {
       return <any>str; // no prediction
     }
-    if (predictor !== 2 && (predictor < 10 || predictor > 15)) 
+    if( predictor !== 2 && (predictor < 10 || predictor > 15) )
     {
       throw new FormatError(`Unsupported predictor: ${predictor}`);
     }
 
-    if (predictor === 2) 
+    if( predictor === 2 )
     {
       this.readBlock = this.readBlockTiff;
     } 

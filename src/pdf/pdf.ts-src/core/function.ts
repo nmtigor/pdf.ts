@@ -25,7 +25,9 @@ import {
   shadow,
 } from "../shared/util.js";
 import { PostScriptLexer, PostScriptParser } from "./ps_parser.js";
+import { BaseStream } from "./base_stream.js";
 import { LocalFunctionCache } from "./image_utils.js";
+import { XRef } from "./xref.js";
 /*81---------------------------------------------------------------------------*/
 
 export class PDFFunctionFactory 
@@ -77,15 +79,15 @@ export class PDFFunctionFactory
   getCached( cacheKey:Ref | Dict | BaseStream )
   {
     let fnRef;
-    if (cacheKey instanceof Ref) 
+    if( cacheKey instanceof Ref )
     {
       fnRef = cacheKey;
     }
-    else if (cacheKey instanceof Dict) 
+    else if( cacheKey instanceof Dict )
     {
       fnRef = cacheKey.objId;
     }
-    else if (cacheKey instanceof BaseStream) 
+    else if( cacheKey instanceof BaseStream )
     {
       fnRef = cacheKey.dict?.objId;
     }
@@ -106,19 +108,20 @@ export class PDFFunctionFactory
       );
     }
     let fnRef;
-    if (cacheKey instanceof Ref) 
+    if( cacheKey instanceof Ref ) 
     {
       fnRef = cacheKey;
     } 
-    else if (cacheKey instanceof Dict) 
+    else if( cacheKey instanceof Dict ) 
     {
       fnRef = cacheKey.objId;
     } 
-    else if (cacheKey instanceof BaseStream) 
+    else if( cacheKey instanceof BaseStream ) 
     {
       fnRef = cacheKey.dict && cacheKey.dict.objId;
     }
-    if (fnRef) {
+    if( fnRef )
+    {
       this._localFunctionCache.set(/* name = */ null, fnRef, parsedFunction);
     }
   }
@@ -131,10 +134,8 @@ export class PDFFunctionFactory
 
 function toNumberArray( arr:unknown ):number[] | null
 {
-  if (!Array.isArray(arr)) 
-  {
-    return null;
-  }
+  if( !Array.isArray(arr) ) return null;
+
   const length = arr.length;
   for( let i = 0; i < length; i++ )
   {
@@ -1596,6 +1597,4 @@ namespace NsPostScriptCompiler
   }
 }
 export import PostScriptCompiler = NsPostScriptCompiler.PostScriptCompiler;
-import { XRef } from "./xref.js";
-import { BaseStream } from "./base_stream.js";
 /*81---------------------------------------------------------------------------*/
