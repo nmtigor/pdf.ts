@@ -603,23 +603,6 @@ export class AbortException extends BaseException
   }
 }
 
-const NullCharactersRegExp = /\x00+/g;
-const InvisibleCharactersRegExp = /[\x01-\x1F]/g;
-
-export function removeNullCharacters( str:string, replaceInvisible=false ) 
-{
-  if (typeof str !== "string") 
-  {
-    warn("The argument for removeNullCharacters must be a string.");
-    return str;
-  }
-  if (replaceInvisible) 
-  {
-    str = str.replace(InvisibleCharactersRegExp, " ");
-  }
-  return str.replace(NullCharactersRegExp, "");
-}
-
 export function bytesToString( bytes:Uint8Array | Uint8ClampedArray ) 
 {
   assert( isObjectLike(bytes) && bytes.length !== undefined,
@@ -643,6 +626,8 @@ export function bytesToString( bytes:Uint8Array | Uint8ClampedArray )
 
 export function stringToBytes( str:string )
 {
+  assert( typeof str === "string", "Invalid argument for stringToBytes" );
+
   const length = str.length;
   const bytes = new Uint8Array(length);
   for (let i = 0; i < length; ++i) {
@@ -654,9 +639,15 @@ export function stringToBytes( str:string )
 /**
  * Gets length of the array (Array, Uint8Array, or string) in bytes.
  */
+// eslint-disable-next-line consistent-return
 export function arrayByteLength( arr:any[] | Uint8Array | string | ArrayBufferLike ):number
 {
-  return (<any[] | Uint8Array | string>arr).length ?? (<ArrayBufferLike>arr).byteLength;
+  if( (<any[] | Uint8Array | string>arr).length !== undefined ) 
+    return (<any[] | Uint8Array | string>arr).length;
+  if( (<ArrayBufferLike>arr).byteLength !== undefined )
+    return (<ArrayBufferLike>arr).byteLength;
+  assert(0,"Invalid argument for arrayByteLength");
+  return 0;
 }
 
 /**
@@ -1030,27 +1021,37 @@ const PDFStringTranslateTable = [
 
 export function stringToPDFString( str:string ) 
 {
-  const length = str.length,
-    strBuf = [];
-  if (str[0] === "\xFE" && str[1] === "\xFF") {
-    // UTF16BE BOM
-    for (let i = 2; i < length; i += 2) {
-      strBuf.push(
-        String.fromCharCode((str.charCodeAt(i) << 8) | str.charCodeAt(i + 1))
-      );
+  if( str[0] >= "\xEF" )
+  {
+    let encoding;
+    if( str[0] === "\xFE" && str[1] === "\xFF" )
+    {
+      encoding = "utf-16be";
+    } else if( str[0] === "\xFF" && str[1] === "\xFE" )
+    {
+      encoding = "utf-16le";
+    } else if( str[0] === "\xEF" && str[1] === "\xBB" && str[2] === "\xBF" )
+    {
+      encoding = "utf-8";
     }
-  } else if (str[0] === "\xFF" && str[1] === "\xFE") {
-    // UTF16LE BOM
-    for (let i = 2; i < length; i += 2) {
-      strBuf.push(
-        String.fromCharCode((str.charCodeAt(i + 1) << 8) | str.charCodeAt(i))
-      );
+
+    if( encoding )
+    {
+      try {
+        const decoder = new TextDecoder(encoding, { fatal: true });
+        const buffer = stringToBytes(str);
+        return decoder.decode(buffer);
+      } catch (ex) {
+        warn(`stringToPDFString: "${ex}".`);
+      }
     }
-  } else {
-    for (let i = 0; i < length; ++i) {
-      const code = PDFStringTranslateTable[str.charCodeAt(i)];
-      strBuf.push(code ? String.fromCharCode(code) : str.charAt(i));
-    }
+  }
+  // ISO Latin 1
+  const strBuf = [];
+  for( let i = 0, ii = str.length; i < ii; i++ )
+  {
+    const code = PDFStringTranslateTable[str.charCodeAt(i)];
+    strBuf.push(code ? String.fromCharCode(code) : str.charAt(i));
   }
   return strBuf.join("");
 }
@@ -1098,16 +1099,6 @@ export function utf8StringToString( str:string )
   return unescape(encodeURIComponent(str));
 }
 
-export function isBool( v:unknown )
-{
-  return typeof v === "boolean";
-}
-
-export function isString( v:unknown ) 
-{
-  return typeof v === "string";
-}
-
 export function isArrayBuffer( v:any ) 
 {
   return typeof v === "object" && v?.byteLength !== undefined;
@@ -1125,31 +1116,5 @@ export function getModificationDate( date=new Date )
   ];
 
   return buffer.join("");
-}
-
-export function createObjectURL( data:Uint8Array | Uint8ClampedArray, 
-  contentType="", forceDataSchema=false
-) {
-  if( (<any>URL).createObjectURL && typeof Blob !== "undefined" && !forceDataSchema)
-  {
-    return URL.createObjectURL(new Blob([data!], { type: contentType }));
-  }
-  // Blob/createObjectURL is not available, falling back to data schema.
-  const digits =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
-
-  let buffer = `data:${contentType};base64,`;
-  for( let i = 0, ii = data.length; i < ii; i += 3 )
-  {
-    const b1 = data[i] & 0xff;
-    const b2 = data[i + 1] & 0xff;
-    const b3 = data[i + 2] & 0xff;
-    const d1 = b1 >> 2,
-      d2 = ((b1 & 3) << 4) | (b2 >> 4);
-    const d3 = i + 1 < ii ? ((b2 & 0xf) << 2) | (b3 >> 6) : 64;
-    const d4 = i + 2 < ii ? b3 & 0x3f : 64;
-    buffer += digits[d1] + digits[d2] + digits[d3] + digits[d4];
-  }
-  return buffer;
 }
 /*81---------------------------------------------------------------------------*/

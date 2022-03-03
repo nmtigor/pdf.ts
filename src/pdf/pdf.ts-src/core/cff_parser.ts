@@ -588,7 +588,7 @@ namespace NsCFFParser
       return strings;
     }
 
-    createDict< T extends CFFDict >( Type:Constructor<T>, dict:CFFDictParsed, strings?:CFFStrings )
+    createDict<T extends CFFDict>( Type:Constructor<T>, dict:CFFDictParsed, strings?:CFFStrings )
     {
       const cffDict = new Type(strings);
       for( let i = 0, ii = dict.length; i < ii; ++i )
@@ -1165,7 +1165,7 @@ namespace NsCFFParser
           for( i = 0; i < rangesCount; ++i )
           {
             let first = (bytes[pos++] << 8) | bytes[pos++];
-            if (i === 0 && first !== 0) 
+            if( i === 0 && first !== 0 )
             {
               warn(
                 "parseFDSelect: The first range must have a first GID of 0" +
@@ -1291,7 +1291,7 @@ export class CFFStrings
   }
 }
 
-export class CFFIndex< T extends number[] | Uint8Array | Uint8ClampedArray=number[] | Uint8Array | Uint8ClampedArray >
+export class CFFIndex<T extends number[] | Uint8Array | Uint8ClampedArray=number[] | Uint8Array | Uint8ClampedArray>
 {
   objects:T[] = [];
   get count() { return this.objects.length; }

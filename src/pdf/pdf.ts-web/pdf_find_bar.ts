@@ -40,6 +40,7 @@ export class PDFFindBar
   findField;
   highlightAll;
   caseSensitive;
+  matchDiacritics;
   entireWord;
   findMsg;
   findResultsCount;
@@ -55,6 +56,7 @@ export class PDFFindBar
     this.findField = options.findField;
     this.highlightAll = options.highlightAllCheckbox;
     this.caseSensitive = options.caseSensitiveCheckbox;
+    this.matchDiacritics = options.matchDiacriticsCheckbox;
     this.entireWord = options.entireWordCheckbox;
     this.findMsg = options.findMsg;
     this.findResultsCount = options.findResultsCount;
@@ -103,6 +105,10 @@ export class PDFFindBar
       this.dispatchEvent("entirewordchange");
     });
 
+    this.matchDiacritics.addEventListener("click", () => {
+      this.dispatchEvent("diacriticmatchingchange");
+    });
+
     this.eventBus._on( "resize", this.#adjustWidth );
   }
 
@@ -119,6 +125,7 @@ export class PDFFindBar
       entireWord: this.entireWord.checked,
       highlightAll: this.highlightAll.checked,
       findPrevious: findPrev,
+      matchDiacritics: this.matchDiacritics.checked,
     });
   }
 
@@ -181,7 +188,6 @@ export class PDFFindBar
     }
     matchCountMsg.then(msg => {
       this.findResultsCount.textContent = msg;
-      this.findResultsCount.classList.toggle("hidden", !total);
       // Since `updateResultsCount` may be called from `PDFFindController`,
       // ensure that the width of the findbar is always updated correctly.
       this.#adjustWidth();

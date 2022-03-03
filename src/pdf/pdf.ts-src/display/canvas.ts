@@ -37,7 +37,6 @@ import {
 import { PageViewport, PixelsPerInch } from "./display_utils.js";
 import { 
   getShadingPattern, 
-  RadialAxialShadingPattern, 
   type ShadingPattern, 
   type STPattern, 
   TilingPattern, 
@@ -268,6 +267,11 @@ function mirrorContextOperations( ctx:C2D, destCtx:C2D )
 
 function addContextCurrentTransform( ctx:C2D ) 
 {
+  if( ctx._transformStack )
+  {
+    // Reset the transform stack.
+    ctx._transformStack = [];
+  }
   // If the context doesn't expose a `mozCurrentTransform`, add a JS based one.
   if( ctx.mozCurrentTransform ) return;
 
@@ -341,7 +345,12 @@ function addContextCurrentTransform( ctx:C2D )
     this._originalSave();
   }
 
-  ctx.restore = function ctxRestore() {
+  ctx.restore = function ctxRestore()
+  {
+    if( this._transformStack.length === 0 )
+    {
+      warn("Tried to restore a ctx when the stack was already empty.");
+    }
     const prev = this._transformStack.pop();
     if( prev )
     {
@@ -1058,7 +1067,8 @@ function copyCtxState( sourceCtx:C2D, destCtx:C2D )
       (<any>destCtx)[property] = (<any>sourceCtx)[property];
     }
   }
-  if (sourceCtx.setLineDash !== undefined) {
+  if( sourceCtx.setLineDash !== undefined )
+  {
     destCtx.setLineDash(sourceCtx.getLineDash());
     destCtx.lineDashOffset = sourceCtx.lineDashOffset;
   }
@@ -1289,10 +1299,7 @@ export class CanvasGraphics
   objs;
   canvasFactory;
   imageLayer;
-  groupStack:{ 
-    ctx:C2D;
-    suspendedCtx:C2D | undefined;
-  }[] = [];
+  groupStack:C2D[] = [];
   processingType3:Glyph | undefined;
 
   /**
@@ -1306,7 +1313,10 @@ export class CanvasGraphics
   smaskStack:SMask[] = [];
   smaskCounter = 0;
   tempSMask:SMask | undefined;
+
   suspendedCtx:C2D | undefined;
+  get inSMaskMode() { return !!this.suspendedCtx; }
+
   contentVisible = true;
   markedContentStack:{ visible:boolean; }[] = [];
   optionalContentConfig;
@@ -1487,7 +1497,7 @@ export class CanvasGraphics
 
   endDrawing() {
     // Finishing all opened operations such as SMask group painting.
-    while( this.stateStack.length || this.current.activeSMask !== undefined )
+    while( this.stateStack.length || this.inSMaskMode )
     {
       this[ OPS.restore ]();
     }
@@ -1754,7 +1764,7 @@ export class CanvasGraphics
 
   checkSMaskState() 
   {
-    const inSMaskMode = !!this.suspendedCtx;
+    const inSMaskMode = this.inSMaskMode;
     if (this.current.activeSMask && !inSMaskMode) 
     {
       this.beginSMaskMode();
@@ -1777,7 +1787,7 @@ export class CanvasGraphics
    */
   beginSMaskMode() 
   {
-    if (this.suspendedCtx) 
+    if( this.inSMaskMode )
     {
       throw new Error("beginSMaskMode called while already in smask mode");
     }
@@ -1806,17 +1816,16 @@ export class CanvasGraphics
 
   endSMaskMode() 
   {
-    if( !this.suspendedCtx )
+    if( !this.inSMaskMode )
     {
       throw new Error("endSMaskMode called while not in smask mode");
     }
     // The soft mask is done, now restore the suspended canvas as the main
     // drawing canvas.
     this.ctx._removeMirroring!();
-    copyCtxState(this.ctx, this.suspendedCtx);
-    this.ctx = this.suspendedCtx;
+    copyCtxState( this.ctx, this.suspendedCtx! );
+    this.ctx = this.suspendedCtx!;
 
-    this.current.activeSMask = undefined;
     this.suspendedCtx = undefined;
   }
 
@@ -1848,22 +1857,42 @@ export class CanvasGraphics
 
   [ OPS.save ]()
   {
-    this.ctx.save();
+    if( this.inSMaskMode )
+    {
+      // SMask mode may be turned on/off causing us to lose graphics state.
+      // Copy the temporary canvas state to the main(suspended) canvas to keep
+      // it in sync.
+      copyCtxState( this.ctx, this.suspendedCtx! );
+      // Don't bother calling save on the temporary canvas since state is not
+      // saved there.
+      this.suspendedCtx!.save();
+    } 
+    else {
+      this.ctx.save();
+    }
     const old = this.current;
     this.stateStack.push(old);
     this.current = old.clone();
   }
   [ OPS.restore ]()
   {
-    if (this.stateStack.length === 0 && this.current.activeSMask) 
+    if( this.stateStack.length === 0 && this.inSMaskMode )
     {
       this.endSMaskMode();
     }
-
-    if( this.stateStack.length !== 0)
+    if( this.stateStack.length !== 0 )
     {
       this.current = this.stateStack.pop()!;
-      this.ctx.restore();
+      if( this.inSMaskMode )
+      {
+        // Graphics state is stored on the main(suspended) canvas. Restore its
+        // state then copy it over to the temporary canvas.
+        this.suspendedCtx!.restore();
+        copyCtxState( this.suspendedCtx!, this.ctx );
+      } 
+      else {
+        this.ctx.restore();
+      }
       this.checkSMaskState();
 
       // Ensure that the clipping path is reset (fixes issue6413.pdf).
@@ -2039,7 +2068,7 @@ export class CanvasGraphics
           // parallelogram where both heights are lower than 1 and not equal.
           ctx.save();
           ctx.resetTransform();
-          ctx.lineWidth = Math.round( this.#combinedScaleFactor! );
+          ctx.lineWidth = Math.floor( this.#combinedScaleFactor! );
           ctx.stroke();
           ctx.restore();
         } 
@@ -2323,12 +2352,12 @@ export class CanvasGraphics
         ctx.fill();
       }
       if( fillStrokeMode === TextRenderingMode.STROKE
-        || fillStrokeMode === TextRenderingMode.FILL_STROKE
+       || fillStrokeMode === TextRenderingMode.FILL_STROKE
       ) {
         if( resetLineWidthToOne )
         {
           ctx.resetTransform();
-          ctx.lineWidth = Math.round( this.#combinedScaleFactor! );
+          ctx.lineWidth = Math.floor( this.#combinedScaleFactor! );
         }
         ctx.stroke();
       }
@@ -2348,7 +2377,7 @@ export class CanvasGraphics
           ctx.save();
           ctx.moveTo(x, y);
           ctx.resetTransform();
-          ctx.lineWidth = Math.round( this.#combinedScaleFactor! );
+          ctx.lineWidth = Math.floor( this.#combinedScaleFactor! );
           ctx.strokeText(character, 0, 0);
           ctx.restore();
         } 
@@ -2860,10 +2889,9 @@ export class CanvasGraphics
     this[ OPS.save ]();
     // If there's an active soft mask we don't want it enabled for the group, so
     // clear it out. The mask and suspended canvas will be restored in endGroup.
-    const suspendedCtx = this.suspendedCtx;
-    if (this.current.activeSMask) 
+    if( this.inSMaskMode )
     {
-      this.suspendedCtx = undefined;
+      this.endSMaskMode();
       this.current.activeSMask = undefined;
     }
 
@@ -2988,10 +3016,7 @@ export class CanvasGraphics
       ["ca", 1],
       ["CA", 1],
     ]);
-    this.groupStack.push({
-      ctx: currentCtx,
-      suspendedCtx,
-    });
+    this.groupStack.push( currentCtx );
     this.groupLevel++;
   }
 
@@ -3001,16 +3026,11 @@ export class CanvasGraphics
 
     this.groupLevel--;
     const groupCtx = this.ctx;
-    const { ctx, suspendedCtx } = this.groupStack.pop()!;
+    const ctx = this.groupStack.pop()!;
     this.ctx = ctx;
     // Turn off image smoothing to avoid sub pixel interpolation which can
     // look kind of blurry for some pdfs.
     this.ctx.imageSmoothingEnabled = false;
-
-    if (suspendedCtx) 
-    {
-      this.suspendedCtx = suspendedCtx;
-    }
 
     if( group.smask )
     {

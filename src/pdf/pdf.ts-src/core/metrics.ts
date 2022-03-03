@@ -24,7 +24,7 @@ import { getLookupTableFactory } from "./core_utils.js";
 // As per PDF spec, for most fonts (Type 3 being an exception) a glyph
 // space unit corresponds to 1/1000th of text space unit.
 export const getMetrics = getLookupTableFactory( 
-  ( t:Record< string, number | (()=>Record<string,number>) > ) =>
+  ( t:Record<string, number | (()=>Record<string,number>)> ) =>
 {
   t.Courier = 600;
   t["Courier-Bold"] = 600;
@@ -2972,5 +2972,98 @@ export const getMetrics = getLookupTableFactory(
     t.a190 = 970;
     t.a191 = 918;
   });
+});
+
+export const getFontBasicMetrics = getLookupTableFactory<
+  Record<string, {
+    ascent:number;
+    descent:number;
+    capHeight:number;
+    xHeight:number;
+  }>>(function (t) {
+  t.Courier = {
+    ascent: 629,
+    descent: -157,
+    capHeight: 562,
+    xHeight: -426,
+  };
+  t["Courier-Bold"] = {
+    ascent: 629,
+    descent: -157,
+    capHeight: 562,
+    xHeight: 439,
+  };
+  t["Courier-Oblique"] = {
+    ascent: 629,
+    descent: -157,
+    capHeight: 562,
+    xHeight: 426,
+  };
+  t["Courier-BoldOblique"] = {
+    ascent: 629,
+    descent: -157,
+    capHeight: 562,
+    xHeight: 426,
+  };
+  t.Helvetica = {
+    ascent: 718,
+    descent: -207,
+    capHeight: 718,
+    xHeight: 523,
+  };
+  t["Helvetica-Bold"] = {
+    ascent: 718,
+    descent: -207,
+    capHeight: 718,
+    xHeight: 532,
+  };
+  t["Helvetica-Oblique"] = {
+    ascent: 718,
+    descent: -207,
+    capHeight: 718,
+    xHeight: 523,
+  };
+  t["Helvetica-BoldOblique"] = {
+    ascent: 718,
+    descent: -207,
+    capHeight: 718,
+    xHeight: 532,
+  };
+  t["Times-Roman"] = {
+    ascent: 683,
+    descent: -217,
+    capHeight: 662,
+    xHeight: 450,
+  };
+  t["Times-Bold"] = {
+    ascent: 683,
+    descent: -217,
+    capHeight: 676,
+    xHeight: 461,
+  };
+  t["Times-Italic"] = {
+    ascent: 683,
+    descent: -217,
+    capHeight: 653,
+    xHeight: 441,
+  };
+  t["Times-BoldItalic"] = {
+    ascent: 683,
+    descent: -217,
+    capHeight: 669,
+    xHeight: 462,
+  };
+  t.Symbol = {
+    ascent: NaN,
+    descent: NaN,
+    capHeight: NaN,
+    xHeight: NaN,
+  };
+  t.ZapfDingbats = {
+    ascent: NaN,
+    descent: NaN,
+    capHeight: NaN,
+    xHeight: NaN,
+  };
 });
 /*81---------------------------------------------------------------------------*/

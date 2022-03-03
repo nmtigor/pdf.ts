@@ -435,10 +435,13 @@ console.log("%c>>>>>>> test AnnotationBorderStyle >>>>>>>",`color:${css_1}`);
 {
   console.log("it should set and get a valid width...");
   {
-    const borderStyle = new AnnotationBorderStyle();
-    borderStyle.setWidth(3);
+    const borderStyleInt = new AnnotationBorderStyle();
+    borderStyleInt.setWidth(3);
+    const borderStyleNum = new AnnotationBorderStyle();
+    borderStyleNum.setWidth(2.5);
 
-    console.assert( borderStyle.width === 3 );
+    console.assert( borderStyleInt.width === 3 );
+    console.assert( borderStyleNum.width === 2.5 );
   }
 
   console.log("it should not set and get an invalid width...");

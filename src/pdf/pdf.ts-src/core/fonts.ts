@@ -29,6 +29,7 @@ import {
   warn,
   type rect_t,
   type matrix_t,
+  point_t,
 } from "../shared/util.js";
 import { getDingbatsGlyphsUnicode, getGlyphsUnicode } from "./glyphlist.js";
 import {
@@ -47,6 +48,7 @@ import {
   getSupplementalGlyphMapForCalibri,
 } from "./standard_fonts.js";
 import {
+  getCharUnicodeCategory,
   getUnicodeForGlyph,
   getUnicodeRangeFor,
   mapSpecialUnicodeValues,
@@ -65,6 +67,7 @@ import { CFFCompiler, CFFParser } from "./cff_parser.js";
 import { CFFFont } from "./cff_font.js";
 import { Type1Font } from "./type1_font.js";
 import { FontRendererFactory } from "./font_renderer.js";
+import { getFontBasicMetrics } from "./metrics.js";
 import { GlyfTable } from "./glyf.js";
 /*81---------------------------------------------------------------------------*/
 
@@ -269,6 +272,10 @@ interface Accent
 
 export class Glyph
 {
+  isWhitespace;
+  isZeroWidthDiacritic;
+  isInvisibleFormatMark;
+
   compiled?:(( c:CanvasRenderingContext2D ) => void) | undefined;
 
   constructor(
@@ -282,6 +289,10 @@ export class Glyph
     public isSpace:boolean,
     public isInFont:boolean
   ) {
+    const category = getCharUnicodeCategory(unicode);
+    this.isWhitespace = category.isWhitespace;
+    this.isZeroWidthDiacritic = category.isZeroWidthDiacritic;
+    this.isInvisibleFormatMark = category.isInvisibleFormatMark;
   }
 
   matchesForCache(
@@ -1289,6 +1300,25 @@ export class Font extends FontExpotDataEx
     );
 
     fontName = stdFontMap[fontName] || nonStdFontMap[fontName] || fontName;
+
+    const fontBasicMetricsMap = getFontBasicMetrics();
+    const metrics = fontBasicMetricsMap[fontName];
+    if( metrics )
+    {
+      if( isNaN(this.ascent) )
+      {
+        this.ascent = metrics.ascent / PDF_GLYPH_SPACE_UNITS;
+      }
+      if( isNaN(this.descent) )
+      {
+        this.descent = metrics.descent / PDF_GLYPH_SPACE_UNITS;
+      }
+      if( isNaN(this.capHeight) )
+      {
+        this.capHeight = metrics.capHeight / PDF_GLYPH_SPACE_UNITS;
+      }
+    }
+
     this.bold = fontName.search(/bold/gi) !== -1;
     this.italic =
       fontName.search(/oblique/gi) !== -1 || fontName.search(/italic/gi) !== -1;
@@ -3579,7 +3609,10 @@ export class Font extends FontExpotDataEx
       }
     }
     width = this.widths![widthCode];
-    width = (typeof width === "number") ? width : this.defaultWidth;
+    if( typeof width !== "number" )
+    {
+      width = this.defaultWidth;
+    }
     const vmetric = this.vmetrics?.[+widthCode];
 
     let unicode = this.toUnicode!.get(charcode) || charcode;
@@ -3712,11 +3745,11 @@ export class Font extends FontExpotDataEx
    * @param a string encoded with font encoding.
    * @return the positions of each char in the string.
    */
-  getCharPositions( chars:string )
+  getCharPositions( chars:string ):point_t[]
   {
     // This function doesn't use a cache because
     // it's called only when saving or printing.
-    const positions = [];
+    const positions:point_t[] = [];
 
     if (this.cMap) 
     {
@@ -3725,13 +3758,13 @@ export class Font extends FontExpotDataEx
       while (i < chars.length) {
         this.cMap.readCharCode(chars, i, c);
         const length = c.length;
-        positions.push(<const>[i, i + length]);
+        positions.push([i, i + length]);
         i += length;
       }
     } 
     else {
       for (let i = 0, ii = chars.length; i < ii; ++i) {
-        positions.push(<const>[i, i + 1]);
+        positions.push([i, i + 1]);
       }
     }
 

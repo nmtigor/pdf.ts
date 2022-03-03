@@ -15,7 +15,7 @@
 
 import { html } from "../../lib/dom.js";
 import { PDFDocumentProxy } from "../pdf.ts-src/display/api.js";
-import { removeNullCharacters } from "../pdf.ts-src/pdf.js";
+import { removeNullCharacters } from "./ui_utils.js";
 import { EventBus } from "./event_utils.js";
 /*81---------------------------------------------------------------------------*/
 

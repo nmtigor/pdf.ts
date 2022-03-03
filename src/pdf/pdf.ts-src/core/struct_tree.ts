@@ -75,7 +75,7 @@ class StructElementNode
   get role()
   {
     const nameObj = this.dict.get("S");
-    const name = (nameObj instanceof Name) ? nameObj.name : "";
+    const name = nameObj instanceof Name ? nameObj.name : "";
     const { root } = this.tree;
     if( root.roleMap.has(name) )
     {
@@ -88,7 +88,7 @@ class StructElementNode
   {
     let pageObjId;
     const objRef = this.dict.getRaw("Pg");
-    if( (objRef instanceof Ref) )
+    if( objRef instanceof Ref )
     {
       pageObjId = objRef.toString();
     }
@@ -145,18 +145,20 @@ class StructElementNode
       pageObjId = pageRef.toString();
     }
 
-    const type = (kidDict.get("Type") instanceof Name) 
-      ? (<Name>kidDict.get("Type")).name 
-      : null;
-    if (type === "MCR") 
+    const type = 
+      kidDict.get("Type") instanceof Name 
+        ? (<Name>kidDict.get("Type")).name 
+        : null;
+    if( type === "MCR" )
     {
       if( this.tree.pageDict.objId !== pageObjId ) return null;
 
       return new StructElement({
         type: StructElementType.STREAM_CONTENT,
-        refObjId: (kidDict.getRaw("Stm") instanceof Ref)
-          ? kidDict.getRaw("Stm")!.toString()
-          : undefined,
+        refObjId: 
+          kidDict.getRaw("Stm") instanceof Ref
+            ? kidDict.getRaw("Stm")!.toString()
+            : undefined,
         pageObjId,
         mcid: <number>kidDict.get("MCID"),
       });
@@ -168,9 +170,10 @@ class StructElementNode
 
       return new StructElement({
         type: StructElementType.OBJECT,
-        refObjId: kidDict.getRaw("Obj") instanceof Ref
-          ? kidDict.getRaw("Obj")!.toString()
-          : undefined,
+        refObjId: 
+          kidDict.getRaw("Obj") instanceof Ref
+            ? kidDict.getRaw("Obj")!.toString()
+            : undefined,
         pageObjId,
       });
     }
@@ -259,7 +262,7 @@ export class StructTreePage
     const map = new Map<Dict, StructElementNode>();
     for( const ref of parentArray )
     {
-      if( (ref instanceof Ref) )
+      if( ref instanceof Ref )
       {
         this.addNode( <Dict>this.rootDict.xref!.fetch(ref), map );
       }

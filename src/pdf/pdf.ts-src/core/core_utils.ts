@@ -36,7 +36,7 @@ import { XRef } from "./xref.js";
 /*81---------------------------------------------------------------------------*/
 
 export function getLookupTableFactory< 
-  T extends object=Record<string,number> >( initializer?:(lookup:T)=>void ) 
+  T extends object=Record<string,number>>( initializer?:(lookup:T)=>void ) 
 {
   let lookup:T;
   return () => {
@@ -391,7 +391,7 @@ function _collectJS( entry:Obj|undefined, xref:XRef, list:string[], parents:RefS
   } 
   else if (entry instanceof Dict) 
   {
-    if( isName(entry.get("S"), "JavaScript") && entry.has("JS") ) 
+    if( isName(entry.get("S"), "JavaScript") )
     {
       const js = entry.get("JS");
       let code;
@@ -399,11 +399,13 @@ function _collectJS( entry:Obj|undefined, xref:XRef, list:string[], parents:RefS
       {
         code = js.getString();
       } 
-      else {
+      else if( typeof js === "string" )
+      {
         code = <string>js;
       }
-      code = stringToPDFString(code);
-      if (code) {
+      code = code && stringToPDFString(code);
+      if( code )
+      {
         list.push(code);
       }
     }

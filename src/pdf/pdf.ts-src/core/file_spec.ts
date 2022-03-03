@@ -54,7 +54,7 @@ export class FileSpec
   root;
   fs;
   description;
-  contentAvailable:boolean;
+  contentAvailable;
 
   #filename?:string
   get filename() 
@@ -73,9 +73,8 @@ export class FileSpec
 
   constructor( root:Dict, xref:XRef ) 
   {
-    // if (!root || !isDict(root)) {
-    //   return;
-    // }
+    if( !(root instanceof Dict) ) return;
+
     this.xref = xref;
     this.root = root;
     if (root.has("FS")) 
@@ -107,9 +106,8 @@ export class FileSpec
     let content = undefined;
     if( this.contentRef )
     {
-      const xref = this.xref;
-      const fileObj = xref.fetchIfRef(this.contentRef);
-      if( fileObj && (fileObj instanceof BaseStream) )
+      const fileObj = this.xref!.fetchIfRef(this.contentRef);
+      if( fileObj instanceof BaseStream )
       {
         content = fileObj.getBytes();
       } 

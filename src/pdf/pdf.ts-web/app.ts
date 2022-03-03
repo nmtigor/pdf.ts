@@ -43,7 +43,6 @@ import {
 } from "./ui_utils.js";
 import { 
   AppOptions, 
-  compatibilityParams, 
   OptionKind, 
   ViewOnLoad, 
   type OptionName 
@@ -55,7 +54,6 @@ import {
   getFilenameFromUrl,
   GlobalWorkerOptions,
   InvalidPDFException,
-  LinkTarget,
   loadScript,
   MissingPDFException,
   PDFWorker,
@@ -73,7 +71,7 @@ import { PDFFindBar } from "./pdf_find_bar.js";
 import { FindState, type MatchesCount, PDFFindController } from "./pdf_find_controller.js";
 import { PDFHistory } from "./pdf_history.js";
 import { PDFLayerViewer } from "./pdf_layer_viewer.js";
-import { PDFLinkService } from "./pdf_link_service.js";
+import { LinkTarget, PDFLinkService } from "./pdf_link_service.js";
 import { PDFOutlineViewer } from "./pdf_outline_viewer.js";
 import { PDFPresentationMode } from "./pdf_presentation_mode.js";
 import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
@@ -606,18 +604,9 @@ export class PDFViewerApplication
   {
     const { appConfig, externalServices } = this;
 
-    let eventBus;
-    if (appConfig.eventBus) 
-    {
-      eventBus = appConfig.eventBus;
-    } 
-    else if (externalServices.isInAutomation) 
-    {
-      eventBus = new AutomationEventBus();
-    } 
-    else {
-      eventBus = new EventBus();
-    }
+    const eventBus = externalServices.isInAutomation
+      ? new AutomationEventBus()
+      : new EventBus();
     this.eventBus = eventBus;
 
     this.overlayManager = new OverlayManager();
@@ -836,16 +825,7 @@ export class PDFViewerApplication
 
   get supportsFullscreen()
   {
-    // #if MOZCENTRAL
-      return shadow(this, "supportsFullscreen", document.fullscreenEnabled);
-    // #endif
-    return shadow(
-      this,
-      "supportsFullscreen",
-      document.fullscreenEnabled ||
-      (<any>document).mozFullScreenEnabled ||
-      (<any>document).webkitFullscreenEnabled
-    );
+    return shadow(this, "supportsFullscreen", document.fullscreenEnabled);
   }
 
   get supportsIntegratedFind() 
@@ -1108,7 +1088,7 @@ export class PDFViewerApplication
     this.pdfLoadingTask = loadingTask;
 
     loadingTask.onPassword = (
-      updateCallback:( password:string ) => void, 
+      updateCallback:( password:string | Error ) => void, 
       reason:PasswordResponses
     ) => {
       this.pdfLinkService!.externalLinkEnabled = false;
@@ -1235,9 +1215,8 @@ export class PDFViewerApplication
         url: this.baseUrl,
       })
       .then(download => {
-        if (!download) {
-          return;
-        }
+        if( !download ) return;
+
         this.download({ sourceEventType: "download" });
       });
   }
@@ -1251,6 +1230,12 @@ export class PDFViewerApplication
     this.#unblockDocumentLoadEvent();
 
     this._otherError(message, moreInfo);
+
+    this.eventBus.dispatch("documenterror", {
+      source: this,
+      message,
+      reason: moreInfo?.message ?? undefined,
+    });
   }
 
   /**
@@ -2346,14 +2331,11 @@ let validateFileURL:( file?:string ) => void;
         // Hosted or local viewer, allow for any file locations
         return;
       }
-      const { origin, protocol } = new URL(file, window.location.href);
+      const fileOrigin = new URL(file, window.location.href).origin;
       // Removing of the following line will not guarantee that the viewer will
       // start accepting URLs from foreign origin -- CORS headers on the remote
       // server must be properly configured.
-      // IE10 / IE11 does not include an origin in `blob:`-URLs. So don't block
-      // any blob:-URL. The browser's same-origin policy will block requests to
-      // blob:-URLs from other origins, so this is safe.
-      if (origin !== viewerOrigin && protocol !== "blob:") 
+      if( fileOrigin !== viewerOrigin )
       {
         throw new Error("file origin does not match viewer's");
       }
@@ -2751,31 +2733,17 @@ let webViewerOpenFile:( evt:EventMap["openfile"] ) => void;
 // #if GENERIC
   webViewerFileInputChange = ( evt:EventMap['fileinputchange'] ) =>
   {
-    if( viewerapp.pdfViewer?.isInPresentationMode ) 
-    {
-      return; // Opening a new PDF file isn't supported in Presentation Mode.
-    }
+    // Opening a new PDF file isn't supported in Presentation Mode.
+    if( viewerapp.pdfViewer?.isInPresentationMode ) return; 
+
     const file = (<DataTransfer>evt.fileInput).files[0];
 
-    if( !compatibilityParams.disableCreateObjectURL )
+    let url:string | {url:string;originalUrl:string;} = URL.createObjectURL(file);
+    if( file.name )
     {
-      let url:string | {url:string;originalUrl:string;} = URL.createObjectURL(file);
-      if( file.name )
-      {
-        url = { url, originalUrl: file.name };
-      }
-      viewerapp.open(url);
+      url = { url, originalUrl: file.name };
     }
-    else {
-      viewerapp.setTitleUsingUrl(file.name);
-      // Read the local file into a Uint8Array.
-      const fileReader = new FileReader();
-      fileReader.onload = event => {
-        const buffer = <ArrayBuffer>event.target!.result;
-        viewerapp.open( new Uint8Array(buffer) );
-      };
-      fileReader.readAsArrayBuffer(file);
-    }
+    viewerapp.open(url);
   };
 
   webViewerOpenFile = ( evt:EventMap["openfile"] ) =>
@@ -2897,6 +2865,7 @@ function webViewerFindFromUrlHash( evt:EventMap['findfromurlhash'] )
     entireWord: false,
     highlightAll: true,
     findPrevious: false,
+    matchDiacritics: true,
   });
 }
 
@@ -2995,13 +2964,16 @@ function webViewerWheel( evt:WheelEvent )
     // NOTE: this check must be placed *after* preventDefault.
     if( zoomDisabledTimeout || document.visibilityState === "hidden" ) return;
 
+    // It is important that we query deltaMode before delta{X,Y}, so that
+    // Firefox doesn't switch to DOM_DELTA_PIXEL mode for compat with other
+    // browsers, see https://bugzilla.mozilla.org/show_bug.cgi?id=1392460.
+    const deltaMode = evt.deltaMode;
+    const delta = normalizeWheelEventDirection(evt);
     const previousScale = pdfViewer!.currentScale;
 
-    const delta = normalizeWheelEventDirection(evt);
     let ticks = 0;
-    if (
-      evt.deltaMode === WheelEvent.DOM_DELTA_LINE ||
-      evt.deltaMode === WheelEvent.DOM_DELTA_PAGE
+    if( deltaMode === WheelEvent.DOM_DELTA_LINE
+     || deltaMode === WheelEvent.DOM_DELTA_PAGE
     ) {
       // For line-based devices, use one tick per event, because different
       // OSs have different defaults for the number lines. But we generally

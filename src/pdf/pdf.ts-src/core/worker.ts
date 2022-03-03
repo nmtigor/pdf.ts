@@ -49,8 +49,9 @@ import {
   LocalPdfManager, 
   NetworkPdfManager,
 } from "./pdf_manager.js";
-import { clearPrimitiveCaches, Dict, Ref } from "./primitives.js";
+import { Dict, Ref } from "./primitives.js";
 import { PDFWorkerStream } from "./worker_stream.js";
+import { clearGlobalCaches } from "./cleanup_helper.js";
 import { incrementalUpdate } from "./writer.js";
 import { Page } from "./document.js";
 import { type ReadValue } from "../interfaces.js";
@@ -174,16 +175,17 @@ export const WorkerMessageHandler =
       // Ensure that (primarily) Node.js users won't accidentally attempt to use
       // a non-translated/non-polyfilled build of the library, since that would
       // quickly fail anyway because of missing functionality.
-      // #if SKIP_BABEL
-        if( typeof ReadableStream === "undefined" )
-        {
-          throw new Error(
-            "The browser/environment lacks native support for critical " +
-            "functionality used by the PDF.js library (e.g. `ReadableStream`); " +
-            "please use a `legacy`-build instead."
-          );
-        }
-      // #endif
+      if (typeof ReadableStream === "undefined")
+      {
+        const partialMsg =
+          "The browser/environment lacks native support for critical " +
+          "functionality used by the PDF.js library (e.g. `ReadableStream`); ";
+
+        // if (isNodeJS) {
+        //   throw new Error(partialMsg + "please use a `legacy`-build instead.");
+        // }
+        throw new Error(partialMsg + "please update to a supported browser.");
+      }
     // #endif
 
     const docId = docParms.docId;
@@ -516,9 +518,9 @@ export const WorkerMessageHandler =
         )
     );
 
-    handler.on("GetPageIndex", ({ ref }) =>
+    handler.on("GetPageIndex", ( data ) =>
     {
-      const pageRef = Ref.get(ref.num, ref.gen);
+      const pageRef = Ref.get( data.num, data.gen );
       return pdfManager.ensureCatalog("getPageIndex", [pageRef]);
     });
 
@@ -723,9 +725,8 @@ export const WorkerMessageHandler =
             if (xrefInfo instanceof Dict) 
             {
               xrefInfo.forEach((key, value) => {
-                if( (typeof key === "string") 
-                 && (typeof value === "string")
-                ) {
+                if( typeof value === "string" )
+                {
                   infoObj[key] = stringToPDFString(value);
                 }
               });
@@ -826,7 +827,6 @@ export const WorkerMessageHandler =
             handler,
             task,
             sink,
-            normalizeWhitespace: data.normalizeWhitespace,
             includeMarkedContent: data.includeMarkedContent,
             combineTextItems: data.combineTextItems,
           })
@@ -886,7 +886,7 @@ export const WorkerMessageHandler =
         pdfManager = <any>undefined;
       } 
       else {
-        clearPrimitiveCaches();
+        clearGlobalCaches();
       }
       if (cancelXHRs) {
         cancelXHRs(new AbortException("Worker was terminated."));

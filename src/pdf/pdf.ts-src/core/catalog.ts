@@ -17,9 +17,7 @@
  * limitations under the License.
  */
 
-import { createPromiseCap } from "../../../lib/promisecap.js";
 import {
-  clearPrimitiveCaches,
   Dict,
   isDict,
   isName,
@@ -43,7 +41,6 @@ import {
   DocumentActionEventType,
   FormatError,
   info,
-  isBool,
   objectSize,
   PermissionFlag,
   type rect_t,
@@ -53,6 +50,7 @@ import {
   warn,
 } from "../shared/util.js";
 import { NameTree, NumberTree } from "./name_number_tree.js";
+import { clearGlobalCaches } from "./cleanup_helper.js";
 import { ColorSpace } from "./colorspace.js";
 import { FileSpec } from "./file_spec.js";
 import { GlobalImageCache } from "./image_utils.js";
@@ -237,7 +235,7 @@ export class Catalog
     let collection = null;
     try {
       const obj = this.#catDict.get("Collection");
-      if( (obj instanceof Dict) && obj.size > 0 ) 
+      if( obj instanceof Dict && obj.size > 0 ) 
       {
         collection = obj;
       }
@@ -255,14 +253,13 @@ export class Catalog
     let acroForm:Dict | undefined;
     try {
       const obj = this.#catDict.get("AcroForm");
-      if( (obj instanceof Dict) && obj.size > 0 )
+      if( obj instanceof Dict && obj.size > 0 )
       {
         acroForm = obj;
       }
     } catch (ex) {
-      if (ex instanceof MissingDataException) {
-        throw ex;
-      }
+      if( ex instanceof MissingDataException ) throw ex;
+
       info("Cannot fetch AcroForm entry; assuming no forms are present.");
     }
     return shadow(this, "acroForm", acroForm);
@@ -271,7 +268,7 @@ export class Catalog
   get acroFormRef() 
   {
     const value = this.#catDict.getRaw("AcroForm");
-    return shadow(this, "acroFormRef", (value instanceof Ref) ? value : undefined);
+    return shadow(this, "acroFormRef", value instanceof Ref ? value : undefined);
   }
 
   get metadata()
@@ -460,13 +457,13 @@ export class Catalog
 
       i.parent.items.push(outlineItem);
       obj = outlineDict.getRaw("First");
-      if( (obj instanceof Ref) && !processed.has(obj) )
+      if( obj instanceof Ref && !processed.has(obj) )
       {
         queue.push({ obj: obj, parent: outlineItem });
         processed.put( obj );
       }
       obj = outlineDict.getRaw("Next");
-      if( (obj instanceof Ref) && !processed.has(obj) )
+      if( obj instanceof Ref && !processed.has(obj) )
       {
         queue.push({ obj: obj, parent: i.parent });
         processed.put( obj );
@@ -538,7 +535,7 @@ export class Catalog
       const groups:OptionalContentGroupData[] = [];
       const groupRefs:Ref[] = [];
       // Ensure all the optional content groups are valid.
-      for (const groupRef of groupsData) 
+      for( const groupRef of groupsData )
       {
         if( !(groupRef instanceof Ref) ) continue;
 
@@ -547,12 +544,14 @@ export class Catalog
         let v;
         groups.push({
           id: groupRef.toString(),
-          name: (typeof (v = group.get("Name")) == "string")
-            ? stringToPDFString( v )
-            : null,
-          intent: (typeof (v = group.get("Intent")) === "string")
-            ? stringToPDFString( v )
-            : null,
+          name: 
+            typeof (v = group.get("Name")) == "string"
+              ? stringToPDFString( v )
+              : null,
+          intent: 
+            typeof (v = group.get("Intent")) === "string"
+              ? stringToPDFString( v )
+              : null,
         });
       }
       config = this.#readOptionalContentConfig( defaultConfig, groupRefs );
@@ -598,7 +597,7 @@ export class Catalog
 
       for (const value of refs) 
       {
-        if( (value instanceof Ref) && contentGroupRefs.includes(value) )
+        if( value instanceof Ref && contentGroupRefs.includes(value) )
         {
           parsedOrderRefs.put(value); // Handle "hidden" groups, see below.
 
@@ -657,15 +656,18 @@ export class Catalog
 
     let v;
     return {
-      name: (typeof (v = config.get("Name")) === "string")
-        ? stringToPDFString( v )
-        : null,
-      creator: (typeof (v = config.get("Creator")) === "string")
-        ? stringToPDFString( v )
-        : null,
-      baseState: ((v = config.get("BaseState")) instanceof Name)
-        ? v.name
-        : null,
+      name: 
+        typeof (v = config.get("Name")) === "string"
+          ? stringToPDFString( v )
+          : null,
+      creator: 
+        typeof (v = config.get("Creator")) === "string"
+          ? stringToPDFString( v )
+          : null,
+      baseState: 
+        (v = config.get("BaseState")) instanceof Name
+          ? v.name
+          : null,
       on: parseOnOff( <Ref[]>config.get("ON") ),
       off: parseOnOff( <Ref[]>config.get("OFF") ),
       order: parseOrder( <Ref[]>config.get("Order") ),
@@ -797,7 +799,8 @@ export class Catalog
     {
       const labelDict = nums.get(i);
 
-      if (labelDict !== undefined) {
+      if( labelDict !== undefined )
+      {
         if( !(labelDict instanceof Dict) ) 
         {
           throw new FormatError("PageLabel is not a dictionary.");
@@ -826,7 +829,7 @@ export class Catalog
         if( labelDict.has("P") )
         {
           const p = labelDict.get("P");
-          if( !(typeof p === "string") )
+          if( typeof p !== "string" )
           {
             throw new FormatError("Invalid prefix in PageLabel dictionary.");
           }
@@ -937,156 +940,150 @@ export class Catalog
 
   get viewerPreferences()
   {
-    const ViewerPreferencesValidators = {
-      HideToolbar: isBool,
-      HideMenubar: isBool,
-      HideWindowUI: isBool,
-      FitWindow: isBool,
-      CenterWindow: isBool,
-      DisplayDocTitle: isBool,
-      NonFullScreenPageMode: isName,
-      Direction: isName,
-      ViewArea: isName,
-      ViewClip: isName,
-      PrintArea: isName,
-      PrintClip: isName,
-      PrintScaling: isName,
-      Duplex: isName,
-      PickTrayByPDFSize: isBool,
-      PrintPageRange: Array.isArray,
-      NumCopies: Number.isInteger,
-    };
-
     const obj = this.#catDict.get("ViewerPreferences");
+    if( !(obj instanceof Dict) )
+    {
+      return shadow(this, "viewerPreferences", undefined);
+    }
     let prefs:ViewerPref | undefined;
 
-    if( obj instanceof Dict )
+    for( const key of obj.getKeys() )
     {
-      for( const key in ViewerPreferencesValidators )
-      {
-        if( !obj.has(key) )
-        {
-          continue;
-        }
-        const value = <Name | number | number[] | boolean>obj.get(key);
-        // Make sure the (standard) value conforms to the specification.
-        if( !(<any>ViewerPreferencesValidators)[key](value) )
-        {
-          info(`Bad value in ViewerPreferences for "${key}".`);
-          continue;
-        }
-        let prefValue;
+      const value = <Name | number | number[] | boolean>obj.get(key);
+      let prefValue:ViewerPrefValue | undefined;
 
-        switch( key )
-        {
-          case "NonFullScreenPageMode":
-            switch( (<Name>value).name )
+      switch( key )
+      {
+        case "HideToolbar":
+        case "HideMenubar":
+        case "HideWindowUI":
+        case "FitWindow":
+        case "CenterWindow":
+        case "DisplayDocTitle":
+        case "PickTrayByPDFSize":
+          if( typeof value === "boolean" )
+          {
+            prefValue = value;
+          }
+          break;
+        case "NonFullScreenPageMode":
+          if( value instanceof Name )
+          {
+            switch( value.name )
             {
               case "UseNone":
               case "UseOutlines":
               case "UseThumbs":
               case "UseOC":
-                prefValue = (<Name>value).name;
+                prefValue = value.name;
                 break;
               default:
                 prefValue = "UseNone";
             }
-            break;
-          case "Direction":
-            switch ((<Name>value).name) {
+          }
+          break;
+        case "Direction":
+          if( value instanceof Name )
+          {
+            switch( value.name )
+            {
               case "L2R":
               case "R2L":
-                prefValue = (<Name>value).name;
+                prefValue = value.name;
                 break;
               default:
                 prefValue = "L2R";
             }
-            break;
-          case "ViewArea":
-          case "ViewClip":
-          case "PrintArea":
-          case "PrintClip":
-            switch( (<Name>value).name )
+          }
+          break;
+        case "ViewArea":
+        case "ViewClip":
+        case "PrintArea":
+        case "PrintClip":
+          if( value instanceof Name )
+          {
+            switch( value.name )
             {
               case "MediaBox":
               case "CropBox":
               case "BleedBox":
               case "TrimBox":
               case "ArtBox":
-                prefValue = (<Name>value).name;
+                prefValue = value.name;
                 break;
               default:
                 prefValue = "CropBox";
             }
             break;
-          case "PrintScaling":
-            switch( (<Name>value).name )
+          }
+        case "PrintScaling":
+          if( value instanceof Name )
+          {
+            switch( value.name )
             {
               case "None":
               case "AppDefault":
-                prefValue = (<Name>value).name;
+                prefValue = value.name;
                 break;
               default:
                 prefValue = "AppDefault";
             }
-            break;
-          case "Duplex":
-            switch( (<Name>value).name )
+          }
+          break;
+        case "Duplex":
+          if( value instanceof Name )
+          {
+            switch( value.name )
             {
               case "Simplex":
               case "DuplexFlipShortEdge":
               case "DuplexFlipLongEdge":
-                prefValue = (<Name>value).name;
+                prefValue = value.name;
                 break;
               default:
                 prefValue = "None";
             }
-            break;
-          case "PrintPageRange":
-            const length = (<number[]>value).length;
-            if (length % 2 !== 0) {
-              // The number of elements must be even.
-              break;
-            }
-            const isValid = (<Number[]>value).every((page, i, arr) => {
+          }
+          break;
+        case "PrintPageRange":
+          // The number of elements must be even.
+          if( Array.isArray(value) && value.length % 2 === 0 )
+          {
+            const isValid = value.every((page, i, arr) => {
               return (
                 Number.isInteger(page) &&
                 page > 0 &&
                 (i === 0 || page >= arr[i - 1]) &&
-                page <= this.numPages!
+                page <= this.numPages
               );
             });
-            if (isValid) {
-              prefValue = <number[]>value;
-            }
-            break;
-          case "NumCopies":
-            if (value > 0) {
-              prefValue = <number>value;
-            }
-            break;
-          default:
-            if( typeof value !== "boolean" ) 
+            if (isValid)
             {
-              throw new FormatError(
-                `viewerPreferences - expected a boolean value for: ${key}`
-              );
+              prefValue = value;
             }
-            prefValue = value;
-        }
-
-        if( prefValue !== undefined )
-        {
-          if (!prefs) 
-          {
-            prefs = Object.create(null);
           }
-          prefs![key] = prefValue;
-        }
-        else {
-          info(`Bad value in ViewerPreferences for "${key}".`);
-        }
+          break;
+        case "NumCopies":
+          if( Number.isInteger(value) && value > 0 )
+          {
+            prefValue = <number>value;
+          }
+          break;
+        default:
+          warn(`Ignoring non-standard key in ViewerPreferences: ${key}.`);
+          continue;
       }
+
+      if( prefValue === undefined )
+      {
+        warn(`Bad value, for key "${key}", in ViewerPreferences: ${value}.`);
+        continue;
+      }
+      if( !prefs )
+      {
+        prefs = Object.create(null);
+      }
+      prefs![key] = prefValue;
     }
     return shadow(this, "viewerPreferences", prefs);
   }
@@ -1270,7 +1267,7 @@ export class Catalog
 
   cleanup( manuallyTriggered=false )
   {
-    clearPrimitiveCaches();
+    clearGlobalCaches();
     this.globalImageCache.clear(/* onlyData = */ manuallyTriggered);
     this.pageKidsCountCache.clear();
     this.pageIndexCache.clear();
@@ -1295,9 +1292,8 @@ export class Catalog
   /**
    * Dict: Ref. 7.7.3.3 Page Objects
    */
-  getPageDict( pageIndex:number ):Promise<[Dict, Ref | undefined]>
+  async getPageDict( pageIndex:number ):Promise<[Dict, Ref | undefined]>
   {
-    const capability = createPromiseCap<[Dict, Ref | undefined]>();
     const nodesToVisit:(Dict | Ref)[] = [ this.toplevelPagesDict ];
     const visitedNodes = new RefSet();
 
@@ -1306,144 +1302,146 @@ export class Catalog
     {
       visitedNodes.put(pagesRef);
     }
-    const xref = this.xref;
-    const pageKidsCountCache = this.pageKidsCountCache;
+    const xref = this.xref,
+      pageKidsCountCache = this.pageKidsCountCache,
+      pageIndexCache = this.pageIndexCache;
     let currentPageIndex = 0;
 
-    function next() 
+    while( nodesToVisit.length )
     {
-      while( nodesToVisit.length )
+      const currentNode = nodesToVisit.pop()!;
+
+      if( currentNode instanceof Ref )
       {
-        const currentNode = nodesToVisit.pop()!;
-
-        if( (currentNode instanceof Ref) )
+        const count = pageKidsCountCache.get( currentNode );
+        // Skip nodes where the page can't be.
+        if( count! >= 0 && currentPageIndex + count! <= pageIndex )
         {
-          const count = pageKidsCountCache.get( currentNode );
-          // Skip nodes where the page can't be.
-          if( count! >= 0 && currentPageIndex + count! <= pageIndex )
-          {
-            currentPageIndex += count!;
-            continue;
-          }
-          // Prevent circular references in the /Pages tree.
-          if( visitedNodes.has(currentNode) )
-          {
-            capability.reject(
-              new FormatError("Pages tree contains circular reference.")
-            );
-            return;
-          }
-          visitedNodes.put( currentNode );
+          currentPageIndex += count!;
+          continue;
+        }
+        // Prevent circular references in the /Pages tree.
+        if( visitedNodes.has(currentNode) )
+        {
+          throw new FormatError("Pages tree contains circular reference.");
+        }
+        visitedNodes.put( currentNode );
 
-          xref.fetchAsync<Dict | Ref>( currentNode ).then( obj => {
-            if( isDict(obj, "Page") || ((obj instanceof Dict) && !obj.has("Kids")) )
+        const obj = await xref.fetchAsync(currentNode);
+        if( obj instanceof Dict )
+        {
+          let type = obj.getRaw("Type");
+          if (type instanceof Ref)
+          {
+            type = await xref.fetchAsync(type);
+          }
+          if( isName(type, "Page") || !obj.has("Kids") )
+          {
+            // Cache the Page reference, since it can *greatly* improve
+            // performance by reducing redundant lookups in long documents
+            // where all nodes are found at *one* level of the tree.
+            if( !pageKidsCountCache.has(currentNode) )
             {
-              // Cache the Page reference, since it can *greatly* improve
-              // performance by reducing redundant lookups in long documents
-              // where all nodes are found at *one* level of the tree.
-              if( currentNode && !pageKidsCountCache.has(currentNode) )
-              {
-                pageKidsCountCache.put( currentNode, 1 );
-              }
-
-              if( pageIndex === currentPageIndex )
-              {
-                capability.resolve([<Dict>obj, currentNode]);
-              } 
-              else {
-                currentPageIndex++;
-                next();
-              }
-              return;
+              pageKidsCountCache.put( currentNode, 1 );
             }
-            nodesToVisit.push( obj );
-            next();
-          }, capability.reject );
-          return;
-        }
+            // Help improve performance of the `getPageIndex` method.
+            if( !pageIndexCache.has(currentNode) )
+            {
+              pageIndexCache.put(currentNode, currentPageIndex);
+            }
+            // Help improve performance of the `getPageIndex` method.
+            if( !pageIndexCache.has(currentNode) )
+            {
+              pageIndexCache.put(currentNode, currentPageIndex);
+            }
 
-        // Must be a child page dictionary.
-        if( !(currentNode instanceof Dict) )
-        {
-          capability.reject(
-            new FormatError(
-              "Page dictionary kid reference points to wrong type of object."
-            )
-          );
-          return;
-        }
-
-        let count:number | undefined;
-        try {
-          count = <number>currentNode.get("Count");
-        } catch (ex) {
-          if( ex instanceof MissingDataException ) throw ex;
-        }
-        if( Number.isInteger(count) && count! >= 0 )
-        {
-          // Cache the Kids count, since it can reduce redundant lookups in
-          // documents where all nodes are found at *one* level of the tree.
-          const objId = (<Dict>currentNode).objId;
-          if( objId && !pageKidsCountCache.has(objId) )
-          {
-            pageKidsCountCache.put(objId, count!);
-          }
-          // Skip nodes where the page can't be.
-          if( currentPageIndex + count! <= pageIndex )
-          {
-            currentPageIndex += count!;
-            continue;
-          }
-        }
-
-        const kids = <Ref[]>(<Dict>currentNode).get("Kids");
-        if( !Array.isArray(kids) )
-        {
-          // Prevent errors in corrupt PDF documents that violate the
-          // specification by *inlining* Page dicts directly in the Kids
-          // array, rather than using indirect objects (fixes issue9540.pdf).
-          let type;
-          try {
-            type = currentNode.get("Type");
-          } catch (ex) {
-            if( ex instanceof MissingDataException ) throw ex;
-          }
-          if( isName(type, "Page")
-           || (!currentNode.has("Type") && currentNode.has("Contents"))
-          ) {
             if( currentPageIndex === pageIndex )
             {
-              capability.resolve([<Dict>currentNode, undefined]);
-              return;
+              return [obj, currentNode];
             }
             currentPageIndex++;
             continue;
           }
-
-          capability.reject(
-            new FormatError("Page dictionary kids object is not an array.")
-          );
-          return;
         }
+        nodesToVisit.push( <Dict | Ref>obj );
+        continue;
+      }
 
-        // Always check all `Kids` nodes, to avoid getting stuck in an empty
-        // node further down in the tree (see issue5644.pdf, issue8088.pdf),
-        // and to ensure that we actually find the correct `Page` dict.
-        for( let last = kids.length - 1; last >= 0; last-- )
+      // Must be a child page dictionary.
+      if( !(currentNode instanceof Dict) )
+      {
+        throw new FormatError(
+          "Page dictionary kid reference points to wrong type of object."
+        );
+      }
+      const { objId } = currentNode;
+
+      let count = <number | Ref | undefined>currentNode.getRaw("Count");
+      if( count instanceof Ref )
+      {
+        count = await <Promise<number>>xref.fetchAsync(count);
+      }
+      if( Number.isInteger(count) && count! >= 0 )
+      {
+        // Cache the Kids count, since it can reduce redundant lookups in
+        // documents where all nodes are found at *one* level of the tree.
+        if( objId && !pageKidsCountCache.has(objId) )
         {
-          nodesToVisit.push( kids[last] );
+          pageKidsCountCache.put(objId, count!);
+        }
+        
+        // Skip nodes where the page can't be.
+        if( currentPageIndex + count! <= pageIndex )
+        {
+          currentPageIndex += count!;
+          continue;
         }
       }
-      capability.reject(new Error(`Page index ${pageIndex} not found.`));
+
+      let kids = currentNode.getRaw("Kids");
+      if( kids instanceof Ref )
+      {
+        kids = await xref.fetchAsync(kids);
+      }
+      if( !Array.isArray(kids) )
+      {
+        // Prevent errors in corrupt PDF documents that violate the
+        // specification by *inlining* Page dicts directly in the Kids
+        // array, rather than using indirect objects (fixes issue9540.pdf).
+        let type = currentNode.getRaw("Type");
+        if( type instanceof Ref )
+        {
+          type = await xref.fetchAsync(type);
+        }
+        if( isName(type, "Page") || !currentNode.has("Kids") )
+        {
+          if( currentPageIndex === pageIndex )
+          {
+            return [currentNode, undefined];
+          }
+          currentPageIndex++;
+          continue;
+        }
+
+        throw new FormatError("Page dictionary kids object is not an array.");
+      }
+
+      // Always check all `Kids` nodes, to avoid getting stuck in an empty
+      // node further down in the tree (see issue5644.pdf, issue8088.pdf),
+      // and to ensure that we actually find the correct `Page` dict.
+      for( let last = kids.length - 1; last >= 0; last-- )
+      {
+        nodesToVisit.push( <Ref>kids[last] );
+      }
     }
-    next();
-    return capability.promise;
+
+    throw new Error(`Page index ${pageIndex} not found.`);
   }
 
   /**
    * Eagerly fetches the entire /Pages-tree; should ONLY be used as a fallback.
    */
-  getAllPageDicts( recoveryMode=false ):AllPageDicts
+  async getAllPageDicts( recoveryMode=false ):Promise<AllPageDicts>
   {
     const queue = [{ currentNode: this.toplevelPagesDict, posInKids: 0 }];
     const visitedNodes = new RefSet();
@@ -1453,31 +1451,45 @@ export class Catalog
     {
       visitedNodes.put(pagesRef);
     }
-    const map:AllPageDicts = new Map();
+    const map:AllPageDicts = new Map(),
+      xref = this.xref,
+      pageIndexCache = this.pageIndexCache;
     let pageIndex = 0;
 
     function addPageDict( pageDict:Dict, pageRef:Ref | undefined )
     {
+      // Help improve performance of the `getPageIndex` method.
+      if( pageRef && !pageIndexCache.has(pageRef) )
+      {
+        pageIndexCache.put(pageRef, pageIndex);
+      }
+
       map.set(pageIndex++, [pageDict, pageRef]);
     }
     function addPageError( error:Error )
     {
+      if( error instanceof XRefEntryException && !recoveryMode )
+      {
+        throw error;
+      }
+
       map.set(pageIndex++, [error, undefined]);
     }
 
-    while (queue.length > 0) 
+    while( queue.length > 0 )
     {
       const queueItem = queue[queue.length - 1];
       const { currentNode, posInKids } = queueItem;
 
-      let kids;
-      try {
-        kids = currentNode.get("Kids");
-      } catch (ex) {
-        if( ex instanceof MissingDataException ) throw ex;
-        if( ex instanceof XRefEntryException && !recoveryMode ) throw ex;
-        addPageError( <Error>ex );
-        break;
+      let kids = currentNode.getRaw("Kids");
+      if (kids instanceof Ref)
+      {
+        try {
+          kids = await xref.fetchAsync(kids);
+        } catch (ex) {
+          addPageError( <Error>ex );
+          break;
+        }
       }
       if( !Array.isArray(kids) )
       {
@@ -1495,18 +1507,10 @@ export class Catalog
 
       const kidObj = kids[posInKids];
       let obj;
-      if (kidObj instanceof Ref) 
+      if( kidObj instanceof Ref )
       {
-        try {
-          obj = this.xref.fetch(kidObj);
-        } catch (ex) {
-          if( ex instanceof MissingDataException ) throw ex;
-          if( ex instanceof XRefEntryException && !recoveryMode ) throw ex;
-          addPageError( <Error>ex );
-          break;
-        }
         // Prevent circular references in the /Pages tree.
-        if (visitedNodes.has(kidObj)) 
+        if( visitedNodes.has(kidObj) )
         {
           addPageError(
             new FormatError("Pages tree contains circular reference.")
@@ -1514,6 +1518,13 @@ export class Catalog
           break;
         }
         visitedNodes.put(kidObj);
+
+        try {
+          obj = await xref.fetchAsync(kidObj);
+        } catch (ex) {
+          addPageError( <Error>ex );
+          break;
+        }
       } 
       else {
         // Prevent errors in corrupt PDF documents that violate the
@@ -1531,7 +1542,17 @@ export class Catalog
         break;
       }
 
-      if( isDict(obj, "Page") || !obj.has("Kids") )
+      let type = obj.getRaw("Type");
+      if( type instanceof Ref )
+      {
+        try {
+          type = await xref.fetchAsync(type);
+        } catch (ex) {
+          addPageError( <Error>ex );
+          break;
+        }
+      }
+      if( isName(type, "Page") || !obj.has("Kids") )
       {
         addPageDict(obj, kidObj instanceof Ref ? kidObj : undefined);
       } 
@@ -1566,15 +1587,14 @@ export class Catalog
         .then( node => {
           if( isRefsEqual(kidRef, pageRef)
            && !isDict(node, "Page")
-           && !((node instanceof Dict) && !node.has("Type") && node.has("Contents"))
+           && !(node instanceof Dict && !node.has("Type") && node.has("Contents"))
           ) {
             throw new FormatError(
               "The reference does not point to a /Page dictionary."
             );
           }
-          if (!node) {
-            return null;
-          }
+          if( !node ) return null;
+
           if( !(node instanceof Dict) )
           {
             throw new FormatError("Node must be a dictionary.");
@@ -1722,7 +1742,7 @@ export class Catalog
       {
         case "ResetForm":
           const flags = action.get("Flags");
-          const include = (((typeof flags === "number") ? flags : 0) & 1) === 0;
+          const include = ((typeof flags === "number" ? flags : 0) & 1) === 0;
           const fields = [];
           const refs = [];
           for( const obj of <(Ref | string)[]>action.get("Fields") || [] )
@@ -1863,7 +1883,7 @@ export class Catalog
       {
         dest = dest.name;
       }
-      if( (typeof dest === "string") || Array.isArray(dest) )
+      if( typeof dest === "string" || Array.isArray(dest) )
       {
         resultObj.dest = dest;
       }

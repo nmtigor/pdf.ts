@@ -26,8 +26,6 @@ import {
   type matrix_t,
   type point_t,
   type rect_t,
-  removeNullCharacters,
-  shadow,
   stringToBytes,
   Util,
   warn,
@@ -40,18 +38,16 @@ import {
 } from "./base_factory.js";
 /*81---------------------------------------------------------------------------*/
 
-export const DEFAULT_LINK_REL = "noopener noreferrer nofollow";
 const SVG_NS = "http://www.w3.org/2000/svg";
 
-export const PixelsPerInch = {
-  CSS: 96.0,
-  PDF: 72.0,
+export class PixelsPerInch
+{
+  static CSS = 96.0;
 
-  get PDF_TO_CSS_UNITS():number
-  {
-    return shadow(this, "PDF_TO_CSS_UNITS", this.CSS / this.PDF);
-  },
-};
+  static PDF = 72.0;
+
+  static PDF_TO_CSS_UNITS = this.CSS / this.PDF;
+}
 
 export class DOMCanvasFactory extends BaseCanvasFactory 
 {
@@ -417,83 +413,6 @@ export class RenderingCancelledException extends BaseException
   {
     super(msg, "RenderingCancelledException");
   }
-}
-
-export const enum LinkTarget {
-  NONE = 0, // Default value.
-  SELF = 1,
-  BLANK = 2,
-  PARENT = 3,
-  TOP = 4,
-}
-
-interface ExternalLinkParms
-{
-  /**
-   * An absolute URL.
-   */
-  url:string;
-
-  /**
-   * The link target. The default value is `LinkTarget.NONE`.
-   */
-  target?:LinkTarget | undefined;
-
-  /**
-   * The link relationship. The default value is `DEFAULT_LINK_REL`.
-   */
-  rel?:string | undefined;
-
-  /**
-   * Whether the link should be enabled. The default value is true.
-   */
-  enabled?:boolean;
-}
-
-/**
- * Adds various attributes (href, title, target, rel) to hyperlinks.
- * @param link The link element.
- */
-export function addLinkAttributes( link:HTMLAnchorElement, 
-  { url, target, rel, enabled=true }=<ExternalLinkParms>{}
-) {
-  assert(
-    url && typeof url === "string",
-    'addLinkAttributes: A valid "url" parameter must provided.'
-  );
-
-  const urlNullRemoved = removeNullCharacters(url);
-  if (enabled) {
-    link.href = link.title = urlNullRemoved;
-  }
-  else {
-    link.href = "";
-    link.title = `Disabled: ${urlNullRemoved}`;
-    link.onclick = () => {
-      return false;
-    };
-  }
-
-  let targetStr = ""; // LinkTarget.NONE
-  switch (target) {
-    case LinkTarget.NONE:
-      break;
-    case LinkTarget.SELF:
-      targetStr = "_self";
-      break;
-    case LinkTarget.BLANK:
-      targetStr = "_blank";
-      break;
-    case LinkTarget.PARENT:
-      targetStr = "_parent";
-      break;
-    case LinkTarget.TOP:
-      targetStr = "_top";
-      break;
-  }
-  link.target = targetStr;
-
-  link.rel = typeof rel === "string" ? rel : DEFAULT_LINK_REL;
 }
 
 export function isDataScheme( url:string )

@@ -9,8 +9,8 @@ import { css_3 } from "../../../test/alias.js";
 
 // #if TESTING
   // #if TEST_ALL
-    import "./annotation_storage_test.js"
     await import( "./api_test.js" ); //! unsynchronized
+    import "./annotation_storage_test.js"
   // #else
   // #endif
 // #endif

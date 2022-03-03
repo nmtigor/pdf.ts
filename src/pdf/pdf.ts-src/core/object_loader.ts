@@ -29,8 +29,8 @@ function mayHaveChildren( value:unknown )
 {
   return ( value instanceof Ref
     || value instanceof Dict 
+    || value instanceof BaseStream
     || Array.isArray(value) 
-    || (value instanceof BaseStream)
   );
 }
 
@@ -41,7 +41,7 @@ function addChildren( node:Obj, nodesToVisit:Obj[] )
   {
     node_ = node.getRawValues();
   } 
-  else if( (node instanceof BaseStream) )
+  else if( node instanceof BaseStream )
   {
     node_ = node.dict!.getRawValues();
   } 
