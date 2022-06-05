@@ -15,10 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { bytesToString, FONT_IDENTITY_MATRIX, FormatError, warn, } from "../shared/util.js";
+import { bytesToString, FONT_IDENTITY_MATRIX, FormatError, warn } from "../shared/util.js";
 import { CFFParser } from "./cff_parser.js";
-import { getGlyphsUnicode } from "./glyphlist.js";
 import { StandardEncoding } from "./encodings.js";
+import { getGlyphsUnicode } from "./glyphlist.js";
 import { Stream } from "./stream.js";
 /*81---------------------------------------------------------------------------*/
 // TODO: use DataView and its methods.

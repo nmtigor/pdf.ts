@@ -18,10 +18,7 @@
  */
 /* no-babel-preset */
 
-import {
-  getArrayLookupTableFactory,
-  getLookupTableFactory,
-} from "./core_utils.js";
+import { getArrayLookupTableFactory, getLookupTableFactory } from "./core_utils.js";
 /*81---------------------------------------------------------------------------*/
 
 // Some characters, e.g. copyrightserif, are mapped to the private use area
@@ -70,26 +67,27 @@ export function mapSpecialUnicodeValues( code:number )
   return code;
 }
 
-export function getUnicodeForGlyph( name:string, glyphsUnicodeMap:Record<string, number> )
+export function getUnicodeForGlyph( 
+  name:string, glyphsUnicodeMap:Record<string, number> )
 {
   let unicode = glyphsUnicodeMap[name];
-  if (unicode !== undefined) {
+  if( unicode !== undefined )
     return unicode;
-  }
-  if (!name) {
+  if( !name )
     return -1;
-  }
   // Try to recover valid Unicode values from 'uniXXXX'/'uXXXX{XX}' glyphs.
   if( name[0] === "u" )
   {
     const nameLen = name.length;
     let hexStr;
 
-    if (nameLen === 7 && name[1] === "n" && name[2] === "i") {
+    if( nameLen === 7 && name[1] === "n" && name[2] === "i" )
+    {
       // 'uniXXXX'
       hexStr = name.substring(3);
     } 
-    else if (nameLen >= 5 && nameLen <= 7) {
+    else if( nameLen >= 5 && nameLen <= 7 )
+    {
       // 'uXXXX{XX}'
       hexStr = name.substring(1);
     } 
@@ -97,7 +95,8 @@ export function getUnicodeForGlyph( name:string, glyphsUnicodeMap:Record<string,
       return -1;
     }
     // Check for upper-case hexadecimal characters, to avoid false positives.
-    if (hexStr === hexStr.toUpperCase()) {
+    if( hexStr === hexStr.toUpperCase() )
+    {
       unicode = parseInt(hexStr, 16);
       if (unicode >= 0) {
         return unicode;
@@ -260,9 +259,7 @@ function isRTLRangeFor( value:number )
 
 // The normalization table is obtained by filtering the Unicode characters
 // database with <compat> entries.
-export const getNormalizedUnicodes = getArrayLookupTableFactory( () => {
-  // prettier-ignore
-  return [
+export const getNormalizedUnicodes = getArrayLookupTableFactory(() => [
     "\u00A8", "\u0020\u0308",
     "\u00AF", "\u0020\u0304",
     "\u00B4", "\u0020\u0301",
@@ -1640,8 +1637,7 @@ export const getNormalizedUnicodes = getArrayLookupTableFactory( () => {
     "\uFEFA", "\u0644\u0625",
     "\uFEFB", "\u0644\u0627",
     "\uFEFC", "\u0644\u0627",
-  ];
-});
+]);
 
 export function reverseIfRtl( chars:string )
 {
@@ -1658,18 +1654,23 @@ export function reverseIfRtl( chars:string )
   return buf.join("");
 }
 
+interface _CharUnicodeCategory
+{
+  isWhitespace:boolean;
+  isZeroWidthDiacritic:boolean;
+  isInvisibleFormatMark:boolean;
+}
+
+const CategoryCache = new Map<string, _CharUnicodeCategory>();
 const SpecialCharRegExp = new RegExp("^(\\s)|(\\p{Mn})|(\\p{Cf})$", "u");
-const CategoryCache = new Map();
 
 export function getCharUnicodeCategory( char:string )
 {
   const cachedCategory = CategoryCache.get(char);
-  if (cachedCategory)
-  {
+  if( cachedCategory )
     return cachedCategory;
-  }
   const groups = char.match(SpecialCharRegExp);
-  const category = {
+  const category:_CharUnicodeCategory = {
     isWhitespace: !!(groups && groups[1]),
     isZeroWidthDiacritic: !!(groups && groups[2]),
     isInvisibleFormatMark: !!(groups && groups[3]),

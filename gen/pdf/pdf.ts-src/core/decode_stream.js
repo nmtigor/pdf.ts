@@ -88,7 +88,7 @@ export class DecodeStream extends BaseStream {
      * @implements
      * @final
      */
-    getBytes(length, forceClamped = false) {
+    getBytes(length) {
         const pos = this.pos;
         let end;
         if (length) {
@@ -109,11 +109,7 @@ export class DecodeStream extends BaseStream {
             end = this.bufferLength;
         }
         this.pos = end;
-        const subarray = this.buffer.subarray(pos, end);
-        // `this.buffer` is either a `Uint8Array` or `Uint8ClampedArray` here.
-        return forceClamped && !(subarray instanceof Uint8ClampedArray)
-            ? new Uint8ClampedArray(subarray)
-            : subarray;
+        return this.buffer.subarray(pos, end);
     }
     /** @implements */
     reset() {

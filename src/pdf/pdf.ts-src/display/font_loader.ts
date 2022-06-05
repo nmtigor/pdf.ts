@@ -19,20 +19,20 @@
 
 import { html } from "../../../lib/dom.js";
 import { assert } from "../../../lib/util/trace.js";
+import { FontExpotDataEx } from "../core/fonts.js";
+import { type CmdArgs } from "../core/font_renderer.js";
 import {
   bytesToString,
-  IsEvalSupportedCached,
+  FeatureTest,
   shadow,
   string32,
   UNSUPPORTED_FEATURES,
-  warn,
+  warn
 } from "../shared/util.js";
-import { FontExpotDataEx } from "../core/fonts.js";
-import { type CmdArgs } from "../core/font_renderer.js";
 import { PDFObjects } from "./api.js";
 /*81---------------------------------------------------------------------------*/
 
-interface BaseFontLoaderCtorParms
+interface _BaseFontLoaderCtorP
 {
   docId:string;
   onUnsupportedFeature:( _:{ featureId:UNSUPPORTED_FEATURES } ) => void;
@@ -62,7 +62,7 @@ abstract class BaseFontLoader
     onUnsupportedFeature,
     ownerDocument=globalThis.document,
     styleElement=undefined, // For testing only.
-  }:BaseFontLoaderCtorParms ) {
+  }:_BaseFontLoaderCtorP ) {
     this.docId = docId;
     this._onUnsupportedFeature = onUnsupportedFeature;
     this._document = ownerDocument;
@@ -418,7 +418,7 @@ abstract class BaseFontLoader
   // End of PDFJSDev.test('CHROME || GENERIC')
 // #endif
 
-interface FFOCtorParms
+interface _FFOCtorP
 {
   isEvalSupported:boolean | undefined;
   disableFontFace:boolean | undefined;
@@ -433,7 +433,7 @@ export type AddToPath = ( c:CanvasRenderingContext2D, size:number ) => void;
 
 export class FontFaceObject extends FontExpotDataEx
 {
-  compiledGlyphs:Record< string, AddToPath > = Object.create(null);
+  compiledGlyphs:Record< string, AddToPath> = Object.create(null);
   isEvalSupported:boolean;
   disableFontFace:boolean;
   ignoreErrors:boolean;
@@ -450,7 +450,7 @@ export class FontFaceObject extends FontExpotDataEx
       ignoreErrors=false,
       onUnsupportedFeature,
       fontRegistry,
-    }:FFOCtorParms
+    }:_FFOCtorP
   ) {
     super();
 
@@ -490,7 +490,7 @@ export class FontFaceObject extends FontExpotDataEx
       );
     }
 
-    this.fontRegistry?.registerFont(this);
+    this.fontRegistry?.registerFont( this);
     return nativeFontFace;
   }
 
@@ -513,7 +513,7 @@ export class FontFaceObject extends FontExpotDataEx
       rule = `@font-face {font-family:"${this.cssFontInfo.fontFamily}";${css}src:${url}}`;
     }
 
-    this.fontRegistry?.registerFont(this, url);
+    this.fontRegistry?.registerFont( this, url);
     return rule;
   }
 
@@ -542,7 +542,7 @@ export class FontFaceObject extends FontExpotDataEx
     }
 
     // If we can, compile cmds into JS for MAXIMUM SPEED...
-    if( this.isEvalSupported && IsEvalSupportedCached.value )
+    if( this.isEvalSupported && FeatureTest.isEvalSupported )
     {
       const jsBuf:string[] = [];
       for( const current of cmds )

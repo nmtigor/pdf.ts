@@ -4,8 +4,7 @@ import { OverlayManager } from "./overlay_manager.js";
 import { type ViewerConfiguration } from "./viewer.js";
 export declare class PasswordPrompt {
     #private;
-    overlayName: string;
-    container: HTMLDivElement;
+    dialog: HTMLDialogElement;
     label: HTMLParagraphElement;
     input: HTMLInputElement;
     submitButton: HTMLButtonElement;
@@ -13,8 +12,6 @@ export declare class PasswordPrompt {
     overlayManager: OverlayManager;
     l10n: IL10n;
     _isViewerEmbedded: boolean;
-    updateCallback: (password: string | Error) => void;
-    reason?: PasswordResponses;
     /**
      * @param overlayManager Manager for the viewer overlays.
      * @param l10n Localization service.

@@ -20,6 +20,13 @@ export declare const lnum_MAX: lnum_t;
 export declare type ts_t = int64;
 /** Recommand [0,1] */
 export declare type Ratio = number;
+export declare type CSSStyleName = keyof {
+    [K in Extract<keyof CSSStyleDeclaration, string> as string extends K ? never : CSSStyleDeclaration[K] extends string ? K : never]: never;
+};
+export declare type CSSStyle = Record<CSSStyleName, string>;
+/**
+ * @deprecated Use `CSSStyle` instead.
+ */
 export declare type Style = Record<string, string>;
 export interface Runr {
     run(): void | Promise<void>;

@@ -1,4 +1,4 @@
-interface GrabToPanCtorParms {
+interface _GrabToPanCtorP {
     element: HTMLDivElement;
     /**
      * See `ignoreTarget(node)`
@@ -25,7 +25,7 @@ export declare class GrabToPan {
     /**
      * Construct a GrabToPan instance for a given HTML element.
      */
-    constructor(options: GrabToPanCtorParms);
+    constructor(options: _GrabToPanCtorP);
     /**
      * Bind a mousedown event to the element to enable grab-detection.
      */

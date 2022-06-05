@@ -16,19 +16,19 @@
  * limitations under the License.
  */
 import { assert } from "../../../lib/util/trace.js";
-import { bytesToString, FormatError, info, StreamType, warn, } from "../shared/util.js";
-import { Cmd, Dict, EOF, isCmd, Name, Ref, } from "./primitives.js";
-import { isWhiteSpace, MissingDataException, ParserEOFException } from "./core_utils.js";
+import { bytesToString, FormatError, info, StreamType, warn } from "../shared/util.js";
+import { Ascii85Stream } from "./ascii_85_stream.js";
+import { AsciiHexStream } from "./ascii_hex_stream.js";
 import { CCITTFaxStream } from "./ccitt_stream.js";
+import { isWhiteSpace, MissingDataException, ParserEOFException } from "./core_utils.js";
+import { FlateStream } from "./flate_stream.js";
 import { Jbig2Stream } from "./jbig2_stream.js";
 import { JpegStream } from "./jpeg_stream.js";
 import { JpxStream } from "./jpx_stream.js";
 import { LZWStream } from "./lzw_stream.js";
 import { PredictorStream } from "./predictor_stream.js";
-import { FlateStream } from "./flate_stream.js";
+import { Cmd, Dict, EOF, isCmd, Name, Ref } from "./primitives.js";
 import { RunLengthStream } from "./run_length_stream.js";
-import { AsciiHexStream } from "./ascii_hex_stream.js";
-import { Ascii85Stream } from "./ascii_85_stream.js";
 import { NullStream } from "./stream.js";
 /*81---------------------------------------------------------------------------*/
 const MAX_LENGTH_TO_CACHE = 1000;
@@ -141,8 +141,7 @@ export class Parser {
                     }
                     this.shift();
                     return dict;
-                default:
-                    // simple object
+                default: // simple object
                     return buf1;
             }
         }

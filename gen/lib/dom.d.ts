@@ -75,7 +75,7 @@ export declare function span(innerHTML?: string, doc?: Document): HTMLSpanElemen
 declare type SVGRet<NN extends string> = NN extends keyof SVGElementTagNameMap ? SVGElementTagNameMap[NN] : SVGElement;
 export declare function svg<NN extends string>(nodeName: NN, doc?: Document): SVGRet<NN>;
 declare global {
-    interface OnProgressParms {
+    interface OnProgressP {
         /**
          * Currently loaded number of bytes.
          */

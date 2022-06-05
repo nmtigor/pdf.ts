@@ -1,25 +1,25 @@
 import { type rect_t } from "../../shared/util.js";
-import { BreakAfter, BreakBefore, Template } from "./template.js";
 import { type XFAElData } from "./alias.js";
+import { BreakAfter, BreakBefore, Template } from "./template.js";
 export declare function stripQuotes(str: string): string;
-interface GetIntegerParms {
+interface _GetIntegerP {
     data?: string;
     defaultValue: number | string;
     validate: (x: number) => boolean;
 }
-export declare function getInteger({ data, defaultValue, validate }: GetIntegerParms): number;
-interface GetFloatParms {
+export declare function getInteger({ data, defaultValue, validate }: _GetIntegerP): number;
+interface _GetFloatP {
     data?: string;
     defaultValue: number;
     validate: (x: number) => boolean;
 }
-export declare function getFloat({ data, defaultValue, validate }: GetFloatParms): number;
-interface GetKeywordParms {
+export declare function getFloat({ data, defaultValue, validate }: _GetFloatP): number;
+interface _GetKeywordP {
     data?: string | undefined;
     defaultValue: string;
     validate: (k: string) => boolean;
 }
-export declare function getKeyword({ data, defaultValue, validate }: GetKeywordParms): string;
+export declare function getKeyword({ data, defaultValue, validate }: _GetKeywordP): string;
 export declare function getStringOption(data: string | undefined, options: string[]): string;
 export declare function getMeasurement(str: string | undefined, def?: string): number;
 export declare function getRatio(data?: string): {

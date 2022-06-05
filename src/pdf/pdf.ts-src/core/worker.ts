@@ -18,11 +18,10 @@
  */
 
 import { createPromiseCap } from "../../../lib/promisecap.js";
-import { 
-  Thread,
-  type GetDocRequestData,
-  MessageHandler,
-  type PDFInfo, 
+import { type ReadValue } from "../interfaces.js";
+import {
+  MessageHandler, Thread,
+  type GetDocRequestData, type PDFInfo
 } from "../shared/message_handler.js";
 import {
   AbortException,
@@ -40,22 +39,19 @@ import {
   UnknownErrorException,
   UNSUPPORTED_FEATURES,
   VerbosityLevel,
-  warn,
+  warn
 } from "../shared/util.js";
+import { type SaveData, type SaveReturn } from "./annotation.js";
+import { clearGlobalCaches } from "./cleanup_helper.js";
 import { XRefParseException } from "./core_utils.js";
-import { 
-  BasePdfManager,
-  type EvaluatorOptions,
-  LocalPdfManager, 
-  NetworkPdfManager,
+import { Page } from "./document.js";
+import {
+  BasePdfManager, LocalPdfManager,
+  NetworkPdfManager, type EvaluatorOptions
 } from "./pdf_manager.js";
 import { Dict, Ref } from "./primitives.js";
 import { PDFWorkerStream } from "./worker_stream.js";
-import { clearGlobalCaches } from "./cleanup_helper.js";
 import { incrementalUpdate } from "./writer.js";
-import { Page } from "./document.js";
-import { type ReadValue } from "../interfaces.js";
-import { type SaveData, type SaveReturn } from "./annotation.js";
 /*81---------------------------------------------------------------------------*/
 
 export interface IWorker
@@ -113,9 +109,8 @@ export const WorkerMessageHandler =
 
       testMessageProcessed = true;
 
-      // Ensure that `TypedArray`s can be sent to the worker,
-      // and that `postMessage` transfers are supported.
-      handler.send("test", data instanceof Uint8Array && data[0] === 255);
+      // Ensure that `TypedArray`s can be sent to the worker.
+      handler.send("test", data instanceof Uint8Array);
     });
 
     handler.on("configure", data => 
@@ -129,7 +124,7 @@ export const WorkerMessageHandler =
     });
   },
 
-  createDocumentHandler( docParms:GetDocRequestData, port:IWorker )
+  createDocumentHandler( docParams:GetDocRequestData, port:IWorker )
   {
     // This context is actually holds references on pdfManager and handler,
     // until the latter is destroyed.
@@ -139,7 +134,7 @@ export const WorkerMessageHandler =
     const WorkerTasks:WorkerTask[] = [];
     const verbosity = getVerbosityLevel();
 
-    const apiVersion = docParms.apiVersion;
+    const apiVersion = docParams.apiVersion;
     const workerVersion = 0;
       // typeof PDFJSDev !== "undefined" && !PDFJSDev.test("TESTING")
       //   ? PDFJSDev.eval("BUNDLE_VERSION")
@@ -188,9 +183,9 @@ export const WorkerMessageHandler =
       }
     // #endif
 
-    const docId = docParms.docId;
-    const docBaseUrl = docParms.docBaseUrl;
-    const workerHandlerName = docParms.docId + "_worker";
+    const docId = docParams.docId;
+    const docBaseUrl = docParams.docBaseUrl;
+    const workerHandlerName = docParams.docId + "_worker";
     let handler = new MessageHandler<Thread.worker>( workerHandlerName, docId, port );
 
     function ensureNotTerminated() 
@@ -221,7 +216,7 @@ export const WorkerMessageHandler =
       // Check that at least the first page can be successfully loaded,
       // since otherwise the XRef table is definitely not valid.
       await pdfManager.ensureDoc("checkFirstPage", [recoveryMode]);
-      // Check that the last page can be sucessfully loaded, to ensure that
+      // Check that the last page can be successfully loaded, to ensure that
       // `numPages` is correct, and fallback to walking the entire /Pages-tree.
       await pdfManager.ensureDoc("checkLastPage", [recoveryMode]);
   
@@ -291,7 +286,7 @@ export const WorkerMessageHandler =
 
       const fullRequest = pdfStream.getFullReader();
       fullRequest.headersReady
-        .then( () => {
+        .then(() => {
           if( !fullRequest.isRangeSupported ) return;
 
           // We don't need auto-fetch when streaming is enabled.
@@ -424,7 +419,7 @@ export const WorkerMessageHandler =
               pdfManager.updatePassword(password);
               pdfManagerReady();
             })
-            .catch( () => {
+            .catch(() => {
               finishWorkerTask(task);
               handler.send("DocException", ex);
             });
@@ -655,7 +650,7 @@ export const WorkerMessageHandler =
                 const task = new WorkerTask(`Save: page ${pageIndex}`);
                 return page
                   .save( handler, task, annotationStorage )
-                  .finally( () => { finishWorkerTask(task); });
+                  .finally(() => { finishWorkerTask(task); });
               })
             );
           }
@@ -720,7 +715,7 @@ export const WorkerMessageHandler =
           if( xref.trailer )
           {
             // Get string info from Info in order to compute fileId.
-            const infoObj:Record<string,string> = Object.create(null);
+            const infoObj:Record<string, string> = Object.create(null);
             const xrefInfo = xref.trailer.get("Info") || undefined;
             if (xrefInfo instanceof Dict) 
             {
@@ -907,8 +902,8 @@ export const WorkerMessageHandler =
     });
 
     handler.on("Ready", () => {
-      setupDoc(docParms);
-      docParms = <any>null; // we don't need docParms anymore -- saving memory.
+      setupDoc(docParams);
+      docParams = <any>null; // we don't need docParams anymore -- saving memory.
     });
     return workerHandlerName;
   },

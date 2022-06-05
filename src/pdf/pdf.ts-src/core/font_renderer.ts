@@ -20,16 +20,14 @@
 import {
   bytesToString,
   FONT_IDENTITY_MATRIX,
-  FormatError,
-  type matrix_t,
-  warn,
+  FormatError, warn, type matrix_t
 } from "../shared/util.js";
 import { CFFFDSelect, CFFParser, CFFTopDict } from "./cff_parser.js";
-import { getGlyphsUnicode } from "./glyphlist.js";
 import { StandardEncoding } from "./encodings.js";
-import { Font } from "./fonts.js";
-import { Stream } from "./stream.js";
 import { type FontProps } from "./evaluator.js";
+import { Font } from "./fonts.js";
+import { getGlyphsUnicode } from "./glyphlist.js";
+import { Stream } from "./stream.js";
 /*81---------------------------------------------------------------------------*/
 
 // TODO: use DataView and its methods.
@@ -123,8 +121,8 @@ function parseCmap( data:Uint8Array, start:number, end:number )
     for( i = 0; i < segCount; i++, p += 2 )
     {
       let idOffset = getUint16(data, p);
-      if( idOffset === 0 ) continue;
-
+      if( idOffset === 0 )
+        continue;
       ranges[i].ids = [];
       for( let j = 0, jj = ranges[i].end - ranges[i].start + 1; j < jj; j++ )
       {

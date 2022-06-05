@@ -3,16 +3,16 @@ import { PDFPageProxy } from "../pdf.ts-src/display/api.js";
 import { PageViewport, StatTimer } from "../pdf.ts-src/display/display_utils.js";
 import { OptionalContentConfig } from "../pdf.ts-src/display/optional_content_config.js";
 import { AnnotationMode, type point_t } from "../pdf.ts-src/shared/util.js";
+import { AnnotationLayerBuilder } from "./annotation_layer_builder.js";
 import { type ErrorMoreInfo } from "./app.js";
+import { BaseViewer, PageColors } from "./base_viewer.js";
+import { EventBus, EventMap } from "./event_utils.js";
 import { type IL10n, type IPDFAnnotationLayerFactory, type IPDFStructTreeLayerFactory, type IPDFTextLayerFactory, type IPDFXfaLayerFactory, type IVisibleView } from "./interfaces.js";
 import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
-import { AnnotationLayerBuilder } from "./annotation_layer_builder.js";
-import { TextLayerBuilder } from "./text_layer_builder.js";
-import { OutputScale, RendererType, TextLayerMode, RenderingStates } from "./ui_utils.js";
 import { StructTreeLayerBuilder } from "./struct_tree_layer_builder.js";
+import { TextLayerBuilder } from "./text_layer_builder.js";
+import { OutputScale, RendererType, RenderingStates, TextLayerMode } from "./ui_utils.js";
 import { XfaLayerBuilder } from "./xfa_layer_builder.js";
-import { BaseViewer } from "./base_viewer.js";
-import { EventBus, EventMap } from "./event_utils.js";
 interface PDFPageViewOptions {
     /**
      * The viewer element.
@@ -83,6 +83,12 @@ interface PDFPageViewOptions {
      */
     maxCanvasPixels?: number | undefined;
     /**
+     * Overwrites background and foreground colors
+     * with user defined ones in order to improve readability in high contrast
+     * mode.
+     */
+    pageColors?: PageColors | undefined;
+    /**
      * Localization service.
      */
     l10n: IL10n;
@@ -92,12 +98,12 @@ interface PaintTask {
     onRenderContinue: ((cont: () => void) => void) | undefined;
     cancel(): void;
 }
-interface CssTransformParms {
+interface _CSSTransformP {
     target: HTMLCanvasElement | SVGElement;
     redrawAnnotationLayer?: boolean;
     redrawXfaLayer?: boolean;
 }
-interface PDFPageViewUpdateParms {
+interface _PDFPageViewUpdateP {
     scale?: number;
     rotation?: number;
     optionalContentConfigPromise?: Promise<OptionalContentConfig | undefined>;
@@ -123,6 +129,7 @@ export declare class PDFPageView implements IVisibleView {
     imageResourcesPath: string;
     useOnlyCssZoom: boolean;
     maxCanvasPixels: number;
+    pageColors: PageColors | undefined;
     eventBus: EventBus;
     renderingQueue: PDFRenderingQueue | undefined;
     textLayerFactory: IPDFTextLayerFactory | undefined;
@@ -160,7 +167,7 @@ export declare class PDFPageView implements IVisibleView {
         keepAnnotationLayer?: boolean | undefined;
         keepXfaLayer?: boolean | undefined;
     }): void;
-    update({ scale, rotation, optionalContentConfigPromise }: PDFPageViewUpdateParms): void;
+    update({ scale, rotation, optionalContentConfigPromise }: _PDFPageViewUpdateP): void;
     /**
      * PLEASE NOTE: Most likely you want to use the `this.reset()` method,
      *              rather than calling this one directly.
@@ -169,7 +176,7 @@ export declare class PDFPageView implements IVisibleView {
         keepAnnotationLayer?: boolean | undefined;
         keepXfaLayer?: boolean | undefined;
     }): void;
-    cssTransform({ target, redrawAnnotationLayer, redrawXfaLayer, }: CssTransformParms): void;
+    cssTransform({ target, redrawAnnotationLayer, redrawXfaLayer, }: _CSSTransformP): void;
     getPagePoint(x: number, y: number): point_t;
     /**
      * @ignore

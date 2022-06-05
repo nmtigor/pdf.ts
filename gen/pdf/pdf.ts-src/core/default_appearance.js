@@ -15,12 +15,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Name } from "./primitives.js";
 import { OPS, warn } from "../shared/util.js";
 import { ColorSpace } from "./colorspace.js";
 import { escapePDFName } from "./core_utils.js";
-import { StringStream } from "./stream.js";
 import { EvaluatorPreprocessor } from "./evaluator.js";
+import { Name } from "./primitives.js";
+import { StringStream } from "./stream.js";
 /*81---------------------------------------------------------------------------*/
 class DefaultAppearanceEvaluator extends EvaluatorPreprocessor {
     constructor(str) {
@@ -41,9 +41,9 @@ class DefaultAppearanceEvaluator extends EvaluatorPreprocessor {
                 operation.args.length = 0; // Ensure that `args` it's always reset.
                 if (!this.read(operation))
                     break;
-                if (this.savedStatesDepth !== 0) {
-                    continue; // Don't get info in save/restore sections.
-                }
+                if (this.savedStatesDepth !== 0)
+                    // Don't get info in save/restore sections.
+                    continue;
                 const { fn, args } = operation;
                 switch (fn | 0) {
                     case OPS.setFont:

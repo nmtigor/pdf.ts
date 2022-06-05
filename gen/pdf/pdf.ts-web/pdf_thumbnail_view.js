@@ -20,9 +20,9 @@
 /** @typedef {import("./interfaces").IRenderableView} IRenderableView */
 // eslint-disable-next-line max-len
 /** @typedef {import("./pdf_rendering_queue").PDFRenderingQueue} PDFRenderingQueue */
-import { OutputScale, RenderingStates } from "./ui_utils.js";
-import { RenderingCancelledException } from "../pdf.ts-src/display/display_utils.js";
 import { html } from "../../lib/dom.js";
+import { RenderingCancelledException } from "../pdf.ts-src/display/display_utils.js";
+import { OutputScale, RenderingStates } from "./ui_utils.js";
 /*81---------------------------------------------------------------------------*/
 const DRAW_UPSCALE_FACTOR = 2; // See comment in `PDFThumbnailView.draw` below.
 const MAX_NUM_SCALING_STEPS = 3;
@@ -36,7 +36,6 @@ export class TempImageFactory {
         tempCanvas.height = height;
         // Since this is a temporary canvas, we need to fill it with a white
         // background ourselves. `#getPageDrawContext` uses CSS rules for this.
-        tempCanvas.mozOpaque = true;
         const ctx = tempCanvas.getContext("2d", { alpha: false });
         ctx.save();
         ctx.fillStyle = "rgb(255, 255, 255)";
@@ -180,12 +179,6 @@ export class PDFThumbnailView {
         // Keep the no-thumbnail outline visible, i.e. `data-loaded === false`,
         // until rendering/image conversion is complete, to avoid display issues.
         const canvas = html("canvas");
-        // if (
-        //   typeof PDFJSDev === "undefined" ||
-        //   PDFJSDev.test("MOZCENTRAL || GENERIC")
-        // ) {
-        canvas.mozOpaque = true;
-        // }
         const ctx = canvas.getContext("2d", { alpha: false });
         const outputScale = new OutputScale();
         canvas.width = (upscaleFactor * this.canvasWidth * outputScale.sx) | 0;
@@ -234,14 +227,12 @@ export class PDFThumbnailView {
             if (renderTask === this.renderTask) {
                 this.renderTask = undefined;
             }
-            if (error instanceof RenderingCancelledException) {
+            if (error instanceof RenderingCancelledException)
                 return;
-            }
             this.renderingState = RenderingStates.FINISHED;
             this.#convertCanvasToImage(canvas);
-            if (error) {
+            if (error)
                 throw error;
-            }
         };
         // Render the thumbnail at a larger size and downsize the canvas (similar
         // to `setImage`), to improve consistency between thumbnails created by

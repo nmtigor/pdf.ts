@@ -4,7 +4,7 @@ import { PageViewport } from "./display_utils.js";
 /**
  * Text layer render parameters.
  */
-interface TextLayerRenderParms {
+interface _TextLayerRenderP {
     /**
      * Text content to
      * render (the object is returned by the page's `getTextContent` method).
@@ -16,7 +16,7 @@ interface TextLayerRenderParms {
      */
     textContentStream?: ReadableStream | undefined;
     /**
-     * HTML element that will contain text runs.
+     * The DOM node that will contain the text runs.
      */
     container: DocumentFragment;
     /**
@@ -24,15 +24,15 @@ interface TextLayerRenderParms {
      */
     viewport: PageViewport;
     /**
-     * HTML elements that are correspond
-     * to the text items of the textContent input. This is output and shall be
-     * initially be set to empty array.
+     * HTML elements that correspond to
+     * the text items of the textContent input.
+     * This is output and shall initially be set to an empty array.
      */
     textDivs?: HTMLSpanElement[];
     /**
      * Strings that correspond to
-     * the `str` property of the text items of textContent input. This is output
-     * and shall be initially be set to empty array.
+     * the `str` property of the text items of the textContent input.
+     * This is output and shall initially be set to an empty array.
      */
     textContentItemsStr?: string[];
     /**
@@ -57,7 +57,7 @@ interface TextDivProps {
     scale?: number;
 }
 declare namespace Ns_renderTextLayer {
-    interface TLRTCtorParms {
+    interface _TLRTCtorP {
         textContent?: TextContent | undefined;
         textContentStream?: ReadableStream | undefined;
         container: DocumentFragment;
@@ -98,7 +98,7 @@ declare namespace Ns_renderTextLayer {
         _canceled: boolean;
         _capability: import("../../../lib/promisecap.js").PromiseCap<void>;
         _bounds: TLRTBound[] | undefined;
-        constructor({ textContent, textContentStream, container, viewport, textDivs, textContentItemsStr, enhanceTextSelection, }: TLRTCtorParms);
+        constructor({ textContent, textContentStream, container, viewport, textDivs, textContentItemsStr, enhanceTextSelection, }: _TLRTCtorP);
         /**
          * Promise for textLayer rendering task completion.
          */
@@ -117,7 +117,7 @@ declare namespace Ns_renderTextLayer {
         _render(timeout?: number): void;
         expandTextDivs(expandDivs?: boolean): void;
     }
-    export function renderTextLayer(renderParameters: TextLayerRenderParms): TextLayerRenderTask;
+    export function renderTextLayer(renderParameters: _TextLayerRenderP): TextLayerRenderTask;
     export {};
 }
 export import TextLayerRenderTask = Ns_renderTextLayer.TextLayerRenderTask;

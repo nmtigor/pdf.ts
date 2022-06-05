@@ -15,9 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { createPromiseCap } from "../../lib/promisecap.js";
-import { isObjectLike } from "../../lib/jslang.js";
 import { html } from "../../lib/dom.js";
+import { isObjectLike } from "../../lib/jslang.js";
+import { createPromiseCap } from "../../lib/promisecap.js";
 import { BaseTreeViewer } from "./base_tree_viewer.js";
 import { SidebarView } from "./ui_utils.js";
 export class PDFOutlineViewer extends BaseTreeViewer {

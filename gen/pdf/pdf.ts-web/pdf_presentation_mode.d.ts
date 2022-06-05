@@ -1,6 +1,5 @@
 import { EventBus } from "./event_utils.js";
 import { PDFViewer } from "./pdf_viewer.js";
-import { ScrollMode, SpreadMode } from "./ui_utils.js";
 interface PDFPresentationModeOptions {
     /**
      * The container for the viewer element.
@@ -21,19 +20,12 @@ interface TouchSwipeState {
     endX: number;
     endY: number;
 }
-interface PrsntModeArgs {
-    pageNumber: number;
-    scaleValue: string | number;
-    scrollMode: ScrollMode;
-    spreadMode: SpreadMode;
-}
 export declare class PDFPresentationMode {
     #private;
+    get active(): boolean;
     container: HTMLDivElement;
     pdfViewer: PDFViewer;
     eventBus: EventBus;
-    active: boolean;
-    args: PrsntModeArgs | undefined;
     contextMenuOpen: boolean;
     mouseScrollTimeStamp: number;
     mouseScrollDelta: number;
@@ -45,7 +37,7 @@ export declare class PDFPresentationMode {
      * Request the browser to enter fullscreen mode.
      * @return Indicating if the request was successful.
      */
-    request(): boolean;
+    request(): Promise<boolean>;
 }
 export {};
 //# sourceMappingURL=pdf_presentation_mode.d.ts.map

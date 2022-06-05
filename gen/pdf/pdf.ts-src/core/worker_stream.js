@@ -62,7 +62,7 @@ class PDFWorkerStreamReader {
     /** @implements */
     get headersReady() { return this.#headersReady; }
     /** @implements */
-    filename = null;
+    filename = undefined;
     constructor(msgHandler) {
         this.#msgHandler = msgHandler;
         const readableStream = this.#msgHandler.sendWithStream("GetReader", null);

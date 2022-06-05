@@ -1,14 +1,15 @@
-import { ImageLayer, PDFCommonObjs, PDFObjects, PDFObjs } from "./api.js";
-import { type matrix_t, OPS, type rect_t, TextRenderingMode } from "../shared/util.js";
-import { PageViewport } from "./display_utils.js";
-import { type ShadingPattern, TilingPattern, PathType } from "./pattern_helper.js";
-import { OptionalContentConfig } from "./optional_content_config.js";
+import { PageColors } from "src/pdf/pdf.ts-web/base_viewer.js";
 import { type ImgData, type MarkedContentProps, type SmaskOptions } from "../core/evaluator.js";
 import { Glyph } from "../core/fonts.js";
-import { type AddToPath, FontFaceObject } from "./font_loader.js";
-import { type PatternIR, ShadingType } from "../core/pattern.js";
 import { type OpListIR } from "../core/operator_list.js";
+import { ShadingType, type PatternIR } from "../core/pattern.js";
+import { OPS, point_t, TextRenderingMode, type matrix_t, type rect_t } from "../shared/util.js";
+import { ImageLayer, PDFCommonObjs, PDFObjects, PDFObjs } from "./api.js";
 import { BaseCanvasFactory, type CanvasEntry } from "./base_factory.js";
+import { PageViewport } from "./display_utils.js";
+import { FontFaceObject, type AddToPath } from "./font_loader.js";
+import { OptionalContentConfig } from "./optional_content_config.js";
+import { PathType, TilingPattern, type ShadingPattern } from "./pattern_helper.js";
 declare type C2D = CanvasRenderingContext2D;
 declare global {
     interface CanvasRenderingContext2D {
@@ -49,6 +50,7 @@ export declare class CachedCanvases {
     cache: Record<string, CanvasEntry>;
     constructor(canvasFactory: BaseCanvasFactory);
     getCanvas(id: string, width: number, height: number, trackTransform?: boolean): CanvasEntry;
+    delete(id: string): void;
     clear(): void;
 }
 interface SMask {
@@ -99,9 +101,12 @@ declare class CanvasExtraState {
     clone(): any;
     setCurrentPoint(x: number, y: number): void;
     updatePathMinMax(transform: matrix_t, x: number, y: number): void;
-    updateCurvePathMinMax(transform: matrix_t, x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, x3: number, y3: number): void;
+    updateRectMinMax(transform: matrix_t, rect: rect_t): void;
+    updateScalingPathMinMax(transform: matrix_t, minMax: rect_t): void;
+    updateCurvePathMinMax(transform: matrix_t, x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, minMax: rect_t | undefined): void;
     getPathBoundingBox(pathType?: PathType, transform?: matrix_t): rect_t;
     updateClipFromPath(): void;
+    isEmptyClip(): boolean;
     startNewPathAndClipBox(box: rect_t): void;
     getClippedPathBoundingBox(pathType?: PathType, transform?: matrix_t): [number, number, number, number] | undefined;
 }
@@ -116,7 +121,7 @@ declare const enum ClipType {
     NORMAL_CLIP = 0,
     EO_CLIP = 1
 }
-export interface BeginDrawingParms {
+interface _BeginDrawingP {
     transform: matrix_t | undefined;
     viewport: PageViewport;
     transparency?: boolean;
@@ -176,10 +181,13 @@ export declare class CanvasGraphics {
     viewportScale: number;
     outputScaleX: number;
     outputScaleY: number;
+    backgroundColor: string | undefined;
+    foregroundColor: string | undefined;
     transparentCanvas: HTMLCanvasElement | undefined;
     pendingTextPaths?: TextPath[];
-    constructor(canvasCtx: C2D, commonObjs: PDFObjects<PDFCommonObjs>, objs: PDFObjects<PDFObjs | undefined>, canvasFactory: BaseCanvasFactory, imageLayer?: ImageLayer, optionalContentConfig?: OptionalContentConfig, annotationCanvasMap?: Map<string, HTMLCanvasElement>);
-    beginDrawing({ transform, viewport, transparency, background, }: BeginDrawingParms): void;
+    constructor(canvasCtx: C2D, commonObjs: PDFObjects<PDFCommonObjs>, objs: PDFObjects<PDFObjs | undefined>, canvasFactory: BaseCanvasFactory, imageLayer?: ImageLayer, optionalContentConfig?: OptionalContentConfig, annotationCanvasMap?: Map<string, HTMLCanvasElement>, pageColors?: PageColors);
+    getObject<T extends PDFCommonObjs | PDFObjs>(data: any, fallback?: T | undefined): T | undefined;
+    beginDrawing({ transform, viewport, transparency, background, }: _BeginDrawingP): void;
     executeOperatorList(operatorList: OpListIR, executionStartIdx?: number, continueCallback?: () => void): number;
     endDrawing(): void;
     _scaleImage(img: HTMLCanvasElement, inverseTransform: matrix_t): {
@@ -216,7 +224,7 @@ export declare class CanvasGraphics {
     [OPS.save](): void;
     [OPS.restore](): void;
     [OPS.transform](a: number, b: number, c: number, d: number, e: number, f: number): void;
-    [OPS.constructPath](ops: OPS[], args: number[]): void;
+    [OPS.constructPath](ops: OPS[], args: number[], minMax: rect_t): void;
     [OPS.closePath](): void;
     [OPS.stroke](consumePath?: boolean): void;
     [OPS.closeStroke](): void;
@@ -242,7 +250,7 @@ export declare class CanvasGraphics {
     [OPS.setLeadingMoveText](x: number, y: number): void;
     [OPS.setTextMatrix](a: number, b: number, c: number, d: number, e: number, f: number): void;
     [OPS.nextLine](): void;
-    paintChar(character: string, x: number, y: number, patternTransform: matrix_t, resetLineWidthToOne: boolean): void;
+    paintChar(character: string, x: number, y: number, patternTransform: matrix_t): void;
     get isFontSubpixelAAEnabled(): boolean;
     [OPS.showText](glyphs: (Glyph | number)[]): void;
     showType3Text(glyphs: (Glyph | number)[]): void;
@@ -266,7 +274,7 @@ export declare class CanvasGraphics {
     [OPS.beginAnnotation](id: string, rect: rect_t, transform: matrix_t, matrix: matrix_t, hasOwnCanvas: boolean): void;
     [OPS.endAnnotation](): void;
     [OPS.paintImageMaskXObject](img: ImgData): void;
-    [OPS.paintImageMaskXObjectRepeat](imgData: ImgData, scaleX: number, skewX: number | undefined, skewY: number | undefined, scaleY: number, positions: Float32Array): void;
+    [OPS.paintImageMaskXObjectRepeat](img: ImgData, scaleX: number, skewX: number | undefined, skewY: number | undefined, scaleY: number, positions: Float32Array): void;
     [OPS.paintImageMaskXObjectGroup](images: ImgData[]): void;
     [OPS.paintImageXObject](objId: string): void;
     [OPS.paintImageXObjectRepeat](objId: string, scaleX: number, scaleY: number, positions: number[]): void;
@@ -282,11 +290,14 @@ export declare class CanvasGraphics {
     [OPS.endCompat](): void;
     consumePath(clipBox?: rect_t): void;
     getSinglePixelWidth(): number;
+    getScaleForStroking(): point_t;
+    rescaleAndStroke(saveRestore: boolean): void;
     getCanvasPosition(x: number, y: number): number[];
     isContentVisible(): boolean;
 }
 export interface CanvasGraphics {
     [fnId: number]: (...args: any[]) => void;
+    selectColor?: (r: number, g: number, b: number) => string;
 }
 export {};
 //# sourceMappingURL=canvas.d.ts.map

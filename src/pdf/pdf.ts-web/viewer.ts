@@ -18,7 +18,6 @@
  */
 
 import { viewerapp } from "./app.js";
-import { AppOptions } from "./app_options.js";
 /*81---------------------------------------------------------------------------*/
 
 // /* eslint-disable-next-line no-unused-vars */
@@ -130,7 +129,12 @@ function getViewerConfiguration()
       /**
        * Button to open a new document.
        */
-      openFile: <HTMLButtonElement>document.getElementById("openFile"),
+      openFile:
+        // #if GENERIC
+          <HTMLButtonElement>document.getElementById("openFile"),
+        // #else
+          null,
+        // #endif
       print: <HTMLButtonElement>document.getElementById("print"),
       /**
        * Button to switch to presentation mode.
@@ -155,14 +159,6 @@ function getViewerConfiguration()
        */
       toggleButton: <HTMLButtonElement>document.getElementById("secondaryToolbarToggle"),
       /**
-       * Container where all the
-       * toolbar buttons are placed. The maximum height of the toolbar is controlled
-       * dynamically by adjusting the 'max-height' CSS property of this DOM element.
-       */
-      toolbarButtonContainer: <HTMLDivElement>document.getElementById(
-        "secondaryToolbarButtonContainer"
-      ),
-      /**
        * Button for entering presentation mode.
        */
       presentationModeButton: <HTMLButtonElement>document.getElementById(
@@ -171,7 +167,12 @@ function getViewerConfiguration()
       /**
        * Button to open a file.
        */
-      openFileButton: <HTMLButtonElement>document.getElementById("secondaryOpenFile"),
+      openFileButton:
+        // #if GENERIC
+          <HTMLButtonElement>document.getElementById("secondaryOpenFile"),
+        // #else
+          null,
+        // #endif
       /**
        * Button to print the document.
        */
@@ -227,9 +228,9 @@ function getViewerConfiguration()
        */
       outerContainer: <HTMLDivElement>document.getElementById("outerContainer"),
       /**
-       * The viewer container (in which the viewer element is placed).
+       * The sidebar container (in which the views are placed).
        */
-      viewerContainer: <HTMLDivElement>document.getElementById("viewerContainer"),
+      sidebarContainer: <HTMLDivElement>document.getElementById("sidebarContainer"),
       /**
        * The button used for opening/closing the sidebar.
        */
@@ -300,13 +301,9 @@ function getViewerConfiguration()
     },
     passwordOverlay: {
       /**
-       * Name of the overlay for the overlay manager.
+       * The overlay's DOM element. 
        */
-      overlayName: "passwordOverlay",
-      /**
-       * Div container for the overlay.
-       */
-      container: <HTMLDivElement>document.getElementById("passwordOverlay"),
+      dialog: <HTMLDialogElement>document.getElementById("passwordDialog"),
       /**
        * Label containing instructions for entering the password.
        */
@@ -326,13 +323,9 @@ function getViewerConfiguration()
     },
     documentProperties: {
       /**
-       * Name/identifier for the overlay.
+       * The overlay's DOM element.
        */
-      overlayName: "documentPropertiesOverlay",
-      /**
-       * Div container for the overlay.
-       */
-      container: <HTMLDivElement>document.getElementById("documentPropertiesOverlay"),
+      dialog: <HTMLDialogElement>document.getElementById("documentPropertiesDialog"),
       /**
        * Button for closing the overlay.
        */
@@ -359,8 +352,13 @@ function getViewerConfiguration()
     },
     errorWrapper,
     printContainer: <HTMLDivElement>document.getElementById("printContainer"),
-    openFileInputName: "fileInput",
-    // debuggerScriptPath: "./debugger.js",
+    openFileInput:
+      // #if GENERIC
+        <HTMLInputElement>document.getElementById("fileInput"),
+      // #else
+        null,
+      // #endif
+    debuggerScriptPath: "./debugger.js",
   };
 }
 export type ViewerConfiguration = ReturnType<typeof getViewerConfiguration>;
@@ -369,6 +367,16 @@ function webViewerLoad()
 {
   const config = getViewerConfiguration();
   // #if !PRODUCTION
+    if( (<any>window).chrome )
+    {
+      const link = document.createElement("link");
+      link.rel = "stylesheet";
+      // link.href = "../build/dev-css/viewer.css";
+      link.href = "res/pdf/pdf.ts-web/viewer.css";
+
+      document.head.appendChild(link);
+    }
+
     Promise.all([
       import("./genericcom.js"),
       import("./pdf_print_service.js"),
@@ -410,10 +418,7 @@ function webViewerLoad()
 
 // Block the "load" event until all pages are loaded, to ensure that printing
 // works in Firefox; see https://bugzilla.mozilla.org/show_bug.cgi?id=1618553
-if( (<any>document).blockUnblockOnload )
-{
-  (<any>document).blockUnblockOnload(true);
-}
+(<any>document).blockUnblockOnload?.(true);
 
 if( document.readyState === "interactive"
  || document.readyState === "complete"

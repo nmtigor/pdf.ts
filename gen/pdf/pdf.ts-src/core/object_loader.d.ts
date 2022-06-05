@@ -1,6 +1,6 @@
+import { ChunkedStream } from "./chunked_stream.js";
 import { Dict, RefSet } from "./primitives.js";
 import { XRef } from "./xref.js";
-import { ChunkedStream } from "./chunked_stream.js";
 /**
  * A helper for loading missing data in `Dict` graphs. It traverses the graph
  * depth first and queues up any objects that have missing data. Once it has

@@ -248,24 +248,12 @@ export class RefSet {
     has(ref) { return this.#set.has(ref.toString()); }
     put(ref) { this.#set.add(ref.toString()); }
     remove(ref) { this.#set.delete(ref.toString()); }
+    [Symbol.iterator]() { return this.#set.values(); }
     clear() { this.#set.clear(); }
     constructor(parent) {
         if (parent && !(parent instanceof RefSet))
             assert(0, 'RefSet: Invalid "parent" value.');
-        // if (
-        //   (typeof PDFJSDev === "undefined" ||
-        //     PDFJSDev.test("!PRODUCTION || TESTING")) &&
-        //   parent &&
-        //   !(parent instanceof RefSet)
-        // ) {
-        //   assert(0,'RefSet: Invalid "parent" value.');
-        // }
         this.#set = new Set(parent && parent.#set);
-    }
-    forEach(callback) {
-        for (const ref of this.#set.values()) {
-            callback(ref);
-        }
     }
 }
 export class RefSetCache {
@@ -277,11 +265,7 @@ export class RefSetCache {
     putAlias(ref, aliasRef) {
         this.#map.set(ref.toString(), this.get(aliasRef));
     }
-    forEach(callback) {
-        for (const value of this.#map.values()) {
-            callback(value);
-        }
-    }
+    [Symbol.iterator]() { return this.#map.values(); }
     clear() { this.#map.clear(); }
 }
 export function isName(v, name) {

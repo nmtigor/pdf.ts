@@ -15,10 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Dict, Ref, RefSet } from "./primitives.js";
-import { MissingDataException } from "./core_utils.js";
 import { warn } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
+import { MissingDataException } from "./core_utils.js";
+import { Dict, Ref, RefSet } from "./primitives.js";
 /*81---------------------------------------------------------------------------*/
 function mayHaveChildren(value) {
     return (value instanceof Ref

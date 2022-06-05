@@ -17,10 +17,9 @@
  * limitations under the License.
  */
 
-import { assert }     from "../../../lib/util/trace.js";
 import { Thread, type StreamSink } from "../shared/message_handler.js";
-import { ImageKind, type matrix_t, OPS, RenderingIntentFlag, warn } from "../shared/util.js";
-import { type ImgData } from "./evaluator.js";
+import { ImageKind, OPS, RenderingIntentFlag, warn, type matrix_t } from "../shared/util.js";
+import { MarkedContentProps, OpArgs, type ImgData } from "./evaluator.js";
 /*81---------------------------------------------------------------------------*/
 
 namespace NsQueueOptimizer
@@ -29,8 +28,8 @@ namespace NsQueueOptimizer
   {
     iCurr:number;
     fnArray:OPS[];
-    argsArray:unknown[];
     // argsArray:([] | null)[];
+    argsArray:unknown[];
   }
   
   type CheckFn = ( context:QueueOptimizerContext ) => boolean;
@@ -39,7 +38,7 @@ namespace NsQueueOptimizer
 
   interface Match
   {
-    checkFn:CheckFn | null;
+    checkFn:CheckFn | undefined;
     iterateFn:IterateFn;
     processFn:ProcessFn;
   }
@@ -53,7 +52,7 @@ namespace NsQueueOptimizer
   }
 
   function addState( parentState:State, pattern:OPS[], 
-    checkFn:CheckFn | null, iterateFn:IterateFn, processFn:ProcessFn 
+    checkFn:CheckFn | undefined, iterateFn:IterateFn, processFn:ProcessFn 
   ) {
     let state = parentState;
     for( let i = 0, ii = pattern.length - 1; i < ii; i++ )
@@ -68,36 +67,6 @@ namespace NsQueueOptimizer
     };
   }
 
-  function handlePaintSolidColorImageMask(
-    iFirstSave:number,
-    count:number,
-    fnArray:OPS[],
-    argsArray:unknown[],
-  ) {
-    // Handles special case of mainly LaTeX documents which use image masks to
-    // draw lines with the current fill style.
-    // 'count' groups of (save, transform, paintImageMaskXObject, restore)+
-    // have been found at iFirstSave.
-    const iFirstPIMXO = iFirstSave + 2;
-    let i;
-    for( i = 0; i < count; i++ )
-    {
-      const arg = <any>argsArray[iFirstPIMXO + 4 * i];
-      const imageMask = arg.length === 1 && arg[0];
-      if( imageMask 
-       && imageMask.width === 1
-       && imageMask.height === 1
-       && (   !imageMask.data.length 
-           || (imageMask.data.length === 1 && imageMask.data[0] === 0))
-      ) {
-        fnArray[iFirstPIMXO + 4 * i] = OPS.paintSolidColorImageMask;
-        continue;
-      }
-      break;
-    }
-    return count - i;
-  }
-
   const InitialState = <State><unknown>[];
 
   // This replaces (save, transform, paintInlineImageXObject, restore)+
@@ -105,7 +74,7 @@ namespace NsQueueOptimizer
   addState(
     InitialState,
     [OPS.save, OPS.transform, OPS.paintInlineImageXObject, OPS.restore],
-    null,
+    undefined,
     function iterateInlineImageGroup( context, i )
     {
       const fnArray = context.fnArray;
@@ -177,7 +146,7 @@ namespace NsQueueOptimizer
       }
       const imgWidth = Math.max(maxX, currentX) + IMAGE_PADDING;
       const imgHeight = currentY + maxLineHeight + IMAGE_PADDING;
-      const imgData = new Uint8ClampedArray(imgWidth * imgHeight * 4);
+      const imgData = new Uint8Array( imgWidth * imgHeight * 4 );
       const imgRowSize = imgWidth << 2;
       for( let q = 0; q < count; q++ )
       {
@@ -230,7 +199,7 @@ namespace NsQueueOptimizer
   addState(
     InitialState,
     [OPS.save, OPS.transform, OPS.paintImageMaskXObject, OPS.restore],
-    null,
+    undefined,
     function iterateImageMaskGroup(context, i) {
       const fnArray = context.fnArray;
       const iFirstSave = context.iCurr - 3;
@@ -263,13 +232,8 @@ namespace NsQueueOptimizer
       // At this point, i is the index of the first op past the last valid
       // quartet.
       let count = Math.floor((i - iFirstSave) / 4);
-      count = handlePaintSolidColorImageMask(
-        iFirstSave,
-        count,
-        fnArray,
-        argsArray
-      );
-      if (count < MIN_IMAGES_IN_MASKS_BLOCK) {
+      if( count < MIN_IMAGES_IN_MASKS_BLOCK )
+      {
         return i - ((i - iFirstSave) % 4);
       }
 
@@ -336,11 +300,13 @@ namespace NsQueueOptimizer
         for( let q = 0; q < count; q++ )
         {
           transformArgs = <matrix_t>argsArray[iFirstTransform + (q << 2)];
-          const maskParms = <ImgData>(<any>argsArray[iFirstPIMXO + (q << 2)])[0];
+          const maskParams = <ImgData>(<any>argsArray[iFirstPIMXO + (q << 2)])[0];
           images.push({
-            data: maskParms.data,
-            width: maskParms.width,
-            height: maskParms.height,
+            data: maskParams.data,
+            width: maskParams.width,
+            height: maskParams.height,
+            interpolate: maskParams.interpolate,
+            count: maskParams.count,
             transform: transformArgs,
           });
         }
@@ -432,9 +398,7 @@ namespace NsQueueOptimizer
         MAX_IMAGES_IN_BLOCK
       );
       if( count < MIN_IMAGES_IN_BLOCK )
-      {
         return i - ((i - iFirstSave) % 4);
-      }
 
       // Extract the (x,y) positions from all of the matching transforms.
       const positions = new Float32Array(count * 2);
@@ -466,7 +430,7 @@ namespace NsQueueOptimizer
   addState(
     InitialState,
     [OPS.beginText, OPS.setFont, OPS.setTextMatrix, OPS.showText, OPS.endText],
-    null,
+    undefined,
     function iterateShowTextGroup( context, i )
     {
       const fnArray = context.fnArray,
@@ -488,9 +452,8 @@ namespace NsQueueOptimizer
           const iFirstSetFont = context.iCurr - 3;
           const firstSetFontArg0 = (<any>argsArray[iFirstSetFont])[0];
           const firstSetFontArg1 = (<any>argsArray[iFirstSetFont])[1];
-          if (
-            (<any>argsArray[i])[0] !== firstSetFontArg0 ||
-            (<any>argsArray[i])[1] !== firstSetFontArg1
+          if( (<any>argsArray[i])[0] !== firstSetFontArg0
+           || (<any>argsArray[i])[1] !== firstSetFontArg1
           ) {
             return false; // fonts don't match
           }
@@ -523,9 +486,7 @@ namespace NsQueueOptimizer
         MAX_CHARS_IN_BLOCK
       );
       if( count < MIN_CHARS_IN_BLOCK )
-      {
         return i - ((i - iFirstBeginText) % 5);
-      }
 
       // If the preceding quintet is (<something>, setFont, setTextMatrix,
       // showText, endText), include that as well. (E.g. <something> might be
@@ -567,10 +528,10 @@ namespace NsQueueOptimizer
   
     _optimize() {}
   
-    push( fn:OPS, args?:unknown[] | Uint8ClampedArray | null ) 
+    push( fn:OPS, args?:OpArgs ) 
     {
-      this.queue.fnArray.push(fn);
-      this.queue.argsArray.push(args);
+      this.queue.fnArray.push( fn);
+      this.queue.argsArray.push( args);
       this._optimize();
     }
   
@@ -616,10 +577,12 @@ namespace NsQueueOptimizer
       const context = this.context;
       while( i < ii )
       {
-        if (match) {
+        if( match )
+        {
           // Already find a block of potentially optimizable items, iterating...
           const iterate = match.iterateFn(context, i);
-          if (iterate) {
+          if( iterate )
+          {
             i++;
             continue;
           }
@@ -628,9 +591,8 @@ namespace NsQueueOptimizer
           ii = fnArray.length;
           match = undefined;
           state = undefined;
-          if (i >= ii) {
+          if( i >= ii )
             break;
-          }
         }
         // Find the potentially optimizable items.
         state = (<State>state || InitialState)[fnArray[i]];
@@ -698,22 +660,22 @@ namespace NsOperatorList
     /**
      * Array containing the arguments of the functions.
      */
-    argsArray:unknown[];
     // argsArray:(Uint8ClampedArray | OpArgs | undefined)[];
+    argsArray:(OpArgs | undefined)[];
     
     length?:number;
     lastChunk:boolean | undefined;
   }
 
-  // eslint-disable-next-line no-shadow
   /** @final */
   export class OperatorList
   {
     #streamSink;
     fnArray:OPS[] = [];
 
-    argsArray:(unknown[] | Uint8ClampedArray | null | undefined)[] = [];
+    // argsArray:(unknown[] | Uint8ClampedArray | null | undefined)[] = [];
     // argsArray:(Uint8ClampedArray | OpArgs | undefined)[] = [];
+    argsArray:(OpArgs | undefined)[] = [];
     get length() { return this.argsArray.length; }
 
     optimizer:QueueOptimizer | NullOptimizer;
@@ -727,7 +689,7 @@ namespace NsOperatorList
     get totalLength() { return this.#totalLength + this.length; }
 
     weight = 0;
-    #resolved:null | Promise<void>;
+    #resolved:Promise<void> | undefined;
 
     constructor( intent:RenderingIntentFlag=0, streamSink?:StreamSink<Thread.main, "GetOperatorList">
     ) {
@@ -735,7 +697,7 @@ namespace NsOperatorList
       if( streamSink && !(intent & RenderingIntentFlag.OPLIST) ) 
            this.optimizer = new QueueOptimizer(this);
       else this.optimizer = new NullOptimizer(this);
-      this.#resolved = streamSink ? null : Promise.resolve();
+      this.#resolved = streamSink ? undefined : Promise.resolve();
     }
   
     get ready()
@@ -744,9 +706,10 @@ namespace NsOperatorList
     }
 
     // args?:Uint8ClampedArray | OpArgs | [ImgData]
-    addOp( fn:OPS, args?:unknown[] | Uint8ClampedArray | null ) 
+    // args?:unknown[] | Uint8ClampedArray | null
+    addOp( fn:OPS, args?:OpArgs ) 
     {
-      this.optimizer.push(fn, args);
+      this.optimizer.push( fn, args);
       this.weight++;
       if( this.#streamSink )
       {
@@ -763,25 +726,42 @@ namespace NsOperatorList
       }
     }
 
+    addImageOps( fn:OPS, args:OpArgs | undefined, 
+      optionalContent:MarkedContentProps | undefined )
+    {
+      if( optionalContent !== undefined )
+      {
+        this.addOp( OPS.beginMarkedContentProps, ["OC", optionalContent]);
+      }
+
+      this.addOp( fn, args);
+
+      if( optionalContent !== undefined )
+      {
+        this.addOp( OPS.endMarkedContent, []);
+      }
+    }
+
     addDependency( dependency:string )
     {
-      if (this.dependencies.has(dependency)) {
+      if( this.dependencies.has(dependency) )
         return;
-      }
       this.dependencies.add(dependency);
       this.addOp(OPS.dependency, [dependency]);
     }
 
     addDependencies( dependencies:Set<string> )
     {
-      for (const dependency of dependencies) {
+      for( const dependency of dependencies )
+      {
         this.addDependency(dependency);
       }
     }
 
     addOpList( opList:OperatorList )
     {
-      if (!(opList instanceof OperatorList)) {
+      if( !(opList instanceof OperatorList) )
+      {
         warn('addOpList - ignoring invalid "opList" parameter.');
         return;
       }
@@ -791,7 +771,7 @@ namespace NsOperatorList
       }
       for( let i = 0, ii = opList.length; i < ii; i++ )
       {
-        this.addOp(opList.fnArray[i], opList.argsArray[i]);
+        this.addOp( opList.fnArray[i], opList.argsArray[i] );
       }
     }
 
@@ -816,18 +796,10 @@ namespace NsOperatorList
           case OPS.paintInlineImageXObjectGroup:
           case OPS.paintImageMaskXObject:
             const arg = (<any>argsArray[i])[0]; // First parameter in imgData.
-
-            // #if !PRODUCTION || TESTING
-              // if (
-              //   typeof PDFJSDev === "undefined" ||
-              //   PDFJSDev.test("!PRODUCTION || TESTING")
-              // ) {
-              assert( arg.data instanceof Uint8ClampedArray,
-                'OperatorList._transfers: Unsupported "arg.data" type.'
-              );
-              // }
-            // #endif
-            if (!arg.cached) {
+            if( !arg.cached
+             && arg.data
+             && arg.data.buffer instanceof ArrayBuffer
+            ) {
               transfers.push(arg.data.buffer);
             }
             break;

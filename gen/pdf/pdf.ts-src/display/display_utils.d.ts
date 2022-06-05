@@ -11,25 +11,37 @@ export declare class DOMCanvasFactory extends BaseCanvasFactory {
     constructor({ ownerDocument }?: {
         ownerDocument?: Document | undefined;
     });
-    /** @implements */
+    /**
+     * @ignore
+     * @implements
+     */
     _createCanvas(width: number, height: number): HTMLCanvasElement;
 }
 export declare class DOMCMapReaderFactory extends BaseCMapReaderFactory {
-    /** @implements */
+    /**
+     * @ignore
+     * @implements
+     */
     _fetchData(url: string, compressionType: CMapCompressionType): Promise<{
         cMapData: Uint8Array;
         compressionType: CMapCompressionType;
     }>;
 }
 export declare class DOMStandardFontDataFactory extends BaseStandardFontDataFactory {
-    /** @implements */
+    /**
+     * @ignore
+     * @implements
+     */
     _fetchData(url: string): Promise<Uint8Array>;
 }
 export declare class DOMSVGFactory extends BaseSVGFactory {
-    /** @implements */
-    _createSVG(type: keyof SVGElementTagNameMap): SVGSymbolElement | SVGFilterElement | SVGAElement | SVGScriptElement | SVGStyleElement | SVGTitleElement | SVGAnimateElement | SVGAnimateMotionElement | SVGAnimateTransformElement | SVGCircleElement | SVGClipPathElement | SVGDefsElement | SVGDescElement | SVGEllipseElement | SVGFEBlendElement | SVGFEColorMatrixElement | SVGFEComponentTransferElement | SVGFECompositeElement | SVGFEConvolveMatrixElement | SVGFEDiffuseLightingElement | SVGFEDisplacementMapElement | SVGFEDistantLightElement | SVGFEDropShadowElement | SVGFEFloodElement | SVGFEFuncAElement | SVGFEFuncBElement | SVGFEFuncGElement | SVGFEFuncRElement | SVGFEGaussianBlurElement | SVGFEImageElement | SVGFEMergeElement | SVGFEMergeNodeElement | SVGFEMorphologyElement | SVGFEOffsetElement | SVGFEPointLightElement | SVGFESpecularLightingElement | SVGFESpotLightElement | SVGFETileElement | SVGFETurbulenceElement | SVGForeignObjectElement | SVGGElement | SVGImageElement | SVGLineElement | SVGLinearGradientElement | SVGMarkerElement | SVGMaskElement | SVGMetadataElement | SVGMPathElement | SVGPathElement | SVGPatternElement | SVGPolygonElement | SVGPolylineElement | SVGRadialGradientElement | SVGRectElement | SVGSetElement | SVGStopElement | SVGSVGElement | SVGSwitchElement | SVGTextElement | SVGTextPathElement | SVGTSpanElement | SVGUseElement | SVGViewElement;
+    /**
+     * @ignore
+     * @implements
+     */
+    _createSVG(type: keyof SVGElementTagNameMap): SVGSymbolElement | SVGClipPathElement | SVGFilterElement | SVGMarkerElement | SVGMaskElement | SVGAElement | SVGScriptElement | SVGStyleElement | SVGTitleElement | SVGAnimateElement | SVGAnimateMotionElement | SVGAnimateTransformElement | SVGCircleElement | SVGDefsElement | SVGDescElement | SVGEllipseElement | SVGFEBlendElement | SVGFEColorMatrixElement | SVGFEComponentTransferElement | SVGFECompositeElement | SVGFEConvolveMatrixElement | SVGFEDiffuseLightingElement | SVGFEDisplacementMapElement | SVGFEDistantLightElement | SVGFEDropShadowElement | SVGFEFloodElement | SVGFEFuncAElement | SVGFEFuncBElement | SVGFEFuncGElement | SVGFEFuncRElement | SVGFEGaussianBlurElement | SVGFEImageElement | SVGFEMergeElement | SVGFEMergeNodeElement | SVGFEMorphologyElement | SVGFEOffsetElement | SVGFEPointLightElement | SVGFESpecularLightingElement | SVGFESpotLightElement | SVGFETileElement | SVGFETurbulenceElement | SVGForeignObjectElement | SVGGElement | SVGImageElement | SVGLineElement | SVGLinearGradientElement | SVGMetadataElement | SVGMPathElement | SVGPathElement | SVGPatternElement | SVGPolygonElement | SVGPolylineElement | SVGRadialGradientElement | SVGRectElement | SVGSetElement | SVGStopElement | SVGSVGElement | SVGSwitchElement | SVGTextElement | SVGTextPathElement | SVGTSpanElement | SVGUseElement | SVGViewElement;
 }
-interface PageViewportParms {
+interface _PageViewportP {
     /**
      * The xMin, yMin, xMax and yMax coordinates.
      */
@@ -58,7 +70,7 @@ interface PageViewportParms {
      */
     dontFlip?: boolean;
 }
-interface PageViewportCloneParms {
+interface _PageViewportCloneP {
     /**
      * The scale, overriding the one in the cloned
      * viewport. The default value is `this.scale`.
@@ -106,12 +118,12 @@ export declare class PageViewport {
     transform: matrix_t;
     width: number;
     height: number;
-    constructor({ viewBox, scale, rotation, offsetX, offsetY, dontFlip, }: PageViewportParms);
+    constructor({ viewBox, scale, rotation, offsetX, offsetY, dontFlip, }: _PageViewportP);
     /**
      * Clones viewport, with optional additional properties.
      * @return Cloned viewport.
      */
-    clone({ scale, rotation, offsetX, offsetY, dontFlip, }?: PageViewportCloneParms): PageViewport;
+    clone({ scale, rotation, offsetX, offsetY, dontFlip, }?: _PageViewportCloneP): PageViewport;
     /**
      * Converts PDF point to the viewport coordinates. For examples, useful for
      * converting PDF location into canvas pixel coordinates.

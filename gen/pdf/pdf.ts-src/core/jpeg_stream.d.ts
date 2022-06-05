@@ -1,6 +1,6 @@
-import { Dict } from "./primitives.js";
 import { BaseStream } from './base_stream.js';
 import { ImageStream } from './decode_stream.js';
+import { Dict } from "./primitives.js";
 /**
  * For JPEG's we use a library to decode these images and the stream behaves
  * like all the other DecodeStreams.

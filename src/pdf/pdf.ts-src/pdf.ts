@@ -27,7 +27,7 @@
 import { createPromiseCap } from "../../lib/promisecap.js";
 import {
   build,
-  type DocumentInitParms,
+  type DocumentInitP,
   getDocument,
   LoopbackPort,
   PDFDataRangeTransport,
@@ -81,7 +81,7 @@ import { XfaLayer } from "./display/xfa_layer.js";
     import("./display/fetch_stream.js"),
   ]);
 
-  setPDFNetworkStreamFactory( async( params:DocumentInitParms ) => {
+  setPDFNetworkStreamFactory( async( params:DocumentInitP ) => {
     const [{ PDFNetworkStream }, { PDFFetchStream }] = await streamsPromise;
     if( isValidFetchUrl(params.url) )
     {

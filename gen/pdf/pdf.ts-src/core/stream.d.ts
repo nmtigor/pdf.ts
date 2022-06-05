@@ -12,7 +12,7 @@ export declare class Stream extends BaseStream {
     /** @implements */
     getByte(): number;
     /** @implements */
-    getBytes(length?: number, forceClamped?: boolean): Uint8Array | Uint8ClampedArray;
+    getBytes(length?: number): Uint8Array;
     /** @implements */
     getByteRange(begin: number, end: number): Uint8Array;
     /** @implements */

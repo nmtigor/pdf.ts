@@ -72,12 +72,6 @@ declare function getViewerConfiguration(): {
          */
         toggleButton: HTMLButtonElement;
         /**
-         * Container where all the
-         * toolbar buttons are placed. The maximum height of the toolbar is controlled
-         * dynamically by adjusting the 'max-height' CSS property of this DOM element.
-         */
-        toolbarButtonContainer: HTMLDivElement;
-        /**
          * Button for entering presentation mode.
          */
         presentationModeButton: HTMLButtonElement;
@@ -85,9 +79,6 @@ declare function getViewerConfiguration(): {
          * Button to open a file.
          */
         openFileButton: HTMLButtonElement;
-        /**
-         * Button to print the document.
-         */
         printButton: HTMLButtonElement;
         /**
          * Button to download the document.
@@ -139,9 +130,9 @@ declare function getViewerConfiguration(): {
          */
         outerContainer: HTMLDivElement;
         /**
-         * The viewer container (in which the viewer element is placed).
+         * The sidebar container (in which the views are placed).
          */
-        viewerContainer: HTMLDivElement;
+        sidebarContainer: HTMLDivElement;
         /**
          * The button used for opening/closing the sidebar.
          */
@@ -207,13 +198,9 @@ declare function getViewerConfiguration(): {
     };
     passwordOverlay: {
         /**
-         * Name of the overlay for the overlay manager.
+         * The overlay's DOM element.
          */
-        overlayName: string;
-        /**
-         * Div container for the overlay.
-         */
-        container: HTMLDivElement;
+        dialog: HTMLDialogElement;
         /**
          * Label containing instructions for entering the password.
          */
@@ -233,13 +220,9 @@ declare function getViewerConfiguration(): {
     };
     documentProperties: {
         /**
-         * Name/identifier for the overlay.
+         * The overlay's DOM element.
          */
-        overlayName: string;
-        /**
-         * Div container for the overlay.
-         */
-        container: HTMLDivElement;
+        dialog: HTMLDialogElement;
         /**
          * Button for closing the overlay.
          */
@@ -273,7 +256,8 @@ declare function getViewerConfiguration(): {
         lessInfoButton: HTMLButtonElement;
     };
     printContainer: HTMLDivElement;
-    openFileInputName: string;
+    openFileInput: HTMLInputElement;
+    debuggerScriptPath: string;
 };
 export declare type ViewerConfiguration = ReturnType<typeof getViewerConfiguration>;
 export {};

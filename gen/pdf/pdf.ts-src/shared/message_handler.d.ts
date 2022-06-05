@@ -1,24 +1,24 @@
-import { PromiseCap } from "../../../lib/promisecap.js";
 import { HttpStatusCode } from "../../../lib/HttpStatusCode.js";
-import { type IWorker } from "../core/worker.js";
-import { VerbosityLevel } from "../pdf.js";
-import { InvalidPDFException, MissingPDFException, PasswordException, PasswordResponses, PermissionFlag, type rect_t, RenderingIntentFlag, UnexpectedResponseException, UnknownErrorException, UNSUPPORTED_FEATURES } from "./util.js";
-import { type OutlineNode, type PDFDocumentStats, type RefProxy } from "../display/api.js";
-import { type AnnotStorageRecord } from "../display/annotation_layer.js";
-import { type DocumentInfo, type XFAData } from "../core/document.js";
-import { type TypeTextContentItem, type BidiTextContentItem, type FontStyle, type ImgData } from "../core/evaluator.js";
-import { FontExpotDataEx } from "../core/fonts.js";
-import { type OpListIR } from "../core/operator_list.js";
-import { type CmdArgs } from "../core/font_renderer.js";
-import { type AnnotationData, type FieldObject } from "../core/annotation.js";
+import { PromiseCap } from "../../../lib/promisecap.js";
 import { PageLayout, PageMode } from "../../pdf.ts-web/ui_utils.js";
-import { type CMapData } from "../display/base_factory.js";
+import { type AnnotationData, type FieldObject } from "../core/annotation.js";
 import { type ExplicitDest, type MarkInfo, type OpenAction, type OptionalContentConfigData, type ViewerPref } from "../core/catalog.js";
-import { type SerializedMetadata } from "../core/metadata_parser.js";
-import { type StructTree } from "../core/struct_tree.js";
 import { type AnnotActions } from "../core/core_utils.js";
+import { type DocumentInfo, type XFAData } from "../core/document.js";
+import { type BidiTextContentItem, type FontStyle, type ImgData, type TypeTextContentItem } from "../core/evaluator.js";
+import { FontExpotDataEx } from "../core/fonts.js";
+import { type CmdArgs } from "../core/font_renderer.js";
+import { type SerializedMetadata } from "../core/metadata_parser.js";
+import { type OpListIR } from "../core/operator_list.js";
 import { type ShadingPatternIR } from "../core/pattern.js";
+import { type StructTree } from "../core/struct_tree.js";
+import { type IWorker } from "../core/worker.js";
 import { type XFAElObj } from "../core/xfa/alias.js";
+import { type AnnotStorageRecord } from "../display/annotation_layer.js";
+import { type OutlineNode, type PDFDocumentStats, type RefProxy } from "../display/api.js";
+import { type CMapData } from "../display/base_factory.js";
+import { VerbosityLevel } from "../pdf.js";
+import { InvalidPDFException, MissingPDFException, PasswordException, PasswordResponses, PermissionFlag, RenderingIntentFlag, UnexpectedResponseException, UnknownErrorException, UNSUPPORTED_FEATURES, type rect_t } from "./util.js";
 interface reason_t {
     name?: string;
     message: string;
@@ -48,7 +48,7 @@ export interface GetDocRequestData {
     standardFontDataUrl?: string | undefined;
     enableXfa: boolean | undefined;
 }
-export interface PumpOperatorListParms {
+export interface _PumpOperatorListP {
     pageIndex: number;
     intent: RenderingIntentFlag;
     cacheKey: string;
@@ -151,7 +151,7 @@ export interface MActionMap {
         Sinkchunk: undefined;
     };
     GetOperatorList: {
-        Data: PumpOperatorListParms;
+        Data: _PumpOperatorListP;
         Return: void;
         Sinkchunk: OpListIR;
     };
@@ -303,7 +303,7 @@ export interface WActionMap {
         Sinkchunk: undefined;
     };
     DocProgress: {
-        Data: OnProgressParms;
+        Data: OnProgressP;
         Return: void;
         Sinkchunk: undefined;
     };

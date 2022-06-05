@@ -16,23 +16,23 @@
  * limitations under the License.
  */
 import { assert } from "../../../lib/util/trace.js";
-import { bytesToString, FONT_IDENTITY_MATRIX, FontType, FormatError, info, shadow, string32, warn, } from "../shared/util.js";
-import { getDingbatsGlyphsUnicode, getGlyphsUnicode } from "./glyphlist.js";
-import { getEncoding, MacRomanEncoding, StandardEncoding, SymbolSetEncoding, ZapfDingbatsEncoding, } from "./encodings.js";
-import { getGlyphMapForStandardFonts, getNonStdFontMap, getSerifFonts, getStdFontMap, getSupplementalGlyphMapForArialBlack, getSupplementalGlyphMapForCalibri, } from "./standard_fonts.js";
-import { getCharUnicodeCategory, getUnicodeForGlyph, getUnicodeRangeFor, mapSpecialUnicodeValues, } from "./unicode.js";
-import { IdentityCMap } from "./cmap.js";
-import { Stream } from "./stream.js";
-import { FontFlags, getFontType, MacStandardGlyphOrdering, recoverGlyphName, SEAC_ANALYSIS_ENABLED } from "./fonts_utils.js";
-import { readUint32 } from "./core_utils.js";
-import { IdentityToUnicodeMap, ToUnicodeMap } from "./to_unicode_map.js";
-import { OpenTypeFileBuilder, VALID_TABLES } from "./opentype_file_builder.js";
-import { CFFCompiler, CFFParser } from "./cff_parser.js";
+import { bytesToString, FontType, FONT_IDENTITY_MATRIX, FormatError, info, shadow, string32, warn } from "../shared/util.js";
 import { CFFFont } from "./cff_font.js";
-import { Type1Font } from "./type1_font.js";
+import { CFFCompiler, CFFParser } from "./cff_parser.js";
+import { IdentityCMap } from "./cmap.js";
+import { readUint32 } from "./core_utils.js";
+import { getEncoding, MacRomanEncoding, StandardEncoding, SymbolSetEncoding, ZapfDingbatsEncoding } from "./encodings.js";
+import { FontFlags, getFontType, MacStandardGlyphOrdering, recoverGlyphName, SEAC_ANALYSIS_ENABLED } from "./fonts_utils.js";
 import { FontRendererFactory } from "./font_renderer.js";
-import { getFontBasicMetrics } from "./metrics.js";
 import { GlyfTable } from "./glyf.js";
+import { getDingbatsGlyphsUnicode, getGlyphsUnicode } from "./glyphlist.js";
+import { getFontBasicMetrics } from "./metrics.js";
+import { OpenTypeFileBuilder, VALID_TABLES } from "./opentype_file_builder.js";
+import { getGlyphMapForStandardFonts, getNonStdFontMap, getSerifFonts, getStdFontMap, getSupplementalGlyphMapForArialBlack, getSupplementalGlyphMapForCalibri } from "./standard_fonts.js";
+import { Stream } from "./stream.js";
+import { IdentityToUnicodeMap, ToUnicodeMap } from "./to_unicode_map.js";
+import { Type1Font } from "./type1_font.js";
+import { getCharUnicodeCategory, getUnicodeForGlyph, getUnicodeRangeFor, mapSpecialUnicodeValues } from "./unicode.js";
 /*81---------------------------------------------------------------------------*/
 // Unicode Private Use Areas:
 const PRIVATE_USE_AREAS = [
@@ -165,7 +165,7 @@ function adjustToUnicode(properties, builtInEncoding) {
         const glyphName = builtInEncoding[charCode];
         const unicode = getUnicodeForGlyph(glyphName, glyphsUnicodeMap);
         if (unicode !== -1) {
-            toUnicode[charCode] = String.fromCharCode(unicode);
+            toUnicode[+charCode] = String.fromCharCode(unicode);
         }
     }
     if (toUnicode.length > 0) {
@@ -505,7 +505,7 @@ function createCmapTable(glyphs, numGlyphs) {
     }
     const trailingRangesCount = ranges[i][1] < 0xffff ? 1 : 0;
     const segCount = bmpLength + trailingRangesCount;
-    const searchParms = OpenTypeFileBuilder.getSearchParams(segCount, 2);
+    const searchParams = OpenTypeFileBuilder.getSearchParams(segCount, 2);
     // Fill up the 4 parallel arrays describing the segments.
     let startCount = "", endCount = "", idDeltas = "", idRangeOffsets = "", glyphsIds = "", bias = 0;
     let range, codes, start, end;
@@ -546,9 +546,9 @@ function createCmapTable(glyphs, numGlyphs) {
     }
     const format314 = "\x00\x00" + // language
         string16(2 * segCount) +
-        string16(searchParms.range) +
-        string16(searchParms.entry) +
-        string16(searchParms.rangeShift) +
+        string16(searchParams.range) +
+        string16(searchParams.entry) +
+        string16(searchParams.rangeShift) +
         endCount +
         "\x00\x00" +
         startCount +
@@ -1306,17 +1306,16 @@ export class Font extends FontExpotDataEx {
                 };
             }
             const format = file.getUint16();
-            file.skip(2 + 2); // length + language
             let hasShortCmap = false;
             const mappings = [];
             let j, glyphId;
             // TODO(mack): refactor this cmap subtable reading logic out
             if (format === 0) {
+                file.skip(2 + 2); // length + language
                 for (j = 0; j < 256; j++) {
                     const index = file.getByte();
-                    if (!index) {
+                    if (!index)
                         continue;
-                    }
                     mappings.push({
                         charCode: j,
                         glyphId: index,
@@ -1325,6 +1324,7 @@ export class Font extends FontExpotDataEx {
                 hasShortCmap = true;
             }
             else if (format === 2) {
+                file.skip(2 + 2); // length + language
                 const subHeaderKeys = [];
                 let maxSubHeaderKey = 0;
                 // Read subHeaderKeys. If subHeaderKeys[i] === 0, then i is a
@@ -1376,6 +1376,7 @@ export class Font extends FontExpotDataEx {
                 }
             }
             else if (format === 4) {
+                file.skip(2 + 2); // length + language
                 // re-creating the table in format 4 since the encoding
                 // might be changed
                 const segCount = file.getUint16() >> 1;
@@ -1428,6 +1429,7 @@ export class Font extends FontExpotDataEx {
                 }
             }
             else if (format === 6) {
+                file.skip(2 + 2); // length + language
                 // Format 6 is a 2-bytes dense mapping, which means the font data
                 // lives glue together even if they are pretty far in the unicode
                 // table. (This looks weird, so I can have missed something), this
@@ -1442,6 +1444,21 @@ export class Font extends FontExpotDataEx {
                         charCode,
                         glyphId,
                     });
+                }
+            }
+            else if (format === 12) {
+                file.skip(2 + 4 + 4); // reserved + length + language
+                const nGroups = file.getInt32() >>> 0;
+                for (j = 0; j < nGroups; j++) {
+                    const startCharCode = file.getInt32() >>> 0;
+                    const endCharCode = file.getInt32() >>> 0;
+                    let glyphCode = file.getInt32() >>> 0;
+                    for (let charCode = startCharCode; charCode <= endCharCode; charCode++) {
+                        mappings.push({
+                            charCode,
+                            glyphId: glyphCode++,
+                        });
+                    }
                 }
             }
             else {
@@ -1729,6 +1746,18 @@ export class Font extends FontExpotDataEx {
             locaEntries.sort((a, b) => {
                 return a.index - b.index;
             });
+            // Calculate the endOffset of the "first" glyph correctly when there are
+            // *multiple* empty ones at the start of the data (fixes issue14618.pdf).
+            for (i = 0; i < numGlyphs; i++) {
+                const { offset, endOffset } = locaEntries[i];
+                if (offset !== 0 || endOffset !== 0)
+                    break;
+                const nextOffset = locaEntries[i + 1].offset;
+                if (nextOffset === 0)
+                    continue;
+                locaEntries[i].endOffset = nextOffset;
+                break;
+            }
             const missingGlyphs = Object.create(null);
             let writeOffset = 0;
             itemEncode(locaData, 0, writeOffset);

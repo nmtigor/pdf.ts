@@ -54,7 +54,8 @@ export var ColorConverters;
     }
     ColorConverters.CMYK_RGB = CMYK_RGB;
     function CMYK_HTML(components) {
-        return RGB_HTML(CMYK_RGB(components)); //kkkk bug?
+        // return RGB_HTML( CMYK_RGB(components) ); //kkkk bug?
+        return RGB_HTML(CMYK_RGB(components).slice(1));
     }
     ColorConverters.CMYK_HTML = CMYK_HTML;
     function RGB_CMYK([r, g, b]) {

@@ -18,30 +18,30 @@
 /* eslint-disable no-var */
 import { createPromiseCap } from "../../../lib/promisecap.js";
 import { assert } from "../../../lib/util/trace.js";
-import { AbortException, CMapCompressionType, FONT_IDENTITY_MATRIX, FormatError, IDENTITY_MATRIX, info, OPS, shadow, stringToPDFString, TextRenderingMode, UNSUPPORTED_FEATURES, Util, warn, } from "../shared/util.js";
-import { CMapFactory, IdentityCMap } from "./cmap.js";
-import { Cmd, Dict, EOF, FontDict, isName, Name, Ref, RefSet, } from "./primitives.js";
-import { ErrorFont, Font, } from "./fonts.js";
-import { getEncoding, MacRomanEncoding, StandardEncoding, SymbolSetEncoding, WinAnsiEncoding, ZapfDingbatsEncoding, } from "./encodings.js";
-import { getNormalizedUnicodes, getUnicodeForGlyph, reverseIfRtl, } from "./unicode.js";
-import { getFontNameToFileMap, getSerifFonts, getStandardFontName, getStdFontMap, getSymbolsFonts, } from "./standard_fonts.js";
-import { getTilingPatternIR, Pattern } from "./pattern.js";
-import { isPDFFunction, PDFFunctionFactory } from "./function.js";
-import { Lexer, Parser } from "./parser.js";
-import { LocalColorSpaceCache, LocalGStateCache, LocalImageCache, LocalTilingPatternCache, } from "./image_utils.js";
-import { bidi } from "./bidi.js";
-import { ColorSpace } from "./colorspace.js";
-import { NullStream, Stream } from "./stream.js";
-import { getGlyphsUnicode } from "./glyphlist.js";
-import { getMetrics } from "./metrics.js";
-import { MurmurHash3_64 } from "./murmurhash3.js";
-import { OperatorList } from "./operator_list.js";
-import { PDFImage } from "./image.js";
-import { getLookupTableFactory, MissingDataException } from "./core_utils.js";
+import { MurmurHash3_64 } from "../shared/murmurhash3.js";
+import { AbortException, CMapCompressionType, FONT_IDENTITY_MATRIX, FormatError, IDENTITY_MATRIX, info, OPS, shadow, stringToPDFString, TextRenderingMode, UNSUPPORTED_FEATURES, Util, warn } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
+import { bidi } from "./bidi.js";
+import { CMapFactory, IdentityCMap } from "./cmap.js";
+import { ColorSpace } from "./colorspace.js";
+import { getLookupTableFactory, MissingDataException } from "./core_utils.js";
 import { DecodeStream } from "./decode_stream.js";
+import { getEncoding, MacRomanEncoding, StandardEncoding, SymbolSetEncoding, WinAnsiEncoding, ZapfDingbatsEncoding } from "./encodings.js";
+import { ErrorFont, Font } from "./fonts.js";
 import { FontFlags, getFontType } from "./fonts_utils.js";
+import { isPDFFunction, PDFFunctionFactory } from "./function.js";
+import { getGlyphsUnicode } from "./glyphlist.js";
+import { PDFImage } from "./image.js";
+import { LocalColorSpaceCache, LocalGStateCache, LocalImageCache, LocalTilingPatternCache } from "./image_utils.js";
+import { getMetrics } from "./metrics.js";
+import { OperatorList } from "./operator_list.js";
+import { Lexer, Parser } from "./parser.js";
+import { getTilingPatternIR, Pattern } from "./pattern.js";
+import { Cmd, Dict, EOF, FontDict, isName, Name, Ref, RefSet } from "./primitives.js";
+import { getFontNameToFileMap, getSerifFonts, getStandardFontName, getStdFontMap, getSymbolsFonts } from "./standard_fonts.js";
+import { NullStream, Stream } from "./stream.js";
 import { IdentityToUnicodeMap, ToUnicodeMap } from "./to_unicode_map.js";
+import { getNormalizedUnicodes, getUnicodeForGlyph, reverseIfRtl } from "./unicode.js";
 import { getXfaFontDict, getXfaFontName } from "./xfa_fonts.js";
 /*81---------------------------------------------------------------------------*/
 const DefaultPartialEvaluatorOptions = Object.freeze({
@@ -110,6 +110,13 @@ function normalizeBlendMode(value, parsingArray = false) {
         return undefined;
     warn(`Unsupported blend mode: ${value.name}`);
     return "source-over";
+}
+function incrementCachedImageMaskCount(data) {
+    if (data.fn === OPS.paintImageMaskXObject
+        && data.args[0]
+        && data.args[0].count > 0) {
+        data.args[0].count++;
+    }
 }
 /**
  * Trying to minimize Date.now() usage and check every 100 time.
@@ -243,9 +250,8 @@ export class PartialEvaluator {
                         xObject = xref.fetch(xObject);
                     }
                     catch (ex) {
-                        if (ex instanceof MissingDataException) {
+                        if (ex instanceof MissingDataException)
                             throw ex;
-                        }
                         // Avoid parsing a corrupt XObject more than once.
                         processed.put(xObject);
                         info(`hasBlendModes - ignoring XObject: "${ex}".`);
@@ -272,9 +278,9 @@ export class PartialEvaluator {
         // When no blend modes exist, there's no need re-fetch/re-parse any of the
         // processed `Ref`s again for subsequent pages. This helps reduce redundant
         // `XRef.fetch` calls for some documents (e.g. issue6961.pdf).
-        processed.forEach(ref => {
+        for (const ref of processed) {
             nonBlendModesSet.put(ref);
-        });
+        }
         return false;
     }
     fetchBuiltInCMap = async (name) => {
@@ -340,7 +346,7 @@ export class PartialEvaluator {
         }
         if (!data)
             return undefined;
-        // Cache the "raw" standard font data, to avoid fetching it repeateadly
+        // Cache the "raw" standard font data, to avoid fetching it repeatedly
         // (see e.g. issue 11399).
         this.standardFontDataCache.set(name, data);
         return new Stream(data);
@@ -419,7 +425,9 @@ export class PartialEvaluator {
         });
     }
     #sendImgData(objId, imgData, cacheGlobally = false) {
-        const transfers = imgData ? [imgData.data.buffer] : undefined;
+        const transfers = imgData
+            ? [imgData.bitmap || imgData.data.buffer]
+            : undefined;
         if (this.parsingType3Font || cacheGlobally) {
             return this.handler.send("commonobj", [objId, "Image", imgData], transfers);
         }
@@ -437,18 +445,18 @@ export class PartialEvaluator {
         }
         const maxImageSize = this.options.maxImageSize;
         if (maxImageSize !== -1 && w * h > maxImageSize) {
-            warn("Image exceeded maximum allowed size and was removed.");
-            return;
+            const msg = "Image exceeded maximum allowed size and was removed.";
+            if (this.options.ignoreErrors) {
+                warn(msg);
+                return;
+            }
+            throw new Error(msg);
         }
         let optionalContent;
         if (dict.has("OC")) {
             optionalContent = await this.parseMarkedContentProps(dict.get("OC"), resources);
         }
-        if (optionalContent !== undefined) {
-            operatorList.addOp(OPS.beginMarkedContentProps, ["OC", optionalContent]);
-        }
         const imageMask = dict.get("IM", "ImageMask") || false;
-        const interpolate = dict.get("I", "Interpolate");
         let imgData, args;
         // let args:[string,number,number] | [ImgData];
         if (imageMask) {
@@ -457,10 +465,31 @@ export class PartialEvaluator {
             // data can't be done here. Instead of creating a
             // complete PDFImage, only read the information needed
             // for later.
+            const interpolate = dict.get("I", "Interpolate");
             const bitStrideLength = (w + 7) >> 3;
-            const imgArray = image.getBytes(bitStrideLength * h, 
-            /* forceClamped = */ true);
+            const imgArray = image.getBytes(bitStrideLength * h);
             const decode = dict.getArray("D", "Decode");
+            if (this.parsingType3Font) {
+                imgData = PDFImage.createRawMask({
+                    imgArray,
+                    width: w,
+                    height: h,
+                    imageIsFromDecodeStream: image instanceof DecodeStream,
+                    inverseDecode: !!decode && decode[0] > 0,
+                    interpolate,
+                });
+                imgData.cached = !!cacheKey;
+                args = [imgData];
+                operatorList.addImageOps(OPS.paintImageMaskXObject, args, optionalContent);
+                if (cacheKey) {
+                    localImageCache.set(cacheKey, imageRef, {
+                        fn: OPS.paintImageMaskXObject,
+                        args,
+                        optionalContent,
+                    });
+                }
+                return;
+            }
             imgData = PDFImage.createMask({
                 imgArray,
                 width: w,
@@ -469,17 +498,38 @@ export class PartialEvaluator {
                 inverseDecode: !!decode && decode[0] > 0,
                 interpolate,
             });
-            imgData.cached = !!cacheKey;
-            args = [imgData];
-            operatorList.addOp(OPS.paintImageMaskXObject, args);
+            if (imgData.isSingleOpaquePixel) {
+                // Handles special case of mainly LaTeX documents which use image
+                // masks to draw lines with the current fill style.
+                operatorList.addImageOps(OPS.paintSolidColorImageMask, [], optionalContent);
+                if (cacheKey) {
+                    localImageCache.set(cacheKey, imageRef, {
+                        fn: OPS.paintSolidColorImageMask,
+                        args: [],
+                        optionalContent,
+                    });
+                }
+                return;
+            }
+            const objId = `mask_${this.idFactory.createObjId()}`;
+            operatorList.addDependency(objId);
+            this.#sendImgData(objId, imgData);
+            args = [
+                {
+                    data: objId,
+                    width: imgData.width,
+                    height: imgData.height,
+                    interpolate: imgData.interpolate,
+                    count: 1,
+                },
+            ];
+            operatorList.addImageOps(OPS.paintImageMaskXObject, args, optionalContent);
             if (cacheKey) {
                 localImageCache.set(cacheKey, imageRef, {
                     fn: OPS.paintImageMaskXObject,
                     args,
+                    optionalContent,
                 });
-            }
-            if (optionalContent !== undefined) {
-                operatorList.addOp(OPS.endMarkedContent, []);
             }
             return;
         }
@@ -499,10 +549,7 @@ export class PartialEvaluator {
             // We force the use of RGBA_32BPP images here, because we can't handle
             // any other kind.
             imgData = imageObj.createImageData(/* forceRGBA = */ true);
-            operatorList.addOp(OPS.paintInlineImageXObject, [imgData]);
-            if (optionalContent !== undefined) {
-                operatorList.addOp(OPS.endMarkedContent, []);
-            }
+            operatorList.addImageOps(OPS.paintInlineImageXObject, [imgData], optionalContent);
             return;
         }
         // If there is no imageMask, create the PDFImage and a lot
@@ -540,11 +587,12 @@ export class PartialEvaluator {
             warn(`Unable to decode image "${objId}": "${reason}".`);
             return this.#sendImgData(objId, /* imgData = */ undefined, cacheGlobally);
         });
-        operatorList.addOp(OPS.paintImageXObject, args);
+        operatorList.addImageOps(OPS.paintImageXObject, args, optionalContent);
         if (cacheKey) {
             localImageCache.set(cacheKey, imageRef, {
                 fn: OPS.paintImageXObject,
                 args,
+                optionalContent,
             });
             if (imageRef) {
                 assert(!isInline, "Cannot cache an inline image globally.");
@@ -554,13 +602,11 @@ export class PartialEvaluator {
                         objId,
                         fn: OPS.paintImageXObject,
                         args,
+                        optionalContent,
                         byteSize: 0, // Temporary entry, note `addByteSize` above.
                     });
                 }
             }
-        }
-        if (optionalContent !== undefined) {
-            operatorList.addOp(OPS.endMarkedContent, []);
         }
     }
     handleSMask(smask, resources, operatorList, task, stateManager, localColorSpaceCache) {
@@ -593,9 +639,9 @@ export class PartialEvaluator {
         else if (isPDFFunction(tr)) {
             transferArray = [tr];
         }
-        else {
-            return null; // Not a valid transfer function entry.
-        }
+        else
+            // Not a valid transfer function entry.
+            return null;
         const transferMaps = [];
         let numFns = 0;
         let numEffectfulFns = 0;
@@ -606,9 +652,9 @@ export class PartialEvaluator {
                 transferMaps.push(null);
                 continue;
             }
-            else if (!isPDFFunction(transferObj)) {
-                return null; // Not a valid transfer function object.
-            }
+            else if (!isPDFFunction(transferObj))
+                // Not a valid transfer function object.
+                return null;
             const transferFn = this._pdfFunctionFactory.create(transferObj);
             const transferMap = new Uint8Array(256), tmp = new Float32Array(1);
             for (let j = 0; j < 256; j++) {
@@ -619,12 +665,12 @@ export class PartialEvaluator {
             transferMaps.push(transferMap);
             numEffectfulFns++;
         }
-        if (!(numFns === 1 || numFns === 4)) {
-            return null; // Only 1 or 4 functions are supported, by the specification.
-        }
-        if (numEffectfulFns === 0) {
-            return null; // Only /Identity transfer functions found, which are no-ops.
-        }
+        if (!(numFns === 1 || numFns === 4))
+            // Only 1 or 4 functions are supported, by the specification.
+            return null;
+        if (numEffectfulFns === 0)
+            // Only /Identity transfer functions found, which are no-ops.
+            return null;
         return transferMaps;
     }
     handleTilingType(fn, color, resources, pattern, patternDict, operatorList, task, localTilingPatternCache) {
@@ -990,6 +1036,7 @@ export class PartialEvaluator {
         const lastIndex = operatorList.length - 1;
         if (!args)
             args = [];
+        let minMax;
         if (lastIndex < 0
             || operatorList.fnArray[lastIndex] !== OPS.constructPath) {
             // Handle corrupt PDF documents that contains path operators inside of
@@ -1003,7 +1050,8 @@ export class PartialEvaluator {
                 warn(`Encountered path operator "${fn}" inside of a text object.`);
                 operatorList.addOp(OPS.save, null);
             }
-            operatorList.addOp(OPS.constructPath, [[fn], args]);
+            minMax = [Infinity, -Infinity, Infinity, -Infinity];
+            operatorList.addOp(OPS.constructPath, [[fn], args, minMax]);
             if (parsingText) {
                 operatorList.addOp(OPS.restore, null);
             }
@@ -1012,6 +1060,27 @@ export class PartialEvaluator {
             const opArgs = operatorList.argsArray[lastIndex];
             opArgs[0].push(fn);
             Array.prototype.push.apply(opArgs[1], args);
+            minMax = opArgs[2];
+        }
+        // Compute min/max in the worker instead of the main thread.
+        // If the current matrix (when drawing) is a scaling one
+        // then min/max can be easily computed in using those values.
+        // Only rectangle, lineTo and moveTo are handled here since
+        // Bezier stuff requires to have the starting point.
+        switch (fn) {
+            case OPS.rectangle:
+                minMax[0] = Math.min(minMax[0], args[0], args[0] + args[2]);
+                minMax[1] = Math.max(minMax[1], args[0], args[0] + args[2]);
+                minMax[2] = Math.min(minMax[2], args[1], args[1] + args[3]);
+                minMax[3] = Math.max(minMax[3], args[1], args[1] + args[3]);
+                break;
+            case OPS.moveTo:
+            case OPS.lineTo:
+                minMax[0] = Math.min(minMax[0], args[0]);
+                minMax[1] = Math.max(minMax[1], args[0]);
+                minMax[2] = Math.min(minMax[2], args[1]);
+                minMax[3] = Math.max(minMax[3], args[1]);
+                break;
         }
     }
     parseColorSpace({ cs, resources, localColorSpaceCache }) {
@@ -1139,9 +1208,8 @@ export class PartialEvaluator {
         else if (contentProperties instanceof Dict) {
             optionalContent = contentProperties;
         }
-        else {
+        else
             throw new FormatError("Optional content properties malformed.");
-        }
         const optionalContentType = optionalContent.get("Type").name;
         if (optionalContentType === "OCG") {
             return {
@@ -1249,7 +1317,8 @@ export class PartialEvaluator {
                         if (isValidName) {
                             const localImage = localImageCache.getByName(name);
                             if (localImage) {
-                                operatorList.addOp(localImage.fn, localImage.args);
+                                operatorList.addImageOps(localImage.fn, localImage.args, localImage.optionalContent);
+                                incrementCachedImageMaskCount(localImage);
                                 args = null;
                                 continue;
                             }
@@ -1262,14 +1331,15 @@ export class PartialEvaluator {
                             if (xobj instanceof Ref) {
                                 const localImage = localImageCache.getByRef(xobj);
                                 if (localImage) {
-                                    operatorList.addOp(localImage.fn, localImage.args);
+                                    operatorList.addImageOps(localImage.fn, localImage.args, localImage.optionalContent);
+                                    incrementCachedImageMaskCount(localImage);
                                     resolveXObject();
                                     return;
                                 }
                                 const globalImage = self.globalImageCache.getData(xobj, self.pageIndex);
                                 if (globalImage) {
                                     operatorList.addDependency(globalImage.objId);
-                                    operatorList.addOp(globalImage.fn, globalImage.args);
+                                    operatorList.addImageOps(globalImage.fn, globalImage.args, globalImage.optionalContent);
                                     resolveXObject();
                                     return;
                                 }
@@ -1350,7 +1420,8 @@ export class PartialEvaluator {
                         if (cacheKey) {
                             const localImage = localImageCache.getByName(cacheKey);
                             if (localImage) {
-                                operatorList.addOp(localImage.fn, localImage.args);
+                                operatorList.addImageOps(localImage.fn, localImage.args, localImage.optionalContent);
+                                incrementCachedImageMaskCount(localImage);
                                 args = null;
                                 continue;
                             }
@@ -1516,9 +1587,8 @@ export class PartialEvaluator {
                             throw new FormatError("No shading resource found");
                         }
                         const shading = shadingRes.get(args[0].name);
-                        if (!shading) {
+                        if (!shading)
                             throw new FormatError("No shading object found");
-                        }
                         const patternId = self.parseShading({
                             shading,
                             resources: resources,
@@ -1542,13 +1612,11 @@ export class PartialEvaluator {
                             }
                         }
                         next(new Promise((resolveGState, rejectGState) => {
-                            if (!isValidName) {
+                            if (!isValidName)
                                 throw new FormatError("GState must be referred to by name.");
-                            }
                             const extGState = resources.get("ExtGState");
-                            if (!(extGState instanceof Dict)) {
+                            if (!(extGState instanceof Dict))
                                 throw new FormatError("ExtGState should be a dictionary.");
-                            }
                             const gState = extGState.get(name);
                             // TODO: Attempt to lookup cached GStates by reference as well,
                             //       if and only if there are PDF documents where doing so
@@ -1705,14 +1773,53 @@ export class PartialEvaluator {
             spaceInFlowMax: 0,
             trackingSpaceMin: Infinity,
             negativeSpaceMax: -Infinity,
+            notASpace: -Infinity,
             // transform: null,
             // fontName: null,
             hasEOL: false,
         };
+        // Use a circular buffer (length === 2) to save the last chars in the
+        // text stream.
+        // This implementation of the circular buffer is using a fixed array
+        // and the position of the next element:
+        // function addElement(x) {
+        //   buffer[pos] = x;
+        //   pos = (pos + 1) % buffer.length;
+        // }
+        // It's a way faster than:
+        // function addElement(x) {
+        //   buffer.push(x);
+        //   buffer.shift();
+        // }
+        //
+        // It's useful to know when we need to add a whitespace in the
+        // text chunk.
+        const twoLastChars = [" ", " "];
+        let twoLastCharsPos = 0;
+        /**
+         * Save the last char.
+         * @param char
+         * @return true when the two last chars before adding the new one
+         * are a non-whitespace followed by a whitespace.
+         */
+        function saveLastChar(char) {
+            const nextPos = (twoLastCharsPos + 1) % 2;
+            const ret = twoLastChars[twoLastCharsPos] !== " " && twoLastChars[nextPos] === " ";
+            twoLastChars[twoLastCharsPos] = char;
+            twoLastCharsPos = nextPos;
+            return ret;
+        }
+        function resetLastChars() {
+            twoLastChars[0] = twoLastChars[1] = " ";
+            twoLastCharsPos = 0;
+        }
         // Used in addFakeSpaces.
         // A white <= fontSize * TRACKING_SPACE_FACTOR is a tracking space
         // so it doesn't count as a space.
         const TRACKING_SPACE_FACTOR = 0.1;
+        // When a white <= fontSize * NOT_A_SPACE_FACTOR, there is no space
+        // even if one is present in the text stream.
+        const NOT_A_SPACE_FACTOR = 0.03;
         // A negative white < fontSize * NEGATIVE_SPACE_FACTOR induces
         // a break (a new chunk of text is created).
         // It doesn't change anything when the text is copied but
@@ -1786,6 +1893,7 @@ export class PartialEvaluator {
             textContentItem.textAdvanceScale = scaleCtmX * scaleLineX;
             textContentItem.trackingSpaceMin =
                 textState.fontSize * TRACKING_SPACE_FACTOR;
+            textContentItem.notASpace = textState.fontSize * NOT_A_SPACE_FACTOR;
             textContentItem.negativeSpaceMax =
                 textState.fontSize * NEGATIVE_SPACE_FACTOR;
             textContentItem.spaceInFlowMin =
@@ -1931,6 +2039,7 @@ export class PartialEvaluator {
                         appendEOL();
                         return true;
                     }
+                    resetLastChars();
                     flushTextContentItem();
                     return true;
                 }
@@ -1938,11 +2047,17 @@ export class PartialEvaluator {
                     appendEOL();
                     return true;
                 }
+                if (advanceY <= textOrientation * textContentItem.notASpace) {
+                    // The real spacing between 2 consecutive chars is thin enough to be
+                    // considered a non-space.
+                    resetLastChars();
+                }
                 if (advanceY <= textOrientation * textContentItem.trackingSpaceMin) {
                     textContentItem.height += advanceY;
                 }
                 else if (!addFakeSpaces(advanceY, textContentItem.prevTransform, textOrientation)) {
                     if (textContentItem.str.length === 0) {
+                        resetLastChars();
                         textContent.items.push({
                             str: " ",
                             dir: "ltr",
@@ -1970,6 +2085,9 @@ export class PartialEvaluator {
                     appendEOL();
                     return true;
                 }
+                // We're moving back so in case the last char was a whitespace
+                // we cancel it: it doesn't make sense to insert it.
+                resetLastChars();
                 flushTextContentItem();
                 return true;
             }
@@ -1977,11 +2095,17 @@ export class PartialEvaluator {
                 appendEOL();
                 return true;
             }
+            if (advanceX <= textOrientation * textContentItem.notASpace) {
+                // The real spacing between 2 consecutive chars is thin enough to be
+                // considered a non-space.
+                resetLastChars();
+            }
             if (advanceX <= textOrientation * textContentItem.trackingSpaceMin) {
                 textContentItem.width += advanceX;
             }
             else if (!addFakeSpaces(advanceX, textContentItem.prevTransform, textOrientation)) {
                 if (textContentItem.str.length === 0) {
+                    resetLastChars();
                     textContent.items.push({
                         str: " ",
                         dir: "ltr",
@@ -2025,12 +2149,7 @@ export class PartialEvaluator {
                     glyphWidth = glyph.vmetric ? glyph.vmetric[0] : -glyphWidth;
                 }
                 let scaledDim = glyphWidth * scale;
-                if (glyph.isWhitespace &&
-                    (i === 0 ||
-                        i + 1 === ii ||
-                        glyphs[i - 1].isWhitespace ||
-                        glyphs[i + 1].isWhitespace ||
-                        extraSpacing)) {
+                if (glyph.isWhitespace) {
                     // Don't push a " " in the textContentItem
                     // (except when it's between two non-spaces chars),
                     // it will be done (if required) in next call to
@@ -2044,6 +2163,7 @@ export class PartialEvaluator {
                         charSpacing += -scaledDim + textState.wordSpacing;
                         textState.translateTextMatrix(0, -charSpacing);
                     }
+                    saveLastChar(" ");
                     continue;
                 }
                 if (!compareWithLastPosition()) {
@@ -2070,18 +2190,18 @@ export class PartialEvaluator {
                     // Save the position of the last visible character.
                     textChunk.prevTransform = getCurrentTextTransform();
                 }
-                if (glyph.isWhitespace) {
+                let glyphUnicode = glyph.unicode;
+                glyphUnicode = NormalizedUnicodes[glyphUnicode] || glyphUnicode;
+                glyphUnicode = reverseIfRtl(glyphUnicode);
+                if (saveLastChar(glyphUnicode)) {
+                    // The two last chars are a non-whitespace followed by a whitespace
+                    // and then this non-whitespace, so we insert a whitespace here.
                     // Replaces all whitespaces with standard spaces (0x20), to avoid
                     // alignment issues between the textLayer and the canvas if the text
                     // contains e.g. tabs (fixes issue6612.pdf).
                     textChunk.str.push(" ");
                 }
-                else {
-                    let glyphUnicode = glyph.unicode;
-                    glyphUnicode = NormalizedUnicodes[glyphUnicode] || glyphUnicode;
-                    glyphUnicode = reverseIfRtl(glyphUnicode);
-                    textChunk.str.push(glyphUnicode);
-                }
+                textChunk.str.push(glyphUnicode);
                 if (charSpacing) {
                     if (!font.vertical) {
                         textState.translateTextMatrix(charSpacing * textState.textHScale, 0);
@@ -2093,6 +2213,7 @@ export class PartialEvaluator {
             }
         }
         function appendEOL() {
+            resetLastChars();
             if (textContentItem.initialized) {
                 textContentItem.hasEOL = true;
                 flushTextContentItem();
@@ -2113,6 +2234,7 @@ export class PartialEvaluator {
             if (textOrientation * textContentItem.spaceInFlowMin <= width
                 && width <= textOrientation * textContentItem.spaceInFlowMax) {
                 if (textContentItem.initialized) {
+                    resetLastChars();
                     textContentItem.str.push(" ");
                 }
                 return false;
@@ -2124,6 +2246,7 @@ export class PartialEvaluator {
                 width = 0;
             }
             flushTextContentItem();
+            resetLastChars();
             textContent.items.push({
                 str: " ",
                 // TODO: check if using the orientation from last chunk is
@@ -2320,16 +2443,15 @@ export class PartialEvaluator {
                     case OPS.paintXObject:
                         flushTextContentItem();
                         if (!xobjs) {
-                            xobjs = resources.get("XObject") ?? Dict.empty;
+                            xobjs = resources.get("XObject") || Dict.empty;
                         }
                         let isValidName = args[0] instanceof Name;
                         let name = args[0].name;
                         if (isValidName && emptyXObjectCache.getByName(name))
                             break;
                         next(new Promise((resolveXObject, rejectXObject) => {
-                            if (!isValidName) {
+                            if (!isValidName)
                                 throw new FormatError("XObject must be referred to by name.");
-                            }
                             let xobj = xobjs.getRaw(name);
                             if (xobj instanceof Ref) {
                                 if (emptyXObjectCache.getByRef(xobj)) {
@@ -2415,24 +2537,20 @@ export class PartialEvaluator {
                     case OPS.setGState:
                         isValidName = args[0] instanceof Name;
                         name = args[0].name;
-                        if (isValidName && emptyGStateCache.getByName(name)) {
+                        if (isValidName && emptyGStateCache.getByName(name))
                             break;
-                        }
                         next(new Promise(function (resolveGState, rejectGState) {
-                            if (!isValidName) {
+                            if (!isValidName)
                                 throw new FormatError("GState must be referred to by name.");
-                            }
                             const extGState = resources.get("ExtGState");
-                            if (!(extGState instanceof Dict)) {
+                            if (!(extGState instanceof Dict))
                                 throw new FormatError("ExtGState should be a dictionary.");
-                            }
                             const gState = extGState.get(name);
                             // TODO: Attempt to lookup cached GStates by reference as well,
                             //       if and only if there are PDF documents where doing so
                             //       would significantly improve performance.
-                            if (!(gState instanceof Dict)) {
+                            if (!(gState instanceof Dict))
                                 throw new FormatError("GState should be a dictionary.");
-                            }
                             const gStateFont = gState.get("Font");
                             if (!gStateFont) {
                                 emptyGStateCache.set(name, gState.objId, true);
@@ -2571,7 +2689,11 @@ export class PartialEvaluator {
                 baseEncodingName = encoding.name;
             }
             else {
-                throw new FormatError("Encoding is not a Name nor a Dict");
+                const msg = "Encoding is not a Name nor a Dict";
+                if (!this.options.ignoreErrors) {
+                    throw new FormatError(msg);
+                }
+                warn(msg);
             }
             // According to table 114 if the encoding is a named encoding it must be
             // one of these predefined encodings.
@@ -2648,9 +2770,8 @@ export class PartialEvaluator {
             let glyphName = encoding[charcode];
             // b) Look up the character name in the Adobe Glyph List (see the
             //    Bibliography) to obtain the corresponding Unicode value.
-            if (glyphName === "") {
+            if (glyphName === "")
                 continue;
-            }
             else if (glyphsUnicodeMap[glyphName] === undefined) {
                 // (undocumented) c) Few heuristics to recognize unknown glyphs
                 // NOTE: Adobe Reader does not do this step, but OSX Preview does
@@ -2688,8 +2809,7 @@ export class PartialEvaluator {
                             }
                         }
                         break;
-                    default:
-                        // 'uniXXXX'/'uXXXX{XX}' glyphs
+                    default: // 'uniXXXX'/'uXXXX{XX}' glyphs
                         const unicode = getUnicodeForGlyph(glyphName, glyphsUnicodeMap);
                         if (unicode !== -1) {
                             code = unicode;
@@ -2702,7 +2822,7 @@ export class PartialEvaluator {
                     if (baseEncodingName && code === +charcode) {
                         const baseEncoding = getEncoding(baseEncodingName);
                         if (baseEncoding && (glyphName = baseEncoding[charcode])) {
-                            toUnicode[charcode] = String.fromCharCode(glyphsUnicodeMap[glyphName]);
+                            toUnicode[charcode] = String.fromCharCode(+glyphsUnicodeMap[glyphName]);
                             continue;
                         }
                     }
@@ -2710,7 +2830,7 @@ export class PartialEvaluator {
                 }
                 continue;
             }
-            toUnicode[charcode] = String.fromCharCode(glyphsUnicodeMap[glyphName]);
+            toUnicode[charcode] = String.fromCharCode(+glyphsUnicodeMap[glyphName]);
         }
         return toUnicode;
     }
@@ -2839,9 +2959,8 @@ export class PartialEvaluator {
                 });
                 return new ToUnicodeMap(map);
             }, reason => {
-                if (reason instanceof AbortException) {
+                if (reason instanceof AbortException)
                     return undefined;
-                }
                 if (this.options.ignoreErrors) {
                     // Error in the ToUnicode data -- sending unsupported feature
                     // notification and allow font parsing to continue.
@@ -3442,9 +3561,8 @@ export class TranslatedFont {
     loadType3Data(evaluator, resources, task) {
         if (this.type3Loaded)
             return this.type3Loaded;
-        if (!this.font.isType3Font) {
+        if (!this.font.isType3Font)
             throw new Error("Must be a Type3 font.");
-        }
         // When parsing Type3 glyphs, always ignore them if there are errors.
         // Compared to the parsing of e.g. an entire page, it doesn't really
         // make sense to only be able to render a Type3 glyph partially.
@@ -3860,18 +3978,17 @@ export class EvaluatorPreprocessor {
                 operation.args = args;
                 return true;
             }
-            if (obj === EOF) {
-                return false; // no more commands
-            }
+            if (obj === EOF)
+                // no more commands
+                return false;
             // argument
             if (obj !== null) {
                 if (args === null) {
                     args = [];
                 }
                 args.push(obj);
-                if (args.length > 33) {
+                if (args.length > 33)
                     throw new FormatError("Too many arguments");
-                }
             }
         }
     }

@@ -1,6 +1,6 @@
 import { PDFDocumentProxy } from "../pdf.ts-src/display/api.js";
 import { EventBus } from "./event_utils.js";
-export interface BaseTreeViewerCtorParms {
+export interface BaseTreeViewerCtorP {
     /**
      * The viewer element.
      */
@@ -15,7 +15,7 @@ export declare abstract class BaseTreeViewer {
     container: HTMLDivElement;
     eventBus: EventBus;
     protected _pdfDocument: PDFDocumentProxy | undefined;
-    constructor(options: BaseTreeViewerCtorParms);
+    constructor(options: BaseTreeViewerCtorP);
     reset(): void;
     protected abstract _dispatchEvent(count?: number): void;
     protected abstract _bindLink(element: HTMLAnchorElement, params: object): void;

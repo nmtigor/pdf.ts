@@ -111,12 +111,6 @@ function getViewerConfiguration() {
              */
             toggleButton: document.getElementById("secondaryToolbarToggle"),
             /**
-             * Container where all the
-             * toolbar buttons are placed. The maximum height of the toolbar is controlled
-             * dynamically by adjusting the 'max-height' CSS property of this DOM element.
-             */
-            toolbarButtonContainer: document.getElementById("secondaryToolbarButtonContainer"),
-            /**
              * Button for entering presentation mode.
              */
             presentationModeButton: document.getElementById("secondaryPresentationMode"),
@@ -124,9 +118,6 @@ function getViewerConfiguration() {
              * Button to open a file.
              */
             openFileButton: document.getElementById("secondaryOpenFile"),
-            /**
-             * Button to print the document.
-             */
             printButton: document.getElementById("secondaryPrint"),
             /**
              * Button to download the document.
@@ -179,9 +170,9 @@ function getViewerConfiguration() {
              */
             outerContainer: document.getElementById("outerContainer"),
             /**
-             * The viewer container (in which the viewer element is placed).
+             * The sidebar container (in which the views are placed).
              */
-            viewerContainer: document.getElementById("viewerContainer"),
+            sidebarContainer: document.getElementById("sidebarContainer"),
             /**
              * The button used for opening/closing the sidebar.
              */
@@ -250,13 +241,9 @@ function getViewerConfiguration() {
         },
         passwordOverlay: {
             /**
-             * Name of the overlay for the overlay manager.
+             * The overlay's DOM element.
              */
-            overlayName: "passwordOverlay",
-            /**
-             * Div container for the overlay.
-             */
-            container: document.getElementById("passwordOverlay"),
+            dialog: document.getElementById("passwordDialog"),
             /**
              * Label containing instructions for entering the password.
              */
@@ -276,13 +263,9 @@ function getViewerConfiguration() {
         },
         documentProperties: {
             /**
-             * Name/identifier for the overlay.
+             * The overlay's DOM element.
              */
-            overlayName: "documentPropertiesOverlay",
-            /**
-             * Div container for the overlay.
-             */
-            container: document.getElementById("documentPropertiesOverlay"),
+            dialog: document.getElementById("documentPropertiesDialog"),
             /**
              * Button for closing the overlay.
              */
@@ -309,12 +292,19 @@ function getViewerConfiguration() {
         },
         errorWrapper,
         printContainer: document.getElementById("printContainer"),
-        openFileInputName: "fileInput",
-        // debuggerScriptPath: "./debugger.js",
+        openFileInput: document.getElementById("fileInput"),
+        debuggerScriptPath: "./debugger.js",
     };
 }
 function webViewerLoad() {
     const config = getViewerConfiguration();
+    if (window.chrome) {
+        const link = document.createElement("link");
+        link.rel = "stylesheet";
+        // link.href = "../build/dev-css/viewer.css";
+        link.href = "res/pdf/pdf.ts-web/viewer.css";
+        document.head.appendChild(link);
+    }
     Promise.all([
         import("./genericcom.js"),
         import("./pdf_print_service.js"),
@@ -324,9 +314,7 @@ function webViewerLoad() {
 }
 // Block the "load" event until all pages are loaded, to ensure that printing
 // works in Firefox; see https://bugzilla.mozilla.org/show_bug.cgi?id=1618553
-if (document.blockUnblockOnload) {
-    document.blockUnblockOnload(true);
-}
+document.blockUnblockOnload?.(true);
 if (document.readyState === "interactive"
     || document.readyState === "complete") {
     webViewerLoad();

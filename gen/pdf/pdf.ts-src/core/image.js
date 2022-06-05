@@ -1,28 +1,15 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
-/* Copyright 2012 Mozilla Foundation
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 import { assert } from "../../../lib/util/trace.js";
-import { FormatError, ImageKind, info, warn } from "../shared/util.js";
-import { Name } from "./primitives.js";
+import { applyMaskImageData } from "../shared/image_utils.js";
+import { FeatureTest, FormatError, ImageKind, info, warn } from "../shared/util.js";
+import { BaseStream } from "./base_stream.js";
 import { ColorSpace } from "./colorspace.js";
 import { DecodeStream } from "./decode_stream.js";
 import { JpegStream } from "./jpeg_stream.js";
 import { JpxImage } from "./jpx.js";
-import { BaseStream } from "./base_stream.js";
+import { Name } from "./primitives.js";
 /*81---------------------------------------------------------------------------*/
 /**
  * Decode and clamp a value. The formula is different from the spec because we
@@ -244,14 +231,19 @@ export class PDFImage {
         const smask = image.dict.get("SMask");
         const mask = image.dict.get("Mask");
         if (smask) {
-            smaskData = smask;
+            if (smask instanceof BaseStream) {
+                smaskData = smask;
+            }
+            else {
+                warn("Unsupported /SMask format.");
+            }
         }
         else if (mask) {
             if (mask instanceof BaseStream || Array.isArray(mask)) {
                 maskData = mask;
             }
             else {
-                warn("Unsupported mask format.");
+                warn("Unsupported /Mask format.");
             }
         }
         return new PDFImage({
@@ -265,13 +257,7 @@ export class PDFImage {
             localColorSpaceCache,
         });
     }
-    static createMask({ imgArray, width, height, imageIsFromDecodeStream, inverseDecode, interpolate, }) {
-        // if (
-        //   typeof PDFJSDev === "undefined" ||
-        //   PDFJSDev.test("!PRODUCTION || TESTING")
-        // ) {
-        assert(imgArray instanceof Uint8ClampedArray, 'PDFImage.createMask: Unsupported "imgArray" type.');
-        // }
+    static createRawMask({ imgArray, width, height, imageIsFromDecodeStream, inverseDecode, interpolate, }) {
         // |imgArray| might not contain full data for every pixel of the mask, so
         // we need to distinguish between |computedLength| and |actualLength|.
         // In particular, if inverseDecode is true, then the array we return must
@@ -286,15 +272,12 @@ export class PDFImage {
             data = imgArray;
         }
         else if (!inverseDecode) {
-            data = new Uint8ClampedArray(actualLength);
-            data.set(imgArray);
+            data = new Uint8Array(imgArray);
         }
         else {
-            data = new Uint8ClampedArray(computedLength);
+            data = new Uint8Array(computedLength);
             data.set(imgArray);
-            for (i = actualLength; i < computedLength; i++) {
-                data[i] = 0xff;
-            }
+            data.fill(0xff, actualLength);
         }
         // If necessary, invert the original mask data (but not any extra we might
         // have added above). It's safe to modify the array -- whether it's the
@@ -306,6 +289,43 @@ export class PDFImage {
             }
         }
         return { data, width, height, interpolate };
+    }
+    static createMask({ imgArray, width, height, imageIsFromDecodeStream, inverseDecode, interpolate, }) {
+        const isSingleOpaquePixel = width === 1 &&
+            height === 1 &&
+            inverseDecode === (imgArray.length === 0 || !!(imgArray[0] & 128));
+        if (isSingleOpaquePixel)
+            return { isSingleOpaquePixel };
+        if (FeatureTest.isOffscreenCanvasSupported) {
+            const canvas = new globalThis.OffscreenCanvas(width, height);
+            const ctx = canvas.getContext("2d");
+            const imgData = ctx.createImageData(width, height);
+            applyMaskImageData({
+                src: imgArray,
+                dest: imgData.data,
+                width,
+                height,
+                inverseDecode,
+            });
+            ctx.putImageData(imgData, 0, 0);
+            const bitmap = canvas.transferToImageBitmap();
+            return {
+                width,
+                height,
+                interpolate,
+                bitmap,
+            };
+        }
+        // Get the data almost as they're and they'll be decoded
+        // just before being drawn.
+        return this.createRawMask({
+            imgArray,
+            width,
+            height,
+            inverseDecode,
+            imageIsFromDecodeStream,
+            interpolate,
+        });
     }
     get drawWidth() {
         return Math.max(this.width, (this.smask && this.smask.width) || 0, (this.mask && this.mask.width) || 0);
@@ -534,7 +554,6 @@ export class PDFImage {
         const bpc = this.bpc;
         // Rows start at byte boundary.
         const rowBytes = (originalWidth * numComps * bpc + 7) >> 3;
-        let imgArray;
         if (!forceRGBA) {
             // If it is a 1-bit-per-pixel grayscale (i.e. black-and-white) image
             // without any complications, we pass a same-sized copy to the main
@@ -557,20 +576,7 @@ export class PDFImage {
                 && drawWidth === originalWidth
                 && drawHeight === originalHeight) {
                 imgData.kind = kind;
-                imgArray = this.getImageBytes(originalHeight * rowBytes);
-                // If imgArray came from a DecodeStream, we're safe to transfer it
-                // (and thus detach its underlying buffer) because it will constitute
-                // the entire DecodeStream's data.  But if it came from a Stream, we
-                // need to copy it because it'll only be a portion of the Stream's
-                // data, and the rest will be read later on.
-                if (this.image instanceof DecodeStream) {
-                    imgData.data = imgArray;
-                }
-                else {
-                    const newArray = new Uint8ClampedArray(imgArray.length);
-                    newArray.set(imgArray);
-                    imgData.data = newArray;
-                }
+                imgData.data = this.getImageBytes(originalHeight * rowBytes, {});
                 if (this.needsDecode) {
                     // Invert the buffer (which must be grayscale if we reached here).
                     assert(kind === ImageKind.GRAYSCALE_1BPP, "PDFImage.createImageData: The image must be grayscale.");
@@ -592,13 +598,18 @@ export class PDFImage {
                     case "DeviceRGB":
                     case "DeviceCMYK":
                         imgData.kind = ImageKind.RGB_24BPP;
-                        imgData.data = this.getImageBytes(imageLength, drawWidth, drawHeight, 
-                        /* forceRGB = */ true);
+                        imgData.data = this.getImageBytes(imageLength, {
+                            drawWidth,
+                            drawHeight,
+                            forceRGB: true,
+                        });
                         return imgData;
                 }
             }
         }
-        imgArray = this.getImageBytes(originalHeight * rowBytes);
+        const imgArray = this.getImageBytes(originalHeight * rowBytes, {
+            internal: true,
+        });
         // imgArray can be incomplete (e.g. after CCITT fax encoding).
         const actualHeight = 0 | (((imgArray.length / rowBytes) * drawHeight) / originalHeight);
         const comps = this.getComponents(imgArray);
@@ -644,7 +655,7 @@ export class PDFImage {
         const bpc = this.bpc;
         // rows start at byte boundary
         const rowBytes = (width * numComps * bpc + 7) >> 3;
-        const imgArray = this.getImageBytes(height * rowBytes);
+        const imgArray = this.getImageBytes(height * rowBytes, { internal: true });
         const comps = this.getComponents(imgArray);
         let i, length;
         if (bpc === 1) {
@@ -674,12 +685,21 @@ export class PDFImage {
             buffer[i] = scale * comps[i];
         }
     }
-    getImageBytes(length, drawWidth, drawHeight, forceRGB = false) {
+    getImageBytes(length, { drawWidth, drawHeight, forceRGB = false, internal = false }) {
         this.image.reset();
         this.image.drawWidth = drawWidth || this.width;
         this.image.drawHeight = drawHeight || this.height;
         this.image.forceRGB = !!forceRGB;
-        return this.image.getBytes(length, /* forceClamped = */ true);
+        const imageBytes = this.image.getBytes(length);
+        // If imageBytes came from a DecodeStream, we're safe to transfer it
+        // (and thus detach its underlying buffer) because it will constitute
+        // the entire DecodeStream's data.  But if it came from a Stream, we
+        // need to copy it because it'll only be a portion of the Stream's
+        // data, and the rest will be read later on.
+        if (internal || this.image instanceof DecodeStream)
+            return imageBytes;
+        assert(imageBytes instanceof Uint8Array, 'PDFImage.getImageBytes: Unsupported "imageBytes" type.');
+        return new Uint8Array(imageBytes);
     }
 }
 /*81---------------------------------------------------------------------------*/

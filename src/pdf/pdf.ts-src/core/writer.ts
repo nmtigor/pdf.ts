@@ -18,14 +18,14 @@
  */
 
 import { bytesToString, escapeString, warn } from "../shared/util.js";
-import { Dict, Name, type Obj, Ref } from "./primitives.js";
-import { calculateMD5, CipherTransform } from "./crypto.js";
-import { escapePDFName, parseXFAPath } from "./core_utils.js";
-import { type XRefInfo } from "./worker.js";
 import { type SaveData } from "./annotation.js";
+import { BaseStream } from "./base_stream.js";
+import { escapePDFName, parseXFAPath } from "./core_utils.js";
+import { calculateMD5, CipherTransform } from "./crypto.js";
+import { Dict, Name, Ref, type Obj } from "./primitives.js";
+import { type XRefInfo } from "./worker.js";
 import { SimpleDOMNode, SimpleXMLParser } from "./xml_parser.js";
 import { XRef } from "./xref.js";
-import { BaseStream } from "./base_stream.js";
 /*81---------------------------------------------------------------------------*/
 
 export function writeDict( dict:Dict, buffer:string[], transform?:CipherTransform )
@@ -180,15 +180,21 @@ function writeXFADataForAcroform( str:string, newRefs:SaveData[] )
 
   for( const { xfa } of newRefs )
   {
-    if( !xfa ) continue;
-
+    if( !xfa ) 
+      continue;
     const { path, value } = xfa;
-    if( !path ) continue;
-
+    if( !path ) 
+      continue;
     const node = xml.documentElement.searchNode( parseXFAPath(path), 0 );
     if (node) 
     {
-      node.childNodes = [new SimpleDOMNode("#text", value)];
+      if( Array.isArray(value) )
+      {
+        node.childNodes = value.map(val => new SimpleDOMNode("value", val));
+      }
+      else {
+        node.childNodes = [new SimpleDOMNode("#text", value)];
+      }
     }
     else {
       warn(`Node not found for path: ${path}`);
@@ -199,7 +205,7 @@ function writeXFADataForAcroform( str:string, newRefs:SaveData[] )
   return buffer.join("");
 }
 
-interface UpdateXFAParms
+interface _UpdateXFAP
 {
   xfaData:string | undefined;
   xfaDatasetsRef:Ref | undefined;
@@ -219,7 +225,7 @@ function updateXFA({
   newRefs,
   xref,
   xrefInfo,
-}:UpdateXFAParms ) {
+}:_UpdateXFAP ) {
   if( xref === undefined ) return;
 
   if (!hasXfaDatasetsEntry) 
@@ -283,7 +289,7 @@ function updateXFA({
   newRefs.push({ ref: xfaDatasetsRef!, data });
 }
 
-interface IncrementalUpdateParms
+interface _IncrementalUpdateP
 {
   originalData:Uint8Array;
   xrefInfo:XRefInfo;
@@ -310,7 +316,7 @@ export function incrementalUpdate({
   acroFormRef,
   acroForm,
   xfaData,
-}:IncrementalUpdateParms ) 
+}:_IncrementalUpdateP ) 
 {
   if( hasXfa )
   {

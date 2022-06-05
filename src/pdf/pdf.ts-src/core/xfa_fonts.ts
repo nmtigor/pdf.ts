@@ -25,9 +25,10 @@ import {
   CalibriItalicFactors,
   CalibriItalicMetrics,
   CalibriRegularFactors,
-  CalibriRegularMetrics,
+  CalibriRegularMetrics
 } from "./calibri_factors.js";
-import { Dict, Name } from "./primitives.js";
+import { getLookupTableFactory } from "./core_utils.js";
+import { normalizeFontName } from "./fonts_utils.js";
 import {
   HelveticaBoldFactors,
   HelveticaBoldItalicFactors,
@@ -36,7 +37,7 @@ import {
   HelveticaItalicFactors,
   HelveticaItalicMetrics,
   HelveticaRegularFactors,
-  HelveticaRegularMetrics,
+  HelveticaRegularMetrics
 } from "./helvetica_factors.js";
 import {
   LiberationSansBoldItalicMapping,
@@ -46,7 +47,7 @@ import {
   LiberationSansItalicMapping,
   LiberationSansItalicWidths,
   LiberationSansRegularMapping,
-  LiberationSansRegularWidths,
+  LiberationSansRegularWidths
 } from "./liberationsans_widths.js";
 import {
   MyriadProBoldFactors,
@@ -56,8 +57,9 @@ import {
   MyriadProItalicFactors,
   MyriadProItalicMetrics,
   MyriadProRegularFactors,
-  MyriadProRegularMetrics,
+  MyriadProRegularMetrics
 } from "./myriadpro_factors.js";
+import { Dict, Name } from "./primitives.js";
 import {
   SegoeuiBoldFactors,
   SegoeuiBoldItalicFactors,
@@ -66,10 +68,8 @@ import {
   SegoeuiItalicFactors,
   SegoeuiItalicMetrics,
   SegoeuiRegularFactors,
-  SegoeuiRegularMetrics,
+  SegoeuiRegularMetrics
 } from "./segoeui_factors.js";
-import { getLookupTableFactory } from "./core_utils.js";
-import { normalizeFontName } from "./fonts_utils.js";
 /*81---------------------------------------------------------------------------*/
 
 export interface XFAFontMetrics
@@ -280,7 +280,8 @@ export function getXfaFontWidths( name:string )
       ([unicode1], [unicode2]) =>
         unicode1 - unicode2 /* order by unicode only */
     )) {
-    if (unicode === -1) continue;
+    if( unicode === -1 )
+      continue;
 
     if (unicode === currentCode + 1) 
     {

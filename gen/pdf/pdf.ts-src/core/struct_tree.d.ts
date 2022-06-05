@@ -25,7 +25,7 @@ declare class StructElementNode {
     parseKids(): void;
     parseKid(pageObjId: string | undefined, kid: number | Ref | Dict): StructElement | null;
 }
-interface StructElementCtorParms {
+interface _StructElementCtorP {
     type: StructElementType;
     dict?: Dict;
     mcid?: number;
@@ -39,7 +39,7 @@ declare class StructElement {
     pageObjId: string | undefined;
     refObjId: string | undefined;
     parentNode?: StructElementNode;
-    constructor({ type, dict, mcid, pageObjId, refObjId, }: StructElementCtorParms);
+    constructor({ type, dict, mcid, pageObjId, refObjId, }: _StructElementCtorP);
 }
 export interface StructTree {
     type?: string;
@@ -62,7 +62,7 @@ export declare class StructTreePage {
     addNode(dict: Dict, map: Map<Dict, StructElementNode>, level?: number): StructElementNode | undefined;
     addTopLevelNode(dict: Dict, element: StructElementNode): boolean;
     /**
-     * Convert the tree structure into a simplifed object literal that can
+     * Convert the tree structure into a simplified object literal that can
      * be sent to the main thread.
      */
     get serializable(): StructTree;

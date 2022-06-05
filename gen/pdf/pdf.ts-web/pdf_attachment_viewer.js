@@ -15,14 +15,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { createPromiseCap } from "../../lib/promisecap.js";
 import { html } from "../../lib/dom.js";
+import { createPromiseCap } from "../../lib/promisecap.js";
 import { getFilenameFromUrl } from "../pdf.ts-src/pdf.js";
 import { BaseTreeViewer } from "./base_tree_viewer.js";
+import { waitOnEventOrTimeout } from "./event_utils.js";
 export class PDFAttachmentViewer extends BaseTreeViewer {
     _attachments;
     #renderedCapability;
-    _pendingDispatchEvent;
+    #pendingDispatchEvent;
     downloadManager;
     static create(options) {
         const ret = new PDFAttachmentViewer(options);
@@ -42,32 +43,27 @@ export class PDFAttachmentViewer extends BaseTreeViewer {
             // replaced is when appending FileAttachment annotations.
             this.#renderedCapability = createPromiseCap();
         }
-        if (this._pendingDispatchEvent) {
-            clearTimeout(this._pendingDispatchEvent);
-        }
-        this._pendingDispatchEvent = undefined;
+        this.#pendingDispatchEvent = false;
     }
     /** @implements */
-    _dispatchEvent(attachmentsCount) {
+    async _dispatchEvent(attachmentsCount) {
         this.#renderedCapability.resolve();
-        if (this._pendingDispatchEvent) {
-            clearTimeout(this._pendingDispatchEvent);
-            this._pendingDispatchEvent = undefined;
-        }
-        if (attachmentsCount === 0) {
+        if (attachmentsCount === 0 && !this.#pendingDispatchEvent) {
             // Delay the event when no "regular" attachments exist, to allow time for
             // parsing of any FileAttachment annotations that may be present on the
             // *initially* rendered page; this reduces the likelihood of temporarily
             // disabling the attachmentsView when the `PDFSidebar` handles the event.
-            this._pendingDispatchEvent = setTimeout(() => {
-                this.eventBus.dispatch("attachmentsloaded", {
-                    source: this,
-                    attachmentsCount: 0,
-                });
-                this._pendingDispatchEvent = undefined;
+            this.#pendingDispatchEvent = true;
+            await waitOnEventOrTimeout({
+                target: this.eventBus,
+                name: "annotationlayerrendered",
+                delay: 1000,
             });
-            return;
+            if (!this.#pendingDispatchEvent)
+                // There was already another `_dispatchEvent`-call`.
+                return;
         }
+        this.#pendingDispatchEvent = false;
         this.eventBus.dispatch("attachmentsloaded", {
             source: this,
             attachmentsCount,
@@ -112,24 +108,19 @@ export class PDFAttachmentViewer extends BaseTreeViewer {
     /**
      * Used to append FileAttachment annotations to the sidebar.
      */
-    #appendAttachment = ({ id, filename, content }) => {
+    #appendAttachment = ({ filename, content }) => {
         const renderedPromise = this.#renderedCapability.promise;
         renderedPromise.then(() => {
-            if (renderedPromise !== this.#renderedCapability.promise) {
-                return; // The FileAttachment annotation belongs to a previous document.
+            if (renderedPromise !== this.#renderedCapability.promise)
+                // The FileAttachment annotation belongs to a previous document.
+                return;
+            const attachments = this._attachments || Object.create(null);
+            for (const name in attachments) {
+                if (filename === name)
+                    // Ignore the new attachment if it already exists.
+                    return;
             }
-            let attachments = this._attachments;
-            if (!attachments) {
-                attachments = Object.create(null);
-            }
-            else {
-                for (const name in attachments) {
-                    if (id === name) {
-                        return; // Ignore the new attachment if it already exists.
-                    }
-                }
-            }
-            attachments[id] = {
+            attachments[filename] = {
                 filename,
                 content,
             };

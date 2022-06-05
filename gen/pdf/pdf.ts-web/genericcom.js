@@ -12,15 +12,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { assert } from '../../lib/util/trace.js';
 import { Locale } from '../../lib/Locale.js';
-import { viewerapp, DefaultExternalServices } from "./app.js";
-import { BasePreferences } from "./preferences.js";
+import { assert } from '../../lib/util/trace.js';
+import { DefaultExternalServices, viewerapp } from "./app.js";
 import { DownloadManager } from "./download_manager.js";
 import { GenericL10n } from "./genericl10n.js";
+import { BasePreferences } from "./preferences.js";
 // import { GenericScripting } from "./generic_scripting.js";
 /*81---------------------------------------------------------------------------*/
-// if (typeof PDFJSDev !== "undefined" && !PDFJSDev.test("GENERIC")) {
 export const GenericCom = {};
 class GenericPreferences extends BasePreferences {
     /** @implements */

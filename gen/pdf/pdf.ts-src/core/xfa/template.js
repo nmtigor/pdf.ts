@@ -15,15 +15,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { $acceptWhitespace, $addHTML, $appendChild, $childrenToHTML, $clean, $cleanPage, $content, $data, $extra, $finalize, $flushHTML, $getAvailableSpace, $getChildren, $getContainedChildren, $getExtra, $getNextPage, $getParent, $getSubformParent, $getTemplateRoot, $globalData, $hasSettableValue, $ids, $isBindable, $isCDATAXml, $isSplittable, $isThereMoreWidth, $isTransparent, $isUsable, $namespaceId, $nodeName, $onChild, $onText, $popPara, $pushPara, $removeChild, $searchNode, $setSetAttributes, $setValue, $tabIndex, $text, $toHTML, $toPages, $toStyle, $uid, ContentObject, Option01, OptionObject, StringObject, XFAObject, XFAObjectArray, } from "./xfa_object.js";
-import { $buildXFAObject, NamespaceIds } from "./namespaces.js";
-import { addHTML, checkDimensions, flushHTML, getAvailableSpace, } from "./layout.js";
-import { computeBbox, createWrapper, fixDimensions, fixTextIndent, fixURL, isPrintOnly, layoutClass, layoutNode, measureToString, setAccess, setFontFamily, setMinMaxDimensions, setPara, toStyle, } from "./html_utils.js";
-import { getBBox, getColor, getFloat, getInteger, getKeyword, getMeasurement, getRatio, getRelevant, getStringOption, HTMLResult, } from "./utils.js";
 import { stringToBytes, Util, warn } from "../../shared/util.js";
-import { getMetrics } from "./fonts.js";
-import { searchNode } from "./som.js";
 import { recoverJsURL } from "../core_utils.js";
+import { getMetrics } from "./fonts.js";
+import { computeBbox, createWrapper, fixDimensions, fixTextIndent, fixURL, isPrintOnly, layoutClass, layoutNode, measureToString, setAccess, setFontFamily, setMinMaxDimensions, setPara, toStyle } from "./html_utils.js";
+import { addHTML, checkDimensions, flushHTML, getAvailableSpace } from "./layout.js";
+import { $buildXFAObject, NamespaceIds } from "./namespaces.js";
+import { searchNode } from "./som.js";
+import { getBBox, getColor, getFloat, getInteger, getKeyword, getMeasurement, getRatio, getRelevant, getStringOption, HTMLResult } from "./utils.js";
+import { $acceptWhitespace, $addHTML, $appendChild, $childrenToHTML, $clean, $cleanPage, $content, $data, $extra, $finalize, $flushHTML, $getAvailableSpace, $getChildren, $getContainedChildren, $getExtra, $getNextPage, $getParent, $getSubformParent, $getTemplateRoot, $globalData, $hasSettableValue, $ids, $isBindable, $isCDATAXml, $isSplittable, $isThereMoreWidth, $isTransparent, $isUsable, $namespaceId, $nodeName, $onChild, $onText, $popPara, $pushPara, $removeChild, $searchNode, $setSetAttributes, $setValue, $tabIndex, $text, $toHTML, $toPages, $toStyle, $uid, ContentObject, Option01, OptionObject, StringObject, XFAObject, XFAObjectArray } from "./xfa_object.js";
 /*81---------------------------------------------------------------------------*/
 const TEMPLATE_NS_ID = NamespaceIds.template.id;
 const SVG_NS = "http://www.w3.org/2000/svg";
@@ -65,13 +65,11 @@ const IMAGES_HEADERS = [
     [[0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a], "image/png"],
 ];
 function getBorderDims(node) {
-    if (!node || !node.border) {
+    if (!node || !node.border)
         return { w: 0, h: 0 };
-    }
     const borderExtra = node.border[$getExtra]();
-    if (!borderExtra) {
+    if (!borderExtra)
         return { w: 0, h: 0 };
-    }
     return {
         w: borderExtra.widths[0] +
             borderExtra.widths[2] +
@@ -174,12 +172,10 @@ function ariaLabel(obj) {
     if (!obj.assist)
         return undefined;
     const assist = obj.assist;
-    if (assist.speak && assist.speak[$content] !== "") {
+    if (assist.speak && assist.speak[$content] !== "")
         return assist.speak[$content];
-    }
-    if (assist.toolTip) {
+    if (assist.toolTip)
         return assist.toolTip[$content];
-    }
     // TODO: support finding the related caption element. See xfa_bug1718037.pdf
     // for an example.
     return undefined;
@@ -273,9 +269,8 @@ function handleBreak(node) {
         index = contentAreas.indexOf(target) - 1;
         nextPageArea = pageArea === currentPageArea ? undefined : pageArea;
     }
-    else {
+    else
         return false;
-    }
     node[$extra].target = nextPageArea;
     node[$extra].index = index;
     return true;
@@ -492,9 +487,8 @@ export class Area extends XFAObject {
             include: true,
         });
         if (!result.success) {
-            if (result.isBreak()) {
+            if (result.isBreak())
                 return result;
-            }
             // Nothing to propose for the element which doesn't fit the
             // available space.
             delete this[$extra];
@@ -1348,9 +1342,7 @@ class Color extends XFAObject {
         this.usehref = attributes.usehref || "";
         this.value = attributes.value ? getColor(attributes.value) : "";
     }
-    [$hasSettableValue]() {
-        return false;
-    }
+    [$hasSettableValue]() { return false; }
     [$toStyle]() {
         return this.value
             ? Util.makeHexColor(this.value.r, this.value.g, this.value.b)
@@ -1732,9 +1724,8 @@ export class Draw extends XFAObject {
     }
     [$toHTML](availableSpace) {
         setTabIndex(this);
-        if (this.presence === "hidden" || this.presence === "inactive") {
+        if (this.presence === "hidden" || this.presence === "inactive")
             return HTMLResult.EMPTY;
-        }
         fixDimensions(this);
         this[$pushPara]();
         // If at least one dimension is missing and we've a text
@@ -2066,10 +2057,9 @@ class ExData extends ContentObject {
         return false;
     }
     [$toHTML](availableSpace) {
-        if (this.contentType !== "text/html" || !this[$content]) {
+        if (this.contentType !== "text/html" || !this[$content])
             // TODO: fix other cases.
             return HTMLResult.EMPTY;
-        }
         return this[$content][$toHTML](availableSpace);
     }
 }
@@ -2222,9 +2212,8 @@ export class ExclGroup extends XFAObject {
         const parent = this[$getSubformParent]();
         if (!parent[$isSplittable]())
             return false;
-        if (this[$extra]._isSplittable !== undefined) {
+        if (this[$extra]._isSplittable !== undefined)
             return this[$extra]._isSplittable;
-        }
         if (this.layout === "position" || this.layout.includes("row")) {
             this[$extra]._isSplittable = false;
             return false;
@@ -2281,9 +2270,8 @@ export class ExclGroup extends XFAObject {
         if (!isSplittable) {
             setFirstUnsplittable(this);
         }
-        if (!checkDimensions(this, availableSpace)) {
+        if (!checkDimensions(this, availableSpace))
             return HTMLResult.FAILURE;
-        }
         const filter = new Set(["field"]);
         if (this.layout.includes("row")) {
             const columnWidths = this[$getSubformParent]().columnWidths;
@@ -2327,10 +2315,10 @@ export class ExclGroup extends XFAObject {
                 this[$popPara]();
                 return result;
             }
-            if (isLrTb &&
-                this[$extra].attempt === 0 &&
-                this[$extra].numberInLine === 0 &&
-                !this[$getTemplateRoot]()[$extra].noLayoutFailure) {
+            if (isLrTb
+                && this[$extra].attempt === 0
+                && this[$extra].numberInLine === 0
+                && !this[$getTemplateRoot]()[$extra].noLayoutFailure) {
                 // See comment in Subform::[$toHTML].
                 this[$extra].attempt = maxRun;
                 break;
@@ -3128,9 +3116,8 @@ class Image extends StringObject {
         this.usehref = attributes.usehref || "";
     }
     [$toHTML](availableSpace) {
-        if (this.contentType && !MIMES.has(this.contentType.toLowerCase())) {
+        if (this.contentType && !MIMES.has(this.contentType.toLowerCase()))
             return HTMLResult.EMPTY;
-        }
         let buffer = this[$globalData].images?.get(this.href);
         if (!buffer && (this.href || !this[$content])) {
             // In general, we don't get remote data and use what we have
@@ -3150,9 +3137,8 @@ class Image extends StringObject {
                     break;
                 }
             }
-            if (!this.contentType) {
+            if (!this.contentType)
                 return HTMLResult.EMPTY;
-            }
         }
         // TODO: Firefox doesn't support natively tiff (and tif) format.
         const blob = new Blob([buffer], { type: this.contentType });
@@ -3903,9 +3889,8 @@ class PageSet extends XFAObject {
                 return this[$getNextPage]();
             }
             const parent = this[$getParent]();
-            if (parent instanceof PageSet) {
+            if (parent instanceof PageSet)
                 return parent[$getNextPage]();
-            }
             this[$cleanPage]();
             return this[$getNextPage]();
         }
@@ -4598,9 +4583,8 @@ export class Subform extends XFAObject {
     }
     [$getSubformParent]() {
         const parent = this[$getParent]();
-        if (parent instanceof SubformSet) {
+        if (parent instanceof SubformSet)
             return parent[$getSubformParent]();
-        }
         return parent;
     }
     [$isBindable]() { return true; }
@@ -4624,9 +4608,8 @@ export class Subform extends XFAObject {
         const parent = this[$getSubformParent]();
         if (!parent[$isSplittable]())
             return false;
-        if (this[$extra]._isSplittable !== undefined) {
+        if (this[$extra]._isSplittable !== undefined)
             return this[$extra]._isSplittable;
-        }
         if (this.layout === "position" || this.layout.includes("row")) {
             this[$extra]._isSplittable = false;
             return false;
@@ -4686,9 +4669,8 @@ export class Subform extends XFAObject {
             this[$removeChild](this.break);
             this.break = undefined;
         }
-        if (this.presence === "hidden" || this.presence === "inactive") {
+        if (this.presence === "hidden" || this.presence === "inactive")
             return HTMLResult.EMPTY;
-        }
         if (this.breakBefore.children.length > 1
             || this.breakAfter.children.length > 1) {
             // Specs are always talking about the breakBefore element
@@ -4697,13 +4679,11 @@ export class Subform extends XFAObject {
         }
         if (this.breakBefore.children.length >= 1) {
             const breakBefore = this.breakBefore.children[0];
-            if (handleBreak(breakBefore)) {
+            if (handleBreak(breakBefore))
                 return HTMLResult.breakNode(breakBefore);
-            }
         }
-        if (this[$extra] && this[$extra].afterBreakAfter) {
+        if (this[$extra] && this[$extra].afterBreakAfter)
             return HTMLResult.EMPTY;
-        }
         // TODO: incomplete.
         fixDimensions(this);
         const children = [];
@@ -4736,9 +4716,8 @@ export class Subform extends XFAObject {
         if (!isSplittable) {
             setFirstUnsplittable(this);
         }
-        if (!checkDimensions(this, availableSpace)) {
+        if (!checkDimensions(this, availableSpace))
             return HTMLResult.FAILURE;
-        }
         const filter = new Set([
             "area",
             "draw",
@@ -5023,10 +5002,9 @@ export class Template extends XFAObject {
     }
     [$isSplittable]() { return true; }
     [$searchNode](expr, container) {
-        if (expr.startsWith("#")) {
+        if (expr.startsWith("#"))
             // This is an id.
             return [this[$ids].get(expr.slice(1))];
-        }
         return searchNode(this, container, expr, true, true);
     }
     /**
@@ -5547,9 +5525,8 @@ class Ui extends XFAObject {
     [$toHTML](availableSpace) {
         // TODO: picture.
         const obj = this[$getExtra]();
-        if (obj) {
+        if (obj)
             return obj[$toHTML](availableSpace);
-        }
         return HTMLResult.EMPTY;
     }
 }
@@ -5643,27 +5620,24 @@ export class Value extends XFAObject {
     }
     [$text]() {
         if (this.exData) {
-            if (typeof this.exData[$content] === "string") {
+            if (typeof this.exData[$content] === "string")
                 return this.exData[$content].trim();
-            }
             return this.exData[$content][$text]().trim();
         }
         for (const name of Object.getOwnPropertyNames(this)) {
             if (name === "image")
                 continue;
             const obj = this[name];
-            if (obj instanceof XFAObject) {
+            if (obj instanceof XFAObject)
                 return (obj[$content] || "").toString().trim();
-            }
         }
         return undefined;
     }
     [$toHTML](availableSpace) {
         for (const name of Object.getOwnPropertyNames(this)) {
             const obj = this[name];
-            if (!(obj instanceof XFAObject)) {
+            if (!(obj instanceof XFAObject))
                 continue;
-            }
             return obj[$toHTML](availableSpace);
         }
         return HTMLResult.EMPTY;

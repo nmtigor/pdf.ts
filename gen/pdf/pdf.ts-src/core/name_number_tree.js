@@ -47,11 +47,11 @@ class NameOrNumberTree {
                 continue;
             if (obj.has("Kids")) {
                 const kids = obj.get("Kids");
-                for (let i = 0, ii = kids.length; i < ii; i++) {
-                    const kid = kids[i];
-                    if (processed.has(kid)) {
+                if (!Array.isArray(kids))
+                    continue;
+                for (const kid of kids) {
+                    if (processed.has(kid))
                         throw new FormatError(`Duplicate entry in "${this.#type}" tree.`);
-                    }
                     queue.push(kid);
                     processed.put(kid);
                 }
@@ -97,13 +97,12 @@ class NameOrNumberTree {
                     l = m + 1;
                 }
                 else {
-                    kidsOrEntries = xref.fetchIfRef(kids[m]);
+                    kidsOrEntries = kid;
                     break;
                 }
             }
-            if (l > r) {
+            if (l > r)
                 return null;
-            }
         }
         // If we get here, then we have found the right entry. Now go through the
         // entries in the dictionary until we find the key we're looking for.

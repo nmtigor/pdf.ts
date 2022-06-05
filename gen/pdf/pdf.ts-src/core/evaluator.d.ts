@@ -1,25 +1,25 @@
-import { ImageKind, type matrix_t, OPS, type rect_t, TextRenderingMode } from "../shared/util.js";
-import { CMap } from "./cmap.js";
-import { Dict, FontDict, Name, type ObjNoCmd, type Obj, Ref, RefSet, RefSetCache } from "./primitives.js";
-import { ErrorFont, Font, Glyph, type Seac } from "./fonts.js";
-import { PDFFunctionFactory } from "./function.js";
-import { Parser } from "./parser.js";
-import { GlobalImageCache, LocalColorSpaceCache, LocalGStateCache, LocalImageCache, LocalTilingPatternCache } from "./image_utils.js";
-import { ColorSpace } from "./colorspace.js";
-import { Stream } from "./stream.js";
-import { OperatorList } from "./operator_list.js";
-import { Thread, MessageHandler, type StreamSink } from "../shared/message_handler.js";
-import { type CssFontInfo, type GlobalIdFactory } from "./document.js";
-import { type EvaluatorOptions } from "./pdf_manager.js";
-import { WorkerTask } from "./worker.js";
-import { type PrivateData } from "./type1_parser.js";
-import { XRef } from "./xref.js";
-import { BaseStream } from "./base_stream.js";
-import { DecodeStream } from "./decode_stream.js";
-import { FontFlags } from "./fonts_utils.js";
-import { IdentityToUnicodeMap, ToUnicodeMap } from "./to_unicode_map.js";
 import { type CMapData } from "../display/base_factory.js";
-interface PartialEvaluatorCtorParms {
+import { MessageHandler, Thread, type StreamSink } from "../shared/message_handler.js";
+import { ImageKind, OPS, TextRenderingMode, type matrix_t, type rect_t } from "../shared/util.js";
+import { BaseStream } from "./base_stream.js";
+import { CMap } from "./cmap.js";
+import { ColorSpace } from "./colorspace.js";
+import { DecodeStream } from "./decode_stream.js";
+import { type CssFontInfo, type GlobalIdFactory } from "./document.js";
+import { ErrorFont, Font, Glyph, type Seac } from "./fonts.js";
+import { FontFlags } from "./fonts_utils.js";
+import { PDFFunctionFactory } from "./function.js";
+import { GlobalImageCache, LocalColorSpaceCache, LocalGStateCache, LocalImageCache, LocalTilingPatternCache } from "./image_utils.js";
+import { OperatorList } from "./operator_list.js";
+import { Parser } from "./parser.js";
+import { type EvaluatorOptions } from "./pdf_manager.js";
+import { Dict, FontDict, Name, Ref, RefSet, RefSetCache, type Obj } from "./primitives.js";
+import { Stream } from "./stream.js";
+import { IdentityToUnicodeMap, ToUnicodeMap } from "./to_unicode_map.js";
+import { type PrivateData } from "./type1_parser.js";
+import { WorkerTask } from "./worker.js";
+import { XRef } from "./xref.js";
+interface _PartialEvaluatorCtorP {
     xref: XRef;
     handler: MessageHandler<Thread.worker>;
     pageIndex: number;
@@ -31,15 +31,18 @@ interface PartialEvaluatorCtorParms {
     options?: EvaluatorOptions;
 }
 export interface ImgData {
-    width: number;
-    height: number;
-    interpolate?: boolean;
-    data?: Uint8Array | Uint8ClampedArray | undefined;
+    width?: number | undefined;
+    height?: number | undefined;
+    interpolate?: boolean | undefined;
+    bitmap?: ImageBitmap;
+    data?: string | Uint8Array | Uint8ClampedArray | undefined;
+    count?: number | undefined;
     cached?: boolean;
     kind?: ImageKind;
     transform?: matrix_t;
+    isSingleOpaquePixel?: boolean;
 }
-interface BuildPaintImageXObjectParms {
+interface _BuildPaintImageXObjectP {
     resources: Dict;
     image: BaseStream;
     isInline?: boolean;
@@ -48,7 +51,7 @@ interface BuildPaintImageXObjectParms {
     localImageCache: LocalImageCache;
     localColorSpaceCache: LocalColorSpaceCache;
 }
-interface GetOperatorListParms {
+interface _GetOperatorListP {
     stream: BaseStream;
     task: WorkerTask;
     resources?: Dict | undefined;
@@ -56,7 +59,7 @@ interface GetOperatorListParms {
     initialState?: Partial<EvalState> | undefined;
     fallbackFontDict?: Dict | undefined;
 }
-interface SetGStateParms {
+interface _SetGStateP {
     resources: Dict;
     gState: Dict;
     operatorList: OperatorList;
@@ -66,7 +69,7 @@ interface SetGStateParms {
     localGStateCache: LocalGStateCache;
     localColorSpaceCache: LocalColorSpaceCache;
 }
-interface GetTextContentParms {
+interface _GetTextContentP {
     stream: BaseStream;
     task: WorkerTask;
     resources: Dict;
@@ -168,7 +171,7 @@ export interface FontStyle {
     descent: number;
     vertical: boolean | undefined;
 }
-interface ParseColorSpaceParms {
+interface _ParseColorSpaceP {
     cs: Name | Ref;
     resources: Dict;
     localColorSpaceCache: LocalColorSpaceCache;
@@ -188,7 +191,7 @@ export interface SmaskOptions {
     backdrop: number[] | Uint8ClampedArray | undefined;
     transferMap?: Uint8Array;
 }
-interface ParseShadingParms {
+interface _ParseShadingP {
     shading: Dict | BaseStream;
     resources: Dict;
     localColorSpaceCache: LocalColorSpaceCache;
@@ -205,10 +208,19 @@ export declare class PartialEvaluator {
     builtInCMapCache: Map<string, CMapData>;
     standardFontDataCache: Map<string, Uint8Array | ArrayBuffer>;
     globalImageCache: GlobalImageCache | undefined;
-    options: EvaluatorOptions;
+    options: EvaluatorOptions | Readonly<{
+        maxImageSize: -1;
+        disableFontFace: false;
+        ignoreErrors: false;
+        isEvalSupported: true;
+        fontExtraProperties: false;
+        useSystemFonts: true;
+        cMapUrl: undefined;
+        standardFontDataUrl: undefined;
+    }>;
     parsingType3Font: boolean;
     type3FontRefs?: RefSet;
-    constructor({ xref, handler, pageIndex, idFactory, fontCache, builtInCMapCache, standardFontDataCache, globalImageCache, options, }: PartialEvaluatorCtorParms);
+    constructor({ xref, handler, pageIndex, idFactory, fontCache, builtInCMapCache, standardFontDataCache, globalImageCache, options, }: _PartialEvaluatorCtorP);
     /**
      * Since Functions are only cached (locally) by reference, we can share one
      * `PDFFunctionFactory` instance within this `PartialEvaluator` instance.
@@ -219,23 +231,23 @@ export declare class PartialEvaluator {
     fetchBuiltInCMap: (name: string) => Promise<CMapData>;
     fetchStandardFontData(name: string): Promise<Stream | undefined>;
     buildFormXObject(resources: Dict, xobj: BaseStream, smask: SmaskOptions | undefined, operatorList: OperatorList, task: WorkerTask, initialState: Partial<EvalState | TextState>, localColorSpaceCache: LocalColorSpaceCache): Promise<void>;
-    buildPaintImageXObject({ resources, image, isInline, operatorList, cacheKey, localImageCache, localColorSpaceCache, }: BuildPaintImageXObjectParms): Promise<void>;
+    buildPaintImageXObject({ resources, image, isInline, operatorList, cacheKey, localImageCache, localColorSpaceCache, }: _BuildPaintImageXObjectP): Promise<void>;
     handleSMask(smask: Dict, resources: Dict, operatorList: OperatorList, task: WorkerTask, stateManager: StateManager<EvalState>, localColorSpaceCache: LocalColorSpaceCache): Promise<void>;
     handleTransferFunction(tr?: Obj): (Uint8Array | null)[] | null;
     handleTilingType(fn: OPS, color: Uint8ClampedArray | undefined, resources: Dict, pattern: BaseStream, patternDict: Dict, operatorList: OperatorList, task: WorkerTask, localTilingPatternCache: LocalTilingPatternCache): Promise<void>;
     handleSetFont(resources: Dict, fontArgs: FontArgs | undefined, fontRef: Ref | undefined, operatorList: OperatorList, task: WorkerTask, state: Partial<EvalState | TextState>, fallbackFontDict?: FontDict, cssFontInfo?: CssFontInfo): Promise<string>;
     handleText(chars: string, state: Partial<EvalState>): Glyph[];
     ensureStateFont(state: Partial<EvalState | TextState>): void;
-    setGState({ resources, gState, operatorList, cacheKey, task, stateManager, localGStateCache, localColorSpaceCache, }: SetGStateParms): Promise<void>;
+    setGState({ resources, gState, operatorList, cacheKey, task, stateManager, localGStateCache, localColorSpaceCache, }: _SetGStateP): Promise<void>;
     loadFont(fontName: string | undefined, font: Ref | undefined, resources: Dict, fallbackFontDict?: FontDict, cssFontInfo?: CssFontInfo): Promise<TranslatedFont>;
-    buildPath(operatorList: OperatorList, fn: OPS, args: OpArgs, parsingText?: boolean): void;
-    parseColorSpace({ cs, resources, localColorSpaceCache }: ParseColorSpaceParms): Promise<ColorSpace | undefined>;
-    parseShading({ shading, resources, localColorSpaceCache, localShadingPatternCache, }: ParseShadingParms): string;
+    buildPath(operatorList: OperatorList, fn: OPS, args?: number[], parsingText?: boolean): void;
+    parseColorSpace({ cs, resources, localColorSpaceCache }: _ParseColorSpaceP): Promise<ColorSpace | undefined>;
+    parseShading({ shading, resources, localColorSpaceCache, localShadingPatternCache, }: _ParseShadingP): string;
     handleColorN(operatorList: OperatorList, fn: OPS, args: [Name, ...number[]], cs: ColorSpace, patterns: Dict, resources: Dict, task: WorkerTask, localColorSpaceCache: LocalColorSpaceCache, localTilingPatternCache: LocalTilingPatternCache, localShadingPatternCache: Map<Dict | BaseStream, string>): Promise<void> | undefined;
     _parseVisibilityExpression(array: (Obj | undefined)[], nestingCounter: number, currentResult: VisibilityExpressionResult): void;
     parseMarkedContentProps(contentProperties: Dict | Name, resources: Dict): Promise<MarkedContentProps | undefined>;
-    getOperatorList({ stream, task, resources, operatorList, initialState, fallbackFontDict, }: GetOperatorListParms): Promise<void>;
-    getTextContent({ stream, task, resources, stateManager, combineTextItems, includeMarkedContent, sink, seenStyles, viewBox, }: GetTextContentParms): Promise<void>;
+    getOperatorList({ stream, task, resources, operatorList, initialState, fallbackFontDict, }: _GetOperatorListP): Promise<void>;
+    getTextContent({ stream, task, resources, stateManager, combineTextItems, includeMarkedContent, sink, seenStyles, viewBox, }: _GetTextContentP): Promise<void>;
     extractDataStructures(dict: FontDict, baseDict: FontDict, properties: FontProps): Promise<FontProps>;
     /**
      * Builds a char code to unicode map based on section 9.10 of the spec.
@@ -259,7 +271,7 @@ export declare class PartialEvaluator {
     static buildFontPaths(font: Font, glyphs: Glyph[], handler: MessageHandler<Thread.worker>, evaluatorOptions: EvaluatorOptions): void;
     static get fallbackFontDict(): FontDict;
 }
-interface TranslatedFontCtorParms {
+interface _TranslatedFontCtorP {
     loadedName: string;
     font: Font | ErrorFont;
     dict: FontDict | undefined;
@@ -270,12 +282,21 @@ export declare class TranslatedFont {
     loadedName: string;
     font: Font | ErrorFont;
     dict: FontDict | undefined;
-    _evaluatorOptions: EvaluatorOptions;
+    _evaluatorOptions: EvaluatorOptions | Readonly<{
+        maxImageSize: -1;
+        disableFontFace: false;
+        ignoreErrors: false;
+        isEvalSupported: true;
+        fontExtraProperties: false;
+        useSystemFonts: true;
+        cMapUrl: undefined;
+        standardFontDataUrl: undefined;
+    }>;
     type3Loaded?: Promise<void>;
     type3Dependencies: Set<string> | undefined;
     sent: boolean;
     _bbox?: rect_t;
-    constructor({ loadedName, font, dict, evaluatorOptions }: TranslatedFontCtorParms);
+    constructor({ loadedName, font, dict, evaluatorOptions }: _TranslatedFontCtorP);
     send(handler: MessageHandler<Thread.worker>): void;
     fallback(handler: MessageHandler<Thread.worker>): void;
     loadType3Data(evaluator: PartialEvaluator, resources: Dict, task: WorkerTask): Promise<void>;
@@ -324,10 +345,10 @@ interface OpInfo {
     variableArgs: boolean;
 }
 export declare type OpMap = Record<string, OpInfo | null>;
-export declare type OpArgs = ObjNoCmd[] | null;
+export declare type OpArgs = any[] | Uint8ClampedArray | null;
 export interface Operation {
     fn: OPS;
-    args: OpArgs | null;
+    args: OpArgs;
 }
 export declare class EvaluatorPreprocessor {
     #private;
@@ -335,7 +356,7 @@ export declare class EvaluatorPreprocessor {
     static get MAX_INVALID_PATH_OPS(): number;
     parser: Parser;
     stateManager: StateManager<EvalState | TextState>;
-    nonProcessedArgs: ObjNoCmd[];
+    nonProcessedArgs: any[];
     constructor(stream: BaseStream, xref?: XRef, stateManager?: StateManager<EvalState | TextState>);
     get savedStatesDepth(): number;
     read(operation: Operation): boolean;

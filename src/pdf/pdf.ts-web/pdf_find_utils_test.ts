@@ -3,7 +3,6 @@
 ** ------------------- */
 
 import { css_1, css_2 } from "../../test/alias.js";
-import { eq } from "../../lib/jslang.js";
 import { CharacterType, getCharacterType } from "./pdf_find_utils.js";
 
 const strttime = performance.now();

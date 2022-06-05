@@ -110,6 +110,7 @@ export class PDFFindBar {
                 break;
         }
         this.findField.setAttribute("data-status", status);
+        this.findField.setAttribute("aria-invalid", (state === FindState.NOT_FOUND));
         findMsg.then(msg => {
             this.findMsg.textContent = msg;
             this.#adjustWidth();
@@ -170,9 +171,8 @@ export class PDFFindBar {
         }
     }
     #adjustWidth = () => {
-        if (!this.opened) {
+        if (!this.opened)
             return;
-        }
         // The find bar has an absolute position and thus the browser extends
         // its width to the maximum possible width once the find bar does not fit
         // entirely within the window anymore (and its elements are automatically

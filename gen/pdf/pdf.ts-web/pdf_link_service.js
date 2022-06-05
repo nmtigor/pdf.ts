@@ -17,8 +17,8 @@
  */
 /** @typedef {import("./event_utils").EventBus} EventBus */
 /** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
-import { assert } from "../../lib/util/trace.js";
 import { isObjectLike } from "../../lib/jslang.js";
+import { assert } from "../../lib/util/trace.js";
 import { parseQueryString, removeNullCharacters } from "./ui_utils.js";
 /*81---------------------------------------------------------------------------*/
 const DEFAULT_LINK_REL = "noopener noreferrer nofollow";

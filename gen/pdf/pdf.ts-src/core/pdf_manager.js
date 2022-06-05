@@ -1,7 +1,7 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
-import { createValidAbsoluteUrl, warn, } from "../shared/util.js";
+import { createValidAbsoluteUrl, shadow, warn } from "../shared/util.js";
 import { ChunkedStreamManager } from "./chunked_stream.js";
 import { MissingDataException } from "./core_utils.js";
 import { PDFDocument } from "./document.js";
@@ -10,9 +10,8 @@ import { Stream } from "./stream.js";
 function parseDocBaseUrl(url) {
     if (url) {
         const absoluteUrl = createValidAbsoluteUrl(url);
-        if (absoluteUrl) {
+        if (absoluteUrl)
             return absoluteUrl.href;
-        }
         warn(`Invalid absolute docBaseUrl: "${url}".`);
     }
     return undefined;
@@ -27,7 +26,8 @@ export class BasePdfManager {
     msgHandler;
     _docBaseUrl;
     get docBaseUrl() {
-        return this._docBaseUrl;
+        const catalog = this.pdfDocument.catalog;
+        return shadow(this, "docBaseUrl", catalog.baseUrl || this._docBaseUrl);
     }
     evaluatorOptions;
     enableXfa;

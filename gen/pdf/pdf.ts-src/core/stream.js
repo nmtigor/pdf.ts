@@ -15,8 +15,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { BaseStream } from "./base_stream.js";
 import { stringToBytes } from "../shared/util.js";
+import { BaseStream } from "./base_stream.js";
 /*81---------------------------------------------------------------------------*/
 export class Stream extends BaseStream {
     bytes;
@@ -45,23 +45,19 @@ export class Stream extends BaseStream {
         return this.bytes[this.pos++];
     }
     /** @implements */
-    getBytes(length, forceClamped = false) {
+    getBytes(length) {
         const bytes = this.bytes;
         const pos = this.pos;
         const strEnd = this.end;
         if (!length) {
-            const subarray = bytes.subarray(pos, strEnd);
-            // `this.bytes` is always a `Uint8Array` here.
-            return forceClamped ? new Uint8ClampedArray(subarray) : subarray;
+            return bytes.subarray(pos, strEnd);
         }
         let end = pos + length;
         if (end > strEnd) {
             end = strEnd;
         }
         this.pos = end;
-        const subarray = bytes.subarray(pos, end);
-        // `this.bytes` is always a `Uint8Array` here.
-        return forceClamped ? new Uint8ClampedArray(subarray) : subarray;
+        return bytes.subarray(pos, end);
     }
     /** @implements */
     getByteRange(begin, end) {

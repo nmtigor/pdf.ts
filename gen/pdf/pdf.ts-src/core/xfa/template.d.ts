@@ -1,10 +1,10 @@
-import { $acceptWhitespace, $addHTML, $clean, $cleanPage, $content, $data, $extra, $finalize, $flushHTML, $getAvailableSpace, $getContainedChildren, $getExtra, $getNextPage, $getSubformParent, $hasSettableValue, $ids, $isBindable, $isCDATAXml, $isSplittable, $isThereMoreWidth, $isTransparent, $isUsable, $onChild, $onText, $searchNode, $setValue, $text, $toHTML, $toPages, $toStyle, ContentObject, Option01, OptionObject, StringObject, XFAObject, XFAObjectArray, XmlObject } from "./xfa_object.js";
-import { $buildXFAObject } from "./namespaces.js";
-import { type XFALayoutMode } from "./html_utils.js";
-import { type AvailableSpace, type XFAAttrs, type XFAFontBase, type XFAElData, type XFAHTMLObj, type XFAStyleData, type XFAValue, type XFAIds, type XFAExtra } from "./alias.js";
-import { type XFAColor, HTMLResult } from "./utils.js";
 import { type rect_t } from "../../shared/util.js";
+import { type AvailableSpace, type XFAAttrs, type XFAElData, type XFAExtra, type XFAFontBase, type XFAHTMLObj, type XFAIds, type XFAStyleData, type XFAValue } from "./alias.js";
 import { Builder } from "./builder.js";
+import { type XFALayoutMode } from "./html_utils.js";
+import { $buildXFAObject } from "./namespaces.js";
+import { HTMLResult, type XFAColor } from "./utils.js";
+import { $acceptWhitespace, $addHTML, $clean, $cleanPage, $content, $data, $extra, $finalize, $flushHTML, $getAvailableSpace, $getContainedChildren, $getExtra, $getNextPage, $getSubformParent, $hasSettableValue, $ids, $isBindable, $isCDATAXml, $isSplittable, $isThereMoreWidth, $isTransparent, $isUsable, $onChild, $onText, $searchNode, $setValue, $text, $toHTML, $toPages, $toStyle, ContentObject, Option01, OptionObject, StringObject, XFAObject, XFAObjectArray, XmlObject } from "./xfa_object.js";
 import { XhtmlObject } from "./xhtml.js";
 declare class AppearanceFilter extends StringObject {
     type: string;
@@ -1334,7 +1334,7 @@ declare class Variables extends XFAObject {
 }
 export declare type XFANsTemplate = typeof TemplateNamespace;
 export declare const TemplateNamespace: {
-    [$buildXFAObject](name: string, attributes: XFAAttrs): Template | AppearanceFilter | Arc | Area | Assist | Barcode | Bind | BindItems | Bookend | BooleanElement | Border | Break | BreakAfter | BreakBefore | Button | Calculate | Caption | Certificate | Certificates | CheckButton | ChoiceList | Color | Comb | Connect | ContentArea | Corner | DateElement | DateTime | DateTimeEdit | Decimal | DefaultUi | Desc | DigestMethod | DigestMethods | Draw | Edge | Encoding | Encodings | Encrypt | EncryptData | Encryption | EncryptionMethod | EncryptionMethods | Event | ExData | ExObject | ExclGroup | Execute | Extras | Field | Fill | Filter | Float | Font | Format | Handler | Hyphenation | Image | ImageEdit | Integer | Issuers | Items | Keep | KeyUsage | Line | Linear | LockDocument | Manifest | Margin | Mdp | Medium | Message | NumericEdit | Occur | Oid | Oids | Overflow | PageArea | PageSet | Para | PasswordEdit | Pattern | Picture | Proto | Radial | Reason | Reasons | Rectangle | RefElement | Script | SetProperty | SignData | Signature | Signing | Solid | Speak | Stipple | Subform | SubformSet | SubjectDN | SubjectDNs | Submit | Text | TextEdit | Time | TimeStamp | ToolTip | Traversal | Traverse | Ui | Validate | Value | Variables | undefined;
+    [$buildXFAObject](name: string, attributes: XFAAttrs): Template | Draw | Field | Caption | Value | Margin | Para | Font | Occur | ExData | ExclGroup | Subform | Assist | Border | Area | ContentArea | Bind | Break | Keep | Overflow | PageSet | BreakAfter | BreakBefore | SubformSet | Traversal | ToolTip | Speak | PageArea | Medium | AppearanceFilter | Arc | Edge | Fill | Barcode | Picture | BindItems | Bookend | BooleanElement | Corner | Button | Event | Script | Calculate | Certificate | Certificates | CheckButton | ChoiceList | Items | Color | Comb | Connect | DateElement | DateTime | DateTimeEdit | Decimal | DefaultUi | Desc | DigestMethod | DigestMethods | Encoding | Encodings | Encrypt | EncryptData | Encryption | EncryptionMethod | EncryptionMethods | ExObject | Execute | Extras | Ui | TextEdit | Text | Rectangle | Filter | Float | Format | Handler | Hyphenation | Image | ImageEdit | Integer | Issuers | KeyUsage | Line | Linear | LockDocument | Manifest | Mdp | Message | NumericEdit | Oid | Oids | PasswordEdit | Pattern | Proto | Radial | Reason | Reasons | RefElement | SetProperty | SignData | Signature | Signing | Solid | Stipple | SubjectDN | SubjectDNs | Submit | Time | TimeStamp | Traverse | Validate | Variables | undefined;
     appearanceFilter(attrs: XFAAttrs): AppearanceFilter;
     arc(attrs: XFAAttrs): Arc;
     area(attrs: XFAAttrs): Area;

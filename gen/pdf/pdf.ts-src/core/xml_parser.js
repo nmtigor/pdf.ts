@@ -29,14 +29,13 @@ function isWhitespaceString(s) {
     return true;
 }
 export class XMLParserBase {
+    _errorCode = XMLParserErrorCode.NoError;
     #resolveEntities(s) {
         return s.replace(/&([^;]+);/g, (all, entity) => {
-            if (entity.substring(0, 2) === "#x") {
+            if (entity.substring(0, 2) === "#x")
                 return String.fromCodePoint(parseInt(entity.substring(2), 16));
-            }
-            else if (entity.substring(0, 1) === "#") {
+            else if (entity.substring(0, 1) === "#")
                 return String.fromCodePoint(parseInt(entity.substring(1), 10));
-            }
             switch (entity) {
                 case "lt":
                     return "<";
@@ -80,15 +79,15 @@ export class XMLParserBase {
             }
             skipWs();
             if (s[pos] !== "=")
-                return null;
+                return undefined;
             ++pos;
             skipWs();
             const attrEndChar = s[pos];
             if (attrEndChar !== '"' && attrEndChar !== "'")
-                return null;
+                return undefined;
             const attrEndIndex = s.indexOf(attrEndChar, ++pos);
             if (attrEndIndex < 0)
-                return null;
+                return undefined;
             attrValue = s.substring(pos, attrEndIndex);
             attributes.push({
                 name: attrName,
@@ -206,7 +205,7 @@ export class XMLParserBase {
                         break;
                     default:
                         const content = this.#parseContent(s, j);
-                        if (content === null) {
+                        if (content === undefined) {
                             this.onError(XMLParserErrorCode.MalformedElement);
                             return;
                         }
@@ -246,18 +245,19 @@ export class XMLParserBase {
 export class SimpleDOMNode {
     nodeName;
     nodeValue;
-    parentNode = null;
+    parentNode;
     childNodes;
     get firstChild() { return this.childNodes?.[0]; }
+    get children() { return this.childNodes || []; }
     hasChildNodes() { return this.childNodes && this.childNodes.length > 0; }
     attributes;
     constructor(nodeName, nodeValue) {
         this.nodeName = nodeName;
         this.nodeValue = nodeValue;
-        Object.defineProperty(this, "parentNode", { value: null, writable: true });
+        Object.defineProperty(this, "parentNode", { value: undefined, writable: true });
     }
     get nextSibling() {
-        const childNodes = this.parentNode.childNodes;
+        const childNodes = this.parentNode?.childNodes;
         if (!childNodes)
             return undefined;
         const index = childNodes.indexOf(this);
@@ -279,7 +279,7 @@ export class SimpleDOMNode {
      *
      * @param paths an array of objects as returned by {parseXFAPath}.
      * @param pos the current position in the paths array.
-     * @return The node corresponding to the path or null if not found.
+     * @return The node corresponding to the path or undefined if not found.
      */
     searchNode(paths, pos) {
         if (pos >= paths.length)
@@ -291,20 +291,18 @@ export class SimpleDOMNode {
             if (component.name === node.nodeName) {
                 if (component.pos === 0) {
                     const res = node.searchNode(paths, pos + 1);
-                    if (res !== null)
+                    if (res !== undefined)
                         return res;
                 }
-                else if (stack.length === 0) {
-                    return null;
-                }
+                else if (stack.length === 0)
+                    return undefined;
                 else {
                     const [parent] = stack.pop();
                     let siblingPos = 0;
                     for (const child of parent.childNodes) {
                         if (component.name === child.nodeName) {
-                            if (siblingPos === component.pos) {
+                            if (siblingPos === component.pos)
                                 return child.searchNode(paths, pos + 1);
-                            }
                             siblingPos++;
                         }
                     }
@@ -317,9 +315,8 @@ export class SimpleDOMNode {
                 stack.push([node, 0]);
                 node = node.childNodes[0];
             }
-            else if (stack.length === 0) {
-                return null;
-            }
+            else if (stack.length === 0)
+                return undefined;
             else {
                 while (stack.length !== 0) {
                     const [parent, currentPos] = stack.pop();
@@ -331,7 +328,7 @@ export class SimpleDOMNode {
                     }
                 }
                 if (stack.length === 0)
-                    return null;
+                    return undefined;
             }
         }
     }
@@ -362,68 +359,68 @@ export class SimpleDOMNode {
     }
 }
 export class SimpleXMLParser extends XMLParserBase {
-    _currentFragment = null;
-    _stack = null;
-    _errorCode = XMLParserErrorCode.NoError;
-    _hasAttributes;
-    _lowerCaseName;
+    #currentFragment;
+    #stack;
+    #hasAttributes;
+    #lowerCaseName;
     constructor({ hasAttributes = false, lowerCaseName = false }) {
         super();
-        this._hasAttributes = hasAttributes;
-        this._lowerCaseName = lowerCaseName;
+        this.#hasAttributes = hasAttributes;
+        this.#lowerCaseName = lowerCaseName;
     }
     parseFromString(data) {
-        this._currentFragment = [];
-        this._stack = [];
+        this.#currentFragment = [];
+        this.#stack = [];
         this._errorCode = XMLParserErrorCode.NoError;
         this.parseXml(data);
-        if (this._errorCode !== XMLParserErrorCode.NoError) {
-            return undefined; // return undefined on error
-        }
+        if (this._errorCode !== XMLParserErrorCode.NoError)
+            // return undefined on error
+            return undefined;
         // We should only have one root.
-        const [documentElement] = this._currentFragment;
-        if (!documentElement) {
-            return undefined; // Return undefined if no root was found.
-        }
+        const [documentElement] = this.#currentFragment;
+        if (!documentElement)
+            // Return undefined if no root was found.
+            return undefined;
         return { documentElement };
     }
     /** @implements */
     onText(text) {
-        if (isWhitespaceString(text)) {
+        if (isWhitespaceString(text))
             return;
-        }
         const node = new SimpleDOMNode("#text", text);
-        this._currentFragment.push(node);
+        this.#currentFragment.push(node);
     }
     /** @implements */
     onCdata(text) {
         const node = new SimpleDOMNode("#text", text);
-        this._currentFragment.push(node);
+        this.#currentFragment.push(node);
     }
     /** @implements */
     onBeginElement(name, attributes, isEmpty) {
-        if (this._lowerCaseName) {
+        if (this.#lowerCaseName) {
             name = name.toLowerCase();
         }
         const node = new SimpleDOMNode(name);
         node.childNodes = [];
-        if (this._hasAttributes) {
+        if (this.#hasAttributes) {
             node.attributes = attributes;
         }
-        this._currentFragment.push(node);
+        this.#currentFragment.push(node);
         if (isEmpty)
             return;
-        this._stack.push(this._currentFragment);
-        this._currentFragment = node.childNodes;
+        this.#stack.push(this.#currentFragment);
+        this.#currentFragment = node.childNodes;
     }
+    /** @implements */
     onEndElement(name) {
-        this._currentFragment = this._stack.pop() || [];
-        const lastElement = this._currentFragment[this._currentFragment.length - 1];
+        this.#currentFragment = this.#stack.pop() || [];
+        const lastElement = this.#currentFragment[this.#currentFragment.length - 1];
         if (!lastElement)
-            return;
+            return undefined;
         for (let i = 0, ii = lastElement.childNodes.length; i < ii; i++) {
             lastElement.childNodes[i].parentNode = lastElement;
         }
+        return lastElement;
     }
     /** @implements */
     onError(code) {

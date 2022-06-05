@@ -67,12 +67,6 @@ export declare class PDFFindController {
         pageIndex?: number;
         matchIndex?: number;
     }): void;
-    _shouldDirtyMatch(state: FindCtrlrState): boolean;
-    _updateAllPages(): void;
-    _nextMatch(): void;
-    _nextPageMatch(): void;
-    _requestMatchesCount(): MatchesCount;
-    _updateUIState(state: FindState, previous?: boolean): void;
 }
 export {};
 //# sourceMappingURL=pdf_find_controller.d.ts.map

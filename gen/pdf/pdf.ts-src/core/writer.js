@@ -16,11 +16,11 @@
  * limitations under the License.
  */
 import { bytesToString, escapeString, warn } from "../shared/util.js";
-import { Dict, Name, Ref } from "./primitives.js";
-import { calculateMD5 } from "./crypto.js";
-import { escapePDFName, parseXFAPath } from "./core_utils.js";
-import { SimpleDOMNode, SimpleXMLParser } from "./xml_parser.js";
 import { BaseStream } from "./base_stream.js";
+import { escapePDFName, parseXFAPath } from "./core_utils.js";
+import { calculateMD5 } from "./crypto.js";
+import { Dict, Name, Ref } from "./primitives.js";
+import { SimpleDOMNode, SimpleXMLParser } from "./xml_parser.js";
 /*81---------------------------------------------------------------------------*/
 export function writeDict(dict, buffer, transform) {
     buffer.push("<<");
@@ -140,7 +140,12 @@ function writeXFADataForAcroform(str, newRefs) {
             continue;
         const node = xml.documentElement.searchNode(parseXFAPath(path), 0);
         if (node) {
-            node.childNodes = [new SimpleDOMNode("#text", value)];
+            if (Array.isArray(value)) {
+                node.childNodes = value.map(val => new SimpleDOMNode("value", val));
+            }
+            else {
+                node.childNodes = [new SimpleDOMNode("#text", value)];
+            }
         }
         else {
             warn(`Node not found for path: ${path}`);

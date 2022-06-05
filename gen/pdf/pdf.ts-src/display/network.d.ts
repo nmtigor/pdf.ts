@@ -1,7 +1,7 @@
 import { HttpStatusCode } from "../../../lib/HttpStatusCode.js";
 import { type IPDFStream, type IPDFStreamRangeReader, type IPDFStreamReader, type ReadValue } from "../interfaces.js";
 import { AbortException, MissingPDFException, UnexpectedResponseException } from "../shared/util.js";
-import { type DocumentInitParms } from "./api.js";
+import { type DocumentInitP } from "./api.js";
 interface Listeners {
     onHeadersReceived?: (() => void) | undefined;
     onDone?: ((data: {
@@ -44,7 +44,7 @@ declare class NetworkManager {
 }
 export declare class PDFNetworkStream implements IPDFStream {
     #private;
-    constructor(source: DocumentInitParms);
+    constructor(source: DocumentInitP);
     /** @override */
     getFullReader(): PDFNetworkStreamFullRequestReader;
     /** @override */
@@ -60,13 +60,13 @@ declare class PDFNetworkStreamFullRequestReader implements IPDFStreamReader {
     get isRangeSupported(): boolean;
     _cachedChunks: ArrayBufferLike[];
     _storedError?: MissingPDFException | UnexpectedResponseException;
-    get filename(): string | null;
+    get filename(): string | undefined;
     /** @implements */
     onProgress: ((data: {
         loaded: number;
         total: number;
     }) => void) | undefined;
-    constructor(manager: NetworkManager, source: DocumentInitParms);
+    constructor(manager: NetworkManager, source: DocumentInitP);
     /** @implements */
     read(): Promise<ReadValue>;
     /** @override */
@@ -80,7 +80,7 @@ declare class PDFNetworkStreamRangeRequestReader implements IPDFStreamRangeReade
     onProgress: ((data: {
         loaded: number;
     }) => void) | undefined;
-    onClosed: ((reader: PDFNetworkStreamRangeRequestReader) => void) | null;
+    onClosed?: (reader: PDFNetworkStreamRangeRequestReader) => void;
     /** @override */
     get isStreamingSupported(): boolean;
     constructor(manager: NetworkManager, begin: number, end: number);

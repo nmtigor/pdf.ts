@@ -1,10 +1,10 @@
-import { Dict, type ObjNoRef, type Obj, Ref, RefSet } from "./primitives.js";
-import { Parser } from "./parser.js";
+import { ChunkedStream } from "./chunked_stream.js";
 import { DocStats } from "./core_utils.js";
 import { CipherTransformFactory } from "./crypto.js";
-import { Stream } from "./stream.js";
-import { ChunkedStream } from "./chunked_stream.js";
+import { Parser } from "./parser.js";
 import { BasePdfManager } from "./pdf_manager.js";
+import { Dict, Ref, RefSet, type Obj, type ObjNoRef } from "./primitives.js";
+import { Stream } from "./stream.js";
 interface XRefEntry {
     offset: number;
     gen: number;

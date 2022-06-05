@@ -1,14 +1,14 @@
 /*81*****************************************************************************
  * annotation_test
 ** --------------- */
-import { css_1, css_2 } from "../../../test/alias.js";
 import "../../../lib/jslang.js";
-import { Dict, Name, Ref, RefSetCache } from "./primitives.js";
+import { css_1, css_2 } from "../../../test/alias.js";
 import { CMAP_PARAMS, createIdFactory, STANDARD_FONT_DATA_URL, XRefMock } from "../../test_utils.js";
 import { DefaultCMapReaderFactory, DefaultStandardFontDataFactory } from "../display/api.js";
-import { PartialEvaluator } from "./evaluator.js";
-import { Annotation, AnnotationBorderStyle, AnnotationFactory, getQuadPoints, MarkupAnnotation } from "./annotation.js";
 import { AnnotationBorderStyleType, AnnotationFlag, AnnotationType } from "../shared/util.js";
+import { Annotation, AnnotationBorderStyle, AnnotationFactory, getQuadPoints, MarkupAnnotation } from "./annotation.js";
+import { PartialEvaluator } from "./evaluator.js";
+import { Dict, Name, Ref, RefSetCache } from "./primitives.js";
 const strttime = performance.now();
 /*81---------------------------------------------------------------------------*/
 class PDFManagerMock {

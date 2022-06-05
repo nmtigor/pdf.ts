@@ -127,16 +127,21 @@ export class AutomationEventBus extends EventBus {
             for (const key in data) {
                 const value = data[key];
                 if (key === "source") {
-                    if (value === window || value === document) {
-                        return; // No need to re-dispatch (already) global events.
-                    }
+                    if (value === window || value === document)
+                        // No need to re-dispatch (already) global events.
+                        return;
                     continue; // Ignore the `source` property.
                 }
                 details[key] = value;
             }
         }
-        const event = document.createEvent("CustomEvent");
-        event.initCustomEvent(eventName, true, true, details);
+        // const event = document.createEvent("CustomEvent");
+        // event.initCustomEvent(eventName, true, true, details);
+        const event = new CustomEvent(eventName, {
+            bubbles: true,
+            cancelable: true,
+            detail: details,
+        });
         document.dispatchEvent(event);
     }
 }

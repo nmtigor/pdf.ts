@@ -36,7 +36,6 @@ export declare class PDFCursorTools {
      *   must be one of the values in {CursorTool}.
      */
     switchTool(tool?: CursorTool): void;
-    protected _dispatchEvent(): void;
 }
 export {};
 //# sourceMappingURL=pdf_cursor_tools.d.ts.map

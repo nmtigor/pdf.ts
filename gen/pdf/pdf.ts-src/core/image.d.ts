@@ -1,12 +1,12 @@
-import { Dict } from "./primitives.js";
+import { BaseStream } from "./base_stream.js";
 import { ColorSpace } from "./colorspace.js";
 import { ImageStream } from "./decode_stream.js";
+import { type ImgData } from "./evaluator.js";
 import { PDFFunctionFactory } from "./function.js";
 import { LocalColorSpaceCache } from "./image_utils.js";
-import { type ImgData } from "./evaluator.js";
+import { Dict } from "./primitives.js";
 import { XRef } from "./xref.js";
-import { BaseStream } from "./base_stream.js";
-interface PDFImageCtorParms {
+interface _PDFImageCtorP {
     xref: XRef;
     res: Dict;
     image: ImageStream;
@@ -17,27 +17,27 @@ interface PDFImageCtorParms {
     pdfFunctionFactory: PDFFunctionFactory;
     localColorSpaceCache: LocalColorSpaceCache;
 }
-interface CreateMaskParms {
-    imgArray: Uint8ClampedArray;
+interface _CreateMaskP {
+    imgArray: Uint8Array | Uint8ClampedArray;
     width: number;
     height: number;
     imageIsFromDecodeStream: boolean;
     inverseDecode: boolean;
     interpolate: boolean | undefined;
 }
-export interface ImageMask {
-    data: Uint8ClampedArray;
-    width: number;
-    height: number;
-    interpolate: boolean | undefined;
-}
-interface BuildImageParms {
+interface _BuildImageP {
     xref: XRef;
     res: Dict;
     image: ImageStream;
     isInline: boolean;
     pdfFunctionFactory: PDFFunctionFactory;
     localColorSpaceCache: LocalColorSpaceCache;
+}
+interface _GetImageBytesP {
+    drawWidth?: number;
+    drawHeight?: number;
+    forceRGB?: boolean;
+    internal?: boolean;
 }
 /**
  * 8.9
@@ -58,13 +58,14 @@ export declare class PDFImage {
     decodeAddends?: number[];
     smask?: PDFImage;
     mask?: PDFImage | number[];
-    constructor({ xref, res, image, isInline, smask, mask, isMask, pdfFunctionFactory, localColorSpaceCache, }: PDFImageCtorParms);
+    constructor({ xref, res, image, isInline, smask, mask, isMask, pdfFunctionFactory, localColorSpaceCache, }: _PDFImageCtorP);
     /**
      * Handles processing of image data and returns the Promise that is resolved
      * with a PDFImage when the image is ready to be used.
      */
-    static buildImage({ xref, res, image, isInline, pdfFunctionFactory, localColorSpaceCache, }: BuildImageParms): Promise<PDFImage>;
-    static createMask({ imgArray, width, height, imageIsFromDecodeStream, inverseDecode, interpolate, }: CreateMaskParms): ImageMask;
+    static buildImage({ xref, res, image, isInline, pdfFunctionFactory, localColorSpaceCache, }: _BuildImageP): Promise<PDFImage>;
+    static createRawMask({ imgArray, width, height, imageIsFromDecodeStream, inverseDecode, interpolate, }: _CreateMaskP): ImgData;
+    static createMask({ imgArray, width, height, imageIsFromDecodeStream, inverseDecode, interpolate, }: _CreateMaskP): ImgData;
     get drawWidth(): number;
     get drawHeight(): number;
     decodeBuffer(buffer: Uint8Array | Uint8ClampedArray | Uint16Array | Uint32Array): void;
@@ -73,7 +74,7 @@ export declare class PDFImage {
     undoPreblend(buffer: Uint8ClampedArray, width: number, height: number): void;
     createImageData(forceRGBA?: boolean): ImgData;
     fillGrayBuffer(buffer: Uint8ClampedArray): void;
-    getImageBytes(length: number, drawWidth?: number, drawHeight?: number, forceRGB?: boolean): Uint8Array | Uint8ClampedArray;
+    getImageBytes(length: number, { drawWidth, drawHeight, forceRGB, internal }: _GetImageBytesP): Uint8Array | Uint8ClampedArray;
 }
 export {};
 //# sourceMappingURL=image.d.ts.map

@@ -17,10 +17,10 @@
  * limitations under the License.
  */
 
-import { assert, warn as warn_0 } from "../../../lib/util/trace.js";
-import { isObjectLike } from "../../../lib/jslang.js";
 import { type TupleOf } from "../../../lib/alias.js";
 import { HttpStatusCode } from "../../../lib/HttpStatusCode.js";
+import { isObjectLike } from "../../../lib/jslang.js";
+import { assert, warn as warn_0 } from "../../../lib/util/trace.js";
 /*81---------------------------------------------------------------------------*/
 
 export const IDENTITY_MATRIX:matrix_t = [1, 0, 0, 1, 0, 0];
@@ -264,7 +264,7 @@ export const enum CMapCompressionType {
 };
 
 // All the possible operations for an operator list.
-export const enum OPS {
+export /* #if PRODUCTION */const /* #endif */enum OPS {
   // Intentionally start from 1 so it is easy to spot bad operators that will be
   // 0's.
   dependency = 1,
@@ -362,7 +362,7 @@ export const enum OPS {
 
   group = 92,
 }
-// export type OPSName = keyof typeof OPS;
+export type OPSName = keyof typeof OPS;
 // export type OPSValu = (typeof OPS)[OPSName];
 
 export const enum UNSUPPORTED_FEATURES {
@@ -429,23 +429,6 @@ export function warn( msg:string, meta?:{url:string} )
 //   throw new Error(msg);
 // }
 
-// Checks if URLs have the same origin. For non-HTTP based URLs, returns false.
-export function isSameOrigin( baseUrl:string, otherUrl:string ) 
-{
-  let base;
-  try {
-    base = new URL(baseUrl);
-    if (!base.origin || base.origin === "null") {
-      return false; // non-HTTP url
-    }
-  } catch (e) {
-    return false;
-  }
-
-  const other = new URL(otherUrl, base);
-  return base.origin === other.origin;
-}
-
 // Checks if URLs use one of the allowed protocols, e.g. to avoid XSS.
 function _isValidProtocol( url:URL ) 
 {
@@ -464,9 +447,9 @@ function _isValidProtocol( url:URL )
   }
 }
 
-interface CreateValidAbsoluteUrlOptions
+interface _CreateValidAbsoluteUrlP
 {
-  addDefaultProtocol:boolean;
+  addDefaultProtocol?:boolean;
   tryConvertEncoding:boolean;
 }
 
@@ -477,10 +460,12 @@ interface CreateValidAbsoluteUrlOptions
  * @param baseUrl An absolute URL.
  * @return Either a valid {URL}, or `null` otherwise.
  */
-export function createValidAbsoluteUrl( url:URL | string, baseUrl?:URL | string,
-  options?:CreateValidAbsoluteUrlOptions
+export function createValidAbsoluteUrl( url:URL | string, 
+  baseUrl?:URL | string | undefined,
+  options?:_CreateValidAbsoluteUrlP
 ):URL | null {
-  if( !url ) return null;
+  if( !url ) 
+    return null;
 
   try {
     if (options && typeof url === "string") 
@@ -733,11 +718,6 @@ function isLittleEndian() {
   const view32 = new Uint32Array(buffer8.buffer, 0, 1);
   return view32[0] === 1;
 }
-export const IsLittleEndianCached = {
-  get value() {
-    return shadow(this, "value", isLittleEndian());
-  },
-};
 
 // Checks if it's possible to eval JS expressions.
 function isEvalSupported() {
@@ -748,17 +728,34 @@ function isEvalSupported() {
     return false;
   }
 }
-export const IsEvalSupportedCached = {
-  get value() {
-    return shadow(this, "value", isEvalSupported());
-  },
-};
 
-export type point_t = [ number, number ];
-export type point3d_t = [ number, number, number ];
-export type rect_t = TupleOf< number, 4 >;
-export type matrix_t = TupleOf< number, 6 >;
-export type matrix3d_t = TupleOf< number, 9 >;
+export class FeatureTest
+{
+  static get isLittleEndian()
+  {
+    return shadow(this, "isLittleEndian", isLittleEndian());
+  }
+
+  static get isEvalSupported()
+  {
+    return shadow(this, "isEvalSupported", isEvalSupported());
+  }
+
+  static get isOffscreenCanvasSupported()
+  {
+    return shadow(
+      this,
+      "isOffscreenCanvasSupported",
+      typeof (<any>globalThis).OffscreenCanvas !== "undefined"
+    );
+  }
+}
+
+export type point_t = [number, number];
+export type point3d_t = [number, number, number];
+export type rect_t = TupleOf< number, 4>;
+export type matrix_t = TupleOf< number, 6>;
+export type matrix3d_t = TupleOf< number, 9>;
 
 const hexNumbers = [...Array(256).keys()].map(n =>
   n.toString(16).padStart(2, "0")
@@ -769,6 +766,64 @@ export class Util
   static makeHexColor( r:number, g:number, b:number )
   {
     return `#${hexNumbers[r]}${hexNumbers[g]}${hexNumbers[b]}`;
+  }
+
+  // Apply a scaling matrix to some min/max values.
+  // If a scaling factor is negative then min and max must be
+  // swaped.
+  static scaleMinMax( transform:matrix_t, minMax:rect_t )
+  {
+    let temp;
+    if( transform[0] )
+    {
+      if( transform[0] < 0 )
+      {
+        temp = minMax[0];
+        minMax[0] = minMax[1];
+        minMax[1] = temp;
+      }
+      minMax[0] *= transform[0];
+      minMax[1] *= transform[0];
+
+      if( transform[3] < 0 )
+      {
+        temp = minMax[2];
+        minMax[2] = minMax[3];
+        minMax[3] = temp;
+      }
+      minMax[2] *= transform[3];
+      minMax[3] *= transform[3];
+    } 
+    else {
+      temp = minMax[0];
+      minMax[0] = minMax[2];
+      minMax[2] = temp;
+      temp = minMax[1];
+      minMax[1] = minMax[3];
+      minMax[3] = temp;
+
+      if (transform[1] < 0)
+      {
+        temp = minMax[2];
+        minMax[2] = minMax[3];
+        minMax[3] = temp;
+      }
+      minMax[2] *= transform[1];
+      minMax[3] *= transform[1];
+
+      if (transform[2] < 0)
+      {
+        temp = minMax[0];
+        minMax[0] = minMax[1];
+        minMax[1] = temp;
+      }
+      minMax[0] *= transform[2];
+      minMax[1] *= transform[2];
+    }
+    minMax[0] += transform[4];
+    minMax[1] += transform[4];
+    minMax[2] += transform[5];
+    minMax[3] += transform[5];
   }
 
   // Concatenates two transformation matrices together and returns the result.
@@ -886,56 +941,46 @@ export class Util
   }
 
   // Returns a rectangle [x1, y1, x2, y2] corresponding to the
-  // intersection of rect1 and rect2. If no intersection, returns 'false'
+  // intersection of rect1 and rect2. If no intersection, returns 'undefined'
   // The rectangle coordinates of rect1, rect2 should be [x1, y1, x2, y2]
   static intersect( rect1:rect_t, rect2:rect_t ):rect_t | undefined
   {
-    function compare( a:number, b:number) { return a - b; }
+    const xLow = Math.max(
+      Math.min(rect1[0], rect1[2]),
+      Math.min(rect2[0], rect2[2])
+    );
+    const xHigh = Math.min(
+      Math.max(rect1[0], rect1[2]),
+      Math.max(rect2[0], rect2[2])
+    );
+    if( xLow > xHigh ) return undefined;
 
-    // Order points along the axes
-    const orderedX = [rect1[0], rect1[2], rect2[0], rect2[2]].sort(compare);
-    const orderedY = [rect1[1], rect1[3], rect2[1], rect2[3]].sort(compare);
-    const result = [];
+    const yLow = Math.max(
+      Math.min(rect1[1], rect1[3]),
+      Math.min(rect2[1], rect2[3])
+    );
+    const yHigh = Math.min(
+      Math.max(rect1[1], rect1[3]),
+      Math.max(rect2[1], rect2[3])
+    );
+    if( yLow > yHigh ) return undefined;
 
-    rect1 = Util.normalizeRect(rect1);
-    rect2 = Util.normalizeRect(rect2);
-
-    // X: first and second points belong to different rectangles?
-    if( (orderedX[0] === rect1[0] && orderedX[1] === rect2[0])
-     || (orderedX[0] === rect2[0] && orderedX[1] === rect1[0])
-    ) {
-      // Intersection must be between second and third points
-      result[0] = orderedX[1];
-      result[2] = orderedX[2];
-    } 
-    else {
-      return undefined;
-    }
-
-    // Y: first and second points belong to different rectangles?
-    if( (orderedY[0] === rect1[1] && orderedY[1] === rect2[1])
-     || (orderedY[0] === rect2[1] && orderedY[1] === rect1[1])
-    ) {
-      // Intersection must be between second and third points
-      result[1] = orderedY[1];
-      result[3] = orderedY[2];
-    } 
-    else {
-      return undefined;
-    }
-
-    return <rect_t>result;
+    return <rect_t>[xLow, yLow, xHigh, yHigh];
   }
 
   // From https://github.com/adobe-webplatform/Snap.svg/blob/b365287722a72526000ac4bfcf0ce4cac2faa015/src/path.js#L852
-  static bezierBoundingBox( x0:number, y0:number, x1:number, y1:number, x2:number, y2:number, x3:number, y3:number ) 
-  {
+  static bezierBoundingBox( 
+    x0:number, y0:number, 
+    x1:number, y1:number, 
+    x2:number, y2:number, 
+    x3:number, y3:number
+  ):rect_t {
     const tvalues = [],
       bounds:[number[], number[]] = [[], []];
     let a, b, c, t, t1, t2, b2ac, sqrtb2ac;
     for (let i = 0; i < 2; ++i) 
     {
-      if (i === 0) 
+      if( i === 0 )
       {
         b = 6 * x0 - 12 * x1 + 6 * x2;
         a = -3 * x0 + 9 * x1 - 9 * x2 + 3 * x3;
@@ -946,10 +991,10 @@ export class Util
         a = -3 * y0 + 9 * y1 - 9 * y2 + 3 * y3;
         c = 3 * y1 - 3 * y0;
       }
-      if (Math.abs(a) < 1e-12) 
+      if( Math.abs(a) < 1e-12 )
       {
-        if( Math.abs(b) < 1e-12 ) continue;
-
+        if( Math.abs(b) < 1e-12 )
+          continue;
         t = -c / b;
         if (0 < t && t < 1) 
         {
@@ -959,7 +1004,8 @@ export class Util
       }
       b2ac = b * b - 4 * c * a;
       sqrtb2ac = Math.sqrt(b2ac);
-      if( b2ac < 0 ) continue;
+      if( b2ac < 0 ) 
+        continue;
 
       t1 = (-b + sqrtb2ac) / (2 * a);
       if (0 < t1 && t1 < 1) 
@@ -976,7 +1022,7 @@ export class Util
     let j = tvalues.length,
       mt;
     const jlen = j;
-    while (j--) 
+    while( j-- )
     {
       t = tvalues[j];
       mt = 1 - t;
@@ -1027,10 +1073,12 @@ export function stringToPDFString( str:string )
     if( str[0] === "\xFE" && str[1] === "\xFF" )
     {
       encoding = "utf-16be";
-    } else if( str[0] === "\xFF" && str[1] === "\xFE" )
+    } 
+    else if( str[0] === "\xFF" && str[1] === "\xFE" )
     {
       encoding = "utf-16le";
-    } else if( str[0] === "\xEF" && str[1] === "\xBB" && str[2] === "\xBF" )
+    } 
+    else if( str[0] === "\xEF" && str[1] === "\xBB" && str[2] === "\xBF" )
     {
       encoding = "utf-8";
     }
@@ -1064,7 +1112,8 @@ export function escapeString( str:string )
   return str.replace(/([()\\\n\r])/g, match => {
     if (match === "\n") {
       return "\\n";
-    } else if (match === "\r") {
+    } 
+    else if (match === "\r") {
       return "\\r";
     }
     return `\\${match}`;

@@ -17,6 +17,26 @@
  * limitations under the License.
  */
 
+import { createValidAbsoluteUrl, warn, type rect_t } from "../../shared/util.js";
+import {
+  type AvailableSpace, type XFAElObj,
+  type XFAExtra, type XFAFontBase,
+  type XFAHTMLObj, type XFAMargin, type XFAStyleData
+} from "./alias.js";
+import { FontFinder, selectFont } from "./fonts.js";
+import {
+  Area,
+  Border,
+  Caption,
+  ContentArea,
+  Draw,
+  ExclGroup,
+  Field,
+  Margin,
+  Subform
+} from "./template.js";
+import { TextMeasure } from "./text.js";
+import { getMeasurement, stripQuotes } from "./utils.js";
 import {
   $content,
   $extra,
@@ -28,32 +48,8 @@ import {
   $pushGlyphs,
   $text,
   $toStyle,
-  XFAObject,
+  XFAObject
 } from "./xfa_object.js";
-import { 
-  type AvailableSpace, 
-  type XFAFontBase, 
-  type XFAHTMLObj, 
-  type XFAStyleData, 
-  type XFAMargin, 
-  type XFAElObj, 
-  type XFAExtra
-} from "./alias.js";
-import { getMeasurement, stripQuotes } from "./utils.js";
-import { FontFinder, selectFont } from "./fonts.js";
-import { TextMeasure } from "./text.js";
-import { createValidAbsoluteUrl, type rect_t, warn } from "../../shared/util.js";
-import { 
-  Area, 
-  Border,
-  Caption,
-  ContentArea, 
-  Draw, 
-  ExclGroup, 
-  Field, 
-  Margin, 
-  Subform 
-} from "./template.js";
 import { XhtmlObject } from "./xhtml.js";
 /*81---------------------------------------------------------------------------*/
 
@@ -326,7 +322,7 @@ export function layoutNode( node:Caption | Draw | Field, availableSpace:Availabl
     }
 
     const maxWidth = (!node.w ? availableSpace.width : <number>node.w) - marginH;
-    const fontFinder = node[$globalData].fontFinder;
+    const fontFinder = node[$globalData]!.fontFinder;
     if( node.value.exData 
      && node.value.exData[$content] 
      && node.value.exData.contentType === "text/html"
@@ -495,8 +491,8 @@ export function toStyle( node:XFAObject, ...names:string[] )
   for( const name of names )
   {
     const value = (<any>node)[name];
-    if (value === null || value === undefined ) continue;
-
+    if( value === null || value === undefined )
+      continue;
     if( converters.hasOwnProperty(name) )
     {
       converters[<ConverterName>name](node, style);

@@ -15,10 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Dict } from "./primitives.js";
-import { JpegImage } from "./jpg.js";
 import { shadow } from "../shared/util.js";
 import { ImageStream } from './decode_stream.js';
+import { JpegImage } from "./jpg.js";
+import { Dict } from "./primitives.js";
 /*81---------------------------------------------------------------------------*/
 /**
  * For JPEG's we use a library to decode these images and the stream behaves
@@ -44,9 +44,8 @@ export class JpegStream extends ImageStream {
     }
     /** @implements */
     readBlock() {
-        if (this.eof) {
+        if (this.eof)
             return;
-        }
         const jpegOptions = {};
         // Checking if values need to be transformed before conversion.
         const decodeArr = this.dict.getArray("D", "Decode");

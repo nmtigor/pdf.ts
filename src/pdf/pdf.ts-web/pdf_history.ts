@@ -23,17 +23,13 @@
 import { isObjectLike } from "../../lib/jslang.js";
 import { type ExplicitDest } from "../pdf.ts-src/core/catalog.js";
 import { type PDFLocation } from "./base_viewer.js";
-import { 
-  type HistoryInitParms, 
-  type HistoryPushParms, 
-  type IPDFLinkService 
-} from "./interfaces.js";
 import { EventBus, EventMap, waitOnEventOrTimeout } from "./event_utils.js";
 import {
-  isValidRotation,
-  parseQueryString,
-  PresentationModeState,
-} from "./ui_utils.js";
+  type HistoryInitP,
+  type HistoryPushP,
+  type IPDFLinkService
+} from "./interfaces.js";
+import { isValidRotation, parseQueryString } from "./ui_utils.js";
 /*81---------------------------------------------------------------------------*/
 
 // Heuristic value used when force-resetting `this.#blockHashChange`.
@@ -99,7 +95,6 @@ export class PDFHistory
     popState(_:{ state:any }):void;
     pageHide():void;
   } | undefined;
-  _isViewerInPresentationMode = false;
 
   _isPagesLoaded?:boolean;
   
@@ -112,12 +107,8 @@ export class PDFHistory
 
     this.reset();
 
-    // Ensure that we don't miss either a 'presentationmodechanged' or a
-    // 'pagesinit' event, by registering the listeners immediately.
-    this.eventBus._on("presentationmodechanged", evt => {
-      this._isViewerInPresentationMode =
-        evt.state !== PresentationModeState.NORMAL;
-    });
+    // Ensure that we don't miss a "pagesinit" event,
+    // by registering the listener immediately.
     this.eventBus._on("pagesinit", () => {
       this._isPagesLoaded = false;
 
@@ -139,7 +130,7 @@ export class PDFHistory
     fingerprint, 
     resetHistory=false, 
     updateUrl=false 
-  }:HistoryInitParms ) 
+  }:HistoryInitP ) 
   {
     if (!fingerprint || typeof fingerprint !== "string") 
     {
@@ -252,7 +243,7 @@ export class PDFHistory
     namedDest, 
     explicitDest, 
     pageNumber,
-  }:HistoryPushParms ) 
+  }:HistoryPushP ) 
   {
     if (!this.#initialized) {
       return;
@@ -619,9 +610,7 @@ export class PDFHistory
     }
 
     this.#position = {
-      hash: this._isViewerInPresentationMode
-        ? `page=${location!.pageNumber}`
-        : location!.pdfOpenParams.substring(1),
+      hash: location!.pdfOpenParams.substring(1),
       page: this.linkService.page,
       first: location!.pageNumber,
       rotation: location!.rotation,

@@ -15,14 +15,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { CalibriBoldFactors, CalibriBoldItalicFactors, CalibriBoldItalicMetrics, CalibriBoldMetrics, CalibriItalicFactors, CalibriItalicMetrics, CalibriRegularFactors, CalibriRegularMetrics, } from "./calibri_factors.js";
-import { Dict, Name } from "./primitives.js";
-import { HelveticaBoldFactors, HelveticaBoldItalicFactors, HelveticaBoldItalicMetrics, HelveticaBoldMetrics, HelveticaItalicFactors, HelveticaItalicMetrics, HelveticaRegularFactors, HelveticaRegularMetrics, } from "./helvetica_factors.js";
-import { LiberationSansBoldItalicMapping, LiberationSansBoldItalicWidths, LiberationSansBoldMapping, LiberationSansBoldWidths, LiberationSansItalicMapping, LiberationSansItalicWidths, LiberationSansRegularMapping, LiberationSansRegularWidths, } from "./liberationsans_widths.js";
-import { MyriadProBoldFactors, MyriadProBoldItalicFactors, MyriadProBoldItalicMetrics, MyriadProBoldMetrics, MyriadProItalicFactors, MyriadProItalicMetrics, MyriadProRegularFactors, MyriadProRegularMetrics, } from "./myriadpro_factors.js";
-import { SegoeuiBoldFactors, SegoeuiBoldItalicFactors, SegoeuiBoldItalicMetrics, SegoeuiBoldMetrics, SegoeuiItalicFactors, SegoeuiItalicMetrics, SegoeuiRegularFactors, SegoeuiRegularMetrics, } from "./segoeui_factors.js";
+import { CalibriBoldFactors, CalibriBoldItalicFactors, CalibriBoldItalicMetrics, CalibriBoldMetrics, CalibriItalicFactors, CalibriItalicMetrics, CalibriRegularFactors, CalibriRegularMetrics } from "./calibri_factors.js";
 import { getLookupTableFactory } from "./core_utils.js";
 import { normalizeFontName } from "./fonts_utils.js";
+import { HelveticaBoldFactors, HelveticaBoldItalicFactors, HelveticaBoldItalicMetrics, HelveticaBoldMetrics, HelveticaItalicFactors, HelveticaItalicMetrics, HelveticaRegularFactors, HelveticaRegularMetrics } from "./helvetica_factors.js";
+import { LiberationSansBoldItalicMapping, LiberationSansBoldItalicWidths, LiberationSansBoldMapping, LiberationSansBoldWidths, LiberationSansItalicMapping, LiberationSansItalicWidths, LiberationSansRegularMapping, LiberationSansRegularWidths } from "./liberationsans_widths.js";
+import { MyriadProBoldFactors, MyriadProBoldItalicFactors, MyriadProBoldItalicMetrics, MyriadProBoldMetrics, MyriadProItalicFactors, MyriadProItalicMetrics, MyriadProRegularFactors, MyriadProRegularMetrics } from "./myriadpro_factors.js";
+import { Dict, Name } from "./primitives.js";
+import { SegoeuiBoldFactors, SegoeuiBoldItalicFactors, SegoeuiBoldItalicMetrics, SegoeuiBoldMetrics, SegoeuiItalicFactors, SegoeuiItalicMetrics, SegoeuiRegularFactors, SegoeuiRegularMetrics } from "./segoeui_factors.js";
 const getXFAFontMap = getLookupTableFactory((t) => {
     t["MyriadPro-Regular"] = t["PdfJS-Fallback-Regular"] = {
         name: "LiberationSans-Regular",

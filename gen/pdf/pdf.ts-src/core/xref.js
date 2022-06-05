@@ -15,13 +15,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { bytesToString, FormatError, info, InvalidPDFException, warn, } from "../shared/util.js";
-import { Cmd, Dict, isCmd, Ref, RefSet, CIRCULAR_REF, } from "./primitives.js";
-import { Lexer, Parser } from "./parser.js";
-import { DocStats, MissingDataException, ParserEOFException, XRefEntryException, XRefParseException, } from "./core_utils.js";
-import { CipherTransformFactory } from "./crypto.js";
 import { assert } from "../../../lib/util/trace.js";
+import { bytesToString, FormatError, info, InvalidPDFException, warn } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
+import { DocStats, MissingDataException, ParserEOFException, XRefEntryException, XRefParseException } from "./core_utils.js";
+import { CipherTransformFactory } from "./crypto.js";
+import { Lexer, Parser } from "./parser.js";
+import { CIRCULAR_REF, Cmd, Dict, isCmd, Ref, RefSet } from "./primitives.js";
 export class XRef {
     stream;
     pdfManager;
@@ -505,17 +505,14 @@ export class XRef {
             // Do some basic validation of the trailer/root dictionary candidate.
             try {
                 const rootDict = dict.get("Root");
-                if (!(rootDict instanceof Dict)) {
+                if (!(rootDict instanceof Dict))
                     continue;
-                }
                 const pagesDict = rootDict.get("Pages");
-                if (!(pagesDict instanceof Dict)) {
+                if (!(pagesDict instanceof Dict))
                     continue;
-                }
                 const pagesCount = pagesDict.get("Count");
-                if (!Number.isInteger(pagesCount)) {
+                if (!Number.isInteger(pagesCount))
                     continue;
-                }
                 // The top-level /Pages dictionary isn't obviously corrupt.
             }
             catch (ex) {

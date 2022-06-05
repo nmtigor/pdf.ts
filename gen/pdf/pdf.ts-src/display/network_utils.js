@@ -2,12 +2,12 @@
  * nmtigor (https://github.com/nmtigor) @2022
  */
 import { assert } from "../../../lib/util/trace.js";
-import { MissingPDFException, UnexpectedResponseException, } from "../shared/util.js";
+import { MissingPDFException, UnexpectedResponseException } from "../shared/util.js";
 import { getFilenameFromContentDispositionHeader } from "./content_disposition.js";
 import { isPdfFile } from "./display_utils.js";
 /*81---------------------------------------------------------------------------*/
 export function validateRangeRequestCapabilities({ getResponseHeader, isHttp, rangeChunkSize, disableRange, }) {
-    assert(rangeChunkSize > 0, "Range chunk size must be larger than zero");
+    assert(Number.isInteger(rangeChunkSize) && rangeChunkSize > 0, "rangeChunkSize must be an integer larger than zero.");
     const returnValues = {
         allowRangeRequests: false,
     };
@@ -16,21 +16,17 @@ export function validateRangeRequestCapabilities({ getResponseHeader, isHttp, ra
         return returnValues;
     }
     returnValues.suggestedLength = length;
-    if (length <= 2 * rangeChunkSize) {
+    if (length <= 2 * rangeChunkSize)
         // The file size is smaller than the size of two chunks, so it does not
         // make any sense to abort the request and retry with a range request.
         return returnValues;
-    }
-    if (disableRange || !isHttp) {
+    if (disableRange || !isHttp)
         return returnValues;
-    }
-    if (getResponseHeader("Accept-Ranges") !== "bytes") {
+    if (getResponseHeader("Accept-Ranges") !== "bytes")
         return returnValues;
-    }
     const contentEncoding = getResponseHeader("Content-Encoding") || "identity";
-    if (contentEncoding !== "identity") {
+    if (contentEncoding !== "identity")
         return returnValues;
-    }
     returnValues.allowRangeRequests = true;
     return returnValues;
 }
@@ -44,16 +40,14 @@ export function extractFilenameFromHeader(getResponseHeader) {
             }
             catch (ex) { }
         }
-        if (isPdfFile(filename)) {
+        if (isPdfFile(filename))
             return filename;
-        }
     }
-    return null;
+    return undefined;
 }
 export function createResponseStatusError(status, url) {
-    if (status === 404 || (status === 0 && url.toString().startsWith("file:"))) {
+    if (status === 404 || (status === 0 && url.toString().startsWith("file:")))
         return new MissingPDFException(`Missing PDF "${url}".`);
-    }
     return new UnexpectedResponseException(`Unexpected server response (${status}) while retrieving PDF "${url}".`, status);
 }
 export function validateResponseStatus(status) {

@@ -15,9 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { createPromiseCap } from "../../../lib/promisecap.js";
 import { html, span } from "../../../lib/dom.js";
-import { AbortException, Util, } from "../shared/util.js";
+import { createPromiseCap } from "../../../lib/promisecap.js";
+import { AbortException, Util } from "../shared/util.js";
 var Ns_renderTextLayer;
 (function (Ns_renderTextLayer) {
     const MAX_TEXT_DIVS_TO_RENDER = 100000;
@@ -622,12 +622,6 @@ var Ns_renderTextLayer;
             // The temporary canvas is used to measure text length in the DOM.
             const canvas = html("canvas", undefined, this._document);
             canvas.height = canvas.width = DEFAULT_FONT_SIZE;
-            // if (
-            //   typeof PDFJSDev === "undefined" ||
-            //   PDFJSDev?.test("MOZCENTRAL || GENERIC")
-            // ) {
-            canvas.mozOpaque = true;
-            // }
             this._layoutTextCtx = canvas.getContext("2d", { alpha: false });
             if (this._textContent) {
                 const textItems = this._textContent.items;

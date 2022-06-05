@@ -1,12 +1,12 @@
 /*81*****************************************************************************
  * writer_test
 ** ----------- */
-import { css_1, css_2 } from "../../../test/alias.js";
 import "../../../lib/jslang.js";
-import { Dict, Name, Ref } from "./primitives.js";
-import { incrementalUpdate, writeDict } from "./writer.js";
+import { css_1, css_2 } from "../../../test/alias.js";
 import { bytesToString } from "../shared/util.js";
+import { Dict, Name, Ref } from "./primitives.js";
 import { StringStream } from "./stream.js";
+import { incrementalUpdate, writeDict } from "./writer.js";
 const strttime = performance.now();
 /*81---------------------------------------------------------------------------*/
 console.log("%c>>>>>>> test Incremental update >>>>>>>", `color:${css_1}`);

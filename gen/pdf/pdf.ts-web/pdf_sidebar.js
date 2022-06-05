@@ -1,20 +1,6 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
-/* Copyright 2016 Mozilla Foundation
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 import { PresentationModeState, RenderingStates, SidebarView } from "./ui_utils.js";
 /*81---------------------------------------------------------------------------*/
 const UI_NOTIFICATION_CLASS = "pdfSidebarNotification";
@@ -30,7 +16,7 @@ export class PDFSidebar {
     pdfViewer;
     pdfThumbnailViewer;
     outerContainer;
-    viewerContainer;
+    sidebarContainer;
     toggleButton;
     thumbnailButton;
     outlineButton;
@@ -48,7 +34,7 @@ export class PDFSidebar {
         this.pdfViewer = pdfViewer;
         this.pdfThumbnailViewer = pdfThumbnailViewer;
         this.outerContainer = elements.outerContainer;
-        this.viewerContainer = elements.viewerContainer;
+        this.sidebarContainer = elements.sidebarContainer;
         this.toggleButton = elements.toggleButton;
         this.thumbnailButton = elements.thumbnailButton;
         this.outlineButton = elements.outlineButton;
@@ -159,18 +145,23 @@ export class PDFSidebar {
         // Update the active view *after* it has been validated above,
         // in order to prevent setting it to an invalid state.
         this.active = view;
-        // Update the CSS classes, for all buttons...
-        this.thumbnailButton.classList.toggle("toggled", view === SidebarView.THUMBS);
-        this.outlineButton.classList.toggle("toggled", view === SidebarView.OUTLINE);
-        this.attachmentsButton.classList.toggle("toggled", view === SidebarView.ATTACHMENTS);
-        this.layersButton.classList.toggle("toggled", view === SidebarView.LAYERS);
+        const isThumbs = view === SidebarView.THUMBS, isOutline = view === SidebarView.OUTLINE, isAttachments = view === SidebarView.ATTACHMENTS, isLayers = view === SidebarView.LAYERS;
+        // Update the CSS classes (and aria attributes), for all buttons...
+        this.thumbnailButton.classList.toggle("toggled", isThumbs);
+        this.outlineButton.classList.toggle("toggled", isOutline);
+        this.attachmentsButton.classList.toggle("toggled", isAttachments);
+        this.layersButton.classList.toggle("toggled", isLayers);
+        this.thumbnailButton.setAttribute("aria-checked", isThumbs);
+        this.outlineButton.setAttribute("aria-checked", isOutline);
+        this.attachmentsButton.setAttribute("aria-checked", isAttachments);
+        this.layersButton.setAttribute("aria-checked", isLayers);
         // ... and for all views.
-        this.thumbnailView.classList.toggle("hidden", view !== SidebarView.THUMBS);
-        this.outlineView.classList.toggle("hidden", view !== SidebarView.OUTLINE);
-        this.attachmentsView.classList.toggle("hidden", view !== SidebarView.ATTACHMENTS);
-        this.layersView.classList.toggle("hidden", view !== SidebarView.LAYERS);
+        this.thumbnailView.classList.toggle("hidden", !isThumbs);
+        this.outlineView.classList.toggle("hidden", !isOutline);
+        this.attachmentsView.classList.toggle("hidden", !isAttachments);
+        this.layersView.classList.toggle("hidden", !isLayers);
         // Finally, update view-specific CSS classes.
-        this._outlineOptionsContainer.classList.toggle("hidden", view !== SidebarView.OUTLINE);
+        this._outlineOptionsContainer.classList.toggle("hidden", !isOutline);
         if (forceOpen && !this.isOpen) {
             this.open();
             return true; // Opening will trigger rendering and dispatch the event.
@@ -269,8 +260,8 @@ export class PDFSidebar {
         }
     }
     #addEventListeners() {
-        this.viewerContainer.addEventListener("transitionend", evt => {
-            if (evt.target === this.viewerContainer) {
+        this.sidebarContainer.addEventListener("transitionend", evt => {
+            if (evt.target === this.sidebarContainer) {
                 this.outerContainer.classList.remove("sidebarMoving");
             }
         });

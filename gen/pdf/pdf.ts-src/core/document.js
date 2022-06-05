@@ -16,24 +16,25 @@
  * limitations under the License.
  */
 import { assert } from "../../../lib/util/trace.js";
-import { FormatError, info, InvalidPDFException, isArrayBuffer, OPS, PageActionEventType, RenderingIntentFlag, shadow, stringToBytes, stringToPDFString, stringToUTF8String, UNSUPPORTED_FEATURES, Util, warn, } from "../shared/util.js";
-import { Dict, isName, Name, Ref, } from "./primitives.js";
-import { collectActions, getInheritableProperty, isWhiteSpace, MissingDataException, validateCSSFont, XRefEntryException, XRefParseException, } from "./core_utils.js";
-import { getXfaFontDict, getXfaFontName } from "./xfa_fonts.js";
-import { NullStream, Stream } from "./stream.js";
+import { FormatError, info, InvalidPDFException, OPS, PageActionEventType, RenderingIntentFlag, shadow, stringToBytes, stringToPDFString, stringToUTF8String, UNSUPPORTED_FEATURES, Util, warn } from "../shared/util.js";
 import { AnnotationFactory } from "./annotation.js";
-import { calculateMD5 } from "./crypto.js";
-import { Linearization } from "./parser.js";
-import { OperatorList } from "./operator_list.js";
-import { PartialEvaluator } from "./evaluator.js";
+import { BaseStream } from "./base_stream.js";
 import { Catalog } from "./catalog.js";
 import { clearGlobalCaches } from "./cleanup_helper.js";
-import { XRef } from "./xref.js";
-import { ObjectLoader } from "./object_loader.js";
-import { StructTreePage } from "./struct_tree.js";
-import { BaseStream } from "./base_stream.js";
-import { XFAFactory } from "./xfa/factory.js";
+import { collectActions, getInheritableProperty, isWhiteSpace, MissingDataException, validateCSSFont, XRefEntryException, XRefParseException } from "./core_utils.js";
+import { calculateMD5 } from "./crypto.js";
+import { DatasetReader } from "./dataset_reader.js";
 import { StreamsSequenceStream } from "./decode_stream.js";
+import { PartialEvaluator } from "./evaluator.js";
+import { ObjectLoader } from "./object_loader.js";
+import { OperatorList } from "./operator_list.js";
+import { Linearization } from "./parser.js";
+import { Dict, isName, Name, Ref } from "./primitives.js";
+import { NullStream } from "./stream.js";
+import { StructTreePage } from "./struct_tree.js";
+import { XFAFactory } from "./xfa/factory.js";
+import { getXfaFontDict, getXfaFontName } from "./xfa_fonts.js";
+import { XRef } from "./xref.js";
 /*81---------------------------------------------------------------------------*/
 const DEFAULT_USER_UNIT = 1.0;
 const LETTER_SIZE_MEDIABOX = [0, 0, 612, 792];
@@ -467,17 +468,8 @@ export class PDFDocument {
     #globalIdFactory;
     get _globalIdFactory() { return this.#globalIdFactory; }
     #localIdFactory;
-    constructor(pdfManager, arg) {
-        let stream;
-        if (arg instanceof BaseStream) {
-            stream = arg;
-        }
-        else if (isArrayBuffer(arg)) {
-            stream = new Stream(arg);
-        }
-        else {
-            throw new Error("PDFDocument: Unknown argument type");
-        }
+    constructor(pdfManager, stream) {
+        assert(stream instanceof BaseStream, 'PDFDocument: Invalid "stream" argument.');
         if (stream.length <= 0) {
             throw new InvalidPDFException("The PDF file is empty, i.e. its size is zero bytes.");
         }
@@ -628,7 +620,7 @@ export class PDFDocument {
             return isSignature && isInvisible;
         });
     }
-    get xfaData() {
+    get _xfaStreams() {
         const acroForm = this.catalog.acroForm;
         if (!acroForm)
             return undefined;
@@ -644,18 +636,11 @@ export class PDFDocument {
             "/xdp:xdp": "",
         };
         if (xfa instanceof BaseStream && !xfa.isEmpty) {
-            try {
-                entries["xdp:xdp"] = stringToUTF8String(xfa.getString());
-                return entries;
-            }
-            catch (_) {
-                warn("XFA - Invalid utf-8 string.");
-                return undefined;
-            }
+            entries["xdp:xdp"] = xfa;
+            return entries;
         }
-        if (!Array.isArray(xfa) || xfa.length === 0) {
+        if (!Array.isArray(xfa) || xfa.length === 0)
             return undefined;
-        }
         for (let i = 0, ii = xfa.length; i < ii; i += 2) {
             let name;
             if (i === 0) {
@@ -672,15 +657,47 @@ export class PDFDocument {
             const data = this.xref.fetchIfRef(xfa[i + 1]);
             if (!(data instanceof BaseStream) || data.isEmpty)
                 continue;
+            entries[name] = data;
+        }
+        return entries;
+    }
+    get xfaDatasets() {
+        const streams = this._xfaStreams;
+        if (!streams)
+            return shadow(this, "xfaDatasets", undefined);
+        for (const key of ["datasets", "xdp:xdp"]) {
+            const stream = streams[key];
+            if (!stream)
+                continue;
             try {
-                entries[name] = stringToUTF8String(data.getString());
+                const str = stringToUTF8String(stream.getString());
+                const data = { [key]: str };
+                return shadow(this, "xfaDatasets", new DatasetReader(data));
             }
             catch (_) {
                 warn("XFA - Invalid utf-8 string.");
-                return undefined;
+                break;
             }
         }
-        return entries;
+        return shadow(this, "xfaDatasets", undefined);
+    }
+    get xfaData() {
+        const streams = this._xfaStreams;
+        if (!streams)
+            return null;
+        const data = Object.create(null);
+        for (const [key, stream] of Object.entries(streams)) {
+            if (!stream)
+                continue;
+            try {
+                data[key] = stringToUTF8String(stream.getString());
+            }
+            catch (_) {
+                warn("XFA - Invalid utf-8 string.");
+                return null;
+            }
+        }
+        return data;
     }
     get xfaFactory() {
         let data;
@@ -953,7 +970,7 @@ export class PDFDocument {
                             break;
                     }
                     if (customValue === undefined) {
-                        warn(`Bad value, for custom key "${key}", in Info: ${String(value)}.`);
+                        warn(`Bad value, for custom key "${key}", in Info: ${value}.`);
                         continue;
                     }
                     if (!docInfo.Custom) {
@@ -962,7 +979,7 @@ export class PDFDocument {
                     docInfo.Custom[key] = customValue;
                     continue;
             }
-            warn(`Bad value, for key "${key}", in Info: ${String(value)}.`);
+            warn(`Bad value, for key "${key}", in Info: ${value}.`);
         }
         return shadow(this, "documentInfo", docInfo);
     }
@@ -1219,9 +1236,8 @@ export class PDFDocument {
         ]);
         if (catalogJsActions)
             return true;
-        const fieldObjects_ = await fieldObjects;
-        if (fieldObjects_) {
-            return Object.values(fieldObjects_).some(fieldObject => fieldObject.some(object => object.actions !== undefined));
+        if (fieldObjects) {
+            return Object.values(fieldObjects).some(fieldObject => fieldObject.some(object => object.actions !== undefined));
         }
         return false;
     }

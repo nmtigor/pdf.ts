@@ -21,9 +21,7 @@
 import { getArrayLookupTableFactory } from "./core_utils.js";
 /*81---------------------------------------------------------------------------*/
 
-export const getGlyphsUnicode = getArrayLookupTableFactory(function () {
-  // prettier-ignore
-  return [
+export const getGlyphsUnicode = getArrayLookupTableFactory(() => [
     "A", 0x0041,
     "AE", 0x00c6,
     "AEacute", 0x01fc,
@@ -4348,12 +4346,9 @@ export const getGlyphsUnicode = getArrayLookupTableFactory(function () {
     "uniontext", 0x22c3,
     "vextenddouble", 0x2225,
     "vextendsingle", 0x2223,
-  ];
-});
+]);
 
-export const getDingbatsGlyphsUnicode = getArrayLookupTableFactory(function () {
-  // prettier-ignore
-  return [
+export const getDingbatsGlyphsUnicode = getArrayLookupTableFactory(() => [
     "space", 0x0020,
     "a1", 0x2701,
     "a2", 0x2702,
@@ -4557,6 +4552,5 @@ export const getDingbatsGlyphsUnicode = getArrayLookupTableFactory(function () {
     "a95", 0x2774, // 0xF8E3
     "a96", 0x2775, // 0xF8E4
     ".notdef", 0x0000,
-  ];
-});
+]);
 /*81---------------------------------------------------------------------------*/

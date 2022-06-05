@@ -71,9 +71,9 @@ export class PDFCursorTools {
         // Update the active tool *after* it has been validated above,
         // in order to prevent setting it to an invalid state.
         this.active = tool;
-        this._dispatchEvent();
+        this.#dispatchEvent();
     }
-    _dispatchEvent() {
+    #dispatchEvent() {
         this.eventBus.dispatch("cursortoolchanged", {
             source: this,
             tool: this.active,

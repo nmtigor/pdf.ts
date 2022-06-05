@@ -9,11 +9,11 @@ export declare abstract class BaseStream {
     dict: Dict | undefined;
     cacheKey?: string;
     abstract getByte(): number;
-    abstract getBytes(length?: number, forceClamped?: boolean): Uint8Array | Uint8ClampedArray;
+    abstract getBytes(length?: number): Uint8Array | Uint8ClampedArray;
     /** @final */
     peekByte(): number;
     /** @final */
-    peekBytes(length?: number, forceClamped?: boolean): Uint8Array | Uint8ClampedArray;
+    peekBytes(length?: number): Uint8Array | Uint8ClampedArray;
     /** @final */
     getUint16(): number;
     /** @final */

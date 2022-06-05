@@ -1,4 +1,4 @@
-import { Thread, type GetDocRequestData, MessageHandler } from "../shared/message_handler.js";
+import { MessageHandler, Thread, type GetDocRequestData } from "../shared/message_handler.js";
 import { Ref } from "./primitives.js";
 export interface IWorker {
     postMessage(message: any, transfer: Transferable[]): void;
@@ -30,7 +30,7 @@ export interface XRefInfo {
 }
 export declare const WorkerMessageHandler: {
     setup(handler: MessageHandler<Thread.worker>, port: IWorker): void;
-    createDocumentHandler(docParms: GetDocRequestData, port: IWorker): string;
+    createDocumentHandler(docParams: GetDocRequestData, port: IWorker): string;
     initializeFromPort(port: IWorker): void;
 };
 //# sourceMappingURL=worker.d.ts.map

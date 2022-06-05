@@ -196,7 +196,7 @@ export declare const enum CMapCompressionType {
     BINARY = 1,
     STREAM = 2
 }
-export declare const enum OPS {
+export declare enum OPS {
     dependency = 1,
     setLineWidth = 2,
     setLineCap = 3,
@@ -291,6 +291,7 @@ export declare const enum OPS {
     constructPath = 91,
     group = 92
 }
+export declare type OPSName = keyof typeof OPS;
 export declare const enum UNSUPPORTED_FEATURES {
     /** @deprecated unused */
     unknown = "unknown",
@@ -335,9 +336,8 @@ export declare function info(msg: string): void;
 export declare function warn(msg: string, meta?: {
     url: string;
 }): void;
-export declare function isSameOrigin(baseUrl: string, otherUrl: string): boolean;
-interface CreateValidAbsoluteUrlOptions {
-    addDefaultProtocol: boolean;
+interface _CreateValidAbsoluteUrlP {
+    addDefaultProtocol?: boolean;
     tryConvertEncoding: boolean;
 }
 /**
@@ -347,7 +347,7 @@ interface CreateValidAbsoluteUrlOptions {
  * @param baseUrl An absolute URL.
  * @return Either a valid {URL}, or `null` otherwise.
  */
-export declare function createValidAbsoluteUrl(url: URL | string, baseUrl?: URL | string, options?: CreateValidAbsoluteUrlOptions): URL | null;
+export declare function createValidAbsoluteUrl(url: URL | string, baseUrl?: URL | string | undefined, options?: _CreateValidAbsoluteUrlP): URL | null;
 export declare function shadow<T>(obj: any, prop: string | symbol, value: T): T;
 export declare abstract class BaseException extends Error {
     constructor(message: string | undefined, name: string);
@@ -396,12 +396,11 @@ export declare function arraysToBytes(arr: (any[] | Uint8Array | string | ArrayB
 export declare function string32(value: number): string;
 export declare function objectSize(obj: {}): number;
 export declare function objectFromMap<K extends string | number, V>(map: Iterable<readonly [K, V]>): Record<K, V>;
-export declare const IsLittleEndianCached: {
-    readonly value: boolean;
-};
-export declare const IsEvalSupportedCached: {
-    readonly value: boolean;
-};
+export declare class FeatureTest {
+    static get isLittleEndian(): boolean;
+    static get isEvalSupported(): boolean;
+    static get isOffscreenCanvasSupported(): boolean;
+}
 export declare type point_t = [number, number];
 export declare type point3d_t = [number, number, number];
 export declare type rect_t = TupleOf<number, 4>;
@@ -409,6 +408,7 @@ export declare type matrix_t = TupleOf<number, 6>;
 export declare type matrix3d_t = TupleOf<number, 9>;
 export declare class Util {
     static makeHexColor(r: number, g: number, b: number): string;
+    static scaleMinMax(transform: matrix_t, minMax: rect_t): void;
     static transform(m1: matrix_t, m2: matrix_t): matrix_t;
     static applyTransform(p: point_t | rect_t, m: matrix_t): point_t;
     static applyInverseTransform(p: point_t, m: matrix_t): point_t;
@@ -418,7 +418,7 @@ export declare class Util {
     static singularValueDecompose2dScale(m: matrix_t): number[];
     static normalizeRect(rect: rect_t): [number, number, number, number];
     static intersect(rect1: rect_t, rect2: rect_t): rect_t | undefined;
-    static bezierBoundingBox(x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, x3: number, y3: number): number[];
+    static bezierBoundingBox(x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, x3: number, y3: number): rect_t;
 }
 export declare function stringToPDFString(str: string): string;
 export declare function escapeString(str: string): string;

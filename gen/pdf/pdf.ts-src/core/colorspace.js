@@ -2,9 +2,10 @@
  * nmtigor (https://github.com/nmtigor) @2022
  */
 import { assert } from "../../../lib/util/trace.js";
-import { FormatError, info, shadow, warn, } from "../shared/util.js";
-import { Dict, Name, Ref } from "./primitives.js";
+import { FormatError, info, shadow, warn } from "../shared/util.js";
+import { BaseStream } from "./base_stream.js";
 import { MissingDataException } from "./core_utils.js";
+import { Dict, Name, Ref } from "./primitives.js";
 /*81---------------------------------------------------------------------------*/
 /**
  * Resizes an RGB image with 3 components.
@@ -1228,6 +1229,5 @@ var NsLabCS;
     NsLabCS.LabCS = LabCS;
 })(NsLabCS || (NsLabCS = {}));
 var LabCS = NsLabCS.LabCS;
-import { BaseStream } from "./base_stream.js";
 /*81---------------------------------------------------------------------------*/
 //# sourceMappingURL=colorspace.js.map

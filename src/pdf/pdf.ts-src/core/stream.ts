@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-import { BaseStream } from "./base_stream.js";
 import { stringToBytes } from "../shared/util.js";
+import { BaseStream } from "./base_stream.js";
 import { Dict } from "./primitives.js";
 /*81---------------------------------------------------------------------------*/
 
@@ -61,7 +61,7 @@ export class Stream extends BaseStream
   }
 
   /** @implements */
-  getBytes( length?:number, forceClamped=false ) 
+  getBytes( length?:number ) 
   {
     const bytes = this.bytes;
     const pos = this.pos;
@@ -69,18 +69,15 @@ export class Stream extends BaseStream
 
     if( !length )
     {
-      const subarray = bytes.subarray(pos, strEnd);
-      // `this.bytes` is always a `Uint8Array` here.
-      return forceClamped ? new Uint8ClampedArray(subarray) : subarray;
+      return bytes.subarray( pos, strEnd );
     }
     let end = pos + length;
-    if (end > strEnd) {
+    if( end > strEnd )
+    {
       end = strEnd;
     }
     this.pos = end;
-    const subarray = bytes.subarray(pos, end);
-    // `this.bytes` is always a `Uint8Array` here.
-    return forceClamped ? new Uint8ClampedArray(subarray) : subarray;
+    return bytes.subarray( pos, end );
   }
 
   /** @implements */

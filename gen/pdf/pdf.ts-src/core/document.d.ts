@@ -1,25 +1,26 @@
-import { RenderingIntentFlag } from "../shared/util.js";
-import { Dict, Name, Ref, RefSet, RefSetCache } from "./primitives.js";
-import { type XFAFontMetrics } from "./xfa_fonts.js";
-import { Stream } from "./stream.js";
-import { Annotation, type AnnotationData, type FieldObject, type SaveReturn } from "./annotation.js";
-import { Linearization } from "./parser.js";
-import { TranslatedFont } from "./evaluator.js";
-import { BasePdfManager } from "./pdf_manager.js";
-import { Thread, MessageHandler, type StreamSink } from "../shared/message_handler.js";
-import { WorkerTask } from "./worker.js";
-import { GlobalImageCache } from "./image_utils.js";
 import { type AnnotStorageRecord } from "../display/annotation_layer.js";
 import { type CMapData } from "../display/base_factory.js";
-import { Catalog } from "./catalog.js";
-import { XRef } from "./xref.js";
-import { StructTreePage, StructTreeRoot } from "./struct_tree.js";
+import { MessageHandler, Thread, type StreamSink } from "../shared/message_handler.js";
+import { RenderingIntentFlag } from "../shared/util.js";
+import { Annotation, type AnnotationData, type FieldObject, type SaveReturn } from "./annotation.js";
 import { BaseStream } from "./base_stream.js";
+import { Catalog } from "./catalog.js";
+import { DatasetReader } from "./dataset_reader.js";
+import { TranslatedFont } from "./evaluator.js";
+import { GlobalImageCache } from "./image_utils.js";
+import { Linearization } from "./parser.js";
+import { BasePdfManager } from "./pdf_manager.js";
+import { Dict, Name, Ref, RefSet, RefSetCache } from "./primitives.js";
+import { Stream } from "./stream.js";
+import { StructTreePage, StructTreeRoot } from "./struct_tree.js";
+import { WorkerTask } from "./worker.js";
 import { XFAFactory } from "./xfa/factory.js";
+import { type XFAFontMetrics } from "./xfa_fonts.js";
+import { XRef } from "./xref.js";
 export interface LocalIdFactory extends GlobalIdFactory {
     createObjId(): string;
 }
-interface PageCtorParms {
+interface _PageCtorP {
     pdfManager: BasePdfManager;
     xref: XRef;
     pageIndex: number;
@@ -33,7 +34,7 @@ interface PageCtorParms {
     nonBlendModesSet: RefSet;
     xfaFactory?: XFAFactory | undefined;
 }
-interface PageGetOperatorListParms {
+interface _PageGetOperatorListP {
     handler: MessageHandler<Thread.worker>;
     sink: StreamSink<Thread.main, "GetOperatorList">;
     task: WorkerTask;
@@ -41,7 +42,7 @@ interface PageGetOperatorListParms {
     cacheKey: string;
     annotationStorage: AnnotStorageRecord | undefined;
 }
-interface ExtractTextContentParms {
+interface _ExtractTextContentP {
     handler: MessageHandler<Thread.worker>;
     task: WorkerTask;
     sink: StreamSink<Thread.main, "GetTextContent">;
@@ -64,8 +65,8 @@ export declare class Page {
     xfaFactory: XFAFactory | undefined;
     get _localIdFactory(): LocalIdFactory;
     resourcesPromise?: Promise<Dict>;
-    constructor({ pdfManager, xref, pageIndex, pageDict, ref, globalIdFactory, fontCache, builtInCMapCache, standardFontDataCache, globalImageCache, nonBlendModesSet, xfaFactory, }: PageCtorParms);
-    get content(): Stream | (Stream | Ref)[] | undefined;
+    constructor({ pdfManager, xref, pageIndex, pageDict, ref, globalIdFactory, fontCache, builtInCMapCache, standardFontDataCache, globalImageCache, nonBlendModesSet, xfaFactory, }: _PageCtorP);
+    get content(): Stream | (Ref | Stream)[] | undefined;
     /**
      * Table 33
      */
@@ -82,10 +83,10 @@ export declare class Page {
     } | null;
     save(handler: MessageHandler<Thread.worker>, task: WorkerTask, annotationStorage?: AnnotStorageRecord): Promise<(SaveReturn | null)[]>;
     loadResources(keys: string[]): Promise<import("./chunked_stream.js").ChunkedStream | undefined>;
-    getOperatorList({ handler, sink, task, intent, cacheKey, annotationStorage, }: PageGetOperatorListParms): Promise<{
+    getOperatorList({ handler, sink, task, intent, cacheKey, annotationStorage, }: _PageGetOperatorListP): Promise<{
         length: number;
     }>;
-    extractTextContent({ handler, task, includeMarkedContent, sink, combineTextItems, }: ExtractTextContentParms): Promise<void>;
+    extractTextContent({ handler, task, includeMarkedContent, sink, combineTextItems, }: _ExtractTextContentP): Promise<void>;
     getStructTree(): Promise<import("./struct_tree.js").StructTree | undefined>;
     /**
      * @private
@@ -128,21 +129,23 @@ interface FormInfo {
     hasXfa: boolean;
     hasSignatures: boolean;
 }
-export interface XFAData {
+interface _XFAStreams {
+    "xdp:xdp": string | BaseStream;
+    template: string | BaseStream;
+    datasets: string | BaseStream;
+    config: string | BaseStream;
+    connectionSet: string | BaseStream;
+    localeSet: string | BaseStream;
+    stylesheet: string | BaseStream;
+    "/xdp:xdp": string | BaseStream;
+}
+export declare type XFAData = _XFAStreams & {
     name: string;
     value: string;
     attributes?: string;
-    "xdp:xdp": string;
-    template: string;
-    datasets: string;
-    config: string;
-    connectionSet: string;
-    localeSet: string;
-    stylesheet: string;
-    "/xdp:xdp": string;
     children: (XFAData | null)[];
     [key: string]: unknown;
-}
+};
 export interface CssFontInfo {
     fontFamily: string;
     metrics?: XFAFontMetrics | undefined;
@@ -159,7 +162,7 @@ export declare class PDFDocument {
     xref: XRef;
     catalog?: Catalog;
     get _globalIdFactory(): GlobalIdFactory;
-    constructor(pdfManager: BasePdfManager, arg: Stream | ArrayBufferLike);
+    constructor(pdfManager: BasePdfManager, stream: Stream);
     parse(recoveryMode: boolean): void;
     get linearization(): Linearization | null;
     get startXRef(): number;
@@ -170,7 +173,9 @@ export declare class PDFDocument {
     checkHeader(): void;
     parseStartXRef(): void;
     get numPages(): number | Promise<number>;
-    get xfaData(): XFAData | undefined;
+    get _xfaStreams(): _XFAStreams | undefined;
+    get xfaDatasets(): DatasetReader | undefined;
+    get xfaData(): any;
     get xfaFactory(): XFAFactory | undefined;
     get isPureXfa(): boolean;
     get htmlForXfa(): Promise<import("./xfa/factory.js").XFAPages> | undefined;

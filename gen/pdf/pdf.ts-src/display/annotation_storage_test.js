@@ -1,8 +1,8 @@
 /*81*****************************************************************************
  * annotation_storage_test
 ** ----------------------- */
-import { css_1, css_2 } from "../../../test/alias.js";
 import "../../../lib/jslang.js";
+import { css_1, css_2 } from "../../../test/alias.js";
 import { AnnotationStorage } from "./annotation_storage.js";
 const strttime = performance.now();
 /*81---------------------------------------------------------------------------*/

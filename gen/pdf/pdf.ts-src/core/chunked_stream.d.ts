@@ -1,8 +1,8 @@
-import { Thread, MessageHandler } from "../shared/message_handler.js";
+import { MessageHandler, Thread } from "../shared/message_handler.js";
 import { AbortException } from "../shared/util.js";
 import { Dict } from "./primitives.js";
-import { PDFWorkerStream } from "./worker_stream.js";
 import { Stream } from "./stream.js";
+import { PDFWorkerStream } from "./worker_stream.js";
 interface ChunkedStreamSubstream extends ChunkedStream {
 }
 export declare class ChunkedStream extends Stream {
@@ -23,7 +23,7 @@ export declare class ChunkedStream extends Stream {
     ensureRange(begin: number, end: number): void;
     nextEmptyChunk(beginChunk: number): number | null;
     getByte(): number;
-    getBytes(length?: number, forceClamped?: boolean): Uint8Array | Uint8ClampedArray;
+    getBytes(length?: number): Uint8Array;
     getByteRange(begin: number, end: number): Uint8Array;
     makeSubStream(start: number, length?: number, dict?: Dict): ChunkedStreamSubstream;
     getBaseStreams(): this[];

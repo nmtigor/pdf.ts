@@ -1,5 +1,5 @@
 import type { OpListIR } from "../core/operator_list.js";
-import { type RadialAxialIR, type ShadingPatternIR, ShadingType, type TilingPatternIR } from "../core/pattern.js";
+import { ShadingType, type RadialAxialIR, type ShadingPatternIR, type TilingPatternIR } from "../core/pattern.js";
 import { type matrix_t } from "../shared/util.js";
 import { CanvasGraphics } from "./canvas.js";
 export declare const enum PathType {
@@ -27,7 +27,7 @@ export declare class RadialAxialShadingPattern implements RadialAxialPattern {
     constructor(IR: RadialAxialIR);
     _createGradient(ctx: CanvasRenderingContext2D): CanvasGradient | null;
     /** @implements */
-    getPattern(ctx: CanvasRenderingContext2D, owner: CanvasGraphics, inverse: matrix_t, pathType: PathType): CanvasGradient | CanvasPattern | null;
+    getPattern(ctx: CanvasRenderingContext2D, owner: CanvasGraphics, inverse: matrix_t, pathType: PathType): CanvasPattern | CanvasGradient | null;
 }
 export interface MeshCanvasContext {
     coords: Float32Array;

@@ -1,27 +1,31 @@
-import { PresentationModeState, RendererType, ScrollMode, SpreadMode, TextLayerMode, type VisibleElements } from "./ui_utils.js";
+import { type FieldObject } from "../pdf.ts-src/core/annotation.js";
+import { type ExplicitDest } from "../pdf.ts-src/core/catalog.js";
+import { AnnotationStorage } from "../pdf.ts-src/display/annotation_storage.js";
+import { PDFDocumentProxy, PDFPageProxy } from "../pdf.ts-src/display/api.js";
+import { PageViewport } from "../pdf.ts-src/display/display_utils.js";
+import { OptionalContentConfig } from "../pdf.ts-src/display/optional_content_config.js";
+import { AnnotationMode } from "../pdf.ts-src/shared/util.js";
 import { AnnotationLayerBuilder } from "./annotation_layer_builder.js";
-import { PDFPageView } from "./pdf_page_view.js";
-import { TextLayerBuilder } from "./text_layer_builder.js";
+import { EventBus, EventMap } from "./event_utils.js";
 import { IDownloadManager, type IL10n, type IPDFAnnotationLayerFactory, type IPDFLinkService, type IPDFStructTreeLayerFactory, type IPDFTextLayerFactory, type IPDFXfaLayerFactory, type MouseState } from "./interfaces.js";
 import { PDFFindController } from "./pdf_find_controller.js";
-import { AnnotationMode } from "../pdf.ts-src/shared/util.js";
-import { PDFDocumentProxy, PDFPageProxy } from "../pdf.ts-src/display/api.js";
-import { OptionalContentConfig } from "../pdf.ts-src/display/optional_content_config.js";
-import { PageViewport } from "../pdf.ts-src/display/display_utils.js";
-import { AnnotationStorage } from "../pdf.ts-src/display/annotation_storage.js";
-import { XfaLayerBuilder } from "./xfa_layer_builder.js";
+import { PDFPageView } from "./pdf_page_view.js";
+import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
 import { PDFScriptingManager } from "./pdf_scripting_manager.js";
-import { type ExplicitDest } from "../pdf.ts-src/core/catalog.js";
 import { StructTreeLayerBuilder } from "./struct_tree_layer_builder.js";
 import { TextHighlighter } from "./text_highlighter.js";
-import { type FieldObject } from "../pdf.ts-src/core/annotation.js";
-import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
-import { EventBus, EventMap } from "./event_utils.js";
+import { TextLayerBuilder } from "./text_layer_builder.js";
+import { PresentationModeState, RendererType, ScrollMode, SpreadMode, TextLayerMode, type VisibleElements } from "./ui_utils.js";
+import { XfaLayerBuilder } from "./xfa_layer_builder.js";
 export declare const enum PagesCountLimit {
     FORCE_SCROLL_MODE_PAGE = 15000,
     FORCE_LAZY_PAGE_INIT = 7500,
     PAUSE_EAGER_PAGE_INIT = 250
 }
+export declare type PageColors = {
+    background: string;
+    foreground: string;
+};
 export interface PDFViewerOptions {
     /**
      * The container for the viewer element.
@@ -107,6 +111,12 @@ export interface PDFViewerOptions {
      * when they exist. The default value is `false`.
      */
     enablePermissions?: boolean;
+    /**
+     * Overwrites background and foreground colors
+     * with user defined ones in order to improve readability in high contrast
+     * mode.
+     */
+    pageColors?: PageColors;
 }
 export declare class PDFPageViewBuffer {
     #private;
@@ -123,7 +133,7 @@ export declare class PDFPageViewBuffer {
      */
     resize(newSize: number, idsToKeep?: Set<number>): void;
 }
-interface ScrollPageIntoViewParms {
+interface _ScrollPageIntoViewP {
     /**
      * The page number.
      */
@@ -152,14 +162,6 @@ export interface PDFLocation {
     rotation: number;
     pdfOpenParams: string;
 }
-export interface ScrollIntoViewParms {
-    pageDiv: HTMLDivElement;
-    pageSpot?: {
-        top?: number;
-        left?: number;
-    } | undefined;
-    pageNumber?: number | undefined;
-}
 export interface PageOverview {
     width: number;
     height: number;
@@ -187,6 +189,7 @@ export declare abstract class BaseViewer implements IPDFAnnotationLayerFactory, 
     useOnlyCssZoom: boolean;
     maxCanvasPixels: number | undefined;
     l10n: IL10n;
+    pageColors: PageColors | undefined;
     _mouseState?: MouseState;
     defaultRenderingQueue: boolean;
     renderingQueue?: PDFRenderingQueue | undefined;
@@ -266,7 +269,6 @@ export declare abstract class BaseViewer implements IPDFAnnotationLayerFactory, 
     setPageLabels(labels: string[] | null): void;
     protected _resetView(): void;
     _scrollUpdate(): void;
-    protected _scrollIntoView({ pageDiv, pageSpot }: ScrollIntoViewParms, pageNumber?: number): void;
     protected get _pageWidthScaleFactor(): 1 | 2;
     _setScale(value: string | number, noScroll?: boolean): void;
     /**
@@ -277,7 +279,7 @@ export declare abstract class BaseViewer implements IPDFAnnotationLayerFactory, 
     /**
      * Scrolls page into view.
      */
-    scrollPageIntoView({ pageNumber, destArray, allowNegativeOffset, ignoreDestinationZoom, }: ScrollPageIntoViewParms): void;
+    scrollPageIntoView({ pageNumber, destArray, allowNegativeOffset, ignoreDestinationZoom, }: _ScrollPageIntoViewP): void;
     /** @final */
     update(): void;
     containsElement(element: Node | null): boolean;
@@ -287,12 +289,6 @@ export declare abstract class BaseViewer implements IPDFAnnotationLayerFactory, 
     get isChangingPresentationMode(): boolean;
     get isHorizontalScrollbarEnabled(): boolean;
     get isVerticalScrollbarEnabled(): boolean;
-    /**
-     * Helper method for `this.getVisiblePages$`. Should only ever be used when
-     * the viewer can only display a single page at a time, for example:
-     *  - When PresentationMode is active.
-     */
-    protected getCurrentVisiblePage$(): VisibleElements;
     /** @final */
     protected getVisiblePages$(): VisibleElements;
     isPageVisible(pageNumber: number): boolean;
@@ -379,6 +375,7 @@ export declare abstract class BaseViewer implements IPDFAnnotationLayerFactory, 
      * @param steps Defaults to zooming once.
      */
     decreaseScale(steps?: number): void;
+    updateContainerHeightCss(): void;
 }
 export {};
 //# sourceMappingURL=base_viewer.d.ts.map

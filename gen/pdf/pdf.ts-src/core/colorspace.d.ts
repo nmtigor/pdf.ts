@@ -1,6 +1,7 @@
+import { BaseStream } from "./base_stream.js";
+import { PDFFunctionFactory } from "./function.js";
 import { LocalColorSpaceCache } from "./image_utils.js";
 import { Dict, Name, Ref } from "./primitives.js";
-import { PDFFunctionFactory } from "./function.js";
 import { XRef } from "./xref.js";
 export declare type CS = Ref | Name | Dict | number | [
     Ref | Name,
@@ -8,7 +9,7 @@ export declare type CS = Ref | Name | Dict | number | [
     (undefined | Ref | Name | Dict | number)?,
     (undefined | Ref | BaseStream | string)?
 ];
-interface ParseParms {
+interface _ParseP {
     cs: CS;
     xref: XRef;
     resources: Dict | undefined;
@@ -76,8 +77,8 @@ export declare abstract class ColorSpace {
     get usesZeroToOneRange(): boolean;
     private static _cache;
     static getCached(cacheKey: unknown, xref: XRef, localColorSpaceCache: LocalColorSpaceCache): ColorSpace | undefined;
-    static parseAsync({ cs, xref, resources, pdfFunctionFactory, localColorSpaceCache, }: ParseParms): Promise<ColorSpace>;
-    static parse({ cs, xref, resources, pdfFunctionFactory, localColorSpaceCache, }: ParseParms): ColorSpace;
+    static parseAsync({ cs, xref, resources, pdfFunctionFactory, localColorSpaceCache, }: _ParseP): Promise<ColorSpace>;
+    static parse({ cs, xref, resources, pdfFunctionFactory, localColorSpaceCache, }: _ParseP): ColorSpace;
     private static _parse;
     /**
      * Checks if a decode map matches the default decode map for a color space.
@@ -132,6 +133,5 @@ declare namespace NsDeviceCmykCS {
     }
 }
 import DeviceCmykCS = NsDeviceCmykCS.DeviceCmykCS;
-import { BaseStream } from "./base_stream.js";
 export {};
 //# sourceMappingURL=colorspace.d.ts.map

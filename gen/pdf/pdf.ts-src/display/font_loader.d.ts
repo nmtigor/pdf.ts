@@ -1,8 +1,8 @@
-import { UNSUPPORTED_FEATURES } from "../shared/util.js";
 import { FontExpotDataEx } from "../core/fonts.js";
 import { type CmdArgs } from "../core/font_renderer.js";
+import { UNSUPPORTED_FEATURES } from "../shared/util.js";
 import { PDFObjects } from "./api.js";
-interface BaseFontLoaderCtorParms {
+interface _BaseFontLoaderCtorP {
     docId: string;
     onUnsupportedFeature: (_: {
         featureId: UNSUPPORTED_FEATURES;
@@ -24,7 +24,7 @@ declare abstract class BaseFontLoader {
     _document: Document;
     nativeFontFaces: FontFace[];
     styleElement: HTMLStyleElement | undefined;
-    constructor({ docId, onUnsupportedFeature, ownerDocument, styleElement, }: BaseFontLoaderCtorParms);
+    constructor({ docId, onUnsupportedFeature, ownerDocument, styleElement, }: _BaseFontLoaderCtorP);
     addNativeFontFace(nativeFontFace: FontFace): void;
     insertRule(rule: string): void;
     clear(): void;
@@ -47,7 +47,7 @@ export declare class FontLoader extends BaseFontLoader {
     get _loadTestFont(): string;
     protected prepareFontLoadEvent$(rules: string[], fonts: FontFaceObject[], request: Request): void;
 }
-interface FFOCtorParms {
+interface _FFOCtorP {
     isEvalSupported: boolean | undefined;
     disableFontFace: boolean | undefined;
     ignoreErrors: boolean | undefined;
@@ -71,7 +71,7 @@ export declare class FontFaceObject extends FontExpotDataEx {
         registerFont(font: FontFaceObject, url?: string | undefined): void;
     } | undefined;
     attached?: boolean;
-    constructor(translatedData: FontExpotDataEx, { isEvalSupported, disableFontFace, ignoreErrors, onUnsupportedFeature, fontRegistry, }: FFOCtorParms);
+    constructor(translatedData: FontExpotDataEx, { isEvalSupported, disableFontFace, ignoreErrors, onUnsupportedFeature, fontRegistry, }: _FFOCtorP);
     createNativeFontFace(): FontFace | null;
     createFontFaceRule(): string | null;
     getPathGenerator(objs: PDFObjects<CmdArgs[] | FontFaceObject>, character: string): AddToPath;

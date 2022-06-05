@@ -20,6 +20,10 @@
 
 import { createPromiseCap } from "../../../lib/promisecap.js";
 import { assert } from "../../../lib/util/trace.js";
+import { type CMapData } from "../display/base_factory.js";
+import { type GroupOptions } from "../display/canvas.js";
+import { MessageHandler, Thread, type MActionMap, type StreamSink } from "../shared/message_handler.js";
+import { MurmurHash3_64 } from "../shared/murmurhash3.js";
 import {
   AbortException,
   CMapCompressionType,
@@ -27,91 +31,78 @@ import {
   FormatError,
   IDENTITY_MATRIX,
   ImageKind,
-  info,
-  type matrix_t,
-  OPS,
-  type rect_t,
-  shadow,
+  info, OPS, shadow,
   stringToPDFString,
   TextRenderingMode,
   UNSUPPORTED_FEATURES,
   Util,
-  warn,
+  warn, type matrix_t, type rect_t
 } from "../shared/util.js";
+import { BaseStream } from "./base_stream.js";
+import { bidi } from "./bidi.js";
 import { CMap, CMapFactory, IdentityCMap } from "./cmap.js";
-import {
-  Cmd,
-  Dict,
-  EOF,
-  FontDict,
-  isName,
-  Name,
-  type ObjNoCmd,
-  type Obj,
-  Ref,
-  RefSet,
-  RefSetCache,
-} from "./primitives.js";
-import {
-  ErrorFont,
-  Font,
-  Glyph,
-  type Seac,
-} from "./fonts.js";
+import { ColorSpace } from "./colorspace.js";
+import { getLookupTableFactory, MissingDataException } from "./core_utils.js";
+import { DecodeStream, ImageStream } from "./decode_stream.js";
+import { type CssFontInfo, type GlobalIdFactory } from "./document.js";
 import {
   getEncoding,
   MacRomanEncoding,
   StandardEncoding,
   SymbolSetEncoding,
   WinAnsiEncoding,
-  ZapfDingbatsEncoding,
+  ZapfDingbatsEncoding
 } from "./encodings.js";
 import {
-  getNormalizedUnicodes,
-  getUnicodeForGlyph,
-  reverseIfRtl,
-} from "./unicode.js";
+  ErrorFont,
+  Font,
+  Glyph,
+  type Seac
+} from "./fonts.js";
+import { FontFlags, getFontType } from "./fonts_utils.js";
+import { isPDFFunction, PDFFunctionFactory } from "./function.js";
+import { getGlyphsUnicode } from "./glyphlist.js";
+import { PDFImage } from "./image.js";
+import {
+  GlobalImageCache, LocalColorSpaceCache,
+  LocalGStateCache,
+  LocalImageCache,
+  LocalTilingPatternCache, type LGS_CData,
+  type LI_CData
+} from "./image_utils.js";
+import { getMetrics } from "./metrics.js";
+import { OperatorList } from "./operator_list.js";
+import { Lexer, Parser } from "./parser.js";
+import { getTilingPatternIR, Pattern, type ShadingPatternIR } from "./pattern.js";
+import { type EvaluatorOptions } from "./pdf_manager.js";
+import {
+  Cmd,
+  Dict,
+  EOF,
+  FontDict,
+  isName,
+  Name, Ref,
+  RefSet,
+  RefSetCache, type Obj, type ObjNoCmd
+} from "./primitives.js";
 import {
   getFontNameToFileMap,
   getSerifFonts,
   getStandardFontName,
   getStdFontMap,
-  getSymbolsFonts,
+  getSymbolsFonts
 } from "./standard_fonts.js";
-import { getTilingPatternIR, Pattern, type ShadingPatternIR } from "./pattern.js";
-import { isPDFFunction, PDFFunctionFactory } from "./function.js";
-import { Lexer, Parser } from "./parser.js";
-import {
-  GlobalImageCache,
-  type LGS_CData,
-  type LI_CData,
-  LocalColorSpaceCache,
-  LocalGStateCache,
-  LocalImageCache,
-  LocalTilingPatternCache,
-} from "./image_utils.js";
-import { bidi } from "./bidi.js";
-import { ColorSpace } from "./colorspace.js";
 import { NullStream, Stream } from "./stream.js";
-import { getGlyphsUnicode } from "./glyphlist.js";
-import { getMetrics } from "./metrics.js";
-import { MurmurHash3_64 } from "./murmurhash3.js";
-import { OperatorList } from "./operator_list.js";
-import { PDFImage } from "./image.js";
-import { Thread, MessageHandler, type StreamSink, type MActionMap } from "../shared/message_handler.js";
-import { type CssFontInfo, type GlobalIdFactory } from "./document.js";
-import { type EvaluatorOptions } from "./pdf_manager.js";
-import { WorkerTask } from "./worker.js";
-import { type PrivateData } from "./type1_parser.js";
-import { XRef } from "./xref.js";
-import { getLookupTableFactory, MissingDataException } from "./core_utils.js";
-import { type GroupOptions } from "../display/canvas.js";
-import { BaseStream } from "./base_stream.js";
-import { DecodeStream, ImageStream } from "./decode_stream.js";
-import { FontFlags, getFontType } from "./fonts_utils.js";
 import { IdentityToUnicodeMap, ToUnicodeMap } from "./to_unicode_map.js";
-import { type CMapData } from "../display/base_factory.js";
+import { type PrivateData } from "./type1_parser.js";
+import {
+  getNormalizedUnicodes,
+  getUnicodeForGlyph,
+  reverseIfRtl
+} from "./unicode.js";
+import { WorkerTask } from "./worker.js";
 import { getXfaFontDict, getXfaFontName } from "./xfa_fonts.js";
+import { XRef } from "./xref.js";
 /*81---------------------------------------------------------------------------*/
 
 const DefaultPartialEvaluatorOptions = Object.freeze({
@@ -192,6 +183,16 @@ function normalizeBlendMode( value:BMValue, parsingArray=false ):string | undefi
   return "source-over";
 }
 
+function incrementCachedImageMaskCount( data:LI_CData )
+{
+  if( data.fn === OPS.paintImageMaskXObject
+   && data.args[0]
+   && data.args[0].count! > 0
+  ) {
+    data.args[0].count!++;
+  }
+}
+
 /**
  * Trying to minimize Date.now() usage and check every 100 time.
  */
@@ -230,7 +231,7 @@ class TimeSlotManager
   }
 }
 
-interface PartialEvaluatorCtorParms
+interface _PartialEvaluatorCtorP
 {
   xref:XRef;
   handler:MessageHandler<Thread.worker>;
@@ -245,16 +246,23 @@ interface PartialEvaluatorCtorParms
 
 export interface ImgData
 {
-  width:number;
-  height:number;
-  interpolate?:boolean;
-  data?:Uint8Array | Uint8ClampedArray | undefined;
+  width?:number | undefined;
+  height?:number | undefined;
+
+  interpolate?:boolean | undefined;
+
+  bitmap?:ImageBitmap;
+  data?:string | Uint8Array | Uint8ClampedArray | undefined;
+  count?:number | undefined;
+
   cached?:boolean;
   kind?:ImageKind;
   transform?:matrix_t;
+
+  isSingleOpaquePixel?:boolean;
 }
 
-interface BuildPaintImageXObjectParms
+interface _BuildPaintImageXObjectP
 {
   resources:Dict;
   image:BaseStream;
@@ -265,7 +273,7 @@ interface BuildPaintImageXObjectParms
   localColorSpaceCache:LocalColorSpaceCache;
 }
 
-interface GetOperatorListParms
+interface _GetOperatorListP
 {
   stream:BaseStream;
   task:WorkerTask;
@@ -275,7 +283,7 @@ interface GetOperatorListParms
   fallbackFontDict?:Dict | undefined;
 }
 
-interface SetGStateParms
+interface _SetGStateP
 {
   resources:Dict;
   gState:Dict;
@@ -287,7 +295,7 @@ interface SetGStateParms
   localColorSpaceCache:LocalColorSpaceCache;
 }
 
-interface GetTextContentParms
+interface _GetTextContentP
 {
   stream:BaseStream;
   task:WorkerTask;
@@ -396,7 +404,7 @@ interface PreEvaluatedFont
   cssFontInfo?:CssFontInfo | undefined
 }
 
-interface TextContentItem
+interface _TextContentItem
 {
   initialized:boolean;
   str:string[];
@@ -416,6 +424,7 @@ interface TextContentItem
   fakeMultiSpaceMax?:number;
   trackingSpaceMin:number;
   negativeSpaceMax:number;
+  notASpace:number;
   transform?:matrix_t;
   fontName?:string;
   hasEOL:boolean;
@@ -448,7 +457,7 @@ export interface FontStyle
   vertical:boolean | undefined;
 }
 
-interface ParseColorSpaceParms
+interface _ParseColorSpaceP
 {
   cs:Name | Ref;
   resources:Dict;
@@ -485,7 +494,7 @@ export interface SmaskOptions
   transferMap?:Uint8Array;
 }
 
-interface ParseShadingParms
+interface _ParseShadingP
 {
   shading:Dict | BaseStream;
   resources:Dict;
@@ -493,7 +502,7 @@ interface ParseShadingParms
   localShadingPatternCache:Map<Dict | BaseStream, string>;
 }
 
-interface BuildTextContentItemParms
+interface _BuildTextContentItemP
 {
   chars:string;
   extraSpacing:number;
@@ -524,7 +533,7 @@ export class PartialEvaluator
     standardFontDataCache,
     globalImageCache,
     options,
-  }:PartialEvaluatorCtorParms ) 
+  }:_PartialEvaluatorCtorP ) 
   {
     this.xref = xref;
     this.handler = handler;
@@ -598,8 +607,8 @@ export class PartialEvaluator
               continue;
             }
           }
-          if (!(graphicState instanceof Dict)) continue;
-
+          if (!(graphicState instanceof Dict))
+            continue;
           if (graphicState.objId) 
           {
             processed.put(graphicState.objId);
@@ -626,8 +635,8 @@ export class PartialEvaluator
       }
       // Descend into the XObjects to look for more resources and blend modes.
       const xObjects = node.get("XObject");
-      if (!(xObjects instanceof Dict)) continue;
-
+      if (!(xObjects instanceof Dict))
+        continue;
       for (let xObject of xObjects.getRawValues()) 
       {
         if( xObject instanceof Ref )
@@ -643,9 +652,7 @@ export class PartialEvaluator
             xObject = xref.fetch(xObject);
           } catch (ex) {
             if (ex instanceof MissingDataException) 
-            {
               throw ex;
-            }
             // Avoid parsing a corrupt XObject more than once.
             processed.put( <Ref>xObject );
 
@@ -653,17 +660,18 @@ export class PartialEvaluator
             continue;
           }
         }
-        if( !(xObject instanceof BaseStream) ) continue;
-
+        if( !(xObject instanceof BaseStream) )
+          continue;
         if( xObject.dict!.objId )
         {
           processed.put( xObject.dict!.objId! );
         }
         const xResources = xObject.dict!.get("Resources");
-        if( !(xResources instanceof Dict) ) continue;
-
+        if( !(xResources instanceof Dict) )
+          continue;
         // Checking objId to detect an infinite loop.
-        if (xResources.objId && processed.has(xResources.objId)) continue;
+        if (xResources.objId && processed.has(xResources.objId))
+          continue;
 
         nodes.push(xResources);
         if (xResources.objId) 
@@ -676,9 +684,10 @@ export class PartialEvaluator
     // When no blend modes exist, there's no need re-fetch/re-parse any of the
     // processed `Ref`s again for subsequent pages. This helps reduce redundant
     // `XRef.fetch` calls for some documents (e.g. issue6961.pdf).
-    processed.forEach( ref => {
+    for( const ref of processed )
+    {
       nonBlendModesSet.put(ref);
-    });
+    }
     return false;
   }
 
@@ -713,7 +722,7 @@ export class PartialEvaluator
     if( data.compressionType !== CMapCompressionType.NONE )
     {
       // Given the size of uncompressed CMaps, only cache compressed ones.
-      this.builtInCMapCache.set(name, data);
+      this.builtInCMapCache.set( name, data );
     }
     return data;
   }
@@ -764,7 +773,7 @@ export class PartialEvaluator
     }
 
     if( !data ) return undefined;
-    // Cache the "raw" standard font data, to avoid fetching it repeateadly
+    // Cache the "raw" standard font data, to avoid fetching it repeatedly
     // (see e.g. issue 11399).
     this.standardFontDataCache.set( name, data );
 
@@ -782,7 +791,7 @@ export class PartialEvaluator
   ) {
     const dict = xobj.dict!;
     const matrix = <matrix_t | undefined>dict.getArray("Matrix");
-    let bbox = <rect_t|undefined>dict.getArray("BBox");
+    let bbox = <rect_t | undefined>dict.getArray("BBox");
     if( Array.isArray(bbox) && bbox.length === 4 )
     {
       bbox = Util.normalizeRect( <rect_t>bbox );
@@ -800,9 +809,9 @@ export class PartialEvaluator
         resources
       );
     }
-    if (optionalContent !== undefined) 
+    if( optionalContent !== undefined )
     {
-      operatorList.addOp( OPS.beginMarkedContentProps, ["OC", optionalContent] );
+      operatorList.addOp( OPS.beginMarkedContentProps, ["OC", optionalContent]);
     }
     const group = <Dict | undefined>dict.get("Group");
     if( group )
@@ -829,7 +838,7 @@ export class PartialEvaluator
             this.xref,
             localColorSpaceCache
           );
-          if (cachedColorSpace) 
+          if( cachedColorSpace )
           {
             colorSpace = cachedColorSpace;
           } 
@@ -849,14 +858,14 @@ export class PartialEvaluator
         smask.backdrop = colorSpace.getRgb( <number[]>smask.backdrop, 0 );
       }
 
-      operatorList.addOp(OPS.beginGroup, [groupOptions]);
+      operatorList.addOp( OPS.beginGroup, [groupOptions]);
     }
 
     // If it's a group, a new canvas will be created that is the size of the
     // bounding box and translated to the correct position so we don't need to
     // apply the bounding box to it.
     const args = group ? [matrix, null] : [matrix, bbox];
-    operatorList.addOp(OPS.paintFormXObjectBegin, args);
+    operatorList.addOp( OPS.paintFormXObjectBegin, args);
 
     return this.getOperatorList({
       stream: xobj,
@@ -864,24 +873,26 @@ export class PartialEvaluator
       resources: <Dict | undefined>dict.get("Resources") || resources,
       operatorList,
       initialState: <Partial<EvalState>>initialState,
-    }).then( () => {
-      operatorList.addOp(OPS.paintFormXObjectEnd, []);
+    }).then(() => {
+      operatorList.addOp( OPS.paintFormXObjectEnd, []);
 
-      if (group) 
+      if( group )
       {
-        operatorList.addOp(OPS.endGroup, [groupOptions]);
+        operatorList.addOp( OPS.endGroup, [groupOptions]);
       }
 
       if( optionalContent !== undefined )
       {
-        operatorList.addOp(OPS.endMarkedContent, []);
+        operatorList.addOp( OPS.endMarkedContent, []);
       }
     });
   }
 
   #sendImgData( objId:string, imgData?:ImgData, cacheGlobally=false )
   {
-    const transfers = imgData ? [imgData.data!.buffer] : undefined;
+    const transfers = imgData 
+      ? [imgData.bitmap || (<Uint8Array>imgData.data).buffer] 
+      : undefined;
 
     if( this.parsingType3Font || cacheGlobally )
     {
@@ -906,7 +917,7 @@ export class PartialEvaluator
     cacheKey,
     localImageCache,
     localColorSpaceCache,
-  }:BuildPaintImageXObjectParms )
+  }:_BuildPaintImageXObjectP )
   {
     const dict = image.dict!; // Table 89
     const imageRef = dict.objId;
@@ -922,27 +933,28 @@ export class PartialEvaluator
     const maxImageSize = this.options.maxImageSize;
     if( maxImageSize !== -1 && w * h > maxImageSize )
     {
-      warn("Image exceeded maximum allowed size and was removed.");
-      return;
+      const msg = "Image exceeded maximum allowed size and was removed.";
+
+      if( this.options.ignoreErrors )
+      {
+        warn( msg );
+        return;
+      }
+      throw new Error(msg);
     }
 
-    let optionalContent;
-    if (dict.has("OC")) 
+    let optionalContent:MarkedContentProps | undefined;
+    if( dict.has("OC") )
     {
       optionalContent = await this.parseMarkedContentProps(
         <Dict | Name>dict.get("OC"),
         resources
       );
     }
-    if (optionalContent !== undefined) 
-    {
-      operatorList.addOp(OPS.beginMarkedContentProps, ["OC", optionalContent]);
-    }
 
     const imageMask = <boolean>dict.get("IM", "ImageMask") || false;
-    const interpolate = <boolean | undefined>dict.get("I", "Interpolate");
     let imgData,
-      args;
+      args:[ImgData] | [string,number,number];
     // let args:[string,number,number] | [ImgData];
     if( imageMask )
     {
@@ -951,36 +963,98 @@ export class PartialEvaluator
       // data can't be done here. Instead of creating a
       // complete PDFImage, only read the information needed
       // for later.
+      const interpolate = <boolean | undefined>dict.get("I", "Interpolate");
       const bitStrideLength = (w + 7) >> 3;
-      const imgArray = <Uint8ClampedArray>image.getBytes(
-        bitStrideLength * h,
-        /* forceClamped = */ true
-      );
+      const imgArray = image.getBytes(bitStrideLength * h);
       const decode = <number[] | undefined>dict.getArray("D", "Decode");
 
-      imgData = <ImgData>PDFImage.createMask({
+      if( this.parsingType3Font )
+      {
+        imgData = PDFImage.createRawMask({
+          imgArray,
+          width: w,
+          height: h,
+          imageIsFromDecodeStream: image instanceof DecodeStream,
+          inverseDecode: !!decode && decode![0] > 0,
+          interpolate,
+        });
+        
+        imgData.cached = !!cacheKey;
+        args = [imgData];
+
+        operatorList.addImageOps(
+          OPS.paintImageMaskXObject,
+          args,
+          optionalContent
+        );
+
+        if( cacheKey )
+        {
+          localImageCache.set( cacheKey, imageRef, {
+            fn: OPS.paintImageMaskXObject,
+            args,
+            optionalContent,
+          });
+        }
+        return;
+      }
+
+      imgData = PDFImage.createMask({
         imgArray,
         width: w,
         height: h,
         imageIsFromDecodeStream: image instanceof DecodeStream,
-        inverseDecode: !!decode && decode![0] > 0,
+        inverseDecode: !!decode && decode[0] > 0,
         interpolate,
       });
-      imgData.cached = !!cacheKey;
-      args = [imgData] as [ImgData];
 
-      operatorList.addOp(OPS.paintImageMaskXObject, args);
+      if( imgData.isSingleOpaquePixel )
+      {
+        // Handles special case of mainly LaTeX documents which use image
+        // masks to draw lines with the current fill style.
+        operatorList.addImageOps(
+          OPS.paintSolidColorImageMask,
+          [],
+          optionalContent
+        );
+
+        if( cacheKey )
+        {
+          localImageCache.set( cacheKey, imageRef, {
+            fn: OPS.paintSolidColorImageMask,
+            args: [],
+            optionalContent,
+          });
+        }
+        return;
+      }
+
+      const objId = `mask_${this.idFactory.createObjId!()}`;
+      operatorList.addDependency(objId);
+      this.#sendImgData( objId, imgData );
+
+      args = [
+        {
+          data: objId,
+          width: imgData.width,
+          height: imgData.height,
+          interpolate: imgData.interpolate,
+          count: 1,
+        },
+      ];
+      operatorList.addImageOps(
+        OPS.paintImageMaskXObject,
+        args,
+        optionalContent
+      );
+
       if( cacheKey )
       {
         localImageCache.set(cacheKey, imageRef, {
           fn: OPS.paintImageMaskXObject,
           args,
+          optionalContent,
         });
-      }
-
-      if (optionalContent !== undefined)
-      {
-        operatorList.addOp(OPS.endMarkedContent, []);
       }
       return;
     }
@@ -1003,12 +1077,11 @@ export class PartialEvaluator
       // We force the use of RGBA_32BPP images here, because we can't handle
       // any other kind.
       imgData = imageObj.createImageData(/* forceRGBA = */ true);
-      operatorList.addOp(OPS.paintInlineImageXObject, [imgData]);
-
-      if (optionalContent !== undefined) 
-      {
-        operatorList.addOp(OPS.endMarkedContent, []);
-      }
+      operatorList.addImageOps(
+        OPS.paintInlineImageXObject,
+        [imgData],
+        optionalContent
+      );
       return;
     }
 
@@ -1061,12 +1134,14 @@ export class PartialEvaluator
         return this.#sendImgData(objId, /* imgData = */ undefined, cacheGlobally);
       });
 
-    operatorList.addOp( OPS.paintImageXObject, args );
+    operatorList.addImageOps( OPS.paintImageXObject, args, optionalContent);
+
     if( cacheKey )
     {
       localImageCache.set( cacheKey, imageRef, {
         fn: OPS.paintImageXObject,
         args,
+        optionalContent,
       });
 
       if( imageRef )
@@ -1080,15 +1155,11 @@ export class PartialEvaluator
             objId,
             fn: OPS.paintImageXObject,
             args,
+            optionalContent,
             byteSize: 0, // Temporary entry, note `addByteSize` above.
           });
         }
       }
-    }
-
-    if (optionalContent !== undefined) 
-    {
-      operatorList.addOp(OPS.endMarkedContent, []);
     }
   }
 
@@ -1145,9 +1216,9 @@ export class PartialEvaluator
     {
       transferArray = [tr];
     }
-    else {
-      return null; // Not a valid transfer function entry.
-    }
+    else 
+      // Not a valid transfer function entry.
+      return null; 
 
     const transferMaps = [];
     let numFns = 0;
@@ -1163,9 +1234,8 @@ export class PartialEvaluator
         continue;
       } 
       else if( !isPDFFunction(transferObj) )
-      {
-        return null; // Not a valid transfer function object.
-      }
+        // Not a valid transfer function object.
+        return null; 
 
       const transferFn = this._pdfFunctionFactory.create( <BaseStream|Dict>transferObj );
       const transferMap = new Uint8Array(256),
@@ -1181,13 +1251,11 @@ export class PartialEvaluator
     }
 
     if (!(numFns === 1 || numFns === 4)) 
-    {
-      return null; // Only 1 or 4 functions are supported, by the specification.
-    }
+      // Only 1 or 4 functions are supported, by the specification.
+      return null; 
     if (numEffectfulFns === 0) 
-    {
-      return null; // Only /Identity transfer functions found, which are no-ops.
-    }
+      // Only /Identity transfer functions found, which are no-ops.
+      return null; 
     return transferMaps;
   }
 
@@ -1216,7 +1284,7 @@ export class PartialEvaluator
       resources: patternResources,
       operatorList: tilingOpList,
     })
-      .then( () => {
+      .then(() => {
         const operatorListIR = tilingOpList.getIR();
         const tilingPatternIR = getTilingPatternIR(
           operatorListIR,
@@ -1226,7 +1294,7 @@ export class PartialEvaluator
         // Add the dependencies to the parent operator list so they are
         // resolved before the sub operator list is executed synchronously.
         operatorList.addDependencies( tilingOpList.dependencies );
-        operatorList.addOp(fn, tilingPatternIR);
+        operatorList.addOp( fn, tilingPatternIR);
 
         if (patternDict.objId) 
         {
@@ -1237,9 +1305,9 @@ export class PartialEvaluator
         }
       })
       .catch( reason => {
-          if( reason instanceof AbortException ) return;
-
-          if (this.options.ignoreErrors) 
+          if( reason instanceof AbortException )
+            return;
+          if( this.options.ignoreErrors )
           {
             // Error(s) in the TilingPattern -- sending unsupported feature
             // notification and allow rendering to continue.
@@ -1278,7 +1346,7 @@ export class PartialEvaluator
 
         return translated
           .loadType3Data( this, resources, task )
-          .then( () => {
+          .then(() => {
             // Add the dependencies to the parent operatorList so they are
             // resolved before Type3 operatorLists are executed synchronously.
             operatorList.addDependencies( translated.type3Dependencies! );
@@ -1362,7 +1430,7 @@ export class PartialEvaluator
     stateManager,
     localGStateCache,
     localColorSpaceCache,
-  }:SetGStateParms ) {
+  }:_SetGStateP ) {
     const gStateRef = gState.objId;
     let isSimpleGState = true;
     // This array holds the converted/processed state data.
@@ -1372,7 +1440,7 @@ export class PartialEvaluator
     for( let i = 0, ii = gStateKeys.length; i < ii; i++ )
     {
       const key = gStateKeys[i];
-      const value = gState.get(key);
+      const value = gState.get( key );
       switch( key )
       {
         case "Type":
@@ -1386,7 +1454,7 @@ export class PartialEvaluator
         case "FL":
         case "CA":
         case "ca":
-          gStateObj.push([key, value!]);
+          gStateObj.push([ key, value! ]);
           break;
         case "Font":
           isSimpleGState = false;
@@ -1411,7 +1479,7 @@ export class PartialEvaluator
         case "SMask":
           if( isName(value, "None") )
           {
-            gStateObj.push([key, false]);
+            gStateObj.push([ key, false ]);
             break;
           }
           if( value instanceof Dict )
@@ -1428,7 +1496,7 @@ export class PartialEvaluator
                 localColorSpaceCache
               );
             });
-            gStateObj.push([key, true]);
+            gStateObj.push([ key, true ]);
           } 
           else {
             warn("Unsupported SMask type");
@@ -1436,7 +1504,7 @@ export class PartialEvaluator
           break;
         case "TR":
           const transferMaps = this.handleTransferFunction(value);
-          gStateObj.push([key, transferMaps]);
+          gStateObj.push([ key, transferMaps ]);
           break;
         // Only generate info log messages for the following since
         // they are unlikely to have a big impact on the rendering.
@@ -1461,7 +1529,7 @@ export class PartialEvaluator
           break;
       }
     }
-    return promise.then( () => {
+    return promise.then(() => {
       if( gStateObj.length > 0 )
       {
         operatorList.addOp( OPS.setGState, [gStateObj] );
@@ -1687,11 +1755,16 @@ export class PartialEvaluator
     return fontCapability.promise;
   }
 
-  buildPath( operatorList:OperatorList, fn:OPS, args:OpArgs, parsingText=false )
-  {
+  buildPath( 
+    operatorList:OperatorList, 
+    fn:OPS, 
+    args?:number[],
+    parsingText=false
+  ) {
     const lastIndex = operatorList.length - 1;
-    if( !args ) args = [];
-
+    if( !args ) 
+      args = [];
+    let minMax:rect_t;
     if( lastIndex < 0 
      || operatorList.fnArray[lastIndex] !== OPS.constructPath
     ) {
@@ -1705,20 +1778,44 @@ export class PartialEvaluator
       if( parsingText )
       {
         warn(`Encountered path operator "${fn}" inside of a text object.`);
-        operatorList.addOp(OPS.save, null);
+        operatorList.addOp( OPS.save, null);
       }
 
-      operatorList.addOp(OPS.constructPath, [[fn], args]);
+      minMax = [Infinity, -Infinity, Infinity, -Infinity];
+      operatorList.addOp( OPS.constructPath, [[fn], args, minMax]);
 
       if( parsingText )
       {
-        operatorList.addOp(OPS.restore, null);
+        operatorList.addOp( OPS.restore, null);
       }
     } 
     else {
       const opArgs = operatorList.argsArray[lastIndex]!;
       (<OPS[]>opArgs[0]).push(fn);
-      Array.prototype.push.apply(opArgs[1], args);
+      Array.prototype.push.apply( <number[]>opArgs[1], args );
+      minMax = <rect_t>opArgs[2];
+    }
+
+    // Compute min/max in the worker instead of the main thread.
+    // If the current matrix (when drawing) is a scaling one
+    // then min/max can be easily computed in using those values.
+    // Only rectangle, lineTo and moveTo are handled here since
+    // Bezier stuff requires to have the starting point.
+    switch( fn )
+    {
+      case OPS.rectangle:
+        minMax[0] = Math.min(minMax[0], args[0], args[0] + args[2]);
+        minMax[1] = Math.max(minMax[1], args[0], args[0] + args[2]);
+        minMax[2] = Math.min(minMax[2], args[1], args[1] + args[3]);
+        minMax[3] = Math.max(minMax[3], args[1], args[1] + args[3]);
+        break;
+      case OPS.moveTo:
+      case OPS.lineTo:
+        minMax[0] = Math.min(minMax[0], args[0]);
+        minMax[1] = Math.max(minMax[1], args[0]);
+        minMax[2] = Math.min(minMax[2], args[1]);
+        minMax[3] = Math.max(minMax[3], args[1]);
+        break;
     }
   }
 
@@ -1726,7 +1823,7 @@ export class PartialEvaluator
     cs, 
     resources, 
     localColorSpaceCache 
-  }:ParseColorSpaceParms ) {
+  }:_ParseColorSpaceP ) {
     return ColorSpace.parseAsync({
       cs,
       xref: this.xref,
@@ -1734,8 +1831,8 @@ export class PartialEvaluator
       pdfFunctionFactory: this._pdfFunctionFactory,
       localColorSpaceCache,
     }).catch( reason => {
-      if (reason instanceof AbortException) return undefined;
-
+      if( reason instanceof AbortException )
+        return undefined;
       if (this.options.ignoreErrors) 
       {
         // Error(s) in the ColorSpace -- sending unsupported feature
@@ -1755,7 +1852,7 @@ export class PartialEvaluator
     resources,
     localColorSpaceCache,
     localShadingPatternCache,
-  }:ParseShadingParms ) {
+  }:_ParseShadingP ) {
     // Shadings and patterns may be referenced by the same name but the resource
     // dictionary could be different so we can't use the name for the cache key.
     let id = localShadingPatternCache.get(shading);
@@ -1808,7 +1905,7 @@ export class PartialEvaluator
             localTilingPattern.dict,
             color
           );
-          operatorList.addOp(fn, tilingPatternIR);
+          operatorList.addOp( fn, tilingPatternIR);
           return undefined;
         } 
         catch (ex) {
@@ -1846,7 +1943,7 @@ export class PartialEvaluator
             localColorSpaceCache,
             localShadingPatternCache,
           });
-          operatorList.addOp(fn, ["Shading", objId, matrix]);
+          operatorList.addOp( fn, ["Shading", objId, matrix]);
           return undefined;
         }
         throw new FormatError(`Unknown PatternType: ${typeNum}`);
@@ -1913,9 +2010,8 @@ export class PartialEvaluator
     {
       optionalContent = contentProperties;
     } 
-    else {
+    else 
       throw new FormatError("Optional content properties malformed.");
-    }
 
     const optionalContentType = (<Name>optionalContent.get("Type")).name;
     if( optionalContentType === "OCG" )
@@ -1928,10 +2024,10 @@ export class PartialEvaluator
     else if( optionalContentType === "OCMD" )
     {
       const expression = optionalContent.get("VE");
-      if (Array.isArray(expression)) 
+      if( Array.isArray(expression) )
       {
         const result:VisibilityExpressionResult = [];
-        this._parseVisibilityExpression(expression, 0, result);
+        this._parseVisibilityExpression( expression, 0, result);
         if( result.length > 0 )
         {
           return {
@@ -1945,7 +2041,7 @@ export class PartialEvaluator
       if( Array.isArray(optionalContentGroups)
        || optionalContentGroups instanceof Dict
       ) {
-        const groupIds:(string | undefined)[] = [];
+        const groupIds:string[] = [];
         if( Array.isArray(optionalContentGroups) )
         {
           for( const ocg of <Dict[]>optionalContentGroups )
@@ -1955,7 +2051,7 @@ export class PartialEvaluator
         } 
         else {
           // Dictionary, just use the obj id.
-          groupIds.push( optionalContentGroups.objId );
+          groupIds.push( optionalContentGroups.objId! );
         }
 
         const v = optionalContent.get("P");
@@ -1983,7 +2079,7 @@ export class PartialEvaluator
     operatorList,
     initialState,
     fallbackFontDict,
-  }:GetOperatorListParms ) {
+  }:_GetOperatorListP ) {
     // Ensure that `resources`/`initialState` is correctly initialized,
     // even if the provided parameter is e.g. `null`.
     resources = resources || Dict.empty;
@@ -2013,14 +2109,14 @@ export class PartialEvaluator
     {
       for( let i = 0, ii = preprocessor.savedStatesDepth; i < ii; i++ )
       {
-        operatorList.addOp(OPS.restore, []);
+        operatorList.addOp( OPS.restore, []);
       }
     }
 
     return new Promise<void>( function promiseBody( resolve, reject )
     {
       const next = ( promise?:Promise<void> ) => {
-        Promise.all([ promise, operatorList.ready ]).then( () => {
+        Promise.all([ promise, operatorList.ready ]).then(() => {
           try {
             promiseBody(resolve, reject);
           } catch (ex) {
@@ -2039,10 +2135,10 @@ export class PartialEvaluator
         // cannot reuse the same array on each iteration. Therefore we pass
         // in |null| as the initial value (see the comment on
         // EvaluatorPreprocessor_read() for why).
-        operation.args = null;
-        if( !preprocessor.read(operation) ) break;
-
-        let args = <OpArgs | Uint8ClampedArray | [Glyph[]]>operation.args;
+        operation.args = <OpArgs>null;
+        if( !preprocessor.read(operation) )
+          break;
+        let args = operation.args;
         let fn = operation.fn;
 
         switch( fn | 0 ) 
@@ -2054,10 +2150,16 @@ export class PartialEvaluator
 
             if( isValidName )
             {
-              const localImage = localImageCache.getByName(name);
+              const localImage = <LI_CData>localImageCache.getByName(name);
               if( localImage )
               {
-                operatorList.addOp( (<any>localImage).fn, (<any>localImage).args );
+                operatorList.addImageOps(
+                  localImage.fn,
+                  localImage.args,
+                  localImage.optionalContent
+                );
+
+                incrementCachedImageMaskCount( localImage );
                 args = null;
                 continue;
               }
@@ -2073,11 +2175,16 @@ export class PartialEvaluator
                 let xobj = xobjs.getRaw(name);
                 if( xobj instanceof Ref )
                 {
-                  const localImage = localImageCache.getByRef(xobj);
+                  const localImage = <LI_CData>localImageCache.getByRef(xobj);
                   if( localImage )
                   {
-                    operatorList.addOp( (<any>localImage).fn, (<any>localImage).args );
+                    operatorList.addImageOps(
+                      localImage.fn,
+                      localImage.args,
+                      localImage.optionalContent
+                    );
 
+                    incrementCachedImageMaskCount( localImage );
                     resolveXObject();
                     return;
                   }
@@ -2089,7 +2196,11 @@ export class PartialEvaluator
                   if( globalImage )
                   {
                     operatorList.addDependency( globalImage.objId );
-                    operatorList.addOp( globalImage.fn, globalImage.args );
+                    operatorList.addImageOps(
+                      globalImage.fn,
+                      globalImage.args,
+                      globalImage.optionalContent
+                    );
 
                     resolveXObject();
                     return;
@@ -2155,8 +2266,8 @@ export class PartialEvaluator
                 }
                 resolveXObject();
               }).catch( reason => {
-                if( reason instanceof AbortException ) return;
-
+                if( reason instanceof AbortException ) 
+                  return;
                 if( self.options.ignoreErrors )
                 {
                   // Error(s) in the XObject -- sending unsupported feature
@@ -2187,7 +2298,7 @@ export class PartialEvaluator
                 )
                 .then( loadedName => {
                   operatorList.addDependency(loadedName);
-                  operatorList.addOp(OPS.setFont, [loadedName, fontSize]);
+                  operatorList.addOp( OPS.setFont, [loadedName, fontSize]);
                 })
             );
             return;
@@ -2201,13 +2312,16 @@ export class PartialEvaluator
             const cacheKey = (<BaseStream>args![0]).cacheKey;
             if( cacheKey )
             {
-              const localImage = localImageCache.getByName(cacheKey);
-             if( localImage )
+              const localImage = <LI_CData>localImageCache.getByName(cacheKey);
+              if( localImage )
               {
-                operatorList.addOp( 
-                  (<LI_CData>localImage).fn, 
-                  (<LI_CData>localImage).args
+                operatorList.addImageOps(
+                  localImage.fn,
+                  localImage.args,
+                  localImage.optionalContent
                 );
+
+                incrementCachedImageMaskCount( localImage );
                 args = null;
                 continue;
               }
@@ -2266,7 +2380,7 @@ export class PartialEvaluator
               self.ensureStateFont(stateManager.state);
               continue;
             }
-            operatorList.addOp(OPS.nextLine);
+            operatorList.addOp( OPS.nextLine);
             args![0] = self.handleText( <string>args![0], stateManager.state);
             fn = OPS.showText;
             break;
@@ -2276,9 +2390,9 @@ export class PartialEvaluator
               self.ensureStateFont(stateManager.state);
               continue;
             }
-            operatorList.addOp(OPS.nextLine);
-            operatorList.addOp(OPS.setWordSpacing, [(<unknown[]>args).shift()!]);
-            operatorList.addOp(OPS.setCharSpacing, [(<unknown[]>args).shift()!]);
+            operatorList.addOp( OPS.nextLine);
+            operatorList.addOp( OPS.setWordSpacing, [(<unknown[]>args).shift()!]);
+            operatorList.addOp( OPS.setCharSpacing, [(<unknown[]>args).shift()!]);
             args![0] = self.handleText( <string>args![0], stateManager.state );
             fn = OPS.showText;
             break;
@@ -2382,7 +2496,7 @@ export class PartialEvaluator
             break;
           case OPS.setFillColorN:
             cs = stateManager.state.fillColorSpace!;
-            if (cs.name === "Pattern") 
+            if( cs.name === "Pattern" )
             {
               next(
                 self.handleColorN(
@@ -2405,7 +2519,7 @@ export class PartialEvaluator
             break;
           case OPS.setStrokeColorN:
             cs = stateManager.state.strokeColorSpace!;
-            if (cs.name === "Pattern") 
+            if( cs.name === "Pattern" )
             {
               next(
                 self.handleColorN(
@@ -2434,31 +2548,29 @@ export class PartialEvaluator
             }
 
             const shading = <Dict | BaseStream>shadingRes.get( (<Name>args![0]).name );
-            if (!shading) 
-            {
+            if( !shading )
               throw new FormatError("No shading object found");
-            }
             const patternId = self.parseShading({
               shading,
               resources: resources!,
               localColorSpaceCache,
               localShadingPatternCache,
             });
-            args = <OpArgs>[ patternId ];
+            args = [ patternId ];
             fn = OPS.shadingFill;
             break;
           case OPS.setGState:
             isValidName = args![0] instanceof Name;
             name = (<Name>args![0]).name;
 
-            if (isValidName)
+            if( isValidName )
             {
-              const localGStateObj = localGStateCache.getByName(name);
+              const localGStateObj = localGStateCache.getByName( name );
               if( localGStateObj )
               {
                 if( (<LGS_CData>localGStateObj).length > 0 )
                 {
-                  operatorList.addOp( OPS.setGState, [localGStateObj] );
+                  operatorList.addOp( OPS.setGState, [localGStateObj]);
                 }
                 args = null;
                 continue;
@@ -2467,16 +2579,12 @@ export class PartialEvaluator
 
             next(
               new Promise<void>( (resolveGState,rejectGState) => {
-                if (!isValidName) 
-                {
+                if( !isValidName )
                   throw new FormatError("GState must be referred to by name.");
-                }
 
                 const extGState = <Dict>resources!.get("ExtGState");
                 if( !(extGState instanceof Dict) ) 
-                {
                   throw new FormatError("ExtGState should be a dictionary.");
-                }
 
                 const gState = <Dict>extGState.get(name);
                 // TODO: Attempt to lookup cached GStates by reference as well,
@@ -2500,9 +2608,9 @@ export class PartialEvaluator
                   })
                   .then( resolveGState, rejectGState );
               }).catch( reason => {
-                if( reason instanceof AbortException ) return;
-
-                if (self.options.ignoreErrors) 
+                if( reason instanceof AbortException )
+                  return;
+                if( self.options.ignoreErrors )
                 {
                   // Error(s) in the ExtGState -- sending unsupported feature
                   // notification and allow parsing/rendering to continue.
@@ -2523,7 +2631,7 @@ export class PartialEvaluator
           case OPS.curveTo3:
           case OPS.closePath:
           case OPS.rectangle:
-            self.buildPath(operatorList, fn, <OpArgs>args, parsingText);
+            self.buildPath( operatorList, fn, <number[] | undefined>args, parsingText );
             continue;
           case OPS.markPoint:
           case OPS.markPointProps:
@@ -2554,8 +2662,8 @@ export class PartialEvaluator
                     ]);
                   })
                   .catch( reason => {
-                    if( reason instanceof AbortException ) return;
-
+                    if( reason instanceof AbortException )
+                      return;
                     if( self.options.ignoreErrors ) 
                     {
                       self.handler.send("UnsupportedFeature", {
@@ -2588,7 +2696,8 @@ export class PartialEvaluator
             {
               for( i = 0, ii = args.length; i < ii; i++ )
               {
-                if( args[i] instanceof Dict ) break;
+                if( args[i] instanceof Dict )
+                  break;
               }
               if( i < ii )
               {
@@ -2597,9 +2706,9 @@ export class PartialEvaluator
               }
             }
         }
-        operatorList.addOp( fn, args );
+        operatorList.addOp( fn, args);
       }
-      if (stop) 
+      if( stop )
       {
         next(deferred);
         return;
@@ -2609,8 +2718,8 @@ export class PartialEvaluator
       closePendingRestoreOPS();
       resolve();
     }).catch(reason => {
-      if( reason instanceof AbortException ) return;
-
+      if( reason instanceof AbortException )
+        return;
       if (this.options.ignoreErrors) 
       {
         // Error(s) in the OperatorList -- sending unsupported feature
@@ -2640,7 +2749,7 @@ export class PartialEvaluator
     sink,
     seenStyles=new Set(),
     viewBox,
-  }:GetTextContentParms ) 
+  }:_GetTextContentP ) 
   {
     // Ensure that `resources`/`stateManager` is correctly initialized,
     // even if the provided parameter is e.g. `null`.
@@ -2653,7 +2762,7 @@ export class PartialEvaluator
       items: <(BidiTextContentItem | TypeTextContentItem)[]>[],
       styles: <Record< string, FontStyle >>Object.create(null),
     }
-    const textContentItem:TextContentItem = {
+    const textContentItem:_TextContentItem = {
       initialized: false,
       str: [],
       totalWidth: 0,
@@ -2667,16 +2776,63 @@ export class PartialEvaluator
       spaceInFlowMax: 0,
       trackingSpaceMin: Infinity,
       negativeSpaceMax: -Infinity,
+      notASpace: -Infinity,
       // transform: null,
       // fontName: null,
       hasEOL: false,
     };
+
+    // Use a circular buffer (length === 2) to save the last chars in the
+    // text stream.
+    // This implementation of the circular buffer is using a fixed array
+    // and the position of the next element:
+    // function addElement(x) {
+    //   buffer[pos] = x;
+    //   pos = (pos + 1) % buffer.length;
+    // }
+    // It's a way faster than:
+    // function addElement(x) {
+    //   buffer.push(x);
+    //   buffer.shift();
+    // }
+    //
+    // It's useful to know when we need to add a whitespace in the
+    // text chunk.
+    const twoLastChars = [" ", " "];
+    let twoLastCharsPos = 0;
+
+    /**
+     * Save the last char.
+     * @param char
+     * @return true when the two last chars before adding the new one
+     * are a non-whitespace followed by a whitespace.
+     */
+    function saveLastChar( char:string )
+    {
+      const nextPos = (twoLastCharsPos + 1) % 2;
+      const ret =
+        twoLastChars[twoLastCharsPos] !== " " && twoLastChars[nextPos] === " ";
+      twoLastChars[twoLastCharsPos] = char;
+      twoLastCharsPos = nextPos;
+
+      return ret;
+    }
+
+    function resetLastChars()
+    {
+      twoLastChars[0] = twoLastChars[1] = " ";
+      twoLastCharsPos = 0;
+    }
 
     // Used in addFakeSpaces.
 
     // A white <= fontSize * TRACKING_SPACE_FACTOR is a tracking space
     // so it doesn't count as a space.
     const TRACKING_SPACE_FACTOR = 0.1;
+
+    // When a white <= fontSize * NOT_A_SPACE_FACTOR, there is no space
+    // even if one is present in the text stream.
+    const NOT_A_SPACE_FACTOR = 0.03;
 
     // A negative white < fontSize * NEGATIVE_SPACE_FACTOR induces
     // a break (a new chunk of text is created).
@@ -2783,6 +2939,7 @@ export class PartialEvaluator
 
       textContentItem.trackingSpaceMin =
         textState.fontSize * TRACKING_SPACE_FACTOR;
+      textContentItem.notASpace = textState.fontSize * NOT_A_SPACE_FACTOR;
       textContentItem.negativeSpaceMax =
         textState.fontSize * NEGATIVE_SPACE_FACTOR;
       textContentItem.spaceInFlowMin =
@@ -2823,7 +2980,7 @@ export class PartialEvaluator
       textContentItem.textAdvanceScale = scaleFactor;
     }
 
-    function runBidiTransform( textChunk:TextContentItem ):BidiTextContentItem
+    function runBidiTransform( textChunk:_TextContentItem ):BidiTextContentItem
     {
       const text = textChunk.str.join("");
       const bidiResult = bidi(text, -1, textChunk.vertical);
@@ -2847,11 +3004,11 @@ export class PartialEvaluator
 
           return translated
             .loadType3Data(self, resources, task)
-            .catch( () => {
+            .catch(() => {
               // Ignore Type3-parsing errors, since we only use `loadType3Data`
               // here to ensure that we'll always obtain a useful /FontBBox.
             })
-            .then( () => {
+            .then(() => {
               return translated;
             });
         })
@@ -2967,6 +3124,7 @@ export class PartialEvaluator
             return true;
           }
 
+          resetLastChars();
           flushTextContentItem();
           return true;
         }
@@ -2976,6 +3134,14 @@ export class PartialEvaluator
           appendEOL();
           return true;
         }
+
+        if( advanceY <= textOrientation * textContentItem.notASpace )
+        {
+          // The real spacing between 2 consecutive chars is thin enough to be
+          // considered a non-space.
+          resetLastChars();
+        }
+
         if( advanceY <= textOrientation * textContentItem.trackingSpaceMin )
         {
           textContentItem.height += advanceY;
@@ -2989,6 +3155,7 @@ export class PartialEvaluator
         ) {
           if (textContentItem.str.length === 0) 
           {
+            resetLastChars();
             textContent.items.push({
               str: " ",
               dir: "ltr",
@@ -3022,6 +3189,10 @@ export class PartialEvaluator
           appendEOL();
           return true;
         }
+
+        // We're moving back so in case the last char was a whitespace
+        // we cancel it: it doesn't make sense to insert it.
+        resetLastChars();
         flushTextContentItem();
         return true;
       }
@@ -3030,6 +3201,13 @@ export class PartialEvaluator
       {
         appendEOL();
         return true;
+      }
+
+      if( advanceX <= textOrientation * textContentItem.notASpace )
+      {
+        // The real spacing between 2 consecutive chars is thin enough to be
+        // considered a non-space.
+        resetLastChars();
       }
 
       if( advanceX <= textOrientation * textContentItem.trackingSpaceMin )
@@ -3041,6 +3219,7 @@ export class PartialEvaluator
       ) {
         if( textContentItem.str.length === 0 )
         {
+          resetLastChars();
           textContent.items.push({
             str: " ",
             dir: "ltr",
@@ -3059,7 +3238,7 @@ export class PartialEvaluator
       return true;
     }
 
-    function buildTextContentItem({ chars, extraSpacing }:BuildTextContentItemParms )
+    function buildTextContentItem({ chars, extraSpacing }:_BuildTextContentItemP )
     {
       const font = textState.font!;
       if( !chars )
@@ -3089,8 +3268,8 @@ export class PartialEvaluator
       for( let i = 0, ii = glyphs.length; i < ii; i++ )
       {
         const glyph = glyphs[i];
-        if( glyph.isInvisibleFormatMark ) continue;
-
+        if( glyph.isInvisibleFormatMark )
+          continue;
         let charSpacing =
           textState.charSpacing + (i + 1 === ii ? extraSpacing : 0);
 
@@ -3101,20 +3280,14 @@ export class PartialEvaluator
         }
         let scaledDim = glyphWidth! * scale;
 
-        if (
-          glyph.isWhitespace &&
-          (i === 0 ||
-            i + 1 === ii ||
-            glyphs[i - 1].isWhitespace ||
-            glyphs[i + 1].isWhitespace ||
-            extraSpacing)
-        ) {
+        if( glyph.isWhitespace )
+        {
           // Don't push a " " in the textContentItem
           // (except when it's between two non-spaces chars),
           // it will be done (if required) in next call to
           // compareWithLastPosition.
           // This way we can merge real spaces and spaces due to cursor moves.
-          if (!font.vertical) 
+          if( !font.vertical )
           {
             charSpacing += scaledDim + textState.wordSpacing;
             textState.translateTextMatrix(
@@ -3126,6 +3299,7 @@ export class PartialEvaluator
             charSpacing += -scaledDim + textState.wordSpacing;
             textState.translateTextMatrix(0, -charSpacing);
           }
+          saveLastChar(" ");
           continue;
         }
 
@@ -3161,19 +3335,19 @@ export class PartialEvaluator
           textChunk.prevTransform = getCurrentTextTransform();
         }
 
-        if( glyph.isWhitespace )
+        let glyphUnicode = glyph.unicode;
+        glyphUnicode = NormalizedUnicodes[glyphUnicode] || glyphUnicode;
+        glyphUnicode = reverseIfRtl(glyphUnicode);
+        if( saveLastChar(glyphUnicode) )
         {
+          // The two last chars are a non-whitespace followed by a whitespace
+          // and then this non-whitespace, so we insert a whitespace here.
           // Replaces all whitespaces with standard spaces (0x20), to avoid
           // alignment issues between the textLayer and the canvas if the text
           // contains e.g. tabs (fixes issue6612.pdf).
           textChunk.str.push(" ");
         }
-        else {
-            let glyphUnicode = glyph.unicode;
-          glyphUnicode = <any>NormalizedUnicodes[glyphUnicode] || glyphUnicode;
-          glyphUnicode = reverseIfRtl(glyphUnicode);
-          textChunk.str.push(glyphUnicode);
-        }
+        textChunk.str.push(glyphUnicode);
 
         if( charSpacing )
         {
@@ -3193,6 +3367,7 @@ export class PartialEvaluator
 
     function appendEOL()
     {
+      resetLastChars();
       if( textContentItem.initialized )
       {
         textContentItem.hasEOL = true;
@@ -3219,6 +3394,7 @@ export class PartialEvaluator
       ) {
         if( textContentItem.initialized )
         {
+          resetLastChars();
           textContentItem.str.push(" ");
         }
         return false;
@@ -3234,6 +3410,7 @@ export class PartialEvaluator
       }
 
       flushTextContentItem();
+      resetLastChars();
       textContent.items.push({
         str: " ",
         // TODO: check if using the orientation from last chunk is
@@ -3307,8 +3484,8 @@ export class PartialEvaluator
         // unnecessary allocations.
         args.length = 0;
         operation.args = args;
-        if( !preprocessor.read(operation) ) break;
-
+        if( !preprocessor.read(operation) )
+          break;
         textState = <TextState>stateManager!.state;
         const fn = operation.fn;
         args = operation.args;
@@ -3475,20 +3652,19 @@ export class PartialEvaluator
             flushTextContentItem();
             if( !xobjs )
             {
-              xobjs = <Dict>resources.get("XObject") ?? Dict.empty;
+              xobjs = <Dict>resources.get("XObject") || Dict.empty;
             }
 
             let isValidName = args[0] instanceof Name;
             let name = (<Name>args[0]).name;
 
-            if( isValidName && emptyXObjectCache.getByName(name) ) break;
+            if( isValidName && emptyXObjectCache.getByName(name) )
+              break;
 
             next(
               new Promise<void>( (resolveXObject, rejectXObject) => {
-                if (!isValidName) 
-                {
+                if( !isValidName )
                   throw new FormatError("XObject must be referred to by name.");
-                }
 
                 let xobj = xobjs!.getRaw(name);
                 if( xobj instanceof Ref )
@@ -3580,16 +3756,17 @@ export class PartialEvaluator
                     seenStyles,
                     viewBox,
                   })
-                  .then( () => {
+                  .then(() => {
                     if( !sinkWrapper.enqueueInvoked )
                     {
-                      emptyXObjectCache.set(name, (<BaseStream>xobj).dict!.objId, true);
+                      emptyXObjectCache.set( 
+                        name, (<BaseStream>xobj).dict!.objId, true );
                     }
                     resolveXObject();
                   }, rejectXObject);
               }).catch( reason => {
-                if( reason instanceof AbortException ) return;
-
+                if( reason instanceof AbortException )
+                  return;
                 if( self.options.ignoreErrors )
                 {
                   // Error(s) in the XObject -- allow text-extraction to
@@ -3605,36 +3782,29 @@ export class PartialEvaluator
             isValidName = args[0] instanceof Name;
             name = (<Name>args[0]).name;
 
-            if (isValidName && emptyGStateCache.getByName(name)) {
+            if( isValidName && emptyGStateCache.getByName(name))
               break;
-            }
 
             next(
               new Promise<void>(function (resolveGState, rejectGState) {
                 if (!isValidName) 
-                {
                   throw new FormatError("GState must be referred to by name.");
-                }
 
                 const extGState = resources.get("ExtGState");
-                if (!(extGState instanceof Dict)) 
-                {
+                if( !(extGState instanceof Dict) )
                   throw new FormatError("ExtGState should be a dictionary.");
-                }
 
                 const gState = extGState.get(name);
                 // TODO: Attempt to lookup cached GStates by reference as well,
                 //       if and only if there are PDF documents where doing so
                 //       would significantly improve performance.
                 if( !(gState instanceof Dict) )
-                {
                   throw new FormatError("GState should be a dictionary.");
-                }
 
                 const gStateFont = <[Ref,number]>gState.get("Font");
                 if( !gStateFont )
                 {
-                  emptyGStateCache.set(name, gState.objId, true);
+                  emptyGStateCache.set( name, gState.objId, true);
 
                   resolveGState();
                   return;
@@ -3648,8 +3818,8 @@ export class PartialEvaluator
                   rejectGState
                 );
               }).catch( reason => {
-                if( reason instanceof AbortException ) return;
-
+                if( reason instanceof AbortException )
+                  return;
                 if (self.options.ignoreErrors) 
                 {
                   // Error(s) in the ExtGState -- allow text-extraction to
@@ -3714,9 +3884,9 @@ export class PartialEvaluator
       enqueueChunk();
       resolve();
     }).catch(reason => {
-      if( reason instanceof AbortException ) return;
-
-      if (this.options.ignoreErrors) 
+      if( reason instanceof AbortException ) 
+        return;
+      if( this.options.ignoreErrors )
       {
         // Error(s) in the TextContent -- allow text-extraction to continue.
         warn(
@@ -3807,7 +3977,13 @@ export class PartialEvaluator
         baseEncodingName = encoding.name;
       } 
       else {
-        throw new FormatError("Encoding is not a Name nor a Dict");
+        const msg = "Encoding is not a Name nor a Dict";
+
+        if( !this.options.ignoreErrors )
+        {
+          throw new FormatError(msg);
+        }
+        warn( msg );
       }
       // According to table 114 if the encoding is a named encoding it must be
       // one of these predefined encodings.
@@ -3900,10 +4076,8 @@ export class PartialEvaluator
       let glyphName = encoding[charcode];
       // b) Look up the character name in the Adobe Glyph List (see the
       //    Bibliography) to obtain the corresponding Unicode value.
-      if (glyphName === "") 
-      {
+      if( glyphName === "" )
         continue;
-      } 
       else if( glyphsUnicodeMap[glyphName] === undefined ) 
       {
         // (undocumented) c) Few heuristics to recognize unknown glyphs
@@ -3952,25 +4126,25 @@ export class PartialEvaluator
               }
             }
             break;
-          default:
-            // 'uniXXXX'/'uXXXX{XX}' glyphs
-            const unicode = getUnicodeForGlyph(glyphName, glyphsUnicodeMap);
-            if (unicode !== -1) {
+          default: // 'uniXXXX'/'uXXXX{XX}' glyphs
+            const unicode = getUnicodeForGlyph( glyphName, glyphsUnicodeMap );
+            if( unicode !== -1 )
+            {
               code = unicode;
             }
         }
-        if (code > 0 && code <= 0x10ffff && Number.isInteger(code)) 
+        if( code > 0 && code <= 0x10ffff && Number.isInteger(code) )
         {
           // If `baseEncodingName` is one the predefined encodings, and `code`
           // equals `charcode`, using the glyph defined in the baseEncoding
           // seems to yield a better `toUnicode` mapping (fixes issue 5070).
-          if (baseEncodingName && code === +charcode) 
+          if( baseEncodingName && code === +charcode )
           {
-            const baseEncoding = getEncoding(baseEncodingName);
-            if (baseEncoding && (glyphName = baseEncoding[charcode])) 
+            const baseEncoding = getEncoding( baseEncodingName);
+            if( baseEncoding && (glyphName = baseEncoding[charcode]) )
             {
               toUnicode[charcode] = String.fromCharCode(
-                glyphsUnicodeMap[glyphName]
+                +glyphsUnicodeMap[glyphName]
               );
               continue;
             }
@@ -3979,7 +4153,7 @@ export class PartialEvaluator
         }
         continue;
       }
-      toUnicode[charcode] = String.fromCharCode( <number>glyphsUnicodeMap[glyphName] );
+      toUnicode[charcode] = String.fromCharCode( +glyphsUnicodeMap[glyphName] );
     }
     return toUnicode;
   }
@@ -4132,10 +4306,10 @@ export class PartialEvaluator
           return new ToUnicodeMap(map);
         },
         reason => {
-          if (reason instanceof AbortException) {
+          if( reason instanceof AbortException )
             return undefined;
-          }
-          if (this.options.ignoreErrors) {
+          if( this.options.ignoreErrors )
+          {
             // Error in the ToUnicode data -- sending unsupported feature
             // notification and allow font parsing to continue.
             this.handler.send("UnsupportedFeature", {
@@ -4161,8 +4335,8 @@ export class PartialEvaluator
     {
       const glyphID = (glyphsData[j++] << 8) | glyphsData[j];
       const code = j >> 1;
-      if( glyphID === 0 && !toUnicode.has(code) ) continue;
-
+      if( glyphID === 0 && !toUnicode.has(code) )
+        continue;
       result[code] = glyphID;
     }
     return result;
@@ -4810,15 +4984,16 @@ export class PartialEvaluator
     {
       const glyphName = `${font.loadedName}_path_${fontChar}`;
       try {
-        if( font.renderer.hasBuiltPath(fontChar) ) return;
-
+        if( font.renderer.hasBuiltPath(fontChar) )
+          return;
         handler.send("commonobj", [
           glyphName,
           "FontPath",
           font.renderer.getPathJs(fontChar),
         ]);
       } catch (reason) {
-        if (evaluatorOptions.ignoreErrors) {
+        if( evaluatorOptions.ignoreErrors )
+        {
           // Error in the font data -- sending unsupported feature notification
           // and allow glyph path building to continue.
           handler.send("UnsupportedFeature", {
@@ -4845,7 +5020,8 @@ export class PartialEvaluator
     }
   }
 
-  static get fallbackFontDict() {
+  static get fallbackFontDict()
+  {
     const dict = new FontDict();
     dict.set("BaseFont", Name.get("PDFJS-FallbackFont"));
     dict.set("Type", Name.get("FallbackType"));
@@ -4856,7 +5032,7 @@ export class PartialEvaluator
   }
 }
 
-interface TranslatedFontCtorParms
+interface _TranslatedFontCtorP
 {
   loadedName:string;
   font:Font | ErrorFont;
@@ -4876,7 +5052,7 @@ export class TranslatedFont
 
   _bbox?:rect_t;
 
-  constructor({ loadedName, font, dict, evaluatorOptions }:TranslatedFontCtorParms ) 
+  constructor({ loadedName, font, dict, evaluatorOptions }:_TranslatedFontCtorP ) 
   {
     this.loadedName = loadedName;
     this.font = font;
@@ -4921,12 +5097,10 @@ export class TranslatedFont
 
   loadType3Data( evaluator:PartialEvaluator, resources:Dict, task:WorkerTask )
   {
-    if( this.type3Loaded ) return this.type3Loaded;
-
+    if( this.type3Loaded ) 
+      return this.type3Loaded;
     if( !this.font.isType3Font )
-    {
       throw new Error("Must be a Type3 font.");
-    }
     // When parsing Type3 glyphs, always ignore them if there are errors.
     // Compared to the parsing of e.g. an entire page, it doesn't really
     // make sense to only be able to render a Type3 glyph partially.
@@ -5003,14 +5177,14 @@ export class TranslatedFont
         "Type3 glyph shall start with the d1 operator."
       );
     // #endif
-    if (isEmptyBBox) 
+    if( isEmptyBBox )
     {
-      if (!this._bbox) 
+      if( !this._bbox )
       {
         this._bbox = [Infinity, Infinity, -Infinity, -Infinity];
       }
       const charBBox = Util.normalizeRect( 
-        <rect_t>(<number[]>operatorList.argsArray[0]).slice(2) 
+        <rect_t>operatorList.argsArray[0]!.slice(2)
       );
 
       this._bbox[0] = Math.min(this._bbox[0], charBBox[0]);
@@ -5022,7 +5196,8 @@ export class TranslatedFont
       ii = operatorList.length;
     while( i < ii )
     {
-      switch (operatorList.fnArray[i]) {
+      switch( operatorList.fnArray[i] )
+      {
         case OPS.setStrokeColorSpace:
         case OPS.setFillColorSpace:
         case OPS.setStrokeColor:
@@ -5043,10 +5218,11 @@ export class TranslatedFont
           continue;
 
         case OPS.setGState:
-          const [gStateObj] = <[[string][]]>operatorList.argsArray[i];
+          const [gStateObj] = operatorList.argsArray[i]!;
           let j = 0;
           let jj = gStateObj.length;
-          while (j < jj) {
+          while( j < jj )
+          {
             const [gStateKey] = gStateObj[j];
             switch( gStateKey )
             {
@@ -5192,17 +5368,14 @@ interface OpInfo
   numArgs:number;
   variableArgs:boolean;
 }
-// export interface OpMap
-// {
-//   [ key:string ]:OpInfo | null;
-// }
-export type OpMap = Record<string, OpInfo | null>;
+export type OpMap = Record< string, OpInfo | null>;
 
-export type OpArgs = ObjNoCmd[] | null;
+// export type OpArgs = (ObjNoCmd | Glyph[] | GroupOptions | MarkedContentProps)[] | null;
+export type OpArgs = any[] | Uint8ClampedArray | null;
 export interface Operation
 {
   fn:OPS;
-  args:OpArgs | null;
+  args:OpArgs;
 }
 
 export class EvaluatorPreprocessor 
@@ -5213,7 +5386,7 @@ export class EvaluatorPreprocessor
     //
     // If variableArgs === true: [0, `numArgs`] expected
     // If variableArgs === false: exactly `numArgs` expected
-    const getOPMap = getLookupTableFactory( (t:OpMap) => {
+    const getOPMap = getLookupTableFactory(( t:OpMap) => {
       // Graphic state
       t.w = { id: OPS.setLineWidth, numArgs: 1, variableArgs: false };
       t.J = { id: OPS.setLineCap, numArgs: 1, variableArgs: false };
@@ -5339,7 +5512,7 @@ export class EvaluatorPreprocessor
   parser:Parser;
   stateManager;
 
-  nonProcessedArgs:ObjNoCmd[] = [];
+  nonProcessedArgs:any[] = [];
   #numInvalidPathOPS = 0;
 
   constructor( stream:BaseStream, xref?:XRef, 
@@ -5379,15 +5552,15 @@ export class EvaluatorPreprocessor
   read( operation:Operation ) 
   {
     let args = operation.args;
-    while (true) 
+    while( true )
     {
       const obj = this.parser.getObj();
-      if (obj instanceof Cmd) 
+      if( obj instanceof Cmd )
       {
         const cmd = obj.cmd;
         // Check that the command is valid
         const opSpec = EvaluatorPreprocessor.opMap[cmd];
-        if (!opSpec) 
+        if( !opSpec )
         {
           warn(`Unknown command "${cmd}".`);
           continue;
@@ -5397,29 +5570,29 @@ export class EvaluatorPreprocessor
         const numArgs = opSpec.numArgs;
         let argsLength = args !== null ? args.length : 0;
 
-        if (!opSpec.variableArgs) 
+        if( !opSpec.variableArgs )
         {
           // Postscript commands can be nested, e.g. /F2 /GS2 gs 5.711 Tf
-          if (argsLength !== numArgs) 
+          if( argsLength !== numArgs )
           {
             const nonProcessedArgs = this.nonProcessedArgs;
             while( argsLength > numArgs )
             {
-              nonProcessedArgs.push( args!.shift()! );
+              nonProcessedArgs.push( (<any[]>args).shift()! );
               argsLength--;
             }
             while( argsLength < numArgs && nonProcessedArgs.length !== 0 )
             {
-              if (args === null) 
+              if( args === null )
               {
                 args = [];
               }
-              args.unshift( nonProcessedArgs.pop()! );
+              (<any[]>args).unshift( nonProcessedArgs.pop() );
               argsLength++;
             }
           }
 
-          if (argsLength < numArgs) 
+          if( argsLength < numArgs )
           {
             const partialMsg =
               `command ${cmd}: expected ${numArgs} args, ` +
@@ -5438,9 +5611,9 @@ export class EvaluatorPreprocessor
             // If we receive too few arguments, it's not possible to execute
             // the command, hence we skip the command.
             warn(`Skipping ${partialMsg}`);
-            if (args !== null) 
+            if( args !== null )
             {
-              args.length = 0;
+              (<any[]>args).length = 0;
             }
             continue;
           }
@@ -5457,22 +5630,19 @@ export class EvaluatorPreprocessor
         operation.args = args;
         return true;
       }
-      if (obj === EOF) 
-      {
-        return false; // no more commands
-      }
+      if( obj === EOF )
+        // no more commands
+        return false; 
       // argument
-      if (obj !== null) 
+      if( obj !== null )
       {
-        if (args === null) 
+        if( args === null )
         {
           args = [];
         }
-        args.push( <ObjNoCmd>obj );
-        if (args.length > 33) 
-        {
+        (<any[]>args).push( obj );
+        if( args.length > 33 ) 
           throw new FormatError("Too many arguments");
-        }
       }
     }
   }

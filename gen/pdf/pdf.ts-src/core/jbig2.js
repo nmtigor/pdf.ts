@@ -16,9 +16,9 @@
  * limitations under the License.
  */
 import { BaseException, shadow } from "../shared/util.js";
-import { log2, readInt8, readUint16, readUint32 } from "./core_utils.js";
 import { ArithmeticDecoder } from "./arithmetic_decoder.js";
 import { CCITTFaxDecoder } from "./ccitt.js";
+import { log2, readInt8, readUint16, readUint32 } from "./core_utils.js";
 /*81---------------------------------------------------------------------------*/
 class Jbig2Error extends BaseException {
     constructor(msg) {
@@ -1335,9 +1335,7 @@ var NsJbig2Image;
             // The contents of ArrayBuffers are initialized to 0.
             // Fill the buffer with 0xFF only if info.defaultPixelValue is set
             if (info.defaultPixelValue) {
-                for (let i = 0, ii = buffer.length; i < ii; i++) {
-                    buffer[i] = 0xff;
-                }
+                buffer.fill(0xff);
             }
             this.buffer = buffer;
         };

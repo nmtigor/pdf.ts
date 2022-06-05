@@ -16,10 +16,70 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/* globals PDFBug, Stats */
 
-import { createPromiseCap } from "../../lib/promisecap.js";
 import "../../lib/jslang.js";
+import { Locale } from "../../lib/Locale.js";
+import { createPromiseCap } from "../../lib/promisecap.js";
+import { assert } from "../../lib/util/trace.js";
+import { type ExplicitDest, type OpenAction } from "../pdf.ts-src/core/catalog.js";
+import { type DocumentInfo } from "../pdf.ts-src/core/document.js";
+import { WorkerMessageHandler } from "../pdf.ts-src/core/worker.js";
+import {
+  PDFDataRangeTransport,
+  PDFDocumentLoadingTask,
+  PDFDocumentProxy, type DocumentInitP, type PDFDocumentStats
+} from "../pdf.ts-src/display/api.js";
+import { getPdfFilenameFromUrl, isPdfFile } from "../pdf.ts-src/display/display_utils.js";
+import { Metadata } from "../pdf.ts-src/display/metadata.js";
+import { OptionalContentConfig } from "../pdf.ts-src/display/optional_content_config.js";
+import {
+  build,
+  getDocument,
+  getFilenameFromUrl,
+  GlobalWorkerOptions,
+  InvalidPDFException,
+  loadScript,
+  MissingPDFException,
+  PDFWorker,
+  shadow,
+  UnexpectedResponseException,
+  UNSUPPORTED_FEATURES,
+  version
+} from "../pdf.ts-src/pdf.js";
+import { OPS, PasswordResponses } from "../pdf.ts-src/shared/util.js";
+import {
+  AppOptions,
+  OptionKind,
+  ViewOnLoad,
+  type OptionName
+} from "./app_options.js";
+import { type PageOverview } from "./base_viewer.js";
+import { PDFBug } from "./debugger.js";
+import { DownloadManager } from "./download_manager.js";
+import { AutomationEventBus, EventBus, EventMap } from "./event_utils.js";
+import { IScripting, type IL10n } from "./interfaces.js";
+import { OverlayManager } from "./overlay_manager.js";
+import { PasswordPrompt } from "./password_prompt.js";
+import { PDFAttachmentViewer } from "./pdf_attachment_viewer.js";
+import { CursorTool, PDFCursorTools } from "./pdf_cursor_tools.js";
+import { PDFDocumentProperties } from "./pdf_document_properties.js";
+import { PDFFindBar } from "./pdf_find_bar.js";
+import { FindState, PDFFindController, type MatchesCount } from "./pdf_find_controller.js";
+import { PDFHistory } from "./pdf_history.js";
+import { PDFLayerViewer } from "./pdf_layer_viewer.js";
+import { LinkTarget, PDFLinkService } from "./pdf_link_service.js";
+import { PDFOutlineViewer } from "./pdf_outline_viewer.js";
+import { PDFPresentationMode } from "./pdf_presentation_mode.js";
+import { PDFPrintService } from "./pdf_print_service.js";
+import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
+import { PDFScriptingManager } from "./pdf_scripting_manager.js";
+import { PDFSidebar } from "./pdf_sidebar.js";
+import { PDFSidebarResizer } from "./pdf_sidebar_resizer.js";
+import { PDFThumbnailViewer } from "./pdf_thumbnail_viewer.js";
+import { PDFViewer } from "./pdf_viewer.js";
+import { BasePreferences } from "./preferences.js";
+import { SecondaryToolbar } from "./secondary_toolbar.js";
+import { Toolbar } from "./toolbar.js";
 import {
   animationStarted,
   apiPageLayoutToViewerModes,
@@ -39,73 +99,10 @@ import {
   ScrollMode,
   SidebarView,
   SpreadMode,
-  TextLayerMode,
+  TextLayerMode
 } from "./ui_utils.js";
-import { 
-  AppOptions, 
-  OptionKind, 
-  ViewOnLoad, 
-  type OptionName 
-} from "./app_options.js";
-import { AutomationEventBus, EventBus, EventMap } from "./event_utils.js";
-import {
-  build,
-  getDocument,
-  getFilenameFromUrl,
-  GlobalWorkerOptions,
-  InvalidPDFException,
-  loadScript,
-  MissingPDFException,
-  PDFWorker,
-  shadow,
-  UnexpectedResponseException,
-  UNSUPPORTED_FEATURES,
-  version,
-} from "../pdf.ts-src/pdf.js";
-import { CursorTool, PDFCursorTools } from "./pdf_cursor_tools.js";
-import { OverlayManager } from "./overlay_manager.js";
-import { PasswordPrompt } from "./password_prompt.js";
-import { PDFAttachmentViewer } from "./pdf_attachment_viewer.js";
-import { PDFDocumentProperties } from "./pdf_document_properties.js";
-import { PDFFindBar } from "./pdf_find_bar.js";
-import { FindState, type MatchesCount, PDFFindController } from "./pdf_find_controller.js";
-import { PDFHistory } from "./pdf_history.js";
-import { PDFLayerViewer } from "./pdf_layer_viewer.js";
-import { LinkTarget, PDFLinkService } from "./pdf_link_service.js";
-import { PDFOutlineViewer } from "./pdf_outline_viewer.js";
-import { PDFPresentationMode } from "./pdf_presentation_mode.js";
-import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
-import { PDFSidebarResizer } from "./pdf_sidebar_resizer.js";
-import { PDFThumbnailViewer } from "./pdf_thumbnail_viewer.js";
-import { PDFViewer } from "./pdf_viewer.js";
-import { SecondaryToolbar } from "./secondary_toolbar.js";
-import { Toolbar } from "./toolbar.js";
-import { type MultipleStored, ViewHistory } from "./view_history.js";
-import { PasswordResponses } from "../pdf.ts-src/shared/util.js";
-import { DownloadManager } from "./download_manager.js";
 import { type ViewerConfiguration } from "./viewer.js";
-import { BasePreferences } from "./preferences.js";
-import { Locale } from "../../lib/Locale.js";
-import { 
-  type DocumentInitParms, 
-  PDFDataRangeTransport, 
-  PDFDocumentLoadingTask, 
-  PDFDocumentProxy, 
-  type PDFDocumentStats
-} from "../pdf.ts-src/display/api.js";
-import { Metadata } from "../pdf.ts-src/display/metadata.js";
-import { type PageOverview } from "./base_viewer.js";
-import { OptionalContentConfig } from "../pdf.ts-src/display/optional_content_config.js";
-import { PDFPrintService } from "./pdf_print_service.js";
-import { PDFSidebar } from "./pdf_sidebar.js";
-import { assert } from "../../lib/util/trace.js";
-import { type DocumentInfo } from "../pdf.ts-src/core/document.js";
-import { type IL10n, IScripting } from "./interfaces.js";
-import { getPdfFilenameFromUrl, isPdfFile } from "../pdf.ts-src/display/display_utils.js";
-import { type ExplicitDest, type OpenAction } from "../pdf.ts-src/core/catalog.js";
-import { PDFScriptingManager } from "./pdf_scripting_manager.js";
-import { WorkerMessageHandler } from "../pdf.ts-src/core/worker.js";
-import { html } from "../../lib/dom.js";
+import { ViewHistory, type MultipleStored } from "./view_history.js";
 /*81---------------------------------------------------------------------------*/
 
 const DISABLE_AUTO_FETCH_LOADING_BAR_TIMEOUT = 5000; // ms
@@ -173,8 +170,8 @@ export interface FindControlState
 
 export interface PassiveLoadingCbs
 {
-  onOpenWithTransport( url:ViewerAppOpenParms_file, length:number, transport:PDFDataRangeTransport ):void;
-  onOpenWithData( data:ViewerAppOpenParms_file, contentDispositionFilename:string ):void;
+  onOpenWithTransport( url:_ViewerAppOpenP_file, length:number, transport:PDFDataRangeTransport ):void;
+  onOpenWithData( data:_ViewerAppOpenP_file, contentDispositionFilename:string ):void;
   onOpenWithURL( url:string, length?:number, originalUrl?:string ):void
   onError( err?:ErrorMoreInfo ):void;
   onProgress( loaded:number, total:number ):void;
@@ -213,11 +210,6 @@ export class DefaultExternalServices
   updateFindMatchesCount( data:MatchesCount ) {}
 
   initPassiveLoading( callbacks:PassiveLoadingCbs ) {}
-
-  async fallback( data:FallbackParams ):Promise<unknown>
-  {
-    return 0;
-  }
 
   reportTelemetry( data:TelemetryData ) {}
 
@@ -265,7 +257,7 @@ export class DefaultExternalServices
   }
 }
 
-interface SetInitialViewParms
+interface _SetInitialViewP
 {
   rotation?:number | undefined;
   sidebarView?:SidebarView | undefined;
@@ -290,7 +282,7 @@ interface ScriptingInstance
   domEvents:Map< unknown, unknown >;
 }
 
-interface InitHistoryParms
+interface _InitHistoryP
 {
   fingerprint:string;
   viewOnLoad:ViewOnLoad;
@@ -316,11 +308,11 @@ export type ScriptingDocProperties = DocumentInfo &
   URL:string;
 }
 
-type ViewerAppOpenParms_file = string | Uint8Array | {
+type _ViewerAppOpenP_file = string | Uint8Array | {
   url:string;
   originalUrl:string;
 }
-interface ViewerAppOpenParms_args
+interface _ViewerAppOpenP_args
 {
   length:number;
   range?:PDFDataRangeTransport
@@ -332,7 +324,6 @@ export class PDFViewerApplication
   initialRotation?:number | undefined;
   
   #initializedCapability = createPromiseCap();
-  _fellback = false;
   appConfig!:ViewerConfiguration;
   pdfDocument:PDFDocumentProxy | undefined;
   pdfLoadingTask:PDFDocumentLoadingTask | undefined;
@@ -381,7 +372,9 @@ export class PDFViewerApplication
   _docStats:PDFDocumentStats | undefined;
   _wheelUnusedTicks = 0;
   
-  _idleCallbacks = new Set();
+  _idleCallbacks = new Set<number>();
+
+  _PDFBug?:typeof PDFBug;
 
   disableAutoFetchLoadingBarTimeout:number | undefined;
 
@@ -471,12 +464,16 @@ export class PDFViewerApplication
     const hash = document.location.hash.substring(1);
     if( !hash ) return;
 
-    const params = parseQueryString( hash ),
-      waitOn = [];
+    const { mainContainer, viewerContainer } = this.appConfig,
+      params = parseQueryString(hash);
 
     if( params.get("disableworker") === "true" )
     {
-      waitOn.push( loadFakeWorker() );
+      try {
+        await loadFakeWorker();
+      } catch (ex) {
+        console.error(`_parseHashParameters: "${(<any>ex).message}".`);
+      }
     }
     if( params.has("disablerange") )
     {
@@ -518,18 +515,29 @@ export class PDFViewerApplication
         case "visible":
         case "shadow":
         case "hover":
-          const viewer = this.appConfig.viewerContainer;
-          viewer.classList.add(`textLayer-${params.get("textlayer")}`);
+          viewerContainer.classList.add(`textLayer-${params.get("textlayer")}`);
+          try {
+            await loadPDFBug( this );
+            this._PDFBug!.loadCSS();
+          } catch (ex) {
+            console.error(`_parseHashParameters: "${(<any>ex).message}".`);
+          }
           break;
       }
     }
-    // if (params.has("pdfbug")) {
-    //   AppOptions.set("pdfBug", true);
-    //   AppOptions.set("fontExtraProperties", true);
+    if( params.has("pdfbug") )
+    {
+      AppOptions.set("pdfBug", true);
+      AppOptions.set("fontExtraProperties", true);
 
-    //   const enabled = params.get("pdfbug").split(",");
-    //   waitOn.push(initPDFBug(enabled));
-    // }
+      const enabled = params.get("pdfbug")!.split(",");
+      try {
+        await loadPDFBug( this );
+        this._PDFBug!.init({ OPS }, mainContainer, enabled);
+      } catch (ex) {
+        console.error(`_parseHashParameters: "${(<any>ex).message}".`);
+      }
+    }
     // It is not possible to change locale for the (various) extension builds.
     // #if !PRODUCTION || GENERIC
       if( params.has("locale") )
@@ -537,14 +545,6 @@ export class PDFViewerApplication
         AppOptions.set("locale", params.get("locale"));
       }
     // #endif
-
-    if( waitOn.length === 0 ) return;
-
-    try {
-      await Promise.all(waitOn);
-    } catch (reason) {
-      console.error(`_parseHashParameters: "${(<any>reason).message}".`);
-    }
   }
 
   async #initializeL10n()
@@ -666,6 +666,10 @@ export class PDFViewerApplication
       useOnlyCssZoom: AppOptions.get("useOnlyCssZoom"),
       maxCanvasPixels: AppOptions.get("maxCanvasPixels"),
       enablePermissions: AppOptions.get("enablePermissions"),
+      pageColors: {
+        background: AppOptions.get("pageColorsBackground"),
+        foreground: AppOptions.get("pageColorsForeground"),
+      },
     });
     pdfRenderingQueue.setViewer(this.pdfViewer);
     pdfLinkService.setViewer(this.pdfViewer);
@@ -713,7 +717,6 @@ export class PDFViewerApplication
 
     this.secondaryToolbar = new SecondaryToolbar(
       appConfig.secondaryToolbar,
-      container,
       eventBus
     );
 
@@ -933,9 +936,8 @@ export class PDFViewerApplication
 
   #cancelIdleCallbacks()
   {
-    if (!this._idleCallbacks.size) {
+    if( !this._idleCallbacks.size ) 
       return;
-    }
     for( const callback of this._idleCallbacks )
     {
       (<any>window).cancelIdleCallback(callback);
@@ -987,7 +989,6 @@ export class PDFViewerApplication
       this.pdfDocumentProperties.setDocument();
     }
     this.pdfLinkService.externalLinkEnabled = true;
-    this._fellback = false;
     this.store = undefined;
     this.isInitialViewSet = false;
     this.downloadComplete = false;
@@ -1013,10 +1014,8 @@ export class PDFViewerApplication
     this.findBar?.reset();
     this.toolbar.reset();
     this.secondaryToolbar!.reset();
+    this._PDFBug?.cleanup();
 
-    // if (typeof PDFBug !== "undefined") {
-    //   PDFBug.cleanup();
-    // }
     await Promise.all(promises);
   }
 
@@ -1027,7 +1026,7 @@ export class PDFViewerApplication
    *  e.g. HTTP headers ('httpHeaders') or alternative data transport ('range').
    * @return Returns the promise, which is resolved when document is opened.
    */
-  async open( file:ViewerAppOpenParms_file, args?:ViewerAppOpenParms_args )
+  async open( file:_ViewerAppOpenP_file, args?:_ViewerAppOpenP_args )
   {
     if (this.pdfLoadingTask) 
     {
@@ -1041,7 +1040,7 @@ export class PDFViewerApplication
       (<any>GlobalWorkerOptions)[key] = workerParameters[ <OptionName>key ];
     }
 
-    const parameters:DocumentInitParms = Object.create(null);
+    const parameters:DocumentInitP = Object.create(null);
     if( typeof file === "string" )
     {
       // URL
@@ -1100,7 +1099,7 @@ export class PDFViewerApplication
       this.progress(loaded / total);
     };
 
-    // Listen for unsupported features to trigger the fallback UI.
+    // Listen for unsupported features to report telemetry.
     loadingTask.onUnsupportedFeature = this.fallback;
 
     return loadingTask.promise.then(
@@ -1202,23 +1201,6 @@ export class PDFViewerApplication
       type: "unsupportedFeature",
       featureId,
     });
-
-    // Only trigger the fallback once so we don't spam the user with messages
-    // for one PDF.
-    if( this._fellback ) return;
-
-    this._fellback = true;
-
-    this.externalServices
-      .fallback({
-        featureId,
-        url: this.baseUrl,
-      })
-      .then(download => {
-        if( !download ) return;
-
-        this.download({ sourceEventType: "download" });
-      });
   }
 
   /**
@@ -1375,14 +1357,14 @@ export class PDFViewerApplication
 
     // Since the `setInitialView` call below depends on this being resolved,
     // fetch it early to avoid delaying initial rendering of the PDF document.
-    const pageLayoutPromise = pdfDocument.getPageLayout().catch( () =>
+    const pageLayoutPromise = pdfDocument.getPageLayout().catch(() =>
       /* Avoid breaking initial rendering; ignoring errors. */
       undefined
     );
-    const pageModePromise = pdfDocument.getPageMode().catch( () => {
+    const pageModePromise = pdfDocument.getPageMode().catch(() => {
       /* Avoid breaking initial rendering; ignoring errors. */
     });
-    const openActionPromise = pdfDocument.getOpenAction().catch( () => 
+    const openActionPromise = pdfDocument.getOpenAction().catch(() => 
       /* Avoid breaking initial rendering; ignoring errors. */
       undefined
     );
@@ -1535,7 +1517,7 @@ export class PDFViewerApplication
           // even if there are any errors thrown above.
           this.setInitialView();
         })
-        .then( () => {
+        .then(() => {
           // At this point, rendering of the initial page(s) should always have
           // started (and may even have completed).
           // To prevent any future issues, e.g. the document being completely
@@ -1585,11 +1567,11 @@ export class PDFViewerApplication
         const callback = (<any>window).requestIdleCallback(
           () => {
             this.#collectTelemetry(pdfDocument);
-            this._idleCallbacks.delete(callback);
+            this._idleCallbacks.delete( callback);
           },
           { timeout: 1000 }
         );
-        this._idleCallbacks.add(callback);
+        this._idleCallbacks.add( callback);
       }
       // #if MOZCENTRAL
         fn_();
@@ -1858,7 +1840,7 @@ export class PDFViewerApplication
     );
   }
 
-  #initializePdfHistory({ fingerprint, viewOnLoad, initialDest }:InitHistoryParms )
+  #initializePdfHistory({ fingerprint, viewOnLoad, initialDest }:_InitHistoryP )
   {
     if( !this.pdfHistory ) return;
 
@@ -1910,7 +1892,7 @@ export class PDFViewerApplication
   }
 
   setInitialView( storedHash?:string,
-    { rotation, sidebarView, scrollMode, spreadMode }:SetInitialViewParms={}
+    { rotation, sidebarView, scrollMode, spreadMode }:_SetInitialViewP={}
   ) {
     const setRotation = ( angle?:number ) => 
     {
@@ -2177,6 +2159,9 @@ export class PDFViewerApplication
 
   unbindEvents() 
   {
+    // #if MOZCENTRAL
+      throw new Error("Not implemented: unbindEvents");
+    // #endif
     const { eventBus, _boundEvents } = this;
 
     eventBus._off("resize", webViewerResize);
@@ -2234,6 +2219,9 @@ export class PDFViewerApplication
 
   unbindWindowEvents() 
   {
+    // #if MOZCENTRAL
+      throw new Error("Not implemented: unbindWindowEvents");
+    // #endif
     const { _boundEvents } = this;
 
     window.removeEventListener("visibilitychange", webViewerVisibilityChange);
@@ -2277,10 +2265,8 @@ export class PDFViewerApplication
    */
   #unblockDocumentLoadEvent = () => 
   {
-    if( (<any>document).blockUnblockOnload )
-    {
-      (<any>document).blockUnblockOnload(false);
-    }
+    (<any>document).blockUnblockOnload?.( false );
+
     // Ensure that this method is only ever run once.
     this.#unblockDocumentLoadEvent = () => {};
   }
@@ -2322,7 +2308,7 @@ let validateFileURL:( file?:string ) => void;
   ];
   validateFileURL = function( file )
   {
-    if( file === undefined ) return;
+    if( !file ) return;
 
     try {
       const viewerOrigin = new URL(window.location.href).origin || "null";
@@ -2363,10 +2349,8 @@ declare global
 
 async function loadFakeWorker()
 {
-  if( !GlobalWorkerOptions.workerSrc )
-  {
-    GlobalWorkerOptions.workerSrc = AppOptions.get("workerSrc");
-  }
+  GlobalWorkerOptions.workerSrc ||= AppOptions.get("workerSrc");
+
   // #if !PRODUCTION
     window.pdfjsWorker = await import("../pdf.ts-src/core/worker.js");
     return;
@@ -2374,35 +2358,33 @@ async function loadFakeWorker()
   await loadScript( PDFWorker.workerSrc );
 }
 
-// async function initPDFBug(enabledTabs) {
-//   const { debuggerScriptPath, mainContainer } = PDFViewerApplication.appConfig;
-//   await loadScript(debuggerScriptPath);
-//   PDFBug.init({ OPS }, mainContainer, enabledTabs);
-// }
+async function loadPDFBug( self:PDFViewerApplication )
+{
+  const { debuggerScriptPath } = self.appConfig;
+  const { PDFBug } =
+    // #if !PRODUCTION
+      await import(debuggerScriptPath) // eslint-disable-line no-unsanitized/method
+    // #else
+      // await __non_webpack_import__(debuggerScriptPath); // eslint-disable-line no-undef
+      await import(debuggerScriptPath) // eslint-disable-line no-unsanitized/method
+    /* #endif */;
 
-// interface PageBug
-// {
-//   pageNumber:number;
-// }
+  self._PDFBug = PDFBug;
+}
 
-// function reportPageStatsPDFBug({ pageNumber }:PageBug )
-// {
-//   if (typeof Stats === "undefined" || !Stats.enabled) {
-//     return;
-//   }
-//   const pageView = viewerapp.pdfViewer!.getPageView(
-//     /* index = */ pageNumber - 1
-//   );
-//   const pageStats = pageView?.pdfPage?.stats;
-//   if (!pageStats) {
-//     return;
-//   }
-//   Stats.add(pageNumber, pageStats);
-// }
+function reportPageStatsPDFBug({ pageNumber }:{ pageNumber:number; })
+{
+  if( !(<any>globalThis).Stats?.enabled )
+    return;
+  const pageView = viewerapp.pdfViewer.getPageView(
+    /* index = */ pageNumber - 1
+  );
+  (<any>globalThis).Stats.add(pageNumber, pageView?.pdfPage?.stats);
+}
 
 function webViewerInitialized() 
 {
-  const appConfig = viewerapp.appConfig;
+  const { appConfig, eventBus } = viewerapp;
   // #if GENERIC
     const queryString = document.location.search.substring(1);
     const params = parseQueryString(queryString);
@@ -2417,57 +2399,36 @@ function webViewerInitialized()
   // #endif
 
   // #if GENERIC
-    const fileInput = html("input");
-    fileInput.id = appConfig.openFileInputName;
-    fileInput.className = "fileInput";
-    fileInput.setAttribute("type", "file");
-    fileInput.oncontextmenu = noContextMenuHandler;
-    document.body.appendChild(fileInput);
+    const fileInput = appConfig.openFileInput;
+    fileInput.value = <any>null;
 
-    if( !window.File
-     || !window.FileReader
-     || !window.FileList
-     || !window.Blob
-    ) {
-      appConfig.toolbar.openFile.hidden = true;
-      appConfig.secondaryToolbar.openFileButton.hidden = true;
-    } 
-    else {
-      fileInput.value = "";
-    }
-
-    fileInput.addEventListener( "change", function( evt:Event ) {
-      const files = (<HTMLInputElement>evt.target).files;
-      if( !files || files.length === 0 ) return;
-      
-      viewerapp.eventBus.dispatch("fileinputchange", {
+    fileInput.addEventListener("change", function (evt) {
+      const { files } = <HTMLInputElement>evt.target;
+      if( !files || files.length === 0 )
+        return;
+      eventBus.dispatch("fileinputchange", {
         source: this,
         fileInput: evt.target,
       });
     });
 
     // Enable dragging-and-dropping a new PDF file onto the viewerContainer.
-    appConfig.mainContainer.addEventListener("dragover", ( evt:DragEvent ) =>
-    {
+    appConfig.mainContainer.addEventListener("dragover", evt => {
       evt.preventDefault();
 
       evt.dataTransfer!.dropEffect = "move";
     });
-    appConfig.mainContainer.addEventListener("drop", function( evt:DragEvent ) 
-    {
+    appConfig.mainContainer.addEventListener("drop", function (evt) {
       evt.preventDefault();
 
-      const files = evt.dataTransfer!.files;
-      if (!files || files.length === 0) return;
-      
-      viewerapp.eventBus.dispatch("fileinputchange", {
+      const { files } = evt.dataTransfer!;
+      if( !files || files.length === 0 )
+        return;
+      eventBus.dispatch("fileinputchange", {
         source: this,
         fileInput: evt.dataTransfer,
       });
     });
-  // #else
-    appConfig.toolbar.openFile.hidden = true;
-    appConfig.secondaryToolbar.openFileButton.hidden = true;
   // #endif
 
   if( !viewerapp.supportsDocumentFonts )
@@ -2497,39 +2458,37 @@ function webViewerInitialized()
 
   appConfig.mainContainer.addEventListener(
     "transitionend",
-    function( evt:TransitionEvent ) {
-      if (evt.target === /* mainContainer */ this) 
+    function( evt:TransitionEvent )
+    {
+      if( evt.target === /* mainContainer */ this )
       {
-        viewerapp.eventBus.dispatch("resize", { source: this });
+        eventBus.dispatch("resize", { source: this });
       }
     },
     true
   );
 
   try {
-    webViewerOpenFileViaURL( file );
-  } catch( reason ) {
-    viewerapp.l10n.get("loading_error").then( msg => {
-      viewerapp._documentError( msg, <ErrorMoreInfo>reason );
+    // #if GENERIC
+      if( file )
+      {
+        viewerapp.open(file);
+      } 
+      else {
+        viewerapp._hideViewBookmark();
+      }
+    /* #else */ /* #if MOZCENTRAL || CHROME */
+      viewerapp.setTitleUsingUrl(file, /* downloadUrl = */ file);
+      viewerapp.initPassiveLoading();
+    // #else
+      throw new Error("Not implemented: webViewerInitialized");
+    // #endif
+    // #endif
+  } catch (reason) {
+    viewerapp.l10n.get("loading_error").then(msg => {
+      viewerapp._documentError( msg, <any>reason);
     });
   }
-}
-
-function webViewerOpenFileViaURL( file:string )
-{
-  // #if GENERIC
-    if( file ) 
-         viewerapp.open( file );
-    else viewerapp._hideViewBookmark();
-  /* #else */ /* #if MOZCENTRAL || CHROME */
-    viewerapp.setTitleUsingUrl( file, /* downloadUrl = */ file );
-    viewerapp.initPassiveLoading();
-  // #else
-    if (file) 
-         throw new Error("Not implemented: webViewerOpenFileViaURL");
-    else viewerapp._hideViewBookmark();
-  // #endif
-  // #endif
 }
 
 function webViewerPageRendered({ pageNumber, error }:EventMap['pagerendered'] )
@@ -2657,7 +2616,7 @@ function webViewerUpdateViewarea( evt:EventMap['updateviewarea'] )
         scrollTop: location.top,
         rotation: location.rotation,
       })
-      .catch( () => {
+      .catch(() => {
         // Unable to write to storage.
       });
   }
@@ -2700,6 +2659,8 @@ function webViewerSpreadModeChanged( evt:EventMap['spreadmodechanged'] )
 function webViewerResize() 
 {
   const { pdfDocument, pdfViewer } = viewerapp;
+  pdfViewer.updateContainerHeightCss();
+
   if( !pdfDocument ) return;
 
   const currentScaleValue = pdfViewer.currentScaleValue;
@@ -2728,13 +2689,12 @@ function webViewerHashchange( evt:EventMap['hashchange'] )
   }
 }
 
-let webViewerFileInputChange:( evt:EventMap['fileinputchange'] ) => void;
-let webViewerOpenFile:( evt:EventMap["openfile"] ) => void;
 // #if GENERIC
-  webViewerFileInputChange = ( evt:EventMap['fileinputchange'] ) =>
-  {
-    // Opening a new PDF file isn't supported in Presentation Mode.
-    if( viewerapp.pdfViewer?.isInPresentationMode ) return; 
+  // eslint-disable-next-line no-var
+  const webViewerFileInputChange = ( evt:EventMap['fileinputchange'] ) => {
+    if( viewerapp.pdfViewer?.isInPresentationMode ) 
+      // Opening a new PDF file isn't supported in Presentation Mode.
+      return; 
 
     const file = (<DataTransfer>evt.fileInput).files[0];
 
@@ -2746,10 +2706,10 @@ let webViewerOpenFile:( evt:EventMap["openfile"] ) => void;
     viewerapp.open(url);
   };
 
-  webViewerOpenFile = ( evt:EventMap["openfile"] ) =>
-  {
-    const openFileInputName = viewerapp.appConfig.openFileInputName;
-    document.getElementById(openFileInputName)!.click();
+  // eslint-disable-next-line no-var
+  const webViewerOpenFile = ( evt:EventMap["openfile"] ) => {
+    const fileInput = viewerapp.appConfig.openFileInput;
+    fileInput.click();
   };
 // #endif
 
@@ -2945,7 +2905,7 @@ function setZoomDisabledTimeout()
   {
     clearTimeout(zoomDisabledTimeout);
   }
-  zoomDisabledTimeout = setTimeout( () => {
+  zoomDisabledTimeout = setTimeout(() => {
     zoomDisabledTimeout = undefined;
   }, WHEEL_ZOOM_DISABLED_TIMEOUT);
 }
@@ -3123,7 +3083,7 @@ function webViewerKeyDown( evt:KeyboardEvent )
         if (!isViewerInPresentationMode) 
         {
           // keeping it unhandled (to restore page zoom to 100%)
-          setTimeout( () => {
+          setTimeout(() => {
             // ... and resetting the scale after browser adjusts its scale
             viewerapp.zoomReset();
           });

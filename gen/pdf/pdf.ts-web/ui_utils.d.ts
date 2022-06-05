@@ -85,6 +85,10 @@ export declare class OutputScale {
      */
     get scaled(): boolean;
 }
+export interface PageSpot {
+    top?: number;
+    left?: number;
+}
 /**
  * Scrolls specified element into view of its parent.
  * @param element The element to be visible.
@@ -94,10 +98,7 @@ export declare class OutputScale {
  *   ignore elements that either: Contains marked content identifiers,
  *   or have the CSS-rule `overflow: hidden;` set. The default value is `false`.
  */
-export declare function scrollIntoView(element: HTMLElement, spot?: {
-    top?: number;
-    left?: number;
-}, scrollMatches?: boolean): void;
+export declare function scrollIntoView(element: HTMLElement, spot?: PageSpot, scrollMatches?: boolean): void;
 /**
  * Helper function to start monitoring the scroll event and converting them into
  * PDF.js friendly one: with scroll debounce and scroll direction.
@@ -133,7 +134,7 @@ export declare function binarySearchFirstItem<T>(items: T[], condition: (view: T
  */
 export declare function approximateFraction(x: number): [number, number];
 export declare function roundToDivide(x: number, div: number): number;
-interface GetPageSizeInchesParms {
+interface _GetPageSizeInchesP {
     view: number[];
     userUnit: number;
     rotate: number;
@@ -155,7 +156,7 @@ interface PageSize {
  * @return An Object containing the properties: {number} `width`
  *   and {number} `height`, given in inches.
  */
-export declare function getPageSizeInches({ view, userUnit, rotate }: GetPageSizeInchesParms): PageSize;
+export declare function getPageSizeInches({ view, userUnit, rotate }: _GetPageSizeInchesP): PageSize;
 /**
  * Helper function for getVisibleElements.
  *
@@ -184,7 +185,7 @@ export interface VisibleElements {
     views: VisibleElement[];
     ids?: Set<number>;
 }
-interface GetVisibleElementsParms {
+interface _GetVisibleElementsP {
     /**
      * A container that can possibly scroll.
      */
@@ -229,7 +230,7 @@ interface GetVisibleElementsParms {
  * rendering canvas. Earlier and later refer to index in `views`, not page
  * layout.)
  */
-export declare function getVisibleElements({ scrollEl, views, sortByVisibility, horizontal, rtl, }: GetVisibleElementsParms): VisibleElements;
+export declare function getVisibleElements({ scrollEl, views, sortByVisibility, horizontal, rtl, }: _GetVisibleElementsP): VisibleElements;
 /**
  * Event handler to suppress context menu.
  */
@@ -253,21 +254,14 @@ export declare const enum WaitOnType {
 export declare const animationStarted: Promise<unknown>;
 export declare function clamp(v: number, min: number, max: number): number;
 export declare class ProgressBar {
+    #private;
     visible: boolean;
     div: HTMLDivElement;
     bar: HTMLDivElement;
-    height: number;
-    width: number;
-    units: string;
     _percent: number;
     get percent(): number;
     _indeterminate?: boolean;
-    constructor(id: string, { height, width, units }?: {
-        height?: number;
-        width?: number;
-        units?: string;
-    });
-    _updateBar(): void;
+    constructor(id: string);
     set percent(val: number);
     setWidth(viewer?: HTMLDivElement): void;
     hide(): void;

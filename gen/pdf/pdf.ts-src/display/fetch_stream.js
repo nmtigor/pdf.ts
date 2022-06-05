@@ -17,8 +17,8 @@
  */
 import { createPromiseCap } from "../../../lib/promisecap.js";
 import { assert } from "../../../lib/util/trace.js";
-import { AbortException, } from "../shared/util.js";
-import { createResponseStatusError, extractFilenameFromHeader, validateRangeRequestCapabilities, validateResponseStatus, } from "./network_utils.js";
+import { AbortException } from "../shared/util.js";
+import { createResponseStatusError, extractFilenameFromHeader, validateRangeRequestCapabilities, validateResponseStatus } from "./network_utils.js";
 /*81---------------------------------------------------------------------------*/
 function createFetchOptions(headers, withCredentials, abortController) {
     return {
@@ -63,9 +63,8 @@ export class PDFFetchStream {
     }
     /** @implements */
     getRangeReader(begin, end) {
-        if (end <= this._progressiveDataLength) {
-            return null;
-        }
+        if (end <= this._progressiveDataLength)
+            return undefined;
         const reader = new PDFFetchStreamRangeReader(this, begin, end);
         this.#rangeRequestReaders.push(reader);
         return reader;
@@ -84,7 +83,7 @@ class PDFFetchStreamReader {
     #stream;
     #reader = null;
     _loaded = 0;
-    #filename = null;
+    #filename;
     get filename() { return this.#filename; }
     #withCredentials;
     #contentLength;

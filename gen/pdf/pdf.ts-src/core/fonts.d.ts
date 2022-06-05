@@ -1,11 +1,11 @@
-import { FontType, type rect_t, type matrix_t, point_t } from "../shared/util.js";
+import { FontType, point_t, type matrix_t, type rect_t } from "../shared/util.js";
+import { BaseStream } from "./base_stream.js";
+import { CFFFont } from "./cff_font.js";
 import { CMap } from "./cmap.js";
+import { type CssFontInfo } from "./document.js";
 import { type FontProps, type VMetric } from './evaluator.js';
 import { type OpListIR } from './operator_list.js';
-import { type CssFontInfo } from "./document.js";
-import { BaseStream } from "./base_stream.js";
 import { IdentityToUnicodeMap, ToUnicodeMap } from "./to_unicode_map.js";
-import { CFFFont } from "./cff_font.js";
 import { Type1Font } from "./type1_font.js";
 export declare abstract class FontExpotData {
     name: string;
@@ -66,9 +66,9 @@ export declare class Glyph {
     operatorListId: number | undefined;
     isSpace: boolean;
     isInFont: boolean;
-    isWhitespace: any;
-    isZeroWidthDiacritic: any;
-    isInvisibleFormatMark: any;
+    isWhitespace: boolean;
+    isZeroWidthDiacritic: boolean;
+    isInvisibleFormatMark: boolean;
     compiled?: ((c: CanvasRenderingContext2D) => void) | undefined;
     constructor(originalCharCode: number, fontChar: string, unicode: string, accent: Accent | undefined, width: number | undefined, vmetric: VMetric | undefined, operatorListId: number | undefined, isSpace: boolean, isInFont: boolean);
     matchesForCache(originalCharCode: number, fontChar: string, unicode: string, accent: Accent | undefined, width: number | undefined, vmetric: VMetric | undefined, operatorListId: number | undefined, isSpace: boolean, isInFont: boolean): boolean;

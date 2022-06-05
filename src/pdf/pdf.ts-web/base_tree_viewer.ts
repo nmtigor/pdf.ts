@@ -15,14 +15,14 @@
 
 import { html } from "../../lib/dom.js";
 import { PDFDocumentProxy } from "../pdf.ts-src/display/api.js";
-import { removeNullCharacters } from "./ui_utils.js";
 import { EventBus } from "./event_utils.js";
+import { removeNullCharacters } from "./ui_utils.js";
 /*81---------------------------------------------------------------------------*/
 
 const TREEITEM_OFFSET_TOP = -100; // px
 const TREEITEM_SELECTED_CLASS = "selected";
 
-export interface BaseTreeViewerCtorParms
+export interface BaseTreeViewerCtorP
 {
   /**
    * The viewer element.
@@ -44,7 +44,7 @@ export abstract class BaseTreeViewer
   #lastToggleIsShow!:boolean;
   #currentTreeItem!:HTMLElement | null;
 
-  constructor( options:BaseTreeViewerCtorParms )
+  constructor( options:BaseTreeViewerCtorP )
   {
     this.container = options.container;
     this.eventBus = options.eventBus;

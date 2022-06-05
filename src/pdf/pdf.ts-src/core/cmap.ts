@@ -17,19 +17,19 @@
  * limitations under the License.
  */
 
+import { type TupleOf } from "../../../lib/alias.js";
 import { assert } from "../../../lib/util/trace.js";
+import { type FetchBuiltInCMap } from "../display/base_factory.js";
 import {
   CMapCompressionType,
   FormatError,
-  warn,
+  warn
 } from "../shared/util.js";
-import { Cmd, EOF, isCmd, Name, type ObjNoCmd } from "./primitives.js";
-import { Lexer } from "./parser.js";
-import { MissingDataException } from "./core_utils.js";
-import { Stream } from "./stream.js";
-import { type TupleOf } from "../../../lib/alias.js";
 import { BaseStream } from "./base_stream.js";
-import { type FetchBuiltInCMap } from "../display/base_factory.js";
+import { MissingDataException } from "./core_utils.js";
+import { Lexer } from "./parser.js";
+import { Cmd, EOF, isCmd, Name, type ObjNoCmd } from "./primitives.js";
+import { Stream } from "./stream.js";
 /*81---------------------------------------------------------------------------*/
 
 const BUILT_IN_CMAPS = [
@@ -856,10 +856,10 @@ namespace NsCMapFactory
     while (true) 
     {
       let obj = lexer.getObj();
-      if (obj === EOF) break;
-
-      if (isCmd(obj, "endbfchar")) return;
-
+      if( obj === EOF )
+        break;
+      if( isCmd(obj, "endbfchar") )
+        return;
       expectString(obj);
       const src = strToInt( <string>obj );
       obj = lexer.getObj();
@@ -874,10 +874,10 @@ namespace NsCMapFactory
   {
     while (true) {
       let obj = lexer.getObj();
-      if (obj === EOF) break;
-
-      if (isCmd(obj, "endbfrange")) return;
-
+      if( obj === EOF )
+        break;
+      if( isCmd(obj, "endbfrange") )
+        return;
       expectString(obj);
       const low = strToInt( <string>obj );
       obj = lexer.getObj();
@@ -912,10 +912,10 @@ namespace NsCMapFactory
     while (true) 
     {
       let obj = lexer.getObj();
-      if (obj === EOF) break;
-
-      if (isCmd(obj, "endcidchar")) return;
-
+      if( obj === EOF )
+        break;
+      if( isCmd(obj, "endcidchar") )
+        return;
       expectString(obj);
       const src = strToInt( <string>obj );
       obj = lexer.getObj();
@@ -930,10 +930,10 @@ namespace NsCMapFactory
     while (true) 
     {
       let obj = lexer.getObj();
-      if (obj === EOF) break;
-
-      if (isCmd(obj, "endcidrange")) return;
-
+      if( obj === EOF )
+        break;
+      if( isCmd(obj, "endcidrange") )
+        return;
       expectString(obj);
       const low = strToInt( <string>obj );
       obj = lexer.getObj();
@@ -951,16 +951,16 @@ namespace NsCMapFactory
     while( true )
     {
       let obj = lexer.getObj();
-      if( obj === EOF ) break;
-
-      if( isCmd(obj, "endcodespacerange") ) return;
-
-      if( typeof obj !== "string" ) break;
-
+      if( obj === EOF )
+        break;
+      if( isCmd(obj, "endcodespacerange") )
+        return;
+      if( typeof obj !== "string" )
+        break;
       const low = strToInt( obj );
       obj = lexer.getObj();
-      if( typeof obj !== "string" ) break;
-
+      if( typeof obj !== "string" )
+        break;
       const high = strToInt( obj );
       cMap.addCodespaceRange( obj.length, low, high);
     }
@@ -993,9 +993,7 @@ namespace NsCMapFactory
       try {
         const obj = lexer.getObj();
         if( obj === EOF )
-        {
           break;
-        } 
         else if( obj instanceof Name )
         {
          if( obj.name === "WMode" )
@@ -1114,7 +1112,7 @@ namespace NsCMapFactory
     );
   }
 
-  export interface CMapFactoryCreateParms
+  interface _CMapFactoryCreateP
   {
     encoding:Name | BaseStream;
     fetchBuiltInCMap:FetchBuiltInCMap;
@@ -1122,7 +1120,7 @@ namespace NsCMapFactory
   }
 
   export const CMapFactory = {
-    async create( params:CMapFactoryCreateParms ) 
+    async create( params:_CMapFactoryCreateP ) 
     {
       const encoding = params.encoding;
       const fetchBuiltInCMap = params.fetchBuiltInCMap;

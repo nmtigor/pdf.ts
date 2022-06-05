@@ -31,13 +31,13 @@
 /** @typedef {import("./interfaces").IRenderableView} IRenderableView */
 // eslint-disable-next-line max-len
 /** @typedef {import("./pdf_rendering_queue").PDFRenderingQueue} PDFRenderingQueue */
+import { html } from "../../lib/dom.js";
 import { createPromiseCap } from "../../lib/promisecap.js";
 import { PixelsPerInch, RenderingCancelledException, SVGGraphics } from "../pdf.ts-src/pdf.js";
 import { AnnotationMode } from "../pdf.ts-src/shared/util.js";
-import { NullL10n } from "./l10n_utils.js";
-import { approximateFraction, DEFAULT_SCALE, OutputScale, RendererType, roundToDivide, TextLayerMode, RenderingStates } from "./ui_utils.js";
-import { html } from "../../lib/dom.js";
 import { compatibilityParams } from "./app_options.js";
+import { NullL10n } from "./l10n_utils.js";
+import { approximateFraction, DEFAULT_SCALE, OutputScale, RendererType, RenderingStates, roundToDivide, TextLayerMode } from "./ui_utils.js";
 const MAX_CANVAS_PIXELS = compatibilityParams.maxCanvasPixels || 16777216;
 export class PDFPageView {
     /** @implements */
@@ -60,6 +60,7 @@ export class PDFPageView {
     imageResourcesPath;
     useOnlyCssZoom;
     maxCanvasPixels;
+    pageColors;
     eventBus;
     renderingQueue;
     textLayerFactory;
@@ -103,6 +104,7 @@ export class PDFPageView {
         this.imageResourcesPath = options.imageResourcesPath || "";
         this.useOnlyCssZoom = options.useOnlyCssZoom || false;
         this.maxCanvasPixels = options.maxCanvasPixels || MAX_CANVAS_PIXELS;
+        this.pageColors = options.pageColors;
         this.eventBus = options.eventBus;
         this.renderingQueue = options.renderingQueue;
         this.textLayerFactory = options.textLayerFactory;
@@ -264,15 +266,13 @@ export class PDFPageView {
             this._optionalContentConfigPromise = optionalContentConfigPromise;
         }
         const totalRotation = (this.rotation + this.pdfPageRotate) % 360;
-        const viewportScale = this.scale * PixelsPerInch.PDF_TO_CSS_UNITS;
         this.viewport = this.viewport.clone({
-            scale: viewportScale,
+            scale: this.scale * PixelsPerInch.PDF_TO_CSS_UNITS,
             rotation: totalRotation,
         });
         if (this._isStandalone) {
             const { style } = document.documentElement;
-            style.setProperty("--zoom-factor", String(this.scale));
-            style.setProperty("--viewport-scale-factor", String(viewportScale));
+            style.setProperty("--zoom-factor", this.scale);
         }
         if (this.svg) {
             this.cssTransform({
@@ -625,7 +625,6 @@ export class PDFPageView {
         };
         canvasWrapper.appendChild(canvas);
         this.canvas = canvas;
-        canvas.mozOpaque = true;
         const ctx = canvas.getContext("2d", { alpha: false });
         const outputScale = (this.outputScale = new OutputScale());
         if (this.useOnlyCssZoom) {
@@ -668,6 +667,7 @@ export class PDFPageView {
             annotationMode: this.#annotationMode,
             optionalContentConfigPromise: this._optionalContentConfigPromise,
             annotationCanvasMap: this._annotationCanvasMap,
+            pageColors: this.pageColors,
         };
         const renderTask = this.pdfPage.render(renderContext);
         renderTask.onContinue = (cont) => {

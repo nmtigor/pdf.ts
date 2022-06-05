@@ -15,12 +15,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { warn } from "../../shared/util.js";
 import { $buildXFAObject, NamespaceIds } from "./namespaces.js";
-import { $cleanup, $finalize, $ids, $isNsAgnostic, $nsAttributes, $onChild, $resolvePrototypes, $root, XFAObject, } from "./xfa_object.js";
 import { NamespaceSetUp } from "./setup.js";
 import { Template } from "./template.js";
 import { UnknownNamespace } from "./unknown.js";
-import { warn } from "../../shared/util.js";
+import { $cleanup, $finalize, $ids, $isNsAgnostic, $nsAttributes, $onChild, $resolvePrototypes, $root, XFAObject } from "./xfa_object.js";
 /*81---------------------------------------------------------------------------*/
 export class Root extends XFAObject {
     element;

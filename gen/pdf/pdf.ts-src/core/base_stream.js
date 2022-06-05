@@ -33,8 +33,8 @@ export class BaseStream {
         return peekedByte;
     }
     /** @final */
-    peekBytes(length, forceClamped = false) {
-        const bytes = this.getBytes(length, forceClamped);
+    peekBytes(length) {
+        const bytes = this.getBytes(length);
         this.pos -= bytes.length;
         return bytes;
     }
@@ -57,7 +57,7 @@ export class BaseStream {
     }
     /** @final */
     getString(length) {
-        return bytesToString(this.getBytes(length, false));
+        return bytesToString(this.getBytes(length));
     }
     /** @final */
     skip(n) { this.pos += n || 1; }

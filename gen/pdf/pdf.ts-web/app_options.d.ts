@@ -1,5 +1,5 @@
-import { RendererType, ScrollMode, SpreadMode } from "./ui_utils.js";
 import { VerbosityLevel } from "../pdf.ts-src/shared/util.js";
+import { RendererType, ScrollMode, SpreadMode } from "./ui_utils.js";
 export declare const compatibilityParams: any;
 export declare const enum OptionKind {
     VIEWER = 2,
@@ -103,6 +103,16 @@ declare const defaultOptions: {
         value: number;
         compatibility: any;
         kind: OptionKind;
+    };
+    pageColorsBackground: {
+        /** @type {string} */
+        value: string;
+        kind: number;
+    };
+    pageColorsForeground: {
+        /** @type {string} */
+        value: string;
+        kind: number;
     };
     pdfBugEnabled: {
         /** @type {boolean} */

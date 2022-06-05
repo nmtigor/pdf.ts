@@ -17,16 +17,11 @@
  * limitations under the License.
  */
 
-import { Dict, type ObjNoRef, type Obj, Ref } from "./primitives.js";
-import {
-  FormatError,
-  info,
-  IsEvalSupportedCached,
-  shadow,
-} from "../shared/util.js";
-import { PostScriptLexer, PostScriptParser } from "./ps_parser.js";
+import { FeatureTest, FormatError, info, shadow } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
 import { LocalFunctionCache } from "./image_utils.js";
+import { Dict, Ref, type Obj, type ObjNoRef } from "./primitives.js";
+import { PostScriptLexer, PostScriptParser } from "./ps_parser.js";
 import { XRef } from "./xref.js";
 /*81---------------------------------------------------------------------------*/
 
@@ -122,7 +117,7 @@ export class PDFFunctionFactory
     }
     if( fnRef )
     {
-      this._localFunctionCache.set(/* name = */ null, fnRef, parsedFunction);
+      this._localFunctionCache.set(/* name = */ undefined, fnRef, parsedFunction);
     }
   }
 
@@ -163,19 +158,19 @@ namespace NsPDFFunction
     CONSTRUCT_POSTSCRIPT = 4,
   }
 
-  interface ParseParms
+  interface _ParseP
   {
     xref:XRef;
     isEvalSupported:boolean;
     fn:Dict | BaseStream;
   }
-  interface TypeParms
+  interface _TypeP
   {
     xref:XRef;
     isEvalSupported:boolean;
     dict:Dict;
   }
-  interface TypeFnParms extends TypeParms
+  interface _TypeFnP extends _TypeP
   {
     fn:BaseStream;
   }
@@ -245,7 +240,7 @@ namespace NsPDFFunction
       return array;
     },
 
-    parse({ xref, isEvalSupported, fn }:ParseParms ):ParsedFunction
+    parse({ xref, isEvalSupported, fn }:_ParseP ):ParsedFunction
     {
       const dict = (<BaseStream>fn).dict || <Dict>fn;
       const typeNum = dict.get("FunctionType");
@@ -296,7 +291,7 @@ namespace NsPDFFunction
     /**
      * 7.10.2
      */
-    constructSampled({ xref, isEvalSupported, fn, dict }:TypeFnParms )
+    constructSampled({ xref, isEvalSupported, fn, dict }:_TypeFnP )
     {
       function toMultiArray( arr:number[] )
       {
@@ -318,9 +313,8 @@ namespace NsPDFFunction
       let domain:null | number[] | (readonly[number,number])[] = toNumberArray( dict.getArray("Domain") );
       let range:null | number[] | (readonly[number,number])[] = toNumberArray( dict.getArray("Range") );
 
-      if (!domain || !range) {
+      if( !domain || !range )
         throw new FormatError("No domain or range");
-      }
 
       const inputSize = domain.length / 2;
       const outputSize = range.length / 2;
@@ -455,7 +449,7 @@ namespace NsPDFFunction
       };
     },
 
-    constructInterpolated({ xref, isEvalSupported, dict }:TypeParms )
+    constructInterpolated({ xref, isEvalSupported, dict }:_TypeP )
     {
       const c0 = toNumberArray(dict.getArray("C0")) || [0];
       const c1 = toNumberArray(dict.getArray("C1")) || [1];
@@ -502,7 +496,7 @@ namespace NsPDFFunction
     //   };
     // },
 
-    constructStiched({ xref, isEvalSupported, dict }:TypeParms )
+    constructStiched({ xref, isEvalSupported, dict }:_TypeP )
     {
       const domain = toNumberArray(dict.getArray("Domain"));
 
@@ -552,7 +546,8 @@ namespace NsPDFFunction
         let i;
         for (i = 0; i < length; ++i) 
         {
-          if( v < bounds[i] ) break;
+          if( v < bounds[i] )
+            break;
         }
   
         // encode value into domain of function
@@ -582,7 +577,7 @@ namespace NsPDFFunction
       };
     },
 
-    constructPostScript({ xref, isEvalSupported, fn, dict }:TypeFnParms )
+    constructPostScript({ xref, isEvalSupported, fn, dict }:_TypeFnP )
     {
       const domain = toNumberArray(dict.getArray("Domain"));
       const range = toNumberArray(dict.getArray("Range"));
@@ -601,10 +596,10 @@ namespace NsPDFFunction
       const parser = new PostScriptParser(lexer);
       const code = parser.parse();
 
-      if (isEvalSupported && IsEvalSupportedCached.value) 
+      if( isEvalSupported && FeatureTest.isEvalSupported )
       {
         const compiled = new PostScriptCompiler().compile(code, domain, range);
-        if (compiled) 
+        if( compiled )
         {
           // Compiled function consists of simple expressions such as addition,
           // subtraction, Math.max, and also contains 'var' and 'return'

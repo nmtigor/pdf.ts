@@ -23,33 +23,29 @@ import {
   FormatError,
   info,
   StreamType,
-  warn,
+  warn
 } from "../shared/util.js";
-import {
-  Cmd,
-  Dict,
-  EOF,
-  isCmd,
-  Name,
-  type Obj,
-  Ref,
-} from "./primitives.js";
-import { isWhiteSpace, MissingDataException, ParserEOFException } from "./core_utils.js";
+import { Ascii85Stream } from "./ascii_85_stream.js";
+import { AsciiHexStream } from "./ascii_hex_stream.js";
+import { BaseStream } from "./base_stream.js";
 import { CCITTFaxStream } from "./ccitt_stream.js";
+import {
+  isWhiteSpace,
+  MissingDataException,
+  ParserEOFException
+} from "./core_utils.js";
+import { CipherTransform } from "./crypto.js";
+import { type OpMap } from "./evaluator.js";
+import { FlateStream } from "./flate_stream.js";
 import { Jbig2Stream } from "./jbig2_stream.js";
 import { JpegStream } from "./jpeg_stream.js";
 import { JpxStream } from "./jpx_stream.js";
-import { CipherTransform } from "./crypto.js";
-import { type OpMap } from "./evaluator.js";
-import { XRef } from "./xref.js";
 import { LZWStream } from "./lzw_stream.js";
 import { PredictorStream } from "./predictor_stream.js";
-import { FlateStream } from "./flate_stream.js";
+import { Cmd, Dict, EOF, isCmd, Name, Ref, type Obj } from "./primitives.js";
 import { RunLengthStream } from "./run_length_stream.js";
-import { AsciiHexStream } from "./ascii_hex_stream.js";
-import { Ascii85Stream } from "./ascii_85_stream.js";
 import { NullStream, Stream } from "./stream.js";
-import { BaseStream } from "./base_stream.js";
+import { XRef } from "./xref.js";
 /*81---------------------------------------------------------------------------*/
 
 const MAX_LENGTH_TO_CACHE = 1000;
@@ -79,7 +75,7 @@ function computeAdler32( bytes:Uint8Array | Uint8ClampedArray )
   return (b % 65521 << 16) | a % 65521;
 }
 
-interface ParserCtorParms
+interface _ParserCtorP
 {
   lexer:Lexer;
   xref?:XRef | undefined;
@@ -105,7 +101,7 @@ export class Parser
     xref, 
     allowStreams=false, 
     recoveryMode=false 
-  }:ParserCtorParms ) 
+  }:_ParserCtorP ) 
   {
     this.lexer = lexer;
     this.xref = xref;
@@ -188,28 +184,28 @@ export class Parser
 
             const key = this.buf1.name;
             this.shift();
-            if( this.buf1 === <any>EOF ) break;
-
+            if( this.buf1 === <any>EOF ) 
+              break;
             dict.set(key, this.getObj(cipherTransform));
           }
           if( this.buf1 === EOF )
           {
-            if( this.recoveryMode ) return dict;
-
+            if( this.recoveryMode ) 
+              return dict;
             throw new ParserEOFException("End of file inside dictionary.");
           }
 
           // Stream objects are not allowed inside content streams or
           // object streams.
-          if (isCmd(this.buf2, "stream")) {
+          if( isCmd(this.buf2, "stream") )
+          {
             return this.allowStreams
               ? this.makeStream(dict, cipherTransform)
               : dict;
           }
           this.shift();
           return dict;
-        default:
-          // simple object
+        default: // simple object
           return buf1;
       }
     }
@@ -565,11 +561,12 @@ export class Parser
       }
       const key = this.buf1.name;
       this.shift();
-      if( this.buf1 == <any>EOF ) break;
-
+      if( this.buf1 == <any>EOF )
+        break;
       dict.set(key, this.getObj(cipherTransform));
     }
-    if (lexer.beginInlineImagePos !== -1) {
+    if( lexer.beginInlineImagePos !== -1 )
+    {
       dictLength = stream.pos - lexer.beginInlineImagePos;
     }
 
@@ -891,8 +888,8 @@ export class Parser
       warn(`Filter "${name}" is not supported.`);
       return stream;
     } catch (ex) {
-      if( ex instanceof MissingDataException ) throw ex;
-
+      if( ex instanceof MissingDataException )
+        throw ex;
       warn(`Invalid stream: "${ex}"`);
       return new NullStream();
     }

@@ -36,7 +36,7 @@ export interface IPDFStream
    * @param begin the start offset of the data.
    * @param end the end offset of the data.
    */
-  getRangeReader( begin:number, end:number ):IPDFStreamRangeReader | null;
+  getRangeReader( begin:number, end:number ):IPDFStreamRangeReader | undefined;
 
   /**
    * Cancels all opened reader and closes all their opened requests.
@@ -45,7 +45,7 @@ export interface IPDFStream
   cancelAllRequests( reason:AbortException ):void
 }
 
-export type ReadValue = ReadableStreamDefaultReadResult<ArrayBufferLike>
+export type ReadValue = ReadableStreamDefaultReadResult< ArrayBufferLike>
 
 /**
  * Interface for a PDF binary data reader.
@@ -58,7 +58,7 @@ export interface IPDFStreamReader
    * The callback is called with one parameter: an object with the loaded and
    * total properties.
    */
-  onProgress:(( data:OnProgressParms ) => void) | undefined;
+  onProgress:(( data:OnProgressP ) => void) | undefined;
 
   /**
    * Gets a promise that is resolved when the headers and other metadata of
@@ -70,9 +70,9 @@ export interface IPDFStreamReader
    * Gets the Content-Disposition filename. It is defined after the headersReady
    * promise is resolved.
    * 
-   * The filename, or `null` if the Content-Disposition header is missing/invalid.
+   * The filename, or `undefined` if the Content-Disposition header is missing/invalid.
    */
-  readonly filename:string | null;
+  readonly filename:string | undefined;
 
   /**
    * Gets PDF binary data length. It is defined after the headersReady promise

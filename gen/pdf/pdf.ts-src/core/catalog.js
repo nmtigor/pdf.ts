@@ -15,18 +15,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Dict, isDict, isName, isRefsEqual, Name, Ref, RefSet, RefSetCache, } from "./primitives.js";
-import { collectActions, MissingDataException, recoverJsURL, toRomanNumerals, XRefEntryException, } from "./core_utils.js";
-import { createValidAbsoluteUrl, DocumentActionEventType, FormatError, info, objectSize, PermissionFlag, shadow, stringToPDFString, stringToUTF8String, warn, } from "../shared/util.js";
-import { NameTree, NumberTree } from "./name_number_tree.js";
+import { PageLayout, PageMode } from "../../../pdf/pdf.ts-web/ui_utils.js";
+import { createValidAbsoluteUrl, DocumentActionEventType, FormatError, info, objectSize, PermissionFlag, shadow, stringToPDFString, stringToUTF8String, warn } from "../shared/util.js";
+import { BaseStream } from "./base_stream.js";
 import { clearGlobalCaches } from "./cleanup_helper.js";
 import { ColorSpace } from "./colorspace.js";
+import { collectActions, MissingDataException, recoverJsURL, toRomanNumerals, XRefEntryException } from "./core_utils.js";
 import { FileSpec } from "./file_spec.js";
 import { GlobalImageCache } from "./image_utils.js";
 import { MetadataParser } from "./metadata_parser.js";
+import { NameTree, NumberTree } from "./name_number_tree.js";
+import { Dict, isDict, isName, isRefsEqual, Name, Ref, RefSet, RefSetCache } from "./primitives.js";
 import { StructTreeRoot } from "./struct_tree.js";
-import { PageLayout, PageMode } from "../../../pdf/pdf.ts-web/ui_utils.js";
-import { BaseStream } from "./base_stream.js";
 function fetchDestination(dest) {
     if (dest instanceof Dict) {
         dest = dest.get("D");
@@ -158,18 +158,16 @@ export class Catalog {
         const obj = this.#catDict.get("MarkInfo");
         if (!(obj instanceof Dict))
             return undefined;
-        const markInfo = Object.assign(Object.create(null), {
+        const markInfo = {
             Marked: false,
             UserProperties: false,
             Suspects: false,
-        });
+        };
         for (const key in markInfo) {
-            if (!obj.has(key))
-                continue;
             const value = obj.get(key);
-            if (!(typeof value === "boolean"))
-                continue;
-            markInfo[key] = value;
+            if (typeof value === "boolean") {
+                markInfo[key] = value;
+            }
         }
         return markInfo;
     }
@@ -397,9 +395,8 @@ export class Catalog {
             }
             const hiddenGroups = [];
             for (const groupRef of contentGroupRefs) {
-                if (parsedOrderRefs.has(groupRef)) {
+                if (parsedOrderRefs.has(groupRef))
                     continue;
-                }
                 hiddenGroups.push(groupRef.toString());
             }
             if (hiddenGroups.length) {
@@ -466,7 +463,7 @@ export class Catalog {
             for (const [key, value] of obj.getAll()) {
                 const dest = fetchDestination(value);
                 if (dest) {
-                    dests[key] = dest;
+                    dests[stringToPDFString(key)] = dest;
                 }
             }
         }
@@ -592,11 +589,7 @@ export class Catalog {
                     const baseCharCode = style === "a" ? A_LOWER_CASE : A_UPPER_CASE;
                     const letterIndex = currentIndex - 1;
                     const character = String.fromCharCode(baseCharCode + (letterIndex % LIMIT));
-                    const charBuf = [];
-                    for (let j = 0, jj = (letterIndex / LIMIT) | 0; j <= jj; j++) {
-                        charBuf.push(character);
-                    }
-                    currentLabel = charBuf.join("");
+                    currentLabel = character.repeat(Math.floor(letterIndex / LIMIT) + 1);
                     break;
                 default:
                     if (style) {
@@ -836,7 +829,7 @@ export class Catalog {
                 if (!xfaImages) {
                     xfaImages = new Dict(this.xref);
                 }
-                xfaImages.set(key, value);
+                xfaImages.set(stringToPDFString(key), value);
             }
         }
         return shadow(this, "xfaImages", xfaImages);
@@ -864,7 +857,7 @@ export class Catalog {
         if (obj instanceof Dict && obj.has("JavaScript")) {
             const nameTree = new NameTree(obj.getRaw("JavaScript"), this.xref);
             for (const [key, value] of nameTree.getAll()) {
-                appendIfJavaScriptDict(key, value);
+                appendIfJavaScriptDict(stringToPDFString(key), value);
             }
         }
         // Append OpenAction "JavaScript" actions, if any, to the JavaScript map.
@@ -896,38 +889,28 @@ export class Catalog {
         }
         return shadow(this, "jsActions", actions);
     }
-    fontFallback(id, handler) {
-        const promises = [];
-        this.fontCache.forEach(promise => {
-            promises.push(promise);
-        });
-        return Promise.all(promises).then(translatedFonts => {
-            for (const translatedFont of translatedFonts) {
-                if (translatedFont.loadedName === id) {
-                    translatedFont.fallback(handler);
-                    return;
-                }
+    async fontFallback(id, handler) {
+        const translatedFonts = await Promise.all(this.fontCache);
+        for (const translatedFont of translatedFonts) {
+            if (translatedFont.loadedName === id) {
+                translatedFont.fallback(handler);
+                return;
             }
-        });
+        }
     }
-    cleanup(manuallyTriggered = false) {
+    async cleanup(manuallyTriggered = false) {
         clearGlobalCaches();
         this.globalImageCache.clear(/* onlyData = */ manuallyTriggered);
         this.pageKidsCountCache.clear();
         this.pageIndexCache.clear();
         this.nonBlendModesSet.clear();
-        const promises = [];
-        this.fontCache.forEach(promise => {
-            promises.push(promise);
-        });
-        return Promise.all(promises).then(translatedFonts => {
-            for (const { dict } of translatedFonts) {
-                delete dict?.cacheKey;
-            }
-            this.fontCache.clear();
-            this.builtInCMapCache.clear();
-            this.standardFontDataCache.clear();
-        });
+        const translatedFonts = await Promise.all(this.fontCache);
+        for (const { dict } of translatedFonts) {
+            delete dict?.cacheKey;
+        }
+        this.fontCache.clear();
+        this.builtInCMapCache.clear();
+        this.standardFontDataCache.clear();
     }
     /**
      * Dict: Ref. 7.7.3.3 Page Objects
@@ -1212,14 +1195,21 @@ export class Catalog {
         });
         return next(pageRef);
     }
-    /**
-     * @typedef ParseDestDictionaryParameters
-     * @property {Dict} destDict - The dictionary containing the destination.
-     * @property {Object} resultObj - The object where the parsed destination
-     *   properties will be placed.
-     * @property {string} [docBaseUrl] - The document base URL that is used when
-     *   attempting to recover valid absolute URLs from relative ones.
-     */
+    get baseUrl() {
+        const uri = this.#catDict.get("URI");
+        if (uri instanceof Dict) {
+            const base = uri.get("Base");
+            if (typeof base === "string") {
+                const absoluteUrl = createValidAbsoluteUrl(base, undefined, {
+                    tryConvertEncoding: true,
+                });
+                if (absoluteUrl) {
+                    return shadow(this, "baseUrl", absoluteUrl.href);
+                }
+            }
+        }
+        return shadow(this, "baseUrl", undefined);
+    }
     /**
      * Helper function used to parse the contents of destination dictionaries.
      */
@@ -1285,7 +1275,6 @@ export class Catalog {
                         // Some bad PDFs do not put parentheses around relative URLs.
                         url = "/" + url.name;
                     }
-                    // TODO: pdf spec mentions urls can be relative to a Base entry in the dictionary.
                     break;
                 case "GoTo":
                     dest = action.get("D");
@@ -1377,7 +1366,10 @@ export class Catalog {
             if (dest instanceof Name) {
                 dest = dest.name;
             }
-            if (typeof dest === "string" || Array.isArray(dest)) {
+            if (typeof dest === "string") {
+                resultObj.dest = stringToPDFString(dest);
+            }
+            else if (Array.isArray(dest)) {
                 resultObj.dest = dest;
             }
         }

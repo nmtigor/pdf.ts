@@ -16,8 +16,8 @@
  * limitations under the License.
  */
 import { createPromiseCap } from "../../lib/promisecap.js";
-import { getPageSizeInches, isPortraitOrientation } from "./ui_utils.js";
 import { getPdfFilenameFromUrl, PDFDateString } from "../pdf.ts-src/display/display_utils.js";
+import { getPageSizeInches, isPortraitOrientation } from "./ui_utils.js";
 /*81---------------------------------------------------------------------------*/
 const DEFAULT_FIELD_CONTENT = "-";
 // See https://en.wikibooks.org/wiki/Lentis/Conversion_to_the_Metric_Standard_in_the_United_States
@@ -38,12 +38,11 @@ function getPageName(size, isPortrait, pageNames) {
     return pageNames[`${width}x${height}`];
 }
 export class PDFDocumentProperties {
+    dialog;
+    fields;
+    #fieldData;
     overlayManager;
     l10n;
-    overlayName;
-    fields;
-    fieldData;
-    container;
     pdfDocument;
     url;
     maybeFileSize;
@@ -59,16 +58,15 @@ export class PDFDocumentProperties {
      * @param eventBus The application event bus.
      * @param l10n Localization service.
      */
-    constructor({ overlayName, fields, container, closeButton }, overlayManager, eventBus, l10n) {
+    constructor({ dialog, fields, closeButton }, overlayManager, eventBus, l10n) {
+        this.dialog = dialog;
+        this.fields = fields;
         this.overlayManager = overlayManager;
         this.l10n = l10n;
-        this.overlayName = overlayName;
-        this.fields = fields;
-        this.container = container;
         this.#reset();
         // Bind the event listener for the Close button.
         closeButton.addEventListener("click", this.close.bind(this));
-        this.overlayManager.register(this.overlayName, this.container, this.close.bind(this));
+        this.overlayManager.register(this.dialog);
         eventBus._on("pagechanging", evt => {
             this._currentPageNumber = evt.pageNumber;
         });
@@ -83,25 +81,17 @@ export class PDFDocumentProperties {
      * Open the document properties overlay.
      */
     async open() {
-        const freezeFieldData = (data) => {
-            Object.defineProperty(this, "fieldData", {
-                value: Object.freeze(data),
-                writable: false,
-                enumerable: true,
-                configurable: true,
-            });
-        };
         await Promise.all([
-            this.overlayManager.open(this.overlayName),
+            this.overlayManager.open(this.dialog),
             this.#dataAvailableCapability.promise,
         ]);
         const currentPageNumber = this._currentPageNumber;
         const pagesRotation = this._pagesRotation;
         // If the document properties were previously fetched (for this PDF file),
         // just update the dialog immediately to avoid redundant lookups.
-        if (this.fieldData
-            && currentPageNumber === this.fieldData._currentPageNumber
-            && pagesRotation === this.fieldData._pagesRotation) {
+        if (this.#fieldData
+            && currentPageNumber === this.#fieldData._currentPageNumber
+            && pagesRotation === this.#fieldData._pagesRotation) {
             this.#updateUI();
             return;
         }
@@ -119,7 +109,7 @@ export class PDFDocumentProperties {
             }),
             this.#parseLinearization(info.IsLinearized),
         ]);
-        freezeFieldData({
+        this.#fieldData = Object.freeze({
             fileName,
             fileSize,
             title: info.Title,
@@ -141,19 +131,19 @@ export class PDFDocumentProperties {
         // Get the correct fileSize, since it may not have been available
         // or could potentially be wrong.
         const { length } = await this.pdfDocument.getDownloadInfo();
-        if (contentLength === length) {
-            return; // The fileSize has already been correctly set.
-        }
-        const data = Object.assign(Object.create(null), this.fieldData);
+        if (contentLength === length)
+            // The fileSize has already been correctly set.
+            return;
+        const data = Object.assign(Object.create(null), this.#fieldData);
         data.fileSize = await this.#parseFileSize(length);
-        freezeFieldData(data);
+        this.#fieldData = Object.freeze(data);
         this.#updateUI();
     }
     /**
      * Close the document properties overlay.
      */
-    close() {
-        this.overlayManager.close(this.overlayName);
+    async close() {
+        this.overlayManager.close(this.dialog);
     }
     /**
      * Set a reference to the PDF document and the URL in order
@@ -178,7 +168,7 @@ export class PDFDocumentProperties {
     #reset() {
         this.pdfDocument = undefined;
         this.url = undefined;
-        delete this.fieldData;
+        this.#fieldData = undefined;
         this.#dataAvailableCapability = createPromiseCap();
         this._currentPageNumber = 1;
         this._pagesRotation = 0;
@@ -189,28 +179,27 @@ export class PDFDocumentProperties {
      *       nor a number, it will fall back to `DEFAULT_FIELD_CONTENT`.
      */
     #updateUI(reset = false) {
-        if (reset || !this.fieldData) {
+        if (reset || !this.#fieldData) {
             for (const id in this.fields) {
                 this.fields[id].textContent = DEFAULT_FIELD_CONTENT;
             }
             return;
         }
-        if (this.overlayManager.active !== this.overlayName) {
+        if (this.overlayManager.active !== this.dialog) {
             // Don't bother updating the dialog if has already been closed,
             // since it will be updated the next time `this.open` is called.
             return;
         }
         for (const id in this.fields) {
-            const content = this.fieldData[id];
+            const content = this.#fieldData[id];
             this.fields[id].textContent =
                 content || content === 0 ? content : DEFAULT_FIELD_CONTENT;
         }
     }
     async #parseFileSize(fileSize = 0) {
         const kb = fileSize / 1024, mb = kb / 1024;
-        if (!kb) {
+        if (!kb)
             return undefined;
-        }
         return this.l10n.get(`document_properties_${mb >= 1 ? "mb" : "kb"}`, {
             size_mb: (mb >= 1 && (+mb.toPrecision(3)).toLocaleString()),
             size_kb: (mb < 1 && (+kb.toPrecision(3)).toLocaleString()),

@@ -1,4 +1,4 @@
-interface GlyfTableCtorParms {
+interface _GlyfTableCtorP {
     glyfTable: Uint8Array | Uint8ClampedArray;
     isGlyphLocationsLong: number;
     locaTable: Uint8Array | Uint8ClampedArray;
@@ -19,7 +19,7 @@ interface GlyfTableCtorParms {
  */
 export declare class GlyfTable {
     glyphs: Glyph[];
-    constructor({ glyfTable, isGlyphLocationsLong, locaTable, numGlyphs }: GlyfTableCtorParms);
+    constructor({ glyfTable, isGlyphLocationsLong, locaTable, numGlyphs }: _GlyfTableCtorP);
     getSize(): number;
     write(): {
         isLocationLong: boolean;
@@ -28,7 +28,7 @@ export declare class GlyfTable {
     };
     scale(factors: number[]): void;
 }
-interface GlyphCtorParms {
+interface _GlyphCtorP {
     header?: GlyphHeader;
     simple?: SimpleGlyph;
     composites?: CompositeGlyph[];
@@ -37,13 +37,13 @@ declare class Glyph {
     header: GlyphHeader | undefined;
     simple: SimpleGlyph | undefined;
     composites: CompositeGlyph[] | undefined;
-    constructor({ header, simple, composites }: GlyphCtorParms);
+    constructor({ header, simple, composites }: _GlyphCtorP);
     static parse(pos: number, glyf: DataView): Glyph;
     getSize(): number;
     write(pos: number, buf: DataView): number;
     scale(factor: number): void;
 }
-interface GlyphHeaderCtorParms {
+interface _GlyphHeaderCtorP {
     numberOfContours: number;
     xMin: number;
     yMin: number;
@@ -56,13 +56,13 @@ declare class GlyphHeader {
     yMin: number;
     xMax: number;
     yMax: number;
-    constructor({ numberOfContours, xMin, yMin, xMax, yMax }: GlyphHeaderCtorParms);
+    constructor({ numberOfContours, xMin, yMin, xMax, yMax }: _GlyphHeaderCtorP);
     static parse(pos: number, glyf: DataView): readonly [10, GlyphHeader];
     getSize(): number;
     write(pos: number, buf: DataView): number;
     scale(x: number, factor: number): void;
 }
-interface ContourCtorParms {
+interface _ContourCtorP {
     flags: number[];
     xCoordinates: number[];
     yCoordinates: number[];
@@ -71,22 +71,22 @@ declare class Contour {
     xCoordinates: number[];
     yCoordinates: number[];
     flags: number[];
-    constructor({ flags, xCoordinates, yCoordinates }: ContourCtorParms);
+    constructor({ flags, xCoordinates, yCoordinates }: _ContourCtorP);
 }
-interface SimpleGlyphCtorParms {
+interface _SimpleGlyphCtorP {
     contours: Contour[];
     instructions: Uint8Array;
 }
 declare class SimpleGlyph {
     contours: Contour[];
     instructions: Uint8Array;
-    constructor({ contours, instructions }: SimpleGlyphCtorParms);
+    constructor({ contours, instructions }: _SimpleGlyphCtorP);
     static parse(pos: number, glyf: DataView, numberOfContours: number): SimpleGlyph;
     getSize(): number;
     write(pos: number, buf: DataView): number;
     scale(x: number, factor: number): void;
 }
-interface CompositeGlyphCtorParms {
+interface _CompositeGlyphCtorP {
     flags: number;
     glyphIndex: number;
     argument1: number;
@@ -101,7 +101,7 @@ declare class CompositeGlyph {
     argument2: number;
     transf: number[];
     instructions: Uint8Array | undefined;
-    constructor({ flags, glyphIndex, argument1, argument2, transf, instructions, }: CompositeGlyphCtorParms);
+    constructor({ flags, glyphIndex, argument1, argument2, transf, instructions, }: _CompositeGlyphCtorP);
     static parse(pos: number, glyf: DataView): readonly [number, CompositeGlyph];
     getSize(): number;
     write(pos: number, buf: DataView): number;

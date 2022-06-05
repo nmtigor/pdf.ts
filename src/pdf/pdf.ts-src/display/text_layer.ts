@@ -17,20 +17,18 @@
  * limitations under the License.
  */
 
-import { createPromiseCap } from "../../../lib/promisecap.js";
 import { html, span } from "../../../lib/dom.js";
+import { createPromiseCap } from "../../../lib/promisecap.js";
 import {
-  AbortException,
-  type matrix_t,
+  AbortException, Util, type matrix_t,
   type point_t,
-  type rect_t,
-  Util,
+  type rect_t
 } from "../shared/util.js";
-import { 
-  type TextContent, 
-  type TextItem, 
-  type TextMarkedContent, 
-  type TextStyle 
+import {
+  type TextContent,
+  type TextItem,
+  type TextMarkedContent,
+  type TextStyle
 } from "./api.js";
 import { PageViewport } from "./display_utils.js";
 /*81---------------------------------------------------------------------------*/
@@ -38,7 +36,7 @@ import { PageViewport } from "./display_utils.js";
 /**
  * Text layer render parameters.
  */
-interface TextLayerRenderParms
+interface _TextLayerRenderP
 {
   /**
    * Text content to
@@ -53,7 +51,7 @@ interface TextLayerRenderParms
   textContentStream?:ReadableStream | undefined;
 
   /**
-   * HTML element that will contain text runs.
+   * The DOM node that will contain the text runs.
    */
   container:DocumentFragment;
 
@@ -63,16 +61,16 @@ interface TextLayerRenderParms
   viewport:PageViewport;
 
   /**
-   * HTML elements that are correspond
-   * to the text items of the textContent input. This is output and shall be
-   * initially be set to empty array.
+   * HTML elements that correspond to
+   * the text items of the textContent input.
+   * This is output and shall initially be set to an empty array.
    */
   textDivs?:HTMLSpanElement[];
 
   /**
    * Strings that correspond to
-   * the `str` property of the text items of textContent input. This is output
-   * and shall be initially be set to empty array.
+   * the `str` property of the text items of the textContent input.
+   * This is output and shall initially be set to an empty array.
    */
   textContentItemsStr?:string[];
 
@@ -647,7 +645,7 @@ namespace Ns_renderTextLayer
     }
   }
 
-  interface TLRTCtorParms
+  interface _TLRTCtorP
   {
     textContent?:TextContent | undefined;
     textContentStream?:ReadableStream | undefined;
@@ -721,7 +719,7 @@ namespace Ns_renderTextLayer
       textDivs,
       textContentItemsStr,
       enhanceTextSelection,
-    }:TLRTCtorParms
+    }:_TLRTCtorP
     ) {
       this._textContent = textContent;
       this._textContentStream = textContentStream;
@@ -884,14 +882,6 @@ namespace Ns_renderTextLayer
       const canvas = html( "canvas", undefined, this._document );
       canvas.height = canvas.width = DEFAULT_FONT_SIZE;
 
-      // #if MOZCENTRAL || GENERIC
-      // if (
-      //   typeof PDFJSDev === "undefined" ||
-      //   PDFJSDev?.test("MOZCENTRAL || GENERIC")
-      // ) {
-      (<any>canvas).mozOpaque = true;
-      // }
-      // #endif
       this._layoutTextCtx = canvas.getContext("2d", { alpha: false });
 
       if( this._textContent )
@@ -1017,7 +1007,7 @@ namespace Ns_renderTextLayer
   }
 
 export function renderTextLayer( 
-  renderParameters:TextLayerRenderParms ):TextLayerRenderTask 
+  renderParameters:_TextLayerRenderP ):TextLayerRenderTask 
 {
     const task = new TextLayerRenderTask({
       textContent: renderParameters.textContent,

@@ -1,11 +1,11 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
-import { bytesToString, FormatError, info, shadow, stringToBytes, Util, warn, } from "../shared/util.js";
-import { ExpertCharset, ExpertSubsetCharset, ISOAdobeCharset, } from "./charsets.js";
+import { bytesToString, FormatError, info, shadow, stringToBytes, Util, warn } from "../shared/util.js";
+import { ExpertCharset, ExpertSubsetCharset, ISOAdobeCharset } from "./charsets.js";
 import { ExpertEncoding, StandardEncoding } from "./encodings.js";
 /*81---------------------------------------------------------------------------*/
-// Maximum subroutine call depth of type 2 chartrings. Matches OTS.
+// Maximum subroutine call depth of type 2 charstrings. Matches OTS.
 const MAX_SUBR_NESTING = 10;
 /**
  * The CFF class takes a Type1 file and wrap it into a

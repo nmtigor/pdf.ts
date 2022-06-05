@@ -1,15 +1,15 @@
-import { Dict, Name, type Obj, Ref, RefSet, RefSetCache } from "./primitives.js";
-import { PermissionFlag, type rect_t } from "../shared/util.js";
-import { GlobalImageCache } from "./image_utils.js";
-import { StructTreeRoot } from "./struct_tree.js";
-import { MessageHandler, Thread } from "../shared/message_handler.js";
-import { TranslatedFont } from "./evaluator.js";
-import { type CMapData } from "../display/base_factory.js";
-import { BasePdfManager } from "./pdf_manager.js";
-import { XRef } from "./xref.js";
-import { type OutlineNode } from "../display/api.js";
 import { PageLayout, PageMode } from "../../../pdf/pdf.ts-web/ui_utils.js";
 import { type ResetForm } from "../display/annotation_layer.js";
+import { type OutlineNode } from "../display/api.js";
+import { type CMapData } from "../display/base_factory.js";
+import { MessageHandler, Thread } from "../shared/message_handler.js";
+import { PermissionFlag, type rect_t } from "../shared/util.js";
+import { TranslatedFont } from "./evaluator.js";
+import { GlobalImageCache } from "./image_utils.js";
+import { BasePdfManager } from "./pdf_manager.js";
+import { Dict, Name, Ref, RefSet, RefSetCache, type Obj } from "./primitives.js";
+import { StructTreeRoot } from "./struct_tree.js";
+import { XRef } from "./xref.js";
 declare type DestPage = Ref | number | null;
 export declare type ExplicitDest = [DestPage, {
     name: "XYZ";
@@ -29,7 +29,7 @@ export interface CatParseDestDictRes {
     action?: string;
     resetForm?: ResetForm;
 }
-interface CatParseDestDictParms {
+interface _ParseDestDictionaryP {
     /**
      * The dictionary containing the destination.
      */
@@ -139,18 +139,11 @@ export declare class Catalog {
      */
     getAllPageDicts(recoveryMode?: boolean): Promise<AllPageDicts>;
     getPageIndex(pageRef: Ref): Promise<number>;
-    /**
-     * @typedef ParseDestDictionaryParameters
-     * @property {Dict} destDict - The dictionary containing the destination.
-     * @property {Object} resultObj - The object where the parsed destination
-     *   properties will be placed.
-     * @property {string} [docBaseUrl] - The document base URL that is used when
-     *   attempting to recover valid absolute URLs from relative ones.
-     */
+    get baseUrl(): string | undefined;
     /**
      * Helper function used to parse the contents of destination dictionaries.
      */
-    static parseDestDictionary(params: CatParseDestDictParms): void;
+    static parseDestDictionary(params: _ParseDestDictionaryP): void;
 }
 export {};
 //# sourceMappingURL=catalog.d.ts.map

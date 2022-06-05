@@ -1,7 +1,7 @@
 import { type ExplicitDest } from "../pdf.ts-src/core/catalog.js";
 import { type PDFLocation } from "./base_viewer.js";
-import { type HistoryInitParms, type HistoryPushParms, type IPDFLinkService } from "./interfaces.js";
 import { EventBus } from "./event_utils.js";
+import { type HistoryInitP, type HistoryPushP, type IPDFLinkService } from "./interfaces.js";
 interface PDFHistoryOptions {
     /**
      * The navigation/linking service.
@@ -29,14 +29,13 @@ export declare class PDFHistory {
         }): void;
         pageHide(): void;
     } | undefined;
-    _isViewerInPresentationMode: boolean;
     _isPagesLoaded?: boolean;
     constructor({ linkService, eventBus }: PDFHistoryOptions);
     /**
      * Initialize the history for the PDF document, using either the current
      * browser history entry or the document hash, whichever is present.
      */
-    initialize({ fingerprint, resetHistory, updateUrl }: HistoryInitParms): void;
+    initialize({ fingerprint, resetHistory, updateUrl }: HistoryInitP): void;
     /**
      * Reset the current `PDFHistory` instance, and consequently prevent any
      * further updates and/or navigation of the browser history.
@@ -45,7 +44,7 @@ export declare class PDFHistory {
     /**
      * Push an internal destination to the browser history.
      */
-    push({ namedDest, explicitDest, pageNumber, }: HistoryPushParms): void;
+    push({ namedDest, explicitDest, pageNumber, }: HistoryPushP): void;
     /**
      * Push a page to the browser history; generally the `push` method should be
      * used instead.

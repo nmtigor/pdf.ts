@@ -17,6 +17,10 @@
  * limitations under the License.
  */
 
+import { warn } from "../../shared/util.js";
+import { Datasets } from "./datasets.js";
+import { NamespaceIds } from "./namespaces.js";
+import { Xdp } from "./xdp.js";
 import {
   $appendChild,
   $getChildren,
@@ -27,12 +31,8 @@ import {
   XFAAttribute,
   XFAObject,
   XFAObjectArray,
-  XmlObject,
+  XmlObject
 } from "./xfa_object.js";
-import { warn } from "../../shared/util.js";
-import { Datasets } from "./datasets.js";
-import { Xdp } from "./xdp.js";
-import { NamespaceIds } from "./namespaces.js";
 /*81---------------------------------------------------------------------------*/
 
 const namePattern = /^[^.[]+/;
@@ -90,7 +90,7 @@ interface Parsed
   formCalc:undefined;
 }
 
-// For now expressions containaing .[...] or .(...) are not
+// For now expressions containing .[...] or .(...) are not
 // evaluated so don't parse them.
 // TODO: implement that stuff and the remove the noExpr param.
 function parseExpression( expr:string, dotDotAllowed?:boolean, noExpr=true )
@@ -157,7 +157,7 @@ function parseExpression( expr:string, dotDotAllowed?:boolean, noExpr=true )
           return undefined;
         }
         // TODO:
-        // Javascript expression: should be a boolean operation with a path
+        // JavaScript expression: should be a boolean operation with a path
         // so maybe we can have our own parser for that stuff or
         // maybe use the formcalc one.
         operator = operators.dotParen;
@@ -217,22 +217,24 @@ export function searchNode(
     const nodes = [];
     for( const node of root_1 )
     {
-      if( !(node instanceof XFAObject) ) continue;
+      if( !(node instanceof XFAObject) )
+        continue;
 
       let children:(XFAObject | XFAAttribute | string)[] | undefined, 
         cached;
 
-      if (useCache) 
+      if( useCache )
       {
         cached = somCache.get(node);
-        if (!cached) {
+        if( !cached )
+        {
           cached = new Map();
           somCache.set(node, cached);
         }
         children = cached.get(cacheName);
       }
 
-      if (!children) 
+      if( !children )
       {
         switch (operator) 
         {

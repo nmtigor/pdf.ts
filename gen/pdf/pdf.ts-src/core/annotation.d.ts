@@ -1,20 +1,21 @@
-import { AnnotationBorderStyleType, AnnotationFieldFlag, AnnotationFlag, AnnotationReplyType, AnnotationType, type rect_t, RenderingIntentFlag } from "../shared/util.js";
-import { Dict, Name, Ref } from "./primitives.js";
-import { OperatorList } from "./operator_list.js";
-import { BasePdfManager } from "./pdf_manager.js";
-import { type LocalIdFactory } from "./document.js";
-import { PartialEvaluator } from "./evaluator.js";
-import { WorkerTask } from "./worker.js";
 import { type TupleOf } from "../../../lib/alias.js";
-import { type AnnotActions } from "./core_utils.js";
-import { type DefaultAppearanceData } from "./default_appearance.js";
 import { type AnnotStorageRecord } from "../display/annotation_layer.js";
-import { type CatParseDestDictRes } from "./catalog.js";
-import { type Serializable } from "./file_spec.js";
-import { XRef } from "./xref.js";
+import { AnnotationBorderStyleType, AnnotationFieldFlag, AnnotationFlag, AnnotationReplyType, AnnotationType, RenderingIntentFlag, type rect_t } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
 import { type BidiText } from "./bidi.js";
+import { type CatParseDestDictRes } from "./catalog.js";
+import { type AnnotActions } from "./core_utils.js";
+import { DatasetReader } from "./dataset_reader.js";
+import { type DefaultAppearanceData } from "./default_appearance.js";
+import { type LocalIdFactory } from "./document.js";
+import { PartialEvaluator } from "./evaluator.js";
+import { type Serializable } from "./file_spec.js";
+import { OperatorList } from "./operator_list.js";
+import { BasePdfManager } from "./pdf_manager.js";
+import { Dict, Name, Ref } from "./primitives.js";
+import { WorkerTask } from "./worker.js";
 import { type XFAHTMLObj } from "./xfa/alias.js";
+import { XRef } from "./xref.js";
 declare type AnnotType = "Caret" | "Circle" | "FileAttachment" | "FreeText" | "Ink" | "Line" | "Link" | "Highlight" | "Polygon" | "PolyLine" | "Popup" | "Stamp" | "Square" | "Squiggly" | "StrikeOut" | "Text" | "Underline" | "Widget";
 export declare class AnnotationFactory {
     #private;
@@ -29,10 +30,10 @@ export declare class AnnotationFactory {
     /**
      * @private
      */
-    static _create(xref: XRef, ref: Ref, pdfManager: BasePdfManager, idFactory: LocalIdFactory, acroForm: Dict | undefined, collectFields: boolean, pageIndex?: number): Annotation | undefined;
+    static _create(xref: XRef, ref: Ref, pdfManager: BasePdfManager, idFactory: LocalIdFactory, acroForm: Dict | undefined, xfaDatasets: DatasetReader | undefined, collectFields: boolean, pageIndex?: number): Annotation | undefined;
 }
 export declare function getQuadPoints(dict: Dict, rect?: rect_t): TupleOf<AnnotPoint, 4>[] | null;
-interface AnnotationCtorParms {
+interface _AnnotationCtorP {
     xref: XRef;
     ref: Ref;
     dict: Dict;
@@ -40,6 +41,7 @@ interface AnnotationCtorParms {
     id: string;
     pdfManager: BasePdfManager;
     acroForm: Dict;
+    xfaDatasets: DatasetReader | undefined;
     collectFields: boolean;
     pageIndex: number;
 }
@@ -70,8 +72,8 @@ export declare type AnnotationData = {
     state?: string | undefined;
     stateModel?: string | undefined;
     quadPoints?: TupleOf<AnnotPoint, 4>[] | null;
-    fieldValue?: string | string[] | undefined;
-    defaultFieldValue?: string | string[] | undefined;
+    fieldValue?: string | string[] | null;
+    defaultFieldValue?: string | string[] | null;
     alternativeText?: string;
     defaultAppearance?: string;
     defaultAppearanceData?: DefaultAppearanceData;
@@ -88,10 +90,10 @@ export declare type AnnotationData = {
     pushButton?: boolean;
     isTooltipOnly?: boolean;
     exportValue?: string;
-    buttonValue?: string | undefined;
+    buttonValue?: string | null;
     options?: {
-        exportValue?: string | string[] | undefined;
-        displayValue?: string | string[] | undefined;
+        exportValue: string | string[] | null;
+        displayValue: string | string[] | null;
     }[];
     combo?: boolean;
     multiSelect?: boolean;
@@ -102,6 +104,7 @@ export declare type AnnotationData = {
     hasPopup?: boolean;
     lineCoordinates?: rect_t;
     vertices?: AnnotPoint[];
+    lineEndings?: [_LineEndingStr, _LineEndingStr];
     inkLists?: AnnotPoint[][];
     file?: Serializable;
     parentType?: string | undefined;
@@ -141,6 +144,8 @@ export interface FieldObject {
     numItems?: number;
     multipleSelection?: boolean;
 }
+declare type _LineEndingStr = "None" | "Square" | "Circle" | "Diamond" | "OpenArrow" | "ClosedArrow" | "Butt" | "ROpenArrow" | "RClosedArrow" | "Slash";
+declare type _LineEnding = _LineEndingStr | Name;
 export declare class Annotation {
     #private;
     _streams: BaseStream[];
@@ -220,7 +225,8 @@ export declare class Annotation {
      * @param rectangle - The rectangle array with exactly four entries
      */
     setRectangle(rectangle: unknown): void;
-    constructor(params: AnnotationCtorParms);
+    lineEndings: [_LineEndingStr, _LineEndingStr];
+    constructor(params: _AnnotationCtorP);
     /**
      * Set the border style (as AnnotationBorderStyle object).
      *
@@ -235,6 +241,11 @@ export declare class Annotation {
      *  (transparent), 1 (grayscale), 3 (RGB) or 4 (CMYK) elements
      */
     setColor(color: number[]): void;
+    /**
+     * Set the line endings; should only be used with specific annotation types.
+     * @param lineEndings The line endings array.
+     */
+    setLineEndings(lineEndings: [_LineEnding, _LineEnding]): void;
     /**
      * Set the color for background and border if any.
      * The default values are transparent.
@@ -321,7 +332,7 @@ export interface AnnotPoint {
     y: number;
 }
 declare type AColor = TupleOf<number, 0 | 1 | 3 | 4>;
-interface SetDefaultAppearanceParms {
+interface _SetDefaultAppearanceP {
     xref: XRef;
     extra?: string;
     strokeColor?: AColor;
@@ -343,9 +354,9 @@ export declare class MarkupAnnotation extends Annotation {
      *  annotation was originally created
      */
     setCreationDate(creationDate: unknown): void;
-    constructor(parameters: AnnotationCtorParms);
+    constructor(parameters: _AnnotationCtorP);
     /** @final */
-    protected setDefaultAppearance$({ xref, extra, strokeColor, fillColor, blendMode, strokeAlpha, fillAlpha, pointsCallback, }: SetDefaultAppearanceParms): void;
+    protected setDefaultAppearance$({ xref, extra, strokeColor, fillColor, blendMode, strokeAlpha, fillAlpha, pointsCallback, }: _SetDefaultAppearanceP): void;
 }
 export {};
 //# sourceMappingURL=annotation.d.ts.map

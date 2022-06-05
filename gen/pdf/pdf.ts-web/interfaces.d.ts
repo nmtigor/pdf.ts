@@ -63,7 +63,7 @@ export interface IPDFLinkService {
     isPageCached(pageNumber: number): boolean;
     eventBus?: EventBus;
 }
-export interface HistoryInitParms {
+export interface HistoryInitP {
     /**
      * The PDF document's unique fingerprint.
      */
@@ -78,7 +78,7 @@ export interface HistoryInitParms {
      */
     updateUrl: boolean | undefined;
 }
-export interface HistoryPushParms {
+export interface HistoryPushP {
     /**
      * The named destination. If absent, a
      * stringified version of `explicitDest` is used.

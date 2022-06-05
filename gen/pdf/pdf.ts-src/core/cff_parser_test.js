@@ -3,9 +3,9 @@
 ** --------------- */
 import { eq } from "../../../lib/jslang.js";
 import { css_1, css_2 } from "../../../test/alias.js";
-import { Stream } from "./stream.js";
 import { CFFCharset, CFFCompiler, CFFFDSelect, CFFParser, CFFStrings } from "./cff_parser.js";
 import { SEAC_ANALYSIS_ENABLED } from "./fonts_utils.js";
+import { Stream } from "./stream.js";
 const strttime = performance.now();
 /*81---------------------------------------------------------------------------*/
 console.log("%c>>>>>>> test CFFParser >>>>>>>", `color:${css_1}`);

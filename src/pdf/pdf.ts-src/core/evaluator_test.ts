@@ -2,16 +2,16 @@
  * evaluator_test
 ** --------------- */
 
-import { css_1, css_2 } from "../../../test/alias.js";
 import { eq } from "../../../lib/jslang.js";
-import { Stream, StringStream } from "./stream.js";
+import { css_1, css_2 } from "../../../test/alias.js";
 import { createIdFactory, XRefMock } from "../../test_utils.js";
-import { WorkerTask } from "./worker.js";
-import { OperatorList } from "./operator_list.js";
-import { PartialEvaluator } from "./evaluator.js";
-import { BaseStream } from "./base_stream.js";
 import { FormatError, OPS } from "../shared/util.js";
+import { BaseStream } from "./base_stream.js";
+import { PartialEvaluator } from "./evaluator.js";
+import { OperatorList } from "./operator_list.js";
 import { Dict, Name } from "./primitives.js";
+import { Stream, StringStream } from "./stream.js";
+import { WorkerTask } from "./worker.js";
 
 const strttime = performance.now();
 /*81---------------------------------------------------------------------------*/
@@ -273,10 +273,9 @@ console.log("%c>>>>>>> test validateNumberOfArgs >>>>>>>",`color:${css_1}`);
   console.log("it should error if (many) path operators have too few arguments (bug 1443140)...");
   {
     const NUM_INVALID_OPS = 25;
-    const tempArr = new Array(NUM_INVALID_OPS + 1);
 
     // Non-path operators, should be ignored.
-    const invalidMoveText = tempArr.join("10 Td\n");
+    const invalidMoveText = "10 Td\n".repeat(NUM_INVALID_OPS);
     const moveTextStream = new StringStream(invalidMoveText);
     const result = await runOperatorListCheck(
       partialEvaluator,
@@ -287,7 +286,7 @@ console.log("%c>>>>>>> test validateNumberOfArgs >>>>>>>",`color:${css_1}`);
     console.assert( result.fnArray.eq([]) );
 
     // Path operators, should throw error.
-    const invalidLineTo = tempArr.join("20 l\n");
+    const invalidLineTo = "20 l\n".repeat(NUM_INVALID_OPS);
     const lineToStream = new StringStream(invalidLineTo);
 
     try {

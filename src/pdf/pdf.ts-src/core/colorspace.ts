@@ -18,18 +18,17 @@
  */
 
 import { type TypedArray } from "../../../lib/alias.js";
-import { LocalColorSpaceCache } from "./image_utils.js";
 import { assert } from "../../../lib/util/trace.js";
 import {
   FormatError,
-  info,
-  type rect_t,
-  shadow,
-  warn,
+  info, shadow,
+  warn, type rect_t
 } from "../shared/util.js";
-import { Dict, Name, Ref } from "./primitives.js";
+import { BaseStream } from "./base_stream.js";
 import { MissingDataException } from "./core_utils.js";
-import { type ParsedFunction, PDFFunctionFactory } from "./function.js";
+import { PDFFunctionFactory, type ParsedFunction } from "./function.js";
+import { LocalColorSpaceCache } from "./image_utils.js";
+import { Dict, Name, Ref } from "./primitives.js";
 import { XRef } from "./xref.js";
 /*81---------------------------------------------------------------------------*/
 
@@ -79,7 +78,7 @@ export type CS = Ref | Name | Dict | number
   ]
 ;
 
-interface ParseParms
+interface _ParseP
 {
   cs:CS;
   xref:XRef;
@@ -114,7 +113,7 @@ export abstract class ColorSpace
   getRgb( src:Float32Array | number[], srcOffset:number ) 
   {
     const rgb = new Uint8ClampedArray(3);
-    this.getRgbItem(src, srcOffset, rgb, 0);
+    this.getRgbItem( src, srcOffset, rgb, 0);
     return rgb;
   }
 
@@ -351,22 +350,25 @@ export abstract class ColorSpace
         'ColorSpace.getCached - expected "localColorSpaceCache" argument.'
       );
     }
-    if (cacheKey instanceof Ref) 
+    if( cacheKey instanceof Ref )
     {
       const localColorSpace = localColorSpaceCache.getByRef(cacheKey);
-      if( localColorSpace ) return localColorSpace;
+      if( localColorSpace ) 
+        return localColorSpace;
 
       try {
         cacheKey = <Name>xref.fetch(cacheKey);
       } catch (ex) {
-        if( ex instanceof MissingDataException ) throw ex;
+        if( ex instanceof MissingDataException )
+          throw ex;
         // Any errors should be handled during parsing, rather than here.
       }
     }
-    if (cacheKey instanceof Name) 
+    if( cacheKey instanceof Name )
     {
       const localColorSpace = localColorSpaceCache.getByName(cacheKey.name);
-      if( localColorSpace ) return localColorSpace;
+      if( localColorSpace )
+        return localColorSpace;
     }
     return undefined;
   }
@@ -377,7 +379,7 @@ export abstract class ColorSpace
     resources,
     pdfFunctionFactory,
     localColorSpaceCache,
-  }:ParseParms ) {
+  }:_ParseP ) {
     // #if !PRODUCTION || TESTING
       assert( !this.getCached(<any>cs, xref, localColorSpaceCache),
         "Expected `ColorSpace.getCached` to have been manually checked " +
@@ -403,10 +405,10 @@ export abstract class ColorSpace
     resources,
     pdfFunctionFactory,
     localColorSpaceCache,
-  }:ParseParms ) {
+  }:_ParseP ) {
     const cachedColorSpace = this.getCached(cs, xref, localColorSpaceCache);
-    if( cachedColorSpace ) return cachedColorSpace;
-
+    if( cachedColorSpace ) 
+      return cachedColorSpace;
     const parsedColorSpace = this._parse(
       cs,
       xref,
@@ -1757,5 +1759,4 @@ namespace NsLabCS
   }
 }
 import LabCS = NsLabCS.LabCS;
-import { BaseStream } from "./base_stream.js";
 /*81---------------------------------------------------------------------------*/

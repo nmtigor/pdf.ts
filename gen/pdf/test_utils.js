@@ -3,17 +3,17 @@
 ** -------- */
 import { isObjectLike } from "../lib/jslang.js";
 import { assert } from "../lib/util/trace.js";
+import { DocStats } from "./pdf.ts-src/core/core_utils.js";
+import { Page, PDFDocument } from "./pdf.ts-src/core/document.js";
 import { Ref } from "./pdf.ts-src/core/primitives.js";
 import { StringStream } from "./pdf.ts-src/core/stream.js";
-import { Page, PDFDocument } from "./pdf.ts-src/core/document.js";
 import { GlobalWorkerOptions } from "./pdf.ts-src/pdf.js";
-import { DocStats } from "./pdf.ts-src/core/core_utils.js";
 /*81---------------------------------------------------------------------------*/
 const D_base = "/pdf.ts";
 const D_pdf = `${D_base}/res/pdf`;
 const D_external = `${D_pdf}/pdf.ts-external`;
-export const TEST_PDFS_PATH = `${D_pdf}/test/pdfs/`;
 // const TEST_PDFS_PATH = isNodeJS ? "./test/pdfs/" : "../pdfs/";
+export const TEST_PDFS_PATH = `${D_pdf}/test/pdfs/`;
 export const CMAP_PARAMS = {
     cMapUrl: `${D_external}/bcmaps/`,
     // cMapUrl: isNodeJS ? "./external/bcmaps/" : "../../external/bcmaps/",
@@ -52,10 +52,10 @@ class DOMFileReaderFactory {
 export const DefaultFileReaderFactory = DOMFileReaderFactory;
 export function buildGetDocumentParams(filename, options) {
     const params = Object.create(null);
-    params.url = new URL(TEST_PDFS_PATH + filename, window.location).href;
     // params.url = isNodeJS
     //   ? TEST_PDFS_PATH + filename
     //   : new URL(TEST_PDFS_PATH + filename, window.location).href;
+    params.url = new URL(TEST_PDFS_PATH + filename, window.location).href;
     params.standardFontDataUrl = STANDARD_FONT_DATA_URL;
     for (const option in options) {
         params[option] = options[option];

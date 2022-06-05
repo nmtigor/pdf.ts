@@ -15,11 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { $content, $extra, $getParent, $getSubformParent, $getTemplateRoot, $globalData, $nodeName, $pushGlyphs, $text, $toStyle, XFAObject, } from "./xfa_object.js";
-import { getMeasurement, stripQuotes } from "./utils.js";
+import { createValidAbsoluteUrl, warn } from "../../shared/util.js";
 import { selectFont } from "./fonts.js";
 import { TextMeasure } from "./text.js";
-import { createValidAbsoluteUrl, warn } from "../../shared/util.js";
+import { getMeasurement, stripQuotes } from "./utils.js";
+import { $content, $extra, $getParent, $getSubformParent, $getTemplateRoot, $globalData, $nodeName, $pushGlyphs, $text, $toStyle, XFAObject } from "./xfa_object.js";
 /*81---------------------------------------------------------------------------*/
 export function measureToString(m) {
     if (typeof m === "string")

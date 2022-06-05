@@ -1,8 +1,8 @@
 /*81*****************************************************************************
  * bidi_test
 ** --------- */
-import { css_1, css_2 } from "../../../test/alias.js";
 import "../../../lib/jslang.js";
+import { css_1, css_2 } from "../../../test/alias.js";
 import { bidi } from "./bidi.js";
 const strttime = performance.now();
 /*81---------------------------------------------------------------------------*/

@@ -1,12 +1,12 @@
 import { type ExplicitDest } from "../pdf.ts-src/core/catalog.js";
-import { type OutlineNode, PDFDocumentProxy } from "../pdf.ts-src/display/api.js";
-import { BaseTreeViewer, type BaseTreeViewerCtorParms } from "./base_tree_viewer.js";
+import { PDFDocumentProxy, type OutlineNode } from "../pdf.ts-src/display/api.js";
+import { BaseTreeViewer, type BaseTreeViewerCtorP } from "./base_tree_viewer.js";
 import { PDFLinkService } from "./pdf_link_service.js";
 import { SidebarView } from "./ui_utils.js";
-interface PDFOutlineViewerOptions extends BaseTreeViewerCtorParms {
+interface PDFOutlineViewerOptions extends BaseTreeViewerCtorP {
     linkService: PDFLinkService;
 }
-interface PDFOutlineViewerRenderParms {
+interface _PDFOutlineViewerRenderP {
     /**
      * An array of outline objects.
      */
@@ -35,7 +35,7 @@ export declare class PDFOutlineViewer extends BaseTreeViewer {
     }): void;
     protected toggleAllTreeItems$(): void;
     /** @implements */
-    render({ outline, pdfDocument }: PDFOutlineViewerRenderParms): void;
+    render({ outline, pdfDocument }: _PDFOutlineViewerRenderP): void;
 }
 export {};
 //# sourceMappingURL=pdf_outline_viewer.d.ts.map

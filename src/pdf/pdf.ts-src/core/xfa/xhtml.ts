@@ -18,6 +18,26 @@
  */
 
 import {
+  type AvailableSpace,
+  type XFAAttrs, type XFAElData, type XFAFontBase, type XFAHTMLObj,
+  type XFAMargin,
+  type XFAStyleData
+} from "./alias.js";
+import { Builder } from "./builder.js";
+import {
+  fixTextIndent,
+  fixURL,
+  measureToString,
+  setFontFamily
+} from "./html_utils.js";
+import { $buildXFAObject, NamespaceIds } from "./namespaces.js";
+import { TextMeasure } from "./text.js";
+import {
+  getMeasurement,
+  HTMLResult,
+  stripQuotes
+} from "./utils.js";
+import {
   $acceptWhitespace,
   $childrenToHTML,
   $clean,
@@ -31,31 +51,8 @@ import {
   $pushGlyphs,
   $text,
   $toHTML,
-  XmlObject,
+  XmlObject
 } from "./xfa_object.js";
-import { $buildXFAObject, NamespaceIds } from "./namespaces.js";
-import { 
-  fixTextIndent, 
-  fixURL,
-  measureToString, 
-  setFontFamily 
-} from "./html_utils.js";
-import { 
-  type AvailableSpace, 
-  type XFAAttrs, 
-  type XFAFontBase, 
-  type XFAElData, 
-  type XFAHTMLObj, 
-  type XFAMargin, 
-  type XFAStyleData 
-} from "./alias.js";
-import { 
-  getMeasurement, 
-  HTMLResult, 
-  stripQuotes, 
-} from "./utils.js";
-import { TextMeasure } from "./text.js";
-import { Builder } from "./builder.js";
 /*81---------------------------------------------------------------------------*/
 
 const XHTML_NS_ID = NamespaceIds.xhtml.id;
@@ -185,7 +182,7 @@ function mapStyle( styleStr:string, node:XhtmlObject, richText:boolean )
         size: original.fontSize || 0,
       },
       node,
-      node[$globalData].fontFinder!,
+      node[$globalData]!.fontFinder!,
       style
     );
   }
@@ -230,7 +227,7 @@ function checkStyle( node:XhtmlObject )
     .map(s => s.split(/\s*:\s*/, 2))
     .filter(([key, value]) => {
       if (key === "font-family") {
-        node[$globalData].usedTypefaces.add(value);
+        node[$globalData]!.usedTypefaces.add(value);
       }
       return VALID_STYLES.has(key);
     })
@@ -242,7 +239,7 @@ const NoWhites = new Set(["body", "html"]);
 
 export abstract class XhtmlObject extends XmlObject
 {
-  override [$content]:string;
+  override [$content]?:string;
 
   href?:string;
   

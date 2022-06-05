@@ -13,7 +13,7 @@ export declare class Datasets extends XFAObject {
 }
 export declare type XFANsDatasets = typeof DatasetsNamespace;
 export declare const DatasetsNamespace: {
-    [$buildXFAObject](name: string, attributes: XFAAttrs): Data | Datasets | undefined;
+    [$buildXFAObject](name: string, attributes: XFAAttrs): Datasets | Data | undefined;
     datasets(attrs: XFAAttrs): Datasets;
     data(attrs: XFAAttrs): Data;
 };

@@ -20,15 +20,15 @@
 /** @typedef {import("./event_utils").EventBus} EventBus */
 /** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
 
-import { assert } from "../../lib/util/trace.js";
 import { isObjectLike } from "../../lib/jslang.js";
+import { assert } from "../../lib/util/trace.js";
+import { type Destination, type ExplicitDest } from "../pdf.ts-src/core/catalog.js";
 import { Ref } from "../pdf.ts-src/core/primitives.js";
 import { PDFDocumentProxy, type RefProxy } from "../pdf.ts-src/display/api.js";
-import { type IPDFLinkService } from "./interfaces.js";
-import { PDFViewer } from "./pdf_viewer.js";
-import { PDFHistory } from "./pdf_history.js";
-import { type Destination, type ExplicitDest } from "../pdf.ts-src/core/catalog.js";
 import { EventBus } from "./event_utils.js";
+import { type IPDFLinkService } from "./interfaces.js";
+import { PDFHistory } from "./pdf_history.js";
+import { PDFViewer } from "./pdf_viewer.js";
 import { parseQueryString, removeNullCharacters } from "./ui_utils.js";
 /*81---------------------------------------------------------------------------*/
 
@@ -42,7 +42,7 @@ export const enum LinkTarget {
   TOP = 4,
 };
 
-interface ExternalLinkParms
+interface _ExternalLinkP
 {
   /**
    * An absolute URL.
@@ -70,7 +70,7 @@ interface ExternalLinkParms
  * @param link The link element.
  */
 function addLinkAttributes( link:HTMLAnchorElement, 
-  { url, target, rel, enabled=true }:ExternalLinkParms = <ExternalLinkParms>{})
+  { url, target, rel, enabled=true }:_ExternalLinkP = <_ExternalLinkP>{})
 {
   if( !url || typeof url !== "string" )
   {

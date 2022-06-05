@@ -20,17 +20,16 @@
 /** @typedef {import("./display_utils").PageViewport} PageViewport */
 /** @typedef {import("../../web/interfaces").IPDFLinkService} IPDFLinkService */
 
-import { type HSElement, html as createHTML, textnode } from "../../../lib/dom.js";
-import { warn } from "../shared/util.js";
+import { html as createHTML, textnode, type HSElement } from "../../../lib/dom.js";
+import { type IPDFLinkService } from "../../pdf.ts-web/interfaces.js";
 import { type XFAElObj, type XFAHTMLObj } from "../core/xfa/alias.js";
 import { AnnotationStorage } from "./annotation_storage.js";
-import { type AnnotIntent, PDFPageProxy } from "./api.js";
+import { PDFPageProxy, type AnnotIntent } from "./api.js";
 import { PageViewport } from "./display_utils.js";
 import { XfaText } from "./xfa_text.js";
-import { type IPDFLinkService } from "../../pdf.ts-web/interfaces.js";
 /*81---------------------------------------------------------------------------*/
 
-interface XfaLayerParms
+interface _XfaLayerP
 {
   viewport?:PageViewport;
   div:HTMLDivElement;
@@ -46,7 +45,7 @@ interface XfaLayerParms
   intent:AnnotIntent;
 }
 
-interface SetAttributesParms
+interface _SetAttributesP
 {
   html:Element;
   element:XFAElObj;
@@ -68,7 +67,8 @@ export abstract class XfaLayer
         {
           html.textContent = <any>storedData.value;
         }
-        if( intent === "print" ) break;
+        if( intent === "print" )
+          break;
 
         html.addEventListener("input", event => {
           storage.setValue(id, { value: (<HTMLTextAreaElement>event.target).value });
@@ -88,8 +88,8 @@ export abstract class XfaLayer
             // unset through the UI and we're here because of printing.
             html.removeAttribute("checked");
           }
-          if( intent === "print" ) break;
-
+          if( intent === "print" )
+            break;
           html.addEventListener("change", event => {
             storage.setValue(id, {
               value: (<any>event.target).checked
@@ -106,8 +106,8 @@ export abstract class XfaLayer
           {
             html.setAttribute( "value", <any>storedData.value );
           }
-          if( intent === "print" ) break;
-
+          if( intent === "print" )
+            break;
           html.addEventListener("input", event => {
             storage.setValue(id, { value: (<HTMLInputElement>event.target).value });
           });
@@ -136,7 +136,7 @@ export abstract class XfaLayer
     }
   }
 
-  static setAttributes({ html, element, storage, intent, linkService }:SetAttributesParms ) 
+  static setAttributes({ html, element, storage, intent, linkService }:_SetAttributesP ) 
   {
     const { attributes } = element;
     const isHTMLAnchorElement = html instanceof HTMLAnchorElement;
@@ -168,7 +168,7 @@ export abstract class XfaLayer
           }
         } 
         else {
-          if (isHTMLAnchorElement && (key === "href" || key === "newWindow")) 
+          if( isHTMLAnchorElement && (key === "href" || key === "newWindow") ) 
           {
             continue; // Handled below.
           }
@@ -182,15 +182,7 @@ export abstract class XfaLayer
 
     if( isHTMLAnchorElement ) 
     {
-      // #if GENERIC
-        if( !linkService.addLinkAttributes )
-        {
-          warn(
-            "XfaLayer.setAttribute - missing `addLinkAttributes`-method on the `linkService`-instance."
-          );
-        }
-      // #endif
-      linkService.addLinkAttributes?.(
+      linkService.addLinkAttributes(
         html,
         attributes!.href!,
         attributes!.newWindow
@@ -208,7 +200,7 @@ export abstract class XfaLayer
   /**
    * Render the XFA layer.
    */
-  static render( parameters:XfaLayerParms ) 
+  static render( parameters:_XfaLayerP ) 
   {
     const storage = parameters.annotationStorage;
     const linkService = parameters.linkService!;
@@ -331,7 +323,7 @@ export abstract class XfaLayer
   /**
    * Update the XFA layer.
    */
-  static update( parameters:XfaLayerParms ) 
+  static update( parameters:_XfaLayerP ) 
   {
     const transform = `matrix(${parameters.viewport!.transform.join(",")})`;
     parameters.div.style.transform = transform;

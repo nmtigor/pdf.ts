@@ -1,24 +1,24 @@
 import { type IPDFStream, type IPDFStreamRangeReader, type IPDFStreamReader, type ReadValue } from "../interfaces.js";
 import { AbortException } from "../shared/util.js";
-import { type DocumentInitParms } from "./api.js";
+import { type DocumentInitP } from "./api.js";
 export declare class PDFFetchStream implements IPDFStream {
     #private;
-    source: DocumentInitParms;
+    source: DocumentInitP;
     isHttp: boolean;
     httpHeaders: Record<string, string>;
     get _progressiveDataLength(): number;
-    constructor(source: DocumentInitParms);
+    constructor(source: DocumentInitP);
     /** @implements */
     getFullReader(): PDFFetchStreamReader;
     /** @implements */
-    getRangeReader(begin: number, end: number): PDFFetchStreamRangeReader | null;
+    getRangeReader(begin: number, end: number): PDFFetchStreamRangeReader | undefined;
     /** @implements */
     cancelAllRequests(reason: AbortException): void;
 }
 declare class PDFFetchStreamReader implements IPDFStreamReader {
     #private;
     _loaded: number;
-    get filename(): string | null;
+    get filename(): string | undefined;
     /** @implements */
     get contentLength(): number;
     get headersReady(): Promise<void>;

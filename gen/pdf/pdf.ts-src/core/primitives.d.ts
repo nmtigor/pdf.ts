@@ -88,9 +88,9 @@ export declare class RefSet {
     has(ref: Ref | string): boolean;
     put(ref: Ref | string): void;
     remove(ref: Ref): void;
+    [Symbol.iterator](): IterableIterator<string>;
     clear(): void;
     constructor(parent?: RefSet);
-    forEach(callback: (ref: string) => void): void;
 }
 export declare class RefSetCache<T = Obj> {
     #private;
@@ -99,7 +99,7 @@ export declare class RefSetCache<T = Obj> {
     has(ref: Ref | string): boolean;
     put(ref: Ref | string, obj: T): void;
     putAlias(ref: Ref, aliasRef: Ref): void;
-    forEach(callback: (value: T) => void): void;
+    [Symbol.iterator](): IterableIterator<T>;
     clear(): void;
 }
 export declare function isName(v: any, name: string): boolean;

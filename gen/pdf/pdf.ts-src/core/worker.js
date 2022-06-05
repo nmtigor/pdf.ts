@@ -16,13 +16,13 @@
  * limitations under the License.
  */
 import { createPromiseCap } from "../../../lib/promisecap.js";
-import { MessageHandler, } from "../shared/message_handler.js";
-import { AbortException, arrayByteLength, arraysToBytes, getVerbosityLevel, info, InvalidPDFException, MissingPDFException, PasswordException, setVerbosityLevel, stringToPDFString, UnexpectedResponseException, UnknownErrorException, UNSUPPORTED_FEATURES, VerbosityLevel, warn, } from "../shared/util.js";
+import { MessageHandler } from "../shared/message_handler.js";
+import { AbortException, arrayByteLength, arraysToBytes, getVerbosityLevel, info, InvalidPDFException, MissingPDFException, PasswordException, setVerbosityLevel, stringToPDFString, UnexpectedResponseException, UnknownErrorException, UNSUPPORTED_FEATURES, VerbosityLevel, warn } from "../shared/util.js";
+import { clearGlobalCaches } from "./cleanup_helper.js";
 import { XRefParseException } from "./core_utils.js";
-import { LocalPdfManager, NetworkPdfManager, } from "./pdf_manager.js";
+import { LocalPdfManager, NetworkPdfManager } from "./pdf_manager.js";
 import { Dict, Ref } from "./primitives.js";
 import { PDFWorkerStream } from "./worker_stream.js";
-import { clearGlobalCaches } from "./cleanup_helper.js";
 import { incrementalUpdate } from "./writer.js";
 export class WorkerTask {
     name;
@@ -48,9 +48,8 @@ export const WorkerMessageHandler = {
             if (testMessageProcessed)
                 return;
             testMessageProcessed = true;
-            // Ensure that `TypedArray`s can be sent to the worker,
-            // and that `postMessage` transfers are supported.
-            handler.send("test", data instanceof Uint8Array && data[0] === 255);
+            // Ensure that `TypedArray`s can be sent to the worker.
+            handler.send("test", data instanceof Uint8Array);
         });
         handler.on("configure", data => {
             setVerbosityLevel(data.verbosity);
@@ -59,7 +58,7 @@ export const WorkerMessageHandler = {
             return WorkerMessageHandler.createDocumentHandler(data, port);
         });
     },
-    createDocumentHandler(docParms, port) {
+    createDocumentHandler(docParams, port) {
         // This context is actually holds references on pdfManager and handler,
         // until the latter is destroyed.
         let pdfManager;
@@ -67,7 +66,7 @@ export const WorkerMessageHandler = {
         let cancelXHRs;
         const WorkerTasks = [];
         const verbosity = getVerbosityLevel();
-        const apiVersion = docParms.apiVersion;
+        const apiVersion = docParams.apiVersion;
         const workerVersion = 0;
         // typeof PDFJSDev !== "undefined" && !PDFJSDev.test("TESTING")
         //   ? PDFJSDev.eval("BUNDLE_VERSION")
@@ -102,9 +101,9 @@ export const WorkerMessageHandler = {
             // }
             throw new Error(partialMsg + "please update to a supported browser.");
         }
-        const docId = docParms.docId;
-        const docBaseUrl = docParms.docBaseUrl;
-        const workerHandlerName = docParms.docId + "_worker";
+        const docId = docParams.docId;
+        const docBaseUrl = docParams.docBaseUrl;
+        const workerHandlerName = docParams.docId + "_worker";
         let handler = new MessageHandler(workerHandlerName, docId, port);
         function ensureNotTerminated() {
             if (terminated) {
@@ -126,7 +125,7 @@ export const WorkerMessageHandler = {
             // Check that at least the first page can be successfully loaded,
             // since otherwise the XRef table is definitely not valid.
             await pdfManager.ensureDoc("checkFirstPage", [recoveryMode]);
-            // Check that the last page can be sucessfully loaded, to ensure that
+            // Check that the last page can be successfully loaded, to ensure that
             // `numPages` is correct, and fallback to walking the entire /Pages-tree.
             await pdfManager.ensureDoc("checkLastPage", [recoveryMode]);
             const isPureXfa = await pdfManager.ensureDoc("isPureXfa");
@@ -627,8 +626,8 @@ export const WorkerMessageHandler = {
             });
         });
         handler.on("Ready", () => {
-            setupDoc(docParms);
-            docParms = null; // we don't need docParms anymore -- saving memory.
+            setupDoc(docParams);
+            docParams = null; // we don't need docParams anymore -- saving memory.
         });
         return workerHandlerName;
     },

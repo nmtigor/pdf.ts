@@ -3,8 +3,8 @@
 ** ------------------- */
 
 import { css_1, css_2 } from "../../test/alias.js";
-import { isDestArraysEqual, isDestHashesEqual } from "./pdf_history.js";
 import { type ExplicitDest } from "../pdf.ts-src/core/catalog.js";
+import { isDestArraysEqual, isDestHashesEqual } from "./pdf_history.js";
 
 const strttime = performance.now();
 /*81---------------------------------------------------------------------------*/

@@ -16,11 +16,11 @@
  * limitations under the License.
  */
 import { isObjectLike } from "../../../../lib/jslang.js";
-import { getInteger, getKeyword, HTMLResult } from "./utils.js";
-import { shadow, warn, utf8StringToString } from "../../shared/util.js";
+import { shadow, utf8StringToString, warn } from "../../shared/util.js";
+import { encodeToXmlString } from "../core_utils.js";
 import { NamespaceIds } from "./namespaces.js";
 import { searchNode } from "./som.js";
-import { encodeToXmlString } from "../core_utils.js";
+import { getInteger, getKeyword, HTMLResult } from "./utils.js";
 /*81---------------------------------------------------------------------------*/
 // We use these symbols to avoid name conflict between tags
 // and properties/methods names.
@@ -412,7 +412,7 @@ export class XFAObject {
     }
     /**
      * Update the node with properties coming from a prototype and apply
-     * this function recursivly to all children.
+     * this function recursively to all children.
      * @final
      */
     [$resolvePrototypes](ids, ancestors = new Set()) {

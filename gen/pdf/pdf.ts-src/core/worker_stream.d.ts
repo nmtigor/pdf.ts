@@ -1,5 +1,5 @@
 import { type IPDFStream, type IPDFStreamRangeReader, type IPDFStreamReader, type ReadValue } from "../interfaces.js";
-import { Thread, MessageHandler } from "../shared/message_handler.js";
+import { MessageHandler, Thread } from "../shared/message_handler.js";
 import { AbortException } from "../shared/util.js";
 export declare class PDFWorkerStream implements IPDFStream {
     #private;
@@ -24,7 +24,7 @@ declare class PDFWorkerStreamReader implements IPDFStreamReader {
     /** @implements */
     get headersReady(): Promise<void>;
     /** @implements */
-    readonly filename: null;
+    readonly filename: undefined;
     constructor(msgHandler: MessageHandler<Thread.worker>);
     /** @implements */
     read(): Promise<ReadValue>;

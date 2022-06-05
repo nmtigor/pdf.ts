@@ -30,7 +30,7 @@ export declare abstract class DecodeStream extends BaseStream {
      * @implements
      * @final
      */
-    getBytes(length?: number, forceClamped?: boolean): Uint8Array | Uint8ClampedArray;
+    getBytes(length?: number): Uint8Array | Uint8ClampedArray;
     /** @implements */
     reset(): void;
     /** @implements */
@@ -47,7 +47,7 @@ export declare abstract class DecodeStream extends BaseStream {
 /** @final */
 export declare class StreamsSequenceStream extends DecodeStream {
     streams: BaseStream[];
-    _onError: ((reason: unknown, objId?: string | undefined) => void) | undefined;
+    _onError: ((reason: unknown, objId?: string) => void) | undefined;
     constructor(streams: BaseStream[], onError?: (reason: unknown, objId?: string) => void);
     /** @implements */
     readBlock(): void;

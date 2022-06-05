@@ -14,13 +14,13 @@
  */
 
 import { assert } from "../../../lib/util/trace.js";
-import { 
-  type IPDFStream, 
-  type IPDFStreamRangeReader, 
-  type IPDFStreamReader, 
+import {
+  type IPDFStream,
+  type IPDFStreamRangeReader,
+  type IPDFStreamReader,
   type ReadValue
 } from "../interfaces.js";
-import { Thread, MessageHandler } from "../shared/message_handler.js";
+import { MessageHandler, Thread } from "../shared/message_handler.js";
 import { AbortException } from "../shared/util.js";
 /*81---------------------------------------------------------------------------*/
 
@@ -91,7 +91,7 @@ class PDFWorkerStreamReader implements IPDFStreamReader
   get headersReady() { return this.#headersReady; }
 
   /** @implements */
-  readonly filename = null;
+  readonly filename = undefined;
   
   constructor( msgHandler:MessageHandler<Thread.worker> ) 
   {

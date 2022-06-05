@@ -127,10 +127,10 @@ export class PDFCursorTools
     // in order to prevent setting it to an invalid state.
     this.active = tool;
 
-    this._dispatchEvent();
+    this.#dispatchEvent();
   }
 
-  protected _dispatchEvent() 
+  #dispatchEvent() 
   {
     this.eventBus.dispatch("cursortoolchanged", {
       source: this,
@@ -141,7 +141,7 @@ export class PDFCursorTools
   #addEventListeners()
   {
     this.eventBus._on("switchcursortool", evt => {
-      this.switchTool(evt.tool);
+      this.switchTool( evt.tool );
     });
 
     this.eventBus._on("presentationmodechanged", evt => {

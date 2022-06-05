@@ -1,5 +1,5 @@
 import { type AnnotStorageRecord } from "../display/annotation_layer.js";
-import { Thread, MessageHandler } from "../shared/message_handler.js";
+import { MessageHandler, Thread } from "../shared/message_handler.js";
 import { AbortException } from "../shared/util.js";
 import { AnnotationFactory } from "./annotation.js";
 import { Catalog } from "./catalog.js";
@@ -67,7 +67,7 @@ export declare class LocalPdfManager extends BasePdfManager {
     /** @implements */
     terminate(reason: AbortException): void;
 }
-interface NetworkPdfManagerCtorParms {
+interface _NetworkPdfManagerCtorP {
     msgHandler: MessageHandler<Thread.worker>;
     password: string | undefined;
     length: number;
@@ -76,7 +76,7 @@ interface NetworkPdfManagerCtorParms {
 }
 export declare class NetworkPdfManager extends BasePdfManager {
     streamManager: ChunkedStreamManager;
-    constructor(docId: string, pdfNetworkStream: PDFWorkerStream, args: NetworkPdfManagerCtorParms, evaluatorOptions: EvaluatorOptions, enableXfa?: boolean, docBaseUrl?: string);
+    constructor(docId: string, pdfNetworkStream: PDFWorkerStream, args: _NetworkPdfManagerCtorP, evaluatorOptions: EvaluatorOptions, enableXfa?: boolean, docBaseUrl?: string);
     /** @implements */
     ensure<O extends PDFDocument | Page | XRef | Catalog | AnnotationFactory, P extends keyof O, A = O[P] extends (...args: any) => any ? Parameters<O[P]> : undefined, R = O[P] extends (...args: any) => any ? ReturnType<O[P]> : O[P]>(obj: O, prop: P, args: A): Promise<Awaited<R>>;
     /** @implements */

@@ -11,7 +11,7 @@ interface XfaLayerBuilderOptions {
     linkService: IPDFLinkService;
     xfaHtml?: XFAElData | undefined;
 }
-export interface XfaLayerParms {
+export interface XfaLayerP {
     viewport: PageViewport;
     div?: HTMLDivElement;
     xfa?: XFAData;

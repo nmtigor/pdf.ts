@@ -1,7 +1,7 @@
 import { type IPDFStream, type IPDFStreamRangeReader, type IPDFStreamReader, type ReadValue } from "../interfaces.js";
 import { PDFDataRangeTransport } from "../pdf.js";
 import { AbortException } from "../shared/util.js";
-interface StreamInitParms {
+interface _StreamInitP {
     length: number;
     initialData: ArrayLike<number> | undefined;
     progressiveDone: boolean | undefined;
@@ -11,26 +11,26 @@ interface StreamInitParms {
 }
 export declare class PDFDataTransportStream implements IPDFStream {
     #private;
-    _contentDispositionFilename: string | null;
+    _contentDispositionFilename: string | undefined;
     _isStreamingSupported: boolean;
     _isRangeSupported: boolean;
     _contentLength: number;
-    _fullRequestReader: PDFDataTransportStreamReader | null;
-    constructor(params: StreamInitParms, pdfDataRangeTransport: PDFDataRangeTransport);
+    _fullRequestReader?: PDFDataTransportStreamReader;
+    constructor(params: _StreamInitP, pdfDataRangeTransport: PDFDataRangeTransport);
     get _progressiveDataLength(): number;
     _onProgressiveDone(): void;
     _removeRangeReader(reader: PDFDataTransportStreamRangeReader): void;
     /** @implements */
     getFullReader(): PDFDataTransportStreamReader;
     /** @implements */
-    getRangeReader(begin: number, end: number): PDFDataTransportStreamRangeReader | null;
+    getRangeReader(begin: number, end: number): PDFDataTransportStreamRangeReader | undefined;
     /** @implements */
     cancelAllRequests(reason: AbortException): void;
 }
 declare class PDFDataTransportStreamReader implements IPDFStreamReader {
     #private;
     /** @implements */
-    get filename(): string | null;
+    get filename(): string | undefined;
     _loaded: number;
     get headersReady(): Promise<void>;
     /** @implements */
@@ -38,7 +38,7 @@ declare class PDFDataTransportStreamReader implements IPDFStreamReader {
         loaded: number;
         total: number;
     }) => void) | undefined;
-    constructor(stream: PDFDataTransportStream, queuedChunks?: ArrayBufferLike[] | null, progressiveDone?: boolean, contentDispositionFilename?: string | null);
+    constructor(stream: PDFDataTransportStream, queuedChunks?: ArrayBufferLike[] | undefined, progressiveDone?: boolean, contentDispositionFilename?: string);
     _enqueue(chunk: ArrayBufferLike): void;
     get isRangeSupported(): boolean;
     get isStreamingSupported(): boolean;

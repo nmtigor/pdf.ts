@@ -4,12 +4,12 @@
 
 import "../../../lib/jslang.js";
 import { css_1, css_2 } from "../../../test/alias.js";
-import { Stream, StringStream } from "./stream.js";
 import { XRefMock } from "../../test_utils.js";
-import { Dict, Name, Ref } from "./primitives.js";
 import { ColorSpace } from "./colorspace.js";
-import { LocalColorSpaceCache } from "./image_utils.js";
 import { PDFFunctionFactory } from "./function.js";
+import { LocalColorSpaceCache } from "./image_utils.js";
+import { Dict, Name, Ref } from "./primitives.js";
+import { Stream, StringStream } from "./stream.js";
 
 const strttime = performance.now();
 /*81---------------------------------------------------------------------------*/

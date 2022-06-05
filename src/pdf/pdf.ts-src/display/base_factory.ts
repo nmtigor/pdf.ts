@@ -70,10 +70,13 @@ export abstract class BaseCanvasFactory
     (<any>canvasAndContext).context = null;
   }
 
+  /**
+   * @ignore
+   */
   protected abstract _createCanvas( width:number, height:number ):HTMLCanvasElement
 }
 
-interface BaseCMapReaderFactoryCtorParms
+interface _BaseCMapReaderFactoryCtorP
 {
   baseUrl:string | undefined;
   isCompressed:boolean | undefined;
@@ -91,7 +94,7 @@ export abstract class BaseCMapReaderFactory
   baseUrl;
   isCompressed;
 
-  constructor({ baseUrl, isCompressed=false }:BaseCMapReaderFactoryCtorParms )
+  constructor({ baseUrl, isCompressed=false }:_BaseCMapReaderFactoryCtorP )
   {
     this.baseUrl = baseUrl;
     this.isCompressed = isCompressed;
@@ -123,6 +126,9 @@ export abstract class BaseCMapReaderFactory
     });
   }
 
+  /**
+   * @ignore
+   */
   protected abstract _fetchData( url:string, compressionType:CMapCompressionType ):Promise<CMapData>;
 }
 
@@ -155,6 +161,9 @@ export abstract class BaseStandardFontDataFactory
     });
   }
 
+  /**
+   * @ignore
+   */
   protected abstract _fetchData( url:string ):Promise<Uint8Array>;
 }
 
@@ -185,6 +194,9 @@ export abstract class BaseSVGFactory
     return this._createSVG(type);
   }
 
+  /**
+   * @ignore
+   */
   protected abstract _createSVG( type:string ):SVGElement
 }
 /*81---------------------------------------------------------------------------*/

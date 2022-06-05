@@ -1,8 +1,8 @@
-import { type AvailableSpace, type XFAAttrs, type XFAExtra, type XFAGlobalData, type XFAElData, type XFAHTMLObj, type XFAIds, type XFAStyleData, type XFAValue, type XFANsAttrs, type XFACleanup } from "./alias.js";
-import { HTMLResult } from "./utils.js";
 import { type rect_t } from "../../shared/util.js";
-import { type XFANsId } from "./namespaces.js";
+import { type AvailableSpace, type XFAAttrs, type XFACleanup, type XFAElData, type XFAExtra, type XFAGlobalData, type XFAHTMLObj, type XFAIds, type XFANsAttrs, type XFAStyleData, type XFAValue } from "./alias.js";
 import { Builder } from "./builder.js";
+import { type XFANsId } from "./namespaces.js";
+import { HTMLResult } from "./utils.js";
 export declare const $acceptWhitespace: unique symbol;
 export declare const $addHTML: unique symbol;
 export declare const $appendChild: unique symbol;
@@ -109,7 +109,7 @@ export declare abstract class XFAObject {
     /** @final */
     [$uid]: string;
     /** @final */
-    [$globalData]: XFAGlobalData;
+    [$globalData]?: XFAGlobalData | undefined;
     id: string;
     name?: string;
     h: unknown;
@@ -215,7 +215,7 @@ export declare abstract class XFAObject {
     }): HTMLResult;
     /**
      * Update the node with properties coming from a prototype and apply
-     * this function recursivly to all children.
+     * this function recursively to all children.
      * @final
      */
     [$resolvePrototypes](ids: XFAIds, ancestors?: Set<XFAObject>): void;

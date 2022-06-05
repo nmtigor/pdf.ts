@@ -1,10 +1,10 @@
-import { Dict, Ref } from "./primitives.js";
-import { CipherTransform } from "./crypto.js";
-import { type XRefInfo } from "./worker.js";
 import { type SaveData } from "./annotation.js";
+import { CipherTransform } from "./crypto.js";
+import { Dict, Ref } from "./primitives.js";
+import { type XRefInfo } from "./worker.js";
 import { XRef } from "./xref.js";
 export declare function writeDict(dict: Dict, buffer: string[], transform?: CipherTransform): void;
-interface IncrementalUpdateParms {
+interface _IncrementalUpdateP {
     originalData: Uint8Array;
     xrefInfo: XRefInfo;
     newRefs: SaveData[];
@@ -16,6 +16,6 @@ interface IncrementalUpdateParms {
     xfaData?: string | undefined;
     xfaDatasetsRef?: Ref | undefined;
 }
-export declare function incrementalUpdate({ originalData, xrefInfo, newRefs, xref, hasXfa, xfaDatasetsRef, hasXfaDatasetsEntry, acroFormRef, acroForm, xfaData, }: IncrementalUpdateParms): Uint8Array;
+export declare function incrementalUpdate({ originalData, xrefInfo, newRefs, xref, hasXfa, xfaDatasetsRef, hasXfaDatasetsEntry, acroFormRef, acroForm, xfaData, }: _IncrementalUpdateP): Uint8Array;
 export {};
 //# sourceMappingURL=writer.d.ts.map

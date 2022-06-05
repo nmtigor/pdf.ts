@@ -1,5 +1,6 @@
 import { Thread, type StreamSink } from "../shared/message_handler.js";
 import { OPS, RenderingIntentFlag } from "../shared/util.js";
+import { MarkedContentProps, OpArgs } from "./evaluator.js";
 declare namespace NsQueueOptimizer {
     interface QueueOptimizerContext {
         iCurr: number;
@@ -10,7 +11,7 @@ declare namespace NsQueueOptimizer {
     type IterateFn = (context: QueueOptimizerContext, i: number) => boolean;
     type ProcessFn = (context: QueueOptimizerContext, i: number) => number;
     interface Match {
-        checkFn: CheckFn | null;
+        checkFn: CheckFn | undefined;
         iterateFn: IterateFn;
         processFn: ProcessFn;
     }
@@ -21,7 +22,7 @@ declare namespace NsQueueOptimizer {
         queue: OperatorList;
         constructor(queue: OperatorList);
         _optimize(): void;
-        push(fn: OPS, args?: unknown[] | Uint8ClampedArray | null): void;
+        push(fn: OPS, args?: OpArgs): void;
         flush(): void;
         reset(): void;
     }
@@ -51,7 +52,7 @@ declare namespace NsOperatorList {
         /**
          * Array containing the arguments of the functions.
          */
-        argsArray: unknown[];
+        argsArray: (OpArgs | undefined)[];
         length?: number;
         lastChunk: boolean | undefined;
     }
@@ -59,7 +60,7 @@ declare namespace NsOperatorList {
     class OperatorList {
         #private;
         fnArray: OPS[];
-        argsArray: (unknown[] | Uint8ClampedArray | null | undefined)[];
+        argsArray: (OpArgs | undefined)[];
         get length(): number;
         optimizer: QueueOptimizer | NullOptimizer;
         dependencies: Set<string>;
@@ -71,7 +72,8 @@ declare namespace NsOperatorList {
         weight: number;
         constructor(intent?: RenderingIntentFlag, streamSink?: StreamSink<Thread.main, "GetOperatorList">);
         get ready(): Promise<void>;
-        addOp(fn: OPS, args?: unknown[] | Uint8ClampedArray | null): void;
+        addOp(fn: OPS, args?: OpArgs): void;
+        addImageOps(fn: OPS, args: OpArgs | undefined, optionalContent: MarkedContentProps | undefined): void;
         addDependency(dependency: string): void;
         addDependencies(dependencies: Set<string>): void;
         addOpList(opList: OperatorList): void;

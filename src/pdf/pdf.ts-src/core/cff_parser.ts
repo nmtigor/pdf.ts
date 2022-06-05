@@ -21,25 +21,23 @@ import { type Constructor } from "../../../lib/alias.js";
 import {
   bytesToString,
   FormatError,
-  info,
-  type matrix_t,
-  type rect_t,
-  shadow,
+  info, shadow,
   stringToBytes,
   Util,
-  warn,
+  warn, type matrix_t,
+  type rect_t
 } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
 import {
   ExpertCharset,
   ExpertSubsetCharset,
-  ISOAdobeCharset,
+  ISOAdobeCharset
 } from "./charsets.js";
 import { ExpertEncoding, StandardEncoding } from "./encodings.js";
 import { type FontProps } from "./evaluator.js";
 /*81---------------------------------------------------------------------------*/
 
-// Maximum subroutine call depth of type 2 chartrings. Matches OTS.
+// Maximum subroutine call depth of type 2 charstrings. Matches OTS.
 const MAX_SUBR_NESTING = 10;
 
 /**
@@ -252,7 +250,7 @@ namespace NsCFFParser
     { id: "flex1", min: 11, resetStack: true },
   ];
 
-  interface ParseCharStringsParms
+  interface _ParseCharStringsP
   {
     charStrings:CFFIndex;
     localSubrIndex?:CFFIndex | undefined;
@@ -491,12 +489,12 @@ namespace NsCFFParser
           const b1 = b >> 4;
           const b2 = b & 15;
 
-          if( b1 === eof ) break;
-
+          if( b1 === eof )
+            break;
           str += lookup[b1];
 
-          if( b2 === eof ) break;
-
+          if( b2 === eof )
+            break;
           str += lookup[b2];
         }
         return parseFloat(str);
@@ -849,7 +847,7 @@ namespace NsCFFParser
       fdSelect,
       fdArray,
       privateDict,
-    }:ParseCharStringsParms ) 
+    }:_ParseCharStringsP ) 
     {
       const seacs:number[][] = [];
       const widths:number[] = [];
@@ -2003,8 +2001,8 @@ export class CFFCompiler
     for( let i = 0; i < order.length; ++i )
     {
       const key = order[i];
-      if( !(key in dict.values) ) continue;
-
+      if( !(key in dict.values) )
+        continue;
       let values = dict.values[key];
       let types = dict.types[key];
       if (!Array.isArray(types)) 
@@ -2017,7 +2015,8 @@ export class CFFCompiler
       }
 
       // Remove any empty dict values.
-      if( values.length === 0 ) continue;
+      if( values.length === 0 ) 
+        continue;
 
       for( let j = 0, jj = types.length; j < jj; ++j )
       {

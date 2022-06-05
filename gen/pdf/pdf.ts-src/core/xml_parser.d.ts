@@ -18,6 +18,7 @@ export interface XMLAttr {
 }
 export declare abstract class XMLParserBase {
     #private;
+    _errorCode: XMLParserErrorCode;
     parseXml(s: string): void;
     onResolveEntity(name: string): string;
     /** @final */
@@ -29,18 +30,19 @@ export declare abstract class XMLParserBase {
     onDoctype(doctypeContent: string): void;
     abstract onText(text: string): void;
     abstract onBeginElement(name: string, attributes: XMLAttr[], isEmpty: boolean): void;
-    abstract onEndElement(name: string): void;
+    abstract onEndElement(name: string): undefined | SimpleDOMNode;
     abstract onError(code: XMLParserErrorCode): void;
 }
 export declare class SimpleDOMNode {
     nodeName: string;
-    nodeValue?: string | undefined;
-    parentNode: SimpleDOMNode | null;
+    nodeValue: string | undefined;
+    parentNode: SimpleDOMNode | undefined;
     childNodes?: SimpleDOMNode[];
     get firstChild(): SimpleDOMNode | undefined;
+    get children(): SimpleDOMNode[];
     hasChildNodes(): boolean | undefined;
     attributes?: XMLAttr[];
-    constructor(nodeName: string, nodeValue?: string | undefined);
+    constructor(nodeName: string, nodeValue?: string);
     get nextSibling(): SimpleDOMNode | undefined;
     get textContent(): string;
     /**
@@ -50,21 +52,18 @@ export declare class SimpleDOMNode {
      *
      * @param paths an array of objects as returned by {parseXFAPath}.
      * @param pos the current position in the paths array.
-     * @return The node corresponding to the path or null if not found.
+     * @return The node corresponding to the path or undefined if not found.
      */
-    searchNode(paths: XFAPath, pos: number): SimpleDOMNode | null;
+    searchNode(paths: XFAPath, pos: number): SimpleDOMNode | undefined;
     dump(buffer: string[]): void;
 }
+export interface SimpleXMLParserCtorP {
+    hasAttributes?: boolean;
+    lowerCaseName?: boolean;
+}
 export declare class SimpleXMLParser extends XMLParserBase {
-    _currentFragment: SimpleDOMNode[] | null;
-    _stack: SimpleDOMNode[][] | null;
-    _errorCode: XMLParserErrorCode;
-    _hasAttributes: boolean;
-    _lowerCaseName: boolean;
-    constructor({ hasAttributes, lowerCaseName }: {
-        hasAttributes?: boolean | undefined;
-        lowerCaseName?: boolean | undefined;
-    });
+    #private;
+    constructor({ hasAttributes, lowerCaseName }: SimpleXMLParserCtorP);
     parseFromString(data: string): {
         documentElement: SimpleDOMNode;
     } | undefined;
@@ -74,7 +73,8 @@ export declare class SimpleXMLParser extends XMLParserBase {
     onCdata(text: string): void;
     /** @implements */
     onBeginElement(name: string, attributes: XMLAttr[], isEmpty: boolean): void;
-    onEndElement(name: string): void;
+    /** @implements */
+    onEndElement(name: string): SimpleDOMNode | undefined;
     /** @implements */
     onError(code: XMLParserErrorCode): void;
 }

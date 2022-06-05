@@ -61,18 +61,16 @@ export interface XMLAttr
 
 export abstract class XMLParserBase
 {
+  _errorCode = XMLParserErrorCode.NoError;
+
   #resolveEntities( s:string )
   {
     return s.replace(/&([^;]+);/g, ( all, entity:string ) => {
       if( entity.substring(0, 2) === "#x" )
-      {
         return String.fromCodePoint(parseInt(entity.substring(2), 16));
-      } 
       else if( entity.substring(0, 1) === "#" )
-      {
         return String.fromCodePoint(parseInt(entity.substring(1), 10));
-      }
-      switch (entity) 
+      switch( entity ) 
       {
         case "lt":
           return "<";
@@ -125,16 +123,16 @@ export abstract class XMLParserBase
         ++pos;
       }
       skipWs();
-      if( s[pos] !== "=" ) return null;
-
+      if( s[pos] !== "=" ) 
+        return undefined;
       ++pos;
       skipWs();
       const attrEndChar = s[pos];
-      if( attrEndChar !== '"' && attrEndChar !== "'" ) return null;
-
+      if( attrEndChar !== '"' && attrEndChar !== "'" ) 
+        return undefined;
       const attrEndIndex = s.indexOf(attrEndChar, ++pos);
-      if( attrEndIndex < 0 ) return null;
-
+      if( attrEndIndex < 0 ) 
+        return undefined;
       attrValue = s.substring(pos, attrEndIndex);
       attributes.push({
         name: attrName,
@@ -188,21 +186,21 @@ export abstract class XMLParserBase
   parseXml( s:string )
   {
     let i = 0;
-    while (i < s.length) 
+    while( i < s.length ) 
     {
       const ch = s[i];
       let j = i;
-      if (ch === "<") 
+      if( ch === "<" )
       {
         ++j;
         const ch2 = s[j];
         let q;
-        switch (ch2) 
+        switch( ch2 )
         {
           case "/":
             ++j;
             q = s.indexOf(">", j);
-            if (q < 0) 
+            if( q < 0 )
             {
               this.onError( XMLParserErrorCode.UnterminatedElement );
               return;
@@ -213,55 +211,53 @@ export abstract class XMLParserBase
           case "?":
             ++j;
             const pi = this.#parseProcessingInstruction(s, j);
-            if (s.substring(j + pi.parsed, j + pi.parsed + 2) !== "?>") 
+            if( s.substring(j + pi.parsed, j + pi.parsed + 2) !== "?>" )
             {
-              this.onError(XMLParserErrorCode.UnterminatedXmlDeclaration);
+              this.onError( XMLParserErrorCode.UnterminatedXmlDeclaration );
               return;
             }
             this.onPi(pi.name, pi.value);
             j += pi.parsed + 2;
             break;
           case "!":
-            if (s.substring(j + 1, j + 3) === "--") 
+            if( s.substring(j + 1, j + 3) === "--" )
             {
               q = s.indexOf("-->", j + 3);
-              if (q < 0) 
+              if( q < 0 )
               {
-                this.onError(XMLParserErrorCode.UnterminatedComment);
+                this.onError( XMLParserErrorCode.UnterminatedComment );
                 return;
               }
               this.onComment(s.substring(j + 3, q));
               j = q + 3;
             } 
-            else if (s.substring(j + 1, j + 8) === "[CDATA[") 
+            else if( s.substring(j + 1, j + 8) === "[CDATA[" )
             {
               q = s.indexOf("]]>", j + 8);
-              if (q < 0) 
+              if( q < 0 )
               {
-                this.onError(XMLParserErrorCode.UnterminatedCdat);
+                this.onError( XMLParserErrorCode.UnterminatedCdat );
                 return;
               }
               this.onCdata(s.substring(j + 8, q));
               j = q + 3;
             } 
-            else if (s.substring(j + 1, j + 8) === "DOCTYPE") 
+            else if( s.substring(j + 1, j + 8) === "DOCTYPE" )
             {
               const q2 = s.indexOf("[", j + 8);
               let complexDoctype = false;
               q = s.indexOf(">", j + 8);
-              if (q < 0) 
+              if( q < 0 )
               {
-                this.onError(XMLParserErrorCode.UnterminatedDoctypeDeclaration);
+                this.onError( XMLParserErrorCode.UnterminatedDoctypeDeclaration );
                 return;
               }
-              if (q2 > 0 && q > q2) 
+              if( q2 > 0 && q > q2 )
               {
                 q = s.indexOf("]>", j + 8);
-                if (q < 0) 
+                if( q < 0 )
                 {
-                  this.onError(
-                    XMLParserErrorCode.UnterminatedDoctypeDeclaration
-                  );
+                  this.onError( XMLParserErrorCode.UnterminatedDoctypeDeclaration );
                   return;
                 }
                 complexDoctype = true;
@@ -274,15 +270,15 @@ export abstract class XMLParserBase
               j = q + (complexDoctype ? 2 : 1);
             } 
             else {
-              this.onError(XMLParserErrorCode.MalformedElement);
+              this.onError( XMLParserErrorCode.MalformedElement );
               return;
             }
             break;
           default:
             const content = this.#parseContent(s, j);
-            if (content === null) 
+            if( content === undefined )
             {
-              this.onError(XMLParserErrorCode.MalformedElement);
+              this.onError( XMLParserErrorCode.MalformedElement );
               return;
             }
             let isClosed = false;
@@ -294,7 +290,7 @@ export abstract class XMLParserBase
             else if (
               s.substring(j + content.parsed, j + content.parsed + 1) !== ">"
             ) {
-              this.onError(XMLParserErrorCode.UnterminatedElement);
+              this.onError( XMLParserErrorCode.UnterminatedElement );
               return;
             }
             this.onBeginElement(content.name, content.attributes, isClosed);
@@ -303,7 +299,7 @@ export abstract class XMLParserBase
         }
       } 
       else {
-        while (j < s.length && s[j] !== "<") 
+        while( j < s.length && s[j] !== "<" )
         {
           j++;
         }
@@ -333,41 +329,48 @@ export abstract class XMLParserBase
   abstract onText( text:string ):void;
 
   abstract onBeginElement( name:string, attributes:XMLAttr[], isEmpty:boolean ):void;
-  abstract onEndElement( name:string ):void;
+  abstract onEndElement( name:string ):undefined | SimpleDOMNode;
 
   abstract onError( code:XMLParserErrorCode ):void;
 }
 
 export class SimpleDOMNode
 {
-  parentNode:SimpleDOMNode | null = null;
+  nodeName;
+  nodeValue;
+
+  parentNode:SimpleDOMNode | undefined;
 
   childNodes?:SimpleDOMNode[];
   get firstChild() { return this.childNodes?.[0]; }
+  get children() { return this.childNodes || []; }
   hasChildNodes() { return this.childNodes && this.childNodes.length > 0; }
   
   attributes?:XMLAttr[];
   
-  constructor( public nodeName:string, public nodeValue?:string )
+  constructor( nodeName:string, nodeValue?:string )
   {
-    Object.defineProperty(this, "parentNode", { value: null, writable: true });
+    this.nodeName = nodeName;
+    this.nodeValue = nodeValue;
+
+    Object.defineProperty( this, "parentNode", { value: undefined, writable: true });
   }
 
   get nextSibling():SimpleDOMNode | undefined
   {
-    const childNodes = this.parentNode!.childNodes;
-    if( !childNodes ) return undefined;
-
+    const childNodes = this.parentNode?.childNodes;
+    if( !childNodes ) 
+      return undefined;
     const index = childNodes.indexOf(this);
-    if( index === -1 ) return undefined;
-
+    if( index === -1 ) 
+      return undefined;
     return childNodes[index + 1];
   }
 
   get textContent():string
   {
-    if( !this.childNodes ) return this.nodeValue || "";
-
+    if( !this.childNodes ) 
+      return this.nodeValue || "";
     return this.childNodes
       .map( child => child.textContent )
       .join("");
@@ -380,29 +383,29 @@ export class SimpleDOMNode
    *
    * @param paths an array of objects as returned by {parseXFAPath}.
    * @param pos the current position in the paths array.
-   * @return The node corresponding to the path or null if not found.
+   * @return The node corresponding to the path or undefined if not found.
    */
-  searchNode( paths:XFAPath, pos:number ):SimpleDOMNode | null
+  searchNode( paths:XFAPath, pos:number ):SimpleDOMNode | undefined
   {
-    if( pos >= paths.length ) return this;
+    if( pos >= paths.length ) 
+      return this;
 
     const component = paths[pos];
     const stack:[SimpleDOMNode,number][] = [];
     let node:SimpleDOMNode = this;
 
-    while (true) 
+    while( true )
     {
       if (component.name === node.nodeName) 
       {
         if (component.pos === 0) 
         {
           const res = node.searchNode(paths, pos + 1);
-          if( res !== null ) return res;
+          if( res !== undefined ) 
+            return res;
         } 
         else if( stack.length === 0 )
-        {
-          return null;
-        } 
+          return undefined;
         else {
           const [parent] = stack.pop()!;
           let siblingPos = 0;
@@ -411,9 +414,7 @@ export class SimpleDOMNode
             if( component.name === child.nodeName )
             {
               if( siblingPos === component.pos )
-              {
                 return child.searchNode(paths, pos + 1);
-              }
               siblingPos++;
             }
           }
@@ -428,10 +429,8 @@ export class SimpleDOMNode
         stack.push([node, 0]);
         node = node.childNodes[0];
       }
-      else if (stack.length === 0) 
-      {
-        return null;
-      } 
+      else if( stack.length === 0)
+        return undefined;
       else {
         while( stack.length !== 0 )
         {
@@ -444,7 +443,8 @@ export class SimpleDOMNode
             break;
           }
         }
-        if( stack.length === 0 ) return null;
+        if( stack.length === 0 ) 
+          return undefined;
       }
     }
   }
@@ -458,9 +458,9 @@ export class SimpleDOMNode
     }
 
     buffer.push(`<${this.nodeName}`);
-    if (this.attributes) 
+    if( this.attributes ) 
     {
-      for (const attribute of this.attributes) 
+      for( const attribute of this.attributes ) 
       {
         buffer.push(
           ` ${attribute.name}="${encodeToXmlString(attribute.value)}"`
@@ -476,7 +476,7 @@ export class SimpleDOMNode
       }
       buffer.push(`</${this.nodeName}>`);
     } 
-    else if (this.nodeValue) 
+    else if( this.nodeValue )
     {
       buffer.push(`>${encodeToXmlString(this.nodeValue)}</${this.nodeName}>`);
     }
@@ -486,41 +486,44 @@ export class SimpleDOMNode
   }
 }
 
+export interface SimpleXMLParserCtorP
+{
+  hasAttributes?:boolean;
+  lowerCaseName?:boolean;
+}
+
 export class SimpleXMLParser extends XMLParserBase
 {
-  _currentFragment:SimpleDOMNode[] | null = null;
-  _stack:SimpleDOMNode[][] | null = null;
-  _errorCode = XMLParserErrorCode.NoError;
-  _hasAttributes:boolean;
-  _lowerCaseName:boolean;
+  #currentFragment?:SimpleDOMNode[];
+  #stack?:SimpleDOMNode[][];
 
-  constructor({ hasAttributes=false, lowerCaseName=false })
+  #hasAttributes:boolean;
+  #lowerCaseName:boolean;
+
+  constructor({ hasAttributes=false, lowerCaseName=false }:SimpleXMLParserCtorP )
   {
     super();
-
-    this._hasAttributes = hasAttributes;
-    this._lowerCaseName = lowerCaseName;
+    this.#hasAttributes = hasAttributes;
+    this.#lowerCaseName = lowerCaseName;
   }
 
   parseFromString( data:string )
   {
-    this._currentFragment = [];
-    this._stack = [];
+    this.#currentFragment = [];
+    this.#stack = [];
     this._errorCode = XMLParserErrorCode.NoError;
 
     this.parseXml( data );
 
     if( this._errorCode !== XMLParserErrorCode.NoError )
-    {
-      return undefined; // return undefined on error
-    }
+      // return undefined on error
+      return undefined; 
 
     // We should only have one root.
-    const [documentElement] = this._currentFragment;
-    if (!documentElement) 
-    {
-      return undefined; // Return undefined if no root was found.
-    }
+    const [documentElement] = this.#currentFragment;
+    if( !documentElement )
+      // Return undefined if no root was found.
+      return undefined; 
     return { documentElement };
   }
 
@@ -528,50 +531,50 @@ export class SimpleXMLParser extends XMLParserBase
   onText( text:string )
   {
     if( isWhitespaceString(text) )
-    {
-    return;
-    }
+      return;
     const node = new SimpleDOMNode("#text", text);
-    this._currentFragment!.push(node);
+    this.#currentFragment!.push(node);
   }
 
   /** @implements */
   onCdata( text:string )
   {
     const node = new SimpleDOMNode("#text", text);
-    this._currentFragment!.push(node);
+    this.#currentFragment!.push(node);
   }
 
   /** @implements */
   onBeginElement( name:string, attributes:XMLAttr[], isEmpty:boolean )
   {
-    if( this._lowerCaseName )
+    if( this.#lowerCaseName )
     {
       name = name.toLowerCase();
     }
     const node = new SimpleDOMNode(name);
     node.childNodes = [];
-    if( this._hasAttributes )
+    if( this.#hasAttributes )
     {
       node.attributes = attributes;
     }
-    this._currentFragment!.push(node);
+    this.#currentFragment!.push(node);
     if( isEmpty ) return;
 
-    this._stack!.push( this._currentFragment! );
-    this._currentFragment = node.childNodes;
+    this.#stack!.push( this.#currentFragment! );
+    this.#currentFragment = node.childNodes;
   }
 
+  /** @implements */
   onEndElement( name:string )
   {
-    this._currentFragment = this._stack!.pop() || [];
-    const lastElement = this._currentFragment[this._currentFragment.length - 1];
-    if( !lastElement ) return;
-
+    this.#currentFragment = this.#stack!.pop() || [];
+    const lastElement = this.#currentFragment[ this.#currentFragment.length - 1];
+    if( !lastElement ) 
+      return undefined;
     for( let i = 0, ii = lastElement.childNodes!.length; i < ii; i++ )
     {
       lastElement.childNodes![i].parentNode = lastElement;
     }
+    return lastElement;
   }
 
   /** @implements */

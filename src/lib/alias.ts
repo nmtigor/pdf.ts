@@ -43,7 +43,22 @@ export type ts_t = int64;
 export type Ratio = number; 
 /*81---------------------------------------------------------------------------*/
 
+export type CSSStyleName = keyof {
+  [K in Extract< keyof CSSStyleDeclaration, string> as 
+    string extends K 
+      ? never
+      : CSSStyleDeclaration[K] extends string ? K : never
+  ]: never;
+}
+// const cname:CSSStyleName = "length";
+
+export type CSSStyle = Record< CSSStyleName, string>;
+
+/**
+ * @deprecated Use `CSSStyle` instead.
+ */
 export type Style = Record<string, string>;
+/*49-------------------------------------------*/
 
 export interface Runr
 {

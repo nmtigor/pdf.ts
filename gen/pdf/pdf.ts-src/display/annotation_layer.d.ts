@@ -1,10 +1,11 @@
 import { IDownloadManager, type IPDFLinkService, type MouseState } from "../../pdf.ts-web/interfaces.js";
-import { DOMSVGFactory, PageViewport } from "./display_utils.js";
+import { type AnnotationData, type FieldObject } from "../core/annotation.js";
+import { ColorConvertersDetail } from "../shared/scripting_utils.js";
 import { AnnotationStorage } from "./annotation_storage.js";
 import { PDFPageProxy } from "./api.js";
-import { type AnnotationData, type FieldObject } from "../core/annotation.js";
+import { DOMSVGFactory, PageViewport } from "./display_utils.js";
 declare type HTMLSectionElement = HTMLElement;
-interface AnnotationElementParms {
+interface _AnnotationElementCtorP {
     data: AnnotationData;
     layer: HTMLDivElement;
     page: PDFPageProxy;
@@ -43,11 +44,28 @@ export declare class AnnotationElement {
     _mouseState: MouseState | undefined;
     container?: HTMLSectionElement;
     quadrilaterals?: HTMLSectionElement[] | undefined;
-    constructor(parameters: AnnotationElementParms, { isRenderable, ignoreBorder, createQuadrilaterals, }?: {
+    constructor(parameters: _AnnotationElementCtorP, { isRenderable, ignoreBorder, createQuadrilaterals, }?: {
         isRenderable?: boolean | undefined;
         ignoreBorder?: boolean | undefined;
         createQuadrilaterals?: boolean | undefined;
     });
+    get _commonActions(): {
+        display: (event: CustomEvent) => void;
+        print: (event: CustomEvent) => void;
+        hidden: (event: CustomEvent) => void;
+        focus: (event: CustomEvent) => void;
+        userName: (event: CustomEvent) => void;
+        readonly: (event: CustomEvent) => void;
+        required: (event: CustomEvent) => void;
+        bgColor: (event: CustomEvent<ColorConvertersDetail>) => void;
+        fillColor: (event: CustomEvent<ColorConvertersDetail>) => void;
+        fgColor: (event: CustomEvent<ColorConvertersDetail>) => void;
+        textColor: (event: CustomEvent<ColorConvertersDetail>) => void;
+        borderColor: (event: CustomEvent<ColorConvertersDetail>) => void;
+        strokeColor: (event: CustomEvent<ColorConvertersDetail>) => void;
+    };
+    _dispatchEventFromSandbox(actions: Actions, jsEvent: CustomEvent): void;
+    _setDefaultPropertiesFromJS(element: HTMLElement): void;
     /**
      * Create a popup for the annotation's HTML element. This is used for
      * annotations that do not have a Popup entry in the dictionary, but
@@ -85,6 +103,19 @@ export interface ResetForm {
     refs: string[];
     include: boolean;
 }
+declare type Action = (event: CustomEvent) => void;
+interface Actions {
+    value: Action;
+    clear?: Action;
+    editable?: Action;
+    indices?: Action;
+    insert?: Action;
+    items?: Action;
+    multipleSelection?: Action;
+    remove?: Action;
+    selRange?: Action;
+    formattedValue?: Action;
+}
 interface Item {
     displayValue: string | null;
     exportValue: string;
@@ -93,10 +124,10 @@ export declare class FileAttachmentAnnotationElement extends AnnotationElement {
     #private;
     filename: string;
     content: Uint8Array | Uint8ClampedArray | undefined;
-    constructor(parameters: AnnotationElementParms);
+    constructor(parameters: _AnnotationElementCtorP);
     render(): HTMLElement;
 }
-interface AnnotationLayerParms {
+interface _AnnotationLayerP {
     viewport: PageViewport;
     div: HTMLDivElement;
     annotations: AnnotationData[];
@@ -138,11 +169,11 @@ export declare class AnnotationLayer {
     /**
      * Render a new annotation layer with all annotation elements.
      */
-    static render(parameters: AnnotationLayerParms): void;
+    static render(parameters: _AnnotationLayerP): void;
     /**
      * Update the annotation elements on existing annotation layer.
      */
-    static update(parameters: AnnotationLayerParms): void;
+    static update(parameters: _AnnotationLayerP): void;
 }
 export {};
 //# sourceMappingURL=annotation_layer.d.ts.map

@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 import { createPromiseCap } from "../../../lib/promisecap.js";
-import { arrayByteLength, arraysToBytes, } from "../shared/util.js";
+import { arrayByteLength, arraysToBytes } from "../shared/util.js";
 import { MissingDataException } from "./core_utils.js";
 import { Stream } from "./stream.js";
 export class ChunkedStream extends Stream {
@@ -129,7 +129,7 @@ export class ChunkedStream extends Stream {
         }
         return this.bytes[this.pos++];
     }
-    getBytes(length, forceClamped = false) {
+    getBytes(length) {
         const bytes = this.bytes;
         const pos = this.pos;
         const strEnd = this.end;
@@ -137,9 +137,7 @@ export class ChunkedStream extends Stream {
             if (strEnd > this.progressiveDataLength) {
                 this.ensureRange(pos, strEnd);
             }
-            const subarray = bytes.subarray(pos, strEnd);
-            // `this.bytes` is always a `Uint8Array` here.
-            return forceClamped ? new Uint8ClampedArray(subarray) : subarray;
+            return bytes.subarray(pos, strEnd);
         }
         let end = pos + length;
         if (end > strEnd) {
@@ -149,9 +147,7 @@ export class ChunkedStream extends Stream {
             this.ensureRange(pos, end);
         }
         this.pos = end;
-        const subarray = bytes.subarray(pos, end);
-        // `this.bytes` is always a `Uint8Array` here.
-        return forceClamped ? new Uint8ClampedArray(subarray) : subarray;
+        return bytes.subarray(pos, end);
     }
     getByteRange(begin, end) {
         if (begin < 0) {

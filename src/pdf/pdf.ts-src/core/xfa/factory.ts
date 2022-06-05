@@ -17,25 +17,25 @@
  * limitations under the License.
  */
 
-import { 
-  $appendChild, 
-  $globalData, 
-  $nodeName, 
-  $text, 
-  $toHTML,
-  $toPages,
-} from "./xfa_object.js";
-import { Binder } from "./bind.js";
-import { XFAParser } from "./parser.js";
+import { type AnnotStorageRecord } from "../../display/annotation_layer.js";
+import { warn, type rect_t } from "../../shared/util.js";
 import { type XFAData } from "../document.js";
+import { ErrorFont, Font } from "../fonts.js";
+import { type XFAElObj, type XFAHTMLObj } from "./alias.js";
+import { Binder } from "./bind.js";
 import { DataHandler } from "./data.js";
 import { FontFinder } from "./fonts.js";
-import { type XFAElObj, type XFAHTMLObj } from "./alias.js";
+import { XFAParser } from "./parser.js";
+import { Template } from "./template.js";
 import { HTMLResult, stripQuotes } from "./utils.js";
-import { type rect_t, warn } from "../../shared/util.js";
-import { ErrorFont, Font } from "../fonts.js";
-import { type AnnotStorageRecord } from "../../display/annotation_layer.js";
-import { Subform, Template } from "./template.js";
+import {
+  $appendChild,
+  $globalData,
+  $nodeName,
+  $text,
+  $toHTML,
+  $toPages
+} from "./xfa_object.js";
 import { XhtmlNamespace } from "./xhtml.js";
 /*81---------------------------------------------------------------------------*/
 
@@ -57,11 +57,11 @@ export class XFAFactory
   constructor( data:XFAData )
   {
     try {
-      this.root = new XFAParser().parse( XFAFactory._createDocument(data) )!;
+      this.root = new XFAParser().parse( <string>XFAFactory._createDocument(data) )!;
       const binder = new Binder( this.root );
       this.form = binder.bind();
       this.dataHandler = new DataHandler( this.root, binder.getData() );
-      this.form[$globalData].template = this.form;
+      this.form[$globalData]!.template = this.form;
     } catch( e ) {
       warn(`XFA - an error occurred during parsing and binding: ${e}`);
     }
@@ -127,17 +127,17 @@ export class XFAFactory
 
   setImages( images:Map<string, Uint8Array | Uint8ClampedArray> )
   {
-    this.form![$globalData].images = images;
+    this.form![$globalData]!.images = images;
   }
 
   setFonts( fonts:(Font | ErrorFont)[] )
   {
-    this.form![$globalData].fontFinder = new FontFinder(fonts);
+    this.form![$globalData]!.fontFinder = new FontFinder(fonts);
     const missingFonts = [];
-    for( let typeface of this.form![$globalData].usedTypefaces )
+    for( let typeface of this.form![$globalData]!.usedTypefaces )
     {
       typeface = stripQuotes(typeface);
-      const font = this.form![$globalData].fontFinder!.find(typeface);
+      const font = this.form![$globalData]!.fontFinder!.find(typeface);
       if( !font )
       {
         missingFonts.push(typeface);
@@ -154,7 +154,7 @@ export class XFAFactory
 
   appendFonts( fonts:(Font | ErrorFont)[], reallyMissingFonts:Set<string> )
   {
-    this.form![$globalData].fontFinder!.add( fonts, reallyMissingFonts );
+    this.form![$globalData]!.fontFinder!.add( fonts, reallyMissingFonts );
   }
 
   async getPages()
@@ -176,9 +176,7 @@ export class XFAFactory
   static _createDocument( data:XFAData )
   {
     if( !data["/xdp:xdp"] )
-    {
       return data["xdp:xdp"];
-    }
     return Object.values(data).join("");
   }
 

@@ -16,8 +16,8 @@
  * limitations under the License.
  */
 import { Locale } from "../../lib/Locale.js";
-import { RendererType, ScrollMode, SpreadMode } from "./ui_utils.js";
 import { VerbosityLevel } from "../pdf.ts-src/shared/util.js";
+import { RendererType, ScrollMode, SpreadMode } from "./ui_utils.js";
 /*81---------------------------------------------------------------------------*/
 export const compatibilityParams = Object.create(null);
 const userAgent = navigator.userAgent || "";
@@ -144,6 +144,16 @@ const defaultOptions = {
         value: 16777216,
         compatibility: compatibilityParams.maxCanvasPixels,
         kind: OptionKind.VIEWER,
+    },
+    pageColorsBackground: {
+        /** @type {string} */
+        value: "Canvas",
+        kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
+    },
+    pageColorsForeground: {
+        /** @type {string} */
+        value: "CanvasText",
+        kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
     },
     pdfBugEnabled: {
         /** @type {boolean} */

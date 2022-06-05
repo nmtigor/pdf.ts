@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 import { html } from "../../../lib/dom.js";
-import { BaseException, stringToBytes, Util, warn, } from "../shared/util.js";
+import { BaseException, stringToBytes, Util, warn } from "../shared/util.js";
 import { BaseCanvasFactory, BaseCMapReaderFactory, BaseStandardFontDataFactory, BaseSVGFactory } from "./base_factory.js";
 /*81---------------------------------------------------------------------------*/
 const SVG_NS = "http://www.w3.org/2000/svg";
@@ -31,7 +31,10 @@ export class DOMCanvasFactory extends BaseCanvasFactory {
         super();
         this._document = ownerDocument;
     }
-    /** @implements */
+    /**
+     * @ignore
+     * @implements
+     */
     _createCanvas(width, height) {
         const canvas = this._document.createElement("canvas");
         canvas.width = width;
@@ -80,7 +83,10 @@ async function fetchData(url, asTypedArray = false) {
     });
 }
 export class DOMCMapReaderFactory extends BaseCMapReaderFactory {
-    /** @implements */
+    /**
+     * @ignore
+     * @implements
+     */
     _fetchData(url, compressionType) {
         return fetchData(url, /* asTypedArray = */ this.isCompressed).then(data => {
             return { cMapData: data, compressionType };
@@ -88,13 +94,19 @@ export class DOMCMapReaderFactory extends BaseCMapReaderFactory {
     }
 }
 export class DOMStandardFontDataFactory extends BaseStandardFontDataFactory {
-    /** @implements */
+    /**
+     * @ignore
+     * @implements
+     */
     _fetchData(url) {
         return fetchData(url, /* asTypedArray = */ true);
     }
 }
 export class DOMSVGFactory extends BaseSVGFactory {
-    /** @implements */
+    /**
+     * @ignore
+     * @implements
+     */
     _createSVG(type) {
         return document.createElementNS(SVG_NS, type);
     }

@@ -25,7 +25,7 @@ import { normalizeFontName } from "./fonts_utils.js";
  * Hold a map of decoded fonts and of the standard fourteen Type1
  * fonts and their acronyms.
  */
-export const getStdFontMap = getLookupTableFactory( ( t:Record<string,string> ) =>
+export const getStdFontMap = getLookupTableFactory( ( t:Record<string, string> ) =>
 {
   // The standard 14 fonts:
   t["Times-Roman"] = "Times-Roman";
@@ -97,7 +97,7 @@ export const getStdFontMap = getLookupTableFactory( ( t:Record<string,string> ) 
 });
 
 // Contains mapping for standard fonts and xfa fonts.
-export const getFontNameToFileMap = getLookupTableFactory( ( t:Record<string,string> ) => {
+export const getFontNameToFileMap = getLookupTableFactory( ( t:Record<string, string> ) => {
   t.Courier = "FoxitFixed.pfb";
   t["Courier-Bold"] = "FoxitFixedBold.pfb";
   t["Courier-BoldOblique"] = "FoxitFixedBoldItalic.pfb";
@@ -122,7 +122,7 @@ export const getFontNameToFileMap = getLookupTableFactory( ( t:Record<string,str
  * Holds the map of the non-standard fonts that might be included as
  * a standard fonts without glyph data.
  */
-export const getNonStdFontMap = getLookupTableFactory( ( t:Record<string,string> ) => 
+export const getNonStdFontMap = getLookupTableFactory( ( t:Record<string, string> ) => 
 {
   t.Calibri = "Helvetica";
   t["Calibri-Bold"] = "Helvetica-Bold";

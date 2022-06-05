@@ -15,11 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { createPromiseCap } from "../../../lib/promisecap.js";
 import { HttpStatusCode } from "../../../lib/HttpStatusCode.js";
+import { createPromiseCap } from "../../../lib/promisecap.js";
 import { assert } from "../../../lib/util/trace.js";
-import { stringToBytes, } from "../shared/util.js";
-import { createResponseStatusError, extractFilenameFromHeader, validateRangeRequestCapabilities, } from "./network_utils.js";
+import { stringToBytes } from "../shared/util.js";
+import { createResponseStatusError, extractFilenameFromHeader, validateRangeRequestCapabilities } from "./network_utils.js";
 /*81---------------------------------------------------------------------------*/
 function getArrayBuffer(xhr) {
     const data = xhr.response;
@@ -165,7 +165,7 @@ class NetworkManager {
 export class PDFNetworkStream {
     #source;
     #manager;
-    // #rangeChunkSize;
+    #rangeChunkSize;
     #fullRequestReader;
     #rangeRequestReaders = [];
     constructor(source) {
@@ -174,7 +174,7 @@ export class PDFNetworkStream {
             httpHeaders: source.httpHeaders,
             withCredentials: source.withCredentials,
         });
-        // this.#rangeChunkSize = source.rangeChunkSize;
+        this.#rangeChunkSize = source.rangeChunkSize;
     }
     #onRangeRequestReaderClosed = (reader) => {
         const i = this.#rangeRequestReaders.indexOf(reader);
@@ -221,7 +221,7 @@ class PDFNetworkStreamFullRequestReader {
     #requests = [];
     #done = false;
     _storedError;
-    #filename = null;
+    #filename;
     get filename() { return this.#filename; }
     /** @implements */
     onProgress;
@@ -330,7 +330,7 @@ class PDFNetworkStreamFullRequestReader {
         if (this.#manager.isPendingRequest(this.#fullRequestId)) {
             this.#manager.abortRequest(this.#fullRequestId);
         }
-        // this.#fullRequestReader = null;
+        // this.#fullRequestReader = undefined;
     }
 }
 class PDFNetworkStreamRangeRequestReader {
@@ -338,12 +338,12 @@ class PDFNetworkStreamRangeRequestReader {
     _url;
     #requestId;
     #requests = [];
-    #queuedChunk = null;
+    #queuedChunk;
     #done = false;
     _storedError;
     /** @implements */
     onProgress;
-    onClosed = null;
+    onClosed;
     /** @override */
     get isStreamingSupported() { return false; }
     constructor(manager, begin, end) {
@@ -379,7 +379,7 @@ class PDFNetworkStreamRangeRequestReader {
             requestCapability.reject(this._storedError);
         }
         this.#requests.length = 0;
-        this.#queuedChunk = null;
+        this.#queuedChunk = undefined;
     };
     #onProgress = (evt) => {
         if (!this.isStreamingSupported) {
@@ -390,14 +390,13 @@ class PDFNetworkStreamRangeRequestReader {
     async read() {
         if (this._storedError)
             throw this._storedError;
-        if (this.#queuedChunk !== null) {
+        if (this.#queuedChunk !== undefined) {
             const chunk = this.#queuedChunk;
-            this.#queuedChunk = null;
+            this.#queuedChunk = undefined;
             return { value: chunk, done: false };
         }
-        if (this.#done) {
+        if (this.#done)
             return { value: undefined, done: true };
-        }
         const requestCapability = createPromiseCap();
         this.#requests.push(requestCapability);
         return requestCapability.promise;

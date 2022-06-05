@@ -1,7 +1,7 @@
-import { Name, type ObjNoCmd } from "./primitives.js";
 import { type TupleOf } from "../../../lib/alias.js";
-import { BaseStream } from "./base_stream.js";
 import { type FetchBuiltInCMap } from "../display/base_factory.js";
+import { BaseStream } from "./base_stream.js";
+import { Name, type ObjNoCmd } from "./primitives.js";
 export interface CharCodeOut {
     charcode: number;
     length: number;
@@ -63,14 +63,15 @@ export declare class IdentityCMap extends CMap {
     get isIdentityCMap(): boolean;
 }
 declare namespace NsCMapFactory {
-    interface CMapFactoryCreateParms {
+    interface _CMapFactoryCreateP {
         encoding: Name | BaseStream;
         fetchBuiltInCMap: FetchBuiltInCMap;
         useCMap?: string;
     }
-    const CMapFactory: {
-        create(params: CMapFactoryCreateParms): Promise<CMap | IdentityCMap>;
+    export const CMapFactory: {
+        create(params: _CMapFactoryCreateP): Promise<CMap | IdentityCMap>;
     };
+    export {};
 }
 export import CMapFactory = NsCMapFactory.CMapFactory;
 export {};

@@ -1,10 +1,10 @@
-import { type matrix_t, OPS, type rect_t, TextRenderingMode } from "../shared/util.js";
-import { DOMSVGFactory, PageViewport } from "./display_utils.js";
-import { PDFCommonObjs, PDFObjects, PDFObjs } from "./api.js";
 import { type ImgData } from "../core/evaluator.js";
 import { FontExpotData, Glyph } from "../core/fonts.js";
 import { type OpListIR } from "../core/operator_list.js";
 import { type ShadingPatternIR, type TilingPatternIR } from "../core/pattern.js";
+import { OPS, TextRenderingMode, type matrix_t, type rect_t } from "../shared/util.js";
+import { PDFCommonObjs, PDFObjects, PDFObjs } from "./api.js";
+import { DOMSVGFactory, PageViewport } from "./display_utils.js";
 declare class SVGExtraState {
     font?: FontExpotData;
     fontSize: number;

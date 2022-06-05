@@ -1,20 +1,20 @@
-import { Cmd, Dict, EOF, Name, type Obj, Ref } from "./primitives.js";
+import { Ascii85Stream } from "./ascii_85_stream.js";
+import { AsciiHexStream } from "./ascii_hex_stream.js";
+import { BaseStream } from "./base_stream.js";
 import { CCITTFaxStream } from "./ccitt_stream.js";
+import { CipherTransform } from "./crypto.js";
+import { type OpMap } from "./evaluator.js";
+import { FlateStream } from "./flate_stream.js";
 import { Jbig2Stream } from "./jbig2_stream.js";
 import { JpegStream } from "./jpeg_stream.js";
 import { JpxStream } from "./jpx_stream.js";
-import { CipherTransform } from "./crypto.js";
-import { type OpMap } from "./evaluator.js";
-import { XRef } from "./xref.js";
 import { LZWStream } from "./lzw_stream.js";
 import { PredictorStream } from "./predictor_stream.js";
-import { FlateStream } from "./flate_stream.js";
+import { Cmd, Dict, EOF, Name, Ref, type Obj } from "./primitives.js";
 import { RunLengthStream } from "./run_length_stream.js";
-import { AsciiHexStream } from "./ascii_hex_stream.js";
-import { Ascii85Stream } from "./ascii_85_stream.js";
 import { Stream } from "./stream.js";
-import { BaseStream } from "./base_stream.js";
-interface ParserCtorParms {
+import { XRef } from "./xref.js";
+interface _ParserCtorP {
     lexer: Lexer;
     xref?: XRef | undefined;
     allowStreams?: boolean;
@@ -29,7 +29,7 @@ export declare class Parser {
     imageCache: Record<string, any>;
     buf1: Obj;
     buf2: Obj;
-    constructor({ lexer, xref, allowStreams, recoveryMode }: ParserCtorParms);
+    constructor({ lexer, xref, allowStreams, recoveryMode }: _ParserCtorP);
     refill(): void;
     shift(): void;
     tryShift(): boolean;
@@ -61,8 +61,8 @@ export declare class Parser {
     makeInlineImage(cipherTransform?: CipherTransform): any;
     _findStreamLength(startPos: number, signature: Uint8Array): number;
     makeStream(dict: Dict, cipherTransform?: CipherTransform): BaseStream;
-    filter(stream: BaseStream, dict: Dict, length: number): BaseStream | CCITTFaxStream | Jbig2Stream | JpegStream | JpxStream | LZWStream | FlateStream | PredictorStream | RunLengthStream | AsciiHexStream | Ascii85Stream;
-    makeFilter(stream: BaseStream, name: string, maybeLength?: number, params?: Dict): BaseStream | CCITTFaxStream | Jbig2Stream | JpegStream | JpxStream | LZWStream | FlateStream | PredictorStream | RunLengthStream | AsciiHexStream | Ascii85Stream;
+    filter(stream: BaseStream, dict: Dict, length: number): BaseStream | Ascii85Stream | AsciiHexStream | CCITTFaxStream | FlateStream | Jbig2Stream | JpegStream | JpxStream | LZWStream | PredictorStream | RunLengthStream;
+    makeFilter(stream: BaseStream, name: string, maybeLength?: number, params?: Dict): BaseStream | Ascii85Stream | AsciiHexStream | CCITTFaxStream | FlateStream | Jbig2Stream | JpegStream | JpxStream | LZWStream | PredictorStream | RunLengthStream;
 }
 /** @final */
 export declare class Lexer {
@@ -96,7 +96,7 @@ export declare class Lexer {
     getName(): Name;
     getHexString(): string;
     getObj(): Obj;
-    peekObj(): string | number | boolean | Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint16Array | Int32Array | Uint32Array | Float32Array | Float64Array | BaseStream | Dict | Name | Cmd | typeof import("./primitives.js").CIRCULAR_REF | typeof EOF | Ref | (Obj | undefined)[];
+    peekObj(): string | number | boolean | Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint16Array | Int32Array | Uint32Array | Float32Array | Float64Array | Ref | Name | Cmd | BaseStream | Dict | typeof import("./primitives.js").CIRCULAR_REF | typeof EOF | (Obj | undefined)[];
     skipToNextLine(): void;
 }
 export declare class Linearization {

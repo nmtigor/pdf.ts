@@ -17,7 +17,7 @@
  * Hashes roughly 100 KB per millisecond on i7 3.4 GHz.
  */
 
-import { isArrayBuffer } from "../shared/util.js";
+import { isArrayBuffer } from "./util.js";
 /*81---------------------------------------------------------------------------*/
 
 const SEED = 0xc3d2e1f0;

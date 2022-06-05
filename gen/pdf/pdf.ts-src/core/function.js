@@ -15,11 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Dict, Ref } from "./primitives.js";
-import { FormatError, info, IsEvalSupportedCached, shadow, } from "../shared/util.js";
-import { PostScriptLexer, PostScriptParser } from "./ps_parser.js";
+import { FeatureTest, FormatError, info, shadow } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
 import { LocalFunctionCache } from "./image_utils.js";
+import { Dict, Ref } from "./primitives.js";
+import { PostScriptLexer, PostScriptParser } from "./ps_parser.js";
 /*81---------------------------------------------------------------------------*/
 export class PDFFunctionFactory {
     xref;
@@ -87,7 +87,7 @@ export class PDFFunctionFactory {
             fnRef = cacheKey.dict && cacheKey.dict.objId;
         }
         if (fnRef) {
-            this._localFunctionCache.set(/* name = */ null, fnRef, parsedFunction);
+            this._localFunctionCache.set(/* name = */ undefined, fnRef, parsedFunction);
         }
     }
     get _localFunctionCache() {
@@ -197,9 +197,8 @@ var NsPDFFunction;
             }
             let domain = toNumberArray(dict.getArray("Domain"));
             let range = toNumberArray(dict.getArray("Range"));
-            if (!domain || !range) {
+            if (!domain || !range)
                 throw new FormatError("No domain or range");
-            }
             const inputSize = domain.length / 2;
             const outputSize = range.length / 2;
             domain = toMultiArray(domain);
@@ -391,7 +390,7 @@ var NsPDFFunction;
             const lexer = new PostScriptLexer(fn);
             const parser = new PostScriptParser(lexer);
             const code = parser.parse();
-            if (isEvalSupported && IsEvalSupportedCached.value) {
+            if (isEvalSupported && FeatureTest.isEvalSupported) {
                 const compiled = new PostScriptCompiler().compile(code, domain, range);
                 if (compiled) {
                     // Compiled function consists of simple expressions such as addition,

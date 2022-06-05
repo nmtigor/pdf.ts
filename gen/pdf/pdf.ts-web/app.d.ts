@@ -1,40 +1,41 @@
 import "../../lib/jslang.js";
-import { ProgressBar, ScrollMode, SidebarView, SpreadMode } from "./ui_utils.js";
-import { EventBus } from "./event_utils.js";
+import { Locale } from "../../lib/Locale.js";
+import { type DocumentInfo } from "../pdf.ts-src/core/document.js";
+import { WorkerMessageHandler } from "../pdf.ts-src/core/worker.js";
+import { PDFDataRangeTransport, PDFDocumentLoadingTask, PDFDocumentProxy, type PDFDocumentStats } from "../pdf.ts-src/display/api.js";
+import { Metadata } from "../pdf.ts-src/display/metadata.js";
+import { OptionalContentConfig } from "../pdf.ts-src/display/optional_content_config.js";
 import { UNSUPPORTED_FEATURES } from "../pdf.ts-src/pdf.js";
-import { PDFCursorTools } from "./pdf_cursor_tools.js";
+import { type PageOverview } from "./base_viewer.js";
+import { PDFBug } from "./debugger.js";
+import { DownloadManager } from "./download_manager.js";
+import { EventBus } from "./event_utils.js";
+import { IScripting, type IL10n } from "./interfaces.js";
 import { OverlayManager } from "./overlay_manager.js";
 import { PasswordPrompt } from "./password_prompt.js";
 import { PDFAttachmentViewer } from "./pdf_attachment_viewer.js";
+import { PDFCursorTools } from "./pdf_cursor_tools.js";
 import { PDFDocumentProperties } from "./pdf_document_properties.js";
 import { PDFFindBar } from "./pdf_find_bar.js";
-import { FindState, type MatchesCount, PDFFindController } from "./pdf_find_controller.js";
+import { FindState, PDFFindController, type MatchesCount } from "./pdf_find_controller.js";
 import { PDFHistory } from "./pdf_history.js";
 import { PDFLayerViewer } from "./pdf_layer_viewer.js";
 import { PDFLinkService } from "./pdf_link_service.js";
 import { PDFOutlineViewer } from "./pdf_outline_viewer.js";
 import { PDFPresentationMode } from "./pdf_presentation_mode.js";
+import { PDFPrintService } from "./pdf_print_service.js";
 import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
+import { PDFScriptingManager } from "./pdf_scripting_manager.js";
+import { PDFSidebar } from "./pdf_sidebar.js";
 import { PDFSidebarResizer } from "./pdf_sidebar_resizer.js";
 import { PDFThumbnailViewer } from "./pdf_thumbnail_viewer.js";
 import { PDFViewer } from "./pdf_viewer.js";
+import { BasePreferences } from "./preferences.js";
 import { SecondaryToolbar } from "./secondary_toolbar.js";
 import { Toolbar } from "./toolbar.js";
-import { ViewHistory } from "./view_history.js";
-import { DownloadManager } from "./download_manager.js";
+import { ProgressBar, ScrollMode, SidebarView, SpreadMode } from "./ui_utils.js";
 import { type ViewerConfiguration } from "./viewer.js";
-import { BasePreferences } from "./preferences.js";
-import { Locale } from "../../lib/Locale.js";
-import { PDFDataRangeTransport, PDFDocumentLoadingTask, PDFDocumentProxy, type PDFDocumentStats } from "../pdf.ts-src/display/api.js";
-import { Metadata } from "../pdf.ts-src/display/metadata.js";
-import { type PageOverview } from "./base_viewer.js";
-import { OptionalContentConfig } from "../pdf.ts-src/display/optional_content_config.js";
-import { PDFPrintService } from "./pdf_print_service.js";
-import { PDFSidebar } from "./pdf_sidebar.js";
-import { type DocumentInfo } from "../pdf.ts-src/core/document.js";
-import { type IL10n, IScripting } from "./interfaces.js";
-import { PDFScriptingManager } from "./pdf_scripting_manager.js";
-import { WorkerMessageHandler } from "../pdf.ts-src/core/worker.js";
+import { ViewHistory } from "./view_history.js";
 export interface FindControlState {
     result: FindState;
     findPrevious?: boolean | undefined;
@@ -42,8 +43,8 @@ export interface FindControlState {
     rawQuery: string | null;
 }
 export interface PassiveLoadingCbs {
-    onOpenWithTransport(url: ViewerAppOpenParms_file, length: number, transport: PDFDataRangeTransport): void;
-    onOpenWithData(data: ViewerAppOpenParms_file, contentDispositionFilename: string): void;
+    onOpenWithTransport(url: _ViewerAppOpenP_file, length: number, transport: PDFDataRangeTransport): void;
+    onOpenWithData(data: _ViewerAppOpenP_file, contentDispositionFilename: string): void;
     onOpenWithURL(url: string, length?: number, originalUrl?: string): void;
     onError(err?: ErrorMoreInfo): void;
     onProgress(loaded: number, total: number): void;
@@ -67,7 +68,6 @@ export declare class DefaultExternalServices {
     updateFindControlState(data: FindControlState): void;
     updateFindMatchesCount(data: MatchesCount): void;
     initPassiveLoading(callbacks: PassiveLoadingCbs): void;
-    fallback(data: FallbackParams): Promise<unknown>;
     reportTelemetry(data: TelemetryData): void;
     createDownloadManager(): DownloadManager;
     createPreferences(): BasePreferences;
@@ -85,7 +85,7 @@ export declare class DefaultExternalServices {
     };
     get isInAutomation(): boolean;
 }
-interface SetInitialViewParms {
+interface _SetInitialViewP {
     rotation?: number | undefined;
     sidebarView?: SidebarView | undefined;
     scrollMode?: ScrollMode | undefined;
@@ -106,11 +106,11 @@ export declare type ScriptingDocProperties = DocumentInfo & {
     numPages: number;
     URL: string;
 };
-declare type ViewerAppOpenParms_file = string | Uint8Array | {
+declare type _ViewerAppOpenP_file = string | Uint8Array | {
     url: string;
     originalUrl: string;
 };
-interface ViewerAppOpenParms_args {
+interface _ViewerAppOpenP_args {
     length: number;
     range?: PDFDataRangeTransport;
 }
@@ -118,7 +118,6 @@ export declare class PDFViewerApplication {
     #private;
     initialBookmark: string | undefined;
     initialRotation?: number | undefined;
-    _fellback: boolean;
     appConfig: ViewerConfiguration;
     pdfDocument: PDFDocumentProxy | undefined;
     pdfLoadingTask: PDFDocumentLoadingTask | undefined;
@@ -162,7 +161,8 @@ export declare class PDFViewerApplication {
     _saveInProgress: boolean;
     _docStats: PDFDocumentStats | undefined;
     _wheelUnusedTicks: number;
-    _idleCallbacks: Set<unknown>;
+    _idleCallbacks: Set<number>;
+    _PDFBug?: typeof PDFBug;
     disableAutoFetchLoadingBarTimeout: number | undefined;
     _annotationStorageModified?: boolean;
     constructor();
@@ -209,7 +209,7 @@ export declare class PDFViewerApplication {
      *  e.g. HTTP headers ('httpHeaders') or alternative data transport ('range').
      * @return Returns the promise, which is resolved when document is opened.
      */
-    open(file: ViewerAppOpenParms_file, args?: ViewerAppOpenParms_args): Promise<void | undefined>;
+    open(file: _ViewerAppOpenP_file, args?: _ViewerAppOpenP_args): Promise<void | undefined>;
     download({ sourceEventType }?: {
         sourceEventType?: string | undefined;
     }): Promise<void>;
@@ -219,7 +219,7 @@ export declare class PDFViewerApplication {
     downloadOrSave(options: {
         sourceEventType: "download" | "save";
     }): void;
-    fallback: (featureId?: UNSUPPORTED_FEATURES | undefined) => void;
+    fallback: (featureId?: UNSUPPORTED_FEATURES) => void;
     /**
      * Show the error box; used for errors affecting loading and/or parsing of
      * the entire PDF document.
@@ -236,7 +236,7 @@ export declare class PDFViewerApplication {
     _otherError(message: string, moreInfo?: ErrorMoreInfo): void;
     progress(level: number): void;
     load(pdfDocument: PDFDocumentProxy): void;
-    setInitialView(storedHash?: string, { rotation, sidebarView, scrollMode, spreadMode }?: SetInitialViewParms): void;
+    setInitialView(storedHash?: string, { rotation, sidebarView, scrollMode, spreadMode }?: _SetInitialViewP): void;
     _cleanup: () => void;
     forceRendering: () => void;
     beforePrint: () => void;

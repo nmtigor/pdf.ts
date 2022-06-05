@@ -8,7 +8,7 @@ import { type FontProps } from "./evaluator.js";
 export declare const CFFStandardStrings: string[];
 export declare const NUM_STANDARD_CFF_STRINGS = 391;
 declare namespace NsCFFParser {
-    interface ParseCharStringsParms {
+    interface _ParseCharStringsP {
         charStrings: CFFIndex;
         localSubrIndex?: CFFIndex | undefined;
         globalSubrIndex: CFFIndex;
@@ -58,7 +58,7 @@ declare namespace NsCFFParser {
         parseStringIndex(index: CFFIndex<Uint8Array | Uint8ClampedArray>): CFFStrings;
         createDict<T extends CFFDict>(Type: Constructor<T>, dict: CFFDictParsed, strings?: CFFStrings): T;
         parseCharString(state: ParseCharStringState, data: Uint8Array | Uint8ClampedArray | number[], localSubrIndex: CFFIndex | undefined, globalSubrIndex: CFFIndex): boolean;
-        parseCharStrings({ charStrings, localSubrIndex, globalSubrIndex, fdSelect, fdArray, privateDict, }: ParseCharStringsParms): {
+        parseCharStrings({ charStrings, localSubrIndex, globalSubrIndex, fdSelect, fdArray, privateDict, }: _ParseCharStringsP): {
             charStrings: CFFIndex<Uint8Array | Uint8ClampedArray | number[]>;
             seacs: number[][];
             widths: number[];

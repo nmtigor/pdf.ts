@@ -1,8 +1,8 @@
 /*81*****************************************************************************
  * xml_parser_test
 ** --------------- */
-import { css_1, css_2 } from "../../../test/alias.js";
 import "../../../lib/jslang.js";
+import { css_1, css_2 } from "../../../test/alias.js";
 import { parseXFAPath } from "./core_utils.js";
 import { SimpleXMLParser, XMLParserBase } from "./xml_parser.js";
 const strttime = performance.now();
@@ -107,7 +107,7 @@ console.log("%c>>>>>>> test searchNode() >>>>>>>", `color:${css_1}`);
             onCdata() { }
             onText() { }
             onBeginElement() { }
-            onEndElement() { }
+            onEndElement() { return undefined; }
             onError() { }
         }
         new MyParser().parseXml(xml);

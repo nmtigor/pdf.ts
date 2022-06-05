@@ -1,22 +1,7 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
-/* Copyright 2016 Mozilla Foundation
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-import { html } from "../../lib/dom.js";
-import { animationStarted, DEFAULT_SCALE, DEFAULT_SCALE_VALUE, MAX_SCALE, MIN_SCALE, noContextMenuHandler, } from "./ui_utils.js";
+import { animationStarted, DEFAULT_SCALE, DEFAULT_SCALE_VALUE, MAX_SCALE, MIN_SCALE, noContextMenuHandler } from "./ui_utils.js";
 /*81---------------------------------------------------------------------------*/
 const PAGE_NUMBER_LOADING_INDICATOR = "visiblePageIsLoading";
 export class Toolbar {
@@ -41,7 +26,6 @@ export class Toolbar {
             { element: options.next, eventName: "nextpage" },
             { element: options.zoomIn, eventName: "zoomin" },
             { element: options.zoomOut, eventName: "zoomout" },
-            { element: options.openFile, eventName: "openfile" },
             { element: options.print, eventName: "print" },
             {
                 element: options.presentationModeButton,
@@ -50,6 +34,7 @@ export class Toolbar {
             { element: options.download, eventName: "download" },
             { element: options.viewBookmark, eventName: null },
         ];
+        this.buttons.push({ element: options.openFile, eventName: "openfile" });
         this.items = {
             numPages: options.numPages,
             pageNumber: options.pageNumber,
@@ -207,12 +192,11 @@ export class Toolbar {
             l10n.get("page_scale_fit"),
             l10n.get("page_scale_width"),
         ]);
+        await animationStarted;
         const style = getComputedStyle(items.scaleSelect), scaleSelectContainerWidth = parseInt(style.getPropertyValue("--scale-select-container-width"), 10), scaleSelectOverflow = parseInt(style.getPropertyValue("--scale-select-overflow"), 10);
         // The temporary canvas is used to measure text length in the DOM.
-        let canvas = html("canvas");
-        canvas.mozOpaque = true;
-        let ctx = canvas.getContext("2d", { alpha: false });
-        await animationStarted;
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d", { alpha: false });
         ctx.font = `${style.fontSize} ${style.fontFamily}`;
         let maxWidth = 0;
         for (const predefinedValue of await predefinedValuesPromise) {
@@ -230,7 +214,6 @@ export class Toolbar {
         // immediately, which can greatly reduce memory consumption.
         canvas.width = 0;
         canvas.height = 0;
-        canvas = ctx = null;
     }
 }
 /*81---------------------------------------------------------------------------*/

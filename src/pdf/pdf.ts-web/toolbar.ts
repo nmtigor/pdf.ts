@@ -17,7 +17,6 @@
  * limitations under the License.
  */
 
-import { html } from "../../lib/dom.js";
 import { EventBus, EventName } from "./event_utils.js";
 import { type IL10n } from "./interfaces.js";
 import {
@@ -26,7 +25,7 @@ import {
   DEFAULT_SCALE_VALUE,
   MAX_SCALE,
   MIN_SCALE,
-  noContextMenuHandler,
+  noContextMenuHandler
 } from "./ui_utils.js";
 import { type ViewerConfiguration } from "./viewer.js";
 /*81---------------------------------------------------------------------------*/
@@ -79,7 +78,6 @@ export class Toolbar
       { element: options.next, eventName: "nextpage" },
       { element: options.zoomIn, eventName: "zoomin" },
       { element: options.zoomOut, eventName: "zoomout" },
-      { element: options.openFile, eventName: "openfile" },
       { element: options.print, eventName: "print" },
       {
         element: options.presentationModeButton,
@@ -88,6 +86,9 @@ export class Toolbar
       { element: options.download, eventName: "download" },
       { element: options.viewBookmark, eventName: null },
     ];
+    // #if GENERIC
+      this.buttons.push({ element: options.openFile, eventName: "openfile" });
+    // #endif
     this.items = {
       numPages: options.numPages,
       pageNumber: options.pageNumber,
@@ -281,6 +282,7 @@ export class Toolbar
       l10n.get("page_scale_fit"),
       l10n.get("page_scale_width"),
     ]);
+    await animationStarted;
 
     const style = getComputedStyle(items.scaleSelect),
       scaleSelectContainerWidth = parseInt(
@@ -293,13 +295,8 @@ export class Toolbar
       );
 
     // The temporary canvas is used to measure text length in the DOM.
-    let canvas = html("canvas");
-    // #if MOZCENTRAL || GENERIC
-      (<any>canvas).mozOpaque = true;
-    // #endif
-    let ctx = canvas.getContext("2d", { alpha: false })!;
-
-    await animationStarted;
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d", { alpha: false })!;
     ctx.font = `${style.fontSize} ${style.fontFamily}`;
 
     let maxWidth = 0;
@@ -322,7 +319,6 @@ export class Toolbar
     // immediately, which can greatly reduce memory consumption.
     canvas.width = 0;
     canvas.height = 0;
-    canvas = ctx = <any>null;
   }
 }
 /*81---------------------------------------------------------------------------*/

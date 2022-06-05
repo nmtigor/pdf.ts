@@ -1,38 +1,43 @@
-import { PromiseCap } from "../../../lib/promisecap.js";
+/**
+ * @module pdfjsLib
+ */
+import { PageColors } from "src/pdf/pdf.ts-web/base_viewer.js";
+import { Stepper } from "src/pdf/pdf.ts-web/debugger.js";
 import { TypedArray } from "../../../lib/alias.js";
-import { AnnotationMode, FontType, type matrix_t, PasswordResponses, RenderingIntentFlag, StreamType, UNSUPPORTED_FEATURES, VerbosityLevel } from "../shared/util.js";
-import { DOMCanvasFactory, DOMCMapReaderFactory, DOMStandardFontDataFactory, PageViewport, StatTimer } from "./display_utils.js";
-import { FontFaceObject, FontLoader } from "./font_loader.js";
-import { AnnotationStorage } from "./annotation_storage.js";
-import { CanvasGraphics } from "./canvas.js";
-import { Thread, MessageHandler, type PageInfo, type PDFInfo } from "../shared/message_handler.js";
-import { Metadata } from "./metadata.js";
-import { OptionalContentConfig } from "./optional_content_config.js";
-import { type IPDFStream } from "../interfaces.js";
+import { PromiseCap } from "../../../lib/promisecap.js";
+import { type AnnotationData, type FieldObject } from "../core/annotation.js";
+import { type ExplicitDest } from "../core/catalog.js";
+import { type AnnotActions } from "../core/core_utils.js";
+import { DocumentInfo, type XFAData } from "../core/document.js";
 import { type ImgData } from "../core/evaluator.js";
 import { FontExpotDataEx } from "../core/fonts.js";
 import { type CmdArgs } from "../core/font_renderer.js";
 import { type OpListIR } from "../core/operator_list.js";
-import { type ExplicitDest } from "../core/catalog.js";
-import { type IWorker } from "../core/worker.js";
-import { type AnnotationData, type FieldObject } from "../core/annotation.js";
-import { type StructTree } from "../core/struct_tree.js";
-import { DocumentInfo, type XFAData } from "../core/document.js";
-import { type AnnotActions } from "../core/core_utils.js";
-import { BaseCanvasFactory } from "./base_factory.js";
-import { type XFAElObj } from "../core/xfa/alias.js";
 import { type ShadingPatternIR } from "../core/pattern.js";
-export declare const DefaultCanvasFactory: typeof DOMCanvasFactory;
-export declare const DefaultCMapReaderFactory: typeof DOMCMapReaderFactory;
-export declare const DefaultStandardFontDataFactory: typeof DOMStandardFontDataFactory;
+import { type StructTree } from "../core/struct_tree.js";
+import { type IWorker } from "../core/worker.js";
+import { type XFAElObj } from "../core/xfa/alias.js";
+import { type IPDFStream } from "../interfaces.js";
+import { MessageHandler, Thread, type PageInfo, type PDFInfo } from "../shared/message_handler.js";
+import { AnnotationMode, FontType, PasswordResponses, RenderingIntentFlag, StreamType, UNSUPPORTED_FEATURES, VerbosityLevel, type matrix_t } from "../shared/util.js";
+import { AnnotationStorage } from "./annotation_storage.js";
+import { BaseCanvasFactory } from "./base_factory.js";
+import { CanvasGraphics } from "./canvas.js";
+import { DOMCanvasFactory, DOMCMapReaderFactory, DOMStandardFontDataFactory, PageViewport, StatTimer } from "./display_utils.js";
+import { FontFaceObject, FontLoader } from "./font_loader.js";
+import { Metadata } from "./metadata.js";
+import { OptionalContentConfig } from "./optional_content_config.js";
+export declare let DefaultCanvasFactory: typeof DOMCanvasFactory;
+export declare let DefaultCMapReaderFactory: typeof DOMCMapReaderFactory;
+export declare let DefaultStandardFontDataFactory: typeof DOMStandardFontDataFactory;
 /**
- * @param params - The document initialization
+ * @param params The document initialization
  *   parameters. The "url" key is always present.
  * @return A promise, which is resolved with an instance of
  *   {IPDFStream}.
  * @ignore
  */
-declare type IPDFStreamFactory = (params: DocumentInitParms) => Promise<IPDFStream>;
+declare type IPDFStreamFactory = (params: DocumentInitP) => Promise<IPDFStream>;
 /**
  * Sets the function that instantiates an {IPDFStream} as an alternative PDF
  * data transport.
@@ -50,7 +55,7 @@ export interface RefProxy {
 /**
  * Document initialization / loading parameters object.
  */
-export interface DocumentInitParms {
+export interface DocumentInitP {
     /**
      * The URL of the PDF.
      */
@@ -116,7 +121,7 @@ export interface DocumentInitParms {
      * The URL where the predefined Adobe CMaps are
      * located. Include the trailing slash.
      */
-    cMapUrl?: string;
+    cMapUrl?: string | undefined;
     /**
      * Specifies if the Adobe CMaps are binary
      * packed or not.
@@ -141,7 +146,7 @@ export interface DocumentInitParms {
      * The URL where the standard font
      * files are located. Include the trailing slash.
      */
-    standardFontDataUrl?: string;
+    standardFontDataUrl?: string | undefined;
     /**
      * The factory that will be used
      * when reading the standard font files. Providing a custom factory is useful
@@ -202,7 +207,7 @@ export interface DocumentInitParms {
      * context to create elements with and to load resources, such as fonts,
      * into. Defaults to the current document.
      */
-    ownerDocument?: Document;
+    ownerDocument?: Document | undefined;
     /**
      * For testing only.
      */
@@ -229,6 +234,11 @@ export interface DocumentInitParms {
      * disabling of pre-fetching to work correctly.
      */
     disableAutoFetch?: boolean;
+    /**
+     * Enables special hooks for debugging PDF.js
+     * (see `web/debugger.js`). The default value is `false`.
+     */
+    pdfBug?: boolean;
     progressiveDone?: boolean;
     contentDispositionFilename?: string | undefined;
 }
@@ -242,16 +252,14 @@ export interface DocumentInitParms {
  * @param src Can be a URL where a PDF file is located, a typed array (Uint8Array)
  *  already populated with data, or a parameter object.
  */
-export declare function getDocument(src: string | URL | TypedArray | DocumentInitParms | PDFDataRangeTransport): PDFDocumentLoadingTask;
+export declare function getDocument(src: string | URL | TypedArray | DocumentInitP | PDFDataRangeTransport): PDFDocumentLoadingTask;
 /**
  * The loading task controls the operations required to load a PDF document
  * (such as network requests) and provides a way to listen for completion,
  * after which individual pages can be rendered.
  */
 export declare class PDFDocumentLoadingTask {
-    static get idCounters(): {
-        doc: number;
-    };
+    #private;
     _capability: PromiseCap<PDFDocumentProxy>;
     _transport: WorkerTransport | undefined;
     _worker: PDFWorker | undefined;
@@ -272,9 +280,9 @@ export declare class PDFDocumentLoadingTask {
     /**
      * Callback to be able to monitor the loading progress of the PDF file
      * (necessary to implement e.g. a loading bar).
-     * The callback receives an {@link OnProgressParms} argument.
+     * The callback receives an {@link OnProgressP} argument.
      */
-    onProgress?: (_: OnProgressParms) => void;
+    onProgress?: (_: OnProgressP) => void;
     /**
      * Callback for when an unsupported feature is used in the PDF document.
      * The callback receives an {@link UNSUPPORTED_FEATURES} argument.
@@ -555,7 +563,7 @@ export declare class PDFDocumentProxy {
 /**
  * Page getViewport parameters.
  */
-interface GetViewportParms {
+interface _GetViewportP {
     /**
      * The desired scale of the viewport.
      * In CSS unit.
@@ -585,7 +593,7 @@ interface GetViewportParms {
 /**
  * Page getTextContent parameters.
  */
-interface GetTextContentParms {
+interface _GetTextContentP {
     /**
      * Do not attempt to combine
      * same line {@link TextItem}'s. The default value is `false`.
@@ -685,7 +693,7 @@ export interface TextStyle {
 /**
  * Page annotation parameters.
  */
-interface GetAnnotationsParms {
+interface _GetAnnotationsP {
     /**
      * Determines the annotations that are fetched,
      * can be 'display' (viewable annotations), 'print' (printable annotations),
@@ -707,7 +715,7 @@ export interface ImageLayer {
 /**
  * Page render parameters.
  */
-export interface RenderParms {
+export interface RenderP {
     /**
      * A 2D context of a DOM Canvas object.
      */
@@ -764,8 +772,17 @@ export interface RenderParms {
      * <color> value, a `CanvasGradient` object (a linear or radial gradient) or
      * a `CanvasPattern` object (a repetitive image). The default value is
      * 'rgb(255,255,255)'.
+     *
+     * NOTE: This option may be partially, or completely, ignored when the
+     * `pageColors`-option is used.
      */
     background?: string | CanvasGradient | CanvasPattern;
+    /**
+     * Overwrites background and foreground colors
+     * with user defined ones in order to improve readability in high contrast
+     * mode.
+     */
+    pageColors?: PageColors | undefined;
     /**
      * A promise that should resolve with an {@link OptionalContentConfig}
      * created from `PDFDocumentProxy.getOptionalContentConfig`. If `null`,
@@ -781,7 +798,7 @@ export interface RenderParms {
 /**
  * Page getOperatorList parameters.
  */
-interface GetOperatorListParms {
+interface _GetOperatorListP {
     /**
      * Rendering intent, can be 'display', 'print',
      * or 'any'. The default value is 'display'.
@@ -828,6 +845,7 @@ export declare class PDFPageProxy {
     _pdfBug: boolean;
     commonObjs: PDFObjects<PDFCommonObjs>;
     objs: PDFObjects<PDFObjs | undefined>;
+    _bitmaps: Set<ImageBitmap>;
     cleanupAfterRender: boolean;
     _structTreePromise: Promise<StructTree | undefined> | undefined;
     pendingCleanup: boolean;
@@ -864,13 +882,13 @@ export declare class PDFPageProxy {
      * @return Contains 'width' and 'height' properties
      *   along with transforms required for rendering.
      */
-    getViewport({ scale, rotation, offsetX, offsetY, dontFlip, }: GetViewportParms): PageViewport;
+    getViewport({ scale, rotation, offsetX, offsetY, dontFlip, }: _GetViewportP): PageViewport;
     /**
      * @param params Annotation parameters.
      * @return A promise that is resolved with an
      *   {Array} of the annotation objects.
      */
-    getAnnotations({ intent }?: GetAnnotationsParms): Promise<AnnotationData[]>;
+    getAnnotations({ intent }?: _GetAnnotationsP): Promise<AnnotationData[]>;
     /**
      * @return A promise that is resolved with an
      *   {Object} with JS actions.
@@ -890,13 +908,13 @@ export declare class PDFPageProxy {
      * @return An object that contains a promise that is
      *   resolved when the page finishes rendering.
      */
-    render({ canvasContext, viewport, intent, annotationMode, transform, imageLayer, canvasFactory, background, optionalContentConfigPromise, annotationCanvasMap, }: RenderParms): RenderTask;
+    render({ canvasContext, viewport, intent, annotationMode, transform, imageLayer, canvasFactory, background, optionalContentConfigPromise, annotationCanvasMap, pageColors, }: RenderP): RenderTask;
     /**
      * @param params Page getOperatorList parameters.
      * @return A promise resolved with an
      *   {@link PDFOperatorList} object that represents the page's operator list.
      */
-    getOperatorList({ intent, annotationMode, }?: GetOperatorListParms): Promise<OpListIR>;
+    getOperatorList({ intent, annotationMode, }?: _GetOperatorListP): Promise<OpListIR>;
     /**
      * NOTE: All occurrences of whitespace will be replaced by
      * standard spaces (0x20).
@@ -904,7 +922,7 @@ export declare class PDFPageProxy {
      * @param params getTextContent parameters.
      * @return Stream for reading text content chunks.
      */
-    streamTextContent({ disableCombineTextItems, includeMarkedContent, }?: GetTextContentParms): ReadableStream;
+    streamTextContent({ disableCombineTextItems, includeMarkedContent, }?: _GetTextContentP): ReadableStream;
     /**
      * NOTE: All occurrences of whitespace will be replaced by
      * standard spaces (0x20).
@@ -913,7 +931,7 @@ export declare class PDFPageProxy {
      * @return A promise that is resolved with a
      *   {@link TextContent} object that represents the page's text content.
      */
-    getTextContent(params?: GetTextContentParms): Promise<TextContent>;
+    getTextContent(params?: _GetTextContentP): Promise<TextContent>;
     /**
      * @return {Promise<StructTreeNode>} A promise that is resolved with a
      *   {@link StructTreeNode} object that represents the page's structure tree,
@@ -942,7 +960,7 @@ export declare class LoopbackPort {
     removeEventListener(name: string, listener: EventListener): void;
     terminate(): void;
 }
-interface PDFWorkerParms {
+interface _PDFWorkerP {
     /**
      * The name of the worker.
      */
@@ -957,6 +975,13 @@ interface PDFWorkerParms {
      */
     verbosity?: VerbosityLevel | undefined;
 }
+export declare const PDFWorkerUtil: {
+    isWorkerDisabled: boolean;
+    fallbackWorkerSrc: string | undefined;
+    fakeWorkerId: number;
+    isSameOrigin: (baseUrl: string | URL, otherUrl: string | URL) => boolean;
+    createCDNWrapper: (url: string) => string;
+};
 /**
  * PDF.js web worker abstraction that controls the instantiation of PDF
  * documents. Message handlers are used to pass information from the main
@@ -965,7 +990,6 @@ interface PDFWorkerParms {
  */
 export declare class PDFWorker {
     #private;
-    static get _workerPorts(): WeakMap<IWorker, PDFWorker>;
     name: string | undefined;
     destroyed: boolean;
     verbosity: VerbosityLevel;
@@ -982,7 +1006,7 @@ export declare class PDFWorker {
      * The current MessageHandler-instance.
      */
     get messageHandler(): MessageHandler<Thread.main, Thread.worker>;
-    constructor({ name, port, verbosity, }?: PDFWorkerParms);
+    constructor({ name, port, verbosity, }?: _PDFWorkerP);
     /**
      * Destroys the worker instance.
      */
@@ -990,7 +1014,7 @@ export declare class PDFWorker {
     /**
      * @param params The worker initialization parameters.
      */
-    static fromPort(params: PDFWorkerParms): PDFWorker;
+    static fromPort(params: _PDFWorkerP): PDFWorker | undefined;
     /**
      * The current `workerSrc`, when it exists.
      */
@@ -998,7 +1022,7 @@ export declare class PDFWorker {
     static get _mainThreadWorkerMessageHandler(): any;
     static get _setupFakeWorkerGlobal(): Promise<{
         setup(handler: MessageHandler<Thread.worker, Thread.main>, port: IWorker): void;
-        createDocumentHandler(docParms: import("../shared/message_handler.js").GetDocRequestData, port: IWorker): string;
+        createDocumentHandler(docParams: import("../shared/message_handler.js").GetDocRequestData, port: IWorker): string;
         initializeFromPort(port: IWorker): void;
     }>;
 }
@@ -1024,7 +1048,7 @@ declare class WorkerTransport {
     fontLoader: FontLoader;
     _getFieldObjectsPromise: Promise<Record<string, FieldObject[]> | undefined> | undefined;
     _hasJSActionsPromise: Promise<boolean> | undefined;
-    _params: DocumentInitParms;
+    _params: DocumentInitP;
     CMapReaderFactory: DOMCMapReaderFactory | undefined;
     StandardFontDataFactory: DOMStandardFontDataFactory | undefined;
     destroyed: boolean;
@@ -1037,7 +1061,7 @@ declare class WorkerTransport {
         length: number;
     }>;
     _htmlForXfa: XFAElObj | undefined;
-    constructor(messageHandler: MessageHandler<Thread.main>, loadingTask: PDFDocumentLoadingTask, networkStream: IPDFStream | undefined, params: DocumentInitParms);
+    constructor(messageHandler: MessageHandler<Thread.main>, loadingTask: PDFDocumentLoadingTask, networkStream: IPDFStream | undefined, params: DocumentInitP);
     get annotationStorage(): AnnotationStorage;
     getRenderingIntent(intent: Intent, annotationMode?: AnnotationMode, isOpList?: boolean): IntentArgs;
     destroy(): Promise<void>;
@@ -1119,16 +1143,16 @@ export declare class RenderTask {
      */
     cancel(): void;
 }
-interface Params_IRTCtorParms {
+interface _IRTCtorP_paraams {
     canvasContext: CanvasRenderingContext2D;
     viewport: PageViewport;
     transform: matrix_t | undefined;
     imageLayer: ImageLayer | undefined;
     background: string | CanvasGradient | CanvasPattern | undefined;
 }
-interface InternalRenderTaskCtorParms {
+interface _InternalRenderTaskCtorP {
     callback: (error?: unknown) => void;
-    params: Params_IRTCtorParms;
+    params: _IRTCtorP_paraams;
     objs: PDFObjects<PDFObjs | undefined>;
     commonObjs: PDFObjects<PDFCommonObjs>;
     annotationCanvasMap: Map<string, HTMLCanvasElement> | undefined;
@@ -1137,8 +1161,9 @@ interface InternalRenderTaskCtorParms {
     canvasFactory: BaseCanvasFactory;
     useRequestAnimationFrame?: boolean;
     pdfBug?: boolean;
+    pageColors: PageColors | undefined;
 }
-interface InitializeGraphicsParms {
+interface _InitializeGraphicsP {
     transparency?: boolean;
     optionalContentConfig: OptionalContentConfig | undefined;
 }
@@ -1147,9 +1172,9 @@ interface InitializeGraphicsParms {
  * @ignore
  */
 export declare class InternalRenderTask {
-    static get canvasInUse(): WeakSet<object>;
+    #private;
     callback: (error?: unknown) => void;
-    params: Params_IRTCtorParms;
+    params: _IRTCtorP_paraams;
     objs: PDFObjects<PDFObjs | undefined>;
     commonObjs: PDFObjects<PDFCommonObjs>;
     annotationCanvasMap: Map<string, HTMLCanvasElement> | undefined;
@@ -1158,6 +1183,7 @@ export declare class InternalRenderTask {
     _pageIndex: number;
     canvasFactory: BaseCanvasFactory;
     _pdfBug: boolean;
+    pageColors: PageColors | undefined;
     running: boolean;
     graphicsReadyCallback?: () => void;
     graphicsReady: boolean;
@@ -1166,10 +1192,11 @@ export declare class InternalRenderTask {
     capability: PromiseCap<void>;
     task: RenderTask;
     _canvas: HTMLCanvasElement;
+    stepper?: Stepper;
     gfx?: CanvasGraphics;
-    constructor({ callback, params, objs, commonObjs, annotationCanvasMap, operatorList, pageIndex, canvasFactory, useRequestAnimationFrame, pdfBug, }: InternalRenderTaskCtorParms);
+    constructor({ callback, params, objs, commonObjs, annotationCanvasMap, operatorList, pageIndex, canvasFactory, useRequestAnimationFrame, pdfBug, pageColors, }: _InternalRenderTaskCtorP);
     get completed(): Promise<void>;
-    initializeGraphics({ transparency, optionalContentConfig }: InitializeGraphicsParms): void;
+    initializeGraphics({ transparency, optionalContentConfig }: _InitializeGraphicsP): void;
     cancel: (error?: any) => void;
     operatorListChanged(): void;
     _continue: () => void;

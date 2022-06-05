@@ -17,15 +17,15 @@
  * limitations under the License.
  */
 
-import { createPromiseCap, PromiseCap } from "../../lib/promisecap.js";
 import { html } from "../../lib/dom.js";
+import { createPromiseCap, PromiseCap } from "../../lib/promisecap.js";
 import { getFilenameFromUrl } from "../pdf.ts-src/pdf.js";
-import { BaseTreeViewer, type BaseTreeViewerCtorParms } from "./base_tree_viewer.js";
+import { BaseTreeViewer, type BaseTreeViewerCtorP } from "./base_tree_viewer.js";
 import { DownloadManager } from "./download_manager.js";
-import { EventMap } from "./event_utils.js";
+import { EventMap, waitOnEventOrTimeout } from "./event_utils.js";
 /*81---------------------------------------------------------------------------*/
 
-interface PDFAttachmentViewerOptions extends BaseTreeViewerCtorParms
+interface PDFAttachmentViewerOptions extends BaseTreeViewerCtorP
 {
   /**
    * The download manager.
@@ -33,7 +33,7 @@ interface PDFAttachmentViewerOptions extends BaseTreeViewerCtorParms
   downloadManager:DownloadManager;
 }
 
-interface PDFAttachmentViewerRenderParms
+interface _PDFAttachmentViewerRenderP
 {
   /**
    * A lookup table of attachment objects.
@@ -53,7 +53,7 @@ export class PDFAttachmentViewer extends BaseTreeViewer
 {
   _attachments?:Record<string, Attachment> | undefined;
   #renderedCapability?:PromiseCap<void>;
-  _pendingDispatchEvent?:number | undefined;
+  #pendingDispatchEvent!:boolean;
 
   downloadManager:DownloadManager;
 
@@ -84,38 +84,33 @@ export class PDFAttachmentViewer extends BaseTreeViewer
       // replaced is when appending FileAttachment annotations.
       this.#renderedCapability = createPromiseCap();
     }
-    if( this._pendingDispatchEvent )
-    {
-      clearTimeout(this._pendingDispatchEvent);
-    }
-    this._pendingDispatchEvent = undefined;
+    this.#pendingDispatchEvent = false;
   }
 
   /** @implements */
-  protected _dispatchEvent( attachmentsCount:number ) 
+  protected async _dispatchEvent( attachmentsCount:number ) 
   {
     this.#renderedCapability!.resolve();
 
-    if (this._pendingDispatchEvent) 
-    {
-      clearTimeout(this._pendingDispatchEvent);
-      this._pendingDispatchEvent = undefined;
-    }
-    if (attachmentsCount === 0) 
+    if( attachmentsCount === 0 && !this.#pendingDispatchEvent )
     {
       // Delay the event when no "regular" attachments exist, to allow time for
       // parsing of any FileAttachment annotations that may be present on the
       // *initially* rendered page; this reduces the likelihood of temporarily
       // disabling the attachmentsView when the `PDFSidebar` handles the event.
-      this._pendingDispatchEvent = setTimeout(() => {
-        this.eventBus.dispatch("attachmentsloaded", {
-          source: this,
-          attachmentsCount: 0,
-        });
-        this._pendingDispatchEvent = undefined;
+      this.#pendingDispatchEvent = true;
+
+      await waitOnEventOrTimeout({
+        target: this.eventBus,
+        name: "annotationlayerrendered",
+        delay: 1000,
       });
-      return;
+
+      if( !this.#pendingDispatchEvent )
+        // There was already another `_dispatchEvent`-call`.
+        return; 
     }
+    this.#pendingDispatchEvent = false;
 
     this.eventBus.dispatch("attachmentsloaded", {
       source: this,
@@ -135,7 +130,7 @@ export class PDFAttachmentViewer extends BaseTreeViewer
   }
 
   /** @implements */
-  render({ attachments, keepRenderedCapability=false }:PDFAttachmentViewerRenderParms )
+  render({ attachments, keepRenderedCapability=false }:_PDFAttachmentViewerRenderP )
   {
     if( this._attachments )
     {
@@ -179,31 +174,23 @@ export class PDFAttachmentViewer extends BaseTreeViewer
   /**
    * Used to append FileAttachment annotations to the sidebar.
    */
-  #appendAttachment = ({ id, filename, content }:EventMap["fileattachmentannotation"]
+  #appendAttachment = ({ filename, content }:EventMap["fileattachmentannotation"]
   ) => {
     const renderedPromise = this.#renderedCapability!.promise;
 
     renderedPromise.then(() => {
       if( renderedPromise !== this.#renderedCapability!.promise )
-      {
-        return; // The FileAttachment annotation belongs to a previous document.
-      }
-      let attachments = this._attachments;
+        // The FileAttachment annotation belongs to a previous document.
+        return;       
+      const attachments = this._attachments || <Record<string, Attachment>>Object.create(null);
 
-      if( !attachments )
+      for( const name in attachments )
       {
-        attachments = Object.create(null);
+        if( filename === name )
+          // Ignore the new attachment if it already exists.
+          return; 
       }
-      else {
-        for( const name in attachments )
-        {
-          if (id === name) 
-          {
-            return; // Ignore the new attachment if it already exists.
-          }
-        }
-      }
-      attachments![id] = {
+      attachments[filename] = {
         filename,
         content,
       };

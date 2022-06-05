@@ -1,9 +1,9 @@
-import { type XFAData } from "../document.js";
-import { DataHandler } from "./data.js";
-import { type XFAElObj, type XFAHTMLObj } from "./alias.js";
-import { type rect_t } from "../../shared/util.js";
-import { ErrorFont, Font } from "../fonts.js";
 import { type AnnotStorageRecord } from "../../display/annotation_layer.js";
+import { type rect_t } from "../../shared/util.js";
+import { type XFAData } from "../document.js";
+import { ErrorFont, Font } from "../fonts.js";
+import { type XFAElObj, type XFAHTMLObj } from "./alias.js";
+import { DataHandler } from "./data.js";
 import { Template } from "./template.js";
 export interface XFAPages {
     name: string;
@@ -30,7 +30,7 @@ export declare class XFAFactory {
     appendFonts(fonts: (Font | ErrorFont)[], reallyMissingFonts: Set<string>): void;
     getPages(): Promise<XFAPages>;
     serializeData(storage: AnnotStorageRecord | undefined): string;
-    static _createDocument(data: XFAData): string;
+    static _createDocument(data: XFAData): string | import("../base_stream.js").BaseStream;
     static getRichTextAsHtml(rc: string): {
         html: XFAHTMLObj;
         str: string | undefined;

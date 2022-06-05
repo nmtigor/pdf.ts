@@ -22,7 +22,7 @@ export declare const enum WaitOnType {
     EVENT = "event",
     TIMEOUT = "timeout"
 }
-interface WaitOnEventOrTimeoutParms {
+interface _WaitOnEventOrTimeoutP {
     /**
      * The event target, can for example be:
      * `window`, `document`, a DOM element, or an {EventBus} instance.
@@ -45,7 +45,7 @@ interface WaitOnEventOrTimeoutParms {
  *
 = * @return A promise that is resolved with a {WaitOnType} value.
  */
-export declare function waitOnEventOrTimeout({ target, name, delay }: WaitOnEventOrTimeoutParms): Promise<unknown>;
+export declare function waitOnEventOrTimeout({ target, name, delay }: _WaitOnEventOrTimeoutP): Promise<unknown>;
 export interface EventMap {
     afterprint: {};
     annotationlayerrendered: {
@@ -116,7 +116,6 @@ export interface EventMap {
     };
     fileattachmentannotation: {
         source: FileAttachmentAnnotationElement;
-        id: string;
         filename: string;
         content?: Uint8Array | Uint8ClampedArray | undefined;
     };

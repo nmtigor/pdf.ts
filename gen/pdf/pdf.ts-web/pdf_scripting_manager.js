@@ -112,13 +112,13 @@ export class PDFScriptingManager {
             this.#eventBus._on(name, listener);
         }
         for (const [name, listener] of this.#domEvents) {
-            window.addEventListener(name, listener);
+            window.addEventListener(name, listener, true);
         }
         try {
             const docProperties = await this.#getDocProperties();
-            if (pdfDocument !== this.#pdfDocument) {
-                return; // The document was closed while the properties resolved.
-            }
+            if (pdfDocument !== this.#pdfDocument)
+                // The document was closed while the properties resolved.
+                return;
             await this._scripting?.createSandbox({
                 objects,
                 calculationOrder,
@@ -375,7 +375,7 @@ export class PDFScriptingManager {
         }
         this.#internalEvents.clear();
         for (const [name, listener] of this.#domEvents) {
-            window.removeEventListener(name, listener);
+            window.removeEventListener(name, listener, true);
         }
         this.#domEvents.clear();
         this.#pageOpenPending.clear();

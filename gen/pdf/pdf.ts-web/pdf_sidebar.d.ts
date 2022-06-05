@@ -1,9 +1,9 @@
-import { SidebarView } from "./ui_utils.js";
+import { EventBus } from "./event_utils.js";
+import { type IL10n } from "./interfaces.js";
 import { PDFThumbnailViewer } from "./pdf_thumbnail_viewer.js";
 import { PDFViewer } from "./pdf_viewer.js";
-import { type IL10n } from "./interfaces.js";
+import { SidebarView } from "./ui_utils.js";
 import { type ViewerConfiguration } from "./viewer.js";
-import { EventBus } from "./event_utils.js";
 interface PDFSidebarOptions {
     /**
      * The DOM elements.
@@ -39,7 +39,7 @@ export declare class PDFSidebar {
     pdfViewer: PDFViewer;
     pdfThumbnailViewer: PDFThumbnailViewer;
     outerContainer: HTMLDivElement;
-    viewerContainer: HTMLDivElement;
+    sidebarContainer: HTMLDivElement;
     toggleButton: HTMLButtonElement;
     thumbnailButton: HTMLButtonElement;
     outlineButton: HTMLButtonElement;

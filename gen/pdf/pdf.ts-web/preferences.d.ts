@@ -5,9 +5,7 @@ import { type OptionName, type UserOptions } from "./app_options.js";
  *   or every time the viewer is loaded.
  */
 export declare abstract class BasePreferences {
-    prefs: UserOptions;
-    defaults: UserOptions;
-    _initializedPromise: Promise<void>;
+    #private;
     constructor();
     /**
      * Stub function for writing preferences to storage.

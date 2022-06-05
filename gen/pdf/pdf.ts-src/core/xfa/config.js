@@ -15,10 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { $buildXFAObject, NamespaceIds } from "./namespaces.js";
-import { $content, $finalize, ContentObject, IntegerObject, Option01, Option10, OptionObject, StringObject, XFAObject, XFAObjectArray, } from "./xfa_object.js";
-import { getInteger, getStringOption } from "./utils.js";
 import { shadow, warn } from "../../shared/util.js";
+import { $buildXFAObject, NamespaceIds } from "./namespaces.js";
+import { getInteger, getStringOption } from "./utils.js";
+import { $content, $finalize, ContentObject, IntegerObject, Option01, Option10, OptionObject, StringObject, XFAObject, XFAObjectArray } from "./xfa_object.js";
 /*81---------------------------------------------------------------------------*/
 const CONFIG_NS_ID = NamespaceIds.config.id;
 class Acrobat extends XFAObject {

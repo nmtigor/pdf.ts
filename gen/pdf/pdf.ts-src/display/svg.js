@@ -16,10 +16,10 @@
  * limitations under the License.
  */
 /* globals __non_webpack_require__ */
-import { FONT_IDENTITY_MATRIX, IDENTITY_MATRIX, ImageKind, OPS, TextRenderingMode, Util, warn, } from "../shared/util.js";
-import { DOMSVGFactory } from "./display_utils.js";
 import { svg as createSVG } from "../../../lib/dom.js";
 import { ShadingType } from "../core/pattern.js";
+import { FONT_IDENTITY_MATRIX, IDENTITY_MATRIX, ImageKind, OPS, TextRenderingMode, Util, warn } from "../shared/util.js";
+import { DOMSVGFactory } from "./display_utils.js";
 /*81---------------------------------------------------------------------------*/
 // export let SVGGraphics = ():any => 
 // {

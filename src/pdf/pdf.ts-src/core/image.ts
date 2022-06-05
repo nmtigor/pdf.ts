@@ -17,20 +17,27 @@
  * limitations under the License.
  */
 
-import { assert }      from "../../../lib/util/trace.js";
-import { FormatError, ImageKind, info, warn } from "../shared/util.js";
-import { Dict, Name } from "./primitives.js";
+import { type TypedArray } from "../../../lib/alias.js";
+import { assert } from "../../../lib/util/trace.js";
+import { applyMaskImageData } from "../shared/image_utils.js";
+import {
+  FeatureTest,
+  FormatError,
+  ImageKind,
+  info,
+  warn
+} from "../shared/util.js";
+import { BaseStream } from "./base_stream.js";
 import { ColorSpace, type CS } from "./colorspace.js";
 import { DecodeStream, ImageStream } from "./decode_stream.js";
-import { JpegStream } from "./jpeg_stream.js";
-import { JpxImage } from "./jpx.js";
-import { type TypedArray } from "../../../lib/alias.js";
+import { type ImgData } from "./evaluator.js";
 import { PDFFunctionFactory } from "./function.js";
 import { LocalColorSpaceCache } from "./image_utils.js";
+import { JpegStream } from "./jpeg_stream.js";
+import { JpxImage } from "./jpx.js";
 import { JpxStream } from "./jpx_stream.js";
-import { type ImgData } from "./evaluator.js";
+import { Dict, Name } from "./primitives.js";
 import { XRef } from "./xref.js";
-import { BaseStream } from "./base_stream.js";
 /*81---------------------------------------------------------------------------*/
 
 /**
@@ -97,7 +104,7 @@ function resizeImageMask( src:TypedArray,
   return dest;
 }
 
-interface PDFImageCtorParms
+interface _PDFImageCtorP
 {
   xref:XRef;
   res:Dict;
@@ -110,9 +117,9 @@ interface PDFImageCtorParms
   localColorSpaceCache:LocalColorSpaceCache;
 }
 
-interface CreateMaskParms
+interface _CreateMaskP
 {
-  imgArray:Uint8ClampedArray;
+  imgArray:Uint8Array | Uint8ClampedArray;
   width:number;
   height:number;
   imageIsFromDecodeStream:boolean;
@@ -120,15 +127,7 @@ interface CreateMaskParms
   interpolate:boolean | undefined;
 }
 
-export interface ImageMask
-{
-  data:Uint8ClampedArray;
-  width:number;
-  height:number;
-  interpolate:boolean | undefined;
-}
-
-interface BuildImageParms
+interface _BuildImageP
 {
   xref:XRef;
   res:Dict;
@@ -136,6 +135,14 @@ interface BuildImageParms
   isInline:boolean;
   pdfFunctionFactory:PDFFunctionFactory;
   localColorSpaceCache:LocalColorSpaceCache;
+}
+
+interface _GetImageBytesP
+{
+  drawWidth?:number;
+  drawHeight?:number;
+  forceRGB?:boolean;
+  internal?:boolean;
 }
 
 /**
@@ -174,7 +181,7 @@ export class PDFImage
     isMask=false,
     pdfFunctionFactory,
     localColorSpaceCache,
-  }:PDFImageCtorParms ) 
+  }:_PDFImageCtorP ) 
   {
     this.image = image;
     const dict = image.dict!;
@@ -357,7 +364,7 @@ export class PDFImage
     isInline=false,
     pdfFunctionFactory,
     localColorSpaceCache,
-  }:BuildImageParms ) {
+  }:_BuildImageP ) {
     const imageData = image;
     let smaskData;
     let maskData;
@@ -367,7 +374,13 @@ export class PDFImage
 
     if( smask )
     {
-      smaskData = <BaseStream>smask;
+      if( smask instanceof BaseStream )
+      {
+        smaskData = smask;
+      } 
+      else {
+        warn("Unsupported /SMask format.");
+      }
     } 
     else if( mask )
     {
@@ -376,7 +389,7 @@ export class PDFImage
         maskData = <BaseStream | number[]>mask;
       } 
       else {
-        warn("Unsupported mask format.");
+        warn("Unsupported /Mask format.");
       }
     }
 
@@ -392,24 +405,14 @@ export class PDFImage
     });
   }
 
-  static createMask({
+  static createRawMask({
     imgArray,
     width,
     height,
     imageIsFromDecodeStream,
     inverseDecode,
     interpolate,
-  }:CreateMaskParms ):ImageMask {
-    // #if !PRODUCTION || TESTING
-    // if (
-    //   typeof PDFJSDev === "undefined" ||
-    //   PDFJSDev.test("!PRODUCTION || TESTING")
-    // ) {
-    assert( imgArray instanceof Uint8ClampedArray,
-      'PDFImage.createMask: Unsupported "imgArray" type.'
-    );
-    // }
-    // #endif
+  }:_CreateMaskP ):ImgData {
     // |imgArray| might not contain full data for every pixel of the mask, so
     // we need to distinguish between |computedLength| and |actualLength|.
     // In particular, if inverseDecode is true, then the array we return must
@@ -428,16 +431,12 @@ export class PDFImage
     } 
     else if( !inverseDecode )
     {
-      data = new Uint8ClampedArray(actualLength);
-      data.set(imgArray);
+      data = new Uint8Array(imgArray);
     } 
     else {
-      data = new Uint8ClampedArray(computedLength);
+      data = new Uint8Array(computedLength);
       data.set(imgArray);
-      for( i = actualLength; i < computedLength; i++ )
-      {
-        data[i] = 0xff;
-      }
+      data.fill(0xff, actualLength);
     }
 
     // If necessary, invert the original mask data (but not any extra we might
@@ -453,6 +452,58 @@ export class PDFImage
     }
 
     return { data, width, height, interpolate };
+  }
+
+  static createMask({
+    imgArray,
+    width,
+    height,
+    imageIsFromDecodeStream,
+    inverseDecode,
+    interpolate,
+  }:_CreateMaskP ):ImgData {
+    const isSingleOpaquePixel =
+      width === 1 &&
+      height === 1 &&
+      inverseDecode === (imgArray.length === 0 || !!(imgArray[0] & 128));
+
+    if( isSingleOpaquePixel ) 
+      return { isSingleOpaquePixel };
+
+    if( FeatureTest.isOffscreenCanvasSupported )
+    {
+      const canvas = new (<any>globalThis).OffscreenCanvas(width, height);
+      const ctx = <CanvasRenderingContext2D>canvas.getContext("2d");
+      const imgData = ctx.createImageData(width, height);
+      applyMaskImageData({
+        src: imgArray,
+        dest: imgData.data,
+        width,
+        height,
+        inverseDecode,
+      });
+
+      ctx.putImageData(imgData, 0, 0);
+      const bitmap = canvas.transferToImageBitmap();
+
+      return {
+        width,
+        height,
+        interpolate,
+        bitmap,
+      };
+    }
+
+    // Get the data almost as they're and they'll be decoded
+    // just before being drawn.
+    return this.createRawMask({
+      imgArray,
+      width,
+      height,
+      inverseDecode,
+      imageIsFromDecodeStream,
+      interpolate,
+    });
   }
 
   get drawWidth() 
@@ -749,7 +800,6 @@ export class PDFImage
 
     // Rows start at byte boundary.
     const rowBytes = (originalWidth * numComps * bpc + 7) >> 3;
-    let imgArray;
 
     if( !forceRGBA )
     {
@@ -777,22 +827,8 @@ export class PDFImage
        && drawHeight === originalHeight
       ) {
         imgData.kind = kind;
+        imgData.data = this.getImageBytes(originalHeight * rowBytes, {});
 
-        imgArray = this.getImageBytes(originalHeight * rowBytes);
-        // If imgArray came from a DecodeStream, we're safe to transfer it
-        // (and thus detach its underlying buffer) because it will constitute
-        // the entire DecodeStream's data.  But if it came from a Stream, we
-        // need to copy it because it'll only be a portion of the Stream's
-        // data, and the rest will be read later on.
-        if( this.image instanceof DecodeStream )
-        {
-          imgData.data = imgArray;
-        } 
-        else {
-          const newArray = new Uint8ClampedArray(imgArray.length);
-          newArray.set(imgArray);
-          imgData.data = newArray;
-        }
         if( this.needsDecode )
         {
           // Invert the buffer (which must be grayscale if we reached here).
@@ -820,18 +856,19 @@ export class PDFImage
           case "DeviceRGB":
           case "DeviceCMYK":
             imgData.kind = ImageKind.RGB_24BPP;
-            imgData.data = this.getImageBytes(
-              imageLength,
+            imgData.data = this.getImageBytes(imageLength, {
               drawWidth,
               drawHeight,
-              /* forceRGB = */ true
-            );
+              forceRGB: true,
+            });
             return imgData;
         }
       }
     }
 
-    imgArray = this.getImageBytes(originalHeight * rowBytes);
+    const imgArray = this.getImageBytes(originalHeight * rowBytes, {
+      internal: true,
+    });
     // imgArray can be incomplete (e.g. after CCITT fax encoding).
     const actualHeight =
       0 | (((imgArray.length / rowBytes) * drawHeight) / originalHeight);
@@ -912,7 +949,7 @@ export class PDFImage
 
     // rows start at byte boundary
     const rowBytes = (width * numComps * bpc + 7) >> 3;
-    const imgArray = this.getImageBytes(height * rowBytes);
+    const imgArray = this.getImageBytes(height * rowBytes, { internal: true });
 
     const comps = this.getComponents(imgArray);
     let i, length;
@@ -946,13 +983,27 @@ export class PDFImage
     }
   }
 
-  getImageBytes( length:number, drawWidth?:number, drawHeight?:number, forceRGB=false )
-  {
+  getImageBytes( length:number, 
+    { drawWidth, drawHeight, forceRGB=false, internal=false }:_GetImageBytesP
+  ) {
     this.image.reset();
     this.image.drawWidth = drawWidth || this.width;
     this.image.drawHeight = drawHeight || this.height;
     this.image.forceRGB = !!forceRGB;
-    return this.image.getBytes(length, /* forceClamped = */ true);
+    const imageBytes = this.image.getBytes(length);
+
+    // If imageBytes came from a DecodeStream, we're safe to transfer it
+    // (and thus detach its underlying buffer) because it will constitute
+    // the entire DecodeStream's data.  But if it came from a Stream, we
+    // need to copy it because it'll only be a portion of the Stream's
+    // data, and the rest will be read later on.
+    if( internal || this.image instanceof DecodeStream ) return imageBytes;
+
+    assert(
+      imageBytes instanceof Uint8Array,
+      'PDFImage.getImageBytes: Unsupported "imageBytes" type.'
+    );
+    return new Uint8Array( imageBytes );
   }
 }
 /*81---------------------------------------------------------------------------*/

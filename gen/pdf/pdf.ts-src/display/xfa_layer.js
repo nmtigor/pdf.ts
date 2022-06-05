@@ -18,7 +18,6 @@
 /** @typedef {import("./display_utils").PageViewport} PageViewport */
 /** @typedef {import("../../web/interfaces").IPDFLinkService} IPDFLinkService */
 import { html as createHTML, textnode } from "../../../lib/dom.js";
-import { warn } from "../shared/util.js";
 import { XfaText } from "./xfa_text.js";
 export class XfaLayer {
     static setupStorage(html, id, element, storage, intent) {
@@ -122,10 +121,7 @@ export class XfaLayer {
             }
         }
         if (isHTMLAnchorElement) {
-            if (!linkService.addLinkAttributes) {
-                warn("XfaLayer.setAttribute - missing `addLinkAttributes`-method on the `linkService`-instance.");
-            }
-            linkService.addLinkAttributes?.(html, attributes.href, attributes.newWindow);
+            linkService.addLinkAttributes(html, attributes.href, attributes.newWindow);
         }
         // Set the value after the others to be sure overwrite
         // any other values.

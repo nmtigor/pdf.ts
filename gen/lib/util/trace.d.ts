@@ -2,12 +2,12 @@
  * @param { const } assertion
  * @param { const } msg
  */
-export declare const assert: (assertion: any, msg?: string | undefined, meta?: {
+export declare const assert: (assertion: any, msg?: string, meta?: {
     url: string;
-} | undefined) => void;
+}) => void;
 export declare const warn: (msg: string, meta?: {
     url: string;
-} | undefined) => void;
+}) => void;
 interface ErrorJ {
     ts: number;
     name: string;

@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 import { assert } from "../../../lib/util/trace.js";
-import { BaseException, objectSize, stringToPDFString, warn, StreamType, FontType, } from "../shared/util.js";
+import { BaseException, FontType, objectSize, StreamType, stringToPDFString, warn } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
 import { Dict, isName, Ref, RefSet } from "./primitives.js";
 /*81---------------------------------------------------------------------------*/

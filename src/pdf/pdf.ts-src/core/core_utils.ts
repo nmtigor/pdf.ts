@@ -19,19 +19,14 @@
 
 import { assert } from "../../../lib/util/trace.js";
 import { MessageHandler, Thread } from "../shared/message_handler.js";
-import { 
-  type ActionEventType,
-  type ActionEventTypesType,
-  BaseException, 
-  objectSize, 
-  stringToPDFString,
-  warn,
-  StreamType,
-  FontType, 
+import {
+  BaseException, FontType, objectSize, StreamType, stringToPDFString,
+  warn, type ActionEventType,
+  type ActionEventTypesType
 } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
 import { type CssFontInfo } from "./document.js";
-import { Dict, isName, type ObjNoRef, type Obj, Ref, RefSet } from "./primitives.js";
+import { Dict, isName, Ref, RefSet, type Obj, type ObjNoRef } from "./primitives.js";
 import { XRef } from "./xref.js";
 /*81---------------------------------------------------------------------------*/
 
@@ -50,9 +45,10 @@ export function getLookupTableFactory<
   };
 }
 
-export function getArrayLookupTableFactory( initializer?:()=>(string|number)[] )
-{
-  let lookup:Record<string,number>;
+export function getArrayLookupTableFactory<T extends string | number>( 
+  initializer?:()=>(string | T)[]
+) {
+  let lookup:Record< string, T>;
   return () => {
     if( initializer )
     {
@@ -61,7 +57,7 @@ export function getArrayLookupTableFactory( initializer?:()=>(string|number)[] )
       lookup = Object.create(null);
       for( let i = 0, ii = arr.length; i < ii; i += 2 )
       {
-        lookup[arr[i]] = <number>arr[i + 1];
+        lookup[<string>arr[i]] = <T>arr[i + 1];
       }
       arr = <any>undefined;
     }
@@ -151,7 +147,7 @@ export class DocStats
   }
 }
 
-interface GetInheritablePropertyParms
+interface _GetInheritablePropertyP
 {
   /**
    * Dictionary from where to start the traversal.
@@ -193,7 +189,7 @@ export function getInheritableProperty({
   key,
   getArray=false,
   stopWhenFound=true,
-}:GetInheritablePropertyParms )
+}:_GetInheritablePropertyP )
 {
   let values:ObjNoRef[] | undefined;;
   const visited = new RefSet();
@@ -438,13 +434,13 @@ export function collectActions( xref:XRef, dict:Dict, eventType:ActionEventTypes
     for( let i = additionalActionsDicts.length - 1; i >= 0; i-- )
     {
       const additionalActions = additionalActionsDicts[i];
-      if( !(additionalActions instanceof Dict) ) continue;
-
+      if( !(additionalActions instanceof Dict) )
+        continue;
       for( const key of additionalActions.getKeys() )
       {
         const action = < ActionEventType >(<any>eventType)[key];
-        if( !action ) continue;
-
+        if( !action )
+          continue;
         const actionDict = additionalActions.getRaw(key);
         const parents = new RefSet();
         const list:string[] = [];

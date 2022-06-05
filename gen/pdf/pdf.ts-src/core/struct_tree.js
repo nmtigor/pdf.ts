@@ -15,9 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Dict, isName, Name, Ref } from "./primitives.js";
 import { stringToPDFString, warn } from "../shared/util.js";
 import { NumberTree } from "./name_number_tree.js";
+import { Dict, isName, Name, Ref } from "./primitives.js";
 /*81---------------------------------------------------------------------------*/
 const MAX_DEPTH = 40;
 var StructElementType;
@@ -250,7 +250,7 @@ export class StructTreePage {
         return save;
     }
     /**
-     * Convert the tree structure into a simplifed object literal that can
+     * Convert the tree structure into a simplified object literal that can
      * be sent to the main thread.
      */
     get serializable() {

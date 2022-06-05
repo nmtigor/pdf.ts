@@ -11,7 +11,6 @@ export const UNKNOWN_SCALE = 0;
 export const MAX_AUTO_SCALE = 1.25;
 export const SCROLLBAR_PADDING = 40;
 export const VERTICAL_PADDING = 5;
-const LOADINGBAR_END_OFFSET_VAR = "--loadingBar-end-offset";
 export var RenderingStates;
 (function (RenderingStates) {
     RenderingStates[RenderingStates["INITIAL"] = 0] = "INITIAL";
@@ -579,61 +578,52 @@ export class ProgressBar {
     visible = true;
     div;
     bar;
-    height;
-    width;
-    units;
     _percent = 0;
     get percent() { return this._percent; }
     _indeterminate;
-    constructor(id, { height, width, units } = {}) {
+    constructor(id) {
+        if (arguments.length > 1) {
+            throw new Error("ProgressBar no longer accepts any additional options, " +
+                "please use CSS rules to modify its appearance instead.");
+        }
         // Fetch the sub-elements for later.
         this.div = document.querySelector(id + " .progress");
         // Get the loading bar element, so it can be resized to fit the viewer.
         this.bar = this.div.parentNode;
-        // Get options, with sensible defaults.
-        this.height = height || 100;
-        this.width = width || 100;
-        this.units = units || "%";
-        // Initialize heights.
-        this.div.style.height = this.height + this.units;
     }
-    _updateBar() {
+    #updateBar() {
         if (this._indeterminate) {
             this.div.classList.add("indeterminate");
-            this.div.style.width = this.width + this.units;
             return;
         }
         this.div.classList.remove("indeterminate");
-        const progressSize = (this.width * this._percent) / 100;
-        this.div.style.width = progressSize + this.units;
+        const doc = document.documentElement;
+        doc.style.setProperty("--progressBar-percent", `${this._percent}%`);
     }
     set percent(val) {
         this._indeterminate = isNaN(val);
         this._percent = clamp(val, 0, 100);
-        this._updateBar();
+        this.#updateBar();
     }
     setWidth(viewer) {
-        if (!viewer) {
+        if (!viewer)
             return;
-        }
         const container = viewer.parentNode;
         const scrollbarWidth = container.offsetWidth - viewer.offsetWidth;
         if (scrollbarWidth > 0) {
             const doc = document.documentElement;
-            doc.style.setProperty(LOADINGBAR_END_OFFSET_VAR, `${scrollbarWidth}px`);
+            doc.style.setProperty("--progressBar-end-offset", `${scrollbarWidth}px`);
         }
     }
     hide() {
-        if (!this.visible) {
+        if (!this.visible)
             return;
-        }
         this.visible = false;
         this.bar.classList.add("hidden");
     }
     show() {
-        if (this.visible) {
+        if (this.visible)
             return;
-        }
         this.visible = true;
         this.bar.classList.remove("hidden");
     }

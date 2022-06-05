@@ -1,28 +1,8 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
-/* Copyright 2012 Mozilla Foundation
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-/** @typedef {import("../src/display/api").PDFDocumentProxy} PDFDocumentProxy */
-/** @typedef {import("./event_utils").EventBus} EventBus */
-/** @typedef {import("./interfaces").IL10n} IL10n */
-/** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
-// eslint-disable-next-line max-len
-/** @typedef {import("./pdf_rendering_queue").PDFRenderingQueue} PDFRenderingQueue */
-import { getVisibleElements, isValidRotation, scrollIntoView, watchScroll, RenderingStates, } from "./ui_utils.js";
 import { PDFThumbnailView, TempImageFactory } from "./pdf_thumbnail_view.js";
+import { getVisibleElements, isValidRotation, RenderingStates, scrollIntoView, watchScroll } from "./ui_utils.js";
 /*81---------------------------------------------------------------------------*/
 const THUMBNAIL_SCROLL_MARGIN = -19;
 const THUMBNAIL_SELECTED_CLASS = "selected";
@@ -121,10 +101,9 @@ export class PDFThumbnailViewer {
         this._currentPageNumber = pageNumber;
     }
     cleanup() {
-        for (let i = 0, ii = this._thumbnails.length; i < ii; i++) {
-            if (this._thumbnails[i]
-                && this._thumbnails[i].renderingState !== RenderingStates.FINISHED) {
-                this._thumbnails[i].reset();
+        for (const thumbnail of this._thumbnails) {
+            if (thumbnail.renderingState !== RenderingStates.FINISHED) {
+                thumbnail.reset();
             }
         }
         TempImageFactory.destroyCanvas();
@@ -186,10 +165,8 @@ export class PDFThumbnailViewer {
         });
     }
     _cancelRendering() {
-        for (let i = 0, ii = this._thumbnails.length; i < ii; i++) {
-            if (this._thumbnails[i]) {
-                this._thumbnails[i].cancelRendering();
-            }
+        for (const thumbnail of this._thumbnails) {
+            thumbnail.cancelRendering();
         }
     }
     setPageLabels(labels) {

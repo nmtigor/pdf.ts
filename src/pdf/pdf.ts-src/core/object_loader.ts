@@ -17,12 +17,12 @@
  * limitations under the License.
  */
 
-import { Dict, type Obj, Ref, RefSet } from "./primitives.js";
-import { MissingDataException } from "./core_utils.js";
 import { warn } from "../shared/util.js";
-import { XRef } from "./xref.js";
-import { ChunkedStream, type ChunkRange } from "./chunked_stream.js";
 import { BaseStream } from "./base_stream.js";
+import { ChunkedStream, type ChunkRange } from "./chunked_stream.js";
+import { MissingDataException } from "./core_utils.js";
+import { Dict, Ref, RefSet, type Obj } from "./primitives.js";
+import { XRef } from "./xref.js";
 /*81---------------------------------------------------------------------------*/
 
 function mayHaveChildren( value:unknown ) 
@@ -139,8 +139,8 @@ export class ObjectLoader
           let foundMissingData = false;
           for( const stream of baseStreams ) 
           {
-            if( stream.isDataLoaded ) continue;
-
+            if( stream.isDataLoaded ) 
+              continue;
             foundMissingData = true;
             pendingRequests.push({ begin: (<ChunkedStream>stream).start, end: (<ChunkedStream>stream).end });
           }
@@ -159,11 +159,12 @@ export class ObjectLoader
     {
       await (<ChunkedStream>this.xref.stream).manager.requestRanges(pendingRequests);
 
-      for (const node of nodesToRevisit)
+      for( const node of nodesToRevisit )
       {
         // Remove any reference nodes from the current `RefSet` so they
         // aren't skipped when we revist them.
-        if (node instanceof Ref) {
+        if( node instanceof Ref )
+        {
           this.refSet!.remove(node);
         }
       }

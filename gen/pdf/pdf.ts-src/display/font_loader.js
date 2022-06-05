@@ -17,8 +17,8 @@
  */
 import { html } from "../../../lib/dom.js";
 import { assert } from "../../../lib/util/trace.js";
-import { bytesToString, IsEvalSupportedCached, shadow, string32, UNSUPPORTED_FEATURES, warn, } from "../shared/util.js";
 import { FontExpotDataEx } from "../core/fonts.js";
+import { bytesToString, FeatureTest, shadow, string32, UNSUPPORTED_FEATURES, warn } from "../shared/util.js";
 class BaseFontLoader {
     docId;
     _onUnsupportedFeature;
@@ -359,7 +359,7 @@ export class FontFaceObject extends FontExpotDataEx {
             });
         }
         // If we can, compile cmds into JS for MAXIMUM SPEED...
-        if (this.isEvalSupported && IsEvalSupportedCached.value) {
+        if (this.isEvalSupported && FeatureTest.isEvalSupported) {
             const jsBuf = [];
             for (const current of cmds) {
                 const args = current.args !== undefined ? current.args.join(",") : "";

@@ -1,9 +1,14 @@
-import { PDFThumbnailView } from "./pdf_thumbnail_view.js";
-import { type IL10n, type IPDFLinkService } from "./interfaces.js";
-import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
+/** @typedef {import("../src/display/api").PDFDocumentProxy} PDFDocumentProxy */
+/** @typedef {import("./event_utils").EventBus} EventBus */
+/** @typedef {import("./interfaces").IL10n} IL10n */
+/** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
+/** @typedef {import("./pdf_rendering_queue").PDFRenderingQueue} PDFRenderingQueue */
 import { PDFDocumentProxy, PDFPageProxy } from '../pdf.ts-src/display/api.js';
 import { OptionalContentConfig } from '../pdf.ts-src/display/optional_content_config.js';
 import { EventBus } from "./event_utils.js";
+import { type IL10n, type IPDFLinkService } from "./interfaces.js";
+import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
+import { PDFThumbnailView } from "./pdf_thumbnail_view.js";
 interface PDFThumbnailViewerOptions {
     /**
      * The container for the thumbnail elements.

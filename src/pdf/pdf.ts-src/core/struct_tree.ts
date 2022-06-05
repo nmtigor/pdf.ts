@@ -17,9 +17,9 @@
  * limitations under the License.
  */
 
-import { Dict, isName, Name, Ref } from "./primitives.js";
 import { stringToPDFString, warn } from "../shared/util.js";
 import { NumberTree } from "./name_number_tree.js";
+import { Dict, isName, Name, Ref } from "./primitives.js";
 /*81---------------------------------------------------------------------------*/
 
 const MAX_DEPTH = 40;
@@ -185,7 +185,7 @@ class StructElementNode
   }
 }
 
-interface StructElementCtorParms
+interface _StructElementCtorP
 {
   type:StructElementType;
   dict?:Dict;
@@ -209,7 +209,7 @@ class StructElement
     mcid,
     pageObjId,
     refObjId,
-  }:StructElementCtorParms ) {
+  }:_StructElementCtorP ) {
     this.type = type;
     this.dict = dict;
     this.mcid = mcid;
@@ -341,7 +341,7 @@ export class StructTreePage
   }
 
   /**
-   * Convert the tree structure into a simplifed object literal that can
+   * Convert the tree structure into a simplified object literal that can
    * be sent to the main thread.
    */
   get serializable()
@@ -400,8 +400,8 @@ export class StructTreePage
     root.role = "Root";
     for( const child of this.nodes )
     {
-      if( !child ) continue;
-
+      if( !child )
+        continue;
       nodeToSerializable( child, root );
     }
     return root;
