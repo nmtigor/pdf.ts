@@ -25,8 +25,7 @@ import { type ViewerConfiguration } from "./viewer.js";
 
 export class PasswordPrompt 
 {
-  overlayName;
-  container;
+  dialog;
   label
   input;
   submitButton;
@@ -35,8 +34,8 @@ export class PasswordPrompt
   l10n;
   _isViewerEmbedded;
 
-  updateCallback!:( password:string | Error ) => void;
-  reason?:PasswordResponses;
+  #updateCallback!:(( password:string | Error ) => void) | undefined;
+  #reason?:PasswordResponses;
 
   /**
    * @param overlayManager Manager for the viewer overlays.
@@ -47,8 +46,7 @@ export class PasswordPrompt
   constructor( options:ViewerConfiguration['passwordOverlay'], 
     overlayManager:OverlayManager, l10n:IL10n, isViewerEmbedded=false 
   ) {
-    this.overlayName = options.overlayName;
-    this.container = options.container;
+    this.dialog = options.dialog;
     this.label = options.label;
     this.input = options.input;
     this.submitButton = options.submitButton;
@@ -57,12 +55,9 @@ export class PasswordPrompt
     this.l10n = l10n;
     this._isViewerEmbedded = isViewerEmbedded;
 
-    // this.updateCallback = null;
-    // this.reason = null;
-
     // Attach the event listeners.
-    this.submitButton.addEventListener("click", this.#verify.bind(this));
-    this.cancelButton.addEventListener("click", this.#cancel.bind(this));
+    this.submitButton.addEventListener("click", this.#verify );
+    this.cancelButton.addEventListener("click", this.#cancel );
     this.input.addEventListener("keydown", e => {
       if( e.keyCode === /* Enter = */ 13 )
       {
@@ -70,22 +65,20 @@ export class PasswordPrompt
       }
     });
 
-    this.overlayManager.register(
-      this.overlayName,
-      this.container,
-      this.#cancel.bind(this),
-      true
-    );
+    this.overlayManager.register(this.dialog, /* canForceClose = */ true);
+
+    this.dialog.addEventListener("close", this.#cancel );
   }
 
   async open()
   {
-    await this.overlayManager.open(this.overlayName);
+    await this.overlayManager.open(this.dialog);
 
     const passwordIncorrect =
-      this.reason === PasswordResponses.INCORRECT_PASSWORD;
+      this.#reason === PasswordResponses.INCORRECT_PASSWORD;
 
-    if (!this._isViewerEmbedded || passwordIncorrect) {
+    if( !this._isViewerEmbedded || passwordIncorrect )
+    {
       this.input.focus();
     }
     this.label.textContent = await this.l10n.get(
@@ -95,30 +88,43 @@ export class PasswordPrompt
 
   async close()
   {
-    await this.overlayManager.close(this.overlayName);
-    this.input.value = "";
-  }
-
-  #verify() {
-    const password = this.input.value;
-    if( password?.length > 0 )
+    if( this.overlayManager.active === this.dialog )
     {
-      this.close();
-      this.updateCallback( password );
+      this.overlayManager.close(this.dialog);
     }
   }
 
-  #cancel() {
+  #verify = () => {
+    const password = this.input.value;
+    if( password?.length > 0 )
+    {
+      this.#invokeCallback( password );
+    }
+  }
+
+  #cancel = () => {
+    this.#invokeCallback( new Error("PasswordPrompt cancelled."));
+  }
+
+  #invokeCallback( password:string | Error )
+  {
+    if( !this.#updateCallback )
+      // Ensure that the callback is only invoked once.
+      return; 
+    
     this.close();
-    this.updateCallback( new Error("PasswordPrompt cancelled.") );
+    this.input.value = "";
+
+    this.#updateCallback( password );
+    this.#updateCallback = undefined;
   }
 
   setUpdateCallback( 
     updateCallback:( password:string | Error ) => void, 
     reason:PasswordResponses
   ) {
-    this.updateCallback = updateCallback;
-    this.reason = reason;
+    this.#updateCallback = updateCallback;
+    this.#reason = reason;
   }
 }
 /*81---------------------------------------------------------------------------*/

@@ -1592,19 +1592,12 @@ namespace NsJpegImage
     getData({ width, height, forceRGB=false, isSourcePDF=false }:JpegData )
     {
       // #if !PRODUCTION || TESTING
-      // if (
-      //   typeof PDFJSDev === "undefined" ||
-      //   PDFJSDev.test("!PRODUCTION || TESTING")
-      // ) {
-      assert( isSourcePDF === true,
-        'JpegImage.getData: Unexpected "isSourcePDF" value for PDF files.'
-      );
-      // }
+        assert( isSourcePDF === true,
+          'JpegImage.getData: Unexpected "isSourcePDF" value for PDF files.'
+        );
       // #endif
       if( this.numComponents! > 4 )
-      {
         throw new JpegError("Unsupported color mode");
-      }
       // Type of data: Uint8ClampedArray(width * height * numComponents)
       const data = this.#getLinearizedBlockData(width, height, isSourcePDF);
   
@@ -1623,23 +1616,17 @@ namespace NsJpegImage
         return rgbData;
       } 
       else if( this.numComponents === 3 && this.#isColorConversionNeeded )
-      {
         return this.#convertYccToRgb(data);
-      } 
       else if( this.numComponents === 4 )
       {
         if( this.#isColorConversionNeeded )
         {
           if( forceRGB )
-          {
             return this.#convertYcckToRgb(data);
-          }
           return this.#convertYcckToCmyk(data);
         } 
         else if( forceRGB )
-        {
           return this.#convertCmykToRgb(data);
-        }
       }
       return data;
     }

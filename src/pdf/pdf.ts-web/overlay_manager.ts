@@ -1,3 +1,7 @@
+/* Converted from JavaScript to TypeScript by
+ * nmtigor (https://github.com/nmtigor) @2022
+ */
+
 /* Copyright 2014 Mozilla Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,150 +16,94 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import { isObjectLike } from "../../lib/jslang.js";
 /*81---------------------------------------------------------------------------*/
 
-interface Overlay
+export class OverlayManager
 {
-  element:HTMLElement;
-  container:HTMLElement;
-  callerCloseMethod?:(() => void) | undefined;
-  canForceClose:boolean;
-}
+  #overlays = new WeakMap<HTMLDialogElement, { canForceClose:boolean; }>();
 
-export class OverlayManager 
-{
-  _overlays:Record< string, Overlay > = {};
-  
-  _active:string | null = null;
-  get active() { return this._active; }
+  #active:HTMLDialogElement | undefined;
+  get active() { return this.#active; }
 
   /**
-   * @param name The name of the overlay that is registered.
-   * @param element The overlay's DOM element.
-   * @param callerCloseMethod The method that, if present, calls
-   *  `OverlayManager.close` from the object registering the
-   *  overlay. Access to this method is necessary in order to
-   *  run cleanup code when e.g. the overlay is force closed.
-   *  The default is `null`.
+   * @param dialog The overlay's DOM element.
    * @param canForceClose Indicates if opening the overlay closes
    *  an active overlay. The default is `false`.
    * @return A promise that is resolved when the overlay has been registered.
    */
-  async register(
-    name:string,
-    element:HTMLElement,
-    callerCloseMethod?:() => void,
-    canForceClose=false
-  ) {
-    let container;
-    if( !name || !element || !(container = <HTMLElement>element.parentNode) )
-    {
+  async register( dialog:HTMLDialogElement, canForceClose=false )
+  {
+    if( !isObjectLike(dialog)  )
       throw new Error("Not enough parameters.");
-    } 
-    else if( this._overlays[name] )
-    {
+    else if( this.#overlays.has(dialog) )
       throw new Error("The overlay is already registered.");
-    }
-    this._overlays[name] = {
-      element,
-      container,
-      callerCloseMethod,
-      canForceClose,
-    };
+    this.#overlays.set( dialog, { canForceClose });
+
+    // #if GENERIC && !SKIP_BABEL
+      if( !dialog.showModal )
+      {
+        const dialogPolyfill = (<any>globalThis).require("dialog-polyfill/dist/dialog-polyfill.js");
+        dialogPolyfill.registerDialog(dialog);
+      }
+    // #endif
+
+    dialog.addEventListener("cancel", evt => {
+      this.#active = undefined;
+    });
   }
 
   /**
-   * @param name - The name of the overlay that is unregistered.
+   * @param dialog The overlay's DOM element.
    * @return A promise that is resolved when the overlay has been unregistered.
    */
-  async unregister( name:string ) 
+  async unregister( dialog:HTMLDialogElement )
   {
-    if( !this._overlays[name] )
-    {
+    if( !this.#overlays.has(dialog) )
       throw new Error("The overlay does not exist.");
-    }
-    else if( this._active === name )
-    {
+    else if( this.#active === dialog )
       throw new Error("The overlay cannot be removed while it is active.");
-    }
-    delete this._overlays[name];
+    this.#overlays.delete(dialog);
   }
 
   /**
-   * @param name - The name of the overlay that should be opened.
+   * @param dialog The overlay's DOM element.
    * @return A promise that is resolved when the overlay has been opened.
    */
-  async open( name:string ) 
+  async open( dialog:HTMLDialogElement )
   {
-    if( !this._overlays[name] )
-    {
+    if( !this.#overlays.has(dialog) )
       throw new Error("The overlay does not exist.");
-    } 
-    else if( this._active )
+    else if( this.#active )
     {
-      if( this._overlays[name].canForceClose )
-      {
-        this.#closeThroughCaller();
-      } 
-      else if( this._active === name )
-      {
+      if( this.#active === dialog )
         throw new Error("The overlay is already active.");
+      else if( this.#overlays.get(dialog)!.canForceClose )
+      {
+        await this.close();
       } 
-      else {
+      else 
         throw new Error("Another overlay is currently active.");
-      }
     }
-    this._active = name;
-    this._overlays[this._active].element.classList.remove("hidden");
-    this._overlays[this._active].container.classList.remove("hidden");
-
-    window.addEventListener( "keydown", this.#keyDown );
+    this.#active = dialog;
+    dialog.showModal();
   }
 
   /**
-   * @param name The name of the overlay that should be closed.
+   * @param dialog The overlay's DOM element.
    * @return A promise that is resolved when the overlay has been closed.
    */
-  async close( name:string )
+  async close( dialog=this.#active! )
   {
-    if( !this._overlays[name] )
-    {
+    if( !this.#overlays.has(dialog) )
       throw new Error("The overlay does not exist.");
-    }
-    else if( !this._active )
-    {
+    else if( !this.#active )
       throw new Error("The overlay is currently not active.");
-    }
-    else if( this._active !== name ) 
-    {
+    else if( this.#active !== dialog )
       throw new Error("Another overlay is currently active.");
-    }
-    this._overlays[this._active].container.classList.add("hidden");
-    this._overlays[this._active].element.classList.add("hidden");
-    this._active = null;
-
-    window.removeEventListener( "keydown", this.#keyDown );
-  }
-
-  #keyDown = ( evt:KeyboardEvent ) => 
-  {
-    if( this._active && evt.keyCode === /* Esc = */ 27 )
-    {
-      this.#closeThroughCaller();
-      evt.preventDefault();
-    }
-  }
-
-  #closeThroughCaller = () => 
-  {
-    if( this._overlays[this._active!].callerCloseMethod )
-    {
-      this._overlays[this._active!].callerCloseMethod!();
-    }
-    if( this._active )
-    {
-      this.close( this._active );
-    }
+    dialog.close();
+    this.#active = undefined;
   }
 }
 /*81---------------------------------------------------------------------------*/

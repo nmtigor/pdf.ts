@@ -38,10 +38,10 @@ type RGB = TupleOf< number, 3 >;
 type CYMK = TupleOf< number, 4 >;
 
 export type CSTag = "G" | "RGB" | "T" | "CMYK";
-type ColorConverters =
-{
-  [ fn in `${CSTag}_HTML` ]:( _?:[number] | RGB | CYMK ) => string;
-}
+// export type ColorConvertersDetail = {
+//   [ C in CSTag ]:[ C, ...number[]];
+// }
+export type ColorConvertersDetail = Record< string, [CSTag, ...number[]]>
 
 /**
  * PDF specifications section 10.3
@@ -82,7 +82,8 @@ export namespace ColorConverters
     return `#${R}${G}${B}`;
   }
 
-  export function T_HTML() {
+  export function T_HTML()
+  {
     return "#00000000";
   }
 
@@ -98,7 +99,8 @@ export namespace ColorConverters
 
   export function CMYK_HTML( components:CYMK )
   {
-    return RGB_HTML( <any>CMYK_RGB(components) );//kkkk bug?
+    // return RGB_HTML( CMYK_RGB(components) ); //kkkk bug?
+    return RGB_HTML( <RGB>CMYK_RGB(components).slice(1) );
   }
 
   export function RGB_CMYK([ r, g, b ]:RGB )

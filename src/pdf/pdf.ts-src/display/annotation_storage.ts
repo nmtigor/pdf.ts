@@ -17,11 +17,10 @@
  * limitations under the License.
  */
 
+import { MurmurHash3_64 } from "../shared/murmurhash3.js";
 import { objectFromMap } from "../shared/util.js";
-import { 
-  type ASVKey,
-  type AnnotStorageValue,
-  AnnotStorageRecord,
+import {
+  AnnotStorageRecord, type AnnotStorageValue, type ASVKey
 } from "./annotation_layer.js";
 /*81---------------------------------------------------------------------------*/
 
@@ -32,13 +31,6 @@ export class AnnotationStorage
 {
   _storage:AnnotStorageRecord = new Map<string, AnnotStorageValue>();
   get size() { return this._storage.size; }
-
-  _timeStamp = Date.now();
-  /**
-   * PLEASE NOTE: Only intended for usage within the API itself.
-   * @ignore
-   */
-  get lastModified() { return this._timeStamp.toString(); }
 
   _modified = false;
 
@@ -61,6 +53,14 @@ export class AnnotationStorage
     }
 
     return Object.assign(defaultValue, value);
+  }
+
+  /**
+   * Get the value for a given key.
+   */
+  getRawValue( key:string )
+  {
+    return this._storage.get(key);
   }
 
   /**
@@ -87,7 +87,6 @@ export class AnnotationStorage
     }
     if (modified) 
     {
-      this._timeStamp = Date.now();
       this.#setModified();
     }
   }
@@ -128,6 +127,21 @@ export class AnnotationStorage
   get serializable()
   {
     return this._storage.size > 0 ? this._storage : undefined;
+  }
+
+  /**
+   * PLEASE NOTE: Only intended for usage within the API itself.
+   * @ignore
+   */
+  get hash()
+  {
+    const hash = new MurmurHash3_64();
+
+    for( const [key, value] of this._storage )
+    {
+      hash.update(`${key}:${JSON.stringify(value)}`);
+    }
+    return hash.hexdigest();
   }
 }
 /*81---------------------------------------------------------------------------*/

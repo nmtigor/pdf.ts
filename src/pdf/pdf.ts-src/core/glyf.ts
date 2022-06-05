@@ -17,6 +17,8 @@
  * limitations under the License.
  */
 
+/*81---------------------------------------------------------------------------*/
+
 const ON_CURVE_POINT = 1 << 0;
 const X_SHORT_VECTOR = 1 << 1;
 const Y_SHORT_VECTOR = 1 << 2;
@@ -38,7 +40,7 @@ const WE_HAVE_INSTRUCTIONS = 1 << 8;
 // const SCALED_COMPONENT_OFFSET = 1 << 11;
 // const UNSCALED_COMPONENT_OFFSET = 1 << 12;
 
-interface GlyfTableCtorParms
+interface _GlyfTableCtorP
 {
   glyfTable:Uint8Array | Uint8ClampedArray;
   isGlyphLocationsLong:number;
@@ -63,7 +65,7 @@ export class GlyfTable
 {
   glyphs:Glyph[] = [];
   
-  constructor({ glyfTable, isGlyphLocationsLong, locaTable, numGlyphs }:GlyfTableCtorParms ) 
+  constructor({ glyfTable, isGlyphLocationsLong, locaTable, numGlyphs }:_GlyfTableCtorP ) 
   {
     // this.glyphs = [];
     const loca = new DataView(
@@ -159,7 +161,7 @@ export class GlyfTable
   }
 }
 
-interface GlyphCtorParms
+interface _GlyphCtorP
 {
   header?:GlyphHeader;
   simple?:SimpleGlyph;
@@ -172,7 +174,7 @@ class Glyph
   simple;
   composites;
 
-  constructor({ header, simple, composites }:GlyphCtorParms ) 
+  constructor({ header, simple, composites }:_GlyphCtorP ) 
   {
     this.header = header;
     this.simple = simple;
@@ -256,7 +258,7 @@ class Glyph
   }
 }
 
-interface GlyphHeaderCtorParms
+interface _GlyphHeaderCtorP
 {
   numberOfContours:number;
   xMin:number;
@@ -273,7 +275,7 @@ class GlyphHeader
   xMax;
   yMax;
   
-  constructor({ numberOfContours, xMin, yMin, xMax, yMax }:GlyphHeaderCtorParms )
+  constructor({ numberOfContours, xMin, yMin, xMax, yMax }:_GlyphHeaderCtorP )
   {
     this.numberOfContours = numberOfContours;
     this.xMin = xMin;
@@ -316,7 +318,7 @@ class GlyphHeader
   }
 }
 
-interface ContourCtorParms
+interface _ContourCtorP
 {
   flags:number[];
   xCoordinates:number[];
@@ -329,7 +331,7 @@ class Contour
   yCoordinates;
   flags;
 
-  constructor({ flags, xCoordinates, yCoordinates }:ContourCtorParms ) 
+  constructor({ flags, xCoordinates, yCoordinates }:_ContourCtorP ) 
   {
     this.xCoordinates = xCoordinates;
     this.yCoordinates = yCoordinates;
@@ -337,7 +339,7 @@ class Contour
   }
 }
 
-interface SimpleGlyphCtorParms
+interface _SimpleGlyphCtorP
 {
   contours:Contour[];
   instructions:Uint8Array;
@@ -348,7 +350,7 @@ class SimpleGlyph
   contours;
   instructions;
 
-  constructor({ contours, instructions }:SimpleGlyphCtorParms ) 
+  constructor({ contours, instructions }:_SimpleGlyphCtorP ) 
   {
     this.contours = contours;
     this.instructions = instructions;
@@ -655,7 +657,7 @@ class SimpleGlyph
   }
 }
 
-interface CompositeGlyphCtorParms
+interface _CompositeGlyphCtorP
 {
   flags:number;
   glyphIndex:number;
@@ -681,7 +683,7 @@ class CompositeGlyph
     argument2,
     transf,
     instructions,
-  }:CompositeGlyphCtorParms ) {
+  }:_CompositeGlyphCtorP ) {
     this.flags = flags;
     this.glyphIndex = glyphIndex;
     this.argument1 = argument1;

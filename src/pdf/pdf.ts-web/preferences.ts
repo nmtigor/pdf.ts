@@ -17,12 +17,7 @@
  * limitations under the License.
  */
 
-import { 
-  AppOptions, 
-  OptionKind, 
-  type OptionName, 
-  type UserOptions 
-} from "./app_options.js";
+import { AppOptions, OptionKind, type OptionName, type UserOptions } from "./app_options.js";
 /*81---------------------------------------------------------------------------*/
 
 /**
@@ -32,38 +27,39 @@ import {
  */
 export abstract class BasePreferences 
 {
-  prefs:UserOptions = Object.create(null);
-  defaults!:UserOptions;
-  _initializedPromise:Promise<void>;
+  #defaults = Object.freeze(
+    // #if !PRODUCTION
+      AppOptions.getAll(OptionKind.PREFERENCE)
+    // #else
+    // PDFJSDev.eval("DEFAULT_PREFERENCES")
+      AppOptions.getAll(OptionKind.PREFERENCE)
+    // #endif
+  );
+  // #defaults!:UserOptions;
+
+  #prefs:UserOptions = Object.create(null);
+
+  #initializedPromise:Promise<void>;
 
   constructor() 
   {
-    Object.defineProperty(this, "defaults", {
-      value: Object.freeze(
-        // #if !PRODUCTION
-        AppOptions.getAll( OptionKind.PREFERENCE )
-        // #else
-        AppOptions.getAll( OptionKind.PREFERENCE )
-        // PDFJSDev.eval("DEFAULT_PREFERENCES")
-        // #endif
-        // typeof PDFJSDev === "undefined" || !PDFJSDev.test("PRODUCTION")
-        //   ? AppOptions.getAll(OptionKind.PREFERENCE)
-        //   : PDFJSDev.json("$ROOT/build/default_preferences.json")
-      ),
-      writable: false,
-      enumerable: true,
-      configurable: false,
-    });
+    // #if CHROME
+      Object.defineProperty(this, "defaults", {
+        get() {
+          return this.#defaults;
+        },
+      });
+    // #endif
 
-    this._initializedPromise = this._readFromStorage(this.defaults).then(
+    this.#initializedPromise = this._readFromStorage(this.#defaults).then(
       prefs => {
-        for( const name in this.defaults )
+        for( const name in this.#defaults )
         {
           const prefValue = prefs?.[ <OptionName>name ];
           // Ignore preferences whose types don't match the default values.
-          if( typeof prefValue === typeof this.defaults[<OptionName>name] )
+          if( typeof prefValue === typeof this.#defaults[<OptionName>name] )
           {
-            (<any>this.prefs)[name] = prefValue;
+            (<any>this.#prefs)[name] = prefValue;
           }
         }
       }
@@ -93,9 +89,15 @@ export abstract class BasePreferences
    */
   async reset():Promise<unknown> 
   {
-    await this._initializedPromise;
-    this.prefs = Object.create(null);
-    return this._writeToStorage(this.defaults);
+    await this.#initializedPromise;
+    const prefs = this.#prefs;
+
+    this.#prefs = Object.create(null);
+    return this._writeToStorage(this.#defaults).catch(reason => {
+      // Revert all preference values, since writing to storage failed.
+      this.#prefs = prefs;
+      throw reason;
+    });
   }
 
   /**
@@ -107,19 +109,23 @@ export abstract class BasePreferences
    */
   async set( name:OptionName, value:boolean | number | string ):Promise<unknown>
   {
-    await this._initializedPromise;
-    const defaultValue = this.defaults[name];
+    await this.#initializedPromise;
+    const defaultValue = this.#defaults[name],
+      prefs = this.#prefs;
 
-    if (defaultValue === undefined) {
+    if( defaultValue === undefined )
+    {
       throw new Error(`Set preference: "${name}" is undefined.`);
     } 
-    else if (value === undefined) {
+    else if (value === undefined )
+    {
       throw new Error("Set preference: no value is specified.");
     }
-    const valueType = typeof value;
-    const defaultType = typeof defaultValue;
+    const valueType = typeof value,
+      defaultType = typeof defaultValue;
 
-    if (valueType !== defaultType) {
+    if( valueType !== defaultType )
+    {
       if (valueType === "number" && defaultType === "string") {
         value = value.toString();
       } 
@@ -130,12 +136,18 @@ export abstract class BasePreferences
       }
     } 
     else {
-      if (valueType === "number" && !Number.isInteger(value)) {
+      if( valueType === "number" && !Number.isInteger(value) )
+      {
         throw new Error(`Set preference: "${value}" must be an integer.`);
       }
     }
-    (<any>this.prefs)[name] = value;
-    return this._writeToStorage(this.prefs);
+
+    (<any>this.#prefs)[name] = value;
+    return this._writeToStorage(this.#prefs).catch(reason => {
+      // Revert all preference values, since writing to storage failed.
+      this.#prefs = prefs;
+      throw reason;
+    });
   }
 
   /**
@@ -146,14 +158,14 @@ export abstract class BasePreferences
    */
   async get( name:OptionName )
   {
-    await this._initializedPromise;
-    const defaultValue = this.defaults[name];
-    const prefValue = this.prefs[name];
+    await this.#initializedPromise;
+    const defaultValue = this.#defaults[name];
 
-    if (defaultValue === undefined) {
+    if( defaultValue === undefined )
+    {
       throw new Error(`Get preference: "${name}" is undefined.`);
     }
-    return prefValue !== undefined ? prefValue : defaultValue;
+    return this.#prefs[name] ?? defaultValue;
   }
 
   /**
@@ -163,13 +175,12 @@ export abstract class BasePreferences
    */
   async getAll()
   {
-    await this._initializedPromise;
+    await this.#initializedPromise;
     const obj:UserOptions = Object.create(null);
 
-    for( const name in this.defaults )
+    for( const name in this.#defaults )
     {
-      const prefValue = this.prefs[ <OptionName>name ];
-      (<any>obj)[name] = prefValue !== undefined ? prefValue : this.defaults[ <OptionName>name ];
+      (<any>obj)[name] = this.#prefs[<OptionName>name] ?? this.#defaults[<OptionName>name];
     }
     return obj;
   }

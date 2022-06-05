@@ -2,20 +2,21 @@
  * core_utils_test
 ** --------------- */
 
-import { css_1, css_2 } from "../../../test/alias.js";
 import "../../../lib/jslang.js";
-import { encodeToXmlString, 
-  escapePDFName, 
-  getInheritableProperty, 
-  isWhiteSpace, 
-  log2, 
-  parseXFAPath, 
-  toRomanNumerals, 
-  validateCSSFont 
-} from "./core_utils.js";
-import { Dict, Ref } from "./primitives.js";
+import { css_1, css_2 } from "../../../test/alias.js";
 import { XRefMock } from "../../test_utils.js";
+import {
+  encodeToXmlString,
+  escapePDFName,
+  getInheritableProperty,
+  isWhiteSpace,
+  log2,
+  parseXFAPath,
+  toRomanNumerals,
+  validateCSSFont
+} from "./core_utils.js";
 import { type CssFontInfo } from "./document.js";
+import { Dict, Ref } from "./primitives.js";
 
 const strttime = performance.now();
 /*81---------------------------------------------------------------------------*/

@@ -23,15 +23,15 @@
 // eslint-disable-next-line max-len
 /** @typedef {import("./pdf_rendering_queue").PDFRenderingQueue} PDFRenderingQueue */
 
-import { OutputScale, RenderingStates } from "./ui_utils.js";
-import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
-import { type IL10n, type IPDFLinkService, type IVisibleView } from "./interfaces.js";
+import { html } from "../../lib/dom.js";
+import { PDFPageProxy, RenderTask } from "../pdf.ts-src/display/api.js";
 import { PageViewport, RenderingCancelledException } from "../pdf.ts-src/display/display_utils.js";
 import { OptionalContentConfig } from "../pdf.ts-src/display/optional_content_config.js";
-import { PDFPageView } from "./pdf_page_view.js";
-import { PDFPageProxy, RenderTask } from "../pdf.ts-src/display/api.js";
 import { type matrix_t } from "../pdf.ts-src/shared/util.js";
-import { html } from "../../lib/dom.js";
+import { type IL10n, type IPDFLinkService, type IVisibleView } from "./interfaces.js";
+import { PDFPageView } from "./pdf_page_view.js";
+import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
+import { OutputScale, RenderingStates } from "./ui_utils.js";
 /*81---------------------------------------------------------------------------*/
 
 const DRAW_UPSCALE_FACTOR = 2; // See comment in `PDFThumbnailView.draw` below.
@@ -92,10 +92,6 @@ export class TempImageFactory
 
     // Since this is a temporary canvas, we need to fill it with a white
     // background ourselves. `#getPageDrawContext` uses CSS rules for this.
-    // #if MOZCENTRAL || GENERIC
-      (<any>tempCanvas).mozOpaque = true;
-    // #endif
-
     const ctx = tempCanvas.getContext("2d", { alpha: false })!;
     ctx.save();
     ctx.fillStyle = "rgb(255, 255, 255)";
@@ -291,15 +287,6 @@ export class PDFThumbnailView implements IVisibleView
     // Keep the no-thumbnail outline visible, i.e. `data-loaded === false`,
     // until rendering/image conversion is complete, to avoid display issues.
     const canvas = html("canvas");
-
-    // #if MOZCENTRAL || GENERIC
-    // if (
-    //   typeof PDFJSDev === "undefined" ||
-    //   PDFJSDev.test("MOZCENTRAL || GENERIC")
-    // ) {
-    (<any>canvas).mozOpaque = true;
-    // }
-    // #endif
     const ctx = canvas.getContext("2d", { alpha: false })!;
     const outputScale = new OutputScale();
 
@@ -349,7 +336,8 @@ export class PDFThumbnailView implements IVisibleView
     }
     const { pdfPage } = this;
 
-    if (!pdfPage) {
+    if( !pdfPage )
+    {
       this.renderingState = RenderingStates.FINISHED;
       return Promise.reject(new Error("pdfPage is not loaded"));
     }
@@ -360,19 +348,18 @@ export class PDFThumbnailView implements IVisibleView
       // The renderTask may have been replaced by a new one, so only remove
       // the reference to the renderTask if it matches the one that is
       // triggering this callback.
-      if (renderTask === this.renderTask) {
+      if( renderTask === this.renderTask )
+      {
         this.renderTask = undefined;
       }
 
-      if (error instanceof RenderingCancelledException) {
+      if( error instanceof RenderingCancelledException )
         return;
-      }
       this.renderingState = RenderingStates.FINISHED;
       this.#convertCanvasToImage( canvas );
 
-      if (error) {
+      if( error )
         throw error;
-      }
     };
 
     // Render the thumbnail at a larger size and downsize the canvas (similar

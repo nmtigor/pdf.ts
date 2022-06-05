@@ -18,24 +18,20 @@
  */
 /* globals __non_webpack_require__ */
 
-import {
-  FONT_IDENTITY_MATRIX,
-  IDENTITY_MATRIX,
-  ImageKind,
-  type matrix_t,
-  OPS,
-  type rect_t,
-  TextRenderingMode,
-  Util,
-  warn,
-} from "../shared/util.js";
-import { DOMSVGFactory, PageViewport } from "./display_utils.js";
-import { PDFCommonObjs, PDFObjects, PDFObjs } from "./api.js";
+import { svg as createSVG } from "../../../lib/dom.js";
 import { type ImgData } from "../core/evaluator.js";
 import { FontExpotData, Glyph } from "../core/fonts.js";
 import { type OpListIR } from "../core/operator_list.js";
-import { svg as createSVG } from "../../../lib/dom.js";
-import { type ShadingPatternIR, ShadingType, type TilingPatternIR } from "../core/pattern.js";
+import { ShadingType, type ShadingPatternIR, type TilingPatternIR } from "../core/pattern.js";
+import {
+  FONT_IDENTITY_MATRIX,
+  IDENTITY_MATRIX,
+  ImageKind, OPS, TextRenderingMode,
+  Util,
+  warn, type matrix_t, type rect_t
+} from "../shared/util.js";
+import { PDFCommonObjs, PDFObjects, PDFObjs } from "./api.js";
+import { DOMSVGFactory, PageViewport } from "./display_utils.js";
 /*81---------------------------------------------------------------------------*/
 
 // export let SVGGraphics = ():any => 
@@ -245,12 +241,13 @@ import { type ShadingPatternIR, ShadingType, type TilingPatternIR } from "../cor
 
     function encode( imgData:ImgData, kind:ImageKind, forceDataSchema:boolean, isMask:boolean )
     {
-      const width = imgData.width;
-      const height = imgData.height;
+      const width = imgData.width!;
+      const height = imgData.height!;
       let bitDepth, colorType, lineSize;
-      const bytes = imgData.data;
+      const bytes = <Uint8Array | Uint8ClampedArray>imgData.data;
 
-      switch (kind) {
+      switch( kind )
+      {
         case ImageKind.GRAYSCALE_1BPP:
           colorType = 0;
           bitDepth = 1;
@@ -278,19 +275,22 @@ import { type ShadingPatternIR, ShadingType, type TilingPatternIR } from "../cor
       {
         literals[offsetLiterals++] = 0; // no prediction
         literals.set(
-          bytes!.subarray(offsetBytes, offsetBytes + lineSize),
+          bytes.subarray(offsetBytes, offsetBytes + lineSize),
           offsetLiterals
         );
         offsetBytes += lineSize;
         offsetLiterals += lineSize;
       }
 
-      if (kind === ImageKind.GRAYSCALE_1BPP && isMask) {
+      if( kind === ImageKind.GRAYSCALE_1BPP && isMask )
+      {
         // inverting for image masks
         offsetLiterals = 0;
-        for (let y = 0; y < height; y++) {
+        for( let y = 0; y < height; y++ )
+        {
           offsetLiterals++; // skipping predictor
-          for (let i = 0; i < lineSize; i++) {
+          for( let i = 0; i < lineSize; i++ )
+          {
             literals[offsetLiterals++] ^= 0xff;
           }
         }
@@ -1749,24 +1749,24 @@ import { type ShadingPatternIR, ShadingType, type TilingPatternIR } from "../cor
 
     [ OPS.paintInlineImageXObject ]( imgData:ImgData, mask?:SVGMaskElement )
     {
-      const width = imgData.width;
-      const height = imgData.height;
+      const width = imgData.width!;
+      const height = imgData.height!;
 
-      const imgSrc = convertImgDataToPng(imgData, this.forceDataSchema, !!mask);
+      const imgSrc = convertImgDataToPng( imgData, this.forceDataSchema, !!mask);
       const cliprect = createSVG("rect");
-      cliprect.setAttributeNS(null, "x", "0");
-      cliprect.setAttributeNS(null, "y", "0");
-      cliprect.setAttributeNS(null, "width", pf(width));
-      cliprect.setAttributeNS(null, "height", pf(height));
+      cliprect.setAttributeNS( null, "x", "0");
+      cliprect.setAttributeNS( null, "y", "0");
+      cliprect.setAttributeNS( null, "width", pf(width));
+      cliprect.setAttributeNS( null, "height", pf(height));
       this.current.element = cliprect;
       this[ OPS.clip ]("nonzero");
 
       const imgEl = createSVG("image");
-      imgEl.setAttributeNS(XLINK_NS, "xlink:href", imgSrc);
-      imgEl.setAttributeNS(null, "x", "0");
-      imgEl.setAttributeNS(null, "y", pf(-height));
-      imgEl.setAttributeNS(null, "width", pf(width) + "px");
-      imgEl.setAttributeNS(null, "height", pf(height) + "px");
+      imgEl.setAttributeNS( XLINK_NS, "xlink:href", imgSrc);
+      imgEl.setAttributeNS( null, "x", "0");
+      imgEl.setAttributeNS( null, "y", pf(-height));
+      imgEl.setAttributeNS( null, "width", pf(width) + "px");
+      imgEl.setAttributeNS( null, "height", pf(height) + "px");
       imgEl.setAttributeNS(
         null,
         "transform",
@@ -1783,8 +1783,8 @@ import { type ShadingPatternIR, ShadingType, type TilingPatternIR } from "../cor
     [ OPS.paintImageMaskXObject ]( imgData:ImgData )
     {
       const current = this.current;
-      const width = imgData.width;
-      const height = imgData.height;
+      const width = imgData.width!;
+      const height = imgData.height!;
       const fillColor = current.fillColor;
 
       current.maskId = `mask${maskCount++}`;

@@ -18,22 +18,19 @@
  */
 
 import { html } from "../../../lib/dom.js";
-import { assert } from "../../../lib/util/trace.js";
 import { type XFAElObj } from "../core/xfa/alias.js";
 import {
   BaseException,
-  CMapCompressionType,
-  type matrix_t,
-  type point_t,
-  type rect_t,
-  stringToBytes,
+  CMapCompressionType, stringToBytes,
   Util,
-  warn,
+  warn, type matrix_t,
+  type point_t,
+  type rect_t
 } from "../shared/util.js";
-import { 
-  BaseCanvasFactory, 
-  BaseCMapReaderFactory, 
-  BaseStandardFontDataFactory, 
+import {
+  BaseCanvasFactory,
+  BaseCMapReaderFactory,
+  BaseStandardFontDataFactory,
   BaseSVGFactory
 } from "./base_factory.js";
 /*81---------------------------------------------------------------------------*/
@@ -60,7 +57,10 @@ export class DOMCanvasFactory extends BaseCanvasFactory
     this._document = ownerDocument;
   }
 
-  /** @implements */
+  /** 
+   * @ignore
+   * @implements
+   */
   _createCanvas( width:number, height:number )
   {
     const canvas = this._document.createElement("canvas");
@@ -125,7 +125,10 @@ async function fetchData( url:string, asTypedArray=false )
 
 export class DOMCMapReaderFactory extends BaseCMapReaderFactory
 {
-  /** @implements */
+  /** 
+   * @ignore
+   * @implements 
+   */
   _fetchData( url:string, compressionType:CMapCompressionType )
   {
     return fetchData(url, /* asTypedArray = */ this.isCompressed).then(data => {
@@ -136,7 +139,10 @@ export class DOMCMapReaderFactory extends BaseCMapReaderFactory
 
 export class DOMStandardFontDataFactory extends BaseStandardFontDataFactory
 {
-  /** @implements */
+  /** 
+   * @ignore
+   * @implements 
+   */
   _fetchData( url:string )
   {
     return fetchData(url, /* asTypedArray = */ true);
@@ -145,14 +151,17 @@ export class DOMStandardFontDataFactory extends BaseStandardFontDataFactory
 
 export class DOMSVGFactory extends BaseSVGFactory
 {
-  /** @implements */
+  /** 
+   * @ignore
+   * @implements 
+   */
   _createSVG( type:keyof SVGElementTagNameMap )
   {
     return document.createElementNS(SVG_NS, type);
   }
 }
 
-interface PageViewportParms
+interface _PageViewportP
 {
   /**
    * The xMin, yMin, xMax and yMax coordinates.
@@ -188,7 +197,7 @@ interface PageViewportParms
   dontFlip?:boolean;
 }
 
-interface PageViewportCloneParms
+interface _PageViewportCloneP
 {
   /**
    * The scale, overriding the one in the cloned
@@ -256,7 +265,7 @@ export class PageViewport
     offsetX=0,
     offsetY=0,
     dontFlip=false,
-  }:PageViewportParms )
+  }:_PageViewportP )
   {
     this.viewBox = viewBox;
     this.scale = scale;
@@ -351,7 +360,7 @@ export class PageViewport
     offsetX=this.offsetX,
     offsetY=this.offsetY,
     dontFlip=false,
-  }:PageViewportCloneParms={}
+  }:_PageViewportCloneP={}
   ):PageViewport {
     return new PageViewport({
       viewBox: <rect_t>this.viewBox.slice(),

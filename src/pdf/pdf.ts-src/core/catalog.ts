@@ -17,54 +17,49 @@
  * limitations under the License.
  */
 
+import { PageLayout, PageMode } from "../../../pdf/pdf.ts-web/ui_utils.js";
+import { type ResetForm } from "../display/annotation_layer.js";
+import { type OutlineNode } from "../display/api.js";
+import { type CMapData } from "../display/base_factory.js";
+import { MessageHandler, Thread } from "../shared/message_handler.js";
 import {
-  Dict,
-  isDict,
-  isName,
-  isRefsEqual,
-  Name,
-  type Obj,
-  Ref,
-  RefSet,
-  RefSetCache,
-} from "./primitives.js";
-import {
-  collectActions,
-  MissingDataException,
-  recoverJsURL,
-  toRomanNumerals,
-  XRefEntryException,
-} from "./core_utils.js";
-import {
-  type ActionEventType,
   createValidAbsoluteUrl,
   DocumentActionEventType,
   FormatError,
   info,
   objectSize,
-  PermissionFlag,
-  type rect_t,
-  shadow,
+  PermissionFlag, shadow,
   stringToPDFString,
   stringToUTF8String,
-  warn,
+  warn, type ActionEventType, type rect_t
 } from "../shared/util.js";
-import { NameTree, NumberTree } from "./name_number_tree.js";
+import { BaseStream } from "./base_stream.js";
 import { clearGlobalCaches } from "./cleanup_helper.js";
 import { ColorSpace } from "./colorspace.js";
+import {
+  collectActions,
+  MissingDataException,
+  recoverJsURL,
+  toRomanNumerals,
+  XRefEntryException
+} from "./core_utils.js";
+import { TranslatedFont } from "./evaluator.js";
 import { FileSpec } from "./file_spec.js";
 import { GlobalImageCache } from "./image_utils.js";
 import { MetadataParser } from "./metadata_parser.js";
-import { StructTreeRoot } from "./struct_tree.js";
-import { MessageHandler, Thread } from "../shared/message_handler.js";
-import { TranslatedFont } from "./evaluator.js";
-import { type CMapData } from "../display/base_factory.js";
+import { NameTree, NumberTree } from "./name_number_tree.js";
 import { BasePdfManager } from "./pdf_manager.js";
+import {
+  Dict,
+  isDict,
+  isName,
+  isRefsEqual,
+  Name, Ref,
+  RefSet,
+  RefSetCache, type Obj
+} from "./primitives.js";
+import { StructTreeRoot } from "./struct_tree.js";
 import { XRef } from "./xref.js";
-import { type OutlineNode } from "../display/api.js";
-import { PageLayout, PageMode } from "../../../pdf/pdf.ts-web/ui_utils.js";
-import { BaseStream } from "./base_stream.js";
-import { type ResetForm } from "../display/annotation_layer.js";
 /*81---------------------------------------------------------------------------*/
 
 type DestPage = Ref | number | null;
@@ -98,7 +93,7 @@ export interface CatParseDestDictRes
   resetForm?:ResetForm;
 }
 
-interface CatParseDestDictParms
+interface _ParseDestDictionaryP
 {
   /**
    * The dictionary containing the destination.
@@ -258,8 +253,8 @@ export class Catalog
         acroForm = obj;
       }
     } catch (ex) {
-      if( ex instanceof MissingDataException ) throw ex;
-
+      if( ex instanceof MissingDataException )
+        throw ex;
       info("Cannot fetch AcroForm entry; assuming no forms are present.");
     }
     return shadow(this, "acroForm", acroForm);
@@ -304,8 +299,8 @@ export class Catalog
         }
       } 
     } catch (ex) {
-      if (ex instanceof MissingDataException) throw ex;
-
+      if( ex instanceof MissingDataException )
+        throw ex;
       info(`Skipping invalid Metadata: "${ex}".`);
     }
     return shadow(this, "metadata", metadata);
@@ -330,19 +325,18 @@ export class Catalog
     const obj = <Dict>this.#catDict.get("MarkInfo");
     if( !(obj instanceof Dict) ) return undefined;
 
-    const markInfo:MarkInfo = Object.assign(Object.create(null), {
+    const markInfo:MarkInfo = {
       Marked: false,
       UserProperties: false,
       Suspects: false,
-    });
+    };
     for( const key in markInfo )
     {
-      if( !obj.has(key) ) continue;
-
       const value = obj.get(key);
-      if( !(typeof value === "boolean") ) continue;
-
-      markInfo[ <keyof MarkInfo>key ] = value;
+      if( typeof value === "boolean" )
+      {
+        markInfo[ <keyof MarkInfo>key ] = value;
+      }
     }
 
     return markInfo;
@@ -388,8 +382,8 @@ export class Catalog
     try {
       obj = this.#readDocumentOutline();
     } catch (ex) {
-      if( ex instanceof MissingDataException ) throw ex;
-
+      if( ex instanceof MissingDataException )
+        throw ex;
       warn("Unable to read document outline.");
     }
     return shadow(this, "documentOutline", obj);
@@ -415,8 +409,8 @@ export class Catalog
     {
       const i = queue.shift()!;
       const outlineDict = <Dict>xref.fetchIfRef( i.obj );
-      if( outlineDict === null || outlineDict === undefined ) continue;
-
+      if( outlineDict === null || outlineDict === undefined )
+        continue;
       if( !outlineDict.has("Title") )
       {
         throw new FormatError("Invalid outline item encountered.");
@@ -430,7 +424,7 @@ export class Catalog
       });
       const title = <string>outlineDict.get("Title");
       const flags = <number>outlineDict.get("F") ?? 0;
-      const color = <Float32Array|undefined>outlineDict.getArray("C");
+      const color = <Float32Array | undefined>outlineDict.getArray("C");
       const count = <number|undefined>outlineDict.get("Count");
       let rgbColor = blackColor;
 
@@ -478,8 +472,8 @@ export class Catalog
     try {
       permissions = this.#readPermissions();
     } catch (ex) {
-      if (ex instanceof MissingDataException) throw ex;
-
+      if( ex instanceof MissingDataException )
+        throw ex;
       warn("Unable to read permissions.");
     }
     return shadow(this, "permissions", permissions);
@@ -537,8 +531,8 @@ export class Catalog
       // Ensure all the optional content groups are valid.
       for( const groupRef of groupsData )
       {
-        if( !(groupRef instanceof Ref) ) continue;
-
+        if( !(groupRef instanceof Ref) )
+          continue;
         groupRefs.push( groupRef );
         const group = <Dict>this.xref.fetchIfRef( groupRef ); // Table 98
         let v;
@@ -577,8 +571,8 @@ export class Catalog
       {
         for (const value of refs) 
         {
-          if( !(value instanceof Ref) ) continue;
-
+          if( !(value instanceof Ref) )
+            continue;
           if (contentGroupRefs.includes(value)) 
           {
             onParsed.push(value.toString());
@@ -616,13 +610,14 @@ export class Catalog
         return order;
       }
       const hiddenGroups = [];
-      for (const groupRef of contentGroupRefs) {
-        if (parsedOrderRefs.has(groupRef)) {
+      for( const groupRef of contentGroupRefs )
+      {
+        if( parsedOrderRefs.has(groupRef) )
           continue;
-        }
         hiddenGroups.push(groupRef.toString());
       }
-      if (hiddenGroups.length) {
+      if( hiddenGroups.length )
+      {
         order.push({ name: null, order: hiddenGroups });
       }
 
@@ -710,9 +705,9 @@ export class Catalog
       for( const [key, value] of obj.getAll() )
       {
         const dest = fetchDestination(value);
-        if (dest) 
+        if( dest )
         {
-          dests[key] = <ExplicitDest>dest;
+          dests[stringToPDFString(key)] = <ExplicitDest>dest;
         }
       }
     } 
@@ -774,8 +769,8 @@ export class Catalog
     try {
       obj = this.#readPageLabels();
     } catch (ex) {
-      if( ex instanceof MissingDataException ) throw ex;
-
+      if( ex instanceof MissingDataException )
+        throw ex;
       warn("Unable to read page labels.");
     }
     return shadow(this, "pageLabels", obj);
@@ -872,15 +867,10 @@ export class Catalog
           const character = String.fromCharCode(
             baseCharCode + (letterIndex % LIMIT)
           );
-          const charBuf = [];
-          for (let j = 0, jj = (letterIndex / LIMIT) | 0; j <= jj; j++) 
-          {
-            charBuf.push(character);
-          }
-          currentLabel = charBuf.join("");
+          currentLabel = character.repeat(Math.floor(letterIndex / LIMIT) + 1);
           break;
         default:
-          if (style) 
+          if( style )
           {
             throw new FormatError(
               `Invalid style "${style}" in PageLabel dictionary.`
@@ -1152,13 +1142,13 @@ export class Catalog
     if (obj instanceof Dict && obj.has("XFAImages")) 
     {
       const nameTree = new NameTree( <Ref>obj.getRaw("XFAImages"), this.xref );
-      for (const [key, value] of nameTree.getAll()) 
+      for( const [key, value] of nameTree.getAll() )
       {
         if (!xfaImages) 
         {
           xfaImages = new Dict(this.xref);
         }
-        xfaImages.set(key, value);
+        xfaImages.set( stringToPDFString(key), value );
       }
     }
     return shadow(this, "xfaImages", xfaImages);
@@ -1197,7 +1187,7 @@ export class Catalog
       const nameTree = new NameTree( <Ref>obj.getRaw("JavaScript"), this.xref );
       for( const [key, value] of nameTree.getAll() )
       {
-        appendIfJavaScriptDict(key, value);
+        appendIfJavaScriptDict( stringToPDFString(key), value );
       }
     }
     // Append OpenAction "JavaScript" actions, if any, to the JavaScript map.
@@ -1248,24 +1238,20 @@ export class Catalog
     return shadow(this, "jsActions", actions);
   }
 
-  fontFallback( id:string, handler:MessageHandler<Thread.worker> ) 
+  async fontFallback( id:string, handler:MessageHandler<Thread.worker> ) 
   {
-    const promises:Promise<TranslatedFont>[] = [];
-    this.fontCache.forEach( promise => {
-      promises.push(promise);
-    });
-
-    return Promise.all(promises).then(translatedFonts => {
-      for (const translatedFont of translatedFonts) {
-        if (translatedFont.loadedName === id) {
-          translatedFont.fallback(handler);
-          return;
-        }
+    const translatedFonts = await Promise.all( this.fontCache );
+    for( const translatedFont of translatedFonts )
+    {
+      if( translatedFont.loadedName === id )
+      {
+        translatedFont.fallback(handler);
+        return;
       }
-    });
+    }
   }
 
-  cleanup( manuallyTriggered=false )
+  async cleanup( manuallyTriggered=false )
   {
     clearGlobalCaches();
     this.globalImageCache.clear(/* onlyData = */ manuallyTriggered);
@@ -1273,20 +1259,15 @@ export class Catalog
     this.pageIndexCache.clear();
     this.nonBlendModesSet.clear();
 
-    const promises:Promise<TranslatedFont>[] = [];
-    this.fontCache.forEach( promise => {
-      promises.push(promise);
-    });
+    const translatedFonts = await Promise.all( this.fontCache );
 
-    return Promise.all(promises).then( translatedFonts => {
-      for( const { dict } of translatedFonts )
-      {
-        delete dict?.cacheKey;
-      }
-      this.fontCache.clear();
-      this.builtInCMapCache.clear();
-      this.standardFontDataCache.clear();
-    });
+    for( const { dict } of translatedFonts )
+    {
+      delete dict?.cacheKey;
+    }
+    this.fontCache.clear();
+    this.builtInCMapCache.clear();
+    this.standardFontDataCache.clear();
   }
 
   /**
@@ -1649,7 +1630,7 @@ export class Catalog
           {
             throw new FormatError("Kid reference not found in parent's kids.");
           }
-          return Promise.all(kidPromises).then( () => {
+          return Promise.all(kidPromises).then(() => {
             return <const>[total, parentRef];
           });
         });
@@ -1671,19 +1652,30 @@ export class Catalog
     return next( pageRef );
   }
 
-  /**
-   * @typedef ParseDestDictionaryParameters
-   * @property {Dict} destDict - The dictionary containing the destination.
-   * @property {Object} resultObj - The object where the parsed destination
-   *   properties will be placed.
-   * @property {string} [docBaseUrl] - The document base URL that is used when
-   *   attempting to recover valid absolute URLs from relative ones.
-   */
+  get baseUrl()
+  {
+    const uri = this.#catDict.get("URI");
+    if( uri instanceof Dict )
+    {
+      const base = uri.get("Base");
+      if( typeof base === "string" )
+      {
+        const absoluteUrl = createValidAbsoluteUrl(base, undefined, {
+          tryConvertEncoding: true,
+        });
+        if( absoluteUrl )
+        {
+          return shadow( this, "baseUrl", absoluteUrl.href);
+        }
+      }
+    }
+    return shadow( this, "baseUrl", undefined);
+  }
 
   /**
    * Helper function used to parse the contents of destination dictionaries.
    */
-  static parseDestDictionary( params:CatParseDestDictParms ) 
+  static parseDestDictionary( params:_ParseDestDictionaryP ) 
   {
     const destDict = params.destDict;
     if( !(destDict instanceof Dict) ) 
@@ -1765,7 +1757,6 @@ export class Catalog
             // Some bad PDFs do not put parentheses around relative URLs.
             url = "/" + url.name;
           }
-          // TODO: pdf spec mentions urls can be relative to a Base entry in the dictionary.
           break;
 
         case "GoTo":
@@ -1883,7 +1874,11 @@ export class Catalog
       {
         dest = dest.name;
       }
-      if( typeof dest === "string" || Array.isArray(dest) )
+      if( typeof dest === "string" )
+      {
+        resultObj.dest = stringToPDFString(dest);
+      }
+      else if( Array.isArray(dest) )
       {
         resultObj.dest = dest;
       }

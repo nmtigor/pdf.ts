@@ -3,11 +3,11 @@
 ** --------- */
 
 import { css_1, css_2 } from "../../../test/alias.js";
-import { StringStream } from "./stream.js";
 import { CMAP_PARAMS } from "../../test_utils.js";
 import { DOMCMapReaderFactory } from "../display/display_utils.js";
-import { type CharCodeOut, CMap, CMapFactory, IdentityCMap } from "./cmap.js";
+import { CMap, CMapFactory, IdentityCMap, type CharCodeOut } from "./cmap.js";
 import { Name } from "./primitives.js";
+import { StringStream } from "./stream.js";
 
 const strttime = performance.now();
 /*81---------------------------------------------------------------------------*/

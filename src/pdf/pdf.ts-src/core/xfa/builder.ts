@@ -17,7 +17,18 @@
  * limitations under the License.
  */
 
+import { warn } from "../../shared/util.js";
+import {
+  type XFAAttrs,
+  type XFACleanup,
+  type XFAIds,
+  type XFANsAttrs,
+  type XFAPrefix
+} from "./alias.js";
 import { $buildXFAObject, NamespaceIds, type XFANsName } from "./namespaces.js";
+import { NamespaceSetUp, type XFAKnownNs } from "./setup.js";
+import { Template } from "./template.js";
+import { UnknownNamespace } from "./unknown.js";
 import {
   $cleanup,
   $finalize,
@@ -27,19 +38,8 @@ import {
   $onChild,
   $resolvePrototypes,
   $root,
-  XFAObject,
+  XFAObject
 } from "./xfa_object.js";
-import { NamespaceSetUp, type XFAKnownNs } from "./setup.js";
-import { Template } from "./template.js";
-import { UnknownNamespace } from "./unknown.js";
-import { warn } from "../../shared/util.js";
-import { 
-  type XFAAttrs, 
-  type XFACleanup, 
-  type XFAIds, 
-  type XFANsAttrs, 
-  type XFAPrefix 
-} from "./alias.js";
 /*81---------------------------------------------------------------------------*/
 
 export class Root extends XFAObject
@@ -88,7 +88,7 @@ class Empty extends XFAObject
   }
 }
 
-interface BuildParms
+interface _BuildP
 {
   nsPrefix:string | undefined;
   name:string;
@@ -123,7 +123,7 @@ export class Builder
     return new Root( ids );
   }
 
-  build({ nsPrefix, name, attributes, namespace, prefixes }:BuildParms )
+  build({ nsPrefix, name, attributes, namespace, prefixes }:_BuildP )
   {
     const hasNamespaceDef = namespace !== undefined;
     if( hasNamespaceDef ) 

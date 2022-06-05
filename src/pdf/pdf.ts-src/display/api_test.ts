@@ -2,38 +2,37 @@
  * api_test
 ** -------- */
 
-import { css_1, css_2 } from "../../../test/alias.js";
+import { $enum } from "../../../3rd/ts-enum-util/src/$enum.js";
 import { eq } from "../../../lib/jslang.js";
 import { createPromiseCap } from "../../../lib/promisecap.js";
-import { 
-  buildGetDocumentParams, 
-  DefaultFileReaderFactory, 
-  TEST_PDFS_PATH 
-} from "../../test_utils.js";
-import { 
-  DefaultCanvasFactory, 
-  DocumentInitParms, 
-  getDocument, 
-  PDFDataRangeTransport, 
-  PDFDocumentLoadingTask, 
-  PDFDocumentProxy, 
-  PDFPageProxy, 
-  PDFWorker, 
-  RenderTask, 
-  type TextItem,
-} from "./api.js";
-import { GlobalWorkerOptions } from "./worker_options.js";
-import { 
-  AnnotationMode, 
-  FontType, 
-  InvalidPDFException, 
-  OPS, 
-  PermissionFlag, StreamType, UnknownErrorException 
+import { css_1, css_2 } from "../../../test/alias.js";
+import {
+  AnnotationMode,
+  FontType, OPS,
+  PermissionFlag, StreamType, UnknownErrorException
 } from "../../pdf.ts-src/shared/util.js";
 import { PageLayout, PageMode } from "../../pdf.ts-web/ui_utils.js";
-import { $enum } from "../../../3rd/ts-enum-util/src/$enum.js";
-import { Metadata } from "./metadata.js";
+import {
+  buildGetDocumentParams,
+  DefaultFileReaderFactory,
+  TEST_PDFS_PATH
+} from "../../test_utils.js";
+import {
+  DefaultCanvasFactory,
+  DocumentInitP,
+  getDocument,
+  PDFDataRangeTransport,
+  PDFDocumentLoadingTask,
+  PDFDocumentProxy,
+  PDFPageProxy,
+  PDFWorker,
+  PDFWorkerUtil,
+  RenderTask,
+  type TextItem
+} from "./api.js";
 import { PageViewport, RenderingCancelledException } from "./display_utils.js";
+import { Metadata } from "./metadata.js";
+import { GlobalWorkerOptions } from "./worker_options.js";
 
 const strttime = performance.now();
 /*81---------------------------------------------------------------------------*/
@@ -47,7 +46,7 @@ let CanvasFactory = new DefaultCanvasFactory();
 function waitSome( callback:()=>void ) 
 {
   const WAIT_TIMEOUT = 10;
-  setTimeout( () => { callback(); }, WAIT_TIMEOUT );
+  setTimeout(() => { callback(); }, WAIT_TIMEOUT );
 }
 
 function mergeText( items:TextItem[] )
@@ -98,7 +97,7 @@ console.log("%c>>>>>>> test getDocument() >>>>>>>",`color:${css_1}`);
     const loadingTask = getDocument(basicApiGetDocumentParams);
     console.assert( loadingTask instanceof PDFDocumentLoadingTask );
 
-    const progressReportedCapability = createPromiseCap<OnProgressParms>();
+    const progressReportedCapability = createPromiseCap<OnProgressP>();
     // Attach the callback that is used to report loading progress;
     // similarly to how viewer.js works.
     loadingTask.onProgress = progressData => {
@@ -159,7 +158,7 @@ console.log("%c>>>>>>> test getDocument() >>>>>>>",`color:${css_1}`);
     const loadingTask = getDocument(typedArrayPdf);
     console.assert( loadingTask instanceof PDFDocumentLoadingTask );
 
-    const progressReportedCapability = createPromiseCap<OnProgressParms>();
+    const progressReportedCapability = createPromiseCap<OnProgressP>();
     loadingTask.onProgress = data => {
       progressReportedCapability.resolve(data);
     };
@@ -586,7 +585,7 @@ console.log("%c>>>>>>> test PDFWorker >>>>>>>",`color:${css_1}`);
 
     const loadingTask = getDocument(basicApiGetDocumentParams);
     let worker:PDFWorker | undefined;
-    loadingTask.promise.then( () => {
+    loadingTask.promise.then(() => {
       worker = loadingTask._worker;
       console.assert( !!worker );
     });
@@ -613,7 +612,7 @@ console.log("%c>>>>>>> test PDFWorker >>>>>>>",`color:${css_1}`);
         worker,
       })
     );
-    loadingTask.promise.then( () => {
+    loadingTask.promise.then(() => {
       const docWorker = loadingTask._worker;
       console.assert( !docWorker );
       // checking is the same port is used in the MessageHandler
@@ -904,6 +903,23 @@ console.log("%c>>>>>>> test PDFDocument >>>>>>>",`color:${css_1}`);
   //   await loadingTask.destroy();
   // }
 
+  // console.log(`${++i}: it gets a destination, from /Names (NameTree) dictionary with keys using PDFDocEncoding (issue 14847)...`);
+  // {
+  //   const loadingTask = getDocument( buildGetDocumentParams("issue14847.pdf"));
+  //   const pdfDoc = await loadingTask.promise;
+  //   const destination = await pdfDoc.getDestination("index");
+  //   console.log(destination);
+  //   console.assert( destination!.eq([
+  //     { num: 10, gen: 0 },
+  //     { name: "XYZ" },
+  //     85.039,
+  //     728.504,
+  //     null,
+  //   ]));
+
+  //   await loadingTask.destroy();
+  // }
+
   // console.log(`${++i}: it gets non-string destination...`);
   // {
   //   let numberPromise:Promise<any> = pdfDocument.getDestination(<any>4.3);
@@ -1157,7 +1173,55 @@ console.log("%c>>>>>>> test PDFDocument >>>>>>>",`color:${css_1}`);
 
   // console.log(`${++i}: it gets fieldObjects...`);
   // {
-    
+  //   const loadingTask = getDocument(buildGetDocumentParams("js-authors.pdf"));
+  //   const pdfDoc = await loadingTask.promise;
+  //   const fieldObjects = await pdfDoc.getFieldObjects();
+
+  //   console.assert( fieldObjects!.eq({
+  //     Text1: [
+  //       {
+  //         id: "25R",
+  //         value: "",
+  //         defaultValue: "",
+  //         multiline: false,
+  //         password: false,
+  //         charLimit: null,
+  //         comb: false,
+  //         editable: true,
+  //         hidden: false,
+  //         name: "Text1",
+  //         rect: [24.1789, 719.66, 432.22, 741.66],
+  //         actions: null,
+  //         page: 0,
+  //         strokeColor: null,
+  //         fillColor: null,
+  //         type: "text",
+  //       },
+  //     ],
+  //     Button1: [
+  //       {
+  //         id: "26R",
+  //         value: "Off",
+  //         defaultValue: null,
+  //         exportValues: undefined,
+  //         editable: true,
+  //         name: "Button1",
+  //         rect: [455.436, 719.678, 527.436, 739.678],
+  //         hidden: false,
+  //         actions: {
+  //           Action: [
+  //             `this.getField("Text1").value = this.info.authors.join("::");`,
+  //           ],
+  //         },
+  //         page: 0,
+  //         strokeColor: null,
+  //         fillColor: new Uint8ClampedArray([192, 192, 192]),
+  //         type: "button",
+  //       },
+  //     ],
+  //   }));
+
+  //   await loadingTask.destroy();
   // }
 
   // console.log(`${++i}: it gets non-existent calculationOrder...`);
@@ -1228,6 +1292,35 @@ console.log("%c>>>>>>> test PDFDocument >>>>>>>",`color:${css_1}`);
 
     await loadingTask.destroy();
   }
+
+  // console.log(`${++i}: it gets outline, with dest-strings using PDFDocEncoding (issue 14864)...`);
+  // {
+  //   // if (isNodeJS) {
+  //   //   pending("Linked test-cases are not supported in Node.js.");
+  //   // }
+  //   const loadingTask = getDocument( buildGetDocumentParams("issue14864.pdf"));
+  //   const pdfDoc = await loadingTask.promise;
+  //   const outline = await pdfDoc.getOutline();
+
+  //   console.assert( Array.isArray(outline) );
+  //   console.assert( outline!.length === 6 );
+
+  //   console.log(outline![4])
+  //   console.assert( outline![4].eq({
+  //     dest: "Händel -- Halle🎆lujah",
+  //     url: null,
+  //     unsafeUrl: undefined,
+  //     newWindow: undefined,
+  //     title: "Händel -- Halle🎆lujah",
+  //     color: new Uint8ClampedArray([0, 0, 0]),
+  //     count: undefined,
+  //     bold: false,
+  //     italic: false,
+  //     items: [],
+  //   }));
+
+  //   await loadingTask.destroy();
+  // }
 
   console.log(`${++i}: it gets outline with non-displayable chars...`);
   {
@@ -1465,7 +1558,7 @@ console.log("%c>>>>>>> test PDFDocument >>>>>>>",`color:${css_1}`);
 
     console.assert( fingerprints1 !== fingerprints2 );
 
-    console.assert( fingerprints1.eq(["2f695a83d6e7553c24fc08b7ac69712d", undefined]) );
+    console.assert( fingerprints1.eq(["657428c0628e329f9a281fb6d2d092d4", undefined]) );
     console.assert( fingerprints2.eq(["04c7126b34a46b6d4d6e7a1eff7edcb6", undefined]) );
 
     await Promise.all([loadingTask1.destroy(), loadingTask2.destroy()]);
@@ -1785,7 +1878,7 @@ console.log("%c>>>>>>> test Page >>>>>>>",`color:${css_1}`);
     const data = await Promise.all([defaultPromise, parametersPromise]);
 
     console.assert( !!data[0].items );
-    console.assert( data[0].items.length === 11 );
+    console.assert( data[0].items.length === 15 );
     console.assert( !!data[0].styles );
 
     const page1 = mergeText( <TextItem[]>data[0].items );
@@ -2572,7 +2665,7 @@ console.log("%c>>>>>>> test Multiple `getDocument` instances >>>>>>>",`color:${c
 
   // Render the first page of the given PDF file.
   // Fulfills the promise with the base64-encoded version of the PDF.
-  async function renderPDF( filename:DocumentInitParms ) 
+  async function renderPDF( filename:DocumentInitP ) 
   {
     const loadingTask = getDocument(filename);
     loadingTasks.push(loadingTask);
@@ -2656,7 +2749,7 @@ console.log("%c>>>>>>> test PDFDataRangeTransport >>>>>>>",`color:${css_1}`);
     const transport = new PDFDataRangeTransport(data.length, initialData);
     transport.requestDataRange = (begin, end) => {
       fetches++;
-      waitSome( () => {
+      waitSome(() => {
         transport.onDataProgress( 4000, <any>undefined );
         transport.onDataRange(begin, data.subarray(begin, end));
       });
@@ -2735,6 +2828,39 @@ console.log("%c>>>>>>> test PDFDataRangeTransport >>>>>>>",`color:${css_1}`);
   }
 
   dataPromise = <any>undefined;
+}
+
+console.log("%c>>>>>>> test PDFWorkerUtil >>>>>>>",`color:${css_1}`);
+{
+  console.log(">>>>>>> test isSameOrigin >>>>>>>");
+  {
+    const { isSameOrigin } = PDFWorkerUtil;
+
+    console.log(`it handles invalid base URLs...`);
+    {
+      // The base URL is not valid.
+      console.assert( !isSameOrigin("/foo", "/bar"));
+
+      // The base URL has no origin.
+      console.assert( !isSameOrigin("blob:foo", "/bar"));
+    }
+
+    console.log(`it correctly checks if the origin of both URLs matches...`);
+    {
+      console.assert(
+        isSameOrigin(
+          "https://www.mozilla.org/foo",
+          "https://www.mozilla.org/bar"
+        )
+      );
+      console.assert(
+        !isSameOrigin(
+          "https://www.mozilla.org/foo",
+          "https://www.example.com/bar"
+        )
+      );
+    }
+  }
 }
 
 CanvasFactory = <any>undefined;

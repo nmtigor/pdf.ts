@@ -380,6 +380,7 @@ export class RefSet
   has( ref:Ref | string ) { return this.#set.has( ref.toString() ); }
   put( ref:Ref | string ) { this.#set.add( ref.toString() ); }
   remove( ref:Ref ) { this.#set.delete( ref.toString() ); }
+  [Symbol.iterator]() { return this.#set.values(); }
   clear() { this.#set.clear(); }
 
   constructor( parent?:RefSet )
@@ -388,22 +389,7 @@ export class RefSet
     if( parent && !(parent instanceof RefSet) )
       assert(0,'RefSet: Invalid "parent" value.');
     // #endif
-    // if (
-    //   (typeof PDFJSDev === "undefined" ||
-    //     PDFJSDev.test("!PRODUCTION || TESTING")) &&
-    //   parent &&
-    //   !(parent instanceof RefSet)
-    // ) {
-    //   assert(0,'RefSet: Invalid "parent" value.');
-    // }
     this.#set = new Set( parent && parent.#set );
-  }
-
-  forEach( callback:(ref:string)=>void )
-  {
-    for (const ref of this.#set.values()) {
-      callback(ref);
-    }
   }
 }
 
@@ -421,13 +407,7 @@ export class RefSetCache<T=Obj>
     this.#map.set( ref.toString(), this.get(aliasRef)! );
   }
 
-  forEach( callback:(value:T)=>void ) 
-  {
-    for( const value of this.#map.values() )
-    {
-      callback(value);
-    }
-  }
+  [Symbol.iterator]() { return this.#map.values(); }
 
   clear() { this.#map.clear(); }
 }

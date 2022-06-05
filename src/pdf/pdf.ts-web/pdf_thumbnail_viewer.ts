@@ -24,20 +24,16 @@
 // eslint-disable-next-line max-len
 /** @typedef {import("./pdf_rendering_queue").PDFRenderingQueue} PDFRenderingQueue */
 
-import {
-  getVisibleElements,
-  isValidRotation,
-  scrollIntoView,
-  type VisibleElements,
-  watchScroll,
-  RenderingStates,
-} from "./ui_utils.js";
-import { PDFThumbnailView, TempImageFactory } from "./pdf_thumbnail_view.js";
-import { type IL10n, type IPDFLinkService } from "./interfaces.js";
-import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
 import { PDFDocumentProxy, PDFPageProxy } from '../pdf.ts-src/display/api.js';
 import { OptionalContentConfig } from '../pdf.ts-src/display/optional_content_config.js';
 import { EventBus } from "./event_utils.js";
+import { type IL10n, type IPDFLinkService } from "./interfaces.js";
+import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
+import { PDFThumbnailView, TempImageFactory } from "./pdf_thumbnail_view.js";
+import {
+  getVisibleElements,
+  isValidRotation, RenderingStates, scrollIntoView, watchScroll, type VisibleElements
+} from "./ui_utils.js";
 /*81---------------------------------------------------------------------------*/
 
 const THUMBNAIL_SCROLL_MARGIN = -19;
@@ -204,12 +200,11 @@ export class PDFThumbnailViewer
 
   cleanup() 
   {
-    for (let i = 0, ii = this._thumbnails.length; i < ii; i++) 
+    for( const thumbnail of this._thumbnails )
     {
-      if( this._thumbnails[i]
-       && this._thumbnails[i].renderingState !== RenderingStates.FINISHED
-      ) {
-        this._thumbnails[i].reset();
+      if( thumbnail.renderingState !== RenderingStates.FINISHED )
+      {
+        thumbnail.reset();
       }
     }
     TempImageFactory.destroyCanvas();
@@ -286,12 +281,9 @@ export class PDFThumbnailViewer
 
   protected _cancelRendering() 
   {
-    for (let i = 0, ii = this._thumbnails.length; i < ii; i++) 
+    for( const thumbnail of this._thumbnails )
     {
-      if (this._thumbnails[i]) 
-      {
-        this._thumbnails[i].cancelRendering();
-      }
+      thumbnail.cancelRendering();
     }
   }
 

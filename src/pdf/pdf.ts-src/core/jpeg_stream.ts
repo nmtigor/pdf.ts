@@ -17,11 +17,11 @@
  * limitations under the License.
  */
 
-import { Dict } from "./primitives.js";
-import { JpegImage, type JpegOptions } from "./jpg.js";
 import { shadow } from "../shared/util.js";
 import { BaseStream } from './base_stream.js';
 import { ImageStream } from './decode_stream.js';
+import { JpegImage, type JpegOptions } from "./jpg.js";
+import { Dict } from "./primitives.js";
 /*81---------------------------------------------------------------------------*/
 
 /**
@@ -55,9 +55,8 @@ export class JpegStream extends ImageStream
   /** @implements */
   readBlock() 
   {
-    if (this.eof) {
+    if( this.eof ) 
       return;
-    }
     const jpegOptions:JpegOptions = {};
 
     // Checking if values need to be transformed before conversion.

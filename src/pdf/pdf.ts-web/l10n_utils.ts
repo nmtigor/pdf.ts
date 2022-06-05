@@ -25,7 +25,7 @@ import { type IL10n } from "./interfaces.js";
 /**
  * A subset of the l10n strings in the `l10n/en-US/viewer.properties` file.
  */
-const DEFAULT_L10N_STRINGS:Record<string,string> = {
+const DEFAULT_L10N_STRINGS:Record<string, string> = {
   of_pages: "of {{pagesCount}}",
   page_of_pages: "({{pageNumber}} of {{pagesCount}})",
 

@@ -22,7 +22,8 @@
 /** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
 
 import { createPromiseCap, PromiseCap } from "../../lib/promisecap.js";
-import { PDFDocumentProxy, type TextItem } from "../pdf.ts-src/display/api.js";
+import { PDFDocumentProxy, TextItem } from "../pdf.ts-src/display/api.js";
+import { point_t } from "../pdf.ts-src/shared/util.js";
 import { EventBus } from "./event_utils.js";
 import { type IPDFLinkService } from "./interfaces.js";
 import { getCharacterType } from "./pdf_find_utils.js";
@@ -140,7 +141,7 @@ function normalize( text:string ):[string, [number,number][], boolean]
   // Thirdly, if o > n, then we push the element: [y - (s - n), o + s - n]
 
   // Collect diacritics length and positions.
-  const rawDiacriticsPositions:[number, number][] = [];
+  const rawDiacriticsPositions:point_t[] = [];
   let m;
   while( (m = DIACRITICS_REG_EXP.exec(text)) !== null )
   {
@@ -348,7 +349,7 @@ export class PDFFindController
   get state() { return this.#state; }
 
   #offset!:FindCtrlrOffset;
-  #extractTextPromises!:Promise<number>[];
+  #extractTextPromises!:Promise<void>[];
   #pageContents!:string[]; // Stores the normalized text for each page.
   #pageDiffs!:(Diffs|undefined)[];
   #hasDiacritics!:boolean[];
@@ -372,7 +373,7 @@ export class PDFFindController
     this.#eventBus = eventBus;
 
     this.#reset();
-    eventBus._on("find", this.#onFind);
+    eventBus._on("find", this.#onFind );
     eventBus._on("findbarclose", this.#onFindBarClose );
   }
 
@@ -388,27 +389,28 @@ export class PDFFindController
     {
       this.#reset();
     }
-    if( !pdfDocument ) return;
-
+    if( !pdfDocument ) 
+      return;
     this._pdfDocument = pdfDocument;
     this._firstPageCapability.resolve();
   }
 
   #onFind = ( state:FindCtrlrState ) =>
   {
-    if( !state ) return;
+    if( !state ) 
+      return;
 
     const pdfDocument = this._pdfDocument;
     const { type } = state;
 
-    if( this.#state === undefined || this._shouldDirtyMatch(state) )
+    if( this.#state === undefined || this.#shouldDirtyMatch(state) )
     {
       this.#dirtyMatch = true;
     }
     this.#state = state;
     if( type !== "findhighlightallchange" )
     {
-      this._updateUIState(FindState.PENDING);
+      this.#updateUIState(FindState.PENDING);
     }
 
     this._firstPageCapability.promise.then(() => {
@@ -434,7 +436,7 @@ export class PDFFindController
         // Trigger the find action with a small delay to avoid starting the
         // search when the user is still typing (saving resources).
         this.#findTimeout = setTimeout(() => {
-          this._nextMatch();
+          this.#nextMatch();
           this.#findTimeout = undefined;
         }, FIND_TIMEOUT);
       } 
@@ -442,17 +444,17 @@ export class PDFFindController
       {
         // Immediately trigger searching for non-'find' operations, when the
         // current state needs to be reset and matches re-calculated.
-        this._nextMatch();
+        this.#nextMatch();
       } 
       else if( type === "findagain" )
       {
-        this._nextMatch();
+        this.#nextMatch();
 
         // When the findbar was previously closed, and `highlightAll` is set,
         // ensure that the matches on all active pages are highlighted again.
         if( findbarClosed && this.#state!.highlightAll )
         {
-          this._updateAllPages();
+          this.#updateAllPages();
         }
       } 
       else if (type === "findhighlightallchange") 
@@ -461,15 +463,15 @@ export class PDFFindController
         // search *first* to ensure that the correct matches are highlighted.
         if (pendingTimeout) 
         {
-          this._nextMatch();
+          this.#nextMatch();
         } 
         else {
           this.#highlightMatches = true;
         }
-        this._updateAllPages(); // Update the highlighting on all active pages.
+        this.#updateAllPages(); // Update the highlighting on all active pages.
       } 
       else {
-        this._nextMatch();
+        this.#nextMatch();
       }
     });
   }
@@ -481,22 +483,19 @@ export class PDFFindController
     matchIndex?:number;
   }) 
   {
-    if (!this._scrollMatches || !element) {
+    if( !this._scrollMatches || !element )
       return;
-    } 
-    else if (matchIndex === -1 || matchIndex !== this.#selected.matchIdx) {
+    else if( matchIndex === -1 || matchIndex !== this.#selected.matchIdx )
       return;
-    } 
-    else if (pageIndex === -1 || pageIndex !== this.#selected.pageIdx) {
+    else if( pageIndex === -1 || pageIndex !== this.#selected.pageIdx )
       return;
-    }
     this._scrollMatches = false; // Ensure that scrolling only happens once.
 
     const spot = {
       top: MATCH_SCROLL_OFFSET_TOP,
       left: selectedLeft + MATCH_SCROLL_OFFSET_LEFT,
     };
-    scrollIntoView(element, spot, /* scrollMatches = */ true);
+    scrollIntoView( element, spot, /* scrollMatches = */ true );
   }
 
   #reset()
@@ -546,12 +545,12 @@ export class PDFFindController
     return this.#normalizedQuery;
   }
 
-  _shouldDirtyMatch( state:FindCtrlrState ) 
+  #shouldDirtyMatch( state:FindCtrlrState ) 
   {
     // When the search query changes, regardless of the actual search command
     // used, always re-calculate matches to avoid errors (fixes bug 1030622).
-    if( state.query !== this.#state!.query ) return true;
-
+    if( state.query !== this.#state!.query ) 
+      return true;
     switch( state.type )
     {
       case "again":
@@ -593,9 +592,7 @@ export class PDFFindController
       const first = content.charCodeAt(startIdx);
       const limit = match[1].charCodeAt(0);
       if( getCharacterType(first) === getCharacterType(limit) )
-      {
         return false;
-      }
     }
 
     match = content
@@ -606,9 +603,7 @@ export class PDFFindController
       const last = content.charCodeAt(startIdx + length - 1);
       const limit = match[1].charCodeAt(0);
       if( getCharacterType(last) === getCharacterType(limit) )
-      {
         return false;
-      }
     }
 
     return true;
@@ -636,7 +631,8 @@ export class PDFFindController
         match[0].length
       );
 
-      if (matchLen) {
+      if( matchLen )
+      {
         matches.push(matchPos);
         matchesLength.push(matchLen);
       }
@@ -726,10 +722,8 @@ export class PDFFindController
   {
     let query:string | RegExp = this.#query!;
     if( query.length === 0 )
-    {
       // Do nothing: the matches should be wiped out already.
       return;
-    }
 
     const { caseSensitive, entireWord, phraseSearch } = this.#state!;
     const pageContent = this.#pageContents[pageIndex];
@@ -776,7 +770,7 @@ export class PDFFindController
     if (this.#resumePageIdx === pageIndex) 
     {
       this.#resumePageIdx = undefined;
-      this._nextPageMatch();
+      this.#nextPageMatch();
     }
 
     // Update the match count.
@@ -790,13 +784,14 @@ export class PDFFindController
 
   #extractText() 
   {
-    // Perform text extraction once if this method is called multiple times.
-    if( this.#extractTextPromises.length > 0 ) return;
+    if( this.#extractTextPromises.length > 0 ) 
+      // Perform text extraction once if this method is called multiple times.
+      return;
 
     let promise = Promise.resolve();
-    for (let i = 0, ii = this.#linkService.pagesCount; i < ii; i++) 
+    for( let i = 0, ii = this.#linkService.pagesCount; i < ii; i++ )
     {
-      const extractTextCapability = createPromiseCap<number>();
+      const extractTextCapability = createPromiseCap<void>();
       this.#extractTextPromises[i] = extractTextCapability.promise;
 
       promise = promise.then(() => {
@@ -807,12 +802,13 @@ export class PDFFindController
           })
           .then(
             textContent => {
-              const textItems = <TextItem[]>textContent.items;
               const strBuf = [];
 
-              for (let j = 0, jj = textItems.length; j < jj; j++) {
-                strBuf.push(textItems[j].str);
-                if (textItems[j].hasEOL) {
+              for( const textItem of textContent.items )
+              {
+                strBuf.push( (<TextItem>textItem).str );
+                if( (<TextItem>textItem).hasEOL )
+                {
                   strBuf.push("\n");
                 }
               }
@@ -822,8 +818,8 @@ export class PDFFindController
                 this.#pageContents[i],
                 this.#pageDiffs[i],
                 this.#hasDiacritics[i],
-              ] = normalize(strBuf.join(""));
-              extractTextCapability.resolve(i);
+              ] = normalize( strBuf.join("") );
+              extractTextCapability.resolve();
             },
             reason => {
               console.error(
@@ -834,7 +830,7 @@ export class PDFFindController
               this.#pageContents[i] = "";
               this.#pageDiffs[i] = undefined;
               this.#hasDiacritics[i] = false;
-              extractTextCapability.resolve(i);
+              extractTextCapability.resolve();
             }
           );
       });
@@ -857,7 +853,7 @@ export class PDFFindController
     });
   }
 
-  _updateAllPages() 
+  #updateAllPages() 
   {
     this.#eventBus.dispatch("updatetextlayermatches", {
       source: this,
@@ -865,7 +861,7 @@ export class PDFFindController
     });
   }
 
-  _nextMatch() 
+  #nextMatch() 
   {
     const previous = this.#state!.findPrevious;
     const currentPageIndex = this.#linkService.page - 1;
@@ -886,7 +882,7 @@ export class PDFFindController
       this.#pageMatchesLength.length = 0;
       this.#matchesCountTotal = 0;
 
-      this._updateAllPages(); // Wipe out any previously highlighted matches.
+      this.#updateAllPages(); // Wipe out any previously highlighted matches.
 
       for (let i = 0; i < numPages; i++) 
       {
@@ -894,21 +890,22 @@ export class PDFFindController
         if( this.#pendingFindMatches.has(i) ) continue;
 
         this.#pendingFindMatches.add(i);
-        this.#extractTextPromises[i].then(pageIdx => {
-          this.#pendingFindMatches.delete(pageIdx);
-          this.#calculateMatch(pageIdx);
+        this.#extractTextPromises[i].then(() => {
+          this.#pendingFindMatches.delete(i);
+          this.#calculateMatch(i);
         });
       }
     }
 
     // If there's no query there's no point in searching.
-    if (this.#query === "") 
+    if( this.#query === "" )
     {
-      this._updateUIState(FindState.FOUND);
+      this.#updateUIState( FindState.FOUND );
       return;
     }
     // If we're waiting on a page, we return since we can't do anything else.
-    if( this.#resumePageIdx ) return;
+    if( this.#resumePageIdx ) 
+      return;
 
     const offset = this.#offset;
     // Keep track of how many pages we should maximally iterate through.
@@ -932,7 +929,7 @@ export class PDFFindController
       this.#advanceOffsetPage(previous);
     }
     // Start searching through the page.
-    this._nextPageMatch();
+    this.#nextPageMatch();
   }
 
   #matchesReady( matches:number[] )
@@ -941,7 +938,7 @@ export class PDFFindController
     const numMatches = matches.length;
     const previous = this.#state!.findPrevious;
 
-    if (numMatches) 
+    if( numMatches )
     {
       // There were matches for the page, so initialize `matchIdx`.
       offset.matchIdx = previous ? numMatches - 1 : 0;
@@ -950,10 +947,10 @@ export class PDFFindController
     }
     // No matches, so attempt to search the next page.
     this.#advanceOffsetPage(previous);
-    if (offset.wrapped) 
+    if( offset.wrapped )
     {
       offset.matchIdx = null;
-      if (this.#pagesToSearch! < 0) 
+      if( this.#pagesToSearch! < 0 )
       {
         // No point in wrapping again, there were no matches.
         this.#updateMatch(/* found = */ false);
@@ -966,7 +963,7 @@ export class PDFFindController
     return false;
   }
 
-  _nextPageMatch() 
+  #nextPageMatch() 
   {
     if (this.#resumePageIdx !== undefined) 
     {
@@ -1009,26 +1006,27 @@ export class PDFFindController
     const wrapped = this.#offset.wrapped;
     this.#offset.wrapped = false;
 
-    if (found) {
+    if( found )
+    {
       const previousPage = this.#selected.pageIdx;
       this.#selected.pageIdx = this.#offset.pageIdx!;
       this.#selected.matchIdx = this.#offset.matchIdx!;
       state = wrapped ? FindState.WRAPPED : FindState.FOUND;
 
       // Update the currently selected page to wipe out any selected matches.
-      if (previousPage !== -1 && previousPage !== this.#selected.pageIdx) 
+      if( previousPage !== -1 && previousPage !== this.#selected.pageIdx )
       {
         this.#updatePage(previousPage);
       }
     }
 
-    this._updateUIState(state, this.#state!.findPrevious);
-    if (this.#selected.pageIdx !== -1) 
+    this.#updateUIState( state, this.#state!.findPrevious );
+    if( this.#selected.pageIdx !== -1 )
     {
       // Ensure that the match will be scrolled into view.
       this._scrollMatches = true;
 
-      this.#updatePage(this.#selected.pageIdx);
+      this.#updatePage( this.#selected.pageIdx );
     }
   }
 
@@ -1040,14 +1038,13 @@ export class PDFFindController
     // events will always be dispatched in the expected order.
     this._firstPageCapability.promise.then(() => {
       // Only update the UI if the document is open, and is the current one.
-      if (
-        !this._pdfDocument ||
-        (pdfDocument && this._pdfDocument !== pdfDocument)
+      if( !this._pdfDocument
+       || (pdfDocument && this._pdfDocument !== pdfDocument)
       ) {
         return;
       }
       // Ensure that a pending, not yet started, search operation is aborted.
-      if (this.#findTimeout) 
+      if( this.#findTimeout )
       {
         clearTimeout(this.#findTimeout);
         this.#findTimeout = undefined;
@@ -1056,27 +1053,27 @@ export class PDFFindController
       // view *after* the findbar has been closed. In this case `this.#offset`
       // will most likely differ from `this.#selected`, hence we also ensure
       // that any new search operation will always start with a clean slate.
-      if (this.#resumePageIdx) 
+      if( this.#resumePageIdx )
       {
         this.#resumePageIdx = undefined;
         this.#dirtyMatch = true;
       }
       // Avoid the UI being in a pending state when the findbar is re-opened.
-      this._updateUIState(FindState.FOUND);
+      this.#updateUIState(FindState.FOUND);
 
       this.#highlightMatches = false;
-      this._updateAllPages(); // Wipe out any previously highlighted matches.
+      this.#updateAllPages(); // Wipe out any previously highlighted matches.
     });
   }
 
-  _requestMatchesCount():MatchesCount
+  #requestMatchesCount():MatchesCount
   {
     const { pageIdx, matchIdx } = this.#selected;
     let current = 0,
       total = this.#matchesCountTotal;
-    if (matchIdx !== -1) 
+    if( matchIdx !== -1 )
     {
-      for (let i = 0; i < pageIdx; i++) 
+      for( let i = 0; i < pageIdx; i++ )
       {
         current += this.#pageMatches[i]?.length || 0;
       }
@@ -1096,17 +1093,17 @@ export class PDFFindController
   {
     this.#eventBus.dispatch("updatefindmatchescount", {
       source: this,
-      matchesCount: this._requestMatchesCount(),
+      matchesCount: this.#requestMatchesCount(),
     });
   }
 
-  _updateUIState( state:FindState, previous=false ) 
+  #updateUIState( state:FindState, previous=false ) 
   {
     this.#eventBus.dispatch("updatefindcontrolstate", {
       source: this,
       state,
       previous,
-      matchesCount: this._requestMatchesCount(),
+      matchesCount: this.#requestMatchesCount(),
       rawQuery: this.#state?.query ?? null,
     });
   }

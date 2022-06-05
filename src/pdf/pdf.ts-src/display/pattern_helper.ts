@@ -18,22 +18,16 @@
  */
 
 import type { OpListIR } from "../core/operator_list.js";
-import { 
-  type MeshFigure, 
-  type MeshIR, 
-  type RadialAxialIR, 
-  type ShadingPatternIR, 
-  ShadingType, 
-  type TilingPatternIR 
+import {
+  ShadingType, type MeshFigure,
+  type MeshIR,
+  type RadialAxialIR,
+  type ShadingPatternIR, type TilingPatternIR
 } from "../core/pattern.js";
-import { 
-  FormatError, 
-  info, 
-  type matrix_t, 
-  OPS, 
-  type rect_t, 
-  Util, 
-  warn 
+import {
+  FormatError,
+  info, OPS, Util,
+  warn, type matrix_t, type rect_t
 } from "../shared/util.js";
 import { CachedCanvases, CanvasGraphics } from "./canvas.js";
 /*81---------------------------------------------------------------------------*/
@@ -47,7 +41,7 @@ export const enum PathType {
 
 function applyBoundingBox( ctx:CanvasRenderingContext2D, bbox?:rect_t )
 {
-  if( !bbox || typeof Path2D === "undefined" ) return;
+  if( !bbox ) return;
 
   const width = bbox[2] - bbox[0];
   const height = bbox[3] - bbox[1];
@@ -679,7 +673,7 @@ namespace NsTilingPattern
       let adjustedY0 = y0;
       let adjustedX1 = x1;
       let adjustedY1 = y1;
-      // Some bounding boxes have negative x0/y0 cordinates which will cause the
+    // Some bounding boxes have negative x0/y0 coordinates which will cause the
       // some of the drawing to be off of the canvas. To avoid this shift the
       // bounding box over.
       if (x0 < 0) 
@@ -743,6 +737,12 @@ namespace NsTilingPattern
       const bboxWidth = x1 - x0;
       const bboxHeight = y1 - y0;
       graphics.ctx.rect(x0, y0, bboxWidth, bboxHeight);
+      graphics.current.updateRectMinMax(graphics.ctx.mozCurrentTransform, [
+        x0,
+        y0,
+        x1,
+        y1,
+      ]);
       graphics[ OPS.clip ]();
       graphics[ OPS.endPath ]();
     }

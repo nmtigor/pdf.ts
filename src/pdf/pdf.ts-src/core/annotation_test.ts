@@ -2,32 +2,32 @@
  * annotation_test
 ** --------------- */
 
-import { css_1, css_2 } from "../../../test/alias.js";
 import "../../../lib/jslang.js";
-import { Dict, Name, Ref, RefSetCache } from "./primitives.js";
-import { 
-  CMAP_PARAMS, 
-  createIdFactory, 
-  STANDARD_FONT_DATA_URL, 
-  XRefMock 
+import { css_1, css_2 } from "../../../test/alias.js";
+import {
+  CMAP_PARAMS,
+  createIdFactory,
+  STANDARD_FONT_DATA_URL,
+  XRefMock
 } from "../../test_utils.js";
 import { DefaultCMapReaderFactory, DefaultStandardFontDataFactory } from "../display/api.js";
-import { PartialEvaluator } from "./evaluator.js";
 import { type CMapData } from "../display/base_factory.js";
-import { 
-  Annotation, 
-  AnnotationBorderStyle, 
-  AnnotationFactory, 
-  getQuadPoints, 
-  MarkupAnnotation 
-} from "./annotation.js";
-import { 
-  AnnotationBorderStyleType, 
-  AnnotationFlag, 
-  AnnotationType, 
-  type rect_t 
+import {
+  AnnotationBorderStyleType,
+  AnnotationFlag,
+  AnnotationType,
+  type rect_t
 } from "../shared/util.js";
+import {
+  Annotation,
+  AnnotationBorderStyle,
+  AnnotationFactory,
+  getQuadPoints,
+  MarkupAnnotation
+} from "./annotation.js";
+import { PartialEvaluator } from "./evaluator.js";
 import { BasePdfManager } from "./pdf_manager.js";
+import { Dict, Name, Ref, RefSetCache } from "./primitives.js";
 
 const strttime = performance.now();
 /*81---------------------------------------------------------------------------*/

@@ -44,7 +44,7 @@ export const enum WaitOnType {
   TIMEOUT = "timeout",
 }
 
-interface WaitOnEventOrTimeoutParms
+interface _WaitOnEventOrTimeoutP
 {
   /**
    * The event target, can for example be:
@@ -76,7 +76,7 @@ export function waitOnEventOrTimeout({
   target, 
   name, 
   delay=0 
-}:WaitOnEventOrTimeoutParms ):Promise<unknown>
+}:_WaitOnEventOrTimeoutP ):Promise<unknown>
 {
   return new Promise(function (resolve, reject) {
     if( typeof target !== "object"
@@ -192,7 +192,6 @@ export interface EventMap
   }
   fileattachmentannotation:{
     source:FileAttachmentAnnotationElement;
-    id:string;
     filename:string;
     content?:Uint8Array | Uint8ClampedArray | undefined;
   }
@@ -444,8 +443,8 @@ export class EventBus
   dispatch<EN extends EventName>( eventName:EN, data:EventMap[EN] ) 
   {
     const eventListeners = this.#listeners[eventName];
-    if( !eventListeners || eventListeners.length === 0 ) return;
-
+    if( !eventListeners || eventListeners.length === 0 )
+      return;
     let externalListeners:Listener1[] | undefined;
     // Making copy of the listeners array in case if it will be modified
     // during dispatch.
@@ -495,8 +494,8 @@ export class EventBus
   _off<EN extends EventName>( eventName:EN, listener:ListenerMap[EN] ) 
   {
     const eventListeners = this.#listeners[eventName];
-    if( !eventListeners ) return;
-
+    if( !eventListeners ) 
+      return;
     for( let i = 0, ii = eventListeners.length; i < ii; i++ )
     {
       if( eventListeners[i].listener === listener )
@@ -518,7 +517,7 @@ export class AutomationEventBus extends EventBus
     // #if !MOZCENTRAL
       throw new Error("Not implemented: AutomationEventBus.dispatch");
     // #endif
-    super.dispatch(eventName, data);
+    super.dispatch( eventName, data);
 
     const details = Object.create(null);
     if( data )
@@ -529,16 +528,20 @@ export class AutomationEventBus extends EventBus
         if( key === "source" )
         {
           if( <unknown>value === window || <unknown>value === document )
-          {
-            return; // No need to re-dispatch (already) global events.
-          }
+            // No need to re-dispatch (already) global events.
+            return; 
           continue; // Ignore the `source` property.
         }
         details[key] = value;
       }
     }
-    const event = document.createEvent("CustomEvent");
-    event.initCustomEvent(eventName, true, true, details);
+    // const event = document.createEvent("CustomEvent");
+    // event.initCustomEvent(eventName, true, true, details);
+    const event = new CustomEvent( eventName, {
+      bubbles: true, 
+      cancelable: true,
+      detail: details,
+    });
     document.dispatchEvent( event );
   }
 }

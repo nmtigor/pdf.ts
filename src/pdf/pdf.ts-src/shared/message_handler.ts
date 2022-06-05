@@ -17,12 +17,37 @@
  * limitations under the License.
  */
 
-import { createPromiseCap, PromiseCap } from "../../../lib/promisecap.js";
-import { global } from "../../../global.js";
-import { isObjectLike } from "../../../lib/jslang.js";
 import { HttpStatusCode } from "../../../lib/HttpStatusCode.js";
-import { assert }         from "../../../lib/util/trace.js";
+import { isObjectLike } from "../../../lib/jslang.js";
+import { createPromiseCap, PromiseCap } from "../../../lib/promisecap.js";
+import { assert } from "../../../lib/util/trace.js";
+import { PageLayout, PageMode } from "../../pdf.ts-web/ui_utils.js";
+import { type AnnotationData, type FieldObject } from "../core/annotation.js";
+import {
+  type ExplicitDest,
+  type MarkInfo,
+  type OpenAction,
+  type OptionalContentConfigData,
+  type ViewerPref
+} from "../core/catalog.js";
+import { type AnnotActions } from "../core/core_utils.js";
+import { type DocumentInfo, type XFAData } from "../core/document.js";
+import {
+  type BidiTextContentItem,
+  type FontStyle,
+  type ImgData, type TypeTextContentItem
+} from "../core/evaluator.js";
+import { FontExpotDataEx } from "../core/fonts.js";
+import { type CmdArgs } from "../core/font_renderer.js";
+import { type SerializedMetadata } from "../core/metadata_parser.js";
+import { type OpListIR } from "../core/operator_list.js";
+import { type ShadingPatternIR } from "../core/pattern.js";
+import { type StructTree } from "../core/struct_tree.js";
 import { type IWorker } from "../core/worker.js";
+import { type XFAElObj } from "../core/xfa/alias.js";
+import { type AnnotStorageRecord } from "../display/annotation_layer.js";
+import { type OutlineNode, type PDFDocumentStats, type RefProxy } from "../display/api.js";
+import { type CMapData } from "../display/base_factory.js";
 import { VerbosityLevel } from "../pdf.js";
 import {
   AbortException,
@@ -30,41 +55,11 @@ import {
   MissingPDFException,
   PasswordException,
   PasswordResponses,
-  PermissionFlag,
-  type rect_t,
-  RenderingIntentFlag,
+  PermissionFlag, RenderingIntentFlag,
   UnexpectedResponseException,
   UnknownErrorException,
-  UNSUPPORTED_FEATURES,
-  warn,
+  UNSUPPORTED_FEATURES, type rect_t
 } from "./util.js";
-import { type OutlineNode, type PDFDocumentStats, type RefProxy } from "../display/api.js";
-import { type AnnotStorageRecord } from "../display/annotation_layer.js";
-import { type DocumentInfo, type XFAData } from "../core/document.js";
-import { 
-  type TypeTextContentItem, 
-  type BidiTextContentItem, 
-  type FontStyle, 
-  type ImgData 
-} from "../core/evaluator.js";
-import { FontExpotDataEx } from "../core/fonts.js";
-import { type OpListIR } from "../core/operator_list.js";
-import { type CmdArgs } from "../core/font_renderer.js";
-import { type AnnotationData, type FieldObject } from "../core/annotation.js";
-import { PageLayout, PageMode } from "../../pdf.ts-web/ui_utils.js";
-import { type CMapData } from "../display/base_factory.js";
-import { 
-  type ExplicitDest, 
-  type MarkInfo, 
-  type OpenAction, 
-  type OptionalContentConfigData, 
-  type ViewerPref 
-} from "../core/catalog.js";
-import { type SerializedMetadata } from "../core/metadata_parser.js";
-import { type StructTree } from "../core/struct_tree.js";
-import { type AnnotActions } from "../core/core_utils.js";
-import { type ShadingPatternIR } from "../core/pattern.js";
-import { type XFAElObj } from "../core/xfa/alias.js";
 /*81---------------------------------------------------------------------------*/
 
 enum CallbackKind {
@@ -145,7 +140,7 @@ export interface GetDocRequestData
   enableXfa:boolean | undefined;
 }
 
-export interface PumpOperatorListParms
+export interface _PumpOperatorListP
 {
   pageIndex:number;
   intent:RenderingIntentFlag;
@@ -253,7 +248,7 @@ export interface MActionMap
     Sinkchunk:undefined;
   }
   GetOperatorList:{
-    Data:PumpOperatorListParms;
+    Data:_PumpOperatorListP;
     Return:void;
     Sinkchunk:OpListIR;
   }
@@ -417,7 +412,7 @@ export interface WActionMap
     Sinkchunk:undefined;
   }
   DocProgress:{
-    Data:OnProgressParms;
+    Data:OnProgressP;
     Return:void;
     Sinkchunk:undefined;
   }
@@ -654,7 +649,8 @@ export class MessageHandler<
     {
       const callbackId = data.callbackId!;
       const capability = this.callbackCapabilities[callbackId];
-      if( !capability ) throw new Error(`Cannot resolve callback ${callbackId}`);
+      if( !capability )
+        throw new Error(`Cannot resolve callback ${callbackId}`);
       delete this.callbackCapabilities[callbackId];
 
       if( data.callback === CallbackKind.DATA )
@@ -674,7 +670,8 @@ export class MessageHandler<
       return;
     }
     const action = this.actionHandler[data.action!];
-    if( !action ) throw new Error(`Unknown action from worker: ${data.action}`);
+    if( !action )
+      throw new Error(`Unknown action from worker: ${data.action}`);
     if( data.callbackId )
     {
       const comObj = this.comObj;
@@ -1044,14 +1041,14 @@ export class MessageHandler<
         break;
       case StreamKind.ENQUEUE:
         assert(streamController, "enqueue should have stream controller");
-        if( streamController.isClosed ) break;
-
+        if( streamController.isClosed )
+          break;
         streamController.controller.enqueue(data.chunk);
         break;
       case StreamKind.CLOSE:
         assert(streamController, "close should have stream controller");
-        if (streamController.isClosed) break;
-
+        if( streamController.isClosed )
+          break;
         streamController.isClosed = true;
         streamController.controller.close();
         this.#deleteStreamController(streamController, streamId);
@@ -1072,7 +1069,8 @@ export class MessageHandler<
         this.#deleteStreamController(streamController, streamId);
         break;
       case StreamKind.CANCEL:
-        if( !streamSink ) break;
+        if( !streamSink )
+          break;
 
         new Promise( resolve => {
           resolve(

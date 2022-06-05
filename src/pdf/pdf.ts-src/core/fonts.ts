@@ -19,56 +19,60 @@
 
 import { assert } from "../../../lib/util/trace.js";
 import {
-  bytesToString,
-  FONT_IDENTITY_MATRIX,
-  FontType,
-  FormatError,
-  info,
-  shadow,
+  bytesToString, FontType, FONT_IDENTITY_MATRIX, FormatError,
+  info, point_t, shadow,
   string32,
-  warn,
-  type rect_t,
-  type matrix_t,
-  point_t,
+  warn, type matrix_t, type rect_t
 } from "../shared/util.js";
-import { getDingbatsGlyphsUnicode, getGlyphsUnicode } from "./glyphlist.js";
+import { BaseStream } from "./base_stream.js";
+import { CFFFont } from "./cff_font.js";
+import { CFFCompiler, CFFParser } from "./cff_parser.js";
+import { CMap, IdentityCMap, type CharCodeOut } from "./cmap.js";
+import { readUint32 } from "./core_utils.js";
+import { type CssFontInfo } from "./document.js";
 import {
   getEncoding,
   MacRomanEncoding,
   StandardEncoding,
   SymbolSetEncoding,
-  ZapfDingbatsEncoding,
+  ZapfDingbatsEncoding
 } from "./encodings.js";
+import { type FontfileType, type FontProps, type VMetric } from './evaluator.js';
+import {
+  FontFlags,
+  getFontType,
+  MacStandardGlyphOrdering,
+  recoverGlyphName,
+  SEAC_ANALYSIS_ENABLED
+} from "./fonts_utils.js";
+import { FontRendererFactory } from "./font_renderer.js";
+import { GlyfTable } from "./glyf.js";
+import { getDingbatsGlyphsUnicode, getGlyphsUnicode } from "./glyphlist.js";
+import { getFontBasicMetrics } from "./metrics.js";
+import {
+  OpenTypeFileBuilder,
+  VALID_TABLES,
+  type OTTable,
+  type OTTag
+} from "./opentype_file_builder.js";
+import { type OpListIR } from './operator_list.js';
 import {
   getGlyphMapForStandardFonts,
   getNonStdFontMap,
   getSerifFonts,
   getStdFontMap,
   getSupplementalGlyphMapForArialBlack,
-  getSupplementalGlyphMapForCalibri,
+  getSupplementalGlyphMapForCalibri
 } from "./standard_fonts.js";
+import { Stream } from "./stream.js";
+import { IdentityToUnicodeMap, ToUnicodeMap } from "./to_unicode_map.js";
+import { Type1Font } from "./type1_font.js";
 import {
   getCharUnicodeCategory,
   getUnicodeForGlyph,
   getUnicodeRangeFor,
-  mapSpecialUnicodeValues,
+  mapSpecialUnicodeValues
 } from "./unicode.js";
-import { type CharCodeOut, CMap, IdentityCMap } from "./cmap.js";
-import { Stream } from "./stream.js";
-import { type FontfileType, type FontProps, type VMetric } from './evaluator.js';
-import { type OpListIR } from './operator_list.js';
-import { type CssFontInfo } from "./document.js";
-import { BaseStream } from "./base_stream.js";
-import { FontFlags, getFontType, MacStandardGlyphOrdering, recoverGlyphName, SEAC_ANALYSIS_ENABLED } from "./fonts_utils.js";
-import { readUint32 } from "./core_utils.js";
-import { IdentityToUnicodeMap, ToUnicodeMap } from "./to_unicode_map.js";
-import { OpenTypeFileBuilder, type OTTable, type OTTag, VALID_TABLES } from "./opentype_file_builder.js";
-import { CFFCompiler, CFFParser } from "./cff_parser.js";
-import { CFFFont } from "./cff_font.js";
-import { Type1Font } from "./type1_font.js";
-import { FontRendererFactory } from "./font_renderer.js";
-import { getFontBasicMetrics } from "./metrics.js";
-import { GlyfTable } from "./glyf.js";
 /*81---------------------------------------------------------------------------*/
 
 // Unicode Private Use Areas:
@@ -229,8 +233,9 @@ function adjustToUnicode( properties:FontProps, builtInEncoding?:string[] )
     }
     const glyphName = builtInEncoding[<any>charCode];
     const unicode = getUnicodeForGlyph(glyphName, glyphsUnicodeMap);
-    if (unicode !== -1) {
-      toUnicode[<any>charCode] = String.fromCharCode(unicode);
+    if( unicode !== -1 )
+    {
+      toUnicode[+charCode] = String.fromCharCode(unicode);
     }
   }
   if (toUnicode.length > 0) 
@@ -511,21 +516,24 @@ function applyStandardFontGlyphMap( map:number[],
   }
 }
 
-function buildToFontChar( encoding:string[], glyphsUnicodeMap:Record<string,number>, differences?:string[] )
+function buildToFontChar( encoding:string[], 
+  glyphsUnicodeMap:Record<string, number>, differences?:string[] )
 {
   const toFontChar = [];
   let unicode;
   for( let i = 0, ii = encoding.length; i < ii; i++ )
   {
     unicode = getUnicodeForGlyph(encoding[i], glyphsUnicodeMap);
-    if (unicode !== -1) {
+    if( unicode !== -1 )
+    {
       toFontChar[i] = unicode;
     }
   }
   for( const charCode in differences )
   {
-    unicode = getUnicodeForGlyph(differences[+charCode], glyphsUnicodeMap);
-    if (unicode !== -1) {
+    unicode = getUnicodeForGlyph( differences[+charCode], glyphsUnicodeMap );
+    if( unicode !== -1 )
+    {
       toFontChar[+charCode] = unicode;
     }
   }
@@ -582,8 +590,8 @@ function adjustMapping( charCodeToGlyphId:Record<string|number,number>,
     originalCharCode = +originalCharCode_s | 0;
     let glyphId = charCodeToGlyphId[originalCharCode];
     // For missing glyphs don't create the mappings so the glyph isn't drawn.
-    if( !hasGlyph(glyphId) ) continue;
-
+    if( !hasGlyph(glyphId) )
+      continue;
     if (nextAvailableFontCharCode > privateUseOffetEnd) 
     {
       privateUseAreaIndex++;
@@ -619,8 +627,8 @@ function getRanges( glyphs:Record<number,number>, numGlyphs:number )
   for (const charCode in glyphs) 
   {
     // Remove an invalid glyph ID mappings to make OTS happy.
-    if (glyphs[charCode] >= numGlyphs) continue;
-
+    if (glyphs[charCode] >= numGlyphs)
+      continue;
     codes.push({ fontCharCode: +charCode | 0, glyphId: glyphs[charCode] });
   }
   // Some fonts have zero glyphs and are used only for text selection, but
@@ -682,7 +690,7 @@ function createCmapTable( glyphs:Record<number,number>, numGlyphs:number )
   }
   const trailingRangesCount = ranges[i][1] < 0xffff ? 1 : 0;
   const segCount = bmpLength + trailingRangesCount;
-  const searchParms = OpenTypeFileBuilder.getSearchParams(segCount, 2);
+  const searchParams = OpenTypeFileBuilder.getSearchParams(segCount, 2);
 
   // Fill up the 4 parallel arrays describing the segments.
   let startCount = "",
@@ -742,9 +750,9 @@ function createCmapTable( glyphs:Record<number,number>, numGlyphs:number )
   const format314 =
     "\x00\x00" + // language
     string16(2 * segCount) +
-    string16(searchParms.range) +
-    string16(searchParms.entry) +
-    string16(searchParms.rangeShift) +
+    string16(searchParams.range) +
+    string16(searchParams.entry) +
+    string16(searchParams.rangeShift) +
     endCount +
     "\x00\x00" +
     startCount +
@@ -1435,7 +1443,8 @@ export class Font extends FontExpotDataEx
           const glyphName =
             this.differences?.[+charCode] || this.defaultEncoding![+charCode];
           const unicode = getUnicodeForGlyph( glyphName, glyphsUnicodeMap );
-          if (unicode !== -1) {
+          if( unicode !== -1 )
+          {
             unicodeCharCode = unicode;
           }
         }
@@ -1751,19 +1760,20 @@ export class Font extends FontExpotDataEx
       }
 
       const format = file.getUint16();
-      file.skip(2 + 2); // length + language
-
       let hasShortCmap = false;
       const mappings = [];
       let j, glyphId;
 
       // TODO(mack): refactor this cmap subtable reading logic out
-      if (format === 0) {
-        for (j = 0; j < 256; j++) {
+      if( format === 0 )
+      {
+        file.skip(2 + 2); // length + language
+
+        for( j = 0; j < 256; j++ )
+        {
           const index = file.getByte();
-          if (!index) {
+          if( !index ) 
             continue;
-          }
           mappings.push({
             charCode: j,
             glyphId: index,
@@ -1771,8 +1781,10 @@ export class Font extends FontExpotDataEx
         }
         hasShortCmap = true;
       } 
-      else if (format === 2) 
+      else if( format === 2 ) 
       {
+        file.skip(2 + 2); // length + language
+
         const subHeaderKeys = [];
         let maxSubHeaderKey = 0;
         // Read subHeaderKeys. If subHeaderKeys[i] === 0, then i is a
@@ -1831,6 +1843,8 @@ export class Font extends FontExpotDataEx
       }
       else if (format === 4) 
       {
+        file.skip(2 + 2); // length + language
+
         // re-creating the table in format 4 since the encoding
         // might be changed
         const segCount = file.getUint16() >> 1;
@@ -1899,6 +1913,8 @@ export class Font extends FontExpotDataEx
       } 
       else if( format === 6 )
       {
+        file.skip(2 + 2); // length + language
+
         // Format 6 is a 2-bytes dense mapping, which means the font data
         // lives glue together even if they are pretty far in the unicode
         // table. (This looks weird, so I can have missed something), this
@@ -1916,7 +1932,29 @@ export class Font extends FontExpotDataEx
             glyphId,
           });
         }
-      } 
+      }
+      else if( format === 12 )
+      {
+        file.skip(2 + 4 + 4); // reserved + length + language
+
+        const nGroups = file.getInt32() >>> 0;
+        for (j = 0; j < nGroups; j++) {
+          const startCharCode = file.getInt32() >>> 0;
+          const endCharCode = file.getInt32() >>> 0;
+          let glyphCode = file.getInt32() >>> 0;
+
+          for (
+            let charCode = startCharCode;
+            charCode <= endCharCode;
+            charCode++
+          ) {
+            mappings.push({
+              charCode,
+              glyphId: glyphCode++,
+            });
+          }
+        }
+      }
       else {
         warn("cmap table has unsupported format: " + format);
         return {
@@ -2287,11 +2325,25 @@ export class Font extends FontExpotDataEx
       locaEntries.sort((a, b) => {
         return a.index - b.index;
       });
+      // Calculate the endOffset of the "first" glyph correctly when there are
+      // *multiple* empty ones at the start of the data (fixes issue14618.pdf).
+      for( i = 0; i < numGlyphs; i++ )
+      {
+        const { offset, endOffset } = locaEntries[i];
+        if( offset !== 0 || endOffset !== 0 ) 
+          break;
+        const nextOffset = locaEntries[i + 1].offset;
+        if( nextOffset === 0 ) 
+          continue;
+        locaEntries[i].endOffset = nextOffset;
+        break;
+      }
 
       const missingGlyphs = Object.create(null);
       let writeOffset = 0;
       itemEncode(locaData, 0, writeOffset);
-      for (i = 0, j = itemSize; i < numGlyphs; i++, j += itemSize) {
+      for( i = 0, j = itemSize; i < numGlyphs; i++, j += itemSize )
+      {
         const glyphProfile = sanitizeGlyph(
           oldGlyfData,
           locaEntries[i].offset,
@@ -2301,33 +2353,39 @@ export class Font extends FontExpotDataEx
           hintsValid
         );
         const newLength = glyphProfile.length;
-        if (newLength === 0) {
+        if( newLength === 0 )
+        {
           missingGlyphs[i] = true;
         }
-        if (glyphProfile.sizeOfInstructions > maxSizeOfInstructions) {
+        if( glyphProfile.sizeOfInstructions > maxSizeOfInstructions )
+        {
           maxSizeOfInstructions = glyphProfile.sizeOfInstructions;
         }
         writeOffset += newLength;
         itemEncode(locaData, j, writeOffset);
       }
 
-      if (writeOffset === 0) {
+      if( writeOffset === 0 )
+      {
         // glyf table cannot be empty -- redoing the glyf and loca tables
         // to have single glyph with one point
         const simpleGlyph = new Uint8Array([
           0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 49, 0,
         ]);
-        for (i = 0, j = itemSize; i < numGlyphsOut; i++, j += itemSize) {
+        for( i = 0, j = itemSize; i < numGlyphsOut; i++, j += itemSize )
+        {
           itemEncode(locaData, j, simpleGlyph.length);
         }
         glyf.data = simpleGlyph;
       } 
-      else if (dupFirstEntry) {
+      else if( dupFirstEntry )
+      {
         // Browsers will not display a glyph at position 0. Typically glyph 0
         // is notdef, but a number of fonts put a valid glyph there so it must
         // be duplicated and appended.
         const firstEntryLength = itemDecode(locaData, itemSize);
-        if (newGlyfData.length > firstEntryLength + writeOffset) {
+        if( newGlyfData.length > firstEntryLength + writeOffset )
+        {
           glyf.data = newGlyfData.subarray(0, firstEntryLength + writeOffset);
         } 
         else {
@@ -3418,8 +3476,8 @@ export class Font extends FontExpotDataEx
         const accentGlyphName = StandardEncoding[seac[3]];
         const baseGlyphId = charset.indexOf(baseGlyphName);
         const accentGlyphId = charset.indexOf(accentGlyphName);
-        if( baseGlyphId < 0 || accentGlyphId < 0 ) continue;
-
+        if( baseGlyphId < 0 || accentGlyphId < 0 ) 
+          continue;
         const accentOffset = {
           x: seac[0] * matrix[0] + seac[1] * matrix[2] + matrix[4],
           y: seac[0] * matrix[1] + seac[1] * matrix[3] + matrix[5],
@@ -3715,7 +3773,8 @@ export class Font extends FontExpotDataEx
       const c:CharCodeOut = Object.create(null),
         ii = chars.length;
       let i = 0;
-      while (i < ii) {
+      while( i < ii )
+      {
         this.cMap.readCharCode(chars, i, c);
         const { charcode, length } = c;
         i += length;
@@ -3728,7 +3787,7 @@ export class Font extends FontExpotDataEx
       }
     } 
     else {
-      for (let i = 0, ii = chars.length; i < ii; ++i) 
+      for( let i = 0, ii = chars.length; i < ii; ++i )
       {
         const charcode = chars.charCodeAt(i);
         const glyph = this.#charToGlyph(charcode, charcode === 0x20);

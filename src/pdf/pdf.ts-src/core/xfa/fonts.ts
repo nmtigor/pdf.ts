@@ -229,7 +229,7 @@ export function getMetrics( xfaFont?:XFAFont, real=false ):XFAFontMetrics
   if( xfaFont )
   {
     const name = stripQuotes( xfaFont.typeface! );
-    const typeface = xfaFont[$globalData].fontFinder!.find(name);
+    const typeface = xfaFont[$globalData]!.fontFinder!.find(name);
     pdfFont = selectFont( xfaFont, typeface! );
   }
 

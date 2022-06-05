@@ -17,6 +17,49 @@
  * limitations under the License.
  */
 
+import { stringToBytes, Util, warn, type rect_t } from "../../shared/util.js";
+import { recoverJsURL } from "../core_utils.js";
+import {
+  type AvailableSpace, type XFAAttrs, type XFAElData, type XFAElObj, type XFAElObjBase, type XFAExtra, type XFAFontBase, type XFAHTMLAttrs, type XFAHTMLObj, type XFAIds, type XFAStyleData, type XFASVGAttrs, type XFASVGObj, type XFAValue
+} from "./alias.js";
+import { Builder } from "./builder.js";
+import { getMetrics } from "./fonts.js";
+import {
+  computeBbox,
+  createWrapper,
+  fixDimensions,
+  fixTextIndent,
+  fixURL,
+  isPrintOnly,
+  layoutClass,
+  layoutNode,
+  measureToString,
+  setAccess,
+  setFontFamily,
+  setMinMaxDimensions,
+  setPara,
+  toStyle,
+  type XFALayoutMode
+} from "./html_utils.js";
+import {
+  addHTML,
+  checkDimensions,
+  flushHTML,
+  getAvailableSpace
+} from "./layout.js";
+import { $buildXFAObject, NamespaceIds } from "./namespaces.js";
+import { searchNode } from "./som.js";
+import {
+  getBBox,
+  getColor,
+  getFloat,
+  getInteger,
+  getKeyword,
+  getMeasurement,
+  getRatio,
+  getRelevant,
+  getStringOption, HTMLResult, type XFAColor
+} from "./utils.js";
 import {
   $acceptWhitespace,
   $addHTML,
@@ -68,67 +111,9 @@ import {
   StringObject,
   XFAObject,
   XFAObjectArray,
-  XmlObject,
+  XmlObject
 } from "./xfa_object.js";
-import { $buildXFAObject, NamespaceIds } from "./namespaces.js";
-import {
-  addHTML,
-  checkDimensions,
-  flushHTML,
-  getAvailableSpace,
-} from "./layout.js";
-import {
-  computeBbox,
-  createWrapper,
-  fixDimensions,
-  fixTextIndent,
-  fixURL,
-  isPrintOnly,
-  layoutClass,
-  layoutNode,
-  measureToString,
-  setAccess,
-  setFontFamily,
-  setMinMaxDimensions,
-  setPara,
-  toStyle,
-  type XFALayoutMode,
-} from "./html_utils.js";
-import {
-  type AvailableSpace,
-  type XFAHTMLAttrs,
-  type XFASVGAttrs,
-  type XFAAttrs,
-  type XFAFontBase,
-  type XFAElData,
-  type XFAHTMLObj,
-  type XFAStyleData,
-  type XFAValue,
-  type XFASVGObj,
-  type XFAIds,
-  type XFAElObjBase,
-  type XFAElObj,
-  type XFAExtra,
-} from "./alias.js";
-import {
-  getBBox,
-  getColor,
-  getFloat,
-  getInteger,
-  getKeyword,
-  getMeasurement,
-  getRatio,
-  getRelevant,
-  getStringOption,
-  type XFAColor,
-  HTMLResult,
-} from "./utils.js";
-import { type rect_t, stringToBytes, Util, warn } from "../../shared/util.js";
-import { getMetrics } from "./fonts.js";
-import { searchNode } from "./som.js";
-import { Builder } from "./builder.js";
 import { XhtmlObject } from "./xhtml.js";
-import { recoverJsURL } from "../core_utils.js";
 /*81---------------------------------------------------------------------------*/
 
 const TEMPLATE_NS_ID = NamespaceIds.template.id;
@@ -186,15 +171,11 @@ interface BorderDims
 function getBorderDims( node?:XFAObject ):BorderDims
 {
   if (!node || !node.border) 
-  {
     return { w: 0, h: 0 };
-  }
 
   const borderExtra = (<Border>node.border)[$getExtra]();
-  if (!borderExtra) 
-  {
+  if( !borderExtra )
     return { w: 0, h: 0 };
-  }
 
   return {
     w:
@@ -255,7 +236,8 @@ function setTabIndex( node:XFAObject )
       return;
     }
 
-    if( node[$tabIndex] ) return;
+    if( node[$tabIndex] ) 
+      return;
 
     let next:XFAObject | undefined;
     for( const child of (<Traversal>node.traversal)[$getChildren]() ) 
@@ -277,7 +259,8 @@ function setTabIndex( node:XFAObject )
     node[$tabIndex] = ++root[$tabIndex]!;
 
     const ref = root[$searchNode]( <string>next.ref, node );
-    if (!ref) return;
+    if (!ref) 
+      return;
 
     node = ref[0];
   }
@@ -330,17 +313,13 @@ function applyAssist( obj:Draw | ExclGroup | Field | Subform, attributes:XFAHTML
 
 function ariaLabel( obj:Field )
 {
-  if( !obj.assist ) return undefined;
-
+  if( !obj.assist ) 
+    return undefined;
   const assist = obj.assist;
   if (assist.speak && assist.speak[$content] !== "") 
-  {
     return <string | undefined>assist.speak[$content];
-  }
   if (assist.toolTip) 
-  {
     return <string | undefined>assist.toolTip[$content];
-  }
   // TODO: support finding the related caption element. See xfa_bug1718037.pdf
   // for an example.
   return undefined;
@@ -387,19 +366,21 @@ function unsetFirstUnsplittable( node:Draw | ExclGroup | Field | Subform )
 
 function handleBreak( node:BreakAfter | BreakBefore )
 {
-  if( node[$extra] ) return false;
+  if( node[$extra] ) 
+    return false;
 
   node[$extra] = Object.create(null);
 
-  if( node.targetType === "auto" ) return false;
+  if( node.targetType === "auto" ) 
+    return false;
 
   const root = node[$getTemplateRoot]()!;
   let target:XFAObject | undefined;
   if( node.target ) 
   {
     const target_a = root[$searchNode]( node.target, node[$getParent]() );
-    if( !target_a ) return false;
-
+    if( !target_a ) 
+      return false;
     target = target_a[0];
   }
 
@@ -462,9 +443,8 @@ function handleBreak( node:BreakAfter | BreakBefore )
     index = contentAreas.indexOf(target) - 1;
     nextPageArea = pageArea === currentPageArea ? undefined : pageArea;
   } 
-  else {
+  else 
     return false;
-  }
 
   (<XFAExtra>node[$extra]).target = nextPageArea;
   (<XFAExtra>node[$extra]).index = index;
@@ -644,7 +624,7 @@ export class Area extends XFAObject
   subform = new XFAObjectArray();
   subformSet = new XFAObjectArray();
 
-  override [$extra]:XFAExtra;
+  override [$extra]!:XFAExtra;
 
   constructor( attributes:XFAAttrs )
   {
@@ -731,9 +711,7 @@ export class Area extends XFAObject
     if( !result.success )
     {
       if( result.isBreak() )
-      {
         return result;
-      }
       // Nothing to propose for the element which doesn't fit the
       // available space.
       delete (<any>this)[$extra];
@@ -1303,13 +1281,14 @@ class Button extends XFAObject
     for( const event of grandpa.event.children )
     {
       // if (true) break;
-      if( (<Event>event).activity !== "click" || !(<Event>event).script ) continue;
-
+      if( (<Event>event).activity !== "click" || !(<Event>event).script ) 
+        continue;
       const jsURL = recoverJsURL( <string>(<Event>event).script![$content] );
-      if( !jsURL ) continue;
-
+      if( !jsURL ) 
+        continue;
       const href = fixURL( jsURL.url );
-      if( !href ) continue;
+      if( !href ) 
+        continue;
 
       // we've an url so generate a <a>
       htmlButton.children.push({
@@ -1417,7 +1396,8 @@ export class Caption extends XFAObject
   override [$toHTML]( availableSpace?:AvailableSpace )
   {
     // TODO: incomplete.
-    if( !this.value ) return HTMLResult.EMPTY;
+    if( !this.value ) 
+      return HTMLResult.EMPTY;
 
     this[$pushPara]();
     const value = (<HTMLResult>this.value[$toHTML]( availableSpace )).html;
@@ -1759,9 +1739,7 @@ class Color extends XFAObject
     this.value = attributes.value ? getColor(attributes.value) : <const>"";
   }
 
-  override [$hasSettableValue]() {
-    return false;
-  }
+  override [$hasSettableValue]() { return false; }
 
   override [$toStyle]()
   {
@@ -1926,7 +1904,7 @@ class Corner extends XFAObject
 
 class DateElement extends ContentObject 
 {
-  override [$content]:string | Date;
+  override [$content]!:string | Date;
 
   constructor( attributes:XFAAttrs )
   {
@@ -1951,7 +1929,7 @@ class DateElement extends ContentObject
 
 class DateTime extends ContentObject 
 {
-  override [$content]:string | Date;
+  override [$content]!:string | Date;
 
   constructor( attributes:XFAAttrs ) 
   {
@@ -2028,7 +2006,7 @@ class DateTimeEdit extends XFAObject
 
 class Decimal extends ContentObject 
 {
-  override [$content]:string | number;
+  override [$content]!:string | number;
 
   fracDigits;
   leadDigits;
@@ -2228,9 +2206,7 @@ export class Draw extends XFAObject
     setTabIndex(this);
 
     if (this.presence === "hidden" || this.presence === "inactive") 
-    {
       return HTMLResult.EMPTY;
-    }
 
     fixDimensions(this);
     this[$pushPara]();
@@ -2594,7 +2570,7 @@ class Event extends XFAObject
 
 class ExData extends ContentObject 
 {
-  override [$content]:XhtmlObject | string;
+  override [$content]!:XhtmlObject | string;
 
   contentType;
   href;
@@ -2646,11 +2622,9 @@ class ExData extends ContentObject
 
   override [$toHTML]( availableSpace?:AvailableSpace )
   {
-    if (this.contentType !== "text/html" || !this[$content]) 
-    {
+    if( this.contentType !== "text/html" || !this[$content] )
       // TODO: fix other cases.
       return HTMLResult.EMPTY;
-    }
 
     return (<XhtmlObject>this[$content])[$toHTML]( availableSpace );
   }
@@ -2723,7 +2697,7 @@ export class ExclGroup extends XFAObject
   field = new XFAObjectArray();
   setProperty = new XFAObjectArray();
 
-  override [$extra]:XFAExtra;
+  override [$extra]!:XFAExtra;
   [$data]?:XFAObject;
   occur:Occur | undefined;
 
@@ -2824,12 +2798,11 @@ export class ExclGroup extends XFAObject
   {
     // We cannot cache the result here because the contentArea can change.
     const parent = this[$getSubformParent]()!;
-    if( !parent[$isSplittable]() ) return false;
+    if( !parent[$isSplittable]() ) 
+      return false;
 
     if( this[$extra]._isSplittable !== undefined )
-    {
       return this[$extra]._isSplittable!;
-    }
 
     if( this.layout === "position" || this.layout.includes("row") )
     {
@@ -2908,10 +2881,8 @@ export class ExclGroup extends XFAObject
       setFirstUnsplittable(this);
     }
 
-    if (!checkDimensions(this, availableSpace)) 
-    {
+    if( !checkDimensions(this, availableSpace) )
       return HTMLResult.FAILURE;
-    }
     const filter = new Set(["field"]);
 
     if( this.layout.includes("row") )
@@ -2979,11 +2950,10 @@ export class ExclGroup extends XFAObject
         this[$popPara]();
         return result;
       }
-      if (
-        isLrTb &&
-        this[$extra].attempt === 0 &&
-        this[$extra].numberInLine === 0 &&
-        !this[$getTemplateRoot]()![$extra].noLayoutFailure
+      if( isLrTb
+       && this[$extra].attempt === 0
+       && this[$extra].numberInLine === 0
+       && !this[$getTemplateRoot]()![$extra].noLayoutFailure
       ) {
         // See comment in Subform::[$toHTML].
         this[$extra].attempt = maxRun;
@@ -3252,7 +3222,7 @@ export class Field extends XFAObject
       return HTMLResult.EMPTY;
     }
 
-    if (this.caption) 
+    if( this.caption )
     {
       // Maybe we already tried to layout this field with
       // another availableSpace, so to avoid to use the cached
@@ -3455,10 +3425,10 @@ export class Field extends XFAObject
       {
         [aElement] = ui.children!.splice(0, 1);
       }
-      Object.assign( ui.attributes!.style, borderStyle );
+      Object.assign( ui.attributes!.style!, borderStyle );
     } 
     else {
-      Object.assign(style, borderStyle);
+      Object.assign( style, borderStyle);
     }
 
     children.push(ui);
@@ -3658,10 +3628,11 @@ class Fill extends XFAObject
 
     for( const name of Object.getOwnPropertyNames(this) )
     {
-      if( name === "extras" || name === "color" ) continue;
-
+      if( name === "extras" || name === "color" ) 
+        continue;
       const obj = (<any>this)[name];
-      if( !(obj instanceof XFAObject) ) continue;
+      if( !(obj instanceof XFAObject) ) 
+        continue;
 
       const color = <string>obj[$toStyle]( this.color );
       if( color )
@@ -3719,7 +3690,7 @@ class Filter extends XFAObject
 
 class Float extends ContentObject 
 {
-  override [$content]:string | number;
+  override [$content]!:string | number;
 
   constructor( attributes:XFAAttrs ) 
   {
@@ -3822,7 +3793,7 @@ export class Font extends XFAObject implements XFAFontBase
   override [$clean]( builder:Builder )
   {
     super[$clean](builder);
-    this[$globalData].usedTypefaces.add( this.typeface );
+    this[$globalData]!.usedTypefaces.add( this.typeface );
   }
 
   override [$toStyle]()
@@ -3874,7 +3845,7 @@ export class Font extends XFAObject implements XFAFontBase
     style.fontStyle = this.posture;
     style.fontSize = measureToString(0.99 * this.size);
 
-    setFontFamily(this, this, this[$globalData].fontFinder!, style);
+    setFontFamily(this, this, this[$globalData]!.fontFinder!, style);
 
     if (this.underline !== 0) {
       style.textDecoration = "underline";
@@ -3969,7 +3940,7 @@ class Hyphenation extends XFAObject
 
 class Image extends StringObject 
 {
-  override [$content]:string;
+  override [$content]!:string;
 
   aspect;
   contentType;
@@ -4002,11 +3973,9 @@ class Image extends StringObject
   override [$toHTML]( availableSpace?:AvailableSpace )
   {
     if (this.contentType && !MIMES.has(this.contentType.toLowerCase())) 
-    {
       return HTMLResult.EMPTY;
-    }
 
-    let buffer = this[$globalData].images?.get( this.href );
+    let buffer = this[$globalData]!.images?.get( this.href );
     if( !buffer && (this.href || !this[$content]) )
     {
       // In general, we don't get remote data and use what we have
@@ -4019,7 +3988,8 @@ class Image extends StringObject
       buffer = stringToBytes( atob(this[$content]) );
     }
 
-    if( !buffer ) return HTMLResult.EMPTY;
+    if( !buffer ) 
+      return HTMLResult.EMPTY;
 
     if( !this.contentType )
     {
@@ -4032,10 +4002,8 @@ class Image extends StringObject
           break;
         }
       }
-      if (!this.contentType) 
-      {
+      if( !this.contentType )
         return HTMLResult.EMPTY;
-      }
     }
 
     // TODO: Firefox doesn't support natively tiff (and tif) format.
@@ -4115,7 +4083,7 @@ class ImageEdit extends XFAObject
 
 class Integer extends ContentObject 
 {
-  override [$content]:string | number;
+  override [$content]!:string | number;
 
   constructor( attributes:XFAAttrs )
   {
@@ -4335,7 +4303,7 @@ class Line extends XFAObject
       },
     };
 
-    if (hasMargin(parent)) 
+    if( hasMargin(parent) )
     {
       return HTMLResult.success({
         name: "div",
@@ -4387,7 +4355,7 @@ class Linear extends XFAObject
 
 class LockDocument extends ContentObject 
 {
-  override [$content]:string;
+  override [$content]!:string;
 
   type;
 
@@ -4981,9 +4949,8 @@ class PageSet extends XFAObject
       }
 
       const parent = this[$getParent]();
-      if (parent instanceof PageSet) {
+      if( parent instanceof PageSet )
         return parent[$getNextPage]();
-      }
 
       this[$cleanPage]();
       return this[$getNextPage]();
@@ -4995,17 +4962,20 @@ class PageSet extends XFAObject
     let page = <PageArea | undefined>this.pageArea.children.find(
       p => (<PageArea>p).oddOrEven === parity && (<PageArea>p).pagePosition === position
     );
-    if (page) return page;
+    if( page )
+      return page;
 
     page = <PageArea | undefined>this.pageArea.children.find(
       p => (<PageArea>p).oddOrEven === "any" && (<PageArea>p).pagePosition === position
     );
-    if (page) return page;
+    if( page )
+      return page;
 
     page = <PageArea | undefined>this.pageArea.children.find(
       p => (<PageArea>p).oddOrEven === "any" && (<PageArea>p).pagePosition === "any"
     );
-    if (page) return page;
+    if( page )
+      return page;
 
     return <PageArea>this.pageArea.children[0];
   }
@@ -5711,7 +5681,7 @@ export class Subform extends XFAObject
   subformSet = new XFAObjectArray();
 
   [$data]?:XmlObject;
-  override [$extra]:XFAExtra;
+  override [$extra]!:XFAExtra;
 
   constructor( attributes:XFAAttrs )
   {
@@ -5799,9 +5769,7 @@ export class Subform extends XFAObject
   {
     const parent = this[$getParent]();
     if( parent instanceof SubformSet )
-    {
       return parent[$getSubformParent]();
-    }
     return <Subform>parent;
   }
 
@@ -5838,9 +5806,7 @@ export class Subform extends XFAObject
     if( !parent[$isSplittable]() ) return false;
 
     if( this[$extra]._isSplittable !== undefined )
-    {
       return this[$extra]._isSplittable!;
-    }
 
     if (this.layout === "position" || this.layout.includes("row")) 
     {
@@ -5916,9 +5882,8 @@ export class Subform extends XFAObject
       this.break = undefined;
     }
 
-    if (this.presence === "hidden" || this.presence === "inactive") {
+    if( this.presence === "hidden" || this.presence === "inactive" )
       return HTMLResult.EMPTY;
-    }
 
     if( this.breakBefore.children.length > 1
      || this.breakAfter.children.length > 1
@@ -5934,15 +5899,11 @@ export class Subform extends XFAObject
     {
       const breakBefore = <BreakBefore>this.breakBefore.children[0];
       if( handleBreak(breakBefore) ) 
-      {
         return HTMLResult.breakNode(breakBefore);
-      }
     }
 
     if( this[$extra] && this[$extra].afterBreakAfter ) 
-    {
       return HTMLResult.EMPTY;
-    }
 
     // TODO: incomplete.
     fixDimensions(this);
@@ -5984,9 +5945,7 @@ export class Subform extends XFAObject
     }
 
     if( !checkDimensions(this, availableSpace!) )
-    {
       return HTMLResult.FAILURE;
-    }
 
     const filter = new Set([
       "area",
@@ -6221,7 +6180,7 @@ class SubformSet extends XFAObject
 
 class SubjectDN extends ContentObject 
 {
-  override [$content]:string | Map<string, string>;
+  override [$content]!:string | Map<string, string>;
 
   delimiter;
 
@@ -6329,7 +6288,7 @@ export class Template extends XFAObject
   // Can we have more than one subform ?
   subform = new XFAObjectArray();
 
-  override [$extra]:XFAExtra;
+  override [$extra]!:XFAExtra;
   [$ids]?:XFAIds;
   leader?:string;
   occur?:Occur;
@@ -6363,10 +6322,8 @@ export class Template extends XFAObject
   [$searchNode]( expr:string, container?:XFAObject )
   {
     if( expr.startsWith("#") ) 
-    {
       // This is an id.
       return [ this[$ids]!.get(expr.slice(1))! ];
-    }
     return <XFAObject[] | undefined>searchNode( this, container, expr, true, true );
   }
 
@@ -6551,7 +6508,7 @@ export class Template extends XFAObject
               hasSomething ||
               !!((<XFAElObj>html.html).children 
               && (<XFAElObj>html.html).children!.length !== 0);
-            htmlContentAreas[i].children!.push(html.html);
+            htmlContentAreas[i].children!.push( html.html);
           } 
           else if (!hasSomething && mainHtml.children.length > 1) 
           {
@@ -6561,12 +6518,13 @@ export class Template extends XFAObject
           return mainHtml;
         }
 
-        if (html.isBreak()) 
+        if( html.isBreak() )
         {
           const node = html.breakNode!;
           flush(i);
 
-          if( node.targetType === "auto" ) continue;
+          if( node.targetType === "auto" ) 
+            continue;
 
           if( node.leader ) 
           {
@@ -6668,7 +6626,7 @@ export class Template extends XFAObject
 
 export class Text extends ContentObject implements XFAValue
 {
-  override [$content]:string | XFAObject;
+  override [$content]!:string | XFAObject;
 
   maxChars;
   rid;
@@ -6703,8 +6661,8 @@ export class Text extends ContentObject implements XFAValue
 
   override [$onText]( str:string )
   {
-    if( this[$content] instanceof XFAObject ) return;
-
+    if( this[$content] instanceof XFAObject ) 
+      return;
     super[$onText](str);
   }
 
@@ -6887,7 +6845,7 @@ class TextEdit extends XFAObject
 
 class Time extends StringObject 
 {
-  override [$content]:string | Date;
+  override [$content]!:string | Date;
 
   constructor( attributes:XFAAttrs )
   {
@@ -6929,7 +6887,7 @@ class TimeStamp extends XFAObject
 
 class ToolTip extends StringObject 
 {
-  override [$content]:string;
+  override [$content]!:string;
 
   rid;
 
@@ -7022,10 +6980,11 @@ class Ui extends XFAObject
     {
       for( const name of Object.getOwnPropertyNames(this) )
       {
-        if (name === "extras" || name === "picture") continue;
-
+        if (name === "extras" || name === "picture") 
+          continue;
         const obj = (<any>this)[name];
-        if( !(obj instanceof XFAObject) ) continue;
+        if( !(obj instanceof XFAObject) ) 
+          continue;
 
         this[$extra] = obj;
         return obj;
@@ -7040,9 +6999,7 @@ class Ui extends XFAObject
     // TODO: picture.
     const obj = this[$getExtra]();
     if( obj )
-    {
       return obj[$toHTML]( availableSpace );
-    }
     return HTMLResult.EMPTY;
   }
 }
@@ -7160,31 +7117,27 @@ export class Value extends XFAObject
     if( this.exData )
     {
       if( typeof this.exData[$content] === "string" )
-      {
         return (<string>this.exData[$content]).trim();
-      }
       return (<XhtmlObject>this.exData[$content])[$text]()!.trim();
     }
     for( const name of Object.getOwnPropertyNames(this) )
     {
-      if (name === "image") continue;
-
+      if (name === "image") 
+        continue;
       const obj = (<any>this)[name];
       if( obj instanceof XFAObject )
-      {
         return (obj[$content] || "").toString().trim();
-      }
     }
     return undefined;
   }
 
   override [$toHTML]( availableSpace?:AvailableSpace )
   {
-    for (const name of Object.getOwnPropertyNames(this)) {
+    for( const name of Object.getOwnPropertyNames(this) )
+    {
       const obj = (<any>this)[name];
-      if (!(obj instanceof XFAObject)) {
+      if( !(obj instanceof XFAObject) )
         continue;
-      }
 
       return obj[$toHTML](availableSpace);
     }

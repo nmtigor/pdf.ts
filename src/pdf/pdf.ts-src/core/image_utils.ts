@@ -17,111 +17,115 @@
  * limitations under the License.
  */
 
-import { assert }      from "../../../lib/util/trace.js";
+import { assert } from "../../../lib/util/trace.js";
 import { OPS, shadow, warn } from "../shared/util.js";
-import { Dict, type Obj, Ref, RefSetCache } from "./primitives.js";
-import { type ImgData } from "./evaluator.js";
 import { ColorSpace } from "./colorspace.js";
-import { type OpListIR } from "./operator_list.js";
+import { MarkedContentProps, type ImgData } from "./evaluator.js";
 import { type ParsedFunction } from "./function.js";
+import { type OpListIR } from "./operator_list.js";
+import { Dict, Ref, RefSetCache, type Obj } from "./primitives.js";
 /*81---------------------------------------------------------------------------*/
 
 abstract class BaseLocalCache<CD>
 {
-  _onlyRefs;
+  readonly #onlyRefs;
   protected nameRefMap$;
   protected imageMap$;
   protected imageCache$ = new RefSetCache<CD>();
 
   constructor( options?:{onlyRefs:boolean} ) 
   {
-    this._onlyRefs = (options && options.onlyRefs) === true;
+    this.#onlyRefs = (options && options.onlyRefs) === true;
 
-    if (!this._onlyRefs) 
+    if (!this.#onlyRefs) 
     {
-      this.nameRefMap$ = new Map<string, string | Ref>();
-      this.imageMap$ = new Map<string, CD>();
+      this.nameRefMap$ = new Map< string, string | Ref>();
+      this.imageMap$ = new Map< string, CD>();
     }
   }
 
+  /** @final */
   getByName( name:string ) 
   {
-    if (this._onlyRefs) 
-    {
+    if (this.#onlyRefs) 
       assert( 0, "Should not call `getByName` method." );
-    }
     const ref = this.nameRefMap$!.get(name);
-    if (ref) 
-    {
+    if( ref )
       return this.getByRef(ref);
-    }
-    return this.imageMap$!.get(name) || null;
+    return this.imageMap$!.get(name) || undefined;
   }
 
   /** @final */
   getByRef( ref:string | Ref ) 
   {
-    return this.imageCache$.get(ref) || null;
+    return this.imageCache$.get(ref) || undefined;
   }
 
-  abstract set( name:string | undefined, ref:Ref | string | null, data:CD ):void;
+  abstract set( name:string | undefined, ref:Ref | string | undefined, data:CD ):void;
 }
 
-interface Image_LI_CData
+export interface Image_LI_CData
 {
   fn:OPS.paintImageXObject;
   args:[ objId:string, width:number, height:number ];
+  optionalContent:MarkedContentProps | undefined;
 }
-
-interface ImageMask_LI_CData
+export interface ImageMask_LI_CData
 {
   fn:OPS.paintImageMaskXObject;
   args:[ImgData];
+  optionalContent:MarkedContentProps | undefined;
 }
-
-export type LI_CData = Image_LI_CData | ImageMask_LI_CData;
-type LI_CData_B = LI_CData | boolean;
-export class LocalImageCache extends BaseLocalCache<LI_CData_B>
+export interface SolidColorImageMask_LI_CData
+{
+  fn:OPS.paintSolidColorImageMask;
+  args:ImgData[];
+  optionalContent:MarkedContentProps | undefined;
+}
+export type LI_CData = 
+  | Image_LI_CData 
+  | ImageMask_LI_CData 
+  | SolidColorImageMask_LI_CData
+;
+export class LocalImageCache extends BaseLocalCache< LI_CData | boolean>
 {
   /** @implements */
-  set( name:string, ref:Ref | string | null=null, data:LI_CData_B )
+  set( name:string, 
+    ref:Ref | string | undefined=undefined, data:LI_CData | boolean )
   {
-    if (typeof name !== "string") {
+    if( typeof name !== "string" )
       throw new Error('LocalImageCache.set - expected "name" argument.');
-    }
-    if (ref) {
-      if (this.imageCache$.has(ref)) {
+    if( ref )
+    {
+      if( this.imageCache$.has(ref) )
         return;
-      }
-      this.nameRefMap$!.set(name, ref);
-      this.imageCache$.put(ref, data);
+      this.nameRefMap$!.set( name, ref );
+      this.imageCache$.put( ref, data );
       return;
     }
     // name
-    if (this.imageMap$!.has(name)) {
+    if( this.imageMap$!.has(name) )
       return;
-    }
-    this.imageMap$!.set(name, data);
+    this.imageMap$!.set( name, data );
   }
 }
 
 type LCS_CData = ColorSpace;
-export class LocalColorSpaceCache extends BaseLocalCache<LCS_CData>
+export class LocalColorSpaceCache extends BaseLocalCache< LCS_CData>
 {
   /** @implements */
-  set( name:string | null=null, ref:Ref | string | null=null, data:LCS_CData ) 
-  {
+  set( name:string | undefined=undefined, 
+    ref:Ref | string | undefined=undefined, data:LCS_CData
+  ) {
     if( typeof name !== "string" && !ref )
-    {
       throw new Error(
         'LocalColorSpaceCache.set - expected "name" and/or "ref" argument.'
       );
-    }
-    if (ref) 
+    if( ref )
     {
-      if( this.imageCache$.has(ref) ) return;
-
-      if (name !== null) 
+      if( this.imageCache$.has(ref) )
+        return;
+      if( name !== undefined )
       {
         // Optional when `ref` is defined.
         this.nameRefMap$!.set(name, ref);
@@ -130,14 +134,14 @@ export class LocalColorSpaceCache extends BaseLocalCache<LCS_CData>
       return;
     }
     // name
-    if( this.imageMap$!.has(name!) ) return;
-
+    if( this.imageMap$!.has(name!) )
+      return;
     this.imageMap$!.set(name!, data);
   }
 }
 
 type LF_CData = ParsedFunction;
-export class LocalFunctionCache extends BaseLocalCache<LF_CData>
+export class LocalFunctionCache extends BaseLocalCache< LF_CData>
 {
   constructor() 
   {
@@ -145,41 +149,37 @@ export class LocalFunctionCache extends BaseLocalCache<LF_CData>
   }
 
   /** @implements */
-  set( name:string | null=null, ref:Ref | string | null, data:LF_CData ) 
+  set( name:string | undefined=undefined, ref:Ref | string | undefined, data:LF_CData ) 
   {
-    if (!ref) {
+    if( !ref )
       throw new Error('LocalFunctionCache.set - expected "ref" argument.');
-    }
-    if (this.imageCache$.has(ref)) {
+    if( this.imageCache$.has(ref) )
       return;
-    }
-    this.imageCache$.put(ref, data);
+    this.imageCache$.put( ref, data );
   }
 }
 
-export type LGS_CData = [string,Obj][];
-type LGS_CData_B = LGS_CData | boolean;
-export class LocalGStateCache extends BaseLocalCache<LGS_CData_B>
+export type LGS_CData = [string, Obj][];
+export class LocalGStateCache extends BaseLocalCache< LGS_CData | boolean>
 {
   /** @implements */
-  set( name:string, ref:Ref | string | null=null, data:LGS_CData_B ) 
+  set( name:string, 
+    ref:Ref | string | undefined=undefined, data:LGS_CData | boolean ) 
   {
-    if (typeof name !== "string") {
+    if( typeof name !== "string" )
       throw new Error('LocalGStateCache.set - expected "name" argument.');
-    }
-    if (ref) {
-      if (this.imageCache$.has(ref)) {
+    if( ref )
+    {
+      if( this.imageCache$.has(ref) )
         return;
-      }
-      this.nameRefMap$!.set(name, ref);
-      this.imageCache$.put(ref, data);
+      this.nameRefMap$!.set( name, ref );
+      this.imageCache$.put( ref, data );
       return;
     }
     // name
-    if (this.imageMap$!.has(name)) {
+    if( this.imageMap$!.has(name) )
       return;
-    }
-    this.imageMap$!.set(name, data);
+    this.imageMap$!.set( name, data );
   }
 }
 
@@ -187,7 +187,7 @@ type LTP_CData = {
   operatorListIR:OpListIR;
   dict:Dict
 }
-export class LocalTilingPatternCache extends BaseLocalCache<LTP_CData>
+export class LocalTilingPatternCache extends BaseLocalCache< LTP_CData>
 {
   constructor( options?:unknown ) 
   {
@@ -195,10 +195,13 @@ export class LocalTilingPatternCache extends BaseLocalCache<LTP_CData>
   }
 
   /** @implements */
-  set( name:string | undefined, ref:Ref | string | null=null, data:LTP_CData )
-  {
-    if( !ref ) throw new Error('LocalTilingPatternCache.set - expected "ref" argument.');
-    if( this.imageCache$.has(ref) ) return;
+  set( name:string | undefined, 
+    ref:Ref | string | undefined=undefined, data:LTP_CData
+  ) {
+    if( !ref )
+      throw new Error('LocalTilingPatternCache.set - expected "ref" argument.');
+    if( this.imageCache$.has(ref) )
+      return;
     this.imageCache$.put( ref, data );
   }
 }
@@ -221,29 +224,25 @@ export class GlobalImageCache
     return shadow(this, "MAX_BYTE_SIZE", /* Forty megabytes = */ 40e6);
   }
 
-  #refCache = new RefSetCache< Set<number> >();
-  #imageCache = new RefSetCache< GI_CData >();
+  #refCache = new RefSetCache< Set<number>>();
+  #imageCache = new RefSetCache< GI_CData>();
 
   constructor()
   {
     // #if !PRODUCTION || TESTING
-    // if (
-    //   typeof PDFJSDev === "undefined" ||
-    //   PDFJSDev.test("!PRODUCTION || TESTING")
-    // ) {
-    assert( GlobalImageCache.NUM_PAGES_THRESHOLD > 1,
-      "GlobalImageCache - invalid NUM_PAGES_THRESHOLD constant."
-    );
-    // }
+      assert( GlobalImageCache.NUM_PAGES_THRESHOLD > 1,
+        "GlobalImageCache - invalid NUM_PAGES_THRESHOLD constant."
+      );
     // #endif
   }
 
   get _byteSize()
   {
     let byteSize = 0;
-    this.#imageCache.forEach(imageData => {
+    for( const imageData of this.#imageCache )
+    {
       byteSize += imageData.byteSize!;
-    });
+    }
     return byteSize;
   }
 
@@ -257,6 +256,7 @@ export class GlobalImageCache
     return true;
   }
 
+  /** @final */
   shouldCache( ref:string | Ref, pageIndex:number ) 
   {
     const pageIndexSet = this.#refCache.get(ref);
@@ -274,6 +274,7 @@ export class GlobalImageCache
     return true;
   }
 
+  /** @final */
   addPageIndex( ref:Ref | string, pageIndex:number ) 
   {
     let pageIndexSet = this.#refCache.get(ref);
@@ -286,6 +287,7 @@ export class GlobalImageCache
 
   /**
    * PLEASE NOTE: Must be called *after* the `setData` method.
+   * @final
    */
   addByteSize( ref:string | Ref, byteSize:number )
   {
@@ -299,46 +301,45 @@ export class GlobalImageCache
     imageData.byteSize = byteSize;
   }
 
+  /** @final */
   getData( ref:Ref, pageIndex:number ) 
   {
     const pageIndexSet = this.#refCache.get(ref);
-    if (!pageIndexSet) {
+    if( !pageIndexSet )
       return undefined;
-    }
-    if (pageIndexSet.size < GlobalImageCache.NUM_PAGES_THRESHOLD) {
+    if( pageIndexSet.size < GlobalImageCache.NUM_PAGES_THRESHOLD )
       return undefined;
-    }
     const imageData = this.#imageCache.get(ref);
-    if (!imageData) {
+    if( !imageData )
       return undefined;
-    }
     // Ensure that we keep track of all pages containing the image reference.
     pageIndexSet.add(pageIndex);
 
     return imageData;
   }
 
+  /** @final */
   setData( ref:Ref | string, data:GI_CData )
   {
-    if (!this.#refCache.has(ref)) {
+    if( !this.#refCache.has(ref) )
       throw new Error(
         'GlobalImageCache.setData - expected "addPageIndex" to have been called.'
       );
-    }
-    if (this.#imageCache.has(ref)) {
+    if( this.#imageCache.has(ref) )
       return;
-    }
     if( this._cacheLimitReached )
     {
       warn("GlobalImageCache.setData - cache limit reached.");
       return;
     }
-    this.#imageCache.put(ref, data);
+    this.#imageCache.put( ref, data );
   }
 
+  /** @fianl */
   clear( onlyData=false ) 
   {
-    if (!onlyData) {
+    if( !onlyData )
+    {
       this.#refCache.clear();
     }
     this.#imageCache.clear();

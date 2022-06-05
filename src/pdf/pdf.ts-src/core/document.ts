@@ -18,32 +18,30 @@
  */
 
 import { assert } from "../../../lib/util/trace.js";
+import { type AnnotStorageRecord } from "../display/annotation_layer.js";
+import { type CMapData } from "../display/base_factory.js";
+import { MessageHandler, Thread, type StreamSink } from "../shared/message_handler.js";
 import {
   FormatError,
   info,
   InvalidPDFException,
-  isArrayBuffer,
   OPS,
-  PageActionEventType,
-  type rect_t,
-  RenderingIntentFlag,
+  PageActionEventType, RenderingIntentFlag,
   shadow,
   stringToBytes,
   stringToPDFString,
   stringToUTF8String,
   UNSUPPORTED_FEATURES,
   Util,
-  warn,
+  warn, type rect_t
 } from "../shared/util.js";
 import {
-  Dict,
-  isName,
-  Name,
-  type Obj,
-  Ref,
-  RefSet,
-  RefSetCache,
-} from "./primitives.js";
+  Annotation, AnnotationFactory, type AnnotationData, type FieldObject,
+  type SaveReturn
+} from "./annotation.js";
+import { BaseStream } from "./base_stream.js";
+import { Catalog } from "./catalog.js";
+import { clearGlobalCaches } from "./cleanup_helper.js";
 import {
   collectActions,
   getInheritableProperty,
@@ -51,35 +49,25 @@ import {
   MissingDataException,
   validateCSSFont,
   XRefEntryException,
-  XRefParseException,
+  XRefParseException
 } from "./core_utils.js";
-import { type XFAFontMetrics, getXfaFontDict, getXfaFontName } from "./xfa_fonts.js";
-import { NullStream, Stream } from "./stream.js";
-import { Annotation, 
-  type AnnotationData, 
-  AnnotationFactory, 
-  type FieldObject, 
-  type SaveReturn 
-} from "./annotation.js";
 import { calculateMD5 } from "./crypto.js";
-import { Linearization } from "./parser.js";
-import { OperatorList } from "./operator_list.js";
-import { PartialEvaluator, TranslatedFont } from "./evaluator.js";
-import { BasePdfManager } from "./pdf_manager.js";
-import { Thread, MessageHandler, type StreamSink } from "../shared/message_handler.js";
-import { WorkerTask } from "./worker.js";
-import { GlobalImageCache } from "./image_utils.js";
-import { type AnnotStorageRecord } from "../display/annotation_layer.js";
-import { type CMapData } from "../display/base_factory.js";
-import { Catalog } from "./catalog.js";
-import { clearGlobalCaches } from "./cleanup_helper.js";
-import { XRef } from "./xref.js";
-import { ObjectLoader } from "./object_loader.js";
-import { StructTreePage, StructTreeRoot } from "./struct_tree.js";
-import { BaseStream } from "./base_stream.js";
-import { XFAFactory } from "./xfa/factory.js";
-import { ErrorFont, Font } from "./fonts.js";
+import { DatasetReader, DatasetReaderCtorP } from "./dataset_reader.js";
 import { StreamsSequenceStream } from "./decode_stream.js";
+import { PartialEvaluator, TranslatedFont } from "./evaluator.js";
+import { ErrorFont, Font } from "./fonts.js";
+import { GlobalImageCache } from "./image_utils.js";
+import { ObjectLoader } from "./object_loader.js";
+import { OperatorList } from "./operator_list.js";
+import { Linearization } from "./parser.js";
+import { BasePdfManager } from "./pdf_manager.js";
+import { Dict, isName, Name, Ref, RefSet, RefSetCache, type Obj } from "./primitives.js";
+import { NullStream, Stream } from "./stream.js";
+import { StructTreePage, StructTreeRoot } from "./struct_tree.js";
+import { WorkerTask } from "./worker.js";
+import { XFAFactory } from "./xfa/factory.js";
+import { getXfaFontDict, getXfaFontName, type XFAFontMetrics } from "./xfa_fonts.js";
+import { XRef } from "./xref.js";
 /*81---------------------------------------------------------------------------*/
 
 const DEFAULT_USER_UNIT = 1.0;
@@ -90,7 +78,7 @@ export interface LocalIdFactory extends GlobalIdFactory
   createObjId():string;
 }
 
-interface PageCtorParms
+interface _PageCtorP
 {
   pdfManager:BasePdfManager;
   xref:XRef;
@@ -106,7 +94,7 @@ interface PageCtorParms
   xfaFactory?:XFAFactory | undefined,
 }
 
-interface PageGetOperatorListParms
+interface _PageGetOperatorListP
 {
   handler:MessageHandler< Thread.worker >;
   sink:StreamSink<Thread.main, "GetOperatorList">;
@@ -116,7 +104,7 @@ interface PageGetOperatorListParms
   annotationStorage:AnnotStorageRecord | undefined;
 }
 
-interface ExtractTextContentParms
+interface _ExtractTextContentP
 {
   handler:MessageHandler< Thread.worker >;
   task:WorkerTask;
@@ -160,7 +148,7 @@ export class Page
     globalImageCache,
     nonBlendModesSet,
     xfaFactory,
-  }:PageCtorParms ) 
+  }:_PageCtorP ) 
   {
     this.pdfManager = pdfManager;
     this.pageIndex = pageIndex;
@@ -205,7 +193,7 @@ export class Page
 
   get content()
   {
-    return <Stream | (Ref|Stream)[] | undefined>this.pageDict.getArray("Contents");
+    return <Stream | (Ref | Stream)[] | undefined>this.pageDict.getArray("Contents");
   }
 
   /**
@@ -387,8 +375,8 @@ export class Page
       const newRefsPromises:Promise<SaveReturn | null>[] = [];
       for( const annotation of annotations )
       {
-        if( !annotation.mustBePrinted(annotationStorage) ) continue;
-
+        if( !annotation.mustBePrinted(annotationStorage) )
+          continue;
         newRefsPromises.push(
           annotation
             .save( partialEvaluator, task, annotationStorage )
@@ -426,7 +414,7 @@ export class Page
     intent,
     cacheKey,
     annotationStorage=undefined,
-  }:PageGetOperatorListParms ) 
+  }:_PageGetOperatorListP ) 
   {
     const contentStreamPromise = this.getContentStream( handler );
     const resourcesPromise = this.loadResources([
@@ -472,7 +460,7 @@ export class Page
           resources: this.resources,
           operatorList: opList,
         })
-        .then( () => opList );
+        .then(() => opList );
     });
 
     // Fetch the page's annotations and add their operator lists to the
@@ -536,7 +524,7 @@ export class Page
     includeMarkedContent,
     sink,
     combineTextItems,
-  }:ExtractTextContentParms ) {
+  }:_ExtractTextContentP ) {
     const contentStreamPromise = this.getContentStream( handler );
     const resourcesPromise = this.loadResources([
       "ExtGState",
@@ -779,21 +767,22 @@ interface FormInfo
 
 type FieldPromises = Map<string, Promise< FieldObject | undefined >[]>;
 
-export interface XFAData
+interface _XFAStreams
 {
+  "xdp:xdp":string | BaseStream;
+  template:string | BaseStream;
+  datasets:string | BaseStream;
+  config:string | BaseStream;
+  connectionSet:string | BaseStream;
+  localeSet:string | BaseStream;
+  stylesheet:string | BaseStream;
+  "/xdp:xdp":string | BaseStream;
+}
+export type XFAData = _XFAStreams & {
   name:string;
   value:string;
   attributes?:string;
   
-  "xdp:xdp":string;
-  template:string;
-  datasets:string;
-  config:string;
-  connectionSet:string;
-  localeSet:string;
-  stylesheet:string;
-  "/xdp:xdp":string;
-
   children:(XFAData | null)[];
 
   [key:string]:unknown; //kkkk
@@ -826,20 +815,13 @@ export class PDFDocument
   // #endif
   #localIdFactory?:LocalIdFactory;
 
-  constructor( pdfManager:BasePdfManager, arg:Stream | ArrayBufferLike ) 
+  constructor( pdfManager:BasePdfManager, stream:Stream ) 
   {
-    let stream;
-    if( arg instanceof BaseStream )
-    {
-      stream = arg;
-    } 
-    else if( isArrayBuffer(arg) )
-    {
-      stream = new Stream( <ArrayBufferLike>arg );
-    } 
-    else {
-      throw new Error("PDFDocument: Unknown argument type");
-    }
+    // #if !PRODUCTION || TESTING
+      assert( stream instanceof BaseStream,
+        'PDFDocument: Invalid "stream" argument.'
+      );
+    // #endif
     if (stream.length <= 0) 
     {
       throw new InvalidPDFException(
@@ -886,8 +868,8 @@ export class PDFDocument
     try {
       linearization = Linearization.create( this.stream );
     } catch (err) {
-      if( err instanceof MissingDataException ) throw err;
-
+      if( err instanceof MissingDataException )
+        throw err;
       info( <string>err );
     }
     return shadow(this, "linearization", linearization);
@@ -957,7 +939,7 @@ export class PDFDocument
     const stream = this.stream;
     stream.reset();
 
-    if (!find(stream, PDF_HEADER_SIGNATURE)) 
+    if( !find(stream, PDF_HEADER_SIGNATURE) )
     {
       // May not be a PDF file, but don't throw an error and let
       // parsing continue.
@@ -971,8 +953,8 @@ export class PDFDocument
       ch;
     while( (ch = stream.getByte()) > /* Space = */ 0x20 )
     {
-      if( version.length >= MAX_PDF_VERSION_LENGTH ) break;
-
+      if( version.length >= MAX_PDF_VERSION_LENGTH )
+        break;
       version += String.fromCharCode(ch);
     }
     if( !this.#version )
@@ -1039,13 +1021,14 @@ export class PDFDocument
     });
   }
 
-  get xfaData()
+  get _xfaStreams()
   {
     const acroForm = this.catalog!.acroForm;
-    if( !acroForm ) return undefined;
+    if( !acroForm ) 
+      return undefined;
 
     const xfa = acroForm.get("XFA");
-    const entries = <XFAData>{
+    const entries:_XFAStreams = {
       "xdp:xdp": "",
       template: "",
       datasets: "",
@@ -1057,28 +1040,21 @@ export class PDFDocument
     };
     if( xfa instanceof BaseStream && !xfa.isEmpty )
     {
-      try {
-        entries["xdp:xdp"] = stringToUTF8String( xfa.getString() );
-        return entries;
-      } catch (_) {
-        warn("XFA - Invalid utf-8 string.");
-        return undefined;
-      }
+      entries["xdp:xdp"] = xfa;
+      return entries;
     }
 
-    if( !Array.isArray(xfa) || xfa.length === 0 )
-    {
+    if( !Array.isArray(xfa) || xfa.length === 0 ) 
       return undefined;
-    }
 
     for( let i = 0, ii = xfa.length; i < ii; i += 2 )
     {
       let name;
-      if (i === 0) 
+      if( i === 0 )
       {
         name = "xdp:xdp";
       }
-      else if (i === ii - 2) 
+      else if( i === ii - 2 )
       {
         name = "/xdp:xdp";
       }
@@ -1086,19 +1062,56 @@ export class PDFDocument
         name = <string>xfa[i];
       }
 
-      if( !entries.hasOwnProperty(name) ) continue;
-
+      if( !entries.hasOwnProperty(name) ) 
+        continue;
       const data = this.xref.fetchIfRef(xfa[i + 1]);
-      if( !(data instanceof BaseStream) || data.isEmpty ) continue;
-
-      try {
-        entries[name] = stringToUTF8String( data.getString() );
-      } catch (_) {
-        warn("XFA - Invalid utf-8 string.");
-        return undefined;
-      }
+      if( !(data instanceof BaseStream) || data.isEmpty ) 
+        continue;
+      entries[<keyof _XFAStreams>name] = data;
     }
     return entries;
+  }
+
+  get xfaDatasets()
+  {
+    const streams = this._xfaStreams;
+    if( !streams )
+      return shadow( this, "xfaDatasets", undefined);
+    for( const key of ["datasets", "xdp:xdp"] )
+    {
+      const stream = streams[<"datasets" | "xdp:xdp">key];
+      if( !stream ) 
+        continue;
+      try {
+        const str = stringToUTF8String( (<BaseStream>stream).getString() );
+        const data = <DatasetReaderCtorP>{ [key]: str };
+        return shadow( this, "xfaDatasets", new DatasetReader( data));
+      } catch (_) {
+        warn("XFA - Invalid utf-8 string.");
+        break;
+      }
+    }
+    return shadow( this, "xfaDatasets", undefined);
+  }
+
+  get xfaData()
+  {
+    const streams = this._xfaStreams;
+    if( !streams ) return null;
+
+    const data = Object.create(null);
+    for (const [key, stream] of Object.entries(streams))
+    {
+      if( !stream )
+        continue;
+      try {
+        data[key] = stringToUTF8String(stream.getString());
+      } catch (_) {
+        warn("XFA - Invalid utf-8 string.");
+        return null;
+      }
+    }
+    return data;
   }
 
   get xfaFactory()
@@ -1190,11 +1203,11 @@ export class PDFDocument
     });
     const promises = [];
 
-    for (const [fontName, font] of fonts) 
+    for( const [fontName, font] of fonts )
     {
       const descriptor = font.get("FontDescriptor");
-      if( !(descriptor instanceof Dict) ) continue;
-
+      if( !(descriptor instanceof Dict) )
+        continue;
       let fontFamily = <string>descriptor.get("FontFamily");
       // For example, "Wingdings 3" is not a valid font name in the css specs.
       fontFamily = fontFamily.replace(/[ ]+(\d)/g, "$1");
@@ -1206,8 +1219,8 @@ export class PDFDocument
       const italicAngle = <number>descriptor.get("ItalicAngle");
       const cssFontInfo:CssFontInfo = { fontFamily, fontWeight, italicAngle };
 
-      if( !validateCSSFont(cssFontInfo) ) continue;
-
+      if( !validateCSSFont(cssFontInfo) )
+        continue;
       promises.push(
         partialEvaluator
           .handleSetFont(
@@ -1253,9 +1266,9 @@ export class PDFDocument
 
     for (const missing of missingFonts) 
     {
-      if( reallyMissingFonts.has(missing) ) continue;
-
-      for (const fontInfo of [
+      if( reallyMissingFonts.has(missing) )
+        continue;
+      for( const fontInfo of [
         { name: "Regular", fontWeight: 400, italicAngle: 0 },
         { name: "Bold", fontWeight: 700, italicAngle: 0 },
         { name: "Italic", fontWeight: 400, italicAngle: 12 },
@@ -1448,7 +1461,7 @@ export class PDFDocument
 
         if( customValue === undefined )
         {
-          warn(`Bad value, for custom key "${key}", in Info: ${String(value)}.`);
+          warn(`Bad value, for custom key "${key}", in Info: ${<any>value}.`);
           continue;
         }
         if( !docInfo.Custom )
@@ -1458,7 +1471,7 @@ export class PDFDocument
         docInfo.Custom![key] = customValue;
         continue;
       }
-      warn(`Bad value, for key "${key}", in Info: ${String(value)}.`);
+      warn(`Bad value, for key "${key}", in Info: ${<any>value}.`);
     }
     return shadow(this, "documentInfo", docInfo);
   }
@@ -1795,8 +1808,8 @@ export class PDFDocument
 
   get hasJSActions()
   {
-    const promise = this.pdfManager.ensureDoc("_parseHasJSActions");
-    return shadow(this, "hasJSActions", promise);
+    const promise:Promise<boolean> = this.pdfManager.ensureDoc("_parseHasJSActions");
+    return shadow( this, "hasJSActions", promise);
   }
 
   /**
@@ -1809,12 +1822,12 @@ export class PDFDocument
       this.pdfManager.ensureDoc("fieldObjects"),
     ]);
 
-    if( catalogJsActions ) return true;
+    if( catalogJsActions )
+      return true;
 
-    const fieldObjects_ = await fieldObjects;
-    if( fieldObjects_ )
+    if( fieldObjects )
     {
-      return Object.values(fieldObjects_).some(fieldObject =>
+      return Object.values(fieldObjects).some( fieldObject =>
         fieldObject.some(object => object.actions !== undefined)
       );
     }

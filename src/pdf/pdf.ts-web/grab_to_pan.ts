@@ -24,7 +24,7 @@ import { html } from "../../lib/dom.js";
 // Class name of element which can be grabbed.
 const CSS_CLASS_GRAB = "grab-to-pan-grab";
 
-interface GrabToPanCtorParms
+interface _GrabToPanCtorP
 {
   element:HTMLDivElement;
 
@@ -59,7 +59,7 @@ export class GrabToPan
   /**
    * Construct a GrabToPan instance for a given HTML element.
    */
-  constructor( options:GrabToPanCtorParms )
+  constructor( options:_GrabToPanCtorP )
   {
     this.element = options.element;
     this.document = options.element.ownerDocument;

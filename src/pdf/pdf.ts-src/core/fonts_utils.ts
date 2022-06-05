@@ -106,18 +106,18 @@ export function getFontType( type:string, subtype?:string, isStandardFont=false 
 
 // Some bad PDF generators, e.g. Scribus PDF, include glyph names
 // in a 'uniXXXX' format -- attempting to recover proper ones.
-export function recoverGlyphName( name:string, glyphsUnicodeMap:Record<string,number> )
+export function recoverGlyphName( name:string, glyphsUnicodeMap:Record<string, number> )
 {
-  if (glyphsUnicodeMap[name] !== undefined) {
+  if( glyphsUnicodeMap[name] !== undefined )
     return name;
-  }
   // The glyph name is non-standard, trying to recover.
   const unicode = getUnicodeForGlyph(name, glyphsUnicodeMap);
-  if (unicode !== -1) {
-    for (const key in glyphsUnicodeMap) {
-      if (glyphsUnicodeMap[key] === unicode) {
+  if( unicode !== -1 )
+  {
+    for( const key in glyphsUnicodeMap )
+    {
+      if( glyphsUnicodeMap[key] === unicode )
         return key;
-      }
     }
   }
   info("Unable to recover a standard glyph name for: " + name);

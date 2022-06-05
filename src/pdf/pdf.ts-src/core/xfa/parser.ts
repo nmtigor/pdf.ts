@@ -17,6 +17,10 @@
  * limitations under the License.
  */
 
+import { warn } from "../../shared/util.js";
+import { XMLParserBase, XMLParserErrorCode, type XMLAttr } from "../xml_parser.js";
+import { type XFANsAttrs, type XFAPrefix } from "./alias.js";
+import { Builder, Root } from "./builder.js";
 import {
   $acceptWhitespace,
   $clean,
@@ -28,35 +32,30 @@ import {
   $onChild,
   $onText,
   $setId,
-  XFAObject,
+  XFAObject
 } from "./xfa_object.js";
-import { type XMLAttr, XMLParserBase, XMLParserErrorCode } from "../xml_parser.js";
-import { Builder, Root } from "./builder.js";
-import { warn } from "../../shared/util.js";
-import { type XFANsAttrs, type XFAPrefix } from "./alias.js";
 import { type XFANsXhtml } from "./xhtml.js";
 /*81---------------------------------------------------------------------------*/
 
 export class XFAParser extends XMLParserBase
 {
-  _builder;
-  _stack:XFAObject[] = [];
+  readonly #builder;
+  readonly #stack:XFAObject[] = [];
   _globalData = {
     usedTypefaces: new Set<string>(),
   };
-  _ids = new Map<string, XFAObject>();
-  _current:XFAObject;
-  _errorCode = XMLParserErrorCode.NoError;
-  _whiteRegex = /^\s+$/;
-  _nbsps = /\xa0+/g;
-  _richText;
+  readonly #ids = new Map<string, XFAObject>();
+  #current:XFAObject;
+  readonly #whiteRegex = /^\s+$/;
+  readonly #nbsps = /\xa0+/g;
+  readonly #richText;
 
   constructor( rootNameSpace?:XFANsXhtml, richText=false )
   {
     super();
-    this._builder = new Builder(rootNameSpace);
-    this._current = this._builder.buildRoot( this._ids );
-    this._richText = richText;
+    this.#builder = new Builder(rootNameSpace);
+    this.#current = this.#builder.buildRoot( this.#ids );
+    this.#richText = richText;
   }
 
   parse( data:string )
@@ -64,35 +63,32 @@ export class XFAParser extends XMLParserBase
     this.parseXml( data );
 
     if( this._errorCode !== XMLParserErrorCode.NoError )
-    {
       return undefined;
-    }
 
-    this._current[$finalize]();
+    this.#current[$finalize]();
 
-    return (<Root>this._current).element;
+    return (<Root>this.#current).element;
   }
 
   onText( text:string )
   {
     // Normally by definition a &nbsp is unbreakable
     // but in real life Acrobat can break strings on &nbsp.
-    text = text.replace(this._nbsps, match => match.slice(1) + " ");
-    if( this._richText || this._current[$acceptWhitespace]() )
+    text = text.replace(this.#nbsps, match => match.slice(1) + " ");
+    if( this.#richText || this.#current[$acceptWhitespace]() )
     {
-      this._current[$onText](text, this._richText);
+      this.#current[$onText]( text, this.#richText );
       return;
     }
 
-    if (this._whiteRegex.test(text)) {
+    if( this.#whiteRegex.test(text) )
       return;
-    }
-    this._current[$onText](text.trim());
+    this.#current[$onText](text.trim());
   }
 
   onCdata( text:string )
   {
-    this._current[$onText](text);
+    this.#current[$onText](text);
   }
 
   _mkAttributes( attributes:XMLAttr[], tagName:string )
@@ -168,9 +164,9 @@ export class XFAParser extends XMLParserBase
     );
     const [name, nsPrefix] = this._getNameAndPrefix(
       tagName,
-      this._builder.isNsAgnostic()
+      this.#builder.isNsAgnostic()
     );
-    const node = this._builder.build({
+    const node = this.#builder.build({
       nsPrefix,
       name,
       attributes: attributesObj,
@@ -183,21 +179,21 @@ export class XFAParser extends XMLParserBase
     {
       // No children: just push the node into its parent.
       node[$finalize]();
-      if( this._current[$onChild](node) )
+      if( this.#current[$onChild](node) )
       {
-        node[$setId]( this._ids );
+        node[$setId]( this.#ids );
       }
-      node[$clean](this._builder);
+      node[$clean]( this.#builder );
       return;
     }
 
-    this._stack.push( this._current );
-    this._current = node;
+    this.#stack.push( this.#current );
+    this.#current = node;
   }
 
-  onEndElement( name:string )
+  override onEndElement( name:string )
   {
-    const node = this._current;
+    const node = this.#current;
     if( node[$isCDATAXml]() && typeof node[$content] === "string" )
     {
       const parser = new XFAParser();
@@ -208,14 +204,16 @@ export class XFAParser extends XMLParserBase
     }
 
     node[$finalize]();
-    this._current = this._stack.pop()!;
-    if( this._current[$onChild](node) )
+    this.#current = this.#stack.pop()!;
+    if( this.#current[$onChild](node) )
     {
-      node[$setId]( this._ids );
+      node[$setId]( this.#ids );
     }
-    node[$clean](this._builder);
+    node[$clean]( this.#builder );
+    return undefined;
   }
 
+  /** @implements */
   onError( code:XMLParserErrorCode )
   {
     this._errorCode = code;

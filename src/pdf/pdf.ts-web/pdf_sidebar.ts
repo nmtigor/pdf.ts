@@ -17,16 +17,12 @@
  * limitations under the License.
  */
 
-import { 
-  PresentationModeState, 
-  RenderingStates, 
-  SidebarView 
-} from "./ui_utils.js";
+import { EventBus } from "./event_utils.js";
+import { type IL10n } from "./interfaces.js";
 import { PDFThumbnailViewer } from "./pdf_thumbnail_viewer.js";
 import { PDFViewer } from "./pdf_viewer.js";
-import { type IL10n } from "./interfaces.js";
+import { PresentationModeState, RenderingStates, SidebarView } from "./ui_utils.js";
 import { type ViewerConfiguration } from "./viewer.js";
-import { EventBus } from "./event_utils.js";
 /*81---------------------------------------------------------------------------*/
 
 const UI_NOTIFICATION_CLASS = "pdfSidebarNotification";
@@ -75,7 +71,7 @@ export class PDFSidebar
   pdfThumbnailViewer;
 
   outerContainer;
-  viewerContainer;
+  sidebarContainer;
   toggleButton;
 
   thumbnailButton;
@@ -106,7 +102,7 @@ export class PDFSidebar
     this.pdfThumbnailViewer = pdfThumbnailViewer;
 
     this.outerContainer = elements.outerContainer;
-    this.viewerContainer = elements.viewerContainer;
+    this.sidebarContainer = elements.sidebarContainer;
     this.toggleButton = elements.toggleButton;
 
     this.thumbnailButton = elements.thumbnailButton;
@@ -247,46 +243,41 @@ export class PDFSidebar
     // in order to prevent setting it to an invalid state.
     this.active = view;
 
-    // Update the CSS classes, for all buttons...
-    this.thumbnailButton.classList.toggle(
-      "toggled",
-      view === SidebarView.THUMBS
-    );
-    this.outlineButton.classList.toggle(
-      "toggled",
-      view === SidebarView.OUTLINE
-    );
-    this.attachmentsButton.classList.toggle(
-      "toggled",
-      view === SidebarView.ATTACHMENTS
-    );
-    this.layersButton.classList.toggle("toggled", view === SidebarView.LAYERS);
+    const isThumbs = view === SidebarView.THUMBS,
+      isOutline = view === SidebarView.OUTLINE,
+      isAttachments = view === SidebarView.ATTACHMENTS,
+      isLayers = view === SidebarView.LAYERS;
+
+    // Update the CSS classes (and aria attributes), for all buttons...
+    this.thumbnailButton.classList.toggle("toggled", isThumbs);
+    this.outlineButton.classList.toggle("toggled", isOutline);
+    this.attachmentsButton.classList.toggle("toggled", isAttachments);
+    this.layersButton.classList.toggle("toggled", isLayers);
+
+    this.thumbnailButton.setAttribute("aria-checked", <any>isThumbs);
+    this.outlineButton.setAttribute("aria-checked", <any>isOutline);
+    this.attachmentsButton.setAttribute("aria-checked", <any>isAttachments);
+    this.layersButton.setAttribute("aria-checked", <any>isLayers);
     // ... and for all views.
-    this.thumbnailView.classList.toggle("hidden", view !== SidebarView.THUMBS);
-    this.outlineView.classList.toggle("hidden", view !== SidebarView.OUTLINE);
-    this.attachmentsView.classList.toggle(
-      "hidden",
-      view !== SidebarView.ATTACHMENTS
-    );
-    this.layersView.classList.toggle("hidden", view !== SidebarView.LAYERS);
+    this.thumbnailView.classList.toggle("hidden", !isThumbs);
+    this.outlineView.classList.toggle("hidden", !isOutline);
+    this.attachmentsView.classList.toggle("hidden", !isAttachments);
+    this.layersView.classList.toggle("hidden", !isLayers);
 
     // Finally, update view-specific CSS classes.
-    this._outlineOptionsContainer.classList.toggle(
-      "hidden",
-      view !== SidebarView.OUTLINE
-    );
+    this._outlineOptionsContainer.classList.toggle("hidden", !isOutline);
 
-    if (forceOpen && !this.isOpen) 
+    if( forceOpen && !this.isOpen ) 
     {
       this.open();
       return true; // Opening will trigger rendering and dispatch the event.
     }
-    if (shouldForceRendering) 
+    if( shouldForceRendering ) 
     {
       this.#updateThumbnailViewer();
       this.#forceRendering();
     }
-    if (isViewChanged) 
+    if( isViewChanged ) 
     {
       this._dispatchEvent();
     }
@@ -295,8 +286,8 @@ export class PDFSidebar
 
   open()
   {
-    if( this.isOpen ) return;
-
+    if( this.isOpen ) 
+      return;
     this.isOpen = true;
     this.toggleButton.classList.add("toggled");
     this.toggleButton.setAttribute("aria-expanded", "true");
@@ -409,8 +400,9 @@ export class PDFSidebar
 
   #addEventListeners()
   {
-    this.viewerContainer.addEventListener("transitionend", evt => {
-      if (evt.target === this.viewerContainer) {
+    this.sidebarContainer.addEventListener("transitionend", evt => {
+      if( evt.target === this.sidebarContainer )
+      {
         this.outerContainer.classList.remove("sidebarMoving");
       }
     });

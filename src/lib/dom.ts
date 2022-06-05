@@ -345,7 +345,7 @@ export function svg<NN extends string>(
 
 declare global 
 {
-  interface OnProgressParms
+  interface OnProgressP
   {
     /**
      * Currently loaded number of bytes.

@@ -17,9 +17,9 @@
  * limitations under the License.
  */
 
-import { type rect_t, shadow } from "../../shared/util.js";
-import { BreakAfter, BreakBefore, Template } from "./template.js";
+import { shadow, type rect_t } from "../../shared/util.js";
 import { type XFAElData } from "./alias.js";
+import { BreakAfter, BreakBefore, Template } from "./template.js";
 /*81---------------------------------------------------------------------------*/
 
 const dimConverters = {
@@ -40,13 +40,13 @@ export function stripQuotes( str:string )
   return str;
 }
 
-interface GetIntegerParms
+interface _GetIntegerP
 {
   data?:string;
   defaultValue:number | string;
   validate:( x:number ) => boolean;
 }
-export function getInteger({ data, defaultValue, validate }:GetIntegerParms )
+export function getInteger({ data, defaultValue, validate }:_GetIntegerP )
 {
   if (!data) {
     return <number>defaultValue;
@@ -59,13 +59,13 @@ export function getInteger({ data, defaultValue, validate }:GetIntegerParms )
   return <number>defaultValue;
 }
 
-interface GetFloatParms
+interface _GetFloatP
 {
   data?:string;
   defaultValue:number;
   validate:( x:number ) => boolean;
 } 
-export function getFloat({ data, defaultValue, validate }:GetFloatParms)
+export function getFloat({ data, defaultValue, validate }:_GetFloatP)
 {
   if (!data) {
     return defaultValue;
@@ -78,13 +78,13 @@ export function getFloat({ data, defaultValue, validate }:GetFloatParms)
   return defaultValue;
 }
 
-interface GetKeywordParms
+interface _GetKeywordP
 {
   data?:string | undefined;
   defaultValue:string;
   validate:( k:string ) => boolean;
 }
-export function getKeyword({ data, defaultValue, validate }:GetKeywordParms)
+export function getKeyword({ data, defaultValue, validate }:_GetKeywordP)
 {
   if (!data) {
     return defaultValue;

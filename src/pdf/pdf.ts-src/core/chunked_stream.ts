@@ -19,16 +19,16 @@
 
 import { createPromiseCap, PromiseCap } from "../../../lib/promisecap.js";
 import { type ReadValue } from "../interfaces.js";
-import { Thread, MessageHandler } from "../shared/message_handler.js";
+import { MessageHandler, Thread } from "../shared/message_handler.js";
 import {
   AbortException,
   arrayByteLength,
-  arraysToBytes,
+  arraysToBytes
 } from "../shared/util.js";
 import { MissingDataException } from "./core_utils.js";
 import { Dict } from "./primitives.js";
-import { PDFWorkerStream } from "./worker_stream.js";
 import { Stream } from "./stream.js";
+import { PDFWorkerStream } from "./worker_stream.js";
 /*81---------------------------------------------------------------------------*/
 
 interface ChunkedStreamSubstream extends ChunkedStream
@@ -183,19 +183,19 @@ export class ChunkedStream extends Stream
     return this.bytes[this.pos++];
   }
 
-  override getBytes( length?:number, forceClamped=false ) 
+  override getBytes( length?:number ) 
   {
     const bytes = this.bytes;
     const pos = this.pos;
     const strEnd = this.end;
 
-    if (!length) {
-      if (strEnd > this.progressiveDataLength) {
+    if( !length )
+    {
+      if( strEnd > this.progressiveDataLength )
+      {
         this.ensureRange(pos, strEnd);
       }
-      const subarray = bytes.subarray(pos, strEnd);
-      // `this.bytes` is always a `Uint8Array` here.
-      return forceClamped ? new Uint8ClampedArray(subarray) : subarray;
+      return bytes.subarray(pos, strEnd);
     }
 
     let end = pos + length;
@@ -207,20 +207,21 @@ export class ChunkedStream extends Stream
     }
 
     this.pos = end;
-    const subarray = bytes.subarray(pos, end);
-    // `this.bytes` is always a `Uint8Array` here.
-    return forceClamped ? new Uint8ClampedArray(subarray) : subarray;
+    return bytes.subarray(pos, end);
   }
 
   override getByteRange( begin:number, end:number ) 
   {
-    if (begin < 0) {
+    if( begin < 0 )
+    {
       begin = 0;
     }
-    if (end > this.end) {
+    if( end > this.end )
+    {
       end = this.end;
     }
-    if (end > this.progressiveDataLength) {
+    if( end > this.progressiveDataLength )
+    {
       this.ensureRange(begin, end);
     }
     return this.bytes.subarray(begin, end);
@@ -230,7 +231,8 @@ export class ChunkedStream extends Stream
   {
     if( length )
     {
-      if (start + length > this.progressiveDataLength) {
+      if( start + length > this.progressiveDataLength )
+      {
         this.ensureRange(start, start + length);
       }
     } 

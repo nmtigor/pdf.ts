@@ -19,18 +19,19 @@
 
 import { createPromiseCap } from "../../../lib/promisecap.js";
 import { assert } from "../../../lib/util/trace.js";
-import { 
-  type IPDFStream, 
-  type IPDFStreamRangeReader, 
-  type IPDFStreamReader, 
-  type ReadValue } from "../interfaces.js";
-import { AbortException, } from "../shared/util.js";
-import { type DocumentInitParms } from "./api.js";
+import {
+  type IPDFStream,
+  type IPDFStreamRangeReader,
+  type IPDFStreamReader,
+  type ReadValue
+} from "../interfaces.js";
+import { AbortException } from "../shared/util.js";
+import { type DocumentInitP } from "./api.js";
 import {
   createResponseStatusError,
   extractFilenameFromHeader,
   validateRangeRequestCapabilities,
-  validateResponseStatus,
+  validateResponseStatus
 } from "./network_utils.js";
 /*81---------------------------------------------------------------------------*/
 
@@ -80,7 +81,7 @@ export class PDFFetchStream implements IPDFStream
 
   #rangeRequestReaders:PDFFetchStreamRangeReader[] = [];
 
-  constructor( source:DocumentInitParms ) 
+  constructor( source:DocumentInitP ) 
   {
     this.source = source;
     this.isHttp = /^https?:/i.test( source.url!.toString() );
@@ -100,9 +101,8 @@ export class PDFFetchStream implements IPDFStream
   /** @implements */
   getRangeReader( begin:number, end:number ) 
   {
-    if (end <= this._progressiveDataLength) {
-      return null;
-    }
+    if( end <= this._progressiveDataLength )
+      return undefined;
     const reader = new PDFFetchStreamRangeReader(this, begin, end);
     this.#rangeRequestReaders.push(reader);
     return reader;
@@ -128,7 +128,7 @@ class PDFFetchStreamReader implements IPDFStreamReader
   #reader:ReadableStreamDefaultReader<Uint8Array> | null = null;
   _loaded = 0;
 
-  #filename:string | null = null;
+  #filename:string | undefined;
   get filename() { return this.#filename; }
 
   #withCredentials:boolean;

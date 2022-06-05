@@ -37,7 +37,7 @@ export abstract class BaseStream
   cacheKey?:string;
 
   abstract getByte():number;
-  abstract getBytes( length?:number, forceClamped?:boolean ):Uint8Array | Uint8ClampedArray;
+  abstract getBytes( length?:number ):Uint8Array | Uint8ClampedArray;
 
   /** @final */
   peekByte()
@@ -51,9 +51,9 @@ export abstract class BaseStream
   }
 
   /** @final */
-  peekBytes( length?:number, forceClamped=false )
+  peekBytes( length?:number )
   {
-    const bytes = this.getBytes(length, forceClamped);
+    const bytes = this.getBytes( length );
     this.pos -= bytes.length;
     return bytes;
   }
@@ -85,7 +85,7 @@ export abstract class BaseStream
   /** @final */
   getString( length?:number )
   {
-    return bytesToString( this.getBytes(length,false) );
+    return bytesToString( this.getBytes(length) );
   }
 
   /** @final */

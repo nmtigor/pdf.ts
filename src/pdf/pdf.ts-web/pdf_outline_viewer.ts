@@ -17,23 +17,23 @@
  * limitations under the License.
  */
 
-import { createPromiseCap, PromiseCap } from "../../lib/promisecap.js";
-import { isObjectLike } from "../../lib/jslang.js";
 import { html } from "../../lib/dom.js";
+import { isObjectLike } from "../../lib/jslang.js";
+import { createPromiseCap, PromiseCap } from "../../lib/promisecap.js";
 import { type ExplicitDest } from "../pdf.ts-src/core/catalog.js";
 import { Ref } from "../pdf.ts-src/core/primitives.js";
-import { type OutlineNode, PDFDocumentProxy } from "../pdf.ts-src/display/api.js";
-import { BaseTreeViewer, type BaseTreeViewerCtorParms } from "./base_tree_viewer.js";
+import { PDFDocumentProxy, type OutlineNode } from "../pdf.ts-src/display/api.js";
+import { BaseTreeViewer, type BaseTreeViewerCtorP } from "./base_tree_viewer.js";
 import { PDFLinkService } from "./pdf_link_service.js";
 import { SidebarView } from "./ui_utils.js";
 /*81---------------------------------------------------------------------------*/
 
-interface PDFOutlineViewerOptions extends BaseTreeViewerCtorParms
+interface PDFOutlineViewerOptions extends BaseTreeViewerCtorP
 {
   linkService:PDFLinkService;
 }
 
-interface PDFOutlineViewerRenderParms
+interface _PDFOutlineViewerRenderP
 {
   /**
    * An array of outline objects.
@@ -208,7 +208,7 @@ export class PDFOutlineViewer extends BaseTreeViewer
   }
 
   /** @implements */
-  render({ outline, pdfDocument }:PDFOutlineViewerRenderParms ) 
+  render({ outline, pdfDocument }:_PDFOutlineViewerRenderP ) 
   {
     if( this.#outline )
     {

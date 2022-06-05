@@ -17,12 +17,12 @@
  * limitations under the License.
  */
 
-import { Name, type ObjNoCmd } from "./primitives.js";
 import { OPS, warn } from "../shared/util.js";
 import { ColorSpace } from "./colorspace.js";
 import { escapePDFName } from "./core_utils.js";
-import { StringStream } from "./stream.js";
 import { EvaluatorPreprocessor } from "./evaluator.js";
+import { Name, type ObjNoCmd } from "./primitives.js";
+import { StringStream } from "./stream.js";
 /*81---------------------------------------------------------------------------*/
 
 class DefaultAppearanceEvaluator extends EvaluatorPreprocessor
@@ -49,12 +49,11 @@ class DefaultAppearanceEvaluator extends EvaluatorPreprocessor
       {
         operation.args.length = 0; // Ensure that `args` it's always reset.
 
-        if( !this.read(operation) ) break;
-
+        if( !this.read(operation) ) 
+          break;
         if (this.savedStatesDepth !== 0) 
-        {
-          continue; // Don't get info in save/restore sections.
-        }
+          // Don't get info in save/restore sections.
+          continue; 
         const { fn, args } = operation;
 
         switch( fn | 0 )

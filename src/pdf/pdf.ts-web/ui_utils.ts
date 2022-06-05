@@ -30,8 +30,6 @@ export const MAX_AUTO_SCALE = 1.25;
 export const SCROLLBAR_PADDING = 40;
 export const VERTICAL_PADDING = 5;
 
-const LOADINGBAR_END_OFFSET_VAR = "--loadingBar-end-offset";
-
 export const enum RenderingStates {
   INITIAL = 0,
   RUNNING = 1,
@@ -105,7 +103,7 @@ export const enum PageLayout {
 export const AutoPrintRegExp = /\bprint\s*\(/;
 
 // Replaces {{arguments}} with their values.
-function xxxx_formatL10nValue( text:string, args:Record<string,string> | null )
+function xxxx_formatL10nValue( text:string, args:Record<string, string> | null )
 {
   if (!args) {
     return text;
@@ -142,6 +140,11 @@ export class OutputScale
   }
 }
 
+export interface PageSpot
+{
+  top?:number;
+  left?:number;
+}
 
 /**
  * Scrolls specified element into view of its parent.
@@ -152,9 +155,9 @@ export class OutputScale
  *   ignore elements that either: Contains marked content identifiers,
  *   or have the CSS-rule `overflow: hidden;` set. The default value is `false`.
  */
-export function scrollIntoView( element:HTMLElement, 
-  spot?:{top?:number;left?:number;}, scrollMatches=false
-) {
+export function scrollIntoView( 
+  element:HTMLElement, spot?:PageSpot, scrollMatches=false )
+{
   // Assuming offsetParent is available (it's not available when viewer is in
   // hidden iframe or object). We have to scroll: if the offsetParent is not set
   // producing the error. See also animationStarted.
@@ -364,7 +367,7 @@ export function roundToDivide( x:number, div:number )
   return r === 0 ? x : Math.round(x - r + div);
 }
 
-interface GetPageSizeInchesParms
+interface _GetPageSizeInchesP
 {
   view:number[];
   userUnit:number;
@@ -390,7 +393,7 @@ interface PageSize
  * @return An Object containing the properties: {number} `width`
  *   and {number} `height`, given in inches.
  */
-export function getPageSizeInches({ view, userUnit, rotate }:GetPageSizeInchesParms 
+export function getPageSizeInches({ view, userUnit, rotate }:_GetPageSizeInchesP 
 ):PageSize {
   const [x1, y1, x2, y2] = view;
   // We need to take the page rotation into account as well.
@@ -511,7 +514,7 @@ export interface VisibleElements
   ids?:Set<number>;
 }
 
-interface GetVisibleElementsParms
+interface _GetVisibleElementsP
 {
   /**
    * A container that can possibly scroll.
@@ -568,7 +571,7 @@ export function getVisibleElements({
   sortByVisibility=false,
   horizontal=false,
   rtl=false,
-}:GetVisibleElementsParms ) {
+}:_GetVisibleElementsP ) {
   const top = scrollEl.scrollTop,
     bottom = top + scrollEl.clientHeight;
   const left = scrollEl.scrollLeft,
@@ -811,75 +814,74 @@ export class ProgressBar
   div;
   bar;
 
-  height:number;
-  width:number;
-  units:string
-
   _percent = 0;
   get percent() { return this._percent; }
 
   _indeterminate?:boolean;
 
-  constructor( id:string, 
-    { height, width, units }:{ height?:number; width?:number; units?:string }={} 
-  ) {
+  constructor( id:string )
+  {
+    // #if GENERIC
+      if( arguments.length > 1 )
+      {
+        throw new Error(
+          "ProgressBar no longer accepts any additional options, " +
+          "please use CSS rules to modify its appearance instead."
+        );
+      }
+    // #endif
+
     // Fetch the sub-elements for later.
     this.div = <HTMLDivElement>document.querySelector(id + " .progress");
     // Get the loading bar element, so it can be resized to fit the viewer.
     this.bar = <HTMLDivElement>this.div.parentNode;
-
-    // Get options, with sensible defaults.
-    this.height = height || 100;
-    this.width = width || 100;
-    this.units = units || "%";
-
-    // Initialize heights.
-    this.div.style.height = this.height + this.units;
   }
 
-  _updateBar() {
-    if (this._indeterminate) {
+  #updateBar()
+  {
+    if( this._indeterminate )
+    {
       this.div.classList.add("indeterminate");
-      this.div.style.width = this.width + this.units;
       return;
     }
-
     this.div.classList.remove("indeterminate");
-    const progressSize = (this.width * this._percent) / 100;
-    this.div.style.width = progressSize + this.units;
+
+    const doc = document.documentElement;
+    doc.style.setProperty("--progressBar-percent", `${this._percent}%`);
   }
 
-  set percent(val) {
+  set percent( val )
+  {
     this._indeterminate = isNaN(val);
     this._percent = clamp(val, 0, 100);
-    this._updateBar();
+    this.#updateBar();
   }
 
   setWidth( viewer?:HTMLDivElement ) 
   {
-    if (!viewer) {
-      return;
-    }
+    if( !viewer ) return;
+    
     const container = <HTMLElement>viewer.parentNode;
     const scrollbarWidth = container.offsetWidth - viewer.offsetWidth;
-    if (scrollbarWidth > 0) {
+    if( scrollbarWidth > 0 )
+    {
       const doc = document.documentElement;
-      doc.style.setProperty(LOADINGBAR_END_OFFSET_VAR, `${scrollbarWidth}px`);
+      doc.style.setProperty("--progressBar-end-offset", `${scrollbarWidth}px`);
     }
   }
 
-  hide() {
-    if (!this.visible) {
-      return;
-    }
+  hide()
+  {
+    if( !this.visible ) return;
+    
     this.visible = false;
     this.bar.classList.add("hidden");
   }
 
-  show() {
-    if (this.visible) {
-      return;
-    }
+  show()
+  {
+    if( this.visible ) return;
+    
     this.visible = true;
     this.bar.classList.remove("hidden");
   }

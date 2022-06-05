@@ -3,11 +3,11 @@
 ** ------------------------ */
 
 import { css_1, css_2 } from "../../test/alias.js";
-import { type FindCtrlrState, PDFFindController } from "./pdf_find_controller.js";
-import { SimpleLinkService } from "./pdf_link_service.js";
 import { getDocument, PDFDocumentProxy } from "../pdf.ts-src/display/api.js";
 import { buildGetDocumentParams } from "../test_utils.js";
 import { EventBus, EventMap } from "./event_utils.js";
+import { PDFFindController, type FindCtrlrState } from "./pdf_find_controller.js";
+import { SimpleLinkService } from "./pdf_link_service.js";
 
 const strttime = performance.now();
 /*81---------------------------------------------------------------------------*/
@@ -51,7 +51,7 @@ async function initPdfFindController( filename?:string )
   return { eventBus, pdfFindController, loadingTask };
 }
 
-interface TestSearchParms
+interface _TestSearchP
 {
   eventBus:EventBus;
   pdfFindController:PDFFindController;
@@ -73,7 +73,7 @@ function testSearch({
   selectedMatch,
   pageMatches,
   pageMatchesLength,
-}:TestSearchParms ) {
+}:_TestSearchP ) {
   return new Promise<void>(function( this:any, resolve ) {
     const eventState:EventMap["find"] = Object.assign(
       Object.create(null),

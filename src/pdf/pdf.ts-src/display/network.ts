@@ -17,26 +17,26 @@
  * limitations under the License.
  */
 
-import { createPromiseCap, PromiseCap } from "../../../lib/promisecap.js";
 import { HttpStatusCode } from "../../../lib/HttpStatusCode.js";
+import { createPromiseCap, PromiseCap } from "../../../lib/promisecap.js";
 import { assert } from "../../../lib/util/trace.js";
-import { 
-  type IPDFStream, 
-  type IPDFStreamRangeReader, 
-  type IPDFStreamReader, 
-  type ReadValue 
+import {
+  type IPDFStream,
+  type IPDFStreamRangeReader,
+  type IPDFStreamReader,
+  type ReadValue
 } from "../interfaces.js";
 import {
   AbortException,
   MissingPDFException,
   stringToBytes,
-  UnexpectedResponseException,
+  UnexpectedResponseException
 } from "../shared/util.js";
-import { type DocumentInitParms } from "./api.js";
+import { type DocumentInitP } from "./api.js";
 import {
   createResponseStatusError,
   extractFilenameFromHeader,
-  validateRangeRequestCapabilities,
+  validateRangeRequestCapabilities
 } from "./network_utils.js";
 /*81---------------------------------------------------------------------------*/
 
@@ -259,20 +259,20 @@ class NetworkManager
 
 export class PDFNetworkStream implements IPDFStream
 {
-  #source:DocumentInitParms;
+  #source:DocumentInitP;
   #manager:NetworkManager;
-  // #rangeChunkSize;
-  #fullRequestReader?:PDFNetworkStreamFullRequestReader;
+  #rangeChunkSize:number | undefined;
+  #fullRequestReader:PDFNetworkStreamFullRequestReader | undefined;
   #rangeRequestReaders:PDFNetworkStreamRangeRequestReader[] = [];
 
-  constructor( source:DocumentInitParms ) 
+  constructor( source:DocumentInitP ) 
   {
     this.#source = source;
     this.#manager = new NetworkManager( source.url!, {
       httpHeaders: source.httpHeaders,
       withCredentials: source.withCredentials,
     });
-    // this.#rangeChunkSize = source.rangeChunkSize;
+    this.#rangeChunkSize = source.rangeChunkSize;
   }
 
   #onRangeRequestReaderClosed = ( reader:PDFNetworkStreamRangeRequestReader ) =>
@@ -315,7 +315,7 @@ export class PDFNetworkStream implements IPDFStream
   {
     this.#fullRequestReader?.cancel(reason);
 
-    for (const reader of this.#rangeRequestReaders.slice(0)) 
+    for( const reader of this.#rangeRequestReaders.slice(0) )
     {
       reader.cancel(reason);
     }
@@ -350,13 +350,13 @@ class PDFNetworkStreamFullRequestReader implements IPDFStreamReader
   #done = false;
   _storedError?:MissingPDFException | UnexpectedResponseException;
 
-  #filename:string | null = null;
+  #filename:string | undefined;
   get filename() { return this.#filename; }
 
   /** @implements */
   onProgress:(( data:{ loaded:number, total:number } ) => void) | undefined;
 
-  constructor( manager:NetworkManager, source:DocumentInitParms )
+  constructor( manager:NetworkManager, source:DocumentInitP )
   {
     this.#manager = manager;
 
@@ -400,14 +400,15 @@ class PDFNetworkStreamFullRequestReader implements IPDFStreamReader
     // Setting right content length.
     this.#contentLength = suggestedLength || this.#contentLength;
 
-    this.#filename = extractFilenameFromHeader(getResponseHeader);
+    this.#filename = extractFilenameFromHeader( getResponseHeader);
 
-    if (this.#isRangeSupported) {
+    if( this.#isRangeSupported )
+    {
       // NOTE: by cancelling the full request, and then issuing range
       // requests, there will be an issue for sites where you can only
       // request the pdf once. However, if this is the case, then the
       // server should not be returning that it can support range requests.
-      this.#manager.abortRequest(fullRequestXhrId);
+      this.#manager.abortRequest( fullRequestXhrId);
     }
 
     this.#headersReceivedCapability.resolve();
@@ -491,7 +492,7 @@ class PDFNetworkStreamFullRequestReader implements IPDFStreamReader
     if (this.#manager.isPendingRequest(this.#fullRequestId)) {
       this.#manager.abortRequest(this.#fullRequestId);
     }
-    // this.#fullRequestReader = null;
+    // this.#fullRequestReader = undefined;
   }
 }
 
@@ -502,13 +503,13 @@ class PDFNetworkStreamRangeRequestReader implements IPDFStreamRangeReader
   _url;
   #requestId:number;
   #requests:PromiseCap< ReadValue >[] = [];
-  #queuedChunk:ArrayBufferLike | null = null;
+  #queuedChunk:ArrayBufferLike | undefined;
   #done = false;
   _storedError:MissingPDFException | UnexpectedResponseException | undefined;
 
   /** @implements */
   onProgress:(( data:{ loaded:number } ) => void) | undefined;
-  onClosed:(( reader:PDFNetworkStreamRangeRequestReader ) => void) | null = null;
+  onClosed?:( reader:PDFNetworkStreamRangeRequestReader ) => void;
 
   /** @override */
   get isStreamingSupported() { return false; }
@@ -542,7 +543,7 @@ class PDFNetworkStreamRangeRequestReader implements IPDFStreamRangeReader
       this.#queuedChunk = chunk;
     }
     this.#done = true;
-    for (const requestCapability of this.#requests) 
+    for( const requestCapability of this.#requests )
     {
       requestCapability.resolve({ value: undefined, done: true });
     }
@@ -552,12 +553,12 @@ class PDFNetworkStreamRangeRequestReader implements IPDFStreamRangeReader
 
   #onError = ( status:HttpStatusCode ) => {
     this._storedError = createResponseStatusError(status, this._url);
-    for (const requestCapability of this.#requests) 
+    for( const requestCapability of this.#requests )
     {
       requestCapability.reject(this._storedError);
     }
     this.#requests.length = 0;
-    this.#queuedChunk = null;
+    this.#queuedChunk = undefined;
   }
 
   #onProgress = ( evt:{ loaded:number } ) =>
@@ -571,18 +572,16 @@ class PDFNetworkStreamRangeRequestReader implements IPDFStreamRangeReader
   /** @implements */
   async read() 
   {
-    if( this._storedError ) throw this._storedError;
-
-    if( this.#queuedChunk !== null )
+    if( this._storedError )
+      throw this._storedError;
+    if( this.#queuedChunk !== undefined )
     {
       const chunk = this.#queuedChunk;
-      this.#queuedChunk = null;
+      this.#queuedChunk = undefined;
       return { value: chunk, done: false } as ReadValue;
     }
-    if (this.#done) 
-    {
+    if( this.#done )
       return { value: undefined, done: true } as ReadValue;
-    }
     const requestCapability = createPromiseCap< ReadValue >();
     this.#requests.push(requestCapability);
     return requestCapability.promise;
@@ -592,11 +591,13 @@ class PDFNetworkStreamRangeRequestReader implements IPDFStreamRangeReader
   cancel( reason:object ) 
   {
     this.#done = true;
-    for (const requestCapability of this.#requests) {
+    for( const requestCapability of this.#requests )
+    {
       requestCapability.resolve({ value: undefined, done: true });
     }
     this.#requests.length = 0;
-    if (this.#manager.isPendingRequest(this.#requestId)) {
+    if( this.#manager.isPendingRequest(this.#requestId) )
+    {
       this.#manager.abortRequest(this.#requestId);
     }
     this.#close();

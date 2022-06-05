@@ -21,11 +21,11 @@ import { html } from "../../lib/dom.js";
 import { type Order } from "../pdf.ts-src/core/catalog.js";
 import { PDFDocumentProxy } from "../pdf.ts-src/display/api.js";
 import { OptionalContentConfig } from "../pdf.ts-src/display/optional_content_config.js";
-import { BaseTreeViewer, type BaseTreeViewerCtorParms } from "./base_tree_viewer.js";
+import { BaseTreeViewer, type BaseTreeViewerCtorP } from "./base_tree_viewer.js";
 import { type IL10n } from "./interfaces.js";
 /*81---------------------------------------------------------------------------*/
 
-interface PDFLayerViewerOptions extends BaseTreeViewerCtorParms
+interface PDFLayerViewerOptions extends BaseTreeViewerCtorP
 {
   /**
    * Localization service.
@@ -33,7 +33,7 @@ interface PDFLayerViewerOptions extends BaseTreeViewerCtorParms
   l10n?:IL10n;
 }
 
-interface PDFLayerViewerRenderParms
+interface _PDFLayerViewerRenderP
 {
   /**
    * An {OptionalContentConfig} instance.
@@ -133,7 +133,7 @@ export class PDFLayerViewer extends BaseTreeViewer
   }
 
   /** @implements */
-  render({ optionalContentConfig, pdfDocument }:PDFLayerViewerRenderParms ) 
+  render({ optionalContentConfig, pdfDocument }:_PDFLayerViewerRenderP ) 
   {
     if( this.#optionalContentConfig )
     {

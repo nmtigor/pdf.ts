@@ -17,38 +17,33 @@
  * limitations under the License.
  */
 
+import { assert } from "../../../lib/util/trace.js";
 import {
   bytesToString,
   FormatError,
   info,
   InvalidPDFException,
-  warn,
+  warn
 } from "../shared/util.js";
-import {
-  Cmd,
-  Dict,
-  isCmd,
-  type ObjNoRef,
-  type Obj,
-  Ref,
-  RefSet,
-  CIRCULAR_REF,
-} from "./primitives.js";
-import { Lexer, Parser } from "./parser.js";
+import { BaseStream } from "./base_stream.js";
+import { ChunkedStream } from "./chunked_stream.js";
 import {
   DocStats,
   MissingDataException,
   ParserEOFException,
   XRefEntryException,
-  XRefParseException,
+  XRefParseException
 } from "./core_utils.js";
 import { CipherTransformFactory } from "./crypto.js";
-import { Stream } from "./stream.js";
-import { ChunkedStream } from "./chunked_stream.js";
-import { type PDFDocumentStats } from "../display/api.js";
+import { Lexer, Parser } from "./parser.js";
 import { BasePdfManager } from "./pdf_manager.js";
-import { assert } from "../../../lib/util/trace.js";
-import { BaseStream } from "./base_stream.js";
+import {
+  CIRCULAR_REF, Cmd,
+  Dict,
+  isCmd, Ref,
+  RefSet, type Obj, type ObjNoRef
+} from "./primitives.js";
+import { Stream } from "./stream.js";
 /*81---------------------------------------------------------------------------*/
 
 interface XRefEntry
@@ -181,13 +176,13 @@ export class XRef
           return;
         }
       } catch (ex) {
-        if( ex instanceof MissingDataException ) throw ex;        
-        
+        if( ex instanceof MissingDataException )
+          throw ex;        
         warn(`XRef.parse - Invalid "Pages" reference: "${ex}".`);
       }
     }
-    if( !recoveryMode ) throw new XRefParseException();
-
+    if( !recoveryMode ) 
+      throw new XRefParseException();
     // Even recovery failed, there's nothing more we can do here.
     throw new InvalidPDFException("Invalid Root reference.");
   }
@@ -673,29 +668,26 @@ export class XRef
       }
       // read the trailer dictionary
       const dict = <Dict>parser.getObj();
-      if( !(dict instanceof Dict) ) continue;
-
+      if( !(dict instanceof Dict) )
+        continue;
       // Do some basic validation of the trailer/root dictionary candidate.
       try {
         const rootDict = dict.get("Root");
-        if (!(rootDict instanceof Dict)) {
+        if (!(rootDict instanceof Dict)) 
           continue;
-        }
         const pagesDict = rootDict.get("Pages");
-        if (!(pagesDict instanceof Dict)) {
+        if (!(pagesDict instanceof Dict)) 
           continue;
-        }
         const pagesCount = pagesDict.get("Count");
-        if (!Number.isInteger(pagesCount)) {
+        if (!Number.isInteger(pagesCount) )
           continue;
-        }
         // The top-level /Pages dictionary isn't obviously corrupt.
       } catch (ex) {
         continue;
       }
       // taking the first one with 'ID'
-      if( dict.has("ID") ) return dict;
-
+      if( dict.has("ID") )
+        return dict;
         // The current dictionary is a candidate, but continue searching.
       trailerDict = dict;
     }
@@ -806,8 +798,8 @@ export class XRef
 
       return this.topDict!;
     } catch (e) {
-      if( e instanceof MissingDataException ) throw e;
-
+      if( e instanceof MissingDataException )
+        throw e;
       info("(while reading XRef): " + e);
 
       this.startXRefQueue.shift();
@@ -1012,8 +1004,8 @@ export class XRef
 
       const obj = <ObjNoRef>parser.getObj();
       entries[i] = obj;
-      if( obj instanceof BaseStream ) continue;
-
+      if( obj instanceof BaseStream )
+        continue;
       const num = nums[i];
       const entry = this.entries[num];
       if( entry && entry.offset === tableOffset && entry.gen === i )

@@ -18,11 +18,12 @@
  */
 
 import { type AnnotStorageRecord } from "../display/annotation_layer.js";
-import { Thread, MessageHandler } from "../shared/message_handler.js";
+import { MessageHandler, Thread } from "../shared/message_handler.js";
 import {
   AbortException,
   createValidAbsoluteUrl,
-  warn,
+  shadow,
+  warn
 } from "../shared/util.js";
 import { AnnotationFactory } from "./annotation.js";
 import { Catalog } from "./catalog.js";
@@ -39,11 +40,9 @@ function parseDocBaseUrl( url?:string )
 {
   if( url )
   {
-    const absoluteUrl = createValidAbsoluteUrl(url);
-    if (absoluteUrl) 
-    {
+    const absoluteUrl = createValidAbsoluteUrl( url );
+    if( absoluteUrl )
       return absoluteUrl.href;
-    }
     warn(`Invalid absolute docBaseUrl: "${url}".`);
   }
   return undefined;
@@ -76,7 +75,8 @@ export abstract class BasePdfManager
   protected _docBaseUrl:URL | string | undefined;
   get docBaseUrl() 
   {
-    return this._docBaseUrl;
+    const catalog = this.pdfDocument.catalog!;
+    return shadow(this, "docBaseUrl", catalog.baseUrl || this._docBaseUrl);
   }
 
   evaluatorOptions!:EvaluatorOptions;
@@ -189,7 +189,7 @@ export class LocalPdfManager extends BasePdfManager
     this.enableXfa = enableXfa;
 
     const stream = new Stream(data);
-    this.pdfDocument = new PDFDocument(this, stream);
+    this.pdfDocument = new PDFDocument( this, stream );
     this.#loadedStreamPromise = Promise.resolve(stream);
   }
 
@@ -237,9 +237,9 @@ export class LocalPdfManager extends BasePdfManager
   terminate( reason:AbortException ) {}
 }
 
-interface NetworkPdfManagerCtorParms
+interface _NetworkPdfManagerCtorP
 {
-  msgHandler:MessageHandler< Thread.worker >;
+  msgHandler:MessageHandler< Thread.worker>;
   password:string | undefined;
   length:number;
   disableAutoFetch:boolean;
@@ -252,7 +252,7 @@ export class NetworkPdfManager extends BasePdfManager
 
   constructor( docId:string, 
     pdfNetworkStream:PDFWorkerStream, 
-    args:NetworkPdfManagerCtorParms,
+    args:_NetworkPdfManagerCtorP,
     evaluatorOptions:EvaluatorOptions, 
     enableXfa?:boolean,
     docBaseUrl?:string

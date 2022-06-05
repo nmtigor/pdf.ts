@@ -53,27 +53,26 @@ abstract class NameOrNumberTree<T extends string | number>
     while( queue.length > 0 )
     {
       const obj = xref.fetchIfRef( queue.shift()! );
-      if( !(obj instanceof Dict) ) continue;
-
+      if( !(obj instanceof Dict) )
+        continue;
       if( obj.has("Kids") ) 
       {
         const kids = <Ref[]>obj.get("Kids");
-        for( let i = 0, ii = kids.length; i < ii; i++ )
+        if( !Array.isArray(kids) ) 
+          continue;
+        for( const kid of kids )
         {
-          const kid = kids[i];
           if( processed.has(kid) )
-          {
             throw new FormatError(`Duplicate entry in "${this.#type}" tree.`);
-          }
-          queue.push(kid);
-          processed.put(kid);
+          queue.push( kid );
+          processed.put( kid );
         }
         continue;
       }
       const entries = obj.get(this.#type);
-      if( !Array.isArray(entries) ) continue;
-
-      for( let i = 0, ii = entries.length; i < ii; i += 2)
+      if( !Array.isArray(entries) ) 
+        continue;
+      for( let i = 0, ii = entries.length; i < ii; i += 2 )
       {
         map.set( <T>xref.fetchIfRef(entries[i]), <Dict>xref.fetchIfRef(entries[i+1]) );
       }
@@ -121,13 +120,11 @@ abstract class NameOrNumberTree<T extends string | number>
           l = m + 1;
         } 
         else {
-          kidsOrEntries = <Dict>xref.fetchIfRef(kids[m]);
+          kidsOrEntries = kid;
           break;
         }
       }
-      if (l > r) {
-        return null;
-      }
+      if( l > r ) return null;
     }
 
     // If we get here, then we have found the right entry. Now go through the

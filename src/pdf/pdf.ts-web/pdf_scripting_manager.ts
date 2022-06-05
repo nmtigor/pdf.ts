@@ -20,13 +20,13 @@
 /** @typedef {import("./event_utils").EventBus} EventBus */
 
 import { createPromiseCap, PromiseCap } from "../../lib/promisecap.js";
-import { shadow } from "../pdf.ts-src/shared/util.js";
-import { apiPageLayoutToViewerModes, PageLayout, RenderingStates } from "./ui_utils.js";
 import { PDFDocumentProxy } from "../pdf.ts-src/display/api.js";
-import { PDFViewer } from "./pdf_viewer.js";
-import { IScripting, type MouseState } from "./interfaces.js";
+import { shadow } from "../pdf.ts-src/shared/util.js";
 import { DefaultExternalServices, type ScriptingDocProperties } from "./app.js";
 import { EventBus, EventMap } from "./event_utils.js";
+import { IScripting, type MouseState } from "./interfaces.js";
+import { PDFViewer } from "./pdf_viewer.js";
+import { apiPageLayoutToViewerModes, PageLayout, RenderingStates } from "./ui_utils.js";
 /*81---------------------------------------------------------------------------*/
 
 interface PDFScriptingManagerOptions
@@ -195,21 +195,20 @@ export class PDFScriptingManager
       this.#mouseState.isDown = false;
     });
 
-    for (const [name, listener] of this.#internalEvents) 
+    for( const [name, listener] of this.#internalEvents ) 
     {
-      this.#eventBus._on(name, listener);
+      this.#eventBus._on( name, listener );
     }
-    for (const [name, listener] of this.#domEvents) 
+    for( const [name, listener] of this.#domEvents ) 
     {
-      window.addEventListener(name, listener);
+      window.addEventListener( name, listener, true );
     }
 
     try {
       const docProperties = await this.#getDocProperties();
       if (pdfDocument !== this.#pdfDocument) 
-      {
-        return; // The document was closed while the properties resolved.
-      }
+        // The document was closed while the properties resolved.
+        return; 
 
       await this._scripting?.createSandbox({
         objects,
@@ -538,15 +537,15 @@ export class PDFScriptingManager
       await this._scripting.destroySandbox();
     } catch (ex) {}
 
-    for (const [name, listener] of this.#internalEvents) 
+    for( const [name, listener] of this.#internalEvents )
     {
       this.#eventBus._off(name, listener);
     }
     this.#internalEvents.clear();
 
-    for (const [name, listener] of this.#domEvents) 
+    for( const [name, listener] of this.#domEvents )
     {
-      window.removeEventListener(name, listener);
+      window.removeEventListener( name, listener, true );
     }
     this.#domEvents.clear();
 

@@ -18,25 +18,19 @@
  */
 
 import { isObjectLike } from "../../../../lib/jslang.js";
-import { 
-  type AvailableSpace, 
-  type XFAAttrs, 
-  type XFAExtra, 
-  type XFAGlobalData, 
-  type XFAElData, 
-  type XFAHTMLObj, 
-  type XFAIds, 
-  type XFAStyleData,
-  type XFAValue,
-  type XFANsAttrs,
-  type XFACleanup, 
-} from "./alias.js";
-import { getInteger, getKeyword, HTMLResult } from "./utils.js";
-import { type rect_t, shadow, warn, utf8StringToString } from "../../shared/util.js";
-import { NamespaceIds, type XFANsId } from "./namespaces.js";
-import { Builder } from "./builder.js";
-import { searchNode } from "./som.js";
+import { shadow, utf8StringToString, warn, type rect_t } from "../../shared/util.js";
 import { encodeToXmlString } from "../core_utils.js";
+import {
+  type AvailableSpace,
+  type XFAAttrs, type XFACleanup, type XFAElData, type XFAExtra,
+  type XFAGlobalData, type XFAHTMLObj,
+  type XFAIds, type XFANsAttrs, type XFAStyleData,
+  type XFAValue
+} from "./alias.js";
+import { Builder } from "./builder.js";
+import { NamespaceIds, type XFANsId } from "./namespaces.js";
+import { searchNode } from "./som.js";
+import { getInteger, getKeyword, HTMLResult } from "./utils.js";
 /*81---------------------------------------------------------------------------*/
 
 // We use these symbols to avoid name conflict between tags
@@ -170,7 +164,7 @@ export abstract class XFAObject
   /** @final */
   [$uid]:string;
   /** @final */
-  [$globalData]:XFAGlobalData;
+  [$globalData]?:XFAGlobalData | undefined;
 
   id!:string;
 
@@ -206,7 +200,7 @@ export abstract class XFAObject
   /* _attributes */
   [_setAttributes]?:Set<string>;
   /** @final */
-  [$setSetAttributes]( attributes:Record<string,string> )
+  [$setSetAttributes]( attributes:Record<string, string> )
   {
     // Just keep set attributes because it can be used in a proto.
     this[_setAttributes] = new Set( Object.keys(attributes) );
@@ -359,7 +353,7 @@ export abstract class XFAObject
   /** @final */
   [$getTemplateRoot]()
   {
-    return this[$globalData].template;
+    return this[$globalData]!.template;
   }
 
   [$isSplittable]() { return false; }
@@ -572,7 +566,7 @@ export abstract class XFAObject
 
   /**
    * Update the node with properties coming from a prototype and apply
-   * this function recursivly to all children.
+   * this function recursively to all children.
    * @final
    */
   [$resolvePrototypes]( ids:XFAIds, ancestors=new Set<XFAObject>() )
@@ -1275,7 +1269,7 @@ export abstract class OptionObject extends ContentObject
 
 export abstract class StringObject extends ContentObject 
 {
-  override [$content]:string | Date | string[] | [number,number][];
+  override [$content]!:string | Date | string[] | [number,number][];
 
   /** @final */
   override [$finalize]()
@@ -1286,7 +1280,7 @@ export abstract class StringObject extends ContentObject
 
 export abstract class IntegerObject extends ContentObject
 {
-  override [$content]:string | number;
+  override [$content]!:string | number;
 
   [_defaultValue]:number;
   [_validator]:( n:number ) => boolean;

@@ -13,23 +13,20 @@
  * limitations under the License.
  */
 
-import { assert } from '../../lib/util/trace.js';
 import { Locale } from '../../lib/Locale.js';
-import { viewerapp, DefaultExternalServices } from "./app.js";
-import { BasePreferences } from "./preferences.js";
+import { assert } from '../../lib/util/trace.js';
+import { DefaultExternalServices, viewerapp } from "./app.js";
+import { type UserOptions } from "./app_options.js";
 import { DownloadManager } from "./download_manager.js";
 import { GenericL10n } from "./genericl10n.js";
-import { type UserOptions } from "./app_options.js";
+import { BasePreferences } from "./preferences.js";
 // import { GenericScripting } from "./generic_scripting.js";
 /*81---------------------------------------------------------------------------*/
 
 // #if !GENERIC
-  // if (typeof PDFJSDev !== "undefined" && !PDFJSDev.test("GENERIC")) {
   throw new Error(
-    'Module "pdfjs-web/genericcom" shall not be used outside ' +
-    "GENERIC build."
+    'Module "pdfjs-web/genericcom" shall not be used outside GENERIC build.'
   );
-  // }
 // #endif
 
 export const GenericCom = {};

@@ -17,7 +17,10 @@
  * limitations under the License.
  */
 
+import { shadow, warn } from "../../shared/util.js";
+import { type XFAAttrs } from "./alias.js";
 import { $buildXFAObject, NamespaceIds } from "./namespaces.js";
+import { getInteger, getStringOption } from "./utils.js";
 import {
   $content,
   $finalize,
@@ -28,11 +31,8 @@ import {
   OptionObject,
   StringObject,
   XFAObject,
-  XFAObjectArray,
+  XFAObjectArray
 } from "./xfa_object.js";
-import { type XFAAttrs } from "./alias.js";
-import { getInteger, getStringOption } from "./utils.js";
-import { shadow, warn } from "../../shared/util.js";
 /*81---------------------------------------------------------------------------*/
 
 const CONFIG_NS_ID = NamespaceIds.config.id;
@@ -208,7 +208,7 @@ class BatchOutput extends XFAObject
 
 class BehaviorOverride extends ContentObject
 {
-  override [$content]:string | Map<string,string>;
+  override [$content]!:string | Map<string,string>;
 
   constructor( attributes:XFAAttrs )
   {
@@ -575,7 +575,7 @@ class EquateRange extends XFAObject
 
 class Exclude extends ContentObject
 {
-  override [$content]:string | string[];
+  override [$content]!:string | string[];
 
   constructor( attributes:XFAAttrs )
   {
@@ -911,7 +911,7 @@ class Overprint extends OptionObject
 
 class Packets extends StringObject
 {
-  override [$content]:string | Date | string[];
+  override [$content]!:string | Date | string[];
 
   constructor( attributes:XFAAttrs )
   {
@@ -955,7 +955,7 @@ class PageOffset extends XFAObject
 
 class PageRange extends StringObject
 {
-  override [$content]:string | [number,number][];
+  override [$content]!:string | [number,number][];
 
   constructor( attributes:XFAAttrs )
   {
@@ -1220,7 +1220,7 @@ class Ps extends XFAObject
 
 class Range extends ContentObject
 {
-  override [$content]:string | [number,number][];
+  override [$content]!:string | [number,number][];
 
   constructor( attributes:XFAAttrs )
   {
@@ -1245,7 +1245,7 @@ class Range extends ContentObject
 
 class Record extends ContentObject
 {
-  override [$content]:string;
+  override [$content]!:string;
   
   constructor( attributes:XFAAttrs )
   {
@@ -1265,7 +1265,7 @@ class Record extends ContentObject
 
 class Relevant extends ContentObject
 {
-  override [$content]:string | string[];
+  override [$content]!:string | string[];
 
   constructor( attributes:XFAAttrs )
   {
@@ -1280,7 +1280,7 @@ class Relevant extends ContentObject
 
 class Rename extends ContentObject
 {
-  override [$content]:string;
+  override [$content]!:string;
 
   constructor( attributes:XFAAttrs )
   {
@@ -1565,7 +1565,7 @@ class Validate extends OptionObject
 
 class ValidateApprovalSignatures extends ContentObject
 {
-  override [$content]:string | string[];
+  override [$content]!:string | string[];
 
   constructor( attributes:XFAAttrs )
   {
@@ -1673,7 +1673,7 @@ class Whitespace extends OptionObject
 
 class Window extends ContentObject
 {
-  override [$content]:string | [number,number];
+  override [$content]!:string | [number,number];
 
   constructor( attributes:XFAAttrs )
   {

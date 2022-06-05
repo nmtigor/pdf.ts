@@ -34,9 +34,10 @@
 // eslint-disable-next-line max-len
 /** @typedef {import("./pdf_rendering_queue").PDFRenderingQueue} PDFRenderingQueue */
 
+import { html, type HSElement } from "../../lib/dom.js";
 import { createPromiseCap } from "../../lib/promisecap.js";
 import { AnnotationStorage } from "../pdf.ts-src/display/annotation_storage.js";
-import { PDFPageProxy, type RenderParms, type TextItem } from "../pdf.ts-src/display/api.js";
+import { PDFPageProxy, type RenderP, type TextItem } from "../pdf.ts-src/display/api.js";
 import { PageViewport, StatTimer } from "../pdf.ts-src/display/display_utils.js";
 import { OptionalContentConfig } from "../pdf.ts-src/display/optional_content_config.js";
 import {
@@ -45,34 +46,31 @@ import {
   SVGGraphics
 } from "../pdf.ts-src/pdf.js";
 import { AnnotationMode, type matrix_t, type point_t } from "../pdf.ts-src/shared/util.js";
+import { AnnotationLayerBuilder } from "./annotation_layer_builder.js";
 import { type ErrorMoreInfo } from "./app.js";
-import { 
-  type IL10n, 
-  type IPDFAnnotationLayerFactory, 
-  type IPDFStructTreeLayerFactory, 
-  type IPDFTextLayerFactory, 
-  type IPDFXfaLayerFactory, 
-  type IVisibleView 
+import { compatibilityParams } from "./app_options.js";
+import { BaseViewer, PageColors } from "./base_viewer.js";
+import { EventBus, EventMap } from "./event_utils.js";
+import {
+  type IL10n,
+  type IPDFAnnotationLayerFactory,
+  type IPDFStructTreeLayerFactory,
+  type IPDFTextLayerFactory,
+  type IPDFXfaLayerFactory,
+  type IVisibleView
 } from "./interfaces.js";
 import { NullL10n } from "./l10n_utils.js";
 import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
-import { AnnotationLayerBuilder } from "./annotation_layer_builder.js";
+import { StructTreeLayerBuilder } from "./struct_tree_layer_builder.js";
 import { TextLayerBuilder } from "./text_layer_builder.js";
 import {
   approximateFraction,
   DEFAULT_SCALE,
   OutputScale,
-  RendererType,
-  roundToDivide,
-  TextLayerMode,
-  RenderingStates
+  RendererType, RenderingStates, roundToDivide,
+  TextLayerMode
 } from "./ui_utils.js";
-import { StructTreeLayerBuilder } from "./struct_tree_layer_builder.js";
 import { XfaLayerBuilder } from "./xfa_layer_builder.js";
-import { html, type HSElement } from "../../lib/dom.js";
-import { compatibilityParams } from "./app_options.js";
-import { BaseViewer } from "./base_viewer.js";
-import { EventBus, EventMap } from "./event_utils.js";
 /*81---------------------------------------------------------------------------*/
 
 interface PDFPageViewOptions
@@ -161,6 +159,13 @@ interface PDFPageViewOptions
   maxCanvasPixels?:number | undefined;
   
   /**
+   * Overwrites background and foreground colors
+   * with user defined ones in order to improve readability in high contrast
+   * mode.
+   */
+  pageColors?:PageColors | undefined;
+  
+  /**
    * Localization service.
    */
   l10n:IL10n;
@@ -175,14 +180,14 @@ interface PaintTask
   cancel():void;
 }
 
-interface CssTransformParms
+interface _CSSTransformP
 {
   target:HTMLCanvasElement | SVGElement;
   redrawAnnotationLayer?:boolean;
   redrawXfaLayer?:boolean;
 }
 
-interface PDFPageViewUpdateParms
+interface _PDFPageViewUpdateP
 {
   scale?:number;
   rotation?:number;
@@ -214,6 +219,7 @@ export class PDFPageView implements IVisibleView
   imageResourcesPath:string;
   useOnlyCssZoom:boolean;
   maxCanvasPixels:number;
+  pageColors:PageColors | undefined;
 
   eventBus:EventBus;
   renderingQueue:PDFRenderingQueue | undefined;
@@ -271,6 +277,7 @@ export class PDFPageView implements IVisibleView
     this.imageResourcesPath = options.imageResourcesPath || "";
     this.useOnlyCssZoom = options.useOnlyCssZoom || false;
     this.maxCanvasPixels = options.maxCanvasPixels || MAX_CANVAS_PIXELS;
+    this.pageColors = options.pageColors;
 
     this.eventBus = options.eventBus;
     this.renderingQueue = options.renderingQueue;
@@ -469,7 +476,7 @@ export class PDFPageView implements IVisibleView
     div.appendChild( this.loadingIconDiv );
   }
 
-  update({ scale=0, rotation, optionalContentConfigPromise }:PDFPageViewUpdateParms ) 
+  update({ scale=0, rotation, optionalContentConfigPromise }:_PDFPageViewUpdateP ) 
   {
     this.scale = scale || this.scale;
     if (typeof rotation === "number") 
@@ -482,17 +489,15 @@ export class PDFPageView implements IVisibleView
     }
 
     const totalRotation = (this.rotation + this.pdfPageRotate) % 360;
-    const viewportScale = this.scale * PixelsPerInch.PDF_TO_CSS_UNITS;
     this.viewport = this.viewport.clone({
-      scale: viewportScale,
+      scale: this.scale * PixelsPerInch.PDF_TO_CSS_UNITS,
       rotation: totalRotation,
     });
 
     if( this._isStandalone )
     {
       const { style } = document.documentElement;
-      style.setProperty("--zoom-factor", String(this.scale));
-      style.setProperty("--viewport-scale-factor", String(viewportScale));
+      style.setProperty("--zoom-factor", <any>this.scale );
     }
 
     if( this.svg )
@@ -605,7 +610,7 @@ export class PDFPageView implements IVisibleView
     target,
     redrawAnnotationLayer=false,
     redrawXfaLayer=false,
-  }:CssTransformParms ) 
+  }:_CSSTransformP ) 
   {
     // Scale target (canvas or svg), its wrapper and page container.
     const width = this.viewport.width;
@@ -844,7 +849,8 @@ export class PDFPageView implements IVisibleView
         error: this._renderError,
       });
 
-      if( error ) throw error;
+      if( error ) 
+        throw error;
     };
 
     const paintTask = this.renderer === RendererType.SVG
@@ -949,7 +955,7 @@ export class PDFPageView implements IVisibleView
     canvas.hidden = true;
     let isCanvasHidden = true;
     const showCanvas = () => {
-      if (isCanvasHidden) 
+      if( isCanvasHidden )
       {
         canvas.hidden = false;
         isCanvasHidden = false;
@@ -958,10 +964,6 @@ export class PDFPageView implements IVisibleView
 
     canvasWrapper.appendChild(canvas);
     this.canvas = canvas;
-
-    // #if MOZCENTRAL || GENERIC
-      (<any>canvas).mozOpaque = true;
-    // #endif
 
     const ctx = canvas.getContext( "2d", {alpha:false} )!;
     const outputScale = (this.outputScale = new OutputScale());
@@ -1006,13 +1008,14 @@ export class PDFPageView implements IVisibleView
     const transform = outputScale.scaled
       ? <matrix_t>[outputScale.sx, 0, 0, outputScale.sy, 0, 0]
       : undefined;
-    const renderContext:RenderParms = {
+    const renderContext:RenderP = {
       canvasContext: ctx,
       transform,
       viewport: this.viewport,
       annotationMode: this.#annotationMode,
       optionalContentConfigPromise: this._optionalContentConfigPromise,
       annotationCanvasMap: this._annotationCanvasMap,
+      pageColors: this.pageColors,
     };
     const renderTask = this.pdfPage!.render( renderContext );
     renderTask.onContinue = ( cont:()=>void ) => {
