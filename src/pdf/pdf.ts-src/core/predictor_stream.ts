@@ -17,65 +17,63 @@
  * limitations under the License.
  */
 
-import { DecodeStream } from "./decode_stream.js";
-import { FormatError } from "../shared/util.js";
-import { Dict } from "./primitives.js";
-import { FlateStream } from "./flate_stream.js";
-import { LZWStream } from "./lzw_stream.js";
-/*81---------------------------------------------------------------------------*/
+import { FormatError } from "../shared/util.ts";
+import { DecodeStream } from "./decode_stream.ts";
+import { FlateStream } from "./flate_stream.ts";
+import { LZWStream } from "./lzw_stream.ts";
+import { Dict } from "./primitives.ts";
+/*80--------------------------------------------------------------------------*/
 
-export interface PredictorStream
-{
-  readBlock():void;
+export interface PredictorStream {
+  readBlock(): void;
 }
 /** @final */
-export class PredictorStream extends DecodeStream
-{
-  predictor!:number;
+export class PredictorStream extends DecodeStream {
+  predictor!: number;
 
-  colors!:number;
-  bits!:number;
-  columns!:number;
+  colors!: number;
+  bits!: number;
+  columns!: number;
 
-  pixBytes!:number;
-  rowBytes!:number;
+  pixBytes!: number;
+  rowBytes!: number;
 
   /**
    * ! Could return non-PredictorStream.
    */
-  constructor( str:FlateStream | LZWStream, maybeLength?:number, params?:Dict )
-  {
-    super( maybeLength );
+  constructor(
+    str: FlateStream | LZWStream,
+    maybeLength?: number,
+    params?: Dict,
+  ) {
+    super(maybeLength);
 
-    if( !(params instanceof Dict) )
-    {
-      return <any>str; // no prediction
+    if (!(params instanceof Dict)) {
+      return <any> str; // no prediction
     }
-    const predictor = (this.predictor = <number | undefined>params.get("Predictor") || 1);
+    const predictor =
+      (this.predictor = <number | undefined> params.get("Predictor") || 1);
 
-    if( predictor <= 1 )
-    {
-      return <any>str; // no prediction
+    if (predictor <= 1) {
+      return <any> str; // no prediction
     }
-    if( predictor !== 2 && (predictor < 10 || predictor > 15) )
-    {
+    if (predictor !== 2 && (predictor < 10 || predictor > 15)) {
       throw new FormatError(`Unsupported predictor: ${predictor}`);
     }
 
-    if( predictor === 2 )
-    {
+    if (predictor === 2) {
       this.readBlock = this.readBlockTiff;
-    } 
-    else {
+    } else {
       this.readBlock = this.readBlockPng;
     }
 
     this.str = str;
     this.dict = str.dict;
 
-    const colors = (this.colors = <number>params.get("Colors") || 1);
-    const bits = (this.bits = <number>params.get("BPC", "BitsPerComponent") || 8);
-    const columns = (this.columns = <number>params.get("Columns") || 1);
+    const colors = (this.colors = <number> params.get("Colors") || 1);
+    const bits =
+      (this.bits = <number> params.get("BPC", "BitsPerComponent") || 8);
+    const columns = (this.columns = <number> params.get("Columns") || 1);
 
     this.pixBytes = (colors * bits + 7) >> 3;
     this.rowBytes = (columns * colors * bits + 7) >> 3;
@@ -83,8 +81,7 @@ export class PredictorStream extends DecodeStream
     return this;
   }
 
-  protected readBlockTiff()
-  {
+  protected readBlockTiff() {
     const rowBytes = this.rowBytes;
 
     const bufferLength = this.bufferLength;
@@ -117,8 +114,7 @@ export class PredictorStream extends DecodeStream
         inbuf = (c & 1) << 7;
         buffer[pos++] = c;
       }
-    } 
-    else if (bits === 8) {
+    } else if (bits === 8) {
       for (i = 0; i < colors; ++i) {
         buffer[pos++] = rawBytes[i];
       }
@@ -126,23 +122,20 @@ export class PredictorStream extends DecodeStream
         buffer[pos] = buffer[pos - colors] + rawBytes[i];
         pos++;
       }
-    } 
-    else if (bits === 16) {
+    } else if (bits === 16) {
       const bytesPerPixel = colors * 2;
       for (i = 0; i < bytesPerPixel; ++i) {
         buffer[pos++] = rawBytes[i];
       }
       for (; i < rowBytes; i += 2) {
-        const sum =
-          ((rawBytes[i] & 0xff) << 8) +
+        const sum = ((rawBytes[i] & 0xff) << 8) +
           (rawBytes[i + 1] & 0xff) +
           ((buffer[pos - bytesPerPixel] & 0xff) << 8) +
           (buffer[pos - bytesPerPixel + 1] & 0xff);
         buffer[pos++] = (sum >> 8) & 0xff;
         buffer[pos++] = sum & 0xff;
       }
-    } 
-    else {
+    } else {
       const compArray = new Uint8Array(colors + 1);
       const bitMask = (1 << bits) - 1;
       let j = 0,
@@ -154,8 +147,8 @@ export class PredictorStream extends DecodeStream
             inbuf = (inbuf << 8) | (rawBytes[j++] & 0xff);
             inbits += 8;
           }
-          compArray[kk] =
-            (compArray[kk] + (inbuf >> (inbits - bits))) & bitMask;
+          compArray[kk] = (compArray[kk] + (inbuf >> (inbits - bits))) &
+            bitMask;
           inbits -= bits;
           outbuf = (outbuf << bits) | compArray[kk];
           outbits += bits;
@@ -166,15 +159,14 @@ export class PredictorStream extends DecodeStream
         }
       }
       if (outbits > 0) {
-        buffer[k++] =
-          (outbuf << (8 - outbits)) + (inbuf & ((1 << (8 - outbits)) - 1));
+        buffer[k++] = (outbuf << (8 - outbits)) +
+          (inbuf & ((1 << (8 - outbits)) - 1));
       }
     }
     this.bufferLength += rowBytes;
   }
 
-  protected readBlockPng() 
-  {
+  protected readBlockPng() {
     const rowBytes = this.rowBytes;
     const pixBytes = this.pixBytes;
 
@@ -270,4 +262,4 @@ export class PredictorStream extends DecodeStream
     this.bufferLength += rowBytes;
   }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

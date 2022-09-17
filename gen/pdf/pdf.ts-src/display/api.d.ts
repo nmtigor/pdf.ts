@@ -1,10 +1,7 @@
-/**
- * @module pdfjsLib
- */
-import { PageColors } from "src/pdf/pdf.ts-web/base_viewer.js";
-import { Stepper } from "src/pdf/pdf.ts-web/debugger.js";
 import { TypedArray } from "../../../lib/alias.js";
 import { PromiseCap } from "../../../lib/promisecap.js";
+import { PageColors } from "../../pdf.ts-web/base_viewer.js";
+import { Stepper } from "../../pdf.ts-web/debugger.js";
 import { type AnnotationData, type FieldObject } from "../core/annotation.js";
 import { type ExplicitDest } from "../core/catalog.js";
 import { type AnnotActions } from "../core/core_utils.js";
@@ -12,24 +9,24 @@ import { DocumentInfo, type XFAData } from "../core/document.js";
 import { type ImgData } from "../core/evaluator.js";
 import { FontExpotDataEx } from "../core/fonts.js";
 import { type CmdArgs } from "../core/font_renderer.js";
+import { type IWorker } from "../core/iworker.js";
 import { type OpListIR } from "../core/operator_list.js";
 import { type ShadingPatternIR } from "../core/pattern.js";
-import { type StructTree } from "../core/struct_tree.js";
-import { type IWorker } from "../core/worker.js";
 import { type XFAElObj } from "../core/xfa/alias.js";
 import { type IPDFStream } from "../interfaces.js";
-import { MessageHandler, Thread, type PageInfo, type PDFInfo } from "../shared/message_handler.js";
-import { AnnotationMode, FontType, PasswordResponses, RenderingIntentFlag, StreamType, UNSUPPORTED_FEATURES, VerbosityLevel, type matrix_t } from "../shared/util.js";
-import { AnnotationStorage } from "./annotation_storage.js";
+import { MessageHandler, type PageInfo, type PDFInfo, Thread } from "../shared/message_handler.js";
+import { AnnotationMode, FontType, type matrix_t, PasswordResponses, RenderingIntentFlag, StreamType, UNSUPPORTED_FEATURES, VerbosityLevel } from "../shared/util.js";
+import { AnnotStorageRecord } from "./annotation_layer.js";
+import { AnnotationStorage, PrintAnnotationStorage } from "./annotation_storage.js";
 import { BaseCanvasFactory } from "./base_factory.js";
 import { CanvasGraphics } from "./canvas.js";
 import { DOMCanvasFactory, DOMCMapReaderFactory, DOMStandardFontDataFactory, PageViewport, StatTimer } from "./display_utils.js";
-import { FontFaceObject, FontLoader } from "./font_loader.js";
+import { FontFaceObject } from "./font_loader.js";
 import { Metadata } from "./metadata.js";
 import { OptionalContentConfig } from "./optional_content_config.js";
-export declare let DefaultCanvasFactory: typeof DOMCanvasFactory;
-export declare let DefaultCMapReaderFactory: typeof DOMCMapReaderFactory;
-export declare let DefaultStandardFontDataFactory: typeof DOMStandardFontDataFactory;
+export declare const DefaultCanvasFactory: typeof DOMCanvasFactory;
+export declare const DefaultCMapReaderFactory: typeof DOMCMapReaderFactory;
+export declare const DefaultStandardFontDataFactory: typeof DOMStandardFontDataFactory;
 /**
  * @param params The document initialization
  *   parameters. The "url" key is always present.
@@ -65,7 +62,7 @@ export interface DocumentInitP {
      * typed arrays (Uint8Array) to improve the memory usage. If PDF data is
      * BASE64-encoded, use `atob()` to convert it to a binary string first.
      */
-    data?: Uint8Array | number[];
+    data?: Uint8Array | number[] | undefined;
     /**
      * Basic authentication headers.
      */
@@ -208,9 +205,7 @@ export interface DocumentInitP {
      * into. Defaults to the current document.
      */
     ownerDocument?: Document | undefined;
-    /**
-     * For testing only.
-     */
+    /** For testing only. */
     styleElement?: HTMLStyleElement;
     /**
      * Disable range request loading of PDF
@@ -396,7 +391,7 @@ export declare class PDFDocumentProxy {
      * @param pageNumber The page number to get. The first page is 1.
      * @return A promise that is resolved with a {@link PDFPageProxy} object.
      */
-    getPage(pageNumber: unknown): Promise<PDFPageProxy>;
+    getPage(pageNumber: number): Promise<PDFPageProxy>;
     /**
      * @param ref The page reference.
      * @return A promise that is resolved with the page index,
@@ -497,9 +492,9 @@ export declare class PDFDocumentProxy {
     getMarkInfo(): Promise<import("../core/catalog.js").MarkInfo | undefined>;
     /**
      * @return A promise that is resolved with a
-     *   {TypedArray} that has the raw data from the PDF.
+     *   {Uint8Array} that has the raw data from the PDF.
      */
-    getData(): Promise<TypedArray>;
+    getData(): Promise<Uint8Array>;
     /**
      * @return A promise that is resolved when the
      *   document's data is loaded. It is resolved with an {Object} that contains
@@ -794,6 +789,7 @@ export interface RenderP {
      * Map some annotation ids with canvases used to render them.
      */
     annotationCanvasMap?: Map<string, HTMLCanvasElement> | undefined;
+    printAnnotationStorage?: PrintAnnotationStorage | undefined;
 }
 /**
  * Page getOperatorList parameters.
@@ -819,13 +815,44 @@ interface _GetOperatorListP {
      * The default value is `AnnotationMode.ENABLE`.
      */
     annotationMode?: AnnotationMode;
+    printAnnotationStorage?: PrintAnnotationStorage;
+}
+/**
+ * Structure tree node. The root node will have a role "Root".
+ */
+export interface StructTreeNode {
+    /**
+     * Array of {@link StructTreeNode} and {@link StructTreeContent} objects.
+     */
+    children: (StructTreeNode | StructTreeContent)[];
+    /**
+     * element's role, already mapped if a role map exists in the PDF.
+     */
+    role: string;
+    alt?: string;
+    lang?: string;
+}
+/**
+ * Structure tree content.
+ */
+export interface StructTreeContent {
+    /**
+     * either "content" for page and stream structure
+     * elements or "object" for object references.
+     */
+    type: "content" | "object";
+    /**
+     * unique id that will map to the text layer.
+     */
+    id?: string;
 }
 export declare type AnnotIntent = "display" | "print" | "richText";
 export declare type Intent = AnnotIntent | "any";
 export declare type PDFObjs = ImgData | ShadingPatternIR;
-interface IntentArgs {
+interface _IntentArgs {
     renderingIntent: RenderingIntentFlag;
     cacheKey: string;
+    annotationStorageMap: AnnotStorageRecord | undefined;
     isOpList?: boolean;
 }
 /**
@@ -847,7 +874,7 @@ export declare class PDFPageProxy {
     objs: PDFObjects<PDFObjs | undefined>;
     _bitmaps: Set<ImageBitmap>;
     cleanupAfterRender: boolean;
-    _structTreePromise: Promise<StructTree | undefined> | undefined;
+    _structTreePromise: Promise<StructTreeNode | undefined> | undefined;
     pendingCleanup: boolean;
     _annotationPromises: Map<string, Promise<AnnotationData[]>>;
     destroyed: boolean;
@@ -908,13 +935,13 @@ export declare class PDFPageProxy {
      * @return An object that contains a promise that is
      *   resolved when the page finishes rendering.
      */
-    render({ canvasContext, viewport, intent, annotationMode, transform, imageLayer, canvasFactory, background, optionalContentConfigPromise, annotationCanvasMap, pageColors, }: RenderP): RenderTask;
+    render({ canvasContext, viewport, intent, annotationMode, transform, imageLayer, canvasFactory, background, optionalContentConfigPromise, annotationCanvasMap, pageColors, printAnnotationStorage, }: RenderP): RenderTask;
     /**
      * @param params Page getOperatorList parameters.
      * @return A promise resolved with an
      *   {@link PDFOperatorList} object that represents the page's operator list.
      */
-    getOperatorList({ intent, annotationMode, }?: _GetOperatorListP): Promise<OpListIR>;
+    getOperatorList({ intent, annotationMode, printAnnotationStorage, }?: _GetOperatorListP): Promise<OpListIR>;
     /**
      * NOTE: All occurrences of whitespace will be replaced by
      * standard spaces (0x20).
@@ -933,11 +960,11 @@ export declare class PDFPageProxy {
      */
     getTextContent(params?: _GetTextContentP): Promise<TextContent>;
     /**
-     * @return {Promise<StructTreeNode>} A promise that is resolved with a
+     * @return A promise that is resolved with a
      *   {@link StructTreeNode} object that represents the page's structure tree,
      *   or `null` when no structure tree is present for the current page.
      */
-    getStructTree(): Promise<StructTree | undefined>;
+    getStructTree(): Promise<StructTreeNode | undefined>;
     /**
      * Destroys the page object.
      * @private
@@ -1045,7 +1072,24 @@ declare class WorkerTransport {
     messageHandler: MessageHandler<Thread.main, Thread.worker>;
     loadingTask: PDFDocumentLoadingTask;
     commonObjs: PDFObjects<PDFCommonObjs>;
-    fontLoader: FontLoader;
+    fontLoader: {
+        readonly isSyncFontLoadingSupported: boolean;
+        docId: string;
+        _onUnsupportedFeature: (_: {
+            featureId: UNSUPPORTED_FEATURES;
+        }) => void;
+        _document: Document;
+        nativeFontFaces: FontFace[];
+        styleElement: HTMLStyleElement | undefined;
+        addNativeFontFace(nativeFontFace: FontFace): void;
+        insertRule(rule: string): void;
+        clear(): void;
+        bind(font: FontFaceObject): Promise<void>;
+        _queueLoadingCallback(callback: (request: import("./font_loader.js").Request) => void): any;
+        readonly isFontLoadingAPISupported: boolean;
+        readonly _loadTestFont: string;
+        _prepareFontLoadEvent(rules: string[], fontsToLoad: FontFaceObject[], request: import("./font_loader.js").Request): void;
+    };
     _getFieldObjectsPromise: Promise<Record<string, FieldObject[]> | undefined> | undefined;
     _hasJSActionsPromise: Promise<boolean> | undefined;
     _params: DocumentInitP;
@@ -1063,7 +1107,7 @@ declare class WorkerTransport {
     _htmlForXfa: XFAElObj | undefined;
     constructor(messageHandler: MessageHandler<Thread.main>, loadingTask: PDFDocumentLoadingTask, networkStream: IPDFStream | undefined, params: DocumentInitP);
     get annotationStorage(): AnnotationStorage;
-    getRenderingIntent(intent: Intent, annotationMode?: AnnotationMode, isOpList?: boolean): IntentArgs;
+    getRenderingIntent(intent: Intent, annotationMode?: AnnotationMode, printAnnotationStorage?: PrintAnnotationStorage | undefined, isOpList?: boolean): _IntentArgs;
     destroy(): Promise<void>;
     setupMessageHandler(): void;
     getData(): Promise<Uint8Array>;
@@ -1085,7 +1129,7 @@ declare class WorkerTransport {
     getJavaScript(): Promise<string[] | undefined>;
     getDocJSActions(): Promise<AnnotActions | undefined>;
     getPageJSActions(pageIndex: number): Promise<AnnotActions | undefined>;
-    getStructTree(pageIndex: number): Promise<StructTree | undefined>;
+    getStructTree(pageIndex: number): Promise<StructTreeNode | undefined>;
     getOutline(): Promise<OutlineNode[] | undefined>;
     getOptionalContentConfig(): Promise<OptionalContentConfig>;
     getPermissions(): Promise<import("../shared/util.js").PermissionFlag[] | undefined>;
@@ -1130,7 +1174,7 @@ export declare class RenderTask {
      * each time the rendering is paused.  To continue rendering call the
      * function that is the first argument to the callback.
      */
-    onContinue?: ((cont: () => void) => void);
+    onContinue?: (cont: () => void) => void;
     constructor(internalRenderTask: InternalRenderTask);
     /**
      * Promise for rendering task completion.
@@ -1142,6 +1186,10 @@ export declare class RenderTask {
      * this object extends will be rejected when cancelled.
      */
     cancel(): void;
+    /**
+     * Whether form fields are rendered separately from the main operatorList.
+     */
+    get separateAnnots(): boolean;
 }
 interface _IRTCtorP_paraams {
     canvasContext: CanvasRenderingContext2D;

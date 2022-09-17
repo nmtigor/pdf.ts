@@ -35,8 +35,9 @@ export function applyMaskImageData({ src, srcPos = 0, dest, destPos = 0, width, 
             dest[destPos++] = elem & 0b10 ? oneMapping : zeroMapping;
             dest[destPos++] = elem & 0b1 ? oneMapping : zeroMapping;
         }
-        if (widthRemainder === 0)
+        if (widthRemainder === 0) {
             continue;
+        }
         const elem = srcPos < srcLength ? src[srcPos++] : 255;
         for (let j = 0; j < widthRemainder; j++) {
             dest[destPos++] = elem & (1 << (7 - j)) ? oneMapping : zeroMapping;
@@ -44,5 +45,5 @@ export function applyMaskImageData({ src, srcPos = 0, dest, destPos = 0, width, 
     }
     return { srcPos, destPos };
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=image_utils.js.map

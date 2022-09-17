@@ -17,10 +17,10 @@
  * limitations under the License.
  */
 
-import { EventBus } from "./event_utils.js";
-import { GrabToPan } from "./grab_to_pan.js";
-import { PresentationModeState } from "./ui_utils.js";
-/*81---------------------------------------------------------------------------*/
+import { EventBus } from "./event_utils.ts";
+import { GrabToPan } from "./grab_to_pan.ts";
+import { PresentationModeState } from "./ui_utils.ts";
+/*80--------------------------------------------------------------------------*/
 
 export const enum CursorTool {
   SELECT = 0, // The default value.
@@ -28,43 +28,42 @@ export const enum CursorTool {
   ZOOM = 2,
 }
 
-interface PDFCursorToolsOptions
-{
+interface PDFCursorToolsOptions {
   /**
    * The document container.
    */
-  container:HTMLDivElement;
+  container: HTMLDivElement;
 
   /**
    * The application event bus.
    */
-  eventBus:EventBus;
+  eventBus: EventBus;
 
   /**
    * The cursor tool that will be enabled
    * on load; the constants from {CursorTool} should be used. The default value
    * is `CursorTool.SELECT`.
    */
-  cursorToolOnLoad:CursorTool | undefined;
+  cursorToolOnLoad: CursorTool | undefined;
 }
 
-export class PDFCursorTools 
-{
-  container:HTMLDivElement;
-  eventBus:EventBus;
+export class PDFCursorTools {
+  container: HTMLDivElement;
+  eventBus: EventBus;
 
   active = CursorTool.SELECT;
-  get activeTool() { return this.active; }
-  activeBeforePresentationMode?:CursorTool | undefined;
+  get activeTool() {
+    return this.active;
+  }
+  activeBeforePresentationMode?: CursorTool | undefined;
 
-  handTool:GrabToPan;
+  handTool: GrabToPan;
 
-  constructor({ 
-    container, 
-    eventBus, 
-    cursorToolOnLoad=CursorTool.SELECT 
-  }:PDFCursorToolsOptions ) 
-  {
+  constructor({
+    container,
+    eventBus,
+    cursorToolOnLoad = CursorTool.SELECT,
+  }: PDFCursorToolsOptions) {
     this.container = container;
     this.eventBus = eventBus;
 
@@ -86,30 +85,30 @@ export class PDFCursorTools
    * @param tool - The cursor mode that should be switched to,
    *   must be one of the values in {CursorTool}.
    */
-  switchTool( tool?:CursorTool ) 
-  {
-    // Cursor tools cannot be used in Presentation Mode.
-    if( this.activeBeforePresentationMode !== undefined ) return; 
-
-    // The requested tool is already active.
-    if( tool === this.active ) return; 
+  switchTool(tool?: CursorTool) {
+    if (this.activeBeforePresentationMode !== undefined) {
+      // Cursor tools cannot be used in Presentation Mode.
+      return;
+    }
+    if (tool === this.active) {
+      // The requested tool is already active.
+      return;
+    }
 
     const disableActiveTool = () => {
-      switch (this.active) 
-      {
+      switch (this.active) {
         case CursorTool.SELECT:
           break;
         case CursorTool.HAND:
           this.handTool.deactivate();
           break;
         case CursorTool.ZOOM:
-        /* falls through */
+          /* falls through */
       }
     };
 
     // Enable the new cursor tool.
-    switch (tool) 
-    {
+    switch (tool) {
       case CursorTool.SELECT:
         disableActiveTool();
         break;
@@ -130,23 +129,20 @@ export class PDFCursorTools
     this.#dispatchEvent();
   }
 
-  #dispatchEvent() 
-  {
+  #dispatchEvent() {
     this.eventBus.dispatch("cursortoolchanged", {
       source: this,
       tool: this.active,
     });
   }
 
-  #addEventListeners()
-  {
-    this.eventBus._on("switchcursortool", evt => {
-      this.switchTool( evt.tool );
+  #addEventListeners() {
+    this.eventBus._on("switchcursortool", (evt) => {
+      this.switchTool(evt.tool);
     });
 
-    this.eventBus._on("presentationmodechanged", evt => {
-      switch( evt.state )
-      {
+    this.eventBus._on("presentationmodechanged", (evt) => {
+      switch (evt.state) {
         case PresentationModeState.FULLSCREEN: {
           const previouslyActive = this.active;
 
@@ -165,4 +161,4 @@ export class PDFCursorTools
     });
   }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

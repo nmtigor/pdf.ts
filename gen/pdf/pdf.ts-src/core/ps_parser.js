@@ -13,9 +13,9 @@
  * limitations under the License.
  */
 import { FormatError, shadow } from "../shared/util.js";
-import { EOF } from "./primitives.js";
 import { isWhiteSpace } from "./core_utils.js";
-/*81---------------------------------------------------------------------------*/
+import { EOF } from "./primitives.js";
+/*80--------------------------------------------------------------------------*/
 export class PostScriptParser {
     lexer;
     operators = [];
@@ -195,9 +195,9 @@ export class PostScriptLexer {
         const strBuf = this.strBuf;
         strBuf.length = 0;
         strBuf[0] = String.fromCharCode(ch);
-        while ((ch = this.nextChar()) >= 0
-            && ((ch >= /* 'A' = */ 0x41 && ch <= /* 'Z' = */ 0x5a)
-                || (ch >= /* 'a' = */ 0x61 && ch <= /* 'z' = */ 0x7a))) {
+        while ((ch = this.nextChar()) >= 0 &&
+            ((ch >= /* 'A' = */ 0x41 && ch <= /* 'Z' = */ 0x5a) ||
+                (ch >= /* 'a' = */ 0x61 && ch <= /* 'z' = */ 0x7a))) {
             strBuf.push(String.fromCharCode(ch));
         }
         const str = strBuf.join("");
@@ -232,5 +232,5 @@ export class PostScriptLexer {
         return value;
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=ps_parser.js.map

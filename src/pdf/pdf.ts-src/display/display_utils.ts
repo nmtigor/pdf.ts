@@ -17,8 +17,10 @@
  * limitations under the License.
  */
 
-import { html } from "../../../lib/dom.js";
-import { type XFAElObj } from "../core/xfa/alias.js";
+import { DENO, MOZCENTRAL, TESTING } from "../../../global.ts";
+import { html } from "../../../lib/dom.ts";
+import { type XFAElObj } from "../core/xfa/alias.ts";
+import { RGB } from "../shared/scripting_utils.ts";
 import {
   BaseException,
   CMapCompressionType, stringToBytes,
@@ -26,19 +28,18 @@ import {
   warn, type matrix_t,
   type point_t,
   type rect_t
-} from "../shared/util.js";
+} from "../shared/util.ts";
 import {
   BaseCanvasFactory,
   BaseCMapReaderFactory,
   BaseStandardFontDataFactory,
   BaseSVGFactory
-} from "./base_factory.js";
-/*81---------------------------------------------------------------------------*/
+} from "./base_factory.ts";
+/*80--------------------------------------------------------------------------*/
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
-export class PixelsPerInch
-{
+export class PixelsPerInch {
   static CSS = 96.0;
 
   static PDF = 72.0;
@@ -46,50 +47,43 @@ export class PixelsPerInch
   static PDF_TO_CSS_UNITS = this.CSS / this.PDF;
 }
 
-export class DOMCanvasFactory extends BaseCanvasFactory 
-{
-  _document:Document;
-  
-  constructor({ ownerDocument=globalThis.document } = {}) 
-  {
+export class DOMCanvasFactory extends BaseCanvasFactory {
+  _document: Document;
+
+  constructor({ ownerDocument = globalThis.document } = {}) {
     super();
 
     this._document = ownerDocument;
   }
 
-  /** 
+  /**
    * @ignore
-   * @implements
+   * @implement
    */
-  _createCanvas( width:number, height:number )
-  {
-    const canvas = this._document.createElement("canvas");
+  _createCanvas(width: number, height: number) {
+    const canvas = html("canvas", undefined, this._document);
     canvas.width = width;
     canvas.height = height;
     return canvas;
   }
 }
 
-async function fetchData( url:string, asTypedArray=false )
-{
-  const rn_ = async() => {
+async function fetchData(url: string, asTypedArray = false) {
+  /*#static*/if (
+    MOZCENTRAL ||
+    isValidFetchUrl(url, globalThis.document?.baseURI)
+  ) {
     const response = await fetch(url);
-    if( !response.ok )
-    {
+    if (!response.ok) {
       throw new Error(response.statusText);
     }
     return asTypedArray
       ? new Uint8Array(await response.arrayBuffer())
       : stringToBytes(await response.text());
   }
-  // #if MOZCENTRAL
-    return await rn_();
-  // #endif
-  if( isValidFetchUrl(url, document.baseURI) ) 
-    return await rn_();
 
   // The Fetch API is not supported.
-  return new Promise<Uint8Array>( (resolve, reject) => {
+  return new Promise<Uint8Array>((resolve, reject) => {
     const request = new XMLHttpRequest();
     request.open("GET", url, /* asTypedArray = */ true);
 
@@ -97,21 +91,16 @@ async function fetchData( url:string, asTypedArray=false )
       request.responseType = "arraybuffer";
     }
     request.onreadystatechange = () => {
-      if( request.readyState !== XMLHttpRequest.DONE ) return;
+      if (request.readyState !== XMLHttpRequest.DONE) return;
 
-      if (request.status === 200 || request.status === 0) 
-      {
+      if (request.status === 200 || request.status === 0) {
         let data;
-        if (asTypedArray && request.response) 
-        {
+        if (asTypedArray && request.response) {
           data = new Uint8Array(request.response);
-        } 
-        else if (!asTypedArray && request.responseText) 
-        {
+        } else if (!asTypedArray && request.responseText) {
           data = stringToBytes(request.responseText);
         }
-        if (data) 
-        {
+        if (data) {
           resolve(data);
           return;
         }
@@ -123,150 +112,142 @@ async function fetchData( url:string, asTypedArray=false )
   });
 }
 
-export class DOMCMapReaderFactory extends BaseCMapReaderFactory
-{
-  /** 
+export class DOMCMapReaderFactory extends BaseCMapReaderFactory {
+  /**
    * @ignore
-   * @implements 
+   * @implement
    */
-  _fetchData( url:string, compressionType:CMapCompressionType )
-  {
-    return fetchData(url, /* asTypedArray = */ this.isCompressed).then(data => {
-      return { cMapData: data, compressionType };
-    });
+  _fetchData(url: string, compressionType: CMapCompressionType) {
+    return fetchData(url, /* asTypedArray = */ this.isCompressed).then(
+      (data) => {
+        return { cMapData: data, compressionType };
+      },
+    );
   }
 }
 
-export class DOMStandardFontDataFactory extends BaseStandardFontDataFactory
-{
-  /** 
+export class DOMStandardFontDataFactory extends BaseStandardFontDataFactory {
+  /**
    * @ignore
-   * @implements 
+   * @implement
    */
-  _fetchData( url:string )
-  {
+  _fetchData(url: string) {
     return fetchData(url, /* asTypedArray = */ true);
   }
 }
 
-export class DOMSVGFactory extends BaseSVGFactory
-{
-  /** 
+export class DOMSVGFactory extends BaseSVGFactory {
+  /**
    * @ignore
-   * @implements 
+   * @implement
    */
-  _createSVG( type:keyof SVGElementTagNameMap )
-  {
+  _createSVG(type: keyof SVGElementTagNameMap) {
     return document.createElementNS(SVG_NS, type);
   }
 }
 
-interface _PageViewportP
-{
+interface _PageViewportP {
   /**
    * The xMin, yMin, xMax and yMax coordinates.
    */
-  viewBox:rect_t;
+  viewBox: rect_t;
 
   /**
    * The scale of the viewport.
    */
-  scale:number;
+  scale: number;
 
   /**
    * The rotation, in degrees, of the viewport.
    */
-  rotation:number;
+  rotation: number;
 
   /**
-   * The horizontal, i.e. x-axis, offset. 
+   * The horizontal, i.e. x-axis, offset.
    * The default value is `0`.
    */
-  offsetX?:number;
+  offsetX?: number;
 
   /**
-   * The vertical, i.e. y-axis, offset. 
+   * The vertical, i.e. y-axis, offset.
    * The default value is `0`.
    */
-  offsetY?:number;
+  offsetY?: number;
 
   /**
-   * If true, the y-axis will not be flipped. 
+   * If true, the y-axis will not be flipped.
    * The default value is `false`.
    */
-  dontFlip?:boolean;
+  dontFlip?: boolean;
 }
 
-interface _PageViewportCloneP
-{
+interface _PageViewportCloneP {
   /**
    * The scale, overriding the one in the cloned
    * viewport. The default value is `this.scale`.
    */
-  scale?:number;
+  scale?: number;
 
   /**
    * The rotation, in degrees, overriding the one
    * in the cloned viewport. The default value is `this.rotation`.
    */
-  rotation?:number;
+  rotation?: number;
 
   /**
-   * The horizontal, i.e. x-axis, offset. 
+   * The horizontal, i.e. x-axis, offset.
    * The default value is `this.offsetX`.
    */
-  offsetX?:number;
+  offsetX?: number;
 
   /**
    * The vertical, i.e. y-axis, offset.
    * The default value is `this.offsetY`.
    */
-  offsetY?:number;
+  offsetY?: number;
 
   /**
    * If true, the x-axis will not be flipped.
    * The default value is `false`.
    */
-  dontFlip?:boolean;
+  dontFlip?: boolean;
 }
 
 /**
  * PDF page viewport created based on scale, rotation and offset.
  */
-export class PageViewport 
-{
+export class PageViewport {
   /**
    * In PDF unit.
    */
-  viewBox:rect_t;
+  viewBox: rect_t;
 
   /**
    * To CSS unit.
    */
-  scale:number;
+  scale: number;
 
-  rotation:number;
-  
+  rotation: number;
+
   /**
    * In CSS unit.
    */
-  offsetX:number;
-  offsetY:number;
+  offsetX: number;
+  offsetY: number;
 
-  transform:matrix_t;
+  transform: matrix_t;
 
-  width:number;
-  height:number;
+  width: number;
+  height: number;
 
   constructor({
     viewBox,
     scale,
     rotation,
-    offsetX=0,
-    offsetY=0,
-    dontFlip=false,
-  }:_PageViewportP )
-  {
+    offsetX = 0,
+    offsetY = 0,
+    dontFlip = false,
+  }: _PageViewportP) {
     this.viewBox = viewBox;
     this.scale = scale;
     this.rotation = rotation;
@@ -280,7 +261,7 @@ export class PageViewport
     let rotateA, rotateB, rotateC, rotateD;
     // Normalize the rotation, by clamping it to the [0, 360) range.
     rotation %= 360;
-    if( rotation < 0 ) rotation += 360;
+    if (rotation < 0) rotation += 360;
     switch (rotation) // clockwise, with flip first
     {
       case 180:
@@ -309,26 +290,23 @@ export class PageViewport
         break;
       default:
         throw new Error(
-          "PageViewport: Invalid rotation, must be a multiple of 90 degrees."
+          "PageViewport: Invalid rotation, must be a multiple of 90 degrees.",
         );
     }
 
-    if (dontFlip) 
-    {
+    if (dontFlip) {
       rotateC = -rotateC;
       rotateD = -rotateD;
     }
 
     let offsetCanvasX, offsetCanvasY;
     let width, height;
-    if (rotateA === 0) 
-    {
+    if (rotateA === 0) {
       offsetCanvasX = Math.abs(centerY - viewBox[1]) * scale + offsetX;
       offsetCanvasY = Math.abs(centerX - viewBox[0]) * scale + offsetY;
       width = Math.abs(viewBox[3] - viewBox[1]) * scale;
       height = Math.abs(viewBox[2] - viewBox[0]) * scale;
-    }
-    else {
+    } else {
       offsetCanvasX = Math.abs(centerX - viewBox[0]) * scale + offsetX;
       offsetCanvasY = Math.abs(centerY - viewBox[1]) * scale + offsetY;
       width = Math.abs(viewBox[2] - viewBox[0]) * scale;
@@ -355,15 +333,14 @@ export class PageViewport
    * @return Cloned viewport.
    */
   clone({
-    scale=this.scale,
-    rotation=this.rotation,
-    offsetX=this.offsetX,
-    offsetY=this.offsetY,
-    dontFlip=false,
-  }:_PageViewportCloneP={}
-  ):PageViewport {
+    scale = this.scale,
+    rotation = this.rotation,
+    offsetX = this.offsetX,
+    offsetY = this.offsetY,
+    dontFlip = false,
+  }: _PageViewportCloneP = {}): PageViewport {
     return new PageViewport({
-      viewBox: <rect_t>this.viewBox.slice(),
+      viewBox: <rect_t> this.viewBox.slice(),
       scale,
       rotation,
       offsetX,
@@ -382,8 +359,7 @@ export class PageViewport
    * @see {@link convertToPdfPoint}
    * @see {@link convertToViewportRectangle}
    */
-  convertToViewportPoint( x:number, y:number )
-  {
+  convertToViewportPoint(x: number, y: number) {
     return Util.applyTransform([x, y], this.transform);
   }
 
@@ -394,8 +370,7 @@ export class PageViewport
    *   rectangle in the viewport coordinate space.
    * @see {@link convertToViewportPoint}
    */
-  convertToViewportRectangle( rect:rect_t ):rect_t
-  {
+  convertToViewportRectangle(rect: rect_t): rect_t {
     const topLeft = Util.applyTransform([rect[0], rect[1]], this.transform);
     const bottomRight = Util.applyTransform([rect[2], rect[3]], this.transform);
     return [topLeft[0], topLeft[1], bottomRight[0], bottomRight[1]];
@@ -410,22 +385,18 @@ export class PageViewport
    *   point in the PDF coordinate space.
    * @see {@link convertToViewportPoint}
    */
-  convertToPdfPoint( x:number, y:number ):point_t
-  {
+  convertToPdfPoint(x: number, y: number): point_t {
     return Util.applyInverseTransform([x, y], this.transform);
   }
 }
 
-export class RenderingCancelledException extends BaseException 
-{
-  constructor( msg:string, public type:string ) 
-  {
+export class RenderingCancelledException extends BaseException {
+  constructor(msg: string, public type: string) {
     super(msg, "RenderingCancelledException");
   }
 }
 
-export function isDataScheme( url:string )
-{
+export function isDataScheme(url: string) {
   const ii = url.length;
   let i = 0;
   while (i < ii && url[i].trim() === "") {
@@ -434,21 +405,19 @@ export function isDataScheme( url:string )
   return url.substring(i, i + 5).toLowerCase() === "data:";
 }
 
-export function isPdfFile( filename:unknown )
-{
+export function isPdfFile(filename: unknown) {
   return typeof filename === "string" && /\.pdf$/i.test(filename);
 }
 
 /**
  * Gets the filename from a given URL.
  */
-export function getFilenameFromUrl( url:string ) 
-{
+export function getFilenameFromUrl(url: string) {
   const anchor = url.indexOf("#");
   const query = url.indexOf("?");
   const end = Math.min(
     anchor > 0 ? anchor : url.length,
-    query > 0 ? query : url.length
+    query > 0 ? query : url.length,
   );
   return url.substring(url.lastIndexOf("/", end) + 1, end);
 }
@@ -460,12 +429,13 @@ export function getFilenameFromUrl( url:string )
  *   unknown, or the protocol is unsupported.
  * @return Guessed PDF filename.
  */
-export function getPdfFilenameFromUrl( url:unknown, defaultFilename="document.pdf" )
-{
-  if( typeof url !== "string" ) return defaultFilename;
+export function getPdfFilenameFromUrl(
+  url: unknown,
+  defaultFilename = "document.pdf",
+) {
+  if (typeof url !== "string") return defaultFilename;
 
-  if( isDataScheme(url) )
-  {
+  if (isDataScheme(url)) {
     warn('getPdfFilenameFromUrl: ignore "data:"-URL for performance reasons.');
     return defaultFilename;
   }
@@ -474,17 +444,17 @@ export function getPdfFilenameFromUrl( url:unknown, defaultFilename="document.pd
   // Pattern to get last matching NAME.pdf
   const reFilename = /[^/?#=]+\.pdf\b(?!.*\.pdf\b)/i;
   const splitURI = reURI.exec(url);
-  let suggestedFilename:RegExpExecArray | string | null =
-    reFilename.exec( splitURI![1] ) ||
-    reFilename.exec( splitURI![2] ) ||
-    reFilename.exec( splitURI![3] );
+  let suggestedFilename: RegExpExecArray | string | null =
+    reFilename.exec(splitURI![1]) ||
+    reFilename.exec(splitURI![2]) ||
+    reFilename.exec(splitURI![3]);
   if (suggestedFilename) {
     suggestedFilename = suggestedFilename[0];
     if (suggestedFilename.includes("%")) {
       // URL-encoded %2Fpath%2Fto%2Ffile.pdf should be file.pdf
       try {
         suggestedFilename = reFilename.exec(
-          decodeURIComponent(suggestedFilename)
+          decodeURIComponent(suggestedFilename),
         )![0];
       } catch (ex) {
         // Possible (extremely rare) errors:
@@ -496,31 +466,25 @@ export function getPdfFilenameFromUrl( url:unknown, defaultFilename="document.pd
   return suggestedFilename || defaultFilename;
 }
 
-interface StatTime
-{
-  name:string;
-  start:number;
-  end:number;
+interface StatTime {
+  name: string;
+  start: number;
+  end: number;
 }
 
-export class StatTimer 
-{
+export class StatTimer {
   started = Object.create(null);
-  times:StatTime[] = [];
+  times: StatTime[] = [];
 
-  time( name:string ) 
-  {
-    if (name in this.started) 
-    {
+  time(name: string) {
+    if (name in this.started) {
       warn(`Timer is already running for ${name}`);
     }
     this.started[name] = Date.now();
   }
 
-  timeEnd( name:string ) 
-  {
-    if (!(name in this.started)) 
-    {
+  timeEnd(name: string) {
+    if (!(name in this.started)) {
       warn(`Timer has not been started for ${name}`);
     }
     this.times.push({
@@ -532,21 +496,17 @@ export class StatTimer
     delete this.started[name];
   }
 
-  toString() 
-  {
+  toString() {
     // Find the longest name for padding purposes.
     const outBuf = [];
     let longest = 0;
-    for (const time of this.times) 
-    {
+    for (const time of this.times) {
       const name = time.name;
-      if (name.length > longest) 
-      {
+      if (name.length > longest) {
         longest = name.length;
       }
     }
-    for (const time of this.times) 
-    {
+    for (const time of this.times) {
       const duration = time.end - time.start;
       outBuf.push(`${time.name.padEnd(longest)} ${duration}ms\n`);
     }
@@ -554,26 +514,30 @@ export class StatTimer
   }
 }
 
-export function isValidFetchUrl( url:string | URL | undefined, baseUrl?:string|URL ) 
-{
+export function isValidFetchUrl(
+  url: string | URL | undefined,
+  baseUrl?: string | URL,
+) {
   try {
-    const { protocol } = baseUrl 
-      ? new URL( url!, baseUrl ) 
-      : new URL( url! );
-    // The Fetch API only supports the http/https protocols, and not file/ftp.
-    return protocol === "http:" || protocol === "https:";
+    const { protocol } = baseUrl ? new URL(url!, baseUrl) : new URL(url!);
+    if (DENO && TESTING) {
+      return protocol === "http:" || protocol === "https:" ||
+        protocol === "file:";
+    } else {
+      // The Fetch API only supports the http/https protocols, and not file/ftp.
+      return protocol === "http:" || protocol === "https:";
+    }
   } catch (ex) {
     return false; // `new URL()` will throw on incorrect data.
   }
 }
 
-export function loadScript( src:string, removeScriptElement=false )
-{
+export function loadScript(src: string, removeScriptElement = false) {
   return new Promise<Event>((resolve, reject) => {
     const script = html("script");
     script.src = src;
 
-    script.onload = ( evt:Event ) => {
+    script.onload = (evt: Event) => {
       if (removeScriptElement) {
         script.remove();
       }
@@ -582,20 +546,18 @@ export function loadScript( src:string, removeScriptElement=false )
     script.onerror = () => {
       reject(new Error(`Cannot load script at: ${script.src}`));
     };
-    (document.head || document.documentElement).appendChild(script);
+    (document.head || document.documentElement).append(script);
   });
 }
 
 // Deprecated API function -- display regardless of the `verbosity` setting.
-export function deprecated( details:string )
-{
+export function deprecated(details: string) {
   console.log("Deprecated API usage: " + details);
 }
 
-let pdfDateStringRegex:RegExp;
+let pdfDateStringRegex: RegExp;
 
-export class PDFDateString 
-{
+export class PDFDateString {
   /**
    * Convert a PDF date string to a JavaScript `Date` object.
    *
@@ -609,25 +571,24 @@ export class PDFDateString
    * and doesn't use the user's time zone (effectively ignoring the HH' and mm'
    * parts of the date string).
    */
-  static toDateObject( input:string )
-  {
-    if( !input || !(typeof input === "string") ) return null;
+  static toDateObject(input: string) {
+    if (!input || !(typeof input === "string")) return null;
 
     // Lazily initialize the regular expression.
     if (!pdfDateStringRegex) {
       pdfDateStringRegex = new RegExp(
         "^D:" + // Prefix (required)
-        "(\\d{4})" + // Year (required)
-        "(\\d{2})?" + // Month (optional)
-        "(\\d{2})?" + // Day (optional)
-        "(\\d{2})?" + // Hour (optional)
-        "(\\d{2})?" + // Minute (optional)
-        "(\\d{2})?" + // Second (optional)
-        "([Z|+|-])?" + // Universal time relation (optional)
-        "(\\d{2})?" + // Offset hour (optional)
-        "'?" + // Splitting apostrophe (optional)
-        "(\\d{2})?" + // Offset minute (optional)
-          "'?" // Trailing apostrophe (optional)
+          "(\\d{4})" + // Year (required)
+          "(\\d{2})?" + // Month (optional)
+          "(\\d{2})?" + // Day (optional)
+          "(\\d{2})?" + // Hour (optional)
+          "(\\d{2})?" + // Minute (optional)
+          "(\\d{2})?" + // Second (optional)
+          "([Z|+|-])?" + // Universal time relation (optional)
+          "(\\d{2})?" + // Offset hour (optional)
+          "'?" + // Splitting apostrophe (optional)
+          "(\\d{2})?" + // Offset minute (optional)
+          "'?", // Trailing apostrophe (optional)
       );
     }
 
@@ -665,8 +626,7 @@ export class PDFDateString
     if (universalTimeRelation === "-") {
       hour += offsetHour;
       minute += offsetMinute;
-    }
-    else if (universalTimeRelation === "+") {
+    } else if (universalTimeRelation === "+") {
       hour -= offsetHour;
       minute -= offsetMinute;
     }
@@ -678,10 +638,13 @@ export class PDFDateString
 /**
  * NOTE: This is (mostly) intended to support printing of XFA forms.
  */
-export function getXfaPageViewport( xfaPage:XFAElObj, { scale = 1, rotation = 0 }) 
-{
-  const { width, height } = <{width:string;height:string;}>xfaPage.attributes!.style;
-  const viewBox:rect_t = [0, 0, parseInt(width), parseInt(height)];
+export function getXfaPageViewport(
+  xfaPage: XFAElObj,
+  { scale = 1, rotation = 0 },
+) {
+  const { width, height } = <{ width: string; height: string }> xfaPage
+    .attributes!.style;
+  const viewBox: rect_t = [0, 0, parseInt(width), parseInt(height)];
 
   return new PageViewport({
     viewBox,
@@ -690,4 +653,81 @@ export function getXfaPageViewport( xfaPage:XFAElObj, { scale = 1, rotation = 0 
   });
 }
 
-/*81---------------------------------------------------------------------------*/
+export function getRGB(color: string): RGB {
+  if (color.startsWith("#")) {
+    const colorRGB = parseInt(color.slice(1), 16);
+    return [
+      (colorRGB & 0xff0000) >> 16,
+      (colorRGB & 0x00ff00) >> 8,
+      colorRGB & 0x0000ff,
+    ];
+  }
+
+  if (color.startsWith("rgb(")) {
+    // getComputedStyle(...).color returns a `rgb(R, G, B)` color.
+    return color
+      .slice(/* "rgb(".length */ 4, -1) // Strip out "rgb(" and ")".
+      .split(",")
+      .map((x) => parseInt(x)) as RGB;
+  }
+
+  if (color.startsWith("rgba(")) {
+    return color
+      .slice(/* "rgba(".length */ 5, -1) // Strip out "rgba(" and ")".
+      .split(",")
+      .map((x) => parseInt(x))
+      .slice(0, 3) as RGB;
+  }
+
+  warn(`Not a valid color format: "${color}"`);
+  return [0, 0, 0];
+}
+
+export function getColorValues(colors: Map<string, RGB | undefined>) {
+  const span = html("span");
+  span.style.visibility = "hidden";
+  document.body.append(span);
+  for (const name of colors.keys()) {
+    span.style.color = name;
+    const computedColor = window.getComputedStyle(span).color;
+    colors.set(name, getRGB(computedColor));
+  }
+  span.remove();
+}
+
+/**
+ * Use binary search to find the index of the first item in a given array which
+ * passes a given condition. The items are expected to be sorted in the sense
+ * that if the condition is true for one item in the array, then it is also true
+ * for all following items.
+ *
+ * @return Index of the first array element to pass the test,
+ *  or |items.length| if no such element exists.
+ */
+export function binarySearchFirstItem<T>(
+  items: T[],
+  condition: (item: T) => boolean,
+  start = 0,
+): number {
+  let minIndex = start;
+  let maxIndex = items.length - 1;
+
+  if (maxIndex < 0 || !condition(items[maxIndex])) {
+    return items.length;
+  }
+  if (condition(items[minIndex])) {
+    return minIndex;
+  }
+
+  while (minIndex < maxIndex) {
+    const currentIndex = (minIndex + maxIndex) >> 1;
+    const currentItem = items[currentIndex];
+    if (condition(currentItem)) {
+      maxIndex = currentIndex;
+    } else {
+      minIndex = currentIndex + 1;
+    }
+  }
+  return minIndex; /* === maxIndex */
+}
+/*80--------------------------------------------------------------------------*/

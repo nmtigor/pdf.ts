@@ -1,24 +1,10 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
-/* Copyright 2021 Mozilla Foundation
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 import { stringToPDFString, warn } from "../shared/util.js";
 import { NumberTree } from "./name_number_tree.js";
 import { Dict, isName, Name, Ref } from "./primitives.js";
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 const MAX_DEPTH = 40;
 var StructElementType;
 (function (StructElementType) {
@@ -38,11 +24,13 @@ export class StructTreeRoot {
     }
     readRoleMap() {
         const roleMapDict = this.dict.get("RoleMap");
-        if (!(roleMapDict instanceof Dict))
+        if (!(roleMapDict instanceof Dict)) {
             return;
+        }
         roleMapDict.forEach((key, value) => {
-            if (!(value instanceof Name))
+            if (!(value instanceof Name)) {
                 return;
+            }
             this.roleMap.set(key, value.name);
         });
     }
@@ -94,8 +82,9 @@ class StructElementNode {
     parseKid(pageObjId, kid) {
         // A direct link to content, the integer is an mcid.
         if (Number.isInteger(kid)) {
-            if (this.tree.pageDict.objId !== pageObjId)
+            if (this.tree.pageDict.objId !== pageObjId) {
                 return null;
+            }
             return new StructElement({
                 type: StructElementType.PAGE_CONTENT,
                 mcid: kid,
@@ -110,8 +99,9 @@ class StructElementNode {
         else if (kid instanceof Dict) {
             kidDict = kid;
         }
-        if (!kidDict)
+        if (!kidDict) {
             return null;
+        }
         const pageRef = kidDict.getRaw("Pg");
         if (pageRef instanceof Ref) {
             pageObjId = pageRef.toString();
@@ -120,8 +110,9 @@ class StructElementNode {
             ? kidDict.get("Type").name
             : null;
         if (type === "MCR") {
-            if (this.tree.pageDict.objId !== pageObjId)
+            if (this.tree.pageDict.objId !== pageObjId) {
                 return null;
+            }
             return new StructElement({
                 type: StructElementType.STREAM_CONTENT,
                 refObjId: kidDict.getRaw("Stm") instanceof Ref
@@ -132,8 +123,9 @@ class StructElementNode {
             });
         }
         if (type === "OBJR") {
-            if (this.tree.pageDict.objId !== pageObjId)
+            if (this.tree.pageDict.objId !== pageObjId) {
                 return null;
+            }
             return new StructElement({
                 type: StructElementType.OBJECT,
                 refObjId: kidDict.getRaw("Obj") instanceof Ref
@@ -177,18 +169,22 @@ export class StructTreePage {
      * Table 322
      */
     parse() {
-        if (!this.root || !this.rootDict)
+        if (!this.root || !this.rootDict) {
             return;
+        }
         const parentTree = this.rootDict.get("ParentTree");
-        if (!parentTree)
+        if (!parentTree) {
             return;
+        }
         const id = this.pageDict.get("StructParents");
-        if (!Number.isInteger(id))
+        if (!Number.isInteger(id)) {
             return;
+        }
         const numberTree = new NumberTree(parentTree, this.rootDict.xref);
         const parentArray = numberTree.get(id);
-        if (!Array.isArray(parentArray))
+        if (!Array.isArray(parentArray)) {
             return;
+        }
         const map = new Map();
         for (const ref of parentArray) {
             if (ref instanceof Ref) {
@@ -201,8 +197,9 @@ export class StructTreePage {
             warn("StructTree MAX_DEPTH reached.");
             return undefined;
         }
-        if (map.has(dict))
+        if (map.has(dict)) {
             return map.get(dict);
+        }
         const element = new StructElementNode(this, dict);
         map.set(dict, element);
         const parent = dict.get("P");
@@ -213,8 +210,9 @@ export class StructTreePage {
             return element;
         }
         const parentNode = this.addNode(parent, map, level + 1);
-        if (!parentNode)
+        if (!parentNode) {
             return element;
+        }
         let save = false;
         for (const kid of parentNode.kids) {
             if (kid.type === StructElementType.ELEMENT && kid.dict === dict) {
@@ -229,16 +227,19 @@ export class StructTreePage {
     }
     addTopLevelNode(dict, element) {
         const obj = this.rootDict?.get("K");
-        if (!obj)
+        if (!obj) {
             return false;
+        }
         if (obj instanceof Dict) {
-            if (obj.objId !== dict.objId)
+            if (obj.objId !== dict.objId) {
                 return false;
+            }
             this.nodes[0] = element;
             return true;
         }
-        if (!Array.isArray(obj))
+        if (!Array.isArray(obj)) {
             return true;
+        }
         let save = false;
         for (let i = 0; i < obj.length; i++) {
             const kidRef = obj[i];
@@ -272,13 +273,15 @@ export class StructTreePage {
                 obj.lang = stringToPDFString(lang);
             }
             for (const kid of node.kids) {
-                const kidElement = kid.type === StructElementType.ELEMENT ? kid.parentNode : null;
+                const kidElement = kid.type === StructElementType.ELEMENT
+                    ? kid.parentNode
+                    : undefined;
                 if (kidElement) {
                     nodeToSerializable(kidElement, obj, level + 1);
                     continue;
                 }
-                else if (kid.type === StructElementType.PAGE_CONTENT
-                    || kid.type === StructElementType.STREAM_CONTENT) {
+                else if (kid.type === StructElementType.PAGE_CONTENT ||
+                    kid.type === StructElementType.STREAM_CONTENT) {
                     obj.children.push({
                         type: "content",
                         id: `page${kid.pageObjId}_mcid${kid.mcid}`,
@@ -296,12 +299,13 @@ export class StructTreePage {
         root.children = [];
         root.role = "Root";
         for (const child of this.nodes) {
-            if (!child)
+            if (!child) {
                 continue;
+            }
             nodeToSerializable(child, root);
         }
         return root;
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=struct_tree.js.map

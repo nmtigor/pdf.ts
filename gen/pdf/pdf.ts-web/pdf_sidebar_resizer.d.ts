@@ -5,7 +5,6 @@ export declare class PDFSidebarResizer {
     #private;
     isRTL: boolean;
     sidebarOpen: boolean;
-    doc: HTMLElement;
     _width?: number;
     _outerContainerWidth?: number | undefined;
     _boundEvents: any;
@@ -16,7 +15,7 @@ export declare class PDFSidebarResizer {
      * @param eventBus The application event bus.
      * @param l10n Localization service.
      */
-    constructor(options: ViewerConfiguration['sidebarResizer'], eventBus: EventBus, l10n: IL10n);
+    constructor(options: ViewerConfiguration["sidebarResizer"], eventBus: EventBus, l10n: IL10n);
     get outerContainerWidth(): number;
 }
 //# sourceMappingURL=pdf_sidebar_resizer.d.ts.map

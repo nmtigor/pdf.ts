@@ -1,5 +1,4 @@
-import { type ExplicitDest } from "../pdf.ts-src/core/catalog.js";
-import { PDFDocumentProxy, type OutlineNode } from "../pdf.ts-src/display/api.js";
+import { type ExplicitDest, type OutlineNode, PDFDocumentProxy } from "../pdf.ts-src/pdf.js";
 import { BaseTreeViewer, type BaseTreeViewerCtorP } from "./base_tree_viewer.js";
 import { PDFLinkService } from "./pdf_link_service.js";
 import { SidebarView } from "./ui_utils.js";
@@ -25,16 +24,16 @@ export declare class PDFOutlineViewer extends BaseTreeViewer {
     static create(options: PDFOutlineViewerOptions): PDFOutlineViewer;
     private constructor();
     reset(): void;
-    /** @implements */
+    /** @implement */
     protected _dispatchEvent(outlineCount: number): void;
-    /** @implements */
+    /** @implement */
     protected _bindLink(element: HTMLAnchorElement, { url, newWindow, dest }: {
         url?: string | undefined;
         newWindow?: boolean | undefined;
         dest?: ExplicitDest | string | undefined;
     }): void;
     protected toggleAllTreeItems$(): void;
-    /** @implements */
+    /** @implement */
     render({ outline, pdfDocument }: _PDFOutlineViewerRenderP): void;
 }
 export {};

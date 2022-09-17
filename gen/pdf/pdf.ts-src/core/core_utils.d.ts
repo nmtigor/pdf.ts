@@ -1,5 +1,6 @@
+import { AnnotStorageRecord, AnnotStorageValue } from "../display/annotation_layer.js";
 import { MessageHandler, Thread } from "../shared/message_handler.js";
-import { BaseException, FontType, StreamType, type ActionEventType, type ActionEventTypesType } from "../shared/util.js";
+import { ActionEventName, BaseException, FontType, StreamType, type ActionEventTypeType } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
 import { type CssFontInfo } from "./document.js";
 import { Dict, type Obj } from "./primitives.js";
@@ -60,7 +61,7 @@ interface _GetInheritablePropertyP {
  * the value for the key is returned or, if `stopWhenFound` is `false`, a list
  * of values is returned.
  */
-export declare function getInheritableProperty({ dict, key, getArray, stopWhenFound, }: _GetInheritablePropertyP): string | number | boolean | Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint16Array | Int32Array | Uint32Array | Float32Array | Float64Array | XFANsName.Name | NsCmd.Cmd | BaseStream | Dict | typeof import("./primitives.js").CIRCULAR_REF | typeof import("./primitives.js").EOF | (Obj | undefined)[] | null | undefined;
+export declare function getInheritableProperty({ dict, key, getArray, stopWhenFound, }: _GetInheritablePropertyP): string | number | boolean | Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint16Array | Int32Array | Uint32Array | Float32Array | Float64Array | XFANsName.Name | BaseStream | Dict | NsCmd.Cmd | typeof import("./primitives.js").CIRCULAR_REF | typeof import("./primitives.js").EOF | (Obj | undefined)[] | null | undefined;
 /**
  * Converts positive integers to (upper case) Roman numerals.
  * @param number The number that should be converted.
@@ -92,15 +93,15 @@ export declare type XFAPath = XFAPathCom[];
  */
 export declare function parseXFAPath(path: string): XFAPath;
 export declare function escapePDFName(str: string): string;
-export declare type AnnotActions = Record<ActionEventType, string[]> & {
-    Action?: string[];
-};
-export declare function collectActions(xref: XRef, dict: Dict, eventType: ActionEventTypesType): AnnotActions | undefined;
+export declare type AnnotActions = Record<ActionEventName, string[]>;
+export declare function collectActions(xref: XRef, dict: Dict, eventType: ActionEventTypeType): AnnotActions | undefined;
 export declare function encodeToXmlString(str: string): string;
 export declare function validateCSSFont(cssFontInfo: CssFontInfo): boolean;
 export declare function recoverJsURL(str: string): {
     url: string;
     newWindow: boolean;
 } | null;
+export declare function numberToString(value: number): string;
+export declare function getNewAnnotationsMap(annotationStorage: AnnotStorageRecord | undefined): Map<number, AnnotStorageValue[]> | undefined;
 export {};
 //# sourceMappingURL=core_utils.d.ts.map

@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 import { html } from "../../lib/dom.js";
-import { BaseTreeViewer } from "./base_tree_viewer.js";
+import { BaseTreeViewer, } from "./base_tree_viewer.js";
 export class PDFLayerViewer extends BaseTreeViewer {
     l10n;
     #optionalContentConfig;
@@ -35,14 +35,14 @@ export class PDFLayerViewer extends BaseTreeViewer {
         super.reset();
         this.#optionalContentConfig = undefined;
     }
-    /** @implements */
+    /** @implement */
     _dispatchEvent(layersCount) {
         this.eventBus.dispatch("layersloaded", {
             source: this,
             layersCount,
         });
     }
-    /** @implements */
+    /** @implement */
     _bindLink(element, { groupId, input }) {
         const setVisibility = () => {
             this.#optionalContentConfig.setVisibility(groupId, input.checked);
@@ -51,7 +51,7 @@ export class PDFLayerViewer extends BaseTreeViewer {
                 promise: Promise.resolve(this.#optionalContentConfig),
             });
         };
-        element.onclick = evt => {
+        element.onclick = (evt) => {
             if (evt.target === input) {
                 setVisibility();
                 return true;
@@ -76,11 +76,12 @@ export class PDFLayerViewer extends BaseTreeViewer {
         super._addToggleButton(div, /* hidden = */ name === null);
     };
     toggleAllTreeItems$() {
-        if (!this.#optionalContentConfig)
+        if (!this.#optionalContentConfig) {
             return;
+        }
         super.toggleAllTreeItems$();
     }
-    /** @implements */
+    /** @implement */
     render({ optionalContentConfig, pdfDocument }) {
         if (this.#optionalContentConfig) {
             this.reset();
@@ -101,14 +102,14 @@ export class PDFLayerViewer extends BaseTreeViewer {
                 const div = html("div");
                 div.className = "treeItem";
                 const element = html("a");
-                div.appendChild(element);
+                div.append(element);
                 if (typeof groupId === "object") {
                     hasAnyNesting = true;
                     this.#addToggleButton(div, groupId);
                     this.#setNestedName(element, groupId);
                     const itemsDiv = html("div");
                     itemsDiv.className = "treeItems";
-                    div.appendChild(itemsDiv);
+                    div.append(itemsDiv);
                     queue.push({ parent: itemsDiv, groups: groupId.order });
                 }
                 else {
@@ -116,16 +117,15 @@ export class PDFLayerViewer extends BaseTreeViewer {
                     const input = html("input");
                     this._bindLink(element, { groupId, input });
                     input.type = "checkbox";
-                    input.id = groupId;
                     input.checked = group.visible;
                     const label = html("label");
                     label.setAttribute("for", groupId);
                     label.textContent = this._normalizeTextContent(group.name);
-                    element.appendChild(input);
-                    element.appendChild(label);
+                    element.append(input);
+                    element.append(label);
                     layersCount++;
                 }
-                levelData.parent.appendChild(div);
+                levelData.parent.append(div);
             }
         }
         this.finishRendering$(fragment, layersCount, hasAnyNesting);
@@ -134,7 +134,8 @@ export class PDFLayerViewer extends BaseTreeViewer {
         if (!this.#optionalContentConfig)
             return;
         // Fetch the default optional content configuration...
-        const optionalContentConfig = await this._pdfDocument.getOptionalContentConfig();
+        const optionalContentConfig = await this._pdfDocument
+            .getOptionalContentConfig();
         this.eventBus.dispatch("optionalcontentconfig", {
             source: this,
             promise: Promise.resolve(optionalContentConfig),
@@ -146,5 +147,5 @@ export class PDFLayerViewer extends BaseTreeViewer {
         });
     };
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=pdf_layer_viewer.js.map

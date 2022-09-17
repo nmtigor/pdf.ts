@@ -53,7 +53,7 @@ export declare abstract class BaseStandardFontDataFactory {
 }
 export declare abstract class BaseSVGFactory {
     /** @final */
-    create(width: number, height: number): SVGElement;
+    create(width: number, height: number, skipDimensions?: boolean): SVGElement;
     /** @final */
     createElement(type: string): SVGElement;
     /**

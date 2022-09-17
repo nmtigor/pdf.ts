@@ -1,5 +1,5 @@
-import { FontFinder } from "./fonts.js";
 import { type XFAFontBase, type XFAMargin } from "./alias.js";
+import { FontFinder } from "./fonts.js";
 declare class FontInfo {
     lineHeight: string | number | undefined;
     paraMargin: XFAMargin;
@@ -20,7 +20,7 @@ declare class FontSelector {
     constructor(defaultXfaFont: XFAFontBase | undefined, defaultParaMargin: XFAMargin | undefined, defaultLineHeight: string | number | undefined, fontFinder: FontFinder | undefined);
     pushData(xfaFont: XFAFontBase, margin: XFAMargin, lineHeight?: string | number): void;
     popFont(): void;
-    topFont(): FontInfo;
+    topFont(): FontInfo | undefined;
 }
 declare type XFAGlyph = [
     glyphWidth: number,

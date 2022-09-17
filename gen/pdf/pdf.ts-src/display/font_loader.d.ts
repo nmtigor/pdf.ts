@@ -10,43 +10,33 @@ interface _BaseFontLoaderCtorP {
     ownerDocument: Document | undefined;
     styleElement?: HTMLStyleElement | undefined;
 }
-interface Request {
+export interface Request {
     id: string;
     done: boolean;
     complete: () => void;
     callback: (request: Request) => void;
 }
-declare abstract class BaseFontLoader {
-    docId: string;
-    _onUnsupportedFeature: (_: {
-        featureId: UNSUPPORTED_FEATURES;
-    }) => void;
-    _document: Document;
-    nativeFontFaces: FontFace[];
-    styleElement: HTMLStyleElement | undefined;
-    constructor({ docId, onUnsupportedFeature, ownerDocument, styleElement, }: _BaseFontLoaderCtorP);
-    addNativeFontFace(nativeFontFace: FontFace): void;
-    insertRule(rule: string): void;
-    clear(): void;
-    bind(font: FontFaceObject): Promise<void>;
-    protected queueLoadingCallback$(callback: (request: Request) => void): Request;
-    get isFontLoadingAPISupported(): boolean;
-    abstract get isSyncFontLoadingSupported(): boolean;
-    get _loadTestFont(): string;
-    protected prepareFontLoadEvent$(rules: string[], fontsToLoad: FontFaceObject[], request: Request): void;
-}
-export declare class FontLoader extends BaseFontLoader {
-    loadingContext: {
-        requests: Request[];
-        nextRequestId: number;
+export declare let FontLoader: {
+    new ({ docId, onUnsupportedFeature, ownerDocument, styleElement, }: _BaseFontLoaderCtorP): {
+        /** @implement */
+        readonly isSyncFontLoadingSupported: boolean;
+        docId: string;
+        _onUnsupportedFeature: (_: {
+            featureId: UNSUPPORTED_FEATURES;
+        }) => void;
+        _document: Document;
+        nativeFontFaces: FontFace[];
+        styleElement: HTMLStyleElement | undefined;
+        addNativeFontFace(nativeFontFace: FontFace): void;
+        insertRule(rule: string): void;
+        clear(): void;
+        bind(font: FontFaceObject): Promise<void>;
+        _queueLoadingCallback(callback: (request: Request) => void): any;
+        readonly isFontLoadingAPISupported: boolean;
+        readonly _loadTestFont: string;
+        _prepareFontLoadEvent(rules: string[], fontsToLoad: FontFaceObject[], request: Request): void;
     };
-    loadTestFontId: number;
-    /** @implements */
-    get isSyncFontLoadingSupported(): boolean;
-    protected queueLoadingCallback$(callback: (request: Request) => void): Request;
-    get _loadTestFont(): string;
-    protected prepareFontLoadEvent$(rules: string[], fonts: FontFaceObject[], request: Request): void;
-}
+};
 interface _FFOCtorP {
     isEvalSupported: boolean | undefined;
     disableFontFace: boolean | undefined;

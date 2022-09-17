@@ -1,12 +1,12 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
-import { assert } from '../../../lib/util/trace.js';
+import { assert } from "../../../lib/util/trace.js";
 import { FormatError, info, shadow, UNSUPPORTED_FEATURES, Util, warn, } from "../shared/util.js";
+import { BaseStream } from "./base_stream.js";
 import { ColorSpace } from "./colorspace.js";
 import { MissingDataException } from "./core_utils.js";
-import { BaseStream } from './base_stream.js';
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 export var ShadingType;
 (function (ShadingType) {
     ShadingType[ShadingType["FUNCTION_BASED"] = 1] = "FUNCTION_BASED";
@@ -99,8 +99,8 @@ class RadialAxialShading extends BaseShading {
             extendStart = extendArr[0];
             extendEnd = extendArr[1];
         }
-        if (this.shadingType === ShadingType.RADIAL
-            && (!extendStart || !extendEnd)) {
+        if (this.shadingType === ShadingType.RADIAL &&
+            (!extendStart || !extendEnd)) {
             // Radial gradient only currently works if either circle is fully within
             // the other circle.
             const [x1, y1, r1, x2, y2, r2] = this.coordsArr;
@@ -149,12 +149,12 @@ class RadialAxialShading extends BaseShading {
         }
         if (!extendEnd) {
             // Same idea as above in extendStart but for the end.
-            colorStops[colorStops.length - 1][0] -= BaseShading.SMALL_NUMBER;
+            colorStops.at(-1)[0] -= BaseShading.SMALL_NUMBER;
             colorStops.push([1, background]);
         }
         this.colorStops = colorStops;
     }
-    /** @implements */
+    /** @implement */
     getIR() {
         const coordsArr = this.coordsArr;
         const shadingType = this.shadingType;
@@ -181,7 +181,14 @@ class RadialAxialShading extends BaseShading {
             assert(0, `getPattern type unknown: ${shadingType}`);
         }
         return [
-            "RadialAxial", type, this.bbox, this.colorStops, p0, p1, r0, r1
+            "RadialAxial",
+            type,
+            this.bbox,
+            this.colorStops,
+            p0,
+            p1,
+            r0,
+            r1,
         ];
     }
 }
@@ -232,11 +239,10 @@ class MeshStreamReader {
                     this.stream.getByte()) >>>
                     0);
             }
-            buffer =
-                (buffer << 24) |
-                    (this.stream.getByte() << 16) |
-                    (this.stream.getByte() << 8) |
-                    this.stream.getByte();
+            buffer = (buffer << 24) |
+                (this.stream.getByte() << 16) |
+                (this.stream.getByte() << 8) |
+                this.stream.getByte();
             const nextByte = this.stream.getByte();
             this.buffer = nextByte & ((1 << bufferLength) - 1);
             return (((buffer << (8 - bufferLength)) |
@@ -294,7 +300,7 @@ class MeshStreamReader {
         return this.context.colorSpace.getRgb(color, 0);
     }
 }
-const getB = (function getBClosure() {
+const getB = (() => {
     function buildB(count) {
         const lut = [];
         for (let i = 0; i <= count; i++) {
@@ -309,7 +315,7 @@ const getB = (function getBClosure() {
         return lut;
     }
     const cache = [];
-    return function (count) {
+    return (count) => {
         if (!cache[count]) {
             cache[count] = buildB(count);
         }
@@ -429,11 +435,11 @@ export class MeshShading extends BaseShading {
                         verticesLeft = 3;
                         break;
                     case 1:
-                        ps.push(ps[ps.length - 2], ps[ps.length - 1]);
+                        ps.push(ps.at(-2), ps.at(-1));
                         verticesLeft = 1;
                         break;
                     case 2:
-                        ps.push(ps[ps.length - 3], ps[ps.length - 1]);
+                        ps.push(ps.at(-3), ps.at(-1));
                         verticesLeft = 1;
                         break;
                 }
@@ -887,7 +893,7 @@ export class MeshShading extends BaseShading {
             }
         }
     }
-    /** @implements */
+    /** @implement */
     getIR() {
         return [
             "Mesh",
@@ -903,7 +909,7 @@ export class MeshShading extends BaseShading {
 }
 class DummyShading extends BaseShading {
     type = "Pattern";
-    /** @implements */
+    /** @implement */
     getIR() {
         return ["Dummy"];
     }
@@ -935,5 +941,5 @@ export function getTilingPatternIR(operatorList, dict, color) {
         tilingType,
     ];
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=pattern.js.map

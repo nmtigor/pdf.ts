@@ -1,4 +1,4 @@
-import { Thread, type StreamSink } from "../shared/message_handler.js";
+import { type StreamSink, Thread } from "../shared/message_handler.js";
 import { OPS, RenderingIntentFlag } from "../shared/util.js";
 import { MarkedContentProps, OpArgs } from "./evaluator.js";
 declare namespace NsQueueOptimizer {
@@ -55,6 +55,10 @@ declare namespace NsOperatorList {
         argsArray: (OpArgs | undefined)[];
         length?: number;
         lastChunk: boolean | undefined;
+        separateAnnots: {
+            form: boolean;
+            canvas: boolean;
+        } | undefined;
     }
     /** @final */
     class OperatorList {
@@ -79,7 +83,10 @@ declare namespace NsOperatorList {
         addOpList(opList: OperatorList): void;
         getIR(): OpListIR;
         get _transfers(): any[];
-        flush(lastChunk?: boolean): void;
+        flush(lastChunk?: boolean, separateAnnots?: {
+            form: boolean;
+            canvas: boolean;
+        }): void;
     }
 }
 export import OperatorList = NsOperatorList.OperatorList;

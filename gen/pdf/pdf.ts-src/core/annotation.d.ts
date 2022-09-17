@@ -1,6 +1,8 @@
 import { type TupleOf } from "../../../lib/alias.js";
-import { type AnnotStorageRecord } from "../display/annotation_layer.js";
-import { AnnotationBorderStyleType, AnnotationFieldFlag, AnnotationFlag, AnnotationReplyType, AnnotationType, RenderingIntentFlag, type rect_t } from "../shared/util.js";
+import { AnnotStorageValue, type AnnotStorageRecord } from "../display/annotation_layer.js";
+import { DocWrapped, FieldWrapped } from "../scripting_api/app.js";
+import { SendData } from "../scripting_api/pdf_object.js";
+import { AnnotationBorderStyleType, AnnotationFieldFlag, AnnotationFlag, AnnotationReplyType, AnnotationType, point_t, RenderingIntentFlag, type rect_t } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
 import { type BidiText } from "./bidi.js";
 import { type CatParseDestDictRes } from "./catalog.js";
@@ -10,13 +12,24 @@ import { type DefaultAppearanceData } from "./default_appearance.js";
 import { type LocalIdFactory } from "./document.js";
 import { PartialEvaluator } from "./evaluator.js";
 import { type Serializable } from "./file_spec.js";
+import { ErrorFont, Font, Glyph } from "./fonts.js";
 import { OperatorList } from "./operator_list.js";
 import { BasePdfManager } from "./pdf_manager.js";
 import { Dict, Name, Ref } from "./primitives.js";
+import { StringStream } from "./stream.js";
 import { WorkerTask } from "./worker.js";
 import { type XFAHTMLObj } from "./xfa/alias.js";
 import { XRef } from "./xref.js";
 declare type AnnotType = "Caret" | "Circle" | "FileAttachment" | "FreeText" | "Ink" | "Line" | "Link" | "Highlight" | "Polygon" | "PolyLine" | "Popup" | "Stamp" | "Square" | "Squiggly" | "StrikeOut" | "Text" | "Underline" | "Widget";
+interface _Dependency {
+    ref: Ref;
+    data: string;
+}
+interface _CreateNewAnnotationP {
+    evaluator: PartialEvaluator;
+    task: WorkerTask;
+    baseFontRef?: Ref;
+}
 export declare class AnnotationFactory {
     #private;
     /**
@@ -31,6 +44,17 @@ export declare class AnnotationFactory {
      * @private
      */
     static _create(xref: XRef, ref: Ref, pdfManager: BasePdfManager, idFactory: LocalIdFactory, acroForm: Dict | undefined, xfaDatasets: DatasetReader | undefined, collectFields: boolean, pageIndex?: number): Annotation | undefined;
+    static saveNewAnnotations(evaluator: PartialEvaluator, task: WorkerTask, annotations: AnnotStorageValue[]): Promise<{
+        annotations: {
+            ref: import("./primitives.js").NsRef.Ref;
+            data: string;
+        }[];
+        dependencies: {
+            ref: import("./primitives.js").NsRef.Ref;
+            data: string;
+        }[];
+    }>;
+    static printNewAnnotations(evaluator: PartialEvaluator, task: WorkerTask, annotations: AnnotStorageValue[]): Promise<MarkupAnnotation[] | undefined>;
 }
 export declare function getQuadPoints(dict: Dict, rect?: rect_t): TupleOf<AnnotPoint, 4>[] | null;
 interface _AnnotationCtorP {
@@ -51,10 +75,11 @@ export interface RichText {
 }
 export declare type AnnotationData = {
     annotationFlags: AnnotationFlag;
+    color: Uint8ClampedArray | undefined;
     backgroundColor: Uint8ClampedArray | undefined;
     borderStyle: AnnotationBorderStyle;
     borderColor: Uint8ClampedArray | undefined;
-    color: Uint8ClampedArray | undefined;
+    rotation: number;
     contentsObj: BidiText;
     richText?: RichText | undefined;
     hasAppearance: boolean;
@@ -72,8 +97,8 @@ export declare type AnnotationData = {
     state?: string | undefined;
     stateModel?: string | undefined;
     quadPoints?: TupleOf<AnnotPoint, 4>[] | null;
-    fieldValue?: string | string[] | null;
-    defaultFieldValue?: string | string[] | null;
+    fieldValue?: string | string[] | undefined;
+    defaultFieldValue?: string | string[] | undefined;
     alternativeText?: string;
     defaultAppearance?: string;
     defaultAppearanceData?: DefaultAppearanceData;
@@ -81,19 +106,21 @@ export declare type AnnotationData = {
     fieldFlags?: AnnotationFieldFlag;
     readOnly?: boolean;
     hidden?: boolean;
+    required?: boolean;
     textAlignment?: number | undefined;
     maxLen?: number | undefined;
     multiLine?: boolean;
     comb?: boolean;
+    doNotScroll?: boolean;
     checkBox?: boolean;
     radioButton?: boolean;
     pushButton?: boolean;
     isTooltipOnly?: boolean;
     exportValue?: string;
-    buttonValue?: string | null;
+    buttonValue?: string | undefined;
     options?: {
-        exportValue: string | string[] | null;
-        displayValue: string | string[] | null;
+        exportValue: string | string[] | undefined;
+        displayValue: string | string[] | undefined;
     }[];
     combo?: boolean;
     multiSelect?: boolean;
@@ -104,7 +131,10 @@ export declare type AnnotationData = {
     hasPopup?: boolean;
     lineCoordinates?: rect_t;
     vertices?: AnnotPoint[];
-    lineEndings?: [_LineEndingStr, _LineEndingStr];
+    lineEndings?: [
+        _LineEndingStr,
+        _LineEndingStr
+    ];
     inkLists?: AnnotPoint[][];
     file?: Serializable;
     parentType?: string | undefined;
@@ -143,6 +173,12 @@ export interface FieldObject {
     exportValues?: string;
     numItems?: number;
     multipleSelection?: boolean;
+    send?: (data: SendData) => void;
+    globalEval?: (code: string) => unknown;
+    doc?: DocWrapped;
+    fieldPath?: string;
+    appObjects?: Record<string, FieldWrapped>;
+    siblings?: string[];
 }
 declare type _LineEndingStr = "None" | "Square" | "Circle" | "Diamond" | "OpenArrow" | "ClosedArrow" | "Butt" | "ROpenArrow" | "RClosedArrow" | "Slash";
 declare type _LineEnding = _LineEndingStr | Name;
@@ -155,7 +191,7 @@ export declare class Annotation {
     /**
      * Set the flags.
      *
-     * @param flags - Unsigned 32-bit integer specifying annotation characteristics
+     * @param flags Unsigned 32-bit integer specifying annotation characteristics
      * @see {@link shared/util.js}
      */
     setFlags(flags: unknown): void;
@@ -222,10 +258,12 @@ export declare class Annotation {
     /**
      * Set the rectangle.
      *
-     * @param rectangle - The rectangle array with exactly four entries
+     * @param rectangle The rectangle array with exactly four entries
      */
     setRectangle(rectangle: unknown): void;
     lineEndings: [_LineEndingStr, _LineEndingStr];
+    oc: Dict | undefined;
+    rotation: number;
     constructor(params: _AnnotationCtorP);
     /**
      * Set the border style (as AnnotationBorderStyle object).
@@ -246,22 +284,28 @@ export declare class Annotation {
      * @param lineEndings The line endings array.
      */
     setLineEndings(lineEndings: [_LineEnding, _LineEnding]): void;
+    setRotation(mk: Dict | undefined): void;
     /**
      * Set the color for background and border if any.
      * The default values are transparent.
      *
      * @param mk The MK dictionary
      */
-    setBorderAndBackgroundColors(mk: unknown): void;
+    setBorderAndBackgroundColors(mk: Dict | undefined): void;
     /**
      * Set the (normal) appearance.
      *
      * @param dict The annotation's data dictionary
      */
     setAppearance(dict: Dict): void;
+    setOptionalContent(dict: Dict): void;
     loadResources(keys: string[], appearance: BaseStream): Promise<Dict | undefined>;
-    getOperatorList(evaluator: PartialEvaluator, task: WorkerTask, intent: RenderingIntentFlag, renderForms?: boolean, annotationStorage?: AnnotStorageRecord): Promise<OperatorList>;
-    save(evaluator: PartialEvaluator, task: WorkerTask, annotationStorage?: AnnotStorageRecord): Promise<SaveReturn | null>;
+    getOperatorList(evaluator: PartialEvaluator, task: WorkerTask, intent: RenderingIntentFlag, renderForms?: boolean, annotationStorage?: AnnotStorageRecord): Promise<{
+        opList: OperatorList;
+        separateForm: boolean;
+        separateCanvas: boolean;
+    }>;
+    save(evaluator: PartialEvaluator, task: WorkerTask, annotationStorage?: AnnotStorageRecord): Promise<SaveReturn | undefined>;
     /**
      * Get field data for usage in JS sandbox.
      *
@@ -342,6 +386,10 @@ interface _SetDefaultAppearanceP {
     blendMode?: string;
     pointsCallback: (buffer: string[], points: TupleOf<AnnotPoint, 4>) => rect_t;
 }
+interface _CreateNewDictP {
+    apRef?: Ref;
+    ap?: StringStream;
+}
 /**
  * 12.5.6.2
  */
@@ -355,8 +403,69 @@ export declare class MarkupAnnotation extends Annotation {
      */
     setCreationDate(creationDate: unknown): void;
     constructor(parameters: _AnnotationCtorP);
+    static createNewDict(annotation: AnnotStorageValue, xref: XRef, _: _CreateNewDictP): Dict;
+    static createNewAppearanceStream(annotation: AnnotStorageValue, xref: XRef, params?: _CreateNewAnnotationP): Promise<StringStream>;
     /** @final */
     protected setDefaultAppearance$({ xref, extra, strokeColor, fillColor, blendMode, strokeAlpha, fillAlpha, pointsCallback, }: _SetDefaultAppearanceP): void;
+    static createNewAnnotation(xref: XRef, annotation: AnnotStorageValue, dependencies: _Dependency[], params?: _CreateNewAnnotationP): Promise<{
+        ref: import("./primitives.js").NsRef.Ref;
+        data: string;
+    }>;
+    static createNewPrintAnnotation(xref: XRef, annotation: AnnotStorageValue, params?: _CreateNewAnnotationP): Promise<MarkupAnnotation>;
+}
+interface FieldResources {
+    localResources?: Dict | undefined;
+    acroFormResources?: Dict | undefined;
+    appearanceResources?: Dict | undefined;
+    mergedResources: Dict;
+}
+interface CachedLines {
+    line: string;
+    glyphs: Glyph[];
+    positions: point_t[];
+}
+export declare class WidgetAnnotation extends Annotation {
+    ref: Ref;
+    _hasValueFromXFA?: boolean;
+    _defaultAppearance: string;
+    _fieldResources: FieldResources;
+    protected _hasText?: boolean;
+    constructor(params: _AnnotationCtorP);
+    /**
+     * Decode the given form value.
+     *
+     * @param formValue The (possibly encoded) form value.
+     */
+    protected _decodeFormValue(formValue: unknown): string | string[] | undefined;
+    /**
+     * Check if a provided field flag is set.
+     *
+     * @param flag Hexadecimal representation for an annotation field characteristic
+     * @see {@link shared/util.js}
+     */
+    hasFieldFlag(flag: AnnotationFieldFlag): boolean;
+    static _getRotationMatrix(rotation: number, width: number, height: number): number[];
+    getRotationMatrix(annotationStorage: AnnotStorageRecord | undefined): number[];
+    getBorderAndBackgroundAppearances(annotationStorage: AnnotStorageRecord | undefined): string;
+    getOperatorList(evaluator: PartialEvaluator, task: WorkerTask, intent: RenderingIntentFlag, renderForms?: boolean, annotationStorage?: AnnotStorageRecord): Promise<{
+        opList: OperatorList;
+        separateForm: boolean;
+        separateCanvas: boolean;
+    }>;
+    _getMKDict(rotation: number): Dict | null;
+    save(evaluator: PartialEvaluator, task: WorkerTask, annotationStorage?: AnnotStorageRecord): Promise<SaveReturn | undefined>;
+    _getCombAppearance(defaultAppearance: string, font: Font | ErrorFont, text: string, width: number, hPadding: number, vPadding: number, annotationStorage: AnnotStorageRecord | undefined): string;
+    _getMultilineAppearance(defaultAppearance: string, text: string, font: Font | ErrorFont, fontSize: number, width: number, height: number, alignment: number, hPadding: number, vPadding: number, AnnotStorageRecord: AnnotStorageRecord | undefined): string;
+    _splitLine(line: string | undefined, font: Font | ErrorFont, fontSize: number, width: number, cache?: CachedLines): string[];
+    protected getAppearance$(evaluator: PartialEvaluator, task: WorkerTask, annotationStorage?: AnnotStorageRecord): Promise<string | undefined>;
+    /** For testing only. */
+    _getAppearance(evaluator: PartialEvaluator, task: WorkerTask, annotationStorage?: AnnotStorageRecord): Promise<string | undefined>;
+    static _getFontData(evaluator: PartialEvaluator, task: WorkerTask, appearanceData: DefaultAppearanceData | undefined, resources: Dict): Promise<Font | ErrorFont>;
+    protected getTextWidth$(text: string, font: Font | ErrorFont): number;
+    protected computeFontSize$(height: number, width: number, text: string, font: Font | ErrorFont, lineCount: number): [string, number];
+    _renderText(text: string, font: Font | ErrorFont, fontSize: number, totalWidth: number, alignment: number, hPadding: number, vPadding: number): string;
+    _getSaveFieldResources(xref: XRef): Dict;
+    getFieldObject(): FieldObject | undefined;
 }
 export {};
 //# sourceMappingURL=annotation.d.ts.map

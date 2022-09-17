@@ -1,4 +1,4 @@
-import { type Locale_1, type WebL10nArgs } from "../../lib/l10n.js";
+import { type Locale_1, type WebL10nArgs } from "../../3rd/webL10n/l10n.js";
 import { Locale } from "../../lib/Locale.js";
 import { type IL10n } from "./interfaces.js";
 export declare function getL10nFallback(key: string, args: WebL10nArgs): string;

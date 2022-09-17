@@ -2,7 +2,7 @@
 /** @typedef {import("./event_utils").EventBus} EventBus */
 /** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
 import { PromiseCap } from "../../lib/promisecap.js";
-import { PDFDocumentProxy } from "../pdf.ts-src/display/api.js";
+import { PDFDocumentProxy } from "../pdf.ts-src/pdf.js";
 import { EventBus } from "./event_utils.js";
 import { type IPDFLinkService } from "./interfaces.js";
 export declare const enum FindState {
@@ -22,7 +22,7 @@ interface PDFFindControllerOptions {
     eventBus: EventBus;
 }
 export declare type FindType = "again" | "casesensitivitychange" | "diacriticmatchingchange" | "entirewordchange" | "findagain" | "findhighlightallchange" | "highlightallchange";
-export declare type FindCtrlrState = {
+export declare type FindCtrlState = {
     type: FindType | "";
     query: string;
     phraseSearch: boolean;
@@ -50,10 +50,10 @@ export declare class PDFFindController {
         pageIdx: number;
         matchIdx: number;
     };
-    get state(): FindCtrlrState | undefined;
+    get state(): FindCtrlState | undefined;
     _firstPageCapability: PromiseCap;
     _rawQuery?: string;
-    constructor({ linkService, eventBus }: PDFFindControllerOptions);
+    constructor({ linkService, eventBus, }: PDFFindControllerOptions);
     /**
      * Set a reference to the PDF document in order to search it.
      * Note that searching is not possible if this method is not called.

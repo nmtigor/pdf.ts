@@ -17,7 +17,7 @@
  */
 /** @typedef {import("../src/display/api").PDFPageProxy} PDFPageProxy */
 import { html } from "../../lib/dom.js";
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 const PDF_ROLE_TO_HTML_ROLE = {
     // Document level structure types
     Document: null,
@@ -95,7 +95,7 @@ export class StructTreeLayerBuilder {
     }
     _walk(node) {
         if (!node)
-            return null;
+            return undefined;
         const element = html("span");
         if ("role" in node) {
             const { role } = node;
@@ -104,7 +104,7 @@ export class StructTreeLayerBuilder {
                 element.setAttribute("role", "heading");
                 element.setAttribute("aria-level", match[1]);
             }
-            else if (PDF_ROLE_TO_HTML_ROLE[role]) {
+            else if ((PDF_ROLE_TO_HTML_ROLE)[role]) {
                 element.setAttribute("role", PDF_ROLE_TO_HTML_ROLE[role]);
             }
         }
@@ -117,12 +117,12 @@ export class StructTreeLayerBuilder {
             }
             else {
                 for (const kid of node.children) {
-                    element.appendChild(this._walk(kid));
+                    element.append(this._walk(kid));
                 }
             }
         }
         return element;
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=struct_tree_layer_builder.js.map

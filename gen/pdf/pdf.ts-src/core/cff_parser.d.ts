@@ -1,6 +1,6 @@
 import { type Constructor } from "../../../lib/alias.js";
-import { BaseStream } from "./base_stream.js";
 import { type FontProps } from "./evaluator.js";
+import { Stream } from "./stream.js";
 /**
  * The CFF class takes a Type1 file and wrap it into a
  * 'Compact Font Format' which itself embed Type2 charstrings.
@@ -33,10 +33,10 @@ declare namespace NsCFFParser {
         properties: FontProps;
         seacAnalysisEnabled: boolean;
         cff?: CFF;
-        constructor(file: BaseStream, properties: FontProps, seacAnalysisEnabled: boolean);
+        constructor(file: Stream, properties: FontProps, seacAnalysisEnabled: boolean);
         /**
          * Ref. The Compact Font Format Specification
-         * [CFF] http://wwwimages.adobe.com/content/dam/acom/en/devnet/font/pdfs/5176.CFF.pdf
+         * [CFF] https://adobe-type-tools.github.io/font-tech-notes/pdfs/5176.CFF.pdf
          */
         parse(): CFF;
         /**
@@ -123,15 +123,15 @@ interface CFFTables {
     order: number[];
 }
 declare abstract class CFFDict {
-    strings?: CFFStrings | undefined;
     keyToNameMap: string[];
     nameToKeyMap: Record<string, number>;
     defaults: (number | number[] | null)[];
     types: (string | string[])[];
-    opcodes: ([number] | [number, number])[];
+    opcodes: ([number, number] | [number])[];
     order: number[];
+    strings: CFFStrings | undefined;
     values: (number[] | number | undefined)[];
-    constructor(tables: CFFTables, strings?: CFFStrings | undefined);
+    constructor(tables: CFFTables, strings?: CFFStrings);
     setByKey(key: number, value: number[]): boolean;
     setByName(name: string, value?: number | number[]): void;
     hasName(name: string): boolean;
@@ -155,14 +155,16 @@ declare namespace NsCFFTopDict {
         constructor(strings?: CFFStrings);
     }
 }
-export import CFFTopDict = NsCFFTopDict.CFFTopDict;
+export declare type CFFTopDict = NsCFFTopDict.CFFTopDict;
+export declare var CFFTopDict: typeof NsCFFTopDict.CFFTopDict;
 declare namespace NsCFFPrivateDict {
     class CFFPrivateDict extends CFFDict {
         subrsIndex?: CFFIndex;
         constructor(strings?: CFFStrings);
     }
 }
-export import CFFPrivateDict = NsCFFPrivateDict.CFFPrivateDict;
+export declare type CFFPrivateDict = NsCFFPrivateDict.CFFPrivateDict;
+export declare var CFFPrivateDict: typeof NsCFFPrivateDict.CFFPrivateDict;
 export declare const enum CFFCharsetPredefinedTypes {
     ISO_ADOBE = 0,
     EXPERT = 1,

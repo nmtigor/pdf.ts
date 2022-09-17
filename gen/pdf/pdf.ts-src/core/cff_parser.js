@@ -1,10 +1,10 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
-import { bytesToString, FormatError, info, shadow, stringToBytes, Util, warn } from "../shared/util.js";
-import { ExpertCharset, ExpertSubsetCharset, ISOAdobeCharset } from "./charsets.js";
+import { bytesToString, FormatError, info, shadow, stringToBytes, Util, warn, } from "../shared/util.js";
+import { ExpertCharset, ExpertSubsetCharset, ISOAdobeCharset, } from "./charsets.js";
 import { ExpertEncoding, StandardEncoding } from "./encodings.js";
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 // Maximum subroutine call depth of type 2 charstrings. Matches OTS.
 const MAX_SUBR_NESTING = 10;
 /**
@@ -13,71 +13,397 @@ const MAX_SUBR_NESTING = 10;
  */
 // prettier-ignore
 export const CFFStandardStrings = [
-    ".notdef", "space", "exclam", "quotedbl", "numbersign", "dollar", "percent",
-    "ampersand", "quoteright", "parenleft", "parenright", "asterisk", "plus",
-    "comma", "hyphen", "period", "slash", "zero", "one", "two", "three", "four",
-    "five", "six", "seven", "eight", "nine", "colon", "semicolon", "less",
-    "equal", "greater", "question", "at", "A", "B", "C", "D", "E", "F", "G", "H",
-    "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W",
-    "X", "Y", "Z", "bracketleft", "backslash", "bracketright", "asciicircum",
-    "underscore", "quoteleft", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j",
-    "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y",
-    "z", "braceleft", "bar", "braceright", "asciitilde", "exclamdown", "cent",
-    "sterling", "fraction", "yen", "florin", "section", "currency",
-    "quotesingle", "quotedblleft", "guillemotleft", "guilsinglleft",
-    "guilsinglright", "fi", "fl", "endash", "dagger", "daggerdbl",
-    "periodcentered", "paragraph", "bullet", "quotesinglbase", "quotedblbase",
-    "quotedblright", "guillemotright", "ellipsis", "perthousand", "questiondown",
-    "grave", "acute", "circumflex", "tilde", "macron", "breve", "dotaccent",
-    "dieresis", "ring", "cedilla", "hungarumlaut", "ogonek", "caron", "emdash",
-    "AE", "ordfeminine", "Lslash", "Oslash", "OE", "ordmasculine", "ae",
-    "dotlessi", "lslash", "oslash", "oe", "germandbls", "onesuperior",
-    "logicalnot", "mu", "trademark", "Eth", "onehalf", "plusminus", "Thorn",
-    "onequarter", "divide", "brokenbar", "degree", "thorn", "threequarters",
-    "twosuperior", "registered", "minus", "eth", "multiply", "threesuperior",
-    "copyright", "Aacute", "Acircumflex", "Adieresis", "Agrave", "Aring",
-    "Atilde", "Ccedilla", "Eacute", "Ecircumflex", "Edieresis", "Egrave",
-    "Iacute", "Icircumflex", "Idieresis", "Igrave", "Ntilde", "Oacute",
-    "Ocircumflex", "Odieresis", "Ograve", "Otilde", "Scaron", "Uacute",
-    "Ucircumflex", "Udieresis", "Ugrave", "Yacute", "Ydieresis", "Zcaron",
-    "aacute", "acircumflex", "adieresis", "agrave", "aring", "atilde",
-    "ccedilla", "eacute", "ecircumflex", "edieresis", "egrave", "iacute",
-    "icircumflex", "idieresis", "igrave", "ntilde", "oacute", "ocircumflex",
-    "odieresis", "ograve", "otilde", "scaron", "uacute", "ucircumflex",
-    "udieresis", "ugrave", "yacute", "ydieresis", "zcaron", "exclamsmall",
-    "Hungarumlautsmall", "dollaroldstyle", "dollarsuperior", "ampersandsmall",
-    "Acutesmall", "parenleftsuperior", "parenrightsuperior", "twodotenleader",
-    "onedotenleader", "zerooldstyle", "oneoldstyle", "twooldstyle",
-    "threeoldstyle", "fouroldstyle", "fiveoldstyle", "sixoldstyle",
-    "sevenoldstyle", "eightoldstyle", "nineoldstyle", "commasuperior",
-    "threequartersemdash", "periodsuperior", "questionsmall", "asuperior",
-    "bsuperior", "centsuperior", "dsuperior", "esuperior", "isuperior",
-    "lsuperior", "msuperior", "nsuperior", "osuperior", "rsuperior", "ssuperior",
-    "tsuperior", "ff", "ffi", "ffl", "parenleftinferior", "parenrightinferior",
-    "Circumflexsmall", "hyphensuperior", "Gravesmall", "Asmall", "Bsmall",
-    "Csmall", "Dsmall", "Esmall", "Fsmall", "Gsmall", "Hsmall", "Ismall",
-    "Jsmall", "Ksmall", "Lsmall", "Msmall", "Nsmall", "Osmall", "Psmall",
-    "Qsmall", "Rsmall", "Ssmall", "Tsmall", "Usmall", "Vsmall", "Wsmall",
-    "Xsmall", "Ysmall", "Zsmall", "colonmonetary", "onefitted", "rupiah",
-    "Tildesmall", "exclamdownsmall", "centoldstyle", "Lslashsmall",
-    "Scaronsmall", "Zcaronsmall", "Dieresissmall", "Brevesmall", "Caronsmall",
-    "Dotaccentsmall", "Macronsmall", "figuredash", "hypheninferior",
-    "Ogoneksmall", "Ringsmall", "Cedillasmall", "questiondownsmall", "oneeighth",
-    "threeeighths", "fiveeighths", "seveneighths", "onethird", "twothirds",
-    "zerosuperior", "foursuperior", "fivesuperior", "sixsuperior",
-    "sevensuperior", "eightsuperior", "ninesuperior", "zeroinferior",
-    "oneinferior", "twoinferior", "threeinferior", "fourinferior",
-    "fiveinferior", "sixinferior", "seveninferior", "eightinferior",
-    "nineinferior", "centinferior", "dollarinferior", "periodinferior",
-    "commainferior", "Agravesmall", "Aacutesmall", "Acircumflexsmall",
-    "Atildesmall", "Adieresissmall", "Aringsmall", "AEsmall", "Ccedillasmall",
-    "Egravesmall", "Eacutesmall", "Ecircumflexsmall", "Edieresissmall",
-    "Igravesmall", "Iacutesmall", "Icircumflexsmall", "Idieresissmall",
-    "Ethsmall", "Ntildesmall", "Ogravesmall", "Oacutesmall", "Ocircumflexsmall",
-    "Otildesmall", "Odieresissmall", "OEsmall", "Oslashsmall", "Ugravesmall",
-    "Uacutesmall", "Ucircumflexsmall", "Udieresissmall", "Yacutesmall",
-    "Thornsmall", "Ydieresissmall", "001.000", "001.001", "001.002", "001.003",
-    "Black", "Bold", "Book", "Light", "Medium", "Regular", "Roman", "Semibold"
+    ".notdef",
+    "space",
+    "exclam",
+    "quotedbl",
+    "numbersign",
+    "dollar",
+    "percent",
+    "ampersand",
+    "quoteright",
+    "parenleft",
+    "parenright",
+    "asterisk",
+    "plus",
+    "comma",
+    "hyphen",
+    "period",
+    "slash",
+    "zero",
+    "one",
+    "two",
+    "three",
+    "four",
+    "five",
+    "six",
+    "seven",
+    "eight",
+    "nine",
+    "colon",
+    "semicolon",
+    "less",
+    "equal",
+    "greater",
+    "question",
+    "at",
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "H",
+    "I",
+    "J",
+    "K",
+    "L",
+    "M",
+    "N",
+    "O",
+    "P",
+    "Q",
+    "R",
+    "S",
+    "T",
+    "U",
+    "V",
+    "W",
+    "X",
+    "Y",
+    "Z",
+    "bracketleft",
+    "backslash",
+    "bracketright",
+    "asciicircum",
+    "underscore",
+    "quoteleft",
+    "a",
+    "b",
+    "c",
+    "d",
+    "e",
+    "f",
+    "g",
+    "h",
+    "i",
+    "j",
+    "k",
+    "l",
+    "m",
+    "n",
+    "o",
+    "p",
+    "q",
+    "r",
+    "s",
+    "t",
+    "u",
+    "v",
+    "w",
+    "x",
+    "y",
+    "z",
+    "braceleft",
+    "bar",
+    "braceright",
+    "asciitilde",
+    "exclamdown",
+    "cent",
+    "sterling",
+    "fraction",
+    "yen",
+    "florin",
+    "section",
+    "currency",
+    "quotesingle",
+    "quotedblleft",
+    "guillemotleft",
+    "guilsinglleft",
+    "guilsinglright",
+    "fi",
+    "fl",
+    "endash",
+    "dagger",
+    "daggerdbl",
+    "periodcentered",
+    "paragraph",
+    "bullet",
+    "quotesinglbase",
+    "quotedblbase",
+    "quotedblright",
+    "guillemotright",
+    "ellipsis",
+    "perthousand",
+    "questiondown",
+    "grave",
+    "acute",
+    "circumflex",
+    "tilde",
+    "macron",
+    "breve",
+    "dotaccent",
+    "dieresis",
+    "ring",
+    "cedilla",
+    "hungarumlaut",
+    "ogonek",
+    "caron",
+    "emdash",
+    "AE",
+    "ordfeminine",
+    "Lslash",
+    "Oslash",
+    "OE",
+    "ordmasculine",
+    "ae",
+    "dotlessi",
+    "lslash",
+    "oslash",
+    "oe",
+    "germandbls",
+    "onesuperior",
+    "logicalnot",
+    "mu",
+    "trademark",
+    "Eth",
+    "onehalf",
+    "plusminus",
+    "Thorn",
+    "onequarter",
+    "divide",
+    "brokenbar",
+    "degree",
+    "thorn",
+    "threequarters",
+    "twosuperior",
+    "registered",
+    "minus",
+    "eth",
+    "multiply",
+    "threesuperior",
+    "copyright",
+    "Aacute",
+    "Acircumflex",
+    "Adieresis",
+    "Agrave",
+    "Aring",
+    "Atilde",
+    "Ccedilla",
+    "Eacute",
+    "Ecircumflex",
+    "Edieresis",
+    "Egrave",
+    "Iacute",
+    "Icircumflex",
+    "Idieresis",
+    "Igrave",
+    "Ntilde",
+    "Oacute",
+    "Ocircumflex",
+    "Odieresis",
+    "Ograve",
+    "Otilde",
+    "Scaron",
+    "Uacute",
+    "Ucircumflex",
+    "Udieresis",
+    "Ugrave",
+    "Yacute",
+    "Ydieresis",
+    "Zcaron",
+    "aacute",
+    "acircumflex",
+    "adieresis",
+    "agrave",
+    "aring",
+    "atilde",
+    "ccedilla",
+    "eacute",
+    "ecircumflex",
+    "edieresis",
+    "egrave",
+    "iacute",
+    "icircumflex",
+    "idieresis",
+    "igrave",
+    "ntilde",
+    "oacute",
+    "ocircumflex",
+    "odieresis",
+    "ograve",
+    "otilde",
+    "scaron",
+    "uacute",
+    "ucircumflex",
+    "udieresis",
+    "ugrave",
+    "yacute",
+    "ydieresis",
+    "zcaron",
+    "exclamsmall",
+    "Hungarumlautsmall",
+    "dollaroldstyle",
+    "dollarsuperior",
+    "ampersandsmall",
+    "Acutesmall",
+    "parenleftsuperior",
+    "parenrightsuperior",
+    "twodotenleader",
+    "onedotenleader",
+    "zerooldstyle",
+    "oneoldstyle",
+    "twooldstyle",
+    "threeoldstyle",
+    "fouroldstyle",
+    "fiveoldstyle",
+    "sixoldstyle",
+    "sevenoldstyle",
+    "eightoldstyle",
+    "nineoldstyle",
+    "commasuperior",
+    "threequartersemdash",
+    "periodsuperior",
+    "questionsmall",
+    "asuperior",
+    "bsuperior",
+    "centsuperior",
+    "dsuperior",
+    "esuperior",
+    "isuperior",
+    "lsuperior",
+    "msuperior",
+    "nsuperior",
+    "osuperior",
+    "rsuperior",
+    "ssuperior",
+    "tsuperior",
+    "ff",
+    "ffi",
+    "ffl",
+    "parenleftinferior",
+    "parenrightinferior",
+    "Circumflexsmall",
+    "hyphensuperior",
+    "Gravesmall",
+    "Asmall",
+    "Bsmall",
+    "Csmall",
+    "Dsmall",
+    "Esmall",
+    "Fsmall",
+    "Gsmall",
+    "Hsmall",
+    "Ismall",
+    "Jsmall",
+    "Ksmall",
+    "Lsmall",
+    "Msmall",
+    "Nsmall",
+    "Osmall",
+    "Psmall",
+    "Qsmall",
+    "Rsmall",
+    "Ssmall",
+    "Tsmall",
+    "Usmall",
+    "Vsmall",
+    "Wsmall",
+    "Xsmall",
+    "Ysmall",
+    "Zsmall",
+    "colonmonetary",
+    "onefitted",
+    "rupiah",
+    "Tildesmall",
+    "exclamdownsmall",
+    "centoldstyle",
+    "Lslashsmall",
+    "Scaronsmall",
+    "Zcaronsmall",
+    "Dieresissmall",
+    "Brevesmall",
+    "Caronsmall",
+    "Dotaccentsmall",
+    "Macronsmall",
+    "figuredash",
+    "hypheninferior",
+    "Ogoneksmall",
+    "Ringsmall",
+    "Cedillasmall",
+    "questiondownsmall",
+    "oneeighth",
+    "threeeighths",
+    "fiveeighths",
+    "seveneighths",
+    "onethird",
+    "twothirds",
+    "zerosuperior",
+    "foursuperior",
+    "fivesuperior",
+    "sixsuperior",
+    "sevensuperior",
+    "eightsuperior",
+    "ninesuperior",
+    "zeroinferior",
+    "oneinferior",
+    "twoinferior",
+    "threeinferior",
+    "fourinferior",
+    "fiveinferior",
+    "sixinferior",
+    "seveninferior",
+    "eightinferior",
+    "nineinferior",
+    "centinferior",
+    "dollarinferior",
+    "periodinferior",
+    "commainferior",
+    "Agravesmall",
+    "Aacutesmall",
+    "Acircumflexsmall",
+    "Atildesmall",
+    "Adieresissmall",
+    "Aringsmall",
+    "AEsmall",
+    "Ccedillasmall",
+    "Egravesmall",
+    "Eacutesmall",
+    "Ecircumflexsmall",
+    "Edieresissmall",
+    "Igravesmall",
+    "Iacutesmall",
+    "Icircumflexsmall",
+    "Idieresissmall",
+    "Ethsmall",
+    "Ntildesmall",
+    "Ogravesmall",
+    "Oacutesmall",
+    "Ocircumflexsmall",
+    "Otildesmall",
+    "Odieresissmall",
+    "OEsmall",
+    "Oslashsmall",
+    "Ugravesmall",
+    "Uacutesmall",
+    "Ucircumflexsmall",
+    "Udieresissmall",
+    "Yacutesmall",
+    "Thornsmall",
+    "Ydieresissmall",
+    "001.000",
+    "001.001",
+    "001.002",
+    "001.003",
+    "Black",
+    "Bold",
+    "Book",
+    "Light",
+    "Medium",
+    "Regular",
+    "Roman",
+    "Semibold",
 ];
 export const NUM_STANDARD_CFF_STRINGS = 391;
 // type CharStringIndex = CFFIndex< Uint8Array | Uint8ClampedArray >;
@@ -210,7 +536,7 @@ var NsCFFParser;
         }
         /**
          * Ref. The Compact Font Format Specification
-         * [CFF] http://wwwimages.adobe.com/content/dam/acom/en/devnet/font/pdfs/5176.CFF.pdf
+         * [CFF] https://adobe-type-tools.github.io/font-tech-notes/pdfs/5176.CFF.pdf
          */
         parse() {
             const properties = this.properties;
@@ -340,18 +666,35 @@ var NsCFFParser;
                 let str = "";
                 const eof = 15;
                 // prettier-ignore
-                const lookup = ["0", "1", "2", "3", "4", "5", "6", "7", "8",
-                    "9", ".", "E", "E-", null, "-"];
+                const lookup = [
+                    "0",
+                    "1",
+                    "2",
+                    "3",
+                    "4",
+                    "5",
+                    "6",
+                    "7",
+                    "8",
+                    "9",
+                    ".",
+                    "E",
+                    "E-",
+                    null,
+                    "-",
+                ];
                 const length = dict.length;
                 while (pos < length) {
                     const b = dict[pos++];
                     const b1 = b >> 4;
                     const b2 = b & 15;
-                    if (b1 === eof)
+                    if (b1 === eof) {
                         break;
+                    }
                     str += lookup[b1];
-                    if (b2 === eof)
+                    if (b2 === eof) {
                         break;
+                    }
                     str += lookup[b2];
                 }
                 return parseFloat(str);
@@ -434,8 +777,9 @@ var NsCFFParser;
             return cffDict;
         }
         parseCharString(state, data, localSubrIndex, globalSubrIndex) {
-            if (!data || state.callDepth > MAX_SUBR_NESTING)
+            if (!data || state.callDepth > MAX_SUBR_NESTING) {
                 return false;
+            }
             let stackSize = state.stackSize;
             const stack = state.stack;
             const length = data.length;
@@ -482,21 +826,19 @@ var NsCFFParser;
                 }
                 else if (value >= 247 && value <= 254) {
                     // number (+1 bytes)
-                    stack[stackSize] =
-                        value < 251
-                            ? ((value - 247) << 8) + data[j] + 108
-                            : -((value - 251) << 8) - data[j] - 108;
+                    stack[stackSize] = value < 251
+                        ? ((value - 247) << 8) + data[j] + 108
+                        : -((value - 251) << 8) - data[j] - 108;
                     j++;
                     stackSize++;
                 }
                 else if (value === 255) {
                     // number (32 bit)
-                    stack[stackSize] =
-                        ((data[j] << 24) |
-                            (data[j + 1] << 16) |
-                            (data[j + 2] << 8) |
-                            data[j + 3]) /
-                            65536;
+                    stack[stackSize] = ((data[j] << 24) |
+                        (data[j + 1] << 16) |
+                        (data[j + 2] << 8) |
+                        data[j + 3]) /
+                        65536;
                     j += 4;
                     stackSize++;
                 }
@@ -528,9 +870,9 @@ var NsCFFParser;
                         bias = 1131;
                     }
                     const subrNumber = stack[--stackSize] + bias;
-                    if (subrNumber < 0
-                        || subrNumber >= subrsIndex.count
-                        || isNaN(subrNumber)) {
+                    if (subrNumber < 0 ||
+                        subrNumber >= subrsIndex.count ||
+                        isNaN(subrNumber)) {
                         validationCommand = CharstringValidationData[value];
                         warn("Out of bounds subrIndex for " + validationCommand.id);
                         return false;
@@ -538,8 +880,9 @@ var NsCFFParser;
                     state.stackSize = stackSize;
                     state.callDepth++;
                     const valid = this.parseCharString(state, subrsIndex.get(subrNumber), localSubrIndex, globalSubrIndex);
-                    if (!valid)
+                    if (!valid) {
                         return false;
+                    }
                     state.callDepth--;
                     stackSize = state.stackSize;
                     continue;
@@ -718,8 +1061,9 @@ var NsCFFParser;
             const privateDict = this.createDict(CFFPrivateDict, dict, parentDict.strings);
             parentDict.privateDict = privateDict;
             // Parse the Subrs index also since it's relative to the private dict.
-            if (!privateDict.getByName("Subrs"))
+            if (!privateDict.getByName("Subrs")) {
                 return;
+            }
             const subrsOffset = privateDict.getByName("Subrs");
             const relativeOffset = offset + subrsOffset;
             // Validate the offset.
@@ -922,8 +1266,9 @@ export class CFF {
         }
     }
     hasGlyphId(id) {
-        if (id < 0 || id >= this.charStrings.count)
+        if (id < 0 || id >= this.charStrings.count) {
             return false;
+        }
         const glyph = this.charStrings.get(id);
         return glyph.length > 0;
     }
@@ -942,7 +1287,9 @@ export class CFFHeader {
 }
 export class CFFStrings {
     strings = [];
-    get count() { return this.strings.length; }
+    get count() {
+        return this.strings.length;
+    }
     get(index) {
         if (index >= 0 && index <= NUM_STANDARD_CFF_STRINGS - 1) {
             return CFFStandardStrings[index];
@@ -954,11 +1301,13 @@ export class CFFStrings {
     }
     getSID(str) {
         let index = CFFStandardStrings.indexOf(str);
-        if (index !== -1)
+        if (index !== -1) {
             return index;
+        }
         index = this.strings.indexOf(str);
-        if (index !== -1)
+        if (index !== -1) {
             return index + NUM_STANDARD_CFF_STRINGS;
+        }
         return -1;
     }
     add(value) {
@@ -967,7 +1316,9 @@ export class CFFStrings {
 }
 export class CFFIndex {
     objects = [];
-    get count() { return this.objects.length; }
+    get count() {
+        return this.objects.length;
+    }
     length = 0;
     add(data) {
         this.length += data.length;
@@ -982,31 +1333,33 @@ export class CFFIndex {
     }
 }
 class CFFDict {
-    strings;
     keyToNameMap;
     nameToKeyMap;
     defaults;
     types;
     opcodes;
     order;
+    strings;
     values = Object.create(null);
     constructor(tables, strings) {
-        this.strings = strings;
         this.keyToNameMap = tables.keyToNameMap;
         this.nameToKeyMap = tables.nameToKeyMap;
         this.defaults = tables.defaults;
         this.types = tables.types;
         this.opcodes = tables.opcodes;
         this.order = tables.order;
+        this.strings = strings;
     }
     // value should always be an array
     setByKey(key, value) {
-        if (!(key in this.keyToNameMap))
+        if (!(key in this.keyToNameMap)) {
             return false;
+        }
         const valueLength = value.length;
         // ignore empty values
-        if (valueLength === 0)
+        if (valueLength === 0) {
             return true;
+        }
         // Ignore invalid values (fixes bug1068432.pdf and bug1308536.pdf).
         for (let i = 0; i < valueLength; i++) {
             if (isNaN(value[i])) {
@@ -1016,8 +1369,9 @@ class CFFDict {
         }
         const type = this.types[key];
         // remove the array wrapping these types of values
-        if (type === "num" || type === "sid" || type === "offset")
+        if (type === "num" || type === "sid" || type === "offset") {
             this.values[key] = value[0];
+        }
         else
             this.values[key] = value;
         return true;
@@ -1036,8 +1390,9 @@ class CFFDict {
             throw new FormatError(`Invalid dictionary name ${name}"`);
         }
         const key = this.nameToKeyMap[name];
-        if (!(key in this.values))
+        if (!(key in this.values)) {
             return this.defaults[key];
+        }
         return this.values[key];
     }
     removeByName(name) {
@@ -1085,8 +1440,14 @@ var NsCFFTopDict;
         [[12, 5], "PaintType", "num", 0],
         [[12, 6], "CharstringType", "num", 2],
         // prettier-ignore
-        [[12, 7], "FontMatrix", ["num", "num", "num", "num", "num", "num"],
-            [0.001, 0, 0, 0.001, 0, 0]],
+        [[12, 7], "FontMatrix", ["num", "num", "num", "num", "num", "num"], [
+                0.001,
+                0,
+                0,
+                0.001,
+                0,
+                0,
+            ]],
         [13, "UniqueID", "num", null],
         [5, "FontBBox", ["num", "num", "num", "num"], [0, 0, 0, 0]],
         [[12, 8], "StrokeWidth", "num", 0],
@@ -1109,22 +1470,22 @@ var NsCFFTopDict;
         [[12, 36], "FDArray", "offset", null],
         [[12, 38], "FontName", "sid", null],
     ];
-    let tables = null;
+    let tables;
     /**
      * [CFF] Table 9
      */
     class CFFTopDict extends CFFDict {
         privateDict;
         constructor(strings) {
-            // if (tables === null) {
-            //   tables = CFFDict.createTables(layout);
-            // }
-            super((tables === null ? (tables = CFFDict.createTables(layout)) : tables), strings);
-            // this.privateDict = null;
+            if (tables === undefined) {
+                tables = CFFDict.createTables(layout);
+            }
+            super(tables, strings);
         }
     }
     NsCFFTopDict.CFFTopDict = CFFTopDict;
 })(NsCFFTopDict || (NsCFFTopDict = {}));
+// Hoisting for deno.
 export var CFFTopDict = NsCFFTopDict.CFFTopDict;
 var NsCFFPrivateDict;
 (function (NsCFFPrivateDict) {
@@ -1148,20 +1509,20 @@ var NsCFFPrivateDict;
         [21, "nominalWidthX", "num", 0],
         [19, "Subrs", "offset", null],
     ];
-    let tables = null;
+    let tables;
     // eslint-disable-next-line no-shadow
     class CFFPrivateDict extends CFFDict {
         subrsIndex;
         constructor(strings) {
-            // if (tables === null) {
-            //   tables = CFFDict.createTables(layout);
-            // }
-            super((tables === null ? (tables = CFFDict.createTables(layout)) : tables), strings);
-            // this.subrsIndex = null;
+            if (tables === undefined) {
+                tables = CFFDict.createTables(layout);
+            }
+            super(tables, strings);
         }
     }
     NsCFFPrivateDict.CFFPrivateDict = CFFPrivateDict;
 })(NsCFFPrivateDict || (NsCFFPrivateDict = {}));
+// Hoisting for deno.
 export var CFFPrivateDict = NsCFFPrivateDict.CFFPrivateDict;
 export var CFFCharsetPredefinedTypes;
 (function (CFFCharsetPredefinedTypes) {
@@ -1201,8 +1562,9 @@ export class CFFFDSelect {
         this.fdSelect = fdSelect;
     }
     getFDIndex(glyphIndex) {
-        if (glyphIndex < 0 || glyphIndex >= this.fdSelect.length)
+        if (glyphIndex < 0 || glyphIndex >= this.fdSelect.length) {
             return -1;
+        }
         return this.fdSelect[glyphIndex];
     }
 }
@@ -1238,11 +1600,11 @@ class CFFOffsetTracker {
             const offset3 = offset0 + 3;
             const offset4 = offset0 + 4;
             // It's easy to screw up offsets so perform this sanity check.
-            if (data[offset0] !== 0x1d
-                || data[offset1] !== 0
-                || data[offset2] !== 0
-                || data[offset3] !== 0
-                || data[offset4] !== 0) {
+            if (data[offset0] !== 0x1d ||
+                data[offset1] !== 0 ||
+                data[offset2] !== 0 ||
+                data[offset3] !== 0 ||
+                data[offset4] !== 0) {
                 throw new FormatError("writing to an offset that is not empty");
             }
             const value = values[i];
@@ -1266,7 +1628,7 @@ export class CFFCompiler {
         const output = {
             data: [],
             length: 0,
-            add: function CFFCompiler_add(data) {
+            add(data) {
                 this.data = this.data.concat(data);
                 this.length = this.data.length;
             },
@@ -1353,8 +1715,9 @@ export class CFFCompiler {
         return output.data;
     }
     encodeNumber(value) {
-        if (Number.isInteger(value))
+        if (Number.isInteger(value)) {
             return this.encodeInteger(value);
+        }
         return this.encodeFloat(value);
     }
     static get EncodeFloatRegExp() {
@@ -1431,18 +1794,18 @@ export class CFFCompiler {
                 // OTS requires chars to be between a range and not certain other
                 // chars.
                 let char = name[j];
-                if (char < "!"
-                    || char > "~"
-                    || char === "["
-                    || char === "]"
-                    || char === "("
-                    || char === ")"
-                    || char === "{"
-                    || char === "}"
-                    || char === "<"
-                    || char === ">"
-                    || char === "/"
-                    || char === "%") {
+                if (char < "!" ||
+                    char > "~" ||
+                    char === "[" ||
+                    char === "]" ||
+                    char === "(" ||
+                    char === ")" ||
+                    char === "{" ||
+                    char === "}" ||
+                    char === "<" ||
+                    char === ">" ||
+                    char === "/" ||
+                    char === "%") {
                     char = "_";
                 }
                 sanitizedName[j] = char;
@@ -1506,13 +1869,12 @@ export class CFFCompiler {
         }
     }
     compileDict(dict, offsetTracker) {
-        let out = [];
+        const out = [];
         // The dictionary keys must be in a certain order.
-        const order = dict.order;
-        for (let i = 0; i < order.length; ++i) {
-            const key = order[i];
-            if (!(key in dict.values))
+        for (const key of dict.order) {
+            if (!(key in dict.values)) {
                 continue;
+            }
             let values = dict.values[key];
             let types = dict.types[key];
             if (!Array.isArray(types)) {
@@ -1522,15 +1884,16 @@ export class CFFCompiler {
                 values = [values];
             }
             // Remove any empty dict values.
-            if (values.length === 0)
+            if (values.length === 0) {
                 continue;
+            }
             for (let j = 0, jj = types.length; j < jj; ++j) {
                 const type = types[j];
                 const value = values[j];
                 switch (type) {
                     case "num":
                     case "sid":
-                        out = out.concat(this.encodeNumber(value));
+                        out.push(...this.encodeNumber(value));
                         break;
                     case "offset":
                         // For offsets we just insert a 32bit integer so we don't have to
@@ -1542,20 +1905,20 @@ export class CFFCompiler {
                         if (!offsetTracker.isTracking(name)) {
                             offsetTracker.track(name, out.length);
                         }
-                        out = out.concat([0x1d, 0, 0, 0, 0]);
+                        out.push(0x1d, 0, 0, 0, 0);
                         break;
                     case "array":
                     case "delta":
-                        out = out.concat(this.encodeNumber(value));
+                        out.push(...this.encodeNumber(value));
                         for (let k = 1, kk = values.length; k < kk; ++k) {
-                            out = out.concat(this.encodeNumber(values[k]));
+                            out.push(...this.encodeNumber(values[k]));
                         }
                         break;
                     default:
                         throw new FormatError(`Unknown data type of ${type}`);
                 }
             }
-            out = out.concat(dict.opcodes[key]);
+            out.push(...dict.opcodes[key]);
         }
         return out;
     }
@@ -1566,7 +1929,7 @@ export class CFFCompiler {
         }
         return this.compileIndex(stringIndex);
     }
-    // compileGlobalSubrIndex() 
+    // compileGlobalSubrIndex()
     // {
     //   const globalSubrIndex = this.cff.globalSubrIndex!;
     //   this.out.writeByteArray( this.compileIndex(globalSubrIndex) );
@@ -1683,8 +2046,9 @@ export class CFFCompiler {
         const count = objects.length;
         // If there is no object, just create an index. This technically
         // should just be [0, 0] but OTS has an issue with that.
-        if (count === 0)
+        if (count === 0) {
             return [0, 0, 0];
+        }
         const data = [(count >> 8) & 0xff, count & 0xff];
         let lastOffset = 1;
         let i;
@@ -1733,5 +2097,5 @@ export class CFFCompiler {
         return data;
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=cff_parser.js.map

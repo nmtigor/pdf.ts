@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 export const $buildXFAObject = Symbol();
 export const NamespaceIds = {
     config: {
@@ -79,5 +79,5 @@ export const NamespaceIds = {
         check: (ns) => ns === "http://ns.adobe.com/xmpmeta/",
     },
 };
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=namespaces.js.map

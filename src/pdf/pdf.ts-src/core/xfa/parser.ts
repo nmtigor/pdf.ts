@@ -17,10 +17,14 @@
  * limitations under the License.
  */
 
-import { warn } from "../../shared/util.js";
-import { XMLParserBase, XMLParserErrorCode, type XMLAttr } from "../xml_parser.js";
-import { type XFANsAttrs, type XFAPrefix } from "./alias.js";
-import { Builder, Root } from "./builder.js";
+import { warn } from "../../shared/util.ts";
+import {
+  type XMLAttr,
+  XMLParserBase,
+  XMLParserErrorCode,
+} from "../xml_parser.ts";
+import { type XFANsAttrs, type XFAPrefix } from "./alias.ts";
+import { Builder, Root } from "./builder.ts";
 import {
   $acceptWhitespace,
   $clean,
@@ -32,111 +36,94 @@ import {
   $onChild,
   $onText,
   $setId,
-  XFAObject
-} from "./xfa_object.js";
-import { type XFANsXhtml } from "./xhtml.js";
-/*81---------------------------------------------------------------------------*/
+  XFAObject,
+} from "./xfa_object.ts";
+import { type XFANsXhtml } from "./xhtml.ts";
+/*80--------------------------------------------------------------------------*/
 
-export class XFAParser extends XMLParserBase
-{
+export class XFAParser extends XMLParserBase {
   readonly #builder;
-  readonly #stack:XFAObject[] = [];
+  readonly #stack: XFAObject[] = [];
   _globalData = {
     usedTypefaces: new Set<string>(),
   };
   readonly #ids = new Map<string, XFAObject>();
-  #current:XFAObject;
+  #current: XFAObject;
   readonly #whiteRegex = /^\s+$/;
   readonly #nbsps = /\xa0+/g;
   readonly #richText;
 
-  constructor( rootNameSpace?:XFANsXhtml, richText=false )
-  {
+  constructor(rootNameSpace?: XFANsXhtml, richText = false) {
     super();
     this.#builder = new Builder(rootNameSpace);
-    this.#current = this.#builder.buildRoot( this.#ids );
+    this.#current = this.#builder.buildRoot(this.#ids);
     this.#richText = richText;
   }
 
-  parse( data:string )
-  {
-    this.parseXml( data );
+  parse(data: string) {
+    this.parseXml(data);
 
-    if( this._errorCode !== XMLParserErrorCode.NoError )
+    if (this._errorCode !== XMLParserErrorCode.NoError) {
       return undefined;
+    }
 
     this.#current[$finalize]();
 
-    return (<Root>this.#current).element;
+    return (<Root> this.#current).element;
   }
 
-  onText( text:string )
-  {
+  onText(text: string) {
     // Normally by definition a &nbsp is unbreakable
     // but in real life Acrobat can break strings on &nbsp.
-    text = text.replace(this.#nbsps, match => match.slice(1) + " ");
-    if( this.#richText || this.#current[$acceptWhitespace]() )
-    {
-      this.#current[$onText]( text, this.#richText );
+    text = text.replace(this.#nbsps, (match) => match.slice(1) + " ");
+    if (this.#richText || this.#current[$acceptWhitespace]()) {
+      this.#current[$onText](text, this.#richText);
       return;
     }
 
-    if( this.#whiteRegex.test(text) )
+    if (this.#whiteRegex.test(text)) {
       return;
+    }
     this.#current[$onText](text.trim());
   }
 
-  onCdata( text:string )
-  {
+  onCdata(text: string) {
     this.#current[$onText](text);
   }
 
-  _mkAttributes( attributes:XMLAttr[], tagName:string )
-  {
+  _mkAttributes(attributes: XMLAttr[], tagName: string) {
     // Transform attributes into an object and get out
     // namespaces information.
-    let namespace:string | undefined;
-    let prefixes:XFAPrefix[] | undefined;
-    const attributeObj:XFANsAttrs = Object.create({});
-    for( const { name, value } of attributes ) 
-    {
-      if (name === "xmlns") 
-      {
-        if (!namespace) 
-        {
+    let namespace: string | undefined;
+    let prefixes: XFAPrefix[] | undefined;
+    const attributeObj: XFANsAttrs = Object.create({});
+    for (const { name, value } of attributes) {
+      if (name === "xmlns") {
+        if (!namespace) {
           namespace = value;
-        } 
-        else {
+        } else {
           warn(`XFA - multiple namespace definition in <${tagName}>`);
         }
-      } 
-      else if (name.startsWith("xmlns:")) 
-      {
+      } else if (name.startsWith("xmlns:")) {
         const prefix = name.substring("xmlns:".length);
-        if (!prefixes) 
-        {
+        if (!prefixes) {
           prefixes = [];
         }
         prefixes.push({ prefix, value });
-      } 
-      else {
+      } else {
         const i = name.indexOf(":");
-        if (i === -1) 
-        {
+        if (i === -1) {
           attributeObj[name] = value;
-        } 
-        else {
+        } else {
           // Attributes can have their own namespace.
           // For example in data, we can have <foo xfa:dataNode="dataGroup"/>
           let nsAttrs = attributeObj[$nsAttributes];
-          if (!nsAttrs) 
-          {
+          if (!nsAttrs) {
             nsAttrs = attributeObj[$nsAttributes] = Object.create(null);
           }
           const [ns, attrName] = [name.slice(0, i), name.slice(i + 1)];
           let attrs = nsAttrs![ns];
-          if (!attrs) 
-          {
+          if (!attrs) {
             attrs = nsAttrs![ns] = Object.create(null);
           }
           attrs[attrName] = value;
@@ -144,27 +131,28 @@ export class XFAParser extends XMLParserBase
       }
     }
 
-    return <const>[namespace, prefixes, attributeObj];
+    return [namespace, prefixes, attributeObj] as const;
   }
 
-  _getNameAndPrefix( name:string, nsAgnostic:boolean )
-  {
+  _getNameAndPrefix(name: string, nsAgnostic: boolean) {
     const i = name.indexOf(":");
     if (i === -1) {
-      return <const>[name, undefined];
+      return [name, undefined] as const;
     }
-    return <const>[name.substring(i + 1), nsAgnostic ? "" : name.substring(0, i)];
+    return [
+      name.substring(i + 1),
+      nsAgnostic ? "" : name.substring(0, i),
+    ] as const;
   }
 
-  onBeginElement( tagName:string, attributes:XMLAttr[], isEmpty:boolean )
-  {
+  onBeginElement(tagName: string, attributes: XMLAttr[], isEmpty: boolean) {
     const [namespace, prefixes, attributesObj] = this._mkAttributes(
       attributes,
-      tagName
+      tagName,
     );
     const [name, nsPrefix] = this._getNameAndPrefix(
       tagName,
-      this.#builder.isNsAgnostic()
+      this.#builder.isNsAgnostic(),
     );
     const node = this.#builder.build({
       nsPrefix,
@@ -175,48 +163,42 @@ export class XFAParser extends XMLParserBase
     });
     node[$globalData] = this._globalData;
 
-    if( isEmpty )
-    {
+    if (isEmpty) {
       // No children: just push the node into its parent.
       node[$finalize]();
-      if( this.#current[$onChild](node) )
-      {
-        node[$setId]( this.#ids );
+      if (this.#current[$onChild](node)) {
+        node[$setId](this.#ids);
       }
-      node[$clean]( this.#builder );
+      node[$clean](this.#builder);
       return;
     }
 
-    this.#stack.push( this.#current );
+    this.#stack.push(this.#current);
     this.#current = node;
   }
 
-  override onEndElement( name:string )
-  {
+  override onEndElement(name: string) {
     const node = this.#current;
-    if( node[$isCDATAXml]() && typeof node[$content] === "string" )
-    {
+    if (node[$isCDATAXml]() && typeof node[$content] === "string") {
       const parser = new XFAParser();
       parser._globalData = this._globalData;
-      const root = parser.parse( <string>node[$content] );
+      const root = parser.parse(<string> node[$content]);
       node[$content] = undefined;
-      node[$onChild]( root! );
+      node[$onChild](root!);
     }
 
     node[$finalize]();
     this.#current = this.#stack.pop()!;
-    if( this.#current[$onChild](node) )
-    {
-      node[$setId]( this.#ids );
+    if (this.#current[$onChild](node)) {
+      node[$setId](this.#ids);
     }
-    node[$clean]( this.#builder );
+    node[$clean](this.#builder);
     return undefined;
   }
 
-  /** @implements */
-  onError( code:XMLParserErrorCode )
-  {
+  /** @implement */
+  onError(code: XMLParserErrorCode) {
     this._errorCode = code;
   }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

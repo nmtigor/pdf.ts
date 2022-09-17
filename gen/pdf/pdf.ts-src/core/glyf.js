@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 const ON_CURVE_POINT = 1 << 0;
 const X_SHORT_VECTOR = 1 << 1;
 const Y_SHORT_VECTOR = 1 << 2;
@@ -141,16 +141,18 @@ class Glyph {
         return new Glyph({ header, simple });
     }
     getSize() {
-        if (!this.header)
+        if (!this.header) {
             return 0;
+        }
         const size = this.simple
             ? this.simple.getSize()
             : this.composites.reduce((a, c) => a + c.getSize(), 0);
         return this.header.getSize() + size;
     }
     write(pos, buf) {
-        if (!this.header)
+        if (!this.header) {
             return 0;
+        }
         const spos = pos;
         pos += this.header.write(pos, buf);
         if (this.simple) {
@@ -164,8 +166,9 @@ class Glyph {
         return pos - spos;
     }
     scale(factor) {
-        if (!this.header)
+        if (!this.header) {
             return;
+        }
         const xMiddle = (this.header.xMin + this.header.xMax) / 2;
         this.header.scale(xMiddle, factor);
         if (this.simple) {
@@ -203,7 +206,9 @@ class GlyphHeader {
             }),
         ];
     }
-    getSize() { return 10; }
+    getSize() {
+        return 10;
+    }
     write(pos, buf) {
         buf.setInt16(pos, this.numberOfContours);
         buf.setInt16(pos + 2, this.xMin);
@@ -377,10 +382,9 @@ class SimpleGlyph {
                 else {
                     const abs = Math.abs(delta);
                     if (abs <= 255) {
-                        flag |=
-                            delta >= 0
-                                ? X_SHORT_VECTOR | X_IS_SAME_OR_POSITIVE_X_SHORT_VECTOR
-                                : X_SHORT_VECTOR;
+                        flag |= delta >= 0
+                            ? X_SHORT_VECTOR | X_IS_SAME_OR_POSITIVE_X_SHORT_VECTOR
+                            : X_SHORT_VECTOR;
                         xCoordinates.push(abs);
                     }
                     else {
@@ -397,10 +401,9 @@ class SimpleGlyph {
                 else {
                     const abs = Math.abs(delta);
                     if (abs <= 255) {
-                        flag |=
-                            delta >= 0
-                                ? Y_SHORT_VECTOR | Y_IS_SAME_OR_POSITIVE_Y_SHORT_VECTOR
-                                : Y_SHORT_VECTOR;
+                        flag |= delta >= 0
+                            ? Y_SHORT_VECTOR | Y_IS_SAME_OR_POSITIVE_Y_SHORT_VECTOR
+                            : Y_SHORT_VECTOR;
                         yCoordinates.push(abs);
                     }
                     else {
@@ -550,18 +553,18 @@ class CompositeGlyph {
         size += 2;
         if (this.flags & 2) {
             // Arguments are signed.
-            if (!(this.argument1 >= -128
-                && this.argument1 <= 127
-                && this.argument2 >= -128
-                && this.argument2 <= 127)) {
+            if (!(this.argument1 >= -128 &&
+                this.argument1 <= 127 &&
+                this.argument2 >= -128 &&
+                this.argument2 <= 127)) {
                 size += 2;
             }
         }
         else {
-            if (!(this.argument1 >= 0
-                && this.argument1 <= 255
-                && this.argument2 >= 0
-                && this.argument2 <= 255)) {
+            if (!(this.argument1 >= 0 &&
+                this.argument1 <= 255 &&
+                this.argument2 >= 0 &&
+                this.argument2 <= 255)) {
                 size += 2;
             }
         }
@@ -571,18 +574,18 @@ class CompositeGlyph {
         const spos = pos;
         if (this.flags & ARGS_ARE_XY_VALUES) {
             // Arguments are signed.
-            if (!(this.argument1 >= -128
-                && this.argument1 <= 127
-                && this.argument2 >= -128
-                && this.argument2 <= 127)) {
+            if (!(this.argument1 >= -128 &&
+                this.argument1 <= 127 &&
+                this.argument2 >= -128 &&
+                this.argument2 <= 127)) {
                 this.flags |= ARG_1_AND_2_ARE_WORDS;
             }
         }
         else {
-            if (!(this.argument1 >= 0
-                && this.argument1 <= 255
-                && this.argument2 >= 0
-                && this.argument2 <= 255)) {
+            if (!(this.argument1 >= 0 &&
+                this.argument1 <= 255 &&
+                this.argument2 >= 0 &&
+                this.argument2 <= 255)) {
                 this.flags |= ARG_1_AND_2_ARE_WORDS;
             }
         }
@@ -618,5 +621,5 @@ class CompositeGlyph {
     }
     scale(x, factor) { }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=glyf.js.map

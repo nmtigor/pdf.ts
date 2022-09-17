@@ -17,120 +17,116 @@
  * limitations under the License.
  */
 
-import { type AnnotStorageRecord } from "../display/annotation_layer.js";
-import { MessageHandler, Thread } from "../shared/message_handler.js";
+import { type AnnotStorageRecord } from "../display/annotation_layer.ts";
+import { MessageHandler, Thread } from "../shared/message_handler.ts";
 import {
   AbortException,
   createValidAbsoluteUrl,
   shadow,
-  warn
-} from "../shared/util.js";
-import { AnnotationFactory } from "./annotation.js";
-import { Catalog } from "./catalog.js";
-import { ChunkedStreamManager } from "./chunked_stream.js";
-import { MissingDataException } from "./core_utils.js";
-import { Page, PDFDocument } from "./document.js";
-import { Stream } from "./stream.js";
-import { WorkerTask } from "./worker.js";
-import { PDFWorkerStream } from "./worker_stream.js";
-import { XRef } from "./xref.js";
-/*81---------------------------------------------------------------------------*/
+  warn,
+} from "../shared/util.ts";
+import { AnnotationFactory } from "./annotation.ts";
+import { Catalog } from "./catalog.ts";
+import { ChunkedStreamManager } from "./chunked_stream.ts";
+import { MissingDataException } from "./core_utils.ts";
+import { Page, PDFDocument } from "./document.ts";
+import { Stream } from "./stream.ts";
+import { WorkerTask } from "./worker.ts";
+import { PDFWorkerStream } from "./worker_stream.ts";
+import { XRef } from "./xref.ts";
+/*80--------------------------------------------------------------------------*/
 
-function parseDocBaseUrl( url?:string )
-{
-  if( url )
-  {
-    const absoluteUrl = createValidAbsoluteUrl( url );
-    if( absoluteUrl )
+function parseDocBaseUrl(url?: string) {
+  if (url) {
+    const absoluteUrl = createValidAbsoluteUrl(url);
+    if (absoluteUrl) {
       return absoluteUrl.href;
+    }
     warn(`Invalid absolute docBaseUrl: "${url}".`);
   }
   return undefined;
 }
 
-export interface EvaluatorOptions 
-{
-  maxImageSize:number;
-  disableFontFace:boolean | undefined;
-  ignoreErrors:boolean | undefined;
-  isEvalSupported:boolean | undefined;
-  fontExtraProperties:boolean | undefined;
-  useSystemFonts:boolean | undefined;
-  cMapUrl?:string | undefined;
-  standardFontDataUrl:string | undefined;
+export interface EvaluatorOptions {
+  maxImageSize: number;
+  disableFontFace: boolean | undefined;
+  ignoreErrors: boolean | undefined;
+  isEvalSupported: boolean | undefined;
+  fontExtraProperties: boolean | undefined;
+  useSystemFonts: boolean | undefined;
+  cMapUrl?: string | undefined;
+  standardFontDataUrl: string | undefined;
 }
 
-export abstract class BasePdfManager 
-{
-  protected _docId:string;
+export abstract class BasePdfManager {
+  protected _docId: string;
   /** @final */
-  get docId() { return this._docId; }
+  get docId() {
+    return this._docId;
+  }
 
-  protected _password?:string | undefined;
+  protected _password?: string | undefined;
   /** @final */
-  get password() { return this._password; }
+  get password() {
+    return this._password;
+  }
 
-  msgHandler!:MessageHandler<Thread.worker>;
+  msgHandler!: MessageHandler<Thread.worker>;
 
-  protected _docBaseUrl:URL | string | undefined;
-  get docBaseUrl() 
-  {
+  protected _docBaseUrl: URL | string | undefined;
+  get docBaseUrl() {
     const catalog = this.pdfDocument.catalog!;
     return shadow(this, "docBaseUrl", catalog.baseUrl || this._docBaseUrl);
   }
 
-  evaluatorOptions!:EvaluatorOptions;
-  enableXfa?:boolean | undefined;
+  evaluatorOptions!: EvaluatorOptions;
+  enableXfa?: boolean | undefined;
 
-  pdfDocument!:PDFDocument;
+  pdfDocument!: PDFDocument;
 
-  constructor( docId:string, docBaseUrl?:string )
-  {
+  constructor(docId: string, docBaseUrl?: string) {
     this._docId = docId;
     this._docBaseUrl = parseDocBaseUrl(docBaseUrl);
   }
 
-  abstract onLoadedStream():Promise<Stream>;
+  abstract onLoadedStream(): Promise<Stream>;
 
   /** @fianl */
   ensureDoc<
     P extends keyof PDFDocument,
-    A=PDFDocument[P] extends (...args: any) => any ? Parameters< PDFDocument[P] > : undefined,
-  >( prop:P, args?:A ) 
-  {
+    A = PDFDocument[P] extends (...args: any) => any
+      ? Parameters<PDFDocument[P]>
+      : undefined,
+  >(prop: P, args?: A) {
     return this.ensure(this.pdfDocument, prop, args);
   }
 
   /** @fianl */
   ensureXRef<
     P extends keyof XRef,
-    A=XRef[P] extends (...args: any) => any ? Parameters< XRef[P] > : undefined,
-  >( prop:P, args?:A ) 
-  {
+    A = XRef[P] extends (...args: any) => any ? Parameters<XRef[P]> : undefined,
+  >(prop: P, args?: A) {
     return this.ensure(this.pdfDocument.xref, prop, args);
   }
 
   /** @fianl */
   ensureCatalog<
     P extends keyof Catalog,
-    A=Catalog[P] extends (...args: any) => any ? Parameters< Catalog[P] > : undefined
-  >( prop:P, args?:A ) 
-  {
-    return this.ensure( this.pdfDocument.catalog!, prop, args );
+    A = Catalog[P] extends (...args: any) => any ? Parameters<Catalog[P]>
+      : undefined,
+  >(prop: P, args?: A) {
+    return this.ensure(this.pdfDocument.catalog!, prop, args);
   }
 
-  getPage( pageIndex:number ) 
-  {
+  getPage(pageIndex: number) {
     return this.pdfDocument.getPage(pageIndex);
   }
 
-  fontFallback( id:string, handler:MessageHandler<Thread.worker> ) 
-  {
+  fontFallback(id: string, handler: MessageHandler<Thread.worker>) {
     return this.pdfDocument.fontFallback(id, handler);
   }
 
-  loadXfaFonts( handler:MessageHandler<Thread.worker>, task:WorkerTask )
-  {
+  loadXfaFonts(handler: MessageHandler<Thread.worker>, task: WorkerTask) {
     return this.pdfDocument.loadXfaFonts(handler, task);
   }
 
@@ -138,50 +134,47 @@ export abstract class BasePdfManager
     return this.pdfDocument.loadXfaImages();
   }
 
-  serializeXfaData( annotationStorage:AnnotStorageRecord | undefined )
-  {
-    return this.pdfDocument.serializeXfaData( annotationStorage );
+  serializeXfaData(annotationStorage: AnnotStorageRecord | undefined) {
+    return this.pdfDocument.serializeXfaData(annotationStorage);
   }
 
-  cleanup( manuallyTriggered=false )
-  {
+  cleanup(manuallyTriggered = false) {
     return this.pdfDocument.cleanup(manuallyTriggered);
   }
 
   abstract ensure<
     O extends PDFDocument | Page | XRef | Catalog | AnnotationFactory,
     P extends keyof O,
-    A=O[P] extends (...args:any) => any ? Parameters< O[P] > : undefined,
-    R=O[P] extends (...args:any) => any ? ReturnType< O[P] > : O[P]
-  >( obj:O, prop:P, args?:A ):Promise< Awaited<R> >;
+    A = O[P] extends (...args: any) => any ? Parameters<O[P]> : undefined,
+    R = O[P] extends (...args: any) => any ? ReturnType<O[P]> : O[P],
+  >(obj: O, prop: P, args?: A): Promise<Awaited<R>>;
 
-  abstract requestRange( begin:number, end:number ):Promise<void>;
+  abstract requestRange(begin: number, end: number): Promise<void>;
 
-  abstract requestLoadedStream():void;
+  abstract requestLoadedStream(): void;
 
-  sendProgressiveData?(chunk:ArrayBufferLike ):void;
+  sendProgressiveData?(chunk: ArrayBufferLike): void;
 
-  updatePassword( password:string ) 
-  {
+  updatePassword(password: string) {
     this._password = password;
   }
 
-  abstract terminate( reason:AbortException ):void;
+  abstract terminate(reason: AbortException): void;
 }
 
-export class LocalPdfManager extends BasePdfManager 
-{
-  #loadedStreamPromise:Promise<Stream>;
+export class LocalPdfManager extends BasePdfManager {
+  #loadedStreamPromise: Promise<Stream>;
 
-  constructor( docId:string, 
-    data:Uint8Array | number[], 
-    password:string  | undefined, 
-    msgHandler:MessageHandler<Thread.worker>,
-    evaluatorOptions:EvaluatorOptions, 
-    enableXfa?:boolean,
-    docBaseUrl?:string
+  constructor(
+    docId: string,
+    data: Uint8Array | number[],
+    password: string | undefined,
+    msgHandler: MessageHandler<Thread.worker>,
+    evaluatorOptions: EvaluatorOptions,
+    enableXfa?: boolean,
+    docBaseUrl?: string,
   ) {
-    super( docId, docBaseUrl );
+    super(docId, docBaseUrl);
 
     this._password = password;
     this.msgHandler = msgHandler;
@@ -189,24 +182,22 @@ export class LocalPdfManager extends BasePdfManager
     this.enableXfa = enableXfa;
 
     const stream = new Stream(data);
-    this.pdfDocument = new PDFDocument( this, stream );
+    this.pdfDocument = new PDFDocument(this, stream);
     this.#loadedStreamPromise = Promise.resolve(stream);
   }
 
-  /** @implements */
+  /** @implement */
   async ensure<
     O extends PDFDocument | Page | XRef | Catalog | AnnotationFactory,
     P extends keyof O,
-    A=O[P] extends (...args:any) => any ? Parameters< O[P] > : undefined,
-    R=O[P] extends (...args:any) => any ? ReturnType< O[P] > : O[P]
-  >( obj:O, prop:P, args:A ):Promise< Awaited<R> >
-  {
+    A = O[P] extends (...args: any) => any ? Parameters<O[P]> : undefined,
+    R = O[P] extends (...args: any) => any ? ReturnType<O[P]> : O[P],
+  >(obj: O, prop: P, args: A): Promise<Awaited<R>> {
     const value = obj[prop];
-    if (typeof value === "function") 
-    {
+    if (typeof value === "function") {
       return value.apply(obj, args);
     }
-    return <any>value;
+    return <any> value;
   }
 
   // ensure = ( obj, prop, args ) =>
@@ -218,46 +209,43 @@ export class LocalPdfManager extends BasePdfManager
   //   return value;
   // }
 
-  /** @implements */
-  requestRange( begin:number, end:number ) 
-  {
+  /** @implement */
+  requestRange(begin: number, end: number) {
     return Promise.resolve();
   }
 
-  /** @implements */
+  /** @implement */
   requestLoadedStream() {}
 
-  /** @implements */
-  onLoadedStream()
-  {
+  /** @implement */
+  onLoadedStream() {
     return this.#loadedStreamPromise;
   }
 
-  /** @implements */
-  terminate( reason:AbortException ) {}
+  /** @implement */
+  terminate(reason: AbortException) {}
 }
 
-interface _NetworkPdfManagerCtorP
-{
-  msgHandler:MessageHandler< Thread.worker>;
-  password:string | undefined;
-  length:number;
-  disableAutoFetch:boolean;
-  rangeChunkSize:number;
+interface _NetworkPdfManagerCtorP {
+  msgHandler: MessageHandler<Thread.worker>;
+  password: string | undefined;
+  length: number;
+  disableAutoFetch: boolean;
+  rangeChunkSize: number;
 }
 
-export class NetworkPdfManager extends BasePdfManager 
-{
-  streamManager:ChunkedStreamManager;
+export class NetworkPdfManager extends BasePdfManager {
+  streamManager: ChunkedStreamManager;
 
-  constructor( docId:string, 
-    pdfNetworkStream:PDFWorkerStream, 
-    args:_NetworkPdfManagerCtorP,
-    evaluatorOptions:EvaluatorOptions, 
-    enableXfa?:boolean,
-    docBaseUrl?:string
+  constructor(
+    docId: string,
+    pdfNetworkStream: PDFWorkerStream,
+    args: _NetworkPdfManagerCtorP,
+    evaluatorOptions: EvaluatorOptions,
+    enableXfa?: boolean,
+    docBaseUrl?: string,
   ) {
-    super( docId, docBaseUrl );
+    super(docId, docBaseUrl);
 
     this._password = args.password;
     this.msgHandler = args.msgHandler;
@@ -270,26 +258,24 @@ export class NetworkPdfManager extends BasePdfManager
       disableAutoFetch: args.disableAutoFetch,
       rangeChunkSize: args.rangeChunkSize,
     });
-    this.pdfDocument = new PDFDocument( this, this.streamManager.getStream() );
+    this.pdfDocument = new PDFDocument(this, this.streamManager.getStream());
   }
 
-  /** @implements */
+  /** @implement */
   async ensure<
     O extends PDFDocument | Page | XRef | Catalog | AnnotationFactory,
     P extends keyof O,
-    A=O[P] extends (...args:any) => any ? Parameters< O[P] > : undefined,
-    R=O[P] extends (...args:any) => any ? ReturnType< O[P] > : O[P]
-  >( obj:O, prop:P, args:A ):Promise< Awaited<R> >
-  {
+    A = O[P] extends (...args: any) => any ? Parameters<O[P]> : undefined,
+    R = O[P] extends (...args: any) => any ? ReturnType<O[P]> : O[P],
+  >(obj: O, prop: P, args: A): Promise<Awaited<R>> {
     try {
       const value = obj[prop];
       if (typeof value === "function") {
         return value.apply(obj, args);
       }
-      return <any>value;
+      return <any> value;
     } catch (ex) {
-      if (!(ex instanceof MissingDataException)) 
-      {
+      if (!(ex instanceof MissingDataException)) {
         throw ex;
       }
       await this.requestRange(ex.begin, ex.end);
@@ -297,33 +283,28 @@ export class NetworkPdfManager extends BasePdfManager
     }
   }
 
-  /** @implements */
-  requestRange( begin:number, end:number ) 
-  {
+  /** @implement */
+  requestRange(begin: number, end: number) {
     return this.streamManager.requestRange(begin, end);
   }
 
-  /** @implements */
-  requestLoadedStream() 
-  {
+  /** @implement */
+  requestLoadedStream() {
     this.streamManager.requestAllChunks();
   }
 
-  override sendProgressiveData( chunk:ArrayBufferLike ) 
-  {
+  override sendProgressiveData(chunk: ArrayBufferLike) {
     this.streamManager.onReceiveData({ chunk });
   }
 
-  /** @implements */
-  onLoadedStream()
-  {
+  /** @implement */
+  onLoadedStream() {
     return this.streamManager.onLoadedStream();
   }
 
-  /** @implements */
-  terminate( reason:AbortException ) 
-  {
+  /** @implement */
+  terminate(reason: AbortException) {
     this.streamManager.abort(reason);
   }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

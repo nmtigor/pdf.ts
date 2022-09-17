@@ -1,6 +1,4 @@
-import { OpListIR } from "../pdf.ts-src/core/operator_list.js";
-import { FontFaceObject } from "../pdf.ts-src/display/font_loader.js";
-import { OPS } from "../pdf.ts-src/shared/util.js";
+import { FontFaceObject, OpListIR, OPS } from "../pdf.ts-src/pdf.js";
 interface _PdfjsLib {
     OPS: typeof OPS;
 }

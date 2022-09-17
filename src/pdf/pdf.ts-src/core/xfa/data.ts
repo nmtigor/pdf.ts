@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-import { type AnnotStorageRecord } from "../../display/annotation_layer.js";
-import { Datasets } from "./datasets.js";
+import { type AnnotStorageRecord } from "../../display/annotation_layer.ts";
+import { Datasets } from "./datasets.ts";
 import {
   $getAttributes,
   $getChildren,
@@ -28,56 +28,46 @@ import {
   $uid,
   XFAObject,
   XmlObject,
-} from "./xfa_object.js";
-/*81---------------------------------------------------------------------------*/
+} from "./xfa_object.ts";
+/*80--------------------------------------------------------------------------*/
 
-export class DataHandler
-{
+export class DataHandler {
   data;
   dataset;
 
-  constructor( root:XFAObject, data:XmlObject ) 
-  {
+  constructor(root: XFAObject, data: XmlObject) {
     this.data = data;
-    this.dataset = <Datasets | undefined>root.datasets || undefined;
+    this.dataset = <Datasets | undefined> root.datasets || undefined;
   }
 
-  serialize( storage:AnnotStorageRecord | undefined ) 
-  {
-    const stack:([number,XFAObject[]])[] = [[-1, this.data[$getChildren]()]];
+  serialize(storage: AnnotStorageRecord | undefined) {
+    const stack: ([number, XFAObject[]])[] = [[-1, this.data[$getChildren]()]];
 
-    while( stack.length > 0 )
-    {
-      const last = stack[stack.length - 1];
+    while (stack.length > 0) {
+      const last = stack.at(-1)!;
       const [i, children] = last;
-      if( i + 1 === children.length )
-      {
+      if (i + 1 === children.length) {
         stack.pop();
         continue;
       }
 
-      const child = <XmlObject>children[++last[0]];
-      const storageEntry = storage!.get( child[$uid] );
-      if( storageEntry ) 
-      {
-        child[$setValue]( <any>storageEntry ); //kkkk
-      } 
-      else {
+      const child = <XmlObject> children[++last[0]];
+      const storageEntry = storage!.get(child[$uid]);
+      if (storageEntry) {
+        child[$setValue](<any> storageEntry); //kkkk
+      } else {
         const attributes = child[$getAttributes]();
-        for( const value of attributes!.values() )
-        {
+        for (const value of attributes!.values()) {
           const entry = storage!.get(value[$uid]);
-          if (entry) 
-          {
-            value[$setValue]( <any>entry ); //kkkk
+          if (entry) {
+            value[$setValue](<any> entry); //kkkk
             break;
           }
         }
       }
 
       const nodes = child[$getChildren]();
-      if (nodes.length > 0) 
-      {
+      if (nodes.length > 0) {
         stack.push([-1, nodes]);
       }
     }
@@ -85,15 +75,12 @@ export class DataHandler
     const buf = [
       `<xfa:datasets xmlns:xfa="http://www.xfa.org/schema/xfa-data/1.0/">`,
     ];
-    if( this.dataset ) 
-    {
+    if (this.dataset) {
       // Dump nodes other than data: they can contains for example
       // some data for choice lists.
-      for( const child of this.dataset[$getChildren]()) 
-      {
-        if( child[$nodeName] !== "data" )
-        {
-          (<XmlObject>child)[$toString](buf);
+      for (const child of this.dataset[$getChildren]()) {
+        if (child[$nodeName] !== "data") {
+          (<XmlObject> child)[$toString](buf);
         }
       }
     }
@@ -103,4 +90,4 @@ export class DataHandler
     return buf.join("");
   }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

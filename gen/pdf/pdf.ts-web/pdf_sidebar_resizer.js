@@ -1,14 +1,15 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
-/*81---------------------------------------------------------------------------*/
+import { docStyle } from "./ui_utils.js";
+/*80--------------------------------------------------------------------------*/
 const SIDEBAR_WIDTH_VAR = "--sidebar-width";
 const SIDEBAR_MIN_WIDTH = 200; // pixels
 const SIDEBAR_RESIZING_CLASS = "sidebarResizing";
 export class PDFSidebarResizer {
     isRTL = false;
     sidebarOpen = false;
-    doc;
+    // doc;
     _width;
     _outerContainerWidth;
     _boundEvents = Object.create(null);
@@ -20,11 +21,10 @@ export class PDFSidebarResizer {
      * @param l10n Localization service.
      */
     constructor(options, eventBus, l10n) {
-        this.doc = document.documentElement;
         this.outerContainer = options.outerContainer;
         this.resizer = options.resizer;
         this.eventBus = eventBus;
-        l10n.getDirection().then(dir => {
+        l10n.getDirection().then((dir) => {
             this.isRTL = dir === "rtl";
         });
         this.#addEventListeners();
@@ -49,7 +49,7 @@ export class PDFSidebarResizer {
         if (width === this._width)
             return false;
         this._width = width;
-        this.doc.style.setProperty(SIDEBAR_WIDTH_VAR, `${width}px`);
+        docStyle.setProperty(SIDEBAR_WIDTH_VAR, `${width}px`);
         return true;
     }
     #mouseMove = (evt) => {
@@ -73,7 +73,7 @@ export class PDFSidebarResizer {
         const _boundEvents = this._boundEvents;
         _boundEvents.mouseMove = this.#mouseMove;
         _boundEvents.mouseUp = this.#mouseUp;
-        this.resizer.addEventListener("mousedown", evt => {
+        this.resizer.addEventListener("mousedown", (evt) => {
             if (evt.button !== 0)
                 return;
             // Disable the `transition-duration` rules when sidebar resizing begins,
@@ -82,10 +82,10 @@ export class PDFSidebarResizer {
             window.addEventListener("mousemove", _boundEvents.mouseMove);
             window.addEventListener("mouseup", _boundEvents.mouseUp);
         });
-        this.eventBus._on("sidebarviewchanged", evt => {
+        this.eventBus._on("sidebarviewchanged", (evt) => {
             this.sidebarOpen = !!evt?.view;
         });
-        this.eventBus._on("resize", evt => {
+        this.eventBus._on("resize", (evt) => {
             // When the *entire* viewer is resized, such that it becomes narrower,
             // ensure that the sidebar doesn't end up being too wide.
             if (evt?.source !== window)
@@ -114,5 +114,5 @@ export class PDFSidebarResizer {
         });
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=pdf_sidebar_resizer.js.map

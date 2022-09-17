@@ -1,3 +1,6 @@
+/* Converted from JavaScript to TypeScript by
+ * nmtigor (https://github.com/nmtigor) @2022
+ */
 /* Copyright 2018 Mozilla Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 export var CharacterType;
 (function (CharacterType) {
     CharacterType[CharacterType["SPACE"] = 0] = "SPACE";
@@ -98,5 +101,5 @@ export function getCharacterType(charCode) {
     }
     return CharacterType.ALPHA_LETTER;
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=pdf_find_utils.js.map

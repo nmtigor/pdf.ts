@@ -1,8 +1,23 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
-import { normalizeWheelEventDelta, PresentationModeState, ScrollMode, SpreadMode } from "./ui_utils.js";
-/*81---------------------------------------------------------------------------*/
+/* Copyright 2012 Mozilla Foundation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import { AnnotationEditorType } from "../pdf.ts-src/pdf.js";
+import { normalizeWheelEventDelta, PresentationModeState, ScrollMode, SpreadMode, } from "./ui_utils.js";
+/*80--------------------------------------------------------------------------*/
 const DELAY_BEFORE_HIDING_CONTROLS = 3000; // in ms
 const ACTIVE_SELECTOR = "pdfPresentationMode";
 const CONTROLS_SELECTOR = "pdfPresentationModeControls";
@@ -40,8 +55,9 @@ export class PDFPresentationMode {
      */
     async request() {
         const { container, pdfViewer } = this;
-        if (this.active || !pdfViewer.pagesCount || !container.requestFullscreen)
+        if (this.active || !pdfViewer.pagesCount || !container.requestFullscreen) {
             return false;
+        }
         this.#addFullscreenChangeListeners();
         this.#notifyStateChange(PresentationModeState.CHANGING);
         const promise = container.requestFullscreen();
@@ -49,12 +65,16 @@ export class PDFPresentationMode {
             pageNumber: pdfViewer.currentPageNumber,
             scaleValue: pdfViewer.currentScaleValue,
             scrollMode: pdfViewer.scrollMode,
+            annotationEditorMode: undefined,
         };
-        if (pdfViewer.spreadMode !== SpreadMode.NONE
-            && !(pdfViewer.pageViewsReady && pdfViewer.hasEqualPageSizes)) {
+        if (pdfViewer.spreadMode !== SpreadMode.NONE &&
+            !(pdfViewer.pageViewsReady && pdfViewer.hasEqualPageSizes)) {
             console.warn("Ignoring Spread modes when entering PresentationMode, " +
                 "since the document may contain varying page sizes.");
             this.#args.spreadMode = pdfViewer.spreadMode;
+        }
+        if (pdfViewer.annotationEditorMode !== AnnotationEditorType.DISABLE) {
+            this.#args.annotationEditorMode = pdfViewer.annotationEditorMode;
         }
         try {
             await promise;
@@ -67,20 +87,21 @@ export class PDFPresentationMode {
         return false;
     }
     #mouseWheel = (evt) => {
-        if (!this.active)
+        if (!this.active) {
             return;
+        }
         evt.preventDefault();
         const delta = normalizeWheelEventDelta(evt);
         const currentTime = Date.now();
         const storedTime = this.mouseScrollTimeStamp;
         // If we've already switched page, avoid accidentally switching again.
-        if (currentTime > storedTime
-            && currentTime - storedTime < MOUSE_SCROLL_COOLDOWN_TIME) {
+        if (currentTime > storedTime &&
+            currentTime - storedTime < MOUSE_SCROLL_COOLDOWN_TIME) {
             return;
         }
         // If the scroll direction changed, reset the accumulated scroll delta.
-        if ((this.mouseScrollDelta > 0 && delta < 0)
-            || (this.mouseScrollDelta < 0 && delta > 0)) {
+        if ((this.mouseScrollDelta > 0 && delta < 0) ||
+            (this.mouseScrollDelta < 0 && delta > 0)) {
             this.#resetMouseScrollState();
         }
         this.mouseScrollDelta += delta;
@@ -111,6 +132,9 @@ export class PDFPresentationMode {
             }
             this.pdfViewer.currentPageNumber = this.#args.pageNumber;
             this.pdfViewer.currentScaleValue = "page-fit";
+            if (this.#args.annotationEditorMode !== undefined) {
+                this.pdfViewer.annotationEditorMode = AnnotationEditorType.NONE;
+            }
         }, 0);
         this.#addWindowListeners();
         this.#showControls();
@@ -134,6 +158,9 @@ export class PDFPresentationMode {
             }
             this.pdfViewer.currentScaleValue = this.#args.scaleValue;
             this.pdfViewer.currentPageNumber = pageNumber;
+            if (this.#args.annotationEditorMode !== undefined) {
+                this.pdfViewer.annotationEditorMode = this.#args.annotationEditorMode;
+            }
             this.#args = undefined;
         }, 0);
         this.#removeWindowListeners();
@@ -150,7 +177,8 @@ export class PDFPresentationMode {
         if (evt.button === 0) {
             // Enable clicking of links in presentation mode. Note: only links
             // pointing to destinations in the current PDF document work.
-            const isInternalLink = evt.target.href && evt.target.classList.contains("internalLink");
+            const isInternalLink = evt.target.href &&
+                evt.target.classList.contains("internalLink");
             if (!isInternalLink) {
                 // Unless an internal link was clicked, advance one page.
                 evt.preventDefault();
@@ -221,8 +249,9 @@ export class PDFPresentationMode {
                 evt.preventDefault();
                 break;
             case "touchend":
-                if (this.touchSwipeState === undefined)
+                if (this.touchSwipeState === undefined) {
                     return;
+                }
                 let delta = 0;
                 const dx = this.touchSwipeState.endX - this.touchSwipeState.startX;
                 const dy = this.touchSwipeState.endY - this.touchSwipeState.startY;
@@ -296,5 +325,5 @@ export class PDFPresentationMode {
         // delete this.fullscreenChangeBind;
     };
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=pdf_presentation_mode.js.map

@@ -1,16 +1,11 @@
 import "../../lib/jslang.js";
 import { Locale } from "../../lib/Locale.js";
-import { type DocumentInfo } from "../pdf.ts-src/core/document.js";
-import { WorkerMessageHandler } from "../pdf.ts-src/core/worker.js";
-import { PDFDataRangeTransport, PDFDocumentLoadingTask, PDFDocumentProxy, type PDFDocumentStats } from "../pdf.ts-src/display/api.js";
-import { Metadata } from "../pdf.ts-src/display/metadata.js";
-import { OptionalContentConfig } from "../pdf.ts-src/display/optional_content_config.js";
-import { UNSUPPORTED_FEATURES } from "../pdf.ts-src/pdf.js";
+import { Metadata, OptionalContentConfig, PDFDataRangeTransport, PDFDocumentLoadingTask, PDFDocumentProxy, PrintAnnotationStorage, UNSUPPORTED_FEATURES, WorkerMessageHandler, type DocumentInfo, type PDFDocumentStats } from "../pdf.ts-src/pdf.js";
+import { AnnotationEditorParams } from "./annotation_editor_params.js";
 import { type PageOverview } from "./base_viewer.js";
 import { PDFBug } from "./debugger.js";
-import { DownloadManager } from "./download_manager.js";
-import { EventBus } from "./event_utils.js";
-import { IScripting, type IL10n } from "./interfaces.js";
+import { EventBus, EventMap } from "./event_utils.js";
+import { IDownloadManager, IScripting, type IL10n } from "./interfaces.js";
 import { OverlayManager } from "./overlay_manager.js";
 import { PasswordPrompt } from "./password_prompt.js";
 import { PDFAttachmentViewer } from "./pdf_attachment_viewer.js";
@@ -50,7 +45,7 @@ export interface PassiveLoadingCbs {
     onProgress(loaded: number, total: number): void;
 }
 declare type TelemetryType = "documentInfo" | "documentStats" | "pageInfo" | "print" | "tagged" | "unsupportedFeature";
-interface TelemetryData {
+export interface TelemetryData {
     type: TelemetryType;
     featureId?: UNSUPPORTED_FEATURES | undefined;
     formType?: string;
@@ -69,7 +64,7 @@ export declare class DefaultExternalServices {
     updateFindMatchesCount(data: MatchesCount): void;
     initPassiveLoading(callbacks: PassiveLoadingCbs): void;
     reportTelemetry(data: TelemetryData): void;
-    createDownloadManager(): DownloadManager;
+    createDownloadManager(): IDownloadManager;
     createPreferences(): BasePreferences;
     createL10n({ locale }?: {
         locale?: Locale | undefined;
@@ -84,6 +79,7 @@ export declare class DefaultExternalServices {
         metaKey: boolean;
     };
     get isInAutomation(): boolean;
+    updateEditorStates(data: EventMap["annotationeditorstateschanged"]): void;
 }
 interface _SetInitialViewP {
     rotation?: number | undefined;
@@ -97,15 +93,15 @@ export interface ErrorMoreInfo {
     filename?: string;
     lineNumber?: number;
 }
-export declare type ScriptingDocProperties = DocumentInfo & {
+export interface ScriptingDocProperties extends DocumentInfo {
     baseURL: string;
     filesize?: number;
     filename: string;
-    metadata?: string;
-    authors?: string | string[];
+    metadata?: string | undefined;
+    authors?: string | string[] | undefined;
     numPages: number;
     URL: string;
-};
+}
 declare type _ViewerAppOpenP_file = string | Uint8Array | {
     url: string;
     originalUrl: string;
@@ -127,7 +123,7 @@ export declare class PDFViewerApplication {
     overlayManager: OverlayManager;
     pdfRenderingQueue: PDFRenderingQueue;
     pdfLinkService: PDFLinkService;
-    downloadManager: DownloadManager;
+    downloadManager: IDownloadManager;
     findController: PDFFindController;
     pdfScriptingManager: PDFScriptingManager;
     pdfViewer: PDFViewer;
@@ -147,6 +143,7 @@ export declare class PDFViewerApplication {
     pdfSidebarResizer: PDFSidebarResizer;
     preferences: BasePreferences;
     l10n: IL10n;
+    annotationEditorParams?: AnnotationEditorParams;
     isInitialViewSet: boolean;
     downloadComplete: boolean;
     isViewerEmbedded: boolean;
@@ -163,6 +160,7 @@ export declare class PDFViewerApplication {
     _wheelUnusedTicks: number;
     _idleCallbacks: Set<number>;
     _PDFBug?: typeof PDFBug;
+    _printAnnotationStoragePromise: Promise<PrintAnnotationStorage | undefined> | undefined;
     disableAutoFetchLoadingBarTimeout: number | undefined;
     _annotationStorageModified?: boolean;
     constructor();
@@ -210,15 +208,9 @@ export declare class PDFViewerApplication {
      * @return Returns the promise, which is resolved when document is opened.
      */
     open(file: _ViewerAppOpenP_file, args?: _ViewerAppOpenP_args): Promise<void | undefined>;
-    download({ sourceEventType }?: {
-        sourceEventType?: string | undefined;
-    }): Promise<void>;
-    save({ sourceEventType }?: {
-        sourceEventType?: string | undefined;
-    }): Promise<void>;
-    downloadOrSave(options: {
-        sourceEventType: "download" | "save";
-    }): void;
+    download(): Promise<void>;
+    save(): Promise<void>;
+    downloadOrSave(): void;
     fallback: (featureId?: UNSUPPORTED_FEATURES) => void;
     /**
      * Show the error box; used for errors affecting loading and/or parsing of
@@ -271,7 +263,7 @@ declare global {
 export declare const PDFPrintServiceFactory: {
     instance: {
         supportsPrinting: boolean;
-        createPrintService(pdfDocument: PDFDocumentProxy, pagesOverview: PageOverview[], printContainer: HTMLDivElement, printResolution: number | undefined, optionalContentConfigPromise: Promise<OptionalContentConfig | undefined> | undefined, l10n: IL10n): PDFPrintService;
+        createPrintService(pdfDocument: PDFDocumentProxy, pagesOverview: PageOverview[], printContainer: HTMLDivElement, printResolution: number | undefined, optionalContentConfigPromise: Promise<OptionalContentConfig | undefined> | undefined, printAnnotationStoragePromise?: Promise<PrintAnnotationStorage | undefined>, l10n?: IL10n): PDFPrintService;
     };
 };
 export {};

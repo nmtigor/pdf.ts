@@ -17,6 +17,16 @@
  * limitations under the License.
  */
 
+import { type rect_t } from "../../shared/util.ts";
+import {
+  type AvailableSpace,
+  type XFAElData,
+  type XFAElObj,
+  type XFAExtra,
+  type XFAHTMLObj,
+} from "./alias.ts";
+import { measureToString } from "./html_utils.ts";
+import { Draw, ExclGroup, Field, Subform } from "./template.ts";
 import {
   $extra,
   $flushHTML,
@@ -24,18 +34,8 @@ import {
   $getTemplateRoot,
   $isSplittable,
   $isThereMoreWidth,
-} from "./xfa_object.js";
-import { measureToString } from "./html_utils.js";
-import { type rect_t } from "../../shared/util.js";
-import { 
-  type AvailableSpace, 
-  type XFAElData, 
-  type XFAElObj, 
-  type XFAExtra, 
-  type XFAHTMLObj 
-} from "./alias.js";
-import { Draw, ExclGroup, Field, Subform } from "./template.js";
-/*81---------------------------------------------------------------------------*/
+} from "./xfa_object.ts";
+/*80--------------------------------------------------------------------------*/
 
 // Subform and ExclGroup have a layout so they share these functions.
 
@@ -66,9 +66,8 @@ import { Draw, ExclGroup, Field, Subform } from "./template.js";
  * returning.
  */
 
-function createLine( node:ExclGroup | Subform, children:XFAHTMLObj[] ) 
-{
-  return <XFAHTMLObj>{
+function createLine(node: ExclGroup | Subform, children: XFAHTMLObj[]) {
+  return <XFAHTMLObj> {
     name: "div",
     attributes: {
       class: [node.layout === "lr-tb" ? "xfaLr" : "xfaRl"],
@@ -77,27 +76,22 @@ function createLine( node:ExclGroup | Subform, children:XFAHTMLObj[] )
   };
 }
 
-export function flushHTML( node:ExclGroup | Subform )
-{
-  if( !node[$extra] ) return undefined;
+export function flushHTML(node: ExclGroup | Subform) {
+  if (!node[$extra]) return undefined;
 
   const attributes = node[$extra].attributes!;
   const html = {
     name: "div",
     attributes,
-    children: <XFAElData[]>node[$extra].children,
+    children: <XFAElData[]> node[$extra].children,
   };
 
-  if( node[$extra].failingNode ) 
-  {
+  if (node[$extra].failingNode) {
     const htmlFromFailing = node[$extra].failingNode![$flushHTML]();
-    if( htmlFromFailing ) 
-    {
-      if (node.layout.endsWith("-tb")) 
-      {
-        html.children.push( createLine(node, [htmlFromFailing]) );
-      } 
-      else {
+    if (htmlFromFailing) {
+      if (node.layout.endsWith("-tb")) {
+        html.children.push(createLine(node, [htmlFromFailing]));
+      } else {
         html.children.push(htmlFromFailing);
       }
     }
@@ -107,42 +101,41 @@ export function flushHTML( node:ExclGroup | Subform )
     return undefined;
   }
 
-  return <XFAHTMLObj>html;
+  return <XFAHTMLObj> html;
 }
 
-export function addHTML( node:ExclGroup | Subform, html:XFAElData, bbox:rect_t )
-{
+export function addHTML(
+  node: ExclGroup | Subform,
+  html: XFAElData,
+  bbox: rect_t,
+) {
   const extra = node[$extra];
   const availableSpace = extra.availableSpace!;
 
   const [x, y, w, h] = bbox;
-  switch( node.layout ) 
-  {
+  switch (node.layout) {
     case "position": {
-      extra.width = Math.max( extra.width!, x + w );
-      extra.height = Math.max( extra.height!, y + h );
-      extra.children!.push( html );
+      extra.width = Math.max(extra.width!, x + w);
+      extra.height = Math.max(extra.height!, y + h);
+      extra.children!.push(html);
       break;
     }
     case "lr-tb":
     case "rl-tb":
-      if( !extra.line || extra.attempt === 1 ) 
-      {
+      if (!extra.line || extra.attempt === 1) {
         extra.line = createLine(node, []);
-        extra.children!.push( extra.line );
+        extra.children!.push(extra.line);
         extra.numberInLine = 0;
       }
 
       extra.numberInLine! += 1;
       extra.line.children!.push(html);
 
-      if( extra.attempt === 0 ) 
-      {
+      if (extra.attempt === 0) {
         // Add the element on the line
         extra.currentWidth! += w;
-        extra.height = Math.max( extra.height!, extra.prevHeight! + h );
-      } 
-      else {
+        extra.height = Math.max(extra.height!, extra.prevHeight! + h);
+      } else {
         extra.currentWidth = w;
         extra.prevHeight = extra.height;
         extra.height! += h;
@@ -150,22 +143,21 @@ export function addHTML( node:ExclGroup | Subform, html:XFAElData, bbox:rect_t )
         // The element has been added on a new line so switch to line mode now.
         extra.attempt = 0;
       }
-      extra.width = Math.max( extra.width!, extra.currentWidth! );
+      extra.width = Math.max(extra.width!, extra.currentWidth!);
       break;
     case "rl-row":
     case "row": {
       extra.children!.push(html);
       extra.width! += w;
-      extra.height = Math.max( extra.height!, h );
+      extra.height = Math.max(extra.height!, h);
       const height = measureToString(extra.height);
-      for( const child of extra.children! ) 
-      {
-        (<XFAElObj>child).attributes!.style!.height = height;
+      for (const child of extra.children!) {
+        (<XFAElObj> child).attributes!.style!.height = height;
       }
       break;
     }
     case "table": {
-      extra.width = Math.min( availableSpace.width, Math.max(extra.width!, w) );
+      extra.width = Math.min(availableSpace.width, Math.max(extra.width!, w));
       extra.height! += h;
       extra.children!.push(html);
       break;
@@ -182,8 +174,7 @@ export function addHTML( node:ExclGroup | Subform, html:XFAElData, bbox:rect_t )
   }
 }
 
-export function getAvailableSpace( node:ExclGroup | Subform )
-{
+export function getAvailableSpace(node: ExclGroup | Subform) {
   const availableSpace = node[$extra].availableSpace!;
   const marginV = node.margin
     ? node.margin.topInset + node.margin.bottomInset
@@ -223,8 +214,7 @@ export function getAvailableSpace( node:ExclGroup | Subform )
   }
 }
 
-function getTransformedBBox( node:Draw | ExclGroup | Field | Subform ) 
-{
+function getTransformedBBox(node: Draw | ExclGroup | Field | Subform) {
   // Take into account rotation and anchor to get the real bounding box.
   let w = node.w === "" ? NaN : node.w;
   let h = node.h === "" ? NaN : node.h;
@@ -256,7 +246,7 @@ function getTransformedBBox( node:Draw | ExclGroup | Field | Subform )
       break;
   }
 
-  let x:number, y:number;
+  let x: number, y: number;
   switch (node.rotate || 0) {
     case 0:
       [x, y] = [-centerX, -centerY];
@@ -288,11 +278,11 @@ function getTransformedBBox( node:Draw | ExclGroup | Field | Subform )
  * else the layout will go to its next step (changing of line
  * in case of lr-tb or changing content area...).
  */
-export function checkDimensions( node:Draw | ExclGroup | Field | Subform, 
-  space:AvailableSpace 
+export function checkDimensions(
+  node: Draw | ExclGroup | Field | Subform,
+  space: AvailableSpace,
 ) {
-  if( node[$getTemplateRoot]()![$extra].firstUnsplittable === null ) 
-  {
+  if (node[$getTemplateRoot]()![$extra].firstUnsplittable === null) {
     return true;
   }
 
@@ -302,31 +292,26 @@ export function checkDimensions( node:Draw | ExclGroup | Field | Subform,
 
   const ERROR = 2;
   const parent = node[$getSubformParent]()!;
-  const attempt = (parent[$extra] && (<XFAExtra>parent[$extra]).attempt) || 0;
+  const attempt = (parent[$extra] && (<XFAExtra> parent[$extra]).attempt) || 0;
 
-  const [, y, w, h] = getTransformedBBox( node );
+  const [, y, w, h] = getTransformedBBox(node);
   switch (parent.layout) {
     case "lr-tb":
     case "rl-tb":
       if (attempt === 0) {
         // Try to put an element in the line.
 
-        if (!node[$getTemplateRoot]()![$extra].noLayoutFailure) 
-        {
-          if (node.h !== "" && Math.round(h - space.height) > ERROR) 
-          {
+        if (!node[$getTemplateRoot]()![$extra].noLayoutFailure) {
+          if (node.h !== "" && Math.round(h - space.height) > ERROR) {
             // Not enough height.
             return false;
           }
 
-          if (node.w !== "") 
-          {
-            if (Math.round(w - space.width) <= ERROR) 
-            {
+          if (node.w !== "") {
+            if (Math.round(w - space.width) <= ERROR) {
               return true;
             }
-            if( (<XFAExtra>parent[$extra]).numberInLine === 0 )
-            {
+            if ((<XFAExtra> parent[$extra]).numberInLine === 0) {
               return space.height > ERROR;
             }
 
@@ -340,8 +325,7 @@ export function checkDimensions( node:Draw | ExclGroup | Field | Subform,
 
         // Put the element on the line but we can fail
         // and then in the second step (next line) we'll accept.
-        if (node.w !== "") 
-        {
+        if (node.w !== "") {
           return Math.round(w - space.width) <= ERROR;
         }
 
@@ -350,63 +334,53 @@ export function checkDimensions( node:Draw | ExclGroup | Field | Subform,
 
       // Second attempt: try to put the element on the next line.
 
-      if( node[$getTemplateRoot]()![$extra].noLayoutFailure ) 
-      {
+      if (node[$getTemplateRoot]()![$extra].noLayoutFailure) {
         // We cannot fail.
         return true;
       }
 
-      if (node.h !== "" && Math.round(h - space.height) > ERROR) 
-      {
+      if (node.h !== "" && Math.round(h - space.height) > ERROR) {
         return false;
       }
 
-      if (node.w === "" || Math.round(w - space.width) <= ERROR) 
-      {
+      if (node.w === "" || Math.round(w - space.width) <= ERROR) {
         return space.height > ERROR;
       }
 
-      if (parent[$isThereMoreWidth]()) 
-      {
+      if (parent[$isThereMoreWidth]()) {
         return false;
       }
 
       return space.height > ERROR;
     case "table":
     case "tb":
-      if( node[$getTemplateRoot]()![$extra].noLayoutFailure ) 
-      {
+      if (node[$getTemplateRoot]()![$extra].noLayoutFailure) {
         return true;
       }
 
       // If the node has a height then check if it's fine with available height.
       // If the node is breakable then we can return true.
-      if (node.h !== "" && !node[$isSplittable]()) 
-      {
+      if (node.h !== "" && !node[$isSplittable]()) {
         return Math.round(h - space.height) <= ERROR;
       }
       // Else wait and see: this node will be layed out itself
       // in the provided space and maybe a children won't fit.
 
-      if (node.w === "" || Math.round(w - space.width) <= ERROR) 
-      {
+      if (node.w === "" || Math.round(w - space.width) <= ERROR) {
         return space.height > ERROR;
       }
 
-      if (parent[$isThereMoreWidth]()) 
-      {
+      if (parent[$isThereMoreWidth]()) {
         return false;
       }
 
       return space.height > ERROR;
     case "position":
-      if( node[$getTemplateRoot]()![$extra].noLayoutFailure) 
-      {
+      if (node[$getTemplateRoot]()![$extra].noLayoutFailure) {
         return true;
       }
 
-      if (node.h === "" || Math.round(h + y - space.height) <= ERROR) 
-      {
+      if (node.h === "" || Math.round(h + y - space.height) <= ERROR) {
         return true;
       }
 
@@ -414,13 +388,11 @@ export function checkDimensions( node:Draw | ExclGroup | Field | Subform,
       return h + y > area.h;
     case "rl-row":
     case "row":
-      if( node[$getTemplateRoot]()![$extra].noLayoutFailure ) 
-      {
+      if (node[$getTemplateRoot]()![$extra].noLayoutFailure) {
         return true;
       }
 
-      if (node.h !== "") 
-      {
+      if (node.h !== "") {
         return Math.round(h - space.height) <= ERROR;
       }
       return true;
@@ -429,4 +401,4 @@ export function checkDimensions( node:Draw | ExclGroup | Field | Subform,
       return true;
   }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

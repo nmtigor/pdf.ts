@@ -16,14 +16,16 @@
  * limitations under the License.
  */
 import { assert } from "../../../lib/util/trace.js";
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 export class ToUnicodeMap {
     /**
      * The elements of this.#map can be integers or strings, depending on how
      * `cmap` was created.
      */
     _map;
-    get length() { return this._map.length; }
+    get length() {
+        return this._map.length;
+    }
     constructor(cmap = []) {
         this._map = cmap;
     }
@@ -61,7 +63,9 @@ export class ToUnicodeMap {
 export class IdentityToUnicodeMap {
     firstChar;
     lastChar;
-    get length() { return this.lastChar + 1 - this.firstChar; }
+    get length() {
+        return this.lastChar + 1 - this.firstChar;
+    }
     constructor(firstChar, lastChar) {
         this.firstChar = firstChar;
         this.lastChar = lastChar;
@@ -81,7 +85,8 @@ export class IdentityToUnicodeMap {
         return undefined;
     }
     charCodeOf(v) {
-        return Number.isInteger(v) && v >= this.firstChar && v <= this.lastChar
+        return Number.isInteger(v) && v >= this.firstChar &&
+            v <= this.lastChar
             ? v
             : -1;
     }
@@ -89,5 +94,5 @@ export class IdentityToUnicodeMap {
         assert(0, "Should not call amend()");
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=to_unicode_map.js.map

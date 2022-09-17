@@ -2,7 +2,7 @@
  * nmtigor (https://github.com/nmtigor) @2022
  */
 import { $getAttributes, $getChildren, $nodeName, $setValue, $toString, $uid, } from "./xfa_object.js";
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 export class DataHandler {
     data;
     dataset;
@@ -13,7 +13,7 @@ export class DataHandler {
     serialize(storage) {
         const stack = [[-1, this.data[$getChildren]()]];
         while (stack.length > 0) {
-            const last = stack[stack.length - 1];
+            const last = stack.at(-1);
             const [i, children] = last;
             if (i + 1 === children.length) {
                 stack.pop();
@@ -56,5 +56,5 @@ export class DataHandler {
         return buf.join("");
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=data.js.map

@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 import { assert } from "../../../lib/util/trace.js";
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 export class PDFWorkerStream {
     #msgHandler;
     // #contentLength?:number;
@@ -22,19 +22,19 @@ export class PDFWorkerStream {
     constructor(msgHandler) {
         this.#msgHandler = msgHandler;
     }
-    /** @implements */
+    /** @implement */
     getFullReader() {
         assert(!this.#fullRequestReader, "PDFWorkerStream.getFullReader can only be called once.");
         this.#fullRequestReader = new PDFWorkerStreamReader(this.#msgHandler);
         return this.#fullRequestReader;
     }
-    /** @implements */
+    /** @implement */
     getRangeReader(begin, end) {
         const reader = new PDFWorkerStreamRangeReader(begin, end, this.#msgHandler);
         this.#rangeRequestReaders.push(reader);
         return reader;
     }
-    /** @implements */
+    /** @implement */
     cancelAllRequests(reason) {
         if (this.#fullRequestReader) {
             this.#fullRequestReader.cancel(reason);
@@ -46,22 +46,30 @@ export class PDFWorkerStream {
 }
 class PDFWorkerStreamReader {
     #msgHandler;
-    /** @implements */
+    /** @implement */
     onProgress = undefined;
     #contentLength;
-    /** @implements */
-    get contentLength() { return this.#contentLength; }
+    /** @implement */
+    get contentLength() {
+        return this.#contentLength;
+    }
     #isRangeSupported = false;
-    /** @implements */
-    get isRangeSupported() { return this.#isRangeSupported; }
+    /** @implement */
+    get isRangeSupported() {
+        return this.#isRangeSupported;
+    }
     #isStreamingSupported = false;
-    /** @implements */
-    get isStreamingSupported() { return this.#isStreamingSupported; }
+    /** @implement */
+    get isStreamingSupported() {
+        return this.#isStreamingSupported;
+    }
     #reader;
     #headersReady;
-    /** @implements */
-    get headersReady() { return this.#headersReady; }
-    /** @implements */
+    /** @implement */
+    get headersReady() {
+        return this.#headersReady;
+    }
+    /** @implement */
     filename = undefined;
     constructor(msgHandler) {
         this.#msgHandler = msgHandler;
@@ -69,13 +77,13 @@ class PDFWorkerStreamReader {
         this.#reader = readableStream.getReader();
         this.#headersReady = this.#msgHandler
             .sendWithPromise("ReaderHeadersReady", null)
-            .then(data => {
+            .then((data) => {
             this.#isStreamingSupported = data.isStreamingSupported;
             this.#isRangeSupported = data.isRangeSupported;
             this.#contentLength = data.contentLength;
         });
     }
-    /** @implements */
+    /** @implement */
     async read() {
         const { value, done } = await this.#reader.read();
         if (done) {
@@ -85,32 +93,40 @@ class PDFWorkerStreamReader {
         // unwrap it to ArrayBuffer for further processing.
         return { value: value.buffer, done: false };
     }
-    /** @implements */
-    cancel(reason) { this.#reader.cancel(reason); }
+    /** @implement */
+    cancel(reason) {
+        this.#reader.cancel(reason);
+    }
 }
 class PDFWorkerStreamRangeReader {
     #msgHandler;
-    /** @implements */
+    /** @implement */
     onProgress;
     #reader;
     constructor(begin, end, msgHandler) {
         this.#msgHandler = msgHandler;
-        const readableStream = this.#msgHandler.sendWithStream("GetRangeReader", { begin, end, });
+        const readableStream = this.#msgHandler.sendWithStream("GetRangeReader", {
+            begin,
+            end,
+        });
         this.#reader = readableStream.getReader();
     }
     get isStreamingSupported() {
         return false;
     }
-    /** @implements */
+    /** @implement */
     async read() {
         const { value, done } = await this.#reader.read();
-        if (done)
+        if (done) {
             return { value: undefined, done: true };
+        }
         else
             return { value: value.buffer, done: false };
     }
-    /** @implements */
-    cancel(reason) { this.#reader.cancel(reason); }
+    /** @implement */
+    cancel(reason) {
+        this.#reader.cancel(reason);
+    }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=worker_stream.js.map

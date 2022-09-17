@@ -17,10 +17,10 @@
  */
 import { clearPrimitiveCaches } from "./primitives.js";
 import { clearUnicodeCaches } from "./unicode.js";
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 export function clearGlobalCaches() {
     clearPrimitiveCaches();
     clearUnicodeCaches();
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=cleanup_helper.js.map

@@ -21,9 +21,9 @@
 // eslint-disable-next-line max-len
 /** @typedef {import("./pdf_rendering_queue").PDFRenderingQueue} PDFRenderingQueue */
 import { html } from "../../lib/dom.js";
-import { RenderingCancelledException } from "../pdf.ts-src/display/display_utils.js";
+import { RenderingCancelledException, } from "../pdf.ts-src/pdf.js";
 import { OutputScale, RenderingStates } from "./ui_utils.js";
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 const DRAW_UPSCALE_FACTOR = 2; // See comment in `PDFThumbnailView.draw` below.
 const MAX_NUM_SCALING_STEPS = 3;
 const THUMBNAIL_CANVAS_BORDER_WIDTH = 1; // px
@@ -31,7 +31,7 @@ const THUMBNAIL_WIDTH = 98; // px
 export class TempImageFactory {
     static #tempCanvas;
     static getCanvas(width, height) {
-        const tempCanvas = (this.#tempCanvas ||= document.createElement("canvas"));
+        const tempCanvas = (this.#tempCanvas ||= html("canvas"));
         tempCanvas.width = width;
         tempCanvas.height = height;
         // Since this is a temporary canvas, we need to fill it with a white
@@ -55,30 +55,30 @@ export class TempImageFactory {
     }
 }
 export class PDFThumbnailView {
-    id; /** @implements */
-    renderingId; /** @implements */
+    id; /** @implement */
+    renderingId; /** @implement */
     pageLabel;
     pdfPage;
     rotation = 0;
     viewport;
     pdfPageRotate;
     _optionalContentConfigPromise;
+    pageColors;
     linkService;
     renderingQueue;
     renderTask;
     renderingState = RenderingStates.INITIAL;
-    resume; /** @implements */
-    #checkSetImageDisabled;
+    resume; /** @implement */
     canvasWidth;
     canvasHeight;
     scale;
     l10n;
     anchor;
-    div; /** @implements */
+    div; /** @implement */
     ring;
     canvas;
     image;
-    constructor({ container, id, defaultViewport, optionalContentConfigPromise, linkService, renderingQueue, checkSetImageDisabled, l10n, }) {
+    constructor({ container, id, defaultViewport, optionalContentConfigPromise, linkService, renderingQueue, l10n, pageColors, }) {
         this.id = id;
         this.renderingId = "thumbnail" + id;
         // this.pageLabel = null;
@@ -87,12 +87,9 @@ export class PDFThumbnailView {
         this.viewport = defaultViewport;
         this.pdfPageRotate = defaultViewport.rotation;
         this._optionalContentConfigPromise = optionalContentConfigPromise;
+        this.pageColors = pageColors || undefined;
         this.linkService = linkService;
         this.renderingQueue = renderingQueue;
-        // this.renderTask = null;
-        // this.renderingState = RenderingStates.INITIAL;
-        // this.resume = null;
-        this.#checkSetImageDisabled = checkSetImageDisabled || (() => false);
         const pageWidth = this.viewport.width, pageHeight = this.viewport.height, pageRatio = pageWidth / pageHeight;
         this.canvasWidth = THUMBNAIL_WIDTH;
         this.canvasHeight = (this.canvasWidth / pageRatio) | 0;
@@ -100,10 +97,10 @@ export class PDFThumbnailView {
         this.l10n = l10n;
         const anchor = html("a");
         anchor.href = linkService.getAnchorUrl("#page=" + id);
-        this._thumbPageTitle.then(msg => {
+        this._thumbPageTitle.then((msg) => {
             anchor.title = msg;
         });
-        anchor.onclick = function () {
+        anchor.onclick = () => {
             linkService.goToPage(id);
             return false;
         };
@@ -118,9 +115,9 @@ export class PDFThumbnailView {
         ring.style.width = this.canvasWidth + borderAdjustment + "px";
         ring.style.height = this.canvasHeight + borderAdjustment + "px";
         this.ring = ring;
-        div.appendChild(ring);
-        anchor.appendChild(div);
-        container.appendChild(anchor);
+        div.append(ring);
+        anchor.append(div);
+        container.append(anchor);
     }
     setPdfPage(pdfPage) {
         this.pdfPage = pdfPage;
@@ -195,7 +192,7 @@ export class PDFThumbnailView {
         const reducedCanvas = this.#reduceImage(canvas);
         const image = html("img");
         image.className = "thumbnailImage";
-        this._thumbPageCanvas.then(msg => {
+        this._thumbPageCanvas.then((msg) => {
             image.setAttribute("aria-label", msg);
         });
         image.style.width = this.canvasWidth + "px";
@@ -203,7 +200,7 @@ export class PDFThumbnailView {
         image.src = reducedCanvas.toDataURL();
         this.image = image;
         this.div.setAttribute("data-loaded", true);
-        this.ring.appendChild(image);
+        this.ring.append(image);
         // Zeroing the width and height causes Firefox to release graphics
         // resources immediately, which can greatly reduce memory consumption.
         reducedCanvas.width = 0;
@@ -220,19 +217,21 @@ export class PDFThumbnailView {
             return Promise.reject(new Error("pdfPage is not loaded"));
         }
         this.renderingState = RenderingStates.RUNNING;
-        const finishRenderTask = async (error = null) => {
+        const finishRenderTask = async (error = undefined) => {
             // The renderTask may have been replaced by a new one, so only remove
             // the reference to the renderTask if it matches the one that is
             // triggering this callback.
             if (renderTask === this.renderTask) {
                 this.renderTask = undefined;
             }
-            if (error instanceof RenderingCancelledException)
+            if (error instanceof RenderingCancelledException) {
                 return;
+            }
             this.renderingState = RenderingStates.FINISHED;
             this.#convertCanvasToImage(canvas);
-            if (error)
+            if (error) {
                 throw error;
+            }
         };
         // Render the thumbnail at a larger size and downsize the canvas (similar
         // to `setImage`), to improve consistency between thumbnails created by
@@ -259,14 +258,11 @@ export class PDFThumbnailView {
             transform,
             viewport: drawViewport,
             optionalContentConfigPromise: this._optionalContentConfigPromise,
+            pageColors: this.pageColors,
         };
         const renderTask = (this.renderTask = pdfPage.render(renderContext));
         renderTask.onContinue = renderContinueCallback;
-        const resultPromise = renderTask.promise.then(function () {
-            return finishRenderTask(null);
-        }, function (error) {
-            return finishRenderTask(error);
-        });
+        const resultPromise = renderTask.promise.then(() => finishRenderTask(undefined), (error) => finishRenderTask(error));
         resultPromise.finally(() => {
             // Zeroing the width and height causes Firefox to release graphics
             // resources immediately, which can greatly reduce memory consumption.
@@ -282,13 +278,10 @@ export class PDFThumbnailView {
         return resultPromise;
     }
     setImage(pageView) {
-        if (this.#checkSetImageDisabled()) {
-            return;
-        }
         if (this.renderingState !== RenderingStates.INITIAL) {
             return;
         }
-        const { canvas, pdfPage } = pageView;
+        const { thumbnailCanvas: canvas, pdfPage } = pageView;
         if (!canvas) {
             return;
         }
@@ -333,16 +326,16 @@ export class PDFThumbnailView {
     }
     setPageLabel(label) {
         this.pageLabel = typeof label === "string" ? label : undefined;
-        this._thumbPageTitle.then(msg => {
+        this._thumbPageTitle.then((msg) => {
             this.anchor.title = msg;
         });
         if (this.renderingState !== RenderingStates.FINISHED) {
             return;
         }
-        this._thumbPageCanvas.then(msg => {
+        this._thumbPageCanvas.then((msg) => {
             this.image?.setAttribute("aria-label", msg);
         });
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=pdf_thumbnail_view.js.map

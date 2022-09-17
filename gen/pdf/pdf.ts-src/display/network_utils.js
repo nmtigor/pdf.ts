@@ -1,13 +1,30 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
+/* Copyright 2012 Mozilla Foundation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import { _PDFDEV } from "../../../global.js";
 import { assert } from "../../../lib/util/trace.js";
 import { MissingPDFException, UnexpectedResponseException } from "../shared/util.js";
 import { getFilenameFromContentDispositionHeader } from "./content_disposition.js";
 import { isPdfFile } from "./display_utils.js";
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 export function validateRangeRequestCapabilities({ getResponseHeader, isHttp, rangeChunkSize, disableRange, }) {
-    assert(Number.isInteger(rangeChunkSize) && rangeChunkSize > 0, "rangeChunkSize must be an integer larger than zero.");
+    /*#static*/  {
+        assert(Number.isInteger(rangeChunkSize) && rangeChunkSize > 0, "rangeChunkSize must be an integer larger than zero.");
+    }
     const returnValues = {
         allowRangeRequests: false,
     };
@@ -16,17 +33,21 @@ export function validateRangeRequestCapabilities({ getResponseHeader, isHttp, ra
         return returnValues;
     }
     returnValues.suggestedLength = length;
-    if (length <= 2 * rangeChunkSize)
+    if (length <= 2 * rangeChunkSize) {
         // The file size is smaller than the size of two chunks, so it does not
         // make any sense to abort the request and retry with a range request.
         return returnValues;
-    if (disableRange || !isHttp)
+    }
+    if (disableRange || !isHttp) {
         return returnValues;
-    if (getResponseHeader("Accept-Ranges") !== "bytes")
+    }
+    if (getResponseHeader("Accept-Ranges") !== "bytes") {
         return returnValues;
+    }
     const contentEncoding = getResponseHeader("Content-Encoding") || "identity";
-    if (contentEncoding !== "identity")
+    if (contentEncoding !== "identity") {
         return returnValues;
+    }
     returnValues.allowRangeRequests = true;
     return returnValues;
 }
@@ -40,18 +61,20 @@ export function extractFilenameFromHeader(getResponseHeader) {
             }
             catch (ex) { }
         }
-        if (isPdfFile(filename))
+        if (isPdfFile(filename)) {
             return filename;
+        }
     }
     return undefined;
 }
 export function createResponseStatusError(status, url) {
-    if (status === 404 || (status === 0 && url.toString().startsWith("file:")))
+    if (status === 404 || (status === 0 && url.toString().startsWith("file:"))) {
         return new MissingPDFException(`Missing PDF "${url}".`);
+    }
     return new UnexpectedResponseException(`Unexpected server response (${status}) while retrieving PDF "${url}".`, status);
 }
 export function validateResponseStatus(status) {
     return status === 200 || status === 206;
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=network_utils.js.map

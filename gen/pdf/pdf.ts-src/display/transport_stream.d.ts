@@ -20,20 +20,20 @@ export declare class PDFDataTransportStream implements IPDFStream {
     get _progressiveDataLength(): number;
     _onProgressiveDone(): void;
     _removeRangeReader(reader: PDFDataTransportStreamRangeReader): void;
-    /** @implements */
+    /** @implement */
     getFullReader(): PDFDataTransportStreamReader;
-    /** @implements */
+    /** @implement */
     getRangeReader(begin: number, end: number): PDFDataTransportStreamRangeReader | undefined;
-    /** @implements */
+    /** @implement */
     cancelAllRequests(reason: AbortException): void;
 }
 declare class PDFDataTransportStreamReader implements IPDFStreamReader {
     #private;
-    /** @implements */
+    /** @implement */
     get filename(): string | undefined;
     _loaded: number;
     get headersReady(): Promise<void>;
-    /** @implements */
+    /** @implement */
     onProgress: ((data: {
         loaded: number;
         total: number;
@@ -42,11 +42,11 @@ declare class PDFDataTransportStreamReader implements IPDFStreamReader {
     _enqueue(chunk: ArrayBufferLike): void;
     get isRangeSupported(): boolean;
     get isStreamingSupported(): boolean;
-    /** @implements */
+    /** @implement */
     get contentLength(): number;
-    /** @implements */
+    /** @implement */
     read(): Promise<ReadValue>;
-    /** @implements */
+    /** @implement */
     cancel(reason: object): void;
     progressiveDone(): void;
 }
@@ -54,17 +54,17 @@ declare class PDFDataTransportStreamRangeReader implements IPDFStreamRangeReader
     #private;
     _begin: number;
     _end: number;
-    /** @implements */
+    /** @implement */
     onProgress: ((data: {
         loaded: number;
     }) => void) | undefined;
-    /** @implements */
+    /** @implement */
     get isStreamingSupported(): boolean;
     constructor(stream: PDFDataTransportStream, begin: number, end: number);
     _enqueue(chunk: ArrayBufferLike): void;
-    /** @implements */
+    /** @implement */
     read(): Promise<ReadValue>;
-    /** @implements */
+    /** @implement */
     cancel(reason: object): void;
 }
 export {};

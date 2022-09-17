@@ -1,4 +1,4 @@
-import { uint8, Ratio } from "./alias.js";
+import { Ratio, uint8 } from "./alias.js";
 declare type CsscHex = string; /** "#123" or "#1234" or "#123456" or "#12345678" */
 declare type CsscRGB = string; /** "rgb(25, 55, 55)" */
 declare type CsscRGBA = string; /** "rgb(25, 55, 55, .3)" */
@@ -22,18 +22,23 @@ export declare type Cssc = CsscHex | CsscRGB | CsscRGBA | CsscHSL | CsscHSLA | C
 export declare class Colr {
     #private;
     /**
-     * @param { const } typ_x
-     * @param { const } dat_x
+     * @const @param typ_x
+     * @const @param dat_x
      */
-    constructor(typ_x?: ColrTyp, ...dat_x: [(CsscHex | R_t | H_t | CsscName)?, (G_t | S_t)?, (B_t | L_t)?, A_t?]);
+    constructor(typ_x?: ColrTyp, ...dat_x: [
+        (CsscHex | R_t | H_t | CsscName)?,
+        (G_t | S_t)?,
+        (B_t | L_t)?,
+        A_t?
+    ]);
     /**
      * in( isValidCssc(cssc) );
-     * @param { const } cssc
+     * @const @param cssc
      */
     set_by_s(cssc: Cssc): this;
     /**
      * in( colr );
-     * @param { const } colr
+     * @const @param colr
      */
     set_by_c(colr: Colr): this;
     dup(): Colr;
@@ -55,64 +60,64 @@ export declare class Colr {
     get isligt(): boolean;
     /**
      * "l+.5"
-     * @param { const } ratio_x
+     * @const @param ratio_x
      */
     ligten(ratio_x: Ratio): this;
     /**
      * "l-.5"
-     * @param { const } ratio_x
+     * @const @param ratio_x
      */
     darken(ratio_x: Ratio): this;
     /**
      * "s+.5"
-     * @param { const } ratio_x
+     * @const @param ratio_x
      */
     saturate(ratio_x: Ratio): this;
     /**
      * "s-.5"
-     * @param { const } ratio_x
+     * @const @param ratio_x
      */
     desaturate(ratio_x: Ratio): this;
     /**
      * "r50"
      * in( 0 <= val_x && val_x < 256 )
-     * @param { const } val_x - [0,255]
+     * @const @param val_x - [0,255]
      */
     setR(val_x: R_t): this;
     /**
      * "g50"
      * in( 0 <= val_x && val_x < 256 )
-     * @param { const } val_x - [0,255]
+     * @const @param val_x - [0,255]
      */
     setG(val_x: G_t): this;
     /**
      * "b50"
      * in( 0 <= val_x && val_x < 256 )
-     * @param { const } val_x - [0,255]
+     * @const @param val_x - [0,255]
      */
     setB(val_x: B_t): this;
     /**
      * "h50"
      * in( 0 <= val_x && val_x < 360 )
-     * @param { const } val_x - [0,360)
+     * @const @param val_x - [0,360)
      */
     setH(val_x: H_t): this;
     /**
      * "s50"
      * in( 0 <= val_x && val_x <= 100 )
-     * @param { const } val_x - [0,100]
+     * @const @param val_x - [0,100]
      */
     setS(val_x: S_t): this;
     /**
      * "l50"
      * in( 0 <= val_x && val_x <= 100 )
-     * @param { const } val_x - [0,100]
+     * @const @param val_x - [0,100]
      */
     setL(val_x: L_t): this;
     /**
      * "a.5"
      * in( 0 <= val_x && val_x <= 1 )
-     * @param { const } val_x
+     * @const @param val_x
      */
     setA(val_x: A_t): this;
     get cssc(): Cssc;
@@ -123,13 +128,13 @@ export declare function isColr(obj: Object): boolean;
  * Ref. "contrast ratio" in https://www.w3.org/TR/WCAG20/#glossary
  * in( isColr(colr1) )
  * in( isColr(colr2) )
- * @param { headconst } colr1
- * @param { headconst } colr2
+ * @headconst @param colr1
+ * @headconst @param colr2
  * @return (0,1]
  */
 export declare function contrastRatioOf(colr1: Colr, colr2: Colr): number;
 /**
- * @param { const } cssc
+ * @const @param cssc
  */
 export declare function isValidCssc(cssc: string): Cssc | false;
 export declare function hexcolr(hexstr: CsscHex): Colr;
@@ -140,7 +145,7 @@ export declare function hsla(h: H_t, s: S_t, l: L_t, a: A_t): Colr;
 export declare function csscname(cn: CsscName): Colr;
 /**
  * in( isValidCssc(cssc) )
- * @param { const } cssc
+ * @const @param cssc
  */
 export declare function createColr(cssc?: Cssc): Colr;
 /**

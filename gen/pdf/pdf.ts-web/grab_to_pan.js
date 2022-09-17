@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 import { html } from "../../lib/dom.js";
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 // Class name of element which can be grabbed.
 const CSS_CLASS_GRAB = "grab-to-pan-grab";
 export class GrabToPan {
@@ -69,8 +69,9 @@ export class GrabToPan {
         }
     };
     toggle = () => {
-        if (this.active)
+        if (this.active) {
             this.deactivate();
+        }
         else
             this.activate();
     };
@@ -86,8 +87,9 @@ export class GrabToPan {
         return node.matches("a[href], a[href] *, input, textarea, button, button *, select, option");
     };
     #onMouseDown = (event) => {
-        if (event.button !== 0 || this.ignoreTarget(event.target))
+        if (event.button !== 0 || this.ignoreTarget(event.target)) {
             return;
+        }
         if (event.originalTarget) {
             try {
                 // eslint-disable-next-line no-unused-expressions
@@ -138,7 +140,7 @@ export class GrabToPan {
             this.element.scrollLeft = scrollLeft;
         }
         if (!this.overlay.parentNode) {
-            document.body.appendChild(this.overlay);
+            document.body.append(this.overlay);
         }
     };
     #endPan = () => {
@@ -149,5 +151,5 @@ export class GrabToPan {
         this.overlay.remove();
     };
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=grab_to_pan.js.map

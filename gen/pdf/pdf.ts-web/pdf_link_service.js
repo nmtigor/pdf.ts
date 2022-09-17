@@ -20,7 +20,7 @@
 import { isObjectLike } from "../../lib/jslang.js";
 import { assert } from "../../lib/util/trace.js";
 import { parseQueryString, removeNullCharacters } from "./ui_utils.js";
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 const DEFAULT_LINK_REL = "noopener noreferrer nofollow";
 export var LinkTarget;
 (function (LinkTarget) {
@@ -30,7 +30,6 @@ export var LinkTarget;
     LinkTarget[LinkTarget["PARENT"] = 3] = "PARENT";
     LinkTarget[LinkTarget["TOP"] = 4] = "TOP";
 })(LinkTarget || (LinkTarget = {}));
-;
 /**
  * Adds various attributes (href, title, target, rel) to hyperlinks.
  * @param link The link element.
@@ -46,9 +45,7 @@ function addLinkAttributes(link, { url, target, rel, enabled = true } = {}) {
     else {
         link.href = "";
         link.title = `Disabled: ${urlNullRemoved}`;
-        link.onclick = () => {
-            return false;
-        };
+        link.onclick = () => false;
     }
     let targetStr = ""; // LinkTarget.NONE
     switch (target) {
@@ -105,14 +102,14 @@ export class PDFLinkService {
     get pagesCount() {
         return this.pdfDocument ? this.pdfDocument.numPages : 0;
     }
-    /** @implements */
+    /** @implement */
     get page() {
         return this.pdfViewer.currentPageNumber;
     }
     set page(value) {
         this.pdfViewer.currentPageNumber = value;
     }
-    /** @implements */
+    /** @implement */
     get rotation() {
         return this.pdfViewer.pagesRotation;
     }
@@ -130,7 +127,7 @@ export class PDFLinkService {
                 // only occur during loading, before all pages have been resolved.
                 this.pdfDocument
                     .getPageIndex(destRef)
-                    .then(pageIndex => {
+                    .then((pageIndex) => {
                     this.cachePageRef(pageIndex + 1, destRef);
                     this.#goToDestinationHelper(rawDest, namedDest, explicitDest);
                 })
@@ -168,7 +165,7 @@ export class PDFLinkService {
     }
     /**
      * This method will, when available, also update the browser history.
-     * @implements
+     * @implement
      * @param dest The named, or explicit, PDF destination.
      */
     async goToDestination(dest) {
@@ -193,7 +190,7 @@ export class PDFLinkService {
     /**
      * This method will, when available, also update the browser history.
      *
-     * @implements
+     * @implement
      * @param val The page number, or page label.
      */
     goToPage(val) {
@@ -201,9 +198,9 @@ export class PDFLinkService {
             return;
         const pageNumber = (typeof val === "string" && this.pdfViewer.pageLabelToPageNumber(val)) ||
             +val | 0;
-        if (!(Number.isInteger(pageNumber)
-            && pageNumber > 0
-            && pageNumber <= this.pagesCount)) {
+        if (!(Number.isInteger(pageNumber) &&
+            pageNumber > 0 &&
+            pageNumber <= this.pagesCount)) {
             console.error(`PDFLinkService.goToPage: "${val}" is not a valid page.`);
             return;
         }
@@ -217,7 +214,7 @@ export class PDFLinkService {
     }
     /**
      * Wrapper around the `addLinkAttributes` helper function.
-     * @implements
+     * @implement
      */
     addLinkAttributes(link, url, newWindow = false) {
         addLinkAttributes(link, {
@@ -228,7 +225,7 @@ export class PDFLinkService {
         });
     }
     /**
-     * @implements
+     * @implement
      * @param dest The PDF destination object.
      * @return The hyperlink to the PDF object.
      */
@@ -249,14 +246,14 @@ export class PDFLinkService {
     /**
      * Prefix the full url on anchor links to make sure that links are resolved
      * relative to the current URL instead of the one defined in <base href>.
-     * @implements
+     * @implement
      * @param anchor The anchor hash, including the #.
      * @return The hyperlink to the PDF object.
      */
     getAnchorUrl(anchor) {
         return (this.baseUrl || "") + anchor;
     }
-    /** @implements */
+    /** @implement */
     setHash(hash) {
         if (!this.pdfDocument)
             return;
@@ -294,10 +291,10 @@ export class PDFLinkService {
                     if (zoomArg === "Fit" || zoomArg === "FitB") {
                         dest = [null, { name: zoomArg }];
                     }
-                    else if (zoomArg === "FitH"
-                        || zoomArg === "FitBH"
-                        || zoomArg === "FitV"
-                        || zoomArg === "FitBV") {
+                    else if (zoomArg === "FitH" ||
+                        zoomArg === "FitBH" ||
+                        zoomArg === "FitV" ||
+                        zoomArg === "FitBV") {
                         dest = [
                             null,
                             { name: zoomArg },
@@ -358,15 +355,15 @@ export class PDFLinkService {
                 }
             }
             catch (ex) { }
-            if (typeof dest === "string"
-                || PDFLinkService.#isValidExplicitDestination(dest)) {
+            if (typeof dest === "string" ||
+                PDFLinkService.#isValidExplicitDestination(dest)) {
                 this.goToDestination(dest);
                 return;
             }
             console.error(`PDFLinkService.setHash: "${unescape(hash)}" is not a valid destination.`);
         }
     }
-    /** @implements */
+    /** @implement */
     executeNamedAction(action) {
         // See PDF reference, table 8.45 - Named action
         switch (action) {
@@ -397,24 +394,28 @@ export class PDFLinkService {
         });
     }
     /**
-     * @implements
+     * @implement
      * @param pageNum page number.
      * @param pageRef reference to the page.
      */
     cachePageRef(pageNum, pageRef) {
         if (!pageRef)
             return;
-        const refStr = pageRef.gen === 0 ? `${pageRef.num}R` : `${pageRef.num}R${pageRef.gen}`;
+        const refStr = pageRef.gen === 0
+            ? `${pageRef.num}R`
+            : `${pageRef.num}R${pageRef.gen}`;
         this.#pagesRefCache.set(refStr, pageNum);
     }
-    /** @implements */
+    /** @implement */
     _cachedPageNumber(pageRef) {
         if (!pageRef)
             return undefined;
-        const refStr = pageRef.gen === 0 ? `${pageRef.num}R` : `${pageRef.num}R${pageRef.gen}`;
+        const refStr = pageRef.gen === 0
+            ? `${pageRef.num}R`
+            : `${pageRef.num}R${pageRef.gen}`;
         return this.#pagesRefCache.get(refStr) || undefined;
     }
-    /** @implements */
+    /** @implement */
     isPageVisible(pageNumber) {
         return this.pdfViewer.isPageVisible(pageNumber);
     }
@@ -428,15 +429,16 @@ export class PDFLinkService {
         if (destLength < 2)
             return false;
         const page = dest[0];
-        if (!(typeof page === "object"
-            && Number.isInteger(page.num)
-            && Number.isInteger(page.gen)) &&
+        if (!(typeof page === "object" &&
+            Number.isInteger(page.num) &&
+            Number.isInteger(page.gen)) &&
             !(Number.isInteger(page) && page >= 0)) {
             return false;
         }
         const zoom = dest[1];
-        if (!(typeof zoom === "object" && typeof zoom.name === "string"))
+        if (!(typeof zoom === "object" && typeof zoom.name === "string")) {
             return false;
+        }
         let allowNull = true;
         switch (zoom.name) {
             case "XYZ":
@@ -463,26 +465,33 @@ export class PDFLinkService {
         }
         for (let i = 2; i < destLength; i++) {
             const param = dest[i];
-            if (!(typeof param === "number" || (allowNull && param === null)))
+            if (!(typeof param === "number" || (allowNull && param === null))) {
                 return false;
+            }
         }
         return true;
     }
 }
 export class SimpleLinkService {
-    /** @implements */
+    /** @implement */
     externalLinkTarget;
-    /** @implements */
+    /** @implement */
     externalLinkRel;
-    /** @implements */
+    /** @implement */
     externalLinkEnabled = true;
-    /** @implements */
-    get pagesCount() { return 0; }
-    /** @implements */
-    get page() { return 0; }
+    /** @implement */
+    get pagesCount() {
+        return 0;
+    }
+    /** @implement */
+    get page() {
+        return 0;
+    }
     set page(value) { }
-    /** @implements */
-    get rotation() { return 0; }
+    /** @implement */
+    get rotation() {
+        return 0;
+    }
     set rotation(value) { }
     /**
      * @param dest The named, or explicit, PDF destination.
@@ -492,7 +501,7 @@ export class SimpleLinkService {
      * @param val The page number, or page label.
      */
     goToPage(val) { }
-    /** @implements */
+    /** @implement */
     addLinkAttributes(link, url, newWindow = false) {
         addLinkAttributes(link, { url, enabled: this.externalLinkEnabled });
     }
@@ -500,32 +509,43 @@ export class SimpleLinkService {
      * @param dest The PDF destination object.
      * @return The hyperlink to the PDF object.
      */
-    getDestinationHash(dest) { return "#"; }
+    getDestinationHash(dest) {
+        return "#";
+    }
     /**
-     * @implements
+     * @implement
      * @param hash The PDF parameters/hash.
      * @return The hyperlink to the PDF object.
      */
-    getAnchorUrl(hash) { return "#"; }
-    /** @implements */
+    getAnchorUrl(hash) {
+        return "#";
+    }
+    /** @implement */
     setHash(hash) { }
-    /** @implements */
+    /** @implement */
     executeNamedAction(action) { }
     /**
-     * @implements
+     * @implement
      * @param pageNum page number.
      * @param pageRef reference to the page.
      */
     cachePageRef(pageNum, pageRef) { }
-    /** @implements */
-    _cachedPageNumber(pageRef) { assert(0); return undefined; }
-    /** @implements */
-    isPageVisible(pageNumber) { return true; }
+    /** @implement */
+    _cachedPageNumber(pageRef) {
+        assert(0);
+        return undefined;
+    }
+    /** @implement */
+    isPageVisible(pageNumber) {
+        return true;
+    }
     /**
-     * @implements
+     * @implement
      * @param {number} pageNumber
      */
-    isPageCached(pageNumber) { return true; }
+    isPageCached(pageNumber) {
+        return true;
+    }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=pdf_link_service.js.map

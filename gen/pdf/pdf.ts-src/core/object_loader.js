@@ -19,12 +19,12 @@ import { warn } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
 import { MissingDataException } from "./core_utils.js";
 import { Dict, Ref, RefSet } from "./primitives.js";
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 function mayHaveChildren(value) {
-    return (value instanceof Ref
-        || value instanceof Dict
-        || value instanceof BaseStream
-        || Array.isArray(value));
+    return (value instanceof Ref ||
+        value instanceof Dict ||
+        value instanceof BaseStream ||
+        Array.isArray(value));
 }
 function addChildren(node, nodesToVisit) {
     let node_;
@@ -66,8 +66,9 @@ export class ObjectLoader {
     }
     async load() {
         // Don't walk the graph if all the data is already loaded.
-        if (this.xref.stream.isDataLoaded)
+        if (this.xref.stream.isDataLoaded) {
             return undefined;
+        }
         const { keys, dict } = this;
         this.refSet = new RefSet();
         // Setup the initial nodes to visit.
@@ -113,10 +114,14 @@ export class ObjectLoader {
                 if (baseStreams) {
                     let foundMissingData = false;
                     for (const stream of baseStreams) {
-                        if (stream.isDataLoaded)
+                        if (stream.isDataLoaded) {
                             continue;
+                        }
                         foundMissingData = true;
-                        pendingRequests.push({ begin: stream.start, end: stream.end });
+                        pendingRequests.push({
+                            begin: stream.start,
+                            end: stream.end,
+                        });
                     }
                     if (foundMissingData) {
                         nodesToRevisit.push(currentNode);
@@ -141,5 +146,5 @@ export class ObjectLoader {
         return undefined;
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=object_loader.js.map

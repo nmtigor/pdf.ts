@@ -1,11 +1,11 @@
-import { AnnotationElement, FileAttachmentAnnotationElement } from "../pdf.ts-src/display/annotation_layer.js";
-import { OptionalContentConfig } from "../pdf.ts-src/display/optional_content_config.js";
+import { AnnotationEditorParamsType, AnnotationEditorType, AnnotationEditorUIManager, AnnotationElement, DispatchUpdateStatesP, FileAttachmentAnnotationElement, OptionalContentConfig, PropertyToUpdate, ScriptingActionName } from "../pdf.ts-src/pdf.js";
+import { AnnotationEditorParams } from "./annotation_editor_params.js";
 import { ErrorMoreInfo, PDFViewerApplication } from "./app.js";
 import { BaseViewer, PDFLocation } from "./base_viewer.js";
 import { PDFAttachmentViewer } from "./pdf_attachment_viewer.js";
 import { CursorTool, PDFCursorTools } from "./pdf_cursor_tools.js";
 import { PDFFindBar } from "./pdf_find_bar.js";
-import { FindCtrlrState, FindState, MatchesCount, PDFFindController } from "./pdf_find_controller.js";
+import { FindCtrlState, FindState, MatchesCount, PDFFindController } from "./pdf_find_controller.js";
 import { PDFLayerViewer } from "./pdf_layer_viewer.js";
 import { PDFLinkService } from "./pdf_link_service.js";
 import { PDFOutlineViewer } from "./pdf_outline_viewer.js";
@@ -45,9 +45,26 @@ interface _WaitOnEventOrTimeoutP {
  *
 = * @return A promise that is resolved with a {WaitOnType} value.
  */
-export declare function waitOnEventOrTimeout({ target, name, delay }: _WaitOnEventOrTimeoutP): Promise<unknown>;
+export declare function waitOnEventOrTimeout({ target, name, delay, }: _WaitOnEventOrTimeoutP): Promise<unknown>;
 export interface EventMap {
     afterprint: {};
+    annotationeditorlayerrendered: {
+        source: PDFPageView;
+        pageNumber: number;
+        error: unknown;
+    };
+    annotationeditormodechanged: {
+        source: BaseViewer;
+        mode: AnnotationEditorType;
+    };
+    annotationeditorparamschanged: {
+        source: AnnotationEditorUIManager;
+        details: PropertyToUpdate[];
+    };
+    annotationeditorstateschanged: {
+        source: AnnotationEditorUIManager;
+        details: DispatchUpdateStatesP;
+    };
     annotationlayerrendered: {
         source: PDFPageView;
         pageNumber: number;
@@ -75,8 +92,8 @@ export interface EventMap {
         detail: {
             id: string;
             ids?: string[];
-            name: string;
-            value?: string | string[] | number | boolean | null;
+            name: ScriptingActionName;
+            value?: string | string[] | number | boolean | undefined;
             shift?: boolean;
             modifier?: boolean;
             willCommit?: boolean;
@@ -101,13 +118,17 @@ export interface EventMap {
     };
     documentproperties: {};
     download: {
-        source: typeof window;
+        source: typeof window | PDFScriptingManager;
     };
-    find: FindCtrlrState & {
+    editingaction: {
+        source: typeof window;
+        name: string;
+    };
+    find: FindCtrlState & {
         source: typeof window | PDFFindBar | PDFLinkService;
     };
     findbarclose: {
-        source: PDFFindBar;
+        source: typeof window | PDFFindBar;
     };
     findfromurlhash: {
         source: PDFLinkService;
@@ -262,6 +283,15 @@ export interface EventMap {
         source: BaseViewer;
         mode: SpreadMode;
     };
+    switchannotationeditormode: {
+        source: AnnotationEditorUIManager;
+        mode: AnnotationEditorType;
+    };
+    switchannotationeditorparams: {
+        source: AnnotationEditorParams;
+        type: AnnotationEditorParamsType;
+        value: string | number;
+    };
     switchcursortool: {
         tool: CursorTool;
     };
@@ -279,6 +309,9 @@ export interface EventMap {
     togglelayerstree: {};
     toggleoutlinetree: {
         source: PDFSidebar;
+    };
+    toolbarreset: {
+        source: Toolbar;
     };
     updatefindcontrolstate: {
         source: PDFFindController;

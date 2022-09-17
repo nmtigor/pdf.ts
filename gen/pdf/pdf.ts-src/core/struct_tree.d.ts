@@ -1,3 +1,4 @@
+import { StructTreeNode } from "../display/api.js";
 import { Dict, Ref } from "./primitives.js";
 declare const enum StructElementType {
     PAGE_CONTENT = "PAGE_CONTENT",
@@ -41,14 +42,6 @@ declare class StructElement {
     parentNode?: StructElementNode;
     constructor({ type, dict, mcid, pageObjId, refObjId, }: _StructElementCtorP);
 }
-export interface StructTree {
-    type?: string;
-    id?: string | undefined;
-    lang?: string;
-    role?: string;
-    children?: StructTree[];
-    alt?: string;
-}
 export declare class StructTreePage {
     root: StructTreeRoot;
     rootDict: Dict;
@@ -65,7 +58,7 @@ export declare class StructTreePage {
      * Convert the tree structure into a simplified object literal that can
      * be sent to the main thread.
      */
-    get serializable(): StructTree;
+    get serializable(): StructTreeNode;
 }
 export {};
 //# sourceMappingURL=struct_tree.d.ts.map

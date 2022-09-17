@@ -104,7 +104,7 @@ export declare const $uts: unique symbol;
  */
 export declare const $vuu: unique symbol;
 /**
- * this.el$[ $Vuu ] { typeof Vuu }
+ * this.el$[ $Vuu ] { Constructor<Vuu> }
  */
 export declare const $Vuu: unique symbol;
 //# sourceMappingURL=symbols.d.ts.map

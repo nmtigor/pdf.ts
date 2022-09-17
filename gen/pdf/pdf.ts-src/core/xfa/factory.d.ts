@@ -2,12 +2,14 @@ import { type AnnotStorageRecord } from "../../display/annotation_layer.js";
 import { type rect_t } from "../../shared/util.js";
 import { type XFAData } from "../document.js";
 import { ErrorFont, Font } from "../fonts.js";
-import { type XFAElObj, type XFAHTMLObj } from "./alias.js";
+import { XFAHTMLAttrs, type XFAHTMLObj } from "./alias.js";
 import { DataHandler } from "./data.js";
 import { Template } from "./template.js";
 export interface XFAPages {
+    xfaName: string;
     name: string;
-    children: XFAElObj[];
+    children: XFAHTMLObj[];
+    attributes?: XFAHTMLAttrs;
 }
 export declare class XFAFactory {
     root: import("./xfa_object.js").XFAObject | undefined;

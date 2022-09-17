@@ -17,97 +17,102 @@
  * limitations under the License.
  */
 
-import { HttpStatusCode } from "../../../lib/HttpStatusCode.js";
-import { assert } from "../../../lib/util/trace.js";
+import { _PDFDEV } from "../../../global.ts";
+import { HttpStatusCode } from "../../../lib/HttpStatusCode.ts";
+import { assert } from "../../../lib/util/trace.ts";
 import {
   MissingPDFException,
   UnexpectedResponseException
-} from "../shared/util.js";
-import { getFilenameFromContentDispositionHeader } from "./content_disposition.js";
-import { isPdfFile } from "./display_utils.js";
-/*81---------------------------------------------------------------------------*/
+} from "../shared/util.ts";
+import { getFilenameFromContentDispositionHeader } from "./content_disposition.ts";
+import { isPdfFile } from "./display_utils.ts";
+/*80--------------------------------------------------------------------------*/
 
 export function validateRangeRequestCapabilities({
   getResponseHeader,
   isHttp,
   rangeChunkSize,
   disableRange,
-}:{
-  getResponseHeader:( name:string ) => string | null,
-  isHttp:boolean,
-  rangeChunkSize:number,
-  disableRange:boolean,
+}: {
+  getResponseHeader: (name: string) => string | null;
+  isHttp: boolean;
+  rangeChunkSize: number;
+  disableRange: boolean;
 }) {
-  // #if !PRODUCTION || TESTING
+  /*#static*/ if (_PDFDEV) {
     assert(
       Number.isInteger(rangeChunkSize) && rangeChunkSize > 0,
-      "rangeChunkSize must be an integer larger than zero."
+      "rangeChunkSize must be an integer larger than zero.",
     );
-  // #endif
-  const returnValues:{
-    allowRangeRequests:boolean,
-    suggestedLength?:number,
+  }
+  const returnValues: {
+    allowRangeRequests: boolean;
+    suggestedLength?: number;
   } = {
     allowRangeRequests: false,
   };
 
   const length = parseInt(getResponseHeader("Content-Length")!, 10);
-  if( !Number.isInteger(length) )
-  {
+  if (!Number.isInteger(length)) {
     return returnValues;
   }
 
   returnValues.suggestedLength = length;
 
-  if (length <= 2 * rangeChunkSize) 
+  if (length <= 2 * rangeChunkSize) {
     // The file size is smaller than the size of two chunks, so it does not
     // make any sense to abort the request and retry with a range request.
     return returnValues;
+  }
 
-  if( disableRange || !isHttp )
+  if (disableRange || !isHttp) {
     return returnValues;
-  if( getResponseHeader("Accept-Ranges") !== "bytes" )
+  }
+  if (getResponseHeader("Accept-Ranges") !== "bytes") {
     return returnValues;
+  }
 
   const contentEncoding = getResponseHeader("Content-Encoding") || "identity";
-  if( contentEncoding !== "identity" )
+  if (contentEncoding !== "identity") {
     return returnValues;
+  }
 
   returnValues.allowRangeRequests = true;
   return returnValues;
 }
 
 export function extractFilenameFromHeader(
-  getResponseHeader:( name:string ) => string | null
+  getResponseHeader: (name: string) => string | null,
 ) {
   const contentDisposition = getResponseHeader("Content-Disposition");
-  if( contentDisposition )
-  {
-    let filename = getFilenameFromContentDispositionHeader( contentDisposition);
-    if( filename.includes("%") )
-    {
+  if (contentDisposition) {
+    let filename = getFilenameFromContentDispositionHeader(contentDisposition);
+    if (filename.includes("%")) {
       try {
         filename = decodeURIComponent(filename);
       } catch (ex) {}
     }
-    if( isPdfFile(filename) )
+    if (isPdfFile(filename)) {
       return filename;
+    }
   }
   return undefined;
 }
 
-export function createResponseStatusError( status:HttpStatusCode|0, url:string | URL ) 
-{
-  if( status === 404 || (status === 0 && url.toString().startsWith("file:")) )
-    return new MissingPDFException( `Missing PDF "${url}".` );
+export function createResponseStatusError(
+  status: HttpStatusCode | 0,
+  url: string | URL,
+) {
+  if (status === 404 || (status === 0 && url.toString().startsWith("file:"))) {
+    return new MissingPDFException(`Missing PDF "${url}".`);
+  }
   return new UnexpectedResponseException(
     `Unexpected server response (${status}) while retrieving PDF "${url}".`,
-    status
+    status,
   );
 }
 
-export function validateResponseStatus( status:HttpStatusCode ) 
-{
+export function validateResponseStatus(status: HttpStatusCode) {
   return status === 200 || status === 206;
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

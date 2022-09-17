@@ -1,4 +1,4 @@
-import { PDFDocumentProxy } from "../pdf.ts-src/display/api.js";
+import { PDFDocumentProxy } from "../pdf.ts-src/pdf.js";
 import { EventBus } from "./event_utils.js";
 import { type IL10n } from "./interfaces.js";
 import { OverlayManager } from "./overlay_manager.js";
@@ -10,6 +10,7 @@ export declare class PDFDocumentProperties {
     fields: Fields;
     overlayManager: OverlayManager;
     l10n: IL10n;
+    _fileNameLookup: () => string;
     pdfDocument: PDFDocumentProxy | undefined;
     url: string | undefined;
     maybeFileSize: number;
@@ -20,7 +21,7 @@ export declare class PDFDocumentProperties {
      * @param eventBus The application event bus.
      * @param l10n Localization service.
      */
-    constructor({ dialog, fields, closeButton }: ViewerConfiguration["documentProperties"], overlayManager: OverlayManager, eventBus: EventBus, l10n: IL10n);
+    constructor({ dialog, fields, closeButton, }: ViewerConfiguration["documentProperties"], overlayManager: OverlayManager, eventBus: EventBus, l10n: IL10n, fileNameLookup: () => string);
     /**
      * Open the document properties overlay.
      */
@@ -30,15 +31,13 @@ export declare class PDFDocumentProperties {
      */
     close(): Promise<void>;
     /**
-     * Set a reference to the PDF document and the URL in order
-     * to populate the overlay fields with the document properties.
-     * Note that the overlay will contain no information if this method
-     * is not called.
+     * Set a reference to the PDF document in order to populate the dialog fields
+     * with the document properties. Note that the dialog will contain no
+     * information if this method is not called.
      *
      * @param pdfDocument A reference to the PDF document.
-     * @param url The URL of the document.
      */
-    setDocument(pdfDocument?: PDFDocumentProxy, url?: string): void;
+    setDocument(pdfDocument?: PDFDocumentProxy): void;
 }
 export {};
 //# sourceMappingURL=pdf_document_properties.d.ts.map

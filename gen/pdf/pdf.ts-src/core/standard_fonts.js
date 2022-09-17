@@ -17,7 +17,7 @@
  */
 import { getLookupTableFactory } from "./core_utils.js";
 import { normalizeFontName } from "./fonts_utils.js";
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 /**
  * Hold a map of decoded fonts and of the standard fourteen Type1
  * fonts and their acronyms.
@@ -55,10 +55,14 @@ export const getStdFontMap = getLookupTableFactory((t) => {
     t["Arial-Bold"] = "Helvetica-Bold";
     t["Arial-BoldItalic"] = "Helvetica-BoldOblique";
     t["Arial-Italic"] = "Helvetica-Oblique";
+    t.ArialMT = "Helvetica";
     t["Arial-BoldItalicMT"] = "Helvetica-BoldOblique";
     t["Arial-BoldMT"] = "Helvetica-Bold";
     t["Arial-ItalicMT"] = "Helvetica-Oblique";
-    t.ArialMT = "Helvetica";
+    t.ArialUnicodeMS = "Helvetica";
+    t["ArialUnicodeMS-Bold"] = "Helvetica-Bold";
+    t["ArialUnicodeMS-BoldItalic"] = "Helvetica-BoldOblique";
+    t["ArialUnicodeMS-Italic"] = "Helvetica-Oblique";
     t["Courier-BoldItalic"] = "Courier-BoldOblique";
     t["Courier-Italic"] = "Courier-Oblique";
     t.CourierNew = "Courier";
@@ -304,7 +308,7 @@ export const getSymbolsFonts = getLookupTableFactory((t) => {
 // Glyph map for well-known standard fonts. Sometimes Ghostscript uses CID
 // fonts, but does not embed the CID to GID mapping. The mapping is incomplete
 // for all glyphs, but common for some set of the standard fonts.
-export const getGlyphMapForStandardFonts = getLookupTableFactory(function (t) {
+export const getGlyphMapForStandardFonts = getLookupTableFactory((t) => {
     t[2] = 10;
     t[3] = 32;
     t[4] = 33;
@@ -520,6 +524,33 @@ export const getGlyphMapForStandardFonts = getLookupTableFactory(function (t) {
     t[337] = 9552;
     t[493] = 1039;
     t[494] = 1040;
+    t[672] = 1488;
+    t[673] = 1489;
+    t[674] = 1490;
+    t[675] = 1491;
+    t[676] = 1492;
+    t[677] = 1493;
+    t[678] = 1494;
+    t[679] = 1495;
+    t[680] = 1496;
+    t[681] = 1497;
+    t[682] = 1498;
+    t[683] = 1499;
+    t[684] = 1500;
+    t[685] = 1501;
+    t[686] = 1502;
+    t[687] = 1503;
+    t[688] = 1504;
+    t[689] = 1505;
+    t[690] = 1506;
+    t[691] = 1507;
+    t[692] = 1508;
+    t[693] = 1509;
+    t[694] = 1510;
+    t[695] = 1511;
+    t[696] = 1512;
+    t[697] = 1513;
+    t[698] = 1514;
     t[705] = 1524;
     t[706] = 8362;
     t[710] = 64288;
@@ -826,5 +857,5 @@ export function getStandardFontName(name) {
     const stdFontMap = getStdFontMap();
     return stdFontMap[fontName];
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=standard_fonts.js.map

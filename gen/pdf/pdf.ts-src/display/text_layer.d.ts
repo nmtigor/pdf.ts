@@ -18,7 +18,7 @@ interface _TextLayerRenderP {
     /**
      * The DOM node that will contain the text runs.
      */
-    container: DocumentFragment;
+    container: DocumentFragment | HTMLElement;
     /**
      * The target viewport to properly layout the text runs.
      */
@@ -47,6 +47,7 @@ interface _TextLayerRenderP {
 interface TextDivProps {
     angle: number;
     canvasWidth: number;
+    fontSize: number;
     hasText: boolean;
     hasEOL: boolean;
     originalTransform?: string | undefined;
@@ -60,7 +61,7 @@ declare namespace Ns_renderTextLayer {
     interface _TLRTCtorP {
         textContent?: TextContent | undefined;
         textContentStream?: ReadableStream | undefined;
-        container: DocumentFragment;
+        container: DocumentFragment | HTMLElement;
         viewport: PageViewport;
         textDivs?: HTMLSpanElement[] | undefined;
         textContentItemsStr?: string[] | undefined;
@@ -89,8 +90,9 @@ declare namespace Ns_renderTextLayer {
         _textContentItemsStr: string[];
         _enhanceTextSelection: boolean;
         _fontInspectorEnabled: boolean;
+        _devicePixelRatio: number;
         _reader?: ReadableStreamDefaultReader | undefined;
-        _layoutTextLastFontSize: string | null;
+        _layoutTextLastFontSize: number | undefined;
         _layoutTextLastFontFamily: string | null;
         _layoutTextCtx: CanvasRenderingContext2D | null;
         _textDivProperties: WeakMap<HTMLSpanElement, TextDivProps> | undefined;

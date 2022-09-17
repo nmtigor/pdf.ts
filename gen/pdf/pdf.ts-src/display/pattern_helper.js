@@ -1,16 +1,15 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
-import { ShadingType } from "../core/pattern.js";
-import { FormatError, info, OPS, Util, warn } from "../shared/util.js";
-/*81---------------------------------------------------------------------------*/
+import { ShadingType, } from "../core/pattern.js";
+import { FormatError, info, OPS, Util, warn, } from "../shared/util.js";
+/*80--------------------------------------------------------------------------*/
 export var PathType;
 (function (PathType) {
     PathType["FILL"] = "Fill";
     PathType["STROKE"] = "Stroke";
     PathType["SHADING"] = "Shading";
 })(PathType || (PathType = {}));
-;
 function applyBoundingBox(ctx, bbox) {
     if (!bbox)
         return;
@@ -51,7 +50,7 @@ export class RadialAxialShadingPattern {
         }
         return grad;
     }
-    /** @implements */
+    /** @implement */
     getPattern(ctx, owner, inverse, pathType) {
         let pattern;
         if (pathType === PathType.STROKE || pathType === PathType.FILL) {
@@ -306,7 +305,7 @@ class MeshShadingPattern {
             scaleY,
         };
     }
-    /** @implements */
+    /** @implement */
     getPattern(ctx, owner, inverse, pathType) {
         applyBoundingBox(ctx, this._bbox);
         let scale;
@@ -336,16 +335,19 @@ class MeshShadingPattern {
     }
 }
 class DummyShadingPattern {
-    /** @implements */
+    /** @implement */
     getPattern() {
         return "hotpink";
     }
 }
 export function getShadingPattern(IR) {
     switch (IR[0]) {
-        case "RadialAxial": return new RadialAxialShadingPattern(IR);
-        case "Mesh": return new MeshShadingPattern(IR);
-        case "Dummy": return new DummyShadingPattern();
+        case "RadialAxial":
+            return new RadialAxialShadingPattern(IR);
+        case "Mesh":
+            return new MeshShadingPattern(IR);
+        case "Dummy":
+            return new DummyShadingPattern();
     }
     throw new Error(`Unknown IR type: ${IR[0]}`);
 }
@@ -459,7 +461,8 @@ var NsTilingPattern;
             // else we end up with unbalanced save/restores.
             tmpCtx.save();
             this.clipBbox(graphics, adjustedX0, adjustedY0, adjustedX1, adjustedY1);
-            graphics.baseTransform = graphics.ctx.mozCurrentTransform.slice();
+            graphics.baseTransform = graphics.ctx.mozCurrentTransform
+                .slice();
             graphics.executeOperatorList(operatorList);
             graphics.endDrawing();
             return {
@@ -555,5 +558,5 @@ var NsTilingPattern;
 export var TilingPattern = NsTilingPattern.TilingPattern;
 export var TilingPaintType = NsTilingPattern.PaintType;
 export var TilingType = NsTilingPattern.TilingType;
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=pattern_helper.js.map

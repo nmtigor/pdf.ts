@@ -1,6 +1,6 @@
 import { BaseStream } from "./base_stream.js";
 import { LocalFunctionCache } from "./image_utils.js";
-import { Dict, Ref, type ObjNoRef } from "./primitives.js";
+import { Dict, type ObjNoRef, Ref } from "./primitives.js";
 import { XRef } from "./xref.js";
 export declare class PDFFunctionFactory {
     #private;
@@ -60,6 +60,7 @@ declare namespace NsPostScriptCompiler {
         compile(code: (number | string | null)[], domain: number[], range: number[]): string | null;
     }
 }
-export import PostScriptCompiler = NsPostScriptCompiler.PostScriptCompiler;
+export declare type PostScriptCompiler = NsPostScriptCompiler.PostScriptCompiler;
+export declare var PostScriptCompiler: typeof NsPostScriptCompiler.PostScriptCompiler;
 export {};
 //# sourceMappingURL=function.d.ts.map

@@ -1,9 +1,13 @@
 import { type OptionalContentConfigData, type Order } from "../core/catalog.js";
 import { type MarkedContentProps } from "../core/evaluator.js";
+declare const INTERNAL: unique symbol;
 declare class OptionalContentGroup {
+    #private;
     name: string | null;
     intent: string | null;
-    visible: boolean;
+    get visible(): boolean;
+    /** @ignore */
+    _setVisible(internal: typeof INTERNAL, visible: boolean): void;
     constructor(name: string | null, intent: string | null);
 }
 export declare class OptionalContentConfig {
@@ -13,6 +17,7 @@ export declare class OptionalContentConfig {
     constructor(data?: OptionalContentConfigData);
     isVisible(group: MarkedContentProps): boolean;
     setVisibility(id: string, visible?: boolean): void;
+    get hasInitialVisibility(): boolean;
     getOrder(): (string | {
         name: string | null;
         order: Order;

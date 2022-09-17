@@ -1,4 +1,15 @@
 import { type AbstractConstructor, type Constructor, type uint, type uint8 } from "./alias.js";
+declare global {
+    interface ObjectConstructor {
+        /**
+         * Determines whether an object has a property with the specified name.
+         * @param o An object.
+         * @param v A property name.
+         */
+        hasOwn<T extends PropertyKey>(o: Readonly<Record<T, unknown>>, v: unknown): v is T;
+        hasOwn(o: object, v: PropertyKey): boolean;
+    }
+}
 export declare function isObjectLike(value: unknown): value is object;
 export declare function eq(lhs_x: unknown, rhs_x: unknown, valve_x?: number): boolean;
 declare global {
@@ -8,10 +19,13 @@ declare global {
 }
 declare global {
     interface Array<T> {
+        /**
+         * @deprecated Use `at(-1)`.
+         */
         last: T | undefined;
         /**
-         * @param { headconst } rhs
-         * @param { const } valve_x
+         * @headconst @param rhs
+         * @const @param valve_x
          */
         eq(rhs_x: unknown, valve_x?: uint): boolean;
         fillArray(ary: []): this;
@@ -19,7 +33,7 @@ declare global {
     }
 }
 /**
- * @param { const } cp Code Point returned by `string.charCodeAt()`
+ * @const @param cp Code Point returned by `string.charCodeAt()`
  */
 export declare function isDecimalDigit(cp: uint): boolean;
 export declare function isHexDigit(cp: uint): boolean;
@@ -50,55 +64,55 @@ declare global {
 declare global {
     interface Int8Array {
         /**
-         * @param { const } rhs_x
+         * @const @param rhs_x
          */
         eq(rhs_x: unknown): boolean;
     }
     interface Uint8Array {
         /**
-         * @param { const } rhs_x
+         * @const @param rhs_x
          */
         eq(rhs_x: unknown): boolean;
     }
     interface Uint8ClampedArray {
         /**
-         * @param { const } rhs_x
+         * @const @param rhs_x
          */
         eq(rhs_x: unknown): boolean;
     }
     interface Int16Array {
         /**
-         * @param { const } rhs_x
+         * @const @param rhs_x
          */
         eq(rhs_x: unknown): boolean;
     }
     interface Uint16Array {
         /**
-         * @param { const } rhs_x
+         * @const @param rhs_x
          */
         eq(rhs_x: unknown): boolean;
     }
     interface Int32Array {
         /**
-         * @param { const } rhs_x
+         * @const @param rhs_x
          */
         eq(rhs_x: unknown): boolean;
     }
     interface Uint32Array {
         /**
-         * @param { const } rhs_x
+         * @const @param rhs_x
          */
         eq(rhs_x: unknown): boolean;
     }
     interface Float32Array {
         /**
-         * @param { const } rhs_x
+         * @const @param rhs_x
          */
         eq(rhs_x: unknown): boolean;
     }
     interface Float64Array {
         /**
-         * @param { const } rhs_x
+         * @const @param rhs_x
          */
         eq(rhs_x: unknown): boolean;
     }
@@ -123,9 +137,10 @@ declare global {
 }
 /**
  * class X extends mix( Y, Z )
- * ! should always companion with an `interface` declaration.
+ * ! Should always companion with an interface declaration.
  *
- * @param mixins First element has highest precedence, and so on.
+ * @param mixins
+ *  Laat element has the highest precedence, and so on.
  */
-export declare function mix(...mixins: (Constructor | AbstractConstructor)[]): AbstractConstructor<object>;
+export declare function mix(base: Constructor | AbstractConstructor, ...mixins: (Constructor | AbstractConstructor)[]): AbstractConstructor<object>;
 //# sourceMappingURL=jslang.d.ts.map

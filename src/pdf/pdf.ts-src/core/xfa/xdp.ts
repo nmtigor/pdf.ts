@@ -17,59 +17,56 @@
  * limitations under the License.
  */
 
-import { ConnectionSet } from "./connection_set.js";
-import { Datasets } from "./datasets.js";
-import { $buildXFAObject, NamespaceIds, type XFANsName } from "./namespaces.js";
-import { Template } from "./template.js";
-import { type XFAAttrs } from "./alias.js";
+import { type XFAAttrs } from "./alias.ts";
+import { ConnectionSet } from "./connection_set.ts";
+import { Datasets } from "./datasets.ts";
+import { $buildXFAObject, NamespaceIds, type XFANsName } from "./namespaces.ts";
+import { Template } from "./template.ts";
 import {
   $namespaceId,
   $nodeName,
   $onChildCheck,
   XFAObject,
   XFAObjectArray,
-} from "./xfa_object.js";
-/*81---------------------------------------------------------------------------*/
+} from "./xfa_object.ts";
+/*80--------------------------------------------------------------------------*/
 
 const XDP_NS_ID = NamespaceIds.xdp.id;
 
-export class Xdp extends XFAObject
-{
+export class Xdp extends XFAObject {
   uuid;
   timeStamp;
-  config:unknown;
-  connectionSet:ConnectionSet | undefined = undefined;
-  override datasets:Datasets | undefined = undefined;
-  localeSet:unknown;
+  config: unknown;
+  connectionSet: ConnectionSet | undefined = undefined;
+  override datasets: Datasets | undefined = undefined;
+  localeSet: unknown;
   stylesheet = new XFAObjectArray();
-  override template:Template | undefined = undefined;
+  override template: Template | undefined = undefined;
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( XDP_NS_ID, "xdp", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(XDP_NS_ID, "xdp", /* hasChildren = */ true);
     this.uuid = attributes.uuid || "";
     this.timeStamp = attributes.timeStamp || "";
   }
 
-  override [$onChildCheck]( child:XFAObject )
-  {
-    const ns = NamespaceIds[<XFANsName>child[$nodeName]];
+  override [$onChildCheck](child: XFAObject) {
+    const ns = NamespaceIds[<XFANsName> child[$nodeName]];
     return ns && child[$namespaceId] === ns.id;
   }
 }
 
 export type XFANsXdp = typeof XdpNamespace;
 type XdpName = Exclude<keyof XFANsXdp, symbol>;
-export const XdpNamespace =
-{
-  [$buildXFAObject]( name:string, attributes:XFAAttrs )
-  {
-    if (XdpNamespace.hasOwnProperty(name)) {
-      return XdpNamespace[<XdpName>name]( attributes );
+export const XdpNamespace = {
+  [$buildXFAObject](name: string, attributes: XFAAttrs) {
+    if (Object.hasOwn(XdpNamespace, name)) {
+      return XdpNamespace[<XdpName> name](attributes);
     }
     return undefined;
   },
 
-  xdp( attrs:XFAAttrs ) { return new Xdp( attrs ); },
-}
-/*81---------------------------------------------------------------------------*/
+  xdp(attrs: XFAAttrs) {
+    return new Xdp(attrs);
+  },
+};
+/*80--------------------------------------------------------------------------*/

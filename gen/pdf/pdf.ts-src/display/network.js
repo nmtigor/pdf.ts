@@ -15,12 +15,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { MOZCENTRAL } from "../../../global.js";
 import { HttpStatusCode } from "../../../lib/HttpStatusCode.js";
 import { createPromiseCap } from "../../../lib/promisecap.js";
 import { assert } from "../../../lib/util/trace.js";
-import { stringToBytes } from "../shared/util.js";
-import { createResponseStatusError, extractFilenameFromHeader, validateRangeRequestCapabilities } from "./network_utils.js";
-/*81---------------------------------------------------------------------------*/
+import { stringToBytes, } from "../shared/util.js";
+import { createResponseStatusError, extractFilenameFromHeader, validateRangeRequestCapabilities, } from "./network_utils.js";
+/*80--------------------------------------------------------------------------*/
+/*#static*/ 
 function getArrayBuffer(xhr) {
     const data = xhr.response;
     if (typeof data !== "string") {
@@ -63,8 +65,9 @@ class NetworkManager {
         xhr.withCredentials = this.withCredentials;
         for (const property in this.httpHeaders) {
             const value = this.httpHeaders[property];
-            if (typeof value === "undefined")
+            if (typeof value === "undefined") {
                 continue;
+            }
             xhr.setRequestHeader(property, value);
         }
         if (this.isHttp && "begin" in args && "end" in args) {
@@ -76,7 +79,7 @@ class NetworkManager {
         }
         xhr.responseType = "arraybuffer";
         if (args.onError) {
-            xhr.onerror = function (evt) {
+            xhr.onerror = (evt) => {
                 args.onError(xhr.status);
             };
         }
@@ -126,8 +129,8 @@ class NetworkManager {
         // get a 200 rather than a 206 response from a range request.
         const ok_response_on_range_request = xhrStatus === HttpStatusCode.OK &&
             pendingRequest.expectedStatus === HttpStatusCode.PARTIAL_CONTENT;
-        if (!ok_response_on_range_request
-            && xhrStatus !== pendingRequest.expectedStatus) {
+        if (!ok_response_on_range_request &&
+            xhrStatus !== pendingRequest.expectedStatus) {
             pendingRequest.onError?.(xhr.status);
             return;
         }
@@ -182,20 +185,20 @@ export class PDFNetworkStream {
             this.#rangeRequestReaders.splice(i, 1);
         }
     };
-    /** @override */
+    /** @implement */
     getFullReader() {
         assert(!this.#fullRequestReader, "PDFNetworkStream.getFullReader can only be called once.");
         this.#fullRequestReader = new PDFNetworkStreamFullRequestReader(this.#manager, this.#source);
         return this.#fullRequestReader;
     }
-    /** @override */
+    /** @implement */
     getRangeReader(begin, end) {
         const reader = new PDFNetworkStreamRangeRequestReader(this.#manager, begin, end);
         reader.onClosed = this.#onRangeRequestReaderClosed;
         this.#rangeRequestReaders.push(reader);
         return reader;
     }
-    /** @implements */
+    /** @implement */
     cancelAllRequests(reason) {
         this.#fullRequestReader?.cancel(reason);
         for (const reader of this.#rangeRequestReaders.slice(0)) {
@@ -208,22 +211,32 @@ class PDFNetworkStreamFullRequestReader {
     #url;
     #fullRequestId;
     #headersReceivedCapability = createPromiseCap();
-    get headersReady() { return this.#headersReceivedCapability.promise; }
+    get headersReady() {
+        return this.#headersReceivedCapability.promise;
+    }
     #disableRange;
     #contentLength;
-    get contentLength() { return this.#contentLength; }
+    get contentLength() {
+        return this.#contentLength;
+    }
     #rangeChunkSize;
     #isStreamingSupported = false;
-    get isStreamingSupported() { return this.#isStreamingSupported; }
+    get isStreamingSupported() {
+        return this.#isStreamingSupported;
+    }
     #isRangeSupported = false;
-    get isRangeSupported() { return this.#isRangeSupported; }
+    get isRangeSupported() {
+        return this.#isRangeSupported;
+    }
     _cachedChunks = [];
     #requests = [];
     #done = false;
     _storedError;
     #filename;
-    get filename() { return this.#filename; }
-    /** @implements */
+    get filename() {
+        return this.#filename;
+    }
+    /** @implement */
     onProgress;
     constructor(manager, source) {
         this.#manager = manager;
@@ -303,7 +316,7 @@ class PDFNetworkStreamFullRequestReader {
             total: evt.lengthComputable ? evt.total : this.#contentLength,
         });
     };
-    /** @implements */
+    /** @implement */
     async read() {
         if (this._storedError) {
             throw this._storedError;
@@ -319,7 +332,7 @@ class PDFNetworkStreamFullRequestReader {
         this.#requests.push(requestCapability);
         return requestCapability.promise;
     }
-    /** @override */
+    /** @implement */
     cancel(reason) {
         this.#done = true;
         this.#headersReceivedCapability.reject(reason);
@@ -341,11 +354,13 @@ class PDFNetworkStreamRangeRequestReader {
     #queuedChunk;
     #done = false;
     _storedError;
-    /** @implements */
+    /** @implement */
     onProgress;
     onClosed;
-    /** @override */
-    get isStreamingSupported() { return false; }
+    /** @implement */
+    get isStreamingSupported() {
+        return false;
+    }
     constructor(manager, begin, end) {
         this.#manager = manager;
         const args = {
@@ -386,22 +401,24 @@ class PDFNetworkStreamRangeRequestReader {
             this.onProgress?.({ loaded: evt.loaded });
         }
     };
-    /** @implements */
+    /** @implement */
     async read() {
-        if (this._storedError)
+        if (this._storedError) {
             throw this._storedError;
+        }
         if (this.#queuedChunk !== undefined) {
             const chunk = this.#queuedChunk;
             this.#queuedChunk = undefined;
             return { value: chunk, done: false };
         }
-        if (this.#done)
+        if (this.#done) {
             return { value: undefined, done: true };
+        }
         const requestCapability = createPromiseCap();
         this.#requests.push(requestCapability);
         return requestCapability.promise;
     }
-    /** @override */
+    /** @implement */
     cancel(reason) {
         this.#done = true;
         for (const requestCapability of this.#requests) {
@@ -414,5 +431,5 @@ class PDFNetworkStreamRangeRequestReader {
         this.#close();
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=network.js.map

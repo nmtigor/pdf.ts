@@ -1,6 +1,5 @@
-import { PDFPageProxy, RenderTask } from "../pdf.ts-src/display/api.js";
-import { PageViewport } from "../pdf.ts-src/display/display_utils.js";
-import { OptionalContentConfig } from "../pdf.ts-src/display/optional_content_config.js";
+import { OptionalContentConfig, PageViewport, PDFPageProxy, RenderTask } from "../pdf.ts-src/pdf.js";
+import { PageColors } from "./base_viewer.js";
 import { type IL10n, type IPDFLinkService, type IVisibleView } from "./interfaces.js";
 import { PDFPageView } from "./pdf_page_view.js";
 import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
@@ -31,11 +30,16 @@ interface PDFThumbnailViewOptions {
      * The rendering queue object.
      */
     renderingQueue: PDFRenderingQueue;
-    checkSetImageDisabled: () => boolean;
     /**
      * Localization service.
      */
     l10n: IL10n;
+    /**
+     * Overwrites background and foreground colors
+     * with user defined ones in order to improve readability in high contrast
+     * mode.
+     */
+    pageColors: PageColors | undefined;
 }
 export declare class TempImageFactory {
     #private;
@@ -44,29 +48,30 @@ export declare class TempImageFactory {
 }
 export declare class PDFThumbnailView implements IVisibleView {
     #private;
-    readonly id: number; /** @implements */
-    readonly renderingId: string; /** @implements */
+    readonly id: number; /** @implement */
+    readonly renderingId: string; /** @implement */
     pageLabel: string | undefined;
     pdfPage?: PDFPageProxy;
     rotation: number;
     viewport: PageViewport;
     pdfPageRotate: number;
     _optionalContentConfigPromise: Promise<OptionalContentConfig> | undefined;
+    pageColors: PageColors | undefined;
     linkService: IPDFLinkService;
     renderingQueue: PDFRenderingQueue;
     renderTask?: RenderTask | undefined;
     renderingState: RenderingStates;
-    resume?: (() => void) | undefined; /** @implements */
+    resume?: (() => void) | undefined; /** @implement */
     canvasWidth: number;
     canvasHeight: number;
     scale: number;
     l10n: IL10n;
     anchor: HTMLAnchorElement;
-    div: HTMLDivElement; /** @implements */
+    div: HTMLDivElement; /** @implement */
     ring: HTMLDivElement;
     canvas?: HTMLCanvasElement;
     image?: HTMLImageElement;
-    constructor({ container, id, defaultViewport, optionalContentConfigPromise, linkService, renderingQueue, checkSetImageDisabled, l10n, }: PDFThumbnailViewOptions);
+    constructor({ container, id, defaultViewport, optionalContentConfigPromise, linkService, renderingQueue, l10n, pageColors, }: PDFThumbnailViewOptions);
     setPdfPage(pdfPage: PDFPageProxy): void;
     reset(): void;
     update({ rotation }: {

@@ -24,7 +24,7 @@ export declare class PDFFindBar {
     findResultsCount: HTMLSpanElement;
     findPreviousButton: HTMLButtonElement;
     findNextButton: HTMLButtonElement;
-    constructor(options: ViewerConfiguration['findBar'], eventBus: EventBus, l10n: IL10n);
+    constructor(options: ViewerConfiguration["findBar"], eventBus: EventBus, l10n: IL10n);
     reset(): void;
     dispatchEvent(type: FindType | "", findPrev?: boolean): void;
     updateUIState(state?: FindState, previous?: boolean, matchesCount?: MatchesCount): void;

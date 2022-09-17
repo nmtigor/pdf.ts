@@ -16,15 +16,13 @@
  * limitations under the License.
  */
 /* globals __non_webpack_require__ */
+import { GENERIC, PRODUCTION } from "../../../global.js";
 import { svg as createSVG } from "../../../lib/dom.js";
-import { ShadingType } from "../core/pattern.js";
-import { FONT_IDENTITY_MATRIX, IDENTITY_MATRIX, ImageKind, OPS, TextRenderingMode, Util, warn } from "../shared/util.js";
-import { DOMSVGFactory } from "./display_utils.js";
-/*81---------------------------------------------------------------------------*/
-// export let SVGGraphics = ():any => 
-// {
-//   throw new Error("Not implemented: SVGGraphics");
-// };
+import { ShadingType, } from "../core/pattern.js";
+import { FONT_IDENTITY_MATRIX, IDENTITY_MATRIX, ImageKind, OPS, TextRenderingMode, Util, warn, } from "../shared/util.js";
+import { deprecated, DOMSVGFactory } from "./display_utils.js";
+/*80--------------------------------------------------------------------------*/
+/*#static*/ 
 const SVG_DEFAULTS = {
     fontStyle: "normal",
     fontWeight: "normal",
@@ -34,10 +32,10 @@ const XML_NS = "http://www.w3.org/XML/1998/namespace";
 const XLINK_NS = "http://www.w3.org/1999/xlink";
 const LINE_CAP_STYLES = ["butt", "round", "square"];
 const LINE_JOIN_STYLES = ["miter", "round", "bevel"];
-const createObjectURL = function (data, contentType = "", forceDataSchema = false) {
-    if (URL.createObjectURL
-        && typeof Blob !== "undefined"
-        && !forceDataSchema) {
+const createObjectURL = (data, contentType = "", forceDataSchema = false) => {
+    if (URL.createObjectURL &&
+        typeof Blob !== "undefined" &&
+        !forceDataSchema) {
         return URL.createObjectURL(new Blob([data], { type: contentType }));
     }
     // Blob/createObjectURL is not available, falling back to data schema.
@@ -54,9 +52,16 @@ const createObjectURL = function (data, contentType = "", forceDataSchema = fals
     }
     return buffer;
 };
-const convertImgDataToPng = (function () {
+const convertImgDataToPng = (() => {
     const PNG_HEADER = new Uint8Array([
-        0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+        0x89,
+        0x50,
+        0x4e,
+        0x47,
+        0x0d,
+        0x0a,
+        0x1a,
+        0x0a,
     ]);
     const CHUNK_WRAPPER_SIZE = 12;
     const crcTable = new Int32Array(256);
@@ -138,7 +143,7 @@ const convertImgDataToPng = (function () {
         //   // eslint-disable-next-line no-undef
         //   if (parseInt(process.versions.node) >= 8) {
         //     input = literals;
-        //   } 
+        //   }
         //   else {
         //     // eslint-disable-next-line no-undef
         //     input = Buffer.from(literals);
@@ -251,7 +256,8 @@ const convertImgDataToPng = (function () {
         ]);
         const idat = deflateSync(literals);
         // PNG consists of: header, IHDR+data, IDAT+data, and IEND.
-        const pngLength = PNG_HEADER.length + CHUNK_WRAPPER_SIZE * 3 + ihdr.length + idat.length;
+        const pngLength = PNG_HEADER.length + CHUNK_WRAPPER_SIZE * 3 + ihdr.length +
+            idat.length;
         const data = new Uint8Array(pngLength);
         let offset = 0;
         data.set(PNG_HEADER, offset);
@@ -264,8 +270,10 @@ const convertImgDataToPng = (function () {
         return createObjectURL(data, "image/png", forceDataSchema);
     }
     // eslint-disable-next-line no-shadow
-    return function convertImgDataToPng(imgData, forceDataSchema, isMask) {
-        const kind = imgData.kind === undefined ? ImageKind.GRAYSCALE_1BPP : imgData.kind;
+    return /* convertImgDataToPng */ (imgData, forceDataSchema, isMask) => {
+        const kind = imgData.kind === undefined
+            ? ImageKind.GRAYSCALE_1BPP
+            : imgData.kind;
         return encode(imgData, kind, forceDataSchema, isMask);
     };
 })();
@@ -333,7 +341,7 @@ function opListToTree(opList) {
         if (opListElement.fnId === OPS.save) {
             opTree.push({ fnId: OPS.group, items: [] });
             tmp.push(opTree);
-            opTree = opTree[opTree.length - 1].items;
+            opTree = opTree.at(-1).items;
             continue;
         }
         if (opListElement.fnId === OPS.restore) {
@@ -357,8 +365,9 @@ function pf(value) {
     }
     const s = value.toFixed(10);
     let i = s.length - 1;
-    if (s[i] !== "0")
+    if (s[i] !== "0") {
         return s;
+    }
     // Remove trailing zeros.
     do {
         i--;
@@ -425,6 +434,7 @@ export class SVGGraphics {
     svg;
     tgrp;
     constructor(commonObjs, objs, forceDataSchema = false) {
+        deprecated("The SVG back-end is no longer maintained and *may* be removed in the future.");
         this.commonObjs = commonObjs;
         this.objs = objs;
         this.forceDataSchema = !!forceDataSchema;
@@ -459,7 +469,7 @@ export class SVGGraphics {
             }
             for (const obj of argsArray[i]) {
                 const objsPool = obj.startsWith("g_") ? this.commonObjs : this.objs;
-                const promise = new Promise(resolve => {
+                const promise = new Promise((resolve) => {
                     objsPool.get(obj, resolve);
                 });
                 this.current.dependencies.push(promise);
@@ -703,7 +713,7 @@ export class SVGGraphics {
         current.tspan.setAttributeNS(null, "font-size", `${pf(current.fontSize)}px`);
         current.tspan.setAttributeNS(null, "y", pf(-current.y));
         current.txtElement = createSVG("text");
-        current.txtElement.appendChild(current.tspan);
+        current.txtElement.append(current.tspan);
     }
     [OPS.beginText]() {
         const current = this.current;
@@ -816,9 +826,10 @@ export class SVGGraphics {
         if (current.fontWeight !== SVG_DEFAULTS.fontWeight) {
             current.tspan.setAttributeNS(null, "font-weight", current.fontWeight);
         }
-        const fillStrokeMode = current.textRenderingMode & TextRenderingMode.FILL_STROKE_MASK;
-        if (fillStrokeMode === TextRenderingMode.FILL
-            || fillStrokeMode === TextRenderingMode.FILL_STROKE) {
+        const fillStrokeMode = current.textRenderingMode &
+            TextRenderingMode.FILL_STROKE_MASK;
+        if (fillStrokeMode === TextRenderingMode.FILL ||
+            fillStrokeMode === TextRenderingMode.FILL_STROKE) {
             if (current.fillColor !== SVG_DEFAULTS.fillColor) {
                 current.tspan.setAttributeNS(null, "fill", current.fillColor);
             }
@@ -834,8 +845,8 @@ export class SVGGraphics {
         else {
             current.tspan.setAttributeNS(null, "fill", "none");
         }
-        if (fillStrokeMode === TextRenderingMode.STROKE
-            || fillStrokeMode === TextRenderingMode.FILL_STROKE) {
+        if (fillStrokeMode === TextRenderingMode.STROKE ||
+            fillStrokeMode === TextRenderingMode.FILL_STROKE) {
             const lineWidthScale = 1 / (current.textMatrixScale || 1);
             this.#setStrokeAttributes(current.tspan, lineWidthScale);
         }
@@ -849,9 +860,9 @@ export class SVGGraphics {
         }
         current.txtElement.setAttributeNS(null, "transform", `${pm(textMatrix)} scale(${pf(textHScale)}, -1)`);
         current.txtElement.setAttributeNS(XML_NS, "xml:space", "preserve");
-        current.txtElement.appendChild(current.tspan);
-        current.txtgrp.appendChild(current.txtElement);
-        this.#ensureTransformGroup().appendChild(current.txtElement);
+        current.txtElement.append(current.tspan);
+        current.txtgrp.append(current.txtElement);
+        this.#ensureTransformGroup().append(current.txtElement);
     }
     [OPS.setLeadingMoveText](x, y) {
         this[OPS.setLeading](-y);
@@ -865,7 +876,7 @@ export class SVGGraphics {
         if (!this.cssStyle) {
             this.cssStyle = createSVG("style");
             this.cssStyle.setAttributeNS(null, "type", "text/css");
-            this.defs.appendChild(this.cssStyle);
+            this.defs.append(this.cssStyle);
         }
         const url = createObjectURL(fontObj.data, fontObj.mimetype, this.forceDataSchema);
         this.cssStyle.textContent +=
@@ -877,9 +888,9 @@ export class SVGGraphics {
         const fontObj = this.commonObjs.get(details[0]);
         let size = details[1];
         current.font = fontObj;
-        if (this.embedFonts
-            && !fontObj.missingFile
-            && !this.embeddedFonts[fontObj.loadedName]) {
+        if (this.embedFonts &&
+            !fontObj.missingFile &&
+            !this.embeddedFonts[fontObj.loadedName]) {
             this.addFontStyle(fontObj);
             this.embeddedFonts[fontObj.loadedName] = fontObj;
         }
@@ -975,7 +986,7 @@ export class SVGGraphics {
         if (this.current.fillAlpha < 1) {
             rect.setAttributeNS(null, "fill-opacity", this.current.fillAlpha);
         }
-        this.#ensureTransformGroup().appendChild(rect);
+        this.#ensureTransformGroup().append(rect);
     }
     #makeColorN_Pattern(args) {
         if (args[0] === "TilingPattern") {
@@ -1025,8 +1036,8 @@ export class SVGGraphics {
         this.transformMatrix = transformMatrix;
         this.current.fillColor = fillColor;
         this.current.strokeColor = strokeColor;
-        tiling.appendChild(bbox.childNodes[0]);
-        this.defs.appendChild(tiling);
+        tiling.append(bbox.childNodes[0]);
+        this.defs.append(tiling);
         return `url(#${tilingId})`;
     }
     #makeShadingPattern(args) {
@@ -1072,9 +1083,9 @@ export class SVGGraphics {
                     const stop = createSVG("stop");
                     stop.setAttributeNS(null, "offset", colorStop[0].toString());
                     stop.setAttributeNS(null, "stop-color", colorStop[1]);
-                    gradient.appendChild(stop);
+                    gradient.append(stop);
                 }
-                this.defs.appendChild(gradient);
+                this.defs.append(gradient);
                 return `url(#${shadingId})`;
             case "Mesh":
                 warn("Unimplemented pattern Mesh");
@@ -1139,10 +1150,10 @@ export class SVGGraphics {
             }
         }
         d = d.join(" ");
-        if (current.path
-            && ops.length > 0
-            && ops[0] !== OPS.rectangle
-            && ops[0] !== OPS.moveTo) {
+        if (current.path &&
+            ops.length > 0 &&
+            ops[0] !== OPS.rectangle &&
+            ops[0] !== OPS.moveTo) {
             // If a path does not start with an OPS.rectangle or OPS.moveTo, it has
             // probably been divided into two OPS.constructPath operators by
             // OperatorList. Append the commands to the previous path element.
@@ -1150,7 +1161,7 @@ export class SVGGraphics {
         }
         else {
             current.path = createSVG("path");
-            this.#ensureTransformGroup().appendChild(current.path);
+            this.#ensureTransformGroup().append(current.path);
         }
         current.path.setAttributeNS(null, "d", d);
         current.path.setAttributeNS(null, "fill", "none");
@@ -1184,8 +1195,8 @@ export class SVGGraphics {
             clipElement.setAttributeNS(null, "clip-rule", "nonzero");
         }
         this.pendingClip = undefined;
-        clipPath.appendChild(clipElement);
-        this.defs.appendChild(clipPath);
+        clipPath.append(clipElement);
+        this.defs.append(clipPath);
         if (current.activeClipUrl) {
             // The previous clipping group content can go out of order -- resetting
             // cached clipGroups.
@@ -1286,9 +1297,7 @@ export class SVGGraphics {
         const current = this.current;
         let dashArray = current.dashArray;
         if (lineWidthScale !== 1 && dashArray.length > 0) {
-            dashArray = dashArray.map(function (value) {
-                return lineWidthScale * value;
-            });
+            dashArray = dashArray.map((value) => lineWidthScale * value);
         }
         element.setAttributeNS(null, "stroke", current.strokeColor);
         element.setAttributeNS(null, "stroke-opacity", current.strokeAlpha.toString());
@@ -1336,7 +1345,7 @@ export class SVGGraphics {
         rect.setAttributeNS(null, "width", "1px");
         rect.setAttributeNS(null, "height", "1px");
         rect.setAttributeNS(null, "fill", this.current.fillColor);
-        this.#ensureTransformGroup().appendChild(rect);
+        this.#ensureTransformGroup().append(rect);
     }
     [OPS.paintImageXObject](objId) {
         const imgData = objId.startsWith("g_")
@@ -1367,10 +1376,10 @@ export class SVGGraphics {
         imgEl.setAttributeNS(null, "height", pf(height) + "px");
         imgEl.setAttributeNS(null, "transform", `scale(${pf(1 / width)} ${pf(-1 / height)})`);
         if (mask) {
-            mask.appendChild(imgEl);
+            mask.append(imgEl);
         }
         else {
-            this.#ensureTransformGroup().appendChild(imgEl);
+            this.#ensureTransformGroup().append(imgEl);
         }
     }
     [OPS.paintImageMaskXObject](imgData) {
@@ -1388,8 +1397,8 @@ export class SVGGraphics {
         rect.setAttributeNS(null, "height", pf(height));
         rect.setAttributeNS(null, "fill", fillColor);
         rect.setAttributeNS(null, "mask", `url(#${current.maskId})`);
-        this.defs.appendChild(mask);
-        this.#ensureTransformGroup().appendChild(rect);
+        this.defs.append(mask);
+        this.#ensureTransformGroup().append(rect);
         this[OPS.paintInlineImageXObject](imgData, mask);
     }
     [OPS.paintFormXObjectBegin](matrix, bbox) {
@@ -1414,13 +1423,13 @@ export class SVGGraphics {
         const svg = this.svgFactory.create(viewport.width, viewport.height);
         // Create the definitions element.
         const definitions = createSVG("defs");
-        svg.appendChild(definitions);
+        svg.append(definitions);
         this.defs = definitions;
         // Create the root group element, which acts a container for all other
         // groups and applies the viewport transform.
         const rootGroup = createSVG("g");
         rootGroup.setAttributeNS(null, "transform", pm(viewport.transform));
-        svg.appendChild(rootGroup);
+        svg.append(rootGroup);
         // For the construction of the SVG image we are only interested in the
         // root group, so we expose it as the entry point of the SVG image for
         // the other code in this class.
@@ -1431,7 +1440,7 @@ export class SVGGraphics {
         if (!this.current.clipGroup) {
             const clipGroup = createSVG("g");
             clipGroup.setAttributeNS(null, "clip-path", this.current.activeClipUrl);
-            this.svg.appendChild(clipGroup);
+            this.svg.append(clipGroup);
             this.current.clipGroup = clipGroup;
         }
         return this.current.clipGroup;
@@ -1441,10 +1450,10 @@ export class SVGGraphics {
             this.tgrp = createSVG("g");
             this.tgrp.setAttributeNS(null, "transform", pm(this.transformMatrix));
             if (this.current.activeClipUrl) {
-                this.#ensureClipGroup().appendChild(this.tgrp);
+                this.#ensureClipGroup().append(this.tgrp);
             }
             else {
-                this.svg.appendChild(this.tgrp);
+                this.svg.append(this.tgrp);
             }
         }
         return this.tgrp;
@@ -1454,5 +1463,5 @@ export class SVGGraphics {
 // {
 //   [ fnId:number ]:( ...args:any[] ) => void;
 // }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=svg.js.map

@@ -1,7 +1,7 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 export class XfaText {
     /**
      * Walk an XFA tree and create an array of text nodes that is compatible
@@ -59,5 +59,5 @@ export class XfaText {
             name === "select");
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=xfa_text.js.map

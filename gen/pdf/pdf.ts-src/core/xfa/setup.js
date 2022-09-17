@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 import { ConfigNamespace } from "./config.js";
-import { ConnectionSetNamespace } from "./connection_set.js";
+import { ConnectionSetNamespace, } from "./connection_set.js";
 import { DatasetsNamespace } from "./datasets.js";
 import { LocaleSetNamespace } from "./locale_set.js";
 import { SignatureNamespace } from "./signature.js";
@@ -35,5 +35,5 @@ export const NamespaceSetUp = {
     xdp: XdpNamespace,
     xhtml: XhtmlNamespace,
 };
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=setup.js.map

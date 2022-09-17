@@ -1,16 +1,29 @@
-/** @typedef {import("./display/api").PDFDocumentLoadingTask} PDFDocumentLoadingTask */
-/** @typedef {import("./display/api").PDFDocumentProxy} PDFDocumentProxy */
-/** @typedef {import("./display/api").PDFPageProxy} PDFPageProxy */
-/** @typedef {import("./display/api").RenderTask} RenderTask */
-/** @typedef {import("./display/display_utils").PageViewport} PageViewport */
-import { createPromiseCap } from "../../lib/promisecap.js";
-import { build, getDocument, LoopbackPort, PDFDataRangeTransport, PDFWorker, version } from "./display/api.js";
-import { AnnotationMode, CMapCompressionType, createValidAbsoluteUrl, InvalidPDFException, MissingPDFException, OPS, PasswordResponses, PermissionFlag, shadow, UnexpectedResponseException, UNSUPPORTED_FEATURES, Util, VerbosityLevel } from "./shared/util.js";
-import { getFilenameFromUrl, getPdfFilenameFromUrl, getXfaPageViewport, isPdfFile, loadScript, PDFDateString, PixelsPerInch, RenderingCancelledException } from "./display/display_utils.js";
-import { AnnotationLayer } from "./display/annotation_layer.js";
-import { GlobalWorkerOptions } from "./display/worker_options.js";
-import { renderTextLayer } from "./display/text_layer.js";
+import { type FieldObject } from "./core/annotation.js";
+import { type Destination, type ExplicitDest, type OpenAction, type Order } from "./core/catalog.js";
+import { type AnnotActions } from "./core/core_utils.js";
+import { type DocumentInfo, type XFAData } from "./core/document.js";
+import { type OpListIR } from "./core/operator_list.js";
+import { Ref } from "./core/primitives.js";
+import { WorkerMessageHandler } from "./core/worker.js";
+import { type XFAElData, type XFAElObj } from "./core/xfa/alias.js";
+import { AnnotationElement, AnnotationLayer, FileAttachmentAnnotationElement } from "./display/annotation_layer.js";
+import { AnnotationStorage, PrintAnnotationStorage } from "./display/annotation_storage.js";
+import { type AnnotIntent, build, type DocumentInitP, getDocument, type Intent, LoopbackPort, type OutlineNode, PDFDataRangeTransport, PDFDocumentLoadingTask, PDFDocumentProxy, type PDFDocumentStats, PDFPageProxy, PDFWorker, type RefProxy, type RenderP, RenderTask, type TextContent, type TextItem, version } from "./display/api.js";
+import { binarySearchFirstItem, getFilenameFromUrl, getPdfFilenameFromUrl, getXfaPageViewport, isPdfFile, loadScript, PageViewport, PDFDateString, PixelsPerInch, RenderingCancelledException, StatTimer } from "./display/display_utils.js";
+import { AnnotationEditorLayer } from "./display/editor/annotation_editor_layer.js";
+import { type PropertyToUpdate } from "./display/editor/editor.js";
+import { AnnotationEditorUIManager, type DispatchUpdateStatesP } from "./display/editor/tools.js";
+import { FontFaceObject } from "./display/font_loader.js";
+import { Metadata } from "./display/metadata.js";
+import { OptionalContentConfig } from "./display/optional_content_config.js";
 import { SVGGraphics } from "./display/svg.js";
+import { renderTextLayer, TextLayerRenderTask } from "./display/text_layer.js";
+import { GlobalWorkerOptions } from "./display/worker_options.js";
 import { XfaLayer } from "./display/xfa_layer.js";
-export { AnnotationLayer, AnnotationMode, build, CMapCompressionType, createPromiseCap, createValidAbsoluteUrl, getDocument, getFilenameFromUrl, getPdfFilenameFromUrl, getXfaPageViewport, GlobalWorkerOptions, InvalidPDFException, isPdfFile, loadScript, LoopbackPort, MissingPDFException, OPS, PasswordResponses, PDFDataRangeTransport, PDFDateString, PDFWorker, PermissionFlag, PixelsPerInch, RenderingCancelledException, renderTextLayer, shadow, SVGGraphics, UnexpectedResponseException, UNSUPPORTED_FEATURES, Util, VerbosityLevel, version, XfaLayer, };
+import { QuickJSSandbox } from "./pdf.sandbox.js";
+import { type AppInfo } from "./scripting_api/app.js";
+import { type ScriptingActionName } from "./scripting_api/common.js";
+import { type DocInfo } from "./scripting_api/doc.js";
+import { AnnotationEditorParamsType, AnnotationEditorType, AnnotationMode, CMapCompressionType, createValidAbsoluteUrl, InvalidPDFException, type matrix_t, MissingPDFException, OPS, type OPSName, PasswordResponses, PermissionFlag, type point_t, shadow, UnexpectedResponseException, UNSUPPORTED_FEATURES, Util, VerbosityLevel } from "./shared/util.js";
+export { type AnnotActions, AnnotationEditorLayer, AnnotationEditorParamsType, AnnotationEditorType, AnnotationEditorUIManager, AnnotationElement, AnnotationLayer, AnnotationMode, AnnotationStorage, type AnnotIntent, type AppInfo, binarySearchFirstItem, build, CMapCompressionType, createValidAbsoluteUrl, type Destination, type DispatchUpdateStatesP, type DocInfo, type DocumentInfo, type DocumentInitP, type ExplicitDest, type FieldObject, FileAttachmentAnnotationElement, FontFaceObject, getDocument, getFilenameFromUrl, getPdfFilenameFromUrl, getXfaPageViewport, GlobalWorkerOptions, type Intent, InvalidPDFException, isPdfFile, loadScript, LoopbackPort, type matrix_t, Metadata, MissingPDFException, type OpenAction, type OpListIR, OPS, type OPSName, OptionalContentConfig, type Order, type OutlineNode, PageViewport, PasswordResponses, PDFDataRangeTransport, PDFDateString, PDFDocumentLoadingTask, PDFDocumentProxy, type PDFDocumentStats, PDFPageProxy, PDFWorker, PermissionFlag, PixelsPerInch, type point_t, PrintAnnotationStorage, type PropertyToUpdate, QuickJSSandbox, Ref, type RefProxy, RenderingCancelledException, type RenderP, RenderTask, renderTextLayer, type ScriptingActionName, shadow, StatTimer, SVGGraphics, type TextContent, type TextItem, TextLayerRenderTask, UnexpectedResponseException, UNSUPPORTED_FEATURES, Util, VerbosityLevel, version, WorkerMessageHandler, type XFAData, type XFAElData, type XFAElObj, XfaLayer, };
 //# sourceMappingURL=pdf.d.ts.map

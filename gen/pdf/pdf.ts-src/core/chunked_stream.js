@@ -16,16 +16,22 @@
  * limitations under the License.
  */
 import { createPromiseCap } from "../../../lib/promisecap.js";
-import { arrayByteLength, arraysToBytes } from "../shared/util.js";
+import { arrayByteLength, arraysToBytes, } from "../shared/util.js";
 import { MissingDataException } from "./core_utils.js";
 import { Stream } from "./stream.js";
 export class ChunkedStream extends Stream {
     chunkSize;
     #loadedChunks = new Set();
-    get numChunksLoaded() { return this.#loadedChunks.size; }
-    hasChunk(chunk) { return this.#loadedChunks.has(chunk); }
+    get numChunksLoaded() {
+        return this.#loadedChunks.size;
+    }
+    hasChunk(chunk) {
+        return this.#loadedChunks.has(chunk);
+    }
     numChunks;
-    get isDataLoaded() { return this.numChunksLoaded === this.numChunks; }
+    get isDataLoaded() {
+        return this.numChunksLoaded === this.numChunks;
+    }
     manager;
     progressiveDataLength = 0;
     lastSuccessfulEnsureByteChunk = -1; /** Single-entry cache */
@@ -82,26 +88,32 @@ export class ChunkedStream extends Stream {
         }
     }
     ensureByte(pos) {
-        if (pos < this.progressiveDataLength)
+        if (pos < this.progressiveDataLength) {
             return;
+        }
         const chunk = Math.floor(pos / this.chunkSize);
-        if (chunk > this.numChunks)
+        if (chunk > this.numChunks) {
             return;
-        if (chunk === this.lastSuccessfulEnsureByteChunk)
+        }
+        if (chunk === this.lastSuccessfulEnsureByteChunk) {
             return;
+        }
         if (!this.#loadedChunks.has(chunk)) {
             throw new MissingDataException(pos, pos + 1);
         }
         this.lastSuccessfulEnsureByteChunk = chunk;
     }
     ensureRange(begin, end) {
-        if (begin >= end)
+        if (begin >= end) {
             return;
-        if (end <= this.progressiveDataLength)
+        }
+        if (end <= this.progressiveDataLength) {
             return;
+        }
         const beginChunk = Math.floor(begin / this.chunkSize);
-        if (beginChunk > this.numChunks)
+        if (beginChunk > this.numChunks) {
             return;
+        }
         const endChunk = Math.min(Math.floor((end - 1) / this.chunkSize) + 1, this.numChunks);
         for (let chunk = beginChunk; chunk < endChunk; ++chunk) {
             if (!this.#loadedChunks.has(chunk)) {
@@ -189,7 +201,7 @@ export class ChunkedStream extends Stream {
             const endChunk = Math.floor((this.end - 1) / chunkSize) + 1;
             const missingChunks = [];
             for (let chunk = beginChunk; chunk < endChunk; ++chunk) {
-                if (!this._loadedChunks.has(chunk)) {
+                if (!this.#loadedChunks.has(chunk)) {
                     missingChunks.push(chunk);
                 }
             }
@@ -210,14 +222,18 @@ export class ChunkedStream extends Stream {
         subStream.dict = dict;
         return subStream;
     }
-    getBaseStreams() { return [this]; }
+    getBaseStreams() {
+        return [this];
+    }
 }
 export class ChunkedStreamManager {
     pdfNetworkStream;
     length;
     chunkSize;
     stream;
-    getStream() { return this.stream; }
+    getStream() {
+        return this.stream;
+    }
     disableAutoFetch;
     msgHandler;
     currRequestId = 0;
@@ -267,7 +283,7 @@ export class ChunkedStreamManager {
                 }
             };
             rangeReader.read().then(readChunk, reject);
-        }).then(data => {
+        }).then((data) => {
             if (this.aborted) {
                 return; // Ignoring any data after abort.
             }
@@ -315,7 +331,7 @@ export class ChunkedStreamManager {
                 this.sendRequest(begin, end).catch(capability.reject);
             }
         }
-        return capability.promise.catch(reason => {
+        return capability.promise.catch((reason) => {
             if (this.aborted) {
                 return; // Ignoring any pending requests after abort.
             }
@@ -346,9 +362,7 @@ export class ChunkedStreamManager {
                 }
             }
         }
-        chunksToRequest.sort(function (a, b) {
-            return a - b;
-        });
+        chunksToRequest.sort((a, b) => a - b);
         return this.#requestChunks(chunksToRequest);
     }
     /**
@@ -468,5 +482,5 @@ export class ChunkedStreamManager {
         }
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=chunked_stream.js.map

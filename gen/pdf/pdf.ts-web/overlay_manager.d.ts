@@ -1,6 +1,7 @@
 export declare class OverlayManager {
     #private;
     get active(): HTMLDialogElement | undefined;
+    _dialogPolyfillCSS?: boolean;
     /**
      * @param dialog The overlay's DOM element.
      * @param canForceClose Indicates if opening the overlay closes

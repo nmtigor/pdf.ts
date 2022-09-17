@@ -7,7 +7,7 @@ import { DataHandler } from "./data.js";
 import { FontFinder } from "./fonts.js";
 import { XFAParser } from "./parser.js";
 import { stripQuotes } from "./utils.js";
-import { $appendChild, $globalData, $nodeName, $text, $toHTML, $toPages } from "./xfa_object.js";
+import { $appendChild, $globalData, $nodeName, $text, $toHTML, $toPages, } from "./xfa_object.js";
 import { XhtmlNamespace } from "./xhtml.js";
 export class XFAFactory {
     root;
@@ -57,7 +57,7 @@ export class XFAFactory {
     async _createPages() {
         try {
             this.pages = await this._createPagesHelper();
-            this.dims = this.pages.children.map(c => {
+            this.dims = this.pages.children.map((c) => {
                 const { width, height } = c.attributes.style;
                 return [0, 0, parseInt(width), parseInt(height)];
             });
@@ -108,8 +108,9 @@ export class XFAFactory {
         return this.dataHandler.serialize(storage);
     }
     static _createDocument(data) {
-        if (!data["/xdp:xdp"])
+        if (!data["/xdp:xdp"]) {
             return data["xdp:xdp"];
+        }
         return Object.values(data).join("");
     }
     static getRichTextAsHtml(rc) {
@@ -130,7 +131,7 @@ export class XFAFactory {
             const { attributes } = html;
             if (attributes) {
                 if (attributes.class) {
-                    attributes.class = attributes.class.filter(attr => !attr.startsWith("xfa"));
+                    attributes.class = attributes.class.filter((attr) => !attr.startsWith("xfa"));
                 }
                 attributes.dir = "auto";
             }
@@ -142,5 +143,5 @@ export class XFAFactory {
         return undefined;
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=factory.js.map

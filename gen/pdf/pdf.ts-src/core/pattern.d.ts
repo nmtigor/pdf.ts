@@ -1,13 +1,13 @@
+import { TilingPaintType, TilingType } from "../display/pattern_helper.js";
+import { MessageHandler, Thread } from "../shared/message_handler.js";
 import { type matrix_t, type point_t, type rect_t } from "../shared/util.js";
+import { BaseStream } from "./base_stream.js";
 import { ColorSpace } from "./colorspace.js";
+import { type ParsedFunction, PDFFunctionFactory } from "./function.js";
+import { LocalColorSpaceCache } from "./image_utils.js";
+import { type OpListIR } from "./operator_list.js";
 import { Dict } from "./primitives.js";
-import { MessageHandler, Thread } from '../shared/message_handler.js';
-import { type ParsedFunction, PDFFunctionFactory } from './function.js';
-import { LocalColorSpaceCache } from './image_utils.js';
-import { type OpListIR } from './operator_list.js';
-import { TilingPaintType, TilingType } from '../display/pattern_helper.js';
-import { XRef } from './xref.js';
-import { BaseStream } from './base_stream.js';
+import { XRef } from "./xref.js";
 export declare const enum ShadingType {
     FUNCTION_BASED = 1,
     AXIAL = 2,
@@ -87,7 +87,7 @@ declare class RadialAxialShading extends BaseShading {
     extendEnd: boolean;
     colorStops: [number, string][];
     constructor(dict: Dict, xref: XRef, resources: Dict, pdfFunctionFactory: PDFFunctionFactory, localColorSpaceCache: LocalColorSpaceCache);
-    /** @implements */
+    /** @implement */
     getIR(): ["RadialAxial", ShadingType.AXIAL | ShadingType.RADIAL, [number, number, number, number] | undefined, [number, string][], point_t, point_t, number, number];
 }
 /**
@@ -141,12 +141,12 @@ export declare class MeshShading extends BaseShading {
     _buildFigureFromPatch(index: number): void;
     _updateBounds(): void;
     _packData(): void;
-    /** @implements */
+    /** @implement */
     getIR(): ["Mesh", ShadingType, Float32Array, Uint8Array, MeshFigure[], [number, number, number, number], [number, number, number, number] | undefined, Uint8ClampedArray | undefined];
 }
 declare class DummyShading extends BaseShading {
     type: string;
-    /** @implements */
+    /** @implement */
     getIR(): DummyIR;
 }
 /**

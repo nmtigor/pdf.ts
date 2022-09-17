@@ -67,15 +67,15 @@ export declare class SimpleXMLParser extends XMLParserBase {
     parseFromString(data: string): {
         documentElement: SimpleDOMNode;
     } | undefined;
-    /** @implements */
+    /** @implement */
     onText(text: string): void;
-    /** @implements */
+    /** @implement */
     onCdata(text: string): void;
-    /** @implements */
+    /** @implement */
     onBeginElement(name: string, attributes: XMLAttr[], isEmpty: boolean): void;
-    /** @implements */
+    /** @implement */
     onEndElement(name: string): SimpleDOMNode | undefined;
-    /** @implements */
+    /** @implement */
     onError(code: XMLParserErrorCode): void;
 }
 //# sourceMappingURL=xml_parser.d.ts.map

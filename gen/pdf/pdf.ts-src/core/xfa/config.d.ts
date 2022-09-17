@@ -100,7 +100,7 @@ declare class Compression extends XFAObject {
     type: unknown;
     constructor(attributes: XFAAttrs);
 }
-declare class Config extends XFAObject {
+export declare class Config extends XFAObject {
     acrobat: unknown;
     present: unknown;
     trace: unknown;

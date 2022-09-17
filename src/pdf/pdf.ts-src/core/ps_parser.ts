@@ -13,44 +13,41 @@
  * limitations under the License.
  */
 
-import { FormatError, shadow } from "../shared/util.js";
-import { EOF } from "./primitives.js";
-import { isWhiteSpace } from "./core_utils.js";
-/*81---------------------------------------------------------------------------*/
+import { FormatError, shadow } from "../shared/util.ts";
+import { BaseStream } from "./base_stream.ts";
+import { isWhiteSpace } from "./core_utils.ts";
+import { EOF } from "./primitives.ts";
+/*80--------------------------------------------------------------------------*/
 
-export class PostScriptParser 
-{
-  operators:(number | string | null)[] = [];
-  token:PostScriptToken | EOF | null = null;
-  prev:PostScriptToken | EOF | null = null;
-  
-  constructor( public lexer:PostScriptLexer ) 
-  {
+export class PostScriptParser {
+  operators: (number | string | null)[] = [];
+  token: PostScriptToken | EOF | null = null;
+  prev: PostScriptToken | EOF | null = null;
+
+  constructor(public lexer: PostScriptLexer) {
   }
 
-  nextToken()
-  {
+  nextToken() {
     this.prev = this.token;
     this.token = this.lexer.getToken();
   }
 
-  accept( type:PostScriptTokenTypes ) 
-  {
-    if( (<PostScriptToken>this.token).type === type )
-    {
+  accept(type: PostScriptTokenTypes) {
+    if ((<PostScriptToken> this.token).type === type) {
       this.nextToken();
       return true;
     }
     return false;
   }
 
-  expect( type:PostScriptTokenTypes ) 
-  {
+  expect(type: PostScriptTokenTypes) {
     if (this.accept(type)) {
       return true;
     }
     throw new FormatError(
-      `Unexpected symbol: found ${(<PostScriptToken>this.token).type} expected ${type}.`
+      `Unexpected symbol: found ${
+        (<PostScriptToken> this.token).type
+      } expected ${type}.`,
     );
   }
 
@@ -62,45 +59,35 @@ export class PostScriptParser
     return this.operators;
   }
 
-  parseBlock()
-  {
-    while( true )
-    {
-      if( this.accept(PostScriptTokenTypes.NUMBER) )
-      {
-        this.operators.push( <number>(<PostScriptToken>this.prev).value );
-      } 
-      else if( this.accept(PostScriptTokenTypes.OPERATOR) )
-      {
-        this.operators.push( <PostScriptTokenTypes>(<PostScriptToken>this.prev).value );
-      }
-      else if( this.accept(PostScriptTokenTypes.LBRACE) )
-      {
+  parseBlock() {
+    while (true) {
+      if (this.accept(PostScriptTokenTypes.NUMBER)) {
+        this.operators.push(<number> (<PostScriptToken> this.prev).value);
+      } else if (this.accept(PostScriptTokenTypes.OPERATOR)) {
+        this.operators.push(
+          <PostScriptTokenTypes> (<PostScriptToken> this.prev).value,
+        );
+      } else if (this.accept(PostScriptTokenTypes.LBRACE)) {
         this.parseCondition();
-      } 
-      else {
+      } else {
         return;
       }
     }
   }
 
-  parseCondition()
-  {
+  parseCondition() {
     // Add two place holders that will be updated later
     const conditionLocation = this.operators.length;
     this.operators.push(null, null);
 
     this.parseBlock();
     this.expect(PostScriptTokenTypes.RBRACE);
-    if( this.accept(PostScriptTokenTypes.IF) )
-    {
+    if (this.accept(PostScriptTokenTypes.IF)) {
       // The true block is right after the 'if' so it just falls through on true
       // else it jumps and skips the true block.
       this.operators[conditionLocation] = this.operators.length;
       this.operators[conditionLocation + 1] = "jz";
-    }
-    else if( this.accept(PostScriptTokenTypes.LBRACE) )
-    {
+    } else if (this.accept(PostScriptTokenTypes.LBRACE)) {
       const jumpLocation = this.operators.length;
       this.operators.push(null, null);
       const endOfTrue = this.operators.length;
@@ -128,31 +115,27 @@ const enum PostScriptTokenTypes {
   IFELSE = 5,
 }
 
-namespace NsPostScriptToken
-{
-  const opCache:Record<string, PostScriptToken> = Object.create(null);
+namespace NsPostScriptToken {
+  const opCache: Record<string, PostScriptToken> = Object.create(null);
 
   // eslint-disable-next-line no-shadow
-  export class PostScriptToken 
-  {
+  export class PostScriptToken {
     type;
     value;
 
-    constructor( type:PostScriptTokenTypes, value:string | number ) 
-    {
+    constructor(type: PostScriptTokenTypes, value: string | number) {
       this.type = type;
       this.value = value;
     }
 
-    static getOperator( op:string ) 
-    {
+    static getOperator(op: string) {
       const opValue = opCache[op];
       if (opValue) {
         return opValue;
       }
       return (opCache[op] = new PostScriptToken(
         PostScriptTokenTypes.OPERATOR,
-        op
+        op,
       ));
     }
 
@@ -160,7 +143,7 @@ namespace NsPostScriptToken
       return shadow(
         this,
         "LBRACE",
-        new PostScriptToken(PostScriptTokenTypes.LBRACE, "{")
+        new PostScriptToken(PostScriptTokenTypes.LBRACE, "{"),
       );
     }
 
@@ -168,7 +151,7 @@ namespace NsPostScriptToken
       return shadow(
         this,
         "RBRACE",
-        new PostScriptToken(PostScriptTokenTypes.RBRACE, "}")
+        new PostScriptToken(PostScriptTokenTypes.RBRACE, "}"),
       );
     }
 
@@ -176,7 +159,7 @@ namespace NsPostScriptToken
       return shadow(
         this,
         "IF",
-        new PostScriptToken(PostScriptTokenTypes.IF, "IF")
+        new PostScriptToken(PostScriptTokenTypes.IF, "IF"),
       );
     }
 
@@ -184,64 +167,50 @@ namespace NsPostScriptToken
       return shadow(
         this,
         "IFELSE",
-        new PostScriptToken(PostScriptTokenTypes.IFELSE, "IFELSE")
+        new PostScriptToken(PostScriptTokenTypes.IFELSE, "IFELSE"),
       );
     }
   }
 }
 import PostScriptToken = NsPostScriptToken.PostScriptToken;
-import { BaseStream } from "./base_stream.js";
 
-export class PostScriptLexer 
-{
-  stream:BaseStream;
+export class PostScriptLexer {
+  stream: BaseStream;
 
-  strBuf:string[] = [];
-  currentChar!:number;
+  strBuf: string[] = [];
+  currentChar!: number;
 
-  constructor( stream:BaseStream ) 
-  {
+  constructor(stream: BaseStream) {
     this.stream = stream;
     this.nextChar();
   }
 
-  nextChar()
-  {
+  nextChar() {
     return (this.currentChar = this.stream.getByte());
   }
 
-  getToken()
-  {
+  getToken() {
     let comment = false;
     let ch = this.currentChar;
 
     // skip comments
-    while (true) 
-    {
-      if (ch < 0) 
-      {
+    while (true) {
+      if (ch < 0) {
         return EOF;
       }
 
-      if (comment) 
-      {
-        if (ch === 0x0a || ch === 0x0d) 
-        {
+      if (comment) {
+        if (ch === 0x0a || ch === 0x0d) {
           comment = false;
         }
-      } 
-      else if (ch === /* '%' = */ 0x25) 
-      {
+      } else if (ch === /* '%' = */ 0x25) {
         comment = true;
-      } 
-      else if (!isWhiteSpace(ch)) 
-      {
+      } else if (!isWhiteSpace(ch)) {
         break;
       }
       ch = this.nextChar();
     }
-    switch( ch | 0 ) 
-    {
+    switch (ch | 0) {
       case 0x30: // '0'
       case 0x31: // '1'
       case 0x32: // '2'
@@ -257,7 +226,7 @@ export class PostScriptLexer
       case 0x2e: // '.'
         return new PostScriptToken(
           PostScriptTokenTypes.NUMBER,
-          this.getNumber()
+          this.getNumber(),
         );
       case 0x7b: // '{'
         this.nextChar();
@@ -271,15 +240,15 @@ export class PostScriptLexer
     strBuf.length = 0;
     strBuf[0] = String.fromCharCode(ch);
 
-    while( (ch = this.nextChar()) >= 0
-     && ((ch >= /* 'A' = */ 0x41 && ch <= /* 'Z' = */ 0x5a)
-     || (ch >= /* 'a' = */ 0x61 && ch <= /* 'z' = */ 0x7a))
+    while (
+      (ch = this.nextChar()) >= 0 &&
+      ((ch >= /* 'A' = */ 0x41 && ch <= /* 'Z' = */ 0x5a) ||
+        (ch >= /* 'a' = */ 0x61 && ch <= /* 'z' = */ 0x7a))
     ) {
       strBuf.push(String.fromCharCode(ch));
     }
     const str = strBuf.join("");
-    switch( str.toLowerCase() )
-    {
+    switch (str.toLowerCase()) {
       case "if":
         return PostScriptToken.IF;
       case "ifelse":
@@ -289,8 +258,7 @@ export class PostScriptLexer
     }
   }
 
-  getNumber()
-  {
+  getNumber() {
     let ch = this.currentChar;
     const strBuf = this.strBuf;
     strBuf.length = 0;
@@ -314,4 +282,4 @@ export class PostScriptLexer
     return value;
   }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

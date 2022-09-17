@@ -18,7 +18,7 @@
 import { assert } from "../../../lib/util/trace.js";
 import { BaseStream } from "./base_stream.js";
 import { Stream } from "./stream.js";
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 // Lots of DecodeStreams are created whose buffers are never used.  For these
 // we share a single empty buffer. This is (a) space-efficient and (b) avoids
 // having special cases that would be required if we used |null| for an empty
@@ -32,13 +32,13 @@ export class DecodeStream extends BaseStream {
     _rawMinBufferLength;
     bufferLength = 0;
     eof = false;
-    /** @implements */
+    /** @implement */
     get length() {
         assert(0, "Abstract getter `length` accessed");
         return undefined;
     }
     /**
-     * @implements
+     * @implement
      * @final
      */
     get isEmpty() {
@@ -61,8 +61,9 @@ export class DecodeStream extends BaseStream {
     }
     ensureBuffer(requested) {
         const buffer = this.buffer;
-        if (requested <= buffer.byteLength)
+        if (requested <= buffer.byteLength) {
             return buffer;
+        }
         let size = this.minBufferLength;
         while (size < requested) {
             size *= 2;
@@ -72,20 +73,21 @@ export class DecodeStream extends BaseStream {
         return (this.buffer = buffer2);
     }
     /**
-     * @implements
+     * @implement
      * @final
      */
     getByte() {
         const pos = this.pos;
         while (this.bufferLength <= pos) {
-            if (this.eof)
+            if (this.eof) {
                 return -1;
+            }
             this.readBlock();
         }
         return this.buffer[this.pos++];
     }
     /**
-     * @implements
+     * @implement
      * @final
      */
     getBytes(length) {
@@ -111,21 +113,21 @@ export class DecodeStream extends BaseStream {
         this.pos = end;
         return this.buffer.subarray(pos, end);
     }
-    /** @implements */
+    /** @implement */
     reset() {
         this.pos = 0;
     }
-    /** @implements */
+    /** @implement */
     getByteRange(begin, end) {
         assert(0, "Abstract method `getByteRange` called");
         return undefined;
     }
-    /** @implements */
+    /** @implement */
     moveStart() {
         assert(0, "Abstract method `moveStart` called");
     }
     /**
-     * @implements
+     * @implement
      * @final
      */
     makeSubStream(start, length, dict) {
@@ -153,16 +155,15 @@ export class StreamsSequenceStream extends DecodeStream {
     constructor(streams, onError) {
         let maybeLength = 0;
         for (const stream of streams) {
-            maybeLength +=
-                stream instanceof DecodeStream
-                    ? stream._rawMinBufferLength
-                    : stream.length;
+            maybeLength += stream instanceof DecodeStream
+                ? stream._rawMinBufferLength
+                : stream.length;
         }
         super(maybeLength);
         this.streams = streams;
         this._onError = onError;
     }
-    /** @implements */
+    /** @implement */
     readBlock() {
         const streams = this.streams;
         if (streams.length === 0) {
@@ -198,7 +199,7 @@ export class StreamsSequenceStream extends DecodeStream {
         return baseStreamsBuf.length > 0 ? baseStreamsBuf : undefined;
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 export class ImageStream extends DecodeStream {
     stream;
     maybeLength;
@@ -218,5 +219,5 @@ export class ImageStream extends DecodeStream {
         this.params = params;
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=decode_stream.js.map

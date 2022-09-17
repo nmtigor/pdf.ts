@@ -29,7 +29,7 @@ export declare class PDFCursorTools {
     get activeTool(): CursorTool;
     activeBeforePresentationMode?: CursorTool | undefined;
     handTool: GrabToPan;
-    constructor({ container, eventBus, cursorToolOnLoad }: PDFCursorToolsOptions);
+    constructor({ container, eventBus, cursorToolOnLoad, }: PDFCursorToolsOptions);
     /**
      * NOTE: This method is ignored while Presentation Mode is active.
      * @param tool - The cursor mode that should be switched to,

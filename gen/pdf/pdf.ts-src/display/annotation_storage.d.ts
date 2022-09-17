@@ -18,11 +18,20 @@ export declare class AnnotationStorage {
      */
     getRawValue(key: string): AnnotStorageValue | undefined;
     /**
+     * Remove a value from the storage.
+     */
+    removeKey(key: string): void;
+    /**
      * Set the value for a given key
      */
     setValue(key: string, value: AnnotStorageValue): void;
+    /**
+     * Check if the storage contains the given key.
+     */
+    has(key: string): boolean;
     getAll(): Record<string, AnnotStorageValue> | undefined;
     resetModified(): void;
+    get print(): PrintAnnotationStorage;
     /**
      * PLEASE NOTE: Only intended for usage within the API itself.
      * @ignore
@@ -32,6 +41,21 @@ export declare class AnnotationStorage {
      * PLEASE NOTE: Only intended for usage within the API itself.
      * @ignore
      */
-    get hash(): string;
+    static getHash(map: AnnotStorageRecord | undefined): string;
+}
+/**
+ * A special `AnnotationStorage` for use during printing, where the serializable
+ * data is *frozen* upon initialization, to prevent scripting from modifying its
+ * contents. (Necessary since printing is triggered synchronously in browsers.)
+ */
+export declare class PrintAnnotationStorage extends AnnotationStorage {
+    #private;
+    constructor(parent: AnnotationStorage);
+    get print(): PrintAnnotationStorage;
+    /**
+     * PLEASE NOTE: Only intended for usage within the API itself.
+     * @ignore
+     */
+    get serializable(): AnnotStorageRecord | undefined;
 }
 //# sourceMappingURL=annotation_storage.d.ts.map

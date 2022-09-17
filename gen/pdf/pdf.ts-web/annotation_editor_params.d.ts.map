@@ -1,0 +1,1 @@
+{"version":3,"file":"annotation_editor_params.d.ts","sourceRoot":"","sources":["../../../src/pdf/pdf.ts-web/annotation_editor_params.ts"],"names":[],"mappings":"AAoBA,OAAO,EAAE,QAAQ,EAAE,MAAM,kBAAkB,CAAC;AAC5C,OAAO,EAAE,mBAAmB,EAAE,MAAM,aAAa,CAAC;AAGlD,qBAAa,sBAAsB;;IACjC,QAAQ,WAAC;gBAGP,OAAO,EAAE,mBAAmB,CAAC,wBAAwB,CAAC,EACtD,QAAQ,EAAE,QAAQ;CAuErB"}

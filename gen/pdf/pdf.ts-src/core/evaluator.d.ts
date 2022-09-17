@@ -1,6 +1,6 @@
 import { type CMapData } from "../display/base_factory.js";
-import { MessageHandler, Thread, type StreamSink } from "../shared/message_handler.js";
-import { ImageKind, OPS, TextRenderingMode, type matrix_t, type rect_t } from "../shared/util.js";
+import { MessageHandler, type StreamSink, Thread } from "../shared/message_handler.js";
+import { ImageKind, type matrix_t, OPS, type rect_t, TextRenderingMode } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
 import { CMap } from "./cmap.js";
 import { ColorSpace } from "./colorspace.js";
@@ -13,7 +13,7 @@ import { GlobalImageCache, LocalColorSpaceCache, LocalGStateCache, LocalImageCac
 import { OperatorList } from "./operator_list.js";
 import { Parser } from "./parser.js";
 import { type EvaluatorOptions } from "./pdf_manager.js";
-import { Dict, FontDict, Name, Ref, RefSet, RefSetCache, type Obj } from "./primitives.js";
+import { Dict, FontDict, Name, type Obj, Ref, RefSet, RefSetCache } from "./primitives.js";
 import { Stream } from "./stream.js";
 import { IdentityToUnicodeMap, ToUnicodeMap } from "./to_unicode_map.js";
 import { type PrivateData } from "./type1_parser.js";
@@ -241,11 +241,11 @@ export declare class PartialEvaluator {
     setGState({ resources, gState, operatorList, cacheKey, task, stateManager, localGStateCache, localColorSpaceCache, }: _SetGStateP): Promise<void>;
     loadFont(fontName: string | undefined, font: Ref | undefined, resources: Dict, fallbackFontDict?: FontDict, cssFontInfo?: CssFontInfo): Promise<TranslatedFont>;
     buildPath(operatorList: OperatorList, fn: OPS, args?: number[], parsingText?: boolean): void;
-    parseColorSpace({ cs, resources, localColorSpaceCache }: _ParseColorSpaceP): Promise<ColorSpace | undefined>;
+    parseColorSpace({ cs, resources, localColorSpaceCache, }: _ParseColorSpaceP): Promise<ColorSpace | undefined>;
     parseShading({ shading, resources, localColorSpaceCache, localShadingPatternCache, }: _ParseShadingP): string;
     handleColorN(operatorList: OperatorList, fn: OPS, args: [Name, ...number[]], cs: ColorSpace, patterns: Dict, resources: Dict, task: WorkerTask, localColorSpaceCache: LocalColorSpaceCache, localTilingPatternCache: LocalTilingPatternCache, localShadingPatternCache: Map<Dict | BaseStream, string>): Promise<void> | undefined;
     _parseVisibilityExpression(array: (Obj | undefined)[], nestingCounter: number, currentResult: VisibilityExpressionResult): void;
-    parseMarkedContentProps(contentProperties: Dict | Name, resources: Dict): Promise<MarkedContentProps | undefined>;
+    parseMarkedContentProps(contentProperties: Dict | Name, resources: Dict | undefined): Promise<MarkedContentProps | undefined>;
     getOperatorList({ stream, task, resources, operatorList, initialState, fallbackFontDict, }: _GetOperatorListP): Promise<void>;
     getTextContent({ stream, task, resources, stateManager, combineTextItems, includeMarkedContent, sink, seenStyles, viewBox, }: _GetTextContentP): Promise<void>;
     extractDataStructures(dict: FontDict, baseDict: FontDict, properties: FontProps): Promise<FontProps>;
@@ -357,6 +357,7 @@ export declare class EvaluatorPreprocessor {
     parser: Parser;
     stateManager: StateManager<EvalState | TextState>;
     nonProcessedArgs: any[];
+    _isPathOp: boolean;
     constructor(stream: BaseStream, xref?: XRef, stateManager?: StateManager<EvalState | TextState>);
     get savedStatesDepth(): number;
     read(operation: Operation): boolean;

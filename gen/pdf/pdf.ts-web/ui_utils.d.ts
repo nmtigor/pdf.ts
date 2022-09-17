@@ -8,7 +8,7 @@ export declare const UNKNOWN_SCALE = 0;
 export declare const MAX_AUTO_SCALE = 1.25;
 export declare const SCROLLBAR_PADDING = 40;
 export declare const VERTICAL_PADDING = 5;
-export declare const enum RenderingStates {
+export declare enum RenderingStates {
     INITIAL = 0,
     RUNNING = 1,
     PAUSED = 2,
@@ -115,16 +115,6 @@ export declare function watchScroll(viewAreaElement: HTMLDivElement, callback: (
  */
 export declare function parseQueryString(query: string): Map<string, string>;
 export declare function removeNullCharacters(str: string, replaceInvisible?: boolean): string;
-/**
- * Use binary search to find the index of the first item in a given array which
- * passes a given condition. The items are expected to be sorted in the sense
- * that if the condition is true for one item in the array, then it is also true
- * for all following items.
- *
- * @return Index of the first array element to pass the test,
- *  or |items.length| if no such element exists.
- */
-export declare function binarySearchFirstItem<T>(items: T[], condition: (view: T) => boolean, start?: number): number;
 /**
  * Approximates float number as a fraction using Farey sequence (max order
  * of 8).
@@ -252,17 +242,14 @@ export declare const enum WaitOnType {
  * Promise that is resolved when DOM window becomes visible.
  */
 export declare const animationStarted: Promise<unknown>;
+export declare const docStyle: CSSStyleDeclaration | undefined;
 export declare function clamp(v: number, min: number, max: number): number;
 export declare class ProgressBar {
     #private;
-    visible: boolean;
-    div: HTMLDivElement;
-    bar: HTMLDivElement;
-    _percent: number;
     get percent(): number;
+    set percent(val: number);
     _indeterminate?: boolean;
     constructor(id: string);
-    set percent(val: number);
     setWidth(viewer?: HTMLDivElement): void;
     hide(): void;
     show(): void;

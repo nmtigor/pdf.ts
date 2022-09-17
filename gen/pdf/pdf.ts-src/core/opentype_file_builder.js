@@ -15,9 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { readUint32 } from "./core_utils.js";
 import { string32 } from "../shared/util.js";
-/*81---------------------------------------------------------------------------*/
+import { readUint32 } from "./core_utils.js";
+/*80--------------------------------------------------------------------------*/
 export function writeInt16(dest, offset, num) {
     dest[offset] = (num >> 8) & 0xff;
     dest[offset + 1] = num & 0xff;
@@ -64,7 +64,8 @@ export const VALID_TABLES = [
 ];
 export class OpenTypeFileBuilder {
     sfnt;
-    tables = Object.create(null);
+    tables = Object
+        .create(null);
     constructor(sfnt) {
         this.sfnt = sfnt;
         this.tables = Object.create(null);
@@ -153,5 +154,5 @@ export class OpenTypeFileBuilder {
         this.tables[tag] = data;
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=opentype_file_builder.js.map

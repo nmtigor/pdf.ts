@@ -41,15 +41,16 @@ var _FontInspector;
         }
     }
     function textLayerClick(e) {
-        if (!e.target.dataset.fontName
-            || e.target.tagName.toUpperCase() !== "SPAN") {
+        if (!e.target.dataset.fontName ||
+            e.target.tagName.toUpperCase() !== "SPAN") {
             return;
         }
         const fontName = e.target.dataset.fontName;
         const selects = document.getElementsByTagName("input");
         for (const select of selects) {
-            if (select.dataset.fontName !== fontName)
+            if (select.dataset.fontName !== fontName) {
                 continue;
+            }
             select.checked = !select.checked;
             selectFont(fontName, select.checked);
             select.scrollIntoView();
@@ -63,9 +64,9 @@ var _FontInspector;
         const tmp = html("button");
         tmp.addEventListener("click", resetSelection);
         tmp.textContent = "Refresh";
-        panel.appendChild(tmp);
+        panel.append(tmp);
         fonts = html("div");
-        panel.appendChild(fonts);
+        panel.append(fonts);
     }
     _FontInspector.init = init;
     function cleanup() {
@@ -85,9 +86,7 @@ var _FontInspector;
                 removeSelection();
             }
         },
-        get: function () {
-            return _active;
-        },
+        get: () => _active,
     });
     // FontInspector specific functions.
     function fontAdded(fontObj, url) {
@@ -97,11 +96,11 @@ var _FontInspector;
                 const tr = html("tr");
                 const td1 = html("td");
                 td1.textContent = entry;
-                tr.appendChild(td1);
+                tr.append(td1);
                 const td2 = html("td");
                 td2.textContent = obj[entry].toString();
-                tr.appendChild(td2);
-                moreInfo.appendChild(tr);
+                tr.append(td2);
+                moreInfo.append(tr);
             }
             return moreInfo;
         }
@@ -115,15 +114,13 @@ var _FontInspector;
             download.href = (/url\(['"]?([^)"']+)/.exec(url))[1];
         }
         else if (fontObj.data) {
-            download.href = URL.createObjectURL(
-            // new Blob([fontObj.data], { type: fontObj.mimeType! }) //kkkk bug?
-            new Blob([fontObj.data], { type: fontObj.mimetype }));
+            download.href = URL.createObjectURL(new Blob([fontObj.data], { type: fontObj.mimetype }));
         }
         download.textContent = "Download";
         const logIt = html("a");
         logIt.href = "";
         logIt.textContent = "Log";
-        logIt.addEventListener("click", function (event) {
+        logIt.addEventListener("click", (event) => {
             event.preventDefault();
             console.log(fontObj);
         });
@@ -133,14 +130,8 @@ var _FontInspector;
         select.addEventListener("click", () => {
             selectFont(fontName, select.checked);
         });
-        font.appendChild(select);
-        font.appendChild(name);
-        font.appendChild(document.createTextNode(" "));
-        font.appendChild(download);
-        font.appendChild(document.createTextNode(" "));
-        font.appendChild(logIt);
-        font.appendChild(moreInfo);
-        fonts.appendChild(font);
+        font.append(select, name, " ", download, " ", logIt, moreInfo);
+        fonts.append(font);
         // Somewhat of a hack, should probably add a hook for when the text layer
         // is done rendering.
         setTimeout(() => {
@@ -168,10 +159,10 @@ var _StepperManager;
         stepperChooser.addEventListener("change", function (event) {
             _StepperManager.selectStepper(+this.value);
         });
-        stepperControls.appendChild(stepperChooser);
+        stepperControls.append(stepperChooser);
         stepperDiv = html("div");
-        _StepperManager.panel.appendChild(stepperControls);
-        _StepperManager.panel.appendChild(stepperDiv);
+        _StepperManager.panel.append(stepperControls);
+        _StepperManager.panel.append(stepperDiv);
         if (sessionStorage.getItem("pdfjsBreakPoints")) {
             breakPoints = JSON.parse(sessionStorage.getItem("pdfjsBreakPoints"));
         }
@@ -195,11 +186,11 @@ var _StepperManager;
         debug.id = "stepper" + pageIndex;
         debug.hidden = true;
         debug.className = "stepper";
-        stepperDiv.appendChild(debug);
+        stepperDiv.append(debug);
         const b = html("option");
         b.textContent = "Page " + (pageIndex + 1);
         b.value = pageIndex;
-        stepperChooser.appendChild(b);
+        stepperChooser.append(b);
         const initBreakPoints = breakPoints[pageIndex] || [];
         const stepper = new Stepper(debug, pageIndex, initBreakPoints);
         steppers.push(stepper);
@@ -238,8 +229,9 @@ var NsStepper;
                 ? args
                 : args.substring(0, MAX_STRING_LENGTH) + "...";
         }
-        if (typeof args !== "object" || args === undefined)
+        if (typeof args !== "object" || args === undefined) {
             return args;
+        }
         if ("length" in args) {
             // array
             const MAX_ITEMS = 10, simpleArgs = [];
@@ -282,15 +274,12 @@ var NsStepper;
             const panel = this.panel;
             const content = html("div", "c=continue, s=step");
             const table = html("table");
-            content.appendChild(table);
+            content.append(table);
             table.cellSpacing = 0;
             const headerRow = html("tr");
-            table.appendChild(headerRow);
-            headerRow.appendChild(html("th", "Break"));
-            headerRow.appendChild(html("th", "Idx"));
-            headerRow.appendChild(html("th", "fn"));
-            headerRow.appendChild(html("th", "args"));
-            panel.appendChild(content);
+            table.append(headerRow);
+            headerRow.append(html("th", "Break"), html("th", "Idx"), html("th", "fn"), html("th", "args"));
+            panel.append(content);
             this.table = table;
             this.updateOperatorList(operatorList);
         }
@@ -307,15 +296,16 @@ var NsStepper;
                 _StepperManager.saveBreakPoints(self.pageIndex, self.breakPoints);
             }
             const MAX_OPERATORS_COUNT = 15000;
-            if (this.operatorListIdx > MAX_OPERATORS_COUNT)
+            if (this.operatorListIdx > MAX_OPERATORS_COUNT) {
                 return;
+            }
             const chunk = document.createDocumentFragment();
             const operatorsToDisplay = Math.min(MAX_OPERATORS_COUNT, operatorList.fnArray.length);
             for (let i = this.operatorListIdx; i < operatorsToDisplay; i++) {
                 const line = html("tr");
                 line.className = "line";
                 line.dataset.idx = i;
-                chunk.appendChild(line);
+                chunk.append(line);
                 const checked = this.breakPoints.includes(i);
                 const args = operatorList.argsArray[i] || [];
                 const breakCell = html("td");
@@ -325,9 +315,8 @@ var NsStepper;
                 cbox.checked = checked;
                 cbox.dataset.idx = i;
                 cbox.onclick = cboxOnClick;
-                breakCell.appendChild(cbox);
-                line.appendChild(breakCell);
-                line.appendChild(html("td", i.toString()));
+                breakCell.append(cbox);
+                line.append(breakCell, html("td", i.toString()));
                 const fn = opMap[operatorList.fnArray[i]];
                 let decArgs = args;
                 if (fn === "showText") {
@@ -337,54 +326,55 @@ var NsStepper;
                     const unicodeRow = html("tr");
                     for (const glyph of glyphs) {
                         if (typeof glyph === "object" && glyph !== null) {
-                            charCodeRow.appendChild(html("td", glyph.originalCharCode));
-                            fontCharRow.appendChild(html("td", glyph.fontChar));
-                            unicodeRow.appendChild(html("td", glyph.unicode));
+                            charCodeRow.append(html("td", glyph.originalCharCode));
+                            fontCharRow.append(html("td", glyph.fontChar));
+                            unicodeRow.append(html("td", glyph.unicode));
                         }
                         else {
                             // null or number
                             const advanceEl = html("td", glyph);
                             advanceEl.classList.add("advance");
-                            charCodeRow.appendChild(advanceEl);
-                            fontCharRow.appendChild(html("td"));
-                            unicodeRow.appendChild(html("td"));
+                            charCodeRow.append(advanceEl);
+                            fontCharRow.append(html("td"));
+                            unicodeRow.append(html("td"));
                         }
                     }
                     decArgs = html("td");
                     const table = html("table");
                     table.classList.add("showText");
-                    decArgs.appendChild(table);
-                    table.appendChild(charCodeRow);
-                    table.appendChild(fontCharRow);
-                    table.appendChild(unicodeRow);
+                    decArgs.append(table);
+                    table.append(charCodeRow);
+                    table.append(fontCharRow);
+                    table.append(unicodeRow);
                 }
                 else if (fn === "restore") {
                     this.indentLevel--;
                 }
-                line.appendChild(html("td", " ".repeat(this.indentLevel * 2) + fn));
+                line.append(html("td", " ".repeat(this.indentLevel * 2) + fn));
                 if (fn === "save") {
                     this.indentLevel++;
                 }
                 if (decArgs instanceof HTMLElement) {
-                    line.appendChild(decArgs);
+                    line.append(decArgs);
                 }
                 else {
-                    line.appendChild(html("td", JSON.stringify(simplifyArgs(decArgs))));
+                    line.append(html("td", JSON.stringify(simplifyArgs(decArgs))));
                 }
             }
             if (operatorsToDisplay < operatorList.fnArray.length) {
                 const lastCell = html("td", "...");
                 lastCell.colSpan = 4;
-                chunk.appendChild(lastCell);
+                chunk.append(lastCell);
             }
             this.operatorListIdx = operatorList.fnArray.length;
-            this.table.appendChild(chunk);
+            this.table.append(chunk);
         }
         getNextBreakPoint() {
             this.breakPoints.sort((a, b) => a - b);
             for (const breakPoint of this.breakPoints) {
-                if (breakPoint > this.currentIdx)
+                if (breakPoint > this.currentIdx) {
                     return breakPoint;
+                }
             }
             return undefined;
         }
@@ -411,7 +401,8 @@ var NsStepper;
             this.goTo(idx);
         }
         goTo(idx) {
-            const allRows = this.panel.getElementsByClassName("line");
+            const allRows = this.panel
+                .getElementsByClassName("line");
             for (const row of allRows) {
                 if ((row.dataset.idx | 0) === idx) {
                     row.style.backgroundColor = "rgb(251,250,207)";
@@ -434,8 +425,9 @@ var _Stats;
     }
     function getStatIndex(pageNumber) {
         for (const [i, stat] of stats.entries()) {
-            if (stat.pageNumber === pageNumber)
+            if (stat.pageNumber === pageNumber) {
                 return i;
+            }
         }
         return false;
     }
@@ -448,8 +440,9 @@ var _Stats;
     _Stats.active = false;
     // Stats specific functions.
     function add(pageNumber, stat) {
-        if (!stat)
+        if (!stat) {
             return;
+        }
         const statsIndex = getStatIndex(pageNumber);
         if (statsIndex !== false) {
             stats[statsIndex].div.remove();
@@ -462,13 +455,12 @@ var _Stats;
         title.textContent = "Page: " + pageNumber;
         const statsDiv = html("div");
         statsDiv.textContent = stat.toString();
-        wrapper.appendChild(title);
-        wrapper.appendChild(statsDiv);
+        wrapper.append(title, statsDiv);
         stats.push({ pageNumber, div: wrapper });
         stats.sort((a, b) => a.pageNumber - b.pageNumber);
         clear(_Stats.panel);
         for (const entry of stats) {
-            _Stats.panel.appendChild(entry.div);
+            _Stats.panel.append(entry.div);
         }
     }
     _Stats.add = add;
@@ -524,23 +516,23 @@ export var PDFBug;
         ui.id = "PDFBug";
         const controls = html("div");
         controls.setAttribute("class", "controls");
-        ui.appendChild(controls);
+        ui.append(controls);
         const panels = html("div");
         panels.setAttribute("class", "panels");
-        ui.appendChild(panels);
-        container.appendChild(ui);
+        ui.append(panels);
+        container.append(ui);
         container.style.right = panelWidth + "px";
         // Initialize all the debugging tools.
         for (const tool of PDFBug.tools) {
             const panel = html("div");
             const panelButton = html("button");
             panelButton.textContent = tool.name;
-            panelButton.addEventListener("click", event => {
+            panelButton.addEventListener("click", (event) => {
                 event.preventDefault();
                 PDFBug.selectPanel(tool);
             });
-            controls.appendChild(panelButton);
-            panels.appendChild(panel);
+            controls.append(panelButton);
+            panels.append(panel);
             tool.panel = panel;
             tool.manager = PDFBug;
             if (tool.enabled) {
@@ -561,7 +553,7 @@ export var PDFBug;
         const link = html("link");
         link.rel = "stylesheet";
         link.href = url.replace(/.js$/, ".css");
-        document.head.appendChild(link);
+        document.head.append(link);
     }
     PDFBug.loadCSS = loadCSS;
     function cleanup() {
@@ -576,8 +568,9 @@ export var PDFBug;
         if (typeof index !== "number") {
             index = PDFBug.tools.indexOf(index);
         }
-        if (index === activePanel)
+        if (index === activePanel) {
             return;
+        }
         activePanel = index;
         for (const [j, tool] of PDFBug.tools.entries()) {
             const isActive = j === index;
@@ -591,5 +584,5 @@ export var PDFBug;
 globalThis.FontInspector = _FontInspector;
 globalThis.StepperManager = _StepperManager;
 globalThis.Stats = _Stats;
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=debugger.js.map

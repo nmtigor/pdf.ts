@@ -1,59 +1,44 @@
 {
   "compilerOptions": {
-    "baseUrl": "/data/cod/premsys/pdf.ts",
-    "outDir": "/data/cod/premsys/pdf.ts/gen",
+    "outDir": "gen",
+
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
 
     "target": "ESNext",
-    "module": "ESNext",
+    "lib": [
+      "ESNext",
+      "DOM",
+      "DOM.Iterable",
+    ],
+    "skipLibCheck": true,
 
     "strict": true,
     "exactOptionalPropertyTypes": true,
     "noImplicitReturns": true,
     "noImplicitOverride": true,
-    "useDefineForClassFields": true,
     "isolatedModules": true,
 
-    "declarationDir": "gen",
     "declaration": true,
     "declarationMap": true,
+    "declarationDir": "gen",
+    "allowJs": true,
+    "checkJs": false,
 
     "sourceMap": true,
 
-    "lib": [
-      "ESNext",
-      "DOM",
-      "DOM.Iterable",
-      "WebWorker"
-    ],
-    "skipLibCheck": true,
-
-    "preprocessor": [
-      "INOUT",
-      "DEV",
-        "INFO",
-          // "RESIZ",
-          "PDFTS",
-            "PDFTS_v", // verbose
-              // "PDFTS_vv", // very verbose
-      // "APP",
-      "TESTING",
-        "TEST_ALL",
-
-      "GENERIC",
-      // "MOZCENTRAL",
-      // "CHROME",
-      // "PRODUCTION",
-      // "LIB",
-      // "SKIP_BABEL",
-      // "IMAGE_DECODERS",
-      // "COMPONENTS"
-    ],
+    "preprocessorFile": "src/global.ts",
+    "appendJsImport": "ts",
+    "allowTsImport": true,
   },
 
   "files": [
     "src/pdf/pdf.ts-web/viewer.ts",
     "src/pdf/pdf.ts-src/pdf.worker.ts",
+    "src/pdf/pdf.ts-src/pdf.sandbox.ts",
+    "src/pdf/pdf.ts-src/pdf.scripting.ts",
 
-    "src/test/pdf_test.ts",
+    "src/pdf/pdf.ts-src/core/xfa/formcalc_parser.ts"
   ],
 }

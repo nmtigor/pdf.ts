@@ -1,95 +1,91 @@
-/*81*****************************************************************************
+/*80****************************************************************************
  * trace
 ** ----- */
 
-import { global }    from "../../global.js";
-/*81---------------------------------------------------------------------------*/
+import { global, TESTING } from "../../global.ts";
+/*80--------------------------------------------------------------------------*/
 
 /**
- * @param { const } assertion 
- * @param { const } msg 
+ * @const @param assertion
+ * @const @param msg
  */
-export const assert = ( assertion:any, msg?:string, meta?:{url:string} ) =>
-{
-  if( !assertion && meta )
-  {
+export const assert = (
+  assertion: any,
+  msg?: string,
+  meta?: { url: string },
+) => {
+  if (!assertion && meta) {
     const match = meta.url.match(/\/([^\/]+\.js)/);
     // console.log(match);
-    if( match ) msg += ` (${match[1]})`;
+    if (match) msg += ` (${match[1]})`;
   }
-  // #if !TESTING
-    console.assert( assertion, msg );
-  // #endif
+  /*#static*/ if (!TESTING) {
+    console.assert(assertion, msg);
+  }
 
-  if( !assertion ) throw new Error( msg );
+  if (!assertion) throw new Error(msg);
 };
 
-export const warn = ( msg:string, meta?:{url:string} ) =>
-{
-  if( meta )
-  {
-    const match = meta.url.match(/\/([^\/]+\.js)/);
-    if( match ) msg += ` (${match[1]})`;
-  }
-  console.warn( msg );
-}
+export const warn = (msg: string, meta?: { url: string }) => {
+  if (TESTING) return;
 
-let reporting_:Error | undefined;
+  if (meta) {
+    const match = meta.url.match(/\/([^\/]+\.js)/);
+    if (match) msg += ` (${match[1]})`;
+  }
+  console.warn(msg);
+};
+
+let reporting_: Error | undefined;
 let count_reported_ = 0;
 const MAX_reported_ = 2;
 
-interface ErrorJ
-{
-  ts:number;
-  name:string;
-  message:string;
-  stack:ReturnType<typeof computeStackTrace_>;
+interface ErrorJ {
+  ts: number;
+  name: string;
+  message: string;
+  stack: ReturnType<typeof _computeStackTrace>;
 }
-export interface ReportedError
-{
-  err_j:ErrorJ | undefined;
-  ts:number;
+export interface ReportedError {
+  err_j: ErrorJ | undefined;
+  ts: number;
 }
 
-declare global
-{
-  interface Error
-  {
-    toJ():ErrorJ;
+declare global {
+  interface Error {
+    toJ(): ErrorJ;
   }
 }
 
-Reflect.defineProperty( Error.prototype, "toJ", {
-  value( this:Error )
-  {
+Reflect.defineProperty(Error.prototype, "toJ", {
+  value(this: Error) {
     return {
       ts: Date.now(),
       name: this.name,
       message: this.message,
       // actionlist: actionlist_.toval(),
-      stack: computeStackTrace_( this ),
+      stack: _computeStackTrace(this),
     };
-  }
+  },
 });
 
 /**
- * @param { headconst } err_x
+ * @headconst @param err_x
  */
-export const reportError = async <E extends Error>( err_x:E ) =>
-{
-  if( reporting_ ) return;
+export const reportError = async <E extends Error>(err_x: E) => {
+  if (reporting_) return;
   reporting_ = err_x;
 
-  // const trace_js = JSON.stringify( computeStackTrace_(err_x) );
+  // const trace_js = JSON.stringify( _computeStackTrace(err_x) );
   // console.log( trace_js );
 
   const err_j = err_x?.toJ(); //! `err_x` seems still  could be `null` at runtime
   // console.log(err_j);
   global.globalhvc?.showReportedError?.({
     err_j,
-    ts: err_j?.ts ?? Date.now(), 
+    ts: err_j?.ts ?? Date.now(),
   });
-  
+
   reporting_ = undefined;
 
   // const url = new URL( `/logerr`, window.location.toString() );
@@ -98,7 +94,7 @@ export const reportError = async <E extends Error>( err_x:E ) =>
   // else url.host = "datni.nmtigor.org";
   // const data_be = {
   //   data_fe: JSON.stringify( err_j ),
-  //   ts: err_j?.ts ?? Date.now(), 
+  //   ts: err_j?.ts ?? Date.now(),
   // };
   // const res = await fetch( url.toString(), {
   //   method: "PUT",
@@ -109,87 +105,88 @@ export const reportError = async <E extends Error>( err_x:E ) =>
   //   },
   // });
 
-  // if( res.ok ) 
+  // if( res.ok )
   // {
   //   global.globalhvc?.showReportedError?.( data_be.data_fe );
-    
+
   //   count_reported_++;
   //   if( count_reported_ > MAX_reported_ )
   //     console.warn( `Has reported ${count_reported_} errors. Please pause and wait for debugging.` );
-    
+
   //   // actionlist_.reset();
-    
+
   //   console.assert( reporting_ === err_x );
   //   reporting_ = undefined;
   // }
   // else console.error( res );
 };
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 
 /**
  * Computes a stack trace for an exception.
- * @param { headconst } err_x
+ * @headconst @param err_x
  */
-function computeStackTrace_( err_x:Error ) 
-{
-  let ret = null;
+function _computeStackTrace(err_x: Error) {
+  let ret: _StackElement[] | undefined;
 
   try {
     // This must be tried first because Opera 10 *destroys*
     // its stacktrace property if you try to access the stack
     // property first!!
-    ret = computeStackTraceFromStacktraceProp_( err_x );
-  } 
-  catch( e ) {
-    console.log( e );
+    ret = _computeStackTraceFromStacktraceProp(err_x);
+  } catch (e) {
+    console.log(e);
   }
 
-  if( !ret ) 
-  {
+  if (!ret) {
     try {
-      ret = computeStackTraceFromStackProp_( err_x );
-    } 
-    catch( e ) {
-      console.log( e );
+      ret = _computeStackTraceFromStackProp(err_x);
+    } catch (e) {
+      console.log(e);
     }
   }
 
   return ret;
 }
 
+interface _StackElement {
+  url: string | undefined;
+  line: number | undefined;
+  column: number | undefined;
+  func: string;
+  args: string[];
+}
+
 /**
  * Computes stack trace information from the stacktrace property.
  * Opera 10+ uses this property.
- * @param { headconst } err_x
+ * @headconst @param err_x
  */
-function computeStackTraceFromStacktraceProp_( err_x:any )
-{
+function _computeStackTraceFromStacktraceProp(err_x: any) {
   // Access and store the stacktrace property before doing ANYTHING
   // else to it because Opera is not very good at providing it
   // reliably in other circumstances.
-  if( !err_x.stacktrace ) return null;
+  if (!err_x.stacktrace) return undefined;
 
-  const ret = [];
+  const ret: _StackElement[] = [];
 
-  const opera10Regex = / line (\d+).*script (?:in )?(\S+)(?:: in function (\S+))?$/i
-     ,  opera11Regex = / line (\d+), column (\d+)\s*(?:in (?:<anonymous function: ([^>]+)>|([^\)]+))\((.*)\))? in (.*):\s*$/i
-        ;
+  const opera10Regex =
+      / line (\d+).*script (?:in )?(\S+)(?:: in function (\S+))?$/i,
+    opera11Regex =
+      / line (\d+), column (\d+)\s*(?:in (?:<anonymous function: ([^>]+)>|([^\)]+))\((.*)\))? in (.*):\s*$/i;
   const lines = err_x.stacktrace.split("\n");
-  let element, parts;
-  for( let i = 0, j = lines.length; i < j; i += 2 ) 
-  {
-    if( (parts = opera10Regex.exec(lines[i])) )
-    {
+  let element: _StackElement,
+    parts: RegExpExecArray | null;
+  for (let i = 0, j = lines.length; i < j; i += 2) {
+    if ((parts = opera10Regex.exec(lines[i]))) {
       element = {
         url: parts[2],
         line: +parts[1],
-        column: null,
+        column: undefined,
         func: parts[3],
         args: [],
       };
-    } 
-    else if( (parts = opera11Regex.exec(lines[i])) )
-    {
+    } else if ((parts = opera11Regex.exec(lines[i]))) {
       element = {
         url: parts[6],
         line: +parts[1],
@@ -197,10 +194,9 @@ function computeStackTraceFromStacktraceProp_( err_x:any )
         func: parts[3] || parts[4],
         args: parts[5] ? parts[5].split(",") : [],
       };
-    }
-    else continue;
+    } else continue;
 
-    // if( !element.func && element.line ) 
+    // if( !element.func && element.line )
     // {
     //   element.func = guessFunctionName(element.url, element.line);
     // }
@@ -208,51 +204,50 @@ function computeStackTraceFromStacktraceProp_( err_x:any )
     // {
     //   try {
     //     element.context = gatherContext(element.url, element.line);
-    //   } catch (exc) {}
+    //   } catch( exc) {}
     // }
 
-    // if( !element.context ) 
+    // if( !element.context )
     // {
     //   element.context = [ lines[i+1] ];
     // }
 
-    ret.push( element );
+    ret.push(element);
   }
 
-  return ret.length ? ret : null;
+  return ret.length ? ret : undefined;
 }
 
 /**
  * Computes stack trace information from the stack property.
  * Chrome and Gecko use this property.
- * @param { headconst } err_x
+ * @headconst @param err_x
  */
-function computeStackTraceFromStackProp_( err_x:Error ) 
-{
-  if( !err_x.stack ) return null;
+function _computeStackTraceFromStackProp(err_x: Error) {
+  if (!err_x.stack) return undefined;
 
-  const ret = [];
+  const ret: _StackElement[] = [];
 
-  const chrome = /^\s*at (?:(.*?) ?\()?((?:file|https?|blob|chrome-extension|native|eval|webpack|<anonymous>|[a-z]:|\/).*?)(?::(\d+))?(?::(\d+))?\)?\s*$/i
-      , gecko = /^\s*(.*?)(?:\((.*?)\))?(?:^|@)((?:file|https?|blob|chrome|webpack|resource|moz-extension).*?:\/.*?|\[native code\]|[^@]*bundle)(?::(\d+))?(?::(\d+))?\s*$/i
-      , winjs = /^\s*at (?:((?:\[object object\])?.+) )?\(?((?:file|ms-appx|https?|webpack|blob):.*?):(\d+)(?::(\d+))?\)?\s*$/i
-        ;
+  const chrome =
+      /^\s*at (?:(.*?) ?\()?((?:file|https?|blob|chrome-extension|native|eval|webpack|<anonymous>|[a-z]:|\/).*?)(?::(\d+))?(?::(\d+))?\)?\s*$/i,
+    gecko =
+      /^\s*(.*?)(?:\((.*?)\))?(?:^|@)((?:file|https?|blob|chrome|webpack|resource|moz-extension).*?:\/.*?|\[native code\]|[^@]*bundle)(?::(\d+))?(?::(\d+))?\s*$/i,
+    winjs =
+      /^\s*at (?:((?:\[object object\])?.+) )?\(?((?:file|ms-appx|https?|webpack|blob):.*?):(\d+)(?::(\d+))?\)?\s*$/i;
 
   // Used to additionally parse URL/line/column from eval frames
-  const geckoEval = /(\S+) line (\d+)(?: > eval line \d+)* > eval/i
-      , chromeEval = /\((\S*)(?::(\d+))(?::(\d+))\)/
-        ;
+  const geckoEval = /(\S+) line (\d+)(?: > eval line \d+)* > eval/i,
+    chromeEval = /\((\S*)(?::(\d+))(?::(\d+))\)/;
 
   const lines = err_x.stack.split("\n");
-  let element, parts, submatch;
-  for( let i = 0, j = lines.length; i < j; ++i ) 
-  {
-    if( (parts = chrome.exec(lines[i])) ) 
-    {
+  let element: _StackElement,
+    parts: RegExpExecArray | null,
+    submatch;
+  for (let i = 0, j = lines.length; i < j; ++i) {
+    if ((parts = chrome.exec(lines[i]))) {
       const isNative = parts[2] && parts[2].indexOf("native") === 0; // start of line
       const isEval = parts[2] && parts[2].indexOf("eval") === 0; // start of line
-      if( isEval && (submatch = chromeEval.exec(parts[2])) ) 
-      {
+      if (isEval && (submatch = chromeEval.exec(parts[2]))) {
         // throw out eval line/column and use top-most line/column number
         parts[2] = submatch[1]; // url
         // NOTE: It's messing out our integration tests in Karma, let's see if we can live with it – Kamil
@@ -260,53 +255,47 @@ function computeStackTraceFromStackProp_( err_x:Error )
         // parts[4] = submatch[3]; // column
       }
       element = {
-        url: !isNative ? parts[2] : null,
+        url: !isNative ? parts[2] : undefined,
         func: parts[1] || "?",
         args: isNative ? [parts[2]] : [],
-        line: parts[3] ? +parts[3] : null,
-        column: parts[4] ? +parts[4] : null,
+        line: parts[3] ? +parts[3] : undefined,
+        column: parts[4] ? +parts[4] : undefined,
       };
-    } 
-    else if( (parts = winjs.exec(lines[i])) )
-    {
+    } else if ((parts = winjs.exec(lines[i]))) {
       element = {
         url: parts[2],
         func: parts[1] || "?",
         args: [],
         line: +parts[3],
-        column: parts[4] ? +parts[4] : null,
+        column: parts[4] ? +parts[4] : undefined,
       };
-    } 
-    else if( (parts = gecko.exec(lines[i])) )
-    {
+    } else if ((parts = gecko.exec(lines[i]))) {
       const isEval = parts[3] && parts[3].indexOf(" > eval") > -1;
-      if( isEval && (submatch = geckoEval.exec(parts[3])) )
-      {
+      if (isEval && (submatch = geckoEval.exec(parts[3]))) {
         // throw out eval line/column and use top-most line number
         parts[3] = submatch[1];
         // NOTE: It's messing out our integration tests in Karma, let's see if we can live with it – Kamil
         // parts[4] = submatch[2];
         // parts[5] = null; // no column when eval
-      } 
-      else if( i === 0 && !parts[5] && (<any>err_x).columnNumber !== undefined ) 
-      {
+      } else if (
+        i === 0 && !parts[5] && (<any> err_x).columnNumber !== undefined
+      ) {
         // FireFox uses this awesome columnNumber property for its top frame
         // Also note, Firefox's column number is 0-based and everything else expects 1-based,
         // so adding 1
         // NOTE: this hack doesn't work if top-most frame is eval
-        ret[0].column = (<any>err_x).columnNumber + 1;
+        ret[0].column = (<any> err_x).columnNumber + 1;
       }
       element = {
         url: parts[3],
         func: parts[1] || "?",
         args: parts[2] ? parts[2].split(",") : [],
-        line: parts[4] ? +parts[4] : null,
-        column: parts[5] ? +parts[5] : null,
+        line: parts[4] ? +parts[4] : undefined,
+        column: parts[5] ? +parts[5] : undefined,
       };
-    } 
-    else continue;
+    } else continue;
 
-    // if( !element.func && element.line ) 
+    // if( !element.func && element.line )
     // {
     //   element.func = guessFunctionName(element.url, element.line);
     // }
@@ -351,7 +340,7 @@ function computeStackTraceFromStackProp_( err_x:Error )
 
     // element.context = element.line ? gatherContext(element.url, element.line) : null;
 
-    ret.push( element );
+    ret.push(element);
   }
 
   // const reference = /^(.*) is undefined$/.exec(err_x.message);
@@ -359,6 +348,6 @@ function computeStackTraceFromStackProp_( err_x:Error )
   //   stack[0].column = findSourceInLine(reference[1], stack[0].url, stack[0].line);
   // }
 
-  return ret.length ? ret : null;
+  return ret.length ? ret : undefined;
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

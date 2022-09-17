@@ -15,10 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { DENO, MOZCENTRAL, TESTING } from "../../../global.js";
 import { html } from "../../../lib/dom.js";
 import { BaseException, stringToBytes, Util, warn } from "../shared/util.js";
 import { BaseCanvasFactory, BaseCMapReaderFactory, BaseStandardFontDataFactory, BaseSVGFactory } from "./base_factory.js";
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 const SVG_NS = "http://www.w3.org/2000/svg";
 export class PixelsPerInch {
     static CSS = 96.0;
@@ -33,17 +34,18 @@ export class DOMCanvasFactory extends BaseCanvasFactory {
     }
     /**
      * @ignore
-     * @implements
+     * @implement
      */
     _createCanvas(width, height) {
-        const canvas = this._document.createElement("canvas");
+        const canvas = html("canvas", undefined, this._document);
         canvas.width = width;
         canvas.height = height;
         return canvas;
     }
 }
 async function fetchData(url, asTypedArray = false) {
-    const rn_ = async () => {
+    /*#static*/ if (MOZCENTRAL ||
+        isValidFetchUrl(url, globalThis.document?.baseURI)) {
         const response = await fetch(url);
         if (!response.ok) {
             throw new Error(response.statusText);
@@ -51,9 +53,7 @@ async function fetchData(url, asTypedArray = false) {
         return asTypedArray
             ? new Uint8Array(await response.arrayBuffer())
             : stringToBytes(await response.text());
-    };
-    if (isValidFetchUrl(url, document.baseURI))
-        return await rn_();
+    }
     // The Fetch API is not supported.
     return new Promise((resolve, reject) => {
         const request = new XMLHttpRequest();
@@ -85,10 +85,10 @@ async function fetchData(url, asTypedArray = false) {
 export class DOMCMapReaderFactory extends BaseCMapReaderFactory {
     /**
      * @ignore
-     * @implements
+     * @implement
      */
     _fetchData(url, compressionType) {
-        return fetchData(url, /* asTypedArray = */ this.isCompressed).then(data => {
+        return fetchData(url, /* asTypedArray = */ this.isCompressed).then((data) => {
             return { cMapData: data, compressionType };
         });
     }
@@ -96,7 +96,7 @@ export class DOMCMapReaderFactory extends BaseCMapReaderFactory {
 export class DOMStandardFontDataFactory extends BaseStandardFontDataFactory {
     /**
      * @ignore
-     * @implements
+     * @implement
      */
     _fetchData(url) {
         return fetchData(url, /* asTypedArray = */ true);
@@ -105,7 +105,7 @@ export class DOMStandardFontDataFactory extends BaseStandardFontDataFactory {
 export class DOMSVGFactory extends BaseSVGFactory {
     /**
      * @ignore
-     * @implements
+     * @implement
      */
     _createSVG(type) {
         return document.createElementNS(SVG_NS, type);
@@ -365,11 +365,15 @@ export class StatTimer {
 }
 export function isValidFetchUrl(url, baseUrl) {
     try {
-        const { protocol } = baseUrl
-            ? new URL(url, baseUrl)
-            : new URL(url);
-        // The Fetch API only supports the http/https protocols, and not file/ftp.
-        return protocol === "http:" || protocol === "https:";
+        const { protocol } = baseUrl ? new URL(url, baseUrl) : new URL(url);
+        if (DENO && TESTING) {
+            return protocol === "http:" || protocol === "https:" ||
+                protocol === "file:";
+        }
+        else {
+            // The Fetch API only supports the http/https protocols, and not file/ftp.
+            return protocol === "http:" || protocol === "https:";
+        }
     }
     catch (ex) {
         return false; // `new URL()` will throw on incorrect data.
@@ -388,7 +392,7 @@ export function loadScript(src, removeScriptElement = false) {
         script.onerror = () => {
             reject(new Error(`Cannot load script at: ${script.src}`));
         };
-        (document.head || document.documentElement).appendChild(script);
+        (document.head || document.documentElement).append(script);
     });
 }
 // Deprecated API function -- display regardless of the `verbosity` setting.
@@ -426,8 +430,7 @@ export class PDFDateString {
                 "(\\d{2})?" + // Offset hour (optional)
                 "'?" + // Splitting apostrophe (optional)
                 "(\\d{2})?" + // Offset minute (optional)
-                "'?" // Trailing apostrophe (optional)
-            );
+                "'?");
         }
         // Optional fields that don't satisfy the requirements from the regular
         // expression (such as incorrect digit counts or numbers that are out of
@@ -473,7 +476,8 @@ export class PDFDateString {
  * NOTE: This is (mostly) intended to support printing of XFA forms.
  */
 export function getXfaPageViewport(xfaPage, { scale = 1, rotation = 0 }) {
-    const { width, height } = xfaPage.attributes.style;
+    const { width, height } = xfaPage
+        .attributes.style;
     const viewBox = [0, 0, parseInt(width), parseInt(height)];
     return new PageViewport({
         viewBox,
@@ -481,5 +485,72 @@ export function getXfaPageViewport(xfaPage, { scale = 1, rotation = 0 }) {
         rotation,
     });
 }
-/*81---------------------------------------------------------------------------*/
+export function getRGB(color) {
+    if (color.startsWith("#")) {
+        const colorRGB = parseInt(color.slice(1), 16);
+        return [
+            (colorRGB & 0xff0000) >> 16,
+            (colorRGB & 0x00ff00) >> 8,
+            colorRGB & 0x0000ff,
+        ];
+    }
+    if (color.startsWith("rgb(")) {
+        // getComputedStyle(...).color returns a `rgb(R, G, B)` color.
+        return color
+            .slice(/* "rgb(".length */ 4, -1) // Strip out "rgb(" and ")".
+            .split(",")
+            .map((x) => parseInt(x));
+    }
+    if (color.startsWith("rgba(")) {
+        return color
+            .slice(/* "rgba(".length */ 5, -1) // Strip out "rgba(" and ")".
+            .split(",")
+            .map((x) => parseInt(x))
+            .slice(0, 3);
+    }
+    warn(`Not a valid color format: "${color}"`);
+    return [0, 0, 0];
+}
+export function getColorValues(colors) {
+    const span = html("span");
+    span.style.visibility = "hidden";
+    document.body.append(span);
+    for (const name of colors.keys()) {
+        span.style.color = name;
+        const computedColor = window.getComputedStyle(span).color;
+        colors.set(name, getRGB(computedColor));
+    }
+    span.remove();
+}
+/**
+ * Use binary search to find the index of the first item in a given array which
+ * passes a given condition. The items are expected to be sorted in the sense
+ * that if the condition is true for one item in the array, then it is also true
+ * for all following items.
+ *
+ * @return Index of the first array element to pass the test,
+ *  or |items.length| if no such element exists.
+ */
+export function binarySearchFirstItem(items, condition, start = 0) {
+    let minIndex = start;
+    let maxIndex = items.length - 1;
+    if (maxIndex < 0 || !condition(items[maxIndex])) {
+        return items.length;
+    }
+    if (condition(items[minIndex])) {
+        return minIndex;
+    }
+    while (minIndex < maxIndex) {
+        const currentIndex = (minIndex + maxIndex) >> 1;
+        const currentItem = items[currentIndex];
+        if (condition(currentItem)) {
+            maxIndex = currentIndex;
+        }
+        else {
+            minIndex = currentIndex + 1;
+        }
+    }
+    return minIndex; /* === maxIndex */
+}
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=display_utils.js.map

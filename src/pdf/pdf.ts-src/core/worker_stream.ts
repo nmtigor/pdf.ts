@@ -13,50 +13,46 @@
  * limitations under the License.
  */
 
-import { assert } from "../../../lib/util/trace.js";
+import { assert } from "../../../lib/util/trace.ts";
 import {
   type IPDFStream,
   type IPDFStreamRangeReader,
   type IPDFStreamReader,
-  type ReadValue
-} from "../interfaces.js";
-import { MessageHandler, Thread } from "../shared/message_handler.js";
-import { AbortException } from "../shared/util.js";
-/*81---------------------------------------------------------------------------*/
+  type ReadValue,
+} from "../interfaces.ts";
+import { MessageHandler, Thread } from "../shared/message_handler.ts";
+import { AbortException } from "../shared/util.ts";
+/*80--------------------------------------------------------------------------*/
 
-export class PDFWorkerStream implements IPDFStream
-{
+export class PDFWorkerStream implements IPDFStream {
   #msgHandler;
   // #contentLength?:number;
-  #fullRequestReader?:PDFWorkerStreamReader;
-  #rangeRequestReaders:PDFWorkerStreamRangeReader[] = [];
+  #fullRequestReader?: PDFWorkerStreamReader;
+  #rangeRequestReaders: PDFWorkerStreamRangeReader[] = [];
 
-  constructor( msgHandler:MessageHandler<Thread.worker> ) 
-  {
+  constructor(msgHandler: MessageHandler<Thread.worker>) {
     this.#msgHandler = msgHandler;
   }
 
-  /** @implements */
-  getFullReader() 
-  {
-    assert( !this.#fullRequestReader,
-      "PDFWorkerStream.getFullReader can only be called once."
+  /** @implement */
+  getFullReader() {
+    assert(
+      !this.#fullRequestReader,
+      "PDFWorkerStream.getFullReader can only be called once.",
     );
-    this.#fullRequestReader = new PDFWorkerStreamReader( this.#msgHandler );
+    this.#fullRequestReader = new PDFWorkerStreamReader(this.#msgHandler);
     return this.#fullRequestReader;
   }
 
-  /** @implements */
-  getRangeReader( begin:number, end:number ) 
-  {
+  /** @implement */
+  getRangeReader(begin: number, end: number) {
     const reader = new PDFWorkerStreamRangeReader(begin, end, this.#msgHandler);
     this.#rangeRequestReaders.push(reader);
     return reader;
   }
 
-  /** @implements */
-  cancelAllRequests( reason:AbortException ) 
-  {
+  /** @implement */
+  cancelAllRequests(reason: AbortException) {
     if (this.#fullRequestReader) {
       this.#fullRequestReader.cancel(reason);
     }
@@ -66,55 +62,59 @@ export class PDFWorkerStream implements IPDFStream
   }
 }
 
-class PDFWorkerStreamReader implements IPDFStreamReader
-{
+class PDFWorkerStreamReader implements IPDFStreamReader {
   #msgHandler;
-  /** @implements */
+  /** @implement */
   onProgress = undefined;
 
-  #contentLength?:number | undefined;
-  /** @implements */
-  get contentLength() { return this.#contentLength; }
-  
+  #contentLength?: number | undefined;
+  /** @implement */
+  get contentLength() {
+    return this.#contentLength;
+  }
+
   #isRangeSupported = false;
-  /** @implements */
-  get isRangeSupported() { return this.#isRangeSupported; }
+  /** @implement */
+  get isRangeSupported() {
+    return this.#isRangeSupported;
+  }
 
   #isStreamingSupported = false;
-  /** @implements */
-  get isStreamingSupported() { return this.#isStreamingSupported; }
+  /** @implement */
+  get isStreamingSupported() {
+    return this.#isStreamingSupported;
+  }
 
-  #reader:ReadableStreamDefaultReader< Uint8Array >;
+  #reader: ReadableStreamDefaultReader<Uint8Array>;
 
-  #headersReady:Promise<void>;
-  /** @implements */
-  get headersReady() { return this.#headersReady; }
+  #headersReady: Promise<void>;
+  /** @implement */
+  get headersReady() {
+    return this.#headersReady;
+  }
 
-  /** @implements */
+  /** @implement */
   readonly filename = undefined;
-  
-  constructor( msgHandler:MessageHandler<Thread.worker> ) 
-  {
+
+  constructor(msgHandler: MessageHandler<Thread.worker>) {
     this.#msgHandler = msgHandler;
 
-    const readableStream = this.#msgHandler.sendWithStream( "GetReader", null );
+    const readableStream = this.#msgHandler.sendWithStream("GetReader", null);
     this.#reader = readableStream.getReader();
 
     this.#headersReady = this.#msgHandler
-      .sendWithPromise( "ReaderHeadersReady", null )
-      .then( data => {
+      .sendWithPromise("ReaderHeadersReady", null)
+      .then((data) => {
         this.#isStreamingSupported = data.isStreamingSupported;
         this.#isRangeSupported = data.isRangeSupported;
         this.#contentLength = data.contentLength;
       });
   }
 
-  /** @implements */
-  async read() 
-  {
+  /** @implement */
+  async read() {
     const { value, done } = await this.#reader.read();
-    if( done ) 
-    {
+    if (done) {
       return { value: undefined, done: true } as ReadValue;
     }
     // `value` is wrapped into Uint8Array, we need to
@@ -122,24 +122,30 @@ class PDFWorkerStreamReader implements IPDFStreamReader
     return { value: value!.buffer, done: false } as ReadValue;
   }
 
-  /** @implements */
-  cancel( reason:object ) { this.#reader.cancel(reason); }
+  /** @implement */
+  cancel(reason: object) {
+    this.#reader.cancel(reason);
+  }
 }
 
-class PDFWorkerStreamRangeReader implements IPDFStreamRangeReader 
-{
+class PDFWorkerStreamRangeReader implements IPDFStreamRangeReader {
   #msgHandler;
-  /** @implements */
-  onProgress:(( data:{ loaded:number } ) => void) | undefined;
+  /** @implement */
+  onProgress: ((data: { loaded: number }) => void) | undefined;
 
-  #reader:ReadableStreamDefaultReader< Uint8Array >;
+  #reader: ReadableStreamDefaultReader<Uint8Array>;
 
-  constructor( begin:number, end:number, msgHandler:MessageHandler< Thread.worker > ) 
-  {
+  constructor(
+    begin: number,
+    end: number,
+    msgHandler: MessageHandler<Thread.worker>,
+  ) {
     this.#msgHandler = msgHandler;
 
-    const readableStream = 
-      this.#msgHandler.sendWithStream( "GetRangeReader", { begin, end, } );
+    const readableStream = this.#msgHandler.sendWithStream("GetRangeReader", {
+      begin,
+      end,
+    });
     this.#reader = readableStream.getReader();
   }
 
@@ -147,16 +153,17 @@ class PDFWorkerStreamRangeReader implements IPDFStreamRangeReader
     return false;
   }
 
-  /** @implements */
-  async read() 
-  {
+  /** @implement */
+  async read() {
     const { value, done } = await this.#reader.read();
-    if( done ) 
-         return { value: undefined, done: true } as ReadValue;
-    else return { value: value!.buffer, done: false } as ReadValue;
+    if (done) {
+      return { value: undefined, done: true } as ReadValue;
+    } else return { value: value!.buffer, done: false } as ReadValue;
   }
 
-  /** @implements */
-  cancel( reason:object ) { this.#reader.cancel(reason); }
+  /** @implement */
+  cancel(reason: object) {
+    this.#reader.cancel(reason);
+  }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

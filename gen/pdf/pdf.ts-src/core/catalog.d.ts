@@ -7,13 +7,19 @@ import { PermissionFlag, type rect_t } from "../shared/util.js";
 import { TranslatedFont } from "./evaluator.js";
 import { GlobalImageCache } from "./image_utils.js";
 import { BasePdfManager } from "./pdf_manager.js";
-import { Dict, Name, Ref, RefSet, RefSetCache, type Obj } from "./primitives.js";
+import { Dict, Name, type Obj, Ref, RefSet, RefSetCache } from "./primitives.js";
 import { StructTreeRoot } from "./struct_tree.js";
 import { XRef } from "./xref.js";
 declare type DestPage = Ref | number | null;
-export declare type ExplicitDest = [DestPage, {
-    name: "XYZ";
-}, number | null, number | null, number | string | null] | [DestPage, {
+export declare type ExplicitDest = [
+    DestPage,
+    {
+        name: "XYZ";
+    },
+    number | null,
+    number | null,
+    number | string | null
+] | [DestPage, {
     name: "Fit" | "FitB";
 }] | [DestPage, {
     name: "FitH" | "FitBH" | "FitV" | "FitBV";
@@ -102,7 +108,7 @@ export declare class Catalog {
     get needsRendering(): boolean;
     get collection(): Dict | null;
     get acroForm(): Dict | undefined;
-    get acroFormRef(): Ref | undefined;
+    get acroFormRef(): import("./primitives.js").NsRef.Ref | undefined;
     get metadata(): import("./metadata_parser.js").SerializedMetadata | undefined;
     get markInfo(): MarkInfo | undefined;
     get structTreeRoot(): StructTreeRoot | undefined;

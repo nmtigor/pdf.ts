@@ -38,7 +38,7 @@ declare abstract class CompiledFont {
 }
 export declare class TrueTypeCompiled extends CompiledFont {
     constructor(glyphs: Uint8Array[], cmap?: Range[], fontMatrix?: FontMatrix);
-    /** @implements */
+    /** @implement */
     compileGlyphImpl(code: Uint8Array, cmds: CmdArgs[], glyphId: number): void;
 }
 export declare class Type2Compiled extends CompiledFont {
@@ -48,7 +48,7 @@ export declare class Type2Compiled extends CompiledFont {
     gsubrsBias: number;
     subrsBias: number;
     constructor(cffInfo: CffInfo, cmap?: Range[], fontMatrix?: FontMatrix, glyphNameMap?: Record<string, string | number>);
-    /** @implements */
+    /** @implement */
     compileGlyphImpl(code: Uint8Array, cmds: CmdArgs[], glyphId: number): void;
 }
 export declare class FontRendererFactory {

@@ -89,8 +89,8 @@ declare const _resolvePrototypesHelper: unique symbol;
 declare const _setAttributes: unique symbol;
 declare const _validator: unique symbol;
 declare type NonattrValue = null | undefined | XFAObject | XFAObjectArray;
-export declare type XFAProp = NonattrValue | string;
-declare type Dumped = {
+declare type XFAProp = NonattrValue | string;
+export declare type Dumped = {
     $content?: string | number | Date | XFAObject | Map<string, string> | string[] | [number, number][] | [number, number];
     $name?: string;
     attributes?: XFAAttrs;
@@ -112,8 +112,8 @@ export declare abstract class XFAObject {
     [$globalData]?: XFAGlobalData | undefined;
     id: string;
     name?: string;
-    h: unknown;
-    w: unknown;
+    h: number | "";
+    w: number | "";
     use: string;
     usehref: string;
     /** @final */
@@ -276,6 +276,7 @@ export declare class XmlObject extends XFAObject {
     [$onChild](child: XFAObject): boolean;
     [$finalize](): void;
     [$toHTML](): HTMLResult;
+    [$getChildren](name?: string): XmlObject[];
     /** @final */
     [$getAttributes](): Map<string, XFAAttribute> | undefined;
     /** @final */
@@ -288,7 +289,7 @@ export declare class XmlObject extends XFAObject {
     [$dump](hasNS?: boolean): Dumped;
 }
 export declare abstract class ContentObject extends XFAObject {
-    [$content]: string | number | Date | XFAObject | Map<string, string> | string[] | [number, number][] | [number, number];
+    [$content]: string | number | Date | XFAObject | Map<string, string> | string[] | [number, number][] | [number, number] | undefined;
     [$onText](text: string): void;
     constructor(nsId: XFANsId, name: string);
     [$finalize](): void;
@@ -302,7 +303,7 @@ export declare abstract class OptionObject extends ContentObject {
     [$clean](builder: Builder): void;
 }
 export declare abstract class StringObject extends ContentObject {
-    [$content]: string | Date | string[] | [number, number][];
+    [$content]: string | Date | string[] | [number, number][] | undefined;
     /** @final */
     [$finalize](): void;
 }

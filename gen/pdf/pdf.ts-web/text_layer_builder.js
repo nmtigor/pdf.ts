@@ -19,9 +19,10 @@
 /** @typedef {import("../src/display/display_utils").PageViewport} PageViewport */
 /** @typedef {import("./event_utils").EventBus} EventBus */
 /** @typedef {import("./text_highlighter").TextHighlighter} TextHighlighter */
+import { GENERIC, MOZCENTRAL } from "../../global.js";
 import { html } from "../../lib/dom.js";
-import { renderTextLayer } from "../pdf.ts-src/pdf.js";
-/*81---------------------------------------------------------------------------*/
+import { renderTextLayer, } from "../pdf.ts-src/pdf.js";
+/*80--------------------------------------------------------------------------*/
 const EXPAND_DIVS_TIMEOUT = 300; // ms
 /**
  * The text layer builder provides text selection functionality for the PDF.
@@ -56,7 +57,7 @@ export class TextLayerBuilder {
         if (!this.enhanceTextSelection) {
             const endOfContent = html("div");
             endOfContent.className = "endOfContent";
-            this.textLayerDiv.appendChild(endOfContent);
+            this.textLayerDiv.append(endOfContent);
         }
         this.eventBus.dispatch("textlayerrendered", {
             source: this,
@@ -70,8 +71,9 @@ export class TextLayerBuilder {
      * @param timeout Wait for a specified amount of milliseconds before rendering.
      */
     render(timeout = 0) {
-        if (!(this.textContent || this.textContentStream) || this.renderingDone)
+        if (!(this.textContent || this.textContentStream) || this.renderingDone) {
             return;
+        }
         this.cancel();
         this.textDivs.length = 0;
         this.highlighter?.setTextMapping(this.textDivs, this.textContentItemsStr);
@@ -87,7 +89,7 @@ export class TextLayerBuilder {
             enhanceTextSelection: this.enhanceTextSelection,
         });
         this.textLayerRenderTask.promise.then(() => {
-            this.textLayerDiv.appendChild(textLayerFrag);
+            this.textLayerDiv.append(textLayerFrag);
             this.#finishRendering();
             this.highlighter?.enable();
         }, function (reason) {
@@ -120,56 +122,61 @@ export class TextLayerBuilder {
     #bindMouse() {
         const div = this.textLayerDiv;
         let expandDivsTimer;
-        div.addEventListener("mousedown", evt => {
+        div.addEventListener("mousedown", (evt) => {
             if (this.enhanceTextSelection && this.textLayerRenderTask) {
                 this.textLayerRenderTask.expandTextDivs(true);
-                // if (
-                //   (typeof PDFJSDev === "undefined" || !PDFJSDev.test("MOZCENTRAL")) &&
-                //   expandDivsTimer
-                // ) {
-                if (expandDivsTimer) {
-                    clearTimeout(expandDivsTimer);
-                    expandDivsTimer = undefined;
+                /*#static*/  {
+                    if (expandDivsTimer) {
+                        clearTimeout(expandDivsTimer);
+                        expandDivsTimer = undefined;
+                    }
                 }
                 return;
             }
             const end = div.querySelector(".endOfContent");
             if (!end)
                 return;
-            // On non-Firefox browsers, the selection will feel better if the height
-            // of the `endOfContent` div is adjusted to start at mouse click
-            // location. This avoids flickering when the selection moves up.
-            // However it does not work when selection is started on empty space.
-            let adjustTop = evt.target !== div;
-            adjustTop =
-                adjustTop &&
-                    window
-                        .getComputedStyle(end)
-                        .getPropertyValue("-moz-user-select") !== "none";
-            if (adjustTop) {
-                const divBounds = div.getBoundingClientRect();
-                const r = Math.max(0, (evt.pageY - divBounds.top) / divBounds.height);
-                end.style.top = (r * 100).toFixed(2) + "%";
+            /*#static*/  {
+                // On non-Firefox browsers, the selection will feel better if the height
+                // of the `endOfContent` div is adjusted to start at mouse click
+                // location. This avoids flickering when the selection moves up.
+                // However it does not work when selection is started on empty space.
+                let adjustTop = evt.target !== div;
+                /*#static*/  {
+                    adjustTop = adjustTop &&
+                        window
+                            .getComputedStyle(end)
+                            .getPropertyValue("-moz-user-select") !== "none";
+                }
+                if (adjustTop) {
+                    const divBounds = div.getBoundingClientRect();
+                    const r = Math.max(0, (evt.pageY - divBounds.top) / divBounds.height);
+                    end.style.top = (r * 100).toFixed(2) + "%";
+                }
             }
             end.classList.add("active");
         });
         div.addEventListener("mouseup", () => {
             if (this.enhanceTextSelection && this.textLayerRenderTask) {
-                expandDivsTimer = setTimeout(() => {
-                    if (this.textLayerRenderTask) {
-                        this.textLayerRenderTask.expandTextDivs(false);
-                    }
-                    expandDivsTimer = undefined;
-                }, EXPAND_DIVS_TIMEOUT);
+                /*#static*/  {
+                    expandDivsTimer = setTimeout(() => {
+                        if (this.textLayerRenderTask) {
+                            this.textLayerRenderTask.expandTextDivs(false);
+                        }
+                        expandDivsTimer = undefined;
+                    }, EXPAND_DIVS_TIMEOUT);
+                }
                 return;
             }
             const end = div.querySelector(".endOfContent");
             if (!end)
                 return;
-            end.style.top = "";
+            /*#static*/  {
+                end.style.top = "";
+            }
             end.classList.remove("active");
         });
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=text_layer_builder.js.map

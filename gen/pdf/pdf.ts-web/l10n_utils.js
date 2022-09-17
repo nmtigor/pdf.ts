@@ -2,7 +2,7 @@
  * nmtigor (https://github.com/nmtigor) @2022
  */
 import { Locale } from "../../lib/Locale.js";
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 /**
  * A subset of the l10n strings in the `l10n/en-US/viewer.properties` file.
  */
@@ -57,6 +57,10 @@ const DEFAULT_L10N_STRINGS = {
     printing_not_supported: "Warning: Printing is not fully supported by this browser.",
     printing_not_ready: "Warning: The PDF is not fully loaded for printing.",
     web_fonts_disabled: "Web fonts are disabled: unable to use embedded PDF fonts.",
+    free_text_default_content: "Enter text…",
+    editor_free_text_aria_label: "FreeText Editor",
+    editor_ink_aria_label: "Ink Editor",
+    editor_ink_canvas_aria_label: "User-created image",
 };
 export function getL10nFallback(key, args) {
     switch (key) {
@@ -91,8 +95,9 @@ export function fixupLangCode(langCode) {
 }
 // Replaces {{arguments}} with their values.
 export function formatL10nValue(text, args) {
-    if (!args)
+    if (!args) {
         return text;
+    }
     return text.replace(/\{\{\s*(\w+)\s*\}\}/g, (all, name) => {
         return name in args ? args[name] : "{{" + name + "}}";
     });
@@ -101,12 +106,16 @@ export function formatL10nValue(text, args) {
  * No-op implementation of the localization service.
  */
 export const NullL10n = {
-    async getLanguage() { return Locale.en_US.toLowerCase(); },
-    async getDirection() { return "ltr"; },
+    async getLanguage() {
+        return Locale.en_US.toLowerCase();
+    },
+    async getDirection() {
+        return "ltr";
+    },
     async get(key, args, fallback = getL10nFallback(key, args)) {
         return formatL10nValue(fallback, args);
     },
     async translate(element) { },
 };
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=l10n_utils.js.map

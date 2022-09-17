@@ -18,7 +18,7 @@ export declare class PasswordPrompt {
      * @param isViewerEmbedded If the viewer is embedded, in e.g.
      *   an <iframe> or an <object>. The default value is `false`.
      */
-    constructor(options: ViewerConfiguration['passwordOverlay'], overlayManager: OverlayManager, l10n: IL10n, isViewerEmbedded?: boolean);
+    constructor(options: ViewerConfiguration["passwordOverlay"], overlayManager: OverlayManager, l10n: IL10n, isViewerEmbedded?: boolean);
     open(): Promise<void>;
     close(): Promise<void>;
     setUpdateCallback(updateCallback: (password: string | Error) => void, reason: PasswordResponses): void;

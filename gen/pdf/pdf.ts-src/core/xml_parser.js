@@ -2,7 +2,7 @@
  * nmtigor (https://github.com/nmtigor) @2022
  */
 import { encodeToXmlString } from "./core_utils.js";
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 export var XMLParserErrorCode;
 (function (XMLParserErrorCode) {
     XMLParserErrorCode[XMLParserErrorCode["NoError"] = 0] = "NoError";
@@ -23,8 +23,9 @@ function isWhitespace(s, index) {
 }
 function isWhitespaceString(s) {
     for (let i = 0, ii = s.length; i < ii; i++) {
-        if (!isWhitespace(s, i))
+        if (!isWhitespace(s, i)) {
             return false;
+        }
     }
     return true;
 }
@@ -32,10 +33,12 @@ export class XMLParserBase {
     _errorCode = XMLParserErrorCode.NoError;
     #resolveEntities(s) {
         return s.replace(/&([^;]+);/g, (all, entity) => {
-            if (entity.substring(0, 2) === "#x")
+            if (entity.substring(0, 2) === "#x") {
                 return String.fromCodePoint(parseInt(entity.substring(2), 16));
-            else if (entity.substring(0, 1) === "#")
+            }
+            else if (entity.substring(0, 1) === "#") {
                 return String.fromCodePoint(parseInt(entity.substring(1), 10));
+            }
             switch (entity) {
                 case "lt":
                     return "<";
@@ -59,18 +62,18 @@ export class XMLParserBase {
                 ++pos;
             }
         }
-        while (pos < s.length
-            && !isWhitespace(s, pos)
-            && s[pos] !== ">"
-            && s[pos] !== "/") {
+        while (pos < s.length &&
+            !isWhitespace(s, pos) &&
+            s[pos] !== ">" &&
+            s[pos] !== "/") {
             ++pos;
         }
         const name = s.substring(start, pos);
         skipWs();
-        while (pos < s.length
-            && s[pos] !== ">"
-            && s[pos] !== "/"
-            && s[pos] !== "?") {
+        while (pos < s.length &&
+            s[pos] !== ">" &&
+            s[pos] !== "/" &&
+            s[pos] !== "?") {
             skipWs();
             let attrName = "", attrValue = "";
             while (pos < s.length && !isWhitespace(s, pos) && s[pos] !== "=") {
@@ -78,16 +81,19 @@ export class XMLParserBase {
                 ++pos;
             }
             skipWs();
-            if (s[pos] !== "=")
+            if (s[pos] !== "=") {
                 return undefined;
+            }
             ++pos;
             skipWs();
             const attrEndChar = s[pos];
-            if (attrEndChar !== '"' && attrEndChar !== "'")
+            if (attrEndChar !== '"' && attrEndChar !== "'") {
                 return undefined;
+            }
             const attrEndIndex = s.indexOf(attrEndChar, ++pos);
-            if (attrEndIndex < 0)
+            if (attrEndIndex < 0) {
                 return undefined;
+            }
             attrValue = s.substring(pos, attrEndIndex);
             attributes.push({
                 name: attrName,
@@ -109,11 +115,11 @@ export class XMLParserBase {
                 ++pos;
             }
         }
-        while (pos < s.length
-            && !isWhitespace(s, pos)
-            && s[pos] !== ">"
-            && s[pos] !== "?"
-            && s[pos] !== "/") {
+        while (pos < s.length &&
+            !isWhitespace(s, pos) &&
+            s[pos] !== ">" &&
+            s[pos] !== "?" &&
+            s[pos] !== "/") {
             ++pos;
         }
         const name = s.substring(start, pos);
@@ -247,29 +253,41 @@ export class SimpleDOMNode {
     nodeValue;
     parentNode;
     childNodes;
-    get firstChild() { return this.childNodes?.[0]; }
-    get children() { return this.childNodes || []; }
-    hasChildNodes() { return this.childNodes && this.childNodes.length > 0; }
+    get firstChild() {
+        return this.childNodes?.[0];
+    }
+    get children() {
+        return this.childNodes || [];
+    }
+    hasChildNodes() {
+        return this.childNodes && this.childNodes.length > 0;
+    }
     attributes;
     constructor(nodeName, nodeValue) {
         this.nodeName = nodeName;
         this.nodeValue = nodeValue;
-        Object.defineProperty(this, "parentNode", { value: undefined, writable: true });
+        Object.defineProperty(this, "parentNode", {
+            value: undefined,
+            writable: true,
+        });
     }
     get nextSibling() {
         const childNodes = this.parentNode?.childNodes;
-        if (!childNodes)
+        if (!childNodes) {
             return undefined;
+        }
         const index = childNodes.indexOf(this);
-        if (index === -1)
+        if (index === -1) {
             return undefined;
+        }
         return childNodes[index + 1];
     }
     get textContent() {
-        if (!this.childNodes)
+        if (!this.childNodes) {
             return this.nodeValue || "";
+        }
         return this.childNodes
-            .map(child => child.textContent)
+            .map((child) => child.textContent)
             .join("");
     }
     /**
@@ -282,8 +300,9 @@ export class SimpleDOMNode {
      * @return The node corresponding to the path or undefined if not found.
      */
     searchNode(paths, pos) {
-        if (pos >= paths.length)
+        if (pos >= paths.length) {
             return this;
+        }
         const component = paths[pos];
         const stack = [];
         let node = this;
@@ -291,18 +310,21 @@ export class SimpleDOMNode {
             if (component.name === node.nodeName) {
                 if (component.pos === 0) {
                     const res = node.searchNode(paths, pos + 1);
-                    if (res !== undefined)
+                    if (res !== undefined) {
                         return res;
+                    }
                 }
-                else if (stack.length === 0)
+                else if (stack.length === 0) {
                     return undefined;
+                }
                 else {
                     const [parent] = stack.pop();
                     let siblingPos = 0;
                     for (const child of parent.childNodes) {
                         if (component.name === child.nodeName) {
-                            if (siblingPos === component.pos)
+                            if (siblingPos === component.pos) {
                                 return child.searchNode(paths, pos + 1);
+                            }
                             siblingPos++;
                         }
                     }
@@ -315,8 +337,9 @@ export class SimpleDOMNode {
                 stack.push([node, 0]);
                 node = node.childNodes[0];
             }
-            else if (stack.length === 0)
+            else if (stack.length === 0) {
                 return undefined;
+            }
             else {
                 while (stack.length !== 0) {
                     const [parent, currentPos] = stack.pop();
@@ -327,8 +350,9 @@ export class SimpleDOMNode {
                         break;
                     }
                 }
-                if (stack.length === 0)
+                if (stack.length === 0) {
                     return undefined;
+                }
             }
         }
     }
@@ -373,29 +397,32 @@ export class SimpleXMLParser extends XMLParserBase {
         this.#stack = [];
         this._errorCode = XMLParserErrorCode.NoError;
         this.parseXml(data);
-        if (this._errorCode !== XMLParserErrorCode.NoError)
+        if (this._errorCode !== XMLParserErrorCode.NoError) {
             // return undefined on error
             return undefined;
+        }
         // We should only have one root.
         const [documentElement] = this.#currentFragment;
-        if (!documentElement)
+        if (!documentElement) {
             // Return undefined if no root was found.
             return undefined;
+        }
         return { documentElement };
     }
-    /** @implements */
+    /** @implement */
     onText(text) {
-        if (isWhitespaceString(text))
+        if (isWhitespaceString(text)) {
             return;
+        }
         const node = new SimpleDOMNode("#text", text);
         this.#currentFragment.push(node);
     }
-    /** @implements */
+    /** @implement */
     onCdata(text) {
         const node = new SimpleDOMNode("#text", text);
         this.#currentFragment.push(node);
     }
-    /** @implements */
+    /** @implement */
     onBeginElement(name, attributes, isEmpty) {
         if (this.#lowerCaseName) {
             name = name.toLowerCase();
@@ -406,26 +433,28 @@ export class SimpleXMLParser extends XMLParserBase {
             node.attributes = attributes;
         }
         this.#currentFragment.push(node);
-        if (isEmpty)
+        if (isEmpty) {
             return;
+        }
         this.#stack.push(this.#currentFragment);
         this.#currentFragment = node.childNodes;
     }
-    /** @implements */
+    /** @implement */
     onEndElement(name) {
         this.#currentFragment = this.#stack.pop() || [];
-        const lastElement = this.#currentFragment[this.#currentFragment.length - 1];
-        if (!lastElement)
+        const lastElement = this.#currentFragment.at(-1);
+        if (!lastElement) {
             return undefined;
+        }
         for (let i = 0, ii = lastElement.childNodes.length; i < ii; i++) {
             lastElement.childNodes[i].parentNode = lastElement;
         }
         return lastElement;
     }
-    /** @implements */
+    /** @implement */
     onError(code) {
         this._errorCode = code;
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=xml_parser.js.map

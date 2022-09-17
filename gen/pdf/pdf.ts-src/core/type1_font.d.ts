@@ -1,6 +1,6 @@
-import { type CharStringObject } from "./type1_parser.js";
-import { BaseStream } from "./base_stream.js";
 import { type FontProps } from "./evaluator.js";
+import { Stream } from "./stream.js";
+import { type CharStringObject } from "./type1_parser.js";
 /**
  * Type1Font is also a CIDFontType0.
  */
@@ -9,7 +9,7 @@ export declare class Type1Font {
     get numGlyphs(): number;
     data: number[];
     seacs: number[][];
-    constructor(name: string, file: BaseStream, properties: FontProps);
+    constructor(name: string, file: Stream, properties: FontProps);
     getCharset(): string[];
     getGlyphMapping(properties: FontProps): any;
     hasGlyphId(id: number): boolean;

@@ -15,10 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { assert } from '../../../lib/util/trace.js';
+import { _PDFDEV } from "../../../global.js";
+import { assert } from "../../../lib/util/trace.js";
 import { BaseException, warn } from "../shared/util.js";
 import { readUint16 } from "./core_utils.js";
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 class JpegError extends BaseException {
     constructor(msg) {
         super(`JPEG error: ${msg}`, "JpegError");
@@ -53,20 +54,69 @@ var NsJpegImage;
     // prettier-ignore
     const dctZigZag = new Uint8Array([
         0,
-        1, 8,
-        16, 9, 2,
-        3, 10, 17, 24,
-        32, 25, 18, 11, 4,
-        5, 12, 19, 26, 33, 40,
-        48, 41, 34, 27, 20, 13, 6,
-        7, 14, 21, 28, 35, 42, 49, 56,
-        57, 50, 43, 36, 29, 22, 15,
-        23, 30, 37, 44, 51, 58,
-        59, 52, 45, 38, 31,
-        39, 46, 53, 60,
-        61, 54, 47,
-        55, 62,
-        63
+        1,
+        8,
+        16,
+        9,
+        2,
+        3,
+        10,
+        17,
+        24,
+        32,
+        25,
+        18,
+        11,
+        4,
+        5,
+        12,
+        19,
+        26,
+        33,
+        40,
+        48,
+        41,
+        34,
+        27,
+        20,
+        13,
+        6,
+        7,
+        14,
+        21,
+        28,
+        35,
+        42,
+        49,
+        56,
+        57,
+        50,
+        43,
+        36,
+        29,
+        22,
+        15,
+        23,
+        30,
+        37,
+        44,
+        51,
+        58,
+        59,
+        52,
+        45,
+        38,
+        31,
+        39,
+        46,
+        53,
+        60,
+        61,
+        54,
+        47,
+        55,
+        62,
+        63,
     ]);
     const dctCos1 = 4017; // cos(pi/16)
     const dctSin1 = 799; // sin(pi/16)
@@ -93,7 +143,7 @@ var NsJpegImage;
                 p.index++;
                 code.push(p);
                 while (code.length <= i) {
-                    code.push((q = { children: [], index: 0 }));
+                    code.push(q = { children: [], index: 0 });
                     p.children[p.index] = q.children;
                     p = q;
                 }
@@ -101,7 +151,7 @@ var NsJpegImage;
             }
             if (i + 1 < length) {
                 // p here points to last code
-                code.push((q = { children: [], index: 0 }));
+                code.push(q = { children: [], index: 0 });
                 p.children[p.index] = q.children;
                 p = q;
             }
@@ -238,8 +288,8 @@ var NsJpegImage;
                 }
                 k += r;
                 const z = dctZigZag[k];
-                component.blockData[blockOffset + z] =
-                    receiveAndExtend(s) * (1 << successive);
+                component.blockData[blockOffset + z] = receiveAndExtend(s) *
+                    (1 << successive);
                 k++;
             }
         }
@@ -293,7 +343,8 @@ var NsJpegImage;
                             component.blockData[offsetZ] += sign * (readBit() << successive);
                         }
                         else {
-                            component.blockData[offsetZ] = successiveACNextValue << successive;
+                            component.blockData[offsetZ] = successiveACNextValue <<
+                                successive;
                             successiveACState = 0;
                         }
                         break;
@@ -345,7 +396,8 @@ var NsJpegImage;
         let fileMarker;
         let mcuExpected;
         if (componentsLength === 1) {
-            mcuExpected = components[0].blocksPerLine * components[0].blocksPerColumn;
+            mcuExpected = components[0].blocksPerLine *
+                components[0].blocksPerColumn;
         }
         else {
             mcuExpected = mcusPerLine * frame.mcusPerColumn;
@@ -733,7 +785,8 @@ var NsJpegImage;
                     const blocksPerColumn = Math.ceil((Math.ceil(frame.scanLines / 8) * component.v) / frame.maxV);
                     const blocksPerLineForMcu = mcusPerLine * component.h;
                     const blocksPerColumnForMcu = mcusPerColumn * component.v;
-                    const blocksBufferSize = 64 * blocksPerColumnForMcu * (blocksPerLineForMcu + 1);
+                    const blocksBufferSize = 64 * blocksPerColumnForMcu *
+                        (blocksPerLineForMcu + 1);
                     component.blockData = new Int16Array(blocksBufferSize);
                     component.blocksPerLine = blocksPerLine;
                     component.blocksPerColumn = blocksPerColumn;
@@ -778,11 +831,11 @@ var NsJpegImage;
                         const appData = readDataBlock();
                         if (fileMarker === 0xffe0) {
                             // 'JFIF\x00'
-                            if (appData[0] === 0x4a
-                                && appData[1] === 0x46
-                                && appData[2] === 0x49
-                                && appData[3] === 0x46
-                                && appData[4] === 0) {
+                            if (appData[0] === 0x4a &&
+                                appData[1] === 0x46 &&
+                                appData[2] === 0x49 &&
+                                appData[3] === 0x46 &&
+                                appData[4] === 0) {
                                 jfif = {
                                     version: { major: appData[5], minor: appData[6] },
                                     densityUnits: appData[7],
@@ -1054,7 +1107,16 @@ var NsJpegImage;
             // inverting JPEG (CMYK) images if and only if the image data does *not*
             // come from a PDF file and no `decodeTransform` was passed by the user.
             if (!isSourcePDF && numComponents === 4 && !transform) {
-                transform = new Int32Array([-256, 255, -256, 255, -256, 255, -256, 255]);
+                transform = new Int32Array([
+                    -256,
+                    255,
+                    -256,
+                    255,
+                    -256,
+                    255,
+                    -256,
+                    255,
+                ]);
             }
             if (transform) {
                 for (i = 0; i < dataLength;) {
@@ -1115,60 +1177,57 @@ var NsJpegImage;
                 Cb = data[i + 1];
                 Cr = data[i + 2];
                 k = data[i + 3];
-                data[offset++] =
-                    -122.67195406894 +
-                        Cb *
-                            (-6.60635669420364e-5 * Cb +
-                                0.000437130475926232 * Cr -
-                                5.4080610064599e-5 * Y +
-                                0.00048449797120281 * k -
-                                0.154362151871126) +
-                        Cr *
-                            (-0.000957964378445773 * Cr +
-                                0.000817076911346625 * Y -
-                                0.00477271405408747 * k +
-                                1.53380253221734) +
-                        Y *
-                            (0.000961250184130688 * Y -
-                                0.00266257332283933 * k +
-                                0.48357088451265) +
-                        k * (-0.000336197177618394 * k + 0.484791561490776);
-                data[offset++] =
-                    107.268039397724 +
-                        Cb *
-                            (2.19927104525741e-5 * Cb -
-                                0.000640992018297945 * Cr +
-                                0.000659397001245577 * Y +
-                                0.000426105652938837 * k -
-                                0.176491792462875) +
-                        Cr *
-                            (-0.000778269941513683 * Cr +
-                                0.00130872261408275 * Y +
-                                0.000770482631801132 * k -
-                                0.151051492775562) +
-                        Y *
-                            (0.00126935368114843 * Y -
-                                0.00265090189010898 * k +
-                                0.25802910206845) +
-                        k * (-0.000318913117588328 * k - 0.213742400323665);
-                data[offset++] =
-                    -20.810012546947 +
-                        Cb *
-                            (-0.000570115196973677 * Cb -
-                                2.63409051004589e-5 * Cr +
-                                0.0020741088115012 * Y -
-                                0.00288260236853442 * k +
-                                0.814272968359295) +
-                        Cr *
-                            (-1.53496057440975e-5 * Cr -
-                                0.000132689043961446 * Y +
-                                0.000560833691242812 * k -
-                                0.195152027534049) +
-                        Y *
-                            (0.00174418132927582 * Y -
-                                0.00255243321439347 * k +
-                                0.116935020465145) +
-                        k * (-0.000343531996510555 * k + 0.24165260232407);
+                data[offset++] = -122.67195406894 +
+                    Cb *
+                        (-6.60635669420364e-5 * Cb +
+                            0.000437130475926232 * Cr -
+                            5.4080610064599e-5 * Y +
+                            0.00048449797120281 * k -
+                            0.154362151871126) +
+                    Cr *
+                        (-0.000957964378445773 * Cr +
+                            0.000817076911346625 * Y -
+                            0.00477271405408747 * k +
+                            1.53380253221734) +
+                    Y *
+                        (0.000961250184130688 * Y -
+                            0.00266257332283933 * k +
+                            0.48357088451265) +
+                    k * (-0.000336197177618394 * k + 0.484791561490776);
+                data[offset++] = 107.268039397724 +
+                    Cb *
+                        (2.19927104525741e-5 * Cb -
+                            0.000640992018297945 * Cr +
+                            0.000659397001245577 * Y +
+                            0.000426105652938837 * k -
+                            0.176491792462875) +
+                    Cr *
+                        (-0.000778269941513683 * Cr +
+                            0.00130872261408275 * Y +
+                            0.000770482631801132 * k -
+                            0.151051492775562) +
+                    Y *
+                        (0.00126935368114843 * Y -
+                            0.00265090189010898 * k +
+                            0.25802910206845) +
+                    k * (-0.000318913117588328 * k - 0.213742400323665);
+                data[offset++] = -20.810012546947 +
+                    Cb *
+                        (-0.000570115196973677 * Cb -
+                            2.63409051004589e-5 * Cr +
+                            0.0020741088115012 * Y -
+                            0.00288260236853442 * k +
+                            0.814272968359295) +
+                    Cr *
+                        (-1.53496057440975e-5 * Cr -
+                            0.000132689043961446 * Y +
+                            0.000560833691242812 * k -
+                            0.195152027534049) +
+                    Y *
+                        (0.00174418132927582 * Y -
+                            0.00255243321439347 * k +
+                            0.116935020465145) +
+                    k * (-0.000343531996510555 * k + 0.24165260232407);
             }
             // Ensure that only the converted RGB data is returned.
             return data.subarray(0, offset);
@@ -1194,68 +1253,68 @@ var NsJpegImage;
                 m = data[i + 1];
                 y = data[i + 2];
                 k = data[i + 3];
-                data[offset++] =
-                    255 +
-                        c *
-                            (-0.00006747147073602441 * c +
-                                0.0008379262121013727 * m +
-                                0.0002894718188643294 * y +
-                                0.003264231057537806 * k -
-                                1.1185611867203937) +
-                        m *
-                            (0.000026374107616089405 * m -
-                                0.00008626949158638572 * y -
-                                0.0002748769067499491 * k -
-                                0.02155688794978967) +
-                        y *
-                            (-0.00003878099212869363 * y -
-                                0.0003267808279485286 * k +
-                                0.0686742238595345) -
-                        k * (0.0003361971776183937 * k + 0.7430659151342254);
-                data[offset++] =
-                    255 +
-                        c *
-                            (0.00013596372813588848 * c +
-                                0.000924537132573585 * m +
-                                0.00010567359618683593 * y +
-                                0.0004791864687436512 * k -
-                                0.3109689587515875) +
-                        m *
-                            (-0.00023545346108370344 * m +
-                                0.0002702845253534714 * y +
-                                0.0020200308977307156 * k -
-                                0.7488052167015494) +
-                        y *
-                            (0.00006834815998235662 * y +
-                                0.00015168452363460973 * k -
-                                0.09751927774728933) -
-                        k * (0.0003189131175883281 * k + 0.7364883807733168);
-                data[offset++] =
-                    255 +
-                        c *
-                            (0.000013598650411385307 * c +
-                                0.00012423956175490851 * m +
-                                0.0004751985097583589 * y -
-                                0.0000036729317476630422 * k -
-                                0.05562186980264034) +
-                        m *
-                            (0.00016141380598724676 * m +
-                                0.0009692239130725186 * y +
-                                0.0007782692450036253 * k -
-                                0.44015232367526463) +
-                        y *
-                            (5.068882914068769e-7 * y +
-                                0.0017778369011375071 * k -
-                                0.7591454649749609) -
-                        k * (0.0003435319965105553 * k + 0.7063770186160144);
+                data[offset++] = 255 +
+                    c *
+                        (-0.00006747147073602441 * c +
+                            0.0008379262121013727 * m +
+                            0.0002894718188643294 * y +
+                            0.003264231057537806 * k -
+                            1.1185611867203937) +
+                    m *
+                        (0.000026374107616089405 * m -
+                            0.00008626949158638572 * y -
+                            0.0002748769067499491 * k -
+                            0.02155688794978967) +
+                    y *
+                        (-0.00003878099212869363 * y -
+                            0.0003267808279485286 * k +
+                            0.0686742238595345) -
+                    k * (0.0003361971776183937 * k + 0.7430659151342254);
+                data[offset++] = 255 +
+                    c *
+                        (0.00013596372813588848 * c +
+                            0.000924537132573585 * m +
+                            0.00010567359618683593 * y +
+                            0.0004791864687436512 * k -
+                            0.3109689587515875) +
+                    m *
+                        (-0.00023545346108370344 * m +
+                            0.0002702845253534714 * y +
+                            0.0020200308977307156 * k -
+                            0.7488052167015494) +
+                    y *
+                        (0.00006834815998235662 * y +
+                            0.00015168452363460973 * k -
+                            0.09751927774728933) -
+                    k * (0.0003189131175883281 * k + 0.7364883807733168);
+                data[offset++] = 255 +
+                    c *
+                        (0.000013598650411385307 * c +
+                            0.00012423956175490851 * m +
+                            0.0004751985097583589 * y -
+                            0.0000036729317476630422 * k -
+                            0.05562186980264034) +
+                    m *
+                        (0.00016141380598724676 * m +
+                            0.0009692239130725186 * y +
+                            0.0007782692450036253 * k -
+                            0.44015232367526463) +
+                    y *
+                        (5.068882914068769e-7 * y +
+                            0.0017778369011375071 * k -
+                            0.7591454649749609) -
+                    k * (0.0003435319965105553 * k + 0.7063770186160144);
             }
             // Ensure that only the converted RGB data is returned.
             return data.subarray(0, offset);
         };
         getData({ width, height, forceRGB = false, isSourcePDF = false }) {
-            assert(isSourcePDF === true, 'JpegImage.getData: Unexpected "isSourcePDF" value for PDF files.');
-            if (this.numComponents > 4)
+            /*#static*/  {
+                assert(isSourcePDF === true, 'JpegImage.getData: Unexpected "isSourcePDF" value for PDF files.');
+            }
+            if (this.numComponents > 4) {
                 throw new JpegError("Unsupported color mode");
+            }
             // Type of data: Uint8ClampedArray(width * height * numComponents)
             const data = this.#getLinearizedBlockData(width, height, isSourcePDF);
             if (this.numComponents === 1 && forceRGB) {
@@ -1270,16 +1329,19 @@ var NsJpegImage;
                 }
                 return rgbData;
             }
-            else if (this.numComponents === 3 && this.#isColorConversionNeeded)
+            else if (this.numComponents === 3 && this.#isColorConversionNeeded) {
                 return this.#convertYccToRgb(data);
+            }
             else if (this.numComponents === 4) {
                 if (this.#isColorConversionNeeded) {
-                    if (forceRGB)
+                    if (forceRGB) {
                         return this.#convertYcckToRgb(data);
+                    }
                     return this.#convertYcckToCmyk(data);
                 }
-                else if (forceRGB)
+                else if (forceRGB) {
                     return this.#convertCmykToRgb(data);
+                }
             }
             return data;
         }
@@ -1287,5 +1349,5 @@ var NsJpegImage;
     NsJpegImage.JpegImage = JpegImage;
 })(NsJpegImage || (NsJpegImage = {}));
 export var JpegImage = NsJpegImage.JpegImage;
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=jpg.js.map

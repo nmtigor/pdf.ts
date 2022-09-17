@@ -17,33 +17,30 @@
  * limitations under the License.
  */
 
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 
-interface GlobalWorkerOptionsType 
-{
+interface GlobalWorkerOptionsType {
   /**
    * Defines global port for worker process. Overrides the `workerSrc` option.
    */
-  workerPort?:Worker | undefined;
+  workerPort?: Worker | undefined;
 
   /**
    * A string containing the path and filename of the worker file.
-   * 
+   *
    *   NOTE: The `workerSrc` option should always be set, in order to prevent any
    *         issues when using the PDF.js library.
    */
-  workerSrc?:string | undefined;
+  workerSrc?: string | undefined;
 }
 
-export const GlobalWorkerOptions:GlobalWorkerOptionsType = Object.create(null);
+export const GlobalWorkerOptions: GlobalWorkerOptionsType = Object.create(null);
 
-GlobalWorkerOptions.workerPort =
-  GlobalWorkerOptions.workerPort === undefined
-    ? undefined
-    : GlobalWorkerOptions.workerPort;
+GlobalWorkerOptions.workerPort = GlobalWorkerOptions.workerPort === undefined
+  ? undefined
+  : GlobalWorkerOptions.workerPort;
 
-GlobalWorkerOptions.workerSrc =
-  GlobalWorkerOptions.workerSrc === undefined
-    ? ""
-    : GlobalWorkerOptions.workerSrc;
-/*81---------------------------------------------------------------------------*/
+GlobalWorkerOptions.workerSrc = GlobalWorkerOptions.workerSrc === undefined
+  ? ""
+  : GlobalWorkerOptions.workerSrc;
+/*80--------------------------------------------------------------------------*/

@@ -1,11 +1,11 @@
-/*81*****************************************************************************
+/*80****************************************************************************
  * trace
 ** ----- */
-import { global } from "../../global.js";
-/*81---------------------------------------------------------------------------*/
+import { global, TESTING } from "../../global.js";
+/*80--------------------------------------------------------------------------*/
 /**
- * @param { const } assertion
- * @param { const } msg
+ * @const @param assertion
+ * @const @param msg
  */
 export const assert = (assertion, msg, meta) => {
     if (!assertion && meta) {
@@ -14,10 +14,15 @@ export const assert = (assertion, msg, meta) => {
         if (match)
             msg += ` (${match[1]})`;
     }
+    /*#static*/ if (!TESTING) {
+        console.assert(assertion, msg);
+    }
     if (!assertion)
         throw new Error(msg);
 };
 export const warn = (msg, meta) => {
+    if (TESTING)
+        return;
     if (meta) {
         const match = meta.url.match(/\/([^\/]+\.js)/);
         if (match)
@@ -35,18 +40,18 @@ Reflect.defineProperty(Error.prototype, "toJ", {
             name: this.name,
             message: this.message,
             // actionlist: actionlist_.toval(),
-            stack: computeStackTrace_(this),
+            stack: _computeStackTrace(this),
         };
-    }
+    },
 });
 /**
- * @param { headconst } err_x
+ * @headconst @param err_x
  */
 export const reportError = async (err_x) => {
     if (reporting_)
         return;
     reporting_ = err_x;
-    // const trace_js = JSON.stringify( computeStackTrace_(err_x) );
+    // const trace_js = JSON.stringify( _computeStackTrace(err_x) );
     // console.log( trace_js );
     const err_j = err_x?.toJ(); //! `err_x` seems still  could be `null` at runtime
     // console.log(err_j);
@@ -61,7 +66,7 @@ export const reportError = async (err_x) => {
     // else url.host = "datni.nmtigor.org";
     // const data_be = {
     //   data_fe: JSON.stringify( err_j ),
-    //   ts: err_j?.ts ?? Date.now(), 
+    //   ts: err_j?.ts ?? Date.now(),
     // };
     // const res = await fetch( url.toString(), {
     //   method: "PUT",
@@ -71,7 +76,7 @@ export const reportError = async (err_x) => {
     //     // "X-PReMSys-Report": "",
     //   },
     // });
-    // if( res.ok ) 
+    // if( res.ok )
     // {
     //   global.globalhvc?.showReportedError?.( data_be.data_fe );
     //   count_reported_++;
@@ -83,25 +88,25 @@ export const reportError = async (err_x) => {
     // }
     // else console.error( res );
 };
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 /**
  * Computes a stack trace for an exception.
- * @param { headconst } err_x
+ * @headconst @param err_x
  */
-function computeStackTrace_(err_x) {
-    let ret = null;
+function _computeStackTrace(err_x) {
+    let ret;
     try {
         // This must be tried first because Opera 10 *destroys*
         // its stacktrace property if you try to access the stack
         // property first!!
-        ret = computeStackTraceFromStacktraceProp_(err_x);
+        ret = _computeStackTraceFromStacktraceProp(err_x);
     }
     catch (e) {
         console.log(e);
     }
     if (!ret) {
         try {
-            ret = computeStackTraceFromStackProp_(err_x);
+            ret = _computeStackTraceFromStackProp(err_x);
         }
         catch (e) {
             console.log(e);
@@ -112,14 +117,14 @@ function computeStackTrace_(err_x) {
 /**
  * Computes stack trace information from the stacktrace property.
  * Opera 10+ uses this property.
- * @param { headconst } err_x
+ * @headconst @param err_x
  */
-function computeStackTraceFromStacktraceProp_(err_x) {
+function _computeStackTraceFromStacktraceProp(err_x) {
     // Access and store the stacktrace property before doing ANYTHING
     // else to it because Opera is not very good at providing it
     // reliably in other circumstances.
     if (!err_x.stacktrace)
-        return null;
+        return undefined;
     const ret = [];
     const opera10Regex = / line (\d+).*script (?:in )?(\S+)(?:: in function (\S+))?$/i, opera11Regex = / line (\d+), column (\d+)\s*(?:in (?:<anonymous function: ([^>]+)>|([^\)]+))\((.*)\))? in (.*):\s*$/i;
     const lines = err_x.stacktrace.split("\n");
@@ -129,7 +134,7 @@ function computeStackTraceFromStacktraceProp_(err_x) {
             element = {
                 url: parts[2],
                 line: +parts[1],
-                column: null,
+                column: undefined,
                 func: parts[3],
                 args: [],
             };
@@ -145,7 +150,7 @@ function computeStackTraceFromStacktraceProp_(err_x) {
         }
         else
             continue;
-        // if( !element.func && element.line ) 
+        // if( !element.func && element.line )
         // {
         //   element.func = guessFunctionName(element.url, element.line);
         // }
@@ -153,24 +158,24 @@ function computeStackTraceFromStacktraceProp_(err_x) {
         // {
         //   try {
         //     element.context = gatherContext(element.url, element.line);
-        //   } catch (exc) {}
+        //   } catch( exc) {}
         // }
-        // if( !element.context ) 
+        // if( !element.context )
         // {
         //   element.context = [ lines[i+1] ];
         // }
         ret.push(element);
     }
-    return ret.length ? ret : null;
+    return ret.length ? ret : undefined;
 }
 /**
  * Computes stack trace information from the stack property.
  * Chrome and Gecko use this property.
- * @param { headconst } err_x
+ * @headconst @param err_x
  */
-function computeStackTraceFromStackProp_(err_x) {
+function _computeStackTraceFromStackProp(err_x) {
     if (!err_x.stack)
-        return null;
+        return undefined;
     const ret = [];
     const chrome = /^\s*at (?:(.*?) ?\()?((?:file|https?|blob|chrome-extension|native|eval|webpack|<anonymous>|[a-z]:|\/).*?)(?::(\d+))?(?::(\d+))?\)?\s*$/i, gecko = /^\s*(.*?)(?:\((.*?)\))?(?:^|@)((?:file|https?|blob|chrome|webpack|resource|moz-extension).*?:\/.*?|\[native code\]|[^@]*bundle)(?::(\d+))?(?::(\d+))?\s*$/i, winjs = /^\s*at (?:((?:\[object object\])?.+) )?\(?((?:file|ms-appx|https?|webpack|blob):.*?):(\d+)(?::(\d+))?\)?\s*$/i;
     // Used to additionally parse URL/line/column from eval frames
@@ -189,11 +194,11 @@ function computeStackTraceFromStackProp_(err_x) {
                 // parts[4] = submatch[3]; // column
             }
             element = {
-                url: !isNative ? parts[2] : null,
+                url: !isNative ? parts[2] : undefined,
                 func: parts[1] || "?",
                 args: isNative ? [parts[2]] : [],
-                line: parts[3] ? +parts[3] : null,
-                column: parts[4] ? +parts[4] : null,
+                line: parts[3] ? +parts[3] : undefined,
+                column: parts[4] ? +parts[4] : undefined,
             };
         }
         else if ((parts = winjs.exec(lines[i]))) {
@@ -202,7 +207,7 @@ function computeStackTraceFromStackProp_(err_x) {
                 func: parts[1] || "?",
                 args: [],
                 line: +parts[3],
-                column: parts[4] ? +parts[4] : null,
+                column: parts[4] ? +parts[4] : undefined,
             };
         }
         else if ((parts = gecko.exec(lines[i]))) {
@@ -225,13 +230,13 @@ function computeStackTraceFromStackProp_(err_x) {
                 url: parts[3],
                 func: parts[1] || "?",
                 args: parts[2] ? parts[2].split(",") : [],
-                line: parts[4] ? +parts[4] : null,
-                column: parts[5] ? +parts[5] : null,
+                line: parts[4] ? +parts[4] : undefined,
+                column: parts[5] ? +parts[5] : undefined,
             };
         }
         else
             continue;
-        // if( !element.func && element.line ) 
+        // if( !element.func && element.line )
         // {
         //   element.func = guessFunctionName(element.url, element.line);
         // }
@@ -273,7 +278,7 @@ function computeStackTraceFromStackProp_(err_x) {
     // if (stack[0] && stack[0].line && !stack[0].column && reference) {
     //   stack[0].column = findSourceInLine(reference[1], stack[0].url, stack[0].line);
     // }
-    return ret.length ? ret : null;
+    return ret.length ? ret : undefined;
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=trace.js.map

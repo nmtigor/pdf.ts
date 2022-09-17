@@ -18,7 +18,7 @@
 import { html } from "../../lib/dom.js";
 import { createPromiseCap } from "../../lib/promisecap.js";
 import { getFilenameFromUrl } from "../pdf.ts-src/pdf.js";
-import { BaseTreeViewer } from "./base_tree_viewer.js";
+import { BaseTreeViewer, } from "./base_tree_viewer.js";
 import { waitOnEventOrTimeout } from "./event_utils.js";
 export class PDFAttachmentViewer extends BaseTreeViewer {
     _attachments;
@@ -45,7 +45,7 @@ export class PDFAttachmentViewer extends BaseTreeViewer {
         }
         this.#pendingDispatchEvent = false;
     }
-    /** @implements */
+    /** @implement */
     async _dispatchEvent(attachmentsCount) {
         this.#renderedCapability.resolve();
         if (attachmentsCount === 0 && !this.#pendingDispatchEvent) {
@@ -59,9 +59,10 @@ export class PDFAttachmentViewer extends BaseTreeViewer {
                 name: "annotationlayerrendered",
                 delay: 1000,
             });
-            if (!this.#pendingDispatchEvent)
+            if (!this.#pendingDispatchEvent) {
                 // There was already another `_dispatchEvent`-call`.
                 return;
+            }
         }
         this.#pendingDispatchEvent = false;
         this.eventBus.dispatch("attachmentsloaded", {
@@ -69,14 +70,14 @@ export class PDFAttachmentViewer extends BaseTreeViewer {
             attachmentsCount,
         });
     }
-    /** @implements */
+    /** @implement */
     _bindLink(element, { content, filename }) {
         element.onclick = () => {
             this.downloadManager.openOrDownloadData(element, content, filename);
             return false;
         };
     }
-    /** @implements */
+    /** @implement */
     render({ attachments, keepRenderedCapability = false }) {
         if (this._attachments) {
             this.reset(keepRenderedCapability);
@@ -99,8 +100,8 @@ export class PDFAttachmentViewer extends BaseTreeViewer {
             const element = html("a");
             this._bindLink(element, { content, filename });
             element.textContent = this._normalizeTextContent(filename);
-            div.appendChild(element);
-            fragment.appendChild(div);
+            div.append(element);
+            fragment.append(div);
             attachmentsCount++;
         }
         this.finishRendering$(fragment, attachmentsCount);
@@ -111,14 +112,17 @@ export class PDFAttachmentViewer extends BaseTreeViewer {
     #appendAttachment = ({ filename, content }) => {
         const renderedPromise = this.#renderedCapability.promise;
         renderedPromise.then(() => {
-            if (renderedPromise !== this.#renderedCapability.promise)
+            if (renderedPromise !== this.#renderedCapability.promise) {
                 // The FileAttachment annotation belongs to a previous document.
                 return;
-            const attachments = this._attachments || Object.create(null);
+            }
+            const attachments = this._attachments ||
+                Object.create(null);
             for (const name in attachments) {
-                if (filename === name)
+                if (filename === name) {
                     // Ignore the new attachment if it already exists.
                     return;
+                }
             }
             attachments[filename] = {
                 filename,
@@ -131,5 +135,5 @@ export class PDFAttachmentViewer extends BaseTreeViewer {
         });
     };
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=pdf_attachment_viewer.js.map

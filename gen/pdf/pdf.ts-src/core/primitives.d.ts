@@ -70,7 +70,7 @@ export declare class FontDict extends Dict {
     };
     cacheKey?: Ref | string;
 }
-declare namespace NsRef {
+export declare namespace NsRef {
     class Ref {
         /** object number */
         num: number;
@@ -82,7 +82,8 @@ declare namespace NsRef {
         static _clearCache(): void;
     }
 }
-export import Ref = NsRef.Ref;
+export declare type Ref = NsRef.Ref;
+export declare var Ref: typeof NsRef.Ref;
 export declare class RefSet {
     #private;
     has(ref: Ref | string): boolean;
@@ -102,9 +103,9 @@ export declare class RefSetCache<T = Obj> {
     [Symbol.iterator](): IterableIterator<T>;
     clear(): void;
 }
-export declare function isName(v: any, name: string): boolean;
+export declare function isName(v: any, name?: string): boolean;
 export declare function isCmd(v: any, cmd?: string): boolean;
-export declare function isDict(v: any, type: string): boolean;
+export declare function isDict(v: any, type?: string): boolean;
 export declare function isRefsEqual(v1: Ref, v2: Ref): boolean;
 export declare function clearPrimitiveCaches(): void;
 declare type Prm = boolean | number | string | null | Name | Cmd | CIRCULAR_REF | EOF | Dict | TypedArray | BaseStream | Ref;

@@ -1,23 +1,9 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
-/* Copyright 2021 Mozilla Foundation
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 import { $buildXFAObject, NamespaceIds } from "./namespaces.js";
 import { StringObject, XFAObject, XFAObjectArray } from "./xfa_object.js";
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 const CONNECTION_SET_NS_ID = NamespaceIds.connectionSet.id;
 export class ConnectionSet extends XFAObject {
     wsdlConnection = new XFAObjectArray();
@@ -138,23 +124,47 @@ class XsdConnection extends XFAObject {
 }
 export const ConnectionSetNamespace = {
     [$buildXFAObject](name, attributes) {
-        if (ConnectionSetNamespace.hasOwnProperty(name)) {
+        if (Object.hasOwn(ConnectionSetNamespace, name)) {
             return ConnectionSetNamespace[name](attributes);
         }
         return undefined;
     },
-    connectionSet(attrs) { return new ConnectionSet(attrs); },
-    effectiveInputPolicy(attrs) { return new EffectiveInputPolicy(attrs); },
-    effectiveOutputPolicy(attrs) { return new EffectiveOutputPolicy(attrs); },
-    operation(attrs) { return new Operation(attrs); },
-    rootElement(attrs) { return new RootElement(attrs); },
-    soapAction(attrs) { return new SoapAction(attrs); },
-    soapAddress(attrs) { return new SoapAddress(attrs); },
-    uri(attrs) { return new Uri(attrs); },
-    wsdlAddress(attrs) { return new WsdlAddress(attrs); },
-    wsdlConnection(attrs) { return new WsdlConnection(attrs); },
-    xmlConnection(attrs) { return new XmlConnection(attrs); },
-    xsdConnection(attrs) { return new XsdConnection(attrs); },
+    connectionSet(attrs) {
+        return new ConnectionSet(attrs);
+    },
+    effectiveInputPolicy(attrs) {
+        return new EffectiveInputPolicy(attrs);
+    },
+    effectiveOutputPolicy(attrs) {
+        return new EffectiveOutputPolicy(attrs);
+    },
+    operation(attrs) {
+        return new Operation(attrs);
+    },
+    rootElement(attrs) {
+        return new RootElement(attrs);
+    },
+    soapAction(attrs) {
+        return new SoapAction(attrs);
+    },
+    soapAddress(attrs) {
+        return new SoapAddress(attrs);
+    },
+    uri(attrs) {
+        return new Uri(attrs);
+    },
+    wsdlAddress(attrs) {
+        return new WsdlAddress(attrs);
+    },
+    wsdlConnection(attrs) {
+        return new WsdlConnection(attrs);
+    },
+    xmlConnection(attrs) {
+        return new XmlConnection(attrs);
+    },
+    xsdConnection(attrs) {
+        return new XsdConnection(attrs);
+    },
 };
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=connection_set.js.map

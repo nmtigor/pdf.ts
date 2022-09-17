@@ -18,7 +18,7 @@
 /** @typedef {import("./event_utils").EventBus} EventBus */
 // eslint-disable-next-line max-len
 /** @typedef {import("./pdf_find_controller").PDFFindController} PDFFindController */
-import { textnode } from "../../lib/dom.js";
+import { html, textnode } from "../../lib/dom.js";
 /**
  * TextHighlighter handles highlighting matches from the FindController in
  * either the text layer or XFA layer depending on the type of document.
@@ -60,7 +60,7 @@ export class TextHighlighter {
         }
         this.enabled = true;
         if (!this._onUpdateTextLayerMatches) {
-            this._onUpdateTextLayerMatches = evt => {
+            this._onUpdateTextLayerMatches = (evt) => {
                 if (evt.pageIndex === this.pageIdx || evt.pageIndex === -1) {
                     this._updateMatches();
                 }
@@ -121,8 +121,9 @@ export class TextHighlighter {
     }
     _renderMatches(matches) {
         // Early exit if there is nothing to render.
-        if (matches.length === 0)
+        if (matches.length === 0) {
             return;
+        }
         const { findController, pageIdx } = this;
         const { textContentItemsStr, textDivs } = this;
         const isSelectedPage = pageIdx === findController.selected.pageIdx;
@@ -141,22 +142,22 @@ export class TextHighlighter {
         function appendTextToDiv(divIdx, fromOffset, toOffset, className) {
             let div = textDivs[divIdx];
             if (div.nodeType === Node.TEXT_NODE) {
-                const span = document.createElement("span");
-                div.parentNode.insertBefore(span, div);
-                span.appendChild(div);
+                const span = html("span");
+                div.before(span);
+                span.append(div);
                 textDivs[divIdx] = span;
                 div = span;
             }
             const content = textContentItemsStr[divIdx].substring(fromOffset, toOffset);
             const node = textnode(content);
             if (className) {
-                const span = document.createElement("span");
+                const span = html("span");
                 span.className = `${className} appended`;
-                span.appendChild(node);
-                div.appendChild(span);
+                span.append(node);
+                div.append(span);
                 return className.includes("selected") ? span.offsetLeft : 0;
             }
-            div.appendChild(node);
+            div.append(node);
             return 0;
         }
         let i0 = selectedMatchIdx, i1 = i0 + 1;
@@ -193,7 +194,8 @@ export class TextHighlighter {
             else {
                 selectedLeft = appendTextToDiv(begin.divIdx, begin.offset, infinity.offset, "highlight begin" + highlightSuffix);
                 for (let n0 = begin.divIdx + 1, n1 = end.divIdx; n0 < n1; n0++) {
-                    textDivs[n0].className = "highlight middle" + highlightSuffix;
+                    textDivs[n0].className = "highlight middle" +
+                        highlightSuffix;
                 }
                 beginText(end, "highlight end" + highlightSuffix);
             }
@@ -239,5 +241,5 @@ export class TextHighlighter {
         this._renderMatches(this.matches);
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=text_highlighter.js.map

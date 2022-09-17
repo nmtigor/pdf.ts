@@ -1,6 +1,6 @@
-import { Dict, Name } from "./primitives.js";
-import { DecryptStream } from "./decrypt_stream.js";
 import { BaseStream } from "./base_stream.js";
+import { DecryptStream } from "./decrypt_stream.js";
+import { Dict, Name } from "./primitives.js";
 export declare class ARCFourCipher {
     a: number;
     b: number;
@@ -40,18 +40,18 @@ declare abstract class AESBaseCipher {
     protected _key: Uint8Array;
     constructor();
     protected abstract _expandKey(cipherKey: ArrayLike<number>): Uint8Array;
-    decryptBlock: (data: Uint8Array | Uint8ClampedArray, finalize: boolean, iv?: Uint8Array | null) => Uint8Array | Uint8ClampedArray;
+    decryptBlock: (data: Uint8Array | Uint8ClampedArray, finalize?: boolean, iv?: Uint8Array | undefined) => Uint8Array | Uint8ClampedArray;
     encrypt(data: Uint8Array, iv?: Uint8Array): Uint8Array;
 }
 export declare class AES128Cipher extends AESBaseCipher {
     _rcon: Uint8Array;
     constructor(key: ArrayLike<number>);
-    /** @override */
+    /** @implement */
     protected _expandKey(cipherKey: ArrayLike<number>): Uint8Array;
 }
 export declare class AES256Cipher extends AESBaseCipher {
     constructor(key: ArrayLike<number>);
-    /** @override */
+    /** @implement */
     protected _expandKey(cipherKey: ArrayLike<number>): Uint8Array;
 }
 /** @final */

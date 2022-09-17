@@ -15,12 +15,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { createValidAbsoluteUrl, warn } from "../../shared/util.js";
+import { createValidAbsoluteUrl, warn, } from "../../shared/util.js";
 import { selectFont } from "./fonts.js";
 import { TextMeasure } from "./text.js";
 import { getMeasurement, stripQuotes } from "./utils.js";
-import { $content, $extra, $getParent, $getSubformParent, $getTemplateRoot, $globalData, $nodeName, $pushGlyphs, $text, $toStyle, XFAObject } from "./xfa_object.js";
-/*81---------------------------------------------------------------------------*/
+import { $content, $extra, $getParent, $getSubformParent, $getTemplateRoot, $globalData, $nodeName, $pushGlyphs, $text, $toStyle, XFAObject, } from "./xfa_object.js";
+/*80--------------------------------------------------------------------------*/
 export function measureToString(m) {
     if (typeof m === "string")
         return "0px";
@@ -81,8 +81,8 @@ const converters = {
                 w = extra.columnWidths
                     .slice(extra.currentColumn, extra.currentColumn + colSpan)
                     .reduce((a, x) => a + x, 0);
-                extra.currentColumn =
-                    (extra.currentColumn + node.colSpan) % extra.columnWidths.length;
+                extra.currentColumn = (extra.currentColumn + node.colSpan) %
+                    extra.columnWidths.length;
             }
             if (!isNaN(w)) {
                 width = node.w = w;
@@ -208,7 +208,9 @@ export function layoutNode(node, availableSpace) {
         let margin;
         if (node.para) {
             margin = Object.create(null);
-            lineHeight = node.para.lineHeight === "" ? undefined : node.para.lineHeight;
+            lineHeight = node.para.lineHeight === ""
+                ? undefined
+                : node.para.lineHeight;
             margin.top = node.para.spaceAbove === "" ? 0 : node.para.spaceAbove;
             margin.bottom = node.para.spaceBelow === "" ? 0 : node.para.spaceBelow;
             margin.left = node.para.marginLeft === "" ? 0 : node.para.marginLeft;
@@ -226,11 +228,11 @@ export function layoutNode(node, availableSpace) {
                 parent = parent[$getParent]();
             }
         }
-        const maxWidth = (!node.w ? availableSpace.width : node.w) - marginH;
+        const maxWidth = (node.w || availableSpace.width) - marginH;
         const fontFinder = node[$globalData].fontFinder;
-        if (node.value.exData
-            && node.value.exData[$content]
-            && node.value.exData.contentType === "text/html") {
+        if (node.value.exData &&
+            node.value.exData[$content] &&
+            node.value.exData.contentType === "text/html") {
             const res = layoutText(node.value.exData[$content], font, margin, lineHeight, fontFinder, maxWidth);
             width = res.width;
             height = res.height;
@@ -353,9 +355,10 @@ export function toStyle(node, ...names) {
     const style = Object.create(null);
     for (const name of names) {
         const value = node[name];
-        if (value === null || value === undefined)
+        if (value === null || value === undefined) {
             continue;
-        if (converters.hasOwnProperty(name)) {
+        }
+        if (Object.hasOwn(converters, name)) {
             converters[name](node, style);
             continue;
         }
@@ -505,7 +508,7 @@ export function isPrintOnly(node) {
 }
 function getCurrentPara(node) {
     const stack = node[$getTemplateRoot]()[$extra].paraStack;
-    return stack.length ? stack[stack.length - 1] : undefined;
+    return stack.length ? stack.at(-1) : undefined;
 }
 export function setPara(node, nodeStyle, value) {
     if (value.attributes?.class?.includes("xfaRich")) {
@@ -578,5 +581,5 @@ export function fixURL(str) {
     });
     return absoluteUrl ? absoluteUrl.href : undefined;
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=html_utils.js.map

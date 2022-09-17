@@ -1,7 +1,7 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 function makeColorComp(n) {
     return Math.floor(Math.max(0, Math.min(1, n)) * 255)
         .toString(16)
@@ -13,7 +13,10 @@ function makeColorComp(n) {
 export var ColorConverters;
 (function (ColorConverters) {
     function CMYK_G([c, y, m, k]) {
-        return ["G", 1 - Math.min(1, 0.3 * c + 0.59 * m + 0.11 * y + k)];
+        return [
+            "G",
+            1 - Math.min(1, 0.3 * c + 0.59 * m + 0.11 * y + k),
+        ];
     }
     ColorConverters.CMYK_G = CMYK_G;
     function G_CMYK([g]) {
@@ -54,8 +57,8 @@ export var ColorConverters;
     }
     ColorConverters.CMYK_RGB = CMYK_RGB;
     function CMYK_HTML(components) {
-        // return RGB_HTML( CMYK_RGB(components) ); //kkkk bug?
-        return RGB_HTML(CMYK_RGB(components).slice(1));
+        const rgb = CMYK_RGB(components).slice(1);
+        return RGB_HTML(rgb);
     }
     ColorConverters.CMYK_HTML = CMYK_HTML;
     function RGB_CMYK([r, g, b]) {
@@ -67,5 +70,5 @@ export var ColorConverters;
     }
     ColorConverters.RGB_CMYK = RGB_CMYK;
 })(ColorConverters || (ColorConverters = {}));
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=scripting_utils.js.map

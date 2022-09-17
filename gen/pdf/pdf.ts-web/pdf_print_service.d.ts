@@ -1,5 +1,4 @@
-import { PDFDocumentProxy } from "../pdf.ts-src/display/api.js";
-import { OptionalContentConfig } from "../pdf.ts-src/display/optional_content_config.js";
+import { OptionalContentConfig, PDFDocumentProxy, PrintAnnotationStorage } from "../pdf.ts-src/pdf.js";
 import { type PageOverview } from "./base_viewer.js";
 import { type IL10n } from "./interfaces.js";
 export declare class PDFPrintService {
@@ -9,14 +8,15 @@ export declare class PDFPrintService {
     printContainer: HTMLDivElement;
     _printResolution: number;
     _optionalContentConfigPromise: Promise<OptionalContentConfig | undefined>;
-    l10n: IL10n;
+    _printAnnotationStoragePromise: Promise<PrintAnnotationStorage | undefined>;
+    l10n: IL10n | undefined;
     currentPage: number;
     pageStyleSheet: HTMLStyleElement | undefined;
     /**
      * The temporary canvas where renderPage paints one page at a time.
      */
     scratchCanvas: HTMLCanvasElement | undefined;
-    constructor(pdfDocument: PDFDocumentProxy, pagesOverview: PageOverview[], printContainer: HTMLDivElement, printResolution: number | undefined, optionalContentConfigPromise: Promise<OptionalContentConfig | undefined> | undefined, l10n: IL10n);
+    constructor(pdfDocument: PDFDocumentProxy, pagesOverview: PageOverview[], printContainer: HTMLDivElement, printResolution: number | undefined, optionalContentConfigPromise: Promise<OptionalContentConfig | undefined> | undefined, printAnnotationStoragePromise?: Promise<PrintAnnotationStorage | undefined>, l10n?: IL10n);
     layout(): void;
     destroy(): void;
     renderPages(): Promise<void>;

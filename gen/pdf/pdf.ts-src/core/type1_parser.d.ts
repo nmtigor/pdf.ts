@@ -1,5 +1,5 @@
-import { Stream } from "./stream.js";
 import { type FontProps } from "./evaluator.js";
+import { Stream } from "./stream.js";
 declare namespace NsType1Parser {
     export interface PrivateData {
         BlueValues: number[];

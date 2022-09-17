@@ -15,11 +15,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { IMAGE_DECODERS } from "../../../global.js";
 import { BaseException, shadow } from "../shared/util.js";
 import { ArithmeticDecoder } from "./arithmetic_decoder.js";
 import { CCITTFaxDecoder } from "./ccitt.js";
 import { log2, readInt8, readUint16, readUint32 } from "./core_utils.js";
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 class Jbig2Error extends BaseException {
     constructor(msg) {
         super(`JBIG2 error: ${msg}`, "Jbig2Error");
@@ -65,8 +66,9 @@ var NsJbig2Image;
             let v = 0;
             for (let i = 0; i < length; i++) {
                 const bit = decoder.readBit(contexts, prev);
-                prev =
-                    prev < 256 ? (prev << 1) | bit : (((prev << 1) | bit) & 511) | 256;
+                prev = prev < 256
+                    ? (prev << 1) | bit
+                    : (((prev << 1) | bit) & 511) | 256;
                 v = (v << 1) | bit;
             }
             return v >>> 0;
@@ -74,17 +76,15 @@ var NsJbig2Image;
         const sign = readBits(1);
         // prettier-ignore
         /* eslint-disable no-nested-ternary */
-        const value = readBits(1) ?
-            (readBits(1) ?
-                (readBits(1) ?
-                    (readBits(1) ?
-                        (readBits(1) ?
-                            (readBits(32) + 4436) :
-                            readBits(12) + 340) :
-                        readBits(8) + 84) :
-                    readBits(6) + 20) :
-                readBits(4) + 4) :
-            readBits(2);
+        const value = readBits(1)
+            ? (readBits(1)
+                ? (readBits(1)
+                    ? (readBits(1)
+                        ? (readBits(1) ? (readBits(32) + 4436) : readBits(12) + 340)
+                        : readBits(8) + 84)
+                    : readBits(6) + 20)
+                : readBits(4) + 4)
+            : readBits(2);
         /* eslint-enable no-nested-ternary */
         if (sign === 0) {
             return value;
@@ -288,23 +288,21 @@ var NsJbig2Image;
             row2 = i < 2 ? row : bitmap[i - 2];
             // At the beginning of each row:
             // Fill contextLabel with pixels that are above/right of (X)
-            contextLabel =
-                (row2[0] << 13) |
-                    (row2[1] << 12) |
-                    (row2[2] << 11) |
-                    (row1[0] << 7) |
-                    (row1[1] << 6) |
-                    (row1[2] << 5) |
-                    (row1[3] << 4);
+            contextLabel = (row2[0] << 13) |
+                (row2[1] << 12) |
+                (row2[2] << 11) |
+                (row1[0] << 7) |
+                (row1[1] << 6) |
+                (row1[2] << 5) |
+                (row1[3] << 4);
             for (j = 0; j < width; j++) {
                 row[j] = pixel = decoder.readBit(contexts, contextLabel);
                 // At each pixel: Clear contextLabel pixels that are shifted
                 // out of the context, then add new ones.
-                contextLabel =
-                    ((contextLabel & OLD_PIXEL_MASK) << 1) |
-                        (j + 3 < width ? row2[j + 3] << 11 : 0) |
-                        (j + 4 < width ? row1[j + 4] << 4 : 0) |
-                        pixel;
+                contextLabel = ((contextLabel & OLD_PIXEL_MASK) << 1) |
+                    (j + 3 < width ? row2[j + 3] << 11 : 0) |
+                    (j + 4 < width ? row1[j + 4] << 4 : 0) |
+                    pixel;
             }
         }
         return bitmap;
@@ -337,9 +335,7 @@ var NsJbig2Image;
         // Sorting is non-standard, and it is not required. But sorting increases
         // the number of template bits that can be reused from the previous
         // contextLabel in the main loop.
-        template.sort(function (a, b) {
-            return a.y - b.y || a.x - b.x;
-        });
+        template.sort((a, b) => a.y - b.y || a.x - b.x);
         const templateLength = template.length;
         const templateX = new Int8Array(templateLength);
         const templateY = new Int8Array(templateLength);
@@ -500,10 +496,10 @@ var NsJbig2Image;
                 for (k = 0; k < referenceTemplateLength; k++) {
                     i0 = i + referenceTemplateY[k] - offsetY;
                     j0 = j + referenceTemplateX[k] - offsetX;
-                    if (i0 < 0
-                        || i0 >= referenceHeight
-                        || j0 < 0
-                        || j0 >= referenceWidth) {
+                    if (i0 < 0 ||
+                        i0 >= referenceHeight ||
+                        j0 < 0 ||
+                        j0 >= referenceWidth) {
                         contextLabel <<= 1; // out of bound pixel
                     }
                     else {
@@ -1258,8 +1254,7 @@ var NsJbig2Image;
                 // are comments and can be ignored.
                 break;
             default:
-                throw new Jbig2Error(`segment type ${header.typeName}(${header.type})` +
-                    " is not implemented");
+                throw new Jbig2Error(`segment type ${header.typeName}(${header.type}) is not implemented`);
         }
         const callbackName = "on" + header.typeName;
         if (callbackName in visitor) {
@@ -1281,6 +1276,9 @@ var NsJbig2Image;
         return visitor.buffer;
     }
     function parseJbig2(data) {
+        /*#static*/  {
+            throw new Error("Not implemented: parseJbig2");
+        }
         const end = data.length;
         let position = 0;
         if (data[position] !== 0x97 ||
@@ -1409,13 +1407,13 @@ var NsJbig2Image;
             if (!symbols) {
                 this.symbols = symbols = {};
             }
-            let inputSymbols = [];
-            for (let i = 0, ii = referredSegments.length; i < ii; i++) {
-                const referredSymbols = symbols[referredSegments[i]];
+            const inputSymbols = [];
+            for (const referredSegment of referredSegments) {
+                const referredSymbols = symbols[referredSegment];
                 // referredSymbols is undefined when we have a reference to a Tables
                 // segment instead of a SymbolDictionary.
                 if (referredSymbols) {
-                    inputSymbols = inputSymbols.concat(referredSymbols);
+                    inputSymbols.push(...referredSymbols);
                 }
             }
             const decodingContext = new DecodingContext(data, start, end);
@@ -1427,13 +1425,13 @@ var NsJbig2Image;
             let huffmanInput;
             // Combines exported symbols from all referred segments
             const symbols = this.symbols;
-            let inputSymbols = [];
-            for (let i = 0, ii = referredSegments.length; i < ii; i++) {
-                const referredSymbols = symbols[referredSegments[i]];
+            const inputSymbols = [];
+            for (const referredSegment of referredSegments) {
+                const referredSymbols = symbols[referredSegment];
                 // referredSymbols is undefined when we have a reference to a Tables
                 // segment instead of a SymbolDictionary.
                 if (referredSymbols) {
-                    inputSymbols = inputSymbols.concat(referredSymbols);
+                    inputSymbols.push(...referredSymbols);
                 }
             }
             const symbolCodeLength = log2(inputSymbols.length);
@@ -2166,6 +2164,9 @@ var NsJbig2Image;
             return parseJbig2Chunks(chunks);
         }
         parse(data) {
+            /*#static*/  {
+                throw new Error("Not implemented: Jbig2Image.parse");
+            }
             const { imgData, width, height } = parseJbig2(data);
             this.width = width;
             this.height = height;
@@ -2175,5 +2176,5 @@ var NsJbig2Image;
     NsJbig2Image.Jbig2Image = Jbig2Image;
 })(NsJbig2Image || (NsJbig2Image = {}));
 export var Jbig2Image = NsJbig2Image.Jbig2Image;
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=jbig2.js.map

@@ -8,7 +8,7 @@ import { MissingDataException } from "./core_utils.js";
 import { Lexer } from "./parser.js";
 import { Cmd, EOF, isCmd, Name } from "./primitives.js";
 import { Stream } from "./stream.js";
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 const BUILT_IN_CMAPS = [
     // << Start unicode maps.
     "Adobe-GB1-UCS2",
@@ -200,13 +200,21 @@ export class CMap {
      *   one byte per character.
      */
     _map = [];
-    getMap() { return this._map; }
+    getMap() {
+        return this._map;
+    }
     /**
      * This is used for both bf and cid chars.
      */
-    mapOne(src, dst) { this._map[src] = dst; }
-    lookup(code) { return this._map[code]; }
-    contains(code) { return this._map[code] !== undefined; }
+    mapOne(src, dst) {
+        this._map[src] = dst;
+    }
+    lookup(code) {
+        return this._map[code];
+    }
+    contains(code) {
+        return this._map[code] !== undefined;
+    }
     name = "";
     vertical = false;
     useCMap;
@@ -236,14 +244,13 @@ export class CMap {
             // Only the last byte has to be incremented (in the normal case).
             const nextCharCode = dstLow.charCodeAt(lastByte) + 1;
             if (nextCharCode > 0xff) {
-                dstLow =
-                    dstLow.substring(0, lastByte - 1) +
-                        String.fromCharCode(dstLow.charCodeAt(lastByte - 1) + 1) +
-                        "\x00";
+                dstLow = dstLow.substring(0, lastByte - 1) +
+                    String.fromCharCode(dstLow.charCodeAt(lastByte - 1) + 1) +
+                    "\x00";
                 continue;
             }
-            dstLow =
-                dstLow.substring(0, lastByte) + String.fromCharCode(nextCharCode);
+            dstLow = dstLow.substring(0, lastByte) +
+                String.fromCharCode(nextCharCode);
         }
     }
     mapBfRangeToArray(low, high, array) {
@@ -329,15 +336,20 @@ export class CMap {
         }
         return 1;
     }
-    get length() { return this._map.length; }
+    get length() {
+        return this._map.length;
+    }
     get isIdentityCMap() {
-        if (!(this.name === "Identity-H" || this.name === "Identity-V"))
+        if (!(this.name === "Identity-H" || this.name === "Identity-V")) {
             return false;
-        if (this._map.length !== 0x10000)
+        }
+        if (this._map.length !== 0x10000) {
             return false;
+        }
         for (let i = 0; i < 0x10000; i++) {
-            if (this._map[i] !== i)
+            if (this._map[i] !== i) {
                 return false;
+            }
         }
         return true;
     }
@@ -386,7 +398,9 @@ export class IdentityCMap extends CMap {
         }
         return map;
     }
-    get length() { return 0x10000; }
+    get length() {
+        return 0x10000;
+    }
     // eslint-disable-next-line getter-return
     get isIdentityCMap() {
         assert(0, "should not access .isIdentityCMap");
@@ -686,10 +700,12 @@ var NsCMapFactory;
     function parseBfChar(cMap, lexer) {
         while (true) {
             let obj = lexer.getObj();
-            if (obj === EOF)
+            if (obj === EOF) {
                 break;
-            if (isCmd(obj, "endbfchar"))
+            }
+            if (isCmd(obj, "endbfchar")) {
                 return;
+            }
             expectString(obj);
             const src = strToInt(obj);
             obj = lexer.getObj();
@@ -702,10 +718,12 @@ var NsCMapFactory;
     function parseBfRange(cMap, lexer) {
         while (true) {
             let obj = lexer.getObj();
-            if (obj === EOF)
+            if (obj === EOF) {
                 break;
-            if (isCmd(obj, "endbfrange"))
+            }
+            if (isCmd(obj, "endbfrange")) {
                 return;
+            }
             expectString(obj);
             const low = strToInt(obj);
             obj = lexer.getObj();
@@ -713,7 +731,9 @@ var NsCMapFactory;
             const high = strToInt(obj);
             obj = lexer.getObj();
             if (Number.isInteger(obj) || typeof obj === "string") {
-                const dstLow = Number.isInteger(obj) ? String.fromCharCode(obj) : obj;
+                const dstLow = Number.isInteger(obj)
+                    ? String.fromCharCode(obj)
+                    : obj;
                 cMap.mapBfRange(low, high, dstLow);
             }
             else if (isCmd(obj, "[")) {
@@ -734,10 +754,12 @@ var NsCMapFactory;
     function parseCidChar(cMap, lexer) {
         while (true) {
             let obj = lexer.getObj();
-            if (obj === EOF)
+            if (obj === EOF) {
                 break;
-            if (isCmd(obj, "endcidchar"))
+            }
+            if (isCmd(obj, "endcidchar")) {
                 return;
+            }
             expectString(obj);
             const src = strToInt(obj);
             obj = lexer.getObj();
@@ -749,10 +771,12 @@ var NsCMapFactory;
     function parseCidRange(cMap, lexer) {
         while (true) {
             let obj = lexer.getObj();
-            if (obj === EOF)
+            if (obj === EOF) {
                 break;
-            if (isCmd(obj, "endcidrange"))
+            }
+            if (isCmd(obj, "endcidrange")) {
                 return;
+            }
             expectString(obj);
             const low = strToInt(obj);
             obj = lexer.getObj();
@@ -767,16 +791,20 @@ var NsCMapFactory;
     function parseCodespaceRange(cMap, lexer) {
         while (true) {
             let obj = lexer.getObj();
-            if (obj === EOF)
+            if (obj === EOF) {
                 break;
-            if (isCmd(obj, "endcodespacerange"))
+            }
+            if (isCmd(obj, "endcodespacerange")) {
                 return;
-            if (typeof obj !== "string")
+            }
+            if (typeof obj !== "string") {
                 break;
+            }
             const low = strToInt(obj);
             obj = lexer.getObj();
-            if (typeof obj !== "string")
+            if (typeof obj !== "string") {
                 break;
+            }
             const high = strToInt(obj);
             cMap.addCodespaceRange(obj.length, low, high);
         }
@@ -799,8 +827,9 @@ var NsCMapFactory;
         objLoop: while (true) {
             try {
                 const obj = lexer.getObj();
-                if (obj === EOF)
+                if (obj === EOF) {
                     break;
+                }
                 else if (obj instanceof Name) {
                     if (obj.name === "WMode") {
                         parseWMode(cMap, lexer);
@@ -891,7 +920,7 @@ var NsCMapFactory;
         const { cMapData, compressionType } = await fetchBuiltInCMap(name);
         const cMap = new CMap(true);
         if (compressionType === CMapCompressionType.BINARY) {
-            return new BinaryCMapReader().process(cMapData, cMap, useCMap => {
+            return new BinaryCMapReader().process(cMapData, cMap, (useCMap) => {
                 return extendCMap(cMap, fetchBuiltInCMap, useCMap);
             });
         }
@@ -923,5 +952,5 @@ var NsCMapFactory;
     };
 })(NsCMapFactory || (NsCMapFactory = {}));
 export var CMapFactory = NsCMapFactory.CMapFactory;
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=cmap.js.map

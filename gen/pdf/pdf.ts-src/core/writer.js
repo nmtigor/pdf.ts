@@ -17,11 +17,21 @@
  */
 import { bytesToString, escapeString, warn } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
-import { escapePDFName, parseXFAPath } from "./core_utils.js";
+import { escapePDFName, numberToString, parseXFAPath } from "./core_utils.js";
 import { calculateMD5 } from "./crypto.js";
 import { Dict, Name, Ref } from "./primitives.js";
 import { SimpleDOMNode, SimpleXMLParser } from "./xml_parser.js";
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
+export function writeObject(ref, obj, buffer, transform) {
+    buffer.push(`${ref.num} ${ref.gen} obj\n`);
+    if (obj instanceof Dict) {
+        writeDict(obj, buffer, transform);
+    }
+    else if (obj instanceof BaseStream) {
+        writeStream(obj, buffer, transform);
+    }
+    buffer.push("\nendobj\n");
+}
 export function writeDict(dict, buffer, transform) {
     buffer.push("<<");
     for (const key of dict.getKeys()) {
@@ -52,19 +62,6 @@ function writeArray(array, buffer, transform) {
         writeValue(val, buffer, transform);
     }
     buffer.push("]");
-}
-function numberToString(value) {
-    if (Number.isInteger(value)) {
-        return value.toString();
-    }
-    const roundedValue = Math.round(value * 100);
-    if (roundedValue % 100 === 0) {
-        return (roundedValue / 100).toString();
-    }
-    if (roundedValue % 10 === 0) {
-        return value.toFixed(1);
-    }
-    return value.toFixed(2);
 }
 function writeValue(value, buffer, transform) {
     if (value instanceof Name) {
@@ -133,15 +130,17 @@ function computeMD5(filesize, xrefInfo) {
 function writeXFADataForAcroform(str, newRefs) {
     const xml = new SimpleXMLParser({ hasAttributes: true }).parseFromString(str);
     for (const { xfa } of newRefs) {
-        if (!xfa)
+        if (!xfa) {
             continue;
+        }
         const { path, value } = xfa;
-        if (!path)
+        if (!path) {
             continue;
+        }
         const node = xml.documentElement.searchNode(parseXFAPath(path), 0);
         if (node) {
             if (Array.isArray(value)) {
-                node.childNodes = value.map(val => new SimpleDOMNode("value", val));
+                node.childNodes = value.map((val) => new SimpleDOMNode("value", val));
             }
             else {
                 node.childNodes = [new SimpleDOMNode("#text", value)];
@@ -156,8 +155,9 @@ function writeXFADataForAcroform(str, newRefs) {
     return buffer.join("");
 }
 function updateXFA({ xfaData, xfaDatasetsRef, hasXfaDatasetsEntry, acroFormRef, acroForm, newRefs, xref, xrefInfo, }) {
-    if (xref === undefined)
+    if (xref === undefined) {
         return;
+    }
     if (!hasXfaDatasetsEntry) {
         if (!acroFormRef) {
             warn("XFA - Cannot save it");
@@ -213,7 +213,7 @@ export function incrementalUpdate({ originalData, xrefInfo, newRefs, xref, hasXf
     const newXref = new Dict();
     const refForXrefTable = xrefInfo.newRef;
     let buffer, baseOffset;
-    const lastByte = originalData[originalData.length - 1];
+    const lastByte = originalData.at(-1);
     if (lastByte === /* \n */ 0x0a || lastByte === /* \r */ 0x0d) {
         buffer = [];
         baseOffset = originalData.length;
@@ -286,5 +286,5 @@ export function incrementalUpdate({ originalData, xrefInfo, newRefs, xref, hasXf
     writeString(footer, offset, array);
     return array;
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=writer.js.map

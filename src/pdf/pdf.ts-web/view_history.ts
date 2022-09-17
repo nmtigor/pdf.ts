@@ -17,21 +17,21 @@
  * limitations under the License.
  */
 
-import { ScrollMode, SidebarView, SpreadMode } from "./ui_utils.js";
-/*81---------------------------------------------------------------------------*/
+import { MOZCENTRAL } from "../../global.ts";
+import { ScrollMode, SidebarView, SpreadMode } from "./ui_utils.ts";
+/*80--------------------------------------------------------------------------*/
 
 const DEFAULT_VIEW_HISTORY_CACHE_SIZE = 20;
 
-export interface MultipleStored
-{
-  page:number | undefined;
-  zoom?:string | number | undefined;
-  scrollLeft:number;
-  scrollTop:number;
-  rotation:number | undefined;
-  sidebarView?:SidebarView,
-  scrollMode?:ScrollMode,
-  spreadMode?:SpreadMode,
+export interface MultipleStored {
+  page: number | undefined;
+  zoom?: string | number | undefined;
+  scrollLeft: number;
+  scrollTop: number;
+  rotation: number | undefined;
+  sidebarView?: SidebarView;
+  scrollMode?: ScrollMode;
+  spreadMode?: SpreadMode;
 }
 
 /**
@@ -43,32 +43,27 @@ export interface MultipleStored
  *  - MOZCENTRAL        - uses sessionStorage.
  *  - GENERIC or CHROME - uses localStorage, if it is available.
  */
-export class ViewHistory 
-{
-  _initializedPromise:Promise<unknown>;
+export class ViewHistory {
+  _initializedPromise: Promise<unknown>;
 
-  file!:Record< string, string | number >;
-  database:unknown;
+  file!: Record<string, string | number>;
+  database: unknown;
 
-  constructor( 
-    public fingerprint:string,
-    public cacheSize=DEFAULT_VIEW_HISTORY_CACHE_SIZE 
+  constructor(
+    public fingerprint: string,
+    public cacheSize = DEFAULT_VIEW_HISTORY_CACHE_SIZE,
   ) {
-    this._initializedPromise = this._readFromStorage().then(databaseStr => 
-    {
+    this._initializedPromise = this._readFromStorage().then((databaseStr) => {
       const database = JSON.parse(databaseStr || "{}");
       let index = -1;
-      if( !Array.isArray(database.files) )
-      {
+      if (!Array.isArray(database.files)) {
         database.files = [];
-      } 
-      else {
+      } else {
         while (database.files.length >= this.cacheSize) {
           database.files.shift();
         }
 
-        for( let i = 0, ii = database.files.length; i < ii; i++ )
-        {
+        for (let i = 0, ii = database.files.length; i < ii; i++) {
           const branch = database.files[i];
           if (branch.fingerprint === this.fingerprint) {
             index = i;
@@ -87,60 +82,51 @@ export class ViewHistory
   async _writeToStorage() {
     const databaseStr = JSON.stringify(this.database);
 
-    // #if MOZCENTRAL
-    // if (typeof PDFJSDev !== "undefined" && PDFJSDev.test("MOZCENTRAL")) {
-    sessionStorage.setItem("pdfjs.history", databaseStr);
-    return;
-    // }
-    // #endif
+    /*#static*/ if (MOZCENTRAL) {
+      sessionStorage.setItem("pdfjs.history", databaseStr);
+      return;
+    }
     localStorage.setItem("pdfjs.history", databaseStr);
   }
 
-  async _readFromStorage()
-  {
-    // #if MOZCENTRAL
-    // if (typeof PDFJSDev !== "undefined" && PDFJSDev.test("MOZCENTRAL")) {
-    return sessionStorage.getItem("pdfjs.history");
-    // }
-    // #endif
+  async _readFromStorage() {
+    /*#static*/ if (MOZCENTRAL) {
+      return sessionStorage.getItem("pdfjs.history");
+    }
     return localStorage.getItem("pdfjs.history");
   }
 
-  async set( name:string, val:SidebarView | ScrollMode | SpreadMode )
-  {
+  async set(name: string, val: SidebarView | ScrollMode | SpreadMode) {
     await this._initializedPromise;
     this.file[name] = val;
     return this._writeToStorage();
   }
 
-  async setMultiple( properties:MultipleStored )
-  {
+  async setMultiple(properties: MultipleStored) {
     await this._initializedPromise;
-    for( const name in properties )
-    {
-      this.file[name] = (<any>properties)[name];
+    for (const name in properties) {
+      this.file[name] = (<any> properties)[name];
     }
     return this._writeToStorage();
   }
 
-  async get( name:string, defaultValue:SidebarView | ScrollMode | SpreadMode )
-  {
+  async get(name: string, defaultValue: SidebarView | ScrollMode | SpreadMode) {
     await this._initializedPromise;
     const val = this.file[name];
     return val !== undefined ? val : defaultValue;
   }
 
-  async getMultiple( properties:MultipleStored )
-  {
+  async getMultiple(properties: MultipleStored) {
     await this._initializedPromise;
-    const values:MultipleStored = Object.create(null);
+    const values: MultipleStored = Object.create(null);
 
-    for( const name in properties )
-    {
+    for (const name in properties) {
       const val = this.file[name];
-      (<any>values)[name] = val !== undefined ? val : properties[ <keyof MultipleStored>name ];
+      (<any> values)[name] = val !== undefined
+        ? val
+        : properties[<keyof MultipleStored> name];
     }
     return values;
   }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

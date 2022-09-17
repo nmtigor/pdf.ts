@@ -1,18 +1,32 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
+/* Copyright 2018 Mozilla Foundation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import { _INFO, _PDFDEV, global, PDFTS_vv } from "../../../global.js";
 import { isObjectLike } from "../../../lib/jslang.js";
 import { createPromiseCap } from "../../../lib/promisecap.js";
 import { assert } from "../../../lib/util/trace.js";
-import { AbortException, MissingPDFException, PasswordException, UnexpectedResponseException, UnknownErrorException } from "./util.js";
-/*81---------------------------------------------------------------------------*/
+import { AbortException, MissingPDFException, PasswordException, UnexpectedResponseException, UnknownErrorException, } from "./util.js";
+/*80--------------------------------------------------------------------------*/
 var CallbackKind;
 (function (CallbackKind) {
     CallbackKind[CallbackKind["UNKNOWN"] = 0] = "UNKNOWN";
     CallbackKind[CallbackKind["DATA"] = 1] = "DATA";
     CallbackKind[CallbackKind["ERROR"] = 2] = "ERROR";
 })(CallbackKind || (CallbackKind = {}));
-;
 var StreamKind;
 (function (StreamKind) {
     StreamKind[StreamKind["UNKNOWN"] = 0] = "UNKNOWN";
@@ -25,7 +39,6 @@ var StreamKind;
     StreamKind[StreamKind["PULL_COMPLETE"] = 7] = "PULL_COMPLETE";
     StreamKind[StreamKind["START_COMPLETE"] = 8] = "START_COMPLETE";
 })(StreamKind || (StreamKind = {}));
-;
 function wrapReason(reason) {
     if (!(reason instanceof Error || isObjectLike(reason))) {
         assert(0, 'wrapReason: Expected "reason" to be a (possibly cloned) Error.');
@@ -51,18 +64,21 @@ export var Thread;
     Thread[Thread["main"] = 0] = "main";
     Thread[Thread["worker"] = 1] = "worker";
 })(Thread || (Thread = {}));
+// #if _INFO && PDFTS
 function stringof(msg) {
-    return `[${msg.sourceName} -> ${msg.targetName}]`
-        + (msg.stream ? ` stream_${msg.streamId}: ${StreamKind[msg.stream]}` : "")
-        + (msg.callback ? ` callback_${msg.callbackId}: ${CallbackKind[msg.callback]}` : "")
-        + (msg.action ? ` "${msg.action}"` : "");
+    return `[${msg.sourceName} -> ${msg.targetName}]` +
+        (msg.stream ? ` stream_${msg.streamId}: ${StreamKind[msg.stream]}` : "") +
+        (msg.callback
+            ? ` callback_${msg.callbackId}: ${CallbackKind[msg.callback]}`
+            : "") +
+        (msg.action ? ` "${msg.action}"` : "");
 }
 export class MessageHandler {
+    static #ID = 0;
+    id = ++MessageHandler.#ID;
     sourceName;
     targetName;
     comObj;
-    static #ID = 0;
-    id = ++MessageHandler.#ID;
     callbackId = 1;
     streamId = 1;
     streamSinks = Object.create(null);
@@ -77,17 +93,21 @@ export class MessageHandler {
     }
     #onComObjOnMessage = (event) => {
         const data = event.data;
-        if (data.targetName !== this.sourceName)
+        if (data.targetName !== this.sourceName) {
             return;
+        }
+        /*#static*/ 
         if (data.stream) {
             this.#processStreamMessage(data);
+            /*#static*/ 
             return;
         }
         if (data.callback) {
             const callbackId = data.callbackId;
             const capability = this.callbackCapabilities[callbackId];
-            if (!capability)
+            if (!capability) {
                 throw new Error(`Cannot resolve callback ${callbackId}`);
+            }
             delete this.callbackCapabilities[callbackId];
             if (data.callback === CallbackKind.DATA) {
                 capability.resolve(data.data);
@@ -98,18 +118,20 @@ export class MessageHandler {
             else {
                 throw new Error("Unexpected callback case");
             }
+            /*#static*/ 
             return;
         }
         const action = this.actionHandler[data.action];
-        if (!action)
+        if (!action) {
             throw new Error(`Unknown action from worker: ${data.action}`);
+        }
         if (data.callbackId) {
             const comObj = this.comObj;
             const cbSourceName = this.sourceName;
             const cbTargetName = data.sourceName;
-            new Promise(resolve => {
+            new Promise((resolve) => {
                 resolve(action(data.data, undefined));
-            }).then(result => {
+            }).then((result) => {
                 comObj.postMessage({
                     sourceName: cbSourceName,
                     targetName: cbTargetName,
@@ -117,7 +139,7 @@ export class MessageHandler {
                     callbackId: data.callbackId,
                     data: result,
                 }, undefined);
-            }, reason => {
+            }, (reason) => {
                 comObj.postMessage({
                     sourceName: cbSourceName,
                     targetName: cbTargetName,
@@ -126,16 +148,21 @@ export class MessageHandler {
                     reason: wrapReason(reason),
                 }, undefined);
             });
+            /*#static*/ 
             return;
         }
         if (data.streamId) {
             this.#createStreamSink(data);
+            /*#static*/ 
             return;
         }
         action(data.data, undefined);
+        /*#static*/ 
     };
     on(actionName, handler) {
-        assert(typeof handler === "function", 'MessageHandler.on: Expected "handler" to be a function.');
+        /*#static*/  {
+            assert(typeof handler === "function", 'MessageHandler.on: Expected "handler" to be a function.');
+        }
         const ah = this.actionHandler;
         if (ah[actionName]) {
             throw new Error(`There is already an actionName called "${actionName}"`);
@@ -249,8 +276,9 @@ export class MessageHandler {
         const sinkCapability = createPromiseCap();
         const streamSink = {
             enqueue(chunk, size = 1, transfers) {
-                if (this.isCancelled)
+                if (this.isCancelled) {
                     return;
+                }
                 const lastDesiredSize = this.desiredSize;
                 this.desiredSize -= size;
                 // Enqueue decreases the desiredSize property of sink,
@@ -269,8 +297,9 @@ export class MessageHandler {
                 }, transfers);
             },
             close() {
-                if (this.isCancelled)
+                if (this.isCancelled) {
                     return;
+                }
                 this.isCancelled = true;
                 comObj.postMessage({
                     sourceName,
@@ -281,9 +310,10 @@ export class MessageHandler {
                 delete self.streamSinks[streamId];
             },
             error(reason) {
-                // assert(reason instanceof Error, "error must have a valid reason");
-                if (this.isCancelled)
+                assert(reason instanceof Error, "error must have a valid reason");
+                if (this.isCancelled) {
                     return;
+                }
                 this.isCancelled = true;
                 comObj.postMessage({
                     sourceName,
@@ -300,7 +330,7 @@ export class MessageHandler {
         };
         sinkCapability.resolve();
         this.streamSinks[streamId] = streamSink;
-        new Promise(resolve => {
+        new Promise((resolve) => {
             resolve(action(data.data, streamSink));
         }).then(() => {
             comObj.postMessage({
@@ -310,7 +340,7 @@ export class MessageHandler {
                 streamId,
                 success: true,
             });
-        }, reason => {
+        }, (reason) => {
             comObj.postMessage({
                 sourceName,
                 targetName,
@@ -359,7 +389,7 @@ export class MessageHandler {
                 }
                 // Reset desiredSize property of sink on every pull.
                 streamSink.desiredSize = data.desiredSize;
-                new Promise(resolve => {
+                new Promise((resolve) => {
                     resolve(streamSink.onPull && streamSink.onPull());
                 }).then(() => {
                     comObj.postMessage({
@@ -369,7 +399,7 @@ export class MessageHandler {
                         streamId,
                         success: true,
                     });
-                }, reason => {
+                }, (reason) => {
                     comObj.postMessage({
                         sourceName,
                         targetName,
@@ -381,14 +411,16 @@ export class MessageHandler {
                 break;
             case StreamKind.ENQUEUE:
                 assert(streamController, "enqueue should have stream controller");
-                if (streamController.isClosed)
+                if (streamController.isClosed) {
                     break;
+                }
                 streamController.controller.enqueue(data.chunk);
                 break;
             case StreamKind.CLOSE:
                 assert(streamController, "close should have stream controller");
-                if (streamController.isClosed)
+                if (streamController.isClosed) {
                     break;
+                }
                 streamController.isClosed = true;
                 streamController.controller.close();
                 this.#deleteStreamController(streamController, streamId);
@@ -408,10 +440,12 @@ export class MessageHandler {
                 this.#deleteStreamController(streamController, streamId);
                 break;
             case StreamKind.CANCEL:
-                if (!streamSink)
+                if (!streamSink) {
                     break;
-                new Promise(resolve => {
-                    resolve(streamSink.onCancel && streamSink.onCancel(wrapReason(data.reason)));
+                }
+                new Promise((resolve) => {
+                    resolve(streamSink.onCancel &&
+                        streamSink.onCancel(wrapReason(data.reason)));
                 }).then(() => {
                     comObj.postMessage({
                         sourceName,
@@ -420,7 +454,7 @@ export class MessageHandler {
                         streamId,
                         success: true,
                     });
-                }, reason => {
+                }, (reason) => {
                     comObj.postMessage({
                         sourceName,
                         targetName,
@@ -451,5 +485,5 @@ export class MessageHandler {
         this.comObj.removeEventListener("message", this.#onComObjOnMessage);
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=message_handler.js.map

@@ -1,12 +1,27 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
+/* Copyright 2012 Mozilla Foundation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import { _PDFDEV } from "../../../global.js";
 import { assert } from "../../../lib/util/trace.js";
 import { FormatError, info, shadow, warn } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
 import { MissingDataException } from "./core_utils.js";
 import { Dict, Name, Ref } from "./primitives.js";
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 /**
  * Resizes an RGB image with 3 components.
  * @param src The source buffer.
@@ -82,12 +97,9 @@ export class ColorSpace {
      * @final
      */
     fillRgb(dest, originalWidth, originalHeight, width, height, actualHeight, bpc, comps, alpha01) {
-        // if (
-        //   typeof PDFJSDev === "undefined" ||
-        //   PDFJSDev.test("!PRODUCTION || TESTING")
-        // ) {
-        assert(dest instanceof Uint8ClampedArray, 'ColorSpace.fillRgb: Unsupported "dest" type.');
-        // }
+        /*#static*/  {
+            assert(dest instanceof Uint8ClampedArray, 'ColorSpace.fillRgb: Unsupported "dest" type.');
+        }
         const count = originalWidth * originalHeight;
         let rgbBuf = null;
         const numComponentColors = 1 << bpc;
@@ -198,27 +210,32 @@ export class ColorSpace {
         }
         if (cacheKey instanceof Ref) {
             const localColorSpace = localColorSpaceCache.getByRef(cacheKey);
-            if (localColorSpace)
+            if (localColorSpace) {
                 return localColorSpace;
+            }
             try {
                 cacheKey = xref.fetch(cacheKey);
             }
             catch (ex) {
-                if (ex instanceof MissingDataException)
+                if (ex instanceof MissingDataException) {
                     throw ex;
+                }
                 // Any errors should be handled during parsing, rather than here.
             }
         }
         if (cacheKey instanceof Name) {
             const localColorSpace = localColorSpaceCache.getByName(cacheKey.name);
-            if (localColorSpace)
+            if (localColorSpace) {
                 return localColorSpace;
+            }
         }
         return undefined;
     }
     static async parseAsync({ cs, xref, resources, pdfFunctionFactory, localColorSpaceCache, }) {
-        assert(!this.getCached(cs, xref, localColorSpaceCache), "Expected `ColorSpace.getCached` to have been manually checked " +
-            "before calling `ColorSpace.parseAsync`.");
+        /*#static*/  {
+            assert(!this.getCached(cs, xref, localColorSpaceCache), "Expected `ColorSpace.getCached` to have been manually checked " +
+                "before calling `ColorSpace.parseAsync`.");
+        }
         const parsedColorSpace = this._parse(cs, xref, resources, pdfFunctionFactory);
         // Attempt to cache the parsed ColorSpace, by name and/or reference.
         this._cache(cs, xref, localColorSpaceCache, parsedColorSpace);
@@ -226,8 +243,9 @@ export class ColorSpace {
     }
     static parse({ cs, xref, resources, pdfFunctionFactory, localColorSpaceCache, }) {
         const cachedColorSpace = this.getCached(cs, xref, localColorSpaceCache);
-        if (cachedColorSpace)
+        if (cachedColorSpace) {
             return cachedColorSpace;
+        }
         const parsedColorSpace = this._parse(cs, xref, resources, pdfFunctionFactory);
         // Attempt to cache the parsed ColorSpace, by name and/or reference.
         this._cache(cs, xref, localColorSpaceCache, parsedColorSpace);
@@ -300,16 +318,20 @@ export class ColorSpace {
                         const altCS = this._parse(alt, xref, resources, pdfFunctionFactory);
                         // Ensure that the number of components are correct,
                         // and also (indirectly) that it is not a PatternCS.
-                        if (altCS.numComps === numComps)
+                        if (altCS.numComps === numComps) {
                             return altCS;
+                        }
                         warn("ICCBased color space: Ignoring incorrect /Alternate entry.");
                     }
-                    if (numComps === 1)
+                    if (numComps === 1) {
                         return this.singletons.gray;
-                    else if (numComps === 3)
+                    }
+                    else if (numComps === 3) {
                         return this.singletons.rgb;
-                    else if (numComps === 4)
+                    }
+                    else if (numComps === 4) {
                         return this.singletons.cmyk;
+                    }
                     break;
                 case "Pattern":
                     baseCS = cs[1] || undefined;
@@ -352,15 +374,17 @@ export class ColorSpace {
      * @param numComps Number of components the color space has.
      */
     static isDefaultDecode(decode, numComps) {
-        if (!Array.isArray(decode))
+        if (!Array.isArray(decode)) {
             return true;
+        }
         if (numComps * 2 !== decode.length) {
             warn("The decode map is not the correct length");
             return true;
         }
         for (let i = 0, ii = decode.length; i < ii; i += 2) {
-            if (decode[i] !== 0 || decode[i + 1] !== 1)
+            if (decode[i] !== 0 || decode[i + 1] !== 1) {
                 return false;
+            }
         }
         return true;
     }
@@ -395,27 +419,27 @@ class AlternateCS extends ColorSpace {
         this.tintFn = tintFn;
         this.tmpBuf = new Float32Array(base.numComps);
     }
-    /** @implements */
+    /** @implement */
     getRgbItem(src, srcOffset, dest, destOffset) {
-        assert(dest instanceof Uint8ClampedArray, 'AlternateCS.getRgbItem: Unsupported "dest" type.');
+        /*#static*/  {
+            assert(dest instanceof Uint8ClampedArray, 'AlternateCS.getRgbItem: Unsupported "dest" type.');
+        }
         const tmpBuf = this.tmpBuf;
         this.tintFn(src, srcOffset, tmpBuf, 0);
         this.base.getRgbItem(tmpBuf, 0, dest, destOffset);
     }
-    /** @implements */
+    /** @implement */
     getRgbBuffer(src, srcOffset, count, dest, destOffset, bits, alpha01) {
-        // if (
-        //   typeof PDFJSDev === "undefined" ||
-        //   PDFJSDev.test("!PRODUCTION || TESTING")
-        // ) {
-        assert(dest instanceof Uint8ClampedArray, 'AlternateCS.getRgbBuffer: Unsupported "dest" type.');
-        // }
+        /*#static*/  {
+            assert(dest instanceof Uint8ClampedArray, 'AlternateCS.getRgbBuffer: Unsupported "dest" type.');
+        }
         const tintFn = this.tintFn;
         const base = this.base;
         const scale = 1 / ((1 << bits) - 1);
         const baseNumComps = base.numComps;
         const usesZeroToOneRange = base.usesZeroToOneRange;
-        const isPassthrough = (base.isPassthrough(8) || !usesZeroToOneRange) && alpha01 === 0;
+        const isPassthrough = (base.isPassthrough(8) || !usesZeroToOneRange) &&
+            alpha01 === 0;
         let pos = isPassthrough ? destOffset : 0;
         const baseBuf = isPassthrough
             ? dest
@@ -443,7 +467,7 @@ class AlternateCS extends ColorSpace {
             base.getRgbBuffer(baseBuf, 0, count, dest, destOffset, 8, alpha01);
         }
     }
-    /** @implements */
+    /** @implement */
     getOutputLength(inputLength, alpha01) {
         return this.base.getOutputLength((inputLength * this.base.numComps) / this.numComps, alpha01);
     }
@@ -453,15 +477,15 @@ class PatternCS extends ColorSpace {
         super("Pattern");
         this.base = baseCS;
     }
-    /** @implements */
+    /** @implement */
     getRgbItem() {
         assert(0, "Should not call PatternCS.getRgbItem");
     }
-    /** @implements */
+    /** @implement */
     getRgbBuffer() {
         assert(0, "Should not call PatternCS.getRgbBuffer");
     }
-    /** @implements */
+    /** @implement */
     getOutputLength(inputLength, alpha01) {
         assert(0, "Should not call ColorSpace.getOutputLength");
         return 0;
@@ -496,26 +520,20 @@ class IndexedCS extends ColorSpace {
             throw new FormatError(`IndexedCS - unrecognized lookup table: ${lookup}`);
         }
     }
-    /** @implements */
+    /** @implement */
     getRgbItem(src, srcOffset, dest, destOffset) {
-        // if (
-        //   typeof PDFJSDev === "undefined" ||
-        //   PDFJSDev.test("!PRODUCTION || TESTING")
-        // ) {
-        assert(dest instanceof Uint8ClampedArray, 'IndexedCS.getRgbItem: Unsupported "dest" type.');
-        // }
+        /*#static*/  {
+            assert(dest instanceof Uint8ClampedArray, 'IndexedCS.getRgbItem: Unsupported "dest" type.');
+        }
         const numComps = this.base.numComps;
         const start = src[srcOffset] * numComps;
         this.base.getRgbBuffer(this.lookup, start, 1, dest, destOffset, 8, 0);
     }
-    /** @implements */
+    /** @implement */
     getRgbBuffer(src, srcOffset, count, dest, destOffset, bits, alpha01) {
-        // if (
-        //   typeof PDFJSDev === "undefined" ||
-        //   PDFJSDev.test("!PRODUCTION || TESTING")
-        // ) {
-        assert(dest instanceof Uint8ClampedArray, 'IndexedCS.getRgbBuffer: Unsupported "dest" type.');
-        // }
+        /*#static*/  {
+            assert(dest instanceof Uint8ClampedArray, 'IndexedCS.getRgbBuffer: Unsupported "dest" type.');
+        }
         const base = this.base;
         const numComps = base.numComps;
         const outputDelta = base.getOutputLength(numComps, alpha01);
@@ -551,20 +569,19 @@ export class DeviceGrayCS extends ColorSpace {
     constructor() {
         super("DeviceGray", 1);
     }
-    /** @implements */
+    /** @implement */
     getRgbItem(src, srcOffset, dest, destOffset) {
-        assert(dest instanceof Uint8ClampedArray, 'DeviceGrayCS.getRgbItem: Unsupported "dest" type.');
+        /*#static*/  {
+            assert(dest instanceof Uint8ClampedArray, 'DeviceGrayCS.getRgbItem: Unsupported "dest" type.');
+        }
         const c = src[srcOffset] * 255;
         dest[destOffset] = dest[destOffset + 1] = dest[destOffset + 2] = c;
     }
-    /** @implements */
+    /** @implement */
     getRgbBuffer(src, srcOffset, count, dest, destOffset, bits, alpha01) {
-        // if (
-        //   typeof PDFJSDev === "undefined" ||
-        //   PDFJSDev.test("!PRODUCTION || TESTING")
-        // ) {
-        assert(dest instanceof Uint8ClampedArray, 'DeviceGrayCS.getRgbBuffer: Unsupported "dest" type.');
-        // }
+        /*#static*/  {
+            assert(dest instanceof Uint8ClampedArray, 'DeviceGrayCS.getRgbBuffer: Unsupported "dest" type.');
+        }
         const scale = 255 / ((1 << bits) - 1);
         let j = srcOffset, q = destOffset;
         for (let i = 0; i < count; ++i) {
@@ -586,21 +603,20 @@ class DeviceRgbCS extends ColorSpace {
     constructor() {
         super("DeviceRGB", 3);
     }
-    /** @implements */
+    /** @implement */
     getRgbItem(src, srcOffset, dest, destOffset) {
-        assert(dest instanceof Uint8ClampedArray, 'DeviceRgbCS.getRgbItem: Unsupported "dest" type.');
+        /*#static*/  {
+            assert(dest instanceof Uint8ClampedArray, 'DeviceRgbCS.getRgbItem: Unsupported "dest" type.');
+        }
         dest[destOffset] = src[srcOffset] * 255;
         dest[destOffset + 1] = src[srcOffset + 1] * 255;
         dest[destOffset + 2] = src[srcOffset + 2] * 255;
     }
-    /** @implements */
+    /** @implement */
     getRgbBuffer(src, srcOffset, count, dest, destOffset, bits, alpha01) {
-        // if (
-        //   typeof PDFJSDev === "undefined" ||
-        //   PDFJSDev.test("!PRODUCTION || TESTING")
-        // ) {
-        assert(dest instanceof Uint8ClampedArray, 'DeviceRgbCS.getRgbBuffer: Unsupported "dest" type.');
-        // }
+        /*#static*/  {
+            assert(dest instanceof Uint8ClampedArray, 'DeviceRgbCS.getRgbBuffer: Unsupported "dest" type.');
+        }
         if (bits === 8 && alpha01 === 0) {
             dest.set(src.subarray(srcOffset, srcOffset + count * 3), destOffset);
             return;
@@ -637,74 +653,70 @@ var NsDeviceCmykCS;
         const m = src[srcOffset + 1] * srcScale;
         const y = src[srcOffset + 2] * srcScale;
         const k = src[srcOffset + 3] * srcScale;
-        dest[destOffset] =
-            255 +
-                c *
-                    (-4.387332384609988 * c +
-                        54.48615194189176 * m +
-                        18.82290502165302 * y +
-                        212.25662451639585 * k +
-                        -285.2331026137004) +
-                m *
-                    (1.7149763477362134 * m -
-                        5.6096736904047315 * y +
-                        -17.873870861415444 * k -
-                        5.497006427196366) +
-                y *
-                    (-2.5217340131683033 * y - 21.248923337353073 * k + 17.5119270841813) +
-                k * (-21.86122147463605 * k - 189.48180835922747);
-        dest[destOffset + 1] =
-            255 +
-                c *
-                    (8.841041422036149 * c +
-                        60.118027045597366 * m +
-                        6.871425592049007 * y +
-                        31.159100130055922 * k +
-                        -79.2970844816548) +
-                m *
-                    (-15.310361306967817 * m +
-                        17.575251261109482 * y +
-                        131.35250912493976 * k -
-                        190.9453302588951) +
-                y * (4.444339102852739 * y + 9.8632861493405 * k - 24.86741582555878) +
-                k * (-20.737325471181034 * k - 187.80453709719578);
-        dest[destOffset + 2] =
-            255 +
-                c *
-                    (0.8842522430003296 * c +
-                        8.078677503112928 * m +
-                        30.89978309703729 * y -
-                        0.23883238689178934 * k +
-                        -14.183576799673286) +
-                m *
-                    (10.49593273432072 * m +
-                        63.02378494754052 * y +
-                        50.606957656360734 * k -
-                        112.23884253719248) +
-                y *
-                    (0.03296041114873217 * y +
-                        115.60384449646641 * k +
-                        -193.58209356861505) +
-                k * (-22.33816807309886 * k - 180.12613974708367);
+        dest[destOffset] = 255 +
+            c *
+                (-4.387332384609988 * c +
+                    54.48615194189176 * m +
+                    18.82290502165302 * y +
+                    212.25662451639585 * k +
+                    -285.2331026137004) +
+            m *
+                (1.7149763477362134 * m -
+                    5.6096736904047315 * y +
+                    -17.873870861415444 * k -
+                    5.497006427196366) +
+            y *
+                (-2.5217340131683033 * y - 21.248923337353073 * k + 17.5119270841813) +
+            k * (-21.86122147463605 * k - 189.48180835922747);
+        dest[destOffset + 1] = 255 +
+            c *
+                (8.841041422036149 * c +
+                    60.118027045597366 * m +
+                    6.871425592049007 * y +
+                    31.159100130055922 * k +
+                    -79.2970844816548) +
+            m *
+                (-15.310361306967817 * m +
+                    17.575251261109482 * y +
+                    131.35250912493976 * k -
+                    190.9453302588951) +
+            y * (4.444339102852739 * y + 9.8632861493405 * k - 24.86741582555878) +
+            k * (-20.737325471181034 * k - 187.80453709719578);
+        dest[destOffset + 2] = 255 +
+            c *
+                (0.8842522430003296 * c +
+                    8.078677503112928 * m +
+                    30.89978309703729 * y -
+                    0.23883238689178934 * k +
+                    -14.183576799673286) +
+            m *
+                (10.49593273432072 * m +
+                    63.02378494754052 * y +
+                    50.606957656360734 * k -
+                    112.23884253719248) +
+            y *
+                (0.03296041114873217 * y +
+                    115.60384449646641 * k +
+                    -193.58209356861505) +
+            k * (-22.33816807309886 * k - 180.12613974708367);
     }
     // eslint-disable-next-line no-shadow
     class DeviceCmykCS extends ColorSpace {
         constructor() {
             super("DeviceCMYK", 4);
         }
-        /** @implements */
+        /** @implement */
         getRgbItem(src, srcOffset, dest, destOffset) {
-            assert(dest instanceof Uint8ClampedArray, 'DeviceCmykCS.getRgbItem: Unsupported "dest" type.');
+            /*#static*/  {
+                assert(dest instanceof Uint8ClampedArray, 'DeviceCmykCS.getRgbItem: Unsupported "dest" type.');
+            }
             convertToRgb(src, srcOffset, 1, dest, destOffset);
         }
-        /** @implements */
+        /** @implement */
         getRgbBuffer(src, srcOffset, count, dest, destOffset, bits, alpha01) {
-            // if (
-            //   typeof PDFJSDev === "undefined" ||
-            //   PDFJSDev.test("!PRODUCTION || TESTING")
-            // ) {
-            assert(dest instanceof Uint8ClampedArray, 'DeviceCmykCS.getRgbBuffer: Unsupported "dest" type.');
-            // }
+            /*#static*/  {
+                assert(dest instanceof Uint8ClampedArray, 'DeviceCmykCS.getRgbBuffer: Unsupported "dest" type.');
+            }
             const scale = 1 / ((1 << bits) - 1);
             for (let i = 0; i < count; i++) {
                 convertToRgb(src, srcOffset, scale, dest, destOffset);
@@ -718,6 +730,7 @@ var NsDeviceCmykCS;
     }
     NsDeviceCmykCS.DeviceCmykCS = DeviceCmykCS;
 })(NsDeviceCmykCS || (NsDeviceCmykCS = {}));
+// Hoisting for deno.
 var DeviceCmykCS = NsDeviceCmykCS.DeviceCmykCS;
 /**
  * CalGrayCS: Based on "PDF Reference, Sixth Ed", p.245
@@ -784,19 +797,18 @@ var NsCalGrayCS;
                 this.G = 1;
             }
         }
-        /** @implements */
+        /** @implement */
         getRgbItem(src, srcOffset, dest, destOffset) {
-            assert(dest instanceof Uint8ClampedArray, 'CalGrayCS.getRgbItem: Unsupported "dest" type.');
+            /*#static*/  {
+                assert(dest instanceof Uint8ClampedArray, 'CalGrayCS.getRgbItem: Unsupported "dest" type.');
+            }
             convertToRgb(this, src, srcOffset, dest, destOffset, 1);
         }
-        /** @implements */
+        /** @implement */
         getRgbBuffer(src, srcOffset, count, dest, destOffset, bits, alpha01) {
-            // if (
-            //   typeof PDFJSDev === "undefined" ||
-            //   PDFJSDev.test("!PRODUCTION || TESTING")
-            // ) {
-            assert(dest instanceof Uint8ClampedArray, 'CalGrayCS.getRgbBuffer: Unsupported "dest" type.');
-            // }
+            /*#static*/  {
+                assert(dest instanceof Uint8ClampedArray, 'CalGrayCS.getRgbBuffer: Unsupported "dest" type.');
+            }
             const scale = 1 / ((1 << bits) - 1);
             for (let i = 0; i < count; ++i) {
                 convertToRgb(this, src, srcOffset, dest, destOffset, scale);
@@ -810,6 +822,7 @@ var NsCalGrayCS;
     }
     NsCalGrayCS.CalGrayCS = CalGrayCS;
 })(NsCalGrayCS || (NsCalGrayCS = {}));
+// Hoisting for deno.
 var CalGrayCS = NsCalGrayCS.CalGrayCS;
 /**
  * CalRGBCS: Based on "PDF Reference, Sixth Ed", p.247
@@ -822,22 +835,40 @@ var NsCalRGBCS;
     // matrices.
     // prettier-ignore
     const BRADFORD_SCALE_MATRIX = new Float32Array([
-        0.8951, 0.2664, -0.1614,
-        -0.7502, 1.7135, 0.0367,
-        0.0389, -0.0685, 1.0296
+        0.8951,
+        0.2664,
+        -0.1614,
+        -0.7502,
+        1.7135,
+        0.0367,
+        0.0389,
+        -0.0685,
+        1.0296,
     ]);
     // prettier-ignore
     const BRADFORD_SCALE_INVERSE_MATRIX = new Float32Array([
-        0.9869929, -0.1470543, 0.1599627,
-        0.4323053, 0.5183603, 0.0492912,
-        -0.0085287, 0.0400428, 0.9684867
+        0.9869929,
+        -0.1470543,
+        0.1599627,
+        0.4323053,
+        0.5183603,
+        0.0492912,
+        -0.0085287,
+        0.0400428,
+        0.9684867,
     ]);
     // See http://www.brucelindbloom.com/index.html?Eqn_RGB_XYZ_Matrix.html.
     // prettier-ignore
     const SRGB_D65_XYZ_TO_RGB_MATRIX = new Float32Array([
-        3.2404542, -1.5371385, -0.4985314,
-        -0.9692660, 1.8760108, 0.0415560,
-        0.0556434, -0.2040259, 1.0572252
+        3.2404542,
+        -1.5371385,
+        -0.4985314,
+        -0.9692660,
+        1.8760108,
+        0.0415560,
+        0.0556434,
+        -0.2040259,
+        1.0572252,
     ]);
     const FLAT_WHITEPOINT_MATRIX = new Float32Array([1, 1, 1]);
     const tempNormalizeMatrix = new Float32Array(3);
@@ -1042,19 +1073,18 @@ var NsCalRGBCS;
                 this.GR = this.GG = this.GB = 1;
             }
         }
-        /** @implements */
+        /** @implement */
         getRgbItem(src, srcOffset, dest, destOffset) {
-            assert(dest instanceof Uint8ClampedArray, 'CalRGBCS.getRgbItem: Unsupported "dest" type.');
+            /*#static*/  {
+                assert(dest instanceof Uint8ClampedArray, 'CalRGBCS.getRgbItem: Unsupported "dest" type.');
+            }
             convertToRgb(this, src, srcOffset, dest, destOffset, 1);
         }
-        /** @implements */
+        /** @implement */
         getRgbBuffer(src, srcOffset, count, dest, destOffset, bits, alpha01) {
-            // if (
-            //   typeof PDFJSDev === "undefined" ||
-            //   PDFJSDev.test("!PRODUCTION || TESTING")
-            // ) {
-            assert(dest instanceof Uint8ClampedArray, 'CalRGBCS.getRgbBuffer: Unsupported "dest" type.');
-            // }
+            /*#static*/  {
+                assert(dest instanceof Uint8ClampedArray, 'CalRGBCS.getRgbBuffer: Unsupported "dest" type.');
+            }
             const scale = 1 / ((1 << bits) - 1);
             for (let i = 0; i < count; ++i) {
                 convertToRgb(this, src, srcOffset, dest, destOffset, scale);
@@ -1068,6 +1098,7 @@ var NsCalRGBCS;
     }
     NsCalRGBCS.CalRGBCS = CalRGBCS;
 })(NsCalRGBCS || (NsCalRGBCS = {}));
+// Hoisting for deno.
 var CalRGBCS = NsCalRGBCS.CalRGBCS;
 /**
  * LabCS: Based on "PDF Reference, Sixth Ed", p.250
@@ -1194,19 +1225,18 @@ var NsLabCS;
                 this.bmax = 100;
             }
         }
-        /** @implements */
+        /** @implement */
         getRgbItem(src, srcOffset, dest, destOffset) {
-            assert(dest instanceof Uint8ClampedArray, 'LabCS.getRgbItem: Unsupported "dest" type.');
+            /*#static*/  {
+                assert(dest instanceof Uint8ClampedArray, 'LabCS.getRgbItem: Unsupported "dest" type.');
+            }
             convertToRgb(this, src, srcOffset, false, dest, destOffset);
         }
-        /** @implements */
+        /** @implement */
         getRgbBuffer(src, srcOffset, count, dest, destOffset, bits, alpha01) {
-            // if (
-            //   typeof PDFJSDev === "undefined" ||
-            //   PDFJSDev.test("!PRODUCTION || TESTING")
-            // ) {
-            assert(dest instanceof Uint8ClampedArray, 'LabCS.getRgbBuffer: Unsupported "dest" type.');
-            // }
+            /*#static*/  {
+                assert(dest instanceof Uint8ClampedArray, 'LabCS.getRgbBuffer: Unsupported "dest" type.');
+            }
             const maxVal = (1 << bits) - 1;
             for (let i = 0; i < count; i++) {
                 convertToRgb(this, src, srcOffset, maxVal, dest, destOffset);
@@ -1228,6 +1258,7 @@ var NsLabCS;
     }
     NsLabCS.LabCS = LabCS;
 })(NsLabCS || (NsLabCS = {}));
+// Hoisting for deno.
 var LabCS = NsLabCS.LabCS;
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=colorspace.js.map

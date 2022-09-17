@@ -17,13 +17,26 @@
  * limitations under the License.
  */
 
-import { stringToBytes, Util, warn, type rect_t } from "../../shared/util.js";
-import { recoverJsURL } from "../core_utils.js";
+import { stringToBytes, Util, warn, type rect_t } from "../../shared/util.ts";
+import { recoverJsURL } from "../core_utils.ts";
 import {
-  type AvailableSpace, type XFAAttrs, type XFAElData, type XFAElObj, type XFAElObjBase, type XFAExtra, type XFAFontBase, type XFAHTMLAttrs, type XFAHTMLObj, type XFAIds, type XFAStyleData, type XFASVGAttrs, type XFASVGObj, type XFAValue
-} from "./alias.js";
-import { Builder } from "./builder.js";
-import { getMetrics } from "./fonts.js";
+  type AvailableSpace,
+  type XFAAttrs,
+  type XFAElData,
+  type XFAElObj,
+  type XFAElObjBase,
+  type XFAExtra,
+  type XFAFontBase,
+  type XFAHTMLAttrs,
+  type XFAHTMLObj,
+  type XFAIds,
+  type XFAStyleData,
+  type XFASVGAttrs,
+  type XFASVGObj,
+  type XFAValue
+} from "./alias.ts";
+import { Builder } from "./builder.ts";
+import { getMetrics } from "./fonts.ts";
 import {
   computeBbox,
   createWrapper,
@@ -40,15 +53,15 @@ import {
   setPara,
   toStyle,
   type XFALayoutMode
-} from "./html_utils.js";
+} from "./html_utils.ts";
 import {
   addHTML,
   checkDimensions,
   flushHTML,
   getAvailableSpace
-} from "./layout.js";
-import { $buildXFAObject, NamespaceIds } from "./namespaces.js";
-import { searchNode } from "./som.js";
+} from "./layout.ts";
+import { $buildXFAObject, NamespaceIds } from "./namespaces.ts";
+import { searchNode } from "./som.ts";
 import {
   getBBox,
   getColor,
@@ -58,8 +71,10 @@ import {
   getMeasurement,
   getRatio,
   getRelevant,
-  getStringOption, HTMLResult, type XFAColor
-} from "./utils.js";
+  getStringOption,
+  HTMLResult,
+  type XFAColor
+} from "./utils.ts";
 import {
   $acceptWhitespace,
   $addHTML,
@@ -112,9 +127,9 @@ import {
   XFAObject,
   XFAObjectArray,
   XmlObject
-} from "./xfa_object.js";
-import { XhtmlObject } from "./xhtml.js";
-/*81---------------------------------------------------------------------------*/
+} from "./xfa_object.ts";
+import { XhtmlObject } from "./xhtml.ts";
+/*80--------------------------------------------------------------------------*/
 
 const TEMPLATE_NS_ID = NamespaceIds.template.id;
 const SVG_NS = "http://www.w3.org/2000/svg";
@@ -153,7 +168,7 @@ const MIMES = new Set([
   "application/octet-stream",
 ]);
 
-const IMAGES_HEADERS:[number[], string][] = [
+const IMAGES_HEADERS: [number[], string][] = [
   [[0x42, 0x4d], "image/bmp"],
   [[0xff, 0xd8, 0xff], "image/jpeg"],
   [[0x49, 0x49, 0x2a, 0x00], "image/tiff"],
@@ -162,63 +177,57 @@ const IMAGES_HEADERS:[number[], string][] = [
   [[0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a], "image/png"],
 ];
 
-interface BorderDims
-{
-  w:number;
-  h:number;
+interface BorderDims {
+  w: number;
+  h: number;
 }
 
-function getBorderDims( node?:XFAObject ):BorderDims
-{
-  if (!node || !node.border) 
+function getBorderDims(node?: XFAObject): BorderDims {
+  if (!node || !node.border) {
     return { w: 0, h: 0 };
+  }
 
-  const borderExtra = (<Border>node.border)[$getExtra]();
-  if( !borderExtra )
+  const borderExtra = (<Border> node.border)[$getExtra]();
+  if (!borderExtra) {
     return { w: 0, h: 0 };
+  }
 
   return {
-    w:
-      borderExtra.widths![0] +
+    w: borderExtra.widths![0] +
       borderExtra.widths![2] +
       borderExtra.insets![0] +
       borderExtra.insets![2],
-    h:
-      borderExtra.widths![1] +
+    h: borderExtra.widths![1] +
       borderExtra.widths![3] +
       borderExtra.insets![1] +
       borderExtra.insets![3],
   };
 }
 
-function hasMargin( node:XFAObject )
-{
+function hasMargin(node: XFAObject) {
   return (
     node.margin &&
-    ((<Margin>node.margin).topInset ||
-      (<Margin>node.margin).rightInset ||
-      (<Margin>node.margin).bottomInset ||
-      (<Margin>node.margin).leftInset)
+    ((<Margin> node.margin).topInset ||
+      (<Margin> node.margin).rightInset ||
+      (<Margin> node.margin).bottomInset ||
+      (<Margin> node.margin).leftInset)
   );
 }
 
-function _setValue( templateNode:Caption | Draw | Field, value:XFAValue )
-{
-  if( !templateNode.value )
-  {
+function _setValue(templateNode: Caption | Draw | Field, value: XFAValue) {
+  if (!templateNode.value) {
     const nodeValue = new Value({});
     templateNode[$appendChild](nodeValue);
     templateNode.value = nodeValue;
   }
-  templateNode.value[$setValue]( value );
+  templateNode.value[$setValue](value);
 }
 
-function* getContainedChildren( node:Area | Subform | SubformSet ):Generator<XFAObject>
-{
-  for( const child of node[$getChildren]()) 
-  {
-    if( child instanceof SubformSet ) 
-    {
+function* getContainedChildren(
+  node: Area | Subform | SubformSet,
+): Generator<XFAObject> {
+  for (const child of node[$getChildren]()) {
+    if (child instanceof SubformSet) {
       yield* child[$getContainedChildren]();
       continue;
     }
@@ -226,31 +235,30 @@ function* getContainedChildren( node:Area | Subform | SubformSet ):Generator<XFA
   }
 }
 
-function setTabIndex( node:XFAObject )
-{
-  while( node ) 
-  {
-    if (!node.traversal) 
-    {
+function isRequired(node: Field) {
+  return node.validate && node.validate.nullTest === "error";
+}
+
+function setTabIndex(node: XFAObject) {
+  while (node) {
+    if (!node.traversal) {
       node[$tabIndex] = node[$getParent]()![$tabIndex];
       return;
     }
 
-    if( node[$tabIndex] ) 
+    if (node[$tabIndex]) {
       return;
+    }
 
-    let next:XFAObject | undefined;
-    for( const child of (<Traversal>node.traversal)[$getChildren]() ) 
-    {
-      if (child.operation === "next") 
-      {
+    let next: XFAObject | undefined;
+    for (const child of (<Traversal> node.traversal)[$getChildren]()) {
+      if (child.operation === "next") {
         next = child;
         break;
       }
     }
 
-    if( !next || !next.ref ) 
-    {
+    if (!next || !next.ref) {
       node[$tabIndex] = node[$getParent]()![$tabIndex];
       return;
     }
@@ -258,28 +266,28 @@ function setTabIndex( node:XFAObject )
     const root = node[$getTemplateRoot]()!;
     node[$tabIndex] = ++root[$tabIndex]!;
 
-    const ref = root[$searchNode]( <string>next.ref, node );
-    if (!ref) 
+    const ref = root[$searchNode](<string> next.ref, node);
+    if (!ref) {
       return;
+    }
 
     node = ref[0];
   }
 }
 
-function applyAssist( obj:Draw | ExclGroup | Field | Subform, attributes:XFAHTMLAttrs ) 
-{
+function applyAssist(
+  obj: Draw | ExclGroup | Field | Subform,
+  attributes: XFAHTMLAttrs,
+) {
   const assist = obj.assist;
-  if (assist) 
-  {
+  if (assist) {
     const assistTitle = assist[$toHTML]();
-    if (assistTitle) 
-    {
+    if (assistTitle) {
       attributes.title = assistTitle;
     }
     const role = assist.role;
     const match = role.match(HEADING_PATTERN);
-    if (match) 
-    {
+    if (match) {
       const ariaRole = "heading";
       const ariaLevel = match[1];
       attributes.role = ariaRole;
@@ -288,45 +296,39 @@ function applyAssist( obj:Draw | ExclGroup | Field | Subform, attributes:XFAHTML
   }
   // XXX: We could end up in a situation where the obj has a heading role and
   // is also a table. For now prioritize the table role.
-  if (obj.layout === "table") 
-  {
+  if (obj.layout === "table") {
     attributes.role = "table";
-  } 
-  else if (obj.layout === "row") 
-  {
+  } else if (obj.layout === "row") {
     attributes.role = "row";
-  } 
-  else {
+  } else {
     const parent = obj[$getParent]()!;
-    if( parent.layout === "row" ) 
-    {
-      if( parent.assist && (<Assist>parent.assist).role === "TH" ) 
-      {
+    if (parent.layout === "row") {
+      if (parent.assist && (<Assist> parent.assist).role === "TH") {
         attributes.role = "columnheader";
-      } 
-      else {
+      } else {
         attributes.role = "cell";
       }
     }
   }
 }
 
-function ariaLabel( obj:Field )
-{
-  if( !obj.assist ) 
+function ariaLabel(obj: Field) {
+  if (!obj.assist) {
     return undefined;
+  }
   const assist = obj.assist;
-  if (assist.speak && assist.speak[$content] !== "") 
-    return <string | undefined>assist.speak[$content];
-  if (assist.toolTip) 
-    return <string | undefined>assist.toolTip[$content];
+  if (assist.speak && assist.speak[$content] !== "") {
+    return <string | undefined> assist.speak[$content];
+  }
+  if (assist.toolTip) {
+    return <string | undefined> assist.toolTip[$content];
+  }
   // TODO: support finding the related caption element. See xfa_bug1718037.pdf
   // for an example.
   return undefined;
 }
 
-function valueToHtml( value:string )
-{
+function valueToHtml(value: string) {
   return HTMLResult.success({
     name: "div",
     attributes: {
@@ -345,114 +347,104 @@ function valueToHtml( value:string )
   });
 }
 
-function setFirstUnsplittable( node:Draw | ExclGroup | Field | Subform )
-{
+function setFirstUnsplittable(node: Draw | ExclGroup | Field | Subform) {
   const root = node[$getTemplateRoot]()!;
-  if( root[$extra].firstUnsplittable === undefined ) 
-  {
+  if (root[$extra].firstUnsplittable === undefined) {
     root[$extra].firstUnsplittable = node;
     root[$extra].noLayoutFailure = true;
   }
 }
 
-function unsetFirstUnsplittable( node:Draw | ExclGroup | Field | Subform )
-{
+function unsetFirstUnsplittable(node: Draw | ExclGroup | Field | Subform) {
   const root = node[$getTemplateRoot]()!;
-  if( root[$extra].firstUnsplittable === node ) 
-  {
+  if (root[$extra].firstUnsplittable === node) {
     root[$extra].noLayoutFailure = false;
   }
 }
 
-function handleBreak( node:BreakAfter | BreakBefore )
-{
-  if( node[$extra] ) 
+function handleBreak(node: BreakAfter | BreakBefore) {
+  if (node[$extra]) {
     return false;
+  }
 
   node[$extra] = Object.create(null);
 
-  if( node.targetType === "auto" ) 
+  if (node.targetType === "auto") {
     return false;
+  }
 
   const root = node[$getTemplateRoot]()!;
-  let target:XFAObject | undefined;
-  if( node.target ) 
-  {
-    const target_a = root[$searchNode]( node.target, node[$getParent]() );
-    if( !target_a ) 
+  let target: XFAObject | undefined;
+  if (node.target) {
+    const target_a = root[$searchNode](node.target, node[$getParent]());
+    if (!target_a) {
       return false;
+    }
     target = target_a[0];
   }
 
   const { currentPageArea, currentContentArea } = root[$extra];
 
-  if (node.targetType === "pageArea") 
-  {
-    if( !(target instanceof PageArea) ) 
-    {
+  if (node.targetType === "pageArea") {
+    if (!(target instanceof PageArea)) {
       target = undefined;
     }
 
-    if( node.startNew ) 
-    {
-      (<XFAExtra>node[$extra]).target = target || currentPageArea;
+    if (node.startNew) {
+      (<XFAExtra> node[$extra]).target = target || currentPageArea;
       return true;
-    } 
-    else if( target && target !== currentPageArea )
-    {
-      (<XFAExtra>node[$extra]).target = target;
+    } else if (target && target !== currentPageArea) {
+      (<XFAExtra> node[$extra]).target = target;
       return true;
     }
 
     return false;
   }
 
-  if( !(target instanceof ContentArea) ) 
-  {
+  if (!(target instanceof ContentArea)) {
     target = undefined;
   }
 
-  const pageArea = <PageArea | undefined>target?.[$getParent]();
+  const pageArea = <PageArea | undefined> target?.[$getParent]();
 
   let index;
   let nextPageArea = pageArea;
-  if (node.startNew) 
-  {
+  if (node.startNew) {
     // startNew === 1 so we must create a new container (pageArea or
     // contentArea).
-    if (target) 
-    {
+    if (target) {
       const contentAreas = pageArea!.contentArea.children;
-      const indexForCurrent = contentAreas.indexOf( currentContentArea! );
+      const indexForCurrent = contentAreas.indexOf(currentContentArea!);
       const indexForTarget = contentAreas.indexOf(target);
-      if (indexForCurrent !== -1 && indexForCurrent < indexForTarget) 
-      {
+      if (indexForCurrent !== -1 && indexForCurrent < indexForTarget) {
         // The next container is after the current container so
         // we can stay on the same page.
         nextPageArea = undefined;
       }
       index = indexForTarget - 1;
-    } 
-    else {
-      index = currentPageArea!.contentArea.children.indexOf( currentContentArea! );
+    } else {
+      index = currentPageArea!.contentArea.children.indexOf(
+        currentContentArea!,
+      );
     }
-  } 
-  else if( target && target !== currentContentArea )
-  {
+  } else if (target && target !== currentContentArea) {
     const contentAreas = pageArea!.contentArea.children;
     index = contentAreas.indexOf(target) - 1;
     nextPageArea = pageArea === currentPageArea ? undefined : pageArea;
-  } 
-  else 
+  } else {
     return false;
+  }
 
-  (<XFAExtra>node[$extra]).target = nextPageArea;
-  (<XFAExtra>node[$extra]).index = index;
+  (<XFAExtra> node[$extra]).target = nextPageArea;
+  (<XFAExtra> node[$extra]).index = index;
   return true;
 }
 
-function handleOverflow( node:Subform, extraNode:XFAObject, space?:AvailableSpace )
-{
+function handleOverflow(
+  node: Subform,
+  extraNode: XFAObject,
+  space?: AvailableSpace,
+) {
   const root = node[$getTemplateRoot]()!;
   const saved = root[$extra].noLayoutFailure;
   const savedMethod = extraNode[$getSubformParent];
@@ -462,19 +454,17 @@ function handleOverflow( node:Subform, extraNode:XFAObject, space?:AvailableSpac
   extraNode[$getSubformParent] = () => node;
 
   root[$extra].noLayoutFailure = true;
-  const res = <HTMLResult>extraNode[$toHTML](space);
-  node[$addHTML]( res.html!, res.bbox! );
+  const res = <HTMLResult> extraNode[$toHTML](space);
+  node[$addHTML](res.html!, res.bbox!);
   root[$extra].noLayoutFailure = saved;
   extraNode[$getSubformParent] = savedMethod;
 }
 
-class AppearanceFilter extends StringObject
-{
+class AppearanceFilter extends StringObject {
   type;
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "appearanceFilter" );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "appearanceFilter");
     this.id = attributes.id || "";
     this.type = getStringOption(attributes.type, ["optional", "required"]);
     this.use = attributes.use || "";
@@ -482,56 +472,52 @@ class AppearanceFilter extends StringObject
   }
 }
 
-class Arc extends XFAObject
-{
+class Arc extends XFAObject {
   circular;
   hand;
   startAngle;
   sweepAngle;
-  edge?:Edge;
-  fill?:Fill;
+  edge?: Edge;
+  fill?: Fill;
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "arc", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "arc", /* hasChildren = */ true);
     this.circular = getInteger({
       data: attributes.circular,
       defaultValue: 0,
-      validate: x => x === 1,
+      validate: (x) => x === 1,
     });
     this.hand = getStringOption(attributes.hand, ["even", "left", "right"]);
     this.id = attributes.id || "";
     this.startAngle = getFloat({
       data: attributes.startAngle,
       defaultValue: 0,
-      validate: x => true,
+      validate: (x) => true,
     });
     this.sweepAngle = getFloat({
       data: attributes.sweepAngle,
       defaultValue: 360,
-      validate: x => true,
+      validate: (x) => true,
     });
     this.use = attributes.use || "";
     this.usehref = attributes.usehref || "";
   }
 
-  override [$toHTML]()
-  {
-    const edge = this.edge ? this.edge : new Edge({});
+  override [$toHTML]() {
+    const edge = this.edge || new Edge({});
     const edgeStyle = edge[$toStyle]();
     const style = Object.create(null);
     if (this.fill && this.fill.presence === "visible") {
       Object.assign(style, this.fill[$toStyle]());
-    } 
-    else {
+    } else {
       style.fill = "transparent";
     }
     style.strokeWidth = measureToString(
-      edge.presence === "visible" ? edge.thickness : 0
+      edge.presence === "visible" ? edge.thickness : 0,
     );
     style.stroke = edgeStyle.color;
-    let arc:XFAHTMLObj;
-    const attributes:XFASVGAttrs = {
+    let arc: XFAHTMLObj;
+    const attributes: XFASVGAttrs = {
       xmlns: SVG_NS,
       style: {
         width: "100%",
@@ -540,11 +526,10 @@ class Arc extends XFAObject
       },
     };
 
-    if (this.sweepAngle === 360) 
-    {
+    if (this.sweepAngle === 360) {
       arc = {
         name: "ellipse",
-        attributes: <XFASVGAttrs>{
+        attributes: <XFASVGAttrs> {
           xmlns: SVG_NS,
           cx: "50%",
           cy: "50%",
@@ -553,8 +538,7 @@ class Arc extends XFAObject
           style,
         },
       };
-    } 
-    else {
+    } else {
       const startAngle = (this.startAngle * Math.PI) / 180;
       const sweepAngle = (this.sweepAngle * Math.PI) / 180;
       const largeArc = this.sweepAngle > 180 ? 1 : 0;
@@ -567,7 +551,7 @@ class Arc extends XFAObject
 
       arc = {
         name: "path",
-        attributes: <XFASVGAttrs>{
+        attributes: <XFASVGAttrs> {
           xmlns: SVG_NS,
           d: `M ${x1} ${y1} A 50 50 0 ${largeArc} 0 ${x2} ${y2}`,
           vectorEffect: "non-scaling-stroke",
@@ -581,15 +565,14 @@ class Arc extends XFAObject
       });
     }
 
-    const svg:XFASVGObj = {
+    const svg: XFASVGObj = {
       name: "svg",
       children: [arc],
       attributes,
     };
 
     const parent = this[$getParent]()![$getParent]()!;
-    if( hasMargin(parent) )
-    {
+    if (hasMargin(parent)) {
       return HTMLResult.success({
         name: "div",
         attributes: {
@@ -608,14 +591,13 @@ class Arc extends XFAObject
   }
 }
 
-export class Area extends XFAObject
-{
+export class Area extends XFAObject {
   override colSpan;
   relevant;
   override x;
   override y;
-  desc:unknown;
-  extras:unknown;
+  desc: unknown;
+  extras: unknown;
   area = new XFAObjectArray();
   draw = new XFAObjectArray();
   exObject = new XFAObjectArray();
@@ -624,15 +606,14 @@ export class Area extends XFAObject
   subform = new XFAObjectArray();
   subformSet = new XFAObjectArray();
 
-  override [$extra]!:XFAExtra;
+  override [$extra]!: XFAExtra;
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "area", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "area", /* hasChildren = */ true);
     this.colSpan = getInteger({
       data: attributes.colSpan,
       defaultValue: 1,
-      validate: n => n >= 1 || n === -1,
+      validate: (n) => n >= 1 || n === -1,
     });
     this.id = attributes.id || "";
     this.name = attributes.name || "";
@@ -643,52 +624,50 @@ export class Area extends XFAObject
     this.y = getMeasurement(attributes.y, "0pt");
   }
 
-  override *[$getContainedChildren]() 
-  {
+  override *[$getContainedChildren]() {
     // This function is overriden in order to fake that subforms under
     // this set are in fact under parent subform.
     yield* getContainedChildren(this);
   }
 
-  override [$isTransparent]() { return true; }
+  override [$isTransparent]() {
+    return true;
+  }
 
-  override [$isBindable]() { return true; }
+  override [$isBindable]() {
+    return true;
+  }
 
-  override [$addHTML]( html:XFAElData, bbox:rect_t )
-  {
+  override [$addHTML](html: XFAElData, bbox: rect_t) {
     const [x, y, w, h] = bbox;
-    this[$extra].width = Math.max( this[$extra].width!, x + w );
-    this[$extra].height = Math.max( this[$extra].height!, y + h );
+    this[$extra].width = Math.max(this[$extra].width!, x + w);
+    this[$extra].height = Math.max(this[$extra].height!, y + h);
 
     this[$extra].children!.push(html);
   }
 
-  override [$getAvailableSpace]()
-  {
+  override [$getAvailableSpace]() {
     return this[$extra].availableSpace;
   }
 
-  override [$toHTML]( availableSpace?:AvailableSpace )
-  {
+  override [$toHTML](availableSpace?: AvailableSpace) {
     // TODO: incomplete.
     const style = toStyle(this, "position");
-    const attributes:XFAHTMLAttrs = {
+    const attributes: XFAHTMLAttrs = {
       style,
       id: this[$uid],
       class: ["xfaArea"],
     };
 
-    if( isPrintOnly(this) )
-    {
+    if (isPrintOnly(this)) {
       attributes.class!.push("xfaPrintOnly");
     }
 
-    if( this.name )
-    {
+    if (this.name) {
       attributes.xfaName = this.name;
     }
 
-    const children:XFAElData[] = [];
+    const children: XFAElData[] = [];
     this[$extra] = {
       children,
       width: 0,
@@ -708,18 +687,18 @@ export class Area extends XFAObject
       include: true,
     });
 
-    if( !result.success )
-    {
-      if( result.isBreak() )
+    if (!result.success) {
+      if (result.isBreak()) {
         return result;
+      }
       // Nothing to propose for the element which doesn't fit the
       // available space.
-      delete (<any>this)[$extra];
+      delete (<any> this)[$extra];
       return HTMLResult.FAILURE;
     }
 
-    style.width = measureToString( this[$extra].width! );
-    style.height = measureToString( this[$extra].height! );
+    style.width = measureToString(this[$extra].width!);
+    style.height = measureToString(this[$extra].height!);
 
     const html = {
       name: "div",
@@ -727,36 +706,37 @@ export class Area extends XFAObject
       children,
     };
 
-    const bbox:rect_t = [this.x, this.y, this[$extra].width!, this[$extra].height!];
-    delete (<any>this)[$extra];
+    const bbox: rect_t = [
+      this.x,
+      this.y,
+      this[$extra].width!,
+      this[$extra].height!,
+    ];
+    delete (<any> this)[$extra];
 
     return HTMLResult.success(html, bbox);
   }
 }
 
-class Assist extends XFAObject
-{
+class Assist extends XFAObject {
   role;
-  speak:Speak | undefined = undefined;
-  toolTip:ToolTip | undefined = undefined;
+  speak: Speak | undefined = undefined;
+  toolTip: ToolTip | undefined = undefined;
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "assist", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "assist", /* hasChildren = */ true);
     this.id = attributes.id || "";
     this.role = attributes.role || "";
     this.use = attributes.use || "";
     this.usehref = attributes.usehref || "";
   }
 
-  override [$toHTML]()
-  {
+  override [$toHTML]() {
     return this.toolTip?.[$content];
   }
 }
 
-class Barcode extends XFAObject
-{
+class Barcode extends XFAObject {
   charEncoding;
   checksum;
   dataColumnCount;
@@ -775,18 +755,17 @@ class Barcode extends XFAObject
   type;
   upsMode;
   wideNarrowRatio;
-  encrypt:unknown;
-  extras:unknown;
+  encrypt: unknown;
+  extras: unknown;
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "barcode", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "barcode", /* hasChildren = */ true);
     this.charEncoding = getKeyword({
       data: attributes.charEncoding
         ? attributes.charEncoding.toLowerCase()
         : "",
       defaultValue: "",
-      validate: k =>
+      validate: (k) =>
         [
           "utf-8",
           "big-five",
@@ -811,12 +790,12 @@ class Barcode extends XFAObject
     this.dataColumnCount = getInteger({
       data: attributes.dataColumnCount,
       defaultValue: -1,
-      validate: x => x >= 0,
+      validate: (x) => x >= 0,
     });
     this.dataLength = getInteger({
       data: attributes.dataLength,
       defaultValue: -1,
-      validate: x => x >= 0,
+      validate: (x) => x >= 0,
     });
     this.dataPrep = getStringOption(attributes.dataPrep, [
       "none",
@@ -825,13 +804,13 @@ class Barcode extends XFAObject
     this.dataRowCount = getInteger({
       data: attributes.dataRowCount,
       defaultValue: -1,
-      validate: x => x >= 0,
+      validate: (x) => x >= 0,
     });
     this.endChar = attributes.endChar || "";
     this.errorCorrectionLevel = getInteger({
       data: attributes.errorCorrectionLevel,
       defaultValue: -1,
-      validate: x => x >= 0 && x <= 8,
+      validate: (x) => x >= 0 && x <= 8,
     });
     this.id = attributes.id || "";
     this.moduleHeight = getMeasurement(attributes.moduleHeight, "5mm");
@@ -839,7 +818,7 @@ class Barcode extends XFAObject
     this.printCheckDigit = getInteger({
       data: attributes.printCheckDigit,
       defaultValue: 0,
-      validate: x => x === 1,
+      validate: (x) => x === 1,
     });
     this.rowColumnRatio = getRatio(attributes.rowColumnRatio);
     this.startChar = attributes.startChar || "";
@@ -853,7 +832,7 @@ class Barcode extends XFAObject
     this.truncate = getInteger({
       data: attributes.truncate,
       defaultValue: 0,
-      validate: x => x === 1,
+      validate: (x) => x === 1,
     });
     this.type = getStringOption(
       attributes.type ? attributes.type.toLowerCase() : "",
@@ -920,7 +899,7 @@ class Barcode extends XFAObject
         "upcean2",
         "upcean5",
         "upsmaxicode",
-      ]
+      ],
     );
     this.upsMode = getStringOption(attributes.upsMode, [
       "usCarrier",
@@ -934,15 +913,13 @@ class Barcode extends XFAObject
   }
 }
 
-class Bind extends XFAObject
-{
+class Bind extends XFAObject {
   match;
   override ref;
-  picture?:Picture;
+  picture?: Picture;
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "bind", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "bind", /* hasChildren = */ true);
     this.match = getStringOption(attributes.match, [
       "once",
       "dataRef",
@@ -953,16 +930,14 @@ class Bind extends XFAObject
   }
 }
 
-export class BindItems extends XFAObject
-{
+export class BindItems extends XFAObject {
   connection;
   labelRef;
   override ref;
   valueRef;
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "bindItems" );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "bindItems");
     this.connection = attributes.connection || "";
     this.labelRef = attributes.labelRef || "";
     this.ref = attributes.ref || "";
@@ -970,14 +945,12 @@ export class BindItems extends XFAObject
   }
 }
 
-class Bookend extends XFAObject
-{
+class Bookend extends XFAObject {
   leader;
   trailer;
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "bookend" );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "bookend");
     this.id = attributes.id || "";
     this.leader = attributes.leader || "";
     this.trailer = attributes.trailer || "";
@@ -986,47 +959,41 @@ class Bookend extends XFAObject
   }
 }
 
-class BooleanElement extends Option01
-{
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "boolean" );
+class BooleanElement extends Option01 {
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "boolean");
     this.id = attributes.id || "";
     this.name = attributes.name || "";
     this.use = attributes.use || "";
     this.usehref = attributes.usehref || "";
   }
 
-  override [$toHTML]( availableSpace?:AvailableSpace )
-  {
+  override [$toHTML](availableSpace?: AvailableSpace) {
     return valueToHtml(this[$content] === 1 ? "1" : "0");
   }
 }
 
-export interface BorderExtra
-{
-  widths:number[];
-  insets:rect_t;
-  edges:Edge[];
+export interface BorderExtra {
+  widths: number[];
+  insets: rect_t;
+  edges: Edge[];
 }
 
-export class Border extends XFAObject
-{
+export class Border extends XFAObject {
   break;
   hand;
   override presence;
   relevant;
   corner = new XFAObjectArray(4);
   edge = new XFAObjectArray(4);
-  extras:unknown; //?:Extras;
-  fill?:Fill;
-  override margin:Margin | undefined = undefined;
+  extras: unknown; //?:Extras;
+  fill?: Fill;
+  override margin: Margin | undefined = undefined;
 
-  override [$extra]:BorderExtra | undefined;
+  override [$extra]: BorderExtra | undefined;
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "border", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "border", /* hasChildren = */ true);
     this.break = getStringOption(attributes.break, ["close", "open"]);
     this.hand = getStringOption(attributes.hand, ["even", "left", "right"]);
     this.id = attributes.id || "";
@@ -1041,24 +1008,19 @@ export class Border extends XFAObject
     this.usehref = attributes.usehref || "";
   }
 
-  [$getExtra]():BorderExtra
-  {
-    if( !this[$extra] )
-    {
-      const edges = <Edge[]>this.edge.children.slice();
-      if (edges.length < 4) 
-      {
-        const defaultEdge = edges[edges.length - 1] || new Edge({});
-        for (let i = edges.length; i < 4; i++) 
-        {
+  [$getExtra](): BorderExtra {
+    if (!this[$extra]) {
+      const edges = <Edge[]> this.edge.children.slice();
+      if (edges.length < 4) {
+        const defaultEdge = edges.at(-1) || new Edge({});
+        for (let i = edges.length; i < 4; i++) {
           edges.push(defaultEdge);
         }
       }
 
-      const widths = edges.map( edge => edge.thickness );
-      const insets:rect_t = [0, 0, 0, 0];
-      if (this.margin) 
-      {
+      const widths = edges.map((edge) => edge.thickness);
+      const insets: rect_t = [0, 0, 0, 0];
+      if (this.margin) {
         insets[0] = this.margin.topInset;
         insets[1] = this.margin.rightInset;
         insets[2] = this.margin.bottomInset;
@@ -1069,44 +1031,38 @@ export class Border extends XFAObject
     return this[$extra]!;
   }
 
-  override [$toStyle]()
-  {
+  override [$toStyle]() {
     // TODO: incomplete (hand).
     const { edges } = this[$getExtra]();
-    const edgeStyles = edges!.map(node => {
+    const edgeStyles = edges!.map((node) => {
       const style = node[$toStyle]();
       style.color = style.color || "#000000";
       return style;
     });
 
-    const style:XFAStyleData = Object.create(null);
-    if( this.margin )
-    {
-      Object.assign( style, this.margin[$toStyle]() );
+    const style: XFAStyleData = Object.create(null);
+    if (this.margin) {
+      Object.assign(style, this.margin[$toStyle]());
     }
 
-    if( this.fill?.presence === "visible" )
-    {
-      Object.assign( style, this.fill[$toStyle]() );
+    if (this.fill?.presence === "visible") {
+      Object.assign(style, this.fill[$toStyle]());
     }
 
-    if( this.corner.children.some(node => (<Corner>node).radius !== 0) ) 
-    {
-      const cornerStyles = this.corner.children.map(node => node[$toStyle]());
-      if( cornerStyles.length === 2 || cornerStyles.length === 3 )
-      {
-        const last = cornerStyles[cornerStyles.length - 1];
-        for( let i = cornerStyles.length; i < 4; i++ )
-        {
+    if (this.corner.children.some((node) => (<Corner> node).radius !== 0)) {
+      const cornerStyles = this.corner.children.map((node) => node[$toStyle]());
+      if (cornerStyles.length === 2 || cornerStyles.length === 3) {
+        const last = cornerStyles.at(-1);
+        for (let i = cornerStyles.length; i < 4; i++) {
           cornerStyles.push(last);
         }
       }
 
-      style.borderRadius = cornerStyles.map(s => (<XFAStyleData>s).radius).join(" ");
+      style.borderRadius = cornerStyles.map((s) => (<XFAStyleData> s).radius)
+        .join(" ");
     }
 
-    switch( this.presence )
-    {
+    switch (this.presence) {
       case "invisible":
       case "hidden":
         style.borderStyle = "";
@@ -1115,19 +1071,18 @@ export class Border extends XFAObject
         style.borderStyle = "none";
         break;
       default:
-        style.borderStyle = edgeStyles.map(s => s.style).join(" ");
+        style.borderStyle = edgeStyles.map((s) => s.style).join(" ");
         break;
     }
 
-    style.borderWidth = edgeStyles.map(s => s.width).join(" ");
-    style.borderColor = edgeStyles.map(s => s.color).join(" ");
+    style.borderWidth = edgeStyles.map((s) => s.width).join(" ");
+    style.borderColor = edgeStyles.map((s) => s.color).join(" ");
 
     return style;
   }
 }
 
-class Break extends XFAObject
-{
+class Break extends XFAObject {
   after;
   afterTarget;
   before;
@@ -1138,11 +1093,10 @@ class Break extends XFAObject
   overflowTarget;
   overflowTrailer;
   startNew;
-  extras:unknown;
+  extras: unknown;
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "break", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "break", /* hasChildren = */ true);
     this.after = getStringOption(attributes.after, [
       "auto",
       "contentArea",
@@ -1168,31 +1122,29 @@ class Break extends XFAObject
     this.startNew = getInteger({
       data: attributes.startNew,
       defaultValue: 0,
-      validate: x => x === 1,
+      validate: (x) => x === 1,
     });
     this.use = attributes.use || "";
     this.usehref = attributes.usehref || "";
   }
 }
 
-export class BreakAfter extends XFAObject
-{
+export class BreakAfter extends XFAObject {
   leader;
   startNew;
   target;
   targetType;
   trailer;
-  script:unknown; //?:Script
+  script: unknown; //?:Script
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "breakAfter", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "breakAfter", /* hasChildren = */ true);
     this.id = attributes.id || "";
     this.leader = attributes.leader || "";
     this.startNew = getInteger({
       data: attributes.startNew,
       defaultValue: 0,
-      validate: x => x === 1,
+      validate: (x) => x === 1,
     });
     this.target = attributes.target || "";
     this.targetType = getStringOption(attributes.targetType, [
@@ -1206,24 +1158,22 @@ export class BreakAfter extends XFAObject
   }
 }
 
-export class BreakBefore extends XFAObject
-{
+export class BreakBefore extends XFAObject {
   leader;
   startNew;
   target;
   targetType;
   trailer;
-  script:unknown; //?:Script
+  script: unknown; //?:Script
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "breakBefore", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "breakBefore", /* hasChildren = */ true);
     this.id = attributes.id || "";
     this.leader = attributes.leader || "";
     this.startNew = getInteger({
       data: attributes.startNew,
       defaultValue: 0,
-      validate: x => x === 1,
+      validate: (x) => x === 1,
     });
     this.target = attributes.target || "";
     this.targetType = getStringOption(attributes.targetType, [
@@ -1236,21 +1186,18 @@ export class BreakBefore extends XFAObject
     this.usehref = attributes.usehref || "";
   }
 
-  override [$toHTML]( availableSpace?:AvailableSpace )
-  {
+  override [$toHTML](availableSpace?: AvailableSpace) {
     this[$extra] = {};
     return HTMLResult.FAILURE;
   }
 }
 
-class Button extends XFAObject
-{
+class Button extends XFAObject {
   highlight;
-  extras:unknown; //?:Extras;
+  extras: unknown; //?:Extras;
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "button", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "button", /* hasChildren = */ true);
     this.highlight = getStringOption(attributes.highlight, [
       "inverted",
       "none",
@@ -1262,12 +1209,11 @@ class Button extends XFAObject
     this.usehref = attributes.usehref || "";
   }
 
-  override [$toHTML]( availableSpace?:AvailableSpace )
-  {
+  override [$toHTML](availableSpace?: AvailableSpace) {
     // TODO: highlight.
 
     const parent = this[$getParent]()!;
-    const grandpa = <ExclGroup | Field | Subform>parent[$getParent]();
+    const grandpa = <ExclGroup | Field | Subform> parent[$getParent]();
     const htmlButton = {
       name: "button",
       attributes: {
@@ -1275,20 +1221,22 @@ class Button extends XFAObject
         class: ["xfaButton"],
         style: {},
       },
-      children: <XFAElObj[]>[],
+      children: <XFAElObj[]> [],
     };
 
-    for( const event of grandpa.event.children )
-    {
+    for (const event of grandpa.event.children) {
       // if (true) break;
-      if( (<Event>event).activity !== "click" || !(<Event>event).script ) 
+      if ((<Event> event).activity !== "click" || !(<Event> event).script) {
         continue;
-      const jsURL = recoverJsURL( <string>(<Event>event).script![$content] );
-      if( !jsURL ) 
+      }
+      const jsURL = recoverJsURL(<string> (<Event> event).script![$content]);
+      if (!jsURL) {
         continue;
-      const href = fixURL( jsURL.url );
-      if( !href ) 
+      }
+      const href = fixURL(jsURL.url);
+      if (!href) {
         continue;
+      }
 
       // we've an url so generate a <a>
       htmlButton.children.push({
@@ -1308,16 +1256,14 @@ class Button extends XFAObject
   }
 }
 
-class Calculate extends XFAObject
-{
+class Calculate extends XFAObject {
   override;
-  extras:unknown; //?:Extras;
-  message:unknown; //?:Message;
-  script:unknown; //?:Script
+  extras: unknown; //?:Extras;
+  message: unknown; //?:Message;
+  script: unknown; //?:Script
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "calculate", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "calculate", /* hasChildren = */ true);
     this.id = attributes.id || "";
     this.override = getStringOption(attributes.override, [
       "disabled",
@@ -1330,22 +1276,20 @@ class Calculate extends XFAObject
   }
 }
 
-export class Caption extends XFAObject
-{
+export class Caption extends XFAObject {
   placement;
   override presence;
   reserve;
-  extras:unknown; //?:Extras;
-  font?:Font;
-  override margin:Margin | undefined = undefined;
-  override para:Para | undefined = undefined
-  value?:Value;
+  extras: unknown; //?:Extras;
+  font?: Font;
+  override margin: Margin | undefined = undefined;
+  override para: Para | undefined = undefined;
+  value?: Value;
 
-  override [$extra]:XFALayoutMode | undefined;
+  override [$extra]: XFALayoutMode | undefined;
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "caption", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "caption", /* hasChildren = */ true);
     this.id = attributes.id || "";
     this.placement = getStringOption(attributes.placement, [
       "left",
@@ -1365,18 +1309,14 @@ export class Caption extends XFAObject
     this.usehref = attributes.usehref || "";
   }
 
-  override [$setValue]( value:XFAValue )
-  {
-    _setValue( this, value );
+  override [$setValue](value: XFAValue) {
+    _setValue(this, value);
   }
 
-  [$getExtra]( availableSpace?:AvailableSpace ):XFALayoutMode
-  {
-    if( !this[$extra] )
-    {
+  [$getExtra](availableSpace?: AvailableSpace): XFALayoutMode {
+    if (!this[$extra]) {
       let { width, height } = availableSpace!;
-      switch (this.placement) 
-      {
+      switch (this.placement) {
         case "left":
         case "right":
         case "inline":
@@ -1388,30 +1328,28 @@ export class Caption extends XFAObject
           break;
       }
 
-      this[$extra] = layoutNode( this, { width, height } );
+      this[$extra] = layoutNode(this, { width, height });
     }
     return this[$extra]!;
   }
 
-  override [$toHTML]( availableSpace?:AvailableSpace )
-  {
+  override [$toHTML](availableSpace?: AvailableSpace) {
     // TODO: incomplete.
-    if( !this.value ) 
+    if (!this.value) {
       return HTMLResult.EMPTY;
+    }
 
     this[$pushPara]();
-    const value = (<HTMLResult>this.value[$toHTML]( availableSpace )).html;
+    const value = (<HTMLResult> this.value[$toHTML](availableSpace)).html;
 
-    if( !value ) 
-    {
+    if (!value) {
       this[$popPara]();
       return HTMLResult.EMPTY;
     }
 
     const savedReserve = this.reserve;
-    if( this.reserve <= 0 )
-    {
-      const { w, h } = this[$getExtra]( availableSpace );
+    if (this.reserve <= 0) {
+      const { w, h } = this[$getExtra](availableSpace);
       switch (this.placement) {
         case "left":
         case "right":
@@ -1425,21 +1363,18 @@ export class Caption extends XFAObject
       }
     }
 
-    const children:XFAElData[] = [];
-    if( typeof value === "string" )
-    {
+    const children: XFAElData[] = [];
+    if (typeof value === "string") {
       children.push({
         name: "#text",
         value,
       });
-    } 
-    else {
+    } else {
       children.push(value);
     }
 
-    const style = toStyle( this, "font", "margin", "visibility" );
-    switch( this.placement )
-    {
+    const style = toStyle(this, "font", "margin", "visibility");
+    switch (this.placement) {
       case "left":
       case "right":
         if (this.reserve > 0) {
@@ -1454,7 +1389,7 @@ export class Caption extends XFAObject
         break;
     }
 
-    setPara( this, undefined, <XFAElObj>value );
+    setPara(this, undefined, <XFAElObj> value);
     this[$popPara]();
 
     this.reserve = savedReserve;
@@ -1470,11 +1405,9 @@ export class Caption extends XFAObject
   }
 }
 
-class Certificate extends StringObject
-{
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "certificate" );
+class Certificate extends StringObject {
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "certificate");
     this.id = attributes.id || "";
     this.name = attributes.name || "";
     this.use = attributes.use || "";
@@ -1482,24 +1415,22 @@ class Certificate extends StringObject
   }
 }
 
-class Certificates extends XFAObject
-{
+class Certificates extends XFAObject {
   credentialServerPolicy;
   url;
   urlPolicy;
-  encryption:unknown;
-  issuers:unknown;
-  keyUsage:unknown;
-  oids:unknown;
-  signing:unknown;
-  subjectDNs:unknown;
+  encryption: unknown;
+  issuers: unknown;
+  keyUsage: unknown;
+  oids: unknown;
+  signing: unknown;
+  subjectDNs: unknown;
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "certificates", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "certificates", /* hasChildren = */ true);
     this.credentialServerPolicy = getStringOption(
       attributes.credentialServerPolicy,
-      ["optional", "required"]
+      ["optional", "required"],
     );
     this.id = attributes.id || "";
     this.url = attributes.url || "";
@@ -1509,18 +1440,16 @@ class Certificates extends XFAObject
   }
 }
 
-class CheckButton extends XFAObject 
-{
+class CheckButton extends XFAObject {
   mark;
   shape;
   size;
-  override border:unknown | undefined = undefined; //?:Border;
-  extras:unknown; //?:Extras;
-  override margin:Margin | undefined = undefined;
+  override border: unknown | undefined = undefined; //?:Border;
+  extras: unknown; //?:Extras;
+  override margin: Margin | undefined = undefined;
 
-  constructor( attributes:XFAAttrs ) 
-  {
-    super( TEMPLATE_NS_ID, "checkButton", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "checkButton", /* hasChildren = */ true);
     this.id = attributes.id || "";
     this.mark = getStringOption(attributes.mark, [
       "default",
@@ -1537,11 +1466,10 @@ class CheckButton extends XFAObject
     this.usehref = attributes.usehref || "";
   }
 
-  override [$toHTML]( availableSpace?:AvailableSpace )
-  {
+  override [$toHTML](availableSpace?: AvailableSpace) {
     // TODO: border, shape and mark.
 
-    const style = toStyle( this.margin! );
+    const style = toStyle(this.margin!);
     const size = measureToString(this.size);
 
     style.width = style.height = size;
@@ -1549,14 +1477,14 @@ class CheckButton extends XFAObject
     let type;
     let className;
     let groupId;
-    const field = <Field>this[$getParent]()![$getParent]();
-    const items =
-      (field.items.children.length &&
-        (<HTMLResult>field.items.children[0][$toHTML]()).html) ||
+    const field = <Field> this[$getParent]()![$getParent]();
+    const items = (field.items.children.length &&
+      (<HTMLResult> field.items.children[0][$toHTML]()).html) ||
       [];
     const exportedValue = {
-      on: ((<any>items)[0] !== undefined ? (<any>items)[0] : "on").toString(),
-      off: ((<any>items)[1] !== undefined ? (<any>items)[1] : "off").toString(),
+      on: ((<any> items)[0] !== undefined ? (<any> items)[0] : "on").toString(),
+      off: ((<any> items)[1] !== undefined ? (<any> items)[1] : "off")
+        .toString(),
     };
 
     const value = (field.value && field.value[$text]()) || "off";
@@ -1565,22 +1493,20 @@ class CheckButton extends XFAObject
     const fieldId = field[$uid];
     let dataId;
 
-    if( container instanceof ExclGroup ) 
-    {
+    if (container instanceof ExclGroup) {
       groupId = container[$uid];
       type = "radio";
       className = "xfaRadio";
       dataId = container[$data]?.[$uid] || container[$uid];
-    } 
-    else {
+    } else {
       type = "checkbox";
       className = "xfaCheckbox";
       dataId = field[$data]?.[$uid] || field[$uid];
     }
 
-    const input:XFAHTMLObj = {
+    const input: XFAHTMLObj = {
       name: "input",
-      attributes: <XFAHTMLAttrs>{
+      attributes: <XFAHTMLAttrs> {
         class: [className],
         style,
         fieldId,
@@ -1590,12 +1516,17 @@ class CheckButton extends XFAObject
         xfaOn: exportedValue.on,
         xfaOff: exportedValue.off,
         "aria-label": ariaLabel(field),
+        "aria-required": false,
       },
     };
 
-    if( groupId )
-    {
+    if (groupId) {
       input.attributes!.name = groupId;
+    }
+
+    if (isRequired(field)) {
+      input.attributes!["aria-required"] = true;
+      input.attributes!.required = true;
     }
 
     return HTMLResult.success({
@@ -1608,18 +1539,16 @@ class CheckButton extends XFAObject
   }
 }
 
-class ChoiceList extends XFAObject 
-{
+class ChoiceList extends XFAObject {
   commitOn;
   open;
   textEntry;
-  override border:unknown | undefined = undefined; //?:Border;
-  extras:unknown; //?:Extras;
+  override border: unknown | undefined = undefined; //?:Border;
+  extras: unknown; //?:Extras;
   override margin = undefined;
 
-  constructor( attributes:XFAAttrs ) 
-  {
-    super( TEMPLATE_NS_ID, "choiceList", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "choiceList", /* hasChildren = */ true);
     this.commitOn = getStringOption(attributes.commitOn, ["select", "exit"]);
     this.id = attributes.id || "";
     this.open = getStringOption(attributes.open, [
@@ -1631,58 +1560,53 @@ class ChoiceList extends XFAObject
     this.textEntry = getInteger({
       data: attributes.textEntry,
       defaultValue: 0,
-      validate: x => x === 1,
+      validate: (x) => x === 1,
     });
     this.use = attributes.use || "";
     this.usehref = attributes.usehref || "";
   }
 
-  override [$toHTML]( availableSpace?:AvailableSpace )
-  {
+  override [$toHTML](availableSpace?: AvailableSpace) {
     // TODO: incomplete.
     const style = toStyle(this, "border", "margin");
     const ui = this[$getParent]()!;
-    const field = <Field>ui[$getParent]();
+    const field = <Field> ui[$getParent]();
     const fontSize = (field.font && field.font.size) || 10;
     const optionStyle = {
-      fontSize: `calc(${fontSize}px * var(--zoom-factor))`,
+      fontSize: `calc(${fontSize}px * var(--scale-factor))`,
     };
     const children = [];
 
-    if( field.items.children.length > 0 )
-    {
+    if (field.items.children.length > 0) {
       const items = field.items;
-      let displayedIndex:string | number = 0;
+      let displayedIndex: string | number = 0;
       let saveIndex = 0;
-      if( items.children.length === 2 )
-      {
-        displayedIndex = (<Items>items.children[0]).save;
+      if (items.children.length === 2) {
+        displayedIndex = (<Items> items.children[0]).save;
         saveIndex = 1 - displayedIndex;
       }
-      const displayed = (<HTMLResult>items.children[displayedIndex][$toHTML]()).html;
-      const values = (<HTMLResult>items.children[saveIndex][$toHTML]()).html;
+      const displayed =
+        (<HTMLResult> items.children[displayedIndex][$toHTML]()).html;
+      const values = (<HTMLResult> items.children[saveIndex][$toHTML]()).html;
 
       let selected = false;
       const value = field.value?.[$text]() || "";
-      for (let i = 0, ii = (<any>displayed).length; i < ii; i++) 
-      {
+      for (let i = 0, ii = (<any> displayed).length; i < ii; i++) {
         const option = {
           name: "option",
-          attributes: <XFAHTMLAttrs>{
-            value: (<any>values)[i] || (<any>displayed)[i],
+          attributes: <XFAHTMLAttrs> {
+            value: (<any> values)[i] || (<any> displayed)[i],
             style: optionStyle,
           },
-          value: (<any>displayed)[i],
+          value: (<any> displayed)[i],
         };
-        if ((<any>values)[i] === value) 
-        {
+        if ((<any> values)[i] === value) {
           option.attributes.selected = selected = true;
         }
         children.push(option);
       }
 
-      if (!selected) 
-      {
+      if (!selected) {
         children.splice(0, 0, {
           name: "option",
           attributes: {
@@ -1694,16 +1618,21 @@ class ChoiceList extends XFAObject
       }
     }
 
-    const selectAttributes:XFAHTMLAttrs = {
+    const selectAttributes: XFAHTMLAttrs = {
       class: ["xfaSelect"],
       fieldId: field[$uid],
       dataId: field[$data]?.[$uid] || field[$uid],
       style,
       "aria-label": ariaLabel(field),
+      "aria-required": false,
     };
 
-    if( this.open === "multiSelect" ) 
-    {
+    if (isRequired(field)) {
+      selectAttributes["aria-required"] = true;
+      selectAttributes.required = true;
+    }
+
+    if (this.open === "multiSelect") {
       selectAttributes.multiple = true;
     }
 
@@ -1723,60 +1652,55 @@ class ChoiceList extends XFAObject
   }
 }
 
-class Color extends XFAObject 
-{
+class Color extends XFAObject {
   cSpace;
   value;
-  extras:unknown; //?:Extras;
+  extras: unknown; //?:Extras;
 
-  constructor( attributes:XFAAttrs ) 
-  {
-    super( TEMPLATE_NS_ID, "color", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "color", /* hasChildren = */ true);
     this.cSpace = getStringOption(attributes.cSpace, ["SRGB"]);
     this.id = attributes.id || "";
     this.use = attributes.use || "";
     this.usehref = attributes.usehref || "";
-    this.value = attributes.value ? getColor(attributes.value) : <const>"";
+    this.value = attributes.value ? getColor(attributes.value) : "" as const;
   }
 
-  override [$hasSettableValue]() { return false; }
+  override [$hasSettableValue]() {
+    return false;
+  }
 
-  override [$toStyle]()
-  {
+  override [$toStyle]() {
     return this.value
       ? Util.makeHexColor(this.value.r, this.value.g, this.value.b)
       : undefined;
   }
 }
 
-class Comb extends XFAObject 
-{
+class Comb extends XFAObject {
   numberOfCells;
 
-  constructor( attributes:XFAAttrs ) 
-  {
-    super( TEMPLATE_NS_ID, "comb" );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "comb");
     this.id = attributes.id || "";
     this.numberOfCells = getInteger({
       data: attributes.numberOfCells,
       defaultValue: 0,
-      validate: x => x >= 0,
+      validate: (x) => x >= 0,
     });
     this.use = attributes.use || "";
     this.usehref = attributes.usehref || "";
   }
 }
 
-class Connect extends XFAObject 
-{
+class Connect extends XFAObject {
   connection;
   override ref;
   usage;
-  picture:unknown //?:Picture;
+  picture: unknown; //?:Picture;
 
-  constructor( attributes:XFAAttrs ) 
-  {
-    super( TEMPLATE_NS_ID, "connect", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "connect", /* hasChildren = */ true);
     this.connection = attributes.connection || "";
     this.id = attributes.id || "";
     this.ref = attributes.ref || "";
@@ -1790,19 +1714,17 @@ class Connect extends XFAObject
   }
 }
 
-export class ContentArea extends XFAObject 
-{
+export class ContentArea extends XFAObject {
   override h;
-  relevant
+  relevant;
   override w;
   override x;
   override y;
-  desc:unknown; //?:Desc;
-  extras:unknown; //?:Extras;
+  desc: unknown; //?:Desc;
+  extras: unknown; //?:Extras;
 
-  constructor( attributes:XFAAttrs ) 
-  {
-    super( TEMPLATE_NS_ID, "contentArea", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "contentArea", /* hasChildren = */ true);
     this.h = getMeasurement(attributes.h);
     this.id = attributes.id || "";
     this.name = attributes.name || "";
@@ -1814,8 +1736,7 @@ export class ContentArea extends XFAObject
     this.y = getMeasurement(attributes.y, "0pt");
   }
 
-  override [$toHTML]( availableSpace?:AvailableSpace )
-  {
+  override [$toHTML](availableSpace?: AvailableSpace) {
     // TODO: incomplete.
     const left = measureToString(this.x);
     const top = measureToString(this.y);
@@ -1845,25 +1766,23 @@ export class ContentArea extends XFAObject
   }
 }
 
-class Corner extends XFAObject 
-{
+class Corner extends XFAObject {
   inverted;
   join;
   override presence;
   radius;
   stroke;
   thickness;
-  color:unknown; //?:Color;
-  extras:unknown; //?:Extras;
+  color: unknown; //?:Color;
+  extras: unknown; //?:Extras;
 
-  constructor( attributes:XFAAttrs ) 
-  {
-    super( TEMPLATE_NS_ID, "corner", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "corner", /* hasChildren = */ true);
     this.id = attributes.id || "";
     this.inverted = getInteger({
       data: attributes.inverted,
       defaultValue: 0,
-      validate: x => x === 1,
+      validate: (x) => x === 1,
     });
     this.join = getStringOption(attributes.join, ["square", "round"]);
     this.presence = getStringOption(attributes.presence, [
@@ -1889,8 +1808,7 @@ class Corner extends XFAObject
     this.usehref = attributes.usehref || "";
   }
 
-  override [$toStyle]()
-  {
+  override [$toStyle]() {
     // In using CSS it's only possible to handle radius
     // (at least with basic css).
     // Is there a real use (interest ?) of all these properties ?
@@ -1902,68 +1820,58 @@ class Corner extends XFAObject
   }
 }
 
-class DateElement extends ContentObject 
-{
-  override [$content]!:string | Date;
+class DateElement extends ContentObject {
+  override [$content]: string | Date | undefined;
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "date" );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "date");
     this.id = attributes.id || "";
     this.name = attributes.name || "";
     this.use = attributes.use || "";
     this.usehref = attributes.usehref || "";
   }
 
-  override [$finalize]() 
-  {
-    const date = (<string>this[$content]).trim();
-    this[$content] = date ? new Date(date) : "";
+  override [$finalize]() {
+    const date = (<string> this[$content]).trim();
+    this[$content] = date ? new Date(date) : undefined;
   }
 
-  override [$toHTML]( availableSpace?:AvailableSpace )
-  {
-    return valueToHtml( this[$content] ? this[$content].toString() : "" );
+  override [$toHTML](availableSpace?: AvailableSpace) {
+    return valueToHtml(this[$content] ? this[$content].toString() : "");
   }
 }
 
-class DateTime extends ContentObject 
-{
-  override [$content]!:string | Date;
+class DateTime extends ContentObject {
+  override [$content]: string | Date | undefined;
 
-  constructor( attributes:XFAAttrs ) 
-  {
-    super( TEMPLATE_NS_ID, "dateTime" );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "dateTime");
     this.id = attributes.id || "";
     this.name = attributes.name || "";
     this.use = attributes.use || "";
     this.usehref = attributes.usehref || "";
   }
 
-  override [$finalize]()
-  {
-    const date = (<string>this[$content]).trim();
-    this[$content] = date ? new Date(date) : "";
+  override [$finalize]() {
+    const date = (<string> this[$content]).trim();
+    this[$content] = date ? new Date(date) : undefined;
   }
 
-  override [$toHTML]( availableSpace?:AvailableSpace )
-  {
-    return valueToHtml( this[$content] ? this[$content].toString() : "" );
+  override [$toHTML](availableSpace?: AvailableSpace) {
+    return valueToHtml(this[$content] ? this[$content].toString() : "");
   }
 }
 
-class DateTimeEdit extends XFAObject 
-{
+class DateTimeEdit extends XFAObject {
   hScrollPolicy;
   picker;
-  override border:unknown | undefined = undefined; //?:Border;
-  comb:unknown; //?:Comb;
-  extras:unknown; //?:Extras;
+  override border: unknown | undefined = undefined; //?:Border;
+  comb: unknown; //?:Comb;
+  extras: unknown; //?:Extras;
   override margin = undefined;
 
-  constructor( attributes:XFAAttrs ) 
-  {
-    super( TEMPLATE_NS_ID, "dateTimeEdit", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "dateTimeEdit", /* hasChildren = */ true);
     this.hScrollPolicy = getStringOption(attributes.hScrollPolicy, [
       "auto",
       "off",
@@ -1975,24 +1883,29 @@ class DateTimeEdit extends XFAObject
     this.usehref = attributes.usehref || "";
   }
 
-  override [$toHTML]( availableSpace?:AvailableSpace )
-  {
+  override [$toHTML](availableSpace?: AvailableSpace) {
     // TODO: incomplete.
     // When the picker is host we should use type=date for the input
     // but we need to put the buttons outside the text-field.
     const style = toStyle(this, "border", "font", "margin");
-    const field = <Field>this[$getParent]()![$getParent]();
+    const field = <Field> this[$getParent]()![$getParent]();
     const html = {
       name: "input",
-      attributes: {
+      attributes: <XFAHTMLAttrs> {
         type: "text",
         fieldId: field[$uid],
         dataId: field[$data]?.[$uid] || field[$uid],
         class: ["xfaTextfield"],
         style,
         "aria-label": ariaLabel(field),
+        "aria-required": false,
       },
     };
+
+    if (isRequired(field)) {
+      html.attributes["aria-required"] = true;
+      html.attributes.required = true;
+    }
 
     return HTMLResult.success({
       name: "label",
@@ -2004,61 +1917,54 @@ class DateTimeEdit extends XFAObject
   }
 }
 
-class Decimal extends ContentObject 
-{
-  override [$content]!:string | number;
+class Decimal extends ContentObject {
+  override [$content]: string | number | undefined;
 
   fracDigits;
   leadDigits;
 
-  constructor( attributes:XFAAttrs ) 
-  {
-    super( TEMPLATE_NS_ID, "decimal" );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "decimal");
     this.fracDigits = getInteger({
       data: attributes.fracDigits,
       defaultValue: 2,
-      validate: x => true,
+      validate: (x) => true,
     });
     this.id = attributes.id || "";
     this.leadDigits = getInteger({
       data: attributes.leadDigits,
       defaultValue: -1,
-      validate: x => true,
+      validate: (x) => true,
     });
     this.name = attributes.name || "";
     this.use = attributes.use || "";
     this.usehref = attributes.usehref || "";
   }
 
-  override [$finalize]()
-  {
-    const number = parseFloat( (<string>this[$content]).trim() );
-    this[$content] = isNaN(number) ? "" : number;
+  override [$finalize]() {
+    const number = parseFloat((<string> this[$content]).trim());
+    this[$content] = isNaN(number) ? undefined : number;
   }
 
-  override [$toHTML]( availableSpace?:AvailableSpace ) 
-  {
+  override [$toHTML](availableSpace?: AvailableSpace) {
     return valueToHtml(
-      this[$content] !== null ? this[$content].toString() : ""
+      this[$content] !== undefined ? this[$content].toString() : "",
     );
   }
 }
 
-class DefaultUi extends XFAObject 
-{
-  extras:unknown; //?:Extras;
+class DefaultUi extends XFAObject {
+  extras: unknown; //?:Extras;
 
-  constructor( attributes:XFAAttrs ) 
-  {
-    super( TEMPLATE_NS_ID, "defaultUi", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "defaultUi", /* hasChildren = */ true);
     this.id = attributes.id || "";
     this.use = attributes.use || "";
     this.usehref = attributes.usehref || "";
   }
 }
 
-class Desc extends XFAObject 
-{
+class Desc extends XFAObject {
   boolean = new XFAObjectArray();
   date = new XFAObjectArray();
   dateTime = new XFAObjectArray();
@@ -2070,20 +1976,17 @@ class Desc extends XFAObject
   text = new XFAObjectArray();
   time = new XFAObjectArray();
 
-  constructor( attributes:XFAAttrs ) 
-  {
-    super( TEMPLATE_NS_ID, "desc", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "desc", /* hasChildren = */ true);
     this.id = attributes.id || "";
     this.use = attributes.use || "";
     this.usehref = attributes.usehref || "";
   }
 }
 
-class DigestMethod extends OptionObject 
-{
-  constructor( attributes:XFAAttrs ) 
-  {
-    super( TEMPLATE_NS_ID, "digestMethod", [
+class DigestMethod extends OptionObject {
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "digestMethod", [
       "",
       "SHA1",
       "SHA256",
@@ -2096,14 +1999,12 @@ class DigestMethod extends OptionObject
   }
 }
 
-class DigestMethods extends XFAObject 
-{
+class DigestMethods extends XFAObject {
   type;
   digestMethod = new XFAObjectArray();
 
-  constructor( attributes:XFAAttrs ) 
-  {
-    super( TEMPLATE_NS_ID, "digestMethods", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "digestMethods", /* hasChildren = */ true);
     this.id = attributes.id || "";
     this.type = getStringOption(attributes.type, ["optional", "required"]);
     this.use = attributes.use || "";
@@ -2111,11 +2012,10 @@ class DigestMethods extends XFAObject
   }
 }
 
-export class Draw extends XFAObject 
-{
+export class Draw extends XFAObject {
   override anchorType;
   override colSpan;
-  override h;
+  // override h;
   override hAlign;
   locale;
   maxH;
@@ -2125,26 +2025,25 @@ export class Draw extends XFAObject
   override presence;
   relevant;
   override rotate;
-  override w;
+  // override w;
   override x;
   override y;
-  override assist:Assist | undefined = undefined;
-  override border:Border | undefined = undefined;
-  caption:unknown; //?:Caption;
-  desc:unknown; //?:Desc;
-  extras:unknown; //?:Extras;
-  font?:Font;
-  keep:unknown; //?:Keep;
-  override margin:Margin | undefined = undefined;
-  override para:Para | undefined = undefined;
+  override assist: Assist | undefined = undefined;
+  override border: Border | undefined = undefined;
+  caption: unknown; //?:Caption;
+  desc: unknown; //?:Desc;
+  extras: unknown; //?:Extras;
+  font?: Font;
+  keep: unknown; //?:Keep;
+  override margin: Margin | undefined = undefined;
+  override para: Para | undefined = undefined;
   override traversal = undefined; //?:Traversal;
-  ui:unknown; //?:Ui;
-  value?:Value;
+  ui: unknown; //?:Ui;
+  value?: Value;
   setProperty = new XFAObjectArray();
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "draw", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "draw", /* hasChildren = */ true);
     this.anchorType = getStringOption(attributes.anchorType, [
       "topLeft",
       "bottomCenter",
@@ -2159,9 +2058,9 @@ export class Draw extends XFAObject
     this.colSpan = getInteger({
       data: attributes.colSpan,
       defaultValue: 1,
-      validate: n => n >= 1 || n === -1,
+      validate: (n) => n >= 1 || n === -1,
     });
-    this.h = attributes.h ? getMeasurement(attributes.h) : <const>"";
+    this.h = attributes.h ? getMeasurement(attributes.h) : "" as const;
     this.hAlign = getStringOption(attributes.hAlign, [
       "left",
       "center",
@@ -2187,26 +2086,25 @@ export class Draw extends XFAObject
     this.rotate = getInteger({
       data: attributes.rotate,
       defaultValue: 0,
-      validate: x => x % 90 === 0,
+      validate: (x) => x % 90 === 0,
     });
     this.use = attributes.use || "";
     this.usehref = attributes.usehref || "";
-    this.w = attributes.w ? getMeasurement(attributes.w) : <const>"";
+    this.w = attributes.w ? getMeasurement(attributes.w) : "" as const;
     this.x = getMeasurement(attributes.x, "0pt");
     this.y = getMeasurement(attributes.y, "0pt");
   }
 
-  override [$setValue]( value:XFAValue )
-  {
+  override [$setValue](value: XFAValue) {
     _setValue(this, value);
   }
 
-  override [$toHTML]( availableSpace:AvailableSpace )
-  {
+  override [$toHTML](availableSpace: AvailableSpace) {
     setTabIndex(this);
 
-    if (this.presence === "hidden" || this.presence === "inactive") 
+    if (this.presence === "hidden" || this.presence === "inactive") {
       return HTMLResult.EMPTY;
+    }
 
     fixDimensions(this);
     this[$pushPara]();
@@ -2223,22 +2121,19 @@ export class Draw extends XFAObject
       // splitted into almost 10 chunks: so it won't be nice.
       // So if we've potentially more width to provide in some parent containers
       // let's increase it to give a chance to have a better rendering.
-      if( isBroken && this[$getSubformParent]()![$isThereMoreWidth]() )
-      {
+      if (isBroken && this[$getSubformParent]()![$isThereMoreWidth]()) {
         this[$popPara]();
         return HTMLResult.FAILURE;
       }
 
       this.w = w;
     }
-    if( h && this.h === "" )
-    {
+    if (h && this.h === "") {
       this.h = h;
     }
 
     setFirstUnsplittable(this);
-    if( !checkDimensions(this, availableSpace) )
-    {
+    if (!checkDimensions(this, availableSpace)) {
       this.w = savedW;
       this.h = savedH;
       this[$popPara]();
@@ -2256,7 +2151,7 @@ export class Draw extends XFAObject
       "rotate",
       "anchorType",
       "border",
-      "margin"
+      "margin",
     );
 
     setMinMaxDimensions(this, style);
@@ -2274,7 +2169,7 @@ export class Draw extends XFAObject
       classNames.push("xfaPrintOnly");
     }
 
-    const attributes:XFAHTMLAttrs = {
+    const attributes: XFAHTMLAttrs = {
       style,
       id: this[$uid],
       class: classNames,
@@ -2287,45 +2182,44 @@ export class Draw extends XFAObject
     const html = {
       name: "div",
       attributes,
-      children: <XFAElData[]>[],
+      children: <XFAElData[]> [],
     };
 
     applyAssist(this, attributes);
 
     const bbox = computeBbox(this, html, availableSpace);
 
-    const value = this.value ? (<HTMLResult>this.value[$toHTML](availableSpace)).html : undefined;
-    if( value === undefined )
-    {
+    const value = this.value
+      ? (<HTMLResult> this.value[$toHTML](availableSpace)).html
+      : undefined;
+    if (value === undefined) {
       this.w = savedW;
       this.h = savedH;
       this[$popPara]();
-      return HTMLResult.success( createWrapper(this, html), bbox );
+      return HTMLResult.success(createWrapper(this, html), bbox);
     }
 
-    html.children.push( value );
-    setPara( this, style, <XFAElObj>value );
+    html.children.push(value);
+    setPara(this, style, <XFAElObj> value);
 
     this.w = savedW;
     this.h = savedH;
 
     this[$popPara]();
-    return HTMLResult.success( createWrapper(this, html), bbox );
+    return HTMLResult.success(createWrapper(this, html), bbox);
   }
 }
 
-export class Edge extends XFAObject 
-{
+export class Edge extends XFAObject {
   cap;
   override presence;
   stroke;
   thickness;
-  color?:Color;
-  extras:unknown; //?:Extras;
+  color?: Color;
+  extras: unknown; //?:Extras;
 
-  constructor( attributes:XFAAttrs ) 
-  {
-    super( TEMPLATE_NS_ID, "edge", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "edge", /* hasChildren = */ true);
     this.cap = getStringOption(attributes.cap, ["square", "butt", "round"]);
     this.id = attributes.id || "";
     this.presence = getStringOption(attributes.presence, [
@@ -2350,8 +2244,7 @@ export class Edge extends XFAObject
     this.usehref = attributes.usehref || "";
   }
 
-  override [$toStyle]()
-  {
+  override [$toStyle]() {
     // TODO: dashDot & dashDotDot.
     const style = toStyle(this, "visibility");
     Object.assign(style, {
@@ -2363,8 +2256,7 @@ export class Edge extends XFAObject
 
     if (this.presence !== "visible") {
       style.style = "none";
-    } 
-    else {
+    } else {
       switch (this.stroke) {
         case "solid":
           style.style = "solid";
@@ -2399,11 +2291,9 @@ export class Edge extends XFAObject
   }
 }
 
-class Encoding extends OptionObject
-{
-  constructor( attributes:XFAAttrs ) 
-  {
-    super( TEMPLATE_NS_ID, "encoding", [
+class Encoding extends OptionObject {
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "encoding", [
       "adbe.x509.rsa_sha1",
       "adbe.pkcs7.detached",
       "adbe.pkcs7.sha1",
@@ -2414,14 +2304,12 @@ class Encoding extends OptionObject
   }
 }
 
-class Encodings extends XFAObject 
-{
+class Encodings extends XFAObject {
   type;
   encoding = new XFAObjectArray();
 
-  constructor( attributes:XFAAttrs ) 
-  {
-    super( TEMPLATE_NS_ID, "encodings", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "encodings", /* hasChildren = */ true);
     this.id = attributes.id || "";
     this.type = getStringOption(attributes.type, ["optional", "required"]);
     this.use = attributes.use || "";
@@ -2429,29 +2317,25 @@ class Encodings extends XFAObject
   }
 }
 
-class Encrypt extends XFAObject 
-{
-  certificate:unknown;
+class Encrypt extends XFAObject {
+  certificate: unknown;
 
-  constructor( attributes:XFAAttrs ) 
-  {
-    super( TEMPLATE_NS_ID, "encrypt", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "encrypt", /* hasChildren = */ true);
     this.id = attributes.id || "";
     this.use = attributes.use || "";
     this.usehref = attributes.usehref || "";
   }
 }
 
-class EncryptData extends XFAObject 
-{
+class EncryptData extends XFAObject {
   override operation;
   target;
-  filter:unknown; //?:Filter
-  manifest:unknown; //?:Manifest
+  filter: unknown; //?:Filter
+  manifest: unknown; //?:Manifest
 
-  constructor( attributes:XFAAttrs ) 
-  {
-    super( TEMPLATE_NS_ID, "encryptData", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "encryptData", /* hasChildren = */ true);
     this.id = attributes.id || "";
     this.operation = getStringOption(attributes.operation, [
       "encrypt",
@@ -2463,14 +2347,12 @@ class EncryptData extends XFAObject
   }
 }
 
-class Encryption extends XFAObject 
-{
+class Encryption extends XFAObject {
   type;
   certificate = new XFAObjectArray();
 
-  constructor( attributes:XFAAttrs ) 
-  {
-    super( TEMPLATE_NS_ID, "encryption", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "encryption", /* hasChildren = */ true);
     this.id = attributes.id || "";
     this.type = getStringOption(attributes.type, ["optional", "required"]);
     this.use = attributes.use || "";
@@ -2478,11 +2360,9 @@ class Encryption extends XFAObject
   }
 }
 
-class EncryptionMethod extends OptionObject 
-{
-  constructor( attributes:XFAAttrs ) 
-  {
-    super( TEMPLATE_NS_ID, "encryptionMethod", [
+class EncryptionMethod extends OptionObject {
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "encryptionMethod", [
       "",
       "AES256-CBC",
       "TRIPLEDES-CBC",
@@ -2495,14 +2375,12 @@ class EncryptionMethod extends OptionObject
   }
 }
 
-class EncryptionMethods extends XFAObject 
-{
+class EncryptionMethods extends XFAObject {
   type;
   encryptionMethod = new XFAObjectArray();
 
-  constructor( attributes:XFAAttrs ) 
-  {
-    super( TEMPLATE_NS_ID, "encryptionMethods", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "encryptionMethods", /* hasChildren = */ true);
     this.id = attributes.id || "";
     this.type = getStringOption(attributes.type, ["optional", "required"]);
     this.use = attributes.use || "";
@@ -2510,23 +2388,21 @@ class EncryptionMethods extends XFAObject
   }
 }
 
-class Event extends XFAObject 
-{
+class Event extends XFAObject {
   activity;
   listen;
   override ref;
-  extras:unknown; //?:Extras;
+  extras: unknown; //?:Extras;
 
   // One-of properties
-  encryptData:unknown;
-  execute:unknown;
-  script:Script | undefined = undefined;
-  signData:unknown;
-  submit:unknown;
-  
-  constructor( attributes:XFAAttrs ) 
-  {
-    super( TEMPLATE_NS_ID, "event", /* hasChildren = */ true );
+  encryptData: unknown;
+  execute: unknown;
+  script: Script | undefined = undefined;
+  signData: unknown;
+  submit: unknown;
+
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "event", /* hasChildren = */ true);
     this.activity = getStringOption(attributes.activity, [
       "click",
       "change",
@@ -2568,9 +2444,8 @@ class Event extends XFAObject
   }
 }
 
-class ExData extends ContentObject 
-{
-  override [$content]!:XhtmlObject | string;
+class ExData extends ContentObject {
+  override [$content]!: XhtmlObject | string;
 
   contentType;
   href;
@@ -2578,16 +2453,15 @@ class ExData extends ContentObject
   rid;
   transferEncoding;
 
-  constructor( attributes:XFAAttrs ) 
-  {
-    super( TEMPLATE_NS_ID, "exData" );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "exData");
     this.contentType = attributes.contentType || "";
     this.href = attributes.href || "";
     this.id = attributes.id || "";
     this.maxLength = getInteger({
       data: attributes.maxLength,
       defaultValue: -1,
-      validate: x => x >= -1,
+      validate: (x) => x >= -1,
     });
     this.name = attributes.name || "";
     this.rid = attributes.rid || "";
@@ -2600,43 +2474,43 @@ class ExData extends ContentObject
     this.usehref = attributes.usehref || "";
   }
 
-  override [$isCDATAXml]() { return this.contentType === "text/html"; }
+  override [$isCDATAXml]() {
+    return this.contentType === "text/html";
+  }
 
-  override [$onChild]( child:XFAObject )
-  {
-    if( this.contentType === "text/html" 
-     && child[$namespaceId] === NamespaceIds.xhtml.id
+  override [$onChild](child: XFAObject) {
+    if (
+      this.contentType === "text/html" &&
+      child[$namespaceId] === NamespaceIds.xhtml.id
     ) {
-      this[$content] = <XhtmlObject>child;
+      this[$content] = child as XhtmlObject;
       return true;
     }
 
-    if( this.contentType === "text/xml" )
-    {
-      this[$content] = <XhtmlObject>child;
+    if (this.contentType === "text/xml") {
+      this[$content] = child as XhtmlObject;
       return true;
     }
 
     return false;
   }
 
-  override [$toHTML]( availableSpace?:AvailableSpace )
-  {
-    if( this.contentType !== "text/html" || !this[$content] )
+  override [$toHTML](availableSpace?: AvailableSpace) {
+    if (this.contentType !== "text/html" || !this[$content]) {
       // TODO: fix other cases.
       return HTMLResult.EMPTY;
+    }
 
-    return (<XhtmlObject>this[$content])[$toHTML]( availableSpace );
+    return (<XhtmlObject> this[$content])[$toHTML](availableSpace);
   }
 }
 
-class ExObject extends XFAObject 
-{
+class ExObject extends XFAObject {
   archive;
   classId;
   codeBase;
   codeType;
-  extras:unknown; //?:Extras;
+  extras: unknown; //?:Extras;
   boolean = new XFAObjectArray();
   date = new XFAObjectArray();
   dateTime = new XFAObjectArray();
@@ -2649,9 +2523,8 @@ class ExObject extends XFAObject
   text = new XFAObjectArray();
   time = new XFAObjectArray();
 
-  constructor( attributes:XFAAttrs ) 
-  {
-    super( TEMPLATE_NS_ID, "exObject", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "exObject", /* hasChildren = */ true);
     this.archive = attributes.archive || "";
     this.classId = attributes.classId || "";
     this.codeBase = attributes.codeBase || "";
@@ -2663,8 +2536,7 @@ class ExObject extends XFAObject
   }
 }
 
-export class ExclGroup extends XFAObject 
-{
+export class ExclGroup extends XFAObject {
   access;
   accessKey;
   override anchorType;
@@ -2681,29 +2553,28 @@ export class ExclGroup extends XFAObject
   override w;
   override x;
   override y;
-  override assist:Assist | undefined = undefined;
-  bind?:Bind;
-  override border:Border | undefined = undefined;
-  calculate:unknown; //?:Calculate;
-  caption:unknown; //?:Caption;
-  desc:unknown; //?:Desc;
-  extras:unknown; //?:Extras;
-  override margin:Margin | undefined = undefined;
-  override para:unknown | undefined = undefined; //?:Para;
+  override assist: Assist | undefined = undefined;
+  bind?: Bind;
+  override border: Border | undefined = undefined;
+  calculate: unknown; //?:Calculate;
+  caption: unknown; //?:Caption;
+  desc: unknown; //?:Desc;
+  extras: unknown; //?:Extras;
+  override margin: Margin | undefined = undefined;
+  override para: unknown | undefined = undefined; //?:Para;
   override traversal = undefined; //?:Traversal;
-  validate:unknown; //?:Validate;
+  validate: unknown; //?:Validate;
   connect = new XFAObjectArray();
   event = new XFAObjectArray();
   field = new XFAObjectArray();
   setProperty = new XFAObjectArray();
 
-  override [$extra]!:XFAExtra;
-  [$data]?:XFAObject;
-  occur:Occur | undefined;
+  override [$extra]!: XFAExtra;
+  [$data]?: XFAObject;
+  occur: Occur | undefined;
 
-  constructor( attributes:XFAAttrs ) 
-  {
-    super( TEMPLATE_NS_ID, "exclGroup", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "exclGroup", /* hasChildren = */ true);
     this.access = getStringOption(attributes.access, [
       "open",
       "nonInteractive",
@@ -2725,9 +2596,9 @@ export class ExclGroup extends XFAObject
     this.colSpan = getInteger({
       data: attributes.colSpan,
       defaultValue: 1,
-      validate: n => n >= 1 || n === -1,
+      validate: (n) => n >= 1 || n === -1,
     });
-    this.h = attributes.h ? getMeasurement(attributes.h) : <const>"";
+    this.h = attributes.h ? getMeasurement(attributes.h) : "" as const;
     this.hAlign = getStringOption(attributes.hAlign, [
       "left",
       "center",
@@ -2760,32 +2631,32 @@ export class ExclGroup extends XFAObject
     this.relevant = getRelevant(attributes.relevant);
     this.use = attributes.use || "";
     this.usehref = attributes.usehref || "";
-    this.w = attributes.w ? getMeasurement(attributes.w) : <const>"";
+    this.w = attributes.w ? getMeasurement(attributes.w) : "" as const;
     this.x = getMeasurement(attributes.x, "0pt");
     this.y = getMeasurement(attributes.y, "0pt");
   }
 
-  override [$isBindable]() { return true; }
+  override [$isBindable]() {
+    return true;
+  }
 
-  override [$hasSettableValue]() { return true; }
+  override [$hasSettableValue]() {
+    return true;
+  }
 
-  override [$setValue]( value:XFAValue )
-  {
-    for( const field of this.field.children )
-    {
-      if( !(<Field>field).value )
-      {
+  override [$setValue](value: XFAValue) {
+    for (const field of this.field.children) {
+      if (!(<Field> field).value) {
         const nodeValue = new Value({});
         field[$appendChild](nodeValue);
-        (<Field>field).value = nodeValue;
+        (<Field> field).value = nodeValue;
       }
 
-      (<Field>field).value![$setValue]( value );
+      (<Field> field).value![$setValue](value);
     }
   }
 
-  override [$isThereMoreWidth]()
-  {
+  override [$isThereMoreWidth]() {
     return (
       (this.layout.endsWith("-tb") &&
         this[$extra].attempt === 0 &&
@@ -2794,24 +2665,25 @@ export class ExclGroup extends XFAObject
     );
   }
 
-  override [$isSplittable]()
-  {
+  override [$isSplittable]() {
     // We cannot cache the result here because the contentArea can change.
     const parent = this[$getSubformParent]()!;
-    if( !parent[$isSplittable]() ) 
+    if (!parent[$isSplittable]()) {
       return false;
+    }
 
-    if( this[$extra]._isSplittable !== undefined )
+    if (this[$extra]._isSplittable !== undefined) {
       return this[$extra]._isSplittable!;
+    }
 
-    if( this.layout === "position" || this.layout.includes("row") )
-    {
+    if (this.layout === "position" || this.layout.includes("row")) {
       this[$extra]._isSplittable = false;
       return false;
     }
 
-    if( parent.layout?.endsWith("-tb")
-     && (<XFAExtra>parent[$extra]).numberInLine !== 0
+    if (
+      parent.layout?.endsWith("-tb") &&
+      (<XFAExtra> parent[$extra]).numberInLine !== 0
     ) {
       // See comment in Subform::[$isSplittable] for an explanation.
       return false;
@@ -2821,41 +2693,40 @@ export class ExclGroup extends XFAObject
     return true;
   }
 
-  override [$flushHTML]() { return flushHTML(this); }
+  override [$flushHTML]() {
+    return flushHTML(this);
+  }
 
-  override [$addHTML]( html:XFAElData, bbox:rect_t )
-  {
+  override [$addHTML](html: XFAElData, bbox: rect_t) {
     addHTML(this, html, bbox);
   }
 
-  override [$getAvailableSpace]()
-  {
-    return getAvailableSpace( this );
+  override [$getAvailableSpace]() {
+    return getAvailableSpace(this);
   }
 
-  override [$toHTML]( availableSpace:AvailableSpace )
-  {
+  override [$toHTML](availableSpace: AvailableSpace) {
     setTabIndex(this);
-    if( this.presence === "hidden"
-     || this.presence === "inactive"
-     || this.h === 0
-     || this.w === 0
+    if (
+      this.presence === "hidden" ||
+      this.presence === "inactive" ||
+      this.h === 0 ||
+      this.w === 0
     ) {
       return HTMLResult.EMPTY;
     }
 
     fixDimensions(this);
 
-    const children:XFAElData[] = [];
-    const attributes:XFAHTMLAttrs = {
+    const children: XFAElData[] = [];
+    const attributes: XFAHTMLAttrs = {
       id: this[$uid],
       class: [],
     };
 
-    setAccess( this, attributes.class! );
+    setAccess(this, attributes.class!);
 
-    if (!this[$extra]) 
-    {
+    if (!this[$extra]) {
       this[$extra] = Object.create(null);
     }
 
@@ -2863,7 +2734,7 @@ export class ExclGroup extends XFAObject
       children,
       attributes,
       attempt: 0,
-      line: null,
+      line: undefined,
       numberInLine: 0,
       availableSpace: {
         width: Math.min(this.w || Infinity, availableSpace.width),
@@ -2876,20 +2747,18 @@ export class ExclGroup extends XFAObject
     });
 
     const isSplittable = this[$isSplittable]();
-    if (!isSplittable) 
-    {
+    if (!isSplittable) {
       setFirstUnsplittable(this);
     }
 
-    if( !checkDimensions(this, availableSpace) )
+    if (!checkDimensions(this, availableSpace)) {
       return HTMLResult.FAILURE;
+    }
     const filter = new Set(["field"]);
 
-    if( this.layout.includes("row") )
-    {
-      const columnWidths = (<Subform>this[$getSubformParent]()).columnWidths;
-      if( Array.isArray(columnWidths) && columnWidths.length > 0 )
-      {
+    if (this.layout.includes("row")) {
+      const columnWidths = (<Subform> this[$getSubformParent]()).columnWidths;
+      if (Array.isArray(columnWidths) && columnWidths.length > 0) {
         this[$extra].columnWidths = columnWidths;
         this[$extra].currentColumn = 0;
       }
@@ -2903,35 +2772,30 @@ export class ExclGroup extends XFAObject
       "presence",
       "border",
       "margin",
-      "hAlign"
+      "hAlign",
     );
     const classNames = ["xfaExclgroup"];
     const cl = layoutClass(this);
-    if (cl) 
-    {
+    if (cl) {
       classNames.push(cl);
     }
 
-    if (isPrintOnly(this)) 
-    {
+    if (isPrintOnly(this)) {
       classNames.push("xfaPrintOnly");
     }
 
     attributes.style = style;
     attributes.class = classNames;
 
-    if (this.name) 
-    {
+    if (this.name) {
       attributes.xfaName = this.name;
     }
 
     this[$pushPara]();
     const isLrTb = this.layout === "lr-tb" || this.layout === "rl-tb";
     const maxRun = isLrTb ? MAX_ATTEMPTS_FOR_LRTB_LAYOUT : 1;
-    for(; this[$extra].attempt! < maxRun; this[$extra].attempt!++ ) 
-    {
-      if (isLrTb && this[$extra].attempt === MAX_ATTEMPTS_FOR_LRTB_LAYOUT - 1) 
-      {
+    for (; this[$extra].attempt! < maxRun; this[$extra].attempt!++) {
+      if (isLrTb && this[$extra].attempt === MAX_ATTEMPTS_FOR_LRTB_LAYOUT - 1) {
         // If the layout is lr-tb then having attempt equals to
         // MAX_ATTEMPTS_FOR_LRTB_LAYOUT-1 means that we're trying to layout
         // on the next line so this on is empty.
@@ -2941,19 +2805,18 @@ export class ExclGroup extends XFAObject
         filter,
         include: true,
       });
-      if (result.success) 
-      {
+      if (result.success) {
         break;
       }
-      if (result.isBreak()) 
-      {
+      if (result.isBreak()) {
         this[$popPara]();
         return result;
       }
-      if( isLrTb
-       && this[$extra].attempt === 0
-       && this[$extra].numberInLine === 0
-       && !this[$getTemplateRoot]()![$extra].noLayoutFailure
+      if (
+        isLrTb &&
+        this[$extra].attempt === 0 &&
+        this[$extra].numberInLine === 0 &&
+        !this[$getTemplateRoot]()![$extra].noLayoutFailure
       ) {
         // See comment in Subform::[$toHTML].
         this[$extra].attempt = maxRun;
@@ -2963,38 +2826,32 @@ export class ExclGroup extends XFAObject
 
     this[$popPara]();
 
-    if (!isSplittable) 
-    {
+    if (!isSplittable) {
       unsetFirstUnsplittable(this);
     }
 
-    if (this[$extra].attempt === maxRun) 
-    {
-      if (!isSplittable) 
-      {
-        delete (<any>this)[$extra];
+    if (this[$extra].attempt === maxRun) {
+      if (!isSplittable) {
+        delete (<any> this)[$extra];
       }
       return HTMLResult.FAILURE;
     }
 
     let marginH = 0;
     let marginV = 0;
-    if (this.margin) 
-    {
+    if (this.margin) {
       marginH = this.margin.leftInset + this.margin.rightInset;
       marginV = this.margin.topInset + this.margin.bottomInset;
     }
 
-    const width = Math.max( this[$extra].width! + marginH, this.w || 0 );
-    const height = Math.max( this[$extra].height! + marginV, this.h || 0 );
-    const bbox:rect_t = [this.x, this.y, width, height];
+    const width = Math.max(this[$extra].width! + marginH, this.w || 0);
+    const height = Math.max(this[$extra].height! + marginV, this.h || 0);
+    const bbox: rect_t = [this.x, this.y, width, height];
 
-    if (this.w === "") 
-    {
+    if (this.w === "") {
       style.width = measureToString(width);
     }
-    if (this.h === "") 
-    {
+    if (this.h === "") {
       style.height = measureToString(height);
     }
 
@@ -3006,21 +2863,19 @@ export class ExclGroup extends XFAObject
 
     applyAssist(this, attributes);
 
-    delete (<any>this)[$extra];
+    delete (<any> this)[$extra];
 
-    return HTMLResult.success( createWrapper(this, html), bbox );
+    return HTMLResult.success(createWrapper(this, html), bbox);
   }
 }
 
-class Execute extends XFAObject 
-{
+class Execute extends XFAObject {
   connection;
   executeType;
   runAt;
 
-  constructor( attributes:XFAAttrs ) 
-  {
-    super( TEMPLATE_NS_ID, "execute" );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "execute");
     this.connection = attributes.connection || "";
     this.executeType = getStringOption(attributes.executeType, [
       "import",
@@ -3037,8 +2892,7 @@ class Execute extends XFAObject
   }
 }
 
-class Extras extends XFAObject 
-{
+class Extras extends XFAObject {
   boolean = new XFAObjectArray();
   date = new XFAObjectArray();
   dateTime = new XFAObjectArray();
@@ -3051,9 +2905,8 @@ class Extras extends XFAObject
   text = new XFAObjectArray();
   time = new XFAObjectArray();
 
-  constructor( attributes:XFAAttrs ) 
-  {
-    super( TEMPLATE_NS_ID, "extras", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "extras", /* hasChildren = */ true);
     this.id = attributes.id || "";
     this.name = attributes.name || "";
     this.use = attributes.use || "";
@@ -3065,13 +2918,12 @@ class Extras extends XFAObject
   // data to a template.
 }
 
-export class Field extends XFAObject 
-{
+export class Field extends XFAObject {
   access;
   accessKey;
   override anchorType;
   override colSpan;
-  override h;
+  // override h;
   override hAlign;
   locale;
   maxH;
@@ -3081,39 +2933,38 @@ export class Field extends XFAObject
   override presence;
   relevant;
   override rotate;
-  override w;
+  // override w;
   override x;
   override y;
-  override assist:Assist | undefined = undefined;
-  bind?:Bind;
-  override border:Border | undefined = undefined;
-  calculate:unknown; //?:Calculate;
-  caption?:Caption;
-  desc:unknown; //?:Desc;
-  extras:unknown; //?:Extras;
-  font?:Font;
-  format:unknown; //?:Format;
+  override assist: Assist | undefined = undefined;
+  bind?: Bind;
+  override border: Border | undefined = undefined;
+  calculate: unknown; //?:Calculate;
+  caption?: Caption;
+  desc: unknown; //?:Desc;
+  extras: unknown; //?:Extras;
+  font?: Font;
+  format: unknown; //?:Format;
   // For a choice list, one list is used to have display entries
   // and the other for the exported values
   items = new XFAObjectArray(2);
-  keep:unknown; //?:Keep;
-  override margin:Margin | undefined = undefined;
-  override para:Para | undefined = undefined;
-  override traversal:Traversal | undefined = undefined;
-  ui?:Ui;
-  validate:unknown; //?:Validate;
-  value?:Value;
+  keep: unknown; //?:Keep;
+  override margin: Margin | undefined = undefined;
+  override para: Para | undefined = undefined;
+  override traversal: Traversal | undefined = undefined;
+  ui?: Ui;
+  validate?: Validate;
+  value?: Value;
   bindItems = new XFAObjectArray();
   connect = new XFAObjectArray();
   event = new XFAObjectArray();
   setProperty = new XFAObjectArray();
 
-  [$data]?:XFAObject;
-  occur?:Occur;
+  [$data]?: XFAObject;
+  occur?: Occur;
 
-  constructor( attributes:XFAAttrs ) 
-  {
-    super( TEMPLATE_NS_ID, "field", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "field", /* hasChildren = */ true);
     this.access = getStringOption(attributes.access, [
       "open",
       "nonInteractive",
@@ -3135,9 +2986,9 @@ export class Field extends XFAObject
     this.colSpan = getInteger({
       data: attributes.colSpan,
       defaultValue: 1,
-      validate: n => n >= 1 || n === -1,
+      validate: (n) => n >= 1 || n === -1,
     });
-    this.h = attributes.h ? getMeasurement(attributes.h) : <const>"";
+    this.h = attributes.h ? getMeasurement(attributes.h) : "" as const;
     this.hAlign = getStringOption(attributes.hAlign, [
       "left",
       "center",
@@ -3163,25 +3014,27 @@ export class Field extends XFAObject
     this.rotate = getInteger({
       data: attributes.rotate,
       defaultValue: 0,
-      validate: x => x % 90 === 0,
+      validate: (x) => x % 90 === 0,
     });
     this.use = attributes.use || "";
     this.usehref = attributes.usehref || "";
-    this.w = attributes.w ? getMeasurement(attributes.w) : <const>"";
+    this.w = attributes.w ? getMeasurement(attributes.w) : "" as const;
     this.x = getMeasurement(attributes.x, "0pt");
     this.y = getMeasurement(attributes.y, "0pt");
   }
 
-  override [$isBindable]() { return true; }
+  override [$isBindable]() {
+    return true;
+  }
 
-  override [$setValue]( value:XFAValue ) { _setValue(this, value); }
+  override [$setValue](value: XFAValue) {
+    _setValue(this, value);
+  }
 
-  override [$toHTML]( availableSpace:AvailableSpace )
-  {
+  override [$toHTML](availableSpace: AvailableSpace) {
     setTabIndex(this);
 
-    if( !this.ui )
-    {
+    if (!this.ui) {
       // It's allowed to not have an ui, specs say:
       //   If the UI element contains no children or is not present,
       //   the application chooses a default user interface for the
@@ -3190,96 +3043,87 @@ export class Field extends XFAObject
       this.ui = new Ui({});
       this.ui[$globalData] = this[$globalData];
       this[$appendChild](this.ui);
-      let node:XFAObject;
+      let node: XFAObject;
 
       // The items element can have 2 element max and
       // according to the items specs it's likely a good
       // way to guess the correct ui type.
-      switch (this.items.children.length) 
-      {
+      switch (this.items.children.length) {
         case 0:
           node = new TextEdit({});
-          this.ui.textEdit = <TextEdit>node;
+          this.ui.textEdit = <TextEdit> node;
           break;
         case 1:
           node = new CheckButton({});
-          this.ui.checkButton = <CheckButton>node;
+          this.ui.checkButton = <CheckButton> node;
           break;
         case 2:
           node = new ChoiceList({});
-          this.ui.choiceList = <ChoiceList>node;
+          this.ui.choiceList = <ChoiceList> node;
           break;
       }
-      this.ui[$appendChild]( node! );
+      this.ui[$appendChild](node!);
     }
 
-    if( !this.ui
-     || this.presence === "hidden"
-     || this.presence === "inactive"
-     || this.h === 0
-     || this.w === 0
+    if (
+      !this.ui ||
+      this.presence === "hidden" ||
+      this.presence === "inactive" ||
+      this.h === 0 ||
+      this.w === 0
     ) {
       return HTMLResult.EMPTY;
     }
 
-    if( this.caption )
-    {
+    if (this.caption) {
       // Maybe we already tried to layout this field with
       // another availableSpace, so to avoid to use the cached
       // value just delete it.
-      delete (<any>this.caption)[$extra];
+      delete (<any> this.caption)[$extra];
     }
 
     this[$pushPara]();
 
     const caption = this.caption
-      ? <XFAHTMLObj>this.caption[$toHTML]( availableSpace ).html
+      ? <XFAHTMLObj> this.caption[$toHTML](availableSpace).html
       : undefined;
     const savedW = this.w;
     const savedH = this.h;
     let marginH = 0;
     let marginV = 0;
-    if (this.margin) 
-    {
+    if (this.margin) {
       marginH = this.margin.leftInset + this.margin.rightInset;
       marginV = this.margin.topInset + this.margin.bottomInset;
     }
 
     let borderDims;
-    if (this.w === "" || this.h === "") 
-    {
-      let width:number;
-      let height:number;
+    if (this.w === "" || this.h === "") {
+      let width: number;
+      let height: number;
 
       let uiW = 0;
       let uiH = 0;
-      if (this.ui.checkButton) 
-      {
+      if (this.ui.checkButton) {
         uiW = uiH = this.ui.checkButton.size;
-      } 
-      else {
-        const { w, h } = layoutNode( this, availableSpace );
-        if( w !== undefined ) 
-        {
+      } else {
+        const { w, h } = layoutNode(this, availableSpace);
+        if (w !== undefined) {
           uiW = w;
           uiH = h!;
-        } 
-        else {
-          uiH = getMetrics( this.font, /* real = */ true ).lineNoGap!;
+        } else {
+          uiH = getMetrics(this.font, /* real = */ true).lineNoGap!;
         }
       }
 
-      borderDims = getBorderDims( this.ui[$getExtra]() );
+      borderDims = getBorderDims(this.ui[$getExtra]());
       uiW += borderDims.w;
       uiH += borderDims.h;
 
-      if( this.caption ) 
-      {
-        const { w, h, isBroken } = this.caption[$getExtra]( availableSpace );
+      if (this.caption) {
+        const { w, h, isBroken } = this.caption[$getExtra](availableSpace);
         // See comment in Draw::[$toHTML] to have an explanation
         // about this line.
-        if( isBroken && this[$getSubformParent]()![$isThereMoreWidth]() )
-        {
+        if (isBroken && this[$getSubformParent]()![$isThereMoreWidth]()) {
           this[$popPara]();
           return HTMLResult.FAILURE;
         }
@@ -3287,8 +3131,7 @@ export class Field extends XFAObject
         width = w!;
         height = h!;
 
-        switch (this.caption.placement) 
-        {
+        switch (this.caption.placement) {
           case "left":
           case "right":
           case "inline":
@@ -3299,27 +3142,24 @@ export class Field extends XFAObject
             height += uiH;
             break;
         }
-      }
-      else {
+      } else {
         width = uiW;
         height = uiH;
       }
 
-      if( width && this.w === "" )
-      {
+      if (width && this.w === "") {
         width += marginH;
         this.w = Math.min(
           this.maxW <= 0 ? Infinity : this.maxW,
-          this.minW + 1 < width ? width : this.minW
+          this.minW + 1 < width ? width : this.minW,
         );
       }
 
-      if( height && this.h === "")
-      {
+      if (height && this.h === "") {
         height += marginV;
         this.h = Math.min(
           this.maxH <= 0 ? Infinity : this.maxH,
-          this.minH + 1 < height ? height : this.minH
+          this.minH + 1 < height ? height : this.minH,
         );
       }
     }
@@ -3329,8 +3169,7 @@ export class Field extends XFAObject
     fixDimensions(this);
 
     setFirstUnsplittable(this);
-    if( !checkDimensions(this, availableSpace) ) 
-    {
+    if (!checkDimensions(this, availableSpace)) {
       this.w = savedW;
       this.h = savedH;
       this[$popPara]();
@@ -3347,43 +3186,39 @@ export class Field extends XFAObject
       "anchorType",
       "presence",
       "margin",
-      "hAlign"
+      "hAlign",
     );
 
     setMinMaxDimensions(this, style);
 
     const classNames = ["xfaField"];
     // If no font, font properties are inherited.
-    if (this.font) 
-    {
+    if (this.font) {
       classNames.push("xfaFont");
     }
 
-    if (isPrintOnly(this)) 
-    {
+    if (isPrintOnly(this)) {
       classNames.push("xfaPrintOnly");
     }
 
-    const attributes:XFAHTMLAttrs = {
+    const attributes: XFAHTMLAttrs = {
       style,
       id: this[$uid],
       class: classNames,
     };
 
-    if (style.margin) 
-    {
+    if (style.margin) {
       style.padding = style.margin;
       delete style.margin;
     }
 
-    setAccess( this, classNames );
+    setAccess(this, classNames);
 
-    if (this.name) 
-    {
+    if (this.name) {
       attributes.xfaName = this.name;
     }
 
-    const children:XFAElData[] = [];
+    const children: XFAElData[] = [];
     const html = {
       name: "div",
       attributes,
@@ -3394,158 +3229,126 @@ export class Field extends XFAObject
 
     const borderStyle = this.border ? this.border[$toStyle]() : undefined;
     const bbox = computeBbox(this, html, availableSpace);
-    const ui = <XFAHTMLObj | undefined>(<HTMLResult>this.ui[$toHTML]()).html;
-    if( !ui )
-    {
+    const ui = <XFAHTMLObj | undefined> (<HTMLResult> this.ui[$toHTML]()).html;
+    if (!ui) {
       Object.assign(style, borderStyle);
-      return HTMLResult.success( createWrapper(this, html), bbox );
+      return HTMLResult.success(createWrapper(this, html), bbox);
     }
 
-    if( this[$tabIndex] )
-    {
-      if( ui.children?.[0] )
-      {
-        (<XFAHTMLObj>ui.children[0]).attributes!.tabindex = this[$tabIndex];
-      } 
-      else {
+    if (this[$tabIndex]) {
+      if (ui.children?.[0]) {
+        (<XFAHTMLObj> ui.children[0]).attributes!.tabindex = this[$tabIndex];
+      } else {
         ui.attributes!.tabindex = this[$tabIndex];
       }
     }
 
-    if( !ui.attributes!.style ) 
-    {
+    if (!ui.attributes!.style) {
       ui.attributes!.style = Object.create(null);
     }
 
     let aElement;
 
-    if( this.ui.button ) 
-    {
-      if( ui.children!.length === 1 )
-      {
+    if (this.ui.button) {
+      if (ui.children!.length === 1) {
         [aElement] = ui.children!.splice(0, 1);
       }
-      Object.assign( ui.attributes!.style!, borderStyle );
-    } 
-    else {
-      Object.assign( style, borderStyle);
+      Object.assign(ui.attributes!.style!, borderStyle);
+    } else {
+      Object.assign(style, borderStyle);
     }
 
     children.push(ui);
 
-    if (this.value) 
-    {
-      if( this.ui.imageEdit )
-      {
-        ui.children!.push( (<HTMLResult>this.value[$toHTML]()).html! );
-      } 
-      else if( !this.ui.button ) 
-      {
-        let value:string | number | undefined = "";
-        if( this.value.exData ) 
-        {
+    if (this.value) {
+      if (this.ui.imageEdit) {
+        ui.children!.push((<HTMLResult> this.value[$toHTML]()).html!);
+      } else if (!this.ui.button) {
+        let value: string | number | undefined = "";
+        if (this.value.exData) {
           value = this.value.exData[$text]();
-        } 
-        else if (this.value.text) 
-        {
+        } else if (this.value.text) {
           value = this.value.text[$getExtra]();
-        }
-        else {
-          const htmlValue = (<HTMLResult>this.value[$toHTML]()).html;
-          if( htmlValue !== undefined )
-          {
-            value = (<XFAHTMLObj>(<XFAHTMLObj>htmlValue).children![0]).value;
+        } else {
+          const htmlValue = (<HTMLResult> this.value[$toHTML]()).html;
+          if (htmlValue !== undefined) {
+            value = (<XFAHTMLObj> (<XFAHTMLObj> htmlValue).children![0]).value;
           }
         }
-        if( this.ui.textEdit && this.value.text?.maxChars )
-        {
-          (<XFAHTMLObj>ui.children![0]).attributes!.maxLength = this.value.text.maxChars;
+        if (this.ui.textEdit && this.value.text?.maxChars) {
+          (<XFAHTMLObj> ui.children![0]).attributes!.maxLength =
+            this.value.text.maxChars;
         }
 
-        if( value ) 
-        {
-          if (this.ui.numericEdit) 
-          {
-            value = parseFloat(<string>value);
+        if (value) {
+          if (this.ui.numericEdit) {
+            value = parseFloat(<string> value);
             value = isNaN(value) ? "" : value.toString();
           }
 
-          if( (<XFAHTMLObj>ui.children![0]).name === "textarea" ) 
-          {
-            (<XFAHTMLObj>ui.children![0]).attributes!.textContent = <string>value;
-          } 
-          else {
-            (<XFAHTMLObj>ui.children![0]).attributes!.value = <string>value;
+          if ((<XFAHTMLObj> ui.children![0]).name === "textarea") {
+            (<XFAHTMLObj> ui.children![0]).attributes!.textContent =
+              <string> value;
+          } else {
+            (<XFAHTMLObj> ui.children![0]).attributes!.value = <string> value;
           }
         }
       }
     }
 
-    if (!this.ui.imageEdit && ui.children && ui.children[0] && this.h) 
-    {
-      borderDims = borderDims || getBorderDims( this.ui[$getExtra]() );
+    if (!this.ui.imageEdit && ui.children && ui.children[0] && this.h) {
+      borderDims = borderDims || getBorderDims(this.ui[$getExtra]());
 
       let captionHeight = 0;
-      if (this.caption && ["top", "bottom"].includes(this.caption.placement)) 
-      {
+      if (this.caption && ["top", "bottom"].includes(this.caption.placement)) {
         captionHeight = this.caption.reserve;
-        if (captionHeight <= 0) 
-        {
+        if (captionHeight <= 0) {
           captionHeight = this.caption[$getExtra](availableSpace).h!;
         }
         const inputHeight = this.h - captionHeight - marginV - borderDims.h;
-        (<XFAElObj>ui.children[0]).attributes!.style!.height = measureToString(inputHeight);
-      } 
-      else {
-        (<XFAElObj>ui.children[0]).attributes!.style!.height = "100%";
+        (<XFAElObj> ui.children[0]).attributes!.style!.height = measureToString(
+          inputHeight,
+        );
+      } else {
+        (<XFAElObj> ui.children[0]).attributes!.style!.height = "100%";
       }
     }
 
-    if (aElement) 
-    {
+    if (aElement) {
       ui.children!.push(aElement);
     }
 
-    if( !caption ) 
-    {
-      if( ui.attributes!.class )
-      {
+    if (!caption) {
+      if (ui.attributes!.class) {
         // Even if no caption this class will help to center the ui.
         ui.attributes!.class.push("xfaLeft");
       }
       this.w = savedW;
       this.h = savedH;
 
-      return HTMLResult.success( createWrapper(this, html), bbox );
+      return HTMLResult.success(createWrapper(this, html), bbox);
     }
 
-    if( this.ui.button )
-    {
-      if( style.padding )
-      {
+    if (this.ui.button) {
+      if (style.padding) {
         delete style.padding;
       }
-      if( caption.name === "div" )
-      {
+      if (caption.name === "div") {
         caption.name = "span";
       }
-      ui.children!.push( caption );
-      return HTMLResult.success( html, bbox );
-    } 
-    else if (this.ui.checkButton) 
-    {
+      ui.children!.push(caption);
+      return HTMLResult.success(html, bbox);
+    } else if (this.ui.checkButton) {
       caption.attributes!.class![0] = "xfaCaptionForCheckButton";
     }
 
-    if( !ui.attributes!.class )
-    {
+    if (!ui.attributes!.class) {
       ui.attributes!.class = [];
     }
 
     ui.children!.splice(0, 0, caption);
 
-    switch( this.caption!.placement ) 
-    {
+    switch (this.caption!.placement) {
       case "left":
         ui.attributes!.class.push("xfaLeft");
         break;
@@ -3566,26 +3369,24 @@ export class Field extends XFAObject
 
     this.w = savedW;
     this.h = savedH;
-    return HTMLResult.success( createWrapper(this, html), bbox );
+    return HTMLResult.success(createWrapper(this, html), bbox);
   }
 }
 
-class Fill extends XFAObject 
-{
+class Fill extends XFAObject {
   override presence;
-  color?:Color;
-  extras:unknown; //?:Extras;
+  color?: Color;
+  extras: unknown; //?:Extras;
 
   // One-of properties or none
-  linear:unknown;
-  pattern:unknown;
-  radial:unknown;
-  solid:unknown;
-  stipple:unknown;
+  linear: unknown;
+  pattern: unknown;
+  radial: unknown;
+  solid: unknown;
+  stipple: unknown;
 
-  constructor( attributes:XFAAttrs ) 
-  {
-    super( TEMPLATE_NS_ID, "fill", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "fill", /* hasChildren = */ true);
     this.id = attributes.id || "";
     this.presence = getStringOption(attributes.presence, [
       "visible",
@@ -3597,8 +3398,7 @@ class Fill extends XFAObject
     this.usehref = attributes.usehref || "";
   }
 
-  override [$toStyle]() 
-  {
+  override [$toStyle]() {
     const parent = this[$getParent]()!;
     const grandpa = parent[$getParent]()!;
     const ggrandpa = grandpa[$getParent]();
@@ -3610,66 +3410,60 @@ class Fill extends XFAObject
     // Use for non-color, i.e. gradient, radial-gradient...
     let altPropName = propName;
 
-    if (parent instanceof Border) 
-    {
+    if (parent instanceof Border) {
       propName = "background-color";
       altPropName = "background";
-      if (ggrandpa instanceof Ui) 
-      {
+      if (ggrandpa instanceof Ui) {
         // The default fill color is white.
         style.backgroundColor = "white";
       }
     }
-    if (parent instanceof Rectangle || parent instanceof Arc) 
-    {
+    if (parent instanceof Rectangle || parent instanceof Arc) {
       propName = altPropName = "fill";
       style.fill = "white";
     }
 
-    for( const name of Object.getOwnPropertyNames(this) )
-    {
-      if( name === "extras" || name === "color" ) 
+    for (const name of Object.getOwnPropertyNames(this)) {
+      if (name === "extras" || name === "color") {
         continue;
-      const obj = (<any>this)[name];
-      if( !(obj instanceof XFAObject) ) 
+      }
+      const obj = (<any> this)[name];
+      if (!(obj instanceof XFAObject)) {
         continue;
+      }
 
-      const color = <string>obj[$toStyle]( this.color );
-      if( color )
-      {
+      const color = <string> obj[$toStyle](this.color);
+      if (color) {
         style[color.startsWith("#") ? propName : altPropName] = color;
       }
       return style;
     }
 
-    if (this.color && this.color.value) 
-    {
-      const color = <string>this.color[$toStyle]();
-      style[ color.startsWith("#") ? propName : altPropName ] = color;
+    if (this.color && this.color.value) {
+      const color = <string> this.color[$toStyle]();
+      style[color.startsWith("#") ? propName : altPropName] = color;
     }
 
     return style;
   }
 }
 
-class Filter extends XFAObject 
-{
+class Filter extends XFAObject {
   addRevocationInfo;
   version;
-  appearanceFilter:unknown;
-  certificates:unknown;
-  digestMethods:unknown;
-  encodings:unknown;
-  encryptionMethods:unknown;
-  handler:unknown;
-  lockDocument:unknown;
-  mdp:unknown;
-  reasons:unknown;
-  timeStamp:unknown;
+  appearanceFilter: unknown;
+  certificates: unknown;
+  digestMethods: unknown;
+  encodings: unknown;
+  encryptionMethods: unknown;
+  handler: unknown;
+  lockDocument: unknown;
+  mdp: unknown;
+  reasons: unknown;
+  timeStamp: unknown;
 
-  constructor( attributes:XFAAttrs ) 
-  {
-    super( TEMPLATE_NS_ID, "filter", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "filter", /* hasChildren = */ true);
     this.addRevocationInfo = getStringOption(attributes.addRevocationInfo, [
       "",
       "required",
@@ -3681,42 +3475,37 @@ class Filter extends XFAObject
     this.use = attributes.use || "";
     this.usehref = attributes.usehref || "";
     this.version = getInteger({
-      data: (<any>this).version,
+      data: (<any> this).version,
       defaultValue: 5,
-      validate: x => x >= 1 && x <= 5,
+      validate: (x) => x >= 1 && x <= 5,
     });
   }
 }
 
-class Float extends ContentObject 
-{
-  override [$content]!:string | number;
+class Float extends ContentObject {
+  override [$content]: string | number | undefined;
 
-  constructor( attributes:XFAAttrs ) 
-  {
-    super( TEMPLATE_NS_ID, "float" );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "float");
     this.id = attributes.id || "";
     this.name = attributes.name || "";
     this.use = attributes.use || "";
     this.usehref = attributes.usehref || "";
   }
 
-  override [$finalize]()
-  {
-    const number = parseFloat( (<string>this[$content]).trim() );
-    this[$content] = isNaN(number) ? "" : number;
+  override [$finalize]() {
+    const number = parseFloat((<string> this[$content]).trim());
+    this[$content] = isNaN(number) ? undefined : number;
   }
 
-  override [$toHTML]( availableSpace?:AvailableSpace )
-  {
+  override [$toHTML](availableSpace?: AvailableSpace) {
     return valueToHtml(
-      this[$content] !== "" ? this[$content].toString() : ""
+      this[$content] !== undefined ? this[$content].toString() : "",
     );
   }
 }
 
-export class Font extends XFAObject implements XFAFontBase
-{
+export class Font extends XFAObject implements XFAFontBase {
   baselineShift;
   fontHorizontalScale;
   fontVerticalScale;
@@ -3732,22 +3521,21 @@ export class Font extends XFAObject implements XFAFontBase
   underline;
   underlinePeriod;
   weight;
-  extras:unknown; //?:Extras;
-  fill:unknown; //?:Fill;
+  extras: unknown; //?:Extras;
+  fill: unknown; //?:Fill;
 
-  constructor( attributes:XFAAttrs ) 
-  {
-    super( TEMPLATE_NS_ID, "font", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "font", /* hasChildren = */ true);
     this.baselineShift = getMeasurement(attributes.baselineShift);
     this.fontHorizontalScale = getFloat({
       data: attributes.fontHorizontalScale,
       defaultValue: 100,
-      validate: x => x >= 0,
+      validate: (x) => x >= 0,
     });
     this.fontVerticalScale = getFloat({
       data: attributes.fontVerticalScale,
       defaultValue: 100,
-      validate: x => x >= 0,
+      validate: (x) => x >= 0,
     });
     this.id = attributes.id || "";
     this.kerningMode = getStringOption(attributes.kerningMode, [
@@ -3758,7 +3546,7 @@ export class Font extends XFAObject implements XFAFontBase
     this.lineThrough = getInteger({
       data: attributes.lineThrough,
       defaultValue: 0,
-      validate: x => x === 1 || x === 2,
+      validate: (x) => x === 1 || x === 2,
     });
     this.lineThroughPeriod = getStringOption(attributes.lineThroughPeriod, [
       "all",
@@ -3767,7 +3555,7 @@ export class Font extends XFAObject implements XFAFontBase
     this.overline = getInteger({
       data: attributes.overline,
       defaultValue: 0,
-      validate: x => x === 1 || x === 2,
+      validate: (x) => x === 1 || x === 2,
     });
     this.overlinePeriod = getStringOption(attributes.overlinePeriod, [
       "all",
@@ -3779,7 +3567,7 @@ export class Font extends XFAObject implements XFAFontBase
     this.underline = getInteger({
       data: attributes.underline,
       defaultValue: 0,
-      validate: x => x === 1 || x === 2,
+      validate: (x) => x === 1 || x === 2,
     });
     this.underlinePeriod = getStringOption(attributes.underlinePeriod, [
       "all",
@@ -3790,22 +3578,19 @@ export class Font extends XFAObject implements XFAFontBase
     this.weight = getStringOption(attributes.weight, ["normal", "bold"]);
   }
 
-  override [$clean]( builder:Builder )
-  {
+  override [$clean](builder: Builder) {
     super[$clean](builder);
-    this[$globalData]!.usedTypefaces.add( this.typeface );
+    this[$globalData]!.usedTypefaces.add(this.typeface);
   }
 
-  override [$toStyle]()
-  {
+  override [$toStyle]() {
     const style = toStyle(this, "fill");
     const color = style.color;
     if (color) {
       if (color === "#000000") {
         // Default font color.
         delete style.color;
-      } 
-      else if (!color.startsWith("#")) {
+      } else if (!color.startsWith("#")) {
         // We've a gradient which is not possible for a font color
         // so use a workaround.
         style.background = color;
@@ -3862,27 +3647,23 @@ export class Font extends XFAObject implements XFAFontBase
   }
 }
 
-class Format extends XFAObject 
-{
-  extras:unknown; //?:Extras;
-  picture:unknown; //?:Picture;
+class Format extends XFAObject {
+  extras: unknown; //?:Extras;
+  picture: unknown; //?:Picture;
 
-  constructor( attributes:XFAAttrs ) 
-  {
-    super( TEMPLATE_NS_ID, "format", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "format", /* hasChildren = */ true);
     this.id = attributes.id || "";
     this.use = attributes.use || "";
     this.usehref = attributes.usehref || "";
   }
 }
 
-class Handler extends StringObject 
-{
+class Handler extends StringObject {
   type;
 
-  constructor( attributes:XFAAttrs ) 
-  {
-    super( TEMPLATE_NS_ID, "handler" );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "handler");
     this.id = attributes.id || "";
     this.type = getStringOption(attributes.type, ["optional", "required"]);
     this.use = attributes.use || "";
@@ -3890,8 +3671,7 @@ class Handler extends StringObject
   }
 }
 
-class Hyphenation extends XFAObject 
-{
+class Hyphenation extends XFAObject {
   excludeAllCaps;
   excludeInitialCap;
   hyphenate;
@@ -3899,57 +3679,54 @@ class Hyphenation extends XFAObject
   remainCharacterCount;
   wordCharacterCount;
 
-  constructor( attributes:XFAAttrs ) 
-  {
-    super( TEMPLATE_NS_ID, "hyphenation" );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "hyphenation");
     this.excludeAllCaps = getInteger({
       data: attributes.excludeAllCaps,
       defaultValue: 0,
-      validate: x => x === 1,
+      validate: (x) => x === 1,
     });
     this.excludeInitialCap = getInteger({
       data: attributes.excludeInitialCap,
       defaultValue: 0,
-      validate: x => x === 1,
+      validate: (x) => x === 1,
     });
     this.hyphenate = getInteger({
       data: attributes.hyphenate,
       defaultValue: 0,
-      validate: x => x === 1,
+      validate: (x) => x === 1,
     });
     this.id = attributes.id || "";
     this.pushCharacterCount = getInteger({
       data: attributes.pushCharacterCount,
       defaultValue: 3,
-      validate: x => x >= 0,
+      validate: (x) => x >= 0,
     });
     this.remainCharacterCount = getInteger({
       data: attributes.remainCharacterCount,
       defaultValue: 3,
-      validate: x => x >= 0,
+      validate: (x) => x >= 0,
     });
     this.use = attributes.use || "";
     this.usehref = attributes.usehref || "";
     this.wordCharacterCount = getInteger({
       data: attributes.wordCharacterCount,
       defaultValue: 7,
-      validate: x => x >= 0,
+      validate: (x) => x >= 0,
     });
   }
 }
 
-class Image extends StringObject 
-{
-  override [$content]!:string;
+class Image extends StringObject {
+  override [$content]!: string;
 
   aspect;
   contentType;
   href;
   transferEncoding;
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "image" );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "image");
     this.aspect = getStringOption(attributes.aspect, [
       "fit",
       "actual",
@@ -3970,47 +3747,45 @@ class Image extends StringObject
     this.usehref = attributes.usehref || "";
   }
 
-  override [$toHTML]( availableSpace?:AvailableSpace )
-  {
-    if (this.contentType && !MIMES.has(this.contentType.toLowerCase())) 
+  override [$toHTML](availableSpace?: AvailableSpace) {
+    if (this.contentType && !MIMES.has(this.contentType.toLowerCase())) {
       return HTMLResult.EMPTY;
+    }
 
-    let buffer = this[$globalData]!.images?.get( this.href );
-    if( !buffer && (this.href || !this[$content]) )
-    {
+    let buffer = this[$globalData]!.images?.get(this.href);
+    if (!buffer && (this.href || !this[$content])) {
       // In general, we don't get remote data and use what we have
       // in the pdf itself, so no picture for non null href.
       return HTMLResult.EMPTY;
     }
 
-    if( !buffer && this.transferEncoding === "base64" )
-    {
-      buffer = stringToBytes( atob(this[$content]) );
+    if (!buffer && this.transferEncoding === "base64") {
+      buffer = stringToBytes(atob(this[$content]));
     }
 
-    if( !buffer ) 
+    if (!buffer) {
       return HTMLResult.EMPTY;
+    }
 
-    if( !this.contentType )
-    {
-      for( const [header, type] of IMAGES_HEADERS )
-      {
-        if( buffer.length > header.length
-         && header.every( (x, i) => x === buffer![i] )
+    if (!this.contentType) {
+      for (const [header, type] of IMAGES_HEADERS) {
+        if (
+          buffer.length > header.length &&
+          header.every((x, i) => x === buffer![i])
         ) {
           this.contentType = type;
           break;
         }
       }
-      if( !this.contentType )
+      if (!this.contentType) {
         return HTMLResult.EMPTY;
+      }
     }
 
     // TODO: Firefox doesn't support natively tiff (and tif) format.
     const blob = new Blob([buffer], { type: this.contentType });
     let style;
-    switch( this.aspect )
-    {
+    switch (this.aspect) {
       case "fit":
       case "actual":
         // TODO: check what to do with actual.
@@ -4040,36 +3815,32 @@ class Image extends StringObject
     const parent = this[$getParent]();
     return HTMLResult.success({
       name: "img",
-      attributes: <XFAHTMLAttrs>{
+      attributes: <XFAHTMLAttrs> {
         class: ["xfaImage"],
         style,
         src: URL.createObjectURL(blob),
-        alt: parent ? ariaLabel( <Field>parent[$getParent]() ) : undefined,
+        alt: parent ? ariaLabel( parent[$getParent]()as Field) : undefined,
       },
     });
   }
 }
 
-class ImageEdit extends XFAObject 
-{
+class ImageEdit extends XFAObject {
   data;
-  override border:unknown | undefined = undefined; //?:Border;
-  extras:unknown; //?:Extras;
+  override border: unknown | undefined = undefined; //?:Border;
+  extras: unknown; //?:Extras;
   override margin = undefined; //?:Margin;
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "imageEdit", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "imageEdit", /* hasChildren = */ true);
     this.data = getStringOption(attributes.data, ["link", "embed"]);
     this.id = attributes.id || "";
     this.use = attributes.use || "";
     this.usehref = attributes.usehref || "";
   }
 
-  override [$toHTML]( availableSpace?:AvailableSpace )
-  {
-    if( this.data === "embed" )
-    {
+  override [$toHTML](availableSpace?: AvailableSpace) {
+    if (this.data === "embed") {
       return HTMLResult.success({
         name: "div",
         children: [],
@@ -4081,41 +3852,35 @@ class ImageEdit extends XFAObject
   }
 }
 
-class Integer extends ContentObject 
-{
-  override [$content]!:string | number;
+class Integer extends ContentObject {
+  override [$content]: string | number | undefined;
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "integer" );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "integer");
     this.id = attributes.id || "";
     this.name = attributes.name || "";
     this.use = attributes.use || "";
     this.usehref = attributes.usehref || "";
   }
 
-  override [$finalize]()
-  {
-    const number = parseInt( (<string>this[$content]).trim(), 10 );
-    this[$content] = isNaN(number) ? "" : number;
+  override [$finalize]() {
+    const number = parseInt((<string> this[$content]).trim(), 10);
+    this[$content] = isNaN(number) ? undefined : number;
   }
 
-  override [$toHTML]( availableSpace?:AvailableSpace )
-  {
+  override [$toHTML](availableSpace?: AvailableSpace) {
     return valueToHtml(
-      this[$content] !== "" ? this[$content].toString() : ""
+      this[$content] !== undefined ? this[$content].toString() : "",
     );
   }
 }
 
-class Issuers extends XFAObject 
-{
+class Issuers extends XFAObject {
   type;
   certificate = new XFAObjectArray();
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "issuers", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "issuers", /* hasChildren = */ true);
     this.id = attributes.id || "";
     this.type = getStringOption(attributes.type, ["optional", "required"]);
     this.use = attributes.use || "";
@@ -4123,8 +3888,7 @@ class Issuers extends XFAObject
   }
 }
 
-export class Items extends XFAObject 
-{
+export class Items extends XFAObject {
   override presence;
   override ref;
   save;
@@ -4139,9 +3903,8 @@ export class Items extends XFAObject
   text = new XFAObjectArray();
   time = new XFAObjectArray();
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "items", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "items", /* hasChildren = */ true);
     this.id = attributes.id || "";
     this.name = attributes.name || "";
     this.presence = getStringOption(attributes.presence, [
@@ -4154,33 +3917,29 @@ export class Items extends XFAObject
     this.save = getInteger({
       data: attributes.save,
       defaultValue: 0,
-      validate: x => x === 1,
+      validate: (x) => x === 1,
     });
     this.use = attributes.use || "";
     this.usehref = attributes.usehref || "";
   }
 
-  override [$toHTML]( availableSpace?:AvailableSpace )
-  {
+  override [$toHTML](availableSpace?: AvailableSpace) {
     const output = [];
-    for( const child of this[$getChildren]() )
-    {
-      output.push( child[$text]() );
+    for (const child of this[$getChildren]()) {
+      output.push(child[$text]());
     }
-    return HTMLResult.success( <any>output );
+    return HTMLResult.success(<any> output);
   }
 }
 
-class Keep extends XFAObject 
-{
+class Keep extends XFAObject {
   intact;
   next;
   previous;
-  extras:unknown; //?:Extras
+  extras: unknown; //?:Extras
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "keep", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "keep", /* hasChildren = */ true);
     this.id = attributes.id || "";
     const options = ["none", "contentArea", "pageArea"];
     this.intact = getStringOption(attributes.intact, options);
@@ -4191,8 +3950,7 @@ class Keep extends XFAObject
   }
 }
 
-class KeyUsage extends XFAObject 
-{
+class KeyUsage extends XFAObject {
   crlSign;
   dataEncipherment;
   decipherOnly;
@@ -4204,19 +3962,18 @@ class KeyUsage extends XFAObject
   nonRepudiation;
   type;
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "keyUsage" );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "keyUsage");
     const options = ["", "yes", "no"];
     this.crlSign = getStringOption(attributes.crlSign, options);
     this.dataEncipherment = getStringOption(
       attributes.dataEncipherment,
-      options
+      options,
     );
     this.decipherOnly = getStringOption(attributes.decipherOnly, options);
     this.digitalSignature = getStringOption(
       attributes.digitalSignature,
-      options
+      options,
     );
     this.encipherOnly = getStringOption(attributes.encipherOnly, options);
     this.id = attributes.id || "";
@@ -4230,15 +3987,13 @@ class KeyUsage extends XFAObject
   }
 }
 
-class Line extends XFAObject 
-{
+class Line extends XFAObject {
   hand;
   slope;
-  edge?:Edge
+  edge?: Edge;
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "line", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "line", /* hasChildren = */ true);
     this.hand = getStringOption(attributes.hand, ["even", "left", "right"]);
     this.id = attributes.id || "";
     this.slope = getStringOption(attributes.slope, ["\\", "/"]);
@@ -4246,10 +4001,9 @@ class Line extends XFAObject
     this.usehref = attributes.usehref || "";
   }
 
-  override [$toHTML]( availableSpace?:AvailableSpace )
-  {
+  override [$toHTML](availableSpace?: AvailableSpace) {
     const parent = this[$getParent]()![$getParent]()!;
-    const edge = this.edge ? this.edge : new Edge({});
+    const edge = this.edge || new Edge({});
     const edgeStyle = edge[$toStyle]();
     const style = Object.create(null);
     const thickness = edge.presence === "visible" ? edge.thickness : 0;
@@ -4259,21 +4013,16 @@ class Line extends XFAObject
     let width = "100%";
     let height = "100%";
 
-    if( <number>parent.w <= thickness )
-    {
+    if (<number> parent.w <= thickness) {
       [x1, y1, x2, y2] = ["50%", 0, "50%", "100%"];
       width = style.strokeWidth;
-    } 
-    else if( <number>parent.h <= thickness ) 
-    {
+    } else if (<number> parent.h <= thickness) {
       [x1, y1, x2, y2] = [0, "50%", "100%", "50%"];
       height = style.strokeWidth;
-    } 
-    else {
+    } else {
       if (this.slope === "\\") {
         [x1, y1, x2, y2] = [0, 0, "100%", "100%"];
-      } 
-      else {
+      } else {
         [x1, y1, x2, y2] = [0, "100%", "100%", 0];
       }
     }
@@ -4293,7 +4042,7 @@ class Line extends XFAObject
     const svg = {
       name: "svg",
       children: [line],
-      attributes: <XFASVGAttrs>{
+      attributes: <XFASVGAttrs> {
         xmlns: SVG_NS,
         width,
         height,
@@ -4303,8 +4052,7 @@ class Line extends XFAObject
       },
     };
 
-    if( hasMargin(parent) )
-    {
+    if (hasMargin(parent)) {
       return HTMLResult.success({
         name: "div",
         attributes: {
@@ -4323,15 +4071,13 @@ class Line extends XFAObject
   }
 }
 
-class Linear extends XFAObject 
-{
+class Linear extends XFAObject {
   type;
-  color?:Color;
-  extras:unknown; //?:Extras;
+  color?: Color;
+  extras: unknown; //?:Extras;
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "linear", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "linear", /* hasChildren = */ true);
     this.id = attributes.id || "";
     this.type = getStringOption(attributes.type, [
       "toRight",
@@ -4341,11 +4087,9 @@ class Linear extends XFAObject
     ]);
     this.use = attributes.use || "";
     this.usehref = attributes.usehref || "";
-
   }
 
-  override [$toStyle]( startColor?:Color )
-  {
+  override [$toStyle](startColor?: Color) {
     const startColor_s = startColor ? startColor[$toStyle]() : "#FFFFFF";
     const transf = this.type.replace(/([RBLT])/, " $1").toLowerCase();
     const endColor_s = this.color ? this.color[$toStyle]() : "#000000";
@@ -4353,36 +4097,31 @@ class Linear extends XFAObject
   }
 }
 
-class LockDocument extends ContentObject 
-{
-  override [$content]!:string;
+class LockDocument extends ContentObject {
+  override [$content]!: string;
 
   type;
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "lockDocument" );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "lockDocument");
     this.id = attributes.id || "";
     this.type = getStringOption(attributes.type, ["optional", "required"]);
     this.use = attributes.use || "";
     this.usehref = attributes.usehref || "";
   }
 
-  override [$finalize]() 
-  {
-    this[$content] = getStringOption( this[$content], ["auto", "0", "1"] );
+  override [$finalize]() {
+    this[$content] = getStringOption(this[$content], ["auto", "0", "1"]);
   }
 }
 
-class Manifest extends XFAObject 
-{
+class Manifest extends XFAObject {
   action;
-  extras:unknown; //?:Extras;
+  extras: unknown; //?:Extras;
   override ref = new XFAObjectArray();
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "manifest", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "manifest", /* hasChildren = */ true);
     this.action = getStringOption(attributes.action, [
       "include",
       "all",
@@ -4395,17 +4134,15 @@ class Manifest extends XFAObject
   }
 }
 
-export class Margin extends XFAObject
-{
+export class Margin extends XFAObject {
   bottomInset;
   leftInset;
   rightInset;
   topInset;
-  extras:unknown; //?:Extras;
+  extras: unknown; //?:Extras;
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "margin", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "margin", /* hasChildren = */ true);
     this.bottomInset = getMeasurement(attributes.bottomInset, "0");
     this.id = attributes.id || "";
     this.leftInset = getMeasurement(attributes.leftInset, "0");
@@ -4415,11 +4152,9 @@ export class Margin extends XFAObject
     this.usehref = attributes.usehref || "";
   }
 
-  override [$toStyle]()
-  {
+  override [$toStyle]() {
     return {
-      margin:
-        measureToString(this.topInset) +
+      margin: measureToString(this.topInset) +
         " " +
         measureToString(this.rightInset) +
         " " +
@@ -4430,19 +4165,17 @@ export class Margin extends XFAObject
   }
 }
 
-class Mdp extends XFAObject 
-{
+class Mdp extends XFAObject {
   permissions;
   signatureType;
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "mdp" );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "mdp");
     this.id = attributes.id || "";
     this.permissions = getInteger({
       data: attributes.permissions,
       defaultValue: 2,
-      validate: x => x === 1 || x === 3,
+      validate: (x) => x === 1 || x === 3,
     });
     this.signatureType = getStringOption(attributes.signatureType, [
       "filler",
@@ -4453,8 +4186,7 @@ class Mdp extends XFAObject
   }
 }
 
-class Medium extends XFAObject 
-{
+class Medium extends XFAObject {
   imagingBBox;
   long;
   orientation;
@@ -4463,9 +4195,8 @@ class Medium extends XFAObject
   trayIn;
   trayOut;
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "medium" );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "medium");
     this.id = attributes.id || "";
     this.imagingBBox = getBBox(attributes.imagingBBox);
     this.long = getMeasurement(attributes.long);
@@ -4486,30 +4217,26 @@ class Medium extends XFAObject
   }
 }
 
-class Message extends XFAObject 
-{
+class Message extends XFAObject {
   text = new XFAObjectArray();
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "message", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "message", /* hasChildren = */ true);
     this.id = attributes.id || "";
     this.use = attributes.use || "";
     this.usehref = attributes.usehref || "";
   }
 }
 
-class NumericEdit extends XFAObject 
-{
+class NumericEdit extends XFAObject {
   hScrollPolicy;
-  override border:unknown | undefined = undefined; //?:Border;
-  comb:unknown; //?:Comb;
-  extras:unknown; //?:Extras;
+  override border: unknown | undefined = undefined; //?:Border;
+  comb: unknown; //?:Comb;
+  extras: unknown; //?:Extras;
   override margin = undefined; //?:Margin;
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "numericEdit", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "numericEdit", /* hasChildren = */ true);
     this.hScrollPolicy = getStringOption(attributes.hScrollPolicy, [
       "auto",
       "off",
@@ -4520,22 +4247,27 @@ class NumericEdit extends XFAObject
     this.usehref = attributes.usehref || "";
   }
 
-  override [$toHTML]( availableSpace?:AvailableSpace )
-  {
+  override [$toHTML](availableSpace?: AvailableSpace) {
     // TODO: incomplete.
     const style = toStyle(this, "border", "font", "margin");
-    const field = <Field>this[$getParent]()![$getParent]();
+    const field = <Field> this[$getParent]()![$getParent]();
     const html = {
       name: "input",
-      attributes: {
+      attributes: <XFAHTMLAttrs> {
         type: "text",
         fieldId: field[$uid],
         dataId: field[$data]?.[$uid] || field[$uid],
         class: ["xfaTextfield"],
         style,
         "aria-label": ariaLabel(field),
+        "aria-required": false,
       },
     };
+
+    if (isRequired(field)) {
+      html.attributes["aria-required"] = true;
+      html.attributes.required = true;
+    }
 
     return HTMLResult.success({
       name: "label",
@@ -4547,84 +4279,72 @@ class NumericEdit extends XFAObject
   }
 }
 
-class Occur extends XFAObject 
-{
+class Occur extends XFAObject {
   initial;
   max;
   min;
-  extras:unknown; //?:Extras;
+  extras: unknown; //?:Extras;
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "occur", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "occur", /* hasChildren = */ true);
     this.id = attributes.id || "";
-    this.initial =
-      attributes.initial !== ""
-        ? getInteger({
-            data: attributes.initial,
-            defaultValue: "",
-            validate: x => true,
-          })
-        : "";
-    this.max =
-      attributes.max !== ""
-        ? getInteger({
-            data: attributes.max,
-            defaultValue: 1,
-            validate: x => true,
-          })
-        : "";
-    this.min =
-      attributes.min !== ""
-        ? getInteger({
-            data: attributes.min,
-            defaultValue: 1,
-            validate: x => true,
-          })
-        : "";
+    this.initial = attributes.initial !== ""
+      ? getInteger({
+        data: attributes.initial,
+        defaultValue: "",
+        validate: (x) => true,
+      })
+      : "";
+    this.max = attributes.max !== ""
+      ? getInteger({
+        data: attributes.max,
+        defaultValue: 1,
+        validate: (x) => true,
+      })
+      : "";
+    this.min = attributes.min !== ""
+      ? getInteger({
+        data: attributes.min,
+        defaultValue: 1,
+        validate: (x) => true,
+      })
+      : "";
     this.use = attributes.use || "";
     this.usehref = attributes.usehref || "";
   }
 
-  override [$clean]() 
-  {
+  override [$clean]() {
     const parent = this[$getParent]();
     const originalMin = this.min;
 
-    if (this.min === "") 
-    {
-      this.min =
-        parent instanceof PageArea || parent instanceof PageSet ? 0 : 1;
+    if (this.min === "") {
+      this.min = parent instanceof PageArea || parent instanceof PageSet
+        ? 0
+        : 1;
     }
-    if (this.max === "") 
-    {
-      if (originalMin === "") 
-      {
-        this.max =
-          parent instanceof PageArea || parent instanceof PageSet ? -1 : 1;
-      } 
-      else {
+    if (this.max === "") {
+      if (originalMin === "") {
+        this.max = parent instanceof PageArea || parent instanceof PageSet
+          ? -1
+          : 1;
+      } else {
         this.max = this.min;
       }
     }
 
-    if (this.max !== -1 && this.max < this.min) 
-    {
+    if (this.max !== -1 && this.max < this.min) {
       this.max = this.min;
     }
 
-    if (this.initial === "") 
-    {
+    if (this.initial === "") {
       this.initial = parent instanceof Template ? 1 : this.min;
     }
   }
 }
 
-class Oid extends StringObject 
-{
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "oid" );
+class Oid extends StringObject {
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "oid");
     this.id = attributes.id || "";
     this.name = attributes.name || "";
     this.use = attributes.use || "";
@@ -4632,14 +4352,12 @@ class Oid extends StringObject
   }
 }
 
-class Oids extends XFAObject 
-{
+class Oids extends XFAObject {
   type;
   oid = new XFAObjectArray();
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "oids", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "oids", /* hasChildren = */ true);
     this.id = attributes.id || "";
     this.type = getStringOption(attributes.type, ["optional", "required"]);
     this.use = attributes.use || "";
@@ -4647,26 +4365,23 @@ class Oids extends XFAObject
   }
 }
 
-export interface OverflowExtra
-{
-  target:XFAObject | undefined;
-  leader:XFAObject | undefined;
-  trailer:XFAObject | undefined;
-  addLeader:boolean;
-  addTrailer:boolean;
+export interface OverflowExtra {
+  target: XFAObject | undefined;
+  leader: XFAObject | undefined;
+  trailer: XFAObject | undefined;
+  addLeader: boolean;
+  addTrailer: boolean;
 }
 
-export class Overflow extends XFAObject 
-{
+export class Overflow extends XFAObject {
   leader;
   target;
   trailer;
 
-  override [$extra]:OverflowExtra | undefined;
-  
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "overflow" );
+  override [$extra]: OverflowExtra | undefined;
+
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "overflow");
     this.id = attributes.id || "";
     this.leader = attributes.leader || "";
     this.target = attributes.target || "";
@@ -4675,15 +4390,13 @@ export class Overflow extends XFAObject
     this.usehref = attributes.usehref || "";
   }
 
-  [$getExtra]():OverflowExtra 
-  {
-    if( !this[$extra] )
-    {
+  [$getExtra](): OverflowExtra {
+    if (!this[$extra]) {
       const parent = this[$getParent]();
       const root = this[$getTemplateRoot]()!;
-      const target = root[$searchNode]( this.target, parent );
-      const leader = root[$searchNode]( this.leader, parent );
-      const trailer = root[$searchNode]( this.trailer, parent );
+      const target = root[$searchNode](this.target, parent);
+      const leader = root[$searchNode](this.leader, parent);
+      const trailer = root[$searchNode](this.trailer, parent);
       this[$extra] = {
         target: target?.[0],
         leader: leader?.[0],
@@ -4696,18 +4409,17 @@ export class Overflow extends XFAObject
   }
 }
 
-export class PageArea extends XFAObject 
-{
+export class PageArea extends XFAObject {
   blankOrNotBlank;
   initialNumber;
   numbered;
   oddOrEven;
   pagePosition;
   relevant;
-  desc:unknown; //?:Desc;
-  extras:unknown; //?:Extras;
-  medium?:Medium;
-  occur?:Occur;
+  desc: unknown; //?:Desc;
+  extras: unknown; //?:Extras;
+  medium?: Medium;
+  occur?: Occur;
   area = new XFAObjectArray();
   contentArea = new XFAObjectArray();
   draw = new XFAObjectArray();
@@ -4715,11 +4427,10 @@ export class PageArea extends XFAObject
   field = new XFAObjectArray();
   subform = new XFAObjectArray();
 
-  override [$extra]:XFAExtra | undefined;
+  override [$extra]: XFAExtra | undefined;
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "pageArea", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "pageArea", /* hasChildren = */ true);
     this.blankOrNotBlank = getStringOption(attributes.blankOrNotBlank, [
       "any",
       "blank",
@@ -4729,13 +4440,13 @@ export class PageArea extends XFAObject
     this.initialNumber = getInteger({
       data: attributes.initialNumber,
       defaultValue: 1,
-      validate: x => true,
+      validate: (x) => true,
     });
     this.name = attributes.name || "";
     this.numbered = getInteger({
       data: attributes.numbered,
       defaultValue: 1,
-      validate: x => true,
+      validate: (x) => true,
     });
     this.oddOrEven = getStringOption(attributes.oddOrEven, [
       "any",
@@ -4754,10 +4465,8 @@ export class PageArea extends XFAObject
     this.usehref = attributes.usehref || "";
   }
 
-   [$isUsable]()
-  {
-    if( !this[$extra] )
-    {
+  [$isUsable]() {
+    if (!this[$extra]) {
       this[$extra] = {
         numberOfUse: 0,
       };
@@ -4770,22 +4479,20 @@ export class PageArea extends XFAObject
     );
   }
 
-  [$cleanPage]() { delete (<any>this)[$extra]; }
+  [$cleanPage]() {
+    delete (<any> this)[$extra];
+  }
 
-  [$getNextPage]():PageArea
-  {
-    if (!this[$extra]) 
-    {
+  [$getNextPage](): PageArea {
+    if (!this[$extra]) {
       this[$extra] = {
         numberOfUse: 0,
       };
     }
 
-    const parent = <PageSet>this[$getParent]();
-    if( parent.relation === "orderedOccurrence" ) 
-    {
-      if (this[$isUsable]()) 
-      {
+    const parent = <PageSet> this[$getParent]();
+    if (parent.relation === "orderedOccurrence") {
+      if (this[$isUsable]()) {
         this[$extra]!.numberOfUse! += 1;
         return this;
       }
@@ -4794,35 +4501,30 @@ export class PageArea extends XFAObject
     return parent[$getNextPage]();
   }
 
-  override [$getAvailableSpace]()
-  {
+  override [$getAvailableSpace]() {
     return this[$extra]!.space || { width: 0, height: 0 };
   }
 
-  override [$toHTML]( availableSpace?:AvailableSpace )
-  {
+  override [$toHTML](availableSpace?: AvailableSpace) {
     // TODO: incomplete.
-    if( !this[$extra] )
-    {
+    if (!this[$extra]) {
       this[$extra] = {
         numberOfUse: 1,
       };
     }
 
-    const children:XFAElData[] = [];
+    const children: XFAElData[] = [];
     this[$extra]!.children = children;
 
     const style = Object.create(null);
-    if( this.medium?.short && this.medium?.long ) 
-    {
+    if (this.medium?.short && this.medium?.long) {
       style.width = measureToString(this.medium.short);
       style.height = measureToString(this.medium.long);
       this[$extra]!.space = {
         width: this.medium.short,
         height: this.medium.long,
       };
-      if (this.medium.orientation === "landscape") 
-      {
+      if (this.medium.orientation === "landscape") {
         const x = style.width;
         style.width = style.height;
         style.height = x;
@@ -4831,8 +4533,7 @@ export class PageArea extends XFAObject
           height: this.medium.short,
         };
       }
-    } 
-    else {
+    } else {
       warn("XFA - No medium specified in pageArea: please file a bug.");
     }
 
@@ -4851,7 +4552,7 @@ export class PageArea extends XFAObject
     return HTMLResult.success({
       name: "div",
       children,
-      attributes: <XFAHTMLAttrs>{
+      attributes: <XFAHTMLAttrs> {
         class: ["xfaPage"],
         id: this[$uid],
         style,
@@ -4861,21 +4562,19 @@ export class PageArea extends XFAObject
   }
 }
 
-class PageSet extends XFAObject 
-{
+class PageSet extends XFAObject {
   duplexImposition;
   relation;
   relevant;
-  extras:unknown; //?:Extras;
-  occur?:Occur;
+  extras: unknown; //?:Extras;
+  occur?: Occur;
   pageArea = new XFAObjectArray();
   pageSet = new XFAObjectArray();
 
-  override [$extra]:XFAExtra | undefined;
+  override [$extra]: XFAExtra | undefined;
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "pageSet", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "pageSet", /* hasChildren = */ true);
     this.duplexImposition = getStringOption(attributes.duplexImposition, [
       "longEdge",
       "shortEdge",
@@ -4892,20 +4591,16 @@ class PageSet extends XFAObject
     this.usehref = attributes.usehref || "";
   }
 
-  [$cleanPage]() 
-  {
-    for( const page of this.pageArea.children )
-    {
-      (<PageArea>page)[$cleanPage]();
+  [$cleanPage]() {
+    for (const page of this.pageArea.children) {
+      (<PageArea> page)[$cleanPage]();
     }
-    for( const page of this.pageSet.children )
-    {
-      (<PageSet>page)[$cleanPage]();
+    for (const page of this.pageSet.children) {
+      (<PageSet> page)[$cleanPage]();
     }
   }
 
-  [$isUsable]() 
-  {
+  [$isUsable]() {
     return (
       !this.occur ||
       this.occur.max === -1 ||
@@ -4913,10 +4608,8 @@ class PageSet extends XFAObject
     );
   }
 
-  [$getNextPage]():PageArea
-  {
-    if( !this[$extra] ) 
-    {
+  [$getNextPage](): PageArea {
+    if (!this[$extra]) {
       this[$extra] = {
         numberOfUse: 1,
         pageIndex: -1,
@@ -4924,24 +4617,22 @@ class PageSet extends XFAObject
       };
     }
 
-    if( this.relation === "orderedOccurrence" ) 
-    {
-      if( this[$extra]!.pageIndex! + 1 < this.pageArea.children.length ) 
-      {
+    if (this.relation === "orderedOccurrence") {
+      if (this[$extra]!.pageIndex! + 1 < this.pageArea.children.length) {
         this[$extra]!.pageIndex! += 1;
-        const pageArea = <PageArea>this.pageArea.children[ this[$extra]!.pageIndex! ];
+        const pageArea = <PageArea> this.pageArea
+          .children[this[$extra]!.pageIndex!];
         return pageArea[$getNextPage]();
       }
 
-      if( this[$extra]!.pageSetIndex! + 1 < this.pageSet.children.length ) 
-      {
+      if (this[$extra]!.pageSetIndex! + 1 < this.pageSet.children.length) {
         this[$extra]!.pageSetIndex! += 1;
-        const pageSet = <PageSet>this.pageSet.children[ this[$extra]!.pageSetIndex! ]; 
+        const pageSet = <PageSet> this.pageSet
+          .children[this[$extra]!.pageSetIndex!];
         return pageSet[$getNextPage]();
       }
 
-      if( this[$isUsable]() ) 
-      {
+      if (this[$isUsable]()) {
         this[$extra]!.numberOfUse! += 1;
         this[$extra]!.pageIndex = -1;
         this[$extra]!.pageSetIndex = -1;
@@ -4949,8 +4640,9 @@ class PageSet extends XFAObject
       }
 
       const parent = this[$getParent]();
-      if( parent instanceof PageSet )
+      if (parent instanceof PageSet) {
         return parent[$getNextPage]();
+      }
 
       this[$cleanPage]();
       return this[$getNextPage]();
@@ -4959,30 +4651,38 @@ class PageSet extends XFAObject
     const parity = pageNumber % 2 === 0 ? "even" : "odd";
     const position = pageNumber === 0 ? "first" : "rest";
 
-    let page = <PageArea | undefined>this.pageArea.children.find(
-      p => (<PageArea>p).oddOrEven === parity && (<PageArea>p).pagePosition === position
+    let page = <PageArea | undefined> this.pageArea.children.find(
+      (p) =>
+        (<PageArea> p).oddOrEven === parity &&
+        (<PageArea> p).pagePosition === position,
     );
-    if( page )
+    if (page) {
       return page;
+    }
 
-    page = <PageArea | undefined>this.pageArea.children.find(
-      p => (<PageArea>p).oddOrEven === "any" && (<PageArea>p).pagePosition === position
+    page = <PageArea | undefined> this.pageArea.children.find(
+      (p) =>
+        (<PageArea> p).oddOrEven === "any" &&
+        (<PageArea> p).pagePosition === position,
     );
-    if( page )
+    if (page) {
       return page;
+    }
 
-    page = <PageArea | undefined>this.pageArea.children.find(
-      p => (<PageArea>p).oddOrEven === "any" && (<PageArea>p).pagePosition === "any"
+    page = <PageArea | undefined> this.pageArea.children.find(
+      (p) =>
+        (<PageArea> p).oddOrEven === "any" &&
+        (<PageArea> p).pagePosition === "any",
     );
-    if( page )
+    if (page) {
       return page;
+    }
 
-    return <PageArea>this.pageArea.children[0];
+    return <PageArea> this.pageArea.children[0];
   }
 }
 
-export class Para extends XFAObject 
-{
+export class Para extends XFAObject {
   lineHeight;
   marginLeft;
   marginRight;
@@ -4991,19 +4691,18 @@ export class Para extends XFAObject
   radixOffset;
   spaceAbove;
   spaceBelow;
-  tabDefault:string | number | undefined = undefined;
+  tabDefault: string | number | undefined = undefined;
   tabStops;
   textIndent;
   override hAlign;
   vAlign;
   widows;
-  hyphenation:unknown; //?:Hyphenation;
+  hyphenation: unknown; //?:Hyphenation;
 
-  hyphenatation?:XFAObject;
+  hyphenatation?: XFAObject;
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "para", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "para", /* hasChildren = */ true);
     this.hAlign = getStringOption(attributes.hAlign, [
       "left",
       "center",
@@ -5012,41 +4711,41 @@ export class Para extends XFAObject
       "radix",
       "right",
     ]);
-    this.id = attributes.id || <const>"";
+    this.id = attributes.id || "" as const;
     this.lineHeight = attributes.lineHeight
       ? getMeasurement(attributes.lineHeight, "0pt")
-      : <const>"";
+      : "" as const;
     this.marginLeft = attributes.marginLeft
       ? getMeasurement(attributes.marginLeft, "0pt")
-      : <const>"";
+      : "" as const;
     this.marginRight = attributes.marginRight
       ? getMeasurement(attributes.marginRight, "0pt")
-      : <const>"";
+      : "" as const;
     this.orphans = getInteger({
       data: attributes.orphans,
       defaultValue: 0,
-      validate: x => x >= 0,
+      validate: (x) => x >= 0,
     });
     this.preserve = attributes.preserve || "";
     this.radixOffset = attributes.radixOffset
       ? getMeasurement(attributes.radixOffset, "0pt")
-      : <const>"";
+      : "" as const;
     this.spaceAbove = attributes.spaceAbove
       ? getMeasurement(attributes.spaceAbove, "0pt")
-      : <const>"";
+      : "" as const;
     this.spaceBelow = attributes.spaceBelow
       ? getMeasurement(attributes.spaceBelow, "0pt")
-      : <const>"";
+      : "" as const;
     this.tabDefault = attributes.tabDefault
-      ? getMeasurement( <string | undefined>this.tabDefault )
-      : <const>"";
+      ? getMeasurement(<string | undefined> this.tabDefault)
+      : "" as const;
     this.tabStops = (attributes.tabStops || "")
       .trim()
       .split(/\s+/)
       .map((x, i) => (i % 2 === 1 ? getMeasurement(x) : x));
     this.textIndent = attributes.textIndent
       ? getMeasurement(attributes.textIndent, "0pt")
-      : <const>"";
+      : "" as const;
     this.use = attributes.use || "";
     this.usehref = attributes.usehref || "";
     this.vAlign = getStringOption(attributes.vAlign, [
@@ -5057,12 +4756,11 @@ export class Para extends XFAObject
     this.widows = getInteger({
       data: attributes.widows,
       defaultValue: 0,
-      validate: x => x >= 0,
+      validate: (x) => x >= 0,
     });
   }
 
-  override [$toStyle]()
-  {
+  override [$toStyle]() {
     const style = toStyle(this, "hAlign");
     if (this.marginLeft !== "") {
       style.paddingLeft = measureToString(this.marginLeft);
@@ -5078,7 +4776,7 @@ export class Para extends XFAObject
     }
     if (this.textIndent !== "") {
       style.textIndent = measureToString(this.textIndent);
-      fixTextIndent( style );
+      fixTextIndent(style);
     }
 
     if (this.lineHeight > 0) {
@@ -5086,15 +4784,14 @@ export class Para extends XFAObject
     }
 
     if (this.tabDefault !== "") {
-      style.tabSize = measureToString( this.tabDefault! );
+      style.tabSize = measureToString(this.tabDefault!);
     }
 
     if (this.tabStops.length > 0) {
       // TODO
     }
 
-    if( this.hyphenatation )
-    {
+    if (this.hyphenatation) {
       Object.assign(style, this.hyphenatation[$toStyle]());
     }
 
@@ -5102,17 +4799,15 @@ export class Para extends XFAObject
   }
 }
 
-class PasswordEdit extends XFAObject 
-{
+class PasswordEdit extends XFAObject {
   hScrollPolicy;
   passwordChar;
-  override border:unknown | undefined = undefined; //?:Border;
-  extras:unknown; //?:Extras;
+  override border: unknown | undefined = undefined; //?:Border;
+  extras: unknown; //?:Extras;
   override margin = undefined; //?:Margin;
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "passwordEdit", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "passwordEdit", /* hasChildren = */ true);
     this.hScrollPolicy = getStringOption(attributes.hScrollPolicy, [
       "auto",
       "off",
@@ -5125,15 +4820,13 @@ class PasswordEdit extends XFAObject
   }
 }
 
-class Pattern extends XFAObject 
-{
+class Pattern extends XFAObject {
   type;
-  color?:Color;
-  extras:unknown; //?:Extras;
+  color?: Color;
+  extras: unknown; //?:Extras;
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "pattern", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "pattern", /* hasChildren = */ true);
     this.id = attributes.id || "";
     this.type = getStringOption(attributes.type, [
       "crossHatch",
@@ -5147,42 +4840,44 @@ class Pattern extends XFAObject
     this.usehref = attributes.usehref || "";
   }
 
-  override [$toStyle]( startColor?:Color )
-  {
+  override [$toStyle](startColor?: Color) {
     const startColor_s = startColor ? startColor[$toStyle]() : "#FFFFFF";
     const endColor_s = this.color ? this.color[$toStyle]() : "#000000";
     const width = 5;
     const cmd = "repeating-linear-gradient";
-    const colors = `${startColor_s},${startColor_s} ${width}px,${endColor_s} ${width}px,${endColor_s} ${
-      2 * width
-    }px`;
-    switch( this.type)
-    {
-      case "crossHatch": return `${cmd}(to top,${colors}) ${cmd}(to right,${colors})`;
-      case "crossDiagonal": return `${cmd}(45deg,${colors}) ${cmd}(-45deg,${colors})`;
-      case "diagonalLeft": return `${cmd}(45deg,${colors})`;
-      case "diagonalRight": return `${cmd}(-45deg,${colors})`;
-      case "horizontal": return `${cmd}(to top,${colors})`;
-      case "vertical": return `${cmd}(to right,${colors})`;
+    const colors =
+      `${startColor_s},${startColor_s} ${width}px,${endColor_s} ${width}px,${endColor_s} ${
+        2 * width
+      }px`;
+    switch (this.type) {
+      case "crossHatch":
+        return `${cmd}(to top,${colors}) ${cmd}(to right,${colors})`;
+      case "crossDiagonal":
+        return `${cmd}(45deg,${colors}) ${cmd}(-45deg,${colors})`;
+      case "diagonalLeft":
+        return `${cmd}(45deg,${colors})`;
+      case "diagonalRight":
+        return `${cmd}(-45deg,${colors})`;
+      case "horizontal":
+        return `${cmd}(to top,${colors})`;
+      case "vertical":
+        return `${cmd}(to right,${colors})`;
     }
 
     return "";
   }
 }
 
-class Picture extends StringObject 
-{
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "picture" );
+class Picture extends StringObject {
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "picture");
     this.id = attributes.id || "";
     this.use = attributes.use || "";
     this.usehref = attributes.usehref || "";
   }
 }
 
-class Proto extends XFAObject 
-{
+class Proto extends XFAObject {
   appearanceFilter = new XFAObjectArray();
   arc = new XFAObjectArray();
   area = new XFAObjectArray();
@@ -5294,44 +4989,37 @@ class Proto extends XFAObject
   value = new XFAObjectArray();
   variables = new XFAObjectArray();
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "proto", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "proto", /* hasChildren = */ true);
   }
 }
 
-class Radial extends XFAObject 
-{
+class Radial extends XFAObject {
   type;
-  color?:Color;
-  extras:unknown; //?:Extras;
+  color?: Color;
+  extras: unknown; //?:Extras;
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "radial", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "radial", /* hasChildren = */ true);
     this.id = attributes.id || "";
     this.type = getStringOption(attributes.type, ["toEdge", "toCenter"]);
     this.use = attributes.use || "";
     this.usehref = attributes.usehref || "";
   }
 
-  override [$toStyle]( startColor?:Color )
-  {
+  override [$toStyle](startColor?: Color) {
     const startColor_s = startColor ? startColor[$toStyle]() : "#FFFFFF";
     const endColor_s = this.color ? this.color[$toStyle]() : "#000000";
-    const colors =
-      this.type === "toEdge"
-        ? `${startColor_s},${endColor_s}`
-        : `${endColor_s},${startColor_s}`;
+    const colors = this.type === "toEdge"
+      ? `${startColor_s},${endColor_s}`
+      : `${endColor_s},${startColor_s}`;
     return `radial-gradient(circle at center, ${colors})`;
   }
 }
 
-class Reason extends StringObject 
-{
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "reason" );
+class Reason extends StringObject {
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "reason");
     this.id = attributes.id || "";
     this.name = attributes.name || "";
     this.use = attributes.use || "";
@@ -5339,14 +5027,12 @@ class Reason extends StringObject
   }
 }
 
-class Reasons extends XFAObject 
-{
+class Reasons extends XFAObject {
   type;
   reason = new XFAObjectArray();
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "reasons", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "reasons", /* hasChildren = */ true);
     this.id = attributes.id || "";
     this.type = getStringOption(attributes.type, ["optional", "required"]);
     this.use = attributes.use || "";
@@ -5354,45 +5040,40 @@ class Reasons extends XFAObject
   }
 }
 
-class Rectangle extends XFAObject 
-{
+class Rectangle extends XFAObject {
   hand;
   corner = new XFAObjectArray(4);
   edge = new XFAObjectArray(4);
-  fill?:Fill;
+  fill?: Fill;
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "rectangle", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "rectangle", /* hasChildren = */ true);
     this.hand = getStringOption(attributes.hand, ["even", "left", "right"]);
     this.id = attributes.id || "";
     this.use = attributes.use || "";
     this.usehref = attributes.usehref || "";
   }
 
-  override [$toHTML]( availableSpace?:AvailableSpace )
-  {
+  override [$toHTML](availableSpace?: AvailableSpace) {
     const edge = this.edge.children.length
-      ? <Edge>this.edge.children[0]
+      ? <Edge> this.edge.children[0]
       : new Edge({});
     const edgeStyle = edge[$toStyle]();
     const style = Object.create(null);
-    if (this.fill && this.fill.presence === "visible") 
-    {
+    if (this.fill && this.fill.presence === "visible") {
       Object.assign(style, this.fill[$toStyle]());
-    } 
-    else {
+    } else {
       style.fill = "transparent";
     }
     style.strokeWidth = measureToString(
-      edge.presence === "visible" ? edge.thickness : 0
+      edge.presence === "visible" ? edge.thickness : 0,
     );
     style.stroke = edgeStyle.color;
 
     const corner = this.corner.children.length
       ? this.corner.children[0]
       : new Corner({});
-    const cornerStyle = <XFAStyleData>corner[$toStyle]();
+    const cornerStyle = <XFAStyleData> corner[$toStyle]();
 
     const rect = {
       name: "rect",
@@ -5411,7 +5092,7 @@ class Rectangle extends XFAObject
     const svg = {
       name: "svg",
       children: [rect],
-      attributes: <XFASVGAttrs>{
+      attributes: <XFASVGAttrs> {
         xmlns: SVG_NS,
         style: {
           overflow: "visible",
@@ -5422,8 +5103,7 @@ class Rectangle extends XFAObject
     };
 
     const parent = this[$getParent]()![$getParent]()!;
-    if( hasMargin(parent) ) 
-    {
+    if (hasMargin(parent)) {
       return HTMLResult.success({
         name: "div",
         attributes: {
@@ -5442,26 +5122,22 @@ class Rectangle extends XFAObject
   }
 }
 
-class RefElement extends StringObject 
-{
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "ref" );
+class RefElement extends StringObject {
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "ref");
     this.id = attributes.id || "";
     this.use = attributes.use || "";
     this.usehref = attributes.usehref || "";
   }
 }
 
-class Script extends StringObject 
-{
+class Script extends StringObject {
   binding;
   contentType;
   runAt;
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "script" );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "script");
     this.binding = attributes.binding || "";
     this.contentType = attributes.contentType || "";
     this.id = attributes.id || "";
@@ -5476,32 +5152,28 @@ class Script extends StringObject
   }
 }
 
-export class SetProperty extends XFAObject 
-{
+export class SetProperty extends XFAObject {
   connection;
   override ref;
   target;
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "setProperty" );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "setProperty");
     this.connection = attributes.connection || "";
     this.ref = attributes.ref || "";
     this.target = attributes.target || "";
   }
 }
 
-class SignData extends XFAObject 
-{
+class SignData extends XFAObject {
   override operation;
   override ref;
   target;
-  filter:unknown; //?:Filter
-  manifest:unknown; //?:Manifest
+  filter: unknown; //?:Filter
+  manifest: unknown; //?:Manifest
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "signData", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "signData", /* hasChildren = */ true);
     this.id = attributes.id || "";
     this.operation = getStringOption(attributes.operation, [
       "sign",
@@ -5515,18 +5187,16 @@ class SignData extends XFAObject
   }
 }
 
-class Signature extends XFAObject 
-{
+class Signature extends XFAObject {
   type;
-  override border:unknown | undefined = undefined; //?:Border;
-  extras:unknown; //?:Extras;
-  filter:unknown; //?:Filter;
-  manifest:unknown; //?:Manifest;
+  override border: unknown | undefined = undefined; //?:Border;
+  extras: unknown; //?:Extras;
+  filter: unknown; //?:Filter;
+  manifest: unknown; //?:Manifest;
   override margin = undefined; //?:Margin;
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "signature", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "signature", /* hasChildren = */ true);
     this.id = attributes.id || "";
     this.type = getStringOption(attributes.type, ["PDF1.3", "PDF1.6"]);
     this.use = attributes.use || "";
@@ -5534,14 +5204,12 @@ class Signature extends XFAObject
   }
 }
 
-class Signing extends XFAObject 
-{
+class Signing extends XFAObject {
   type;
   certificate = new XFAObjectArray();
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "signing", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "signing", /* hasChildren = */ true);
     this.id = attributes.id || "";
     this.type = getStringOption(attributes.type, ["optional", "required"]);
     this.use = attributes.use || "";
@@ -5549,37 +5217,32 @@ class Signing extends XFAObject
   }
 }
 
-class Solid extends XFAObject 
-{
-  extras:unknown; //?:Extras;
+class Solid extends XFAObject {
+  extras: unknown; //?:Extras;
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "solid", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "solid", /* hasChildren = */ true);
     this.id = attributes.id || "";
     this.use = attributes.use || "";
     this.usehref = attributes.usehref || "";
   }
 
-  override [$toStyle]( startColor?:Color )
-  {
+  override [$toStyle](startColor?: Color) {
     return startColor ? startColor[$toStyle]() : "#FFFFFF";
   }
 }
 
-class Speak extends StringObject 
-{
+class Speak extends StringObject {
   disable;
   priority;
   rid;
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "speak" );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "speak");
     this.disable = getInteger({
       data: attributes.disable,
       defaultValue: 0,
-      validate: x => x === 1,
+      validate: (x) => x === 1,
     });
     this.id = attributes.id || "";
     this.priority = getStringOption(attributes.priority, [
@@ -5594,40 +5257,42 @@ class Speak extends StringObject
   }
 }
 
-class Stipple extends XFAObject 
-{
+class Stipple extends XFAObject {
   rate;
-  color:unknown; //?:Color;
-  extras:unknown; //?:Extras;
+  color: unknown; //?:Color;
+  extras: unknown; //?:Extras;
 
-  value?:XFAColor;
+  value?: XFAColor;
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "stipple", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "stipple", /* hasChildren = */ true);
     this.id = attributes.id || "";
     this.rate = getInteger({
       data: attributes.rate,
       defaultValue: 50,
-      validate: x => x >= 0 && x <= 100,
+      validate: (x) => x >= 0 && x <= 100,
     });
     this.use = attributes.use || "";
     this.usehref = attributes.usehref || "";
   }
 
-  override [$toStyle]( bgColor:Color )
-  {
+  override [$toStyle](bgColor: Color) {
     const alpha = this.rate / 100;
     return Util.makeHexColor(
-      Math.round( (<XFAColor>bgColor.value).r * (1 - alpha) + this.value!.r * alpha),
-      Math.round( (<XFAColor>bgColor.value).g * (1 - alpha) + this.value!.g * alpha),
-      Math.round( (<XFAColor>bgColor.value).b * (1 - alpha) + this.value!.b * alpha)
+      Math.round(
+        (<XFAColor> bgColor.value).r * (1 - alpha) + this.value!.r * alpha,
+      ),
+      Math.round(
+        (<XFAColor> bgColor.value).g * (1 - alpha) + this.value!.g * alpha,
+      ),
+      Math.round(
+        (<XFAColor> bgColor.value).b * (1 - alpha) + this.value!.b * alpha,
+      ),
     );
   }
 }
 
-export class Subform extends XFAObject 
-{
+export class Subform extends XFAObject {
   access;
   allowMacro;
   override anchorType;
@@ -5649,23 +5314,23 @@ export class Subform extends XFAObject
   override w;
   override x;
   override y;
-  override assist:Assist | undefined = undefined;
-  bind?:Bind;
-  bookend:unknown;
-  override border:Border | undefined = undefined;
-  break?:Break | undefined;
-  calculate:unknown;
-  desc:unknown;
-  extras:unknown;
-  keep?:Keep;
-  override margin:Margin | undefined = undefined;
-  occur?:Occur;
-  overflow?:Overflow;
-  pageSet?:PageSet;
-  override para:unknown | undefined = undefined;
-  override traversal:unknown | undefined = undefined;
-  validate:unknown;
-  variables:unknown;
+  override assist: Assist | undefined = undefined;
+  bind?: Bind;
+  bookend: unknown;
+  override border: Border | undefined = undefined;
+  break?: Break | undefined;
+  calculate: unknown;
+  desc: unknown;
+  extras: unknown;
+  keep?: Keep;
+  override margin: Margin | undefined = undefined;
+  occur?: Occur;
+  overflow?: Overflow;
+  pageSet?: PageSet;
+  override para: unknown | undefined = undefined;
+  override traversal: unknown | undefined = undefined;
+  validate: unknown;
+  variables: unknown;
   area = new XFAObjectArray();
   breakAfter = new XFAObjectArray();
   breakBefore = new XFAObjectArray();
@@ -5680,12 +5345,11 @@ export class Subform extends XFAObject
   subform = new XFAObjectArray();
   subformSet = new XFAObjectArray();
 
-  [$data]?:XmlObject;
-  override [$extra]!:XFAExtra;
+  [$data]?: XmlObject;
+  override [$extra]!: XFAExtra;
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "subform", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "subform", /* hasChildren = */ true);
     this.access = getStringOption(attributes.access, [
       "open",
       "nonInteractive",
@@ -5695,7 +5359,7 @@ export class Subform extends XFAObject
     this.allowMacro = getInteger({
       data: attributes.allowMacro,
       defaultValue: 0,
-      validate: x => x === 1,
+      validate: (x) => x === 1,
     });
     this.anchorType = getStringOption(attributes.anchorType, [
       "topLeft",
@@ -5711,13 +5375,13 @@ export class Subform extends XFAObject
     this.colSpan = getInteger({
       data: attributes.colSpan,
       defaultValue: 1,
-      validate: n => n >= 1 || n === -1,
+      validate: (n) => n >= 1 || n === -1,
     });
     this.columnWidths = (attributes.columnWidths || "")
       .trim()
       .split(/\s+/)
-      .map(x => (x === "-1" ? -1 : getMeasurement(x)));
-    this.h = attributes.h ? getMeasurement(attributes.h) : <const>"";
+      .map((x) => (x === "-1" ? -1 : getMeasurement(x)));
+    this.h = attributes.h ? getMeasurement(attributes.h) : "" as const;
     this.hAlign = getStringOption(attributes.hAlign, [
       "left",
       "center",
@@ -5760,23 +5424,24 @@ export class Subform extends XFAObject
     this.scope = getStringOption(attributes.scope, ["name", "none"]);
     this.use = attributes.use || "";
     this.usehref = attributes.usehref || "";
-    this.w = attributes.w ? getMeasurement(attributes.w) : <const>"";
+    this.w = attributes.w ? getMeasurement(attributes.w) : "" as const;
     this.x = getMeasurement(attributes.x, "0pt");
     this.y = getMeasurement(attributes.y, "0pt");
   }
 
-  override [$getSubformParent]():Subform
-  {
+  override [$getSubformParent](): Subform {
     const parent = this[$getParent]();
-    if( parent instanceof SubformSet )
+    if (parent instanceof SubformSet) {
       return parent[$getSubformParent]();
-    return <Subform>parent;
+    }
+    return <Subform> parent;
   }
 
-  override [$isBindable]() { return true; }
+  override [$isBindable]() {
+    return true;
+  }
 
-  override [$isThereMoreWidth]()
-  {
+  override [$isThereMoreWidth]() {
     return (
       (this.layout.endsWith("-tb") &&
         this[$extra].attempt === 0 &&
@@ -5785,43 +5450,47 @@ export class Subform extends XFAObject
     );
   }
 
-  override *[$getContainedChildren]()
-  {
+  override *[$getContainedChildren]() {
     // This function is overriden in order to fake that subforms under
     // this set are in fact under parent subform.
     yield* getContainedChildren(this);
   }
 
-  override [$flushHTML]() { return flushHTML(this); }
+  override [$flushHTML]() {
+    return flushHTML(this);
+  }
 
-  override [$addHTML]( html:XFAElData, bbox:rect_t ) { addHTML(this, html, bbox); }
+  override [$addHTML](html: XFAElData, bbox: rect_t) {
+    addHTML(this, html, bbox);
+  }
 
-  override [$getAvailableSpace]() { return getAvailableSpace(this); }
+  override [$getAvailableSpace]() {
+    return getAvailableSpace(this);
+  }
 
-  override [$isSplittable]()
-  {
+  override [$isSplittable]() {
     // We cannot cache the result here because the contentArea
     // can change.
     const parent = this[$getSubformParent]();
-    if( !parent[$isSplittable]() ) return false;
+    if (!parent[$isSplittable]()) return false;
 
-    if( this[$extra]._isSplittable !== undefined )
+    if (this[$extra]._isSplittable !== undefined) {
       return this[$extra]._isSplittable!;
+    }
 
-    if (this.layout === "position" || this.layout.includes("row")) 
-    {
+    if (this.layout === "position" || this.layout.includes("row")) {
       this[$extra]._isSplittable = false;
       return false;
     }
 
-    if (this.keep && this.keep.intact !== "none") 
-    {
+    if (this.keep && this.keep.intact !== "none") {
       this[$extra]._isSplittable = false;
       return false;
     }
 
-    if( parent.layout?.endsWith("-tb") 
-     && parent[$extra].numberInLine !== 0
+    if (
+      parent.layout?.endsWith("-tb") &&
+      parent[$extra].numberInLine !== 0
     ) {
       // If parent can fit in w=100 and there's already an element which takes
       // 90 then we've 10 for this element. Suppose this element has a tb layout
@@ -5837,12 +5506,10 @@ export class Subform extends XFAObject
     return true;
   }
 
-  override [$toHTML]( availableSpace?:AvailableSpace )
-  {
+  override [$toHTML](availableSpace?: AvailableSpace) {
     setTabIndex(this);
 
-    if (this.break) 
-    {
+    if (this.break) {
       // break element is deprecated so plug it on one of its replacement
       // breakBefore or breakAfter.
       if (this.break.after !== "auto" || this.break.afterTarget !== "") {
@@ -5875,53 +5542,56 @@ export class Subform extends XFAObject
         });
         node[$globalData] = this[$globalData];
         this[$appendChild](node);
-        (<any>this.overflow).push(node);
+        (<any> this.overflow).push(node);
       }
 
       this[$removeChild](this.break);
       this.break = undefined;
     }
 
-    if( this.presence === "hidden" || this.presence === "inactive" )
+    if (this.presence === "hidden" || this.presence === "inactive") {
       return HTMLResult.EMPTY;
+    }
 
-    if( this.breakBefore.children.length > 1
-     || this.breakAfter.children.length > 1
+    if (
+      this.breakBefore.children.length > 1 ||
+      this.breakAfter.children.length > 1
     ) {
       // Specs are always talking about the breakBefore element
       // and it doesn't really make sense to have several ones.
       warn(
-        "XFA - Several breakBefore or breakAfter in subforms: please file a bug."
+        "XFA - Several breakBefore or breakAfter in subforms: please file a bug.",
       );
     }
 
-    if (this.breakBefore.children.length >= 1) 
-    {
-      const breakBefore = <BreakBefore>this.breakBefore.children[0];
-      if( handleBreak(breakBefore) ) 
+    if (this.breakBefore.children.length >= 1) {
+      const breakBefore = <BreakBefore> this.breakBefore.children[0];
+      if (handleBreak(breakBefore)) {
         return HTMLResult.breakNode(breakBefore);
+      }
     }
 
-    if( this[$extra] && this[$extra].afterBreakAfter ) 
+    if (this[$extra] && this[$extra].afterBreakAfter) {
       return HTMLResult.EMPTY;
+    }
 
     // TODO: incomplete.
     fixDimensions(this);
-    const children:XFAElData[] = [];
-    const attributes:XFAHTMLAttrs = {
+    const children: XFAElData[] = [];
+    const attributes: XFAHTMLAttrs = {
       id: this[$uid],
       class: [],
     };
 
-    setAccess( this, attributes.class! );
+    setAccess(this, attributes.class!);
 
     if (!this[$extra]) {
       this[$extra] = Object.create(null);
     }
 
-    Object.assign( this[$extra], {
+    Object.assign(this[$extra], {
       children,
-      line: null,
+      line: undefined,
       attributes,
       attempt: 0,
       numberInLine: 0,
@@ -5939,13 +5609,13 @@ export class Subform extends XFAObject
     const savedNoLayoutFailure = root[$extra].noLayoutFailure;
 
     const isSplittable = this[$isSplittable]();
-    if (!isSplittable) 
-    {
+    if (!isSplittable) {
       setFirstUnsplittable(this);
     }
 
-    if( !checkDimensions(this, availableSpace!) )
+    if (!checkDimensions(this, availableSpace!)) {
       return HTMLResult.FAILURE;
+    }
 
     const filter = new Set([
       "area",
@@ -5956,11 +5626,9 @@ export class Subform extends XFAObject
       "subformSet",
     ]);
 
-    if (this.layout.includes("row")) 
-    {
+    if (this.layout.includes("row")) {
       const columnWidths = this[$getSubformParent]().columnWidths;
-      if (Array.isArray(columnWidths) && columnWidths.length > 0) 
-      {
+      if (Array.isArray(columnWidths) && columnWidths.length > 0) {
         this[$extra].columnWidths = columnWidths;
         this[$extra].currentColumn = 0;
       }
@@ -5974,7 +5642,7 @@ export class Subform extends XFAObject
       "presence",
       "border",
       "margin",
-      "hAlign"
+      "hAlign",
     );
     const classNames = ["xfaSubform"];
     const cl = layoutClass(this);
@@ -5985,16 +5653,13 @@ export class Subform extends XFAObject
     attributes.style = style;
     attributes.class = classNames;
 
-    if (this.name) 
-    {
+    if (this.name) {
       attributes.xfaName = this.name;
     }
 
-    if( this.overflow )
-    {
+    if (this.overflow) {
       const overflowExtra = this.overflow[$getExtra]();
-      if( overflowExtra.addLeader )
-      {
+      if (overflowExtra.addLeader) {
         overflowExtra.addLeader = false;
         handleOverflow(this, overflowExtra.leader!, availableSpace);
       }
@@ -6003,10 +5668,8 @@ export class Subform extends XFAObject
     this[$pushPara]();
     const isLrTb = this.layout === "lr-tb" || this.layout === "rl-tb";
     const maxRun = isLrTb ? MAX_ATTEMPTS_FOR_LRTB_LAYOUT : 1;
-    for(; this[$extra].attempt! < maxRun; this[$extra].attempt!++ )
-    {
-      if (isLrTb && this[$extra].attempt === MAX_ATTEMPTS_FOR_LRTB_LAYOUT - 1) 
-      {
+    for (; this[$extra].attempt! < maxRun; this[$extra].attempt!++) {
+      if (isLrTb && this[$extra].attempt === MAX_ATTEMPTS_FOR_LRTB_LAYOUT - 1) {
         // If the layout is lr-tb then having attempt equals to
         // MAX_ATTEMPTS_FOR_LRTB_LAYOUT-1 means that we're trying to layout
         // on the next line so this on is empty.
@@ -6016,19 +5679,18 @@ export class Subform extends XFAObject
         filter,
         include: true,
       });
-      if (result.success) 
-      {
+      if (result.success) {
         break;
       }
-      if (result.isBreak()) 
-      {
+      if (result.isBreak()) {
         this[$popPara]();
         return result;
       }
-      if( isLrTb
-       && this[$extra].attempt === 0
-       && this[$extra].numberInLine === 0
-       && !root[$extra].noLayoutFailure
+      if (
+        isLrTb &&
+        this[$extra].attempt === 0 &&
+        this[$extra].numberInLine === 0 &&
+        !root[$extra].noLayoutFailure
       ) {
         // We're failing to put the first element on the line so no
         // need to test on the next line.
@@ -6044,33 +5706,27 @@ export class Subform extends XFAObject
     }
 
     this[$popPara]();
-    if (!isSplittable) 
-    {
+    if (!isSplittable) {
       unsetFirstUnsplittable(this);
     }
     root[$extra].noLayoutFailure = savedNoLayoutFailure;
 
-    if (this[$extra].attempt === maxRun) 
-    {
-      if( this.overflow )
-      {
+    if (this[$extra].attempt === maxRun) {
+      if (this.overflow) {
         this[$getTemplateRoot]()![$extra].overflowNode = this.overflow;
       }
 
-      if (!isSplittable) 
-      {
+      if (!isSplittable) {
         // Since a new try will happen in a new container with maybe
         // new dimensions, we invalidate already layed out components.
-        delete (<any>this)[$extra];
+        delete (<any> this)[$extra];
       }
       return HTMLResult.FAILURE;
     }
 
-    if (this.overflow) 
-    {
+    if (this.overflow) {
       const overflowExtra = this.overflow[$getExtra]();
-      if (overflowExtra.addTrailer) 
-      {
+      if (overflowExtra.addTrailer) {
         overflowExtra.addTrailer = false;
         handleOverflow(this, overflowExtra.trailer!, availableSpace);
       }
@@ -6083,9 +5739,9 @@ export class Subform extends XFAObject
       marginV = this.margin.topInset + this.margin.bottomInset;
     }
 
-    const width = Math.max( this[$extra].width! + marginH, this.w || 0 );
-    const height = Math.max( this[$extra].height! + marginV, this.h || 0 );
-    const bbox:rect_t = [this.x, this.y, width, height];
+    const width = Math.max(this[$extra].width! + marginH, this.w || 0);
+    const height = Math.max(this[$extra].height! + marginV, this.h || 0);
+    const bbox: rect_t = [this.x, this.y, width, height];
 
     if (this.w === "") {
       style.width = measureToString(width);
@@ -6094,8 +5750,9 @@ export class Subform extends XFAObject
       style.height = measureToString(height);
     }
 
-    if( (style.width === "0px" || style.height === "0px")
-     && children.length === 0
+    if (
+      (style.width === "0px" || style.height === "0px") &&
+      children.length === 0
     ) {
       return HTMLResult.EMPTY;
     }
@@ -6108,42 +5765,38 @@ export class Subform extends XFAObject
 
     applyAssist(this, attributes);
 
-    const result = HTMLResult.success( createWrapper(this, html), bbox );
+    const result = HTMLResult.success(createWrapper(this, html), bbox);
 
-    if (this.breakAfter.children.length >= 1) 
-    {
-      const breakAfter = <BreakAfter>this.breakAfter.children[0];
-      if( handleBreak(breakAfter) ) 
-      {
+    if (this.breakAfter.children.length >= 1) {
+      const breakAfter = <BreakAfter> this.breakAfter.children[0];
+      if (handleBreak(breakAfter)) {
         this[$extra].afterBreakAfter = result;
         return HTMLResult.breakNode(breakAfter);
       }
     }
 
-    delete (<any>this)[$extra];
+    delete (<any> this)[$extra];
 
     return result;
   }
 }
 
-class SubformSet extends XFAObject 
-{
+class SubformSet extends XFAObject {
   relation;
   relevant;
-  bookend:unknown; //?:Bookend;
-  break?:Break;
-  desc:unknown; //?:Desc;
-  extras:unknown; //?:Extras;
-  occur:unknown; //?:Occur;
-  overflow:unknown;
+  bookend: unknown; //?:Bookend;
+  break?: Break;
+  desc: unknown; //?:Desc;
+  extras: unknown; //?:Extras;
+  occur: unknown; //?:Occur;
+  overflow: unknown;
   breakAfter = new XFAObjectArray();
   breakBefore = new XFAObjectArray();
   subform = new XFAObjectArray();
   subformSet = new XFAObjectArray();
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "subformSet", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "subformSet", /* hasChildren = */ true);
     this.id = attributes.id || "";
     this.name = attributes.name || "";
     this.relation = getStringOption(attributes.relation, [
@@ -6158,35 +5811,32 @@ class SubformSet extends XFAObject
     // TODO: need to handle break stuff and relation.
   }
 
-  override *[$getContainedChildren]()
-  {
+  override *[$getContainedChildren]() {
     // This function is overriden in order to fake that subforms under
     // this set are in fact under parent subform.
     yield* getContainedChildren(this);
   }
 
-  override [$getSubformParent]():Subform
-  {
+  override [$getSubformParent](): Subform {
     let parent = this[$getParent]();
-    while( !(parent instanceof Subform) )
-    {
+    while (!(parent instanceof Subform)) {
       parent = parent![$getParent]();
     }
     return parent;
   }
 
-  override [$isBindable]() { return true; }
+  override [$isBindable]() {
+    return true;
+  }
 }
 
-class SubjectDN extends ContentObject 
-{
-  override [$content]!:string | Map<string, string>;
+class SubjectDN extends ContentObject {
+  override [$content]!: string | Map<string, string>;
 
   delimiter;
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "subjectDN" );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "subjectDN");
     this.delimiter = attributes.delimiter || ",";
     this.id = attributes.id || "";
     this.name = attributes.name || "";
@@ -6194,26 +5844,23 @@ class SubjectDN extends ContentObject
     this.usehref = attributes.usehref || "";
   }
 
-  override [$finalize]() 
-  {
+  override [$finalize]() {
     this[$content] = new Map(
-      (<string>this[$content]).split(this.delimiter).map(kv => {
-        const kv_a = <[string,string]>kv.split("=", 2);
+      (<string> this[$content]).split(this.delimiter).map((kv) => {
+        const kv_a = <[string, string]> kv.split("=", 2);
         kv_a[0] = kv_a[0].trim();
         return kv_a;
-      })
+      }),
     );
   }
 }
 
-class SubjectDNs extends XFAObject 
-{
+class SubjectDNs extends XFAObject {
   type;
   subjectDN = new XFAObjectArray();
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "subjectDNs", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "subjectDNs", /* hasChildren = */ true);
     this.id = attributes.id || "";
     this.type = getStringOption(attributes.type, ["optional", "required"]);
     this.use = attributes.use || "";
@@ -6221,24 +5868,22 @@ class SubjectDNs extends XFAObject
   }
 }
 
-class Submit extends XFAObject 
-{
+class Submit extends XFAObject {
   embedPDF;
   format;
   target;
   textEncoding;
   xdpContent;
-  encrypt:unknown; //?:Encrypt;
+  encrypt: unknown; //?:Encrypt;
   encryptData = new XFAObjectArray();
   signData = new XFAObjectArray();
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "submit", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "submit", /* hasChildren = */ true);
     this.embedPDF = getInteger({
       data: attributes.embedPDF,
       defaultValue: 0,
-      validate: x => x === 1,
+      validate: (x) => x === 1,
     });
     this.format = getStringOption(attributes.format, [
       "xdp",
@@ -6255,7 +5900,7 @@ class Submit extends XFAObject
         ? attributes.textEncoding.toLowerCase()
         : "",
       defaultValue: "",
-      validate: k =>
+      validate: (k) =>
         [
           "utf-8",
           "big-five",
@@ -6269,7 +5914,7 @@ class Submit extends XFAObject
           "ucs-2",
           "utf-16",
         ].includes(k) || !!k.match(/iso-8859-\d{2}/),
-      });
+    });
     this.use = attributes.use || "";
     this.usehref = attributes.usehref || "";
     this.xdpContent = attributes.xdpContent || "";
@@ -6277,10 +5922,9 @@ class Submit extends XFAObject
 }
 
 /** @final */
-export class Template extends XFAObject 
-{
+export class Template extends XFAObject {
   baseProfile;
-  extras:unknown; //?:Extras;
+  extras: unknown; //?:Extras;
 
   // Spec is unclear:
   //  A container element that describes a single subform capable of
@@ -6288,43 +5932,47 @@ export class Template extends XFAObject
   // Can we have more than one subform ?
   subform = new XFAObjectArray();
 
-  override [$extra]!:XFAExtra;
-  [$ids]?:XFAIds;
-  leader?:string;
-  occur?:Occur;
-  trailer?:string;
-  targetType?:string;
+  override [$extra]!: XFAExtra;
+  [$ids]?: XFAIds;
+  leader?: string;
+  occur?: Occur;
+  trailer?: string;
+  targetType?: string;
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "template", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "template", /* hasChildren = */ true);
     this.baseProfile = getStringOption(attributes.baseProfile, [
       "full",
       "interactiveForms",
     ]);
   }
 
-  override [$finalize]() 
-  {
-    if (this.subform.children.length === 0) 
-    {
+  override [$finalize]() {
+    if (this.subform.children.length === 0) {
       warn("XFA - No subforms in template node.");
     }
-    if (this.subform.children.length >= 2) 
-    {
+    if (this.subform.children.length >= 2) {
       warn("XFA - Several subforms in template node: please file a bug.");
     }
     this[$tabIndex] = DEFAULT_TAB_INDEX;
   }
 
-  override [$isSplittable]() { return true; }
+  override [$isSplittable]() {
+    return true;
+  }
 
-  [$searchNode]( expr:string, container?:XFAObject )
-  {
-    if( expr.startsWith("#") ) 
+  [$searchNode](expr: string, container?: XFAObject) {
+    if (expr.startsWith("#")) {
       // This is an id.
-      return [ this[$ids]!.get(expr.slice(1))! ];
-    return <XFAObject[] | undefined>searchNode( this, container, expr, true, true );
+      return [this[$ids]!.get(expr.slice(1))!];
+    }
+    return <XFAObject[] | undefined> searchNode(
+      this,
+      container,
+      expr,
+      true,
+      true,
+    );
   }
 
   /**
@@ -6332,10 +5980,8 @@ export class Template extends XFAObject
    * pages is done asynchronously and we want to save the state
    * of the function where we were in the previous iteration.
    */
-  *[$toPages]()
-  {
-    if( !this.subform.children.length )
-    {
+  *[$toPages]() {
+    if (!this.subform.children.length) {
       return HTMLResult.success({
         name: "div",
         children: [],
@@ -6354,57 +6000,54 @@ export class Template extends XFAObject
       paraStack: [],
     };
 
-    const root = <Subform>this.subform.children[0];
+    const root = <Subform> this.subform.children[0];
     root.pageSet![$cleanPage]();
 
-    const pageAreas = <PageArea[]>root.pageSet!.pageArea.children;
+    const pageAreas = <PageArea[]> root.pageSet!.pageArea.children;
     const mainHtml = {
       name: "div",
-      children: <XFAElData[]>[],
+      children: <XFAElData[]> [],
     };
 
-    let pageArea:PageArea | undefined;
-    let breakBefore:BreakBefore | Break | undefined;
-    let breakBeforeTarget:string | undefined;
-    if( root.breakBefore.children.length >= 1 ) 
-    {
-      breakBefore = <BreakBefore>root.breakBefore.children[0];
+    let pageArea: PageArea | undefined;
+    let breakBefore: BreakBefore | Break | undefined;
+    let breakBeforeTarget: string | undefined;
+    if (root.breakBefore.children.length >= 1) {
+      breakBefore = <BreakBefore> root.breakBefore.children[0];
       breakBeforeTarget = breakBefore.target;
-    } 
-    else if( root.subform.children.length >= 1 
-     && (<Subform | SubformSet>root.subform.children[0]).breakBefore.children.length >= 1
+    } else if (
+      root.subform.children.length >= 1 &&
+      (<Subform | SubformSet> root.subform.children[0]).breakBefore.children
+          .length >= 1
     ) {
-      breakBefore = <BreakBefore>(<Subform | SubformSet>root.subform.children[0]).breakBefore.children[0];
+      breakBefore =
+        <BreakBefore> (<Subform | SubformSet> root.subform.children[0])
+          .breakBefore.children[0];
       breakBeforeTarget = breakBefore.target;
-    } 
-    else if( root.break?.beforeTarget ) 
-    {
+    } else if (root.break?.beforeTarget) {
       breakBefore = root.break;
       breakBeforeTarget = breakBefore.beforeTarget;
-    } 
-    else if ( root.subform.children.length >= 1 
-      && (<Subform | SubformSet>root.subform.children[0]).break?.beforeTarget
+    } else if (
+      root.subform.children.length >= 1 &&
+      (<Subform | SubformSet> root.subform.children[0]).break?.beforeTarget
     ) {
-      breakBefore = (<Subform | SubformSet>root.subform.children[0]).break!;
+      breakBefore = (<Subform | SubformSet> root.subform.children[0]).break!;
       breakBeforeTarget = breakBefore.beforeTarget;
     }
 
-    if( breakBefore )
-    {
+    if (breakBefore) {
       const target = this[$searchNode](
         breakBeforeTarget!,
-        breakBefore[$getParent]()
+        breakBefore[$getParent](),
       );
-      if( target?.[0] instanceof PageArea ) 
-      {
+      if (target?.[0] instanceof PageArea) {
         pageArea = target[0];
         // Consume breakBefore.
         breakBefore[$extra] = {};
       }
     }
 
-    if( !pageArea )
-    {
+    if (!pageArea) {
       pageArea = pageAreas[0];
     }
 
@@ -6412,153 +6055,145 @@ export class Template extends XFAObject
       numberOfUse: 1,
     };
 
-    const pageAreaParent = <PageSet>pageArea[$getParent]();
+    const pageAreaParent = <PageSet> pageArea[$getParent]();
     pageAreaParent[$extra] = {
       numberOfUse: 1,
-      pageIndex: pageAreaParent.pageArea.children.indexOf( pageArea ),
+      pageIndex: pageAreaParent.pageArea.children.indexOf(pageArea),
       pageSetIndex: 0,
     };
 
     let targetPageArea;
-    let leader:XFAObject | undefined;
-    let trailer:XFAObject | undefined;
+    let leader: XFAObject | undefined;
+    let trailer: XFAObject | undefined;
     let hasSomething = true;
     let hasSomethingCounter = 0;
     let startIndex = 0;
 
-    while(true)
-    {
-      if( !hasSomething )
-      {
+    while (true) {
+      if (!hasSomething) {
         mainHtml.children.pop();
         // Nothing has been added in the previous page
-        if( ++hasSomethingCounter === MAX_EMPTY_PAGES )
-        {
+        if (++hasSomethingCounter === MAX_EMPTY_PAGES) {
           warn("XFA - Something goes wrong: please file a bug.");
           // return new HTMLResult( false, mainHtml, undefined, this );
           return mainHtml;
         }
-      } 
-      else {
+      } else {
         hasSomethingCounter = 0;
       }
 
       targetPageArea = undefined;
       this[$extra].currentPageArea = pageArea;
-      const page = <XFAElObjBase>pageArea![$toHTML]().html;
-      mainHtml.children.push( page );
+      const page = <XFAElObjBase> pageArea![$toHTML]().html;
+      mainHtml.children.push(page);
 
-      if( leader ) 
-      {
+      if (leader) {
         this[$extra].noLayoutFailure = true;
-        page.children!.push( (<HTMLResult>leader[$toHTML]( pageArea![$extra]!.space )).html! );
+        page.children!.push(
+          (<HTMLResult> leader[$toHTML](pageArea![$extra]!.space)).html!,
+        );
         leader = undefined;
       }
 
-      if( trailer ) 
-      {
+      if (trailer) {
         this[$extra].noLayoutFailure = true;
-        page.children!.push( (<HTMLResult>trailer[$toHTML]( pageArea![$extra]!.space )).html! );
+        page.children!.push(
+          (<HTMLResult> trailer[$toHTML](pageArea![$extra]!.space)).html!,
+        );
         trailer = undefined;
       }
 
-      const contentAreas = <ContentArea[]>pageArea!.contentArea.children;
-      const htmlContentAreas = <XFAElObj[]>page.children!.filter( node =>
-        (<XFAElObj>node).attributes!.class!.includes("xfaContentarea")
+      const contentAreas = <ContentArea[]> pageArea!.contentArea.children;
+      const htmlContentAreas = <XFAElObj[]> page.children!.filter((node) =>
+        (<XFAElObj> node).attributes!.class!.includes("xfaContentarea")
       );
 
       hasSomething = false;
       this[$extra].firstUnsplittable = undefined;
       this[$extra].noLayoutFailure = false;
 
-      const flush = ( index:number ) => {
+      const flush = (index: number) => {
         const html = root[$flushHTML]();
-        if( html )
-        {
-          hasSomething =
-            hasSomething || !!(html.children && html.children.length !== 0);
+        if (html) {
+          hasSomething = hasSomething ||
+            !!(html.children && html.children.length !== 0);
           htmlContentAreas[index].children!.push(html);
         }
       };
 
-      for( let i = startIndex, ii = contentAreas.length; i < ii; i++ )
-      {
+      for (let i = startIndex, ii = contentAreas.length; i < ii; i++) {
         const contentArea = (this[$extra].currentContentArea = contentAreas[i]);
-        const space = <AvailableSpace>{ width: contentArea.w, height: contentArea.h };
+        const space = <AvailableSpace> {
+          width: contentArea.w,
+          height: contentArea.h,
+        };
         startIndex = 0;
 
-        if( leader ) 
-        {
-          htmlContentAreas[i].children!.push( (<HTMLResult>leader[$toHTML](space)).html! );
+        if (leader) {
+          htmlContentAreas[i].children!.push(
+            (<HTMLResult> leader[$toHTML](space)).html!,
+          );
           leader = undefined;
         }
 
-        if( trailer ) 
-        {
-          htmlContentAreas[i].children!.push( (<HTMLResult>trailer[$toHTML](space)).html! );
+        if (trailer) {
+          htmlContentAreas[i].children!.push(
+            (<HTMLResult> trailer[$toHTML](space)).html!,
+          );
           trailer = undefined;
         }
 
         const html = root[$toHTML](space);
-        if (html.success) 
-        {
-          if (html.html) 
-          {
-            hasSomething =
-              hasSomething ||
-              !!((<XFAElObj>html.html).children 
-              && (<XFAElObj>html.html).children!.length !== 0);
-            htmlContentAreas[i].children!.push( html.html);
-          } 
-          else if (!hasSomething && mainHtml.children.length > 1) 
-          {
+        if (html.success) {
+          if (html.html) {
+            hasSomething = hasSomething ||
+              !!((<XFAElObj> html.html).children &&
+                (<XFAElObj> html.html).children!.length !== 0);
+            htmlContentAreas[i].children!.push(html.html);
+          } else if (!hasSomething && mainHtml.children.length > 1) {
             mainHtml.children.pop();
           }
           // return HTMLResult.success( mainHtml );
           return mainHtml;
         }
 
-        if( html.isBreak() )
-        {
+        if (html.isBreak()) {
           const node = html.breakNode!;
           flush(i);
 
-          if( node.targetType === "auto" ) 
+          if (node.targetType === "auto") {
             continue;
+          }
 
-          if( node.leader ) 
-          {
-            const leader_a = this[$searchNode]( node.leader, node[$getParent]() );
+          if (node.leader) {
+            const leader_a = this[$searchNode](node.leader, node[$getParent]());
             leader = leader_a ? leader_a[0] : undefined;
           }
 
-          if( node.trailer ) 
-          {
-            const trailer_a = this[$searchNode]( node.trailer, node[$getParent]() );
+          if (node.trailer) {
+            const trailer_a = this[$searchNode](
+              node.trailer,
+              node[$getParent](),
+            );
             trailer = trailer_a ? trailer_a[0] : undefined;
           }
 
-          if( node.targetType === "pageArea" )
-          {
-            targetPageArea = (<XFAExtra>node[$extra]).target;
+          if (node.targetType === "pageArea") {
+            targetPageArea = (<XFAExtra> node[$extra]).target;
             i = Infinity;
-          } 
-          else if( !(<XFAExtra>node[$extra]).target ) 
-          {
+          } else if (!(<XFAExtra> node[$extra]).target) {
             // We stay on the same page.
-            i = (<XFAExtra>node[$extra]).index!;
-          } 
-          else {
-            targetPageArea = (<XFAExtra>node[$extra]).target;
-            startIndex = (<XFAExtra>node[$extra]).index! + 1;
+            i = (<XFAExtra> node[$extra]).index!;
+          } else {
+            targetPageArea = (<XFAExtra> node[$extra]).target;
+            startIndex = (<XFAExtra> node[$extra]).index! + 1;
             i = Infinity;
           }
 
           continue;
         }
 
-        if( this[$extra].overflowNode ) 
-        {
+        if (this[$extra].overflowNode) {
           const node = this[$extra].overflowNode!;
           this[$extra].overflowNode = undefined;
 
@@ -6572,33 +6207,24 @@ export class Template extends XFAObject
           const currentIndex = i;
 
           i = Infinity;
-          if( target instanceof PageArea )
-          {
+          if (target instanceof PageArea) {
             // We must stop the contentAreas filling and go to the next page.
             targetPageArea = target;
-          } 
-          else if( target instanceof ContentArea )
-          {
-            const index = contentAreas.findIndex(e => e === target);
-            if( index !== -1 )
-            {
-              if( index > currentIndex )
-              {
+          } else if (target instanceof ContentArea) {
+            const index = contentAreas.indexOf(target);
+            if (index !== -1) {
+              if (index > currentIndex) {
                 // In the next loop iteration `i` will be incremented, note the
                 // `continue` just below, hence we need to subtract one here.
                 i = index - 1;
-              }
-              else {
+              } else {
                 // The targetted contentArea has already been filled
                 // so create a new page.
                 startIndex = index;
               }
-            } 
-            else {
-              targetPageArea = <PageArea>target[$getParent]();
-              startIndex = targetPageArea.contentArea.children.findIndex(
-                e => e === target
-              );
+            } else {
+              targetPageArea = <PageArea> target[$getParent]();
+              startIndex = targetPageArea.contentArea.children.indexOf(target);
             }
           }
           continue;
@@ -6608,37 +6234,33 @@ export class Template extends XFAObject
       }
 
       this[$extra].pageNumber! += 1;
-      if( targetPageArea )
-      {
-        if( (<PageArea>targetPageArea)[$isUsable]() ) 
-        {
-          (<PageArea>targetPageArea)[$extra]!.numberOfUse! += 1;
-        } 
-        else {
+      if (targetPageArea) {
+        if ((<PageArea> targetPageArea)[$isUsable]()) {
+          (<PageArea> targetPageArea)[$extra]!.numberOfUse! += 1;
+        } else {
           targetPageArea = undefined;
         }
       }
-      pageArea = <PageArea | undefined>targetPageArea || pageArea![$getNextPage]();
-      yield null;
+      pageArea = <PageArea | undefined> targetPageArea ||
+        pageArea![$getNextPage]();
+      yield undefined;
     }
   }
 }
 
-export class Text extends ContentObject implements XFAValue
-{
-  override [$content]!:string | XFAObject;
+export class Text extends ContentObject implements XFAValue {
+  override [$content]!: string | XFAObject;
 
   maxChars;
   rid;
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "text" );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "text");
     this.id = attributes.id || "";
     this.maxChars = getInteger({
       data: attributes.maxChars,
       defaultValue: 0,
-      validate: x => x >= 0,
+      validate: (x) => x >= 0,
     });
     this.name = attributes.name || "";
     this.rid = attributes.rid || "";
@@ -6646,12 +6268,12 @@ export class Text extends ContentObject implements XFAValue
     this.usehref = attributes.usehref || "";
   }
 
-  override [$acceptWhitespace]() { return true; }
+  override [$acceptWhitespace]() {
+    return true;
+  }
 
-  override [$onChild]( child:XFAObject )
-  {
-    if( child[$namespaceId] === NamespaceIds.xhtml.id ) 
-    {
+  override [$onChild](child: XFAObject) {
+    if (child[$namespaceId] === NamespaceIds.xhtml.id) {
       this[$content] = child;
       return true;
     }
@@ -6659,56 +6281,48 @@ export class Text extends ContentObject implements XFAValue
     return false;
   }
 
-  override [$onText]( str:string )
-  {
-    if( this[$content] instanceof XFAObject ) 
+  override [$onText](str: string) {
+    if (this[$content] instanceof XFAObject) {
       return;
+    }
     super[$onText](str);
   }
 
-  override [$finalize]() 
-  {
-    if( typeof this[$content] === "string" )
-    {
-      this[$content] = (<string>this[$content]).replace(/\r\n/g, "\n");
+  override [$finalize]() {
+    if (typeof this[$content] === "string") {
+      this[$content] = (<string> this[$content]).replace(/\r\n/g, "\n");
     }
   }
 
-  [$getExtra]() 
-  {
-    if (typeof this[$content] === "string") 
-    {
-      return (<string>this[$content])
+  [$getExtra]() {
+    if (typeof this[$content] === "string") {
+      return (<string> this[$content])
         .split(/[\u2029\u2028\n]/)
         .reduce((acc, line) => {
-          if (line) 
-          {
+          if (line) {
             acc.push(line);
           }
           return acc;
-        }, <string[]>[])
+        }, <string[]> [])
         .join("\n");
     }
-    return (<XFAObject>this[$content])[$text]();
+    return (<XFAObject> this[$content])[$text]();
   }
 
-  override [$toHTML]( availableSpace?:AvailableSpace )
-  {
-    if (typeof this[$content] === "string") 
-    {
+  override [$toHTML](availableSpace?: AvailableSpace) {
+    if (typeof this[$content] === "string") {
       // \u2028 is a line separator.
       // \u2029 is a paragraph separator.
-      const html = <XFAElObj>valueToHtml( <string>this[$content] ).html;
+      const html = <XFAElObj> valueToHtml(<string> this[$content]).html;
 
-      if( (<string>this[$content]).includes("\u2029") ) 
-      {
+      if ((<string> this[$content]).includes("\u2029")) {
         // We've plain text containing a paragraph separator
         // so convert it into a set of <p>.
         html.name = "div";
         html.children = [];
-        (<string>this[$content])
+        (<string> this[$content])
           .split("\u2029")
-          .map(para =>
+          .map((para) =>
             // Convert a paragraph into a set of <span> (for lines)
             // separated by <br>.
             para.split(/[\u2028\n]/).reduce((acc, line) => {
@@ -6719,25 +6333,23 @@ export class Text extends ContentObject implements XFAValue
                 },
                 {
                   name: "br",
-                }
+                },
               );
               return acc;
-            }, <{name:string;value?:string;}[]>[])
+            }, <{ name: string; value?: string }[]> [])
           )
-          .forEach(lines => {
+          .forEach((lines) => {
             html.children!.push({
               name: "p",
               children: lines,
             });
           });
-      } 
-      else if( /[\u2028\n]/.test(<string>this[$content]) ) 
-      {
+      } else if (/[\u2028\n]/.test(<string> this[$content])) {
         html.name = "div";
         html.children = [];
         // Convert plain text into a set of <span> (for lines)
         // separated by <br>.
-        (<string>this[$content]).split(/[\u2028\n]/).forEach( line => {
+        (<string> this[$content]).split(/[\u2028\n]/).forEach((line) => {
           html.children!.push(
             {
               name: "span",
@@ -6745,7 +6357,7 @@ export class Text extends ContentObject implements XFAValue
             },
             {
               name: "br",
-            }
+            },
           );
         });
       }
@@ -6753,28 +6365,26 @@ export class Text extends ContentObject implements XFAValue
       return HTMLResult.success(html);
     }
 
-    return (<XFAObject>this[$content])[$toHTML]( availableSpace );
+    return (<XFAObject> this[$content])[$toHTML](availableSpace);
   }
 }
 
-class TextEdit extends XFAObject 
-{
+class TextEdit extends XFAObject {
   allowRichText;
   hScrollPolicy;
-  multiLine:string | number;
-  vScrollPolicy
-  override border:unknown | undefined = undefined; //?:Border;
-  comb:unknown; //?:Comb;
-  extras:unknown; //?:Extras;
+  multiLine: string | number;
+  vScrollPolicy;
+  override border: unknown | undefined = undefined; //?:Border;
+  comb: unknown; //?:Comb;
+  extras: unknown; //?:Extras;
   override margin = undefined; //?:Margin;
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "textEdit", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "textEdit", /* hasChildren = */ true);
     this.allowRichText = getInteger({
       data: attributes.allowRichText,
       defaultValue: 0,
-      validate: x => x === 1,
+      validate: (x) => x === 1,
     });
     this.hScrollPolicy = getStringOption(attributes.hScrollPolicy, [
       "auto",
@@ -6785,7 +6395,7 @@ class TextEdit extends XFAObject
     this.multiLine = getInteger({
       data: attributes.multiLine,
       defaultValue: "",
-      validate: x => x === 0 || x === 1,
+      validate: (x) => x === 0 || x === 1,
     });
     this.use = attributes.use || "";
     this.usehref = attributes.usehref || "";
@@ -6796,18 +6406,15 @@ class TextEdit extends XFAObject
     ]);
   }
 
-  override [$toHTML]( availableSpace?:AvailableSpace )
-  {
+  override [$toHTML](availableSpace?: AvailableSpace) {
     // TODO: incomplete.
     const style = toStyle(this, "border", "font", "margin");
     let html;
-    const field = <Field>this[$getParent]()![$getParent]();
-    if (this.multiLine === "") 
-    {
+    const field = <Field> this[$getParent]()![$getParent]();
+    if (this.multiLine === "") {
       this.multiLine = field instanceof Draw ? 1 : 0;
     }
-    if (this.multiLine === 1) 
-    {
+    if (this.multiLine === 1) {
       html = {
         name: "textarea",
         attributes: {
@@ -6815,68 +6422,70 @@ class TextEdit extends XFAObject
           fieldId: field[$uid],
           class: ["xfaTextfield"],
           style,
-          "aria-label": ariaLabel( <Field>field ),
+          "aria-label": ariaLabel(<Field> field),
+          "aria-required": false,
         },
       };
-    } 
-    else {
+    } else {
       html = {
         name: "input",
-        attributes: {
+        attributes: <XFAHTMLAttrs> {
           type: "text",
           dataId: field[$data]?.[$uid] || field[$uid],
           fieldId: field[$uid],
           class: ["xfaTextfield"],
           style,
-          "aria-label": ariaLabel( <Field>field ),
+          "aria-label": ariaLabel(<Field> field),
+          "aria-required": false,
         },
       };
     }
 
-    return HTMLResult.success(<XFAHTMLObj>{
-      name: "label",
-      attributes: {
-        class: ["xfaLabel"],
+    if (isRequired(<Field> field)) {
+      html.attributes["aria-required"] = true;
+      html.attributes.required = true;
+    }
+
+    return HTMLResult.success(
+      <XFAHTMLObj> {
+        name: "label",
+        attributes: {
+          class: ["xfaLabel"],
+        },
+        children: [html],
       },
-      children: [html],
-    });
+    );
   }
 }
 
-class Time extends StringObject 
-{
-  override [$content]!:string | Date;
+class Time extends StringObject {
+  override [$content]: string | Date | undefined;
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "time" );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "time");
     this.id = attributes.id || "";
     this.name = attributes.name || "";
     this.use = attributes.use || "";
     this.usehref = attributes.usehref || "";
   }
 
-  override [$finalize]() 
-  {
+  override [$finalize]() {
     // TODO: need to handle the string as a time and not as a date.
-    const date = (<string>this[$content]).trim();
-    this[$content] = date ? new Date(date) : "";
+    const date = (<string> this[$content]).trim();
+    this[$content] = date ? new Date(date) : undefined;
   }
 
-  override [$toHTML]( availableSpace?:AvailableSpace )
-  {
+  override [$toHTML](availableSpace?: AvailableSpace) {
     return valueToHtml(this[$content] ? this[$content].toString() : "");
   }
 }
 
-class TimeStamp extends XFAObject 
-{
+class TimeStamp extends XFAObject {
   server;
   type;
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "timeStamp" );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "timeStamp");
     this.id = attributes.id || "";
     this.server = attributes.server || "";
     this.type = getStringOption(attributes.type, ["optional", "required"]);
@@ -6885,15 +6494,13 @@ class TimeStamp extends XFAObject
   }
 }
 
-class ToolTip extends StringObject 
-{
-  override [$content]!:string;
+class ToolTip extends StringObject {
+  override [$content]!: string;
 
   rid;
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "toolTip" );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "toolTip");
     this.id = attributes.id || "";
     this.rid = attributes.rid || "";
     this.use = attributes.use || "";
@@ -6901,30 +6508,26 @@ class ToolTip extends StringObject
   }
 }
 
-class Traversal extends XFAObject 
-{
-  extras:unknown; //?:Extras;
+class Traversal extends XFAObject {
+  extras: unknown; //?:Extras;
   traverse = new XFAObjectArray();
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "traversal", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "traversal", /* hasChildren = */ true);
     this.id = attributes.id || "";
     this.use = attributes.use || "";
     this.usehref = attributes.usehref || "";
   }
 }
 
-class Traverse extends XFAObject 
-{
+class Traverse extends XFAObject {
   override operation;
   override ref;
-  extras:unknown; //?:Extras;
-  script:unknown; //?:Script
+  extras: unknown; //?:Extras;
+  script: unknown; //?:Script
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "traverse", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "traverse", /* hasChildren = */ true);
     this.id = attributes.id || "";
     this.operation = getStringOption(attributes.operation, [
       "next",
@@ -6940,83 +6543,80 @@ class Traverse extends XFAObject
     this.usehref = attributes.usehref || "";
 
     // SOM expression: see page 94
-    Reflect.defineProperty( this, "name", {
-      get:() => this.operation,
+    Reflect.defineProperty(this, "name", {
+      get: () => this.operation,
     });
   }
 
-  override [$isTransparent]() { return false; }
+  override [$isTransparent]() {
+    return false;
+  }
 }
 
-class Ui extends XFAObject 
-{
-  extras:unknown; //?:Extras;
-  picture:unknown; //?:Picture;
+class Ui extends XFAObject {
+  extras: unknown; //?:Extras;
+  picture: unknown; //?:Picture;
 
   // One-of properties
-  barcode:unknown;
-  button?:Button;
-  checkButton?:CheckButton;
-  choiceList?:ChoiceList;
-  dateTimeEdit:unknown;
-  defaultUi:unknown;
-  imageEdit:unknown;
-  numericEdit:unknown;
-  passwordEdit:unknown;
-  signature:unknown;
-  textEdit?:TextEdit;
+  barcode: unknown;
+  button?: Button;
+  checkButton?: CheckButton;
+  choiceList?: ChoiceList;
+  dateTimeEdit: unknown;
+  defaultUi: unknown;
+  imageEdit: unknown;
+  numericEdit: unknown;
+  passwordEdit: unknown;
+  signature: unknown;
+  textEdit?: TextEdit;
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "ui", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "ui", /* hasChildren = */ true);
     this.id = attributes.id || "";
     this.use = attributes.use || "";
     this.usehref = attributes.usehref || "";
   }
 
-  [$getExtra]():XFAObject | undefined
-  {
-    if( this[$extra] === undefined )
-    {
-      for( const name of Object.getOwnPropertyNames(this) )
-      {
-        if (name === "extras" || name === "picture") 
+  [$getExtra](): XFAObject | undefined {
+    if (this[$extra] === undefined) {
+      for (const name of Object.getOwnPropertyNames(this)) {
+        if (name === "extras" || name === "picture") {
           continue;
-        const obj = (<any>this)[name];
-        if( !(obj instanceof XFAObject) ) 
+        }
+        const obj = (<any> this)[name];
+        if (!(obj instanceof XFAObject)) {
           continue;
+        }
 
         this[$extra] = obj;
         return obj;
       }
       this[$extra] = undefined;
     }
-    return <XFAObject | undefined>this[$extra];
+    return <XFAObject | undefined> this[$extra];
   }
 
-  override [$toHTML]( availableSpace?:AvailableSpace )
-  {
+  override [$toHTML](availableSpace?: AvailableSpace) {
     // TODO: picture.
     const obj = this[$getExtra]();
-    if( obj )
-      return obj[$toHTML]( availableSpace );
+    if (obj) {
+      return obj[$toHTML](availableSpace);
+    }
     return HTMLResult.EMPTY;
   }
 }
 
-class Validate extends XFAObject 
-{
+class Validate extends XFAObject {
   formatTest;
   nullTest;
   scriptTest;
-  extras:unknown; //?:Extras;
-  message:unknown; //?:Message;
-  picture:unknown; //?:Picture;
-  script:unknown; //?:Script
+  extras: unknown; //?:Extras;
+  message: unknown; //?:Message;
+  picture: unknown; //?:Picture;
+  script: unknown; //?:Script
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "validate", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "validate", /* hasChildren = */ true);
     this.formatTest = getStringOption(attributes.formatTest, [
       "warning",
       "disabled",
@@ -7038,106 +6638,98 @@ class Validate extends XFAObject
   }
 }
 
-export class Value extends XFAObject 
-{
+export class Value extends XFAObject {
   override;
   relevant;
 
   // One-of properties
-  arc:unknown;
-  boolean:unknown;
-  date:unknown;
-  dateTime:unknown;
-  decimal:unknown;
-  exData?:ExData
-  float:unknown;
-  image?:Image;
-  integer:unknown;
-  line:unknown;
-  rectangle:unknown;
-  text?:Text;
-  time:unknown;
+  arc: unknown;
+  boolean: unknown;
+  date: unknown;
+  dateTime: unknown;
+  decimal: unknown;
+  exData?: ExData;
+  float: unknown;
+  image?: Image;
+  integer: unknown;
+  line: unknown;
+  rectangle: unknown;
+  text?: Text;
+  time: unknown;
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "value", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "value", /* hasChildren = */ true);
     this.id = attributes.id || "";
     this.override = getInteger({
       data: attributes.override,
       defaultValue: 0,
-      validate: x => x === 1,
+      validate: (x) => x === 1,
     });
     this.relevant = getRelevant(attributes.relevant);
     this.use = attributes.use || "";
     this.usehref = attributes.usehref || "";
   }
 
-  override [$setValue]( value:XFAValue )
-  {
+  override [$setValue](value: XFAValue) {
     const parent = this[$getParent]();
-    if( parent instanceof Field )
-    {
-      if( parent.ui && parent.ui.imageEdit )
-      {
-        if( !this.image )
-        {
+    if (parent instanceof Field) {
+      if (parent.ui && parent.ui.imageEdit) {
+        if (!this.image) {
           this.image = new Image({});
           this[$appendChild](this.image);
         }
-        this.image[$content] = <string>value[$content];
+        this.image[$content] = <string> value[$content];
         return;
       }
     }
 
     const valueName = value[$nodeName];
-    if( (<any>this)[valueName] !== null 
-     && (<any>this)[valueName] !== undefined
+    if (
+      (<any> this)[valueName] !== null &&
+      (<any> this)[valueName] !== undefined
     ) {
-      (<any>this)[valueName][$content] = value[$content];
+      (<any> this)[valueName][$content] = value[$content];
       return;
     }
 
     // Reset all the properties.
-    for( const name of Object.getOwnPropertyNames(this) )
-    {
-      const obj = (<any>this)[name];
-      if( obj instanceof XFAObject )
-      {
-        (<any>this)[name] = undefined;
+    for (const name of Object.getOwnPropertyNames(this)) {
+      const obj = (<any> this)[name];
+      if (obj instanceof XFAObject) {
+        (<any> this)[name] = undefined;
         this[$removeChild](obj);
       }
     }
 
-    (<any>this)[value[$nodeName]] = value;
+    (<any> this)[value[$nodeName]] = value;
     this[$appendChild](value);
   }
 
-  override [$text]()
-  {
-    if( this.exData )
-    {
-      if( typeof this.exData[$content] === "string" )
-        return (<string>this.exData[$content]).trim();
-      return (<XhtmlObject>this.exData[$content])[$text]()!.trim();
+  override [$text]() {
+    if (this.exData) {
+      if (typeof this.exData[$content] === "string") {
+        return (<string> this.exData[$content]).trim();
+      }
+      return (<XhtmlObject> this.exData[$content])[$text]()!.trim();
     }
-    for( const name of Object.getOwnPropertyNames(this) )
-    {
-      if (name === "image") 
+    for (const name of Object.getOwnPropertyNames(this)) {
+      if (name === "image") {
         continue;
-      const obj = (<any>this)[name];
-      if( obj instanceof XFAObject )
+      }
+      const obj = (<any> this)[name];
+      if (obj instanceof XFAObject) {
         return (obj[$content] || "").toString().trim();
+      }
     }
     return undefined;
   }
 
-  override [$toHTML]( availableSpace?:AvailableSpace )
-  {
-    for( const name of Object.getOwnPropertyNames(this) )
-    {
-      const obj = (<any>this)[name];
-      if( !(obj instanceof XFAObject) )
+  override [$toHTML](availableSpace?: AvailableSpace) {
+    for (const name of Object.getOwnPropertyNames(this)) {
+      const obj = (<any> this)[name];
+      if (!(obj instanceof XFAObject)) {
         continue;
+      }
 
       return obj[$toHTML](availableSpace);
     }
@@ -7146,8 +6738,7 @@ export class Value extends XFAObject
   }
 }
 
-class Variables extends XFAObject 
-{
+class Variables extends XFAObject {
   boolean = new XFAObjectArray();
   date = new XFAObjectArray();
   dateTime = new XFAObjectArray();
@@ -7161,144 +6752,368 @@ class Variables extends XFAObject
   text = new XFAObjectArray();
   time = new XFAObjectArray();
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( TEMPLATE_NS_ID, "variables", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(TEMPLATE_NS_ID, "variables", /* hasChildren = */ true);
     this.id = attributes.id || "";
     this.use = attributes.use || "";
     this.usehref = attributes.usehref || "";
   }
 
-  override [$isTransparent]() { return true; }
+  override [$isTransparent]() {
+    return true;
+  }
 }
 
 export type XFANsTemplate = typeof TemplateNamespace;
 type TemplateName = Exclude<keyof XFANsTemplate, symbol>;
-export const TemplateNamespace = 
-{
-  [$buildXFAObject]( name:string, attributes:XFAAttrs )
-  {
-    if( TemplateNamespace.hasOwnProperty(name) ) 
-    {
-      const node = TemplateNamespace[<TemplateName>name]( attributes );
-      node[$setSetAttributes]( attributes );
+export const TemplateNamespace = {
+  [$buildXFAObject](name: string, attributes: XFAAttrs) {
+    if (Object.hasOwn(TemplateNamespace, name)) {
+      const node = TemplateNamespace[<TemplateName> name](attributes);
+      node[$setSetAttributes](attributes);
       return node;
     }
     return undefined;
   },
-  
-  appearanceFilter( attrs:XFAAttrs ) { return new AppearanceFilter(attrs); },
-  arc( attrs:XFAAttrs ) { return new Arc(attrs); },
-  area( attrs:XFAAttrs ) { return new Area(attrs); },
-  assist( attrs:XFAAttrs ) { return new Assist(attrs); },
-  barcode( attrs:XFAAttrs ) { return new Barcode(attrs); },
-  bind( attrs:XFAAttrs ) { return new Bind(attrs); },
-  bindItems( attrs:XFAAttrs ) { return new BindItems(attrs); },
-  bookend( attrs:XFAAttrs ) { return new Bookend(attrs); },
-  boolean( attrs:XFAAttrs ) { return new BooleanElement(attrs); },
-  border( attrs:XFAAttrs ) { return new Border(attrs); },
-  break( attrs:XFAAttrs ) { return new Break(attrs); },
-  breakAfter( attrs:XFAAttrs ) { return new BreakAfter(attrs); },
-  breakBefore( attrs:XFAAttrs ) { return new BreakBefore(attrs); },
-  button( attrs:XFAAttrs ) { return new Button(attrs); },
-  calculate( attrs:XFAAttrs ) { return new Calculate(attrs); },
-  caption( attrs:XFAAttrs ) { return new Caption(attrs); },
-  certificate( attrs:XFAAttrs ) { return new Certificate(attrs); },
-  certificates( attrs:XFAAttrs ) { return new Certificates(attrs); },
-  checkButton( attrs:XFAAttrs ) { return new CheckButton(attrs); },
-  choiceList( attrs:XFAAttrs ) { return new ChoiceList(attrs); },
-  color( attrs:XFAAttrs ) { return new Color(attrs); },
-  comb( attrs:XFAAttrs ) { return new Comb(attrs); },
-  connect( attrs:XFAAttrs ) { return new Connect(attrs); },
-  contentArea( attrs:XFAAttrs ) { return new ContentArea(attrs); },
-  corner( attrs:XFAAttrs ) { return new Corner(attrs); },
-  date( attrs:XFAAttrs ) { return new DateElement(attrs); },
-  dateTime( attrs:XFAAttrs ) { return new DateTime(attrs); },
-  dateTimeEdit( attrs:XFAAttrs ) { return new DateTimeEdit(attrs); },
-  decimal( attrs:XFAAttrs ) { return new Decimal(attrs); },
-  defaultUi( attrs:XFAAttrs ) { return new DefaultUi(attrs); },
-  desc( attrs:XFAAttrs ) { return new Desc(attrs); },
-  digestMethod( attrs:XFAAttrs ) { return new DigestMethod(attrs); },
-  digestMethods( attrs:XFAAttrs ) { return new DigestMethods(attrs); },
-  draw( attrs:XFAAttrs ) { return new Draw(attrs); },
-  edge( attrs:XFAAttrs ) { return new Edge(attrs); },
-  encoding( attrs:XFAAttrs ) { return new Encoding(attrs); },
-  encodings( attrs:XFAAttrs ) { return new Encodings(attrs); },
-  encrypt( attrs:XFAAttrs ) { return new Encrypt(attrs); },
-  encryptData( attrs:XFAAttrs ) { return new EncryptData(attrs); },
-  encryption( attrs:XFAAttrs ) { return new Encryption(attrs); },
-  encryptionMethod( attrs:XFAAttrs ) { return new EncryptionMethod(attrs); },
-  encryptionMethods( attrs:XFAAttrs ) { return new EncryptionMethods(attrs); },
-  event( attrs:XFAAttrs ) { return new Event(attrs); },
-  exData( attrs:XFAAttrs ) { return new ExData(attrs); },
-  exObject( attrs:XFAAttrs ) { return new ExObject(attrs); },
-  exclGroup( attrs:XFAAttrs ) { return new ExclGroup(attrs); },
-  execute( attrs:XFAAttrs ) { return new Execute(attrs); },
-  extras( attrs:XFAAttrs ) { return new Extras(attrs); },
-  field( attrs:XFAAttrs ) { return new Field(attrs); },
-  fill( attrs:XFAAttrs ) { return new Fill(attrs); },
-  filter( attrs:XFAAttrs ) { return new Filter(attrs); },
-  float( attrs:XFAAttrs ) { return new Float(attrs); },
-  font( attrs:XFAAttrs ) { return new Font(attrs); },
-  format( attrs:XFAAttrs ) { return new Format(attrs); },
-  handler( attrs:XFAAttrs ) { return new Handler(attrs); },
-  hyphenation( attrs:XFAAttrs ) { return new Hyphenation(attrs); },
-  image( attrs:XFAAttrs ) { return new Image(attrs); },
-  imageEdit( attrs:XFAAttrs ) { return new ImageEdit(attrs); },
-  integer( attrs:XFAAttrs ) { return new Integer(attrs); },
-  issuers( attrs:XFAAttrs ) { return new Issuers(attrs); },
-  items( attrs:XFAAttrs ) { return new Items(attrs); },
-  keep( attrs:XFAAttrs ) { return new Keep(attrs); },
-  keyUsage( attrs:XFAAttrs ) { return new KeyUsage(attrs); },
-  line( attrs:XFAAttrs ) { return new Line(attrs); },
-  linear( attrs:XFAAttrs ) { return new Linear(attrs); },
-  lockDocument( attrs:XFAAttrs ) { return new LockDocument(attrs); },
-  manifest( attrs:XFAAttrs ) { return new Manifest(attrs); },
-  margin( attrs:XFAAttrs ) { return new Margin(attrs); },
-  mdp( attrs:XFAAttrs ) { return new Mdp(attrs); },
-  medium( attrs:XFAAttrs ) { return new Medium(attrs); },
-  message( attrs:XFAAttrs ) { return new Message(attrs); },
-  numericEdit( attrs:XFAAttrs ) { return new NumericEdit(attrs); },
-  occur( attrs:XFAAttrs ) { return new Occur(attrs); },
-  oid( attrs:XFAAttrs ) { return new Oid(attrs); },
-  oids( attrs:XFAAttrs ) { return new Oids(attrs); },
-  overflow( attrs:XFAAttrs ) { return new Overflow(attrs); },
-  pageArea( attrs:XFAAttrs ) { return new PageArea(attrs); },
-  pageSet( attrs:XFAAttrs ) { return new PageSet(attrs); },
-  para( attrs:XFAAttrs ) { return new Para(attrs); },
-  passwordEdit( attrs:XFAAttrs ) { return new PasswordEdit(attrs); },
-  pattern( attrs:XFAAttrs ) { return new Pattern(attrs); },
-  picture( attrs:XFAAttrs ) { return new Picture(attrs); },
-  proto( attrs:XFAAttrs ) { return new Proto(attrs); },
-  radial( attrs:XFAAttrs ) { return new Radial(attrs); },
-  reason( attrs:XFAAttrs ) { return new Reason(attrs); },
-  reasons( attrs:XFAAttrs ) { return new Reasons(attrs); },
-  rectangle( attrs:XFAAttrs ) { return new Rectangle(attrs); },
-  ref( attrs:XFAAttrs ) { return new RefElement(attrs); },
-  script( attrs:XFAAttrs ) { return new Script(attrs); },
-  setProperty( attrs:XFAAttrs ) { return new SetProperty(attrs); },
-  signData( attrs:XFAAttrs ) { return new SignData(attrs); },
-  signature( attrs:XFAAttrs ) { return new Signature(attrs); },
-  signing( attrs:XFAAttrs ) { return new Signing(attrs); },
-  solid( attrs:XFAAttrs ) { return new Solid(attrs); },
-  speak( attrs:XFAAttrs ) { return new Speak(attrs); },
-  stipple( attrs:XFAAttrs ) { return new Stipple(attrs); },
-  subform( attrs:XFAAttrs ) { return new Subform(attrs); },
-  subformSet( attrs:XFAAttrs ) { return new SubformSet(attrs); },
-  subjectDN( attrs:XFAAttrs ) { return new SubjectDN(attrs); },
-  subjectDNs( attrs:XFAAttrs ) { return new SubjectDNs(attrs); },
-  submit( attrs:XFAAttrs ) { return new Submit(attrs); },
-  template( attrs:XFAAttrs ) { return new Template(attrs); },
-  text( attrs:XFAAttrs ) { return new Text(attrs); },
-  textEdit( attrs:XFAAttrs ) { return new TextEdit(attrs); },
-  time( attrs:XFAAttrs ) { return new Time(attrs); },
-  timeStamp( attrs:XFAAttrs ) { return new TimeStamp(attrs); },
-  toolTip( attrs:XFAAttrs ) { return new ToolTip(attrs); },
-  traversal( attrs:XFAAttrs ) { return new Traversal(attrs); },
-  traverse( attrs:XFAAttrs ) { return new Traverse(attrs); },
-  ui( attrs:XFAAttrs ) { return new Ui(attrs); },
-  validate( attrs:XFAAttrs ) { return new Validate(attrs); },
-  value( attrs:XFAAttrs ) { return new Value(attrs); },
-  variables( attrs:XFAAttrs ) { return new Variables(attrs); },
-}
-/*81---------------------------------------------------------------------------*/
+
+  appearanceFilter(attrs: XFAAttrs) {
+    return new AppearanceFilter(attrs);
+  },
+  arc(attrs: XFAAttrs) {
+    return new Arc(attrs);
+  },
+  area(attrs: XFAAttrs) {
+    return new Area(attrs);
+  },
+  assist(attrs: XFAAttrs) {
+    return new Assist(attrs);
+  },
+  barcode(attrs: XFAAttrs) {
+    return new Barcode(attrs);
+  },
+  bind(attrs: XFAAttrs) {
+    return new Bind(attrs);
+  },
+  bindItems(attrs: XFAAttrs) {
+    return new BindItems(attrs);
+  },
+  bookend(attrs: XFAAttrs) {
+    return new Bookend(attrs);
+  },
+  boolean(attrs: XFAAttrs) {
+    return new BooleanElement(attrs);
+  },
+  border(attrs: XFAAttrs) {
+    return new Border(attrs);
+  },
+  break(attrs: XFAAttrs) {
+    return new Break(attrs);
+  },
+  breakAfter(attrs: XFAAttrs) {
+    return new BreakAfter(attrs);
+  },
+  breakBefore(attrs: XFAAttrs) {
+    return new BreakBefore(attrs);
+  },
+  button(attrs: XFAAttrs) {
+    return new Button(attrs);
+  },
+  calculate(attrs: XFAAttrs) {
+    return new Calculate(attrs);
+  },
+  caption(attrs: XFAAttrs) {
+    return new Caption(attrs);
+  },
+  certificate(attrs: XFAAttrs) {
+    return new Certificate(attrs);
+  },
+  certificates(attrs: XFAAttrs) {
+    return new Certificates(attrs);
+  },
+  checkButton(attrs: XFAAttrs) {
+    return new CheckButton(attrs);
+  },
+  choiceList(attrs: XFAAttrs) {
+    return new ChoiceList(attrs);
+  },
+  color(attrs: XFAAttrs) {
+    return new Color(attrs);
+  },
+  comb(attrs: XFAAttrs) {
+    return new Comb(attrs);
+  },
+  connect(attrs: XFAAttrs) {
+    return new Connect(attrs);
+  },
+  contentArea(attrs: XFAAttrs) {
+    return new ContentArea(attrs);
+  },
+  corner(attrs: XFAAttrs) {
+    return new Corner(attrs);
+  },
+  date(attrs: XFAAttrs) {
+    return new DateElement(attrs);
+  },
+  dateTime(attrs: XFAAttrs) {
+    return new DateTime(attrs);
+  },
+  dateTimeEdit(attrs: XFAAttrs) {
+    return new DateTimeEdit(attrs);
+  },
+  decimal(attrs: XFAAttrs) {
+    return new Decimal(attrs);
+  },
+  defaultUi(attrs: XFAAttrs) {
+    return new DefaultUi(attrs);
+  },
+  desc(attrs: XFAAttrs) {
+    return new Desc(attrs);
+  },
+  digestMethod(attrs: XFAAttrs) {
+    return new DigestMethod(attrs);
+  },
+  digestMethods(attrs: XFAAttrs) {
+    return new DigestMethods(attrs);
+  },
+  draw(attrs: XFAAttrs) {
+    return new Draw(attrs);
+  },
+  edge(attrs: XFAAttrs) {
+    return new Edge(attrs);
+  },
+  encoding(attrs: XFAAttrs) {
+    return new Encoding(attrs);
+  },
+  encodings(attrs: XFAAttrs) {
+    return new Encodings(attrs);
+  },
+  encrypt(attrs: XFAAttrs) {
+    return new Encrypt(attrs);
+  },
+  encryptData(attrs: XFAAttrs) {
+    return new EncryptData(attrs);
+  },
+  encryption(attrs: XFAAttrs) {
+    return new Encryption(attrs);
+  },
+  encryptionMethod(attrs: XFAAttrs) {
+    return new EncryptionMethod(attrs);
+  },
+  encryptionMethods(attrs: XFAAttrs) {
+    return new EncryptionMethods(attrs);
+  },
+  event(attrs: XFAAttrs) {
+    return new Event(attrs);
+  },
+  exData(attrs: XFAAttrs) {
+    return new ExData(attrs);
+  },
+  exObject(attrs: XFAAttrs) {
+    return new ExObject(attrs);
+  },
+  exclGroup(attrs: XFAAttrs) {
+    return new ExclGroup(attrs);
+  },
+  execute(attrs: XFAAttrs) {
+    return new Execute(attrs);
+  },
+  extras(attrs: XFAAttrs) {
+    return new Extras(attrs);
+  },
+  field(attrs: XFAAttrs) {
+    return new Field(attrs);
+  },
+  fill(attrs: XFAAttrs) {
+    return new Fill(attrs);
+  },
+  filter(attrs: XFAAttrs) {
+    return new Filter(attrs);
+  },
+  float(attrs: XFAAttrs) {
+    return new Float(attrs);
+  },
+  font(attrs: XFAAttrs) {
+    return new Font(attrs);
+  },
+  format(attrs: XFAAttrs) {
+    return new Format(attrs);
+  },
+  handler(attrs: XFAAttrs) {
+    return new Handler(attrs);
+  },
+  hyphenation(attrs: XFAAttrs) {
+    return new Hyphenation(attrs);
+  },
+  image(attrs: XFAAttrs) {
+    return new Image(attrs);
+  },
+  imageEdit(attrs: XFAAttrs) {
+    return new ImageEdit(attrs);
+  },
+  integer(attrs: XFAAttrs) {
+    return new Integer(attrs);
+  },
+  issuers(attrs: XFAAttrs) {
+    return new Issuers(attrs);
+  },
+  items(attrs: XFAAttrs) {
+    return new Items(attrs);
+  },
+  keep(attrs: XFAAttrs) {
+    return new Keep(attrs);
+  },
+  keyUsage(attrs: XFAAttrs) {
+    return new KeyUsage(attrs);
+  },
+  line(attrs: XFAAttrs) {
+    return new Line(attrs);
+  },
+  linear(attrs: XFAAttrs) {
+    return new Linear(attrs);
+  },
+  lockDocument(attrs: XFAAttrs) {
+    return new LockDocument(attrs);
+  },
+  manifest(attrs: XFAAttrs) {
+    return new Manifest(attrs);
+  },
+  margin(attrs: XFAAttrs) {
+    return new Margin(attrs);
+  },
+  mdp(attrs: XFAAttrs) {
+    return new Mdp(attrs);
+  },
+  medium(attrs: XFAAttrs) {
+    return new Medium(attrs);
+  },
+  message(attrs: XFAAttrs) {
+    return new Message(attrs);
+  },
+  numericEdit(attrs: XFAAttrs) {
+    return new NumericEdit(attrs);
+  },
+  occur(attrs: XFAAttrs) {
+    return new Occur(attrs);
+  },
+  oid(attrs: XFAAttrs) {
+    return new Oid(attrs);
+  },
+  oids(attrs: XFAAttrs) {
+    return new Oids(attrs);
+  },
+  overflow(attrs: XFAAttrs) {
+    return new Overflow(attrs);
+  },
+  pageArea(attrs: XFAAttrs) {
+    return new PageArea(attrs);
+  },
+  pageSet(attrs: XFAAttrs) {
+    return new PageSet(attrs);
+  },
+  para(attrs: XFAAttrs) {
+    return new Para(attrs);
+  },
+  passwordEdit(attrs: XFAAttrs) {
+    return new PasswordEdit(attrs);
+  },
+  pattern(attrs: XFAAttrs) {
+    return new Pattern(attrs);
+  },
+  picture(attrs: XFAAttrs) {
+    return new Picture(attrs);
+  },
+  proto(attrs: XFAAttrs) {
+    return new Proto(attrs);
+  },
+  radial(attrs: XFAAttrs) {
+    return new Radial(attrs);
+  },
+  reason(attrs: XFAAttrs) {
+    return new Reason(attrs);
+  },
+  reasons(attrs: XFAAttrs) {
+    return new Reasons(attrs);
+  },
+  rectangle(attrs: XFAAttrs) {
+    return new Rectangle(attrs);
+  },
+  ref(attrs: XFAAttrs) {
+    return new RefElement(attrs);
+  },
+  script(attrs: XFAAttrs) {
+    return new Script(attrs);
+  },
+  setProperty(attrs: XFAAttrs) {
+    return new SetProperty(attrs);
+  },
+  signData(attrs: XFAAttrs) {
+    return new SignData(attrs);
+  },
+  signature(attrs: XFAAttrs) {
+    return new Signature(attrs);
+  },
+  signing(attrs: XFAAttrs) {
+    return new Signing(attrs);
+  },
+  solid(attrs: XFAAttrs) {
+    return new Solid(attrs);
+  },
+  speak(attrs: XFAAttrs) {
+    return new Speak(attrs);
+  },
+  stipple(attrs: XFAAttrs) {
+    return new Stipple(attrs);
+  },
+  subform(attrs: XFAAttrs) {
+    return new Subform(attrs);
+  },
+  subformSet(attrs: XFAAttrs) {
+    return new SubformSet(attrs);
+  },
+  subjectDN(attrs: XFAAttrs) {
+    return new SubjectDN(attrs);
+  },
+  subjectDNs(attrs: XFAAttrs) {
+    return new SubjectDNs(attrs);
+  },
+  submit(attrs: XFAAttrs) {
+    return new Submit(attrs);
+  },
+  template(attrs: XFAAttrs) {
+    return new Template(attrs);
+  },
+  text(attrs: XFAAttrs) {
+    return new Text(attrs);
+  },
+  textEdit(attrs: XFAAttrs) {
+    return new TextEdit(attrs);
+  },
+  time(attrs: XFAAttrs) {
+    return new Time(attrs);
+  },
+  timeStamp(attrs: XFAAttrs) {
+    return new TimeStamp(attrs);
+  },
+  toolTip(attrs: XFAAttrs) {
+    return new ToolTip(attrs);
+  },
+  traversal(attrs: XFAAttrs) {
+    return new Traversal(attrs);
+  },
+  traverse(attrs: XFAAttrs) {
+    return new Traverse(attrs);
+  },
+  ui(attrs: XFAAttrs) {
+    return new Ui(attrs);
+  },
+  validate(attrs: XFAAttrs) {
+    return new Validate(attrs);
+  },
+  value(attrs: XFAAttrs) {
+    return new Value(attrs);
+  },
+  variables(attrs: XFAAttrs) {
+    return new Variables(attrs);
+  },
+};
+/*80--------------------------------------------------------------------------*/

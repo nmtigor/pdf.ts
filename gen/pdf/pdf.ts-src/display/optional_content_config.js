@@ -1,12 +1,38 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
+/* Copyright 2020 Mozilla Foundation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import { assert } from "../../../lib/util/trace.js";
 import { objectFromMap, warn } from "../shared/util.js";
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
+const INTERNAL = Symbol("INTERNAL");
 class OptionalContentGroup {
     name;
     intent;
-    visible = true;
+    #visible = true;
+    get visible() {
+        return this.#visible;
+    }
+    /** @ignore */
+    _setVisible(internal, visible) {
+        if (internal !== INTERNAL) {
+            assert(0, "Internal method `_setVisible` called.");
+        }
+        this.#visible = visible;
+    }
     constructor(name, intent) {
         this.name = name;
         this.intent = intent;
@@ -15,11 +41,14 @@ class OptionalContentGroup {
 export class OptionalContentConfig {
     name = null;
     creator = null;
-    #order = null;
+    #cachedHasInitialVisibility = true;
     #groups = new Map();
+    #initialVisibility;
+    #order = null;
     constructor(data) {
-        if (data === undefined)
+        if (data === undefined) {
             return;
+        }
         this.name = data.name;
         this.creator = data.creator;
         this.#order = data.order;
@@ -28,20 +57,26 @@ export class OptionalContentConfig {
         }
         if (data.baseState === "OFF") {
             for (const group of this.#groups.values()) {
-                group.visible = false;
+                group._setVisible(INTERNAL, false);
             }
         }
         for (const on of data.on) {
-            this.#groups.get(on).visible = true;
+            this.#groups.get(on)._setVisible(INTERNAL, true);
         }
         for (const off of data.off) {
-            this.#groups.get(off).visible = false;
+            this.#groups.get(off)._setVisible(INTERNAL, false);
+        }
+        // The following code must always run *last* in the constructor.
+        this.#initialVisibility = new Map();
+        for (const [id, group] of this.#groups) {
+            this.#initialVisibility.set(id, group.visible);
         }
     }
     #evaluateVisibilityExpression(array) {
         const length = array.length;
-        if (length < 2)
+        if (length < 2) {
             return true;
+        }
         const operator = array[0];
         for (let i = 1; i < length; i++) {
             const element = array[i];
@@ -76,8 +111,9 @@ export class OptionalContentConfig {
         return operator === "And";
     }
     isVisible(group) {
-        if (this.#groups.size === 0)
+        if (this.#groups.size === 0) {
             return true;
+        }
         if (!group) {
             warn("Optional content group not defined.");
             return true;
@@ -154,7 +190,20 @@ export class OptionalContentConfig {
             warn(`Optional content group not found: ${id}`);
             return;
         }
-        this.#groups.get(id).visible = !!visible;
+        this.#groups.get(id)._setVisible(INTERNAL, !!visible);
+        this.#cachedHasInitialVisibility = undefined;
+    }
+    get hasInitialVisibility() {
+        if (this.#cachedHasInitialVisibility !== undefined) {
+            return this.#cachedHasInitialVisibility;
+        }
+        for (const [id, group] of this.#groups) {
+            const visible = this.#initialVisibility.get(id);
+            if (group.visible !== visible) {
+                return (this.#cachedHasInitialVisibility = false);
+            }
+        }
+        return (this.#cachedHasInitialVisibility = true);
     }
     getOrder() {
         if (!this.#groups.size) {
@@ -163,7 +212,7 @@ export class OptionalContentConfig {
         if (this.#order) {
             return this.#order.slice();
         }
-        return Array.from(this.#groups.keys());
+        return [...this.#groups.keys()];
     }
     getGroups() {
         return this.#groups.size > 0 ? objectFromMap(this.#groups) : null;
@@ -172,5 +221,5 @@ export class OptionalContentConfig {
         return this.#groups.get(id) || null;
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=optional_content_config.js.map

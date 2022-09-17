@@ -17,118 +17,108 @@
  * limitations under the License.
  */
 
-import { stringToBytes } from "../shared/util.js";
-import { BaseStream } from "./base_stream.js";
-import { Dict } from "./primitives.js";
-/*81---------------------------------------------------------------------------*/
+import { stringToBytes } from "../shared/util.ts";
+import { BaseStream } from "./base_stream.ts";
+import { Dict } from "./primitives.ts";
+/*80--------------------------------------------------------------------------*/
 
-export class Stream extends BaseStream
-{
-  readonly bytes:Uint8Array;
+export class Stream extends BaseStream {
+  readonly bytes: Uint8Array;
 
-  override start:number;
-  override end:number;
-  /** @implements */
-  get length() { return this.end - this.start; }
-  /** @implements */
-  get isEmpty() { return this.length === 0; }
+  override start: number;
+  override end: number;
+  /** @implement */
+  get length() {
+    return this.end - this.start;
+  }
+  /** @implement */
+  get isEmpty() {
+    return this.length === 0;
+  }
 
-  constructor( arrayBuffer:Uint8Array | ArrayLike<number> | ArrayBufferLike, 
-    start?:number, length?:number, dict?:Dict
+  constructor(
+    arrayBuffer: Uint8Array | ArrayLike<number> | ArrayBufferLike,
+    start?: number,
+    length?: number,
+    dict?: Dict,
   ) {
     super();
 
-    this.bytes =
-      arrayBuffer instanceof Uint8Array
-        ? arrayBuffer
-        : new Uint8Array(arrayBuffer);
-    
+    this.bytes = arrayBuffer instanceof Uint8Array
+      ? arrayBuffer
+      : new Uint8Array(arrayBuffer);
+
     this.start = start || 0;
     this.pos = this.start;
     this.end = (start! + length!) || this.bytes.length;
-    
+
     this.dict = dict;
   }
 
-  /** @implements */
-  getByte()
-  {
-    if( this.pos >= this.end )
-    {
+  /** @implement */
+  getByte() {
+    if (this.pos >= this.end) {
       return -1;
     }
     return this.bytes[this.pos++];
   }
 
-  /** @implements */
-  getBytes( length?:number ) 
-  {
+  /** @implement */
+  getBytes(length?: number) {
     const bytes = this.bytes;
     const pos = this.pos;
     const strEnd = this.end;
 
-    if( !length )
-    {
-      return bytes.subarray( pos, strEnd );
+    if (!length) {
+      return bytes.subarray(pos, strEnd);
     }
     let end = pos + length;
-    if( end > strEnd )
-    {
+    if (end > strEnd) {
       end = strEnd;
     }
     this.pos = end;
-    return bytes.subarray( pos, end );
+    return bytes.subarray(pos, end);
   }
 
-  /** @implements */
-  getByteRange( begin:number, end:number ) 
-  {
-    if( begin < 0 )
-    {
+  /** @implement */
+  getByteRange(begin: number, end: number) {
+    if (begin < 0) {
       begin = 0;
     }
-    if( end > this.end )
-    {
+    if (end > this.end) {
       end = this.end;
     }
     return this.bytes.subarray(begin, end);
   }
 
-  /** @implements */
-  reset() 
-  {
+  /** @implement */
+  reset() {
     this.pos = this.start;
   }
 
   /**
-   * @implements
+   * @implement
    * @final
    */
-  moveStart() 
-  {
+  moveStart() {
     this.start = this.pos;
   }
 
-  /** @implements */
-  makeSubStream( start:number, length?:number, dict?:Dict ):Stream
-  {
-    return new Stream( this.bytes.buffer, start, length, dict );
+  /** @implement */
+  makeSubStream(start: number, length?: number, dict?: Dict): Stream {
+    return new Stream(this.bytes.buffer, start, length, dict);
   }
 }
 
-export class StringStream extends Stream
-{
-  constructor( str:string ) 
-  {
-    super( stringToBytes(str) );
+export class StringStream extends Stream {
+  constructor(str: string) {
+    super(stringToBytes(str));
   }
 }
 
-export class NullStream extends Stream
-{
-  constructor() 
-  {
-    super( new Uint8Array(0) );
+export class NullStream extends Stream {
+  constructor() {
+    super(new Uint8Array(0));
   }
-};
-/*81---------------------------------------------------------------------------*/
+}
+/*80--------------------------------------------------------------------------*/

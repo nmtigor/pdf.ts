@@ -1,17 +1,18 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
-import { createValidAbsoluteUrl, shadow, warn } from "../shared/util.js";
+import { createValidAbsoluteUrl, shadow, warn, } from "../shared/util.js";
 import { ChunkedStreamManager } from "./chunked_stream.js";
 import { MissingDataException } from "./core_utils.js";
 import { PDFDocument } from "./document.js";
 import { Stream } from "./stream.js";
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 function parseDocBaseUrl(url) {
     if (url) {
         const absoluteUrl = createValidAbsoluteUrl(url);
-        if (absoluteUrl)
+        if (absoluteUrl) {
             return absoluteUrl.href;
+        }
         warn(`Invalid absolute docBaseUrl: "${url}".`);
     }
     return undefined;
@@ -19,10 +20,14 @@ function parseDocBaseUrl(url) {
 export class BasePdfManager {
     _docId;
     /** @final */
-    get docId() { return this._docId; }
+    get docId() {
+        return this._docId;
+    }
     _password;
     /** @final */
-    get password() { return this._password; }
+    get password() {
+        return this._password;
+    }
     msgHandler;
     _docBaseUrl;
     get docBaseUrl() {
@@ -82,7 +87,7 @@ export class LocalPdfManager extends BasePdfManager {
         this.pdfDocument = new PDFDocument(this, stream);
         this.#loadedStreamPromise = Promise.resolve(stream);
     }
-    /** @implements */
+    /** @implement */
     async ensure(obj, prop, args) {
         const value = obj[prop];
         if (typeof value === "function") {
@@ -98,17 +103,17 @@ export class LocalPdfManager extends BasePdfManager {
     //   }
     //   return value;
     // }
-    /** @implements */
+    /** @implement */
     requestRange(begin, end) {
         return Promise.resolve();
     }
-    /** @implements */
+    /** @implement */
     requestLoadedStream() { }
-    /** @implements */
+    /** @implement */
     onLoadedStream() {
         return this.#loadedStreamPromise;
     }
-    /** @implements */
+    /** @implement */
     terminate(reason) { }
 }
 export class NetworkPdfManager extends BasePdfManager {
@@ -127,7 +132,7 @@ export class NetworkPdfManager extends BasePdfManager {
         });
         this.pdfDocument = new PDFDocument(this, this.streamManager.getStream());
     }
-    /** @implements */
+    /** @implement */
     async ensure(obj, prop, args) {
         try {
             const value = obj[prop];
@@ -144,25 +149,25 @@ export class NetworkPdfManager extends BasePdfManager {
             return this.ensure(obj, prop, args);
         }
     }
-    /** @implements */
+    /** @implement */
     requestRange(begin, end) {
         return this.streamManager.requestRange(begin, end);
     }
-    /** @implements */
+    /** @implement */
     requestLoadedStream() {
         this.streamManager.requestAllChunks();
     }
     sendProgressiveData(chunk) {
         this.streamManager.onReceiveData({ chunk });
     }
-    /** @implements */
+    /** @implement */
     onLoadedStream() {
         return this.streamManager.onLoadedStream();
     }
-    /** @implements */
+    /** @implement */
     terminate(reason) {
         this.streamManager.abort(reason);
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=pdf_manager.js.map

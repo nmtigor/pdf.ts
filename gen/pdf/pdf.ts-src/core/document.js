@@ -15,13 +15,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { _PDFDEV } from "../../../global.js";
 import { assert } from "../../../lib/util/trace.js";
-import { FormatError, info, InvalidPDFException, OPS, PageActionEventType, RenderingIntentFlag, shadow, stringToBytes, stringToPDFString, stringToUTF8String, UNSUPPORTED_FEATURES, Util, warn } from "../shared/util.js";
-import { AnnotationFactory } from "./annotation.js";
+import { FormatError, info, InvalidPDFException, PageActionEventType, RenderingIntentFlag, shadow, stringToBytes, stringToPDFString, stringToUTF8String, UNSUPPORTED_FEATURES, Util, warn, } from "../shared/util.js";
+import { AnnotationFactory, } from "./annotation.js";
 import { BaseStream } from "./base_stream.js";
 import { Catalog } from "./catalog.js";
 import { clearGlobalCaches } from "./cleanup_helper.js";
-import { collectActions, getInheritableProperty, isWhiteSpace, MissingDataException, validateCSSFont, XRefEntryException, XRefParseException } from "./core_utils.js";
+import { collectActions, getInheritableProperty, getNewAnnotationsMap, isWhiteSpace, MissingDataException, validateCSSFont, XRefEntryException, XRefParseException, } from "./core_utils.js";
 import { calculateMD5 } from "./crypto.js";
 import { DatasetReader } from "./dataset_reader.js";
 import { StreamsSequenceStream } from "./decode_stream.js";
@@ -29,13 +30,14 @@ import { PartialEvaluator } from "./evaluator.js";
 import { ObjectLoader } from "./object_loader.js";
 import { OperatorList } from "./operator_list.js";
 import { Linearization } from "./parser.js";
-import { Dict, isName, Name, Ref } from "./primitives.js";
+import { Dict, isName, Name, Ref, } from "./primitives.js";
 import { NullStream } from "./stream.js";
 import { StructTreePage } from "./struct_tree.js";
+import { writeObject } from "./writer.js";
 import { XFAFactory } from "./xfa/factory.js";
-import { getXfaFontDict, getXfaFontName } from "./xfa_fonts.js";
+import { getXfaFontDict, getXfaFontName, } from "./xfa_fonts.js";
 import { XRef } from "./xref.js";
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 const DEFAULT_USER_UNIT = 1.0;
 const LETTER_SIZE_MEDIABOX = [0, 0, 612, 792];
 export class Page {
@@ -52,7 +54,9 @@ export class Page {
     evaluatorOptions;
     xfaFactory;
     #localIdFactory;
-    get _localIdFactory() { return this.#localIdFactory; }
+    get _localIdFactory() {
+        return this.#localIdFactory;
+    }
     resourcesPromise;
     constructor({ pdfManager, xref, pageIndex, pageDict, ref, globalIdFactory, fontCache, builtInCMapCache, standardFontDataCache, globalImageCache, nonBlendModesSet, xfaFactory, }) {
         this.pdfManager = pdfManager;
@@ -100,16 +104,18 @@ export class Page {
         // For robustness: The spec states that a \Resources entry has to be
         // present, but can be empty. Some documents still omit it; in this case
         // we return an empty dictionary.
-        return shadow(this, "resources", this.#getInheritableProperty("Resources") || Dict.empty);
+        const resources = this.#getInheritableProperty("Resources");
+        return shadow(this, "resources", resources instanceof Dict ? resources : Dict.empty);
     }
     _getBoundingBox(name) {
         if (this.xfaData) {
             return this.xfaData.bbox;
         }
-        const box = this.#getInheritableProperty(name, /* getArray = */ true);
+        const box = this.#getInheritableProperty(name, 
+        /* getArray = */ true);
         if (Array.isArray(box) && box.length === 4) {
-            if (box[2] - box[0] !== 0
-                && box[3] - box[1] !== 0) {
+            if (box[2] - box[0] !== 0 &&
+                box[3] - box[1] !== 0) {
                 return box;
             }
             warn(`Empty /${name} entry.`);
@@ -181,7 +187,7 @@ export class Page {
         throw reason;
     }
     getContentStream(handler) {
-        return this.pdfManager.ensure(this, "content").then(content => {
+        return this.pdfManager.ensure(this, "content").then((content) => {
             if (content instanceof BaseStream) {
                 return content;
             }
@@ -197,6 +203,42 @@ export class Page {
             ? { bbox: this.xfaFactory.getBoundingBox(this.pageIndex) }
             : null);
     }
+    async saveNewAnnotations(handler, task, annotations) {
+        if (this.xfaFactory) {
+            throw new Error("XFA: Cannot save new annotations.");
+        }
+        const partialEvaluator = new PartialEvaluator({
+            xref: this.xref,
+            handler,
+            pageIndex: this.pageIndex,
+            idFactory: this._localIdFactory,
+            fontCache: this.fontCache,
+            builtInCMapCache: this.builtInCMapCache,
+            standardFontDataCache: this.standardFontDataCache,
+            globalImageCache: this.globalImageCache,
+            options: this.evaluatorOptions,
+        });
+        const pageDict = this.pageDict;
+        const annotationsArray = this.annotations.slice();
+        const newData = await AnnotationFactory.saveNewAnnotations(partialEvaluator, task, annotations);
+        for (const { ref } of newData.annotations) {
+            annotationsArray.push(ref);
+        }
+        const savedDict = pageDict.get("Annots");
+        pageDict.set("Annots", annotationsArray);
+        const buffer = [];
+        let transform;
+        if (this.xref.encrypt) {
+            transform = this.xref.encrypt.createCipherTransform(this.ref.num, this.ref.gen);
+        }
+        writeObject(this.ref, pageDict, buffer, transform);
+        if (savedDict) {
+            pageDict.set("Annots", savedDict);
+        }
+        const objects = newData.dependencies;
+        objects.push({ ref: this.ref, data: buffer.join("") }, ...newData.annotations);
+        return objects;
+    }
     save(handler, task, annotationStorage) {
         const partialEvaluator = new PartialEvaluator({
             xref: this.xref,
@@ -211,20 +253,21 @@ export class Page {
         });
         // Fetch the page's annotations and save the content
         // in case of interactive form fields.
-        return this._parsedAnnotations.then(annotations => {
+        return this._parsedAnnotations.then((annotations) => {
             const newRefsPromises = [];
             for (const annotation of annotations) {
-                if (!annotation.mustBePrinted(annotationStorage))
+                if (!annotation.mustBePrinted(annotationStorage)) {
                     continue;
+                }
                 newRefsPromises.push(annotation
                     .save(partialEvaluator, task, annotationStorage)
-                    .catch(reason => {
+                    .catch((reason) => {
                     warn("save - ignoring annotation data during " +
                         `"${task.name}" task: "${reason}".`);
-                    return null;
+                    return undefined;
                 }));
             }
-            return Promise.all(newRefsPromises);
+            return Promise.all(newRefsPromises).then((newRefs) => newRefs.filter((newRef) => !!newRef));
         });
     }
     loadResources(keys) {
@@ -259,6 +302,17 @@ export class Page {
             globalImageCache: this.globalImageCache,
             options: this.evaluatorOptions,
         });
+        const newAnnotationsByPage = !this.xfaFactory
+            ? getNewAnnotationsMap(annotationStorage)
+            : undefined;
+        let newAnnotationsPromise = Promise
+            .resolve(undefined);
+        if (newAnnotationsByPage) {
+            const newAnnotations = newAnnotationsByPage.get(this.pageIndex);
+            if (newAnnotations) {
+                newAnnotationsPromise = AnnotationFactory.printNewAnnotations(partialEvaluator, task, newAnnotations);
+            }
+        }
         const dataPromises = Promise.all([contentStreamPromise, resourcesPromise]);
         const pageListPromise = dataPromises.then(([contentStream]) => {
             const opList = new OperatorList(intent, sink);
@@ -278,10 +332,17 @@ export class Page {
         });
         // Fetch the page's annotations and add their operator lists to the
         // page's operator list to render them.
-        return Promise.all([pageListPromise, this._parsedAnnotations]).then(([pageOpList, annotations]) => {
-            if (annotations.length === 0
-                || intent & RenderingIntentFlag.ANNOTATIONS_DISABLE) {
-                pageOpList.flush(true);
+        return Promise.all([
+            pageListPromise,
+            this._parsedAnnotations,
+            newAnnotationsPromise,
+        ]).then(([pageOpList, annotations, newAnnotations]) => {
+            if (newAnnotations) {
+                annotations = annotations.concat(newAnnotations);
+            }
+            if (annotations.length === 0 ||
+                intent & RenderingIntentFlag.ANNOTATIONS_DISABLE) {
+                pageOpList.flush(/* lastChunk = */ true);
                 return { length: pageOpList.totalLength };
             }
             const renderForms = !!(intent & RenderingIntentFlag.ANNOTATIONS_FORMS), intentAny = !!(intent & RenderingIntentFlag.ANY), intentDisplay = !!(intent & RenderingIntentFlag.DISPLAY), intentPrint = !!(intent & RenderingIntentFlag.PRINT);
@@ -289,24 +350,31 @@ export class Page {
             // is resolved with the complete operator list for a single annotation.
             const opListPromises = [];
             for (const annotation of annotations) {
-                if (intentAny
-                    || (intentDisplay && annotation.mustBeViewed(annotationStorage))
-                    || (intentPrint && annotation.mustBePrinted(annotationStorage))) {
+                if (intentAny ||
+                    (intentDisplay && annotation.mustBeViewed(annotationStorage)) ||
+                    (intentPrint && annotation.mustBePrinted(annotationStorage))) {
                     opListPromises.push(annotation
                         .getOperatorList(partialEvaluator, task, intent, renderForms, annotationStorage)
                         .catch((reason) => {
                         warn(`getOperatorList - ignoring annotation data during "${task.name}" task: "${reason}".`);
-                        return null;
+                        return undefined;
                     }));
                 }
             }
-            return Promise.all(opListPromises).then(opLists => {
-                pageOpList.addOp(OPS.beginAnnotations, []);
-                for (const opList of opLists) {
+            return Promise.all(opListPromises).then((opLists) => {
+                let form = false, canvas = false;
+                for (const { opList, separateForm, separateCanvas } of opLists) {
                     pageOpList.addOpList(opList);
+                    if (separateForm) {
+                        form = separateForm;
+                    }
+                    if (separateCanvas) {
+                        canvas = separateCanvas;
+                    }
                 }
-                pageOpList.addOp(OPS.endAnnotations, []);
-                pageOpList.flush(true);
+                pageOpList.flush(
+                /* lastChunk = */ true, 
+                /* separateAnnots = */ { form, canvas });
                 return { length: pageOpList.totalLength };
             });
         });
@@ -345,8 +413,9 @@ export class Page {
     }
     async getStructTree() {
         const structTreeRoot = await this.pdfManager.ensureCatalog("structTreeRoot");
-        if (!structTreeRoot)
+        if (!structTreeRoot) {
             return undefined;
+        }
         const structTree = await this.pdfManager.ensure(this, "_parseStructTree", [
             structTreeRoot,
         ]);
@@ -361,17 +430,18 @@ export class Page {
         return tree;
     }
     getAnnotationsData(intent) {
-        return this._parsedAnnotations.then(annotations => {
+        return this._parsedAnnotations.then((annotations) => {
             const annotationsData = [];
-            if (annotations.length === 0)
+            if (annotations.length === 0) {
                 return annotationsData;
+            }
             const intentAny = !!(intent & RenderingIntentFlag.ANY), intentDisplay = !!(intent & RenderingIntentFlag.DISPLAY), intentPrint = !!(intent & RenderingIntentFlag.PRINT);
             for (const annotation of annotations) {
                 // Get the annotation even if it's hidden because
                 // JS can change its display.
-                if (intentAny
-                    || (intentDisplay && annotation.viewable)
-                    || (intentPrint && annotation.printable)) {
+                if (intentAny ||
+                    (intentDisplay && annotation.viewable) ||
+                    (intentPrint && annotation.printable)) {
                     annotationsData.push(annotation.data);
                 }
             }
@@ -389,13 +459,13 @@ export class Page {
             const annotationPromises = [];
             for (const annotationRef of this.annotations) {
                 annotationPromises.push(AnnotationFactory.create(this.xref, annotationRef, this.pdfManager, this.#localIdFactory, 
-                /* collectFields */ false).catch(reason => {
+                /* collectFields */ false).catch((reason) => {
                     warn(`_parsedAnnotations: "${reason}".`);
                     return undefined;
                 }));
             }
-            return Promise.all(annotationPromises).then(annotations => {
-                return annotations.filter(annotation => !!annotation);
+            return Promise.all(annotationPromises).then((annotations) => {
+                return annotations.filter((annotation) => !!annotation);
             });
         });
         return shadow(this, "_parsedAnnotations", parsedAnnotations);
@@ -407,26 +477,37 @@ export class Page {
 }
 const PDF_HEADER_SIGNATURE = new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d]); // `%PDF-`
 const STARTXREF_SIGNATURE = new Uint8Array([
-    0x73, 0x74, 0x61, 0x72, 0x74, 0x78, 0x72, 0x65, 0x66,
+    0x73,
+    0x74,
+    0x61,
+    0x72,
+    0x74,
+    0x78,
+    0x72,
+    0x65,
+    0x66,
 ]);
 const ENDOBJ_SIGNATURE = new Uint8Array([0x65, 0x6e, 0x64, 0x6f, 0x62, 0x6a]);
 const FINGERPRINT_FIRST_BYTES = 1024;
 const EMPTY_FINGERPRINT = "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00";
 const PDF_HEADER_VERSION_REGEXP = /^[1-9]\.\d$/;
 function find(stream, signature, limit = 1024, backwards = false) {
-    assert(limit > 0, 'The "limit" must be a positive integer.');
+    /*#static*/  {
+        assert(limit > 0, 'The "limit" must be a positive integer.');
+    }
     const signatureLength = signature.length;
     const scanBytes = stream.peekBytes(limit);
     const scanLength = scanBytes.length - signatureLength;
-    if (scanLength <= 0)
+    if (scanLength <= 0) {
         return false;
+    }
     if (backwards) {
         const signatureEnd = signatureLength - 1;
         let pos = scanBytes.length - 1;
         while (pos >= signatureEnd) {
             let j = 0;
-            while (j < signatureLength
-                && scanBytes[pos - j] === signature[signatureEnd - j]) {
+            while (j < signatureLength &&
+                scanBytes[pos - j] === signature[signatureEnd - j]) {
                 j++;
             }
             if (j >= signatureLength) {
@@ -466,10 +547,14 @@ export class PDFDocument {
     #pagePromises = new Map();
     #version;
     #globalIdFactory;
-    get _globalIdFactory() { return this.#globalIdFactory; }
+    get _globalIdFactory() {
+        return this.#globalIdFactory;
+    }
     #localIdFactory;
     constructor(pdfManager, stream) {
-        assert(stream instanceof BaseStream, 'PDFDocument: Invalid "stream" argument.');
+        /*#static*/  {
+            assert(stream instanceof BaseStream, 'PDFDocument: Invalid "stream" argument.');
+        }
         if (stream.length <= 0) {
             throw new InvalidPDFException("The PDF file is empty, i.e. its size is zero bytes.");
         }
@@ -505,8 +590,9 @@ export class PDFDocument {
             linearization = Linearization.create(this.stream);
         }
         catch (err) {
-            if (err instanceof MissingDataException)
+            if (err instanceof MissingDataException) {
                 throw err;
+            }
             info(err);
         }
         return shadow(this, "linearization", linearization);
@@ -570,8 +656,9 @@ export class PDFDocument {
         const MAX_PDF_VERSION_LENGTH = 12;
         let version = "", ch;
         while ((ch = stream.getByte()) > /* Space = */ 0x20) {
-            if (version.length >= MAX_PDF_VERSION_LENGTH)
+            if (version.length >= MAX_PDF_VERSION_LENGTH) {
                 break;
+            }
             version += String.fromCharCode(ch);
         }
         if (!this.#version) {
@@ -601,12 +688,14 @@ export class PDFDocument {
     }
     #hasOnlyDocumentSignatures(fields, recursionDepth = 0) {
         const RECURSION_LIMIT = 10;
-        if (!Array.isArray(fields))
+        if (!Array.isArray(fields)) {
             return false;
-        return fields.every(field => {
+        }
+        return fields.every((field) => {
             const field_ = this.xref.fetchIfRef(field);
-            if (!(field_ instanceof Dict))
+            if (!(field_ instanceof Dict)) {
                 return false;
+            }
             if (field_.has("Kids")) {
                 if (++recursionDepth > RECURSION_LIMIT) {
                     warn("#hasOnlyDocumentSignatures: maximum recursion depth reached");
@@ -616,14 +705,16 @@ export class PDFDocument {
             }
             const isSignature = isName(field_.get("FT"), "Sig");
             const rectangle = field_.get("Rect");
-            const isInvisible = Array.isArray(rectangle) && rectangle.every(value => value === 0);
+            const isInvisible = Array.isArray(rectangle) &&
+                rectangle.every((value) => value === 0);
             return isSignature && isInvisible;
         });
     }
     get _xfaStreams() {
         const acroForm = this.catalog.acroForm;
-        if (!acroForm)
+        if (!acroForm) {
             return undefined;
+        }
         const xfa = acroForm.get("XFA");
         const entries = {
             "xdp:xdp": "",
@@ -639,8 +730,9 @@ export class PDFDocument {
             entries["xdp:xdp"] = xfa;
             return entries;
         }
-        if (!Array.isArray(xfa) || xfa.length === 0)
+        if (!Array.isArray(xfa) || xfa.length === 0) {
             return undefined;
+        }
         for (let i = 0, ii = xfa.length; i < ii; i += 2) {
             let name;
             if (i === 0) {
@@ -652,23 +744,27 @@ export class PDFDocument {
             else {
                 name = xfa[i];
             }
-            if (!entries.hasOwnProperty(name))
+            if (!Object.hasOwn(entries, name)) {
                 continue;
+            }
             const data = this.xref.fetchIfRef(xfa[i + 1]);
-            if (!(data instanceof BaseStream) || data.isEmpty)
+            if (!(data instanceof BaseStream) || data.isEmpty) {
                 continue;
+            }
             entries[name] = data;
         }
         return entries;
     }
     get xfaDatasets() {
         const streams = this._xfaStreams;
-        if (!streams)
+        if (!streams) {
             return shadow(this, "xfaDatasets", undefined);
+        }
         for (const key of ["datasets", "xdp:xdp"]) {
             const stream = streams[key];
-            if (!stream)
+            if (!stream) {
                 continue;
+            }
             try {
                 const str = stringToUTF8String(stream.getString());
                 const data = { [key]: str };
@@ -683,12 +779,14 @@ export class PDFDocument {
     }
     get xfaData() {
         const streams = this._xfaStreams;
-        if (!streams)
+        if (!streams) {
             return null;
+        }
         const data = Object.create(null);
         for (const [key, stream] of Object.entries(streams)) {
-            if (!stream)
+            if (!stream) {
                 continue;
+            }
             try {
                 data[key] = stringToUTF8String(stream.getString());
             }
@@ -701,10 +799,10 @@ export class PDFDocument {
     }
     get xfaFactory() {
         let data;
-        if (this.pdfManager.enableXfa
-            && this.catalog.needsRendering
-            && this.formInfo.hasXfa
-            && !this.formInfo.hasAcroForm) {
+        if (this.pdfManager.enableXfa &&
+            this.catalog.needsRendering &&
+            this.formInfo.hasXfa &&
+            !this.formInfo.hasAcroForm) {
             data = this.xfaData;
         }
         return shadow(this, "xfaFactory", data ? new XFAFactory(data) : undefined);
@@ -717,8 +815,9 @@ export class PDFDocument {
     }
     async loadXfaImages() {
         const xfaImagesDict = await this.pdfManager.ensureCatalog("xfaImages");
-        if (!xfaImagesDict)
+        if (!xfaImagesDict) {
             return;
+        }
         const keys = xfaImagesDict.getKeys();
         const objectLoader = new ObjectLoader(xfaImagesDict, keys, this.xref);
         await objectLoader.load();
@@ -733,16 +832,19 @@ export class PDFDocument {
     }
     async loadXfaFonts(handler, task) {
         const acroForm = await this.pdfManager.ensureCatalog("acroForm");
-        if (!acroForm)
+        if (!acroForm) {
             return;
+        }
         const resources = await acroForm.getAsync("DR");
-        if (!(resources instanceof Dict))
+        if (!(resources instanceof Dict)) {
             return;
+        }
         const objectLoader = new ObjectLoader(resources, ["Font"], this.xref);
         await objectLoader.load();
         const fontRes = resources.get("Font");
-        if (!(fontRes instanceof Dict))
+        if (!(fontRes instanceof Dict)) {
             return;
+        }
         const options = Object.assign(Object.create(null), this.pdfManager.evaluatorOptions);
         options.useSystemFonts = false;
         const partialEvaluator = new PartialEvaluator({
@@ -758,9 +860,15 @@ export class PDFDocument {
         const operatorList = new OperatorList();
         const pdfFonts = [];
         const initialState = {
-            get font() { return pdfFonts[pdfFonts.length - 1]; },
-            set font(font) { pdfFonts.push(font); },
-            clone() { return this; },
+            get font() {
+                return pdfFonts.at(-1);
+            },
+            set font(font) {
+                pdfFonts.push(font);
+            },
+            clone() {
+                return this;
+            },
         };
         const fonts = new Map();
         fontRes.forEach((fontName, font) => {
@@ -769,8 +877,9 @@ export class PDFDocument {
         const promises = [];
         for (const [fontName, font] of fonts) {
             const descriptor = font.get("FontDescriptor");
-            if (!(descriptor instanceof Dict))
+            if (!(descriptor instanceof Dict)) {
                 continue;
+            }
             let fontFamily = descriptor.get("FontFamily");
             // For example, "Wingdings 3" is not a valid font name in the css specs.
             fontFamily = fontFamily.replace(/[ ]+(\d)/g, "$1");
@@ -780,22 +889,24 @@ export class PDFDocument {
             // (see https://drafts.csswg.org/css-fonts-4/#valdef-font-style-oblique-angle)
             const italicAngle = descriptor.get("ItalicAngle");
             const cssFontInfo = { fontFamily, fontWeight, italicAngle };
-            if (!validateCSSFont(cssFontInfo))
+            if (!validateCSSFont(cssFontInfo)) {
                 continue;
+            }
             promises.push(partialEvaluator
                 .handleSetFont(resources, [Name.get(fontName), 1], 
             /* fontRef = */ undefined, operatorList, task, initialState, 
             /* fallbackFontDict = */ undefined, 
             /* cssFontInfo = */ cssFontInfo)
-                .catch(reason => {
+                .catch((reason) => {
                 warn(`loadXfaFonts: "${reason}".`);
                 return null;
             }));
         }
         await Promise.all(promises);
         const missingFonts = this.xfaFactory?.setFonts(pdfFonts);
-        if (!missingFonts)
+        if (!missingFonts) {
             return;
+        }
         options.ignoreErrors = true;
         promises.length = 0;
         pdfFonts.length = 0;
@@ -810,8 +921,9 @@ export class PDFDocument {
             missingFonts.push("PdfJS-Fallback");
         }
         for (const missing of missingFonts) {
-            if (reallyMissingFonts.has(missing))
+            if (reallyMissingFonts.has(missing)) {
                 continue;
+            }
             for (const fontInfo of [
                 { name: "Regular", fontWeight: 400, italicAngle: 0 },
                 { name: "Bold", fontWeight: 700, italicAngle: 0 },
@@ -829,7 +941,7 @@ export class PDFDocument {
                     fontWeight: fontInfo.fontWeight,
                     italicAngle: fontInfo.italicAngle,
                 })
-                    .catch(reason => {
+                    .catch((reason) => {
                     warn(`loadXfaFonts: "${reason}".`);
                     return null;
                 }));
@@ -861,9 +973,8 @@ export class PDFDocument {
             // The document contains XFA data if the `XFA` entry is a non-empty
             // array or stream.
             const xfa = acroForm.get("XFA");
-            formInfo.hasXfa =
-                (Array.isArray(xfa) && xfa.length > 0) ||
-                    (xfa instanceof BaseStream && !xfa.isEmpty);
+            formInfo.hasXfa = (Array.isArray(xfa) && xfa.length > 0) ||
+                (xfa instanceof BaseStream && !xfa.isEmpty);
             // The document contains AcroForm data if the `Fields` entry is a
             // non-empty array and it doesn't consist of only document signatures.
             // This second check is required for files that don't actually contain
@@ -873,7 +984,8 @@ export class PDFDocument {
             // specification).
             const sigFlags = acroForm.get("SigFlags");
             const hasSignatures = !!(sigFlags & 0x1);
-            const hasOnlyDocumentSignatures = hasSignatures && this.#hasOnlyDocumentSignatures(fields);
+            const hasOnlyDocumentSignatures = hasSignatures &&
+                this.#hasOnlyDocumentSignatures(fields);
             formInfo.hasAcroForm = hasFields && !hasOnlyDocumentSignatures;
             formInfo.hasSignatures = hasSignatures;
         }
@@ -898,8 +1010,8 @@ export class PDFDocument {
         //   Trapped: isName,
         // };
         let version = this.#version;
-        if (typeof version !== "string"
-            || !PDF_HEADER_VERSION_REGEXP.test(version)) {
+        if (typeof version !== "string" ||
+            !PDF_HEADER_VERSION_REGEXP.test(version)) {
             warn(`Invalid PDF header version number: ${version}`);
             version = undefined;
         }
@@ -1015,7 +1127,9 @@ export class PDFDocument {
     }
     async #getLinearizationPage(pageIndex) {
         const { catalog, linearization, xref } = this;
-        assert(linearization && linearization.pageFirst === pageIndex, "#getLinearizationPage - invalid pageIndex argument.");
+        /*#static*/  {
+            assert(linearization && linearization.pageFirst === pageIndex, "#getLinearizationPage - invalid pageIndex argument.");
+        }
         const ref = Ref.get(linearization.objectNumberFirst, 0);
         try {
             const obj = await xref.fetchAsync(ref);
@@ -1045,8 +1159,9 @@ export class PDFDocument {
     }
     getPage(pageIndex) {
         const cachedPromise = this.#pagePromises.get(pageIndex);
-        if (cachedPromise)
+        if (cachedPromise) {
             return cachedPromise;
+        }
         const { catalog, linearization, xfaFactory } = this;
         let promise;
         if (xfaFactory) {
@@ -1078,8 +1193,9 @@ export class PDFDocument {
         return promise;
     }
     async checkFirstPage(recoveryMode = false) {
-        if (recoveryMode)
+        if (recoveryMode) {
             return;
+        }
         try {
             await this.getPage(0);
         }
@@ -1104,19 +1220,22 @@ export class PDFDocument {
                 pdfManager.ensureDoc("linearization"),
                 pdfManager.ensureCatalog("numPages"),
             ]);
-            // The Page count is always calculated for XFA-documents.
-            if (this.xfaFactory)
+            if (this.xfaFactory) {
+                // The Page count is always calculated for XFA-documents.
                 return;
-            if (this.linearization) {
+            }
+            else if (this.linearization) {
                 numPages = this.linearization.numPages;
             }
             else {
                 numPages = catalog.numPages;
             }
-            if (!Number.isInteger(numPages))
+            if (!Number.isInteger(numPages)) {
                 throw new FormatError("Page count is not an integer.");
-            if (numPages <= 1)
+            }
+            else if (numPages <= 1) {
                 return;
+            }
             await this.getPage(numPages - 1);
         }
         catch (reason) {
@@ -1125,16 +1244,18 @@ export class PDFDocument {
             // subsequent `this.getPage` calls.
             this.#pagePromises.delete(numPages - 1);
             await this.cleanup();
-            if (reason instanceof XRefEntryException && !recoveryMode)
+            if (reason instanceof XRefEntryException && !recoveryMode) {
                 throw new XRefParseException();
+            }
             warn(`checkLastPage - invalid /Pages tree /Count: ${numPages}.`);
             let pagesTree;
             try {
                 pagesTree = await catalog.getAllPageDicts(recoveryMode);
             }
             catch (reasonAll) {
-                if (reasonAll instanceof XRefEntryException && !recoveryMode)
+                if (reasonAll instanceof XRefEntryException && !recoveryMode) {
                     throw new XRefParseException();
+                }
                 catalog.setActualNumPages(1);
                 return;
             }
@@ -1190,8 +1311,8 @@ export class PDFDocument {
         }
         promises.get(name).push(AnnotationFactory.create(this.xref, fieldRef, this.pdfManager, this.#localIdFactory, //kkkk bug? (never set)
         /* collectFields */ true)
-            .then(annotation => annotation && annotation.getFieldObject())
-            .catch(reason => {
+            .then((annotation) => annotation && annotation.getFieldObject())
+            .catch((reason) => {
             warn(`#collectFieldObjects: "${reason}".`);
             return undefined;
         }));
@@ -1213,8 +1334,8 @@ export class PDFDocument {
         }
         const allPromises = [];
         for (const [name, promises] of fieldPromises) {
-            allPromises.push(Promise.all(promises).then(fields => {
-                fields = fields.filter(field => !!field);
+            allPromises.push(Promise.all(promises).then((fields) => {
+                fields = fields.filter((field) => !!field);
                 if (fields.length > 0) {
                     allFields[name] = fields;
                 }
@@ -1234,10 +1355,11 @@ export class PDFDocument {
             this.pdfManager.ensureCatalog("jsActions"),
             this.pdfManager.ensureDoc("fieldObjects"),
         ]);
-        if (catalogJsActions)
+        if (catalogJsActions) {
             return true;
+        }
         if (fieldObjects) {
-            return Object.values(fieldObjects).some(fieldObject => fieldObject.some(object => object.actions !== undefined));
+            return Object.values(fieldObjects).some((fieldObject) => fieldObject.some((object) => object.actions !== undefined));
         }
         return false;
     }
@@ -1262,5 +1384,5 @@ export class PDFDocument {
         return shadow(this, "calculationOrderIds", ids);
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=document.js.map

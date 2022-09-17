@@ -65,9 +65,10 @@ export class PDFDataTransportStream {
             }
         }
         else {
-            const found = this.#rangeReaders.some(rangeReader => {
-                if (rangeReader._begin !== args.begin)
+            const found = this.#rangeReaders.some((rangeReader) => {
+                if (rangeReader._begin !== args.begin) {
                     return false;
+                }
                 rangeReader._enqueue(buffer);
                 return true;
             });
@@ -104,23 +105,24 @@ export class PDFDataTransportStream {
             this.#rangeReaders.splice(i, 1);
         }
     }
-    /** @implements */
+    /** @implement */
     getFullReader() {
         assert(!this._fullRequestReader, "PDFDataTransportStream.getFullReader can only be called once.");
         const queuedChunks = this.#queuedChunks;
         this.#queuedChunks = undefined;
         return new PDFDataTransportStreamReader(this, queuedChunks, this.#progressiveDone, this._contentDispositionFilename);
     }
-    /** @implements */
+    /** @implement */
     getRangeReader(begin, end) {
-        if (end <= this._progressiveDataLength)
+        if (end <= this._progressiveDataLength) {
             return undefined;
+        }
         const reader = new PDFDataTransportStreamRangeReader(this, begin, end);
         this.#pdfDataRangeTransport.requestDataRange(begin, end);
         this.#rangeReaders.push(reader);
         return reader;
     }
-    /** @implements */
+    /** @implement */
     cancelAllRequests(reason) {
         if (this._fullRequestReader) {
             this._fullRequestReader.cancel(reason);
@@ -135,14 +137,18 @@ class PDFDataTransportStreamReader {
     #stream;
     #done;
     #filename;
-    /** @implements */
-    get filename() { return this.#filename; }
+    /** @implement */
+    get filename() {
+        return this.#filename;
+    }
     #queuedChunks;
     _loaded = 0;
     #requests = [];
     #headersReady = Promise.resolve();
-    get headersReady() { return this.#headersReady; }
-    /** @implements */
+    get headersReady() {
+        return this.#headersReady;
+    }
+    /** @implement */
     onProgress;
     constructor(stream, queuedChunks = undefined, progressiveDone = false, contentDispositionFilename) {
         this.#stream = stream;
@@ -157,9 +163,10 @@ class PDFDataTransportStreamReader {
         stream._fullRequestReader = this;
     }
     _enqueue(chunk) {
-        if (this.#done)
+        if (this.#done) {
             // Ignore new data.
             return;
+        }
         if (this.#requests.length > 0) {
             const requestCapability = this.#requests.shift();
             requestCapability.resolve({ value: chunk, done: false });
@@ -175,23 +182,24 @@ class PDFDataTransportStreamReader {
     get isStreamingSupported() {
         return this.#stream._isStreamingSupported;
     }
-    /** @implements */
+    /** @implement */
     get contentLength() {
         return this.#stream._contentLength;
     }
-    /** @implements */
+    /** @implement */
     async read() {
         if (this.#queuedChunks.length > 0) {
             const chunk = this.#queuedChunks.shift();
             return { value: chunk, done: false };
         }
-        if (this.#done)
+        if (this.#done) {
             return { value: undefined, done: true };
+        }
         const requestCapability = createPromiseCap();
         this.#requests.push(requestCapability);
         return requestCapability.promise;
     }
-    /** @implements */
+    /** @implement */
     cancel(reason) {
         this.#done = true;
         for (const requestCapability of this.#requests) {
@@ -200,8 +208,9 @@ class PDFDataTransportStreamReader {
         this.#requests.length = 0;
     }
     progressiveDone() {
-        if (this.#done)
+        if (this.#done) {
             return;
+        }
         this.#done = true;
     }
 }
@@ -212,19 +221,22 @@ class PDFDataTransportStreamRangeReader {
     #queuedChunk;
     #requests = [];
     #done = false;
-    /** @implements */
+    /** @implement */
     onProgress;
-    /** @implements */
-    get isStreamingSupported() { return false; }
+    /** @implement */
+    get isStreamingSupported() {
+        return false;
+    }
     constructor(stream, begin, end) {
         this.#stream = stream;
         this._begin = begin;
         this._end = end;
     }
     _enqueue(chunk) {
-        if (this.#done)
+        if (this.#done) {
             // ignore new data
             return;
+        }
         if (this.#requests.length === 0) {
             this.#queuedChunk = chunk;
         }
@@ -239,7 +251,7 @@ class PDFDataTransportStreamRangeReader {
         this.#done = true;
         this.#stream._removeRangeReader(this);
     }
-    /** @implements */
+    /** @implement */
     async read() {
         if (this.#queuedChunk) {
             const chunk = this.#queuedChunk;
@@ -253,7 +265,7 @@ class PDFDataTransportStreamRangeReader {
         this.#requests.push(requestCapability);
         return requestCapability.promise;
     }
-    /** @implements */
+    /** @implement */
     cancel(reason) {
         this.#done = true;
         for (const requestCapability of this.#requests) {
@@ -263,5 +275,5 @@ class PDFDataTransportStreamRangeReader {
         this.#stream._removeRangeReader(this);
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=transport_stream.js.map

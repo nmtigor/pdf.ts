@@ -17,17 +17,20 @@
  * limitations under the License.
  */
 
-import { ConfigNamespace, type XFANsConfig } from "./config.js";
-import { ConnectionSetNamespace, type XFANsConnectionSet } from "./connection_set.js";
-import { DatasetsNamespace, type XFANsDatasets } from "./datasets.js";
-import { LocaleSetNamespace, type XFANsLocaleSet } from "./locale_set.js";
-import { type XFANsName } from "./namespaces.js";
-import { SignatureNamespace, type XFANsSignature } from "./signature.js";
-import { StylesheetNamespace, type XFANsStylesheet } from "./stylesheet.js";
-import { TemplateNamespace, type XFANsTemplate } from "./template.js";
-import { XdpNamespace, type XFANsXdp } from "./xdp.js";
-import { type XFANsXhtml, XhtmlNamespace } from "./xhtml.js";
-/*81---------------------------------------------------------------------------*/
+import { ConfigNamespace, type XFANsConfig } from "./config.ts";
+import {
+  ConnectionSetNamespace,
+  type XFANsConnectionSet,
+} from "./connection_set.ts";
+import { DatasetsNamespace, type XFANsDatasets } from "./datasets.ts";
+import { LocaleSetNamespace, type XFANsLocaleSet } from "./locale_set.ts";
+import { type XFANsName } from "./namespaces.ts";
+import { SignatureNamespace, type XFANsSignature } from "./signature.ts";
+import { StylesheetNamespace, type XFANsStylesheet } from "./stylesheet.ts";
+import { TemplateNamespace, type XFANsTemplate } from "./template.ts";
+import { XdpNamespace, type XFANsXdp } from "./xdp.ts";
+import { type XFANsXhtml, XhtmlNamespace } from "./xhtml.ts";
+/*80--------------------------------------------------------------------------*/
 
 export type XFAKnownNs =
   | XFANsConfig
@@ -38,11 +41,10 @@ export type XFAKnownNs =
   | XFANsStylesheet
   | XFANsTemplate
   | XFANsXdp
-  | XFANsXhtml
-;
+  | XFANsXhtml;
 
-export const NamespaceSetUp:{
-  [_ in XFANsName]?:XFAKnownNs
+export const NamespaceSetUp: {
+  [_ in XFANsName]?: XFAKnownNs;
 } = {
   config: ConfigNamespace,
   connectionSet: ConnectionSetNamespace,
@@ -54,4 +56,4 @@ export const NamespaceSetUp:{
   xdp: XdpNamespace,
   xhtml: XhtmlNamespace,
 };
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

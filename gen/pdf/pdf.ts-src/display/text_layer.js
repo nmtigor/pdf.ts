@@ -17,7 +17,8 @@
  */
 import { html, span } from "../../../lib/dom.js";
 import { createPromiseCap } from "../../../lib/promisecap.js";
-import { AbortException, Util } from "../shared/util.js";
+import { AbortException, Util, } from "../shared/util.js";
+import { deprecated } from "./display_utils.js";
 var Ns_renderTextLayer;
 (function (Ns_renderTextLayer) {
     const MAX_TEXT_DIVS_TO_RENDER = 100000;
@@ -93,12 +94,14 @@ var Ns_renderTextLayer;
                 paddingRight: 0,
                 paddingTop: 0,
                 scale: 1,
+                fontSize: 0,
             }
             : {
                 angle: 0,
                 canvasWidth: 0,
                 hasText: geom.str !== "",
                 hasEOL: geom.hasEOL,
+                fontSize: 0,
             };
         task._textDivs.push(textDiv);
         const tx = Util.transform(task._viewport.transform, geom.transform);
@@ -124,6 +127,7 @@ var Ns_renderTextLayer;
         textDiv.style.top = `${top}px`;
         textDiv.style.fontSize = `${fontHeight}px`;
         textDiv.style.fontFamily = style.fontFamily;
+        textDivProperties.fontSize = fontHeight;
         // Keeps screen readers from pausing on every new text span.
         textDiv.setAttribute("role", "presentation");
         textDiv.textContent = geom.str;
@@ -141,16 +145,16 @@ var Ns_renderTextLayer;
         // little effect on text highlighting. This makes scrolling on docs with
         // lots of such divs a lot faster.
         let shouldScaleText = false;
-        if (geom.str.length > 1
-            || (task._enhanceTextSelection && AllWhitespaceRegexp.test(geom.str))) {
+        if (geom.str.length > 1 ||
+            (task._enhanceTextSelection && AllWhitespaceRegexp.test(geom.str))) {
             shouldScaleText = true;
         }
         else if (geom.str !== " " && geom.transform[0] !== geom.transform[3]) {
             const absScaleX = Math.abs(geom.transform[0]), absScaleY = Math.abs(geom.transform[3]);
             // When the horizontal/vertical scaling differs significantly, also scale
             // even single-char text to improve highlighting (fixes issue11713.pdf).
-            if (absScaleX !== absScaleY
-                && Math.max(absScaleX, absScaleY) / Math.min(absScaleX, absScaleY) > 1.5) {
+            if (absScaleX !== absScaleY &&
+                Math.max(absScaleX, absScaleY) / Math.min(absScaleX, absScaleY) > 1.5) {
                 shouldScaleText = true;
             }
         }
@@ -172,7 +176,8 @@ var Ns_renderTextLayer;
                 angleCos = Math.cos(angle);
                 angleSin = Math.sin(angle);
             }
-            const divWidth = (style.vertical ? geom.height : geom.width) * task._viewport.scale;
+            const divWidth = (style.vertical ? geom.height : geom.width) *
+                task._viewport.scale;
             const divHeight = fontHeight;
             let m, b;
             if (angle !== 0) {
@@ -245,7 +250,12 @@ var Ns_renderTextLayer;
             const e = expanded[i], b = bounds[i];
             const m = b.m, c = m[0], s = m[1];
             // Finding intersections with expanded box.
-            const points = [[0, 0], [0, b.size[1]], [b.size[0], 0], b.size];
+            const points = [
+                [0, 0],
+                [0, b.size[1]],
+                [b.size[0], 0],
+                b.size,
+            ];
             const ts = new Float64Array(64);
             for (let j = 0, jj = points.length; j < jj; j++) {
                 const t = Util.applyTransform(points[j], m);
@@ -301,7 +311,7 @@ var Ns_renderTextLayer;
         }
         // Rotating on 90 degrees and extending extended boxes. Reusing the bounds
         // array and objects.
-        boxes.map(function (box, i) {
+        boxes.map((box, i) => {
             const e = expanded[i], b = bounds[i];
             b.x1 = box.top;
             b.y1 = width - e.right;
@@ -360,10 +370,9 @@ var Ns_renderTextLayer;
                     // In the middle of the previous element, new x shall be at the
                     // boundary start. Extending if further if the affected boundary
                     // placed on top of the current one.
-                    xNew =
-                        affectedBoundary.index > boundary.index
-                            ? affectedBoundary.x1New
-                            : boundary.x1;
+                    xNew = affectedBoundary.index > boundary.index
+                        ? affectedBoundary.x1New
+                        : boundary.x1;
                 }
                 else if (affectedBoundary.x2New === undefined) {
                     // We have some space in between, new x in middle will be a fair
@@ -409,10 +418,12 @@ var Ns_renderTextLayer;
                 horizonPart = horizon[q];
                 affectedBoundary = horizonPart.boundary;
                 // Checking which boundary will be visible.
-                const useBoundary = affectedBoundary.x2 > boundary.x2 ? affectedBoundary : boundary;
+                const useBoundary = affectedBoundary.x2 > boundary.x2
+                    ? affectedBoundary
+                    : boundary;
                 if (lastBoundary === useBoundary) {
                     // Merging with previous.
-                    changedHorizon[changedHorizon.length - 1].end = horizonPart.end;
+                    changedHorizon.at(-1).end = horizonPart.end;
                 }
                 else {
                     changedHorizon.push({
@@ -432,7 +443,7 @@ var Ns_renderTextLayer;
                 });
             }
             if (boundary.y2 < horizon[j].end) {
-                changedHorizon[changedHorizon.length - 1].end = boundary.y2;
+                changedHorizon.at(-1).end = boundary.y2;
                 changedHorizon.push({
                     start: boundary.y2,
                     end: horizon[j].end,
@@ -462,7 +473,7 @@ var Ns_renderTextLayer;
                     affectedBoundary.x2New = maxXNew;
                 }
             }
-            Array.prototype.splice.apply(horizon, [i, j - i + 1].concat(changedHorizon));
+            Array.prototype.splice.apply(horizon, [i, j - i + 1, ...changedHorizon]);
         }
         // Set new x2 for all unset boundaries.
         for (const horizonPart of horizon) {
@@ -485,8 +496,9 @@ var Ns_renderTextLayer;
         _textContentItemsStr;
         _enhanceTextSelection;
         _fontInspectorEnabled;
+        _devicePixelRatio;
         _reader;
-        _layoutTextLastFontSize = null;
+        _layoutTextLastFontSize;
         _layoutTextLastFontFamily = null;
         _layoutTextCtx = null;
         _textDivProperties = new WeakMap();
@@ -496,6 +508,9 @@ var Ns_renderTextLayer;
         #renderTimer;
         _bounds = [];
         constructor({ textContent, textContentStream, container, viewport, textDivs, textContentItemsStr, enhanceTextSelection, }) {
+            if (enhanceTextSelection) {
+                deprecated("The `enhanceTextSelection` functionality will be removed in the future.");
+            }
             this._textContent = textContent;
             this._textContentStream = textContentStream;
             this._container = container;
@@ -505,6 +520,7 @@ var Ns_renderTextLayer;
             this._textContentItemsStr = textContentItemsStr || [];
             this._enhanceTextSelection = !!enhanceTextSelection;
             this._fontInspectorEnabled = !!globalThis.FontInspector?.enabled;
+            this._devicePixelRatio = globalThis.devicePixelRatio || 1;
             // Always clean-up the temporary canvas once rendering is no longer pending.
             this._capability.promise
                 .finally(() => {
@@ -551,18 +567,19 @@ var Ns_renderTextLayer;
         #processItems(items, styleCache) {
             for (let i = 0, len = items.length; i < len; i++) {
                 if (items[i].str === undefined) {
-                    if (items[i].type === "beginMarkedContentProps"
-                        || items[i].type === "beginMarkedContent") {
+                    if (items[i].type === "beginMarkedContentProps" ||
+                        items[i].type === "beginMarkedContent") {
                         const parent = this._container;
                         this._container = html("span");
                         this._container.classList.add("markedContent");
                         if (items[i].id !== undefined) {
                             this._container.setAttribute("id", `${items[i].id}`);
                         }
-                        parent.appendChild(this._container);
+                        parent.append(this._container);
                     }
                     else if (items[i].type === "endMarkedContent") {
-                        this._container = this._container.parentNode;
+                        this._container = this._container
+                            .parentNode;
                     }
                     continue;
                 }
@@ -577,18 +594,19 @@ var Ns_renderTextLayer;
             const textDivProperties = this._textDivProperties.get(textDiv);
             let transform = "";
             if (textDivProperties.canvasWidth !== 0 && textDivProperties.hasText) {
-                const { fontSize, fontFamily } = textDiv.style;
+                const { fontFamily } = textDiv.style;
+                const { fontSize } = textDivProperties;
                 // Only build font string and set to context if different from last.
-                if (fontSize !== this._layoutTextLastFontSize
-                    || fontFamily !== this._layoutTextLastFontFamily) {
-                    this._layoutTextCtx.font = `${fontSize} ${fontFamily}`;
+                if (fontSize !== this._layoutTextLastFontSize ||
+                    fontFamily !== this._layoutTextLastFontFamily) {
+                    this._layoutTextCtx.font = `${fontSize * this._devicePixelRatio}px ${fontFamily}`;
                     this._layoutTextLastFontSize = fontSize;
                     this._layoutTextLastFontFamily = fontFamily;
                 }
                 // Only measure the width for multi-char text divs, see `appendText`.
                 const { width } = this._layoutTextCtx.measureText(textDiv.textContent);
                 if (width > 0) {
-                    const scale = textDivProperties.canvasWidth / width;
+                    const scale = (this._devicePixelRatio * textDivProperties.canvasWidth) / width;
                     if (this._enhanceTextSelection) {
                         textDivProperties.scale = scale;
                     }
@@ -605,12 +623,12 @@ var Ns_renderTextLayer;
                 textDiv.style.transform = transform;
             }
             if (textDivProperties.hasText) {
-                this._container.appendChild(textDiv);
+                this._container.append(textDiv);
             }
             if (textDivProperties.hasEOL) {
-                const br = document.createElement("br");
+                const br = html("br");
                 br.setAttribute("role", "presentation");
-                this._container.appendChild(br);
+                this._container.append(br);
             }
         }
         /**
@@ -663,8 +681,9 @@ var Ns_renderTextLayer;
             }, this._capability.reject);
         }
         expandTextDivs(expandDivs = false) {
-            if (!this._enhanceTextSelection || !this._renderingDone)
+            if (!this._enhanceTextSelection || !this._renderingDone) {
                 return;
+            }
             if (this._bounds !== undefined) {
                 expand(this);
                 this._bounds = undefined;
@@ -673,8 +692,9 @@ var Ns_renderTextLayer;
             for (let i = 0, ii = this._textDivs.length; i < ii; i++) {
                 const div = this._textDivs[i];
                 const divProps = this._textDivProperties.get(div);
-                if (!divProps.hasText)
+                if (!divProps.hasText) {
                     continue;
+                }
                 if (expandDivs) {
                     transformBuf.length = 0;
                     paddingBuf.length = 0;
@@ -737,5 +757,5 @@ var Ns_renderTextLayer;
 })(Ns_renderTextLayer || (Ns_renderTextLayer = {}));
 export var TextLayerRenderTask = Ns_renderTextLayer.TextLayerRenderTask;
 export var renderTextLayer = Ns_renderTextLayer.renderTextLayer;
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=text_layer.js.map

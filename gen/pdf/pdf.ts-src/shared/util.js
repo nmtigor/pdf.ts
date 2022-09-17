@@ -1,11 +1,30 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
+/* Copyright 2012 Mozilla Foundation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import { _PDFDEV } from "../../../global.js";
 import { isObjectLike } from "../../../lib/jslang.js";
 import { assert, warn as warn_0 } from "../../../lib/util/trace.js";
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 export const IDENTITY_MATRIX = [1, 0, 0, 1, 0, 0];
 export const FONT_IDENTITY_MATRIX = [0.001, 0, 0, 0.001, 0, 0];
+// Represent the percentage of the height of a single-line field over
+// the font size. Acrobat seems to use this value.
+export const LINE_FACTOR = 1.35;
+export const LINE_DESCENT_FACTOR = 0.35;
 /**
  * Refer to the `WorkerTransport.getRenderingIntent`-method in the API, to see
  * how these flags are being used:
@@ -35,6 +54,23 @@ export var AnnotationMode;
     AnnotationMode[AnnotationMode["ENABLE_FORMS"] = 2] = "ENABLE_FORMS";
     AnnotationMode[AnnotationMode["ENABLE_STORAGE"] = 3] = "ENABLE_STORAGE";
 })(AnnotationMode || (AnnotationMode = {}));
+export const AnnotationEditorPrefix = "pdfjs_internal_editor_";
+export var AnnotationEditorType;
+(function (AnnotationEditorType) {
+    AnnotationEditorType[AnnotationEditorType["DISABLE"] = -1] = "DISABLE";
+    AnnotationEditorType[AnnotationEditorType["NONE"] = 0] = "NONE";
+    AnnotationEditorType[AnnotationEditorType["FREETEXT"] = 3] = "FREETEXT";
+    AnnotationEditorType[AnnotationEditorType["INK"] = 15] = "INK";
+})(AnnotationEditorType || (AnnotationEditorType = {}));
+export var AnnotationEditorParamsType;
+(function (AnnotationEditorParamsType) {
+    AnnotationEditorParamsType[AnnotationEditorParamsType["FREETEXT_SIZE"] = 1] = "FREETEXT_SIZE";
+    AnnotationEditorParamsType[AnnotationEditorParamsType["FREETEXT_COLOR"] = 2] = "FREETEXT_COLOR";
+    AnnotationEditorParamsType[AnnotationEditorParamsType["FREETEXT_OPACITY"] = 3] = "FREETEXT_OPACITY";
+    AnnotationEditorParamsType[AnnotationEditorParamsType["INK_COLOR"] = 11] = "INK_COLOR";
+    AnnotationEditorParamsType[AnnotationEditorParamsType["INK_THICKNESS"] = 12] = "INK_THICKNESS";
+    AnnotationEditorParamsType[AnnotationEditorParamsType["INK_OPACITY"] = 13] = "INK_OPACITY";
+})(AnnotationEditorParamsType || (AnnotationEditorParamsType = {}));
 // Permission flags from Table 22, Section 7.6.3.2 of the PDF specification.
 export var PermissionFlag;
 (function (PermissionFlag) {
@@ -95,7 +131,6 @@ export var AnnotationType;
     AnnotationType[AnnotationType["THREED"] = 25] = "THREED";
     AnnotationType[AnnotationType["REDACT"] = 26] = "REDACT";
 })(AnnotationType || (AnnotationType = {}));
-;
 // const AnnotationStateModelType = {
 //   MARKED: "Marked",
 //   REVIEW: "Review",
@@ -116,8 +151,8 @@ export var AnnotationReplyType;
     AnnotationReplyType["GROUP"] = "Group";
     AnnotationReplyType["REPLY"] = "R";
 })(AnnotationReplyType || (AnnotationReplyType = {}));
-;
 // PDF 1.7 Table 165
+// deno-fmt-ignore
 export var AnnotationFlag;
 (function (AnnotationFlag) {
     AnnotationFlag[AnnotationFlag["INVISIBLE"] = 1] = "INVISIBLE";
@@ -131,7 +166,6 @@ export var AnnotationFlag;
     AnnotationFlag[AnnotationFlag["TOGGLENOVIEW"] = 256] = "TOGGLENOVIEW";
     AnnotationFlag[AnnotationFlag["LOCKEDCONTENTS"] = 512] = "LOCKEDCONTENTS";
 })(AnnotationFlag || (AnnotationFlag = {}));
-;
 export var AnnotationFieldFlag;
 (function (AnnotationFieldFlag) {
     AnnotationFieldFlag[AnnotationFieldFlag["READONLY"] = 1] = "READONLY";
@@ -165,36 +199,33 @@ export var AnnotationBorderStyleType;
     AnnotationBorderStyleType[AnnotationBorderStyleType["INSET"] = 4] = "INSET";
     AnnotationBorderStyleType[AnnotationBorderStyleType["UNDERLINE"] = 5] = "UNDERLINE";
 })(AnnotationBorderStyleType || (AnnotationBorderStyleType = {}));
-export var AnnotationActionEventType;
-(function (AnnotationActionEventType) {
-    AnnotationActionEventType["E"] = "Mouse Enter";
-    AnnotationActionEventType["X"] = "Mouse Exit";
-    AnnotationActionEventType["D"] = "Mouse Down";
-    AnnotationActionEventType["U"] = "Mouse Up";
-    AnnotationActionEventType["Fo"] = "Focus";
-    AnnotationActionEventType["Bl"] = "Blur";
-    AnnotationActionEventType["PO"] = "PageOpen";
-    AnnotationActionEventType["PC"] = "PageClose";
-    AnnotationActionEventType["PV"] = "PageVisible";
-    AnnotationActionEventType["PI"] = "PageInvisible";
-    AnnotationActionEventType["K"] = "Keystroke";
-    AnnotationActionEventType["F"] = "Format";
-    AnnotationActionEventType["V"] = "Validate";
-    AnnotationActionEventType["C"] = "Calculate";
-})(AnnotationActionEventType || (AnnotationActionEventType = {}));
-export var DocumentActionEventType;
-(function (DocumentActionEventType) {
-    DocumentActionEventType["WC"] = "WillClose";
-    DocumentActionEventType["WS"] = "WillSave";
-    DocumentActionEventType["DS"] = "DidSave";
-    DocumentActionEventType["WP"] = "WillPrint";
-    DocumentActionEventType["DP"] = "DidPrint";
-})(DocumentActionEventType || (DocumentActionEventType = {}));
-export var PageActionEventType;
-(function (PageActionEventType) {
-    PageActionEventType["O"] = "PageOpen";
-    PageActionEventType["C"] = "PageClose";
-})(PageActionEventType || (PageActionEventType = {}));
+export const AnnotationActionEventType = {
+    E: "Mouse Enter",
+    X: "Mouse Exit",
+    D: "Mouse Down",
+    U: "Mouse Up",
+    Fo: "Focus",
+    Bl: "Blur",
+    PO: "PageOpen",
+    PC: "PageClose",
+    PV: "PageVisible",
+    PI: "PageInvisible",
+    K: "Keystroke",
+    F: "Format",
+    V: "Validate",
+    C: "Calculate",
+};
+export const DocumentActionEventType = {
+    WC: "WillClose",
+    WS: "WillSave",
+    DS: "DidSave",
+    WP: "WillPrint",
+    DP: "DidPrint",
+};
+export const PageActionEventType = {
+    O: "PageOpen",
+    C: "PageClose",
+};
 export var StreamType;
 (function (StreamType) {
     StreamType["UNKNOWN"] = "UNKNOWN";
@@ -235,7 +266,6 @@ export var CMapCompressionType;
     CMapCompressionType[CMapCompressionType["BINARY"] = 1] = "BINARY";
     CMapCompressionType[CMapCompressionType["STREAM"] = 2] = "STREAM";
 })(CMapCompressionType || (CMapCompressionType = {}));
-;
 // All the possible operations for an operator list.
 export var OPS;
 (function (OPS) {
@@ -318,7 +348,9 @@ export var OPS;
     OPS[OPS["paintFormXObjectEnd"] = 75] = "paintFormXObjectEnd";
     OPS[OPS["beginGroup"] = 76] = "beginGroup";
     OPS[OPS["endGroup"] = 77] = "endGroup";
+    /** @deprecated unused */
     OPS[OPS["beginAnnotations"] = 78] = "beginAnnotations";
+    /** @deprecated unused */
     OPS[OPS["endAnnotations"] = 79] = "endAnnotations";
     OPS[OPS["beginAnnotation"] = 80] = "beginAnnotation";
     OPS[OPS["endAnnotation"] = 81] = "endAnnotation";
@@ -363,16 +395,18 @@ export var UNSUPPORTED_FEATURES;
     UNSUPPORTED_FEATURES["errorMarkedContent"] = "errorMarkedContent";
     UNSUPPORTED_FEATURES["errorContentSubStream"] = "errorContentSubStream";
 })(UNSUPPORTED_FEATURES || (UNSUPPORTED_FEATURES = {}));
-;
 export var PasswordResponses;
 (function (PasswordResponses) {
     PasswordResponses[PasswordResponses["NEED_PASSWORD"] = 1] = "NEED_PASSWORD";
     PasswordResponses[PasswordResponses["INCORRECT_PASSWORD"] = 2] = "INCORRECT_PASSWORD";
 })(PasswordResponses || (PasswordResponses = {}));
-;
 let verbosity = VerbosityLevel.WARNINGS;
-export function setVerbosityLevel(level) { verbosity = level; }
-export function getVerbosityLevel() { return verbosity; }
+export function setVerbosityLevel(level) {
+    verbosity = level;
+}
+export function getVerbosityLevel() {
+    return verbosity;
+}
 /**
  * A notice for devs. These are good for things that are helpful to devs, such
  * as warning that Workers were disabled, which is important to devs but not
@@ -418,8 +452,9 @@ function _isValidProtocol(url) {
  * @return Either a valid {URL}, or `null` otherwise.
  */
 export function createValidAbsoluteUrl(url, baseUrl, options) {
-    if (!url)
+    if (!url) {
         return null;
+    }
     try {
         if (options && typeof url === "string") {
             // Let URLs beginning with "www." default to using the "http://" protocol.
@@ -451,7 +486,9 @@ export function createValidAbsoluteUrl(url, baseUrl, options) {
     return null;
 }
 export function shadow(obj, prop, value) {
-    assert(prop in obj, `shadow: Property "${prop && prop.toString()}" not found in object.`);
+    /*#static*/  {
+        assert(prop in obj, `shadow: Property "${prop && prop.toString()}" not found in object.`);
+    }
     Object.defineProperty(obj, prop, {
         value,
         enumerable: true,
@@ -542,10 +579,12 @@ export function stringToBytes(str) {
  */
 // eslint-disable-next-line consistent-return
 export function arrayByteLength(arr) {
-    if (arr.length !== undefined)
+    if (arr.length !== undefined) {
         return arr.length;
-    if (arr.byteLength !== undefined)
+    }
+    if (arr.byteLength !== undefined) {
         return arr.byteLength;
+    }
     assert(0, "Invalid argument for arrayByteLength");
     return 0;
 }
@@ -581,12 +620,9 @@ export function arraysToBytes(arr) {
     return data;
 }
 export function string32(value) {
-    // if (
-    //   typeof PDFJSDev === "undefined" ||
-    //   PDFJSDev.test("!PRODUCTION || TESTING")
-    // ) {
-    assert(typeof value === "number" && Math.abs(value) < 2 ** 32, `string32: Unexpected input "${value}".`);
-    // }
+    /*#static*/  {
+        assert(typeof value === "number" && Math.abs(value) < 2 ** 32, `string32: Unexpected input "${value}".`);
+    }
     return String.fromCharCode((value >> 24) & 0xff, (value >> 16) & 0xff, (value >> 8) & 0xff, value & 0xff);
 }
 export function objectSize(obj) {
@@ -629,7 +665,7 @@ export class FeatureTest {
         return shadow(this, "isOffscreenCanvasSupported", typeof globalThis.OffscreenCanvas !== "undefined");
     }
 }
-const hexNumbers = [...Array(256).keys()].map(n => n.toString(16).padStart(2, "0"));
+const hexNumbers = [...Array(256).keys()].map((n) => n.toString(16).padStart(2, "0"));
 export class Util {
     static makeHexColor(r, g, b) {
         return `#${hexNumbers[r]}${hexNumbers[g]}${hexNumbers[b]}`;
@@ -807,8 +843,9 @@ export class Util {
                 c = 3 * y1 - 3 * y0;
             }
             if (Math.abs(a) < 1e-12) {
-                if (Math.abs(b) < 1e-12)
+                if (Math.abs(b) < 1e-12) {
                     continue;
+                }
                 t = -c / b;
                 if (0 < t && t < 1) {
                     tvalues.push(t);
@@ -817,8 +854,9 @@ export class Util {
             }
             b2ac = b * b - 4 * c * a;
             sqrtb2ac = Math.sqrt(b2ac);
-            if (b2ac < 0)
+            if (b2ac < 0) {
                 continue;
+            }
             t1 = (-b + sqrtb2ac) / (2 * a);
             if (0 < t1 && t1 < 1) {
                 tvalues.push(t1);
@@ -833,16 +871,14 @@ export class Util {
         while (j--) {
             t = tvalues[j];
             mt = 1 - t;
-            bounds[0][j] =
-                mt * mt * mt * x0 +
-                    3 * mt * mt * t * x1 +
-                    3 * mt * t * t * x2 +
-                    t * t * t * x3;
-            bounds[1][j] =
-                mt * mt * mt * y0 +
-                    3 * mt * mt * t * y1 +
-                    3 * mt * t * t * y2 +
-                    t * t * t * y3;
+            bounds[0][j] = mt * mt * mt * x0 +
+                3 * mt * mt * t * x1 +
+                3 * mt * t * t * x2 +
+                t * t * t * x3;
+            bounds[1][j] = mt * mt * mt * y0 +
+                3 * mt * mt * t * y1 +
+                3 * mt * t * t * y2 +
+                t * t * t * y3;
         }
         bounds[0][jlen] = x0;
         bounds[1][jlen] = y0;
@@ -858,15 +894,167 @@ export class Util {
     }
 }
 const PDFStringTranslateTable = [
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x2d8,
-    0x2c7, 0x2c6, 0x2d9, 0x2dd, 0x2db, 0x2da, 0x2dc, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0x2022, 0x2020, 0x2021, 0x2026, 0x2014, 0x2013, 0x192,
-    0x2044, 0x2039, 0x203a, 0x2212, 0x2030, 0x201e, 0x201c, 0x201d, 0x2018,
-    0x2019, 0x201a, 0x2122, 0xfb01, 0xfb02, 0x141, 0x152, 0x160, 0x178, 0x17d,
-    0x131, 0x142, 0x153, 0x161, 0x17e, 0, 0x20ac,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0x2d8,
+    0x2c7,
+    0x2c6,
+    0x2d9,
+    0x2dd,
+    0x2db,
+    0x2da,
+    0x2dc,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0x2022,
+    0x2020,
+    0x2021,
+    0x2026,
+    0x2014,
+    0x2013,
+    0x192,
+    0x2044,
+    0x2039,
+    0x203a,
+    0x2212,
+    0x2030,
+    0x201e,
+    0x201c,
+    0x201d,
+    0x2018,
+    0x2019,
+    0x201a,
+    0x2122,
+    0xfb01,
+    0xfb02,
+    0x141,
+    0x152,
+    0x160,
+    0x178,
+    0x17d,
+    0x131,
+    0x142,
+    0x153,
+    0x161,
+    0x17e,
+    0,
+    0x20ac,
 ];
 export function stringToPDFString(str) {
     if (str[0] >= "\xEF") {
@@ -903,7 +1091,7 @@ export function escapeString(str) {
     // replace "(", ")", "\n", "\r" and "\"
     // by "\(", "\)", "\\n", "\\r" and "\\"
     // in order to write it in a PDF file.
-    return str.replace(/([()\\\n\r])/g, match => {
+    return str.replace(/([()\\\n\r])/g, (match) => {
         if (match === "\n") {
             return "\\n";
         }
@@ -933,7 +1121,7 @@ export function utf8StringToString(str) {
 export function isArrayBuffer(v) {
     return typeof v === "object" && v?.byteLength !== undefined;
 }
-export function getModificationDate(date = new Date) {
+export function getModificationDate(date = new Date()) {
     const buffer = [
         date.getUTCFullYear().toString(),
         (date.getUTCMonth() + 1).toString().padStart(2, "0"),
@@ -944,5 +1132,5 @@ export function getModificationDate(date = new Date) {
     ];
     return buffer.join("");
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=util.js.map

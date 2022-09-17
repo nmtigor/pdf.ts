@@ -24,7 +24,7 @@ import { $buildXFAObject, NamespaceIds } from "./namespaces.js";
 import { searchNode } from "./som.js";
 import { getBBox, getColor, getFloat, getInteger, getKeyword, getMeasurement, getRatio, getRelevant, getStringOption, HTMLResult } from "./utils.js";
 import { $acceptWhitespace, $addHTML, $appendChild, $childrenToHTML, $clean, $cleanPage, $content, $data, $extra, $finalize, $flushHTML, $getAvailableSpace, $getChildren, $getContainedChildren, $getExtra, $getNextPage, $getParent, $getSubformParent, $getTemplateRoot, $globalData, $hasSettableValue, $ids, $isBindable, $isCDATAXml, $isSplittable, $isThereMoreWidth, $isTransparent, $isUsable, $namespaceId, $nodeName, $onChild, $onText, $popPara, $pushPara, $removeChild, $searchNode, $setSetAttributes, $setValue, $tabIndex, $text, $toHTML, $toPages, $toStyle, $uid, ContentObject, Option01, OptionObject, StringObject, XFAObject, XFAObjectArray } from "./xfa_object.js";
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 const TEMPLATE_NS_ID = NamespaceIds.template.id;
 const SVG_NS = "http://www.w3.org/2000/svg";
 // In case of lr-tb (and rl-tb) layouts, we try:
@@ -65,11 +65,13 @@ const IMAGES_HEADERS = [
     [[0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a], "image/png"],
 ];
 function getBorderDims(node) {
-    if (!node || !node.border)
+    if (!node || !node.border) {
         return { w: 0, h: 0 };
+    }
     const borderExtra = node.border[$getExtra]();
-    if (!borderExtra)
+    if (!borderExtra) {
         return { w: 0, h: 0 };
+    }
     return {
         w: borderExtra.widths[0] +
             borderExtra.widths[2] +
@@ -105,14 +107,18 @@ function* getContainedChildren(node) {
         yield child;
     }
 }
+function isRequired(node) {
+    return node.validate && node.validate.nullTest === "error";
+}
 function setTabIndex(node) {
     while (node) {
         if (!node.traversal) {
             node[$tabIndex] = node[$getParent]()[$tabIndex];
             return;
         }
-        if (node[$tabIndex])
+        if (node[$tabIndex]) {
             return;
+        }
         let next;
         for (const child of node.traversal[$getChildren]()) {
             if (child.operation === "next") {
@@ -127,8 +133,9 @@ function setTabIndex(node) {
         const root = node[$getTemplateRoot]();
         node[$tabIndex] = ++root[$tabIndex];
         const ref = root[$searchNode](next.ref, node);
-        if (!ref)
+        if (!ref) {
             return;
+        }
         node = ref[0];
     }
 }
@@ -169,13 +176,16 @@ function applyAssist(obj, attributes) {
     }
 }
 function ariaLabel(obj) {
-    if (!obj.assist)
+    if (!obj.assist) {
         return undefined;
+    }
     const assist = obj.assist;
-    if (assist.speak && assist.speak[$content] !== "")
+    if (assist.speak && assist.speak[$content] !== "") {
         return assist.speak[$content];
-    if (assist.toolTip)
+    }
+    if (assist.toolTip) {
         return assist.toolTip[$content];
+    }
     // TODO: support finding the related caption element. See xfa_bug1718037.pdf
     // for an example.
     return undefined;
@@ -212,17 +222,20 @@ function unsetFirstUnsplittable(node) {
     }
 }
 function handleBreak(node) {
-    if (node[$extra])
+    if (node[$extra]) {
         return false;
+    }
     node[$extra] = Object.create(null);
-    if (node.targetType === "auto")
+    if (node.targetType === "auto") {
         return false;
+    }
     const root = node[$getTemplateRoot]();
     let target;
     if (node.target) {
         const target_a = root[$searchNode](node.target, node[$getParent]());
-        if (!target_a)
+        if (!target_a) {
             return false;
+        }
         target = target_a[0];
     }
     const { currentPageArea, currentContentArea } = root[$extra];
@@ -269,8 +282,9 @@ function handleBreak(node) {
         index = contentAreas.indexOf(target) - 1;
         nextPageArea = pageArea === currentPageArea ? undefined : pageArea;
     }
-    else
+    else {
         return false;
+    }
     node[$extra].target = nextPageArea;
     node[$extra].index = index;
     return true;
@@ -310,25 +324,25 @@ class Arc extends XFAObject {
         this.circular = getInteger({
             data: attributes.circular,
             defaultValue: 0,
-            validate: x => x === 1,
+            validate: (x) => x === 1,
         });
         this.hand = getStringOption(attributes.hand, ["even", "left", "right"]);
         this.id = attributes.id || "";
         this.startAngle = getFloat({
             data: attributes.startAngle,
             defaultValue: 0,
-            validate: x => true,
+            validate: (x) => true,
         });
         this.sweepAngle = getFloat({
             data: attributes.sweepAngle,
             defaultValue: 360,
-            validate: x => true,
+            validate: (x) => true,
         });
         this.use = attributes.use || "";
         this.usehref = attributes.usehref || "";
     }
     [$toHTML]() {
-        const edge = this.edge ? this.edge : new Edge({});
+        const edge = this.edge || new Edge({});
         const edgeStyle = edge[$toStyle]();
         const style = Object.create(null);
         if (this.fill && this.fill.presence === "visible") {
@@ -428,7 +442,7 @@ export class Area extends XFAObject {
         this.colSpan = getInteger({
             data: attributes.colSpan,
             defaultValue: 1,
-            validate: n => n >= 1 || n === -1,
+            validate: (n) => n >= 1 || n === -1,
         });
         this.id = attributes.id || "";
         this.name = attributes.name || "";
@@ -443,8 +457,12 @@ export class Area extends XFAObject {
         // this set are in fact under parent subform.
         yield* getContainedChildren(this);
     }
-    [$isTransparent]() { return true; }
-    [$isBindable]() { return true; }
+    [$isTransparent]() {
+        return true;
+    }
+    [$isBindable]() {
+        return true;
+    }
     [$addHTML](html, bbox) {
         const [x, y, w, h] = bbox;
         this[$extra].width = Math.max(this[$extra].width, x + w);
@@ -487,8 +505,9 @@ export class Area extends XFAObject {
             include: true,
         });
         if (!result.success) {
-            if (result.isBreak())
+            if (result.isBreak()) {
                 return result;
+            }
             // Nothing to propose for the element which doesn't fit the
             // available space.
             delete this[$extra];
@@ -501,7 +520,12 @@ export class Area extends XFAObject {
             attributes,
             children,
         };
-        const bbox = [this.x, this.y, this[$extra].width, this[$extra].height];
+        const bbox = [
+            this.x,
+            this.y,
+            this[$extra].width,
+            this[$extra].height,
+        ];
         delete this[$extra];
         return HTMLResult.success(html, bbox);
     }
@@ -549,7 +573,7 @@ class Barcode extends XFAObject {
                 ? attributes.charEncoding.toLowerCase()
                 : "",
             defaultValue: "",
-            validate: k => [
+            validate: (k) => [
                 "utf-8",
                 "big-five",
                 "fontspecific",
@@ -573,12 +597,12 @@ class Barcode extends XFAObject {
         this.dataColumnCount = getInteger({
             data: attributes.dataColumnCount,
             defaultValue: -1,
-            validate: x => x >= 0,
+            validate: (x) => x >= 0,
         });
         this.dataLength = getInteger({
             data: attributes.dataLength,
             defaultValue: -1,
-            validate: x => x >= 0,
+            validate: (x) => x >= 0,
         });
         this.dataPrep = getStringOption(attributes.dataPrep, [
             "none",
@@ -587,13 +611,13 @@ class Barcode extends XFAObject {
         this.dataRowCount = getInteger({
             data: attributes.dataRowCount,
             defaultValue: -1,
-            validate: x => x >= 0,
+            validate: (x) => x >= 0,
         });
         this.endChar = attributes.endChar || "";
         this.errorCorrectionLevel = getInteger({
             data: attributes.errorCorrectionLevel,
             defaultValue: -1,
-            validate: x => x >= 0 && x <= 8,
+            validate: (x) => x >= 0 && x <= 8,
         });
         this.id = attributes.id || "";
         this.moduleHeight = getMeasurement(attributes.moduleHeight, "5mm");
@@ -601,7 +625,7 @@ class Barcode extends XFAObject {
         this.printCheckDigit = getInteger({
             data: attributes.printCheckDigit,
             defaultValue: 0,
-            validate: x => x === 1,
+            validate: (x) => x === 1,
         });
         this.rowColumnRatio = getRatio(attributes.rowColumnRatio);
         this.startChar = attributes.startChar || "";
@@ -615,7 +639,7 @@ class Barcode extends XFAObject {
         this.truncate = getInteger({
             data: attributes.truncate,
             defaultValue: 0,
-            validate: x => x === 1,
+            validate: (x) => x === 1,
         });
         this.type = getStringOption(attributes.type ? attributes.type.toLowerCase() : "", [
             "aztec",
@@ -774,12 +798,12 @@ export class Border extends XFAObject {
         if (!this[$extra]) {
             const edges = this.edge.children.slice();
             if (edges.length < 4) {
-                const defaultEdge = edges[edges.length - 1] || new Edge({});
+                const defaultEdge = edges.at(-1) || new Edge({});
                 for (let i = edges.length; i < 4; i++) {
                     edges.push(defaultEdge);
                 }
             }
-            const widths = edges.map(edge => edge.thickness);
+            const widths = edges.map((edge) => edge.thickness);
             const insets = [0, 0, 0, 0];
             if (this.margin) {
                 insets[0] = this.margin.topInset;
@@ -794,7 +818,7 @@ export class Border extends XFAObject {
     [$toStyle]() {
         // TODO: incomplete (hand).
         const { edges } = this[$getExtra]();
-        const edgeStyles = edges.map(node => {
+        const edgeStyles = edges.map((node) => {
             const style = node[$toStyle]();
             style.color = style.color || "#000000";
             return style;
@@ -806,15 +830,16 @@ export class Border extends XFAObject {
         if (this.fill?.presence === "visible") {
             Object.assign(style, this.fill[$toStyle]());
         }
-        if (this.corner.children.some(node => node.radius !== 0)) {
-            const cornerStyles = this.corner.children.map(node => node[$toStyle]());
+        if (this.corner.children.some((node) => node.radius !== 0)) {
+            const cornerStyles = this.corner.children.map((node) => node[$toStyle]());
             if (cornerStyles.length === 2 || cornerStyles.length === 3) {
-                const last = cornerStyles[cornerStyles.length - 1];
+                const last = cornerStyles.at(-1);
                 for (let i = cornerStyles.length; i < 4; i++) {
                     cornerStyles.push(last);
                 }
             }
-            style.borderRadius = cornerStyles.map(s => s.radius).join(" ");
+            style.borderRadius = cornerStyles.map((s) => s.radius)
+                .join(" ");
         }
         switch (this.presence) {
             case "invisible":
@@ -825,11 +850,11 @@ export class Border extends XFAObject {
                 style.borderStyle = "none";
                 break;
             default:
-                style.borderStyle = edgeStyles.map(s => s.style).join(" ");
+                style.borderStyle = edgeStyles.map((s) => s.style).join(" ");
                 break;
         }
-        style.borderWidth = edgeStyles.map(s => s.width).join(" ");
-        style.borderColor = edgeStyles.map(s => s.color).join(" ");
+        style.borderWidth = edgeStyles.map((s) => s.width).join(" ");
+        style.borderColor = edgeStyles.map((s) => s.color).join(" ");
         return style;
     }
 }
@@ -872,7 +897,7 @@ class Break extends XFAObject {
         this.startNew = getInteger({
             data: attributes.startNew,
             defaultValue: 0,
-            validate: x => x === 1,
+            validate: (x) => x === 1,
         });
         this.use = attributes.use || "";
         this.usehref = attributes.usehref || "";
@@ -892,7 +917,7 @@ export class BreakAfter extends XFAObject {
         this.startNew = getInteger({
             data: attributes.startNew,
             defaultValue: 0,
-            validate: x => x === 1,
+            validate: (x) => x === 1,
         });
         this.target = attributes.target || "";
         this.targetType = getStringOption(attributes.targetType, [
@@ -919,7 +944,7 @@ export class BreakBefore extends XFAObject {
         this.startNew = getInteger({
             data: attributes.startNew,
             defaultValue: 0,
-            validate: x => x === 1,
+            validate: (x) => x === 1,
         });
         this.target = attributes.target || "";
         this.targetType = getStringOption(attributes.targetType, [
@@ -966,14 +991,17 @@ class Button extends XFAObject {
         };
         for (const event of grandpa.event.children) {
             // if (true) break;
-            if (event.activity !== "click" || !event.script)
+            if (event.activity !== "click" || !event.script) {
                 continue;
+            }
             const jsURL = recoverJsURL(event.script[$content]);
-            if (!jsURL)
+            if (!jsURL) {
                 continue;
+            }
             const href = fixURL(jsURL.url);
-            if (!href)
+            if (!href) {
                 continue;
+            }
             // we've an url so generate a <a>
             htmlButton.children.push({
                 name: "a",
@@ -1061,8 +1089,9 @@ export class Caption extends XFAObject {
     }
     [$toHTML](availableSpace) {
         // TODO: incomplete.
-        if (!this.value)
+        if (!this.value) {
             return HTMLResult.EMPTY;
+        }
         this[$pushPara]();
         const value = this.value[$toHTML](availableSpace).html;
         if (!value) {
@@ -1189,7 +1218,8 @@ class CheckButton extends XFAObject {
             [];
         const exportedValue = {
             on: (items[0] !== undefined ? items[0] : "on").toString(),
-            off: (items[1] !== undefined ? items[1] : "off").toString(),
+            off: (items[1] !== undefined ? items[1] : "off")
+                .toString(),
         };
         const value = (field.value && field.value[$text]()) || "off";
         const checked = value === exportedValue.on || undefined;
@@ -1219,10 +1249,15 @@ class CheckButton extends XFAObject {
                 xfaOn: exportedValue.on,
                 xfaOff: exportedValue.off,
                 "aria-label": ariaLabel(field),
+                "aria-required": false,
             },
         };
         if (groupId) {
             input.attributes.name = groupId;
+        }
+        if (isRequired(field)) {
+            input.attributes["aria-required"] = true;
+            input.attributes.required = true;
         }
         return HTMLResult.success({
             name: "label",
@@ -1253,7 +1288,7 @@ class ChoiceList extends XFAObject {
         this.textEntry = getInteger({
             data: attributes.textEntry,
             defaultValue: 0,
-            validate: x => x === 1,
+            validate: (x) => x === 1,
         });
         this.use = attributes.use || "";
         this.usehref = attributes.usehref || "";
@@ -1265,7 +1300,7 @@ class ChoiceList extends XFAObject {
         const field = ui[$getParent]();
         const fontSize = (field.font && field.font.size) || 10;
         const optionStyle = {
-            fontSize: `calc(${fontSize}px * var(--zoom-factor))`,
+            fontSize: `calc(${fontSize}px * var(--scale-factor))`,
         };
         const children = [];
         if (field.items.children.length > 0) {
@@ -1311,7 +1346,12 @@ class ChoiceList extends XFAObject {
             dataId: field[$data]?.[$uid] || field[$uid],
             style,
             "aria-label": ariaLabel(field),
+            "aria-required": false,
         };
+        if (isRequired(field)) {
+            selectAttributes["aria-required"] = true;
+            selectAttributes.required = true;
+        }
         if (this.open === "multiSelect") {
             selectAttributes.multiple = true;
         }
@@ -1342,7 +1382,9 @@ class Color extends XFAObject {
         this.usehref = attributes.usehref || "";
         this.value = attributes.value ? getColor(attributes.value) : "";
     }
-    [$hasSettableValue]() { return false; }
+    [$hasSettableValue]() {
+        return false;
+    }
     [$toStyle]() {
         return this.value
             ? Util.makeHexColor(this.value.r, this.value.g, this.value.b)
@@ -1357,7 +1399,7 @@ class Comb extends XFAObject {
         this.numberOfCells = getInteger({
             data: attributes.numberOfCells,
             defaultValue: 0,
-            validate: x => x >= 0,
+            validate: (x) => x >= 0,
         });
         this.use = attributes.use || "";
         this.usehref = attributes.usehref || "";
@@ -1442,7 +1484,7 @@ class Corner extends XFAObject {
         this.inverted = getInteger({
             data: attributes.inverted,
             defaultValue: 0,
-            validate: x => x === 1,
+            validate: (x) => x === 1,
         });
         this.join = getStringOption(attributes.join, ["square", "round"]);
         this.presence = getStringOption(attributes.presence, [
@@ -1489,7 +1531,7 @@ class DateElement extends ContentObject {
     }
     [$finalize]() {
         const date = this[$content].trim();
-        this[$content] = date ? new Date(date) : "";
+        this[$content] = date ? new Date(date) : undefined;
     }
     [$toHTML](availableSpace) {
         return valueToHtml(this[$content] ? this[$content].toString() : "");
@@ -1506,7 +1548,7 @@ class DateTime extends ContentObject {
     }
     [$finalize]() {
         const date = this[$content].trim();
-        this[$content] = date ? new Date(date) : "";
+        this[$content] = date ? new Date(date) : undefined;
     }
     [$toHTML](availableSpace) {
         return valueToHtml(this[$content] ? this[$content].toString() : "");
@@ -1546,8 +1588,13 @@ class DateTimeEdit extends XFAObject {
                 class: ["xfaTextfield"],
                 style,
                 "aria-label": ariaLabel(field),
+                "aria-required": false,
             },
         };
+        if (isRequired(field)) {
+            html.attributes["aria-required"] = true;
+            html.attributes.required = true;
+        }
         return HTMLResult.success({
             name: "label",
             attributes: {
@@ -1566,13 +1613,13 @@ class Decimal extends ContentObject {
         this.fracDigits = getInteger({
             data: attributes.fracDigits,
             defaultValue: 2,
-            validate: x => true,
+            validate: (x) => true,
         });
         this.id = attributes.id || "";
         this.leadDigits = getInteger({
             data: attributes.leadDigits,
             defaultValue: -1,
-            validate: x => true,
+            validate: (x) => true,
         });
         this.name = attributes.name || "";
         this.use = attributes.use || "";
@@ -1580,10 +1627,10 @@ class Decimal extends ContentObject {
     }
     [$finalize]() {
         const number = parseFloat(this[$content].trim());
-        this[$content] = isNaN(number) ? "" : number;
+        this[$content] = isNaN(number) ? undefined : number;
     }
     [$toHTML](availableSpace) {
-        return valueToHtml(this[$content] !== null ? this[$content].toString() : "");
+        return valueToHtml(this[$content] !== undefined ? this[$content].toString() : "");
     }
 }
 class DefaultUi extends XFAObject {
@@ -1641,7 +1688,7 @@ class DigestMethods extends XFAObject {
 export class Draw extends XFAObject {
     anchorType;
     colSpan;
-    h;
+    // override h;
     hAlign;
     locale;
     maxH;
@@ -1651,7 +1698,7 @@ export class Draw extends XFAObject {
     presence;
     relevant;
     rotate;
-    w;
+    // override w;
     x;
     y;
     assist = undefined;
@@ -1683,7 +1730,7 @@ export class Draw extends XFAObject {
         this.colSpan = getInteger({
             data: attributes.colSpan,
             defaultValue: 1,
-            validate: n => n >= 1 || n === -1,
+            validate: (n) => n >= 1 || n === -1,
         });
         this.h = attributes.h ? getMeasurement(attributes.h) : "";
         this.hAlign = getStringOption(attributes.hAlign, [
@@ -1711,7 +1758,7 @@ export class Draw extends XFAObject {
         this.rotate = getInteger({
             data: attributes.rotate,
             defaultValue: 0,
-            validate: x => x % 90 === 0,
+            validate: (x) => x % 90 === 0,
         });
         this.use = attributes.use || "";
         this.usehref = attributes.usehref || "";
@@ -1724,8 +1771,9 @@ export class Draw extends XFAObject {
     }
     [$toHTML](availableSpace) {
         setTabIndex(this);
-        if (this.presence === "hidden" || this.presence === "inactive")
+        if (this.presence === "hidden" || this.presence === "inactive") {
             return HTMLResult.EMPTY;
+        }
         fixDimensions(this);
         this[$pushPara]();
         // If at least one dimension is missing and we've a text
@@ -1785,7 +1833,9 @@ export class Draw extends XFAObject {
         };
         applyAssist(this, attributes);
         const bbox = computeBbox(this, html, availableSpace);
-        const value = this.value ? this.value[$toHTML](availableSpace).html : undefined;
+        const value = this.value
+            ? this.value[$toHTML](availableSpace).html
+            : undefined;
         if (value === undefined) {
             this.w = savedW;
             this.h = savedH;
@@ -2031,7 +2081,7 @@ class ExData extends ContentObject {
         this.maxLength = getInteger({
             data: attributes.maxLength,
             defaultValue: -1,
-            validate: x => x >= -1,
+            validate: (x) => x >= -1,
         });
         this.name = attributes.name || "";
         this.rid = attributes.rid || "";
@@ -2043,10 +2093,12 @@ class ExData extends ContentObject {
         this.use = attributes.use || "";
         this.usehref = attributes.usehref || "";
     }
-    [$isCDATAXml]() { return this.contentType === "text/html"; }
+    [$isCDATAXml]() {
+        return this.contentType === "text/html";
+    }
     [$onChild](child) {
-        if (this.contentType === "text/html"
-            && child[$namespaceId] === NamespaceIds.xhtml.id) {
+        if (this.contentType === "text/html" &&
+            child[$namespaceId] === NamespaceIds.xhtml.id) {
             this[$content] = child;
             return true;
         }
@@ -2057,9 +2109,10 @@ class ExData extends ContentObject {
         return false;
     }
     [$toHTML](availableSpace) {
-        if (this.contentType !== "text/html" || !this[$content])
+        if (this.contentType !== "text/html" || !this[$content]) {
             // TODO: fix other cases.
             return HTMLResult.EMPTY;
+        }
         return this[$content][$toHTML](availableSpace);
     }
 }
@@ -2150,7 +2203,7 @@ export class ExclGroup extends XFAObject {
         this.colSpan = getInteger({
             data: attributes.colSpan,
             defaultValue: 1,
-            validate: n => n >= 1 || n === -1,
+            validate: (n) => n >= 1 || n === -1,
         });
         this.h = attributes.h ? getMeasurement(attributes.h) : "";
         this.hAlign = getStringOption(attributes.hAlign, [
@@ -2189,8 +2242,12 @@ export class ExclGroup extends XFAObject {
         this.x = getMeasurement(attributes.x, "0pt");
         this.y = getMeasurement(attributes.y, "0pt");
     }
-    [$isBindable]() { return true; }
-    [$hasSettableValue]() { return true; }
+    [$isBindable]() {
+        return true;
+    }
+    [$hasSettableValue]() {
+        return true;
+    }
     [$setValue](value) {
         for (const field of this.field.children) {
             if (!field.value) {
@@ -2210,23 +2267,27 @@ export class ExclGroup extends XFAObject {
     [$isSplittable]() {
         // We cannot cache the result here because the contentArea can change.
         const parent = this[$getSubformParent]();
-        if (!parent[$isSplittable]())
+        if (!parent[$isSplittable]()) {
             return false;
-        if (this[$extra]._isSplittable !== undefined)
+        }
+        if (this[$extra]._isSplittable !== undefined) {
             return this[$extra]._isSplittable;
+        }
         if (this.layout === "position" || this.layout.includes("row")) {
             this[$extra]._isSplittable = false;
             return false;
         }
-        if (parent.layout?.endsWith("-tb")
-            && parent[$extra].numberInLine !== 0) {
+        if (parent.layout?.endsWith("-tb") &&
+            parent[$extra].numberInLine !== 0) {
             // See comment in Subform::[$isSplittable] for an explanation.
             return false;
         }
         this[$extra]._isSplittable = true;
         return true;
     }
-    [$flushHTML]() { return flushHTML(this); }
+    [$flushHTML]() {
+        return flushHTML(this);
+    }
     [$addHTML](html, bbox) {
         addHTML(this, html, bbox);
     }
@@ -2235,10 +2296,10 @@ export class ExclGroup extends XFAObject {
     }
     [$toHTML](availableSpace) {
         setTabIndex(this);
-        if (this.presence === "hidden"
-            || this.presence === "inactive"
-            || this.h === 0
-            || this.w === 0) {
+        if (this.presence === "hidden" ||
+            this.presence === "inactive" ||
+            this.h === 0 ||
+            this.w === 0) {
             return HTMLResult.EMPTY;
         }
         fixDimensions(this);
@@ -2255,7 +2316,7 @@ export class ExclGroup extends XFAObject {
             children,
             attributes,
             attempt: 0,
-            line: null,
+            line: undefined,
             numberInLine: 0,
             availableSpace: {
                 width: Math.min(this.w || Infinity, availableSpace.width),
@@ -2270,8 +2331,9 @@ export class ExclGroup extends XFAObject {
         if (!isSplittable) {
             setFirstUnsplittable(this);
         }
-        if (!checkDimensions(this, availableSpace))
+        if (!checkDimensions(this, availableSpace)) {
             return HTMLResult.FAILURE;
+        }
         const filter = new Set(["field"]);
         if (this.layout.includes("row")) {
             const columnWidths = this[$getSubformParent]().columnWidths;
@@ -2315,10 +2377,10 @@ export class ExclGroup extends XFAObject {
                 this[$popPara]();
                 return result;
             }
-            if (isLrTb
-                && this[$extra].attempt === 0
-                && this[$extra].numberInLine === 0
-                && !this[$getTemplateRoot]()[$extra].noLayoutFailure) {
+            if (isLrTb &&
+                this[$extra].attempt === 0 &&
+                this[$extra].numberInLine === 0 &&
+                !this[$getTemplateRoot]()[$extra].noLayoutFailure) {
                 // See comment in Subform::[$toHTML].
                 this[$extra].attempt = maxRun;
                 break;
@@ -2405,7 +2467,7 @@ export class Field extends XFAObject {
     accessKey;
     anchorType;
     colSpan;
-    h;
+    // override h;
     hAlign;
     locale;
     maxH;
@@ -2415,7 +2477,7 @@ export class Field extends XFAObject {
     presence;
     relevant;
     rotate;
-    w;
+    // override w;
     x;
     y;
     assist = undefined;
@@ -2435,7 +2497,7 @@ export class Field extends XFAObject {
     para = undefined;
     traversal = undefined;
     ui;
-    validate; //?:Validate;
+    validate;
     value;
     bindItems = new XFAObjectArray();
     connect = new XFAObjectArray();
@@ -2466,7 +2528,7 @@ export class Field extends XFAObject {
         this.colSpan = getInteger({
             data: attributes.colSpan,
             defaultValue: 1,
-            validate: n => n >= 1 || n === -1,
+            validate: (n) => n >= 1 || n === -1,
         });
         this.h = attributes.h ? getMeasurement(attributes.h) : "";
         this.hAlign = getStringOption(attributes.hAlign, [
@@ -2494,7 +2556,7 @@ export class Field extends XFAObject {
         this.rotate = getInteger({
             data: attributes.rotate,
             defaultValue: 0,
-            validate: x => x % 90 === 0,
+            validate: (x) => x % 90 === 0,
         });
         this.use = attributes.use || "";
         this.usehref = attributes.usehref || "";
@@ -2502,8 +2564,12 @@ export class Field extends XFAObject {
         this.x = getMeasurement(attributes.x, "0pt");
         this.y = getMeasurement(attributes.y, "0pt");
     }
-    [$isBindable]() { return true; }
-    [$setValue](value) { _setValue(this, value); }
+    [$isBindable]() {
+        return true;
+    }
+    [$setValue](value) {
+        _setValue(this, value);
+    }
     [$toHTML](availableSpace) {
         setTabIndex(this);
         if (!this.ui) {
@@ -2534,11 +2600,11 @@ export class Field extends XFAObject {
             }
             this.ui[$appendChild](node);
         }
-        if (!this.ui
-            || this.presence === "hidden"
-            || this.presence === "inactive"
-            || this.h === 0
-            || this.w === 0) {
+        if (!this.ui ||
+            this.presence === "hidden" ||
+            this.presence === "inactive" ||
+            this.h === 0 ||
+            this.w === 0) {
             return HTMLResult.EMPTY;
         }
         if (this.caption) {
@@ -2704,7 +2770,8 @@ export class Field extends XFAObject {
                     }
                 }
                 if (this.ui.textEdit && this.value.text?.maxChars) {
-                    ui.children[0].attributes.maxLength = this.value.text.maxChars;
+                    ui.children[0].attributes.maxLength =
+                        this.value.text.maxChars;
                 }
                 if (value) {
                     if (this.ui.numericEdit) {
@@ -2712,7 +2779,8 @@ export class Field extends XFAObject {
                         value = isNaN(value) ? "" : value.toString();
                     }
                     if (ui.children[0].name === "textarea") {
-                        ui.children[0].attributes.textContent = value;
+                        ui.children[0].attributes.textContent =
+                            value;
                     }
                     else {
                         ui.children[0].attributes.value = value;
@@ -2831,11 +2899,13 @@ class Fill extends XFAObject {
             style.fill = "white";
         }
         for (const name of Object.getOwnPropertyNames(this)) {
-            if (name === "extras" || name === "color")
+            if (name === "extras" || name === "color") {
                 continue;
+            }
             const obj = this[name];
-            if (!(obj instanceof XFAObject))
+            if (!(obj instanceof XFAObject)) {
                 continue;
+            }
             const color = obj[$toStyle](this.color);
             if (color) {
                 style[color.startsWith("#") ? propName : altPropName] = color;
@@ -2877,7 +2947,7 @@ class Filter extends XFAObject {
         this.version = getInteger({
             data: this.version,
             defaultValue: 5,
-            validate: x => x >= 1 && x <= 5,
+            validate: (x) => x >= 1 && x <= 5,
         });
     }
 }
@@ -2892,10 +2962,10 @@ class Float extends ContentObject {
     }
     [$finalize]() {
         const number = parseFloat(this[$content].trim());
-        this[$content] = isNaN(number) ? "" : number;
+        this[$content] = isNaN(number) ? undefined : number;
     }
     [$toHTML](availableSpace) {
-        return valueToHtml(this[$content] !== "" ? this[$content].toString() : "");
+        return valueToHtml(this[$content] !== undefined ? this[$content].toString() : "");
     }
 }
 export class Font extends XFAObject {
@@ -2922,12 +2992,12 @@ export class Font extends XFAObject {
         this.fontHorizontalScale = getFloat({
             data: attributes.fontHorizontalScale,
             defaultValue: 100,
-            validate: x => x >= 0,
+            validate: (x) => x >= 0,
         });
         this.fontVerticalScale = getFloat({
             data: attributes.fontVerticalScale,
             defaultValue: 100,
-            validate: x => x >= 0,
+            validate: (x) => x >= 0,
         });
         this.id = attributes.id || "";
         this.kerningMode = getStringOption(attributes.kerningMode, [
@@ -2938,7 +3008,7 @@ export class Font extends XFAObject {
         this.lineThrough = getInteger({
             data: attributes.lineThrough,
             defaultValue: 0,
-            validate: x => x === 1 || x === 2,
+            validate: (x) => x === 1 || x === 2,
         });
         this.lineThroughPeriod = getStringOption(attributes.lineThroughPeriod, [
             "all",
@@ -2947,7 +3017,7 @@ export class Font extends XFAObject {
         this.overline = getInteger({
             data: attributes.overline,
             defaultValue: 0,
-            validate: x => x === 1 || x === 2,
+            validate: (x) => x === 1 || x === 2,
         });
         this.overlinePeriod = getStringOption(attributes.overlinePeriod, [
             "all",
@@ -2959,7 +3029,7 @@ export class Font extends XFAObject {
         this.underline = getInteger({
             data: attributes.underline,
             defaultValue: 0,
-            validate: x => x === 1 || x === 2,
+            validate: (x) => x === 1 || x === 2,
         });
         this.underlinePeriod = getStringOption(attributes.underlinePeriod, [
             "all",
@@ -3056,35 +3126,35 @@ class Hyphenation extends XFAObject {
         this.excludeAllCaps = getInteger({
             data: attributes.excludeAllCaps,
             defaultValue: 0,
-            validate: x => x === 1,
+            validate: (x) => x === 1,
         });
         this.excludeInitialCap = getInteger({
             data: attributes.excludeInitialCap,
             defaultValue: 0,
-            validate: x => x === 1,
+            validate: (x) => x === 1,
         });
         this.hyphenate = getInteger({
             data: attributes.hyphenate,
             defaultValue: 0,
-            validate: x => x === 1,
+            validate: (x) => x === 1,
         });
         this.id = attributes.id || "";
         this.pushCharacterCount = getInteger({
             data: attributes.pushCharacterCount,
             defaultValue: 3,
-            validate: x => x >= 0,
+            validate: (x) => x >= 0,
         });
         this.remainCharacterCount = getInteger({
             data: attributes.remainCharacterCount,
             defaultValue: 3,
-            validate: x => x >= 0,
+            validate: (x) => x >= 0,
         });
         this.use = attributes.use || "";
         this.usehref = attributes.usehref || "";
         this.wordCharacterCount = getInteger({
             data: attributes.wordCharacterCount,
             defaultValue: 7,
-            validate: x => x >= 0,
+            validate: (x) => x >= 0,
         });
     }
 }
@@ -3116,8 +3186,9 @@ class Image extends StringObject {
         this.usehref = attributes.usehref || "";
     }
     [$toHTML](availableSpace) {
-        if (this.contentType && !MIMES.has(this.contentType.toLowerCase()))
+        if (this.contentType && !MIMES.has(this.contentType.toLowerCase())) {
             return HTMLResult.EMPTY;
+        }
         let buffer = this[$globalData].images?.get(this.href);
         if (!buffer && (this.href || !this[$content])) {
             // In general, we don't get remote data and use what we have
@@ -3127,18 +3198,20 @@ class Image extends StringObject {
         if (!buffer && this.transferEncoding === "base64") {
             buffer = stringToBytes(atob(this[$content]));
         }
-        if (!buffer)
+        if (!buffer) {
             return HTMLResult.EMPTY;
+        }
         if (!this.contentType) {
             for (const [header, type] of IMAGES_HEADERS) {
-                if (buffer.length > header.length
-                    && header.every((x, i) => x === buffer[i])) {
+                if (buffer.length > header.length &&
+                    header.every((x, i) => x === buffer[i])) {
                     this.contentType = type;
                     break;
                 }
             }
-            if (!this.contentType)
+            if (!this.contentType) {
                 return HTMLResult.EMPTY;
+            }
         }
         // TODO: Firefox doesn't support natively tiff (and tif) format.
         const blob = new Blob([buffer], { type: this.contentType });
@@ -3216,10 +3289,10 @@ class Integer extends ContentObject {
     }
     [$finalize]() {
         const number = parseInt(this[$content].trim(), 10);
-        this[$content] = isNaN(number) ? "" : number;
+        this[$content] = isNaN(number) ? undefined : number;
     }
     [$toHTML](availableSpace) {
-        return valueToHtml(this[$content] !== "" ? this[$content].toString() : "");
+        return valueToHtml(this[$content] !== undefined ? this[$content].toString() : "");
     }
 }
 class Issuers extends XFAObject {
@@ -3261,7 +3334,7 @@ export class Items extends XFAObject {
         this.save = getInteger({
             data: attributes.save,
             defaultValue: 0,
-            validate: x => x === 1,
+            validate: (x) => x === 1,
         });
         this.use = attributes.use || "";
         this.usehref = attributes.usehref || "";
@@ -3333,7 +3406,7 @@ class Line extends XFAObject {
     }
     [$toHTML](availableSpace) {
         const parent = this[$getParent]()[$getParent]();
-        const edge = this.edge ? this.edge : new Edge({});
+        const edge = this.edge || new Edge({});
         const edgeStyle = edge[$toStyle]();
         const style = Object.create(null);
         const thickness = edge.presence === "visible" ? edge.thickness : 0;
@@ -3489,7 +3562,7 @@ class Mdp extends XFAObject {
         this.permissions = getInteger({
             data: attributes.permissions,
             defaultValue: 2,
-            validate: x => x === 1 || x === 3,
+            validate: (x) => x === 1 || x === 3,
         });
         this.signatureType = getStringOption(attributes.signatureType, [
             "filler",
@@ -3567,8 +3640,13 @@ class NumericEdit extends XFAObject {
                 class: ["xfaTextfield"],
                 style,
                 "aria-label": ariaLabel(field),
+                "aria-required": false,
             },
         };
+        if (isRequired(field)) {
+            html.attributes["aria-required"] = true;
+            html.attributes.required = true;
+        }
         return HTMLResult.success({
             name: "label",
             attributes: {
@@ -3586,30 +3664,27 @@ class Occur extends XFAObject {
     constructor(attributes) {
         super(TEMPLATE_NS_ID, "occur", /* hasChildren = */ true);
         this.id = attributes.id || "";
-        this.initial =
-            attributes.initial !== ""
-                ? getInteger({
-                    data: attributes.initial,
-                    defaultValue: "",
-                    validate: x => true,
-                })
-                : "";
-        this.max =
-            attributes.max !== ""
-                ? getInteger({
-                    data: attributes.max,
-                    defaultValue: 1,
-                    validate: x => true,
-                })
-                : "";
-        this.min =
-            attributes.min !== ""
-                ? getInteger({
-                    data: attributes.min,
-                    defaultValue: 1,
-                    validate: x => true,
-                })
-                : "";
+        this.initial = attributes.initial !== ""
+            ? getInteger({
+                data: attributes.initial,
+                defaultValue: "",
+                validate: (x) => true,
+            })
+            : "";
+        this.max = attributes.max !== ""
+            ? getInteger({
+                data: attributes.max,
+                defaultValue: 1,
+                validate: (x) => true,
+            })
+            : "";
+        this.min = attributes.min !== ""
+            ? getInteger({
+                data: attributes.min,
+                defaultValue: 1,
+                validate: (x) => true,
+            })
+            : "";
         this.use = attributes.use || "";
         this.usehref = attributes.usehref || "";
     }
@@ -3617,13 +3692,15 @@ class Occur extends XFAObject {
         const parent = this[$getParent]();
         const originalMin = this.min;
         if (this.min === "") {
-            this.min =
-                parent instanceof PageArea || parent instanceof PageSet ? 0 : 1;
+            this.min = parent instanceof PageArea || parent instanceof PageSet
+                ? 0
+                : 1;
         }
         if (this.max === "") {
             if (originalMin === "") {
-                this.max =
-                    parent instanceof PageArea || parent instanceof PageSet ? -1 : 1;
+                this.max = parent instanceof PageArea || parent instanceof PageSet
+                    ? -1
+                    : 1;
             }
             else {
                 this.max = this.min;
@@ -3718,13 +3795,13 @@ export class PageArea extends XFAObject {
         this.initialNumber = getInteger({
             data: attributes.initialNumber,
             defaultValue: 1,
-            validate: x => true,
+            validate: (x) => true,
         });
         this.name = attributes.name || "";
         this.numbered = getInteger({
             data: attributes.numbered,
             defaultValue: 1,
-            validate: x => true,
+            validate: (x) => true,
         });
         this.oddOrEven = getStringOption(attributes.oddOrEven, [
             "any",
@@ -3753,7 +3830,9 @@ export class PageArea extends XFAObject {
             this.occur.max === -1 ||
             this[$extra].numberOfUse < this.occur.max);
     }
-    [$cleanPage]() { delete this[$extra]; }
+    [$cleanPage]() {
+        delete this[$extra];
+    }
     [$getNextPage]() {
         if (!this[$extra]) {
             this[$extra] = {
@@ -3874,12 +3953,14 @@ class PageSet extends XFAObject {
         if (this.relation === "orderedOccurrence") {
             if (this[$extra].pageIndex + 1 < this.pageArea.children.length) {
                 this[$extra].pageIndex += 1;
-                const pageArea = this.pageArea.children[this[$extra].pageIndex];
+                const pageArea = this.pageArea
+                    .children[this[$extra].pageIndex];
                 return pageArea[$getNextPage]();
             }
             if (this[$extra].pageSetIndex + 1 < this.pageSet.children.length) {
                 this[$extra].pageSetIndex += 1;
-                const pageSet = this.pageSet.children[this[$extra].pageSetIndex];
+                const pageSet = this.pageSet
+                    .children[this[$extra].pageSetIndex];
                 return pageSet[$getNextPage]();
             }
             if (this[$isUsable]()) {
@@ -3889,23 +3970,30 @@ class PageSet extends XFAObject {
                 return this[$getNextPage]();
             }
             const parent = this[$getParent]();
-            if (parent instanceof PageSet)
+            if (parent instanceof PageSet) {
                 return parent[$getNextPage]();
+            }
             this[$cleanPage]();
             return this[$getNextPage]();
         }
         const pageNumber = this[$getTemplateRoot]()[$extra].pageNumber;
         const parity = pageNumber % 2 === 0 ? "even" : "odd";
         const position = pageNumber === 0 ? "first" : "rest";
-        let page = this.pageArea.children.find(p => p.oddOrEven === parity && p.pagePosition === position);
-        if (page)
+        let page = this.pageArea.children.find((p) => p.oddOrEven === parity &&
+            p.pagePosition === position);
+        if (page) {
             return page;
-        page = this.pageArea.children.find(p => p.oddOrEven === "any" && p.pagePosition === position);
-        if (page)
+        }
+        page = this.pageArea.children.find((p) => p.oddOrEven === "any" &&
+            p.pagePosition === position);
+        if (page) {
             return page;
-        page = this.pageArea.children.find(p => p.oddOrEven === "any" && p.pagePosition === "any");
-        if (page)
+        }
+        page = this.pageArea.children.find((p) => p.oddOrEven === "any" &&
+            p.pagePosition === "any");
+        if (page) {
             return page;
+        }
         return this.pageArea.children[0];
     }
 }
@@ -3949,7 +4037,7 @@ export class Para extends XFAObject {
         this.orphans = getInteger({
             data: attributes.orphans,
             defaultValue: 0,
-            validate: x => x >= 0,
+            validate: (x) => x >= 0,
         });
         this.preserve = attributes.preserve || "";
         this.radixOffset = attributes.radixOffset
@@ -3981,7 +4069,7 @@ export class Para extends XFAObject {
         this.widows = getInteger({
             data: attributes.widows,
             defaultValue: 0,
-            validate: x => x >= 0,
+            validate: (x) => x >= 0,
         });
     }
     [$toStyle]() {
@@ -4061,12 +4149,18 @@ class Pattern extends XFAObject {
         const cmd = "repeating-linear-gradient";
         const colors = `${startColor_s},${startColor_s} ${width}px,${endColor_s} ${width}px,${endColor_s} ${2 * width}px`;
         switch (this.type) {
-            case "crossHatch": return `${cmd}(to top,${colors}) ${cmd}(to right,${colors})`;
-            case "crossDiagonal": return `${cmd}(45deg,${colors}) ${cmd}(-45deg,${colors})`;
-            case "diagonalLeft": return `${cmd}(45deg,${colors})`;
-            case "diagonalRight": return `${cmd}(-45deg,${colors})`;
-            case "horizontal": return `${cmd}(to top,${colors})`;
-            case "vertical": return `${cmd}(to right,${colors})`;
+            case "crossHatch":
+                return `${cmd}(to top,${colors}) ${cmd}(to right,${colors})`;
+            case "crossDiagonal":
+                return `${cmd}(45deg,${colors}) ${cmd}(-45deg,${colors})`;
+            case "diagonalLeft":
+                return `${cmd}(45deg,${colors})`;
+            case "diagonalRight":
+                return `${cmd}(-45deg,${colors})`;
+            case "horizontal":
+                return `${cmd}(to top,${colors})`;
+            case "vertical":
+                return `${cmd}(to right,${colors})`;
         }
         return "";
     }
@@ -4412,7 +4506,7 @@ class Speak extends StringObject {
         this.disable = getInteger({
             data: attributes.disable,
             defaultValue: 0,
-            validate: x => x === 1,
+            validate: (x) => x === 1,
         });
         this.id = attributes.id || "";
         this.priority = getStringOption(attributes.priority, [
@@ -4437,7 +4531,7 @@ class Stipple extends XFAObject {
         this.rate = getInteger({
             data: attributes.rate,
             defaultValue: 50,
-            validate: x => x >= 0 && x <= 100,
+            validate: (x) => x >= 0 && x <= 100,
         });
         this.use = attributes.use || "";
         this.usehref = attributes.usehref || "";
@@ -4512,7 +4606,7 @@ export class Subform extends XFAObject {
         this.allowMacro = getInteger({
             data: attributes.allowMacro,
             defaultValue: 0,
-            validate: x => x === 1,
+            validate: (x) => x === 1,
         });
         this.anchorType = getStringOption(attributes.anchorType, [
             "topLeft",
@@ -4528,12 +4622,12 @@ export class Subform extends XFAObject {
         this.colSpan = getInteger({
             data: attributes.colSpan,
             defaultValue: 1,
-            validate: n => n >= 1 || n === -1,
+            validate: (n) => n >= 1 || n === -1,
         });
         this.columnWidths = (attributes.columnWidths || "")
             .trim()
             .split(/\s+/)
-            .map(x => (x === "-1" ? -1 : getMeasurement(x)));
+            .map((x) => (x === "-1" ? -1 : getMeasurement(x)));
         this.h = attributes.h ? getMeasurement(attributes.h) : "";
         this.hAlign = getStringOption(attributes.hAlign, [
             "left",
@@ -4583,11 +4677,14 @@ export class Subform extends XFAObject {
     }
     [$getSubformParent]() {
         const parent = this[$getParent]();
-        if (parent instanceof SubformSet)
+        if (parent instanceof SubformSet) {
             return parent[$getSubformParent]();
+        }
         return parent;
     }
-    [$isBindable]() { return true; }
+    [$isBindable]() {
+        return true;
+    }
     [$isThereMoreWidth]() {
         return ((this.layout.endsWith("-tb") &&
             this[$extra].attempt === 0 &&
@@ -4599,17 +4696,24 @@ export class Subform extends XFAObject {
         // this set are in fact under parent subform.
         yield* getContainedChildren(this);
     }
-    [$flushHTML]() { return flushHTML(this); }
-    [$addHTML](html, bbox) { addHTML(this, html, bbox); }
-    [$getAvailableSpace]() { return getAvailableSpace(this); }
+    [$flushHTML]() {
+        return flushHTML(this);
+    }
+    [$addHTML](html, bbox) {
+        addHTML(this, html, bbox);
+    }
+    [$getAvailableSpace]() {
+        return getAvailableSpace(this);
+    }
     [$isSplittable]() {
         // We cannot cache the result here because the contentArea
         // can change.
         const parent = this[$getSubformParent]();
         if (!parent[$isSplittable]())
             return false;
-        if (this[$extra]._isSplittable !== undefined)
+        if (this[$extra]._isSplittable !== undefined) {
             return this[$extra]._isSplittable;
+        }
         if (this.layout === "position" || this.layout.includes("row")) {
             this[$extra]._isSplittable = false;
             return false;
@@ -4618,8 +4722,8 @@ export class Subform extends XFAObject {
             this[$extra]._isSplittable = false;
             return false;
         }
-        if (parent.layout?.endsWith("-tb")
-            && parent[$extra].numberInLine !== 0) {
+        if (parent.layout?.endsWith("-tb") &&
+            parent[$extra].numberInLine !== 0) {
             // If parent can fit in w=100 and there's already an element which takes
             // 90 then we've 10 for this element. Suppose this element has a tb layout
             // and 5 elements have a width of 7 and the 6th has a width of 20:
@@ -4669,21 +4773,24 @@ export class Subform extends XFAObject {
             this[$removeChild](this.break);
             this.break = undefined;
         }
-        if (this.presence === "hidden" || this.presence === "inactive")
+        if (this.presence === "hidden" || this.presence === "inactive") {
             return HTMLResult.EMPTY;
-        if (this.breakBefore.children.length > 1
-            || this.breakAfter.children.length > 1) {
+        }
+        if (this.breakBefore.children.length > 1 ||
+            this.breakAfter.children.length > 1) {
             // Specs are always talking about the breakBefore element
             // and it doesn't really make sense to have several ones.
             warn("XFA - Several breakBefore or breakAfter in subforms: please file a bug.");
         }
         if (this.breakBefore.children.length >= 1) {
             const breakBefore = this.breakBefore.children[0];
-            if (handleBreak(breakBefore))
+            if (handleBreak(breakBefore)) {
                 return HTMLResult.breakNode(breakBefore);
+            }
         }
-        if (this[$extra] && this[$extra].afterBreakAfter)
+        if (this[$extra] && this[$extra].afterBreakAfter) {
             return HTMLResult.EMPTY;
+        }
         // TODO: incomplete.
         fixDimensions(this);
         const children = [];
@@ -4697,7 +4804,7 @@ export class Subform extends XFAObject {
         }
         Object.assign(this[$extra], {
             children,
-            line: null,
+            line: undefined,
             attributes,
             attempt: 0,
             numberInLine: 0,
@@ -4716,8 +4823,9 @@ export class Subform extends XFAObject {
         if (!isSplittable) {
             setFirstUnsplittable(this);
         }
-        if (!checkDimensions(this, availableSpace))
+        if (!checkDimensions(this, availableSpace)) {
             return HTMLResult.FAILURE;
+        }
         const filter = new Set([
             "area",
             "draw",
@@ -4772,10 +4880,10 @@ export class Subform extends XFAObject {
                 this[$popPara]();
                 return result;
             }
-            if (isLrTb
-                && this[$extra].attempt === 0
-                && this[$extra].numberInLine === 0
-                && !root[$extra].noLayoutFailure) {
+            if (isLrTb &&
+                this[$extra].attempt === 0 &&
+                this[$extra].numberInLine === 0 &&
+                !root[$extra].noLayoutFailure) {
                 // We're failing to put the first element on the line so no
                 // need to test on the next line.
                 // The goal is not only to avoid some useless checks but to avoid
@@ -4826,8 +4934,8 @@ export class Subform extends XFAObject {
         if (this.h === "") {
             style.height = measureToString(height);
         }
-        if ((style.width === "0px" || style.height === "0px")
-            && children.length === 0) {
+        if ((style.width === "0px" || style.height === "0px") &&
+            children.length === 0) {
             return HTMLResult.EMPTY;
         }
         const html = {
@@ -4887,7 +4995,9 @@ class SubformSet extends XFAObject {
         }
         return parent;
     }
-    [$isBindable]() { return true; }
+    [$isBindable]() {
+        return true;
+    }
 }
 class SubjectDN extends ContentObject {
     [$content];
@@ -4901,7 +5011,7 @@ class SubjectDN extends ContentObject {
         this.usehref = attributes.usehref || "";
     }
     [$finalize]() {
-        this[$content] = new Map(this[$content].split(this.delimiter).map(kv => {
+        this[$content] = new Map(this[$content].split(this.delimiter).map((kv) => {
             const kv_a = kv.split("=", 2);
             kv_a[0] = kv_a[0].trim();
             return kv_a;
@@ -4933,7 +5043,7 @@ class Submit extends XFAObject {
         this.embedPDF = getInteger({
             data: attributes.embedPDF,
             defaultValue: 0,
-            validate: x => x === 1,
+            validate: (x) => x === 1,
         });
         this.format = getStringOption(attributes.format, [
             "xdp",
@@ -4950,7 +5060,7 @@ class Submit extends XFAObject {
                 ? attributes.textEncoding.toLowerCase()
                 : "",
             defaultValue: "",
-            validate: k => [
+            validate: (k) => [
                 "utf-8",
                 "big-five",
                 "fontspecific",
@@ -5000,11 +5110,14 @@ export class Template extends XFAObject {
         }
         this[$tabIndex] = DEFAULT_TAB_INDEX;
     }
-    [$isSplittable]() { return true; }
+    [$isSplittable]() {
+        return true;
+    }
     [$searchNode](expr, container) {
-        if (expr.startsWith("#"))
+        if (expr.startsWith("#")) {
             // This is an id.
             return [this[$ids].get(expr.slice(1))];
+        }
         return searchNode(this, container, expr, true, true);
     }
     /**
@@ -5045,17 +5158,20 @@ export class Template extends XFAObject {
             breakBefore = root.breakBefore.children[0];
             breakBeforeTarget = breakBefore.target;
         }
-        else if (root.subform.children.length >= 1
-            && root.subform.children[0].breakBefore.children.length >= 1) {
-            breakBefore = root.subform.children[0].breakBefore.children[0];
+        else if (root.subform.children.length >= 1 &&
+            root.subform.children[0].breakBefore.children
+                .length >= 1) {
+            breakBefore =
+                root.subform.children[0]
+                    .breakBefore.children[0];
             breakBeforeTarget = breakBefore.target;
         }
         else if (root.break?.beforeTarget) {
             breakBefore = root.break;
             breakBeforeTarget = breakBefore.beforeTarget;
         }
-        else if (root.subform.children.length >= 1
-            && root.subform.children[0].break?.beforeTarget) {
+        else if (root.subform.children.length >= 1 &&
+            root.subform.children[0].break?.beforeTarget) {
             breakBefore = root.subform.children[0].break;
             breakBeforeTarget = breakBefore.beforeTarget;
         }
@@ -5113,21 +5229,24 @@ export class Template extends XFAObject {
                 trailer = undefined;
             }
             const contentAreas = pageArea.contentArea.children;
-            const htmlContentAreas = page.children.filter(node => node.attributes.class.includes("xfaContentarea"));
+            const htmlContentAreas = page.children.filter((node) => node.attributes.class.includes("xfaContentarea"));
             hasSomething = false;
             this[$extra].firstUnsplittable = undefined;
             this[$extra].noLayoutFailure = false;
             const flush = (index) => {
                 const html = root[$flushHTML]();
                 if (html) {
-                    hasSomething =
-                        hasSomething || !!(html.children && html.children.length !== 0);
+                    hasSomething = hasSomething ||
+                        !!(html.children && html.children.length !== 0);
                     htmlContentAreas[index].children.push(html);
                 }
             };
             for (let i = startIndex, ii = contentAreas.length; i < ii; i++) {
                 const contentArea = (this[$extra].currentContentArea = contentAreas[i]);
-                const space = { width: contentArea.w, height: contentArea.h };
+                const space = {
+                    width: contentArea.w,
+                    height: contentArea.h,
+                };
                 startIndex = 0;
                 if (leader) {
                     htmlContentAreas[i].children.push(leader[$toHTML](space).html);
@@ -5140,10 +5259,9 @@ export class Template extends XFAObject {
                 const html = root[$toHTML](space);
                 if (html.success) {
                     if (html.html) {
-                        hasSomething =
-                            hasSomething ||
-                                !!(html.html.children
-                                    && html.html.children.length !== 0);
+                        hasSomething = hasSomething ||
+                            !!(html.html.children &&
+                                html.html.children.length !== 0);
                         htmlContentAreas[i].children.push(html.html);
                     }
                     else if (!hasSomething && mainHtml.children.length > 1) {
@@ -5155,8 +5273,9 @@ export class Template extends XFAObject {
                 if (html.isBreak()) {
                     const node = html.breakNode;
                     flush(i);
-                    if (node.targetType === "auto")
+                    if (node.targetType === "auto") {
                         continue;
+                    }
                     if (node.leader) {
                         const leader_a = this[$searchNode](node.leader, node[$getParent]());
                         leader = leader_a ? leader_a[0] : undefined;
@@ -5195,7 +5314,7 @@ export class Template extends XFAObject {
                         targetPageArea = target;
                     }
                     else if (target instanceof ContentArea) {
-                        const index = contentAreas.findIndex(e => e === target);
+                        const index = contentAreas.indexOf(target);
                         if (index !== -1) {
                             if (index > currentIndex) {
                                 // In the next loop iteration `i` will be incremented, note the
@@ -5210,7 +5329,7 @@ export class Template extends XFAObject {
                         }
                         else {
                             targetPageArea = target[$getParent]();
-                            startIndex = targetPageArea.contentArea.children.findIndex(e => e === target);
+                            startIndex = targetPageArea.contentArea.children.indexOf(target);
                         }
                     }
                     continue;
@@ -5226,8 +5345,9 @@ export class Template extends XFAObject {
                     targetPageArea = undefined;
                 }
             }
-            pageArea = targetPageArea || pageArea[$getNextPage]();
-            yield null;
+            pageArea = targetPageArea ||
+                pageArea[$getNextPage]();
+            yield undefined;
         }
     }
 }
@@ -5241,14 +5361,16 @@ export class Text extends ContentObject {
         this.maxChars = getInteger({
             data: attributes.maxChars,
             defaultValue: 0,
-            validate: x => x >= 0,
+            validate: (x) => x >= 0,
         });
         this.name = attributes.name || "";
         this.rid = attributes.rid || "";
         this.use = attributes.use || "";
         this.usehref = attributes.usehref || "";
     }
-    [$acceptWhitespace]() { return true; }
+    [$acceptWhitespace]() {
+        return true;
+    }
     [$onChild](child) {
         if (child[$namespaceId] === NamespaceIds.xhtml.id) {
             this[$content] = child;
@@ -5258,8 +5380,9 @@ export class Text extends ContentObject {
         return false;
     }
     [$onText](str) {
-        if (this[$content] instanceof XFAObject)
+        if (this[$content] instanceof XFAObject) {
             return;
+        }
         super[$onText](str);
     }
     [$finalize]() {
@@ -5293,7 +5416,7 @@ export class Text extends ContentObject {
                 html.children = [];
                 this[$content]
                     .split("\u2029")
-                    .map(para => 
+                    .map((para) => 
                 // Convert a paragraph into a set of <span> (for lines)
                 // separated by <br>.
                 para.split(/[\u2028\n]/).reduce((acc, line) => {
@@ -5305,7 +5428,7 @@ export class Text extends ContentObject {
                     });
                     return acc;
                 }, []))
-                    .forEach(lines => {
+                    .forEach((lines) => {
                     html.children.push({
                         name: "p",
                         children: lines,
@@ -5317,7 +5440,7 @@ export class Text extends ContentObject {
                 html.children = [];
                 // Convert plain text into a set of <span> (for lines)
                 // separated by <br>.
-                this[$content].split(/[\u2028\n]/).forEach(line => {
+                this[$content].split(/[\u2028\n]/).forEach((line) => {
                     html.children.push({
                         name: "span",
                         value: line,
@@ -5345,7 +5468,7 @@ class TextEdit extends XFAObject {
         this.allowRichText = getInteger({
             data: attributes.allowRichText,
             defaultValue: 0,
-            validate: x => x === 1,
+            validate: (x) => x === 1,
         });
         this.hScrollPolicy = getStringOption(attributes.hScrollPolicy, [
             "auto",
@@ -5356,7 +5479,7 @@ class TextEdit extends XFAObject {
         this.multiLine = getInteger({
             data: attributes.multiLine,
             defaultValue: "",
-            validate: x => x === 0 || x === 1,
+            validate: (x) => x === 0 || x === 1,
         });
         this.use = attributes.use || "";
         this.usehref = attributes.usehref || "";
@@ -5383,6 +5506,7 @@ class TextEdit extends XFAObject {
                     class: ["xfaTextfield"],
                     style,
                     "aria-label": ariaLabel(field),
+                    "aria-required": false,
                 },
             };
         }
@@ -5396,8 +5520,13 @@ class TextEdit extends XFAObject {
                     class: ["xfaTextfield"],
                     style,
                     "aria-label": ariaLabel(field),
+                    "aria-required": false,
                 },
             };
+        }
+        if (isRequired(field)) {
+            html.attributes["aria-required"] = true;
+            html.attributes.required = true;
         }
         return HTMLResult.success({
             name: "label",
@@ -5420,7 +5549,7 @@ class Time extends StringObject {
     [$finalize]() {
         // TODO: need to handle the string as a time and not as a date.
         const date = this[$content].trim();
-        this[$content] = date ? new Date(date) : "";
+        this[$content] = date ? new Date(date) : undefined;
     }
     [$toHTML](availableSpace) {
         return valueToHtml(this[$content] ? this[$content].toString() : "");
@@ -5484,7 +5613,9 @@ class Traverse extends XFAObject {
             get: () => this.operation,
         });
     }
-    [$isTransparent]() { return false; }
+    [$isTransparent]() {
+        return false;
+    }
 }
 class Ui extends XFAObject {
     extras; //?:Extras;
@@ -5510,11 +5641,13 @@ class Ui extends XFAObject {
     [$getExtra]() {
         if (this[$extra] === undefined) {
             for (const name of Object.getOwnPropertyNames(this)) {
-                if (name === "extras" || name === "picture")
+                if (name === "extras" || name === "picture") {
                     continue;
+                }
                 const obj = this[name];
-                if (!(obj instanceof XFAObject))
+                if (!(obj instanceof XFAObject)) {
                     continue;
+                }
                 this[$extra] = obj;
                 return obj;
             }
@@ -5525,8 +5658,9 @@ class Ui extends XFAObject {
     [$toHTML](availableSpace) {
         // TODO: picture.
         const obj = this[$getExtra]();
-        if (obj)
+        if (obj) {
             return obj[$toHTML](availableSpace);
+        }
         return HTMLResult.EMPTY;
     }
 }
@@ -5583,7 +5717,7 @@ export class Value extends XFAObject {
         this.override = getInteger({
             data: attributes.override,
             defaultValue: 0,
-            validate: x => x === 1,
+            validate: (x) => x === 1,
         });
         this.relevant = getRelevant(attributes.relevant);
         this.use = attributes.use || "";
@@ -5602,8 +5736,8 @@ export class Value extends XFAObject {
             }
         }
         const valueName = value[$nodeName];
-        if (this[valueName] !== null
-            && this[valueName] !== undefined) {
+        if (this[valueName] !== null &&
+            this[valueName] !== undefined) {
             this[valueName][$content] = value[$content];
             return;
         }
@@ -5620,24 +5754,28 @@ export class Value extends XFAObject {
     }
     [$text]() {
         if (this.exData) {
-            if (typeof this.exData[$content] === "string")
+            if (typeof this.exData[$content] === "string") {
                 return this.exData[$content].trim();
+            }
             return this.exData[$content][$text]().trim();
         }
         for (const name of Object.getOwnPropertyNames(this)) {
-            if (name === "image")
+            if (name === "image") {
                 continue;
+            }
             const obj = this[name];
-            if (obj instanceof XFAObject)
+            if (obj instanceof XFAObject) {
                 return (obj[$content] || "").toString().trim();
+            }
         }
         return undefined;
     }
     [$toHTML](availableSpace) {
         for (const name of Object.getOwnPropertyNames(this)) {
             const obj = this[name];
-            if (!(obj instanceof XFAObject))
+            if (!(obj instanceof XFAObject)) {
                 continue;
+            }
             return obj[$toHTML](availableSpace);
         }
         return HTMLResult.EMPTY;
@@ -5662,130 +5800,358 @@ class Variables extends XFAObject {
         this.use = attributes.use || "";
         this.usehref = attributes.usehref || "";
     }
-    [$isTransparent]() { return true; }
+    [$isTransparent]() {
+        return true;
+    }
 }
 export const TemplateNamespace = {
     [$buildXFAObject](name, attributes) {
-        if (TemplateNamespace.hasOwnProperty(name)) {
+        if (Object.hasOwn(TemplateNamespace, name)) {
             const node = TemplateNamespace[name](attributes);
             node[$setSetAttributes](attributes);
             return node;
         }
         return undefined;
     },
-    appearanceFilter(attrs) { return new AppearanceFilter(attrs); },
-    arc(attrs) { return new Arc(attrs); },
-    area(attrs) { return new Area(attrs); },
-    assist(attrs) { return new Assist(attrs); },
-    barcode(attrs) { return new Barcode(attrs); },
-    bind(attrs) { return new Bind(attrs); },
-    bindItems(attrs) { return new BindItems(attrs); },
-    bookend(attrs) { return new Bookend(attrs); },
-    boolean(attrs) { return new BooleanElement(attrs); },
-    border(attrs) { return new Border(attrs); },
-    break(attrs) { return new Break(attrs); },
-    breakAfter(attrs) { return new BreakAfter(attrs); },
-    breakBefore(attrs) { return new BreakBefore(attrs); },
-    button(attrs) { return new Button(attrs); },
-    calculate(attrs) { return new Calculate(attrs); },
-    caption(attrs) { return new Caption(attrs); },
-    certificate(attrs) { return new Certificate(attrs); },
-    certificates(attrs) { return new Certificates(attrs); },
-    checkButton(attrs) { return new CheckButton(attrs); },
-    choiceList(attrs) { return new ChoiceList(attrs); },
-    color(attrs) { return new Color(attrs); },
-    comb(attrs) { return new Comb(attrs); },
-    connect(attrs) { return new Connect(attrs); },
-    contentArea(attrs) { return new ContentArea(attrs); },
-    corner(attrs) { return new Corner(attrs); },
-    date(attrs) { return new DateElement(attrs); },
-    dateTime(attrs) { return new DateTime(attrs); },
-    dateTimeEdit(attrs) { return new DateTimeEdit(attrs); },
-    decimal(attrs) { return new Decimal(attrs); },
-    defaultUi(attrs) { return new DefaultUi(attrs); },
-    desc(attrs) { return new Desc(attrs); },
-    digestMethod(attrs) { return new DigestMethod(attrs); },
-    digestMethods(attrs) { return new DigestMethods(attrs); },
-    draw(attrs) { return new Draw(attrs); },
-    edge(attrs) { return new Edge(attrs); },
-    encoding(attrs) { return new Encoding(attrs); },
-    encodings(attrs) { return new Encodings(attrs); },
-    encrypt(attrs) { return new Encrypt(attrs); },
-    encryptData(attrs) { return new EncryptData(attrs); },
-    encryption(attrs) { return new Encryption(attrs); },
-    encryptionMethod(attrs) { return new EncryptionMethod(attrs); },
-    encryptionMethods(attrs) { return new EncryptionMethods(attrs); },
-    event(attrs) { return new Event(attrs); },
-    exData(attrs) { return new ExData(attrs); },
-    exObject(attrs) { return new ExObject(attrs); },
-    exclGroup(attrs) { return new ExclGroup(attrs); },
-    execute(attrs) { return new Execute(attrs); },
-    extras(attrs) { return new Extras(attrs); },
-    field(attrs) { return new Field(attrs); },
-    fill(attrs) { return new Fill(attrs); },
-    filter(attrs) { return new Filter(attrs); },
-    float(attrs) { return new Float(attrs); },
-    font(attrs) { return new Font(attrs); },
-    format(attrs) { return new Format(attrs); },
-    handler(attrs) { return new Handler(attrs); },
-    hyphenation(attrs) { return new Hyphenation(attrs); },
-    image(attrs) { return new Image(attrs); },
-    imageEdit(attrs) { return new ImageEdit(attrs); },
-    integer(attrs) { return new Integer(attrs); },
-    issuers(attrs) { return new Issuers(attrs); },
-    items(attrs) { return new Items(attrs); },
-    keep(attrs) { return new Keep(attrs); },
-    keyUsage(attrs) { return new KeyUsage(attrs); },
-    line(attrs) { return new Line(attrs); },
-    linear(attrs) { return new Linear(attrs); },
-    lockDocument(attrs) { return new LockDocument(attrs); },
-    manifest(attrs) { return new Manifest(attrs); },
-    margin(attrs) { return new Margin(attrs); },
-    mdp(attrs) { return new Mdp(attrs); },
-    medium(attrs) { return new Medium(attrs); },
-    message(attrs) { return new Message(attrs); },
-    numericEdit(attrs) { return new NumericEdit(attrs); },
-    occur(attrs) { return new Occur(attrs); },
-    oid(attrs) { return new Oid(attrs); },
-    oids(attrs) { return new Oids(attrs); },
-    overflow(attrs) { return new Overflow(attrs); },
-    pageArea(attrs) { return new PageArea(attrs); },
-    pageSet(attrs) { return new PageSet(attrs); },
-    para(attrs) { return new Para(attrs); },
-    passwordEdit(attrs) { return new PasswordEdit(attrs); },
-    pattern(attrs) { return new Pattern(attrs); },
-    picture(attrs) { return new Picture(attrs); },
-    proto(attrs) { return new Proto(attrs); },
-    radial(attrs) { return new Radial(attrs); },
-    reason(attrs) { return new Reason(attrs); },
-    reasons(attrs) { return new Reasons(attrs); },
-    rectangle(attrs) { return new Rectangle(attrs); },
-    ref(attrs) { return new RefElement(attrs); },
-    script(attrs) { return new Script(attrs); },
-    setProperty(attrs) { return new SetProperty(attrs); },
-    signData(attrs) { return new SignData(attrs); },
-    signature(attrs) { return new Signature(attrs); },
-    signing(attrs) { return new Signing(attrs); },
-    solid(attrs) { return new Solid(attrs); },
-    speak(attrs) { return new Speak(attrs); },
-    stipple(attrs) { return new Stipple(attrs); },
-    subform(attrs) { return new Subform(attrs); },
-    subformSet(attrs) { return new SubformSet(attrs); },
-    subjectDN(attrs) { return new SubjectDN(attrs); },
-    subjectDNs(attrs) { return new SubjectDNs(attrs); },
-    submit(attrs) { return new Submit(attrs); },
-    template(attrs) { return new Template(attrs); },
-    text(attrs) { return new Text(attrs); },
-    textEdit(attrs) { return new TextEdit(attrs); },
-    time(attrs) { return new Time(attrs); },
-    timeStamp(attrs) { return new TimeStamp(attrs); },
-    toolTip(attrs) { return new ToolTip(attrs); },
-    traversal(attrs) { return new Traversal(attrs); },
-    traverse(attrs) { return new Traverse(attrs); },
-    ui(attrs) { return new Ui(attrs); },
-    validate(attrs) { return new Validate(attrs); },
-    value(attrs) { return new Value(attrs); },
-    variables(attrs) { return new Variables(attrs); },
+    appearanceFilter(attrs) {
+        return new AppearanceFilter(attrs);
+    },
+    arc(attrs) {
+        return new Arc(attrs);
+    },
+    area(attrs) {
+        return new Area(attrs);
+    },
+    assist(attrs) {
+        return new Assist(attrs);
+    },
+    barcode(attrs) {
+        return new Barcode(attrs);
+    },
+    bind(attrs) {
+        return new Bind(attrs);
+    },
+    bindItems(attrs) {
+        return new BindItems(attrs);
+    },
+    bookend(attrs) {
+        return new Bookend(attrs);
+    },
+    boolean(attrs) {
+        return new BooleanElement(attrs);
+    },
+    border(attrs) {
+        return new Border(attrs);
+    },
+    break(attrs) {
+        return new Break(attrs);
+    },
+    breakAfter(attrs) {
+        return new BreakAfter(attrs);
+    },
+    breakBefore(attrs) {
+        return new BreakBefore(attrs);
+    },
+    button(attrs) {
+        return new Button(attrs);
+    },
+    calculate(attrs) {
+        return new Calculate(attrs);
+    },
+    caption(attrs) {
+        return new Caption(attrs);
+    },
+    certificate(attrs) {
+        return new Certificate(attrs);
+    },
+    certificates(attrs) {
+        return new Certificates(attrs);
+    },
+    checkButton(attrs) {
+        return new CheckButton(attrs);
+    },
+    choiceList(attrs) {
+        return new ChoiceList(attrs);
+    },
+    color(attrs) {
+        return new Color(attrs);
+    },
+    comb(attrs) {
+        return new Comb(attrs);
+    },
+    connect(attrs) {
+        return new Connect(attrs);
+    },
+    contentArea(attrs) {
+        return new ContentArea(attrs);
+    },
+    corner(attrs) {
+        return new Corner(attrs);
+    },
+    date(attrs) {
+        return new DateElement(attrs);
+    },
+    dateTime(attrs) {
+        return new DateTime(attrs);
+    },
+    dateTimeEdit(attrs) {
+        return new DateTimeEdit(attrs);
+    },
+    decimal(attrs) {
+        return new Decimal(attrs);
+    },
+    defaultUi(attrs) {
+        return new DefaultUi(attrs);
+    },
+    desc(attrs) {
+        return new Desc(attrs);
+    },
+    digestMethod(attrs) {
+        return new DigestMethod(attrs);
+    },
+    digestMethods(attrs) {
+        return new DigestMethods(attrs);
+    },
+    draw(attrs) {
+        return new Draw(attrs);
+    },
+    edge(attrs) {
+        return new Edge(attrs);
+    },
+    encoding(attrs) {
+        return new Encoding(attrs);
+    },
+    encodings(attrs) {
+        return new Encodings(attrs);
+    },
+    encrypt(attrs) {
+        return new Encrypt(attrs);
+    },
+    encryptData(attrs) {
+        return new EncryptData(attrs);
+    },
+    encryption(attrs) {
+        return new Encryption(attrs);
+    },
+    encryptionMethod(attrs) {
+        return new EncryptionMethod(attrs);
+    },
+    encryptionMethods(attrs) {
+        return new EncryptionMethods(attrs);
+    },
+    event(attrs) {
+        return new Event(attrs);
+    },
+    exData(attrs) {
+        return new ExData(attrs);
+    },
+    exObject(attrs) {
+        return new ExObject(attrs);
+    },
+    exclGroup(attrs) {
+        return new ExclGroup(attrs);
+    },
+    execute(attrs) {
+        return new Execute(attrs);
+    },
+    extras(attrs) {
+        return new Extras(attrs);
+    },
+    field(attrs) {
+        return new Field(attrs);
+    },
+    fill(attrs) {
+        return new Fill(attrs);
+    },
+    filter(attrs) {
+        return new Filter(attrs);
+    },
+    float(attrs) {
+        return new Float(attrs);
+    },
+    font(attrs) {
+        return new Font(attrs);
+    },
+    format(attrs) {
+        return new Format(attrs);
+    },
+    handler(attrs) {
+        return new Handler(attrs);
+    },
+    hyphenation(attrs) {
+        return new Hyphenation(attrs);
+    },
+    image(attrs) {
+        return new Image(attrs);
+    },
+    imageEdit(attrs) {
+        return new ImageEdit(attrs);
+    },
+    integer(attrs) {
+        return new Integer(attrs);
+    },
+    issuers(attrs) {
+        return new Issuers(attrs);
+    },
+    items(attrs) {
+        return new Items(attrs);
+    },
+    keep(attrs) {
+        return new Keep(attrs);
+    },
+    keyUsage(attrs) {
+        return new KeyUsage(attrs);
+    },
+    line(attrs) {
+        return new Line(attrs);
+    },
+    linear(attrs) {
+        return new Linear(attrs);
+    },
+    lockDocument(attrs) {
+        return new LockDocument(attrs);
+    },
+    manifest(attrs) {
+        return new Manifest(attrs);
+    },
+    margin(attrs) {
+        return new Margin(attrs);
+    },
+    mdp(attrs) {
+        return new Mdp(attrs);
+    },
+    medium(attrs) {
+        return new Medium(attrs);
+    },
+    message(attrs) {
+        return new Message(attrs);
+    },
+    numericEdit(attrs) {
+        return new NumericEdit(attrs);
+    },
+    occur(attrs) {
+        return new Occur(attrs);
+    },
+    oid(attrs) {
+        return new Oid(attrs);
+    },
+    oids(attrs) {
+        return new Oids(attrs);
+    },
+    overflow(attrs) {
+        return new Overflow(attrs);
+    },
+    pageArea(attrs) {
+        return new PageArea(attrs);
+    },
+    pageSet(attrs) {
+        return new PageSet(attrs);
+    },
+    para(attrs) {
+        return new Para(attrs);
+    },
+    passwordEdit(attrs) {
+        return new PasswordEdit(attrs);
+    },
+    pattern(attrs) {
+        return new Pattern(attrs);
+    },
+    picture(attrs) {
+        return new Picture(attrs);
+    },
+    proto(attrs) {
+        return new Proto(attrs);
+    },
+    radial(attrs) {
+        return new Radial(attrs);
+    },
+    reason(attrs) {
+        return new Reason(attrs);
+    },
+    reasons(attrs) {
+        return new Reasons(attrs);
+    },
+    rectangle(attrs) {
+        return new Rectangle(attrs);
+    },
+    ref(attrs) {
+        return new RefElement(attrs);
+    },
+    script(attrs) {
+        return new Script(attrs);
+    },
+    setProperty(attrs) {
+        return new SetProperty(attrs);
+    },
+    signData(attrs) {
+        return new SignData(attrs);
+    },
+    signature(attrs) {
+        return new Signature(attrs);
+    },
+    signing(attrs) {
+        return new Signing(attrs);
+    },
+    solid(attrs) {
+        return new Solid(attrs);
+    },
+    speak(attrs) {
+        return new Speak(attrs);
+    },
+    stipple(attrs) {
+        return new Stipple(attrs);
+    },
+    subform(attrs) {
+        return new Subform(attrs);
+    },
+    subformSet(attrs) {
+        return new SubformSet(attrs);
+    },
+    subjectDN(attrs) {
+        return new SubjectDN(attrs);
+    },
+    subjectDNs(attrs) {
+        return new SubjectDNs(attrs);
+    },
+    submit(attrs) {
+        return new Submit(attrs);
+    },
+    template(attrs) {
+        return new Template(attrs);
+    },
+    text(attrs) {
+        return new Text(attrs);
+    },
+    textEdit(attrs) {
+        return new TextEdit(attrs);
+    },
+    time(attrs) {
+        return new Time(attrs);
+    },
+    timeStamp(attrs) {
+        return new TimeStamp(attrs);
+    },
+    toolTip(attrs) {
+        return new ToolTip(attrs);
+    },
+    traversal(attrs) {
+        return new Traversal(attrs);
+    },
+    traverse(attrs) {
+        return new Traverse(attrs);
+    },
+    ui(attrs) {
+        return new Ui(attrs);
+    },
+    validate(attrs) {
+        return new Validate(attrs);
+    },
+    value(attrs) {
+        return new Value(attrs);
+    },
+    variables(attrs) {
+        return new Variables(attrs);
+    },
 };
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=template.js.map

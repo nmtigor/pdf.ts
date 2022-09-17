@@ -17,15 +17,20 @@
  * limitations under the License.
  */
 
-import { isObjectLike } from "../../lib/jslang.js";
-/*81---------------------------------------------------------------------------*/
+import { GENERIC, SKIP_BABEL } from "../../global.ts";
+import { html } from "../../lib/dom.ts";
+import { isObjectLike } from "../../lib/jslang.ts";
+/*80--------------------------------------------------------------------------*/
 
-export class OverlayManager
-{
-  #overlays = new WeakMap<HTMLDialogElement, { canForceClose:boolean; }>();
+export class OverlayManager {
+  #overlays = new WeakMap<HTMLDialogElement, { canForceClose: boolean }>();
 
-  #active:HTMLDialogElement | undefined;
-  get active() { return this.#active; }
+  #active: HTMLDialogElement | undefined;
+  get active() {
+    return this.#active;
+  }
+
+  _dialogPolyfillCSS?: boolean;
 
   /**
    * @param dialog The overlay's DOM element.
@@ -33,23 +38,34 @@ export class OverlayManager
    *  an active overlay. The default is `false`.
    * @return A promise that is resolved when the overlay has been registered.
    */
-  async register( dialog:HTMLDialogElement, canForceClose=false )
-  {
-    if( !isObjectLike(dialog) )
+  async register(dialog: HTMLDialogElement, canForceClose = false) {
+    if (!isObjectLike(dialog)) {
       throw new Error("Not enough parameters.");
-    else if( this.#overlays.has(dialog) )
+    } else if (this.#overlays.has(dialog)) {
       throw new Error("The overlay is already registered.");
-    this.#overlays.set( dialog, { canForceClose });
+    }
+    this.#overlays.set(dialog, { canForceClose });
 
-    // #if GENERIC && !SKIP_BABEL
-      if( !dialog.showModal )
-      {
-        const dialogPolyfill = (<any>globalThis).require("dialog-polyfill/dist/dialog-polyfill.js");
+    /*#static*/ if (GENERIC && !SKIP_BABEL) {
+      if (!dialog.showModal) {
+        const dialogPolyfill = (<any> globalThis).require(
+          "dialog-polyfill/dist/dialog-polyfill.js",
+        );
         dialogPolyfill.registerDialog(dialog);
-      }
-    // #endif
 
-    dialog.addEventListener("cancel", evt => {
+        if (!this._dialogPolyfillCSS) {
+          this._dialogPolyfillCSS = true;
+
+          const style = html("style");
+          // style.textContent = PDFJSDev.eval( "DIALOG_POLYFILL_CSS");
+          style.textContent = "";
+
+          document.head.prepend(style);
+        }
+      }
+    }
+
+    dialog.addEventListener("cancel", (evt) => {
       this.#active = undefined;
     });
   }
@@ -58,12 +74,12 @@ export class OverlayManager
    * @param dialog The overlay's DOM element.
    * @return A promise that is resolved when the overlay has been unregistered.
    */
-  async unregister( dialog:HTMLDialogElement )
-  {
-    if( !this.#overlays.has(dialog) )
+  async unregister(dialog: HTMLDialogElement) {
+    if (!this.#overlays.has(dialog)) {
       throw new Error("The overlay does not exist.");
-    else if( this.#active === dialog )
+    } else if (this.#active === dialog) {
       throw new Error("The overlay cannot be removed while it is active.");
+    }
     this.#overlays.delete(dialog);
   }
 
@@ -71,20 +87,17 @@ export class OverlayManager
    * @param dialog The overlay's DOM element.
    * @return A promise that is resolved when the overlay has been opened.
    */
-  async open( dialog:HTMLDialogElement )
-  {
-    if( !this.#overlays.has(dialog) )
+  async open(dialog: HTMLDialogElement) {
+    if (!this.#overlays.has(dialog)) {
       throw new Error("The overlay does not exist.");
-    else if( this.#active )
-    {
-      if( this.#active === dialog )
+    } else if (this.#active) {
+      if (this.#active === dialog) {
         throw new Error("The overlay is already active.");
-      else if( this.#overlays.get(dialog)!.canForceClose )
-      {
+      } else if (this.#overlays.get(dialog)!.canForceClose) {
         await this.close();
-      } 
-      else 
+      } else {
         throw new Error("Another overlay is currently active.");
+      }
     }
     this.#active = dialog;
     dialog.showModal();
@@ -94,16 +107,16 @@ export class OverlayManager
    * @param dialog The overlay's DOM element.
    * @return A promise that is resolved when the overlay has been closed.
    */
-  async close( dialog=this.#active! )
-  {
-    if( !this.#overlays.has(dialog) )
+  async close(dialog = this.#active!) {
+    if (!this.#overlays.has(dialog)) {
       throw new Error("The overlay does not exist.");
-    else if( !this.#active )
+    } else if (!this.#active) {
       throw new Error("The overlay is currently not active.");
-    else if( this.#active !== dialog )
+    } else if (this.#active !== dialog) {
       throw new Error("Another overlay is currently active.");
+    }
     dialog.close();
     this.#active = undefined;
   }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

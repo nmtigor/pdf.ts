@@ -1,5 +1,5 @@
-import { type Constructor } from "./alias.js";
-import { $vuu, $Vuu } from "./symbols.js";
+import { AbstractConstructor } from "./alias.js";
+import { $Vuu, $vuu } from "./symbols.js";
 import { type ReportedError } from "./util/trace.js";
 /**
  * Inwards API, i.e., API called from outside of `Coo`.
@@ -8,22 +8,23 @@ export interface CooInterface {
     reportError?: (error: Error) => void | Promise<void>;
 }
 /**
- * Only has access to other Coo's through `ci`.
- * Notice, a in Coo contained Coo also only has access to other Coo's.
- *
- * @final
+ * Access rule like scope:
+ * Only has access to sibling or child Coo's through `ci`.
+ * Child Coo accessing parent Coo has no such restriction.
  */
 export declare abstract class Coo<CI extends CooInterface = CooInterface> {
     abstract get ci(): CI;
+    getParentCoo?<PC extends Coo>(): PC;
 }
 declare global {
     interface Node {
         [$vuu]?: Vuu;
-        [$Vuu]?: Constructor<Vuu>;
+        [$Vuu]?: AbstractConstructor<Vuu>;
     }
 }
 /**
- * Wrapper of DOM
+ * Wrapper of DOM.
+ * Vuu ⊆ Coo
  */
 export declare abstract class Vuu<C extends Coo = Coo, E extends Element = Element> {
     protected coo$: C;
@@ -31,26 +32,24 @@ export declare abstract class Vuu<C extends Coo = Coo, E extends Element = Eleme
     protected el$: E;
     get el(): E;
     /**
-     * @param { headconst } coo_x
-     * @param { headconst } el_x
+     * @headconst @param coo_x
+     * @headconst @param el_x
      */
     constructor(coo_x: C, el_x: E);
-    get parentvuu1(): Vuu | undefined;
+    get parentVuu1(): Vuu | undefined;
     /**
-     * @param { headconst } node_x
+     * @headconst @param node_x
      */
-    static vuuOf(node_x: Node): Vuu<Coo<CooInterface>, Element> | undefined;
+    static of(node_x: Node): Vuu | undefined;
     /**
-     * @param { headconst } ret_x
-     * @param { headconst } refvuu
-     * @param { headconst } el_x
+     * @headconst @param ret_x
+     * @headconst @param refvuu
      */
-    attachBefore<V extends Vuu<C>>(ret_x: V, refvuu?: Vuu, el_x?: E): V;
+    attachBefore<V extends Vuu<C>>(ret_x: V, refvuu?: Vuu): V;
     /**
-     * @param { headconst } ret_x
-     * @param { headconst } el_x
+     * @headconst @param ret_x
      */
-    detach<V extends Vuu<C>>(ret_x: V, el_x?: E): V;
+    detach<V extends Vuu<C>>(ret_x: V): V;
     on(...args: [string, any, any?]): void;
     off(...args: [string, any, any?]): void;
 }
@@ -61,15 +60,15 @@ export declare class SVGVuu<C extends Coo = Coo, E extends SVGElement = SVGEleme
 /**
  * It is a `Coo` functionally.
  */
-export interface HTMLVCoo<CI extends CooInterface = CooInterface, E extends HTMLElement = HTMLElement> extends HTMLVuu<Coo<CI>, E>, Coo<CI> {
+export interface HTMLVCo<CI extends CooInterface = CooInterface, E extends HTMLElement = HTMLElement> extends HTMLVuu<Coo<CI>, E>, Coo<CI> {
 }
-declare const HTMLVCoo_base: import("./alias.js").AbstractConstructor<object>;
-export declare abstract class HTMLVCoo<CI extends CooInterface, E extends HTMLElement> extends HTMLVCoo_base {
+declare const HTMLVCo_base: AbstractConstructor<object>;
+export declare abstract class HTMLVCo<CI extends CooInterface, E extends HTMLElement> extends HTMLVCo_base {
     #private;
-    /** @implements */
+    /** @implement */
     get ci(): CI;
     /**
-     * @param { headconst } el_x
+     * @headconst @param el_x
      */
     constructor(el_x: E);
     showReportedError?(re_x: ReportedError): void;
@@ -77,61 +76,61 @@ export declare abstract class HTMLVCoo<CI extends CooInterface, E extends HTMLEl
 /**
  * It is a Coo functionally.
  */
-export interface SVGVCoo<CI extends CooInterface = CooInterface, E extends SVGElement = SVGElement> extends SVGVuu<Coo<CI>, E>, Coo<CI> {
+export interface SVGVCo<CI extends CooInterface = CooInterface, E extends SVGElement = SVGElement> extends SVGVuu<Coo<CI>, E>, Coo<CI> {
 }
-declare const SVGVCoo_base: import("./alias.js").AbstractConstructor<object>;
-export declare abstract class SVGVCoo<CI extends CooInterface, E extends SVGElement> extends SVGVCoo_base {
+declare const SVGVCo_base: AbstractConstructor<object>;
+export declare abstract class SVGVCo<CI extends CooInterface, E extends SVGElement> extends SVGVCo_base {
     #private;
-    /** @implements */
+    /** @implement */
     get ci(): CI;
     /**
-     * @param { headconst } el_x
+     * @headconst @param el_x
      */
     constructor(el_x: E);
 }
-export declare class SVGViewbox<CI extends CooInterface = CooInterface> extends SVGVCoo<CI> {
+export declare class SVGViewbox<CI extends CooInterface = CooInterface> extends SVGVCo<CI> {
     /**
-     * @param { headconst } coo_x
-     * @param { const } viewBox_x
+     * @headconst @param coo_x
+     * @const @param viewBox_x
      */
     constructor(viewBox_x?: string);
 }
-export declare type MooEq<T> = (a: T, b: T) => boolean;
-export declare type MooHandler<T, D = any> = (newval: T, oldval?: T, data?: D) => void;
-export declare class Moo<T, D = any> {
+export declare type MooEq<T extends {} | null> = (a: T, b: T) => boolean;
+export declare type MooHandler<T extends {} | null, D = any> = (newval: T, oldval?: T, data?: D) => void;
+export declare class Moo<T extends {} | null, D = any> {
     #private;
     get val(): T;
     get newval(): T;
     get _len(): number;
+    set forceOnce(force: boolean);
+    force(): this;
     set data(data_x: D);
     /**
-     * @param { headconst } val_x
-     * @param { headocnst } eq_x
-     * @param { const } force
+     * @headconst @param val_x
+     * @headconst @param eq_x
+     * @const @param force
      */
     constructor(val_x: T, eq_x?: (a: T, b: T) => boolean, force_x?: "force");
-    reset(): this;
     /**
      * Without invoking any callbacks.
      */
     set(val: T): void;
+    reset(): this;
     /** @final */
-    registHandler(handler_x: MooHandler<T, D>, newval_x?: T, oldval_x?: T, force_x?: "force", index_x?: number): void;
+    registHandler(handler_x: MooHandler<T, D>, match_newval_x?: T, match_oldval_x?: T, force_x?: "force", index_x?: number): void;
     /** @final */
-    removeHandler(handler_x: MooHandler<T, D>, newval_x?: T, oldval_x?: T): void;
+    removeHandler(handler_x: MooHandler<T, D>, match_newval_x?: T, match_oldval_x?: T): void;
     /** @final */
-    registOnceHandler(handler_x: MooHandler<T, D>, newval_x?: T, oldval_x?: T, force_x?: "force", index_x?: number): void;
+    registOnceHandler(handler_x: MooHandler<T, D>, match_newval_x?: T, match_oldval_x?: T, force_x?: "force", index_x?: number): void;
     /** @final */
     on(newval_x: T, handler_x: MooHandler<T, D>, force_x?: "force", index_x?: number): void;
     /** @final */
     off(newval_x: T, handler_x: MooHandler<T, D>): void;
     /** @final */
     once(newval_x: T, handler_x: MooHandler<T, D>, force_x?: "force", index_x?: number): void;
-    shareHandlerTo(rhs: Moo<T>): void;
-    set forceOnce(force: boolean);
-    force(): this;
-    refresh(): void;
     set val(val_x: T);
+    refresh(): void;
+    shareHandlerTo(rhs: Moo<T, D>): void;
 }
 export {};
 //# sourceMappingURL=mv.d.ts.map

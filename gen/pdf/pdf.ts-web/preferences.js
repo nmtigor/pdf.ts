@@ -15,22 +15,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { AppOptions, OptionKind } from "./app_options.js";
-/*81---------------------------------------------------------------------------*/
+import { CHROME, PRODUCTION } from "../../global.js";
+import { AppOptions, OptionKind, } from "./app_options.js";
+/*80--------------------------------------------------------------------------*/
 /**
  * BasePreferences - Abstract base class for storing persistent settings.
  *   Used for settings that should be applied to all opened documents,
  *   or every time the viewer is loaded.
  */
 export class BasePreferences {
-    #defaults = Object.freeze(AppOptions.getAll(OptionKind.PREFERENCE)
-    // PDFJSDev.eval("DEFAULT_PREFERENCES")
-    );
-    // #defaults!:UserOptions;
+    #defaults = Object.freeze(!PRODUCTION /*#static*/ ? AppOptions.getAll(OptionKind.PREFERENCE) : // : PDFJSDev.eval("DEFAULT_PREFERENCES")
+        AppOptions.getAll(OptionKind.PREFERENCE));
+    defaults;
     #prefs = Object.create(null);
     #initializedPromise;
     constructor() {
-        this.#initializedPromise = this._readFromStorage(this.#defaults).then(prefs => {
+        /*#static*/ 
+        this.#initializedPromise = this._readFromStorage(this.#defaults).then((prefs) => {
             for (const name in this.#defaults) {
                 const prefValue = prefs?.[name];
                 // Ignore preferences whose types don't match the default values.
@@ -49,7 +50,7 @@ export class BasePreferences {
         await this.#initializedPromise;
         const prefs = this.#prefs;
         this.#prefs = Object.create(null);
-        return this._writeToStorage(this.#defaults).catch(reason => {
+        return this._writeToStorage(this.#defaults).catch((reason) => {
             // Revert all preference values, since writing to storage failed.
             this.#prefs = prefs;
             throw reason;
@@ -86,7 +87,7 @@ export class BasePreferences {
             }
         }
         this.#prefs[name] = value;
-        return this._writeToStorage(this.#prefs).catch(reason => {
+        return this._writeToStorage(this.#prefs).catch((reason) => {
             // Revert all preference values, since writing to storage failed.
             this.#prefs = prefs;
             throw reason;
@@ -115,10 +116,11 @@ export class BasePreferences {
         await this.#initializedPromise;
         const obj = Object.create(null);
         for (const name in this.#defaults) {
-            obj[name] = this.#prefs[name] ?? this.#defaults[name];
+            obj[name] = this.#prefs[name] ??
+                this.#defaults[name];
         }
         return obj;
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=preferences.js.map

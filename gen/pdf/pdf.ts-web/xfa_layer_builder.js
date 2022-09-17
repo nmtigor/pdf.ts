@@ -20,7 +20,7 @@
 /** @typedef {import("../src/display/display_utils").PageViewport} PageViewport */
 /** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
 import { html } from "../../lib/dom.js";
-import { XfaLayer } from "../pdf.ts-src/display/xfa_layer.js";
+import { XfaLayer, } from "../pdf.ts-src/pdf.js";
 export class XfaLayerBuilder {
     pageDiv;
     pdfPage;
@@ -29,8 +29,10 @@ export class XfaLayerBuilder {
     xfaHtml;
     div;
     #cancelled = false;
-    cancel() { this.#cancelled = true; }
-    constructor({ pageDiv, pdfPage, annotationStorage = undefined, linkService, xfaHtml = undefined }) {
+    cancel() {
+        this.#cancelled = true;
+    }
+    constructor({ pageDiv, pdfPage, annotationStorage = undefined, linkService, xfaHtml = undefined, }) {
         this.pageDiv = pageDiv;
         this.pdfPage = pdfPage;
         this.annotationStorage = annotationStorage;
@@ -54,7 +56,7 @@ export class XfaLayerBuilder {
             };
             // Create an xfa layer div and render the form
             const div = html("div");
-            this.pageDiv.appendChild(div);
+            this.pageDiv.append(div);
             parameters.div = div;
             const result = XfaLayer.render(parameters);
             return Promise.resolve(result);
@@ -62,7 +64,7 @@ export class XfaLayerBuilder {
         // intent === "display"
         return this.pdfPage
             .getXfa()
-            .then(xfaHtml => {
+            .then((xfaHtml) => {
             if (this.#cancelled || !xfaHtml)
                 return { textDivs: [] };
             const parameters = {
@@ -79,11 +81,11 @@ export class XfaLayerBuilder {
             }
             // Create an xfa layer div and render the form
             this.div = html("div");
-            this.pageDiv.appendChild(this.div);
+            this.pageDiv.append(this.div);
             parameters.div = this.div;
             return XfaLayer.render(parameters);
         })
-            .catch(error => {
+            .catch((error) => {
             console.error(error);
         });
     }
@@ -93,5 +95,5 @@ export class XfaLayerBuilder {
         this.div.hidden = true;
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=xfa_layer_builder.js.map

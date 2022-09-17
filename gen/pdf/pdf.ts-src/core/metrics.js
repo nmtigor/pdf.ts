@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 import { getLookupTableFactory } from "./core_utils.js";
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 // The Metrics object contains glyph widths (in glyph space units).
 // As per PDF spec, for most fonts (Type 3 being an exception) a glyph
 // space unit corresponds to 1/1000th of text space unit.
@@ -26,7 +26,7 @@ export const getMetrics = getLookupTableFactory((t) => {
     t["Courier-BoldOblique"] = 600;
     t["Courier-Oblique"] = 600;
     // eslint-disable-next-line no-shadow
-    t.Helvetica = getLookupTableFactory(function (t) {
+    t.Helvetica = getLookupTableFactory((t) => {
         t.space = 278;
         t.exclam = 278;
         t.quotedbl = 355;
@@ -344,7 +344,7 @@ export const getMetrics = getLookupTableFactory((t) => {
         t.Euro = 556;
     });
     // eslint-disable-next-line no-shadow
-    t["Helvetica-Bold"] = getLookupTableFactory(function (t) {
+    t["Helvetica-Bold"] = getLookupTableFactory((t) => {
         t.space = 278;
         t.exclam = 333;
         t.quotedbl = 474;
@@ -662,7 +662,7 @@ export const getMetrics = getLookupTableFactory((t) => {
         t.Euro = 556;
     });
     // eslint-disable-next-line no-shadow
-    t["Helvetica-BoldOblique"] = getLookupTableFactory(function (t) {
+    t["Helvetica-BoldOblique"] = getLookupTableFactory((t) => {
         t.space = 278;
         t.exclam = 333;
         t.quotedbl = 474;
@@ -980,7 +980,7 @@ export const getMetrics = getLookupTableFactory((t) => {
         t.Euro = 556;
     });
     // eslint-disable-next-line no-shadow
-    t["Helvetica-Oblique"] = getLookupTableFactory(function (t) {
+    t["Helvetica-Oblique"] = getLookupTableFactory((t) => {
         t.space = 278;
         t.exclam = 278;
         t.quotedbl = 355;
@@ -1298,7 +1298,7 @@ export const getMetrics = getLookupTableFactory((t) => {
         t.Euro = 556;
     });
     // eslint-disable-next-line no-shadow
-    t.Symbol = getLookupTableFactory(function (t) {
+    t.Symbol = getLookupTableFactory((t) => {
         t.space = 250;
         t.exclam = 333;
         t.universal = 713;
@@ -1491,7 +1491,7 @@ export const getMetrics = getLookupTableFactory((t) => {
         t.apple = 790;
     });
     // eslint-disable-next-line no-shadow
-    t["Times-Roman"] = getLookupTableFactory(function (t) {
+    t["Times-Roman"] = getLookupTableFactory((t) => {
         t.space = 250;
         t.exclam = 333;
         t.quotedbl = 408;
@@ -1809,7 +1809,7 @@ export const getMetrics = getLookupTableFactory((t) => {
         t.Euro = 500;
     });
     // eslint-disable-next-line no-shadow
-    t["Times-Bold"] = getLookupTableFactory(function (t) {
+    t["Times-Bold"] = getLookupTableFactory((t) => {
         t.space = 250;
         t.exclam = 333;
         t.quotedbl = 555;
@@ -2127,7 +2127,7 @@ export const getMetrics = getLookupTableFactory((t) => {
         t.Euro = 500;
     });
     // eslint-disable-next-line no-shadow
-    t["Times-BoldItalic"] = getLookupTableFactory(function (t) {
+    t["Times-BoldItalic"] = getLookupTableFactory((t) => {
         t.space = 250;
         t.exclam = 389;
         t.quotedbl = 555;
@@ -2445,7 +2445,7 @@ export const getMetrics = getLookupTableFactory((t) => {
         t.Euro = 500;
     });
     // eslint-disable-next-line no-shadow
-    t["Times-Italic"] = getLookupTableFactory(function (t) {
+    t["Times-Italic"] = getLookupTableFactory((t) => {
         t.space = 250;
         t.exclam = 333;
         t.quotedbl = 420;
@@ -2763,7 +2763,7 @@ export const getMetrics = getLookupTableFactory((t) => {
         t.Euro = 500;
     });
     // eslint-disable-next-line no-shadow
-    t.ZapfDingbats = getLookupTableFactory(function (t) {
+    t.ZapfDingbats = getLookupTableFactory((t) => {
         t.space = 278;
         t.a1 = 974;
         t.a2 = 961;
@@ -2968,7 +2968,7 @@ export const getMetrics = getLookupTableFactory((t) => {
         t.a191 = 918;
     });
 });
-export const getFontBasicMetrics = getLookupTableFactory(function (t) {
+export const getFontBasicMetrics = getLookupTableFactory((t) => {
     t.Courier = {
         ascent: 629,
         descent: -157,
@@ -3054,5 +3054,5 @@ export const getFontBasicMetrics = getLookupTableFactory(function (t) {
         xHeight: NaN,
     };
 });
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=metrics.js.map

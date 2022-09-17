@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 import { BaseViewer } from "./base_viewer.js";
-import { SpreadMode, ScrollMode } from "./ui_utils.js";
-/*81---------------------------------------------------------------------------*/
+import { ScrollMode, SpreadMode } from "./ui_utils.js";
+/*80--------------------------------------------------------------------------*/
 export class PDFViewer extends BaseViewer {
 }
 export class PDFSinglePageViewer extends BaseViewer {
@@ -30,5 +30,5 @@ export class PDFSinglePageViewer extends BaseViewer {
     set spreadMode(mode) { }
     _updateSpreadMode() { }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=pdf_viewer.js.map

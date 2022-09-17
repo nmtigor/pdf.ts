@@ -1,81 +1,87 @@
-import { VerbosityLevel } from "../pdf.ts-src/shared/util.js";
-import { RendererType, ScrollMode, SpreadMode } from "./ui_utils.js";
-export declare const compatibilityParams: any;
+import { AnnotationEditorType, AnnotationMode, VerbosityLevel } from "../pdf.ts-src/pdf.js";
+import { CursorTool } from "./pdf_cursor_tools.js";
+import { LinkTarget } from "./pdf_link_service.js";
+import { RendererType, ScrollMode, SidebarView, SpreadMode, TextLayerMode } from "./ui_utils.js";
 export declare const enum OptionKind {
     VIEWER = 2,
     API = 4,
     WORKER = 8,
     PREFERENCE = 128
 }
+export declare enum ViewerCssTheme {
+    AUTOMATIC = 0,
+    LIGHT = 1,
+    DARK = 2
+}
 export declare const enum ViewOnLoad {
     UNKNOWN = -1,
     PREVIOUS = 0,
     INITIAL = 1
 }
+export declare let D_base: string;
+declare type _DefaultOptions = typeof defaultOptions;
+export declare type OptionName = keyof _DefaultOptions;
+declare type _OptionType = number | string | boolean | Worker;
+export declare type UserOptions = {
+    [ON in OptionName]?: _OptionType | undefined;
+};
+export declare const compatibilityParams: UserOptions;
 /**
  * NOTE: These options are used to generate the `default_preferences.json` file,
  *       see `OptionKind.PREFERENCE`, hence the values below must use only
  *       primitive types and cannot rely on any imported types.
  */
 declare const defaultOptions: {
+    annotationEditorMode: {
+        value: AnnotationEditorType;
+        kind: number;
+    };
     annotationMode: {
-        /** @type {number} */
-        value: number;
+        value: AnnotationMode;
         kind: number;
     };
     cursorToolOnLoad: {
-        /** @type {number} */
-        value: number;
+        value: CursorTool;
         kind: number;
     };
     defaultUrl: {
-        /** @type {string} */
-        value: string;
+        value: string | undefined;
         kind: OptionKind;
     };
     defaultZoomValue: {
-        /** @type {string} */
         value: string;
         kind: number;
     };
     disableHistory: {
-        /** @type {boolean} */
         value: boolean;
         kind: OptionKind;
     };
     disablePageLabels: {
-        /** @type {boolean} */
         value: boolean;
         kind: number;
     };
     disablePreferences: {
-        /** @type {boolean} */
         value: boolean;
-        kind: number;
+        kind: OptionKind;
     };
     enablePermissions: {
-        /** @type {boolean} */
         value: boolean;
         kind: number;
     };
     enablePrintAutoRotate: {
-        /** @type {boolean} */
         value: boolean;
         kind: number;
     };
     enableScripting: {
-        /** @type {boolean} */
         value: boolean;
         kind: number;
     };
     externalLinkRel: {
-        /** @type {string} */
         value: string;
         kind: OptionKind;
     };
     externalLinkTarget: {
-        /** @type {number} */
-        value: number;
+        value: LinkTarget;
         kind: number;
     };
     historyUpdateUrl: {
@@ -84,7 +90,6 @@ declare const defaultOptions: {
         kind: number;
     };
     ignoreDestinationZoom: {
-        /** @type {boolean} */
         value: boolean;
         kind: number;
     };
@@ -94,177 +99,191 @@ declare const defaultOptions: {
         kind: OptionKind;
     };
     locale: {
-        /** @type {string} */
-        value: string;
-        kind: number;
-    };
-    maxCanvasPixels: {
-        /** @type {number} */
-        value: number;
-        compatibility: any;
+        value: string | undefined;
         kind: OptionKind;
     };
+    maxCanvasPixels: {
+        value: number;
+        kind: OptionKind;
+    };
+    forcePageColors: {
+        value: boolean;
+        kind: number;
+    };
     pageColorsBackground: {
-        /** @type {string} */
         value: string;
         kind: number;
     };
     pageColorsForeground: {
-        /** @type {string} */
         value: string;
         kind: number;
     };
     pdfBugEnabled: {
-        /** @type {boolean} */
         value: boolean;
         kind: number;
     };
     printResolution: {
-        /** @type {number} */
         value: number;
         kind: OptionKind;
     };
     renderer: {
-        /** @type {RendererType} */
-        value: RendererType;
+        value: RendererType | undefined;
         kind: OptionKind;
     };
     sidebarViewOnLoad: {
-        /** @type {number} */
-        value: number;
+        value: SidebarView;
         kind: number;
     };
     scrollModeOnLoad: {
-        /** @type {ScrollMode} */
         value: ScrollMode;
         kind: number;
     };
     spreadModeOnLoad: {
-        /** @type {SpreadMode} */
         value: SpreadMode;
         kind: number;
     };
     textLayerMode: {
-        /** @type {number} */
-        value: number;
+        value: TextLayerMode;
         kind: number;
     };
     useOnlyCssZoom: {
-        /** @type {boolean} */
         value: boolean;
         kind: number;
     };
     viewerCssTheme: {
-        /** @type {number} */
-        value: number;
+        value: ViewerCssTheme;
         kind: number;
     };
     viewOnLoad: {
-        /** @type {ViewOnLoad} */
         value: ViewOnLoad;
         kind: number;
     };
     cMapPacked: {
-        /** @type {boolean} */
         value: boolean;
         kind: OptionKind;
     };
     cMapUrl: {
-        /** @type {string} */
         value: string;
         kind: OptionKind;
     };
     disableAutoFetch: {
-        /** @type {boolean} */
         value: boolean;
         kind: number;
     };
     disableFontFace: {
-        /** @type {boolean} */
         value: boolean;
         kind: number;
     };
     disableRange: {
-        /** @type {boolean} */
         value: boolean;
         kind: number;
     };
     disableStream: {
-        /** @type {boolean} */
         value: boolean;
         kind: number;
     };
     disableTelemetry: {
-        /** @type {boolean} */
         value: boolean;
-        kind: number;
+        kind: OptionKind;
     };
     docBaseUrl: {
-        /** @type {string} */
-        value: string;
+        value: string | undefined;
         kind: OptionKind;
     };
     enableXfa: {
-        /** @type {boolean} */
         value: boolean;
         kind: number;
     };
     fontExtraProperties: {
-        /** @type {boolean} */
         value: boolean;
         kind: OptionKind;
     };
     isEvalSupported: {
-        /** @type {boolean} */
         value: boolean;
         kind: OptionKind;
     };
     maxImageSize: {
-        /** @type {number} */
         value: number;
         kind: OptionKind;
     };
     pdfBug: {
-        /** @type {boolean} */
         value: boolean;
         kind: OptionKind;
     };
     standardFontDataUrl: {
-        /** @type {string} */
         value: string;
         kind: OptionKind;
     };
     verbosity: {
-        /** @type {VerbosityLevel} */
         value: VerbosityLevel;
         kind: OptionKind;
     };
     workerPort: {
-        /** @type {Object} */
         value: Worker | undefined;
         kind: OptionKind;
     };
     workerSrc: {
-        /** @type {string} */
         value: string;
         kind: OptionKind;
     };
     sandboxBundleSrc: {
-        /** @type {string} */
-        value: string;
-        kind: number;
+        value: string | undefined;
+        kind: OptionKind;
     };
 };
-declare type DefaultOptions = typeof defaultOptions;
-export declare type OptionName = keyof DefaultOptions;
-declare type OptionType<ON extends OptionName> = DefaultOptions[ON]["value"];
-export declare type UserOptions = {
-    [ON in OptionName]?: OptionType<ON>;
-};
 export declare abstract class AppOptions {
-    static get<ON extends OptionName>(name: ON): OptionType<ON>;
+    #private;
+    static get annotationEditorMode(): AnnotationEditorType;
+    static get annotationMode(): AnnotationMode;
+    static get cursorToolOnLoad(): CursorTool;
+    static get defaultUrl(): string | undefined;
+    static get defaultZoomValue(): string;
+    static get disableHistory(): boolean;
+    static get disablePageLabels(): boolean;
+    static get disablePreferences(): boolean;
+    static get enablePermissions(): boolean;
+    static get enablePrintAutoRotate(): boolean;
+    static get enableScripting(): boolean;
+    static get externalLinkRel(): string;
+    static get externalLinkTarget(): LinkTarget;
+    static get historyUpdateUrl(): boolean;
+    static get ignoreDestinationZoom(): boolean;
+    static get imageResourcesPath(): string;
+    static get locale(): string | undefined;
+    static get maxCanvasPixels(): number;
+    static get forcePageColors(): boolean;
+    static get pageColorsBackground(): string;
+    static get pageColorsForeground(): string;
+    static get pdfBugEnabled(): boolean;
+    static get printResolution(): number;
+    static get renderer(): RendererType | undefined;
+    static get sidebarViewOnLoad(): SidebarView;
+    static get scrollModeOnLoad(): ScrollMode;
+    static get spreadModeOnLoad(): SpreadMode;
+    static get textLayerMode(): TextLayerMode;
+    static get useOnlyCssZoom(): boolean;
+    static get viewerCssTheme(): ViewerCssTheme;
+    static get viewOnLoad(): ViewOnLoad;
+    static get cMapPacked(): boolean;
+    static get cMapUrl(): string;
+    static get disableAutoFetch(): boolean;
+    static get disableFontFace(): boolean;
+    static get disableRange(): boolean;
+    static get disableStream(): boolean;
+    static get disableTelemetry(): boolean;
+    static get docBaseUrl(): string | undefined;
+    static get enableXfa(): boolean;
+    static get fontExtraProperties(): boolean;
+    static get isEvalSupported(): boolean;
+    static get maxImageSize(): number;
+    static get pdfBug(): boolean;
+    static get standardFontDataUrl(): string;
+    static get verbosity(): VerbosityLevel;
+    static get workerPort(): Worker | undefined;
+    static get workerSrc(): string;
+    static get sandboxBundleSrc(): string | undefined;
     static getAll(kind?: OptionKind): UserOptions;
-    static set<ON extends OptionName>(name: ON, value: OptionType<ON> | undefined): void;
+    static set<ON extends OptionName>(name: ON, value: _OptionType | undefined): void;
     static setAll(options: UserOptions): void;
     static remove(name: OptionName): void;
     /**

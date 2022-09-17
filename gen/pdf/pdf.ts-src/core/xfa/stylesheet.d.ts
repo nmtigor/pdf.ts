@@ -1,5 +1,5 @@
-import { $buildXFAObject } from "./namespaces.js";
 import { type XFAAttrs } from "./alias.js";
+import { $buildXFAObject } from "./namespaces.js";
 import { XFAObject } from "./xfa_object.js";
 declare class Stylesheet extends XFAObject {
     constructor(attributes: XFAAttrs);

@@ -8,7 +8,7 @@ interface PDFSidebarOptions {
     /**
      * The DOM elements.
      */
-    elements: ViewerConfiguration['sidebar'];
+    elements: ViewerConfiguration["sidebar"];
     /**
      * The document viewer.
      */
@@ -31,6 +31,7 @@ export declare class PDFSidebar {
     isOpen: boolean;
     active: SidebarView;
     isInitialViewSet: boolean;
+    isInitialEventDispatched: boolean;
     /**
      * Callback used when the sidebar has been opened/closed, to ensure that
      * the viewers (PDFViewer/PDFThumbnailViewer) are updated correctly.
@@ -59,25 +60,20 @@ export declare class PDFSidebar {
      * @return One of the values in {SidebarView}.
      */
     get visibleView(): number;
-    get isThumbnailViewVisible(): boolean;
-    get isOutlineViewVisible(): boolean;
-    get isAttachmentsViewVisible(): boolean;
-    get isLayersViewVisible(): boolean;
     /**
      * @param view The sidebar view that should become visible,
      *  must be one of the values in {SidebarView}.
      */
     setInitialView(view?: SidebarView): void;
     /**
-     * @param view - The sidebar view that should be switched to,
+     * @param view The sidebar view that should be switched to,
      *  must be one of the values in {SidebarView}.
-     * @param forceOpen - Ensure that the sidebar is open. The default value is `false`.
+     * @param forceOpen Ensure that the sidebar is open. The default value is `false`.
      */
-    switchView(view: number, forceOpen?: boolean): void;
+    switchView(view: number, forceOpen?: boolean): false | undefined;
     open(): void;
     close(): void;
     toggle(): void;
-    protected _dispatchEvent(): void;
 }
 export {};
 //# sourceMappingURL=pdf_sidebar.d.ts.map

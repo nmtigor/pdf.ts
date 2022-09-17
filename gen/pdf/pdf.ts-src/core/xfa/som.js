@@ -17,8 +17,8 @@
  */
 import { warn } from "../../shared/util.js";
 import { NamespaceIds } from "./namespaces.js";
-import { $appendChild, $getChildren, $getChildrenByClass, $getChildrenByName, $getParent, $namespaceId, XFAObject, XFAObjectArray, XmlObject } from "./xfa_object.js";
-/*81---------------------------------------------------------------------------*/
+import { $appendChild, $getChildren, $getChildrenByClass, $getChildrenByName, $getParent, $namespaceId, XFAObject, XFAObjectArray, XmlObject, } from "./xfa_object.js";
+/*80--------------------------------------------------------------------------*/
 const namePattern = /^[^.[]+/;
 const indexPattern = /^[^\]]+/;
 const operators = {
@@ -29,7 +29,10 @@ const operators = {
     dotParen: 4,
 };
 const shortcuts = new Map([
-    ["$data", (root, current) => (root.datasets ? root.datasets.data : root)],
+    [
+        "$data",
+        (root, current) => (root.datasets ? root.datasets.data : root),
+    ],
     [
         "$record",
         (root, current) => (root.datasets ? root.datasets.data : root)[$getChildren]()[0],
@@ -83,7 +86,7 @@ function parseExpression(expr, dotDotAllowed, noExpr = true) {
                 warn("XFA - Invalid index in SOM expression");
                 return undefined;
             }
-            parsed[parsed.length - 1].index = parseIndex(match[0]);
+            parsed.at(-1).index = parseIndex(match[0]);
             pos += match[0].length + 1;
             continue;
         }
@@ -161,8 +164,9 @@ export function searchNode(root, container, expr, dotDotAllowed = true, useCache
         const { name, cacheName, operator, index } = parsed[i];
         const nodes = [];
         for (const node of root_1) {
-            if (!(node instanceof XFAObject))
+            if (!(node instanceof XFAObject)) {
                 continue;
+            }
             let children, cached;
             if (useCache) {
                 cached = somCache.get(node);
@@ -216,10 +220,10 @@ export function searchNode(root, container, expr, dotDotAllowed = true, useCache
             continue;
         }
         if (isFinite(index)) {
-            root_1 = nodes.filter(node => index < node.length).map(node => node[index]);
+            root_1 = nodes.filter((node) => index < node.length).map((node) => node[index]);
         }
         else {
-            root_1 = nodes.reduce((acc, node) => acc.concat(node), []);
+            root_1 = nodes.flat();
         }
     }
     if (root_1.length === 0) {
@@ -243,7 +247,7 @@ export function createDataNode(root, container, expr) {
     const parsed = parseExpression(expr);
     if (!parsed)
         return undefined;
-    if (parsed.some(x => x.operator === operators.dotDot))
+    if (parsed.some((x) => x.operator === operators.dotDot))
         return undefined;
     const fn = shortcuts.get(parsed[0].name);
     let i = 0;
@@ -301,5 +305,5 @@ export function createDataNode(root, container, expr) {
     }
     return undefined;
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=som.js.map

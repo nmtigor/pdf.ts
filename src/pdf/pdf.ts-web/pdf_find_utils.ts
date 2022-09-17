@@ -1,3 +1,7 @@
+/* Converted from JavaScript to TypeScript by
+ * nmtigor (https://github.com/nmtigor) @2022
+ */
+
 /* Copyright 2018 Mozilla Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 
 export const enum CharacterType {
   SPACE = 0,
@@ -25,31 +29,26 @@ export const enum CharacterType {
   THAI_LETTER = 7,
 }
 
-function isAlphabeticalScript( charCode:number )
-{
+function isAlphabeticalScript(charCode: number) {
   return charCode < 0x2e80;
 }
 
-function isAscii( charCode:number )
-{
+function isAscii(charCode: number) {
   return (charCode & 0xff80) === 0;
 }
 
-function isAsciiAlpha( charCode:number )
-{
+function isAsciiAlpha(charCode: number) {
   return (
     (charCode >= /* a = */ 0x61 && charCode <= /* z = */ 0x7a) ||
     (charCode >= /* A = */ 0x41 && charCode <= /* Z = */ 0x5a)
   );
 }
 
-function isAsciiDigit( charCode:number )
-{
+function isAsciiDigit(charCode: number) {
   return charCode >= /* 0 = */ 0x30 && charCode <= /* 9 = */ 0x39;
 }
 
-function isAsciiSpace( charCode:number )
-{
+function isAsciiSpace(charCode: number) {
   return (
     charCode === /* SPACE = */ 0x20 ||
     charCode === /* TAB = */ 0x09 ||
@@ -58,31 +57,26 @@ function isAsciiSpace( charCode:number )
   );
 }
 
-function isHan( charCode:number )
-{
+function isHan(charCode: number) {
   return (
     (charCode >= 0x3400 && charCode <= 0x9fff) ||
     (charCode >= 0xf900 && charCode <= 0xfaff)
   );
 }
 
-function isKatakana( charCode:number )
-{
+function isKatakana(charCode: number) {
   return charCode >= 0x30a0 && charCode <= 0x30ff;
 }
 
-function isHiragana( charCode:number )
-{
+function isHiragana(charCode: number) {
   return charCode >= 0x3040 && charCode <= 0x309f;
 }
 
-function isHalfwidthKatakana( charCode:number )
-{
+function isHalfwidthKatakana(charCode: number) {
   return charCode >= 0xff60 && charCode <= 0xff9f;
 }
 
-function isThai( charCode:number )
-{
+function isThai(charCode: number) {
   return (charCode & 0xff80) === 0x0e00;
 }
 
@@ -90,8 +84,7 @@ function isThai( charCode:number )
  * This function is based on the word-break detection implemented in:
  * https://hg.mozilla.org/mozilla-central/file/tip/intl/lwbrk/WordBreaker.cpp
  */
-export function getCharacterType( charCode:number )
-{
+export function getCharacterType(charCode: number) {
   if (isAlphabeticalScript(charCode)) {
     if (isAscii(charCode)) {
       if (isAsciiSpace(charCode)) {
@@ -123,4 +116,4 @@ export function getCharacterType( charCode:number )
   }
   return CharacterType.ALPHA_LETTER;
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

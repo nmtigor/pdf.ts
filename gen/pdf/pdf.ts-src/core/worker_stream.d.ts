@@ -4,44 +4,44 @@ import { AbortException } from "../shared/util.js";
 export declare class PDFWorkerStream implements IPDFStream {
     #private;
     constructor(msgHandler: MessageHandler<Thread.worker>);
-    /** @implements */
+    /** @implement */
     getFullReader(): PDFWorkerStreamReader;
-    /** @implements */
+    /** @implement */
     getRangeReader(begin: number, end: number): PDFWorkerStreamRangeReader;
-    /** @implements */
+    /** @implement */
     cancelAllRequests(reason: AbortException): void;
 }
 declare class PDFWorkerStreamReader implements IPDFStreamReader {
     #private;
-    /** @implements */
+    /** @implement */
     onProgress: undefined;
-    /** @implements */
+    /** @implement */
     get contentLength(): number | undefined;
-    /** @implements */
+    /** @implement */
     get isRangeSupported(): boolean;
-    /** @implements */
+    /** @implement */
     get isStreamingSupported(): boolean;
-    /** @implements */
+    /** @implement */
     get headersReady(): Promise<void>;
-    /** @implements */
+    /** @implement */
     readonly filename: undefined;
     constructor(msgHandler: MessageHandler<Thread.worker>);
-    /** @implements */
+    /** @implement */
     read(): Promise<ReadValue>;
-    /** @implements */
+    /** @implement */
     cancel(reason: object): void;
 }
 declare class PDFWorkerStreamRangeReader implements IPDFStreamRangeReader {
     #private;
-    /** @implements */
+    /** @implement */
     onProgress: ((data: {
         loaded: number;
     }) => void) | undefined;
     constructor(begin: number, end: number, msgHandler: MessageHandler<Thread.worker>);
     get isStreamingSupported(): boolean;
-    /** @implements */
+    /** @implement */
     read(): Promise<ReadValue>;
-    /** @implements */
+    /** @implement */
     cancel(reason: object): void;
 }
 export {};

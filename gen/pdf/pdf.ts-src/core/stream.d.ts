@@ -4,25 +4,25 @@ export declare class Stream extends BaseStream {
     readonly bytes: Uint8Array;
     start: number;
     end: number;
-    /** @implements */
+    /** @implement */
     get length(): number;
-    /** @implements */
+    /** @implement */
     get isEmpty(): boolean;
     constructor(arrayBuffer: Uint8Array | ArrayLike<number> | ArrayBufferLike, start?: number, length?: number, dict?: Dict);
-    /** @implements */
+    /** @implement */
     getByte(): number;
-    /** @implements */
+    /** @implement */
     getBytes(length?: number): Uint8Array;
-    /** @implements */
+    /** @implement */
     getByteRange(begin: number, end: number): Uint8Array;
-    /** @implements */
+    /** @implement */
     reset(): void;
     /**
-     * @implements
+     * @implement
      * @final
      */
     moveStart(): void;
-    /** @implements */
+    /** @implement */
     makeSubStream(start: number, length?: number, dict?: Dict): Stream;
 }
 export declare class StringStream extends Stream {

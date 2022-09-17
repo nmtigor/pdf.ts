@@ -30,7 +30,7 @@ export declare class Builder {
     isNsAgnostic(): boolean;
     _searchNamespace(nsName: string): XFANs;
     _addNamespacePrefix(prefixes: XFAPrefix[]): void;
-    _getNamespaceToUse(prefix?: string): XFANs | null;
+    _getNamespaceToUse(prefix?: string): XFANs | null | undefined;
     clean(data: XFACleanup): void;
 }
 export {};

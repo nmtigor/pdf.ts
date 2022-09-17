@@ -1,4 +1,4 @@
-/*81*****************************************************************************
+/*80****************************************************************************
  * synbols
 ** ------- */
 /**
@@ -111,7 +111,7 @@ export const $uts = Symbol("$uts");
  */
 export const $vuu = Symbol("$vuu");
 /**
- * this.el$[ $Vuu ] { typeof Vuu }
+ * this.el$[ $Vuu ] { Constructor<Vuu> }
  */
 export const $Vuu = Symbol("$Vuu");
 //# sourceMappingURL=symbols.js.map

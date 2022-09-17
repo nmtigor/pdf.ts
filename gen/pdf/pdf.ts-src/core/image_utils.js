@@ -15,10 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { _PDFDEV } from "../../../global.js";
 import { assert } from "../../../lib/util/trace.js";
 import { shadow, warn } from "../shared/util.js";
 import { RefSetCache } from "./primitives.js";
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 class BaseLocalCache {
     #onlyRefs;
     nameRefMap$;
@@ -33,11 +34,13 @@ class BaseLocalCache {
     }
     /** @final */
     getByName(name) {
-        if (this.#onlyRefs)
+        if (this.#onlyRefs) {
             assert(0, "Should not call `getByName` method.");
+        }
         const ref = this.nameRefMap$.get(name);
-        if (ref)
+        if (ref) {
             return this.getByRef(ref);
+        }
         return this.imageMap$.get(name) || undefined;
     }
     /** @final */
@@ -46,31 +49,36 @@ class BaseLocalCache {
     }
 }
 export class LocalImageCache extends BaseLocalCache {
-    /** @implements */
+    /** @implement */
     set(name, ref = undefined, data) {
-        if (typeof name !== "string")
+        if (typeof name !== "string") {
             throw new Error('LocalImageCache.set - expected "name" argument.');
+        }
         if (ref) {
-            if (this.imageCache$.has(ref))
+            if (this.imageCache$.has(ref)) {
                 return;
+            }
             this.nameRefMap$.set(name, ref);
             this.imageCache$.put(ref, data);
             return;
         }
         // name
-        if (this.imageMap$.has(name))
+        if (this.imageMap$.has(name)) {
             return;
+        }
         this.imageMap$.set(name, data);
     }
 }
 export class LocalColorSpaceCache extends BaseLocalCache {
-    /** @implements */
+    /** @implement */
     set(name = undefined, ref = undefined, data) {
-        if (typeof name !== "string" && !ref)
+        if (typeof name !== "string" && !ref) {
             throw new Error('LocalColorSpaceCache.set - expected "name" and/or "ref" argument.');
+        }
         if (ref) {
-            if (this.imageCache$.has(ref))
+            if (this.imageCache$.has(ref)) {
                 return;
+            }
             if (name !== undefined) {
                 // Optional when `ref` is defined.
                 this.nameRefMap$.set(name, ref);
@@ -79,8 +87,9 @@ export class LocalColorSpaceCache extends BaseLocalCache {
             return;
         }
         // name
-        if (this.imageMap$.has(name))
+        if (this.imageMap$.has(name)) {
             return;
+        }
         this.imageMap$.set(name, data);
     }
 }
@@ -88,30 +97,35 @@ export class LocalFunctionCache extends BaseLocalCache {
     constructor() {
         super({ onlyRefs: true });
     }
-    /** @implements */
+    /** @implement */
     set(name = undefined, ref, data) {
-        if (!ref)
+        if (!ref) {
             throw new Error('LocalFunctionCache.set - expected "ref" argument.');
-        if (this.imageCache$.has(ref))
+        }
+        if (this.imageCache$.has(ref)) {
             return;
+        }
         this.imageCache$.put(ref, data);
     }
 }
 export class LocalGStateCache extends BaseLocalCache {
-    /** @implements */
+    /** @implement */
     set(name, ref = undefined, data) {
-        if (typeof name !== "string")
+        if (typeof name !== "string") {
             throw new Error('LocalGStateCache.set - expected "name" argument.');
+        }
         if (ref) {
-            if (this.imageCache$.has(ref))
+            if (this.imageCache$.has(ref)) {
                 return;
+            }
             this.nameRefMap$.set(name, ref);
             this.imageCache$.put(ref, data);
             return;
         }
         // name
-        if (this.imageMap$.has(name))
+        if (this.imageMap$.has(name)) {
             return;
+        }
         this.imageMap$.set(name, data);
     }
 }
@@ -119,12 +133,14 @@ export class LocalTilingPatternCache extends BaseLocalCache {
     constructor(options) {
         super({ onlyRefs: true });
     }
-    /** @implements */
+    /** @implement */
     set(name, ref = undefined, data) {
-        if (!ref)
+        if (!ref) {
             throw new Error('LocalTilingPatternCache.set - expected "ref" argument.');
-        if (this.imageCache$.has(ref))
+        }
+        if (this.imageCache$.has(ref)) {
             return;
+        }
         this.imageCache$.put(ref, data);
     }
 }
@@ -141,7 +157,9 @@ export class GlobalImageCache {
     #refCache = new RefSetCache();
     #imageCache = new RefSetCache();
     constructor() {
-        assert(GlobalImageCache.NUM_PAGES_THRESHOLD > 1, "GlobalImageCache - invalid NUM_PAGES_THRESHOLD constant.");
+        /*#static*/  {
+            assert(GlobalImageCache.NUM_PAGES_THRESHOLD > 1, "GlobalImageCache - invalid NUM_PAGES_THRESHOLD constant.");
+        }
     }
     get _byteSize() {
         let byteSize = 0;
@@ -199,23 +217,28 @@ export class GlobalImageCache {
     /** @final */
     getData(ref, pageIndex) {
         const pageIndexSet = this.#refCache.get(ref);
-        if (!pageIndexSet)
+        if (!pageIndexSet) {
             return undefined;
-        if (pageIndexSet.size < GlobalImageCache.NUM_PAGES_THRESHOLD)
+        }
+        if (pageIndexSet.size < GlobalImageCache.NUM_PAGES_THRESHOLD) {
             return undefined;
+        }
         const imageData = this.#imageCache.get(ref);
-        if (!imageData)
+        if (!imageData) {
             return undefined;
+        }
         // Ensure that we keep track of all pages containing the image reference.
         pageIndexSet.add(pageIndex);
         return imageData;
     }
     /** @final */
     setData(ref, data) {
-        if (!this.#refCache.has(ref))
+        if (!this.#refCache.has(ref)) {
             throw new Error('GlobalImageCache.setData - expected "addPageIndex" to have been called.');
-        if (this.#imageCache.has(ref))
+        }
+        if (this.#imageCache.has(ref)) {
             return;
+        }
         if (this._cacheLimitReached) {
             warn("GlobalImageCache.setData - cache limit reached.");
             return;
@@ -230,5 +253,5 @@ export class GlobalImageCache {
         this.#imageCache.clear();
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=image_utils.js.map

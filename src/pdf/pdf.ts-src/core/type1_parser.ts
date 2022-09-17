@@ -17,12 +17,12 @@
  * limitations under the License.
  */
 
-import { getEncoding } from "./encodings.js";
-import { isWhiteSpace } from "./core_utils.js";
-import { Stream } from "./stream.js";
-import { type matrix_t, type rect_t, warn } from "../shared/util.js";
-import { type FontProps } from "./evaluator.js";
-/*81---------------------------------------------------------------------------*/
+import { type matrix_t, type rect_t, warn } from "../shared/util.ts";
+import { isWhiteSpace } from "./core_utils.ts";
+import { getEncoding } from "./encodings.ts";
+import { type FontProps } from "./evaluator.ts";
+import { Stream } from "./stream.ts";
+/*80--------------------------------------------------------------------------*/
 
 // Hinting is currently disabled due to unknown problems on windows
 // in tracemonkey and various other pdfs with type1 fonts.
@@ -66,8 +66,7 @@ const HINTING_ENABLED = false;
  * to be encoded and this encoding technique helps to minimize the length of
  * the charStrings.
  */
-namespace NsType1CharString
-{
+namespace NsType1CharString {
   const COMMAND_MAP = {
     hstem: [1],
     vstem: [3],
@@ -87,29 +86,27 @@ namespace NsType1CharString
   };
   type CommandMap = typeof COMMAND_MAP;
   type CommandName = keyof CommandMap;
-  type Command = CommandMap[ CommandName ];
+  type Command = CommandMap[CommandName];
 
   // eslint-disable-next-line no-shadow
-  export class Type1CharString
-  {
+  export class Type1CharString {
     width = 0;
     lsb = 0;
     flexing = false;
-    output:number[] = [];
-    stack:number[] = [];
-    
-    seac?:number[];
+    output: number[] = [];
+    stack: number[] = [];
+
+    seac?: number[];
 
     convert(
-      encoded:Uint8Array | Uint8ClampedArray,
-      subrs:(Uint8Array | Uint8ClampedArray)[],
-      seacAnalysisEnabled:boolean
-    ):boolean {
+      encoded: Uint8Array | Uint8ClampedArray,
+      subrs: (Uint8Array | Uint8ClampedArray)[],
+      seacAnalysisEnabled: boolean,
+    ): boolean {
       const count = encoded.length;
       let error = false;
       let wx, sbx, subrNumber;
-      for( let i = 0; i < count; i++ )
-      {
+      for (let i = 0; i < count; i++) {
         let value = encoded[i];
         if (value < 32) {
           if (value === 12) {
@@ -174,7 +171,7 @@ namespace NsType1CharString
               error = this.convert(
                 subrs[subrNumber],
                 subrs,
-                seacAnalysisEnabled
+                seacAnalysisEnabled,
               );
               break;
             case 11: // return
@@ -244,12 +241,11 @@ namespace NsType1CharString
               // seac is like type 2's special endchar but it doesn't use the
               // first argument asb, so remove it.
               if (seacAnalysisEnabled) {
-                const asb = this.stack[this.stack.length - 5];
+                const asb = this.stack.at(-5);
                 this.seac = this.stack.splice(-4, 4);
-                this.seac[0] += this.lsb - asb;
+                this.seac[0] += this.lsb - asb!;
                 error = this.executeCommand(0, COMMAND_MAP.endchar);
-              } 
-              else {
+              } else {
                 error = this.executeCommand(4, COMMAND_MAP.endchar);
               }
               break;
@@ -302,15 +298,14 @@ namespace NsType1CharString
                   flexArgs[11], // bcp4y
                   flexArgs[12], // p3x
                   flexArgs[13], // p3y
-                  flexArgs[14] // flexDepth
+                  flexArgs[14], // flexDepth
                   // 15 = finalx unused by flex
                   // 16 = finaly unused by flex
                 );
                 error = this.executeCommand(13, COMMAND_MAP.flex, true);
                 this.flexing = false;
                 this.stack.push(flexArgs[15], flexArgs[16]);
-              } 
-              else if (subrNumber === 1 && numArgs === 0) {
+              } else if (subrNumber === 1 && numArgs === 0) {
                 this.flexing = true;
               }
               break;
@@ -322,26 +317,21 @@ namespace NsType1CharString
               this.stack = [];
               break;
             default:
-              warn( `Unknown type 1 charstring command of "${value}"` );
+              warn(`Unknown type 1 charstring command of "${value}"`);
               break;
           }
           if (error) {
             break;
           }
           continue;
-        } 
-        else if (value <= 246) {
+        } else if (value <= 246) {
           value -= 139;
-        } 
-        else if (value <= 250) {
+        } else if (value <= 250) {
           value = (value - 247) * 256 + encoded[++i] + 108;
-        } 
-        else if (value <= 254) {
+        } else if (value <= 254) {
           value = -((value - 251) * 256) - encoded[++i] - 108;
-        } 
-        else {
-          value =
-            ((encoded[++i] & 0xff) << 24) |
+        } else {
+          value = ((encoded[++i] & 0xff) << 24) |
             ((encoded[++i] & 0xff) << 16) |
             ((encoded[++i] & 0xff) << 8) |
             ((encoded[++i] & 0xff) << 0);
@@ -351,21 +341,17 @@ namespace NsType1CharString
       return error;
     }
 
-    executeCommand( howManyArgs:number, command:Command, keepStack?:boolean )
-    {
+    executeCommand(howManyArgs: number, command: Command, keepStack?: boolean) {
       const stackLength = this.stack.length;
       if (howManyArgs > stackLength) {
         return true;
       }
       const start = stackLength - howManyArgs;
-      for( let i = start; i < stackLength; i++ )
-      {
+      for (let i = start; i < stackLength; i++) {
         let value = this.stack[i];
-        if( Number.isInteger(value) )
-        {
+        if (Number.isInteger(value)) {
           this.output.push(28, (value >> 8) & 0xff, value & 0xff);
-        } 
-        else {
+        } else {
           // fixed point
           value = (65536 * value) | 0;
           this.output.push(
@@ -373,15 +359,14 @@ namespace NsType1CharString
             (value >> 24) & 0xff,
             (value >> 16) & 0xff,
             (value >> 8) & 0xff,
-            value & 0xff
+            value & 0xff,
           );
         }
       }
       this.output.push.apply(this.output, command);
       if (keepStack) {
         this.stack.splice(start, howManyArgs);
-      } 
-      else {
+      } else {
         this.stack.length = 0;
       }
       return false;
@@ -398,8 +383,7 @@ import Type1CharString = NsType1CharString.Type1CharString;
  * of PostScript, but it is possible in most cases to extract what we need
  * without a full parse.
  */
-namespace NsType1Parser
-{
+namespace NsType1Parser {
   /*
    * Decrypt a Sequence of Ciphertext Bytes to Produce the Original Sequence
    * of Plaintext Bytes. The function took a key as a parameter which can be
@@ -408,8 +392,7 @@ namespace NsType1Parser
   const EEXEC_ENCRYPT_KEY = 55665;
   const CHAR_STRS_ENCRYPT_KEY = 4330;
 
-  function isHexDigit( code:number )
-  {
+  function isHexDigit(code: number) {
     return (
       (code >= 48 && code <= 57) || // '0'-'9'
       (code >= 65 && code <= 70) || // 'A'-'F'
@@ -417,23 +400,25 @@ namespace NsType1Parser
     );
   }
 
-  function decrypt( data:Uint8Array | Uint8ClampedArray, key:number, discardNumber:number ) 
-  {
-    if( discardNumber >= data.length ) return new Uint8Array(0);
-
+  function decrypt(
+    data: Uint8Array | Uint8ClampedArray,
+    key: number,
+    discardNumber: number,
+  ) {
+    if (discardNumber >= data.length) {
+      return new Uint8Array(0);
+    }
     const c1 = 52845;
     const c2 = 22719;
     let r = key | 0,
       i,
       j;
-    for( i = 0; i < discardNumber; i++ )
-    {
+    for (i = 0; i < discardNumber; i++) {
       r = ((data[i] + r) * c1 + c2) & ((1 << 16) - 1);
     }
     const count = data.length - discardNumber;
     const decrypted = new Uint8Array(count);
-    for (i = discardNumber, j = 0; j < count; i++, j++) 
-    {
+    for (i = discardNumber, j = 0; j < count; i++, j++) {
       const value = data[i];
       decrypted[j] = value ^ (r >> 8);
       r = ((value + r) * c1 + c2) & ((1 << 16) - 1);
@@ -441,8 +426,11 @@ namespace NsType1Parser
     return decrypted;
   }
 
-  function decryptAscii( data:Uint8Array | Uint8ClampedArray, key:number, discardNumber:number ) 
-  {
+  function decryptAscii(
+    data: Uint8Array | Uint8ClampedArray,
+    key: number,
+    discardNumber: number,
+  ) {
     const c1 = 52845,
       c2 = 22719;
     let r = key | 0;
@@ -450,15 +438,14 @@ namespace NsType1Parser
     const maybeLength = count >>> 1;
     const decrypted = new Uint8Array(maybeLength);
     let i, j;
-    for( i = 0, j = 0; i < count; i++ )
-    {
+    for (i = 0, j = 0; i < count; i++) {
       const digit1 = data[i];
       if (!isHexDigit(digit1)) {
         continue;
       }
       i++;
-      let digit2:number | undefined;
-      while (i < count && !isHexDigit((digit2 = data[i]))) {
+      let digit2: number | undefined;
+      while (i < count && !isHexDigit(digit2 = data[i])) {
         i++;
       }
       if (i < count) {
@@ -470,8 +457,7 @@ namespace NsType1Parser
     return decrypted.slice(discardNumber, j);
   }
 
-  function isSpecial( c:number )
-  {
+  function isSpecial(c: number) {
     return (
       c === /* '/' = */ 0x2f ||
       c === /* '[' = */ 0x5b ||
@@ -483,71 +469,67 @@ namespace NsType1Parser
     );
   }
 
-  export interface PrivateData
-  {
-    BlueValues:number[]; // 5.3
-    OtherBlues?:number[]; // 5.4
-    FamilyBlues?:number[]; // 5.5
-    FamilyOtherBlues?:number[]; // 5.5
+  export interface PrivateData {
+    BlueValues: number[]; // 5.3
+    OtherBlues?: number[]; // 5.4
+    FamilyBlues?: number[]; // 5.5
+    FamilyOtherBlues?: number[]; // 5.5
 
-    BlueScale?:number; // 5.6
-    BlueShift?:number; // 5.7
-    BlueFuzz?:number; // 5.8
+    BlueScale?: number; // 5.6
+    BlueShift?: number; // 5.7
+    BlueFuzz?: number; // 5.8
 
-    StemSnapH?:number[]; // 5.9
-    StemSnapV?:number[]; // 5.9
-    StdHW?:number; // 5.9
-    StdVW?:number; // 5.9
+    StemSnapH?: number[]; // 5.9
+    StemSnapV?: number[]; // 5.9
+    StdHW?: number; // 5.9
+    StdVW?: number; // 5.9
 
-    ForceBold?:0 | 1; // 5.10
+    ForceBold?: 0 | 1; // 5.10
 
-    LanguageGroup?:number; // 5.11
+    LanguageGroup?: number; // 5.11
 
-    lenIV:number; // 5.12
+    lenIV: number; // 5.12
 
-    ExpansionFactor?:number; // 5.14
+    ExpansionFactor?: number; // 5.14
   }
 
-  interface CharString
-  {
-    glyph:string;
-    encoded:Uint8Array | Uint8ClampedArray;
+  interface CharString {
+    glyph: string;
+    encoded: Uint8Array | Uint8ClampedArray;
   }
 
-  export interface CharStringObject
-  {
-    glyphName:string;
-    charstring:number[];
-    width:number;
-    lsb:number;
-    seac?:number[] | undefined;
+  export interface CharStringObject {
+    glyphName: string;
+    charstring: number[];
+    width: number;
+    lsb: number;
+    seac?: number[] | undefined;
   }
 
-  interface FontProgramProp
-  {
-    privateData:PrivateData;
+  interface FontProgramProp {
+    privateData: PrivateData;
   }
 
-  export interface FontProgram
-  {
-    subrs:number[][];
-    charstrings:CharStringObject[];
-    properties:FontProgramProp;
+  export interface FontProgram {
+    subrs: number[][];
+    charstrings: CharStringObject[];
+    properties: FontProgramProp;
   }
 
   // eslint-disable-next-line no-shadow
-  export class Type1Parser
-  {
+  export class Type1Parser {
     seacAnalysisEnabled;
-    
+
     stream;
 
-    currentChar!:number;
+    currentChar!: number;
 
-    constructor( stream:Stream, encrypted:boolean, seacAnalysisEnabled:boolean ) 
-    {
-      if( encrypted ) 
-      {
+    constructor(
+      stream: Stream,
+      encrypted: boolean,
+      seacAnalysisEnabled: boolean,
+    ) {
+      if (encrypted) {
         const data = stream.getBytes();
         const isBinary = !(
           (isHexDigit(data[0]) || isWhiteSpace(data[0])) &&
@@ -562,17 +544,16 @@ namespace NsType1Parser
         stream = new Stream(
           isBinary
             ? decrypt(data, EEXEC_ENCRYPT_KEY, 4)
-            : decryptAscii(data, EEXEC_ENCRYPT_KEY, 4)
+            : decryptAscii(data, EEXEC_ENCRYPT_KEY, 4),
         );
       }
       this.seacAnalysisEnabled = !!seacAnalysisEnabled;
-  
+
       this.stream = stream;
       this.nextChar();
     }
-  
-    readNumberArray() 
-    {
+
+    readNumberArray() {
       this.getToken(); // read '[' or '{' (arrays can start with either)
       const array = [];
       while (true) {
@@ -580,46 +561,40 @@ namespace NsType1Parser
         if (token === null || token === "]" || token === "}") {
           break;
         }
-        array.push( parseFloat(token||'0') );
+        array.push(parseFloat(token || "0"));
       }
       return array;
     }
 
-    readNumber()
-    {
+    readNumber() {
       const token = this.getToken();
-      return parseFloat(token || '0');
+      return parseFloat(token || "0");
     }
 
-    readInt() 
-    {
+    readInt() {
       // Use '| 0' to prevent setting a double into length such as the double
       // does not flow into the loop variable.
       const token = this.getToken();
-      return parseInt(token || '0', 10) | 0;
+      return parseInt(token || "0", 10) | 0;
     }
 
-    readBoolean()
-    {
+    readBoolean() {
       const token = this.getToken();
 
       // Use 1 and 0 since that's what type2 charstrings use.
       return token === "true" ? 1 : 0;
     }
 
-    nextChar() 
-    {
+    nextChar() {
       return (this.currentChar = this.stream.getByte());
     }
 
-    prevChar()
-    {
+    prevChar() {
       this.stream.skip(-2);
       return (this.currentChar = this.stream.getByte());
     }
 
-    getToken() 
-    {
+    getToken() {
       // Eat whitespace and comments.
       let comment = false;
       let ch = this.currentChar;
@@ -632,11 +607,9 @@ namespace NsType1Parser
           if (ch === 0x0a || ch === 0x0d) {
             comment = false;
           }
-        } 
-        else if (ch === /* '%' = */ 0x25) {
+        } else if (ch === /* '%' = */ 0x25) {
           comment = true;
-        } 
-        else if (!isWhiteSpace(ch)) {
+        } else if (!isWhiteSpace(ch)) {
           break;
         }
         ch = this.nextChar();
@@ -653,8 +626,7 @@ namespace NsType1Parser
       return token;
     }
 
-    readCharStrings( bytes:Uint8Array | Uint8ClampedArray, lenIV:number ) 
-    {
+    readCharStrings(bytes: Uint8Array | Uint8ClampedArray, lenIV: number) {
       if (lenIV === -1) {
         // This isn't in the spec, but Adobe's tx program handles -1
         // as plain text.
@@ -667,34 +639,30 @@ namespace NsType1Parser
      * Returns an object containing a Subrs array and a CharStrings
      * array extracted from and eexec encrypted block of data
      */
-    extractFontProgram( properties:FontProps ):FontProgram 
-    {
+    extractFontProgram(properties: FontProps): FontProgram {
       const stream = this.stream;
 
-      const subrs:(Uint8Array | Uint8ClampedArray)[] = [];
-      const charstrings:CharString[] = [];
-      const privateData = < PrivateData >Object.create(null);
+      const subrs: (Uint8Array | Uint8ClampedArray)[] = [];
+      const charstrings: CharString[] = [];
+      const privateData = <PrivateData> Object.create(null);
       privateData.lenIV = 4;
-      const program = <FontProgram>{
+      const program = <FontProgram> {
         subrs: [],
         charstrings: [],
         properties: {
           privateData,
         },
       };
-      let token:string | null;
-      let length:number;
+      let token: string | null;
+      let length: number;
       let data;
-      let lenIV:number;
-      let encoded:Uint8Array | Uint8ClampedArray;
-      while( (token = this.getToken()) !== null )
-      {
+      let lenIV: number;
+      while ((token = this.getToken()) !== null) {
         if (token !== "/") {
           continue;
         }
         token = this.getToken();
-        switch( token )
-        {
+        switch (token) {
           case "CharStrings":
             // The number immediately following CharStrings must be greater or
             // equal to the number of CharStrings.
@@ -716,15 +684,12 @@ namespace NsType1Parser
               this.getToken(); // read in 'RD' or '-|'
               data = length > 0 ? stream.getBytes(length) : new Uint8Array(0);
               lenIV = program.properties.privateData.lenIV;
-              encoded = this.readCharStrings(data, lenIV);
+              const encoded = this.readCharStrings(data, lenIV);
               this.nextChar();
               token = this.getToken(); // read in 'ND' or '|-'
-              if( token === "noaccess" )
-              {
+              if (token === "noaccess") {
                 this.getToken(); // read in 'def'
-              }
-              else if( token === "/" )
-              {
+              } else if (token === "/") {
                 // The expected 'ND' or '|-' token is missing, avoid swallowing
                 // the start of the next glyph (fixes issue14462_reduced.pdf).
                 this.prevChar();
@@ -738,14 +703,13 @@ namespace NsType1Parser
           case "Subrs":
             this.readInt(); // num
             this.getToken(); // read in 'array'
-            while( this.getToken() === "dup" )
-            {
+            while (this.getToken() === "dup") {
               const index = this.readInt();
               length = this.readInt();
               this.getToken(); // read in 'RD' or '-|'
               data = length > 0 ? stream.getBytes(length) : new Uint8Array(0);
               lenIV = program.properties.privateData.lenIV;
-              encoded = this.readCharStrings(data, lenIV);
+              const encoded = this.readCharStrings(data, lenIV);
               this.nextChar();
               token = this.getToken(); // read in 'NP' or '|'
               if (token === "noaccess") {
@@ -791,15 +755,12 @@ namespace NsType1Parser
         }
       }
 
-      for( let i = 0; i < charstrings.length; i++ )
-      {
-        const glyph = charstrings[i].glyph;
-        encoded = charstrings[i].encoded;
+      for (const { encoded, glyph } of charstrings) {
         const charString = new Type1CharString();
         const error = charString.convert(
           encoded,
           subrs,
-          this.seacAnalysisEnabled
+          this.seacAnalysisEnabled,
         );
         let output = charString.output;
         if (error) {
@@ -817,10 +778,9 @@ namespace NsType1Parser
         };
         if (glyph === ".notdef") {
           // Make sure .notdef is at index zero (issue #11477).
-          program.charstrings.unshift( charStringObject );
-        } 
-        else {
-          program.charstrings.push( charStringObject );
+          program.charstrings.unshift(charStringObject);
+        } else {
+          program.charstrings.push(charStringObject);
         }
 
         // Attempt to replace missing widths, from the font dictionary /Widths
@@ -841,35 +801,30 @@ namespace NsType1Parser
       return program;
     }
 
-    extractFontHeader( properties:FontProps ) 
-    {
+    extractFontHeader(properties: FontProps) {
       let token;
-      while( (token = this.getToken()) !== null )
-      {
+      while ((token = this.getToken()) !== null) {
         if (token !== "/") {
           continue;
         }
         token = this.getToken();
         switch (token) {
           case "FontMatrix":
-            const matrix = <matrix_t>this.readNumberArray();
+            const matrix = <matrix_t> this.readNumberArray();
             properties.fontMatrix = matrix;
             break;
           case "Encoding":
             const encodingArg = this.getToken()!;
             let encoding;
-            if( !/^\d+$/.test(encodingArg) )
-            {
+            if (!/^\d+$/.test(encodingArg)) {
               // encoding name is specified
               encoding = getEncoding(encodingArg);
-            }
-            else {
+            } else {
               encoding = [];
               const size = parseInt(encodingArg, 10) | 0;
               this.getToken(); // read in 'array'
 
-              for( let j = 0; j < size; j++ )
-              {
+              for (let j = 0; j < size; j++) {
                 token = this.getToken();
                 // skipping till first dup or def (e.g. ignoring for statement)
                 while (token !== "dup" && token !== "def") {
@@ -891,7 +846,7 @@ namespace NsType1Parser
             properties.builtInEncoding = encoding;
             break;
           case "FontBBox":
-            const fontBBox = <rect_t>this.readNumberArray();
+            const fontBBox = <rect_t> this.readNumberArray();
             // adjusting ascent/descent
             properties.ascent = Math.max(fontBBox[3], fontBBox[1]);
             properties.descent = Math.min(fontBBox[1], fontBBox[3]);
@@ -906,4 +861,4 @@ export import Type1Parser = NsType1Parser.Type1Parser;
 export type PrivateData = NsType1Parser.PrivateData;
 export type CharStringObject = NsType1Parser.CharStringObject;
 export type FontProgram = NsType1Parser.FontProgram;
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

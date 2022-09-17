@@ -15,6 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { GENERIC } from "../../global.js";
 import { PagesCountLimit } from "./base_viewer.js";
 import { CursorTool } from "./pdf_cursor_tools.js";
 import { ScrollMode, SpreadMode } from "./ui_utils.js";
@@ -114,11 +115,13 @@ export class SecondaryToolbar {
                 close: true,
             },
         ];
-        this.buttons.push({
-            element: options.openFileButton,
-            eventName: "openfile",
-            close: true,
-        });
+        /*#static*/  {
+            this.buttons.push({
+                element: options.openFileButton,
+                eventName: "openfile",
+                close: true,
+            });
+        }
         this.items = {
             firstPage: options.firstPageButton,
             lastPage: options.lastPageButton,
@@ -177,8 +180,8 @@ export class SecondaryToolbar {
             });
         }
     }
-    #bindCursorToolsListener({ cursorSelectToolButton, cursorHandToolButton }) {
-        this.eventBus._on("cursortoolchanged", function ({ tool }) {
+    #bindCursorToolsListener({ cursorSelectToolButton, cursorHandToolButton, }) {
+        this.eventBus._on("cursortoolchanged", ({ tool }) => {
             const isSelect = tool === CursorTool.SELECT, isHand = tool === CursorTool.HAND;
             cursorSelectToolButton.classList.toggle("toggled", isSelect);
             cursorHandToolButton.classList.toggle("toggled", isHand);
@@ -228,34 +231,37 @@ export class SecondaryToolbar {
             spreadEvenButton.setAttribute("aria-checked", isEven);
         }
         this.eventBus._on("spreadmodechanged", spreadModeChanged);
-        this.eventBus._on("secondarytoolbarreset", evt => {
+        this.eventBus._on("secondarytoolbarreset", (evt) => {
             if (evt.source === this) {
                 spreadModeChanged({ mode: SpreadMode.NONE });
             }
         });
     }
     open() {
-        if (this.opened)
+        if (this.opened) {
             return;
+        }
         this.opened = true;
         this.toggleButton.classList.add("toggled");
         this.toggleButton.setAttribute("aria-expanded", "true");
         this.toolbar.classList.remove("hidden");
     }
     close() {
-        if (!this.opened)
+        if (!this.opened) {
             return;
+        }
         this.opened = false;
         this.toolbar.classList.add("hidden");
         this.toggleButton.classList.remove("toggled");
         this.toggleButton.setAttribute("aria-expanded", "false");
     }
     toggle() {
-        if (this.opened)
+        if (this.opened) {
             this.close();
+        }
         else
             this.open();
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=secondary_toolbar.js.map

@@ -17,30 +17,27 @@
  * limitations under the License.
  */
 
-import { BaseStream } from "./base_stream.js";
-import { DecodeStream } from "./decode_stream.js";
-/*81---------------------------------------------------------------------------*/
+import { BaseStream } from "./base_stream.ts";
+import { DecodeStream } from "./decode_stream.ts";
+/*80--------------------------------------------------------------------------*/
 
-class AsciiHexStream extends DecodeStream
-{
+export class AsciiHexStream extends DecodeStream {
   firstDigit = -1;
 
-  constructor( str:BaseStream, maybeLength:number )
-  {
+  constructor(str: BaseStream, maybeLength: number) {
     // Most streams increase in size when decoded, but AsciiHex streams shrink
     // by 50%.
     if (maybeLength) {
       maybeLength *= 0.5;
     }
-    super( maybeLength );
+    super(maybeLength);
 
     this.str = str;
     this.dict = str.dict;
   }
 
-  /** @implements */
-  readBlock()
-  {
+  /** @implement */
+  readBlock() {
     const UPSTREAM_BLOCK_SIZE = 8000;
     const bytes = this.str!.getBytes(UPSTREAM_BLOCK_SIZE);
     if (!bytes.length) {
@@ -57,25 +54,21 @@ class AsciiHexStream extends DecodeStream
       let digit;
       if (ch >= /* '0' = */ 0x30 && ch <= /* '9' = */ 0x39) {
         digit = ch & 0x0f;
-      } 
-      else if (
+      } else if (
         (ch >= /* 'A' = */ 0x41 && ch <= /* 'Z' = */ 0x46) ||
         (ch >= /* 'a' = */ 0x61 && ch <= /* 'z' = */ 0x66)
       ) {
         digit = (ch & 0x0f) + 9;
-      } 
-      else if (ch === /* '>' = */ 0x3e) {
+      } else if (ch === /* '>' = */ 0x3e) {
         this.eof = true;
         break;
-      } 
+      } // Probably whitespace, ignoring.
       else {
-        // Probably whitespace, ignoring.
         continue;
       }
       if (firstDigit < 0) {
         firstDigit = digit;
-      } 
-      else {
+      } else {
         buffer[bufferLength++] = (firstDigit << 4) | digit;
         firstDigit = -1;
       }
@@ -89,6 +82,4 @@ class AsciiHexStream extends DecodeStream
     this.bufferLength = bufferLength;
   }
 }
-
-export { AsciiHexStream };
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

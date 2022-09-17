@@ -17,7 +17,7 @@
  */
 import { FormatError, warn } from "../shared/util.js";
 import { Dict, RefSet } from "./primitives.js";
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 /**
  * A NameTree/NumberTree is like a Dict but has some advantageous properties,
  * see the specification (7.9.6 and 7.9.7) for additional details.
@@ -34,8 +34,9 @@ class NameOrNumberTree {
     }
     getAll() {
         const map = new Map();
-        if (!this.root)
+        if (!this.root) {
             return map;
+        }
         const xref = this.xref;
         // Reading Name/Number tree.
         const processed = new RefSet();
@@ -43,23 +44,27 @@ class NameOrNumberTree {
         const queue = [this.root];
         while (queue.length > 0) {
             const obj = xref.fetchIfRef(queue.shift());
-            if (!(obj instanceof Dict))
+            if (!(obj instanceof Dict)) {
                 continue;
+            }
             if (obj.has("Kids")) {
                 const kids = obj.get("Kids");
-                if (!Array.isArray(kids))
+                if (!Array.isArray(kids)) {
                     continue;
+                }
                 for (const kid of kids) {
-                    if (processed.has(kid))
+                    if (processed.has(kid)) {
                         throw new FormatError(`Duplicate entry in "${this.#type}" tree.`);
+                    }
                     queue.push(kid);
                     processed.put(kid);
                 }
                 continue;
             }
             const entries = obj.get(this.#type);
-            if (!Array.isArray(entries))
+            if (!Array.isArray(entries)) {
                 continue;
+            }
             for (let i = 0, ii = entries.length; i < ii; i += 2) {
                 map.set(xref.fetchIfRef(entries[i]), xref.fetchIfRef(entries[i + 1]));
             }
@@ -67,8 +72,9 @@ class NameOrNumberTree {
         return map;
     }
     get(key) {
-        if (!this.root)
+        if (!this.root) {
             return null;
+        }
         const xref = this.xref;
         let kidsOrEntries = xref.fetchIfRef(this.root);
         let loopCount = 0;
@@ -101,8 +107,9 @@ class NameOrNumberTree {
                     break;
                 }
             }
-            if (l > r)
+            if (l > r) {
                 return null;
+            }
         }
         // If we get here, then we have found the right entry. Now go through the
         // entries in the dictionary until we find the key we're looking for.
@@ -139,5 +146,5 @@ export class NumberTree extends NameOrNumberTree {
         super(root, xref, "Nums");
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=name_number_tree.js.map

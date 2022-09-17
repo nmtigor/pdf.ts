@@ -1,3 +1,4 @@
+import { BaseStream } from "./base_stream.js";
 import { EOF } from "./primitives.js";
 export declare class PostScriptParser {
     lexer: PostScriptLexer;
@@ -33,7 +34,6 @@ declare namespace NsPostScriptToken {
     }
 }
 import PostScriptToken = NsPostScriptToken.PostScriptToken;
-import { BaseStream } from "./base_stream.js";
 export declare class PostScriptLexer {
     stream: BaseStream;
     strBuf: string[];

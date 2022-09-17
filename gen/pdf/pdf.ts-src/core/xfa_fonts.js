@@ -15,14 +15,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { CalibriBoldFactors, CalibriBoldItalicFactors, CalibriBoldItalicMetrics, CalibriBoldMetrics, CalibriItalicFactors, CalibriItalicMetrics, CalibriRegularFactors, CalibriRegularMetrics } from "./calibri_factors.js";
+import { CalibriBoldFactors, CalibriBoldItalicFactors, CalibriBoldItalicMetrics, CalibriBoldMetrics, CalibriItalicFactors, CalibriItalicMetrics, CalibriRegularFactors, CalibriRegularMetrics, } from "./calibri_factors.js";
 import { getLookupTableFactory } from "./core_utils.js";
 import { normalizeFontName } from "./fonts_utils.js";
-import { HelveticaBoldFactors, HelveticaBoldItalicFactors, HelveticaBoldItalicMetrics, HelveticaBoldMetrics, HelveticaItalicFactors, HelveticaItalicMetrics, HelveticaRegularFactors, HelveticaRegularMetrics } from "./helvetica_factors.js";
-import { LiberationSansBoldItalicMapping, LiberationSansBoldItalicWidths, LiberationSansBoldMapping, LiberationSansBoldWidths, LiberationSansItalicMapping, LiberationSansItalicWidths, LiberationSansRegularMapping, LiberationSansRegularWidths } from "./liberationsans_widths.js";
-import { MyriadProBoldFactors, MyriadProBoldItalicFactors, MyriadProBoldItalicMetrics, MyriadProBoldMetrics, MyriadProItalicFactors, MyriadProItalicMetrics, MyriadProRegularFactors, MyriadProRegularMetrics } from "./myriadpro_factors.js";
+import { HelveticaBoldFactors, HelveticaBoldItalicFactors, HelveticaBoldItalicMetrics, HelveticaBoldMetrics, HelveticaItalicFactors, HelveticaItalicMetrics, HelveticaRegularFactors, HelveticaRegularMetrics, } from "./helvetica_factors.js";
+import { LiberationSansBoldItalicMapping, LiberationSansBoldItalicWidths, LiberationSansBoldMapping, LiberationSansBoldWidths, LiberationSansItalicMapping, LiberationSansItalicWidths, LiberationSansRegularMapping, LiberationSansRegularWidths, } from "./liberationsans_widths.js";
+import { MyriadProBoldFactors, MyriadProBoldItalicFactors, MyriadProBoldItalicMetrics, MyriadProBoldMetrics, MyriadProItalicFactors, MyriadProItalicMetrics, MyriadProRegularFactors, MyriadProRegularMetrics, } from "./myriadpro_factors.js";
 import { Dict, Name } from "./primitives.js";
-import { SegoeuiBoldFactors, SegoeuiBoldItalicFactors, SegoeuiBoldItalicMetrics, SegoeuiBoldMetrics, SegoeuiItalicFactors, SegoeuiItalicMetrics, SegoeuiRegularFactors, SegoeuiRegularMetrics } from "./segoeui_factors.js";
+import { SegoeuiBoldFactors, SegoeuiBoldItalicFactors, SegoeuiBoldItalicMetrics, SegoeuiBoldMetrics, SegoeuiItalicFactors, SegoeuiItalicMetrics, SegoeuiRegularFactors, SegoeuiRegularMetrics, } from "./segoeui_factors.js";
 const getXFAFontMap = getLookupTableFactory((t) => {
     t["MyriadPro-Regular"] = t["PdfJS-Fallback-Regular"] = {
         name: "LiberationSans-Regular",
@@ -173,8 +173,9 @@ export function getXfaFontName(name) {
 }
 export function getXfaFontWidths(name) {
     const info = getXfaFontName(name);
-    if (!info)
+    if (!info) {
         return undefined;
+    }
     const { baseWidths, baseMapping, factors } = info;
     let rescaledBaseWidths;
     if (!factors) {
@@ -201,10 +202,11 @@ export function getXfaFontWidths(name) {
         .map((charUnicode, index) => [
         charUnicode,
         index,
-    ] /* collect unicode and glyph index */)
-        .sort(([unicode1], [unicode2]) => unicode1 - unicode2 /* order by unicode only */)) {
-        if (unicode === -1)
+    ])
+        .sort(([unicode1], [unicode2]) => unicode1 - unicode2)) {
+        if (unicode === -1) {
             continue;
+        }
         if (unicode === currentCode + 1) {
             currentArray.push(rescaledBaseWidths[glyphIndex]);
             currentCode += 1;
@@ -227,8 +229,7 @@ export function getXfaFontDict(name) {
     dict.set("CIDToGIDMap", Name.get("Identity"));
     dict.set("W", widths);
     dict.set("FirstChar", widths[0]);
-    dict.set("LastChar", widths[widths.length - 2] +
-        widths[widths.length - 1].length - 1);
+    dict.set("LastChar", widths.at(-2) + widths.at(-1).length - 1);
     const descriptor = new Dict();
     dict.set("FontDescriptor", descriptor);
     const systemInfo = new Dict();
@@ -238,5 +239,5 @@ export function getXfaFontDict(name) {
     dict.set("CIDSystemInfo", systemInfo);
     return dict;
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=xfa_fonts.js.map

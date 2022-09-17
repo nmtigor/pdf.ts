@@ -16,9 +16,9 @@
  * limitations under the License.
  */
 /** @typedef {import("./interfaces").IL10n} IL10n */
-import { webL10n } from "../../lib/l10n.js";
+import { webL10n } from "../../3rd/webL10n/l10n.js";
 import { fixupLangCode, getL10nFallback } from "./l10n_utils.js";
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 // const webL10n = document.webL10n;
 export class GenericL10n {
     _lang;
@@ -31,12 +31,12 @@ export class GenericL10n {
             });
         });
     }
-    /** @implements */
+    /** @implement */
     async getLanguage() {
         const l10n = await this._ready;
         return l10n.getLanguage();
     }
-    /** @implements */
+    /** @implement */
     async getDirection() {
         const l10n = await this._ready;
         return l10n.getDirection();
@@ -50,5 +50,5 @@ export class GenericL10n {
         return l10n.translate(element);
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=genericl10n.js.map

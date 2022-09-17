@@ -1,8 +1,23 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
-import { FindState } from "./pdf_find_controller.js";
-/*81---------------------------------------------------------------------------*/
+/* Copyright 2012 Mozilla Foundation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import { MOZCENTRAL } from "../../global.js";
+import { FindState, } from "./pdf_find_controller.js";
+/*80--------------------------------------------------------------------------*/
 const MATCHES_COUNT_LIMIT = 1000;
 /**
  * Creates a "search bar" given a set of DOM elements that act as controls
@@ -46,7 +61,7 @@ export class PDFFindBar {
         this.findField.addEventListener("input", () => {
             this.dispatchEvent("");
         });
-        this.bar.addEventListener("keydown", e => {
+        this.bar.addEventListener("keydown", (e) => {
             switch (e.keyCode) {
                 case 13: // Enter
                     if (e.target === this.findField) {
@@ -78,7 +93,9 @@ export class PDFFindBar {
         });
         this.eventBus._on("resize", this.#adjustWidth);
     }
-    reset() { this.updateUIState(); }
+    reset() {
+        this.updateUIState();
+    }
     dispatchEvent(type, findPrev = false) {
         this.eventBus.dispatch("find", {
             source: this,
@@ -111,7 +128,7 @@ export class PDFFindBar {
         }
         this.findField.setAttribute("data-status", status);
         this.findField.setAttribute("aria-invalid", (state === FindState.NOT_FOUND));
-        findMsg.then(msg => {
+        findMsg.then((msg) => {
             this.findMsg.textContent = msg;
             this.#adjustWidth();
         });
@@ -123,18 +140,19 @@ export class PDFFindBar {
         if (total > 0) {
             if (total > limit) {
                 let key = "find_match_count_limit";
-                // TODO: Remove this hard-coded `[other]` form once plural support has
-                // been implemented in the mozilla-central specific `l10n.js` file.
+                /*#static*/ 
                 matchCountMsg = this.l10n.get(key, { limit: limit });
             }
             else {
                 let key = "find_match_count";
-                // TODO: Remove this hard-coded `[other]` form once plural support has
-                // been implemented in the mozilla-central specific `l10n.js` file.
-                matchCountMsg = this.l10n.get(key, { current: current, total: total });
+                /*#static*/ 
+                matchCountMsg = this.l10n.get(key, {
+                    current: current,
+                    total: total,
+                });
             }
         }
-        matchCountMsg.then(msg => {
+        matchCountMsg.then((msg) => {
             this.findResultsCount.textContent = msg;
             // Since `updateResultsCount` may be called from `PDFFindController`,
             // ensure that the width of the findbar is always updated correctly.
@@ -171,8 +189,9 @@ export class PDFFindBar {
         }
     }
     #adjustWidth = () => {
-        if (!this.opened)
+        if (!this.opened) {
             return;
+        }
         // The find bar has an absolute position and thus the browser extends
         // its width to the maximum possible width once the find bar does not fit
         // entirely within the window anymore (and its elements are automatically
@@ -188,5 +207,5 @@ export class PDFFindBar {
         }
     };
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=pdf_find_bar.js.map

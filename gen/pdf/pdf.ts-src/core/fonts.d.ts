@@ -3,8 +3,9 @@ import { BaseStream } from "./base_stream.js";
 import { CFFFont } from "./cff_font.js";
 import { CMap } from "./cmap.js";
 import { type CssFontInfo } from "./document.js";
-import { type FontProps, type VMetric } from './evaluator.js';
-import { type OpListIR } from './operator_list.js';
+import { type FontProps, type VMetric } from "./evaluator.js";
+import { type OpListIR } from "./operator_list.js";
+import { Stream } from "./stream.js";
 import { IdentityToUnicodeMap, ToUnicodeMap } from "./to_unicode_map.js";
 import { Type1Font } from "./type1_font.js";
 export declare abstract class FontExpotData {
@@ -92,7 +93,7 @@ export declare class Font extends FontExpotDataEx {
     isOpenType?: boolean;
     isCharBBox?: boolean;
     glyphNameMap?: Record<string, string | number>;
-    constructor(name: string, file: BaseStream | undefined, properties: FontProps);
+    constructor(name: string, file: Stream | undefined, properties: FontProps);
     get renderer(): import("./font_renderer.js").TrueTypeCompiled | import("./font_renderer.js").Type2Compiled;
     exportData(extraProperties?: boolean): FontExpotDataEx;
     fallbackToSystemFont(properties: FontProps): void;

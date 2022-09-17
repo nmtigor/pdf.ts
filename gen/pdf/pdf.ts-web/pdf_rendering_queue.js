@@ -19,9 +19,10 @@
 /** @typedef {import("./pdf_viewer").PDFViewer} PDFViewer */
 // eslint-disable-next-line max-len
 /** @typedef {import("./pdf_thumbnail_viewer").PDFThumbnailViewer} PDFThumbnailViewer */
-import { RenderingCancelledException } from "../pdf.ts-src/display/display_utils.js";
+import { global, PDFTS_vv, _INFO } from "../../global.js";
+import { RenderingCancelledException } from "../pdf.ts-src/pdf.js";
 import { RenderingStates } from "./ui_utils.js";
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 const CLEANUP_TIMEOUT = 30000;
 /**
  * Controls rendering of the views for pages and thumbnails.
@@ -43,22 +44,27 @@ export class PDFRenderingQueue {
     isHighestPriority(view) {
         return this.highestPriorityPage === view.renderingId;
     }
-    hasViewer() { return !!this.pdfViewer; }
+    hasViewer() {
+        return !!this.pdfViewer;
+    }
     renderHighestPriority(currentlyVisiblePages) {
         if (this.idleTimeout) {
             clearTimeout(this.idleTimeout);
             this.idleTimeout = undefined;
         }
         // Pages have a higher priority than thumbnails, so check them first.
-        if (this.pdfViewer.forceRendering(currentlyVisiblePages))
+        if (this.pdfViewer.forceRendering(currentlyVisiblePages)) {
             return;
+        }
         // No pages needed rendering, so check thumbnails.
-        if (this.isThumbnailViewEnabled
-            && this.pdfThumbnailViewer?.forceRendering())
+        if (this.isThumbnailViewEnabled &&
+            this.pdfThumbnailViewer?.forceRendering()) {
             return;
-        // If printing is currently ongoing do not reschedule cleanup.
-        if (this.printing)
+        }
+        if (this.printing) {
+            // If printing is currently ongoing do not reschedule cleanup.
             return;
+        }
         if (this.onIdle) {
             this.idleTimeout = setTimeout(this.onIdle.bind(this), CLEANUP_TIMEOUT);
         }
@@ -74,12 +80,14 @@ export class PDFRenderingQueue {
          *    if last scrolled up, the page before the visible pages
          */
         const visibleViews = visible.views, numVisible = visibleViews.length;
-        if (numVisible === 0)
+        if (numVisible === 0) {
             return undefined;
+        }
         for (let i = 0; i < numVisible; i++) {
             const view = visibleViews[i].view;
-            if (!this.isViewFinished(view))
+            if (!this.isViewFinished(view)) {
                 return view;
+            }
         }
         const firstId = visible.first.id, lastId = visible.last.id;
         // All the visible views have rendered; try to handle any "holes" in the
@@ -88,11 +96,13 @@ export class PDFRenderingQueue {
             const visibleIds = visible.ids;
             for (let i = 1, ii = lastId - firstId; i < ii; i++) {
                 const holeId = scrolledDown ? firstId + i : lastId - i;
-                if (visibleIds.has(holeId))
+                if (visibleIds.has(holeId)) {
                     continue;
+                }
                 const holeView = views[holeId - 1];
-                if (!this.isViewFinished(holeView))
+                if (!this.isViewFinished(holeView)) {
                     return holeView;
+                }
             }
         }
         // All the visible views have rendered; try to render next/previous page.
@@ -121,8 +131,10 @@ export class PDFRenderingQueue {
      * `false`.
      */
     renderView(view) {
+        /*#static*/ 
         switch (view.renderingState) {
             case RenderingStates.FINISHED:
+                /*#static*/ 
                 return false;
             case RenderingStates.PAUSED:
                 this.highestPriorityPage = view.renderingId;
@@ -138,15 +150,17 @@ export class PDFRenderingQueue {
                     .finally(() => {
                     this.renderHighestPriority();
                 })
-                    .catch(reason => {
-                    if (reason instanceof RenderingCancelledException)
+                    .catch((reason) => {
+                    if (reason instanceof RenderingCancelledException) {
                         return;
+                    }
                     console.error(`renderView: "${reason}"`);
                 });
                 break;
         }
+        /*#static*/ 
         return true;
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=pdf_rendering_queue.js.map

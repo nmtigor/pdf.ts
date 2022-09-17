@@ -17,34 +17,37 @@
  */
 import { stringToBytes } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 export class Stream extends BaseStream {
     bytes;
     start;
     end;
-    /** @implements */
-    get length() { return this.end - this.start; }
-    /** @implements */
-    get isEmpty() { return this.length === 0; }
+    /** @implement */
+    get length() {
+        return this.end - this.start;
+    }
+    /** @implement */
+    get isEmpty() {
+        return this.length === 0;
+    }
     constructor(arrayBuffer, start, length, dict) {
         super();
-        this.bytes =
-            arrayBuffer instanceof Uint8Array
-                ? arrayBuffer
-                : new Uint8Array(arrayBuffer);
+        this.bytes = arrayBuffer instanceof Uint8Array
+            ? arrayBuffer
+            : new Uint8Array(arrayBuffer);
         this.start = start || 0;
         this.pos = this.start;
         this.end = (start + length) || this.bytes.length;
         this.dict = dict;
     }
-    /** @implements */
+    /** @implement */
     getByte() {
         if (this.pos >= this.end) {
             return -1;
         }
         return this.bytes[this.pos++];
     }
-    /** @implements */
+    /** @implement */
     getBytes(length) {
         const bytes = this.bytes;
         const pos = this.pos;
@@ -59,7 +62,7 @@ export class Stream extends BaseStream {
         this.pos = end;
         return bytes.subarray(pos, end);
     }
-    /** @implements */
+    /** @implement */
     getByteRange(begin, end) {
         if (begin < 0) {
             begin = 0;
@@ -69,18 +72,18 @@ export class Stream extends BaseStream {
         }
         return this.bytes.subarray(begin, end);
     }
-    /** @implements */
+    /** @implement */
     reset() {
         this.pos = this.start;
     }
     /**
-     * @implements
+     * @implement
      * @final
      */
     moveStart() {
         this.start = this.pos;
     }
-    /** @implements */
+    /** @implement */
     makeSubStream(start, length, dict) {
         return new Stream(this.bytes.buffer, start, length, dict);
     }
@@ -95,6 +98,5 @@ export class NullStream extends Stream {
         super(new Uint8Array(0));
     }
 }
-;
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=stream.js.map

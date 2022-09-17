@@ -1,6 +1,6 @@
 /**
- * @param { const } assertion
- * @param { const } msg
+ * @const @param assertion
+ * @const @param msg
  */
 export declare const assert: (assertion: any, msg?: string, meta?: {
     url: string;
@@ -12,7 +12,7 @@ interface ErrorJ {
     ts: number;
     name: string;
     message: string;
-    stack: ReturnType<typeof computeStackTrace_>;
+    stack: ReturnType<typeof _computeStackTrace>;
 }
 export interface ReportedError {
     err_j: ErrorJ | undefined;
@@ -24,19 +24,20 @@ declare global {
     }
 }
 /**
- * @param { headconst } err_x
+ * @headconst @param err_x
  */
 export declare const reportError: <E extends Error>(err_x: E) => Promise<void>;
 /**
  * Computes a stack trace for an exception.
- * @param { headconst } err_x
+ * @headconst @param err_x
  */
-declare function computeStackTrace_(err_x: Error): {
-    url: string | null;
+declare function _computeStackTrace(err_x: Error): _StackElement[] | undefined;
+interface _StackElement {
+    url: string | undefined;
+    line: number | undefined;
+    column: number | undefined;
     func: string;
     args: string[];
-    line: number | null;
-    column: number | null;
-}[] | null;
+}
 export {};
 //# sourceMappingURL=trace.d.ts.map

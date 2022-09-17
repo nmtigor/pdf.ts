@@ -225,11 +225,7 @@ declare class ChoiceList extends XFAObject {
 }
 declare class Color extends XFAObject {
     cSpace: string;
-    value: "" | {
-        r: number;
-        g: number;
-        b: number;
-    };
+    value: "" | XFAColor;
     extras: unknown;
     constructor(attributes: XFAAttrs);
     [$hasSettableValue](): boolean;
@@ -273,13 +269,13 @@ declare class Corner extends XFAObject {
     [$toStyle](): XFAStyleData;
 }
 declare class DateElement extends ContentObject {
-    [$content]: string | Date;
+    [$content]: string | Date | undefined;
     constructor(attributes: XFAAttrs);
     [$finalize](): void;
     [$toHTML](availableSpace?: AvailableSpace): HTMLResult;
 }
 declare class DateTime extends ContentObject {
-    [$content]: string | Date;
+    [$content]: string | Date | undefined;
     constructor(attributes: XFAAttrs);
     [$finalize](): void;
     [$toHTML](availableSpace?: AvailableSpace): HTMLResult;
@@ -295,7 +291,7 @@ declare class DateTimeEdit extends XFAObject {
     [$toHTML](availableSpace?: AvailableSpace): HTMLResult;
 }
 declare class Decimal extends ContentObject {
-    [$content]: string | number;
+    [$content]: string | number | undefined;
     fracDigits: number;
     leadDigits: number;
     constructor(attributes: XFAAttrs);
@@ -330,7 +326,6 @@ declare class DigestMethods extends XFAObject {
 export declare class Draw extends XFAObject {
     anchorType: string;
     colSpan: number;
-    h: number | "";
     hAlign: string;
     locale: string;
     maxH: number;
@@ -343,7 +338,6 @@ export declare class Draw extends XFAObject {
         viewname: string;
     }[];
     rotate: number;
-    w: number | "";
     x: number;
     y: number;
     assist: Assist | undefined;
@@ -522,7 +516,6 @@ export declare class Field extends XFAObject {
     accessKey: string;
     anchorType: string;
     colSpan: number;
-    h: number | "";
     hAlign: string;
     locale: string;
     maxH: number;
@@ -535,7 +528,6 @@ export declare class Field extends XFAObject {
         viewname: string;
     }[];
     rotate: number;
-    w: number | "";
     x: number;
     y: number;
     assist: Assist | undefined;
@@ -553,7 +545,7 @@ export declare class Field extends XFAObject {
     para: Para | undefined;
     traversal: Traversal | undefined;
     ui?: Ui;
-    validate: unknown;
+    validate?: Validate;
     value?: Value;
     bindItems: XFAObjectArray;
     connect: XFAObjectArray;
@@ -594,7 +586,7 @@ declare class Filter extends XFAObject {
     constructor(attributes: XFAAttrs);
 }
 declare class Float extends ContentObject {
-    [$content]: string | number;
+    [$content]: string | number | undefined;
     constructor(attributes: XFAAttrs);
     [$finalize](): void;
     [$toHTML](availableSpace?: AvailableSpace): HTMLResult;
@@ -657,7 +649,7 @@ declare class ImageEdit extends XFAObject {
     [$toHTML](availableSpace?: AvailableSpace): HTMLResult;
 }
 declare class Integer extends ContentObject {
-    [$content]: string | number;
+    [$content]: string | number | undefined;
     constructor(attributes: XFAAttrs);
     [$finalize](): void;
     [$toHTML](availableSpace?: AvailableSpace): HTMLResult;
@@ -1206,7 +1198,7 @@ export declare class Template extends XFAObject {
      * pages is done asynchronously and we want to save the state
      * of the function where we were in the previous iteration.
      */
-    [$toPages](): Generator<null, HTMLResult | {
+    [$toPages](): Generator<undefined, HTMLResult | {
         name: string;
         children: XFAElData[];
     }, unknown>;
@@ -1236,7 +1228,7 @@ declare class TextEdit extends XFAObject {
     [$toHTML](availableSpace?: AvailableSpace): HTMLResult;
 }
 declare class Time extends StringObject {
-    [$content]: string | Date;
+    [$content]: string | Date | undefined;
     constructor(attributes: XFAAttrs);
     [$finalize](): void;
     [$toHTML](availableSpace?: AvailableSpace): HTMLResult;
@@ -1334,7 +1326,7 @@ declare class Variables extends XFAObject {
 }
 export declare type XFANsTemplate = typeof TemplateNamespace;
 export declare const TemplateNamespace: {
-    [$buildXFAObject](name: string, attributes: XFAAttrs): Template | Draw | Field | Caption | Value | Margin | Para | Font | Occur | ExData | ExclGroup | Subform | Assist | Border | Area | ContentArea | Bind | Break | Keep | Overflow | PageSet | BreakAfter | BreakBefore | SubformSet | Traversal | ToolTip | Speak | PageArea | Medium | AppearanceFilter | Arc | Edge | Fill | Barcode | Picture | BindItems | Bookend | BooleanElement | Corner | Button | Event | Script | Calculate | Certificate | Certificates | CheckButton | ChoiceList | Items | Color | Comb | Connect | DateElement | DateTime | DateTimeEdit | Decimal | DefaultUi | Desc | DigestMethod | DigestMethods | Encoding | Encodings | Encrypt | EncryptData | Encryption | EncryptionMethod | EncryptionMethods | ExObject | Execute | Extras | Ui | TextEdit | Text | Rectangle | Filter | Float | Format | Handler | Hyphenation | Image | ImageEdit | Integer | Issuers | KeyUsage | Line | Linear | LockDocument | Manifest | Mdp | Message | NumericEdit | Oid | Oids | PasswordEdit | Pattern | Proto | Radial | Reason | Reasons | RefElement | SetProperty | SignData | Signature | Signing | Solid | Stipple | SubjectDN | SubjectDNs | Submit | Time | TimeStamp | Traverse | Validate | Variables | undefined;
+    [$buildXFAObject](name: string, attributes: XFAAttrs): Template | BreakAfter | BreakBefore | Para | Draw | Field | Caption | Value | Margin | Font | Occur | ExData | ExclGroup | Subform | Assist | Border | Area | ContentArea | AppearanceFilter | Arc | Barcode | Bind | BindItems | Bookend | BooleanElement | Break | Button | Calculate | Certificate | Certificates | CheckButton | ChoiceList | Color | Comb | Connect | Corner | DateElement | DateTime | DateTimeEdit | Decimal | DefaultUi | Desc | DigestMethod | DigestMethods | Edge | Encoding | Encodings | Encrypt | EncryptData | Encryption | EncryptionMethod | EncryptionMethods | Event | ExObject | Execute | Extras | Fill | Filter | Float | Format | Handler | Hyphenation | Image | ImageEdit | Integer | Issuers | Items | Keep | KeyUsage | Line | Linear | LockDocument | Manifest | Mdp | Medium | Message | NumericEdit | Oid | Oids | Overflow | PageArea | PageSet | PasswordEdit | Pattern | Picture | Proto | Radial | Reason | Reasons | Rectangle | RefElement | Script | SetProperty | SignData | Signature | Signing | Solid | Speak | Stipple | SubformSet | SubjectDN | SubjectDNs | Submit | Text | TextEdit | Time | TimeStamp | ToolTip | Traversal | Traverse | Ui | Validate | Variables | undefined;
     appearanceFilter(attrs: XFAAttrs): AppearanceFilter;
     arc(attrs: XFAAttrs): Arc;
     area(attrs: XFAAttrs): Area;

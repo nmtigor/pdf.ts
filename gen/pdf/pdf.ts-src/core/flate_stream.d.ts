@@ -1,5 +1,5 @@
-import { DecodeStream } from "./decode_stream.js";
 import { BaseStream } from "./base_stream.js";
+import { DecodeStream } from "./decode_stream.js";
 declare type FlateTable = [Int32Array, number];
 /** @final */
 export declare class FlateStream extends DecodeStream {
@@ -9,7 +9,7 @@ export declare class FlateStream extends DecodeStream {
     getBits(bits: number): number;
     getCode(table: FlateTable): number;
     generateHuffmanTable(lengths: Uint8Array): FlateTable;
-    /** @implements */
+    /** @implement */
     readBlock(): void;
 }
 export {};

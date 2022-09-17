@@ -14,7 +14,7 @@ export class DecryptStream extends DecodeStream {
         this.dict = str.dict;
         this.decrypt = decrypt;
     }
-    /** @implements */
+    /** @implement */
     readBlock() {
         let chunk;
         if (this.initialized) {
@@ -40,5 +40,5 @@ export class DecryptStream extends DecodeStream {
         this.bufferLength = bufferLength;
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=decrypt_stream.js.map

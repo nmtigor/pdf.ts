@@ -21,9 +21,9 @@
 /** @typedef {import("./interfaces").IDownloadManager} IDownloadManager */
 /** @typedef {import("./interfaces").IL10n} IL10n */
 /** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
-import { AnnotationLayer } from "../pdf.ts-src/pdf.js";
-import { NullL10n } from "./l10n_utils.js";
 import { html } from "../../lib/dom.js";
+import { AnnotationLayer, } from "../pdf.ts-src/pdf.js";
+import { NullL10n } from "./l10n_utils.js";
 export class AnnotationLayerBuilder {
     pageDiv;
     pdfPage;
@@ -94,7 +94,7 @@ export class AnnotationLayerBuilder {
             // if there is at least one annotation.
             this.div = html("div");
             this.div.className = "annotationLayer";
-            this.pageDiv.appendChild(this.div);
+            this.pageDiv.append(this.div);
             parameters.div = this.div;
             AnnotationLayer.render(parameters);
             this.l10n.translate(this.div);
@@ -109,5 +109,5 @@ export class AnnotationLayerBuilder {
         this.div.hidden = true;
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=annotation_layer_builder.js.map

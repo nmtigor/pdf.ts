@@ -2,11 +2,13 @@
  * nmtigor (https://github.com/nmtigor) @2022
  */
 import { objectFromMap } from "../shared/util.js";
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 export class Metadata {
     #metadataMap;
     #data;
-    getRaw() { return this.#data; }
+    getRaw() {
+        return this.#data;
+    }
     constructor({ parsedData, rawData }) {
         this.#metadataMap = parsedData;
         this.#data = rawData;
@@ -21,5 +23,5 @@ export class Metadata {
         return this.#metadataMap.has(name);
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=metadata.js.map

@@ -17,12 +17,12 @@
  * limitations under the License.
  */
 
-import { clearPrimitiveCaches } from "./primitives.js";
-import { clearUnicodeCaches } from "./unicode.js";
-/*81---------------------------------------------------------------------------*/
+import { clearPrimitiveCaches } from "./primitives.ts";
+import { clearUnicodeCaches } from "./unicode.ts";
+/*80--------------------------------------------------------------------------*/
 
 export function clearGlobalCaches() {
   clearPrimitiveCaches();
   clearUnicodeCaches();
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

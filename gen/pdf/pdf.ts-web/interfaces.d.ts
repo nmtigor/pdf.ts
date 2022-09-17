@@ -1,27 +1,24 @@
 /** @typedef {import("../src/display/api").PDFPageProxy} PDFPageProxy */
 /** @typedef {import("../src/display/display_utils").PageViewport} PageViewport */
 /** @typedef {import("./annotation_layer_builder").AnnotationLayerBuilder} AnnotationLayerBuilder */
+/** @typedef {import("./annotation_editor_layer_builder").AnnotationEditorLayerBuilder} AnnotationEditorLayerBuilder */
 /** @typedef {import("./event_utils").EventBus} EventBus */
 /** @typedef {import("./struct_tree_builder").StructTreeLayerBuilder} StructTreeLayerBuilder */
 /** @typedef {import("./text_highlighter").TextHighlighter} TextHighlighter */
 /** @typedef {import("./text_layer_builder").TextLayerBuilder} TextLayerBuilder */
 /** @typedef {import("./ui_utils").RenderingStates} RenderingStates */
 /** @typedef {import("./xfa_layer_builder").XfaLayerBuilder} XfaLayerBuilder */
-import { PageViewport } from "../pdf.ts-src/display/display_utils.js";
-import { AnnotationStorage } from "../pdf.ts-src/display/annotation_storage.js";
-import { TextLayerBuilder } from "./text_layer_builder.js";
+import { type Locale_1, type WebL10nArgs } from "../../3rd/webL10n/l10n.js";
+import { AnnotActions, AnnotationEditorUIManager, AnnotationStorage, AppInfo, type Destination, DocInfo, type ExplicitDest, type FieldObject, PageViewport, PDFPageProxy, type RefProxy, ScriptingActionName } from "../pdf.ts-src/pdf.js";
+import { AnnotationEditorLayerBuilder } from "./annotation_editor_layer_builder.js";
 import { AnnotationLayerBuilder } from "./annotation_layer_builder.js";
-import { PDFPageProxy, type RefProxy } from "../pdf.ts-src/display/api.js";
-import { type Locale_1, type WebL10nArgs } from "../../lib/l10n.js";
-import { XfaLayerBuilder } from "./xfa_layer_builder.js";
-import { type Destination, type ExplicitDest } from "../pdf.ts-src/core/catalog.js";
-import { StructTreeLayerBuilder } from "./struct_tree_layer_builder.js";
-import { type XFAElData } from "../pdf.ts-src/core/xfa/alias.js";
-import { TextHighlighter } from "./text_highlighter.js";
-import { type FieldObject } from "../pdf.ts-src/core/annotation.js";
 import { EventBus } from "./event_utils.js";
-import { RenderingStates } from "./ui_utils.js";
 import { LinkTarget } from "./pdf_link_service.js";
+import { StructTreeLayerBuilder } from "./struct_tree_layer_builder.js";
+import { TextHighlighter } from "./text_highlighter.js";
+import { TextLayerBuilder } from "./text_layer_builder.js";
+import { RenderingStates } from "./ui_utils.js";
+import { XfaLayerBuilder } from "./xfa_layer_builder.js";
 export interface IPDFLinkService {
     readonly pagesCount: number;
     page: number;
@@ -109,43 +106,94 @@ export interface IVisibleView extends IRenderableView {
     readonly id: number;
     readonly div: HTMLDivElement;
 }
-export interface IPDFTextLayerFactory {
+export interface CreateTextLayerBuilderP {
+    textLayerDiv: HTMLDivElement;
+    pageIndex: number;
+    viewport: PageViewport;
     /**
-     * @param enhanceTextSelection=false
+     * =false
      */
-    createTextLayerBuilder(textLayerDiv: HTMLDivElement, pageIndex: number, viewport: PageViewport, enhanceTextSelection: boolean, eventBus: EventBus, highlighter: TextHighlighter | undefined): TextLayerBuilder;
+    enhanceTextSelection: boolean;
+    eventBus: EventBus;
+    highlighter: TextHighlighter | undefined;
+}
+export interface IPDFTextLayerFactory {
+    createTextLayerBuilder(_: CreateTextLayerBuilderP): TextLayerBuilder;
 }
 export interface MouseState {
     isDown?: boolean;
 }
-export interface IPDFAnnotationLayerFactory {
+export interface CreateAnnotationLayerBuilderP {
+    pageDiv: HTMLDivElement;
+    pdfPage: PDFPageProxy;
     /**
-     * @param annotationStorage Storage for annotation data in forms.
-     * @param imageResourcesPath="" Path for image resources, mainly
-     *   for annotation icons. Include trailing slash.
-     * @param renderForms=true
-     * @param annotationCanvasMap Map some
-     *   annotation ids with canvases used to render them.
+     * Storage for annotation data in forms.
      */
-    createAnnotationLayerBuilder(pageDiv: HTMLDivElement, pdfPage: PDFPageProxy, annotationStorage?: AnnotationStorage, imageResourcesPath?: string, renderForms?: boolean, l10n?: IL10n, enableScripting?: boolean, hasJSActionsPromise?: Promise<boolean>, mouseState?: MouseState, fieldObjectsPromise?: Promise<Record<string, FieldObject[]> | undefined>, annotationCanvasMap?: Map<string, HTMLCanvasElement>): AnnotationLayerBuilder;
+    annotationStorage?: AnnotationStorage;
+    /**
+     * =""
+     * Path for image resources, mainly
+     * for annotation icons. Include trailing slash.
+     */
+    imageResourcesPath?: string;
+    /**
+     * =true
+     */
+    renderForms?: boolean;
+    l10n?: IL10n;
+    /**
+     * =false
+     */
+    enableScripting?: boolean;
+    hasJSActionsPromise?: Promise<boolean>;
+    mouseState?: MouseState;
+    fieldObjectsPromise?: Promise<Record<string, FieldObject[]> | undefined>;
+    /**
+     * Map some annotation ids with canvases used to render them.
+     */
+    annotationCanvasMap?: Map<string, HTMLCanvasElement>;
+}
+export interface IPDFAnnotationLayerFactory {
+    createAnnotationLayerBuilder(_: CreateAnnotationLayerBuilderP): AnnotationLayerBuilder;
+}
+export interface CreateAnnotationEditorLayerBuilderP {
+    uiManager?: AnnotationEditorUIManager;
+    pageDiv: HTMLDivElement;
+    pdfPage: PDFPageProxy;
+    l10n: IL10n;
+    /**
+     * Storage for annotation data in forms.
+     */
+    annotationStorage?: AnnotationStorage;
+}
+export interface IPDFAnnotationEditorLayerFactory {
+    createAnnotationEditorLayerBuilder(_: CreateAnnotationEditorLayerBuilderP): AnnotationEditorLayerBuilder;
+}
+export interface CreateXfaLayerBuilderP {
+    pageDiv: HTMLDivElement;
+    pdfPage: PDFPageProxy;
+    /**
+     * Storage for annotation data in forms.
+     */
+    annotationStorage?: AnnotationStorage;
 }
 export interface IPDFXfaLayerFactory {
-    createXfaLayerBuilder(pageDiv: HTMLDivElement, pdfPage: PDFPageProxy, annotationStorage?: AnnotationStorage, xfaHtml?: XFAElData): XfaLayerBuilder;
+    createXfaLayerBuilder(_: CreateXfaLayerBuilderP): XfaLayerBuilder;
+}
+export interface CreateStructTreeLayerBuilderP {
+    pdfPage: PDFPageProxy;
 }
 export interface IPDFStructTreeLayerFactory {
-    createStructTreeLayerBuilder(pdfPage: PDFPageProxy): StructTreeLayerBuilder;
+    createStructTreeLayerBuilder(_: CreateStructTreeLayerBuilderP): StructTreeLayerBuilder;
 }
 export interface IDownloadManager {
     downloadUrl(url: string, filename: string): void;
-    downloadData(data: Uint8Array, filename: string, contentType: string): void;
+    downloadData(data: Uint8Array | Uint8ClampedArray, filename: string, contentType: string): void;
     /**
      * @return Indicating if the data was opened.
      */
-    openOrDownloadData(element: HTMLElement, data: Uint8Array | Uint8ClampedArray | undefined, filename: string): boolean;
-    /**
-     * @param sourceEventType="download"
-     */
-    download(blob: Blob, url: string, filename: string, sourceEventType?: string): void;
+    openOrDownloadData(element: HTMLElement, data: Uint8Array | Uint8ClampedArray, filename: string): boolean;
+    download(blob: Blob, url: string, filename: string): void;
 }
 export interface IL10n {
     getLanguage(): Promise<Lowercase<Locale_1> | "">;
@@ -161,9 +209,21 @@ export interface IL10n {
      */
     translate(element: HTMLElement): Promise<void>;
 }
+export interface CreateSandboxP {
+    objects: Record<string, FieldObject[]>;
+    calculationOrder: string[] | undefined;
+    appInfo: AppInfo;
+    docInfo: DocInfo;
+}
+export interface EventInSandBox {
+    id: string;
+    name: ScriptingActionName;
+    pageNumber?: number;
+    actions?: AnnotActions | undefined;
+}
 export declare abstract class IScripting {
-    abstract createSandbox(data: unknown): Promise<void>;
-    abstract dispatchEventInSandbox(event: unknown): Promise<void>;
+    abstract createSandbox(data: CreateSandboxP): Promise<void>;
+    abstract dispatchEventInSandbox(event: EventInSandBox): Promise<void>;
     abstract destroySandbox(): Promise<void>;
 }
 //# sourceMappingURL=interfaces.d.ts.map

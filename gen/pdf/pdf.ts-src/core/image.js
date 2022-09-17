@@ -1,6 +1,21 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
+/* Copyright 2012 Mozilla Foundation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import { _PDFDEV } from "../../../global.js";
 import { assert } from "../../../lib/util/trace.js";
 import { applyMaskImageData } from "../shared/image_utils.js";
 import { FeatureTest, FormatError, ImageKind, info, warn } from "../shared/util.js";
@@ -10,7 +25,7 @@ import { DecodeStream } from "./decode_stream.js";
 import { JpegStream } from "./jpeg_stream.js";
 import { JpxImage } from "./jpx.js";
 import { Name } from "./primitives.js";
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 /**
  * Decode and clamp a value. The formula is different from the spec because we
  * don't decode to float range [0,1], we decode it in the [0,max] range.
@@ -88,29 +103,38 @@ export class PDFImage {
         this.image = image;
         const dict = image.dict;
         const filter = dict.get("F", "Filter");
+        let filterName;
         if (filter instanceof Name) {
-            switch (filter.name) {
-                case "JPXDecode":
-                    const jpxImage = new JpxImage();
-                    jpxImage.parseImageProperties(image.stream);
-                    image.stream.reset();
-                    image.width = jpxImage.width;
-                    image.height = jpxImage.height;
-                    image.bitsPerComponent = jpxImage.bitsPerComponent;
-                    image.numComps = jpxImage.componentsCount;
-                    break;
-                case "JBIG2Decode":
-                    image.bitsPerComponent = 1;
-                    image.numComps = 1;
-                    break;
+            filterName = filter.name;
+        }
+        else if (Array.isArray(filter)) {
+            const filterZero = xref.fetchIfRef(filter[0]);
+            if (filterZero instanceof Name) {
+                filterName = filterZero.name;
             }
         }
-        // TODO cache rendered images?
+        switch (filterName) {
+            case "JPXDecode":
+                const jpxImage = new JpxImage();
+                jpxImage.parseImageProperties(image.stream);
+                image.stream.reset();
+                image.width = jpxImage.width;
+                image.height = jpxImage.height;
+                image.bitsPerComponent = jpxImage.bitsPerComponent;
+                image.numComps = jpxImage.componentsCount;
+                break;
+            case "JBIG2Decode":
+                image.bitsPerComponent = 1;
+                image.numComps = 1;
+                break;
+        }
         let width = dict.get("W", "Width");
         let height = dict.get("H", "Height");
-        if (Number.isInteger(image.width) && image.width > 0
-            && Number.isInteger(image.height) && image.height > 0
-            && (image.width !== width || image.height !== height)) {
+        if (Number.isInteger(image.width) &&
+            image.width > 0 &&
+            Number.isInteger(image.height) &&
+            image.height > 0 &&
+            (image.width !== width || image.height !== height)) {
             warn("PDFImage - using the Width/Height of the image data, " +
                 "rather than the image dictionary.");
             width = image.width;
@@ -166,8 +190,8 @@ export class PDFImage {
         }
         this.decode = dict.getArray("D", "Decode");
         this.needsDecode = false;
-        if (this.decode
-            && ((this.colorSpace &&
+        if (this.decode &&
+            ((this.colorSpace &&
                 !this.colorSpace.isDefaultDecode(this.decode, bitsPerComponent)) ||
                 (isMask &&
                     !ColorSpace.isDefaultDecode(this.decode, /* numComps = */ 1)))) {
@@ -294,8 +318,9 @@ export class PDFImage {
         const isSingleOpaquePixel = width === 1 &&
             height === 1 &&
             inverseDecode === (imgArray.length === 0 || !!(imgArray[0] & 128));
-        if (isSingleOpaquePixel)
+        if (isSingleOpaquePixel) {
             return { isSingleOpaquePixel };
+        }
         if (FeatureTest.isOffscreenCanvasSupported) {
             const canvas = new globalThis.OffscreenCanvas(width, height);
             const ctx = canvas.getContext("2d");
@@ -438,12 +463,9 @@ export class PDFImage {
         return output;
     }
     fillOpacity(rgbaBuf, width, height, actualHeight, image) {
-        // if (
-        //   typeof PDFJSDev === "undefined" ||
-        //   PDFJSDev.test("!PRODUCTION || TESTING")
-        // ) {
-        assert(rgbaBuf instanceof Uint8ClampedArray, 'PDFImage.fillOpacity: Unsupported "rgbaBuf" type.');
-        // }
+        /*#static*/  {
+            assert(rgbaBuf instanceof Uint8ClampedArray, 'PDFImage.fillOpacity: Unsupported "rgbaBuf" type.');
+        }
         const smask = this.smask;
         const mask = this.mask;
         let alphaBuf, sw, sh, i, ii, j;
@@ -507,15 +529,13 @@ export class PDFImage {
         }
     }
     undoPreblend(buffer, width, height) {
-        // if (
-        //   typeof PDFJSDev === "undefined" ||
-        //   PDFJSDev.test("!PRODUCTION || TESTING")
-        // ) {
-        assert(buffer instanceof Uint8ClampedArray, 'PDFImage.undoPreblend: Unsupported "buffer" type.');
-        // }
+        /*#static*/  {
+            assert(buffer instanceof Uint8ClampedArray, 'PDFImage.undoPreblend: Unsupported "buffer" type.');
+        }
         const matte = this.smask && this.smask.matte;
-        if (!matte)
+        if (!matte) {
             return;
+        }
         const matteRgb = this.colorSpace.getRgb(matte, 0);
         const matteR = matteRgb[0];
         const matteG = matteRgb[1];
@@ -566,15 +586,15 @@ export class PDFImage {
             if (this.colorSpace.name === "DeviceGray" && bpc === 1) {
                 kind = ImageKind.GRAYSCALE_1BPP;
             }
-            else if (this.colorSpace.name === "DeviceRGB"
-                && bpc === 8 && !this.needsDecode) {
+            else if (this.colorSpace.name === "DeviceRGB" &&
+                bpc === 8 && !this.needsDecode) {
                 kind = ImageKind.RGB_24BPP;
             }
-            if (kind
-                && !this.smask
-                && !this.mask
-                && drawWidth === originalWidth
-                && drawHeight === originalHeight) {
+            if (kind &&
+                !this.smask &&
+                !this.mask &&
+                drawWidth === originalWidth &&
+                drawHeight === originalHeight) {
                 imgData.kind = kind;
                 imgData.data = this.getImageBytes(originalHeight * rowBytes, {});
                 if (this.needsDecode) {
@@ -611,7 +631,8 @@ export class PDFImage {
             internal: true,
         });
         // imgArray can be incomplete (e.g. after CCITT fax encoding).
-        const actualHeight = 0 | (((imgArray.length / rowBytes) * drawHeight) / originalHeight);
+        const actualHeight = 0 |
+            (((imgArray.length / rowBytes) * drawHeight) / originalHeight);
         const comps = this.getComponents(imgArray);
         // If opacity data is present, use RGBA_32BPP form. Otherwise, use the
         // more compact RGB_24BPP form if allowable.
@@ -640,12 +661,9 @@ export class PDFImage {
         return imgData;
     }
     fillGrayBuffer(buffer) {
-        // if (
-        //   typeof PDFJSDev === "undefined" ||
-        //   PDFJSDev.test("!PRODUCTION || TESTING")
-        // ) {
-        assert(buffer instanceof Uint8ClampedArray, 'PDFImage.fillGrayBuffer: Unsupported "buffer" type.');
-        // }
+        /*#static*/  {
+            assert(buffer instanceof Uint8ClampedArray, 'PDFImage.fillGrayBuffer: Unsupported "buffer" type.');
+        }
         const numComps = this.numComps;
         if (numComps !== 1) {
             throw new FormatError(`Reading gray scale from a color image: ${numComps}`);
@@ -696,11 +714,12 @@ export class PDFImage {
         // the entire DecodeStream's data.  But if it came from a Stream, we
         // need to copy it because it'll only be a portion of the Stream's
         // data, and the rest will be read later on.
-        if (internal || this.image instanceof DecodeStream)
+        if (internal || this.image instanceof DecodeStream) {
             return imageBytes;
+        }
         assert(imageBytes instanceof Uint8Array, 'PDFImage.getImageBytes: Unsupported "imageBytes" type.');
         return new Uint8Array(imageBytes);
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=image.js.map

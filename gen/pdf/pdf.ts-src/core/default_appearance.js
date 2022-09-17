@@ -17,11 +17,11 @@
  */
 import { OPS, warn } from "../shared/util.js";
 import { ColorSpace } from "./colorspace.js";
-import { escapePDFName } from "./core_utils.js";
+import { escapePDFName, numberToString } from "./core_utils.js";
 import { EvaluatorPreprocessor } from "./evaluator.js";
 import { Name } from "./primitives.js";
 import { StringStream } from "./stream.js";
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 class DefaultAppearanceEvaluator extends EvaluatorPreprocessor {
     constructor(str) {
         super(new StringStream(str));
@@ -39,11 +39,13 @@ class DefaultAppearanceEvaluator extends EvaluatorPreprocessor {
         try {
             while (true) {
                 operation.args.length = 0; // Ensure that `args` it's always reset.
-                if (!this.read(operation))
+                if (!this.read(operation)) {
                     break;
-                if (this.savedStatesDepth !== 0)
+                }
+                if (this.savedStatesDepth !== 0) {
                     // Don't get info in save/restore sections.
                     continue;
+                }
                 const { fn, args } = operation;
                 switch (fn | 0) {
                     case OPS.setFont:
@@ -77,19 +79,19 @@ class DefaultAppearanceEvaluator extends EvaluatorPreprocessor {
 export function parseDefaultAppearance(str) {
     return new DefaultAppearanceEvaluator(str).parse();
 }
+export function getPdfColor(color, isFill) {
+    if (color[0] === color[1] && color[1] === color[2]) {
+        const gray = color[0] / 255;
+        return `${numberToString(gray)} ${isFill ? "g" : "G"}`;
+    }
+    return (Array.from(color)
+        .map((c) => numberToString(c / 255))
+        .join(" ") + ` ${isFill ? "rg" : "RG"}`);
+}
 // Create default appearance string from some information.
 export function createDefaultAppearance({ fontSize, fontName, fontColor }) {
-    let colorCmd;
-    if (fontColor.every(c => c === 0)) {
-        colorCmd = "0 g";
-    }
-    else {
-        colorCmd =
-            Array.from(fontColor)
-                .map(c => (c / 255).toFixed(2))
-                .join(" ") + " rg";
-    }
-    return `/${escapePDFName(fontName)} ${fontSize} Tf ${colorCmd}`;
+    return `/${escapePDFName(fontName)} ${fontSize} Tf ${getPdfColor(fontColor, 
+    /* isFill */ true)}`;
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=default_appearance.js.map

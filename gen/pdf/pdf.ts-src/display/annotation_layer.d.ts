@@ -1,10 +1,10 @@
 import { IDownloadManager, type IPDFLinkService, type MouseState } from "../../pdf.ts-web/interfaces.js";
 import { type AnnotationData, type FieldObject } from "../core/annotation.js";
 import { ColorConvertersDetail } from "../shared/scripting_utils.js";
+import { AnnotationEditorType, rect_t } from "../shared/util.js";
 import { AnnotationStorage } from "./annotation_storage.js";
 import { PDFPageProxy } from "./api.js";
 import { DOMSVGFactory, PageViewport } from "./display_utils.js";
-declare type HTMLSectionElement = HTMLElement;
 interface _AnnotationElementCtorP {
     data: AnnotationData;
     layer: HTMLDivElement;
@@ -42,13 +42,14 @@ export declare class AnnotationElement {
     hasJSActions: boolean | undefined;
     _fieldObjects: Record<string, FieldObject[]> | undefined;
     _mouseState: MouseState | undefined;
-    container?: HTMLSectionElement;
-    quadrilaterals?: HTMLSectionElement[] | undefined;
+    container?: HTMLElement;
+    quadrilaterals?: HTMLElement[] | undefined;
     constructor(parameters: _AnnotationElementCtorP, { isRenderable, ignoreBorder, createQuadrilaterals, }?: {
         isRenderable?: boolean | undefined;
         ignoreBorder?: boolean | undefined;
         createQuadrilaterals?: boolean | undefined;
     });
+    setRotation(angle: number, container?: HTMLElement): void;
     get _commonActions(): {
         display: (event: CustomEvent) => void;
         print: (event: CustomEvent) => void;
@@ -56,13 +57,18 @@ export declare class AnnotationElement {
         focus: (event: CustomEvent) => void;
         userName: (event: CustomEvent) => void;
         readonly: (event: CustomEvent) => void;
-        required: (event: CustomEvent) => void;
+        required: (event: CustomEvent<{
+            required: boolean;
+        }>) => void;
         bgColor: (event: CustomEvent<ColorConvertersDetail>) => void;
         fillColor: (event: CustomEvent<ColorConvertersDetail>) => void;
         fgColor: (event: CustomEvent<ColorConvertersDetail>) => void;
         textColor: (event: CustomEvent<ColorConvertersDetail>) => void;
         borderColor: (event: CustomEvent<ColorConvertersDetail>) => void;
         strokeColor: (event: CustomEvent<ColorConvertersDetail>) => void;
+        rotation: (event: CustomEvent<{
+            rotation: number;
+        }>) => void;
     };
     _dispatchEventFromSandbox(actions: Actions, jsEvent: CustomEvent): void;
     _setDefaultPropertiesFromJS(element: HTMLElement): void;
@@ -74,12 +80,14 @@ export declare class AnnotationElement {
     protected _createPopup(trigger_x: HTMLOrSVGElement | undefined, data: AnnotationData): void;
     /**
      * Render the quadrilaterals of the annotation.
+     * @return An array of section elements.
      */
     protected _renderQuadrilaterals(className: string): HTMLElement[];
     /**
      * Render the annotation's HTML element(s).
+     * @return A section element or an array of section elements.
      */
-    render(): HTMLSectionElement | HTMLSectionElement[];
+    render(): HTMLElement | HTMLElement[];
     /**
      * @private
      * @return {Array}
@@ -87,7 +95,7 @@ export declare class AnnotationElement {
     _getElementsByName(name: string, skipId?: string): {
         id: string;
         exportValue: string | undefined;
-        domElement: HTMLElement | null;
+        domElement: Element | null;
     }[] | {
         id: any;
         exportValue: any;
@@ -97,6 +105,7 @@ export declare class AnnotationElement {
         isWin: boolean;
         isMac: boolean;
     };
+    _setRequired(lement: HTMLElement, isRequired: boolean): void;
 }
 export interface ResetForm {
     fields: string[];
@@ -155,12 +164,25 @@ interface _AnnotationLayerP {
     annotationCanvasMap?: Map<string, HTMLCanvasElement>;
 }
 export interface AnnotStorageValue {
-    value?: string | string[] | number | boolean | null | undefined;
-    valueAsString?: string | string[] | undefined;
+    annotationType?: AnnotationEditorType;
+    color?: Uint8ClampedArray;
     formattedValue?: string | undefined;
+    fontSize?: number;
     hidden?: boolean;
     items?: Item[];
+    opacity?: number;
+    pageIndex?: number;
+    paths?: {
+        bezier: number[];
+        points: number[];
+    }[];
     print?: boolean;
+    rect?: rect_t;
+    rotation?: number;
+    thickness?: number;
+    user?: string;
+    value?: string | string[] | number | boolean | undefined;
+    valueAsString?: string | string[] | undefined;
 }
 export declare type ASVKey = keyof AnnotStorageValue;
 export declare type AnnotStorageRecord = Map<string, AnnotStorageValue>;

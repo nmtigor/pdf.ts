@@ -17,52 +17,49 @@
  * limitations under the License.
  */
 
-import { AppOptions, OptionKind, type OptionName, type UserOptions } from "./app_options.js";
-/*81---------------------------------------------------------------------------*/
+import { CHROME, PRODUCTION } from "../../global.ts";
+import {
+  AppOptions,
+  OptionKind,
+  type OptionName,
+  type UserOptions,
+} from "./app_options.ts";
+/*80--------------------------------------------------------------------------*/
 
 /**
  * BasePreferences - Abstract base class for storing persistent settings.
  *   Used for settings that should be applied to all opened documents,
  *   or every time the viewer is loaded.
  */
-export abstract class BasePreferences 
-{
+export abstract class BasePreferences {
   #defaults = Object.freeze(
-    // #if !PRODUCTION
-      AppOptions.getAll(OptionKind.PREFERENCE)
-    // #else
-    // PDFJSDev.eval("DEFAULT_PREFERENCES")
-      AppOptions.getAll(OptionKind.PREFERENCE)
-    // #endif
+    !PRODUCTION /*#static*/ ? AppOptions.getAll(OptionKind.PREFERENCE) : // : PDFJSDev.eval("DEFAULT_PREFERENCES")
+      AppOptions.getAll(OptionKind.PREFERENCE),
   );
-  // #defaults!:UserOptions;
+  defaults!: Readonly<UserOptions>;
 
-  #prefs:UserOptions = Object.create(null);
+  #prefs: UserOptions = Object.create(null);
+  #initializedPromise: Promise<void>;
 
-  #initializedPromise:Promise<void>;
-
-  constructor() 
-  {
-    // #if CHROME
+  constructor() {
+    /*#static*/ if (CHROME) {
       Object.defineProperty(this, "defaults", {
         get() {
           return this.#defaults;
         },
       });
-    // #endif
+    }
 
     this.#initializedPromise = this._readFromStorage(this.#defaults).then(
-      prefs => {
-        for( const name in this.#defaults )
-        {
-          const prefValue = prefs?.[ <OptionName>name ];
+      (prefs) => {
+        for (const name in this.#defaults) {
+          const prefValue = prefs?.[name as OptionName];
           // Ignore preferences whose types don't match the default values.
-          if( typeof prefValue === typeof this.#defaults[<OptionName>name] )
-          {
-            (<any>this.#prefs)[name] = prefValue;
+          if (typeof prefValue === typeof this.#defaults[name as OptionName]) {
+            this.#prefs[name as OptionName] = prefValue;
           }
         }
-      }
+      },
     );
   }
 
@@ -72,7 +69,7 @@ export abstract class BasePreferences
    * @return A promise that is resolved when the preference values
    *  have been written.
    */
-  protected abstract _writeToStorage( prefObj:UserOptions ):Promise< UserOptions | void >;
+  protected abstract _writeToStorage(prefObj: UserOptions): Promise<void>;
 
   /**
    * Stub function for reading preferences from storage.
@@ -80,20 +77,21 @@ export abstract class BasePreferences
    * @return A promise that is resolved with an {Object} containing
    *  the preferences that have been read.
    */
-  protected abstract _readFromStorage( prefObj:UserOptions ):Promise< UserOptions >;
+  protected abstract _readFromStorage(
+    prefObj: UserOptions,
+  ): Promise<UserOptions>;
 
   /**
    * Reset the preferences to their default values and update storage.
    * @return A promise that is resolved when the preference values
    *  have been reset.
    */
-  async reset():Promise<unknown> 
-  {
+  async reset(): Promise<void> {
     await this.#initializedPromise;
     const prefs = this.#prefs;
 
     this.#prefs = Object.create(null);
-    return this._writeToStorage(this.#defaults).catch(reason => {
+    return this._writeToStorage(this.#defaults).catch((reason) => {
       // Revert all preference values, since writing to storage failed.
       this.#prefs = prefs;
       throw reason;
@@ -107,43 +105,38 @@ export abstract class BasePreferences
    * @return A promise that is resolved when the value has been set,
    *  provided that the preference exists and the types match.
    */
-  async set( name:OptionName, value:boolean | number | string ):Promise<unknown>
-  {
+  async set(
+    name: OptionName,
+    value: boolean | number | string,
+  ): Promise<unknown> {
     await this.#initializedPromise;
     const defaultValue = this.#defaults[name],
       prefs = this.#prefs;
 
-    if( defaultValue === undefined )
-    {
+    if (defaultValue === undefined) {
       throw new Error(`Set preference: "${name}" is undefined.`);
-    } 
-    else if (value === undefined )
-    {
+    } else if (value === undefined) {
       throw new Error("Set preference: no value is specified.");
     }
     const valueType = typeof value,
       defaultType = typeof defaultValue;
 
-    if( valueType !== defaultType )
-    {
+    if (valueType !== defaultType) {
       if (valueType === "number" && defaultType === "string") {
         value = value.toString();
-      } 
-      else {
+      } else {
         throw new Error(
-          `Set preference: "${value}" is a ${valueType}, expected a ${defaultType}.`
+          `Set preference: "${value}" is a ${valueType}, expected a ${defaultType}.`,
         );
       }
-    } 
-    else {
-      if( valueType === "number" && !Number.isInteger(value) )
-      {
+    } else {
+      if (valueType === "number" && !Number.isInteger(value)) {
         throw new Error(`Set preference: "${value}" must be an integer.`);
       }
     }
 
-    (<any>this.#prefs)[name] = value;
-    return this._writeToStorage(this.#prefs).catch(reason => {
+    (<any> this.#prefs)[name] = value;
+    return this._writeToStorage(this.#prefs).catch((reason) => {
       // Revert all preference values, since writing to storage failed.
       this.#prefs = prefs;
       throw reason;
@@ -156,13 +149,11 @@ export abstract class BasePreferences
    * @return A promise resolved with a {boolean|number|string}
    *  containing the value of the preference.
    */
-  async get( name:OptionName )
-  {
+  async get(name: OptionName) {
     await this.#initializedPromise;
     const defaultValue = this.#defaults[name];
 
-    if( defaultValue === undefined )
-    {
+    if (defaultValue === undefined) {
       throw new Error(`Get preference: "${name}" is undefined.`);
     }
     return this.#prefs[name] ?? defaultValue;
@@ -173,16 +164,15 @@ export abstract class BasePreferences
    * @return A promise that is resolved with an {Object} containing
    *  the values of all preferences.
    */
-  async getAll()
-  {
+  async getAll() {
     await this.#initializedPromise;
-    const obj:UserOptions = Object.create(null);
+    const obj: UserOptions = Object.create(null);
 
-    for( const name in this.#defaults )
-    {
-      (<any>obj)[name] = this.#prefs[<OptionName>name] ?? this.#defaults[<OptionName>name];
+    for (const name in this.#defaults) {
+      (<any> obj)[name] = this.#prefs[<OptionName> name] ??
+        this.#defaults[<OptionName> name];
     }
     return obj;
   }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

@@ -1,7 +1,7 @@
 import { DecodeStream } from "./decode_stream.js";
-import { Dict } from "./primitives.js";
 import { FlateStream } from "./flate_stream.js";
 import { LZWStream } from "./lzw_stream.js";
+import { Dict } from "./primitives.js";
 export interface PredictorStream {
     readBlock(): void;
 }

@@ -32,11 +32,13 @@ export class FontFinder {
         }
         for (const pdfFont of this.fonts.values()) {
             if (!pdfFont.regular) {
-                pdfFont.regular = pdfFont.italic || pdfFont.bold || pdfFont.bolditalic;
+                pdfFont.regular = pdfFont.italic || pdfFont.bold ||
+                    pdfFont.bolditalic;
             }
         }
-        if (!reallyMissingFonts || reallyMissingFonts.size === 0)
+        if (!reallyMissingFonts || reallyMissingFonts.size === 0) {
             return;
+        }
         const myriad = this.fonts.get("PdfJS-Fallback-PdfJS-XFA");
         for (const missing of reallyMissingFonts) {
             this.fonts.set(missing, myriad);
@@ -62,13 +64,13 @@ export class FontFinder {
             property = "bold";
         }
         if (!property) {
-            if (pdfFont.name.includes("Bold")
-                || (pdfFont.psName && pdfFont.psName.includes("Bold"))) {
+            if (pdfFont.name.includes("Bold") ||
+                (pdfFont.psName && pdfFont.psName.includes("Bold"))) {
                 property = "bold";
             }
-            if (pdfFont.name.includes("Italic")
-                || pdfFont.name.endsWith("It")
-                || (pdfFont.psName &&
+            if (pdfFont.name.includes("Italic") ||
+                pdfFont.name.endsWith("It") ||
+                (pdfFont.psName &&
                     (pdfFont.psName.includes("Italic") || pdfFont.psName.endsWith("It")))) {
                 property += "italic";
             }
@@ -83,8 +85,9 @@ export class FontFinder {
     }
     find(fontName, mustWarn = true) {
         let font = this.fonts.get(fontName) || this.cache.get(fontName);
-        if (font)
+        if (font) {
             return font;
+        }
         const pattern = /,|-|_| |bolditalic|bold|italic|regular|it/gi;
         let name = fontName.replace(pattern, "");
         font = this.fonts.get(name);
@@ -178,5 +181,5 @@ export function getMetrics(xfaFont, real = false) {
         lineNoGap: Math.max(1, lineHeight - lineGap) * size,
     };
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=fonts.js.map

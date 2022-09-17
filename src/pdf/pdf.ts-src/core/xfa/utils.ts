@@ -17,56 +17,50 @@
  * limitations under the License.
  */
 
-import { shadow, type rect_t } from "../../shared/util.js";
-import { type XFAElData } from "./alias.js";
-import { BreakAfter, BreakBefore, Template } from "./template.js";
-/*81---------------------------------------------------------------------------*/
+import { type rect_t, shadow } from "../../shared/util.ts";
+import { type XFAElData } from "./alias.ts";
+import { BreakAfter, BreakBefore, Template } from "./template.ts";
+/*80--------------------------------------------------------------------------*/
 
 const dimConverters = {
-  pt: ( x:number ) => x,
-  cm: ( x:number ) => (x / 2.54) * 72,
-  mm: ( x:number ) => (x / (10 * 2.54)) * 72,
-  in: ( x:number ) => x * 72,
-  px: ( x:number ) => x,
+  pt: (x: number) => x,
+  cm: (x: number) => (x / 2.54) * 72,
+  mm: (x: number) => (x / (10 * 2.54)) * 72,
+  in: (x: number) => x * 72,
+  px: (x: number) => x,
 };
 const measurementPattern = /([+-]?\d+\.?\d*)(.*)/;
 
-export function stripQuotes( str:string )
-{
-  if (str.startsWith("'") || str.startsWith('"')) 
-  {
+export function stripQuotes(str: string) {
+  if (str.startsWith("'") || str.startsWith('"')) {
     return str.slice(1, str.length - 1);
   }
   return str;
 }
 
-interface _GetIntegerP
-{
-  data?:string;
-  defaultValue:number | string;
-  validate:( x:number ) => boolean;
+interface _GetIntegerP {
+  data?: string;
+  defaultValue: number | string;
+  validate: (x: number) => boolean;
 }
-export function getInteger({ data, defaultValue, validate }:_GetIntegerP )
-{
+export function getInteger({ data, defaultValue, validate }: _GetIntegerP) {
   if (!data) {
-    return <number>defaultValue;
+    return <number> defaultValue;
   }
   data = data.trim();
   const n = parseInt(data, 10);
   if (!isNaN(n) && validate(n)) {
     return n;
   }
-  return <number>defaultValue;
+  return <number> defaultValue;
 }
 
-interface _GetFloatP
-{
-  data?:string;
-  defaultValue:number;
-  validate:( x:number ) => boolean;
-} 
-export function getFloat({ data, defaultValue, validate }:_GetFloatP)
-{
+interface _GetFloatP {
+  data?: string;
+  defaultValue: number;
+  validate: (x: number) => boolean;
+}
+export function getFloat({ data, defaultValue, validate }: _GetFloatP) {
   if (!data) {
     return defaultValue;
   }
@@ -78,14 +72,12 @@ export function getFloat({ data, defaultValue, validate }:_GetFloatP)
   return defaultValue;
 }
 
-interface _GetKeywordP
-{
-  data?:string | undefined;
-  defaultValue:string;
-  validate:( k:string ) => boolean;
+interface _GetKeywordP {
+  data?: string | undefined;
+  defaultValue: string;
+  validate: (k: string) => boolean;
 }
-export function getKeyword({ data, defaultValue, validate }:_GetKeywordP)
-{
+export function getKeyword({ data, defaultValue, validate }: _GetKeywordP) {
   if (!data) {
     return defaultValue;
   }
@@ -96,17 +88,15 @@ export function getKeyword({ data, defaultValue, validate }:_GetKeywordP)
   return defaultValue;
 }
 
-export function getStringOption( data:string | undefined, options:string[] )
-{
+export function getStringOption(data: string | undefined, options: string[]) {
   return getKeyword({
     data,
     defaultValue: options[0],
-    validate: (k:string) => options.includes(k),
+    validate: (k: string) => options.includes(k),
   });
 }
 
-export function getMeasurement( str:string | undefined, def="0" ):number
-{
+export function getMeasurement(str: string | undefined, def = "0"): number {
   def = def || "0";
   if (!str) {
     return getMeasurement(def);
@@ -125,7 +115,7 @@ export function getMeasurement( str:string | undefined, def="0" ):number
     return 0;
   }
 
-  const conv = dimConverters[ <keyof typeof dimConverters>unit ];
+  const conv = dimConverters[<keyof typeof dimConverters> unit];
   if (conv) {
     return conv(value);
   }
@@ -133,16 +123,15 @@ export function getMeasurement( str:string | undefined, def="0" ):number
   return value;
 }
 
-export function getRatio( data?:string )
-{
+export function getRatio(data?: string) {
   if (!data) {
     return { num: 1, den: 1 };
   }
   const ratio = data
     .trim()
     .split(/\s*:\s*/)
-    .map(x => parseFloat(x))
-    .filter(x => !isNaN(x));
+    .map((x) => parseFloat(x))
+    .filter((x) => !isNaN(x));
   if (ratio.length === 1) {
     ratio.push(1);
   }
@@ -155,15 +144,14 @@ export function getRatio( data?:string )
   return { num, den };
 }
 
-export function getRelevant( data?:string )
-{
+export function getRelevant(data?: string) {
   if (!data) {
     return [];
   }
   return data
     .trim()
     .split(/\s+/)
-    .map(e => {
+    .map((e) => {
       return {
         excluded: e[0] === "-",
         viewname: e.substring(1),
@@ -171,14 +159,12 @@ export function getRelevant( data?:string )
     });
 }
 
-export interface XFAColor
-{
-  r:number;
-  g:number;
-  b:number;
+export interface XFAColor {
+  r: number;
+  g: number;
+  b: number;
 }
-export function getColor( data?:string, def=[0, 0, 0] )
-{
+export function getColor(data?: string, def = [0, 0, 0]) {
   let [r, g, b] = def;
   if (!data) {
     return { r, g, b };
@@ -186,26 +172,24 @@ export function getColor( data?:string, def=[0, 0, 0] )
   const color = data
     .trim()
     .split(/\s*,\s*/)
-    .map(c => Math.min(Math.max(0, parseInt(c.trim(), 10)), 255))
-    .map(c => (isNaN(c) ? 0 : c));
+    .map((c) => Math.min(Math.max(0, parseInt(c.trim(), 10)), 255))
+    .map((c) => (isNaN(c) ? 0 : c));
 
   if (color.length < 3) {
     return { r, g, b };
   }
 
   [r, g, b] = color;
-  return <XFAColor>{ r, g, b };
+  return <XFAColor> { r, g, b };
 }
 
-export interface XFABBox
-{
-  x:number;
-  y:number;
-  width:number;
-  height:number;
+export interface XFABBox {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
-export function getBBox( data?:string ):XFABBox
-{
+export function getBBox(data?: string): XFABBox {
   const def = -1;
   if (!data) {
     return { x: def, y: def, width: def, height: def };
@@ -213,7 +197,7 @@ export function getBBox( data?:string ):XFABBox
   const bbox = data
     .trim()
     .split(/\s*,\s*/)
-    .map(m => getMeasurement(m, "-1"));
+    .map((m) => getMeasurement(m, "-1"));
   if (bbox.length < 4 || bbox[2] < 0 || bbox[3] < 0) {
     return { x: def, y: def, width: def, height: def };
   }
@@ -222,14 +206,13 @@ export function getBBox( data?:string ):XFABBox
   return { x, y, width, height };
 }
 
-export class HTMLResult
-{
+export class HTMLResult {
   static get FAILURE() {
-    return shadow(this, "FAILURE", new HTMLResult( false ));
+    return shadow(this, "FAILURE", new HTMLResult(false));
   }
 
   static get EMPTY() {
-    return shadow(this, "EMPTY", new HTMLResult( true ));
+    return shadow(this, "EMPTY", new HTMLResult(true));
   }
 
   success;
@@ -237,25 +220,28 @@ export class HTMLResult
   bbox;
 
   breakNode;
-  isBreak() { return !!this.breakNode; }
+  isBreak() {
+    return !!this.breakNode;
+  }
 
-  constructor( success:boolean, html?:XFAElData, bbox?:rect_t, 
-    breakNode?:BreakAfter | BreakBefore | Template )
-  {
+  constructor(
+    success: boolean,
+    html?: XFAElData,
+    bbox?: rect_t,
+    breakNode?: BreakAfter | BreakBefore | Template,
+  ) {
     this.success = success;
     this.html = html;
     this.bbox = bbox;
     this.breakNode = breakNode;
   }
 
-  static breakNode( node:BreakAfter | BreakBefore )
-  {
-    return new HTMLResult( false, undefined, undefined, node );
+  static breakNode(node: BreakAfter | BreakBefore) {
+    return new HTMLResult(false, undefined, undefined, node);
   }
 
-  static success( html:XFAElData, bbox?:rect_t )
-  {
-    return new HTMLResult( true, html, bbox );
+  static success(html: XFAElData, bbox?: rect_t) {
+    return new HTMLResult(true, html, bbox);
   }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

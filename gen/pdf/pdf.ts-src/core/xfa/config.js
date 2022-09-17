@@ -18,8 +18,8 @@
 import { shadow, warn } from "../../shared/util.js";
 import { $buildXFAObject, NamespaceIds } from "./namespaces.js";
 import { getInteger, getStringOption } from "./utils.js";
-import { $content, $finalize, ContentObject, IntegerObject, Option01, Option10, OptionObject, StringObject, XFAObject, XFAObjectArray } from "./xfa_object.js";
-/*81---------------------------------------------------------------------------*/
+import { $content, $finalize, ContentObject, IntegerObject, Option01, Option10, OptionObject, StringObject, XFAObject, XFAObjectArray, } from "./xfa_object.js";
+/*80--------------------------------------------------------------------------*/
 const CONFIG_NS_ID = NamespaceIds.config.id;
 class Acrobat extends XFAObject {
     acrobat7;
@@ -65,7 +65,7 @@ class AdjustData extends Option10 {
 }
 class AdobeExtensionLevel extends IntegerObject {
     constructor(attributes) {
-        super(CONFIG_NS_ID, "adobeExtensionLevel", 0, n => n >= 1 && n <= 8);
+        super(CONFIG_NS_ID, "adobeExtensionLevel", 0, (n) => n >= 1 && n <= 8);
     }
 }
 class Agent extends XFAObject {
@@ -92,7 +92,7 @@ class Area extends XFAObject {
         this.level = getInteger({
             data: attributes.level,
             defaultValue: 0,
-            validate: n => n >= 1 && n <= 3,
+            validate: (n) => n >= 1 && n <= 3,
         });
         this.name = getStringOption(attributes.name, [
             "",
@@ -146,8 +146,8 @@ class BehaviorOverride extends ContentObject {
         this[$content] = new Map(this[$content]
             .trim()
             .split(/\s+/)
-            .filter(x => x.includes(":"))
-            .map(x => x.split(":", 2)));
+            .filter((x) => x.includes(":"))
+            .map((x) => x.split(":", 2)));
     }
 }
 class Cache extends XFAObject {
@@ -201,7 +201,7 @@ class Compression extends XFAObject {
         super(CONFIG_NS_ID, "compression", /* hasChildren = */ true);
     }
 }
-class Config extends XFAObject {
+export class Config extends XFAObject {
     acrobat;
     present;
     trace;
@@ -222,7 +222,7 @@ class ContentCopy extends Option01 {
 }
 class Copies extends IntegerObject {
     constructor(attributes) {
-        super(CONFIG_NS_ID, "copies", 1, n => n >= 1);
+        super(CONFIG_NS_ID, "copies", 1, (n) => n >= 1);
     }
 }
 class Creator extends StringObject {
@@ -232,7 +232,7 @@ class Creator extends StringObject {
 }
 class CurrentPage extends IntegerObject {
     constructor(attributes) {
-        super(CONFIG_NS_ID, "currentPage", 0, n => n >= 0);
+        super(CONFIG_NS_ID, "currentPage", 0, (n) => n >= 0);
     }
 }
 class Data extends XFAObject {
@@ -354,7 +354,7 @@ class Equate extends XFAObject {
         this.force = getInteger({
             data: attributes.force,
             defaultValue: 1,
-            validate: n => n === 0,
+            validate: (n) => n === 0,
         });
         this.from = attributes.from || "";
         this.to = attributes.to || "";
@@ -376,9 +376,9 @@ class EquateRange extends XFAObject {
         const unicodeRange = this._unicodeRange;
         for (let range of unicodeRange
             .split(",")
-            .map(x => x.trim())
-            .filter(x => !!x)) {
-            const range_1 = range.split("-", 2).map(x => {
+            .map((x) => x.trim())
+            .filter((x) => !!x)) {
+            const range_1 = range.split("-", 2).map((x) => {
                 const found = x.match(unicodeRegex);
                 if (!found) {
                     return 0;
@@ -402,7 +402,7 @@ class Exclude extends ContentObject {
         this[$content] = this[$content]
             .trim()
             .split(/\s+/)
-            .filter(x => x &&
+            .filter((x) => x &&
             [
                 "calculate",
                 "close",
@@ -497,7 +497,7 @@ class Layout extends OptionObject {
 }
 class Level extends IntegerObject {
     constructor(attributes) {
-        super(CONFIG_NS_ID, "level", 0, n => n > 0);
+        super(CONFIG_NS_ID, "level", 0, (n) => n > 0);
     }
 }
 class Linearized extends Option01 {
@@ -563,7 +563,7 @@ class ModifyAnnots extends Option01 {
 }
 class MsgId extends IntegerObject {
     constructor(attributes) {
-        super(CONFIG_NS_ID, "msgId", 1, n => n >= 1);
+        super(CONFIG_NS_ID, "msgId", 1, (n) => n >= 1);
     }
 }
 class NameAttr extends StringObject {
@@ -578,7 +578,7 @@ class NeverEmbed extends ContentObject {
 }
 class NumberOfCopies extends IntegerObject {
     constructor(attributes) {
-        super(CONFIG_NS_ID, "numberOfCopies", 0, n => n >= 2 && n <= 5);
+        super(CONFIG_NS_ID, "numberOfCopies", 0, (n) => n >= 2 && n <= 5);
     }
 }
 class OpenAction extends XFAObject {
@@ -623,7 +623,7 @@ class Packets extends StringObject {
         this[$content] = this[$content]
             .trim()
             .split(/\s+/)
-            .filter(x => ["config", "datasets", "template", "xfdf", "xslt"].includes(x));
+            .filter((x) => ["config", "datasets", "template", "xfdf", "xslt"].includes(x));
     }
 }
 class PageOffset extends XFAObject {
@@ -634,12 +634,12 @@ class PageOffset extends XFAObject {
         this.x = getInteger({
             data: attributes.x,
             defaultValue: "useXDCSetting",
-            validate: n => true,
+            validate: (n) => true,
         });
         this.y = getInteger({
             data: attributes.y,
             defaultValue: "useXDCSetting",
-            validate: n => true,
+            validate: (n) => true,
         });
     }
 }
@@ -652,7 +652,7 @@ class PageRange extends StringObject {
         const numbers = this[$content]
             .trim()
             .split(/\s+/)
-            .map(x => parseInt(x, 10));
+            .map((x) => parseInt(x, 10));
         const ranges = [];
         for (let i = 0, ii = numbers.length; i < ii; i += 2) {
             ranges.push(numbers.slice(i, i + 2));
@@ -682,7 +682,7 @@ class PaginationOverride extends OptionObject {
 }
 class Part extends IntegerObject {
     constructor(attributes) {
-        super(CONFIG_NS_ID, "part", 1, n => false);
+        super(CONFIG_NS_ID, "part", 1, (n) => false);
     }
 }
 class Pcl extends XFAObject {
@@ -847,9 +847,9 @@ class Range extends ContentObject {
         this[$content] = this[$content]
             .trim()
             .split(/\s*,\s*/, 2)
-            .map(range => range.split("-").map(x => parseInt(x.trim(), 10)))
-            .filter(range => range.every(x => !isNaN(x)))
-            .map(range => {
+            .map((range) => range.split("-").map((x) => parseInt(x.trim(), 10)))
+            .filter((range) => range.every((x) => !isNaN(x)))
+            .map((range) => {
             if (range.length === 1) {
                 range.push(range[0]);
             }
@@ -888,8 +888,8 @@ class Rename extends ContentObject {
         this[$content] = this[$content].trim();
         // String must be a XFA name: same as XML one except that there
         // is no colon.
-        if (this[$content].toLowerCase().startsWith("xml")
-            || this[$content].match(new RegExp("[\\p{L}_][\\p{L}\\d._\\p{M}-]*", "u"))) {
+        if (this[$content].toLowerCase().startsWith("xml") ||
+            this[$content].match(new RegExp("[\\p{L}_][\\p{L}\\d._\\p{M}-]*", "u"))) {
             warn("XFA - Rename: invalid XFA name");
         }
     }
@@ -953,7 +953,7 @@ class StartNode extends StringObject {
 }
 class StartPage extends IntegerObject {
     constructor(attributes) {
-        super(CONFIG_NS_ID, "startPage", 0, n => true);
+        super(CONFIG_NS_ID, "startPage", 0, (n) => true);
     }
 }
 class SubmitFormat extends OptionObject {
@@ -974,7 +974,7 @@ class SubmitUrl extends StringObject {
 }
 class SubsetBelow extends IntegerObject {
     constructor(attributes) {
-        super(CONFIG_NS_ID, "subsetBelow", 100, n => n >= 0 && n <= 100);
+        super(CONFIG_NS_ID, "subsetBelow", 100, (n) => n >= 0 && n <= 100);
     }
 }
 class SuppressBanner extends Option01 {
@@ -1027,7 +1027,7 @@ class TemplateCache extends XFAObject {
         this.maxEntries = getInteger({
             data: attributes.maxEntries,
             defaultValue: 5,
-            validate: n => n >= 0,
+            validate: (n) => n >= 0,
         });
     }
 }
@@ -1089,7 +1089,7 @@ class ValidateApprovalSignatures extends ContentObject {
         this[$content] = this[$content]
             .trim()
             .split(/\s+/)
-            .filter(x => ["docReady", "postSign"].includes(x));
+            .filter((x) => ["docReady", "postSign"].includes(x));
     }
 }
 class ValidationMessaging extends OptionObject {
@@ -1170,8 +1170,8 @@ class Window extends ContentObject {
         const pair = this[$content]
             .trim()
             .split(/\s*,\s*/, 2)
-            .map(x => parseInt(x, 10));
-        if (pair.some(x => isNaN(x))) {
+            .map((x) => parseInt(x, 10));
+        if (pair.some((x) => isNaN(x))) {
             this[$content] = [0, 0];
             return;
         }
@@ -1213,150 +1213,428 @@ class Zpl extends XFAObject {
 }
 export const ConfigNamespace = {
     [$buildXFAObject](name, attributes) {
-        if (ConfigNamespace.hasOwnProperty(name)) {
+        if (Object.hasOwn(ConfigNamespace, name)) {
             return ConfigNamespace[name](attributes);
         }
         return undefined;
     },
-    acrobat(attrs) { return new Acrobat(attrs); },
-    acrobat7(attrs) { return new Acrobat7(attrs); },
-    ADBE_JSConsole(attrs) { return new ADBE_JSConsole(attrs); },
-    ADBE_JSDebugger(attrs) { return new ADBE_JSDebugger(attrs); },
-    addSilentPrint(attrs) { return new AddSilentPrint(attrs); },
-    addViewerPreferences(attrs) { return new AddViewerPreferences(attrs); },
-    adjustData(attrs) { return new AdjustData(attrs); },
-    adobeExtensionLevel(attrs) { return new AdobeExtensionLevel(attrs); },
-    agent(attrs) { return new Agent(attrs); },
-    alwaysEmbed(attrs) { return new AlwaysEmbed(attrs); },
-    amd(attrs) { return new Amd(attrs); },
-    area(attrs) { return new Area(attrs); },
-    attributes(attrs) { return new Attributes(attrs); },
-    autoSave(attrs) { return new AutoSave(attrs); },
-    base(attrs) { return new Base(attrs); },
-    batchOutput(attrs) { return new BatchOutput(attrs); },
-    behaviorOverride(attrs) { return new BehaviorOverride(attrs); },
-    cache(attrs) { return new Cache(attrs); },
-    change(attrs) { return new Change(attrs); },
-    common(attrs) { return new Common(attrs); },
-    compress(attrs) { return new Compress(attrs); },
-    compressLogicalStructure(attrs) { return new CompressLogicalStructure(attrs); },
-    compressObjectStream(attrs) { return new CompressObjectStream(attrs); },
-    compression(attrs) { return new Compression(attrs); },
-    config(attrs) { return new Config(attrs); },
-    conformance(attrs) { return new Conformance(attrs); },
-    contentCopy(attrs) { return new ContentCopy(attrs); },
-    copies(attrs) { return new Copies(attrs); },
-    creator(attrs) { return new Creator(attrs); },
-    currentPage(attrs) { return new CurrentPage(attrs); },
-    data(attrs) { return new Data(attrs); },
-    debug(attrs) { return new Debug(attrs); },
-    defaultTypeface(attrs) { return new DefaultTypeface(attrs); },
-    destination(attrs) { return new Destination(attrs); },
-    documentAssembly(attrs) { return new DocumentAssembly(attrs); },
-    driver(attrs) { return new Driver(attrs); },
-    duplexOption(attrs) { return new DuplexOption(attrs); },
-    dynamicRender(attrs) { return new DynamicRender(attrs); },
-    embed(attrs) { return new Embed(attrs); },
-    encrypt(attrs) { return new Encrypt(attrs); },
-    encryption(attrs) { return new Encryption(attrs); },
-    encryptionLevel(attrs) { return new EncryptionLevel(attrs); },
-    enforce(attrs) { return new Enforce(attrs); },
-    equate(attrs) { return new Equate(attrs); },
-    equateRange(attrs) { return new EquateRange(attrs); },
-    exclude(attrs) { return new Exclude(attrs); },
-    excludeNS(attrs) { return new ExcludeNS(attrs); },
-    flipLabel(attrs) { return new FlipLabel(attrs); },
-    fontInfo(attrs) { return new FontInfo(attrs); },
-    formFieldFilling(attrs) { return new FormFieldFilling(attrs); },
-    groupParent(attrs) { return new GroupParent(attrs); },
-    ifEmpty(attrs) { return new IfEmpty(attrs); },
-    includeXDPContent(attrs) { return new IncludeXDPContent(attrs); },
-    incrementalLoad(attrs) { return new IncrementalLoad(attrs); },
-    incrementalMerge(attrs) { return new IncrementalMerge(attrs); },
-    interactive(attrs) { return new Interactive(attrs); },
-    jog(attrs) { return new Jog(attrs); },
-    labelPrinter(attrs) { return new LabelPrinter(attrs); },
-    layout(attrs) { return new Layout(attrs); },
-    level(attrs) { return new Level(attrs); },
-    linearized(attrs) { return new Linearized(attrs); },
-    locale(attrs) { return new Locale(attrs); },
-    localeSet(attrs) { return new LocaleSet(attrs); },
-    log(attrs) { return new Log(attrs); },
-    map(attrs) { return new MapElement(attrs); },
-    mediumInfo(attrs) { return new MediumInfo(attrs); },
-    message(attrs) { return new Message(attrs); },
-    messaging(attrs) { return new Messaging(attrs); },
-    mode(attrs) { return new Mode(attrs); },
-    modifyAnnots(attrs) { return new ModifyAnnots(attrs); },
-    msgId(attrs) { return new MsgId(attrs); },
-    nameAttr(attrs) { return new NameAttr(attrs); },
-    neverEmbed(attrs) { return new NeverEmbed(attrs); },
-    numberOfCopies(attrs) { return new NumberOfCopies(attrs); },
-    openAction(attrs) { return new OpenAction(attrs); },
-    output(attrs) { return new Output(attrs); },
-    outputBin(attrs) { return new OutputBin(attrs); },
-    outputXSL(attrs) { return new OutputXSL(attrs); },
-    overprint(attrs) { return new Overprint(attrs); },
-    packets(attrs) { return new Packets(attrs); },
-    pageOffset(attrs) { return new PageOffset(attrs); },
-    pageRange(attrs) { return new PageRange(attrs); },
-    pagination(attrs) { return new Pagination(attrs); },
-    paginationOverride(attrs) { return new PaginationOverride(attrs); },
-    part(attrs) { return new Part(attrs); },
-    pcl(attrs) { return new Pcl(attrs); },
-    pdf(attrs) { return new Pdf(attrs); },
-    pdfa(attrs) { return new Pdfa(attrs); },
-    permissions(attrs) { return new Permissions(attrs); },
-    pickTrayByPDFSize(attrs) { return new PickTrayByPDFSize(attrs); },
-    picture(attrs) { return new Picture(attrs); },
-    plaintextMetadata(attrs) { return new PlaintextMetadata(attrs); },
-    presence(attrs) { return new Presence(attrs); },
-    present(attrs) { return new Present(attrs); },
-    print(attrs) { return new Print(attrs); },
-    printHighQuality(attrs) { return new PrintHighQuality(attrs); },
-    printScaling(attrs) { return new PrintScaling(attrs); },
-    printerName(attrs) { return new PrinterName(attrs); },
-    producer(attrs) { return new Producer(attrs); },
-    ps(attrs) { return new Ps(attrs); },
-    range(attrs) { return new Range(attrs); },
-    record(attrs) { return new Record(attrs); },
-    relevant(attrs) { return new Relevant(attrs); },
-    rename(attrs) { return new Rename(attrs); },
-    renderPolicy(attrs) { return new RenderPolicy(attrs); },
-    runScripts(attrs) { return new RunScripts(attrs); },
-    script(attrs) { return new Script(attrs); },
-    scriptModel(attrs) { return new ScriptModel(attrs); },
-    severity(attrs) { return new Severity(attrs); },
-    silentPrint(attrs) { return new SilentPrint(attrs); },
-    staple(attrs) { return new Staple(attrs); },
-    startNode(attrs) { return new StartNode(attrs); },
-    startPage(attrs) { return new StartPage(attrs); },
-    submitFormat(attrs) { return new SubmitFormat(attrs); },
-    submitUrl(attrs) { return new SubmitUrl(attrs); },
-    subsetBelow(attrs) { return new SubsetBelow(attrs); },
-    suppressBanner(attrs) { return new SuppressBanner(attrs); },
-    tagged(attrs) { return new Tagged(attrs); },
-    template(attrs) { return new Template(attrs); },
-    templateCache(attrs) { return new TemplateCache(attrs); },
-    threshold(attrs) { return new Threshold(attrs); },
-    to(attrs) { return new To(attrs); },
-    trace(attrs) { return new Trace(attrs); },
-    transform(attrs) { return new Transform(attrs); },
-    type(attrs) { return new Type(attrs); },
-    uri(attrs) { return new Uri(attrs); },
-    validate(attrs) { return new Validate(attrs); },
-    validateApprovalSignatures(attrs) { return new ValidateApprovalSignatures(attrs); },
-    validationMessaging(attrs) { return new ValidationMessaging(attrs); },
-    version(attrs) { return new Version(attrs); },
-    versionControl(attrs) { return new VersionControl(attrs); },
-    viewerPreferences(attrs) { return new ViewerPreferences(attrs); },
-    webClient(attrs) { return new WebClient(attrs); },
-    whitespace(attrs) { return new Whitespace(attrs); },
-    window(attrs) { return new Window(attrs); },
-    xdc(attrs) { return new Xdc(attrs); },
-    xdp(attrs) { return new Xdp(attrs); },
-    xsl(attrs) { return new Xsl(attrs); },
-    zpl(attrs) { return new Zpl(attrs); },
+    acrobat(attrs) {
+        return new Acrobat(attrs);
+    },
+    acrobat7(attrs) {
+        return new Acrobat7(attrs);
+    },
+    ADBE_JSConsole(attrs) {
+        return new ADBE_JSConsole(attrs);
+    },
+    ADBE_JSDebugger(attrs) {
+        return new ADBE_JSDebugger(attrs);
+    },
+    addSilentPrint(attrs) {
+        return new AddSilentPrint(attrs);
+    },
+    addViewerPreferences(attrs) {
+        return new AddViewerPreferences(attrs);
+    },
+    adjustData(attrs) {
+        return new AdjustData(attrs);
+    },
+    adobeExtensionLevel(attrs) {
+        return new AdobeExtensionLevel(attrs);
+    },
+    agent(attrs) {
+        return new Agent(attrs);
+    },
+    alwaysEmbed(attrs) {
+        return new AlwaysEmbed(attrs);
+    },
+    amd(attrs) {
+        return new Amd(attrs);
+    },
+    area(attrs) {
+        return new Area(attrs);
+    },
+    attributes(attrs) {
+        return new Attributes(attrs);
+    },
+    autoSave(attrs) {
+        return new AutoSave(attrs);
+    },
+    base(attrs) {
+        return new Base(attrs);
+    },
+    batchOutput(attrs) {
+        return new BatchOutput(attrs);
+    },
+    behaviorOverride(attrs) {
+        return new BehaviorOverride(attrs);
+    },
+    cache(attrs) {
+        return new Cache(attrs);
+    },
+    change(attrs) {
+        return new Change(attrs);
+    },
+    common(attrs) {
+        return new Common(attrs);
+    },
+    compress(attrs) {
+        return new Compress(attrs);
+    },
+    compressLogicalStructure(attrs) {
+        return new CompressLogicalStructure(attrs);
+    },
+    compressObjectStream(attrs) {
+        return new CompressObjectStream(attrs);
+    },
+    compression(attrs) {
+        return new Compression(attrs);
+    },
+    config(attrs) {
+        return new Config(attrs);
+    },
+    conformance(attrs) {
+        return new Conformance(attrs);
+    },
+    contentCopy(attrs) {
+        return new ContentCopy(attrs);
+    },
+    copies(attrs) {
+        return new Copies(attrs);
+    },
+    creator(attrs) {
+        return new Creator(attrs);
+    },
+    currentPage(attrs) {
+        return new CurrentPage(attrs);
+    },
+    data(attrs) {
+        return new Data(attrs);
+    },
+    debug(attrs) {
+        return new Debug(attrs);
+    },
+    defaultTypeface(attrs) {
+        return new DefaultTypeface(attrs);
+    },
+    destination(attrs) {
+        return new Destination(attrs);
+    },
+    documentAssembly(attrs) {
+        return new DocumentAssembly(attrs);
+    },
+    driver(attrs) {
+        return new Driver(attrs);
+    },
+    duplexOption(attrs) {
+        return new DuplexOption(attrs);
+    },
+    dynamicRender(attrs) {
+        return new DynamicRender(attrs);
+    },
+    embed(attrs) {
+        return new Embed(attrs);
+    },
+    encrypt(attrs) {
+        return new Encrypt(attrs);
+    },
+    encryption(attrs) {
+        return new Encryption(attrs);
+    },
+    encryptionLevel(attrs) {
+        return new EncryptionLevel(attrs);
+    },
+    enforce(attrs) {
+        return new Enforce(attrs);
+    },
+    equate(attrs) {
+        return new Equate(attrs);
+    },
+    equateRange(attrs) {
+        return new EquateRange(attrs);
+    },
+    exclude(attrs) {
+        return new Exclude(attrs);
+    },
+    excludeNS(attrs) {
+        return new ExcludeNS(attrs);
+    },
+    flipLabel(attrs) {
+        return new FlipLabel(attrs);
+    },
+    fontInfo(attrs) {
+        return new FontInfo(attrs);
+    },
+    formFieldFilling(attrs) {
+        return new FormFieldFilling(attrs);
+    },
+    groupParent(attrs) {
+        return new GroupParent(attrs);
+    },
+    ifEmpty(attrs) {
+        return new IfEmpty(attrs);
+    },
+    includeXDPContent(attrs) {
+        return new IncludeXDPContent(attrs);
+    },
+    incrementalLoad(attrs) {
+        return new IncrementalLoad(attrs);
+    },
+    incrementalMerge(attrs) {
+        return new IncrementalMerge(attrs);
+    },
+    interactive(attrs) {
+        return new Interactive(attrs);
+    },
+    jog(attrs) {
+        return new Jog(attrs);
+    },
+    labelPrinter(attrs) {
+        return new LabelPrinter(attrs);
+    },
+    layout(attrs) {
+        return new Layout(attrs);
+    },
+    level(attrs) {
+        return new Level(attrs);
+    },
+    linearized(attrs) {
+        return new Linearized(attrs);
+    },
+    locale(attrs) {
+        return new Locale(attrs);
+    },
+    localeSet(attrs) {
+        return new LocaleSet(attrs);
+    },
+    log(attrs) {
+        return new Log(attrs);
+    },
+    map(attrs) {
+        return new MapElement(attrs);
+    },
+    mediumInfo(attrs) {
+        return new MediumInfo(attrs);
+    },
+    message(attrs) {
+        return new Message(attrs);
+    },
+    messaging(attrs) {
+        return new Messaging(attrs);
+    },
+    mode(attrs) {
+        return new Mode(attrs);
+    },
+    modifyAnnots(attrs) {
+        return new ModifyAnnots(attrs);
+    },
+    msgId(attrs) {
+        return new MsgId(attrs);
+    },
+    nameAttr(attrs) {
+        return new NameAttr(attrs);
+    },
+    neverEmbed(attrs) {
+        return new NeverEmbed(attrs);
+    },
+    numberOfCopies(attrs) {
+        return new NumberOfCopies(attrs);
+    },
+    openAction(attrs) {
+        return new OpenAction(attrs);
+    },
+    output(attrs) {
+        return new Output(attrs);
+    },
+    outputBin(attrs) {
+        return new OutputBin(attrs);
+    },
+    outputXSL(attrs) {
+        return new OutputXSL(attrs);
+    },
+    overprint(attrs) {
+        return new Overprint(attrs);
+    },
+    packets(attrs) {
+        return new Packets(attrs);
+    },
+    pageOffset(attrs) {
+        return new PageOffset(attrs);
+    },
+    pageRange(attrs) {
+        return new PageRange(attrs);
+    },
+    pagination(attrs) {
+        return new Pagination(attrs);
+    },
+    paginationOverride(attrs) {
+        return new PaginationOverride(attrs);
+    },
+    part(attrs) {
+        return new Part(attrs);
+    },
+    pcl(attrs) {
+        return new Pcl(attrs);
+    },
+    pdf(attrs) {
+        return new Pdf(attrs);
+    },
+    pdfa(attrs) {
+        return new Pdfa(attrs);
+    },
+    permissions(attrs) {
+        return new Permissions(attrs);
+    },
+    pickTrayByPDFSize(attrs) {
+        return new PickTrayByPDFSize(attrs);
+    },
+    picture(attrs) {
+        return new Picture(attrs);
+    },
+    plaintextMetadata(attrs) {
+        return new PlaintextMetadata(attrs);
+    },
+    presence(attrs) {
+        return new Presence(attrs);
+    },
+    present(attrs) {
+        return new Present(attrs);
+    },
+    print(attrs) {
+        return new Print(attrs);
+    },
+    printHighQuality(attrs) {
+        return new PrintHighQuality(attrs);
+    },
+    printScaling(attrs) {
+        return new PrintScaling(attrs);
+    },
+    printerName(attrs) {
+        return new PrinterName(attrs);
+    },
+    producer(attrs) {
+        return new Producer(attrs);
+    },
+    ps(attrs) {
+        return new Ps(attrs);
+    },
+    range(attrs) {
+        return new Range(attrs);
+    },
+    record(attrs) {
+        return new Record(attrs);
+    },
+    relevant(attrs) {
+        return new Relevant(attrs);
+    },
+    rename(attrs) {
+        return new Rename(attrs);
+    },
+    renderPolicy(attrs) {
+        return new RenderPolicy(attrs);
+    },
+    runScripts(attrs) {
+        return new RunScripts(attrs);
+    },
+    script(attrs) {
+        return new Script(attrs);
+    },
+    scriptModel(attrs) {
+        return new ScriptModel(attrs);
+    },
+    severity(attrs) {
+        return new Severity(attrs);
+    },
+    silentPrint(attrs) {
+        return new SilentPrint(attrs);
+    },
+    staple(attrs) {
+        return new Staple(attrs);
+    },
+    startNode(attrs) {
+        return new StartNode(attrs);
+    },
+    startPage(attrs) {
+        return new StartPage(attrs);
+    },
+    submitFormat(attrs) {
+        return new SubmitFormat(attrs);
+    },
+    submitUrl(attrs) {
+        return new SubmitUrl(attrs);
+    },
+    subsetBelow(attrs) {
+        return new SubsetBelow(attrs);
+    },
+    suppressBanner(attrs) {
+        return new SuppressBanner(attrs);
+    },
+    tagged(attrs) {
+        return new Tagged(attrs);
+    },
+    template(attrs) {
+        return new Template(attrs);
+    },
+    templateCache(attrs) {
+        return new TemplateCache(attrs);
+    },
+    threshold(attrs) {
+        return new Threshold(attrs);
+    },
+    to(attrs) {
+        return new To(attrs);
+    },
+    trace(attrs) {
+        return new Trace(attrs);
+    },
+    transform(attrs) {
+        return new Transform(attrs);
+    },
+    type(attrs) {
+        return new Type(attrs);
+    },
+    uri(attrs) {
+        return new Uri(attrs);
+    },
+    validate(attrs) {
+        return new Validate(attrs);
+    },
+    validateApprovalSignatures(attrs) {
+        return new ValidateApprovalSignatures(attrs);
+    },
+    validationMessaging(attrs) {
+        return new ValidationMessaging(attrs);
+    },
+    version(attrs) {
+        return new Version(attrs);
+    },
+    versionControl(attrs) {
+        return new VersionControl(attrs);
+    },
+    viewerPreferences(attrs) {
+        return new ViewerPreferences(attrs);
+    },
+    webClient(attrs) {
+        return new WebClient(attrs);
+    },
+    whitespace(attrs) {
+        return new Whitespace(attrs);
+    },
+    window(attrs) {
+        return new Window(attrs);
+    },
+    xdc(attrs) {
+        return new Xdc(attrs);
+    },
+    xdp(attrs) {
+        return new Xdp(attrs);
+    },
+    xsl(attrs) {
+        return new Xsl(attrs);
+    },
+    zpl(attrs) {
+        return new Zpl(attrs);
+    },
 };
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=config.js.map

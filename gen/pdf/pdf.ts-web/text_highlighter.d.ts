@@ -30,7 +30,7 @@ export declare class TextHighlighter {
     eventBus: EventBus;
     pageIdx: number;
     _onUpdateTextLayerMatches: ((evt: EventMap["updatetextlayermatches"]) => void) | undefined;
-    textDivs: Node[] | undefined;
+    textDivs: (HTMLSpanElement | Text)[] | undefined;
     textContentItemsStr: string[] | undefined;
     enabled: boolean;
     constructor({ findController, eventBus, pageIndex }: TextHighlighterOptions);
@@ -40,7 +40,7 @@ export declare class TextHighlighter {
      * should correspond to the other. e.g.
      * `items[0] = "<span>Item 0</span>" and texts[0] = "Item 0";
      */
-    setTextMapping(divs: Node[], texts: string[]): void;
+    setTextMapping(divs: (HTMLSpanElement | Text)[], texts: string[]): void;
     /**
      * Start listening for events to update the highlighter and check if there are
      * any current matches that need be highlighted.

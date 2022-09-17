@@ -17,56 +17,64 @@
  * limitations under the License.
  */
 
-import { HttpStatusCode } from "../../../lib/HttpStatusCode.js";
-import { isObjectLike } from "../../../lib/jslang.js";
-import { createPromiseCap, PromiseCap } from "../../../lib/promisecap.js";
-import { assert } from "../../../lib/util/trace.js";
-import { PageLayout, PageMode } from "../../pdf.ts-web/ui_utils.js";
-import { type AnnotationData, type FieldObject } from "../core/annotation.js";
+import { _INFO, _PDFDEV, global, PDFTS_vv } from "../../../global.ts";
+import { HttpStatusCode } from "../../../lib/HttpStatusCode.ts";
+import { isObjectLike } from "../../../lib/jslang.ts";
+import { createPromiseCap, PromiseCap } from "../../../lib/promisecap.ts";
+import { assert } from "../../../lib/util/trace.ts";
+import { PageLayout, PageMode } from "../../pdf.ts-web/ui_utils.ts";
+import { type AnnotationData, type FieldObject } from "../core/annotation.ts";
 import {
   type ExplicitDest,
   type MarkInfo,
   type OpenAction,
   type OptionalContentConfigData,
-  type ViewerPref
-} from "../core/catalog.js";
-import { type AnnotActions } from "../core/core_utils.js";
-import { type DocumentInfo, type XFAData } from "../core/document.js";
+  type ViewerPref,
+} from "../core/catalog.ts";
+import { type AnnotActions } from "../core/core_utils.ts";
+import { type DocumentInfo, type XFAData } from "../core/document.ts";
 import {
   type BidiTextContentItem,
   type FontStyle,
-  type ImgData, type TypeTextContentItem
-} from "../core/evaluator.js";
-import { FontExpotDataEx } from "../core/fonts.js";
-import { type CmdArgs } from "../core/font_renderer.js";
-import { type SerializedMetadata } from "../core/metadata_parser.js";
-import { type OpListIR } from "../core/operator_list.js";
-import { type ShadingPatternIR } from "../core/pattern.js";
-import { type StructTree } from "../core/struct_tree.js";
-import { type IWorker } from "../core/worker.js";
-import { type XFAElObj } from "../core/xfa/alias.js";
-import { type AnnotStorageRecord } from "../display/annotation_layer.js";
-import { type OutlineNode, type PDFDocumentStats, type RefProxy } from "../display/api.js";
-import { type CMapData } from "../display/base_factory.js";
-import { VerbosityLevel } from "../pdf.js";
+  type ImgData,
+  type TypeTextContentItem,
+} from "../core/evaluator.ts";
+import { FontExpotDataEx } from "../core/fonts.ts";
+import { type CmdArgs } from "../core/font_renderer.ts";
+import { type IWorker } from "../core/iworker.ts";
+import { type SerializedMetadata } from "../core/metadata_parser.ts";
+import { type OpListIR } from "../core/operator_list.ts";
+import { type ShadingPatternIR } from "../core/pattern.ts";
+import { type XFAElObj } from "../core/xfa/alias.ts";
+import { type AnnotStorageRecord } from "../display/annotation_layer.ts";
+import {
+  StructTreeNode,
+  type OutlineNode,
+  type PDFDocumentStats,
+  type RefProxy,
+} from "../display/api.ts";
+import { type CMapData } from "../display/base_factory.ts";
+import { VerbosityLevel } from "../pdf.ts";
 import {
   AbortException,
   InvalidPDFException,
   MissingPDFException,
   PasswordException,
   PasswordResponses,
-  PermissionFlag, RenderingIntentFlag,
+  PermissionFlag,
+  type rect_t,
+  RenderingIntentFlag,
   UnexpectedResponseException,
   UnknownErrorException,
-  UNSUPPORTED_FEATURES, type rect_t
-} from "./util.js";
-/*81---------------------------------------------------------------------------*/
+  UNSUPPORTED_FEATURES,
+} from "./util.ts";
+/*80--------------------------------------------------------------------------*/
 
 enum CallbackKind {
   UNKNOWN = 0,
   DATA,
   ERROR,
-};
+}
 
 enum StreamKind {
   UNKNOWN = 0,
@@ -78,28 +86,22 @@ enum StreamKind {
   PULL,
   PULL_COMPLETE,
   START_COMPLETE,
-};
-
-interface reason_t
-{
-  name?:string;
-  message:string;
-
-  code?:PasswordResponses;
-  status?:HttpStatusCode;
-  details?:string;
 }
 
-function wrapReason( reason:reason_t )
-{
-  if( !( reason instanceof Error || isObjectLike(reason) ) )
-  {
-    assert(0,
-      'wrapReason: Expected "reason" to be a (possibly cloned) Error.'
-    );
+interface reason_t {
+  name?: string;
+  message: string;
+
+  code?: PasswordResponses;
+  status?: HttpStatusCode;
+  details?: string;
+}
+
+function wrapReason(reason: reason_t) {
+  if (!(reason instanceof Error || isObjectLike(reason))) {
+    assert(0, 'wrapReason: Expected "reason" to be a (possibly cloned) Error.');
   }
-  switch (reason.name) 
-  {
+  switch (reason.name) {
     case "AbortException":
       return new AbortException(reason.message);
     case "MissingPDFException":
@@ -111,394 +113,394 @@ function wrapReason( reason:reason_t )
     case "UnknownErrorException":
       return new UnknownErrorException(reason.message, reason.details);
     default:
-      return new UnknownErrorException( reason.message, reason.toString() );
+      return new UnknownErrorException(reason.message, reason.toString());
   }
 }
 /*49-------------------------------------------*/
 
-export interface GetDocRequestData
-{
-  docId:string;
-  apiVersion:number;
-  source:{
-    data:Uint8Array | number[] | undefined;
-    url:string | URL | undefined;
-    password:string | undefined;
-    disableAutoFetch:boolean | undefined;
-    rangeChunkSize:number | undefined;
-    length:number | undefined;
+export interface GetDocRequestData {
+  docId: string;
+  apiVersion: number;
+  source: {
+    data: Uint8Array | number[] | undefined;
+    url: string | URL | undefined;
+    password: string | undefined;
+    disableAutoFetch: boolean | undefined;
+    rangeChunkSize: number | undefined;
+    length: number | undefined;
   };
-  maxImageSize:number | undefined;
-  disableFontFace:boolean | undefined;
-  docBaseUrl:string | undefined;
-  ignoreErrors:boolean | undefined;
-  isEvalSupported:boolean | undefined;
-  fontExtraProperties:boolean | undefined;
-  useSystemFonts:boolean | undefined;
-  cMapUrl:string | undefined;
-  standardFontDataUrl?:string | undefined;
-  enableXfa:boolean | undefined;
+  maxImageSize: number | undefined;
+  disableFontFace: boolean | undefined;
+  docBaseUrl: string | undefined;
+  ignoreErrors: boolean | undefined;
+  isEvalSupported: boolean | undefined;
+  fontExtraProperties: boolean | undefined;
+  useSystemFonts: boolean | undefined;
+  cMapUrl: string | undefined;
+  standardFontDataUrl?: string | undefined;
+  enableXfa: boolean | undefined;
 }
 
-export interface _PumpOperatorListP
-{
-  pageIndex:number;
-  intent:RenderingIntentFlag;
-  cacheKey:string;
-  annotationStorage?:AnnotStorageRecord | undefined;
+export interface _PumpOperatorListP {
+  pageIndex: number;
+  intent: RenderingIntentFlag;
+  cacheKey: string;
+  annotationStorage: AnnotStorageRecord | undefined;
 }
 
-export interface PageInfo
-{
-  rotate:number;
-  ref:RefProxy | undefined;
-  userUnit:number;
-  view:rect_t;
+export interface PageInfo {
+  rotate: number;
+  ref: RefProxy | undefined;
+  userUnit: number;
+  view: rect_t;
 }
 
-export interface MActionMap
-{
-  configure:{
-    Data:{
-      verbosity:VerbosityLevel;
-    }
-    Return:void;
-    Sinkchunk:undefined;
-  }
-  Cleanup:{
-    Data:null;
-    Return:Promise<void>;
-    Sinkchunk:undefined;
-  }
-  FontFallback:{
-    Data:{
-      id:string;
-    }
-    Return:void;
-    Sinkchunk:undefined;
-  }
-  GetAnnotations:{
-    Data:{
-      pageIndex:number;
-      intent:RenderingIntentFlag;
+export interface MActionMap {
+  configure: {
+    Data: {
+      verbosity: VerbosityLevel;
     };
-    Return:AnnotationData[];
-    Sinkchunk:undefined;
-  }
-  GetAttachments:{
-    Data:null;
-    Return:unknown;
-    Sinkchunk:undefined;
-  }
-  GetCalculationOrderIds:{
-    Data:unknown;
-    Return?:string[];
-    Sinkchunk:undefined;
-  }
-  GetData:{
-    Data:null,
-    Return:Uint8Array,
-    Sinkchunk:undefined;
-  }
-  GetDestination:{
-    Data:{
-      id:string;
-    }
-    Return?:ExplicitDest;
-    Sinkchunk:undefined;
-  }
-  GetDestinations:{
-    Data:null;
-    Return:Record<string, ExplicitDest>;
-    Sinkchunk:undefined;
-  }
-  GetDocJSActions:{
-    Data:null;
-    Return?:AnnotActions;
-    Sinkchunk:undefined;
-  }
-  GetDocRequest:{
-    Data:GetDocRequestData;
-    Return:string;
-    Sinkchunk:undefined;
-  }
-  GetFieldObjects:{
-    Data:null;
-    Return:Record<string, FieldObject[]> | undefined;
-    Sinkchunk:undefined;
-  }
-  GetJavaScript:{
-    Data:null;
-    Return?:string[];
-    Sinkchunk:undefined;
-  }
-  GetMarkInfo:{
-    Data:null;
-    Return:MarkInfo | undefined;
-    Sinkchunk:undefined;
-  }
-  GetMetadata:{
-    Data:null;
-    Return:[ DocumentInfo, SerializedMetadata | undefined ];
-    Sinkchunk:undefined;
-  }
-  GetOpenAction:{
-    Data:null;
-    Return?:OpenAction;
-    Sinkchunk:undefined;
-  }
-  GetOperatorList:{
-    Data:_PumpOperatorListP;
-    Return:void;
-    Sinkchunk:OpListIR;
-  }
-  GetOptionalContentConfig:{
-    Data:null;
-    Return?:OptionalContentConfigData;
-    Sinkchunk:undefined;
-  }
-  GetOutline:{
-    Data:null;
-    Return:OutlineNode[] | undefined
-    Sinkchunk:undefined;
-  }
-  GetPage:{
-    Data:{
-      pageIndex:number;
-    }
-    Return:PageInfo;
-    Sinkchunk:undefined;
-  }
-  GetPageIndex:{
-    Data:RefProxy;
-    Return:number;
-    Sinkchunk:undefined;
-  }
-  GetPageJSActions:{
-    Data:{
-      pageIndex:number;
-    }
-    Return?:AnnotActions;
-    Sinkchunk:undefined;
-  }
-  GetPageLabels:{
-    Data:null;
-    Return:string[] | undefined;
-    Sinkchunk:undefined;
-  }
-  GetPageLayout:{
-    Data:null;
-    Return?:PageLayout;
-    Sinkchunk:undefined;
-  }
-  GetPageMode:{
-    Data:null;
-    Return:PageMode;
-    Sinkchunk:undefined;
-  }
-  GetPageXfa:{
-    Data:{
-      pageIndex:number;
+    Return: void;
+    Sinkchunk: undefined;
+  };
+  Cleanup: {
+    Data: null;
+    Return: Promise<void>;
+    Sinkchunk: undefined;
+  };
+  FontFallback: {
+    Data: {
+      id: string;
     };
-    Return?:XFAData;
-    Sinkchunk:undefined;
-  }
-  GetPermissions:{
-    Data:null;
-    Return:PermissionFlag[] | undefined;
-    Sinkchunk:undefined;
-  }
-  GetStats:{
-    Data:null;
-    Return:PDFDocumentStats;
-    Sinkchunk:undefined;
-  }
-  GetStructTree:{
-    Data:{
-      pageIndex:number;
-    }
-    Return?:StructTree;
-    Sinkchunk:undefined;
-  }
-  GetTextContent:{
-    Data:{
-      pageIndex:number;
-      combineTextItems:boolean;
-      includeMarkedContent:boolean
-    }
-    Return:void;
-    Sinkchunk:{
-      items:(BidiTextContentItem | TypeTextContentItem)[];
-      styles:Record<string, FontStyle>;
-    }
-  }
-  GetViewerPreferences:{
-    Data:null,
-    Return:ViewerPref | undefined,
-    Sinkchunk:undefined;
-  }
-  HasJSActions:{
-    Data:null;
-    Return:boolean;
-    Sinkchunk:undefined;
-  }
-  Ready:{
-    Data:null;
-    Return:void;
-    Sinkchunk:undefined;
-  }
-  SaveDocument:{
-    Data:{
-      isPureXfa:boolean;
-      numPages:number;
-      annotationStorage:AnnotStorageRecord | undefined;
-      filename:string | undefined;
-    }
-    Return:Uint8Array;
-    Sinkchunk:undefined;
-  }
-  Terminate:{
-    Data:null;
-    Return:void;
-    Sinkchunk:undefined;
-  }
-  test:{
-    Data:Uint8Array;
-    Return:void;
-    Sinkchunk:undefined;
-  }
+    Return: void;
+    Sinkchunk: undefined;
+  };
+  GetAnnotations: {
+    Data: {
+      pageIndex: number;
+      intent: RenderingIntentFlag;
+    };
+    Return: AnnotationData[];
+    Sinkchunk: undefined;
+  };
+  GetAttachments: {
+    Data: null;
+    Return: unknown;
+    Sinkchunk: undefined;
+  };
+  GetCalculationOrderIds: {
+    Data: unknown;
+    Return?: string[];
+    Sinkchunk: undefined;
+  };
+  GetData: {
+    Data: null;
+    Return: Uint8Array;
+    Sinkchunk: undefined;
+  };
+  GetDestination: {
+    Data: {
+      id: string;
+    };
+    Return?: ExplicitDest;
+    Sinkchunk: undefined;
+  };
+  GetDestinations: {
+    Data: null;
+    Return: Record<string, ExplicitDest>;
+    Sinkchunk: undefined;
+  };
+  GetDocJSActions: {
+    Data: null;
+    Return?: AnnotActions;
+    Sinkchunk: undefined;
+  };
+  GetDocRequest: {
+    Data: GetDocRequestData;
+    Return: string;
+    Sinkchunk: undefined;
+  };
+  GetFieldObjects: {
+    Data: null;
+    Return: Record<string, FieldObject[]> | undefined;
+    Sinkchunk: undefined;
+  };
+  GetJavaScript: {
+    Data: null;
+    Return?: string[];
+    Sinkchunk: undefined;
+  };
+  GetMarkInfo: {
+    Data: null;
+    Return: MarkInfo | undefined;
+    Sinkchunk: undefined;
+  };
+  GetMetadata: {
+    Data: null;
+    Return: [DocumentInfo, SerializedMetadata | undefined];
+    Sinkchunk: undefined;
+  };
+  GetOpenAction: {
+    Data: null;
+    Return?: OpenAction;
+    Sinkchunk: undefined;
+  };
+  GetOperatorList: {
+    Data: _PumpOperatorListP;
+    Return: void;
+    Sinkchunk: OpListIR;
+  };
+  GetOptionalContentConfig: {
+    Data: null;
+    Return?: OptionalContentConfigData;
+    Sinkchunk: undefined;
+  };
+  GetOutline: {
+    Data: null;
+    Return: OutlineNode[] | undefined;
+    Sinkchunk: undefined;
+  };
+  GetPage: {
+    Data: {
+      pageIndex: number;
+    };
+    Return: PageInfo;
+    Sinkchunk: undefined;
+  };
+  GetPageIndex: {
+    Data: RefProxy;
+    Return: number;
+    Sinkchunk: undefined;
+  };
+  GetPageJSActions: {
+    Data: {
+      pageIndex: number;
+    };
+    Return?: AnnotActions;
+    Sinkchunk: undefined;
+  };
+  GetPageLabels: {
+    Data: null;
+    Return: string[] | undefined;
+    Sinkchunk: undefined;
+  };
+  GetPageLayout: {
+    Data: null;
+    Return?: PageLayout;
+    Sinkchunk: undefined;
+  };
+  GetPageMode: {
+    Data: null;
+    Return: PageMode;
+    Sinkchunk: undefined;
+  };
+  GetPageXfa: {
+    Data: {
+      pageIndex: number;
+    };
+    Return?: XFAData;
+    Sinkchunk: undefined;
+  };
+  GetPermissions: {
+    Data: null;
+    Return: PermissionFlag[] | undefined;
+    Sinkchunk: undefined;
+  };
+  GetStats: {
+    Data: null;
+    Return: PDFDocumentStats;
+    Sinkchunk: undefined;
+  };
+  GetStructTree: {
+    Data: {
+      pageIndex: number;
+    };
+    Return?: StructTreeNode;
+    Sinkchunk: undefined;
+  };
+  GetTextContent: {
+    Data: {
+      pageIndex: number;
+      combineTextItems: boolean;
+      includeMarkedContent: boolean;
+    };
+    Return: void;
+    Sinkchunk: {
+      items: (BidiTextContentItem | TypeTextContentItem)[];
+      styles: Record<string, FontStyle>;
+    };
+  };
+  GetViewerPreferences: {
+    Data: null;
+    Return: ViewerPref | undefined;
+    Sinkchunk: undefined;
+  };
+  HasJSActions: {
+    Data: null;
+    Return: boolean;
+    Sinkchunk: undefined;
+  };
+  Ready: {
+    Data: null;
+    Return: void;
+    Sinkchunk: undefined;
+  };
+  SaveDocument: {
+    Data: {
+      isPureXfa: boolean;
+      numPages: number;
+      annotationStorage: AnnotStorageRecord | undefined;
+      filename: string | undefined;
+    };
+    Return: Uint8Array;
+    Sinkchunk: undefined;
+  };
+  Terminate: {
+    Data: null;
+    Return: void;
+    Sinkchunk: undefined;
+  };
+  test: {
+    Data: Uint8Array;
+    Return: void;
+    Sinkchunk: undefined;
+  };
 }
 
 type MActionName = keyof MActionMap;
 /*25-------------------*/
 
-export interface PDFInfo
-{
-  numPages:number,
+export interface PDFInfo {
+  numPages: number;
   // fingerprint:string,
-  fingerprints:[string, string | undefined],
+  fingerprints: [string, string | undefined];
   // isPureXfa:boolean;
-  htmlForXfa:XFAElObj | undefined;
+  htmlForXfa: XFAElObj | undefined;
 }
 
-export interface ReaderHeaders
-{
-  contentLength:number | undefined;
-  isRangeSupported:boolean;
-  isStreamingSupported:boolean;
+export interface ReaderHeaders {
+  contentLength: number | undefined;
+  isRangeSupported: boolean;
+  isStreamingSupported: boolean;
 }
 
-export interface WActionMap
-{
-  commonobj:{
+export interface WActionMap {
+  commonobj: {
     Data:
-      | [ string, "Font", FontExpotDataEx | {error:string} ]
-      | [ string, "FontPath", CmdArgs[] ]
-      | [ string, "Image", ImgData | undefined ]
-    ;
-    Return:void;
-    Sinkchunk:undefined;
-  }
-  DataLoaded:{
-    Data:{
-      length:number;
-    }
-    Return:void;
-    Sinkchunk:undefined;
-  }
-  DocException:{
-    Data:PasswordException | InvalidPDFException | MissingPDFException | UnexpectedResponseException | UnknownErrorException;
-    Return:void;
-    Sinkchunk:undefined;
-  }
-  DocProgress:{
-    Data:OnProgressP;
-    Return:void;
-    Sinkchunk:undefined;
-  }
-  DocStats:{
-    Data:PDFDocumentStats;
-    Return:void;
-    Sinkchunk:undefined;
-  }
-  FetchBuiltInCMap:{
-    Data:{
-      name:string;
-    }
-    Return:Promise<CMapData>;
-    Sinkchunk:CMapData;
-  }
-  FetchStandardFontData:{
-    Data:{
-      filename:string;
-    }
-    Return:Promise<Uint8Array>;
-    Sinkchunk:unknown;
-  }
-  GetDoc:{
-    Data:{
-      pdfInfo:PDFInfo;
-    }
-    Return:void;
-    Sinkchunk:undefined;
-  }
-  GetRangeReader:{
-    Data:{
-      begin:number;
-      end:number;
-    }
-    Return:void;
-    Sinkchunk:Uint8Array;
-  }
-  GetReader:{
-    Data:null;
-    Return:void;
-    Sinkchunk:Uint8Array;
-  }
-  obj:{
-    Data:[ string, number, 
-      ...["Pattern", ShadingPatternIR] | ["Image", ImgData | undefined] ];
-    Return:void;
-    Sinkchunk:undefined;
-  }
-  PasswordRequest:{
-    Data:PasswordException;
-    Return:{
-      password:string;
-    }
-    Sinkchunk:undefined;
-  }
-  ReaderHeadersReady:{
-    Data:null;
-    Return:ReaderHeaders;
-    Sinkchunk:undefined;
-  }
-  ready:{
-    Data:null;
-    Return:void;
-    Sinkchunk:undefined;
-  }
-  StartRenderPage:{
-    Data:{
-      transparency:boolean;
-      pageIndex:number;
-      cacheKey:string;
-    }
-    Return:void;
-    Sinkchunk:undefined;
-  }
-  test:{
-    Data:boolean;
-    Return:void;
-    Sinkchunk:undefined;
-  }
-  UnsupportedFeature:{
-    Data:{
-      featureId:UNSUPPORTED_FEATURES;
-    }
-    Return:void;
-    Sinkchunk:undefined;
-  }
+      | [string, "Font", FontExpotDataEx | { error: string }]
+      | [string, "FontPath", CmdArgs[]]
+      | [string, "Image", ImgData | undefined];
+    Return: void;
+    Sinkchunk: undefined;
+  };
+  DataLoaded: {
+    Data: {
+      length: number;
+    };
+    Return: void;
+    Sinkchunk: undefined;
+  };
+  DocException: {
+    Data:
+      | PasswordException
+      | InvalidPDFException
+      | MissingPDFException
+      | UnexpectedResponseException
+      | UnknownErrorException;
+    Return: void;
+    Sinkchunk: undefined;
+  };
+  DocProgress: {
+    Data: OnProgressP;
+    Return: void;
+    Sinkchunk: undefined;
+  };
+  DocStats: {
+    Data: PDFDocumentStats;
+    Return: void;
+    Sinkchunk: undefined;
+  };
+  FetchBuiltInCMap: {
+    Data: {
+      name: string;
+    };
+    Return: Promise<CMapData>;
+    Sinkchunk: CMapData;
+  };
+  FetchStandardFontData: {
+    Data: {
+      filename: string;
+    };
+    Return: Promise<Uint8Array>;
+    Sinkchunk: unknown;
+  };
+  GetDoc: {
+    Data: {
+      pdfInfo: PDFInfo;
+    };
+    Return: void;
+    Sinkchunk: undefined;
+  };
+  GetRangeReader: {
+    Data: {
+      begin: number;
+      end: number;
+    };
+    Return: void;
+    Sinkchunk: Uint8Array;
+  };
+  GetReader: {
+    Data: null;
+    Return: void;
+    Sinkchunk: Uint8Array;
+  };
+  obj: {
+    Data: [
+      string,
+      number,
+      ...["Pattern", ShadingPatternIR] | ["Image", ImgData | undefined],
+    ];
+    Return: void;
+    Sinkchunk: undefined;
+  };
+  PasswordRequest: {
+    Data: PasswordException;
+    Return: {
+      password: string;
+    };
+    Sinkchunk: undefined;
+  };
+  ReaderHeadersReady: {
+    Data: null;
+    Return: ReaderHeaders;
+    Sinkchunk: undefined;
+  };
+  ready: {
+    Data: null;
+    Return: void;
+    Sinkchunk: undefined;
+  };
+  StartRenderPage: {
+    Data: {
+      transparency: boolean;
+      pageIndex: number;
+      cacheKey: string;
+    };
+    Return: void;
+    Sinkchunk: undefined;
+  };
+  test: {
+    Data: boolean;
+    Return: void;
+    Sinkchunk: undefined;
+  };
+  UnsupportedFeature: {
+    Data: {
+      featureId: UNSUPPORTED_FEATURES;
+    };
+    Return: void;
+    Sinkchunk: undefined;
+  };
 }
 
 type WActionName = keyof WActionMap;
@@ -509,229 +511,236 @@ export const enum Thread {
   worker,
 }
 
-export type ActionName<Ta extends Thread> = Ta extends Thread.main ? MActionName : WActionName;
+export type ActionName<Ta extends Thread> = Ta extends Thread.main ? MActionName
+  : WActionName;
 // export type ActionDataMap< Ta extends Thread > = Ta extends Thread.main ? MActionMap : WActionMap;
 
-export interface StreamSink< 
-  Ta extends Thread, 
-  AN extends ActionName<Ta>=ActionName<Ta> 
+export interface StreamSink<
+  Ta extends Thread,
+  AN extends ActionName<Ta> = ActionName<Ta>,
 > {
-  enqueue( chunk:ActionSinkchunk<Ta,AN>, size?:number, transfers?:Transferable[] ):void;
-  close?():void;
-  error?( reason:reason_t ):void;
+  enqueue(
+    chunk: ActionSinkchunk<Ta, AN>,
+    size?: number,
+    transfers?: Transferable[],
+  ): void;
+  close?(): void;
+  error?(reason: reason_t): void;
 
-  sinkCapability?:PromiseCap;
-  onPull?( desiredSize?:number ):void;
-  onCancel?( reason:object ):void;
-  isCancelled?:boolean;
-  desiredSize:number | null | undefined;
-  ready:Promise<void>;
+  sinkCapability?: PromiseCap;
+  onPull?(desiredSize?: number): void;
+  onCancel?(reason: object): void;
+  isCancelled?: boolean;
+  desiredSize: number | null | undefined;
+  ready: Promise<void>;
 }
 
-type MActionHandler< AN extends MActionName > = ( 
-  data:MActionMap[AN]["Data"], 
-  sink:StreamSink< Thread.main, AN > 
-) => MActionMap[AN]["Return"] | Promise< MActionMap[AN]["Return"] >;
-type WActionHandler< AN extends WActionName > = ( 
-  data:WActionMap[AN]["Data"], 
-  sink:StreamSink< Thread.worker, AN > 
-) => WActionMap[AN]["Return"] | Promise< WActionMap[AN]["Return"] >;
+type MActionHandler<AN extends MActionName> = (
+  data: MActionMap[AN]["Data"],
+  sink: StreamSink<Thread.main, AN>,
+) => MActionMap[AN]["Return"] | Promise<MActionMap[AN]["Return"]>;
+type WActionHandler<AN extends WActionName> = (
+  data: WActionMap[AN]["Data"],
+  sink: StreamSink<Thread.worker, AN>,
+) => WActionMap[AN]["Return"] | Promise<WActionMap[AN]["Return"]>;
 // type WActionHandler< AN extends WActionName > = ( data:WActionMap[AN], sink? ) => void | string;
-export type ActionHandler< 
-  Ta extends Thread, 
-  AN extends ActionName<Ta>=ActionName<Ta>,
-> = Ta extends Thread.main ? 
-  MActionHandler< AN & MActionName > : WActionHandler< AN & WActionName >;
-
-export type ActionData< 
+export type ActionHandler<
   Ta extends Thread,
-  AN extends ActionName<Ta>=ActionName<Ta>,
-> = Ta extends Thread.main ? 
-  MActionMap[ AN & MActionName ]["Data"] : WActionMap[ AN & WActionName ]["Data"];
+  AN extends ActionName<Ta> = ActionName<Ta>,
+> = Ta extends Thread.main ? MActionHandler<AN & MActionName>
+  : WActionHandler<AN & WActionName>;
 
-export type ActionReturn< 
+export type ActionData<
   Ta extends Thread,
-  AN extends ActionName<Ta>=ActionName<Ta>,
-> = Ta extends Thread.main ? 
-  MActionMap[ AN & MActionName ]["Return"] : WActionMap[ AN & WActionName ]["Return"];
+  AN extends ActionName<Ta> = ActionName<Ta>,
+> = Ta extends Thread.main ? MActionMap[AN & MActionName]["Data"]
+  : WActionMap[AN & WActionName]["Data"];
 
-export type ActionSinkchunk< 
+export type ActionReturn<
   Ta extends Thread,
-  AN extends ActionName<Ta>=ActionName<Ta>,
-> = Ta extends Thread.main 
-  ? MActionMap[ AN & MActionName ]["Sinkchunk"] 
-  : WActionMap[ AN & WActionName ]["Sinkchunk"]
-;
+  AN extends ActionName<Ta> = ActionName<Ta>,
+> = Ta extends Thread.main ? MActionMap[AN & MActionName]["Return"]
+  : WActionMap[AN & WActionName]["Return"];
 
-interface Message< 
-  Ta extends Thread, 
-  AN extends ActionName<Ta>=ActionName<Ta> 
+export type ActionSinkchunk<
+  Ta extends Thread,
+  AN extends ActionName<Ta> = ActionName<Ta>,
+> = Ta extends Thread.main ? MActionMap[AN & MActionName]["Sinkchunk"]
+  : WActionMap[AN & WActionName]["Sinkchunk"];
+
+interface Message<
+  Ta extends Thread,
+  AN extends ActionName<Ta> = ActionName<Ta>,
 > {
-  sourceName:string;
-  targetName:string;
+  sourceName: string;
+  targetName: string;
 
-  stream?:StreamKind;
-  streamId?:number;
+  stream?: StreamKind;
+  streamId?: number;
 
-  callback?:CallbackKind;
-  callbackId?:number;
+  callback?: CallbackKind;
+  callbackId?: number;
 
-  action?:AN;
-  data?:ActionData<Ta, AN>;
-  desiredSize?:number | null;
-  reason?:reason_t;
-  success?:boolean;
+  action?: AN;
+  data?: ActionData<Ta, AN>;
+  desiredSize?: number | null;
+  reason?: reason_t;
+  success?: boolean;
 
-  chunk?:ActionSinkchunk<Ta, AN>;
+  chunk?: ActionSinkchunk<Ta, AN>;
 }
-// #if DEV && INFO && PDFTS
-  function stringof<Ta extends Thread>( msg:Message<Ta> )
-  {
-    return `[${msg.sourceName} -> ${msg.targetName}]`
-      + (msg.stream ? ` stream_${msg.streamId}: ${StreamKind[msg.stream]}` : "")
-      + (msg.callback ? ` callback_${msg.callbackId}: ${CallbackKind[msg.callback]}` : "")
-      + (msg.action ? ` "${msg.action}"` : "");
-  }
+// #if _INFO && PDFTS
+function stringof<Ta extends Thread>(msg: Message<Ta>) {
+  return `[${msg.sourceName} -> ${msg.targetName}]` +
+    (msg.stream ? ` stream_${msg.streamId}: ${StreamKind[msg.stream]}` : "") +
+    (msg.callback
+      ? ` callback_${msg.callbackId}: ${CallbackKind[msg.callback]}`
+      : "") +
+    (msg.action ? ` "${msg.action}"` : "");
+}
 // #endif
 /*49-------------------------------------------*/
 
-interface StreamController< 
-  Ta extends Thread, 
-  AN extends ActionName<Ta>=ActionName<Ta> 
+interface StreamController<
+  Ta extends Thread,
+  AN extends ActionName<Ta> = ActionName<Ta>,
 > {
-  controller:ReadableStreamDefaultController< ActionSinkchunk<Ta,AN> >;
-  startCall:PromiseCap;
-  pullCall?:PromiseCap;
-  cancelCall?:PromiseCap;
-  isClosed:boolean,
+  controller: ReadableStreamDefaultController<ActionSinkchunk<Ta, AN>>;
+  startCall: PromiseCap;
+  pullCall?: PromiseCap;
+  cancelCall?: PromiseCap;
+  isClosed: boolean;
 }
 
-export class MessageHandler< 
+export class MessageHandler<
   Ta extends Thread,
-  Tn extends Thread=Ta extends Thread.main ? Thread.worker : Thread.main >
-{
+  Tn extends Thread = Ta extends Thread.main ? Thread.worker : Thread.main,
+> {
   static #ID = 0;
   readonly id = ++MessageHandler.#ID;
 
+  sourceName;
+  targetName;
+  comObj;
   callbackId = 1;
   streamId = 1;
-  streamSinks:StreamSink<Ta>[] = Object.create(null);
-  streamControllers:StreamController<Tn>[] = Object.create(null);
-  callbackCapabilities:PromiseCap<unknown>[] = Object.create(null);
-  actionHandler:Record< ActionName<Tn>, ActionHandler<Tn> > = Object.create(null);
+  streamSinks: StreamSink<Ta>[] = Object.create(null);
+  streamControllers: StreamController<Tn>[] = Object.create(null);
+  callbackCapabilities: PromiseCap<unknown>[] = Object.create(null);
+  actionHandler: Record<ActionName<Tn>, ActionHandler<Tn>> = Object.create(
+    null,
+  );
 
-  constructor( 
-    public sourceName:string, 
-    public targetName:string, 
-    public comObj:IWorker
-  ) {
-    comObj.addEventListener( "message", this.#onComObjOnMessage );
+  constructor(sourceName: string, targetName: string, comObj: IWorker) {
+    this.sourceName = sourceName;
+    this.targetName = targetName;
+    this.comObj = comObj;
+
+    comObj.addEventListener("message", this.#onComObjOnMessage);
   }
 
-  #onComObjOnMessage = ( event:MessageEvent<Message<Tn>> ) => 
-  {
+  #onComObjOnMessage = (event: MessageEvent<Message<Tn>>) => {
     const data = event.data;
-    if( data.targetName !== this.sourceName ) return;
-
-    // #if DEV && INFO && PDFTS_vv
-      console.log(`${global.indent}>>>>>>> MessageHandler_${this.sourceName}_${this.id}.#onComObjOnMessage() >>>>>>>`);
-      console.log(`${global.dent}${stringof(event.data)}`);
-    // #endif
-    if( data.stream )
-    {
-      this.#processStreamMessage( data );
-      // #if DEV && INFO && PDFTS_vv
-        global.outdent;
-      // #endif
+    if (data.targetName !== this.sourceName) {
       return;
     }
-    if( data.callback )
-    {
+    /*#static*/ if (_INFO && PDFTS_vv) {
+      console.log(
+        `${global.indent}>>>>>>> MessageHandler_${this.sourceName}_${this.id}.#onComObjOnMessage() >>>>>>>`,
+      );
+      console.log(`${global.dent}${stringof(event.data)}`);
+    }
+    if (data.stream) {
+      this.#processStreamMessage(data);
+      /*#static*/ if (_INFO && PDFTS_vv) {
+        global.outdent;
+      }
+      return;
+    }
+    if (data.callback) {
       const callbackId = data.callbackId!;
       const capability = this.callbackCapabilities[callbackId];
-      if( !capability )
+      if (!capability) {
         throw new Error(`Cannot resolve callback ${callbackId}`);
+      }
       delete this.callbackCapabilities[callbackId];
 
-      if( data.callback === CallbackKind.DATA )
-      {
+      if (data.callback === CallbackKind.DATA) {
         capability.resolve(data.data);
-      } 
-      else if( data.callback === CallbackKind.ERROR )
-      {
+      } else if (data.callback === CallbackKind.ERROR) {
         capability.reject(wrapReason(data.reason!));
-      } 
-      else {
+      } else {
         throw new Error("Unexpected callback case");
       }
-      // #if DEV && INFO && PDFTS_vv
+      /*#static*/ if (_INFO && PDFTS_vv) {
         global.outdent;
-      // #endif
+      }
       return;
     }
     const action = this.actionHandler[data.action!];
-    if( !action )
+    if (!action) {
       throw new Error(`Unknown action from worker: ${data.action}`);
-    if( data.callbackId )
-    {
+    }
+    if (data.callbackId) {
       const comObj = this.comObj;
       const cbSourceName = this.sourceName;
       const cbTargetName = data.sourceName;
 
-      new Promise( resolve => {
-        resolve( action(<any>data.data,<any>undefined) );
+      new Promise((resolve) => {
+        resolve(action(<any> data.data, <any> undefined));
       }).then(
-        result => {
+        (result) => {
           comObj.postMessage({
             sourceName: cbSourceName,
             targetName: cbTargetName,
             callback: CallbackKind.DATA,
             callbackId: data.callbackId,
             data: result,
-          }, undefined );
+          }, undefined);
         },
-        reason => {
+        (reason) => {
           comObj.postMessage({
             sourceName: cbSourceName,
             targetName: cbTargetName,
             callback: CallbackKind.ERROR,
             callbackId: data.callbackId,
             reason: wrapReason(reason),
-          }, undefined );
-        }
+          }, undefined);
+        },
       );
-      // #if DEV && INFO && PDFTS_vv
+      /*#static*/ if (_INFO && PDFTS_vv) {
         global.outdent;
-      // #endif
+      }
       return;
     }
-    if( data.streamId )
-    {
-      this.#createStreamSink( data );
-      // #if DEV && INFO && PDFTS_vv
+    if (data.streamId) {
+      this.#createStreamSink(data);
+      /*#static*/ if (_INFO && PDFTS_vv) {
         global.outdent;
-      // #endif
+      }
       return;
     }
-    action( <any>data.data, <any>undefined );
-    // #if DEV && INFO && PDFTS_vv
+    action(<any> data.data, <any> undefined);
+    /*#static*/ if (_INFO && PDFTS_vv) {
       global.outdent;
-    // #endif
+    }
   };
 
-  on<AN extends ActionName<Tn>>( actionName:AN, handler:ActionHandler<Tn,AN> ) 
-  {
-    // #if !PRODUCTION || TESTING
-      assert( typeof handler === "function",
-        'MessageHandler.on: Expected "handler" to be a function.'
+  on<AN extends ActionName<Tn>>(
+    actionName: AN,
+    handler: ActionHandler<Tn, AN>,
+  ) {
+    /*#static*/ if (_PDFDEV) {
+      assert(
+        typeof handler === "function",
+        'MessageHandler.on: Expected "handler" to be a function.',
       );
-    // #endif
+    }
     const ah = this.actionHandler;
-    if( ah[actionName] )
-    {
+    if (ah[actionName]) {
       throw new Error(`There is already an actionName called "${actionName}"`);
     }
-    ah[actionName] = < ActionHandler<Tn> ><unknown>handler;
+    ah[actionName] = <ActionHandler<Tn>> <unknown> handler;
   }
 
   /**
@@ -740,8 +749,10 @@ export class MessageHandler<
    * @param data - JSON data to send.
    * @param transfers - List of transfers/ArrayBuffers.
    */
-  send<AN extends ActionName<Ta>>( 
-    actionName:AN, data:ActionData<Ta,AN>, transfers?:Transferable[]
+  send<AN extends ActionName<Ta>>(
+    actionName: AN,
+    data: ActionData<Ta, AN>,
+    transfers?: Transferable[],
   ) {
     this.comObj.postMessage(
       {
@@ -750,7 +761,7 @@ export class MessageHandler<
         action: actionName,
         data,
       },
-      <any>transfers
+      <any> transfers,
     );
   }
 
@@ -762,12 +773,14 @@ export class MessageHandler<
    * @param transfers List of transfers/ArrayBuffers.
    * @return Promise to be resolved with response data.
    */
-  sendWithPromise<AN extends ActionName<Ta>>( 
-    actionName:AN, data:ActionData<Ta,AN>, transfers?:Transferable[] 
-  ):Promise< ActionReturn<Ta,AN>> {
+  sendWithPromise<AN extends ActionName<Ta>>(
+    actionName: AN,
+    data: ActionData<Ta, AN>,
+    transfers?: Transferable[],
+  ): Promise<ActionReturn<Ta, AN>> {
     const callbackId = this.callbackId++;
     const capability = createPromiseCap<ActionReturn<Ta, AN>>();
-    this.callbackCapabilities[callbackId] = <PromiseCap< unknown >>capability;
+    this.callbackCapabilities[callbackId] = <PromiseCap<unknown>> capability;
     try {
       this.comObj.postMessage(
         {
@@ -777,7 +790,7 @@ export class MessageHandler<
           callbackId,
           data,
         },
-        <any>transfers
+        <any> transfers,
       );
     } catch (ex) {
       capability.reject(ex);
@@ -794,20 +807,20 @@ export class MessageHandler<
    * @param transfers List of transfers/ArrayBuffers.
    * @return ReadableStream to read data in chunks.
    */
-  sendWithStream<AN extends ActionName<Ta>>( 
-    actionName:AN, data:ActionData<Ta,AN>,
-    queueingStrategy?:QueuingStrategy<ActionSinkchunk<Ta,AN>>, 
-    transfers?:Transferable[] 
+  sendWithStream<AN extends ActionName<Ta>>(
+    actionName: AN,
+    data: ActionData<Ta, AN>,
+    queueingStrategy?: QueuingStrategy<ActionSinkchunk<Ta, AN>>,
+    transfers?: Transferable[],
   ) {
     const streamId = this.streamId++,
       sourceName = this.sourceName,
       targetName = this.targetName,
       comObj = this.comObj;
 
-    return new ReadableStream<ActionSinkchunk<Ta,AN>>(
+    return new ReadableStream<ActionSinkchunk<Ta, AN>>(
       {
-        start: ( controller:ReadableStreamDefaultController ) => 
-        {
+        start: (controller: ReadableStreamDefaultController) => {
           const startCapability = createPromiseCap();
           this.streamControllers[streamId] = {
             controller,
@@ -823,14 +836,13 @@ export class MessageHandler<
               data,
               desiredSize: controller.desiredSize,
             },
-            <any>transfers
+            <any> transfers,
           );
           // Return Promise for Async process, to signal success/failure.
           return startCapability.promise;
         },
 
-        pull: ( controller:ReadableStreamDefaultController ) => 
-        {
+        pull: (controller: ReadableStreamDefaultController) => {
           const pullCapability = createPromiseCap();
           this.streamControllers[streamId].pullCall = pullCapability;
           comObj.postMessage({
@@ -839,14 +851,13 @@ export class MessageHandler<
             stream: StreamKind.PULL,
             streamId,
             desiredSize: controller.desiredSize,
-          }, undefined );
+          }, undefined);
           // Returning Promise will not call "pull"
           // again until current pull is resolved.
           return pullCapability.promise;
         },
 
-        cancel: ( reason:reason_t ) => 
-        {
+        cancel: (reason: reason_t) => {
           // assert(reason instanceof Error, "cancel must have a valid reason");
           const cancelCapability = createPromiseCap();
           this.streamControllers[streamId].cancelCall = cancelCapability;
@@ -862,12 +873,11 @@ export class MessageHandler<
           return cancelCapability.promise;
         },
       },
-      queueingStrategy
+      queueingStrategy,
     );
   }
 
-  #createStreamSink( data:Message<Tn> )
-  {
+  #createStreamSink(data: Message<Tn>) {
     const streamId = data.streamId!,
       sourceName = this.sourceName,
       targetName = data.sourceName,
@@ -876,18 +886,17 @@ export class MessageHandler<
       action = this.actionHandler[data.action!];
 
     const sinkCapability = createPromiseCap();
-    const streamSink:StreamSink<Ta> = {
-      enqueue( chunk, size=1, transfers ) 
-      {
-        if( this.isCancelled ) return;
-
+    const streamSink: StreamSink<Ta> = {
+      enqueue(chunk, size = 1, transfers) {
+        if (this.isCancelled) {
+          return;
+        }
         const lastDesiredSize = this.desiredSize!;
         this.desiredSize! -= size;
         // Enqueue decreases the desiredSize property of sink,
         // so when it changes from positive to negative,
         // set ready as unresolved promise.
-        if( lastDesiredSize > 0 && this.desiredSize! <= 0 )
-        {
+        if (lastDesiredSize > 0 && this.desiredSize! <= 0) {
           this.sinkCapability = createPromiseCap();
           this.ready = this.sinkCapability.promise;
         }
@@ -899,14 +908,14 @@ export class MessageHandler<
             streamId,
             chunk,
           },
-          <any>transfers
+          <any> transfers,
         );
       },
 
-      close() 
-      {
-        if( this.isCancelled ) return;
-
+      close() {
+        if (this.isCancelled) {
+          return;
+        }
         this.isCancelled = true;
         comObj.postMessage({
           sourceName,
@@ -917,11 +926,11 @@ export class MessageHandler<
         delete self.streamSinks[streamId];
       },
 
-      error( reason ) 
-      {
-        // assert(reason instanceof Error, "error must have a valid reason");
-        if( this.isCancelled ) return;
-
+      error(reason) {
+        assert(reason instanceof Error, "error must have a valid reason");
+        if (this.isCancelled) {
+          return;
+        }
         this.isCancelled = true;
         comObj.postMessage({
           sourceName,
@@ -929,7 +938,7 @@ export class MessageHandler<
           stream: StreamKind.ERROR,
           streamId,
           reason: wrapReason(reason),
-        }, undefined );
+        }, undefined);
       },
 
       sinkCapability,
@@ -941,8 +950,8 @@ export class MessageHandler<
     sinkCapability.resolve();
     this.streamSinks[streamId] = streamSink;
 
-    new Promise( resolve => {
-      resolve( action( <any>data.data, <any>streamSink ) );
+    new Promise((resolve) => {
+      resolve(action(<any> data.data, <any> streamSink));
     }).then(
       () => {
         comObj.postMessage({
@@ -953,7 +962,7 @@ export class MessageHandler<
           success: true,
         });
       },
-      reason => {
+      (reason) => {
         comObj.postMessage({
           sourceName,
           targetName,
@@ -961,12 +970,11 @@ export class MessageHandler<
           streamId,
           reason: wrapReason(reason),
         });
-      }
+      },
     );
   }
 
-  #processStreamMessage( data:Message<Tn> )
-  {
+  #processStreamMessage(data: Message<Tn>) {
     const streamId = data.streamId!,
       sourceName = this.sourceName,
       targetName = data.sourceName,
@@ -974,30 +982,24 @@ export class MessageHandler<
     const streamController = this.streamControllers[streamId],
       streamSink = this.streamSinks[streamId];
 
-    switch( data.stream )
-    {
+    switch (data.stream) {
       case StreamKind.START_COMPLETE:
-        if (data.success) 
-        {
+        if (data.success) {
           streamController.startCall.resolve();
-        }
-        else {
-          streamController.startCall.reject( wrapReason(data.reason!) );
+        } else {
+          streamController.startCall.reject(wrapReason(data.reason!));
         }
         break;
       case StreamKind.PULL_COMPLETE:
-        if( data.success )
-        {
+        if (data.success) {
           streamController.pullCall!.resolve();
-        } 
-        else {
+        } else {
           streamController.pullCall!.reject(wrapReason(data.reason!));
         }
         break;
       case StreamKind.PULL:
         // Ignore any pull after close is called.
-        if( !streamSink )
-        {
+        if (!streamSink) {
           comObj.postMessage({
             sourceName,
             targetName,
@@ -1009,15 +1011,14 @@ export class MessageHandler<
         }
         // Pull increases the desiredSize property of sink, so when it changes
         // from negative to positive, set ready property as resolved promise.
-        if( streamSink.desiredSize! <= 0 && data.desiredSize! > 0 )
-        {
+        if (streamSink.desiredSize! <= 0 && data.desiredSize! > 0) {
           streamSink.sinkCapability!.resolve();
         }
         // Reset desiredSize property of sink on every pull.
         streamSink.desiredSize = data.desiredSize;
 
-        new Promise( resolve => {
-          resolve( streamSink.onPull && streamSink.onPull() );
+        new Promise((resolve) => {
+          resolve(streamSink.onPull && streamSink.onPull());
         }).then(
           () => {
             comObj.postMessage({
@@ -1028,7 +1029,7 @@ export class MessageHandler<
               success: true,
             });
           },
-          reason => {
+          (reason) => {
             comObj.postMessage({
               sourceName,
               targetName,
@@ -1036,19 +1037,21 @@ export class MessageHandler<
               streamId,
               reason: wrapReason(reason),
             });
-          }
+          },
         );
         break;
       case StreamKind.ENQUEUE:
         assert(streamController, "enqueue should have stream controller");
-        if( streamController.isClosed )
+        if (streamController.isClosed) {
           break;
+        }
         streamController.controller.enqueue(data.chunk);
         break;
       case StreamKind.CLOSE:
         assert(streamController, "close should have stream controller");
-        if( streamController.isClosed )
+        if (streamController.isClosed) {
           break;
+        }
         streamController.isClosed = true;
         streamController.controller.close();
         this.#deleteStreamController(streamController, streamId);
@@ -1059,22 +1062,22 @@ export class MessageHandler<
         this.#deleteStreamController(streamController, streamId);
         break;
       case StreamKind.CANCEL_COMPLETE:
-        if( data.success )
-        {
+        if (data.success) {
           streamController.cancelCall!.resolve();
-        } 
-        else {
-          streamController.cancelCall!.reject( wrapReason(data.reason!) );
+        } else {
+          streamController.cancelCall!.reject(wrapReason(data.reason!));
         }
         this.#deleteStreamController(streamController, streamId);
         break;
       case StreamKind.CANCEL:
-        if( !streamSink )
+        if (!streamSink) {
           break;
+        }
 
-        new Promise( resolve => {
+        new Promise((resolve) => {
           resolve(
-            streamSink.onCancel && streamSink.onCancel( wrapReason(data.reason!) )
+            streamSink.onCancel &&
+              streamSink.onCancel(wrapReason(data.reason!)),
           );
         }).then(
           () => {
@@ -1086,7 +1089,7 @@ export class MessageHandler<
               success: true,
             });
           },
-          reason => {
+          (reason) => {
             comObj.postMessage({
               sourceName,
               targetName,
@@ -1094,9 +1097,9 @@ export class MessageHandler<
               streamId,
               reason: wrapReason(reason),
             });
-          }
+          },
         );
-        streamSink.sinkCapability!.reject( wrapReason(data.reason!) );
+        streamSink.sinkCapability!.reject(wrapReason(data.reason!));
         streamSink.isCancelled = true;
         delete this.streamSinks[streamId];
         break;
@@ -1105,8 +1108,10 @@ export class MessageHandler<
     }
   }
 
-  async #deleteStreamController( streamController:StreamController<Tn>, streamId:number )
-  {
+  async #deleteStreamController(
+    streamController: StreamController<Tn>,
+    streamId: number,
+  ) {
     // Delete the `streamController` only when the start, pull, and cancel
     // capabilities have settled, to prevent `TypeError`s.
     await Promise.allSettled([
@@ -1117,9 +1122,8 @@ export class MessageHandler<
     delete this.streamControllers[streamId];
   }
 
-  destroy() 
-  {
-    this.comObj.removeEventListener( "message", this.#onComObjOnMessage );
+  destroy() {
+    this.comObj.removeEventListener("message", this.#onComObjOnMessage);
   }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

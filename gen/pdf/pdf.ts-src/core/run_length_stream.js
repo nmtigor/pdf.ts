@@ -2,14 +2,14 @@
  * nmtigor (https://github.com/nmtigor) @2022
  */
 import { DecodeStream } from "./decode_stream.js";
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 export class RunLengthStream extends DecodeStream {
     constructor(str, maybeLength) {
         super(maybeLength);
         this.str = str;
         this.dict = str.dict;
     }
-    /** @implements */
+    /** @implement */
     readBlock() {
         // The repeatHeader has following format. The first byte defines type of run
         // and amount of bytes to repeat/copy: n = 0 through 127 - copy next n bytes
@@ -44,5 +44,5 @@ export class RunLengthStream extends DecodeStream {
         this.bufferLength = bufferLength;
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=run_length_stream.js.map

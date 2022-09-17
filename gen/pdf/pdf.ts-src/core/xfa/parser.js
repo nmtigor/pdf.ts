@@ -16,10 +16,10 @@
  * limitations under the License.
  */
 import { warn } from "../../shared/util.js";
-import { XMLParserBase, XMLParserErrorCode } from "../xml_parser.js";
+import { XMLParserBase, XMLParserErrorCode, } from "../xml_parser.js";
 import { Builder } from "./builder.js";
-import { $acceptWhitespace, $clean, $content, $finalize, $globalData, $isCDATAXml, $nsAttributes, $onChild, $onText, $setId } from "./xfa_object.js";
-/*81---------------------------------------------------------------------------*/
+import { $acceptWhitespace, $clean, $content, $finalize, $globalData, $isCDATAXml, $nsAttributes, $onChild, $onText, $setId, } from "./xfa_object.js";
+/*80--------------------------------------------------------------------------*/
 export class XFAParser extends XMLParserBase {
     #builder;
     #stack = [];
@@ -39,21 +39,23 @@ export class XFAParser extends XMLParserBase {
     }
     parse(data) {
         this.parseXml(data);
-        if (this._errorCode !== XMLParserErrorCode.NoError)
+        if (this._errorCode !== XMLParserErrorCode.NoError) {
             return undefined;
+        }
         this.#current[$finalize]();
         return this.#current.element;
     }
     onText(text) {
         // Normally by definition a &nbsp is unbreakable
         // but in real life Acrobat can break strings on &nbsp.
-        text = text.replace(this.#nbsps, match => match.slice(1) + " ");
+        text = text.replace(this.#nbsps, (match) => match.slice(1) + " ");
         if (this.#richText || this.#current[$acceptWhitespace]()) {
             this.#current[$onText](text, this.#richText);
             return;
         }
-        if (this.#whiteRegex.test(text))
+        if (this.#whiteRegex.test(text)) {
             return;
+        }
         this.#current[$onText](text.trim());
     }
     onCdata(text) {
@@ -109,7 +111,10 @@ export class XFAParser extends XMLParserBase {
         if (i === -1) {
             return [name, undefined];
         }
-        return [name.substring(i + 1), nsAgnostic ? "" : name.substring(0, i)];
+        return [
+            name.substring(i + 1),
+            nsAgnostic ? "" : name.substring(0, i),
+        ];
     }
     onBeginElement(tagName, attributes, isEmpty) {
         const [namespace, prefixes, attributesObj] = this._mkAttributes(attributes, tagName);
@@ -151,10 +156,10 @@ export class XFAParser extends XMLParserBase {
         node[$clean](this.#builder);
         return undefined;
     }
-    /** @implements */
+    /** @implement */
     onError(code) {
         this._errorCode = code;
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=parser.js.map

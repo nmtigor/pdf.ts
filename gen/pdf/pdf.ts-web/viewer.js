@@ -15,8 +15,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { DENO } from "../../global.js";
+import { CHROME, GENERIC, MOZCENTRAL, PRODUCTION } from "../../global.js";
+import { html } from "../../lib/dom.js";
 import { viewerapp } from "./app.js";
-/*81---------------------------------------------------------------------------*/
+import { AppOptions } from "./app_options.js";
+/*80--------------------------------------------------------------------------*/
 // /* eslint-disable-next-line no-unused-vars */
 // const pdfjsVersion =
 //   typeof PDFJSDev !== "undefined" ? PDFJSDev.eval("BUNDLE_VERSION") : void 0;
@@ -25,18 +29,27 @@ import { viewerapp } from "./app.js";
 //   typeof PDFJSDev !== "undefined" ? PDFJSDev.eval("BUNDLE_BUILD") : void 0;
 // window.PDFViewerApplication = PDFViewerApplication;
 // window.PDFViewerApplicationOptions = AppOptions;
-import("./genericcom.js");
-import("./pdf_print_service.js");
+/*#static*/ 
+/*#static*/ 
+/*#static*/  {
+    import("./genericcom.js");
+}
+/*#static*/ 
+/*#static*/  {
+    import("./pdf_print_service.js");
+}
 function getViewerConfiguration() {
     let errorWrapper = undefined;
-    errorWrapper = {
-        container: document.getElementById("errorWrapper"),
-        errorMessage: document.getElementById("errorMessage"),
-        closeButton: document.getElementById("errorClose"),
-        errorMoreInfo: document.getElementById("errorMoreInfo"),
-        moreInfoButton: document.getElementById("errorShowMore"),
-        lessInfoButton: document.getElementById("errorShowLess"),
-    };
+    /*#static*/  {
+        errorWrapper = {
+            container: document.getElementById("errorWrapper"),
+            errorMessage: document.getElementById("errorMessage"),
+            closeButton: document.getElementById("errorClose"),
+            errorMoreInfo: document.getElementById("errorMoreInfo"),
+            moreInfoButton: document.getElementById("errorShowMore"),
+            lessInfoButton: document.getElementById("errorShowLess"),
+        };
+    }
     return {
         appContainer: document.body,
         mainContainer: document.getElementById("viewerContainer"),
@@ -86,8 +99,21 @@ function getViewerConfiguration() {
             /**
              * Button to open a new document.
              */
-            openFile: document.getElementById("openFile"),
+            openFile: GENERIC /*#static*/
+                ? document.getElementById("openFile")
+                : undefined,
             print: document.getElementById("print"),
+            /**
+             * Button to disable editing.
+             */
+            editorNoneButton: document.getElementById("editorNone"),
+            /**
+             * Button to switch to FreeText editing.
+             */
+            editorFreeTextButton: document.getElementById("editorFreeText"),
+            editorFreeTextParamsToolbar: document.getElementById("editorFreeTextParamsToolbar"),
+            editorInkButton: document.getElementById("editorInk"),
+            editorInkParamsToolbar: document.getElementById("editorInkParamsToolbar"),
             /**
              * Button to switch to presentation mode.
              */
@@ -117,7 +143,12 @@ function getViewerConfiguration() {
             /**
              * Button to open a file.
              */
-            openFileButton: document.getElementById("secondaryOpenFile"),
+            openFileButton: GENERIC /*#static*/
+                ? document.getElementById("secondaryOpenFile")
+                : undefined,
+            /**
+             * Button to print the document.
+             */
             printButton: document.getElementById("secondaryPrint"),
             /**
              * Button to download the document.
@@ -290,37 +321,48 @@ function getViewerConfiguration() {
                 linearized: document.getElementById("linearizedField"),
             },
         },
+        annotationEditorParams: {
+            editorFreeTextFontSize: document.getElementById("editorFreeTextFontSize"),
+            editorFreeTextColor: document.getElementById("editorFreeTextColor"),
+            editorInkColor: document.getElementById("editorInkColor"),
+            editorInkThickness: document.getElementById("editorInkThickness"),
+            editorInkOpacity: document.getElementById("editorInkOpacity"),
+        },
         errorWrapper,
         printContainer: document.getElementById("printContainer"),
-        openFileInput: document.getElementById("fileInput"),
+        openFileInput: GENERIC /*#static*/
+            ? document.getElementById("fileInput")
+            : undefined,
         debuggerScriptPath: "./debugger.js",
     };
 }
 function webViewerLoad() {
     const config = getViewerConfiguration();
-    if (window.chrome) {
-        const link = document.createElement("link");
-        link.rel = "stylesheet";
-        // link.href = "../build/dev-css/viewer.css";
-        link.href = "res/pdf/pdf.ts-web/viewer.css";
-        document.head.appendChild(link);
+    /*#static*/  {
+        if (window.chrome) {
+            const link = html("link");
+            link.rel = "stylesheet";
+            // link.href = "../build/dev-css/viewer.css";
+            link.href = "res/pdf/pdf.ts-web/viewer.css";
+            document.head.append(link);
+        }
+        Promise.all([
+            import("./genericcom.js"),
+            import("./pdf_print_service.js"),
+        ]).then(([genericCom, pdfPrintService]) => {
+            viewerapp.run(config);
+        });
     }
-    Promise.all([
-        import("./genericcom.js"),
-        import("./pdf_print_service.js"),
-    ]).then(([genericCom, pdfPrintService]) => {
-        viewerapp.run(config);
-    });
 }
 // Block the "load" event until all pages are loaded, to ensure that printing
 // works in Firefox; see https://bugzilla.mozilla.org/show_bug.cgi?id=1618553
 document.blockUnblockOnload?.(true);
-if (document.readyState === "interactive"
-    || document.readyState === "complete") {
+if (document.readyState === "interactive" ||
+    document.readyState === "complete") {
     webViewerLoad();
 }
 else {
     document.addEventListener("DOMContentLoaded", webViewerLoad, true);
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=viewer.js.map

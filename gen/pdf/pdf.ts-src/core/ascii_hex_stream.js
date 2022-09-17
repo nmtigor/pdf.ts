@@ -2,8 +2,8 @@
  * nmtigor (https://github.com/nmtigor) @2022
  */
 import { DecodeStream } from "./decode_stream.js";
-/*81---------------------------------------------------------------------------*/
-class AsciiHexStream extends DecodeStream {
+/*80--------------------------------------------------------------------------*/
+export class AsciiHexStream extends DecodeStream {
     firstDigit = -1;
     constructor(str, maybeLength) {
         // Most streams increase in size when decoded, but AsciiHex streams shrink
@@ -15,7 +15,7 @@ class AsciiHexStream extends DecodeStream {
         this.str = str;
         this.dict = str.dict;
     }
-    /** @implements */
+    /** @implement */
     readBlock() {
         const UPSTREAM_BLOCK_SIZE = 8000;
         const bytes = this.str.getBytes(UPSTREAM_BLOCK_SIZE);
@@ -39,9 +39,8 @@ class AsciiHexStream extends DecodeStream {
             else if (ch === /* '>' = */ 0x3e) {
                 this.eof = true;
                 break;
-            }
+            } // Probably whitespace, ignoring.
             else {
-                // Probably whitespace, ignoring.
                 continue;
             }
             if (firstDigit < 0) {
@@ -61,6 +60,5 @@ class AsciiHexStream extends DecodeStream {
         this.bufferLength = bufferLength;
     }
 }
-export { AsciiHexStream };
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=ascii_hex_stream.js.map

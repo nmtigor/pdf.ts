@@ -1,4 +1,4 @@
-import { XMLParserBase, XMLParserErrorCode, type XMLAttr } from "../xml_parser.js";
+import { type XMLAttr, XMLParserBase, XMLParserErrorCode } from "../xml_parser.js";
 import { type XFANsAttrs, type XFAPrefix } from "./alias.js";
 import { XFAObject } from "./xfa_object.js";
 import { type XFANsXhtml } from "./xhtml.js";
@@ -15,7 +15,7 @@ export declare class XFAParser extends XMLParserBase {
     _getNameAndPrefix(name: string, nsAgnostic: boolean): readonly [string, string] | readonly [string, undefined];
     onBeginElement(tagName: string, attributes: XMLAttr[], isEmpty: boolean): void;
     onEndElement(name: string): undefined;
-    /** @implements */
+    /** @implement */
     onError(code: XMLParserErrorCode): void;
 }
 //# sourceMappingURL=parser.d.ts.map

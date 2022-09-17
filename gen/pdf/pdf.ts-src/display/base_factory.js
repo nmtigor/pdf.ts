@@ -72,8 +72,8 @@ export class BaseCMapReaderFactory {
         const compressionType = this.isCompressed
             ? CMapCompressionType.BINARY
             : CMapCompressionType.NONE;
-        return this._fetchData(url, compressionType).catch(reason => {
-            throw new Error(`Unable to load ${this.isCompressed ? "binary " : ""}CMap at: ${url}`);
+        return this._fetchData(url, compressionType).catch((reason) => {
+            throw new Error(`Unable to load ${this.isCompressed ? "binary " : ""}CMap at: ${url}`, { cause: reason });
         });
     }
 }
@@ -91,21 +91,23 @@ export class BaseStandardFontDataFactory {
             throw new Error("Font filename must be specified.");
         }
         const url = `${this.baseUrl}${filename}`;
-        return this._fetchData(url).catch(reason => {
+        return this._fetchData(url).catch((reason) => {
             throw new Error(`Unable to load font data at: ${url}`);
         });
     }
 }
 export class BaseSVGFactory {
     /** @final */
-    create(width, height) {
+    create(width, height, skipDimensions = false) {
         if (width <= 0 || height <= 0) {
             throw new Error("Invalid SVG dimensions");
         }
         const svg = this._createSVG("svg:svg");
         svg.setAttribute("version", "1.1");
-        svg.setAttribute("width", `${width}px`);
-        svg.setAttribute("height", `${height}px`);
+        if (!skipDimensions) {
+            svg.setAttribute("width", `${width}px`);
+            svg.setAttribute("height", `${height}px`);
+        }
         svg.setAttribute("preserveAspectRatio", "none");
         svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
         return svg;
@@ -118,5 +120,5 @@ export class BaseSVGFactory {
         return this._createSVG(type);
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=base_factory.js.map

@@ -17,41 +17,36 @@
  * limitations under the License.
  */
 
-import { readUint32 } from "./core_utils.js";
-import { string32 } from "../shared/util.js";
-/*81---------------------------------------------------------------------------*/
+import { string32 } from "../shared/util.ts";
+import { readUint32 } from "./core_utils.ts";
+/*80--------------------------------------------------------------------------*/
 
-export function writeInt16( dest:Uint8Array, offset:number, num:number ) 
-{
+export function writeInt16(dest: Uint8Array, offset: number, num: number) {
   dest[offset] = (num >> 8) & 0xff;
   dest[offset + 1] = num & 0xff;
 }
 
-export function writeInt32( dest:Uint8Array, offset:number, num:number ) 
-{
+export function writeInt32(dest: Uint8Array, offset: number, num: number) {
   dest[offset] = (num >> 24) & 0xff;
   dest[offset + 1] = (num >> 16) & 0xff;
   dest[offset + 2] = (num >> 8) & 0xff;
   dest[offset + 3] = num & 0xff;
 }
 
-export function writeData( dest:Uint8Array, offset:number, data:Uint8Array | string | number[] ) 
-{
-  if (data instanceof Uint8Array) 
-  {
+export function writeData(
+  dest: Uint8Array,
+  offset: number,
+  data: Uint8Array | string | number[],
+) {
+  if (data instanceof Uint8Array) {
     dest.set(data, offset);
-  } 
-  else if (typeof data === "string") 
-  {
-    for (let i = 0, ii = data.length; i < ii; i++) 
-    {
+  } else if (typeof data === "string") {
+    for (let i = 0, ii = data.length; i < ii; i++) {
       dest[offset++] = data.charCodeAt(i) & 0xff;
     }
-  } 
-  else {
+  } else {
     // treating everything else as array
-    for (let i = 0, ii = data.length; i < ii; i++) 
-    {
+    for (let i = 0, ii = data.length; i < ii; i++) {
       dest[offset++] = data[i] & 0xff;
     }
   }
@@ -60,7 +55,7 @@ export function writeData( dest:Uint8Array, offset:number, data:Uint8Array | str
 const OTF_HEADER_SIZE = 12;
 const OTF_TABLE_ENTRY_SIZE = 16;
 
-export const VALID_TABLES = <const>[
+export const VALID_TABLES = [
   "OS/2",
   "cmap",
   "head",
@@ -75,37 +70,31 @@ export const VALID_TABLES = <const>[
   "prep",
   "cvt ",
   "CFF ",
-];
+] as const;
 export type OTTag = (typeof VALID_TABLES)[number];
 
-export interface OTTable
-{
-  tag:OTTag;
-  checksum:number;
-  offset:number;
-  length:number;
-  data:Uint8Array;
+export interface OTTable {
+  tag: OTTag;
+  checksum: number;
+  offset: number;
+  length: number;
+  data: Uint8Array;
 }
 
-export class OpenTypeFileBuilder
-{
+export class OpenTypeFileBuilder {
   sfnt;
-  tables:Record<OTTag, 
-    OTTable | Uint8Array | string | number[]
-  > = Object.create(null);
+  tables: Record<OTTag, OTTable | Uint8Array | string | number[]> = Object
+    .create(null);
 
-  constructor( sfnt:string )
-  {
+  constructor(sfnt: string) {
     this.sfnt = sfnt;
     this.tables = Object.create(null);
   }
 
-  static getSearchParams( entriesCount:number, entrySize:number )
-  {
+  static getSearchParams(entriesCount: number, entrySize: number) {
     let maxPower2 = 1,
       log2 = 0;
-    while ((maxPower2 ^ entriesCount) > maxPower2) 
-    {
+    while ((maxPower2 ^ entriesCount) > maxPower2) {
       maxPower2 <<= 1;
       log2++;
     }
@@ -117,13 +106,12 @@ export class OpenTypeFileBuilder
     };
   }
 
-  toArray()
-  {
+  toArray() {
     let sfnt = this.sfnt;
 
     // Tables needs to be written by ascendant alphabetic order
     const tables = this.tables;
-    const tablesNames = <OTTag[]>Object.keys(tables);
+    const tablesNames = <OTTag[]> Object.keys(tables);
     tablesNames.sort();
     const numTables = tablesNames.length;
 
@@ -131,8 +119,7 @@ export class OpenTypeFileBuilder
     // layout the tables data
     let offset = OTF_HEADER_SIZE + numTables * OTF_TABLE_ENTRY_SIZE;
     const tableOffsets = [offset];
-    for (i = 0; i < numTables; i++) 
-    {
+    for (i = 0; i < numTables; i++) {
       table = tables[tablesNames[i]];
       const paddedLength = ((table.length + 3) & ~3) >>> 0;
       offset += paddedLength;
@@ -141,15 +128,13 @@ export class OpenTypeFileBuilder
 
     const file = new Uint8Array(offset);
     // write the table data first (mostly for checksum)
-    for (i = 0; i < numTables; i++) 
-    {
+    for (i = 0; i < numTables; i++) {
       table = tables[tablesNames[i]];
-      writeData( file, tableOffsets[i], <Uint8Array | string | number[]>table );
+      writeData(file, tableOffsets[i], <Uint8Array | string | number[]> table);
     }
 
     // sfnt version (4 bytes)
-    if (sfnt === "true") 
-    {
+    if (sfnt === "true") {
       // Windows hates the Mac TrueType sfnt version number
       sfnt = string32(0x00010000);
     }
@@ -172,8 +157,7 @@ export class OpenTypeFileBuilder
 
     offset = OTF_HEADER_SIZE;
     // writing table entries
-    for (i = 0; i < numTables; i++) 
-    {
+    for (i = 0; i < numTables; i++) {
       tableName = tablesNames[i];
       file[offset] = tableName.charCodeAt(0) & 0xff;
       file[offset + 1] = tableName.charCodeAt(1) & 0xff;
@@ -182,8 +166,7 @@ export class OpenTypeFileBuilder
 
       // checksum
       let checksum = 0;
-      for (j = tableOffsets[i], jj = tableOffsets[i + 1]; j < jj; j += 4) 
-      {
+      for (j = tableOffsets[i], jj = tableOffsets[i + 1]; j < jj; j += 4) {
         const quad = readUint32(file, j);
         checksum = (checksum + quad) >>> 0;
       }
@@ -199,13 +182,11 @@ export class OpenTypeFileBuilder
     return file;
   }
 
-  addTable( tag:OTTag, data:Uint8Array | string | number[] )
-  {
-    if (tag in this.tables) 
-    {
+  addTable(tag: OTTag, data: Uint8Array | string | number[]) {
+    if (tag in this.tables) {
       throw new Error("Table " + tag + " already exists");
     }
     this.tables[tag] = data;
   }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

@@ -15,13 +15,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { CFF, CFFCharset, CFFCompiler, CFFHeader, CFFIndex, CFFPrivateDict, CFFStandardStrings, CFFStrings, CFFTopDict, NUM_STANDARD_CFF_STRINGS, } from "./cff_parser.js";
-import { SEAC_ANALYSIS_ENABLED, type1FontGlyphMapping } from "./fonts_utils.js";
+import { warn } from "../shared/util.js";
+import { CFF, CFFCharset, CFFCompiler, CFFHeader, CFFIndex, CFFPrivateDict, CFFStandardStrings, CFFStrings, CFFTopDict, NUM_STANDARD_CFF_STRINGS } from "./cff_parser.js";
 import { isWhiteSpace } from "./core_utils.js";
+import { SEAC_ANALYSIS_ENABLED, type1FontGlyphMapping } from "./fonts_utils.js";
 import { Stream } from "./stream.js";
 import { Type1Parser } from "./type1_parser.js";
-import { warn } from "../shared/util.js";
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 function findBlock(streamBytes, signature, startIndex) {
     const streamBytesLength = streamBytes.length;
     const signatureLength = signature.length;
@@ -130,7 +130,9 @@ function getEexecBlock(stream, suggestedLength) {
  */
 export class Type1Font {
     charstrings;
-    get numGlyphs() { return this.charstrings.length + 1; }
+    get numGlyphs() {
+        return this.charstrings.length + 1;
+    }
     data;
     seacs;
     constructor(name, file, properties) {
@@ -144,11 +146,10 @@ export class Type1Font {
         const pfbHeaderPresent = pfbHeader[0] === 0x80 && pfbHeader[1] === 0x01;
         if (pfbHeaderPresent) {
             file.skip(PFB_HEADER_SIZE);
-            headerBlockLength =
-                (pfbHeader[5] << 24) |
-                    (pfbHeader[4] << 16) |
-                    (pfbHeader[3] << 8) |
-                    pfbHeader[2];
+            headerBlockLength = (pfbHeader[5] << 24) |
+                (pfbHeader[4] << 16) |
+                (pfbHeader[3] << 8) |
+                pfbHeader[2];
         }
         // Get the data block containing glyphs and subrs information
         const headerBlock = getHeaderBlock(file, headerBlockLength);
@@ -156,11 +157,10 @@ export class Type1Font {
         headerBlockParser.extractFontHeader(properties);
         if (pfbHeaderPresent) {
             pfbHeader = file.getBytes(PFB_HEADER_SIZE);
-            eexecBlockLength =
-                (pfbHeader[5] << 24) |
-                    (pfbHeader[4] << 16) |
-                    (pfbHeader[3] << 8) |
-                    pfbHeader[2];
+            eexecBlockLength = (pfbHeader[5] << 24) |
+                (pfbHeader[4] << 16) |
+                (pfbHeader[3] << 8) |
+                pfbHeader[2];
         }
         // Decrypt the data blocks and retrieve it's content
         const eexecBlock = getEexecBlock(file, eexecBlockLength);
@@ -179,8 +179,8 @@ export class Type1Font {
     getCharset() {
         const charset = [".notdef"];
         const charstrings = this.charstrings;
-        for (let glyphId = 0; glyphId < charstrings.length; glyphId++) {
-            charset.push(charstrings[glyphId].glyphName);
+        for (const { glyphName } of this.charstrings) {
+            charset.push(glyphName);
         }
         return charset;
     }
@@ -353,5 +353,5 @@ export class Type1Font {
         return compiler.compile();
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=type1_font.js.map

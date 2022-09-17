@@ -17,33 +17,34 @@
  * limitations under the License.
  */
 
-import { BaseStream } from "./base_stream.js";
-import { DecodeStream } from "./decode_stream.js";
-/*81---------------------------------------------------------------------------*/
+import { BaseStream } from "./base_stream.ts";
+import { DecodeStream } from "./decode_stream.ts";
+/*80--------------------------------------------------------------------------*/
 
-interface LZWState
-{
-  earlyChange:number,
-  codeLength:number,
-  prevCode?:number | undefined,
-  nextCode:number,
-  dictionaryValues:Uint8Array,
-  dictionaryLengths:Uint16Array,
-  dictionaryPrevCodes:Uint16Array,
-  currentSequence:Uint8Array,
-  currentSequenceLength:number,
+interface LZWState {
+  earlyChange: number;
+  codeLength: number;
+  prevCode?: number | undefined;
+  nextCode: number;
+  dictionaryValues: Uint8Array;
+  dictionaryLengths: Uint16Array;
+  dictionaryPrevCodes: Uint16Array;
+  currentSequence: Uint8Array;
+  currentSequenceLength: number;
 }
 
-export class LZWStream extends DecodeStream
-{
+export class LZWStream extends DecodeStream {
   cachedData = 0;
   bitsCached = 0;
 
-  lzwState?:LZWState;
+  lzwState?: LZWState;
 
-  constructor( str:BaseStream, maybeLength:number | undefined, earlyChange:number )
-  {
-    super( maybeLength );
+  constructor(
+    str: BaseStream,
+    maybeLength: number | undefined,
+    earlyChange: number,
+  ) {
+    super(maybeLength);
 
     this.str = str;
     this.dict = str.dict;
@@ -59,20 +60,17 @@ export class LZWStream extends DecodeStream
       currentSequence: new Uint8Array(maxLzwDictionarySize),
       currentSequenceLength: 0,
     };
-    for( let i = 0; i < 256; ++i )
-    {
+    for (let i = 0; i < 256; ++i) {
       lzwState.dictionaryValues[i] = i;
       lzwState.dictionaryLengths[i] = 1;
     }
     this.lzwState = lzwState;
   }
 
-  readBits( n:number )
-  {
+  readBits(n: number) {
     let bitsCached = this.bitsCached;
     let cachedData = this.cachedData;
-    while( bitsCached < n )
-    {
+    while (bitsCached < n) {
       const c = this.str!.getByte();
       if (c === -1) {
         this.eof = true;
@@ -87,9 +85,8 @@ export class LZWStream extends DecodeStream
     return (cachedData >>> bitsCached) & ((1 << n) - 1);
   }
 
-  /** @implements */
-  protected readBlock()
-  {
+  /** @implement */
+  protected readBlock() {
     const blockSize = 512,
       decodedSizeDelta = blockSize;
     let estimatedDecodedSize = blockSize * 2;
@@ -120,44 +117,38 @@ export class LZWStream extends DecodeStream
       if (code < 256) {
         currentSequence[0] = code;
         currentSequenceLength = 1;
-      } 
-      else if (code >= 258) {
+      } else if (code >= 258) {
         if (code < nextCode) {
           currentSequenceLength = dictionaryLengths[code];
           for (j = currentSequenceLength - 1, q = code; j >= 0; j--) {
             currentSequence[j] = dictionaryValues[q];
             q = dictionaryPrevCodes[q];
           }
-        } 
-        else {
+        } else {
           currentSequence[currentSequenceLength++] = currentSequence[0];
         }
-      } 
-      else if (code === 256) {
+      } else if (code === 256) {
         codeLength = 9;
         nextCode = 258;
         currentSequenceLength = 0;
         continue;
-      } 
-      else {
+      } else {
         this.eof = true;
         delete this.lzwState;
         break;
       }
 
-      if( hasPrev )
-      {
+      if (hasPrev) {
         dictionaryPrevCodes[nextCode] = prevCode!;
         dictionaryLengths[nextCode] = dictionaryLengths[prevCode!] + 1;
         dictionaryValues[nextCode] = currentSequence[0];
         nextCode++;
-        codeLength =
-          (nextCode + earlyChange) & (nextCode + earlyChange - 1)
-            ? codeLength
-            : Math.min(
-                Math.log(nextCode + earlyChange) / 0.6931471805599453 + 1,
-                12
-              ) | 0;
+        codeLength = (nextCode + earlyChange) & (nextCode + earlyChange - 1)
+          ? codeLength
+          : Math.min(
+            Math.log(nextCode + earlyChange) / 0.6931471805599453 + 1,
+            12,
+          ) | 0;
       }
       prevCode = code;
 
@@ -180,4 +171,4 @@ export class LZWStream extends DecodeStream
     this.bufferLength = currentBufferLength;
   }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

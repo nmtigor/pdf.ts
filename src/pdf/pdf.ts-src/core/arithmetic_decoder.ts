@@ -77,21 +77,23 @@ const QeTable = [
  * The arithmetic decoder is used in conjunction with context models to decode
  * JPEG2000 and JBIG2 streams.
  */
-export class ArithmeticDecoder
-{
-  bp:number;
-  dataEnd:number;
+export class ArithmeticDecoder {
+  bp: number;
+  dataEnd: number;
 
-  chigh:number;
+  chigh: number;
   clow = 0;
-  ct!:number;
+  ct!: number;
   a = 0x8000;
 
   /**
    * C.3.5 Initialisation of the decoder (INITDEC)
    */
-  constructor( public data:Uint8Array | Uint8ClampedArray, start:number, end:number ) 
-  {
+  constructor(
+    public data: Uint8Array | Uint8ClampedArray,
+    start: number,
+    end: number,
+  ) {
     this.bp = start;
     this.dataEnd = end;
 
@@ -107,8 +109,7 @@ export class ArithmeticDecoder
   /**
    * C.3.4 Compressed data input (BYTEIN)
    */
-  byteIn() 
-  {
+  byteIn() {
     const data = this.data;
     let bp = this.bp;
 
@@ -137,8 +138,7 @@ export class ArithmeticDecoder
   /**
    * C.3.2 Decoding a decision (DECODE)
    */
-  readBit( contexts:Int8Array, pos:number )
-  {
+  readBit(contexts: Int8Array, pos: number) {
     // Contexts are packed into 1 byte:
     // highest 7 bits carry cx.index, lowest bit carries cx.mps
     let cx_index = contexts[pos] >> 1,
@@ -197,4 +197,4 @@ export class ArithmeticDecoder
     return d;
   }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

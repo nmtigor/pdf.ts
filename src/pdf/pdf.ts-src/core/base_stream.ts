@@ -17,62 +17,57 @@
  * limitations under the License.
  */
 
-import { bytesToString, shadow } from "../shared/util.js";
-import { Dict } from "./primitives.js";
-/*81---------------------------------------------------------------------------*/
+import { bytesToString, shadow } from "../shared/util.ts";
+import { Dict } from "./primitives.ts";
+/*80--------------------------------------------------------------------------*/
 
-export abstract class BaseStream
-{
+export abstract class BaseStream {
   pos = 0;
-  
-  start?:number;
-  end?:number;
-  abstract get length():number;
-  abstract get isEmpty():boolean;
 
-  get isDataLoaded() { return shadow(this, "isDataLoaded", true); }
+  start?: number;
+  end?: number;
+  abstract get length(): number;
+  abstract get isEmpty(): boolean;
 
-  dict:Dict | undefined;
+  get isDataLoaded() {
+    return shadow(this, "isDataLoaded", true);
+  }
 
-  cacheKey?:string;
+  dict: Dict | undefined;
 
-  abstract getByte():number;
-  abstract getBytes( length?:number ):Uint8Array | Uint8ClampedArray;
+  cacheKey?: string;
+
+  abstract getByte(): number;
+  abstract getBytes(length?: number): Uint8Array | Uint8ClampedArray;
 
   /** @final */
-  peekByte()
-  {
+  peekByte() {
     const peekedByte = this.getByte();
-    if( peekedByte !== -1 )
-    {
+    if (peekedByte !== -1) {
       this.pos--;
     }
     return peekedByte;
   }
 
   /** @final */
-  peekBytes( length?:number )
-  {
-    const bytes = this.getBytes( length );
+  peekBytes(length?: number) {
+    const bytes = this.getBytes(length);
     this.pos -= bytes.length;
     return bytes;
   }
 
   /** @final */
-  getUint16()
-  {
+  getUint16() {
     const b0 = this.getByte();
     const b1 = this.getByte();
-    if( b0 === -1 || b1 === -1 )
-    {
+    if (b0 === -1 || b1 === -1) {
       return -1;
     }
     return (b0 << 8) + b1;
   }
 
   /** @final */
-  getInt32()
-  {
+  getInt32() {
     const b0 = this.getByte();
     const b1 = this.getByte();
     const b2 = this.getByte();
@@ -80,25 +75,29 @@ export abstract class BaseStream
     return (b0 << 24) + (b1 << 16) + (b2 << 8) + b3;
   }
 
-  abstract getByteRange( begin:number, end:number ):Uint8Array
+  abstract getByteRange(begin: number, end: number): Uint8Array;
 
   /** @final */
-  getString( length?:number )
-  {
-    return bytesToString( this.getBytes(length) );
+  getString(length?: number) {
+    return bytesToString(this.getBytes(length));
   }
 
   /** @final */
-  skip( n?:number ) { this.pos += n || 1; }
+  skip(n?: number) {
+    this.pos += n || 1;
+  }
 
-  abstract reset():void;
-  abstract moveStart():void;
+  abstract reset(): void;
+  abstract moveStart(): void;
 
-  abstract makeSubStream( start:number, length?:number, dict?:Dict ):BaseStream;
+  abstract makeSubStream(
+    start: number,
+    length?: number,
+    dict?: Dict,
+  ): BaseStream;
 
-  getBaseStreams():BaseStream[] | undefined
-  {
+  getBaseStreams(): BaseStream[] | undefined {
     return undefined;
   }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

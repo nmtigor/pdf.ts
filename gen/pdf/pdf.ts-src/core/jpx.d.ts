@@ -1,3 +1,4 @@
+import { JpxStream } from "./jpx_stream.js";
 interface PrecinctsSize {
     PPx: number;
     PPy: number;
@@ -226,6 +227,5 @@ declare namespace NsJpxImage {
     }
 }
 export import JpxImage = NsJpxImage.JpxImage;
-import { JpxStream } from "./jpx_stream.js";
 export {};
 //# sourceMappingURL=jpx.d.ts.map

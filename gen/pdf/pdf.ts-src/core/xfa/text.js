@@ -1,22 +1,8 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
-/* Copyright 2021 Mozilla Foundation
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 import { selectFont } from "./fonts.js";
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 const WIDTH_FACTOR = 1.02;
 class FontInfo {
     lineHeight;
@@ -90,7 +76,7 @@ class FontSelector {
         ];
     }
     pushData(xfaFont, margin, lineHeight) {
-        const lastFont = this.stack[this.stack.length - 1];
+        const lastFont = this.stack.at(-1);
         for (const name of [
             "typeface",
             "posture",
@@ -117,7 +103,7 @@ class FontSelector {
         this.stack.pop();
     }
     topFont() {
-        return this.stack[this.stack.length - 1];
+        return this.stack.at(-1);
     }
 }
 /**
@@ -149,12 +135,14 @@ export class TextMeasure {
             const letterSpacing = lastFont.xfaFont.letterSpacing;
             const pdfFont = lastFont.pdfFont;
             const fontLineHeight = pdfFont.lineHeight || 1.2;
-            const lineHeight = lastFont.lineHeight || Math.max(1.2, fontLineHeight) * fontSize;
+            const lineHeight = lastFont.lineHeight ||
+                Math.max(1.2, fontLineHeight) * fontSize;
             const lineGap = pdfFont.lineGap === undefined ? 0.2 : pdfFont.lineGap;
             const noGap = fontLineHeight - lineGap;
             const firstLineHeight = Math.max(1, noGap) * fontSize;
             const scale = fontSize / 1000;
-            const fallbackWidth = pdfFont.defaultWidth || pdfFont.charsToGlyphs(" ")[0].width;
+            const fallbackWidth = pdfFont.defaultWidth ||
+                pdfFont.charsToGlyphs(" ")[0].width;
             for (const line of str.split(/[\u2029\n]/)) {
                 const encodedLine = pdfFont.encodeString(line).join("");
                 const glyphs = pdfFont.charsToGlyphs(encodedLine);
@@ -248,5 +236,5 @@ export class TextMeasure {
         return { width: WIDTH_FACTOR * width, height, isBroken };
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=text.js.map

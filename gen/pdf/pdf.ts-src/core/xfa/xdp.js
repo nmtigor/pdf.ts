@@ -3,7 +3,7 @@
  */
 import { $buildXFAObject, NamespaceIds } from "./namespaces.js";
 import { $namespaceId, $nodeName, $onChildCheck, XFAObject, XFAObjectArray, } from "./xfa_object.js";
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 const XDP_NS_ID = NamespaceIds.xdp.id;
 export class Xdp extends XFAObject {
     uuid;
@@ -26,12 +26,14 @@ export class Xdp extends XFAObject {
 }
 export const XdpNamespace = {
     [$buildXFAObject](name, attributes) {
-        if (XdpNamespace.hasOwnProperty(name)) {
+        if (Object.hasOwn(XdpNamespace, name)) {
             return XdpNamespace[name](attributes);
         }
         return undefined;
     },
-    xdp(attrs) { return new Xdp(attrs); },
+    xdp(attrs) {
+        return new Xdp(attrs);
+    },
 };
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=xdp.js.map

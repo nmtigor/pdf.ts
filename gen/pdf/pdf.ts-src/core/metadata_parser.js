@@ -77,15 +77,16 @@ export class MetadataParser {
         if (name !== "rdf:bag" && name !== "rdf:seq" && name !== "rdf:alt") {
             return undefined;
         }
-        return entry.childNodes?.filter(node => node.nodeName === "rdf:li");
+        return entry.childNodes?.filter((node) => node.nodeName === "rdf:li");
     }
     _parseArray(entry) {
-        if (!entry.hasChildNodes())
+        if (!entry.hasChildNodes()) {
             return;
+        }
         // Child must be a Bag (unordered array) or a Seq.
         const [seqNode] = entry.childNodes;
         const sequence = this._getSequence(seqNode) || [];
-        this.#metadataMap.set(entry.nodeName, sequence.map(node => node.textContent.trim()));
+        this.#metadataMap.set(entry.nodeName, sequence.map((node) => node.textContent.trim()));
     }
     _parse(xmlDocument) {
         let rdf = xmlDocument.documentElement;
@@ -124,5 +125,5 @@ export class MetadataParser {
         };
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=metadata_parser.js.map

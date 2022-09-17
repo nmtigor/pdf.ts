@@ -1,5 +1,5 @@
-import { Coo, HTMLVuu, SVGVuu } from "../mv.js";
 import { Ratio } from "../alias.js";
+import { Coo, HTMLVuu, SVGVuu } from "../mv.js";
 /**
  * Can act as static `Vuu`
  */
@@ -8,14 +8,14 @@ export declare class HTMLAnvuu<C extends Coo = Coo, E extends HTMLElement = HTML
     protected readonly anmax$: number;
     protected readonly delta$: number;
     /**
-     * @param { headconst } coo_x
-     * @param { headconst } el_x
-     * @param { const } anmin
-     * @param { const } anmax
+     * @headconst @param coo_x
+     * @headconst @param el_x
+     * @const @param anmin
+     * @const @param anmax
      */
     constructor(coo_x: C, el_x: E, anmin?: number, anmax?: number);
     /**
-     * @param { const } anval_x
+     * @const @param anval_x
      */
     set anval(anval_x: number);
     /** @final */
@@ -23,7 +23,7 @@ export declare class HTMLAnvuu<C extends Coo = Coo, E extends HTMLElement = HTML
     fina(): void;
     /**
      * @final
-     * @param { const } ratio_x
+     * @const @param ratio_x
      */
     setByRatio(ratio_x: Ratio): void;
 }
@@ -77,7 +77,6 @@ export declare class Transsize extends HTMLAnvuu {
     set w1dw(val_x: number);
     set h0dh(val_x: number);
     set h1dh(val_x: number);
-    /** @override */
     set anval(anval_x: number);
 }
 export declare class Transopac extends HTMLAnvuu {

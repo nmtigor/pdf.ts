@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 import { PasswordResponses } from "../pdf.ts-src/pdf.js";
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 export class PasswordPrompt {
     dialog;
     label;
@@ -46,7 +46,7 @@ export class PasswordPrompt {
         // Attach the event listeners.
         this.submitButton.addEventListener("click", this.#verify);
         this.cancelButton.addEventListener("click", this.#cancel);
-        this.input.addEventListener("keydown", e => {
+        this.input.addEventListener("keydown", (e) => {
             if (e.keyCode === /* Enter = */ 13) {
                 this.#verify();
             }
@@ -77,9 +77,10 @@ export class PasswordPrompt {
         this.#invokeCallback(new Error("PasswordPrompt cancelled."));
     };
     #invokeCallback(password) {
-        if (!this.#updateCallback)
+        if (!this.#updateCallback) {
             // Ensure that the callback is only invoked once.
             return;
+        }
         this.close();
         this.input.value = "";
         this.#updateCallback(password);
@@ -90,5 +91,5 @@ export class PasswordPrompt {
         this.#reason = reason;
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=password_prompt.js.map

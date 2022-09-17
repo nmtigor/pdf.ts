@@ -1,4 +1,4 @@
-import { AbortException } from "./shared/util";
+import { AbortException } from "./shared/util.js";
 /**
  * Interface that represents PDF data transport. If possible, it allows
  * progressively load entire or fragment of the PDF binary data.

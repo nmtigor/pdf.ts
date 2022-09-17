@@ -1,10 +1,5 @@
-/** @typedef {import("../src/display/api").PDFDocumentProxy} PDFDocumentProxy */
-/** @typedef {import("./event_utils").EventBus} EventBus */
-/** @typedef {import("./interfaces").IL10n} IL10n */
-/** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
-/** @typedef {import("./pdf_rendering_queue").PDFRenderingQueue} PDFRenderingQueue */
-import { PDFDocumentProxy, PDFPageProxy } from '../pdf.ts-src/display/api.js';
-import { OptionalContentConfig } from '../pdf.ts-src/display/optional_content_config.js';
+import { OptionalContentConfig, PDFDocumentProxy, PDFPageProxy } from "../pdf.ts-src/pdf.js";
+import { PageColors } from "./base_viewer.js";
 import { EventBus } from "./event_utils.js";
 import { type IL10n, type IPDFLinkService } from "./interfaces.js";
 import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
@@ -30,6 +25,12 @@ interface PDFThumbnailViewerOptions {
      * Localization service.
      */
     l10n: IL10n;
+    /**
+     * Overwrites background and foreground colors
+     * with user defined ones in order to improve readability in high contrast
+     * mode.
+     */
+    pageColors: PageColors | undefined;
 }
 /**
  * Viewer control to display thumbnails for pages in a PDF document.
@@ -40,6 +41,7 @@ export declare class PDFThumbnailViewer {
     linkService: IPDFLinkService;
     renderingQueue: PDFRenderingQueue;
     l10n: IL10n;
+    pageColors: PageColors | undefined;
     scroll: {
         right: boolean;
         down: boolean;
@@ -57,7 +59,7 @@ export declare class PDFThumbnailViewer {
     _pagesRequests: WeakMap<PDFThumbnailView, Promise<void | PDFPageProxy>>;
     _setImageDisabled: boolean;
     pdfDocument?: PDFDocumentProxy | undefined;
-    constructor({ container, eventBus, linkService, renderingQueue, l10n, }: PDFThumbnailViewerOptions);
+    constructor({ container, eventBus, linkService, renderingQueue, l10n, pageColors, }: PDFThumbnailViewerOptions);
     scrollThumbnailIntoView(pageNumber: number): void;
     cleanup(): void;
     protected _resetView(): void;

@@ -1,11 +1,11 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
-import { fixTextIndent, fixURL, measureToString, setFontFamily } from "./html_utils.js";
+import { fixTextIndent, fixURL, measureToString, setFontFamily, } from "./html_utils.js";
 import { $buildXFAObject, NamespaceIds } from "./namespaces.js";
 import { getMeasurement, HTMLResult, stripQuotes } from "./utils.js";
-import { $acceptWhitespace, $childrenToHTML, $clean, $content, $extra, $getChildren, $getParent, $globalData, $nodeName, $onText, $pushGlyphs, $text, $toHTML, XmlObject } from "./xfa_object.js";
-/*81---------------------------------------------------------------------------*/
+import { $acceptWhitespace, $childrenToHTML, $clean, $content, $extra, $getChildren, $getParent, $globalData, $nodeName, $onText, $pushGlyphs, $text, $toHTML, XmlObject, } from "./xfa_object.js";
+/*80--------------------------------------------------------------------------*/
 const XHTML_NS_ID = NamespaceIds.xhtml.id;
 const $richText = Symbol();
 const VALID_STYLES = new Set([
@@ -78,13 +78,15 @@ const crlfRegExp = /[\r\n]+/g;
 const crlfForRichTextRegExp = /\r\n?/g;
 function mapStyle(styleStr, node, richText) {
     const style = Object.create(null);
-    if (!styleStr)
+    if (!styleStr) {
         return style;
+    }
     const original = Object.create(null);
-    for (const [key, value] of styleStr.split(";").map(s => s.split(":", 2))) {
+    for (const [key, value] of styleStr.split(";").map((s) => s.split(":", 2))) {
         const mapping = StyleMapping.get(key);
-        if (mapping === "")
+        if (mapping === "") {
             continue;
+        }
         let newValue = value;
         if (mapping) {
             if (typeof mapping === "string") {
@@ -115,10 +117,10 @@ function mapStyle(styleStr, node, richText) {
             size: original.fontSize || 0,
         }, node, node[$globalData].fontFinder, style);
     }
-    if (richText
-        && style.verticalAlign
-        && style.verticalAlign !== "0px"
-        && style.fontSize) {
+    if (richText &&
+        style.verticalAlign &&
+        style.verticalAlign !== "0px" &&
+        style.fontSize) {
         // A non-zero verticalAlign means that we've a sub/super-script and
         // consequently the font size must be decreased.
         // https://www.adobe.com/content/dam/acom/en/devnet/pdf/pdfs/PDF32000_2008.pdf#G11.2097514
@@ -133,6 +135,9 @@ function mapStyle(styleStr, node, richText) {
             fontSize *
             VERTICAL_FACTOR);
     }
+    if (richText && style.fontSize) {
+        style.fontSize = `calc(${style.fontSize} * var(--scale-factor))`;
+    }
     fixTextIndent(style);
     return style;
 }
@@ -144,15 +149,15 @@ function checkStyle(node) {
     return node.style
         .trim()
         .split(/\s*;\s*/)
-        .filter(s => !!s)
-        .map(s => s.split(/\s*:\s*/, 2))
+        .filter((s) => !!s)
+        .map((s) => s.split(/\s*:\s*/, 2))
         .filter(([key, value]) => {
         if (key === "font-family") {
             node[$globalData].usedTypefaces.add(value);
         }
         return VALID_STYLES.has(key);
     })
-        .map(kv => kv.join(":"))
+        .map((kv) => kv.join(":"))
         .join(";");
 }
 const NoWhites = new Set(["body", "html"]);
@@ -169,7 +174,9 @@ export class XhtmlObject extends XmlObject {
         super[$clean](builder);
         this.style = checkStyle(this);
     }
-    [$acceptWhitespace]() { return !NoWhites.has(this[$nodeName]); }
+    [$acceptWhitespace]() {
+        return !NoWhites.has(this[$nodeName]);
+    }
     [$onText](str, richText = false) {
         if (!richText) {
             str = str.replace(crlfRegExp, "");
@@ -195,7 +202,7 @@ export class XhtmlObject extends XmlObject {
         let lineHeight;
         for (const [key, value] of this.style
             .split(";")
-            .map(s => s.split(":", 2))) {
+            .map((s) => s.split(":", 2))) {
             switch (key) {
                 case "font-family":
                     xfaFont.typeface = stripQuotes(value);
@@ -213,7 +220,7 @@ export class XhtmlObject extends XmlObject {
                     xfaFont.letterSpacing = getMeasurement(value);
                     break;
                 case "margin":
-                    const values = value.split(/ \t/).map(x => getMeasurement(x));
+                    const values = value.split(/ \t/).map((x) => getMeasurement(x));
                     switch (values.length) {
                         case 1:
                             margin.top =
@@ -314,7 +321,12 @@ class B extends XhtmlObject {
         super(attributes, "b");
     }
     [$pushGlyphs](measure) {
-        measure.pushData({ weight: "bold" }, { top: NaN, bottom: NaN, left: NaN, right: NaN });
+        measure.pushData({ weight: "bold" }, {
+            top: NaN,
+            bottom: NaN,
+            left: NaN,
+            right: NaN,
+        });
         super[$pushGlyphs](measure);
         measure.popFont();
     }
@@ -337,8 +349,12 @@ class Br extends XhtmlObject {
     constructor(attributes) {
         super(attributes, "br");
     }
-    [$text]() { return "\n"; }
-    [$pushGlyphs](measure) { measure.addString("\n"); }
+    [$text]() {
+        return "\n";
+    }
+    [$pushGlyphs](measure) {
+        measure.addString("\n");
+    }
     [$toHTML](availableSpace) {
         return HTMLResult.success({
             name: "br",
@@ -386,7 +402,12 @@ class I extends XhtmlObject {
         super(attributes, "i");
     }
     [$pushGlyphs](measure) {
-        measure.pushData({ posture: "italic" }, { top: NaN, bottom: NaN, left: NaN, right: NaN });
+        measure.pushData({ posture: "italic" }, {
+            top: NaN,
+            bottom: NaN,
+            left: NaN,
+            right: NaN,
+        });
         super[$pushGlyphs](measure);
         measure.popFont();
     }
@@ -413,7 +434,7 @@ class P extends XhtmlObject {
     }
     [$text]() {
         const siblings = this[$getParent]()[$getChildren]();
-        if (siblings[siblings.length - 1] === this) {
+        if (siblings.at(-1) === this) {
             return super[$text]();
         }
         return super[$text]() + "\n";
@@ -441,24 +462,50 @@ class Ul extends XhtmlObject {
 }
 export const XhtmlNamespace = {
     [$buildXFAObject](name, attributes) {
-        if (XhtmlNamespace.hasOwnProperty(name)) {
+        if (Object.hasOwn(XhtmlNamespace, name)) {
             return XhtmlNamespace[name](attributes);
         }
         return undefined;
     },
-    a(attrs) { return new A(attrs); },
-    b(attrs) { return new B(attrs); },
-    body(attrs) { return new Body(attrs); },
-    br(attrs) { return new Br(attrs); },
-    html(attrs) { return new Html(attrs); },
-    i(attrs) { return new I(attrs); },
-    li(attrs) { return new Li(attrs); },
-    ol(attrs) { return new Ol(attrs); },
-    p(attrs) { return new P(attrs); },
-    span(attrs) { return new Span(attrs); },
-    sub(attrs) { return new Sub(attrs); },
-    sup(attrs) { return new Sup(attrs); },
-    ul(attrs) { return new Ul(attrs); },
+    a(attrs) {
+        return new A(attrs);
+    },
+    b(attrs) {
+        return new B(attrs);
+    },
+    body(attrs) {
+        return new Body(attrs);
+    },
+    br(attrs) {
+        return new Br(attrs);
+    },
+    html(attrs) {
+        return new Html(attrs);
+    },
+    i(attrs) {
+        return new I(attrs);
+    },
+    li(attrs) {
+        return new Li(attrs);
+    },
+    ol(attrs) {
+        return new Ol(attrs);
+    },
+    p(attrs) {
+        return new P(attrs);
+    },
+    span(attrs) {
+        return new Span(attrs);
+    },
+    sub(attrs) {
+        return new Sub(attrs);
+    },
+    sup(attrs) {
+        return new Sup(attrs);
+    },
+    ul(attrs) {
+        return new Ul(attrs);
+    },
 };
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=xhtml.js.map

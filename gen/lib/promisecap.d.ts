@@ -4,20 +4,20 @@
 export interface PromiseCap<T = void> {
     id: number;
     /**
-    * A Promise object.
-    */
+     * A Promise object.
+     */
     promise: Promise<T>;
     /**
-    * If the Promise has been fulfilled/rejected.
-    */
+     * If the Promise has been fulfilled/rejected.
+     */
     settled: boolean;
     /**
-    * Fulfills the Promise.
-    */
+     * Fulfills the Promise.
+     */
     resolve: (data: T) => void;
     /**
-    * Rejects the Promise.
-    */
+     * Rejects the Promise.
+     */
     reject: (reason: any) => void;
 }
 /**

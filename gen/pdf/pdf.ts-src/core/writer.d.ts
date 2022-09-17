@@ -1,8 +1,10 @@
 import { type SaveData } from "./annotation.js";
+import { BaseStream } from "./base_stream.js";
 import { CipherTransform } from "./crypto.js";
 import { Dict, Ref } from "./primitives.js";
 import { type XRefInfo } from "./worker.js";
 import { XRef } from "./xref.js";
+export declare function writeObject(ref: Ref, obj: Dict | BaseStream, buffer: string[], transform: CipherTransform | undefined): void;
 export declare function writeDict(dict: Dict, buffer: string[], transform?: CipherTransform): void;
 interface _IncrementalUpdateP {
     originalData: Uint8Array;

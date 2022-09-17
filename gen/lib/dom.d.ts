@@ -1,5 +1,5 @@
 import { type loff_t } from "./alias.js";
-import { $tail_ignored, $loff, $ovlap } from "./symbols.js";
+import { $loff, $ovlap, $tail_ignored } from "./symbols.js";
 declare global {
     interface EventTarget {
         on(type: string, listener: any, options?: any): void;
@@ -50,7 +50,7 @@ declare global {
     interface Range {
         /**
          * @param { out } rec_a
-         * @param { const } ovlap
+         * @const @param ovlap
          */
         getReca(rec_a: DOMRect[], ovlap?: boolean): void;
         reset(): void;
@@ -63,17 +63,17 @@ declare global {
     }
 }
 /**
- * @param { const } text_x
- * @param { const } loff_x
- * @param { const } tail_ignored_x
+ * @const @param text_x
+ * @const @param loff_x
+ * @const @param tail_ignored_x
  */
 export declare function textnode(text_x: string, loff_x?: loff_t, tail_ignored_x?: boolean): Text;
-declare type HTMLRet<NN extends string> = NN extends keyof HTMLElementTagNameMap ? HTMLElementTagNameMap[NN] : HTMLElement;
-export declare function html<NN extends string>(nodeName: NN, innerHTML?: string, doc?: Document): HTMLRet<NN>;
+declare type _HTMLRet<NN extends string> = NN extends keyof HTMLElementTagNameMap ? HTMLElementTagNameMap[NN] : HTMLElement;
+export declare function html<NN extends string>(nodeName: NN, innerHTML?: string, doc?: Document): _HTMLRet<NN>;
 export declare function div(innerHTML?: string, doc?: Document): HTMLDivElement;
 export declare function span(innerHTML?: string, doc?: Document): HTMLSpanElement;
-declare type SVGRet<NN extends string> = NN extends keyof SVGElementTagNameMap ? SVGElementTagNameMap[NN] : SVGElement;
-export declare function svg<NN extends string>(nodeName: NN, doc?: Document): SVGRet<NN>;
+declare type _SVGRet<NN extends string> = NN extends keyof SVGElementTagNameMap ? SVGElementTagNameMap[NN] : SVGElement;
+export declare function svg<NN extends string>(nodeName: NN, doc?: Document): _SVGRet<NN>;
 declare global {
     interface OnProgressP {
         /**

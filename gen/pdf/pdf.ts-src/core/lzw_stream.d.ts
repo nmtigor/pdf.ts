@@ -17,7 +17,7 @@ export declare class LZWStream extends DecodeStream {
     lzwState?: LZWState;
     constructor(str: BaseStream, maybeLength: number | undefined, earlyChange: number);
     readBits(n: number): number | undefined;
-    /** @implements */
+    /** @implement */
     protected readBlock(): void;
 }
 export {};

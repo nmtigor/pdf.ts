@@ -15,10 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { warn } from "../shared/util.js";
 import { CFFCompiler, CFFParser } from "./cff_parser.js";
 import { SEAC_ANALYSIS_ENABLED, type1FontGlyphMapping } from "./fonts_utils.js";
-import { warn } from "../shared/util.js";
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 export class CFFFont {
     properties;
     cff;
@@ -45,7 +45,9 @@ export class CFFFont {
     get numGlyphs() {
         return this.cff.charStrings.count;
     }
-    getCharset() { return this.cff.charset.charset; }
+    getCharset() {
+        return this.cff.charset.charset;
+    }
     getGlyphMapping() {
         const cff = this.cff;
         const properties = this.properties;
@@ -74,7 +76,9 @@ export class CFFFont {
             }
             return charCodeToGlyphId;
         }
-        let encoding = cff.encoding ? cff.encoding.encoding : undefined;
+        let encoding = cff.encoding
+            ? cff.encoding.encoding
+            : undefined;
         if (properties.isInternalFont) {
             encoding = properties.defaultEncoding;
         }
@@ -108,5 +112,5 @@ export class CFFFont {
         }
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=cff_font.js.map

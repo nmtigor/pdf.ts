@@ -16,16 +16,16 @@
  * limitations under the License.
  */
 import { PageLayout, PageMode } from "../../../pdf/pdf.ts-web/ui_utils.js";
-import { createValidAbsoluteUrl, DocumentActionEventType, FormatError, info, objectSize, PermissionFlag, shadow, stringToPDFString, stringToUTF8String, warn } from "../shared/util.js";
+import { createValidAbsoluteUrl, DocumentActionEventType, FormatError, info, objectSize, PermissionFlag, shadow, stringToPDFString, stringToUTF8String, warn, } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
 import { clearGlobalCaches } from "./cleanup_helper.js";
 import { ColorSpace } from "./colorspace.js";
-import { collectActions, MissingDataException, recoverJsURL, toRomanNumerals, XRefEntryException } from "./core_utils.js";
+import { collectActions, MissingDataException, recoverJsURL, toRomanNumerals, XRefEntryException, } from "./core_utils.js";
 import { FileSpec } from "./file_spec.js";
 import { GlobalImageCache } from "./image_utils.js";
 import { MetadataParser } from "./metadata_parser.js";
 import { NameTree, NumberTree } from "./name_number_tree.js";
-import { Dict, isDict, isName, isRefsEqual, Name, Ref, RefSet, RefSetCache } from "./primitives.js";
+import { Dict, isDict, isName, isRefsEqual, Name, Ref, RefSet, RefSetCache, } from "./primitives.js";
 import { StructTreeRoot } from "./struct_tree.js";
 function fetchDestination(dest) {
     if (dest instanceof Dict) {
@@ -100,8 +100,9 @@ export class Catalog {
             }
         }
         catch (ex) {
-            if (ex instanceof MissingDataException)
+            if (ex instanceof MissingDataException) {
                 throw ex;
+            }
             info("Cannot fetch AcroForm entry; assuming no forms are present.");
         }
         return shadow(this, "acroForm", acroForm);
@@ -112,14 +113,15 @@ export class Catalog {
     }
     get metadata() {
         const streamRef = this.#catDict.getRaw("Metadata");
-        if (!(streamRef instanceof Ref))
+        if (!(streamRef instanceof Ref)) {
             return shadow(this, "metadata", undefined);
+        }
         let metadata;
         try {
             const suppressEncryption = !(this.xref.encrypt && this.xref.encrypt.encryptMetadata);
             const stream = this.xref.fetch(streamRef, suppressEncryption);
-            if ((stream instanceof BaseStream)
-                && (stream.dict instanceof Dict)) {
+            if ((stream instanceof BaseStream) &&
+                (stream.dict instanceof Dict)) {
                 const type = stream.dict.get("Type");
                 const subtype = stream.dict.get("Subtype");
                 if (isName(type, "Metadata") && isName(subtype, "XML")) {
@@ -135,8 +137,9 @@ export class Catalog {
             }
         }
         catch (ex) {
-            if (ex instanceof MissingDataException)
+            if (ex instanceof MissingDataException) {
                 throw ex;
+            }
             info(`Skipping invalid Metadata: "${ex}".`);
         }
         return shadow(this, "metadata", metadata);
@@ -156,8 +159,9 @@ export class Catalog {
     }
     #readMarkInfo() {
         const obj = this.#catDict.get("MarkInfo");
-        if (!(obj instanceof Dict))
+        if (!(obj instanceof Dict)) {
             return undefined;
+        }
         const markInfo = {
             Marked: false,
             UserProperties: false,
@@ -186,8 +190,9 @@ export class Catalog {
     }
     #readStructTreeRoot() {
         const obj = this.#catDict.get("StructTreeRoot");
-        if (!(obj instanceof Dict))
+        if (!(obj instanceof Dict)) {
             return undefined;
+        }
         const root = new StructTreeRoot(obj);
         root.init();
         return root;
@@ -205,19 +210,22 @@ export class Catalog {
             obj = this.#readDocumentOutline();
         }
         catch (ex) {
-            if (ex instanceof MissingDataException)
+            if (ex instanceof MissingDataException) {
                 throw ex;
+            }
             warn("Unable to read document outline.");
         }
         return shadow(this, "documentOutline", obj);
     }
     #readDocumentOutline() {
         let obj = this.#catDict.get("Outlines");
-        if (!(obj instanceof Dict))
+        if (!(obj instanceof Dict)) {
             return undefined;
+        }
         obj = obj.getRaw("First");
-        if (!(obj instanceof Ref))
+        if (!(obj instanceof Ref)) {
             return undefined;
+        }
         const root = { items: [] };
         const queue = [{ obj: obj, parent: root }];
         // To avoid recursion, keep track of the already processed items.
@@ -228,8 +236,9 @@ export class Catalog {
         while (queue.length > 0) {
             const i = queue.shift();
             const outlineDict = xref.fetchIfRef(i.obj);
-            if (outlineDict === null || outlineDict === undefined)
+            if (outlineDict === null || outlineDict === undefined) {
                 continue;
+            }
             if (!outlineDict.has("Title")) {
                 throw new FormatError("Invalid outline item encountered.");
             }
@@ -245,9 +254,9 @@ export class Catalog {
             const count = outlineDict.get("Count");
             let rgbColor = blackColor;
             // We only need to parse the color when it's valid, and non-default.
-            if (Array.isArray(color)
-                && color.length === 3
-                && (color[0] !== 0 || color[1] !== 0 || color[2] !== 0)) {
+            if (Array.isArray(color) &&
+                color.length === 3 &&
+                (color[0] !== 0 || color[1] !== 0 || color[2] !== 0)) {
                 rgbColor = ColorSpace.singletons.rgb.getRgb(color, 0);
             }
             const outlineItem = {
@@ -282,19 +291,22 @@ export class Catalog {
             permissions = this.#readPermissions();
         }
         catch (ex) {
-            if (ex instanceof MissingDataException)
+            if (ex instanceof MissingDataException) {
                 throw ex;
+            }
             warn("Unable to read permissions.");
         }
         return shadow(this, "permissions", permissions);
     }
     #readPermissions() {
         const encrypt = this.xref.trailer.get("Encrypt");
-        if (!(encrypt instanceof Dict))
+        if (!(encrypt instanceof Dict)) {
             return undefined;
+        }
         let flags = encrypt.get("P");
-        if (!(typeof flags === "number"))
+        if (!(typeof flags === "number")) {
             return undefined;
+        }
         // PDF integer objects are represented internally in signed 2's complement
         // form. Therefore, convert the signed decimal integer to a signed 2's
         // complement binary integer so we can use regular bitwise operations on it.
@@ -330,8 +342,9 @@ export class Catalog {
             const groupRefs = [];
             // Ensure all the optional content groups are valid.
             for (const groupRef of groupsData) {
-                if (!(groupRef instanceof Ref))
+                if (!(groupRef instanceof Ref)) {
                     continue;
+                }
                 groupRefs.push(groupRef);
                 const group = this.xref.fetchIfRef(groupRef); // Table 98
                 let v;
@@ -364,8 +377,9 @@ export class Catalog {
             const onParsed = [];
             if (Array.isArray(refs)) {
                 for (const value of refs) {
-                    if (!(value instanceof Ref))
+                    if (!(value instanceof Ref)) {
                         continue;
+                    }
                     if (contentGroupRefs.includes(value)) {
                         onParsed.push(value.toString());
                     }
@@ -395,8 +409,9 @@ export class Catalog {
             }
             const hiddenGroups = [];
             for (const groupRef of contentGroupRefs) {
-                if (parsedOrderRefs.has(groupRef))
+                if (parsedOrderRefs.has(groupRef)) {
                     continue;
+                }
                 hiddenGroups.push(groupRef.toString());
             }
             if (hiddenGroups.length) {
@@ -432,9 +447,7 @@ export class Catalog {
             creator: typeof (v = config.get("Creator")) === "string"
                 ? stringToPDFString(v)
                 : null,
-            baseState: (v = config.get("BaseState")) instanceof Name
-                ? v.name
-                : null,
+            baseState: (v = config.get("BaseState")) instanceof Name ? v.name : null,
             on: parseOnOff(config.get("ON")),
             off: parseOnOff(config.get("OFF")),
             order: parseOrder(config.get("Order")),
@@ -468,7 +481,7 @@ export class Catalog {
             }
         }
         else if (obj instanceof Dict) {
-            obj.forEach(function (key, value) {
+            obj.forEach((key, value) => {
                 const dest = fetchDestination(value);
                 if (dest) {
                     dests[key] = dest;
@@ -481,8 +494,9 @@ export class Catalog {
         const obj = this.#readDests();
         if (obj instanceof NameTree) {
             const dest = fetchDestination(obj.get(+id));
-            if (dest)
+            if (dest) {
                 return dest;
+            }
             // Fallback to checking the *entire* NameTree, in an attempt to handle
             // corrupt PDF documents with out-of-order NameTrees (fixes issue 10272).
             const allDest = this.destinations[id];
@@ -493,8 +507,9 @@ export class Catalog {
         }
         else if (obj instanceof Dict) {
             const dest = fetchDestination(obj.get(id));
-            if (dest)
+            if (dest) {
                 return dest;
+            }
         }
         return undefined;
     }
@@ -515,16 +530,18 @@ export class Catalog {
             obj = this.#readPageLabels();
         }
         catch (ex) {
-            if (ex instanceof MissingDataException)
+            if (ex instanceof MissingDataException) {
                 throw ex;
+            }
             warn("Unable to read page labels.");
         }
         return shadow(this, "pageLabels", obj);
     }
     #readPageLabels() {
         const obj = this.#catDict.getRaw("PageLabels");
-        if (!obj)
+        if (!obj) {
             return undefined;
+        }
         const pageLabels = new Array(this.numPages);
         let style;
         let prefix = "";
@@ -539,8 +556,9 @@ export class Catalog {
                     throw new FormatError("PageLabel is not a dictionary.");
                 }
                 let v;
-                if (labelDict.has("Type")
-                    && !((v = labelDict.get("Type")) instanceof Name && v.name === "PageLabel")) {
+                if (labelDict.has("Type") &&
+                    !((v = labelDict.get("Type")) instanceof Name &&
+                        v.name === "PageLabel")) {
                     throw new FormatError("Invalid type in PageLabel dictionary.");
                 }
                 if (labelDict.has("S")) {
@@ -838,10 +856,12 @@ export class Catalog {
         const obj = this.#catDict.get("Names");
         let javaScript;
         function appendIfJavaScriptDict(name, jsDict) {
-            if (!(jsDict instanceof Dict))
+            if (!(jsDict instanceof Dict)) {
                 return;
-            if (!isName(jsDict.get("S"), "JavaScript"))
+            }
+            if (!isName(jsDict.get("S"), "JavaScript")) {
                 return;
+            }
             let js = jsDict.get("JS");
             if (js instanceof BaseStream) {
                 js = js.getString();
@@ -852,7 +872,8 @@ export class Catalog {
             if (javaScript === undefined) {
                 javaScript = new Map();
             }
-            javaScript.set(name, stringToPDFString(js));
+            js = stringToPDFString(js).replace(/\u0000/g, "");
+            javaScript.set(name, js);
         }
         if (obj instanceof Dict && obj.has("JavaScript")) {
             const nameTree = new NameTree(obj.getRaw("JavaScript"), this.xref);
@@ -1046,7 +1067,7 @@ export class Catalog {
             map.set(pageIndex++, [error, undefined]);
         }
         while (queue.length > 0) {
-            const queueItem = queue[queue.length - 1];
+            const queueItem = queue.at(-1);
             const { currentNode, posInKids } = queueItem;
             let kids = currentNode.getRaw("Kids");
             if (kids instanceof Ref) {
@@ -1126,31 +1147,34 @@ export class Catalog {
             let total = 0, parentRef;
             return xref
                 .fetchAsync(kidRef)
-                .then(node => {
-                if (isRefsEqual(kidRef, pageRef)
-                    && !isDict(node, "Page")
-                    && !(node instanceof Dict && !node.has("Type") && node.has("Contents"))) {
+                .then((node) => {
+                if (isRefsEqual(kidRef, pageRef) &&
+                    !isDict(node, "Page") &&
+                    !(node instanceof Dict && !node.has("Type") && node.has("Contents"))) {
                     throw new FormatError("The reference does not point to a /Page dictionary.");
                 }
-                if (!node)
+                if (!node) {
                     return null;
+                }
                 if (!(node instanceof Dict)) {
                     throw new FormatError("Node must be a dictionary.");
                 }
                 parentRef = node.getRaw("Parent");
                 return node.getAsync("Parent");
             })
-                .then(parent => {
-                if (!parent)
+                .then((parent) => {
+                if (!parent) {
                     return null;
+                }
                 if (!(parent instanceof Dict)) {
                     throw new FormatError("Parent must be a dictionary.");
                 }
                 return parent.getAsync("Kids");
             })
-                .then(kids => {
-                if (!kids)
+                .then((kids) => {
+                if (!kids) {
                     return null;
+                }
                 const kidPromises = [];
                 let found = false;
                 for (let i = 0, ii = kids.length; i < ii; i++) {
@@ -1162,7 +1186,7 @@ export class Catalog {
                         found = true;
                         break;
                     }
-                    kidPromises.push(xref.fetchAsync(kid).then(obj => {
+                    kidPromises.push(xref.fetchAsync(kid).then((obj) => {
                         if (!(obj instanceof Dict)) {
                             throw new FormatError("Kid node must be a dictionary.");
                         }
@@ -1178,13 +1202,11 @@ export class Catalog {
                 if (!found) {
                     throw new FormatError("Kid reference not found in parent's kids.");
                 }
-                return Promise.all(kidPromises).then(() => {
-                    return [total, parentRef];
-                });
+                return Promise.all(kidPromises).then(() => [total, parentRef]);
             });
         }
         let total = 0;
-        const next = (ref) => pagesBeforeRef(ref).then(args => {
+        const next = (ref) => pagesBeforeRef(ref).then((args) => {
             if (!args) {
                 this.pageIndexCache.put(pageRef, total);
                 return total;
@@ -1375,5 +1397,5 @@ export class Catalog {
         }
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=catalog.js.map

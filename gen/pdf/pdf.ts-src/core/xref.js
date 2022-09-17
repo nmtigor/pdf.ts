@@ -15,6 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { _PDFDEV } from "../../../global.js";
 import { assert } from "../../../lib/util/trace.js";
 import { bytesToString, FormatError, info, InvalidPDFException, warn } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
@@ -33,11 +34,13 @@ export class XRef {
     #newRefNum = null;
     getNewRef() {
         if (this.#newRefNum === null) {
-            this.#newRefNum = this.entries.length;
+            this.#newRefNum = this.entries.length || 1;
         }
         return Ref.get(this.#newRefNum++, 0);
     }
-    resetNewRef() { this.#newRefNum = null; }
+    resetNewRef() {
+        this.#newRefNum = null;
+    }
     startXRefQueue;
     setStartXRef(startXRef) {
         // Store the starting positions of xref tables as we process them
@@ -106,20 +109,20 @@ export class XRef {
                 }
             }
             catch (ex) {
-                if (ex instanceof MissingDataException)
+                if (ex instanceof MissingDataException) {
                     throw ex;
+                }
                 warn(`XRef.parse - Invalid "Pages" reference: "${ex}".`);
             }
         }
-        if (!recoveryMode)
+        if (!recoveryMode) {
             throw new XRefParseException();
+        }
         // Even recovery failed, there's nothing more we can do here.
         throw new InvalidPDFException("Invalid Root reference.");
     }
     processXRefTable(parser) {
-        if (!this.tableState) 
-        // if( !("tableState" in this) )
-        {
+        if (!this.tableState) { // if( !("tableState" in this) )
             // Stores state of the table as we process it so we can resume
             // from middle of table in case of missing data error
             this.tableState = {
@@ -173,7 +176,7 @@ export class XRef {
         let obj;
         while (true) {
             if (!("firstEntryNum" in tableState) || !("entryCount" in tableState)) {
-                if (isCmd((obj = parser.getObj()), "trailer")) {
+                if (isCmd(obj = parser.getObj(), "trailer")) {
                     break;
                 }
                 tableState.firstEntryNum = obj;
@@ -205,9 +208,9 @@ export class XRef {
                     }
                 }
                 // Validate entry obj
-                if (!Number.isInteger(entry.offset)
-                    || !Number.isInteger(entry.gen)
-                    || !(entry.free || entry.uncompressed)) {
+                if (!Number.isInteger(entry.offset) ||
+                    !Number.isInteger(entry.gen) ||
+                    !(entry.free || entry.uncompressed)) {
                     throw new FormatError(`Invalid entry in XRef subsection: ${first}, ${count}`);
                 }
                 // The first xref table entry, i.e. obj 0, should be free. Attempting
@@ -233,9 +236,7 @@ export class XRef {
         return obj;
     }
     processXRefStream(stream) {
-        if (!this.streamState) 
-        // if( !("streamState" in this) ) 
-        {
+        if (!this.streamState) { // if( !("streamState" in this) )
             // Stores state of the stream as we process it so we can resume
             // from middle of stream in case of missing data error
             const streamParameters = stream.dict;
@@ -363,7 +364,15 @@ export class XRef {
         const CHECK_CONTENT_LENGTH = 25;
         const trailerBytes = new Uint8Array([116, 114, 97, 105, 108, 101, 114]);
         const startxrefBytes = new Uint8Array([
-            115, 116, 97, 114, 116, 120, 114, 101, 102,
+            115,
+            116,
+            97,
+            114,
+            116,
+            120,
+            114,
+            101,
+            102,
         ]);
         const objBytes = new Uint8Array([111, 98, 106]);
         const xrefBytes = new Uint8Array([47, 88, 82, 101, 102]);
@@ -463,8 +472,8 @@ export class XRef {
                 // checking XRef stream suspect
                 // (it shall have '/XRef' and next char is not a letter)
                 const xrefTagOffset = skipUntil(content, 0, xrefBytes);
-                if (xrefTagOffset < contentLength
-                    && content[xrefTagOffset + 5] < 64) {
+                if (xrefTagOffset < contentLength &&
+                    content[xrefTagOffset + 5] < 64) {
                     xrefStms.push(position - stream.start);
                     this.xrefstms[position - stream.start] = 1; // Avoid recursion
                 }
@@ -500,33 +509,39 @@ export class XRef {
             }
             // read the trailer dictionary
             const dict = parser.getObj();
-            if (!(dict instanceof Dict))
+            if (!(dict instanceof Dict)) {
                 continue;
+            }
             // Do some basic validation of the trailer/root dictionary candidate.
             try {
                 const rootDict = dict.get("Root");
-                if (!(rootDict instanceof Dict))
+                if (!(rootDict instanceof Dict)) {
                     continue;
+                }
                 const pagesDict = rootDict.get("Pages");
-                if (!(pagesDict instanceof Dict))
+                if (!(pagesDict instanceof Dict)) {
                     continue;
+                }
                 const pagesCount = pagesDict.get("Count");
-                if (!Number.isInteger(pagesCount))
+                if (!Number.isInteger(pagesCount)) {
                     continue;
+                }
                 // The top-level /Pages dictionary isn't obviously corrupt.
             }
             catch (ex) {
                 continue;
             }
             // taking the first one with 'ID'
-            if (dict.has("ID"))
+            if (dict.has("ID")) {
                 return dict;
+            }
             // The current dictionary is a candidate, but continue searching.
             trailerDict = dict;
         }
         // No trailer with 'ID', taking last one (if exists).
-        if (trailerDict)
+        if (trailerDict) {
             return trailerDict;
+        }
         // No trailer dictionary found, taking the "top"-dictionary (if exists).
         if (this.topDict) {
             return this.topDict;
@@ -578,9 +593,9 @@ export class XRef {
                 }
                 else if (Number.isInteger(obj)) {
                     // Parse in-stream XRef
-                    if (!Number.isInteger(parser.getObj())
-                        || !isCmd(parser.getObj(), "obj")
-                        || !((obj = parser.getObj()) instanceof BaseStream)) {
+                    if (!Number.isInteger(parser.getObj()) ||
+                        !isCmd(parser.getObj(), "obj") ||
+                        !((obj = parser.getObj()) instanceof BaseStream)) {
                         throw new FormatError("Invalid XRef stream");
                     }
                     dict = this.processXRefStream(obj);
@@ -609,13 +624,15 @@ export class XRef {
             return this.topDict;
         }
         catch (e) {
-            if (e instanceof MissingDataException)
+            if (e instanceof MissingDataException) {
                 throw e;
+            }
             info("(while reading XRef): " + e);
             this.startXRefQueue.shift();
         }
-        if (recoveryMode)
+        if (recoveryMode) {
             return undefined;
+        }
         throw new XRefParseException();
     }
     getEntry(i) {
@@ -626,8 +643,9 @@ export class XRef {
         return null;
     }
     fetchIfRef(obj, suppressEncryption = false) {
-        if (!(obj instanceof Ref))
+        if (!(obj instanceof Ref)) {
             return obj;
+        }
         return this.fetch(obj, suppressEncryption);
     }
     fetch(ref, suppressEncryption = false) {
@@ -663,8 +681,9 @@ export class XRef {
         this._pendingRefs.put(ref);
         let obj1;
         try {
-            if (xrefEntry.uncompressed)
+            if (xrefEntry.uncompressed) {
                 obj1 = this.fetchUncompressed(ref, xrefEntry, suppressEncryption);
+            }
             else
                 obj1 = this.fetchCompressed(ref, xrefEntry, suppressEncryption);
             this._pendingRefs.remove(ref);
@@ -716,7 +735,9 @@ export class XRef {
             obj1 = parser.getObj();
         }
         if (!(obj1 instanceof BaseStream)) {
-            assert(obj1 !== undefined, 'fetchUncompressed: The "obj1" cannot be undefined.');
+            /*#static*/  {
+                assert(obj1 !== undefined, 'fetchUncompressed: The "obj1" cannot be undefined.');
+            }
             this.#cacheMap.set(num, obj1);
         }
         return obj1;
@@ -767,12 +788,15 @@ export class XRef {
             });
             const obj = parser.getObj();
             entries[i] = obj;
-            if (obj instanceof BaseStream)
+            if (obj instanceof BaseStream) {
                 continue;
+            }
             const num = nums[i];
             const entry = this.entries[num];
             if (entry && entry.offset === tableOffset && entry.gen === i) {
-                assert(obj !== undefined, 'fetchCompressed: The "obj" cannot be undefined.');
+                /*#static*/  {
+                    assert(obj !== undefined, 'fetchCompressed: The "obj" cannot be undefined.');
+                }
                 this.#cacheMap.set(num, obj);
             }
         }
@@ -804,5 +828,5 @@ export class XRef {
         return this.root;
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=xref.js.map

@@ -17,23 +17,24 @@
  * limitations under the License.
  */
 
-import { FontFinder, selectFont } from "./fonts.js";
-import { type XFAFontBase, type XFAMargin } from "./alias.js";
-/*81---------------------------------------------------------------------------*/
+import { type XFAFontBase, type XFAMargin } from "./alias.ts";
+import { FontFinder, selectFont } from "./fonts.ts";
+/*80--------------------------------------------------------------------------*/
 
 const WIDTH_FACTOR = 1.02;
 
-class FontInfo
-{
+class FontInfo {
   lineHeight;
   paraMargin;
 
   pdfFont;
   xfaFont;
 
-  constructor( xfaFont:XFAFontBase | undefined, margin:XFAMargin | undefined, 
-    lineHeight:string | number | undefined, 
-    fontFinder:FontFinder | undefined
+  constructor(
+    xfaFont: XFAFontBase | undefined,
+    margin: XFAMargin | undefined,
+    lineHeight: string | number | undefined,
+    fontFinder: FontFinder | undefined,
   ) {
     this.lineHeight = lineHeight;
     this.paraMargin = margin || {
@@ -43,9 +44,8 @@ class FontInfo
       right: 0,
     };
 
-    if( !xfaFont )
-    {
-      [this.pdfFont, this.xfaFont] = this.defaultFont( fontFinder! );
+    if (!xfaFont) {
+      [this.pdfFont, this.xfaFont] = this.defaultFont(fontFinder!);
       return;
     }
 
@@ -56,64 +56,58 @@ class FontInfo
       size: xfaFont.size,
       letterSpacing: xfaFont.letterSpacing,
     };
-    const typeface = fontFinder!.find( xfaFont.typeface! );
-    if( !typeface ) 
-    {
-      [this.pdfFont, this.xfaFont] = this.defaultFont( fontFinder! );
+    const typeface = fontFinder!.find(xfaFont.typeface!);
+    if (!typeface) {
+      [this.pdfFont, this.xfaFont] = this.defaultFont(fontFinder!);
       return;
     }
 
     this.pdfFont = selectFont(xfaFont, typeface);
 
-    if( !this.pdfFont )
-    {
-      [this.pdfFont, this.xfaFont] = this.defaultFont( fontFinder! );
+    if (!this.pdfFont) {
+      [this.pdfFont, this.xfaFont] = this.defaultFont(fontFinder!);
     }
   }
 
-  defaultFont( fontFinder:FontFinder )
-  {
+  defaultFont(fontFinder: FontFinder) {
     // TODO: Add a default font based on Liberation.
-    const font =
-      fontFinder.find("Helvetica", false) ||
+    const font = fontFinder.find("Helvetica", false) ||
       fontFinder.find("Myriad Pro", false) ||
       fontFinder.find("Arial", false) ||
       fontFinder.getDefault();
-    if( font?.regular ) 
-    {
+    if (font?.regular) {
       const pdfFont = font.regular;
       const info = pdfFont.cssFontInfo!;
-      const xfaFont:XFAFontBase = {
+      const xfaFont: XFAFontBase = {
         typeface: info.fontFamily,
         posture: "normal",
         weight: "normal",
         size: 10,
         letterSpacing: 0,
       };
-      return <const>[pdfFont, xfaFont];
+      return [pdfFont, xfaFont] as const;
     }
 
-    const xfaFont:XFAFontBase = {
+    const xfaFont: XFAFontBase = {
       typeface: "Courier",
       posture: "normal",
       weight: "normal",
       size: 10,
       letterSpacing: 0,
     };
-    return <const>[undefined, xfaFont];
+    return [undefined, xfaFont] as const;
   }
 }
 
-class FontSelector
-{
+class FontSelector {
   fontFinder;
   stack;
-  
+
   constructor(
-    defaultXfaFont:XFAFontBase | undefined,
-    defaultParaMargin:XFAMargin | undefined,
-    defaultLineHeight:string | number | undefined,
-    fontFinder:FontFinder | undefined
+    defaultXfaFont: XFAFontBase | undefined,
+    defaultParaMargin: XFAMargin | undefined,
+    defaultLineHeight: string | number | undefined,
+    fontFinder: FontFinder | undefined,
   ) {
     this.fontFinder = fontFinder;
     this.stack = [
@@ -121,31 +115,33 @@ class FontSelector
         defaultXfaFont,
         defaultParaMargin,
         defaultLineHeight,
-        fontFinder
+        fontFinder,
       ),
     ];
   }
 
-  pushData( xfaFont:XFAFontBase, margin:XFAMargin, lineHeight?:string | number )
-  {
-    const lastFont = this.stack[this.stack.length - 1];
-    for( const name of <const>[
-      "typeface",
-      "posture",
-      "weight",
-      "size",
-      "letterSpacing",
-    ]) {
-      if( !xfaFont[name] )
-      {
-        (<any>xfaFont)[name] = lastFont.xfaFont[name];
+  pushData(
+    xfaFont: XFAFontBase,
+    margin: XFAMargin,
+    lineHeight?: string | number,
+  ) {
+    const lastFont = this.stack.at(-1)!;
+    for (
+      const name of [
+        "typeface",
+        "posture",
+        "weight",
+        "size",
+        "letterSpacing",
+      ] as const
+    ) {
+      if (!xfaFont[name]) {
+        (<any> xfaFont)[name] = lastFont.xfaFont[name];
       }
     }
 
-    for( const name of <const>["top", "bottom", "left", "right"] ) 
-    {
-      if( isNaN(margin[name]) )
-      {
+    for (const name of ["top", "bottom", "left", "right"] as const) {
+      if (isNaN(margin[name])) {
         margin[name] = lastFont.paraMargin[name];
       }
     }
@@ -154,14 +150,13 @@ class FontSelector
       xfaFont,
       margin,
       lineHeight || lastFont.lineHeight,
-      this.fontFinder
+      this.fontFinder,
     );
-    if( !fontInfo.pdfFont ) 
-    {
+    if (!fontInfo.pdfFont) {
       fontInfo.pdfFont = lastFont.pdfFont;
     }
 
-    this.stack.push( fontInfo );
+    this.stack.push(fontInfo);
   }
 
   popFont() {
@@ -169,82 +164,80 @@ class FontSelector
   }
 
   topFont() {
-    return this.stack[this.stack.length - 1];
+    return this.stack.at(-1);
   }
 }
 
-type XFAGlyph = [ 
-  glyphWidth:number, 
-  lineHeight:number,
-  firstLineHeight:number, 
-  char:string, 
-  isEOL:boolean 
+type XFAGlyph = [
+  glyphWidth: number,
+  lineHeight: number,
+  firstLineHeight: number,
+  char: string,
+  isEOL: boolean,
 ];
 
 /**
  * Compute a text area dimensions based on font metrics.
  */
-export class TextMeasure
-{
-  glyphs:XFAGlyph[] = [];
+export class TextMeasure {
+  glyphs: XFAGlyph[] = [];
   fontSelector;
   extraHeight = 0;
 
-  constructor( defaultXfaFont:XFAFontBase | undefined, 
-    defaultParaMargin:XFAMargin | undefined, 
-    defaultLineHeight:string | number | undefined, 
-    fonts:FontFinder | undefined
+  constructor(
+    defaultXfaFont: XFAFontBase | undefined,
+    defaultParaMargin: XFAMargin | undefined,
+    defaultLineHeight: string | number | undefined,
+    fonts: FontFinder | undefined,
   ) {
     this.fontSelector = new FontSelector(
       defaultXfaFont,
       defaultParaMargin,
       defaultLineHeight,
-      fonts
+      fonts,
     );
   }
 
-  pushData( xfaFont:XFAFontBase, margin:XFAMargin, lineHeight?:string | number ) 
-  {
-    this.fontSelector.pushData( xfaFont, margin, lineHeight );
+  pushData(
+    xfaFont: XFAFontBase,
+    margin: XFAMargin,
+    lineHeight?: string | number,
+  ) {
+    this.fontSelector.pushData(xfaFont, margin, lineHeight);
   }
 
-  popFont( xfaFont?:XFAFontBase )
-  {
+  popFont(xfaFont?: XFAFontBase) {
     return this.fontSelector.popFont();
   }
 
   addPara() {
-    const lastFont = this.fontSelector.topFont();
+    const lastFont = this.fontSelector.topFont()!;
     this.extraHeight += lastFont.paraMargin.top + lastFont.paraMargin.bottom;
   }
 
-  addString( str:string ) 
-  {
-    if( !str ) return;
+  addString(str: string) {
+    if (!str) return;
 
-    const lastFont = this.fontSelector.topFont();
+    const lastFont = this.fontSelector.topFont()!;
     const fontSize = lastFont.xfaFont.size;
-    if (lastFont.pdfFont) 
-    {
+    if (lastFont.pdfFont) {
       const letterSpacing = lastFont.xfaFont.letterSpacing;
       const pdfFont = lastFont.pdfFont;
       const fontLineHeight = pdfFont.lineHeight || 1.2;
-      const lineHeight =
-        lastFont.lineHeight || Math.max(1.2, fontLineHeight) * fontSize!;
+      const lineHeight = lastFont.lineHeight ||
+        Math.max(1.2, fontLineHeight) * fontSize!;
       const lineGap = pdfFont.lineGap === undefined ? 0.2 : pdfFont.lineGap;
       const noGap = fontLineHeight - lineGap;
       const firstLineHeight = Math.max(1, noGap) * fontSize!;
       const scale = fontSize! / 1000;
-      const fallbackWidth =
-        pdfFont.defaultWidth || pdfFont.charsToGlyphs(" ")[0].width;
+      const fallbackWidth = pdfFont.defaultWidth ||
+        pdfFont.charsToGlyphs(" ")[0].width;
 
-      for (const line of str.split(/[\u2029\n]/)) 
-      {
+      for (const line of str.split(/[\u2029\n]/)) {
         const encodedLine = pdfFont.encodeString(line).join("");
         const glyphs = pdfFont.charsToGlyphs(encodedLine);
 
-        for (const glyph of glyphs) 
-        {
+        for (const glyph of glyphs) {
           const width = glyph.width || fallbackWidth;
           this.glyphs.push([
             width! * scale + letterSpacing!,
@@ -262,10 +255,8 @@ export class TextMeasure
     }
 
     // When we have no font in the pdf, just use the font size as default width.
-    for (const line of str.split(/[\u2029\n]/)) 
-    {
-      for (const char of line.split("")) 
-      {
+    for (const line of str.split(/[\u2029\n]/)) {
+      for (const char of line.split("")) {
         this.glyphs.push([fontSize!, 1.2 * fontSize!, fontSize!, char, false]);
       }
 
@@ -274,8 +265,7 @@ export class TextMeasure
     this.glyphs.pop();
   }
 
-  compute( maxWidth:number ) 
-  {
+  compute(maxWidth: number) {
     let lastSpacePos = -1,
       lastSpaceWidth = 0,
       width = 0,
@@ -285,14 +275,12 @@ export class TextMeasure
     let isBroken = false;
     let isFirstLine = true;
 
-    for (let i = 0, ii = this.glyphs.length; i < ii; i++) 
-    {
+    for (let i = 0, ii = this.glyphs.length; i < ii; i++) {
       const [glyphWidth, lineHeight, firstLineHeight, char, isEOL] =
         this.glyphs[i];
       const isSpace = char === " ";
       const glyphHeight = isFirstLine ? firstLineHeight : lineHeight;
-      if (isEOL) 
-      {
+      if (isEOL) {
         width = Math.max(width, currentLineWidth);
         currentLineWidth = 0;
         height += currentLineHeight;
@@ -303,10 +291,8 @@ export class TextMeasure
         continue;
       }
 
-      if (isSpace) 
-      {
-        if (currentLineWidth + glyphWidth > maxWidth) 
-        {
+      if (isSpace) {
+        if (currentLineWidth + glyphWidth > maxWidth) {
           // We can break here but the space is not taken into account.
           width = Math.max(width, currentLineWidth);
           currentLineWidth = 0;
@@ -316,9 +302,8 @@ export class TextMeasure
           lastSpaceWidth = 0;
           isBroken = true;
           isFirstLine = false;
-        } 
-        else {
-          currentLineHeight = Math.max( +glyphHeight, currentLineHeight );
+        } else {
+          currentLineHeight = Math.max(+glyphHeight, currentLineHeight);
           lastSpaceWidth = currentLineWidth;
           currentLineWidth += glyphWidth;
           lastSpacePos = i;
@@ -326,8 +311,7 @@ export class TextMeasure
         continue;
       }
 
-      if (currentLineWidth + glyphWidth > maxWidth) 
-      {
+      if (currentLineWidth + glyphWidth > maxWidth) {
         // We must break to the last white position (if available)
         height += currentLineHeight;
         currentLineHeight = +glyphHeight;
@@ -337,8 +321,7 @@ export class TextMeasure
           currentLineWidth = 0;
           lastSpacePos = -1;
           lastSpaceWidth = 0;
-        } 
-        else {
+        } else {
           // Just break in the middle of the word
           width = Math.max(width, currentLineWidth);
           currentLineWidth = glyphWidth;
@@ -350,7 +333,7 @@ export class TextMeasure
       }
 
       currentLineWidth += glyphWidth;
-      currentLineHeight = Math.max( +glyphHeight, currentLineHeight );
+      currentLineHeight = Math.max(+glyphHeight, currentLineHeight);
     }
 
     width = Math.max(width, currentLineWidth);
@@ -359,4 +342,4 @@ export class TextMeasure
     return { width: WIDTH_FACTOR * width, height, isBroken };
   }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

@@ -56,15 +56,15 @@ export declare abstract class BasePdfManager {
 export declare class LocalPdfManager extends BasePdfManager {
     #private;
     constructor(docId: string, data: Uint8Array | number[], password: string | undefined, msgHandler: MessageHandler<Thread.worker>, evaluatorOptions: EvaluatorOptions, enableXfa?: boolean, docBaseUrl?: string);
-    /** @implements */
+    /** @implement */
     ensure<O extends PDFDocument | Page | XRef | Catalog | AnnotationFactory, P extends keyof O, A = O[P] extends (...args: any) => any ? Parameters<O[P]> : undefined, R = O[P] extends (...args: any) => any ? ReturnType<O[P]> : O[P]>(obj: O, prop: P, args: A): Promise<Awaited<R>>;
-    /** @implements */
+    /** @implement */
     requestRange(begin: number, end: number): Promise<void>;
-    /** @implements */
+    /** @implement */
     requestLoadedStream(): void;
-    /** @implements */
+    /** @implement */
     onLoadedStream(): Promise<Stream>;
-    /** @implements */
+    /** @implement */
     terminate(reason: AbortException): void;
 }
 interface _NetworkPdfManagerCtorP {
@@ -77,16 +77,16 @@ interface _NetworkPdfManagerCtorP {
 export declare class NetworkPdfManager extends BasePdfManager {
     streamManager: ChunkedStreamManager;
     constructor(docId: string, pdfNetworkStream: PDFWorkerStream, args: _NetworkPdfManagerCtorP, evaluatorOptions: EvaluatorOptions, enableXfa?: boolean, docBaseUrl?: string);
-    /** @implements */
+    /** @implement */
     ensure<O extends PDFDocument | Page | XRef | Catalog | AnnotationFactory, P extends keyof O, A = O[P] extends (...args: any) => any ? Parameters<O[P]> : undefined, R = O[P] extends (...args: any) => any ? ReturnType<O[P]> : O[P]>(obj: O, prop: P, args: A): Promise<Awaited<R>>;
-    /** @implements */
+    /** @implement */
     requestRange(begin: number, end: number): Promise<void>;
-    /** @implements */
+    /** @implement */
     requestLoadedStream(): void;
     sendProgressiveData(chunk: ArrayBufferLike): void;
-    /** @implements */
+    /** @implement */
     onLoadedStream(): Promise<import("./chunked_stream.js").ChunkedStream>;
-    /** @implements */
+    /** @implement */
     terminate(reason: AbortException): void;
 }
 export {};

@@ -1,9 +1,13 @@
+import { AnnotationEditorType } from "../pdf.ts-src/pdf.js";
 import { EventBus, EventName } from "./event_utils.js";
 import { type IL10n } from "./interfaces.js";
 import { type ViewerConfiguration } from "./viewer.js";
 interface ToolbarButton {
     element: HTMLElement;
     eventName: EventName | null;
+    eventDetails?: {
+        mode: AnnotationEditorType;
+    };
 }
 interface ToolbarItems {
     numPages: HTMLSpanElement;
@@ -14,6 +18,11 @@ interface ToolbarItems {
     next: HTMLButtonElement;
     zoomIn: HTMLButtonElement;
     zoomOut: HTMLButtonElement;
+    editorNoneButton: HTMLButtonElement;
+    editorFreeTextButton: HTMLButtonElement;
+    editorFreeTextParamsToolbar: HTMLDivElement;
+    editorInkButton: HTMLButtonElement;
+    editorInkParamsToolbar: HTMLButtonElement;
 }
 export declare class Toolbar {
     #private;
@@ -29,7 +38,7 @@ export declare class Toolbar {
     pagesCount: number;
     pageScaleValue: string;
     pageScale: number;
-    constructor(options: ViewerConfiguration['toolbar'], eventBus: EventBus, l10n: IL10n);
+    constructor(options: ViewerConfiguration["toolbar"], eventBus: EventBus, l10n: IL10n);
     setPageNumber(pageNumber: number, pageLabel?: string): void;
     setPagesCount(pagesCount: number, hasPageLabels: boolean): void;
     setPageScale(pageScaleValue: string | number | undefined, pageScale: number): void;

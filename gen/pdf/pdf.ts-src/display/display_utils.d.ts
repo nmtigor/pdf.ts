@@ -1,4 +1,5 @@
 import { type XFAElObj } from "../core/xfa/alias.js";
+import { RGB } from "../shared/scripting_utils.js";
 import { BaseException, CMapCompressionType, type matrix_t, type point_t, type rect_t } from "../shared/util.js";
 import { BaseCanvasFactory, BaseCMapReaderFactory, BaseStandardFontDataFactory, BaseSVGFactory } from "./base_factory.js";
 export declare class PixelsPerInch {
@@ -13,14 +14,14 @@ export declare class DOMCanvasFactory extends BaseCanvasFactory {
     });
     /**
      * @ignore
-     * @implements
+     * @implement
      */
     _createCanvas(width: number, height: number): HTMLCanvasElement;
 }
 export declare class DOMCMapReaderFactory extends BaseCMapReaderFactory {
     /**
      * @ignore
-     * @implements
+     * @implement
      */
     _fetchData(url: string, compressionType: CMapCompressionType): Promise<{
         cMapData: Uint8Array;
@@ -30,14 +31,14 @@ export declare class DOMCMapReaderFactory extends BaseCMapReaderFactory {
 export declare class DOMStandardFontDataFactory extends BaseStandardFontDataFactory {
     /**
      * @ignore
-     * @implements
+     * @implement
      */
     _fetchData(url: string): Promise<Uint8Array>;
 }
 export declare class DOMSVGFactory extends BaseSVGFactory {
     /**
      * @ignore
-     * @implements
+     * @implement
      */
     _createSVG(type: keyof SVGElementTagNameMap): SVGSymbolElement | SVGClipPathElement | SVGFilterElement | SVGMarkerElement | SVGMaskElement | SVGAElement | SVGScriptElement | SVGStyleElement | SVGTitleElement | SVGAnimateElement | SVGAnimateMotionElement | SVGAnimateTransformElement | SVGCircleElement | SVGDefsElement | SVGDescElement | SVGEllipseElement | SVGFEBlendElement | SVGFEColorMatrixElement | SVGFEComponentTransferElement | SVGFECompositeElement | SVGFEConvolveMatrixElement | SVGFEDiffuseLightingElement | SVGFEDisplacementMapElement | SVGFEDistantLightElement | SVGFEDropShadowElement | SVGFEFloodElement | SVGFEFuncAElement | SVGFEFuncBElement | SVGFEFuncGElement | SVGFEFuncRElement | SVGFEGaussianBlurElement | SVGFEImageElement | SVGFEMergeElement | SVGFEMergeNodeElement | SVGFEMorphologyElement | SVGFEOffsetElement | SVGFEPointLightElement | SVGFESpecularLightingElement | SVGFESpotLightElement | SVGFETileElement | SVGFETurbulenceElement | SVGForeignObjectElement | SVGGElement | SVGImageElement | SVGLineElement | SVGLinearGradientElement | SVGMetadataElement | SVGMPathElement | SVGPathElement | SVGPatternElement | SVGPolygonElement | SVGPolylineElement | SVGRadialGradientElement | SVGRectElement | SVGSetElement | SVGStopElement | SVGSVGElement | SVGSwitchElement | SVGTextElement | SVGTextPathElement | SVGTSpanElement | SVGUseElement | SVGViewElement;
 }
@@ -210,5 +211,17 @@ export declare function getXfaPageViewport(xfaPage: XFAElObj, { scale, rotation 
     scale?: number | undefined;
     rotation?: number | undefined;
 }): PageViewport;
+export declare function getRGB(color: string): RGB;
+export declare function getColorValues(colors: Map<string, RGB | undefined>): void;
+/**
+ * Use binary search to find the index of the first item in a given array which
+ * passes a given condition. The items are expected to be sorted in the sense
+ * that if the condition is true for one item in the array, then it is also true
+ * for all following items.
+ *
+ * @return Index of the first array element to pass the test,
+ *  or |items.length| if no such element exists.
+ */
+export declare function binarySearchFirstItem<T>(items: T[], condition: (item: T) => boolean, start?: number): number;
 export {};
 //# sourceMappingURL=display_utils.d.ts.map

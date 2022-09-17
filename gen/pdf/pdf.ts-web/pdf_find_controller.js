@@ -19,9 +19,10 @@
 /** @typedef {import("./event_utils").EventBus} EventBus */
 /** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
 import { createPromiseCap } from "../../lib/promisecap.js";
+import { binarySearchFirstItem, } from "../pdf.ts-src/pdf.js";
 import { getCharacterType } from "./pdf_find_utils.js";
-import { binarySearchFirstItem, scrollIntoView } from "./ui_utils.js";
-/*81---------------------------------------------------------------------------*/
+import { scrollIntoView } from "./ui_utils.js";
+/*80--------------------------------------------------------------------------*/
 export var FindState;
 (function (FindState) {
     FindState[FindState["FOUND"] = 0] = "FOUND";
@@ -55,13 +56,44 @@ const CHARACTERS_TO_NORMALIZE = {
 const DIACRITICS_EXCEPTION = new Set([
     // UNICODE_COMBINING_CLASS_KANA_VOICING
     // https://www.compart.com/fr/unicode/combining/8
-    0x3099, 0x309a,
+    0x3099,
+    0x309a,
     // UNICODE_COMBINING_CLASS_VIRAMA (under 0xFFFF)
     // https://www.compart.com/fr/unicode/combining/9
-    0x094d, 0x09cd, 0x0a4d, 0x0acd, 0x0b4d, 0x0bcd, 0x0c4d, 0x0ccd, 0x0d3b,
-    0x0d3c, 0x0d4d, 0x0dca, 0x0e3a, 0x0eba, 0x0f84, 0x1039, 0x103a, 0x1714,
-    0x1734, 0x17d2, 0x1a60, 0x1b44, 0x1baa, 0x1bab, 0x1bf2, 0x1bf3, 0x2d7f,
-    0xa806, 0xa82c, 0xa8c4, 0xa953, 0xa9c0, 0xaaf6, 0xabed,
+    0x094d,
+    0x09cd,
+    0x0a4d,
+    0x0acd,
+    0x0b4d,
+    0x0bcd,
+    0x0c4d,
+    0x0ccd,
+    0x0d3b,
+    0x0d3c,
+    0x0d4d,
+    0x0dca,
+    0x0e3a,
+    0x0eba,
+    0x0f84,
+    0x1039,
+    0x103a,
+    0x1714,
+    0x1734,
+    0x17d2,
+    0x1a60,
+    0x1b44,
+    0x1baa,
+    0x1bab,
+    0x1bf2,
+    0x1bf3,
+    0x2d7f,
+    0xa806,
+    0xa82c,
+    0xa8c4,
+    0xa953,
+    0xa9c0,
+    0xaaf6,
+    0xabed,
     // 91
     // https://www.compart.com/fr/unicode/combining/91
     0x0c56,
@@ -70,27 +102,70 @@ const DIACRITICS_EXCEPTION = new Set([
     0x0f71,
     // 130
     // https://www.compart.com/fr/unicode/combining/130
-    0x0f72, 0x0f7a, 0x0f7b, 0x0f7c, 0x0f7d, 0x0f80,
+    0x0f72,
+    0x0f7a,
+    0x0f7b,
+    0x0f7c,
+    0x0f7d,
+    0x0f80,
     // 132
     // https://www.compart.com/fr/unicode/combining/132
     0x0f74,
 ]);
 const DIACRITICS_EXCEPTION_STR = [...DIACRITICS_EXCEPTION.values()]
-    .map(x => String.fromCharCode(x))
+    .map((x) => String.fromCharCode(x))
     .join("");
 const DIACRITICS_REG_EXP = /\p{M}+/gu;
 const SPECIAL_CHARS_REG_EXP = /([.*+?^${}()|[\]\\])|(\p{P})|(\s+)|(\p{M})|(\p{L})/gu;
 const NOT_DIACRITIC_FROM_END_REG_EXP = /([^\p{M}])\p{M}*$/u;
 const NOT_DIACRITIC_FROM_START_REG_EXP = /^\p{M}*([^\p{M}])/u;
-let normalizationRegex = null;
+// The range [AC00-D7AF] corresponds to the Hangul syllables.
+// The few other chars are some CJK Compatibility Ideographs.
+const SYLLABLES_REG_EXP = /[\uAC00-\uD7AF\uFA6C\uFACF-\uFAD1\uFAD5-\uFAD7]+/g;
+const SYLLABLES_LENGTHS = new Map();
+// When decomposed (in using NFD) the above syllables will start
+// with one of the chars in this regexp.
+const FIRST_CHAR_SYLLABLES_REG_EXP = "[\\u1100-\\u1112\\ud7a4-\\ud7af\\ud84a\\ud84c\\ud850\\ud854\\ud857\\ud85f]";
+let noSyllablesRegExp = null;
+let withSyllablesRegExp = null;
 function normalize(text) {
     // The diacritics in the text or in the query can be composed or not.
     // So we use a decomposed text using NFD (and the same for the query)
     // in order to be sure that diacritics are in the same order.
-    if (!normalizationRegex) {
+    // Collect syllables length and positions.
+    const syllablePositions = [];
+    let m;
+    while ((m = SYLLABLES_REG_EXP.exec(text)) !== null) {
+        let { index } = m;
+        for (const char of m[0]) {
+            let len = SYLLABLES_LENGTHS.get(char);
+            if (!len) {
+                len = char.normalize("NFD").length;
+                SYLLABLES_LENGTHS.set(char, len);
+            }
+            syllablePositions.push([len, index++]);
+        }
+    }
+    let normalizationRegex;
+    if (syllablePositions.length === 0 && noSyllablesRegExp) {
+        normalizationRegex = noSyllablesRegExp;
+    }
+    else if (syllablePositions.length > 0 && withSyllablesRegExp) {
+        normalizationRegex = withSyllablesRegExp;
+    }
+    else {
         // Compile the regular expression for text normalization once.
         const replace = Object.keys(CHARACTERS_TO_NORMALIZE).join("");
-        normalizationRegex = new RegExp(`([${replace}])|(\\p{M}+(?:-\\n)?)|(\\S-\\n)|(\\n)`, "gum");
+        const regexp = `([${replace}])|(\\p{M}+(?:-\\n)?)|(\\S-\\n)|(\\n)`;
+        if (syllablePositions.length === 0) {
+            // Most of the syllables belong to Hangul so there are no need
+            // to search for them in a non-Hangul document.
+            // We use the \0 in order to have the same number of groups.
+            normalizationRegex = noSyllablesRegExp = new RegExp(regexp + "|(\\u0000)", "gum");
+        }
+        else {
+            normalizationRegex = withSyllablesRegExp = new RegExp(regexp + `|(${FIRST_CHAR_SYLLABLES_REG_EXP})`, "gum");
+        }
     }
     // The goal of this function is to normalize the string and
     // be able to get from an index in the new string the
@@ -119,18 +194,18 @@ function normalize(text) {
     // Thirdly, if o > n, then we push the element: [y - (s - n), o + s - n]
     // Collect diacritics length and positions.
     const rawDiacriticsPositions = [];
-    let m;
     while ((m = DIACRITICS_REG_EXP.exec(text)) !== null) {
         rawDiacriticsPositions.push([m[0].length, m.index]);
     }
     let normalized = text.normalize("NFD");
     const positions = [[0, 0]];
-    let k = 0;
+    let rawDiacriticsIndex = 0;
+    let syllableIndex = 0;
     let shift = 0;
     let shiftOrigin = 0;
     let eol = 0;
     let hasDiacritics = false;
-    normalized = normalized.replace(normalizationRegex, (match, p1, p2, p3, p4, i) => {
+    normalized = normalized.replace(normalizationRegex, (match, p1, p2, p3, p4, p5, i) => {
         i -= shiftOrigin;
         if (p1) {
             // Maybe fractions or quotations mark...
@@ -148,11 +223,11 @@ function normalize(text) {
             // Diacritics.
             hasDiacritics = true;
             let jj = len;
-            if (i + eol === rawDiacriticsPositions[k]?.[1]) {
-                jj -= rawDiacriticsPositions[k][0];
-                ++k;
+            if (i + eol === rawDiacriticsPositions[rawDiacriticsIndex]?.[1]) {
+                jj -= rawDiacriticsPositions[rawDiacriticsIndex][0];
+                ++rawDiacriticsIndex;
             }
-            for (let j = 1; j < jj + 1; j++) {
+            for (let j = 1; j <= jj; j++) {
                 // i is the position of the first diacritic
                 // so (i - 1) is the position for the letter before.
                 positions.push([i - 1 - shift + j, shift - j]);
@@ -182,14 +257,28 @@ function normalize(text) {
             eol += 1;
             return p3.charAt(0);
         }
-        // p4
-        // eol is replaced by space: "foo\nbar" is likely equivalent to
-        // "foo bar".
-        positions.push([i - shift + 1, shift - 1]);
-        shift -= 1;
-        shiftOrigin += 1;
-        eol += 1;
-        return " ";
+        if (p4) {
+            // eol is replaced by space: "foo\nbar" is likely equivalent to
+            // "foo bar".
+            positions.push([i - shift + 1, shift - 1]);
+            shift -= 1;
+            shiftOrigin += 1;
+            eol += 1;
+            return " ";
+        }
+        // p5
+        if (i + eol === syllablePositions[syllableIndex]?.[1]) {
+            // A syllable (1 char) is replaced with several chars (n) so
+            // newCharsLen = n - 1.
+            const newCharLen = syllablePositions[syllableIndex][0] - 1;
+            ++syllableIndex;
+            for (let j = 1; j <= newCharLen; j++) {
+                positions.push([i - (shift - j), shift - j]);
+            }
+            shift -= newCharLen;
+            shiftOrigin += newCharLen;
+        }
+        return p5;
     });
     positions.push([normalized.length, shift]);
     return [normalized, positions, hasDiacritics];
@@ -202,11 +291,11 @@ function getOriginalIndex(diffs, pos, len) {
         return [pos, len];
     const start = pos;
     const end = pos + len;
-    let i = binarySearchFirstItem(diffs, x => x[0] >= start);
+    let i = binarySearchFirstItem(diffs, (x) => x[0] >= start);
     if (diffs[i][0] > start) {
         --i;
     }
-    let j = binarySearchFirstItem(diffs, x => x[0] >= end, i);
+    let j = binarySearchFirstItem(diffs, (x) => x[0] >= end, i);
     if (diffs[j][0] > end) {
         --j;
     }
@@ -219,17 +308,27 @@ export class PDFFindController {
     #linkService;
     #eventBus;
     #highlightMatches;
-    get highlightMatches() { return this.#highlightMatches; }
+    get highlightMatches() {
+        return this.#highlightMatches;
+    }
     _scrollMatches;
     _pdfDocument;
     #pageMatches;
-    get pageMatches() { return this.#pageMatches; }
+    get pageMatches() {
+        return this.#pageMatches;
+    }
     #pageMatchesLength;
-    get pageMatchesLength() { return this.#pageMatchesLength; }
+    get pageMatchesLength() {
+        return this.#pageMatchesLength;
+    }
     #selected;
-    get selected() { return this.#selected; }
+    get selected() {
+        return this.#selected;
+    }
     #state;
-    get state() { return this.#state; }
+    get state() {
+        return this.#state;
+    }
     #offset;
     #extractTextPromises;
     #pageContents; // Stores the normalized text for each page.
@@ -244,7 +343,7 @@ export class PDFFindController {
     _firstPageCapability;
     _rawQuery;
     #normalizedQuery;
-    constructor({ linkService, eventBus }) {
+    constructor({ linkService, eventBus, }) {
         this.#linkService = linkService;
         this.#eventBus = eventBus;
         this.#reset();
@@ -261,14 +360,16 @@ export class PDFFindController {
         if (this._pdfDocument) {
             this.#reset();
         }
-        if (!pdfDocument)
+        if (!pdfDocument) {
             return;
+        }
         this._pdfDocument = pdfDocument;
         this._firstPageCapability.resolve();
     }
     #onFind = (state) => {
-        if (!state)
+        if (!state) {
             return;
+        }
         const pdfDocument = this._pdfDocument;
         const { type } = state;
         if (this.#state === undefined || this.#shouldDirtyMatch(state)) {
@@ -281,8 +382,8 @@ export class PDFFindController {
         this._firstPageCapability.promise.then(() => {
             // If the document was closed before searching began, or if the search
             // operation was relevant for a previously opened document, do nothing.
-            if (!this._pdfDocument
-                || (pdfDocument && this._pdfDocument !== pdfDocument)) {
+            if (!this._pdfDocument ||
+                (pdfDocument && this._pdfDocument !== pdfDocument)) {
                 return;
             }
             this.#extractText();
@@ -330,12 +431,15 @@ export class PDFFindController {
         });
     };
     scrollMatchIntoView({ element, selectedLeft = 0, pageIndex = -1, matchIndex = -1 }) {
-        if (!this._scrollMatches || !element)
+        if (!this._scrollMatches || !element) {
             return;
-        else if (matchIndex === -1 || matchIndex !== this.#selected.matchIdx)
+        }
+        else if (matchIndex === -1 || matchIndex !== this.#selected.matchIdx) {
             return;
-        else if (pageIndex === -1 || pageIndex !== this.#selected.pageIdx)
+        }
+        else if (pageIndex === -1 || pageIndex !== this.#selected.pageIdx) {
             return;
+        }
         this._scrollMatches = false; // Ensure that scrolling only happens once.
         const spot = {
             top: MATCH_SCROLL_OFFSET_TOP,
@@ -387,8 +491,9 @@ export class PDFFindController {
     #shouldDirtyMatch(state) {
         // When the search query changes, regardless of the actual search command
         // used, always re-calculate matches to avoid errors (fixes bug 1030622).
-        if (state.query !== this.#state.query)
+        if (state.query !== this.#state.query) {
             return true;
+        }
         switch (state.type) {
             case "again":
                 const pageNumber = this.#selected.pageIdx + 1;
@@ -401,10 +506,10 @@ export class PDFFindController {
                 // there's a risk that consecutive 'findagain' operations could "skip"
                 // over matches at the top/bottom of pages thus making them completely
                 // inaccessible when there's multiple pages visible in the viewer.
-                if (pageNumber >= 1
-                    && pageNumber <= linkService.pagesCount
-                    && pageNumber !== linkService.page
-                    && !linkService.isPageVisible(pageNumber)) {
+                if (pageNumber >= 1 &&
+                    pageNumber <= linkService.pagesCount &&
+                    pageNumber !== linkService.page &&
+                    !linkService.isPageVisible(pageNumber)) {
                     return true;
                 }
                 return false;
@@ -424,8 +529,9 @@ export class PDFFindController {
         if (match) {
             const first = content.charCodeAt(startIdx);
             const limit = match[1].charCodeAt(0);
-            if (getCharacterType(first) === getCharacterType(limit))
+            if (getCharacterType(first) === getCharacterType(limit)) {
                 return false;
+            }
         }
         match = content
             .slice(startIdx + length)
@@ -433,8 +539,9 @@ export class PDFFindController {
         if (match) {
             const last = content.charCodeAt(startIdx + length - 1);
             const limit = match[1].charCodeAt(0);
-            if (getCharacterType(last) === getCharacterType(limit))
+            if (getCharacterType(last) === getCharacterType(limit)) {
                 return false;
+            }
         }
         return true;
     };
@@ -443,8 +550,8 @@ export class PDFFindController {
         const diffs = this.#pageDiffs[pageIndex];
         let match;
         while ((match = query.exec(pageContent)) !== null) {
-            if (entireWord
-                && !this.#isEntireWord(pageContent, match.index, match[0].length)) {
+            if (entireWord &&
+                !this.#isEntireWord(pageContent, match.index, match[0].length)) {
                 continue;
             }
             const [matchPos, matchLen] = getOriginalIndex(diffs, match.index, match[0].length);
@@ -460,7 +567,7 @@ export class PDFFindController {
         // const matchesWithLength:MatchWithLength[] = [];
         const { matchDiacritics } = this.#state;
         let isUnicode = false;
-        query = query.replace(SPECIAL_CHARS_REG_EXP, (match, p1 /* to escape */, p2 /* punctuation */, p3 /* whitespaces */, p4 /* diacritics */, p5 /* letters */) => {
+        query = query.replace(SPECIAL_CHARS_REG_EXP, (match, p1, /* to escape */ p2, /* punctuation */ p3, /* whitespaces */ p4, /* diacritics */ p5) => {
             // We don't need to use a \s for whitespaces since all the different
             // kind of whitespaces are replaced by a single " ".
             if (p1) {
@@ -508,9 +615,10 @@ export class PDFFindController {
     }
     #calculateMatch(pageIndex) {
         let query = this.#query;
-        if (query.length === 0)
+        if (query.length === 0) {
             // Do nothing: the matches should be wiped out already.
             return;
+        }
         const { caseSensitive, entireWord, phraseSearch } = this.#state;
         const pageContent = this.#pageContents[pageIndex];
         const hasDiacritics = this.#hasDiacritics[pageIndex];
@@ -526,7 +634,7 @@ export class PDFFindController {
                 query = match
                     .sort()
                     .reverse()
-                    .map(q => {
+                    .map((q) => {
                     const [isUnicodePart, queryPart] = this.#convertToRegExpString(q, hasDiacritics);
                     isUnicode ||= isUnicodePart;
                     return `(${queryPart})`;
@@ -554,9 +662,10 @@ export class PDFFindController {
         }
     }
     #extractText() {
-        if (this.#extractTextPromises.length > 0)
+        if (this.#extractTextPromises.length > 0) {
             // Perform text extraction once if this method is called multiple times.
             return;
+        }
         let promise = Promise.resolve();
         for (let i = 0, ii = this.#linkService.pagesCount; i < ii; i++) {
             const extractTextCapability = createPromiseCap();
@@ -564,10 +673,10 @@ export class PDFFindController {
             promise = promise.then(() => {
                 return this._pdfDocument
                     .getPage(i + 1)
-                    .then(pdfPage => {
+                    .then((pdfPage) => {
                     return pdfPage.getTextContent();
                 })
-                    .then(textContent => {
+                    .then((textContent) => {
                     const strBuf = [];
                     for (const textItem of textContent.items) {
                         strBuf.push(textItem.str);
@@ -582,7 +691,7 @@ export class PDFFindController {
                         this.#hasDiacritics[i],
                     ] = normalize(strBuf.join(""));
                     extractTextCapability.resolve();
-                }, reason => {
+                }, (reason) => {
                     console.error(`Unable to get text content for page ${i + 1}`, reason);
                     // Page error -- assuming no text content.
                     this.#pageContents[i] = "";
@@ -630,8 +739,9 @@ export class PDFFindController {
             this.#updateAllPages(); // Wipe out any previously highlighted matches.
             for (let i = 0; i < numPages; i++) {
                 // Start finding the matches as soon as the text is extracted.
-                if (this.#pendingFindMatches.has(i))
+                if (this.#pendingFindMatches.has(i)) {
                     continue;
+                }
                 this.#pendingFindMatches.add(i);
                 this.#extractTextPromises[i].then(() => {
                     this.#pendingFindMatches.delete(i);
@@ -645,8 +755,9 @@ export class PDFFindController {
             return;
         }
         // If we're waiting on a page, we return since we can't do anything else.
-        if (this.#resumePageIdx)
+        if (this.#resumePageIdx) {
             return;
+        }
         const offset = this.#offset;
         // Keep track of how many pages we should maximally iterate through.
         this.#pagesToSearch = numPages;
@@ -654,8 +765,8 @@ export class PDFFindController {
         // page's matches.
         if (offset.matchIdx !== null) {
             const numPageMatches = this.#pageMatches[offset.pageIdx].length;
-            if ((!previous && offset.matchIdx + 1 < numPageMatches)
-                || (previous && offset.matchIdx > 0)) {
+            if ((!previous && offset.matchIdx + 1 < numPageMatches) ||
+                (previous && offset.matchIdx > 0)) {
                 // The simple case; we just have advance the matchIdx to select
                 // the next match on the page.
                 offset.matchIdx = previous ? offset.matchIdx - 1 : offset.matchIdx + 1;
@@ -749,8 +860,8 @@ export class PDFFindController {
         // events will always be dispatched in the expected order.
         this._firstPageCapability.promise.then(() => {
             // Only update the UI if the document is open, and is the current one.
-            if (!this._pdfDocument
-                || (pdfDocument && this._pdfDocument !== pdfDocument)) {
+            if (!this._pdfDocument ||
+                (pdfDocument && this._pdfDocument !== pdfDocument)) {
                 return;
             }
             // Ensure that a pending, not yet started, search operation is aborted.
@@ -805,5 +916,5 @@ export class PDFFindController {
         });
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=pdf_find_controller.js.map

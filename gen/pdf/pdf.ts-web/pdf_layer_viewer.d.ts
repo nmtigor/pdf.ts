@@ -1,5 +1,4 @@
-import { PDFDocumentProxy } from "../pdf.ts-src/display/api.js";
-import { OptionalContentConfig } from "../pdf.ts-src/display/optional_content_config.js";
+import { OptionalContentConfig, PDFDocumentProxy } from "../pdf.ts-src/pdf.js";
 import { BaseTreeViewer, type BaseTreeViewerCtorP } from "./base_tree_viewer.js";
 import { type IL10n } from "./interfaces.js";
 interface PDFLayerViewerOptions extends BaseTreeViewerCtorP {
@@ -24,15 +23,15 @@ export declare class PDFLayerViewer extends BaseTreeViewer {
     static create(options: PDFLayerViewerOptions): PDFLayerViewer;
     private constructor();
     reset(): void;
-    /** @implements */
+    /** @implement */
     protected _dispatchEvent(layersCount: number): void;
-    /** @implements */
+    /** @implement */
     protected _bindLink(element: HTMLAnchorElement, { groupId, input }: {
         groupId: string;
         input: HTMLInputElement;
     }): void;
     protected toggleAllTreeItems$(): void;
-    /** @implements */
+    /** @implement */
     render({ optionalContentConfig, pdfDocument }: _PDFLayerViewerRenderP): void;
 }
 export {};

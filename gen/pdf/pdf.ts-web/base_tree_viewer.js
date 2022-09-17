@@ -14,7 +14,7 @@
  */
 import { html } from "../../lib/dom.js";
 import { removeNullCharacters } from "./ui_utils.js";
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 const TREEITEM_OFFSET_TOP = -100; // px
 const TREEITEM_SELECTED_CLASS = "selected";
 export class BaseTreeViewer {
@@ -43,8 +43,8 @@ export class BaseTreeViewer {
     _normalizeTextContent(str) {
         // Chars in range [0x01-0x1F] will be replaced with a white space
         // and 0x00 by "".
-        return (removeNullCharacters(str, /* replaceInvisible */ true) ||
-            /* en dash = */ "\u2013");
+        return (removeNullCharacters(str, /* replaceInvisible */ true) || /* en dash = */
+            "\u2013");
     }
     /**
      * Prepend a button before a tree item which allows the user to collapse or
@@ -56,7 +56,7 @@ export class BaseTreeViewer {
         if (hidden) {
             toggler.classList.add("treeItemsHidden");
         }
-        toggler.onclick = evt => {
+        toggler.onclick = (evt) => {
             evt.stopPropagation();
             toggler.classList.toggle("treeItemsHidden");
             if (evt.shiftKey) {
@@ -64,7 +64,7 @@ export class BaseTreeViewer {
                 this.#toggleTreeItem(div, shouldShowAll);
             }
         };
-        div.insertBefore(toggler, div.firstChild);
+        div.prepend(toggler);
     }
     /**
      * Collapse or expand the subtree of a tree item.
@@ -75,7 +75,7 @@ export class BaseTreeViewer {
      */
     #toggleTreeItem(root, show = false) {
         this.#lastToggleIsShow = show;
-        root.querySelectorAll(".treeItemToggler").forEach(toggler => {
+        root.querySelectorAll(".treeItemToggler").forEach((toggler) => {
             toggler.classList.toggle("treeItemsHidden", !show);
         });
     }
@@ -91,7 +91,7 @@ export class BaseTreeViewer {
             this.container.classList.add("treeWithDeepNesting");
             this.#lastToggleIsShow = !fragment.querySelector(".treeItemsHidden");
         }
-        this.container.appendChild(fragment);
+        this.container.append(fragment);
         this._dispatchEvent(count);
     }
     _updateCurrentTreeItem(treeItem = null) {
@@ -122,5 +122,5 @@ export class BaseTreeViewer {
         this.container.scrollTo(treeItem.offsetLeft, treeItem.offsetTop + TREEITEM_OFFSET_TOP);
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=base_tree_viewer.js.map

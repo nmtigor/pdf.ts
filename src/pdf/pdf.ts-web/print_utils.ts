@@ -17,25 +17,29 @@
  * limitations under the License.
  */
 
-import { type XFAElObj } from "../pdf.ts-src/core/xfa/alias.js";
-import { PDFDocumentProxy } from "../pdf.ts-src/display/api.js";
-import { getXfaPageViewport, PixelsPerInch } from "../pdf.ts-src/display/display_utils.js";
-import { SimpleLinkService } from "./pdf_link_service.js";
-import { XfaLayerBuilder } from "./xfa_layer_builder.js";
-/*81---------------------------------------------------------------------------*/
+import { div } from "../../lib/dom.ts";
+import {
+  getXfaPageViewport,
+  PDFDocumentProxy,
+  PixelsPerInch,
+  type XFAElObj,
+} from "../pdf.ts-src/pdf.ts";
+import { SimpleLinkService } from "./pdf_link_service.ts";
+import { XfaLayerBuilder } from "./xfa_layer_builder.ts";
+/*80--------------------------------------------------------------------------*/
 
-export function getXfaHtmlForPrinting( 
-  printContainer:HTMLDivElement, pdfDocument:PDFDocumentProxy
+export function getXfaHtmlForPrinting(
+  printContainer: HTMLDivElement,
+  pdfDocument: PDFDocumentProxy,
 ) {
   const xfaHtml = pdfDocument.allXfaHtml!;
   const linkService = new SimpleLinkService();
   const scale = Math.round(PixelsPerInch.PDF_TO_CSS_UNITS * 100) / 100;
 
-  for( const xfaPage of xfaHtml.children! )
-  {
-    const page = document.createElement("div");
+  for (const xfaPage of xfaHtml.children!) {
+    const page = div();
     page.className = "xfaPrintedPage";
-    printContainer.appendChild(page);
+    printContainer.append(page);
 
     const builder = new XfaLayerBuilder({
       pageDiv: page,
@@ -44,9 +48,9 @@ export function getXfaHtmlForPrinting(
       linkService,
       xfaHtml: xfaPage,
     });
-    const viewport = getXfaPageViewport( <XFAElObj>xfaPage, { scale });
+    const viewport = getXfaPageViewport(<XFAElObj> xfaPage, { scale });
 
     builder.render(viewport, "print");
   }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

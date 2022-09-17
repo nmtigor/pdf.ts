@@ -45,11 +45,11 @@ declare class NetworkManager {
 export declare class PDFNetworkStream implements IPDFStream {
     #private;
     constructor(source: DocumentInitP);
-    /** @override */
+    /** @implement */
     getFullReader(): PDFNetworkStreamFullRequestReader;
-    /** @override */
+    /** @implement */
     getRangeReader(begin: number, end: number): PDFNetworkStreamRangeRequestReader;
-    /** @implements */
+    /** @implement */
     cancelAllRequests(reason: AbortException): void;
 }
 declare class PDFNetworkStreamFullRequestReader implements IPDFStreamReader {
@@ -61,32 +61,32 @@ declare class PDFNetworkStreamFullRequestReader implements IPDFStreamReader {
     _cachedChunks: ArrayBufferLike[];
     _storedError?: MissingPDFException | UnexpectedResponseException;
     get filename(): string | undefined;
-    /** @implements */
+    /** @implement */
     onProgress: ((data: {
         loaded: number;
         total: number;
     }) => void) | undefined;
     constructor(manager: NetworkManager, source: DocumentInitP);
-    /** @implements */
+    /** @implement */
     read(): Promise<ReadValue>;
-    /** @override */
+    /** @implement */
     cancel(reason: object): void;
 }
 declare class PDFNetworkStreamRangeRequestReader implements IPDFStreamRangeReader {
     #private;
     _url: string | URL;
     _storedError: MissingPDFException | UnexpectedResponseException | undefined;
-    /** @implements */
+    /** @implement */
     onProgress: ((data: {
         loaded: number;
     }) => void) | undefined;
     onClosed?: (reader: PDFNetworkStreamRangeRequestReader) => void;
-    /** @override */
+    /** @implement */
     get isStreamingSupported(): boolean;
     constructor(manager: NetworkManager, begin: number, end: number);
-    /** @implements */
+    /** @implement */
     read(): Promise<ReadValue>;
-    /** @override */
+    /** @implement */
     cancel(reason: object): void;
 }
 export {};

@@ -1,6 +1,6 @@
-import { type AnnotStorageRecord } from "../display/annotation_layer.js";
+import { type AnnotStorageRecord, AnnotStorageValue } from "../display/annotation_layer.js";
 import { type CMapData } from "../display/base_factory.js";
-import { MessageHandler, Thread, type StreamSink } from "../shared/message_handler.js";
+import { MessageHandler, type StreamSink, Thread } from "../shared/message_handler.js";
 import { RenderingIntentFlag } from "../shared/util.js";
 import { Annotation, type AnnotationData, type FieldObject, type SaveReturn } from "./annotation.js";
 import { BaseStream } from "./base_stream.js";
@@ -55,7 +55,7 @@ export declare class Page {
     pageIndex: number;
     pageDict: Dict;
     xref: XRef;
-    ref: Ref | undefined;
+    ref: import("./primitives.js").NsRef.Ref | undefined;
     fontCache: RefSetCache<Promise<TranslatedFont>>;
     builtInCMapCache: Map<string, CMapData>;
     standardFontDataCache: Map<string, Uint8Array | ArrayBuffer>;
@@ -66,7 +66,7 @@ export declare class Page {
     get _localIdFactory(): LocalIdFactory;
     resourcesPromise?: Promise<Dict>;
     constructor({ pdfManager, xref, pageIndex, pageDict, ref, globalIdFactory, fontCache, builtInCMapCache, standardFontDataCache, globalImageCache, nonBlendModesSet, xfaFactory, }: _PageCtorP);
-    get content(): Stream | (Ref | Stream)[] | undefined;
+    get content(): Stream | (import("./primitives.js").NsRef.Ref | Stream)[] | undefined;
     /**
      * Table 33
      */
@@ -81,19 +81,23 @@ export declare class Page {
     get xfaData(): {
         bbox: [number, number, number, number];
     } | null;
-    save(handler: MessageHandler<Thread.worker>, task: WorkerTask, annotationStorage?: AnnotStorageRecord): Promise<(SaveReturn | null)[]>;
+    saveNewAnnotations(handler: MessageHandler<Thread.worker>, task: WorkerTask, annotations: AnnotStorageValue[]): Promise<{
+        ref: import("./primitives.js").NsRef.Ref;
+        data: string;
+    }[]>;
+    save(handler: MessageHandler<Thread.worker>, task: WorkerTask, annotationStorage?: AnnotStorageRecord): Promise<SaveReturn[]>;
     loadResources(keys: string[]): Promise<import("./chunked_stream.js").ChunkedStream | undefined>;
     getOperatorList({ handler, sink, task, intent, cacheKey, annotationStorage, }: _PageGetOperatorListP): Promise<{
         length: number;
     }>;
     extractTextContent({ handler, task, includeMarkedContent, sink, combineTextItems, }: _ExtractTextContentP): Promise<void>;
-    getStructTree(): Promise<import("./struct_tree.js").StructTree | undefined>;
+    getStructTree(): Promise<import("../display/api.js").StructTreeNode | undefined>;
     /**
      * @private
      */
     _parseStructTree(structTreeRoot: StructTreeRoot): StructTreePage;
     getAnnotationsData(intent: RenderingIntentFlag): Promise<AnnotationData[]>;
-    get annotations(): Ref[];
+    get annotations(): import("./primitives.js").NsRef.Ref[];
     get _parsedAnnotations(): Promise<Annotation[]>;
     get jsActions(): import("./core_utils.js").AnnotActions | undefined;
 }

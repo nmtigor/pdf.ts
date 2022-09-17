@@ -16,11 +16,14 @@
  * limitations under the License.
  */
 /** @typedef {import("./interfaces").IDownloadManager} IDownloadManager */
+import { CHROME, GENERIC } from "../../global.js";
 import { html } from "../../lib/dom.js";
-import { isPdfFile } from "../pdf.ts-src/display/display_utils.js";
-import { createValidAbsoluteUrl } from "../pdf.ts-src/pdf.js";
-/*81---------------------------------------------------------------------------*/
-// if (typeof PDFJSDev !== "undefined" && !PDFJSDev.test("CHROME || GENERIC")) {
+import { createValidAbsoluteUrl, isPdfFile } from "../pdf.ts-src/pdf.js";
+/*80--------------------------------------------------------------------------*/
+/*#static*/ if (!(CHROME || GENERIC)) {
+    throw new Error('Module "pdfjs-web/download_manager" shall not be used ' +
+        "outside CHROME and GENERIC builds.");
+}
 function download(blobUrl, filename) {
     const a = html("a");
     if (!a.click) {
@@ -35,13 +38,14 @@ function download(blobUrl, filename) {
     }
     // <a> must be in the document for recent Firefox versions,
     // otherwise .click() is ignored.
-    (document.body || document.documentElement).appendChild(a);
+    (document.body || document.documentElement).append(a);
     a.click();
     a.remove();
 }
 export class DownloadManager {
     _openBlobUrls = new WeakMap();
     onerror;
+    /** @implement */
     downloadUrl(url, filename) {
         if (!createValidAbsoluteUrl(url, "http://example.com")) {
             console.error(`downloadUrl - not a valid URL: ${url}`);
@@ -49,11 +53,13 @@ export class DownloadManager {
         }
         download(url + "#pdfjs.action=download", filename);
     }
+    /** @implement */
     downloadData(data, filename, contentType) {
         const blobUrl = URL.createObjectURL(new Blob([data], { type: contentType }));
         download(blobUrl, filename);
     }
     /**
+     * @implement
      * @return Indicating if the data was opened.
      */
     openOrDownloadData(element, data, filename) {
@@ -66,10 +72,10 @@ export class DownloadManager {
                 this._openBlobUrls.set(element, blobUrl);
             }
             let viewerUrl;
-            // The current URL is the viewer, let's use it and append the file.
-            viewerUrl = "?file=" + encodeURIComponent(blobUrl + "#" + filename);
-            // In the Chrome extension, the URL is rewritten using the history API
-            // in viewer.js, so an absolute URL must be generated.
+            /*#static*/  {
+                // The current URL is the viewer, let's use it and append the file.
+                viewerUrl = "?file=" + encodeURIComponent(blobUrl + "#" + filename);
+            }
             try {
                 window.open(viewerUrl);
                 return true;
@@ -85,16 +91,11 @@ export class DownloadManager {
         this.downloadData(data, filename, contentType);
         return false;
     }
-    /**
-     * @param sourceEventType Used to signal what triggered the download.
-     *   The version of PDF.js integrated with Firefox uses this to to determine
-     *   which dialog to show. "save" triggers "save as" and "download" triggers
-     *   the "open with" dialog.
-     */
-    download(blob, url, filename, sourceEventType = "download") {
+    /** @implement */
+    download(blob, url, filename) {
         const blobUrl = URL.createObjectURL(blob);
         download(blobUrl, filename);
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=download_manager.js.map

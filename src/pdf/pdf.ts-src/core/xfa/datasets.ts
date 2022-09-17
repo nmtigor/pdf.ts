@@ -17,6 +17,8 @@
  * limitations under the License.
  */
 
+import { type XFAAttrs } from "./alias.ts";
+import { $buildXFAObject, NamespaceIds } from "./namespaces.ts";
 import {
   $appendChild,
   $isNsAgnostic,
@@ -25,62 +27,58 @@ import {
   $onChild,
   XFAObject,
   XmlObject,
-} from "./xfa_object.js";
-import { $buildXFAObject, NamespaceIds } from "./namespaces.js";
-import { type XFAAttrs } from "./alias.js";
-/*81---------------------------------------------------------------------------*/
+} from "./xfa_object.ts";
+/*80--------------------------------------------------------------------------*/
 
 const DATASETS_NS_ID = NamespaceIds.datasets.id;
 
-class Data extends XmlObject
-{
-  constructor( attributes:XFAAttrs )
-  {
-    super( DATASETS_NS_ID, "data", attributes );
+class Data extends XmlObject {
+  constructor(attributes: XFAAttrs) {
+    super(DATASETS_NS_ID, "data", attributes);
   }
 
-  override [$isNsAgnostic]() { return true; }
+  override [$isNsAgnostic]() {
+    return true;
+  }
 }
 
-export class Datasets extends XFAObject
-{
-  data?:Data;
-  Signature:unknown;
+export class Datasets extends XFAObject {
+  data?: Data;
+  Signature: unknown;
 
-  constructor( attributes:XFAAttrs )
-  {
-    super( DATASETS_NS_ID, "datasets", /* hasChildren = */ true );
+  constructor(attributes: XFAAttrs) {
+    super(DATASETS_NS_ID, "datasets", /* hasChildren = */ true);
   }
 
-  override [$onChild]( child:XFAObject )
-  {
+  override [$onChild](child: XFAObject) {
     const name = child[$nodeName];
     if (
       (name === "data" && child[$namespaceId] === DATASETS_NS_ID) ||
       (name === "Signature" &&
         child[$namespaceId] === NamespaceIds.signature.id)
     ) {
-      (<any>this)[name] = child;
-    } 
-    this[$appendChild]( child );
+      (<any> this)[name] = child;
+    }
+    this[$appendChild](child);
     return true;
   }
 }
 
 export type XFANsDatasets = typeof DatasetsNamespace;
 type DatasetsName = Exclude<keyof XFANsDatasets, symbol>;
-export const DatasetsNamespace =
-{
-  [$buildXFAObject]( name:string, attributes:XFAAttrs )
-  {
-    if( DatasetsNamespace.hasOwnProperty(name) )
-    {
-      return DatasetsNamespace[<DatasetsName>name]( attributes );
+export const DatasetsNamespace = {
+  [$buildXFAObject](name: string, attributes: XFAAttrs) {
+    if (Object.hasOwn(DatasetsNamespace, name)) {
+      return DatasetsNamespace[<DatasetsName> name](attributes);
     }
     return undefined;
   },
 
-  datasets( attrs:XFAAttrs ) { return new Datasets( attrs ); },
-  data( attrs:XFAAttrs ) { return new Data( attrs ); },
-}
-/*81---------------------------------------------------------------------------*/
+  datasets(attrs: XFAAttrs) {
+    return new Datasets(attrs);
+  },
+  data(attrs: XFAAttrs) {
+    return new Data(attrs);
+  },
+};
+/*80--------------------------------------------------------------------------*/

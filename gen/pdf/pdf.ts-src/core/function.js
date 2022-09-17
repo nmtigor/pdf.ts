@@ -20,7 +20,7 @@ import { BaseStream } from "./base_stream.js";
 import { LocalFunctionCache } from "./image_utils.js";
 import { Dict, Ref } from "./primitives.js";
 import { PostScriptLexer, PostScriptParser } from "./ps_parser.js";
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 export class PDFFunctionFactory {
     xref;
     isEvalSupported;
@@ -30,8 +30,9 @@ export class PDFFunctionFactory {
     }
     create(fn) {
         const cachedFunction = this.getCached(fn);
-        if (cachedFunction)
+        if (cachedFunction) {
             return cachedFunction;
+        }
         const parsedFunction = PDFFunction.parse({
             xref: this.xref,
             isEvalSupported: this.isEvalSupported,
@@ -43,8 +44,9 @@ export class PDFFunctionFactory {
     }
     createFromArray(fnObj) {
         const cachedFunction = this.getCached(fnObj);
-        if (cachedFunction)
+        if (cachedFunction) {
             return cachedFunction;
+        }
         const parsedFunction = PDFFunction.parseArray({
             xref: this.xref,
             isEvalSupported: this.isEvalSupported,
@@ -67,8 +69,9 @@ export class PDFFunctionFactory {
         }
         if (fnRef) {
             const localFunction = this._localFunctionCache.getByRef(fnRef);
-            if (localFunction)
+            if (localFunction) {
                 return localFunction;
+            }
         }
         return null;
     }
@@ -87,7 +90,8 @@ export class PDFFunctionFactory {
             fnRef = cacheKey.dict && cacheKey.dict.objId;
         }
         if (fnRef) {
-            this._localFunctionCache.set(/* name = */ undefined, fnRef, parsedFunction);
+            this._localFunctionCache.set(
+            /* name = */ undefined, fnRef, parsedFunction);
         }
     }
     get _localFunctionCache() {
@@ -95,8 +99,9 @@ export class PDFFunctionFactory {
     }
 }
 function toNumberArray(arr) {
-    if (!Array.isArray(arr))
+    if (!Array.isArray(arr)) {
         return null;
+    }
     const length = arr.length;
     for (let i = 0; i < length; i++) {
         if (typeof arr[i] !== "number") {
@@ -151,28 +156,50 @@ var NsPDFFunction;
             const typeNum = dict.get("FunctionType");
             switch (typeNum) {
                 case FunctionType.CONSTRUCT_SAMPLED:
-                    return NsPDFFunction.PDFFunction.constructSampled({ xref, isEvalSupported, fn: fn, dict });
+                    return NsPDFFunction.PDFFunction.constructSampled({
+                        xref,
+                        isEvalSupported,
+                        fn: fn,
+                        dict,
+                    });
                 case 1:
                     break;
                 case FunctionType.CONSTRUCT_INTERPOLATED:
-                    return NsPDFFunction.PDFFunction.constructInterpolated({ xref, isEvalSupported, dict });
+                    return NsPDFFunction.PDFFunction.constructInterpolated({
+                        xref,
+                        isEvalSupported,
+                        dict,
+                    });
                 case FunctionType.CONSTRUCT_STICHED:
                     return NsPDFFunction.PDFFunction.constructStiched({ xref, isEvalSupported, dict });
                 case FunctionType.CONSTRUCT_POSTSCRIPT:
-                    return NsPDFFunction.PDFFunction.constructPostScript({ xref, isEvalSupported, fn: fn, dict });
+                    return NsPDFFunction.PDFFunction.constructPostScript({
+                        xref,
+                        isEvalSupported,
+                        fn: fn,
+                        dict,
+                    });
             }
             throw new FormatError("Unknown type of function");
         },
         parseArray({ xref, isEvalSupported, fnObj }) {
             if (!Array.isArray(fnObj)) {
                 // not an array -- parsing as regular function
-                return this.parse({ xref, isEvalSupported, fn: fnObj });
+                return this.parse({
+                    xref,
+                    isEvalSupported,
+                    fn: fnObj,
+                });
             }
             const fnArray = [];
             for (let j = 0, jj = fnObj.length; j < jj; j++) {
-                fnArray.push(this.parse({ xref, isEvalSupported, fn: xref.fetchIfRef(fnObj[j]) }));
+                fnArray.push(this.parse({
+                    xref,
+                    isEvalSupported,
+                    fn: xref.fetchIfRef(fnObj[j]),
+                }));
             }
-            return function (src, srcOffset, dest, destOffset) {
+            return (src, srcOffset, dest, destOffset) => {
                 for (let i = 0, ii = fnArray.length; i < ii; i++) {
                     fnArray[i](src, srcOffset, dest, destOffset + i);
                 }
@@ -197,8 +224,9 @@ var NsPDFFunction;
             }
             let domain = toNumberArray(dict.getArray("Domain"));
             let range = toNumberArray(dict.getArray("Range"));
-            if (!domain || !range)
+            if (!domain || !range) {
                 throw new FormatError("No domain or range");
+            }
             const inputSize = domain.length / 2;
             const outputSize = range.length / 2;
             domain = toMultiArray(domain);
@@ -230,7 +258,7 @@ var NsPDFFunction;
             }
             const samples = this.getSampleArray(size, outputSize, bps, fn);
             // const mask = 2 ** bps - 1;
-            return function constructSampledFn(src, srcOffset, dest, destOffset) {
+            return /* constructSampledFn */ (src, srcOffset, dest, destOffset) => {
                 // See chapter 3, page 110 of the PDF reference.
                 // Building the cube vertices: its part and sample index
                 // http://rjwagner49.com/Mathematics/Interpolation.pdf
@@ -296,7 +324,7 @@ var NsPDFFunction;
                 diff.push(c1[i] - c0[i]);
             }
             const length = diff.length;
-            return function constructInterpolatedFn(src, srcOffset, dest, destOffset) {
+            return /* constructInterpolatedFn */ (src, srcOffset, dest, destOffset) => {
                 const x = n === 1 ? src[srcOffset] : src[srcOffset] ** n;
                 for (let j = 0; j < length; ++j) {
                     dest[destOffset + j] = c0[j] + x * diff[j];
@@ -312,7 +340,7 @@ var NsPDFFunction;
         //   const diff = IR[2];
         //   const n = IR[3];
         //   const length = diff.length;
-        //   return function( src, srcOffset, dest, destOffset )
+        //   return ( src, srcOffset, dest, destOffset )=>
         //   {
         //     const x = n === 1 ? src[srcOffset] : src[srcOffset] ** n;
         //     for( let j = 0; j < length; ++j )
@@ -333,13 +361,17 @@ var NsPDFFunction;
             const fnRefs = dict.get("Functions");
             const fns = [];
             for (let i = 0, ii = fnRefs.length; i < ii; ++i) {
-                fns.push(this.parse({ xref, isEvalSupported, fn: xref.fetchIfRef(fnRefs[i]) }));
+                fns.push(this.parse({
+                    xref,
+                    isEvalSupported,
+                    fn: xref.fetchIfRef(fnRefs[i]),
+                }));
             }
             const bounds = toNumberArray(dict.getArray("Bounds"));
             const encode = toNumberArray(dict.getArray("Encode"));
             const tmpBuf = new Float32Array(1);
-            return function constructStichedFn(src, srcOffset, dest, destOffset) {
-                const clip = function constructStichedFromIRClip(v, min, max) {
+            return /* constructStichedFn */ (src, srcOffset, dest, destOffset) => {
+                const clip = (v, min, max) => {
                     if (v > max) {
                         v = max;
                     }
@@ -354,8 +386,9 @@ var NsPDFFunction;
                 const length = bounds.length;
                 let i;
                 for (i = 0; i < length; ++i) {
-                    if (v < bounds[i])
+                    if (v < bounds[i]) {
                         break;
+                    }
                 }
                 // encode value into domain of function
                 let dmin = domain[0];
@@ -370,10 +403,9 @@ var NsPDFFunction;
                 const rmax = encode[2 * i + 1];
                 // Prevent the value from becoming NaN as a result
                 // of division by zero (fixes issue6113.pdf).
-                tmpBuf[0] =
-                    dmin === dmax
-                        ? rmin
-                        : rmin + ((v - dmin) * (rmax - rmin)) / (dmax - dmin);
+                tmpBuf[0] = dmin === dmax
+                    ? rmin
+                    : rmin + ((v - dmin) * (rmax - rmin)) / (dmax - dmin);
                 // call the appropriate function
                 fns[i](tmpBuf, 0, dest, destOffset);
             };
@@ -412,7 +444,7 @@ var NsPDFFunction;
             const MAX_CACHE_SIZE = 2048 * 4;
             let cache_available = MAX_CACHE_SIZE;
             const tmpBuf = new Float32Array(numInputs);
-            return function constructPostScriptFn(src, srcOffset, dest, destOffset) {
+            return /* constructPostScriptFn */ (src, srcOffset, dest, destOffset) => {
                 let i, value;
                 let key = "";
                 const input = tmpBuf;
@@ -488,7 +520,7 @@ var NsPDFFunction;
         //   const MAX_CACHE_SIZE = 2048 * 4;
         //   let cache_available = MAX_CACHE_SIZE;
         //   const tmpBuf = new Float32Array(numInputs);
-        //   return function( src, srcOffset, dest, destOffset )
+        //   return ( src, srcOffset, dest, destOffset )=>
         //   {
         //     let i, value;
         //     let key = "";
@@ -512,7 +544,7 @@ var NsPDFFunction;
         //       let bound = range[i * 2];
         //       if (value < bound) {
         //         value = bound;
-        //       } 
+        //       }
         //       else {
         //         bound = range[i * 2 + 1];
         //         if (value > bound) {
@@ -530,6 +562,7 @@ var NsPDFFunction;
         // },
     };
 })(NsPDFFunction || (NsPDFFunction = {}));
+// Hoisting for deno.
 var PDFFunction = NsPDFFunction.PDFFunction;
 export function isPDFFunction(v) {
     let fnDict;
@@ -879,7 +912,7 @@ var NsPostScriptCompiler;
             this.min = min;
             this.max = max;
         }
-        /** @implements */
+        /** @implement */
         visit(visitor) {
             visitor.visitArgument(this);
         }
@@ -894,7 +927,7 @@ var NsPostScriptCompiler;
             this.min = number;
             this.max = number;
         }
-        /** @implements */
+        /** @implement */
         visit(visitor) {
             visitor.visitLiteral(this);
         }
@@ -913,7 +946,7 @@ var NsPostScriptCompiler;
             this.min = min;
             this.max = max;
         }
-        /** @implements */
+        /** @implement */
         visit(visitor) {
             visitor.visitBinaryOperation(this);
         }
@@ -928,7 +961,7 @@ var NsPostScriptCompiler;
             this.max = max;
             this.min = arg.min;
         }
-        /** @implements */
+        /** @implement */
         visit(visitor) {
             visitor.visitMin(this);
         }
@@ -943,7 +976,7 @@ var NsPostScriptCompiler;
             this.min = min;
             this.max = max;
         }
-        /** @implements */
+        /** @implement */
         visit(visitor) {
             visitor.visitVariable(this);
         }
@@ -956,7 +989,7 @@ var NsPostScriptCompiler;
             this.variable = variable;
             this.arg = arg;
         }
-        /** @implements */
+        /** @implement */
         visit(visitor) {
             visitor.visitVariableDefinition(this);
         }
@@ -1048,10 +1081,11 @@ var NsPostScriptCompiler;
                 return new AstLiteral(num1.number - num2.number);
             }
         }
-        if (num2.type === AstNodeType.binary && num2.op === "-"
-            && num1.type === AstNodeType.literal && num1.number === 1
-            && num2.arg1.type === AstNodeType.literal
-            && num2.arg1.number === 1) {
+        if (num2.type === AstNodeType.binary &&
+            num2.op === "-" &&
+            num1.type === AstNodeType.literal && num1.number === 1 &&
+            num2.arg1.type === AstNodeType.literal &&
+            num2.arg1.number === 1) {
             // optimization for case: 1 - (1 - x)
             return num2.arg2;
         }
@@ -1156,19 +1190,19 @@ var NsPostScriptCompiler;
                         if (stack.length < 1) {
                             return null;
                         }
-                        if (typeof code[i + 1] === "number"
-                            && code[i + 2] === "gt"
-                            && code[i + 3] === i + 7
-                            && code[i + 4] === "jz"
-                            && code[i + 5] === "pop"
-                            && code[i + 6] === code[i + 1]) {
+                        if (typeof code[i + 1] === "number" &&
+                            code[i + 2] === "gt" &&
+                            code[i + 3] === i + 7 &&
+                            code[i + 4] === "jz" &&
+                            code[i + 5] === "pop" &&
+                            code[i + 6] === code[i + 1]) {
                             // special case of the commands sequence for the min operation
                             num1 = stack.pop();
                             stack.push(buildMinOperation(num1, code[i + 1]));
                             i += 6;
                             break;
                         }
-                        ast1 = stack[stack.length - 1];
+                        ast1 = stack.at(-1);
                         if (ast1.type === AstNodeType.literal || ast1.type === AstNodeType.var) {
                             // we don't have to save into intermediate variable a literal or
                             // variable.
@@ -1186,7 +1220,8 @@ var NsPostScriptCompiler;
                         }
                         num2 = stack.pop();
                         num1 = stack.pop();
-                        if (num2.type !== AstNodeType.literal || num1.type !== AstNodeType.literal) {
+                        if (num2.type !== AstNodeType.literal ||
+                            num1.type !== AstNodeType.literal) {
                             // both roll operands must be numbers
                             return null;
                         }
@@ -1240,6 +1275,7 @@ var NsPostScriptCompiler;
     }
     NsPostScriptCompiler.PostScriptCompiler = PostScriptCompiler;
 })(NsPostScriptCompiler || (NsPostScriptCompiler = {}));
+// Hoisting for deno.
 export var PostScriptCompiler = NsPostScriptCompiler.PostScriptCompiler;
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=function.js.map

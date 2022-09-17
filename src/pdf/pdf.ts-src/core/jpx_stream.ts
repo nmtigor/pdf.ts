@@ -17,33 +17,29 @@
  * limitations under the License.
  */
 
-import { JpxImage } from "./jpx.js";
-import { shadow } from "../shared/util.js";
-import { Dict } from "./primitives.js";
-import { BaseStream } from "./base_stream.js";
-import { ImageStream } from "./decode_stream.js";
-/*81---------------------------------------------------------------------------*/
+import { shadow } from "../shared/util.ts";
+import { BaseStream } from "./base_stream.ts";
+import { ImageStream } from "./decode_stream.ts";
+import { JpxImage } from "./jpx.ts";
+import { Dict } from "./primitives.ts";
+/*80--------------------------------------------------------------------------*/
 
 /**
  * For JPEG 2000's we use a library to decode these images and
  * the stream behaves like all the other DecodeStreams.
  */
-export class JpxStream extends ImageStream
-{
-  constructor( stream:BaseStream, maybeLength?:number, params?:Dict )
-  {
-    super( stream, maybeLength, params );
+export class JpxStream extends ImageStream {
+  constructor(stream: BaseStream, maybeLength?: number, params?: Dict) {
+    super(stream, maybeLength, params);
   }
 
-  get bytes()
-  {
+  get bytes() {
     // If `this.maybeLength` is null, we'll get the entire stream.
-    return shadow( this, "bytes", this.stream.getBytes(this.maybeLength) );
+    return shadow(this, "bytes", this.stream.getBytes(this.maybeLength));
   }
 
-  /** @implements */
-  readBlock() 
-  {
+  /** @implement */
+  readBlock() {
     if (this.eof) {
       return;
     }
@@ -56,8 +52,7 @@ export class JpxStream extends ImageStream
     const tileCount = jpxImage.tiles!.length;
     if (tileCount === 1) {
       this.buffer = jpxImage.tiles![0].items;
-    } 
-    else {
+    } else {
       const data = new Uint8ClampedArray(width * height * componentsCount);
 
       for (let k = 0; k < tileCount; k++) {
@@ -86,11 +81,10 @@ export class JpxStream extends ImageStream
     this.eof = true;
   }
 
-  override ensureBuffer( requested:number )
-  {
+  override ensureBuffer(requested: number) {
     // No-op, since `this.readBlock` will always parse the entire image and
     // directly insert all of its data into `this.buffer`.
-    return <any>undefined;
+    return <any> undefined;
   }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

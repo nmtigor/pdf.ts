@@ -17,34 +17,31 @@
  * limitations under the License.
  */
 
-import { $buildXFAObject, NamespaceIds } from "./namespaces.js";
-import { type XFAAttrs } from "./alias.js";
-import { XFAObject } from "./xfa_object.js";
-/*81---------------------------------------------------------------------------*/
+import { type XFAAttrs } from "./alias.ts";
+import { $buildXFAObject, NamespaceIds } from "./namespaces.ts";
+import { XFAObject } from "./xfa_object.ts";
+/*80--------------------------------------------------------------------------*/
 
 const SIGNATURE_NS_ID = NamespaceIds.signature.id;
 
-class Signature extends XFAObject
-{
-  constructor( attributes:XFAAttrs )
-  {
-    super( SIGNATURE_NS_ID, "signature", /* hasChildren = */ true );
+class Signature extends XFAObject {
+  constructor(attributes: XFAAttrs) {
+    super(SIGNATURE_NS_ID, "signature", /* hasChildren = */ true);
   }
 }
 
 export type XFANsSignature = typeof SignatureNamespace;
 type SignatureName = Exclude<keyof XFANsSignature, symbol>;
-export const SignatureNamespace =
-{
-  [$buildXFAObject]( name:string, attributes:XFAAttrs )
-  {
-    if( SignatureNamespace.hasOwnProperty(name) )
-    {
-      return SignatureNamespace[<SignatureName>name]( attributes );
+export const SignatureNamespace = {
+  [$buildXFAObject](name: string, attributes: XFAAttrs) {
+    if (Object.hasOwn(SignatureNamespace, name)) {
+      return SignatureNamespace[<SignatureName> name](attributes);
     }
     return undefined;
   },
 
-  signature( attrs:XFAAttrs ) { return new Signature( attrs ); },
-}
-/*81---------------------------------------------------------------------------*/
+  signature(attrs: XFAAttrs) {
+    return new Signature(attrs);
+  },
+};
+/*80--------------------------------------------------------------------------*/

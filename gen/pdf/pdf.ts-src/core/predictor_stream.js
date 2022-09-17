@@ -15,8 +15,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { DecodeStream } from "./decode_stream.js";
 import { FormatError } from "../shared/util.js";
+import { DecodeStream } from "./decode_stream.js";
 import { Dict } from "./primitives.js";
 /** @final */
 export class PredictorStream extends DecodeStream {
@@ -117,8 +117,8 @@ export class PredictorStream extends DecodeStream {
                         inbuf = (inbuf << 8) | (rawBytes[j++] & 0xff);
                         inbits += 8;
                     }
-                    compArray[kk] =
-                        (compArray[kk] + (inbuf >> (inbits - bits))) & bitMask;
+                    compArray[kk] = (compArray[kk] + (inbuf >> (inbits - bits))) &
+                        bitMask;
                     inbits -= bits;
                     outbuf = (outbuf << bits) | compArray[kk];
                     outbits += bits;
@@ -129,8 +129,8 @@ export class PredictorStream extends DecodeStream {
                 }
             }
             if (outbits > 0) {
-                buffer[k++] =
-                    (outbuf << (8 - outbits)) + (inbuf & ((1 << (8 - outbits)) - 1));
+                buffer[k++] = (outbuf << (8 - outbits)) +
+                    (inbuf & ((1 << (8 - outbits)) - 1));
             }
         }
         this.bufferLength += rowBytes;
@@ -224,5 +224,5 @@ export class PredictorStream extends DecodeStream {
         this.bufferLength += rowBytes;
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=predictor_stream.js.map

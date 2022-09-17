@@ -15,15 +15,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { assert } from "../../../lib/util/trace.js";
 import { MurmurHash3_64 } from "../shared/murmurhash3.js";
 import { objectFromMap } from "../shared/util.js";
-/*81---------------------------------------------------------------------------*/
+import { AnnotationEditor } from "./editor/editor.js";
+/*80--------------------------------------------------------------------------*/
 /**
  * Key/value storage for annotation data in forms.
  */
 export class AnnotationStorage {
     _storage = new Map();
-    get size() { return this._storage.size; }
+    get size() {
+        return this._storage.size;
+    }
     _modified = false;
     // Callbacks to signal when the modification state is set or reset.
     // This is used by the viewer to only bind on `beforeunload` if forms
@@ -48,6 +52,15 @@ export class AnnotationStorage {
         return this._storage.get(key);
     }
     /**
+     * Remove a value from the storage.
+     */
+    removeKey(key) {
+        this._storage.delete(key);
+        if (this._storage.size === 0) {
+            this.resetModified();
+        }
+    }
+    /**
      * Set the value for a given key
      */
     setValue(key, value) {
@@ -69,6 +82,12 @@ export class AnnotationStorage {
             this.#setModified();
         }
     }
+    /**
+     * Check if the storage contains the given key.
+     */
+    has(key) {
+        return this._storage.has(key);
+    }
     getAll() {
         return this._storage.size > 0 ? objectFromMap(this._storage) : undefined;
     }
@@ -88,24 +107,67 @@ export class AnnotationStorage {
             }
         }
     }
+    get print() {
+        return new PrintAnnotationStorage(this);
+    }
     /**
      * PLEASE NOTE: Only intended for usage within the API itself.
      * @ignore
      */
     get serializable() {
-        return this._storage.size > 0 ? this._storage : undefined;
+        if (this._storage.size === 0) {
+            return undefined;
+        }
+        const clone = new Map();
+        for (const [key, val] of this._storage) {
+            const serialized = val instanceof AnnotationEditor
+                ? val.serialize()
+                : val;
+            if (serialized) {
+                clone.set(key, serialized);
+            }
+        }
+        return clone;
     }
     /**
      * PLEASE NOTE: Only intended for usage within the API itself.
      * @ignore
      */
-    get hash() {
+    static getHash(map) {
+        if (!map) {
+            return "";
+        }
         const hash = new MurmurHash3_64();
-        for (const [key, value] of this._storage) {
-            hash.update(`${key}:${JSON.stringify(value)}`);
+        for (const [key, val] of map) {
+            hash.update(`${key}:${JSON.stringify(val)}`);
         }
         return hash.hexdigest();
     }
 }
-/*81---------------------------------------------------------------------------*/
+/**
+ * A special `AnnotationStorage` for use during printing, where the serializable
+ * data is *frozen* upon initialization, to prevent scripting from modifying its
+ * contents. (Necessary since printing is triggered synchronously in browsers.)
+ */
+export class PrintAnnotationStorage extends AnnotationStorage {
+    #serializable;
+    constructor(parent) {
+        super();
+        // Create a *copy* of the data, since Objects are passed by reference in JS.
+        this.#serializable = structuredClone(parent.serializable);
+    }
+    // eslint-disable-next-line getter-return
+    get print() {
+        assert(0, "Should not call PrintAnnotationStorage.print");
+        return 0;
+    }
+    /**
+     * PLEASE NOTE: Only intended for usage within the API itself.
+     * @ignore
+     */
+    get serializable() {
+        return this.#serializable;
+    }
+}
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=annotation_storage.js.map

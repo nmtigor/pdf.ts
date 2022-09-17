@@ -1,4 +1,4 @@
-/*81*****************************************************************************
+/*80****************************************************************************
  * colr
 ** ---- */
 import { assert } from "./util/trace.js";
@@ -10,21 +10,25 @@ function normalize_CsscHex(csschex) {
             ret = `#${csschex[1]}${csschex[1]}${csschex[2]}${csschex[2]}${csschex[3]}${csschex[3]}`;
             break;
         case 5: // "#1234"
-            if (csschex.endsWith("f"))
+            if (csschex.endsWith("f")) {
                 ret = `#${csschex[1]}${csschex[1]}${csschex[2]}${csschex[2]}${csschex[3]}${csschex[3]}`;
-            else
+            }
+            else {
                 ret = `#${csschex[1]}${csschex[1]}${csschex[2]}${csschex[2]}${csschex[3]}${csschex[3]}${csschex[4]}${csschex[4]}`;
+            }
             break;
         case 7: // "#123456"
             ret = csschex;
             break;
         case 9: // "#12345678"
-            if (csschex.endsWith("ff"))
+            if (csschex.endsWith("ff")) {
                 ret = csschex.slice(0, 7);
+            }
             else
                 ret = csschex;
             break;
-        default: assert(0);
+        default:
+            assert(0);
     }
     return ret;
 }
@@ -40,8 +44,8 @@ export class Colr {
     #a;
     #name;
     /**
-     * @param { const } typ_x
-     * @param { const } dat_x
+     * @const @param typ_x
+     * @const @param dat_x
      */
     constructor(typ_x, ...dat_x) {
         switch (typ_x) {
@@ -90,36 +94,49 @@ export class Colr {
     }
     /**
      * in( isValidCssc(cssc) );
-     * @param { const } cssc
+     * @const @param cssc
      */
     set_by_s(cssc) {
         if (cssc.startsWith("#")) {
             this.#x = normalize_CsscHex(cssc);
-            this.#r = this.#g = this.#b =
-                this.#h = this.#s = this.#l =
-                    this.#a =
-                        this.#name = undefined;
+            this.#r =
+                this.#g =
+                    this.#b =
+                        this.#h =
+                            this.#s =
+                                this.#l =
+                                    this.#a =
+                                        this.#name =
+                                            undefined;
         }
         else if (csscname_m.hasN(cssc)) {
             this.#name = cssc;
             this.#x =
-                this.#r = this.#g = this.#b =
-                    this.#h = this.#s = this.#l =
-                        this.#a = undefined;
+                this.#r =
+                    this.#g =
+                        this.#b =
+                            this.#h =
+                                this.#s =
+                                    this.#l =
+                                        this.#a =
+                                            undefined;
         }
         else {
             const compo_a = cssc
                 .replace(/[^\.\d,]/g, "")
                 .split(",")
-                .map(s => parseFloat(s));
+                .map((s) => parseFloat(s));
             if (cssc.startsWith("rgba")) {
                 this.#r = compo_a[0];
                 this.#g = compo_a[1];
                 this.#b = compo_a[2];
                 this.#a = compo_a[3];
                 this.#x =
-                    this.#h = this.#s = this.#l =
-                        this.#name = undefined;
+                    this.#h =
+                        this.#s =
+                            this.#l =
+                                this.#name =
+                                    undefined;
             }
             else if (cssc.startsWith("hsla")) {
                 this.#h = compo_a[0];
@@ -127,26 +144,35 @@ export class Colr {
                 this.#l = compo_a[2];
                 this.#a = compo_a[3];
                 this.#x =
-                    this.#r = this.#g = this.#b =
-                        this.#name = undefined;
+                    this.#r =
+                        this.#g =
+                            this.#b =
+                                this.#name =
+                                    undefined;
             }
             else if (cssc.startsWith("rgb")) {
                 this.#r = compo_a[0];
                 this.#g = compo_a[1];
                 this.#b = compo_a[2];
                 this.#x =
-                    this.#h = this.#s = this.#l =
-                        this.#a =
-                            this.#name = undefined;
+                    this.#h =
+                        this.#s =
+                            this.#l =
+                                this.#a =
+                                    this.#name =
+                                        undefined;
             }
             else if (cssc.startsWith("hsl")) {
                 this.#h = compo_a[0];
                 this.#s = compo_a[1];
                 this.#l = compo_a[2];
                 this.#x =
-                    this.#r = this.#g = this.#b =
-                        this.#a =
-                            this.#name = undefined;
+                    this.#r =
+                        this.#g =
+                            this.#b =
+                                this.#a =
+                                    this.#name =
+                                        undefined;
             }
             else
                 assert(0);
@@ -155,7 +181,7 @@ export class Colr {
     }
     /**
      * in( colr );
-     * @param { const } colr
+     * @const @param colr
      */
     set_by_c(colr) {
         this.#x = colr.#x;
@@ -169,7 +195,9 @@ export class Colr {
         this.#name = colr.#name;
         return this;
     }
-    dup() { return (new Colr()).set_by_c(this); }
+    dup() {
+        return (new Colr()).set_by_c(this);
+    }
     get x() {
         if (this.#x !== undefined)
             return this.#x;
@@ -184,13 +212,16 @@ export class Colr {
         }
         assert(this.#x && this.#x.length === 7);
         if (this.a < 1) {
-            const xa = Math.round(this.a * 0xff).toString(16).padStart(2, "0").toLowerCase();
+            const xa = Math.round(this.a * 0xff).toString(16).padStart(2, "0")
+                .toLowerCase();
             if (xa !== "ff")
                 this.#x += xa;
         }
         return this.#x;
     }
-    eq(rhs) { return rhs === this || rhs.x === this.x; }
+    eq(rhs) {
+        return rhs === this || rhs.x === this.x;
+    }
     /**
      * in( this.#x !== undefined )
      */
@@ -209,7 +240,8 @@ export class Colr {
                 this.#b = (i >> 8) & 0xFF;
                 this.#a = (i & 0xFF) / 0xFF;
                 break;
-            default: assert(0);
+            default:
+                assert(0);
         }
     }
     get r() {
@@ -229,8 +261,9 @@ export class Colr {
                 this.#r = this.#g = this.#b = Math.round(l * 255);
             else {
                 let t2;
-                if (l < 0.5)
+                if (l < 0.5) {
                     t2 = l * (1 + s);
+                }
                 else
                     t2 = l + s - l * s;
                 let t1 = 2 * l - t2;
@@ -324,7 +357,9 @@ export class Colr {
         assert(this.#l !== undefined);
         return this.#l;
     }
-    get a() { return this.#a === undefined ? 1 : this.#a; }
+    get a() {
+        return this.#a === undefined ? 1 : this.#a;
+    }
     get name() {
         if (this.#name !== undefined)
             return this.#name;
@@ -338,8 +373,11 @@ export class Colr {
         this.#g = 255 - this.g;
         this.#b = 255 - this.b;
         this.#x =
-            this.#h = this.#s = this.#l =
-                this.#name = undefined; //!
+            this.#h =
+                this.#s =
+                    this.#l =
+                        this.#name =
+                            undefined; //!
         return this;
     }
     // ref. YIQ equation from http://24ways.org/2010/calculating-color-contrast
@@ -349,36 +387,44 @@ export class Colr {
             Number(this.b) * 114) / 1000) < 128;
     }
     // get isdark() { return this.l < 50; }
-    get isligt() { return !this.isdark; }
+    get isligt() {
+        return !this.isdark;
+    }
     /**
      * "l+.5"
-     * @param { const } ratio_x
+     * @const @param ratio_x
      */
     ligten(ratio_x) {
         if (ratio_x === 0)
             return this;
         this.#l = this.l + (100 - this.l) * ratio_x;
         this.#x =
-            this.#r = this.#g = this.#b =
-                this.#name = undefined; //!
+            this.#r =
+                this.#g =
+                    this.#b =
+                        this.#name =
+                            undefined; //!
         return this;
     }
     /**
      * "l-.5"
-     * @param { const } ratio_x
+     * @const @param ratio_x
      */
     darken(ratio_x) {
         if (ratio_x === 0)
             return this;
         this.#l = this.l - this.l * ratio_x;
         this.#x =
-            this.#r = this.#g = this.#b =
-                this.#name = undefined; //!
+            this.#r =
+                this.#g =
+                    this.#b =
+                        this.#name =
+                            undefined; //!
         return this;
     }
     /**
      * "s+.5"
-     * @param { const } ratio_x
+     * @const @param ratio_x
      */
     saturate(ratio_x) {
         if (ratio_x === 0)
@@ -387,13 +433,16 @@ export class Colr {
         this.#s = this.s + (100 - this.s) * ratio_x;
         // console.log( `after desaturate:  ${Math.round(this.s)}%` );
         this.#x =
-            this.#r = this.#g = this.#b =
-                this.#name = undefined; //!
+            this.#r =
+                this.#g =
+                    this.#b =
+                        this.#name =
+                            undefined; //!
         return this;
     }
     /**
      * "s-.5"
-     * @param { const } ratio_x
+     * @const @param ratio_x
      */
     desaturate(ratio_x) {
         if (ratio_x === 0)
@@ -402,96 +451,118 @@ export class Colr {
         this.#s = this.s - this.s * ratio_x;
         // console.log( `after desaturate:  ${Math.round(this.s)}%` );
         this.#x =
-            this.#r = this.#g = this.#b =
-                this.#name = undefined; //!
+            this.#r =
+                this.#g =
+                    this.#b =
+                        this.#name =
+                            undefined; //!
         return this;
     }
     /**
      * "r50"
      * in( 0 <= val_x && val_x < 256 )
-     * @param { const } val_x - [0,255]
+     * @const @param val_x - [0,255]
      */
     setR(val_x) {
         this.r;
         this.#x =
-            this.#h = this.#s = this.#l =
-                this.#name = undefined; //!
+            this.#h =
+                this.#s =
+                    this.#l =
+                        this.#name =
+                            undefined; //!
         this.#r = val_x;
         return this;
     }
     /**
      * "g50"
      * in( 0 <= val_x && val_x < 256 )
-     * @param { const } val_x - [0,255]
+     * @const @param val_x - [0,255]
      */
     setG(val_x) {
         this.g;
         this.#x =
-            this.#h = this.#s = this.#l =
-                this.#name = undefined; //!
+            this.#h =
+                this.#s =
+                    this.#l =
+                        this.#name =
+                            undefined; //!
         this.#g = val_x;
         return this;
     }
     /**
      * "b50"
      * in( 0 <= val_x && val_x < 256 )
-     * @param { const } val_x - [0,255]
+     * @const @param val_x - [0,255]
      */
     setB(val_x) {
         this.b;
         this.#x =
-            this.#h = this.#s = this.#l =
-                this.#name = undefined; //!
+            this.#h =
+                this.#s =
+                    this.#l =
+                        this.#name =
+                            undefined; //!
         this.#b = val_x;
         return this;
     }
     /**
      * "h50"
      * in( 0 <= val_x && val_x < 360 )
-     * @param { const } val_x - [0,360)
+     * @const @param val_x - [0,360)
      */
     setH(val_x) {
         this.h;
         this.#x =
-            this.#r = this.#g = this.#b =
-                this.#name = undefined; //!
+            this.#r =
+                this.#g =
+                    this.#b =
+                        this.#name =
+                            undefined; //!
         this.#h = val_x;
         return this;
     }
     /**
      * "s50"
      * in( 0 <= val_x && val_x <= 100 )
-     * @param { const } val_x - [0,100]
+     * @const @param val_x - [0,100]
      */
     setS(val_x) {
         this.s;
         this.#x =
-            this.#r = this.#g = this.#b =
-                this.#name = undefined; //!
+            this.#r =
+                this.#g =
+                    this.#b =
+                        this.#name =
+                            undefined; //!
         this.#s = val_x;
         return this;
     }
     /**
      * "l50"
      * in( 0 <= val_x && val_x <= 100 )
-     * @param { const } val_x - [0,100]
+     * @const @param val_x - [0,100]
      */
     setL(val_x) {
         this.l;
         this.#x =
-            this.#r = this.#g = this.#b =
-                this.#name = undefined; //!
+            this.#r =
+                this.#g =
+                    this.#b =
+                        this.#name =
+                            undefined; //!
         this.#l = val_x;
         return this;
     }
     /**
      * "a.5"
      * in( 0 <= val_x && val_x <= 1 )
-     * @param { const } val_x
+     * @const @param val_x
      */
     setA(val_x) {
-        if (this.#r === undefined && this.#h === undefined)
+        if (this.#r === undefined && this.#h === undefined) {
             this.r;
+        }
         this.#x = undefined; //!
         this.#a = val_x;
         return this;
@@ -500,14 +571,16 @@ export class Colr {
         if (this.#x !== undefined)
             return this.#x;
         else if (this.#r !== undefined) {
-            if (this.#a === undefined || this.#a === 1)
+            if (this.#a === undefined || this.#a === 1) {
                 return `rgb(${this.#r},${this.#g},${this.#b})`;
+            }
             else
                 return `rgba(${this.#r},${this.#g},${this.#b},${this.#a})`;
         }
         else if (this.#h !== undefined) {
-            if (this.#a === undefined || this.#a === 1)
+            if (this.#a === undefined || this.#a === 1) {
                 return `hsl(${this.#h},${this.#s}%,${this.#l}%)`;
+            }
             else
                 return `hsla(${this.#h},${this.#s}%,${this.#l}%,${this.#a})`;
         }
@@ -517,14 +590,16 @@ export class Colr {
         }
     }
 } // class Colr
-export function isColr(obj) { return obj.constructor === Colr; }
+export function isColr(obj) {
+    return obj.constructor === Colr;
+}
 /**
  * (L1 + 0.05) / (L2 + 0.05)
  * Ref. "contrast ratio" in https://www.w3.org/TR/WCAG20/#glossary
  * in( isColr(colr1) )
  * in( isColr(colr2) )
- * @param { headconst } colr1
- * @param { headconst } colr2
+ * @headconst @param colr1
+ * @headconst @param colr2
  * @return (0,1]
  */
 export function contrastRatioOf(colr1, colr2) {
@@ -539,7 +614,7 @@ export function contrastRatioOf(colr1, colr2) {
 }
 const style_ = (new Option()).style;
 /**
- * @param { const } cssc
+ * @const @param cssc
  */
 export function isValidCssc(cssc) {
     if (cssc === "currentcolor")
@@ -550,15 +625,27 @@ export function isValidCssc(cssc) {
     return !!style_.color ? cssc : false;
 }
 // console.log( isValidCssc("#23202F") );
-export function hexcolr(hexstr) { return new Colr("hex", hexstr); }
-export function rgb(r, g, b) { return new Colr("rgb", r, g, b); }
-export function rgba(r, g, b, a) { return new Colr("rgba", r, g, b, a); }
-export function hsl(h, s, l) { return new Colr("hsl", h, s, l); }
-export function hsla(h, s, l, a) { return new Colr("hsla", h, s, l, a); }
-export function csscname(cn) { return new Colr("name", cn); }
+export function hexcolr(hexstr) {
+    return new Colr("hex", hexstr);
+}
+export function rgb(r, g, b) {
+    return new Colr("rgb", r, g, b);
+}
+export function rgba(r, g, b, a) {
+    return new Colr("rgba", r, g, b, a);
+}
+export function hsl(h, s, l) {
+    return new Colr("hsl", h, s, l);
+}
+export function hsla(h, s, l, a) {
+    return new Colr("hsla", h, s, l, a);
+}
+export function csscname(cn) {
+    return new Colr("name", cn);
+}
 /**
  * in( isValidCssc(cssc) )
- * @param { const } cssc
+ * @const @param cssc
  */
 export function createColr(cssc) {
     const ret = new Colr();
@@ -579,79 +666,171 @@ class CsscNameMap {
     hasN(key) {
         return this.#map.has(key);
     }
-    getX(key) { return this.#map.get(key); }
+    getX(key) {
+        return this.#map.get(key);
+    }
     getN(key) {
         return this.#revmap.get(normalize_CsscHex(key).slice(0, 7));
     }
 }
 export const csscname_m = new CsscNameMap([
     /* Pink Colors */
-    ["pink", "#ffc0cb"], ["lightpink", "#ffb6c1"], ["hotpink", "#ff69b4"],
-    ["deeppink", "#ff1493"], ["palevioletred", "#db7093"], ["mediumvioletred", "#c71585"],
+    ["pink", "#ffc0cb"],
+    ["lightpink", "#ffb6c1"],
+    ["hotpink", "#ff69b4"],
+    ["deeppink", "#ff1493"],
+    ["palevioletred", "#db7093"],
+    ["mediumvioletred", "#c71585"],
     /* Purple Colors */
-    ["lavender", "#e6e6fa"], ["thistle", "#d8bfd8"], ["plum", "#dda0dd"],
-    ["orchid", "#da70d6"], ["violet", "#ee82ee"], ["fuchsia", "#ff00ff"],
-    ["magenta", "#ff00ff"], ["mediumorchid", "#ba55d3"], ["darkorchid", "#9932cc"],
-    ["darkviolet", "#9400d3"], ["blueviolet", "#8a2be2"], ["darkmagenta", "#8b008b"],
-    ["purple", "#800080"], ["mediumpurple", "#9370db"], ["mediumslateblue", "#7b68ee"],
-    ["slateblue", "#6a5acd"], ["darkslateblue", "#483d8b"], ["rebeccapurple", "#663399"],
+    ["lavender", "#e6e6fa"],
+    ["thistle", "#d8bfd8"],
+    ["plum", "#dda0dd"],
+    ["orchid", "#da70d6"],
+    ["violet", "#ee82ee"],
+    ["fuchsia", "#ff00ff"],
+    ["magenta", "#ff00ff"],
+    ["mediumorchid", "#ba55d3"],
+    ["darkorchid", "#9932cc"],
+    ["darkviolet", "#9400d3"],
+    ["blueviolet", "#8a2be2"],
+    ["darkmagenta", "#8b008b"],
+    ["purple", "#800080"],
+    ["mediumpurple", "#9370db"],
+    ["mediumslateblue", "#7b68ee"],
+    ["slateblue", "#6a5acd"],
+    ["darkslateblue", "#483d8b"],
+    ["rebeccapurple", "#663399"],
     ["indigo", "#4b0082"],
     /* Red Colors */
-    ["lightsalmon", "#ffa07a"], ["salmon", "#fa8072"], ["darksalmon", "#e9967a"],
-    ["lightcoral", "#f08080"], ["indianred", "#cd5c5c"], ["crimson", "#dc143c"],
-    ["red", "#ff0000"], ["firebrick", "#b22222"], ["darkred", "#8b0000"],
+    ["lightsalmon", "#ffa07a"],
+    ["salmon", "#fa8072"],
+    ["darksalmon", "#e9967a"],
+    ["lightcoral", "#f08080"],
+    ["indianred", "#cd5c5c"],
+    ["crimson", "#dc143c"],
+    ["red", "#ff0000"],
+    ["firebrick", "#b22222"],
+    ["darkred", "#8b0000"],
     /* Orange Colors */
-    ["orange", "#ffa500"], ["darkorange", "#ff8c00"], ["coral", "#ff7f50"],
-    ["tomato", "#ff6347"], ["orangered", "#ff4500"],
+    ["orange", "#ffa500"],
+    ["darkorange", "#ff8c00"],
+    ["coral", "#ff7f50"],
+    ["tomato", "#ff6347"],
+    ["orangered", "#ff4500"],
     /* Yellow Colors */
-    ["gold", "#ffd700"], ["yellow", "#ffff00"], ["lightyellow", "#ffffe0"],
-    ["lemonchiffon", "#fffacd"], ["lightgoldenrodyellow", "#fafad2"], ["papayawhip", "#ffefd5"],
-    ["moccasin", "#ffe4b5"], ["peachpuff", "#ffdab9"], ["palegoldenrod", "#eee8aa"],
-    ["khaki", "#f0e68c"], ["darkkhaki", "#bdb76b"],
+    ["gold", "#ffd700"],
+    ["yellow", "#ffff00"],
+    ["lightyellow", "#ffffe0"],
+    ["lemonchiffon", "#fffacd"],
+    ["lightgoldenrodyellow", "#fafad2"],
+    ["papayawhip", "#ffefd5"],
+    ["moccasin", "#ffe4b5"],
+    ["peachpuff", "#ffdab9"],
+    ["palegoldenrod", "#eee8aa"],
+    ["khaki", "#f0e68c"],
+    ["darkkhaki", "#bdb76b"],
     /* Green Colors */
-    ["greenyellow", "#adff2f"], ["chartreuse", "#7fff00"], ["lawngreen", "#7cfc00"],
-    ["lime", "#00ff00"], ["limegreen", "#32cd32"], ["palegreen", "#98fb98"],
-    ["lightgreen", "#90ee90"], ["mediumspringgreen", "#00fa9a"], ["springgreen", "#00ff7f"],
-    ["mediumseagreen", "#3cb371"], ["seagreen", "#2e8b57"], ["forestgreen", "#228b22"],
-    ["green", "#008000"], ["darkgreen", "#006400"], ["yellowgreen", "#9acd32"],
-    ["olivedrab", "#6b8e23"], ["darkolivegreen", "#556b2f"], ["mediumaquamarine", "#66cdaa"],
-    ["darkseagreen", "#8fbc8f"], ["lightseagreen", "#20b2aa"], ["darkcyan", "#008b8b"],
+    ["greenyellow", "#adff2f"],
+    ["chartreuse", "#7fff00"],
+    ["lawngreen", "#7cfc00"],
+    ["lime", "#00ff00"],
+    ["limegreen", "#32cd32"],
+    ["palegreen", "#98fb98"],
+    ["lightgreen", "#90ee90"],
+    ["mediumspringgreen", "#00fa9a"],
+    ["springgreen", "#00ff7f"],
+    ["mediumseagreen", "#3cb371"],
+    ["seagreen", "#2e8b57"],
+    ["forestgreen", "#228b22"],
+    ["green", "#008000"],
+    ["darkgreen", "#006400"],
+    ["yellowgreen", "#9acd32"],
+    ["olivedrab", "#6b8e23"],
+    ["darkolivegreen", "#556b2f"],
+    ["mediumaquamarine", "#66cdaa"],
+    ["darkseagreen", "#8fbc8f"],
+    ["lightseagreen", "#20b2aa"],
+    ["darkcyan", "#008b8b"],
     ["teal", "#008080"],
     /* Cyan Colors */
-    ["aqua", "#00ffff"], ["cyan", "#00ffff"], ["lightcyan", "#e0ffff"],
-    ["paleturquoise", "#afeeee"], ["aquamarine", "#7fffd4"], ["turquoise", "#40e0d0"],
-    ["mediumturquoise", "#48d1cc"], ["darkturquoise", "#00ced1"],
+    ["aqua", "#00ffff"],
+    ["cyan", "#00ffff"],
+    ["lightcyan", "#e0ffff"],
+    ["paleturquoise", "#afeeee"],
+    ["aquamarine", "#7fffd4"],
+    ["turquoise", "#40e0d0"],
+    ["mediumturquoise", "#48d1cc"],
+    ["darkturquoise", "#00ced1"],
     /* Blue Colors */
-    ["cadetblue", "#5f9ea0"], ["steelblue", "#4682b4"], ["lightsteelblue", "#b0c4de"],
-    ["lightblue", "#add8e6"], ["powderblue", "#b0e0e6"], ["lightskyblue", "#87cefa"],
-    ["skyblue", "#87ceeb"], ["cornflowerblue", "#6495ed"], ["deepskyblue", "#00bfff"],
-    ["dodgerblue", "#1e90ff"], ["royalblue", "#4169e1"], ["blue", "#0000ff"],
-    ["mediumblue", "#0000cd"], ["darkblue", "#00008b"], ["navy", "#000080"],
+    ["cadetblue", "#5f9ea0"],
+    ["steelblue", "#4682b4"],
+    ["lightsteelblue", "#b0c4de"],
+    ["lightblue", "#add8e6"],
+    ["powderblue", "#b0e0e6"],
+    ["lightskyblue", "#87cefa"],
+    ["skyblue", "#87ceeb"],
+    ["cornflowerblue", "#6495ed"],
+    ["deepskyblue", "#00bfff"],
+    ["dodgerblue", "#1e90ff"],
+    ["royalblue", "#4169e1"],
+    ["blue", "#0000ff"],
+    ["mediumblue", "#0000cd"],
+    ["darkblue", "#00008b"],
+    ["navy", "#000080"],
     ["midnightblue", "#191970"],
     /* Brown Colors */
-    ["cornsilk", "#fff8dc"], ["blanchedalmond", "#ffebcd"], ["bisque", "#ffe4c4"],
-    ["navajowhite", "#ffdead"], ["wheat", "#f5deb3"], ["burlywood", "#deb887"],
-    ["tan", "#d2b48c"], ["rosybrown", "#bc8f8f"], ["sandybrown", "#f4a460"],
-    ["goldenrod", "#daa520"], ["darkgoldenrod", "#b8860b"], ["peru", "#cd853f"],
-    ["chocolate", "#d2691e"], ["olive", "#808000"], ["saddlebrown", "#8b4513"],
-    ["sienna", "#a0522d"], ["brown", "#a52a2a"], ["maroon", "#800000"],
+    ["cornsilk", "#fff8dc"],
+    ["blanchedalmond", "#ffebcd"],
+    ["bisque", "#ffe4c4"],
+    ["navajowhite", "#ffdead"],
+    ["wheat", "#f5deb3"],
+    ["burlywood", "#deb887"],
+    ["tan", "#d2b48c"],
+    ["rosybrown", "#bc8f8f"],
+    ["sandybrown", "#f4a460"],
+    ["goldenrod", "#daa520"],
+    ["darkgoldenrod", "#b8860b"],
+    ["peru", "#cd853f"],
+    ["chocolate", "#d2691e"],
+    ["olive", "#808000"],
+    ["saddlebrown", "#8b4513"],
+    ["sienna", "#a0522d"],
+    ["brown", "#a52a2a"],
+    ["maroon", "#800000"],
     /* White Colors */
-    ["white", "#ffffff"], ["snow", "#fffafa"], ["honeydew", "#f0fff0"],
-    ["mintcream", "#f5fffa"], ["azure", "#f0ffff"], ["aliceblue", "#f0f8ff"],
-    ["ghostwhite", "#f8f8ff"], ["whitesmoke", "#f5f5f5"], ["seashell", "#fff5ee"],
-    ["beige", "#f5f5dc"], ["oldlace", "#fdf5e6"], ["floralwhite", "#fffaf0"],
-    ["ivory", "#fffff0"], ["antiquewhite", "#faebd7"], ["linen", "#faf0e6"],
-    ["lavenderblush", "#fff0f5"], ["mistyrose", "#ffe4e1"],
+    ["white", "#ffffff"],
+    ["snow", "#fffafa"],
+    ["honeydew", "#f0fff0"],
+    ["mintcream", "#f5fffa"],
+    ["azure", "#f0ffff"],
+    ["aliceblue", "#f0f8ff"],
+    ["ghostwhite", "#f8f8ff"],
+    ["whitesmoke", "#f5f5f5"],
+    ["seashell", "#fff5ee"],
+    ["beige", "#f5f5dc"],
+    ["oldlace", "#fdf5e6"],
+    ["floralwhite", "#fffaf0"],
+    ["ivory", "#fffff0"],
+    ["antiquewhite", "#faebd7"],
+    ["linen", "#faf0e6"],
+    ["lavenderblush", "#fff0f5"],
+    ["mistyrose", "#ffe4e1"],
     /* Grey Colors */
-    ["gainsboro", "#dcdcdc"], ["lightgray", "#d3d3d3"], ["silver", "#c0c0c0"],
-    ["darkgray", "#a9a9a9"], ["dimgray", "#696969"], ["gray", "#808080"],
-    ["lightslategray", "#778899"], ["slategray", "#708090"], ["darkslategray", "#2f4f4f"],
+    ["gainsboro", "#dcdcdc"],
+    ["lightgray", "#d3d3d3"],
+    ["silver", "#c0c0c0"],
+    ["darkgray", "#a9a9a9"],
+    ["dimgray", "#696969"],
+    ["gray", "#808080"],
+    ["lightslategray", "#778899"],
+    ["slategray", "#708090"],
+    ["darkslategray", "#2f4f4f"],
     ["black", "#000000"],
 ]);
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 // /**
 //  * @param { Number } n0
-//  * @param { const Array } colrpool_x 
+//  * @const @param { Array } colrpool_x
 //  * @return { String } - "#112233"
 //  */
 // export const genColrhex = ( n0=Date.now(), colrpool_x = CalendarBgcolr_a ) =>
@@ -660,7 +839,7 @@ export const csscname_m = new CsscNameMap([
 //   const hexstr = colrpool_x[ n0 % colrpool_x.length ].toString(16);
 //   // console.log( `hexstr=${hexstr}` );
 //   let r,g,b;
-//   switch( hexstr.length ) 
+//   switch( hexstr.length )
 //   {
 //   case 1: r = 0;         g = 0;         b = hexstr[0]; break;
 //   case 2: r = 0;         g = hexstr[0]; b = hexstr[1]; break;
@@ -729,7 +908,7 @@ export const csscname_m = new CsscNameMap([
 //   0x943,
 //   0x658,
 //   0xc26,
-//   0x367, 
+//   0x367,
 //   0x573,
 //   0x466,
 //   0x847,

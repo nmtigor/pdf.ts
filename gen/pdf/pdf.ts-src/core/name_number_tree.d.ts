@@ -7,7 +7,7 @@ import { XRef } from "./xref.js";
  */
 declare abstract class NameOrNumberTree<T extends string | number> {
     #private;
-    root: Ref;
+    root: import("./primitives.js").NsRef.Ref;
     xref: XRef;
     constructor(root: Ref, xref: XRef, type: "Names" | "Nums");
     getAll(): Map<T, Dict>;

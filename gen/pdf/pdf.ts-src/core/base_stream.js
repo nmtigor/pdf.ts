@@ -16,12 +16,14 @@
  * limitations under the License.
  */
 import { bytesToString, shadow } from "../shared/util.js";
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 export class BaseStream {
     pos = 0;
     start;
     end;
-    get isDataLoaded() { return shadow(this, "isDataLoaded", true); }
+    get isDataLoaded() {
+        return shadow(this, "isDataLoaded", true);
+    }
     dict;
     cacheKey;
     /** @final */
@@ -60,10 +62,12 @@ export class BaseStream {
         return bytesToString(this.getBytes(length));
     }
     /** @final */
-    skip(n) { this.pos += n || 1; }
+    skip(n) {
+        this.pos += n || 1;
+    }
     getBaseStreams() {
         return undefined;
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=base_stream.js.map

@@ -15,10 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { JpxImage } from "./jpx.js";
 import { shadow } from "../shared/util.js";
 import { ImageStream } from "./decode_stream.js";
-/*81---------------------------------------------------------------------------*/
+import { JpxImage } from "./jpx.js";
+/*80--------------------------------------------------------------------------*/
 /**
  * For JPEG 2000's we use a library to decode these images and
  * the stream behaves like all the other DecodeStreams.
@@ -31,7 +31,7 @@ export class JpxStream extends ImageStream {
         // If `this.maybeLength` is null, we'll get the entire stream.
         return shadow(this, "bytes", this.stream.getBytes(this.maybeLength));
     }
-    /** @implements */
+    /** @implement */
     readBlock() {
         if (this.eof) {
             return;
@@ -76,5 +76,5 @@ export class JpxStream extends ImageStream {
         return undefined;
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=jpx_stream.js.map

@@ -733,5 +733,4 @@ export var Locale;
     Locale["zu"] = "zu";
     Locale["zu_ZA"] = "zu-ZA";
 })(Locale || (Locale = {}));
-;
 //# sourceMappingURL=Locale.js.map

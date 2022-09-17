@@ -20,8 +20,8 @@ import { $buildXFAObject, NamespaceIds } from "./namespaces.js";
 import { NamespaceSetUp } from "./setup.js";
 import { Template } from "./template.js";
 import { UnknownNamespace } from "./unknown.js";
-import { $cleanup, $finalize, $ids, $isNsAgnostic, $nsAttributes, $onChild, $resolvePrototypes, $root, XFAObject } from "./xfa_object.js";
-/*81---------------------------------------------------------------------------*/
+import { $cleanup, $finalize, $ids, $isNsAgnostic, $nsAttributes, $onChild, $resolvePrototypes, $root, XFAObject, } from "./xfa_object.js";
+/*80--------------------------------------------------------------------------*/
 export class Root extends XFAObject {
     element;
     [$ids];
@@ -61,8 +61,8 @@ export class Builder {
     _nextNsId = Math.max(...Object.values(NamespaceIds).map(({ id }) => id));
     _currentNamespace;
     constructor(rootNameSpace) {
-        this._currentNamespace =
-            rootNameSpace || new UnknownNamespace(++this._nextNsId);
+        this._currentNamespace = rootNameSpace ||
+            new UnknownNamespace(++this._nextNsId);
     }
     buildRoot(ids) {
         return new Root(ids);
@@ -78,7 +78,7 @@ export class Builder {
             // The xml node may have namespace prefix definitions
             this._addNamespacePrefix(prefixes);
         }
-        if (attributes.hasOwnProperty($nsAttributes)) {
+        if (Object.hasOwn(attributes, $nsAttributes)) {
             // Only support xfa-data namespace.
             const dataTemplate = NamespaceSetUp.datasets;
             const nsAttrs = attributes[$nsAttributes];
@@ -151,7 +151,7 @@ export class Builder {
             return this._currentNamespace;
         const prefixStack = this._namespacePrefixes.get(prefix);
         if (prefixStack && prefixStack.length > 0) {
-            return prefixStack[prefixStack.length - 1];
+            return prefixStack.at(-1);
         }
         warn(`Unknown namespace prefix: ${prefix}.`);
         return null;
@@ -171,5 +171,5 @@ export class Builder {
         }
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=builder.js.map

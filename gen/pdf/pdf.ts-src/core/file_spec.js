@@ -15,10 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Dict } from "./primitives.js";
 import { stringToPDFString, warn } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
-/*81---------------------------------------------------------------------------*/
+import { Dict } from "./primitives.js";
+/*80--------------------------------------------------------------------------*/
 function pickPlatformItem(dict) {
     // Look for the filename in this order:
     // UF, F, Unix, Mac, DOS
@@ -60,8 +60,9 @@ export class FileSpec {
     }
     contentRef;
     constructor(root, xref) {
-        if (!(root instanceof Dict))
+        if (!(root instanceof Dict)) {
             return;
+        }
         this.xref = xref;
         this.root = root;
         if (root.has("FS")) {
@@ -80,8 +81,9 @@ export class FileSpec {
         }
     }
     get content() {
-        if (!this.contentAvailable)
+        if (!this.contentAvailable) {
             return undefined;
+        }
         if (!this.contentRef && this.root) {
             this.contentRef = pickPlatformItem(this.root.get("EF"));
         }
@@ -108,5 +110,5 @@ export class FileSpec {
         };
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=file_spec.js.map

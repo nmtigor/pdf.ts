@@ -2,6 +2,8 @@ import { type TupleOf } from "../../../lib/alias.js";
 import { HttpStatusCode } from "../../../lib/HttpStatusCode.js";
 export declare const IDENTITY_MATRIX: matrix_t;
 export declare const FONT_IDENTITY_MATRIX: matrix_t;
+export declare const LINE_FACTOR = 1.35;
+export declare const LINE_DESCENT_FACTOR = 0.35;
 /**
  * Refer to the `WorkerTransport.getRenderingIntent`-method in the API, to see
  * how these flags are being used:
@@ -28,6 +30,21 @@ export declare const enum AnnotationMode {
     ENABLE = 1,
     ENABLE_FORMS = 2,
     ENABLE_STORAGE = 3
+}
+export declare const AnnotationEditorPrefix = "pdfjs_internal_editor_";
+export declare enum AnnotationEditorType {
+    DISABLE = -1,
+    NONE = 0,
+    FREETEXT = 3,
+    INK = 15
+}
+export declare const enum AnnotationEditorParamsType {
+    FREETEXT_SIZE = 1,
+    FREETEXT_COLOR = 2,
+    FREETEXT_OPACITY = 3,
+    INK_COLOR = 11,
+    INK_THICKNESS = 12,
+    INK_OPACITY = 13
 }
 export declare enum PermissionFlag {
     PRINT = 4,
@@ -131,35 +148,36 @@ export declare const enum AnnotationBorderStyleType {
     INSET = 4,
     UNDERLINE = 5
 }
-export declare enum AnnotationActionEventType {
-    E = "Mouse Enter",
-    X = "Mouse Exit",
-    D = "Mouse Down",
-    U = "Mouse Up",
-    Fo = "Focus",
-    Bl = "Blur",
-    PO = "PageOpen",
-    PC = "PageClose",
-    PV = "PageVisible",
-    PI = "PageInvisible",
-    K = "Keystroke",
-    F = "Format",
-    V = "Validate",
-    C = "Calculate"
-}
-export declare enum DocumentActionEventType {
-    WC = "WillClose",
-    WS = "WillSave",
-    DS = "DidSave",
-    WP = "WillPrint",
-    DP = "DidPrint"
-}
-export declare enum PageActionEventType {
-    O = "PageOpen",
-    C = "PageClose"
-}
-export declare type ActionEventType = AnnotationActionEventType | DocumentActionEventType | PageActionEventType;
-export declare type ActionEventTypesType = typeof AnnotationActionEventType | typeof DocumentActionEventType | typeof PageActionEventType;
+export declare const AnnotationActionEventType: {
+    readonly E: "Mouse Enter";
+    readonly X: "Mouse Exit";
+    readonly D: "Mouse Down";
+    readonly U: "Mouse Up";
+    readonly Fo: "Focus";
+    readonly Bl: "Blur";
+    readonly PO: "PageOpen";
+    readonly PC: "PageClose";
+    readonly PV: "PageVisible";
+    readonly PI: "PageInvisible";
+    readonly K: "Keystroke";
+    readonly F: "Format";
+    readonly V: "Validate";
+    readonly C: "Calculate";
+};
+export declare const DocumentActionEventType: {
+    readonly WC: "WillClose";
+    readonly WS: "WillSave";
+    readonly DS: "DidSave";
+    readonly WP: "WillPrint";
+    readonly DP: "DidPrint";
+};
+export declare const PageActionEventType: {
+    readonly O: "PageOpen";
+    readonly C: "PageClose";
+};
+export declare type ActionEventTypeType = typeof AnnotationActionEventType | typeof DocumentActionEventType | typeof PageActionEventType;
+export declare type ActionEventType = keyof typeof AnnotationActionEventType | keyof typeof DocumentActionEventType | keyof typeof PageActionEventType;
+export declare type ActionEventName = (typeof AnnotationActionEventType)[keyof typeof AnnotationActionEventType] | (typeof DocumentActionEventType)[keyof typeof DocumentActionEventType] | (typeof PageActionEventType)[keyof typeof PageActionEventType] | "Action";
 export declare enum StreamType {
     UNKNOWN = "UNKNOWN",
     FLATE = "FLATE",
@@ -274,7 +292,9 @@ export declare enum OPS {
     paintFormXObjectEnd = 75,
     beginGroup = 76,
     endGroup = 77,
+    /** @deprecated unused */
     beginAnnotations = 78,
+    /** @deprecated unused */
     endAnnotations = 79,
     beginAnnotation = 80,
     endAnnotation = 81,

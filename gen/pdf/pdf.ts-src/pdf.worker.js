@@ -16,12 +16,11 @@
  * limitations under the License.
  */
 import { WorkerMessageHandler } from "./core/worker.js";
-// import { PDFJSDev } from "../tspatch.js";
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 // /* eslint-disable-next-line no-unused-vars */
 // const pdfjsVersion = PDFJSDev?.eval("BUNDLE_VERSION");
 // /* eslint-disable-next-line no-unused-vars */
 // const pdfjsBuild = PDFJSDev?.eval("BUNDLE_BUILD");
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 export { WorkerMessageHandler };
 //# sourceMappingURL=pdf.worker.js.map

@@ -1,8 +1,8 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
-import { ImageKind, OPS, RenderingIntentFlag, warn } from "../shared/util.js";
-/*81---------------------------------------------------------------------------*/
+import { ImageKind, OPS, RenderingIntentFlag, warn, } from "../shared/util.js";
+/*80--------------------------------------------------------------------------*/
 var NsQueueOptimizer;
 (function (NsQueueOptimizer) {
     function addState(parentState, pattern, checkFn, iterateFn, processFn) {
@@ -11,7 +11,7 @@ var NsQueueOptimizer;
             const item = pattern[i];
             state = state[item] || (state[item] = []);
         }
-        state[pattern.last] = {
+        state[pattern.at(-1)] = {
             checkFn,
             iterateFn,
             processFn,
@@ -162,11 +162,11 @@ var NsQueueOptimizer;
             let iPIMXO = iFirstPIMXO + 4;
             for (let q = 1; q < count; q++, iTransform += 4, iPIMXO += 4) {
                 transformArgs = argsArray[iTransform];
-                if (argsArray[iPIMXO][0] !== firstPIMXOArg0
-                    || transformArgs[0] !== firstTransformArg0
-                    || transformArgs[1] !== firstTransformArg1
-                    || transformArgs[2] !== firstTransformArg2
-                    || transformArgs[3] !== firstTransformArg3) {
+                if (argsArray[iPIMXO][0] !== firstPIMXOArg0 ||
+                    transformArgs[0] !== firstTransformArg0 ||
+                    transformArgs[1] !== firstTransformArg1 ||
+                    transformArgs[2] !== firstTransformArg2 ||
+                    transformArgs[3] !== firstTransformArg3) {
                     if (q < MIN_IMAGES_IN_MASKS_BLOCK) {
                         isSameImage = false;
                     }
@@ -221,12 +221,13 @@ var NsQueueOptimizer;
     // This replaces (save, transform, paintImageXObject, restore)+ sequences
     // with one paintImageXObjectRepeat operation, if the |transform| and
     // |paintImageXObjectRepeat| ops are appropriate.
-    addState(InitialState, [OPS.save, OPS.transform, OPS.paintImageXObject, OPS.restore], function (context) {
+    addState(InitialState, [OPS.save, OPS.transform, OPS.paintImageXObject, OPS.restore], (context) => {
         const argsArray = context.argsArray;
         const iFirstTransform = context.iCurr - 2;
-        return (argsArray[iFirstTransform][1] === 0
-            && argsArray[iFirstTransform][2] === 0);
-    }, function iterateImageGroup(context, i) {
+        return (argsArray[iFirstTransform][1] === 0 &&
+            argsArray[iFirstTransform][2] === 0);
+    }, 
+    /* iterateImageGroup */ (context, i) => {
         const fnArray = context.fnArray;
         const argsArray = context.argsArray;
         const iFirstSave = context.iCurr - 3;
@@ -241,10 +242,10 @@ var NsQueueOptimizer;
                 const iFirstTransform = context.iCurr - 2;
                 const firstTransformArg0 = argsArray[iFirstTransform][0];
                 const firstTransformArg3 = argsArray[iFirstTransform][3];
-                if (argsArray[i][0] !== firstTransformArg0
-                    || argsArray[i][1] !== 0
-                    || argsArray[i][2] !== 0
-                    || argsArray[i][3] !== firstTransformArg3) {
+                if (argsArray[i][0] !== firstTransformArg0 ||
+                    argsArray[i][1] !== 0 ||
+                    argsArray[i][2] !== 0 ||
+                    argsArray[i][3] !== firstTransformArg3) {
                     return false; // transforms don't match
                 }
                 return true;
@@ -262,7 +263,7 @@ var NsQueueOptimizer;
                 return fnArray[i] === OPS.restore;
         }
         throw new Error(`iterateImageGroup - invalid pos: ${pos}`);
-    }, function (context, i) {
+    }, (context, i) => {
         const MIN_IMAGES_IN_BLOCK = 3;
         const MAX_IMAGES_IN_BLOCK = 1000;
         const fnArray = context.fnArray, argsArray = context.argsArray;
@@ -276,8 +277,9 @@ var NsQueueOptimizer;
         // At this point, i is the index of the first op past the last valid
         // quartet.
         const count = Math.min(Math.floor((i - iFirstSave) / 4), MAX_IMAGES_IN_BLOCK);
-        if (count < MIN_IMAGES_IN_BLOCK)
+        if (count < MIN_IMAGES_IN_BLOCK) {
             return i - ((i - iFirstSave) % 4);
+        }
         // Extract the (x,y) positions from all of the matching transforms.
         const positions = new Float32Array(count * 2);
         let iTransform = iFirstTransform;
@@ -318,8 +320,8 @@ var NsQueueOptimizer;
                 const iFirstSetFont = context.iCurr - 3;
                 const firstSetFontArg0 = argsArray[iFirstSetFont][0];
                 const firstSetFontArg1 = argsArray[iFirstSetFont][1];
-                if (argsArray[i][0] !== firstSetFontArg0
-                    || argsArray[i][1] !== firstSetFontArg1) {
+                if (argsArray[i][0] !== firstSetFontArg0 ||
+                    argsArray[i][1] !== firstSetFontArg1) {
                     return false; // fonts don't match
                 }
                 return true;
@@ -327,7 +329,7 @@ var NsQueueOptimizer;
                 return fnArray[i] === OPS.endText;
         }
         throw new Error(`iterateShowTextGroup - invalid pos: ${pos}`);
-    }, function (context, i) {
+    }, (context, i) => {
         const MIN_CHARS_IN_BLOCK = 3;
         const MAX_CHARS_IN_BLOCK = 1000;
         const fnArray = context.fnArray, argsArray = context.argsArray;
@@ -342,19 +344,20 @@ var NsQueueOptimizer;
         // At this point, i is the index of the first op past the last valid
         // quintet.
         let count = Math.min(Math.floor((i - iFirstBeginText) / 5), MAX_CHARS_IN_BLOCK);
-        if (count < MIN_CHARS_IN_BLOCK)
+        if (count < MIN_CHARS_IN_BLOCK) {
             return i - ((i - iFirstBeginText) % 5);
+        }
         // If the preceding quintet is (<something>, setFont, setTextMatrix,
         // showText, endText), include that as well. (E.g. <something> might be
         // |dependency|.)
         let iFirst = iFirstBeginText;
-        if (iFirstBeginText >= 4
-            && fnArray[iFirstBeginText - 4] === fnArray[iFirstSetFont]
-            && fnArray[iFirstBeginText - 3] === fnArray[iFirstSetTextMatrix]
-            && fnArray[iFirstBeginText - 2] === fnArray[iFirstShowText]
-            && fnArray[iFirstBeginText - 1] === fnArray[iFirstEndText]
-            && argsArray[iFirstBeginText - 4][0] === firstSetFontArg0
-            && argsArray[iFirstBeginText - 4][1] === firstSetFontArg1) {
+        if (iFirstBeginText >= 4 &&
+            fnArray[iFirstBeginText - 4] === fnArray[iFirstSetFont] &&
+            fnArray[iFirstBeginText - 3] === fnArray[iFirstSetTextMatrix] &&
+            fnArray[iFirstBeginText - 2] === fnArray[iFirstShowText] &&
+            fnArray[iFirstBeginText - 1] === fnArray[iFirstEndText] &&
+            argsArray[iFirstBeginText - 4][0] === firstSetFontArg0 &&
+            argsArray[iFirstBeginText - 4][1] === firstSetFontArg1) {
             count++;
             iFirst -= 5;
         }
@@ -422,8 +425,9 @@ var NsQueueOptimizer;
                     ii = fnArray.length;
                     match = undefined;
                     state = undefined;
-                    if (i >= ii)
+                    if (i >= ii) {
                         break;
+                    }
                 }
                 // Find the potentially optimizable items.
                 state = (state || InitialState)[fnArray[i]];
@@ -477,7 +481,9 @@ var NsOperatorList;
         // argsArray:(unknown[] | Uint8ClampedArray | null | undefined)[] = [];
         // argsArray:(Uint8ClampedArray | OpArgs | undefined)[] = [];
         argsArray = [];
-        get length() { return this.argsArray.length; }
+        get length() {
+            return this.argsArray.length;
+        }
         optimizer;
         dependencies = new Set();
         #totalLength = 0;
@@ -485,13 +491,16 @@ var NsOperatorList;
          * @return The total length of the entire operator list, since
          *  `this.length === 0` after flushing.
          */
-        get totalLength() { return this.#totalLength + this.length; }
+        get totalLength() {
+            return this.#totalLength + this.length;
+        }
         weight = 0;
         #resolved;
         constructor(intent = 0, streamSink) {
             this.#streamSink = streamSink;
-            if (streamSink && !(intent & RenderingIntentFlag.OPLIST))
+            if (streamSink && !(intent & RenderingIntentFlag.OPLIST)) {
                 this.optimizer = new QueueOptimizer(this);
+            }
             else
                 this.optimizer = new NullOptimizer(this);
             this.#resolved = streamSink ? undefined : Promise.resolve();
@@ -508,8 +517,8 @@ var NsOperatorList;
                 if (this.weight >= CHUNK_SIZE) {
                     this.flush();
                 }
-                else if (this.weight >= CHUNK_SIZE_ABOUT
-                    && (fn === OPS.restore || fn === OPS.endText)) {
+                else if (this.weight >= CHUNK_SIZE_ABOUT &&
+                    (fn === OPS.restore || fn === OPS.endText)) {
                     // Heuristic to flush on boundary of restore or endText.
                     this.flush();
                 }
@@ -525,8 +534,9 @@ var NsOperatorList;
             }
         }
         addDependency(dependency) {
-            if (this.dependencies.has(dependency))
+            if (this.dependencies.has(dependency)) {
                 return;
+            }
             this.dependencies.add(dependency);
             this.addOp(OPS.dependency, [dependency]);
         }
@@ -563,9 +573,9 @@ var NsOperatorList;
                     case OPS.paintInlineImageXObjectGroup:
                     case OPS.paintImageMaskXObject:
                         const arg = argsArray[i][0]; // First parameter in imgData.
-                        if (!arg.cached
-                            && arg.data
-                            && arg.data.buffer instanceof ArrayBuffer) {
+                        if (!arg.cached &&
+                            arg.data &&
+                            arg.data.buffer instanceof ArrayBuffer) {
                             transfers.push(arg.data.buffer);
                         }
                         break;
@@ -573,7 +583,7 @@ var NsOperatorList;
             }
             return transfers;
         }
-        flush(lastChunk = false) {
+        flush(lastChunk = false, separateAnnots) {
             this.optimizer.flush();
             const length = this.length;
             this.#totalLength += length;
@@ -581,6 +591,7 @@ var NsOperatorList;
                 fnArray: this.fnArray,
                 argsArray: this.argsArray,
                 lastChunk,
+                separateAnnots,
                 length,
             }, 1, this._transfers);
             this.dependencies.clear();
@@ -593,5 +604,5 @@ var NsOperatorList;
     NsOperatorList.OperatorList = OperatorList;
 })(NsOperatorList || (NsOperatorList = {}));
 export var OperatorList = NsOperatorList.OperatorList;
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=operator_list.js.map

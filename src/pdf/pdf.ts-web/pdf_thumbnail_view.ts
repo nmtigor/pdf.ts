@@ -23,70 +23,81 @@
 // eslint-disable-next-line max-len
 /** @typedef {import("./pdf_rendering_queue").PDFRenderingQueue} PDFRenderingQueue */
 
-import { html } from "../../lib/dom.js";
-import { PDFPageProxy, RenderTask } from "../pdf.ts-src/display/api.js";
-import { PageViewport, RenderingCancelledException } from "../pdf.ts-src/display/display_utils.js";
-import { OptionalContentConfig } from "../pdf.ts-src/display/optional_content_config.js";
-import { type matrix_t } from "../pdf.ts-src/shared/util.js";
-import { type IL10n, type IPDFLinkService, type IVisibleView } from "./interfaces.js";
-import { PDFPageView } from "./pdf_page_view.js";
-import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
-import { OutputScale, RenderingStates } from "./ui_utils.js";
-/*81---------------------------------------------------------------------------*/
+import { html } from "../../lib/dom.ts";
+import {
+  type matrix_t,
+  OptionalContentConfig,
+  PageViewport,
+  PDFPageProxy,
+  RenderingCancelledException,
+  RenderTask,
+} from "../pdf.ts-src/pdf.ts";
+import { PageColors } from "./base_viewer.ts";
+import {
+  type IL10n,
+  type IPDFLinkService,
+  type IVisibleView,
+} from "./interfaces.ts";
+import { PDFPageView } from "./pdf_page_view.ts";
+import { PDFRenderingQueue } from "./pdf_rendering_queue.ts";
+import { OutputScale, RenderingStates } from "./ui_utils.ts";
+/*80--------------------------------------------------------------------------*/
 
 const DRAW_UPSCALE_FACTOR = 2; // See comment in `PDFThumbnailView.draw` below.
 const MAX_NUM_SCALING_STEPS = 3;
 const THUMBNAIL_CANVAS_BORDER_WIDTH = 1; // px
 const THUMBNAIL_WIDTH = 98; // px
 
-interface PDFThumbnailViewOptions
-{
+interface PDFThumbnailViewOptions {
   /**
    * The viewer element.
    */
-  container:HTMLDivElement;
+  container: HTMLDivElement;
 
   /**
    * The thumbnail's unique ID (normally its number).
    */
-  id:number;
+  id: number;
 
   /**
    * The page viewport.
    */
-  defaultViewport:PageViewport;
+  defaultViewport: PageViewport;
 
   /**
    * A promise that is resolved with an {@link OptionalContentConfig} instance.
    * The default value is `null`.
    */
-  optionalContentConfigPromise?:Promise< OptionalContentConfig >;
+  optionalContentConfigPromise?: Promise<OptionalContentConfig>;
 
   /**
    * The navigation/linking service.
    */
-  linkService:IPDFLinkService;
+  linkService: IPDFLinkService;
 
   /**
    * The rendering queue object.
    */
-  renderingQueue:PDFRenderingQueue;
-
-  checkSetImageDisabled:() => boolean;
+  renderingQueue: PDFRenderingQueue;
 
   /**
    * Localization service.
    */
-  l10n:IL10n;
+  l10n: IL10n;
+
+  /**
+   * Overwrites background and foreground colors
+   * with user defined ones in order to improve readability in high contrast
+   * mode.
+   */
+  pageColors: PageColors | undefined;
 }
 
-export class TempImageFactory 
-{
-  static #tempCanvas:HTMLCanvasElement | undefined;
+export class TempImageFactory {
+  static #tempCanvas: HTMLCanvasElement | undefined;
 
-  static getCanvas( width:number, height:number )
-  {
-    const tempCanvas = (this.#tempCanvas ||= document.createElement("canvas"));
+  static getCanvas(width: number, height: number) {
+    const tempCanvas = (this.#tempCanvas ||= html("canvas"));
     tempCanvas.width = width;
     tempCanvas.height = height;
 
@@ -97,14 +108,12 @@ export class TempImageFactory
     ctx.fillStyle = "rgb(255, 255, 255)";
     ctx.fillRect(0, 0, width, height);
     ctx.restore();
-    return <const>[tempCanvas, tempCanvas.getContext("2d")!];
+    return [tempCanvas, tempCanvas.getContext("2d")!] as const;
   }
 
-  static destroyCanvas() 
-  {
+  static destroyCanvas() {
     const tempCanvas = this.#tempCanvas;
-    if( tempCanvas )
-    {
+    if (tempCanvas) {
       // Zeroing the width and height causes Firefox to release graphics
       // resources immediately, which can greatly reduce memory consumption.
       tempCanvas.width = 0;
@@ -114,25 +123,24 @@ export class TempImageFactory
   }
 }
 
-export class PDFThumbnailView implements IVisibleView
-{
-  readonly id; /** @implements */
-  readonly renderingId; /** @implements */
-  pageLabel:string | undefined;
+export class PDFThumbnailView implements IVisibleView {
+  readonly id; /** @implement */
+  readonly renderingId; /** @implement */
+  pageLabel: string | undefined;
 
-  pdfPage?:PDFPageProxy;
+  pdfPage?: PDFPageProxy;
   rotation = 0;
   viewport;
   pdfPageRotate;
   _optionalContentConfigPromise;
+  pageColors;
 
   linkService;
   renderingQueue;
 
-  renderTask?:RenderTask | undefined;
+  renderTask?: RenderTask | undefined;
   renderingState = RenderingStates.INITIAL;
-  resume?:(() => void) | undefined; /** @implements */
-  #checkSetImageDisabled:() => boolean;
+  resume?: (() => void) | undefined; /** @implement */
 
   canvasWidth;
   canvasHeight;
@@ -141,11 +149,11 @@ export class PDFThumbnailView implements IVisibleView
   l10n;
 
   anchor;
-  div; /** @implements */
+  div; /** @implement */
   ring;
 
-  canvas?:HTMLCanvasElement;
-  image?:HTMLImageElement;
+  canvas?: HTMLCanvasElement;
+  image?: HTMLImageElement;
 
   constructor({
     container,
@@ -154,10 +162,9 @@ export class PDFThumbnailView implements IVisibleView
     optionalContentConfigPromise,
     linkService,
     renderingQueue,
-    checkSetImageDisabled,
     l10n,
-  }:PDFThumbnailViewOptions ) 
-  {
+    pageColors,
+  }: PDFThumbnailViewOptions) {
     this.id = id;
     this.renderingId = "thumbnail" + id;
     // this.pageLabel = null;
@@ -167,14 +174,10 @@ export class PDFThumbnailView implements IVisibleView
     this.viewport = defaultViewport;
     this.pdfPageRotate = defaultViewport.rotation;
     this._optionalContentConfigPromise = optionalContentConfigPromise;
+    this.pageColors = pageColors || undefined;
 
     this.linkService = linkService;
     this.renderingQueue = renderingQueue;
-
-    // this.renderTask = null;
-    // this.renderingState = RenderingStates.INITIAL;
-    // this.resume = null;
-    this.#checkSetImageDisabled = checkSetImageDisabled || (() => false);
 
     const pageWidth = this.viewport.width,
       pageHeight = this.viewport.height,
@@ -188,10 +191,10 @@ export class PDFThumbnailView implements IVisibleView
 
     const anchor = html("a");
     anchor.href = linkService.getAnchorUrl("#page=" + id);
-    this._thumbPageTitle.then(msg => {
+    this._thumbPageTitle.then((msg) => {
       anchor.title = msg;
     });
-    anchor.onclick = function () {
+    anchor.onclick = () => {
       linkService.goToPage(id);
       return false;
     };
@@ -199,7 +202,7 @@ export class PDFThumbnailView implements IVisibleView
 
     const div = html("div");
     div.className = "thumbnail";
-    div.setAttribute("data-page-number", <any>this.id);
+    div.setAttribute("data-page-number", <any> this.id);
     this.div = div;
 
     const ring = html("div");
@@ -209,13 +212,12 @@ export class PDFThumbnailView implements IVisibleView
     ring.style.height = this.canvasHeight + borderAdjustment + "px";
     this.ring = ring;
 
-    div.appendChild(ring);
-    anchor.appendChild(div);
-    container.appendChild(anchor);
+    div.append(ring);
+    anchor.append(div);
+    container.append(anchor);
   }
 
-  setPdfPage( pdfPage:PDFPageProxy )
-  {
+  setPdfPage(pdfPage: PDFPageProxy) {
     this.pdfPage = pdfPage;
     this.pdfPageRotate = pdfPage.rotate;
     const totalRotation = (this.rotation + this.pdfPageRotate) % 360;
@@ -241,8 +243,7 @@ export class PDFThumbnailView implements IVisibleView
     ring.style.width = this.canvasWidth + borderAdjustment + "px";
     ring.style.height = this.canvasHeight + borderAdjustment + "px";
 
-    if( this.canvas )
-    {
+    if (this.canvas) {
       // Zeroing the width and height causes Firefox to release graphics
       // resources immediately, which can greatly reduce memory consumption.
       this.canvas.width = 0;
@@ -255,10 +256,8 @@ export class PDFThumbnailView implements IVisibleView
     }
   }
 
-  update({ rotation }:{ rotation?:number })
-  {
-    if( typeof rotation === "number" )
-    {
+  update({ rotation }: { rotation?: number }) {
+    if (typeof rotation === "number") {
       this.rotation = rotation; // The rotation may be zero.
     }
     const totalRotation = (this.rotation + this.pdfPageRotate) % 360;
@@ -274,16 +273,14 @@ export class PDFThumbnailView implements IVisibleView
    *              rather than calling this one directly.
    */
   cancelRendering() {
-    if( this.renderTask )
-    {
+    if (this.renderTask) {
       this.renderTask.cancel();
       this.renderTask = undefined;
     }
     this.resume = undefined;
   }
 
-  #getPageDrawContext = ( upscaleFactor=1 ) =>
-  {
+  #getPageDrawContext = (upscaleFactor = 1) => {
     // Keep the no-thumbnail outline visible, i.e. `data-loaded === false`,
     // until rendering/image conversion is complete, to avoid display issues.
     const canvas = html("canvas");
@@ -294,14 +291,13 @@ export class PDFThumbnailView implements IVisibleView
     canvas.height = (upscaleFactor * this.canvasHeight * outputScale.sy) | 0;
 
     const transform = outputScale.scaled
-      ? <matrix_t>[outputScale.sx, 0, 0, outputScale.sy, 0, 0]
+      ? <matrix_t> [outputScale.sx, 0, 0, outputScale.sy, 0, 0]
       : undefined;
 
     return { ctx, canvas, transform };
-  }
+  };
 
-  #convertCanvasToImage( canvas:HTMLCanvasElement )
-  {
+  #convertCanvasToImage(canvas: HTMLCanvasElement) {
     if (this.renderingState !== RenderingStates.FINISHED) {
       throw new Error("_convertCanvasToImage: Rendering has not finished.");
     }
@@ -309,7 +305,7 @@ export class PDFThumbnailView implements IVisibleView
 
     const image = html("img");
     image.className = "thumbnailImage";
-    this._thumbPageCanvas.then(msg => {
+    this._thumbPageCanvas.then((msg) => {
       image.setAttribute("aria-label", msg);
     });
     image.style.width = this.canvasWidth + "px";
@@ -318,8 +314,8 @@ export class PDFThumbnailView implements IVisibleView
     image.src = reducedCanvas.toDataURL();
     this.image = image;
 
-    this.div.setAttribute("data-loaded", <any>true);
-    this.ring.appendChild(image);
+    this.div.setAttribute("data-loaded", <any> true);
+    this.ring.append(image);
 
     // Zeroing the width and height causes Firefox to release graphics
     // resources immediately, which can greatly reduce memory consumption.
@@ -327,39 +323,37 @@ export class PDFThumbnailView implements IVisibleView
     reducedCanvas.height = 0;
   }
 
-  draw() 
-  {
-    if (this.renderingState !== RenderingStates.INITIAL) 
-    {
+  draw() {
+    if (this.renderingState !== RenderingStates.INITIAL) {
       console.error("Must be in new state before drawing");
       return Promise.resolve();
     }
     const { pdfPage } = this;
 
-    if( !pdfPage )
-    {
+    if (!pdfPage) {
       this.renderingState = RenderingStates.FINISHED;
       return Promise.reject(new Error("pdfPage is not loaded"));
     }
 
     this.renderingState = RenderingStates.RUNNING;
 
-    const finishRenderTask = async ( error:any=null ) => {
+    const finishRenderTask = async (error: any = undefined) => {
       // The renderTask may have been replaced by a new one, so only remove
       // the reference to the renderTask if it matches the one that is
       // triggering this callback.
-      if( renderTask === this.renderTask )
-      {
+      if (renderTask === this.renderTask) {
         this.renderTask = undefined;
       }
 
-      if( error instanceof RenderingCancelledException )
+      if (error instanceof RenderingCancelledException) {
         return;
+      }
       this.renderingState = RenderingStates.FINISHED;
-      this.#convertCanvasToImage( canvas );
+      this.#convertCanvasToImage(canvas);
 
-      if( error )
+      if (error) {
         throw error;
+      }
     };
 
     // Render the thumbnail at a larger size and downsize the canvas (similar
@@ -367,14 +361,14 @@ export class PDFThumbnailView implements IVisibleView
     // the `draw` and `setImage` methods (fixes issue 8233).
     // NOTE: To primarily avoid increasing memory usage too much, but also to
     //   reduce downsizing overhead, we purposely limit the up-scaling factor.
-    const { ctx, canvas, transform } =
-      this.#getPageDrawContext(DRAW_UPSCALE_FACTOR);
+    const { ctx, canvas, transform } = this.#getPageDrawContext(
+      DRAW_UPSCALE_FACTOR,
+    );
     const drawViewport = this.viewport.clone({
       scale: DRAW_UPSCALE_FACTOR * this.scale,
     });
-    const renderContinueCallback = ( cont:()=>void ) => {
-      if( !this.renderingQueue.isHighestPriority(this) )
-      {
+    const renderContinueCallback = (cont: () => void) => {
+      if (!this.renderingQueue.isHighestPriority(this)) {
         this.renderingState = RenderingStates.PAUSED;
         this.resume = () => {
           this.renderingState = RenderingStates.RUNNING;
@@ -390,17 +384,14 @@ export class PDFThumbnailView implements IVisibleView
       transform,
       viewport: drawViewport,
       optionalContentConfigPromise: this._optionalContentConfigPromise,
+      pageColors: this.pageColors,
     };
     const renderTask = (this.renderTask = pdfPage.render(renderContext));
     renderTask.onContinue = renderContinueCallback;
 
     const resultPromise = renderTask.promise.then(
-      function () {
-        return finishRenderTask(null);
-      },
-      function (error) {
-        return finishRenderTask(error);
-      }
+      () => finishRenderTask(undefined),
+      (error) => finishRenderTask(error),
     );
     resultPromise.finally(() => {
       // Zeroing the width and height causes Firefox to release graphics
@@ -419,27 +410,22 @@ export class PDFThumbnailView implements IVisibleView
     return resultPromise;
   }
 
-  setImage( pageView:PDFPageView )
-  {
-    if (this.#checkSetImageDisabled()) {
-      return;
-    }
+  setImage(pageView: PDFPageView) {
     if (this.renderingState !== RenderingStates.INITIAL) {
       return;
     }
-    const { canvas, pdfPage } = pageView;
+    const { thumbnailCanvas: canvas, pdfPage } = pageView;
     if (!canvas) {
       return;
     }
     if (!this.pdfPage) {
-      this.setPdfPage( pdfPage! );
+      this.setPdfPage(pdfPage!);
     }
     this.renderingState = RenderingStates.FINISHED;
     this.#convertCanvasToImage(canvas);
   }
 
-  #reduceImage = ( img:HTMLCanvasElement ) =>
-  {
+  #reduceImage = (img: HTMLCanvasElement) => {
     const { ctx, canvas } = this.#getPageDrawContext();
 
     if (img.width <= 2 * canvas.width) {
@@ -452,7 +438,7 @@ export class PDFThumbnailView implements IVisibleView
         0,
         0,
         canvas.width,
-        canvas.height
+        canvas.height,
       );
       return canvas;
     }
@@ -461,7 +447,7 @@ export class PDFThumbnailView implements IVisibleView
     let reducedHeight = canvas.height << MAX_NUM_SCALING_STEPS;
     const [reducedImage, reducedImageCtx] = TempImageFactory.getCanvas(
       reducedWidth,
-      reducedHeight
+      reducedHeight,
     );
 
     while (reducedWidth > img.width || reducedHeight > img.height) {
@@ -477,7 +463,7 @@ export class PDFThumbnailView implements IVisibleView
       0,
       0,
       reducedWidth,
-      reducedHeight
+      reducedHeight,
     );
     while (reducedWidth > 2 * canvas.width) {
       reducedImageCtx.drawImage(
@@ -489,7 +475,7 @@ export class PDFThumbnailView implements IVisibleView
         0,
         0,
         reducedWidth >> 1,
-        reducedHeight >> 1
+        reducedHeight >> 1,
       );
       reducedWidth >>= 1;
       reducedHeight >>= 1;
@@ -503,29 +489,27 @@ export class PDFThumbnailView implements IVisibleView
       0,
       0,
       canvas.width,
-      canvas.height
+      canvas.height,
     );
     return canvas;
-  }
+  };
 
-  get _thumbPageTitle()
-  {
+  get _thumbPageTitle() {
     return this.l10n.get("thumb_page_title", {
-      page: this.pageLabel ?? <any>this.id,
+      page: this.pageLabel ?? <any> this.id,
     });
   }
 
   get _thumbPageCanvas() {
     return this.l10n.get("thumb_page_canvas", {
-      page: this.pageLabel ?? <any>this.id,
+      page: this.pageLabel ?? <any> this.id,
     });
   }
 
-  setPageLabel( label:string | null ) 
-  {
+  setPageLabel(label: string | null) {
     this.pageLabel = typeof label === "string" ? label : undefined;
 
-    this._thumbPageTitle.then(msg => {
+    this._thumbPageTitle.then((msg) => {
       this.anchor.title = msg;
     });
 
@@ -533,9 +517,9 @@ export class PDFThumbnailView implements IVisibleView
       return;
     }
 
-    this._thumbPageCanvas.then(msg => {
+    this._thumbPageCanvas.then((msg) => {
       this.image?.setAttribute("aria-label", msg);
     });
   }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

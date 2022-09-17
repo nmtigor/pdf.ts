@@ -44,7 +44,7 @@ export class LZWStream extends DecodeStream {
         // this.lastCode = null;
         return (cachedData >>> bitsCached) & ((1 << n) - 1);
     }
-    /** @implements */
+    /** @implement */
     readBlock() {
         const blockSize = 512, decodedSizeDelta = blockSize;
         let estimatedDecodedSize = blockSize * 2;
@@ -100,10 +100,9 @@ export class LZWStream extends DecodeStream {
                 dictionaryLengths[nextCode] = dictionaryLengths[prevCode] + 1;
                 dictionaryValues[nextCode] = currentSequence[0];
                 nextCode++;
-                codeLength =
-                    (nextCode + earlyChange) & (nextCode + earlyChange - 1)
-                        ? codeLength
-                        : Math.min(Math.log(nextCode + earlyChange) / 0.6931471805599453 + 1, 12) | 0;
+                codeLength = (nextCode + earlyChange) & (nextCode + earlyChange - 1)
+                    ? codeLength
+                    : Math.min(Math.log(nextCode + earlyChange) / 0.6931471805599453 + 1, 12) | 0;
             }
             prevCode = code;
             decodedLength += currentSequenceLength;
@@ -124,5 +123,5 @@ export class LZWStream extends DecodeStream {
         this.bufferLength = currentBufferLength;
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=lzw_stream.js.map

@@ -8,17 +8,16 @@ import { type DocumentInfo, type XFAData } from "../core/document.js";
 import { type BidiTextContentItem, type FontStyle, type ImgData, type TypeTextContentItem } from "../core/evaluator.js";
 import { FontExpotDataEx } from "../core/fonts.js";
 import { type CmdArgs } from "../core/font_renderer.js";
+import { type IWorker } from "../core/iworker.js";
 import { type SerializedMetadata } from "../core/metadata_parser.js";
 import { type OpListIR } from "../core/operator_list.js";
 import { type ShadingPatternIR } from "../core/pattern.js";
-import { type StructTree } from "../core/struct_tree.js";
-import { type IWorker } from "../core/worker.js";
 import { type XFAElObj } from "../core/xfa/alias.js";
 import { type AnnotStorageRecord } from "../display/annotation_layer.js";
-import { type OutlineNode, type PDFDocumentStats, type RefProxy } from "../display/api.js";
+import { StructTreeNode, type OutlineNode, type PDFDocumentStats, type RefProxy } from "../display/api.js";
 import { type CMapData } from "../display/base_factory.js";
 import { VerbosityLevel } from "../pdf.js";
-import { InvalidPDFException, MissingPDFException, PasswordException, PasswordResponses, PermissionFlag, RenderingIntentFlag, UnexpectedResponseException, UnknownErrorException, UNSUPPORTED_FEATURES, type rect_t } from "./util.js";
+import { InvalidPDFException, MissingPDFException, PasswordException, PasswordResponses, PermissionFlag, type rect_t, RenderingIntentFlag, UnexpectedResponseException, UnknownErrorException, UNSUPPORTED_FEATURES } from "./util.js";
 interface reason_t {
     name?: string;
     message: string;
@@ -52,7 +51,7 @@ export interface _PumpOperatorListP {
     pageIndex: number;
     intent: RenderingIntentFlag;
     cacheKey: string;
-    annotationStorage?: AnnotStorageRecord | undefined;
+    annotationStorage: AnnotStorageRecord | undefined;
 }
 export interface PageInfo {
     rotate: number;
@@ -220,7 +219,7 @@ export interface MActionMap {
         Data: {
             pageIndex: number;
         };
-        Return?: StructTree;
+        Return?: StructTreeNode;
         Sinkchunk: undefined;
     };
     GetTextContent: {
@@ -426,10 +425,10 @@ interface StreamController<Ta extends Thread, AN extends ActionName<Ta> = Action
 }
 export declare class MessageHandler<Ta extends Thread, Tn extends Thread = Ta extends Thread.main ? Thread.worker : Thread.main> {
     #private;
+    readonly id: number;
     sourceName: string;
     targetName: string;
     comObj: IWorker;
-    readonly id: number;
     callbackId: number;
     streamId: number;
     streamSinks: StreamSink<Ta>[];

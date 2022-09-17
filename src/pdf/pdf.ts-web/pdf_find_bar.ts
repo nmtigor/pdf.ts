@@ -17,11 +17,16 @@
  * limitations under the License.
  */
 
-import { EventBus } from "./event_utils.js";
-import { type IL10n } from "./interfaces.js";
-import { FindState, type FindType, type MatchesCount } from "./pdf_find_controller.js";
-import { type ViewerConfiguration } from "./viewer.js";
-/*81---------------------------------------------------------------------------*/
+import { MOZCENTRAL } from "../../global.ts";
+import { EventBus } from "./event_utils.ts";
+import { type IL10n } from "./interfaces.ts";
+import {
+  FindState,
+  type FindType,
+  type MatchesCount,
+} from "./pdf_find_controller.ts";
+import { type ViewerConfiguration } from "./viewer.ts";
+/*80--------------------------------------------------------------------------*/
 
 const MATCHES_COUNT_LIMIT = 1000;
 
@@ -31,8 +36,7 @@ const MATCHES_COUNT_LIMIT = 1000;
  * also sets up the appropriate events for the controls. Actual searching
  * is done by PDFFindController.
  */
-export class PDFFindBar 
-{
+export class PDFFindBar {
   opened = false;
 
   bar;
@@ -47,9 +51,10 @@ export class PDFFindBar
   findPreviousButton;
   findNextButton;
 
-  constructor( options:ViewerConfiguration['findBar'],
-    public eventBus:EventBus, 
-    public l10n:IL10n
+  constructor(
+    options: ViewerConfiguration["findBar"],
+    public eventBus: EventBus,
+    public l10n: IL10n,
   ) {
     this.bar = options.bar;
     this.toggleButton = options.toggleButton;
@@ -72,7 +77,7 @@ export class PDFFindBar
       this.dispatchEvent("");
     });
 
-    this.bar.addEventListener("keydown", e => {
+    this.bar.addEventListener("keydown", (e) => {
       switch (e.keyCode) {
         case 13: // Enter
           if (e.target === this.findField) {
@@ -109,13 +114,14 @@ export class PDFFindBar
       this.dispatchEvent("diacriticmatchingchange");
     });
 
-    this.eventBus._on( "resize", this.#adjustWidth );
+    this.eventBus._on("resize", this.#adjustWidth);
   }
 
-  reset() { this.updateUIState(); }
+  reset() {
+    this.updateUIState();
+  }
 
-  dispatchEvent( type:FindType | "", findPrev=false )
-  {
+  dispatchEvent(type: FindType | "", findPrev = false) {
     this.eventBus.dispatch("find", {
       source: this,
       type,
@@ -129,13 +135,15 @@ export class PDFFindBar
     });
   }
 
-  updateUIState( state?:FindState, previous?:boolean, matchesCount?:MatchesCount )
-  {
+  updateUIState(
+    state?: FindState,
+    previous?: boolean,
+    matchesCount?: MatchesCount,
+  ) {
     let findMsg = Promise.resolve("");
     let status = "";
 
-    switch( state )
-    {
+    switch (state) {
       case FindState.FOUND:
         break;
       case FindState.PENDING:
@@ -150,9 +158,12 @@ export class PDFFindBar
         break;
     }
     this.findField.setAttribute("data-status", status);
-    this.findField.setAttribute("aria-invalid", <any>(state === FindState.NOT_FOUND));
+    this.findField.setAttribute(
+      "aria-invalid",
+      <any> (state === FindState.NOT_FOUND),
+    );
 
-    findMsg.then(msg => {
+    findMsg.then((msg) => {
       this.findMsg.textContent = msg;
       this.#adjustWidth();
     });
@@ -160,8 +171,7 @@ export class PDFFindBar
     this.updateResultsCount(matchesCount);
   }
 
-  updateResultsCount({ current=0, total=0 } = {})
-  {
+  updateResultsCount({ current = 0, total = 0 } = {}) {
     const limit = MATCHES_COUNT_LIMIT;
     let matchCountMsg = Promise.resolve("");
 
@@ -169,25 +179,27 @@ export class PDFFindBar
       if (total > limit) {
         let key = "find_match_count_limit";
 
-        // #if MOZCENTRAL
+        /*#static*/ if (MOZCENTRAL) {
           // TODO: Remove this hard-coded `[other]` form once plural support has
           // been implemented in the mozilla-central specific `l10n.js` file.
           key += "[other]";
-        // #endif
-        matchCountMsg = this.l10n.get(key, { limit: <any>limit });
-      }
-      else {
+        }
+        matchCountMsg = this.l10n.get(key, { limit: <any> limit });
+      } else {
         let key = "find_match_count";
 
-        // #if MOZCENTRAL
+        /*#static*/ if (MOZCENTRAL) {
           // TODO: Remove this hard-coded `[other]` form once plural support has
           // been implemented in the mozilla-central specific `l10n.js` file.
           key += "[other]";
-        // #endif
-        matchCountMsg = this.l10n.get(key, { current: <any>current, total: <any>total });
+        }
+        matchCountMsg = this.l10n.get(key, {
+          current: <any> current,
+          total: <any> total,
+        });
       }
     }
-    matchCountMsg.then(msg => {
+    matchCountMsg.then((msg) => {
       this.findResultsCount.textContent = msg;
       // Since `updateResultsCount` may be called from `PDFFindController`,
       // ensure that the width of the findbar is always updated correctly.
@@ -223,16 +235,15 @@ export class PDFFindBar
   toggle() {
     if (this.opened) {
       this.close();
-    } 
-    else {
+    } else {
       this.open();
     }
   }
 
-  #adjustWidth =() => 
-  {
-    if( !this.opened ) 
+  #adjustWidth = () => {
+    if (!this.opened) {
       return;
+    }
 
     // The find bar has an absolute position and thus the browser extends
     // its width to the maximum possible width once the find bar does not fit
@@ -249,6 +260,6 @@ export class PDFFindBar
       // wrap all of them to adjust the width of the find bar.
       this.bar.classList.add("wrapContainers");
     }
-  }
+  };
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

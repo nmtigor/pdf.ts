@@ -3,8 +3,8 @@
  */
 import { stringToUTF8String, warn } from "../shared/util.js";
 import { parseXFAPath } from "./core_utils.js";
-import { SimpleXMLParser } from "./xml_parser.js";
-/*81---------------------------------------------------------------------------*/
+import { SimpleXMLParser, } from "./xml_parser.js";
+/*80--------------------------------------------------------------------------*/
 function decodeString(str) {
     try {
         return stringToUTF8String(str);
@@ -45,16 +45,19 @@ export class DatasetReader {
         }
     }
     getValue(path) {
-        if (!this.node || !path)
+        if (!this.node || !path) {
             return "";
+        }
         const node = this.node.searchNode(parseXFAPath(path), 0);
-        if (!node)
+        if (!node) {
             return "";
+        }
         const first = node.firstChild;
-        if (first && first.nodeName === "value")
-            return node.children.map(child => decodeString(child.textContent));
+        if (first && first.nodeName === "value") {
+            return node.children.map((child) => decodeString(child.textContent));
+        }
         return decodeString(node.textContent);
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=dataset_reader.js.map

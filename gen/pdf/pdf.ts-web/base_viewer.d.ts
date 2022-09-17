@@ -1,13 +1,8 @@
-import { type FieldObject } from "../pdf.ts-src/core/annotation.js";
-import { type ExplicitDest } from "../pdf.ts-src/core/catalog.js";
-import { AnnotationStorage } from "../pdf.ts-src/display/annotation_storage.js";
-import { PDFDocumentProxy, PDFPageProxy } from "../pdf.ts-src/display/api.js";
-import { PageViewport } from "../pdf.ts-src/display/display_utils.js";
-import { OptionalContentConfig } from "../pdf.ts-src/display/optional_content_config.js";
-import { AnnotationMode } from "../pdf.ts-src/shared/util.js";
+import { AnnotationEditorType, AnnotationMode, type ExplicitDest, OptionalContentConfig, PDFDocumentProxy, PDFPageProxy } from "../pdf.ts-src/pdf.js";
+import { AnnotationEditorLayerBuilder } from "./annotation_editor_layer_builder.js";
 import { AnnotationLayerBuilder } from "./annotation_layer_builder.js";
 import { EventBus, EventMap } from "./event_utils.js";
-import { IDownloadManager, type IL10n, type IPDFAnnotationLayerFactory, type IPDFLinkService, type IPDFStructTreeLayerFactory, type IPDFTextLayerFactory, type IPDFXfaLayerFactory, type MouseState } from "./interfaces.js";
+import { CreateAnnotationEditorLayerBuilderP, CreateAnnotationLayerBuilderP, CreateStructTreeLayerBuilderP, CreateTextLayerBuilderP, CreateXfaLayerBuilderP, IDownloadManager, type IL10n, IPDFAnnotationEditorLayerFactory, type IPDFAnnotationLayerFactory, type IPDFLinkService, type IPDFStructTreeLayerFactory, type IPDFTextLayerFactory, type IPDFXfaLayerFactory, type MouseState } from "./interfaces.js";
 import { PDFFindController } from "./pdf_find_controller.js";
 import { PDFPageView } from "./pdf_page_view.js";
 import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
@@ -79,6 +74,12 @@ export interface PDFViewerOptions {
      */
     annotationMode?: AnnotationMode;
     /**
+     * Enables the creation and editing
+     * of new Annotations. The constants from {@link AnnotationEditorType} should
+     * be used. The default value is `AnnotationEditorType.DISABLE`.
+     */
+    annotationEditorMode?: AnnotationEditorType;
+    /**
      * Path for image resources, mainly
      * mainly for annotation icons. Include trailing slash.
      */
@@ -91,7 +92,7 @@ export interface PDFViewerOptions {
     /**
      * 'canvas' or 'svg'. The default is 'canvas'.
      */
-    renderer: RendererType | undefined;
+    renderer?: RendererType | undefined;
     /**
      * Enables CSS only zooming. The default value is `false`.
      */
@@ -116,7 +117,7 @@ export interface PDFViewerOptions {
      * with user defined ones in order to improve readability in high contrast
      * mode.
      */
-    pageColors?: PageColors;
+    pageColors: PageColors | undefined;
 }
 export declare class PDFPageViewBuffer {
     #private;
@@ -167,10 +168,14 @@ export interface PageOverview {
     height: number;
     rotation: number;
 }
+interface _CreateTextHighlighterP {
+    pageIndex: number;
+    eventBus: EventBus;
+}
 /**
  * Simple viewer control to display PDF content/pages.
  */
-export declare abstract class BaseViewer implements IPDFAnnotationLayerFactory, IPDFStructTreeLayerFactory, IPDFTextLayerFactory, IPDFXfaLayerFactory {
+export declare abstract class BaseViewer implements IPDFAnnotationLayerFactory, IPDFAnnotationEditorLayerFactory, IPDFStructTreeLayerFactory, IPDFTextLayerFactory, IPDFXfaLayerFactory {
     #private;
     container: HTMLDivElement;
     viewer: HTMLDivElement;
@@ -185,7 +190,7 @@ export declare abstract class BaseViewer implements IPDFAnnotationLayerFactory, 
     get renderForms(): boolean;
     imageResourcesPath: string;
     enablePrintAutoRotate: boolean;
-    renderer: RendererType;
+    renderer: RendererType | undefined;
     useOnlyCssZoom: boolean;
     maxCanvasPixels: number | undefined;
     l10n: IL10n;
@@ -193,7 +198,6 @@ export declare abstract class BaseViewer implements IPDFAnnotationLayerFactory, 
     _mouseState?: MouseState;
     defaultRenderingQueue: boolean;
     renderingQueue?: PDFRenderingQueue | undefined;
-    _doc: HTMLElement;
     scroll: {
         right: boolean;
         down: boolean;
@@ -202,8 +206,8 @@ export declare abstract class BaseViewer implements IPDFAnnotationLayerFactory, 
         _eventHandler: (evt: unknown) => void;
     };
     presentationModeState: PresentationModeState;
-    _onBeforeDraw: ((evt: EventMap['pagerender']) => void) | undefined;
-    _onAfterDraw: ((evt: EventMap['pagerendered']) => void) | undefined;
+    _onBeforeDraw: ((evt: EventMap["pagerender"]) => void) | undefined;
+    _onAfterDraw: ((evt: EventMap["pagerendered"]) => void) | undefined;
     _pages: PDFPageView[];
     get pagesCount(): number;
     getPageView(index: number): PDFPageView;
@@ -296,23 +300,17 @@ export declare abstract class BaseViewer implements IPDFAnnotationLayerFactory, 
     cleanup(): void;
     protected _cancelRendering(): void;
     forceRendering(currentlyVisiblePages?: VisibleElements): boolean;
-    /** @implements */
-    createTextLayerBuilder(textLayerDiv: HTMLDivElement, pageIndex: number, viewport: PageViewport, enhanceTextSelection: boolean | undefined, eventBus: EventBus, highlighter: TextHighlighter): TextLayerBuilder;
-    createTextHighlighter(pageIndex: number, eventBus: EventBus): TextHighlighter;
-    /**
-     * @implements
-     *
-     * @param annotationStorage Storage for annotation data in forms.
-     * @param imageResourcesPath Path for image resources, mainly
-     *   for annotation icons. Include trailing slash.
-     */
-    createAnnotationLayerBuilder(pageDiv: HTMLDivElement, pdfPage: PDFPageProxy, annotationStorage?: AnnotationStorage, imageResourcesPath?: string, renderForms?: boolean, l10n?: IL10n, enableScripting?: boolean, hasJSActionsPromise?: Promise<boolean>, mouseState?: MouseState, fieldObjectsPromise?: Promise<Record<string, FieldObject[]> | undefined>, annotationCanvasMap?: Map<string, HTMLCanvasElement>): AnnotationLayerBuilder;
-    /**
-     * @param annotationStorage Storage for annotation data in forms.
-     */
-    createXfaLayerBuilder(pageDiv: HTMLDivElement, pdfPage: PDFPageProxy, annotationStorage?: AnnotationStorage): XfaLayerBuilder;
-    /** @implements */
-    createStructTreeLayerBuilder(pdfPage: PDFPageProxy): StructTreeLayerBuilder;
+    /** @implement */
+    createTextLayerBuilder({ textLayerDiv, pageIndex, viewport, enhanceTextSelection, eventBus, highlighter, }: CreateTextLayerBuilderP): TextLayerBuilder;
+    createTextHighlighter({ pageIndex, eventBus }: _CreateTextHighlighterP): TextHighlighter;
+    /** @implement */
+    createAnnotationLayerBuilder({ pageDiv, pdfPage, annotationStorage, imageResourcesPath, renderForms, l10n, enableScripting, hasJSActionsPromise, mouseState, fieldObjectsPromise, annotationCanvasMap, }: CreateAnnotationLayerBuilderP): AnnotationLayerBuilder;
+    /** @implement */
+    createAnnotationEditorLayerBuilder({ uiManager, pageDiv, pdfPage, l10n, annotationStorage, }: CreateAnnotationEditorLayerBuilderP): AnnotationEditorLayerBuilder;
+    /** @implement */
+    createXfaLayerBuilder({ pageDiv, pdfPage, annotationStorage, }: CreateXfaLayerBuilderP): XfaLayerBuilder;
+    /** @implement */
+    createStructTreeLayerBuilder({ pdfPage }: CreateStructTreeLayerBuilderP): StructTreeLayerBuilder;
     /**
      * @return Whether all pages of the PDF document have identical
      *   widths and heights.
@@ -376,6 +374,12 @@ export declare abstract class BaseViewer implements IPDFAnnotationLayerFactory, 
      */
     decreaseScale(steps?: number): void;
     updateContainerHeightCss(): void;
+    get annotationEditorMode(): AnnotationEditorType;
+    /**
+     * @param AnnotationEditor mode (None, FreeText, Ink, ...)
+     */
+    set annotationEditorMode(mode: AnnotationEditorType);
+    set annotationEditorParams({ type, value }: EventMap["switchannotationeditorparams"]);
 }
 export {};
 //# sourceMappingURL=base_viewer.d.ts.map

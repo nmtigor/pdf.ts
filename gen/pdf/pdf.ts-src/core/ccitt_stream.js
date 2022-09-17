@@ -1,24 +1,10 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
-/* Copyright 2012 Mozilla Foundation
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-import { Dict } from "./primitives.js";
 import { CCITTFaxDecoder } from "./ccitt.js";
 import { DecodeStream } from "./decode_stream.js";
-/*81---------------------------------------------------------------------------*/
+import { Dict } from "./primitives.js";
+/*80--------------------------------------------------------------------------*/
 export class CCITTFaxStream extends DecodeStream {
     ccittFaxDecoder;
     constructor(str, maybeLength, params) {
@@ -43,7 +29,7 @@ export class CCITTFaxStream extends DecodeStream {
             BlackIs1: params.get("BlackIs1"),
         });
     }
-    /** @implements */
+    /** @implement */
     readBlock() {
         while (!this.eof) {
             const c = this.ccittFaxDecoder.readNextChar();
@@ -55,7 +41,6 @@ export class CCITTFaxStream extends DecodeStream {
             this.buffer[this.bufferLength++] = c;
         }
     }
-    ;
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=ccitt_stream.js.map

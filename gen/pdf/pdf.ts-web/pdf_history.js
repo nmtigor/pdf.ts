@@ -17,10 +17,11 @@
  */
 /** @typedef {import("./event_utils").EventBus} EventBus */
 /** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
+import { CHROME } from "../../global.js";
 import { isObjectLike } from "../../lib/jslang.js";
 import { waitOnEventOrTimeout } from "./event_utils.js";
 import { isValidRotation, parseQueryString } from "./ui_utils.js";
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 // Heuristic value used when force-resetting `this.#blockHashChange`.
 const HASH_CHANGE_TIMEOUT = 1000; // milliseconds
 // Heuristic value used when adding the current position to the browser history.
@@ -45,9 +46,13 @@ export class PDFHistory {
     #destination;
     #position;
     #initialRotation;
-    get initialRotation() { return this.#initialized ? this.#initialRotation : undefined; }
+    get initialRotation() {
+        return this.#initialized ? this.#initialRotation : undefined;
+    }
     #initialBookmark = null;
-    get initialBookmark() { return this.#initialized ? this.#initialBookmark : null; }
+    get initialBookmark() {
+        return this.#initialized ? this.#initialBookmark : null;
+    }
     _boundEvents;
     _isPagesLoaded;
     #updateViewareaTimeout;
@@ -59,7 +64,7 @@ export class PDFHistory {
         // by registering the listener immediately.
         this.eventBus._on("pagesinit", () => {
             this._isPagesLoaded = false;
-            this.eventBus._on("pagesloaded", evt => {
+            this.eventBus._on("pagesloaded", (evt) => {
                 this._isPagesLoaded = !!evt.pagesCount;
             }, { once: true });
         });
@@ -68,7 +73,7 @@ export class PDFHistory {
      * Initialize the history for the PDF document, using either the current
      * browser history entry or the document hash, whichever is present.
      */
-    initialize({ fingerprint, resetHistory = false, updateUrl = false }) {
+    initialize({ fingerprint, resetHistory = false, updateUrl = false, }) {
         if (!fingerprint || typeof fingerprint !== "string") {
             console.error('PDFHistory.initialize: The "fingerprint" must be a non-empty string.');
             return;
@@ -77,7 +82,8 @@ export class PDFHistory {
         if (this.#initialized) {
             this.reset();
         }
-        const reInitialized = this.#fingerprint !== "" && this.#fingerprint !== fingerprint;
+        const reInitialized = this.#fingerprint !== "" &&
+            this.#fingerprint !== fingerprint;
         this.#fingerprint = fingerprint;
         this.#updateUrl = updateUrl === true;
         this.#initialized = true;
@@ -174,9 +180,9 @@ export class PDFHistory {
             return;
         }
         let forceReplace = false;
-        if (this.#destination
-            && (isDestHashesEqual(this.#destination.hash, hash)
-                || isDestArraysEqual(this.#destination.dest, explicitDest))) {
+        if (this.#destination &&
+            (isDestHashesEqual(this.#destination.hash, hash) ||
+                isDestArraysEqual(this.#destination.dest, explicitDest))) {
             // When the new destination is identical to `this.#destination`, and
             // its `page` is undefined, replace the current browser history entry.
             // NOTE: This can only occur if `this.#destination` was set either:
@@ -212,8 +218,9 @@ export class PDFHistory {
      * used instead.
      */
     pushPage(pageNumber) {
-        if (!this.#initialized)
+        if (!this.#initialized) {
             return;
+        }
         if (!this.#isValidPage(pageNumber)) {
             console.error(`PDFHistory.pushPage: "${pageNumber}" is not a valid page number.`);
             return;
@@ -248,8 +255,9 @@ export class PDFHistory {
      * Push the current position to the browser history.
      */
     pushCurrentPosition() {
-        if (!this.#initialized || this._popStateInProgress)
+        if (!this.#initialized || this._popStateInProgress) {
             return;
+        }
         this.#tryPushCurrentPosition();
     }
     /**
@@ -257,8 +265,9 @@ export class PDFHistory {
      * NOTE: Avoids navigating away from the document, useful for "named actions".
      */
     back() {
-        if (!this.#initialized || this._popStateInProgress)
+        if (!this.#initialized || this._popStateInProgress) {
             return;
+        }
         const state = window.history.state;
         if (this.#isValidState(state) && state.uid > 0) {
             window.history.back();
@@ -269,8 +278,9 @@ export class PDFHistory {
      * NOTE: Avoids navigating away from the document, useful for "named actions".
      */
     forward() {
-        if (!this.#initialized || this._popStateInProgress)
+        if (!this.#initialized || this._popStateInProgress) {
             return;
+        }
         const state = window.history.state;
         if (this.#isValidState(state) && state.uid < this.#maxUid) {
             window.history.forward();
@@ -291,6 +301,7 @@ export class PDFHistory {
             uid: shouldReplace ? this.#uid : this.#uid + 1,
             destination,
         };
+        /*#static*/ 
         this.#updateInternalState(destination, newState.uid);
         let newUrl;
         if (this.#updateUrl && destination?.hash) {
@@ -306,6 +317,7 @@ export class PDFHistory {
         else {
             window.history.pushState(newState, "", newUrl);
         }
+        /*#static*/ 
     }
     #tryPushCurrentPosition = (temporary = false) => {
         if (!this.#position) {
@@ -326,7 +338,8 @@ export class PDFHistory {
             return;
         }
         if (this.#destination.hash === position.hash) {
-            return; // The current document position has not changed.
+            // The current document position has not changed.
+            return;
         }
         if (!this.#destination.page &&
             (POSITION_UPDATED_THRESHOLD <= 0 ||
@@ -357,25 +370,24 @@ export class PDFHistory {
         return (Number.isInteger(val) && val > 0 && val <= this.linkService.pagesCount);
     }
     #isValidState(state, checkReload = false) {
-        if (!state)
+        if (!state) {
             return false;
+        }
         if (state.fingerprint !== this.#fingerprint) {
             if (checkReload) {
                 // Potentially accept the history entry, even if the fingerprints don't
                 // match, when the viewer was reloaded (see issue 6847).
-                if (typeof state.fingerprint !== "string"
-                    || state.fingerprint.length !== this.#fingerprint.length) {
+                if (typeof state.fingerprint !== "string" ||
+                    state.fingerprint.length !== this.#fingerprint.length) {
                     return false;
                 }
                 const [perfEntry] = performance.getEntriesByType("navigation");
-                if (perfEntry?.type !== "reload") //kkkk bug? should be `entryType`?
-                 {
+                if (perfEntry?.type !== "reload") {
                     return false;
                 }
-            }
+            } // This should only occur in viewers with support for opening more than
+            // one PDF document, e.g. the GENERIC viewer.
             else {
-                // This should only occur in viewers with support for opening more than
-                // one PDF document, e.g. the GENERIC viewer.
                 return false;
             }
         }
@@ -427,12 +439,13 @@ export class PDFHistory {
             first: location.pageNumber,
             rotation: location.rotation,
         };
-        if (this._popStateInProgress)
+        if (this._popStateInProgress) {
             return;
-        if (POSITION_UPDATED_THRESHOLD > 0
-            && this._isPagesLoaded
-            && this.#destination
-            && !this.#destination.page) {
+        }
+        if (POSITION_UPDATED_THRESHOLD > 0 &&
+            this._isPagesLoaded &&
+            this.#destination &&
+            !this.#destination.page) {
             // If the current destination was set through the user changing the hash
             // of the document, we will usually not try to push the current position
             // to the browser history; see `this.#tryPushCurrentPosition()`.
@@ -478,8 +491,10 @@ export class PDFHistory {
             /* forceReplace = */ true);
             return;
         };
-        if (!state)
+        /*#static*/ 
+        if (!state) {
             return rn_();
+        }
         if (!this.#isValidState(state)) {
             // This should only occur in viewers with support for opening more than
             // one PDF document, e.g. the GENERIC viewer.
@@ -542,7 +557,8 @@ export class PDFHistory {
     };
     #bindEvents = () => {
         if (this._boundEvents) {
-            return; // The event listeners were already added.
+            // The event listeners were already added.
+            return;
         }
         this._boundEvents = {
             updateViewarea: this.#updateViewarea,
@@ -555,7 +571,8 @@ export class PDFHistory {
     };
     #unbindEvents = () => {
         if (!this._boundEvents) {
-            return; // The event listeners were already removed.
+            // The event listeners were already removed.
+            return;
         }
         this.eventBus._off("updateviewarea", this._boundEvents.updateViewarea);
         window.removeEventListener("popstate", this._boundEvents.popState);
@@ -578,30 +595,37 @@ export function isDestHashesEqual(destHash, pushHash) {
 }
 export function isDestArraysEqual(firstDest, secondDest) {
     function isEntryEqual(first, second) {
-        if (typeof first !== typeof second)
+        if (typeof first !== typeof second) {
             return false;
-        if (Array.isArray(first) || Array.isArray(second))
+        }
+        if (Array.isArray(first) || Array.isArray(second)) {
             return false;
+        }
         if (isObjectLike(first) && second !== null) {
-            if (Object.keys(first).length !== Object.keys(second).length)
+            if (Object.keys(first).length !== Object.keys(second).length) {
                 return false;
+            }
             for (const key in first) {
-                if (!isEntryEqual(first[key], second[key]))
+                if (!isEntryEqual(first[key], second[key])) {
                     return false;
+                }
             }
             return true;
         }
         return first === second || (Number.isNaN(first) && Number.isNaN(second));
     }
-    if (!(Array.isArray(firstDest) && Array.isArray(secondDest)))
+    if (!(Array.isArray(firstDest) && Array.isArray(secondDest))) {
         return false;
-    if (firstDest.length !== secondDest.length)
+    }
+    if (firstDest.length !== secondDest.length) {
         return false;
+    }
     for (let i = 0, ii = firstDest.length; i < ii; i++) {
-        if (!isEntryEqual(firstDest[i], secondDest[i]))
+        if (!isEntryEqual(firstDest[i], secondDest[i])) {
             return false;
+        }
     }
     return true;
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=pdf_history.js.map

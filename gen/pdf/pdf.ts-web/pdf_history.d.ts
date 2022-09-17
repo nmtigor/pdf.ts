@@ -1,4 +1,4 @@
-import { type ExplicitDest } from "../pdf.ts-src/core/catalog.js";
+import { type ExplicitDest } from "../pdf.ts-src/pdf.js";
 import { type PDFLocation } from "./base_viewer.js";
 import { EventBus } from "./event_utils.js";
 import { type HistoryInitP, type HistoryPushP, type IPDFLinkService } from "./interfaces.js";
@@ -11,6 +11,20 @@ interface PDFHistoryOptions {
      * The application event bus.
      */
     eventBus: EventBus;
+}
+interface PDFHistoryPosition {
+    hash: string;
+    page: number | undefined;
+    first?: number;
+    rotation: number;
+    temporary?: boolean;
+    dest?: ExplicitDest;
+}
+export interface HistoryState {
+    fingerprint: string;
+    uid: number;
+    destination: PDFHistoryPosition | undefined;
+    chromecomState?: unknown;
 }
 export declare class PDFHistory {
     #private;
@@ -35,7 +49,7 @@ export declare class PDFHistory {
      * Initialize the history for the PDF document, using either the current
      * browser history entry or the document hash, whichever is present.
      */
-    initialize({ fingerprint, resetHistory, updateUrl }: HistoryInitP): void;
+    initialize({ fingerprint, resetHistory, updateUrl, }: HistoryInitP): void;
     /**
      * Reset the current `PDFHistory` instance, and consequently prevent any
      * further updates and/or navigation of the browser history.

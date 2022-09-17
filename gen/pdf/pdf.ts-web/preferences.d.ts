@@ -6,6 +6,7 @@ import { type OptionName, type UserOptions } from "./app_options.js";
  */
 export declare abstract class BasePreferences {
     #private;
+    defaults: Readonly<UserOptions>;
     constructor();
     /**
      * Stub function for writing preferences to storage.
@@ -13,7 +14,7 @@ export declare abstract class BasePreferences {
      * @return A promise that is resolved when the preference values
      *  have been written.
      */
-    protected abstract _writeToStorage(prefObj: UserOptions): Promise<UserOptions | void>;
+    protected abstract _writeToStorage(prefObj: UserOptions): Promise<void>;
     /**
      * Stub function for reading preferences from storage.
      * @param prefObj The preferences that should be read from storage.
@@ -26,7 +27,7 @@ export declare abstract class BasePreferences {
      * @return A promise that is resolved when the preference values
      *  have been reset.
      */
-    reset(): Promise<unknown>;
+    reset(): Promise<void>;
     /**
      * Set the value of a preference.
      * @param name The name of the preference that should be changed.

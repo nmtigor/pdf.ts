@@ -93,7 +93,7 @@ export declare abstract class ColorSpace {
     static get singletons(): {
         readonly gray: DeviceGrayCS;
         readonly rgb: DeviceRgbCS;
-        readonly cmyk: DeviceCmykCS;
+        readonly cmyk: NsDeviceCmykCS.DeviceCmykCS;
     };
 }
 /**
@@ -101,9 +101,9 @@ export declare abstract class ColorSpace {
  */
 export declare class DeviceGrayCS extends ColorSpace {
     constructor();
-    /** @implements */
+    /** @implement */
     getRgbItem(src: Float32Array | number[], srcOffset: number, dest: Uint8ClampedArray, destOffset: number): void;
-    /** @implements */
+    /** @implement */
     getRgbBuffer(src: Uint8Array | Uint16Array | Uint8ClampedArray | Uint32Array, srcOffset: number, count: number, dest: Uint8ClampedArray, destOffset: number, bits: number, alpha01: number): void;
     getOutputLength(inputLength: number, alpha01: number): number;
 }
@@ -112,9 +112,9 @@ export declare class DeviceGrayCS extends ColorSpace {
  */
 declare class DeviceRgbCS extends ColorSpace {
     constructor();
-    /** @implements */
+    /** @implement */
     getRgbItem(src: Float32Array | number[], srcOffset: number, dest: Uint8ClampedArray, destOffset: number): void;
-    /** @implements */
+    /** @implement */
     getRgbBuffer(src: Uint8Array | Uint16Array | Uint8ClampedArray | Uint32Array, srcOffset: number, count: number, dest: Uint8ClampedArray, destOffset: number, bits: number, alpha01: number): void;
     getOutputLength(inputLength: number, alpha01: number): number;
     isPassthrough(bits: number): boolean;
@@ -125,13 +125,12 @@ declare class DeviceRgbCS extends ColorSpace {
 declare namespace NsDeviceCmykCS {
     class DeviceCmykCS extends ColorSpace {
         constructor();
-        /** @implements */
+        /** @implement */
         getRgbItem(src: Float32Array | number[], srcOffset: number, dest: Uint8ClampedArray, destOffset: number): void;
-        /** @implements */
+        /** @implement */
         getRgbBuffer(src: Uint8Array | Uint16Array | Uint8ClampedArray | Uint32Array, srcOffset: number, count: number, dest: Uint8ClampedArray, destOffset: number, bits: number, alpha01: number): void;
         getOutputLength(inputLength: number, alpha01: number): number;
     }
 }
-import DeviceCmykCS = NsDeviceCmykCS.DeviceCmykCS;
 export {};
 //# sourceMappingURL=colorspace.d.ts.map

@@ -15,12 +15,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Dict } from "./primitives.js";
-import { Jbig2Image } from "./jbig2.js";
 import { shadow } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
 import { ImageStream } from "./decode_stream.js";
-/*81---------------------------------------------------------------------------*/
+import { Jbig2Image } from "./jbig2.js";
+import { Dict } from "./primitives.js";
+/*80--------------------------------------------------------------------------*/
 /**
  * For JBIG2's we use a library to decode these images and
  * the stream behaves like all the other DecodeStreams.
@@ -33,10 +33,11 @@ export class Jbig2Stream extends ImageStream {
         // If `this.maybeLength` is null, we'll get the entire stream.
         return shadow(this, "bytes", this.stream.getBytes(this.maybeLength));
     }
-    /** @implements */
+    /** @implement */
     readBlock() {
-        if (this.eof)
+        if (this.eof) {
             return;
+        }
         const jbig2Image = new Jbig2Image();
         const chunks = [];
         if (this.params instanceof Dict) {
@@ -63,5 +64,5 @@ export class Jbig2Stream extends ImageStream {
         return undefined;
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=jbig2_stream.js.map

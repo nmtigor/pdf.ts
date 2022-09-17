@@ -7,7 +7,7 @@ export declare class DecryptStream extends DecodeStream {
     nextChunk?: Uint8Array | Uint8ClampedArray;
     initialized: boolean;
     constructor(str: BaseStream, maybeLength: number, decrypt: Decrypt);
-    /** @implements */
+    /** @implement */
     readBlock(): void;
 }
 export {};

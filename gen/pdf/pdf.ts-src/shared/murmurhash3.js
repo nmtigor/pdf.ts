@@ -17,7 +17,7 @@
  * Hashes roughly 100 KB per millisecond on i7 3.4 GHz.
  */
 import { isArrayBuffer } from "./util.js";
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 const SEED = 0xc3d2e1f0;
 // Workaround for missing math precision in JS.
 const MASK_HIGH = 0xffff0000;
@@ -115,18 +115,16 @@ export class MurmurHash3_64 {
         let h2 = this.h2;
         h1 ^= h2 >>> 1;
         h1 = ((h1 * 0xed558ccd) & MASK_HIGH) | ((h1 * 0x8ccd) & MASK_LOW);
-        h2 =
-            ((h2 * 0xff51afd7) & MASK_HIGH) |
-                (((((h2 << 16) | (h1 >>> 16)) * 0xafd7ed55) & MASK_HIGH) >>> 16);
+        h2 = ((h2 * 0xff51afd7) & MASK_HIGH) |
+            (((((h2 << 16) | (h1 >>> 16)) * 0xafd7ed55) & MASK_HIGH) >>> 16);
         h1 ^= h2 >>> 1;
         h1 = ((h1 * 0x1a85ec53) & MASK_HIGH) | ((h1 * 0xec53) & MASK_LOW);
-        h2 =
-            ((h2 * 0xc4ceb9fe) & MASK_HIGH) |
-                (((((h2 << 16) | (h1 >>> 16)) * 0xb9fe1a85) & MASK_HIGH) >>> 16);
+        h2 = ((h2 * 0xc4ceb9fe) & MASK_HIGH) |
+            (((((h2 << 16) | (h1 >>> 16)) * 0xb9fe1a85) & MASK_HIGH) >>> 16);
         h1 ^= h2 >>> 1;
         const hex1 = (h1 >>> 0).toString(16), hex2 = (h2 >>> 0).toString(16);
         return hex1.padStart(8, "0") + hex2.padStart(8, "0");
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=murmurhash3.js.map

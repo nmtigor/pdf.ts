@@ -1,15 +1,16 @@
-import { PageColors } from "src/pdf/pdf.ts-web/base_viewer.js";
+import { PageColors } from "../../pdf.ts-web/base_viewer.js";
+import { Stepper } from "../../pdf.ts-web/debugger.js";
 import { type ImgData, type MarkedContentProps, type SmaskOptions } from "../core/evaluator.js";
 import { Glyph } from "../core/fonts.js";
 import { type OpListIR } from "../core/operator_list.js";
-import { ShadingType, type PatternIR } from "../core/pattern.js";
-import { OPS, point_t, TextRenderingMode, type matrix_t, type rect_t } from "../shared/util.js";
+import { type PatternIR, ShadingType } from "../core/pattern.js";
+import { type matrix_t, OPS, point_t, type rect_t, TextRenderingMode } from "../shared/util.js";
 import { ImageLayer, PDFCommonObjs, PDFObjects, PDFObjs } from "./api.js";
 import { BaseCanvasFactory, type CanvasEntry } from "./base_factory.js";
 import { PageViewport } from "./display_utils.js";
-import { FontFaceObject, type AddToPath } from "./font_loader.js";
+import { type AddToPath, FontFaceObject } from "./font_loader.js";
 import { OptionalContentConfig } from "./optional_content_config.js";
-import { PathType, TilingPattern, type ShadingPattern } from "./pattern_helper.js";
+import { PathType, type ShadingPattern, TilingPattern } from "./pattern_helper.js";
 declare type C2D = CanvasRenderingContext2D;
 declare global {
     interface CanvasRenderingContext2D {
@@ -188,7 +189,7 @@ export declare class CanvasGraphics {
     constructor(canvasCtx: C2D, commonObjs: PDFObjects<PDFCommonObjs>, objs: PDFObjects<PDFObjs | undefined>, canvasFactory: BaseCanvasFactory, imageLayer?: ImageLayer, optionalContentConfig?: OptionalContentConfig, annotationCanvasMap?: Map<string, HTMLCanvasElement>, pageColors?: PageColors);
     getObject<T extends PDFCommonObjs | PDFObjs>(data: any, fallback?: T | undefined): T | undefined;
     beginDrawing({ transform, viewport, transparency, background, }: _BeginDrawingP): void;
-    executeOperatorList(operatorList: OpListIR, executionStartIdx?: number, continueCallback?: () => void): number;
+    executeOperatorList(operatorList: OpListIR, executionStartIdx?: number, continueCallback?: () => void, stepper?: Stepper): number;
     endDrawing(): void;
     _scaleImage(img: HTMLCanvasElement, inverseTransform: matrix_t): {
         img: HTMLCanvasElement;
@@ -269,8 +270,6 @@ export declare class CanvasGraphics {
     [OPS.paintFormXObjectEnd](): void;
     [OPS.beginGroup](group: GroupOptions): void;
     [OPS.endGroup](group: GroupOptions): void;
-    [OPS.beginAnnotations](): void;
-    [OPS.endAnnotations](): void;
     [OPS.beginAnnotation](id: string, rect: rect_t, transform: matrix_t, matrix: matrix_t, hasOwnCanvas: boolean): void;
     [OPS.endAnnotation](): void;
     [OPS.paintImageMaskXObject](img: ImgData): void;

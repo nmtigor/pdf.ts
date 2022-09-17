@@ -3,7 +3,7 @@
  */
 import { GrabToPan } from "./grab_to_pan.js";
 import { PresentationModeState } from "./ui_utils.js";
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 export var CursorTool;
 (function (CursorTool) {
     CursorTool[CursorTool["SELECT"] = 0] = "SELECT";
@@ -14,10 +14,12 @@ export class PDFCursorTools {
     container;
     eventBus;
     active = CursorTool.SELECT;
-    get activeTool() { return this.active; }
+    get activeTool() {
+        return this.active;
+    }
     activeBeforePresentationMode;
     handTool;
-    constructor({ container, eventBus, cursorToolOnLoad = CursorTool.SELECT }) {
+    constructor({ container, eventBus, cursorToolOnLoad = CursorTool.SELECT, }) {
         this.container = container;
         this.eventBus = eventBus;
         this.handTool = new GrabToPan({
@@ -36,12 +38,14 @@ export class PDFCursorTools {
      *   must be one of the values in {CursorTool}.
      */
     switchTool(tool) {
-        // Cursor tools cannot be used in Presentation Mode.
-        if (this.activeBeforePresentationMode !== undefined)
+        if (this.activeBeforePresentationMode !== undefined) {
+            // Cursor tools cannot be used in Presentation Mode.
             return;
-        // The requested tool is already active.
-        if (tool === this.active)
+        }
+        if (tool === this.active) {
+            // The requested tool is already active.
             return;
+        }
         const disableActiveTool = () => {
             switch (this.active) {
                 case CursorTool.SELECT:
@@ -80,10 +84,10 @@ export class PDFCursorTools {
         });
     }
     #addEventListeners() {
-        this.eventBus._on("switchcursortool", evt => {
+        this.eventBus._on("switchcursortool", (evt) => {
             this.switchTool(evt.tool);
         });
-        this.eventBus._on("presentationmodechanged", evt => {
+        this.eventBus._on("presentationmodechanged", (evt) => {
             switch (evt.state) {
                 case PresentationModeState.FULLSCREEN: {
                     const previouslyActive = this.active;
@@ -101,5 +105,5 @@ export class PDFCursorTools {
         });
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=pdf_cursor_tools.js.map

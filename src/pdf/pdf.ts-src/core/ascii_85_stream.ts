@@ -17,31 +17,28 @@
  * limitations under the License.
  */
 
-import { DecodeStream } from "./decode_stream.js";
-import { isWhiteSpace } from "./core_utils.js";
-import { BaseStream } from "./base_stream.js";
-/*81---------------------------------------------------------------------------*/
+import { BaseStream } from "./base_stream.ts";
+import { isWhiteSpace } from "./core_utils.ts";
+import { DecodeStream } from "./decode_stream.ts";
+/*80--------------------------------------------------------------------------*/
 
-export class Ascii85Stream extends DecodeStream
-{
+export class Ascii85Stream extends DecodeStream {
   input = new Uint8Array(5);
 
-  constructor( str:BaseStream, maybeLength:number )
-  {
+  constructor(str: BaseStream, maybeLength: number) {
     // Most streams increase in size when decoded, but Ascii85 streams
     // typically shrink by ~20%.
     if (maybeLength) {
       maybeLength *= 0.8;
     }
-    super( maybeLength );
+    super(maybeLength);
 
     this.str = str;
     this.dict = str.dict;
   }
 
-  /** @implements */
-  protected readBlock() 
-  {
+  /** @implement */
+  protected readBlock() {
     const TILDA_CHAR = 0x7e; // '~'
     const Z_LOWER_CHAR = 0x7a; // 'z'
     const EOF = -1;
@@ -68,8 +65,7 @@ export class Ascii85Stream extends DecodeStream
         buffer[bufferLength + i] = 0;
       }
       this.bufferLength += 4;
-    } 
-    else {
+    } else {
       const input = this.input;
       input[0] = c;
       for (i = 1; i < 5; ++i) {
@@ -106,4 +102,4 @@ export class Ascii85Stream extends DecodeStream
     }
   }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

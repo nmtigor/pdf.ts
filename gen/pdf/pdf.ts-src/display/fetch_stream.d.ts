@@ -8,48 +8,48 @@ export declare class PDFFetchStream implements IPDFStream {
     httpHeaders: Record<string, string>;
     get _progressiveDataLength(): number;
     constructor(source: DocumentInitP);
-    /** @implements */
+    /** @implement */
     getFullReader(): PDFFetchStreamReader;
-    /** @implements */
+    /** @implement */
     getRangeReader(begin: number, end: number): PDFFetchStreamRangeReader | undefined;
-    /** @implements */
+    /** @implement */
     cancelAllRequests(reason: AbortException): void;
 }
 declare class PDFFetchStreamReader implements IPDFStreamReader {
     #private;
     _loaded: number;
     get filename(): string | undefined;
-    /** @implements */
+    /** @implement */
     get contentLength(): number;
     get headersReady(): Promise<void>;
-    /** @implements */
+    /** @implement */
     get isStreamingSupported(): boolean;
-    /** @implements */
+    /** @implement */
     get isRangeSupported(): boolean;
-    /** @implements */
+    /** @implement */
     onProgress: ((data: {
         loaded: number;
         total: number;
     }) => void) | undefined;
     constructor(stream: PDFFetchStream);
-    /** @implements */
+    /** @implement */
     read(): Promise<ReadValue>;
-    /** @implements */
+    /** @implement */
     cancel(reason: object): void;
 }
 declare class PDFFetchStreamRangeReader implements IPDFStreamRangeReader {
     #private;
     _loaded: number;
-    /** @implements */
+    /** @implement */
     get isStreamingSupported(): boolean;
-    /** @implements */
+    /** @implement */
     onProgress: ((data: {
         loaded: number;
     }) => void) | undefined;
     constructor(stream: PDFFetchStream, begin: number, end: number);
-    /** @implements */
+    /** @implement */
     read(): Promise<ReadValue>;
-    /** @implements */
+    /** @implement */
     cancel(reason: object): void;
 }
 export {};

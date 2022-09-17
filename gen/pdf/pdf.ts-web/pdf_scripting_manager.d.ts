@@ -1,4 +1,4 @@
-import { PDFDocumentProxy } from "../pdf.ts-src/display/api.js";
+import { PDFDocumentProxy } from "../pdf.ts-src/pdf.js";
 import { DefaultExternalServices, type ScriptingDocProperties } from "./app.js";
 import { EventBus } from "./event_utils.js";
 import { IScripting, type MouseState } from "./interfaces.js";
@@ -22,7 +22,7 @@ interface PDFScriptingManagerOptions {
      * The function that is used to
      * lookup the necessary document properties.
      */
-    docPropertiesLookup?: (pdfDocument?: PDFDocumentProxy) => Promise<ScriptingDocProperties | null>;
+    docPropertiesLookup?: (pdfDocument: PDFDocumentProxy) => Promise<ScriptingDocProperties | undefined>;
 }
 export declare class PDFScriptingManager {
     #private;

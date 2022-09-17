@@ -17,25 +17,22 @@
  * limitations under the License.
  */
 
-import { Dict } from "./primitives.js";
-import { CCITTFaxDecoder } from "./ccitt.js";
-import { DecodeStream } from "./decode_stream.js";
-import { BaseStream } from "./base_stream.js";
-/*81---------------------------------------------------------------------------*/
+import { BaseStream } from "./base_stream.ts";
+import { CCITTFaxDecoder } from "./ccitt.ts";
+import { DecodeStream } from "./decode_stream.ts";
+import { Dict } from "./primitives.ts";
+/*80--------------------------------------------------------------------------*/
 
-export class CCITTFaxStream extends DecodeStream
-{
-  ccittFaxDecoder:CCITTFaxDecoder;
+export class CCITTFaxStream extends DecodeStream {
+  ccittFaxDecoder: CCITTFaxDecoder;
 
-  constructor( str:BaseStream, maybeLength?:number, params?:Dict ) 
-  {
-    super( maybeLength );
-    
+  constructor(str: BaseStream, maybeLength?: number, params?: Dict) {
+    super(maybeLength);
+
     this.str = str;
     this.dict = str.dict;
 
-    if( !(params instanceof Dict) )
-    {
+    if (!(params instanceof Dict)) {
       params = Dict.empty;
     }
 
@@ -45,21 +42,19 @@ export class CCITTFaxStream extends DecodeStream
       },
     };
     this.ccittFaxDecoder = new CCITTFaxDecoder(source, {
-      K: <number | undefined>params.get("K"),
-      EndOfLine: <boolean | undefined>params.get("EndOfLine"),
-      EncodedByteAlign: <boolean | undefined>params.get("EncodedByteAlign"),
-      Columns: <number | undefined>params.get("Columns"),
-      Rows: <number | undefined>params.get("Rows"),
-      EndOfBlock: <boolean | undefined>params.get("EndOfBlock"),
-      BlackIs1: <boolean | undefined>params.get("BlackIs1"),
+      K: <number | undefined> params.get("K"),
+      EndOfLine: <boolean | undefined> params.get("EndOfLine"),
+      EncodedByteAlign: <boolean | undefined> params.get("EncodedByteAlign"),
+      Columns: <number | undefined> params.get("Columns"),
+      Rows: <number | undefined> params.get("Rows"),
+      EndOfBlock: <boolean | undefined> params.get("EndOfBlock"),
+      BlackIs1: <boolean | undefined> params.get("BlackIs1"),
     });
   }
 
-  /** @implements */
-  readBlock() 
-  {
-    while( !this.eof )
-    {
+  /** @implement */
+  readBlock() {
+    while (!this.eof) {
       const c = this.ccittFaxDecoder.readNextChar();
       if (c === -1) {
         this.eof = true;
@@ -68,6 +63,6 @@ export class CCITTFaxStream extends DecodeStream
       this.ensureBuffer(this.bufferLength + 1);
       this.buffer[this.bufferLength++] = c;
     }
-  };
+  }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

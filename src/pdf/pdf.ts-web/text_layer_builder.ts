@@ -22,61 +22,60 @@
 /** @typedef {import("./event_utils").EventBus} EventBus */
 /** @typedef {import("./text_highlighter").TextHighlighter} TextHighlighter */
 
-import { html } from "../../lib/dom.js";
-import { type TextContent } from "../pdf.ts-src/display/api.js";
-import { PageViewport } from "../pdf.ts-src/display/display_utils.js";
-import { TextLayerRenderTask } from "../pdf.ts-src/display/text_layer.js";
-import { renderTextLayer } from "../pdf.ts-src/pdf.js";
-import { EventBus } from "./event_utils.js";
-import { type IPDFTextLayerFactory } from "./interfaces.js";
-import { TextHighlighter } from "./text_highlighter.js";
-/*81---------------------------------------------------------------------------*/
+import { GENERIC, MOZCENTRAL } from "../../global.ts";
+import { html } from "../../lib/dom.ts";
+import {
+  PageViewport,
+  renderTextLayer,
+  type TextContent,
+  TextLayerRenderTask,
+} from "../pdf.ts-src/pdf.ts";
+import { EventBus } from "./event_utils.ts";
+import { TextHighlighter } from "./text_highlighter.ts";
+/*80--------------------------------------------------------------------------*/
 
 const EXPAND_DIVS_TIMEOUT = 300; // ms
 
-interface TextLayerBuilderOptions
-{
+interface TextLayerBuilderOptions {
   /**
    * The text layer container.
    */
-  textLayerDiv:HTMLDivElement;
+  textLayerDiv: HTMLDivElement;
 
   /**
    * The application event bus.
    */
-  eventBus:EventBus;
+  eventBus: EventBus;
 
   /**
    * The page index.
    */
-  pageIndex:number;
+  pageIndex: number;
 
   /**
    * The viewport of the text layer.
    */
-  viewport:PageViewport;
+  viewport: PageViewport;
 
   /**
    * Optional object that will handle
    * highlighting text from the find controller.
    */
-  highlighter:TextHighlighter | undefined;
+  highlighter: TextHighlighter | undefined;
 
   /**
    * Option to turn on improved text selection.
    */
-  enhanceTextSelection?:boolean;
- }
-
-interface TLBMBound
-{
-  divIdx:number;
-  offset?:number;
+  enhanceTextSelection?: boolean;
 }
-interface TextLayerBuilderMatches
-{
-  begin:TLBMBound;
-  end:TLBMBound;
+
+interface TLBMBound {
+  divIdx: number;
+  offset?: number;
+}
+interface TextLayerBuilderMatches {
+  begin: TLBMBound;
+  end: TLBMBound;
 }
 
 /**
@@ -84,19 +83,18 @@ interface TextLayerBuilderMatches
  * It does this by creating overlay divs over the PDF's text. These divs
  * contain text that matches the PDF text they are overlaying.
  */
-export class TextLayerBuilder 
-{
+export class TextLayerBuilder {
   textLayerDiv;
   eventBus;
-  textContent?:TextContent | undefined;
-  textContentItemsStr:string[] = [];
-  textContentStream?:ReadableStream;
+  textContent?: TextContent | undefined;
+  textContentItemsStr: string[] = [];
+  textContentStream?: ReadableStream;
   renderingDone = false;
   pageNumber;
-  matches:TextLayerBuilderMatches[] = [];
+  matches: TextLayerBuilderMatches[] = [];
   viewport;
-  textDivs:HTMLDivElement[] = [];
-  textLayerRenderTask?:TextLayerRenderTask | undefined;
+  textDivs: HTMLDivElement[] = [];
+  textLayerRenderTask?: TextLayerRenderTask | undefined;
   highlighter;
   enhanceTextSelection;
 
@@ -106,8 +104,8 @@ export class TextLayerBuilder
     pageIndex,
     viewport,
     highlighter,
-    enhanceTextSelection=false,
-  }:TextLayerBuilderOptions ) {
+    enhanceTextSelection = false,
+  }: TextLayerBuilderOptions) {
     this.textLayerDiv = textLayerDiv;
     this.eventBus = eventBus;
     this.pageNumber = pageIndex + 1;
@@ -118,15 +116,13 @@ export class TextLayerBuilder
     this.#bindMouse();
   }
 
-  #finishRendering()
-  {
+  #finishRendering() {
     this.renderingDone = true;
 
-    if (!this.enhanceTextSelection) 
-    {
+    if (!this.enhanceTextSelection) {
       const endOfContent = html("div");
       endOfContent.className = "endOfContent";
-      this.textLayerDiv.appendChild(endOfContent);
+      this.textLayerDiv.append(endOfContent);
     }
 
     this.eventBus.dispatch("textlayerrendered", {
@@ -141,10 +137,10 @@ export class TextLayerBuilder
    *
    * @param timeout Wait for a specified amount of milliseconds before rendering.
    */
-  render( timeout=0 ) 
-  {
-    if( !(this.textContent || this.textContentStream) || this.renderingDone )
+  render(timeout = 0) {
+    if (!(this.textContent || this.textContentStream) || this.renderingDone) {
       return;
+    }
 
     this.cancel();
 
@@ -164,37 +160,33 @@ export class TextLayerBuilder
     });
     this.textLayerRenderTask.promise.then(
       () => {
-        this.textLayerDiv.appendChild(textLayerFrag);
+        this.textLayerDiv.append(textLayerFrag);
         this.#finishRendering();
         this.highlighter?.enable();
       },
       function (reason) {
         // Cancelled or failed to render text layer; skipping errors.
-      }
+      },
     );
   }
 
   /**
    * Cancel rendering of the text layer.
    */
-  cancel() 
-  {
-    if (this.textLayerRenderTask) 
-    {
+  cancel() {
+    if (this.textLayerRenderTask) {
       this.textLayerRenderTask.cancel();
       this.textLayerRenderTask = undefined;
     }
     this.highlighter?.disable();
   }
 
-  setTextContentStream( readableStream:ReadableStream ) 
-  {
+  setTextContentStream(readableStream: ReadableStream) {
     this.cancel();
     this.textContentStream = readableStream;
   }
 
-  setTextContent( textContent?:TextContent )
-  {
+  setTextContent(textContent?: TextContent) {
     this.cancel();
     this.textContent = textContent;
   }
@@ -204,78 +196,69 @@ export class TextLayerBuilder
    * clicked. This reduces flickering of the content if the mouse is slowly
    * dragged up or down.
    */
-  #bindMouse()
-  {
+  #bindMouse() {
     const div = this.textLayerDiv;
-    let expandDivsTimer:number | undefined;
+    let expandDivsTimer: number | undefined;
 
-    div.addEventListener("mousedown", evt => {
+    div.addEventListener("mousedown", (evt) => {
       if (this.enhanceTextSelection && this.textLayerRenderTask) {
         this.textLayerRenderTask.expandTextDivs(true);
-        // #if !MOZCENTRAL
-        // if (
-        //   (typeof PDFJSDev === "undefined" || !PDFJSDev.test("MOZCENTRAL")) &&
-        //   expandDivsTimer
-        // ) {
-        if( expandDivsTimer )
-        {
-          clearTimeout(expandDivsTimer);
-          expandDivsTimer = undefined;
+        /*#static*/ if (!MOZCENTRAL) {
+          if (expandDivsTimer) {
+            clearTimeout(expandDivsTimer);
+            expandDivsTimer = undefined;
+          }
         }
-        // #endif
         return;
       }
 
-      const end = div.querySelector< HTMLElement >(".endOfContent");
-      if( !end ) return;
+      const end = div.querySelector<HTMLElement>(".endOfContent");
+      if (!end) return;
 
-      // #if !MOZCENTRAL
+      /*#static*/ if (!MOZCENTRAL) {
         // On non-Firefox browsers, the selection will feel better if the height
         // of the `endOfContent` div is adjusted to start at mouse click
         // location. This avoids flickering when the selection moves up.
         // However it does not work when selection is started on empty space.
         let adjustTop = evt.target !== div;
-        // #if GENERIC
-          adjustTop =
-            adjustTop &&
+        /*#static*/ if (GENERIC) {
+          adjustTop = adjustTop &&
             window
-              .getComputedStyle(end)
-              .getPropertyValue("-moz-user-select") !== "none";
-        // #endif
-        if (adjustTop) 
-        {
+                .getComputedStyle(end)
+                .getPropertyValue("-moz-user-select") !== "none";
+        }
+        if (adjustTop) {
           const divBounds = div.getBoundingClientRect();
           const r = Math.max(0, (evt.pageY - divBounds.top) / divBounds.height);
           end.style.top = (r * 100).toFixed(2) + "%";
         }
-      // #endif
+      }
       end.classList.add("active");
     });
 
     div.addEventListener("mouseup", () => {
-      if (this.enhanceTextSelection && this.textLayerRenderTask) 
-      {
-        // #if !MOZCENTRAL
+      if (this.enhanceTextSelection && this.textLayerRenderTask) {
+        /*#static*/ if (!MOZCENTRAL) {
           expandDivsTimer = setTimeout(() => {
             if (this.textLayerRenderTask) {
               this.textLayerRenderTask.expandTextDivs(false);
             }
             expandDivsTimer = undefined;
           }, EXPAND_DIVS_TIMEOUT);
-        // #else
+        } else {
           this.textLayerRenderTask.expandTextDivs(false);
-        // #endif
+        }
         return;
       }
 
       const end = div.querySelector<HTMLElement>(".endOfContent");
-      if( !end ) return;
+      if (!end) return;
 
-      // #if !MOZCENTRAL
+      /*#static*/ if (!MOZCENTRAL) {
         end.style.top = "";
-      // #endif
+      }
       end.classList.remove("active");
     });
   }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

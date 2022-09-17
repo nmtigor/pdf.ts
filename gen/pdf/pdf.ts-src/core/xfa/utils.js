@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 import { shadow } from "../../shared/util.js";
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 const dimConverters = {
     pt: (x) => x,
     cm: (x) => (x / 2.54) * 72,
@@ -100,8 +100,8 @@ export function getRatio(data) {
     const ratio = data
         .trim()
         .split(/\s*:\s*/)
-        .map(x => parseFloat(x))
-        .filter(x => !isNaN(x));
+        .map((x) => parseFloat(x))
+        .filter((x) => !isNaN(x));
     if (ratio.length === 1) {
         ratio.push(1);
     }
@@ -118,7 +118,7 @@ export function getRelevant(data) {
     return data
         .trim()
         .split(/\s+/)
-        .map(e => {
+        .map((e) => {
         return {
             excluded: e[0] === "-",
             viewname: e.substring(1),
@@ -133,8 +133,8 @@ export function getColor(data, def = [0, 0, 0]) {
     const color = data
         .trim()
         .split(/\s*,\s*/)
-        .map(c => Math.min(Math.max(0, parseInt(c.trim(), 10)), 255))
-        .map(c => (isNaN(c) ? 0 : c));
+        .map((c) => Math.min(Math.max(0, parseInt(c.trim(), 10)), 255))
+        .map((c) => (isNaN(c) ? 0 : c));
     if (color.length < 3) {
         return { r, g, b };
     }
@@ -149,7 +149,7 @@ export function getBBox(data) {
     const bbox = data
         .trim()
         .split(/\s*,\s*/)
-        .map(m => getMeasurement(m, "-1"));
+        .map((m) => getMeasurement(m, "-1"));
     if (bbox.length < 4 || bbox[2] < 0 || bbox[3] < 0) {
         return { x: def, y: def, width: def, height: def };
     }
@@ -167,7 +167,9 @@ export class HTMLResult {
     html;
     bbox;
     breakNode;
-    isBreak() { return !!this.breakNode; }
+    isBreak() {
+        return !!this.breakNode;
+    }
     constructor(success, html, bbox, breakNode) {
         this.success = success;
         this.html = html;
@@ -181,5 +183,5 @@ export class HTMLResult {
         return new HTMLResult(true, html, bbox);
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=utils.js.map

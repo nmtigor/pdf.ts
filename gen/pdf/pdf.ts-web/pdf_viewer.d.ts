@@ -1,5 +1,5 @@
 import { BaseViewer } from "./base_viewer.js";
-import { SpreadMode, ScrollMode } from "./ui_utils.js";
+import { ScrollMode, SpreadMode } from "./ui_utils.js";
 export declare class PDFViewer extends BaseViewer {
 }
 export declare class PDFSinglePageViewer extends BaseViewer {

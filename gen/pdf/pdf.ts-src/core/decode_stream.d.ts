@@ -9,10 +9,10 @@ export declare abstract class DecodeStream extends BaseStream {
     _rawMinBufferLength: number;
     bufferLength: number;
     eof: boolean;
-    /** @implements */
+    /** @implement */
     get length(): any;
     /**
-     * @implements
+     * @implement
      * @final
      */
     get isEmpty(): boolean;
@@ -22,23 +22,23 @@ export declare abstract class DecodeStream extends BaseStream {
     protected abstract readBlock(): void;
     ensureBuffer(requested: number): Uint8Array | Uint8ClampedArray;
     /**
-     * @implements
+     * @implement
      * @final
      */
     getByte(): number;
     /**
-     * @implements
+     * @implement
      * @final
      */
     getBytes(length?: number): Uint8Array | Uint8ClampedArray;
-    /** @implements */
+    /** @implement */
     reset(): void;
-    /** @implements */
+    /** @implement */
     getByteRange(begin: number, end: number): any;
-    /** @implements */
+    /** @implement */
     moveStart(): void;
     /**
-     * @implements
+     * @implement
      * @final
      */
     makeSubStream(start: number, length: number, dict?: Dict): Stream;
@@ -49,7 +49,7 @@ export declare class StreamsSequenceStream extends DecodeStream {
     streams: BaseStream[];
     _onError: ((reason: unknown, objId?: string) => void) | undefined;
     constructor(streams: BaseStream[], onError?: (reason: unknown, objId?: string) => void);
-    /** @implements */
+    /** @implement */
     readBlock(): void;
     getBaseStreams(): BaseStream[] | undefined;
 }

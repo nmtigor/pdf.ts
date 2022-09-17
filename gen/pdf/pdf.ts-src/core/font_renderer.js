@@ -15,12 +15,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { bytesToString, FONT_IDENTITY_MATRIX, FormatError, warn } from "../shared/util.js";
+import { bytesToString, FONT_IDENTITY_MATRIX, FormatError, warn, } from "../shared/util.js";
 import { CFFParser } from "./cff_parser.js";
 import { StandardEncoding } from "./encodings.js";
 import { getGlyphsUnicode } from "./glyphlist.js";
 import { Stream } from "./stream.js";
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 // TODO: use DataView and its methods.
 function getUint32(data, offset) {
     return (((data[offset] << 24) |
@@ -75,8 +75,9 @@ function parseCmap(data, start, end) {
         }
         for (i = 0; i < segCount; i++, p += 2) {
             let idOffset = getUint16(data, p);
-            if (idOffset === 0)
+            if (idOffset === 0) {
                 continue;
+            }
             ranges[i].ids = [];
             for (let j = 0, jj = ranges[i].end - ranges[i].start + 1; j < jj; j++) {
                 ranges[i].ids[j] = getUint16(data, p + idOffset);
@@ -148,10 +149,9 @@ function lookupCmap(ranges, unicode) {
         }
     }
     if (ranges[l].start <= code && code <= ranges[l].end) {
-        gid =
-            (ranges[l].idDelta +
-                (ranges[l].ids ? ranges[l].ids[code - ranges[l].start] : code)) &
-                0xffff;
+        gid = (ranges[l].idDelta +
+            (ranges[l].ids ? ranges[l].ids[code - ranges[l].start] : code)) &
+            0xffff;
     }
     return {
         charCode: code,
@@ -253,7 +253,7 @@ function compileGlyf(code, cmds, font) {
         }
         const instructionLength = getUint16(code, i);
         i += 2 + instructionLength; // skipping the instructions
-        const numberOfPoints = endPtsOfContours[endPtsOfContours.length - 1] + 1;
+        const numberOfPoints = endPtsOfContours.at(-1) + 1;
         const points = [];
         while (points.length < numberOfPoints) {
             flags = code[i++];
@@ -304,16 +304,16 @@ function compileGlyf(code, cmds, font) {
             if (contour[0].flags & 1) {
                 contour.push(contour[0]); // using start point at the contour end
             }
-            else if (contour[contour.length - 1].flags & 1) {
+            else if (contour.at(-1).flags & 1) {
                 // first is off-curve point, trying to use one from the end
-                contour.unshift(contour[contour.length - 1]);
+                contour.unshift(contour.at(-1));
             }
             else {
                 // start and end are off-curve points, creating implicit one
                 const p = {
                     flags: 1,
-                    x: (contour[0].x + contour[contour.length - 1].x) / 2,
-                    y: (contour[0].y + contour[contour.length - 1].y) / 2,
+                    x: (contour[0].x + contour.at(-1).x) / 2,
+                    y: (contour[0].y + contour.at(-1).y) / 2,
                 };
                 contour.unshift(p);
                 contour.push(p);
@@ -728,8 +728,9 @@ class CompiledFont {
         return fn;
     }
     compileGlyph(code, glyphId) {
-        if (!code || code.length === 0 || code[0] === 14)
+        if (!code || code.length === 0 || code[0] === 14) {
             return NOOP;
+        }
         let fontMatrix = this.fontMatrix;
         if (this.isCFFCIDFont) {
             // Top DICT's FontMatrix can be ignored because CFFCompiler always
@@ -737,7 +738,8 @@ class CompiledFont {
             const fdIndex = this.fdSelect.getFDIndex(glyphId);
             if (fdIndex >= 0 && fdIndex < this.fdArray.length) {
                 const fontDict = this.fdArray[fdIndex];
-                fontMatrix = fontDict.getByName("FontMatrix") || FONT_IDENTITY_MATRIX;
+                fontMatrix = fontDict.getByName("FontMatrix") ||
+                    FONT_IDENTITY_MATRIX;
             }
             else {
                 warn("Invalid fd index for glyph index.");
@@ -765,7 +767,7 @@ export class TrueTypeCompiled extends CompiledFont {
         this.glyphs = glyphs;
         this.cmap = cmap;
     }
-    /** @implements */
+    /** @implement */
     compileGlyphImpl(code, cmds, glyphId) {
         compileGlyf(code, cmds, this);
     }
@@ -792,7 +794,7 @@ export class Type2Compiled extends CompiledFont {
         this.fdSelect = cffInfo.fdSelect;
         this.fdArray = cffInfo.fdArray;
     }
-    /** @implements */
+    /** @implement */
     compileGlyphImpl(code, cmds, glyphId) {
         compileCharString(code, cmds, this, glyphId);
     }
@@ -834,5 +836,5 @@ export class FontRendererFactory {
         return new Type2Compiled(cff, cmap, font.fontMatrix, font.glyphNameMap);
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=font_renderer.js.map

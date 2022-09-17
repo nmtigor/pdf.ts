@@ -13,29 +13,27 @@
  * limitations under the License.
  */
 
-import { BaseViewer } from "./base_viewer.js";
-import { SpreadMode, ScrollMode } from "./ui_utils.js";
-/*81---------------------------------------------------------------------------*/
+import { BaseViewer } from "./base_viewer.ts";
+import { ScrollMode, SpreadMode } from "./ui_utils.ts";
+/*80--------------------------------------------------------------------------*/
 
 export class PDFViewer extends BaseViewer {}
 
-export class PDFSinglePageViewer extends BaseViewer 
-{
-  override _resetView() 
-  {
+export class PDFSinglePageViewer extends BaseViewer {
+  override _resetView() {
     super._resetView();
     this._scrollMode = ScrollMode.PAGE;
     this._spreadMode = SpreadMode.NONE;
   }
 
   // eslint-disable-next-line accessor-pairs
-  override set scrollMode( mode:ScrollMode ) {}
+  override set scrollMode(mode: ScrollMode) {}
 
   override _updateScrollMode() {}
 
   // eslint-disable-next-line accessor-pairs
-  override set spreadMode( mode:SpreadMode ) {}
+  override set spreadMode(mode: SpreadMode) {}
 
   override _updateSpreadMode() {}
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

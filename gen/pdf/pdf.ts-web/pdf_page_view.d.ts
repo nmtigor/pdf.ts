@@ -1,13 +1,10 @@
-import { AnnotationStorage } from "../pdf.ts-src/display/annotation_storage.js";
-import { PDFPageProxy } from "../pdf.ts-src/display/api.js";
-import { PageViewport, StatTimer } from "../pdf.ts-src/display/display_utils.js";
-import { OptionalContentConfig } from "../pdf.ts-src/display/optional_content_config.js";
-import { AnnotationMode, type point_t } from "../pdf.ts-src/shared/util.js";
+import { AnnotationMode, AnnotationStorage, OptionalContentConfig, PageViewport, PDFPageProxy, type point_t, StatTimer } from "../pdf.ts-src/pdf.js";
+import { AnnotationEditorLayerBuilder } from "./annotation_editor_layer_builder.js";
 import { AnnotationLayerBuilder } from "./annotation_layer_builder.js";
 import { type ErrorMoreInfo } from "./app.js";
 import { BaseViewer, PageColors } from "./base_viewer.js";
 import { EventBus, EventMap } from "./event_utils.js";
-import { type IL10n, type IPDFAnnotationLayerFactory, type IPDFStructTreeLayerFactory, type IPDFTextLayerFactory, type IPDFXfaLayerFactory, type IVisibleView } from "./interfaces.js";
+import { type IL10n, IPDFAnnotationEditorLayerFactory, type IPDFAnnotationLayerFactory, type IPDFStructTreeLayerFactory, type IPDFTextLayerFactory, type IPDFXfaLayerFactory, type IVisibleView } from "./interfaces.js";
 import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
 import { StructTreeLayerBuilder } from "./struct_tree_layer_builder.js";
 import { TextLayerBuilder } from "./text_layer_builder.js";
@@ -60,6 +57,7 @@ interface PDFPageViewOptions {
      */
     annotationMode?: AnnotationMode;
     annotationLayerFactory: IPDFAnnotationLayerFactory | undefined;
+    annotationEditorLayerFactory: IPDFAnnotationEditorLayerFactory | undefined;
     xfaLayerFactory?: IPDFXfaLayerFactory | undefined;
     structTreeLayerFactory: IPDFStructTreeLayerFactory;
     textHighlighterFactory: BaseViewer;
@@ -97,10 +95,12 @@ interface PaintTask {
     promise: Promise<void>;
     onRenderContinue: ((cont: () => void) => void) | undefined;
     cancel(): void;
+    separateAnnots: boolean;
 }
 interface _CSSTransformP {
     target: HTMLCanvasElement | SVGElement;
     redrawAnnotationLayer?: boolean;
+    redrawAnnotationEditorLayer?: boolean;
     redrawXfaLayer?: boolean;
 }
 interface _PDFPageViewUpdateP {
@@ -110,9 +110,9 @@ interface _PDFPageViewUpdateP {
 }
 export declare class PDFPageView implements IVisibleView {
     #private;
-    /** @implements */
+    /** @implement */
     readonly id: number;
-    /** @implements */
+    /** @implement */
     readonly renderingId: string;
     pdfPage?: PDFPageProxy;
     pageLabel?: string | undefined;
@@ -134,37 +134,44 @@ export declare class PDFPageView implements IVisibleView {
     renderingQueue: PDFRenderingQueue | undefined;
     textLayerFactory: IPDFTextLayerFactory | undefined;
     annotationLayerFactory: IPDFAnnotationLayerFactory | undefined;
+    annotationEditorLayerFactory: IPDFAnnotationEditorLayerFactory | undefined;
     xfaLayerFactory: IPDFXfaLayerFactory | undefined;
     textHighlighter: import("./text_highlighter.js").TextHighlighter;
     structTreeLayerFactory: IPDFStructTreeLayerFactory;
-    renderer: RendererType;
+    renderer: RendererType | undefined;
     l10n: IL10n;
     paintTask: PaintTask | undefined;
     paintedViewportMap: WeakMap<SVGElement | HTMLCanvasElement, PageViewport>;
     renderingState: RenderingStates;
-    resume?: (() => void) | undefined; /** @implements */
+    resume?: (() => void) | undefined; /** @implement */
     _renderError?: ErrorMoreInfo | undefined;
-    _isStandalone: boolean;
+    _isStandalone: boolean | undefined;
     _annotationCanvasMap: Map<string, HTMLCanvasElement> | undefined;
     annotationLayer: AnnotationLayerBuilder | undefined;
     textLayer: TextLayerBuilder | undefined;
     zoomLayer: HTMLElement | undefined;
     xfaLayer: XfaLayerBuilder | undefined;
     structTreeLayer?: StructTreeLayerBuilder;
-    div: HTMLDivElement; /** @implements */
+    div: HTMLDivElement; /** @implement */
     stats?: StatTimer;
     canvas?: HTMLCanvasElement;
     svg?: SVGElement;
     loadingIconDiv?: HTMLDivElement;
     outputScale?: OutputScale;
     _onTextLayerRendered: ((event: EventMap["textlayerrendered"]) => void) | undefined;
+    annotationEditorLayer: AnnotationEditorLayerBuilder | undefined;
     constructor(options: PDFPageViewOptions);
     setPdfPage(pdfPage: PDFPageProxy): void;
     destroy(): void;
+    /**
+     * @private
+     */
+    _renderAnnotationEditorLayer(): Promise<void>;
     _buildXfaTextContentItems(textDivs: Text[]): Promise<void>;
-    reset({ keepZoomLayer, keepAnnotationLayer, keepXfaLayer, }?: {
+    reset({ keepZoomLayer, keepAnnotationLayer, keepAnnotationEditorLayer, keepXfaLayer, }?: {
         keepZoomLayer?: boolean | undefined;
         keepAnnotationLayer?: boolean | undefined;
+        keepAnnotationEditorLayer?: boolean | undefined;
         keepXfaLayer?: boolean | undefined;
     }): void;
     update({ scale, rotation, optionalContentConfigPromise }: _PDFPageViewUpdateP): void;
@@ -172,11 +179,12 @@ export declare class PDFPageView implements IVisibleView {
      * PLEASE NOTE: Most likely you want to use the `this.reset()` method,
      *              rather than calling this one directly.
      */
-    cancelRendering({ keepAnnotationLayer, keepXfaLayer }?: {
+    cancelRendering({ keepAnnotationLayer, keepAnnotationEditorLayer, keepXfaLayer, }?: {
         keepAnnotationLayer?: boolean | undefined;
+        keepAnnotationEditorLayer?: boolean | undefined;
         keepXfaLayer?: boolean | undefined;
     }): void;
-    cssTransform({ target, redrawAnnotationLayer, redrawXfaLayer, }: _CSSTransformP): void;
+    cssTransform({ target, redrawAnnotationLayer, redrawAnnotationEditorLayer, redrawXfaLayer, }: _CSSTransformP): void;
     getPagePoint(x: number, y: number): point_t;
     /**
      * @ignore
@@ -186,6 +194,11 @@ export declare class PDFPageView implements IVisibleView {
     paintOnCanvas(canvasWrapper: HTMLDivElement): PaintTask;
     paintOnSvg(wrapper: HTMLDivElement): PaintTask;
     setPageLabel(label?: string): void;
+    /**
+     * For use by the `PDFThumbnailView.setImage`-method.
+     * @ignore
+     */
+    get thumbnailCanvas(): HTMLCanvasElement | null | undefined;
 }
 export {};
 //# sourceMappingURL=pdf_page_view.d.ts.map

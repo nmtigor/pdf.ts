@@ -17,29 +17,28 @@
  * limitations under the License.
  */
 
-import { FeatureTest } from "./util.js";
-/*81---------------------------------------------------------------------------*/
+import { FeatureTest } from "./util.ts";
+/*80--------------------------------------------------------------------------*/
 
-interface _ApplyMaskImageDataP
-{
-  src:Uint8Array | Uint8ClampedArray;
-  srcPos?:number;
-  dest:Uint8ClampedArray | Uint32Array;
-  destPos?:number;
-  width:number;
-  height:number;
-  inverseDecode?:boolean;
+interface _ApplyMaskImageDataP {
+  src: Uint8Array | Uint8ClampedArray;
+  srcPos?: number;
+  dest: Uint8ClampedArray | Uint32Array;
+  destPos?: number;
+  width: number;
+  height: number;
+  inverseDecode?: boolean;
 }
 
 export function applyMaskImageData({
   src,
-  srcPos=0,
+  srcPos = 0,
   dest,
-  destPos=0,
+  destPos = 0,
   width,
   height,
-  inverseDecode=false,
-}:_ApplyMaskImageDataP ) {
+  inverseDecode = false,
+}: _ApplyMaskImageDataP) {
   const opaque = FeatureTest.isLittleEndian ? 0xff000000 : 0x000000ff;
   const [zeroMapping, oneMapping] = !inverseDecode ? [opaque, 0] : [0, opaque];
   const widthInSource = width >> 3;
@@ -47,10 +46,8 @@ export function applyMaskImageData({
   const srcLength = src.length;
   dest = new Uint32Array(dest.buffer);
 
-  for( let i = 0; i < height; i++ )
-  {
-    for( const max = srcPos + widthInSource; srcPos < max; srcPos++ )
-    {
+  for (let i = 0; i < height; i++) {
+    for (const max = srcPos + widthInSource; srcPos < max; srcPos++) {
       const elem = srcPos < srcLength ? src[srcPos] : 255;
       dest[destPos++] = elem & 0b10000000 ? oneMapping : zeroMapping;
       dest[destPos++] = elem & 0b1000000 ? oneMapping : zeroMapping;
@@ -61,15 +58,15 @@ export function applyMaskImageData({
       dest[destPos++] = elem & 0b10 ? oneMapping : zeroMapping;
       dest[destPos++] = elem & 0b1 ? oneMapping : zeroMapping;
     }
-    if( widthRemainder === 0 )
+    if (widthRemainder === 0) {
       continue;
+    }
     const elem = srcPos < srcLength ? src[srcPos++] : 255;
-    for( let j = 0; j < widthRemainder; j++ )
-    {
+    for (let j = 0; j < widthRemainder; j++) {
       dest[destPos++] = elem & (1 << (7 - j)) ? oneMapping : zeroMapping;
     }
   }
 
   return { srcPos, destPos };
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

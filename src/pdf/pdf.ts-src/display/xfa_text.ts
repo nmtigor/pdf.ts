@@ -17,12 +17,15 @@
  * limitations under the License.
  */
 
-import { type XFAElObj } from "../core/xfa/alias.js";
-import { type TextContent, type TextItem, type TextMarkedContent } from "./api.js";
-/*81---------------------------------------------------------------------------*/
+import { type XFAElObj } from "../core/xfa/alias.ts";
+import {
+  type TextContent,
+  type TextItem,
+  type TextMarkedContent,
+} from "./api.ts";
+/*80--------------------------------------------------------------------------*/
 
-export abstract class XfaText 
-{
+export abstract class XfaText {
   /**
    * Walk an XFA tree and create an array of text nodes that is compatible
    * with a regular PDFs TextContent. Currently, only TextItem.str is supported,
@@ -30,49 +33,40 @@ export abstract class XfaText
    *
    * @param xfa An XFA fake DOM object.
    */
-  static textContent( xfa?:XFAElObj ):TextContent
-  {
-    const items:(TextItem | TextMarkedContent)[] = [];
+  static textContent(xfa?: XFAElObj): TextContent {
+    const items: (TextItem | TextMarkedContent)[] = [];
     const output = {
       items,
       styles: Object.create(null),
     };
-    function walk( node?:XFAElObj ) 
-    {
-      if( !node ) return;
+    function walk(node?: XFAElObj) {
+      if (!node) return;
 
-      let str:string | undefined;
+      let str: string | undefined;
       const name = node.name;
-      if (name === "#text") 
-      {
+      if (name === "#text") {
         str = node.value;
-      } 
-      else if (!XfaText.shouldBuildText(name)) 
-      {
+      } else if (!XfaText.shouldBuildText(name)) {
         return;
-      } 
-      else if (node?.attributes?.textContent) 
-      {
+      } else if (node?.attributes?.textContent) {
         str = node.attributes.textContent;
-      } 
-      else if (node.value) 
-      {
+      } else if (node.value) {
         str = node.value;
       }
-      if (str !== undefined) 
-      {
-        items.push(<TextItem>{
-          str,
-        });
+      if (str !== undefined) {
+        items.push(
+          <TextItem> {
+            str,
+          },
+        );
       }
-      if( !node.children ) return;
+      if (!node.children) return;
 
-      for(const child of node.children)
-      {
-        walk( <XFAElObj>child );
+      for (const child of node.children) {
+        walk(<XFAElObj> child);
       }
     }
-    walk( xfa );
+    walk(xfa);
     return output;
   }
 
@@ -81,8 +75,7 @@ export abstract class XfaText
    *
    * @return true if the DOM node should have a corresponding text node.
    */
-  static shouldBuildText( name:string ) 
-  {
+  static shouldBuildText(name: string) {
     return !(
       name === "textarea" ||
       name === "input" ||
@@ -91,4 +84,4 @@ export abstract class XfaText
     );
   }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

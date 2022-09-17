@@ -19,52 +19,51 @@
 
 /** @typedef {import("./interfaces").IL10n} IL10n */
 
-import { webL10n, type WebL10nArgs } from "../../lib/l10n.js";
-import { Locale } from "../../lib/Locale.js";
-import { type IL10n } from "./interfaces.js";
-import { fixupLangCode, getL10nFallback } from "./l10n_utils.js";
-/*81---------------------------------------------------------------------------*/
+import { webL10n, type WebL10nArgs } from "../../3rd/webL10n/l10n.ts";
+import { Locale } from "../../lib/Locale.ts";
+import { type IL10n } from "./interfaces.ts";
+import { fixupLangCode, getL10nFallback } from "./l10n_utils.ts";
+/*80--------------------------------------------------------------------------*/
 
 // const webL10n = document.webL10n;
 
-export class GenericL10n implements IL10n
-{
-  _lang:Locale;
-  _ready:Promise<typeof webL10n>;
+export class GenericL10n implements IL10n {
+  _lang: Locale;
+  _ready: Promise<typeof webL10n>;
 
-  constructor( lang:Locale ) 
-  {
+  constructor(lang: Locale) {
     this._lang = lang;
     this._ready = new Promise((resolve, reject) => {
-      webL10n.setLanguage( fixupLangCode(lang), () => {
+      webL10n.setLanguage(fixupLangCode(lang), () => {
         resolve(webL10n);
       });
     });
   }
 
-  /** @implements */
-  async getLanguage() 
-  {
+  /** @implement */
+  async getLanguage() {
     const l10n = await this._ready;
     return l10n.getLanguage();
   }
 
-  /** @implements */
+  /** @implement */
   async getDirection() {
     const l10n = await this._ready;
     return l10n.getDirection();
   }
 
-  async get( key:string, args?:WebL10nArgs, fallback=getL10nFallback(key, args!) )
-  {
+  async get(
+    key: string,
+    args?: WebL10nArgs,
+    fallback = getL10nFallback(key, args!),
+  ) {
     const l10n = await this._ready;
     return l10n.get(key, args, fallback);
   }
 
-  async translate( element:HTMLElement )
-  {
+  async translate(element: HTMLElement) {
     const l10n = await this._ready;
-    return l10n.translate( element );
+    return l10n.translate(element);
   }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

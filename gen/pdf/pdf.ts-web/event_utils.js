@@ -1,7 +1,22 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
-/*81---------------------------------------------------------------------------*/
+/* Copyright 2012 Mozilla Foundation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import { MOZCENTRAL } from "../../global.js";
+/*80--------------------------------------------------------------------------*/
 export var WaitOnType;
 (function (WaitOnType) {
     WaitOnType["EVENT"] = "event";
@@ -14,11 +29,11 @@ export var WaitOnType;
  *
 = * @return A promise that is resolved with a {WaitOnType} value.
  */
-export function waitOnEventOrTimeout({ target, name, delay = 0 }) {
-    return new Promise(function (resolve, reject) {
-        if (typeof target !== "object"
-            || !(name && typeof name === "string")
-            || !(Number.isInteger(delay) && delay >= 0)) {
+export function waitOnEventOrTimeout({ target, name, delay = 0, }) {
+    return new Promise((resolve, reject) => {
+        if (typeof target !== "object" ||
+            !(name && typeof name === "string") ||
+            !(Number.isInteger(delay) && delay >= 0)) {
             throw new Error("waitOnEventOrTimeout - invalid parameters.");
         }
         function handler(type) {
@@ -65,8 +80,9 @@ export class EventBus {
     }
     dispatch(eventName, data) {
         const eventListeners = this.#listeners[eventName];
-        if (!eventListeners || eventListeners.length === 0)
+        if (!eventListeners || eventListeners.length === 0) {
             return;
+        }
         let externalListeners;
         // Making copy of the listeners array in case if it will be modified
         // during dispatch.
@@ -105,8 +121,9 @@ export class EventBus {
      */
     _off(eventName, listener) {
         const eventListeners = this.#listeners[eventName];
-        if (!eventListeners)
+        if (!eventListeners) {
             return;
+        }
         for (let i = 0, ii = eventListeners.length; i < ii; i++) {
             if (eventListeners[i].listener === listener) {
                 eventListeners.splice(i, 1);
@@ -120,16 +137,19 @@ export class EventBus {
  */
 export class AutomationEventBus extends EventBus {
     dispatch(eventName, data) {
-        throw new Error("Not implemented: AutomationEventBus.dispatch");
+        /*#static*/  {
+            throw new Error("Not implemented: AutomationEventBus.dispatch");
+        }
         super.dispatch(eventName, data);
         const details = Object.create(null);
         if (data) {
             for (const key in data) {
                 const value = data[key];
                 if (key === "source") {
-                    if (value === window || value === document)
+                    if (value === window || value === document) {
                         // No need to re-dispatch (already) global events.
                         return;
+                    }
                     continue; // Ignore the `source` property.
                 }
                 details[key] = value;
@@ -145,5 +165,5 @@ export class AutomationEventBus extends EventBus {
         document.dispatchEvent(event);
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=event_utils.js.map

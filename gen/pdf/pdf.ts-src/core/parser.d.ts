@@ -10,7 +10,7 @@ import { JpegStream } from "./jpeg_stream.js";
 import { JpxStream } from "./jpx_stream.js";
 import { LZWStream } from "./lzw_stream.js";
 import { PredictorStream } from "./predictor_stream.js";
-import { Cmd, Dict, EOF, Name, Ref, type Obj } from "./primitives.js";
+import { Cmd, Dict, EOF, Name, type Obj } from "./primitives.js";
 import { RunLengthStream } from "./run_length_stream.js";
 import { Stream } from "./stream.js";
 import { XRef } from "./xref.js";
@@ -29,7 +29,7 @@ export declare class Parser {
     imageCache: Record<string, any>;
     buf1: Obj;
     buf2: Obj;
-    constructor({ lexer, xref, allowStreams, recoveryMode }: _ParserCtorP);
+    constructor({ lexer, xref, allowStreams, recoveryMode, }: _ParserCtorP);
     refill(): void;
     shift(): void;
     tryShift(): boolean;
@@ -96,7 +96,7 @@ export declare class Lexer {
     getName(): Name;
     getHexString(): string;
     getObj(): Obj;
-    peekObj(): string | number | boolean | Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint16Array | Int32Array | Uint32Array | Float32Array | Float64Array | Ref | Name | Cmd | BaseStream | Dict | typeof import("./primitives.js").CIRCULAR_REF | typeof EOF | (Obj | undefined)[];
+    peekObj(): string | number | boolean | Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint16Array | Int32Array | Uint32Array | Float32Array | Float64Array | import("./primitives.js").NsRef.Ref | Name | BaseStream | Dict | Cmd | typeof import("./primitives.js").CIRCULAR_REF | typeof EOF | (Obj | undefined)[];
     skipToNextLine(): void;
 }
 export declare class Linearization {

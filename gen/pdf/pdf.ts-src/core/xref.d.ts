@@ -33,7 +33,7 @@ export declare class XRef {
     xrefstms: number[];
     _pendingRefs: RefSet;
     stats: DocStats;
-    getNewRef(): Ref;
+    getNewRef(): import("./primitives.js").NsRef.Ref;
     resetNewRef(): void;
     startXRefQueue: number[];
     setStartXRef(startXRef: number): void;

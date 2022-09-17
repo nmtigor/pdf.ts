@@ -22,53 +22,56 @@
 /** @typedef {import("../src/display/display_utils").PageViewport} PageViewport */
 /** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
 
-import { html } from "../../lib/dom.js";
-import { type XFAData } from "../pdf.ts-src/core/document.js";
-import { type XFAElData, type XFAElObj } from "../pdf.ts-src/core/xfa/alias.js";
-import { AnnotationStorage } from "../pdf.ts-src/display/annotation_storage.js";
-import { type AnnotIntent, PDFPageProxy } from "../pdf.ts-src/display/api.js";
-import { PageViewport } from "../pdf.ts-src/display/display_utils.js";
-import { XfaLayer } from "../pdf.ts-src/display/xfa_layer.js";
-import { type IPDFLinkService, type IPDFXfaLayerFactory } from "./interfaces.js";
-/*81---------------------------------------------------------------------------*/
+import { html } from "../../lib/dom.ts";
+import {
+  AnnotationStorage,
+  type AnnotIntent,
+  PageViewport,
+  PDFPageProxy,
+  type XFAData,
+  type XFAElData,
+  type XFAElObj,
+  XfaLayer,
+} from "../pdf.ts-src/pdf.ts";
+import { type IPDFLinkService } from "./interfaces.ts";
+/*80--------------------------------------------------------------------------*/
 
-interface XfaLayerBuilderOptions
-{
-  pageDiv:HTMLDivElement;
-  pdfPage:PDFPageProxy | undefined;
-  annotationStorage:AnnotationStorage | undefined;
-  linkService:IPDFLinkService;
-  xfaHtml?:XFAElData | undefined;
+interface XfaLayerBuilderOptions {
+  pageDiv: HTMLDivElement;
+  pdfPage: PDFPageProxy | undefined;
+  annotationStorage: AnnotationStorage | undefined;
+  linkService: IPDFLinkService;
+  xfaHtml?: XFAElData | undefined;
 }
 
-export interface XfaLayerP
-{
-  viewport:PageViewport;
-  div?:HTMLDivElement;
-  xfa?:XFAData;
-  page:PDFPageProxy;
+export interface XfaLayerP {
+  viewport: PageViewport;
+  div?: HTMLDivElement;
+  xfa?: XFAData;
+  page: PDFPageProxy;
 }
 
-export class XfaLayerBuilder
-{
+export class XfaLayerBuilder {
   pageDiv;
   pdfPage;
   annotationStorage;
   linkService;
   xfaHtml;
 
-  div?:HTMLDivElement;
+  div?: HTMLDivElement;
 
   #cancelled = false;
-  cancel() { this.#cancelled = true; }
+  cancel() {
+    this.#cancelled = true;
+  }
 
-  constructor({ 
-    pageDiv, 
-    pdfPage, 
-    annotationStorage=undefined, 
-    linkService, 
-    xfaHtml=undefined 
-  }:XfaLayerBuilderOptions ) {
+  constructor({
+    pageDiv,
+    pdfPage,
+    annotationStorage = undefined,
+    linkService,
+    xfaHtml = undefined,
+  }: XfaLayerBuilderOptions) {
     this.pageDiv = pageDiv;
     this.pdfPage = pdfPage;
     this.annotationStorage = annotationStorage;
@@ -81,14 +84,12 @@ export class XfaLayerBuilder
    *   of the XFA layer is complete. The first rendering will return an object
    *   with a `textDivs` property that  can be used with the TextHighlighter.
    */
-  render( viewport:PageViewport, intent:AnnotIntent="display" )
-  {
-    if( intent === "print" )
-    {
+  render(viewport: PageViewport, intent: AnnotIntent = "display") {
+    if (intent === "print") {
       const parameters = {
         viewport: viewport.clone({ dontFlip: true }),
         div: this.div!,
-        xfaHtml: <XFAElObj>this.xfaHtml,
+        xfaHtml: <XFAElObj> this.xfaHtml,
         annotationStorage: this.annotationStorage,
         linkService: this.linkService,
         intent,
@@ -96,7 +97,7 @@ export class XfaLayerBuilder
 
       // Create an xfa layer div and render the form
       const div = html("div");
-      this.pageDiv.appendChild(div);
+      this.pageDiv.append(div);
       parameters.div = div;
 
       const result = XfaLayer.render(parameters);
@@ -106,39 +107,37 @@ export class XfaLayerBuilder
     // intent === "display"
     return this.pdfPage!
       .getXfa()!
-      .then( xfaHtml => {
+      .then((xfaHtml) => {
         if (this.#cancelled || !xfaHtml) return { textDivs: [] };
 
         const parameters = {
           viewport: viewport.clone({ dontFlip: true }),
           div: this.div!,
-          xfaHtml: <XFAElObj>xfaHtml,
+          xfaHtml: <XFAElObj> xfaHtml,
           page: this.pdfPage,
           annotationStorage: this.annotationStorage,
           linkService: this.linkService,
           intent,
         };
 
-        if (this.div) 
-        {
+        if (this.div) {
           return XfaLayer.update(parameters);
-        } 
+        }
         // Create an xfa layer div and render the form
         this.div = html("div");
-        this.pageDiv.appendChild(this.div);
+        this.pageDiv.append(this.div);
         parameters.div = this.div;
         return XfaLayer.render(parameters);
       })
-      .catch( error => {
-        console.error( error );
+      .catch((error) => {
+        console.error(error);
       });
   }
 
-  hide()
-  {
-    if( !this.div ) return;
-    
+  hide() {
+    if (!this.div) return;
+
     this.div.hidden = true;
   }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

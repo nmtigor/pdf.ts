@@ -16,9 +16,9 @@
  * limitations under the License.
  */
 import { BaseException, info, warn } from "../shared/util.js";
-import { log2, readUint16, readUint32 } from "./core_utils.js";
 import { ArithmeticDecoder } from "./arithmetic_decoder.js";
-/*81---------------------------------------------------------------------------*/
+import { log2, readUint16, readUint32 } from "./core_utils.js";
+/*80--------------------------------------------------------------------------*/
 class JpxError extends BaseException {
     constructor(msg) {
         super(`JPX error: ${msg}`, "JpxError");
@@ -61,9 +61,8 @@ var NsJpxImage;
                 if (lbox === 1) {
                     // XLBox: read UInt64 according to spec.
                     // JavaScript's int precision of 53 bit should be sufficient here.
-                    lbox =
-                        readUint32(data, position) * 4294967296 +
-                            readUint32(data, position + 4);
+                    lbox = readUint32(data, position) * 4294967296 +
+                        readUint32(data, position + 4);
                     position += 8;
                     headerSize += 8;
                 }
@@ -474,14 +473,12 @@ var NsJpxImage;
             result.PPy = codOrCoc.precinctsSizes[r].PPy;
         }
         // calculate codeblock size as described in section B.7
-        result.xcb_ =
-            r > 0
-                ? Math.min(codOrCoc.xcb, result.PPx - 1)
-                : Math.min(codOrCoc.xcb, result.PPx);
-        result.ycb_ =
-            r > 0
-                ? Math.min(codOrCoc.ycb, result.PPy - 1)
-                : Math.min(codOrCoc.ycb, result.PPy);
+        result.xcb_ = r > 0
+            ? Math.min(codOrCoc.xcb, result.PPx - 1)
+            : Math.min(codOrCoc.xcb, result.PPx);
+        result.ycb_ = r > 0
+            ? Math.min(codOrCoc.ycb, result.PPy - 1)
+            : Math.min(codOrCoc.ycb, result.PPy);
         return result;
     }
     function buildPrecincts(context, resolution, dimensions) {
@@ -503,7 +500,8 @@ var NsJpxImage;
         // coordinates of a point in the LL band and child subband, respectively.
         const isZeroRes = resolution.resLevel === 0;
         const precinctWidthInSubband = 1 << (dimensions.PPx + (isZeroRes ? 0 : -1));
-        const precinctHeightInSubband = 1 << (dimensions.PPy + (isZeroRes ? 0 : -1));
+        const precinctHeightInSubband = 1 <<
+            (dimensions.PPy + (isZeroRes ? 0 : -1));
         const numprecinctswide = resolution.trx1 > resolution.trx0
             ? Math.ceil(resolution.trx1 / precinctWidth) -
                 Math.floor(resolution.trx0 / precinctWidth)
@@ -637,7 +635,7 @@ var NsJpxImage;
                 maxDecompositionLevelsCount = Math.max(maxDecompositionLevelsCount, tile.components[q].codingStyleParameters.decompositionLevelsCount);
             }
             let l = 0, r = 0, i = 0, k = 0;
-            this.nextPacket = function JpxImage_nextPacket() {
+            this.nextPacket = () => {
                 // Section B.12.1.1 Layer-resolution-component-position
                 for (; l < layersCount; l++) {
                     for (; r <= maxDecompositionLevelsCount; r++) {
@@ -677,7 +675,7 @@ var NsJpxImage;
                 maxDecompositionLevelsCount = Math.max(maxDecompositionLevelsCount, tile.components[q].codingStyleParameters.decompositionLevelsCount);
             }
             let r = 0, l = 0, i = 0, k = 0;
-            this.nextPacket = function JpxImage_nextPacket() {
+            this.nextPacket = () => {
                 // Section B.12.1.2 Resolution-layer-component-position
                 for (; r <= maxDecompositionLevelsCount; r++) {
                     for (; l < layersCount; l++) {
@@ -733,7 +731,7 @@ var NsJpxImage;
             r = 0;
             c = 0;
             p = 0;
-            this.nextPacket = function JpxImage_nextPacket() {
+            this.nextPacket = () => {
                 // Section B.12.1.3 Resolution-position-component-layer
                 for (; r <= maxDecompositionLevelsCount; r++) {
                     for (; p < maxNumPrecinctsInLevel[r]; p++) {
@@ -774,7 +772,7 @@ var NsJpxImage;
             const precinctsSizes = getPrecinctSizesInImageScale(tile);
             const precinctsIterationSizes = precinctsSizes;
             let l = 0, r = 0, c = 0, px = 0, py = 0;
-            this.nextPacket = function JpxImage_nextPacket() {
+            this.nextPacket = () => {
                 // Section B.12.1.4 Position-component-resolution-layer
                 for (; py < precinctsIterationSizes.maxNumHigh; py++) {
                     for (; px < precinctsIterationSizes.maxNumWide; px++) {
@@ -816,7 +814,7 @@ var NsJpxImage;
             const componentsCount = siz.Csiz;
             const precinctsSizes = getPrecinctSizesInImageScale(tile);
             let l = 0, r = 0, c = 0, px = 0, py = 0;
-            this.nextPacket = function JpxImage_nextPacket() {
+            this.nextPacket = () => {
                 // Section B.12.1.5 Component-position-resolution-layer
                 for (; c < componentsCount; ++c) {
                     const component = tile.components[c];
@@ -878,8 +876,10 @@ var NsJpxImage;
             let scale = 1;
             for (let r = decompositionLevelsCount; r >= 0; --r) {
                 const resolution = component.resolutions[r];
-                const widthCurrentResolution = scale * resolution.precinctParameters.precinctWidth;
-                const heightCurrentResolution = scale * resolution.precinctParameters.precinctHeight;
+                const widthCurrentResolution = scale *
+                    resolution.precinctParameters.precinctWidth;
+                const heightCurrentResolution = scale *
+                    resolution.precinctParameters.precinctHeight;
                 minWidthCurrentComponent = Math.min(minWidthCurrentComponent, widthCurrentResolution);
                 minHeightCurrentComponent = Math.min(minHeightCurrentComponent, heightCurrentResolution);
                 maxNumWideCurrentComponent = Math.max(maxNumWideCurrentComponent, resolution.precinctParameters.numprecinctswide);
@@ -1594,19 +1594,235 @@ var NsJpxImage;
         // The index is binary presentation: 0dddvvhh, ddd - sum of Di (0..4),
         // vv - sum of Vi (0..2), and hh - sum of Hi (0..2)
         const LLAndLHContextsLabel = new Uint8Array([
-            0, 5, 8, 0, 3, 7, 8, 0, 4, 7, 8, 0, 0, 0, 0, 0, 1, 6, 8, 0, 3, 7, 8, 0, 4,
-            7, 8, 0, 0, 0, 0, 0, 2, 6, 8, 0, 3, 7, 8, 0, 4, 7, 8, 0, 0, 0, 0, 0, 2, 6,
-            8, 0, 3, 7, 8, 0, 4, 7, 8, 0, 0, 0, 0, 0, 2, 6, 8, 0, 3, 7, 8, 0, 4, 7, 8,
+            0,
+            5,
+            8,
+            0,
+            3,
+            7,
+            8,
+            0,
+            4,
+            7,
+            8,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            6,
+            8,
+            0,
+            3,
+            7,
+            8,
+            0,
+            4,
+            7,
+            8,
+            0,
+            0,
+            0,
+            0,
+            0,
+            2,
+            6,
+            8,
+            0,
+            3,
+            7,
+            8,
+            0,
+            4,
+            7,
+            8,
+            0,
+            0,
+            0,
+            0,
+            0,
+            2,
+            6,
+            8,
+            0,
+            3,
+            7,
+            8,
+            0,
+            4,
+            7,
+            8,
+            0,
+            0,
+            0,
+            0,
+            0,
+            2,
+            6,
+            8,
+            0,
+            3,
+            7,
+            8,
+            0,
+            4,
+            7,
+            8,
         ]);
         const HLContextLabel = new Uint8Array([
-            0, 3, 4, 0, 5, 7, 7, 0, 8, 8, 8, 0, 0, 0, 0, 0, 1, 3, 4, 0, 6, 7, 7, 0, 8,
-            8, 8, 0, 0, 0, 0, 0, 2, 3, 4, 0, 6, 7, 7, 0, 8, 8, 8, 0, 0, 0, 0, 0, 2, 3,
-            4, 0, 6, 7, 7, 0, 8, 8, 8, 0, 0, 0, 0, 0, 2, 3, 4, 0, 6, 7, 7, 0, 8, 8, 8,
+            0,
+            3,
+            4,
+            0,
+            5,
+            7,
+            7,
+            0,
+            8,
+            8,
+            8,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            3,
+            4,
+            0,
+            6,
+            7,
+            7,
+            0,
+            8,
+            8,
+            8,
+            0,
+            0,
+            0,
+            0,
+            0,
+            2,
+            3,
+            4,
+            0,
+            6,
+            7,
+            7,
+            0,
+            8,
+            8,
+            8,
+            0,
+            0,
+            0,
+            0,
+            0,
+            2,
+            3,
+            4,
+            0,
+            6,
+            7,
+            7,
+            0,
+            8,
+            8,
+            8,
+            0,
+            0,
+            0,
+            0,
+            0,
+            2,
+            3,
+            4,
+            0,
+            6,
+            7,
+            7,
+            0,
+            8,
+            8,
+            8,
         ]);
         const HHContextLabel = new Uint8Array([
-            0, 1, 2, 0, 1, 2, 2, 0, 2, 2, 2, 0, 0, 0, 0, 0, 3, 4, 5, 0, 4, 5, 5, 0, 5,
-            5, 5, 0, 0, 0, 0, 0, 6, 7, 7, 0, 7, 7, 7, 0, 7, 7, 7, 0, 0, 0, 0, 0, 8, 8,
-            8, 0, 8, 8, 8, 0, 8, 8, 8, 0, 0, 0, 0, 0, 8, 8, 8, 0, 8, 8, 8, 0, 8, 8, 8,
+            0,
+            1,
+            2,
+            0,
+            1,
+            2,
+            2,
+            0,
+            2,
+            2,
+            2,
+            0,
+            0,
+            0,
+            0,
+            0,
+            3,
+            4,
+            5,
+            0,
+            4,
+            5,
+            5,
+            0,
+            5,
+            5,
+            5,
+            0,
+            0,
+            0,
+            0,
+            0,
+            6,
+            7,
+            7,
+            0,
+            7,
+            7,
+            7,
+            0,
+            7,
+            7,
+            7,
+            0,
+            0,
+            0,
+            0,
+            0,
+            8,
+            8,
+            8,
+            0,
+            8,
+            8,
+            8,
+            0,
+            8,
+            8,
+            8,
+            0,
+            0,
+            0,
+            0,
+            0,
+            8,
+            8,
+            8,
+            0,
+            8,
+            8,
+            8,
+            0,
+            8,
+            8,
+            8,
         ]);
         // eslint-disable-next-line no-shadow
         class BitModel {
@@ -1619,7 +1835,9 @@ var NsJpxImage;
             processingFlags;
             bitsDecoded;
             decoder;
-            setDecoder(decoder) { this.decoder = decoder; }
+            setDecoder(decoder) {
+                this.decoder = decoder;
+            }
             contexts;
             constructor(width, height, subband, zeroBitPlanes, mb) {
                 // this.width = width;
@@ -1730,8 +1948,8 @@ var NsJpxImage;
                             }
                             // clear processed flag first
                             processingFlags[index] &= processedInverseMask;
-                            if (coefficentsMagnitude[index]
-                                || !neighborsSignificance[index]) {
+                            if (coefficentsMagnitude[index] ||
+                                !neighborsSignificance[index]) {
                                 continue;
                             }
                             const contextLabel = labels[neighborsSignificance[index]];
@@ -1833,8 +2051,8 @@ var NsJpxImage;
                                 contextLabel = significance === 0 ? 15 : 14;
                             }
                             const bit = decoder.readBit(contexts, contextLabel);
-                            coefficentsMagnitude[index] =
-                                (coefficentsMagnitude[index] << 1) | bit;
+                            coefficentsMagnitude[index] = (coefficentsMagnitude[index] << 1) |
+                                bit;
                             bitsDecoded[index]++;
                             processingFlags[index] |= processedMask;
                         }
@@ -1885,9 +2103,8 @@ var NsJpxImage;
                                 bitsDecoded[index0 + threeRowsDown]++;
                                 continue; // next column
                             }
-                            i1 =
-                                (decoder.readBit(contexts, UNIFORM_CONTEXT) << 1) |
-                                    decoder.readBit(contexts, UNIFORM_CONTEXT);
+                            i1 = (decoder.readBit(contexts, UNIFORM_CONTEXT) << 1) |
+                                decoder.readBit(contexts, UNIFORM_CONTEXT);
                             if (i1 !== 0) {
                                 i = i0 + i1;
                                 index += i1 * width;
@@ -1904,8 +2121,8 @@ var NsJpxImage;
                             i1++;
                         }
                         for (i = i0 + i1; i < iNext; i++, index += width) {
-                            if (coefficentsMagnitude[index]
-                                || (processingFlags[index] & processedMask) !== 0) {
+                            if (coefficentsMagnitude[index] ||
+                                (processingFlags[index] & processedMask) !== 0) {
                                 continue;
                             }
                             const contextLabel = labels[neighborsSignificance[index]];
@@ -2053,7 +2270,7 @@ var NsJpxImage;
         constructor() {
             super();
         }
-        /** @implements */
+        /** @implement */
         filter(x, offset, length) {
             const len = length >> 1;
             offset |= 0;
@@ -2139,7 +2356,7 @@ var NsJpxImage;
         constructor() {
             super();
         }
-        /** @implements */
+        /** @implement */
         filter(x, offset, length) {
             const len = length >> 1;
             offset |= 0;
@@ -2154,5 +2371,5 @@ var NsJpxImage;
     }
 })(NsJpxImage || (NsJpxImage = {}));
 export var JpxImage = NsJpxImage.JpxImage;
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=jpx.js.map

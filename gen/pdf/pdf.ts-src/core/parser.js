@@ -15,6 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { _PDFDEV } from "../../../global.js";
 import { assert } from "../../../lib/util/trace.js";
 import { bytesToString, FormatError, info, StreamType, warn } from "../shared/util.js";
 import { Ascii85Stream } from "./ascii_85_stream.js";
@@ -30,17 +31,14 @@ import { PredictorStream } from "./predictor_stream.js";
 import { Cmd, Dict, EOF, isCmd, Name, Ref } from "./primitives.js";
 import { RunLengthStream } from "./run_length_stream.js";
 import { NullStream } from "./stream.js";
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 const MAX_LENGTH_TO_CACHE = 1000;
 const MAX_ADLER32_LENGTH = 5552;
 function computeAdler32(bytes) {
     const bytesLength = bytes.length;
-    // if (
-    //   typeof PDFJSDev === "undefined" ||
-    //   PDFJSDev.test("!PRODUCTION || TESTING")
-    // ) {
-    assert(bytesLength < MAX_ADLER32_LENGTH, 'computeAdler32: Unsupported "bytes" length.');
-    // }
+    /*#static*/  {
+        assert(bytesLength < MAX_ADLER32_LENGTH, 'computeAdler32: Unsupported "bytes" length.');
+    }
     let a = 1, b = 0;
     for (let i = 0; i < bytesLength; ++i) {
         // No modulo required in the loop if `bytesLength < 5552`.
@@ -58,7 +56,7 @@ export class Parser {
     imageCache = Object.create(null);
     buf1;
     buf2;
-    constructor({ lexer, xref, allowStreams = false, recoveryMode = false }) {
+    constructor({ lexer, xref, allowStreams = false, recoveryMode = false, }) {
         this.lexer = lexer;
         this.xref = xref;
         this.allowStreams = allowStreams;
@@ -123,13 +121,15 @@ export class Parser {
                         }
                         const key = this.buf1.name;
                         this.shift();
-                        if (this.buf1 === EOF)
+                        if (this.buf1 === EOF) {
                             break;
+                        }
                         dict.set(key, this.getObj(cipherTransform));
                     }
                     if (this.buf1 === EOF) {
-                        if (this.recoveryMode)
+                        if (this.recoveryMode) {
                             return dict;
+                        }
                         throw new ParserEOFException("End of file inside dictionary.");
                     }
                     // Stream objects are not allowed inside content streams or
@@ -441,8 +441,9 @@ export class Parser {
             }
             const key = this.buf1.name;
             this.shift();
-            if (this.buf1 == EOF)
+            if (this.buf1 == EOF) {
                 break;
+            }
             dict.set(key, this.getObj(cipherTransform));
         }
         if (lexer.beginInlineImagePos !== -1) {
@@ -565,7 +566,15 @@ export class Parser {
         else {
             // Bad stream length, scanning for endstream command.
             const ENDSTREAM_SIGNATURE = new Uint8Array([
-                0x65, 0x6e, 0x64, 0x73, 0x74, 0x72, 0x65, 0x61, 0x6d,
+                0x65,
+                0x6e,
+                0x64,
+                0x73,
+                0x74,
+                0x72,
+                0x65,
+                0x61,
+                0x6d,
             ]);
             let actualLength = this._findStreamLength(startPos, ENDSTREAM_SIGNATURE);
             if (actualLength < 0) {
@@ -699,8 +708,9 @@ export class Parser {
             return stream;
         }
         catch (ex) {
-            if (ex instanceof MissingDataException)
+            if (ex instanceof MissingDataException) {
                 throw ex;
+            }
             warn(`Invalid stream: "${ex}"`);
             return new NullStream();
         }
@@ -710,22 +720,262 @@ export class Parser {
 // '2' means the character ends a name or command.
 // prettier-ignore
 const specialChars = [
-    1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    1, 0, 0, 0, 0, 2, 0, 0, 2, 2, 0, 0, 0, 0, 0, 2,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 2, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 2, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 2, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 // fx
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    1,
+    0,
+    1,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    2,
+    0,
+    0,
+    2,
+    2,
+    0,
+    0,
+    0,
+    0,
+    0,
+    2,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    2,
+    0,
+    2,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    2,
+    0,
+    2,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    2,
+    0,
+    2,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0, // fx
 ];
 function toHexDigit(ch) {
     if (ch >= /* '0' = */ 0x30 && ch /* '9' = */ <= 0x39) {
@@ -766,8 +1016,12 @@ export class Lexer {
         this.nextChar();
         this.knownCommands = knownCommands;
     }
-    nextChar() { return (this.currentChar = this.stream.getByte()); }
-    peekChar() { return this.stream.peekByte(); }
+    nextChar() {
+        return (this.currentChar = this.stream.getByte());
+    }
+    peekChar() {
+        return this.stream.peekByte();
+    }
     getNumber() {
         let ch = this.currentChar;
         let eNotation = false;
@@ -1238,8 +1492,8 @@ export class Linearization {
     static create(stream) {
         function getInt(linDict, name, allowZeroValue = false) {
             const obj = linDict.get(name);
-            if (Number.isInteger(obj)
-                && (allowZeroValue ? obj >= 0 : obj > 0)) {
+            if (Number.isInteger(obj) &&
+                (allowZeroValue ? obj >= 0 : obj > 0)) {
                 return obj;
             }
             throw new Error(`The "${name}" parameter in the linearization ` +
@@ -1269,12 +1523,12 @@ export class Linearization {
         const linDict = parser.getObj();
         let obj;
         let length;
-        if (!(Number.isInteger(obj1)
-            && Number.isInteger(obj2)
-            && isCmd(obj3, "obj")
-            && linDict instanceof Dict
-            && typeof (obj = linDict.get("Linearized")) === "number"
-            && obj > 0)) {
+        if (!(Number.isInteger(obj1) &&
+            Number.isInteger(obj2) &&
+            isCmd(obj3, "obj") &&
+            linDict instanceof Dict &&
+            typeof (obj = linDict.get("Linearized")) === "number" &&
+            obj > 0)) {
             return null; // No valid linearization dictionary found.
         }
         else if ((length = getInt(linDict, "L")) !== stream.length) {
@@ -1294,5 +1548,5 @@ export class Linearization {
         };
     }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=parser.js.map

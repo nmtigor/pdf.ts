@@ -1,5 +1,4 @@
-import { type Destination, type ExplicitDest } from "../pdf.ts-src/core/catalog.js";
-import { PDFDocumentProxy, type RefProxy } from "../pdf.ts-src/display/api.js";
+import { type Destination, type ExplicitDest, PDFDocumentProxy, type RefProxy } from "../pdf.ts-src/pdf.js";
 import { EventBus } from "./event_utils.js";
 import { type IPDFLinkService } from "./interfaces.js";
 import { PDFHistory } from "./pdf_history.js";
@@ -53,32 +52,32 @@ export declare class PDFLinkService implements IPDFLinkService {
     setViewer(pdfViewer: PDFViewer): void;
     setHistory(pdfHistory: PDFHistory): void;
     get pagesCount(): number;
-    /** @implements */
+    /** @implement */
     get page(): number;
     set page(value: number);
-    /** @implements */
+    /** @implement */
     get rotation(): number;
     set rotation(value: number);
     /**
      * This method will, when available, also update the browser history.
-     * @implements
+     * @implement
      * @param dest The named, or explicit, PDF destination.
      */
     goToDestination(dest: string | ExplicitDest): Promise<void>;
     /**
      * This method will, when available, also update the browser history.
      *
-     * @implements
+     * @implement
      * @param val The page number, or page label.
      */
     goToPage(val: number | string): void;
     /**
      * Wrapper around the `addLinkAttributes` helper function.
-     * @implements
+     * @implement
      */
     addLinkAttributes(link: HTMLAnchorElement, url: string, newWindow?: boolean): void;
     /**
-     * @implements
+     * @implement
      * @param dest The PDF destination object.
      * @return The hyperlink to the PDF object.
      */
@@ -86,40 +85,40 @@ export declare class PDFLinkService implements IPDFLinkService {
     /**
      * Prefix the full url on anchor links to make sure that links are resolved
      * relative to the current URL instead of the one defined in <base href>.
-     * @implements
+     * @implement
      * @param anchor The anchor hash, including the #.
      * @return The hyperlink to the PDF object.
      */
     getAnchorUrl(anchor: string): string;
-    /** @implements */
+    /** @implement */
     setHash(hash: string): void;
-    /** @implements */
+    /** @implement */
     executeNamedAction(action: string): void;
     /**
-     * @implements
+     * @implement
      * @param pageNum page number.
      * @param pageRef reference to the page.
      */
     cachePageRef(pageNum: number, pageRef: RefProxy | undefined): void;
-    /** @implements */
+    /** @implement */
     _cachedPageNumber(pageRef: RefProxy | undefined): number | undefined;
-    /** @implements */
+    /** @implement */
     isPageVisible(pageNumber: number): boolean;
     isPageCached(pageNumber: number): boolean;
 }
 export declare class SimpleLinkService implements IPDFLinkService {
-    /** @implements */
+    /** @implement */
     externalLinkTarget: LinkTarget | undefined;
-    /** @implements */
+    /** @implement */
     externalLinkRel: string | undefined;
-    /** @implements */
+    /** @implement */
     externalLinkEnabled: boolean;
-    /** @implements */
+    /** @implement */
     get pagesCount(): number;
-    /** @implements */
+    /** @implement */
     get page(): number;
     set page(value: number);
-    /** @implements */
+    /** @implement */
     get rotation(): number;
     set rotation(value: number);
     /**
@@ -130,7 +129,7 @@ export declare class SimpleLinkService implements IPDFLinkService {
      * @param val The page number, or page label.
      */
     goToPage(val: number | string): void;
-    /** @implements */
+    /** @implement */
     addLinkAttributes(link: HTMLAnchorElement, url: string, newWindow?: boolean): void;
     /**
      * @param dest The PDF destination object.
@@ -138,27 +137,27 @@ export declare class SimpleLinkService implements IPDFLinkService {
      */
     getDestinationHash(dest?: Destination): string;
     /**
-     * @implements
+     * @implement
      * @param hash The PDF parameters/hash.
      * @return The hyperlink to the PDF object.
      */
     getAnchorUrl(hash: string): string;
-    /** @implements */
+    /** @implement */
     setHash(hash: string): void;
-    /** @implements */
+    /** @implement */
     executeNamedAction(action: string): void;
     /**
-     * @implements
+     * @implement
      * @param pageNum page number.
      * @param pageRef reference to the page.
      */
     cachePageRef(pageNum: number, pageRef: RefProxy | undefined): void;
-    /** @implements */
+    /** @implement */
     _cachedPageNumber(pageRef: RefProxy): undefined;
-    /** @implements */
+    /** @implement */
     isPageVisible(pageNumber: number): boolean;
     /**
-     * @implements
+     * @implement
      * @param {number} pageNumber
      */
     isPageCached(pageNumber: number): boolean;

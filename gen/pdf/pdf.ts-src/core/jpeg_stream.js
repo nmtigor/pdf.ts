@@ -16,10 +16,10 @@
  * limitations under the License.
  */
 import { shadow } from "../shared/util.js";
-import { ImageStream } from './decode_stream.js';
+import { ImageStream } from "./decode_stream.js";
 import { JpegImage } from "./jpg.js";
 import { Dict } from "./primitives.js";
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 /**
  * For JPEG's we use a library to decode these images and the stream behaves
  * like all the other DecodeStreams.
@@ -42,10 +42,11 @@ export class JpegStream extends ImageStream {
         // If `this.maybeLength` is null, we'll get the entire stream.
         return shadow(this, "bytes", this.stream.getBytes(this.maybeLength));
     }
-    /** @implements */
+    /** @implement */
     readBlock() {
-        if (this.eof)
+        if (this.eof) {
             return;
+        }
         const jpegOptions = {};
         // Checking if values need to be transformed before conversion.
         const decodeArr = this.dict.getArray("D", "Decode");
@@ -85,13 +86,11 @@ export class JpegStream extends ImageStream {
         this.bufferLength = data.length;
         this.eof = true;
     }
-    ;
     ensureBuffer(requested) {
         // No-op, since `this.readBlock` will always parse the entire image and
         // directly insert all of its data into `this.buffer`.
         return undefined;
     }
-    ;
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=jpeg_stream.js.map

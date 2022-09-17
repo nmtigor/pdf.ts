@@ -1,8 +1,8 @@
-/*81*****************************************************************************
+/*80****************************************************************************
  * jslang
 ** ------ */
+import { INOUT } from "../global.js";
 import { assert } from "./util/trace.js";
-/*81---------------------------------------------------------------------------*/
 // Ref. https://lodash.com/docs/4.17.15#isObjectLike
 export function isObjectLike(value) {
     return value != null && typeof value == "object";
@@ -12,15 +12,18 @@ let valve = 0;
  * ! Compare deeply Object, Array only.
  * ! Compare enumerable own string-properties only.
  *
- * @param { headconst } lhs_x
- * @param { headconst } rhs_x
+ * @headconst @param lhs_x
+ * @headconst @param rhs_x
  */
 function eq_impl(lhs_x, rhs_x) {
-    assert(valve--, "There is element referencing its ancestor.", import.meta);
-    if (lhs_x === rhs_x
-        || Number.isNaN(lhs_x) && Number.isNaN(rhs_x) //! Notice, `NaN === NaN` is false.
-    )
+    /*#static*/ if (INOUT) {
+        assert(valve--, "There is element referencing its ancestor.", import.meta);
+    }
+    if (lhs_x === rhs_x ||
+        Number.isNaN(lhs_x) && Number.isNaN(rhs_x) //! Notice, `NaN === NaN` is false.
+    ) {
         return true;
+    }
     if (Array.isArray(lhs_x)) {
         if (!Array.isArray(rhs_x))
             return false;
@@ -28,24 +31,24 @@ function eq_impl(lhs_x, rhs_x) {
             return false;
         if (!lhs_x.length && !rhs_x.length)
             return true;
-        let ret = false;
         for (let i = lhs_x.length; i--;) {
-            ret = eq_impl(lhs_x[i], rhs_x[i]);
-            if (!ret)
-                break;
+            if (!eq_impl(lhs_x[i], rhs_x[i])) {
+                return false;
+            }
         }
-        return ret;
+        return true;
     }
-    if (lhs_x instanceof Int8Array
-        || lhs_x instanceof Uint8Array
-        || lhs_x instanceof Uint8ClampedArray
-        || lhs_x instanceof Int16Array
-        || lhs_x instanceof Uint16Array
-        || lhs_x instanceof Int32Array
-        || lhs_x instanceof Uint32Array
-        || lhs_x instanceof Float32Array
-        || lhs_x instanceof Float64Array)
+    if (lhs_x instanceof Int8Array ||
+        lhs_x instanceof Uint8Array ||
+        lhs_x instanceof Uint8ClampedArray ||
+        lhs_x instanceof Int16Array ||
+        lhs_x instanceof Uint16Array ||
+        lhs_x instanceof Int32Array ||
+        lhs_x instanceof Uint32Array ||
+        lhs_x instanceof Float32Array ||
+        lhs_x instanceof Float64Array) {
         return lhs_x.eq(rhs_x);
+    }
     if (isObjectLike(lhs_x)) {
         if (!isObjectLike(rhs_x) || Array.isArray(rhs_x))
             return false;
@@ -55,17 +58,13 @@ function eq_impl(lhs_x, rhs_x) {
             return false;
         if (!keys_lhs.length && !keys_rhs.length)
             return true;
-        let ret = false;
         for (const key of keys_lhs) {
-            if (rhs_x.hasOwnProperty)
-                ret ||= rhs_x.hasOwnProperty(key);
-            else
-                ret ||= key in rhs_x; //! rhs_x could be Object without proto.
-            ret &&= eq_impl(lhs_x[key], rhs_x[key]);
-            if (!ret)
-                break;
+            if (!Object.hasOwn(rhs_x, key) ||
+                !eq_impl(lhs_x[key], rhs_x[key])) {
+                return false;
+            }
         }
-        return ret;
+        return true;
     }
     return false;
 }
@@ -74,56 +73,62 @@ export function eq(lhs_x, rhs_x, valve_x = 100) {
     return eq_impl(lhs_x, rhs_x);
 }
 /**
- * @param { headconst } rhs
- * @param { const } valve_x
+ * @headconst @param rhs
+ * @const @param valve_x
  */
 Reflect.defineProperty(Object.prototype, "eq", {
     value(rhs_x, valve_x = 100) {
         valve = valve_x;
         return eq_impl(this, rhs_x);
-    }
+    },
 });
 Reflect.defineProperty(Array.prototype, "last", {
-    get() { return this[this.length - 1]; }
+    get() {
+        return this[this.length - 1];
+    },
 });
 Reflect.defineProperty(Array.prototype, "eq", {
     value(rhs_x, valve_x = 100) {
         valve = valve_x;
         return eq_impl(this, rhs_x);
-    }
+    },
 });
 /**
- * @param { const } ary
+ * @const @param ary
  */
 Reflect.defineProperty(Array.prototype, "fillArray", {
     value(ary) {
-        assert(ary.length <= this.length);
+        /*#static*/ if (INOUT) {
+            assert(ary.length <= this.length);
+        }
         for (let i = 0, LEN = this.length; i < LEN; ++i) {
             this[i] = ary[i];
         }
         return this;
-    }
+    },
 });
 Reflect.defineProperty(Array.prototype, "fillArrayBack", {
     value(ary) {
-        assert(ary.length <= this.length);
+        /*#static*/ if (INOUT) {
+            assert(ary.length <= this.length);
+        }
         for (let i = this.length; i--;) {
             this[i] = ary[i];
         }
         return this;
-    }
+    },
 });
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 /**
- * @param { const } cp Code Point returned by `string.charCodeAt()`
+ * @const @param cp Code Point returned by `string.charCodeAt()`
  */
 export function isDecimalDigit(cp) {
     return 0x30 <= cp && cp <= 0x39;
 }
 export function isHexDigit(cp) {
-    return (0x30 <= cp && cp <= 0x39) // 0..9
-        || (0x41 <= cp && cp <= 0x46) // A..F
-        || (0x61 <= cp && cp <= 0x66); // a..f
+    return (0x30 <= cp && cp <= 0x39) || // 0..9
+        (0x41 <= cp && cp <= 0x46) || // A..F
+        (0x61 <= cp && cp <= 0x66); // a..f
 }
 export function isOctalDigit(cp) {
     return (0x30 <= cp && cp <= 0x37); // 0..7
@@ -138,11 +143,19 @@ export function isASCIILetter(cp) {
     return isASCIIUpLetter(cp) || isASCIILoLetter(cp);
 }
 Number.apxE = (f0, f1) => Math.abs(f0 - f1) <= Number.EPSILON;
-Number.apxS = function (f0, f1) { return f0 < f1 - Number.EPSILON; };
-Number.apxSE = function (f0, f1) { return f0 <= f1 + Number.EPSILON; };
-Number.apxG = function (f0, f1) { return f0 > f1 + Number.EPSILON; };
-Number.apxGE = function (f0, f1) { return f0 >= f1 - Number.EPSILON; };
-Number.getRandom = function (max, min = 0, fixto = 0) {
+Number.apxS = (f0, f1) => {
+    return f0 < f1 - Number.EPSILON;
+};
+Number.apxSE = (f0, f1) => {
+    return f0 <= f1 + Number.EPSILON;
+};
+Number.apxG = (f0, f1) => {
+    return f0 > f1 + Number.EPSILON;
+};
+Number.apxGE = (f0, f1) => {
+    return f0 >= f1 - Number.EPSILON;
+};
+Number.getRandom = (max, min = 0, fixto = 0) => {
     return min + (Math.random() * (max - min)).fixTo(fixto);
 };
 Number.prototype.fixTo = function (digits = 0) {
@@ -175,63 +188,63 @@ Reflect.defineProperty(Int8Array.prototype, "eq", {
         if (!(rhs_x instanceof Int8Array))
             return false;
         return iaEq_impl(this, rhs_x);
-    }
+    },
 });
 Reflect.defineProperty(Uint8Array.prototype, "eq", {
     value(rhs_x) {
         if (!(rhs_x instanceof Uint8Array))
             return false;
         return iaEq_impl(this, rhs_x);
-    }
+    },
 });
 Reflect.defineProperty(Uint8ClampedArray.prototype, "eq", {
     value(rhs_x) {
         if (!(rhs_x instanceof Uint8ClampedArray))
             return false;
         return iaEq_impl(this, rhs_x);
-    }
+    },
 });
 Reflect.defineProperty(Int16Array.prototype, "eq", {
     value(rhs_x) {
         if (!(rhs_x instanceof Int16Array))
             return false;
         return iaEq_impl(this, rhs_x);
-    }
+    },
 });
 Reflect.defineProperty(Uint16Array.prototype, "eq", {
     value(rhs_x) {
         if (!(rhs_x instanceof Uint16Array))
             return false;
         return iaEq_impl(this, rhs_x);
-    }
+    },
 });
 Reflect.defineProperty(Int32Array.prototype, "eq", {
     value(rhs_x) {
         if (!(rhs_x instanceof Int32Array))
             return false;
         return iaEq_impl(this, rhs_x);
-    }
+    },
 });
 Reflect.defineProperty(Uint32Array.prototype, "eq", {
     value(rhs_x) {
         if (!(rhs_x instanceof Uint32Array))
             return false;
         return iaEq_impl(this, rhs_x);
-    }
+    },
 });
 Reflect.defineProperty(Float32Array.prototype, "eq", {
     value(rhs_x) {
         if (!(rhs_x instanceof Float32Array))
             return false;
         return faEq_impl(this, rhs_x);
-    }
+    },
 });
 Reflect.defineProperty(Float64Array.prototype, "eq", {
     value(rhs_x) {
         if (!(rhs_x instanceof Float64Array))
             return false;
         return faEq_impl(this, rhs_x);
-    }
+    },
 });
 Date.prototype.myformat = function () {
     // let month_s;
@@ -253,78 +266,102 @@ Date.prototype.myformat = function () {
     // const _0 = ( v ) => `${v<10?"0":""}${v}`;
     const tz = this.getTimezoneOffset();
     return [
-        [`${this.getFullYear()}`,
+        [
+            `${this.getFullYear()}`,
             `${this.getMonth() + 1}`.padStart(2, "0"),
-            `${this.getDate()}`.padStart(2, "0")
+            `${this.getDate()}`.padStart(2, "0"),
         ].join("-"),
-        [`${this.getHours()}`.padStart(2, "0"),
+        [
+            `${this.getHours()}`.padStart(2, "0"),
             `${this.getMinutes()}`.padStart(2, "0"),
-            `${this.getSeconds()}`.padStart(2, "0")
+            `${this.getSeconds()}`.padStart(2, "0"),
         ].join(":"),
-        [`${tz <= 0 ? "+" : "-"}`,
+        [
+            `${tz <= 0 ? "+" : "-"}`,
             `${Math.floor(Math.abs(tz) / 60)}`.padStart(2, "0"),
-            `${Math.abs(tz) % 60}`.padStart(2, "0")
+            `${Math.abs(tz) % 60}`.padStart(2, "0"),
         ].join(""),
     ].join(" ");
 };
 Date.prototype.getShiChen = function () {
     switch (this.getHours()) {
         case 23:
-        case 0: return "子";
+        case 0:
+            return "子";
         case 1:
-        case 2: return "丑";
+        case 2:
+            return "丑";
         case 3:
-        case 4: return "寅";
+        case 4:
+            return "寅";
         case 5:
-        case 6: return "卯";
+        case 6:
+            return "卯";
         case 7:
-        case 8: return "辰";
+        case 8:
+            return "辰";
         case 9:
-        case 10: return "巳";
+        case 10:
+            return "巳";
         case 11:
-        case 12: return "午";
+        case 12:
+            return "午";
         case 13:
-        case 14: return "未";
+        case 14:
+            return "未";
         case 15:
-        case 16: return "申";
+        case 16:
+            return "申";
         case 17:
-        case 18: return "酉";
+        case 18:
+            return "酉";
         case 19:
-        case 20: return "戌";
-        default: return "亥";
+        case 20:
+            return "戌";
+        default:
+            return "亥";
     }
 };
-Date.date = new Date;
-Date.setHours = function (refdate, hours, min, sec, ms) {
+Date.date = new Date();
+Date.setHours = (refdate, hours, min, sec, ms) => {
     Date.date.setTime(refdate.getTime());
-    if (ms !== undefined)
+    if (ms !== undefined) {
         return Date.date.setHours(hours, min, sec, ms);
-    else if (sec !== undefined)
+    }
+    else if (sec !== undefined) {
         return Date.date.setHours(hours, min, sec);
-    else if (min !== undefined)
+    }
+    else if (min !== undefined) {
         return Date.date.setHours(hours, min);
-    else
+    }
+    else {
         return Date.date.setHours(hours);
+    }
 };
-Date.setDate = function (refdate, date) {
+Date.setDate = (refdate, date) => {
     Date.date.setTime(refdate.getTime());
     return Date.date.setDate(date);
 };
-Date.setMonth = function (refdate, month, date) {
+Date.setMonth = (refdate, month, date) => {
     Date.date.setTime(refdate.getTime());
-    if (date !== undefined)
+    if (date !== undefined) {
         return Date.date.setMonth(month, date);
-    else
+    }
+    else {
         return Date.date.setMonth(month);
+    }
 };
-Date.setFullYear = function (refdate, year, month, date) {
+Date.setFullYear = (refdate, year, month, date) => {
     Date.date.setTime(refdate.getTime());
-    if (date !== undefined)
+    if (date !== undefined) {
         return Date.date.setFullYear(year, month, date);
-    else if (month !== undefined)
+    }
+    else if (month !== undefined) {
         return Date.date.setFullYear(year, month);
-    else
+    }
+    else {
         return Date.date.setFullYear(year);
+    }
 };
 Math.clamp = (min_x, val_x, max_x) => Math.max(min_x, Math.min(val_x, max_x));
 // Math.minn = ( ...values ) =>
@@ -343,16 +380,16 @@ Math.clamp = (min_x, val_x, max_x) => Math.max(min_x, Math.min(val_x, max_x));
 //   })
 //   return ret;
 // }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 /**
  * class X extends mix( Y, Z )
- * ! should always companion with an `interface` declaration.
+ * ! Should always companion with an interface declaration.
  *
- * @param mixins First element has highest precedence, and so on.
+ * @param mixins
+ *  Laat element has the highest precedence, and so on.
  */
-export function mix(...mixins) {
-    assert(mixins.length);
-    class Mix extends mixins[0] {
+export function mix(base, ...mixins) {
+    class Mix extends base {
     }
     // console.log( Mix );
     function copyProperties(source, target) {
@@ -364,9 +401,9 @@ export function mix(...mixins) {
                 // console.log( `${key} in ${target}` );
                 continue;
             }
-            if (key !== "constructor"
-                && key !== "prototype"
-                && key !== "name") {
+            if (key !== "constructor" &&
+                key !== "prototype" &&
+                key !== "name") {
                 const desc = Object.getOwnPropertyDescriptor(source, key);
                 if (desc !== undefined)
                     Object.defineProperty(target, key, desc);
@@ -380,11 +417,11 @@ export function mix(...mixins) {
             o = Reflect.getPrototypeOf(o);
         }
     }
-    for (let i = 1; i < mixins.length; i++) {
+    for (let i = mixins.length; i--;) {
         deepcopyProperties(mixins[i].prototype, Mix.prototype);
         deepcopyProperties(mixins[i], Mix); // add static stuff
     }
     return Mix;
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=jslang.js.map

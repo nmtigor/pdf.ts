@@ -15,11 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { getEncoding } from "./encodings.js";
-import { isWhiteSpace } from "./core_utils.js";
-import { Stream } from "./stream.js";
 import { warn } from "../shared/util.js";
-/*81---------------------------------------------------------------------------*/
+import { isWhiteSpace } from "./core_utils.js";
+import { getEncoding } from "./encodings.js";
+import { Stream } from "./stream.js";
+/*80--------------------------------------------------------------------------*/
 // Hinting is currently disabled due to unknown problems on windows
 // in tracemonkey and various other pdfs with type1 fonts.
 const HINTING_ENABLED = false;
@@ -223,7 +223,7 @@ var NsType1CharString;
                             // seac is like type 2's special endchar but it doesn't use the
                             // first argument asb, so remove it.
                             if (seacAnalysisEnabled) {
-                                const asb = this.stack[this.stack.length - 5];
+                                const asb = this.stack.at(-5);
                                 this.seac = this.stack.splice(-4, 4);
                                 this.seac[0] += this.lsb - asb;
                                 error = this.executeCommand(0, COMMAND_MAP.endchar);
@@ -280,10 +280,7 @@ var NsType1CharString;
                                 flexArgs[11], // bcp4y
                                 flexArgs[12], // p3x
                                 flexArgs[13], // p3y
-                                flexArgs[14] // flexDepth
-                                // 15 = finalx unused by flex
-                                // 16 = finaly unused by flex
-                                );
+                                flexArgs[14]);
                                 error = this.executeCommand(13, COMMAND_MAP.flex, true);
                                 this.flexing = false;
                                 this.stack.push(flexArgs[15], flexArgs[16]);
@@ -318,11 +315,10 @@ var NsType1CharString;
                     value = -((value - 251) * 256) - encoded[++i] - 108;
                 }
                 else {
-                    value =
-                        ((encoded[++i] & 0xff) << 24) |
-                            ((encoded[++i] & 0xff) << 16) |
-                            ((encoded[++i] & 0xff) << 8) |
-                            ((encoded[++i] & 0xff) << 0);
+                    value = ((encoded[++i] & 0xff) << 24) |
+                        ((encoded[++i] & 0xff) << 16) |
+                        ((encoded[++i] & 0xff) << 8) |
+                        ((encoded[++i] & 0xff) << 0);
                 }
                 this.stack.push(value);
             }
@@ -382,8 +378,9 @@ var NsType1Parser;
         );
     }
     function decrypt(data, key, discardNumber) {
-        if (discardNumber >= data.length)
+        if (discardNumber >= data.length) {
             return new Uint8Array(0);
+        }
         const c1 = 52845;
         const c2 = 22719;
         let r = key | 0, i, j;
@@ -413,7 +410,7 @@ var NsType1Parser;
             }
             i++;
             let digit2;
-            while (i < count && !isHexDigit((digit2 = data[i]))) {
+            while (i < count && !isHexDigit(digit2 = data[i])) {
                 i++;
             }
             if (i < count) {
@@ -465,19 +462,19 @@ var NsType1Parser;
                 if (token === null || token === "]" || token === "}") {
                     break;
                 }
-                array.push(parseFloat(token || '0'));
+                array.push(parseFloat(token || "0"));
             }
             return array;
         }
         readNumber() {
             const token = this.getToken();
-            return parseFloat(token || '0');
+            return parseFloat(token || "0");
         }
         readInt() {
             // Use '| 0' to prevent setting a double into length such as the double
             // does not flow into the loop variable.
             const token = this.getToken();
-            return parseInt(token || '0', 10) | 0;
+            return parseInt(token || "0", 10) | 0;
         }
         readBoolean() {
             const token = this.getToken();
@@ -552,7 +549,6 @@ var NsType1Parser;
             let length;
             let data;
             let lenIV;
-            let encoded;
             while ((token = this.getToken()) !== null) {
                 if (token !== "/") {
                     continue;
@@ -579,7 +575,7 @@ var NsType1Parser;
                             this.getToken(); // read in 'RD' or '-|'
                             data = length > 0 ? stream.getBytes(length) : new Uint8Array(0);
                             lenIV = program.properties.privateData.lenIV;
-                            encoded = this.readCharStrings(data, lenIV);
+                            const encoded = this.readCharStrings(data, lenIV);
                             this.nextChar();
                             token = this.getToken(); // read in 'ND' or '|-'
                             if (token === "noaccess") {
@@ -605,7 +601,7 @@ var NsType1Parser;
                             this.getToken(); // read in 'RD' or '-|'
                             data = length > 0 ? stream.getBytes(length) : new Uint8Array(0);
                             lenIV = program.properties.privateData.lenIV;
-                            encoded = this.readCharStrings(data, lenIV);
+                            const encoded = this.readCharStrings(data, lenIV);
                             this.nextChar();
                             token = this.getToken(); // read in 'NP' or '|'
                             if (token === "noaccess") {
@@ -648,9 +644,7 @@ var NsType1Parser;
                         break;
                 }
             }
-            for (let i = 0; i < charstrings.length; i++) {
-                const glyph = charstrings[i].glyph;
-                encoded = charstrings[i].encoded;
+            for (const { encoded, glyph } of charstrings) {
                 const charString = new Type1CharString();
                 const error = charString.convert(encoded, subrs, this.seacAnalysisEnabled);
                 let output = charString.output;
@@ -746,5 +740,5 @@ var NsType1Parser;
     NsType1Parser.Type1Parser = Type1Parser;
 })(NsType1Parser || (NsType1Parser = {}));
 export var Type1Parser = NsType1Parser.Type1Parser;
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=type1_parser.js.map

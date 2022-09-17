@@ -17,23 +17,19 @@
  * limitations under the License.
  */
 
-import { CMapCompressionType } from "../shared/util.js";
-/*81---------------------------------------------------------------------------*/
+import { CMapCompressionType } from "../shared/util.ts";
+/*80--------------------------------------------------------------------------*/
 
-export interface CanvasEntry
-{
-  canvas:HTMLCanvasElement;
-  context:CanvasRenderingContext2D;
-  savedCtx?:CanvasRenderingContext2D;
+export interface CanvasEntry {
+  canvas: HTMLCanvasElement;
+  context: CanvasRenderingContext2D;
+  savedCtx?: CanvasRenderingContext2D;
 }
 
-export abstract class BaseCanvasFactory
-{
+export abstract class BaseCanvasFactory {
   /** @final */
-  create( width:number, height:number ):CanvasEntry
-  {
-    if (width <= 0 || height <= 0) 
-    {
+  create(width: number, height: number): CanvasEntry {
+    if (width <= 0 || height <= 0) {
       throw new Error("Invalid canvas size");
     }
     const canvas = this._createCanvas(width, height);
@@ -44,8 +40,7 @@ export abstract class BaseCanvasFactory
   }
 
   /** @final */
-  reset( canvasAndContext:CanvasEntry, width:number, height:number )
-  {
+  reset(canvasAndContext: CanvasEntry, width: number, height: number) {
     if (!canvasAndContext.canvas) {
       throw new Error("Canvas is not specified");
     }
@@ -57,8 +52,7 @@ export abstract class BaseCanvasFactory
   }
 
   /** @final */
-  destroy( canvasAndContext:CanvasEntry )
-  {
+  destroy(canvasAndContext: CanvasEntry) {
     if (!canvasAndContext.canvas) {
       throw new Error("Canvas is not specified");
     }
@@ -66,52 +60,48 @@ export abstract class BaseCanvasFactory
     // resources immediately, which can greatly reduce memory consumption.
     canvasAndContext.canvas.width = 0;
     canvasAndContext.canvas.height = 0;
-    (<any>canvasAndContext).canvas = null;
-    (<any>canvasAndContext).context = null;
+    (<any> canvasAndContext).canvas = null;
+    (<any> canvasAndContext).context = null;
   }
 
   /**
    * @ignore
    */
-  protected abstract _createCanvas( width:number, height:number ):HTMLCanvasElement
+  protected abstract _createCanvas(
+    width: number,
+    height: number,
+  ): HTMLCanvasElement;
 }
 
-interface _BaseCMapReaderFactoryCtorP
-{
-  baseUrl:string | undefined;
-  isCompressed:boolean | undefined;
+interface _BaseCMapReaderFactoryCtorP {
+  baseUrl: string | undefined;
+  isCompressed: boolean | undefined;
 }
 
-export interface CMapData
-{
-  cMapData:Uint8Array;
-  compressionType:CMapCompressionType;
+export interface CMapData {
+  cMapData: Uint8Array;
+  compressionType: CMapCompressionType;
 }
-export type FetchBuiltInCMap = ( name:string ) => Promise<CMapData>;
+export type FetchBuiltInCMap = (name: string) => Promise<CMapData>;
 
-export abstract class BaseCMapReaderFactory
-{
+export abstract class BaseCMapReaderFactory {
   baseUrl;
   isCompressed;
 
-  constructor({ baseUrl, isCompressed=false }:_BaseCMapReaderFactoryCtorP )
-  {
+  constructor({ baseUrl, isCompressed = false }: _BaseCMapReaderFactoryCtorP) {
     this.baseUrl = baseUrl;
     this.isCompressed = isCompressed;
   }
 
   /** @final */
-  async fetch({ name }:{ name:string })
-  {
-    if (!this.baseUrl) 
-    {
+  async fetch({ name }: { name: string }) {
+    if (!this.baseUrl) {
       throw new Error(
         'The CMap "baseUrl" parameter must be specified, ensure that ' +
-          'the "cMapUrl" and "cMapPacked" API parameters are provided.'
+          'the "cMapUrl" and "cMapPacked" API parameters are provided.',
       );
     }
-    if (!name) 
-    {
+    if (!name) {
       throw new Error("CMap name must be specified.");
     }
     const url = this.baseUrl + name + (this.isCompressed ? ".bcmap" : "");
@@ -119,9 +109,10 @@ export abstract class BaseCMapReaderFactory
       ? CMapCompressionType.BINARY
       : CMapCompressionType.NONE;
 
-    return this._fetchData(url, compressionType).catch(reason => {
+    return this._fetchData(url, compressionType).catch((reason) => {
       throw new Error(
-        `Unable to load ${this.isCompressed ? "binary " : ""}CMap at: ${url}`
+        `Unable to load ${this.isCompressed ? "binary " : ""}CMap at: ${url}`,
+        { cause: reason },
       );
     });
   }
@@ -129,34 +120,32 @@ export abstract class BaseCMapReaderFactory
   /**
    * @ignore
    */
-  protected abstract _fetchData( url:string, compressionType:CMapCompressionType ):Promise<CMapData>;
+  protected abstract _fetchData(
+    url: string,
+    compressionType: CMapCompressionType,
+  ): Promise<CMapData>;
 }
 
-export abstract class BaseStandardFontDataFactory
-{
+export abstract class BaseStandardFontDataFactory {
   baseUrl;
 
-  constructor({ baseUrl }:{ baseUrl?:string | undefined })
-  {
+  constructor({ baseUrl }: { baseUrl?: string | undefined }) {
     this.baseUrl = baseUrl;
   }
 
-  async fetch({ filename }:{ filename:string })
-  {
-    if (!this.baseUrl) 
-    {
+  async fetch({ filename }: { filename: string }) {
+    if (!this.baseUrl) {
       throw new Error(
         'The standard font "baseUrl" parameter must be specified, ensure that ' +
-          'the "standardFontDataUrl" API parameter is provided.'
+          'the "standardFontDataUrl" API parameter is provided.',
       );
     }
-    if (!filename) 
-    {
+    if (!filename) {
       throw new Error("Font filename must be specified.");
     }
     const url = `${this.baseUrl}${filename}`;
 
-    return this._fetchData(url).catch(reason => {
+    return this._fetchData(url).catch((reason) => {
       throw new Error(`Unable to load font data at: ${url}`);
     });
   }
@@ -164,21 +153,23 @@ export abstract class BaseStandardFontDataFactory
   /**
    * @ignore
    */
-  protected abstract _fetchData( url:string ):Promise<Uint8Array>;
+  protected abstract _fetchData(url: string): Promise<Uint8Array>;
 }
 
-export abstract class BaseSVGFactory
-{
+export abstract class BaseSVGFactory {
   /** @final */
-  create( width:number, height:number )
-  {
+  create(width: number, height: number, skipDimensions = false) {
     if (width <= 0 || height <= 0) {
       throw new Error("Invalid SVG dimensions");
     }
     const svg = this._createSVG("svg:svg");
     svg.setAttribute("version", "1.1");
-    svg.setAttribute("width", `${width}px`);
-    svg.setAttribute("height", `${height}px`);
+
+    if (!skipDimensions) {
+      svg.setAttribute("width", `${width}px`);
+      svg.setAttribute("height", `${height}px`);
+    }
+
     svg.setAttribute("preserveAspectRatio", "none");
     svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
 
@@ -186,8 +177,7 @@ export abstract class BaseSVGFactory
   }
 
   /** @final */
-  createElement( type:string )
-  {
+  createElement(type: string) {
     if (typeof type !== "string") {
       throw new Error("Invalid SVG element type");
     }
@@ -197,6 +187,6 @@ export abstract class BaseSVGFactory
   /**
    * @ignore
    */
-  protected abstract _createSVG( type:string ):SVGElement
+  protected abstract _createSVG(type: string): SVGElement;
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

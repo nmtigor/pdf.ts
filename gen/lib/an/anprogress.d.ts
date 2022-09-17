@@ -28,39 +28,39 @@ export declare class Anprogress {
     get newst(): Anprogress_ST;
     get progress_p(): Promise<void> | undefined;
     /**
-     * @param { const } min_x in milliseconds
-     * @param { const } max_x
-     * @param { headconst } anvuu
-     * @param { headconst } anfun
+     * @const @param min_x in milliseconds
+     * @const @param max_x
+     * @headconst @param anvuu
+     * @headconst @param anfun
      */
     constructor(min_x: number, max_x: number, anvuu: HTMLAnvuu, anfun?: Anlinear);
     /**
-     * @param { const } min_x in milliseconds
-     * @param { const } max_x
+     * @const @param min_x in milliseconds
+     * @const @param max_x
      */
     reset(min_x: number, max_x: number): this;
     /**
-     * @param { const } ratio
+     * @const @param ratio
      */
     valOf(ratio: Ratio): number;
     /**
      * Set `#st_mo`
      * out( this.ts_$ !== undefined )
-     * @param { const } ts_x
-     * @param { const } dir_x
+     * @const @param ts_x
+     * @const @param dir_x
      */
     protected strt$(ts_x: number, dir_x: number): void;
     /**
      * Set `#st_mo`
      * out( this.ts_$ === undefined )
-     * @param { const } dir_x
+     * @const @param dir_x
      */
     stop(dir_x?: 1 | -1): void;
     /**
-     * @param { const } src_x in milliseconds
-     * @param { const } dur_x How long to play.
+     * @const @param src_x in milliseconds
+     * @const @param dur_x How long to play.
      *  Can be negative, which means playing backwards
-     * @param { const } ts0_x Could set manually, float in milliseconds.
+     * @const @param ts0_x Could set manually, float in milliseconds.
      */
     play(src_x?: number, dur_x?: number, ts0_x?: number): void;
     forwplay(src_x?: number, dur_x?: number, ts0_x?: number): void;
@@ -74,18 +74,18 @@ declare abstract class Anfun {
     protected readonly xmax$: number;
     protected readonly ymax$: number;
     /**
-     * @param { const } xmax
-     * @param { const } ymax
+     * @const @param xmax
+     * @const @param ymax
      */
     constructor(xmax: number, ymax: number);
     /**
-     * @param { const } ratio_x
+     * @const @param ratio_x
      */
     abstract getRatioOf(ratio_x: Ratio): Ratio;
 }
 export declare class Anlinear extends Anfun {
     constructor();
-    /** @override */
+    /** @implement */
     getRatioOf(ratio_x: Ratio): Ratio;
 }
 export {};

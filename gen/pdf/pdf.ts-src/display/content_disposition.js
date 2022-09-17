@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 import { stringToBytes } from "../shared/util.js";
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 // This getFilenameFromContentDispositionHeader function is adapted from
 // https://github.com/Rob--W/open-in-browser/blob/7e2e35a38b8b4e981b11da7b2f01df0149049e92/extension/content-disposition.js
 // with the following changes:
@@ -31,7 +31,8 @@ import { stringToBytes } from "../shared/util.js";
 export function getFilenameFromContentDispositionHeader(contentDisposition) {
     let needsEncodingFixup = true;
     // filename*=ext-value ("ext-value" from RFC 5987, referenced by RFC 6266).
-    let tmp = toParamRegExp("filename\\*", "i").exec(contentDisposition);
+    let tmp = toParamRegExp("filename\\*", "i")
+        .exec(contentDisposition);
     if (tmp) {
         tmp = tmp[1];
         let filename = rfc2616unquote(tmp);
@@ -186,7 +187,7 @@ export function getFilenameFromContentDispositionHeader(contentDisposition) {
         // encoding = q or b
         // encoded-text = any printable ASCII character other than ? or space.
         //        ... but Firefox permits ? and space.
-        return value.replace(/=\?([\w-]*)\?([QqBb])\?((?:[^?]|\?(?!=))*)\?=/g, function (matches, charset, encoding, text) {
+        return value.replace(/=\?([\w-]*)\?([QqBb])\?((?:[^?]|\?(?!=))*)\?=/g, (matches, charset, encoding, text) => {
             if (encoding === "q" || encoding === "Q") {
                 // RFC 2047 section 4.2.
                 text = text.replace(/_/g, " ");
@@ -202,5 +203,5 @@ export function getFilenameFromContentDispositionHeader(contentDisposition) {
     }
     return "";
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=content_disposition.js.map

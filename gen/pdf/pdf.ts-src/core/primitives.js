@@ -1,9 +1,24 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
+/* Copyright 2012 Mozilla Foundation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import { _PDFDEV } from "../../../global.js";
 import { assert } from "../../../lib/util/trace.js";
 import { shadow } from "../shared/util.js";
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 export const CIRCULAR_REF = Symbol("CIRCULAR_REF");
 export const EOF = Symbol("EOF");
 var XFANsName;
@@ -12,15 +27,16 @@ var XFANsName;
     class Name {
         name;
         constructor(name) {
-            if (typeof name !== "string") {
-                assert(0, 'Name: The "name" must be a string.');
+            /*#static*/  {
+                if (typeof name !== "string") {
+                    assert(0, 'Name: The "name" must be a string.');
+                }
             }
             this.name = name;
         }
         static get(name) {
-            const nameValue = nameCache[name];
             // eslint-disable-next-line no-restricted-syntax
-            return nameValue ? nameValue : (nameCache[name] = new Name(name));
+            return nameCache[name] || (nameCache[name] = new Name(name));
         }
         static _clearCache() {
             nameCache = Object.create(null);
@@ -35,15 +51,16 @@ var NsCmd;
     class Cmd {
         cmd;
         constructor(cmd) {
-            if (typeof cmd !== "string") {
-                assert(0, 'Cmd: The "cmd" must be a string.');
+            /*#static*/  {
+                if (typeof cmd !== "string") {
+                    assert(0, 'Cmd: The "cmd" must be a string.');
+                }
             }
             this.cmd = cmd;
         }
         static get(cmd) {
-            const cmdValue = cmdCache[cmd];
             // eslint-disable-next-line no-restricted-syntax
-            return cmdValue ? cmdValue : (cmdCache[cmd] = new Cmd(cmd));
+            return cmdCache[cmd] || (cmdCache[cmd] = new Cmd(cmd));
         }
         static _clearCache() {
             cmdCache = Object.create(null);
@@ -56,25 +73,39 @@ export class Dict {
     /* #map */
     // Map should only be used internally, use functions below to access.
     #map = Object.create(null);
-    get size() { return Object.keys(this.#map).length; }
+    get size() {
+        return Object.keys(this.#map).length;
+    }
     /** No dereferencing. */
-    getRaw(key) { return this.#map[key]; }
-    getKeys() { return Object.keys(this.#map); }
+    getRaw(key) {
+        return this.#map[key];
+    }
+    getKeys() {
+        return Object.keys(this.#map);
+    }
     /** No dereferencing. */
-    getRawValues() { return Object.values(this.#map); }
+    getRawValues() {
+        return Object.values(this.#map);
+    }
     set(key, value) {
-        if (typeof key !== "string") {
-            assert(0, 'Dict.set: The "key" must be a string.');
-        }
-        else if (value === undefined) {
-            assert(0, 'Dict.set: The "value" cannot be undefined.');
+        /*#static*/  {
+            if (typeof key !== "string") {
+                assert(0, 'Dict.set: The "key" must be a string.');
+            }
+            else if (value === undefined) {
+                assert(0, 'Dict.set: The "value" cannot be undefined.');
+            }
         }
         this.#map[key] = value;
     }
-    has(key) { return this.#map[key] !== undefined; }
+    has(key) {
+        return this.#map[key] !== undefined;
+    }
     /* ~ */
     xref;
-    assignXref(newXref) { this.xref = newXref; }
+    assignXref(newXref) {
+        this.xref = newXref;
+    }
     objId;
     suppressEncryption = false;
     constructor(xref) {
@@ -86,12 +117,18 @@ export class Dict {
     get(key1, key2, key3) {
         let value = this.#map[key1];
         if (value === undefined && key2 !== undefined) {
-            if (key2.length < key1.length)
-                assert(0, "Dict.get: Expected keys to be ordered by length.");
+            /*#static*/  {
+                if (key2.length < key1.length) {
+                    assert(0, "Dict.get: Expected keys to be ordered by length.");
+                }
+            }
             value = this.#map[key2];
             if (value === undefined && key3 !== undefined) {
-                if (key3.length < key2.length)
-                    assert(0, "Dict.get: Expected keys to be ordered by length.");
+                /*#static*/  {
+                    if (key3.length < key2.length) {
+                        assert(0, "Dict.get: Expected keys to be ordered by length.");
+                    }
+                }
                 value = this.#map[key3];
             }
         }
@@ -106,12 +143,18 @@ export class Dict {
     async getAsync(key1, key2, key3) {
         let value = this.#map[key1];
         if (value === undefined && key2 !== undefined) {
-            if (key2.length < key1.length)
-                assert(0, "Dict.getAsync: Expected keys to be ordered by length.");
+            /*#static*/  {
+                if (key2.length < key1.length) {
+                    assert(0, "Dict.getAsync: Expected keys to be ordered by length.");
+                }
+            }
             value = this.#map[key2];
             if (value === undefined && key3 !== undefined) {
-                if (key3.length < key2.length)
-                    assert(0, "Dict.getAsync: Expected keys to be ordered by length.");
+                /*#static*/  {
+                    if (key3.length < key2.length) {
+                        assert(0, "Dict.getAsync: Expected keys to be ordered by length.");
+                    }
+                }
                 value = this.#map[key3];
             }
         }
@@ -126,12 +169,18 @@ export class Dict {
     getArray(key1, key2, key3) {
         let value = this.#map[key1];
         if (value === undefined && key2 !== undefined) {
-            if (key2.length < key1.length)
-                assert(0, "Dict.getArray: Expected keys to be ordered by length.");
+            /*#static*/  {
+                if (key2.length < key1.length) {
+                    assert(0, "Dict.getArray: Expected keys to be ordered by length.");
+                }
+            }
             value = this.#map[key2];
             if (value === undefined && key3 !== undefined) {
-                if (key3.length < key2.length)
-                    assert(0, "Dict.getArray: Expected keys to be ordered by length.");
+                /*#static*/  {
+                    if (key3.length < key2.length) {
+                        assert(0, "Dict.getArray: Expected keys to be ordered by length.");
+                    }
+                }
                 value = this.#map[key3];
             }
         }
@@ -208,7 +257,7 @@ export class FontDict extends Dict {
     fontAliases;
     cacheKey;
 }
-var NsRef;
+export var NsRef;
 (function (NsRef) {
     let refCache = Object.create(null);
     class Ref {
@@ -230,9 +279,8 @@ var NsRef;
         }
         static get(num, gen) {
             const key = gen === 0 ? `${num}R` : `${num}R${gen}`;
-            const refValue = refCache[key];
             // eslint-disable-next-line no-restricted-syntax
-            return refValue ? refValue : (refCache[key] = new Ref(num, gen));
+            return refCache[key] || (refCache[key] = new Ref(num, gen));
         }
         static _clearCache() {
             refCache = Object.create(null);
@@ -240,33 +288,59 @@ var NsRef;
     }
     NsRef.Ref = Ref;
 })(NsRef || (NsRef = {}));
+// Hoisting for deno.
 export var Ref = NsRef.Ref;
 // The reference is identified by number and generation.
 // This structure stores only one instance of the reference.
 export class RefSet {
     #set = new Set();
-    has(ref) { return this.#set.has(ref.toString()); }
-    put(ref) { this.#set.add(ref.toString()); }
-    remove(ref) { this.#set.delete(ref.toString()); }
-    [Symbol.iterator]() { return this.#set.values(); }
-    clear() { this.#set.clear(); }
+    has(ref) {
+        return this.#set.has(ref.toString());
+    }
+    put(ref) {
+        this.#set.add(ref.toString());
+    }
+    remove(ref) {
+        this.#set.delete(ref.toString());
+    }
+    [Symbol.iterator]() {
+        return this.#set.values();
+    }
+    clear() {
+        this.#set.clear();
+    }
     constructor(parent) {
-        if (parent && !(parent instanceof RefSet))
-            assert(0, 'RefSet: Invalid "parent" value.');
+        /*#static*/  {
+            if (parent && !(parent instanceof RefSet)) {
+                assert(0, 'RefSet: Invalid "parent" value.');
+            }
+        }
         this.#set = new Set(parent && parent.#set);
     }
 }
 export class RefSetCache {
     #map = new Map();
-    get size() { return this.#map.size; }
-    get(ref) { return this.#map.get(ref.toString()); }
-    has(ref) { return this.#map.has(ref.toString()); }
-    put(ref, obj) { this.#map.set(ref.toString(), obj); }
+    get size() {
+        return this.#map.size;
+    }
+    get(ref) {
+        return this.#map.get(ref.toString());
+    }
+    has(ref) {
+        return this.#map.has(ref.toString());
+    }
+    put(ref, obj) {
+        this.#map.set(ref.toString(), obj);
+    }
     putAlias(ref, aliasRef) {
         this.#map.set(ref.toString(), this.get(aliasRef));
     }
-    [Symbol.iterator]() { return this.#map.values(); }
-    clear() { this.#map.clear(); }
+    [Symbol.iterator]() {
+        return this.#map.values();
+    }
+    clear() {
+        this.#map.clear();
+    }
 }
 export function isName(v, name) {
     return v instanceof Name && (name === undefined || v.name === name);
@@ -275,7 +349,7 @@ export function isCmd(v, cmd) {
     return v instanceof Cmd && (cmd === undefined || v.cmd === cmd);
 }
 export function isDict(v, type) {
-    return v instanceof Dict && isName(v.get("Type"), type);
+    return v instanceof Dict && (type === undefined || isName(v.get("Type"), type));
 }
 export function isRefsEqual(v1, v2) {
     return v1.num === v2.num && v1.gen === v2.gen;
@@ -285,5 +359,5 @@ export function clearPrimitiveCaches() {
     Name._clearCache();
     Ref._clearCache();
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=primitives.js.map

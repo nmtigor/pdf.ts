@@ -47,8 +47,19 @@ declare function getViewerConfiguration(): {
         /**
          * Button to open a new document.
          */
-        openFile: HTMLButtonElement;
+        openFile: HTMLButtonElement | undefined;
         print: HTMLButtonElement;
+        /**
+         * Button to disable editing.
+         */
+        editorNoneButton: HTMLButtonElement;
+        /**
+         * Button to switch to FreeText editing.
+         */
+        editorFreeTextButton: HTMLButtonElement;
+        editorFreeTextParamsToolbar: HTMLDivElement;
+        editorInkButton: HTMLButtonElement;
+        editorInkParamsToolbar: HTMLButtonElement;
         /**
          * Button to switch to presentation mode.
          */
@@ -78,7 +89,10 @@ declare function getViewerConfiguration(): {
         /**
          * Button to open a file.
          */
-        openFileButton: HTMLButtonElement;
+        openFileButton: HTMLButtonElement | undefined;
+        /**
+         * Button to print the document.
+         */
         printButton: HTMLButtonElement;
         /**
          * Button to download the document.
@@ -247,6 +261,13 @@ declare function getViewerConfiguration(): {
             linearized: HTMLParagraphElement;
         };
     };
+    annotationEditorParams: {
+        editorFreeTextFontSize: HTMLInputElement;
+        editorFreeTextColor: HTMLInputElement;
+        editorInkColor: HTMLInputElement;
+        editorInkThickness: HTMLInputElement;
+        editorInkOpacity: HTMLInputElement;
+    };
     errorWrapper: {
         container: HTMLDivElement;
         errorMessage: HTMLSpanElement;
@@ -254,9 +275,9 @@ declare function getViewerConfiguration(): {
         errorMoreInfo: HTMLTextAreaElement;
         moreInfoButton: HTMLButtonElement;
         lessInfoButton: HTMLButtonElement;
-    };
+    } | undefined;
     printContainer: HTMLDivElement;
-    openFileInput: HTMLInputElement;
+    openFileInput: HTMLInputElement | undefined;
     debuggerScriptPath: string;
 };
 export declare type ViewerConfiguration = ReturnType<typeof getViewerConfiguration>;
