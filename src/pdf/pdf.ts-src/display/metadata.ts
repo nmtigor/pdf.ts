@@ -17,37 +17,33 @@
  * limitations under the License.
  */
 
-import { type SerializedMetadata } from "../core/metadata_parser.js";
-import { objectFromMap } from "../shared/util.js";
-/*81---------------------------------------------------------------------------*/
+import { type SerializedMetadata } from "../core/metadata_parser.ts";
+import { objectFromMap } from "../shared/util.ts";
+/*80--------------------------------------------------------------------------*/
 
-export class Metadata 
-{
+export class Metadata {
   #metadataMap;
 
   #data;
-  getRaw() { return this.#data; }
+  getRaw() {
+    return this.#data;
+  }
 
-  constructor({ parsedData, rawData }:SerializedMetadata)
-  {
+  constructor({ parsedData, rawData }: SerializedMetadata) {
     this.#metadataMap = parsedData;
     this.#data = rawData;
   }
 
-
-  get( name:string )
-  {
+  get(name: string) {
     return this.#metadataMap.get(name) ?? undefined;
   }
 
-  getAll()
-  {
+  getAll() {
     return objectFromMap(this.#metadataMap);
   }
 
-  has( name:string )
-  {
+  has(name: string) {
     return this.#metadataMap.has(name);
   }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

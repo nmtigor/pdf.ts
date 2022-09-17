@@ -1,3 +1,7 @@
+/* Converted from JavaScript to TypeScript by
+ * nmtigor (https://github.com/nmtigor) @2022
+ */
+
 /* Copyright 2017 Mozilla Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,66 +17,64 @@
  * limitations under the License.
  */
 
-import { Locale } from '../../lib/Locale.js';
-import { assert } from '../../lib/util/trace.js';
-import { DefaultExternalServices, viewerapp } from "./app.js";
-import { type UserOptions } from "./app_options.js";
-import { DownloadManager } from "./download_manager.js";
-import { GenericL10n } from "./genericl10n.js";
-import { BasePreferences } from "./preferences.js";
-// import { GenericScripting } from "./generic_scripting.js";
-/*81---------------------------------------------------------------------------*/
+import { GENERIC, INOUT } from "../../global.ts";
+import { Locale } from "../../lib/Locale.ts";
+import { assert } from "../../lib/util/trace.ts";
+import { DefaultExternalServices, viewerapp } from "./app.ts";
+import { type UserOptions } from "./app_options.ts";
+import { DownloadManager } from "./download_manager.ts";
+import { GenericL10n } from "./genericl10n.ts";
+import { GenericScripting } from "./generic_scripting.ts";
+import { BasePreferences } from "./preferences.ts";
+/*80--------------------------------------------------------------------------*/
 
-// #if !GENERIC
+/*#static*/ if (!GENERIC) {
   throw new Error(
-    'Module "pdfjs-web/genericcom" shall not be used outside GENERIC build.'
+    'Module "pdfjs-web/genericcom" shall not be used outside GENERIC build.',
   );
-// #endif
+}
 
 export const GenericCom = {};
 
-class GenericPreferences extends BasePreferences 
-{
-  /** @implements */
-  protected async _writeToStorage( prefObj:UserOptions ) 
-  {
+class GenericPreferences extends BasePreferences {
+  /** @implement */
+  protected async _writeToStorage(prefObj: UserOptions) {
     localStorage.setItem("pdfjs.preferences", JSON.stringify(prefObj));
   }
 
-  /** @implements */
-  protected async _readFromStorage( prefObj:UserOptions ) 
-  {
-    return JSON.parse( localStorage.getItem("pdfjs.preferences")! );
+  /** @implement */
+  protected async _readFromStorage(prefObj: UserOptions) {
+    return JSON.parse(localStorage.getItem("pdfjs.preferences")!);
   }
 }
 
-class GenericExternalServices extends DefaultExternalServices 
-{
+class GenericExternalServices extends DefaultExternalServices {
   static #initialized = false;
 
-  constructor()
-  {
-    // #if INOUT
-      assert( !GenericExternalServices.#initialized );
-    // #endif
+  constructor() {
+    /*#static*/ if (INOUT) {
+      assert(!GenericExternalServices.#initialized);
+    }
     super();
-    
+
     GenericExternalServices.#initialized = true;
   }
 
-  override createDownloadManager() { return new DownloadManager(); }
+  override createDownloadManager() {
+    return new DownloadManager();
+  }
 
-  override createPreferences() { return new GenericPreferences(); }
+  override createPreferences() {
+    return new GenericPreferences();
+  }
 
-  override createL10n({ locale=Locale.en_US }={} )
-  {
+  override createL10n({ locale = Locale.en_US } = {}) {
     return new GenericL10n(locale);
   }
 
-  // override createScripting({ sandboxBundleSrc='' })
-  // {
-  //   return new GenericScripting(sandboxBundleSrc);
-  // }
+  override createScripting({ sandboxBundleSrc = "" }) {
+    return new GenericScripting(sandboxBundleSrc);
+  }
 }
 viewerapp.externalServices = new GenericExternalServices();
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

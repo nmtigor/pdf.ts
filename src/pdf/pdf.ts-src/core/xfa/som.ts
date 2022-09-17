@@ -17,10 +17,10 @@
  * limitations under the License.
  */
 
-import { warn } from "../../shared/util.js";
-import { Datasets } from "./datasets.js";
-import { NamespaceIds } from "./namespaces.js";
-import { Xdp } from "./xdp.js";
+import { warn } from "../../shared/util.ts";
+import { Datasets } from "./datasets.ts";
+import { NamespaceIds } from "./namespaces.ts";
+import { Xdp } from "./xdp.ts";
 import {
   $appendChild,
   $getChildren,
@@ -31,9 +31,9 @@ import {
   XFAAttribute,
   XFAObject,
   XFAObjectArray,
-  XmlObject
-} from "./xfa_object.js";
-/*81---------------------------------------------------------------------------*/
+  XmlObject,
+} from "./xfa_object.ts";
+/*80--------------------------------------------------------------------------*/
 
 const namePattern = /^[^.[]+/;
 const indexPattern = /^[^\]]+/;
@@ -45,23 +45,28 @@ const operators = {
   dotParen: 4,
 };
 
-const shortcuts = new Map<string,
-  ( root:XFAObject, current:XFAObject ) => XFAObject
+const shortcuts = new Map<
+  string,
+  (root: XFAObject, current: XFAObject) => XFAObject
 >([
-  ["$data", (root, current) => (root.datasets ? (<Datasets>root.datasets).data : root)],
+  [
+    "$data",
+    (root, current) => (root.datasets ? (<Datasets> root.datasets).data : root),
+  ],
   [
     "$record",
     (root, current) =>
-      (root.datasets ? (<Datasets>root.datasets).data! : root)[$getChildren]()[0],
+      (root.datasets ? (<Datasets> root.datasets).data! : root)
+        [$getChildren]()[0],
   ],
-  ["$template", (root, current) => (<Xdp>root).template],
-  ["$connectionSet", (root, current) => (<Xdp>root).connectionSet],
-  ["$form", (root, current) => (<any>root).form],
-  ["$layout", (root, current) => (<any>root).layout],
-  ["$host", (root, current) => (<any>root).host],
-  ["$dataWindow", (root, current) => (<any>root).dataWindow],
-  ["$event", (root, current) => (<any>root).event],
-  ["!", (root, current) => (<Xdp>root).datasets],
+  ["$template", (root, current) => (<Xdp> root).template],
+  ["$connectionSet", (root, current) => (<Xdp> root).connectionSet],
+  ["$form", (root, current) => (<any> root).form],
+  ["$layout", (root, current) => (<any> root).layout],
+  ["$host", (root, current) => (<any> root).host],
+  ["$dataWindow", (root, current) => (<any> root).dataWindow],
+  ["$event", (root, current) => (<any> root).event],
+  ["!", (root, current) => (<Xdp> root).datasets],
   ["$xfa", (root, current) => root],
   ["xfa", (root, current) => root],
   ["$", (root, current) => current],
@@ -70,36 +75,32 @@ const shortcuts = new Map<string,
 const somCache = new WeakMap();
 const NS_DATASETS = NamespaceIds.datasets.id;
 
-function parseIndex( index:string ) 
-{
+function parseIndex(index: string) {
   index = index.trim();
-  if (index === "*") 
-  {
+  if (index === "*") {
     return Infinity;
   }
   return parseInt(index, 10) || 0;
 }
 
-interface Parsed
-{
-  name:string;
-  cacheName:string;
-  operator:number;
-  index:number;
-  js:undefined;
-  formCalc:undefined;
+interface Parsed {
+  name: string;
+  cacheName: string;
+  operator: number;
+  index: number;
+  js: undefined;
+  formCalc: undefined;
 }
 
 // For now expressions containing .[...] or .(...) are not
 // evaluated so don't parse them.
 // TODO: implement that stuff and the remove the noExpr param.
-function parseExpression( expr:string, dotDotAllowed?:boolean, noExpr=true )
-{
+function parseExpression(expr: string, dotDotAllowed?: boolean, noExpr = true) {
   let match = expr.match(namePattern);
-  if( !match ) return undefined;
+  if (!match) return undefined;
 
   let [name] = match;
-  const parsed:Parsed[] = [
+  const parsed: Parsed[] = [
     {
       name,
       cacheName: "." + name,
@@ -121,7 +122,7 @@ function parseExpression( expr:string, dotDotAllowed?:boolean, noExpr=true )
         warn("XFA - Invalid index in SOM expression");
         return undefined;
       }
-      parsed[parsed.length - 1].index = parseIndex(match[0]);
+      parsed.at(-1)!.index = parseIndex(match[0]);
       pos += match[0].length + 1;
       continue;
     }
@@ -142,7 +143,7 @@ function parseExpression( expr:string, dotDotAllowed?:boolean, noExpr=true )
       case "[":
         if (noExpr) {
           warn(
-            "XFA - SOM expression contains a FormCalc subexpression which is not supported for now."
+            "XFA - SOM expression contains a FormCalc subexpression which is not supported for now.",
           );
           return undefined;
         }
@@ -152,7 +153,7 @@ function parseExpression( expr:string, dotDotAllowed?:boolean, noExpr=true )
       case "(":
         if (noExpr) {
           warn(
-            "XFA - SOM expression contains a JavaScript subexpression which is not supported for now."
+            "XFA - SOM expression contains a JavaScript subexpression which is not supported for now.",
           );
           return undefined;
         }
@@ -187,74 +188,63 @@ function parseExpression( expr:string, dotDotAllowed?:boolean, noExpr=true )
 }
 
 export function searchNode(
-  root:XFAObject,
-  container:XFAObject | undefined,
-  expr:string,
-  dotDotAllowed=true,
-  useCache=true
+  root: XFAObject,
+  container: XFAObject | undefined,
+  expr: string,
+  dotDotAllowed = true,
+  useCache = true,
 ) {
-  const parsed = parseExpression( expr, dotDotAllowed );
-  if( !parsed ) return undefined;
+  const parsed = parseExpression(expr, dotDotAllowed);
+  if (!parsed) return undefined;
 
-  const fn = shortcuts.get( parsed[0].name );
+  const fn = shortcuts.get(parsed[0].name);
   let i = 0;
   let isQualified;
   let root_1;
-  if( fn )
-  {
+  if (fn) {
     isQualified = true;
-    root_1 = [ fn(root, container!) ];
+    root_1 = [fn(root, container!)];
     i = 1;
-  } 
-  else {
+  } else {
     isQualified = container === undefined;
     root_1 = [container || root];
   }
 
-  for( let ii = parsed.length; i < ii; i++ )
-  {
+  for (let ii = parsed.length; i < ii; i++) {
     const { name, cacheName, operator, index } = parsed[i];
     const nodes = [];
-    for( const node of root_1 )
-    {
-      if( !(node instanceof XFAObject) )
+    for (const node of root_1) {
+      if (!(node instanceof XFAObject)) {
         continue;
+      }
 
-      let children:(XFAObject | XFAAttribute | string)[] | undefined, 
+      let children: (XFAObject | XFAAttribute | string)[] | undefined,
         cached;
 
-      if( useCache )
-      {
+      if (useCache) {
         cached = somCache.get(node);
-        if( !cached )
-        {
+        if (!cached) {
           cached = new Map();
           somCache.set(node, cached);
         }
         children = cached.get(cacheName);
       }
 
-      if( !children )
-      {
-        switch (operator) 
-        {
+      if (!children) {
+        switch (operator) {
           case operators.dot:
-            children = node[$getChildrenByName]( name, false );
+            children = node[$getChildrenByName](name, false);
             break;
           case operators.dotDot:
-            children = node[$getChildrenByName]( name, true );
+            children = node[$getChildrenByName](name, true);
             break;
           case operators.dotHash:
-            const children_1 = node[$getChildrenByClass]( name );
-            if( children_1 instanceof XFAObjectArray ) 
-            {
+            const children_1 = node[$getChildrenByClass](name);
+            if (children_1 instanceof XFAObjectArray) {
               children = children_1.children;
-            } 
-            else if( Array.isArray(children_1) )
-            {
+            } else if (Array.isArray(children_1)) {
               children = children_1;
-            }
-            else {
+            } else {
               children = [children_1!];
             }
             break;
@@ -266,32 +256,30 @@ export function searchNode(
         }
       }
 
-      if( children!.length > 0 ) 
-      {
-        nodes.push( children! );
+      if (children!.length > 0) {
+        nodes.push(children!);
       }
     }
 
-    if (nodes.length === 0 && !isQualified && i === 0) 
-    {
+    if (nodes.length === 0 && !isQualified && i === 0) {
       // We've an unqualified expression and we didn't find anything
       // so look at container and siblings of container and so on.
       // http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.364.2157&rep=rep1&type=pdf#page=114
       const parent = container![$getParent]();
       container = parent;
-      if( !container ) return undefined;
+      if (!container) return undefined;
 
       i = -1;
       root_1 = [container];
       continue;
     }
 
-    if( isFinite(index) ) 
-    {
-      root_1 = nodes.filter(node => index < node!.length).map(node => node![index]);
-    } 
-    else {
-      root_1 = nodes.reduce((acc, node) => acc!.concat(node), []);
+    if (isFinite(index)) {
+      root_1 = nodes.filter((node) => index < node!.length).map((node) =>
+        node![index]
+      );
+    } else {
+      root_1 = nodes.flat();
     }
   }
 
@@ -302,16 +290,13 @@ export function searchNode(
   return root_1;
 }
 
-function createNodes( root:XFAObject, path:Parsed[] ) 
-{
-  let node:XmlObject | undefined;
-  for( const { name, index } of path ) 
-  {
-    for( let i = 0, ii = !isFinite(index) ? 0 : index; i <= ii; i++ ) 
-    {
+function createNodes(root: XFAObject, path: Parsed[]) {
+  let node: XmlObject | undefined;
+  for (const { name, index } of path) {
+    for (let i = 0, ii = !isFinite(index) ? 0 : index; i <= ii; i++) {
       const nsId = root[$namespaceId] === NS_DATASETS ? -1 : root[$namespaceId];
       node = new XmlObject(nsId, name);
-      root[$appendChild]( node );
+      root[$appendChild](node);
     }
 
     root = node!;
@@ -319,53 +304,47 @@ function createNodes( root:XFAObject, path:Parsed[] )
   return node;
 }
 
-export function createDataNode( root:XFAObject, container:XmlObject, expr:string ) 
-{
+export function createDataNode(
+  root: XFAObject,
+  container: XmlObject,
+  expr: string,
+) {
   const parsed = parseExpression(expr);
   if (!parsed) return undefined;
 
-  if( parsed.some(x => x.operator === operators.dotDot) ) return undefined;
+  if (parsed.some((x) => x.operator === operators.dotDot)) return undefined;
 
-  const fn = shortcuts.get( parsed[0].name );
+  const fn = shortcuts.get(parsed[0].name);
   let i = 0;
-  if( fn )
-  {
+  if (fn) {
     root = fn(root, container);
     i = 1;
-  } 
-  else {
+  } else {
     root = container || root;
   }
 
-  for (let ii = parsed.length; i < ii; i++) 
-  {
+  for (let ii = parsed.length; i < ii; i++) {
     const { name, operator, index } = parsed[i];
-    if( !isFinite(index) )
-    {
+    if (!isFinite(index)) {
       parsed[i].index = 0;
       return createNodes(root, parsed.slice(i));
     }
 
-    let children:(XFAObject | XFAAttribute | string)[] | undefined;
-    switch (operator) 
-    {
+    let children: (XFAObject | XFAAttribute | string)[] | undefined;
+    switch (operator) {
       case operators.dot:
-        children = root[$getChildrenByName]( name, false );
+        children = root[$getChildrenByName](name, false);
         break;
       case operators.dotDot:
-        children = root[$getChildrenByName]( name, true );
+        children = root[$getChildrenByName](name, true);
         break;
       case operators.dotHash:
-        const children_1 = root[$getChildrenByClass]( name );
-        if( children_1 instanceof XFAObjectArray )
-        {
+        const children_1 = root[$getChildrenByClass](name);
+        if (children_1 instanceof XFAObjectArray) {
           children = children_1.children;
-        } 
-        else if( Array.isArray(children_1) )
-        {
+        } else if (Array.isArray(children_1)) {
           children = children_1;
-        }
-        else {
+        } else {
           children = [children_1!];
         }
         break;
@@ -373,26 +352,22 @@ export function createDataNode( root:XFAObject, container:XmlObject, expr:string
         break;
     }
 
-    if( children!.length === 0 )
-    {
+    if (children!.length === 0) {
       return createNodes(root, parsed.slice(i));
     }
 
-    if( index < children!.length )
-    {
+    if (index < children!.length) {
       const child = children![index];
-      if( !(child instanceof XFAObject) ) 
-      {
+      if (!(child instanceof XFAObject)) {
         warn(`XFA - Cannot create a node.`);
         return undefined;
       }
       root = child;
-    } 
-    else {
+    } else {
       parsed[i].index = index - children!.length;
-      return createNodes( root, parsed.slice(i) );
+      return createNodes(root, parsed.slice(i));
     }
   }
   return undefined;
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

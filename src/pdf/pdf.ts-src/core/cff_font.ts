@@ -17,23 +17,21 @@
  * limitations under the License.
  */
 
-import { CFF, CFFCompiler, CFFParser } from "./cff_parser.js";
-import { SEAC_ANALYSIS_ENABLED, type1FontGlyphMapping } from "./fonts_utils.js";
-import { warn } from "../shared/util.js";
-import { BaseStream } from "./base_stream.js";
-import { type FontProps } from "./evaluator.js";
-/*81---------------------------------------------------------------------------*/
+import { warn } from "../shared/util.ts";
+import { CFF, CFFCompiler, CFFParser } from "./cff_parser.ts";
+import { type FontProps } from "./evaluator.ts";
+import { SEAC_ANALYSIS_ENABLED, type1FontGlyphMapping } from "./fonts_utils.ts";
+import { Stream } from "./stream.ts";
+/*80--------------------------------------------------------------------------*/
 
-export class CFFFont
-{
+export class CFFFont {
   properties;
 
-  cff:CFF;
+  cff: CFF;
   seacs;
   data;
 
-  constructor( file:BaseStream, properties:FontProps )
-  {
+  constructor(file: Stream, properties: FontProps) {
     this.properties = properties;
 
     const parser = new CFFParser(file, properties, SEAC_ANALYSIS_ENABLED);
@@ -56,18 +54,18 @@ export class CFFFont
     return this.cff.charStrings!.count;
   }
 
-  getCharset() { return this.cff.charset!.charset; }
+  getCharset() {
+    return this.cff.charset!.charset;
+  }
 
-  getGlyphMapping() 
-  {
+  getGlyphMapping() {
     const cff = this.cff;
     const properties = this.properties;
     const charsets = cff.charset!.charset;
-    let charCodeToGlyphId:Record<number, string | number>;
+    let charCodeToGlyphId: Record<number, string | number>;
     let glyphId;
 
-    if( properties.composite )
-    {
+    if (properties.composite) {
       charCodeToGlyphId = Object.create(null);
       let charCode;
       if (cff.isCIDFont) {
@@ -78,8 +76,7 @@ export class CFFFont
           charCode = properties.cMap!.charCodeOf(cid);
           charCodeToGlyphId[charCode] = glyphId;
         }
-      } 
-      else {
+      } else {
         // If it is NOT actually a CID font then CIDs should be mapped
         // directly to GIDs.
         for (glyphId = 0; glyphId < cff.charStrings!.count; glyphId++) {
@@ -90,17 +87,17 @@ export class CFFFont
       return charCodeToGlyphId;
     }
 
-    let encoding:(number | string)[] | undefined = cff.encoding ? cff.encoding.encoding : undefined;
-    if( properties.isInternalFont )
-    {
+    let encoding: (number | string)[] | undefined = cff.encoding
+      ? cff.encoding.encoding
+      : undefined;
+    if (properties.isInternalFont) {
       encoding = properties.defaultEncoding;
     }
-    charCodeToGlyphId = type1FontGlyphMapping( properties, encoding, charsets );
+    charCodeToGlyphId = type1FontGlyphMapping(properties, encoding, charsets);
     return charCodeToGlyphId;
   }
 
-  hasGlyphId( id:number )
-  {
+  hasGlyphId(id: number) {
     return this.cff.hasGlyphId(id);
   }
 
@@ -114,7 +111,7 @@ export class CFFFont
     }
     const charsets = charset.charset,
       encodings = encoding.encoding;
-    const map:string[] = [];
+    const map: string[] = [];
 
     for (const charCode in encodings) {
       const glyphId = encodings[charCode];
@@ -130,4 +127,4 @@ export class CFFFont
     }
   }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

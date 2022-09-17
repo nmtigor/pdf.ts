@@ -17,69 +17,66 @@
  * limitations under the License.
  */
 
-import { html } from "../../lib/dom.js";
-import { createPromiseCap, PromiseCap } from "../../lib/promisecap.js";
-import { getFilenameFromUrl } from "../pdf.ts-src/pdf.js";
-import { BaseTreeViewer, type BaseTreeViewerCtorP } from "./base_tree_viewer.js";
-import { DownloadManager } from "./download_manager.js";
-import { EventMap, waitOnEventOrTimeout } from "./event_utils.js";
-/*81---------------------------------------------------------------------------*/
+import { html } from "../../lib/dom.ts";
+import { createPromiseCap, PromiseCap } from "../../lib/promisecap.ts";
+import { getFilenameFromUrl } from "../pdf.ts-src/pdf.ts";
+import {
+  BaseTreeViewer,
+  type BaseTreeViewerCtorP,
+} from "./base_tree_viewer.ts";
+import { EventMap, waitOnEventOrTimeout } from "./event_utils.ts";
+import { IDownloadManager } from "./interfaces.ts";
+/*80--------------------------------------------------------------------------*/
 
-interface PDFAttachmentViewerOptions extends BaseTreeViewerCtorP
-{
+interface PDFAttachmentViewerOptions extends BaseTreeViewerCtorP {
   /**
    * The download manager.
    */
-  downloadManager:DownloadManager;
+  downloadManager: IDownloadManager;
 }
 
-interface _PDFAttachmentViewerRenderP
-{
+interface _PDFAttachmentViewerRenderP {
   /**
    * A lookup table of attachment objects.
    */
-  attachments?:Record<string, Attachment> | undefined;
+  attachments?: Record<string, Attachment> | undefined;
 
-  keepRenderedCapability?:boolean;
+  keepRenderedCapability?: boolean;
 }
 
-interface Attachment
-{
-  filename:string;
-  content?:Uint8Array | Uint8ClampedArray | undefined;
+interface Attachment {
+  filename: string;
+  content?: Uint8Array | Uint8ClampedArray | undefined;
 }
 
-export class PDFAttachmentViewer extends BaseTreeViewer 
-{
-  _attachments?:Record<string, Attachment> | undefined;
-  #renderedCapability?:PromiseCap<void>;
-  #pendingDispatchEvent!:boolean;
+export class PDFAttachmentViewer extends BaseTreeViewer {
+  _attachments?: Record<string, Attachment> | undefined;
+  #renderedCapability?: PromiseCap<void>;
+  #pendingDispatchEvent!: boolean;
 
-  downloadManager:DownloadManager;
+  downloadManager: IDownloadManager;
 
-  static create( options:PDFAttachmentViewerOptions )
-  {
-    const ret = new PDFAttachmentViewer( options );
+  static create(options: PDFAttachmentViewerOptions) {
+    const ret = new PDFAttachmentViewer(options);
     ret.reset();
     return ret;
   }
-  private constructor( options:PDFAttachmentViewerOptions ) 
-  {
-    super( options );
+  private constructor(options: PDFAttachmentViewerOptions) {
+    super(options);
 
     this.downloadManager = options.downloadManager;
 
-    this.eventBus._on( 
-      "fileattachmentannotation", this.#appendAttachment );
+    this.eventBus._on(
+      "fileattachmentannotation",
+      this.#appendAttachment,
+    );
   }
 
-  override reset( keepRenderedCapability=false ) 
-  {
+  override reset(keepRenderedCapability = false) {
     super.reset();
     this._attachments = undefined;
 
-    if( !keepRenderedCapability )
-    {
+    if (!keepRenderedCapability) {
       // The only situation in which the `#renderedCapability` should *not* be
       // replaced is when appending FileAttachment annotations.
       this.#renderedCapability = createPromiseCap();
@@ -87,13 +84,11 @@ export class PDFAttachmentViewer extends BaseTreeViewer
     this.#pendingDispatchEvent = false;
   }
 
-  /** @implements */
-  protected async _dispatchEvent( attachmentsCount:number ) 
-  {
+  /** @implement */
+  protected async _dispatchEvent(attachmentsCount: number) {
     this.#renderedCapability!.resolve();
 
-    if( attachmentsCount === 0 && !this.#pendingDispatchEvent )
-    {
+    if (attachmentsCount === 0 && !this.#pendingDispatchEvent) {
       // Delay the event when no "regular" attachments exist, to allow time for
       // parsing of any FileAttachment annotations that may be present on the
       // *initially* rendered page; this reduces the likelihood of temporarily
@@ -106,9 +101,10 @@ export class PDFAttachmentViewer extends BaseTreeViewer
         delay: 1000,
       });
 
-      if( !this.#pendingDispatchEvent )
+      if (!this.#pendingDispatchEvent) {
         // There was already another `_dispatchEvent`-call`.
-        return; 
+        return;
+      }
     }
     this.#pendingDispatchEvent = false;
 
@@ -118,39 +114,38 @@ export class PDFAttachmentViewer extends BaseTreeViewer
     });
   }
 
-  /** @implements */
-  protected _bindLink( element:HTMLAnchorElement, { content, filename }:{
-    content?:Uint8Array | Uint8ClampedArray | undefined;
-    filename:string;
+  /** @implement */
+  protected _bindLink(element: HTMLAnchorElement, { content, filename }: {
+    content?: Uint8Array | Uint8ClampedArray | undefined;
+    filename: string;
   }) {
     element.onclick = () => {
-      this.downloadManager.openOrDownloadData(element, content, filename);
+      this.downloadManager.openOrDownloadData(element, content!, filename);
       return false;
     };
   }
 
-  /** @implements */
-  render({ attachments, keepRenderedCapability=false }:_PDFAttachmentViewerRenderP )
-  {
-    if( this._attachments )
-    {
-      this.reset( keepRenderedCapability );
+  /** @implement */
+  render(
+    { attachments, keepRenderedCapability = false }:
+      _PDFAttachmentViewerRenderP,
+  ) {
+    if (this._attachments) {
+      this.reset(keepRenderedCapability);
     }
     this._attachments = attachments || undefined;
 
-    if( !attachments )
-    {
+    if (!attachments) {
       this._dispatchEvent(/* attachmentsCount = */ 0);
       return;
     }
-    const names = Object.keys(attachments).sort( (a, b) => {
-      return a.toLowerCase().localeCompare( b.toLowerCase() );
+    const names = Object.keys(attachments).sort((a, b) => {
+      return a.toLowerCase().localeCompare(b.toLowerCase());
     });
 
     const fragment = document.createDocumentFragment();
     let attachmentsCount = 0;
-    for( const name of names )
-    {
+    for (const name of names) {
       const item = attachments[name];
       const content = item.content,
         filename = getFilenameFromUrl(item.filename);
@@ -162,9 +157,9 @@ export class PDFAttachmentViewer extends BaseTreeViewer
       this._bindLink(element, { content, filename });
       element.textContent = this._normalizeTextContent(filename);
 
-      div.appendChild(element);
+      div.append(element);
 
-      fragment.appendChild(div);
+      fragment.append(div);
       attachmentsCount++;
     }
 
@@ -174,21 +169,24 @@ export class PDFAttachmentViewer extends BaseTreeViewer
   /**
    * Used to append FileAttachment annotations to the sidebar.
    */
-  #appendAttachment = ({ filename, content }:EventMap["fileattachmentannotation"]
+  #appendAttachment = (
+    { filename, content }: EventMap["fileattachmentannotation"],
   ) => {
     const renderedPromise = this.#renderedCapability!.promise;
 
     renderedPromise.then(() => {
-      if( renderedPromise !== this.#renderedCapability!.promise )
+      if (renderedPromise !== this.#renderedCapability!.promise) {
         // The FileAttachment annotation belongs to a previous document.
-        return;       
-      const attachments = this._attachments || <Record<string, Attachment>>Object.create(null);
+        return;
+      }
+      const attachments = this._attachments ||
+        <Record<string, Attachment>> Object.create(null);
 
-      for( const name in attachments )
-      {
-        if( filename === name )
+      for (const name in attachments) {
+        if (filename === name) {
           // Ignore the new attachment if it already exists.
-          return; 
+          return;
+        }
       }
       attachments[filename] = {
         filename,
@@ -199,6 +197,6 @@ export class PDFAttachmentViewer extends BaseTreeViewer
         keepRenderedCapability: true,
       });
     });
-  }
+  };
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

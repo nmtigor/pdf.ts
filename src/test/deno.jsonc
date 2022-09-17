@@ -1,0 +1,44 @@
+{
+  "compilerOptions": {
+    "lib": [
+      "deno.ns",
+      "deno.unstable",
+      "ESNext",
+      "DOM",
+      "DOM.Iterable"
+    ],
+
+    "strict": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitReturns": true,
+    "noImplicitOverride": true
+  },
+  "test": {
+    "files": {
+      "include": [
+        // "../pdf/pdf.ts-src/core/annotation_test.ts",
+        // "../pdf/pdf.ts-src/core/bidi_test.ts",
+        // "../pdf/pdf.ts-src/core/cff_parser_test.ts",
+        // "../pdf/pdf.ts-src/core/cmap_test.ts",
+        // "../pdf/pdf.ts-src/core/colorspace_test.ts",
+        // "../pdf/pdf.ts-src/core/core_utils_test.ts",
+        // "../pdf/pdf.ts-src/core/crypto_test.ts",
+        // "../pdf/pdf.ts-src/core/default_appearance_test.ts",
+        // "../pdf/pdf.ts-src/core/document_test.ts",
+        // "../pdf/pdf.ts-src/core/encodings_test.ts",
+        // "../pdf/pdf.ts-src/core/evaluator_test.ts",
+        // "../pdf/pdf.ts-src/core/function_test.ts",
+        // "../pdf/pdf.ts-src/core/primitives_test.ts",
+        // "../pdf/pdf.ts-src/core/stream_test.ts",
+        // "../pdf/pdf.ts-src/core/struct_tree_test.ts",
+        // "../pdf/pdf.ts-src/core/type1_parser_test.ts",
+        // "../pdf/pdf.ts-src/core/writer_test.ts",
+        // "../pdf/pdf.ts-src/core/xml_parser_test.ts",
+        // "../pdf/pdf.ts-src/core/xfa/xfa_formcalc_test.ts",
+        // "../pdf/pdf.ts-src/core/xfa/xfa_parser_test.ts",
+        // "../pdf/pdf.ts-src/core/xfa/xfa_serialize_data_test.ts",
+        // "../pdf/pdf.ts-src/core/xfa/xfa_tohtml_test.ts",
+      ],
+    }
+  }
+}

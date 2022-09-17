@@ -20,20 +20,21 @@
 import {
   bytesToString,
   FONT_IDENTITY_MATRIX,
-  FormatError, warn, type matrix_t
-} from "../shared/util.js";
-import { CFFFDSelect, CFFParser, CFFTopDict } from "./cff_parser.js";
-import { StandardEncoding } from "./encodings.js";
-import { type FontProps } from "./evaluator.js";
-import { Font } from "./fonts.js";
-import { getGlyphsUnicode } from "./glyphlist.js";
-import { Stream } from "./stream.js";
-/*81---------------------------------------------------------------------------*/
+  FormatError,
+  type matrix_t,
+  warn,
+} from "../shared/util.ts";
+import { CFFFDSelect, CFFParser, CFFTopDict } from "./cff_parser.ts";
+import { StandardEncoding } from "./encodings.ts";
+import { type FontProps } from "./evaluator.ts";
+import { Font } from "./fonts.ts";
+import { getGlyphsUnicode } from "./glyphlist.ts";
+import { Stream } from "./stream.ts";
+/*80--------------------------------------------------------------------------*/
 
 // TODO: use DataView and its methods.
 
-function getUint32( data:Uint8Array, offset:number )
-{
+function getUint32(data: Uint8Array, offset: number) {
   return (
     ((data[offset] << 24) |
       (data[offset + 1] << 16) |
@@ -43,102 +44,98 @@ function getUint32( data:Uint8Array, offset:number )
   );
 }
 
-function getUint16( data:Uint8Array | Uint8ClampedArray | number[], offset:number )
-{
+function getUint16(
+  data: Uint8Array | Uint8ClampedArray | number[],
+  offset: number,
+) {
   return (data[offset] << 8) | data[offset + 1];
 }
 
-function getInt16(data:Uint8Array | Uint8ClampedArray | number[], offset:number )
-{
+function getInt16(
+  data: Uint8Array | Uint8ClampedArray | number[],
+  offset: number,
+) {
   return ((data[offset] << 24) | (data[offset + 1] << 16)) >> 16;
 }
 
-function getInt8(data:Uint8Array | Uint8ClampedArray | number[], offset:number )
-{
+function getInt8(
+  data: Uint8Array | Uint8ClampedArray | number[],
+  offset: number,
+) {
   return (data[offset] << 24) >> 24;
 }
 
-function getFloat214(data:Uint8Array | Uint8ClampedArray | number[], offset:number )
-{
+function getFloat214(
+  data: Uint8Array | Uint8ClampedArray | number[],
+  offset: number,
+) {
   return getInt16(data, offset) / 16384;
 }
 
-function getSubroutineBias( subrs:(Uint8Array | Uint8ClampedArray | number[])[] )
-{
+function getSubroutineBias(
+  subrs: (Uint8Array | Uint8ClampedArray | number[])[],
+) {
   const numSubrs = subrs.length;
   let bias = 32768;
   if (numSubrs < 1240) {
     bias = 107;
-  } 
-  else if (numSubrs < 33900) {
+  } else if (numSubrs < 33900) {
     bias = 1131;
   }
   return bias;
 }
 
-interface Range
-{
-  start:number;
-  end:number;
-  idDelta:number;
-  ids?:number[];
+interface Range {
+  start: number;
+  end: number;
+  idDelta: number;
+  ids?: number[];
 }
 
-interface PointXXX
-{
-  x:number;
-  y:number;
-  flags:number;
+interface _PointFlags {
+  x: number;
+  y: number;
+  flags: number;
 }
 
-function parseCmap( data:Uint8Array, start:number, end:number )
-{
-  const offset =
-    getUint16(data, start + 2) === 1
-      ? getUint32(data, start + 8)
-      : getUint32(data, start + 16);
+function parseCmap(data: Uint8Array, start: number, end: number) {
+  const offset = getUint16(data, start + 2) === 1
+    ? getUint32(data, start + 8)
+    : getUint32(data, start + 16);
   const format = getUint16(data, start + offset);
   let ranges, p, i;
-  if( format === 4 )
-  {
+  if (format === 4) {
     getUint16(data, start + offset + 2); // length
     const segCount = getUint16(data, start + offset + 6) >> 1;
     p = start + offset + 14;
     ranges = [] as Range[];
-    for (i = 0; i < segCount; i++, p += 2)
-    {
+    for (i = 0; i < segCount; i++, p += 2) {
       ranges[i] = { end: getUint16(data, p) } as Range;
     }
     p += 2;
-    for (i = 0; i < segCount; i++, p += 2)
-    {
+    for (i = 0; i < segCount; i++, p += 2) {
       ranges[i].start = getUint16(data, p);
     }
-    for (i = 0; i < segCount; i++, p += 2)
-    {
+    for (i = 0; i < segCount; i++, p += 2) {
       ranges[i].idDelta = getUint16(data, p);
     }
-    for( i = 0; i < segCount; i++, p += 2 )
-    {
+    for (i = 0; i < segCount; i++, p += 2) {
       let idOffset = getUint16(data, p);
-      if( idOffset === 0 )
+      if (idOffset === 0) {
         continue;
+      }
       ranges[i].ids = [];
-      for( let j = 0, jj = ranges[i].end - ranges[i].start + 1; j < jj; j++ )
-      {
+      for (let j = 0, jj = ranges[i].end - ranges[i].start + 1; j < jj; j++) {
         ranges[i].ids![j] = getUint16(data, p + idOffset);
         idOffset += 2;
       }
     }
     return ranges;
-  } 
-  else if( format === 12 )
-  {
+  } else if (format === 12) {
     const groups = getUint32(data, start + offset + 12);
     p = start + offset + 16;
     ranges = [];
-    for( i = 0; i < groups; i++ )
-    {
+    for (i = 0; i < groups; i++) {
       start = getUint32(data, p);
       ranges.push({
         start,
@@ -152,23 +149,26 @@ function parseCmap( data:Uint8Array, start:number, end:number )
   throw new FormatError(`unsupported cmap: ${format}`);
 }
 
-interface CffInfo
-{
-  glyphs:(Uint8Array | Uint8ClampedArray | number[])[];
-  subrs?:(Uint8Array | Uint8ClampedArray | number[])[] | undefined;
-  gsubrs?:(Uint8Array | Uint8ClampedArray | number[])[] | undefined;
-  isCFFCIDFont:boolean;
-  fdSelect?:CFFFDSelect | undefined;
-  fdArray:CFFTopDict[];
+interface CffInfo {
+  glyphs: (Uint8Array | Uint8ClampedArray | number[])[];
+  subrs?: (Uint8Array | Uint8ClampedArray | number[])[] | undefined;
+  gsubrs?: (Uint8Array | Uint8ClampedArray | number[])[] | undefined;
+  isCFFCIDFont: boolean;
+  fdSelect?: CFFFDSelect | undefined;
+  fdArray: CFFTopDict[];
 }
 
-function parseCff( data:Uint8Array, start:number, end:number, seacAnalysisEnabled:boolean 
-):CffInfo {
+function parseCff(
+  data: Uint8Array,
+  start: number,
+  end: number,
+  seacAnalysisEnabled: boolean,
+): CffInfo {
   const properties = {} as FontProps;
   const parser = new CFFParser(
     new Stream(data, start, end - start),
     properties,
-    seacAnalysisEnabled
+    seacAnalysisEnabled,
   );
   const cff = parser.parse();
   return {
@@ -181,22 +181,23 @@ function parseCff( data:Uint8Array, start:number, end:number, seacAnalysisEnable
   };
 }
 
-function parseGlyfTable( glyf:Uint8Array, loca:Uint8Array, isGlyphLocationsLong?:number )
-{
+function parseGlyfTable(
+  glyf: Uint8Array,
+  loca: Uint8Array,
+  isGlyphLocationsLong?: number,
+) {
   let itemSize, itemDecode;
-  if( isGlyphLocationsLong )
-  {
+  if (isGlyphLocationsLong) {
     itemSize = 4;
     itemDecode = getUint32;
-  } 
-  else {
+  } else {
     itemSize = 2;
-    itemDecode = (data:Uint8Array, offset:number) => 2 * getUint16(data, offset);
+    itemDecode = (data: Uint8Array, offset: number) =>
+      2 * getUint16(data, offset);
   }
   const glyphs = [];
   let startOffset = itemDecode(loca, 0);
-  for( let j = itemSize; j < loca.length; j += itemSize )
-  {
+  for (let j = itemSize; j < loca.length; j += itemSize) {
     const endOffset = itemDecode(loca, j);
     glyphs.push(glyf.subarray(startOffset, endOffset));
     startOffset = endOffset;
@@ -204,8 +205,7 @@ function parseGlyfTable( glyf:Uint8Array, loca:Uint8Array, isGlyphLocationsLong?
   return glyphs;
 }
 
-function lookupCmap( ranges:Range[], unicode:string )
-{
+function lookupCmap(ranges: Range[], unicode: string) {
   const code = unicode.codePointAt(0)!;
   let gid = 0;
   let l = 0,
@@ -214,16 +214,13 @@ function lookupCmap( ranges:Range[], unicode:string )
     const c = (l + r + 1) >> 1;
     if (code < ranges[c].start) {
       r = c - 1;
-    } 
-    else {
+    } else {
       l = c;
     }
   }
-  if( ranges[l].start <= code && code <= ranges[l].end )
-  {
-    gid =
-      (ranges[l].idDelta +
-        (ranges[l].ids ? ranges[l].ids![code - ranges[l].start] : code)) &
+  if (ranges[l].start <= code && code <= ranges[l].end) {
+    gid = (ranges[l].idDelta +
+      (ranges[l].ids ? ranges[l].ids![code - ranges[l].start] : code)) &
       0xffff;
   }
   return {
@@ -232,19 +229,18 @@ function lookupCmap( ranges:Range[], unicode:string )
   };
 }
 
-function compileGlyf( code:Uint8Array | Uint8ClampedArray | number[],
-  cmds:CmdArgs[], font:TrueTypeCompiled
+function compileGlyf(
+  code: Uint8Array | Uint8ClampedArray | number[],
+  cmds: CmdArgs[],
+  font: TrueTypeCompiled,
 ) {
-  function moveTo( x:number, y:number )
-  {
+  function moveTo(x: number, y: number) {
     cmds.push({ cmd: "moveTo", args: [x, y] });
   }
-  function lineTo( x:number, y:number )
-  {
+  function lineTo(x: number, y: number) {
     cmds.push({ cmd: "lineTo", args: [x, y] });
   }
-  function quadraticCurveTo( xa:number, ya:number, x:number, y:number )
-  {
+  function quadraticCurveTo(xa: number, ya: number, x: number, y: number) {
     cmds.push({ cmd: "quadraticCurveTo", args: [xa, ya, x, y] });
   }
 
@@ -254,44 +250,35 @@ function compileGlyf( code:Uint8Array | Uint8ClampedArray | number[],
   let x = 0,
     y = 0;
   i += 10;
-  if( numberOfContours < 0 )
-  {
+  if (numberOfContours < 0) {
     // composite glyph
     do {
       flags = getUint16(code, i);
       const glyphIndex = getUint16(code, i + 2);
       i += 4;
       let arg1, arg2;
-      if( flags & 0x01 )
-      {
-        if( flags & 0x02 )
-        {
+      if (flags & 0x01) {
+        if (flags & 0x02) {
           arg1 = getInt16(code, i);
           arg2 = getInt16(code, i + 2);
-        } 
-        else {
+        } else {
           arg1 = getUint16(code, i);
           arg2 = getUint16(code, i + 2);
         }
         i += 4;
-      } 
-      else {
-        if( flags & 0x02 )
-        {
+      } else {
+        if (flags & 0x02) {
           arg1 = getInt8(code, i++);
           arg2 = getInt8(code, i++);
-        } 
-        else {
+        } else {
           arg1 = code[i++];
           arg2 = code[i++];
         }
       }
-      if( flags & 0x02 )
-      {
+      if (flags & 0x02) {
         x = arg1;
         y = arg2;
-      } 
-      else {
+      } else {
         x = 0;
         y = 0;
       }
@@ -299,19 +286,14 @@ function compileGlyf( code:Uint8Array | Uint8ClampedArray | number[],
         scaleY = 1,
         scale01 = 0,
         scale10 = 0;
-      if( flags & 0x08 )
-      {
+      if (flags & 0x08) {
         scaleX = scaleY = getFloat214(code, i);
         i += 2;
-      } 
-      else if( flags & 0x40 )
-      {
+      } else if (flags & 0x40) {
         scaleX = getFloat214(code, i);
         scaleY = getFloat214(code, i + 2);
         i += 4;
-      } 
-      else if (flags & 0x80 )
-      {
+      } else if (flags & 0x80) {
         scaleX = getFloat214(code, i);
         scale01 = getFloat214(code, i + 2);
         scale10 = getFloat214(code, i + 4);
@@ -319,8 +301,7 @@ function compileGlyf( code:Uint8Array | Uint8ClampedArray | number[],
         i += 8;
       }
       const subglyph = font.glyphs[glyphIndex];
-      if( subglyph )
-      {
+      if (subglyph) {
         // TODO: the transform should be applied only if there is a scale:
         // https://github.com/freetype/freetype/blob/edd4fedc5427cf1cf1f4b045e53ff91eb282e9d4/src/truetype/ttgload.c#L1205
         cmds.push(
@@ -328,49 +309,41 @@ function compileGlyf( code:Uint8Array | Uint8ClampedArray | number[],
           {
             cmd: "transform",
             args: [scaleX, scale01, scale10, scaleY, x, y],
-          }
+          },
         );
 
-        if( !(flags & 0x02) )
-        {
+        if (!(flags & 0x02)) {
           // TODO: we must use arg1 and arg2 to make something similar to:
           // https://github.com/freetype/freetype/blob/edd4fedc5427cf1cf1f4b045e53ff91eb282e9d4/src/truetype/ttgload.c#L1209
         }
-        compileGlyf( subglyph, cmds, font );
+        compileGlyf(subglyph, cmds, font);
         cmds.push({ cmd: "restore" });
       }
     } while (flags & 0x20);
-  } 
-  else {
+  } else {
     // simple glyph
-    const endPtsOfContours:number[] = [];
+    const endPtsOfContours: number[] = [];
     let j, jj;
-    for( j = 0; j < numberOfContours; j++ )
-    {
+    for (j = 0; j < numberOfContours; j++) {
       endPtsOfContours.push(getUint16(code, i));
       i += 2;
     }
     const instructionLength = getUint16(code, i);
     i += 2 + instructionLength; // skipping the instructions
-    const numberOfPoints = endPtsOfContours[endPtsOfContours.length - 1] + 1;
-    const points = [] as PointXXX[];
-    while( points.length < numberOfPoints )
-    {
+    const numberOfPoints = endPtsOfContours.at(-1)! + 1;
+    const points = [] as _PointFlags[];
+    while (points.length < numberOfPoints) {
       flags = code[i++];
       let repeat = 1;
-      if( flags & 0x08 )
-      {
+      if (flags & 0x08) {
         repeat += code[i++];
       }
-      while( repeat-- > 0 )
-      {
-        points.push( { flags } as PointXXX );
+      while (repeat-- > 0) {
+        points.push({ flags } as _PointFlags);
       }
     }
-    for( j = 0; j < numberOfPoints; j++ )
-    {
-      switch (points[j].flags & 0x12)
-      {
+    for (j = 0; j < numberOfPoints; j++) {
+      switch (points[j].flags & 0x12) {
         case 0x00:
           x += getInt16(code, i);
           i += 2;
@@ -384,10 +357,8 @@ function compileGlyf( code:Uint8Array | Uint8ClampedArray | number[],
       }
       points[j].x = x;
     }
-    for (j = 0; j < numberOfPoints; j++)
-    {
-      switch( points[j].flags & 0x24 )
-      {
+    for (j = 0; j < numberOfPoints; j++) {
+      switch (points[j].flags & 0x24) {
         case 0x00:
           y += getInt16(code, i);
           i += 2;
@@ -403,25 +374,22 @@ function compileGlyf( code:Uint8Array | Uint8ClampedArray | number[],
     }
 
     let startPoint = 0;
-    for (i = 0; i < numberOfContours; i++)
-    {
+    for (i = 0; i < numberOfContours; i++) {
       const endPoint = endPtsOfContours[i];
       // contours might have implicit points, which is located in the middle
       // between two neighboring off-curve points
       const contour = points.slice(startPoint, endPoint + 1);
       if (contour[0].flags & 1) {
         contour.push(contour[0]); // using start point at the contour end
-      } 
-      else if (contour[contour.length - 1].flags & 1) {
+      } else if (contour.at(-1)!.flags & 1) {
         // first is off-curve point, trying to use one from the end
-        contour.unshift(contour[contour.length - 1]);
-      } 
-      else {
+        contour.unshift(contour.at(-1)!);
+      } else {
         // start and end are off-curve points, creating implicit one
         const p = {
           flags: 1,
-          x: (contour[0].x + contour[contour.length - 1].x) / 2,
-          y: (contour[0].y + contour[contour.length - 1].y) / 2,
+          x: (contour[0].x + contour.at(-1)!.x) / 2,
+          y: (contour[0].y + contour.at(-1)!.y) / 2,
         };
         contour.unshift(p);
         contour.push(p);
@@ -430,22 +398,20 @@ function compileGlyf( code:Uint8Array | Uint8ClampedArray | number[],
       for (j = 1, jj = contour.length; j < jj; j++) {
         if (contour[j].flags & 1) {
           lineTo(contour[j].x, contour[j].y);
-        } 
-        else if (contour[j + 1].flags & 1) {
+        } else if (contour[j + 1].flags & 1) {
           quadraticCurveTo(
             contour[j].x,
             contour[j].y,
             contour[j + 1].x,
-            contour[j + 1].y
+            contour[j + 1].y,
           );
           j++;
-        } 
-        else {
+        } else {
           quadraticCurveTo(
             contour[j].x,
             contour[j].y,
             (contour[j].x + contour[j + 1].x) / 2,
-            (contour[j].y + contour[j + 1].y) / 2
+            (contour[j].y + contour[j + 1].y) / 2,
           );
         }
       }
@@ -454,29 +420,35 @@ function compileGlyf( code:Uint8Array | Uint8ClampedArray | number[],
   }
 }
 
-function compileCharString( charStringCode:Uint8Array | Uint8ClampedArray | number[], 
-  cmds:CmdArgs[], font:Type2Compiled, glyphId:number
+function compileCharString(
+  charStringCode: Uint8Array | Uint8ClampedArray | number[],
+  cmds: CmdArgs[],
+  font: Type2Compiled,
+  glyphId: number,
 ) {
-  function moveTo( x:number, y:number )
-  {
+  function moveTo(x: number, y: number) {
     cmds.push({ cmd: "moveTo", args: [x, y] });
   }
-  function lineTo( x:number, y:number )
-  {
+  function lineTo(x: number, y: number) {
     cmds.push({ cmd: "lineTo", args: [x, y] });
   }
-  function bezierCurveTo( x1:number, y1:number, x2:number, y2:number, x:number, y:number )
-  {
+  function bezierCurveTo(
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+    x: number,
+    y: number,
+  ) {
     cmds.push({ cmd: "bezierCurveTo", args: [x1, y1, x2, y2, x, y] });
   }
 
-  const stack:number[] = [];
+  const stack: number[] = [];
   let x = 0;
   let y = 0;
   let stems = 0;
 
-  function parse( code:Uint8Array | Uint8ClampedArray | number[] )
-  {
+  function parse(code: Uint8Array | Uint8ClampedArray | number[]) {
     let i = 0;
     while (i < code.length) {
       let stackClean = false;
@@ -539,14 +511,12 @@ function compileCharString( charStringCode:Uint8Array | Uint8ClampedArray | numb
         case 10: // callsubr
           n = stack.pop()!;
           subrCode = null;
-          if( font.isCFFCIDFont )
-          {
+          if (font.isCFFCIDFont) {
             const fdIndex = font.fdSelect!.getFDIndex(glyphId);
             if (fdIndex >= 0 && fdIndex < font.fdArray!.length) {
               const fontDict = font.fdArray![fdIndex];
               let subrs;
-              if( fontDict.privateDict?.subrsIndex )
-              {
+              if (fontDict.privateDict?.subrsIndex) {
                 subrs = fontDict.privateDict.subrsIndex.objects;
               }
               if (subrs) {
@@ -554,12 +524,10 @@ function compileCharString( charStringCode:Uint8Array | Uint8ClampedArray | numb
                 n += getSubroutineBias(subrs);
                 subrCode = subrs[n];
               }
-            } 
-            else {
+            } else {
               warn("Invalid fd index for glyph index.");
             }
-          } 
-          else {
+          } else {
             subrCode = font.subrs[n + font.subrsBias];
           }
           if (subrCode) {
@@ -630,8 +598,7 @@ function compileCharString( charStringCode:Uint8Array | Uint8ClampedArray | numb
               y = yb;
               if (Math.abs(x - x0) > Math.abs(y - y0)) {
                 x += stack.shift()!;
-              } 
-              else {
+              } else {
                 y += stack.shift()!;
               }
               bezierCurveTo(xa, ya, xb, yb, x, y);
@@ -649,25 +616,29 @@ function compileCharString( charStringCode:Uint8Array | Uint8ClampedArray | numb
             cmds.push({ cmd: "save" }, { cmd: "translate", args: [x, y] });
             let cmap = lookupCmap(
               font.cmap!,
-              String.fromCharCode( <any>font.glyphNameMap[StandardEncoding[achar]] )
+              String.fromCharCode(
+                <any> font.glyphNameMap[StandardEncoding[achar]],
+              ),
             );
             compileCharString(
               font.glyphs[cmap.glyphId],
               cmds,
               font,
-              cmap.glyphId
+              cmap.glyphId,
             );
             cmds.push({ cmd: "restore" });
 
             cmap = lookupCmap(
               font.cmap!,
-              String.fromCharCode( <any>font.glyphNameMap[StandardEncoding[bchar]] )
+              String.fromCharCode(
+                <any> font.glyphNameMap[StandardEncoding[bchar]],
+              ),
             );
             compileCharString(
               font.glyphs[cmap.glyphId],
               cmds,
               font,
-              cmap.glyphId
+              cmap.glyphId,
             );
           }
           return;
@@ -817,20 +788,17 @@ function compileCharString( charStringCode:Uint8Array | Uint8ClampedArray | numb
           }
           if (v < 247) {
             stack.push(v - 139);
-          } 
-          else if (v < 251) {
+          } else if (v < 251) {
             stack.push((v - 247) * 256 + code[i++] + 108);
-          } 
-          else if (v < 255) {
+          } else if (v < 255) {
             stack.push(-(v - 251) * 256 - code[i++] - 108);
-          } 
-          else {
+          } else {
             stack.push(
               ((code[i] << 24) |
                 (code[i + 1] << 16) |
                 (code[i + 2] << 8) |
                 code[i + 3]) /
-                65536
+                65536,
             );
             i += 4;
           }
@@ -844,9 +812,9 @@ function compileCharString( charStringCode:Uint8Array | Uint8ClampedArray | numb
   parse(charStringCode);
 }
 
-const NOOP:CmdArgs[] = [];
+const NOOP: CmdArgs[] = [];
 
-type FontMatrix = [ number, number, number, number, number, number ];
+type FontMatrix = [number, number, number, number, number, number];
 
 type C2DCmd =
   | "moveTo"
@@ -857,41 +825,36 @@ type C2DCmd =
   | "scale"
   | "translate"
   | "save"
-  | "restore"
-;
+  | "restore";
 
-export interface CmdArgs
-{
-  cmd:C2DCmd;
-  args?:(number | string)[];
+export interface CmdArgs {
+  cmd: C2DCmd;
+  args?: (number | string)[];
 }
 
-abstract class CompiledFont
-{
+abstract class CompiledFont {
   fontMatrix;
-  
-  compiledGlyphs:CmdArgs[][] = Object.create(null);
-  compiledCharCodeToGlyphId:number[] = Object.create(null);
 
-  glyphs!:(Uint8Array | Uint8ClampedArray | number[])[];
-  cmap?:Range[] | undefined;
+  compiledGlyphs: CmdArgs[][] = Object.create(null);
+  compiledCharCodeToGlyphId: number[] = Object.create(null);
 
-  isCFFCIDFont?:boolean;
-  fdSelect?:CFFFDSelect | undefined;
-  fdArray?:CFFTopDict[];
+  glyphs!: (Uint8Array | Uint8ClampedArray | number[])[];
+  cmap?: Range[] | undefined;
 
-  constructor( fontMatrix:FontMatrix ) 
-  {
+  isCFFCIDFont?: boolean;
+  fdSelect?: CFFFDSelect | undefined;
+  fdArray?: CFFTopDict[];
+
+  constructor(fontMatrix: FontMatrix) {
     this.fontMatrix = fontMatrix;
   }
 
-  getPathJs( unicode:string )
-  {
+  getPathJs(unicode: string) {
     const { charCode, glyphId } = lookupCmap(this.cmap!, unicode);
     let fn = this.compiledGlyphs[glyphId];
     if (!fn) {
       try {
-        fn = this.compileGlyph( this.glyphs[glyphId], glyphId );
+        fn = this.compileGlyph(this.glyphs[glyphId], glyphId);
         this.compiledGlyphs[glyphId] = fn;
       } catch (ex) {
         // Avoid attempting to re-compile a corrupt glyph.
@@ -909,43 +872,48 @@ abstract class CompiledFont
     return fn;
   }
 
-  compileGlyph( code:Uint8Array | Uint8ClampedArray | number[], glyphId:number )
-  {
-    if( !code || code.length === 0 || code[0] === 14 ) return NOOP;
+  compileGlyph(
+    code: Uint8Array | Uint8ClampedArray | number[],
+    glyphId: number,
+  ) {
+    if (!code || code.length === 0 || code[0] === 14) {
+      return NOOP;
+    }
 
     let fontMatrix = this.fontMatrix;
-    if( this.isCFFCIDFont )
-    {
+    if (this.isCFFCIDFont) {
       // Top DICT's FontMatrix can be ignored because CFFCompiler always
       // removes it and copies to FDArray DICTs.
       const fdIndex = this.fdSelect!.getFDIndex(glyphId);
-      if( fdIndex >= 0 && fdIndex < this.fdArray!.length )
-      {
+      if (fdIndex >= 0 && fdIndex < this.fdArray!.length) {
         const fontDict = this.fdArray![fdIndex];
-        fontMatrix = <matrix_t>fontDict.getByName("FontMatrix") || FONT_IDENTITY_MATRIX;
-      } 
-      else {
+        fontMatrix = <matrix_t> fontDict.getByName("FontMatrix") ||
+          FONT_IDENTITY_MATRIX;
+      } else {
         warn("Invalid fd index for glyph index.");
       }
     }
 
-    const cmds:CmdArgs[] = [
+    const cmds: CmdArgs[] = [
       { cmd: "save" },
       { cmd: "transform", args: fontMatrix.slice() },
       { cmd: "scale", args: ["size", "-size"] },
     ];
-    this.compileGlyphImpl( code, cmds, glyphId );
+    this.compileGlyphImpl(code, cmds, glyphId);
 
     cmds.push({ cmd: "restore" });
 
     return cmds;
   }
 
-  abstract compileGlyphImpl( code:Uint8Array | Uint8ClampedArray | number[], cmds:CmdArgs[], glyphId:number ):void;
+  abstract compileGlyphImpl(
+    code: Uint8Array | Uint8ClampedArray | number[],
+    cmds: CmdArgs[],
+    glyphId: number,
+  ): void;
 
   /** @final */
-  hasBuiltPath( unicode:string )
-  {
+  hasBuiltPath(unicode: string) {
     const { charCode, glyphId } = lookupCmap(this.cmap!, unicode);
     return (
       this.compiledGlyphs[glyphId] !== undefined &&
@@ -954,81 +922,75 @@ abstract class CompiledFont
   }
 }
 
-export class TrueTypeCompiled extends CompiledFont 
-{
-  constructor( glyphs:Uint8Array[], cmap?:Range[], fontMatrix?:FontMatrix )
-  {
-    super( fontMatrix || [0.000488, 0, 0, 0.000488, 0, 0] );
+export class TrueTypeCompiled extends CompiledFont {
+  constructor(glyphs: Uint8Array[], cmap?: Range[], fontMatrix?: FontMatrix) {
+    super(fontMatrix || [0.000488, 0, 0, 0.000488, 0, 0]);
 
     this.glyphs = glyphs;
     this.cmap = cmap;
   }
 
-  /** @implements */
-  compileGlyphImpl( code:Uint8Array, cmds:CmdArgs[], glyphId:number )
-  {
-    compileGlyf( code, cmds, this );
+  /** @implement */
+  compileGlyphImpl(code: Uint8Array, cmds: CmdArgs[], glyphId: number) {
+    compileGlyf(code, cmds, this);
   }
 }
 
-export class Type2Compiled extends CompiledFont 
-{
+export class Type2Compiled extends CompiledFont {
   gsubrs;
   subrs;
   glyphNameMap;
 
-  gsubrsBias:number;
-  subrsBias:number;
+  gsubrsBias: number;
+  subrsBias: number;
 
   // isCFFCIDFont;
   // fdSelect;
   // fdArray;
 
-  constructor( cffInfo:CffInfo, cmap?:Range[], 
-    fontMatrix?:FontMatrix, glyphNameMap?:Record<string, string | number>
+  constructor(
+    cffInfo: CffInfo,
+    cmap?: Range[],
+    fontMatrix?: FontMatrix,
+    glyphNameMap?: Record<string, string | number>,
   ) {
-    super( fontMatrix || [0.001, 0, 0, 0.001, 0, 0] );
+    super(fontMatrix || [0.001, 0, 0, 0.001, 0, 0]);
 
     this.glyphs = cffInfo.glyphs;
-    this.gsubrs = cffInfo.gsubrs || <number[][]>[];
-    this.subrs = cffInfo.subrs || <number[][]>[];
+    this.gsubrs = cffInfo.gsubrs || <number[][]> [];
+    this.subrs = cffInfo.subrs || <number[][]> [];
     this.cmap = cmap;
     this.glyphNameMap = glyphNameMap || getGlyphsUnicode();
 
-    this.gsubrsBias = getSubroutineBias( this.gsubrs );
-    this.subrsBias = getSubroutineBias( this.subrs );
+    this.gsubrsBias = getSubroutineBias(this.gsubrs);
+    this.subrsBias = getSubroutineBias(this.subrs);
 
     this.isCFFCIDFont = cffInfo.isCFFCIDFont;
     this.fdSelect = cffInfo.fdSelect;
     this.fdArray = cffInfo.fdArray;
   }
 
-  /** @implements */
-  compileGlyphImpl( code:Uint8Array, cmds:CmdArgs[], glyphId:number )
-  {
+  /** @implement */
+  compileGlyphImpl(code: Uint8Array, cmds: CmdArgs[], glyphId: number) {
     compileCharString(code, cmds, this, glyphId);
   }
 }
 
-export class FontRendererFactory
-{
-  static create( font:Font, seacAnalysisEnabled:boolean )
-  {
-    const data = new Uint8Array( font.data! );
+export class FontRendererFactory {
+  static create(font: Font, seacAnalysisEnabled: boolean) {
+    const data = new Uint8Array(font.data!);
     let cmap,
       glyf,
-      loca:Uint8Array,
-      cff:CffInfo,
+      loca: Uint8Array,
+      cff: CffInfo,
       indexToLocFormat,
       unitsPerEm;
     const numTables = getUint16(data, 4);
-    for( let i = 0, p = 12; i < numTables; i++, p += 16 )
-    {
+    for (let i = 0, p = 12; i < numTables; i++, p += 16) {
       const tag = bytesToString(data.subarray(p, p + 4));
       const offset = getUint32(data, p + 8);
       const length = getUint32(data, p + 12);
-      switch( tag )
-      {
+      switch (tag) {
         case "cmap":
           cmap = parseCmap(data, offset, offset + length);
           break;
@@ -1048,18 +1010,17 @@ export class FontRendererFactory
       }
     }
 
-    if( glyf )
-    {
+    if (glyf) {
       const fontMatrix = !unitsPerEm
         ? font.fontMatrix
-        : <matrix_t>[1 / unitsPerEm, 0, 0, 1 / unitsPerEm, 0, 0];
+        : <matrix_t> [1 / unitsPerEm, 0, 0, 1 / unitsPerEm, 0, 0];
       return new TrueTypeCompiled(
         parseGlyfTable(glyf, loca!, indexToLocFormat),
         cmap,
-        fontMatrix
+        fontMatrix,
       );
     }
-    return new Type2Compiled( cff!, cmap, font.fontMatrix, font.glyphNameMap );
+    return new Type2Compiled(cff!, cmap, font.fontMatrix, font.glyphNameMap);
   }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

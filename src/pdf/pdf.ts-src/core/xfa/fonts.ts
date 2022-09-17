@@ -17,141 +17,125 @@
  * limitations under the License.
  */
 
-import { warn } from "../../shared/util.js";
-import { ErrorFont, Font } from "../fonts.js";
-import { type XFAFontMetrics } from "../xfa_fonts.js";
-import { type XFAFontBase } from "./alias.js";
-import { Font as XFAFont } from "./template.js";
-import { stripQuotes } from "./utils.js";
-import { $globalData } from "./xfa_object.js";
-/*81---------------------------------------------------------------------------*/
+import { warn } from "../../shared/util.ts";
+import { ErrorFont, Font } from "../fonts.ts";
+import { type XFAFontMetrics } from "../xfa_fonts.ts";
+import { type XFAFontBase } from "./alias.ts";
+import { Font as XFAFont } from "./template.ts";
+import { stripQuotes } from "./utils.ts";
+import { $globalData } from "./xfa_object.ts";
+/*80--------------------------------------------------------------------------*/
 
-interface PDFFont
-{
-  bold?:Font | ErrorFont;
-  bolditalic?:Font | ErrorFont;
-  italic?:Font | ErrorFont;
-  regular?:Font | ErrorFont | undefined;
+interface PDFFont {
+  bold?: Font | ErrorFont;
+  bolditalic?: Font | ErrorFont;
+  italic?: Font | ErrorFont;
+  regular?: Font | ErrorFont | undefined;
 }
 
-export class FontFinder
-{
+export class FontFinder {
   fonts = new Map<string, PDFFont | undefined>();
   cache = new Map<string, PDFFont>();
   warned = new Set();
-  defaultFont?:PDFFont;
+  defaultFont?: PDFFont;
 
-  constructor( pdfFonts:(Font | ErrorFont)[] )
-  {
+  constructor(pdfFonts: (Font | ErrorFont)[]) {
     this.add(pdfFonts);
   }
 
-  add( pdfFonts:(Font | ErrorFont)[], reallyMissingFonts?:Set<string> ) 
-  {
-    for (const pdfFont of pdfFonts) 
-    {
+  add(pdfFonts: (Font | ErrorFont)[], reallyMissingFonts?: Set<string>) {
+    for (const pdfFont of pdfFonts) {
       this.addPdfFont(pdfFont);
     }
-    for( const pdfFont of this.fonts.values() ) 
-    {
-      if( !pdfFont!.regular )
-      {
-        pdfFont!.regular = pdfFont!.italic || pdfFont!.bold || pdfFont!.bolditalic;
+    for (const pdfFont of this.fonts.values()) {
+      if (!pdfFont!.regular) {
+        pdfFont!.regular = pdfFont!.italic || pdfFont!.bold ||
+          pdfFont!.bolditalic;
       }
     }
 
-    if( !reallyMissingFonts || reallyMissingFonts.size === 0 ) return;
-
+    if (!reallyMissingFonts || reallyMissingFonts.size === 0) {
+      return;
+    }
     const myriad = this.fonts.get("PdfJS-Fallback-PdfJS-XFA");
-    for( const missing of reallyMissingFonts )
-    {
-      this.fonts.set( missing, myriad );
+    for (const missing of reallyMissingFonts) {
+      this.fonts.set(missing, myriad);
     }
   }
 
-  addPdfFont( pdfFont:Font | ErrorFont )
-  {
+  addPdfFont(pdfFont: Font | ErrorFont) {
     const cssFontInfo = pdfFont.cssFontInfo!;
     const name = cssFontInfo.fontFamily;
     let font = this.fonts.get(name);
-    if( !font )
-    {
-      font = <PDFFont>Object.create(null);
-      this.fonts.set( name, font );
-      if( !this.defaultFont ) 
-      {
+    if (!font) {
+      font = <PDFFont> Object.create(null);
+      this.fonts.set(name, font);
+      if (!this.defaultFont) {
         this.defaultFont = font;
       }
     }
-    let property:keyof PDFFont | "" = "";
-    const fontWeight = parseFloat( <any>cssFontInfo.fontWeight );
-    if (parseFloat(<any>cssFontInfo.italicAngle) !== 0) 
-    {
+    let property: keyof PDFFont | "" = "";
+    const fontWeight = parseFloat(<any> cssFontInfo.fontWeight);
+    if (parseFloat(<any> cssFontInfo.italicAngle) !== 0) {
       property = fontWeight >= 700 ? "bolditalic" : "italic";
-    } 
-    else if (fontWeight >= 700) 
-    {
+    } else if (fontWeight >= 700) {
       property = "bold";
     }
 
-    if( !property ) 
-    {
-      if( pdfFont.name.includes("Bold") 
-       || (pdfFont.psName && pdfFont.psName.includes("Bold"))
+    if (!property) {
+      if (
+        pdfFont.name.includes("Bold") ||
+        (pdfFont.psName && pdfFont.psName.includes("Bold"))
       ) {
         property = "bold";
       }
-      if( pdfFont.name.includes("Italic") 
-       || pdfFont.name.endsWith("It") 
-       || (pdfFont.psName &&
+      if (
+        pdfFont.name.includes("Italic") ||
+        pdfFont.name.endsWith("It") ||
+        (pdfFont.psName &&
           (pdfFont.psName.includes("Italic") || pdfFont.psName.endsWith("It")))
       ) {
         property += "italic";
       }
     }
 
-    if (!property) 
-    {
+    if (!property) {
       property = "regular";
     }
 
-    font[ <keyof PDFFont>property ] = pdfFont;
+    font[<keyof PDFFont> property] = pdfFont;
   }
 
-  getDefault() 
-  {
+  getDefault() {
     return this.defaultFont;
   }
 
-  find( fontName:string, mustWarn=true )
-  {
+  find(fontName: string, mustWarn = true) {
     let font = this.fonts.get(fontName) || this.cache.get(fontName);
-    if( font ) return font;
+    if (font) {
+      return font;
+    }
 
     const pattern = /,|-|_| |bolditalic|bold|italic|regular|it/gi;
     let name = fontName.replace(pattern, "");
     font = this.fonts.get(name);
-    if( font )
-    {
-      this.cache.set( fontName, font );
+    if (font) {
+      this.cache.set(fontName, font);
       return font;
     }
     name = name.toLowerCase();
 
     const maybe = [];
-    for (const [family, pdfFont] of this.fonts.entries()) 
-    {
-      if (family.replace(pattern, "").toLowerCase().startsWith(name)) 
-      {
+    for (const [family, pdfFont] of this.fonts.entries()) {
+      if (family.replace(pattern, "").toLowerCase().startsWith(name)) {
         maybe.push(pdfFont);
       }
     }
 
-    if (maybe.length === 0) 
-    {
-      for (const [, pdfFont] of this.fonts.entries()) 
-      {
-        if( pdfFont!.regular!.name
+    if (maybe.length === 0) {
+      for (const [, pdfFont] of this.fonts.entries()) {
+        if (
+          pdfFont!.regular!.name
             ?.replace(pattern, "")
             .toLowerCase()
             .startsWith(name)
@@ -161,22 +145,19 @@ export class FontFinder
       }
     }
 
-    if (maybe.length === 0) 
-    {
+    if (maybe.length === 0) {
       name = name.replace(/psmt|mt/gi, "");
-      for (const [family, pdfFont] of this.fonts.entries()) 
-      {
+      for (const [family, pdfFont] of this.fonts.entries()) {
         if (family.replace(pattern, "").toLowerCase().startsWith(name)) {
           maybe.push(pdfFont);
         }
       }
     }
 
-    if (maybe.length === 0) 
-    {
-      for (const pdfFont of this.fonts.values()) 
-      {
-        if( pdfFont!.regular!.name
+    if (maybe.length === 0) {
+      for (const pdfFont of this.fonts.values()) {
+        if (
+          pdfFont!.regular!.name
             ?.replace(pattern, "")
             .toLowerCase()
             .startsWith(name)
@@ -186,18 +167,15 @@ export class FontFinder
       }
     }
 
-    if (maybe.length >= 1) 
-    {
-      if (maybe.length !== 1 && mustWarn) 
-      {
+    if (maybe.length >= 1) {
+      if (maybe.length !== 1 && mustWarn) {
         warn(`XFA - Too many choices to guess the correct font: ${fontName}`);
       }
-      this.cache.set( fontName, maybe[0]! );
+      this.cache.set(fontName, maybe[0]!);
       return maybe[0];
     }
 
-    if (mustWarn && !this.warned.has(fontName)) 
-    {
+    if (mustWarn && !this.warned.has(fontName)) {
       this.warned.add(fontName);
       warn(`XFA - Cannot find the font: ${fontName}`);
     }
@@ -205,36 +183,28 @@ export class FontFinder
   }
 }
 
-export function selectFont( xfaFont:XFAFontBase, typeface:PDFFont )
-{
-  if (xfaFont.posture === "italic") 
-  {
-    if (xfaFont.weight === "bold") 
-    {
+export function selectFont(xfaFont: XFAFontBase, typeface: PDFFont) {
+  if (xfaFont.posture === "italic") {
+    if (xfaFont.weight === "bold") {
       return typeface.bolditalic;
     }
     return typeface.italic;
-  } 
-  else if (xfaFont.weight === "bold") 
-  {
+  } else if (xfaFont.weight === "bold") {
     return typeface.bold;
   }
 
   return typeface.regular;
 }
 
-export function getMetrics( xfaFont?:XFAFont, real=false ):XFAFontMetrics
-{
-  let pdfFont:Font | ErrorFont | undefined;
-  if( xfaFont )
-  {
-    const name = stripQuotes( xfaFont.typeface! );
+export function getMetrics(xfaFont?: XFAFont, real = false): XFAFontMetrics {
+  let pdfFont: Font | ErrorFont | undefined;
+  if (xfaFont) {
+    const name = stripQuotes(xfaFont.typeface!);
     const typeface = xfaFont[$globalData]!.fontFinder!.find(name);
-    pdfFont = selectFont( xfaFont, typeface! );
+    pdfFont = selectFont(xfaFont, typeface!);
   }
 
-  if( !pdfFont )
-  {
+  if (!pdfFont) {
     return {
       lineHeight: 12,
       lineGap: 2,
@@ -253,4 +223,4 @@ export function getMetrics( xfaFont?:XFAFont, real=false ):XFAFontMetrics
     lineNoGap: Math.max(1, lineHeight - lineGap) * size,
   };
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

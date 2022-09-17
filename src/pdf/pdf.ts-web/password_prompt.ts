@@ -17,16 +17,15 @@
  * limitations under the License.
  */
 
-import { PasswordResponses } from "../pdf.ts-src/pdf.js";
-import { type IL10n } from "./interfaces.js";
-import { OverlayManager } from "./overlay_manager.js";
-import { type ViewerConfiguration } from "./viewer.js";
-/*81---------------------------------------------------------------------------*/
+import { PasswordResponses } from "../pdf.ts-src/pdf.ts";
+import { type IL10n } from "./interfaces.ts";
+import { OverlayManager } from "./overlay_manager.ts";
+import { type ViewerConfiguration } from "./viewer.ts";
+/*80--------------------------------------------------------------------------*/
 
-export class PasswordPrompt 
-{
+export class PasswordPrompt {
   dialog;
-  label
+  label;
   input;
   submitButton;
   cancelButton;
@@ -34,8 +33,8 @@ export class PasswordPrompt
   l10n;
   _isViewerEmbedded;
 
-  #updateCallback!:(( password:string | Error ) => void) | undefined;
-  #reason?:PasswordResponses;
+  #updateCallback!: ((password: string | Error) => void) | undefined;
+  #reason?: PasswordResponses;
 
   /**
    * @param overlayManager Manager for the viewer overlays.
@@ -43,8 +42,11 @@ export class PasswordPrompt
    * @param isViewerEmbedded If the viewer is embedded, in e.g.
    *   an <iframe> or an <object>. The default value is `false`.
    */
-  constructor( options:ViewerConfiguration['passwordOverlay'], 
-    overlayManager:OverlayManager, l10n:IL10n, isViewerEmbedded=false 
+  constructor(
+    options: ViewerConfiguration["passwordOverlay"],
+    overlayManager: OverlayManager,
+    l10n: IL10n,
+    isViewerEmbedded = false,
   ) {
     this.dialog = options.dialog;
     this.label = options.label;
@@ -56,75 +58,69 @@ export class PasswordPrompt
     this._isViewerEmbedded = isViewerEmbedded;
 
     // Attach the event listeners.
-    this.submitButton.addEventListener("click", this.#verify );
-    this.cancelButton.addEventListener("click", this.#cancel );
-    this.input.addEventListener("keydown", e => {
-      if( e.keyCode === /* Enter = */ 13 )
-      {
+    this.submitButton.addEventListener("click", this.#verify);
+    this.cancelButton.addEventListener("click", this.#cancel);
+    this.input.addEventListener("keydown", (e) => {
+      if (e.keyCode === /* Enter = */ 13) {
         this.#verify();
       }
     });
 
     this.overlayManager.register(this.dialog, /* canForceClose = */ true);
 
-    this.dialog.addEventListener("close", this.#cancel );
+    this.dialog.addEventListener("close", this.#cancel);
   }
 
-  async open()
-  {
+  async open() {
     await this.overlayManager.open(this.dialog);
 
     const passwordIncorrect =
       this.#reason === PasswordResponses.INCORRECT_PASSWORD;
 
-    if( !this._isViewerEmbedded || passwordIncorrect )
-    {
+    if (!this._isViewerEmbedded || passwordIncorrect) {
       this.input.focus();
     }
     this.label.textContent = await this.l10n.get(
-      `password_${passwordIncorrect ? "invalid" : "label"}`
+      `password_${passwordIncorrect ? "invalid" : "label"}`,
     );
   }
 
-  async close()
-  {
-    if( this.overlayManager.active === this.dialog )
-    {
+  async close() {
+    if (this.overlayManager.active === this.dialog) {
       this.overlayManager.close(this.dialog);
     }
   }
 
   #verify = () => {
     const password = this.input.value;
-    if( password?.length > 0 )
-    {
-      this.#invokeCallback( password );
+    if (password?.length > 0) {
+      this.#invokeCallback(password);
     }
-  }
+  };
 
   #cancel = () => {
-    this.#invokeCallback( new Error("PasswordPrompt cancelled."));
-  }
+    this.#invokeCallback(new Error("PasswordPrompt cancelled."));
+  };
 
-  #invokeCallback( password:string | Error )
-  {
-    if( !this.#updateCallback )
+  #invokeCallback(password: string | Error) {
+    if (!this.#updateCallback) {
       // Ensure that the callback is only invoked once.
-      return; 
-    
+      return;
+    }
+
     this.close();
     this.input.value = "";
 
-    this.#updateCallback( password );
+    this.#updateCallback(password);
     this.#updateCallback = undefined;
   }
 
-  setUpdateCallback( 
-    updateCallback:( password:string | Error ) => void, 
-    reason:PasswordResponses
+  setUpdateCallback(
+    updateCallback: (password: string | Error) => void,
+    reason: PasswordResponses,
   ) {
     this.#updateCallback = updateCallback;
     this.#reason = reason;
   }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

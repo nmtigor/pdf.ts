@@ -17,14 +17,20 @@
  * limitations under the License.
  */
 
-import { type TupleOf } from "../../../lib/alias.js";
-import { HttpStatusCode } from "../../../lib/HttpStatusCode.js";
-import { isObjectLike } from "../../../lib/jslang.js";
-import { assert, warn as warn_0 } from "../../../lib/util/trace.js";
-/*81---------------------------------------------------------------------------*/
+import { _PDFDEV } from "../../../global.ts";
+import { type TupleOf } from "../../../lib/alias.ts";
+import { HttpStatusCode } from "../../../lib/HttpStatusCode.ts";
+import { isObjectLike } from "../../../lib/jslang.ts";
+import { assert, warn as warn_0 } from "../../../lib/util/trace.ts";
+/*80--------------------------------------------------------------------------*/
 
-export const IDENTITY_MATRIX:matrix_t = [1, 0, 0, 1, 0, 0];
-export const FONT_IDENTITY_MATRIX:matrix_t = [0.001, 0, 0, 0.001, 0, 0];
+export const IDENTITY_MATRIX: matrix_t = [1, 0, 0, 1, 0, 0];
+export const FONT_IDENTITY_MATRIX: matrix_t = [0.001, 0, 0, 0.001, 0, 0];
+
+// Represent the percentage of the height of a single-line field over
+// the font size. Acrobat seems to use this value.
+export const LINE_FACTOR = 1.35;
+export const LINE_DESCENT_FACTOR = 0.35;
 
 /**
  * Refer to the `WorkerTransport.getRenderingIntent`-method in the API, to see
@@ -53,6 +59,24 @@ export const enum AnnotationMode {
   ENABLE = 1,
   ENABLE_FORMS = 2,
   ENABLE_STORAGE = 3,
+}
+
+export const AnnotationEditorPrefix = "pdfjs_internal_editor_";
+
+export enum AnnotationEditorType {
+  DISABLE = -1,
+  NONE = 0,
+  FREETEXT = 3,
+  INK = 15,
+}
+
+export const enum AnnotationEditorParamsType {
+  FREETEXT_SIZE = 1,
+  FREETEXT_COLOR = 2,
+  FREETEXT_OPACITY = 3,
+  INK_COLOR = 11,
+  INK_THICKNESS = 12,
+  INK_OPACITY = 13,
 }
 
 // Permission flags from Table 22, Section 7.6.3.2 of the PDF specification.
@@ -113,7 +137,7 @@ export const enum AnnotationType {
   WATERMARK,
   THREED,
   REDACT,
-};
+}
 
 // const AnnotationStateModelType = {
 //   MARKED: "Marked",
@@ -136,9 +160,10 @@ export const enum AnnotationType {
 export const enum AnnotationReplyType {
   GROUP = "Group",
   REPLY = "R",
-};
+}
 
 // PDF 1.7 Table 165
+// deno-fmt-ignore
 export const enum AnnotationFlag {
   INVISIBLE      = 0b00_0000_0001,
   HIDDEN         = 0b00_0000_0010,
@@ -150,7 +175,7 @@ export const enum AnnotationFlag {
   LOCKED         = 0b00_1000_0000,
   TOGGLENOVIEW   = 0b01_0000_0000,
   LOCKEDCONTENTS = 0b10_0000_0000,
-};
+}
 
 export const enum AnnotationFieldFlag {
   READONLY = 0x0000001,
@@ -185,43 +210,52 @@ export const enum AnnotationBorderStyleType {
   UNDERLINE = 5,
 }
 
-export enum AnnotationActionEventType {
-  E = "Mouse Enter",
-  X = "Mouse Exit",
-  D = "Mouse Down",
-  U = "Mouse Up",
-  Fo = "Focus",
-  Bl = "Blur",
-  PO = "PageOpen",
-  PC = "PageClose",
-  PV = "PageVisible",
-  PI = "PageInvisible",
-  K = "Keystroke",
-  F = "Format",
-  V = "Validate",
-  C = "Calculate",
-}
-export enum DocumentActionEventType {
-  WC = "WillClose",
-  WS = "WillSave",
-  DS = "DidSave",
-  WP = "WillPrint",
-  DP = "DidPrint",
-}
-export enum PageActionEventType {
-  O = "PageOpen",
-  C = "PageClose",
-}
-export type ActionEventType = 
-  | AnnotationActionEventType 
-  | DocumentActionEventType 
-  | PageActionEventType
-;
-export type ActionEventTypesType =
+export const AnnotationActionEventType = {
+  E: "Mouse Enter",
+  X: "Mouse Exit",
+  D: "Mouse Down",
+  U: "Mouse Up",
+  Fo: "Focus",
+  Bl: "Blur",
+  PO: "PageOpen",
+  PC: "PageClose",
+  PV: "PageVisible",
+  PI: "PageInvisible",
+  K: "Keystroke",
+  F: "Format",
+  V: "Validate",
+  C: "Calculate",
+} as const;
+export const DocumentActionEventType = {
+  WC: "WillClose",
+  WS: "WillSave",
+  DS: "DidSave",
+  WP: "WillPrint",
+  DP: "DidPrint",
+} as const;
+export const PageActionEventType = {
+  O: "PageOpen",
+  C: "PageClose",
+} as const;
+// export const _ActionEventType = <const>{
+//   ...AnnotationActionEventType,
+//   ...DocumentActionEventType,
+//   ...PageActionEventType,
+// }
+// export type ActionEventTypeType = typeof _ActionEventType;
+export type ActionEventTypeType =
   | typeof AnnotationActionEventType
   | typeof DocumentActionEventType
-  | typeof PageActionEventType
-;
+  | typeof PageActionEventType;
+export type ActionEventType =
+  | keyof typeof AnnotationActionEventType
+  | keyof typeof DocumentActionEventType
+  | keyof typeof PageActionEventType;
+export type ActionEventName =
+  | (typeof AnnotationActionEventType)[keyof typeof AnnotationActionEventType]
+  | (typeof DocumentActionEventType)[keyof typeof DocumentActionEventType]
+  | (typeof PageActionEventType)[keyof typeof PageActionEventType]
+  | "Action";
 
 export enum StreamType {
   UNKNOWN = "UNKNOWN",
@@ -261,10 +295,10 @@ export const enum CMapCompressionType {
   NONE = 0,
   BINARY = 1,
   STREAM = 2,
-};
+}
 
 // All the possible operations for an operator list.
-export /* #if PRODUCTION */const /* #endif */enum OPS {
+export enum OPS {
   // Intentionally start from 1 so it is easy to spot bad operators that will be
   // 0's.
   dependency = 1,
@@ -344,7 +378,9 @@ export /* #if PRODUCTION */const /* #endif */enum OPS {
   paintFormXObjectEnd = 75,
   beginGroup = 76,
   endGroup = 77,
+  /** @deprecated unused */
   beginAnnotations = 78,
+  /** @deprecated unused */
   endAnnotations = 79,
   beginAnnotation = 80,
   endAnnotation = 81,
@@ -390,26 +426,28 @@ export const enum UNSUPPORTED_FEATURES {
   errorFontGetPath = "errorFontGetPath",
   errorMarkedContent = "errorMarkedContent",
   errorContentSubStream = "errorContentSubStream",
-};
+}
 
 export const enum PasswordResponses {
   NEED_PASSWORD = 1,
   INCORRECT_PASSWORD = 2,
-};
+}
 
 let verbosity = VerbosityLevel.WARNINGS;
-export function setVerbosityLevel( level:VerbosityLevel ) { verbosity = level; }
-export function getVerbosityLevel() { return verbosity; }
+export function setVerbosityLevel(level: VerbosityLevel) {
+  verbosity = level;
+}
+export function getVerbosityLevel() {
+  return verbosity;
+}
 
 /**
  * A notice for devs. These are good for things that are helpful to devs, such
  * as warning that Workers were disabled, which is important to devs but not
  * end users.
  */
-export function info( msg:string ) 
-{
-  if( verbosity >= VerbosityLevel.INFOS )
-  {
+export function info(msg: string) {
+  if (verbosity >= VerbosityLevel.INFOS) {
     console.log(`Info: ${msg}`);
   }
 }
@@ -417,11 +455,9 @@ export function info( msg:string )
 /**
  * Non-fatal warnings.
  */
-export function warn( msg:string, meta?:{url:string} ) 
-{
-  if( verbosity >= VerbosityLevel.WARNINGS )
-  {
-    warn_0( `Warning: ${msg}`, meta );
+export function warn(msg: string, meta?: { url: string }) {
+  if (verbosity >= VerbosityLevel.WARNINGS) {
+    warn_0(`Warning: ${msg}`, meta);
   }
 }
 
@@ -430,8 +466,7 @@ export function warn( msg:string, meta?:{url:string} )
 // }
 
 // Checks if URLs use one of the allowed protocols, e.g. to avoid XSS.
-function _isValidProtocol( url:URL ) 
-{
+function _isValidProtocol(url: URL) {
   if (!url) {
     return false;
   }
@@ -447,10 +482,9 @@ function _isValidProtocol( url:URL )
   }
 }
 
-interface _CreateValidAbsoluteUrlP
-{
-  addDefaultProtocol?:boolean;
-  tryConvertEncoding:boolean;
+interface _CreateValidAbsoluteUrlP {
+  addDefaultProtocol?: boolean;
+  tryConvertEncoding: boolean;
 }
 
 /**
@@ -460,32 +494,30 @@ interface _CreateValidAbsoluteUrlP
  * @param baseUrl An absolute URL.
  * @return Either a valid {URL}, or `null` otherwise.
  */
-export function createValidAbsoluteUrl( url:URL | string, 
-  baseUrl?:URL | string | undefined,
-  options?:_CreateValidAbsoluteUrlP
-):URL | null {
-  if( !url ) 
+export function createValidAbsoluteUrl(
+  url: URL | string,
+  baseUrl?: URL | string | undefined,
+  options?: _CreateValidAbsoluteUrlP,
+): URL | null {
+  if (!url) {
     return null;
+  }
 
   try {
-    if (options && typeof url === "string") 
-    {
+    if (options && typeof url === "string") {
       // Let URLs beginning with "www." default to using the "http://" protocol.
-      if (options.addDefaultProtocol && url.startsWith("www.")) 
-      {
+      if (options.addDefaultProtocol && url.startsWith("www.")) {
         const dots = url.match(/\./g);
         // Avoid accidentally matching a *relative* URL pointing to a file named
         // e.g. "www.pdf" or similar.
-        if (dots && dots.length >= 2) 
-        {
+        if (dots && dots.length >= 2) {
           url = `http://${url}`;
         }
       }
 
       // According to ISO 32000-1:2008, section 12.6.4.7, URIs should be encoded
       // in 7-bit ASCII. Some bad PDFs use UTF-8 encoding; see bug 1122280.
-      if (options.tryConvertEncoding) 
-      {
+      if (options.tryConvertEncoding) {
         try {
           url = stringToUTF8String(url);
         } catch (ex) {}
@@ -493,8 +525,7 @@ export function createValidAbsoluteUrl( url:URL | string,
     }
 
     const absoluteUrl = baseUrl ? new URL(url, baseUrl) : new URL(url);
-    if (_isValidProtocol(absoluteUrl)) 
-    {
+    if (_isValidProtocol(absoluteUrl)) {
       return absoluteUrl;
     }
   } catch (ex) {
@@ -503,12 +534,14 @@ export function createValidAbsoluteUrl( url:URL | string,
   return null;
 }
 
-export function shadow<T>( obj:any, prop:string | symbol, value:T ):T
-{
-  // #if !PRODUCTION || TESTING
-    assert(  prop in obj, `shadow: Property "${prop && prop.toString()}" not found in object.` );
-  // #endif
-  Object.defineProperty( obj, prop, {
+export function shadow<T>(obj: any, prop: string | symbol, value: T): T {
+  /*#static*/ if (_PDFDEV) {
+    assert(
+      prop in obj,
+      `shadow: Property "${prop && prop.toString()}" not found in object.`,
+    );
+  }
+  Object.defineProperty(obj, prop, {
     value,
     enumerable: true,
     configurable: true,
@@ -517,62 +550,48 @@ export function shadow<T>( obj:any, prop:string | symbol, value:T ):T
   return value;
 }
 
-export abstract class BaseException extends Error
-{
-  constructor( message:string | undefined, name:string )
-  {
-    super( message );
+export abstract class BaseException extends Error {
+  constructor(message: string | undefined, name: string) {
+    super(message);
     this.name = name;
   }
 }
 
-export class PasswordException extends BaseException 
-{
-  constructor( msg:string, public code:number ) 
-  {
-    super( msg, "PasswordException" );
+export class PasswordException extends BaseException {
+  constructor(msg: string, public code: number) {
+    super(msg, "PasswordException");
   }
 }
 
-export class UnknownErrorException extends BaseException 
-{
-  constructor( msg:string, public details?:string ) 
-  {
-    super( msg, "UnknownErrorException" );
+export class UnknownErrorException extends BaseException {
+  constructor(msg: string, public details?: string) {
+    super(msg, "UnknownErrorException");
   }
 }
 
-export class InvalidPDFException extends BaseException 
-{
-  constructor( msg:string )
-  {
+export class InvalidPDFException extends BaseException {
+  constructor(msg: string) {
     super(msg, "InvalidPDFException");
   }
 }
 
-export class MissingPDFException extends BaseException 
-{
-  constructor( msg:string )
-  {
+export class MissingPDFException extends BaseException {
+  constructor(msg: string) {
     super(msg, "MissingPDFException");
   }
 }
 
-export class UnexpectedResponseException extends BaseException 
-{
-  constructor( msg:string, public status:HttpStatusCode ) 
-  {
-    super( msg, "UnexpectedResponseException" );
+export class UnexpectedResponseException extends BaseException {
+  constructor(msg: string, public status: HttpStatusCode) {
+    super(msg, "UnexpectedResponseException");
   }
 }
 
 /**
  * Error caused during parsing PDF data.
  */
-export class FormatError extends BaseException 
-{
-  constructor( msg:string )
-  {
+export class FormatError extends BaseException {
+  constructor(msg: string) {
     super(msg, "FormatError");
   }
 }
@@ -580,38 +599,34 @@ export class FormatError extends BaseException
 /**
  * Error used to indicate task cancellation.
  */
-export class AbortException extends BaseException 
-{
-  constructor( msg:string ) 
-  {
+export class AbortException extends BaseException {
+  constructor(msg: string) {
     super(msg, "AbortException");
   }
 }
 
-export function bytesToString( bytes:Uint8Array | Uint8ClampedArray ) 
-{
-  assert( isObjectLike(bytes) && bytes.length !== undefined,
-    "Invalid argument for bytesToString", import.meta
+export function bytesToString(bytes: Uint8Array | Uint8ClampedArray) {
+  assert(
+    isObjectLike(bytes) && bytes.length !== undefined,
+    "Invalid argument for bytesToString",
+    import.meta,
   );
   const length = bytes.length;
   const MAX_ARGUMENT_COUNT = 8192;
-  if( length < MAX_ARGUMENT_COUNT ) 
-  {
-    return String.fromCharCode.apply( null, <any>bytes );
+  if (length < MAX_ARGUMENT_COUNT) {
+    return String.fromCharCode.apply(null, <any> bytes);
   }
   const strBuf = [];
-  for( let i = 0; i < length; i += MAX_ARGUMENT_COUNT )
-  {
+  for (let i = 0; i < length; i += MAX_ARGUMENT_COUNT) {
     const chunkEnd = Math.min(i + MAX_ARGUMENT_COUNT, length);
     const chunk = bytes.subarray(i, chunkEnd);
-    strBuf.push( String.fromCharCode.apply( null, <any>chunk ) );
+    strBuf.push(String.fromCharCode.apply(null, <any> chunk));
   }
   return strBuf.join("");
 }
 
-export function stringToBytes( str:string )
-{
-  assert( typeof str === "string", "Invalid argument for stringToBytes" );
+export function stringToBytes(str: string) {
+  assert(typeof str === "string", "Invalid argument for stringToBytes");
 
   const length = str.length;
   const bytes = new Uint8Array(length);
@@ -625,13 +640,16 @@ export function stringToBytes( str:string )
  * Gets length of the array (Array, Uint8Array, or string) in bytes.
  */
 // eslint-disable-next-line consistent-return
-export function arrayByteLength( arr:any[] | Uint8Array | string | ArrayBufferLike ):number
-{
-  if( (<any[] | Uint8Array | string>arr).length !== undefined ) 
-    return (<any[] | Uint8Array | string>arr).length;
-  if( (<ArrayBufferLike>arr).byteLength !== undefined )
-    return (<ArrayBufferLike>arr).byteLength;
-  assert(0,"Invalid argument for arrayByteLength");
+export function arrayByteLength(
+  arr: any[] | Uint8Array | string | ArrayBufferLike,
+): number {
+  if ((<any[] | Uint8Array | string> arr).length !== undefined) {
+    return (<any[] | Uint8Array | string> arr).length;
+  }
+  if ((<ArrayBufferLike> arr).byteLength !== undefined) {
+    return (<ArrayBufferLike> arr).byteLength;
+  }
+  assert(0, "Invalid argument for arrayByteLength");
   return 0;
 }
 
@@ -639,73 +657,61 @@ export function arrayByteLength( arr:any[] | Uint8Array | string | ArrayBufferLi
  * Combines array items (arrays) into single Uint8Array object.
  * @param arr the array of the arrays (Array, Uint8Array, or string).
  */
-export function arraysToBytes( arr:(any[] | Uint8Array | string | ArrayBufferLike )[] ):Uint8Array
-{
+export function arraysToBytes(
+  arr: (any[] | Uint8Array | string | ArrayBufferLike)[],
+): Uint8Array {
   const length = arr.length;
   // Shortcut: if first and only item is Uint8Array, return it.
-  if( length === 1 && arr[0] instanceof Uint8Array ) return arr[0];
+  if (length === 1 && arr[0] instanceof Uint8Array) return arr[0];
 
   let resultLength = 0;
-  for (let i = 0; i < length; i++) 
-  {
+  for (let i = 0; i < length; i++) {
     resultLength += arrayByteLength(arr[i]);
   }
   let pos = 0;
   const data = new Uint8Array(resultLength);
-  for (let i = 0; i < length; i++) 
-  {
+  for (let i = 0; i < length; i++) {
     let item = arr[i];
-    if( !(item instanceof Uint8Array) )
-    {
-      if (typeof item === "string") 
-      {
+    if (!(item instanceof Uint8Array)) {
+      if (typeof item === "string") {
         item = stringToBytes(item);
-      } 
-      else {
+      } else {
         item = new Uint8Array(item);
       }
     }
     const itemLength = item.byteLength;
-    data.set( <Uint8Array>item, pos);
+    data.set(<Uint8Array> item, pos);
     pos += itemLength;
   }
   return data;
 }
 
-export function string32( value:number ) 
-{
-  // #if !PRODUCTION || TESTING
-    // if (
-    //   typeof PDFJSDev === "undefined" ||
-    //   PDFJSDev.test("!PRODUCTION || TESTING")
-    // ) {
+export function string32(value: number) {
+  /*#static*/ if (_PDFDEV) {
     assert(
       typeof value === "number" && Math.abs(value) < 2 ** 32,
-      `string32: Unexpected input "${value}".`
+      `string32: Unexpected input "${value}".`,
     );
-    // }
-  // #endif
+  }
   return String.fromCharCode(
     (value >> 24) & 0xff,
     (value >> 16) & 0xff,
     (value >> 8) & 0xff,
-    value & 0xff
+    value & 0xff,
   );
 }
 
-export function objectSize( obj:{} )
-{
+export function objectSize(obj: {}) {
   return Object.keys(obj).length;
 }
 
 // Ensure that the returned Object has a `null` prototype; hence why
 // `Object.fromEntries(...)` is not used.
-export function objectFromMap<K extends string | number, V>( 
-  map:Iterable<readonly [K, V]>
+export function objectFromMap<K extends string | number, V>(
+  map: Iterable<readonly [K, V]>,
 ) {
-  const obj:Record<K, V> = Object.create(null);
-  for( const [key, value] of map )
-  {
+  const obj: Record<K, V> = Object.create(null);
+  for (const [key, value] of map) {
     obj[key] = value;
   }
   return obj;
@@ -729,55 +735,46 @@ function isEvalSupported() {
   }
 }
 
-export class FeatureTest
-{
-  static get isLittleEndian()
-  {
+export class FeatureTest {
+  static get isLittleEndian() {
     return shadow(this, "isLittleEndian", isLittleEndian());
   }
 
-  static get isEvalSupported()
-  {
+  static get isEvalSupported() {
     return shadow(this, "isEvalSupported", isEvalSupported());
   }
 
-  static get isOffscreenCanvasSupported()
-  {
+  static get isOffscreenCanvasSupported() {
     return shadow(
       this,
       "isOffscreenCanvasSupported",
-      typeof (<any>globalThis).OffscreenCanvas !== "undefined"
+      typeof (<any> globalThis).OffscreenCanvas !== "undefined",
     );
   }
 }
 
 export type point_t = [number, number];
 export type point3d_t = [number, number, number];
-export type rect_t = TupleOf< number, 4>;
-export type matrix_t = TupleOf< number, 6>;
-export type matrix3d_t = TupleOf< number, 9>;
+export type rect_t = TupleOf<number, 4>;
+export type matrix_t = TupleOf<number, 6>;
+export type matrix3d_t = TupleOf<number, 9>;
 
-const hexNumbers = [...Array(256).keys()].map(n =>
+const hexNumbers = [...Array(256).keys()].map((n) =>
   n.toString(16).padStart(2, "0")
 );
 
-export class Util
-{
-  static makeHexColor( r:number, g:number, b:number )
-  {
+export class Util {
+  static makeHexColor(r: number, g: number, b: number) {
     return `#${hexNumbers[r]}${hexNumbers[g]}${hexNumbers[b]}`;
   }
 
   // Apply a scaling matrix to some min/max values.
   // If a scaling factor is negative then min and max must be
   // swaped.
-  static scaleMinMax( transform:matrix_t, minMax:rect_t )
-  {
+  static scaleMinMax(transform: matrix_t, minMax: rect_t) {
     let temp;
-    if( transform[0] )
-    {
-      if( transform[0] < 0 )
-      {
+    if (transform[0]) {
+      if (transform[0] < 0) {
         temp = minMax[0];
         minMax[0] = minMax[1];
         minMax[1] = temp;
@@ -785,16 +782,14 @@ export class Util
       minMax[0] *= transform[0];
       minMax[1] *= transform[0];
 
-      if( transform[3] < 0 )
-      {
+      if (transform[3] < 0) {
         temp = minMax[2];
         minMax[2] = minMax[3];
         minMax[3] = temp;
       }
       minMax[2] *= transform[3];
       minMax[3] *= transform[3];
-    } 
-    else {
+    } else {
       temp = minMax[0];
       minMax[0] = minMax[2];
       minMax[2] = temp;
@@ -802,8 +797,7 @@ export class Util
       minMax[1] = minMax[3];
       minMax[3] = temp;
 
-      if (transform[1] < 0)
-      {
+      if (transform[1] < 0) {
         temp = minMax[2];
         minMax[2] = minMax[3];
         minMax[3] = temp;
@@ -811,8 +805,7 @@ export class Util
       minMax[2] *= transform[1];
       minMax[3] *= transform[1];
 
-      if (transform[2] < 0)
-      {
+      if (transform[2] < 0) {
         temp = minMax[0];
         minMax[0] = minMax[1];
         minMax[1] = temp;
@@ -827,8 +820,7 @@ export class Util
   }
 
   // Concatenates two transformation matrices together and returns the result.
-  static transform( m1:matrix_t, m2:matrix_t ):matrix_t
-  {
+  static transform(m1: matrix_t, m2: matrix_t): matrix_t {
     return [
       m1[0] * m2[0] + m1[2] * m2[1],
       m1[1] * m2[0] + m1[3] * m2[1],
@@ -840,15 +832,13 @@ export class Util
   }
 
   // For 2d affine transforms
-  static applyTransform( p:point_t | rect_t, m:matrix_t ):point_t
-  {
+  static applyTransform(p: point_t | rect_t, m: matrix_t): point_t {
     const xt = p[0] * m[0] + p[1] * m[2] + m[4];
     const yt = p[0] * m[1] + p[1] * m[3] + m[5];
     return [xt, yt];
   }
 
-  static applyInverseTransform( p:point_t, m:matrix_t ):point_t
-  {
+  static applyInverseTransform(p: point_t, m: matrix_t): point_t {
     const d = m[0] * m[3] - m[1] * m[2];
     const xt = (p[0] * m[3] - p[1] * m[2] + m[2] * m[5] - m[4] * m[3]) / d;
     const yt = (-p[0] * m[1] + p[1] * m[0] + m[4] * m[1] - m[5] * m[0]) / d;
@@ -857,10 +847,9 @@ export class Util
 
   // Applies the transform to the rectangle and finds the minimum axially
   // aligned bounding box.
-  static getAxialAlignedBoundingBox( r:rect_t, m:matrix_t ):rect_t
-  {
-    const p1 = Util.applyTransform( r, m);
-    const p2 = Util.applyTransform( <point_t>r.slice(2, 4), m);
+  static getAxialAlignedBoundingBox(r: rect_t, m: matrix_t): rect_t {
+    const p1 = Util.applyTransform(r, m);
+    const p2 = Util.applyTransform(<point_t> r.slice(2, 4), m);
     const p3 = Util.applyTransform([r[0], r[3]], m);
     const p4 = Util.applyTransform([r[2], r[1]], m);
     return [
@@ -871,8 +860,7 @@ export class Util
     ];
   }
 
-  static inverseTransform( m:matrix_t ):matrix_t
-  {
+  static inverseTransform(m: matrix_t): matrix_t {
     const d = m[0] * m[3] - m[1] * m[2];
     return [
       m[3] / d,
@@ -890,8 +878,7 @@ export class Util
   //   | g h i |   | Z |
   // M is assumed to be serialized as [a,b,c,d,e,f,g,h,i],
   // with v as [X,Y,Z]
-  static apply3dTransform( m:matrix3d_t, v:point3d_t ) 
-  {
+  static apply3dTransform(m: matrix3d_t, v: point3d_t) {
     return [
       m[0] * v[0] + m[1] * v[1] + m[2] * v[2],
       m[3] * v[0] + m[4] * v[1] + m[5] * v[2],
@@ -902,8 +889,7 @@ export class Util
   // This calculation uses Singular Value Decomposition.
   // The SVD can be represented with formula A = USV. We are interested in the
   // matrix S here because it represents the scale values.
-  static singularValueDecompose2dScale( m:matrix_t )
-  {
+  static singularValueDecompose2dScale(m: matrix_t) {
     const transpose = [m[0], m[2], m[1], m[3]];
 
     // Multiply matrix m with its transpose.
@@ -926,9 +912,8 @@ export class Util
   // For coordinate systems whose origin lies in the bottom-left, this
   // means normalization to (BL,TR) ordering. For systems with origin in the
   // top-left, this means (TL,BR) ordering.
-  static normalizeRect( rect:rect_t )
-  {
-    const r = <rect_t>rect.slice(0); // clone rect
+  static normalizeRect(rect: rect_t) {
+    const r = <rect_t> rect.slice(0); // clone rect
     if (rect[0] > rect[2]) {
       r[0] = rect[2];
       r[2] = rect[0];
@@ -943,78 +928,76 @@ export class Util
   // Returns a rectangle [x1, y1, x2, y2] corresponding to the
   // intersection of rect1 and rect2. If no intersection, returns 'undefined'
   // The rectangle coordinates of rect1, rect2 should be [x1, y1, x2, y2]
-  static intersect( rect1:rect_t, rect2:rect_t ):rect_t | undefined
-  {
+  static intersect(rect1: rect_t, rect2: rect_t): rect_t | undefined {
     const xLow = Math.max(
       Math.min(rect1[0], rect1[2]),
-      Math.min(rect2[0], rect2[2])
+      Math.min(rect2[0], rect2[2]),
     );
     const xHigh = Math.min(
       Math.max(rect1[0], rect1[2]),
-      Math.max(rect2[0], rect2[2])
+      Math.max(rect2[0], rect2[2]),
     );
-    if( xLow > xHigh ) return undefined;
+    if (xLow > xHigh) return undefined;
 
     const yLow = Math.max(
       Math.min(rect1[1], rect1[3]),
-      Math.min(rect2[1], rect2[3])
+      Math.min(rect2[1], rect2[3]),
     );
     const yHigh = Math.min(
       Math.max(rect1[1], rect1[3]),
-      Math.max(rect2[1], rect2[3])
+      Math.max(rect2[1], rect2[3]),
     );
-    if( yLow > yHigh ) return undefined;
+    if (yLow > yHigh) return undefined;
 
-    return <rect_t>[xLow, yLow, xHigh, yHigh];
+    return <rect_t> [xLow, yLow, xHigh, yHigh];
   }
 
   // From https://github.com/adobe-webplatform/Snap.svg/blob/b365287722a72526000ac4bfcf0ce4cac2faa015/src/path.js#L852
-  static bezierBoundingBox( 
-    x0:number, y0:number, 
-    x1:number, y1:number, 
-    x2:number, y2:number, 
-    x3:number, y3:number
-  ):rect_t {
+  static bezierBoundingBox(
+    x0: number,
+    y0: number,
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+    x3: number,
+    y3: number,
+  ): rect_t {
     const tvalues = [],
-      bounds:[number[], number[]] = [[], []];
+      bounds: [number[], number[]] = [[], []];
     let a, b, c, t, t1, t2, b2ac, sqrtb2ac;
-    for (let i = 0; i < 2; ++i) 
-    {
-      if( i === 0 )
-      {
+    for (let i = 0; i < 2; ++i) {
+      if (i === 0) {
         b = 6 * x0 - 12 * x1 + 6 * x2;
         a = -3 * x0 + 9 * x1 - 9 * x2 + 3 * x3;
         c = 3 * x1 - 3 * x0;
-      } 
-      else {
+      } else {
         b = 6 * y0 - 12 * y1 + 6 * y2;
         a = -3 * y0 + 9 * y1 - 9 * y2 + 3 * y3;
         c = 3 * y1 - 3 * y0;
       }
-      if( Math.abs(a) < 1e-12 )
-      {
-        if( Math.abs(b) < 1e-12 )
+      if (Math.abs(a) < 1e-12) {
+        if (Math.abs(b) < 1e-12) {
           continue;
+        }
         t = -c / b;
-        if (0 < t && t < 1) 
-        {
+        if (0 < t && t < 1) {
           tvalues.push(t);
         }
         continue;
       }
       b2ac = b * b - 4 * c * a;
       sqrtb2ac = Math.sqrt(b2ac);
-      if( b2ac < 0 ) 
+      if (b2ac < 0) {
         continue;
+      }
 
       t1 = (-b + sqrtb2ac) / (2 * a);
-      if (0 < t1 && t1 < 1) 
-      {
+      if (0 < t1 && t1 < 1) {
         tvalues.push(t1);
       }
       t2 = (-b - sqrtb2ac) / (2 * a);
-      if (0 < t2 && t2 < 1) 
-      {
+      if (0 < t2 && t2 < 1) {
         tvalues.push(t2);
       }
     }
@@ -1022,17 +1005,14 @@ export class Util
     let j = tvalues.length,
       mt;
     const jlen = j;
-    while( j-- )
-    {
+    while (j--) {
       t = tvalues[j];
       mt = 1 - t;
-      bounds[0][j] =
-        mt * mt * mt * x0 +
+      bounds[0][j] = mt * mt * mt * x0 +
         3 * mt * mt * t * x1 +
         3 * mt * t * t * x2 +
         t * t * t * x3;
-      bounds[1][j] =
-        mt * mt * mt * y0 +
+      bounds[1][j] = mt * mt * mt * y0 +
         3 * mt * mt * t * y1 +
         3 * mt * t * t * y2 +
         t * t * t * y3;
@@ -1054,37 +1034,181 @@ export class Util
 }
 
 const PDFStringTranslateTable = [
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x2d8,
-  0x2c7, 0x2c6, 0x2d9, 0x2dd, 0x2db, 0x2da, 0x2dc, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0x2022, 0x2020, 0x2021, 0x2026, 0x2014, 0x2013, 0x192,
-  0x2044, 0x2039, 0x203a, 0x2212, 0x2030, 0x201e, 0x201c, 0x201d, 0x2018,
-  0x2019, 0x201a, 0x2122, 0xfb01, 0xfb02, 0x141, 0x152, 0x160, 0x178, 0x17d,
-  0x131, 0x142, 0x153, 0x161, 0x17e, 0, 0x20ac,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0x2d8,
+  0x2c7,
+  0x2c6,
+  0x2d9,
+  0x2dd,
+  0x2db,
+  0x2da,
+  0x2dc,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0x2022,
+  0x2020,
+  0x2021,
+  0x2026,
+  0x2014,
+  0x2013,
+  0x192,
+  0x2044,
+  0x2039,
+  0x203a,
+  0x2212,
+  0x2030,
+  0x201e,
+  0x201c,
+  0x201d,
+  0x2018,
+  0x2019,
+  0x201a,
+  0x2122,
+  0xfb01,
+  0xfb02,
+  0x141,
+  0x152,
+  0x160,
+  0x178,
+  0x17d,
+  0x131,
+  0x142,
+  0x153,
+  0x161,
+  0x17e,
+  0,
+  0x20ac,
 ];
 
-export function stringToPDFString( str:string ) 
-{
-  if( str[0] >= "\xEF" )
-  {
+export function stringToPDFString(str: string) {
+  if (str[0] >= "\xEF") {
     let encoding;
-    if( str[0] === "\xFE" && str[1] === "\xFF" )
-    {
+    if (str[0] === "\xFE" && str[1] === "\xFF") {
       encoding = "utf-16be";
-    } 
-    else if( str[0] === "\xFF" && str[1] === "\xFE" )
-    {
+    } else if (str[0] === "\xFF" && str[1] === "\xFE") {
       encoding = "utf-16le";
-    } 
-    else if( str[0] === "\xEF" && str[1] === "\xBB" && str[2] === "\xBF" )
-    {
+    } else if (str[0] === "\xEF" && str[1] === "\xBB" && str[2] === "\xBF") {
       encoding = "utf-8";
     }
 
-    if( encoding )
-    {
+    if (encoding) {
       try {
         const decoder = new TextDecoder(encoding, { fatal: true });
         const buffer = stringToBytes(str);
@@ -1096,65 +1220,56 @@ export function stringToPDFString( str:string )
   }
   // ISO Latin 1
   const strBuf = [];
-  for( let i = 0, ii = str.length; i < ii; i++ )
-  {
+  for (let i = 0, ii = str.length; i < ii; i++) {
     const code = PDFStringTranslateTable[str.charCodeAt(i)];
     strBuf.push(code ? String.fromCharCode(code) : str.charAt(i));
   }
   return strBuf.join("");
 }
 
-export function escapeString( str:string )
-{
+export function escapeString(str: string) {
   // replace "(", ")", "\n", "\r" and "\"
   // by "\(", "\)", "\\n", "\\r" and "\\"
   // in order to write it in a PDF file.
-  return str.replace(/([()\\\n\r])/g, match => {
+  return str.replace(/([()\\\n\r])/g, (match) => {
     if (match === "\n") {
       return "\\n";
-    } 
-    else if (match === "\r") {
+    } else if (match === "\r") {
       return "\\r";
     }
     return `\\${match}`;
   });
 }
 
-export function isAscii( str:string )
-{
+export function isAscii(str: string) {
   return /^[\x00-\x7F]*$/.test(str);
 }
 
-export function stringToUTF16BEString( str:string )
-{
+export function stringToUTF16BEString(str: string) {
   const buf = ["\xFE\xFF"];
   for (let i = 0, ii = str.length; i < ii; i++) {
     const char = str.charCodeAt(i);
     buf.push(
       String.fromCharCode((char >> 8) & 0xff),
-      String.fromCharCode(char & 0xff)
+      String.fromCharCode(char & 0xff),
     );
   }
   return buf.join("");
 }
 
-export function stringToUTF8String( str:string ) 
-{
+export function stringToUTF8String(str: string) {
   return decodeURIComponent(escape(str));
 }
 
-export function utf8StringToString( str:string ) 
-{
+export function utf8StringToString(str: string) {
   return unescape(encodeURIComponent(str));
 }
 
-export function isArrayBuffer( v:any ) 
-{
+export function isArrayBuffer(v: any) {
   return typeof v === "object" && v?.byteLength !== undefined;
 }
 
-export function getModificationDate( date=new Date )
-{
+export function getModificationDate(date = new Date()) {
   const buffer = [
     date.getUTCFullYear().toString(),
     (date.getUTCMonth() + 1).toString().padStart(2, "0"),
@@ -1166,4 +1281,4 @@ export function getModificationDate( date=new Date )
 
   return buffer.join("");
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

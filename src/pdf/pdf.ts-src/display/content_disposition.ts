@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-import { stringToBytes } from "../shared/util.js";
-/*81---------------------------------------------------------------------------*/
+import { stringToBytes } from "../shared/util.ts";
+/*80--------------------------------------------------------------------------*/
 
 // This getFilenameFromContentDispositionHeader function is adapted from
 // https://github.com/Rob--W/open-in-browser/blob/7e2e35a38b8b4e981b11da7b2f01df0149049e92/extension/content-disposition.js
@@ -32,14 +32,15 @@ import { stringToBytes } from "../shared/util.js";
  *
  * @return Filename, if found in the Content-Disposition header.
  */
-export function getFilenameFromContentDispositionHeader( contentDisposition:string 
-):string {
+export function getFilenameFromContentDispositionHeader(
+  contentDisposition: string,
+): string {
   let needsEncodingFixup = true;
 
   // filename*=ext-value ("ext-value" from RFC 5987, referenced by RFC 6266).
-  let tmp:string | RegExpExecArray | null = toParamRegExp("filename\\*", "i").exec(contentDisposition);
-  if( tmp )
-  {
+  let tmp: string | RegExpExecArray | null = toParamRegExp("filename\\*", "i")
+    .exec(contentDisposition);
+  if (tmp) {
     tmp = tmp[1];
     let filename = rfc2616unquote(tmp);
     filename = unescape(filename);
@@ -52,8 +53,7 @@ export function getFilenameFromContentDispositionHeader( contentDisposition:stri
   // filename*n*=part
   // filename*n=part
   tmp = rfc2231getparam(contentDisposition);
-  if( tmp )
-  {
+  if (tmp) {
     // RFC 2047, section
     const filename = rfc2047decode(tmp);
     return fixupEncoding(filename);
@@ -71,8 +71,7 @@ export function getFilenameFromContentDispositionHeader( contentDisposition:stri
   // After this line there are only function declarations. We cannot put
   // "return" here for readability because babel would then drop the function
   // declarations...
-  function toParamRegExp( attributePattern:string, flags:string )
-  {
+  function toParamRegExp(attributePattern: string, flags: string) {
     return new RegExp(
       "(?:^|;)\\s*" +
         attributePattern +
@@ -84,13 +83,11 @@ export function getFilenameFromContentDispositionHeader( contentDisposition:stri
         "|" +
         '"(?:[^"\\\\]|\\\\"?)+"?' +
         ")",
-      flags
+      flags,
     );
   }
-  function textdecode( encoding:string | undefined, value:string )
-  {
-    if( encoding )
-    {
+  function textdecode(encoding: string | undefined, value: string) {
+    if (encoding) {
       if (!/^[\x00-\xFF]+$/.test(value)) {
         return value;
       }
@@ -105,8 +102,7 @@ export function getFilenameFromContentDispositionHeader( contentDisposition:stri
     }
     return value;
   }
-  function fixupEncoding( value:string )
-  {
+  function fixupEncoding(value: string) {
     if (needsEncodingFixup && /[\x80-\xff]/.test(value)) {
       // Maybe multi-byte UTF-8.
       value = textdecode("utf-8", value);
@@ -117,17 +113,15 @@ export function getFilenameFromContentDispositionHeader( contentDisposition:stri
     }
     return value;
   }
-  function rfc2231getparam( contentDispositionStr:string )
-  {
-    const matches:[quot:string,part:string][] = [];
+  function rfc2231getparam(contentDispositionStr: string) {
+    const matches: [quot: string, part: string][] = [];
     let match;
     // Iterate over all filename*n= and filename*n*= with n being an integer
     // of at least zero. Any non-zero number must not start with '0'.
     const iter = toParamRegExp("filename\\*((?!0\\d)\\d+)(\\*?)", "ig");
-    while ((match = iter.exec(contentDispositionStr)) !== null)
-    {
+    while ((match = iter.exec(contentDispositionStr)) !== null) {
       let [, nstr, quot, part] = match; // eslint-disable-line prefer-const
-      const n = parseInt( nstr, 10 );
+      const n = parseInt(nstr, 10);
       if (n in matches) {
         // Ignore anything after the invalid second filename*0.
         if (n === 0) {
@@ -137,7 +131,7 @@ export function getFilenameFromContentDispositionHeader( contentDisposition:stri
       }
       matches[n] = [quot, part];
     }
-    const parts = [];
+    const parts: string[] = [];
     for (let n = 0; n < matches.length; ++n) {
       if (!(n in matches)) {
         // Numbers must be consecutive. Truncate when there is a hole.
@@ -155,8 +149,7 @@ export function getFilenameFromContentDispositionHeader( contentDisposition:stri
     }
     return parts.join("");
   }
-  function rfc2616unquote( value:string )
-  {
+  function rfc2616unquote(value: string) {
     if (value.startsWith('"')) {
       const parts = value.slice(1).split('\\"');
       // Find the first unescaped " and terminate there.
@@ -172,8 +165,7 @@ export function getFilenameFromContentDispositionHeader( contentDisposition:stri
     }
     return value;
   }
-  function rfc5987decode( extvalue:string )
-  {
+  function rfc5987decode(extvalue: string) {
     // Decodes "ext-value" from RFC 5987.
     const encodingend = extvalue.indexOf("'");
     if (encodingend === -1) {
@@ -188,8 +180,7 @@ export function getFilenameFromContentDispositionHeader( contentDisposition:stri
     const value = langvalue.replace(/^[^']*'/, "");
     return textdecode(encoding, value);
   }
-  function rfc2047decode( value:string )
-  {
+  function rfc2047decode(value: string) {
     // RFC 2047-decode the result. Firefox tried to drop support for it, but
     // backed out because some servers use it - https://bugzil.la/875615
     // Firefox's condition for decoding is here: https://searchfox.org/mozilla-central/rev/4a590a5a15e35d88a3b23dd6ac3c471cf85b04a8/netwerk/mime/nsMIMEHeaderParamImpl.cpp#742-748
@@ -212,12 +203,14 @@ export function getFilenameFromContentDispositionHeader( contentDisposition:stri
     //        ... but Firefox permits ? and space.
     return value.replace(
       /=\?([\w-]*)\?([QqBb])\?((?:[^?]|\?(?!=))*)\?=/g,
-      function (matches, charset, encoding, text) {
+      (matches, charset, encoding, text) => {
         if (encoding === "q" || encoding === "Q") {
           // RFC 2047 section 4.2.
-          text = text.replace( /_/g, " " );
-          text = text.replace( /=([0-9a-fA-F]{2})/g, 
-            (match:unknown, hex:string) => String.fromCharCode( parseInt(hex, 16) )
+          text = text.replace(/_/g, " ");
+          text = text.replace(
+            /=([0-9a-fA-F]{2})/g,
+            (match: unknown, hex: string) =>
+              String.fromCharCode(parseInt(hex, 16)),
           );
           return textdecode(charset, text);
         } // else encoding is b or B - base64 (RFC 2047 section 4.1)
@@ -225,10 +218,10 @@ export function getFilenameFromContentDispositionHeader( contentDisposition:stri
           text = atob(text);
         } catch (e) {}
         return textdecode(charset, text);
-      }
+      },
     );
   }
 
   return "";
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

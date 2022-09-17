@@ -1,31 +1,31 @@
-/*81*****************************************************************************
+/*80****************************************************************************
  * mv
  * -- */
 
-import { type Constructor } from "./alias.js";
-import { mix } from "./jslang.js";
-import { svg } from "./dom.js";
-import { $vuu, $Vuu } from "./symbols.js";
-import { assert, type ReportedError } from "./util/trace.js";
-/*81---------------------------------------------------------------------------*/
+import { INOUT } from "../global.ts";
+import { AbstractConstructor } from "./alias.ts";
+import { svg } from "./dom.ts";
+import { mix } from "./jslang.ts";
+import { $Vuu, $vuu } from "./symbols.ts";
+import { assert, type ReportedError } from "./util/trace.ts";
+/*80--------------------------------------------------------------------------*/
 
 /**
  * Inwards API, i.e., API called from outside of `Coo`.
  */
-export interface CooInterface
-{
-  reportError?:( error:Error ) => void | Promise<void>;
+export interface CooInterface {
+  reportError?: (error: Error) => void | Promise<void>;
 }
 
 /**
- * Only has access to other Coo's through `ci`.
- * Notice, a in Coo contained Coo also only has access to other Coo's.
- * 
- * @final
+ * Access rule like scope:
+ * Only has access to sibling or child Coo's through `ci`.
+ * Child Coo accessing parent Coo has no such restriction.
  */
-export abstract class Coo<CI extends CooInterface=CooInterface>
-{
-  abstract get ci():CI;
+export abstract class Coo<CI extends CooInterface = CooInterface> {
+  abstract get ci(): CI;
+
+  getParentCoo?<PC extends Coo>(): PC;
 }
 // Coo.abc = "abc";
 
@@ -34,7 +34,6 @@ export abstract class Coo<CI extends CooInterface=CooInterface>
 
 // type CI<T> = T extends Coo<infer X> ? X : never
 // //#endregion
-
 
 // /**
 //  * Moo for interacting with other Coo's Hii.
@@ -47,74 +46,71 @@ export abstract class Coo<CI extends CooInterface=CooInterface>
 //   }
 // }
 
-declare global 
-{
-  interface Node
-  {
-    [$vuu]?:Vuu;
-    [$Vuu]?:Constructor<Vuu>;
-    // [$Vuu]?:new ( ...args:any ) => Vuu;
+declare global {
+  interface Node {
+    [$vuu]?: Vuu;
+    [$Vuu]?: AbstractConstructor<Vuu>;
   }
 }
 
 /**
- * Wrapper of DOM
+ * Wrapper of DOM.
+ * Vuu ⊆ Coo
  */
-export abstract class Vuu<C extends Coo=Coo, E extends Element=Element>
-{
-  protected coo$;
-  get coo() { return this.coo$; }
+export abstract class Vuu<C extends Coo = Coo, E extends Element = Element> {
+  protected coo$: C;
+  get coo() {
+    return this.coo$;
+  }
 
-  protected el$;
-  get el() { return this.el$; };
+  protected el$: E;
+  get el() {
+    return this.el$;
+  }
 
   /**
-   * @param { headconst } coo_x
-   * @param { headconst } el_x
+   * @headconst @param coo_x
+   * @headconst @param el_x
    */
-  constructor( coo_x:C, el_x:E )
-  {
+  constructor(coo_x: C, el_x: E) {
     this.coo$ = coo_x;
-
     this.el$ = el_x;
-    //jjjj is this not always Vuu? check!
-    this.el$[ $vuu ] = this;
-    this.el$[ $Vuu ] = <Constructor< Vuu >>this.constructor;
+
+    this.el$[$vuu] = this;
+    this.el$[$Vuu] = Vuu;
   }
 
-  get parentvuu1():Vuu | undefined
-  {
+  get parentVuu1(): Vuu | undefined {
     let node = this.el$.parentNode;
-    while( node && !node[$vuu] ) node = node.parentNode;
-    return node ? <Vuu>node[$vuu] : undefined;
+    while (node && !node[$vuu]) node = node.parentNode;
+    return node?.[$vuu];
   }
 
   /**
-   * @param { headconst } node_x
+   * @headconst @param node_x
    */
-  static vuuOf( node_x:Node )
-  {
-    let node:Node | null = node_x;
-    while( node && !node[$vuu] ) node = node.parentNode;
-    return node ? <Vuu>node[$vuu] : undefined;
+  static of(node_x: Node): Vuu | undefined {
+    let node: Node | null = node_x;
+    while (node && !node[$vuu]) node = node.parentNode;
+    return node?.[$vuu];
   }
 
   // /**
   //  * @deprecated - use DOM's `append()` directly
-  //  * @param { headconst Vuu } ret_x
+  //  * @headconst @param { Vuu } ret_x
   //  * @param { Element } el_x
   //  * @return { Vuu } - return ret_x
   //  */
   // append( ret_x, el_x = this.el )
   // {
   //   el_x.appendChild( ret_x.el );
-    
+
   //   return ret_x;
   // }
 
   // /**
-  //  * @param { headconst } ret_x
-  //  * @param { headconst } el_x
+  //  * @headconst @param ret_x
+  //  * @headconst @param el_x
   //  */
   // prepend<V extends Vuu>( ret_x:V, el_x=this.el$ ):V
   // {
@@ -124,27 +120,23 @@ export abstract class Vuu<C extends Coo=Coo, E extends Element=Element>
   // }
 
   /**
-   * @param { headconst } ret_x
-   * @param { headconst } refvuu
-   * @param { headconst } el_x
+   * @headconst @param ret_x
+   * @headconst @param refvuu
    */
-  attachBefore<V extends Vuu<C>>( ret_x:V, refvuu?:Vuu, el_x=this.el$ )
-  {
-    if( refvuu )
-         el_x.insertBefore( ret_x.el$, refvuu.el$ );
-    else el_x.append( ret_x.el$ );
-
+  attachBefore<V extends Vuu<C>>(ret_x: V, refvuu?: Vuu) {
+    if (refvuu) {
+      this.el$.insertBefore(ret_x.el$, refvuu.el$);
+    } else {
+      this.el$.append(ret_x.el$);
+    }
     return ret_x;
   }
 
   /**
-   * @param { headconst } ret_x
-   * @param { headconst } el_x
+   * @headconst @param ret_x
    */
-  detach<V extends Vuu<C>>( ret_x:V, el_x=this.el$ )
-  {
-    el_x.removeChild( ret_x.el$ );
-
+  detach<V extends Vuu<C>>(ret_x: V) {
+    this.el$.removeChild(ret_x.el$);
     return ret_x;
   }
 
@@ -162,27 +154,30 @@ export abstract class Vuu<C extends Coo=Coo, E extends Element=Element>
   //  */
   // attr( ...args ) { this.el$.setAttribute( ...args ); }
 
-  // on< EN extends keyof GlobalEventHandlersEventMap >( type:EN, 
-  //   listener:MyEventListener< GlobalEventHandlersEventMap[EN] > 
-  //          | MyEventListenerObject< GlobalEventHandlersEventMap[EN] > 
-  //          | null, 
-  //   options?:boolean | AddEventListenerOptions 
-  // ) { 
-  //   this.el$.on( type, <EventListenerOrEventListenerObject|null>listener, options ); 
+  // on< EN extends keyof GlobalEventHandlersEventMap >( type:EN,
+  //   listener:MyEventListener< GlobalEventHandlersEventMap[EN] >
+  //          | MyEventListenerObject< GlobalEventHandlersEventMap[EN] >
+  //          | null,
+  //   options?:boolean | AddEventListenerOptions
+  // ) {
+  //   this.el$.on( type, <EventListenerOrEventListenerObject|null>listener, options );
   // }
-  on( ...args:[string,any,any?] ) { this.el$.on( ...args ); }
-  off( ...args:[string,any,any?] ) { this.el$.off( ...args ); }
+  on(...args: [string, any, any?]) {
+    this.el$.on(...args);
+  }
+  off(...args: [string, any, any?]) {
+    this.el$.off(...args);
+  }
 
   // static Vuufn() {}
 }
 // Vuu.def = "def";
 
-export class HTMLVuu<C extends Coo=Coo, E extends HTMLElement=HTMLElement>
-  extends Vuu<C, E>
-{  
+export class HTMLVuu<C extends Coo = Coo, E extends HTMLElement = HTMLElement>
+  extends Vuu<C, E> {
   // /**
-  //  * @param { headconst } coo_x 
-  //  * @param { headconst } el_x
+  //  * @headconst @param coo_x
+  //  * @headconst @param el_x
   //  */
   // constructor( coo_x:C, el_x:E )
   // {
@@ -190,12 +185,11 @@ export class HTMLVuu<C extends Coo=Coo, E extends HTMLElement=HTMLElement>
   // }
 }
 
-export class SVGVuu< C extends Coo=Coo, E extends SVGElement=SVGElement >
-  extends Vuu< C, E >
-{
+export class SVGVuu<C extends Coo = Coo, E extends SVGElement = SVGElement>
+  extends Vuu<C, E> {
   // /**
-  //  * @param { headconst } coo_x 
-  //  * @param { const } viewBox_x 
+  //  * @headconst @param coo_x
+  //  * @const @param viewBox_x
   //  */
   // constructor( coo_x:C, el_x:E )
   // {
@@ -206,51 +200,49 @@ export class SVGVuu< C extends Coo=Coo, E extends SVGElement=SVGElement >
 /**
  * It is a `Coo` functionally.
  */
-export interface HTMLVCoo< 
-  CI extends CooInterface=CooInterface, 
-  E extends HTMLElement=HTMLElement
-> extends HTMLVuu<Coo<CI>, E>, Coo<CI>
-{}
-export abstract class HTMLVCoo<CI extends CooInterface, E extends HTMLElement> 
-  extends mix( HTMLVuu, Coo )
-{
-  readonly #ci:CI = Object.create(null);
-  /** @implements */
-  get ci() { return this.#ci; }
+export interface HTMLVCo<
+  CI extends CooInterface = CooInterface,
+  E extends HTMLElement = HTMLElement,
+> extends HTMLVuu<Coo<CI>, E>, Coo<CI> {}
+export abstract class HTMLVCo<CI extends CooInterface, E extends HTMLElement>
+  extends mix(HTMLVuu, Coo) {
+  readonly #ci: CI = Object.create(null);
+  /** @implement */
+  get ci() {
+    return this.#ci;
+  }
 
   /**
-   * @param { headconst } el_x
+   * @headconst @param el_x
    */
-  constructor( el_x:E )
-  {
-    super( undefined, el_x );
+  constructor(el_x: E) {
+    super(undefined, el_x);
     this.coo$ = this;
   }
 
-  showReportedError?( re_x:ReportedError ):void;
+  showReportedError?(re_x: ReportedError): void;
 }
 
 /**
  * It is a Coo functionally.
  */
-export interface SVGVCoo< 
-  CI extends CooInterface=CooInterface,
-  E extends SVGElement=SVGElement
-> extends SVGVuu< Coo<CI>, E >, Coo<CI>
-{}
-export abstract class SVGVCoo< CI extends CooInterface, E extends SVGElement > 
-  extends mix( SVGVuu, Coo )
-{
-  readonly #ci:CI = Object.create(null);
-  /** @implements */
-  get ci() { return this.#ci; }
+export interface SVGVCo<
+  CI extends CooInterface = CooInterface,
+  E extends SVGElement = SVGElement,
+> extends SVGVuu<Coo<CI>, E>, Coo<CI> {}
+export abstract class SVGVCo<CI extends CooInterface, E extends SVGElement>
+  extends mix(SVGVuu, Coo) {
+  readonly #ci: CI = Object.create(null);
+  /** @implement */
+  get ci() {
+    return this.#ci;
+  }
 
   /**
-   * @param { headconst } el_x
+   * @headconst @param el_x
    */
-  constructor( el_x:E )
-  {
-    super( undefined, el_x );
+  constructor(el_x: E) {
+    super(undefined, el_x);
     this.coo$ = this;
   }
 }
@@ -263,155 +255,176 @@ export abstract class SVGVCoo< CI extends CooInterface, E extends SVGElement >
 // console.log( vcoo instanceof Coo1 ); // false
 // console.log( vcoo instanceof Coo ); // false
 
-export class SVGViewbox<CI extends CooInterface=CooInterface> extends SVGVCoo<CI>
-{
+export class SVGViewbox<CI extends CooInterface = CooInterface>
+  extends SVGVCo<CI> {
   /**
-   * @param { headconst } coo_x 
-   * @param { const } viewBox_x 
+   * @headconst @param coo_x
+   * @const @param viewBox_x
    */
-  constructor( viewBox_x="0 0 100 100" )
-  {
-    super( svg("svg") );
-    
-    this.el$.setAttribute( "viewBox", viewBox_x );
+  constructor(viewBox_x = "0 0 100 100") {
+    super(svg("svg"));
+    this.el$.setAttribute("viewBox", viewBox_x);
   }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 
-export type MooEq<T> = ( a:T, b:T ) => boolean;
-export type MooHandler<T, D=any> = ( newval:T, oldval?:T, data?:D ) => void;
+export type MooEq<T extends {} | null> = (a: T, b: T) => boolean;
+export type MooHandler<T extends {} | null, D = any> = (newval: T, oldval?: T, data?: D) => void;
 
 // type IndexedMooHandler< T > = [ uint, MooHandler<T> ];
 // type SortedIndexedMooHandler< T > = SortedArray< IndexedMooHandler<T> >;
-interface MooHandlerExt<T, D=any> 
-{
-  handler:MooHandler<T, D>;
-  newval:T | undefined;
-  oldval:T | undefined;
-  force:boolean;
-  index:number;
+interface MooHandlerExt<T extends {} | null, D = any> {
+  handler: MooHandler<T, D>;
+  match_newval: T | undefined;
+  match_oldval: T | undefined;
+  force: boolean;
+  index: number;
 }
-class MooHandlerDB<T, D=any>
-{
-  readonly #eq:MooEq<T>;
+class MooHandlerDB<T extends {} | null, D = any> {
+  readonly #eq: MooEq<T>;
 
-  #_a:MooHandlerExt<T,D>[] = [];
-  get len_$() { return this.#_a.length; }
-  get empty() { return this.#_a.length === 0; }
+  #_a: MooHandlerExt<T, D>[] = [];
+  get len_$() {
+    return this.#_a.length;
+  }
+  get empty() {
+    return this.#_a.length === 0;
+  }
   #nforce = 0;
-  get force() { return this.#nforce > 0; }
-  
-  #newval:T | undefined;
-  #oldval?:T;
-  #got:MooHandler<T,D>[] = [];
-  #invalidate_cache = () => { this.#newval = undefined; }
+  get force() {
+    return this.#nforce > 0;
+  }
+
+  #newval: T | undefined;
+  #oldval?: T;
+  #got: MooHandler<T, D>[] = [];
+  #invalidate_cache = () => {
+    this.#newval = undefined;
+  };
 
   /**
-   * @param { headocnst } eq_x
+   * @headconst @param eq_x
    */
-  constructor( eq_x:MooEq<T> )
-  {
+  constructor(eq_x: MooEq<T>) {
     this.#eq = eq_x;
   }
 
   /**
-   * @param { headconst } handler_x 
-   * @param { headconst } newval 
-   * @param { headconst } oldval 
-   * @param { const } force
-   * @return `true` if added, `false` if not
+   * @headconst @param handler_x
+   * @headconst @param match_newval_x
+   * @headconst @param match_oldval_x
+   * @const @param force_x
+   * @const @param index_x
+   * @return `true` if added, `false` if not.
    */
-  add( handler_x:MooHandler<T,D>, newval?:T, oldval?:T, force=false, index=0 )
-  {
-    let ret = true;
-    if( this.#_a.some(_=>_.handler===handler_x) ) ret = false;
+  add(
+    handler_x: MooHandler<T, D>,
+    match_newval_x?: T,
+    match_oldval_x?: T,
+    force_x = false,
+    index_x = 0,
+  ) {
+    let add_ = true;
+    if (this.#_a.some((_) => _.handler === handler_x)) {
+      add_ = false;
+    }
+    if (add_) {
+      if (force_x) ++this.#nforce;
 
-    if( ret )
-    {
-      if( force ) ++this.#nforce;
-
-      let i = this.#_a.findIndex( ext => index < ext.index );
-      if( i < 0 ) i = this.#_a.length;
-      this.#_a.splice( i, 0, {
+      let i = this.#_a.findIndex((ext_y) => index_x < ext_y.index);
+      if (i < 0) i = this.#_a.length;
+      this.#_a.splice(i, 0, {
         handler: handler_x,
-        newval,
-        oldval,
-        force,
-        index,
+        match_newval: match_newval_x,
+        match_oldval: match_oldval_x,
+        force: force_x,
+        index: index_x,
       });
 
       this.#invalidate_cache(); //!
     }
-    
-    return ret;
+    return add_;
+  }
+
+  #valid_eq(v0_x: T | undefined, v1_x: T) {
+    return v0_x !== undefined && this.#eq(v0_x, v1_x);
   }
 
   /**
-   * @param { headconst } handler_x 
-   * @param { headconst } newval 
-   * @param { headconst } oldval 
+   * @headconst @param handler_x
+   * @headconst @param match_newval_x
+   * @headconst @param match_oldval_x
    * @return `true` if deleted, `false` if not
    */
-  del( handler_x:MooHandler<T,D>, newval?:T, oldval?:T )
-  {
-    let ret = true;
+  del(handler_x: MooHandler<T, D>, match_newval_x?: T, match_oldval_x?: T) {
+    let del_ = true;
 
-    const i = this.#_a.findIndex( ext => ext.handler===handler_x );
-    if( i < 0 ) ret = false;
-    if( ret && newval !== undefined )
-    {
-      if( this.#_a[i].newval === undefined
-       || !this.#eq( newval, <T>this.#_a[i].newval )
-      ) ret = false;
+    const i = this.#_a.findIndex((ext) => ext.handler === handler_x);
+    if (i < 0) del_ = false;
+    if (del_ && match_newval_x !== undefined) {
+      if (!this.#valid_eq(this.#_a[i].match_newval, match_newval_x)) {
+        del_ = false;
+      }
     }
-    if( ret && oldval !== undefined )
-    {
-      if( this.#_a[i].oldval === undefined
-       || !this.#eq( oldval, <T>this.#_a[i].oldval )
-      ) ret = false;
+    if (del_ && match_oldval_x !== undefined) {
+      if (!this.#valid_eq(this.#_a[i].match_oldval, match_oldval_x)) {
+        del_ = false;
+      }
     }
 
-    if( ret ) 
-    {
-      if( this.#_a[i].force ) --this.#nforce;
+    if (del_) {
+      if (this.#_a[i].force) --this.#nforce;
 
-      this.#_a.splice( i, 1 );
+      this.#_a.splice(i, 1);
 
       this.#invalidate_cache(); //!
     }
-    
-    return ret;
+    return del_;
   }
-  
-  get( newval:T, oldval:T, gforce:boolean )
-  {
-    if( this.#newval !== undefined && this.#eq( newval, this.#newval )
-     && this.#oldval !== undefined && this.#eq( oldval, this.#oldval )
-    ) return this.#got;
 
-    const nochange = this.#eq( newval, oldval );
+  #match(v0_x: T | undefined, v1_x: T) {
+    return v0_x === undefined || this.#eq(v0_x, v1_x);
+  }
+
+  get(newval_x: T, oldval_x: T, gforce_x: boolean) {
+    if (
+      this.#valid_eq(this.#newval, newval_x) &&
+      this.#valid_eq(this.#oldval, oldval_x)
+    ) {
+      return this.#got;
+    }
     this.#got.length = 0;
-    this.#_a.forEach( ext => {
-      let got_ = true;
 
-      if( ext.newval !== undefined 
-       && !this.#eq( newval, ext.newval )
-      ) got_ = false;
-      if( got_ 
-       && ext.oldval !== undefined 
-       && !this.#eq( oldval, ext.oldval )        
-      ) got_ = false;
-      if( got_
-       && !(gforce || ext.force) && nochange
-      ) got_ = false;
+    const changed_ = !this.#eq(newval_x, oldval_x);
+    this.#_a.forEach((ext) => {
+      // let got_ = true;
 
-      if( got_ ) this.#got.push( ext.handler );
+      // if (!this.#match(ext.newval, newval_x)) {
+      //   got_ = false;
+      // }
+      // if (got_ && !this.#match(ext.oldval, oldval_x)) {
+      //   got_ = false;
+      // }
+      // if (
+      //   got_ &&
+      //   !(gforce_x || ext.force) && !changed_
+      // ) {
+      //   got_ = false;
+      // }
+
+      if (
+        this.#match(ext.match_newval, newval_x) &&
+        this.#match(ext.match_oldval, oldval_x) &&
+        (changed_ || gforce_x || ext.force)
+      ) {
+        this.#got.push(ext.handler);
+      }
     });
+
     return this.#got;
   }
 
-  clear()
-  {
+  clear() {
     this.#_a.length = 0;
     this.#nforce = 0;
 
@@ -419,38 +432,52 @@ class MooHandlerDB<T, D=any>
   }
 }
 
-export class Moo<T, D=any>
-{
-  readonly #initval:T;
-  readonly #eq:MooEq<T>;
-  readonly #force:boolean;
+export class Moo<T extends {} | null, D = any> {
+  readonly #initval: T;
+  readonly #eq: MooEq<T>;
+  readonly #force: boolean;
 
-  #val!:T;
-  get val() { return this.#val; }
-  #newval!:T;
-  get newval() { return this.#newval; }
+  #val!: T;
+  get val() {
+    return this.#val;
+  }
+  #newval!: T;
+  get newval() {
+    return this.#newval;
+  }
   // #handler_db = new Set< MooHandler<T> >();
-  #handler_db!:MooHandlerDB<T,D>;
-  get _len() { return this.#handler_db.len_$; }
-  #forceOnce = false;
+  #handler_db!: MooHandlerDB<T, D>;
+  get _len() {
+    return this.#handler_db.len_$;
+  }
 
-  #data:D | undefined;
-  set data( data_x:D )
-  {
+  #forceOnce = false;
+  set forceOnce(force: boolean) {
+    this.#forceOnce = force;
+  }
+  force() {
+    this.#forceOnce = true;
+    return this;
+  }
+
+  get #forced() {
+    return this.#force || this.#forceOnce;
+  }
+
+  #data: D | undefined;
+  set data(data_x: D) {
     // // #if INOUT
     //   assert( this.#data === undefined );
     // // #endif
-
     this.#data = data_x;
   }
 
   /**
-   * @param { headconst } val_x
-   * @param { headocnst } eq_x
-   * @param { const } force
+   * @headconst @param val_x
+   * @headconst @param eq_x
+   * @const @param force
    */
-  constructor( val_x:T, eq_x=(a:T,b:T)=>a===b, force_x?:"force" )
-  {
+  constructor(val_x: T, eq_x = (a: T, b: T) => a === b, force_x?: "force") {
     this.#initval = val_x;
     this.#eq = eq_x;
     this.#force = force_x === undefined ? false : true;
@@ -458,100 +485,137 @@ export class Moo<T, D=any>
     this.reset();
   }
 
-  reset()
-  {
-    this.#val = this.#initval;
-    this.#newval = this.#initval;
-    if( !this.#handler_db?.empty )
-      this.#handler_db = new MooHandlerDB<T,D>( this.#eq ); 
-    //! not `#handler_db.clear()` b/c `#handler_db` could be shared
-    // if( !this.#handler_db ) this.#handler_db = new MooHandlerDB( this.#eq );
-    // this.#handler_db.clear();
-    this.#forceOnce = this.#force;
-
-    return this;
-  }
-
   /**
    * Without invoking any callbacks.
    */
-  set( val:T ) { this.#val = this.#newval = val; }
-  
-  /** @final */
-  registHandler( handler_x:MooHandler<T,D>, 
-    newval_x?:T, oldval_x?:T, force_x?:"force", index_x=0 
-  ) {
-    this.#handler_db.add( 
-      handler_x, newval_x, oldval_x, force_x!==undefined, index_x );
-    // console.log( `this.#handler_db.size=${this.#handler_db.size}` );
+  set(val: T) {
+    this.#val = this.#newval = val;
   }
-  /** @final */
-  removeHandler( handler_x:MooHandler<T,D>, newval_x?:T, oldval_x?:T )
-  {
-    this.#handler_db.del( handler_x, newval_x, oldval_x );
-    // console.log( `this.#handler_db.size=${this.#handler_db.size}` );
-  }
-  /** @final */
-  registOnceHandler( handler_x:MooHandler<T,D>, 
-    newval_x?:T, oldval_x?:T, force_x?:"force", index_x=0 
-  ) {
-    const wrap = ( newval_y:T, oldval_y?:T, data_y?:D ) => {
-      handler_x( newval_y, oldval_y, data_y );
-      this.removeHandler( wrap, newval_x, oldval_x );
+
+  reset() {
+    this.set(this.#initval);
+    if (!this.#handler_db?.empty) {
+      this.#handler_db = new MooHandlerDB<T, D>(this.#eq);
     }
-    this.registHandler( wrap, newval_x, oldval_x, force_x, index_x );
+    //! Not `#handler_db.clear()` because `#handler_db` could be shared.
+    // if( !this.#handler_db ) this.#handler_db = new MooHandlerDB( this.#eq );
+    // this.#handler_db.clear();
+    this.#forceOnce = this.#force;
+    return this;
   }
 
   /** @final */
-  on( newval_x:T, handler_x:MooHandler<T,D>, force_x?:"force", index_x=0 ) 
-  { 
-    this.registHandler( handler_x, newval_x, undefined, force_x, index_x ); 
+  registHandler(
+    handler_x: MooHandler<T, D>,
+    match_newval_x?: T,
+    match_oldval_x?: T,
+    force_x?: "force",
+    index_x = 0,
+  ) {
+    this.#handler_db.add(
+      handler_x,
+      match_newval_x,
+      match_oldval_x,
+      force_x !== undefined,
+      index_x,
+    );
+    // console.log( `this.#handler_db.size=${this.#handler_db.size}` );
   }
   /** @final */
-  off( newval_x:T, handler_x:MooHandler<T,D> ) 
-  { 
-    this.removeHandler( handler_x, newval_x ); 
+  removeHandler(
+    handler_x: MooHandler<T, D>,
+    match_newval_x?: T,
+    match_oldval_x?: T,
+  ) {
+    this.#handler_db.del(handler_x, match_newval_x, match_oldval_x);
+    // console.log( `this.#handler_db.size=${this.#handler_db.size}` );
   }
   /** @final */
-  once( newval_x:T, handler_x:MooHandler<T,D>, force_x?:"force", index_x=0 ) 
-  {
-    this.registOnceHandler( handler_x, newval_x, undefined, force_x, index_x ); 
+  registOnceHandler(
+    handler_x: MooHandler<T, D>,
+    match_newval_x?: T,
+    match_oldval_x?: T,
+    force_x?: "force",
+    index_x = 0,
+  ) {
+    const wrap_ = (newval_y: T, oldval_y?: T, data_y?: D) => {
+      handler_x(newval_y, oldval_y, data_y);
+      this.removeHandler(wrap_, match_newval_x, match_oldval_x);
+    };
+    this.registHandler(
+      wrap_,
+      match_newval_x,
+      match_oldval_x,
+      force_x,
+      index_x,
+    );
   }
 
-  shareHandlerTo( rhs:Moo<T> ) 
-  { 
-    // #if INOUT
-      assert( rhs.#handler_db.empty || rhs.#handler_db === this.#handler_db );
-    // #endif
-    // console.log( rhs.#handler_db );
-
-    rhs.#handler_db = this.#handler_db;
+  /** @final */
+  on(
+    newval_x: T,
+    handler_x: MooHandler<T, D>,
+    force_x?: "force",
+    index_x = 0,
+  ) {
+    this.registHandler(handler_x, newval_x, undefined, force_x, index_x);
+  }
+  /** @final */
+  off(newval_x: T, handler_x: MooHandler<T, D>) {
+    this.removeHandler(handler_x, newval_x);
+  }
+  /** @final */
+  once(
+    newval_x: T,
+    handler_x: MooHandler<T, D>,
+    force_x?: "force",
+    index_x = 0,
+  ) {
+    this.registOnceHandler(
+      handler_x,
+      newval_x,
+      undefined,
+      force_x,
+      index_x,
+    );
   }
 
-  set forceOnce( force:boolean ) { this.#forceOnce = force; }
-  force() { this.#forceOnce = true; return this; }
-  refresh() { this.force().val = this.#val; }
-
-  set val( val_x:T )
-  {
-    if( this.#eq( val_x, this.#val ) 
-     && !this.#force
-     && !this.#forceOnce
-     && !this.#handler_db.force
-    ) return;
+  set val(val_x: T) {
+    if (
+      this.#eq(val_x, this.#val) &&
+      !this.#forced &&
+      !this.#handler_db.force
+    ) {
+      return;
+    }
 
     this.#newval = val_x;
-    this.#handler_db.get( val_x, this.#val, this.#force || this.#forceOnce )
-      .forEach( handler_y => handler_y( val_x, this.#val, this.#data ) );
-    // for( const handler_y of this.#handler_db ) 
+    this.#handler_db.get(val_x, this.#val, this.#forced)
+      .forEach((handler_y) => handler_y(val_x, this.#val, this.#data));
+    // for( const handler_y of this.#handler_db )
     // {
     //   handler_y( val_x, this.#val, this );
     // }
-    this.#val = val_x; 
+    this.#val = val_x;
     this.#forceOnce = this.#force;
     this.#data = undefined; // it is used once
 
     // if( this.once_ ) this.#handler_db.clear();
   }
+
+  refresh() {
+    this.force().val = this.#val;
+  }
+
+  shareHandlerTo(rhs: Moo<T, D>) {
+    /*#static*/ if (INOUT) {
+      assert(rhs.#handler_db.empty || rhs.#handler_db === this.#handler_db);
+    }
+    // console.log( rhs.#handler_db );
+    rhs.#handler_db = this.#handler_db;
+  }
 }
-/*81---------------------------------------------------------------------------*/
+// new Moo(undefined); // error
+// new Moo(null); // error
+// new Moo(2); // ok
+/*80--------------------------------------------------------------------------*/

@@ -17,8 +17,10 @@
  * limitations under the License.
  */
 
-import { type IVisibleView } from "./interfaces.js";
-/*81---------------------------------------------------------------------------*/
+import { GENERIC, LIB } from "../../global.ts";
+import { binarySearchFirstItem } from "../pdf.ts-src/pdf.ts";
+import { type IVisibleView } from "./interfaces.ts";
+/*80--------------------------------------------------------------------------*/
 
 export const DEFAULT_SCALE_VALUE = "auto";
 export const DEFAULT_SCALE = 1.0;
@@ -30,7 +32,7 @@ export const MAX_AUTO_SCALE = 1.25;
 export const SCROLLBAR_PADDING = 40;
 export const VERTICAL_PADDING = 5;
 
-export const enum RenderingStates {
+export enum RenderingStates {
   INITIAL = 0,
   RUNNING = 1,
   PAUSED = 2,
@@ -103,8 +105,10 @@ export const enum PageLayout {
 export const AutoPrintRegExp = /\bprint\s*\(/;
 
 // Replaces {{arguments}} with their values.
-function xxxx_formatL10nValue( text:string, args:Record<string, string> | null )
-{
+function xxxx_formatL10nValue(
+  text: string,
+  args: Record<string, string> | null,
+) {
   if (!args) {
     return text;
   }
@@ -113,19 +117,17 @@ function xxxx_formatL10nValue( text:string, args:Record<string, string> | null )
   });
 }
 
-export class OutputScale
-{
+export class OutputScale {
   /**
    * @type {number} Horizontal scale.
    */
-  sx:number;
+  sx: number;
   /**
    * @type {number} Vertical scale.
    */
-  sy:number;
+  sy: number;
 
-  constructor()
-  {
+  constructor() {
     const pixelRatio = window.devicePixelRatio || 1;
     this.sx = pixelRatio;
     this.sy = pixelRatio;
@@ -134,16 +136,14 @@ export class OutputScale
   /**
    * @type {boolean} Returns `true` when scaling is required, `false` otherwise.
    */
-  get scaled()
-  {
+  get scaled() {
     return this.sx !== 1 || this.sy !== 1;
   }
 }
 
-export interface PageSpot
-{
-  top?:number;
-  left?:number;
+export interface PageSpot {
+  top?: number;
+  left?: number;
 }
 
 /**
@@ -155,41 +155,39 @@ export interface PageSpot
  *   ignore elements that either: Contains marked content identifiers,
  *   or have the CSS-rule `overflow: hidden;` set. The default value is `false`.
  */
-export function scrollIntoView( 
-  element:HTMLElement, spot?:PageSpot, scrollMatches=false )
-{
+export function scrollIntoView(
+  element: HTMLElement,
+  spot?: PageSpot,
+  scrollMatches = false,
+) {
   // Assuming offsetParent is available (it's not available when viewer is in
   // hidden iframe or object). We have to scroll: if the offsetParent is not set
   // producing the error. See also animationStarted.
-  let parent = <HTMLElement|null>element.offsetParent;
-  if (!parent) 
-  {
+  let parent = <HTMLElement | null> element.offsetParent;
+  if (!parent) {
     console.error("offsetParent is not set -- cannot scroll");
     return;
   }
   let offsetY = element.offsetTop + element.clientTop;
   let offsetX = element.offsetLeft + element.clientLeft;
-  while( (parent.clientHeight === parent.scrollHeight
-       && parent.clientWidth === parent.scrollWidth)
-   || 
-   (scrollMatches &&
-    (parent.classList.contains("markedContent") ||
-      getComputedStyle(parent).overflow === "hidden"))
+  while (
+    (parent.clientHeight === parent.scrollHeight &&
+      parent.clientWidth === parent.scrollWidth) ||
+    (scrollMatches &&
+      (parent.classList.contains("markedContent") ||
+        getComputedStyle(parent).overflow === "hidden"))
   ) {
     offsetY += parent.offsetTop;
     offsetX += parent.offsetLeft;
 
-    parent = <HTMLElement|null>parent.offsetParent;
-    if( !parent ) return; // no need to scroll
+    parent = <HTMLElement | null> parent.offsetParent;
+    if (!parent) return; // no need to scroll
   }
-  if (spot) 
-  {
-    if (spot.top !== undefined) 
-    {
+  if (spot) {
+    if (spot.top !== undefined) {
       offsetY += spot.top;
     }
-    if (spot.left !== undefined) 
-    {
+    if (spot.left !== undefined) {
       offsetX += spot.left;
       parent.scrollLeft = offsetX;
     }
@@ -201,15 +199,17 @@ export function scrollIntoView(
  * Helper function to start monitoring the scroll event and converting them into
  * PDF.js friendly one: with scroll debounce and scroll direction.
  */
-export function watchScroll( viewAreaElement:HTMLDivElement, callback:(state?:unknown)=>void ) 
-{
-  const debounceScroll = function (evt:unknown) {
+export function watchScroll(
+  viewAreaElement: HTMLDivElement,
+  callback: (state?: unknown) => void,
+) {
+  const debounceScroll = (evt: unknown) => {
     if (rAF) {
       return;
     }
     // schedule an invocation of scroll for next animation frame.
-    rAF = globalThis.requestAnimationFrame(function viewAreaElementScrolled() {
-      rAF = null;
+    rAF = globalThis?.requestAnimationFrame?.(/* viewAreaElementScrolled */ () => {
+      rAF = undefined;
 
       const currentX = viewAreaElement.scrollLeft;
       const lastX = state.lastX;
@@ -235,7 +235,7 @@ export function watchScroll( viewAreaElement:HTMLDivElement, callback:(state?:un
     _eventHandler: debounceScroll,
   };
 
-  let rAF:number | null = null;
+  let rAF: number | undefined;
   viewAreaElement.addEventListener("scroll", debounceScroll, true);
   return state;
 }
@@ -243,11 +243,9 @@ export function watchScroll( viewAreaElement:HTMLDivElement, callback:(state?:un
 /**
  * Helper function to parse query string (e.g. ?param1=value&param2=...).
  */
-export function parseQueryString( query:string )
-{
+export function parseQueryString(query: string) {
   const params = new Map<string, string>();
-  for( const [key, value] of new URLSearchParams(query) )
-  {
+  for (const [key, value] of new URLSearchParams(query)) {
     params.set(key.toLowerCase(), value);
   }
   return params;
@@ -256,53 +254,15 @@ export function parseQueryString( query:string )
 const NullCharactersRegExp = /\x00/g;
 const InvisibleCharactersRegExp = /[\x01-\x1F]/g;
 
-export function removeNullCharacters( str:string, replaceInvisible=false )
-{
-  if( typeof str !== "string" )
-  {
+export function removeNullCharacters(str: string, replaceInvisible = false) {
+  if (typeof str !== "string") {
     console.error(`The argument must be a string.`);
     return str;
   }
-  if( replaceInvisible )
-  {
+  if (replaceInvisible) {
     str = str.replace(InvisibleCharactersRegExp, " ");
   }
   return str.replace(NullCharactersRegExp, "");
-}
-
-/**
- * Use binary search to find the index of the first item in a given array which
- * passes a given condition. The items are expected to be sorted in the sense
- * that if the condition is true for one item in the array, then it is also true
- * for all following items.
- *
- * @return Index of the first array element to pass the test,
- *  or |items.length| if no such element exists.
- */
-export function binarySearchFirstItem<T>( items:T[], 
-  condition:(view:T)=>boolean, start=0 ):number 
-{
-  let minIndex = start;
-  let maxIndex = items.length - 1;
-
-  if (maxIndex < 0 || !condition(items[maxIndex])) {
-    return items.length;
-  }
-  if (condition(items[minIndex])) {
-    return minIndex;
-  }
-
-  while (minIndex < maxIndex) {
-    const currentIndex = (minIndex + maxIndex) >> 1;
-    const currentItem = items[currentIndex];
-    if (condition(currentItem)) {
-      maxIndex = currentIndex;
-    } 
-    else {
-      minIndex = currentIndex + 1;
-    }
-  }
-  return minIndex; /* === maxIndex */
 }
 
 /**
@@ -312,8 +272,7 @@ export function binarySearchFirstItem<T>( items:T[],
  * @return Estimated fraction: the first array item is a numerator,
  *  the second one is a denominator.
  */
-export function approximateFraction( x:number ):[number,number]
-{
+export function approximateFraction(x: number): [number, number] {
   // Fast paths for int numbers or their inversions.
   if (Math.floor(x) === x) {
     return [x, 1];
@@ -322,8 +281,7 @@ export function approximateFraction( x:number ):[number,number]
   const limit = 8;
   if (xinv > limit) {
     return [1, limit];
-  } 
-  else if (Math.floor(xinv) === xinv) {
+  } else if (Math.floor(xinv) === xinv) {
     return [1, xinv];
   }
 
@@ -344,46 +302,41 @@ export function approximateFraction( x:number ):[number,number]
     if (x_ <= p / q) {
       c = p;
       d = q;
-    } 
-    else {
+    } else {
       a = p;
       b = q;
     }
   }
-  let result:[number,number];
+  let result: [number, number];
   // Select closest of the neighbours to x.
   if (x_ - a / b < c / d - x_) {
     result = x_ === x ? [a, b] : [b, a];
-  } 
-  else {
+  } else {
     result = x_ === x ? [c, d] : [d, c];
   }
   return result;
 }
 
-export function roundToDivide( x:number, div:number ) 
-{
+export function roundToDivide(x: number, div: number) {
   const r = x % div;
   return r === 0 ? x : Math.round(x - r + div);
 }
 
-interface _GetPageSizeInchesP
-{
-  view:number[];
-  userUnit:number;
-  rotate:number;
+interface _GetPageSizeInchesP {
+  view: number[];
+  userUnit: number;
+  rotate: number;
 }
 
-interface PageSize
-{
+interface PageSize {
   /**
    * In inches.
    */
-  width:number;
+  width: number;
   /**
    * In inches.
    */
-  height:number;
+  height: number;
 }
 
 /**
@@ -393,8 +346,9 @@ interface PageSize
  * @return An Object containing the properties: {number} `width`
  *   and {number} `height`, given in inches.
  */
-export function getPageSizeInches({ view, userUnit, rotate }:_GetPageSizeInchesP 
-):PageSize {
+export function getPageSizeInches(
+  { view, userUnit, rotate }: _GetPageSizeInchesP,
+): PageSize {
   const [x1, y1, x2, y2] = view;
   // We need to take the page rotation into account as well.
   const changeOrientation = rotate % 180 !== 0;
@@ -410,7 +364,7 @@ export function getPageSizeInches({ view, userUnit, rotate }:_GetPageSizeInchesP
 
 /**
  * Helper function for getVisibleElements.
- * 
+ *
  * only exported for testing
  *
  * @param index initial guess at the first visible element
@@ -421,9 +375,11 @@ export function getPageSizeInches({ view, userUnit, rotate }:_GetPageSizeInchesP
  *   this will be the first element in the first partially visible row in
  *   `views`, although sometimes it goes back one row further.)
  */
-export function backtrackBeforeAllVisibleElements( 
-  index:number, views:IVisibleView[], top:number 
-):number {
+export function backtrackBeforeAllVisibleElements(
+  index: number,
+  views: IVisibleView[],
+  top: number,
+): number {
   // binarySearchFirstItem's assumption is that the input is ordered, with only
   // one index where the conditions flips from false to true: [false ...,
   // true...]. With vertical scrolling and spreads, it is possible to have
@@ -497,55 +453,52 @@ export function backtrackBeforeAllVisibleElements(
   return index;
 }
 
-export interface VisibleElement
-{
-  id:number;
-  x:number;
-  y:number
-  view:IVisibleView;
-  percent?:number;
-  widthPercent?:number;
+export interface VisibleElement {
+  id: number;
+  x: number;
+  y: number;
+  view: IVisibleView;
+  percent?: number;
+  widthPercent?: number;
 }
-export interface VisibleElements
-{
-  first?:VisibleElement;
-  last?:VisibleElement;
-  views:VisibleElement[];
-  ids?:Set<number>;
+export interface VisibleElements {
+  first?: VisibleElement;
+  last?: VisibleElement;
+  views: VisibleElement[];
+  ids?: Set<number>;
 }
 
-interface _GetVisibleElementsP
-{
+interface _GetVisibleElementsP {
   /**
    * A container that can possibly scroll.
    */
-  scrollEl:HTMLElement;
+  scrollEl: HTMLElement;
 
   /**
    * Objects with a `div` property that contains an
    * HTMLElement, which should all be descendants of `scrollEl` satisfying the
    * relevant layout assumptions.
    */
-  views:IVisibleView[];
+  views: IVisibleView[];
 
   /**
    * If `true`, the returned elements are
   l* sorted in descending order of the percent of their padding box that is
   l* visible. The default value is `false`.
    */
-  sortByVisibility?:boolean;
+  sortByVisibility?: boolean;
 
   /**
    * If `true`, the elements are assumed to be
    * laid out horizontally instead of vertically. The default value is `false`.
    */
-  horizontal?:boolean;
+  horizontal?: boolean;
 
   /**
    * If `true`, the `scrollEl` container is assumed to
    * be in right-to-left mode. The default value is `false`.
    */
-  rtl?:boolean;
+  rtl?: boolean;
 }
 
 /**
@@ -568,10 +521,10 @@ interface _GetVisibleElementsP
 export function getVisibleElements({
   scrollEl,
   views,
-  sortByVisibility=false,
-  horizontal=false,
-  rtl=false,
-}:_GetVisibleElementsP ) {
+  sortByVisibility = false,
+  horizontal = false,
+  rtl = false,
+}: _GetVisibleElementsP) {
   const top = scrollEl.scrollTop,
     bottom = top + scrollEl.clientHeight;
   const left = scrollEl.scrollLeft,
@@ -587,36 +540,35 @@ export function getVisibleElements({
   // offsetLeft/Top (which includes margin) and adding clientLeft/Top (which is
   // the border). Adding clientWidth/Height gets us the bottom-right corner of
   // the padding edge.
-  function isElementBottomAfterViewTop( view:IVisibleView ) 
-  {
+  function isElementBottomAfterViewTop(view: IVisibleView) {
     const element = view.div;
-    const elementBottom =
-      element.offsetTop + element.clientTop + element.clientHeight;
+    const elementBottom = element.offsetTop + element.clientTop +
+      element.clientHeight;
     return elementBottom > top;
   }
-  function isElementNextAfterViewHorizontally( view:IVisibleView )
-  {
+  function isElementNextAfterViewHorizontally(view: IVisibleView) {
     const element = view.div;
     const elementLeft = element.offsetLeft + element.clientLeft;
     const elementRight = elementLeft + element.clientWidth;
     return rtl ? elementLeft < right : elementRight > left;
   }
 
-  const visible:VisibleElement[] = [],
+  const visible: VisibleElement[] = [],
     ids = new Set(),
     numViews = views.length;
   let firstVisibleElementInd = binarySearchFirstItem(
     views,
     horizontal
       ? isElementNextAfterViewHorizontally
-      : isElementBottomAfterViewTop
+      : isElementBottomAfterViewTop,
   );
 
   // Please note the return value of the `binarySearchFirstItem` function when
   // no valid element is found (hence the `firstVisibleElementInd` check below).
-  if( firstVisibleElementInd > 0
-   && firstVisibleElementInd < numViews
-   && !horizontal
+  if (
+    firstVisibleElementInd > 0 &&
+    firstVisibleElementInd < numViews &&
+    !horizontal
   ) {
     // In wrapped scrolling (or vertical scrolling with spreads), with some page
     // sizes, isElementBottomAfterViewTop doesn't satisfy the binary search
@@ -626,7 +578,7 @@ export function getVisibleElements({
     firstVisibleElementInd = backtrackBeforeAllVisibleElements(
       firstVisibleElementInd,
       views,
-      top
+      top,
     );
   }
 
@@ -640,8 +592,7 @@ export function getVisibleElements({
   // we pass `right`, without needing the code below that handles the -1 case.
   let lastEdge = horizontal ? right : -1;
 
-  for (let i = firstVisibleElementInd; i < numViews; i++) 
-  {
+  for (let i = firstVisibleElementInd; i < numViews; i++) {
     const view = views[i],
       element = view.div;
     const currentWidth = element.offsetLeft + element.clientLeft;
@@ -651,34 +602,31 @@ export function getVisibleElements({
     const viewRight = currentWidth + viewWidth;
     const viewBottom = currentHeight + viewHeight;
 
-    if (lastEdge === -1) 
-    {
+    if (lastEdge === -1) {
       // As commented above, this is only needed in non-horizontal cases.
       // Setting lastEdge to the bottom of the first page that is partially
       // visible ensures that the next page fully below lastEdge is on the
       // next row, which has to be fully hidden along with all subsequent rows.
-      if (viewBottom >= bottom) 
-      {
+      if (viewBottom >= bottom) {
         lastEdge = viewBottom;
       }
-    } 
-    else if ((horizontal ? currentWidth : currentHeight) > lastEdge) 
-    {
+    } else if ((horizontal ? currentWidth : currentHeight) > lastEdge) {
       break;
     }
 
-    if( viewBottom <= top
-     || currentHeight >= bottom
-     || viewRight <= left
-     || currentWidth >= right
+    if (
+      viewBottom <= top ||
+      currentHeight >= bottom ||
+      viewRight <= left ||
+      currentWidth >= right
     ) {
       continue;
     }
 
-    const hiddenHeight =
-      Math.max(0, top - currentHeight) + Math.max(0, viewBottom - bottom);
-    const hiddenWidth =
-      Math.max(0, left - currentWidth) + Math.max(0, viewRight - right);
+    const hiddenHeight = Math.max(0, top - currentHeight) +
+      Math.max(0, viewBottom - bottom);
+    const hiddenWidth = Math.max(0, left - currentWidth) +
+      Math.max(0, viewRight - right);
 
     const fractionHeight = (viewHeight - hiddenHeight) / viewHeight,
       fractionWidth = (viewWidth - hiddenWidth) / viewWidth;
@@ -696,43 +644,37 @@ export function getVisibleElements({
   }
 
   const first = visible[0],
-    last = visible[visible.length - 1];
+    last = visible.at(-1);
 
-  if (sortByVisibility) 
-  {
-    visible.sort(function (a, b) 
-    {
+  if (sortByVisibility) {
+    visible.sort((a, b) => {
       const pc = a.percent! - b.percent!;
-      if( Math.abs(pc) > 0.001 ) return -pc;
+      if (Math.abs(pc) > 0.001) return -pc;
 
       return a.id - b.id; // ensure stability
     });
   }
-  return <VisibleElements>{ first, last, views: visible, ids };
+  return <VisibleElements> { first, last, views: visible, ids };
 }
 
 /**
  * Event handler to suppress context menu.
  */
-export function noContextMenuHandler( evt:Event ) 
-{
+export function noContextMenuHandler(evt: Event) {
   evt.preventDefault();
 }
 
-export function normalizeWheelEventDirection( evt:WheelEvent ) 
-{
+export function normalizeWheelEventDirection(evt: WheelEvent) {
   let delta = Math.hypot(evt.deltaX, evt.deltaY);
   const angle = Math.atan2(evt.deltaY, evt.deltaX);
-  if (-0.25 * Math.PI < angle && angle < 0.75 * Math.PI) 
-  {
+  if (-0.25 * Math.PI < angle && angle < 0.75 * Math.PI) {
     // All that is left-up oriented has to change the sign.
     delta = -delta;
   }
   return delta;
 }
 
-export function normalizeWheelEventDelta( evt:WheelEvent )
-{
+export function normalizeWheelEventDelta(evt: WheelEvent) {
   let delta = normalizeWheelEventDirection(evt);
 
   const MOUSE_DOM_DELTA_PIXEL_MODE = 0;
@@ -741,42 +683,35 @@ export function normalizeWheelEventDelta( evt:WheelEvent )
   const MOUSE_LINES_PER_PAGE = 30;
 
   // Converts delta to per-page units
-  if (evt.deltaMode === MOUSE_DOM_DELTA_PIXEL_MODE) 
-  {
+  if (evt.deltaMode === MOUSE_DOM_DELTA_PIXEL_MODE) {
     delta /= MOUSE_PIXELS_PER_LINE * MOUSE_LINES_PER_PAGE;
-  } 
-  else if (evt.deltaMode === MOUSE_DOM_DELTA_LINE_MODE) 
-  {
+  } else if (evt.deltaMode === MOUSE_DOM_DELTA_LINE_MODE) {
     delta /= MOUSE_LINES_PER_PAGE;
   }
   return delta;
 }
 
-export function isValidRotation( angle:unknown ) 
-{
-  return Number.isInteger(angle) && <number>angle % 90 === 0;
+export function isValidRotation(angle: unknown) {
+  return Number.isInteger(angle) && <number> angle % 90 === 0;
 }
 
-export function isValidScrollMode( mode:unknown )
-{
+export function isValidScrollMode(mode: unknown) {
   return (
     Number.isInteger(mode) &&
-    Object.values(ScrollMode).includes( <ScrollMode>mode ) &&
+    Object.values(ScrollMode).includes(<ScrollMode> mode) &&
     mode !== ScrollMode.UNKNOWN
   );
 }
 
-export function isValidSpreadMode( mode:unknown ) 
-{
+export function isValidSpreadMode(mode: unknown) {
   return (
     Number.isInteger(mode) &&
-    Object.values(SpreadMode).includes( <SpreadMode>mode ) &&
+    Object.values(SpreadMode).includes(<SpreadMode> mode) &&
     mode !== SpreadMode.UNKNOWN
   );
 }
 
-export function isPortraitOrientation( size:{width:number;height:number;} ) 
-{
+export function isPortraitOrientation(size: { width: number; height: number }) {
   return size.width <= size.height;
 }
 
@@ -788,102 +723,95 @@ export const enum WaitOnType {
 /**
  * Promise that is resolved when DOM window becomes visible.
  */
-export const animationStarted = new Promise( resolve => {
-  // #if LIB
-    if( typeof window === "undefined" )
-    {
+export const animationStarted = new Promise((resolve) => {
+  /*#static*/ if (LIB) {
+    if (typeof window === "undefined") {
       // Prevent "ReferenceError: window is not defined" errors when running the
       // unit-tests in Node.js environments.
       setTimeout(resolve, 20);
       return;
     }
-  // #endif
-  globalThis.requestAnimationFrame(resolve);
+  }
+  globalThis?.requestAnimationFrame?.(resolve);
 });
 /*64----------------------------------------------------------*/
 
-export function clamp( v:number, min:number, max:number ) 
-{
+//kkkk bug? ✅ 
+// const docStyle =
+//   typeof PDFJSDev !== "undefined" &&
+//   PDFJSDev.test("LIB") &&
+//   typeof document === "undefined"
+//     ? null
+//     : document.documentElement.style;
+export const docStyle = typeof document !== "undefined"
+  ? document.documentElement.style
+  : undefined;
+
+export function clamp(v: number, min: number, max: number) {
   return Math.min(Math.max(v, min), max);
 }
 
-export class ProgressBar 
-{
-  visible = true;
+export class ProgressBar {
+  #classList: DOMTokenList | undefined;
 
-  div;
-  bar;
-
-  _percent = 0;
-  get percent() { return this._percent; }
-
-  _indeterminate?:boolean;
-
-  constructor( id:string )
-  {
-    // #if GENERIC
-      if( arguments.length > 1 )
-      {
-        throw new Error(
-          "ProgressBar no longer accepts any additional options, " +
-          "please use CSS rules to modify its appearance instead."
-        );
-      }
-    // #endif
-
-    // Fetch the sub-elements for later.
-    this.div = <HTMLDivElement>document.querySelector(id + " .progress");
-    // Get the loading bar element, so it can be resized to fit the viewer.
-    this.bar = <HTMLDivElement>this.div.parentNode;
+  #percent = 0;
+  get percent() {
+    return this.#percent;
   }
+  set percent(val) {
+    this.#percent = clamp(val, 0, 100);
 
-  #updateBar()
-  {
-    if( this._indeterminate )
-    {
-      this.div.classList.add("indeterminate");
+    if (isNaN(val)) {
+      this.#classList!.add("indeterminate");
       return;
     }
-    this.div.classList.remove("indeterminate");
+    this.#classList!.remove("indeterminate");
 
-    const doc = document.documentElement;
-    doc.style.setProperty("--progressBar-percent", `${this._percent}%`);
+    docStyle!.setProperty("--progressBar-percent", `${this.#percent}%`);
   }
 
-  set percent( val )
-  {
-    this._indeterminate = isNaN(val);
-    this._percent = clamp(val, 0, 100);
-    this.#updateBar();
+  #visible = true;
+
+  _indeterminate?: boolean;
+
+  constructor(id: string) {
+    /*#static*/ if (GENERIC) {
+      if (arguments.length > 1) {
+        throw new Error(
+          "ProgressBar no longer accepts any additional options, " +
+            "please use CSS rules to modify its appearance instead.",
+        );
+      }
+    }
+
+    const bar = document.getElementById(id);
+    this.#classList = bar!.classList;
   }
 
-  setWidth( viewer?:HTMLDivElement ) 
-  {
-    if( !viewer ) return;
-    
-    const container = <HTMLElement>viewer.parentNode;
+  setWidth(viewer?: HTMLDivElement) {
+    if (!viewer) return;
+
+    const container = <HTMLElement> viewer.parentNode;
     const scrollbarWidth = container.offsetWidth - viewer.offsetWidth;
-    if( scrollbarWidth > 0 )
-    {
+    if (scrollbarWidth > 0) {
       const doc = document.documentElement;
-      doc.style.setProperty("--progressBar-end-offset", `${scrollbarWidth}px`);
+      docStyle!.setProperty("--progressBar-end-offset", `${scrollbarWidth}px`);
     }
   }
 
-  hide()
-  {
-    if( !this.visible ) return;
-    
-    this.visible = false;
-    this.bar.classList.add("hidden");
+  hide() {
+    if (!this.#visible) {
+      return;
+    }
+    this.#visible = false;
+    this.#classList!.add("hidden");
   }
-
-  show()
-  {
-    if( this.visible ) return;
-    
-    this.visible = true;
-    this.bar.classList.remove("hidden");
+  show() {
+    if (this.#visible) {
+      return;
+    }
+    this.#visible = true;
+    this.#classList!.remove("hidden");
   }
 }
 
@@ -896,15 +824,14 @@ export class ProgressBar
  * @return the truly active or focused element.
  */
 export function getActiveOrFocusedElement() {
-  let curRoot:Document | ShadowRoot = document;
-  let curActiveOrFocused =
-    curRoot.activeElement || curRoot.querySelector(":focus");
+  let curRoot: Document | ShadowRoot = document;
+  let curActiveOrFocused = curRoot.activeElement ||
+    curRoot.querySelector(":focus");
 
-  while( curActiveOrFocused?.shadowRoot )
-  {
+  while (curActiveOrFocused?.shadowRoot) {
     curRoot = curActiveOrFocused.shadowRoot;
-    curActiveOrFocused =
-      curRoot.activeElement || curRoot.querySelector(":focus");
+    curActiveOrFocused = curRoot.activeElement ||
+      curRoot.querySelector(":focus");
   }
 
   return curActiveOrFocused;
@@ -918,19 +845,26 @@ export function getActiveOrFocusedElement() {
  * @param mode The API PageLayout value.
  * @return A value from {SpreadMode}.
  */
-export function apiPageLayoutToViewerModes( layout:PageLayout )
-{
+export function apiPageLayoutToViewerModes(layout: PageLayout) {
   let scrollMode = ScrollMode.VERTICAL,
     spreadMode = SpreadMode.NONE;
 
-  switch( layout )
-  {
-    case PageLayout.SinglePage: scrollMode = ScrollMode.PAGE; break;
-    case PageLayout.OneColumn: break;
-    case PageLayout.TwoPageLeft: scrollMode = ScrollMode.PAGE; /* falls through */
-    case PageLayout.TwoColumnLeft: spreadMode = SpreadMode.ODD; break;
-    case PageLayout.TwoPageRight: scrollMode = ScrollMode.PAGE; /* falls through */
-    case PageLayout.TwoColumnRight: spreadMode = SpreadMode.EVEN; break;
+  switch (layout) {
+    case PageLayout.SinglePage:
+      scrollMode = ScrollMode.PAGE;
+      break;
+    case PageLayout.OneColumn:
+      break;
+    case PageLayout.TwoPageLeft:/* falls through */
+      scrollMode = ScrollMode.PAGE;
+    case PageLayout.TwoColumnLeft:
+      spreadMode = SpreadMode.ODD;
+      break;
+    case PageLayout.TwoPageRight:/* falls through */
+      scrollMode = ScrollMode.PAGE;
+    case PageLayout.TwoColumnRight:
+      spreadMode = SpreadMode.EVEN;
+      break;
   }
   return { scrollMode, spreadMode };
 }
@@ -943,16 +877,19 @@ export function apiPageLayoutToViewerModes( layout:PageLayout )
  * @param mode The API PageMode value.
  * @return A value from {SidebarView}.
  */
-export function apiPageModeToSidebarView( mode:PageMode )
-{
-  switch( mode )
-  {
-    case PageMode.UseNone: return SidebarView.NONE;
-    case PageMode.UseThumbs: return SidebarView.THUMBS;
-    case PageMode.UseOutlines: return SidebarView.OUTLINE;
-    case PageMode.UseAttachments: return SidebarView.ATTACHMENTS;
-    case PageMode.UseOC: return SidebarView.LAYERS;
+export function apiPageModeToSidebarView(mode: PageMode) {
+  switch (mode) {
+    case PageMode.UseNone:
+      return SidebarView.NONE;
+    case PageMode.UseThumbs:
+      return SidebarView.THUMBS;
+    case PageMode.UseOutlines:
+      return SidebarView.OUTLINE;
+    case PageMode.UseAttachments:
+      return SidebarView.ATTACHMENTS;
+    case PageMode.UseOC:
+      return SidebarView.LAYERS;
   }
   return SidebarView.NONE; // Default value.
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

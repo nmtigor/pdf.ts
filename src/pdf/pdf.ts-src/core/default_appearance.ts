@@ -17,26 +17,23 @@
  * limitations under the License.
  */
 
-import { OPS, warn } from "../shared/util.js";
-import { ColorSpace } from "./colorspace.js";
-import { escapePDFName } from "./core_utils.js";
-import { EvaluatorPreprocessor } from "./evaluator.js";
-import { Name, type ObjNoCmd } from "./primitives.js";
-import { StringStream } from "./stream.js";
-/*81---------------------------------------------------------------------------*/
+import { OPS, warn } from "../shared/util.ts";
+import { ColorSpace } from "./colorspace.ts";
+import { escapePDFName, numberToString } from "./core_utils.ts";
+import { EvaluatorPreprocessor } from "./evaluator.ts";
+import { Name, type ObjNoCmd } from "./primitives.ts";
+import { StringStream } from "./stream.ts";
+/*80--------------------------------------------------------------------------*/
 
-class DefaultAppearanceEvaluator extends EvaluatorPreprocessor
-{
-  constructor( str:string )
-  {
-    super( new StringStream(str) );
+class DefaultAppearanceEvaluator extends EvaluatorPreprocessor {
+  constructor(str: string) {
+    super(new StringStream(str));
   }
 
-  parse() 
-  {
+  parse() {
     const operation = {
       fn: 0,
-      args: <ObjNoCmd[]>[],
+      args: <ObjNoCmd[]> [],
     };
     const result = {
       fontSize: 0,
@@ -45,38 +42,51 @@ class DefaultAppearanceEvaluator extends EvaluatorPreprocessor
     };
 
     try {
-      while( true )
-      {
+      while (true) {
         operation.args.length = 0; // Ensure that `args` it's always reset.
 
-        if( !this.read(operation) ) 
+        if (!this.read(operation)) {
           break;
-        if (this.savedStatesDepth !== 0) 
+        }
+        if (this.savedStatesDepth !== 0) {
           // Don't get info in save/restore sections.
-          continue; 
+          continue;
+        }
         const { fn, args } = operation;
 
-        switch( fn | 0 )
-        {
+        switch (fn | 0) {
           case OPS.setFont:
             const [fontName, fontSize] = args;
-            if( fontName instanceof Name )
-            {
+            if (fontName instanceof Name) {
               result.fontName = fontName.name;
             }
-            if (typeof fontSize === "number" && fontSize > 0) 
-            {
+            if (typeof fontSize === "number" && fontSize > 0) {
               result.fontSize = fontSize;
             }
             break;
           case OPS.setFillRGBColor:
-            ColorSpace.singletons.rgb.getRgbItem( <number[]>args, 0, result.fontColor, 0 );
+            ColorSpace.singletons.rgb.getRgbItem(
+              <number[]> args,
+              0,
+              result.fontColor,
+              0,
+            );
             break;
           case OPS.setFillGray:
-            ColorSpace.singletons.gray.getRgbItem( <number[]>args, 0, result.fontColor, 0 );
+            ColorSpace.singletons.gray.getRgbItem(
+              <number[]> args,
+              0,
+              result.fontColor,
+              0,
+            );
             break;
           case OPS.setFillColorSpace:
-            ColorSpace.singletons.cmyk.getRgbItem( <number[]>args, 0, result.fontColor, 0 );
+            ColorSpace.singletons.cmyk.getRgbItem(
+              <number[]> args,
+              0,
+              result.fontColor,
+              0,
+            );
             break;
         }
       }
@@ -88,31 +98,38 @@ class DefaultAppearanceEvaluator extends EvaluatorPreprocessor
   }
 }
 
-export interface DefaultAppearanceData
-{
-  fontSize:number;
-  fontName:string;
-  fontColor:Uint8ClampedArray;
+export interface DefaultAppearanceData {
+  fontSize: number;
+  fontName: string;
+  fontColor: Uint8ClampedArray;
 }
 
 // Parse DA to extract font and color information.
-export function parseDefaultAppearance( str:string )
-{
+export function parseDefaultAppearance(str: string) {
   return new DefaultAppearanceEvaluator(str).parse();
 }
 
-// Create default appearance string from some information.
-export function createDefaultAppearance({ fontSize, fontName, fontColor }:DefaultAppearanceData )
-{
-  let colorCmd;
-  if (fontColor.every(c => c === 0)) {
-    colorCmd = "0 g";
-  } else {
-    colorCmd =
-      Array.from(fontColor)
-        .map(c => (c / 255).toFixed(2))
-        .join(" ") + " rg";
+export function getPdfColor(color: Uint8ClampedArray, isFill: boolean) {
+  if (color[0] === color[1] && color[1] === color[2]) {
+    const gray = color[0] / 255;
+    return `${numberToString(gray)} ${isFill ? "g" : "G"}`;
   }
-  return `/${escapePDFName(fontName)} ${fontSize} Tf ${colorCmd}`;
+  return (
+    Array.from(color)
+      .map((c) => numberToString(c / 255))
+      .join(" ") + ` ${isFill ? "rg" : "RG"}`
+  );
 }
-/*81---------------------------------------------------------------------------*/
+
+// Create default appearance string from some information.
+export function createDefaultAppearance(
+  { fontSize, fontName, fontColor }: DefaultAppearanceData,
+) {
+  return `/${escapePDFName(fontName)} ${fontSize} Tf ${
+    getPdfColor(
+      fontColor,
+      /* isFill */ true,
+    )
+  }`;
+}
+/*80--------------------------------------------------------------------------*/

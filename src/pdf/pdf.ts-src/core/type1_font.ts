@@ -17,6 +17,8 @@
  * limitations under the License.
  */
 
+import { warn } from "../shared/util.ts";
+import { BaseStream } from "./base_stream.ts";
 import {
   CFF,
   CFFCharset,
@@ -27,19 +29,24 @@ import {
   CFFStandardStrings,
   CFFStrings,
   CFFTopDict,
-  NUM_STANDARD_CFF_STRINGS,
-} from "./cff_parser.js";
-import { SEAC_ANALYSIS_ENABLED, type1FontGlyphMapping } from "./fonts_utils.js";
-import { isWhiteSpace } from "./core_utils.js";
-import { Stream } from "./stream.js";
-import { type CharStringObject, type FontProgram, type PrivateData, Type1Parser } from "./type1_parser.js";
-import { warn } from "../shared/util.js";
-import { BaseStream } from "./base_stream.js";
-import { type FontProps } from "./evaluator.js";
-/*81---------------------------------------------------------------------------*/
+  NUM_STANDARD_CFF_STRINGS
+} from "./cff_parser.ts";
+import { isWhiteSpace } from "./core_utils.ts";
+import { type FontProps } from "./evaluator.ts";
+import { SEAC_ANALYSIS_ENABLED, type1FontGlyphMapping } from "./fonts_utils.ts";
+import { Stream } from "./stream.ts";
+import {
+  Type1Parser, type CharStringObject,
+  type FontProgram,
+  type PrivateData
+} from "./type1_parser.ts";
+/*80--------------------------------------------------------------------------*/
 
-function findBlock( streamBytes:Uint8Array | Uint8ClampedArray, signature:number[], startIndex:number )
-{
+function findBlock(
+  streamBytes: Uint8Array | Uint8ClampedArray,
+  signature: number[],
+  startIndex: number,
+) {
   const streamBytesLength = streamBytes.length;
   const signatureLength = signature.length;
   const scanLength = streamBytesLength - signatureLength;
@@ -68,15 +75,14 @@ function findBlock( streamBytes:Uint8Array | Uint8ClampedArray, signature:number
   };
 }
 
-function getHeaderBlock( stream:BaseStream, suggestedLength?:number )
-{
+function getHeaderBlock(stream: BaseStream, suggestedLength?: number) {
   const EEXEC_SIGNATURE = [0x65, 0x65, 0x78, 0x65, 0x63];
 
   const streamStartPos = stream.pos; // Save the initial stream position.
-  let headerBytes:Uint8Array | Uint8ClampedArray | undefined;
+  let headerBytes: Uint8Array | Uint8ClampedArray | undefined;
   let headerBytesLength;
-  let block:{ found:boolean; length:number } | undefined;
-try {
+  let block: { found: boolean; length: number } | undefined;
+  try {
     headerBytes = stream.getBytes(suggestedLength);
     headerBytesLength = headerBytes.length;
   } catch (ex) {
@@ -93,12 +99,12 @@ try {
     block = findBlock(
       headerBytes!,
       EEXEC_SIGNATURE,
-      suggestedLength! - 2 * EEXEC_SIGNATURE.length
+      suggestedLength! - 2 * EEXEC_SIGNATURE.length,
     );
 
     if (block.found && block.length === suggestedLength) {
       return {
-        stream: new Stream( headerBytes! ),
+        stream: new Stream(headerBytes!),
         length: suggestedLength,
       };
     }
@@ -137,8 +143,7 @@ try {
   };
 }
 
-function getEexecBlock( stream:BaseStream, suggestedLength?:number )
-{
+function getEexecBlock(stream: BaseStream, suggestedLength?: number) {
   // We should ideally parse the eexec block to ensure that `suggestedLength`
   // is correct, so we don't truncate the block data if it's too small.
   // However, this would also require checking if the fixed-content portion
@@ -162,16 +167,16 @@ function getEexecBlock( stream:BaseStream, suggestedLength?:number )
 /**
  * Type1Font is also a CIDFontType0.
  */
-export class Type1Font
-{
-  charstrings:CharStringObject[];
-  get numGlyphs() { return this.charstrings.length + 1; }
+export class Type1Font {
+  charstrings: CharStringObject[];
+  get numGlyphs() {
+    return this.charstrings.length + 1;
+  }
 
-  data:number[];
-  seacs:number[][];
+  data: number[];
+  seacs: number[][];
 
-  constructor( name:string, file:BaseStream, properties:FontProps )
-  {
+  constructor(name: string, file: Stream, properties: FontProps) {
     // Some bad generators embed pfb file as is, we have to strip 6-byte header.
     // Also, length1 and length2 might be off by 6 bytes as well.
     // http://www.math.ubc.ca/~cass/piscript/type1.pdf
@@ -182,8 +187,7 @@ export class Type1Font
     const pfbHeaderPresent = pfbHeader[0] === 0x80 && pfbHeader[1] === 0x01;
     if (pfbHeaderPresent) {
       file.skip(PFB_HEADER_SIZE);
-      headerBlockLength =
-        (pfbHeader[5] << 24) |
+      headerBlockLength = (pfbHeader[5] << 24) |
         (pfbHeader[4] << 16) |
         (pfbHeader[3] << 8) |
         pfbHeader[2];
@@ -194,14 +198,13 @@ export class Type1Font
     const headerBlockParser = new Type1Parser(
       headerBlock.stream,
       false,
-      SEAC_ANALYSIS_ENABLED
+      SEAC_ANALYSIS_ENABLED,
     );
     headerBlockParser.extractFontHeader(properties);
 
     if (pfbHeaderPresent) {
       pfbHeader = file.getBytes(PFB_HEADER_SIZE);
-      eexecBlockLength =
-        (pfbHeader[5] << 24) |
+      eexecBlockLength = (pfbHeader[5] << 24) |
         (pfbHeader[4] << 16) |
         (pfbHeader[3] << 8) |
         pfbHeader[2];
@@ -212,12 +215,11 @@ export class Type1Font
     const eexecBlockParser = new Type1Parser(
       eexecBlock.stream,
       true,
-      SEAC_ANALYSIS_ENABLED
+      SEAC_ANALYSIS_ENABLED,
     );
-    const data:FontProgram = eexecBlockParser.extractFontProgram(properties);
-    for( const key in data.properties )
-    {
-      (<any>properties)[key] = (<any>data.properties)[key];
+    const data: FontProgram = eexecBlockParser.extractFontProgram(properties);
+    for (const key in data.properties) {
+      (<any> properties)[key] = (<any> data.properties)[key];
     }
 
     const charstrings = data.charstrings;
@@ -230,7 +232,7 @@ export class Type1Font
       type2Charstrings,
       this.charstrings,
       subrs,
-      properties
+      properties,
     );
     this.seacs = this.getSeacs(data.charstrings);
   }
@@ -238,14 +240,13 @@ export class Type1Font
   getCharset() {
     const charset = [".notdef"];
     const charstrings = this.charstrings;
-    for (let glyphId = 0; glyphId < charstrings.length; glyphId++) {
-      charset.push(charstrings[glyphId].glyphName);
+    for (const { glyphName } of this.charstrings) {
+      charset.push(glyphName);
     }
     return charset;
   }
 
-  getGlyphMapping( properties:FontProps )
-  {
+  getGlyphMapping(properties: FontProps) {
     const charstrings = this.charstrings;
 
     if (properties.composite) {
@@ -282,8 +283,7 @@ export class Type1Font
     return type1FontGlyphMapping(properties, builtInEncoding, glyphNames);
   }
 
-  hasGlyphId( id:number )
-  {
+  hasGlyphId(id: number) {
     if (id < 0 || id >= this.numGlyphs) {
       return false;
     }
@@ -295,9 +295,8 @@ export class Type1Font
     return glyph.charstring.length > 0;
   }
 
-  getSeacs( charstrings:CharStringObject[] )
-  {
-    const seacMap:number[][] = [];
+  getSeacs(charstrings: CharStringObject[]) {
+    const seacMap: number[][] = [];
     for (let i = 0, ii = charstrings.length; i < ii; i++) {
       const charstring = charstrings[i];
       if (charstring.seac) {
@@ -308,8 +307,7 @@ export class Type1Font
     return seacMap;
   }
 
-  getType2Charstrings( type1Charstrings:CharStringObject[] )
-  {
+  getType2Charstrings(type1Charstrings: CharStringObject[]) {
     const type2Charstrings = [];
     for (let i = 0, ii = type1Charstrings.length; i < ii; i++) {
       type2Charstrings.push(type1Charstrings[i].charstring);
@@ -317,8 +315,7 @@ export class Type1Font
     return type2Charstrings;
   }
 
-  getType2Subrs( type1Subrs:number[][] )
-  {
+  getType2Subrs(type1Subrs: number[][]) {
     let bias = 0;
     const count = type1Subrs.length;
     if (count < 1133) {
@@ -344,13 +341,13 @@ export class Type1Font
   }
 
   wrap(
-    name:string,
-    glyphs:number[][],
-    charstrings:CharStringObject[],
-    subrs:number[][],
-    properties:FontProps
+    name: string,
+    glyphs: number[][],
+    charstrings: CharStringObject[],
+    subrs: number[][],
+    properties: FontProps,
   ) {
-  const cff = new CFF();
+    const cff = new CFF();
     cff.header = new CFFHeader(1, 0, 4, 4);
 
     cff.names = [name];
@@ -359,10 +356,10 @@ export class Type1Font
     // CFF strings IDs 0...390 are predefined names, so refering
     // to entries in our own String INDEX starts at SID 391.
     topDict.setByName("version", NUM_STANDARD_CFF_STRINGS);
-    topDict.setByName("Notice", NUM_STANDARD_CFF_STRINGS+1);
-    topDict.setByName("FullName", NUM_STANDARD_CFF_STRINGS+2);
-    topDict.setByName("FamilyName", NUM_STANDARD_CFF_STRINGS+3);
-    topDict.setByName("Weight", NUM_STANDARD_CFF_STRINGS+4);
+    topDict.setByName("Notice", NUM_STANDARD_CFF_STRINGS + 1);
+    topDict.setByName("FullName", NUM_STANDARD_CFF_STRINGS + 2);
+    topDict.setByName("FamilyName", NUM_STANDARD_CFF_STRINGS + 3);
+    topDict.setByName("Weight", NUM_STANDARD_CFF_STRINGS + 4);
     topDict.setByName("Encoding"); // placeholder
     topDict.setByName("FontMatrix", properties.fontMatrix);
     topDict.setByName("FontBBox", properties.bbox);
@@ -419,16 +416,13 @@ export class Type1Font
       "StdHW",
       "StdVW",
     ];
-    for (i = 0, ii = fields.length; i < ii; i++) 
-    {
-      const field:string = fields[i];
-      if( !(field in properties.privateData!) )
-      {
+    for (i = 0, ii = fields.length; i < ii; i++) {
+      const field: string = fields[i];
+      if (!(field in properties.privateData!)) {
         continue;
       }
-      const value = properties.privateData![<keyof PrivateData>field];
-      if (Array.isArray(value))
-      {
+      const value = properties.privateData![<keyof PrivateData> field];
+      if (Array.isArray(value)) {
         // All of the private dictionary array data in CFF must be stored as
         // "delta-encoded" numbers.
         for (let j = value.length - 1; j > 0; j--) {
@@ -449,4 +443,4 @@ export class Type1Font
     return compiler.compile();
   }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

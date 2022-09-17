@@ -19,6 +19,7 @@
 
 // Factors to rescale LiberationSans-Bold.ttf to have the same
 // metrics as MyriadPro-Bold.otf.
+// deno-fmt-ignore
 export const MyriadProBoldFactors = [
   1.36898, 1, 1, 0.72706, 0.80479, 0.83734, 0.98894, 0.99793, 0.9897, 0.93884,
   0.86209, 0.94292, 0.94292, 1.16661, 1.02058, 0.93582, 0.96694, 0.93582,
@@ -85,6 +86,7 @@ export const MyriadProBoldMetrics = { lineHeight: 1.2, lineGap: 0.2 };
 
 // Factors to rescale LiberationSans-BoldItalic.ttf to have the same
 // metrics as MyriadPro-BoldIt.otf.
+// deno-fmt-ignore
 export const MyriadProBoldItalicFactors = [
   1.36898, 1, 1, 0.66227, 0.80779, 0.81625, 0.97276, 0.97276, 0.97733, 0.92222,
   0.83266, 0.94292, 0.94292, 1.16148, 1.02058, 0.93582, 0.96694, 0.93582,
@@ -153,6 +155,7 @@ export const MyriadProBoldItalicMetrics = { lineHeight: 1.2, lineGap: 0.2 };
 
 // Factors to rescale LiberationSans-Italic.ttf to have the same
 // metrics as MyriadPro-It.otf.
+// deno-fmt-ignore
 export const MyriadProItalicFactors = [
   1.36898, 1, 1, 0.65507, 0.84943, 0.85639, 0.88465, 0.88465, 0.86936, 0.88307,
   0.86948, 0.85283, 0.85283, 1.06383, 1.02058, 0.75945, 0.9219, 0.75945,
@@ -219,6 +222,7 @@ export const MyriadProItalicMetrics = { lineHeight: 1.2, lineGap: 0.2 };
 
 // Factors to rescale LiberationSans-Regular.ttf to have the same
 // metrics as MyriadPro-Regular.otf.
+// deno-fmt-ignore
 export const MyriadProRegularFactors = [
   1.36898, 1, 1, 0.76305, 0.82784, 0.94935, 0.89364, 0.92241, 0.89073, 0.90706,
   0.98472, 0.85283, 0.85283, 1.0664, 1.02058, 0.74505, 0.9219, 0.74505, 1.23456,
@@ -282,4 +286,4 @@ export const MyriadProRegularFactors = [
   1, 1, 1,
 ];
 export const MyriadProRegularMetrics = { lineHeight: 1.2, lineGap: 0.2 };
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

@@ -19,11 +19,13 @@
 
 /** @typedef {import("../src/display/api").PDFPageProxy} PDFPageProxy */
 
-import { html } from "../../lib/dom.js";
-import { type StructTree } from "../pdf.ts-src/core/struct_tree.js";
-import { PDFPageProxy } from "../pdf.ts-src/display/api.js";
-import { type IPDFStructTreeLayerFactory } from "./interfaces.js";
-/*81---------------------------------------------------------------------------*/
+import { html } from "../../lib/dom.ts";
+import {
+  StructTreeContent,
+  StructTreeNode,
+} from "../pdf.ts-src/display/api.ts";
+import { PDFPageProxy } from "../pdf.ts-src/pdf.ts";
+/*80--------------------------------------------------------------------------*/
 
 const PDF_ROLE_TO_HTML_ROLE = {
   // Document level structure types
@@ -80,83 +82,75 @@ const PDF_ROLE_TO_HTML_ROLE = {
   // standard structure type Artifact
   Artifact: null,
 };
-type PDFRole = keyof typeof PDF_ROLE_TO_HTML_ROLE;
+type _PDFRole = keyof typeof PDF_ROLE_TO_HTML_ROLE;
 
 const HEADING_PATTERN = /^H(\d+)$/;
 
-interface StructTreeLayerBuilderOptions
-{
-  pdfPage:PDFPageProxy;
+interface StructTreeLayerBuilderOptions {
+  pdfPage: PDFPageProxy;
 }
 
-export class StructTreeLayerBuilder
-{
+export class StructTreeLayerBuilder {
   pdfPage;
 
-  constructor({ pdfPage }:StructTreeLayerBuilderOptions )
-  {
+  constructor({ pdfPage }: StructTreeLayerBuilderOptions) {
     this.pdfPage = pdfPage;
   }
 
-  render( structTree?:StructTree )
-  {
+  render(structTree: StructTreeNode) {
     return this._walk(structTree);
   }
 
-  #setAttributes( structElement:StructTree, htmlElement:HTMLSpanElement )
-  {
-    if( structElement.alt !== undefined )
-    {
-      htmlElement.setAttribute("aria-label", structElement.alt);
+  #setAttributes(
+    structElement: StructTreeNode | StructTreeContent,
+    htmlElement: HTMLSpanElement,
+  ) {
+    if ((structElement as StructTreeNode).alt !== undefined) {
+      htmlElement.setAttribute(
+        "aria-label",
+        (structElement as StructTreeNode).alt!,
+      );
     }
-    if( structElement.id !== undefined )
-    {
-      htmlElement.setAttribute("aria-owns", structElement.id);
+    if ((structElement as StructTreeContent).id !== undefined) {
+      htmlElement.setAttribute(
+        "aria-owns",
+        (structElement as StructTreeContent).id!,
+      );
     }
-    if( structElement.lang !== undefined )
-    {
-      htmlElement.setAttribute("lang", structElement.lang);
+    if ((structElement as StructTreeNode).lang !== undefined) {
+      htmlElement.setAttribute("lang", (structElement as StructTreeNode).lang!);
     }
   }
 
-  _walk( node?:StructTree )
-  {
-    if( !node ) return null;
+  _walk(node?: StructTreeNode) {
+    if (!node) return undefined;
 
     const element = html("span");
-    if( "role" in node )
-    {
+    if ("role" in node) {
       const { role } = node;
-      const match = role!.match(HEADING_PATTERN);
-      if (match) 
-      {
+      const match = role.match(HEADING_PATTERN);
+      if (match) {
         element.setAttribute("role", "heading");
         element.setAttribute("aria-level", match[1]);
-      }
-      else if( (<any>PDF_ROLE_TO_HTML_ROLE)[role!] ) 
-      {
-        element.setAttribute("role", PDF_ROLE_TO_HTML_ROLE[<PDFRole>role]! );
+      } else if ((PDF_ROLE_TO_HTML_ROLE)[role as _PDFRole]) {
+        element.setAttribute("role", PDF_ROLE_TO_HTML_ROLE[role as _PDFRole]!);
       }
     }
 
     this.#setAttributes(node, element);
 
-    if (node.children) 
-    {
-      if (node.children.length === 1 && "id" in node.children[0]) 
-      {
+    if (node.children) {
+      if (node.children.length === 1 && "id" in node.children[0]) {
         // Often there is only one content node so just set the values on the
         // parent node to avoid creating an extra span.
         this.#setAttributes(node.children[0], element);
-      }
-      else {
-        for( const kid of node.children )
-        {
-          element.appendChild( this._walk(kid)! );
+      } else {
+        for (const kid of node.children) {
+          element.append(this._walk(kid as StructTreeNode)!);
         }
       }
     }
     return element;
   }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

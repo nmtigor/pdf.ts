@@ -17,14 +17,17 @@
  * limitations under the License.
  */
 
-import { XOR } from "../../../lib/alias.js";
-import { stringToUTF8String, warn } from "../shared/util.js";
-import { parseXFAPath } from "./core_utils.js";
-import { SimpleDOMNode, SimpleXMLParser, SimpleXMLParserCtorP } from "./xml_parser.js";
-/*81---------------------------------------------------------------------------*/
+import { XOR } from "../../../lib/alias.ts";
+import { stringToUTF8String, warn } from "../shared/util.ts";
+import { parseXFAPath } from "./core_utils.ts";
+import {
+  SimpleDOMNode,
+  SimpleXMLParser,
+  SimpleXMLParserCtorP,
+} from "./xml_parser.ts";
+/*80--------------------------------------------------------------------------*/
 
-function decodeString( str:string )
-{
+function decodeString(str: string) {
   try {
     return stringToUTF8String(str);
   } catch (ex) {
@@ -33,20 +36,16 @@ function decodeString( str:string )
   }
 }
 
-class DatasetXMLParser extends SimpleXMLParser
-{
-  node?:SimpleDOMNode;
+class DatasetXMLParser extends SimpleXMLParser {
+  node?: SimpleDOMNode;
 
-  constructor( options:SimpleXMLParserCtorP )
-  {
-    super( options );
+  constructor(options: SimpleXMLParserCtorP) {
+    super(options);
   }
 
-  override onEndElement( name:string )
-  {
-    const node = super.onEndElement( name );
-    if( node && name === "xfa:datasets" )
-    {
+  override onEndElement(name: string) {
+    const node = super.onEndElement(name);
+    if (node && name === "xfa:datasets") {
       this.node = node;
 
       // We don't need anything else, so just kill the parser.
@@ -57,46 +56,44 @@ class DatasetXMLParser extends SimpleXMLParser
 }
 
 export type DatasetReaderCtorP = XOR<{
-  datasets:string;
+  datasets: string;
 }, {
-  "xdp:xdp":string;
+  "xdp:xdp": string;
 }>;
 
-export class DatasetReader
-{
+export class DatasetReader {
   node;
 
-  constructor( data:DatasetReaderCtorP )
-  {
-    if( data.datasets )
-    {
+  constructor(data: DatasetReaderCtorP) {
+    if (data.datasets) {
       this.node = new SimpleXMLParser({ hasAttributes: true }).parseFromString(
-        data.datasets!
+        data.datasets!,
       )!.documentElement;
-    } 
-    else {
+    } else {
       const parser = new DatasetXMLParser({ hasAttributes: true });
       try {
-        parser.parseFromString( data["xdp:xdp"]! );
+        parser.parseFromString(data["xdp:xdp"]!);
       } catch (_) {}
       this.node = parser.node;
     }
   }
 
-  getValue( path:string )
-  {
-    if( !this.node || !path ) 
+  getValue(path: string) {
+    if (!this.node || !path) {
       return "";
+    }
     const node = this.node.searchNode(parseXFAPath(path), 0);
 
-    if( !node )
+    if (!node) {
       return "";
+    }
 
     const first = node.firstChild;
-    if( first && first.nodeName === "value" )
-      return node.children.map( child => decodeString(child.textContent));
+    if (first && first.nodeName === "value") {
+      return node.children.map((child) => decodeString(child.textContent));
+    }
 
-    return decodeString( node.textContent );
+    return decodeString(node.textContent);
   }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

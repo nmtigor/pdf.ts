@@ -17,41 +17,45 @@
  * limitations under the License.
  */
 
-import { type TypedArray } from "../../../lib/alias.js";
-import { assert } from "../../../lib/util/trace.js";
-import { applyMaskImageData } from "../shared/image_utils.js";
+import { _PDFDEV } from "../../../global.ts";
+import { type TypedArray } from "../../../lib/alias.ts";
+import { assert } from "../../../lib/util/trace.ts";
+import { applyMaskImageData } from "../shared/image_utils.ts";
 import {
   FeatureTest,
   FormatError,
   ImageKind,
   info,
   warn
-} from "../shared/util.js";
-import { BaseStream } from "./base_stream.js";
-import { ColorSpace, type CS } from "./colorspace.js";
-import { DecodeStream, ImageStream } from "./decode_stream.js";
-import { type ImgData } from "./evaluator.js";
-import { PDFFunctionFactory } from "./function.js";
-import { LocalColorSpaceCache } from "./image_utils.js";
-import { JpegStream } from "./jpeg_stream.js";
-import { JpxImage } from "./jpx.js";
-import { JpxStream } from "./jpx_stream.js";
-import { Dict, Name } from "./primitives.js";
-import { XRef } from "./xref.js";
-/*81---------------------------------------------------------------------------*/
+} from "../shared/util.ts";
+import { BaseStream } from "./base_stream.ts";
+import { ColorSpace, type CS } from "./colorspace.ts";
+import { DecodeStream, ImageStream } from "./decode_stream.ts";
+import { type ImgData } from "./evaluator.ts";
+import { PDFFunctionFactory } from "./function.ts";
+import { LocalColorSpaceCache } from "./image_utils.ts";
+import { JpegStream } from "./jpeg_stream.ts";
+import { JpxImage } from "./jpx.ts";
+import { JpxStream } from "./jpx_stream.ts";
+import { Dict, Name } from "./primitives.ts";
+import { XRef } from "./xref.ts";
+/*80--------------------------------------------------------------------------*/
 
 /**
  * Decode and clamp a value. The formula is different from the spec because we
  * don't decode to float range [0,1], we decode it in the [0,max] range.
  */
-function decodeAndClamp( value:number, addend:number, coefficient:number, max:number )
-{
+function decodeAndClamp(
+  value: number,
+  addend: number,
+  coefficient: number,
+  max: number,
+) {
   value = addend + value * coefficient;
   // Clamp the value to the range
   if (value < 0) {
     value = 0;
-  } 
-  else if (value > max) {
+  } else if (value > max) {
     value = max;
   }
   return value;
@@ -67,18 +71,21 @@ function decodeAndClamp( value:number, addend:number, coefficient:number, max:nu
  * @param h2 New height.
  * @return The resized image mask buffer.
  */
-function resizeImageMask( src:TypedArray, 
-  bpc:number, w1:number, h1:number, w2:number, h2:number
-):TypedArray {
+function resizeImageMask(
+  src: TypedArray,
+  bpc: number,
+  w1: number,
+  h1: number,
+  w2: number,
+  h2: number,
+): TypedArray {
   const length = w2 * h2;
   let dest;
   if (bpc <= 8) {
     dest = new Uint8Array(length);
-  } 
-  else if (bpc <= 16) {
+  } else if (bpc <= 16) {
     dest = new Uint16Array(length);
-  } 
-  else {
+  } else {
     dest = new Uint32Array(length);
   }
   const xRatio = w1 / w2;
@@ -104,165 +111,161 @@ function resizeImageMask( src:TypedArray,
   return dest;
 }
 
-interface _PDFImageCtorP
-{
-  xref:XRef;
-  res:Dict;
-  image:ImageStream;
-  isInline?:boolean;
-  smask?:BaseStream | undefined;
-  mask?:BaseStream | number[] | undefined;
-  isMask?:boolean;
-  pdfFunctionFactory:PDFFunctionFactory;
-  localColorSpaceCache:LocalColorSpaceCache;
+interface _PDFImageCtorP {
+  xref: XRef;
+  res: Dict;
+  image: ImageStream;
+  isInline?: boolean;
+  smask?: BaseStream | undefined;
+  mask?: BaseStream | number[] | undefined;
+  isMask?: boolean;
+  pdfFunctionFactory: PDFFunctionFactory;
+  localColorSpaceCache: LocalColorSpaceCache;
 }
 
-interface _CreateMaskP
-{
-  imgArray:Uint8Array | Uint8ClampedArray;
-  width:number;
-  height:number;
-  imageIsFromDecodeStream:boolean;
-  inverseDecode:boolean;
-  interpolate:boolean | undefined;
+interface _CreateMaskP {
+  imgArray: Uint8Array | Uint8ClampedArray;
+  width: number;
+  height: number;
+  imageIsFromDecodeStream: boolean;
+  inverseDecode: boolean;
+  interpolate: boolean | undefined;
 }
 
-interface _BuildImageP
-{
-  xref:XRef;
-  res:Dict;
-  image:ImageStream;
-  isInline:boolean;
-  pdfFunctionFactory:PDFFunctionFactory;
-  localColorSpaceCache:LocalColorSpaceCache;
+interface _BuildImageP {
+  xref: XRef;
+  res: Dict;
+  image: ImageStream;
+  isInline: boolean;
+  pdfFunctionFactory: PDFFunctionFactory;
+  localColorSpaceCache: LocalColorSpaceCache;
 }
 
-interface _GetImageBytesP
-{
-  drawWidth?:number;
-  drawHeight?:number;
-  forceRGB?:boolean;
-  internal?:boolean;
+interface _GetImageBytesP {
+  drawWidth?: number;
+  drawHeight?: number;
+  forceRGB?: boolean;
+  internal?: boolean;
 }
 
 /**
  * 8.9
  */
-export class PDFImage
-{
+export class PDFImage {
   image;
 
-  width:number;
-  height:number;
+  width: number;
+  height: number;
 
   interpolate;
   imageMask;
   matte;
 
-  bpc:number;
-  colorSpace?:ColorSpace;
-  numComps?:number | undefined;
+  bpc: number;
+  colorSpace?: ColorSpace;
+  numComps?: number | undefined;
 
   decode;
-  needsDecode:boolean;
+  needsDecode: boolean;
   decodeCoefficients;
-  decodeAddends?:number[];
+  decodeAddends?: number[];
 
-  smask?:PDFImage;
-  mask?:PDFImage | number[];
+  smask?: PDFImage;
+  mask?: PDFImage | number[];
 
   constructor({
     xref,
     res,
     image,
-    isInline=false,
-    smask=undefined,
-    mask=undefined,
-    isMask=false,
+    isInline = false,
+    smask = undefined,
+    mask = undefined,
+    isMask = false,
     pdfFunctionFactory,
     localColorSpaceCache,
-  }:_PDFImageCtorP ) 
-  {
+  }: _PDFImageCtorP) {
     this.image = image;
     const dict = image.dict!;
 
     const filter = dict.get("F", "Filter");
-    if( filter instanceof Name )
-    {
-      switch( filter.name )
-      {
-        case "JPXDecode":
-          const jpxImage = new JpxImage();
-          jpxImage.parseImageProperties( <JpxStream>image.stream );
-          (<JpxStream>image.stream).reset();
-
-          image.width = jpxImage.width;
-          image.height = jpxImage.height;
-          image.bitsPerComponent = jpxImage.bitsPerComponent;
-          image.numComps = jpxImage.componentsCount;
-          break;
-        case "JBIG2Decode":
-          image.bitsPerComponent = 1;
-          image.numComps = 1;
-          break;
+    let filterName;
+    if (filter instanceof Name) {
+      filterName = filter.name;
+    } else if (Array.isArray(filter)) {
+      const filterZero = xref.fetchIfRef(filter[0]);
+      if (filterZero instanceof Name) {
+        filterName = filterZero.name;
       }
     }
-    // TODO cache rendered images?
+    switch (filterName) {
+      case "JPXDecode":
+        const jpxImage = new JpxImage();
+        jpxImage.parseImageProperties(<JpxStream> image.stream);
+        (<JpxStream> image.stream).reset();
 
-    let width = <number>dict.get("W", "Width");
-    let height = <number>dict.get("H", "Height");
+        image.width = jpxImage.width;
+        image.height = jpxImage.height;
+        image.bitsPerComponent = jpxImage.bitsPerComponent;
+        image.numComps = jpxImage.componentsCount;
+        break;
+      case "JBIG2Decode":
+        image.bitsPerComponent = 1;
+        image.numComps = 1;
+        break;
+    }
 
-    if( Number.isInteger(image.width) && image.width! > 0
-     && Number.isInteger(image.height) && image.height! > 0
-     && (image.width !== width || image.height !== height)
+    let width = <number> dict.get("W", "Width");
+    let height = <number> dict.get("H", "Height");
+
+    if (
+      Number.isInteger(image.width) &&
+      image.width! > 0 &&
+      Number.isInteger(image.height) &&
+      image.height! > 0 &&
+      (image.width !== width || image.height !== height)
     ) {
       warn(
         "PDFImage - using the Width/Height of the image data, " +
-        "rather than the image dictionary."
+          "rather than the image dictionary.",
       );
       width = image.width!;
       height = image.height!;
     }
-    if( width < 1 || height < 1 )
-    {
+    if (width < 1 || height < 1) {
       throw new FormatError(
-        `Invalid image width: ${width} or height: ${height}`
+        `Invalid image width: ${width} or height: ${height}`,
       );
     }
     this.width = width;
     this.height = height;
 
-    this.interpolate = <boolean>dict.get("I", "Interpolate");
-    this.imageMask = <boolean>dict.get("IM", "ImageMask") || false;
-    this.matte = <number[] | undefined>dict.get("Matte") || false;
+    this.interpolate = <boolean> dict.get("I", "Interpolate");
+    this.imageMask = <boolean> dict.get("IM", "ImageMask") || false;
+    this.matte = <number[] | undefined> dict.get("Matte") || false;
 
     let bitsPerComponent = image.bitsPerComponent;
-    if( !bitsPerComponent )
-    {
-      bitsPerComponent = <number | undefined>dict.get("BPC", "BitsPerComponent");
-      if( !bitsPerComponent )
-      {
-        if( this.imageMask )
-        {
+    if (!bitsPerComponent) {
+      bitsPerComponent = <number | undefined> dict.get(
+        "BPC",
+        "BitsPerComponent",
+      );
+      if (!bitsPerComponent) {
+        if (this.imageMask) {
           bitsPerComponent = 1;
-        } 
-        else {
+        } else {
           throw new FormatError(
-            `Bits per component missing in image: ${this.imageMask}`
+            `Bits per component missing in image: ${this.imageMask}`,
           );
         }
       }
     }
     this.bpc = bitsPerComponent;
 
-    if( !this.imageMask )
-    {
+    if (!this.imageMask) {
       let colorSpace = dict.getRaw("CS") || dict.getRaw("ColorSpace");
-      if( !colorSpace )
-      {
+      if (!colorSpace) {
         info("JPX images (which do not require color spaces)");
-        switch( image.numComps )
-        {
+        switch (image.numComps) {
           case 1:
             colorSpace = Name.get("DeviceGray");
             break;
@@ -274,12 +277,12 @@ export class PDFImage
             break;
           default:
             throw new Error(
-              `JPX images with ${image.numComps} color components not supported.`
+              `JPX images with ${image.numComps} color components not supported.`,
             );
         }
       }
       this.colorSpace = ColorSpace.parse({
-        cs: <CS>colorSpace,
+        cs: <CS> colorSpace,
         xref,
         resources: isInline ? res : undefined,
         pdfFunctionFactory,
@@ -288,10 +291,11 @@ export class PDFImage
       this.numComps = this.colorSpace.numComps;
     }
 
-    this.decode = <number[] | undefined>dict.getArray("D", "Decode");
+    this.decode = <number[] | undefined> dict.getArray("D", "Decode");
     this.needsDecode = false;
-    if( this.decode
-     && ((this.colorSpace &&
+    if (
+      this.decode &&
+      ((this.colorSpace &&
         !this.colorSpace.isDefaultDecode(this.decode, bitsPerComponent)) ||
         (isMask &&
           !ColorSpace.isDefaultDecode(this.decode, /* numComps = */ 1)))
@@ -302,8 +306,7 @@ export class PDFImage
       this.decodeCoefficients = [];
       this.decodeAddends = [];
       const isIndexed = this.colorSpace && this.colorSpace.name === "Indexed";
-      for( let i = 0, j = 0; i < this.decode.length; i += 2, ++j )
-      {
+      for (let i = 0, j = 0; i < this.decode.length; i += 2, ++j) {
         const dmin = this.decode[i];
         const dmax = this.decode[i + 1];
         this.decodeCoefficients[j] = isIndexed
@@ -313,42 +316,35 @@ export class PDFImage
       }
     }
 
-    if( smask )
-    {
+    if (smask) {
       this.smask = new PDFImage({
         xref,
         res,
-        image: <ImageStream>smask,
+        image: <ImageStream> smask,
         isInline,
         pdfFunctionFactory,
         localColorSpaceCache,
       });
-    } 
-    else if( mask )
-    {
-      if( mask instanceof BaseStream )
-      {
+    } else if (mask) {
+      if (mask instanceof BaseStream) {
         const maskDict = mask.dict!,
           imageMask = maskDict.get("IM", "ImageMask");
-        if( !imageMask )
-        {
+        if (!imageMask) {
           warn("Ignoring /Mask in image without /ImageMask.");
-        } 
-        else {
+        } else {
           this.mask = new PDFImage({
             xref,
             res,
-            image: <ImageStream>mask,
+            image: <ImageStream> mask,
             isInline,
             isMask: true,
             pdfFunctionFactory,
             localColorSpaceCache,
           });
         }
-      } 
-      else {
+      } else {
         // Color key mask (just an array).
-        this.mask = <number[]>mask;
+        this.mask = <number[]> mask;
       }
     }
   }
@@ -361,10 +357,10 @@ export class PDFImage
     xref,
     res,
     image,
-    isInline=false,
+    isInline = false,
     pdfFunctionFactory,
     localColorSpaceCache,
-  }:_BuildImageP ) {
+  }: _BuildImageP) {
     const imageData = image;
     let smaskData;
     let maskData;
@@ -372,23 +368,16 @@ export class PDFImage
     const smask = image.dict!.get("SMask");
     const mask = image.dict!.get("Mask");
 
-    if( smask )
-    {
-      if( smask instanceof BaseStream )
-      {
+    if (smask) {
+      if (smask instanceof BaseStream) {
         smaskData = smask;
-      } 
-      else {
+      } else {
         warn("Unsupported /SMask format.");
       }
-    } 
-    else if( mask )
-    {
-      if( mask instanceof BaseStream || Array.isArray(mask) )
-      {
-        maskData = <BaseStream | number[]>mask;
-      } 
-      else {
+    } else if (mask) {
+      if (mask instanceof BaseStream || Array.isArray(mask)) {
+        maskData = <BaseStream | number[]> mask;
+      } else {
         warn("Unsupported /Mask format.");
       }
     }
@@ -412,7 +401,7 @@ export class PDFImage
     imageIsFromDecodeStream,
     inverseDecode,
     interpolate,
-  }:_CreateMaskP ):ImgData {
+  }: _CreateMaskP): ImgData {
     // |imgArray| might not contain full data for every pixel of the mask, so
     // we need to distinguish between |computedLength| and |actualLength|.
     // In particular, if inverseDecode is true, then the array we return must
@@ -423,17 +412,13 @@ export class PDFImage
     const haveFullData = computedLength === actualLength;
     let data, i;
 
-    if( imageIsFromDecodeStream && (!inverseDecode || haveFullData) )
-    {
+    if (imageIsFromDecodeStream && (!inverseDecode || haveFullData)) {
       // imgArray came from a DecodeStream and its data is in an appropriate
       // form, so we can just transfer it.
       data = imgArray;
-    } 
-    else if( !inverseDecode )
-    {
+    } else if (!inverseDecode) {
       data = new Uint8Array(imgArray);
-    } 
-    else {
+    } else {
       data = new Uint8Array(computedLength);
       data.set(imgArray);
       data.fill(0xff, actualLength);
@@ -443,10 +428,8 @@ export class PDFImage
     // have added above). It's safe to modify the array -- whether it's the
     // original or a copy, we're about to transfer it anyway, so nothing else
     // in this thread can be relying on its contents.
-    if (inverseDecode) 
-    {
-      for( i = 0; i < actualLength; i++ )
-      {
+    if (inverseDecode) {
+      for (i = 0; i < actualLength; i++) {
         data[i] ^= 0xff;
       }
     }
@@ -461,19 +444,18 @@ export class PDFImage
     imageIsFromDecodeStream,
     inverseDecode,
     interpolate,
-  }:_CreateMaskP ):ImgData {
-    const isSingleOpaquePixel =
-      width === 1 &&
+  }: _CreateMaskP): ImgData {
+    const isSingleOpaquePixel = width === 1 &&
       height === 1 &&
       inverseDecode === (imgArray.length === 0 || !!(imgArray[0] & 128));
 
-    if( isSingleOpaquePixel ) 
+    if (isSingleOpaquePixel) {
       return { isSingleOpaquePixel };
+    }
 
-    if( FeatureTest.isOffscreenCanvasSupported )
-    {
-      const canvas = new (<any>globalThis).OffscreenCanvas(width, height);
-      const ctx = <CanvasRenderingContext2D>canvas.getContext("2d");
+    if (FeatureTest.isOffscreenCanvasSupported) {
+      const canvas = new (<any> globalThis).OffscreenCanvas(width, height);
+      const ctx = <CanvasRenderingContext2D> canvas.getContext("2d");
       const imgData = ctx.createImageData(width, height);
       applyMaskImageData({
         src: imgArray,
@@ -506,26 +488,25 @@ export class PDFImage
     });
   }
 
-  get drawWidth() 
-  {
+  get drawWidth() {
     return Math.max(
       this.width,
       (this.smask && this.smask.width) || 0,
-      (this.mask && (<PDFImage>this.mask).width) || 0
+      (this.mask && (<PDFImage> this.mask).width) || 0,
     );
   }
 
-  get drawHeight() 
-  {
+  get drawHeight() {
     return Math.max(
       this.height,
       (this.smask && this.smask.height) || 0,
-      (this.mask && (<PDFImage>this.mask).height) || 0
+      (this.mask && (<PDFImage> this.mask).height) || 0,
     );
   }
 
-  decodeBuffer( buffer:Uint8Array | Uint8ClampedArray | Uint16Array | Uint32Array )
-  {
+  decodeBuffer(
+    buffer: Uint8Array | Uint8ClampedArray | Uint16Array | Uint32Array,
+  ) {
     const bpc = this.bpc;
     const numComps = this.numComps!;
 
@@ -543,21 +524,19 @@ export class PDFImage
     }
     let index = 0;
     for (i = 0, ii = this.width * this.height; i < ii; i++) {
-      for( let j = 0; j < numComps; j++ )
-      {
+      for (let j = 0; j < numComps; j++) {
         buffer[index] = decodeAndClamp(
           buffer[index],
           decodeAddends![j],
           decodeCoefficients![j],
-          max
+          max,
         );
         index++;
       }
     }
   }
 
-  getComponents( buffer:Uint8Array | Uint8ClampedArray )
-  {
+  getComponents(buffer: Uint8Array | Uint8ClampedArray) {
     const bpc = this.bpc;
 
     // This image doesn't require any extra work.
@@ -574,11 +553,9 @@ export class PDFImage
     let output;
     if (bpc <= 8) {
       output = new Uint8Array(length);
-    } 
-    else if (bpc <= 16) {
+    } else if (bpc <= 16) {
       output = new Uint16Array(length);
-    } 
-    else {
+    } else {
       output = new Uint32Array(length);
     }
     const rowComps = width * numComps;
@@ -591,8 +568,7 @@ export class PDFImage
     if (bpc === 1) {
       // Optimization for reading 1 bpc images.
       let mask, loop1End, loop2End;
-      for( let j = 0; j < height; j++ )
-      {
+      for (let j = 0; j < height; j++) {
         loop1End = i + (rowComps & ~7);
         loop2End = i + rowComps;
 
@@ -620,8 +596,7 @@ export class PDFImage
           }
         }
       }
-    } 
-    else {
+    } else {
       // The general case that handles all other bpc values.
       let bits = 0;
       buf = 0;
@@ -640,8 +615,7 @@ export class PDFImage
         let value = buf >> remainingBits;
         if (value < 0) {
           value = 0;
-        } 
-        else if (value > max) {
+        } else if (value > max) {
           value = max;
         }
         output[i] = value;
@@ -652,25 +626,24 @@ export class PDFImage
     return output;
   }
 
-  fillOpacity( rgbaBuf:Uint8ClampedArray, width:number, height:number, actualHeight:number, 
-    image:Uint8Array | Uint8ClampedArray | Uint16Array | Uint32Array
+  fillOpacity(
+    rgbaBuf: Uint8ClampedArray,
+    width: number,
+    height: number,
+    actualHeight: number,
+    image: Uint8Array | Uint8ClampedArray | Uint16Array | Uint32Array,
   ) {
-    // #if !PRODUCTION || TESTING
-    // if (
-    //   typeof PDFJSDev === "undefined" ||
-    //   PDFJSDev.test("!PRODUCTION || TESTING")
-    // ) {
-    assert( rgbaBuf instanceof Uint8ClampedArray,
-      'PDFImage.fillOpacity: Unsupported "rgbaBuf" type.'
-    );
-    // }
-    // #endif
+    /*#static*/ if (_PDFDEV) {
+      assert(
+        rgbaBuf instanceof Uint8ClampedArray,
+        'PDFImage.fillOpacity: Unsupported "rgbaBuf" type.',
+      );
+    }
     const smask = this.smask;
     const mask = this.mask;
     let alphaBuf, sw, sh, i, ii, j;
 
-    if( smask )
-    {
+    if (smask) {
       sw = smask.width;
       sh = smask.height;
       alphaBuf = new Uint8ClampedArray(sw * sh);
@@ -678,11 +651,8 @@ export class PDFImage
       if (sw !== width || sh !== height) {
         alphaBuf = resizeImageMask(alphaBuf, smask.bpc, sw, sh, width, height);
       }
-    } 
-    else if( mask )
-    {
-      if( mask instanceof PDFImage )
-      {
+    } else if (mask) {
+      if (mask instanceof PDFImage) {
         sw = mask.width;
         sh = mask.height;
         alphaBuf = new Uint8ClampedArray(sw * sh);
@@ -690,28 +660,22 @@ export class PDFImage
         mask.fillGrayBuffer(alphaBuf);
 
         // Need to invert values in rgbaBuf
-        for( i = 0, ii = sw * sh; i < ii; ++i )
-        {
+        for (i = 0, ii = sw * sh; i < ii; ++i) {
           alphaBuf[i] = 255 - alphaBuf[i];
         }
 
-        if( sw !== width || sh !== height )
-        {
+        if (sw !== width || sh !== height) {
           alphaBuf = resizeImageMask(alphaBuf, mask.bpc, sw, sh, width, height);
         }
-      } 
-      else if( Array.isArray(mask) )
-      {
+      } else if (Array.isArray(mask)) {
         // Color key mask: if any of the components are outside the range
         // then they should be painted.
         alphaBuf = new Uint8ClampedArray(width * height);
         const numComps = this.numComps!;
-        for( i = 0, ii = width * height; i < ii; ++i )
-        {
+        for (i = 0, ii = width * height; i < ii; ++i) {
           let opacity = 0;
           const imageOffset = i * numComps;
-          for( j = 0; j < numComps; ++j )
-          {
+          for (j = 0; j < numComps; ++j) {
             const color = image[imageOffset + j];
             const maskOffset = j * 2;
             if (color < mask[maskOffset] || color > mask[maskOffset + 1]) {
@@ -721,49 +685,40 @@ export class PDFImage
           }
           alphaBuf[i] = opacity;
         }
-      } 
-      else {
+      } else {
         throw new FormatError("Unknown mask format.");
       }
     }
 
     if (alphaBuf) {
-      for( i = 0, j = 3, ii = width * actualHeight; i < ii; ++i, j += 4 )
-      {
+      for (i = 0, j = 3, ii = width * actualHeight; i < ii; ++i, j += 4) {
         rgbaBuf[j] = alphaBuf[i];
       }
-    } 
-    else {
+    } else {
       // No mask.
-      for( i = 0, j = 3, ii = width * actualHeight; i < ii; ++i, j += 4 )
-      {
+      for (i = 0, j = 3, ii = width * actualHeight; i < ii; ++i, j += 4) {
         rgbaBuf[j] = 255;
       }
     }
   }
 
-  undoPreblend( buffer:Uint8ClampedArray, width:number, height:number )
-  {
-    // #if !PRODUCTION || TESTING
-    // if (
-    //   typeof PDFJSDev === "undefined" ||
-    //   PDFJSDev.test("!PRODUCTION || TESTING")
-    // ) {
-    assert( buffer instanceof Uint8ClampedArray,
-      'PDFImage.undoPreblend: Unsupported "buffer" type.'
-    );
-    // }
-    // #endif
+  undoPreblend(buffer: Uint8ClampedArray, width: number, height: number) {
+    /*#static*/ if (_PDFDEV) {
+      assert(
+        buffer instanceof Uint8ClampedArray,
+        'PDFImage.undoPreblend: Unsupported "buffer" type.',
+      );
+    }
     const matte = this.smask && this.smask.matte;
-    if( !matte ) return;
-
-    const matteRgb = this.colorSpace!.getRgb( <number[]>matte, 0 );
+    if (!matte) {
+      return;
+    }
+    const matteRgb = this.colorSpace!.getRgb(<number[]> matte, 0);
     const matteR = matteRgb[0];
     const matteG = matteRgb[1];
     const matteB = matteRgb[2];
     const length = width * height * 4;
-    for( let i = 0; i < length; i += 4 )
-    {
+    for (let i = 0; i < length; i += 4) {
       const alpha = buffer[i + 3];
       if (alpha === 0) {
         // according formula we have to get Infinity in all components
@@ -780,11 +735,10 @@ export class PDFImage
     }
   }
 
-  createImageData( forceRGBA=false )
-  {
+  createImageData(forceRGBA = false) {
     const drawWidth = this.drawWidth;
     const drawHeight = this.drawHeight;
-    const imgData:ImgData = {
+    const imgData: ImgData = {
       width: drawWidth,
       height: drawHeight,
       interpolate: this.interpolate,
@@ -801,8 +755,7 @@ export class PDFImage
     // Rows start at byte boundary.
     const rowBytes = (originalWidth * numComps * bpc + 7) >> 3;
 
-    if( !forceRGBA )
-    {
+    if (!forceRGBA) {
       // If it is a 1-bit-per-pixel grayscale (i.e. black-and-white) image
       // without any complications, we pass a same-sized copy to the main
       // thread rather than expanding by 32x to RGBA form. This saves *lots*
@@ -811,43 +764,40 @@ export class PDFImage
       // Similarly, if it is a 24-bit-per pixel RGB image without any
       // complications, we avoid expanding by 1.333x to RGBA form.
       let kind;
-      if( this.colorSpace!.name === "DeviceGray" && bpc === 1 )
-      {
+      if (this.colorSpace!.name === "DeviceGray" && bpc === 1) {
         kind = ImageKind.GRAYSCALE_1BPP;
-      } 
-      else if( this.colorSpace!.name === "DeviceRGB"
-            && bpc === 8 && !this.needsDecode
+      } else if (
+        this.colorSpace!.name === "DeviceRGB" &&
+        bpc === 8 && !this.needsDecode
       ) {
         kind = ImageKind.RGB_24BPP;
       }
-      if( kind
-       && !this.smask
-       && !this.mask
-       && drawWidth === originalWidth
-       && drawHeight === originalHeight
+      if (
+        kind &&
+        !this.smask &&
+        !this.mask &&
+        drawWidth === originalWidth &&
+        drawHeight === originalHeight
       ) {
         imgData.kind = kind;
         imgData.data = this.getImageBytes(originalHeight * rowBytes, {});
 
-        if( this.needsDecode )
-        {
+        if (this.needsDecode) {
           // Invert the buffer (which must be grayscale if we reached here).
-          assert( kind === ImageKind.GRAYSCALE_1BPP,
-            "PDFImage.createImageData: The image must be grayscale."
+          assert(
+            kind === ImageKind.GRAYSCALE_1BPP,
+            "PDFImage.createImageData: The image must be grayscale.",
           );
           const buffer = imgData.data!;
-          for( let i = 0, ii = buffer.length; i < ii; i++ )
-          {
+          for (let i = 0, ii = buffer.length; i < ii; i++) {
             buffer[i] ^= 0xff;
           }
         }
         return imgData;
       }
-      if( this.image instanceof JpegStream && !this.smask && !this.mask )
-      {
+      if (this.image instanceof JpegStream && !this.smask && !this.mask) {
         let imageLength = originalHeight * rowBytes;
-        switch( this.colorSpace!.name )
-        {
+        switch (this.colorSpace!.name) {
           case "DeviceGray":
             // Avoid truncating the image, since `JpegImage.getData`
             // will expand the image data when `forceRGB === true`.
@@ -870,22 +820,20 @@ export class PDFImage
       internal: true,
     });
     // imgArray can be incomplete (e.g. after CCITT fax encoding).
-    const actualHeight =
-      0 | (((imgArray.length / rowBytes) * drawHeight) / originalHeight);
+    const actualHeight = 0 |
+      (((imgArray.length / rowBytes) * drawHeight) / originalHeight);
 
     const comps = this.getComponents(imgArray);
 
     // If opacity data is present, use RGBA_32BPP form. Otherwise, use the
     // more compact RGB_24BPP form if allowable.
     let alpha01, maybeUndoPreblend;
-    if( !forceRGBA && !this.smask && !this.mask )
-    {
+    if (!forceRGBA && !this.smask && !this.mask) {
       imgData.kind = ImageKind.RGB_24BPP;
       imgData.data = new Uint8ClampedArray(drawWidth * drawHeight * 3);
       alpha01 = 0;
       maybeUndoPreblend = false;
-    } 
-    else {
+    } else {
       imgData.kind = ImageKind.RGBA_32BPP;
       imgData.data = new Uint8ClampedArray(drawWidth * drawHeight * 4);
       alpha01 = 1;
@@ -897,12 +845,11 @@ export class PDFImage
         drawWidth,
         drawHeight,
         actualHeight,
-        comps
+        comps,
       );
     }
 
-    if( this.needsDecode )
-    {
+    if (this.needsDecode) {
       this.decodeBuffer(comps);
     }
     this.colorSpace!.fillRgb(
@@ -914,32 +861,26 @@ export class PDFImage
       actualHeight,
       bpc,
       comps,
-      alpha01
+      alpha01,
     );
-    if( maybeUndoPreblend )
-    {
+    if (maybeUndoPreblend) {
       this.undoPreblend(imgData.data, drawWidth, actualHeight);
     }
 
     return imgData;
   }
 
-  fillGrayBuffer( buffer:Uint8ClampedArray )
-  {
-    // #if !PRODUCTION || TESTING
-    // if (
-    //   typeof PDFJSDev === "undefined" ||
-    //   PDFJSDev.test("!PRODUCTION || TESTING")
-    // ) {
-    assert( buffer instanceof Uint8ClampedArray,
-      'PDFImage.fillGrayBuffer: Unsupported "buffer" type.'
-    );
-    // }
-    // #endif
+  fillGrayBuffer(buffer: Uint8ClampedArray) {
+    /*#static*/ if (_PDFDEV) {
+      assert(
+        buffer instanceof Uint8ClampedArray,
+        'PDFImage.fillGrayBuffer: Unsupported "buffer" type.',
+      );
+    }
     const numComps = this.numComps;
     if (numComps !== 1) {
       throw new FormatError(
-        `Reading gray scale from a color image: ${numComps}`
+        `Reading gray scale from a color image: ${numComps}`,
       );
     }
 
@@ -962,8 +903,7 @@ export class PDFImage
         for (i = 0; i < length; ++i) {
           buffer[i] = (comps[i] - 1) & 255;
         }
-      } 
-      else {
+      } else {
         // scale to {0, 255}
         for (i = 0; i < length; ++i) {
           buffer[i] = -comps[i] & 255;
@@ -983,8 +923,10 @@ export class PDFImage
     }
   }
 
-  getImageBytes( length:number, 
-    { drawWidth, drawHeight, forceRGB=false, internal=false }:_GetImageBytesP
+  getImageBytes(
+    length: number,
+    { drawWidth, drawHeight, forceRGB = false, internal = false }:
+      _GetImageBytesP,
   ) {
     this.image.reset();
     this.image.drawWidth = drawWidth || this.width;
@@ -997,13 +939,14 @@ export class PDFImage
     // the entire DecodeStream's data.  But if it came from a Stream, we
     // need to copy it because it'll only be a portion of the Stream's
     // data, and the rest will be read later on.
-    if( internal || this.image instanceof DecodeStream ) return imageBytes;
-
+    if (internal || this.image instanceof DecodeStream) {
+      return imageBytes;
+    }
     assert(
       imageBytes instanceof Uint8Array,
-      'PDFImage.getImageBytes: Unsupported "imageBytes" type.'
+      'PDFImage.getImageBytes: Unsupported "imageBytes" type.',
     );
-    return new Uint8Array( imageBytes );
+    return new Uint8Array(imageBytes);
   }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

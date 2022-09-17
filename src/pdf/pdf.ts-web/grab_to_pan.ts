@@ -18,56 +18,53 @@
  * limitations under the License.
  */
 
-import { html } from "../../lib/dom.js";
-/*81---------------------------------------------------------------------------*/
+import { html } from "../../lib/dom.ts";
+/*80--------------------------------------------------------------------------*/
 
 // Class name of element which can be grabbed.
 const CSS_CLASS_GRAB = "grab-to-pan-grab";
 
-interface _GrabToPanCtorP
-{
-  element:HTMLDivElement;
+interface _GrabToPanCtorP {
+  element: HTMLDivElement;
 
   /**
    * See `ignoreTarget(node)`
    */
-  ignoreTarget?:( node:Element ) => boolean;
+  ignoreTarget?: (node: Element) => boolean;
 
   /**
    * Called when
    * grab-to-pan is (de)activated. The first argument is a boolean that
    * shows whether grab-to-pan is activated.
    */
-  onActiveChanged?:(_:boolean) => unknown;
+  onActiveChanged?: (_: boolean) => unknown;
 }
-export class GrabToPan
-{
+export class GrabToPan {
   element;
   document;
 
-  onActiveChanged?:((_:boolean) => unknown) | undefined;
+  onActiveChanged?: ((_: boolean) => unknown) | undefined;
 
-  overlay:HTMLDivElement;
+  overlay: HTMLDivElement;
 
-  active?:boolean;
+  active?: boolean;
 
-  scrollLeftStart?:number;
-  scrollTopStart?:number;
-  clientXStart?:number;
-  clientYStart?:number;
+  scrollLeftStart?: number;
+  scrollTopStart?: number;
+  clientXStart?: number;
+  clientYStart?: number;
 
   /**
    * Construct a GrabToPan instance for a given HTML element.
    */
-  constructor( options:_GrabToPanCtorP )
-  {
+  constructor(options: _GrabToPanCtorP) {
     this.element = options.element;
     this.document = options.element.ownerDocument;
     if (typeof options.ignoreTarget === "function") {
       this.ignoreTarget = options.ignoreTarget;
     }
     this.onActiveChanged = options.onActiveChanged;
-    
+
     // This overlay will be inserted in the document when the mouse moves during
     // a grab operation, to ensure that the cursor has the desired appearance.
     const overlay = (this.overlay = html("div"));
@@ -77,23 +74,20 @@ export class GrabToPan
   /**
    * Bind a mousedown event to the element to enable grab-detection.
    */
-  activate = () =>
-  {
-    if( !this.active )
-    {
+  activate = () => {
+    if (!this.active) {
       this.active = true;
       this.element.addEventListener("mousedown", this.#onMouseDown, true);
       this.element.classList.add(CSS_CLASS_GRAB);
 
       this.onActiveChanged?.(true);
     }
-  }
+  };
 
   /**
    * Removes all events. Any pending pan session is immediately stopped.
    */
-  deactivate = () => 
-  {
+  deactivate = () => {
     if (this.active) {
       this.active = false;
       this.element.removeEventListener("mousedown", this.#onMouseDown, true);
@@ -102,14 +96,13 @@ export class GrabToPan
 
       this.onActiveChanged?.(false);
     }
-  }
+  };
 
-  toggle = () => 
-  {
-    if (this.active) 
-         this.deactivate();
-    else this.activate();
-  }
+  toggle = () => {
+    if (this.active) {
+      this.deactivate();
+    } else this.activate();
+  };
 
   /**
    * Whether to not pan if the target element is clicked.
@@ -118,24 +111,22 @@ export class GrabToPan
    * @param node The target of the event.
    * @return Whether to not react to the click event.
    */
-  ignoreTarget = ( node:Element ) => 
-  {
+  ignoreTarget = (node: Element) => {
     // Check whether the clicked element is, a child of, an input element/link.
     return node.matches(
-      "a[href], a[href] *, input, textarea, button, button *, select, option"
+      "a[href], a[href] *, input, textarea, button, button *, select, option",
     );
-  }
+  };
 
-  #onMouseDown = ( event:MouseEvent ) => 
-  {
-    if( event.button !== 0 || this.ignoreTarget(<Element>event.target) )
+  #onMouseDown = (event: MouseEvent) => {
+    if (event.button !== 0 || this.ignoreTarget(<Element> event.target)) {
       return;
+    }
 
-    if( (<any>event).originalTarget )
-    {
+    if ((<any> event).originalTarget) {
       try {
         // eslint-disable-next-line no-unused-expressions
-        (<any>event).originalTarget.tagName;
+        (<any> event).originalTarget.tagName;
       } catch (e) {
         // Mozilla-specific: element is a scrollbar (XUL element)
         return;
@@ -155,18 +146,17 @@ export class GrabToPan
     event.preventDefault();
     event.stopPropagation();
 
-    const focusedElement = <HTMLElement|null>document.activeElement;
-    if( focusedElement && !focusedElement.contains(<Node|null>event.target) )
-    {
+    const focusedElement = <HTMLElement | null> document.activeElement;
+    if (
+      focusedElement && !focusedElement.contains(<Node | null> event.target)
+    ) {
       focusedElement.blur();
     }
-  }
+  };
 
-  #onMouseMove = ( event:MouseEvent ) =>
-  {
+  #onMouseMove = (event: MouseEvent) => {
     this.element.removeEventListener("scroll", this.#endPan, true);
-    if (!(event.buttons & 1)) 
-    {
+    if (!(event.buttons & 1)) {
       // The left mouse button is released.
       this.#endPan();
       return;
@@ -175,30 +165,27 @@ export class GrabToPan
     const yDiff = event.clientY - this.clientYStart!;
     const scrollTop = this.scrollTopStart! - yDiff;
     const scrollLeft = this.scrollLeftStart! - xDiff;
-    if( this.element.scrollTo )
-    {
+    if (this.element.scrollTo) {
       this.element.scrollTo({
         top: scrollTop,
         left: scrollLeft,
-        behavior: <ScrollBehavior>"instant",
+        behavior: <ScrollBehavior> "instant",
       });
-    }
-    else {
+    } else {
       this.element.scrollTop = scrollTop;
       this.element.scrollLeft = scrollLeft;
     }
     if (!this.overlay.parentNode) {
-      document.body.appendChild(this.overlay);
+      document.body.append(this.overlay);
     }
-  }
+  };
 
-  #endPan = () =>
-  {
+  #endPan = () => {
     this.element.removeEventListener("scroll", this.#endPan, true);
     this.document.removeEventListener("mousemove", this.#onMouseMove, true);
     this.document.removeEventListener("mouseup", this.#endPan, true);
     // Note: ChildNode.remove doesn't throw if the parentNode is undefined.
     this.overlay.remove();
-  }
+  };
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

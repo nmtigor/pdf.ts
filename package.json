@@ -8,8 +8,9 @@
   "license": "Apache-2.0",
   "dependencies": {},
   "devDependencies": {
-    "@types/css-font-loading-module": "0.0.6",
-    "@types/resize-observer-browser": "^0.1.6",
-    "@types/wicg-file-system-access": "^2020.9.4"
+    "@types/chrome": "latest",
+    "@types/css-font-loading-module": "latest",
+    "@types/resize-observer-browser": "latest",
+    "@types/wicg-file-system-access": "latest"
   }
 }

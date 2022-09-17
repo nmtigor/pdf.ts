@@ -19,24 +19,23 @@
 
 import {
   type AvailableSpace,
-  type XFAAttrs, type XFAElData, type XFAFontBase, type XFAHTMLObj,
+  type XFAAttrs,
+  type XFAElData,
+  type XFAFontBase,
+  type XFAHTMLObj,
   type XFAMargin,
-  type XFAStyleData
-} from "./alias.js";
-import { Builder } from "./builder.js";
+  type XFAStyleData,
+} from "./alias.ts";
+import { Builder } from "./builder.ts";
 import {
   fixTextIndent,
   fixURL,
   measureToString,
-  setFontFamily
-} from "./html_utils.js";
-import { $buildXFAObject, NamespaceIds } from "./namespaces.js";
-import { TextMeasure } from "./text.js";
-import {
-  getMeasurement,
-  HTMLResult,
-  stripQuotes
-} from "./utils.js";
+  setFontFamily,
+} from "./html_utils.ts";
+import { $buildXFAObject, NamespaceIds } from "./namespaces.ts";
+import { TextMeasure } from "./text.ts";
+import { getMeasurement, HTMLResult, stripQuotes } from "./utils.ts";
 import {
   $acceptWhitespace,
   $childrenToHTML,
@@ -51,9 +50,9 @@ import {
   $pushGlyphs,
   $text,
   $toHTML,
-  XmlObject
-} from "./xfa_object.js";
-/*81---------------------------------------------------------------------------*/
+  XmlObject,
+} from "./xfa_object.ts";
+/*80--------------------------------------------------------------------------*/
 
 const XHTML_NS_ID = NamespaceIds.xhtml.id;
 const $richText = Symbol();
@@ -91,22 +90,24 @@ const VALID_STYLES = new Set([
   "xfa-tab-stops",
 ]);
 
-const StyleMapping = new Map<string, string 
-  | (( value:string ) => string) 
-  | (( value:string, original:{fontSize:number} ) => string) 
+const StyleMapping = new Map<
+  string,
+  | string
+  | ((value: string) => string)
+  | ((value: string, original: { fontSize: number }) => string)
 >([
   ["page-break-after", "breakAfter"],
   ["page-break-before", "breakBefore"],
   ["page-break-inside", "breakInside"],
-  ["kerning-mode", ( value:string ) => (value === "none" ? "none" : "normal")],
+  ["kerning-mode", (value: string) => (value === "none" ? "none" : "normal")],
   [
     "xfa-font-horizontal-scale",
-    ( value:string ) =>
+    (value: string) =>
       `scaleX(${Math.max(0, Math.min(parseInt(value) / 100)).toFixed(2)})`,
   ],
   [
     "xfa-font-vertical-scale",
-    ( value:string ) =>
+    (value: string) =>
       `scaleY(${Math.max(0, Math.min(parseInt(value) / 100)).toFixed(2)})`,
   ],
   ["xfa-spacerun", ""],
@@ -114,66 +115,60 @@ const StyleMapping = new Map<string, string
   [
     "font-size",
     (value, original) => {
-      return measureToString( 0.99 * 
-        (original.fontSize = getMeasurement(value)) );
+      return measureToString(
+        0.99 *
+          (original.fontSize = getMeasurement(value)),
+      );
     },
   ],
-  ["letter-spacing", ( value:string ) => measureToString(getMeasurement(value))],
-  ["line-height", ( value:string ) => measureToString(getMeasurement(value))],
-  ["margin", ( value:string ) => measureToString(getMeasurement(value))],
-  ["margin-bottom", ( value:string ) => measureToString(getMeasurement(value))],
-  ["margin-left", ( value:string ) => measureToString(getMeasurement(value))],
-  ["margin-right", ( value:string ) => measureToString(getMeasurement(value))],
-  ["margin-top", ( value:string ) => measureToString(getMeasurement(value))],
-  ["text-indent", ( value:string ) => measureToString(getMeasurement(value))],
-  ["font-family", ( value:string ) => value],
-  ["vertical-align", ( value:string ) => measureToString(getMeasurement(value))],
+  ["letter-spacing", (value: string) => measureToString(getMeasurement(value))],
+  ["line-height", (value: string) => measureToString(getMeasurement(value))],
+  ["margin", (value: string) => measureToString(getMeasurement(value))],
+  ["margin-bottom", (value: string) => measureToString(getMeasurement(value))],
+  ["margin-left", (value: string) => measureToString(getMeasurement(value))],
+  ["margin-right", (value: string) => measureToString(getMeasurement(value))],
+  ["margin-top", (value: string) => measureToString(getMeasurement(value))],
+  ["text-indent", (value: string) => measureToString(getMeasurement(value))],
+  ["font-family", (value: string) => value],
+  ["vertical-align", (value: string) => measureToString(getMeasurement(value))],
 ]);
 
 const spacesRegExp = /\s+/g;
 const crlfRegExp = /[\r\n]+/g;
 const crlfForRichTextRegExp = /\r\n?/g;
 
-function mapStyle( styleStr:string, node:XhtmlObject, richText:boolean )
-{
-  const style:XFAStyleData = Object.create(null);
-  if( !styleStr ) return style;
-
+function mapStyle(styleStr: string, node: XhtmlObject, richText: boolean) {
+  const style: XFAStyleData = Object.create(null);
+  if (!styleStr) {
+    return style;
+  }
   const original = Object.create(null);
-  for (const [key, value] of styleStr.split(";").map(s => s.split(":", 2))) 
-  {
+  for (const [key, value] of styleStr.split(";").map((s) => s.split(":", 2))) {
     const mapping = StyleMapping.get(key);
-    if (mapping === "") continue;
-
+    if (mapping === "") {
+      continue;
+    }
     let newValue = value;
-    if (mapping) 
-    {
-      if (typeof mapping === "string") 
-      {
+    if (mapping) {
+      if (typeof mapping === "string") {
         newValue = mapping;
-      } 
-      else {
+      } else {
         newValue = mapping(value, original);
       }
     }
-    if (key.endsWith("scale")) 
-    {
-      if (style.transform) 
-      {
+    if (key.endsWith("scale")) {
+      if (style.transform) {
         style.transform = `${style[key]} ${newValue}`;
-      } 
-      else {
+      } else {
         style.transform = newValue;
       }
-    } 
-    else {
+    } else {
       style[key.replaceAll(/-([a-zA-Z])/g, (_, x) => x.toUpperCase())] =
         newValue;
     }
   }
 
-  if (style.fontFamily) 
-  {
+  if (style.fontFamily) {
     setFontFamily(
       {
         typeface: style.fontFamily,
@@ -183,14 +178,15 @@ function mapStyle( styleStr:string, node:XhtmlObject, richText:boolean )
       },
       node,
       node[$globalData]!.fontFinder!,
-      style
+      style,
     );
   }
 
-  if( richText
-   && style.verticalAlign
-   && style.verticalAlign !== "0px"
-   && style.fontSize
+  if (
+    richText &&
+    style.verticalAlign &&
+    style.verticalAlign !== "0px" &&
+    style.fontSize
   ) {
     // A non-zero verticalAlign means that we've a sub/super-script and
     // consequently the font size must be decreased.
@@ -205,16 +201,19 @@ function mapStyle( styleStr:string, node:XhtmlObject, richText:boolean )
     style.verticalAlign = measureToString(
       Math.sign(getMeasurement(style.verticalAlign)) *
         fontSize *
-        VERTICAL_FACTOR
+        VERTICAL_FACTOR,
     );
   }
 
-  fixTextIndent( style );
+  if (richText && style.fontSize) {
+    style.fontSize = `calc(${style.fontSize} * var(--scale-factor))`;
+  }
+
+  fixTextIndent(style);
   return style;
 }
 
-function checkStyle( node:XhtmlObject )
-{
+function checkStyle(node: XhtmlObject) {
   if (!node.style) {
     return "";
   }
@@ -223,76 +222,70 @@ function checkStyle( node:XhtmlObject )
   return node.style
     .trim()
     .split(/\s*;\s*/)
-    .filter(s => !!s)
-    .map(s => s.split(/\s*:\s*/, 2))
+    .filter((s) => !!s)
+    .map((s) => s.split(/\s*:\s*/, 2))
     .filter(([key, value]) => {
       if (key === "font-family") {
         node[$globalData]!.usedTypefaces.add(value);
       }
       return VALID_STYLES.has(key);
     })
-    .map(kv => kv.join(":"))
+    .map((kv) => kv.join(":"))
     .join(";");
 }
 
 const NoWhites = new Set(["body", "html"]);
 
-export abstract class XhtmlObject extends XmlObject
-{
-  override [$content]?:string;
+export abstract class XhtmlObject extends XmlObject {
+  override [$content]?: string;
 
-  href?:string;
-  
+  href?: string;
+
   [$richText] = false;
   style;
 
-  constructor( attributes:XFAAttrs, name:string )
-  {
+  constructor(attributes: XFAAttrs, name: string) {
     super(XHTML_NS_ID, name);
     this.style = attributes.style || "";
   }
 
-  override [$clean]( builder:Builder ) 
-  {
+  override [$clean](builder: Builder) {
     super[$clean](builder);
     this.style = checkStyle(this);
   }
 
-  override [$acceptWhitespace]() { return !NoWhites.has( this[$nodeName] ); }
+  override [$acceptWhitespace]() {
+    return !NoWhites.has(this[$nodeName]);
+  }
 
-  override [$onText]( str:string, richText=false )
-  {
-    if (!richText) 
-    {
+  override [$onText](str: string, richText = false) {
+    if (!richText) {
       str = str.replace(crlfRegExp, "");
-      if (!this.style.includes("xfa-spacerun:yes")) 
-      {
+      if (!this.style.includes("xfa-spacerun:yes")) {
         str = str.replace(spacesRegExp, " ");
       }
-    } else 
-    {
+    } else {
       this[$richText] = true;
     }
 
-    if (str) 
-    {
+    if (str) {
       this[$content] += str;
     }
   }
 
-  [$pushGlyphs]( measure:TextMeasure, mustPop=true ): void
-  {
-    const xfaFont:XFAFontBase = Object.create(null);
-    const margin:XFAMargin = {
+  [$pushGlyphs](measure: TextMeasure, mustPop = true): void {
+    const xfaFont: XFAFontBase = Object.create(null);
+    const margin: XFAMargin = {
       top: NaN,
       bottom: NaN,
       left: NaN,
       right: NaN,
     };
-    let lineHeight:number | undefined;
-    for( const [key, value] of this.style
-      .split(";")
-      .map(s => s.split(":", 2))
+    let lineHeight: number | undefined;
+    for (
+      const [key, value] of this.style
+        .split(";")
+        .map((s) => s.split(":", 2))
     ) {
       switch (key) {
         case "font-family":
@@ -311,7 +304,7 @@ export abstract class XhtmlObject extends XmlObject
           xfaFont.letterSpacing = getMeasurement(value);
           break;
         case "margin":
-          const values = value.split(/ \t/).map(x => getMeasurement(x));
+          const values = value.split(/ \t/).map((x) => getMeasurement(x));
           switch (values.length) {
             case 1:
               margin.top =
@@ -355,141 +348,129 @@ export abstract class XhtmlObject extends XmlObject
       }
     }
 
-    measure.pushData( xfaFont, margin, lineHeight );
+    measure.pushData(xfaFont, margin, lineHeight);
 
-    if( this[$content] )
-    {
-      measure.addString( this[$content] );
-    } 
-    else {
-      for( const child of this[$getChildren]() ) 
-      {
-        if (child[$nodeName] === "#text") 
-        {
-          measure.addString( <string>child[$content] );
+    if (this[$content]) {
+      measure.addString(this[$content]);
+    } else {
+      for (const child of this[$getChildren]()) {
+        if (child[$nodeName] === "#text") {
+          measure.addString(<string> child[$content]);
           continue;
         }
-        (<XhtmlObject>child)[$pushGlyphs]( measure );
+        (<XhtmlObject> child)[$pushGlyphs](measure);
       }
     }
 
-    if( mustPop )
-    {
+    if (mustPop) {
       measure.popFont();
     }
   }
 
-  override [$toHTML]( availableSpace?:AvailableSpace )
-  {
-    const children:XFAElData[] = [];
+  override [$toHTML](availableSpace?: AvailableSpace) {
+    const children: XFAElData[] = [];
     this[$extra] = {
       children,
     };
 
     this[$childrenToHTML]({});
 
-    if (children.length === 0 && !this[$content]) 
-    {
+    if (children.length === 0 && !this[$content]) {
       return HTMLResult.EMPTY;
     }
 
     let value;
-    if( this[$richText] )
-    {
+    if (this[$richText]) {
       value = this[$content]
         ? this[$content].replace(crlfForRichTextRegExp, "\n")
         : undefined;
-    } 
-    else {
+    } else {
       value = this[$content] || undefined;
     }
 
-    return HTMLResult.success(<XFAHTMLObj>{
-      name: this[$nodeName],
-      attributes: {
-        href: this.href,
-        style: mapStyle(this.style, this, this[$richText]),
+    return HTMLResult.success(
+      <XFAHTMLObj> {
+        name: this[$nodeName],
+        attributes: {
+          href: this.href,
+          style: mapStyle(this.style, this, this[$richText]),
+        },
+        children,
+        value,
       },
-      children,
-      value,
-    });
+    );
   }
 }
 
-class A extends XhtmlObject 
-{
-  override href:string;
+class A extends XhtmlObject {
+  override href: string;
 
-  constructor( attributes:XFAAttrs ) 
-  {
-    super( attributes, "a" );
+  constructor(attributes: XFAAttrs) {
+    super(attributes, "a");
     this.href = fixURL(attributes.href) || "";
   }
 }
 
-class B extends XhtmlObject 
-{
-  constructor( attributes:XFAAttrs ) 
-  {
-    super( attributes, "b" );
+class B extends XhtmlObject {
+  constructor(attributes: XFAAttrs) {
+    super(attributes, "b");
   }
 
-  override [$pushGlyphs]( measure:TextMeasure )
-  {
-    measure.pushData({ weight: "bold" }, {top:NaN,bottom:NaN,left:NaN,right:NaN});
-    super[$pushGlyphs]( measure );
+  override [$pushGlyphs](measure: TextMeasure) {
+    measure.pushData({ weight: "bold" }, {
+      top: NaN,
+      bottom: NaN,
+      left: NaN,
+      right: NaN,
+    });
+    super[$pushGlyphs](measure);
     measure.popFont();
   }
 }
 
-class Body extends XhtmlObject 
-{
-  constructor( attributes:XFAAttrs ) 
-  {
-    super( attributes, "body" );
+class Body extends XhtmlObject {
+  constructor(attributes: XFAAttrs) {
+    super(attributes, "body");
   }
 
-  override [$toHTML]( availableSpace?:AvailableSpace )
-  {
-    const res = super[$toHTML]( availableSpace );
+  override [$toHTML](availableSpace?: AvailableSpace) {
+    const res = super[$toHTML](availableSpace);
     const { html } = res;
-    if( !html ) return HTMLResult.EMPTY;
+    if (!html) return HTMLResult.EMPTY;
 
-    (<XFAHTMLObj>html).name = "div";
-    (<XFAHTMLObj>html).attributes!.class = ["xfaRich"];
+    (<XFAHTMLObj> html).name = "div";
+    (<XFAHTMLObj> html).attributes!.class = ["xfaRich"];
     return res;
   }
 }
 
-class Br extends XhtmlObject 
-{
-  constructor( attributes:XFAAttrs )
-  {
-    super( attributes, "br" );
+class Br extends XhtmlObject {
+  constructor(attributes: XFAAttrs) {
+    super(attributes, "br");
   }
 
-  override [$text]() { return "\n"; }
+  override [$text]() {
+    return "\n";
+  }
 
-  override [$pushGlyphs]( measure:TextMeasure ) { measure.addString("\n"); }
+  override [$pushGlyphs](measure: TextMeasure) {
+    measure.addString("\n");
+  }
 
-  override [$toHTML]( availableSpace?:AvailableSpace )
-  {
+  override [$toHTML](availableSpace?: AvailableSpace) {
     return HTMLResult.success({
       name: "br",
     });
   }
 }
 
-class Html extends XhtmlObject 
-{
-  constructor( attributes:XFAAttrs )
-  {
-    super( attributes, "html" );
+class Html extends XhtmlObject {
+  constructor(attributes: XFAAttrs) {
+    super(attributes, "html");
   }
 
-  override [$toHTML]( availableSpace?:AvailableSpace )
-  {
-    const children:XFAElData[] = [];
+  override [$toHTML](availableSpace?: AvailableSpace) {
+    const children: XFAElData[] = [];
     this[$extra] = {
       children,
     };
@@ -507,9 +488,8 @@ class Html extends XhtmlObject
     }
 
     if (children.length === 1) {
-      const child = <XFAHTMLObj>children[0];
-      if( child.attributes && child.attributes.class!.includes("xfaRich") )
-      {
+      const child = <XFAHTMLObj> children[0];
+      if (child.attributes && child.attributes.class!.includes("xfaRich")) {
         return HTMLResult.success(child);
       }
     }
@@ -525,120 +505,128 @@ class Html extends XhtmlObject
   }
 }
 
-class I extends XhtmlObject 
-{
-  constructor( attributes:XFAAttrs )
-  {
-    super( attributes, "i" );
+class I extends XhtmlObject {
+  constructor(attributes: XFAAttrs) {
+    super(attributes, "i");
   }
 
-  override [$pushGlyphs]( measure:TextMeasure )
-  {
-    measure.pushData({ posture: "italic" }, {top:NaN,bottom:NaN,left:NaN,right:NaN});
+  override [$pushGlyphs](measure: TextMeasure) {
+    measure.pushData({ posture: "italic" }, {
+      top: NaN,
+      bottom: NaN,
+      left: NaN,
+      right: NaN,
+    });
     super[$pushGlyphs](measure);
     measure.popFont();
   }
 }
 
-class Li extends XhtmlObject 
-{
-  constructor( attributes:XFAAttrs )
-  {
-    super( attributes, "li" );
+class Li extends XhtmlObject {
+  constructor(attributes: XFAAttrs) {
+    super(attributes, "li");
   }
 }
 
-class Ol extends XhtmlObject 
-{
-  constructor( attributes:XFAAttrs )
-  {
-    super( attributes, "ol" );
+class Ol extends XhtmlObject {
+  constructor(attributes: XFAAttrs) {
+    super(attributes, "ol");
   }
 }
 
-class P extends XhtmlObject 
-{
-  constructor( attributes:XFAAttrs )
-  {
-    super( attributes, "p" );
+class P extends XhtmlObject {
+  constructor(attributes: XFAAttrs) {
+    super(attributes, "p");
   }
 
-  override [$pushGlyphs]( measure:TextMeasure )
-  {
+  override [$pushGlyphs](measure: TextMeasure) {
     super[$pushGlyphs](measure, /* mustPop = */ false);
     measure.addString("\n");
     measure.addPara();
     measure.popFont();
   }
 
-  override [$text]() 
-  { 
+  override [$text]() {
     const siblings = this[$getParent]()![$getChildren]();
-    if (siblings[siblings.length - 1] === this) 
-    {
+    if (siblings.at(-1) === this) {
       return super[$text]();
     }
-    return super[$text]() + "\n"; 
+    return super[$text]() + "\n";
   }
 }
 
-class Span extends XhtmlObject 
-{
-  constructor( attributes:XFAAttrs )
-  {
-    super( attributes, "span" );
+class Span extends XhtmlObject {
+  constructor(attributes: XFAAttrs) {
+    super(attributes, "span");
   }
 }
 
-class Sub extends XhtmlObject 
-{
-  constructor( attributes:XFAAttrs )
-  {
-    super( attributes, "sub" );
+class Sub extends XhtmlObject {
+  constructor(attributes: XFAAttrs) {
+    super(attributes, "sub");
   }
 }
 
-class Sup extends XhtmlObject 
-{
-  constructor( attributes:XFAAttrs )
-  {
-    super( attributes, "sup" );
+class Sup extends XhtmlObject {
+  constructor(attributes: XFAAttrs) {
+    super(attributes, "sup");
   }
 }
 
-class Ul extends XhtmlObject 
-{
-  constructor( attributes:XFAAttrs )
-  {
-    super( attributes, "ul" );
+class Ul extends XhtmlObject {
+  constructor(attributes: XFAAttrs) {
+    super(attributes, "ul");
   }
 }
 
 export type XFANsXhtml = typeof XhtmlNamespace;
 type XhtmlName = Exclude<keyof XFANsXhtml, symbol>;
-export const XhtmlNamespace =
-{
-  [$buildXFAObject]( name:string, attributes:XFAAttrs )
-  {
-    if( XhtmlNamespace.hasOwnProperty(name) ) 
-    {
-      return XhtmlNamespace[<XhtmlName>name]( attributes );
+export const XhtmlNamespace = {
+  [$buildXFAObject](name: string, attributes: XFAAttrs) {
+    if (Object.hasOwn(XhtmlNamespace, name)) {
+      return XhtmlNamespace[<XhtmlName> name](attributes);
     }
     return undefined;
   },
 
-  a( attrs:XFAAttrs ) { return new A(attrs); },
-  b( attrs:XFAAttrs ) { return new B(attrs); },
-  body( attrs:XFAAttrs ) { return new Body(attrs); },
-  br( attrs:XFAAttrs ) { return new Br(attrs); },
-  html( attrs:XFAAttrs ) { return new Html(attrs); },
-  i( attrs:XFAAttrs ) { return new I(attrs); },
-  li( attrs:XFAAttrs ) { return new Li(attrs); },
-  ol( attrs:XFAAttrs ) { return new Ol(attrs); },
-  p( attrs:XFAAttrs ) { return new P(attrs); },
-  span( attrs:XFAAttrs ) { return new Span(attrs); },
-  sub( attrs:XFAAttrs ) { return new Sub(attrs); },
-  sup( attrs:XFAAttrs ) { return new Sup(attrs); },
-  ul( attrs:XFAAttrs ) { return new Ul(attrs); },
-}
-/*81---------------------------------------------------------------------------*/
+  a(attrs: XFAAttrs) {
+    return new A(attrs);
+  },
+  b(attrs: XFAAttrs) {
+    return new B(attrs);
+  },
+  body(attrs: XFAAttrs) {
+    return new Body(attrs);
+  },
+  br(attrs: XFAAttrs) {
+    return new Br(attrs);
+  },
+  html(attrs: XFAAttrs) {
+    return new Html(attrs);
+  },
+  i(attrs: XFAAttrs) {
+    return new I(attrs);
+  },
+  li(attrs: XFAAttrs) {
+    return new Li(attrs);
+  },
+  ol(attrs: XFAAttrs) {
+    return new Ol(attrs);
+  },
+  p(attrs: XFAAttrs) {
+    return new P(attrs);
+  },
+  span(attrs: XFAAttrs) {
+    return new Span(attrs);
+  },
+  sub(attrs: XFAAttrs) {
+    return new Sub(attrs);
+  },
+  sup(attrs: XFAAttrs) {
+    return new Sup(attrs);
+  },
+  ul(attrs: XFAAttrs) {
+    return new Ul(attrs);
+  },
+};
+/*80--------------------------------------------------------------------------*/

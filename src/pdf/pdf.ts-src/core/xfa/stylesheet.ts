@@ -17,34 +17,31 @@
  * limitations under the License.
  */
 
-import { $buildXFAObject, NamespaceIds } from "./namespaces.js";
-import { type XFAAttrs } from "./alias.js";
-import { XFAObject } from "./xfa_object.js";
-/*81---------------------------------------------------------------------------*/
+import { type XFAAttrs } from "./alias.ts";
+import { $buildXFAObject, NamespaceIds } from "./namespaces.ts";
+import { XFAObject } from "./xfa_object.ts";
+/*80--------------------------------------------------------------------------*/
 
 const STYLESHEET_NS_ID = NamespaceIds.stylesheet.id;
 
-class Stylesheet extends XFAObject
-{
-  constructor( attributes:XFAAttrs )
-  {
-    super( STYLESHEET_NS_ID, "stylesheet", /* hasChildren = */ true );
+class Stylesheet extends XFAObject {
+  constructor(attributes: XFAAttrs) {
+    super(STYLESHEET_NS_ID, "stylesheet", /* hasChildren = */ true);
   }
 }
 
 export type XFANsStylesheet = typeof StylesheetNamespace;
 type StylesheetName = Exclude<keyof XFANsStylesheet, symbol>;
-export const StylesheetNamespace =
-{
-  [$buildXFAObject]( name:string, attributes:XFAAttrs )
-  {
-    if( StylesheetNamespace.hasOwnProperty(name))
-    {
-      return StylesheetNamespace[<StylesheetName>name]( attributes );
+export const StylesheetNamespace = {
+  [$buildXFAObject](name: string, attributes: XFAAttrs) {
+    if (Object.hasOwn(StylesheetNamespace, name)) {
+      return StylesheetNamespace[<StylesheetName> name](attributes);
     }
     return undefined;
   },
 
-  stylesheet( attrs:XFAAttrs ) { return new Stylesheet( attrs ); },
-}
-/*81---------------------------------------------------------------------------*/
+  stylesheet(attrs: XFAAttrs) {
+    return new Stylesheet(attrs);
+  },
+};
+/*80--------------------------------------------------------------------------*/

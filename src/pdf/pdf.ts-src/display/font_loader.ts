@@ -17,10 +17,11 @@
  * limitations under the License.
  */
 
-import { html } from "../../../lib/dom.js";
-import { assert } from "../../../lib/util/trace.js";
-import { FontExpotDataEx } from "../core/fonts.js";
-import { type CmdArgs } from "../core/font_renderer.js";
+import { CHROME, MOZCENTRAL, _PDFDEV } from "../../../global.ts";
+import { html } from "../../../lib/dom.ts";
+import { assert } from "../../../lib/util/trace.ts";
+import { FontExpotDataEx } from "../core/fonts.ts";
+import { type CmdArgs } from "../core/font_renderer.ts";
 import {
   bytesToString,
   FeatureTest,
@@ -28,103 +29,88 @@ import {
   string32,
   UNSUPPORTED_FEATURES,
   warn
-} from "../shared/util.js";
-import { PDFObjects } from "./api.js";
-/*81---------------------------------------------------------------------------*/
+} from "../shared/util.ts";
+import { PDFObjects } from "./api.ts";
+/*80--------------------------------------------------------------------------*/
 
-interface _BaseFontLoaderCtorP
-{
-  docId:string;
-  onUnsupportedFeature:( _:{ featureId:UNSUPPORTED_FEATURES } ) => void;
-  ownerDocument:Document | undefined;
-  styleElement?:HTMLStyleElement | undefined;
+interface _BaseFontLoaderCtorP {
+  docId: string;
+  onUnsupportedFeature: (_: { featureId: UNSUPPORTED_FEATURES }) => void;
+  ownerDocument: Document | undefined;
+  styleElement?: HTMLStyleElement | undefined;
 }
 
-interface Request
-{
-  id:string;
-  done:boolean;
-  complete:() => void;
-  callback:( request:Request ) => void;
+export interface Request {
+  id: string;
+  done: boolean;
+  complete: () => void;
+  callback: (request: Request) => void;
 }
 
-abstract class BaseFontLoader 
-{
-  docId:string;
-  _onUnsupportedFeature:( _:{ featureId:UNSUPPORTED_FEATURES } ) => void;
-  _document:Document;
+abstract class BaseFontLoader {
+  docId: string;
+  _onUnsupportedFeature: (_: { featureId: UNSUPPORTED_FEATURES }) => void;
+  _document: Document;
 
-  nativeFontFaces:FontFace[] = [];
-  styleElement:HTMLStyleElement | undefined;
+  nativeFontFaces: FontFace[] = [];
+  styleElement: HTMLStyleElement | undefined;
 
   constructor({
     docId,
     onUnsupportedFeature,
-    ownerDocument=globalThis.document,
-    styleElement=undefined, // For testing only.
-  }:_BaseFontLoaderCtorP ) {
+    ownerDocument = globalThis.document,
+    styleElement = undefined, // For testing only.
+  }: _BaseFontLoaderCtorP) {
     this.docId = docId;
     this._onUnsupportedFeature = onUnsupportedFeature;
     this._document = ownerDocument;
 
-    this.styleElement =
-      // #if !PRODUCTION || TESTING
-        styleElement
-      // #else
-        undefined
-      // #endif
-    ;
+    this.styleElement = _PDFDEV /*#static*/
+      ? styleElement
+      : undefined;
   }
 
-  addNativeFontFace( nativeFontFace:FontFace )
-  {
+  addNativeFontFace(nativeFontFace: FontFace) {
     this.nativeFontFaces.push(nativeFontFace);
     this._document.fonts.add(nativeFontFace);
   }
 
-  insertRule( rule:string )
-  {
+  insertRule(rule: string) {
     let styleElement = this.styleElement;
-    if (!styleElement) 
-    {
-      styleElement = this.styleElement = html( "style", "", this._document );
+    if (!styleElement) {
+      styleElement = this.styleElement = html("style", "", this._document);
       styleElement.id = `PDFJS_FONT_STYLE_TAG_${this.docId}`;
       this._document.documentElement
         .getElementsByTagName("head")[0]
-        .appendChild(styleElement);
+        .append(styleElement);
     }
     const styleSheet = styleElement.sheet!;
     styleSheet.insertRule(rule, styleSheet.cssRules.length);
   }
 
-  clear()
-  {
-    for (const nativeFontFace of this.nativeFontFaces) 
-    {
+  clear() {
+    for (const nativeFontFace of this.nativeFontFaces) {
       this._document.fonts.delete(nativeFontFace);
     }
     this.nativeFontFaces.length = 0;
 
-    if (this.styleElement) 
-    {
+    if (this.styleElement) {
       // Note: ChildNode.remove doesn't throw if the parentNode is undefined.
       this.styleElement.remove();
       this.styleElement = undefined;
     }
   }
 
-  async bind( font:FontFaceObject )
-  {
+  async bind(font: FontFaceObject) {
     // Add the font to the DOM only once; skip if the font is already loaded.
-    if( font.attached || font.missingFile ) return;
-
+    if (font.attached || font.missingFile) {
+      return;
+    }
     font.attached = true;
 
-    if( this.isFontLoadingAPISupported )
-    {
+    if (this.isFontLoadingAPISupported) {
       const nativeFontFace = font.createNativeFontFace();
-      if( nativeFontFace )
-      {
+      if (nativeFontFace) {
         this.addNativeFontFace(nativeFontFace);
         try {
           await nativeFontFace.loaded;
@@ -144,119 +130,108 @@ abstract class BaseFontLoader
 
     //. !this.isFontLoadingAPISupported
     const rule = font.createFontFaceRule();
-    if( rule )
-    {
+    if (rule) {
       this.insertRule(rule);
 
-      if (this.isSyncFontLoadingSupported) 
-      {
+      if (this.isSyncFontLoadingSupported) {
         return; // The font was, synchronously, loaded.
       }
-      await new Promise< Request >( resolve => {
-        const request = this.queueLoadingCallback$( resolve );
-        this.prepareFontLoadEvent$( [rule], [font], request );
+      await new Promise<Request>((resolve) => {
+        const request = this._queueLoadingCallback(resolve);
+        this._prepareFontLoadEvent([rule], [font], request);
       });
       // The font was, asynchronously, loaded.
     }
   }
 
-  protected queueLoadingCallback$( callback:(request:Request)=>void )
-  {
-    assert( 0, "Abstract method `queueLoadingCallback$`." );
-    return <Request><unknown>0;
+  _queueLoadingCallback(callback: (request: Request) => void) {
+    assert(0, "Abstract method `_queueLoadingCallback`.");
+    return <any> 0;
   }
 
-  get isFontLoadingAPISupported()
-  {
+  get isFontLoadingAPISupported() {
     const hasFonts = !!this._document?.fonts;
-    // #if !PRODUCTION || TESTING
+    /*#static*/ if (_PDFDEV) {
       return shadow(
         this,
         "isFontLoadingAPISupported",
-        hasFonts && !this.styleElement
+        hasFonts && !this.styleElement,
       );
-    // #endif
-    return shadow(this, "isFontLoadingAPISupported", hasFonts);
+    } else {
+      return shadow(this, "isFontLoadingAPISupported", hasFonts);
+    }
   }
 
   // eslint-disable-next-line getter-return
-  abstract get isSyncFontLoadingSupported():boolean;
+  abstract get isSyncFontLoadingSupported(): boolean;
 
   // eslint-disable-next-line getter-return
-  get _loadTestFont()
-  {
-    assert( 0, "Abstract method `_loadTestFont`." );
+  get _loadTestFont() {
+    assert(0, "Abstract method `_loadTestFont`.");
     return "";
   }
 
-  protected prepareFontLoadEvent$( rules:string[], fontsToLoad:FontFaceObject[], request:Request )
-  {
-    assert( 0, "Abstract method `prepareFontLoadEvent$`." );
+  _prepareFontLoadEvent(
+    rules: string[],
+    fontsToLoad: FontFaceObject[],
+    request: Request,
+  ) {
+    assert(0, "Abstract method `_prepareFontLoadEvent`.");
   }
 }
 
-// #if MOZCENTRAL
-  export class FontLoader extends BaseFontLoader
-  {
-    /** @implements */
-    get isSyncFontLoadingSupported() {
-      return shadow(this, "isSyncFontLoadingSupported", true);
-    }
+export let FontLoader = class extends BaseFontLoader {
+  /** @implement */
+  get isSyncFontLoadingSupported() {
+    return shadow(this, "isSyncFontLoadingSupported", true);
   }
-// #else
+};
+/*#static*/ if (!MOZCENTRAL) {
   // PDFJSDev.test('CHROME || GENERIC')
 
-  export class FontLoader extends BaseFontLoader 
-  {
+  FontLoader = class extends BaseFontLoader {
     loadingContext = {
-      requests: <Request[]>[],
+      requests: <Request[]> [],
       nextRequestId: 0,
     };
     loadTestFontId = 0;
 
-    /** @implements */
-    get isSyncFontLoadingSupported()
-    {
+    /** @implement */
+    get isSyncFontLoadingSupported() {
       let supported = false;
-      // #if !CHROME
-        if (typeof navigator === "undefined") 
-        {
+      /*#static*/ if (!CHROME) {
+        if (typeof navigator === "undefined") {
           // Node.js - we can pretend that sync font loading is supported.
           supported = true;
-        } 
-        else {
+        } else {
           // User agent string sniffing is bad, but there is no reliable way to
           // tell if the font is fully loaded and ready to be used with canvas.
           const m = /Mozilla\/5.0.*?rv:(\d+).*? Gecko/.exec(
-            navigator.userAgent
+            navigator.userAgent,
           );
-          if( <any>m?.[1] >= 14 )
-          {
+          if (<any> m?.[1] >= 14) {
             supported = true;
           }
           // TODO - other browsers...
         }
-      // #endif
+      }
       return shadow(this, "isSyncFontLoadingSupported", supported);
     }
 
-    protected override queueLoadingCallback$( callback:(request:Request)=>void )
-    {
-      function completeRequest() 
-      {
+    override _queueLoadingCallback(callback: (request: Request) => void) {
+      function completeRequest() {
         assert(!request.done, "completeRequest() cannot be called twice.");
         request.done = true;
 
         // Sending all completed requests in order of how they were queued.
-        while (context.requests.length > 0 && context.requests[0].done) 
-        {
+        while (context.requests.length > 0 && context.requests[0].done) {
           const otherRequest = context.requests.shift()!;
           setTimeout(otherRequest.callback, 0);
         }
       }
 
       const context = this.loadingContext;
-      const request:Request = {
+      const request: Request = {
         id: `pdfjs-font-loading-${context.nextRequestId++}`,
         done: false,
         complete: completeRequest,
@@ -266,8 +241,7 @@ abstract class BaseFontLoader
       return request;
     }
 
-    override get _loadTestFont()
-    {
+    override get _loadTestFont() {
       const getLoadTestFont = function () {
         // This is a CFF font with 1 glyph for '.' that fills its entire width
         // and height.
@@ -293,22 +267,24 @@ abstract class BaseFontLoader
             "AAABAAQEAAEBAQJYAAEBASH4DwD4GwHEAvgcA/gXBIwMAYuL+nz5tQXkD5j3CBLnEQAC" +
             "AQEBIVhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYAAABAQAADwACAQEEE/t3" +
             "Dov6fAH6fAT+fPp8+nwHDosMCvm1Cvm1DAz6fBQAAAAAAAABAAAAAMmJbzEAAAAAzgTj" +
-            "FQAAAADOBOQpAAEAAAAAAAAADAAUAAQAAAABAAAAAgABAAAAAAAAAAAD6AAAAAAAAA=="
+            "FQAAAADOBOQpAAEAAAAAAAAADAAUAAQAAAABAAAAAgABAAAAAAAAAAAD6AAAAAAAAA==",
         );
       };
       return shadow(this, "_loadTestFont", getLoadTestFont());
     }
 
-    protected override prepareFontLoadEvent$( rules:string[], fonts:FontFaceObject[], request:Request)
-    {
+    override _prepareFontLoadEvent(
+      rules: string[],
+      fonts: FontFaceObject[],
+      request: Request,
+    ) {
       /** Hack begin */
       // There's currently no event when a font has finished downloading so the
       // following code is a dirty hack to 'guess' when a font is ready.
       // It's assumed fonts are loaded in order, so add a known test font after
       // the desired fonts and then test for the loading of that test font.
 
-      function int32( data:string, offset:number ) 
-      {
+      function int32(data: string, offset: number) {
         return (
           (data.charCodeAt(offset) << 24) |
           (data.charCodeAt(offset + 1) << 16) |
@@ -316,8 +292,12 @@ abstract class BaseFontLoader
           (data.charCodeAt(offset + 3) & 0xff)
         );
       }
-      function spliceString( s:string, offset:number, remove:number, insert:string )
-      {
+      function spliceString(
+        s: string,
+        offset: number,
+        remove: number,
+        insert: string,
+      ) {
         const chunk1 = s.substring(0, offset);
         const chunk2 = s.substring(offset + remove);
         return chunk1 + insert + chunk2;
@@ -325,18 +305,16 @@ abstract class BaseFontLoader
       let i, ii;
 
       // The temporary canvas is used to determine if fonts are loaded.
-      const canvas = html( "canvas", undefined, this._document );
+      const canvas = html("canvas", undefined, this._document);
       canvas.width = 1;
       canvas.height = 1;
       const ctx = canvas.getContext("2d")!;
 
       let called = 0;
-      function isFontReady( name:string, callback:()=>void )
-      {
+      function isFontReady(name: string, callback: () => void) {
         called++;
         // With setTimeout clamping this gives the font ~100ms to load.
-        if (called > 30) 
-        {
+        if (called > 30) {
           warn("Load test font never loaded.");
           callback();
           return;
@@ -344,8 +322,7 @@ abstract class BaseFontLoader
         ctx.font = "30px " + name;
         ctx.fillText(".", 0, 20);
         const imageData = ctx.getImageData(0, 0, 1, 1);
-        if (imageData.data[3] > 0) 
-        {
+        if (imageData.data[3] > 0) {
           callback();
           return;
         }
@@ -364,21 +341,19 @@ abstract class BaseFontLoader
         data,
         COMMENT_OFFSET,
         loadTestFontId.length,
-        loadTestFontId
+        loadTestFontId,
       );
       // CFF checksum is important for IE, adjusting it
       const CFF_CHECKSUM_OFFSET = 16;
       const XXXX_VALUE = 0x58585858; // the "comment" filled with 'X'
       let checksum = int32(data, CFF_CHECKSUM_OFFSET);
-      for (i = 0, ii = loadTestFontId.length - 3; i < ii; i += 4) 
-      {
-        checksum = ( checksum - XXXX_VALUE + int32(loadTestFontId, i) ) | 0;
+      for (i = 0, ii = loadTestFontId.length - 3; i < ii; i += 4) {
+        checksum = (checksum - XXXX_VALUE + int32(loadTestFontId, i)) | 0;
       }
-      if (i < loadTestFontId.length) 
-      {
+      if (i < loadTestFontId.length) {
         // align to 4 bytes boundary
-        checksum =
-          ( checksum - XXXX_VALUE + int32(loadTestFontId + "XXX", i) ) | 0;
+        checksum = (checksum - XXXX_VALUE + int32(loadTestFontId + "XXX", i)) |
+          0;
       }
       data = spliceString(data, CFF_CHECKSUM_OFFSET, 4, string32(checksum));
 
@@ -386,27 +361,25 @@ abstract class BaseFontLoader
       const rule = `@font-face {font-family:"${loadTestFontId}";src:${url}}`;
       this.insertRule(rule);
 
-      const names:string[] = [];
-      for( const font of fonts )
-      {
-        names.push( font.loadedName! );
+      const names: string[] = [];
+      for (const font of fonts) {
+        names.push(font.loadedName!);
       }
       names.push(loadTestFontId);
 
-      const div = html( "div", undefined, this._document );
+      const div = html("div", undefined, this._document);
       div.style.visibility = "hidden";
       div.style.width = div.style.height = "10px";
       div.style.position = "absolute";
       div.style.top = div.style.left = "0px";
 
-      for (const name of names)
-      {
-        const span = html( "span", undefined, this._document );
+      for (const name of names) {
+        const span = html("span", undefined, this._document);
         span.textContent = "Hi";
         span.style.fontFamily = name;
-        div.appendChild(span);
+        div.append(span);
       }
-      this._document.body.appendChild(div);
+      this._document.body.append(div);
 
       isFontReady(loadTestFontId, () => {
         div.remove();
@@ -414,50 +387,46 @@ abstract class BaseFontLoader
       });
       /** Hack end */
     }
-  }
-  // End of PDFJSDev.test('CHROME || GENERIC')
-// #endif
+  };
+} // End of PDFJSDev.test('CHROME || GENERIC')
 
-interface _FFOCtorP
-{
-  isEvalSupported:boolean | undefined;
-  disableFontFace:boolean | undefined;
-  ignoreErrors:boolean | undefined;
-  onUnsupportedFeature:( _:{ featureId:UNSUPPORTED_FEATURES } ) => void;
-  fontRegistry:{
-    registerFont( font:FontFaceObject, url?:string ):void;
-  } | undefined
+interface _FFOCtorP {
+  isEvalSupported: boolean | undefined;
+  disableFontFace: boolean | undefined;
+  ignoreErrors: boolean | undefined;
+  onUnsupportedFeature: (_: { featureId: UNSUPPORTED_FEATURES }) => void;
+  fontRegistry: {
+    registerFont(font: FontFaceObject, url?: string): void;
+  } | undefined;
 }
 
-export type AddToPath = ( c:CanvasRenderingContext2D, size:number ) => void;
+export type AddToPath = (c: CanvasRenderingContext2D, size: number) => void;
 
-export class FontFaceObject extends FontExpotDataEx
-{
-  compiledGlyphs:Record< string, AddToPath> = Object.create(null);
-  isEvalSupported:boolean;
-  disableFontFace:boolean;
-  ignoreErrors:boolean;
-  _onUnsupportedFeature:( _:{ featureId:UNSUPPORTED_FEATURES } ) => void;
+export class FontFaceObject extends FontExpotDataEx {
+  compiledGlyphs: Record<string, AddToPath> = Object.create(null);
+  isEvalSupported: boolean;
+  disableFontFace: boolean;
+  ignoreErrors: boolean;
+  _onUnsupportedFeature: (_: { featureId: UNSUPPORTED_FEATURES }) => void;
   fontRegistry;
 
-  attached?:boolean;
+  attached?: boolean;
 
   constructor(
-    translatedData:FontExpotDataEx,
+    translatedData: FontExpotDataEx,
     {
-      isEvalSupported=true,
-      disableFontFace=false,
-      ignoreErrors=false,
+      isEvalSupported = true,
+      disableFontFace = false,
+      ignoreErrors = false,
       onUnsupportedFeature,
       fontRegistry,
-    }:_FFOCtorP
+    }: _FFOCtorP,
   ) {
     super();
 
     // importing translated data
-    for( const i in translatedData )
-    {
-      (<any>this)[i] = translatedData[ <keyof FontExpotDataEx>i ];
+    for (const i in translatedData) {
+      (<any> this)[i] = translatedData[<keyof FontExpotDataEx> i];
     }
     this.isEvalSupported = isEvalSupported !== false;
     this.disableFontFace = disableFontFace === true;
@@ -466,37 +435,32 @@ export class FontFaceObject extends FontExpotDataEx
     this.fontRegistry = fontRegistry;
   }
 
-  createNativeFontFace()
-  {
-    if( !this.data || this.disableFontFace ) return null;
+  createNativeFontFace() {
+    if (!this.data || this.disableFontFace) return null;
 
     let nativeFontFace;
-    if( !this.cssFontInfo )
-    {
-      nativeFontFace = new FontFace( this.loadedName!, this.data, {} );
-    }
-    else {
-      const css:FontFaceDescriptors = {
-        weight: <any>this.cssFontInfo.fontWeight,
+    if (!this.cssFontInfo) {
+      nativeFontFace = new FontFace(this.loadedName!, this.data, {});
+    } else {
+      const css: FontFaceDescriptors = {
+        weight: <any> this.cssFontInfo.fontWeight,
       };
-      if( this.cssFontInfo.italicAngle)
-      {
+      if (this.cssFontInfo.italicAngle) {
         css.style = `oblique ${this.cssFontInfo.italicAngle}deg`;
       }
       nativeFontFace = new FontFace(
         this.cssFontInfo.fontFamily,
         this.data,
-        css
+        css,
       );
     }
 
-    this.fontRegistry?.registerFont( this);
+    this.fontRegistry?.registerFont(this);
     return nativeFontFace;
   }
 
-  createFontFaceRule()
-  {
-    if( !this.data || this.disableFontFace ) return null;
+  createFontFaceRule() {
+    if (!this.data || this.disableFontFace) return null;
 
     const data = bytesToString(this.data);
     // Add the @font-face rule to the document.
@@ -504,28 +468,30 @@ export class FontFaceObject extends FontExpotDataEx
     let rule;
     if (!this.cssFontInfo) {
       rule = `@font-face {font-family:"${this.loadedName}";src:${url}}`;
-    }
-    else {
+    } else {
       let css = `font-weight: ${this.cssFontInfo.fontWeight};`;
       if (this.cssFontInfo.italicAngle) {
         css += `font-style: oblique ${this.cssFontInfo.italicAngle}deg;`;
       }
-      rule = `@font-face {font-family:"${this.cssFontInfo.fontFamily}";${css}src:${url}}`;
+      rule =
+        `@font-face {font-family:"${this.cssFontInfo.fontFamily}";${css}src:${url}}`;
     }
 
-    this.fontRegistry?.registerFont( this, url);
+    this.fontRegistry?.registerFont(this, url);
     return rule;
   }
 
-  getPathGenerator( objs:PDFObjects< CmdArgs[] | FontFaceObject >, character:string )
-  {
+  getPathGenerator(
+    objs: PDFObjects<CmdArgs[] | FontFaceObject>,
+    character: string,
+  ) {
     if (this.compiledGlyphs[character] !== undefined) {
       return this.compiledGlyphs[character];
     }
 
-    let cmds:CmdArgs[];
+    let cmds: CmdArgs[];
     try {
-      cmds = <CmdArgs[]>objs.get(this.loadedName + "_path_" + character)!;
+      cmds = <CmdArgs[]> objs.get(this.loadedName + "_path_" + character)!;
     } catch (ex) {
       if (!this.ignoreErrors) {
         throw ex;
@@ -535,45 +501,45 @@ export class FontFaceObject extends FontExpotDataEx
       });
       warn(`getPathGenerator - ignoring character: "${ex}".`);
 
-      return (this.compiledGlyphs[character] = function( c:CanvasRenderingContext2D, size:number )
-      {
+      return (this.compiledGlyphs[character] = (
+        c: CanvasRenderingContext2D,
+        size: number,
+      ) => {
         // No-op function, to allow rendering to continue.
       });
     }
 
     // If we can, compile cmds into JS for MAXIMUM SPEED...
-    if( this.isEvalSupported && FeatureTest.isEvalSupported )
-    {
-      const jsBuf:string[] = [];
-      for( const current of cmds )
-      {
+    if (this.isEvalSupported && FeatureTest.isEvalSupported) {
+      const jsBuf: string[] = [];
+      for (const current of cmds) {
         const args = current.args !== undefined ? current.args.join(",") : "";
         jsBuf.push("c.", current.cmd, "(", args, ");\n");
       }
       // eslint-disable-next-line no-new-func
-      return (this.compiledGlyphs[character] = <AddToPath>new Function(
+      return (this.compiledGlyphs[character] = <AddToPath> new Function(
         "c",
         "size",
-        jsBuf.join("")
+        jsBuf.join(""),
       ));
     }
     // ... but fall back on using Function.prototype.apply() if we're
     // blocked from using eval() for whatever reason (like CSP policies).
-    return (this.compiledGlyphs[character] = function ( c:CanvasRenderingContext2D, size:number )
-    {
-      for( const current of cmds )
-      {
-        if (current.cmd === "scale") 
-        {
+    return (this.compiledGlyphs[character] = (
+      c: CanvasRenderingContext2D,
+      size: number,
+    ) => {
+      for (const current of cmds) {
+        if (current.cmd === "scale") {
           current.args = [size, -size];
         }
         c[current.cmd].apply<
-          CanvasRenderingContext2D, 
-          number[], 
+          CanvasRenderingContext2D,
+          number[],
           void
-        >( c, <number[]>current.args );
+        >(c, <number[]> current.args);
       }
     });
   }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

@@ -17,153 +17,150 @@
  * limitations under the License.
  */
 
-import { assert } from "../../../lib/util/trace.js";
-import { MessageHandler, Thread } from "../shared/message_handler.js";
+import { _PDFDEV } from "../../../global.ts";
+import { assert } from "../../../lib/util/trace.ts";
 import {
-  BaseException, FontType, objectSize, StreamType, stringToPDFString,
-  warn, type ActionEventType,
-  type ActionEventTypesType
-} from "../shared/util.js";
-import { BaseStream } from "./base_stream.js";
-import { type CssFontInfo } from "./document.js";
-import { Dict, isName, Ref, RefSet, type Obj, type ObjNoRef } from "./primitives.js";
-import { XRef } from "./xref.js";
-/*81---------------------------------------------------------------------------*/
+  AnnotStorageRecord,
+  AnnotStorageValue
+} from "../display/annotation_layer.ts";
+import { MessageHandler, Thread } from "../shared/message_handler.ts";
+import {
+  ActionEventName, AnnotationEditorPrefix,
+  BaseException,
+  FontType,
+  objectSize,
+  StreamType,
+  stringToPDFString,
+  warn, type ActionEventTypeType
+} from "../shared/util.ts";
+import { BaseStream } from "./base_stream.ts";
+import { type CssFontInfo } from "./document.ts";
+import {
+  Dict,
+  isName, Ref,
+  RefSet, type Obj,
+  type ObjNoRef
+} from "./primitives.ts";
+import { XRef } from "./xref.ts";
+/*80--------------------------------------------------------------------------*/
 
-export function getLookupTableFactory< 
-  T extends object=Record<string,number>>( initializer?:(lookup:T)=>void ) 
-{
-  let lookup:T;
+export function getLookupTableFactory<
+  T extends object = Record<string, number>,
+>(initializer?: (lookup: T) => void) {
+  let lookup: T;
   return () => {
-    if( initializer )
-    {
+    if (initializer) {
       lookup = Object.create(null);
-      initializer( lookup );
+      initializer(lookup);
       initializer = undefined;
     }
     return lookup;
   };
 }
 
-export function getArrayLookupTableFactory<T extends string | number>( 
-  initializer?:()=>(string | T)[]
+export function getArrayLookupTableFactory<T extends string | number>(
+  initializer?: () => (string | T)[],
 ) {
-  let lookup:Record< string, T>;
+  let lookup: Record<string, T>;
   return () => {
-    if( initializer )
-    {
+    if (initializer) {
       let arr = initializer();
       initializer = undefined;
       lookup = Object.create(null);
-      for( let i = 0, ii = arr.length; i < ii; i += 2 )
-      {
-        lookup[<string>arr[i]] = <T>arr[i + 1];
+      for (let i = 0, ii = arr.length; i < ii; i += 2) {
+        lookup[<string> arr[i]] = <T> arr[i + 1];
       }
-      arr = <any>undefined;
+      arr = <any> undefined;
     }
     return lookup;
   };
 }
 
-export class MissingDataException extends BaseException 
-{
-  constructor( public begin:number, public end:number ) 
-  {
-    super( `Missing data [${begin}, ${end})`, "MissingDataException");
+export class MissingDataException extends BaseException {
+  constructor(public begin: number, public end: number) {
+    super(`Missing data [${begin}, ${end})`, "MissingDataException");
   }
 }
 
-export class ParserEOFException extends BaseException 
-{
-  constructor( msg:string ) 
-  {
+export class ParserEOFException extends BaseException {
+  constructor(msg: string) {
     super(msg, "ParserEOFException");
   }
 }
 
-export class XRefEntryException extends BaseException 
-{
-  constructor( msg?:string ) 
-  {
-    super( msg, "XRefEntryException" );
+export class XRefEntryException extends BaseException {
+  constructor(msg?: string) {
+    super(msg, "XRefEntryException");
   }
 }
 
-export class XRefParseException extends BaseException 
-{
-  constructor( msg?:string ) 
-  {
+export class XRefParseException extends BaseException {
+  constructor(msg?: string) {
     super(msg, "XRefParseException");
   }
 }
 
-export class DocStats 
-{
+export class DocStats {
   #handler;
 
   #streamTypes = new Set<StreamType>();
   #fontTypes = new Set<FontType>();
 
-  constructor( handler:MessageHandler<Thread.worker> )
-  {
+  constructor(handler: MessageHandler<Thread.worker>) {
     this.#handler = handler;
   }
 
-  _send() 
-  {
+  _send() {
     const streamTypes = Object.create(null),
       fontTypes = Object.create(null);
-    for( const type of this.#streamTypes )
-    {
+    for (const type of this.#streamTypes) {
       streamTypes[type] = true;
     }
-    for( const type of this.#fontTypes )
-    {
+    for (const type of this.#fontTypes) {
       fontTypes[type] = true;
     }
     this.#handler.send("DocStats", { streamTypes, fontTypes });
   }
 
-  addStreamType( type:StreamType )
-  {
-    // #if !PRODUCTION || TESTING
+  addStreamType(type: StreamType) {
+    /*#static*/ if (_PDFDEV) {
       assert(StreamType[type] === type, 'addStreamType: Invalid "type" value.');
-    // #endif
-    if( this.#streamTypes.has( type ) ) return;
-
-    this.#streamTypes.add( type );
+    }
+    if (this.#streamTypes.has(type)) {
+      return;
+    }
+    this.#streamTypes.add(type);
     this._send();
   }
 
-  addFontType( type:FontType )
-  {
-    // #if !PRODUCTION || TESTING
+  addFontType(type: FontType) {
+    if (_PDFDEV) {
       assert(FontType[type] === type, 'addFontType: Invalid "type" value.');
-    // #endif
-    if( this.#fontTypes.has( type) ) return;
-
-    this.#fontTypes.add( type );
+    }
+    if (this.#fontTypes.has(type)) {
+      return;
+    }
+    this.#fontTypes.add(type);
     this._send();
   }
 }
 
-interface _GetInheritablePropertyP
-{
+interface _GetInheritablePropertyP {
   /**
    * Dictionary from where to start the traversal.
    */
-  dict?:Dict;
+  dict?: Dict;
 
   /**
    * The key of the property to find the value for.
    */
-  key:string;
+  key: string;
 
   /**
    * Whether or not the value should be fetched as an
    * array. The default value is `false`.
    */
-  getArray?:boolean;
+  getArray?: boolean;
 
   /**
    * Whether or not to stop the traversal when
@@ -171,7 +168,7 @@ interface _GetInheritablePropertyP
    * chain, for example to be able to find `\Resources` placed on multiple
    * levels of the tree. The default value is `true`.
    */
-  stopWhenFound?:boolean;
+  stopWhenFound?: boolean;
 }
 /**
  * Get the value of an inheritable property.
@@ -187,37 +184,63 @@ interface _GetInheritablePropertyP
 export function getInheritableProperty({
   dict,
   key,
-  getArray=false,
-  stopWhenFound=true,
-}:_GetInheritablePropertyP )
-{
-  let values:ObjNoRef[] | undefined;;
+  getArray = false,
+  stopWhenFound = true,
+}: _GetInheritablePropertyP) {
+  let values: ObjNoRef[] | undefined;
   const visited = new RefSet();
 
-  while( dict instanceof Dict && !(dict.objId && visited.has(dict.objId)) )
-  {
-    if (dict.objId) 
-    {
-      visited.put( dict.objId );
+  while (dict instanceof Dict && !(dict.objId && visited.has(dict.objId))) {
+    if (dict.objId) {
+      visited.put(dict.objId);
     }
-    const value = getArray ? dict.getArray(key) : <ObjNoRef | undefined>dict.get(key);
-    if (value !== undefined) 
-    {
-      if( stopWhenFound ) return value;
-
-      if( !values ) values = [];
+    const value = getArray
+      ? dict.getArray(key)
+      : <ObjNoRef | undefined> dict.get(key);
+    if (value !== undefined) {
+      if (stopWhenFound) {
+        return value;
+      }
+      if (!values) values = [];
       values.push(value);
     }
-    dict = <Dict | undefined>dict.get("Parent");
+    dict = <Dict | undefined> dict.get("Parent");
   }
   return values;
 }
 
 // prettier-ignore
 const ROMAN_NUMBER_MAP = [
-  "", "C", "CC", "CCC", "CD", "D", "DC", "DCC", "DCCC", "CM",
-  "", "X", "XX", "XXX", "XL", "L", "LX", "LXX", "LXXX", "XC",
-  "", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX"
+  "",
+  "C",
+  "CC",
+  "CCC",
+  "CD",
+  "D",
+  "DC",
+  "DCC",
+  "DCCC",
+  "CM",
+  "",
+  "X",
+  "XX",
+  "XXX",
+  "XL",
+  "L",
+  "LX",
+  "LXX",
+  "LXXX",
+  "XC",
+  "",
+  "I",
+  "II",
+  "III",
+  "IV",
+  "V",
+  "VI",
+  "VII",
+  "VIII",
+  "IX",
 ];
 
 /**
@@ -227,15 +250,16 @@ const ROMAN_NUMBER_MAP = [
  *   to lower case letters. The default value is `false`.
  * @return The resulting Roman number.
  */
-export function toRomanNumerals( number:number, lowerCase=false )
-{
-  assert( Number.isInteger(number) && number > 0,
-    "The number should be a positive integer.", import.meta );
+export function toRomanNumerals(number: number, lowerCase = false) {
+  assert(
+    Number.isInteger(number) && number > 0,
+    "The number should be a positive integer.",
+    import.meta,
+  );
   const romanBuf = [];
   let pos;
   // Thousands
-  while (number >= 1000) 
-  {
+  while (number >= 1000) {
     number -= 1000;
     romanBuf.push("M");
   }
@@ -257,25 +281,28 @@ export function toRomanNumerals( number:number, lowerCase=false )
 // Calculate the base 2 logarithm of the number `x`. This differs from the
 // native function in the sense that it returns the ceiling value and that it
 // returns 0 instead of `Infinity`/`NaN` for `x` values smaller than/equal to 0.
-export function log2( x:number ) 
-{
-  if( x <= 0 ) return 0;
-
+export function log2(x: number) {
+  if (x <= 0) {
+    return 0;
+  }
   return Math.ceil(Math.log2(x));
 }
 
-export function readInt8( data:Uint8Array | Uint8ClampedArray, offset:number )
-{
+export function readInt8(data: Uint8Array | Uint8ClampedArray, offset: number) {
   return (data[offset] << 24) >> 24;
 }
 
-export function readUint16( data:Uint8Array | Uint8ClampedArray, offset:number ) 
-{
+export function readUint16(
+  data: Uint8Array | Uint8ClampedArray,
+  offset: number,
+) {
   return (data[offset] << 8) | data[offset + 1];
 }
 
-export function readUint32( data:Uint8Array | Uint8ClampedArray, offset:number ) 
-{
+export function readUint32(
+  data: Uint8Array | Uint8ClampedArray,
+  offset: number,
+) {
   return (
     ((data[offset] << 24) |
       (data[offset + 1] << 16) |
@@ -288,15 +315,13 @@ export function readUint32( data:Uint8Array | Uint8ClampedArray, offset:number )
 /**
  * Checks if ch is one of the following characters: SPACE, TAB, CR or LF.
  */
-export function isWhiteSpace( ch:number ) 
-{
+export function isWhiteSpace(ch: number) {
   return ch === 0x20 || ch === 0x09 || ch === 0x0d || ch === 0x0a;
 }
 
-interface XFAPathCom
-{
-  name:string;
-  pos:number;
+interface XFAPathCom {
+  name: string;
+  pos: number;
 }
 export type XFAPath = XFAPathCom[];
 
@@ -308,43 +333,39 @@ export type XFAPath = XFAPathCom[];
  * @param path XFA path name.
  * @return Array of Objects with the name and pos of each part of the path.
  */
-export function parseXFAPath( path:string ):XFAPath
-{
+export function parseXFAPath(path: string): XFAPath {
   const positionPattern = /(.+)\[(\d+)\]$/;
-  return path.split(".").map( component => {
+  return path.split(".").map((component) => {
     const m = component.match(positionPattern);
-    if (m) 
-    {
+    if (m) {
       return { name: m[1], pos: parseInt(m[2], 10) };
     }
     return { name: component, pos: 0 };
   });
 }
 
-export function escapePDFName( str:string )
-{
+export function escapePDFName(str: string) {
   const buffer = [];
   let start = 0;
-  for (let i = 0, ii = str.length; i < ii; i++) 
-  {
+  for (let i = 0, ii = str.length; i < ii; i++) {
     const char = str.charCodeAt(i);
     // Whitespace or delimiters aren't regular chars, so escape them.
-    if( char < 0x21
-     || char > 0x7e
-     || char === 0x23 /* # */
-     || char === 0x28 /* ( */
-     || char === 0x29 /* ) */
-     || char === 0x3c /* < */
-     || char === 0x3e /* > */
-     || char === 0x5b /* [ */
-     || char === 0x5d /* ] */
-     || char === 0x7b /* { */
-     || char === 0x7d /* } */
-     || char === 0x2f /* / */
-     || char === 0x25 /* % */
+    if (
+      char < 0x21 ||
+      char > 0x7e ||
+      char === 0x23 /* # */ ||
+      char === 0x28 /* ( */ ||
+      char === 0x29 /* ) */ ||
+      char === 0x3c /* < */ ||
+      char === 0x3e /* > */ ||
+      char === 0x5b /* [ */ ||
+      char === 0x5d /* ] */ ||
+      char === 0x7b /* { */ ||
+      char === 0x7d /* } */ ||
+      char === 0x2f /* / */ ||
+      char === 0x25 /* % */
     ) {
-      if (start < i) 
-      {
+      if (start < i) {
         buffer.push(str.substring(start, i));
       }
       buffer.push(`#${char.toString(16)}`);
@@ -352,115 +373,109 @@ export function escapePDFName( str:string )
     }
   }
 
-  if( buffer.length === 0 ) return str;
+  if (buffer.length === 0) {
+    return str;
+  }
 
-  if (start < str.length) 
-  {
+  if (start < str.length) {
     buffer.push(str.substring(start, str.length));
   }
 
   return buffer.join("");
 }
 
-function _collectJS( entry:Obj|undefined, xref:XRef, list:string[], parents:RefSet )
-{
-  if( !entry ) return;
+function _collectJS(
+  entry: Obj | undefined,
+  xref: XRef,
+  list: string[],
+  parents: RefSet,
+) {
+  if (!entry) {
+    return;
+  }
 
-  let parent:Ref | undefined;
-  if( (entry instanceof Ref) )
-  {
-    if( parents.has(entry) )
-    {
+  let parent: Ref | undefined;
+  if ((entry instanceof Ref)) {
+    if (parents.has(entry)) {
       // If we've already found entry then we've a cycle.
       return;
     }
     parent = entry;
     parents.put(parent);
-    entry = xref.fetch( entry );
+    entry = xref.fetch(entry);
   }
-  if (Array.isArray(entry)) 
-  {
-    for (const element of entry) 
-    {
+  if (Array.isArray(entry)) {
+    for (const element of entry) {
       _collectJS(element, xref, list, parents);
     }
-  } 
-  else if (entry instanceof Dict) 
-  {
-    if( isName(entry.get("S"), "JavaScript") )
-    {
+  } else if (entry instanceof Dict) {
+    if (isName(entry.get("S"), "JavaScript")) {
       const js = entry.get("JS");
       let code;
-      if( js instanceof BaseStream )
-      {
+      if (js instanceof BaseStream) {
         code = js.getString();
-      } 
-      else if( typeof js === "string" )
-      {
-        code = <string>js;
+      } else if (typeof js === "string") {
+        code = <string> js;
       }
-      code = code && stringToPDFString(code);
-      if( code )
-      {
+      code = code && stringToPDFString(code).replace(/\u0000/g, "");
+      if (code) {
         list.push(code);
       }
     }
     _collectJS(entry.getRaw("Next"), xref, list, parents);
   }
 
-  if (parent) 
-  {
+  if (parent) {
     parents.remove(parent);
   }
 }
 
-export type AnnotActions = Record< ActionEventType, string[]> & { Action?:string[] };
+export type AnnotActions = Record<ActionEventName, string[]>;
 
-export function collectActions( xref:XRef, dict:Dict, eventType:ActionEventTypesType )
-{
-  const actions:AnnotActions = Object.create(null);
-  const additionalActionsDicts = <Dict[]>getInheritableProperty({
+export function collectActions(
+  xref: XRef,
+  dict: Dict,
+  eventType: ActionEventTypeType,
+) {
+  const actions: AnnotActions = Object.create(null);
+  const additionalActionsDicts = <Dict[]> getInheritableProperty({
     dict,
     key: "AA",
     stopWhenFound: false,
   });
-  if( additionalActionsDicts )
-  {
+  if (additionalActionsDicts) {
     // additionalActionsDicts contains dicts from ancestors
     // as they're found in the tree from bottom to top.
     // So the dicts are visited in reverse order to guarantee
     // that actions from elder ancestors will be overwritten
     // by ones from younger ancestors.
-    for( let i = additionalActionsDicts.length - 1; i >= 0; i-- )
-    {
+    for (let i = additionalActionsDicts.length - 1; i >= 0; i--) {
       const additionalActions = additionalActionsDicts[i];
-      if( !(additionalActions instanceof Dict) )
+      if (!(additionalActions instanceof Dict)) {
         continue;
-      for( const key of additionalActions.getKeys() )
-      {
-        const action = < ActionEventType >(<any>eventType)[key];
-        if( !action )
+      }
+      for (const key of additionalActions.getKeys()) {
+        const action: ActionEventName = (<any> eventType)[key];
+        if (!action) {
           continue;
+        }
         const actionDict = additionalActions.getRaw(key);
         const parents = new RefSet();
-        const list:string[] = [];
+        const list: string[] = [];
         _collectJS(actionDict, xref, list, parents);
-        if( list.length > 0 ) 
-        {
+        if (list.length > 0) {
           actions[action] = list;
         }
       }
     }
   }
   // Collect the Action if any (we may have one on pushbutton).
-  if( dict.has("A") )
-  {
+  if (dict.has("A")) {
     const actionDict = dict.get("A");
     const parents = new RefSet();
-    const list:string[] = [];
+    const list: string[] = [];
     _collectJS(actionDict, xref, list, parents);
-    if( list.length > 0 )
-    {
+    if (list.length > 0) {
       actions.Action = list;
     }
   }
@@ -474,17 +489,14 @@ const XMLEntities = {
   /* ' */ 0x27: "&apos;",
 };
 
-export function encodeToXmlString( str:string )
-{
+export function encodeToXmlString(str: string) {
   const buffer = [];
   let start = 0;
-  for( let i = 0, ii = str.length; i < ii; i++ )
-  {
+  for (let i = 0, ii = str.length; i < ii; i++) {
     const char = str.codePointAt(i)!;
-    if( 0x20 <= char && char <= 0x7e )
-    {
+    if (0x20 <= char && char <= 0x7e) {
       // ascii
-      const entity = (<any>XMLEntities)[char];
+      const entity = (<any> XMLEntities)[char];
       if (entity) {
         if (start < i) {
           buffer.push(str.substring(start, i));
@@ -492,8 +504,7 @@ export function encodeToXmlString( str:string )
         buffer.push(entity);
         start = i + 1;
       }
-    } 
-    else {
+    } else {
       if (start < i) {
         buffer.push(str.substring(start, i));
       }
@@ -515,8 +526,7 @@ export function encodeToXmlString( str:string )
   return buffer.join("");
 }
 
-export function validateCSSFont( cssFontInfo:CssFontInfo )
-{
+export function validateCSSFont(cssFontInfo: CssFontInfo) {
   // See https://developer.mozilla.org/en-US/docs/Web/CSS/font-style.
   const DEFAULT_CSS_FONT_OBLIQUE = "14";
   // See https://developer.mozilla.org/en-US/docs/Web/CSS/font-weight.
@@ -541,31 +551,29 @@ export function validateCSSFont( cssFontInfo:CssFontInfo )
   const { fontFamily, fontWeight, italicAngle } = cssFontInfo;
 
   // See https://developer.mozilla.org/en-US/docs/Web/CSS/string.
-  if (/^".*"$/.test(fontFamily)) 
-  {
-    if (/[^\\]"/.test(fontFamily.slice(1, fontFamily.length - 1))) 
-    {
-      warn(`XFA - FontFamily contains some unescaped ": ${fontFamily}.`, import.meta );
+  if (/^".*"$/.test(fontFamily)) {
+    if (/[^\\]"/.test(fontFamily.slice(1, fontFamily.length - 1))) {
+      warn(
+        `XFA - FontFamily contains some unescaped ": ${fontFamily}.`,
+        import.meta,
+      );
       return false;
     }
-  } 
-  else if (/^'.*'$/.test(fontFamily)) 
-  {
-    if (/[^\\]'/.test(fontFamily.slice(1, fontFamily.length - 1))) 
-    {
-      warn(`XFA - FontFamily contains some unescaped ': ${fontFamily}.`, import.meta );
+  } else if (/^'.*'$/.test(fontFamily)) {
+    if (/[^\\]'/.test(fontFamily.slice(1, fontFamily.length - 1))) {
+      warn(
+        `XFA - FontFamily contains some unescaped ': ${fontFamily}.`,
+        import.meta,
+      );
       return false;
     }
-  } 
-  else {
+  } else {
     // See https://developer.mozilla.org/en-US/docs/Web/CSS/custom-ident.
-    for (const ident of fontFamily.split(/[ \t]+/)) 
-    {
-      if (/^(\d|(-(\d|-)))/.test(ident) || !/^[\w-\\]+$/.test(ident)) 
-      {
+    for (const ident of fontFamily.split(/[ \t]+/)) {
+      if (/^(\d|(-(\d|-)))/.test(ident) || !/^[\w-\\]+$/.test(ident)) {
         warn(
           `XFA - FontFamily contains some invalid <custom-ident>: ${fontFamily}.`,
-          import.meta
+          import.meta,
         );
         return false;
       }
@@ -577,17 +585,15 @@ export function validateCSSFont( cssFontInfo:CssFontInfo )
     ? weight
     : DEFAULT_CSS_FONT_WEIGHT;
 
-  const angle = parseFloat( <string>italicAngle );
-  cssFontInfo.italicAngle =
-    isNaN(angle) || angle < -90 || angle > 90
-      ? DEFAULT_CSS_FONT_OBLIQUE
-      : italicAngle.toString();
+  const angle = parseFloat(<string> italicAngle);
+  cssFontInfo.italicAngle = isNaN(angle) || angle < -90 || angle > 90
+    ? DEFAULT_CSS_FONT_OBLIQUE
+    : italicAngle.toString();
 
   return true;
 }
 
-export function recoverJsURL( str:string ) 
-{
+export function recoverJsURL(str: string) {
   // Attempt to recover valid URLs from `JS` entries with certain
   // white-listed formats:
   //  - window.open('http://example.com')
@@ -598,17 +604,15 @@ export function recoverJsURL( str:string )
     "^\\s*(" +
       URL_OPEN_METHODS.join("|").split(".").join("\\.") +
       ")\\((?:'|\")([^'\"]*)(?:'|\")(?:,\\s*(\\w+)\\)|\\))",
-    "i"
+    "i",
   );
 
   const jsUrl = regex.exec(str);
-  if (jsUrl && jsUrl[2]) 
-  {
+  if (jsUrl && jsUrl[2]) {
     const url = jsUrl[2];
     let newWindow = false;
 
-    if (jsUrl[3] === "true" && jsUrl[1] === "app.launchURL") 
-    {
+    if (jsUrl[3] === "true" && jsUrl[1] === "app.launchURL") {
       newWindow = true;
     }
     return { url, newWindow };
@@ -616,4 +620,44 @@ export function recoverJsURL( str:string )
 
   return null;
 }
-/*81---------------------------------------------------------------------------*/
+
+export function numberToString(value: number) {
+  if (Number.isInteger(value)) {
+    return value.toString();
+  }
+
+  const roundedValue = Math.round(value * 100);
+  if (roundedValue % 100 === 0) {
+    return (roundedValue / 100).toString();
+  }
+
+  if (roundedValue % 10 === 0) {
+    return value.toFixed(1);
+  }
+
+  return value.toFixed(2);
+}
+
+export function getNewAnnotationsMap(
+  annotationStorage: AnnotStorageRecord | undefined,
+) {
+  if (!annotationStorage) {
+    return undefined;
+  }
+  const newAnnotationsByPage = new Map<number, AnnotStorageValue[]>();
+  // The concept of page in a XFA is very different, so
+  // editing is just not implemented.
+  for (const [key, value] of annotationStorage) {
+    if (!key.startsWith(AnnotationEditorPrefix)) {
+      continue;
+    }
+    let annotations = newAnnotationsByPage.get(value.pageIndex!);
+    if (!annotations) {
+      annotations = [];
+      newAnnotationsByPage.set(value.pageIndex!, annotations);
+    }
+    annotations.push(value);
+  }
+  return newAnnotationsByPage.size > 0 ? newAnnotationsByPage : undefined;
+}
+/*80--------------------------------------------------------------------------*/

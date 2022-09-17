@@ -17,23 +17,20 @@
  * limitations under the License.
  */
 
-import { BaseStream } from "./base_stream.js";
-import { DecodeStream } from "./decode_stream.js";
-/*81---------------------------------------------------------------------------*/
+import { BaseStream } from "./base_stream.ts";
+import { DecodeStream } from "./decode_stream.ts";
+/*80--------------------------------------------------------------------------*/
 
-export class RunLengthStream extends DecodeStream
-{
-  constructor( str:BaseStream, maybeLength?:number )
-  {
-    super( maybeLength );
+export class RunLengthStream extends DecodeStream {
+  constructor(str: BaseStream, maybeLength?: number) {
+    super(maybeLength);
 
     this.str = str;
     this.dict = str.dict;
   }
 
-  /** @implements */
-  readBlock()
-  {
+  /** @implement */
+  readBlock() {
     // The repeatHeader has following format. The first byte defines type of run
     // and amount of bytes to repeat/copy: n = 0 through 127 - copy next n bytes
     // (in addition to the second byte from the header), n = 129 through 255 -
@@ -56,8 +53,7 @@ export class RunLengthStream extends DecodeStream
         buffer.set(source, bufferLength);
         bufferLength += n;
       }
-    } 
-    else {
+    } else {
       n = 257 - n;
       const b = repeatHeader[1];
       buffer = this.ensureBuffer(bufferLength + n + 1);
@@ -68,4 +64,4 @@ export class RunLengthStream extends DecodeStream
     this.bufferLength = bufferLength;
   }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

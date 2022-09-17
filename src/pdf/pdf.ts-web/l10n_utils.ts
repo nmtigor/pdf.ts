@@ -17,15 +17,15 @@
  * limitations under the License.
  */
 
-import { type Locale_1, type WebL10nArgs } from "../../lib/l10n.js";
-import { Locale } from "../../lib/Locale.js";
-import { type IL10n } from "./interfaces.js";
-/*81---------------------------------------------------------------------------*/
+import { type Locale_1, type WebL10nArgs } from "../../3rd/webL10n/l10n.ts";
+import { Locale } from "../../lib/Locale.ts";
+import { type IL10n } from "./interfaces.ts";
+/*80--------------------------------------------------------------------------*/
 
 /**
  * A subset of the l10n strings in the `l10n/en-US/viewer.properties` file.
  */
-const DEFAULT_L10N_STRINGS:Record<string, string> = {
+const DEFAULT_L10N_STRINGS: Record<string, string> = {
   of_pages: "of {{pagesCount}}",
   page_of_pages: "({{pageNumber}} of {{pagesCount}})",
 
@@ -90,10 +90,14 @@ const DEFAULT_L10N_STRINGS:Record<string, string> = {
   printing_not_ready: "Warning: The PDF is not fully loaded for printing.",
   web_fonts_disabled:
     "Web fonts are disabled: unable to use embedded PDF fonts.",
+
+  free_text_default_content: "Enter text…",
+  editor_free_text_aria_label: "FreeText Editor",
+  editor_ink_aria_label: "Ink Editor",
+  editor_ink_canvas_aria_label: "User-created image",
 };
 
-export function getL10nFallback( key:string, args:WebL10nArgs )
-{
+export function getL10nFallback(key: string, args: WebL10nArgs) {
   switch (key) {
     case "find_match_count":
       key = `find_match_count[${+args.total === 1 ? "one" : "other"}]`;
@@ -105,7 +109,7 @@ export function getL10nFallback( key:string, args:WebL10nArgs )
   return DEFAULT_L10N_STRINGS[key] || "";
 }
 
-const PARTIAL_LANG_CODES = <Record<string, Locale_1>>{
+const PARTIAL_LANG_CODES = <Record<string, Locale_1>> {
   en: "en-US",
   es: "es-ES",
   fy: "fy-NL",
@@ -123,16 +127,15 @@ const PARTIAL_LANG_CODES = <Record<string, Locale_1>>{
 };
 
 // Try to support "incompletely" specified language codes (see issue 13689).
-export function fixupLangCode( langCode?:Locale ) 
-{
-  return PARTIAL_LANG_CODES[ langCode?.toLowerCase()! ] || langCode;
+export function fixupLangCode(langCode?: Locale) {
+  return PARTIAL_LANG_CODES[langCode?.toLowerCase()!] || langCode;
 }
 
 // Replaces {{arguments}} with their values.
-export function formatL10nValue( text:string, args?:WebL10nArgs )
-{
-  if( !args ) return text;
-
+export function formatL10nValue(text: string, args?: WebL10nArgs) {
+  if (!args) {
+    return text;
+  }
   return text.replace(/\{\{\s*(\w+)\s*\}\}/g, (all, name) => {
     return name in args ? args[name] : "{{" + name + "}}";
   });
@@ -141,17 +144,23 @@ export function formatL10nValue( text:string, args?:WebL10nArgs )
 /**
  * No-op implementation of the localization service.
  */
-export const NullL10n:IL10n =
-{
-  async getLanguage() { return <Lowercase<Locale>>Locale.en_US.toLowerCase(); },
+export const NullL10n: IL10n = {
+  async getLanguage() {
+    return <Lowercase<Locale>> Locale.en_US.toLowerCase();
+  },
 
-  async getDirection() { return <const>"ltr"; },
+  async getDirection() {
+    return "ltr" as const;
+  },
 
-  async get( key:string, args?:WebL10nArgs, fallback=getL10nFallback(key, args!) )
-  {
+  async get(
+    key: string,
+    args?: WebL10nArgs,
+    fallback = getL10nFallback(key, args!),
+  ) {
     return formatL10nValue(fallback, args);
   },
 
-  async translate( element:HTMLElement ) {},
-}
-/*81---------------------------------------------------------------------------*/
+  async translate(element: HTMLElement) {},
+};
+/*80--------------------------------------------------------------------------*/

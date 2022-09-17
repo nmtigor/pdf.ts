@@ -17,45 +17,42 @@
  * limitations under the License.
  */
 
-import { BaseStream } from "./base_stream.js";
-import { DecodeStream } from "./decode_stream.js";
-/*81---------------------------------------------------------------------------*/
+import { BaseStream } from "./base_stream.ts";
+import { DecodeStream } from "./decode_stream.ts";
+/*80--------------------------------------------------------------------------*/
 
-type Decrypt = ( data:Uint8Array | Uint8ClampedArray, finalize:boolean ) => Uint8Array | Uint8ClampedArray;
+type Decrypt = (
+  data: Uint8Array | Uint8ClampedArray,
+  finalize: boolean,
+) => Uint8Array | Uint8ClampedArray;
 
 const chunkSize = 512;
 
 /** @final */
-export class DecryptStream extends DecodeStream
-{
+export class DecryptStream extends DecodeStream {
   decrypt;
 
-  nextChunk?:Uint8Array | Uint8ClampedArray;
+  nextChunk?: Uint8Array | Uint8ClampedArray;
   initialized = false;
 
-  constructor( str:BaseStream, maybeLength:number, decrypt:Decrypt )
-  {
-    super( maybeLength );
+  constructor(str: BaseStream, maybeLength: number, decrypt: Decrypt) {
+    super(maybeLength);
 
     this.str = str;
     this.dict = str.dict;
     this.decrypt = decrypt;
   }
 
-  /** @implements */
-  readBlock()
-  {
+  /** @implement */
+  readBlock() {
     let chunk;
-    if( this.initialized )
-    {
+    if (this.initialized) {
       chunk = this.nextChunk;
-    } 
-    else {
+    } else {
       chunk = this.str!.getBytes(chunkSize);
       this.initialized = true;
     }
-    if( !chunk || chunk.length === 0 )
-    {
+    if (!chunk || chunk.length === 0) {
       this.eof = true;
       return;
     }
@@ -67,12 +64,11 @@ export class DecryptStream extends DecodeStream
 
     let bufferLength = this.bufferLength;
     const n = chunk.length,
-      buffer = this.ensureBuffer( bufferLength + n );
-    for( let i = 0; i < n; i++ )
-    {
+      buffer = this.ensureBuffer(bufferLength + n);
+    for (let i = 0; i < n; i++) {
       buffer[bufferLength++] = chunk[i];
     }
     this.bufferLength = bufferLength;
   }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

@@ -17,11 +17,11 @@
  * limitations under the License.
  */
 
-import { assert } from "../../../lib/util/trace.js";
-import { BaseStream } from "./base_stream.js";
-import { Dict } from "./primitives.js";
-import { Stream } from "./stream.js";
-/*81---------------------------------------------------------------------------*/
+import { assert } from "../../../lib/util/trace.ts";
+import { BaseStream } from "./base_stream.ts";
+import { Dict } from "./primitives.ts";
+import { Stream } from "./stream.ts";
+/*80--------------------------------------------------------------------------*/
 
 // Lots of DecodeStreams are created whose buffers are never used.  For these
 // we share a single empty buffer. This is (a) space-efficient and (b) avoids
@@ -32,28 +32,24 @@ const emptyBuffer = new Uint8Array(0);
 /**
  * Super class for the decoding streams.
  */
-export abstract class DecodeStream extends BaseStream
-{
-  buffer:Uint8Array | Uint8ClampedArray = emptyBuffer;
+export abstract class DecodeStream extends BaseStream {
+  buffer: Uint8Array | Uint8ClampedArray = emptyBuffer;
 
   _rawMinBufferLength;
 
   bufferLength = 0;
   eof = false;
-  /** @implements */
-  get length()
-  {
-    assert( 0, "Abstract getter `length` accessed" );
-    return <any>undefined;
+  /** @implement */
+  get length() {
+    assert(0, "Abstract getter `length` accessed");
+    return <any> undefined;
   }
   /**
-   * @implements
+   * @implement
    * @final
    */
-  get isEmpty()
-  {
-    while( !this.eof && this.bufferLength === 0 )
-    {
+  get isEmpty() {
+    while (!this.eof && this.bufferLength === 0) {
       this.readBlock();
     }
     return this.bufferLength === 0;
@@ -61,84 +57,73 @@ export abstract class DecodeStream extends BaseStream
 
   minBufferLength = 512;
 
-  str?:BaseStream;
+  str?: BaseStream;
 
-  constructor( maybeMinBufferLength?:number )
-  {
+  constructor(maybeMinBufferLength?: number) {
     super();
 
     this._rawMinBufferLength = maybeMinBufferLength || 0;
 
-    if( maybeMinBufferLength )
-    {
+    if (maybeMinBufferLength) {
       // Compute the first power of two that is as big as maybeMinBufferLength.
-      while( this.minBufferLength < maybeMinBufferLength )
-      {
+      while (this.minBufferLength < maybeMinBufferLength) {
         this.minBufferLength *= 2;
       }
     }
   }
 
-  protected abstract readBlock():void;
+  protected abstract readBlock(): void;
 
-  ensureBuffer( requested:number )
-  {
+  ensureBuffer(requested: number) {
     const buffer = this.buffer;
-    if( requested <= buffer.byteLength ) return buffer;
-
+    if (requested <= buffer.byteLength) {
+      return buffer;
+    }
     let size = this.minBufferLength;
-    while( size < requested )
-    {
+    while (size < requested) {
       size *= 2;
     }
     const buffer2 = new Uint8Array(size);
-    buffer2.set( buffer );
+    buffer2.set(buffer);
     return (this.buffer = buffer2);
   }
 
   /**
-   * @implements
+   * @implement
    * @final
    */
-  getByte()
-  {
+  getByte() {
     const pos = this.pos;
-    while( this.bufferLength <= pos )
-    {
-      if( this.eof ) return -1;
-
+    while (this.bufferLength <= pos) {
+      if (this.eof) {
+        return -1;
+      }
       this.readBlock();
     }
     return this.buffer[this.pos++];
   }
 
   /**
-   * @implements
+   * @implement
    * @final
    */
-  getBytes( length?:number )
-  {
+  getBytes(length?: number) {
     const pos = this.pos;
     let end;
 
-    if( length )
-    {
+    if (length) {
       this.ensureBuffer(pos + length);
       end = pos + length;
 
-      while( !this.eof && this.bufferLength < end )
-      {
+      while (!this.eof && this.bufferLength < end) {
         this.readBlock();
       }
       const bufEnd = this.bufferLength;
-      if( end > bufEnd )
-      {
+      if (end > bufEnd) {
         end = bufEnd;
       }
-    }
-    else {
-      while( !this.eof )
-      {
+    } else {
+      while (!this.eof) {
         this.readBlock();
       }
       end = this.bufferLength;
@@ -148,82 +133,70 @@ export abstract class DecodeStream extends BaseStream
     return this.buffer.subarray(pos, end);
   }
 
-  /** @implements */
-  reset()
-  {
+  /** @implement */
+  reset() {
     this.pos = 0;
   }
 
-  /** @implements */
-  getByteRange( begin:number, end:number )
-  {
-    assert( 0, "Abstract method `getByteRange` called" );
-    return <any>undefined;
+  /** @implement */
+  getByteRange(begin: number, end: number) {
+    assert(0, "Abstract method `getByteRange` called");
+    return <any> undefined;
   }
 
-  /** @implements */
-  moveStart()
-  {
-    assert( 0, "Abstract method `moveStart` called" );
+  /** @implement */
+  moveStart() {
+    assert(0, "Abstract method `moveStart` called");
   }
 
   /**
-   * @implements
+   * @implement
    * @final
    */
-  makeSubStream( start:number, length:number, dict?:Dict )
-  {
-    if( length === undefined )
-    {
-      while( !this.eof)
-      {
+  makeSubStream(start: number, length: number, dict?: Dict) {
+    if (length === undefined) {
+      while (!this.eof) {
         this.readBlock();
       }
-    } 
-    else {
+    } else {
       const end = start + length;
-      while( this.bufferLength <= end && !this.eof )
-      {
+      while (this.bufferLength <= end && !this.eof) {
         this.readBlock();
       }
     }
     return new Stream(this.buffer, start, length, dict);
   }
 
-  override getBaseStreams()
-  {
+  override getBaseStreams() {
     return this.str?.getBaseStreams();
   }
 }
 
 /** @final */
-export class StreamsSequenceStream extends DecodeStream
-{
+export class StreamsSequenceStream extends DecodeStream {
   streams;
   _onError;
 
-  constructor( streams:BaseStream[], onError?:(reason:unknown,objId?:string)=>void )
-  {
+  constructor(
+    streams: BaseStream[],
+    onError?: (reason: unknown, objId?: string) => void,
+  ) {
     let maybeLength = 0;
-    for( const stream of streams )
-    {
-      maybeLength +=
-        stream instanceof DecodeStream
-          ? stream._rawMinBufferLength
-          : stream.length;
+    for (const stream of streams) {
+      maybeLength += stream instanceof DecodeStream
+        ? stream._rawMinBufferLength
+        : stream.length;
     }
-    super( maybeLength );
+    super(maybeLength);
 
     this.streams = streams;
     this._onError = onError;
   }
 
-  /** @implements */
-  readBlock()
-  {
+  /** @implement */
+  readBlock() {
     const streams = this.streams;
-    if( streams.length === 0 )
-    {
+    if (streams.length === 0) {
       this.eof = true;
       return;
     }
@@ -233,8 +206,7 @@ export class StreamsSequenceStream extends DecodeStream
     try {
       chunk = stream.getBytes();
     } catch (reason) {
-      if (this._onError) 
-      {
+      if (this._onError) {
         this._onError(reason, stream.dict && stream.dict.objId);
         return;
       }
@@ -247,40 +219,35 @@ export class StreamsSequenceStream extends DecodeStream
     this.bufferLength = newLength;
   }
 
-  override getBaseStreams()
-  {
+  override getBaseStreams() {
     const baseStreamsBuf = [];
-    for( const stream of this.streams )
-    {
+    for (const stream of this.streams) {
       const baseStreams = stream.getBaseStreams();
-      if( baseStreams )
-      {
+      if (baseStreams) {
         baseStreamsBuf.push(...baseStreams);
       }
     }
     return baseStreamsBuf.length > 0 ? baseStreamsBuf : undefined;
   }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 
-export abstract class ImageStream extends DecodeStream
-{
+export abstract class ImageStream extends DecodeStream {
   stream;
   maybeLength;
   params;
 
-  width?:number | undefined;
-  height?:number | undefined;
-  bitsPerComponent?:number | undefined;
-  numComps?:number | undefined;
+  width?: number | undefined;
+  height?: number | undefined;
+  bitsPerComponent?: number | undefined;
+  numComps?: number | undefined;
 
-  drawWidth?:number;
-  drawHeight?:number;
-  forceRGB?:boolean;
+  drawWidth?: number;
+  drawHeight?: number;
+  forceRGB?: boolean;
 
-  constructor( stream:BaseStream, maybeLength?:number, params?:Dict )
-  {
-    super( maybeLength );
+  constructor(stream: BaseStream, maybeLength?: number, params?: Dict) {
+    super(maybeLength);
 
     this.stream = stream;
     this.dict = stream.dict;
@@ -288,4 +255,4 @@ export abstract class ImageStream extends DecodeStream
     this.params = params;
   }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

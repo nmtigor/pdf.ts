@@ -25,10 +25,10 @@ import {
   CalibriItalicFactors,
   CalibriItalicMetrics,
   CalibriRegularFactors,
-  CalibriRegularMetrics
-} from "./calibri_factors.js";
-import { getLookupTableFactory } from "./core_utils.js";
-import { normalizeFontName } from "./fonts_utils.js";
+  CalibriRegularMetrics,
+} from "./calibri_factors.ts";
+import { getLookupTableFactory } from "./core_utils.ts";
+import { normalizeFontName } from "./fonts_utils.ts";
 import {
   HelveticaBoldFactors,
   HelveticaBoldItalicFactors,
@@ -37,8 +37,8 @@ import {
   HelveticaItalicFactors,
   HelveticaItalicMetrics,
   HelveticaRegularFactors,
-  HelveticaRegularMetrics
-} from "./helvetica_factors.js";
+  HelveticaRegularMetrics,
+} from "./helvetica_factors.ts";
 import {
   LiberationSansBoldItalicMapping,
   LiberationSansBoldItalicWidths,
@@ -47,8 +47,8 @@ import {
   LiberationSansItalicMapping,
   LiberationSansItalicWidths,
   LiberationSansRegularMapping,
-  LiberationSansRegularWidths
-} from "./liberationsans_widths.js";
+  LiberationSansRegularWidths,
+} from "./liberationsans_widths.ts";
 import {
   MyriadProBoldFactors,
   MyriadProBoldItalicFactors,
@@ -57,9 +57,9 @@ import {
   MyriadProItalicFactors,
   MyriadProItalicMetrics,
   MyriadProRegularFactors,
-  MyriadProRegularMetrics
-} from "./myriadpro_factors.js";
-import { Dict, Name } from "./primitives.js";
+  MyriadProRegularMetrics,
+} from "./myriadpro_factors.ts";
+import { Dict, Name } from "./primitives.ts";
 import {
   SegoeuiBoldFactors,
   SegoeuiBoldItalicFactors,
@@ -68,27 +68,25 @@ import {
   SegoeuiItalicFactors,
   SegoeuiItalicMetrics,
   SegoeuiRegularFactors,
-  SegoeuiRegularMetrics
-} from "./segoeui_factors.js";
-/*81---------------------------------------------------------------------------*/
+  SegoeuiRegularMetrics,
+} from "./segoeui_factors.ts";
+/*80--------------------------------------------------------------------------*/
 
-export interface XFAFontMetrics
-{
-  lineHeight:number;
-  lineGap:number;
-  lineNoGap?:number;
+export interface XFAFontMetrics {
+  lineHeight: number;
+  lineGap: number;
+  lineNoGap?: number;
 }
 
-interface XFAFontMap
-{
-  name:string;
-  factors?:number[];
-  baseWidths:number[];
-  baseMapping:number[];
-  metrics?:XFAFontMetrics;
+interface XFAFontMap {
+  name: string;
+  factors?: number[];
+  baseWidths: number[];
+  baseMapping: number[];
+  metrics?: XFAFontMetrics;
 }
 
-const getXFAFontMap = getLookupTableFactory( ( t:Record<string,XFAFontMap> ) => {
+const getXFAFontMap = getLookupTableFactory((t: Record<string, XFAFontMap>) => {
   t["MyriadPro-Regular"] = t["PdfJS-Fallback-Regular"] = {
     name: "LiberationSans-Regular",
     factors: MyriadProRegularFactors,
@@ -232,30 +230,28 @@ const getXFAFontMap = getLookupTableFactory( ( t:Record<string,XFAFontMap> ) => 
   };
 });
 
-export function getXfaFontName( name:string )
-{
+export function getXfaFontName(name: string) {
   const fontName = normalizeFontName(name);
   const fontMap = getXFAFontMap();
   return fontMap[fontName];
 }
 
-export function getXfaFontWidths( name:string )
-{
+export function getXfaFontWidths(name: string) {
   const info = getXfaFontName(name);
-  if( !info ) return undefined;
+  if (!info) {
+    return undefined;
+  }
 
   const { baseWidths, baseMapping, factors } = info;
   let rescaledBaseWidths;
-  if (!factors) 
-  {
+  if (!factors) {
     rescaledBaseWidths = baseWidths;
-  } 
-  else {
+  } else {
     rescaledBaseWidths = baseWidths.map((w, i) => w * factors[i]);
   }
 
   let currentCode = -2;
-  let currentArray:number[];
+  let currentArray: number[];
 
   // Widths array for composite font is:
   // CharCode1 [10, 20, 30] ...
@@ -269,26 +265,27 @@ export function getXfaFontWidths( name:string )
   // (i.e. glyph indices) and then we put widths in an array for the
   // the consecutive unicodes.
   const newWidths = [];
-  for( const [unicode, glyphIndex] of baseMapping
-    .map(
-      (charUnicode, index) => [
-        charUnicode,
-        index,
-      ] /* collect unicode and glyph index */
-    )
-    .sort(
-      ([unicode1], [unicode2]) =>
-        unicode1 - unicode2 /* order by unicode only */
-    )) {
-    if( unicode === -1 )
+  for (
+    const [unicode, glyphIndex] of baseMapping
+      .map(
+        (charUnicode, index) => [
+          charUnicode,
+          index,
+        ], /* collect unicode and glyph index */
+      )
+      .sort(
+        ([unicode1], [unicode2]) =>
+          unicode1 - unicode2, /* order by unicode only */
+      )
+  ) {
+    if (unicode === -1) {
       continue;
+    }
 
-    if (unicode === currentCode + 1) 
-    {
+    if (unicode === currentCode + 1) {
       currentArray!.push(rescaledBaseWidths[glyphIndex]);
       currentCode += 1;
-    } 
-    else {
+    } else {
       currentCode = unicode;
       currentArray = [rescaledBaseWidths[glyphIndex]];
       newWidths.push(unicode, currentArray);
@@ -298,8 +295,7 @@ export function getXfaFontWidths( name:string )
   return newWidths;
 }
 
-export function getXfaFontDict( name:string ) 
-{
+export function getXfaFontDict(name: string) {
   const widths = getXfaFontWidths(name)!;
   const dict = new Dict();
   dict.set("BaseFont", Name.get(name));
@@ -311,8 +307,7 @@ export function getXfaFontDict( name:string )
   dict.set("FirstChar", widths[0]);
   dict.set(
     "LastChar",
-    <number>widths[widths.length - 2] + 
-    (<number[]>widths[widths.length - 1]).length - 1
+    <number> widths.at(-2) + (<number[]> widths.at(-1)).length - 1,
   );
   const descriptor = new Dict();
   dict.set("FontDescriptor", descriptor);
@@ -324,4 +319,4 @@ export function getXfaFontDict( name:string )
 
   return dict;
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

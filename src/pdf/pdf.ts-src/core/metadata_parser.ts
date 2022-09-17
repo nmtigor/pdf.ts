@@ -17,22 +17,19 @@
  * limitations under the License.
  */
 
-import { SimpleDOMNode, SimpleXMLParser } from "./xml_parser.js";
-/*81---------------------------------------------------------------------------*/
+import { SimpleDOMNode, SimpleXMLParser } from "./xml_parser.ts";
+/*80--------------------------------------------------------------------------*/
 
-export interface SerializedMetadata
-{
-  parsedData:Map< string, string | string[] >;
-  rawData:string;
+export interface SerializedMetadata {
+  parsedData: Map<string, string | string[]>;
+  rawData: string;
 }
 
-export class MetadataParser
-{
+export class MetadataParser {
   #metadataMap;
   #data;
-  
-  constructor( data:string )
-  {
+
+  constructor(data: string) {
     // Ghostscript may produce invalid metadata, so try to repair that first.
     data = this._repair(data);
 
@@ -40,7 +37,7 @@ export class MetadataParser
     const parser = new SimpleXMLParser({ lowerCaseName: true });
     const xmlDocument = parser.parseFromString(data);
 
-    this.#metadataMap = new Map< string, string | string[] >();
+    this.#metadataMap = new Map<string, string | string[]>();
     this.#data = data;
 
     if (xmlDocument) {
@@ -48,17 +45,19 @@ export class MetadataParser
     }
   }
 
-  _repair( data:string )
-  {
+  _repair(data: string) {
     // Start by removing any "junk" before the first tag (see issue 10395).
     return data
       .replace(/^[^<]+/, "")
       .replace(/>\\376\\377([^<]+)/g, (all, codes) => {
         const bytes = codes
-          .replace(/\\([0-3])([0-7])([0-7])/g, (code:unknown, d1:number, d2:number, d3:number) => {
-            return String.fromCharCode(d1 * 64 + d2 * 8 + d3 * 1);
-          })
-          .replace(/&(amp|apos|gt|lt|quot);/g, (str:unknown, name:string) => {
+          .replace(
+            /\\([0-3])([0-7])([0-7])/g,
+            (code: unknown, d1: number, d2: number, d3: number) => {
+              return String.fromCharCode(d1 * 64 + d2 * 8 + d3 * 1);
+            },
+          )
+          .replace(/&(amp|apos|gt|lt|quot);/g, (str: unknown, name: string) => {
             switch (name) {
               case "amp":
                 return "&";
@@ -75,8 +74,7 @@ export class MetadataParser
           });
 
         const charBuf = [];
-        for( let i = 0, ii = bytes.length; i < ii; i += 2 )
-        {
+        for (let i = 0, ii = bytes.length; i < ii; i += 2) {
           const code = bytes.charCodeAt(i) * 256 + bytes.charCodeAt(i + 1);
           if (
             code >= /* Space = */ 32 &&
@@ -88,7 +86,7 @@ export class MetadataParser
             charBuf.push(String.fromCharCode(code));
           } else {
             charBuf.push(
-              "&#x" + (0x10000 + code).toString(16).substring(1) + ";"
+              "&#x" + (0x10000 + code).toString(16).substring(1) + ";",
             );
           }
         }
@@ -96,32 +94,30 @@ export class MetadataParser
       });
   }
 
-  _getSequence( entry:SimpleDOMNode )
-  {
+  _getSequence(entry: SimpleDOMNode) {
     const name = entry.nodeName;
     if (name !== "rdf:bag" && name !== "rdf:seq" && name !== "rdf:alt") {
       return undefined;
     }
-    return entry.childNodes?.filter(node => node.nodeName === "rdf:li");
+    return entry.childNodes?.filter((node) => node.nodeName === "rdf:li");
   }
 
-  _parseArray( entry:SimpleDOMNode )
-  {
-    if( !entry.hasChildNodes() ) return;
-
+  _parseArray(entry: SimpleDOMNode) {
+    if (!entry.hasChildNodes()) {
+      return;
+    }
     // Child must be a Bag (unordered array) or a Seq.
     const [seqNode] = entry.childNodes!;
     const sequence = this._getSequence(seqNode) || [];
 
     this.#metadataMap.set(
       entry.nodeName,
-      sequence.map(node => node.textContent.trim())
+      sequence.map((node) => node.textContent.trim()),
     );
   }
 
-  _parse( xmlDocument:{ documentElement: SimpleDOMNode; })
-  {
-    let rdf:SimpleDOMNode | undefined = xmlDocument.documentElement;
+  _parse(xmlDocument: { documentElement: SimpleDOMNode }) {
+    let rdf: SimpleDOMNode | undefined = xmlDocument.documentElement;
 
     if (rdf.nodeName !== "rdf:rdf") {
       // Wrapped in <xmpmeta>
@@ -135,14 +131,12 @@ export class MetadataParser
       return;
     }
 
-    for( const desc of rdf.childNodes! )
-    {
+    for (const desc of rdf.childNodes!) {
       if (desc.nodeName !== "rdf:description") {
         continue;
       }
 
-      for( const entry of desc.childNodes! )
-      {
+      for (const entry of desc.childNodes!) {
         const name = entry.nodeName;
         switch (name) {
           case "#text":
@@ -157,12 +151,11 @@ export class MetadataParser
     }
   }
 
-  get serializable()
-  {
-    return <SerializedMetadata>{
+  get serializable() {
+    return <SerializedMetadata> {
       parsedData: this.#metadataMap,
       rawData: this.#data,
     };
   }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

@@ -17,28 +17,26 @@
  * limitations under the License.
  */
 
-import { Dict } from "./primitives.js";
-import { stringToPDFString, warn } from "../shared/util.js";
-import { XRef } from "./xref.js";
-import { BaseStream } from "./base_stream.js";
-/*81---------------------------------------------------------------------------*/
+import { stringToPDFString, warn } from "../shared/util.ts";
+import { BaseStream } from "./base_stream.ts";
+import { Dict } from "./primitives.ts";
+import { XRef } from "./xref.ts";
+/*80--------------------------------------------------------------------------*/
 
-function pickPlatformItem( dict:Dict )
-{
+function pickPlatformItem(dict: Dict) {
   // Look for the filename in this order:
   // UF, F, Unix, Mac, DOS
-  if (dict.has("UF"))        return <string>dict.get("UF");
-  else if (dict.has("F"))    return <string>dict.get("F");
-  else if (dict.has("Unix")) return <string>dict.get("Unix");
-  else if (dict.has("Mac"))  return <string>dict.get("Mac");
-  else if (dict.has("DOS"))  return <string>dict.get("DOS");
+  if (dict.has("UF")) return <string> dict.get("UF");
+  else if (dict.has("F")) return <string> dict.get("F");
+  else if (dict.has("Unix")) return <string> dict.get("Unix");
+  else if (dict.has("Mac")) return <string> dict.get("Mac");
+  else if (dict.has("DOS")) return <string> dict.get("DOS");
   return undefined;
 }
 
-export interface Serializable
-{
-  filename:string;
-  content?:Uint8Array | Uint8ClampedArray;
+export interface Serializable {
+  filename: string;
+  content?: Uint8Array | Uint8ClampedArray;
 }
 
 /**
@@ -48,17 +46,15 @@ export interface Serializable
  * TODO: support the 'URL' file system (with caching if !/V), portable
  * collections attributes and related files (/RF)
  */
-export class FileSpec
-{
+export class FileSpec {
   xref;
   root;
   fs;
   description;
   contentAvailable;
 
-  #filename?:string
-  get filename() 
-  {
+  #filename?: string;
+  get filename() {
     if (!this.#filename && this.root) {
       const filename = pickPlatformItem(this.root) || "unnamed";
       this.#filename = stringToPDFString(filename)
@@ -69,66 +65,59 @@ export class FileSpec
     return this.#filename!;
   }
 
-  contentRef?:string | undefined;
+  contentRef?: string | undefined;
 
-  constructor( root:Dict, xref:XRef ) 
-  {
-    if( !(root instanceof Dict) ) return;
-
+  constructor(root: Dict, xref: XRef) {
+    if (!(root instanceof Dict)) {
+      return;
+    }
     this.xref = xref;
     this.root = root;
-    if (root.has("FS")) 
-    {
+    if (root.has("FS")) {
       this.fs = root.get("FS");
     }
     this.description = root.has("Desc")
-      ? stringToPDFString( <string>root.get("Desc") )
+      ? stringToPDFString(<string> root.get("Desc"))
       : "";
     if (root.has("RF")) {
       warn("Related file specifications are not supported");
     }
     this.contentAvailable = true;
-    if (!root.has("EF")) 
-    {
+    if (!root.has("EF")) {
       this.contentAvailable = false;
       warn("Non-embedded file specifications are not supported");
     }
   }
 
-  get content()
-  {
-    if( !this.contentAvailable ) return undefined;
-
-    if( !this.contentRef && this.root )
-    {
-      this.contentRef = pickPlatformItem( <Dict>this.root.get("EF") );
+  get content() {
+    if (!this.contentAvailable) {
+      return undefined;
+    }
+    if (!this.contentRef && this.root) {
+      this.contentRef = pickPlatformItem(<Dict> this.root.get("EF"));
     }
     let content = undefined;
-    if( this.contentRef )
-    {
+    if (this.contentRef) {
       const fileObj = this.xref!.fetchIfRef(this.contentRef);
-      if( fileObj instanceof BaseStream )
-      {
+      if (fileObj instanceof BaseStream) {
         content = fileObj.getBytes();
-      } 
-      else {
+      } else {
         warn(
           "Embedded file specification points to non-existing/invalid " +
-            "content"
+            "content",
         );
       }
-    } 
-    else {
+    } else {
       warn("Embedded file specification does not have a content");
     }
     return content;
   }
 
   get serializable() {
-    return <Serializable>{
+    return <Serializable> {
       filename: this.filename,
       content: this.content,
     };
   }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

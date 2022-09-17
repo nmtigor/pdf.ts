@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
 
 export const $buildXFAObject = Symbol();
 
@@ -25,66 +25,70 @@ type NsIds = typeof NamespaceIds;
 export type XFANsName = keyof NsIds;
 export type XFANsId = NsIds[XFANsName]["id"] | -1;
 
-export const NamespaceIds = <const>{
+export const NamespaceIds = {
   config: {
     id: 0,
-    check: ( ns:string ) => ns.startsWith("http://www.xfa.org/schema/xci/"),
+    check: (ns: string) => ns.startsWith("http://www.xfa.org/schema/xci/"),
   },
   connectionSet: {
     id: 1,
-    check: ( ns:string ) => ns.startsWith("http://www.xfa.org/schema/xfa-connection-set/"),
+    check: (ns: string) =>
+      ns.startsWith("http://www.xfa.org/schema/xfa-connection-set/"),
   },
   datasets: {
     id: 2,
-    check: ( ns:string ) => ns.startsWith("http://www.xfa.org/schema/xfa-data/"),
+    check: (ns: string) => ns.startsWith("http://www.xfa.org/schema/xfa-data/"),
   },
   form: {
     id: 3,
-    check: ( ns:string ) => ns.startsWith("http://www.xfa.org/schema/xfa-form/"),
+    check: (ns: string) => ns.startsWith("http://www.xfa.org/schema/xfa-form/"),
   },
   localeSet: {
     id: 4,
-    check: ( ns:string ) => ns.startsWith("http://www.xfa.org/schema/xfa-locale-set/"),
+    check: (ns: string) =>
+      ns.startsWith("http://www.xfa.org/schema/xfa-locale-set/"),
   },
   pdf: {
     id: 5,
-    check: ( ns:string ) => ns === "http://ns.adobe.com/xdp/pdf/",
+    check: (ns: string) => ns === "http://ns.adobe.com/xdp/pdf/",
   },
   signature: {
     id: 6,
-    check: ( ns:string ) => ns === "http://www.w3.org/2000/09/xmldsig#",
+    check: (ns: string) => ns === "http://www.w3.org/2000/09/xmldsig#",
   },
   sourceSet: {
     id: 7,
-    check: ( ns:string ) => ns.startsWith("http://www.xfa.org/schema/xfa-source-set/"),
+    check: (ns: string) =>
+      ns.startsWith("http://www.xfa.org/schema/xfa-source-set/"),
   },
   stylesheet: {
     id: 8,
-    check: ( ns:string ) => ns === "http://www.w3.org/1999/XSL/Transform",
+    check: (ns: string) => ns === "http://www.w3.org/1999/XSL/Transform",
   },
   template: {
     id: 9,
-    check: ( ns:string ) => ns.startsWith("http://www.xfa.org/schema/xfa-template/"),
+    check: (ns: string) =>
+      ns.startsWith("http://www.xfa.org/schema/xfa-template/"),
   },
   xdc: {
     id: 10,
-    check: ( ns:string ) => ns.startsWith("http://www.xfa.org/schema/xdc/"),
+    check: (ns: string) => ns.startsWith("http://www.xfa.org/schema/xdc/"),
   },
   xdp: {
     id: 11,
-    check: ( ns:string ) => ns === "http://ns.adobe.com/xdp/",
+    check: (ns: string) => ns === "http://ns.adobe.com/xdp/",
   },
   xfdf: {
     id: 12,
-    check: ( ns:string ) => ns === "http://ns.adobe.com/xfdf/",
+    check: (ns: string) => ns === "http://ns.adobe.com/xfdf/",
   },
   xhtml: {
     id: 13,
-    check: ( ns:string ) => ns === "http://www.w3.org/1999/xhtml",
+    check: (ns: string) => ns === "http://www.w3.org/1999/xhtml",
   },
   xmpmeta: {
     id: 14,
-    check: ( ns:string ) => ns === "http://ns.adobe.com/xmpmeta/",
+    check: (ns: string) => ns === "http://ns.adobe.com/xmpmeta/",
   },
-};
-/*81---------------------------------------------------------------------------*/
+} as const;
+/*80--------------------------------------------------------------------------*/

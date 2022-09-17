@@ -17,54 +17,54 @@
  * limitations under the License.
  */
 
-import { html } from "../../lib/dom.js";
-import { type Order } from "../pdf.ts-src/core/catalog.js";
-import { PDFDocumentProxy } from "../pdf.ts-src/display/api.js";
-import { OptionalContentConfig } from "../pdf.ts-src/display/optional_content_config.js";
-import { BaseTreeViewer, type BaseTreeViewerCtorP } from "./base_tree_viewer.js";
-import { type IL10n } from "./interfaces.js";
-/*81---------------------------------------------------------------------------*/
+import { html } from "../../lib/dom.ts";
+import {
+  OptionalContentConfig,
+  type Order,
+  PDFDocumentProxy,
+} from "../pdf.ts-src/pdf.ts";
+import {
+  BaseTreeViewer,
+  type BaseTreeViewerCtorP,
+} from "./base_tree_viewer.ts";
+import { type IL10n } from "./interfaces.ts";
+/*80--------------------------------------------------------------------------*/
 
-interface PDFLayerViewerOptions extends BaseTreeViewerCtorP
-{
+interface PDFLayerViewerOptions extends BaseTreeViewerCtorP {
   /**
    * Localization service.
    */
-  l10n?:IL10n;
+  l10n?: IL10n;
 }
 
-interface _PDFLayerViewerRenderP
-{
+interface _PDFLayerViewerRenderP {
   /**
    * An {OptionalContentConfig} instance.
    */
-  optionalContentConfig:OptionalContentConfig | undefined;
+  optionalContentConfig: OptionalContentConfig | undefined;
 
   /**
    * A {PDFDocument} instance.
    */
-  pdfDocument:PDFDocumentProxy;
+  pdfDocument: PDFDocumentProxy;
 }
 
-export class PDFLayerViewer extends BaseTreeViewer 
-{
-  l10n?:IL10n | undefined;
+export class PDFLayerViewer extends BaseTreeViewer {
+  l10n?: IL10n | undefined;
 
-  #optionalContentConfig?:OptionalContentConfig | undefined;
+  #optionalContentConfig?: OptionalContentConfig | undefined;
 
-  static create( options:PDFLayerViewerOptions )
-  {
-    const ret = new PDFLayerViewer( options );
+  static create(options: PDFLayerViewerOptions) {
+    const ret = new PDFLayerViewer(options);
     ret.reset();
     return ret;
   }
-  private constructor( options:PDFLayerViewerOptions ) 
-  {
+  private constructor(options: PDFLayerViewerOptions) {
     super(options);
 
     this.l10n = options.l10n;
 
-    this.eventBus._on("resetlayers", this.#resetLayers );
+    this.eventBus._on("resetlayers", this.#resetLayers);
     this.eventBus._on("togglelayerstree", this.toggleAllTreeItems$.bind(this));
   }
 
@@ -73,19 +73,18 @@ export class PDFLayerViewer extends BaseTreeViewer
     this.#optionalContentConfig = undefined;
   }
 
-  /** @implements */
-  protected _dispatchEvent( layersCount:number ) 
-  {
+  /** @implement */
+  protected _dispatchEvent(layersCount: number) {
     this.eventBus.dispatch("layersloaded", {
       source: this,
       layersCount,
     });
   }
 
-  /** @implements */
-  protected _bindLink( element:HTMLAnchorElement, { groupId, input }:{
-    groupId:string;
-    input:HTMLInputElement;
+  /** @implement */
+  protected _bindLink(element: HTMLAnchorElement, { groupId, input }: {
+    groupId: string;
+    input: HTMLInputElement;
   }) {
     const setVisibility = () => {
       this.#optionalContentConfig!.setVisibility(groupId, input.checked);
@@ -96,7 +95,7 @@ export class PDFLayerViewer extends BaseTreeViewer
       });
     };
 
-    element.onclick = evt => {
+    element.onclick = (evt) => {
       if (evt.target === input) {
         setVisibility();
         return true;
@@ -109,34 +108,35 @@ export class PDFLayerViewer extends BaseTreeViewer
     };
   }
 
-  #setNestedName = async ( 
-    element:HTMLAnchorElement, { name=null }:{ name:string|null } ) =>
-  {
+  #setNestedName = async (
+    element: HTMLAnchorElement,
+    { name = null }: { name: string | null },
+  ) => {
     if (typeof name === "string") {
-      element.textContent = this._normalizeTextContent( <string>name );
+      element.textContent = this._normalizeTextContent(<string> name);
       return;
     }
     element.textContent = await this.l10n!.get("additional_layers");
     element.style.fontStyle = "italic";
-  }
+  };
 
-  #addToggleButton = ( div:HTMLDivElement, { name=null }:{ name:string|null } ) =>
-  {
+  #addToggleButton = (
+    div: HTMLDivElement,
+    { name = null }: { name: string | null },
+  ) => {
     super._addToggleButton(div, /* hidden = */ name === null);
-  }
+  };
 
-  protected override toggleAllTreeItems$() 
-  {
-    if( !this.#optionalContentConfig ) return;
-
+  protected override toggleAllTreeItems$() {
+    if (!this.#optionalContentConfig) {
+      return;
+    }
     super.toggleAllTreeItems$();
   }
 
-  /** @implements */
-  render({ optionalContentConfig, pdfDocument }:_PDFLayerViewerRenderP ) 
-  {
-    if( this.#optionalContentConfig )
-    {
+  /** @implement */
+  render({ optionalContentConfig, pdfDocument }: _PDFLayerViewerRenderP) {
+    if (this.#optionalContentConfig) {
       this.reset();
     }
     this.#optionalContentConfig = optionalContentConfig || undefined;
@@ -149,68 +149,62 @@ export class PDFLayerViewer extends BaseTreeViewer
     }
 
     const fragment = document.createDocumentFragment();
-    const queue:[{
-      parent:DocumentFragment | HTMLDivElement;
-      groups:Order;
+    const queue: [{
+      parent: DocumentFragment | HTMLDivElement;
+      groups: Order;
     }] = [{ parent: fragment, groups }];
     let layersCount = 0,
       hasAnyNesting = false;
-    while( queue.length > 0 )
-    {
+    while (queue.length > 0) {
       const levelData = queue.shift()!;
-      for( const groupId of levelData.groups )
-      {
+      for (const groupId of levelData.groups) {
         const div = html("div");
         div.className = "treeItem";
 
         const element = html("a");
-        div.appendChild(element);
+        div.append(element);
 
-        if( typeof groupId === "object" )
-        {
+        if (typeof groupId === "object") {
           hasAnyNesting = true;
           this.#addToggleButton(div, groupId);
           this.#setNestedName(element, groupId);
 
           const itemsDiv = html("div");
           itemsDiv.className = "treeItems";
-          div.appendChild(itemsDiv);
+          div.append(itemsDiv);
 
           queue.push({ parent: itemsDiv, groups: groupId.order });
-        } 
-        else {
+        } else {
           const group = optionalContentConfig!.getGroup(groupId);
 
           const input = html("input");
-          this._bindLink( element, { groupId, input } );
+          this._bindLink(element, { groupId, input });
           input.type = "checkbox";
-          input.id = groupId;
           input.checked = group!.visible;
 
           const label = html("label");
-          label.setAttribute( "for", groupId );
-          label.textContent = this._normalizeTextContent( group!.name! );
+          label.setAttribute("for", groupId);
+          label.textContent = this._normalizeTextContent(group!.name!);
 
-          element.appendChild(input);
-          element.appendChild(label);
+          element.append(input);
+          element.append(label);
 
           layersCount++;
         }
 
-        levelData.parent.appendChild(div);
+        levelData.parent.append(div);
       }
     }
 
     this.finishRendering$(fragment, layersCount, hasAnyNesting);
   }
 
-  #resetLayers = async() =>
-  {
-    if( !this.#optionalContentConfig ) return;
+  #resetLayers = async () => {
+    if (!this.#optionalContentConfig) return;
 
     // Fetch the default optional content configuration...
-    const optionalContentConfig =
-      await this._pdfDocument!.getOptionalContentConfig();
+    const optionalContentConfig = await this._pdfDocument!
+      .getOptionalContentConfig();
 
     this.eventBus.dispatch("optionalcontentconfig", {
       source: this,
@@ -222,6 +216,6 @@ export class PDFLayerViewer extends BaseTreeViewer
       optionalContentConfig,
       pdfDocument: this._pdfDocument!,
     });
-  }
+  };
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

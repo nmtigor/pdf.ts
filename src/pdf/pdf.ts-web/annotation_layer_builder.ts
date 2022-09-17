@@ -24,50 +24,53 @@
 /** @typedef {import("./interfaces").IL10n} IL10n */
 /** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
 
-import { AnnotationLayer } from "../pdf.ts-src/pdf.js";
-import { AnnotationStorage } from "../pdf.ts-src/display/annotation_storage.js";
-import { 
+import { html } from "../../lib/dom.ts";
+import {
+  AnnotationLayer,
+  AnnotationStorage,
+  type AnnotIntent,
+  type FieldObject,
+  PageViewport,
+  PDFPageProxy,
+} from "../pdf.ts-src/pdf.ts";
+import {
   IDownloadManager,
-  type IL10n, 
-  type IPDFLinkService, 
-  type MouseState 
-} from "./interfaces.js";
-import { PageViewport } from '../pdf.ts-src/display/display_utils.js';
-import { type AnnotIntent, PDFPageProxy } from '../pdf.ts-src/display/api.js';
-import { NullL10n } from "./l10n_utils.js";
-import { html } from "../../lib/dom.js";
-import { type FieldObject } from "../pdf.ts-src/core/annotation.js";
-/*81---------------------------------------------------------------------------*/
+  type IL10n,
+  type IPDFLinkService,
+  type MouseState,
+} from "./interfaces.ts";
+import { NullL10n } from "./l10n_utils.ts";
+/*80--------------------------------------------------------------------------*/
 
-interface AnnotationLayerBuilderOptions
-{
-  pageDiv:HTMLDivElement;
-  pdfPage:PDFPageProxy;
-  annotationStorage?:AnnotationStorage | undefined;
+interface AnnotationLayerBuilderOptions {
+  pageDiv: HTMLDivElement;
+  pdfPage: PDFPageProxy;
+  annotationStorage?: AnnotationStorage | undefined;
 
   /**
    * Path for image resources, mainly for annotation icons. Include trailing slash.
    */
-  imageResourcesPath?:string;
+  imageResourcesPath?: string;
 
-  renderForms:boolean;
-  linkService:IPDFLinkService;
-  downloadManager?:IDownloadManager | undefined;
+  renderForms: boolean;
+  linkService: IPDFLinkService;
+  downloadManager?: IDownloadManager | undefined;
 
   /**
    * Localization service.
    */
-  l10n:IL10n;
+  l10n: IL10n;
 
-  enableScripting?:boolean;
-  hasJSActionsPromise?:Promise<boolean> | undefined;
-  fieldObjectsPromise:Promise< Record<string, FieldObject[]> | undefined > | undefined;
-  mouseState?:MouseState | undefined;
-  annotationCanvasMap:Map<string, HTMLCanvasElement> | undefined;
+  enableScripting?: boolean;
+  hasJSActionsPromise?: Promise<boolean> | undefined;
+  fieldObjectsPromise:
+    | Promise<Record<string, FieldObject[]> | undefined>
+    | undefined;
+  mouseState?: MouseState | undefined;
+  annotationCanvasMap: Map<string, HTMLCanvasElement> | undefined;
 }
 
-export class AnnotationLayerBuilder
-{
+export class AnnotationLayerBuilder {
   pageDiv;
   pdfPage;
   linkService;
@@ -82,7 +85,7 @@ export class AnnotationLayerBuilder
   _mouseState;
   _annotationCanvasMap;
 
-  div?:HTMLDivElement;
+  div?: HTMLDivElement;
   _cancelled = false;
 
   constructor({
@@ -91,16 +94,15 @@ export class AnnotationLayerBuilder
     linkService,
     downloadManager,
     annotationStorage,
-    imageResourcesPath="",
-    renderForms=true,
-    l10n=NullL10n,
-    enableScripting=false,
+    imageResourcesPath = "",
+    renderForms = true,
+    l10n = NullL10n,
+    enableScripting = false,
     hasJSActionsPromise,
     fieldObjectsPromise,
     mouseState,
-    annotationCanvasMap=undefined,
-  }:AnnotationLayerBuilderOptions ) 
-  {
+    annotationCanvasMap = undefined,
+  }: AnnotationLayerBuilderOptions) {
     this.pageDiv = pageDiv;
     this.pdfPage = pdfPage;
     this.linkService = linkService;
@@ -122,16 +124,16 @@ export class AnnotationLayerBuilder
    * @return A promise that is resolved when rendering of the
    *   annotations is complete.
    */
-  async render( viewport:PageViewport, intent:AnnotIntent="display" )
-  {
-    const [annotations, hasJSActions=false, fieldObjects] =
-      await Promise.all([
+  async render(viewport: PageViewport, intent: AnnotIntent = "display") {
+    const [annotations, hasJSActions = false, fieldObjects] = await Promise.all(
+      [
         this.pdfPage.getAnnotations({ intent }),
         this._hasJSActionsPromise,
         this._fieldObjectsPromise,
-      ]);
+      ],
+    );
 
-    if( this._cancelled || annotations.length === 0 ) return;
+    if (this._cancelled || annotations.length === 0) return;
 
     const parameters = {
       viewport: viewport.clone({ dontFlip: true }),
@@ -149,21 +151,19 @@ export class AnnotationLayerBuilder
       mouseState: this._mouseState,
     };
 
-    if( this.div )
-    {
+    if (this.div) {
       // If an annotationLayer already exists, refresh its children's
       // transformation matrices.
-      AnnotationLayer.update( parameters );
-    } 
-    else {
+      AnnotationLayer.update(parameters);
+    } else {
       // Create an annotation layer div and render the annotations
       // if there is at least one annotation.
       this.div = html("div");
       this.div.className = "annotationLayer";
-      this.pageDiv.appendChild(this.div);
+      this.pageDiv.append(this.div);
       parameters.div = this.div;
 
-      AnnotationLayer.render( parameters );
+      AnnotationLayer.render(parameters);
       this.l10n.translate(this.div);
     }
   }
@@ -172,11 +172,10 @@ export class AnnotationLayerBuilder
     this._cancelled = true;
   }
 
-  hide()
-  {
-    if( !this.div ) return;
+  hide() {
+    if (!this.div) return;
 
     this.div.hidden = true;
   }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

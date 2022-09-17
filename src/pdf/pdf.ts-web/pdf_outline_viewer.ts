@@ -17,86 +17,89 @@
  * limitations under the License.
  */
 
-import { html } from "../../lib/dom.js";
-import { isObjectLike } from "../../lib/jslang.js";
-import { createPromiseCap, PromiseCap } from "../../lib/promisecap.js";
-import { type ExplicitDest } from "../pdf.ts-src/core/catalog.js";
-import { Ref } from "../pdf.ts-src/core/primitives.js";
-import { PDFDocumentProxy, type OutlineNode } from "../pdf.ts-src/display/api.js";
-import { BaseTreeViewer, type BaseTreeViewerCtorP } from "./base_tree_viewer.js";
-import { PDFLinkService } from "./pdf_link_service.js";
-import { SidebarView } from "./ui_utils.js";
-/*81---------------------------------------------------------------------------*/
+import { html } from "../../lib/dom.ts";
+import { isObjectLike } from "../../lib/jslang.ts";
+import { createPromiseCap, PromiseCap } from "../../lib/promisecap.ts";
+import {
+  type ExplicitDest,
+  type OutlineNode,
+  PDFDocumentProxy,
+  Ref,
+} from "../pdf.ts-src/pdf.ts";
+import {
+  BaseTreeViewer,
+  type BaseTreeViewerCtorP,
+} from "./base_tree_viewer.ts";
+import { PDFLinkService } from "./pdf_link_service.ts";
+import { SidebarView } from "./ui_utils.ts";
+/*80--------------------------------------------------------------------------*/
 
-interface PDFOutlineViewerOptions extends BaseTreeViewerCtorP
-{
-  linkService:PDFLinkService;
+interface PDFOutlineViewerOptions extends BaseTreeViewerCtorP {
+  linkService: PDFLinkService;
 }
 
-interface _PDFOutlineViewerRenderP
-{
+interface _PDFOutlineViewerRenderP {
   /**
    * An array of outline objects.
    */
-  outline:OutlineNode[] | undefined;
+  outline: OutlineNode[] | undefined;
 
   /**
    * A {PDFDocument} instance.
    */
-  pdfDocument:PDFDocumentProxy;
+  pdfDocument: PDFDocumentProxy;
 }
 
-export class PDFOutlineViewer extends BaseTreeViewer 
-{
-  #outline:OutlineNode[] | undefined;
+export class PDFOutlineViewer extends BaseTreeViewer {
+  #outline: OutlineNode[] | undefined;
 
-  #pageNumberToDestHashCapability:PromiseCap<Map<number, string> | undefined> | undefined;
-  _currentPageNumber!:number;
-  _sidebarView?:SidebarView;
-  
-  _isPagesLoaded!:boolean | undefined;
-  #currentOutlineItemCapability?:PromiseCap<boolean> | undefined;
+  #pageNumberToDestHashCapability:
+    | PromiseCap<Map<number, string> | undefined>
+    | undefined;
+  _currentPageNumber!: number;
+  _sidebarView?: SidebarView;
 
-  linkService:PDFLinkService;
+  _isPagesLoaded!: boolean | undefined;
+  #currentOutlineItemCapability?: PromiseCap<boolean> | undefined;
 
-  static create( options:PDFOutlineViewerOptions )
-  {
-    const ret = new PDFOutlineViewer( options );
+  linkService: PDFLinkService;
+
+  static create(options: PDFOutlineViewerOptions) {
+    const ret = new PDFOutlineViewer(options);
     ret.reset();
     return ret;
   }
-  private constructor( options:PDFOutlineViewerOptions ) 
-  {
+  private constructor(options: PDFOutlineViewerOptions) {
     super(options);
-    
+
     this.linkService = options.linkService;
 
-    this.eventBus._on( "toggleoutlinetree", this.toggleAllTreeItems$.bind(this) );
-    this.eventBus._on( "currentoutlineitem", this.#currentOutlineItem );
+    this.eventBus._on("toggleoutlinetree", this.toggleAllTreeItems$.bind(this));
+    this.eventBus._on("currentoutlineitem", this.#currentOutlineItem);
 
-    this.eventBus._on("pagechanging", evt => {
+    this.eventBus._on("pagechanging", (evt) => {
       this._currentPageNumber = evt.pageNumber;
     });
-    this.eventBus._on("pagesloaded", evt => {
+    this.eventBus._on("pagesloaded", (evt) => {
       this._isPagesLoaded = !!evt.pagesCount;
 
       // If the capability is still pending, see the `_dispatchEvent`-method,
       // we know that the `currentOutlineItem`-button can be enabled here.
-      if( this.#currentOutlineItemCapability 
-       && !this.#currentOutlineItemCapability.settled
+      if (
+        this.#currentOutlineItemCapability &&
+        !this.#currentOutlineItemCapability.settled
       ) {
         this.#currentOutlineItemCapability.resolve(
-          /* enabled = */ this._isPagesLoaded
+          /* enabled = */ this._isPagesLoaded,
         );
       }
     });
-    this.eventBus._on("sidebarviewchanged", evt => {
+    this.eventBus._on("sidebarviewchanged", (evt) => {
       this._sidebarView = evt.view;
     });
   }
 
-  override reset()
-  {
+  override reset() {
     super.reset();
     this.#outline = undefined;
 
@@ -104,27 +107,26 @@ export class PDFOutlineViewer extends BaseTreeViewer
     this._currentPageNumber = 1;
     this._isPagesLoaded = undefined;
 
-    if( this.#currentOutlineItemCapability
-     && !this.#currentOutlineItemCapability.settled
+    if (
+      this.#currentOutlineItemCapability &&
+      !this.#currentOutlineItemCapability.settled
     ) {
       this.#currentOutlineItemCapability.resolve(/* enabled = */ false);
     }
     this.#currentOutlineItemCapability = undefined;
   }
 
-  /** @implements */
-  protected _dispatchEvent( outlineCount:number ) 
-  {
+  /** @implement */
+  protected _dispatchEvent(outlineCount: number) {
     this.#currentOutlineItemCapability = createPromiseCap();
-    if( outlineCount === 0
-     || this._pdfDocument?.loadingParams.disableAutoFetch
+    if (
+      outlineCount === 0 ||
+      this._pdfDocument?.loadingParams.disableAutoFetch
     ) {
       this.#currentOutlineItemCapability.resolve(/* enabled = */ false);
-    } 
-    else if (this._isPagesLoaded !== undefined ) 
-    {
+    } else if (this._isPagesLoaded !== undefined) {
       this.#currentOutlineItemCapability.resolve(
-        /* enabled = */ this._isPagesLoaded
+        /* enabled = */ this._isPagesLoaded,
       );
     }
 
@@ -135,129 +137,113 @@ export class PDFOutlineViewer extends BaseTreeViewer
     });
   }
 
-  /** @implements */
-  protected _bindLink( element:HTMLAnchorElement, { url, newWindow, dest }:{
-    url?:string | undefined;
-    newWindow?:boolean | undefined;
-    dest?:ExplicitDest | string | undefined;
+  /** @implement */
+  protected _bindLink(element: HTMLAnchorElement, { url, newWindow, dest }: {
+    url?: string | undefined;
+    newWindow?: boolean | undefined;
+    dest?: ExplicitDest | string | undefined;
   }) {
     const { linkService } = this;
 
-    if( url )
-    {
+    if (url) {
       linkService.addLinkAttributes(element, url, newWindow);
       return;
     }
 
-    element.href = linkService.getDestinationHash( dest );
-    element.onclick = evt => {
-      this._updateCurrentTreeItem( <HTMLElement|null>(<Node>evt.target).parentNode );
+    element.href = linkService.getDestinationHash(dest);
+    element.onclick = (evt) => {
+      this._updateCurrentTreeItem(
+        <HTMLElement | null> (<Node> evt.target).parentNode,
+      );
 
-      if( dest )
-      {
-        linkService.goToDestination( dest );
+      if (dest) {
+        linkService.goToDestination(dest);
       }
       return false;
     };
   }
 
-  #setStyles( element:HTMLAnchorElement, { bold, italic }:OutlineNode )
-  {
-    if( bold )
-    {
+  #setStyles(element: HTMLAnchorElement, { bold, italic }: OutlineNode) {
+    if (bold) {
       element.style.fontWeight = "bold";
     }
-    if( italic )
-    {
+    if (italic) {
       element.style.fontStyle = "italic";
     }
   }
 
-  #addToggleButton( div:HTMLDivElement, { count, items }:OutlineNode )
-  {
+  #addToggleButton(div: HTMLDivElement, { count, items }: OutlineNode) {
     let hidden = false;
-    if( count! < 0 )
-    {
+    if (count! < 0) {
       let totalCount = items.length;
-      if( totalCount > 0 )
-      {
+      if (totalCount > 0) {
         const queue = [...items];
-        while( queue.length > 0 )
-        {
+        while (queue.length > 0) {
           const { count: nestedCount, items: nestedItems } = queue.shift()!;
-          if( nestedCount! > 0 && nestedItems.length > 0 )
-          {
+          if (nestedCount! > 0 && nestedItems.length > 0) {
             totalCount += nestedItems.length;
             queue.push(...nestedItems);
           }
         }
       }
-      if( Math.abs(count!) === totalCount )
-      {
+      if (Math.abs(count!) === totalCount) {
         hidden = true;
       }
     }
     super._addToggleButton(div, hidden);
   }
 
-  protected override toggleAllTreeItems$() 
-  {
-    if( !this.#outline ) return;
+  protected override toggleAllTreeItems$() {
+    if (!this.#outline) return;
 
     super.toggleAllTreeItems$();
   }
 
-  /** @implements */
-  render({ outline, pdfDocument }:_PDFOutlineViewerRenderP ) 
-  {
-    if( this.#outline )
-    {
+  /** @implement */
+  render({ outline, pdfDocument }: _PDFOutlineViewerRenderP) {
+    if (this.#outline) {
       this.reset();
     }
     this.#outline = outline || undefined;
     this._pdfDocument = pdfDocument || undefined;
 
-    if (!outline) 
-    {
+    if (!outline) {
       this._dispatchEvent(/* outlineCount = */ 0);
       return;
     }
 
     const fragment = document.createDocumentFragment();
-    const queue:[{
-      parent:DocumentFragment | HTMLDivElement;
-      items:OutlineNode[];
+    const queue: [{
+      parent: DocumentFragment | HTMLDivElement;
+      items: OutlineNode[];
     }] = [{ parent: fragment, items: outline }];
     let outlineCount = 0,
       hasAnyNesting = false;
-    while( queue.length > 0 )
-    {
+    while (queue.length > 0) {
       const levelData = queue.shift()!;
-      for( const item of levelData.items )
-      {
+      for (const item of levelData.items) {
         const div = html("div");
         div.className = "treeItem";
 
         const element = html("a");
-        this._bindLink( element, item );
-        this.#setStyles( element, item );
-        element.textContent = this._normalizeTextContent( item.title );
+        this._bindLink(element, item);
+        this.#setStyles(element, item);
+        element.textContent = this._normalizeTextContent(item.title);
 
-        div.appendChild( element );
+        div.append(element);
 
-        if( item.items.length > 0 )
-        {
+        if (item.items.length > 0) {
           hasAnyNesting = true;
-          this.#addToggleButton( div, item );
+          this.#addToggleButton(div, item);
 
           const itemsDiv = html("div");
           itemsDiv.className = "treeItems";
-          div.appendChild(itemsDiv);
+          div.append(itemsDiv);
 
           queue.push({ parent: itemsDiv, items: item.items });
         }
 
-        levelData.parent.appendChild(div);
+        levelData.parent.append(div);
         outlineCount++;
       }
     }
@@ -268,39 +254,42 @@ export class PDFOutlineViewer extends BaseTreeViewer
   /**
    * Find/highlight the current outline item, corresponding to the active page.
    */
-  #currentOutlineItem = async() =>
-  {
-    if (!this._isPagesLoaded) 
-    {
+  #currentOutlineItem = async () => {
+    if (!this._isPagesLoaded) {
       throw new Error("#currentOutlineItem: All pages have not been loaded.");
     }
-    if( !this.#outline || !this._pdfDocument ) return;
+    if (!this.#outline || !this._pdfDocument) {
+      return;
+    }
 
     const pageNumberToDestHash = await this.#getPageNumberToDestHash(
-      this._pdfDocument
+      this._pdfDocument,
     );
-    if( !pageNumberToDestHash ) return;
-
+    if (!pageNumberToDestHash) {
+      return;
+    }
     this._updateCurrentTreeItem(/* treeItem = */ null);
 
-    if (this._sidebarView !== SidebarView.OUTLINE) 
-    {
+    if (this._sidebarView !== SidebarView.OUTLINE) {
       return; // The outline view is no longer visible, hence do nothing.
     }
     // When there is no destination on the current page, always check the
     // previous ones in (reverse) order.
-    for (let i = this._currentPageNumber; i > 0; i--) 
-    {
+    for (let i = this._currentPageNumber; i > 0; i--) {
       const destHash = pageNumberToDestHash.get(i);
-      if( !destHash ) continue;
-
+      if (!destHash) {
+        continue;
+      }
       const linkElement = this.container.querySelector(`a[href="${destHash}"]`);
-      if( !linkElement ) continue;
-
-      this._scrollToCurrentTreeItem( <HTMLElement|null>linkElement.parentNode );
+      if (!linkElement) {
+        continue;
+      }
+      this._scrollToCurrentTreeItem(
+        <HTMLElement | null> linkElement.parentNode,
+      );
       break;
     }
-  }
+  };
 
   /**
    * To (significantly) simplify the overall implementation, we will only
@@ -308,85 +297,72 @@ export class PDFOutlineViewer extends BaseTreeViewer
    * outline item (similar to e.g. Adobe Reader); more specifically, we choose
    * the *first* outline item at the *lowest* level of the outline tree.
    */
-  async #getPageNumberToDestHash( pdfDocument:PDFDocumentProxy )
-  {
-    if( this.#pageNumberToDestHashCapability )
-    {
+  async #getPageNumberToDestHash(pdfDocument: PDFDocumentProxy) {
+    if (this.#pageNumberToDestHashCapability) {
       return this.#pageNumberToDestHashCapability.promise;
     }
     this.#pageNumberToDestHashCapability = createPromiseCap();
 
-    const pageNumberToDestHash = new Map< number, string >(),
+    const pageNumberToDestHash = new Map<number, string>(),
       pageNumberNesting = new Map();
     const queue = [{ nesting: 0, items: this.#outline }];
-    while( queue.length > 0 )
-    {
+    while (queue.length > 0) {
       const levelData = queue.shift()!,
         currentNesting = levelData.nesting;
-      for( const { dest, items } of levelData.items! )
-      {
+      for (const { dest, items } of levelData.items!) {
         let explicitDest, pageNumber;
-        if( typeof dest === "string" )
-        {
+        if (typeof dest === "string") {
           explicitDest = await pdfDocument.getDestination(dest);
 
-          if (pdfDocument !== this._pdfDocument) 
-          {
+          if (pdfDocument !== this._pdfDocument) {
             return undefined; // The document was closed while the data resolved.
           }
-        } 
-        else {
+        } else {
           explicitDest = dest;
         }
-        if (Array.isArray(explicitDest)) 
-        {
+        if (Array.isArray(explicitDest)) {
           const [destRef] = explicitDest;
 
-          if( isObjectLike(destRef) ) 
-          {
-            pageNumber = this.linkService._cachedPageNumber( destRef );
+          if (isObjectLike(destRef)) {
+            pageNumber = this.linkService._cachedPageNumber(destRef);
 
-            if( !pageNumber )
-            {
+            if (!pageNumber) {
               try {
-                pageNumber = (await pdfDocument.getPageIndex( destRef )) + 1;
+                pageNumber = (await pdfDocument.getPageIndex(destRef)) + 1;
 
-                if (pdfDocument !== this._pdfDocument) 
-                {
+                if (pdfDocument !== this._pdfDocument) {
                   return undefined; // The document was closed while the data resolved.
                 }
-                this.linkService.cachePageRef( pageNumber, <Ref>destRef );
+                this.linkService.cachePageRef(pageNumber, <Ref> destRef);
               } catch (ex) {
                 // Invalid page reference, ignore it and continue parsing.
               }
             }
-          } 
-          else if( Number.isInteger(destRef) )
-          {
-            pageNumber = <number>destRef + 1;
+          } else if (Number.isInteger(destRef)) {
+            pageNumber = <number> destRef + 1;
           }
 
-          if( Number.isInteger(pageNumber)
-           && (   !pageNumberToDestHash.has( <number>pageNumber )
-               || currentNesting > pageNumberNesting.get(pageNumber))
+          if (
+            Number.isInteger(pageNumber) &&
+            (!pageNumberToDestHash.has(<number> pageNumber) ||
+              currentNesting > pageNumberNesting.get(pageNumber))
           ) {
             const destHash = this.linkService.getDestinationHash(dest);
-            pageNumberToDestHash.set( <number>pageNumber, destHash );
+            pageNumberToDestHash.set(<number> pageNumber, destHash);
             pageNumberNesting.set(pageNumber, currentNesting);
           }
         }
 
-        if (items.length > 0) 
-        {
+        if (items.length > 0) {
           queue.push({ nesting: currentNesting + 1, items });
         }
       }
     }
 
     this.#pageNumberToDestHashCapability.resolve(
-      pageNumberToDestHash.size > 0 ? pageNumberToDestHash : undefined
+      pageNumberToDestHash.size > 0 ? pageNumberToDestHash : undefined,
     );
     return this.#pageNumberToDestHashCapability.promise;
   }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

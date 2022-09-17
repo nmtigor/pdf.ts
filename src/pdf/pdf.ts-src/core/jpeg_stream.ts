@@ -17,78 +17,69 @@
  * limitations under the License.
  */
 
-import { shadow } from "../shared/util.js";
-import { BaseStream } from './base_stream.js';
-import { ImageStream } from './decode_stream.js';
-import { JpegImage, type JpegOptions } from "./jpg.js";
-import { Dict } from "./primitives.js";
-/*81---------------------------------------------------------------------------*/
+import { shadow } from "../shared/util.ts";
+import { BaseStream } from "./base_stream.ts";
+import { ImageStream } from "./decode_stream.ts";
+import { JpegImage, type JpegOptions } from "./jpg.ts";
+import { Dict } from "./primitives.ts";
+/*80--------------------------------------------------------------------------*/
 
 /**
  * For JPEG's we use a library to decode these images and the stream behaves
  * like all the other DecodeStreams.
  */
-export class JpegStream extends ImageStream
-{
-  constructor( stream:BaseStream, maybeLength?:number, params?:Dict )
-  {
+export class JpegStream extends ImageStream {
+  constructor(stream: BaseStream, maybeLength?: number, params?: Dict) {
     // Some images may contain 'junk' before the SOI (start-of-image) marker.
     // Note: this seems to mainly affect inline images.
     let ch;
-    while ((ch = stream.getByte()) !== -1) 
-    {
+    while ((ch = stream.getByte()) !== -1) {
       // Find the first byte of the SOI marker (0xFFD8).
       if (ch === 0xff) {
         stream.skip(-1); // Reset the stream position to the SOI.
         break;
       }
     }
-    super( stream, maybeLength, params );
+    super(stream, maybeLength, params);
   }
 
-  get bytes()
-  {
+  get bytes() {
     // If `this.maybeLength` is null, we'll get the entire stream.
-    return shadow( this, "bytes", this.stream.getBytes(this.maybeLength) );
+    return shadow(this, "bytes", this.stream.getBytes(this.maybeLength));
   }
 
-  /** @implements */
-  readBlock() 
-  {
-    if( this.eof ) 
+  /** @implement */
+  readBlock() {
+    if (this.eof) {
       return;
-    const jpegOptions:JpegOptions = {};
+    }
+    const jpegOptions: JpegOptions = {};
 
     // Checking if values need to be transformed before conversion.
-    const decodeArr = <number[]>this.dict!.getArray("D", "Decode");
-    if( this.forceRGB && Array.isArray(decodeArr) )
-    {
-      const bitsPerComponent = <number>this.dict!.get("BPC", "BitsPerComponent") || 8;
+    const decodeArr = <number[]> this.dict!.getArray("D", "Decode");
+    if (this.forceRGB && Array.isArray(decodeArr)) {
+      const bitsPerComponent =
+        <number> this.dict!.get("BPC", "BitsPerComponent") || 8;
       const decodeArrLength = decodeArr.length;
       const transform = new Int32Array(decodeArrLength);
       let transformNeeded = false;
       const maxValue = (1 << bitsPerComponent) - 1;
-      for( let i = 0; i < decodeArrLength; i += 2 )
-      {
+      for (let i = 0; i < decodeArrLength; i += 2) {
         transform[i] = ((decodeArr[i + 1] - decodeArr[i]) * 256) | 0;
         transform[i + 1] = (decodeArr[i] * maxValue) | 0;
-        if (transform[i] !== 256 || transform[i + 1] !== 0) 
-        {
+        if (transform[i] !== 256 || transform[i + 1] !== 0) {
           transformNeeded = true;
         }
       }
-      if( transformNeeded )
-      {
+      if (transformNeeded) {
         jpegOptions.decodeTransform = transform;
       }
     }
     // Fetching the 'ColorTransform' entry, if it exists.
-    if( this.params instanceof Dict )
-    {
+    if (this.params instanceof Dict) {
       const colorTransform = this.params.get("ColorTransform");
-      if( Number.isInteger(colorTransform) )
-      {
-        jpegOptions.colorTransform = <number>colorTransform;
+      if (Number.isInteger(colorTransform)) {
+        jpegOptions.colorTransform = <number> colorTransform;
       }
     }
     const jpegImage = new JpegImage(jpegOptions);
@@ -103,14 +94,12 @@ export class JpegStream extends ImageStream
     this.buffer = data;
     this.bufferLength = data.length;
     this.eof = true;
-  };
+  }
 
-  override ensureBuffer( requested:number )
-  {
+  override ensureBuffer(requested: number) {
     // No-op, since `this.readBlock` will always parse the entire image and
     // directly insert all of its data into `this.buffer`.
-    return <any>undefined;
-  };
+    return <any> undefined;
+  }
 }
-/*81---------------------------------------------------------------------------*/
-
+/*80--------------------------------------------------------------------------*/

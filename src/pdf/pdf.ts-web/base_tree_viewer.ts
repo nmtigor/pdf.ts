@@ -13,39 +13,36 @@
  * limitations under the License.
  */
 
-import { html } from "../../lib/dom.js";
-import { PDFDocumentProxy } from "../pdf.ts-src/display/api.js";
-import { EventBus } from "./event_utils.js";
-import { removeNullCharacters } from "./ui_utils.js";
-/*81---------------------------------------------------------------------------*/
+import { html } from "../../lib/dom.ts";
+import { PDFDocumentProxy } from "../pdf.ts-src/pdf.ts";
+import { EventBus } from "./event_utils.ts";
+import { removeNullCharacters } from "./ui_utils.ts";
+/*80--------------------------------------------------------------------------*/
 
 const TREEITEM_OFFSET_TOP = -100; // px
 const TREEITEM_SELECTED_CLASS = "selected";
 
-export interface BaseTreeViewerCtorP
-{
+export interface BaseTreeViewerCtorP {
   /**
    * The viewer element.
    */
-  container:HTMLDivElement;
+  container: HTMLDivElement;
 
   /**
    * The application event bus.
    */
-  eventBus:EventBus;
+  eventBus: EventBus;
 }
 
-export abstract class BaseTreeViewer 
-{
+export abstract class BaseTreeViewer {
   container;
   eventBus;
 
-  protected _pdfDocument:PDFDocumentProxy | undefined;
-  #lastToggleIsShow!:boolean;
-  #currentTreeItem!:HTMLElement | null;
+  protected _pdfDocument: PDFDocumentProxy | undefined;
+  #lastToggleIsShow!: boolean;
+  #currentTreeItem!: HTMLElement | null;
 
-  constructor( options:BaseTreeViewerCtorP )
-  {
+  constructor(options: BaseTreeViewerCtorP) {
     this.container = options.container;
     this.eventBus = options.eventBus;
 
@@ -54,8 +51,7 @@ export abstract class BaseTreeViewer
     // this.reset();
   }
 
-  reset() 
-  {
+  reset() {
     this._pdfDocument = undefined;
     this.#lastToggleIsShow = true;
     this.#currentTreeItem = null;
@@ -67,17 +63,19 @@ export abstract class BaseTreeViewer
     this.container.classList.remove("treeWithDeepNesting");
   }
 
-  protected abstract _dispatchEvent( count?:number ):void;
+  protected abstract _dispatchEvent(count?: number): void;
 
-  protected abstract _bindLink( element:HTMLAnchorElement, params:object ):void;
+  protected abstract _bindLink(
+    element: HTMLAnchorElement,
+    params: object,
+  ): void;
 
-  protected _normalizeTextContent( str:string ):string
-  {
+  protected _normalizeTextContent(str: string): string {
     // Chars in range [0x01-0x1F] will be replaced with a white space
     // and 0x00 by "".
     return (
-      removeNullCharacters(str, /* replaceInvisible */ true) ||
-      /* en dash = */ "\u2013"
+      removeNullCharacters(str, /* replaceInvisible */ true) || /* en dash = */
+      "\u2013"
     );
   }
 
@@ -85,25 +83,22 @@ export abstract class BaseTreeViewer
    * Prepend a button before a tree item which allows the user to collapse or
    * expand all tree items at that level; see `#toggleTreeItem`.
    */
-  protected _addToggleButton( div:HTMLDivElement, hidden=false ) 
-  {
+  protected _addToggleButton(div: HTMLDivElement, hidden = false) {
     const toggler = html("div");
     toggler.className = "treeItemToggler";
-    if (hidden) 
-    {
+    if (hidden) {
       toggler.classList.add("treeItemsHidden");
     }
-    toggler.onclick = evt => {
+    toggler.onclick = (evt) => {
       evt.stopPropagation();
       toggler.classList.toggle("treeItemsHidden");
 
-      if (evt.shiftKey) 
-      {
+      if (evt.shiftKey) {
         const shouldShowAll = !toggler.classList.contains("treeItemsHidden");
         this.#toggleTreeItem(div, shouldShowAll);
       }
     };
-    div.insertBefore(toggler, div.firstChild);
+    div.prepend(toggler);
   }
 
   /**
@@ -113,10 +108,9 @@ export abstract class BaseTreeViewer
    * @param show whether to show the item (sub)tree. If false,
    *   the item subtree rooted at `root` will be collapsed.
    */
-  #toggleTreeItem( root:HTMLDivElement, show=false )
-  {
+  #toggleTreeItem(root: HTMLDivElement, show = false) {
     this.#lastToggleIsShow = show;
-    root.querySelectorAll(".treeItemToggler").forEach( toggler => {
+    root.querySelectorAll(".treeItemToggler").forEach((toggler) => {
       toggler.classList.toggle("treeItemsHidden", !show);
     });
   }
@@ -124,63 +118,59 @@ export abstract class BaseTreeViewer
   /**
    * Collapse or expand all subtrees of the `container`.
    */
-  protected toggleAllTreeItems$() 
-  {
+  protected toggleAllTreeItems$() {
     this.#toggleTreeItem(this.container, !this.#lastToggleIsShow);
   }
 
   /** @final */
-  protected finishRendering$( fragment:DocumentFragment, count:number, hasAnyNesting=false )
-  {
+  protected finishRendering$(
+    fragment: DocumentFragment,
+    count: number,
+    hasAnyNesting = false,
+  ) {
     if (hasAnyNesting) {
       this.container.classList.add("treeWithDeepNesting");
 
       this.#lastToggleIsShow = !fragment.querySelector(".treeItemsHidden");
     }
-    this.container.appendChild(fragment);
+    this.container.append(fragment);
 
     this._dispatchEvent(count);
   }
 
-  abstract render( params:object ):void;
+  abstract render(params: object): void;
 
-  protected _updateCurrentTreeItem( treeItem:HTMLElement | null=null )
-  {
-    if( this.#currentTreeItem )
-    {
+  protected _updateCurrentTreeItem(treeItem: HTMLElement | null = null) {
+    if (this.#currentTreeItem) {
       // Ensure that the current treeItem-selection is always removed.
       this.#currentTreeItem.classList.remove(TREEITEM_SELECTED_CLASS);
       this.#currentTreeItem = null;
     }
-    if( treeItem )
-    {
+    if (treeItem) {
       treeItem.classList.add(TREEITEM_SELECTED_CLASS);
       this.#currentTreeItem = treeItem;
     }
   }
 
-  protected _scrollToCurrentTreeItem( treeItem:HTMLElement | null )
-  {
-    if( !treeItem ) return;
+  protected _scrollToCurrentTreeItem(treeItem: HTMLElement | null) {
+    if (!treeItem) return;
 
     // Ensure that the treeItem is *fully* expanded, such that it will first of
     // all be visible and secondly that scrolling it into view works correctly.
-    let currentNode = <HTMLElement|null>treeItem.parentNode;
-    while( currentNode && currentNode !== this.container )
-    {
-      if( currentNode.classList.contains("treeItem") )
-      {
+    let currentNode = <HTMLElement | null> treeItem.parentNode;
+    while (currentNode && currentNode !== this.container) {
+      if (currentNode.classList.contains("treeItem")) {
         const toggler = currentNode.firstElementChild;
         toggler?.classList.remove("treeItemsHidden");
       }
-      currentNode = <HTMLElement|null>currentNode.parentNode;
+      currentNode = <HTMLElement | null> currentNode.parentNode;
     }
-    this._updateCurrentTreeItem( treeItem );
+    this._updateCurrentTreeItem(treeItem);
 
     this.container.scrollTo(
       treeItem.offsetLeft,
-      treeItem.offsetTop + TREEITEM_OFFSET_TOP
+      treeItem.offsetTop + TREEITEM_OFFSET_TOP,
     );
   }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

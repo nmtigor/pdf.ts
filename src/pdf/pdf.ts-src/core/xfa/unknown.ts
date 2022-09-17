@@ -17,23 +17,20 @@
  * limitations under the License.
  */
 
-import { $buildXFAObject } from "./namespaces.js";
-import { type XFAAttrs } from "./alias.js";
-import { XmlObject } from "./xfa_object.js";
-/*81---------------------------------------------------------------------------*/
+import { type XFAAttrs } from "./alias.ts";
+import { $buildXFAObject } from "./namespaces.ts";
+import { XmlObject } from "./xfa_object.ts";
+/*80--------------------------------------------------------------------------*/
 
-export class UnknownNamespace
-{
+export class UnknownNamespace {
   namespaceId;
 
-  constructor( nsId:number )
-  {
+  constructor(nsId: number) {
     this.namespaceId = nsId;
   }
 
-  [$buildXFAObject]( name:string, attributes:XFAAttrs )
-  {
-    return new XmlObject( <any>this.namespaceId, name, attributes );
+  [$buildXFAObject](name: string, attributes: XFAAttrs) {
+    return new XmlObject(<any> this.namespaceId, name, attributes);
   }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

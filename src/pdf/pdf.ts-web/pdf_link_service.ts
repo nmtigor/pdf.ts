@@ -20,17 +20,21 @@
 /** @typedef {import("./event_utils").EventBus} EventBus */
 /** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
 
-import { isObjectLike } from "../../lib/jslang.js";
-import { assert } from "../../lib/util/trace.js";
-import { type Destination, type ExplicitDest } from "../pdf.ts-src/core/catalog.js";
-import { Ref } from "../pdf.ts-src/core/primitives.js";
-import { PDFDocumentProxy, type RefProxy } from "../pdf.ts-src/display/api.js";
-import { EventBus } from "./event_utils.js";
-import { type IPDFLinkService } from "./interfaces.js";
-import { PDFHistory } from "./pdf_history.js";
-import { PDFViewer } from "./pdf_viewer.js";
-import { parseQueryString, removeNullCharacters } from "./ui_utils.js";
-/*81---------------------------------------------------------------------------*/
+import { isObjectLike } from "../../lib/jslang.ts";
+import { assert } from "../../lib/util/trace.ts";
+import {
+  type Destination,
+  type ExplicitDest,
+  PDFDocumentProxy,
+  Ref,
+  type RefProxy,
+} from "../pdf.ts-src/pdf.ts";
+import { EventBus } from "./event_utils.ts";
+import { type IPDFLinkService } from "./interfaces.ts";
+import { PDFHistory } from "./pdf_history.ts";
+import { PDFViewer } from "./pdf_viewer.ts";
+import { parseQueryString, removeNullCharacters } from "./ui_utils.ts";
+/*80--------------------------------------------------------------------------*/
 
 const DEFAULT_LINK_REL = "noopener noreferrer nofollow";
 
@@ -40,40 +44,39 @@ export const enum LinkTarget {
   BLANK = 2,
   PARENT = 3,
   TOP = 4,
-};
+}
 
-interface _ExternalLinkP
-{
+interface _ExternalLinkP {
   /**
    * An absolute URL.
    */
-  url:string;
+  url: string;
 
   /**
    * The link target. The default value is `LinkTarget.NONE`.
    */
-  target?:LinkTarget | undefined;
+  target?: LinkTarget | undefined;
 
   /**
    * The link relationship. The default value is `DEFAULT_LINK_REL`.
    */
-  rel?:string | undefined;
+  rel?: string | undefined;
 
   /**
    * Whether the link should be enabled. The default value is true.
    */
-  enabled?:boolean;
+  enabled?: boolean;
 }
 
 /**
  * Adds various attributes (href, title, target, rel) to hyperlinks.
  * @param link The link element.
  */
-function addLinkAttributes( link:HTMLAnchorElement, 
-  { url, target, rel, enabled=true }:_ExternalLinkP = <_ExternalLinkP>{})
-{
-  if( !url || typeof url !== "string" )
-  {
+function addLinkAttributes(
+  link: HTMLAnchorElement,
+  { url, target, rel, enabled = true }: _ExternalLinkP = <_ExternalLinkP> {},
+) {
+  if (!url || typeof url !== "string") {
     throw new Error('A valid "url" parameter must provided.');
   }
 
@@ -83,9 +86,7 @@ function addLinkAttributes( link:HTMLAnchorElement,
   } else {
     link.href = "";
     link.title = `Disabled: ${urlNullRemoved}`;
-    link.onclick = () => {
-      return false;
-    };
+    link.onclick = () => false;
   }
 
   let targetStr = ""; // LinkTarget.NONE
@@ -110,50 +111,48 @@ function addLinkAttributes( link:HTMLAnchorElement,
   link.rel = typeof rel === "string" ? rel : DEFAULT_LINK_REL;
 }
 
-interface PDFLinkServiceOptions
-{
+interface PDFLinkServiceOptions {
   /**
    * The application event bus.
    */
-  eventBus:EventBus;
+  eventBus: EventBus;
 
   /**
    * Specifies the `target` attribute
    * for external links. Must use one of the values from {LinkTarget}.
    * Defaults to using no target.
    */
-  externalLinkTarget:LinkTarget | undefined;
+  externalLinkTarget: LinkTarget | undefined;
 
   /**
    * Specifies the `rel` attribute for
    * external links. Defaults to stripping the referrer.
    */
-  externalLinkRel:string | undefined;
+  externalLinkRel: string | undefined;
 
   /**
    * Ignores the zoom argument,
    * thus preserving the current zoom level in the viewer, when navigating
    * to internal destinations. The default value is `false`.
    */
-  ignoreDestinationZoom:boolean | undefined;
+  ignoreDestinationZoom: boolean | undefined;
 }
 
 /**
  * Performs navigation functions inside PDF, such as opening specified page,
  * or destination.
  */
-export class PDFLinkService implements IPDFLinkService
-{
-  eventBus:EventBus;
-  externalLinkTarget:LinkTarget | undefined;
-  externalLinkRel:string | undefined;
+export class PDFLinkService implements IPDFLinkService {
+  eventBus: EventBus;
+  externalLinkTarget: LinkTarget | undefined;
+  externalLinkRel: string | undefined;
   externalLinkEnabled = true;
-  #ignoreDestinationZoom:boolean;
+  #ignoreDestinationZoom: boolean;
 
-  baseUrl:string | undefined;
-  pdfDocument:PDFDocumentProxy | undefined;
-  pdfViewer?:PDFViewer;
-  pdfHistory?:PDFHistory;
+  baseUrl: string | undefined;
+  pdfDocument: PDFDocumentProxy | undefined;
+  pdfViewer?: PDFViewer;
+  pdfHistory?: PDFHistory;
 
   #pagesRefCache = new Map<string, number>();
 
@@ -161,108 +160,95 @@ export class PDFLinkService implements IPDFLinkService
     eventBus,
     externalLinkTarget,
     externalLinkRel,
-    ignoreDestinationZoom=false,
-  }:PDFLinkServiceOptions ) {
+    ignoreDestinationZoom = false,
+  }: PDFLinkServiceOptions) {
     this.eventBus = eventBus;
     this.externalLinkTarget = externalLinkTarget;
     this.externalLinkRel = externalLinkRel;
     this.#ignoreDestinationZoom = ignoreDestinationZoom;
   }
 
-  setDocument( pdfDocument?:PDFDocumentProxy, baseUrl?:string ) 
-  {
+  setDocument(pdfDocument?: PDFDocumentProxy, baseUrl?: string) {
     this.baseUrl = baseUrl;
     this.pdfDocument = pdfDocument;
     this.#pagesRefCache.clear();
   }
 
-  setViewer( pdfViewer:PDFViewer ) 
-  {
+  setViewer(pdfViewer: PDFViewer) {
     this.pdfViewer = pdfViewer;
   }
 
-  setHistory( pdfHistory:PDFHistory ) 
-  {
+  setHistory(pdfHistory: PDFHistory) {
     this.pdfHistory = pdfHistory;
   }
 
-  get pagesCount():number 
-  {
+  get pagesCount(): number {
     return this.pdfDocument ? this.pdfDocument.numPages : 0;
   }
 
-  /** @implements */
-  get page():number 
-  {
+  /** @implement */
+  get page(): number {
     return this.pdfViewer!.currentPageNumber;
   }
-  set page( value:number ) 
-  {
+  set page(value: number) {
     this.pdfViewer!.currentPageNumber = value;
   }
 
-  /** @implements */
-  get rotation():number 
-  {
+  /** @implement */
+  get rotation(): number {
     return this.pdfViewer!.pagesRotation;
   }
-  set rotation( value:number ) 
-  {
+  set rotation(value: number) {
     this.pdfViewer!.pagesRotation = value;
   }
 
-  #goToDestinationHelper( rawDest:string | ExplicitDest, 
-    namedDest:string | undefined, explicitDest:ExplicitDest
+  #goToDestinationHelper(
+    rawDest: string | ExplicitDest,
+    namedDest: string | undefined,
+    explicitDest: ExplicitDest,
   ) {
     // Dest array looks like that: <page-ref> </XYZ|/FitXXX> <args..>
     const destRef = explicitDest[0];
     let pageNumber;
 
-    if( isObjectLike(destRef) ) 
-    {
-      pageNumber = this._cachedPageNumber( destRef );
+    if (isObjectLike(destRef)) {
+      pageNumber = this._cachedPageNumber(destRef);
 
-      if( pageNumber ) 
-      {
+      if (pageNumber) {
         // Fetch the page reference if it's not yet available. This could
         // only occur during loading, before all pages have been resolved.
         this.pdfDocument!
-          .getPageIndex( <Ref>destRef )
-          .then( pageIndex => {
-            this.cachePageRef( pageIndex + 1, <Ref>destRef );
+          .getPageIndex(<Ref> destRef)
+          .then((pageIndex) => {
+            this.cachePageRef(pageIndex + 1, <Ref> destRef);
             this.#goToDestinationHelper(rawDest, namedDest, explicitDest);
           })
           .catch(() => {
             console.error(
               `PDFLinkService.#goToDestinationHelper: "${destRef}" is not ` +
-              `a valid page reference, for dest="${rawDest}".`
+                `a valid page reference, for dest="${rawDest}".`,
             );
           });
         return;
       }
-    } 
-    else if( Number.isInteger(destRef) )
-    {
-      pageNumber = <number>destRef + 1;
-    } 
-    else {
+    } else if (Number.isInteger(destRef)) {
+      pageNumber = <number> destRef + 1;
+    } else {
       console.error(
         `PDFLinkService.#goToDestinationHelper: "${destRef}" is not ` +
-        `a valid destination reference, for dest="${rawDest}".`
+          `a valid destination reference, for dest="${rawDest}".`,
       );
       return;
     }
-    if (!pageNumber || pageNumber < 1 || pageNumber > this.pagesCount) 
-    {
+    if (!pageNumber || pageNumber < 1 || pageNumber > this.pagesCount) {
       console.error(
         `PDFLinkService.#goToDestinationHelper: "${pageNumber}" is not ` +
-        `a valid page number, for dest="${rawDest}".`
+          `a valid page number, for dest="${rawDest}".`,
       );
       return;
     }
 
-    if (this.pdfHistory) 
-    {
+    if (this.pdfHistory) {
       // Update the browser history before scrolling the new destination into
       // view, to be able to accurately capture the current document position.
       this.pdfHistory.pushCurrentPosition();
@@ -278,28 +264,24 @@ export class PDFLinkService implements IPDFLinkService
 
   /**
    * This method will, when available, also update the browser history.
-   * @implements
+   * @implement
    * @param dest The named, or explicit, PDF destination.
    */
-  async goToDestination( dest:string | ExplicitDest )
-  {
-    if( !this.pdfDocument ) return;
+  async goToDestination(dest: string | ExplicitDest) {
+    if (!this.pdfDocument) return;
 
     let namedDest, explicitDest;
-    if( typeof dest === "string" )
-    {
+    if (typeof dest === "string") {
       namedDest = dest;
       explicitDest = await this.pdfDocument.getDestination(dest);
-    } 
-    else {
+    } else {
       namedDest = undefined;
       explicitDest = await dest;
     }
-    if( !Array.isArray(explicitDest) )
-    {
+    if (!Array.isArray(explicitDest)) {
       console.error(
         `PDFLinkService.goToDestination: "${explicitDest}" is not ` +
-          `a valid destination array, for dest="${dest}".`
+          `a valid destination array, for dest="${dest}".`,
       );
       return;
     }
@@ -308,27 +290,26 @@ export class PDFLinkService implements IPDFLinkService
 
   /**
    * This method will, when available, also update the browser history.
-   * 
-   * @implements
+   *
+   * @implement
    * @param val The page number, or page label.
    */
-  goToPage( val:number | string )
-  {
-    if( !this.pdfDocument ) return;
+  goToPage(val: number | string) {
+    if (!this.pdfDocument) return;
 
     const pageNumber =
       (typeof val === "string" && this.pdfViewer!.pageLabelToPageNumber(val)) ||
       +val | 0;
-    if( !(Number.isInteger(pageNumber)
-     && pageNumber > 0
-     && pageNumber <= this.pagesCount
-    )) {
+    if (
+      !(Number.isInteger(pageNumber) &&
+        pageNumber > 0 &&
+        pageNumber <= this.pagesCount)
+    ) {
       console.error(`PDFLinkService.goToPage: "${val}" is not a valid page.`);
       return;
     }
 
-    if (this.pdfHistory) 
-    {
+    if (this.pdfHistory) {
       // Update the browser history before scrolling the new page into view,
       // to be able to accurately capture the current document position.
       this.pdfHistory.pushCurrentPosition();
@@ -340,10 +321,9 @@ export class PDFLinkService implements IPDFLinkService
 
   /**
    * Wrapper around the `addLinkAttributes` helper function.
-   * @implements
+   * @implement
    */
-  addLinkAttributes( link:HTMLAnchorElement, url:string, newWindow=false ) 
-  {
+  addLinkAttributes(link: HTMLAnchorElement, url: string, newWindow = false) {
     addLinkAttributes(link, {
       url,
       target: newWindow ? LinkTarget.BLANK : this.externalLinkTarget,
@@ -353,24 +333,18 @@ export class PDFLinkService implements IPDFLinkService
   }
 
   /**
-   * @implements
+   * @implement
    * @param dest The PDF destination object.
    * @return The hyperlink to the PDF object.
    */
-  getDestinationHash( dest?:Destination )
-  {
-    if( typeof dest === "string" )
-    {
-      if (dest.length > 0) 
-      {
+  getDestinationHash(dest?: Destination) {
+    if (typeof dest === "string") {
+      if (dest.length > 0) {
         return this.getAnchorUrl("#" + escape(dest));
       }
-    }
-    else if( Array.isArray(dest) )
-    {
+    } else if (Array.isArray(dest)) {
       const str = JSON.stringify(dest);
-      if (str.length > 0) 
-      {
+      if (str.length > 0) {
         return this.getAnchorUrl("#" + escape(str));
       }
     }
@@ -380,26 +354,22 @@ export class PDFLinkService implements IPDFLinkService
   /**
    * Prefix the full url on anchor links to make sure that links are resolved
    * relative to the current URL instead of the one defined in <base href>.
-   * @implements
+   * @implement
    * @param anchor The anchor hash, including the #.
    * @return The hyperlink to the PDF object.
    */
-  getAnchorUrl( anchor:string ):string 
-  {
+  getAnchorUrl(anchor: string): string {
     return (this.baseUrl || "") + anchor;
   }
 
-  /** @implements */
-  setHash( hash:string ) 
-  {
-    if( !this.pdfDocument ) return;
+  /** @implement */
+  setHash(hash: string) {
+    if (!this.pdfDocument) return;
 
-    let pageNumber, dest:ExplicitDest;
-    if( hash.includes("=") )
-    {
+    let pageNumber, dest: ExplicitDest;
+    if (hash.includes("=")) {
       const params = parseQueryString(hash);
-      if (params.has("search")) 
-      {
+      if (params.has("search")) {
         this.eventBus.dispatch("findfromurlhash", {
           source: this,
           query: params.get("search")!.replace(/"/g, ""),
@@ -407,19 +377,16 @@ export class PDFLinkService implements IPDFLinkService
         });
       }
       // borrowing syntax from "Parameters for Opening PDF Files"
-      if( params.has("page") )
-      {
+      if (params.has("page")) {
         pageNumber = +params.get("page")! | 0 || 1;
       }
-      if (params.has("zoom")) 
-      {
+      if (params.has("zoom")) {
         // Build the destination array.
         const zoomArgs = params.get("zoom")!.split(","); // scale,left,top
         const zoomArg = zoomArgs[0];
         const zoomArgNumber = parseFloat(zoomArg);
 
-        if( !zoomArg.includes("Fit") )
-        {
+        if (!zoomArg.includes("Fit")) {
           // If the zoomArg is a number, it has to get divided by 100. If it's
           // a string, it should stay as it is.
           dest = [
@@ -429,32 +396,26 @@ export class PDFLinkService implements IPDFLinkService
             zoomArgs.length > 2 ? +zoomArgs[2] | 0 : null,
             zoomArgNumber ? zoomArgNumber / 100 : zoomArg,
           ];
-        } 
-        else {
-          if( zoomArg === "Fit" || zoomArg === "FitB" )
-          {
+        } else {
+          if (zoomArg === "Fit" || zoomArg === "FitB") {
             dest = [null, { name: zoomArg }];
-          } 
-          else if( zoomArg === "FitH"
-                || zoomArg === "FitBH"
-                || zoomArg === "FitV"
-                || zoomArg === "FitBV"
+          } else if (
+            zoomArg === "FitH" ||
+            zoomArg === "FitBH" ||
+            zoomArg === "FitV" ||
+            zoomArg === "FitBV"
           ) {
             dest = [
               null,
               { name: zoomArg },
               zoomArgs.length > 1 ? +zoomArgs[1] | 0 : null,
             ];
-          } 
-          else if (zoomArg === "FitR") 
-          {
-            if (zoomArgs.length !== 5) 
-            {
+          } else if (zoomArg === "FitR") {
+            if (zoomArgs.length !== 5) {
               console.error(
-                'PDFLinkService.setHash: Not enough parameters for "FitR".'
+                'PDFLinkService.setHash: Not enough parameters for "FitR".',
               );
-            } 
-            else {
+            } else {
               dest = [
                 null,
                 { name: zoomArg },
@@ -464,28 +425,23 @@ export class PDFLinkService implements IPDFLinkService
                 +zoomArgs[4] | 0,
               ];
             }
-          } 
-          else {
+          } else {
             console.error(
-              `PDFLinkService.setHash: "${zoomArg}" is not a valid zoom value.`
+              `PDFLinkService.setHash: "${zoomArg}" is not a valid zoom value.`,
             );
           }
         }
       }
-      if( dest! )
-      {
+      if (dest!) {
         this.pdfViewer!.scrollPageIntoView({
           pageNumber: pageNumber || this.page,
           destArray: dest,
           allowNegativeOffset: true,
         });
-      } 
-      else if( pageNumber )
-      {
+      } else if (pageNumber) {
         this.page = pageNumber; // simple page
       }
-      if( params.has("pagemode") ) 
-      {
+      if (params.has("pagemode")) {
         this.eventBus.dispatch("pagemode", {
           source: this,
           mode: params.get("pagemode")!,
@@ -493,43 +449,41 @@ export class PDFLinkService implements IPDFLinkService
       }
       // Ensure that this parameter is *always* handled last, in order to
       // guarantee that it won't be overridden (e.g. by the "page" parameter).
-      if( params.has("nameddest") ) 
-      {
-        this.goToDestination( params.get("nameddest")! );
+      if (params.has("nameddest")) {
+        this.goToDestination(params.get("nameddest")!);
       }
-    } 
-    else {
+    } else {
       // Named (or explicit) destination.
       let dest = unescape(hash);
       try {
         dest = JSON.parse(dest);
 
-        if( !Array.isArray(dest) )
-        {
+        if (!Array.isArray(dest)) {
           // Avoid incorrectly rejecting a valid named destination, such as
           // e.g. "4.3" or "true", because `JSON.parse` converted its type.
           dest = dest.toString();
         }
       } catch (ex) {}
 
-      if( typeof dest === "string" 
-       || PDFLinkService.#isValidExplicitDestination(dest)
+      if (
+        typeof dest === "string" ||
+        PDFLinkService.#isValidExplicitDestination(dest)
       ) {
         this.goToDestination(dest);
         return;
       }
       console.error(
-        `PDFLinkService.setHash: "${unescape(hash)}" is not a valid destination.`
+        `PDFLinkService.setHash: "${
+          unescape(hash)
+        }" is not a valid destination.`,
       );
     }
   }
 
-  /** @implements */
-  executeNamedAction( action:string ) 
-  {
+  /** @implement */
+  executeNamedAction(action: string) {
     // See PDF reference, table 8.45 - Named action
-    switch (action) 
-    {
+    switch (action) {
       case "GoBack":
         this.pdfHistory?.back();
         break;
@@ -565,67 +519,64 @@ export class PDFLinkService implements IPDFLinkService
   }
 
   /**
-   * @implements
+   * @implement
    * @param pageNum page number.
    * @param pageRef reference to the page.
    */
-  cachePageRef( pageNum:number, pageRef:RefProxy | undefined ) 
-  {
-    if( !pageRef ) return;
+  cachePageRef(pageNum: number, pageRef: RefProxy | undefined) {
+    if (!pageRef) return;
 
-    const refStr =
-      pageRef.gen === 0 ? `${pageRef.num}R` : `${pageRef.num}R${pageRef.gen}`;
-    this.#pagesRefCache.set( refStr, pageNum );
+    const refStr = pageRef.gen === 0
+      ? `${pageRef.num}R`
+      : `${pageRef.num}R${pageRef.gen}`;
+    this.#pagesRefCache.set(refStr, pageNum);
   }
 
-  /** @implements */
-  _cachedPageNumber( pageRef:RefProxy | undefined )
-  {
-    if( !pageRef ) return undefined;
+  /** @implement */
+  _cachedPageNumber(pageRef: RefProxy | undefined) {
+    if (!pageRef) return undefined;
 
-    const refStr =
-      pageRef.gen === 0 ? `${pageRef.num}R` : `${pageRef.num}R${pageRef.gen}`;
+    const refStr = pageRef.gen === 0
+      ? `${pageRef.num}R`
+      : `${pageRef.num}R${pageRef.gen}`;
     return this.#pagesRefCache.get(refStr) || undefined;
   }
 
-  /** @implements */
-  isPageVisible( pageNumber:number ) 
-  {
+  /** @implement */
+  isPageVisible(pageNumber: number) {
     return this.pdfViewer!.isPageVisible(pageNumber);
   }
 
-  isPageCached( pageNumber:number )
-  {
+  isPageCached(pageNumber: number) {
     return this.pdfViewer!.isPageCached(pageNumber);
   }
 
-  static #isValidExplicitDestination( dest:unknown )
-  {
-    if( !Array.isArray(dest) ) return false;
+  static #isValidExplicitDestination(dest: unknown) {
+    if (!Array.isArray(dest)) return false;
 
     const destLength = dest.length;
-    if( destLength < 2 ) return false;
+    if (destLength < 2) return false;
 
     const page = dest[0];
     if (
       !(
-        typeof page === "object"
-      && Number.isInteger(page.num)
-      && Number.isInteger(page.gen)
+        typeof page === "object" &&
+        Number.isInteger(page.num) &&
+        Number.isInteger(page.gen)
       ) &&
       !(Number.isInteger(page) && page >= 0)
     ) {
       return false;
     }
     const zoom = dest[1];
-    if( !(typeof zoom === "object" && typeof zoom.name === "string") ) 
+    if (!(typeof zoom === "object" && typeof zoom.name === "string")) {
       return false;
-    
+    }
+
     let allowNull = true;
-    switch (zoom.name) 
-    {
+    switch (zoom.name) {
       case "XYZ":
-        if( destLength !== 5 ) return false;
+        if (destLength !== 5) return false;
         break;
       case "Fit":
       case "FitB":
@@ -634,59 +585,63 @@ export class PDFLinkService implements IPDFLinkService
       case "FitBH":
       case "FitV":
       case "FitBV":
-        if( destLength !== 3 ) return false;
+        if (destLength !== 3) return false;
         break;
       case "FitR":
-        if( destLength !== 6 ) return false;
+        if (destLength !== 6) return false;
 
         allowNull = false;
         break;
       default:
         return false;
     }
-    for (let i = 2; i < destLength; i++) 
-    {
+    for (let i = 2; i < destLength; i++) {
       const param = dest[i];
-      if (!(typeof param === "number" || (allowNull && param === null))) 
+      if (!(typeof param === "number" || (allowNull && param === null))) {
         return false;
+      }
     }
     return true;
   }
 }
 
-export class SimpleLinkService implements IPDFLinkService
-{
-  /** @implements */
-  externalLinkTarget:LinkTarget | undefined;
-  /** @implements */
-  externalLinkRel:string | undefined;
-  /** @implements */
+export class SimpleLinkService implements IPDFLinkService {
+  /** @implement */
+  externalLinkTarget: LinkTarget | undefined;
+  /** @implement */
+  externalLinkRel: string | undefined;
+  /** @implement */
   externalLinkEnabled = true;
 
-  /** @implements */
-  get pagesCount() { return 0; }
+  /** @implement */
+  get pagesCount() {
+    return 0;
+  }
 
-  /** @implements */
-  get page() { return 0; }
-  set page( value:number ) {}
+  /** @implement */
+  get page() {
+    return 0;
+  }
+  set page(value: number) {}
 
-  /** @implements */
-  get rotation() { return 0; }
-  set rotation( value:number ) {}
+  /** @implement */
+  get rotation() {
+    return 0;
+  }
+  set rotation(value: number) {}
 
   /**
    * @param dest The named, or explicit, PDF destination.
    */
-  async goToDestination( dest:Destination ) {}
+  async goToDestination(dest: Destination) {}
 
   /**
    * @param val The page number, or page label.
    */
-  goToPage( val:number | string ) {}
+  goToPage(val: number | string) {}
 
-  /** @implements */
-  addLinkAttributes( link:HTMLAnchorElement, url:string, newWindow=false )
-  {
+  /** @implement */
+  addLinkAttributes(link: HTMLAnchorElement, url: string, newWindow = false) {
     addLinkAttributes(link, { url, enabled: this.externalLinkEnabled });
   }
 
@@ -694,38 +649,49 @@ export class SimpleLinkService implements IPDFLinkService
    * @param dest The PDF destination object.
    * @return The hyperlink to the PDF object.
    */
-  getDestinationHash( dest?:Destination ) { return "#"; }
+  getDestinationHash(dest?: Destination) {
+    return "#";
+  }
 
   /**
-   * @implements
+   * @implement
    * @param hash The PDF parameters/hash.
    * @return The hyperlink to the PDF object.
    */
-  getAnchorUrl( hash:string) { return "#"; }
+  getAnchorUrl(hash: string) {
+    return "#";
+  }
 
-  /** @implements */
-  setHash( hash:string ) {}
+  /** @implement */
+  setHash(hash: string) {}
 
-  /** @implements */
-  executeNamedAction( action:string ) {}
+  /** @implement */
+  executeNamedAction(action: string) {}
 
   /**
-   * @implements
+   * @implement
    * @param pageNum page number.
    * @param pageRef reference to the page.
    */
-  cachePageRef( pageNum:number, pageRef:RefProxy | undefined ) {}
+  cachePageRef(pageNum: number, pageRef: RefProxy | undefined) {}
 
-  /** @implements */
-  _cachedPageNumber( pageRef:RefProxy ) { assert(0); return undefined; }
+  /** @implement */
+  _cachedPageNumber(pageRef: RefProxy) {
+    assert(0);
+    return undefined;
+  }
 
-  /** @implements */
-  isPageVisible( pageNumber:number ) { return true; }
+  /** @implement */
+  isPageVisible(pageNumber: number) {
+    return true;
+  }
 
   /**
-   * @implements
+   * @implement
    * @param {number} pageNumber
    */
-  isPageCached(pageNumber:number ) { return true; }
+  isPageCached(pageNumber: number) {
+    return true;
+  }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

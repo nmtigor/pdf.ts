@@ -17,43 +17,38 @@
  * limitations under the License.
  */
 
-import { Dict } from "./primitives.js";
-import { type Chunk, Jbig2Image } from "./jbig2.js";
-import { shadow } from "../shared/util.js";
-import { BaseStream } from "./base_stream.js";
-import { ImageStream } from "./decode_stream.js";
-/*81---------------------------------------------------------------------------*/
+import { shadow } from "../shared/util.ts";
+import { BaseStream } from "./base_stream.ts";
+import { ImageStream } from "./decode_stream.ts";
+import { type Chunk, Jbig2Image } from "./jbig2.ts";
+import { Dict } from "./primitives.ts";
+/*80--------------------------------------------------------------------------*/
 
 /**
  * For JBIG2's we use a library to decode these images and
  * the stream behaves like all the other DecodeStreams.
  */
-export class Jbig2Stream extends ImageStream
-{
-  constructor( stream:BaseStream, maybeLength?:number, params?:Dict )
-  {
-    super( stream, maybeLength, params );
+export class Jbig2Stream extends ImageStream {
+  constructor(stream: BaseStream, maybeLength?: number, params?: Dict) {
+    super(stream, maybeLength, params);
   }
 
-  get bytes()
-  {
+  get bytes() {
     // If `this.maybeLength` is null, we'll get the entire stream.
-    return shadow( this, "bytes", this.stream.getBytes(this.maybeLength) );
+    return shadow(this, "bytes", this.stream.getBytes(this.maybeLength));
   }
 
-  /** @implements */
-  readBlock()
-  {
-    if( this.eof ) return;
-
+  /** @implement */
+  readBlock() {
+    if (this.eof) {
+      return;
+    }
     const jbig2Image = new Jbig2Image();
 
-    const chunks:Chunk[] = [];
-    if( this.params instanceof Dict )
-    {
+    const chunks: Chunk[] = [];
+    if (this.params instanceof Dict) {
       const globalsStream = this.params.get("JBIG2Globals");
-      if( globalsStream instanceof BaseStream )
-      {
+      if (globalsStream instanceof BaseStream) {
         const globals = globalsStream.getBytes();
         chunks.push({ data: globals, start: 0, end: globals.length });
       }
@@ -71,11 +66,10 @@ export class Jbig2Stream extends ImageStream
     this.eof = true;
   }
 
-  override ensureBuffer( requested:number )
-  {
+  override ensureBuffer(requested: number) {
     // No-op, since `this.readBlock` will always parse the entire image and
     // directly insert all of its data into `this.buffer`.
-    return <any>undefined;
+    return <any> undefined;
   }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

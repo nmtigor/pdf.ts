@@ -17,33 +17,269 @@
  * limitations under the License.
  */
 
-import { warn } from "../shared/util.js";
-/*81---------------------------------------------------------------------------*/
+import { warn } from "../shared/util.ts";
+/*80--------------------------------------------------------------------------*/
 
 // Character types for symbols from 0000 to 00FF.
 // Source: ftp://ftp.unicode.org/Public/UNIDATA/UnicodeData.txt
 // prettier-ignore
 const baseTypes = [
-  "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "S", "B", "S",
-  "WS", "B", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN",
-  "BN", "BN", "BN", "BN", "B", "B", "B", "S", "WS", "ON", "ON", "ET",
-  "ET", "ET", "ON", "ON", "ON", "ON", "ON", "ES", "CS", "ES", "CS", "CS",
-  "EN", "EN", "EN", "EN", "EN", "EN", "EN", "EN", "EN", "EN", "CS", "ON",
-  "ON", "ON", "ON", "ON", "ON", "L", "L", "L", "L", "L", "L", "L", "L",
-  "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L",
-  "L", "L", "L", "L", "ON", "ON", "ON", "ON", "ON", "ON", "L", "L", "L",
-  "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L",
-  "L", "L", "L", "L", "L", "L", "L", "L", "L", "ON", "ON", "ON", "ON",
-  "BN", "BN", "BN", "BN", "BN", "BN", "B", "BN", "BN", "BN", "BN", "BN",
-  "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN",
-  "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "CS", "ON", "ET",
-  "ET", "ET", "ET", "ON", "ON", "ON", "ON", "L", "ON", "ON", "BN", "ON",
-  "ON", "ET", "ET", "EN", "EN", "ON", "L", "ON", "ON", "ON", "EN", "L",
-  "ON", "ON", "ON", "ON", "ON", "L", "L", "L", "L", "L", "L", "L", "L",
-  "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L",
-  "L", "ON", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L",
-  "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L",
-  "L", "L", "L", "L", "L", "ON", "L", "L", "L", "L", "L", "L", "L", "L"
+  "BN",
+  "BN",
+  "BN",
+  "BN",
+  "BN",
+  "BN",
+  "BN",
+  "BN",
+  "BN",
+  "S",
+  "B",
+  "S",
+  "WS",
+  "B",
+  "BN",
+  "BN",
+  "BN",
+  "BN",
+  "BN",
+  "BN",
+  "BN",
+  "BN",
+  "BN",
+  "BN",
+  "BN",
+  "BN",
+  "BN",
+  "BN",
+  "B",
+  "B",
+  "B",
+  "S",
+  "WS",
+  "ON",
+  "ON",
+  "ET",
+  "ET",
+  "ET",
+  "ON",
+  "ON",
+  "ON",
+  "ON",
+  "ON",
+  "ES",
+  "CS",
+  "ES",
+  "CS",
+  "CS",
+  "EN",
+  "EN",
+  "EN",
+  "EN",
+  "EN",
+  "EN",
+  "EN",
+  "EN",
+  "EN",
+  "EN",
+  "CS",
+  "ON",
+  "ON",
+  "ON",
+  "ON",
+  "ON",
+  "ON",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "ON",
+  "ON",
+  "ON",
+  "ON",
+  "ON",
+  "ON",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "ON",
+  "ON",
+  "ON",
+  "ON",
+  "BN",
+  "BN",
+  "BN",
+  "BN",
+  "BN",
+  "BN",
+  "B",
+  "BN",
+  "BN",
+  "BN",
+  "BN",
+  "BN",
+  "BN",
+  "BN",
+  "BN",
+  "BN",
+  "BN",
+  "BN",
+  "BN",
+  "BN",
+  "BN",
+  "BN",
+  "BN",
+  "BN",
+  "BN",
+  "BN",
+  "BN",
+  "BN",
+  "BN",
+  "BN",
+  "BN",
+  "BN",
+  "BN",
+  "CS",
+  "ON",
+  "ET",
+  "ET",
+  "ET",
+  "ET",
+  "ON",
+  "ON",
+  "ON",
+  "ON",
+  "L",
+  "ON",
+  "ON",
+  "BN",
+  "ON",
+  "ON",
+  "ET",
+  "ET",
+  "EN",
+  "EN",
+  "ON",
+  "L",
+  "ON",
+  "ON",
+  "ON",
+  "EN",
+  "L",
+  "ON",
+  "ON",
+  "ON",
+  "ON",
+  "ON",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "ON",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "ON",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
+  "L",
 ];
 
 // Character types for symbols from 0600 to 06FF.
@@ -54,59 +290,290 @@ const baseTypes = [
 // empty string is required to properly index the items after it.
 // prettier-ignore
 const arabicTypes = [
-  "AN", "AN", "AN", "AN", "AN", "AN", "ON", "ON", "AL", "ET", "ET", "AL",
-  "CS", "AL", "ON", "ON", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM",
-  "NSM", "NSM", "NSM", "NSM", "AL", "AL", "", "AL", "AL", "AL", "AL", "AL",
-  "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL",
-  "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL",
-  "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL",
-  "AL", "AL", "AL", "AL", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM",
-  "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM",
-  "NSM", "NSM", "NSM", "NSM", "AN", "AN", "AN", "AN", "AN", "AN", "AN",
-  "AN", "AN", "AN", "ET", "AN", "AN", "AL", "AL", "AL", "NSM", "AL", "AL",
-  "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL",
-  "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL",
-  "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL",
-  "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL",
-  "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL",
-  "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL",
-  "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL",
-  "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL",
-  "AL", "AL", "AL", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "AN",
-  "ON", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "AL", "AL", "NSM", "NSM",
-  "ON", "NSM", "NSM", "NSM", "NSM", "AL", "AL", "EN", "EN", "EN", "EN",
-  "EN", "EN", "EN", "EN", "EN", "EN", "AL", "AL", "AL", "AL", "AL", "AL"
+  "AN",
+  "AN",
+  "AN",
+  "AN",
+  "AN",
+  "AN",
+  "ON",
+  "ON",
+  "AL",
+  "ET",
+  "ET",
+  "AL",
+  "CS",
+  "AL",
+  "ON",
+  "ON",
+  "NSM",
+  "NSM",
+  "NSM",
+  "NSM",
+  "NSM",
+  "NSM",
+  "NSM",
+  "NSM",
+  "NSM",
+  "NSM",
+  "NSM",
+  "AL",
+  "AL",
+  "",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "NSM",
+  "NSM",
+  "NSM",
+  "NSM",
+  "NSM",
+  "NSM",
+  "NSM",
+  "NSM",
+  "NSM",
+  "NSM",
+  "NSM",
+  "NSM",
+  "NSM",
+  "NSM",
+  "NSM",
+  "NSM",
+  "NSM",
+  "NSM",
+  "NSM",
+  "NSM",
+  "NSM",
+  "AN",
+  "AN",
+  "AN",
+  "AN",
+  "AN",
+  "AN",
+  "AN",
+  "AN",
+  "AN",
+  "AN",
+  "ET",
+  "AN",
+  "AN",
+  "AL",
+  "AL",
+  "AL",
+  "NSM",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "NSM",
+  "NSM",
+  "NSM",
+  "NSM",
+  "NSM",
+  "NSM",
+  "NSM",
+  "AN",
+  "ON",
+  "NSM",
+  "NSM",
+  "NSM",
+  "NSM",
+  "NSM",
+  "NSM",
+  "AL",
+  "AL",
+  "NSM",
+  "NSM",
+  "ON",
+  "NSM",
+  "NSM",
+  "NSM",
+  "NSM",
+  "AL",
+  "AL",
+  "EN",
+  "EN",
+  "EN",
+  "EN",
+  "EN",
+  "EN",
+  "EN",
+  "EN",
+  "EN",
+  "EN",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
+  "AL",
 ];
 
-function isOdd( i:number ) { return (i & 1) !== 0; }
+function isOdd(i: number) {
+  return (i & 1) !== 0;
+}
 
-function isEven( i:number ) { return (i & 1) === 0; }
+function isEven(i: number) {
+  return (i & 1) === 0;
+}
 
-function findUnequal( arr:string[], start:number, value:string )
-{
+function findUnequal(arr: string[], start: number, value: string) {
   let j = start;
-  for( const jj = arr.length; j < jj; ++j )
-  {
-    if (arr[j] !== value) 
-    {
+  for (const jj = arr.length; j < jj; ++j) {
+    if (arr[j] !== value) {
       return j;
     }
   }
   return j;
 }
 
-function setValues( arr:string[], start:number, end:number, value:string )
-{
-  for( let j = start; j < end; ++j )
-  {
+function setValues(arr: string[], start: number, end: number, value: string) {
+  for (let j = start; j < end; ++j) {
     arr[j] = value;
   }
 }
 
-function reverseValues( arr:string[], start:number, end:number )
-{
-  for( let i = start, j = end - 1; i < j; ++i, --j )
-  {
+function reverseValues(arr: string[], start: number, end: number) {
+  for (let i = start, j = end - 1; i < j; ++i, --j) {
     const temp = arr[i];
     arr[i] = arr[j];
     arr[j] = temp;
@@ -114,21 +581,20 @@ function reverseValues( arr:string[], start:number, end:number )
 }
 
 export type BidiDir = "ltr" | "rtl" | "ttb";
-export interface BidiText
-{
-  str:string;
-  dir:BidiDir;
+export interface BidiText {
+  str: string;
+  dir: BidiDir;
 }
 
-function createBidiText( str:string, isLTR:boolean, vertical=false ):BidiText
-{
-  let dir:BidiDir = "ltr";
-  if (vertical) 
-  {
+function createBidiText(
+  str: string,
+  isLTR: boolean,
+  vertical = false,
+): BidiText {
+  let dir: BidiDir = "ltr";
+  if (vertical) {
     dir = "ttb";
-  } 
-  else if (!isLTR) 
-  {
+  } else if (!isLTR) {
     dir = "rtl";
   }
   return { str, dir };
@@ -136,15 +602,13 @@ function createBidiText( str:string, isLTR:boolean, vertical=false ):BidiText
 
 // These are used in bidi(), which is called frequently. We re-use them on
 // each call to avoid unnecessary allocations.
-const chars:string[] = [];
-const types:string[] = [];
+const chars: string[] = [];
+const types: string[] = [];
 
-export function bidi( str:string, startLevel=-1, vertical=false ):BidiText
-{
+export function bidi(str: string, startLevel = -1, vertical = false): BidiText {
   let isLTR = true;
   const strLength = str.length;
-  if (strLength === 0 || vertical) 
-  {
+  if (strLength === 0 || vertical) {
     return createBidiText(str, isLTR, vertical);
   }
 
@@ -154,34 +618,24 @@ export function bidi( str:string, startLevel=-1, vertical=false ):BidiText
   let numBidi = 0;
 
   let i, ii;
-  for (i = 0; i < strLength; ++i) 
-  {
+  for (i = 0; i < strLength; ++i) {
     chars[i] = str.charAt(i);
 
     const charCode = str.charCodeAt(i);
     let charType = "L";
-    if (charCode <= 0x00ff) 
-    {
+    if (charCode <= 0x00ff) {
       charType = baseTypes[charCode];
-    } 
-    else if (0x0590 <= charCode && charCode <= 0x05f4) 
-    {
+    } else if (0x0590 <= charCode && charCode <= 0x05f4) {
       charType = "R";
-    } 
-    else if (0x0600 <= charCode && charCode <= 0x06ff) 
-    {
+    } else if (0x0600 <= charCode && charCode <= 0x06ff) {
       charType = arabicTypes[charCode & 0xff];
-      if (!charType) 
-      {
+      if (!charType) {
         warn("Bidi: invalid Unicode character " + charCode.toString(16));
       }
-    } 
-    else if (0x0700 <= charCode && charCode <= 0x08ac) 
-    {
+    } else if (0x0700 <= charCode && charCode <= 0x08ac) {
       charType = "AL";
     }
-    if (charType === "R" || charType === "AL" || charType === "AN") 
-    {
+    if (charType === "R" || charType === "AL" || charType === "AN") {
       numBidi++;
     }
     types[i] = charType;
@@ -192,28 +646,23 @@ export function bidi( str:string, startLevel=-1, vertical=false ):BidiText
   // - If less than 30% chars are rtl then string is primarily ltr,
   //   unless the string is very short.
   // - If more than 30% chars are rtl then string is primarily rtl
-  if (numBidi === 0) 
-  {
+  if (numBidi === 0) {
     isLTR = true;
     return createBidiText(str, isLTR);
   }
 
-  if (startLevel === -1) 
-  {
-    if (numBidi / strLength < 0.3 && strLength > 4) 
-    {
+  if (startLevel === -1) {
+    if (numBidi / strLength < 0.3 && strLength > 4) {
       isLTR = true;
       startLevel = 0;
-    } 
-    else {
+    } else {
       isLTR = false;
       startLevel = 1;
     }
   }
 
   const levels = [];
-  for (i = 0; i < strLength; ++i) 
-  {
+  for (i = 0; i < strLength; ++i) {
     levels[i] = startLevel;
   }
 
@@ -230,13 +679,10 @@ export function bidi( str:string, startLevel=-1, vertical=false ):BidiText
    start of the level run, it will get the type of sor.
    */
   let lastType = sor;
-  for (i = 0; i < strLength; ++i) 
-  {
-    if (types[i] === "NSM") 
-    {
+  for (i = 0; i < strLength; ++i) {
+    if (types[i] === "NSM") {
       types[i] = lastType;
-    } 
-    else {
+    } else {
       lastType = types[i];
     }
   }
@@ -248,15 +694,11 @@ export function bidi( str:string, startLevel=-1, vertical=false ):BidiText
    */
   lastType = sor;
   let t;
-  for (i = 0; i < strLength; ++i) 
-  {
+  for (i = 0; i < strLength; ++i) {
     t = types[i];
-    if (t === "EN") 
-    {
+    if (t === "EN") {
       types[i] = lastType === "AL" ? "AN" : "EN";
-    } 
-    else if (t === "R" || t === "L" || t === "AL") 
-    {
+    } else if (t === "R" || t === "L" || t === "AL") {
       lastType = t;
     }
   }
@@ -264,11 +706,9 @@ export function bidi( str:string, startLevel=-1, vertical=false ):BidiText
   /*
    W3. Change all ALs to R.
    */
-  for (i = 0; i < strLength; ++i) 
-  {
+  for (i = 0; i < strLength; ++i) {
     t = types[i];
-    if (t === "AL") 
-    {
+    if (t === "AL") {
       types[i] = "R";
     }
   }
@@ -278,10 +718,8 @@ export function bidi( str:string, startLevel=-1, vertical=false ):BidiText
    European number. A single common separator between two numbers of the same
    type changes to that type:
    */
-  for (i = 1; i < strLength - 1; ++i) 
-  {
-    if (types[i] === "ES" && types[i - 1] === "EN" && types[i + 1] === "EN") 
-    {
+  for (i = 1; i < strLength - 1; ++i) {
+    if (types[i] === "ES" && types[i - 1] === "EN" && types[i + 1] === "EN") {
       types[i] = "EN";
     }
     if (
@@ -297,24 +735,18 @@ export function bidi( str:string, startLevel=-1, vertical=false ):BidiText
    W5. A sequence of European terminators adjacent to European numbers changes
    to all European numbers:
    */
-  for (i = 0; i < strLength; ++i) 
-  {
-    if (types[i] === "EN") 
-    {
+  for (i = 0; i < strLength; ++i) {
+    if (types[i] === "EN") {
       // do before
-      for( let j = i - 1; j >= 0; --j )
-      {
-        if (types[j] !== "ET") 
-        {
+      for (let j = i - 1; j >= 0; --j) {
+        if (types[j] !== "ET") {
           break;
         }
         types[j] = "EN";
       }
       // do after
-      for( let j = i + 1; j < strLength; ++j )
-      {
-        if (types[j] !== "ET") 
-        {
+      for (let j = i + 1; j < strLength; ++j) {
+        if (types[j] !== "ET") {
           break;
         }
         types[j] = "EN";
@@ -325,11 +757,9 @@ export function bidi( str:string, startLevel=-1, vertical=false ):BidiText
   /*
    W6. Otherwise, separators and terminators change to Other Neutral:
    */
-  for (i = 0; i < strLength; ++i) 
-  {
+  for (i = 0; i < strLength; ++i) {
     t = types[i];
-    if (t === "WS" || t === "ES" || t === "ET" || t === "CS") 
-    {
+    if (t === "WS" || t === "ES" || t === "ET" || t === "CS") {
       types[i] = "ON";
     }
   }
@@ -340,15 +770,11 @@ export function bidi( str:string, startLevel=-1, vertical=false ):BidiText
    the type of the European number to L.
    */
   lastType = sor;
-  for (i = 0; i < strLength; ++i) 
-  {
+  for (i = 0; i < strLength; ++i) {
     t = types[i];
-    if (t === "EN") 
-    {
+    if (t === "EN") {
       types[i] = lastType === "L" ? "L" : "EN";
-    } 
-    else if (t === "R" || t === "L") 
-    {
+    } else if (t === "R" || t === "L") {
       lastType = t;
     }
   }
@@ -359,32 +785,25 @@ export function bidi( str:string, startLevel=-1, vertical=false ):BidiText
    numbers are treated as though they were R. Start-of-level-run (sor) and
    end-of-level-run (eor) are used at level run boundaries.
    */
-  for (i = 0; i < strLength; ++i) 
-  {
-    if (types[i] === "ON") 
-    {
+  for (i = 0; i < strLength; ++i) {
+    if (types[i] === "ON") {
       const end = findUnequal(types, i + 1, "ON");
       let before = sor;
-      if (i > 0) 
-      {
+      if (i > 0) {
         before = types[i - 1];
       }
 
       let after = eor;
-      if (end + 1 < strLength) 
-      {
+      if (end + 1 < strLength) {
         after = types[end + 1];
       }
-      if (before !== "L") 
-      {
+      if (before !== "L") {
         before = "R";
       }
-      if (after !== "L") 
-      {
+      if (after !== "L") {
         after = "R";
       }
-      if (before === after) 
-      {
+      if (before === after) {
         setValues(types, i, end, before);
       }
       i = end - 1; // reset to end (-1 so next iteration is ok)
@@ -394,10 +813,8 @@ export function bidi( str:string, startLevel=-1, vertical=false ):BidiText
   /*
    N2. Any remaining neutrals take the embedding direction.
    */
-  for (i = 0; i < strLength; ++i) 
-  {
-    if (types[i] === "ON") 
-    {
+  for (i = 0; i < strLength; ++i) {
+    if (types[i] === "ON") {
       types[i] = e;
     }
   }
@@ -409,24 +826,17 @@ export function bidi( str:string, startLevel=-1, vertical=false ):BidiText
    I2. For all characters with an odd (right-to-left) embedding direction,
    those of type L, EN or AN go up one level.
    */
-  for (i = 0; i < strLength; ++i) 
-  {
+  for (i = 0; i < strLength; ++i) {
     t = types[i];
-    if (isEven(levels[i])) 
-    {
-      if (t === "R") 
-      {
+    if (isEven(levels[i])) {
+      if (t === "R") {
         levels[i] += 1;
-      } 
-      else if (t === "AN" || t === "EN") 
-      {
+      } else if (t === "AN" || t === "EN") {
         levels[i] += 2;
       }
-    } 
-    else {
+    } else {
       // isOdd
-      if (t === "L" || t === "AN" || t === "EN") 
-      {
+      if (t === "L" || t === "AN" || t === "EN") {
         levels[i] += 1;
       }
     }
@@ -455,41 +865,31 @@ export function bidi( str:string, startLevel=-1, vertical=false ):BidiText
   let highestLevel = -1;
   let lowestOddLevel = 99;
   let level;
-  for (i = 0, ii = levels.length; i < ii; ++i) 
-  {
+  for (i = 0, ii = levels.length; i < ii; ++i) {
     level = levels[i];
-    if (highestLevel < level) 
-    {
+    if (highestLevel < level) {
       highestLevel = level;
     }
-    if (lowestOddLevel > level && isOdd(level)) 
-    {
+    if (lowestOddLevel > level && isOdd(level)) {
       lowestOddLevel = level;
     }
   }
 
   // now reverse between those limits
-  for (level = highestLevel; level >= lowestOddLevel; --level) 
-  {
+  for (level = highestLevel; level >= lowestOddLevel; --level) {
     // find segments to reverse
     let start = -1;
-    for (i = 0, ii = levels.length; i < ii; ++i) 
-    {
-      if (levels[i] < level) 
-      {
-        if (start >= 0) 
-        {
+    for (i = 0, ii = levels.length; i < ii; ++i) {
+      if (levels[i] < level) {
+        if (start >= 0) {
           reverseValues(chars, start, i);
           start = -1;
         }
-      } 
-      else if (start < 0) 
-      {
+      } else if (start < 0) {
         start = i;
       }
     }
-    if (start >= 0) 
-    {
+    if (start >= 0) {
       reverseValues(chars, start, levels.length);
     }
   }
@@ -512,14 +912,12 @@ export function bidi( str:string, startLevel=-1, vertical=false ):BidiText
   // don't mirror as characters are already mirrored in the pdf
 
   // Finally, return string
-  for (i = 0, ii = chars.length; i < ii; ++i) 
-  {
+  for (i = 0, ii = chars.length; i < ii; ++i) {
     const ch = chars[i];
-    if (ch === "<" || ch === ">") 
-    {
+    if (ch === "<" || ch === ">") {
       chars[i] = "";
     }
   }
   return createBidiText(chars.join(""), isLTR);
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/

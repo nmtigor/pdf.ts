@@ -17,58 +17,58 @@
  * limitations under the License.
  */
 
-import { type AnnotStorageRecord } from "../../display/annotation_layer.js";
-import { warn, type rect_t } from "../../shared/util.js";
-import { type XFAData } from "../document.js";
-import { ErrorFont, Font } from "../fonts.js";
-import { type XFAElObj, type XFAHTMLObj } from "./alias.js";
-import { Binder } from "./bind.js";
-import { DataHandler } from "./data.js";
-import { FontFinder } from "./fonts.js";
-import { XFAParser } from "./parser.js";
-import { Template } from "./template.js";
-import { HTMLResult, stripQuotes } from "./utils.js";
+import { type AnnotStorageRecord } from "../../display/annotation_layer.ts";
+import { type rect_t, warn } from "../../shared/util.ts";
+import { type XFAData } from "../document.ts";
+import { ErrorFont, Font } from "../fonts.ts";
+import { XFAHTMLAttrs, type XFAElObj, type XFAHTMLObj } from "./alias.ts";
+import { Binder } from "./bind.ts";
+import { DataHandler } from "./data.ts";
+import { FontFinder } from "./fonts.ts";
+import { XFAParser } from "./parser.ts";
+import { Template } from "./template.ts";
+import { HTMLResult, stripQuotes } from "./utils.ts";
 import {
   $appendChild,
   $globalData,
   $nodeName,
   $text,
   $toHTML,
-  $toPages
-} from "./xfa_object.js";
-import { XhtmlNamespace } from "./xhtml.js";
-/*81---------------------------------------------------------------------------*/
+  $toPages,
+} from "./xfa_object.ts";
+import { XhtmlNamespace } from "./xhtml.ts";
+/*80--------------------------------------------------------------------------*/
 
-export interface XFAPages
-{
-  name:string;
-  children:XFAElObj[];
+export interface XFAPages {
+  xfaName: string;
+  name: string;
+  children: XFAHTMLObj[];
+  attributes?:XFAHTMLAttrs;
 }
 
-export class XFAFactory
-{
+export class XFAFactory {
   root;
-  form!:Template;
+  form!: Template;
   dataHandler;
 
-  pages:XFAPages | undefined;
-  dims!:rect_t[];
+  pages: XFAPages | undefined;
+  dims!: rect_t[];
 
-  constructor( data:XFAData )
-  {
+  constructor(data: XFAData) {
     try {
-      this.root = new XFAParser().parse( <string>XFAFactory._createDocument(data) )!;
-      const binder = new Binder( this.root );
+      this.root = new XFAParser().parse(
+        XFAFactory._createDocument(data) as string,
+      )!;
+      const binder = new Binder(this.root);
       this.form = binder.bind();
-      this.dataHandler = new DataHandler( this.root, binder.getData() );
+      this.dataHandler = new DataHandler(this.root, binder.getData());
       this.form[$globalData]!.template = this.form;
-    } catch( e ) {
+    } catch (e) {
       warn(`XFA - an error occurred during parsing and binding: ${e}`);
     }
   }
 
-  isValid() 
-  {
+  isValid() {
     return !!this.root && !!this.form;
   }
 
@@ -76,18 +76,15 @@ export class XFAFactory
    * In order to avoid to block the event loop, the conversion
    * into pages is made asynchronously.
    */
-  _createPagesHelper() 
-  {
+  _createPagesHelper() {
     const iterator = this.form[$toPages]();
-    return new Promise<XFAPages>(( resolve, reject ) => {
+    return new Promise<XFAPages>((resolve, reject) => {
       const nextIteration = () => {
         try {
           const value = iterator.next();
-          if (value.done) 
-          {
-            resolve( <XFAPages>value.value );
-          } 
-          else {
+          if (value.done) {
+            resolve(value.value as XFAPages);
+          } else {
             setTimeout(nextIteration, 0);
           }
         } catch (e) {
@@ -98,69 +95,57 @@ export class XFAFactory
     });
   }
 
-  async _createPages()
-  {
+  async _createPages() {
     try {
       this.pages = await this._createPagesHelper();
-      this.dims = this.pages!.children!.map( c => {
+      this.dims = this.pages!.children!.map((c) => {
         const { width, height } = c.attributes!.style!;
-        return <rect_t>[0, 0, parseInt(width!), parseInt(height!)];
+        return [0, 0, parseInt(width!), parseInt(height!)] as rect_t;
       });
     } catch (e) {
       warn(`XFA - an error occurred during layout: ${e}`);
     }
   }
 
-  getBoundingBox( pageIndex:number ) 
-  {
+  getBoundingBox(pageIndex: number) {
     return this.dims[pageIndex];
   }
 
-  async getNumPages() 
-  {
-    if( !this.pages )
-    {
+  async getNumPages() {
+    if (!this.pages) {
       await this._createPages();
     }
     return this.dims.length;
   }
 
-  setImages( images:Map<string, Uint8Array | Uint8ClampedArray> )
-  {
+  setImages(images: Map<string, Uint8Array | Uint8ClampedArray>) {
     this.form![$globalData]!.images = images;
   }
 
-  setFonts( fonts:(Font | ErrorFont)[] )
-  {
+  setFonts(fonts: (Font | ErrorFont)[]) {
     this.form![$globalData]!.fontFinder = new FontFinder(fonts);
     const missingFonts = [];
-    for( let typeface of this.form![$globalData]!.usedTypefaces )
-    {
+    for (let typeface of this.form![$globalData]!.usedTypefaces) {
       typeface = stripQuotes(typeface);
       const font = this.form![$globalData]!.fontFinder!.find(typeface);
-      if( !font )
-      {
+      if (!font) {
         missingFonts.push(typeface);
       }
     }
 
-    if (missingFonts.length > 0) 
-    {
+    if (missingFonts.length > 0) {
       return missingFonts;
     }
 
     return undefined;
   }
 
-  appendFonts( fonts:(Font | ErrorFont)[], reallyMissingFonts:Set<string> )
-  {
-    this.form![$globalData]!.fontFinder!.add( fonts, reallyMissingFonts );
+  appendFonts(fonts: (Font | ErrorFont)[], reallyMissingFonts: Set<string>) {
+    this.form![$globalData]!.fontFinder!.add(fonts, reallyMissingFonts);
   }
 
-  async getPages()
-  {
-    if( !this.pages )
-    {
+  async getPages() {
+    if (!this.pages) {
       await this._createPages();
     }
     const pages = this.pages!;
@@ -168,53 +153,48 @@ export class XFAFactory
     return pages;
   }
 
-  serializeData( storage:AnnotStorageRecord | undefined ) 
-  {
-    return this.dataHandler!.serialize( storage );
+  serializeData(storage: AnnotStorageRecord | undefined) {
+    return this.dataHandler!.serialize(storage);
   }
 
-  static _createDocument( data:XFAData )
-  {
-    if( !data["/xdp:xdp"] )
+  static _createDocument(data: XFAData) {
+    if (!data["/xdp:xdp"]) {
       return data["xdp:xdp"];
+    }
     return Object.values(data).join("");
   }
 
-  static getRichTextAsHtml( rc:string ) 
-  {
-    if( !rc || typeof rc !== "string" ) return undefined;
+  static getRichTextAsHtml(rc: string) {
+    if (!rc || typeof rc !== "string") return undefined;
 
     try {
-      let root = new XFAParser( XhtmlNamespace, /* richText */ true ).parse(rc)!;
-      if (!["body", "xhtml"].includes( root[$nodeName]) )
-      {
+      let root = new XFAParser(XhtmlNamespace, /* richText */ true).parse(rc)!;
+      if (!["body", "xhtml"].includes(root[$nodeName])) {
         // No body, so create one.
         const newRoot = XhtmlNamespace.body({});
-        newRoot[$appendChild]( root );
+        newRoot[$appendChild](root);
         root = newRoot;
       }
 
-      const result = <HTMLResult>root[$toHTML]();
-      if( !result.success ) return undefined;
+      const result = <HTMLResult> root[$toHTML]();
+      if (!result.success) return undefined;
 
       const { html } = result;
-      const { attributes } = <XFAHTMLObj>html;
-      if( attributes )
-      {
-        if (attributes.class) 
-        {
+      const { attributes } = <XFAHTMLObj> html;
+      if (attributes) {
+        if (attributes.class) {
           attributes.class = attributes.class.filter(
-            attr => !attr.startsWith("xfa")
+            (attr) => !attr.startsWith("xfa"),
           );
         }
         attributes.dir = "auto";
       }
 
-      return { html: <XFAHTMLObj>html, str: root[$text]() };
+      return { html: <XFAHTMLObj> html, str: root[$text]() };
     } catch (e) {
       warn(`XFA - an error occurred during parsing of rich text: ${e}`);
     }
     return undefined;
   }
 }
-/*81---------------------------------------------------------------------------*/
+/*80--------------------------------------------------------------------------*/
