@@ -995,7 +995,7 @@ export class AnnotationEditorUIManager {
       return;
     }
 
-    // if( this.#selectEditors.size === 0) //kkkk bug? ✅ 
+    // if( this.#selectEditors.size === 0) //kkkk bug? ✅
     if (this.#selectedEditors.size === 0) {
       return;
     }

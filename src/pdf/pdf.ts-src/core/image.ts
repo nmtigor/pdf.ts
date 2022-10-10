@@ -26,7 +26,7 @@ import {
   FormatError,
   ImageKind,
   info,
-  warn
+  warn,
 } from "../shared/util.ts";
 import { BaseStream } from "./base_stream.ts";
 import { ColorSpace, type CS } from "./colorspace.ts";

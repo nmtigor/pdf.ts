@@ -795,7 +795,7 @@ export abstract class XFAObject {
     return <T> clone;
   }
 
-  [$getChildren](name?: string):XFAObject[] {
+  [$getChildren](name?: string): XFAObject[] {
     if (!name) {
       return this[_children];
     }
@@ -1049,7 +1049,7 @@ export class XmlObject extends XFAObject {
     return HTMLResult.EMPTY;
   }
 
-  override [$getChildren](name?: string):XmlObject[] {
+  override [$getChildren](name?: string): XmlObject[] {
     if (!name) {
       return this[_children];
     }

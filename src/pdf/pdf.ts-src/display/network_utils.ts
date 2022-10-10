@@ -22,7 +22,7 @@ import { HttpStatusCode } from "../../../lib/HttpStatusCode.ts";
 import { assert } from "../../../lib/util/trace.ts";
 import {
   MissingPDFException,
-  UnexpectedResponseException
+  UnexpectedResponseException,
 } from "../shared/util.ts";
 import { getFilenameFromContentDispositionHeader } from "./content_disposition.ts";
 import { isPdfFile } from "./display_utils.ts";

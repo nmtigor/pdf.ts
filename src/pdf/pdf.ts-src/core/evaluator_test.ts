@@ -52,7 +52,7 @@ describe("evaluator", () => {
   }
 
   class ResourcesMock {
-    [name: string]: unknown
+    [name: string]: unknown;
 
     get(name: string) {
       return this[name];

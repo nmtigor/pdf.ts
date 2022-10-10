@@ -21,7 +21,8 @@ import { _PDFDEV } from "../../../global.ts";
 import { Constructor, type TupleOf } from "../../../lib/alias.ts";
 import { assert } from "../../../lib/util/trace.ts";
 import {
-  AnnotStorageValue, type AnnotStorageRecord
+  type AnnotStorageRecord,
+  AnnotStorageValue,
 } from "../display/annotation_layer.ts";
 import { DocWrapped, FieldWrapped } from "../scripting_api/app.ts";
 import { SendData } from "../scripting_api/pdf_object.ts";
@@ -38,29 +39,36 @@ import {
   IDENTITY_MATRIX,
   isAscii,
   LINE_DESCENT_FACTOR,
-  LINE_FACTOR, OPS,
-  point_t, RenderingIntentFlag,
+  LINE_FACTOR,
+  type matrix_t,
+  OPS,
+  point_t,
+  type rect_t,
+  RenderingIntentFlag,
   shadow,
   stringToPDFString,
   stringToUTF16BEString,
   stringToUTF8String,
   Util,
-  warn, type matrix_t, type rect_t
+  warn,
 } from "../shared/util.ts";
 import { BaseStream } from "./base_stream.ts";
 import { bidi, type BidiText } from "./bidi.ts";
 import { Catalog, type CatParseDestDictRes } from "./catalog.ts";
 import { ColorSpace } from "./colorspace.ts";
 import {
+  type AnnotActions,
   collectActions,
   getInheritableProperty,
-  numberToString, type AnnotActions
+  numberToString,
 } from "./core_utils.ts";
 import { CipherTransform } from "./crypto.ts";
 import { DatasetReader } from "./dataset_reader.ts";
 import {
-  createDefaultAppearance, getPdfColor,
-  parseDefaultAppearance, type DefaultAppearanceData
+  createDefaultAppearance,
+  type DefaultAppearanceData,
+  getPdfColor,
+  parseDefaultAppearance,
 } from "./default_appearance.ts";
 import { type LocalIdFactory } from "./document.ts";
 import { EvalState, PartialEvaluator } from "./evaluator.ts";
@@ -69,7 +77,7 @@ import { ErrorFont, Font, Glyph } from "./fonts.ts";
 import { ObjectLoader } from "./object_loader.ts";
 import { OperatorList } from "./operator_list.ts";
 import { BasePdfManager } from "./pdf_manager.ts";
-import { Dict, Name, Ref, RefSet, type Obj } from "./primitives.ts";
+import { Dict, Name, type Obj, Ref, RefSet } from "./primitives.ts";
 import { StringStream } from "./stream.ts";
 import { WorkerTask } from "./worker.ts";
 import { writeDict, writeObject } from "./writer.ts";

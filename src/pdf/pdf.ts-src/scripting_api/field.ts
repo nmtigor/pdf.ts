@@ -596,10 +596,10 @@ export class Field extends PDFObject<SendFieldData> {
       return;
     }
     if (!(cTrigger in this._actions)) {
-      // this._actions[cTrigger] = []; //kkkk bug? ✅ 
+      // this._actions[cTrigger] = []; //kkkk bug? ✅
       this._actions.set(cTrigger, []);
     }
-    // this._actions[cTrigger].push( cScript); //kkkk bug? ✅ 
+    // this._actions[cTrigger].push( cScript); //kkkk bug? ✅
     this._actions.get(cTrigger)!.push(cScript);
   }
 

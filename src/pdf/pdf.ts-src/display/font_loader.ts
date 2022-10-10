@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-import { CHROME, MOZCENTRAL, _PDFDEV } from "../../../global.ts";
+import { _PDFDEV, CHROME, MOZCENTRAL } from "../../../global.ts";
 import { html } from "../../../lib/dom.ts";
 import { assert } from "../../../lib/util/trace.ts";
 import { FontExpotDataEx } from "../core/fonts.ts";
@@ -28,7 +28,7 @@ import {
   shadow,
   string32,
   UNSUPPORTED_FEATURES,
-  warn
+  warn,
 } from "../shared/util.ts";
 import { PDFObjects } from "./api.ts";
 /*80--------------------------------------------------------------------------*/
@@ -65,9 +65,7 @@ abstract class BaseFontLoader {
     this._onUnsupportedFeature = onUnsupportedFeature;
     this._document = ownerDocument;
 
-    this.styleElement = _PDFDEV /*#static*/
-      ? styleElement
-      : undefined;
+    this.styleElement = _PDFDEV /*#static*/ ? styleElement : undefined;
   }
 
   addNativeFontFace(nativeFontFace: FontFace) {

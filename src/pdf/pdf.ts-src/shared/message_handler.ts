@@ -48,10 +48,10 @@ import { type ShadingPatternIR } from "../core/pattern.ts";
 import { type XFAElObj } from "../core/xfa/alias.ts";
 import { type AnnotStorageRecord } from "../display/annotation_layer.ts";
 import {
-  StructTreeNode,
   type OutlineNode,
   type PDFDocumentStats,
   type RefProxy,
+  StructTreeNode,
 } from "../display/api.ts";
 import { type CMapData } from "../display/base_factory.ts";
 import { VerbosityLevel } from "../pdf.ts";

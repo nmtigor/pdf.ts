@@ -213,7 +213,7 @@ export class App extends PDFObject<SendAppData> {
     this._timeoutCallbackId = 0;
     this._globalEval = data.globalEval;
     this._externalCall = data.externalCall;
-    // this._document = data._document; //kkkk bug? ✅ 
+    // this._document = data._document; //kkkk bug? ✅
   }
 
   // This function is called thanks to the proxy

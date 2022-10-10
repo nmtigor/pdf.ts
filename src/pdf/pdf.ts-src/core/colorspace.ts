@@ -22,12 +22,14 @@ import { type TypedArray } from "../../../lib/alias.ts";
 import { assert } from "../../../lib/util/trace.ts";
 import {
   FormatError,
-  info, shadow,
-  warn, type rect_t
+  info,
+  type rect_t,
+  shadow,
+  warn,
 } from "../shared/util.ts";
 import { BaseStream } from "./base_stream.ts";
 import { MissingDataException } from "./core_utils.ts";
-import { PDFFunctionFactory, type ParsedFunction } from "./function.ts";
+import { type ParsedFunction, PDFFunctionFactory } from "./function.ts";
 import { LocalColorSpaceCache } from "./image_utils.ts";
 import { Dict, Name, Ref } from "./primitives.ts";
 import { XRef } from "./xref.ts";

@@ -215,7 +215,7 @@ namespace NsJbig2Image {
     getContexts: (id: string) => Int8Array;
   };
   class ContextCache {
-    [id: string]: Int8Array | ((id: string) => Int8Array)
+    [id: string]: Int8Array | ((id: string) => Int8Array);
 
     getContexts(id: string): Int8Array {
       if (id in this) {

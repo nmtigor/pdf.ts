@@ -22,7 +22,7 @@
 // eslint-disable-next-line max-len
 /** @typedef {import("./pdf_thumbnail_viewer").PDFThumbnailViewer} PDFThumbnailViewer */
 
-import { global, PDFTS_vv, _INFO } from "../../global.ts";
+import { _INFO, global, PDFTS_vv } from "../../global.ts";
 import { RenderingCancelledException } from "../pdf.ts-src/pdf.ts";
 import { BaseViewer } from "./base_viewer.ts";
 import { type IRenderableView, type IVisibleView } from "./interfaces.ts";

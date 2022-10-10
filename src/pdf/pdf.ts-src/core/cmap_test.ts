@@ -21,18 +21,18 @@ import {
   assert,
   assertEquals,
   assertNotEquals,
-  assertThrows
+  assertThrows,
 } from "https://deno.land/std@0.154.0/testing/asserts.ts";
 import {
   afterAll,
   beforeAll,
   describe,
-  it
+  it,
 } from "https://deno.land/std@0.154.0/testing/bdd.ts";
 import { DefaultCMapReaderFactory } from "../display/api.ts";
 import { CMapData } from "../display/base_factory.ts";
 import { CMAP_PARAMS } from "../shared/test_utils.ts";
-import { CMap, CMapFactory, IdentityCMap, type CharCodeOut } from "./cmap.ts";
+import { type CharCodeOut, CMap, CMapFactory, IdentityCMap } from "./cmap.ts";
 import { Name } from "./primitives.ts";
 import { StringStream } from "./stream.ts";
 /*80--------------------------------------------------------------------------*/

@@ -269,7 +269,11 @@ export class SVGViewbox<CI extends CooInterface = CooInterface>
 /*80--------------------------------------------------------------------------*/
 
 export type MooEq<T extends {} | null> = (a: T, b: T) => boolean;
-export type MooHandler<T extends {} | null, D = any> = (newval: T, oldval?: T, data?: D) => void;
+export type MooHandler<T extends {} | null, D = any> = (
+  newval: T,
+  oldval?: T,
+  data?: D,
+) => void;
 
 // type IndexedMooHandler< T > = [ uint, MooHandler<T> ];
 // type SortedIndexedMooHandler< T > = SortedArray< IndexedMooHandler<T> >;

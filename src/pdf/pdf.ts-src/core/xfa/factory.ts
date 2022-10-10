@@ -21,7 +21,7 @@ import { type AnnotStorageRecord } from "../../display/annotation_layer.ts";
 import { type rect_t, warn } from "../../shared/util.ts";
 import { type XFAData } from "../document.ts";
 import { ErrorFont, Font } from "../fonts.ts";
-import { XFAHTMLAttrs, type XFAElObj, type XFAHTMLObj } from "./alias.ts";
+import { type XFAElObj, XFAHTMLAttrs, type XFAHTMLObj } from "./alias.ts";
 import { Binder } from "./bind.ts";
 import { DataHandler } from "./data.ts";
 import { FontFinder } from "./fonts.ts";
@@ -43,7 +43,7 @@ export interface XFAPages {
   xfaName: string;
   name: string;
   children: XFAHTMLObj[];
-  attributes?:XFAHTMLAttrs;
+  attributes?: XFAHTMLAttrs;
 }
 
 export class XFAFactory {

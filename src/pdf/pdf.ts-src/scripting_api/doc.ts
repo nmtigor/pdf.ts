@@ -1169,7 +1169,7 @@ export class Doc extends PDFObject<_SendDocData> {
 
   resetForm(aFields?: string[] | { aFields: string[] }) {
     // Handle the case resetForm({ aFields: ... })
-    // if( aFields && typeof aFields === "object") //kkkk bug? ✅ 
+    // if( aFields && typeof aFields === "object") //kkkk bug? ✅
     if (aFields && !Array.isArray(aFields)) {
       aFields = aFields.aFields;
     }

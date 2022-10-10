@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-import { stringToBytes, Util, warn, type rect_t } from "../../shared/util.ts";
+import { type rect_t, stringToBytes, Util, warn } from "../../shared/util.ts";
 import { recoverJsURL } from "../core_utils.ts";
 import {
   type AvailableSpace,
@@ -33,7 +33,7 @@ import {
   type XFAStyleData,
   type XFASVGAttrs,
   type XFASVGObj,
-  type XFAValue
+  type XFAValue,
 } from "./alias.ts";
 import { Builder } from "./builder.ts";
 import { getMetrics } from "./fonts.ts";
@@ -52,13 +52,13 @@ import {
   setMinMaxDimensions,
   setPara,
   toStyle,
-  type XFALayoutMode
+  type XFALayoutMode,
 } from "./html_utils.ts";
 import {
   addHTML,
   checkDimensions,
   flushHTML,
-  getAvailableSpace
+  getAvailableSpace,
 } from "./layout.ts";
 import { $buildXFAObject, NamespaceIds } from "./namespaces.ts";
 import { searchNode } from "./som.ts";
@@ -73,7 +73,7 @@ import {
   getRelevant,
   getStringOption,
   HTMLResult,
-  type XFAColor
+  type XFAColor,
 } from "./utils.ts";
 import {
   $acceptWhitespace,
@@ -126,7 +126,7 @@ import {
   StringObject,
   XFAObject,
   XFAObjectArray,
-  XmlObject
+  XmlObject,
 } from "./xfa_object.ts";
 import { XhtmlObject } from "./xhtml.ts";
 /*80--------------------------------------------------------------------------*/
@@ -3819,7 +3819,7 @@ class Image extends StringObject {
         class: ["xfaImage"],
         style,
         src: URL.createObjectURL(blob),
-        alt: parent ? ariaLabel( parent[$getParent]()as Field) : undefined,
+        alt: parent ? ariaLabel(parent[$getParent]() as Field) : undefined,
       },
     });
   }

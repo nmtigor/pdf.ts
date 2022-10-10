@@ -24,7 +24,7 @@ import {
   FormatError,
   info,
   InvalidPDFException,
-  warn
+  warn,
 } from "../shared/util.ts";
 import { BaseStream } from "./base_stream.ts";
 import { ChunkedStream } from "./chunked_stream.ts";
@@ -33,7 +33,7 @@ import {
   MissingDataException,
   ParserEOFException,
   XRefEntryException,
-  XRefParseException
+  XRefParseException,
 } from "./core_utils.ts";
 import { CipherTransformFactory } from "./crypto.ts";
 import { Lexer, Parser } from "./parser.ts";
@@ -42,9 +42,11 @@ import {
   CIRCULAR_REF,
   Cmd,
   Dict,
-  isCmd, Ref,
-  RefSet, type Obj,
-  type ObjNoRef
+  isCmd,
+  type Obj,
+  type ObjNoRef,
+  Ref,
+  RefSet,
 } from "./primitives.ts";
 import { Stream } from "./stream.ts";
 /*80--------------------------------------------------------------------------*/
