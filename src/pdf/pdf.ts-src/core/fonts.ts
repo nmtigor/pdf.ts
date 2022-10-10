@@ -20,15 +20,22 @@
 import { _PDFDEV } from "../../../global.ts";
 import { assert } from "../../../lib/util/trace.ts";
 import {
-  bytesToString, FontType, FONT_IDENTITY_MATRIX, FormatError,
-  info, point_t, shadow,
+  bytesToString,
+  FONT_IDENTITY_MATRIX,
+  FontType,
+  FormatError,
+  info,
+  type matrix_t,
+  point_t,
+  type rect_t,
+  shadow,
   string32,
-  warn, type matrix_t, type rect_t
+  warn,
 } from "../shared/util.ts";
 import { BaseStream } from "./base_stream.ts";
 import { CFFFont } from "./cff_font.ts";
 import { CFFCompiler, CFFParser } from "./cff_parser.ts";
-import { CMap, IdentityCMap, type CharCodeOut } from "./cmap.ts";
+import { type CharCodeOut, CMap, IdentityCMap } from "./cmap.ts";
 import { readUint32 } from "./core_utils.ts";
 import { type CssFontInfo } from "./document.ts";
 import {
@@ -36,27 +43,29 @@ import {
   MacRomanEncoding,
   StandardEncoding,
   SymbolSetEncoding,
-  ZapfDingbatsEncoding
+  ZapfDingbatsEncoding,
 } from "./encodings.ts";
 import {
   type FontfileType,
   type FontProps,
-  type VMetric
+  type VMetric,
 } from "./evaluator.ts";
 import {
   FontFlags,
   getFontType,
   MacStandardGlyphOrdering,
   recoverGlyphName,
-  SEAC_ANALYSIS_ENABLED
+  SEAC_ANALYSIS_ENABLED,
 } from "./fonts_utils.ts";
 import { FontRendererFactory } from "./font_renderer.ts";
 import { GlyfTable } from "./glyf.ts";
 import { getDingbatsGlyphsUnicode, getGlyphsUnicode } from "./glyphlist.ts";
 import { getFontBasicMetrics } from "./metrics.ts";
 import {
-  OpenTypeFileBuilder, VALID_TABLES, type OTTable,
-  type OTTag
+  OpenTypeFileBuilder,
+  type OTTable,
+  type OTTag,
+  VALID_TABLES,
 } from "./opentype_file_builder.ts";
 import { type OpListIR } from "./operator_list.ts";
 import {
@@ -65,7 +74,7 @@ import {
   getSerifFonts,
   getStdFontMap,
   getSupplementalGlyphMapForArialBlack,
-  getSupplementalGlyphMapForCalibri
+  getSupplementalGlyphMapForCalibri,
 } from "./standard_fonts.ts";
 import { Stream } from "./stream.ts";
 import { IdentityToUnicodeMap, ToUnicodeMap } from "./to_unicode_map.ts";
@@ -74,7 +83,7 @@ import {
   getCharUnicodeCategory,
   getUnicodeForGlyph,
   getUnicodeRangeFor,
-  mapSpecialUnicodeValues
+  mapSpecialUnicodeValues,
 } from "./unicode.ts";
 /*80--------------------------------------------------------------------------*/
 

@@ -24,7 +24,7 @@ import {
   FormatError,
   info,
   StreamType,
-  warn
+  warn,
 } from "../shared/util.ts";
 import { Ascii85Stream } from "./ascii_85_stream.ts";
 import { AsciiHexStream } from "./ascii_hex_stream.ts";
@@ -33,7 +33,7 @@ import { CCITTFaxStream } from "./ccitt_stream.ts";
 import {
   isWhiteSpace,
   MissingDataException,
-  ParserEOFException
+  ParserEOFException,
 } from "./core_utils.ts";
 import { CipherTransform } from "./crypto.ts";
 import { type OpMap } from "./evaluator.ts";
@@ -43,7 +43,7 @@ import { JpegStream } from "./jpeg_stream.ts";
 import { JpxStream } from "./jpx_stream.ts";
 import { LZWStream } from "./lzw_stream.ts";
 import { PredictorStream } from "./predictor_stream.ts";
-import { Cmd, Dict, EOF, isCmd, Name, Ref, type Obj } from "./primitives.ts";
+import { Cmd, Dict, EOF, isCmd, Name, type Obj, Ref } from "./primitives.ts";
 import { RunLengthStream } from "./run_length_stream.ts";
 import { NullStream, Stream } from "./stream.ts";
 import { XRef } from "./xref.ts";

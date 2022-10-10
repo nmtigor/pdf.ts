@@ -18,10 +18,11 @@
  */
 
 import {
-  CHROME, GENERIC,
+  CHROME,
+  GENERIC,
   INOUT,
   MOZCENTRAL,
-  PRODUCTION
+  PRODUCTION,
 } from "../../global.ts";
 import "../../lib/jslang.ts";
 import { Locale } from "../../lib/Locale.ts";
@@ -29,7 +30,11 @@ import { createPromiseCap } from "../../lib/promisecap.ts";
 import { assert } from "../../lib/util/trace.ts";
 import {
   AnnotationEditorType,
-  build, getDocument,
+  build,
+  type DocumentInfo,
+  type DocumentInitP,
+  type ExplicitDest,
+  getDocument,
   getFilenameFromUrl,
   getPdfFilenameFromUrl,
   GlobalWorkerOptions,
@@ -37,31 +42,35 @@ import {
   isPdfFile,
   loadScript,
   Metadata,
-  MissingPDFException, OPS,
+  MissingPDFException,
+  type OpenAction,
+  OPS,
   OptionalContentConfig,
   PasswordResponses,
   PDFDataRangeTransport,
   PDFDocumentLoadingTask,
-  PDFDocumentProxy, PDFWorker,
+  PDFDocumentProxy,
+  type PDFDocumentStats,
+  PDFWorker,
   PrintAnnotationStorage,
   shadow,
   UnexpectedResponseException,
   UNSUPPORTED_FEATURES,
   version,
-  WorkerMessageHandler, type DocumentInfo,
-  type DocumentInitP,
-  type ExplicitDest, type OpenAction, type PDFDocumentStats
+  WorkerMessageHandler,
 } from "../pdf.ts-src/pdf.ts";
 import { AnnotationEditorParams } from "./annotation_editor_params.ts";
 import {
   AppOptions,
-  OptionKind, ViewerCssTheme,
-  ViewOnLoad, type OptionName
+  OptionKind,
+  type OptionName,
+  ViewerCssTheme,
+  ViewOnLoad,
 } from "./app_options.ts";
 import { type PageOverview } from "./base_viewer.ts";
 import { PDFBug } from "./debugger.ts";
 import { AutomationEventBus, EventBus, EventMap } from "./event_utils.ts";
-import { IDownloadManager, IScripting, type IL10n } from "./interfaces.ts";
+import { IDownloadManager, type IL10n, IScripting } from "./interfaces.ts";
 import { OverlayManager } from "./overlay_manager.ts";
 import { PasswordPrompt } from "./password_prompt.ts";
 import { PDFAttachmentViewer } from "./pdf_attachment_viewer.ts";
@@ -69,7 +78,9 @@ import { CursorTool, PDFCursorTools } from "./pdf_cursor_tools.ts";
 import { PDFDocumentProperties } from "./pdf_document_properties.ts";
 import { PDFFindBar } from "./pdf_find_bar.ts";
 import {
-  FindState, PDFFindController, type MatchesCount
+  FindState,
+  type MatchesCount,
+  PDFFindController,
 } from "./pdf_find_controller.ts";
 import { PDFHistory } from "./pdf_history.ts";
 import { PDFLayerViewer } from "./pdf_layer_viewer.ts";
@@ -105,10 +116,10 @@ import {
   ScrollMode,
   SidebarView,
   SpreadMode,
-  TextLayerMode
+  TextLayerMode,
 } from "./ui_utils.ts";
 import { type ViewerConfiguration } from "./viewer.ts";
-import { ViewHistory, type MultipleStored } from "./view_history.ts";
+import { type MultipleStored, ViewHistory } from "./view_history.ts";
 /*80--------------------------------------------------------------------------*/
 
 const DISABLE_AUTO_FETCH_LOADING_BAR_TIMEOUT = 5000; // ms
@@ -2285,8 +2296,8 @@ async function loadPDFBug(self: PDFViewerApplication) {
   const { debuggerScriptPath } = self.appConfig;
   const { PDFBug } = !PRODUCTION /*#static*/
     ? await import(debuggerScriptPath) // eslint-disable-line no-unsanitized/method
-    : // : await __non_webpack_import__(debuggerScriptPath); // eslint-disable-line no-undef
-      await import(debuggerScriptPath) // eslint-disable-line no-unsanitized/method
+    // : await __non_webpack_import__(debuggerScriptPath); // eslint-disable-line no-undef
+    : await import(debuggerScriptPath) // eslint-disable-line no-unsanitized/method
   ;
 
   self._PDFBug = PDFBug;

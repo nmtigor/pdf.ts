@@ -21,25 +21,29 @@ import { _PDFDEV } from "../../../global.ts";
 import { assert } from "../../../lib/util/trace.ts";
 import {
   AnnotStorageRecord,
-  AnnotStorageValue
+  AnnotStorageValue,
 } from "../display/annotation_layer.ts";
 import { MessageHandler, Thread } from "../shared/message_handler.ts";
 import {
-  ActionEventName, AnnotationEditorPrefix,
+  ActionEventName,
+  type ActionEventTypeType,
+  AnnotationEditorPrefix,
   BaseException,
   FontType,
   objectSize,
   StreamType,
   stringToPDFString,
-  warn, type ActionEventTypeType
+  warn,
 } from "../shared/util.ts";
 import { BaseStream } from "./base_stream.ts";
 import { type CssFontInfo } from "./document.ts";
 import {
   Dict,
-  isName, Ref,
-  RefSet, type Obj,
-  type ObjNoRef
+  isName,
+  type Obj,
+  type ObjNoRef,
+  Ref,
+  RefSet,
 } from "./primitives.ts";
 import { XRef } from "./xref.ts";
 /*80--------------------------------------------------------------------------*/

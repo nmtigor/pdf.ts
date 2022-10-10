@@ -20,12 +20,9 @@
 import {
   assert,
   assertEquals,
-  assertThrows
+  assertThrows,
 } from "https://deno.land/std@0.154.0/testing/asserts.ts";
-import {
-  describe,
-  it
-} from "https://deno.land/std@0.154.0/testing/bdd.ts";
+import { describe, it } from "https://deno.land/std@0.154.0/testing/bdd.ts";
 import { Lexer, TOKEN, Token } from "./formcalc_lexer.ts";
 import { Errors, Parser } from "./formcalc_parser.ts";
 /*80--------------------------------------------------------------------------*/
@@ -397,27 +394,27 @@ describe("FormCalc expression parser", () => {
 
     it("should parse for declaration with error", () => {
       let parser = new Parser("for 123 = i upto 1 do a = 1 endfor");
-      assertThrows(()=>parser.parse(),Error, Errors.assignment);
+      assertThrows(() => parser.parse(), Error, Errors.assignment);
 
       parser = new Parser("for var 123 = i upto 1 do a = 1 endfor");
-      assertThrows(()=>parser.parse(),Error, Errors.assignment);
+      assertThrows(() => parser.parse(), Error, Errors.assignment);
 
       parser = new Parser("for var i = 123 upt 1 do a = 1 endfor");
-      assertThrows(()=>parser.parse(),Error, Errors.for);
+      assertThrows(() => parser.parse(), Error, Errors.for);
 
       parser = new Parser("for var i = 123 var 1 do a = 1 endfor");
-      assertThrows(()=>parser.parse(),Error, Errors.for);
+      assertThrows(() => parser.parse(), Error, Errors.for);
 
       parser = new Parser(
         "for var i = 123 upto 1 step for var j = 1 do endfor do a = 1 endfor",
       );
-      assertThrows(()=>parser.parse(),Error, Errors.for);
+      assertThrows(() => parser.parse(), Error, Errors.for);
 
       parser = new Parser("for var i = 123 downto 1 do a = 1 endfunc");
-      assertThrows(()=>parser.parse(),Error, Errors.for);
+      assertThrows(() => parser.parse(), Error, Errors.for);
 
       parser = new Parser("for var i = 123 downto 1 do a = 1");
-      assertThrows(()=>parser.parse(),Error, Errors.for);
+      assertThrows(() => parser.parse(), Error, Errors.for);
     });
 
     it("should parse foreach declaration", () => {
@@ -451,25 +448,25 @@ describe("FormCalc expression parser", () => {
 
     it("should parse foreach declaration with error", () => {
       let parser = new Parser("foreach 123 in (1, 2, 3) do a = 1 endfor");
-      assertThrows(()=>parser.parse(),Error, Errors.foreach);
+      assertThrows(() => parser.parse(), Error, Errors.foreach);
 
       parser = new Parser("foreach foo in 1, 2, 3) do a = 1 endfor");
-      assertThrows(()=>parser.parse(),Error, Errors.foreach);
+      assertThrows(() => parser.parse(), Error, Errors.foreach);
 
       parser = new Parser("foreach foo in (1, 2, 3 do a = 1 endfor");
-      assertThrows(()=>parser.parse(),Error, Errors.params);
+      assertThrows(() => parser.parse(), Error, Errors.params);
 
       parser = new Parser("foreach foo in (1, 2 3) do a = 1 endfor");
-      assertThrows(()=>parser.parse(),Error, Errors.params);
+      assertThrows(() => parser.parse(), Error, Errors.params);
 
       parser = new Parser("foreach foo in (1, 2, 3) od a = 1 endfor");
-      assertThrows(()=>parser.parse(),Error, Errors.foreach);
+      assertThrows(() => parser.parse(), Error, Errors.foreach);
 
       parser = new Parser("foreach foo in (1, 2, 3) do a = 1 endforeach");
-      assertThrows(()=>parser.parse(),Error, Errors.foreach);
+      assertThrows(() => parser.parse(), Error, Errors.foreach);
 
       parser = new Parser("foreach foo in (1, 2, 3) do a = 1  123");
-      assertThrows(()=>parser.parse(),Error, Errors.foreach);
+      assertThrows(() => parser.parse(), Error, Errors.foreach);
     });
 
     it("should parse while declaration", () => {
@@ -504,16 +501,16 @@ describe("FormCalc expression parser", () => {
 
     it("should parse while declaration with error", () => {
       let parser = new Parser("while a == 1 do a = 2 endwhile");
-      assertThrows(()=>parser.parse(),Error, Errors.while);
+      assertThrows(() => parser.parse(), Error, Errors.while);
 
       parser = new Parser("while (a == 1 do a = 2 endwhile");
-      assertThrows(()=>parser.parse(),Error, Errors.while);
+      assertThrows(() => parser.parse(), Error, Errors.while);
 
       parser = new Parser("while (a == 1) var a = 2 endwhile");
-      assertThrows(()=>parser.parse(),Error, Errors.while);
+      assertThrows(() => parser.parse(), Error, Errors.while);
 
       parser = new Parser("while (a == 1) do var a = 2 end");
-      assertThrows(()=>parser.parse(),Error, Errors.while);
+      assertThrows(() => parser.parse(), Error, Errors.while);
     });
 
     it("should parse do declaration", () => {
@@ -551,7 +548,7 @@ describe("FormCalc expression parser", () => {
   y = 2
   endfunc
       `);
-      assertThrows(()=>parser.parse(),Error, Errors.block);
+      assertThrows(() => parser.parse(), Error, Errors.block);
     });
 
     it("should parse func declaration", () => {
@@ -580,19 +577,19 @@ describe("FormCalc expression parser", () => {
 
     it("should parse func declaration with error", () => {
       let parser = new Parser("func 123(a, b) do a = 1 endfunc");
-      assertThrows(()=>parser.parse(),Error, Errors.func);
+      assertThrows(() => parser.parse(), Error, Errors.func);
 
       parser = new Parser("func foo(a, b) for a = 1 endfunc");
-      assertThrows(()=>parser.parse(),Error, Errors.func);
+      assertThrows(() => parser.parse(), Error, Errors.func);
 
       parser = new Parser("func foo(a, b) do a = 1 endfun");
-      assertThrows(()=>parser.parse(),Error, Errors.func);
+      assertThrows(() => parser.parse(), Error, Errors.func);
 
       parser = new Parser("func foo(a, b, c do a = 1 endfunc");
-      assertThrows(()=>parser.parse(),Error, Errors.func);
+      assertThrows(() => parser.parse(), Error, Errors.func);
 
       parser = new Parser("func foo(a, b, 123) do a = 1 endfunc");
-      assertThrows(()=>parser.parse(),Error, Errors.func);
+      assertThrows(() => parser.parse(), Error, Errors.func);
     });
 
     it("should parse if declaration", () => {
@@ -744,20 +741,20 @@ describe("FormCalc expression parser", () => {
 
     it("should parse if declaration with error", () => {
       let parser = new Parser("if foo == 1 then a = 1 endif");
-      assertThrows(()=>parser.parse(),Error, Errors.if);
+      assertThrows(() => parser.parse(), Error, Errors.if);
 
       parser = new Parser("if (foo == 1 then a = 1 endif");
-      assertThrows(()=>parser.parse(),Error, Errors.if);
+      assertThrows(() => parser.parse(), Error, Errors.if);
 
       parser = new Parser(
         "if (foo == 1) then a = 1 elseiff (foo == 2) then a = 2 endif",
       );
-      assertThrows(()=>parser.parse(),Error, Errors.if);
+      assertThrows(() => parser.parse(), Error, Errors.if);
 
       parser = new Parser(
         "if (foo == 1) then a = 1 elseif (foo == 2) then a = 2 end",
       );
-      assertThrows(()=>parser.parse(),Error, Errors.if);
+      assertThrows(() => parser.parse(), Error, Errors.if);
     });
   });
 });

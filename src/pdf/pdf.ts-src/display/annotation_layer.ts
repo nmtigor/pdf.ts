@@ -25,28 +25,30 @@
 import { _PDFDEV } from "../../../global.ts";
 import { CSSStyleName } from "../../../lib/alias.ts";
 import {
-  div, html,
+  div,
+  type HSElement,
+  html,
   span,
   svg as createSVG,
-  textnode, type HSElement
+  textnode,
 } from "../../../lib/dom.ts";
 import { assert } from "../../../lib/util/trace.ts";
 import {
   IDownloadManager,
   type IPDFLinkService,
-  type MouseState
+  type MouseState,
 } from "../../pdf.ts-web/interfaces.ts";
 import {
   type AnnotationData,
   type FieldObject,
-  type RichText
+  type RichText,
 } from "../core/annotation.ts";
 import { type BidiText } from "../core/bidi.ts";
 import { type Destination } from "../core/catalog.ts";
 import { ScriptingActionName } from "../scripting_api/common.ts";
 import {
   ColorConverters,
-  ColorConvertersDetail
+  ColorConvertersDetail,
 } from "../shared/scripting_utils.ts";
 import {
   ActionEventName,
@@ -57,7 +59,7 @@ import {
   rect_t,
   shadow,
   Util,
-  warn
+  warn,
 } from "../shared/util.ts";
 import { AnnotationStorage } from "./annotation_storage.ts";
 import { PDFPageProxy } from "./api.ts";
@@ -65,7 +67,7 @@ import {
   DOMSVGFactory,
   getFilenameFromUrl,
   PageViewport,
-  PDFDateString
+  PDFDateString,
 } from "./display_utils.ts";
 import { XfaLayer } from "./xfa_layer.ts";
 /*80--------------------------------------------------------------------------*/

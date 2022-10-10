@@ -20,13 +20,13 @@
 import {
   assertEquals,
   assertNotStrictEquals,
-  assertStrictEquals
+  assertStrictEquals,
 } from "https://deno.land/std@0.154.0/testing/asserts.ts";
 import {
   afterAll,
   beforeAll,
   describe,
-  it
+  it,
 } from "https://deno.land/std@0.154.0/testing/bdd.ts";
 import { XRefMock } from "../shared/test_utils.ts";
 import { ColorSpace } from "./colorspace.ts";

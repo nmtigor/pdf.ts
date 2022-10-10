@@ -469,7 +469,7 @@ class FirefoxExternalServices extends DefaultExternalServices {
           pdfDataRangeTransport.onDataRange(args.begin, args.chunk);
           break;
         case "rangeProgress":
-          // pdfDataRangeTransport.onDataProgress( args.loaded); //kkkk bug? ✅ 
+          // pdfDataRangeTransport.onDataProgress( args.loaded); //kkkk bug? ✅
           pdfDataRangeTransport.onDataProgress(args.loaded, args.total);
           break;
         case "progressiveRead":

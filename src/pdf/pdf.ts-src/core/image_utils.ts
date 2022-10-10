@@ -21,10 +21,10 @@ import { _PDFDEV } from "../../../global.ts";
 import { assert } from "../../../lib/util/trace.ts";
 import { OPS, shadow, warn } from "../shared/util.ts";
 import { ColorSpace } from "./colorspace.ts";
-import { MarkedContentProps, type ImgData } from "./evaluator.ts";
+import { type ImgData, MarkedContentProps } from "./evaluator.ts";
 import { type ParsedFunction } from "./function.ts";
 import { type OpListIR } from "./operator_list.ts";
-import { Dict, Ref, RefSetCache, type Obj } from "./primitives.ts";
+import { Dict, type Obj, Ref, RefSetCache } from "./primitives.ts";
 /*80--------------------------------------------------------------------------*/
 
 abstract class BaseLocalCache<CD> {

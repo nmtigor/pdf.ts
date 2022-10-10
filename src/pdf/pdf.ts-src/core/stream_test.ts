@@ -33,7 +33,7 @@ describe("stream", () => {
       dict.set("BitsPerComponent", 8);
       dict.set("Columns", 2);
 
-      const input:any = new Stream(
+      const input: any = new Stream(
         new Uint8Array([2, 100, 3, 2, 1, 255, 2, 1, 255]),
         0,
         9,

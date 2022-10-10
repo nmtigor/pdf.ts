@@ -28,14 +28,14 @@ import {
   AnnotationEditorParamsType,
   AnnotationEditorType,
   LINE_FACTOR,
-  Util
+  Util,
 } from "../../shared/util.ts";
 import { AnnotationEditorLayer } from "./annotation_editor_layer.ts";
 import {
   AnnotationEditor,
   AnnotationEditorP,
   AnnotationEditorSerialized,
-  PropertyToUpdate
+  PropertyToUpdate,
 } from "./editor.ts";
 import { bindEvents, KeyboardManager } from "./tools.ts";
 /*80--------------------------------------------------------------------------*/

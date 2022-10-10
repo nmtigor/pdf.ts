@@ -208,23 +208,25 @@ export function watchScroll(
       return;
     }
     // schedule an invocation of scroll for next animation frame.
-    rAF = globalThis?.requestAnimationFrame?.(/* viewAreaElementScrolled */ () => {
-      rAF = undefined;
+    rAF = globalThis?.requestAnimationFrame?.(
+      /* viewAreaElementScrolled */ () => {
+        rAF = undefined;
 
-      const currentX = viewAreaElement.scrollLeft;
-      const lastX = state.lastX;
-      if (currentX !== lastX) {
-        state.right = currentX > lastX;
-      }
-      state.lastX = currentX;
-      const currentY = viewAreaElement.scrollTop;
-      const lastY = state.lastY;
-      if (currentY !== lastY) {
-        state.down = currentY > lastY;
-      }
-      state.lastY = currentY;
-      callback(state);
-    });
+        const currentX = viewAreaElement.scrollLeft;
+        const lastX = state.lastX;
+        if (currentX !== lastX) {
+          state.right = currentX > lastX;
+        }
+        state.lastX = currentX;
+        const currentY = viewAreaElement.scrollTop;
+        const lastY = state.lastY;
+        if (currentY !== lastY) {
+          state.down = currentY > lastY;
+        }
+        state.lastY = currentY;
+        callback(state);
+      },
+    );
   };
 
   const state = {
@@ -736,7 +738,7 @@ export const animationStarted = new Promise((resolve) => {
 });
 /*64----------------------------------------------------------*/
 
-//kkkk bug? ✅ 
+//kkkk bug? ✅
 // const docStyle =
 //   typeof PDFJSDev !== "undefined" &&
 //   PDFJSDev.test("LIB") &&

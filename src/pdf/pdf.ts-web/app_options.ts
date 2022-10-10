@@ -250,8 +250,8 @@ const defaultOptions = {
   cMapUrl: {
     value: !PRODUCTION /*#static*/
       ? `${D_base}/res/pdf/pdf.ts-external/bcmaps/`
-      : // ? "../external/bcmaps/"
-        `${D_base}/res/pdf/pdf.ts-external/bcmaps/`,
+      // ? "../external/bcmaps/"
+      : `${D_base}/res/pdf/pdf.ts-external/bcmaps/`,
     kind: OptionKind.API,
   },
   disableAutoFetch: {
@@ -301,8 +301,8 @@ const defaultOptions = {
   standardFontDataUrl: {
     value: !PRODUCTION /*#static*/
       ? `${D_base}/res/pdf/pdf.ts-external/standard_fonts/`
-      : // ? "../external/standard_fonts/"
-        `${D_base}/res/pdf/pdf.ts-external/standard_fonts/`,
+      // ? "../external/standard_fonts/"
+      : `${D_base}/res/pdf/pdf.ts-external/standard_fonts/`,
     kind: OptionKind.API,
   },
   verbosity: {
@@ -318,8 +318,8 @@ const defaultOptions = {
   workerSrc: {
     value: !PRODUCTION /*#static*/
       ? `${D_base}/gen/pdf/pdf.ts-src/pdf.worker.js`
-      : // ? "../src/worker_loader.js"
-        `${D_base}/gen/pdf/pdf.ts-src/pdf.worker.js`,
+      // ? "../src/worker_loader.js"
+      : `${D_base}/gen/pdf/pdf.ts-src/pdf.worker.js`,
     kind: OptionKind.WORKER,
   },
   sandboxBundleSrc: {
@@ -352,8 +352,8 @@ const defaultOptions = {
   defaultOptions.sandboxBundleSrc = {
     value: !PRODUCTION /*#static*/
       ? `${D_base}/gen/pdf/pdf.ts-src/pdf.sandbox.js`
-      : // ? "../build/dev-sandbox/pdf.sandbox.js"
-        `${D_base}/gen/pdf/pdf.ts-src/pdf.sandbox.js`,
+      // ? "../build/dev-sandbox/pdf.sandbox.js"
+      : `${D_base}/gen/pdf/pdf.ts-src/pdf.sandbox.js`,
     kind: OptionKind.VIEWER,
   };
 } else {

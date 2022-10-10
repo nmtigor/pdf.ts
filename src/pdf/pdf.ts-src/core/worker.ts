@@ -21,7 +21,10 @@ import { GENERIC } from "../../../global.ts";
 import { createPromiseCap } from "../../../lib/promisecap.ts";
 import { type ReadValue } from "../interfaces.ts";
 import {
-  MessageHandler, Thread, type GetDocRequestData, type PDFInfo
+  type GetDocRequestData,
+  MessageHandler,
+  type PDFInfo,
+  Thread,
 } from "../shared/message_handler.ts";
 import {
   AbortException,
@@ -39,7 +42,7 @@ import {
   UnknownErrorException,
   UNSUPPORTED_FEATURES,
   VerbosityLevel,
-  warn
+  warn,
 } from "../shared/util.ts";
 import { type SaveData, type SaveReturn } from "./annotation.ts";
 import { clearGlobalCaches } from "./cleanup_helper.ts";
@@ -47,8 +50,10 @@ import { getNewAnnotationsMap, XRefParseException } from "./core_utils.ts";
 import { Page } from "./document.ts";
 import { DedicatedWorkerGlobalScope, IWorker } from "./iworker.ts";
 import {
-  BasePdfManager, LocalPdfManager,
-  NetworkPdfManager, type EvaluatorOptions
+  BasePdfManager,
+  type EvaluatorOptions,
+  LocalPdfManager,
+  NetworkPdfManager,
 } from "./pdf_manager.ts";
 import { Dict, Ref } from "./primitives.ts";
 import { PDFWorkerStream } from "./worker_stream.ts";

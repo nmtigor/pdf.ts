@@ -29,7 +29,7 @@ import { PDFViewer } from "./pdf_viewer.ts";
 import {
   apiPageLayoutToViewerModes,
   PageLayout,
-  RenderingStates
+  RenderingStates,
 } from "./ui_utils.ts";
 /*80--------------------------------------------------------------------------*/
 

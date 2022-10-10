@@ -252,7 +252,7 @@ export class Lexer {
   getNumber(first: number) {
     const match = this.data.substring(this.pos).match(numberPattern);
     if (!match) {
-      // return first - 0x30 /* = 0 */; //kkkk bug? ✅ 
+      // return first - 0x30 /* = 0 */; //kkkk bug? ✅
       return new Token(TOKEN.number, first - 0x30 /* = 0 */);
     }
     const number = parseFloat(

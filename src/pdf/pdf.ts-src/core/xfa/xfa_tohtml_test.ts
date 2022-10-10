@@ -19,7 +19,7 @@
 
 import {
   assertEquals,
-  assertNotEquals
+  assertNotEquals,
 } from "https://deno.land/std@0.154.0/testing/asserts.ts";
 import { describe, it } from "https://deno.land/std@0.154.0/testing/bdd.ts";
 import { XFAData } from "../document.ts";
@@ -34,7 +34,7 @@ describe("XFAFactory", () => {
     value: string,
     byAttributes = false,
     nth = [0],
-  ):XFAHTMLObj | undefined {
+  ): XFAHTMLObj | undefined {
     if (
       (!byAttributes && root[name] === value) ||
       (byAttributes && root.attributes && root.attributes[name] === value)
@@ -47,7 +47,13 @@ describe("XFAFactory", () => {
       return undefined;
     }
     for (const child of root.children) {
-      const node = searchHtmlNode(child as XFAPages, name, value, byAttributes, nth);
+      const node = searchHtmlNode(
+        child as XFAPages,
+        name,
+        value,
+        byAttributes,
+        nth,
+      );
       if (node) {
         return node;
       }
@@ -563,7 +569,7 @@ describe("XFAFactory", () => {
   });
 
   it("should parse URLs correctly", async () => {
-    function getXml(href:string) {
+    function getXml(href: string) {
       return `
 <?xml version="1.0"?>
 <xdp:xdp xmlns:xdp="http://ns.adobe.com/xdp/">
@@ -638,7 +644,7 @@ describe("XFAFactory", () => {
     factory = new XFAFactory({ "xdp:xdp": getXml("qwerty/") } as XFAData);
     //kkkk
     // assertEquals(await factory.getNumPages(), 1);
-    
+
     //kkkk
     // pages = await factory.getPages();
     // a = searchHtmlNode(pages, "name", "a")!;

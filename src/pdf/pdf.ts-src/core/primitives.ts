@@ -409,7 +409,8 @@ export function isCmd(v: any, cmd?: string) {
 }
 
 export function isDict(v: any, type?: string) {
-  return v instanceof Dict && (type === undefined || isName(v.get("Type"), type));
+  return v instanceof Dict &&
+    (type === undefined || isName(v.get("Type"), type));
 }
 
 export function isRefsEqual(v1: Ref, v2: Ref) {

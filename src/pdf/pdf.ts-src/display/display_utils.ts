@@ -23,17 +23,19 @@ import { type XFAElObj } from "../core/xfa/alias.ts";
 import { RGB } from "../shared/scripting_utils.ts";
 import {
   BaseException,
-  CMapCompressionType, stringToBytes,
-  Util,
-  warn, type matrix_t,
+  CMapCompressionType,
+  type matrix_t,
   type point_t,
-  type rect_t
+  type rect_t,
+  stringToBytes,
+  Util,
+  warn,
 } from "../shared/util.ts";
 import {
   BaseCanvasFactory,
   BaseCMapReaderFactory,
   BaseStandardFontDataFactory,
-  BaseSVGFactory
+  BaseSVGFactory,
 } from "./base_factory.ts";
 /*80--------------------------------------------------------------------------*/
 
@@ -69,7 +71,7 @@ export class DOMCanvasFactory extends BaseCanvasFactory {
 }
 
 async function fetchData(url: string, asTypedArray = false) {
-  /*#static*/if (
+  /*#static*/ if (
     MOZCENTRAL ||
     isValidFetchUrl(url, globalThis.document?.baseURI)
   ) {

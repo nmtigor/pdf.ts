@@ -29,16 +29,17 @@ import {
   CFFStandardStrings,
   CFFStrings,
   CFFTopDict,
-  NUM_STANDARD_CFF_STRINGS
+  NUM_STANDARD_CFF_STRINGS,
 } from "./cff_parser.ts";
 import { isWhiteSpace } from "./core_utils.ts";
 import { type FontProps } from "./evaluator.ts";
 import { SEAC_ANALYSIS_ENABLED, type1FontGlyphMapping } from "./fonts_utils.ts";
 import { Stream } from "./stream.ts";
 import {
-  Type1Parser, type CharStringObject,
+  type CharStringObject,
   type FontProgram,
-  type PrivateData
+  type PrivateData,
+  Type1Parser,
 } from "./type1_parser.ts";
 /*80--------------------------------------------------------------------------*/
 
