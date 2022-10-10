@@ -53,21 +53,16 @@ interface ToolbarItems {
   next: HTMLButtonElement;
   zoomIn: HTMLButtonElement;
   zoomOut: HTMLButtonElement;
-  editorNoneButton: HTMLButtonElement;
-  editorFreeTextButton: HTMLButtonElement;
-  editorFreeTextParamsToolbar: HTMLDivElement;
-  editorInkButton: HTMLButtonElement;
-  editorInkParamsToolbar: HTMLButtonElement;
 }
 
 export class Toolbar {
+  #wasLocalized = false;
+
   toolbar;
   eventBus;
   l10n;
   buttons: ToolbarButton[];
   items: ToolbarItems;
-
-  _wasLocalized = false;
 
   pageNumber!: number;
   pageLabel?: string | undefined;
@@ -90,26 +85,30 @@ export class Toolbar {
       { element: options.zoomIn, eventName: "zoomin" },
       { element: options.zoomOut, eventName: "zoomout" },
       { element: options.print, eventName: "print" },
-      {
-        element: options.presentationModeButton,
-        eventName: "presentationmode",
-      },
       { element: options.download, eventName: "download" },
-      { element: options.viewBookmark, eventName: null },
-      {
-        element: options.editorNoneButton,
-        eventName: "switchannotationeditormode",
-        eventDetails: { mode: AnnotationEditorType.NONE },
-      },
       {
         element: options.editorFreeTextButton,
         eventName: "switchannotationeditormode",
-        eventDetails: { mode: AnnotationEditorType.FREETEXT },
+        eventDetails: {
+          get mode() {
+            const { classList } = options.editorFreeTextButton;
+            return classList.contains("toggled")
+              ? AnnotationEditorType.NONE
+              : AnnotationEditorType.FREETEXT;
+          },
+        },
       },
       {
         element: options.editorInkButton,
         eventName: "switchannotationeditormode",
-        eventDetails: { mode: AnnotationEditorType.INK },
+        eventDetails: {
+          get mode() {
+            const { classList } = options.editorInkButton;
+            return classList.contains("toggled")
+              ? AnnotationEditorType.NONE
+              : AnnotationEditorType.INK;
+          },
+        },
       },
     ];
     /*#static*/ if (GENERIC) {
@@ -124,17 +123,12 @@ export class Toolbar {
       next: options.next,
       zoomIn: options.zoomIn,
       zoomOut: options.zoomOut,
-      editorNoneButton: options.editorNoneButton,
-      editorFreeTextButton: options.editorFreeTextButton,
-      editorFreeTextParamsToolbar: options.editorFreeTextParamsToolbar,
-      editorInkButton: options.editorInkButton,
-      editorInkParamsToolbar: options.editorInkParamsToolbar,
     };
-
-    this.reset();
 
     // Bind the event listeners for click and various other actions.
     this.#bindListeners(options);
+
+    this.reset();
   }
 
   setPageNumber(pageNumber: number, pageLabel?: string) {
@@ -224,7 +218,7 @@ export class Toolbar {
     scaleSelect.oncontextmenu = noContextMenuHandler;
 
     this.eventBus._on("localized", () => {
-      this._wasLocalized = true;
+      this.#wasLocalized = true;
       this.#adjustScaleWidth();
       this.#updateUIState(true);
     });
@@ -233,7 +227,6 @@ export class Toolbar {
   }
 
   #bindEditorToolsListener({
-    editorNoneButton,
     editorFreeTextButton,
     editorFreeTextParamsToolbar,
     editorInkButton,
@@ -244,7 +237,6 @@ export class Toolbar {
       disableButtons = false,
     ) => {
       const editorButtons = [
-        { mode: AnnotationEditorType.NONE, button: editorNoneButton },
         {
           mode: AnnotationEditorType.FREETEXT,
           button: editorFreeTextButton,
@@ -262,9 +254,7 @@ export class Toolbar {
         button.classList.toggle("toggled", checked);
         button.setAttribute("aria-checked", <any> checked);
         button.disabled = disableButtons;
-        if (toolbar) {
-          toolbar.classList.toggle("hidden", !checked);
-        }
+        toolbar?.classList.toggle("hidden", !checked);
       }
     };
     this.eventBus._on("annotationeditormodechanged", editorModeChanged);
@@ -282,9 +272,10 @@ export class Toolbar {
   }
 
   #updateUIState = (resetNumPages = false) => {
-    // Don't update the UI state until we localize the toolbar.
-    if (!this._wasLocalized) return;
-
+    if (!this.#wasLocalized) {
+      // Don't update the UI state until we localize the toolbar.
+      return;
+    }
     const { pageNumber, pagesCount, pageScaleValue, pageScale, items } = this;
 
     if (resetNumPages) {

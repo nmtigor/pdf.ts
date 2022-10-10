@@ -1,4 +1,4 @@
-import { FontType, point_t, type matrix_t, type rect_t } from "../shared/util.js";
+import { FontType, type matrix_t, point_t, type rect_t } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
 import { CFFFont } from "./cff_font.js";
 import { CMap } from "./cmap.js";
@@ -82,6 +82,10 @@ export interface Seac {
         y: number;
     };
 }
+/**
+ * 'Font' is the class the outside world should use, it encapsulate all the font
+ * decoding logics whatever type it is (assuming the font type is supported).
+ */
 export declare class Font extends FontExpotDataEx {
     #private;
     disableFontFace: boolean;

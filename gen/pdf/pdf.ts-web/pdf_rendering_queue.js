@@ -19,7 +19,7 @@
 /** @typedef {import("./pdf_viewer").PDFViewer} PDFViewer */
 // eslint-disable-next-line max-len
 /** @typedef {import("./pdf_thumbnail_viewer").PDFThumbnailViewer} PDFThumbnailViewer */
-import { global, PDFTS_vv, _INFO } from "../../global.js";
+import { _INFO, global, PDFTS_vv } from "../../global.js";
 import { RenderingCancelledException } from "../pdf.ts-src/pdf.js";
 import { RenderingStates } from "./ui_utils.js";
 /*80--------------------------------------------------------------------------*/

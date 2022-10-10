@@ -17,7 +17,7 @@
  */
 import { _PDFDEV } from "../../../global.js";
 import { assert } from "../../../lib/util/trace.js";
-import { FormatError, info, shadow, warn } from "../shared/util.js";
+import { FormatError, info, shadow, warn, } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
 import { MissingDataException } from "./core_utils.js";
 import { Dict, Name, Ref } from "./primitives.js";
@@ -833,42 +833,24 @@ var NsCalRGBCS;
 (function (NsCalRGBCS) {
     // See http://www.brucelindbloom.com/index.html?Eqn_ChromAdapt.html for these
     // matrices.
-    // prettier-ignore
+    // deno-fmt-ignore
     const BRADFORD_SCALE_MATRIX = new Float32Array([
-        0.8951,
-        0.2664,
-        -0.1614,
-        -0.7502,
-        1.7135,
-        0.0367,
-        0.0389,
-        -0.0685,
-        1.0296,
+        0.8951, 0.2664, -0.1614,
+        -0.7502, 1.7135, 0.0367,
+        0.0389, -0.0685, 1.0296
     ]);
-    // prettier-ignore
+    // deno-fmt-ignore
     const BRADFORD_SCALE_INVERSE_MATRIX = new Float32Array([
-        0.9869929,
-        -0.1470543,
-        0.1599627,
-        0.4323053,
-        0.5183603,
-        0.0492912,
-        -0.0085287,
-        0.0400428,
-        0.9684867,
+        0.9869929, -0.1470543, 0.1599627,
+        0.4323053, 0.5183603, 0.0492912,
+        -0.0085287, 0.0400428, 0.9684867
     ]);
     // See http://www.brucelindbloom.com/index.html?Eqn_RGB_XYZ_Matrix.html.
-    // prettier-ignore
+    // deno-fmt-ignore
     const SRGB_D65_XYZ_TO_RGB_MATRIX = new Float32Array([
-        3.2404542,
-        -1.5371385,
-        -0.4985314,
-        -0.9692660,
-        1.8760108,
-        0.0415560,
-        0.0556434,
-        -0.2040259,
-        1.0572252,
+        3.2404542, -1.5371385, -0.4985314,
+        -0.9692660, 1.8760108, 0.0415560,
+        0.0556434, -0.2040259, 1.0572252
     ]);
     const FLAT_WHITEPOINT_MATRIX = new Float32Array([1, 1, 1]);
     const tempNormalizeMatrix = new Float32Array(3);

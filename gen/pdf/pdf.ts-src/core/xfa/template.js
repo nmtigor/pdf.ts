@@ -18,12 +18,12 @@
 import { stringToBytes, Util, warn } from "../../shared/util.js";
 import { recoverJsURL } from "../core_utils.js";
 import { getMetrics } from "./fonts.js";
-import { computeBbox, createWrapper, fixDimensions, fixTextIndent, fixURL, isPrintOnly, layoutClass, layoutNode, measureToString, setAccess, setFontFamily, setMinMaxDimensions, setPara, toStyle } from "./html_utils.js";
-import { addHTML, checkDimensions, flushHTML, getAvailableSpace } from "./layout.js";
+import { computeBbox, createWrapper, fixDimensions, fixTextIndent, fixURL, isPrintOnly, layoutClass, layoutNode, measureToString, setAccess, setFontFamily, setMinMaxDimensions, setPara, toStyle, } from "./html_utils.js";
+import { addHTML, checkDimensions, flushHTML, getAvailableSpace, } from "./layout.js";
 import { $buildXFAObject, NamespaceIds } from "./namespaces.js";
 import { searchNode } from "./som.js";
-import { getBBox, getColor, getFloat, getInteger, getKeyword, getMeasurement, getRatio, getRelevant, getStringOption, HTMLResult } from "./utils.js";
-import { $acceptWhitespace, $addHTML, $appendChild, $childrenToHTML, $clean, $cleanPage, $content, $data, $extra, $finalize, $flushHTML, $getAvailableSpace, $getChildren, $getContainedChildren, $getExtra, $getNextPage, $getParent, $getSubformParent, $getTemplateRoot, $globalData, $hasSettableValue, $ids, $isBindable, $isCDATAXml, $isSplittable, $isThereMoreWidth, $isTransparent, $isUsable, $namespaceId, $nodeName, $onChild, $onText, $popPara, $pushPara, $removeChild, $searchNode, $setSetAttributes, $setValue, $tabIndex, $text, $toHTML, $toPages, $toStyle, $uid, ContentObject, Option01, OptionObject, StringObject, XFAObject, XFAObjectArray } from "./xfa_object.js";
+import { getBBox, getColor, getFloat, getInteger, getKeyword, getMeasurement, getRatio, getRelevant, getStringOption, HTMLResult, } from "./utils.js";
+import { $acceptWhitespace, $addHTML, $appendChild, $childrenToHTML, $clean, $cleanPage, $content, $data, $extra, $finalize, $flushHTML, $getAvailableSpace, $getChildren, $getContainedChildren, $getExtra, $getNextPage, $getParent, $getSubformParent, $getTemplateRoot, $globalData, $hasSettableValue, $ids, $isBindable, $isCDATAXml, $isSplittable, $isThereMoreWidth, $isTransparent, $isUsable, $namespaceId, $nodeName, $onChild, $onText, $popPara, $pushPara, $removeChild, $searchNode, $setSetAttributes, $setValue, $tabIndex, $text, $toHTML, $toPages, $toStyle, $uid, ContentObject, Option01, OptionObject, StringObject, XFAObject, XFAObjectArray, } from "./xfa_object.js";
 /*80--------------------------------------------------------------------------*/
 const TEMPLATE_NS_ID = NamespaceIds.template.id;
 const SVG_NS = "http://www.w3.org/2000/svg";

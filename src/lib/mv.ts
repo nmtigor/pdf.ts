@@ -287,24 +287,18 @@ interface MooHandlerExt<T extends {} | null, D = any> {
 class MooHandlerDB<T extends {} | null, D = any> {
   readonly #eq: MooEq<T>;
 
-  #_a: MooHandlerExt<T, D>[] = [];
+  readonly #_a: MooHandlerExt<T, D>[] = [];
   get len_$() {
     return this.#_a.length;
   }
   get empty() {
     return this.#_a.length === 0;
   }
+
   #nforce = 0;
   get force() {
     return this.#nforce > 0;
   }
-
-  #newval: T | undefined;
-  #oldval?: T;
-  #got: MooHandler<T, D>[] = [];
-  #invalidate_cache = () => {
-    this.#newval = undefined;
-  };
 
   /**
    * @headconst @param eq_x
@@ -328,30 +322,31 @@ class MooHandlerDB<T extends {} | null, D = any> {
     force_x = false,
     index_x = 0,
   ) {
-    let add_ = true;
-    if (this.#_a.some((_) => _.handler === handler_x)) {
-      add_ = false;
-    }
-    if (add_) {
-      if (force_x) ++this.#nforce;
+    if (this.#_a.some((_) => _.handler === handler_x)) return false;
 
-      let i = this.#_a.findIndex((ext_y) => index_x < ext_y.index);
-      if (i < 0) i = this.#_a.length;
-      this.#_a.splice(i, 0, {
-        handler: handler_x,
-        match_newval: match_newval_x,
-        match_oldval: match_oldval_x,
-        force: force_x,
-        index: index_x,
-      });
+    if (force_x) ++this.#nforce;
 
-      this.#invalidate_cache(); //!
-    }
-    return add_;
+    let i = this.#_a.findIndex((ext_y) => index_x < ext_y.index);
+    if (i < 0) i = this.#_a.length;
+    this.#_a.splice(i, 0, {
+      handler: handler_x,
+      match_newval: match_newval_x,
+      match_oldval: match_oldval_x,
+      force: force_x,
+      index: index_x,
+    });
+    this.#got.length = 0; //!
+    return true;
   }
 
-  #valid_eq(v0_x: T | undefined, v1_x: T) {
-    return v0_x !== undefined && this.#eq(v0_x, v1_x);
+  /**
+   * @primaryconst
+   * Not `@const` because `#eq()` could cause non-primary changes, which happens
+   * in elements of `#_a`.
+   */
+  #strict_eq(v0_x: T | undefined, v1_x: T | undefined) {
+    return v0_x === undefined && v1_x === undefined ||
+      v0_x !== undefined && v1_x !== undefined && this.#eq(v0_x, v1_x);
   }
 
   /**
@@ -361,61 +356,46 @@ class MooHandlerDB<T extends {} | null, D = any> {
    * @return `true` if deleted, `false` if not
    */
   del(handler_x: MooHandler<T, D>, match_newval_x?: T, match_oldval_x?: T) {
-    let del_ = true;
-
     const i = this.#_a.findIndex((ext) => ext.handler === handler_x);
-    if (i < 0) del_ = false;
-    if (del_ && match_newval_x !== undefined) {
-      if (!this.#valid_eq(this.#_a[i].match_newval, match_newval_x)) {
-        del_ = false;
-      }
-    }
-    if (del_ && match_oldval_x !== undefined) {
-      if (!this.#valid_eq(this.#_a[i].match_oldval, match_oldval_x)) {
-        del_ = false;
-      }
-    }
+    if (i < 0) return false;
 
+    const toDel = this.#_a[i];
+    const del_ = this.#strict_eq(toDel.match_newval, match_newval_x) &&
+      this.#strict_eq(toDel.match_oldval, match_oldval_x);
     if (del_) {
-      if (this.#_a[i].force) --this.#nforce;
+      if (toDel.force) --this.#nforce;
 
       this.#_a.splice(i, 1);
-
-      this.#invalidate_cache(); //!
+      this.#got.length = 0; //!
     }
     return del_;
   }
 
+  /** @primaryconst */
   #match(v0_x: T | undefined, v1_x: T) {
     return v0_x === undefined || this.#eq(v0_x, v1_x);
   }
 
+  #newval: T | undefined;
+  #oldval: T | undefined;
+  #gforce: boolean | undefined;
+  #got: MooHandler<T, D>[] = [];
   get(newval_x: T, oldval_x: T, gforce_x: boolean) {
     if (
-      this.#valid_eq(this.#newval, newval_x) &&
-      this.#valid_eq(this.#oldval, oldval_x)
+      this.#newval !== undefined && this.#eq(this.#newval, newval_x) &&
+      this.#oldval !== undefined && this.#eq(this.#oldval, oldval_x) &&
+      this.#gforce === gforce_x
     ) {
       return this.#got;
     }
+
+    this.#newval = newval_x;
+    this.#oldval = oldval_x;
+    this.#gforce = gforce_x;
     this.#got.length = 0;
 
     const changed_ = !this.#eq(newval_x, oldval_x);
     this.#_a.forEach((ext) => {
-      // let got_ = true;
-
-      // if (!this.#match(ext.newval, newval_x)) {
-      //   got_ = false;
-      // }
-      // if (got_ && !this.#match(ext.oldval, oldval_x)) {
-      //   got_ = false;
-      // }
-      // if (
-      //   got_ &&
-      //   !(gforce_x || ext.force) && !changed_
-      // ) {
-      //   got_ = false;
-      // }
-
       if (
         this.#match(ext.match_newval, newval_x) &&
         this.#match(ext.match_oldval, oldval_x) &&
@@ -424,15 +404,13 @@ class MooHandlerDB<T extends {} | null, D = any> {
         this.#got.push(ext.handler);
       }
     });
-
     return this.#got;
   }
 
   clear() {
     this.#_a.length = 0;
+    this.#got.length = 0;
     this.#nforce = 0;
-
-    this.#invalidate_cache();
   }
 }
 
@@ -445,10 +423,12 @@ export class Moo<T extends {} | null, D = any> {
   get val() {
     return this.#val;
   }
+
   #newval!: T;
   get newval() {
     return this.#newval;
   }
+
   // #handler_db = new Set< MooHandler<T> >();
   #handler_db!: MooHandlerDB<T, D>;
   get _len() {
@@ -620,6 +600,6 @@ export class Moo<T extends {} | null, D = any> {
   }
 }
 // new Moo(undefined); // error
-// new Moo(null); // error
+// new Moo(null); // ok
 // new Moo(2); // ok
 /*80--------------------------------------------------------------------------*/

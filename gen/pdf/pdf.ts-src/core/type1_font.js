@@ -15,12 +15,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { warn } from "../shared/util.js";
-import { CFF, CFFCharset, CFFCompiler, CFFHeader, CFFIndex, CFFPrivateDict, CFFStandardStrings, CFFStrings, CFFTopDict, NUM_STANDARD_CFF_STRINGS } from "./cff_parser.js";
+import { FormatError, warn } from "../shared/util.js";
+import { CFF, CFFCharset, CFFCompiler, CFFHeader, CFFIndex, CFFPrivateDict, CFFStandardStrings, CFFStrings, CFFTopDict, NUM_STANDARD_CFF_STRINGS, } from "./cff_parser.js";
 import { isWhiteSpace } from "./core_utils.js";
 import { SEAC_ANALYSIS_ENABLED, type1FontGlyphMapping } from "./fonts_utils.js";
 import { Stream } from "./stream.js";
-import { Type1Parser } from "./type1_parser.js";
+import { Type1Parser, } from "./type1_parser.js";
 /*80--------------------------------------------------------------------------*/
 function findBlock(streamBytes, signature, startIndex) {
     const streamBytesLength = streamBytes.length;
@@ -120,6 +120,9 @@ function getEexecBlock(stream, suggestedLength) {
     // in the returned eexec block. In practice this does *not* seem to matter,
     // since `Type1Parser_extractFontProgram` will skip over any non-commands.
     const eexecBytes = stream.getBytes();
+    if (eexecBytes.length === 0) {
+        throw new FormatError("getEexecBlock - no font program found.");
+    }
     return {
         stream: new Stream(eexecBytes),
         length: eexecBytes.length,
@@ -237,8 +240,8 @@ export class Type1Font {
     }
     getType2Charstrings(type1Charstrings) {
         const type2Charstrings = [];
-        for (let i = 0, ii = type1Charstrings.length; i < ii; i++) {
-            type2Charstrings.push(type1Charstrings[i].charstring);
+        for (const type1Charstring of type1Charstrings) {
+            type2Charstrings.push(type1Charstring.charstring);
         }
         return type2Charstrings;
     }

@@ -37,7 +37,7 @@ export class Stream extends BaseStream {
   }
 
   constructor(
-    arrayBuffer: Uint8Array | ArrayLike<number> | ArrayBufferLike,
+    arrayBuffer: Uint8Array | ArrayBuffer | number[],
     start?: number,
     length?: number,
     dict?: Dict,

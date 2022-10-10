@@ -1,12 +1,13 @@
 import { TypedArray } from "../../../lib/alias.js";
 import { PromiseCap } from "../../../lib/promisecap.js";
-import { PageColors } from "../../pdf.ts-web/base_viewer.js";
 import { Stepper } from "../../pdf.ts-web/debugger.js";
+import { PageColors } from "../../pdf.ts-web/pdf_viewer.js";
 import { type AnnotationData, type FieldObject } from "../core/annotation.js";
-import { type ExplicitDest } from "../core/catalog.js";
+import { type ExplicitDest, SetOCGState } from "../core/catalog.js";
 import { type AnnotActions } from "../core/core_utils.js";
 import { DocumentInfo, type XFAData } from "../core/document.js";
 import { type ImgData } from "../core/evaluator.js";
+import { type Attachment } from "../core/file_spec.js";
 import { FontExpotDataEx } from "../core/fonts.js";
 import { type CmdArgs } from "../core/font_renderer.js";
 import { type IWorker } from "../core/iworker.js";
@@ -21,7 +22,7 @@ import { AnnotationStorage, PrintAnnotationStorage } from "./annotation_storage.
 import { BaseCanvasFactory } from "./base_factory.js";
 import { CanvasGraphics } from "./canvas.js";
 import { DOMCanvasFactory, DOMCMapReaderFactory, DOMStandardFontDataFactory, PageViewport, StatTimer } from "./display_utils.js";
-import { FontFaceObject } from "./font_loader.js";
+import { FontFaceObject, FontLoader } from "./font_loader.js";
 import { Metadata } from "./metadata.js";
 import { OptionalContentConfig } from "./optional_content_config.js";
 export declare const DefaultCanvasFactory: typeof DOMCanvasFactory;
@@ -45,6 +46,7 @@ declare type IPDFStreamFactory = (params: DocumentInitP) => Promise<IPDFStream>;
  * @ignore
  */
 export declare function setPDFNetworkStreamFactory(pdfNetworkStreamFactory: IPDFStreamFactory): void;
+export declare type BinaryData = TypedArray | ArrayBuffer | number[] | string;
 export interface RefProxy {
     num: number;
     gen: number;
@@ -58,11 +60,11 @@ export interface DocumentInitP {
      */
     url: string | URL | undefined;
     /**
-     * Binary PDF data. Use
-     * typed arrays (Uint8Array) to improve the memory usage. If PDF data is
+     * Binary PDF data.
+     * Use typed arrays (Uint8Array) to improve the memory usage. If PDF data is
      * BASE64-encoded, use `atob()` to convert it to a binary string first.
      */
-    data?: Uint8Array | number[] | undefined;
+    data?: BinaryData | undefined;
     /**
      * Basic authentication headers.
      */
@@ -237,6 +239,7 @@ export interface DocumentInitP {
     progressiveDone?: boolean;
     contentDispositionFilename?: string | undefined;
 }
+declare type _GetDocumentP = string | URL | TypedArray | ArrayBuffer | PDFDataRangeTransport | DocumentInitP;
 /**
  * This is the main entry point for loading a PDF and interacting with it.
  *
@@ -247,7 +250,7 @@ export interface DocumentInitP {
  * @param src Can be a URL where a PDF file is located, a typed array (Uint8Array)
  *  already populated with data, or a parameter object.
  */
-export declare function getDocument(src: string | URL | TypedArray | DocumentInitP | PDFDataRangeTransport): PDFDocumentLoadingTask;
+export declare function getDocument(src: _GetDocumentP): PDFDocumentLoadingTask;
 /**
  * The loading task controls the operations required to load a PDF document
  * (such as network requests) and provides a way to listen for completion,
@@ -295,7 +298,7 @@ export declare class PDFDocumentLoadingTask {
     destroy(): Promise<void>;
 }
 declare type RangeListener = (begin: number, chunk: ArrayBufferLike) => void;
-declare type ProgressListener = (loaded: number, total: number) => void;
+declare type ProgressListener = (loaded: number, total?: number) => void;
 declare type ProgressiveReadListener = (chunk: ArrayBufferLike) => void;
 declare type ProgressiveDoneListener = () => void;
 /**
@@ -313,7 +316,7 @@ export declare class PDFDataRangeTransport {
     addProgressiveDoneListener(listener: ProgressiveDoneListener): void;
     constructor(length: number, initialData: Uint8Array, progressiveDone?: boolean, contentDispositionFilename?: string | undefined);
     onDataRange(begin: number, chunk: ArrayBufferLike): void;
-    onDataProgress(loaded: number, total: number): void;
+    onDataProgress(loaded: number, total?: number): void;
     onDataProgressiveRead(chunk: ArrayBufferLike): void;
     onDataProgressiveDone(): void;
     transportReady(): void;
@@ -321,19 +324,22 @@ export declare class PDFDataRangeTransport {
     abort(): void;
 }
 export interface OutlineNode {
-    title: string;
+    action: string | undefined;
+    attachment: Attachment | undefined;
     bold: boolean;
-    italic: boolean;
+    count: number | undefined;
     /**
      * The color in RGB format to use for display purposes.
      */
     color: Uint8ClampedArray;
     dest: ExplicitDest | string | undefined;
-    url: string | undefined;
-    unsafeUrl: string | undefined;
-    newWindow: boolean | undefined;
-    count: number | undefined;
+    italic: boolean;
     items: OutlineNode[];
+    newWindow: boolean | undefined;
+    setOCGState: SetOCGState | undefined;
+    title: string;
+    unsafeUrl: string | undefined;
+    url: string | undefined;
 }
 export interface PDFDocumentStats {
     /**
@@ -492,9 +498,14 @@ export declare class PDFDocumentProxy {
     getMarkInfo(): Promise<import("../core/catalog.js").MarkInfo | undefined>;
     /**
      * @return A promise that is resolved with a
-     *   {Uint8Array} that has the raw data from the PDF.
+     *   {Uint8Array} containing the raw data of the PDF document.
      */
     getData(): Promise<Uint8Array>;
+    /**
+     * @return A promise that is resolved with a
+     *   {Uint8Array} containing the full data of the saved document.
+     */
+    saveDocument(): Promise<Uint8Array>;
     /**
      * @return A promise that is resolved when the
      *   document's data is loaded. It is resolved with an {Object} that contains
@@ -532,11 +543,6 @@ export declare class PDFDocumentProxy {
      * The loadingTask for the current document.
      */
     get loadingTask(): PDFDocumentLoadingTask;
-    /**
-     * @return A promise that is resolved with a
-     *   {Uint8Array} containing the full data of the saved document.
-     */
-    saveDocument(): Promise<Uint8Array>;
     /**
      * @return A promise that is
      *   resolved with an {Object} containing /AcroForm field data for the JS
@@ -625,13 +631,13 @@ export interface TextItem {
      */
     str: string;
     /**
-     * Text direction: 'ttb', 'ltr' or 'rtl'.
+     * Text direction.
      */
-    dir: string;
+    dir: "ttb" | "ltr" | "rtl";
     /**
      * Transformation matrix.
      */
-    transform: matrix_t;
+    transform: matrix_t | undefined;
     /**
      * Width in device space.
      */
@@ -643,7 +649,7 @@ export interface TextItem {
     /**
      * Font name used by PDF.js for converted font.
      */
-    fontName: string;
+    fontName: string | undefined;
     /**
      * Indicating if the text content is followed by a line-break.
      */
@@ -653,16 +659,13 @@ export interface TextItem {
  * Page text marked content part.
  */
 export interface TextMarkedContent {
-    /**
-     * Either 'beginMarkedContent',
-     * 'beginMarkedContentProps', or 'endMarkedContent'.
-     */
-    type: string;
+    type: "beginMarkedContent" | "beginMarkedContentProps" | "endMarkedContent";
     /**
      * The marked content identifier. Only used for type
      * 'beginMarkedContentProps'.
      */
-    id: string;
+    id?: string | undefined;
+    tag?: string | undefined;
 }
 /**
  * Text style.
@@ -751,11 +754,6 @@ export interface RenderP {
      * before viewport transform.
      */
     transform?: matrix_t | undefined;
-    /**
-     * An object that has `beginLayout`,
-     * `endLayout` and `appendImage` functions.
-     */
-    imageLayer?: ImageLayer;
     /**
      * The factory instance that will be used
      * when creating canvases. The default value is {new DOMCanvasFactory()}.
@@ -935,7 +933,7 @@ export declare class PDFPageProxy {
      * @return An object that contains a promise that is
      *   resolved when the page finishes rendering.
      */
-    render({ canvasContext, viewport, intent, annotationMode, transform, imageLayer, canvasFactory, background, optionalContentConfigPromise, annotationCanvasMap, pageColors, printAnnotationStorage, }: RenderP): RenderTask;
+    render({ canvasContext, viewport, intent, annotationMode, transform, canvasFactory, background, optionalContentConfigPromise, annotationCanvasMap, pageColors, printAnnotationStorage, }: RenderP): RenderTask;
     /**
      * @param params Page getOperatorList parameters.
      * @return A promise resolved with an
@@ -1072,24 +1070,7 @@ declare class WorkerTransport {
     messageHandler: MessageHandler<Thread.main, Thread.worker>;
     loadingTask: PDFDocumentLoadingTask;
     commonObjs: PDFObjects<PDFCommonObjs>;
-    fontLoader: {
-        readonly isSyncFontLoadingSupported: boolean;
-        docId: string;
-        _onUnsupportedFeature: (_: {
-            featureId: UNSUPPORTED_FEATURES;
-        }) => void;
-        _document: Document;
-        nativeFontFaces: FontFace[];
-        styleElement: HTMLStyleElement | undefined;
-        addNativeFontFace(nativeFontFace: FontFace): void;
-        insertRule(rule: string): void;
-        clear(): void;
-        bind(font: FontFaceObject): Promise<void>;
-        _queueLoadingCallback(callback: (request: import("./font_loader.js").Request) => void): any;
-        readonly isFontLoadingAPISupported: boolean;
-        readonly _loadTestFont: string;
-        _prepareFontLoadEvent(rules: string[], fontsToLoad: FontFaceObject[], request: import("./font_loader.js").Request): void;
-    };
+    fontLoader: FontLoader;
     _getFieldObjectsPromise: Promise<Record<string, FieldObject[]> | undefined> | undefined;
     _hasJSActionsPromise: Promise<boolean> | undefined;
     _params: DocumentInitP;
@@ -1111,10 +1092,10 @@ declare class WorkerTransport {
     destroy(): Promise<void>;
     setupMessageHandler(): void;
     getData(): Promise<Uint8Array>;
+    saveDocument(): Promise<Uint8Array>;
     getPage(pageNumber: unknown): Promise<PDFPageProxy>;
     getPageIndex(ref: RefProxy): Promise<number>;
     getAnnotations(pageIndex: number, intent: RenderingIntentFlag): Promise<AnnotationData[]>;
-    saveDocument(): Promise<Uint8Array>;
     getFieldObjects(): Promise<Record<string, FieldObject[]> | undefined>;
     hasJSActions(): Promise<boolean>;
     getCalculationOrderIds(): Promise<string[] | undefined>;
@@ -1195,7 +1176,6 @@ interface _IRTCtorP_paraams {
     canvasContext: CanvasRenderingContext2D;
     viewport: PageViewport;
     transform: matrix_t | undefined;
-    imageLayer: ImageLayer | undefined;
     background: string | CanvasGradient | CanvasPattern | undefined;
 }
 interface _InternalRenderTaskCtorP {

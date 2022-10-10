@@ -8,7 +8,7 @@ export declare class Stream extends BaseStream {
     get length(): number;
     /** @implement */
     get isEmpty(): boolean;
-    constructor(arrayBuffer: Uint8Array | ArrayLike<number> | ArrayBufferLike, start?: number, length?: number, dict?: Dict);
+    constructor(arrayBuffer: Uint8Array | ArrayBuffer | number[], start?: number, length?: number, dict?: Dict);
     /** @implement */
     getByte(): number;
     /** @implement */

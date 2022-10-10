@@ -33,9 +33,11 @@ import {
   type ExplicitDest,
   type OpenAction,
   type Order,
+  type SetOCGState,
 } from "./core/catalog.ts";
 import { type AnnotActions } from "./core/core_utils.ts";
 import { type DocumentInfo, type XFAData } from "./core/document.ts";
+import { type Attachment } from "./core/file_spec.ts";
 import { type OpListIR } from "./core/operator_list.ts";
 import { Ref } from "./core/primitives.ts";
 import { WorkerMessageHandler } from "./core/worker.ts";
@@ -55,7 +57,6 @@ import {
   type DocumentInitP,
   getDocument,
   type Intent,
-  LoopbackPort,
   type OutlineNode,
   PDFDataRangeTransport,
   PDFDocumentLoadingTask,
@@ -72,7 +73,6 @@ import {
   version,
 } from "./display/api.ts";
 import {
-  binarySearchFirstItem,
   getFilenameFromUrl,
   getPdfFilenameFromUrl,
   getXfaPageViewport,
@@ -171,7 +171,7 @@ export {
   AnnotationStorage,
   type AnnotIntent,
   type AppInfo,
-  binarySearchFirstItem,
+  type Attachment,
   build,
   CMapCompressionType,
   createValidAbsoluteUrl,
@@ -193,7 +193,6 @@ export {
   InvalidPDFException,
   isPdfFile,
   loadScript,
-  LoopbackPort,
   type matrix_t,
   Metadata,
   MissingPDFException,
@@ -226,6 +225,7 @@ export {
   RenderTask,
   renderTextLayer,
   type ScriptingActionName,
+  type SetOCGState,
   shadow,
   StatTimer,
   SVGGraphics,

@@ -19,9 +19,8 @@
 /** @typedef {import("./event_utils").EventBus} EventBus */
 /** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
 import { createPromiseCap } from "../../lib/promisecap.js";
-import { binarySearchFirstItem, } from "../pdf.ts-src/pdf.js";
 import { getCharacterType } from "./pdf_find_utils.js";
-import { scrollIntoView } from "./ui_utils.js";
+import { binarySearchFirstItem, scrollIntoView } from "./ui_utils.js";
 /*80--------------------------------------------------------------------------*/
 export var FindState;
 (function (FindState) {
@@ -156,7 +155,7 @@ function normalize(text) {
     else {
         // Compile the regular expression for text normalization once.
         const replace = Object.keys(CHARACTERS_TO_NORMALIZE).join("");
-        const regexp = `([${replace}])|(\\p{M}+(?:-\\n)?)|(\\S-\\n)|(\\n)`;
+        const regexp = `([${replace}])|(\\p{M}+(?:-\\n)?)|(\\S-\\n)|(\\p{Ideographic}\\n)|(\\n)`;
         if (syllablePositions.length === 0) {
             // Most of the syllables belong to Hangul so there are no need
             // to search for them in a non-Hangul document.
@@ -205,7 +204,7 @@ function normalize(text) {
     let shiftOrigin = 0;
     let eol = 0;
     let hasDiacritics = false;
-    normalized = normalized.replace(normalizationRegex, (match, p1, p2, p3, p4, p5, i) => {
+    normalized = normalized.replace(normalizationRegex, (match, p1, p2, p3, p4, p5, p6, i) => {
         i -= shiftOrigin;
         if (p1) {
             // Maybe fractions or quotations mark...
@@ -258,6 +257,14 @@ function normalize(text) {
             return p3.charAt(0);
         }
         if (p4) {
+            // An ideographic at the end of a line doesn't imply adding an extra
+            // white space.
+            positions.push([i - shift + 1, shift]);
+            shiftOrigin += 1;
+            eol += 1;
+            return p4.charAt(0);
+        }
+        if (p5) {
             // eol is replaced by space: "foo\nbar" is likely equivalent to
             // "foo bar".
             positions.push([i - shift + 1, shift - 1]);
@@ -266,7 +273,7 @@ function normalize(text) {
             eol += 1;
             return " ";
         }
-        // p5
+        // p6
         if (i + eol === syllablePositions[syllableIndex]?.[1]) {
             // A syllable (1 char) is replaced with several chars (n) so
             // newCharsLen = n - 1.
@@ -278,7 +285,7 @@ function normalize(text) {
             shift -= newCharLen;
             shiftOrigin += newCharLen;
         }
-        return p5;
+        return p6;
     });
     positions.push([normalized.length, shift]);
     return [normalized, positions, hasDiacritics];

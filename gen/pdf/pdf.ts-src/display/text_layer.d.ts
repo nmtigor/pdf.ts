@@ -65,7 +65,6 @@ declare namespace Ns_renderTextLayer {
         viewport: PageViewport;
         textDivs?: HTMLSpanElement[] | undefined;
         textContentItemsStr?: string[] | undefined;
-        enhanceTextSelection?: boolean | undefined;
     }
     interface TLRTBound {
         left: number;
@@ -88,7 +87,6 @@ declare namespace Ns_renderTextLayer {
         _viewport: PageViewport;
         _textDivs: HTMLSpanElement[];
         _textContentItemsStr: string[];
-        _enhanceTextSelection: boolean;
         _fontInspectorEnabled: boolean;
         _devicePixelRatio: number;
         _reader?: ReadableStreamDefaultReader | undefined;
@@ -100,7 +98,7 @@ declare namespace Ns_renderTextLayer {
         _canceled: boolean;
         _capability: import("../../../lib/promisecap.js").PromiseCap<void>;
         _bounds: TLRTBound[] | undefined;
-        constructor({ textContent, textContentStream, container, viewport, textDivs, textContentItemsStr, enhanceTextSelection, }: _TLRTCtorP);
+        constructor({ textContent, textContentStream, container, viewport, textDivs, textContentItemsStr, }: _TLRTCtorP);
         /**
          * Promise for textLayer rendering task completion.
          */
@@ -117,7 +115,6 @@ declare namespace Ns_renderTextLayer {
          * @private
          */
         _render(timeout?: number): void;
-        expandTextDivs(expandDivs?: boolean): void;
     }
     export function renderTextLayer(renderParameters: _TextLayerRenderP): TextLayerRenderTask;
     export {};

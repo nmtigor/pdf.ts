@@ -15,40 +15,40 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { CHROME, MOZCENTRAL, _PDFDEV } from "../../../global.js";
+import { _PDFDEV, CHROME, MOZCENTRAL } from "../../../global.js";
 import { html } from "../../../lib/dom.js";
 import { assert } from "../../../lib/util/trace.js";
 import { FontExpotDataEx } from "../core/fonts.js";
-import { bytesToString, FeatureTest, shadow, string32, UNSUPPORTED_FEATURES, warn } from "../shared/util.js";
-class BaseFontLoader {
-    docId;
+import { bytesToString, FeatureTest, shadow, string32, UNSUPPORTED_FEATURES, warn, } from "../shared/util.js";
+export class FontLoader {
     _onUnsupportedFeature;
     _document;
     nativeFontFaces = [];
     styleElement;
-    constructor({ docId, onUnsupportedFeature, ownerDocument = globalThis.document, styleElement = undefined, // For testing only.
+    loadingRequests;
+    loadTestFontId;
+    constructor({ onUnsupportedFeature, ownerDocument = globalThis.document, styleElement = undefined, // For testing only.
      }) {
-        this.docId = docId;
         this._onUnsupportedFeature = onUnsupportedFeature;
         this._document = ownerDocument;
-        this.styleElement = _PDFDEV /*#static*/
-            ? styleElement
-            : undefined;
+        this.styleElement = /*#static*/ styleElement;
+        /*#static*/  {
+            this.loadingRequests = [];
+            this.loadTestFontId = 0;
+        }
     }
     addNativeFontFace(nativeFontFace) {
         this.nativeFontFaces.push(nativeFontFace);
         this._document.fonts.add(nativeFontFace);
     }
     insertRule(rule) {
-        let styleElement = this.styleElement;
-        if (!styleElement) {
-            styleElement = this.styleElement = html("style", "", this._document);
-            styleElement.id = `PDFJS_FONT_STYLE_TAG_${this.docId}`;
+        if (!this.styleElement) {
+            this.styleElement = this._document.createElement("style");
             this._document.documentElement
                 .getElementsByTagName("head")[0]
-                .append(styleElement);
+                .append(this.styleElement);
         }
-        const styleSheet = styleElement.sheet;
+        const styleSheet = this.styleElement.sheet;
         styleSheet.insertRule(rule, styleSheet.cssRules.length);
     }
     clear() {
@@ -87,23 +87,20 @@ class BaseFontLoader {
             }
             return; // The font was, asynchronously, loaded.
         }
-        //. !this.isFontLoadingAPISupported
+        // !this.isFontLoadingAPISupported
         const rule = font.createFontFaceRule();
         if (rule) {
             this.insertRule(rule);
             if (this.isSyncFontLoadingSupported) {
                 return; // The font was, synchronously, loaded.
             }
+            /*#static*/ 
             await new Promise((resolve) => {
                 const request = this._queueLoadingCallback(resolve);
-                this._prepareFontLoadEvent([rule], [font], request);
+                this._prepareFontLoadEvent(font, request);
             });
             // The font was, asynchronously, loaded.
         }
-    }
-    _queueLoadingCallback(callback) {
-        assert(0, "Abstract method `_queueLoadingCallback`.");
-        return 0;
     }
     get isFontLoadingAPISupported() {
         const hasFonts = !!this._document?.fonts;
@@ -111,189 +108,158 @@ class BaseFontLoader {
             return shadow(this, "isFontLoadingAPISupported", hasFonts && !this.styleElement);
         }
     }
-    // eslint-disable-next-line getter-return
-    get _loadTestFont() {
-        assert(0, "Abstract method `_loadTestFont`.");
-        return "";
-    }
-    _prepareFontLoadEvent(rules, fontsToLoad, request) {
-        assert(0, "Abstract method `_prepareFontLoadEvent`.");
-    }
-}
-export let FontLoader = class extends BaseFontLoader {
-    /** @implement */
     get isSyncFontLoadingSupported() {
-        return shadow(this, "isSyncFontLoadingSupported", true);
-    }
-};
-/*#static*/  {
-    // PDFJSDev.test('CHROME || GENERIC')
-    FontLoader = class extends BaseFontLoader {
-        loadingContext = {
-            requests: [],
-            nextRequestId: 0,
-        };
-        loadTestFontId = 0;
-        /** @implement */
-        get isSyncFontLoadingSupported() {
-            let supported = false;
-            /*#static*/  {
-                if (typeof navigator === "undefined") {
-                    // Node.js - we can pretend that sync font loading is supported.
+        /*#static*/ 
+        let supported = false;
+        /*#static*/  {
+            if (typeof navigator === "undefined") {
+                // Node.js - we can pretend that sync font loading is supported.
+                supported = true;
+            }
+            else {
+                // User agent string sniffing is bad, but there is no reliable way to
+                // tell if the font is fully loaded and ready to be used with canvas.
+                const m = /Mozilla\/5.0.*?rv:(\d+).*? Gecko/.exec(navigator.userAgent);
+                if (m?.[1] >= 14) {
                     supported = true;
                 }
-                else {
-                    // User agent string sniffing is bad, but there is no reliable way to
-                    // tell if the font is fully loaded and ready to be used with canvas.
-                    const m = /Mozilla\/5.0.*?rv:(\d+).*? Gecko/.exec(navigator.userAgent);
-                    if (m?.[1] >= 14) {
-                        supported = true;
-                    }
-                    // TODO - other browsers...
-                }
+                // TODO - other browsers...
             }
-            return shadow(this, "isSyncFontLoadingSupported", supported);
         }
-        _queueLoadingCallback(callback) {
-            function completeRequest() {
-                assert(!request.done, "completeRequest() cannot be called twice.");
-                request.done = true;
-                // Sending all completed requests in order of how they were queued.
-                while (context.requests.length > 0 && context.requests[0].done) {
-                    const otherRequest = context.requests.shift();
-                    setTimeout(otherRequest.callback, 0);
-                }
+        return shadow(this, "isSyncFontLoadingSupported", supported);
+    }
+    _queueLoadingCallback(callback) {
+        /*#static*/ 
+        function completeRequest() {
+            assert(!request.done, "completeRequest() cannot be called twice.");
+            request.done = true;
+            // Sending all completed requests in order of how they were queued.
+            while (loadingRequests.length > 0 && loadingRequests[0].done) {
+                const otherRequest = loadingRequests.shift();
+                setTimeout(otherRequest.callback, 0);
             }
-            const context = this.loadingContext;
-            const request = {
-                id: `pdfjs-font-loading-${context.nextRequestId++}`,
-                done: false,
-                complete: completeRequest,
-                callback,
-            };
-            context.requests.push(request);
-            return request;
         }
-        get _loadTestFont() {
-            const getLoadTestFont = function () {
-                // This is a CFF font with 1 glyph for '.' that fills its entire width
-                // and height.
-                return atob("T1RUTwALAIAAAwAwQ0ZGIDHtZg4AAAOYAAAAgUZGVE1lkzZwAAAEHAAAABxHREVGABQA" +
-                    "FQAABDgAAAAeT1MvMlYNYwkAAAEgAAAAYGNtYXABDQLUAAACNAAAAUJoZWFk/xVFDQAA" +
-                    "ALwAAAA2aGhlYQdkA+oAAAD0AAAAJGhtdHgD6AAAAAAEWAAAAAZtYXhwAAJQAAAAARgA" +
-                    "AAAGbmFtZVjmdH4AAAGAAAAAsXBvc3T/hgAzAAADeAAAACAAAQAAAAEAALZRFsRfDzz1" +
-                    "AAsD6AAAAADOBOTLAAAAAM4KHDwAAAAAA+gDIQAAAAgAAgAAAAAAAAABAAADIQAAAFoD" +
-                    "6AAAAAAD6AABAAAAAAAAAAAAAAAAAAAAAQAAUAAAAgAAAAQD6AH0AAUAAAKKArwAAACM" +
-                    "AooCvAAAAeAAMQECAAACAAYJAAAAAAAAAAAAAQAAAAAAAAAAAAAAAFBmRWQAwAAuAC4D" +
-                    "IP84AFoDIQAAAAAAAQAAAAAAAAAAACAAIAABAAAADgCuAAEAAAAAAAAAAQAAAAEAAAAA" +
-                    "AAEAAQAAAAEAAAAAAAIAAQAAAAEAAAAAAAMAAQAAAAEAAAAAAAQAAQAAAAEAAAAAAAUA" +
-                    "AQAAAAEAAAAAAAYAAQAAAAMAAQQJAAAAAgABAAMAAQQJAAEAAgABAAMAAQQJAAIAAgAB" +
-                    "AAMAAQQJAAMAAgABAAMAAQQJAAQAAgABAAMAAQQJAAUAAgABAAMAAQQJAAYAAgABWABY" +
-                    "AAAAAAAAAwAAAAMAAAAcAAEAAAAAADwAAwABAAAAHAAEACAAAAAEAAQAAQAAAC7//wAA" +
-                    "AC7////TAAEAAAAAAAABBgAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
-                    "AAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
-                    "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
-                    "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
-                    "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
-                    "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMAAAAAAAD/gwAyAAAAAQAAAAAAAAAAAAAAAAAA" +
-                    "AAABAAQEAAEBAQJYAAEBASH4DwD4GwHEAvgcA/gXBIwMAYuL+nz5tQXkD5j3CBLnEQAC" +
-                    "AQEBIVhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYAAABAQAADwACAQEEE/t3" +
-                    "Dov6fAH6fAT+fPp8+nwHDosMCvm1Cvm1DAz6fBQAAAAAAAABAAAAAMmJbzEAAAAAzgTj" +
-                    "FQAAAADOBOQpAAEAAAAAAAAADAAUAAQAAAABAAAAAgABAAAAAAAAAAAD6AAAAAAAAA==");
-            };
-            return shadow(this, "_loadTestFont", getLoadTestFont());
+        const { loadingRequests } = this;
+        const request = {
+            done: false,
+            complete: completeRequest,
+            callback,
+        };
+        loadingRequests.push(request);
+        return request;
+    }
+    get _loadTestFont() {
+        /*#static*/ 
+        // This is a CFF font with 1 glyph for '.' that fills its entire width
+        // and height.
+        const testFont = atob("T1RUTwALAIAAAwAwQ0ZGIDHtZg4AAAOYAAAAgUZGVE1lkzZwAAAEHAAAABxHREVGABQA" +
+            "FQAABDgAAAAeT1MvMlYNYwkAAAEgAAAAYGNtYXABDQLUAAACNAAAAUJoZWFk/xVFDQAA" +
+            "ALwAAAA2aGhlYQdkA+oAAAD0AAAAJGhtdHgD6AAAAAAEWAAAAAZtYXhwAAJQAAAAARgA" +
+            "AAAGbmFtZVjmdH4AAAGAAAAAsXBvc3T/hgAzAAADeAAAACAAAQAAAAEAALZRFsRfDzz1" +
+            "AAsD6AAAAADOBOTLAAAAAM4KHDwAAAAAA+gDIQAAAAgAAgAAAAAAAAABAAADIQAAAFoD" +
+            "6AAAAAAD6AABAAAAAAAAAAAAAAAAAAAAAQAAUAAAAgAAAAQD6AH0AAUAAAKKArwAAACM" +
+            "AooCvAAAAeAAMQECAAACAAYJAAAAAAAAAAAAAQAAAAAAAAAAAAAAAFBmRWQAwAAuAC4D" +
+            "IP84AFoDIQAAAAAAAQAAAAAAAAAAACAAIAABAAAADgCuAAEAAAAAAAAAAQAAAAEAAAAA" +
+            "AAEAAQAAAAEAAAAAAAIAAQAAAAEAAAAAAAMAAQAAAAEAAAAAAAQAAQAAAAEAAAAAAAUA" +
+            "AQAAAAEAAAAAAAYAAQAAAAMAAQQJAAAAAgABAAMAAQQJAAEAAgABAAMAAQQJAAIAAgAB" +
+            "AAMAAQQJAAMAAgABAAMAAQQJAAQAAgABAAMAAQQJAAUAAgABAAMAAQQJAAYAAgABWABY" +
+            "AAAAAAAAAwAAAAMAAAAcAAEAAAAAADwAAwABAAAAHAAEACAAAAAEAAQAAQAAAC7//wAA" +
+            "AC7////TAAEAAAAAAAABBgAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
+            "AAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
+            "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
+            "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
+            "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" +
+            "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMAAAAAAAD/gwAyAAAAAQAAAAAAAAAAAAAAAAAA" +
+            "AAABAAQEAAEBAQJYAAEBASH4DwD4GwHEAvgcA/gXBIwMAYuL+nz5tQXkD5j3CBLnEQAC" +
+            "AQEBIVhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYAAABAQAADwACAQEEE/t3" +
+            "Dov6fAH6fAT+fPp8+nwHDosMCvm1Cvm1DAz6fBQAAAAAAAABAAAAAMmJbzEAAAAAzgTj" +
+            "FQAAAADOBOQpAAEAAAAAAAAADAAUAAQAAAABAAAAAgABAAAAAAAAAAAD6AAAAAAAAA==");
+        return shadow(this, "_loadTestFont", testFont);
+    }
+    _prepareFontLoadEvent(font, request) {
+        /*#static*/ 
+        /** Hack begin */
+        // There's currently no event when a font has finished downloading so the
+        // following code is a dirty hack to 'guess' when a font is ready.
+        // It's assumed fonts are loaded in order, so add a known test font after
+        // the desired fonts and then test for the loading of that test font.
+        function int32(data, offset) {
+            return ((data.charCodeAt(offset) << 24) |
+                (data.charCodeAt(offset + 1) << 16) |
+                (data.charCodeAt(offset + 2) << 8) |
+                (data.charCodeAt(offset + 3) & 0xff));
         }
-        _prepareFontLoadEvent(rules, fonts, request) {
-            /** Hack begin */
-            // There's currently no event when a font has finished downloading so the
-            // following code is a dirty hack to 'guess' when a font is ready.
-            // It's assumed fonts are loaded in order, so add a known test font after
-            // the desired fonts and then test for the loading of that test font.
-            function int32(data, offset) {
-                return ((data.charCodeAt(offset) << 24) |
-                    (data.charCodeAt(offset + 1) << 16) |
-                    (data.charCodeAt(offset + 2) << 8) |
-                    (data.charCodeAt(offset + 3) & 0xff));
-            }
-            function spliceString(s, offset, remove, insert) {
-                const chunk1 = s.substring(0, offset);
-                const chunk2 = s.substring(offset + remove);
-                return chunk1 + insert + chunk2;
-            }
-            let i, ii;
-            // The temporary canvas is used to determine if fonts are loaded.
-            const canvas = html("canvas", undefined, this._document);
-            canvas.width = 1;
-            canvas.height = 1;
-            const ctx = canvas.getContext("2d");
-            let called = 0;
-            function isFontReady(name, callback) {
-                called++;
-                // With setTimeout clamping this gives the font ~100ms to load.
-                if (called > 30) {
-                    warn("Load test font never loaded.");
-                    callback();
-                    return;
-                }
-                ctx.font = "30px " + name;
-                ctx.fillText(".", 0, 20);
-                const imageData = ctx.getImageData(0, 0, 1, 1);
-                if (imageData.data[3] > 0) {
-                    callback();
-                    return;
-                }
-                setTimeout(isFontReady.bind(null, name, callback));
-            }
-            const loadTestFontId = `lt${Date.now()}${this.loadTestFontId++}`;
-            // Chromium seems to cache fonts based on a hash of the actual font data,
-            // so the font must be modified for each load test else it will appear to
-            // be loaded already.
-            // TODO: This could maybe be made faster by avoiding the btoa of the full
-            // font by splitting it in chunks before hand and padding the font id.
-            let data = this._loadTestFont;
-            const COMMENT_OFFSET = 976; // has to be on 4 byte boundary (for checksum)
-            data = spliceString(data, COMMENT_OFFSET, loadTestFontId.length, loadTestFontId);
-            // CFF checksum is important for IE, adjusting it
-            const CFF_CHECKSUM_OFFSET = 16;
-            const XXXX_VALUE = 0x58585858; // the "comment" filled with 'X'
-            let checksum = int32(data, CFF_CHECKSUM_OFFSET);
-            for (i = 0, ii = loadTestFontId.length - 3; i < ii; i += 4) {
-                checksum = (checksum - XXXX_VALUE + int32(loadTestFontId, i)) | 0;
-            }
-            if (i < loadTestFontId.length) {
-                // align to 4 bytes boundary
-                checksum = (checksum - XXXX_VALUE + int32(loadTestFontId + "XXX", i)) |
-                    0;
-            }
-            data = spliceString(data, CFF_CHECKSUM_OFFSET, 4, string32(checksum));
-            const url = `url(data:font/opentype;base64,${btoa(data)});`;
-            const rule = `@font-face {font-family:"${loadTestFontId}";src:${url}}`;
-            this.insertRule(rule);
-            const names = [];
-            for (const font of fonts) {
-                names.push(font.loadedName);
-            }
-            names.push(loadTestFontId);
-            const div = html("div", undefined, this._document);
-            div.style.visibility = "hidden";
-            div.style.width = div.style.height = "10px";
-            div.style.position = "absolute";
-            div.style.top = div.style.left = "0px";
-            for (const name of names) {
-                const span = html("span", undefined, this._document);
-                span.textContent = "Hi";
-                span.style.fontFamily = name;
-                div.append(span);
-            }
-            this._document.body.append(div);
-            isFontReady(loadTestFontId, () => {
-                div.remove();
-                request.complete();
-            });
-            /** Hack end */
+        function spliceString(s, offset, remove, insert) {
+            const chunk1 = s.substring(0, offset);
+            const chunk2 = s.substring(offset + remove);
+            return chunk1 + insert + chunk2;
         }
-    };
-} // End of PDFJSDev.test('CHROME || GENERIC')
+        let i, ii;
+        // The temporary canvas is used to determine if fonts are loaded.
+        const canvas = html("canvas", undefined, this._document);
+        canvas.width = 1;
+        canvas.height = 1;
+        const ctx = canvas.getContext("2d");
+        let called = 0;
+        function isFontReady(name, callback) {
+            // With setTimeout clamping this gives the font ~100ms to load.
+            if (++called > 30) {
+                warn("Load test font never loaded.");
+                callback();
+                return;
+            }
+            ctx.font = "30px " + name;
+            ctx.fillText(".", 0, 20);
+            const imageData = ctx.getImageData(0, 0, 1, 1);
+            if (imageData.data[3] > 0) {
+                callback();
+                return;
+            }
+            setTimeout(isFontReady.bind(null, name, callback));
+        }
+        const loadTestFontId = `lt${Date.now()}${this.loadTestFontId++}`;
+        // Chromium seems to cache fonts based on a hash of the actual font data,
+        // so the font must be modified for each load test else it will appear to
+        // be loaded already.
+        // TODO: This could maybe be made faster by avoiding the btoa of the full
+        // font by splitting it in chunks before hand and padding the font id.
+        let data = this._loadTestFont;
+        const COMMENT_OFFSET = 976; // has to be on 4 byte boundary (for checksum)
+        data = spliceString(data, COMMENT_OFFSET, loadTestFontId.length, loadTestFontId);
+        // CFF checksum is important for IE, adjusting it
+        const CFF_CHECKSUM_OFFSET = 16;
+        const XXXX_VALUE = 0x58585858; // the "comment" filled with 'X'
+        let checksum = int32(data, CFF_CHECKSUM_OFFSET);
+        for (i = 0, ii = loadTestFontId.length - 3; i < ii; i += 4) {
+            checksum = (checksum - XXXX_VALUE + int32(loadTestFontId, i)) | 0;
+        }
+        if (i < loadTestFontId.length) {
+            // align to 4 bytes boundary
+            checksum = (checksum - XXXX_VALUE + int32(loadTestFontId + "XXX", i)) | 0;
+        }
+        data = spliceString(data, CFF_CHECKSUM_OFFSET, 4, string32(checksum));
+        const url = `url(data:font/opentype;base64,${btoa(data)});`;
+        const rule = `@font-face {font-family:"${loadTestFontId}";src:${url}}`;
+        this.insertRule(rule);
+        const div = html("div", undefined, this._document);
+        div.style.visibility = "hidden";
+        div.style.width = div.style.height = "10px";
+        div.style.position = "absolute";
+        div.style.top = div.style.left = "0px";
+        for (const name of [font.loadedName, loadTestFontId]) {
+            const span = html("span", undefined, this._document);
+            span.textContent = "Hi";
+            span.style.fontFamily = name;
+            div.append(span);
+        }
+        this._document.body.append(div);
+        isFontReady(loadTestFontId, () => {
+            div.remove();
+            request.complete();
+        });
+        /** Hack end */
+    }
+}
 export class FontFaceObject extends FontExpotDataEx {
     compiledGlyphs = Object.create(null);
     isEvalSupported;
@@ -391,6 +357,7 @@ export class FontFaceObject extends FontExpotDataEx {
                 if (current.cmd === "scale") {
                     current.args = [size, -size];
                 }
+                // eslint-disable-next-line prefer-spread
                 c[current.cmd].apply(c, current.args);
             }
         });

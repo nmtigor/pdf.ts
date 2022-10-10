@@ -18,6 +18,7 @@
  */
 
 import { type AnnotStorageRecord } from "../display/annotation_layer.ts";
+import { type BinaryData } from "../display/api.ts";
 import { MessageHandler, Thread } from "../shared/message_handler.ts";
 import {
   AbortException,
@@ -167,7 +168,7 @@ export class LocalPdfManager extends BasePdfManager {
 
   constructor(
     docId: string,
-    data: Uint8Array | number[],
+    data: BinaryData,
     password: string | undefined,
     msgHandler: MessageHandler<Thread.worker>,
     evaluatorOptions: EvaluatorOptions,
@@ -181,7 +182,7 @@ export class LocalPdfManager extends BasePdfManager {
     this.evaluatorOptions = evaluatorOptions;
     this.enableXfa = enableXfa;
 
-    const stream = new Stream(data);
+    const stream = new Stream(data as Uint8Array | ArrayBuffer | number[]);
     this.pdfDocument = new PDFDocument(this, stream);
     this.#loadedStreamPromise = Promise.resolve(stream);
   }

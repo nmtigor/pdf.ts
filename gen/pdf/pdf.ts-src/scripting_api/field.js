@@ -14,7 +14,6 @@ export class Field extends PDFObject {
     buttonScaleHow;
     buttonScaleWhen;
     calcOrderIndex;
-    charLimit;
     comb;
     commitOnSelChange;
     defaultStyle;
@@ -107,6 +106,16 @@ export class Field extends PDFObject {
     set bgColor(color) {
         this.fillColor = color;
     }
+    _charLimit;
+    get charLimit() {
+        return this._charLimit;
+    }
+    set charLimit(limit) {
+        if (typeof limit !== "number") {
+            throw new Error("Invalid argument value");
+        }
+        this._charLimit = Math.max(0, Math.floor(limit));
+    }
     _isChoice;
     _items;
     get numItems() {
@@ -179,7 +188,6 @@ export class Field extends PDFObject {
         this.buttonScaleHow = data.buttonScaleHow;
         this.buttonScaleWhen = data.buttonScaleWhen;
         this.calcOrderIndex = data.calcOrderIndex;
-        this.charLimit = data.charLimit;
         this.comb = data.comb;
         this.commitOnSelChange = data.commitOnSelChange;
         this.currentValueIndices = data.currentValueIndices;
@@ -216,6 +224,7 @@ export class Field extends PDFObject {
         // Private
         this._actions = createActionsMap(data.actions);
         this._browseForFileToSubmit = data.browseForFileToSubmit;
+        this._charLimit = data.charLimit;
         this._currentValueIndices = data.currentValueIndices || 0;
         this._document = data.doc;
         this._fieldPath = data.fieldPath;
@@ -441,10 +450,10 @@ export class Field extends PDFObject {
             return;
         }
         if (!(cTrigger in this._actions)) {
-            // this._actions[cTrigger] = []; //kkkk bug? ✅ 
+            // this._actions[cTrigger] = []; //kkkk bug? ✅
             this._actions.set(cTrigger, []);
         }
-        // this._actions[cTrigger].push( cScript); //kkkk bug? ✅ 
+        // this._actions[cTrigger].push( cScript); //kkkk bug? ✅
         this._actions.get(cTrigger).push(cScript);
     }
     setFocus() {

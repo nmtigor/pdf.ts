@@ -151,6 +151,7 @@ declare namespace NsCFFTopDict {
      * [CFF] Table 9
      */
     class CFFTopDict extends CFFDict {
+        static get tables(): CFFTables;
         privateDict?: CFFPrivateDict;
         constructor(strings?: CFFStrings);
     }
@@ -159,6 +160,7 @@ export declare type CFFTopDict = NsCFFTopDict.CFFTopDict;
 export declare var CFFTopDict: typeof NsCFFTopDict.CFFTopDict;
 declare namespace NsCFFPrivateDict {
     class CFFPrivateDict extends CFFDict {
+        static get tables(): CFFTables;
         subrsIndex?: CFFIndex;
         constructor(strings?: CFFStrings);
     }

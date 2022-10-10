@@ -23,6 +23,8 @@
 /** @typedef {import("../src/display/editor/tools.js").AnnotationEditorUIManager} AnnotationEditorUIManager */
 // eslint-disable-next-line max-len
 /** @typedef {import("../annotation_storage.js").AnnotationStorage} AnnotationStorage */
+// eslint-disable-next-line max-len
+/** @typedef {import("./text_accessibility.js").TextAccessibilityManager} TextAccessibilityManager */
 /** @typedef {import("./interfaces").IL10n} IL10n */
 import { html } from "../../lib/dom.js";
 import { AnnotationEditorLayer, } from "../pdf.ts-src/pdf.js";
@@ -31,6 +33,7 @@ export class AnnotationEditorLayerBuilder {
     pageDiv;
     pdfPage;
     annotationStorage;
+    accessibilityManager;
     l10n;
     annotationEditorLayer;
     div;
@@ -40,6 +43,7 @@ export class AnnotationEditorLayerBuilder {
         this.pageDiv = options.pageDiv;
         this.pdfPage = options.pdfPage;
         this.annotationStorage = options.annotationStorage || undefined;
+        this.accessibilityManager = options.accessibilityManager;
         this.l10n = options.l10n || NullL10n;
         this._cancelled = false;
         this.#uiManager = options.uiManager;
@@ -69,6 +73,7 @@ export class AnnotationEditorLayerBuilder {
             uiManager: this.#uiManager,
             div: this.div,
             annotationStorage: this.annotationStorage,
+            accessibilityManager: this.accessibilityManager,
             pageIndex: this.pdfPage._pageIndex,
             l10n: this.l10n,
             viewport: clonedViewport,

@@ -31,8 +31,8 @@ import {
   shadow,
 } from "../pdf.ts-src/pdf.ts";
 import { PDFPrintServiceFactory } from "./app.ts";
-import { PageOverview } from "./base_viewer.ts";
 import { PDFPrintService } from "./pdf_print_service.ts";
+import { PageOverview } from "./pdf_viewer.ts";
 import { getXfaHtmlForPrinting } from "./print_utils.ts";
 /*80--------------------------------------------------------------------------*/
 

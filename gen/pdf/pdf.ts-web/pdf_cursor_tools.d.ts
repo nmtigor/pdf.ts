@@ -27,7 +27,7 @@ export declare class PDFCursorTools {
     eventBus: EventBus;
     active: CursorTool;
     get activeTool(): CursorTool;
-    activeBeforePresentationMode?: CursorTool | undefined;
+    previouslyActive?: CursorTool | undefined;
     handTool: GrabToPan;
     constructor({ container, eventBus, cursorToolOnLoad, }: PDFCursorToolsOptions);
     /**

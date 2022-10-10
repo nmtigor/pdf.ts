@@ -15,10 +15,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { _PDFDEV } from "../../../global.js";
+import { _PDFDEV, DENO, SKIP_BABEL } from "../../../global.js";
 import { isObjectLike } from "../../../lib/jslang.js";
 import { assert, warn as warn_0 } from "../../../lib/util/trace.js";
 /*80--------------------------------------------------------------------------*/
+// Skip compatibility checks for modern builds and if we already ran the module.
+/*#static*/ 
 export const IDENTITY_MATRIX = [1, 0, 0, 1, 0, 0];
 export const FONT_IDENTITY_MATRIX = [0.001, 0, 0, 0.001, 0, 0];
 // Represent the percentage of the height of a single-line field over

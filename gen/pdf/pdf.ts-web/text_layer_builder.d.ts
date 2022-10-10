@@ -1,5 +1,6 @@
 import { PageViewport, type TextContent, TextLayerRenderTask } from "../pdf.ts-src/pdf.js";
 import { EventBus } from "./event_utils.js";
+import { TextAccessibilityManager } from "./text_accessibility.js";
 import { TextHighlighter } from "./text_highlighter.js";
 interface TextLayerBuilderOptions {
     /**
@@ -23,10 +24,7 @@ interface TextLayerBuilderOptions {
      * highlighting text from the find controller.
      */
     highlighter: TextHighlighter | undefined;
-    /**
-     * Option to turn on improved text selection.
-     */
-    enhanceTextSelection?: boolean;
+    accessibilityManager: TextAccessibilityManager | undefined;
 }
 interface TLBMBound {
     divIdx: number;
@@ -55,8 +53,8 @@ export declare class TextLayerBuilder {
     textDivs: HTMLDivElement[];
     textLayerRenderTask?: TextLayerRenderTask | undefined;
     highlighter: TextHighlighter | undefined;
-    enhanceTextSelection: boolean;
-    constructor({ textLayerDiv, eventBus, pageIndex, viewport, highlighter, enhanceTextSelection, }: TextLayerBuilderOptions);
+    accessibilityManager: TextAccessibilityManager | undefined;
+    constructor({ textLayerDiv, eventBus, pageIndex, viewport, highlighter, accessibilityManager, }: TextLayerBuilderOptions);
     /**
      * Renders the text layer.
      *

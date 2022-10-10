@@ -1635,9 +1635,7 @@ export class SVGGraphics {
   };
 
   [OPS.eoFill]() {
-    if (this.current.element) {
-      this.current.element.setAttributeNS(null, "fill-rule", "evenodd");
-    }
+    this.current.element?.setAttributeNS(null, "fill-rule", "evenodd");
     this[OPS.fill]();
   }
 
@@ -1649,9 +1647,7 @@ export class SVGGraphics {
   }
 
   [OPS.eoFillStroke]() {
-    if (this.current.element) {
-      this.current.element.setAttributeNS(null, "fill-rule", "evenodd");
-    }
+    this.current.element?.setAttributeNS(null, "fill-rule", "evenodd");
     this[OPS.fillStroke]();
   }
 

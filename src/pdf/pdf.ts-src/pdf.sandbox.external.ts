@@ -37,10 +37,10 @@ export class SandboxSupportBase {
   }
 
   destroy() {
-    // this.commFunc = null; //kkkk bug? ✅
     this.commFun = undefined;
-    // this.timeoutIds.forEach(( [_, id]) => this.win.clearTimeout(id)); //kkkk bug? ✅
-    this.timeoutIds.forEach((_, id) => this.win.clearTimeout(id));
+    for (const id of this.timeoutIds.values()) {
+      this.win.clearTimeout(id);
+    }
     this.timeoutIds = undefined as any;
   }
 
@@ -103,9 +103,9 @@ export class SandboxSupportBase {
         }, nMilliseconds);
         this.timeoutIds.set(callbackId, id);
       },
-      clearTimeout: (id: number) => {
-        this.win.clearTimeout(this.timeoutIds.get(id));
-        this.timeoutIds.delete(id);
+      clearTimeout: (callbackId: number) => {
+        this.win.clearTimeout(this.timeoutIds.get(callbackId));
+        this.timeoutIds.delete(callbackId);
       },
       setInterval: (callbackId: number, nMilliseconds: number) => {
         if (
@@ -122,9 +122,9 @@ export class SandboxSupportBase {
         }, nMilliseconds);
         this.timeoutIds.set(callbackId, id);
       },
-      clearInterval: (id: number) => {
-        this.win.clearInterval(this.timeoutIds.get(id));
-        this.timeoutIds.delete(id);
+      clearInterval: (callbackId: number) => {
+        this.win.clearInterval(this.timeoutIds.get(callbackId));
+        this.timeoutIds.delete(callbackId);
       },
       alert: (cMsg: string) => {
         if (typeof cMsg !== "string") {

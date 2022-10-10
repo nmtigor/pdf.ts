@@ -5,6 +5,7 @@ import { type CMapData } from "../display/base_factory.js";
 import { MessageHandler, Thread } from "../shared/message_handler.js";
 import { PermissionFlag, type rect_t } from "../shared/util.js";
 import { TranslatedFont } from "./evaluator.js";
+import { Attachment } from "./file_spec.js";
 import { GlobalImageCache } from "./image_utils.js";
 import { BasePdfManager } from "./pdf_manager.js";
 import { Dict, Name, type Obj, Ref, RefSet, RefSetCache } from "./primitives.js";
@@ -27,13 +28,19 @@ export declare type ExplicitDest = [
     name: "FitR";
 }, ...rect_t];
 export declare type Destination = ExplicitDest | Name | string;
+export interface SetOCGState {
+    state: string[];
+    preserveRB: boolean;
+}
 export interface CatParseDestDictRes {
-    url?: string;
-    unsafeUrl?: string;
+    action?: string;
+    attachment?: Attachment;
     dest?: ExplicitDest | string;
     newWindow?: boolean;
-    action?: string;
     resetForm?: ResetForm;
+    setOCGState?: SetOCGState;
+    unsafeUrl?: string;
+    url?: string;
 }
 interface _ParseDestDictionaryP {
     /**
@@ -49,6 +56,10 @@ interface _ParseDestDictionaryP {
      * attempting to recover valid absolute URLs from relative ones.
      */
     docBaseUrl?: string | URL | undefined;
+    /**
+     * The document attachments (may not exist in most PDF documents).
+     */
+    docAttachments?: Attachments | undefined;
 }
 export interface OpenAction {
     dest?: Destination;
@@ -83,6 +94,7 @@ export interface MarkInfo {
     Suspects: boolean;
 }
 declare type AllPageDicts = Map<number, [Dict, Ref | undefined] | [Error, undefined]>;
+export declare type Attachments = Record<string, Attachment>;
 /**
  * Table 28
  */
@@ -130,7 +142,7 @@ export declare class Catalog {
     get pageMode(): PageMode;
     get viewerPreferences(): ViewerPref | undefined;
     get openAction(): OpenAction | undefined;
-    get attachments(): any;
+    get attachments(): Attachments | undefined;
     get xfaImages(): Dict | null;
     get javaScript(): string[] | undefined;
     get jsActions(): import("./core_utils.js").AnnotActions | undefined;

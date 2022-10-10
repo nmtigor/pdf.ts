@@ -18,14 +18,12 @@
 import { html, span } from "../../../lib/dom.js";
 import { createPromiseCap } from "../../../lib/promisecap.js";
 import { AbortException, Util, } from "../shared/util.js";
-import { deprecated } from "./display_utils.js";
 var Ns_renderTextLayer;
 (function (Ns_renderTextLayer) {
     const MAX_TEXT_DIVS_TO_RENDER = 100000;
     const DEFAULT_FONT_SIZE = 30;
     const DEFAULT_FONT_ASCENT = 0.8;
     const ascentCache = new Map();
-    const AllWhitespaceRegexp = /^\s+$/g;
     function getAscent(fontFamily, ctx) {
         const cachedAscent = ascentCache.get(fontFamily);
         if (cachedAscent)
@@ -82,27 +80,13 @@ var Ns_renderTextLayer;
     function appendText(task, geom, styles, ctx) {
         // Initialize all used properties to keep the caches monomorphic.
         const textDiv = span();
-        const textDivProperties = task._enhanceTextSelection
-            ? {
-                angle: 0,
-                canvasWidth: 0,
-                hasText: geom.str !== "",
-                hasEOL: geom.hasEOL,
-                originalTransform: undefined,
-                paddingBottom: 0,
-                paddingLeft: 0,
-                paddingRight: 0,
-                paddingTop: 0,
-                scale: 1,
-                fontSize: 0,
-            }
-            : {
-                angle: 0,
-                canvasWidth: 0,
-                hasText: geom.str !== "",
-                hasEOL: geom.hasEOL,
-                fontSize: 0,
-            };
+        const textDivProperties = {
+            angle: 0,
+            canvasWidth: 0,
+            hasText: geom.str !== "",
+            hasEOL: geom.hasEOL,
+            fontSize: 0,
+        };
         task._textDivs.push(textDiv);
         const tx = Util.transform(task._viewport.transform, geom.transform);
         let angle = Math.atan2(tx[1], tx[0]);
@@ -145,8 +129,7 @@ var Ns_renderTextLayer;
         // little effect on text highlighting. This makes scrolling on docs with
         // lots of such divs a lot faster.
         let shouldScaleText = false;
-        if (geom.str.length > 1 ||
-            (task._enhanceTextSelection && AllWhitespaceRegexp.test(geom.str))) {
+        if (geom.str.length > 1) {
             shouldScaleText = true;
         }
         else if (geom.str !== " " && geom.transform[0] !== geom.transform[3]) {
@@ -170,33 +153,6 @@ var Ns_renderTextLayer;
         if (task._textContentStream) {
             task._layoutText(textDiv);
         }
-        if (task._enhanceTextSelection && textDivProperties.hasText) {
-            let angleCos = 1, angleSin = 0;
-            if (angle !== 0) {
-                angleCos = Math.cos(angle);
-                angleSin = Math.sin(angle);
-            }
-            const divWidth = (style.vertical ? geom.height : geom.width) *
-                task._viewport.scale;
-            const divHeight = fontHeight;
-            let m, b;
-            if (angle !== 0) {
-                m = [angleCos, angleSin, -angleSin, angleCos, left, top];
-                b = Util.getAxialAlignedBoundingBox([0, 0, divWidth, divHeight], m);
-            }
-            else {
-                b = [left, top, left + divWidth, top + divHeight];
-            }
-            task._bounds.push({
-                left: b[0],
-                top: b[1],
-                right: b[2],
-                bottom: b[3],
-                div: textDiv,
-                size: [divWidth, divHeight],
-                m,
-            });
-        }
     }
     function render(task) {
         if (task._canceled) {
@@ -213,8 +169,8 @@ var Ns_renderTextLayer;
             return;
         }
         if (!task._textContentStream) {
-            for (let i = 0; i < textDivsLength; i++) {
-                task._layoutText(textDivs[i]);
+            for (const textDiv of textDivs) {
+                task._layoutText(textDiv);
             }
         }
         task._renderingDone = true;
@@ -494,7 +450,6 @@ var Ns_renderTextLayer;
         _viewport;
         _textDivs;
         _textContentItemsStr;
-        _enhanceTextSelection;
         _fontInspectorEnabled;
         _devicePixelRatio;
         _reader;
@@ -507,10 +462,7 @@ var Ns_renderTextLayer;
         _capability = createPromiseCap();
         #renderTimer;
         _bounds = [];
-        constructor({ textContent, textContentStream, container, viewport, textDivs, textContentItemsStr, enhanceTextSelection, }) {
-            if (enhanceTextSelection) {
-                deprecated("The `enhanceTextSelection` functionality will be removed in the future.");
-            }
+        constructor({ textContent, textContentStream, container, viewport, textDivs, textContentItemsStr, }) {
             this._textContent = textContent;
             this._textContentStream = textContentStream;
             this._container = container;
@@ -518,16 +470,13 @@ var Ns_renderTextLayer;
             this._viewport = viewport;
             this._textDivs = textDivs || [];
             this._textContentItemsStr = textContentItemsStr || [];
-            this._enhanceTextSelection = !!enhanceTextSelection;
             this._fontInspectorEnabled = !!globalThis.FontInspector?.enabled;
             this._devicePixelRatio = globalThis.devicePixelRatio || 1;
             // Always clean-up the temporary canvas once rendering is no longer pending.
             this._capability.promise
                 .finally(() => {
-                if (!this._enhanceTextSelection) {
-                    // The `textDiv` properties are no longer needed.
-                    this._textDivProperties = undefined;
-                }
+                // The `textDiv` properties are no longer needed.
+                this._textDivProperties = undefined;
                 if (this._layoutTextCtx) {
                     // Zeroing the width and height cause Firefox to release graphics
                     // resources immediately, which can greatly reduce memory consumption.
@@ -565,26 +514,26 @@ var Ns_renderTextLayer;
             this._capability.reject(new Error("TextLayer task cancelled."));
         }
         #processItems(items, styleCache) {
-            for (let i = 0, len = items.length; i < len; i++) {
-                if (items[i].str === undefined) {
-                    if (items[i].type === "beginMarkedContentProps" ||
-                        items[i].type === "beginMarkedContent") {
+            for (const item of items) {
+                if (item.str === undefined) {
+                    if (item.type === "beginMarkedContentProps" ||
+                        item.type === "beginMarkedContent") {
                         const parent = this._container;
                         this._container = html("span");
                         this._container.classList.add("markedContent");
-                        if (items[i].id !== undefined) {
-                            this._container.setAttribute("id", `${items[i].id}`);
+                        if (item.id !== undefined) {
+                            this._container.setAttribute("id", `${item.id}`);
                         }
                         parent.append(this._container);
                     }
-                    else if (items[i].type === "endMarkedContent") {
+                    else if (item.type === "endMarkedContent") {
                         this._container = this._container
                             .parentNode;
                     }
                     continue;
                 }
-                this._textContentItemsStr.push(items[i].str);
-                appendText(this, items[i], styleCache, this._layoutTextCtx);
+                this._textContentItemsStr.push(item.str);
+                appendText(this, item, styleCache, this._layoutTextCtx);
             }
         }
         /**
@@ -606,20 +555,13 @@ var Ns_renderTextLayer;
                 // Only measure the width for multi-char text divs, see `appendText`.
                 const { width } = this._layoutTextCtx.measureText(textDiv.textContent);
                 if (width > 0) {
-                    const scale = (this._devicePixelRatio * textDivProperties.canvasWidth) / width;
-                    if (this._enhanceTextSelection) {
-                        textDivProperties.scale = scale;
-                    }
-                    transform = `scaleX(${scale})`;
+                    transform = `scaleX(${(this._devicePixelRatio * textDivProperties.canvasWidth) / width})`;
                 }
             }
             if (textDivProperties.angle !== 0) {
                 transform = `rotate(${textDivProperties.angle}deg) ${transform}`;
             }
             if (transform.length > 0) {
-                if (this._enhanceTextSelection) {
-                    textDivProperties.originalTransform = transform;
-                }
                 textDiv.style.transform = transform;
             }
             if (textDivProperties.hasText) {
@@ -680,64 +622,6 @@ var Ns_renderTextLayer;
                 }
             }, this._capability.reject);
         }
-        expandTextDivs(expandDivs = false) {
-            if (!this._enhanceTextSelection || !this._renderingDone) {
-                return;
-            }
-            if (this._bounds !== undefined) {
-                expand(this);
-                this._bounds = undefined;
-            }
-            const transformBuf = [], paddingBuf = [];
-            for (let i = 0, ii = this._textDivs.length; i < ii; i++) {
-                const div = this._textDivs[i];
-                const divProps = this._textDivProperties.get(div);
-                if (!divProps.hasText) {
-                    continue;
-                }
-                if (expandDivs) {
-                    transformBuf.length = 0;
-                    paddingBuf.length = 0;
-                    if (divProps.originalTransform) {
-                        transformBuf.push(divProps.originalTransform);
-                    }
-                    if (divProps.paddingTop > 0) {
-                        paddingBuf.push(`${divProps.paddingTop}px`);
-                        transformBuf.push(`translateY(${-divProps.paddingTop}px)`);
-                    }
-                    else {
-                        paddingBuf.push(0);
-                    }
-                    if (divProps.paddingRight > 0) {
-                        paddingBuf.push(`${divProps.paddingRight / divProps.scale}px`);
-                    }
-                    else {
-                        paddingBuf.push(0);
-                    }
-                    if (divProps.paddingBottom > 0) {
-                        paddingBuf.push(`${divProps.paddingBottom}px`);
-                    }
-                    else {
-                        paddingBuf.push(0);
-                    }
-                    if (divProps.paddingLeft > 0) {
-                        paddingBuf.push(`${divProps.paddingLeft / divProps.scale}px`);
-                        transformBuf.push(`translateX(${-divProps.paddingLeft / divProps.scale}px)`);
-                    }
-                    else {
-                        paddingBuf.push(0);
-                    }
-                    div.style.padding = paddingBuf.join(" ");
-                    if (transformBuf.length) {
-                        div.style.transform = transformBuf.join(" ");
-                    }
-                }
-                else {
-                    div.style.padding = null;
-                    div.style.transform = divProps.originalTransform;
-                }
-            }
-        }
     }
     Ns_renderTextLayer.TextLayerRenderTask = TextLayerRenderTask;
     function renderTextLayer(renderParameters) {
@@ -748,7 +632,6 @@ var Ns_renderTextLayer;
             viewport: renderParameters.viewport,
             textDivs: renderParameters.textDivs,
             textContentItemsStr: renderParameters.textContentItemsStr,
-            enhanceTextSelection: renderParameters.enhanceTextSelection,
         });
         task._render(renderParameters.timeout);
         return task;

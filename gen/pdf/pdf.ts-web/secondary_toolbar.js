@@ -16,8 +16,8 @@
  * limitations under the License.
  */
 import { GENERIC } from "../../global.js";
-import { PagesCountLimit } from "./base_viewer.js";
 import { CursorTool } from "./pdf_cursor_tools.js";
+import { PagesCountLimit } from "./pdf_viewer.js";
 import { ScrollMode, SpreadMode } from "./ui_utils.js";
 export class SecondaryToolbar {
     toolbar;
@@ -26,12 +26,13 @@ export class SecondaryToolbar {
     items;
     mainContainer;
     eventBus;
+    externalServices;
     opened = false;
     containerHeight;
     previousContainerHeight;
     pagesCount;
     pageNumber;
-    constructor(options, eventBus) {
+    constructor(options, eventBus, externalServices) {
         this.toolbar = options.toolbar;
         this.toggleButton = options.toggleButton;
         this.buttons = [
@@ -129,13 +130,14 @@ export class SecondaryToolbar {
             pageRotateCcw: options.pageRotateCcwButton,
         };
         this.eventBus = eventBus;
-        this.reset();
+        this.externalServices = externalServices;
         // Bind the event listeners for click, cursor tool, and scroll/spread mode
         // actions.
         this.#bindClickListeners();
         this.#bindCursorToolsListener(options);
         this.#bindScrollModeListener(options);
         this.#bindSpreadModeListener(options);
+        this.reset();
     }
     get isOpen() {
         return this.opened;
@@ -177,6 +179,10 @@ export class SecondaryToolbar {
                 if (close) {
                     this.close();
                 }
+                this.externalServices.reportTelemetry({
+                    type: "buttons",
+                    data: { id: element.id },
+                });
             });
         }
     }

@@ -71,11 +71,7 @@ export class DownloadManager {
                 blobUrl = URL.createObjectURL(new Blob([data], { type: contentType }));
                 this._openBlobUrls.set(element, blobUrl);
             }
-            let viewerUrl;
-            /*#static*/  {
-                // The current URL is the viewer, let's use it and append the file.
-                viewerUrl = "?file=" + encodeURIComponent(blobUrl + "#" + filename);
-            }
+            const viewerUrl = /*#static*/ "?file=" + encodeURIComponent(blobUrl + "#" + filename);
             try {
                 window.open(viewerUrl);
                 return true;

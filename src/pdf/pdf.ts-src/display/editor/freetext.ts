@@ -66,13 +66,13 @@ export class FreeTextEditor extends AnnotationEditor {
       FreeTextEditor.prototype.commitOrRemove,
     ],
   ]);
+  static override readonly _type = "freetext";
 
   #boundEditorDivBlur = this.editorDivBlur.bind(this);
   #boundEditorDivFocus = this.editorDivFocus.bind(this);
   #boundEditorDivKeydown = this.editorDivKeydown.bind(this);
   #color;
   #content = "";
-  #contentHTML = "";
   #hasAlreadyBeenCommitted = false;
   #fontSize;
 
@@ -89,11 +89,8 @@ export class FreeTextEditor extends AnnotationEditor {
 
   static initialize(l10n: IL10n) {
     this._l10nPromise = new Map(
-      ["free_text_default_content", "editor_free_text_aria_label"].map(
-        (str) => [
-          str,
-          l10n.get(str),
-        ],
+      ["free_text2_default_content", "editor_free_text2_aria_label"].map(
+        (str) => [str, l10n.get(str)],
       ),
     );
 
@@ -242,12 +239,14 @@ export class FreeTextEditor extends AnnotationEditor {
     this.parent.setEditingState(false);
     this.parent.updateToolbar(AnnotationEditorType.FREETEXT);
     super.enableEditMode();
+    this.enableEditing();
     this.overlayDiv.classList.remove("enabled");
     this.editorDiv.contentEditable = <any> true;
     this.div!.draggable = false;
     this.editorDiv.addEventListener("keydown", this.#boundEditorDivKeydown);
     this.editorDiv.addEventListener("focus", this.#boundEditorDivFocus);
     this.editorDiv.addEventListener("blur", this.#boundEditorDivBlur);
+    this.parent.div!.classList.remove("freeTextEditing");
   }
 
   /** @inheritdoc */
@@ -258,6 +257,7 @@ export class FreeTextEditor extends AnnotationEditor {
 
     this.parent.setEditingState(true);
     super.disableEditMode();
+    this.disableEditing();
     this.overlayDiv.classList.add("enabled");
     this.editorDiv.contentEditable = <any> false;
     this.div!.draggable = true;
@@ -271,6 +271,7 @@ export class FreeTextEditor extends AnnotationEditor {
 
     // In case the blur callback hasn't been called.
     this.isEditing = false;
+    this.parent.div!.classList.add("freeTextEditing");
   }
 
   /** @inheritdoc */
@@ -300,6 +301,7 @@ export class FreeTextEditor extends AnnotationEditor {
   override remove() {
     this.isEditing = false;
     this.parent.setEditingState(true);
+    this.parent.div!.classList.add("freeTextEditing");
     super.remove();
   }
 
@@ -312,8 +314,7 @@ export class FreeTextEditor extends AnnotationEditor {
       return this.editorDiv.innerText;
     }
     const buffer = [];
-    for (let i = 0, ii = divs.length; i < ii; i++) {
-      const div = divs[i];
+    for (const div of divs) {
       const first = div.firstChild;
       if (first?.nodeName === "#text") {
         buffer.push((<Text> first).data);
@@ -345,7 +346,6 @@ export class FreeTextEditor extends AnnotationEditor {
     }
 
     this.disableEditMode();
-    this.#contentHTML = this.editorDiv.innerHTML;
     this.#content = this.#extractText().trimEnd();
 
     this.#setEditorDimensions();
@@ -399,11 +399,6 @@ export class FreeTextEditor extends AnnotationEditor {
   }
 
   /** @inheritdoc */
-  override getIdForTextLayer() {
-    return this.editorDiv.id;
-  }
-
-  /** @inheritdoc */
   override render() {
     if (this.div) {
       return this.div;
@@ -423,13 +418,13 @@ export class FreeTextEditor extends AnnotationEditor {
     this.enableEditing();
 
     FreeTextEditor._l10nPromise
-      .get("editor_free_text_aria_label")!
+      .get("editor_free_text2_aria_label")!
       .then((msg) => this.editorDiv?.setAttribute("aria-label", msg));
 
     FreeTextEditor._l10nPromise
-      .get("free_text_default_content")!
+      .get("free_text2_default_content")!
       .then((msg) => this.editorDiv?.setAttribute("default-content", msg));
-    this.editorDiv.contentEditable = <any> true;
+    this.editorDiv.contentEditable = true as any;
 
     const { style } = this.editorDiv;
     style.fontSize = `calc(${this.#fontSize}px * var(--scale-factor))`;
@@ -455,13 +450,20 @@ export class FreeTextEditor extends AnnotationEditor {
         this.width * parentWidth,
         this.height! * parentHeight,
       );
-      // eslint-disable-next-line no-unsanitized/property
-      this.editorDiv.innerHTML = this.#contentHTML;
+
+      for (const line of this.#content.split("\n")) {
+        const div = document.createElement("div");
+        div.append(
+          line ? document.createTextNode(line) : document.createElement("br"),
+        );
+        this.editorDiv.append(div);
+      }
+
       this.div!.draggable = true;
-      this.editorDiv.contentEditable = <any> false;
+      this.editorDiv.contentEditable = false as any;
     } else {
       this.div!.draggable = false;
-      this.editorDiv.contentEditable = <any> true;
+      this.editorDiv.contentEditable = true as any;
     }
 
     return this.div!;
@@ -481,10 +483,6 @@ export class FreeTextEditor extends AnnotationEditor {
     editor.#fontSize = data.fontSize;
     editor.#color = Util.makeHexColor(...data.color);
     editor.#content = data.value;
-    editor.#contentHTML = data.value
-      .split("\n")
-      .map((line) => `<div>${line}</div>`)
-      .join("");
 
     return editor;
   }

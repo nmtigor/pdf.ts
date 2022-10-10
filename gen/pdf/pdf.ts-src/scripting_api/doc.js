@@ -5,6 +5,7 @@ import { createActionsMap, } from "./common.js";
 import { ZoomType } from "./constants.js";
 import { PDFObject } from "./pdf_object.js";
 import { PrintParams } from "./print_params.js";
+const DOC_EXTERNAL = false;
 class InfoProxyHandler {
     static get(obj, prop) {
         return obj[prop.toLowerCase()];
@@ -82,10 +83,9 @@ export class Doc extends PDFObject {
     }
     _printParams;
     getPrintParams() {
-        if (!this._printParams) {
-            this._printParams = new PrintParams({ lastPage: this._numPages - 1 });
-        }
-        return this._printParams;
+        return (this._printParams ||= new PrintParams({
+            lastPage: this._numPages - 1,
+        }));
     }
     _fields = new Map();
     _fieldNames = [];
@@ -346,7 +346,10 @@ export class Doc extends PDFObject {
         throw new Error("doc.dynamicXFAForm is read-only");
     }
     get external() {
-        return true;
+        // According to the specification this should be `true` in non-Acrobat
+        // applications, however we ignore that to avoid bothering users with
+        // an `alert`-dialog on document load (see issue 15509).
+        return DOC_EXTERNAL;
     }
     set external(_) {
         throw new Error("doc.external is read-only");
@@ -718,7 +721,7 @@ export class Doc extends PDFObject {
         for (const [name, field] of this._fields.entries()) {
             if (name.startsWith(fieldName)) {
                 const finalPart = name.slice(len);
-                if (finalPart.match(pattern)) {
+                if (pattern.test(finalPart)) {
                     children.push(field);
                 }
             }
@@ -892,8 +895,7 @@ export class Doc extends PDFObject {
     }
     resetForm(aFields) {
         // Handle the case resetForm({ aFields: ... })
-        // if( aFields && typeof aFields === "object") //kkkk bug? ✅ 
-        if (aFields && !Array.isArray(aFields)) {
+        if (aFields && typeof aFields === "object" && !Array.isArray(aFields)) {
             aFields = aFields.aFields;
         }
         if (aFields && !Array.isArray(aFields)) {

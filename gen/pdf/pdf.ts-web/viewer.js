@@ -15,10 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { DENO } from "../../global.js";
-import { CHROME, GENERIC, MOZCENTRAL, PRODUCTION } from "../../global.js";
+import { CHROME, DENO, GENERIC, MOZCENTRAL, PRODUCTION } from "../../global.js";
 import { html } from "../../lib/dom.js";
-import { viewerapp } from "./app.js";
+import { viewerApp } from "./app.js";
 import { AppOptions } from "./app_options.js";
 /*80--------------------------------------------------------------------------*/
 // /* eslint-disable-next-line no-unused-vars */
@@ -27,7 +26,11 @@ import { AppOptions } from "./app_options.js";
 // /* eslint-disable-next-line no-unused-vars */
 // const pdfjsBuild =
 //   typeof PDFJSDev !== "undefined" ? PDFJSDev.eval("BUNDLE_BUILD") : void 0;
+// const AppConstants = /*#static*/ GENERIC
+//   ? { LinkTarget, RenderingStates, ScrollMode, SpreadMode }
+//   : undefined;
 // window.PDFViewerApplication = PDFViewerApplication;
+// window.PDFViewerApplicationConstants = AppConstants;
 // window.PDFViewerApplicationOptions = AppOptions;
 /*#static*/ 
 /*#static*/ 
@@ -39,17 +42,6 @@ import { AppOptions } from "./app_options.js";
     import("./pdf_print_service.js");
 }
 function getViewerConfiguration() {
-    let errorWrapper = undefined;
-    /*#static*/  {
-        errorWrapper = {
-            container: document.getElementById("errorWrapper"),
-            errorMessage: document.getElementById("errorMessage"),
-            closeButton: document.getElementById("errorClose"),
-            errorMoreInfo: document.getElementById("errorMoreInfo"),
-            moreInfoButton: document.getElementById("errorShowMore"),
-            lessInfoButton: document.getElementById("errorShowLess"),
-        };
-    }
     return {
         appContainer: document.body,
         mainContainer: document.getElementById("viewerContainer"),
@@ -99,14 +91,8 @@ function getViewerConfiguration() {
             /**
              * Button to open a new document.
              */
-            openFile: GENERIC /*#static*/
-                ? document.getElementById("openFile")
-                : undefined,
+            openFile: /*#static*/ document.getElementById("openFile"),
             print: document.getElementById("print"),
-            /**
-             * Button to disable editing.
-             */
-            editorNoneButton: document.getElementById("editorNone"),
             /**
              * Button to switch to FreeText editing.
              */
@@ -115,17 +101,9 @@ function getViewerConfiguration() {
             editorInkButton: document.getElementById("editorInk"),
             editorInkParamsToolbar: document.getElementById("editorInkParamsToolbar"),
             /**
-             * Button to switch to presentation mode.
-             */
-            presentationModeButton: document.getElementById("presentationMode"),
-            /**
              * Button to download the document.
              */
             download: document.getElementById("download"),
-            /**
-             * Button to obtain a bookmark link to the current location in the document.
-             */
-            viewBookmark: document.getElementById("viewBookmark"),
         },
         secondaryToolbar: {
             /**
@@ -139,13 +117,11 @@ function getViewerConfiguration() {
             /**
              * Button for entering presentation mode.
              */
-            presentationModeButton: document.getElementById("secondaryPresentationMode"),
+            presentationModeButton: document.getElementById("presentationMode"),
             /**
              * Button to open a file.
              */
-            openFileButton: GENERIC /*#static*/
-                ? document.getElementById("secondaryOpenFile")
-                : undefined,
+            openFileButton: /*#static*/ document.getElementById("secondaryOpenFile"),
             /**
              * Button to print the document.
              */
@@ -157,7 +133,7 @@ function getViewerConfiguration() {
             /**
              * Button to obtain a bookmark link to the current location in the document.
              */
-            viewBookmarkButton: document.getElementById("secondaryViewBookmark"),
+            viewBookmarkButton: document.getElementById("viewBookmark"),
             /**
              * Button to go to the first page in the document.
              */
@@ -328,11 +304,8 @@ function getViewerConfiguration() {
             editorInkThickness: document.getElementById("editorInkThickness"),
             editorInkOpacity: document.getElementById("editorInkOpacity"),
         },
-        errorWrapper,
         printContainer: document.getElementById("printContainer"),
-        openFileInput: GENERIC /*#static*/
-            ? document.getElementById("fileInput")
-            : undefined,
+        openFileInput: /*#static*/ document.getElementById("fileInput"),
         debuggerScriptPath: "./debugger.js",
     };
 }
@@ -350,7 +323,7 @@ function webViewerLoad() {
             import("./genericcom.js"),
             import("./pdf_print_service.js"),
         ]).then(([genericCom, pdfPrintService]) => {
-            viewerapp.run(config);
+            viewerApp.run(config);
         });
     }
 }

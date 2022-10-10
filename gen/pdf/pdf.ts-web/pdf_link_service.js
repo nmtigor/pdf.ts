@@ -393,6 +393,39 @@ export class PDFLinkService {
             action,
         });
     }
+    async executeSetOCGState(action) {
+        const pdfDocument = this.pdfDocument;
+        const optionalContentConfig = await this.pdfViewer
+            .optionalContentConfigPromise;
+        if (pdfDocument !== this.pdfDocument) {
+            return; // The document was closed while the optional content resolved.
+        }
+        let operator;
+        for (const elem of action.state) {
+            switch (elem) {
+                case "ON":
+                case "OFF":
+                case "Toggle":
+                    operator = elem;
+                    continue;
+            }
+            switch (operator) {
+                case "ON":
+                    optionalContentConfig.setVisibility(elem, true);
+                    break;
+                case "OFF":
+                    optionalContentConfig.setVisibility(elem, false);
+                    break;
+                case "Toggle":
+                    const group = optionalContentConfig.getGroup(elem);
+                    if (group) {
+                        optionalContentConfig.setVisibility(elem, !group.visible);
+                    }
+                    break;
+            }
+        }
+        this.pdfViewer.optionalContentConfigPromise = Promise.resolve(optionalContentConfig);
+    }
     /**
      * @implement
      * @param pageNum page number.
@@ -524,6 +557,10 @@ export class SimpleLinkService {
     setHash(hash) { }
     /** @implement */
     executeNamedAction(action) { }
+    /**
+     * @param {Object} action
+     */
+    executeSetOCGState(action) { }
     /**
      * @implement
      * @param pageNum page number.

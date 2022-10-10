@@ -33,8 +33,10 @@ describe("FormCalc expression parser", () => {
   describe("FormCalc lexer", () => {
     it("should lex numbers", () => {
       const lexer = new Lexer(
-        "12 1.2345 .7 .12345 1e-2 1.2E+3 1e2 1.2E3 nan 12. 2.e3 infinity 99999999999999999 123456789.012345678 9e99999",
+        "1 7 12 1.2345 .7 .12345 1e-2 1.2E+3 1e2 1.2E3 nan 12. 2.e3 infinity 99999999999999999 123456789.012345678 9e99999",
       );
+      assertEquals(lexer.next(), new Token(TOKEN.number, 1));
+      assertEquals(lexer.next(), new Token(TOKEN.number, 7));
       assertEquals(lexer.next(), new Token(TOKEN.number, 12));
       assertEquals(lexer.next(), new Token(TOKEN.number, 1.2345));
       assertEquals(lexer.next(), new Token(TOKEN.number, 0.7));
@@ -274,7 +276,9 @@ describe("FormCalc expression parser", () => {
 
     it("should parse basic expression with dots", () => {
       const parser = new Parser("a.b.c.#d..e.f..g.*");
-      assertEquals(parser.parse().dump()[0], {
+      const exprlist = parser.parse();
+      assertEquals(exprlist.expressions[0].isDotExpression(), true);
+      assertEquals(exprlist.dump()[0], {
         operator: ".",
         left: { id: "a" },
         right: {
@@ -755,6 +759,13 @@ describe("FormCalc expression parser", () => {
         "if (foo == 1) then a = 1 elseif (foo == 2) then a = 2 end",
       );
       assertThrows(() => parser.parse(), Error, Errors.if);
+    });
+
+    it("should parse som predicate", () => {
+      const parser = new Parser("a.b <= 3");
+      const expr = parser.parse().expressions[0];
+      assertEquals(expr.isSomPredicate(), true);
+      assertEquals((expr as any).left.isSomPredicate(), true);
     });
   });
 });

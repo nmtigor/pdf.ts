@@ -34,7 +34,7 @@ export interface ScriptingFieldData extends ScriptingData<SendFieldData> {
     buttonScaleHow: unknown;
     buttonScaleWhen: unknown;
     calcOrderIndex: unknown;
-    charLimit: unknown;
+    charLimit: number;
     comb: unknown;
     commitOnSelChange: unknown;
     currentValueIndices?: number | number[];
@@ -93,7 +93,6 @@ export declare class Field extends PDFObject<SendFieldData> {
     buttonScaleHow: unknown;
     buttonScaleWhen: unknown;
     calcOrderIndex: unknown;
-    charLimit: unknown;
     comb: unknown;
     commitOnSelChange: unknown;
     defaultStyle: unknown;
@@ -144,6 +143,9 @@ export declare class Field extends PDFObject<SendFieldData> {
     set fillColor(color: CorrectColor);
     get bgColor(): CorrectColor;
     set bgColor(color: CorrectColor);
+    _charLimit: number;
+    get charLimit(): number;
+    set charLimit(limit: number);
     _isChoice: boolean;
     _items: _Item[];
     get numItems(): number;

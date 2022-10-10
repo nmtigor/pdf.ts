@@ -686,90 +686,46 @@ export class MeshShading extends BaseShading {
       }
       let tmp1, tmp2, tmp3, tmp4;
       switch (f) {
-        // prettier-ignore
+        // deno-fmt-ignore
         case 0:
-          ps[12] = pi + 3;
-          ps[13] = pi + 4;
-          ps[14] = pi + 5;
-          ps[15] = pi + 6;
-          ps[8] = pi + 2; /* values for 5, 6, 9, 10 are    */
-          ps[11] = pi + 7;
-          ps[4] = pi + 1; /* calculated below              */
-          ps[7] = pi + 8;
-          ps[0] = pi;
-          ps[1] = pi + 11;
-          ps[2] = pi + 10;
-          ps[3] = pi + 9;
-          cs[2] = ci + 1;
-          cs[3] = ci + 2;
-          cs[0] = ci;
-          cs[1] = ci + 3;
+          ps[12] = pi + 3; ps[13] = pi + 4;  ps[14] = pi + 5;  ps[15] = pi + 6;
+          ps[ 8] = pi + 2; /* values for 5, 6, 9, 10 are    */ ps[11] = pi + 7;
+          ps[ 4] = pi + 1; /* calculated below              */ ps[ 7] = pi + 8;
+          ps[ 0] = pi;     ps[ 1] = pi + 11; ps[ 2] = pi + 10; ps[ 3] = pi + 9;
+          cs[2] = ci + 1; cs[3] = ci + 2;
+          cs[0] = ci;     cs[1] = ci + 3;
           break;
-        // prettier-ignore
+        // deno-fmt-ignore
         case 1:
-          tmp1 = ps[12];
-          tmp2 = ps[13];
-          tmp3 = ps[14];
-          tmp4 = ps[15];
-          ps[12] = tmp4;
-          ps[13] = pi + 0;
-          ps[14] = pi + 1;
-          ps[15] = pi + 2;
-          ps[8] = tmp3; /* values for 5, 6, 9, 10 are    */
-          ps[11] = pi + 3;
-          ps[4] = tmp2; /* calculated below              */
-          ps[7] = pi + 4;
-          ps[0] = tmp1;
-          ps[1] = pi + 7;
-          ps[2] = pi + 6;
-          ps[3] = pi + 5;
-          tmp1 = cs[2];
-          tmp2 = cs[3];
-          cs[2] = tmp2;
-          cs[3] = ci;
-          cs[0] = tmp1;
-          cs[1] = ci + 1;
+          tmp1 = ps[12]; tmp2 = ps[13]; tmp3 = ps[14]; tmp4 = ps[15];
+          ps[12] = tmp4; ps[13] = pi + 0;  ps[14] = pi + 1;  ps[15] = pi + 2;
+          ps[ 8] = tmp3; /* values for 5, 6, 9, 10 are    */ ps[11] = pi + 3;
+          ps[ 4] = tmp2; /* calculated below              */ ps[ 7] = pi + 4;
+          ps[ 0] = tmp1; ps[ 1] = pi + 7;   ps[ 2] = pi + 6; ps[ 3] = pi + 5;
+          tmp1 = cs[2]; tmp2 = cs[3];
+          cs[2] = tmp2;   cs[3] = ci;
+          cs[0] = tmp1;   cs[1] = ci + 1;
           break;
-        // prettier-ignore
+        // deno-fmt-ignore
         case 2:
           tmp1 = ps[15];
           tmp2 = ps[11];
-          ps[12] = ps[3];
-          ps[13] = pi + 0;
-          ps[14] = pi + 1;
-          ps[15] = pi + 2;
-          ps[8] = ps[7]; /* values for 5, 6, 9, 10 are    */
-          ps[11] = pi + 3;
-          ps[4] = tmp2; /* calculated below              */
-          ps[7] = pi + 4;
-          ps[0] = tmp1;
-          ps[1] = pi + 7;
-          ps[2] = pi + 6;
-          ps[3] = pi + 5;
+          ps[12] = ps[3];  ps[13] = pi + 0; ps[14] = pi + 1;   ps[15] = pi + 2;
+          ps[ 8] = ps[7];  /* values for 5, 6, 9, 10 are    */ ps[11] = pi + 3;
+          ps[ 4] = tmp2;   /* calculated below              */ ps[ 7] = pi + 4;
+          ps[ 0] = tmp1;  ps[ 1] = pi + 7;   ps[ 2] = pi + 6;  ps[ 3] = pi + 5;
           tmp1 = cs[3];
-          cs[2] = cs[1];
-          cs[3] = ci;
-          cs[0] = tmp1;
-          cs[1] = ci + 1;
+          cs[2] = cs[1]; cs[3] = ci;
+          cs[0] = tmp1;  cs[1] = ci + 1;
           break;
-        // prettier-ignore
+        // deno-fmt-ignore
         case 3:
-          ps[12] = ps[0];
-          ps[13] = pi + 0;
-          ps[14] = pi + 1;
-          ps[15] = pi + 2;
-          ps[8] = ps[1]; /* values for 5, 6, 9, 10 are    */
-          ps[11] = pi + 3;
-          ps[4] = ps[2]; /* calculated below              */
-          ps[7] = pi + 4;
-          ps[0] = ps[3];
-          ps[1] = pi + 7;
-          ps[2] = pi + 6;
-          ps[3] = pi + 5;
-          cs[2] = cs[0];
-          cs[3] = ci;
-          cs[0] = cs[1];
-          cs[1] = ci + 1;
+          ps[12] = ps[0];  ps[13] = pi + 0;   ps[14] = pi + 1; ps[15] = pi + 2;
+          ps[ 8] = ps[1];  /* values for 5, 6, 9, 10 are    */ ps[11] = pi + 3;
+          ps[ 4] = ps[2];  /* calculated below              */ ps[ 7] = pi + 4;
+          ps[ 0] = ps[3];  ps[ 1] = pi + 7;   ps[ 2] = pi + 6; ps[ 3] = pi + 5;
+          cs[2] = cs[0]; cs[3] = ci;
+          cs[0] = cs[1]; cs[1] = ci + 1;
           break;
       }
       // set p11, p12, p21, p22
@@ -861,106 +817,46 @@ export class MeshShading extends BaseShading {
       }
       let tmp1, tmp2, tmp3, tmp4;
       switch (f) {
-        // prettier-ignore
+        // deno-fmt-ignore
         case 0:
-          ps[12] = pi + 3;
-          ps[13] = pi + 4;
-          ps[14] = pi + 5;
-          ps[15] = pi + 6;
-          ps[8] = pi + 2;
-          ps[9] = pi + 13;
-          ps[10] = pi + 14;
-          ps[11] = pi + 7;
-          ps[4] = pi + 1;
-          ps[5] = pi + 12;
-          ps[6] = pi + 15;
-          ps[7] = pi + 8;
-          ps[0] = pi;
-          ps[1] = pi + 11;
-          ps[2] = pi + 10;
-          ps[3] = pi + 9;
-          cs[2] = ci + 1;
-          cs[3] = ci + 2;
-          cs[0] = ci;
-          cs[1] = ci + 3;
+          ps[12] = pi + 3; ps[13] = pi + 4;  ps[14] = pi + 5;  ps[15] = pi + 6;
+          ps[ 8] = pi + 2; ps[ 9] = pi + 13; ps[10] = pi + 14; ps[11] = pi + 7;
+          ps[ 4] = pi + 1; ps[ 5] = pi + 12; ps[ 6] = pi + 15; ps[ 7] = pi + 8;
+          ps[ 0] = pi;     ps[ 1] = pi + 11; ps[ 2] = pi + 10; ps[ 3] = pi + 9;
+          cs[2] = ci + 1; cs[3] = ci + 2;
+          cs[0] = ci;     cs[1] = ci + 3;
           break;
-        // prettier-ignore
+        // deno-fmt-ignore
         case 1:
-          tmp1 = ps[12];
-          tmp2 = ps[13];
-          tmp3 = ps[14];
-          tmp4 = ps[15];
-          ps[12] = tmp4;
-          ps[13] = pi + 0;
-          ps[14] = pi + 1;
-          ps[15] = pi + 2;
-          ps[8] = tmp3;
-          ps[9] = pi + 9;
-          ps[10] = pi + 10;
-          ps[11] = pi + 3;
-          ps[4] = tmp2;
-          ps[5] = pi + 8;
-          ps[6] = pi + 11;
-          ps[7] = pi + 4;
-          ps[0] = tmp1;
-          ps[1] = pi + 7;
-          ps[2] = pi + 6;
-          ps[3] = pi + 5;
-          tmp1 = cs[2];
-          tmp2 = cs[3];
-          cs[2] = tmp2;
-          cs[3] = ci;
-          cs[0] = tmp1;
-          cs[1] = ci + 1;
+          tmp1 = ps[12]; tmp2 = ps[13]; tmp3 = ps[14]; tmp4 = ps[15];
+          ps[12] = tmp4;   ps[13] = pi + 0;  ps[14] = pi + 1;  ps[15] = pi + 2;
+          ps[ 8] = tmp3;   ps[ 9] = pi + 9;  ps[10] = pi + 10; ps[11] = pi + 3;
+          ps[ 4] = tmp2;   ps[ 5] = pi + 8;  ps[ 6] = pi + 11; ps[ 7] = pi + 4;
+          ps[ 0] = tmp1;   ps[ 1] = pi + 7;  ps[ 2] = pi + 6;  ps[ 3] = pi + 5;
+          tmp1 = cs[2]; tmp2 = cs[3];
+          cs[2] = tmp2;   cs[3] = ci;
+          cs[0] = tmp1;   cs[1] = ci + 1;
           break;
-        // prettier-ignore
+        // deno-fmt-ignore
         case 2:
           tmp1 = ps[15];
           tmp2 = ps[11];
-          ps[12] = ps[3];
-          ps[13] = pi + 0;
-          ps[14] = pi + 1;
-          ps[15] = pi + 2;
-          ps[8] = ps[7];
-          ps[9] = pi + 9;
-          ps[10] = pi + 10;
-          ps[11] = pi + 3;
-          ps[4] = tmp2;
-          ps[5] = pi + 8;
-          ps[6] = pi + 11;
-          ps[7] = pi + 4;
-          ps[0] = tmp1;
-          ps[1] = pi + 7;
-          ps[2] = pi + 6;
-          ps[3] = pi + 5;
+          ps[12] = ps[3]; ps[13] = pi + 0; ps[14] = pi + 1;  ps[15] = pi + 2;
+          ps[ 8] = ps[7]; ps[ 9] = pi + 9; ps[10] = pi + 10; ps[11] = pi + 3;
+          ps[ 4] = tmp2;  ps[ 5] = pi + 8; ps[ 6] = pi + 11; ps[ 7] = pi + 4;
+          ps[ 0] = tmp1;  ps[ 1] = pi + 7; ps[ 2] = pi + 6;  ps[ 3] = pi + 5;
           tmp1 = cs[3];
-          cs[2] = cs[1];
-          cs[3] = ci;
-          cs[0] = tmp1;
-          cs[1] = ci + 1;
+          cs[2] = cs[1]; cs[3] = ci;
+          cs[0] = tmp1;  cs[1] = ci + 1;
           break;
-        // prettier-ignore
+        // deno-fmt-ignore
         case 3:
-          ps[12] = ps[0];
-          ps[13] = pi + 0;
-          ps[14] = pi + 1;
-          ps[15] = pi + 2;
-          ps[8] = ps[1];
-          ps[9] = pi + 9;
-          ps[10] = pi + 10;
-          ps[11] = pi + 3;
-          ps[4] = ps[2];
-          ps[5] = pi + 8;
-          ps[6] = pi + 11;
-          ps[7] = pi + 4;
-          ps[0] = ps[3];
-          ps[1] = pi + 7;
-          ps[2] = pi + 6;
-          ps[3] = pi + 5;
-          cs[2] = cs[0];
-          cs[3] = ci;
-          cs[0] = cs[1];
-          cs[1] = ci + 1;
+          ps[12] = ps[0];  ps[13] = pi + 0;  ps[14] = pi + 1;  ps[15] = pi + 2;
+          ps[ 8] = ps[1];  ps[ 9] = pi + 9;  ps[10] = pi + 10; ps[11] = pi + 3;
+          ps[ 4] = ps[2];  ps[ 5] = pi + 8;  ps[ 6] = pi + 11; ps[ 7] = pi + 4;
+          ps[ 0] = ps[3];  ps[ 1] = pi + 7;  ps[ 2] = pi + 6;  ps[ 3] = pi + 5;
+          cs[2] = cs[0]; cs[3] = ci;
+          cs[0] = cs[1]; cs[1] = ci + 1;
           break;
       }
       this.figures.push({

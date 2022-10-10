@@ -1,4 +1,5 @@
 import { type AnnotStorageRecord } from "../display/annotation_layer.js";
+import { type BinaryData } from "../display/api.js";
 import { MessageHandler, Thread } from "../shared/message_handler.js";
 import { AbortException } from "../shared/util.js";
 import { AnnotationFactory } from "./annotation.js";
@@ -55,7 +56,7 @@ export declare abstract class BasePdfManager {
 }
 export declare class LocalPdfManager extends BasePdfManager {
     #private;
-    constructor(docId: string, data: Uint8Array | number[], password: string | undefined, msgHandler: MessageHandler<Thread.worker>, evaluatorOptions: EvaluatorOptions, enableXfa?: boolean, docBaseUrl?: string);
+    constructor(docId: string, data: BinaryData, password: string | undefined, msgHandler: MessageHandler<Thread.worker>, evaluatorOptions: EvaluatorOptions, enableXfa?: boolean, docBaseUrl?: string);
     /** @implement */
     ensure<O extends PDFDocument | Page | XRef | Catalog | AnnotationFactory, P extends keyof O, A = O[P] extends (...args: any) => any ? Parameters<O[P]> : undefined, R = O[P] extends (...args: any) => any ? ReturnType<O[P]> : O[P]>(obj: O, prop: P, args: A): Promise<Awaited<R>>;
     /** @implement */

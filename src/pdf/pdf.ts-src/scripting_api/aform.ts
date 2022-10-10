@@ -33,6 +33,8 @@ type _CFunction =
   | "MIN"
   | "MAX";
 
+type _Action = (n: number, date: Date) => boolean;
+
 export class AForm {
   _document;
   _app;
@@ -55,6 +57,7 @@ export class AForm {
     "m/d/yy HH:MM",
   ];
   _timeFormats = ["HH:MM", "h:MM tt", "HH:MM:ss", "h:MM:ss tt"];
+  _dateActionsCache = new Map<CFormat, _Action[]>();
 
   /**
    * The e-mail address regex below originates from:
@@ -74,7 +77,95 @@ export class AForm {
   }
 
   _mkTargetName(event: Event) {
-    return event.target ? `[ ${(<Field> event.target).name} ]` : "";
+    return event.target ? `[ ${(event.target as Field).name} ]` : "";
+  }
+
+  _tryToGuessDate(cFormat: string, cDate: string) {
+    // We use the format to know the order of day, month, year, ...
+
+    let actions = this._dateActionsCache.get(cFormat);
+    if (!actions) {
+      actions = [];
+      this._dateActionsCache.set(cFormat, actions);
+      cFormat.replace(
+        /(d+)|(m+)|(y+)|(H+)|(M+)|(s+)/g,
+        (match, d, m, y, H, M, s) => {
+          if (d) {
+            actions!.push((n, date) => {
+              if (n >= 1 && n <= 31) {
+                date.setDate(n);
+                return true;
+              }
+              return false;
+            });
+          } else if (m) {
+            actions!.push((n, date) => {
+              if (n >= 1 && n <= 12) {
+                date.setMonth(n - 1);
+                return true;
+              }
+              return false;
+            });
+          } else if (y) {
+            actions!.push((n, date) => {
+              if (n < 50) {
+                n += 2000;
+              } else if (n < 100) {
+                n += 1900;
+              }
+              // date.setYear(n);
+              date.setFullYear(n);
+              return true;
+            });
+          } else if (H) {
+            actions!.push((n, date) => {
+              if (n >= 0 && n <= 23) {
+                date.setHours(n);
+                return true;
+              }
+              return false;
+            });
+          } else if (M) {
+            actions!.push((n, date) => {
+              if (n >= 0 && n <= 59) {
+                date.setMinutes(n);
+                return true;
+              }
+              return false;
+            });
+          } else if (s) {
+            actions!.push((n, date) => {
+              if (n >= 0 && n <= 59) {
+                date.setSeconds(n);
+                return true;
+              }
+              return false;
+            });
+          }
+          return "";
+        },
+      );
+    }
+
+    const number = /\d+/g;
+    let i = 0;
+    let array;
+    const date = new Date();
+    while ((array = number.exec(cDate)) !== null) {
+      if (i < actions.length) {
+        if (!actions[i++](parseInt(array[0]), date)) {
+          return undefined;
+        }
+      } else {
+        break;
+      }
+    }
+
+    if (i === 0) {
+      return undefined;
+    }
+
+    return date;
   }
 
   _parseDate(cFormat: CFormat, cDate: string) {
@@ -85,7 +176,7 @@ export class AForm {
     if (!date) {
       date = Date.parse(cDate);
       if (isNaN(date)) {
-        date = undefined;
+        date = this._tryToGuessDate(cFormat as string, cDate);
       } else {
         date = new Date(date);
       }
@@ -453,7 +544,10 @@ export class AForm {
     const event = <Event> (<any> globalThis).event;
     const values = [];
     for (const cField of cFields) {
-      const field = this._document.getField(cField)!;
+      const field = this._document.getField(cField);
+      if (!field) {
+        continue;
+      }
       const number = this.AFMakeNumber(<string> field.value);
       if (number !== undefined) {
         values.push(number);
@@ -633,6 +727,14 @@ export class AForm {
 
   eMailValidate(str: string) {
     return this._emailRegex.test(str);
+  }
+
+  AFExactMatch(rePatterns: RegExp | RegExp[], str: string) {
+    if (rePatterns instanceof RegExp) {
+      return str.match(rePatterns)?.[0] === str || 0;
+    }
+
+    return rePatterns.findIndex((re) => str.match(re)?.[0] === str) + 1;
   }
 }
 /*80--------------------------------------------------------------------------*/

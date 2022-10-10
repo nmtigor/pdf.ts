@@ -247,6 +247,7 @@ export class Catalog {
                 destDict: outlineDict,
                 resultObj: data,
                 docBaseUrl: this.pdfManager.docBaseUrl,
+                docAttachments: this.attachments,
             });
             const title = outlineDict.get("Title");
             const flags = outlineDict.get("F") ?? 0;
@@ -260,10 +261,13 @@ export class Catalog {
                 rgbColor = ColorSpace.singletons.rgb.getRgb(color, 0);
             }
             const outlineItem = {
+                action: data.action,
+                attachment: data.attachment,
                 dest: data.dest,
                 url: data.url,
                 unsafeUrl: data.unsafeUrl,
                 newWindow: data.newWindow,
+                setOCGState: data.setOCGState,
                 title: stringToPDFString(title),
                 color: rgbColor,
                 count: Number.isInteger(count) ? count : undefined,
@@ -825,7 +829,7 @@ export class Catalog {
     }
     get attachments() {
         const obj = this.#catDict.get("Names");
-        let attachments = null;
+        let attachments;
         if (obj instanceof Dict && obj.has("EmbeddedFiles")) {
             const nameTree = new NameTree(obj.getRaw("EmbeddedFiles"), this.xref);
             for (const [key, value] of nameTree.getAll()) {
@@ -1177,8 +1181,7 @@ export class Catalog {
                 }
                 const kidPromises = [];
                 let found = false;
-                for (let i = 0, ii = kids.length; i < ii; i++) {
-                    const kid = kids[i];
+                for (const kid of kids) {
                     if (!(kid instanceof Ref)) {
                         throw new FormatError("Kid must be a reference.");
                     }
@@ -1247,6 +1250,7 @@ export class Catalog {
             return;
         }
         const docBaseUrl = params.docBaseUrl || undefined;
+        const docAttachments = params.docAttachments || undefined;
         let action = destDict.get("A"), url, dest;
         if (!(action instanceof Dict)) {
             if (destDict.has("Dest")) {
@@ -1338,11 +1342,57 @@ export class Catalog {
                         resultObj.newWindow = newWindow;
                     }
                     break;
+                case "GoToE":
+                    const target = action.get("T");
+                    let attachment;
+                    if (docAttachments && target instanceof Dict) {
+                        const relationship = target.get("R");
+                        const name = target.get("N");
+                        if (isName(relationship, "C") && typeof name === "string") {
+                            attachment = docAttachments[stringToPDFString(name)];
+                        }
+                    }
+                    if (attachment) {
+                        resultObj.attachment = attachment;
+                    }
+                    else {
+                        warn(`parseDestDictionary - unimplemented "GoToE" action.`);
+                    }
+                    break;
                 case "Named":
                     const namedAction = action.get("N");
                     if (namedAction instanceof Name) {
                         resultObj.action = namedAction.name;
                     }
+                    break;
+                case "SetOCGState":
+                    const state = action.get("State");
+                    const preserveRB = action.get("PreserveRB");
+                    if (!Array.isArray(state) || state.length === 0) {
+                        break;
+                    }
+                    const stateArr = [];
+                    for (const elem of state) {
+                        if (elem instanceof Name) {
+                            switch (elem.name) {
+                                case "ON":
+                                case "OFF":
+                                case "Toggle":
+                                    stateArr.push(elem.name);
+                                    break;
+                            }
+                        }
+                        else if (elem instanceof Ref) {
+                            stateArr.push(elem.toString());
+                        }
+                    }
+                    if (stateArr.length !== state.length) {
+                        break; // Some of the original entries are not valid.
+                    }
+                    resultObj.setOCGState = {
+                        state: stateArr,
+                        preserveRB: typeof preserveRB === "boolean" ? preserveRB : true,
+                    };
                     break;
                 case "JavaScript":
                     const jsAction = action.get("JS");

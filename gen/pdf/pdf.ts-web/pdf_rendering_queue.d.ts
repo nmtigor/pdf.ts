@@ -1,19 +1,19 @@
-import { BaseViewer } from "./base_viewer.js";
 import { type IRenderableView, type IVisibleView } from "./interfaces.js";
 import { PDFThumbnailViewer } from "./pdf_thumbnail_viewer.js";
+import { PDFViewer } from "./pdf_viewer.js";
 import { type VisibleElements } from "./ui_utils.js";
 /**
  * Controls rendering of the views for pages and thumbnails.
  */
 export declare class PDFRenderingQueue {
-    pdfViewer?: BaseViewer;
+    pdfViewer?: PDFViewer;
     pdfThumbnailViewer?: PDFThumbnailViewer;
     onIdle?: () => void;
     highestPriorityPage?: string;
     idleTimeout?: number | undefined;
     printing: boolean;
     isThumbnailViewEnabled: boolean;
-    setViewer(pdfViewer: BaseViewer): void;
+    setViewer(pdfViewer: PDFViewer): void;
     setThumbnailViewer(pdfThumbnailViewer: PDFThumbnailViewer): void;
     isHighestPriority(view: IRenderableView): boolean;
     hasViewer(): boolean;

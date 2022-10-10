@@ -63,8 +63,9 @@ export const enum ViewOnLoad {
 }
 /*49-------------------------------------------*/
 
-export let D_base = "/pdf.ts";
-/*#static*/ if (DENO && TESTING) D_base = "file:///data/cod/premsys/pdf.ts";
+export const D_base = /*#static*/ DENO && TESTING
+  ? "file:///data/cod/premsys/pdf.ts"
+  : "/pdf.ts";
 
 type _DefaultOptions = typeof defaultOptions;
 export type OptionName = keyof _DefaultOptions;
@@ -98,13 +99,6 @@ export const compatibilityParams: UserOptions = Object.create(null);
       compatibilityParams.maxCanvasPixels = 5242880;
     }
   })();
-
-  // Support: Safari<13.1
-  (/* checkResizeObserver */ () => {
-    if (typeof ResizeObserver === "undefined") {
-      compatibilityParams.annotationEditorMode = AnnotationEditorType.DISABLE;
-    }
-  })();
 }
 
 /**
@@ -114,9 +108,7 @@ export const compatibilityParams: UserOptions = Object.create(null);
  */
 const defaultOptions = {
   annotationEditorMode: {
-    value: _PDFDEV /*#static*/
-      ? AnnotationEditorType.NONE
-      : AnnotationEditorType.DISABLE,
+    value: AnnotationEditorType.NONE,
     kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
   },
   annotationMode: {
@@ -156,7 +148,7 @@ const defaultOptions = {
     kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
   },
   enableScripting: {
-    value: !CHROME /*#static*/ ? true : false,
+    value: /*#static*/ !CHROME ? true : false,
     kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
   },
   externalLinkRel: {
@@ -168,7 +160,6 @@ const defaultOptions = {
     kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
   },
   historyUpdateUrl: {
-    /** @type {boolean} */
     value: false,
     kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
   },
@@ -177,7 +168,6 @@ const defaultOptions = {
     kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
   },
   imageResourcesPath: {
-    /** @type {string} */
     value: `${D_base}/res/pdf/pdf.ts-web/images/`,
     // value: "./images/",
     kind: OptionKind.VIEWER,
@@ -203,7 +193,7 @@ const defaultOptions = {
     kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
   },
   pdfBugEnabled: {
-    value: !PRODUCTION /*#static*/ ? true : false,
+    value: /*#static*/ !PRODUCTION ? true : false,
     kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
   },
   printResolution: {
@@ -235,7 +225,7 @@ const defaultOptions = {
     kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
   },
   viewerCssTheme: {
-    value: CHROME /*#static*/ ? ViewerCssTheme.DARK : ViewerCssTheme.AUTOMATIC,
+    value: /*#static*/ CHROME ? ViewerCssTheme.DARK : ViewerCssTheme.AUTOMATIC,
     kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
   },
   viewOnLoad: {
@@ -248,7 +238,7 @@ const defaultOptions = {
     kind: OptionKind.API,
   },
   cMapUrl: {
-    value: !PRODUCTION /*#static*/
+    value: /*#static*/ !PRODUCTION
       ? `${D_base}/res/pdf/pdf.ts-external/bcmaps/`
       // ? "../external/bcmaps/"
       : `${D_base}/res/pdf/pdf.ts-external/bcmaps/`,
@@ -299,7 +289,7 @@ const defaultOptions = {
     kind: OptionKind.API,
   },
   standardFontDataUrl: {
-    value: !PRODUCTION /*#static*/
+    value: /*#static*/ !PRODUCTION
       ? `${D_base}/res/pdf/pdf.ts-external/standard_fonts/`
       // ? "../external/standard_fonts/"
       : `${D_base}/res/pdf/pdf.ts-external/standard_fonts/`,
@@ -316,7 +306,7 @@ const defaultOptions = {
     kind: OptionKind.WORKER,
   },
   workerSrc: {
-    value: !PRODUCTION /*#static*/
+    value: /*#static*/ !PRODUCTION
       ? `${D_base}/gen/pdf/pdf.ts-src/pdf.worker.js`
       // ? "../src/worker_loader.js"
       : `${D_base}/gen/pdf/pdf.ts-src/pdf.worker.js`,
@@ -337,7 +327,6 @@ const defaultOptions = {
     kind: OptionKind.VIEWER,
   };
   defaultOptions.disablePreferences = {
-    /** @type {boolean} */
     value: TESTING ? true : false,
     kind: OptionKind.VIEWER,
   };
@@ -350,7 +339,7 @@ const defaultOptions = {
     kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
   };
   defaultOptions.sandboxBundleSrc = {
-    value: !PRODUCTION /*#static*/
+    value: /*#static*/ !PRODUCTION
       ? `${D_base}/gen/pdf/pdf.ts-src/pdf.sandbox.js`
       // ? "../build/dev-sandbox/pdf.sandbox.js"
       : `${D_base}/gen/pdf/pdf.ts-src/pdf.sandbox.js`,

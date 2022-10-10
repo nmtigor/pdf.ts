@@ -75,8 +75,8 @@ const deferred = Promise.resolve();
 function normalizeBlendMode(value, parsingArray = false) {
     if (Array.isArray(value)) {
         // Use the first *supported* BM value in the Array (fixes issue11279.pdf).
-        for (let i = 0, ii = value.length; i < ii; i++) {
-            const maybeBM = normalizeBlendMode(value[i], /* parsingArray = */ true);
+        for (const val of value) {
+            const maybeBM = normalizeBlendMode(val, /* parsingArray = */ true);
             if (maybeBM) {
                 return maybeBM;
             }
@@ -828,10 +828,8 @@ export class PartialEvaluator {
         let isSimpleGState = true;
         // This array holds the converted/processed state data.
         const gStateObj = [];
-        const gStateKeys = gState.getKeys();
         let promise = Promise.resolve();
-        for (let i = 0, ii = gStateKeys.length; i < ii; i++) {
-            const key = gStateKeys[i];
+        for (const key of gState.getKeys()) {
             const value = gState.get(key);
             switch (key) {
                 case "Type":
@@ -1081,7 +1079,6 @@ export class PartialEvaluator {
         if (!args) {
             args = [];
         }
-        let minMax;
         if (lastIndex < 0 ||
             operatorList.fnArray[lastIndex] !== OPS.constructPath) {
             // Handle corrupt PDF documents that contains path operators inside of
@@ -1095,7 +1092,26 @@ export class PartialEvaluator {
                 warn(`Encountered path operator "${fn}" inside of a text object.`);
                 operatorList.addOp(OPS.save, null);
             }
-            minMax = [Infinity, -Infinity, Infinity, -Infinity];
+            let minMax;
+            switch (fn) {
+                case OPS.rectangle:
+                    const x = args[0] + args[2];
+                    const y = args[1] + args[3];
+                    minMax = [
+                        Math.min(args[0], x),
+                        Math.max(args[0], x),
+                        Math.min(args[1], y),
+                        Math.max(args[1], y),
+                    ];
+                    break;
+                case OPS.moveTo:
+                case OPS.lineTo:
+                    minMax = [args[0], args[0], args[1], args[1]];
+                    break;
+                default:
+                    minMax = [Infinity, -Infinity, Infinity, -Infinity];
+                    break;
+            }
             operatorList.addOp(OPS.constructPath, [[fn], args, minMax]);
             if (parsingText) {
                 operatorList.addOp(OPS.restore, null);
@@ -1104,28 +1120,30 @@ export class PartialEvaluator {
         else {
             const opArgs = operatorList.argsArray[lastIndex];
             opArgs[0].push(fn);
-            Array.prototype.push.apply(opArgs[1], args);
-            minMax = opArgs[2];
-        }
-        // Compute min/max in the worker instead of the main thread.
-        // If the current matrix (when drawing) is a scaling one
-        // then min/max can be easily computed in using those values.
-        // Only rectangle, lineTo and moveTo are handled here since
-        // Bezier stuff requires to have the starting point.
-        switch (fn) {
-            case OPS.rectangle:
-                minMax[0] = Math.min(minMax[0], args[0], args[0] + args[2]);
-                minMax[1] = Math.max(minMax[1], args[0], args[0] + args[2]);
-                minMax[2] = Math.min(minMax[2], args[1], args[1] + args[3]);
-                minMax[3] = Math.max(minMax[3], args[1], args[1] + args[3]);
-                break;
-            case OPS.moveTo:
-            case OPS.lineTo:
-                minMax[0] = Math.min(minMax[0], args[0]);
-                minMax[1] = Math.max(minMax[1], args[0]);
-                minMax[2] = Math.min(minMax[2], args[1]);
-                minMax[3] = Math.max(minMax[3], args[1]);
-                break;
+            opArgs[1].push(...args);
+            const minMax = opArgs[2];
+            // Compute min/max in the worker instead of the main thread.
+            // If the current matrix (when drawing) is a scaling one
+            // then min/max can be easily computed in using those values.
+            // Only rectangle, lineTo and moveTo are handled here since
+            // Bezier stuff requires to have the starting point.
+            switch (fn) {
+                case OPS.rectangle:
+                    const x = args[0] + args[2];
+                    const y = args[1] + args[3];
+                    minMax[0] = Math.min(minMax[0], args[0], x);
+                    minMax[1] = Math.max(minMax[1], args[0], x);
+                    minMax[2] = Math.min(minMax[2], args[1], y);
+                    minMax[3] = Math.max(minMax[3], args[1], y);
+                    break;
+                case OPS.moveTo:
+                case OPS.lineTo:
+                    minMax[0] = Math.min(minMax[0], args[0]);
+                    minMax[1] = Math.max(minMax[1], args[0]);
+                    minMax[2] = Math.min(minMax[2], args[1]);
+                    minMax[3] = Math.max(minMax[3], args[1]);
+                    break;
+            }
         }
     }
     parseColorSpace({ cs, resources, localColorSpaceCache, }) {
@@ -1501,14 +1519,11 @@ export class PartialEvaluator {
                             self.ensureStateFont(stateManager.state);
                             continue;
                         }
-                        const arr = args[0];
                         const combinedGlyphs = [];
-                        const arrLength = arr.length;
                         const state = stateManager.state;
-                        for (i = 0; i < arrLength; ++i) {
-                            const arrItem = arr[i];
+                        for (const arrItem of args[0]) {
                             if (typeof arrItem === "string") {
-                                Array.prototype.push.apply(combinedGlyphs, self.handleText(arrItem, state));
+                                combinedGlyphs.push(...self.handleText(arrItem, state));
                             }
                             else if (typeof arrItem === "number") {
                                 combinedGlyphs.push(arrItem);
@@ -1862,7 +1877,6 @@ export class PartialEvaluator {
         let twoLastCharsPos = 0;
         /**
          * Save the last char.
-         * @param char
          * @return true when the two last chars before adding the new one
          * are a non-whitespace followed by a whitespace.
          */
@@ -2765,8 +2779,8 @@ export class PartialEvaluator {
                 if (encoding.has("Differences")) {
                     const diffEncoding = encoding.get("Differences");
                     let index = 0;
-                    for (let j = 0, jj = diffEncoding.length; j < jj; j++) {
-                        const data = xref.fetchIfRef(diffEncoding[j]);
+                    for (const entry of diffEncoding) {
+                        const data = xref.fetchIfRef(entry);
                         if (typeof data === "number") {
                             index = data;
                         }
@@ -3053,7 +3067,7 @@ export class PartialEvaluator {
                             token.charCodeAt(k + 1);
                         str.push(((w1 & 0x3ff) << 10) + (w2 & 0x3ff) + 0x10000);
                     }
-                    map[charCode] = String.fromCodePoint.apply(String, str);
+                    map[charCode] = String.fromCodePoint(...str);
                 });
                 return new ToUnicodeMap(map);
             }, (reason) => {
@@ -3195,8 +3209,7 @@ export class PartialEvaluator {
     isSerifFont(baseFontName) {
         // Simulating descriptor flags attribute
         const fontNameWoStyle = baseFontName.split("-")[0];
-        return (fontNameWoStyle in getSerifFonts() ||
-            fontNameWoStyle.search(/serif/gi) !== -1);
+        return (fontNameWoStyle in getSerifFonts() || /serif/gi.test(fontNameWoStyle));
     }
     getBaseFontMetrics(name) {
         let defaultWidth = 0;
@@ -3434,8 +3447,8 @@ export class PartialEvaluator {
                     if (widths) {
                         const glyphWidths = [];
                         let j = firstChar;
-                        for (let i = 0, ii = widths.length; i < ii; i++) {
-                            glyphWidths[j++] = this.xref.fetchIfRef(widths[i]);
+                        for (const width of widths) {
+                            glyphWidths[j++] = this.xref.fetchIfRef(width);
                         }
                         newProperties.widths = glyphWidths;
                     }

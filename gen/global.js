@@ -17,20 +17,16 @@ export const INOUT = true // contracts
 , _INFO = DEV && INFO, APP = false // release build
 , DENO = false, TESTING = false, /** @deprecated */ TEST_ALL = false
 // from pdf.js
-, GENERIC = true, MOZCENTRAL = false, CHROME = false, PRODUCTION = false, LIB = false, SKIP_BABEL = false, IMAGE_DECODERS = false, COMPONENTS = false, _PDFDEV = !PRODUCTION || TESTING;
+, GENERIC = true, MOZCENTRAL = false, CHROME = false, PRODUCTION = false, LIB = false, SKIP_BABEL = true, IMAGE_DECODERS = false, COMPONENTS = false, _PDFDEV = !PRODUCTION || TESTING;
 /*80-------------------------------------------------------------------------*/
-/**
- * Singleton
- * @final
- */
-class Global {
+export const global = new class {
     /** @deprecated Use preprocessor. */
     testing = false;
     LASTUPDATE_NOT = "2020-07-10 22:17:59 +0200";
     LASTUPDATE_DATNI = "2020-07-24 01:59:51 +0200";
     LASTUPDATE_DEV = "2021-05-22 05:04:21 +0200";
     globalhvc;
-    holdindicatr;
+    // holdindicatr?: [HoldIndicatr, HoldIndicatr, HoldIndicatr];
     has_ResizeObserver = false;
     can_touchstart = false;
     #tabsize = 2;
@@ -54,7 +50,6 @@ class Global {
         assert(this.#dent >= 0);
         return this.#dent;
     }
-}
-export const global = new Global();
+}();
 /*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=global.js.map

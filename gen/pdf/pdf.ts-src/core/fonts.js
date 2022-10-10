@@ -17,23 +17,23 @@
  */
 import { _PDFDEV } from "../../../global.js";
 import { assert } from "../../../lib/util/trace.js";
-import { bytesToString, FontType, FONT_IDENTITY_MATRIX, FormatError, info, shadow, string32, warn } from "../shared/util.js";
+import { bytesToString, FONT_IDENTITY_MATRIX, FontType, FormatError, info, shadow, string32, warn, } from "../shared/util.js";
 import { CFFFont } from "./cff_font.js";
 import { CFFCompiler, CFFParser } from "./cff_parser.js";
 import { IdentityCMap } from "./cmap.js";
 import { readUint32 } from "./core_utils.js";
-import { getEncoding, MacRomanEncoding, StandardEncoding, SymbolSetEncoding, ZapfDingbatsEncoding } from "./encodings.js";
-import { FontFlags, getFontType, MacStandardGlyphOrdering, recoverGlyphName, SEAC_ANALYSIS_ENABLED } from "./fonts_utils.js";
+import { getEncoding, MacRomanEncoding, StandardEncoding, SymbolSetEncoding, ZapfDingbatsEncoding, } from "./encodings.js";
+import { FontFlags, getFontType, MacStandardGlyphOrdering, recoverGlyphName, SEAC_ANALYSIS_ENABLED, } from "./fonts_utils.js";
 import { FontRendererFactory } from "./font_renderer.js";
 import { GlyfTable } from "./glyf.js";
 import { getDingbatsGlyphsUnicode, getGlyphsUnicode } from "./glyphlist.js";
 import { getFontBasicMetrics } from "./metrics.js";
-import { OpenTypeFileBuilder, VALID_TABLES } from "./opentype_file_builder.js";
-import { getGlyphMapForStandardFonts, getNonStdFontMap, getSerifFonts, getStdFontMap, getSupplementalGlyphMapForArialBlack, getSupplementalGlyphMapForCalibri } from "./standard_fonts.js";
+import { OpenTypeFileBuilder, VALID_TABLES, } from "./opentype_file_builder.js";
+import { getGlyphMapForStandardFonts, getNonStdFontMap, getSerifFonts, getStdFontMap, getSupplementalGlyphMapForArialBlack, getSupplementalGlyphMapForCalibri, } from "./standard_fonts.js";
 import { Stream } from "./stream.js";
 import { IdentityToUnicodeMap, ToUnicodeMap } from "./to_unicode_map.js";
 import { Type1Font } from "./type1_font.js";
-import { getCharUnicodeCategory, getUnicodeForGlyph, getUnicodeRangeFor, mapSpecialUnicodeValues } from "./unicode.js";
+import { getCharUnicodeCategory, getUnicodeForGlyph, getUnicodeRangeFor, mapSpecialUnicodeValues, } from "./unicode.js";
 /*80--------------------------------------------------------------------------*/
 // Unicode Private Use Areas:
 const PRIVATE_USE_AREAS = [
@@ -144,6 +144,9 @@ function adjustToUnicode(properties, builtInEncoding) {
     if (properties.isInternalFont) {
         return;
     }
+    if (properties.hasIncludedToUnicodeMap) {
+        return; // The font dictionary has a `ToUnicode` entry.
+    }
     if (builtInEncoding === properties.defaultEncoding) {
         return; // No point in trying to adjust `toUnicode` if the encodings match.
     }
@@ -152,12 +155,7 @@ function adjustToUnicode(properties, builtInEncoding) {
     }
     const toUnicode = [], glyphsUnicodeMap = getGlyphsUnicode();
     for (const charCode in builtInEncoding) {
-        if (properties.hasIncludedToUnicodeMap) {
-            if (properties.toUnicode.has(+charCode)) {
-                continue; // The font dictionary has a `ToUnicode` entry.
-            }
-        }
-        else if (properties.hasEncoding) {
+        if (properties.hasEncoding) {
             if (properties.differences.length === 0 ||
                 properties.differences[+charCode] !== undefined) {
                 continue; // The font dictionary has an `Encoding`/`Differences` entry.
@@ -236,14 +234,6 @@ export class Glyph {
             this.isInFont === isInFont);
     }
 }
-/**
- * 'Font' is the class the outside world should use, it encapsulate all the font
- * decoding logics whatever type it is (assuming the font type is supported).
- *
- * For example to read a Type1 font and to attach it to the document:
- *   const type1Font = new Font("MyFontName", binaryFile, propertiesObject);
- *   type1Font.bind();
- */
 function int16(b0, b1) {
     return (b0 << 8) + b1;
 }
@@ -819,7 +809,10 @@ function createNameTable(name, proto) {
     nameTable += strings.join("") + stringsUnicode.join("");
     return nameTable;
 }
-// eslint-disable-next-line no-shadow
+/**
+ * 'Font' is the class the outside world should use, it encapsulate all the font
+ * decoding logics whatever type it is (assuming the font type is supported).
+ */
 export class Font extends FontExpotDataEx {
     disableFontFace = false;
     _charsCache = Object.create(null);
@@ -995,15 +988,14 @@ export class Font extends FontExpotDataEx {
                 this.capHeight = metrics.capHeight / PDF_GLYPH_SPACE_UNITS;
             }
         }
-        this.bold = fontName.search(/bold/gi) !== -1;
-        this.italic = fontName.search(/oblique/gi) !== -1 ||
-            fontName.search(/italic/gi) !== -1;
+        this.bold = /bold/gi.test(fontName);
+        this.italic = /oblique|italic/gi.test(fontName);
         // Use 'name' instead of 'fontName' here because the original
         // name ArialBlack for example will be replaced by Helvetica.
-        this.black = name.search(/Black/g) !== -1;
+        this.black = /Black/g.test(name);
         // Use 'name' instead of 'fontName' here because the original
         // name ArialNarrow for example will be replaced by Helvetica.
-        const isNarrow = name.search(/Narrow/g) !== -1;
+        const isNarrow = /Narrow/g.test(name);
         // if at least one width is present, remeasure all chars when exists
         this.remeasure = (!isStandardFont || isNarrow) &&
             Object.keys(this.widths).length > 0;
@@ -1968,151 +1960,17 @@ export class Font extends FontExpotDataEx {
             }
             return names;
         }
-        // prettier-ignore
+        // deno-fmt-ignore
         const TTOpsStackDeltas = [
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            -2,
-            -2,
-            -2,
-            -2,
-            0,
-            0,
-            -2,
-            -5,
-            -1,
-            -1,
-            -1,
-            -1,
-            -1,
-            -1,
-            -1,
-            -1,
-            0,
-            0,
-            -1,
-            0,
-            -1,
-            -1,
-            -1,
-            -1,
-            1,
-            -1,
-            -999,
-            0,
-            1,
-            0,
-            -1,
-            -2,
-            0,
-            -1,
-            -2,
-            -1,
-            -1,
-            0,
-            -1,
-            -1,
-            0,
-            0,
-            -999,
-            -999,
-            -1,
-            -1,
-            -1,
-            -1,
-            -2,
-            -999,
-            -2,
-            -2,
-            -999,
-            0,
-            -2,
-            -2,
-            0,
-            0,
-            -2,
-            0,
-            -2,
-            0,
-            0,
-            0,
-            -2,
-            -1,
-            -1,
-            1,
-            1,
-            0,
-            0,
-            -1,
-            -1,
-            -1,
-            -1,
-            -1,
-            -1,
-            -1,
-            0,
-            0,
-            -1,
-            0,
-            -1,
-            -1,
-            0,
-            -999,
-            -1,
-            -1,
-            -1,
-            -1,
-            -1,
-            -1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            -2,
-            -999,
-            -999,
-            -999,
-            -999,
-            -999,
-            -1,
-            -1,
-            -2,
-            -2,
-            0,
-            0,
-            0,
-            0,
-            -1,
-            -1,
-            -999,
-            -2,
-            -2,
-            0,
-            0,
-            -1,
-            -2,
-            -2,
-            0,
-            0,
-            0,
-            -1,
-            -1,
-            -1,
-            -2,
+            0, 0, 0, 0, 0, 0, 0, 0, -2, -2, -2, -2, 0, 0, -2, -5,
+            -1, -1, -1, -1, -1, -1, -1, -1, 0, 0, -1, 0, -1, -1, -1, -1,
+            1, -1, -999, 0, 1, 0, -1, -2, 0, -1, -2, -1, -1, 0, -1, -1,
+            0, 0, -999, -999, -1, -1, -1, -1, -2, -999, -2, -2, -999, 0, -2, -2,
+            0, 0, -2, 0, -2, 0, 0, 0, -2, -1, -1, 1, 1, 0, 0, -1,
+            -1, -1, -1, -1, -1, -1, 0, 0, -1, 0, -1, -1, 0, -999, -1, -1,
+            -1, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            -2, -999, -999, -999, -999, -999, -1, -1, -2, -2, 0, 0, 0, 0, -1, -1,
+            -999, -2, -2, 0, 0, -1, -2, -2, 0, 0, 0, -1, -1, -1, -2
         ];
         // 0xC0-DF == -1 and 0xE0-FF == -2
         function sanitizeTTProgram(table, ttContext) {
@@ -2595,7 +2453,6 @@ export class Font extends FontExpotDataEx {
             const cmapPlatformId = cmapTable.platformId;
             const cmapEncodingId = cmapTable.encodingId;
             const cmapMappings = cmapTable.mappings;
-            const cmapMappingsLength = cmapMappings.length;
             let baseEncoding = [], forcePostTable = false;
             if (properties.hasEncoding &&
                 (properties.baseEncodingName === "MacRomanEncoding" ||
@@ -2649,19 +2506,19 @@ export class Font extends FontExpotDataEx {
                             continue; // No valid glyph mapping found.
                         }
                     }
-                    for (let i = 0; i < cmapMappingsLength; ++i) {
-                        if (cmapMappings[i].charCode !== unicodeOrCharCode) {
+                    for (const mapping of cmapMappings) {
+                        if (mapping.charCode !== unicodeOrCharCode) {
                             continue;
                         }
-                        charCodeToGlyphId[charCode] = cmapMappings[i].glyphId;
+                        charCodeToGlyphId[charCode] = mapping.glyphId;
                         break;
                     }
                 }
             }
             else if (cmapPlatformId === 0) {
                 // Default Unicode semantics, use the charcodes as is.
-                for (let i = 0; i < cmapMappingsLength; ++i) {
-                    charCodeToGlyphId[cmapMappings[i].charCode] = cmapMappings[i].glyphId;
+                for (const mapping of cmapMappings) {
+                    charCodeToGlyphId[mapping.charCode] = mapping.glyphId;
                 }
                 // Always prefer the BaseEncoding/Differences arrays, when they exist
                 // (fixes issue13433.pdf).
@@ -2678,14 +2535,14 @@ export class Font extends FontExpotDataEx {
                 // special range since some PDFs have char codes outside of this range
                 // (e.g. 0x2013) which when masked would overwrite other values in the
                 // cmap.
-                for (let i = 0; i < cmapMappingsLength; ++i) {
-                    let charCode = cmapMappings[i].charCode;
+                for (const mapping of cmapMappings) {
+                    let charCode = mapping.charCode;
                     if (cmapPlatformId === 3 &&
                         charCode >= 0xf000 &&
                         charCode <= 0xf0ff) {
                         charCode &= 0xff;
                     }
-                    charCodeToGlyphId[charCode] = cmapMappings[i].glyphId;
+                    charCodeToGlyphId[charCode] = mapping.glyphId;
                 }
             }
             // Last, try to map any missing charcodes using the post table.
@@ -2843,8 +2700,7 @@ export class Font extends FontExpotDataEx {
                     // to begin with.
                     continue;
                 }
-                for (let i = 0, ii = charCodes.length; i < ii; i++) {
-                    const charCode = charCodes[i];
+                for (const charCode of charCodes) {
                     // Find a fontCharCode that maps to the base and accent glyphs.
                     // If one doesn't exists, create it.
                     const charCodeToGlyphId = newMapping.charCodeToGlyphId;
@@ -2935,8 +2791,7 @@ export class Font extends FontExpotDataEx {
         // trying to estimate space character width
         const possibleSpaceReplacements = ["space", "minus", "one", "i", "I"];
         let width;
-        for (let i = 0, ii = possibleSpaceReplacements.length; i < ii; i++) {
-            const glyphName = possibleSpaceReplacements[i];
+        for (const glyphName of possibleSpaceReplacements) {
             // if possible, getting width by glyph name
             if (glyphName in this.widths) {
                 width = this.widths[glyphName];

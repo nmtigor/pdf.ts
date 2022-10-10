@@ -25,6 +25,7 @@ export declare type Ratio = number;
 export declare type IntegerArray = Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint16Array | Int32Array | Uint32Array;
 export declare type FloatArray = Float32Array | Float64Array;
 export declare type TypedArray = IntegerArray | FloatArray;
+export declare type BinaryData = TypedArray | ArrayBuffer | number[] | string;
 export declare type CSSStyleName = keyof {
     [K in Extract<keyof CSSStyleDeclaration, string> as string extends K ? never : CSSStyleDeclaration[K] extends string ? K : never]: never;
 };

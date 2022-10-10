@@ -17,7 +17,7 @@
  */
 /* globals chrome */
 import { CHROME } from "../../global.js";
-import { DefaultExternalServices, viewerapp, } from "./app.js";
+import { DefaultExternalServices, viewerApp, } from "./app.js";
 import { AppOptions, ViewOnLoad } from "./app_options.js";
 import { DownloadManager } from "./download_manager.js";
 import { GenericL10n } from "./genericl10n.js";
@@ -46,9 +46,7 @@ export const ChromeCom = {
         };
         if (!chrome.runtime) {
             console.error("chrome.runtime is undefined.");
-            if (callback) {
-                callback();
-            }
+            callback?.();
         }
         else if (callback) {
             chrome.runtime.sendMessage(message, callback);
@@ -84,7 +82,7 @@ export const ChromeCom = {
                 // Even without this check, the file load in frames is still blocked,
                 // but this may change in the future (https://crbug.com/550151).
                 if (origin && !/^file:|^chrome-extension:/.test(origin)) {
-                    viewerapp._documentError("Blocked " +
+                    viewerApp._documentError("Blocked " +
                         origin +
                         " from loading " +
                         file +
@@ -344,13 +342,8 @@ class ChromePreferences extends BasePreferences {
                     }
                     delete items.enableHandToolOnLoad;
                     // Migration code for https://github.com/mozilla/pdf.js/pull/9479.
-                    if (items.textLayerMode !== 1) {
-                        if (items.disableTextLayer) {
-                            items.textLayerMode = 0;
-                        }
-                        else if (items.enhanceTextSelection) {
-                            items.textLayerMode = 2;
-                        }
+                    if (items.textLayerMode !== 1 && items.disableTextLayer) {
+                        items.textLayerMode = 0;
                     }
                     delete items.disableTextLayer;
                     delete items.enhanceTextSelection;
@@ -373,7 +366,7 @@ class ChromePreferences extends BasePreferences {
 class ChromeExternalServices extends DefaultExternalServices {
     initPassiveLoading(callbacks) {
         // defaultUrl is set in viewer.js
-        ChromeCom.resolvePDFFile(AppOptions.defaultUrl, viewerapp.overlayManager, (url, length, originalUrl) => {
+        ChromeCom.resolvePDFFile(AppOptions.defaultUrl, viewerApp.overlayManager, (url, length, originalUrl) => {
             callbacks.onOpenWithURL(url, length, originalUrl);
         });
     }
@@ -390,6 +383,6 @@ class ChromeExternalServices extends DefaultExternalServices {
         return new GenericScripting(sandboxBundleSrc);
     }
 }
-viewerapp.externalServices = new ChromeExternalServices();
+viewerApp.externalServices = new ChromeExternalServices();
 /*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=chromecom.js.map

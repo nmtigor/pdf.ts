@@ -1,18 +1,17 @@
 import "../../lib/jslang.js";
 import { Locale } from "../../lib/Locale.js";
-import { Metadata, OptionalContentConfig, PDFDataRangeTransport, PDFDocumentLoadingTask, PDFDocumentProxy, PrintAnnotationStorage, UNSUPPORTED_FEATURES, WorkerMessageHandler, type DocumentInfo, type PDFDocumentStats } from "../pdf.ts-src/pdf.js";
+import { type DocumentInfo, Metadata, OptionalContentConfig, PDFDataRangeTransport, PDFDocumentLoadingTask, PDFDocumentProxy, type PDFDocumentStats, PrintAnnotationStorage, UNSUPPORTED_FEATURES, WorkerMessageHandler } from "../pdf.ts-src/pdf.js";
 import { AnnotationEditorParams } from "./annotation_editor_params.js";
-import { type PageOverview } from "./base_viewer.js";
 import { PDFBug } from "./debugger.js";
 import { EventBus, EventMap } from "./event_utils.js";
-import { IDownloadManager, IScripting, type IL10n } from "./interfaces.js";
+import { IDownloadManager, type IL10n, IScripting } from "./interfaces.js";
 import { OverlayManager } from "./overlay_manager.js";
 import { PasswordPrompt } from "./password_prompt.js";
 import { PDFAttachmentViewer } from "./pdf_attachment_viewer.js";
 import { PDFCursorTools } from "./pdf_cursor_tools.js";
 import { PDFDocumentProperties } from "./pdf_document_properties.js";
 import { PDFFindBar } from "./pdf_find_bar.js";
-import { FindState, PDFFindController, type MatchesCount } from "./pdf_find_controller.js";
+import { FindState, type MatchesCount, PDFFindController } from "./pdf_find_controller.js";
 import { PDFHistory } from "./pdf_history.js";
 import { PDFLayerViewer } from "./pdf_layer_viewer.js";
 import { PDFLinkService } from "./pdf_link_service.js";
@@ -24,7 +23,7 @@ import { PDFScriptingManager } from "./pdf_scripting_manager.js";
 import { PDFSidebar } from "./pdf_sidebar.js";
 import { PDFSidebarResizer } from "./pdf_sidebar_resizer.js";
 import { PDFThumbnailViewer } from "./pdf_thumbnail_viewer.js";
-import { PDFViewer } from "./pdf_viewer.js";
+import { type PageOverview, PDFViewer } from "./pdf_viewer.js";
 import { BasePreferences } from "./preferences.js";
 import { SecondaryToolbar } from "./secondary_toolbar.js";
 import { Toolbar } from "./toolbar.js";
@@ -44,9 +43,13 @@ export interface PassiveLoadingCbs {
     onError(err?: ErrorMoreInfo): void;
     onProgress(loaded: number, total: number): void;
 }
-declare type TelemetryType = "documentInfo" | "documentStats" | "pageInfo" | "print" | "tagged" | "unsupportedFeature";
+declare type TelemetryType = "buttons" | "documentInfo" | "documentStats" | "editing" | "pageInfo" | "print" | "tagged" | "unsupportedFeature";
 export interface TelemetryData {
     type: TelemetryType;
+    data?: {
+        type?: "save" | "freetext" | "ink" | "print";
+        id?: string;
+    };
     featureId?: UNSUPPORTED_FEATURES | undefined;
     formType?: string;
     generator?: string;
@@ -158,8 +161,9 @@ export declare class PDFViewerApplication {
     _saveInProgress: boolean;
     _docStats: PDFDocumentStats | undefined;
     _wheelUnusedTicks: number;
-    _idleCallbacks: Set<number>;
     _PDFBug?: typeof PDFBug;
+    _hasAnnotationEditors: boolean;
+    _title: string;
     _printAnnotationStoragePromise: Promise<PrintAnnotationStorage | undefined> | undefined;
     disableAutoFetchLoadingBarTimeout: number | undefined;
     _annotationStorageModified?: boolean;
@@ -188,7 +192,7 @@ export declare class PDFViewerApplication {
     };
     initPassiveLoading(): void;
     setTitleUsingUrl(url?: string, downloadUrl?: string): void;
-    setTitle(title: string): void;
+    setTitle(title?: string): void;
     get _docFilename(): string;
     /**
      * @private
@@ -251,7 +255,7 @@ export declare class PDFViewerApplication {
      */
     get scriptingReady(): boolean;
 }
-export declare const viewerapp: PDFViewerApplication;
+export declare const viewerApp: PDFViewerApplication;
 export interface PDFJSWorker {
     WorkerMessageHandler: typeof WorkerMessageHandler;
 }

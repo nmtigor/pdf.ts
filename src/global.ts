@@ -4,7 +4,6 @@
 
 import { HTMLVCo } from "./lib/mv.ts";
 import { assert } from "./lib/util/trace.ts";
-import { HoldIndicatr } from "./lib/widget/progressbar.ts";
 /*80--------------------------------------------------------------------------*/
 
 // preprocessor names
@@ -35,18 +34,14 @@ export const
 , CHROME = false
 , PRODUCTION = false
 , LIB = false
-, SKIP_BABEL = false
+, SKIP_BABEL = true
 , IMAGE_DECODERS = false
 , COMPONENTS = false
 , _PDFDEV = !PRODUCTION || TESTING
 ;
 /*80-------------------------------------------------------------------------*/
 
-/**
- * Singleton
- * @final
- */
-class Global {
+export const global = new class {
   /** @deprecated Use preprocessor. */
   testing = false;
 
@@ -55,7 +50,7 @@ class Global {
   readonly LASTUPDATE_DEV = "2021-05-22 05:04:21 +0200";
 
   globalhvc?: HTMLVCo;
-  holdindicatr?: [HoldIndicatr, HoldIndicatr, HoldIndicatr];
+  // holdindicatr?: [HoldIndicatr, HoldIndicatr, HoldIndicatr];
 
   has_ResizeObserver = false;
   can_touchstart = false;
@@ -91,7 +86,5 @@ class Global {
   //        console.log( `${this.dent}${s_x}` );
   //   else console.log( `%c${this.dent}${s_x}`, `color:${c_x}` );
   // }
-}
-
-export const global = new Global();
+}();
 /*80--------------------------------------------------------------------------*/

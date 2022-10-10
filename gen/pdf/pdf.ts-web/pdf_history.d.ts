@@ -1,5 +1,5 @@
 import { type ExplicitDest } from "../pdf.ts-src/pdf.js";
-import { type PDFLocation } from "./base_viewer.js";
+import { type PDFLocation } from "./pdf_viewer.js";
 import { EventBus } from "./event_utils.js";
 import { type HistoryInitP, type HistoryPushP, type IPDFLinkService } from "./interfaces.js";
 interface PDFHistoryOptions {

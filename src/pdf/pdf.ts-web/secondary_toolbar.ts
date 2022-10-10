@@ -18,9 +18,10 @@
  */
 
 import { GENERIC } from "../../global.ts";
-import { PagesCountLimit } from "./base_viewer.ts";
+import { DefaultExternalServices } from "./app.ts";
 import { EventBus, EventMap } from "./event_utils.ts";
 import { CursorTool } from "./pdf_cursor_tools.ts";
+import { PagesCountLimit } from "./pdf_viewer.ts";
 import { ScrollMode, SpreadMode } from "./ui_utils.ts";
 import { type ViewerConfiguration } from "./viewer.ts";
 /*80--------------------------------------------------------------------------*/
@@ -68,6 +69,7 @@ export class SecondaryToolbar {
 
   mainContainer?: HTMLDivElement;
   eventBus: EventBus;
+  externalServices;
 
   opened = false;
   containerHeight?: number;
@@ -79,6 +81,7 @@ export class SecondaryToolbar {
   constructor(
     options: ViewerConfiguration["secondaryToolbar"],
     eventBus: EventBus,
+    externalServices: DefaultExternalServices,
   ) {
     this.toolbar = options.toolbar;
     this.toggleButton = options.toggleButton;
@@ -178,8 +181,7 @@ export class SecondaryToolbar {
     };
 
     this.eventBus = eventBus;
-
-    this.reset();
+    this.externalServices = externalServices;
 
     // Bind the event listeners for click, cursor tool, and scroll/spread mode
     // actions.
@@ -187,6 +189,8 @@ export class SecondaryToolbar {
     this.#bindCursorToolsListener(options);
     this.#bindScrollModeListener(options);
     this.#bindSpreadModeListener(options);
+
+    this.reset();
   }
 
   get isOpen(): boolean {
@@ -236,6 +240,10 @@ export class SecondaryToolbar {
         if (close) {
           this.close();
         }
+        this.externalServices.reportTelemetry({
+          type: "buttons",
+          data: { id: element.id },
+        });
       });
     }
   }

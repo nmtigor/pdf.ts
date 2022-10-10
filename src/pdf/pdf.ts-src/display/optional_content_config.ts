@@ -23,6 +23,7 @@ import {
   type MarkedContentProps,
   type VisibilityExpressionResult,
 } from "../core/evaluator.ts";
+import { MurmurHash3_64 } from "../shared/murmurhash3.ts";
 import { objectFromMap, warn } from "../shared/util.ts";
 /*80--------------------------------------------------------------------------*/
 
@@ -54,11 +55,9 @@ export class OptionalContentConfig {
   name: string | null = null;
   creator: string | null = null;
 
-  #cachedHasInitialVisibility: boolean | undefined = true;
-
+  #cachedGetHash: string | undefined;
   #groups = new Map<string, OptionalContentGroup>();
-
-  #initialVisibility: Map<string, boolean> | undefined;
+  #initialHash: string | undefined;
 
   #order: Order | null = null;
 
@@ -91,10 +90,7 @@ export class OptionalContentConfig {
     }
 
     // The following code must always run *last* in the constructor.
-    this.#initialVisibility = new Map();
-    for (const [id, group] of this.#groups) {
-      this.#initialVisibility.set(id, group.visible);
-    }
+    this.#initialHash = this.getHash();
   }
 
   #evaluateVisibilityExpression(array: VisibilityExpressionResult): boolean {
@@ -213,20 +209,11 @@ export class OptionalContentConfig {
     }
     this.#groups.get(id)!._setVisible(INTERNAL, !!visible);
 
-    this.#cachedHasInitialVisibility = undefined;
+    this.#cachedGetHash = undefined;
   }
 
   get hasInitialVisibility() {
-    if (this.#cachedHasInitialVisibility !== undefined) {
-      return this.#cachedHasInitialVisibility;
-    }
-    for (const [id, group] of this.#groups) {
-      const visible = this.#initialVisibility!.get(id);
-      if (group.visible !== visible) {
-        return (this.#cachedHasInitialVisibility = false);
-      }
-    }
-    return (this.#cachedHasInitialVisibility = true);
+    return this.getHash() === this.#initialHash;
   }
 
   getOrder() {
@@ -245,6 +232,18 @@ export class OptionalContentConfig {
 
   getGroup(id: string) {
     return this.#groups.get(id) || null;
+  }
+
+  getHash() {
+    if (this.#cachedGetHash !== undefined) {
+      return this.#cachedGetHash;
+    }
+    const hash = new MurmurHash3_64();
+
+    for (const [id, group] of this.#groups) {
+      hash.update(`${id}:${group.visible}`);
+    }
+    return (this.#cachedGetHash = hash.hexdigest());
   }
 }
 /*80--------------------------------------------------------------------------*/

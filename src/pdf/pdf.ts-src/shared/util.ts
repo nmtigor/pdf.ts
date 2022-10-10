@@ -17,12 +17,20 @@
  * limitations under the License.
  */
 
-import { _PDFDEV } from "../../../global.ts";
+import { _PDFDEV, DENO, SKIP_BABEL } from "../../../global.ts";
 import { type TupleOf } from "../../../lib/alias.ts";
 import { HttpStatusCode } from "../../../lib/HttpStatusCode.ts";
 import { isObjectLike } from "../../../lib/jslang.ts";
 import { assert, warn as warn_0 } from "../../../lib/util/trace.ts";
 /*80--------------------------------------------------------------------------*/
+
+// Skip compatibility checks for modern builds and if we already ran the module.
+/*#static*/ if (!SKIP_BABEL && !DENO) {
+  if (!(globalThis as any)._pdfjsCompatibilityChecked) {
+    (globalThis as any)._pdfjsCompatibilityChecked = true;
+    (globalThis as any).require("./compatibility.js");
+  }
+}
 
 export const IDENTITY_MATRIX: matrix_t = [1, 0, 0, 1, 0, 0];
 export const FONT_IDENTITY_MATRIX: matrix_t = [0.001, 0, 0, 0.001, 0, 0];

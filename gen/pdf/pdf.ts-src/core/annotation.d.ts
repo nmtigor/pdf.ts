@@ -1,17 +1,17 @@
 import { type TupleOf } from "../../../lib/alias.js";
-import { AnnotStorageValue, type AnnotStorageRecord } from "../display/annotation_layer.js";
+import { type AnnotStorageRecord, AnnotStorageValue } from "../display/annotation_layer.js";
 import { DocWrapped, FieldWrapped } from "../scripting_api/app.js";
 import { SendData } from "../scripting_api/pdf_object.js";
-import { AnnotationBorderStyleType, AnnotationFieldFlag, AnnotationFlag, AnnotationReplyType, AnnotationType, point_t, RenderingIntentFlag, type rect_t } from "../shared/util.js";
+import { AnnotationBorderStyleType, AnnotationFieldFlag, AnnotationFlag, AnnotationReplyType, AnnotationType, point_t, type rect_t, RenderingIntentFlag } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
 import { type BidiText } from "./bidi.js";
-import { type CatParseDestDictRes } from "./catalog.js";
+import { Attachments, type CatParseDestDictRes } from "./catalog.js";
 import { type AnnotActions } from "./core_utils.js";
 import { DatasetReader } from "./dataset_reader.js";
 import { type DefaultAppearanceData } from "./default_appearance.js";
 import { type LocalIdFactory } from "./document.js";
 import { PartialEvaluator } from "./evaluator.js";
-import { type Serializable } from "./file_spec.js";
+import { type Attachment } from "./file_spec.js";
 import { ErrorFont, Font, Glyph } from "./fonts.js";
 import { OperatorList } from "./operator_list.js";
 import { BasePdfManager } from "./pdf_manager.js";
@@ -43,7 +43,7 @@ export declare class AnnotationFactory {
     /**
      * @private
      */
-    static _create(xref: XRef, ref: Ref, pdfManager: BasePdfManager, idFactory: LocalIdFactory, acroForm: Dict | undefined, xfaDatasets: DatasetReader | undefined, collectFields: boolean, pageIndex?: number): Annotation | undefined;
+    static _create(xref: XRef, ref: Ref, pdfManager: BasePdfManager, idFactory: LocalIdFactory, acroForm: Dict | undefined, attachments: Attachments | undefined, xfaDatasets: DatasetReader | undefined, collectFields: boolean, pageIndex?: number): Annotation | undefined;
     static saveNewAnnotations(evaluator: PartialEvaluator, task: WorkerTask, annotations: AnnotStorageValue[]): Promise<{
         annotations: {
             ref: import("./primitives.js").NsRef.Ref;
@@ -65,6 +65,7 @@ interface _AnnotationCtorP {
     id: string;
     pdfManager: BasePdfManager;
     acroForm: Dict;
+    attachments: Attachments | undefined;
     xfaDatasets: DatasetReader | undefined;
     collectFields: boolean;
     pageIndex: number;
@@ -136,10 +137,11 @@ export declare type AnnotationData = {
         _LineEndingStr
     ];
     inkLists?: AnnotPoint[][];
-    file?: Serializable;
+    file?: Attachment;
     parentType?: string | undefined;
     parentId?: string | undefined;
     parentRect?: rect_t;
+    textContent?: string[];
 } & CatParseDestDictRes;
 /**
  * PDF 1.7 Table 56
@@ -306,6 +308,9 @@ export declare class Annotation {
         separateCanvas: boolean;
     }>;
     save(evaluator: PartialEvaluator, task: WorkerTask, annotationStorage?: AnnotStorageRecord): Promise<SaveReturn | undefined>;
+    get hasTextContent(): boolean;
+    /** @final */
+    extractTextContent(evaluator: PartialEvaluator, task: WorkerTask, viewBox: rect_t): Promise<void>;
     /**
      * Get field data for usage in JS sandbox.
      *
@@ -466,6 +471,9 @@ export declare class WidgetAnnotation extends Annotation {
     _renderText(text: string, font: Font | ErrorFont, fontSize: number, totalWidth: number, alignment: number, hPadding: number, vPadding: number): string;
     _getSaveFieldResources(xref: XRef): Dict;
     getFieldObject(): FieldObject | undefined;
+}
+export declare class PopupAnnotation extends Annotation {
+    constructor(parameters: _AnnotationCtorP);
 }
 export {};
 //# sourceMappingURL=annotation.d.ts.map

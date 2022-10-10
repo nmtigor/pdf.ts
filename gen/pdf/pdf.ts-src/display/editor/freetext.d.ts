@@ -23,6 +23,7 @@ export declare class FreeTextEditor extends AnnotationEditor {
     static _defaultColor: string | undefined;
     static _defaultFontSize: number;
     static _keyboardManager: KeyboardManager;
+    static readonly _type = "freetext";
     overlayDiv: HTMLDivElement;
     editorDiv: HTMLDivElement;
     constructor(params: FreeTextEditorP);
@@ -69,8 +70,6 @@ export declare class FreeTextEditor extends AnnotationEditor {
     disableEditing(): void;
     /** @inheritdoc */
     enableEditing(): void;
-    /** @inheritdoc */
-    getIdForTextLayer(): string;
     /** @inheritdoc */
     render(): HTMLDivElement;
     get contentDiv(): HTMLDivElement;

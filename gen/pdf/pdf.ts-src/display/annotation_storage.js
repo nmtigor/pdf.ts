@@ -35,6 +35,7 @@ export class AnnotationStorage {
     // can have undesirable effects.
     onSetModified;
     onResetModified;
+    onAnnotationEditor;
     /**
      * Get the value for a given key if it exists, or return the default value.
      */
@@ -54,10 +55,18 @@ export class AnnotationStorage {
     /**
      * Remove a value from the storage.
      */
-    removeKey(key) {
+    remove(key) {
         this._storage.delete(key);
         if (this._storage.size === 0) {
             this.resetModified();
+        }
+        if (typeof this.onAnnotationEditor === "function") {
+            for (const value of this._storage.values()) {
+                if (value instanceof AnnotationEditor) {
+                    return;
+                }
+            }
+            this.onAnnotationEditor(undefined);
         }
     }
     /**
@@ -80,6 +89,10 @@ export class AnnotationStorage {
         }
         if (modified) {
             this.#setModified();
+        }
+        if (value instanceof AnnotationEditor &&
+            typeof this.onAnnotationEditor === "function") {
+            this.onAnnotationEditor(value.constructor._type);
         }
     }
     /**

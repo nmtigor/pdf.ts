@@ -269,17 +269,19 @@ namespace NsJbig2Image {
     }
 
     const sign = readBits(1);
-    // prettier-ignore
+    // deno-fmt-ignore
     /* eslint-disable no-nested-ternary */
-    const value = readBits(1)
-      ? (readBits(1)
-        ? (readBits(1)
-          ? (readBits(1)
-            ? (readBits(1) ? (readBits(32) + 4436) : readBits(12) + 340)
-            : readBits(8) + 84)
-          : readBits(6) + 20)
-        : readBits(4) + 4)
-      : readBits(2);
+    const value = readBits(1) ?
+                    (readBits(1) ?
+                      (readBits(1) ?
+                        (readBits(1) ?
+                          (readBits(1) ?
+                            (readBits(32) + 4436) :
+                          readBits(12) + 340) :
+                        readBits(8) + 84) :
+                      readBits(6) + 20) :
+                    readBits(4) + 4) :
+                  readBits(2);
     /* eslint-enable no-nested-ternary */
     if (sign === 0) {
       return value;
@@ -1710,7 +1712,7 @@ namespace NsJbig2Image {
     }
     const callbackName = "on" + header.typeName;
     if (callbackName in visitor) {
-      (<any> visitor)[callbackName].apply(visitor, args);
+      (visitor as any)[callbackName].apply(visitor, args);
     }
   }
 

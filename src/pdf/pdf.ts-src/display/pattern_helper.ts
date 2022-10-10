@@ -36,6 +36,7 @@ import {
   warn,
 } from "../shared/util.ts";
 import { CachedCanvases, CanvasGraphics } from "./canvas.ts";
+import { getCurrentTransform } from "./display_utils.ts";
 /*80--------------------------------------------------------------------------*/
 
 export const enum PathType {
@@ -142,7 +143,7 @@ export class RadialAxialShadingPattern implements RadialAxialPattern {
     if (pathType === PathType.STROKE || pathType === PathType.FILL) {
       const ownerBBox = owner.current.getClippedPathBoundingBox(
         pathType,
-        ctx.mozCurrentTransform,
+        getCurrentTransform(ctx),
       ) || [0, 0, 0, 0];
       // Create a canvas that is only as big as the current path. This doesn't
       // allow us to cache the pattern, but it generally creates much smaller
@@ -154,7 +155,6 @@ export class RadialAxialShadingPattern implements RadialAxialPattern {
         "pattern",
         width,
         height,
-        true,
       );
 
       const tmpCtx = tmpCanvas.context;
@@ -174,9 +174,9 @@ export class RadialAxialShadingPattern implements RadialAxialPattern {
         ownerBBox[1],
       ]);
 
-      tmpCtx.transform.apply(tmpCtx, <any> owner.baseTransform);
+      tmpCtx.transform(...owner.baseTransform!);
       if (this.matrix) {
-        tmpCtx.transform.apply(tmpCtx, this.matrix);
+        tmpCtx.transform(...this.matrix);
       }
       applyBoundingBox(tmpCtx, this._bbox);
 
@@ -454,7 +454,6 @@ class MeshShadingPattern implements MeshPattern {
       "mesh",
       paddedWidth,
       paddedHeight,
-      false,
     );
     const tmpCtx = tmpCanvas.context;
 
@@ -493,7 +492,7 @@ class MeshShadingPattern implements MeshPattern {
     applyBoundingBox(ctx, this._bbox);
     let scale;
     if (pathType === PathType.SHADING) {
-      scale = Util.singularValueDecompose2dScale(ctx.mozCurrentTransform);
+      scale = Util.singularValueDecompose2dScale(getCurrentTransform(ctx));
     } else {
       // Obtain scale from matrix and current transformation matrix.
       scale = Util.singularValueDecompose2dScale(owner.baseTransform!);
@@ -512,9 +511,9 @@ class MeshShadingPattern implements MeshPattern {
     );
 
     if (pathType !== PathType.SHADING) {
-      ctx.setTransform.apply(ctx, <any> owner.baseTransform!);
+      ctx.setTransform(...owner.baseTransform!);
       if (this.matrix) {
-        ctx.transform.apply(ctx, this.matrix);
+        ctx.transform(...this.matrix);
       }
     }
 
@@ -661,7 +660,6 @@ namespace NsTilingPattern {
         "pattern",
         dimx.size,
         dimy.size,
-        true,
       );
       const tmpCtx = tmpCanvas.context;
       const graphics = canvasGraphicsFactory.createCanvasGraphics(tmpCtx);
@@ -693,8 +691,7 @@ namespace NsTilingPattern {
 
       this.clipBbox(graphics, adjustedX0, adjustedY0, adjustedX1, adjustedY1);
 
-      graphics.baseTransform = <matrix_t> graphics.ctx.mozCurrentTransform
-        .slice();
+      graphics.baseTransform = getCurrentTransform(graphics.ctx);
 
       graphics.executeOperatorList(operatorList);
 
@@ -740,7 +737,7 @@ namespace NsTilingPattern {
       const bboxWidth = x1 - x0;
       const bboxHeight = y1 - y0;
       graphics.ctx.rect(x0, y0, bboxWidth, bboxHeight);
-      graphics.current.updateRectMinMax(graphics.ctx.mozCurrentTransform, [
+      graphics.current.updateRectMinMax(getCurrentTransform(graphics.ctx), [
         x0,
         y0,
         x1,
@@ -787,9 +784,9 @@ namespace NsTilingPattern {
       // PDF spec 8.7.2 NOTE 1: pattern's matrix is relative to initial matrix.
       let matrix = inverse;
       if (pathType !== PathType.SHADING) {
-        matrix = Util.transform(<matrix_t> matrix, owner.baseTransform!);
+        matrix = Util.transform(matrix, owner.baseTransform!);
         if (this.matrix) {
-          matrix = Util.transform(<matrix_t> matrix, this.matrix);
+          matrix = Util.transform(matrix, this.matrix);
         }
       }
 

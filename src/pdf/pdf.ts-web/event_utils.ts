@@ -31,7 +31,6 @@ import {
 } from "../pdf.ts-src/pdf.ts";
 import { AnnotationEditorParams } from "./annotation_editor_params.ts";
 import { ErrorMoreInfo, PDFViewerApplication } from "./app.ts";
-import { BaseViewer, PDFLocation } from "./base_viewer.ts";
 import { PDFAttachmentViewer } from "./pdf_attachment_viewer.ts";
 import { CursorTool, PDFCursorTools } from "./pdf_cursor_tools.ts";
 import { PDFFindBar } from "./pdf_find_bar.ts";
@@ -49,6 +48,7 @@ import { PDFPresentationMode } from "./pdf_presentation_mode.ts";
 import { PDFScriptingManager } from "./pdf_scripting_manager.ts";
 import { PDFSidebar } from "./pdf_sidebar.ts";
 import { PDFSidebarResizer } from "./pdf_sidebar_resizer.ts";
+import { PDFLocation, PDFViewer } from "./pdf_viewer.ts";
 import { SecondaryToolbar } from "./secondary_toolbar.ts";
 import { TextLayerBuilder } from "./text_layer_builder.ts";
 import { Toolbar } from "./toolbar.ts";
@@ -141,7 +141,7 @@ export interface EventMap {
     error: unknown;
   };
   annotationeditormodechanged: {
-    source: BaseViewer;
+    source: PDFViewer;
     mode: AnnotationEditorType;
   };
   annotationeditorparamschanged: {
@@ -162,7 +162,7 @@ export interface EventMap {
     attachmentsCount: number;
   };
   baseviewerinit: {
-    source: BaseViewer;
+    source: PDFViewer;
   };
   beforeprint: {
     source: typeof window;
@@ -267,7 +267,7 @@ export interface EventMap {
     promise: Promise<OptionalContentConfig | undefined>;
   };
   optionalcontentconfigchanged: {
-    source: BaseViewer;
+    source: PDFViewer;
     promise: Promise<OptionalContentConfig | undefined>;
   };
   outlineloaded: {
@@ -276,13 +276,13 @@ export interface EventMap {
     currentOutlineItemPromise: Promise<boolean>;
   };
   pagechanging: {
-    source: BaseViewer;
+    source: PDFViewer;
     pageNumber: number;
     pageLabel?: string | undefined;
     previous: number;
   };
   pageclose: {
-    source: BaseViewer;
+    source: PDFViewer;
     pageNumber: number;
   };
   pagemode: {
@@ -294,7 +294,7 @@ export interface EventMap {
     value: string;
   };
   pageopen: {
-    source: BaseViewer;
+    source: PDFViewer;
     pageNumber: number;
     actionsPromise?: Promise<object>;
   };
@@ -310,13 +310,13 @@ export interface EventMap {
     error?: ErrorMoreInfo | undefined;
   };
   pagesdestroy: {
-    source: BaseViewer;
+    source: PDFViewer;
   };
   pagesinit: {
-    source: BaseViewer;
+    source: PDFViewer;
   };
   pagesloaded: {
-    source: BaseViewer;
+    source: PDFViewer;
     pagesCount: number;
   };
   presentationmode: {};
@@ -341,7 +341,7 @@ export interface EventMap {
     source: PDFPresentationMode;
   };
   rotationchanging: {
-    source: BaseViewer;
+    source: PDFViewer;
     pagesRotation: number;
     pageNumber: number;
   };
@@ -353,7 +353,7 @@ export interface EventMap {
     source: SecondaryToolbar;
   };
   scalechanging: {
-    source: BaseViewer;
+    source: PDFViewer;
     scale: number;
     presetValue?: number | string | undefined;
   };
@@ -366,11 +366,11 @@ export interface EventMap {
     view: SidebarView;
   };
   scrollmodechanged: {
-    source?: BaseViewer;
+    source?: PDFViewer;
     mode: ScrollMode;
   };
   spreadmodechanged: {
-    source: BaseViewer;
+    source: PDFViewer;
     mode: SpreadMode;
   };
   switchannotationeditormode: {
@@ -435,7 +435,7 @@ export interface EventMap {
     pageIndex: number;
   };
   updateviewarea: {
-    source: BaseViewer;
+    source: PDFViewer;
     location?: PDFLocation | undefined;
   };
   xfalayerrendered: {

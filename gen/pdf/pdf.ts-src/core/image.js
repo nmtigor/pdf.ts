@@ -18,7 +18,7 @@
 import { _PDFDEV } from "../../../global.js";
 import { assert } from "../../../lib/util/trace.js";
 import { applyMaskImageData } from "../shared/image_utils.js";
-import { FeatureTest, FormatError, ImageKind, info, warn } from "../shared/util.js";
+import { FeatureTest, FormatError, ImageKind, info, warn, } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
 import { ColorSpace } from "./colorspace.js";
 import { DecodeStream } from "./decode_stream.js";

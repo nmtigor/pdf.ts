@@ -1,4 +1,4 @@
-# *.pdf
+*.pdf
 *.error
 
 !boundingBox_invalid.pdf
@@ -49,7 +49,10 @@
 !issue7426.pdf
 !issue7439.pdf
 !issue7847_radial.pdf
+!issue8844.pdf
 !issue14953.pdf
+!issue15367.pdf
+!issue15372.pdf
 !issue7446.pdf
 !issue7492.pdf
 !issue7544.pdf
@@ -106,6 +109,7 @@
 !issue10542_reduced.pdf
 !issue10665_reduced.pdf
 !issue11016_reduced.pdf
+!issue15516_reduced.pdf
 !issue11045.pdf
 !bug1057544.pdf
 !issue11150_reduced.pdf
@@ -468,6 +472,7 @@
 !issue11656.pdf
 !annotation-fileattachment.pdf
 !annotation-text-widget.pdf
+!issue15443.pdf
 !annotation-choice-widget.pdf
 !issue10900.pdf
 !annotation-button-widget.pdf
@@ -481,11 +486,13 @@
 !issue11442_reduced.pdf
 !issue11549_reduced.pdf
 !issue8097_reduced.pdf
+!issue15262.pdf
 !bug1743245.pdf
 !quadpoints.pdf
 !transparent.pdf
 !issue13931.pdf
 !xobject-image.pdf
+!issue15441.pdf
 !issue6605.pdf
 !ccitt_EndOfBlock_false.pdf
 !issue9972-1.pdf
@@ -533,3 +540,6 @@
 !bug1675139.pdf
 !issue15092.pdf
 !bug1782186.pdf
+!tracemonkey_a11y.pdf
+!bug1782564.pdf
+!issue15340.pdf

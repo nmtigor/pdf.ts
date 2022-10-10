@@ -72,7 +72,7 @@ interface _SetGStateP {
 interface _GetTextContentP {
     stream: BaseStream;
     task: WorkerTask;
-    resources: Dict;
+    resources: Dict | undefined;
     stateManager?: StateManager<TextState>;
     normalizeWhitespace?: boolean;
     combineTextItems?: boolean;
@@ -149,21 +149,6 @@ interface PreEvaluatedFont {
     toUnicode: BaseStream | Name | undefined;
     hash: string;
     cssFontInfo?: CssFontInfo | undefined;
-}
-export interface BidiTextContentItem {
-    str: string;
-    dir: string;
-    width: number;
-    height: number;
-    transform: matrix_t | undefined;
-    fontName: string | undefined;
-    hasEOL: boolean;
-}
-export interface TypeTextContentItem {
-    type: string;
-    id?: string | undefined;
-    tag?: string | undefined;
-    hasEOL?: boolean;
 }
 export interface FontStyle {
     fontFamily: string;

@@ -537,8 +537,8 @@ export class SimpleXMLParser extends XMLParserBase {
     if (!lastElement) {
       return undefined;
     }
-    for (let i = 0, ii = lastElement.childNodes!.length; i < ii; i++) {
-      lastElement.childNodes![i].parentNode = lastElement;
+    for (const childNode of lastElement.childNodes!) {
+      childNode.parentNode = lastElement;
     }
     return lastElement;
   }

@@ -1,8 +1,8 @@
 import { type AnnotStorageRecord, AnnotStorageValue } from "../display/annotation_layer.js";
 import { type CMapData } from "../display/base_factory.js";
 import { MessageHandler, type StreamSink, Thread } from "../shared/message_handler.js";
-import { RenderingIntentFlag } from "../shared/util.js";
-import { Annotation, type AnnotationData, type FieldObject, type SaveReturn } from "./annotation.js";
+import { type rect_t, RenderingIntentFlag } from "../shared/util.js";
+import { Annotation, type FieldObject, type SaveReturn } from "./annotation.js";
 import { BaseStream } from "./base_stream.js";
 import { Catalog } from "./catalog.js";
 import { DatasetReader } from "./dataset_reader.js";
@@ -66,7 +66,7 @@ export declare class Page {
     get _localIdFactory(): LocalIdFactory;
     resourcesPromise?: Promise<Dict>;
     constructor({ pdfManager, xref, pageIndex, pageDict, ref, globalIdFactory, fontCache, builtInCMapCache, standardFontDataCache, globalImageCache, nonBlendModesSet, xfaFactory, }: _PageCtorP);
-    get content(): Stream | (import("./primitives.js").NsRef.Ref | Stream)[] | undefined;
+    get content(): Stream | (Stream | import("./primitives.js").NsRef.Ref)[] | undefined;
     /**
      * Table 33
      */
@@ -75,7 +75,7 @@ export declare class Page {
     get mediaBox(): [number, number, number, number];
     get cropBox(): [number, number, number, number];
     get userUnit(): number;
-    get view(): [number, number, number, number];
+    get view(): rect_t;
     get rotate(): number;
     getContentStream(handler: MessageHandler<Thread.worker>): Promise<BaseStream>;
     get xfaData(): {
@@ -96,9 +96,9 @@ export declare class Page {
      * @private
      */
     _parseStructTree(structTreeRoot: StructTreeRoot): StructTreePage;
-    getAnnotationsData(intent: RenderingIntentFlag): Promise<AnnotationData[]>;
+    getAnnotationsData(handler: MessageHandler<Thread.worker>, task: WorkerTask, intent: RenderingIntentFlag): Promise<import("./annotation.js").AnnotationData[]>;
     get annotations(): import("./primitives.js").NsRef.Ref[];
-    get _parsedAnnotations(): Promise<Annotation[]>;
+    get _parsedAnnotations(): Promise<(Annotation | undefined)[]>;
     get jsActions(): import("./core_utils.js").AnnotActions | undefined;
 }
 export interface GlobalIdFactory {

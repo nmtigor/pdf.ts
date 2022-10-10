@@ -23,6 +23,23 @@ import { Stream } from "./stream.js";
 // Hinting is currently disabled due to unknown problems on windows
 // in tracemonkey and various other pdfs with type1 fonts.
 const HINTING_ENABLED = false;
+const COMMAND_MAP = {
+    hstem: [1],
+    vstem: [3],
+    vmoveto: [4],
+    rlineto: [5],
+    hlineto: [6],
+    vlineto: [7],
+    rrcurveto: [8],
+    callsubr: [10],
+    flex: [12, 35],
+    drop: [12, 18],
+    endchar: [14],
+    rmoveto: [21],
+    hmoveto: [22],
+    vhcurveto: [30],
+    hvcurveto: [31],
+};
 /*
  * CharStrings are encoded following the the CharString Encoding sequence
  * describe in Chapter 6 of the "Adobe Type1 Font Format" specification.
@@ -58,29 +75,11 @@ const HINTING_ENABLED = false;
  *  0 and 31 inclusive.
  *  If a command byte contains the value 12, then the value in the next byte
  *  indicates a command. This "escape" mechanism allows many extra commands
- * to be encoded and this encoding technique helps to minimize the length of
- * the charStrings.
+ *  to be encoded and this encoding technique helps to minimize the length of
+ *  the charStrings.
  */
 var NsType1CharString;
 (function (NsType1CharString) {
-    const COMMAND_MAP = {
-        hstem: [1],
-        vstem: [3],
-        vmoveto: [4],
-        rlineto: [5],
-        hlineto: [6],
-        vlineto: [7],
-        rrcurveto: [8],
-        callsubr: [10],
-        flex: [12, 35],
-        drop: [12, 18],
-        endchar: [14],
-        rmoveto: [21],
-        hmoveto: [22],
-        vhcurveto: [30],
-        hvcurveto: [31],
-    };
-    // eslint-disable-next-line no-shadow
     class Type1CharString {
         width = 0;
         lsb = 0;
@@ -341,7 +340,7 @@ var NsType1CharString;
                     this.output.push(255, (value >> 24) & 0xff, (value >> 16) & 0xff, (value >> 8) & 0xff, value & 0xff);
                 }
             }
-            this.output.push.apply(this.output, command);
+            this.output.push(...command);
             if (keepStack) {
                 this.stack.splice(start, howManyArgs);
             }
@@ -354,20 +353,12 @@ var NsType1CharString;
     NsType1CharString.Type1CharString = Type1CharString;
 })(NsType1CharString || (NsType1CharString = {}));
 var Type1CharString = NsType1CharString.Type1CharString;
-/*
- * Type1Parser encapsulate the needed code for parsing a Type1 font
- * program. Some of its logic depends on the Type2 charstrings
- * structure.
- * Note: this doesn't really parse the font since that would require evaluation
- * of PostScript, but it is possible in most cases to extract what we need
- * without a full parse.
- */
 var NsType1Parser;
 (function (NsType1Parser) {
-    /*
+    /**
      * Decrypt a Sequence of Ciphertext Bytes to Produce the Original Sequence
-     * of Plaintext Bytes. The function took a key as a parameter which can be
-     * for decrypting the eexec block of for decoding charStrings.
+     * of Plaintext Bytes. The function takes a key as a parameter which can be
+     * for decrypting the eexec block or for decoding charStrings.
      */
     const EEXEC_ENCRYPT_KEY = 55665;
     const CHAR_STRS_ENCRYPT_KEY = 4330;
@@ -430,7 +421,13 @@ var NsType1Parser;
             c === /* '(' = */ 0x28 ||
             c === /* ')' = */ 0x29);
     }
-    // eslint-disable-next-line no-shadow
+    /**
+     * Type1Parser encapsulate the needed code for parsing a Type1 font program.
+     * Some of its logic depends on the Type2 charstrings structure.
+     * NOTE: This doesn't really parse the font since that would require evaluation
+     *       of PostScript, but it is possible in most cases to extract what we need
+     *       without a full parse.
+     */
     class Type1Parser {
         seacAnalysisEnabled;
         stream;

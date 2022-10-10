@@ -28,6 +28,7 @@ import {
   PDFDocumentProxy,
   Ref,
   type RefProxy,
+  SetOCGState,
 } from "../pdf.ts-src/pdf.ts";
 import { EventBus } from "./event_utils.ts";
 import { type IPDFLinkService } from "./interfaces.ts";
@@ -518,6 +519,45 @@ export class PDFLinkService implements IPDFLinkService {
     });
   }
 
+  async executeSetOCGState(action: SetOCGState) {
+    const pdfDocument = this.pdfDocument;
+    const optionalContentConfig = await this.pdfViewer!
+      .optionalContentConfigPromise;
+
+    if (pdfDocument !== this.pdfDocument) {
+      return; // The document was closed while the optional content resolved.
+    }
+    let operator;
+
+    for (const elem of action.state) {
+      switch (elem) {
+        case "ON":
+        case "OFF":
+        case "Toggle":
+          operator = elem;
+          continue;
+      }
+      switch (operator) {
+        case "ON":
+          optionalContentConfig!.setVisibility(elem, true);
+          break;
+        case "OFF":
+          optionalContentConfig!.setVisibility(elem, false);
+          break;
+        case "Toggle":
+          const group = optionalContentConfig!.getGroup(elem);
+          if (group) {
+            optionalContentConfig!.setVisibility(elem, !group.visible);
+          }
+          break;
+      }
+    }
+
+    this.pdfViewer!.optionalContentConfigPromise = Promise.resolve(
+      optionalContentConfig,
+    );
+  }
+
   /**
    * @implement
    * @param pageNum page number.
@@ -667,6 +707,11 @@ export class SimpleLinkService implements IPDFLinkService {
 
   /** @implement */
   executeNamedAction(action: string) {}
+
+  /**
+   * @param {Object} action
+   */
+  executeSetOCGState(action: SetOCGState) {}
 
   /**
    * @implement

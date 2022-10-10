@@ -182,12 +182,6 @@ class MooHandlerDB {
     get force() {
         return this.#nforce > 0;
     }
-    #newval;
-    #oldval;
-    #got = [];
-    #invalidate_cache = () => {
-        this.#newval = undefined;
-    };
     /**
      * @headconst @param eq_x
      */
@@ -203,29 +197,31 @@ class MooHandlerDB {
      * @return `true` if added, `false` if not.
      */
     add(handler_x, match_newval_x, match_oldval_x, force_x = false, index_x = 0) {
-        let add_ = true;
-        if (this.#_a.some((_) => _.handler === handler_x)) {
-            add_ = false;
-        }
-        if (add_) {
-            if (force_x)
-                ++this.#nforce;
-            let i = this.#_a.findIndex((ext_y) => index_x < ext_y.index);
-            if (i < 0)
-                i = this.#_a.length;
-            this.#_a.splice(i, 0, {
-                handler: handler_x,
-                match_newval: match_newval_x,
-                match_oldval: match_oldval_x,
-                force: force_x,
-                index: index_x,
-            });
-            this.#invalidate_cache(); //!
-        }
-        return add_;
+        if (this.#_a.some((_) => _.handler === handler_x))
+            return false;
+        if (force_x)
+            ++this.#nforce;
+        let i = this.#_a.findIndex((ext_y) => index_x < ext_y.index);
+        if (i < 0)
+            i = this.#_a.length;
+        this.#_a.splice(i, 0, {
+            handler: handler_x,
+            match_newval: match_newval_x,
+            match_oldval: match_oldval_x,
+            force: force_x,
+            index: index_x,
+        });
+        this.#got.length = 0; //!
+        return true;
     }
-    #valid_eq(v0_x, v1_x) {
-        return v0_x !== undefined && this.#eq(v0_x, v1_x);
+    /**
+     * @primaryconst
+     * Not `@const` because `#eq()` could cause non-primary changes, which happens
+     * in elements of `#_a`.
+     */
+    #strict_eq(v0_x, v1_x) {
+        return v0_x === undefined && v1_x === undefined ||
+            v0_x !== undefined && v1_x !== undefined && this.#eq(v0_x, v1_x);
     }
     /**
      * @headconst @param handler_x
@@ -234,52 +230,40 @@ class MooHandlerDB {
      * @return `true` if deleted, `false` if not
      */
     del(handler_x, match_newval_x, match_oldval_x) {
-        let del_ = true;
         const i = this.#_a.findIndex((ext) => ext.handler === handler_x);
         if (i < 0)
-            del_ = false;
-        if (del_ && match_newval_x !== undefined) {
-            if (!this.#valid_eq(this.#_a[i].match_newval, match_newval_x)) {
-                del_ = false;
-            }
-        }
-        if (del_ && match_oldval_x !== undefined) {
-            if (!this.#valid_eq(this.#_a[i].match_oldval, match_oldval_x)) {
-                del_ = false;
-            }
-        }
+            return false;
+        const toDel = this.#_a[i];
+        const del_ = this.#strict_eq(toDel.match_newval, match_newval_x) &&
+            this.#strict_eq(toDel.match_oldval, match_oldval_x);
         if (del_) {
-            if (this.#_a[i].force)
+            if (toDel.force)
                 --this.#nforce;
             this.#_a.splice(i, 1);
-            this.#invalidate_cache(); //!
+            this.#got.length = 0; //!
         }
         return del_;
     }
+    /** @primaryconst */
     #match(v0_x, v1_x) {
         return v0_x === undefined || this.#eq(v0_x, v1_x);
     }
+    #newval;
+    #oldval;
+    #gforce;
+    #got = [];
     get(newval_x, oldval_x, gforce_x) {
-        if (this.#valid_eq(this.#newval, newval_x) &&
-            this.#valid_eq(this.#oldval, oldval_x)) {
+        if (this.#newval !== undefined && this.#eq(this.#newval, newval_x) &&
+            this.#oldval !== undefined && this.#eq(this.#oldval, oldval_x) &&
+            this.#gforce === gforce_x) {
             return this.#got;
         }
+        this.#newval = newval_x;
+        this.#oldval = oldval_x;
+        this.#gforce = gforce_x;
         this.#got.length = 0;
         const changed_ = !this.#eq(newval_x, oldval_x);
         this.#_a.forEach((ext) => {
-            // let got_ = true;
-            // if (!this.#match(ext.newval, newval_x)) {
-            //   got_ = false;
-            // }
-            // if (got_ && !this.#match(ext.oldval, oldval_x)) {
-            //   got_ = false;
-            // }
-            // if (
-            //   got_ &&
-            //   !(gforce_x || ext.force) && !changed_
-            // ) {
-            //   got_ = false;
-            // }
             if (this.#match(ext.match_newval, newval_x) &&
                 this.#match(ext.match_oldval, oldval_x) &&
                 (changed_ || gforce_x || ext.force)) {
@@ -290,8 +274,8 @@ class MooHandlerDB {
     }
     clear() {
         this.#_a.length = 0;
+        this.#got.length = 0;
         this.#nforce = 0;
-        this.#invalidate_cache();
     }
 }
 export class Moo {
@@ -417,7 +401,7 @@ export class Moo {
     }
 }
 // new Moo(undefined); // error
-// new Moo(null); // error
+// new Moo(null); // ok
 // new Moo(2); // ok
 /*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=mv.js.map

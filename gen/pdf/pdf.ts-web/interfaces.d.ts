@@ -8,13 +8,15 @@
 /** @typedef {import("./text_layer_builder").TextLayerBuilder} TextLayerBuilder */
 /** @typedef {import("./ui_utils").RenderingStates} RenderingStates */
 /** @typedef {import("./xfa_layer_builder").XfaLayerBuilder} XfaLayerBuilder */
+/** @typedef {import("./text_accessibility.js").TextAccessibilityManager} TextAccessibilityManager */
 import { type Locale_1, type WebL10nArgs } from "../../3rd/webL10n/l10n.js";
-import { AnnotActions, AnnotationEditorUIManager, AnnotationStorage, AppInfo, type Destination, DocInfo, type ExplicitDest, type FieldObject, PageViewport, PDFPageProxy, type RefProxy, ScriptingActionName } from "../pdf.ts-src/pdf.js";
+import { AnnotActions, AnnotationEditorUIManager, AnnotationStorage, AppInfo, type Destination, DocInfo, type ExplicitDest, type FieldObject, PageViewport, PDFPageProxy, type RefProxy, ScriptingActionName, type SetOCGState } from "../pdf.ts-src/pdf.js";
 import { AnnotationEditorLayerBuilder } from "./annotation_editor_layer_builder.js";
 import { AnnotationLayerBuilder } from "./annotation_layer_builder.js";
 import { EventBus } from "./event_utils.js";
 import { LinkTarget } from "./pdf_link_service.js";
 import { StructTreeLayerBuilder } from "./struct_tree_layer_builder.js";
+import { TextAccessibilityManager } from "./text_accessibility.js";
 import { TextHighlighter } from "./text_highlighter.js";
 import { TextLayerBuilder } from "./text_layer_builder.js";
 import { RenderingStates } from "./ui_utils.js";
@@ -50,6 +52,7 @@ export interface IPDFLinkService {
     getAnchorUrl(hash: string): string;
     setHash(hash: string): void;
     executeNamedAction(action: string): void;
+    executeSetOCGState(action: SetOCGState): void;
     /**
      * @param pageNum page number.
      * @param pageRef reference to the page.
@@ -110,12 +113,9 @@ export interface CreateTextLayerBuilderP {
     textLayerDiv: HTMLDivElement;
     pageIndex: number;
     viewport: PageViewport;
-    /**
-     * =false
-     */
-    enhanceTextSelection: boolean;
     eventBus: EventBus;
     highlighter: TextHighlighter | undefined;
+    accessibilityManager?: TextAccessibilityManager;
 }
 export interface IPDFTextLayerFactory {
     createTextLayerBuilder(_: CreateTextLayerBuilderP): TextLayerBuilder;
@@ -152,6 +152,7 @@ export interface CreateAnnotationLayerBuilderP {
      * Map some annotation ids with canvases used to render them.
      */
     annotationCanvasMap?: Map<string, HTMLCanvasElement>;
+    accessibilityManager?: TextAccessibilityManager | undefined;
 }
 export interface IPDFAnnotationLayerFactory {
     createAnnotationLayerBuilder(_: CreateAnnotationLayerBuilderP): AnnotationLayerBuilder;
@@ -165,6 +166,7 @@ export interface CreateAnnotationEditorLayerBuilderP {
      * Storage for annotation data in forms.
      */
     annotationStorage?: AnnotationStorage;
+    accessibilityManager?: TextAccessibilityManager | undefined;
 }
 export interface IPDFAnnotationEditorLayerFactory {
     createAnnotationEditorLayerBuilder(_: CreateAnnotationEditorLayerBuilderP): AnnotationEditorLayerBuilder;

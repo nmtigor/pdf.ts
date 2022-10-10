@@ -221,8 +221,7 @@ export class TextHighlighter {
         const { textContentItemsStr, textDivs } = this;
         let clearedUntilDivIdx = -1;
         // Clear all current matches.
-        for (let i = 0, ii = matches.length; i < ii; i++) {
-            const match = matches[i];
+        for (const match of matches) {
             const begin = Math.max(clearedUntilDivIdx, match.begin.divIdx);
             for (let n = begin, end = match.end.divIdx; n <= end; n++) {
                 const div = textDivs[n];

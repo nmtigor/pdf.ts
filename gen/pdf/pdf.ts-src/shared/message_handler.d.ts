@@ -5,7 +5,7 @@ import { type AnnotationData, type FieldObject } from "../core/annotation.js";
 import { type ExplicitDest, type MarkInfo, type OpenAction, type OptionalContentConfigData, type ViewerPref } from "../core/catalog.js";
 import { type AnnotActions } from "../core/core_utils.js";
 import { type DocumentInfo, type XFAData } from "../core/document.js";
-import { type BidiTextContentItem, type FontStyle, type ImgData, type TypeTextContentItem } from "../core/evaluator.js";
+import { type FontStyle, type ImgData } from "../core/evaluator.js";
 import { FontExpotDataEx } from "../core/fonts.js";
 import { type CmdArgs } from "../core/font_renderer.js";
 import { type IWorker } from "../core/iworker.js";
@@ -14,7 +14,7 @@ import { type OpListIR } from "../core/operator_list.js";
 import { type ShadingPatternIR } from "../core/pattern.js";
 import { type XFAElObj } from "../core/xfa/alias.js";
 import { type AnnotStorageRecord } from "../display/annotation_layer.js";
-import { StructTreeNode, type OutlineNode, type PDFDocumentStats, type RefProxy } from "../display/api.js";
+import { type BinaryData, type OutlineNode, type PDFDocumentStats, type RefProxy, StructTreeNode, type TextItem, type TextMarkedContent } from "../display/api.js";
 import { type CMapData } from "../display/base_factory.js";
 import { VerbosityLevel } from "../pdf.js";
 import { InvalidPDFException, MissingPDFException, PasswordException, PasswordResponses, PermissionFlag, type rect_t, RenderingIntentFlag, UnexpectedResponseException, UnknownErrorException, UNSUPPORTED_FEATURES } from "./util.js";
@@ -29,7 +29,7 @@ export interface GetDocRequestData {
     docId: string;
     apiVersion: number;
     source: {
-        data: Uint8Array | number[] | undefined;
+        data: BinaryData | undefined;
         url: string | URL | undefined;
         password: string | undefined;
         disableAutoFetch: boolean | undefined;
@@ -47,7 +47,7 @@ export interface GetDocRequestData {
     standardFontDataUrl?: string | undefined;
     enableXfa: boolean | undefined;
 }
-export interface _PumpOperatorListP {
+interface _PumpOperatorListP {
     pageIndex: number;
     intent: RenderingIntentFlag;
     cacheKey: string;
@@ -230,7 +230,7 @@ export interface MActionMap {
         };
         Return: void;
         Sinkchunk: {
-            items: (BidiTextContentItem | TypeTextContentItem)[];
+            items: (TextItem | TextMarkedContent)[];
             styles: Record<string, FontStyle>;
         };
     };
@@ -398,7 +398,7 @@ export declare const enum Thread {
     main = 0,
     worker = 1
 }
-export declare type ActionName<Ta extends Thread> = Ta extends Thread.main ? MActionName : WActionName;
+export declare type ActionName</** thread at */ Ta extends Thread> = Ta extends Thread.main ? MActionName : WActionName;
 export interface StreamSink<Ta extends Thread, AN extends ActionName<Ta> = ActionName<Ta>> {
     enqueue(chunk: ActionSinkchunk<Ta, AN>, size?: number, transfers?: Transferable[]): void;
     close?(): void;

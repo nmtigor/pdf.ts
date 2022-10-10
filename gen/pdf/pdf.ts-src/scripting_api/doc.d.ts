@@ -298,8 +298,8 @@ export declare class Doc extends PDFObject<_SendDocData> {
     removeThumbnails(): void;
     removeWeblinks(): void;
     replacePages(): void;
-    resetForm(aFields?: string[] | {
-        aFields: string[];
+    resetForm(aFields?: string | string[] | {
+        aFields?: string | string[];
     }): void;
     saveAs(): void;
     scroll(): void;

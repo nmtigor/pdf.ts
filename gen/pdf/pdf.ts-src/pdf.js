@@ -28,8 +28,8 @@ import { Ref } from "./core/primitives.js";
 import { WorkerMessageHandler } from "./core/worker.js";
 import { AnnotationElement, AnnotationLayer, FileAttachmentAnnotationElement, } from "./display/annotation_layer.js";
 import { AnnotationStorage, PrintAnnotationStorage, } from "./display/annotation_storage.js";
-import { build, getDocument, LoopbackPort, PDFDataRangeTransport, PDFDocumentLoadingTask, PDFDocumentProxy, PDFPageProxy, PDFWorker, RenderTask, setPDFNetworkStreamFactory, version, } from "./display/api.js";
-import { binarySearchFirstItem, getFilenameFromUrl, getPdfFilenameFromUrl, getXfaPageViewport, isPdfFile, isValidFetchUrl, loadScript, PageViewport, PDFDateString, PixelsPerInch, RenderingCancelledException, StatTimer, } from "./display/display_utils.js";
+import { build, getDocument, PDFDataRangeTransport, PDFDocumentLoadingTask, PDFDocumentProxy, PDFPageProxy, PDFWorker, RenderTask, setPDFNetworkStreamFactory, version, } from "./display/api.js";
+import { getFilenameFromUrl, getPdfFilenameFromUrl, getXfaPageViewport, isPdfFile, isValidFetchUrl, loadScript, PageViewport, PDFDateString, PixelsPerInch, RenderingCancelledException, StatTimer, } from "./display/display_utils.js";
 import { AnnotationEditorLayer } from "./display/editor/annotation_editor_layer.js";
 import { AnnotationEditorUIManager, } from "./display/editor/tools.js";
 import { FontFaceObject } from "./display/font_loader.js";
@@ -62,5 +62,5 @@ import { AnnotationEditorParamsType, AnnotationEditorType, AnnotationMode, CMapC
     });
 }
 /*80--------------------------------------------------------------------------*/
-export { AnnotationEditorLayer, AnnotationEditorParamsType, AnnotationEditorType, AnnotationEditorUIManager, AnnotationElement, AnnotationLayer, AnnotationMode, AnnotationStorage, binarySearchFirstItem, build, CMapCompressionType, createValidAbsoluteUrl, FileAttachmentAnnotationElement, FontFaceObject, getDocument, getFilenameFromUrl, getPdfFilenameFromUrl, getXfaPageViewport, GlobalWorkerOptions, InvalidPDFException, isPdfFile, loadScript, LoopbackPort, Metadata, MissingPDFException, OPS, OptionalContentConfig, PageViewport, PasswordResponses, PDFDataRangeTransport, PDFDateString, PDFDocumentLoadingTask, PDFDocumentProxy, PDFPageProxy, PDFWorker, PermissionFlag, PixelsPerInch, PrintAnnotationStorage, QuickJSSandbox, Ref, RenderingCancelledException, RenderTask, renderTextLayer, shadow, StatTimer, SVGGraphics, TextLayerRenderTask, UnexpectedResponseException, UNSUPPORTED_FEATURES, Util, VerbosityLevel, version, WorkerMessageHandler, XfaLayer, };
+export { AnnotationEditorLayer, AnnotationEditorParamsType, AnnotationEditorType, AnnotationEditorUIManager, AnnotationElement, AnnotationLayer, AnnotationMode, AnnotationStorage, build, CMapCompressionType, createValidAbsoluteUrl, FileAttachmentAnnotationElement, FontFaceObject, getDocument, getFilenameFromUrl, getPdfFilenameFromUrl, getXfaPageViewport, GlobalWorkerOptions, InvalidPDFException, isPdfFile, loadScript, Metadata, MissingPDFException, OPS, OptionalContentConfig, PageViewport, PasswordResponses, PDFDataRangeTransport, PDFDateString, PDFDocumentLoadingTask, PDFDocumentProxy, PDFPageProxy, PDFWorker, PermissionFlag, PixelsPerInch, PrintAnnotationStorage, QuickJSSandbox, Ref, RenderingCancelledException, RenderTask, renderTextLayer, shadow, StatTimer, SVGGraphics, TextLayerRenderTask, UnexpectedResponseException, UNSUPPORTED_FEATURES, Util, VerbosityLevel, version, WorkerMessageHandler, XfaLayer, };
 //# sourceMappingURL=pdf.js.map

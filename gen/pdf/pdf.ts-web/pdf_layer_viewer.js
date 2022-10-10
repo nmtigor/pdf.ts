@@ -20,6 +20,7 @@ import { BaseTreeViewer, } from "./base_tree_viewer.js";
 export class PDFLayerViewer extends BaseTreeViewer {
     l10n;
     #optionalContentConfig;
+    #optionalContentHash;
     static create(options) {
         const ret = new PDFLayerViewer(options);
         ret.reset();
@@ -28,12 +29,18 @@ export class PDFLayerViewer extends BaseTreeViewer {
     constructor(options) {
         super(options);
         this.l10n = options.l10n;
-        this.eventBus._on("resetlayers", this.#resetLayers);
+        this.eventBus._on("optionalcontentconfigchanged", (evt) => {
+            this.#updateLayers(evt.promise);
+        });
+        this.eventBus._on("resetlayers", () => {
+            this.#updateLayers();
+        });
         this.eventBus._on("togglelayerstree", this.toggleAllTreeItems$.bind(this));
     }
     reset() {
         super.reset();
         this.#optionalContentConfig = undefined;
+        this.#optionalContentHash = undefined;
     }
     /** @implement */
     _dispatchEvent(layersCount) {
@@ -46,6 +53,7 @@ export class PDFLayerViewer extends BaseTreeViewer {
     _bindLink(element, { groupId, input }) {
         const setVisibility = () => {
             this.#optionalContentConfig.setVisibility(groupId, input.checked);
+            this.#optionalContentHash = this.#optionalContentConfig.getHash();
             this.eventBus.dispatch("optionalcontentconfig", {
                 source: this,
                 promise: Promise.resolve(this.#optionalContentConfig),
@@ -93,6 +101,7 @@ export class PDFLayerViewer extends BaseTreeViewer {
             this._dispatchEvent(/* layersCount = */ 0);
             return;
         }
+        this.#optionalContentHash = optionalContentConfig.getHash();
         const fragment = document.createDocumentFragment();
         const queue = [{ parent: fragment, groups }];
         let layersCount = 0, hasAnyNesting = false;
@@ -130,17 +139,27 @@ export class PDFLayerViewer extends BaseTreeViewer {
         }
         this.finishRendering$(fragment, layersCount, hasAnyNesting);
     }
-    #resetLayers = async () => {
-        if (!this.#optionalContentConfig)
+    #updateLayers = async (promise = undefined) => {
+        if (!this.#optionalContentConfig) {
             return;
-        // Fetch the default optional content configuration...
-        const optionalContentConfig = await this._pdfDocument
-            .getOptionalContentConfig();
-        this.eventBus.dispatch("optionalcontentconfig", {
-            source: this,
-            promise: Promise.resolve(optionalContentConfig),
-        });
-        // ... and reset the sidebarView to the default state.
+        }
+        const pdfDocument = this._pdfDocument;
+        const optionalContentConfig = await (promise || pdfDocument.getOptionalContentConfig());
+        if (pdfDocument !== this._pdfDocument) {
+            return; // The document was closed while the optional content resolved.
+        }
+        if (promise) {
+            if (optionalContentConfig.getHash() === this.#optionalContentHash) {
+                return; // The optional content didn't change, hence no need to reset the UI.
+            }
+        }
+        else {
+            this.eventBus.dispatch("optionalcontentconfig", {
+                source: this,
+                promise: Promise.resolve(optionalContentConfig),
+            });
+        }
+        // Reset the sidebarView to the new state.
         this.render({
             optionalContentConfig,
             pdfDocument: this._pdfDocument,

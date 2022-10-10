@@ -24,9 +24,9 @@
 
 import { _INFO, global, PDFTS_vv } from "../../global.ts";
 import { RenderingCancelledException } from "../pdf.ts-src/pdf.ts";
-import { BaseViewer } from "./base_viewer.ts";
 import { type IRenderableView, type IVisibleView } from "./interfaces.ts";
 import { PDFThumbnailViewer } from "./pdf_thumbnail_viewer.ts";
+import { PDFViewer } from "./pdf_viewer.ts";
 import { RenderingStates, type VisibleElements } from "./ui_utils.ts";
 /*80--------------------------------------------------------------------------*/
 
@@ -36,7 +36,7 @@ const CLEANUP_TIMEOUT = 30000;
  * Controls rendering of the views for pages and thumbnails.
  */
 export class PDFRenderingQueue {
-  pdfViewer?: BaseViewer;
+  pdfViewer?: PDFViewer;
   pdfThumbnailViewer?: PDFThumbnailViewer;
   onIdle?: () => void;
   highestPriorityPage?: string;
@@ -44,7 +44,7 @@ export class PDFRenderingQueue {
   printing = false;
   isThumbnailViewEnabled = false;
 
-  setViewer(pdfViewer: BaseViewer) {
+  setViewer(pdfViewer: PDFViewer) {
     this.pdfViewer = pdfViewer;
   }
 

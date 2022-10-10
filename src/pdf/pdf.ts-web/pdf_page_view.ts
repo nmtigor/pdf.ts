@@ -58,7 +58,6 @@ import { AnnotationEditorLayerBuilder } from "./annotation_editor_layer_builder.
 import { AnnotationLayerBuilder } from "./annotation_layer_builder.ts";
 import { type ErrorMoreInfo } from "./app.ts";
 import { compatibilityParams } from "./app_options.ts";
-import { BaseViewer, PageColors } from "./base_viewer.ts";
 import { EventBus, EventMap } from "./event_utils.ts";
 import {
   type IL10n,
@@ -71,7 +70,10 @@ import {
 } from "./interfaces.ts";
 import { NullL10n } from "./l10n_utils.ts";
 import { PDFRenderingQueue } from "./pdf_rendering_queue.ts";
+import { PDFViewer } from "./pdf_viewer.ts";
+import { PageColors } from "./pdf_viewer.ts";
 import { StructTreeLayerBuilder } from "./struct_tree_layer_builder.ts";
+import { TextAccessibilityManager } from "./text_accessibility.ts";
 import { TextLayerBuilder } from "./text_layer_builder.ts";
 import {
   approximateFraction,
@@ -105,7 +107,7 @@ interface PDFPageViewOptions {
   /**
    * The page scale display.
    */
-  scale: number;
+  scale?: number;
 
   /**
    * The page viewport.
@@ -127,9 +129,8 @@ interface PDFPageViewOptions {
 
   /**
    * Controls if the text layer used for
-   * selection and searching is created, and if the improved text selection
-   * behaviour is enabled. The constants from {TextLayerMode} should be used.
-   * The default value is `TextLayerMode.ENABLE`.
+   * selection and searching is created. The constants from {TextLayerMode}
+   * should be used. The default value is `TextLayerMode.ENABLE`.
    */
   textLayerMode?: TextLayerMode;
 
@@ -145,8 +146,8 @@ interface PDFPageViewOptions {
   annotationLayerFactory: IPDFAnnotationLayerFactory | undefined;
   annotationEditorLayerFactory: IPDFAnnotationEditorLayerFactory | undefined;
   xfaLayerFactory?: IPDFXfaLayerFactory | undefined;
-  structTreeLayerFactory: IPDFStructTreeLayerFactory;
-  textHighlighterFactory: BaseViewer;
+  structTreeLayerFactory?: IPDFStructTreeLayerFactory;
+  textHighlighterFactory?: PDFViewer;
 
   /**
    * Path for image resources, mainly
@@ -157,7 +158,7 @@ interface PDFPageViewOptions {
   /**
    * 'canvas' or 'svg'. The default is 'canvas'.
    */
-  renderer?: RendererType;
+  renderer?: RendererType | undefined;
 
   /**
    * Enables CSS only zooming. The default value is `false`.
@@ -181,7 +182,7 @@ interface PDFPageViewOptions {
   /**
    * Localization service.
    */
-  l10n: IL10n;
+  l10n?: IL10n;
 }
 
 const MAX_CANVAS_PIXELS =
@@ -290,6 +291,8 @@ export class PDFPageView implements IVisibleView {
 
   annotationEditorLayer: AnnotationEditorLayerBuilder | undefined;
 
+  _accessibilityManager: TextAccessibilityManager | undefined;
+
   constructor(options: PDFPageViewOptions) {
     const container = options.container;
     const defaultViewport = options.defaultViewport;
@@ -378,9 +381,7 @@ export class PDFPageView implements IVisibleView {
 
   destroy() {
     this.reset();
-    if (this.pdfPage) {
-      this.pdfPage.cleanup();
-    }
+    this.pdfPage?.cleanup();
   }
 
   async #renderAnnotationLayer() {
@@ -388,6 +389,7 @@ export class PDFPageView implements IVisibleView {
     try {
       await this.annotationLayer!.render(this.viewport, "display");
     } catch (ex) {
+      console.error(`_renderAnnotationLayer: "${ex}".`);
       error = ex;
     } finally {
       this.eventBus.dispatch("annotationlayerrendered", {
@@ -406,6 +408,7 @@ export class PDFPageView implements IVisibleView {
     try {
       await this.annotationEditorLayer!.render(this.viewport, "display");
     } catch (ex) {
+      console.error(`_renderAnnotationEditorLayer: "${ex}".`);
       error = ex;
     } finally {
       this.eventBus.dispatch("annotationeditorlayerrendered", {
@@ -420,10 +423,11 @@ export class PDFPageView implements IVisibleView {
     let error = null;
     try {
       const result = await this.xfaLayer!.render(this.viewport, "display");
-      if (this.textHighlighter) {
+      if (result?.textDivs && this.textHighlighter) {
         this._buildXfaTextContentItems(result!.textDivs);
       }
     } catch (ex) {
+      console.error(`_renderXfaLayer: "${ex}".`);
       error = ex;
     } finally {
       this.eventBus.dispatch("xfalayerrendered", {
@@ -832,6 +836,7 @@ export class PDFPageView implements IVisibleView {
 
     let textLayer: TextLayerBuilder | undefined;
     if (this.textLayerMode !== TextLayerMode.DISABLE && this.textLayerFactory) {
+      this._accessibilityManager ||= new TextAccessibilityManager();
       const textLayerDiv = html("div");
       textLayerDiv.className = "textLayer";
       textLayerDiv.style.width = canvasWrapper.style.width;
@@ -847,10 +852,9 @@ export class PDFPageView implements IVisibleView {
         textLayerDiv,
         pageIndex: this.id - 1,
         viewport: this.viewport,
-        enhanceTextSelection:
-          this.textLayerMode === TextLayerMode.ENABLE_ENHANCE,
         eventBus: this.eventBus,
         highlighter: this.textHighlighter,
+        accessibilityManager: this._accessibilityManager,
       });
     }
     this.textLayer = textLayer;
@@ -868,6 +872,7 @@ export class PDFPageView implements IVisibleView {
           renderForms: this.#annotationMode === AnnotationMode.ENABLE_FORMS,
           l10n: this.l10n,
           annotationCanvasMap: this._annotationCanvasMap,
+          accessibilityManager: this._accessibilityManager,
         });
     }
 
@@ -930,8 +935,8 @@ export class PDFPageView implements IVisibleView {
       }
     };
 
-    const paintTask = !PRODUCTION || GENERIC /*#static*/
-      ? this.renderer === RendererType.SVG /*#static*/
+    const paintTask = /*#static*/ !PRODUCTION || GENERIC
+      ? this.renderer === RendererType.SVG
         ? this.paintOnSvg(canvasWrapper)
         : this.paintOnCanvas(canvasWrapper)
       : this.paintOnCanvas(canvasWrapper);
@@ -958,6 +963,7 @@ export class PDFPageView implements IVisibleView {
                       pageDiv: div,
                       pdfPage,
                       l10n: this.l10n,
+                      accessibilityManager: this._accessibilityManager,
                     },
                   );
                 this._renderAnnotationEditorLayer();
@@ -970,12 +976,10 @@ export class PDFPageView implements IVisibleView {
     );
 
     if (this.xfaLayerFactory) {
-      if (!this.xfaLayer) {
-        this.xfaLayer = this.xfaLayerFactory.createXfaLayerBuilder({
-          pageDiv: div,
-          pdfPage,
-        });
-      }
+      this.xfaLayer ||= this.xfaLayerFactory.createXfaLayerBuilder({
+        pageDiv: div,
+        pdfPage,
+      });
       this.#renderXfaLayer();
     }
 

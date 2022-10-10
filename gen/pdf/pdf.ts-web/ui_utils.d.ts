@@ -34,8 +34,7 @@ export declare const enum RendererType {
 }
 export declare const enum TextLayerMode {
     DISABLE = 0,
-    ENABLE = 1,
-    ENABLE_ENHANCE = 2
+    ENABLE = 1
 }
 export declare enum ScrollMode {
     UNKNOWN = -1,
@@ -115,6 +114,16 @@ export declare function watchScroll(viewAreaElement: HTMLDivElement, callback: (
  */
 export declare function parseQueryString(query: string): Map<string, string>;
 export declare function removeNullCharacters(str: string, replaceInvisible?: boolean): string;
+/**
+ * Use binary search to find the index of the first item in a given array which
+ * passes a given condition. The items are expected to be sorted in the sense
+ * that if the condition is true for one item in the array, then it is also true
+ * for all following items.
+ *
+ * @return Index of the first array element to pass the test,
+ *  or |items.length| if no such element exists.
+ */
+export declare function binarySearchFirstItem<T>(items: T[], condition: (item: T) => boolean, start?: number): number;
 /**
  * Approximates float number as a fraction using Farey sequence (max order
  * of 8).

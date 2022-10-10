@@ -1,8 +1,8 @@
 import { OptionalContentConfig, PageViewport, PDFPageProxy, RenderTask } from "../pdf.ts-src/pdf.js";
-import { PageColors } from "./base_viewer.js";
 import { type IL10n, type IPDFLinkService, type IVisibleView } from "./interfaces.js";
 import { PDFPageView } from "./pdf_page_view.js";
 import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
+import { PageColors } from "./pdf_viewer.js";
 import { RenderingStates } from "./ui_utils.js";
 interface PDFThumbnailViewOptions {
     /**

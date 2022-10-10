@@ -3,7 +3,7 @@ import { DocStats } from "./core_utils.js";
 import { CipherTransformFactory } from "./crypto.js";
 import { Parser } from "./parser.js";
 import { BasePdfManager } from "./pdf_manager.js";
-import { Dict, Ref, RefSet, type Obj, type ObjNoRef } from "./primitives.js";
+import { Dict, type Obj, type ObjNoRef, Ref, RefSet } from "./primitives.js";
 import { Stream } from "./stream.js";
 interface XRefEntry {
     offset: number;

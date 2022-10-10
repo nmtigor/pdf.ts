@@ -496,7 +496,7 @@ export class MeshShading extends BaseShading {
             }
             let tmp1, tmp2, tmp3, tmp4;
             switch (f) {
-                // prettier-ignore
+                // deno-fmt-ignore
                 case 0:
                     ps[12] = pi + 3;
                     ps[13] = pi + 4;
@@ -515,7 +515,7 @@ export class MeshShading extends BaseShading {
                     cs[0] = ci;
                     cs[1] = ci + 3;
                     break;
-                // prettier-ignore
+                // deno-fmt-ignore
                 case 1:
                     tmp1 = ps[12];
                     tmp2 = ps[13];
@@ -540,7 +540,7 @@ export class MeshShading extends BaseShading {
                     cs[0] = tmp1;
                     cs[1] = ci + 1;
                     break;
-                // prettier-ignore
+                // deno-fmt-ignore
                 case 2:
                     tmp1 = ps[15];
                     tmp2 = ps[11];
@@ -562,7 +562,7 @@ export class MeshShading extends BaseShading {
                     cs[0] = tmp1;
                     cs[1] = ci + 1;
                     break;
-                // prettier-ignore
+                // deno-fmt-ignore
                 case 3:
                     ps[12] = ps[0];
                     ps[13] = pi + 0;
@@ -670,7 +670,7 @@ export class MeshShading extends BaseShading {
             }
             let tmp1, tmp2, tmp3, tmp4;
             switch (f) {
-                // prettier-ignore
+                // deno-fmt-ignore
                 case 0:
                     ps[12] = pi + 3;
                     ps[13] = pi + 4;
@@ -693,7 +693,7 @@ export class MeshShading extends BaseShading {
                     cs[0] = ci;
                     cs[1] = ci + 3;
                     break;
-                // prettier-ignore
+                // deno-fmt-ignore
                 case 1:
                     tmp1 = ps[12];
                     tmp2 = ps[13];
@@ -722,7 +722,7 @@ export class MeshShading extends BaseShading {
                     cs[0] = tmp1;
                     cs[1] = ci + 1;
                     break;
-                // prettier-ignore
+                // deno-fmt-ignore
                 case 2:
                     tmp1 = ps[15];
                     tmp2 = ps[11];
@@ -748,7 +748,7 @@ export class MeshShading extends BaseShading {
                     cs[0] = tmp1;
                     cs[1] = ci + 1;
                     break;
-                // prettier-ignore
+                // deno-fmt-ignore
                 case 3:
                     ps[12] = ps[0];
                     ps[13] = pi + 0;

@@ -81,22 +81,17 @@ export class PDFDataTransportStream {
     #onProgress = (evt) => {
         if (evt.total === undefined) {
             // Reporting to first range reader, if it exists.
-            const firstReader = this.#rangeReaders[0];
-            if (firstReader?.onProgress) {
-                firstReader.onProgress({ loaded: evt.loaded });
-            }
+            this.#rangeReaders[0]?.onProgress?.({ loaded: evt.loaded });
         }
         else {
-            const fullReader = this._fullRequestReader;
-            if (fullReader?.onProgress) {
-                fullReader.onProgress({ loaded: evt.loaded, total: evt.total });
-            }
+            this._fullRequestReader?.onProgress?.({
+                loaded: evt.loaded,
+                total: evt.total,
+            });
         }
     };
     _onProgressiveDone() {
-        if (this._fullRequestReader) {
-            this._fullRequestReader.progressiveDone();
-        }
+        this._fullRequestReader?.progressiveDone();
         this.#progressiveDone = true;
     }
     _removeRangeReader(reader) {
@@ -124,9 +119,7 @@ export class PDFDataTransportStream {
     }
     /** @implement */
     cancelAllRequests(reason) {
-        if (this._fullRequestReader) {
-            this._fullRequestReader.cancel(reason);
-        }
+        this._fullRequestReader?.cancel(reason);
         for (const reader of this.#rangeReaders.slice(0)) {
             reader.cancel(reason);
         }

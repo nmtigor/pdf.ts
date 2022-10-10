@@ -27,6 +27,7 @@ export declare class InkEditor extends AnnotationEditor {
     static _defaultOpacity: number;
     static _defaultThickness: number;
     static _l10nPromise: Map<string, Promise<string>>;
+    static readonly _type = "ink";
     color: string | undefined;
     thickness: number | undefined;
     opacity: number | undefined;

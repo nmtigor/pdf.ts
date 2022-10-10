@@ -9,6 +9,7 @@ import { bindEvents, ColorManager, KeyboardManager } from "./tools.js";
  * Base class for editors.
  */
 export class AnnotationEditor {
+    static _type;
     static _colorManager = new ColorManager();
     static _zIndex = 1;
     #boundFocusin = this.focusin.bind(this);
@@ -372,13 +373,6 @@ export class AnnotationEditor {
      * their properties.
      */
     enableEditing() { }
-    /**
-     * Get the id to use in aria-owns when a link is done in the text layer.
-     * @returns {string}
-     */
-    getIdForTextLayer() {
-        return this.id;
-    }
     /**
      * Get some properties to update in the UI.
      */

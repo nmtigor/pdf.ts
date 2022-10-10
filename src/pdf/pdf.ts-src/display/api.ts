@@ -26,13 +26,14 @@ import { TypedArray } from "../../../lib/alias.ts";
 import { isObjectLike } from "../../../lib/jslang.ts";
 import { createPromiseCap, PromiseCap } from "../../../lib/promisecap.ts";
 import { assert } from "../../../lib/util/trace.ts";
-import { PageColors } from "../../pdf.ts-web/base_viewer.ts";
 import { Stepper } from "../../pdf.ts-web/debugger.ts";
+import { PageColors } from "../../pdf.ts-web/pdf_viewer.ts";
 import { type AnnotationData, type FieldObject } from "../core/annotation.ts";
-import { type ExplicitDest } from "../core/catalog.ts";
+import { type ExplicitDest, SetOCGState } from "../core/catalog.ts";
 import { type AnnotActions } from "../core/core_utils.ts";
 import { DocumentInfo, type XFAData } from "../core/document.ts";
 import { type ImgData } from "../core/evaluator.ts";
+import { type Attachment } from "../core/file_spec.ts";
 import { FontExpotDataEx } from "../core/fonts.ts";
 import { type CmdArgs } from "../core/font_renderer.ts";
 import { type IWorker } from "../core/iworker.ts";
@@ -146,6 +147,8 @@ export function setPDFNetworkStreamFactory(
   createPDFNetworkStream = pdfNetworkStreamFactory;
 }
 
+export type BinaryData = TypedArray | ArrayBuffer | number[] | string;
+
 export interface RefProxy {
   num: number;
   gen: number;
@@ -161,11 +164,11 @@ export interface DocumentInitP {
   url: string | URL | undefined;
 
   /**
-   * Binary PDF data. Use
-   * typed arrays (Uint8Array) to improve the memory usage. If PDF data is
+   * Binary PDF data.
+   * Use typed arrays (Uint8Array) to improve the memory usage. If PDF data is
    * BASE64-encoded, use `atob()` to convert it to a binary string first.
    */
-  data?: Uint8Array | number[] | undefined;
+  data?: BinaryData | undefined;
 
   /**
    * Basic authentication headers.
@@ -373,6 +376,14 @@ export interface DocumentInitP {
   contentDispositionFilename?: string | undefined;
 }
 
+type _GetDocumentP =
+  | string
+  | URL
+  | TypedArray
+  | ArrayBuffer
+  | PDFDataRangeTransport
+  | DocumentInitP;
+
 /**
  * This is the main entry point for loading a PDF and interacting with it.
  *
@@ -383,9 +394,7 @@ export interface DocumentInitP {
  * @param src Can be a URL where a PDF file is located, a typed array (Uint8Array)
  *  already populated with data, or a parameter object.
  */
-export function getDocument(
-  src: string | URL | TypedArray | DocumentInitP | PDFDataRangeTransport,
-): PDFDocumentLoadingTask {
+export function getDocument(src: _GetDocumentP): PDFDocumentLoadingTask {
   const task = new PDFDocumentLoadingTask();
 
   let source;
@@ -399,7 +408,7 @@ export function getDocument(
     if (typeof src !== "object") {
       throw new Error(
         "Invalid parameter in getDocument, " +
-          "need either string, URL, Uint8Array, or parameter object.",
+          "need either string, URL, TypedArray, or parameter object.",
       );
     }
     if (!(<any> src).url && !(<any> src).data && !(<any> src).range) {
@@ -462,13 +471,13 @@ export function getDocument(
           params[key] = new Uint8Array(value);
         } else {
           throw new Error(
-            "Invalid PDF binary data: either typed array, " +
+            "Invalid PDF binary data: either TypedArray, " +
               "string, or array-like object is expected in the data property.",
           );
         }
         continue;
     }
-    (<any> params)[key] = value;
+    (params as any)[key] = value;
   }
 
   params.CMapReaderFactory = params.CMapReaderFactory ||
@@ -762,7 +771,7 @@ export class PDFDocumentLoadingTask {
 }
 
 type RangeListener = (begin: number, chunk: ArrayBufferLike) => void;
-type ProgressListener = (loaded: number, total: number) => void;
+type ProgressListener = (loaded: number, total?: number) => void;
 type ProgressiveReadListener = (chunk: ArrayBufferLike) => void;
 type ProgressiveDoneListener = () => void;
 
@@ -805,7 +814,7 @@ export class PDFDataRangeTransport {
     }
   }
 
-  onDataProgress(loaded: number, total: number) {
+  onDataProgress(loaded: number, total?: number) {
     this.#readyCapability.promise.then(() => {
       for (const listener of this.#progressListeners) {
         listener(loaded, total);
@@ -841,11 +850,10 @@ export class PDFDataRangeTransport {
 }
 
 export interface OutlineNode {
-  title: string;
-
+  action: string | undefined;
+  attachment: Attachment | undefined;
   bold: boolean;
-
-  italic: boolean;
+  count: number | undefined;
 
   /**
    * The color in RGB format to use for display purposes.
@@ -853,16 +861,13 @@ export interface OutlineNode {
   color: Uint8ClampedArray;
 
   dest: ExplicitDest | string | undefined;
-
-  url: string | undefined;
-
-  unsafeUrl: string | undefined;
-
-  newWindow: boolean | undefined;
-
-  count: number | undefined;
-
+  italic: boolean;
   items: OutlineNode[];
+  newWindow: boolean | undefined;
+  setOCGState: SetOCGState | undefined;
+  title: string;
+  unsafeUrl: string | undefined;
+  url: string | undefined;
 }
 
 export interface PDFDocumentStats {
@@ -1098,10 +1103,18 @@ export class PDFDocumentProxy {
 
   /**
    * @return A promise that is resolved with a
-   *   {Uint8Array} that has the raw data from the PDF.
+   *   {Uint8Array} containing the raw data of the PDF document.
    */
   getData(): Promise<Uint8Array> {
     return this._transport.getData();
+  }
+
+  /**
+   * @return A promise that is resolved with a
+   *   {Uint8Array} containing the full data of the saved document.
+   */
+  saveDocument() {
+    return this._transport.saveDocument();
   }
 
   /**
@@ -1149,22 +1162,6 @@ export class PDFDocumentProxy {
    */
   get loadingTask(): PDFDocumentLoadingTask {
     return this._transport.loadingTask;
-  }
-
-  /**
-   * @return A promise that is resolved with a
-   *   {Uint8Array} containing the full data of the saved document.
-   */
-  saveDocument() {
-    /*#static*/ if (GENERIC) {
-      if (this._transport.annotationStorage.size <= 0) {
-        deprecated(
-          "saveDocument called while `annotationStorage` is empty, " +
-            "please use the getData-method instead.",
-        );
-      }
-    }
-    return this._transport.saveDocument();
   }
 
   /**
@@ -1274,14 +1271,14 @@ export interface TextItem {
   str: string;
 
   /**
-   * Text direction: 'ttb', 'ltr' or 'rtl'.
+   * Text direction.
    */
-  dir: string;
+  dir: "ttb" | "ltr" | "rtl";
 
   /**
    * Transformation matrix.
    */
-  transform: matrix_t;
+  transform: matrix_t | undefined;
 
   /**
    * Width in device space.
@@ -1296,7 +1293,7 @@ export interface TextItem {
   /**
    * Font name used by PDF.js for converted font.
    */
-  fontName: string;
+  fontName: string | undefined;
 
   /**
    * Indicating if the text content is followed by a line-break.
@@ -1308,17 +1305,15 @@ export interface TextItem {
  * Page text marked content part.
  */
 export interface TextMarkedContent {
-  /**
-   * Either 'beginMarkedContent',
-   * 'beginMarkedContentProps', or 'endMarkedContent'.
-   */
-  type: string;
+  type: "beginMarkedContent" | "beginMarkedContentProps" | "endMarkedContent";
 
   /**
    * The marked content identifier. Only used for type
    * 'beginMarkedContentProps'.
    */
-  id: string;
+  id?: string | undefined;
+
+  tag?: string | undefined;
 }
 
 /**
@@ -1419,12 +1414,6 @@ export interface RenderP {
    * before viewport transform.
    */
   transform?: matrix_t | undefined;
-
-  /**
-   * An object that has `beginLayout`,
-   * `endLayout` and `appendImage` functions.
-   */
-  imageLayer?: ImageLayer;
 
   /**
    * The factory instance that will be used
@@ -1692,34 +1681,6 @@ export class PDFPageProxy {
         intentArgs.renderingIntent,
       );
       this._annotationPromises.set(intentArgs.cacheKey, promise);
-
-      /*#static*/ if (GENERIC) {
-        promise = promise.then((annotations) => {
-          for (const annotation of annotations) {
-            if (annotation.titleObj !== undefined) {
-              Object.defineProperty(annotation, "title", {
-                get() {
-                  deprecated(
-                    "`title`-property on annotation, please use `titleObj` instead.",
-                  );
-                  return annotation.titleObj!.str;
-                },
-              });
-            }
-            if (annotation.contentsObj !== undefined) {
-              Object.defineProperty(annotation, "contents", {
-                get() {
-                  deprecated(
-                    "`contents`-property on annotation, please use `contentsObj` instead.",
-                  );
-                  return annotation.contentsObj.str;
-                },
-              });
-            }
-          }
-          return annotations;
-        });
-      }
     }
     return promise;
   }
@@ -1757,7 +1718,6 @@ export class PDFPageProxy {
     intent = "display",
     annotationMode = AnnotationMode.ENABLE,
     transform = undefined,
-    imageLayer,
     canvasFactory,
     background,
     optionalContentConfigPromise,
@@ -1765,7 +1725,7 @@ export class PDFPageProxy {
     pageColors = undefined,
     printAnnotationStorage = undefined,
   }: RenderP): RenderTask {
-    if (this._stats) this._stats.time("Overall");
+    this._stats?.time("Overall");
 
     const intentArgs = this._transport.getRenderingIntent(
       intent,
@@ -1809,9 +1769,7 @@ export class PDFPageProxy {
         separateAnnots: undefined,
       };
 
-      if (this._stats) {
-        this._stats.time("Page Request");
-      }
+      this._stats?.time("Page Request");
       this.#pumpOperatorList(intentArgs);
     }
 
@@ -1835,10 +1793,9 @@ export class PDFPageProxy {
       } else {
         internalRenderTask.capability.resolve();
       }
-      if (this._stats) {
-        this._stats.timeEnd("Rendering");
-        this._stats.timeEnd("Overall");
-      }
+
+      this._stats?.timeEnd("Rendering");
+      this._stats?.timeEnd("Overall");
     };
 
     const internalRenderTask = new InternalRenderTask({
@@ -1848,7 +1805,6 @@ export class PDFPageProxy {
         canvasContext,
         viewport,
         transform,
-        imageLayer,
         background,
       },
       objs: this.objs,
@@ -1874,9 +1830,8 @@ export class PDFPageProxy {
           complete();
           return;
         }
-        if (this._stats) {
-          this._stats.time("Rendering");
-        }
+        this._stats?.time("Rendering");
+
         internalRenderTask.initializeGraphics({
           transparency,
           optionalContentConfig,
@@ -1931,9 +1886,7 @@ export class PDFPageProxy {
         separateAnnots: undefined,
       };
 
-      if (this._stats) {
-        this._stats.time("Page Request");
-      }
+      this._stats?.time("Page Request");
       this.#pumpOperatorList(intentArgs);
     }
     return intentState!.opListReadCapability.promise;
@@ -2101,16 +2054,14 @@ export class PDFPageProxy {
 
   _startRenderPage(transparency: boolean, cacheKey: string) {
     const intentState = this.#intentStates.get(cacheKey);
-    if (!intentState) return; // Rendering was cancelled.
-
-    if (this._stats) {
-      this._stats.timeEnd("Page Request");
+    if (!intentState) {
+      return; // Rendering was cancelled.
     }
+    this._stats?.timeEnd("Page Request");
+
     // TODO Refactor RenderPageRequest to separate rendering
     // and operator list logic
-    if (intentState.displayReadyCapability) {
-      intentState.displayReadyCapability.resolve(transparency);
-    }
+    intentState.displayReadyCapability?.resolve(transparency);
   }
 
   #renderPageChunk(
@@ -2259,6 +2210,7 @@ export class PDFPageProxy {
 
 export class LoopbackPort {
   #listeners: EventListener[] = [];
+
   #deferred = Promise.resolve();
 
   postMessage(
@@ -2439,6 +2391,10 @@ export class PDFWorker {
       // and ready to accept messages.
     });
     this.#readyCapability.resolve();
+    // Send global setting, e.g. verbosity level.
+    this.#messageHandler.send("configure", {
+      verbosity: this.verbosity,
+    });
   }
 
   #initialize() {
@@ -2448,11 +2404,10 @@ export class PDFWorker {
     // Right now, the requirement is, that an Uint8Array is still an
     // Uint8Array as it arrives on the worker. (Chrome added this with v.15.)
     if (
-      typeof Worker !== "undefined" &&
       !PDFWorkerUtil.isWorkerDisabled &&
       !PDFWorker._mainThreadWorkerMessageHandler
     ) {
-      let workerSrc = PDFWorker.workerSrc;
+      let { workerSrc } = PDFWorker;
 
       try {
         // Wraps workerSrc path into blob URL, if the former does not belong
@@ -2637,12 +2592,14 @@ export class PDFWorker {
     if (GlobalWorkerOptions.workerSrc) {
       return GlobalWorkerOptions.workerSrc;
     }
-    if (PDFWorkerUtil.fallbackWorkerSrc !== undefined) {
-      // if (!isNodeJS)
-      // {
-      deprecated('No "GlobalWorkerOptions.workerSrc" specified.');
-      // }
-      return PDFWorkerUtil.fallbackWorkerSrc;
+    /*#static*/ if (GENERIC) {
+      if (PDFWorkerUtil.fallbackWorkerSrc !== undefined) {
+        // if (!isNodeJS)
+        // {
+        deprecated('No "GlobalWorkerOptions.workerSrc" specified.');
+        // }
+        return PDFWorkerUtil.fallbackWorkerSrc;
+      }
     }
     throw new Error('No "GlobalWorkerOptions.workerSrc" specified.');
   }
@@ -2763,7 +2720,6 @@ class WorkerTransport {
     this.messageHandler = messageHandler;
     this.loadingTask = loadingTask;
     this.fontLoader = new FontLoader({
-      docId: loadingTask.docId,
       onUnsupportedFeature: this.#onUnsupportedFeature,
       ownerDocument: params.ownerDocument,
       styleElement: params.styleElement,
@@ -3294,6 +3250,25 @@ class WorkerTransport {
     return this.messageHandler.sendWithPromise("GetData", null);
   }
 
+  saveDocument() {
+    if (this.annotationStorage.size <= 0) {
+      warn(
+        "saveDocument called while `annotationStorage` is empty, " +
+          "please use the getData-method instead.",
+      );
+    }
+    return this.messageHandler
+      .sendWithPromise("SaveDocument", {
+        isPureXfa: !!this._htmlForXfa,
+        numPages: this.#numPages!,
+        annotationStorage: this.annotationStorage.serializable,
+        filename: this.#fullReader?.filename ?? undefined,
+      })
+      .finally(() => {
+        this.annotationStorage.resetModified();
+      });
+  }
+
   getPage(pageNumber: unknown) {
     if (
       !Number.isInteger(pageNumber) ||
@@ -3351,19 +3326,6 @@ class WorkerTransport {
       pageIndex,
       intent,
     });
-  }
-
-  saveDocument() {
-    return this.messageHandler
-      .sendWithPromise("SaveDocument", {
-        isPureXfa: !!this._htmlForXfa,
-        numPages: this.#numPages!,
-        annotationStorage: this.annotationStorage.serializable,
-        filename: this.#fullReader?.filename ?? undefined,
-      })
-      .finally(() => {
-        this.annotationStorage.resetModified();
-      });
   }
 
   getFieldObjects() {
@@ -3627,7 +3589,6 @@ interface _IRTCtorP_paraams {
   canvasContext: CanvasRenderingContext2D;
   viewport: PageViewport;
   transform: matrix_t | undefined;
-  imageLayer: ImageLayer | undefined;
   background: string | CanvasGradient | CanvasPattern | undefined;
 }
 
@@ -3741,15 +3702,13 @@ export class InternalRenderTask {
       this.stepper.init(this.operatorList);
       this.stepper.nextBreakPoint = this.stepper.getNextBreakPoint();
     }
-    const { canvasContext, viewport, transform, imageLayer, background } =
-      this.params;
+    const { canvasContext, viewport, transform, background } = this.params;
 
     this.gfx = new CanvasGraphics(
       canvasContext,
       this.commonObjs,
       this.objs,
       this.canvasFactory,
-      imageLayer,
       optionalContentConfig,
       this.annotationCanvasMap,
       this.pageColors,
@@ -3768,9 +3727,8 @@ export class InternalRenderTask {
   cancel = (error: any = null) => {
     this.running = false;
     this.cancelled = true;
-    if (this.gfx) {
-      this.gfx.endDrawing();
-    }
+    this.gfx?.endDrawing();
+
     if (this._canvas) {
       InternalRenderTask.#canvasInUse.delete(this._canvas);
     }
@@ -3790,10 +3748,7 @@ export class InternalRenderTask {
       }
       return;
     }
-
-    if (this.stepper) {
-      this.stepper.updateOperatorList(this.operatorList);
-    }
+    this.stepper?.updateOperatorList(this.operatorList);
 
     if (this.running) {
       return;

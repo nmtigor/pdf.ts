@@ -349,7 +349,8 @@ export function isCmd(v, cmd) {
     return v instanceof Cmd && (cmd === undefined || v.cmd === cmd);
 }
 export function isDict(v, type) {
-    return v instanceof Dict && (type === undefined || isName(v.get("Type"), type));
+    return v instanceof Dict &&
+        (type === undefined || isName(v.get("Type"), type));
 }
 export function isRefsEqual(v1, v2) {
     return v1.num === v2.num && v1.gen === v2.gen;

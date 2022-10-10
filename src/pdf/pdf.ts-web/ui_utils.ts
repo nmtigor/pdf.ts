@@ -18,7 +18,6 @@
  */
 
 import { GENERIC, LIB } from "../../global.ts";
-import { binarySearchFirstItem } from "../pdf.ts-src/pdf.ts";
 import { type IVisibleView } from "./interfaces.ts";
 /*80--------------------------------------------------------------------------*/
 
@@ -63,7 +62,6 @@ export const enum RendererType {
 export const enum TextLayerMode {
   DISABLE = 0,
   ENABLE = 1,
-  ENABLE_ENHANCE = 2,
 }
 
 export enum ScrollMode {
@@ -265,6 +263,42 @@ export function removeNullCharacters(str: string, replaceInvisible = false) {
     str = str.replace(InvisibleCharactersRegExp, " ");
   }
   return str.replace(NullCharactersRegExp, "");
+}
+
+/**
+ * Use binary search to find the index of the first item in a given array which
+ * passes a given condition. The items are expected to be sorted in the sense
+ * that if the condition is true for one item in the array, then it is also true
+ * for all following items.
+ *
+ * @return Index of the first array element to pass the test,
+ *  or |items.length| if no such element exists.
+ */
+export function binarySearchFirstItem<T>(
+  items: T[],
+  condition: (item: T) => boolean,
+  start = 0,
+): number {
+  let minIndex = start;
+  let maxIndex = items.length - 1;
+
+  if (maxIndex < 0 || !condition(items[maxIndex])) {
+    return items.length;
+  }
+  if (condition(items[minIndex])) {
+    return minIndex;
+  }
+
+  while (minIndex < maxIndex) {
+    const currentIndex = (minIndex + maxIndex) >> 1;
+    const currentItem = items[currentIndex];
+    if (condition(currentItem)) {
+      maxIndex = currentIndex;
+    } else {
+      minIndex = currentIndex + 1;
+    }
+  }
+  return minIndex; /* === maxIndex */
 }
 
 /**
@@ -777,15 +811,6 @@ export class ProgressBar {
   _indeterminate?: boolean;
 
   constructor(id: string) {
-    /*#static*/ if (GENERIC) {
-      if (arguments.length > 1) {
-        throw new Error(
-          "ProgressBar no longer accepts any additional options, " +
-            "please use CSS rules to modify its appearance instead.",
-        );
-      }
-    }
-
     const bar = document.getElementById(id);
     this.#classList = bar!.classList;
   }

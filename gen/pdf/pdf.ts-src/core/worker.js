@@ -17,11 +17,11 @@
  */
 import { GENERIC } from "../../../global.js";
 import { createPromiseCap } from "../../../lib/promisecap.js";
-import { MessageHandler } from "../shared/message_handler.js";
-import { AbortException, arrayByteLength, arraysToBytes, getVerbosityLevel, info, InvalidPDFException, MissingPDFException, PasswordException, setVerbosityLevel, stringToPDFString, UnexpectedResponseException, UnknownErrorException, UNSUPPORTED_FEATURES, VerbosityLevel, warn } from "../shared/util.js";
+import { MessageHandler, } from "../shared/message_handler.js";
+import { AbortException, arrayByteLength, arraysToBytes, getVerbosityLevel, info, InvalidPDFException, MissingPDFException, PasswordException, setVerbosityLevel, stringToPDFString, UnexpectedResponseException, UnknownErrorException, UNSUPPORTED_FEATURES, VerbosityLevel, warn, } from "../shared/util.js";
 import { clearGlobalCaches } from "./cleanup_helper.js";
 import { getNewAnnotationsMap, XRefParseException } from "./core_utils.js";
-import { LocalPdfManager, NetworkPdfManager } from "./pdf_manager.js";
+import { LocalPdfManager, NetworkPdfManager, } from "./pdf_manager.js";
 import { Dict, Ref } from "./primitives.js";
 import { PDFWorkerStream } from "./worker_stream.js";
 import { incrementalUpdate } from "./writer.js";
@@ -419,8 +419,18 @@ export const WorkerMessageHandler = {
             return pdfManager.onLoadedStream().then((stream) => stream.bytes);
         });
         handler.on("GetAnnotations", ({ pageIndex, intent }) => {
-            return pdfManager.getPage(pageIndex)
-                .then((page) => page.getAnnotationsData(intent));
+            return pdfManager.getPage(pageIndex).then((page) => {
+                const task = new WorkerTask(`GetAnnotations: page ${pageIndex}`);
+                startWorkerTask(task);
+                return page.getAnnotationsData(handler, task, intent).then((data) => {
+                    finishWorkerTask(task);
+                    return data;
+                }, (reason) => {
+                    finishWorkerTask(task);
+                    //kkkk bug?
+                    return [];
+                });
+            });
         });
         handler.on("GetFieldObjects", (data) => {
             return pdfManager.ensureDoc("fieldObjects");

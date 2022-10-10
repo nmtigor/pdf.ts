@@ -20,12 +20,12 @@
 /** @typedef {import("./interfaces").IDownloadManager} IDownloadManager */
 /** @typedef {import("../../web/interfaces").IPDFLinkService} IPDFLinkService */
 import { _PDFDEV } from "../../../global.js";
-import { div, html, span, svg as createSVG, textnode } from "../../../lib/dom.js";
+import { div, html, span, svg as createSVG, textnode, } from "../../../lib/dom.js";
 import { assert } from "../../../lib/util/trace.js";
-import { ColorConverters } from "../shared/scripting_utils.js";
-import { AnnotationBorderStyleType, AnnotationType, LINE_FACTOR, shadow, Util, warn } from "../shared/util.js";
+import { ColorConverters, } from "../shared/scripting_utils.js";
+import { AnnotationBorderStyleType, AnnotationType, LINE_FACTOR, shadow, Util, warn, } from "../shared/util.js";
 import { AnnotationStorage } from "./annotation_storage.js";
-import { DOMSVGFactory, getFilenameFromUrl, PDFDateString } from "./display_utils.js";
+import { AnnotationPrefix, DOMSVGFactory, getFilenameFromUrl, PDFDateString, } from "./display_utils.js";
 import { XfaLayer } from "./xfa_layer.js";
 /*80--------------------------------------------------------------------------*/
 const DEFAULT_TAB_INDEX = 1000;
@@ -168,6 +168,10 @@ export class AnnotationElement {
                 const radius = `calc(${horizontalRadius}px * var(--scale-factor)) / calc(${verticalRadius}px * var(--scale-factor))`;
                 container.style.borderRadius = radius;
             }
+            else if (this instanceof RadioButtonWidgetAnnotationElement) {
+                const radius = `calc(${width}px * var(--scale-factor)) / calc(${height}px * var(--scale-factor))`;
+                container.style.borderRadius = radius;
+            }
             switch (data.borderStyle.style) {
                 case AnnotationBorderStyleType.SOLID:
                     container.style.borderStyle = "solid";
@@ -303,9 +307,7 @@ export class AnnotationElement {
         for (const name of Object.keys(jsEvent.detail)) {
             const action = actions[name] ||
                 commonActions[name];
-            if (action) {
-                action(jsEvent);
-            }
+            action?.(jsEvent);
         }
     }
     _setDefaultPropertiesFromJS(element) {
@@ -321,7 +323,13 @@ export class AnnotationElement {
         for (const [actionName, detail] of Object.entries(storedData)) {
             const action = commonActions[actionName];
             if (action) {
-                action({ detail, target: element });
+                const eventProxy = {
+                    detail: {
+                        [actionName]: detail,
+                    },
+                    target: element,
+                };
+                action(eventProxy);
                 // The action has been consumed: no need to keep it.
                 delete storedData[actionName];
             }
@@ -480,6 +488,14 @@ class LinkAnnotationElement extends AnnotationElement {
             this.#bindNamedAction(link, data.action);
             isBound = true;
         }
+        else if (data.attachment) {
+            this._bindAttachment(link, data.attachment);
+            isBound = true;
+        }
+        else if (data.setOCGState) {
+            this.#bindSetOCGState(link, data.setOCGState);
+            isBound = true;
+        }
         else if (data.dest) {
             this.#bindLink(link, data.dest);
             isBound = true;
@@ -543,6 +559,28 @@ class LinkAnnotationElement extends AnnotationElement {
         link.className = "internalLink";
     }
     /**
+     * Bind attachments to the link element.
+     */
+    _bindAttachment(link, attachment) {
+        link.href = this.linkService.getAnchorUrl("");
+        link.onclick = () => {
+            this.downloadManager?.openOrDownloadData(this.container, attachment.content, attachment.filename);
+            return false;
+        };
+        link.className = "internalLink";
+    }
+    /**
+     * Bind SetOCGState actions to the link element.
+     */
+    #bindSetOCGState(link, action) {
+        link.href = this.linkService.getAnchorUrl("");
+        link.onclick = () => {
+            this.linkService.executeSetOCGState(action);
+            return false;
+        };
+        link.className = "internalLink";
+    }
+    /**
      * Bind JS actions to the link element.
      */
     #bindJSAction(link, data) {
@@ -588,9 +626,7 @@ class LinkAnnotationElement extends AnnotationElement {
             return;
         }
         link.onclick = () => {
-            if (otherClickAction) {
-                otherClickAction();
-            }
+            otherClickAction?.();
             const { fields: resetFormFields, refs: resetFormRefs, include, } = resetForm;
             const allFields = [];
             if (resetFormFields.length !== 0 || resetFormRefs.length !== 0) {
@@ -818,7 +854,15 @@ class TextWidgetAnnotationElement extends WidgetAnnotationElement {
             const storedData = storage.getValue(id, {
                 value: this.data.fieldValue,
             });
-            const textContent = storedData.formattedValue || storedData.value || "";
+            // const textContent = storedData.formattedValue || storedData.value || "";
+            let textContent = storedData.formattedValue ||
+                storedData.value || "";
+            const maxLen = storage.getValue(id, {
+                charLimit: this.data.maxLen,
+            }).charLimit;
+            if (maxLen && textContent.length > maxLen) {
+                textContent = textContent.slice(0, maxLen);
+            }
             const elementData = {
                 userValue: textContent.toString(),
                 valueOnFocus: "",
@@ -844,6 +888,9 @@ class TextWidgetAnnotationElement extends WidgetAnnotationElement {
             element.name = this.data.fieldName;
             element.tabIndex = DEFAULT_TAB_INDEX;
             this._setRequired(element, this.data.required);
+            if (maxLen) {
+                element.maxLength = maxLen;
+            }
             element.addEventListener("input", (event) => {
                 storage.setValue(id, { value: event.target.value });
                 this.setPropertyOnSiblings(element, "value", event.target.value, "value");
@@ -892,6 +939,34 @@ class TextWidgetAnnotationElement extends WidgetAnnotationElement {
                         },
                         selRange(event) {
                             event.target.setSelectionRange(...event.detail.selRange);
+                        },
+                        charLimit: (event) => {
+                            const { charLimit } = event.detail;
+                            const { target } = event;
+                            if (charLimit === 0) {
+                                target.removeAttribute("maxLength");
+                                return;
+                            }
+                            target.setAttribute("maxLength", charLimit);
+                            let value = elementData.userValue;
+                            if (!value || value.length <= charLimit) {
+                                return;
+                            }
+                            value = value.slice(0, charLimit);
+                            target.value = elementData.userValue = value;
+                            storage.setValue(id, { value });
+                            this.linkService.eventBus?.dispatch("dispatcheventinsandbox", {
+                                source: this,
+                                detail: {
+                                    id,
+                                    name: "Keystroke",
+                                    value,
+                                    willCommit: true,
+                                    commitKey: 1,
+                                    selStart: target.selectionStart,
+                                    selEnd: target.selectionEnd,
+                                },
+                            });
                         },
                     };
                     this._dispatchEventFromSandbox(actions, jsEvent);
@@ -1019,12 +1094,9 @@ class TextWidgetAnnotationElement extends WidgetAnnotationElement {
             if (blurListener) {
                 element.addEventListener("blur", blurListener);
             }
-            if (this.data.maxLen !== undefined) {
-                element.maxLength = this.data.maxLen;
-            }
             if (this.data.comb) {
                 const fieldWidth = this.data.rect[2] - this.data.rect[0];
-                const combWidth = fieldWidth / this.data.maxLen;
+                const combWidth = fieldWidth / maxLen;
                 element.classList.add("comb");
                 element.style.letterSpacing = `calc(${combWidth}px - 1ch)`;
             }
@@ -1428,29 +1500,31 @@ class ChoiceWidgetAnnotationElement extends WidgetAnnotationElement {
     }
 }
 class PopupAnnotationElement extends AnnotationElement {
+    // Do not render popup annotations for parent elements with these types as
+    // they create the popups themselves (because of custom trigger divs).
+    static IGNORE_TYPES = new Set([
+        "Line",
+        "Square",
+        "Circle",
+        "PolyLine",
+        "Polygon",
+        "Ink",
+    ]);
     constructor(parameters) {
-        const isRenderable = !!(parameters.data.titleObj?.str ||
-            parameters.data.contentsObj?.str ||
-            parameters.data.richText?.str);
+        // const isRenderable = !!(
+        //   parameters.data.titleObj?.str ||
+        //   parameters.data.contentsObj?.str ||
+        //   parameters.data.richText?.str
+        // );
+        // super(parameters, { isRenderable });
+        const { data } = parameters;
+        const isRenderable = !PopupAnnotationElement.IGNORE_TYPES.has(data.parentType) &&
+            !!(data.titleObj?.str || data.contentsObj?.str || data.richText?.str);
         super(parameters, { isRenderable });
     }
     render() {
-        // Do not render popup annotations for parent elements with these types as
-        // they create the popups themselves (because of custom trigger divs).
-        const IGNORE_TYPES = [
-            "Line",
-            "Square",
-            "Circle",
-            "PolyLine",
-            "Polygon",
-            "Ink",
-        ];
         this.container.className = "popupAnnotation";
-        if (IGNORE_TYPES.includes(this.data.parentType)) {
-            return this.container;
-        }
-        const selector = `[data-annotation-id="${this.data.parentId}"]`;
-        const parentElements = this.layer.querySelectorAll(selector);
+        const parentElements = this.layer.querySelectorAll(`[data-annotation-id="${this.data.parentId}"]`);
         if (parentElements.length === 0) {
             return this.container;
         }
@@ -1608,7 +1682,8 @@ class PopupElement {
         }
         if (this.hideElement.hidden) {
             this.hideElement.hidden = false;
-            this.container.style.zIndex += 1;
+            this.container.style.zIndex = parseInt(this.container.style.zIndex) +
+                1000;
         }
     }
     /**
@@ -1620,23 +1695,37 @@ class PopupElement {
         }
         if (!this.hideElement.hidden && !this.pinned) {
             this.hideElement.hidden = true;
-            this.container.style.zIndex -= 1;
+            this.container.style.zIndex = parseInt(this.container.style.zIndex) -
+                1000;
         }
     }
 }
 class FreeTextAnnotationElement extends AnnotationElement {
+    textContent;
     constructor(parameters) {
         const isRenderable = !!(parameters.data.hasPopup ||
             parameters.data.titleObj?.str ||
             parameters.data.contentsObj?.str ||
             parameters.data.richText?.str);
         super(parameters, { isRenderable, ignoreBorder: true });
+        this.textContent = parameters.data.textContent;
     }
     /**
      * Render the free text annotation's HTML element in the empty container.
      */
     render() {
         this.container.className = "freeTextAnnotation";
+        if (this.textContent) {
+            const content = document.createElement("div");
+            content.className = "annotationTextContent";
+            content.setAttribute("role", "comment");
+            for (const line of this.textContent) {
+                const lineSpan = document.createElement("span");
+                lineSpan.textContent = line;
+                content.append(lineSpan);
+            }
+            this.container.append(content);
+        }
         if (!this.data.hasPopup) {
             this._createPopup(undefined, this.data);
         }
@@ -2021,35 +2110,27 @@ export class FileAttachmentAnnotationElement extends AnnotationElement {
     };
 }
 export class AnnotationLayer {
+    static #appendElement(element, id, div, accessibilityManager) {
+        const contentElement = element.firstChild || element;
+        contentElement.id = `${AnnotationPrefix}${id}`;
+        div.append(element);
+        accessibilityManager?.moveElementInDOM(div, element, contentElement, 
+        /* isRemovable = */ false);
+    }
     /**
      * Render a new annotation layer with all annotation elements.
      */
     static render(parameters) {
-        const { annotations, div, viewport } = parameters;
+        const { annotations, div, viewport, accessibilityManager } = parameters;
         this.#setDimensions(div, viewport);
-        const sortedAnnotations = [];
-        const popupAnnotations = [];
-        // Ensure that Popup annotations are handled last, since they're dependant
-        // upon the parent annotation having already been rendered (please refer to
-        // the `PopupAnnotationElement.render` method); fixes issue 11362.
+        let zIndex = 0;
         for (const data of parameters.annotations) {
-            if (!data) {
-                continue;
+            if (data.annotationType !== AnnotationType.POPUP) {
+                const { width, height } = getRectDims(data.rect);
+                if (width <= 0 || height <= 0) {
+                    continue; // Ignore empty annotations.
+                }
             }
-            if (data.annotationType === AnnotationType.POPUP) {
-                popupAnnotations.push(data);
-                continue;
-            }
-            const { width, height } = getRectDims(data.rect);
-            if (width <= 0 || height <= 0) {
-                continue; // Ignore empty annotations.
-            }
-            sortedAnnotations.push(data);
-        }
-        if (popupAnnotations.length) {
-            sortedAnnotations.push(...popupAnnotations);
-        }
-        for (const data of sortedAnnotations) {
             const element = AnnotationElementFactory.create({
                 data,
                 layer: div,
@@ -2074,17 +2155,24 @@ export class AnnotationLayer {
                 }
                 if (Array.isArray(rendered)) {
                     for (const renderedElement of rendered) {
-                        div.append(renderedElement);
+                        renderedElement.style.zIndex = zIndex++;
+                        AnnotationLayer.#appendElement(renderedElement, data.id, div, accessibilityManager);
                     }
                 }
                 else {
+                    // The accessibility manager will move the annotation in the DOM in
+                    // order to match the visual ordering.
+                    // But if an annotation is above an other one, then we must draw it
+                    // after the other one whatever the order is in the DOM, hence the
+                    // use of the z-index.
+                    rendered.style.zIndex = zIndex++;
                     if (element instanceof PopupAnnotationElement) {
                         // Popup annotation elements should not be on top of other
                         // annotation elements to prevent interfering with mouse events.
                         div.prepend(rendered);
                     }
                     else {
-                        div.append(rendered);
+                        AnnotationLayer.#appendElement(rendered, data.id, div, accessibilityManager);
                     }
                 }
             }

@@ -40,19 +40,7 @@ export class OverlayManager {
             throw new Error("The overlay is already registered.");
         }
         this.#overlays.set(dialog, { canForceClose });
-        /*#static*/  {
-            if (!dialog.showModal) {
-                const dialogPolyfill = globalThis.require("dialog-polyfill/dist/dialog-polyfill.js");
-                dialogPolyfill.registerDialog(dialog);
-                if (!this._dialogPolyfillCSS) {
-                    this._dialogPolyfillCSS = true;
-                    const style = html("style");
-                    // style.textContent = PDFJSDev.eval( "DIALOG_POLYFILL_CSS");
-                    style.textContent = "";
-                    document.head.prepend(style);
-                }
-            }
-        }
+        /*#static*/ 
         dialog.addEventListener("cancel", (evt) => {
             this.#active = undefined;
         });

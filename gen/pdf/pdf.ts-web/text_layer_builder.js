@@ -19,11 +19,11 @@
 /** @typedef {import("../src/display/display_utils").PageViewport} PageViewport */
 /** @typedef {import("./event_utils").EventBus} EventBus */
 /** @typedef {import("./text_highlighter").TextHighlighter} TextHighlighter */
+// eslint-disable-next-line max-len
+/** @typedef {import("./text_accessibility.js").TextAccessibilityManager} TextAccessibilityManager */
 import { GENERIC, MOZCENTRAL } from "../../global.js";
 import { html } from "../../lib/dom.js";
 import { renderTextLayer, } from "../pdf.ts-src/pdf.js";
-/*80--------------------------------------------------------------------------*/
-const EXPAND_DIVS_TIMEOUT = 300; // ms
 /**
  * The text layer builder provides text selection functionality for the PDF.
  * It does this by creating overlay divs over the PDF's text. These divs
@@ -42,23 +42,21 @@ export class TextLayerBuilder {
     textDivs = [];
     textLayerRenderTask;
     highlighter;
-    enhanceTextSelection;
-    constructor({ textLayerDiv, eventBus, pageIndex, viewport, highlighter, enhanceTextSelection = false, }) {
+    accessibilityManager;
+    constructor({ textLayerDiv, eventBus, pageIndex, viewport, highlighter, accessibilityManager = undefined, }) {
         this.textLayerDiv = textLayerDiv;
         this.eventBus = eventBus;
         this.pageNumber = pageIndex + 1;
         this.viewport = viewport;
         this.highlighter = highlighter;
-        this.enhanceTextSelection = enhanceTextSelection;
+        this.accessibilityManager = accessibilityManager;
         this.#bindMouse();
     }
     #finishRendering() {
         this.renderingDone = true;
-        if (!this.enhanceTextSelection) {
-            const endOfContent = html("div");
-            endOfContent.className = "endOfContent";
-            this.textLayerDiv.append(endOfContent);
-        }
+        const endOfContent = html("div");
+        endOfContent.className = "endOfContent";
+        this.textLayerDiv.append(endOfContent);
         this.eventBus.dispatch("textlayerrendered", {
             source: this,
             pageNumber: this.pageNumber,
@@ -77,6 +75,7 @@ export class TextLayerBuilder {
         this.cancel();
         this.textDivs.length = 0;
         this.highlighter?.setTextMapping(this.textDivs, this.textContentItemsStr);
+        this.accessibilityManager?.setTextMapping(this.textDivs);
         const textLayerFrag = document.createDocumentFragment();
         this.textLayerRenderTask = renderTextLayer({
             textContent: this.textContent,
@@ -86,13 +85,13 @@ export class TextLayerBuilder {
             textDivs: this.textDivs,
             textContentItemsStr: this.textContentItemsStr,
             timeout,
-            enhanceTextSelection: this.enhanceTextSelection,
         });
         this.textLayerRenderTask.promise.then(() => {
             this.textLayerDiv.append(textLayerFrag);
             this.#finishRendering();
             this.highlighter?.enable();
-        }, function (reason) {
+            this.accessibilityManager?.enable();
+        }, (reason) => {
             // Cancelled or failed to render text layer; skipping errors.
         });
     }
@@ -105,6 +104,7 @@ export class TextLayerBuilder {
             this.textLayerRenderTask = undefined;
         }
         this.highlighter?.disable();
+        this.accessibilityManager?.disable();
     }
     setTextContentStream(readableStream) {
         this.cancel();
@@ -121,21 +121,12 @@ export class TextLayerBuilder {
      */
     #bindMouse() {
         const div = this.textLayerDiv;
-        let expandDivsTimer;
+        // let expandDivsTimer: number | undefined;
         div.addEventListener("mousedown", (evt) => {
-            if (this.enhanceTextSelection && this.textLayerRenderTask) {
-                this.textLayerRenderTask.expandTextDivs(true);
-                /*#static*/  {
-                    if (expandDivsTimer) {
-                        clearTimeout(expandDivsTimer);
-                        expandDivsTimer = undefined;
-                    }
-                }
+            const end = div.querySelector(".endOfContent");
+            if (!end) {
                 return;
             }
-            const end = div.querySelector(".endOfContent");
-            if (!end)
-                return;
             /*#static*/  {
                 // On non-Firefox browsers, the selection will feel better if the height
                 // of the `endOfContent` div is adjusted to start at mouse click
@@ -143,10 +134,9 @@ export class TextLayerBuilder {
                 // However it does not work when selection is started on empty space.
                 let adjustTop = evt.target !== div;
                 /*#static*/  {
-                    adjustTop = adjustTop &&
-                        window
-                            .getComputedStyle(end)
-                            .getPropertyValue("-moz-user-select") !== "none";
+                    adjustTop &&=
+                        getComputedStyle(end).getPropertyValue("-moz-user-select") !==
+                            "none";
                 }
                 if (adjustTop) {
                     const divBounds = div.getBoundingClientRect();
@@ -157,20 +147,10 @@ export class TextLayerBuilder {
             end.classList.add("active");
         });
         div.addEventListener("mouseup", () => {
-            if (this.enhanceTextSelection && this.textLayerRenderTask) {
-                /*#static*/  {
-                    expandDivsTimer = setTimeout(() => {
-                        if (this.textLayerRenderTask) {
-                            this.textLayerRenderTask.expandTextDivs(false);
-                        }
-                        expandDivsTimer = undefined;
-                    }, EXPAND_DIVS_TIMEOUT);
-                }
+            const end = div.querySelector(".endOfContent");
+            if (!end) {
                 return;
             }
-            const end = div.querySelector(".endOfContent");
-            if (!end)
-                return;
             /*#static*/  {
                 end.style.top = "";
             }

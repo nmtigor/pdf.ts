@@ -21,6 +21,8 @@
 /** @typedef {import("../src/display/display_utils").PageViewport} PageViewport */
 /** @typedef {import("./event_utils").EventBus} EventBus */
 /** @typedef {import("./text_highlighter").TextHighlighter} TextHighlighter */
+// eslint-disable-next-line max-len
+/** @typedef {import("./text_accessibility.js").TextAccessibilityManager} TextAccessibilityManager */
 
 import { GENERIC, MOZCENTRAL } from "../../global.ts";
 import { html } from "../../lib/dom.ts";
@@ -31,10 +33,9 @@ import {
   TextLayerRenderTask,
 } from "../pdf.ts-src/pdf.ts";
 import { EventBus } from "./event_utils.ts";
+import { TextAccessibilityManager } from "./text_accessibility.ts";
 import { TextHighlighter } from "./text_highlighter.ts";
 /*80--------------------------------------------------------------------------*/
-
-const EXPAND_DIVS_TIMEOUT = 300; // ms
 
 interface TextLayerBuilderOptions {
   /**
@@ -63,10 +64,7 @@ interface TextLayerBuilderOptions {
    */
   highlighter: TextHighlighter | undefined;
 
-  /**
-   * Option to turn on improved text selection.
-   */
-  enhanceTextSelection?: boolean;
+  accessibilityManager: TextAccessibilityManager | undefined;
 }
 
 interface TLBMBound {
@@ -96,7 +94,7 @@ export class TextLayerBuilder {
   textDivs: HTMLDivElement[] = [];
   textLayerRenderTask?: TextLayerRenderTask | undefined;
   highlighter;
-  enhanceTextSelection;
+  accessibilityManager;
 
   constructor({
     textLayerDiv,
@@ -104,14 +102,14 @@ export class TextLayerBuilder {
     pageIndex,
     viewport,
     highlighter,
-    enhanceTextSelection = false,
+    accessibilityManager = undefined,
   }: TextLayerBuilderOptions) {
     this.textLayerDiv = textLayerDiv;
     this.eventBus = eventBus;
     this.pageNumber = pageIndex + 1;
     this.viewport = viewport;
     this.highlighter = highlighter;
-    this.enhanceTextSelection = enhanceTextSelection;
+    this.accessibilityManager = accessibilityManager;
 
     this.#bindMouse();
   }
@@ -119,11 +117,9 @@ export class TextLayerBuilder {
   #finishRendering() {
     this.renderingDone = true;
 
-    if (!this.enhanceTextSelection) {
-      const endOfContent = html("div");
-      endOfContent.className = "endOfContent";
-      this.textLayerDiv.append(endOfContent);
-    }
+    const endOfContent = html("div");
+    endOfContent.className = "endOfContent";
+    this.textLayerDiv.append(endOfContent);
 
     this.eventBus.dispatch("textlayerrendered", {
       source: this,
@@ -146,6 +142,7 @@ export class TextLayerBuilder {
 
     this.textDivs.length = 0;
     this.highlighter?.setTextMapping(this.textDivs, this.textContentItemsStr);
+    this.accessibilityManager?.setTextMapping(this.textDivs);
 
     const textLayerFrag = document.createDocumentFragment();
     this.textLayerRenderTask = renderTextLayer({
@@ -156,15 +153,15 @@ export class TextLayerBuilder {
       textDivs: this.textDivs,
       textContentItemsStr: this.textContentItemsStr,
       timeout,
-      enhanceTextSelection: this.enhanceTextSelection,
     });
     this.textLayerRenderTask.promise.then(
       () => {
         this.textLayerDiv.append(textLayerFrag);
         this.#finishRendering();
         this.highlighter?.enable();
+        this.accessibilityManager?.enable();
       },
-      function (reason) {
+      (reason) => {
         // Cancelled or failed to render text layer; skipping errors.
       },
     );
@@ -179,6 +176,7 @@ export class TextLayerBuilder {
       this.textLayerRenderTask = undefined;
     }
     this.highlighter?.disable();
+    this.accessibilityManager?.disable();
   }
 
   setTextContentStream(readableStream: ReadableStream) {
@@ -198,23 +196,13 @@ export class TextLayerBuilder {
    */
   #bindMouse() {
     const div = this.textLayerDiv;
-    let expandDivsTimer: number | undefined;
+    // let expandDivsTimer: number | undefined;
 
     div.addEventListener("mousedown", (evt) => {
-      if (this.enhanceTextSelection && this.textLayerRenderTask) {
-        this.textLayerRenderTask.expandTextDivs(true);
-        /*#static*/ if (!MOZCENTRAL) {
-          if (expandDivsTimer) {
-            clearTimeout(expandDivsTimer);
-            expandDivsTimer = undefined;
-          }
-        }
+      const end = div.querySelector<HTMLElement>(".endOfContent");
+      if (!end) {
         return;
       }
-
-      const end = div.querySelector<HTMLElement>(".endOfContent");
-      if (!end) return;
-
       /*#static*/ if (!MOZCENTRAL) {
         // On non-Firefox browsers, the selection will feel better if the height
         // of the `endOfContent` div is adjusted to start at mouse click
@@ -222,10 +210,9 @@ export class TextLayerBuilder {
         // However it does not work when selection is started on empty space.
         let adjustTop = evt.target !== div;
         /*#static*/ if (GENERIC) {
-          adjustTop = adjustTop &&
-            window
-                .getComputedStyle(end)
-                .getPropertyValue("-moz-user-select") !== "none";
+          adjustTop &&=
+            getComputedStyle(end).getPropertyValue("-moz-user-select") !==
+              "none";
         }
         if (adjustTop) {
           const divBounds = div.getBoundingClientRect();
@@ -237,23 +224,10 @@ export class TextLayerBuilder {
     });
 
     div.addEventListener("mouseup", () => {
-      if (this.enhanceTextSelection && this.textLayerRenderTask) {
-        /*#static*/ if (!MOZCENTRAL) {
-          expandDivsTimer = setTimeout(() => {
-            if (this.textLayerRenderTask) {
-              this.textLayerRenderTask.expandTextDivs(false);
-            }
-            expandDivsTimer = undefined;
-          }, EXPAND_DIVS_TIMEOUT);
-        } else {
-          this.textLayerRenderTask.expandTextDivs(false);
-        }
+      const end = div.querySelector<HTMLElement>(".endOfContent");
+      if (!end) {
         return;
       }
-
-      const end = div.querySelector<HTMLElement>(".endOfContent");
-      if (!end) return;
-
       /*#static*/ if (!MOZCENTRAL) {
         end.style.top = "";
       }

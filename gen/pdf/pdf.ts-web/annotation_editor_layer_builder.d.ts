@@ -1,20 +1,23 @@
 import { AnnotationEditorLayer, AnnotationEditorUIManager, AnnotationStorage, PageViewport, PDFPageProxy } from "../pdf.ts-src/pdf.js";
 import { IL10n } from "./interfaces.js";
+import { TextAccessibilityManager } from "./text_accessibility.js";
 interface AnnotationEditorLayerBuilderOptions {
+    uiManager: AnnotationEditorUIManager;
     pageDiv: HTMLDivElement;
     pdfPage: PDFPageProxy;
-    annotationStorage: AnnotationStorage | undefined;
     /**
      * Localization service.
      */
     l10n: IL10n;
-    uiManager: AnnotationEditorUIManager;
+    annotationStorage: AnnotationStorage | undefined;
+    accessibilityManager: TextAccessibilityManager | undefined;
 }
 export declare class AnnotationEditorLayerBuilder {
     #private;
     pageDiv: HTMLDivElement | undefined;
     pdfPage: PDFPageProxy;
     annotationStorage: AnnotationStorage | undefined;
+    accessibilityManager: TextAccessibilityManager | undefined;
     l10n: IL10n;
     annotationEditorLayer: AnnotationEditorLayer | undefined;
     div: HTMLDivElement | undefined;

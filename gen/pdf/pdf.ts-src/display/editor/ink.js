@@ -33,6 +33,7 @@ export class InkEditor extends AnnotationEditor {
     static _defaultOpacity = 1;
     static _defaultThickness = 1;
     static _l10nPromise;
+    static _type = "ink";
     #aspectRatio = 0;
     #baseHeight = 0;
     #baseWidth = 0;
@@ -65,7 +66,7 @@ export class InkEditor extends AnnotationEditor {
         this.opacity = params.opacity || undefined;
     }
     static initialize(l10n) {
-        this._l10nPromise = new Map(["editor_ink_canvas_aria_label", "editor_ink_aria_label"].map((str) => [
+        this._l10nPromise = new Map(["editor_ink_canvas_aria_label", "editor_ink2_aria_label"].map((str) => [
             str,
             l10n.get(str),
         ]));
@@ -409,7 +410,7 @@ export class InkEditor extends AnnotationEditor {
         this.parent.addInkEditorIfNeeded(/* isCommitting = */ true);
         // When commiting, the position of this editor is changed, hence we must
         // move it to the right position in the DOM.
-        this.parent.moveDivInDOM(this);
+        this.parent.moveEditorInDOM(this);
         // After the div has been moved in the DOM, the focus may have been stolen
         // by document.body, hence we just keep it here.
         this.div.focus();
@@ -512,7 +513,7 @@ export class InkEditor extends AnnotationEditor {
         }
         super.render();
         InkEditor._l10nPromise
-            .get("editor_ink_aria_label")
+            .get("editor_ink2_aria_label")
             .then((msg) => this.div?.setAttribute("aria-label", msg));
         const [x, y, w, h] = this.#getInitialBBox();
         this.setAt(x, y, 0, 0);
@@ -805,8 +806,8 @@ export class InkEditor extends AnnotationEditor {
             editor.bezierPath2D.push(path2D);
         }
         const bbox = editor.#getBbox();
-        editor.#baseWidth = bbox[2] - bbox[0];
-        editor.#baseHeight = bbox[3] - bbox[1];
+        editor.#baseWidth = Math.max(RESIZER_SIZE, bbox[2] - bbox[0]);
+        editor.#baseHeight = Math.max(RESIZER_SIZE, bbox[3] - bbox[1]);
         editor.#setScaleFactor(width, height);
         return editor;
     }

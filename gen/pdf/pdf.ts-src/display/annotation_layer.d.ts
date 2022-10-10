@@ -1,4 +1,5 @@
 import { IDownloadManager, type IPDFLinkService, type MouseState } from "../../pdf.ts-web/interfaces.js";
+import { TextAccessibilityManager } from "../../pdf.ts-web/text_accessibility.js";
 import { type AnnotationData, type FieldObject } from "../core/annotation.js";
 import { ColorConvertersDetail } from "../shared/scripting_utils.js";
 import { AnnotationEditorType, rect_t } from "../shared/util.js";
@@ -115,15 +116,16 @@ export interface ResetForm {
 declare type Action = (event: CustomEvent) => void;
 interface Actions {
     value: Action;
+    charLimit?: Action;
     clear?: Action;
     editable?: Action;
+    formattedValue?: Action;
     indices?: Action;
     insert?: Action;
     items?: Action;
     multipleSelection?: Action;
     remove?: Action;
     selRange?: Action;
-    formattedValue?: Action;
 }
 interface Item {
     displayValue: string | null;
@@ -161,10 +163,12 @@ interface _AnnotationLayerP {
     hasJSActions: boolean;
     fieldObjects: Record<string, FieldObject[]> | undefined;
     mouseState?: MouseState | undefined;
-    annotationCanvasMap?: Map<string, HTMLCanvasElement>;
+    annotationCanvasMap: Map<string, HTMLCanvasElement> | undefined;
+    accessibilityManager: TextAccessibilityManager | undefined;
 }
 export interface AnnotStorageValue {
     annotationType?: AnnotationEditorType;
+    charLimit?: number | undefined;
     color?: Uint8ClampedArray;
     formattedValue?: string | undefined;
     fontSize?: number;

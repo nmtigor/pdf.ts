@@ -20,7 +20,7 @@ export declare class PasswordPrompt {
      */
     constructor(options: ViewerConfiguration["passwordOverlay"], overlayManager: OverlayManager, l10n: IL10n, isViewerEmbedded?: boolean);
     open(): Promise<void>;
-    close(): Promise<void>;
-    setUpdateCallback(updateCallback: (password: string | Error) => void, reason: PasswordResponses): void;
+    close: () => Promise<void>;
+    setUpdateCallback(updateCallback: (password: string | Error) => void, reason: PasswordResponses): Promise<void>;
 }
 //# sourceMappingURL=password_prompt.d.ts.map

@@ -17,7 +17,7 @@
  */
 import { html } from "../../lib/dom.js";
 import { AnnotationMode, PixelsPerInch, } from "../pdf.ts-src/pdf.js";
-import { PDFPrintServiceFactory, viewerapp } from "./app.js";
+import { PDFPrintServiceFactory, viewerApp } from "./app.js";
 import { getXfaHtmlForPrinting } from "./print_utils.js";
 /*80--------------------------------------------------------------------------*/
 let activeService;
@@ -276,22 +276,15 @@ window.addEventListener("keydown", (event) => {
         !event.altKey &&
         (!event.shiftKey || window.chrome || window.opera)) {
         window.print();
-        // The (browser) print dialog cannot be prevented from being shown in
-        // IE11.
         event.preventDefault();
-        if (event.stopImmediatePropagation) {
-            event.stopImmediatePropagation();
-        }
-        else {
-            event.stopPropagation();
-        }
+        event.stopImmediatePropagation();
     }
 }, true);
 if ("onbeforeprint" in window) {
     // Do not propagate before/afterprint events when they are not triggered
     // from within this polyfill. (FF / Chrome 63+).
     const stopPropagationIfNeeded = (event) => {
-        if (event.detail !== "custom" && event.stopImmediatePropagation) {
+        if (event.detail !== "custom") {
             event.stopImmediatePropagation();
         }
     };
@@ -301,7 +294,7 @@ if ("onbeforeprint" in window) {
 let overlayPromise;
 function ensureOverlay() {
     if (!overlayPromise) {
-        overlayManager = viewerapp.overlayManager;
+        overlayManager = viewerApp.overlayManager;
         if (!overlayManager) {
             throw new Error("The overlay manager has not yet been initialized.");
         }

@@ -1,8 +1,8 @@
 import { Dict } from "./primitives.js";
 import { XRef } from "./xref.js";
-export interface Serializable {
+export interface Attachment {
     filename: string;
-    content?: Uint8Array | Uint8ClampedArray;
+    content?: Uint8Array | Uint8ClampedArray | undefined;
 }
 /**
  * "A PDF file can refer to the contents of another file by using a File
@@ -22,6 +22,6 @@ export declare class FileSpec {
     contentRef?: string | undefined;
     constructor(root: Dict, xref: XRef);
     get content(): Uint8Array | Uint8ClampedArray | undefined;
-    get serializable(): Serializable;
+    get serializable(): Attachment;
 }
 //# sourceMappingURL=file_spec.d.ts.map

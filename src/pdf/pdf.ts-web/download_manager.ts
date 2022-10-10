@@ -95,23 +95,17 @@ export class DownloadManager implements IDownloadManager {
         blobUrl = URL.createObjectURL(new Blob([data], { type: contentType }));
         this._openBlobUrls.set(element, blobUrl);
       }
-      let viewerUrl;
-      /*#static*/ if (GENERIC) {
+      const viewerUrl = /*#static*/ GENERIC
         // The current URL is the viewer, let's use it and append the file.
-        viewerUrl = "?file=" + encodeURIComponent(blobUrl + "#" + filename);
-      } else {
-        /*#static*/ if (CHROME) {
-          // In the Chrome extension, the URL is rewritten using the history API
-          // in viewer.js, so an absolute URL must be generated.
-          viewerUrl =
-            // eslint-disable-next-line no-undef
-            (<any> globalThis).chrome.runtime.getURL(
-              "/content/web/viewer.html",
-            ) +
-            "?file=" +
-            encodeURIComponent(blobUrl + "#" + filename);
-        }
-      }
+        ? "?file=" + encodeURIComponent(blobUrl + "#" + filename)
+        : /*#static*/ CHROME
+        // In the Chrome extension, the URL is rewritten using the history API
+        // in viewer.js, so an absolute URL must be generated.
+        ? (globalThis as any).chrome.runtime.getURL(
+          "/content/web/viewer.html",
+        ) + "?file=" +
+          encodeURIComponent(blobUrl + "#" + filename)
+        : undefined;
 
       try {
         window.open(viewerUrl);

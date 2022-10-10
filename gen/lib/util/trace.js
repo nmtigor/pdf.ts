@@ -21,7 +21,7 @@ export const assert = (assertion, msg, meta) => {
         throw new Error(msg);
 };
 export const warn = (msg, meta) => {
-    if (TESTING)
+    /*#static*/ if (TESTING)
         return;
     if (meta) {
         const match = meta.url.match(/\/([^\/]+\.js)/);

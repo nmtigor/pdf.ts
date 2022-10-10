@@ -1,3 +1,4 @@
+import { DefaultExternalServices } from "./app.js";
 import { EventBus } from "./event_utils.js";
 import { CursorTool } from "./pdf_cursor_tools.js";
 import { ScrollMode, SpreadMode } from "./ui_utils.js";
@@ -31,12 +32,13 @@ export declare class SecondaryToolbar {
     };
     mainContainer?: HTMLDivElement;
     eventBus: EventBus;
+    externalServices: DefaultExternalServices;
     opened: boolean;
     containerHeight?: number;
     previousContainerHeight?: number;
     pagesCount?: number;
     pageNumber?: number;
-    constructor(options: ViewerConfiguration["secondaryToolbar"], eventBus: EventBus);
+    constructor(options: ViewerConfiguration["secondaryToolbar"], eventBus: EventBus, externalServices: DefaultExternalServices);
     get isOpen(): boolean;
     setPageNumber(pageNumber: number): void;
     setPagesCount(pagesCount: number): void;

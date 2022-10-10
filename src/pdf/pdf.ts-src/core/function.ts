@@ -290,12 +290,12 @@ namespace NsPDFFunction {
       }
 
       const fnArray: ParsedFunction[] = [];
-      for (let j = 0, jj = fnObj.length; j < jj; j++) {
+      for (const fn of fnObj) {
         fnArray.push(
           this.parse({
             xref,
             isEvalSupported,
-            fn: <BaseStream | Dict> xref.fetchIfRef(fnObj[j]),
+            fn: xref.fetchIfRef(fn) as BaseStream | Dict,
           }),
         );
       }
@@ -527,14 +527,13 @@ namespace NsPDFFunction {
         throw new FormatError("Bad domain for stiched function");
       }
 
-      const fnRefs = <Obj[]> dict.get("Functions");
       const fns: ParsedFunction[] = [];
-      for (let i = 0, ii = fnRefs.length; i < ii; ++i) {
+      for (const fn of dict.get("Functions") as Obj[]) {
         fns.push(
           this.parse({
             xref,
             isEvalSupported,
-            fn: <BaseStream | Dict> xref.fetchIfRef(fnRefs[i]),
+            fn: xref.fetchIfRef(fn) as BaseStream | Dict,
           }),
         );
       }
@@ -797,9 +796,7 @@ namespace NsPostScriptStack {
     stack: (number | boolean)[];
 
     constructor(initialStack?: Float32Array) {
-      this.stack = !initialStack
-        ? []
-        : Array.prototype.slice.call(initialStack, 0);
+      this.stack = initialStack ? Array.from(initialStack) : [];
     }
 
     push(value: number | boolean) {
@@ -1096,12 +1093,6 @@ export class PostScriptEvaluator {
   }
 }
 
-// Most of the PDFs functions consist of simple operations such as:
-//   roll, exch, sub, cvr, pop, index, dup, mul, if, gt, add.
-//
-// We can compile most of such programs, and at the same moment, we can
-// optimize some expressions using basic math properties. Keeping track of
-// min/max values will allow us to avoid extra Math.min/Math.max calls.
 namespace NsPostScriptCompiler {
   const enum AstNodeType {
     args,
@@ -1363,7 +1354,12 @@ namespace NsPostScriptCompiler {
     return new AstMin(num1, max);
   }
 
-  // eslint-disable-next-line no-shadow
+  // Most of the PDFs functions consist of simple operations such as:
+  //   roll, exch, sub, cvr, pop, index, dup, mul, if, gt, add.
+  //
+  // We can compile most of such programs, and at the same moment, we can
+  // optimize some expressions using basic math properties. Keeping track of
+  // min/max values will allow us to avoid extra Math.min/Math.max calls.
   export class PostScriptCompiler {
     compile(
       code: (number | string | null)[],
@@ -1526,10 +1522,7 @@ namespace NsPostScriptCompiler {
             if (j === 0) {
               break; // just skipping -- there are nothing to rotate
             }
-            Array.prototype.push.apply(
-              stack,
-              stack.splice(stack.length - n, n - j),
-            );
+            stack.push(...stack.splice(stack.length - n, n - j));
             break;
           default:
             return null; // unsupported operator

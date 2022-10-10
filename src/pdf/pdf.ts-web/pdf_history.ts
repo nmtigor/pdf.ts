@@ -23,7 +23,7 @@
 import { CHROME } from "../../global.ts";
 import { isObjectLike } from "../../lib/jslang.ts";
 import { type ExplicitDest } from "../pdf.ts-src/pdf.ts";
-import { type PDFLocation } from "./base_viewer.ts";
+import { type PDFLocation } from "./pdf_viewer.ts";
 import { EventBus, EventMap, waitOnEventOrTimeout } from "./event_utils.ts";
 import {
   type HistoryInitP,
@@ -439,7 +439,7 @@ export class PDFHistory {
     /*#static*/ if (CHROME) {
       if (top === window) {
         // eslint-disable-next-line no-undef
-        (<any> globalThis).chrome.runtime.sendMessage("showPageAction");
+        (globalThis as any).chrome.runtime.sendMessage("showPageAction");
       }
     }
   }
@@ -657,7 +657,6 @@ export class PDFHistory {
     if (!state) {
       return rn_();
     }
-
     if (!this.#isValidState(state)) {
       // This should only occur in viewers with support for opening more than
       // one PDF document, e.g. the GENERIC viewer.

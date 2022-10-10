@@ -2,11 +2,13 @@ import { AnnotationMode, AnnotationStorage, OptionalContentConfig, PageViewport,
 import { AnnotationEditorLayerBuilder } from "./annotation_editor_layer_builder.js";
 import { AnnotationLayerBuilder } from "./annotation_layer_builder.js";
 import { type ErrorMoreInfo } from "./app.js";
-import { BaseViewer, PageColors } from "./base_viewer.js";
 import { EventBus, EventMap } from "./event_utils.js";
 import { type IL10n, IPDFAnnotationEditorLayerFactory, type IPDFAnnotationLayerFactory, type IPDFStructTreeLayerFactory, type IPDFTextLayerFactory, type IPDFXfaLayerFactory, type IVisibleView } from "./interfaces.js";
 import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
+import { PDFViewer } from "./pdf_viewer.js";
+import { PageColors } from "./pdf_viewer.js";
 import { StructTreeLayerBuilder } from "./struct_tree_layer_builder.js";
+import { TextAccessibilityManager } from "./text_accessibility.js";
 import { TextLayerBuilder } from "./text_layer_builder.js";
 import { OutputScale, RendererType, RenderingStates, TextLayerMode } from "./ui_utils.js";
 import { XfaLayerBuilder } from "./xfa_layer_builder.js";
@@ -26,7 +28,7 @@ interface PDFPageViewOptions {
     /**
      * The page scale display.
      */
-    scale: number;
+    scale?: number;
     /**
      * The page viewport.
      */
@@ -43,9 +45,8 @@ interface PDFPageViewOptions {
     textLayerFactory?: IPDFTextLayerFactory | undefined;
     /**
      * Controls if the text layer used for
-     * selection and searching is created, and if the improved text selection
-     * behaviour is enabled. The constants from {TextLayerMode} should be used.
-     * The default value is `TextLayerMode.ENABLE`.
+     * selection and searching is created. The constants from {TextLayerMode}
+     * should be used. The default value is `TextLayerMode.ENABLE`.
      */
     textLayerMode?: TextLayerMode;
     /**
@@ -59,8 +60,8 @@ interface PDFPageViewOptions {
     annotationLayerFactory: IPDFAnnotationLayerFactory | undefined;
     annotationEditorLayerFactory: IPDFAnnotationEditorLayerFactory | undefined;
     xfaLayerFactory?: IPDFXfaLayerFactory | undefined;
-    structTreeLayerFactory: IPDFStructTreeLayerFactory;
-    textHighlighterFactory: BaseViewer;
+    structTreeLayerFactory?: IPDFStructTreeLayerFactory;
+    textHighlighterFactory?: PDFViewer;
     /**
      * Path for image resources, mainly
      * for annotation icons. Include trailing slash.
@@ -69,7 +70,7 @@ interface PDFPageViewOptions {
     /**
      * 'canvas' or 'svg'. The default is 'canvas'.
      */
-    renderer?: RendererType;
+    renderer?: RendererType | undefined;
     /**
      * Enables CSS only zooming. The default value is `false`.
      */
@@ -89,7 +90,7 @@ interface PDFPageViewOptions {
     /**
      * Localization service.
      */
-    l10n: IL10n;
+    l10n?: IL10n;
 }
 interface PaintTask {
     promise: Promise<void>;
@@ -136,8 +137,8 @@ export declare class PDFPageView implements IVisibleView {
     annotationLayerFactory: IPDFAnnotationLayerFactory | undefined;
     annotationEditorLayerFactory: IPDFAnnotationEditorLayerFactory | undefined;
     xfaLayerFactory: IPDFXfaLayerFactory | undefined;
-    textHighlighter: import("./text_highlighter.js").TextHighlighter;
-    structTreeLayerFactory: IPDFStructTreeLayerFactory;
+    textHighlighter: import("./text_highlighter.js").TextHighlighter | undefined;
+    structTreeLayerFactory: IPDFStructTreeLayerFactory | undefined;
     renderer: RendererType | undefined;
     l10n: IL10n;
     paintTask: PaintTask | undefined;
@@ -160,6 +161,7 @@ export declare class PDFPageView implements IVisibleView {
     outputScale?: OutputScale;
     _onTextLayerRendered: ((event: EventMap["textlayerrendered"]) => void) | undefined;
     annotationEditorLayer: AnnotationEditorLayerBuilder | undefined;
+    _accessibilityManager: TextAccessibilityManager | undefined;
     constructor(options: PDFPageViewOptions);
     setPdfPage(pdfPage: PDFPageProxy): void;
     destroy(): void;

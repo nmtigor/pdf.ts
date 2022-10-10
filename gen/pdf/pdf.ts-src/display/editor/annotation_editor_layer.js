@@ -1,8 +1,7 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
-import { AnnotationEditorType, shadow } from "../../shared/util.js";
-import { binarySearchFirstItem } from "../display_utils.js";
+import { AnnotationEditorType } from "../../shared/util.js";
 import { FreeTextEditor, } from "./freetext.js";
 import { InkEditor } from "./ink.js";
 import { bindEvents, KeyboardManager, } from "./tools.js";
@@ -11,15 +10,17 @@ import { bindEvents, KeyboardManager, } from "./tools.js";
  */
 export class AnnotationEditorLayer {
     static _initialized = false;
+    #accessibilityManager;
     #allowClick = false;
     #boundPointerup = this.pointerup.bind(this);
     #boundPointerdown = this.pointerdown.bind(this);
     #editors = new Map();
+    #hadPointerDown = false;
     #isCleaningUp = false;
-    #textLayerMap = new WeakMap();
-    #textNodes = new Map();
+    // #textLayerMap = new WeakMap<HTMLElement, HTMLElement[]>();
+    // #textNodes = new Map<string, HTMLElement>();
     #uiManager;
-    #waitingEditors = new Set();
+    // #waitingEditors = new Set<AnnotationEditor>();
     annotationStorage;
     pageIndex;
     div;
@@ -36,33 +37,8 @@ export class AnnotationEditorLayer {
         this.annotationStorage = options.annotationStorage;
         this.pageIndex = options.pageIndex;
         this.div = options.div;
+        this.#accessibilityManager = options.accessibilityManager;
         this.#uiManager.addLayer(this);
-    }
-    get textLayerElements() {
-        // When zooming the text layer is removed from the DOM and sometimes
-        // it's rebuilt hence the nodes are no longer valid.
-        const textLayer = this.div.parentNode
-            .getElementsByClassName("textLayer")
-            .item(0);
-        if (!textLayer) {
-            return shadow(this, "textLayerElements", undefined);
-        }
-        let textChildren = this
-            .#textLayerMap.get(textLayer);
-        if (textChildren) {
-            return textChildren;
-        }
-        textChildren = textLayer.querySelectorAll(`span[role="presentation"]`);
-        if (textChildren.length === 0) {
-            return shadow(this, "textLayerElements", undefined);
-        }
-        textChildren = Array.from(textChildren);
-        textChildren.sort(AnnotationEditorLayer.#compareElementPositions);
-        this.#textLayerMap.set(textLayer, textChildren);
-        return textChildren;
-    }
-    get #hasTextLayer() {
-        return !!this.div.parentNode.querySelector(".textLayer .endOfContent");
     }
     /**
      * Update the toolbar if it's required to reflect the tool currently used.
@@ -84,6 +60,8 @@ export class AnnotationEditorLayer {
             this.enableClick();
         }
         this.#uiManager.unselectAll();
+        this.div.classList.toggle("freeTextEditing", mode === AnnotationEditorType.FREETEXT);
+        this.div.classList.toggle("inkEditing", mode === AnnotationEditorType.INK);
     }
     addInkEditorIfNeeded(isCommitting) {
         if (!isCommitting &&
@@ -157,7 +135,7 @@ export class AnnotationEditorLayer {
     }
     detach(editor) {
         this.#editors.delete(editor.id);
-        this.removePointerInTextLayer(editor);
+        this.#accessibilityManager?.removePointerInTextLayer(editor.contentDiv);
     }
     /**
      * Remove an editor.
@@ -167,7 +145,7 @@ export class AnnotationEditorLayer {
         // parent property as it is, so don't null it!
         this.#uiManager.removeEditor(editor);
         this.detach(editor);
-        this.annotationStorage.removeKey(editor.id);
+        this.annotationStorage.remove(editor.id);
         editor.div.style.display = "none";
         setTimeout(() => {
             // When the div is removed from DOM the focus can move on the
@@ -203,117 +181,10 @@ export class AnnotationEditorLayer {
         }
     }
     /**
-     * Compare the positions of two elements, it must correspond to
-     * the visual ordering.
-     */
-    static #compareElementPositions(e1, e2) {
-        const rect1 = e1.getBoundingClientRect();
-        const rect2 = e2.getBoundingClientRect();
-        if (rect1.y + rect1.height <= rect2.y) {
-            return -1;
-        }
-        if (rect2.y + rect2.height <= rect1.y) {
-            return +1;
-        }
-        const centerX1 = rect1.x + rect1.width / 2;
-        const centerX2 = rect2.x + rect2.width / 2;
-        return centerX1 - centerX2;
-    }
-    /**
-     * Function called when the text layer has finished rendering.
-     */
-    onTextLayerRendered() {
-        this.#textNodes.clear();
-        for (const editor of this.#waitingEditors) {
-            if (editor.isAttachedToDOM) {
-                this.addPointerInTextLayer(editor);
-            }
-        }
-        this.#waitingEditors.clear();
-    }
-    /**
-     * Remove an aria-owns id from a node in the text layer.
-     */
-    removePointerInTextLayer(editor) {
-        if (!this.#hasTextLayer) {
-            this.#waitingEditors.delete(editor);
-            return;
-        }
-        const { id } = editor;
-        const node = this.#textNodes.get(id);
-        if (!node) {
-            return;
-        }
-        this.#textNodes.delete(id);
-        let owns = node.getAttribute("aria-owns");
-        if (owns?.includes(id)) {
-            owns = owns
-                .split(" ")
-                .filter((x) => x !== id)
-                .join(" ");
-            if (owns) {
-                node.setAttribute("aria-owns", owns);
-            }
-            else {
-                node.removeAttribute("aria-owns");
-                node.setAttribute("role", "presentation");
-            }
-        }
-    }
-    /**
-     * Find the text node which is the nearest and add an aria-owns attribute
-     * in order to correctly position this editor in the text flow.
-     */
-    addPointerInTextLayer(editor) {
-        if (!this.#hasTextLayer) {
-            // The text layer needs to be there, so we postpone the association.
-            this.#waitingEditors.add(editor);
-            return;
-        }
-        this.removePointerInTextLayer(editor);
-        const children = this.textLayerElements;
-        if (!children) {
-            return;
-        }
-        const { contentDiv } = editor;
-        const id = editor.getIdForTextLayer();
-        const index = binarySearchFirstItem(children, (node) => AnnotationEditorLayer.#compareElementPositions(contentDiv, node) < 0);
-        const node = children[Math.max(0, index - 1)];
-        const owns = node.getAttribute("aria-owns");
-        if (!owns?.includes(id)) {
-            node.setAttribute("aria-owns", owns ? `${owns} ${id}` : id);
-        }
-        node.removeAttribute("role");
-        this.#textNodes.set(id, node);
-    }
-    /**
-     * Move a div in the DOM in order to respect the visual order.
-     */
-    moveDivInDOM(editor) {
-        this.addPointerInTextLayer(editor);
-        const { div, contentDiv } = editor;
-        if (!this.div.hasChildNodes()) {
-            this.div.append(div);
-            return;
-        }
-        const children = Array.from(this.div.childNodes).filter((node) => node !== div);
-        if (children.length === 0) {
-            return;
-        }
-        const index = binarySearchFirstItem(children, (node) => AnnotationEditorLayer.#compareElementPositions(contentDiv, node) < 0);
-        if (index === 0) {
-            children[0].before(div);
-        }
-        else {
-            children[index - 1].after(div);
-        }
-    }
-    /**
      * Add a new editor in the current view.
      */
     add(editor) {
         this.#changeParent(editor);
-        this.addToAnnotationStorage(editor);
         this.#uiManager.addEditor(editor);
         this.attach(editor);
         if (!editor.isAttachedToDOM) {
@@ -321,8 +192,13 @@ export class AnnotationEditorLayer {
             this.div.append(div);
             editor.isAttachedToDOM = true;
         }
-        this.moveDivInDOM(editor);
+        this.moveEditorInDOM(editor);
         editor.onceAdded();
+        this.addToAnnotationStorage(editor);
+    }
+    moveEditorInDOM(editor) {
+        this.#accessibilityManager?.moveElementInDOM(this.div, editor.div, editor.contentDiv, 
+        /* isRemovable = */ true);
     }
     /**
      * Add an editor in the annotation storage.
@@ -446,6 +322,14 @@ export class AnnotationEditorLayer {
             // Don't create an editor on right click.
             return;
         }
+        if (!this.#hadPointerDown) {
+            // It can happen when the user starts a drag inside a text editor
+            // and then releases the mouse button outside of it. In such a case
+            // we don't want to create a new editor, hence we check that a pointerdown
+            // occured on this div previously.
+            return;
+        }
+        this.#hadPointerDown = false;
         if (event.target !== this.div) {
             return;
         }
@@ -467,6 +351,7 @@ export class AnnotationEditorLayer {
         if (event.target !== this.div) {
             return;
         }
+        this.#hadPointerDown = true;
         const editor = this.#uiManager.getActive();
         this.#allowClick = !editor || editor.isEmpty();
     }
@@ -486,7 +371,7 @@ export class AnnotationEditorLayer {
         const endX = event.clientX - rect.x;
         const endY = event.clientY - rect.y;
         editor.translate(endX - editor.startX, endY - editor.startY);
-        this.moveDivInDOM(editor);
+        this.moveEditorInDOM(editor);
         editor.div.focus();
     }
     /**
@@ -503,15 +388,13 @@ export class AnnotationEditorLayer {
             this.#uiManager.setActiveEditor(undefined);
         }
         for (const editor of this.#editors.values()) {
-            this.removePointerInTextLayer(editor);
+            this.#accessibilityManager?.removePointerInTextLayer(editor.contentDiv);
             editor.isAttachedToDOM = false;
             editor.div.remove();
             editor.parent = null;
         }
-        this.#textNodes.clear();
         this.div = undefined;
         this.#editors.clear();
-        this.#waitingEditors.clear();
         this.#uiManager.removeLayer(this);
     }
     #cleanup() {

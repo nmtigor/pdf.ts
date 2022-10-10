@@ -52,7 +52,8 @@ interface _PDFLayerViewerRenderP {
 export class PDFLayerViewer extends BaseTreeViewer {
   l10n?: IL10n | undefined;
 
-  #optionalContentConfig?: OptionalContentConfig | undefined;
+  #optionalContentConfig: OptionalContentConfig | undefined;
+  #optionalContentHash: string | undefined;
 
   static create(options: PDFLayerViewerOptions) {
     const ret = new PDFLayerViewer(options);
@@ -64,13 +65,19 @@ export class PDFLayerViewer extends BaseTreeViewer {
 
     this.l10n = options.l10n;
 
-    this.eventBus._on("resetlayers", this.#resetLayers);
+    this.eventBus._on("optionalcontentconfigchanged", (evt) => {
+      this.#updateLayers(evt.promise);
+    });
+    this.eventBus._on("resetlayers", () => {
+      this.#updateLayers();
+    });
     this.eventBus._on("togglelayerstree", this.toggleAllTreeItems$.bind(this));
   }
 
   override reset() {
     super.reset();
     this.#optionalContentConfig = undefined;
+    this.#optionalContentHash = undefined;
   }
 
   /** @implement */
@@ -88,6 +95,7 @@ export class PDFLayerViewer extends BaseTreeViewer {
   }) {
     const setVisibility = () => {
       this.#optionalContentConfig!.setVisibility(groupId, input.checked);
+      this.#optionalContentHash = this.#optionalContentConfig!.getHash();
 
       this.eventBus.dispatch("optionalcontentconfig", {
         source: this,
@@ -147,6 +155,7 @@ export class PDFLayerViewer extends BaseTreeViewer {
       this._dispatchEvent(/* layersCount = */ 0);
       return;
     }
+    this.#optionalContentHash = optionalContentConfig!.getHash();
 
     const fragment = document.createDocumentFragment();
     const queue: [{
@@ -199,19 +208,31 @@ export class PDFLayerViewer extends BaseTreeViewer {
     this.finishRendering$(fragment, layersCount, hasAnyNesting);
   }
 
-  #resetLayers = async () => {
-    if (!this.#optionalContentConfig) return;
+  #updateLayers = async (
+    promise: Promise<OptionalContentConfig | undefined> | undefined = undefined,
+  ) => {
+    if (!this.#optionalContentConfig) {
+      return;
+    }
+    const pdfDocument = this._pdfDocument!;
+    const optionalContentConfig =
+      await (promise || pdfDocument.getOptionalContentConfig());
 
-    // Fetch the default optional content configuration...
-    const optionalContentConfig = await this._pdfDocument!
-      .getOptionalContentConfig();
+    if (pdfDocument !== this._pdfDocument) {
+      return; // The document was closed while the optional content resolved.
+    }
+    if (promise) {
+      if (optionalContentConfig!.getHash() === this.#optionalContentHash) {
+        return; // The optional content didn't change, hence no need to reset the UI.
+      }
+    } else {
+      this.eventBus.dispatch("optionalcontentconfig", {
+        source: this,
+        promise: Promise.resolve(optionalContentConfig),
+      });
+    }
 
-    this.eventBus.dispatch("optionalcontentconfig", {
-      source: this,
-      promise: Promise.resolve(optionalContentConfig),
-    });
-
-    // ... and reset the sidebarView to the default state.
+    // Reset the sidebarView to the new state.
     this.render({
       optionalContentConfig,
       pdfDocument: this._pdfDocument!,

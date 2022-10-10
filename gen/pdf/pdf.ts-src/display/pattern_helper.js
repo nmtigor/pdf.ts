@@ -3,6 +3,7 @@
  */
 import { ShadingType, } from "../core/pattern.js";
 import { FormatError, info, OPS, Util, warn, } from "../shared/util.js";
+import { getCurrentTransform } from "./display_utils.js";
 /*80--------------------------------------------------------------------------*/
 export var PathType;
 (function (PathType) {
@@ -54,13 +55,13 @@ export class RadialAxialShadingPattern {
     getPattern(ctx, owner, inverse, pathType) {
         let pattern;
         if (pathType === PathType.STROKE || pathType === PathType.FILL) {
-            const ownerBBox = owner.current.getClippedPathBoundingBox(pathType, ctx.mozCurrentTransform) || [0, 0, 0, 0];
+            const ownerBBox = owner.current.getClippedPathBoundingBox(pathType, getCurrentTransform(ctx)) || [0, 0, 0, 0];
             // Create a canvas that is only as big as the current path. This doesn't
             // allow us to cache the pattern, but it generally creates much smaller
             // canvases and saves memory use. See bug 1722807 for an example.
             const width = Math.ceil(ownerBBox[2] - ownerBBox[0]) || 1;
             const height = Math.ceil(ownerBBox[3] - ownerBBox[1]) || 1;
-            const tmpCanvas = owner.cachedCanvases.getCanvas("pattern", width, height, true);
+            const tmpCanvas = owner.cachedCanvases.getCanvas("pattern", width, height);
             const tmpCtx = tmpCanvas.context;
             tmpCtx.clearRect(0, 0, tmpCtx.canvas.width, tmpCtx.canvas.height);
             tmpCtx.beginPath();
@@ -77,9 +78,9 @@ export class RadialAxialShadingPattern {
                 ownerBBox[0],
                 ownerBBox[1],
             ]);
-            tmpCtx.transform.apply(tmpCtx, owner.baseTransform);
+            tmpCtx.transform(...owner.baseTransform);
             if (this.matrix) {
-                tmpCtx.transform.apply(tmpCtx, this.matrix);
+                tmpCtx.transform(...this.matrix);
             }
             applyBoundingBox(tmpCtx, this._bbox);
             tmpCtx.fillStyle = this._createGradient(tmpCtx);
@@ -280,7 +281,7 @@ class MeshShadingPattern {
         };
         const paddedWidth = width + BORDER_SIZE * 2;
         const paddedHeight = height + BORDER_SIZE * 2;
-        const tmpCanvas = cachedCanvases.getCanvas("mesh", paddedWidth, paddedHeight, false);
+        const tmpCanvas = cachedCanvases.getCanvas("mesh", paddedWidth, paddedHeight);
         const tmpCtx = tmpCanvas.context;
         const data = tmpCtx.createImageData(width, height);
         if (backgroundColor) {
@@ -310,7 +311,7 @@ class MeshShadingPattern {
         applyBoundingBox(ctx, this._bbox);
         let scale;
         if (pathType === PathType.SHADING) {
-            scale = Util.singularValueDecompose2dScale(ctx.mozCurrentTransform);
+            scale = Util.singularValueDecompose2dScale(getCurrentTransform(ctx));
         }
         else {
             // Obtain scale from matrix and current transformation matrix.
@@ -324,9 +325,9 @@ class MeshShadingPattern {
         // might cause OOM.
         const temporaryPatternCanvas = this._createMeshCanvas(scale, pathType === PathType.SHADING ? undefined : this._background, owner.cachedCanvases);
         if (pathType !== PathType.SHADING) {
-            ctx.setTransform.apply(ctx, owner.baseTransform);
+            ctx.setTransform(...owner.baseTransform);
             if (this.matrix) {
-                ctx.transform.apply(ctx, this.matrix);
+                ctx.transform(...this.matrix);
             }
         }
         ctx.translate(temporaryPatternCanvas.offsetX, temporaryPatternCanvas.offsetY);
@@ -435,7 +436,7 @@ var NsTilingPattern;
             // blurry. Too large value makes it look too crispy.
             const dimx = this.getSizeAndScale(xstep, this.ctx.canvas.width, combinedScale[0]);
             const dimy = this.getSizeAndScale(ystep, this.ctx.canvas.height, combinedScale[1]);
-            const tmpCanvas = owner.cachedCanvases.getCanvas("pattern", dimx.size, dimy.size, true);
+            const tmpCanvas = owner.cachedCanvases.getCanvas("pattern", dimx.size, dimy.size);
             const tmpCtx = tmpCanvas.context;
             const graphics = canvasGraphicsFactory.createCanvasGraphics(tmpCtx);
             graphics.groupLevel = owner.groupLevel;
@@ -461,8 +462,7 @@ var NsTilingPattern;
             // else we end up with unbalanced save/restores.
             tmpCtx.save();
             this.clipBbox(graphics, adjustedX0, adjustedY0, adjustedX1, adjustedY1);
-            graphics.baseTransform = graphics.ctx.mozCurrentTransform
-                .slice();
+            graphics.baseTransform = getCurrentTransform(graphics.ctx);
             graphics.executeOperatorList(operatorList);
             graphics.endDrawing();
             return {
@@ -494,7 +494,7 @@ var NsTilingPattern;
             const bboxWidth = x1 - x0;
             const bboxHeight = y1 - y0;
             graphics.ctx.rect(x0, y0, bboxWidth, bboxHeight);
-            graphics.current.updateRectMinMax(graphics.ctx.mozCurrentTransform, [
+            graphics.current.updateRectMinMax(getCurrentTransform(graphics.ctx), [
                 x0,
                 y0,
                 x1,

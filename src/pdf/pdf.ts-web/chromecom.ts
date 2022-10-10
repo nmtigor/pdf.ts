@@ -23,7 +23,7 @@ import { Locale } from "../../lib/Locale.ts";
 import {
   DefaultExternalServices,
   PassiveLoadingCbs,
-  viewerapp,
+  viewerApp,
 } from "./app.ts";
 import { AppOptions, UserOptions, ViewOnLoad } from "./app_options.ts";
 import { DownloadManager } from "./download_manager.ts";
@@ -71,9 +71,7 @@ export const ChromeCom = {
     };
     if (!chrome.runtime) {
       console.error("chrome.runtime is undefined.");
-      if (callback) {
-        callback();
-      }
+      callback?.();
     } else if (callback) {
       chrome.runtime.sendMessage(message, <any> callback);
     } else {
@@ -116,7 +114,7 @@ export const ChromeCom = {
         // Even without this check, the file load in frames is still blocked,
         // but this may change in the future (https://crbug.com/550151).
         if (origin && !/^file:|^chrome-extension:/.test(origin)) {
-          viewerapp._documentError(
+          viewerApp._documentError(
             "Blocked " +
               origin +
               " from loading " +
@@ -429,12 +427,8 @@ class ChromePreferences extends BasePreferences {
           delete items.enableHandToolOnLoad;
 
           // Migration code for https://github.com/mozilla/pdf.js/pull/9479.
-          if (items.textLayerMode !== 1) {
-            if (items.disableTextLayer) {
-              items.textLayerMode = 0;
-            } else if (items.enhanceTextSelection) {
-              items.textLayerMode = 2;
-            }
+          if (items.textLayerMode !== 1 && items.disableTextLayer) {
+            items.textLayerMode = 0;
           }
           delete items.disableTextLayer;
           delete items.enhanceTextSelection;
@@ -461,7 +455,7 @@ class ChromeExternalServices extends DefaultExternalServices {
     // defaultUrl is set in viewer.js
     ChromeCom.resolvePDFFile(
       AppOptions.defaultUrl!,
-      viewerapp.overlayManager,
+      viewerApp.overlayManager,
       (url, length, originalUrl) => {
         callbacks.onOpenWithURL(url, length, originalUrl);
       },
@@ -484,5 +478,5 @@ class ChromeExternalServices extends DefaultExternalServices {
     return new GenericScripting(sandboxBundleSrc);
   }
 }
-viewerapp.externalServices = new ChromeExternalServices();
+viewerApp.externalServices = new ChromeExternalServices();
 /*80--------------------------------------------------------------------------*/

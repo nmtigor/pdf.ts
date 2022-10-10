@@ -4,6 +4,7 @@ import { Doc } from "./doc.js";
 import { Event } from "./event.js";
 import { CFormat, Util } from "./util.js";
 declare type _CFunction = "AVG" | "SUM" | "PRD" | "MIN" | "MAX";
+declare type _Action = (n: number, date: Date) => boolean;
 export declare class AForm {
     _document: Doc;
     _app: App;
@@ -11,6 +12,7 @@ export declare class AForm {
     _color: Color;
     _dateFormats: string[];
     _timeFormats: string[];
+    _dateActionsCache: Map<CFormat, _Action[]>;
     /**
      * The e-mail address regex below originates from:
      * https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address
@@ -18,6 +20,7 @@ export declare class AForm {
     _emailRegex: RegExp;
     constructor(document: Doc, app: App, util: Util, color: Color);
     _mkTargetName(event: Event): string;
+    _tryToGuessDate(cFormat: string, cDate: string): Date | undefined;
     _parseDate(cFormat: CFormat, cDate: string): Date | undefined;
     AFMergeChange(event?: Event): string | undefined;
     AFParseDateEx(cString: string, cOrder: CFormat): Date | undefined;
@@ -43,6 +46,7 @@ export declare class AForm {
     AFTime_KeystrokeEx(cFormat: CFormat): void;
     AFTime_Keystroke(pdf: number): void;
     eMailValidate(str: string): boolean;
+    AFExactMatch(rePatterns: RegExp | RegExp[], str: string): number | true;
 }
 export {};
 //# sourceMappingURL=aform.d.ts.map

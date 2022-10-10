@@ -39,6 +39,7 @@ import { createPromiseCap } from "../../lib/promisecap.js";
 import { AnnotationMode, PixelsPerInch, RenderingCancelledException, SVGGraphics, } from "../pdf.ts-src/pdf.js";
 import { compatibilityParams } from "./app_options.js";
 import { NullL10n } from "./l10n_utils.js";
+import { TextAccessibilityManager } from "./text_accessibility.js";
 import { approximateFraction, DEFAULT_SCALE, docStyle, OutputScale, RendererType, RenderingStates, roundToDivide, TextLayerMode, } from "./ui_utils.js";
 const MAX_CANVAS_PIXELS = compatibilityParams.maxCanvasPixels || 16777216;
 export class PDFPageView {
@@ -101,6 +102,7 @@ export class PDFPageView {
     outputScale;
     _onTextLayerRendered;
     annotationEditorLayer;
+    _accessibilityManager;
     constructor(options) {
         const container = options.container;
         const defaultViewport = options.defaultViewport;
@@ -177,9 +179,7 @@ export class PDFPageView {
     }
     destroy() {
         this.reset();
-        if (this.pdfPage) {
-            this.pdfPage.cleanup();
-        }
+        this.pdfPage?.cleanup();
     }
     async #renderAnnotationLayer() {
         let error = undefined;
@@ -187,6 +187,7 @@ export class PDFPageView {
             await this.annotationLayer.render(this.viewport, "display");
         }
         catch (ex) {
+            console.error(`_renderAnnotationLayer: "${ex}".`);
             error = ex;
         }
         finally {
@@ -206,6 +207,7 @@ export class PDFPageView {
             await this.annotationEditorLayer.render(this.viewport, "display");
         }
         catch (ex) {
+            console.error(`_renderAnnotationEditorLayer: "${ex}".`);
             error = ex;
         }
         finally {
@@ -220,11 +222,12 @@ export class PDFPageView {
         let error = null;
         try {
             const result = await this.xfaLayer.render(this.viewport, "display");
-            if (this.textHighlighter) {
+            if (result?.textDivs && this.textHighlighter) {
                 this._buildXfaTextContentItems(result.textDivs);
             }
         }
         catch (ex) {
+            console.error(`_renderXfaLayer: "${ex}".`);
             error = ex;
         }
         finally {
@@ -568,6 +571,7 @@ export class PDFPageView {
         }
         let textLayer;
         if (this.textLayerMode !== TextLayerMode.DISABLE && this.textLayerFactory) {
+            this._accessibilityManager ||= new TextAccessibilityManager();
             const textLayerDiv = html("div");
             textLayerDiv.className = "textLayer";
             textLayerDiv.style.width = canvasWrapper.style.width;
@@ -583,9 +587,9 @@ export class PDFPageView {
                 textLayerDiv,
                 pageIndex: this.id - 1,
                 viewport: this.viewport,
-                enhanceTextSelection: this.textLayerMode === TextLayerMode.ENABLE_ENHANCE,
                 eventBus: this.eventBus,
                 highlighter: this.textHighlighter,
+                accessibilityManager: this._accessibilityManager,
             });
         }
         this.textLayer = textLayer;
@@ -600,6 +604,7 @@ export class PDFPageView {
                 renderForms: this.#annotationMode === AnnotationMode.ENABLE_FORMS,
                 l10n: this.l10n,
                 annotationCanvasMap: this._annotationCanvasMap,
+                accessibilityManager: this._accessibilityManager,
             });
         }
         if (this.xfaLayer?.div) {
@@ -652,10 +657,8 @@ export class PDFPageView {
                 throw error;
             }
         };
-        const paintTask = !PRODUCTION || GENERIC /*#static*/
-            ? this.renderer === RendererType.SVG /*#static*/
-                ? this.paintOnSvg(canvasWrapper)
-                : this.paintOnCanvas(canvasWrapper)
+        const paintTask = /*#static*/ this.renderer === RendererType.SVG
+            ? this.paintOnSvg(canvasWrapper)
             : this.paintOnCanvas(canvasWrapper);
         paintTask.onRenderContinue = renderContinueCallback;
         this.paintTask = paintTask;
@@ -676,6 +679,7 @@ export class PDFPageView {
                                 pageDiv: div,
                                 pdfPage,
                                 l10n: this.l10n,
+                                accessibilityManager: this._accessibilityManager,
                             });
                             this._renderAnnotationEditorLayer();
                         }
@@ -684,12 +688,10 @@ export class PDFPageView {
             });
         }, (reason) => finishPaintTask(reason));
         if (this.xfaLayerFactory) {
-            if (!this.xfaLayer) {
-                this.xfaLayer = this.xfaLayerFactory.createXfaLayerBuilder({
-                    pageDiv: div,
-                    pdfPage,
-                });
-            }
+            this.xfaLayer ||= this.xfaLayerFactory.createXfaLayerBuilder({
+                pageDiv: div,
+                pdfPage,
+            });
             this.#renderXfaLayer();
         }
         // The structure tree is currently only supported when the text layer is

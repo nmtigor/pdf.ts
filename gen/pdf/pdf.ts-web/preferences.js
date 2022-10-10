@@ -24,8 +24,8 @@ import { AppOptions, OptionKind, } from "./app_options.js";
  *   or every time the viewer is loaded.
  */
 export class BasePreferences {
-    #defaults = Object.freeze(!PRODUCTION /*#static*/ ? AppOptions.getAll(OptionKind.PREFERENCE) : // : PDFJSDev.eval("DEFAULT_PREFERENCES")
-        AppOptions.getAll(OptionKind.PREFERENCE));
+    #defaults = Object.freeze(
+    /*#static*/ AppOptions.getAll(OptionKind.PREFERENCE));
     defaults;
     #prefs = Object.create(null);
     #initializedPromise;

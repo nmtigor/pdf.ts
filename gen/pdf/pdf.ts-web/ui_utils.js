@@ -15,8 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { GENERIC, LIB } from "../../global.js";
-import { binarySearchFirstItem } from "../pdf.ts-src/pdf.js";
+import { LIB } from "../../global.js";
 /*80--------------------------------------------------------------------------*/
 export const DEFAULT_SCALE_VALUE = "auto";
 export const DEFAULT_SCALE = 1.0;
@@ -59,7 +58,6 @@ export var TextLayerMode;
 (function (TextLayerMode) {
     TextLayerMode[TextLayerMode["DISABLE"] = 0] = "DISABLE";
     TextLayerMode[TextLayerMode["ENABLE"] = 1] = "ENABLE";
-    TextLayerMode[TextLayerMode["ENABLE_ENHANCE"] = 2] = "ENABLE_ENHANCE";
 })(TextLayerMode || (TextLayerMode = {}));
 export var ScrollMode;
 (function (ScrollMode) {
@@ -180,7 +178,8 @@ export function watchScroll(viewAreaElement, callback) {
             return;
         }
         // schedule an invocation of scroll for next animation frame.
-        rAF = globalThis?.requestAnimationFrame?.(/* viewAreaElementScrolled */ () => {
+        rAF = globalThis?.requestAnimationFrame?.(
+        /* viewAreaElementScrolled */ () => {
             rAF = undefined;
             const currentX = viewAreaElement.scrollLeft;
             const lastX = state.lastX;
@@ -229,6 +228,36 @@ export function removeNullCharacters(str, replaceInvisible = false) {
         str = str.replace(InvisibleCharactersRegExp, " ");
     }
     return str.replace(NullCharactersRegExp, "");
+}
+/**
+ * Use binary search to find the index of the first item in a given array which
+ * passes a given condition. The items are expected to be sorted in the sense
+ * that if the condition is true for one item in the array, then it is also true
+ * for all following items.
+ *
+ * @return Index of the first array element to pass the test,
+ *  or |items.length| if no such element exists.
+ */
+export function binarySearchFirstItem(items, condition, start = 0) {
+    let minIndex = start;
+    let maxIndex = items.length - 1;
+    if (maxIndex < 0 || !condition(items[maxIndex])) {
+        return items.length;
+    }
+    if (condition(items[minIndex])) {
+        return minIndex;
+    }
+    while (minIndex < maxIndex) {
+        const currentIndex = (minIndex + maxIndex) >> 1;
+        const currentItem = items[currentIndex];
+        if (condition(currentItem)) {
+            maxIndex = currentIndex;
+        }
+        else {
+            minIndex = currentIndex + 1;
+        }
+    }
+    return minIndex; /* === maxIndex */
 }
 /**
  * Approximates float number as a fraction using Farey sequence (max order
@@ -560,7 +589,7 @@ export const animationStarted = new Promise((resolve) => {
     globalThis?.requestAnimationFrame?.(resolve);
 });
 /*64----------------------------------------------------------*/
-//kkkk bug? ✅ 
+//kkkk bug? ✅
 // const docStyle =
 //   typeof PDFJSDev !== "undefined" &&
 //   PDFJSDev.test("LIB") &&
@@ -591,12 +620,6 @@ export class ProgressBar {
     #visible = true;
     _indeterminate;
     constructor(id) {
-        /*#static*/  {
-            if (arguments.length > 1) {
-                throw new Error("ProgressBar no longer accepts any additional options, " +
-                    "please use CSS rules to modify its appearance instead.");
-            }
-        }
         const bar = document.getElementById(id);
         this.#classList = bar.classList;
     }

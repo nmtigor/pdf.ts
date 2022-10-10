@@ -436,7 +436,7 @@ describe("function", () => {
         for (const { input, output } of samples) {
           const out = new Float32Array(output.length);
           fn(input, 0, out, 0);
-          assertEquals(Array.prototype.slice.call(out, 0), output);
+          assertEquals(Array.from(out), output);
         }
       }
     }

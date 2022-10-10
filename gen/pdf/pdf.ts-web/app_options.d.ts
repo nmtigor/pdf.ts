@@ -18,7 +18,7 @@ export declare const enum ViewOnLoad {
     PREVIOUS = 0,
     INITIAL = 1
 }
-export declare let D_base: string;
+export declare const D_base: string;
 declare type _DefaultOptions = typeof defaultOptions;
 export declare type OptionName = keyof _DefaultOptions;
 declare type _OptionType = number | string | boolean | Worker;
@@ -85,7 +85,6 @@ declare const defaultOptions: {
         kind: number;
     };
     historyUpdateUrl: {
-        /** @type {boolean} */
         value: boolean;
         kind: number;
     };
@@ -94,7 +93,6 @@ declare const defaultOptions: {
         kind: number;
     };
     imageResourcesPath: {
-        /** @type {string} */
         value: string;
         kind: OptionKind;
     };

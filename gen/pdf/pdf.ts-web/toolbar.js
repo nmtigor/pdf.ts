@@ -22,12 +22,12 @@ import { animationStarted, DEFAULT_SCALE, DEFAULT_SCALE_VALUE, docStyle, MAX_SCA
 /*80--------------------------------------------------------------------------*/
 const PAGE_NUMBER_LOADING_INDICATOR = "visiblePageIsLoading";
 export class Toolbar {
+    #wasLocalized = false;
     toolbar;
     eventBus;
     l10n;
     buttons;
     items;
-    _wasLocalized = false;
     pageNumber;
     pageLabel;
     hasPageLabels;
@@ -44,26 +44,30 @@ export class Toolbar {
             { element: options.zoomIn, eventName: "zoomin" },
             { element: options.zoomOut, eventName: "zoomout" },
             { element: options.print, eventName: "print" },
-            {
-                element: options.presentationModeButton,
-                eventName: "presentationmode",
-            },
             { element: options.download, eventName: "download" },
-            { element: options.viewBookmark, eventName: null },
-            {
-                element: options.editorNoneButton,
-                eventName: "switchannotationeditormode",
-                eventDetails: { mode: AnnotationEditorType.NONE },
-            },
             {
                 element: options.editorFreeTextButton,
                 eventName: "switchannotationeditormode",
-                eventDetails: { mode: AnnotationEditorType.FREETEXT },
+                eventDetails: {
+                    get mode() {
+                        const { classList } = options.editorFreeTextButton;
+                        return classList.contains("toggled")
+                            ? AnnotationEditorType.NONE
+                            : AnnotationEditorType.FREETEXT;
+                    },
+                },
             },
             {
                 element: options.editorInkButton,
                 eventName: "switchannotationeditormode",
-                eventDetails: { mode: AnnotationEditorType.INK },
+                eventDetails: {
+                    get mode() {
+                        const { classList } = options.editorInkButton;
+                        return classList.contains("toggled")
+                            ? AnnotationEditorType.NONE
+                            : AnnotationEditorType.INK;
+                    },
+                },
             },
         ];
         /*#static*/  {
@@ -78,15 +82,10 @@ export class Toolbar {
             next: options.next,
             zoomIn: options.zoomIn,
             zoomOut: options.zoomOut,
-            editorNoneButton: options.editorNoneButton,
-            editorFreeTextButton: options.editorFreeTextButton,
-            editorFreeTextParamsToolbar: options.editorFreeTextParamsToolbar,
-            editorInkButton: options.editorInkButton,
-            editorInkParamsToolbar: options.editorInkParamsToolbar,
         };
-        this.reset();
         // Bind the event listeners for click and various other actions.
         this.#bindListeners(options);
+        this.reset();
     }
     setPageNumber(pageNumber, pageLabel) {
         this.pageNumber = pageNumber;
@@ -165,16 +164,15 @@ export class Toolbar {
         // Suppress context menus for some controls.
         scaleSelect.oncontextmenu = noContextMenuHandler;
         this.eventBus._on("localized", () => {
-            this._wasLocalized = true;
+            this.#wasLocalized = true;
             this.#adjustScaleWidth();
             this.#updateUIState(true);
         });
         this.#bindEditorToolsListener(options);
     }
-    #bindEditorToolsListener({ editorNoneButton, editorFreeTextButton, editorFreeTextParamsToolbar, editorInkButton, editorInkParamsToolbar, }) {
+    #bindEditorToolsListener({ editorFreeTextButton, editorFreeTextParamsToolbar, editorInkButton, editorInkParamsToolbar, }) {
         const editorModeChanged = (evt, disableButtons = false) => {
             const editorButtons = [
-                { mode: AnnotationEditorType.NONE, button: editorNoneButton },
                 {
                     mode: AnnotationEditorType.FREETEXT,
                     button: editorFreeTextButton,
@@ -191,9 +189,7 @@ export class Toolbar {
                 button.classList.toggle("toggled", checked);
                 button.setAttribute("aria-checked", checked);
                 button.disabled = disableButtons;
-                if (toolbar) {
-                    toolbar.classList.toggle("hidden", !checked);
-                }
+                toolbar?.classList.toggle("hidden", !checked);
             }
         };
         this.eventBus._on("annotationeditormodechanged", editorModeChanged);
@@ -207,9 +203,10 @@ export class Toolbar {
         });
     }
     #updateUIState = (resetNumPages = false) => {
-        // Don't update the UI state until we localize the toolbar.
-        if (!this._wasLocalized)
+        if (!this.#wasLocalized) {
+            // Don't update the UI state until we localize the toolbar.
             return;
+        }
         const { pageNumber, pagesCount, pageScaleValue, pageScale, items } = this;
         if (resetNumPages) {
             if (this.hasPageLabels) {

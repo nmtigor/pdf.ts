@@ -16,6 +16,7 @@
  * limitations under the License.
  */
 import { assert } from "../../../lib/util/trace.js";
+import { MurmurHash3_64 } from "../shared/murmurhash3.js";
 import { objectFromMap, warn } from "../shared/util.js";
 /*80--------------------------------------------------------------------------*/
 const INTERNAL = Symbol("INTERNAL");
@@ -41,9 +42,9 @@ class OptionalContentGroup {
 export class OptionalContentConfig {
     name = null;
     creator = null;
-    #cachedHasInitialVisibility = true;
+    #cachedGetHash;
     #groups = new Map();
-    #initialVisibility;
+    #initialHash;
     #order = null;
     constructor(data) {
         if (data === undefined) {
@@ -67,10 +68,7 @@ export class OptionalContentConfig {
             this.#groups.get(off)._setVisible(INTERNAL, false);
         }
         // The following code must always run *last* in the constructor.
-        this.#initialVisibility = new Map();
-        for (const [id, group] of this.#groups) {
-            this.#initialVisibility.set(id, group.visible);
-        }
+        this.#initialHash = this.getHash();
     }
     #evaluateVisibilityExpression(array) {
         const length = array.length;
@@ -191,19 +189,10 @@ export class OptionalContentConfig {
             return;
         }
         this.#groups.get(id)._setVisible(INTERNAL, !!visible);
-        this.#cachedHasInitialVisibility = undefined;
+        this.#cachedGetHash = undefined;
     }
     get hasInitialVisibility() {
-        if (this.#cachedHasInitialVisibility !== undefined) {
-            return this.#cachedHasInitialVisibility;
-        }
-        for (const [id, group] of this.#groups) {
-            const visible = this.#initialVisibility.get(id);
-            if (group.visible !== visible) {
-                return (this.#cachedHasInitialVisibility = false);
-            }
-        }
-        return (this.#cachedHasInitialVisibility = true);
+        return this.getHash() === this.#initialHash;
     }
     getOrder() {
         if (!this.#groups.size) {
@@ -219,6 +208,16 @@ export class OptionalContentConfig {
     }
     getGroup(id) {
         return this.#groups.get(id) || null;
+    }
+    getHash() {
+        if (this.#cachedGetHash !== undefined) {
+            return this.#cachedGetHash;
+        }
+        const hash = new MurmurHash3_64();
+        for (const [id, group] of this.#groups) {
+            hash.update(`${id}:${group.visible}`);
+        }
+        return (this.#cachedGetHash = hash.hexdigest());
     }
 }
 /*80--------------------------------------------------------------------------*/

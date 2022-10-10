@@ -573,8 +573,22 @@ export const WorkerMessageHandler = {
     });
 
     handler.on("GetAnnotations", ({ pageIndex, intent }) => {
-      return pdfManager.getPage(pageIndex)
-        .then((page) => page.getAnnotationsData(intent));
+      return pdfManager.getPage(pageIndex).then((page) => {
+        const task = new WorkerTask(`GetAnnotations: page ${pageIndex}`);
+        startWorkerTask(task);
+
+        return page.getAnnotationsData(handler, task, intent).then(
+          (data) => {
+            finishWorkerTask(task);
+            return data;
+          },
+          (reason) => {
+            finishWorkerTask(task);
+            //kkkk bug?
+            return [];
+          },
+        );
+      });
     });
 
     handler.on("GetFieldObjects", (data) => {

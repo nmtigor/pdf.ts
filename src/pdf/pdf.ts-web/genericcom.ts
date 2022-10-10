@@ -20,7 +20,7 @@
 import { GENERIC, INOUT } from "../../global.ts";
 import { Locale } from "../../lib/Locale.ts";
 import { assert } from "../../lib/util/trace.ts";
-import { DefaultExternalServices, viewerapp } from "./app.ts";
+import { DefaultExternalServices, viewerApp } from "./app.ts";
 import { type UserOptions } from "./app_options.ts";
 import { DownloadManager } from "./download_manager.ts";
 import { GenericL10n } from "./genericl10n.ts";
@@ -76,5 +76,5 @@ class GenericExternalServices extends DefaultExternalServices {
     return new GenericScripting(sandboxBundleSrc);
   }
 }
-viewerapp.externalServices = new GenericExternalServices();
+viewerApp.externalServices = new GenericExternalServices();
 /*80--------------------------------------------------------------------------*/

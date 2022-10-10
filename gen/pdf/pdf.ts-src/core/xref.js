@@ -17,12 +17,12 @@
  */
 import { _PDFDEV } from "../../../global.js";
 import { assert } from "../../../lib/util/trace.js";
-import { bytesToString, FormatError, info, InvalidPDFException, warn } from "../shared/util.js";
+import { bytesToString, FormatError, info, InvalidPDFException, warn, } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
-import { DocStats, MissingDataException, ParserEOFException, XRefEntryException, XRefParseException } from "./core_utils.js";
+import { DocStats, MissingDataException, ParserEOFException, XRefEntryException, XRefParseException, } from "./core_utils.js";
 import { CipherTransformFactory } from "./crypto.js";
 import { Lexer, Parser } from "./parser.js";
-import { CIRCULAR_REF, Cmd, Dict, isCmd, Ref, RefSet } from "./primitives.js";
+import { CIRCULAR_REF, Cmd, Dict, isCmd, Ref, RefSet, } from "./primitives.js";
 export class XRef {
     stream;
     pdfManager;
@@ -489,14 +489,14 @@ export class XRef {
             }
         }
         // reading XRef streams
-        for (let i = 0, ii = xrefStms.length; i < ii; ++i) {
-            this.startXRefQueue.push(xrefStms[i]);
+        for (const xrefStm of xrefStms) {
+            this.startXRefQueue.push(xrefStm);
             this.readXRef(/* recoveryMode */ true);
         }
         // finding main trailer
         let trailerDict;
-        for (let i = 0, ii = trailers.length; i < ii; ++i) {
-            stream.pos = trailers[i];
+        for (const trailer of trailers) {
+            stream.pos = trailer;
             const parser = new Parser({
                 lexer: new Lexer(stream),
                 xref: this,

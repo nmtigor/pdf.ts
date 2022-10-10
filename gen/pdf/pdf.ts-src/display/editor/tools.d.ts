@@ -123,8 +123,19 @@ export declare class AnnotationEditorUIManager {
     constructor(container: HTMLDivElement, eventBus: EventBus);
     destroy(): void;
     onPageChanging({ pageNumber }: EventMap["pagechanging"]): void;
-    onTextLayerRendered({ pageNumber }: EventMap["textlayerrendered"]): void;
     focusMainContainer(): void;
+    /**
+     * Copy callback.
+     */
+    copy(event: ClipboardEvent): void;
+    /**
+     * Cut callback.
+     */
+    cut(event: ClipboardEvent): void;
+    /**
+     * Paste callback.
+     */
+    paste(event: ClipboardEvent): void;
     /**
      * Keydown callback.
      */
@@ -221,18 +232,6 @@ export declare class AnnotationEditorUIManager {
      * Delete the current editor or all.
      */
     delete(): void;
-    /**
-     * Copy the selected editor.
-     */
-    copy(): void;
-    /**
-     * Cut the selected editor.
-     */
-    cut(): void;
-    /**
-     * Paste a previously copied editor.
-     */
-    paste(): void;
     /**
      * Select all the editors.
      */

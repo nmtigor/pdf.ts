@@ -33,6 +33,7 @@ export declare type PropertyToUpdate = [AnnotationEditorParamsType, string | num
  */
 export declare abstract class AnnotationEditor {
     #private;
+    static readonly _type: "freetext" | "ink";
     static _colorManager: ColorManager;
     static _zIndex: number;
     parent: AnnotationEditorLayer;
@@ -186,11 +187,6 @@ export declare abstract class AnnotationEditor {
      * their properties.
      */
     enableEditing(): void;
-    /**
-     * Get the id to use in aria-owns when a link is done in the text layer.
-     * @returns {string}
-     */
-    getIdForTextLayer(): string;
     /**
      * Get some properties to update in the UI.
      */

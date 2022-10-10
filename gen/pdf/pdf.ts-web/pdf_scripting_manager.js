@@ -19,7 +19,7 @@
 import { COMPONENTS } from "../../global.js";
 import { createPromiseCap } from "../../lib/promisecap.js";
 import { shadow } from "../pdf.ts-src/pdf.js";
-import { apiPageLayoutToViewerModes, RenderingStates } from "./ui_utils.js";
+import { apiPageLayoutToViewerModes, RenderingStates, } from "./ui_utils.js";
 export class PDFScriptingManager {
     #pdfDocument;
     #pdfViewer;

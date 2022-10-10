@@ -2,6 +2,7 @@ import { type XFAElObj } from "../core/xfa/alias.js";
 import { RGB } from "../shared/scripting_utils.js";
 import { BaseException, CMapCompressionType, type matrix_t, type point_t, type rect_t } from "../shared/util.js";
 import { BaseCanvasFactory, BaseCMapReaderFactory, BaseStandardFontDataFactory, BaseSVGFactory } from "./base_factory.js";
+export declare const AnnotationPrefix = "pdfjs_internal_id_";
 export declare class PixelsPerInch {
     static CSS: number;
     static PDF: number;
@@ -213,15 +214,7 @@ export declare function getXfaPageViewport(xfaPage: XFAElObj, { scale, rotation 
 }): PageViewport;
 export declare function getRGB(color: string): RGB;
 export declare function getColorValues(colors: Map<string, RGB | undefined>): void;
-/**
- * Use binary search to find the index of the first item in a given array which
- * passes a given condition. The items are expected to be sorted in the sense
- * that if the condition is true for one item in the array, then it is also true
- * for all following items.
- *
- * @return Index of the first array element to pass the test,
- *  or |items.length| if no such element exists.
- */
-export declare function binarySearchFirstItem<T>(items: T[], condition: (item: T) => boolean, start?: number): number;
+export declare function getCurrentTransform(ctx: CanvasRenderingContext2D): matrix_t;
+export declare function getCurrentTransformInverse(ctx: CanvasRenderingContext2D): matrix_t;
 export {};
 //# sourceMappingURL=display_utils.d.ts.map

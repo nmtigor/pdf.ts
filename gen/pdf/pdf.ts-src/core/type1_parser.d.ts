@@ -33,6 +33,13 @@ declare namespace NsType1Parser {
         charstrings: CharStringObject[];
         properties: FontProgramProp;
     }
+    /**
+     * Type1Parser encapsulate the needed code for parsing a Type1 font program.
+     * Some of its logic depends on the Type2 charstrings structure.
+     * NOTE: This doesn't really parse the font since that would require evaluation
+     *       of PostScript, but it is possible in most cases to extract what we need
+     *       without a full parse.
+     */
     export class Type1Parser {
         seacAnalysisEnabled: boolean;
         stream: Stream;

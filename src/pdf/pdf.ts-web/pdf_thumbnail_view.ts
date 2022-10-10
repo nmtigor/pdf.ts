@@ -32,7 +32,6 @@ import {
   RenderingCancelledException,
   RenderTask,
 } from "../pdf.ts-src/pdf.ts";
-import { PageColors } from "./base_viewer.ts";
 import {
   type IL10n,
   type IPDFLinkService,
@@ -40,6 +39,7 @@ import {
 } from "./interfaces.ts";
 import { PDFPageView } from "./pdf_page_view.ts";
 import { PDFRenderingQueue } from "./pdf_rendering_queue.ts";
+import { PageColors } from "./pdf_viewer.ts";
 import { OutputScale, RenderingStates } from "./ui_utils.ts";
 /*80--------------------------------------------------------------------------*/
 
@@ -414,12 +414,16 @@ export class PDFThumbnailView implements IVisibleView {
     if (this.renderingState !== RenderingStates.INITIAL) {
       return;
     }
-    const { thumbnailCanvas: canvas, pdfPage } = pageView;
+    const { thumbnailCanvas: canvas, pdfPage, scale } = pageView;
     if (!canvas) {
       return;
     }
     if (!this.pdfPage) {
       this.setPdfPage(pdfPage!);
+    }
+    if (scale < this.scale) {
+      // Avoid upscaling the image, since that makes the thumbnail look blurry.
+      return;
     }
     this.renderingState = RenderingStates.FINISHED;
     this.#convertCanvasToImage(canvas);

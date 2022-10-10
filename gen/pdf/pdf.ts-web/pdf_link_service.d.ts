@@ -1,4 +1,4 @@
-import { type Destination, type ExplicitDest, PDFDocumentProxy, type RefProxy } from "../pdf.ts-src/pdf.js";
+import { type Destination, type ExplicitDest, PDFDocumentProxy, type RefProxy, SetOCGState } from "../pdf.ts-src/pdf.js";
 import { EventBus } from "./event_utils.js";
 import { type IPDFLinkService } from "./interfaces.js";
 import { PDFHistory } from "./pdf_history.js";
@@ -94,6 +94,7 @@ export declare class PDFLinkService implements IPDFLinkService {
     setHash(hash: string): void;
     /** @implement */
     executeNamedAction(action: string): void;
+    executeSetOCGState(action: SetOCGState): Promise<void>;
     /**
      * @implement
      * @param pageNum page number.
@@ -146,6 +147,10 @@ export declare class SimpleLinkService implements IPDFLinkService {
     setHash(hash: string): void;
     /** @implement */
     executeNamedAction(action: string): void;
+    /**
+     * @param {Object} action
+     */
+    executeSetOCGState(action: SetOCGState): void;
     /**
      * @implement
      * @param pageNum page number.

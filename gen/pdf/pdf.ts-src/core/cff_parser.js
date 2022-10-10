@@ -11,399 +11,73 @@ const MAX_SUBR_NESTING = 10;
  * The CFF class takes a Type1 file and wrap it into a
  * 'Compact Font Format' which itself embed Type2 charstrings.
  */
-// prettier-ignore
+// deno-fmt-ignore
 export const CFFStandardStrings = [
-    ".notdef",
-    "space",
-    "exclam",
-    "quotedbl",
-    "numbersign",
-    "dollar",
-    "percent",
-    "ampersand",
-    "quoteright",
-    "parenleft",
-    "parenright",
-    "asterisk",
-    "plus",
-    "comma",
-    "hyphen",
-    "period",
-    "slash",
-    "zero",
-    "one",
-    "two",
-    "three",
-    "four",
-    "five",
-    "six",
-    "seven",
-    "eight",
-    "nine",
-    "colon",
-    "semicolon",
-    "less",
-    "equal",
-    "greater",
-    "question",
-    "at",
-    "A",
-    "B",
-    "C",
-    "D",
-    "E",
-    "F",
-    "G",
-    "H",
-    "I",
-    "J",
-    "K",
-    "L",
-    "M",
-    "N",
-    "O",
-    "P",
-    "Q",
-    "R",
-    "S",
-    "T",
-    "U",
-    "V",
-    "W",
-    "X",
-    "Y",
-    "Z",
-    "bracketleft",
-    "backslash",
-    "bracketright",
-    "asciicircum",
-    "underscore",
-    "quoteleft",
-    "a",
-    "b",
-    "c",
-    "d",
-    "e",
-    "f",
-    "g",
-    "h",
-    "i",
-    "j",
-    "k",
-    "l",
-    "m",
-    "n",
-    "o",
-    "p",
-    "q",
-    "r",
-    "s",
-    "t",
-    "u",
-    "v",
-    "w",
-    "x",
-    "y",
-    "z",
-    "braceleft",
-    "bar",
-    "braceright",
-    "asciitilde",
-    "exclamdown",
-    "cent",
-    "sterling",
-    "fraction",
-    "yen",
-    "florin",
-    "section",
-    "currency",
-    "quotesingle",
-    "quotedblleft",
-    "guillemotleft",
-    "guilsinglleft",
-    "guilsinglright",
-    "fi",
-    "fl",
-    "endash",
-    "dagger",
-    "daggerdbl",
-    "periodcentered",
-    "paragraph",
-    "bullet",
-    "quotesinglbase",
-    "quotedblbase",
-    "quotedblright",
-    "guillemotright",
-    "ellipsis",
-    "perthousand",
-    "questiondown",
-    "grave",
-    "acute",
-    "circumflex",
-    "tilde",
-    "macron",
-    "breve",
-    "dotaccent",
-    "dieresis",
-    "ring",
-    "cedilla",
-    "hungarumlaut",
-    "ogonek",
-    "caron",
-    "emdash",
-    "AE",
-    "ordfeminine",
-    "Lslash",
-    "Oslash",
-    "OE",
-    "ordmasculine",
-    "ae",
-    "dotlessi",
-    "lslash",
-    "oslash",
-    "oe",
-    "germandbls",
-    "onesuperior",
-    "logicalnot",
-    "mu",
-    "trademark",
-    "Eth",
-    "onehalf",
-    "plusminus",
-    "Thorn",
-    "onequarter",
-    "divide",
-    "brokenbar",
-    "degree",
-    "thorn",
-    "threequarters",
-    "twosuperior",
-    "registered",
-    "minus",
-    "eth",
-    "multiply",
-    "threesuperior",
-    "copyright",
-    "Aacute",
-    "Acircumflex",
-    "Adieresis",
-    "Agrave",
-    "Aring",
-    "Atilde",
-    "Ccedilla",
-    "Eacute",
-    "Ecircumflex",
-    "Edieresis",
-    "Egrave",
-    "Iacute",
-    "Icircumflex",
-    "Idieresis",
-    "Igrave",
-    "Ntilde",
-    "Oacute",
-    "Ocircumflex",
-    "Odieresis",
-    "Ograve",
-    "Otilde",
-    "Scaron",
-    "Uacute",
-    "Ucircumflex",
-    "Udieresis",
-    "Ugrave",
-    "Yacute",
-    "Ydieresis",
-    "Zcaron",
-    "aacute",
-    "acircumflex",
-    "adieresis",
-    "agrave",
-    "aring",
-    "atilde",
-    "ccedilla",
-    "eacute",
-    "ecircumflex",
-    "edieresis",
-    "egrave",
-    "iacute",
-    "icircumflex",
-    "idieresis",
-    "igrave",
-    "ntilde",
-    "oacute",
-    "ocircumflex",
-    "odieresis",
-    "ograve",
-    "otilde",
-    "scaron",
-    "uacute",
-    "ucircumflex",
-    "udieresis",
-    "ugrave",
-    "yacute",
-    "ydieresis",
-    "zcaron",
-    "exclamsmall",
-    "Hungarumlautsmall",
-    "dollaroldstyle",
-    "dollarsuperior",
-    "ampersandsmall",
-    "Acutesmall",
-    "parenleftsuperior",
-    "parenrightsuperior",
-    "twodotenleader",
-    "onedotenleader",
-    "zerooldstyle",
-    "oneoldstyle",
-    "twooldstyle",
-    "threeoldstyle",
-    "fouroldstyle",
-    "fiveoldstyle",
-    "sixoldstyle",
-    "sevenoldstyle",
-    "eightoldstyle",
-    "nineoldstyle",
-    "commasuperior",
-    "threequartersemdash",
-    "periodsuperior",
-    "questionsmall",
-    "asuperior",
-    "bsuperior",
-    "centsuperior",
-    "dsuperior",
-    "esuperior",
-    "isuperior",
-    "lsuperior",
-    "msuperior",
-    "nsuperior",
-    "osuperior",
-    "rsuperior",
-    "ssuperior",
-    "tsuperior",
-    "ff",
-    "ffi",
-    "ffl",
-    "parenleftinferior",
-    "parenrightinferior",
-    "Circumflexsmall",
-    "hyphensuperior",
-    "Gravesmall",
-    "Asmall",
-    "Bsmall",
-    "Csmall",
-    "Dsmall",
-    "Esmall",
-    "Fsmall",
-    "Gsmall",
-    "Hsmall",
-    "Ismall",
-    "Jsmall",
-    "Ksmall",
-    "Lsmall",
-    "Msmall",
-    "Nsmall",
-    "Osmall",
-    "Psmall",
-    "Qsmall",
-    "Rsmall",
-    "Ssmall",
-    "Tsmall",
-    "Usmall",
-    "Vsmall",
-    "Wsmall",
-    "Xsmall",
-    "Ysmall",
-    "Zsmall",
-    "colonmonetary",
-    "onefitted",
-    "rupiah",
-    "Tildesmall",
-    "exclamdownsmall",
-    "centoldstyle",
-    "Lslashsmall",
-    "Scaronsmall",
-    "Zcaronsmall",
-    "Dieresissmall",
-    "Brevesmall",
-    "Caronsmall",
-    "Dotaccentsmall",
-    "Macronsmall",
-    "figuredash",
-    "hypheninferior",
-    "Ogoneksmall",
-    "Ringsmall",
-    "Cedillasmall",
-    "questiondownsmall",
-    "oneeighth",
-    "threeeighths",
-    "fiveeighths",
-    "seveneighths",
-    "onethird",
-    "twothirds",
-    "zerosuperior",
-    "foursuperior",
-    "fivesuperior",
-    "sixsuperior",
-    "sevensuperior",
-    "eightsuperior",
-    "ninesuperior",
-    "zeroinferior",
-    "oneinferior",
-    "twoinferior",
-    "threeinferior",
-    "fourinferior",
-    "fiveinferior",
-    "sixinferior",
-    "seveninferior",
-    "eightinferior",
-    "nineinferior",
-    "centinferior",
-    "dollarinferior",
-    "periodinferior",
-    "commainferior",
-    "Agravesmall",
-    "Aacutesmall",
-    "Acircumflexsmall",
-    "Atildesmall",
-    "Adieresissmall",
-    "Aringsmall",
-    "AEsmall",
-    "Ccedillasmall",
-    "Egravesmall",
-    "Eacutesmall",
-    "Ecircumflexsmall",
-    "Edieresissmall",
-    "Igravesmall",
-    "Iacutesmall",
-    "Icircumflexsmall",
-    "Idieresissmall",
-    "Ethsmall",
-    "Ntildesmall",
-    "Ogravesmall",
-    "Oacutesmall",
-    "Ocircumflexsmall",
-    "Otildesmall",
-    "Odieresissmall",
-    "OEsmall",
-    "Oslashsmall",
-    "Ugravesmall",
-    "Uacutesmall",
-    "Ucircumflexsmall",
-    "Udieresissmall",
-    "Yacutesmall",
-    "Thornsmall",
-    "Ydieresissmall",
-    "001.000",
-    "001.001",
-    "001.002",
-    "001.003",
-    "Black",
-    "Bold",
-    "Book",
-    "Light",
-    "Medium",
-    "Regular",
-    "Roman",
-    "Semibold",
+    ".notdef", "space", "exclam", "quotedbl", "numbersign", "dollar", "percent",
+    "ampersand", "quoteright", "parenleft", "parenright", "asterisk", "plus",
+    "comma", "hyphen", "period", "slash", "zero", "one", "two", "three", "four",
+    "five", "six", "seven", "eight", "nine", "colon", "semicolon", "less",
+    "equal", "greater", "question", "at", "A", "B", "C", "D", "E", "F", "G", "H",
+    "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W",
+    "X", "Y", "Z", "bracketleft", "backslash", "bracketright", "asciicircum",
+    "underscore", "quoteleft", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j",
+    "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y",
+    "z", "braceleft", "bar", "braceright", "asciitilde", "exclamdown", "cent",
+    "sterling", "fraction", "yen", "florin", "section", "currency",
+    "quotesingle", "quotedblleft", "guillemotleft", "guilsinglleft",
+    "guilsinglright", "fi", "fl", "endash", "dagger", "daggerdbl",
+    "periodcentered", "paragraph", "bullet", "quotesinglbase", "quotedblbase",
+    "quotedblright", "guillemotright", "ellipsis", "perthousand", "questiondown",
+    "grave", "acute", "circumflex", "tilde", "macron", "breve", "dotaccent",
+    "dieresis", "ring", "cedilla", "hungarumlaut", "ogonek", "caron", "emdash",
+    "AE", "ordfeminine", "Lslash", "Oslash", "OE", "ordmasculine", "ae",
+    "dotlessi", "lslash", "oslash", "oe", "germandbls", "onesuperior",
+    "logicalnot", "mu", "trademark", "Eth", "onehalf", "plusminus", "Thorn",
+    "onequarter", "divide", "brokenbar", "degree", "thorn", "threequarters",
+    "twosuperior", "registered", "minus", "eth", "multiply", "threesuperior",
+    "copyright", "Aacute", "Acircumflex", "Adieresis", "Agrave", "Aring",
+    "Atilde", "Ccedilla", "Eacute", "Ecircumflex", "Edieresis", "Egrave",
+    "Iacute", "Icircumflex", "Idieresis", "Igrave", "Ntilde", "Oacute",
+    "Ocircumflex", "Odieresis", "Ograve", "Otilde", "Scaron", "Uacute",
+    "Ucircumflex", "Udieresis", "Ugrave", "Yacute", "Ydieresis", "Zcaron",
+    "aacute", "acircumflex", "adieresis", "agrave", "aring", "atilde",
+    "ccedilla", "eacute", "ecircumflex", "edieresis", "egrave", "iacute",
+    "icircumflex", "idieresis", "igrave", "ntilde", "oacute", "ocircumflex",
+    "odieresis", "ograve", "otilde", "scaron", "uacute", "ucircumflex",
+    "udieresis", "ugrave", "yacute", "ydieresis", "zcaron", "exclamsmall",
+    "Hungarumlautsmall", "dollaroldstyle", "dollarsuperior", "ampersandsmall",
+    "Acutesmall", "parenleftsuperior", "parenrightsuperior", "twodotenleader",
+    "onedotenleader", "zerooldstyle", "oneoldstyle", "twooldstyle",
+    "threeoldstyle", "fouroldstyle", "fiveoldstyle", "sixoldstyle",
+    "sevenoldstyle", "eightoldstyle", "nineoldstyle", "commasuperior",
+    "threequartersemdash", "periodsuperior", "questionsmall", "asuperior",
+    "bsuperior", "centsuperior", "dsuperior", "esuperior", "isuperior",
+    "lsuperior", "msuperior", "nsuperior", "osuperior", "rsuperior", "ssuperior",
+    "tsuperior", "ff", "ffi", "ffl", "parenleftinferior", "parenrightinferior",
+    "Circumflexsmall", "hyphensuperior", "Gravesmall", "Asmall", "Bsmall",
+    "Csmall", "Dsmall", "Esmall", "Fsmall", "Gsmall", "Hsmall", "Ismall",
+    "Jsmall", "Ksmall", "Lsmall", "Msmall", "Nsmall", "Osmall", "Psmall",
+    "Qsmall", "Rsmall", "Ssmall", "Tsmall", "Usmall", "Vsmall", "Wsmall",
+    "Xsmall", "Ysmall", "Zsmall", "colonmonetary", "onefitted", "rupiah",
+    "Tildesmall", "exclamdownsmall", "centoldstyle", "Lslashsmall",
+    "Scaronsmall", "Zcaronsmall", "Dieresissmall", "Brevesmall", "Caronsmall",
+    "Dotaccentsmall", "Macronsmall", "figuredash", "hypheninferior",
+    "Ogoneksmall", "Ringsmall", "Cedillasmall", "questiondownsmall", "oneeighth",
+    "threeeighths", "fiveeighths", "seveneighths", "onethird", "twothirds",
+    "zerosuperior", "foursuperior", "fivesuperior", "sixsuperior",
+    "sevensuperior", "eightsuperior", "ninesuperior", "zeroinferior",
+    "oneinferior", "twoinferior", "threeinferior", "fourinferior",
+    "fiveinferior", "sixinferior", "seveninferior", "eightinferior",
+    "nineinferior", "centinferior", "dollarinferior", "periodinferior",
+    "commainferior", "Agravesmall", "Aacutesmall", "Acircumflexsmall",
+    "Atildesmall", "Adieresissmall", "Aringsmall", "AEsmall", "Ccedillasmall",
+    "Egravesmall", "Eacutesmall", "Ecircumflexsmall", "Edieresissmall",
+    "Igravesmall", "Iacutesmall", "Icircumflexsmall", "Idieresissmall",
+    "Ethsmall", "Ntildesmall", "Ogravesmall", "Oacutesmall", "Ocircumflexsmall",
+    "Otildesmall", "Odieresissmall", "OEsmall", "Oslashsmall", "Ugravesmall",
+    "Uacutesmall", "Ucircumflexsmall", "Udieresissmall", "Yacutesmall",
+    "Thornsmall", "Ydieresissmall", "001.000", "001.001", "001.002", "001.003",
+    "Black", "Bold", "Book", "Light", "Medium", "Regular", "Roman", "Semibold"
 ];
 export const NUM_STANDARD_CFF_STRINGS = 391;
 // type CharStringIndex = CFFIndex< Uint8Array | Uint8ClampedArray >;
@@ -523,7 +197,6 @@ var NsCFFParser;
         { id: "hflex1", min: 9, resetStack: true },
         { id: "flex1", min: 11, resetStack: true },
     ];
-    // eslint-disable-next-line no-shadow
     class CFFParser {
         bytes;
         properties;
@@ -665,24 +338,9 @@ var NsCFFParser;
             function parseFloatOperand() {
                 let str = "";
                 const eof = 15;
-                // prettier-ignore
-                const lookup = [
-                    "0",
-                    "1",
-                    "2",
-                    "3",
-                    "4",
-                    "5",
-                    "6",
-                    "7",
-                    "8",
-                    "9",
-                    ".",
-                    "E",
-                    "E-",
-                    null,
-                    "-",
-                ];
+                // deno-fmt-ignore
+                const lookup = ["0", "1", "2", "3", "4", "5", "6", "7", "8",
+                    "9", ".", "E", "E-", null, "-"];
                 const length = dict.length;
                 while (pos < length) {
                     const b = dict[pos++];
@@ -768,10 +426,7 @@ var NsCFFParser;
         }
         createDict(Type, dict, strings) {
             const cffDict = new Type(strings);
-            for (let i = 0, ii = dict.length; i < ii; ++i) {
-                const pair = dict[i];
-                const key = pair[0];
-                const value = pair[1];
+            for (const [key, value] of dict) {
                 cffDict.setByKey(key, value);
             }
             return cffDict;
@@ -1355,15 +1010,14 @@ class CFFDict {
         if (!(key in this.keyToNameMap)) {
             return false;
         }
-        const valueLength = value.length;
         // ignore empty values
-        if (valueLength === 0) {
+        if (value.length === 0) {
             return true;
         }
         // Ignore invalid values (fixes bug1068432.pdf and bug1308536.pdf).
-        for (let i = 0; i < valueLength; i++) {
-            if (isNaN(value[i])) {
-                warn('Invalid CFFDict value: "' + value + '" for key "' + key + '".');
+        for (const val of value) {
+            if (isNaN(val)) {
+                warn(`Invalid CFFDict value: "${value}" for key "${key}".`);
                 return true;
             }
         }
@@ -1407,8 +1061,7 @@ class CFFDict {
             opcodes: [],
             order: [],
         };
-        for (let i = 0, ii = layout.length; i < ii; ++i) {
-            const entry = layout[i];
+        for (const entry of layout) {
             const key = Array.isArray(entry[0])
                 ? (entry[0][0] << 8) + entry[0][1]
                 : entry[0];
@@ -1439,15 +1092,9 @@ var NsCFFTopDict;
         [[12, 4], "UnderlineThickness", "num", 50],
         [[12, 5], "PaintType", "num", 0],
         [[12, 6], "CharstringType", "num", 2],
-        // prettier-ignore
-        [[12, 7], "FontMatrix", ["num", "num", "num", "num", "num", "num"], [
-                0.001,
-                0,
-                0,
-                0.001,
-                0,
-                0,
-            ]],
+        // deno-fmt-ignore
+        [[12, 7], "FontMatrix", ["num", "num", "num", "num", "num", "num"],
+            [0.001, 0, 0, 0.001, 0, 0]],
         [13, "UniqueID", "num", null],
         [5, "FontBBox", ["num", "num", "num", "num"], [0, 0, 0, 0]],
         [[12, 8], "StrokeWidth", "num", 0],
@@ -1470,17 +1117,16 @@ var NsCFFTopDict;
         [[12, 36], "FDArray", "offset", null],
         [[12, 38], "FontName", "sid", null],
     ];
-    let tables;
     /**
      * [CFF] Table 9
      */
     class CFFTopDict extends CFFDict {
+        static get tables() {
+            return shadow(this, "tables", this.createTables(layout));
+        }
         privateDict;
         constructor(strings) {
-            if (tables === undefined) {
-                tables = CFFDict.createTables(layout);
-            }
-            super(tables, strings);
+            super(CFFTopDict.tables, strings);
         }
     }
     NsCFFTopDict.CFFTopDict = CFFTopDict;
@@ -1509,15 +1155,13 @@ var NsCFFPrivateDict;
         [21, "nominalWidthX", "num", 0],
         [19, "Subrs", "offset", null],
     ];
-    let tables;
-    // eslint-disable-next-line no-shadow
     class CFFPrivateDict extends CFFDict {
+        static get tables() {
+            return shadow(this, "tables", this.createTables(layout));
+        }
         subrsIndex;
         constructor(strings) {
-            if (tables === undefined) {
-                tables = CFFDict.createTables(layout);
-            }
-            super(tables, strings);
+            super(CFFPrivateDict.tables, strings);
         }
     }
     NsCFFPrivateDict.CFFPrivateDict = CFFPrivateDict;
@@ -1654,8 +1298,7 @@ export class CFFCompiler {
             if (cff.topDict.hasName("FontMatrix")) {
                 const base = cff.topDict.getByName("FontMatrix");
                 cff.topDict.removeByName("FontMatrix");
-                for (let i = 0, ii = cff.fdArray.length; i < ii; i++) {
-                    const subDict = cff.fdArray[i];
+                for (const subDict of cff.fdArray) {
                     let matrix = base.slice(0);
                     if (subDict.hasName("FontMatrix")) {
                         matrix = Util.transform(matrix, subDict.getByName("FontMatrix"));
@@ -1785,8 +1428,7 @@ export class CFFCompiler {
     }
     compileNameIndex(names) {
         const nameIndex = new CFFIndex();
-        for (let i = 0, ii = names.length; i < ii; ++i) {
-            const name = names[i];
+        for (const name of names) {
             // OTS doesn't allow names to be over 127 characters.
             const length = Math.min(name.length, 127);
             let sanitizedName = new Array(length);
@@ -1821,8 +1463,7 @@ export class CFFCompiler {
     compileTopDicts(dicts, length, removeCidKeys) {
         const fontDictTrackers = [];
         const fdArrayIndex = new CFFIndex();
-        for (let i = 0, ii = dicts.length; i < ii; ++i) {
-            const fontDict = dicts[i];
+        for (const fontDict of dicts) {
             if (removeCidKeys) {
                 fontDict.removeByName("CIDFontVersion");
                 fontDict.removeByName("CIDFontRevision");
@@ -1924,8 +1565,8 @@ export class CFFCompiler {
     }
     compileStringIndex(strings) {
         const stringIndex = new CFFIndex();
-        for (let i = 0, ii = strings.length; i < ii; ++i) {
-            stringIndex.add(stringToBytes(strings[i]));
+        for (const string of strings) {
+            stringIndex.add(stringToBytes(string));
         }
         return this.compileIndex(stringIndex);
     }
@@ -2044,10 +1685,9 @@ export class CFFCompiler {
         const objects = index.objects;
         // First 2 bytes contains the number of objects contained into this index
         const count = objects.length;
-        // If there is no object, just create an index. This technically
-        // should just be [0, 0] but OTS has an issue with that.
+        // If there is no object, just create an index.
         if (count === 0) {
-            return [0, 0, 0];
+            return [0, 0];
         }
         const data = [(count >> 8) & 0xff, count & 0xff];
         let lastOffset = 1;
@@ -2090,9 +1730,7 @@ export class CFFCompiler {
             if (trackers[i]) {
                 trackers[i].offset(data.length);
             }
-            for (let j = 0, jj = objects[i].length; j < jj; j++) {
-                data.push(objects[i][j]);
-            }
+            data.push(...objects[i]);
         }
         return data;
     }

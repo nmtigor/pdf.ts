@@ -54,6 +54,7 @@ export type FloatArray =
   | Float32Array
   | Float64Array;
 export type TypedArray = IntegerArray | FloatArray;
+export type BinaryData = TypedArray | ArrayBuffer | number[] | string;
 /*80--------------------------------------------------------------------------*/
 
 export type CSSStyleName = keyof {

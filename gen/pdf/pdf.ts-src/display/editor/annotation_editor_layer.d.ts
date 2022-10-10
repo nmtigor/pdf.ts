@@ -1,21 +1,24 @@
 /** @typedef {import("./editor.js").AnnotationEditor} AnnotationEditor */
 /** @typedef {import("./tools.js").AnnotationEditorUIManager} AnnotationEditorUIManager */
 /** @typedef {import("../annotation_storage.js").AnnotationStorage} AnnotationStorage */
+/** @typedef {import("../../web/text_accessibility.js").TextAccessibilityManager} TextAccessibilityManager */
 /** @typedef {import("../../web/interfaces").IL10n} IL10n */
 import { IL10n } from "../../../pdf.ts-web/interfaces.js";
+import { TextAccessibilityManager } from "../../../pdf.ts-web/text_accessibility.js";
 import { AnnotationEditorType } from "../../shared/util.js";
 import { AnnotationStorage } from "../annotation_storage.js";
 import { PageViewport } from "../display_utils.js";
 import { AnnotationEditor, AnnotationEditorSerialized } from "./editor.js";
 import { AddCommandsP, AnnotationEditorUIManager } from "./tools.js";
 interface AnnotationEditorLayerOptions {
-    mode?: unknown;
-    div: HTMLDivElement;
-    uiManager: AnnotationEditorUIManager;
-    enabled?: boolean;
+    accessibilityManager?: TextAccessibilityManager | undefined;
     annotationStorage: AnnotationStorage;
-    pageIndex: number;
+    div: HTMLDivElement;
+    enabled?: boolean;
     l10n: IL10n;
+    mode?: unknown;
+    pageIndex: number;
+    uiManager: AnnotationEditorUIManager;
     viewport: PageViewport;
 }
 interface _AnnotationEditorLayerRenderP {
@@ -33,7 +36,6 @@ export declare class AnnotationEditorLayer {
     viewport: PageViewport;
     isMultipleSelection?: boolean;
     constructor(options: AnnotationEditorLayerOptions);
-    get textLayerElements(): HTMLElement[] | undefined;
     /**
      * Update the toolbar if it's required to reflect the tool currently used.
      */
@@ -73,26 +75,10 @@ export declare class AnnotationEditorLayer {
      */
     remove(editor: AnnotationEditor): void;
     /**
-     * Function called when the text layer has finished rendering.
-     */
-    onTextLayerRendered(): void;
-    /**
-     * Remove an aria-owns id from a node in the text layer.
-     */
-    removePointerInTextLayer(editor: AnnotationEditor): void;
-    /**
-     * Find the text node which is the nearest and add an aria-owns attribute
-     * in order to correctly position this editor in the text flow.
-     */
-    addPointerInTextLayer(editor: AnnotationEditor): void;
-    /**
-     * Move a div in the DOM in order to respect the visual order.
-     */
-    moveDivInDOM(editor: AnnotationEditor): void;
-    /**
      * Add a new editor in the current view.
      */
     add(editor: AnnotationEditor): void;
+    moveEditorInDOM(editor: AnnotationEditor): void;
     /**
      * Add an editor in the annotation storage.
      */

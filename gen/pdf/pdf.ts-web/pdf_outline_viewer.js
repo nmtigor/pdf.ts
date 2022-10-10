@@ -28,6 +28,7 @@ export class PDFOutlineViewer extends BaseTreeViewer {
     _isPagesLoaded;
     #currentOutlineItemCapability;
     linkService;
+    downloadManager;
     static create(options) {
         const ret = new PDFOutlineViewer(options);
         ret.reset();
@@ -36,6 +37,7 @@ export class PDFOutlineViewer extends BaseTreeViewer {
     constructor(options) {
         super(options);
         this.linkService = options.linkService;
+        this.downloadManager = options.downloadManager;
         this.eventBus._on("toggleoutlinetree", this.toggleAllTreeItems$.bind(this));
         this.eventBus._on("currentoutlineitem", this.#currentOutlineItem);
         this.eventBus._on("pagechanging", (evt) => {
@@ -85,10 +87,34 @@ export class PDFOutlineViewer extends BaseTreeViewer {
         });
     }
     /** @implement */
-    _bindLink(element, { url, newWindow, dest }) {
+    _bindLink(element, { url, newWindow, action, attachment, dest, setOCGState }) {
         const { linkService } = this;
         if (url) {
             linkService.addLinkAttributes(element, url, newWindow);
+            return;
+        }
+        if (action) {
+            element.href = linkService.getAnchorUrl("");
+            element.onclick = () => {
+                linkService.executeNamedAction(action);
+                return false;
+            };
+            return;
+        }
+        if (attachment) {
+            element.href = linkService.getAnchorUrl("");
+            element.onclick = () => {
+                this.downloadManager.openOrDownloadData(element, attachment.content, attachment.filename);
+                return false;
+            };
+            return;
+        }
+        if (setOCGState) {
+            element.href = linkService.getAnchorUrl("");
+            element.onclick = () => {
+                linkService.executeSetOCGState(setOCGState);
+                return false;
+            };
             return;
         }
         element.href = linkService.getDestinationHash(dest);

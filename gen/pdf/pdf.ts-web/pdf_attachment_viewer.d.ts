@@ -1,3 +1,4 @@
+import { Attachment } from "../pdf.ts-src/pdf.js";
 import { BaseTreeViewer, type BaseTreeViewerCtorP } from "./base_tree_viewer.js";
 import { IDownloadManager } from "./interfaces.js";
 interface PDFAttachmentViewerOptions extends BaseTreeViewerCtorP {
@@ -12,10 +13,6 @@ interface _PDFAttachmentViewerRenderP {
      */
     attachments?: Record<string, Attachment> | undefined;
     keepRenderedCapability?: boolean;
-}
-interface Attachment {
-    filename: string;
-    content?: Uint8Array | Uint8ClampedArray | undefined;
 }
 export declare class PDFAttachmentViewer extends BaseTreeViewer {
     #private;

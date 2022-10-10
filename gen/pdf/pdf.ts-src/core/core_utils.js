@@ -17,9 +17,9 @@
  */
 import { _PDFDEV } from "../../../global.js";
 import { assert } from "../../../lib/util/trace.js";
-import { AnnotationEditorPrefix, BaseException, FontType, objectSize, StreamType, stringToPDFString, warn } from "../shared/util.js";
+import { AnnotationEditorPrefix, BaseException, FontType, objectSize, StreamType, stringToPDFString, warn, } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
-import { Dict, isName, Ref, RefSet } from "./primitives.js";
+import { Dict, isName, Ref, RefSet, } from "./primitives.js";
 /*80--------------------------------------------------------------------------*/
 export function getLookupTableFactory(initializer) {
     let lookup;
@@ -99,7 +99,7 @@ export class DocStats {
         this._send();
     }
     addFontType(type) {
-         {
+        if (_PDFDEV) {
             assert(FontType[type] === type, 'addFontType: Invalid "type" value.');
         }
         if (this.#fontTypes.has(type)) {
@@ -142,38 +142,11 @@ export function getInheritableProperty({ dict, key, getArray = false, stopWhenFo
     }
     return values;
 }
-// prettier-ignore
+// deno-fmt-ignore
 const ROMAN_NUMBER_MAP = [
-    "",
-    "C",
-    "CC",
-    "CCC",
-    "CD",
-    "D",
-    "DC",
-    "DCC",
-    "DCCC",
-    "CM",
-    "",
-    "X",
-    "XX",
-    "XXX",
-    "XL",
-    "L",
-    "LX",
-    "LXX",
-    "LXXX",
-    "XC",
-    "",
-    "I",
-    "II",
-    "III",
-    "IV",
-    "V",
-    "VI",
-    "VII",
-    "VIII",
-    "IX",
+    "", "C", "CC", "CCC", "CD", "D", "DC", "DCC", "DCCC", "CM",
+    "", "X", "XX", "XXX", "XL", "L", "LX", "LXX", "LXXX", "XC",
+    "", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX"
 ];
 /**
  * Converts positive integers to (upper case) Roman numerals.

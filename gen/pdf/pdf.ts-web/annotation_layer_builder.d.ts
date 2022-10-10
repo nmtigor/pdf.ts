@@ -1,5 +1,6 @@
 import { AnnotationStorage, type AnnotIntent, type FieldObject, PageViewport, PDFPageProxy } from "../pdf.ts-src/pdf.js";
 import { IDownloadManager, type IL10n, type IPDFLinkService, type MouseState } from "./interfaces.js";
+import { TextAccessibilityManager } from "./text_accessibility.js";
 interface AnnotationLayerBuilderOptions {
     pageDiv: HTMLDivElement;
     pdfPage: PDFPageProxy;
@@ -20,6 +21,7 @@ interface AnnotationLayerBuilderOptions {
     fieldObjectsPromise: Promise<Record<string, FieldObject[]> | undefined> | undefined;
     mouseState?: MouseState | undefined;
     annotationCanvasMap: Map<string, HTMLCanvasElement> | undefined;
+    accessibilityManager: TextAccessibilityManager | undefined;
 }
 export declare class AnnotationLayerBuilder {
     pageDiv: HTMLDivElement;
@@ -35,9 +37,10 @@ export declare class AnnotationLayerBuilder {
     _fieldObjectsPromise: Promise<Record<string, FieldObject[]> | undefined> | undefined;
     _mouseState: MouseState | undefined;
     _annotationCanvasMap: Map<string, HTMLCanvasElement> | undefined;
+    _accessibilityManager: TextAccessibilityManager | undefined;
     div?: HTMLDivElement;
     _cancelled: boolean;
-    constructor({ pageDiv, pdfPage, linkService, downloadManager, annotationStorage, imageResourcesPath, renderForms, l10n, enableScripting, hasJSActionsPromise, fieldObjectsPromise, mouseState, annotationCanvasMap, }: AnnotationLayerBuilderOptions);
+    constructor({ pageDiv, pdfPage, linkService, downloadManager, annotationStorage, imageResourcesPath, renderForms, l10n, enableScripting, hasJSActionsPromise, fieldObjectsPromise, mouseState, annotationCanvasMap, accessibilityManager, }: AnnotationLayerBuilderOptions);
     /**
      * @param viewport
      * @param intent (default value is 'display')

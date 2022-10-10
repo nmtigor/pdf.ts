@@ -49,7 +49,7 @@ declare global {
     }
     interface Range {
         /**
-         * @param { out } rec_a
+         * @out @param rec_a
          * @const @param ovlap
          */
         getReca(rec_a: DOMRect[], ovlap?: boolean): void;

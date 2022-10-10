@@ -9,6 +9,7 @@ export declare class AnnotationStorage {
     _modified: boolean;
     onSetModified?: () => void;
     onResetModified?: () => void;
+    onAnnotationEditor: ((type?: "freetext" | "ink" | undefined) => void) | undefined;
     /**
      * Get the value for a given key if it exists, or return the default value.
      */
@@ -20,7 +21,7 @@ export declare class AnnotationStorage {
     /**
      * Remove a value from the storage.
      */
-    removeKey(key: string): void;
+    remove(key: string): void;
     /**
      * Set the value for a given key
      */

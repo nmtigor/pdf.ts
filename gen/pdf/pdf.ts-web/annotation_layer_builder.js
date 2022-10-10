@@ -21,6 +21,8 @@
 /** @typedef {import("./interfaces").IDownloadManager} IDownloadManager */
 /** @typedef {import("./interfaces").IL10n} IL10n */
 /** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
+// eslint-disable-next-line max-len
+/** @typedef {import("./textaccessibility.js").TextAccessibilityManager} TextAccessibilityManager */
 import { html } from "../../lib/dom.js";
 import { AnnotationLayer, } from "../pdf.ts-src/pdf.js";
 import { NullL10n } from "./l10n_utils.js";
@@ -38,9 +40,10 @@ export class AnnotationLayerBuilder {
     _fieldObjectsPromise;
     _mouseState;
     _annotationCanvasMap;
+    _accessibilityManager;
     div;
     _cancelled = false;
-    constructor({ pageDiv, pdfPage, linkService, downloadManager, annotationStorage, imageResourcesPath = "", renderForms = true, l10n = NullL10n, enableScripting = false, hasJSActionsPromise, fieldObjectsPromise, mouseState, annotationCanvasMap = undefined, }) {
+    constructor({ pageDiv, pdfPage, linkService, downloadManager, annotationStorage, imageResourcesPath = "", renderForms = true, l10n = NullL10n, enableScripting = false, hasJSActionsPromise, fieldObjectsPromise, mouseState, annotationCanvasMap, accessibilityManager, }) {
         this.pageDiv = pageDiv;
         this.pdfPage = pdfPage;
         this.linkService = linkService;
@@ -54,6 +57,7 @@ export class AnnotationLayerBuilder {
         this._fieldObjectsPromise = fieldObjectsPromise;
         this._mouseState = mouseState;
         this._annotationCanvasMap = annotationCanvasMap;
+        this._accessibilityManager = accessibilityManager;
     }
     /**
      * @param viewport
@@ -67,8 +71,9 @@ export class AnnotationLayerBuilder {
             this._hasJSActionsPromise,
             this._fieldObjectsPromise,
         ]);
-        if (this._cancelled || annotations.length === 0)
+        if (this._cancelled || annotations.length === 0) {
             return;
+        }
         const parameters = {
             viewport: viewport.clone({ dontFlip: true }),
             div: this.div,
@@ -83,6 +88,8 @@ export class AnnotationLayerBuilder {
             hasJSActions,
             fieldObjects,
             mouseState: this._mouseState,
+            annotationCanvasMap: this._annotationCanvasMap,
+            accessibilityManager: this._accessibilityManager,
         };
         if (this.div) {
             // If an annotationLayer already exists, refresh its children's

@@ -15,6 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { createPromiseCap } from "../../lib/promisecap.js";
 import { PasswordResponses } from "../pdf.ts-src/pdf.js";
 /*80--------------------------------------------------------------------------*/
 export class PasswordPrompt {
@@ -26,6 +27,7 @@ export class PasswordPrompt {
     overlayManager;
     l10n;
     _isViewerEmbedded;
+    #activeCapability;
     #updateCallback;
     #reason;
     /**
@@ -45,7 +47,7 @@ export class PasswordPrompt {
         this._isViewerEmbedded = isViewerEmbedded;
         // Attach the event listeners.
         this.submitButton.addEventListener("click", this.#verify);
-        this.cancelButton.addEventListener("click", this.#cancel);
+        this.cancelButton.addEventListener("click", this.close);
         this.input.addEventListener("keydown", (e) => {
             if (e.keyCode === /* Enter = */ 13) {
                 this.#verify();
@@ -55,18 +57,28 @@ export class PasswordPrompt {
         this.dialog.addEventListener("close", this.#cancel);
     }
     async open() {
-        await this.overlayManager.open(this.dialog);
+        if (this.#activeCapability) {
+            await this.#activeCapability.promise;
+        }
+        this.#activeCapability = createPromiseCap();
+        try {
+            await this.overlayManager.open(this.dialog);
+        }
+        catch (ex) {
+            this.#activeCapability = undefined;
+            throw ex;
+        }
         const passwordIncorrect = this.#reason === PasswordResponses.INCORRECT_PASSWORD;
         if (!this._isViewerEmbedded || passwordIncorrect) {
             this.input.focus();
         }
         this.label.textContent = await this.l10n.get(`password_${passwordIncorrect ? "invalid" : "label"}`);
     }
-    async close() {
+    close = async () => {
         if (this.overlayManager.active === this.dialog) {
             this.overlayManager.close(this.dialog);
         }
-    }
+    };
     #verify = () => {
         const password = this.input.value;
         if (password?.length > 0) {
@@ -75,6 +87,7 @@ export class PasswordPrompt {
     };
     #cancel = () => {
         this.#invokeCallback(new Error("PasswordPrompt cancelled."));
+        this.#activeCapability.resolve();
     };
     #invokeCallback(password) {
         if (!this.#updateCallback) {
@@ -86,7 +99,10 @@ export class PasswordPrompt {
         this.#updateCallback(password);
         this.#updateCallback = undefined;
     }
-    setUpdateCallback(updateCallback, reason) {
+    async setUpdateCallback(updateCallback, reason) {
+        if (this.#activeCapability) {
+            await this.#activeCapability.promise;
+        }
         this.#updateCallback = updateCallback;
         this.#reason = reason;
     }

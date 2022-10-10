@@ -24,6 +24,7 @@ export declare class OptionalContentConfig {
     })[] | null;
     getGroups(): Record<string, OptionalContentGroup> | null;
     getGroup(id: string): OptionalContentGroup | null;
+    getHash(): string;
 }
 export {};
 //# sourceMappingURL=optional_content_config.d.ts.map

@@ -1,11 +1,11 @@
-import { PageColors } from "../../pdf.ts-web/base_viewer.js";
+import { PageColors } from "../../pdf.ts-web/pdf_viewer.js";
 import { Stepper } from "../../pdf.ts-web/debugger.js";
 import { type ImgData, type MarkedContentProps, type SmaskOptions } from "../core/evaluator.js";
 import { Glyph } from "../core/fonts.js";
 import { type OpListIR } from "../core/operator_list.js";
 import { type PatternIR, ShadingType } from "../core/pattern.js";
 import { type matrix_t, OPS, point_t, type rect_t, TextRenderingMode } from "../shared/util.js";
-import { ImageLayer, PDFCommonObjs, PDFObjects, PDFObjs } from "./api.js";
+import { PDFCommonObjs, PDFObjects, PDFObjs } from "./api.js";
 import { BaseCanvasFactory, type CanvasEntry } from "./base_factory.js";
 import { PageViewport } from "./display_utils.js";
 import { type AddToPath, FontFaceObject } from "./font_loader.js";
@@ -50,7 +50,7 @@ export declare class CachedCanvases {
     canvasFactory: BaseCanvasFactory;
     cache: Record<string, CanvasEntry>;
     constructor(canvasFactory: BaseCanvasFactory);
-    getCanvas(id: string, width: number, height: number, trackTransform?: boolean): CanvasEntry;
+    getCanvas(id: string, width: number, height: number): CanvasEntry;
     delete(id: string): void;
     clear(): void;
 }
@@ -155,7 +155,6 @@ export declare class CanvasGraphics {
     commonObjs: PDFObjects<PDFCommonObjs>;
     objs: PDFObjects<PDFObjs | undefined>;
     canvasFactory: BaseCanvasFactory;
-    imageLayer: ImageLayer | undefined;
     groupStack: C2D[];
     processingType3: Glyph | undefined;
     /**
@@ -186,7 +185,7 @@ export declare class CanvasGraphics {
     foregroundColor: string | undefined;
     transparentCanvas: HTMLCanvasElement | undefined;
     pendingTextPaths?: TextPath[];
-    constructor(canvasCtx: C2D, commonObjs: PDFObjects<PDFCommonObjs>, objs: PDFObjects<PDFObjs | undefined>, canvasFactory: BaseCanvasFactory, imageLayer?: ImageLayer, optionalContentConfig?: OptionalContentConfig, annotationCanvasMap?: Map<string, HTMLCanvasElement>, pageColors?: PageColors);
+    constructor(canvasCtx: C2D, commonObjs: PDFObjects<PDFCommonObjs>, objs: PDFObjects<PDFObjs | undefined>, canvasFactory: BaseCanvasFactory, optionalContentConfig?: OptionalContentConfig, annotationCanvasMap?: Map<string, HTMLCanvasElement>, pageColors?: PageColors);
     getObject<T extends PDFCommonObjs | PDFObjs>(data: any, fallback?: T | undefined): T | undefined;
     beginDrawing({ transform, viewport, transparency, background, }: _BeginDrawingP): void;
     executeOperatorList(operatorList: OpListIR, executionStartIdx?: number, continueCallback?: () => void, stepper?: Stepper): number;
@@ -291,7 +290,6 @@ export declare class CanvasGraphics {
     getSinglePixelWidth(): number;
     getScaleForStroking(): point_t;
     rescaleAndStroke(saveRestore: boolean): void;
-    getCanvasPosition(x: number, y: number): number[];
     isContentVisible(): boolean;
 }
 export interface CanvasGraphics {

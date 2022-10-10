@@ -18,7 +18,7 @@
 import { GENERIC, INOUT } from "../../global.js";
 import { Locale } from "../../lib/Locale.js";
 import { assert } from "../../lib/util/trace.js";
-import { DefaultExternalServices, viewerapp } from "./app.js";
+import { DefaultExternalServices, viewerApp } from "./app.js";
 import { DownloadManager } from "./download_manager.js";
 import { GenericL10n } from "./genericl10n.js";
 import { GenericScripting } from "./generic_scripting.js";
@@ -58,6 +58,6 @@ class GenericExternalServices extends DefaultExternalServices {
         return new GenericScripting(sandboxBundleSrc);
     }
 }
-viewerapp.externalServices = new GenericExternalServices();
+viewerApp.externalServices = new GenericExternalServices();
 /*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=genericcom.js.map

@@ -50,10 +50,6 @@ declare function getViewerConfiguration(): {
         openFile: HTMLButtonElement | undefined;
         print: HTMLButtonElement;
         /**
-         * Button to disable editing.
-         */
-        editorNoneButton: HTMLButtonElement;
-        /**
          * Button to switch to FreeText editing.
          */
         editorFreeTextButton: HTMLButtonElement;
@@ -61,17 +57,9 @@ declare function getViewerConfiguration(): {
         editorInkButton: HTMLButtonElement;
         editorInkParamsToolbar: HTMLButtonElement;
         /**
-         * Button to switch to presentation mode.
-         */
-        presentationModeButton: HTMLButtonElement;
-        /**
          * Button to download the document.
          */
         download: HTMLButtonElement;
-        /**
-         * Button to obtain a bookmark link to the current location in the document.
-         */
-        viewBookmark: HTMLAnchorElement;
     };
     secondaryToolbar: {
         /**
@@ -268,14 +256,6 @@ declare function getViewerConfiguration(): {
         editorInkThickness: HTMLInputElement;
         editorInkOpacity: HTMLInputElement;
     };
-    errorWrapper: {
-        container: HTMLDivElement;
-        errorMessage: HTMLSpanElement;
-        closeButton: HTMLButtonElement;
-        errorMoreInfo: HTMLTextAreaElement;
-        moreInfoButton: HTMLButtonElement;
-        lessInfoButton: HTMLButtonElement;
-    } | undefined;
     printContainer: HTMLDivElement;
     openFileInput: HTMLInputElement | undefined;
     debuggerScriptPath: string;

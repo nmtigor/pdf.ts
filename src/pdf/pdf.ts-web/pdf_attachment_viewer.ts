@@ -19,7 +19,7 @@
 
 import { html } from "../../lib/dom.ts";
 import { createPromiseCap, PromiseCap } from "../../lib/promisecap.ts";
-import { getFilenameFromUrl } from "../pdf.ts-src/pdf.ts";
+import { Attachment, getFilenameFromUrl } from "../pdf.ts-src/pdf.ts";
 import {
   BaseTreeViewer,
   type BaseTreeViewerCtorP,
@@ -42,11 +42,6 @@ interface _PDFAttachmentViewerRenderP {
   attachments?: Record<string, Attachment> | undefined;
 
   keepRenderedCapability?: boolean;
-}
-
-interface Attachment {
-  filename: string;
-  content?: Uint8Array | Uint8ClampedArray | undefined;
 }
 
 export class PDFAttachmentViewer extends BaseTreeViewer {

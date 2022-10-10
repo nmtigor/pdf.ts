@@ -18,11 +18,6 @@ interface ToolbarItems {
     next: HTMLButtonElement;
     zoomIn: HTMLButtonElement;
     zoomOut: HTMLButtonElement;
-    editorNoneButton: HTMLButtonElement;
-    editorFreeTextButton: HTMLButtonElement;
-    editorFreeTextParamsToolbar: HTMLDivElement;
-    editorInkButton: HTMLButtonElement;
-    editorInkParamsToolbar: HTMLButtonElement;
 }
 export declare class Toolbar {
     #private;
@@ -31,7 +26,6 @@ export declare class Toolbar {
     l10n: IL10n;
     buttons: ToolbarButton[];
     items: ToolbarItems;
-    _wasLocalized: boolean;
     pageNumber: number;
     pageLabel?: string | undefined;
     hasPageLabels: boolean;
