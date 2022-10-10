@@ -754,14 +754,11 @@ class AstBinaryOperator extends Leaf<AstBinaryOperatorDump> {
   }
 
   override isDotExpression() {
-    // return Operators.id.dot <= this.id && this.id <= Operators.id.dotHash; //kkkk bug?
     return Operators.dot.id <= this.id && this.id <= Operators.dotHash.id;
   }
 
   override isSomPredicate() {
     return (this.isDotExpression() ||
-      // (Operators.id.lt <= this.id &&
-      //   this.id <= Operators.id.or && //kkkk bug? ✅
       (Operators.lt.id <= this.id && this.id <= Operators.or.id &&
         ((this.left.isDotExpression() && this.right.isConstant()) ||
           (this.left.isConstant() && this.right.isDotExpression()) ||
@@ -1191,8 +1188,8 @@ class BlockDecl extends Leaf<BlockDeclDump> {
   }
 }
 
-type ExprListDimp = unknown[];
-class ExprList extends Leaf<ExprListDimp> {
+type ExprListDump = unknown[];
+class ExprList extends Leaf<ExprListDump> {
   expressions;
 
   constructor(expressions: Leaf[]) {

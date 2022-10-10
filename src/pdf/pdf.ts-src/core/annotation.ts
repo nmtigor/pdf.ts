@@ -24,8 +24,10 @@ import {
   type AnnotStorageRecord,
   AnnotStorageValue,
 } from "../display/annotation_layer.ts";
+import { type TextItem } from "../display/api.ts";
 import { DocWrapped, FieldWrapped } from "../scripting_api/app.ts";
 import { SendData } from "../scripting_api/pdf_object.ts";
+import { MActionMap } from "../shared/message_handler.ts";
 import {
   AnnotationActionEventType,
   AnnotationBorderStyleType,
@@ -54,7 +56,7 @@ import {
 } from "../shared/util.ts";
 import { BaseStream } from "./base_stream.ts";
 import { bidi, type BidiText } from "./bidi.ts";
-import { Catalog, type CatParseDestDictRes } from "./catalog.ts";
+import { Attachments, Catalog, type CatParseDestDictRes } from "./catalog.ts";
 import { ColorSpace } from "./colorspace.ts";
 import {
   type AnnotActions,
@@ -72,7 +74,7 @@ import {
 } from "./default_appearance.ts";
 import { type LocalIdFactory } from "./document.ts";
 import { EvalState, PartialEvaluator } from "./evaluator.ts";
-import { FileSpec, type Serializable } from "./file_spec.ts";
+import { type Attachment, FileSpec } from "./file_spec.ts";
 import { ErrorFont, Font, Glyph } from "./fonts.ts";
 import { ObjectLoader } from "./object_loader.ts";
 import { OperatorList } from "./operator_list.ts";
@@ -137,15 +139,19 @@ export class AnnotationFactory {
       // Only necessary to prevent the `pdfManager.docBaseUrl`-getter, used
       // with certain Annotations, from throwing and thus breaking parsing:
       pdfManager.ensureCatalog("baseUrl"),
+      // Only necessary in the `Catalog.parseDestDictionary`-method,
+      // when parsing "GoToE" actions:
+      pdfManager.ensureCatalog("attachments"),
       pdfManager.ensureDoc("xfaDatasets"),
       collectFields ? this.#getPageIndex(xref, ref, pdfManager) : -1,
-    ]).then(([acroForm, baseUrl, xfaDatasets, pageIndex]) =>
+    ]).then(([acroForm, baseUrl, attachments, xfaDatasets, pageIndex]) =>
       pdfManager.ensure(this, "_create", [
         xref,
         ref,
         pdfManager,
         idFactory,
         acroForm,
+        attachments,
         xfaDatasets,
         collectFields,
         pageIndex,
@@ -162,6 +168,7 @@ export class AnnotationFactory {
     pdfManager: BasePdfManager,
     idFactory: LocalIdFactory,
     acroForm: Dict | undefined,
+    attachments: Attachments | undefined,
     xfaDatasets: DatasetReader | undefined,
     collectFields: boolean,
     pageIndex = -1,
@@ -178,7 +185,7 @@ export class AnnotationFactory {
     // Determine the annotation's subtype.
     const subtypename = dict.get("Subtype");
     const subtype = subtypename instanceof Name
-      ? <AnnotType> subtypename.name
+      ? subtypename.name as AnnotType
       : undefined;
 
     // Return the right annotation object based on the subtype and field type.
@@ -190,6 +197,7 @@ export class AnnotationFactory {
       id,
       pdfManager,
       acroForm: acroForm instanceof Dict ? acroForm : Dict.empty,
+      attachments,
       xfaDatasets,
       collectFields,
       pageIndex,
@@ -516,6 +524,7 @@ interface _AnnotationCtorP {
   id: string;
   pdfManager: BasePdfManager;
   acroForm: Dict;
+  attachments: Attachments | undefined;
   xfaDatasets: DatasetReader | undefined;
   collectFields: boolean;
   pageIndex: number;
@@ -617,13 +626,15 @@ export type AnnotationData =
 
     //
 
-    file?: Serializable; /* FileAttachmentAnnotation */
+    file?: Attachment; /* FileAttachmentAnnotation */
 
     /* PopupAnnotation */
     parentType?: string | undefined;
     parentId?: string | undefined;
     parentRect?: rect_t;
     /* ~ */
+
+    textContent?: string[];
   }
   & CatParseDestDictRes;
 
@@ -1195,6 +1206,63 @@ export class Annotation {
     annotationStorage?: AnnotStorageRecord,
   ): Promise<SaveReturn | undefined> {
     return undefined;
+  }
+
+  get hasTextContent() {
+    return false;
+  }
+
+  /** @final */
+  async extractTextContent(
+    evaluator: PartialEvaluator,
+    task: WorkerTask,
+    viewBox: rect_t,
+  ) {
+    if (!this.appearance) {
+      return;
+    }
+
+    const resources = await this.loadResources(
+      ["ExtGState", "Font", "Properties", "XObject"],
+      this.appearance,
+    );
+
+    const text: string[] = [];
+    const buffer: string[] = [];
+    const sink = {
+      desiredSize: Infinity,
+      // ready: true, //kkkk bug? ✅
+      ready: Promise.resolve(),
+
+      enqueue(chunk: MActionMap["GetTextContent"]["Sinkchunk"], size: number) {
+        for (const item of chunk.items) {
+          buffer.push((item as TextItem).str);
+          if ((item as TextItem).hasEOL) {
+            text.push(buffer.join(""));
+            buffer.length = 0;
+          }
+        }
+      },
+    };
+
+    await evaluator.getTextContent({
+      stream: this.appearance,
+      task,
+      resources,
+      includeMarkedContent: true,
+      combineTextItems: true,
+      sink,
+      viewBox,
+    });
+    this.reset();
+
+    if (buffer.length) {
+      text.push(buffer.join(""));
+    }
+
+    if (text.length > 0) {
+      this.data.textContent = text;
+    }
   }
 
   /**
@@ -2672,7 +2740,7 @@ class TextWidgetAnnotation extends WidgetAnnotation {
     // Determine the maximum length of text in the field.
     let maximumLength = getInheritableProperty({ dict, key: "MaxLen" });
     if (!Number.isInteger(maximumLength) || <number> maximumLength < 0) {
-      maximumLength = undefined;
+      maximumLength = 0;
     }
     this.data.maxLen = <number | undefined> maximumLength;
 
@@ -2682,7 +2750,7 @@ class TextWidgetAnnotation extends WidgetAnnotation {
       !this.hasFieldFlag(AnnotationFieldFlag.MULTILINE) &&
       !this.hasFieldFlag(AnnotationFieldFlag.PASSWORD) &&
       !this.hasFieldFlag(AnnotationFieldFlag.FILESELECT) &&
-      this.data.maxLen !== undefined;
+      this.data.maxLen !== 0;
     this.data.doNotScroll = this.hasFieldFlag(AnnotationFieldFlag.DONOTSCROLL);
   }
 
@@ -3258,6 +3326,7 @@ class ButtonWidgetAnnotation extends WidgetAnnotation {
       destDict: params.dict,
       resultObj: this.data,
       docBaseUrl: params.pdfManager.docBaseUrl,
+      docAttachments: params.attachments,
     });
   }
 
@@ -3594,11 +3663,12 @@ class LinkAnnotation extends Annotation {
       destDict: params.dict,
       resultObj: this.data,
       docBaseUrl: params.pdfManager.docBaseUrl,
+      docAttachments: params.attachments,
     });
   }
 }
 
-class PopupAnnotation extends Annotation {
+export class PopupAnnotation extends Annotation {
   constructor(parameters: _AnnotationCtorP) {
     super(parameters);
 
@@ -3677,6 +3747,10 @@ class FreeTextAnnotation extends MarkupAnnotation {
     super(parameters);
 
     this.data.annotationType = AnnotationType.FREETEXT;
+  }
+
+  override get hasTextContent() {
+    return !!this.appearance;
   }
 
   static override createNewDict(

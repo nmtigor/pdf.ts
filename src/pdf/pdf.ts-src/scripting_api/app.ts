@@ -213,7 +213,6 @@ export class App extends PDFObject<SendAppData> {
     this._timeoutCallbackId = 0;
     this._globalEval = data.globalEval;
     this._externalCall = data.externalCall;
-    // this._document = data._document; //kkkk bug? ✅
   }
 
   // This function is called thanks to the proxy
@@ -247,16 +246,12 @@ export class App extends PDFObject<SendAppData> {
     const timeout = Object.create(null);
     const id: _Callback = { callbackId, interval };
     this._timeoutIds.set(timeout, id);
-    if (this._timeoutIdsRegistry) {
-      this._timeoutIdsRegistry.register(timeout, id);
-    }
+    this._timeoutIdsRegistry?.register(timeout, id);
     return timeout;
   }
 
   _unregisterTimeout(timeout: object) {
-    if (this._timeoutIdsRegistry) {
-      this._timeoutIdsRegistry.unregister(timeout);
-    }
+    this._timeoutIdsRegistry?.unregister(timeout);
 
     const data = this._timeoutIds.get(timeout);
     if (!data) {

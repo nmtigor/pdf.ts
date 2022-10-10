@@ -33,6 +33,8 @@
 /** @typedef {import("./text_layer_builder").TextLayerBuilder} TextLayerBuilder */
 /** @typedef {import("./ui_utils").RenderingStates} RenderingStates */
 /** @typedef {import("./xfa_layer_builder").XfaLayerBuilder} XfaLayerBuilder */
+// eslint-disable-next-line max-len
+/** @typedef {import("./text_accessibility.js").TextAccessibilityManager} TextAccessibilityManager */
 
 import { type Locale_1, type WebL10nArgs } from "../../3rd/webL10n/l10n.ts";
 import {
@@ -48,12 +50,14 @@ import {
   PDFPageProxy,
   type RefProxy,
   ScriptingActionName,
+  type SetOCGState,
 } from "../pdf.ts-src/pdf.ts";
 import { AnnotationEditorLayerBuilder } from "./annotation_editor_layer_builder.ts";
 import { AnnotationLayerBuilder } from "./annotation_layer_builder.ts";
 import { EventBus } from "./event_utils.ts";
 import { LinkTarget } from "./pdf_link_service.ts";
 import { StructTreeLayerBuilder } from "./struct_tree_layer_builder.ts";
+import { TextAccessibilityManager } from "./text_accessibility.ts";
 import { TextHighlighter } from "./text_highlighter.ts";
 import { TextLayerBuilder } from "./text_layer_builder.ts";
 import { RenderingStates } from "./ui_utils.ts";
@@ -107,6 +111,8 @@ export interface IPDFLinkService {
   setHash(hash: string): void;
 
   executeNamedAction(action: string): void;
+
+  executeSetOCGState(action: SetOCGState): void;
 
   /**
    * @param pageNum page number.
@@ -185,14 +191,9 @@ export interface CreateTextLayerBuilderP {
   textLayerDiv: HTMLDivElement;
   pageIndex: number;
   viewport: PageViewport;
-
-  /**
-   * =false
-   */
-  enhanceTextSelection: boolean;
-
   eventBus: EventBus;
   highlighter: TextHighlighter | undefined;
+  accessibilityManager?: TextAccessibilityManager;
 }
 export interface IPDFTextLayerFactory {
   createTextLayerBuilder(_: CreateTextLayerBuilderP): TextLayerBuilder;
@@ -238,6 +239,8 @@ export interface CreateAnnotationLayerBuilderP {
    * Map some annotation ids with canvases used to render them.
    */
   annotationCanvasMap?: Map<string, HTMLCanvasElement>;
+
+  accessibilityManager?: TextAccessibilityManager | undefined;
 }
 export interface IPDFAnnotationLayerFactory {
   createAnnotationLayerBuilder(
@@ -255,6 +258,8 @@ export interface CreateAnnotationEditorLayerBuilderP {
    * Storage for annotation data in forms.
    */
   annotationStorage?: AnnotationStorage;
+
+  accessibilityManager?: TextAccessibilityManager | undefined;
 }
 export interface IPDFAnnotationEditorLayerFactory {
   createAnnotationEditorLayerBuilder(

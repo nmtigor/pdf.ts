@@ -213,38 +213,11 @@ export function getInheritableProperty({
   return values;
 }
 
-// prettier-ignore
+// deno-fmt-ignore
 const ROMAN_NUMBER_MAP = [
-  "",
-  "C",
-  "CC",
-  "CCC",
-  "CD",
-  "D",
-  "DC",
-  "DCC",
-  "DCCC",
-  "CM",
-  "",
-  "X",
-  "XX",
-  "XXX",
-  "XL",
-  "L",
-  "LX",
-  "LXX",
-  "LXXX",
-  "XC",
-  "",
-  "I",
-  "II",
-  "III",
-  "IV",
-  "V",
-  "VI",
-  "VII",
-  "VIII",
-  "IX",
+  "", "C", "CC", "CCC", "CD", "D", "DC", "DCC", "DCCC", "CM",
+  "", "X", "XX", "XXX", "XL", "L", "LX", "LXX", "LXXX", "XC",
+  "", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX"
 ];
 
 /**

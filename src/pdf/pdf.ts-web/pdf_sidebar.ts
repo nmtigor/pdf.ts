@@ -326,9 +326,11 @@ export class PDFSidebar {
   }
 
   #showUINotification() {
-    this.l10n.get("toggle_sidebar_notification2.title").then((msg) => {
-      this.toggleButton.title = msg;
-    });
+    this.toggleButton.setAttribute(
+      "data-l10n-id",
+      "toggle_sidebar_notification2",
+    );
+    this.l10n.translate(this.toggleButton);
 
     if (!this.isOpen) {
       // Only show the notification on the `toggleButton` if the sidebar is
@@ -345,9 +347,8 @@ export class PDFSidebar {
     }
 
     if (reset) {
-      this.l10n.get("toggle_sidebar.title").then((msg) => {
-        this.toggleButton.title = msg;
-      });
+      this.toggleButton.setAttribute("data-l10n-id", "toggle_sidebar");
+      this.l10n.translate(this.toggleButton);
     }
   }
 

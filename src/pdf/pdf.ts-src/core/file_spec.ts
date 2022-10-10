@@ -34,9 +34,9 @@ function pickPlatformItem(dict: Dict) {
   return undefined;
 }
 
-export interface Serializable {
+export interface Attachment {
   filename: string;
-  content?: Uint8Array | Uint8ClampedArray;
+  content?: Uint8Array | Uint8ClampedArray | undefined;
 }
 
 /**
@@ -114,7 +114,7 @@ export class FileSpec {
   }
 
   get serializable() {
-    return <Serializable> {
+    return <Attachment> {
       filename: this.filename,
       content: this.content,
     };

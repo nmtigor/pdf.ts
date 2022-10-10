@@ -2,7 +2,7 @@ The purpose of this project is to help learning PDF format and developing PDF to
 
 It is
 
-* based on [pdf.js@v2.15.349](https://github.com/mozilla/pdf.js/tree/v2.15.349),
+* based on [pdf.js@v2.16.105+](https://github.com/mozilla/pdf.js/tree/master)(2022-10-07),
 
 * **transpiled using [TypeScript@mymain](https://github.com/nmtigor/TypeScript/tree/mymain/PRs)!**
 
@@ -22,7 +22,7 @@ It is
   ```bash
   /path_to/TypeScript/bin/tsc
   ```
-* Start a local server for <ins>/path_to/pdf.ts</ins> at <ins>h</ins><ins>ttp://localhost:8000</ins>.
+* Start a local web server for <ins>/path_to/pdf.ts</ins> at <ins>h</ins><ins>ttp://localhost:8000</ins>.
 * Visit <ins>h</ins><ins>ttp://localhost:8000/src/pdf/pdf.ts-web/viewer.html</ins>.
 
 ---

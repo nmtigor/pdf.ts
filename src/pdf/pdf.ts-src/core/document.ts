@@ -46,10 +46,10 @@ import {
 } from "../shared/util.ts";
 import {
   Annotation,
-  type AnnotationData,
   AnnotationFactory,
   type FieldObject,
   MarkupAnnotation,
+  PopupAnnotation,
   type SaveReturn,
 } from "./annotation.ts";
 import { BaseStream } from "./base_stream.ts";
@@ -279,7 +279,7 @@ export class Page {
     return shadow(this, "userUnit", obj);
   }
 
-  get view() {
+  get view(): rect_t {
     // From the spec, 6th ed., p.963:
     // "The crop, bleed, trim, and art boxes should not ordinarily
     // extend beyond the boundaries of the media box. If they do, they are
@@ -441,11 +441,11 @@ export class Page {
     return this._parsedAnnotations.then((annotations) => {
       const newRefsPromises: Promise<SaveReturn | undefined>[] = [];
       for (const annotation of annotations) {
-        if (!annotation.mustBePrinted(annotationStorage)) {
+        if (!annotation!.mustBePrinted(annotationStorage)) {
           continue;
         }
         newRefsPromises.push(
-          annotation
+          annotation!
             .save(partialEvaluator, task, annotationStorage)
             .catch((reason) => {
               warn(
@@ -572,11 +572,11 @@ export class Page {
       for (const annotation of annotations) {
         if (
           intentAny ||
-          (intentDisplay && annotation.mustBeViewed(annotationStorage)) ||
-          (intentPrint && annotation.mustBePrinted(annotationStorage))
+          (intentDisplay && annotation!.mustBeViewed(annotationStorage)) ||
+          (intentPrint && annotation!.mustBePrinted(annotationStorage))
         ) {
           opListPromises.push(
-            annotation
+            annotation!
               .getOperatorList(
                 partialEvaluator,
                 task,
@@ -690,30 +690,60 @@ export class Page {
     return tree;
   }
 
-  getAnnotationsData(intent: RenderingIntentFlag) {
-    return this._parsedAnnotations.then((annotations) => {
-      const annotationsData: AnnotationData[] = [];
+  async getAnnotationsData(
+    handler: MessageHandler<Thread.worker>,
+    task: WorkerTask,
+    intent: RenderingIntentFlag,
+  ) {
+    const annotations = await this._parsedAnnotations;
+    if (annotations.length === 0) {
+      return [];
+    }
 
-      if (annotations.length === 0) {
-        return annotationsData;
+    const textContentPromises = [];
+    const annotationsData = [];
+    let partialEvaluator;
+
+    const intentAny = !!(intent & RenderingIntentFlag.ANY),
+      intentDisplay = !!(intent & RenderingIntentFlag.DISPLAY),
+      intentPrint = !!(intent & RenderingIntentFlag.PRINT);
+
+    for (const annotation of annotations) {
+      // Get the annotation even if it's hidden because
+      // JS can change its display.
+      const isVisible = intentAny || (intentDisplay && annotation!.viewable);
+      if (isVisible || (intentPrint && annotation!.printable)) {
+        annotationsData.push(annotation!.data);
       }
-      const intentAny = !!(intent & RenderingIntentFlag.ANY),
-        intentDisplay = !!(intent & RenderingIntentFlag.DISPLAY),
-        intentPrint = !!(intent & RenderingIntentFlag.PRINT);
 
-      for (const annotation of annotations) {
-        // Get the annotation even if it's hidden because
-        // JS can change its display.
-        if (
-          intentAny ||
-          (intentDisplay && annotation.viewable) ||
-          (intentPrint && annotation.printable)
-        ) {
-          annotationsData.push(annotation.data);
+      if (annotation!.hasTextContent && isVisible) {
+        if (!partialEvaluator) {
+          partialEvaluator = new PartialEvaluator({
+            xref: this.xref,
+            handler,
+            pageIndex: this.pageIndex,
+            idFactory: this._localIdFactory,
+            fontCache: this.fontCache,
+            builtInCMapCache: this.builtInCMapCache,
+            standardFontDataCache: this.standardFontDataCache,
+            globalImageCache: this.globalImageCache,
+            options: this.evaluatorOptions,
+          });
         }
+        textContentPromises.push(
+          annotation!
+            .extractTextContent(partialEvaluator, task, this.view)
+            .catch(function (reason) {
+              warn(
+                `getAnnotationsData - ignoring textContent during "${task.name}" task: "${reason}".`,
+              );
+            }),
+        );
       }
-      return annotationsData;
-    });
+    }
+
+    await Promise.all(textContentPromises);
+    return annotationsData;
   }
 
   get annotations() {
@@ -721,7 +751,7 @@ export class Page {
     return shadow(
       this,
       "annotations",
-      Array.isArray(annots) ? <Ref[]> annots : [],
+      Array.isArray(annots) ? annots as Ref[] : [],
     );
   }
 
@@ -746,9 +776,32 @@ export class Page {
         }
 
         return Promise.all(annotationPromises).then((annotations) => {
-          return <Annotation[]> annotations.filter((annotation) =>
-            !!annotation
-          );
+          if (annotations.length === 0) {
+            return annotations;
+          }
+
+          const sortedAnnotations = [];
+          let popupAnnotations;
+          // Ensure that PopupAnnotations are handled last, since they depend on
+          // their parent Annotation in the display layer; fixes issue 11362.
+          for (const annotation of annotations) {
+            if (!annotation) {
+              continue;
+            }
+            if (annotation instanceof PopupAnnotation) {
+              if (!popupAnnotations) {
+                popupAnnotations = [];
+              }
+              popupAnnotations.push(annotation);
+              continue;
+            }
+            sortedAnnotations.push(annotation);
+          }
+          if (popupAnnotations) {
+            sortedAnnotations.push(...popupAnnotations);
+          }
+
+          return sortedAnnotations;
         });
       });
 
@@ -1567,8 +1620,8 @@ export class PDFDocument {
 
     function hexString(hash: Uint8Array) {
       const buf = [];
-      for (let i = 0, ii = hash.length; i < ii; i++) {
-        const hex = hash[i].toString(16);
+      for (const num of hash) {
+        const hex = num.toString(16);
         buf.push(hex.padStart(2, "0"));
       }
       return buf.join("");

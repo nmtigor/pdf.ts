@@ -30,11 +30,11 @@ import {
   PDFDocumentProxy,
   PDFPageProxy,
 } from "../pdf.ts-src/pdf.ts";
-import { PageColors } from "./base_viewer.ts";
 import { EventBus } from "./event_utils.ts";
 import { type IL10n, type IPDFLinkService } from "./interfaces.ts";
 import { PDFRenderingQueue } from "./pdf_rendering_queue.ts";
 import { PDFThumbnailView, TempImageFactory } from "./pdf_thumbnail_view.ts";
+import { PageColors } from "./pdf_viewer.ts";
 import {
   getVisibleElements,
   isValidRotation,
@@ -273,10 +273,7 @@ export class PDFThumbnailViewer {
         // Set the first `pdfPage` immediately, since it's already loaded,
         // rather than having to repeat the `PDFDocumentProxy.getPage` call in
         // the `this.#ensurePdfPageLoaded` method before rendering can start.
-        const firstThumbnailView = this._thumbnails[0];
-        if (firstThumbnailView) {
-          firstThumbnailView.setPdfPage(firstPdfPage);
-        }
+        this._thumbnails[0]?.setPdfPage(firstPdfPage);
 
         // Ensure that the current thumbnail is always highlighted on load.
         const thumbnailView = this._thumbnails[this._currentPageNumber - 1];

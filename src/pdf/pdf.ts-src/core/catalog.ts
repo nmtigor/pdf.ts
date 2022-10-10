@@ -47,7 +47,7 @@ import {
   XRefEntryException,
 } from "./core_utils.ts";
 import { TranslatedFont } from "./evaluator.ts";
-import { FileSpec } from "./file_spec.ts";
+import { Attachment, FileSpec } from "./file_spec.ts";
 import { GlobalImageCache } from "./image_utils.ts";
 import { MetadataParser } from "./metadata_parser.ts";
 import { NameTree, NumberTree } from "./name_number_tree.ts";
@@ -91,13 +91,20 @@ function fetchDestination(dest?: Obj) {
   return Array.isArray(dest) ? <ExplicitDest> dest : undefined;
 }
 
+export interface SetOCGState {
+  state: string[];
+  preserveRB: boolean;
+}
+
 export interface CatParseDestDictRes {
-  url?: string;
-  unsafeUrl?: string;
+  action?: string;
+  attachment?: Attachment;
   dest?: ExplicitDest | string;
   newWindow?: boolean;
-  action?: string;
   resetForm?: ResetForm;
+  setOCGState?: SetOCGState;
+  unsafeUrl?: string;
+  url?: string;
 }
 
 interface _ParseDestDictionaryP {
@@ -116,6 +123,11 @@ interface _ParseDestDictionaryP {
    * attempting to recover valid absolute URLs from relative ones.
    */
   docBaseUrl?: string | URL | undefined;
+
+  /**
+   * The document attachments (may not exist in most PDF documents).
+   */
+  docAttachments?: Attachments | undefined;
 }
 
 export interface OpenAction {
@@ -157,6 +169,8 @@ export interface MarkInfo {
 }
 
 type AllPageDicts = Map<number, [Dict, Ref | undefined] | [Error, undefined]>;
+
+export type Attachments = Record<string, Attachment>;
 
 /**
  * Table 28
@@ -413,6 +427,7 @@ export class Catalog {
         destDict: outlineDict,
         resultObj: data,
         docBaseUrl: this.pdfManager.docBaseUrl,
+        docAttachments: this.attachments,
       });
       const title = <string> outlineDict.get("Title");
       const flags = <number> outlineDict.get("F") ?? 0;
@@ -430,10 +445,13 @@ export class Catalog {
       }
 
       const outlineItem: OutlineNode = {
+        action: data.action,
+        attachment: data.attachment,
         dest: data.dest,
         url: data.url,
         unsafeUrl: data.unsafeUrl,
         newWindow: data.newWindow,
+        setOCGState: data.setOCGState,
         title: stringToPDFString(title),
         color: rgbColor,
         count: Number.isInteger(count) ? <number> count : undefined,
@@ -1049,20 +1067,20 @@ export class Catalog {
   }
 
   get attachments() {
-    const obj = <Dict | undefined> this.#catDict.get("Names");
-    let attachments = null;
+    const obj = this.#catDict.get("Names") as Dict | undefined;
+    let attachments: Attachments | undefined;
 
     if (obj instanceof Dict && obj.has("EmbeddedFiles")) {
       const nameTree = new NameTree(
-        <Ref> obj.getRaw("EmbeddedFiles"),
+        obj.getRaw("EmbeddedFiles") as Ref,
         this.xref,
       );
       for (const [key, value] of nameTree.getAll()) {
         const fs = new FileSpec(value, this.xref);
         if (!attachments) {
-          attachments = Object.create(null);
+          attachments = Object.create(null) as Attachments;
         }
-        attachments[stringToPDFString(<string> key)] = fs.serializable;
+        attachments[stringToPDFString(key)] = fs.serializable;
       }
     }
     return shadow(this, "attachments", attachments);
@@ -1472,8 +1490,7 @@ export class Catalog {
 
           const kidPromises = [];
           let found = false;
-          for (let i = 0, ii = kids.length; i < ii; i++) {
-            const kid = kids[i];
+          for (const kid of kids) {
             if (!(kid instanceof Ref)) {
               throw new FormatError("Kid must be a reference.");
             }
@@ -1550,6 +1567,7 @@ export class Catalog {
       return;
     }
     const docBaseUrl = params.docBaseUrl || undefined;
+    const docAttachments = params.docAttachments || undefined;
 
     let action = destDict.get("A"),
       url,
@@ -1645,11 +1663,63 @@ export class Catalog {
           }
           break;
 
+        case "GoToE":
+          const target = action.get("T");
+          let attachment;
+
+          if (docAttachments && target instanceof Dict) {
+            const relationship = target.get("R");
+            const name = target.get("N");
+
+            if (isName(relationship, "C") && typeof name === "string") {
+              attachment = docAttachments[stringToPDFString(name)];
+            }
+          }
+
+          if (attachment) {
+            resultObj.attachment = attachment;
+          } else {
+            warn(`parseDestDictionary - unimplemented "GoToE" action.`);
+          }
+          break;
+
         case "Named":
           const namedAction = (<Dict> action).get("N");
           if (namedAction instanceof Name) {
             resultObj.action = namedAction.name;
           }
+          break;
+
+        case "SetOCGState":
+          const state = action.get("State");
+          const preserveRB = action.get("PreserveRB");
+
+          if (!Array.isArray(state) || state.length === 0) {
+            break;
+          }
+          const stateArr = [];
+
+          for (const elem of state) {
+            if (elem instanceof Name) {
+              switch (elem.name) {
+                case "ON":
+                case "OFF":
+                case "Toggle":
+                  stateArr.push(elem.name);
+                  break;
+              }
+            } else if (elem instanceof Ref) {
+              stateArr.push(elem.toString());
+            }
+          }
+
+          if (stateArr.length !== state.length) {
+            break; // Some of the original entries are not valid.
+          }
+          resultObj.setOCGState = {
+            state: stateArr,
+            preserveRB: typeof preserveRB === "boolean" ? preserveRB : true,
+          };
           break;
 
         case "JavaScript":

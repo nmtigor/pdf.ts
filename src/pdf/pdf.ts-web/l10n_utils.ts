@@ -18,6 +18,7 @@
  */
 
 import { type Locale_1, type WebL10nArgs } from "../../3rd/webL10n/l10n.ts";
+import { MOZCENTRAL } from "../../global.ts";
 import { Locale } from "../../lib/Locale.ts";
 import { type IL10n } from "./interfaces.ts";
 /*80--------------------------------------------------------------------------*/
@@ -46,12 +47,6 @@ const DEFAULT_L10N_STRINGS: Record<string, string> = {
     "{{width}} × {{height}} {{unit}} ({{name}}, {{orientation}})",
   document_properties_linearized_yes: "Yes",
   document_properties_linearized_no: "No",
-
-  print_progress_percent: "{{progress}}%",
-
-  "toggle_sidebar.title": "Toggle Sidebar",
-  "toggle_sidebar_notification2.title":
-    "Toggle Sidebar (document contains outline/attachments/layers)",
 
   additional_layers: "Additional Layers",
   page_landmark: "Page {{page}}",
@@ -91,11 +86,14 @@ const DEFAULT_L10N_STRINGS: Record<string, string> = {
   web_fonts_disabled:
     "Web fonts are disabled: unable to use embedded PDF fonts.",
 
-  free_text_default_content: "Enter text…",
-  editor_free_text_aria_label: "FreeText Editor",
-  editor_ink_aria_label: "Ink Editor",
+  free_text2_default_content: "Start typing…",
+  editor_free_text2_aria_label: "Text Editor",
+  editor_ink2_aria_label: "Draw Editor",
   editor_ink_canvas_aria_label: "User-created image",
 };
+/*#static*/ if (!MOZCENTRAL) {
+  DEFAULT_L10N_STRINGS.print_progress_percent = "{{progress}}%";
+}
 
 export function getL10nFallback(key: string, args: WebL10nArgs) {
   switch (key) {

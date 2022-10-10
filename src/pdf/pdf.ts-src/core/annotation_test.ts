@@ -1535,7 +1535,7 @@ describe("annotation", () => {
       ) as Annotation;
       assertEquals(data.annotationType, AnnotationType.WIDGET);
       assertEquals(data.textAlignment, undefined);
-      assertEquals(data.maxLen, undefined);
+      assertEquals(data.maxLen, 0);
       assertEquals(data.readOnly, false);
       assertEquals(data.hidden, false);
       assertEquals(data.multiLine, false);
@@ -1562,7 +1562,7 @@ describe("annotation", () => {
       ) as Annotation;
       assertEquals(data.annotationType, AnnotationType.WIDGET);
       assertEquals(data.textAlignment, undefined);
-      assertEquals(data.maxLen, undefined);
+      assertEquals(data.maxLen, 0);
       assertEquals(data.readOnly, false);
       assertEquals(data.hidden, false);
       assertEquals(data.multiLine, false);
@@ -4244,6 +4244,35 @@ describe("annotation", () => {
         OPS.endText,
         OPS.restore,
         OPS.endAnnotation,
+      ]);
+    });
+
+    it("should extract the text from a FreeText annotation", async function () {
+      partialEvaluator.xref = new XRefMock() as any;
+      const task = new WorkerTask("test FreeText text extraction");
+      const freetextAnnotation = (
+        await AnnotationFactory.printNewAnnotations(partialEvaluator, task, [
+          {
+            annotationType: AnnotationEditorType.FREETEXT,
+            rect: [12, 34, 56, 78],
+            rotation: 0,
+            fontSize: 10,
+            color: [0, 0, 0] as any,
+            value: "Hello PDF.js\nWorld !",
+          },
+        ])
+      )![0];
+
+      await freetextAnnotation.extractTextContent(partialEvaluator, task, [
+        -Infinity,
+        -Infinity,
+        Infinity,
+        Infinity,
+      ]);
+
+      assertEquals(freetextAnnotation.data.textContent, [
+        "Hello PDF.js",
+        "World !",
       ]);
     });
   });

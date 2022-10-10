@@ -33,12 +33,7 @@ import {
 } from "../core/catalog.ts";
 import { type AnnotActions } from "../core/core_utils.ts";
 import { type DocumentInfo, type XFAData } from "../core/document.ts";
-import {
-  type BidiTextContentItem,
-  type FontStyle,
-  type ImgData,
-  type TypeTextContentItem,
-} from "../core/evaluator.ts";
+import { type FontStyle, type ImgData } from "../core/evaluator.ts";
 import { FontExpotDataEx } from "../core/fonts.ts";
 import { type CmdArgs } from "../core/font_renderer.ts";
 import { type IWorker } from "../core/iworker.ts";
@@ -48,10 +43,13 @@ import { type ShadingPatternIR } from "../core/pattern.ts";
 import { type XFAElObj } from "../core/xfa/alias.ts";
 import { type AnnotStorageRecord } from "../display/annotation_layer.ts";
 import {
+  type BinaryData,
   type OutlineNode,
   type PDFDocumentStats,
   type RefProxy,
   StructTreeNode,
+  type TextItem,
+  type TextMarkedContent,
 } from "../display/api.ts";
 import { type CMapData } from "../display/base_factory.ts";
 import { VerbosityLevel } from "../pdf.ts";
@@ -122,7 +120,7 @@ export interface GetDocRequestData {
   docId: string;
   apiVersion: number;
   source: {
-    data: Uint8Array | number[] | undefined;
+    data: BinaryData | undefined;
     url: string | URL | undefined;
     password: string | undefined;
     disableAutoFetch: boolean | undefined;
@@ -141,7 +139,7 @@ export interface GetDocRequestData {
   enableXfa: boolean | undefined;
 }
 
-export interface _PumpOperatorListP {
+interface _PumpOperatorListP {
   pageIndex: number;
   intent: RenderingIntentFlag;
   cacheKey: string;
@@ -326,7 +324,7 @@ export interface MActionMap {
     };
     Return: void;
     Sinkchunk: {
-      items: (BidiTextContentItem | TypeTextContentItem)[];
+      items: (TextItem | TextMarkedContent)[];
       styles: Record<string, FontStyle>;
     };
   };
@@ -511,8 +509,8 @@ export const enum Thread {
   worker,
 }
 
-export type ActionName<Ta extends Thread> = Ta extends Thread.main ? MActionName
-  : WActionName;
+export type ActionName</** thread at */ Ta extends Thread> = Ta extends
+  Thread.main ? MActionName : WActionName;
 // export type ActionDataMap< Ta extends Thread > = Ta extends Thread.main ? MActionMap : WActionMap;
 
 export interface StreamSink<

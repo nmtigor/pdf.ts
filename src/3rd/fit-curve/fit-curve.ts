@@ -378,9 +378,9 @@ function generateBezier<Arr extends number[]>(
 /**
  * Given set of points and their parameterization, try to find a better parameterization.
  *
- * @param {Array<Array<Number>>} bezier Current fitted curve
+ * @param bezier Current fitted curve
  * @param points Array of digitized points
- * @param {Array<Number>} parameters Current parameter values
+ * @param parameters Current parameter values
  * @return New parameter values
  */
 function reparameterize<Arr extends number[]>(

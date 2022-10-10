@@ -21,6 +21,7 @@
 import { _PDFDEV } from "../../../global.ts";
 import { createPromiseCap } from "../../../lib/promisecap.ts";
 import { assert } from "../../../lib/util/trace.ts";
+import { type TextItem, TextMarkedContent } from "../display/api.ts";
 import { type CMapData } from "../display/base_factory.ts";
 import { type GroupOptions } from "../display/canvas.ts";
 import {
@@ -157,8 +158,8 @@ function normalizeBlendMode(
 ): string | undefined {
   if (Array.isArray(value)) {
     // Use the first *supported* BM value in the Array (fixes issue11279.pdf).
-    for (let i = 0, ii = value.length; i < ii; i++) {
-      const maybeBM = normalizeBlendMode(value[i], /* parsingArray = */ true);
+    for (const val of value) {
+      const maybeBM = normalizeBlendMode(val, /* parsingArray = */ true);
       if (maybeBM) {
         return maybeBM;
       }
@@ -320,7 +321,7 @@ interface _SetGStateP {
 interface _GetTextContentP {
   stream: BaseStream;
   task: WorkerTask;
-  resources: Dict;
+  resources: Dict | undefined;
   stateManager?: StateManager<TextState>;
   normalizeWhitespace?: boolean;
   combineTextItems?: boolean;
@@ -449,23 +450,6 @@ interface _TextContentItem {
   transform?: matrix_t;
   fontName?: string;
   hasEOL: boolean;
-}
-
-export interface BidiTextContentItem {
-  str: string;
-  dir: string;
-  width: number;
-  height: number;
-  transform: matrix_t | undefined;
-  fontName: string | undefined;
-  hasEOL: boolean;
-}
-
-export interface TypeTextContentItem {
-  type: string;
-  id?: string | undefined;
-  tag?: string | undefined;
-  hasEOL?: boolean;
 }
 
 export interface FontStyle {
@@ -1407,10 +1391,8 @@ export class PartialEvaluator {
     let isSimpleGState = true;
     // This array holds the converted/processed state data.
     const gStateObj: LGS_CData = [];
-    const gStateKeys = gState.getKeys();
     let promise = Promise.resolve();
-    for (let i = 0, ii = gStateKeys.length; i < ii; i++) {
-      const key = gStateKeys[i];
+    for (const key of gState.getKeys()) {
       const value = gState.get(key);
       switch (key) {
         case "Type":
@@ -1717,7 +1699,6 @@ export class PartialEvaluator {
     if (!args) {
       args = [];
     }
-    let minMax: rect_t;
     if (
       lastIndex < 0 ||
       operatorList.fnArray[lastIndex] !== OPS.constructPath
@@ -1734,7 +1715,26 @@ export class PartialEvaluator {
         operatorList.addOp(OPS.save, null);
       }
 
-      minMax = [Infinity, -Infinity, Infinity, -Infinity];
+      let minMax: rect_t;
+      switch (fn) {
+        case OPS.rectangle:
+          const x = args[0] + args[2];
+          const y = args[1] + args[3];
+          minMax = [
+            Math.min(args[0], x),
+            Math.max(args[0], x),
+            Math.min(args[1], y),
+            Math.max(args[1], y),
+          ];
+          break;
+        case OPS.moveTo:
+        case OPS.lineTo:
+          minMax = [args[0], args[0], args[1], args[1]];
+          break;
+        default:
+          minMax = [Infinity, -Infinity, Infinity, -Infinity];
+          break;
+      }
       operatorList.addOp(OPS.constructPath, [[fn], args, minMax]);
 
       if (parsingText) {
@@ -1742,30 +1742,32 @@ export class PartialEvaluator {
       }
     } else {
       const opArgs = operatorList.argsArray[lastIndex]!;
-      (<OPS[]> opArgs[0]).push(fn);
-      Array.prototype.push.apply(<number[]> opArgs[1], args);
-      minMax = <rect_t> opArgs[2];
-    }
+      (opArgs[0] as OPS[]).push(fn);
+      (opArgs[1] as number[]).push(...args);
+      const minMax = opArgs[2] as rect_t;
 
-    // Compute min/max in the worker instead of the main thread.
-    // If the current matrix (when drawing) is a scaling one
-    // then min/max can be easily computed in using those values.
-    // Only rectangle, lineTo and moveTo are handled here since
-    // Bezier stuff requires to have the starting point.
-    switch (fn) {
-      case OPS.rectangle:
-        minMax[0] = Math.min(minMax[0], args[0], args[0] + args[2]);
-        minMax[1] = Math.max(minMax[1], args[0], args[0] + args[2]);
-        minMax[2] = Math.min(minMax[2], args[1], args[1] + args[3]);
-        minMax[3] = Math.max(minMax[3], args[1], args[1] + args[3]);
-        break;
-      case OPS.moveTo:
-      case OPS.lineTo:
-        minMax[0] = Math.min(minMax[0], args[0]);
-        minMax[1] = Math.max(minMax[1], args[0]);
-        minMax[2] = Math.min(minMax[2], args[1]);
-        minMax[3] = Math.max(minMax[3], args[1]);
-        break;
+      // Compute min/max in the worker instead of the main thread.
+      // If the current matrix (when drawing) is a scaling one
+      // then min/max can be easily computed in using those values.
+      // Only rectangle, lineTo and moveTo are handled here since
+      // Bezier stuff requires to have the starting point.
+      switch (fn) {
+        case OPS.rectangle:
+          const x = args[0] + args[2];
+          const y = args[1] + args[3];
+          minMax[0] = Math.min(minMax[0], args[0], x);
+          minMax[1] = Math.max(minMax[1], args[0], x);
+          minMax[2] = Math.min(minMax[2], args[1], y);
+          minMax[3] = Math.max(minMax[3], args[1], y);
+          break;
+        case OPS.moveTo:
+        case OPS.lineTo:
+          minMax[0] = Math.min(minMax[0], args[0]);
+          minMax[1] = Math.max(minMax[1], args[0]);
+          minMax[2] = Math.min(minMax[2], args[1]);
+          minMax[3] = Math.max(minMax[3], args[1]);
+          break;
+      }
     }
   }
 
@@ -2261,17 +2263,11 @@ export class PartialEvaluator {
               self.ensureStateFont(stateManager.state);
               continue;
             }
-            const arr = <(string | number)[]> args![0];
-            const combinedGlyphs: number[] = [];
-            const arrLength = arr.length;
+            const combinedGlyphs: (number | Glyph)[] = [];
             const state = stateManager.state;
-            for (i = 0; i < arrLength; ++i) {
-              const arrItem = arr[i];
+            for (const arrItem of args![0]) {
               if (typeof arrItem === "string") {
-                Array.prototype.push.apply(
-                  combinedGlyphs,
-                  self.handleText(arrItem, <EvalState> state),
-                );
+                combinedGlyphs.push(...self.handleText(arrItem, state));
               } else if (typeof arrItem === "number") {
                 combinedGlyphs.push(arrItem);
               }
@@ -2664,8 +2660,8 @@ export class PartialEvaluator {
     const NormalizedUnicodes = getNormalizedUnicodes();
 
     const textContent = {
-      items: <(BidiTextContentItem | TypeTextContentItem)[]> [],
-      styles: <Record<string, FontStyle>> Object.create(null),
+      items: [] as (TextItem | TextMarkedContent)[],
+      styles: Object.create(null) as Record<string, FontStyle>,
     };
     const textContentItem: _TextContentItem = {
       initialized: false,
@@ -2708,7 +2704,6 @@ export class PartialEvaluator {
 
     /**
      * Save the last char.
-     * @param char
      * @return true when the two last chars before adding the new one
      * are a non-whitespace followed by a whitespace.
      */
@@ -2882,7 +2877,7 @@ export class PartialEvaluator {
 
     function runBidiTransform(
       textChunk: _TextContentItem,
-    ): BidiTextContentItem {
+    ): TextItem {
       const text = textChunk.str.join("");
       const bidiResult = bidi(text, -1, textChunk.vertical);
       return {
@@ -2898,13 +2893,13 @@ export class PartialEvaluator {
 
     function handleSetFont(fontName?: string, fontRef?: Ref) {
       return self
-        .loadFont(fontName, fontRef, resources)
+        .loadFont(fontName, fontRef, resources!)
         .then((translated) => {
           if (!translated.font.isType3Font) {
             return translated;
           }
           return translated
-            .loadType3Data(self, resources, task)
+            .loadType3Data(self, resources!, task)
             .catch(() => {
               // Ignore Type3-parsing errors, since we only use `loadType3Data`
               // here to ensure that we'll always obtain a useful /FontBBox.
@@ -3514,7 +3509,7 @@ export class PartialEvaluator {
           case OPS.paintXObject:
             flushTextContentItem();
             if (!xobjs) {
-              xobjs = <Dict> resources.get("XObject") || Dict.empty;
+              xobjs = resources!.get("XObject") as Dict || Dict.empty;
             }
 
             let isValidName = args[0] instanceof Name;
@@ -3639,7 +3634,7 @@ export class PartialEvaluator {
             return;
           case OPS.setGState:
             isValidName = args[0] instanceof Name;
-            name = (<Name> args[0]).name;
+            name = (args[0] as Name).name;
 
             if (isValidName && emptyGStateCache.getByName(name)) {
               break;
@@ -3651,7 +3646,7 @@ export class PartialEvaluator {
                   throw new FormatError("GState must be referred to by name.");
                 }
 
-                const extGState = resources.get("ExtGState");
+                const extGState = resources!.get("ExtGState");
                 if (!(extGState instanceof Dict)) {
                   throw new FormatError("ExtGState should be a dictionary.");
                 }
@@ -3821,8 +3816,8 @@ export class PartialEvaluator {
         if (encoding.has("Differences")) {
           const diffEncoding = <Obj[]> encoding.get("Differences");
           let index = 0;
-          for (let j = 0, jj = diffEncoding.length; j < jj; j++) {
-            const data = xref.fetchIfRef(diffEncoding[j]);
+          for (const entry of diffEncoding) {
+            const data = xref.fetchIfRef(entry);
             if (typeof data === "number") {
               index = data;
             } else if (data instanceof Name) {
@@ -4132,7 +4127,7 @@ export class PartialEvaluator {
               (<string> token).charCodeAt(k + 1);
             str.push(((w1 & 0x3ff) << 10) + (w2 & 0x3ff) + 0x10000);
           }
-          map[charCode] = String.fromCodePoint.apply(String, str);
+          map[charCode] = String.fromCodePoint(...str);
         });
         return new ToUnicodeMap(map);
       }, (reason) => {
@@ -4283,8 +4278,7 @@ export class PartialEvaluator {
     // Simulating descriptor flags attribute
     const fontNameWoStyle = baseFontName.split("-")[0];
     return (
-      fontNameWoStyle in getSerifFonts() ||
-      fontNameWoStyle.search(/serif/gi) !== -1
+      fontNameWoStyle in getSerifFonts() || /serif/gi.test(fontNameWoStyle)
     );
   }
 
@@ -4567,8 +4561,8 @@ export class PartialEvaluator {
             if (widths) {
               const glyphWidths: Record<number, number> = [];
               let j = firstChar;
-              for (let i = 0, ii = widths.length; i < ii; i++) {
-                glyphWidths[j++] = <number> this.xref.fetchIfRef(widths[i]);
+              for (const width of widths) {
+                glyphWidths[j++] = this.xref.fetchIfRef(width) as number;
               }
               newProperties.widths = glyphWidths;
             } else {

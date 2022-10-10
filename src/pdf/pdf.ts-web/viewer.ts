@@ -17,10 +17,9 @@
  * limitations under the License.
  */
 
-import { DENO } from "../../global.ts";
-import { CHROME, GENERIC, MOZCENTRAL, PRODUCTION } from "../../global.ts";
+import { CHROME, DENO, GENERIC, MOZCENTRAL, PRODUCTION } from "../../global.ts";
 import { html } from "../../lib/dom.ts";
-import { viewerapp } from "./app.ts";
+import { viewerApp } from "./app.ts";
 import { AppOptions } from "./app_options.ts";
 /*80--------------------------------------------------------------------------*/
 
@@ -31,7 +30,12 @@ import { AppOptions } from "./app_options.ts";
 // const pdfjsBuild =
 //   typeof PDFJSDev !== "undefined" ? PDFJSDev.eval("BUNDLE_BUILD") : void 0;
 
+// const AppConstants = /*#static*/ GENERIC
+//   ? { LinkTarget, RenderingStates, ScrollMode, SpreadMode }
+//   : undefined;
+
 // window.PDFViewerApplication = PDFViewerApplication;
+// window.PDFViewerApplicationConstants = AppConstants;
 // window.PDFViewerApplicationOptions = AppOptions;
 
 /*#static*/ if (CHROME) {
@@ -72,24 +76,6 @@ import { AppOptions } from "./app_options.ts";
 }
 
 function getViewerConfiguration() {
-  let errorWrapper = undefined;
-  /*#static*/ if (!MOZCENTRAL) {
-    errorWrapper = {
-      container: <HTMLDivElement> document.getElementById("errorWrapper"),
-      errorMessage: <HTMLSpanElement> document.getElementById("errorMessage"),
-      closeButton: <HTMLButtonElement> document.getElementById("errorClose"),
-      errorMoreInfo: <HTMLTextAreaElement> document.getElementById(
-        "errorMoreInfo",
-      ),
-      moreInfoButton: <HTMLButtonElement> document.getElementById(
-        "errorShowMore",
-      ),
-      lessInfoButton: <HTMLButtonElement> document.getElementById(
-        "errorShowLess",
-      ),
-    };
-  }
-
   return {
     appContainer: document.body,
     mainContainer: <HTMLDivElement> document.getElementById("viewerContainer"),
@@ -141,16 +127,10 @@ function getViewerConfiguration() {
       /**
        * Button to open a new document.
        */
-      openFile: GENERIC /*#static*/
+      openFile: /*#static*/ GENERIC
         ? <HTMLButtonElement> document.getElementById("openFile")
         : undefined,
       print: <HTMLButtonElement> document.getElementById("print"),
-      /**
-       * Button to disable editing.
-       */
-      editorNoneButton: <HTMLButtonElement> document.getElementById(
-        "editorNone",
-      ),
       /**
        * Button to switch to FreeText editing.
        */
@@ -165,19 +145,9 @@ function getViewerConfiguration() {
         "editorInkParamsToolbar",
       ),
       /**
-       * Button to switch to presentation mode.
-       */
-      presentationModeButton: <HTMLButtonElement> document.getElementById(
-        "presentationMode",
-      ),
-      /**
        * Button to download the document.
        */
       download: <HTMLButtonElement> document.getElementById("download"),
-      /**
-       * Button to obtain a bookmark link to the current location in the document.
-       */
-      viewBookmark: <HTMLAnchorElement> document.getElementById("viewBookmark"),
     },
     secondaryToolbar: {
       /**
@@ -194,12 +164,12 @@ function getViewerConfiguration() {
        * Button for entering presentation mode.
        */
       presentationModeButton: <HTMLButtonElement> document.getElementById(
-        "secondaryPresentationMode",
+        "presentationMode",
       ),
       /**
        * Button to open a file.
        */
-      openFileButton: GENERIC /*#static*/
+      openFileButton: /*#static*/ GENERIC
         ? <HTMLButtonElement> document.getElementById("secondaryOpenFile")
         : undefined,
       /**
@@ -218,7 +188,7 @@ function getViewerConfiguration() {
        * Button to obtain a bookmark link to the current location in the document.
        */
       viewBookmarkButton: <HTMLAnchorElement> document.getElementById(
-        "secondaryViewBookmark",
+        "viewBookmark",
       ),
       /**
        * Button to go to the first page in the document.
@@ -480,9 +450,8 @@ function getViewerConfiguration() {
         "editorInkOpacity",
       ),
     },
-    errorWrapper,
     printContainer: <HTMLDivElement> document.getElementById("printContainer"),
-    openFileInput: GENERIC /*#static*/
+    openFileInput: /*#static*/ GENERIC
       ? <HTMLInputElement> document.getElementById("fileInput")
       : undefined,
     debuggerScriptPath: "./debugger.js",
@@ -506,7 +475,7 @@ function webViewerLoad() {
       import("./genericcom.ts"),
       import("./pdf_print_service.ts"),
     ]).then(([genericCom, pdfPrintService]) => {
-      viewerapp.run(config);
+      viewerApp.run(config);
     });
   } else {
     /*#static*/ if (GENERIC) {
@@ -533,7 +502,7 @@ function webViewerLoad() {
       }
     }
 
-    viewerapp.run(config);
+    viewerApp.run(config);
   }
 }
 

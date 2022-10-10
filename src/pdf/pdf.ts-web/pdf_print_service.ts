@@ -27,8 +27,8 @@ import {
   PixelsPerInch,
   PrintAnnotationStorage,
 } from "../pdf.ts-src/pdf.ts";
-import { PDFPrintServiceFactory, viewerapp } from "./app.ts";
-import { type PageOverview } from "./base_viewer.ts";
+import { PDFPrintServiceFactory, viewerApp } from "./app.ts";
+import { type PageOverview } from "./pdf_viewer.ts";
 import { type IL10n } from "./interfaces.ts";
 import { OverlayManager } from "./overlay_manager.ts";
 import { getXfaHtmlForPrinting } from "./print_utils.ts";
@@ -356,14 +356,8 @@ window.addEventListener(
     ) {
       window.print();
 
-      // The (browser) print dialog cannot be prevented from being shown in
-      // IE11.
       event.preventDefault();
-      if (event.stopImmediatePropagation) {
-        event.stopImmediatePropagation();
-      } else {
-        event.stopPropagation();
-      }
+      event.stopImmediatePropagation();
     }
   },
   true,
@@ -373,7 +367,7 @@ if ("onbeforeprint" in window) {
   // Do not propagate before/afterprint events when they are not triggered
   // from within this polyfill. (FF / Chrome 63+).
   const stopPropagationIfNeeded = (event: Event) => {
-    if ((<any> event).detail !== "custom" && event.stopImmediatePropagation) {
+    if ((event as any).detail !== "custom") {
       event.stopImmediatePropagation();
     }
   };
@@ -384,7 +378,7 @@ if ("onbeforeprint" in window) {
 let overlayPromise: Promise<void>;
 function ensureOverlay() {
   if (!overlayPromise) {
-    overlayManager = viewerapp.overlayManager;
+    overlayManager = viewerApp.overlayManager;
     if (!overlayManager) {
       throw new Error("The overlay manager has not yet been initialized.");
     }

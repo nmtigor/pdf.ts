@@ -70,6 +70,7 @@ export type PropertyToUpdate = [AnnotationEditorParamsType, string | number];
  * Base class for editors.
  */
 export abstract class AnnotationEditor {
+  static readonly _type: "freetext" | "ink";
   static _colorManager = new ColorManager();
   static _zIndex = 1;
 
@@ -515,14 +516,6 @@ export abstract class AnnotationEditor {
    * their properties.
    */
   enableEditing() {}
-
-  /**
-   * Get the id to use in aria-owns when a link is done in the text layer.
-   * @returns {string}
-   */
-  getIdForTextLayer() {
-    return this.id;
-  }
 
   /**
    * Get some properties to update in the UI.

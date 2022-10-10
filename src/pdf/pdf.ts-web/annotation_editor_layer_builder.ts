@@ -25,6 +25,8 @@
 /** @typedef {import("../src/display/editor/tools.js").AnnotationEditorUIManager} AnnotationEditorUIManager */
 // eslint-disable-next-line max-len
 /** @typedef {import("../annotation_storage.js").AnnotationStorage} AnnotationStorage */
+// eslint-disable-next-line max-len
+/** @typedef {import("./text_accessibility.js").TextAccessibilityManager} TextAccessibilityManager */
 /** @typedef {import("./interfaces").IL10n} IL10n */
 
 import { html } from "../../lib/dom.ts";
@@ -37,6 +39,7 @@ import {
 } from "../pdf.ts-src/pdf.ts";
 import { IL10n } from "./interfaces.ts";
 import { NullL10n } from "./l10n_utils.ts";
+import { TextAccessibilityManager } from "./text_accessibility.ts";
 /*80--------------------------------------------------------------------------*/
 
 interface AnnotationEditorLayerBuilderOptions {
@@ -45,22 +48,24 @@ interface AnnotationEditorLayerBuilderOptions {
   //  */
   // mode?:number;
 
+  uiManager: AnnotationEditorUIManager;
   pageDiv: HTMLDivElement;
   pdfPage: PDFPageProxy;
-  annotationStorage: AnnotationStorage | undefined;
 
   /**
    * Localization service.
    */
   l10n: IL10n;
 
-  uiManager: AnnotationEditorUIManager;
+  annotationStorage: AnnotationStorage | undefined;
+  accessibilityManager: TextAccessibilityManager | undefined;
 }
 
 export class AnnotationEditorLayerBuilder {
   pageDiv: HTMLDivElement | undefined;
   pdfPage;
   annotationStorage;
+  accessibilityManager;
   l10n;
   annotationEditorLayer: AnnotationEditorLayer | undefined;
   div: HTMLDivElement | undefined;
@@ -72,6 +77,7 @@ export class AnnotationEditorLayerBuilder {
     this.pageDiv = options.pageDiv;
     this.pdfPage = options.pdfPage;
     this.annotationStorage = options.annotationStorage || undefined;
+    this.accessibilityManager = options.accessibilityManager;
     this.l10n = options.l10n || NullL10n;
     this._cancelled = false;
     this.#uiManager = options.uiManager;
@@ -106,6 +112,7 @@ export class AnnotationEditorLayerBuilder {
       uiManager: this.#uiManager,
       div: this.div,
       annotationStorage: this.annotationStorage!,
+      accessibilityManager: this.accessibilityManager,
       pageIndex: this.pdfPage._pageIndex,
       l10n: this.l10n,
       viewport: clonedViewport,

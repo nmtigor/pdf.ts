@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+import { createPromiseCap, PromiseCap } from "../../lib/promisecap.ts";
 import { PasswordResponses } from "../pdf.ts-src/pdf.ts";
 import { type IL10n } from "./interfaces.ts";
 import { OverlayManager } from "./overlay_manager.ts";
@@ -33,6 +34,7 @@ export class PasswordPrompt {
   l10n;
   _isViewerEmbedded;
 
+  #activeCapability: PromiseCap<void> | undefined;
   #updateCallback!: ((password: string | Error) => void) | undefined;
   #reason?: PasswordResponses;
 
@@ -59,7 +61,7 @@ export class PasswordPrompt {
 
     // Attach the event listeners.
     this.submitButton.addEventListener("click", this.#verify);
-    this.cancelButton.addEventListener("click", this.#cancel);
+    this.cancelButton.addEventListener("click", this.close);
     this.input.addEventListener("keydown", (e) => {
       if (e.keyCode === /* Enter = */ 13) {
         this.#verify();
@@ -72,7 +74,17 @@ export class PasswordPrompt {
   }
 
   async open() {
-    await this.overlayManager.open(this.dialog);
+    if (this.#activeCapability) {
+      await this.#activeCapability.promise;
+    }
+    this.#activeCapability = createPromiseCap();
+
+    try {
+      await this.overlayManager.open(this.dialog);
+    } catch (ex) {
+      this.#activeCapability = undefined;
+      throw ex;
+    }
 
     const passwordIncorrect =
       this.#reason === PasswordResponses.INCORRECT_PASSWORD;
@@ -85,11 +97,11 @@ export class PasswordPrompt {
     );
   }
 
-  async close() {
+  close = async () => {
     if (this.overlayManager.active === this.dialog) {
       this.overlayManager.close(this.dialog);
     }
-  }
+  };
 
   #verify = () => {
     const password = this.input.value;
@@ -100,6 +112,7 @@ export class PasswordPrompt {
 
   #cancel = () => {
     this.#invokeCallback(new Error("PasswordPrompt cancelled."));
+    this.#activeCapability!.resolve();
   };
 
   #invokeCallback(password: string | Error) {
@@ -115,10 +128,13 @@ export class PasswordPrompt {
     this.#updateCallback = undefined;
   }
 
-  setUpdateCallback(
+  async setUpdateCallback(
     updateCallback: (password: string | Error) => void,
     reason: PasswordResponses,
   ) {
+    if (this.#activeCapability) {
+      await this.#activeCapability.promise;
+    }
     this.#updateCallback = updateCallback;
     this.#reason = reason;
   }

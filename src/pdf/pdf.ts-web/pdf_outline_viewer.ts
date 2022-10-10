@@ -20,22 +20,26 @@
 import { html } from "../../lib/dom.ts";
 import { isObjectLike } from "../../lib/jslang.ts";
 import { createPromiseCap, PromiseCap } from "../../lib/promisecap.ts";
-import {
-  type ExplicitDest,
-  type OutlineNode,
-  PDFDocumentProxy,
-  Ref,
-} from "../pdf.ts-src/pdf.ts";
+import { type OutlineNode, PDFDocumentProxy, Ref } from "../pdf.ts-src/pdf.ts";
 import {
   BaseTreeViewer,
   type BaseTreeViewerCtorP,
 } from "./base_tree_viewer.ts";
+import { IDownloadManager } from "./interfaces.ts";
 import { PDFLinkService } from "./pdf_link_service.ts";
 import { SidebarView } from "./ui_utils.ts";
 /*80--------------------------------------------------------------------------*/
 
 interface PDFOutlineViewerOptions extends BaseTreeViewerCtorP {
+  /**
+   * The navigation/linking service.
+   */
   linkService: PDFLinkService;
+
+  /**
+   * The download manager.
+   */
+  downloadManager: IDownloadManager;
 }
 
 interface _PDFOutlineViewerRenderP {
@@ -63,6 +67,7 @@ export class PDFOutlineViewer extends BaseTreeViewer {
   #currentOutlineItemCapability?: PromiseCap<boolean> | undefined;
 
   linkService: PDFLinkService;
+  downloadManager;
 
   static create(options: PDFOutlineViewerOptions) {
     const ret = new PDFOutlineViewer(options);
@@ -73,6 +78,7 @@ export class PDFOutlineViewer extends BaseTreeViewer {
     super(options);
 
     this.linkService = options.linkService;
+    this.downloadManager = options.downloadManager;
 
     this.eventBus._on("toggleoutlinetree", this.toggleAllTreeItems$.bind(this));
     this.eventBus._on("currentoutlineitem", this.#currentOutlineItem);
@@ -138,22 +144,49 @@ export class PDFOutlineViewer extends BaseTreeViewer {
   }
 
   /** @implement */
-  protected _bindLink(element: HTMLAnchorElement, { url, newWindow, dest }: {
-    url?: string | undefined;
-    newWindow?: boolean | undefined;
-    dest?: ExplicitDest | string | undefined;
-  }) {
+  protected _bindLink(
+    element: HTMLAnchorElement,
+    { url, newWindow, action, attachment, dest, setOCGState }: OutlineNode,
+  ) {
     const { linkService } = this;
 
     if (url) {
       linkService.addLinkAttributes(element, url, newWindow);
       return;
     }
+    if (action) {
+      element.href = linkService.getAnchorUrl("");
+      element.onclick = () => {
+        linkService.executeNamedAction(action);
+        return false;
+      };
+      return;
+    }
+    if (attachment) {
+      element.href = linkService.getAnchorUrl("");
+      element.onclick = () => {
+        this.downloadManager.openOrDownloadData(
+          element,
+          attachment.content!,
+          attachment.filename,
+        );
+        return false;
+      };
+      return;
+    }
+    if (setOCGState) {
+      element.href = linkService.getAnchorUrl("");
+      element.onclick = () => {
+        linkService.executeSetOCGState(setOCGState);
+        return false;
+      };
+      return;
+    }
 
     element.href = linkService.getDestinationHash(dest);
     element.onclick = (evt) => {
       this._updateCurrentTreeItem(
-        <HTMLElement | null> (<Node> evt.target).parentNode,
+        (evt.target as Node).parentNode as HTMLElement | null,
       );
 
       if (dest) {

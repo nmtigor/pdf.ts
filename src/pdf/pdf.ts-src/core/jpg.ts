@@ -55,72 +55,23 @@ class EOIMarkerError extends BaseException {
  */
 
 namespace NsJpegImage {
-  // prettier-ignore
+  // deno-fmt-ignore
   const dctZigZag = new Uint8Array([
     0,
-    1,
-    8,
-    16,
-    9,
-    2,
-    3,
-    10,
-    17,
-    24,
-    32,
-    25,
-    18,
-    11,
-    4,
-    5,
-    12,
-    19,
-    26,
-    33,
-    40,
-    48,
-    41,
-    34,
-    27,
-    20,
-    13,
-    6,
-    7,
-    14,
-    21,
-    28,
-    35,
-    42,
-    49,
-    56,
-    57,
-    50,
-    43,
-    36,
-    29,
-    22,
-    15,
-    23,
-    30,
-    37,
-    44,
-    51,
-    58,
-    59,
-    52,
-    45,
-    38,
-    31,
-    39,
-    46,
-    53,
-    60,
-    61,
-    54,
-    47,
-    55,
-    62,
-    63,
+    1,  8,
+    16,  9,  2,
+    3, 10, 17, 24,
+    32, 25, 18, 11, 4,
+    5, 12, 19, 26, 33, 40,
+    48, 41, 34, 27, 20, 13,  6,
+    7, 14, 21, 28, 35, 42, 49, 56,
+    57, 50, 43, 36, 29, 22, 15,
+    23, 30, 37, 44, 51, 58,
+    59, 52, 45, 38, 31,
+    39, 46, 53, 60,
+    61, 54, 47,
+    55, 62,
+    63
   ]);
 
   const dctCos1 = 4017; // cos(pi/16)
@@ -263,11 +214,11 @@ namespace NsJpegImage {
               // Heuristic to attempt to handle corrupt JPEG images with too
               // large `scanLines` parameter, by falling back to the currently
               // parsed number of scanLines when it's at least (approximately)
-              // one order of magnitude smaller than expected (fixes
-              // issue10880.pdf and issue10989.pdf).
+              // one "half" order of magnitude smaller than expected (fixes
+              // issue10880.pdf, issue10989.pdf, issue15492.pdf).
               if (
                 maybeScanLines > 0 &&
-                Math.round(frame.scanLines / maybeScanLines) >= 10
+                Math.round(frame.scanLines / maybeScanLines) >= 5
               ) {
                 throw new DNLMarkerError(
                   "Found EOI marker (0xFFD9) while parsing scan data, " +
@@ -954,8 +905,7 @@ namespace NsJpegImage {
       function prepareComponents(frame: Frame) {
         const mcusPerLine = Math.ceil(frame.samplesPerLine / 8 / frame.maxH);
         const mcusPerColumn = Math.ceil(frame.scanLines / 8 / frame.maxV);
-        for (let i = 0; i < frame.components.length; i++) {
-          const component = frame.components[i];
+        for (const component of frame.components) {
           const blocksPerLine = Math.ceil(
             (Math.ceil(frame.samplesPerLine / 8) * component.h) / frame.maxH,
           );
@@ -1261,9 +1211,7 @@ namespace NsJpegImage {
       this.jfif = jfif;
       this.adobe = adobe;
       this.components = [];
-      for (let i = 0, ii = frame!.components.length; i < ii; i++) {
-        const component = frame!.components[i];
-
+      for (const component of frame!.components) {
         // Prevent errors when DQT markers are placed after SOF{n} markers,
         // by assigning the `quantizationTable` entry after the entire image
         // has been parsed (fixes issue7406.pdf).
@@ -1578,11 +1526,9 @@ namespace NsJpegImage {
       const data = this.#getLinearizedBlockData(width, height, isSourcePDF);
 
       if (this.numComponents === 1 && forceRGB) {
-        const dataLength = data.length;
-        const rgbData = new Uint8ClampedArray(dataLength * 3);
+        const rgbData = new Uint8ClampedArray(data.length * 3);
         let offset = 0;
-        for (let i = 0; i < dataLength; i++) {
-          const grayColor = data[i];
+        for (const grayColor of data) {
           rgbData[offset++] = grayColor;
           rgbData[offset++] = grayColor;
           rgbData[offset++] = grayColor;

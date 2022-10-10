@@ -33,9 +33,10 @@ import {
  */
 export abstract class BasePreferences {
   #defaults = Object.freeze(
-    !PRODUCTION /*#static*/
-      ? AppOptions.getAll(OptionKind.PREFERENCE) // : PDFJSDev.eval("DEFAULT_PREFERENCES")
+    /*#static*/ !PRODUCTION
+      ? AppOptions.getAll(OptionKind.PREFERENCE)
       : AppOptions.getAll(OptionKind.PREFERENCE),
+    // : PDFJSDev.eval("DEFAULT_PREFERENCES")
   );
   defaults!: Readonly<UserOptions>;
 

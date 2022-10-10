@@ -22,12 +22,15 @@
 /** @typedef {import("./tools.js").AnnotationEditorUIManager} AnnotationEditorUIManager */
 // eslint-disable-next-line max-len
 /** @typedef {import("../annotation_storage.js").AnnotationStorage} AnnotationStorage */
+// eslint-disable-next-line max-len
+/** @typedef {import("../../web/text_accessibility.js").TextAccessibilityManager} TextAccessibilityManager */
 /** @typedef {import("../../web/interfaces").IL10n} IL10n */
 
 import { IL10n } from "../../../pdf.ts-web/interfaces.ts";
-import { AnnotationEditorType, shadow } from "../../shared/util.ts";
+import { TextAccessibilityManager } from "../../../pdf.ts-web/text_accessibility.ts";
+import { AnnotationEditorType } from "../../shared/util.ts";
 import { AnnotationStorage } from "../annotation_storage.ts";
-import { binarySearchFirstItem, PageViewport } from "../display_utils.ts";
+import { PageViewport } from "../display_utils.ts";
 import {
   AnnotationEditor,
   AnnotationEditorP,
@@ -48,13 +51,14 @@ import {
 /*80--------------------------------------------------------------------------*/
 
 interface AnnotationEditorLayerOptions {
-  mode?: unknown;
-  div: HTMLDivElement;
-  uiManager: AnnotationEditorUIManager;
-  enabled?: boolean;
+  accessibilityManager?: TextAccessibilityManager | undefined;
   annotationStorage: AnnotationStorage;
-  pageIndex: number;
+  div: HTMLDivElement;
+  enabled?: boolean;
   l10n: IL10n;
+  mode?: unknown;
+  pageIndex: number;
+  uiManager: AnnotationEditorUIManager;
   viewport: PageViewport;
 }
 
@@ -71,15 +75,17 @@ interface _AnnotationEditorLayerRenderP {
 export class AnnotationEditorLayer {
   static _initialized = false;
 
+  #accessibilityManager;
   #allowClick = false;
   #boundPointerup = this.pointerup.bind(this);
   #boundPointerdown = this.pointerdown.bind(this);
   #editors = new Map();
+  #hadPointerDown = false;
   #isCleaningUp = false;
-  #textLayerMap = new WeakMap<HTMLElement, HTMLElement[]>();
-  #textNodes = new Map<string, HTMLElement>();
+  // #textLayerMap = new WeakMap<HTMLElement, HTMLElement[]>();
+  // #textNodes = new Map<string, HTMLElement>();
   #uiManager;
-  #waitingEditors = new Set<AnnotationEditor>();
+  // #waitingEditors = new Set<AnnotationEditor>();
 
   annotationStorage;
   pageIndex;
@@ -101,42 +107,9 @@ export class AnnotationEditorLayer {
     this.annotationStorage = options.annotationStorage;
     this.pageIndex = options.pageIndex;
     this.div = options.div;
+    this.#accessibilityManager = options.accessibilityManager;
 
     this.#uiManager.addLayer(this);
-  }
-
-  get textLayerElements() {
-    // When zooming the text layer is removed from the DOM and sometimes
-    // it's rebuilt hence the nodes are no longer valid.
-
-    const textLayer = (<HTMLElement> this.div!.parentNode)
-      .getElementsByClassName("textLayer")
-      .item(0) as HTMLElement;
-
-    if (!textLayer) {
-      return shadow(this, "textLayerElements", undefined);
-    }
-
-    let textChildren: HTMLElement[] | NodeListOf<HTMLElement> | undefined = this
-      .#textLayerMap.get(textLayer);
-    if (textChildren) {
-      return textChildren;
-    }
-
-    textChildren = textLayer.querySelectorAll(`span[role="presentation"]`);
-    if (textChildren.length === 0) {
-      return shadow(this, "textLayerElements", undefined);
-    }
-
-    textChildren = Array.from(textChildren);
-    textChildren.sort(AnnotationEditorLayer.#compareElementPositions);
-    this.#textLayerMap.set(textLayer, textChildren);
-
-    return textChildren;
-  }
-
-  get #hasTextLayer() {
-    return !!this.div!.parentNode!.querySelector(".textLayer .endOfContent");
   }
 
   /**
@@ -159,6 +132,12 @@ export class AnnotationEditorLayer {
       this.enableClick();
     }
     this.#uiManager.unselectAll();
+
+    this.div!.classList.toggle(
+      "freeTextEditing",
+      mode === AnnotationEditorType.FREETEXT,
+    );
+    this.div!.classList.toggle("inkEditing", mode === AnnotationEditorType.INK);
   }
 
   addInkEditorIfNeeded(isCommitting: boolean) {
@@ -181,7 +160,7 @@ export class AnnotationEditorLayer {
     }
 
     const editor = this.#createAndAddNewEditor(
-      <PointerEvent> { offsetX: 0, offsetY: 0 },
+      { offsetX: 0, offsetY: 0 } as PointerEvent,
     );
     editor!.setInBackground();
   }
@@ -249,7 +228,7 @@ export class AnnotationEditorLayer {
 
   detach(editor: AnnotationEditor) {
     this.#editors.delete(editor.id);
-    this.removePointerInTextLayer(editor);
+    this.#accessibilityManager?.removePointerInTextLayer(editor.contentDiv!);
   }
 
   /**
@@ -261,7 +240,7 @@ export class AnnotationEditorLayer {
 
     this.#uiManager.removeEditor(editor);
     this.detach(editor);
-    this.annotationStorage.removeKey(editor.id);
+    this.annotationStorage.remove(editor.id);
     editor.div!.style.display = "none";
     setTimeout(() => {
       // When the div is removed from DOM the focus can move on the
@@ -301,145 +280,10 @@ export class AnnotationEditorLayer {
   }
 
   /**
-   * Compare the positions of two elements, it must correspond to
-   * the visual ordering.
-   */
-  static #compareElementPositions(e1: HTMLElement, e2: HTMLElement): number {
-    const rect1 = e1.getBoundingClientRect();
-    const rect2 = e2.getBoundingClientRect();
-
-    if (rect1.y + rect1.height <= rect2.y) {
-      return -1;
-    }
-
-    if (rect2.y + rect2.height <= rect1.y) {
-      return +1;
-    }
-
-    const centerX1 = rect1.x + rect1.width / 2;
-    const centerX2 = rect2.x + rect2.width / 2;
-
-    return centerX1 - centerX2;
-  }
-
-  /**
-   * Function called when the text layer has finished rendering.
-   */
-  onTextLayerRendered() {
-    this.#textNodes.clear();
-    for (const editor of this.#waitingEditors) {
-      if (editor.isAttachedToDOM) {
-        this.addPointerInTextLayer(editor);
-      }
-    }
-    this.#waitingEditors.clear();
-  }
-
-  /**
-   * Remove an aria-owns id from a node in the text layer.
-   */
-  removePointerInTextLayer(editor: AnnotationEditor) {
-    if (!this.#hasTextLayer) {
-      this.#waitingEditors.delete(editor);
-      return;
-    }
-
-    const { id } = editor;
-    const node = this.#textNodes.get(id);
-    if (!node) {
-      return;
-    }
-
-    this.#textNodes.delete(id);
-    let owns = node.getAttribute("aria-owns");
-    if (owns?.includes(id)) {
-      owns = owns
-        .split(" ")
-        .filter((x) => x !== id)
-        .join(" ");
-      if (owns) {
-        node.setAttribute("aria-owns", owns);
-      } else {
-        node.removeAttribute("aria-owns");
-        node.setAttribute("role", "presentation");
-      }
-    }
-  }
-
-  /**
-   * Find the text node which is the nearest and add an aria-owns attribute
-   * in order to correctly position this editor in the text flow.
-   */
-  addPointerInTextLayer(editor: AnnotationEditor) {
-    if (!this.#hasTextLayer) {
-      // The text layer needs to be there, so we postpone the association.
-      this.#waitingEditors.add(editor);
-      return;
-    }
-
-    this.removePointerInTextLayer(editor);
-
-    const children = this.textLayerElements;
-    if (!children) {
-      return;
-    }
-    const { contentDiv } = editor;
-    const id = editor.getIdForTextLayer();
-
-    const index = binarySearchFirstItem(
-      children,
-      (node) =>
-        AnnotationEditorLayer.#compareElementPositions(contentDiv!, node) < 0,
-    );
-    const node = children[Math.max(0, index - 1)];
-    const owns = node.getAttribute("aria-owns");
-    if (!owns?.includes(id)) {
-      node.setAttribute("aria-owns", owns ? `${owns} ${id}` : id);
-    }
-    node.removeAttribute("role");
-
-    this.#textNodes.set(id, node);
-  }
-
-  /**
-   * Move a div in the DOM in order to respect the visual order.
-   */
-  moveDivInDOM(editor: AnnotationEditor) {
-    this.addPointerInTextLayer(editor);
-
-    const { div, contentDiv } = editor;
-    if (!this.div!.hasChildNodes()) {
-      this.div!.append(div!);
-      return;
-    }
-
-    const children = Array.from(this.div!.childNodes).filter(
-      (node) => node !== div,
-    ) as HTMLElement[];
-
-    if (children.length === 0) {
-      return;
-    }
-
-    const index = binarySearchFirstItem(
-      children,
-      (node) =>
-        AnnotationEditorLayer.#compareElementPositions(contentDiv!, node) < 0,
-    );
-
-    if (index === 0) {
-      children[0].before(div!);
-    } else {
-      children[index - 1].after(div!);
-    }
-  }
-
-  /**
    * Add a new editor in the current view.
    */
   add(editor: AnnotationEditor) {
     this.#changeParent(editor);
-    this.addToAnnotationStorage(editor);
     this.#uiManager.addEditor(editor);
     this.attach(editor);
 
@@ -449,8 +293,18 @@ export class AnnotationEditorLayer {
       editor.isAttachedToDOM = true;
     }
 
-    this.moveDivInDOM(editor);
+    this.moveEditorInDOM(editor);
     editor.onceAdded();
+    this.addToAnnotationStorage(editor);
+  }
+
+  moveEditorInDOM(editor: AnnotationEditor) {
+    this.#accessibilityManager?.moveElementInDOM(
+      this.div!,
+      editor.div,
+      editor.contentDiv!,
+      /* isRemovable = */ true,
+    );
   }
 
   /**
@@ -593,6 +447,15 @@ export class AnnotationEditorLayer {
       return;
     }
 
+    if (!this.#hadPointerDown) {
+      // It can happen when the user starts a drag inside a text editor
+      // and then releases the mouse button outside of it. In such a case
+      // we don't want to create a new editor, hence we check that a pointerdown
+      // occured on this div previously.
+      return;
+    }
+    this.#hadPointerDown = false;
+
     if (event.target !== this.div) {
       return;
     }
@@ -619,6 +482,8 @@ export class AnnotationEditorLayer {
       return;
     }
 
+    this.#hadPointerDown = true;
+
     const editor = this.#uiManager.getActive();
     this.#allowClick = !editor || editor.isEmpty();
   }
@@ -643,7 +508,7 @@ export class AnnotationEditorLayer {
     const endY = event.clientY - rect.y;
 
     editor.translate(endX - editor.startX, endY - editor.startY);
-    this.moveDivInDOM(editor);
+    this.moveEditorInDOM(editor);
     editor.div!.focus();
   }
 
@@ -663,15 +528,13 @@ export class AnnotationEditorLayer {
     }
 
     for (const editor of this.#editors.values()) {
-      this.removePointerInTextLayer(editor);
+      this.#accessibilityManager?.removePointerInTextLayer(editor.contentDiv);
       editor.isAttachedToDOM = false;
       editor.div.remove();
       editor.parent = null;
     }
-    this.#textNodes.clear();
     this.div = undefined;
     this.#editors.clear();
-    this.#waitingEditors.clear();
     this.#uiManager.removeLayer(this);
   }
 

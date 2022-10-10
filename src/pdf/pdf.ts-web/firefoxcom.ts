@@ -28,7 +28,7 @@ import {
   FindControlState,
   PassiveLoadingCbs,
   TelemetryData,
-  viewerapp,
+  viewerApp,
 } from "./app.ts";
 import { UserOptions } from "./app_options.ts";
 import { EventMap } from "./event_utils.ts";
@@ -314,14 +314,14 @@ class MozL10n implements IL10n {
   const handleEvent = (
     { type, detail }: { type: string; detail?: FindCtrlState },
   ) => {
-    if (!viewerapp.initialized) {
+    if (!viewerApp.initialized) {
       return;
     }
     if (type === "findbarclose") {
-      viewerapp.eventBus.dispatch(type, { source: window });
+      viewerApp.eventBus.dispatch(type, { source: window });
       return;
     }
-    viewerapp.eventBus.dispatch("find", {
+    viewerApp.eventBus.dispatch("find", {
       source: window,
       type: type.substring(findLen) as FindType,
       query: detail!.query,
@@ -344,18 +344,18 @@ class MozL10n implements IL10n {
   const handleEvent = (
     { type, detail }: { type: ArrEl<typeof events>; detail: unknown },
   ) => {
-    if (!viewerapp.initialized) {
+    if (!viewerApp.initialized) {
       return;
     }
     // Avoid attempting to needlessly reset the zoom level *twice* in a row,
     // when using the `Ctrl + 0` keyboard shortcut.
     if (
       type === "zoomreset" &&
-      viewerapp.pdfViewer.currentScaleValue === DEFAULT_SCALE_VALUE
+      viewerApp.pdfViewer.currentScaleValue === DEFAULT_SCALE_VALUE
     ) {
       return;
     }
-    viewerapp.eventBus.dispatch(type, { source: window });
+    viewerApp.eventBus.dispatch(type, { source: window });
   };
 
   for (const event of events) {
@@ -367,10 +367,10 @@ class MozL10n implements IL10n {
   const handleEvent = (
     { type, detail }: CustomEvent<EventMap["save"]>,
   ) => {
-    if (!viewerapp.initialized) {
+    if (!viewerApp.initialized) {
       return;
     }
-    viewerapp.eventBus.dispatch("download", { source: window });
+    viewerApp.eventBus.dispatch("download", { source: window });
   };
 
   window.addEventListener("save", <any> handleEvent);
@@ -380,10 +380,10 @@ class MozL10n implements IL10n {
   const handleEvent = (
     { detail }: CustomEvent<EventMap["editingaction"]>,
   ) => {
-    if (!viewerapp.initialized) {
+    if (!viewerApp.initialized) {
       return;
     }
-    viewerapp.eventBus.dispatch("editingaction", {
+    viewerApp.eventBus.dispatch("editingaction", {
       source: window,
       name: detail.name,
     });
@@ -469,8 +469,7 @@ class FirefoxExternalServices extends DefaultExternalServices {
           pdfDataRangeTransport.onDataRange(args.begin, args.chunk);
           break;
         case "rangeProgress":
-          // pdfDataRangeTransport.onDataProgress( args.loaded); //kkkk bug? ✅
-          pdfDataRangeTransport.onDataProgress(args.loaded, args.total);
+          pdfDataRangeTransport.onDataProgress(args.loaded);
           break;
         case "progressiveRead":
           pdfDataRangeTransport.onDataProgressiveRead(args.chunk);
@@ -548,7 +547,7 @@ class FirefoxExternalServices extends DefaultExternalServices {
     return shadow(this, "isInAutomation", isInAutomation);
   }
 }
-viewerapp.externalServices = new FirefoxExternalServices();
+viewerApp.externalServices = new FirefoxExternalServices();
 
 // l10n.js for Firefox extension expects services to be set.
 document.mozL10n.setExternalLocalizerServices({
