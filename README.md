@@ -12,6 +12,7 @@ It is
 
 * Extract [TypeScript@mymain](https://github.com/nmtigor/TypeScript) onto <ins>/path_to/TypeScript</ins>.
 * Extract this project onto <ins>/path_to/pdf.ts</ins>.
+  * In vscode, in the workspace setting, add `"typescript.tsdk": "/path_to/TypeScript/lib"`.
 * 
   ```bash
   cd /path_to/pdf.ts
