@@ -303,30 +303,6 @@ export class Glyph {
     this.isZeroWidthDiacritic = category.isZeroWidthDiacritic;
     this.isInvisibleFormatMark = category.isInvisibleFormatMark;
   }
-
-  matchesForCache(
-    originalCharCode: number,
-    fontChar: string,
-    unicode: string,
-    accent: Accent | undefined,
-    width: number | undefined,
-    vmetric: VMetric | undefined,
-    operatorListId: number | undefined,
-    isSpace: boolean,
-    isInFont: boolean,
-  ) {
-    return (
-      this.originalCharCode === originalCharCode &&
-      this.fontChar === fontChar &&
-      this.unicode === unicode &&
-      this.accent === accent &&
-      this.width === width &&
-      this.vmetric === vmetric &&
-      this.operatorListId === operatorListId &&
-      this.isSpace === isSpace &&
-      this.isInFont === isInFont
-    );
-  }
 }
 
 export interface Seac {
@@ -3454,6 +3430,12 @@ export class Font extends FontExpotDataEx {
   }
 
   #charToGlyph(charcode: number, isSpace = false) {
+    let glyph = this._glyphCache[charcode];
+    // All `Glyph`-properties, except `isSpace` in multi-byte strings,
+    // depend indirectly on the `charcode`.
+    if (glyph && glyph.isSpace === isSpace) {
+      return glyph;
+    }
     let fontCharCode, width, operatorListId;
 
     let widthCode: number | string = charcode;
@@ -3518,35 +3500,18 @@ export class Font extends FontExpotDataEx {
       }
     }
 
-    let glyph = this._glyphCache[charcode];
-    if (
-      !glyph ||
-      !glyph.matchesForCache(
-        charcode,
-        fontChar,
-        unicode,
-        accent,
-        width,
-        vmetric,
-        operatorListId,
-        isSpace,
-        isInFont,
-      )
-    ) {
-      glyph = new Glyph(
-        charcode,
-        fontChar,
-        unicode,
-        accent,
-        width,
-        vmetric,
-        operatorListId,
-        isSpace,
-        isInFont,
-      );
-      this._glyphCache[charcode] = glyph;
-    }
-    return glyph;
+    glyph = new Glyph(
+      charcode,
+      fontChar,
+      unicode,
+      accent,
+      width,
+      vmetric,
+      operatorListId,
+      isSpace,
+      isInFont,
+    );
+    return (this._glyphCache[charcode] = glyph);
   }
 
   charsToGlyphs(chars: string) {

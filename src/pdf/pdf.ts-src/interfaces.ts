@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+import { ReadableStreamDefaultReadResult } from "../../lib/alias.ts";
 import { AbortException } from "./shared/util.ts";
 /*80--------------------------------------------------------------------------*/
 

@@ -81,7 +81,7 @@ export const reportError = async <E extends Error>(err_x: E) => {
 
   const err_j = err_x?.toJ(); //! `err_x` seems still  could be `null` at runtime
   // console.log(err_j);
-  global.globalhvc?.showReportedError?.({
+  global.ghvc?.showReportedError?.({
     err_j,
     ts: err_j?.ts ?? Date.now(),
   });
@@ -107,7 +107,7 @@ export const reportError = async <E extends Error>(err_x: E) => {
 
   // if( res.ok )
   // {
-  //   global.globalhvc?.showReportedError?.( data_be.data_fe );
+  //   global.ghvc?.showReportedError?.( data_be.data_fe );
 
   //   count_reported_++;
   //   if( count_reported_ > MAX_reported_ )

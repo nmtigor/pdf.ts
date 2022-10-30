@@ -17,8 +17,16 @@ export type uint16 = uint;
 export type uint8 = uint;
 /*49-------------------------------------------*/
 
+/** 0 is special */
 export type id_t = uint32;
 
+/**
+ * ! CHECK
+ * Make sense?
+ * Index-similar value can very likely be `-1`.
+ * Is it better to just use `int`, `uint` according to contexts?
+ * (see sortedarray.ts)
+ */
 export type Index = uint32;
 
 /** Count one "\t" as 1. */
@@ -54,7 +62,15 @@ export type FloatArray =
   | Float32Array
   | Float64Array;
 export type TypedArray = IntegerArray | FloatArray;
-export type BinaryData = TypedArray | ArrayBuffer | number[] | string;
+
+// From lib.dom.d.ts, which deno does not know about.
+export type ReadableStreamDefaultReadResult<T> = {
+  done: false;
+  value: T;
+} | {
+  done: true;
+  value?: undefined;
+};
 /*80--------------------------------------------------------------------------*/
 
 export type CSSStyleName = keyof {

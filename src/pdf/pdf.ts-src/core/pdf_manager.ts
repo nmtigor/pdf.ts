@@ -49,10 +49,11 @@ function parseDocBaseUrl(url?: string) {
 }
 
 export interface EvaluatorOptions {
-  maxImageSize: number;
+  maxImageSize: number | undefined;
   disableFontFace: boolean | undefined;
   ignoreErrors: boolean | undefined;
   isEvalSupported: boolean | undefined;
+  isOffscreenCanvasSupported: boolean | undefined;
   fontExtraProperties: boolean | undefined;
   useSystemFonts: boolean | undefined;
   cMapUrl?: string | undefined;
@@ -89,8 +90,6 @@ export abstract class BasePdfManager {
     this._docId = docId;
     this._docBaseUrl = parseDocBaseUrl(docBaseUrl);
   }
-
-  abstract onLoadedStream(): Promise<Stream>;
 
   /** @fianl */
   ensureDoc<
@@ -152,7 +151,7 @@ export abstract class BasePdfManager {
 
   abstract requestRange(begin: number, end: number): Promise<void>;
 
-  abstract requestLoadedStream(): void;
+  abstract requestLoadedStream(noFetch?: boolean): Promise<Stream>;
 
   sendProgressiveData?(chunk: ArrayBufferLike): void;
 
@@ -216,10 +215,7 @@ export class LocalPdfManager extends BasePdfManager {
   }
 
   /** @implement */
-  requestLoadedStream() {}
-
-  /** @implement */
-  onLoadedStream() {
+  requestLoadedStream(noFetch = false) {
     return this.#loadedStreamPromise;
   }
 
@@ -290,17 +286,12 @@ export class NetworkPdfManager extends BasePdfManager {
   }
 
   /** @implement */
-  requestLoadedStream() {
-    this.streamManager.requestAllChunks();
+  requestLoadedStream(noFetch = false) {
+    return this.streamManager.requestAllChunks(noFetch);
   }
 
   override sendProgressiveData(chunk: ArrayBufferLike) {
     this.streamManager.onReceiveData({ chunk });
-  }
-
-  /** @implement */
-  onLoadedStream() {
-    return this.streamManager.onLoadedStream();
   }
 
   /** @implement */

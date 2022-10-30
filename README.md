@@ -2,7 +2,7 @@ The purpose of this project is to help learning PDF format and developing PDF to
 
 It is
 
-* based on [pdf.js@v2.16.105+](https://github.com/mozilla/pdf.js/tree/master)(2022-10-07),
+* based on [pdf.js@v3.0.279](https://github.com/mozilla/pdf.js/tree/v3.0.279),
 
 * **transpiled using [TypeScript@mymain](https://github.com/nmtigor/TypeScript/tree/mymain/PRs)!**
 

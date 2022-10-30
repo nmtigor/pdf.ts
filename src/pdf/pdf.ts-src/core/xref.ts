@@ -110,6 +110,8 @@ export class XRef {
 
   topDict?: Dict;
 
+  #generationFallback?: boolean;
+
   constructor(stream: Stream | ChunkedStream, pdfManager: BasePdfManager) {
     this.stream = stream;
     this.pdfManager = pdfManager;
@@ -624,9 +626,16 @@ export class XRef {
       this.readXRef(/* recoveryMode */ true);
     }
     // finding main trailer
-    let trailerDict: Dict;
-    for (const trailer of trailers) {
-      stream.pos = trailer;
+    let trailerDict: Dict, trailerError;
+    for (const trailer of [...trailers, "generationFallback", ...trailers]) {
+      if (trailer === "generationFallback") {
+        if (!trailerError) {
+          break; // No need to fallback if there were no validation errors.
+        }
+        this.#generationFallback = true;
+        continue;
+      }
+      stream.pos = trailer as number;
       const parser = new Parser({
         lexer: new Lexer(stream),
         xref: this,
@@ -643,6 +652,7 @@ export class XRef {
         continue;
       }
       // Do some basic validation of the trailer/root dictionary candidate.
+      let validPagesDict = false;
       try {
         const rootDict = dict.get("Root");
         if (!(rootDict instanceof Dict)) {
@@ -653,15 +663,16 @@ export class XRef {
           continue;
         }
         const pagesCount = pagesDict.get("Count");
-        if (!Number.isInteger(pagesCount)) {
-          continue;
+        if (Number.isInteger(pagesCount)) {
+          validPagesDict = true;
         }
         // The top-level /Pages dictionary isn't obviously corrupt.
       } catch (ex) {
+        trailerError = ex;
         continue;
       }
       // taking the first one with 'ID'
-      if (dict.has("ID")) {
+      if (validPagesDict && dict.has("ID")) {
         return dict;
       }
       // The current dictionary is a candidate, but continue searching.
@@ -850,11 +861,21 @@ export class XRef {
     ref: Ref,
     xrefEntry: XRefEntry,
     suppressEncryption = false,
-  ) {
+  ): ObjNoRef {
     const gen = ref.gen;
     let num = ref.num;
     if (xrefEntry.gen !== gen) {
-      throw new XRefEntryException(`Inconsistent generation in XRef: ${ref}`);
+      const msg = `Inconsistent generation in XRef: ${ref}`;
+      // Try falling back to a *previous* generation (fixes issue15577.pdf).
+      if (this.#generationFallback && xrefEntry.gen < gen) {
+        warn(msg);
+        return this.fetchUncompressed(
+          Ref.get(num, xrefEntry.gen),
+          xrefEntry,
+          suppressEncryption,
+        );
+      }
+      throw new XRefEntryException(msg);
     }
     const stream = this.stream.makeSubStream(
       xrefEntry.offset + this.stream.start,
@@ -882,11 +903,11 @@ export class XRef {
       throw new XRefEntryException(`Bad (uncompressed) XRef entry: ${ref}`);
     }
     if (this.encrypt && !suppressEncryption) {
-      obj1 = <ObjNoRef> parser.getObj(
+      obj1 = parser.getObj(
         this.encrypt.createCipherTransform(num, gen),
-      );
+      ) as ObjNoRef;
     } else {
-      obj1 = <ObjNoRef> parser.getObj();
+      obj1 = parser.getObj() as ObjNoRef;
     }
     if (!(obj1 instanceof BaseStream)) {
       /*#static*/ if (_PDFDEV) {

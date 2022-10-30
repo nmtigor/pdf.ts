@@ -1,6 +1,6 @@
 /*80****************************************************************************
  * mv
- * -- */
+** -------------------------------------------------------------------------- */
 
 import { INOUT } from "../global.ts";
 import { AbstractConstructor } from "./alias.ts";
@@ -14,7 +14,7 @@ import { assert, type ReportedError } from "./util/trace.ts";
  * Inwards API, i.e., API called from outside of `Coo`.
  */
 export interface CooInterface {
-  reportError?: (error: Error) => void | Promise<void>;
+  reportError?: (error: unknown) => void | Promise<void>;
 }
 
 /**

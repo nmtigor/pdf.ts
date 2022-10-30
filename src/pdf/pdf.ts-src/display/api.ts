@@ -307,6 +307,14 @@ export interface DocumentInitP {
   isEvalSupported?: boolean;
 
   /**
+   * Determines if we can use
+   * `OffscreenCanvas` in the worker. Primarily used to improve performance of
+   * image conversion/rendering.
+   * The default value is `true` in web environments and `false` in Node.js.
+   */
+  isOffscreenCanvasSupported?: boolean;
+
+  /**
    * By default fonts are converted to
    * OpenType fonts and loaded via the Font Loading API or `@font-face` rules.
    * If disabled, fonts will be rendered using a built-in font renderer that
@@ -517,6 +525,10 @@ export function getDocument(src: _GetDocumentP): PDFDocumentLoadingTask {
   if (typeof params.isEvalSupported !== "boolean") {
     params.isEvalSupported = true;
   }
+  if (typeof params.isOffscreenCanvasSupported !== "boolean") {
+    // params.isOffscreenCanvasSupported = !isNodeJS;
+    params.isOffscreenCanvasSupported = true;
+  }
   if (typeof params.disableFontFace !== "boolean") {
     // params.disableFontFace = isNodeJS;
     params.disableFontFace = false;
@@ -656,33 +668,33 @@ async function _fetchDocument(
   }
   const workerId = await worker.messageHandler.sendWithPromise(
     "GetDocRequest",
+    // Only send the required properties, and *not* the entire `source` object.
     {
       docId,
       apiVersion: 0,
       // typeof PDFJSDev !== "undefined" && !PDFJSDev.test("TESTING")
       //   ? PDFJSDev.eval("BUNDLE_VERSION")
       //   : null,
-      // Only send the required properties, and *not* the entire object.
-      source: {
-        data: source.data,
-        url: source.url,
-        password: source.password,
-        disableAutoFetch: source.disableAutoFetch,
-        rangeChunkSize: source.rangeChunkSize,
-        length: source.length,
-      },
-      maxImageSize: source.maxImageSize,
-      disableFontFace: source.disableFontFace,
+      data: source.data,
+      password: source.password,
+      disableAutoFetch: source.disableAutoFetch,
+      rangeChunkSize: source.rangeChunkSize,
+      length: source.length,
       docBaseUrl: source.docBaseUrl,
-      ignoreErrors: source.ignoreErrors,
-      isEvalSupported: source.isEvalSupported,
-      fontExtraProperties: source.fontExtraProperties,
       enableXfa: source.enableXfa,
-      useSystemFonts: source.useSystemFonts,
-      cMapUrl: source.useWorkerFetch ? source.cMapUrl : undefined,
-      standardFontDataUrl: source.useWorkerFetch
-        ? source.standardFontDataUrl
-        : undefined,
+      evaluatorOptions: {
+        maxImageSize: source.maxImageSize,
+        disableFontFace: source.disableFontFace,
+        ignoreErrors: source.ignoreErrors,
+        isEvalSupported: source.isEvalSupported,
+        isOffscreenCanvasSupported: source.isOffscreenCanvasSupported,
+        fontExtraProperties: source.fontExtraProperties,
+        useSystemFonts: source.useSystemFonts,
+        cMapUrl: source.useWorkerFetch ? source.cMapUrl : undefined,
+        standardFontDataUrl: source.useWorkerFetch
+          ? source.standardFontDataUrl
+          : undefined,
+      },
     },
   );
 
@@ -3430,10 +3442,10 @@ class WorkerTransport {
   }
 
   async startCleanup(keepLoadedFonts = false) {
+    if (this.destroyed) {
+      return; // No need to manually clean-up when destruction has started.
+    }
     await this.messageHandler.sendWithPromise("Cleanup", null);
-
-    // No need to manually clean-up when destruction has started.
-    if (this.destroyed) return;
 
     for (const page of this.#pageCache.values()) {
       const cleanupSuccessful = page.cleanup();

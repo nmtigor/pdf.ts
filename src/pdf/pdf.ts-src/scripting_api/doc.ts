@@ -238,6 +238,11 @@ export class Doc extends PDFObject<_SendDocData> {
     return this._pageNum;
   }
   set pageNum(value) {
+    if (!this._userActivation) {
+      return;
+    }
+    this._userActivation = false;
+
     if (typeof value !== "number" || value < 0 || value >= this._numPages) {
       return;
     }
@@ -289,6 +294,11 @@ export class Doc extends PDFObject<_SendDocData> {
     return this._zoom;
   }
   set zoom(value) {
+    if (!this._userActivation) {
+      return;
+    }
+    this._userActivation = false;
+
     if (typeof value !== "number" || value < 8.33 || value > 6400) {
       return;
     }
@@ -299,6 +309,9 @@ export class Doc extends PDFObject<_SendDocData> {
   _actions;
   _globalEval;
   _pageActions = new Map<number, ScriptingActions>();
+  _userActivation = false;
+  _disablePrinting = false;
+  _disableSaving = false;
 
   _xfa: unknown;
   get xfa() {
@@ -372,12 +385,27 @@ export class Doc extends PDFObject<_SendDocData> {
         "DidPrint",
         "OpenAction",
       ]);
+      // When a pdf has just been opened it doesn't really make sense
+      // to save it: it's up to the user to decide if they want to do that.
+      // A pdf can contain an action /FooBar which will trigger a save
+      // even if there are no WillSave/DidSave (which are themselves triggered
+      // after a save).
+      this._disableSaving = true;
       for (const actionName of this._actions.keys()) {
         if (!dontRun.has(actionName)) {
           this._runActions(actionName);
         }
       }
       this._runActions("OpenAction");
+      this._disableSaving = false;
+    } else if (name === "WillPrint") {
+      this._disablePrinting = true;
+      this._runActions(name);
+      this._disablePrinting = false;
+    } else if (name === "WillSave") {
+      this._disableSaving = true;
+      this._runActions(name);
+      this._disableSaving = false;
     } else {
       this._runActions(name);
     }
@@ -561,6 +589,11 @@ export class Doc extends PDFObject<_SendDocData> {
     return this._layout;
   }
   set layout(value) {
+    if (!this._userActivation) {
+      return;
+    }
+    this._userActivation = false;
+
     if (typeof value !== "string") {
       return;
     }
@@ -703,6 +736,11 @@ export class Doc extends PDFObject<_SendDocData> {
     return this._zoomType;
   }
   set zoomType(type) {
+    if (!this._userActivation) {
+      return;
+    }
+    this._userActivation = false;
+
     if (typeof type !== "string") {
       return;
     }
@@ -952,6 +990,24 @@ export class Doc extends PDFObject<_SendDocData> {
     return children;
   }
 
+  _getTerminalChildren(fieldName: string) {
+    // Get all the descendants which have a value.
+    const children = [];
+    const len = fieldName.length;
+    for (const [name, field] of this._fields.entries()) {
+      if (name.startsWith(fieldName)) {
+        const finalPart = name.slice(len);
+        if (
+          field.obj._hasValue &&
+          (finalPart === "" || finalPart.startsWith("."))
+        ) {
+          children.push(field.wrapped);
+        }
+      }
+    }
+    return children;
+  }
+
   getIcon() {
     /* Not implemented */
   }
@@ -1096,6 +1152,11 @@ export class Doc extends PDFObject<_SendDocData> {
     bAnnotations = true,
     printParams?: _PrintP,
   ) {
+    if (this._disablePrinting || !this._userActivation) {
+      return;
+    }
+    this._userActivation = false;
+
     if (bUI && typeof bUI === "object") {
       nStart = bUI.nStart;
       nEnd = bUI.nEnd;

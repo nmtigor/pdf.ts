@@ -292,8 +292,8 @@ export interface ChunkRange {
 }
 
 export class ChunkedStreamManager {
-  length: number;
-  chunkSize: number;
+  length;
+  chunkSize;
 
   stream: ChunkedStream;
   getStream() {
@@ -312,9 +312,6 @@ export class ChunkedStreamManager {
   aborted = false;
 
   #loadedStreamCapability = createPromiseCap<ChunkedStream>();
-  onLoadedStream(): Promise<ChunkedStream> {
-    return this.#loadedStreamCapability.promise;
-  }
 
   constructor(public pdfNetworkStream: PDFWorkerStream, args: {
     msgHandler: MessageHandler<Thread.worker>;
@@ -370,9 +367,11 @@ export class ChunkedStreamManager {
    * Get all the chunks that are not yet loaded and group them into
    * contiguous ranges to load in as few requests as possible.
    */
-  requestAllChunks() {
-    const missingChunks = this.stream.getMissingChunks();
-    this.#requestChunks(missingChunks);
+  requestAllChunks(noFetch = false) {
+    if (!noFetch) {
+      const missingChunks = this.stream.getMissingChunks();
+      this.#requestChunks(missingChunks);
+    }
     return this.#loadedStreamCapability.promise;
   }
 

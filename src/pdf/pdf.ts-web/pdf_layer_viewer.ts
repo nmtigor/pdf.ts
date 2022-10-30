@@ -62,7 +62,6 @@ export class PDFLayerViewer extends BaseTreeViewer {
   }
   private constructor(options: PDFLayerViewerOptions) {
     super(options);
-
     this.l10n = options.l10n;
 
     this.eventBus._on("optionalcontentconfigchanged", (evt) => {

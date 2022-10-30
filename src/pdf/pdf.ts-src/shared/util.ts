@@ -302,13 +302,14 @@ export const enum VerbosityLevel {
 export const enum CMapCompressionType {
   NONE = 0,
   BINARY = 1,
-  STREAM = 2,
 }
 
 // All the possible operations for an operator list.
 export enum OPS {
   // Intentionally start from 1 so it is easy to spot bad operators that will be
   // 0's.
+  // PLEASE NOTE: We purposely keep any removed operators commented out, since
+  //              re-numbering the list would risk breaking third-party users.
   dependency = 1,
   setLineWidth = 2,
   setLineCap = 3,
@@ -386,14 +387,11 @@ export enum OPS {
   paintFormXObjectEnd = 75,
   beginGroup = 76,
   endGroup = 77,
-  /** @deprecated unused */
-  beginAnnotations = 78,
-  /** @deprecated unused */
-  endAnnotations = 79,
+  // beginAnnotations: 78,
+  // endAnnotations: 79,
   beginAnnotation = 80,
   endAnnotation = 81,
-  /** @deprecated unused */
-  paintJpegXObject = 82,
+  // paintJpegXObject: 82,
   paintImageMaskXObject = 83,
   paintImageMaskXObjectGroup = 84,
   paintImageXObject = 85,
@@ -410,15 +408,11 @@ export type OPSName = keyof typeof OPS;
 // export type OPSValu = (typeof OPS)[OPSName];
 
 export const enum UNSUPPORTED_FEATURES {
-  /** @deprecated unused */
-  unknown = "unknown",
   forms = "forms",
   javaScript = "javaScript",
   signatures = "signatures",
   smask = "smask",
   shadingPattern = "shadingPattern",
-  /** @deprecated unused */
-  font = "font",
   errorTilingPattern = "errorTilingPattern",
   errorExtGState = "errorExtGState",
   errorXObject = "errorXObject",
@@ -877,20 +871,6 @@ export class Util {
       m[0] / d,
       (m[2] * m[5] - m[4] * m[3]) / d,
       (m[4] * m[1] - m[5] * m[0]) / d,
-    ];
-  }
-
-  // Apply a generic 3d matrix M on a 3-vector v:
-  //   | a b c |   | X |
-  //   | d e f | x | Y |
-  //   | g h i |   | Z |
-  // M is assumed to be serialized as [a,b,c,d,e,f,g,h,i],
-  // with v as [X,Y,Z]
-  static apply3dTransform(m: matrix3d_t, v: point3d_t) {
-    return [
-      m[0] * v[0] + m[1] * v[1] + m[2] * v[2],
-      m[3] * v[0] + m[4] * v[1] + m[5] * v[2],
-      m[6] * v[0] + m[7] * v[1] + m[8] * v[2],
     ];
   }
 

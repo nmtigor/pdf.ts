@@ -48,6 +48,8 @@ import {
 import { XRef } from "./xref.ts";
 /*80--------------------------------------------------------------------------*/
 
+export const PDF_VERSION_REGEXP = /^[1-9]\.\d$/;
+
 export function getLookupTableFactory<
   T extends object = Record<string, number>,
 >(initializer?: (lookup: T) => void) {
