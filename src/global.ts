@@ -1,6 +1,6 @@
 /*80****************************************************************************
  * global
-** ------ */
+** -------------------------------------------------------------------------- */
 
 import { HTMLVCo } from "./lib/mv.ts";
 import { assert } from "./lib/util/trace.ts";
@@ -23,9 +23,9 @@ export const
 , _INFO = DEV && INFO
 , APP = false // release build
 
-, DENO = false
+, DENO = true
 
-, TESTING = false
+, TESTING = true
   , /** @deprecated */TEST_ALL = false 
 
   // from pdf.js
@@ -49,10 +49,12 @@ export const global = new class {
   readonly LASTUPDATE_DATNI = "2020-07-24 01:59:51 +0200";
   readonly LASTUPDATE_DEV = "2021-05-22 05:04:21 +0200";
 
-  globalhvc?: HTMLVCo;
+  ghvc?: HTMLVCo;
   // holdindicatr?: [HoldIndicatr, HoldIndicatr, HoldIndicatr];
 
+  /** @deprecated */
   has_ResizeObserver = false;
+
   can_touchstart = false;
 
   readonly #tabsize = 2;

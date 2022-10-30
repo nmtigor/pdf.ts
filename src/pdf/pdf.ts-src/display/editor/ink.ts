@@ -42,6 +42,10 @@ import { opacityToHex } from "./tools.ts";
 // so each dimension must be greater than RESIZER_SIZE.
 const RESIZER_SIZE = 16;
 
+// Some dimensions aren't in percent and that leads to some errors
+// when the page is zoomed (see #15571).
+const TIME_TO_WAIT_BEFORE_FIXING_DIMS = 100;
+
 export interface InkEditorP extends AnnotationEditorP {
   name: "inkEditor";
   color?: string;
@@ -616,9 +620,20 @@ export class InkEditor extends AnnotationEditor {
    * Create the resize observer.
    */
   #createObserver() {
+    let timeoutId: number | undefined;
     this.#observer = new ResizeObserver((entries) => {
       const rect = entries[0].contentRect;
       if (rect.width && rect.height) {
+        // Workaround for:
+        // https://bugzilla.mozilla.org/show_bug.cgi?id=1795536
+        if (timeoutId !== undefined) {
+          clearTimeout(timeoutId);
+        }
+        timeoutId = setTimeout(() => {
+          this.fixDims();
+          timeoutId = undefined;
+        }, TIME_TO_WAIT_BEFORE_FIXING_DIMS);
+
         this.setDimensions(rect.width, rect.height);
       }
     });

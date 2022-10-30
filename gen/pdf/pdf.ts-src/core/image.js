@@ -314,14 +314,14 @@ export class PDFImage {
         }
         return { data, width, height, interpolate };
     }
-    static createMask({ imgArray, width, height, imageIsFromDecodeStream, inverseDecode, interpolate, }) {
+    static createMask({ imgArray, width, height, imageIsFromDecodeStream, inverseDecode, interpolate, isOffscreenCanvasSupported = true, }) {
         const isSingleOpaquePixel = width === 1 &&
             height === 1 &&
             inverseDecode === (imgArray.length === 0 || !!(imgArray[0] & 128));
         if (isSingleOpaquePixel) {
             return { isSingleOpaquePixel };
         }
-        if (FeatureTest.isOffscreenCanvasSupported) {
+        if (isOffscreenCanvasSupported && FeatureTest.isOffscreenCanvasSupported) {
             const canvas = new globalThis.OffscreenCanvas(width, height);
             const ctx = canvas.getContext("2d");
             const imgData = ctx.createImageData(width, height);

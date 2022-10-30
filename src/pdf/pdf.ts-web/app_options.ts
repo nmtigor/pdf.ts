@@ -18,7 +18,6 @@
  */
 
 import {
-  _PDFDEV,
   CHROME,
   DENO,
   GENERIC,
@@ -280,6 +279,10 @@ const defaultOptions = {
     value: true,
     kind: OptionKind.API,
   },
+  isOffscreenCanvasSupported: {
+    value: true,
+    kind: OptionKind.API,
+  },
   maxImageSize: {
     value: -1,
     kind: OptionKind.API,
@@ -513,6 +516,9 @@ export abstract class AppOptions {
   }
   static get isEvalSupported() {
     return this.#get("isEvalSupported") as boolean;
+  }
+  static get isOffscreenCanvasSupported() {
+    return this.#get("isOffscreenCanvasSupported") as boolean;
   }
   static get maxImageSize() {
     return this.#get("maxImageSize") as number;

@@ -47,7 +47,7 @@ class SandboxSupport extends SandboxSupportBase {
 // const PDF_SCRIPTING_JS_SOURCE =
 //   await fetch( "./pdf.scripting.js").then( res => res.text());
 
-class Sandbox {
+export class Sandbox {
   support;
 
   _module;
@@ -72,7 +72,7 @@ class Sandbox {
 
   create(data: unknown) {
     /*#static*/ if (_PDFDEV) {
-      (<any> this._module).ccall("nukeSandbox", null, []);
+      (this._module as any).ccall("nukeSandbox", null, []);
     }
     // const code = [PDFJSDev.eval( "PDF_SCRIPTING_JS_SOURCE")];
     // const code = [PDF_SCRIPTING_JS_SOURCE];
@@ -93,9 +93,9 @@ class Sandbox {
       // "pdfjsScripting.initSandbox..." MUST be the last line to be evaluated
       // since the returned value is used for the communication.
       code.push(`pdfjsScripting.initSandbox({ data: ${sandboxData} })`);
-      buf = (<any> this._module).stringToNewUTF8(code.join("\n"));
+      buf = (this._module as any).stringToNewUTF8(code.join("\n"));
 
-      success = !!(<any> this._module).ccall(
+      success = !!(this._module as any).ccall(
         "init",
         "number",
         ["number", "number"],
@@ -160,7 +160,7 @@ class Sandbox {
   }
 }
 
-export function QuickJSSandbox() {
+export function QuickJSSandbox(): Promise<Sandbox> {
   return ModuleLoader().then((module: unknown) => {
     return new Sandbox(window, module);
   });

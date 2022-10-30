@@ -76,7 +76,6 @@ export class PDFOutlineViewer extends BaseTreeViewer {
   }
   private constructor(options: PDFOutlineViewerOptions) {
     super(options);
-
     this.linkService = options.linkService;
     this.downloadManager = options.downloadManager;
 

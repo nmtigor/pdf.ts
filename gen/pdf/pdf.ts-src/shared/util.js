@@ -266,13 +266,14 @@ export var CMapCompressionType;
 (function (CMapCompressionType) {
     CMapCompressionType[CMapCompressionType["NONE"] = 0] = "NONE";
     CMapCompressionType[CMapCompressionType["BINARY"] = 1] = "BINARY";
-    CMapCompressionType[CMapCompressionType["STREAM"] = 2] = "STREAM";
 })(CMapCompressionType || (CMapCompressionType = {}));
 // All the possible operations for an operator list.
 export var OPS;
 (function (OPS) {
     // Intentionally start from 1 so it is easy to spot bad operators that will be
     // 0's.
+    // PLEASE NOTE: We purposely keep any removed operators commented out, since
+    //              re-numbering the list would risk breaking third-party users.
     OPS[OPS["dependency"] = 1] = "dependency";
     OPS[OPS["setLineWidth"] = 2] = "setLineWidth";
     OPS[OPS["setLineCap"] = 3] = "setLineCap";
@@ -350,14 +351,11 @@ export var OPS;
     OPS[OPS["paintFormXObjectEnd"] = 75] = "paintFormXObjectEnd";
     OPS[OPS["beginGroup"] = 76] = "beginGroup";
     OPS[OPS["endGroup"] = 77] = "endGroup";
-    /** @deprecated unused */
-    OPS[OPS["beginAnnotations"] = 78] = "beginAnnotations";
-    /** @deprecated unused */
-    OPS[OPS["endAnnotations"] = 79] = "endAnnotations";
+    // beginAnnotations: 78,
+    // endAnnotations: 79,
     OPS[OPS["beginAnnotation"] = 80] = "beginAnnotation";
     OPS[OPS["endAnnotation"] = 81] = "endAnnotation";
-    /** @deprecated unused */
-    OPS[OPS["paintJpegXObject"] = 82] = "paintJpegXObject";
+    // paintJpegXObject: 82,
     OPS[OPS["paintImageMaskXObject"] = 83] = "paintImageMaskXObject";
     OPS[OPS["paintImageMaskXObjectGroup"] = 84] = "paintImageMaskXObjectGroup";
     OPS[OPS["paintImageXObject"] = 85] = "paintImageXObject";
@@ -372,15 +370,11 @@ export var OPS;
 // export type OPSValu = (typeof OPS)[OPSName];
 export var UNSUPPORTED_FEATURES;
 (function (UNSUPPORTED_FEATURES) {
-    /** @deprecated unused */
-    UNSUPPORTED_FEATURES["unknown"] = "unknown";
     UNSUPPORTED_FEATURES["forms"] = "forms";
     UNSUPPORTED_FEATURES["javaScript"] = "javaScript";
     UNSUPPORTED_FEATURES["signatures"] = "signatures";
     UNSUPPORTED_FEATURES["smask"] = "smask";
     UNSUPPORTED_FEATURES["shadingPattern"] = "shadingPattern";
-    /** @deprecated unused */
-    UNSUPPORTED_FEATURES["font"] = "font";
     UNSUPPORTED_FEATURES["errorTilingPattern"] = "errorTilingPattern";
     UNSUPPORTED_FEATURES["errorExtGState"] = "errorExtGState";
     UNSUPPORTED_FEATURES["errorXObject"] = "errorXObject";
@@ -766,19 +760,6 @@ export class Util {
             m[0] / d,
             (m[2] * m[5] - m[4] * m[3]) / d,
             (m[4] * m[1] - m[5] * m[0]) / d,
-        ];
-    }
-    // Apply a generic 3d matrix M on a 3-vector v:
-    //   | a b c |   | X |
-    //   | d e f | x | Y |
-    //   | g h i |   | Z |
-    // M is assumed to be serialized as [a,b,c,d,e,f,g,h,i],
-    // with v as [X,Y,Z]
-    static apply3dTransform(m, v) {
-        return [
-            m[0] * v[0] + m[1] * v[1] + m[2] * v[2],
-            m[3] * v[0] + m[4] * v[1] + m[5] * v[2],
-            m[6] * v[0] + m[7] * v[1] + m[8] * v[2],
         ];
     }
     // This calculation uses Singular Value Decomposition.

@@ -33,7 +33,6 @@ import {
   OPS,
   type rect_t,
   Util,
-  warn,
 } from "../shared/util.ts";
 import { CachedCanvases, CanvasGraphics } from "./canvas.ts";
 import { getCurrentTransform } from "./display_utils.ts";
@@ -185,13 +184,7 @@ export class RadialAxialShadingPattern implements RadialAxialPattern {
 
       pattern = ctx.createPattern(tmpCanvas.canvas, "no-repeat");
       const domMatrix = new DOMMatrix(inverse);
-      try {
-        (<CanvasPattern> pattern).setTransform(domMatrix);
-      } catch (ex) {
-        // Avoid rendering breaking completely in Firefox 78 ESR,
-        // and in Node.js (see issue 13724).
-        warn(`RadialAxialShadingPattern.getPattern: "${(<any> ex)?.message}".`);
-      }
+      pattern!.setTransform(domMatrix);
     } else {
       // Shading fills are applied relative to the current matrix which is also
       // how canvas gradients work, so there's no need to do anything special
@@ -808,13 +801,8 @@ namespace NsTilingPattern {
         temporaryPatternCanvas.canvas,
         "repeat",
       );
-      try {
-        pattern!.setTransform(domMatrix);
-      } catch (ex) {
-        // Avoid rendering breaking completely in Firefox 78 ESR,
-        // and in Node.js (see issue 13724).
-        warn(`TilingPattern.getPattern: "${(<any> ex)?.message}".`);
-      }
+      pattern!.setTransform(domMatrix);
+
       return pattern;
     }
   }

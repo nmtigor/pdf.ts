@@ -130,6 +130,7 @@ interface _CreateMaskP {
   imageIsFromDecodeStream: boolean;
   inverseDecode: boolean;
   interpolate: boolean | undefined;
+  isOffscreenCanvasSupported?: boolean | undefined;
 }
 
 interface _BuildImageP {
@@ -444,6 +445,7 @@ export class PDFImage {
     imageIsFromDecodeStream,
     inverseDecode,
     interpolate,
+    isOffscreenCanvasSupported = true,
   }: _CreateMaskP): ImgData {
     const isSingleOpaquePixel = width === 1 &&
       height === 1 &&
@@ -453,8 +455,8 @@ export class PDFImage {
       return { isSingleOpaquePixel };
     }
 
-    if (FeatureTest.isOffscreenCanvasSupported) {
-      const canvas = new (<any> globalThis).OffscreenCanvas(width, height);
+    if (isOffscreenCanvasSupported && FeatureTest.isOffscreenCanvasSupported) {
+      const canvas = new (globalThis as any).OffscreenCanvas(width, height);
       const ctx = <CanvasRenderingContext2D> canvas.getContext("2d");
       const imgData = ctx.createImageData(width, height);
       applyMaskImageData({

@@ -44,7 +44,6 @@ export declare class ChunkedStreamManager {
     currRequestId: number;
     progressiveDataLength: number;
     aborted: boolean;
-    onLoadedStream(): Promise<ChunkedStream>;
     constructor(pdfNetworkStream: PDFWorkerStream, args: {
         msgHandler: MessageHandler<Thread.worker>;
         length: number;
@@ -56,7 +55,7 @@ export declare class ChunkedStreamManager {
      * Get all the chunks that are not yet loaded and group them into
      * contiguous ranges to load in as few requests as possible.
      */
-    requestAllChunks(): Promise<ChunkedStream>;
+    requestAllChunks(noFetch?: boolean): Promise<ChunkedStream>;
     /**
      * Loads any chunks in the requested range that are not yet loaded.
      */

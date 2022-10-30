@@ -443,6 +443,14 @@ export class SVGGraphics {
         //   this._operatorIdMapping[ OPS[<OPSName>op] ] = <OPSName>op;
         // }
     }
+    getObject(data, fallback = undefined) {
+        if (typeof data === "string") {
+            return data.startsWith("g_")
+                ? this.commonObjs.get(data)
+                : this.objs.get(data);
+        }
+        return fallback;
+    }
     [OPS.save]() {
         this.transformStack.push(this.transformMatrix);
         const old = this.current;
@@ -1344,9 +1352,7 @@ export class SVGGraphics {
         this.#ensureTransformGroup().append(rect);
     }
     [OPS.paintImageXObject](objId) {
-        const imgData = objId.startsWith("g_")
-            ? this.commonObjs.get(objId)
-            : this.objs.get(objId);
+        const imgData = this.getObject(objId);
         if (!imgData) {
             warn(`Dependent image with object ID ${objId} is not ready yet`);
             return;
@@ -1378,7 +1384,13 @@ export class SVGGraphics {
             this.#ensureTransformGroup().append(imgEl);
         }
     }
-    [OPS.paintImageMaskXObject](imgData) {
+    [OPS.paintImageMaskXObject](img) {
+        const imgData = this.getObject(img.data, img);
+        if (imgData.bitmap) {
+            warn("paintImageMaskXObject: ImageBitmap support is not implemented, " +
+                "ensure that the `isOffscreenCanvasSupported` API parameter is disabled.");
+            return;
+        }
         const current = this.current;
         const width = imgData.width;
         const height = imgData.height;

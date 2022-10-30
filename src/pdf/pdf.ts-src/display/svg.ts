@@ -565,6 +565,18 @@ export class SVGGraphics {
     // }
   }
 
+  getObject(
+    data: unknown,
+    fallback: PDFCommonObjs | PDFObjs | undefined = undefined,
+  ) {
+    if (typeof data === "string") {
+      return data.startsWith("g_")
+        ? this.commonObjs.get(data)
+        : this.objs.get(data);
+    }
+    return fallback;
+  }
+
   [OPS.save]() {
     this.transformStack.push(this.transformMatrix);
     const old = this.current;
@@ -777,13 +789,13 @@ export class SVGGraphics {
           this[OPS.paintSolidColorImageMask]();
           break;
         case OPS.paintImageXObject:
-          this[OPS.paintImageXObject](<string> (<any> args)[0]);
+          this[OPS.paintImageXObject]((args as any)[0] as string);
           break;
         case OPS.paintInlineImageXObject:
-          this[OPS.paintInlineImageXObject](<ImgData> (<any> args)[0]);
+          this[OPS.paintInlineImageXObject]((args as any)[0] as ImgData);
           break;
         case OPS.paintImageMaskXObject:
-          this[OPS.paintImageMaskXObject](<ImgData> (<any> args)[0]);
+          this[OPS.paintImageMaskXObject]((args as any)[0] as ImgData);
           break;
         case OPS.paintFormXObjectBegin:
           this[OPS.paintFormXObjectBegin](...<[matrix_t, rect_t]> args);
@@ -1678,14 +1690,12 @@ export class SVGGraphics {
   }
 
   [OPS.paintImageXObject](objId: string) {
-    const imgData = objId.startsWith("g_")
-      ? <ImgData> this.commonObjs.get(objId)
-      : this.objs.get(objId);
+    const imgData = this.getObject(objId);
     if (!imgData) {
       warn(`Dependent image with object ID ${objId} is not ready yet`);
       return;
     }
-    this[OPS.paintInlineImageXObject](<ImgData> imgData);
+    this[OPS.paintInlineImageXObject](imgData as ImgData);
   }
 
   [OPS.paintInlineImageXObject](imgData: ImgData, mask?: SVGMaskElement) {
@@ -1719,7 +1729,15 @@ export class SVGGraphics {
     }
   }
 
-  [OPS.paintImageMaskXObject](imgData: ImgData) {
+  [OPS.paintImageMaskXObject](img: ImgData) {
+    const imgData = this.getObject(img.data, img) as ImgData;
+    if (imgData.bitmap) {
+      warn(
+        "paintImageMaskXObject: ImageBitmap support is not implemented, " +
+          "ensure that the `isOffscreenCanvasSupported` API parameter is disabled.",
+      );
+      return;
+    }
     const current = this.current;
     const width = imgData.width!;
     const height = imgData.height!;

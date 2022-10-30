@@ -6,6 +6,7 @@ import { ExternalCall } from "./initialization.js";
 import { PDFObject, ScriptingData, SendData } from "./pdf_object.js";
 import { ScriptingProxyHandler } from "./proxy.js";
 import { Thermometer } from "./thermometer.js";
+export declare const USERACTIVATION_CALLBACKID = 0;
 export interface DocWrapped {
     obj: Doc;
     wrapped: Doc;
@@ -144,7 +145,7 @@ export declare class App extends PDFObject<SendAppData> {
     alert(cMsg: string | {
         cMsg: string;
         nType: number;
-    }, nIcon?: number, nType?: number, cTitle?: string, oDoc?: undefined, oCheckbox?: undefined): 1 | 3 | 4;
+    }, nIcon?: number, nType?: number, cTitle?: string, oDoc?: undefined, oCheckbox?: undefined): 0 | 1 | 3 | 4;
     beep(): void;
     beginPriv(): void;
     browseForDoc(): void;

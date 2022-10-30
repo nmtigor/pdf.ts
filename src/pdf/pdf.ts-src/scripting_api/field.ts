@@ -246,6 +246,8 @@ export class Field extends PDFObject<SendFieldData> {
     throw new Error("field.numItems is read-only");
   }
 
+  _hasValue;
+
   _page;
   get page() {
     return this._page;
@@ -358,6 +360,7 @@ export class Field extends PDFObject<SendFieldData> {
     this._fillColor = data.fillColor || ["T"];
     this._isChoice = Array.isArray(data.items);
     this._items = data.items || [];
+    this._hasValue = data.hasOwnProperty("value");
     this._page = data.page || 0;
     this._strokeColor = data.strokeColor || ["G", 0];
     this._textColor = data.textColor || ["G", 0];
@@ -542,15 +545,32 @@ export class Field extends PDFObject<SendFieldData> {
   }
 
   getArray() {
+    // Gets the array of terminal child fields (that is, fields that can have
+    // a value for this Field object, the parent field).
     if (this._kidIds) {
-      return this._kidIds.map((id) => this._appObjects[id].wrapped);
+      const array: Field[] = [];
+      const fillArrayWithKids = (kidIds: string[]) => {
+        for (const id of kidIds) {
+          const obj = this._appObjects[id];
+          if (!obj) {
+            continue;
+          }
+          if (obj.obj._hasValue) {
+            array.push(obj.wrapped);
+          }
+          if (obj.obj._kidIds) {
+            fillArrayWithKids(obj.obj._kidIds);
+          }
+        }
+      };
+      fillArrayWithKids(this._kidIds);
+      return array;
     }
 
     if (this._children === undefined) {
-      this._children = this._document.obj
-        ._getChildren(this._fieldPath)
-        .map((child) => child.wrapped);
+      this._children = this._document.obj._getTerminalChildren(this._fieldPath);
     }
+
     return this._children;
   }
 

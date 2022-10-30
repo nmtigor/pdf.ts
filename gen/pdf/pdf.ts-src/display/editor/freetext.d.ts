@@ -66,6 +66,7 @@ export declare class FreeTextEditor extends AnnotationEditor {
     editorDivKeydown(event: KeyboardEvent): void;
     editorDivFocus(event: FocusEvent): void;
     editorDivBlur(event: FocusEvent): void;
+    editorDivInput(event: Event): void;
     /** @inheritdoc */
     disableEditing(): void;
     /** @inheritdoc */

@@ -98,6 +98,7 @@ export declare abstract class AnnotationEditor {
      * Set the dimensions of this editor.
      */
     setDims(width: number, height: number): void;
+    fixDims(): void;
     /**
      * Get the translation used to position this editor when it's created.
      */

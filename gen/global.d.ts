@@ -6,7 +6,8 @@ export declare const global: {
     readonly LASTUPDATE_NOT: "2020-07-10 22:17:59 +0200";
     readonly LASTUPDATE_DATNI: "2020-07-24 01:59:51 +0200";
     readonly LASTUPDATE_DEV: "2021-05-22 05:04:21 +0200";
-    globalhvc?: HTMLVCo;
+    ghvc?: HTMLVCo;
+    /** @deprecated */
     has_ResizeObserver: boolean;
     can_touchstart: boolean;
     readonly "__#5@#tabsize": 2;

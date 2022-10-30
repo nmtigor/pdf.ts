@@ -222,17 +222,6 @@ export class Glyph {
         this.isZeroWidthDiacritic = category.isZeroWidthDiacritic;
         this.isInvisibleFormatMark = category.isInvisibleFormatMark;
     }
-    matchesForCache(originalCharCode, fontChar, unicode, accent, width, vmetric, operatorListId, isSpace, isInFont) {
-        return (this.originalCharCode === originalCharCode &&
-            this.fontChar === fontChar &&
-            this.unicode === unicode &&
-            this.accent === accent &&
-            this.width === width &&
-            this.vmetric === vmetric &&
-            this.operatorListId === operatorListId &&
-            this.isSpace === isSpace &&
-            this.isInFont === isInFont);
-    }
 }
 function int16(b0, b1) {
     return (b0 << 8) + b1;
@@ -2825,6 +2814,12 @@ export class Font extends FontExpotDataEx {
         return shadow(this, "spaceWidth", width);
     }
     #charToGlyph(charcode, isSpace = false) {
+        let glyph = this._glyphCache[charcode];
+        // All `Glyph`-properties, except `isSpace` in multi-byte strings,
+        // depend indirectly on the `charcode`.
+        if (glyph && glyph.isSpace === isSpace) {
+            return glyph;
+        }
         let fontCharCode, width, operatorListId;
         let widthCode = charcode;
         if (this.cMap && this.cMap.contains(charcode)) {
@@ -2880,13 +2875,8 @@ export class Font extends FontExpotDataEx {
                 warn(`charToGlyph - invalid fontCharCode: ${fontCharCode}`);
             }
         }
-        let glyph = this._glyphCache[charcode];
-        if (!glyph ||
-            !glyph.matchesForCache(charcode, fontChar, unicode, accent, width, vmetric, operatorListId, isSpace, isInFont)) {
-            glyph = new Glyph(charcode, fontChar, unicode, accent, width, vmetric, operatorListId, isSpace, isInFont);
-            this._glyphCache[charcode] = glyph;
-        }
-        return glyph;
+        glyph = new Glyph(charcode, fontChar, unicode, accent, width, vmetric, operatorListId, isSpace, isInFont);
+        return (this._glyphCache[charcode] = glyph);
     }
     charsToGlyphs(chars) {
         // If we translated this string before, just grab it from the cache.

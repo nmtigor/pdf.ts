@@ -22,7 +22,7 @@ import { AnnotationFactory, PopupAnnotation, } from "./annotation.js";
 import { BaseStream } from "./base_stream.js";
 import { Catalog } from "./catalog.js";
 import { clearGlobalCaches } from "./cleanup_helper.js";
-import { collectActions, getInheritableProperty, getNewAnnotationsMap, isWhiteSpace, MissingDataException, validateCSSFont, XRefEntryException, XRefParseException, } from "./core_utils.js";
+import { collectActions, getInheritableProperty, getNewAnnotationsMap, isWhiteSpace, MissingDataException, PDF_VERSION_REGEXP, validateCSSFont, XRefEntryException, XRefParseException, } from "./core_utils.js";
 import { calculateMD5 } from "./crypto.js";
 import { DatasetReader } from "./dataset_reader.js";
 import { StreamsSequenceStream } from "./decode_stream.js";
@@ -356,8 +356,13 @@ export class Page {
                     opListPromises.push(annotation
                         .getOperatorList(partialEvaluator, task, intent, renderForms, annotationStorage)
                         .catch((reason) => {
-                        warn(`getOperatorList - ignoring annotation data during "${task.name}" task: "${reason}".`);
-                        return undefined;
+                        warn("getOperatorList - ignoring annotation data during " +
+                            `"${task.name}" task: "${reason}".`);
+                        return {
+                            opList: null,
+                            separateForm: false,
+                            separateCanvas: false,
+                        };
                     }));
                 }
             }
@@ -534,7 +539,6 @@ const STARTXREF_SIGNATURE = new Uint8Array([
 const ENDOBJ_SIGNATURE = new Uint8Array([0x65, 0x6e, 0x64, 0x6f, 0x62, 0x6a]);
 const FINGERPRINT_FIRST_BYTES = 1024;
 const EMPTY_FINGERPRINT = "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00";
-const PDF_HEADER_VERSION_REGEXP = /^[1-9]\.\d$/;
 function find(stream, signature, limit = 1024, backwards = false) {
     /*#static*/  {
         assert(limit > 0, 'The "limit" must be a positive integer.');
@@ -620,13 +624,6 @@ export class PDFDocument {
     parse(recoveryMode) {
         this.xref.parse(recoveryMode);
         this.catalog = new Catalog(this.pdfManager, this.xref);
-        // The `checkHeader` method is called before this method and parses the
-        // version from the header. The specification states in section 7.5.2
-        // that the version from the catalog, if present, should overwrite the
-        // version from the header.
-        if (this.catalog.version) {
-            this.#version = this.catalog.version;
-        }
     }
     get linearization() {
         let linearization = null;
@@ -696,18 +693,19 @@ export class PDFDocument {
             return;
         }
         stream.moveStart();
+        // Skip over the "%PDF-" prefix, since it was found above.
+        stream.skip(PDF_HEADER_SIGNATURE.length);
         // Read the PDF format version.
-        const MAX_PDF_VERSION_LENGTH = 12;
         let version = "", ch;
-        while ((ch = stream.getByte()) > /* Space = */ 0x20) {
-            if (version.length >= MAX_PDF_VERSION_LENGTH) {
-                break;
-            }
+        while ((ch = stream.getByte()) > /* Space = */ 0x20 &&
+            version.length < /* MAX_PDF_VERSION_LENGTH = */ 7) {
             version += String.fromCharCode(ch);
         }
-        if (!this.#version) {
-            // Remove the "%PDF-" prefix.
-            this.#version = version.substring(5);
+        if (PDF_VERSION_REGEXP.test(version)) {
+            this.#version = version;
+        }
+        else {
+            warn(`Invalid PDF header version: ${version}`);
         }
     }
     parseStartXRef() {
@@ -999,6 +997,13 @@ export class PDFDocument {
             ? this.xfaFactory.serializeData(annotationStorage)
             : undefined;
     }
+    /**
+     * The specification states in section 7.5.2 that the version from
+     * the catalog, if present, should overwrite the version from the header.
+     */
+    get version() {
+        return this.catalog.version || this.#version;
+    }
     get formInfo() {
         const formInfo = {
             hasFields: false,
@@ -1042,25 +1047,8 @@ export class PDFDocument {
         return shadow(this, "formInfo", formInfo);
     }
     get documentInfo() {
-        // const DocumentInfoValidators = {
-        //   Title: isString,
-        //   Author: isString,
-        //   Subject: isString,
-        //   Keywords: isString,
-        //   Creator: isString,
-        //   Producer: isString,
-        //   CreationDate: isString,
-        //   ModDate: isString,
-        //   Trapped: isName,
-        // };
-        let version = this.#version;
-        if (typeof version !== "string" ||
-            !PDF_HEADER_VERSION_REGEXP.test(version)) {
-            warn(`Invalid PDF header version number: ${version}`);
-            version = undefined;
-        }
         const docInfo = {
-            PDFFormatVersion: version,
+            PDFFormatVersion: this.version,
             Language: this.catalog.lang,
             EncryptFilterName: this.xref.encrypt
                 ? this.xref.encrypt.filterName

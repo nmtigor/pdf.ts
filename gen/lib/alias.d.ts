@@ -8,7 +8,15 @@ export declare type uint64 = uint;
 export declare type uint32 = uint;
 export declare type uint16 = uint;
 export declare type uint8 = uint;
+/** 0 is special */
 export declare type id_t = uint32;
+/**
+ * ! CHECK
+ * Make sense?
+ * Index-similar value can very likely be `-1`.
+ * Is it better to just use `int`, `uint` according to contexts?
+ * (see sortedarray.ts)
+ */
 export declare type Index = uint32;
 /** Count one "\t" as 1. */
 export declare type loff_t = int32;
@@ -25,7 +33,13 @@ export declare type Ratio = number;
 export declare type IntegerArray = Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint16Array | Int32Array | Uint32Array;
 export declare type FloatArray = Float32Array | Float64Array;
 export declare type TypedArray = IntegerArray | FloatArray;
-export declare type BinaryData = TypedArray | ArrayBuffer | number[] | string;
+export declare type ReadableStreamDefaultReadResult<T> = {
+    done: false;
+    value: T;
+} | {
+    done: true;
+    value?: undefined;
+};
 export declare type CSSStyleName = keyof {
     [K in Extract<keyof CSSStyleDeclaration, string> as string extends K ? never : CSSStyleDeclaration[K] extends string ? K : never]: never;
 };

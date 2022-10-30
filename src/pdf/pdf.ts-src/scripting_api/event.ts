@@ -18,12 +18,15 @@
  */
 
 import { AnnotActions } from "../core/core_utils.ts";
-import { DocWrapped, FieldWrapped } from "./app.ts";
+import { DocWrapped, FieldWrapped, USERACTIVATION_CALLBACKID } from "./app.ts";
 import { ScriptingActionName } from "./common.ts";
 import { Doc } from "./doc.ts";
 import { Field } from "./field.ts";
+import { ExternalCall } from "./initialization.ts";
 import { ScriptingData, SendData } from "./pdf_object.ts";
 /*80--------------------------------------------------------------------------*/
+
+const USERACTIVATION_MAXTIME_VALIDITY = 5000;
 
 interface _SendEventData extends SendData {
 }
@@ -106,6 +109,7 @@ export class EventDispatcher {
   _document;
   _calculationOrder;
   _objects;
+  _externalCall;
 
   _isCalculating = false;
 
@@ -113,10 +117,12 @@ export class EventDispatcher {
     document: DocWrapped,
     calculationOrder: string[] | undefined,
     objects: Record<string, FieldWrapped>,
+    externalCall: ExternalCall,
   ) {
     this._document = document;
     this._calculationOrder = calculationOrder;
     this._objects = objects;
+    this._externalCall = externalCall;
 
     this._document.obj._eventDispatcher = this;
   }
@@ -141,29 +147,45 @@ export class EventDispatcher {
     return `${prefix}${event.change}${postfix}`;
   }
 
+  userActivation() {
+    this._document.obj._userActivation = true;
+    this._externalCall("setTimeout", [
+      USERACTIVATION_CALLBACKID,
+      USERACTIVATION_MAXTIME_VALIDITY,
+    ]);
+  }
+
   dispatch(baseEvent: ScriptingEventData) {
     const id = baseEvent.id!;
     if (!(id in this._objects)) {
       let event: Event | undefined;
       if (id === "doc" || id === "page") {
-        event = (<any> globalThis).event = new Event(baseEvent);
+        event = (globalThis as any).event = new Event(baseEvent);
         event.source = event.target = this._document.wrapped;
         event.name = baseEvent.name;
       }
       if (id === "doc") {
-        if (event!.name === "Open") {
+        const eventName = event!.name;
+        if (eventName === "Open") {
           // Before running the Open event, we format all the fields
           // (see bug 1766987).
           this.formatAll();
         }
+        if (
+          !["DidPrint", "DidSave", "WillPrint", "WillSave"].includes(eventName)
+        ) {
+          this.userActivation();
+        }
         this._document.obj._dispatchDocEvent(event!.name);
       } else if (id === "page") {
+        this.userActivation();
         this._document.obj._dispatchPageEvent(
           event!.name,
           baseEvent.actions!,
           baseEvent.pageNumber!,
         );
       } else if (id === "app" && baseEvent.name === "ResetForm") {
+        this.userActivation();
         for (const fieldId of baseEvent.ids!) {
           const obj = this._objects[fieldId];
           obj?.obj._reset();
@@ -174,8 +196,10 @@ export class EventDispatcher {
 
     const name = baseEvent.name;
     const source = this._objects[id];
-    const event = ((<any> globalThis).event = new Event(baseEvent));
+    const event = ((globalThis as any).event = new Event(baseEvent));
     let savedChange: _SavedChange;
+
+    this.userActivation();
 
     if (source.obj._isButton()) {
       source.obj._id = id;
@@ -342,7 +366,7 @@ export class EventDispatcher {
     this._isCalculating = true;
     const first = this._calculationOrder[0];
     const source = this._objects[first];
-    (<any> globalThis).event = new Event(<ScriptingEventData> {});
+    (<any> globalThis).event = new Event({} as ScriptingEventData);
 
     try {
       this.runCalculate(source, (<any> globalThis).event);

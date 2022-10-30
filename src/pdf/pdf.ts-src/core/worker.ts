@@ -40,7 +40,6 @@ import {
   stringToPDFString,
   UnexpectedResponseException,
   UnknownErrorException,
-  UNSUPPORTED_FEATURES,
   VerbosityLevel,
   warn,
 } from "../shared/util.ts";
@@ -51,7 +50,6 @@ import { Page } from "./document.ts";
 import { DedicatedWorkerGlobalScope, IWorker } from "./iworker.ts";
 import {
   BasePdfManager,
-  type EvaluatorOptions,
   LocalPdfManager,
   NetworkPdfManager,
 } from "./pdf_manager.ts";
@@ -133,7 +131,7 @@ export const WorkerMessageHandler = {
     const WorkerTasks: WorkerTask[] = [];
     const verbosity = getVerbosityLevel();
 
-    const apiVersion = docParams.apiVersion;
+    const { docId, apiVersion } = docParams;
     const workerVersion = 0;
     // typeof PDFJSDev !== "undefined" && !PDFJSDev.test("TESTING")
     //   ? PDFJSDev.eval("BUNDLE_VERSION")
@@ -178,10 +176,7 @@ export const WorkerMessageHandler = {
         throw new Error(partialMsg + "please update to a supported browser.");
       }
     }
-
-    const docId = docParams.docId;
-    const docBaseUrl = docParams.docBaseUrl;
-    const workerHandlerName = docParams.docId + "_worker";
+    const workerHandlerName = docId + "_worker";
     let handler = new MessageHandler<Thread.worker>(
       workerHandlerName,
       docId,
@@ -244,21 +239,25 @@ export const WorkerMessageHandler = {
       return { numPages, fingerprints, htmlForXfa };
     }
 
-    function getPdfManager(
-      data: GetDocRequestData,
-      evaluatorOptions: EvaluatorOptions,
-      enableXfa?: boolean,
-    ) {
+    function getPdfManager({
+      data,
+      password,
+      disableAutoFetch,
+      rangeChunkSize,
+      length,
+      docBaseUrl,
+      enableXfa,
+      evaluatorOptions,
+    }: GetDocRequestData) {
       const pdfManagerCapability = createPromiseCap<BasePdfManager>();
       let newPdfManager: BasePdfManager;
 
-      const source = data.source;
-      if (source.data) {
+      if (data) {
         try {
           newPdfManager = new LocalPdfManager(
             docId,
-            source.data,
-            source.password,
+            data,
+            password,
             handler,
             evaluatorOptions,
             enableXfa,
@@ -286,19 +285,19 @@ export const WorkerMessageHandler = {
           if (!fullRequest.isRangeSupported) {
             return;
           }
-
           // We don't need auto-fetch when streaming is enabled.
-          const disableAutoFetch = source.disableAutoFetch ||
+          disableAutoFetch = disableAutoFetch ||
             fullRequest.isStreamingSupported;
+
           newPdfManager = new NetworkPdfManager(
             docId,
             pdfStream,
             {
               msgHandler: handler,
-              password: source.password,
+              password,
               length: fullRequest.contentLength!,
               disableAutoFetch,
-              rangeChunkSize: source.rangeChunkSize!,
+              rangeChunkSize: rangeChunkSize!,
             },
             evaluatorOptions,
             enableXfa,
@@ -323,7 +322,7 @@ export const WorkerMessageHandler = {
       let loaded = 0;
       const flushChunks = () => {
         const pdfFile = arraysToBytes(cachedChunks);
-        if (source.length && pdfFile.length !== source.length) {
+        if (length && pdfFile.length !== length) {
           warn("reported HTTP length is different from actual");
         }
         // the data is array, instantiating directly from it
@@ -331,7 +330,7 @@ export const WorkerMessageHandler = {
           newPdfManager = new LocalPdfManager(
             docId,
             pdfFile,
-            source.password,
+            password,
             handler,
             evaluatorOptions,
             enableXfa,
@@ -436,8 +435,7 @@ export const WorkerMessageHandler = {
             onFailure(reason);
             return;
           }
-          pdfManager.requestLoadedStream();
-          pdfManager.onLoadedStream().then(() => {
+          pdfManager.requestLoadedStream().then(() => {
             ensureNotTerminated();
 
             loadDocument(true).then(onSuccess, onFailure);
@@ -447,33 +445,21 @@ export const WorkerMessageHandler = {
 
       ensureNotTerminated();
 
-      const evaluatorOptions: EvaluatorOptions = {
-        maxImageSize: data.maxImageSize!,
-        disableFontFace: data.disableFontFace,
-        ignoreErrors: data.ignoreErrors,
-        isEvalSupported: data.isEvalSupported,
-        fontExtraProperties: data.fontExtraProperties,
-        useSystemFonts: data.useSystemFonts,
-        cMapUrl: data.cMapUrl,
-        standardFontDataUrl: data.standardFontDataUrl,
-      };
+      getPdfManager(data).then((newPdfManager) => {
+        if (terminated) {
+          // We were in a process of setting up the manager, but it got
+          // terminated in the middle.
+          newPdfManager.terminate(
+            new AbortException("Worker was terminated."),
+          );
+          throw new Error("Worker was terminated");
+        }
+        pdfManager = newPdfManager;
 
-      getPdfManager(data, evaluatorOptions, data.enableXfa)
-        .then((newPdfManager) => {
-          if (terminated) {
-            // We were in a process of setting up the manager, but it got
-            // terminated in the middle.
-            newPdfManager.terminate(
-              new AbortException("Worker was terminated."),
-            );
-            throw new Error("Worker was terminated");
-          }
-          pdfManager = newPdfManager;
-
-          pdfManager.onLoadedStream().then((stream) => {
-            handler.send("DataLoaded", { length: stream.bytes.byteLength });
-          });
-        })
+        pdfManager.requestLoadedStream(/* noFetch = */ true).then((stream) => {
+          handler.send("DataLoaded", { length: stream.bytes.byteLength });
+        });
+      })
         .then(pdfManagerReady, onFailure);
     }
 
@@ -568,8 +554,7 @@ export const WorkerMessageHandler = {
     });
 
     handler.on("GetData", () => {
-      pdfManager.requestLoadedStream();
-      return pdfManager.onLoadedStream().then((stream) => stream.bytes);
+      return pdfManager.requestLoadedStream().then((stream) => stream.bytes);
     });
 
     handler.on("GetAnnotations", ({ pageIndex, intent }) => {
@@ -606,19 +591,17 @@ export const WorkerMessageHandler = {
     handler.on(
       "SaveDocument",
       ({ isPureXfa, numPages, annotationStorage, filename }) => {
-        pdfManager.requestLoadedStream();
-
-        const newAnnotationsByPage = !isPureXfa
-          ? getNewAnnotationsMap(annotationStorage)
-          : undefined;
-
         const promises = [
-          pdfManager.onLoadedStream(),
+          pdfManager.requestLoadedStream(),
           pdfManager.ensureCatalog("acroForm"),
           pdfManager.ensureCatalog("acroFormRef"),
           pdfManager.ensureDoc("xref"),
           pdfManager.ensureDoc("startXRef"),
         ] as const;
+
+        const newAnnotationsByPage = !isPureXfa
+          ? getNewAnnotationsMap(annotationStorage)
+          : undefined;
 
         const promises_1: Promise<
           SaveReturn[] | SaveData[] | string | undefined
@@ -700,7 +683,7 @@ export const WorkerMessageHandler = {
               warn("Unsupported XFA type.");
             }
 
-            let newXrefInfo = <XRefInfo> Object.create(null);
+            let newXrefInfo = Object.create(null) as XRefInfo;
             if (xref.trailer) {
               // Get string info from Info in order to compute fileId.
               const infoObj: Record<string, string> = Object.create(null);
@@ -779,15 +762,8 @@ export const WorkerMessageHandler = {
               finishWorkerTask(task);
 
               if (task.terminated) {
-                // ignoring errors from the terminated thread
-                return;
+                return; // ignoring errors from the terminated thread
               }
-              // For compatibility with older behavior, generating unknown
-              // unsupported feature notification on errors.
-              handler.send("UnsupportedFeature", {
-                featureId: UNSUPPORTED_FEATURES.errorOperatorList,
-              });
-
               sink.error!(reason);
 
               // TODO: Should `reason` be re-thrown here (currently that casues
@@ -879,13 +855,13 @@ export const WorkerMessageHandler = {
         // Notice that even if we destroying handler, resolved response promise
         // must be sent back.
         handler.destroy();
-        handler = <any> undefined;
+        handler = undefined as any;
       });
     });
 
     handler.on("Ready", () => {
       setupDoc(docParams);
-      docParams = <any> null; // we don't need docParams anymore -- saving memory.
+      docParams = undefined as any; // we don't need docParams anymore -- saving memory.
     });
     return workerHandlerName;
   },

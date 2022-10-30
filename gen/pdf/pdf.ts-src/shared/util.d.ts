@@ -211,8 +211,7 @@ export declare const enum VerbosityLevel {
 }
 export declare const enum CMapCompressionType {
     NONE = 0,
-    BINARY = 1,
-    STREAM = 2
+    BINARY = 1
 }
 export declare enum OPS {
     dependency = 1,
@@ -292,14 +291,8 @@ export declare enum OPS {
     paintFormXObjectEnd = 75,
     beginGroup = 76,
     endGroup = 77,
-    /** @deprecated unused */
-    beginAnnotations = 78,
-    /** @deprecated unused */
-    endAnnotations = 79,
     beginAnnotation = 80,
     endAnnotation = 81,
-    /** @deprecated unused */
-    paintJpegXObject = 82,
     paintImageMaskXObject = 83,
     paintImageMaskXObjectGroup = 84,
     paintImageXObject = 85,
@@ -313,15 +306,11 @@ export declare enum OPS {
 }
 export declare type OPSName = keyof typeof OPS;
 export declare const enum UNSUPPORTED_FEATURES {
-    /** @deprecated unused */
-    unknown = "unknown",
     forms = "forms",
     javaScript = "javaScript",
     signatures = "signatures",
     smask = "smask",
     shadingPattern = "shadingPattern",
-    /** @deprecated unused */
-    font = "font",
     errorTilingPattern = "errorTilingPattern",
     errorExtGState = "errorExtGState",
     errorXObject = "errorXObject",
@@ -434,7 +423,6 @@ export declare class Util {
     static applyInverseTransform(p: point_t, m: matrix_t): point_t;
     static getAxialAlignedBoundingBox(r: rect_t, m: matrix_t): rect_t;
     static inverseTransform(m: matrix_t): matrix_t;
-    static apply3dTransform(m: matrix3d_t, v: point3d_t): number[];
     static singularValueDecompose2dScale(m: matrix_t): number[];
     static normalizeRect(rect: rect_t): [number, number, number, number];
     static intersect(rect1: rect_t, rect2: rect_t): rect_t | undefined;

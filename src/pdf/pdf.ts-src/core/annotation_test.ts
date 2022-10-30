@@ -20,7 +20,7 @@
 import {
   assertEquals,
   assertFalse,
-} from "https://deno.land/std@0.154.0/testing/asserts.ts";
+} from "https://deno.land/std@0.155.0/testing/asserts.ts";
 import {
   afterAll,
   afterEach,
@@ -28,7 +28,7 @@ import {
   beforeEach,
   describe,
   it,
-} from "https://deno.land/std@0.154.0/testing/bdd.ts";
+} from "https://deno.land/std@0.155.0/testing/bdd.ts";
 import {
   DefaultCMapReaderFactory,
   DefaultStandardFontDataFactory,

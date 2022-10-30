@@ -28,7 +28,7 @@ export declare function docPropertiesLookup(pdfDocument: PDFDocumentProxy): Prom
     Custom?: Record<string, string | number | boolean | XFANsName.Name>;
 }>;
 export declare class GenericScripting implements IScripting {
-    _ready: Promise<any>;
+    _ready: Promise<import("../pdf.ts-src/pdf.sandbox.js").Sandbox>;
     constructor(sandboxBundleSrc: string);
     /** @implement */
     createSandbox(data: CreateSandboxP): Promise<void>;

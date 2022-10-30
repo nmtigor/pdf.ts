@@ -279,23 +279,6 @@ interface _SetInitialViewP {
   spreadMode?: SpreadMode | undefined;
 }
 
-// interface ScriptingInstance
-// {
-//   scripting:{
-//     createSandbox:( _:unknown) => unknown;
-//     dispatchEventInSandbox:( _:{
-//       id:string;
-//       name:string;
-//       pageNumber?:unknown;
-//       action?:unknown;
-//     }) => void;
-//     destroySandbox:() => Promise<void>;
-//   }
-//   ready:boolean;
-//   internalEvents:Map<unknown, unknown>;
-//   domEvents:Map<unknown, unknown>;
-// }
-
 interface _InitHistoryP {
   fingerprint: string;
   viewOnLoad: ViewOnLoad;
@@ -1171,7 +1154,7 @@ export class PDFViewerApplication {
   };
 
   /**
-   * Show the error box; used for errors affecting loading and/or parsing of
+   * Report the error; used for errors affecting loading and/or parsing of
    * the entire PDF document.
    */
   _documentError(message: string, moreInfo?: ErrorMoreInfo) {
@@ -1187,45 +1170,31 @@ export class PDFViewerApplication {
   }
 
   /**
-   * Show the error box; used for errors affecting e.g. only a single page.
+   * Report the error; used for errors affecting e.g. only a single page.
    *
    * @param message A message that is human readable.
    * @param moreInfo Further information about the error that is
-   *  more technical.  Should have a 'message' and
+   *  more technical. Should have a 'message' and
    *  optionally a 'stack' property.
    */
   _otherError(message: string, moreInfo?: ErrorMoreInfo) {
-    const moreInfoText = [
-      this.l10n.get("error_version_info", {
-        version: version || "?",
-        build: build || "?",
-      }),
-    ];
+    const moreInfoText = [`PDF.js v${version || "?"} (build: ${build || "?"})`];
     if (moreInfo) {
-      moreInfoText.push(
-        this.l10n.get("error_message", { message: moreInfo.message }),
-      );
+      moreInfoText.push(`Message: ${moreInfo.message}`);
+
       if (moreInfo.stack) {
-        moreInfoText.push(
-          this.l10n.get("error_stack", { stack: moreInfo.stack }),
-        );
+        moreInfoText.push(`Stack: ${moreInfo.stack}`);
       } else {
         if (moreInfo.filename) {
-          moreInfoText.push(
-            this.l10n.get("error_file", { file: moreInfo.filename }),
-          );
+          moreInfoText.push(`File: ${moreInfo.filename}`);
         }
         if (moreInfo.lineNumber) {
-          moreInfoText.push(
-            this.l10n.get("error_line", { line: <any> moreInfo.lineNumber }),
-          );
+          moreInfoText.push(`Line: ${moreInfo.lineNumber}`);
         }
       }
     }
 
-    Promise.all(moreInfoText).then((parts) => {
-      console.error(`${message}\n${parts.join("\n")}`);
-    });
+    console.error(`${message}\n\n${moreInfoText.join("\n")}`);
     this.fallback();
   }
 
@@ -1584,7 +1553,7 @@ export class PDFViewerApplication {
     console.log(
       `PDF ${pdfDocument.fingerprints[0]} [${info.PDFFormatVersion} ` +
         `${(info.Producer || "-").trim()} / ${(info.Creator || "-").trim()}] ` +
-        `(PDF.js: ${version || "-"})`,
+        `(PDF.js: ${version || "?"} [${build || "?"}])`,
     );
 
     let pdfTitle: string | string[] | undefined = info.Title;
@@ -2120,12 +2089,12 @@ export class PDFViewerApplication {
     eventBus._off("updatefindmatchescount", webViewerUpdateFindMatchesCount);
     eventBus._off("updatefindcontrolstate", webViewerUpdateFindControlState);
 
-    // if (_boundEvents.reportPageStatsPDFBug) {
-    //   eventBus._off("pagerendered", _boundEvents.reportPageStatsPDFBug);
-    //   eventBus._off("pagechanging", _boundEvents.reportPageStatsPDFBug);
+    if (_boundEvents.reportPageStatsPDFBug) {
+      eventBus._off("pagerendered", _boundEvents.reportPageStatsPDFBug);
+      eventBus._off("pagechanging", _boundEvents.reportPageStatsPDFBug);
 
-    //   _boundEvents.reportPageStatsPDFBug = undefined;
-    // }
+      _boundEvents.reportPageStatsPDFBug = undefined;
+    }
     /*#static*/ if (GENERIC) {
       eventBus._off("fileinputchange", webViewerFileInputChange!);
       eventBus._off("openfile", webViewerOpenFile!);

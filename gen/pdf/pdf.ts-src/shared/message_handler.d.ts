@@ -12,6 +12,7 @@ import { type IWorker } from "../core/iworker.js";
 import { type SerializedMetadata } from "../core/metadata_parser.js";
 import { type OpListIR } from "../core/operator_list.js";
 import { type ShadingPatternIR } from "../core/pattern.js";
+import { EvaluatorOptions } from "../core/pdf_manager.js";
 import { type XFAElObj } from "../core/xfa/alias.js";
 import { type AnnotStorageRecord } from "../display/annotation_layer.js";
 import { type BinaryData, type OutlineNode, type PDFDocumentStats, type RefProxy, StructTreeNode, type TextItem, type TextMarkedContent } from "../display/api.js";
@@ -28,24 +29,14 @@ interface reason_t {
 export interface GetDocRequestData {
     docId: string;
     apiVersion: number;
-    source: {
-        data: BinaryData | undefined;
-        url: string | URL | undefined;
-        password: string | undefined;
-        disableAutoFetch: boolean | undefined;
-        rangeChunkSize: number | undefined;
-        length: number | undefined;
-    };
-    maxImageSize: number | undefined;
-    disableFontFace: boolean | undefined;
+    data: BinaryData | undefined;
+    password: string | undefined;
+    disableAutoFetch: boolean | undefined;
+    rangeChunkSize: number | undefined;
+    length: number | undefined;
     docBaseUrl: string | undefined;
-    ignoreErrors: boolean | undefined;
-    isEvalSupported: boolean | undefined;
-    fontExtraProperties: boolean | undefined;
-    useSystemFonts: boolean | undefined;
-    cMapUrl: string | undefined;
-    standardFontDataUrl?: string | undefined;
     enableXfa: boolean | undefined;
+    evaluatorOptions: EvaluatorOptions;
 }
 interface _PumpOperatorListP {
     pageIndex: number;

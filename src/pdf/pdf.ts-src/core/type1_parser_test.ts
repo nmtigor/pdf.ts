@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-import { assertEquals } from "https://deno.land/std@0.154.0/testing/asserts.ts";
-import { describe, it } from "https://deno.land/std@0.154.0/testing/bdd.ts";
+import { assertEquals } from "https://deno.land/std@0.155.0/testing/asserts.ts";
+import { describe, it } from "https://deno.land/std@0.155.0/testing/bdd.ts";
 import { FontProps } from "./evaluator.ts";
 import { SEAC_ANALYSIS_ENABLED } from "./fonts_utils.ts";
 import { StringStream } from "./stream.ts";

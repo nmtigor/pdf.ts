@@ -3,6 +3,7 @@ import { DocWrapped, FieldWrapped } from "./app.js";
 import { ScriptingActionName } from "./common.js";
 import { Doc } from "./doc.js";
 import { Field } from "./field.js";
+import { ExternalCall } from "./initialization.js";
 import { ScriptingData, SendData } from "./pdf_object.js";
 interface _SendEventData extends SendData {
 }
@@ -55,9 +56,11 @@ export declare class EventDispatcher {
     _document: DocWrapped;
     _calculationOrder: string[] | undefined;
     _objects: Record<string, FieldWrapped>;
+    _externalCall: ExternalCall;
     _isCalculating: boolean;
-    constructor(document: DocWrapped, calculationOrder: string[] | undefined, objects: Record<string, FieldWrapped>);
+    constructor(document: DocWrapped, calculationOrder: string[] | undefined, objects: Record<string, FieldWrapped>, externalCall: ExternalCall);
     mergeChange(event: Event): string | undefined;
+    userActivation(): void;
     dispatch(baseEvent: ScriptingEventData): void;
     formatAll(): void;
     runValidation(source: FieldWrapped, event: Event): void;

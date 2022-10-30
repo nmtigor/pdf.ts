@@ -72,7 +72,6 @@ export declare class Glyph {
     isInvisibleFormatMark: boolean;
     compiled?: ((c: CanvasRenderingContext2D) => void) | undefined;
     constructor(originalCharCode: number, fontChar: string, unicode: string, accent: Accent | undefined, width: number | undefined, vmetric: VMetric | undefined, operatorListId: number | undefined, isSpace: boolean, isInFont: boolean);
-    matchesForCache(originalCharCode: number, fontChar: string, unicode: string, accent: Accent | undefined, width: number | undefined, vmetric: VMetric | undefined, operatorListId: number | undefined, isSpace: boolean, isInFont: boolean): boolean;
 }
 export interface Seac {
     baseFontCharCode: number;

@@ -411,10 +411,6 @@ export class AnnotationElement {
         assert(0, "Abstract method `AnnotationElement.render` called");
         return undefined;
     }
-    /**
-     * @private
-     * @return {Array}
-     */
     _getElementsByName(name, skipId) {
         const fields = [];
         if (this._fieldObjects) {
@@ -443,7 +439,8 @@ export class AnnotationElement {
         // Fallback to a regular DOM lookup, to ensure that the standalone
         // viewer components won't break.
         for (const domElement of document.getElementsByName(name)) {
-            const { id, exportValue } = domElement;
+            const { exportValue } = domElement;
+            const id = domElement.getAttribute("data-element-id");
             if (id === skipId) {
                 continue;
             }
@@ -800,15 +797,17 @@ class WidgetAnnotationElement extends AnnotationElement {
         // If the height is "big" then it could lead to a too big font size
         // so in this case use the one we've in the pdf (hence the min).
         let computedFontSize;
+        const BORDER_SIZE = 2;
+        const roundToOneDecimal = (x) => Math.round(10 * x) / 10;
         if (this.data.multiLine) {
-            const height = Math.abs(this.data.rect[3] - this.data.rect[1]);
+            const height = Math.abs(this.data.rect[3] - this.data.rect[1] - BORDER_SIZE);
             const numberOfLines = Math.round(height / (LINE_FACTOR * fontSize)) || 1;
             const lineHeight = height / numberOfLines;
-            computedFontSize = Math.min(fontSize, Math.round(lineHeight / LINE_FACTOR));
+            computedFontSize = Math.min(fontSize, roundToOneDecimal(lineHeight / LINE_FACTOR));
         }
         else {
-            const height = Math.abs(this.data.rect[3] - this.data.rect[1]);
-            computedFontSize = Math.min(fontSize, Math.round(height / LINE_FACTOR));
+            const height = Math.abs(this.data.rect[3] - this.data.rect[1] - BORDER_SIZE);
+            computedFontSize = Math.min(fontSize, roundToOneDecimal(height / LINE_FACTOR));
         }
         style.fontSize = `calc(${computedFontSize}px * var(--scale-factor))`;
         style.color = Util.makeHexColor(fontColor[0], fontColor[1], fontColor[2]);
@@ -980,7 +979,10 @@ class TextWidgetAnnotationElement extends WidgetAnnotationElement {
                     if (event.key === "Escape") {
                         commitKey = 0;
                     }
-                    else if (event.key === "Enter") {
+                    else if (event.key === "Enter" && !this.data.multiLine) {
+                        // When we've a multiline field, "Enter" key is a key as the other
+                        // hence we don't commit the data (Acrobat behaves the same way)
+                        // (see issue #15627).
                         commitKey = 2;
                     }
                     else if (event.key === "Tab") {

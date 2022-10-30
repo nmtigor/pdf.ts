@@ -80,6 +80,9 @@ interface _GetTextContentP {
     sink: StreamSink<Thread.main, "GetTextContent">;
     seenStyles?: Set<string>;
     viewBox: rect_t;
+    markedContentData?: {
+        level: number;
+    } | undefined;
 }
 interface CIDSystemInfo {
     registry: string;
@@ -198,6 +201,7 @@ export declare class PartialEvaluator {
         disableFontFace: false;
         ignoreErrors: false;
         isEvalSupported: true;
+        isOffscreenCanvasSupported: true;
         fontExtraProperties: false;
         useSystemFonts: true;
         cMapUrl: undefined;
@@ -232,7 +236,7 @@ export declare class PartialEvaluator {
     _parseVisibilityExpression(array: (Obj | undefined)[], nestingCounter: number, currentResult: VisibilityExpressionResult): void;
     parseMarkedContentProps(contentProperties: Dict | Name, resources: Dict | undefined): Promise<MarkedContentProps | undefined>;
     getOperatorList({ stream, task, resources, operatorList, initialState, fallbackFontDict, }: _GetOperatorListP): Promise<void>;
-    getTextContent({ stream, task, resources, stateManager, combineTextItems, includeMarkedContent, sink, seenStyles, viewBox, }: _GetTextContentP): Promise<void>;
+    getTextContent({ stream, task, resources, stateManager, combineTextItems, includeMarkedContent, sink, seenStyles, viewBox, markedContentData, }: _GetTextContentP): Promise<void>;
     extractDataStructures(dict: FontDict, baseDict: FontDict, properties: FontProps): Promise<FontProps>;
     /**
      * Builds a char code to unicode map based on section 9.10 of the spec.
@@ -272,6 +276,7 @@ export declare class TranslatedFont {
         disableFontFace: false;
         ignoreErrors: false;
         isEvalSupported: true;
+        isOffscreenCanvasSupported: true;
         fontExtraProperties: false;
         useSystemFonts: true;
         cMapUrl: undefined;

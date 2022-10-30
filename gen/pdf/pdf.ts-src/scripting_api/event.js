@@ -1,6 +1,9 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
+import { USERACTIVATION_CALLBACKID } from "./app.js";
+/*80--------------------------------------------------------------------------*/
+const USERACTIVATION_MAXTIME_VALIDITY = 5000;
 export class Event {
     change;
     changeEx;
@@ -46,11 +49,13 @@ export class EventDispatcher {
     _document;
     _calculationOrder;
     _objects;
+    _externalCall;
     _isCalculating = false;
-    constructor(document, calculationOrder, objects) {
+    constructor(document, calculationOrder, objects, externalCall) {
         this._document = document;
         this._calculationOrder = calculationOrder;
         this._objects = objects;
+        this._externalCall = externalCall;
         this._document.obj._eventDispatcher = this;
     }
     mergeChange(event) {
@@ -71,6 +76,13 @@ export class EventDispatcher {
             : "";
         return `${prefix}${event.change}${postfix}`;
     }
+    userActivation() {
+        this._document.obj._userActivation = true;
+        this._externalCall("setTimeout", [
+            USERACTIVATION_CALLBACKID,
+            USERACTIVATION_MAXTIME_VALIDITY,
+        ]);
+    }
     dispatch(baseEvent) {
         const id = baseEvent.id;
         if (!(id in this._objects)) {
@@ -81,17 +93,23 @@ export class EventDispatcher {
                 event.name = baseEvent.name;
             }
             if (id === "doc") {
-                if (event.name === "Open") {
+                const eventName = event.name;
+                if (eventName === "Open") {
                     // Before running the Open event, we format all the fields
                     // (see bug 1766987).
                     this.formatAll();
                 }
+                if (!["DidPrint", "DidSave", "WillPrint", "WillSave"].includes(eventName)) {
+                    this.userActivation();
+                }
                 this._document.obj._dispatchDocEvent(event.name);
             }
             else if (id === "page") {
+                this.userActivation();
                 this._document.obj._dispatchPageEvent(event.name, baseEvent.actions, baseEvent.pageNumber);
             }
             else if (id === "app" && baseEvent.name === "ResetForm") {
+                this.userActivation();
                 for (const fieldId of baseEvent.ids) {
                     const obj = this._objects[fieldId];
                     obj?.obj._reset();
@@ -103,6 +121,7 @@ export class EventDispatcher {
         const source = this._objects[id];
         const event = (globalThis.event = new Event(baseEvent));
         let savedChange;
+        this.userActivation();
         if (source.obj._isButton()) {
             source.obj._id = id;
             event.value = source.obj._getExportValue(event.value);

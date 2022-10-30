@@ -2,7 +2,7 @@
  * nmtigor (https://github.com/nmtigor) @2022
  */
 import { ShadingType, } from "../core/pattern.js";
-import { FormatError, info, OPS, Util, warn, } from "../shared/util.js";
+import { FormatError, info, OPS, Util, } from "../shared/util.js";
 import { getCurrentTransform } from "./display_utils.js";
 /*80--------------------------------------------------------------------------*/
 export var PathType;
@@ -87,14 +87,7 @@ export class RadialAxialShadingPattern {
             tmpCtx.fill();
             pattern = ctx.createPattern(tmpCanvas.canvas, "no-repeat");
             const domMatrix = new DOMMatrix(inverse);
-            try {
-                pattern.setTransform(domMatrix);
-            }
-            catch (ex) {
-                // Avoid rendering breaking completely in Firefox 78 ESR,
-                // and in Node.js (see issue 13724).
-                warn(`RadialAxialShadingPattern.getPattern: "${ex?.message}".`);
-            }
+            pattern.setTransform(domMatrix);
         }
         else {
             // Shading fills are applied relative to the current matrix which is also
@@ -542,14 +535,7 @@ var NsTilingPattern;
             domMatrix = domMatrix.translate(temporaryPatternCanvas.offsetX, temporaryPatternCanvas.offsetY);
             domMatrix = domMatrix.scale(1 / temporaryPatternCanvas.scaleX, 1 / temporaryPatternCanvas.scaleY);
             const pattern = ctx.createPattern(temporaryPatternCanvas.canvas, "repeat");
-            try {
-                pattern.setTransform(domMatrix);
-            }
-            catch (ex) {
-                // Avoid rendering breaking completely in Firefox 78 ESR,
-                // and in Node.js (see issue 13724).
-                warn(`TilingPattern.getPattern: "${ex?.message}".`);
-            }
+            pattern.setTransform(domMatrix);
             return pattern;
         }
     }

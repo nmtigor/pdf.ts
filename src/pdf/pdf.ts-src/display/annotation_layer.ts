@@ -564,11 +564,7 @@ export class AnnotationElement {
     return <any> undefined;
   }
 
-  /**
-   * @private
-   * @return {Array}
-   */
-  _getElementsByName(name: string, skipId?: string) {
+  protected _getElementsByName(name: string, skipId?: string) {
     const fields = [];
 
     if (this._fieldObjects) {
@@ -600,7 +596,8 @@ export class AnnotationElement {
     // Fallback to a regular DOM lookup, to ensure that the standalone
     // viewer components won't break.
     for (const domElement of document.getElementsByName(name)) {
-      const { id, exportValue } = <any> domElement;
+      const { exportValue } = domElement as any;
+      const id = domElement.getAttribute("data-element-id");
       if (id === skipId) {
         continue;
       }
@@ -1049,17 +1046,26 @@ class WidgetAnnotationElement extends AnnotationElement {
     // If the height is "big" then it could lead to a too big font size
     // so in this case use the one we've in the pdf (hence the min).
     let computedFontSize;
+    const BORDER_SIZE = 2;
+    const roundToOneDecimal = (x: number) => Math.round(10 * x) / 10;
     if (this.data.multiLine) {
-      const height = Math.abs(this.data.rect[3] - this.data.rect[1]);
+      const height = Math.abs(
+        this.data.rect[3] - this.data.rect[1] - BORDER_SIZE,
+      );
       const numberOfLines = Math.round(height / (LINE_FACTOR * fontSize)) || 1;
       const lineHeight = height / numberOfLines;
       computedFontSize = Math.min(
         fontSize,
-        Math.round(lineHeight / LINE_FACTOR),
+        roundToOneDecimal(lineHeight / LINE_FACTOR),
       );
     } else {
-      const height = Math.abs(this.data.rect[3] - this.data.rect[1]);
-      computedFontSize = Math.min(fontSize, Math.round(height / LINE_FACTOR));
+      const height = Math.abs(
+        this.data.rect[3] - this.data.rect[1] - BORDER_SIZE,
+      );
+      computedFontSize = Math.min(
+        fontSize,
+        roundToOneDecimal(height / LINE_FACTOR),
+      );
     }
     style.fontSize = `calc(${computedFontSize}px * var(--scale-factor))`;
 
@@ -1104,9 +1110,9 @@ class TextWidgetAnnotationElement extends WidgetAnnotationElement {
       )
     ) {
       if (element.domElement) {
-        (<any> element.domElement)[key] = value;
+        (element.domElement as any)[key] = value;
       }
-      storage.setValue(element.id, { [keyInStorage]: value });
+      storage.setValue(element.id!, { [keyInStorage]: value });
     }
   }
 
@@ -1275,7 +1281,10 @@ class TextWidgetAnnotationElement extends WidgetAnnotationElement {
           let commitKey = -1;
           if (event.key === "Escape") {
             commitKey = 0;
-          } else if (event.key === "Enter") {
+          } else if (event.key === "Enter" && !this.data.multiLine) {
+            // When we've a multiline field, "Enter" key is a key as the other
+            // hence we don't commit the data (Acrobat behaves the same way)
+            // (see issue #15627).
             commitKey = 2;
           } else if (event.key === "Tab") {
             commitKey = 3;
@@ -1453,19 +1462,19 @@ class CheckboxWidgetAnnotationElement extends WidgetAnnotationElement {
     element.type = "checkbox";
     element.name = data.fieldName!;
     if (value) {
-      element.setAttribute("checked", <any> true);
+      element.setAttribute("checked", true as any);
     }
     element.setAttribute("exportValue", data.exportValue!);
     element.tabIndex = DEFAULT_TAB_INDEX;
 
     element.addEventListener("change", (event) => {
-      const { name, checked } = <El> event.target;
+      const { name, checked } = event.target as El;
       for (const checkbox of this._getElementsByName(name, /* skipId = */ id)) {
         const curChecked = checked && checkbox.exportValue === data.exportValue;
         if (checkbox.domElement) {
           (<El> checkbox.domElement).checked = curChecked;
         }
-        storage.setValue(checkbox.id, { value: curChecked });
+        storage.setValue(checkbox.id!, { value: curChecked });
       }
       storage.setValue(id, { value: checked });
     });
@@ -1544,16 +1553,16 @@ class RadioButtonWidgetAnnotationElement extends WidgetAnnotationElement {
     element.tabIndex = DEFAULT_TAB_INDEX;
 
     element.addEventListener("change", (event) => {
-      const { name, checked } = <El> event.target;
+      const { name, checked } = event.target as El;
       for (const radio of this._getElementsByName(name, /* skipId = */ id)) {
-        storage.setValue(radio.id, { value: false });
+        storage.setValue(radio.id!, { value: false });
       }
       storage.setValue(id, { value: checked });
     });
 
     element.addEventListener("resetform", (event) => {
       const defaultValue = data.defaultFieldValue;
-      (<El> event.target).checked = defaultValue !== null &&
+      (event.target as El).checked = defaultValue !== null &&
         defaultValue !== undefined &&
         defaultValue === data.buttonValue;
     });
@@ -1569,9 +1578,9 @@ class RadioButtonWidgetAnnotationElement extends WidgetAnnotationElement {
             ) {
               const curChecked = checked && radio.id === id;
               if (radio.domElement) {
-                (<HTMLInputElement> radio.domElement).checked = curChecked;
+                (radio.domElement as HTMLInputElement).checked = curChecked;
               }
-              storage.setValue(radio.id, { value: curChecked });
+              storage.setValue(radio.id!, { value: curChecked });
             }
           },
         };

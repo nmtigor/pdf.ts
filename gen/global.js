@@ -1,6 +1,6 @@
 /*80****************************************************************************
  * global
-** ------ */
+** -------------------------------------------------------------------------- */
 import { assert } from "./lib/util/trace.js";
 /*80--------------------------------------------------------------------------*/
 // preprocessor names
@@ -25,8 +25,9 @@ export const global = new class {
     LASTUPDATE_NOT = "2020-07-10 22:17:59 +0200";
     LASTUPDATE_DATNI = "2020-07-24 01:59:51 +0200";
     LASTUPDATE_DEV = "2021-05-22 05:04:21 +0200";
-    globalhvc;
+    ghvc;
     // holdindicatr?: [HoldIndicatr, HoldIndicatr, HoldIndicatr];
+    /** @deprecated */
     has_ResizeObserver = false;
     can_touchstart = false;
     #tabsize = 2;

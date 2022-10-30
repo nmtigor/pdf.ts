@@ -70,9 +70,11 @@ export class FreeTextEditor extends AnnotationEditor {
 
   #boundEditorDivBlur = this.editorDivBlur.bind(this);
   #boundEditorDivFocus = this.editorDivFocus.bind(this);
+  #boundEditorDivInput = this.editorDivInput.bind(this);
   #boundEditorDivKeydown = this.editorDivKeydown.bind(this);
   #color;
   #content = "";
+  #editorDivId = `${this.id}-editor`;
   #hasAlreadyBeenCommitted = false;
   #fontSize;
 
@@ -239,14 +241,14 @@ export class FreeTextEditor extends AnnotationEditor {
     this.parent.setEditingState(false);
     this.parent.updateToolbar(AnnotationEditorType.FREETEXT);
     super.enableEditMode();
-    this.enableEditing();
     this.overlayDiv.classList.remove("enabled");
     this.editorDiv.contentEditable = <any> true;
     this.div!.draggable = false;
+    this.div!.removeAttribute("aria-activedescendant");
     this.editorDiv.addEventListener("keydown", this.#boundEditorDivKeydown);
     this.editorDiv.addEventListener("focus", this.#boundEditorDivFocus);
     this.editorDiv.addEventListener("blur", this.#boundEditorDivBlur);
-    this.parent.div!.classList.remove("freeTextEditing");
+    this.editorDiv.addEventListener("input", this.#boundEditorDivInput);
   }
 
   /** @inheritdoc */
@@ -257,13 +259,14 @@ export class FreeTextEditor extends AnnotationEditor {
 
     this.parent.setEditingState(true);
     super.disableEditMode();
-    this.disableEditing();
     this.overlayDiv.classList.add("enabled");
-    this.editorDiv.contentEditable = <any> false;
+    this.editorDiv.contentEditable = false as any;
+    this.div!.setAttribute("aria-activedescendant", this.#editorDivId);
     this.div!.draggable = true;
     this.editorDiv.removeEventListener("keydown", this.#boundEditorDivKeydown);
     this.editorDiv.removeEventListener("focus", this.#boundEditorDivFocus);
     this.editorDiv.removeEventListener("blur", this.#boundEditorDivBlur);
+    this.editorDiv.removeEventListener("input", this.#boundEditorDivInput);
 
     // On Chrome, the focus is given to <body> when contentEditable is set to
     // false, hence we focus the div.
@@ -386,6 +389,10 @@ export class FreeTextEditor extends AnnotationEditor {
     this.isEditing = false;
   }
 
+  editorDivInput(event: Event) {
+    this.parent.div!.classList.toggle("freeTextEditing", this.isEmpty());
+  }
+
   /** @inheritdoc */
   override disableEditing() {
     this.editorDiv.setAttribute("role", "comment");
@@ -414,7 +421,7 @@ export class FreeTextEditor extends AnnotationEditor {
     this.editorDiv = html("div");
     this.editorDiv.className = "internal";
 
-    this.editorDiv.setAttribute("id", `${this.id}-editor`);
+    this.editorDiv.setAttribute("id", this.#editorDivId);
     this.enableEditing();
 
     FreeTextEditor._l10nPromise

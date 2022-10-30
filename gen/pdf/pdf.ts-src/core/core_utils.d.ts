@@ -5,6 +5,7 @@ import { BaseStream } from "./base_stream.js";
 import { type CssFontInfo } from "./document.js";
 import { Dict, type Obj } from "./primitives.js";
 import { XRef } from "./xref.js";
+export declare const PDF_VERSION_REGEXP: RegExp;
 export declare function getLookupTableFactory<T extends object = Record<string, number>>(initializer?: (lookup: T) => void): () => T;
 export declare function getArrayLookupTableFactory<T extends string | number>(initializer?: () => (string | T)[]): () => Record<string, T>;
 export declare class MissingDataException extends BaseException {

@@ -20,10 +20,7 @@ import { CHROME, GENERIC } from "../../global.js";
 import { html } from "../../lib/dom.js";
 import { createValidAbsoluteUrl, isPdfFile } from "../pdf.ts-src/pdf.js";
 /*80--------------------------------------------------------------------------*/
-/*#static*/ if (!(CHROME || GENERIC)) {
-    throw new Error('Module "pdfjs-web/download_manager" shall not be used ' +
-        "outside CHROME and GENERIC builds.");
-}
+/*#static*/ 
 function download(blobUrl, filename) {
     const a = html("a");
     if (!a.click) {

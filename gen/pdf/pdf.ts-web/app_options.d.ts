@@ -200,6 +200,10 @@ declare const defaultOptions: {
         value: boolean;
         kind: OptionKind;
     };
+    isOffscreenCanvasSupported: {
+        value: boolean;
+        kind: OptionKind;
+    };
     maxImageSize: {
         value: number;
         kind: OptionKind;
@@ -273,6 +277,7 @@ export declare abstract class AppOptions {
     static get enableXfa(): boolean;
     static get fontExtraProperties(): boolean;
     static get isEvalSupported(): boolean;
+    static get isOffscreenCanvasSupported(): boolean;
     static get maxImageSize(): number;
     static get pdfBug(): boolean;
     static get standardFontDataUrl(): string;

@@ -111,7 +111,7 @@ export declare class Catalog {
     pageIndexCache: RefSetCache<Obj>;
     nonBlendModesSet: RefSet;
     constructor(pdfManager: BasePdfManager, xref: XRef);
-    get version(): string | undefined;
+    get version(): string | null;
     get lang(): string | undefined;
     /**
      * @return `true` for pure XFA documents,

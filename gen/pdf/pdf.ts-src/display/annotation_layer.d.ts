@@ -89,16 +89,12 @@ export declare class AnnotationElement {
      * @return A section element or an array of section elements.
      */
     render(): HTMLElement | HTMLElement[];
-    /**
-     * @private
-     * @return {Array}
-     */
-    _getElementsByName(name: string, skipId?: string): {
+    protected _getElementsByName(name: string, skipId?: string): {
         id: string;
         exportValue: string | undefined;
         domElement: Element | null;
     }[] | {
-        id: any;
+        id: string | null;
         exportValue: any;
         domElement: HTMLElement;
     }[];

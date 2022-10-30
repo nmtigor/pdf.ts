@@ -638,6 +638,9 @@ export class AnnotationEditorUIManager {
   }
 
   registerEditorTypes(types: (typeof InkEditor | typeof FreeTextEditor)[]) {
+    if (this.#editorTypes) {
+      return;
+    }
     this.#editorTypes = types;
     for (const editorType of this.#editorTypes) {
       this.#dispatchUpdateUI(editorType.defaultPropertiesToUpdate);
@@ -914,11 +917,7 @@ export class AnnotationEditorUIManager {
    * Delete the current editor or all.
    */
   delete() {
-    if (this.#activeEditor) {
-      // An editor is being edited so just commit it.
-      this.#activeEditor.commitOrRemove();
-    }
-
+    this.commitOrRemove();
     if (!this.hasSelection) {
       return;
     }
@@ -936,6 +935,11 @@ export class AnnotationEditorUIManager {
     };
 
     this.addCommands({ cmd, undo, mustExec: true });
+  }
+
+  commitOrRemove() {
+    // An editor is being edited so just commit it.
+    this.#activeEditor?.commitOrRemove();
   }
 
   /**

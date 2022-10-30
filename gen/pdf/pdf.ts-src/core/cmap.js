@@ -928,7 +928,7 @@ var NsCMapFactory;
             const lexer = new Lexer(new Stream(cMapData));
             return parseCMap(cMap, lexer, fetchBuiltInCMap);
         }
-        throw new Error("TODO: Only BINARY/NONE CMap compression is currently supported.");
+        throw new Error(`Invalid CMap "compressionType" value: ${compressionType}`);
     }
     NsCMapFactory.CMapFactory = {
         async create(params) {

@@ -132,6 +132,9 @@ export declare class Doc extends PDFObject<_SendDocData> {
     _actions: ScriptingActions;
     _globalEval: (code: string) => unknown;
     _pageActions: Map<number, ScriptingActions>;
+    _userActivation: boolean;
+    _disablePrinting: boolean;
+    _disableSaving: boolean;
     _xfa: unknown;
     get xfa(): unknown;
     set xfa(_: unknown);
@@ -254,6 +257,7 @@ export declare class Doc extends PDFObject<_SendDocData> {
     }): FieldWrapped | undefined;
     getField(cName: string): import("./field.js").Field | undefined;
     _getChildren(fieldName: string): FieldWrapped[];
+    _getTerminalChildren(fieldName: string): import("./field.js").Field[];
     getIcon(): void;
     getLegalWarnings(): void;
     getLinks(): void;

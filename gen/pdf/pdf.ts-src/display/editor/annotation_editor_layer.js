@@ -31,8 +31,8 @@ export class AnnotationEditorLayer {
             AnnotationEditorLayer._initialized = true;
             FreeTextEditor.initialize(options.l10n);
             InkEditor.initialize(options.l10n);
-            options.uiManager.registerEditorTypes([FreeTextEditor, InkEditor]);
         }
+        options.uiManager.registerEditorTypes([FreeTextEditor, InkEditor]);
         this.#uiManager = options.uiManager;
         this.annotationStorage = options.annotationStorage;
         this.pageIndex = options.pageIndex;
@@ -425,6 +425,10 @@ export class AnnotationEditorLayer {
      * Update the main editor.
      */
     update(parameters) {
+        // Editors have their dimensions/positions in percent so to avoid any
+        // issues (see #15582), we must commit the current one before changing
+        // the viewport.
+        this.#uiManager.commitOrRemove();
         this.viewport = parameters.viewport;
         this.setDimensions();
         this.updateMode();

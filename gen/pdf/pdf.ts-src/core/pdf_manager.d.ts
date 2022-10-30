@@ -11,10 +11,11 @@ import { WorkerTask } from "./worker.js";
 import { PDFWorkerStream } from "./worker_stream.js";
 import { XRef } from "./xref.js";
 export interface EvaluatorOptions {
-    maxImageSize: number;
+    maxImageSize: number | undefined;
     disableFontFace: boolean | undefined;
     ignoreErrors: boolean | undefined;
     isEvalSupported: boolean | undefined;
+    isOffscreenCanvasSupported: boolean | undefined;
     fontExtraProperties: boolean | undefined;
     useSystemFonts: boolean | undefined;
     cMapUrl?: string | undefined;
@@ -34,7 +35,6 @@ export declare abstract class BasePdfManager {
     enableXfa?: boolean | undefined;
     pdfDocument: PDFDocument;
     constructor(docId: string, docBaseUrl?: string);
-    abstract onLoadedStream(): Promise<Stream>;
     /** @fianl */
     ensureDoc<P extends keyof PDFDocument, A = PDFDocument[P] extends (...args: any) => any ? Parameters<PDFDocument[P]> : undefined>(prop: P, args?: A): Promise<Awaited<PDFDocument[P] extends (...args: any) => any ? ReturnType<PDFDocument[P]> : PDFDocument[P]>>;
     /** @fianl */
@@ -49,7 +49,7 @@ export declare abstract class BasePdfManager {
     cleanup(manuallyTriggered?: boolean): Promise<void>;
     abstract ensure<O extends PDFDocument | Page | XRef | Catalog | AnnotationFactory, P extends keyof O, A = O[P] extends (...args: any) => any ? Parameters<O[P]> : undefined, R = O[P] extends (...args: any) => any ? ReturnType<O[P]> : O[P]>(obj: O, prop: P, args?: A): Promise<Awaited<R>>;
     abstract requestRange(begin: number, end: number): Promise<void>;
-    abstract requestLoadedStream(): void;
+    abstract requestLoadedStream(noFetch?: boolean): Promise<Stream>;
     sendProgressiveData?(chunk: ArrayBufferLike): void;
     updatePassword(password: string): void;
     abstract terminate(reason: AbortException): void;
@@ -62,9 +62,7 @@ export declare class LocalPdfManager extends BasePdfManager {
     /** @implement */
     requestRange(begin: number, end: number): Promise<void>;
     /** @implement */
-    requestLoadedStream(): void;
-    /** @implement */
-    onLoadedStream(): Promise<Stream>;
+    requestLoadedStream(noFetch?: boolean): Promise<Stream>;
     /** @implement */
     terminate(reason: AbortException): void;
 }
@@ -83,10 +81,8 @@ export declare class NetworkPdfManager extends BasePdfManager {
     /** @implement */
     requestRange(begin: number, end: number): Promise<void>;
     /** @implement */
-    requestLoadedStream(): void;
+    requestLoadedStream(noFetch?: boolean): Promise<import("./chunked_stream.js").ChunkedStream>;
     sendProgressiveData(chunk: ArrayBufferLike): void;
-    /** @implement */
-    onLoadedStream(): Promise<import("./chunked_stream.js").ChunkedStream>;
     /** @implement */
     terminate(reason: AbortException): void;
 }

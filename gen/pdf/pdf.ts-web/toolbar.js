@@ -274,7 +274,8 @@ export class Toolbar {
             l10n.get("page_scale_width"),
         ]);
         await animationStarted;
-        const style = getComputedStyle(items.scaleSelect), scaleSelectContainerWidth = parseInt(style.getPropertyValue("--scale-select-container-width"), 10), scaleSelectOverflow = parseInt(style.getPropertyValue("--scale-select-overflow"), 10);
+        const style = getComputedStyle(items.scaleSelect);
+        const scaleSelectWidth = parseFloat(style.getPropertyValue("--scale-select-width"));
         // The temporary canvas is used to measure text length in the DOM.
         const canvas = html("canvas");
         const ctx = canvas.getContext("2d", { alpha: false });
@@ -286,9 +287,11 @@ export class Toolbar {
                 maxWidth = width;
             }
         }
-        maxWidth += 2 * scaleSelectOverflow;
-        if (maxWidth > scaleSelectContainerWidth) {
-            docStyle.setProperty("--scale-select-container-width", `${maxWidth}px`);
+        // Account for the icon width, and ensure that there's always some spacing
+        // between the text and the icon.
+        maxWidth += 0.3 * scaleSelectWidth;
+        if (maxWidth > scaleSelectWidth) {
+            docStyle.setProperty("--scale-select-width", `${maxWidth}px`);
         }
         // Zeroing the width and height cause Firefox to release graphics resources
         // immediately, which can greatly reduce memory consumption.

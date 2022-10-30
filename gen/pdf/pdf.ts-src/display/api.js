@@ -182,6 +182,10 @@ export function getDocument(src) {
     if (typeof params.isEvalSupported !== "boolean") {
         params.isEvalSupported = true;
     }
+    if (typeof params.isOffscreenCanvasSupported !== "boolean") {
+        // params.isOffscreenCanvasSupported = !isNodeJS;
+        params.isOffscreenCanvasSupported = true;
+    }
     if (typeof params.disableFontFace !== "boolean") {
         // params.disableFontFace = isNodeJS;
         params.disableFontFace = false;
@@ -280,33 +284,34 @@ async function _fetchDocument(worker, source, docId, pdfDataRangeTransport) {
         source.contentDispositionFilename =
             pdfDataRangeTransport.contentDispositionFilename;
     }
-    const workerId = await worker.messageHandler.sendWithPromise("GetDocRequest", {
+    const workerId = await worker.messageHandler.sendWithPromise("GetDocRequest", 
+    // Only send the required properties, and *not* the entire `source` object.
+    {
         docId,
         apiVersion: 0,
         // typeof PDFJSDev !== "undefined" && !PDFJSDev.test("TESTING")
         //   ? PDFJSDev.eval("BUNDLE_VERSION")
         //   : null,
-        // Only send the required properties, and *not* the entire object.
-        source: {
-            data: source.data,
-            url: source.url,
-            password: source.password,
-            disableAutoFetch: source.disableAutoFetch,
-            rangeChunkSize: source.rangeChunkSize,
-            length: source.length,
-        },
-        maxImageSize: source.maxImageSize,
-        disableFontFace: source.disableFontFace,
+        data: source.data,
+        password: source.password,
+        disableAutoFetch: source.disableAutoFetch,
+        rangeChunkSize: source.rangeChunkSize,
+        length: source.length,
         docBaseUrl: source.docBaseUrl,
-        ignoreErrors: source.ignoreErrors,
-        isEvalSupported: source.isEvalSupported,
-        fontExtraProperties: source.fontExtraProperties,
         enableXfa: source.enableXfa,
-        useSystemFonts: source.useSystemFonts,
-        cMapUrl: source.useWorkerFetch ? source.cMapUrl : undefined,
-        standardFontDataUrl: source.useWorkerFetch
-            ? source.standardFontDataUrl
-            : undefined,
+        evaluatorOptions: {
+            maxImageSize: source.maxImageSize,
+            disableFontFace: source.disableFontFace,
+            ignoreErrors: source.ignoreErrors,
+            isEvalSupported: source.isEvalSupported,
+            isOffscreenCanvasSupported: source.isOffscreenCanvasSupported,
+            fontExtraProperties: source.fontExtraProperties,
+            useSystemFonts: source.useSystemFonts,
+            cMapUrl: source.useWorkerFetch ? source.cMapUrl : undefined,
+            standardFontDataUrl: source.useWorkerFetch
+                ? source.standardFontDataUrl
+                : undefined,
+        },
     });
     // Release the TypedArray data, when it exists, since it's no longer needed
     // on the main-thread *after* it's been sent to the worker-thread.
@@ -2153,10 +2158,10 @@ class WorkerTransport {
         return this.messageHandler.sendWithPromise("GetMarkInfo", null);
     }
     async startCleanup(keepLoadedFonts = false) {
+        if (this.destroyed) {
+            return; // No need to manually clean-up when destruction has started.
+        }
         await this.messageHandler.sendWithPromise("Cleanup", null);
-        // No need to manually clean-up when destruction has started.
-        if (this.destroyed)
-            return;
         for (const page of this.#pageCache.values()) {
             const cleanupSuccessful = page.cleanup();
             if (!cleanupSuccessful) {

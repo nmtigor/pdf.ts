@@ -84,8 +84,7 @@ export function getPdfColor(color, isFill) {
         const gray = color[0] / 255;
         return `${numberToString(gray)} ${isFill ? "g" : "G"}`;
     }
-    return (Array.from(color)
-        .map((c) => numberToString(c / 255))
+    return (Array.from(color, (c) => numberToString(c / 255))
         .join(" ") + ` ${isFill ? "rg" : "RG"}`);
 }
 // Create default appearance string from some information.

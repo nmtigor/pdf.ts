@@ -150,6 +150,7 @@ export declare class Field extends PDFObject<SendFieldData> {
     _items: _Item[];
     get numItems(): number;
     set numItems(_: number);
+    _hasValue: boolean;
     _page: number;
     get page(): number;
     set page(_: number);

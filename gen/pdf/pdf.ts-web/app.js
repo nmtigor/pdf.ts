@@ -548,7 +548,7 @@ export class PDFViewerApplication {
         return this.externalServices.supportedMouseWheelZoomModifierKeys;
     }
     initPassiveLoading() {
-        /*#static*/ if (!(MOZCENTRAL || CHROME)) {
+        /*#static*/  {
             throw new Error("Not implemented: initPassiveLoading");
         }
         this.externalServices.initPassiveLoading({
@@ -825,7 +825,7 @@ export class PDFViewerApplication {
         });
     };
     /**
-     * Show the error box; used for errors affecting loading and/or parsing of
+     * Report the error; used for errors affecting loading and/or parsing of
      * the entire PDF document.
      */
     _documentError(message, moreInfo) {
@@ -838,37 +838,30 @@ export class PDFViewerApplication {
         });
     }
     /**
-     * Show the error box; used for errors affecting e.g. only a single page.
+     * Report the error; used for errors affecting e.g. only a single page.
      *
      * @param message A message that is human readable.
      * @param moreInfo Further information about the error that is
-     *  more technical.  Should have a 'message' and
+     *  more technical. Should have a 'message' and
      *  optionally a 'stack' property.
      */
     _otherError(message, moreInfo) {
-        const moreInfoText = [
-            this.l10n.get("error_version_info", {
-                version: version || "?",
-                build: build || "?",
-            }),
-        ];
+        const moreInfoText = [`PDF.js v${version || "?"} (build: ${build || "?"})`];
         if (moreInfo) {
-            moreInfoText.push(this.l10n.get("error_message", { message: moreInfo.message }));
+            moreInfoText.push(`Message: ${moreInfo.message}`);
             if (moreInfo.stack) {
-                moreInfoText.push(this.l10n.get("error_stack", { stack: moreInfo.stack }));
+                moreInfoText.push(`Stack: ${moreInfo.stack}`);
             }
             else {
                 if (moreInfo.filename) {
-                    moreInfoText.push(this.l10n.get("error_file", { file: moreInfo.filename }));
+                    moreInfoText.push(`File: ${moreInfo.filename}`);
                 }
                 if (moreInfo.lineNumber) {
-                    moreInfoText.push(this.l10n.get("error_line", { line: moreInfo.lineNumber }));
+                    moreInfoText.push(`Line: ${moreInfo.lineNumber}`);
                 }
             }
         }
-        Promise.all(moreInfoText).then((parts) => {
-            console.error(`${message}\n${parts.join("\n")}`);
-        });
+        console.error(`${message}\n\n${moreInfoText.join("\n")}`);
         this.fallback();
     }
     progress(level) {
@@ -1173,7 +1166,7 @@ export class PDFViewerApplication {
         // Provides some basic debug information
         console.log(`PDF ${pdfDocument.fingerprints[0]} [${info.PDFFormatVersion} ` +
             `${(info.Producer || "-").trim()} / ${(info.Creator || "-").trim()}] ` +
-            `(PDF.js: ${version || "-"})`);
+            `(PDF.js: ${version || "?"} [${build || "?"}])`);
         let pdfTitle = info.Title;
         const metadataTitle = metadata?.get("dc:title");
         if (metadataTitle) {
@@ -1603,11 +1596,11 @@ export class PDFViewerApplication {
         eventBus._off("findfromurlhash", webViewerFindFromUrlHash);
         eventBus._off("updatefindmatchescount", webViewerUpdateFindMatchesCount);
         eventBus._off("updatefindcontrolstate", webViewerUpdateFindControlState);
-        // if (_boundEvents.reportPageStatsPDFBug) {
-        //   eventBus._off("pagerendered", _boundEvents.reportPageStatsPDFBug);
-        //   eventBus._off("pagechanging", _boundEvents.reportPageStatsPDFBug);
-        //   _boundEvents.reportPageStatsPDFBug = undefined;
-        // }
+        if (_boundEvents.reportPageStatsPDFBug) {
+            eventBus._off("pagerendered", _boundEvents.reportPageStatsPDFBug);
+            eventBus._off("pagechanging", _boundEvents.reportPageStatsPDFBug);
+            _boundEvents.reportPageStatsPDFBug = undefined;
+        }
         /*#static*/  {
             eventBus._off("fileinputchange", webViewerFileInputChange);
             eventBus._off("openfile", webViewerOpenFile);

@@ -186,6 +186,11 @@ export declare class PDFDocument {
     loadXfaImages(): Promise<void>;
     loadXfaFonts(handler: MessageHandler<Thread.worker>, task: WorkerTask): Promise<void>;
     serializeXfaData(annotationStorage: AnnotStorageRecord | undefined): Promise<string | undefined>;
+    /**
+     * The specification states in section 7.5.2 that the version from
+     * the catalog, if present, should overwrite the version from the header.
+     */
+    get version(): string | undefined;
     get formInfo(): FormInfo;
     get documentInfo(): DocumentInfo;
     get fingerprints(): [string, string | undefined];

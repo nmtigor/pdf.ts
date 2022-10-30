@@ -181,6 +181,13 @@ export interface DocumentInitP {
      */
     isEvalSupported?: boolean;
     /**
+     * Determines if we can use
+     * `OffscreenCanvas` in the worker. Primarily used to improve performance of
+     * image conversion/rendering.
+     * The default value is `true` in web environments and `false` in Node.js.
+     */
+    isOffscreenCanvasSupported?: boolean;
+    /**
      * By default fonts are converted to
      * OpenType fonts and loaded via the Font Loading API or `@font-face` rules.
      * If disabled, fonts will be rendered using a built-in font renderer that
@@ -1047,7 +1054,9 @@ export declare class PDFWorker {
     static get _mainThreadWorkerMessageHandler(): any;
     static get _setupFakeWorkerGlobal(): Promise<{
         setup(handler: MessageHandler<Thread.worker, Thread.main>, port: IWorker): void;
-        createDocumentHandler(docParams: import("../shared/message_handler.js").GetDocRequestData, port: IWorker): string;
+        createDocumentHandler(docParams: import("../shared/message_handler.js").GetDocRequestData, port: IWorker): string; /**
+         * The color in RGB format to use for display purposes.
+         */
         initializeFromPort(port: IWorker): void;
     }>;
 }

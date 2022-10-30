@@ -243,9 +243,6 @@ export class ChunkedStreamManager {
     progressiveDataLength = 0;
     aborted = false;
     #loadedStreamCapability = createPromiseCap();
-    onLoadedStream() {
-        return this.#loadedStreamCapability.promise;
-    }
     constructor(pdfNetworkStream, args) {
         this.pdfNetworkStream = pdfNetworkStream;
         this.length = args.length;
@@ -294,9 +291,11 @@ export class ChunkedStreamManager {
      * Get all the chunks that are not yet loaded and group them into
      * contiguous ranges to load in as few requests as possible.
      */
-    requestAllChunks() {
-        const missingChunks = this.stream.getMissingChunks();
-        this.#requestChunks(missingChunks);
+    requestAllChunks(noFetch = false) {
+        if (!noFetch) {
+            const missingChunks = this.stream.getMissingChunks();
+            this.#requestChunks(missingChunks);
+        }
         return this.#loadedStreamCapability.promise;
     }
     #requestChunks = (chunks) => {

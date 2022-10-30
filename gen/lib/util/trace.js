@@ -55,7 +55,7 @@ export const reportError = async (err_x) => {
     // console.log( trace_js );
     const err_j = err_x?.toJ(); //! `err_x` seems still  could be `null` at runtime
     // console.log(err_j);
-    global.globalhvc?.showReportedError?.({
+    global.ghvc?.showReportedError?.({
         err_j,
         ts: err_j?.ts ?? Date.now(),
     });
@@ -78,7 +78,7 @@ export const reportError = async (err_x) => {
     // });
     // if( res.ok )
     // {
-    //   global.globalhvc?.showReportedError?.( data_be.data_fe );
+    //   global.ghvc?.showReportedError?.( data_be.data_fe );
     //   count_reported_++;
     //   if( count_reported_ > MAX_reported_ )
     //     console.warn( `Has reported ${count_reported_} errors. Please pause and wait for debugging.` );

@@ -821,9 +821,7 @@ export class PDFPageView {
         return result;
     }
     paintOnSvg(wrapper) {
-        /*#static*/ if (!(!PRODUCTION || GENERIC)) {
-            throw new Error("Not implemented: paintOnSvg");
-        }
+        /*#static*/ 
         let cancelled = false;
         const ensureNotCancelled = () => {
             if (cancelled) {

@@ -5,7 +5,7 @@ import { type ReportedError } from "./util/trace.js";
  * Inwards API, i.e., API called from outside of `Coo`.
  */
 export interface CooInterface {
-    reportError?: (error: Error) => void | Promise<void>;
+    reportError?: (error: unknown) => void | Promise<void>;
 }
 /**
  * Access rule like scope:

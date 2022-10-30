@@ -217,16 +217,16 @@ export declare class PDFViewerApplication {
     downloadOrSave(): void;
     fallback: (featureId?: UNSUPPORTED_FEATURES) => void;
     /**
-     * Show the error box; used for errors affecting loading and/or parsing of
+     * Report the error; used for errors affecting loading and/or parsing of
      * the entire PDF document.
      */
     _documentError(message: string, moreInfo?: ErrorMoreInfo): void;
     /**
-     * Show the error box; used for errors affecting e.g. only a single page.
+     * Report the error; used for errors affecting e.g. only a single page.
      *
      * @param message A message that is human readable.
      * @param moreInfo Further information about the error that is
-     *  more technical.  Should have a 'message' and
+     *  more technical. Should have a 'message' and
      *  optionally a 'stack' property.
      */
     _otherError(message: string, moreInfo?: ErrorMoreInfo): void;

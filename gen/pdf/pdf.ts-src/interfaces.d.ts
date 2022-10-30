@@ -1,3 +1,4 @@
+import { ReadableStreamDefaultReadResult } from "../../lib/alias.js";
 import { AbortException } from "./shared/util.js";
 /**
  * Interface that represents PDF data transport. If possible, it allows

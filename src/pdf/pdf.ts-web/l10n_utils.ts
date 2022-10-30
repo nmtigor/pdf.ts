@@ -61,13 +61,6 @@ const DEFAULT_L10N_STRINGS: Record<string, string> = {
   "find_match_count_limit[other]": "More than {{limit}} matches",
   find_not_found: "Phrase not found",
 
-  error_version_info: "PDF.js v{{version}} (build: {{build}})",
-  error_message: "Message: {{message}}",
-  error_stack: "Stack: {{stack}}",
-  error_file: "File: {{file}}",
-  error_line: "Line: {{line}}",
-  rendering_error: "An error occurred while rendering the page.",
-
   page_scale_width: "Page Width",
   page_scale_fit: "Page Fit",
   page_scale_auto: "Automatic Zoom",
@@ -79,6 +72,7 @@ const DEFAULT_L10N_STRINGS: Record<string, string> = {
   invalid_file_error: "Invalid or corrupted PDF file.",
   missing_file_error: "Missing PDF file.",
   unexpected_response_error: "Unexpected server response.",
+  rendering_error: "An error occurred while rendering the page.",
 
   printing_not_supported:
     "Warning: Printing is not fully supported by this browser.",

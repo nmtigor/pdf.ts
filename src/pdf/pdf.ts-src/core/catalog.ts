@@ -42,6 +42,7 @@ import { ColorSpace } from "./colorspace.ts";
 import {
   collectActions,
   MissingDataException,
+  PDF_VERSION_REGEXP,
   recoverJsURL,
   toRomanNumerals,
   XRefEntryException,
@@ -206,11 +207,13 @@ export class Catalog {
 
   get version() {
     const version = this.#catDict.get("Version");
-    return shadow(
-      this,
-      "version",
-      version instanceof Name ? version.name : undefined,
-    );
+    if (version instanceof Name) {
+      if (PDF_VERSION_REGEXP.test(version.name)) {
+        return shadow(this, "version", version.name);
+      }
+      warn(`Invalid PDF catalog version: ${version.name}`);
+    }
+    return shadow(this, "version", null);
   }
 
   get lang() {

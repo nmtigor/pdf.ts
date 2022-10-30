@@ -541,16 +541,20 @@ export class AForm {
       throw new TypeError("Invalid function in AFSimple_Calculate");
     }
 
-    const event = <Event> (<any> globalThis).event;
+    const event = (globalThis as any).event as Event;
     const values = [];
+
+    cFields = this.AFMakeArrayFromList(cFields);
     for (const cField of cFields) {
       const field = this._document.getField(cField);
       if (!field) {
         continue;
       }
-      const number = this.AFMakeNumber(<string> field.value);
-      if (number !== undefined) {
-        values.push(number);
+      for (const child of field.getArray()) {
+        const number = this.AFMakeNumber(child.value as string);
+        if (number !== undefined) {
+          values.push(number);
+        }
       }
     }
 

@@ -108,9 +108,7 @@ export class LocalPdfManager extends BasePdfManager {
         return Promise.resolve();
     }
     /** @implement */
-    requestLoadedStream() { }
-    /** @implement */
-    onLoadedStream() {
+    requestLoadedStream(noFetch = false) {
         return this.#loadedStreamPromise;
     }
     /** @implement */
@@ -154,15 +152,11 @@ export class NetworkPdfManager extends BasePdfManager {
         return this.streamManager.requestRange(begin, end);
     }
     /** @implement */
-    requestLoadedStream() {
-        this.streamManager.requestAllChunks();
+    requestLoadedStream(noFetch = false) {
+        return this.streamManager.requestAllChunks(noFetch);
     }
     sendProgressiveData(chunk) {
         this.streamManager.onReceiveData({ chunk });
-    }
-    /** @implement */
-    onLoadedStream() {
-        return this.streamManager.onLoadedStream();
     }
     /** @implement */
     terminate(reason) {

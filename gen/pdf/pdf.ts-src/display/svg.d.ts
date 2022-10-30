@@ -1,7 +1,7 @@
 import { type ImgData } from "../core/evaluator.js";
 import { FontExpotData, Glyph } from "../core/fonts.js";
 import { type OpListIR } from "../core/operator_list.js";
-import { type ShadingPatternIR, type TilingPatternIR } from "../core/pattern.js";
+import { type ShadingPatternIR, ShadingType, type TilingPatternIR } from "../core/pattern.js";
 import { type matrix_t, OPS, type rect_t, TextRenderingMode } from "../shared/util.js";
 import { PDFCommonObjs, PDFObjects, PDFObjs } from "./api.js";
 import { DOMSVGFactory, PageViewport } from "./display_utils.js";
@@ -82,6 +82,9 @@ export declare class SVGGraphics {
     svg?: SVGElement | undefined;
     tgrp?: SVGGElement | undefined;
     constructor(commonObjs: PDFObjects<PDFCommonObjs>, objs: PDFObjects<PDFObjs | undefined>, forceDataSchema?: boolean);
+    getObject(data: unknown, fallback?: PDFCommonObjs | PDFObjs | undefined): string | import("../core/fonts.js").FontExpotDataEx | {
+        error: string;
+    } | import("../core/font_renderer.js").CmdArgs[] | ImgData | ["RadialAxial", ShadingType.AXIAL | ShadingType.RADIAL, [number, number, number, number] | undefined, [number, string][], import("../shared/util.js").point_t, import("../shared/util.js").point_t, number, number] | ["Mesh", ShadingType, Float32Array, Uint8Array, import("../core/pattern.js").MeshFigure[], [number, number, number, number], [number, number, number, number] | undefined, Uint8ClampedArray | undefined] | import("../core/pattern.js").DummyIR | undefined;
     [OPS.save](): void;
     [OPS.restore](): void;
     [OPS.group](items: OpTree): void;
@@ -135,7 +138,7 @@ export declare class SVGGraphics {
     [OPS.paintSolidColorImageMask](): void;
     [OPS.paintImageXObject](objId: string): void;
     [OPS.paintInlineImageXObject](imgData: ImgData, mask?: SVGMaskElement): void;
-    [OPS.paintImageMaskXObject](imgData: ImgData): void;
+    [OPS.paintImageMaskXObject](img: ImgData): void;
     [OPS.paintFormXObjectBegin](matrix: matrix_t, bbox?: rect_t): void;
     [OPS.paintFormXObjectEnd](): void;
 }

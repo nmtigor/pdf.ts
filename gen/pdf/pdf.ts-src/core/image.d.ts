@@ -24,6 +24,7 @@ interface _CreateMaskP {
     imageIsFromDecodeStream: boolean;
     inverseDecode: boolean;
     interpolate: boolean | undefined;
+    isOffscreenCanvasSupported?: boolean | undefined;
 }
 interface _BuildImageP {
     xref: XRef;
@@ -65,7 +66,7 @@ export declare class PDFImage {
      */
     static buildImage({ xref, res, image, isInline, pdfFunctionFactory, localColorSpaceCache, }: _BuildImageP): Promise<PDFImage>;
     static createRawMask({ imgArray, width, height, imageIsFromDecodeStream, inverseDecode, interpolate, }: _CreateMaskP): ImgData;
-    static createMask({ imgArray, width, height, imageIsFromDecodeStream, inverseDecode, interpolate, }: _CreateMaskP): ImgData;
+    static createMask({ imgArray, width, height, imageIsFromDecodeStream, inverseDecode, interpolate, isOffscreenCanvasSupported, }: _CreateMaskP): ImgData;
     get drawWidth(): number;
     get drawHeight(): number;
     decodeBuffer(buffer: Uint8Array | Uint8ClampedArray | Uint16Array | Uint32Array): void;

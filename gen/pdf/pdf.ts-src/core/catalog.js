@@ -20,7 +20,7 @@ import { createValidAbsoluteUrl, DocumentActionEventType, FormatError, info, obj
 import { BaseStream } from "./base_stream.js";
 import { clearGlobalCaches } from "./cleanup_helper.js";
 import { ColorSpace } from "./colorspace.js";
-import { collectActions, MissingDataException, recoverJsURL, toRomanNumerals, XRefEntryException, } from "./core_utils.js";
+import { collectActions, MissingDataException, PDF_VERSION_REGEXP, recoverJsURL, toRomanNumerals, XRefEntryException, } from "./core_utils.js";
 import { FileSpec } from "./file_spec.js";
 import { GlobalImageCache } from "./image_utils.js";
 import { MetadataParser } from "./metadata_parser.js";
@@ -61,7 +61,13 @@ export class Catalog {
     }
     get version() {
         const version = this.#catDict.get("Version");
-        return shadow(this, "version", version instanceof Name ? version.name : undefined);
+        if (version instanceof Name) {
+            if (PDF_VERSION_REGEXP.test(version.name)) {
+                return shadow(this, "version", version.name);
+            }
+            warn(`Invalid PDF catalog version: ${version.name}`);
+        }
+        return shadow(this, "version", null);
     }
     get lang() {
         const lang = this.#catDict.get("Lang");

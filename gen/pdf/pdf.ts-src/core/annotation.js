@@ -1424,10 +1424,10 @@ export class WidgetAnnotation extends Annotation {
             mk.set("R", rotation);
         }
         if (this.borderColor) {
-            mk.set("BC", Array.from(this.borderColor).map((c) => c / 255));
+            mk.set("BC", Array.from(this.borderColor, (c) => c / 255));
         }
         if (this.backgroundColor) {
-            mk.set("BG", Array.from(this.backgroundColor).map((c) => c / 255));
+            mk.set("BG", Array.from(this.backgroundColor, (c) => c / 255));
         }
         return mk.size > 0 ? mk : null;
     }
@@ -2731,7 +2731,7 @@ class LineAnnotation extends MarkupAnnotation {
         if (!this.appearance) {
             // The default stroke color is black.
             const strokeColor = this.color
-                ? Array.from(this.color).map((c) => c / 255)
+                ? Array.from(this.color, (c) => c / 255)
                 : [0, 0, 0];
             const strokeAlpha = dict.get("CA");
             // The default fill color is transparent. Setting the fill colour is
@@ -2740,7 +2740,7 @@ class LineAnnotation extends MarkupAnnotation {
             if (interiorColor) {
                 const interiorColor_1 = getRgbColor(interiorColor);
                 fillColor = interiorColor_1
-                    ? Array.from(interiorColor_1).map((c) => c / 255)
+                    ? Array.from(interiorColor_1, (c) => c / 255)
                     : undefined;
             }
             const fillAlpha = fillColor ? strokeAlpha : undefined;
@@ -2783,7 +2783,7 @@ class SquareAnnotation extends MarkupAnnotation {
         if (!this.appearance) {
             // The default stroke color is black.
             const strokeColor = this.color
-                ? Array.from(this.color).map((c) => c / 255)
+                ? Array.from(this.color, (c) => c / 255)
                 : [0, 0, 0];
             const strokeAlpha = parameters.dict.get("CA");
             // The default fill color is transparent.
@@ -2791,7 +2791,7 @@ class SquareAnnotation extends MarkupAnnotation {
             if (interiorColor) {
                 interiorColor = getRgbColor(interiorColor);
                 fillColor = interiorColor
-                    ? Array.from(interiorColor).map((c) => c / 255)
+                    ? Array.from(interiorColor, (c) => c / 255)
                     : undefined;
             }
             const fillAlpha = fillColor ? strokeAlpha : undefined;
@@ -2831,7 +2831,7 @@ class CircleAnnotation extends MarkupAnnotation {
         if (!this.appearance) {
             // The default stroke color is black.
             const strokeColor = this.color
-                ? Array.from(this.color).map((c) => c / 255)
+                ? Array.from(this.color, (c) => c / 255)
                 : [0, 0, 0];
             const strokeAlpha = parameters.dict.get("CA");
             // The default fill color is transparent.
@@ -2840,7 +2840,7 @@ class CircleAnnotation extends MarkupAnnotation {
             if (interiorColor) {
                 interiorColor = getRgbColor(interiorColor);
                 fillColor = interiorColor
-                    ? Array.from(interiorColor).map((c) => c / 255)
+                    ? Array.from(interiorColor, (c) => c / 255)
                     : undefined;
             }
             const fillAlpha = fillColor ? strokeAlpha : undefined;
@@ -2908,7 +2908,7 @@ class PolylineAnnotation extends MarkupAnnotation {
         if (!this.appearance) {
             // The default stroke color is black.
             const strokeColor = this.color
-                ? Array.from(this.color).map((c) => c / 255)
+                ? Array.from(this.color, (c) => c / 255)
                 : [0, 0, 0];
             const strokeAlpha = dict.get("CA");
             const borderWidth = this.borderStyle.width || 1, borderAdjust = 2 * borderWidth;
@@ -2980,7 +2980,7 @@ class InkAnnotation extends MarkupAnnotation {
         if (!this.appearance) {
             // The default stroke color is black.
             const strokeColor = this.color
-                ? Array.from(this.color).map((c) => c / 255)
+                ? Array.from(this.color, (c) => c / 255)
                 : [0, 0, 0];
             const strokeAlpha = parameters.dict.get("CA");
             const borderWidth = this.borderStyle.width || 1, borderAdjust = 2 * borderWidth;
@@ -3112,7 +3112,7 @@ class HighlightAnnotation extends MarkupAnnotation {
                 }
                 // Default color is yellow in Acrobat Reader
                 const fillColor = this.color
-                    ? Array.from(this.color).map((c) => c / 255)
+                    ? Array.from(this.color, (c) => c / 255)
                     : [1, 1, 0];
                 const fillAlpha = parameters.dict.get("CA");
                 this.setDefaultAppearance$({
@@ -3141,7 +3141,7 @@ class UnderlineAnnotation extends MarkupAnnotation {
             if (!this.appearance) {
                 // Default color is black
                 const strokeColor = this.color
-                    ? Array.from(this.color).map((c) => c / 255)
+                    ? Array.from(this.color, (c) => c / 255)
                     : [0, 0, 0];
                 const strokeAlpha = parameters.dict.get("CA");
                 this.setDefaultAppearance$({
@@ -3170,7 +3170,7 @@ class SquigglyAnnotation extends MarkupAnnotation {
             if (!this.appearance) {
                 // Default color is black
                 const strokeColor = this.color
-                    ? Array.from(this.color).map((c) => c / 255)
+                    ? Array.from(this.color, (c) => c / 255)
                     : [0, 0, 0];
                 const strokeAlpha = parameters.dict.get("CA");
                 this.setDefaultAppearance$({
@@ -3210,7 +3210,7 @@ class StrikeOutAnnotation extends MarkupAnnotation {
             if (!this.appearance) {
                 // Default color is black
                 const strokeColor = this.color
-                    ? Array.from(this.color).map((c) => c / 255)
+                    ? Array.from(this.color, (c) => c / 255)
                     : [0, 0, 0];
                 const strokeAlpha = parameters.dict.get("CA");
                 this.setDefaultAppearance$({

@@ -41,9 +41,11 @@ export class FreeTextEditor extends AnnotationEditor {
     static _type = "freetext";
     #boundEditorDivBlur = this.editorDivBlur.bind(this);
     #boundEditorDivFocus = this.editorDivFocus.bind(this);
+    #boundEditorDivInput = this.editorDivInput.bind(this);
     #boundEditorDivKeydown = this.editorDivKeydown.bind(this);
     #color;
     #content = "";
+    #editorDivId = `${this.id}-editor`;
     #hasAlreadyBeenCommitted = false;
     #fontSize;
     overlayDiv;
@@ -176,14 +178,14 @@ export class FreeTextEditor extends AnnotationEditor {
         this.parent.setEditingState(false);
         this.parent.updateToolbar(AnnotationEditorType.FREETEXT);
         super.enableEditMode();
-        this.enableEditing();
         this.overlayDiv.classList.remove("enabled");
         this.editorDiv.contentEditable = true;
         this.div.draggable = false;
+        this.div.removeAttribute("aria-activedescendant");
         this.editorDiv.addEventListener("keydown", this.#boundEditorDivKeydown);
         this.editorDiv.addEventListener("focus", this.#boundEditorDivFocus);
         this.editorDiv.addEventListener("blur", this.#boundEditorDivBlur);
-        this.parent.div.classList.remove("freeTextEditing");
+        this.editorDiv.addEventListener("input", this.#boundEditorDivInput);
     }
     /** @inheritdoc */
     disableEditMode() {
@@ -192,13 +194,14 @@ export class FreeTextEditor extends AnnotationEditor {
         }
         this.parent.setEditingState(true);
         super.disableEditMode();
-        this.disableEditing();
         this.overlayDiv.classList.add("enabled");
         this.editorDiv.contentEditable = false;
+        this.div.setAttribute("aria-activedescendant", this.#editorDivId);
         this.div.draggable = true;
         this.editorDiv.removeEventListener("keydown", this.#boundEditorDivKeydown);
         this.editorDiv.removeEventListener("focus", this.#boundEditorDivFocus);
         this.editorDiv.removeEventListener("blur", this.#boundEditorDivBlur);
+        this.editorDiv.removeEventListener("input", this.#boundEditorDivInput);
         // On Chrome, the focus is given to <body> when contentEditable is set to
         // false, hence we focus the div.
         this.div.focus();
@@ -303,6 +306,9 @@ export class FreeTextEditor extends AnnotationEditor {
     editorDivBlur(event) {
         this.isEditing = false;
     }
+    editorDivInput(event) {
+        this.parent.div.classList.toggle("freeTextEditing", this.isEmpty());
+    }
     /** @inheritdoc */
     disableEditing() {
         this.editorDiv.setAttribute("role", "comment");
@@ -326,7 +332,7 @@ export class FreeTextEditor extends AnnotationEditor {
         super.render();
         this.editorDiv = html("div");
         this.editorDiv.className = "internal";
-        this.editorDiv.setAttribute("id", `${this.id}-editor`);
+        this.editorDiv.setAttribute("id", this.#editorDivId);
         this.enableEditing();
         FreeTextEditor._l10nPromise
             .get("editor_free_text2_aria_label")

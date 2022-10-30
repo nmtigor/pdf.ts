@@ -58,7 +58,6 @@ export class PDFAttachmentViewer extends BaseTreeViewer {
   }
   private constructor(options: PDFAttachmentViewerOptions) {
     super(options);
-
     this.downloadManager = options.downloadManager;
 
     this.eventBus._on(

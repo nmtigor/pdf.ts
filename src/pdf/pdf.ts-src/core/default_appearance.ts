@@ -115,8 +115,7 @@ export function getPdfColor(color: Uint8ClampedArray, isFill: boolean) {
     return `${numberToString(gray)} ${isFill ? "g" : "G"}`;
   }
   return (
-    Array.from(color)
-      .map((c) => numberToString(c / 255))
+    Array.from(color, (c) => numberToString(c / 255))
       .join(" ") + ` ${isFill ? "rg" : "RG"}`
   );
 }

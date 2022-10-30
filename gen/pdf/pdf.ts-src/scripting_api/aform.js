@@ -416,14 +416,17 @@ export class AForm {
         }
         const event = globalThis.event;
         const values = [];
+        cFields = this.AFMakeArrayFromList(cFields);
         for (const cField of cFields) {
             const field = this._document.getField(cField);
             if (!field) {
                 continue;
             }
-            const number = this.AFMakeNumber(field.value);
-            if (number !== undefined) {
-                values.push(number);
+            for (const child of field.getArray()) {
+                const number = this.AFMakeNumber(child.value);
+                if (number !== undefined) {
+                    values.push(number);
+                }
             }
         }
         if (values.length === 0) {

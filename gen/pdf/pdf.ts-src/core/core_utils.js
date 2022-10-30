@@ -21,6 +21,7 @@ import { AnnotationEditorPrefix, BaseException, FontType, objectSize, StreamType
 import { BaseStream } from "./base_stream.js";
 import { Dict, isName, Ref, RefSet, } from "./primitives.js";
 /*80--------------------------------------------------------------------------*/
+export const PDF_VERSION_REGEXP = /^[1-9]\.\d$/;
 export function getLookupTableFactory(initializer) {
     let lookup;
     return () => {

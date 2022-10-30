@@ -38,7 +38,7 @@ class SandboxSupport extends SandboxSupportBase {
 }
 // const PDF_SCRIPTING_JS_SOURCE =
 //   await fetch( "./pdf.scripting.js").then( res => res.text());
-class Sandbox {
+export class Sandbox {
     support;
     _module;
     /**

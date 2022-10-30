@@ -32,12 +32,9 @@ export class DecryptStream extends DecodeStream {
         const hasMoreData = this.nextChunk && this.nextChunk.length > 0;
         const decrypt = this.decrypt;
         chunk = decrypt(chunk, !hasMoreData);
-        let bufferLength = this.bufferLength;
-        const n = chunk.length, buffer = this.ensureBuffer(bufferLength + n);
-        for (let i = 0; i < n; i++) {
-            buffer[bufferLength++] = chunk[i];
-        }
-        this.bufferLength = bufferLength;
+        const bufferLength = this.bufferLength, newLength = bufferLength + chunk.length, buffer = this.ensureBuffer(newLength);
+        buffer.set(chunk, bufferLength);
+        this.bufferLength = newLength;
     }
 }
 /*80--------------------------------------------------------------------------*/

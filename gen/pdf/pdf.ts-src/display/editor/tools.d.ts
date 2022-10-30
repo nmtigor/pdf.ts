@@ -232,6 +232,7 @@ export declare class AnnotationEditorUIManager {
      * Delete the current editor or all.
      */
     delete(): void;
+    commitOrRemove(): void;
     /**
      * Select all the editors.
      */
