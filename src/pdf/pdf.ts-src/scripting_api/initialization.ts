@@ -86,7 +86,7 @@ declare global {
   var scaleWhen: typeof ScaleWhen;
   var style: typeof Style;
   var trans: typeof Trans;
-  var zoomtype: typeof ZoomType;
+  var zoomtype: ZoomType;
   var ADBE: {
     Reader_Value_Asked: boolean;
     Viewer_Value_Asked: boolean;
@@ -214,7 +214,7 @@ export function initSandbox(params: { data: CreateSandboxP }) {
   globalThis.scaleWhen = ScaleWhen;
   globalThis.style = Style;
   globalThis.trans = Trans;
-  globalThis.zoomtype = ZoomType;
+  globalThis.zoomtype = ZoomType.none;
 
   // Avoid to have a popup asking to update Acrobat.
   globalThis.ADBE = {

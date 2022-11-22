@@ -415,7 +415,7 @@ class PDFNetworkStreamFullRequestReader implements IPDFStreamReader {
     if (this._cachedChunks.length > 0) return;
 
     for (const requestCapability of this.#requests) {
-      requestCapability.resolve({ value: undefined, done: true });
+      requestCapability.resolve({ done: true });
     }
     this.#requests.length = 0;
   };
@@ -451,7 +451,7 @@ class PDFNetworkStreamFullRequestReader implements IPDFStreamReader {
       return { value: chunk, done: false } as ReadValue;
     }
     if (this.#done) {
-      return { value: undefined, done: true } as ReadValue;
+      return { done: true } as ReadValue;
     }
     const requestCapability = createPromiseCap<ReadValue>();
     this.#requests.push(requestCapability);
@@ -463,7 +463,7 @@ class PDFNetworkStreamFullRequestReader implements IPDFStreamReader {
     this.#done = true;
     this.#headersReceivedCapability.reject(reason);
     for (const requestCapability of this.#requests) {
-      requestCapability.resolve({ value: undefined, done: true });
+      requestCapability.resolve({ done: true });
     }
     this.#requests.length = 0;
     if (this.#manager.isPendingRequest(this.#fullRequestId)) {
@@ -519,7 +519,7 @@ class PDFNetworkStreamRangeRequestReader implements IPDFStreamRangeReader {
     }
     this.#done = true;
     for (const requestCapability of this.#requests) {
-      requestCapability.resolve({ value: undefined, done: true });
+      requestCapability.resolve({ done: true });
     }
     this.#requests.length = 0;
     this.#close();
@@ -551,7 +551,7 @@ class PDFNetworkStreamRangeRequestReader implements IPDFStreamRangeReader {
       return { value: chunk, done: false } as ReadValue;
     }
     if (this.#done) {
-      return { value: undefined, done: true } as ReadValue;
+      return { done: true } as ReadValue;
     }
     const requestCapability = createPromiseCap<ReadValue>();
     this.#requests.push(requestCapability);
@@ -562,7 +562,7 @@ class PDFNetworkStreamRangeRequestReader implements IPDFStreamRangeReader {
   cancel(reason: object) {
     this.#done = true;
     for (const requestCapability of this.#requests) {
-      requestCapability.resolve({ value: undefined, done: true });
+      requestCapability.resolve({ done: true });
     }
     this.#requests.length = 0;
     if (this.#manager.isPendingRequest(this.#requestId)) {

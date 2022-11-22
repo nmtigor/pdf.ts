@@ -32,12 +32,12 @@ import { AnnotationEditor } from "./editor/editor.ts";
  * Key/value storage for annotation data in forms.
  */
 export class AnnotationStorage {
-  _storage: AnnotStorageRecord = new Map<string, AnnotStorageValue>();
+  #storage: AnnotStorageRecord = new Map<string, AnnotStorageValue>();
   get size() {
-    return this._storage.size;
+    return this.#storage.size;
   }
 
-  _modified = false;
+  #modified = false;
 
   // Callbacks to signal when the modification state is set or reset.
   // This is used by the viewer to only bind on `beforeunload` if forms
@@ -53,7 +53,7 @@ export class AnnotationStorage {
    * Get the value for a given key if it exists, or return the default value.
    */
   getValue(key: string, defaultValue: AnnotStorageValue) {
-    const value = this._storage.get(key);
+    const value = this.#storage.get(key);
     if (value === undefined) {
       return defaultValue;
     }
@@ -65,21 +65,21 @@ export class AnnotationStorage {
    * Get the value for a given key.
    */
   getRawValue(key: string) {
-    return this._storage.get(key);
+    return this.#storage.get(key);
   }
 
   /**
    * Remove a value from the storage.
    */
   remove(key: string) {
-    this._storage.delete(key);
+    this.#storage.delete(key);
 
-    if (this._storage.size === 0) {
+    if (this.#storage.size === 0) {
       this.resetModified();
     }
 
     if (typeof this.onAnnotationEditor === "function") {
-      for (const value of this._storage.values()) {
+      for (const value of this.#storage.values()) {
         if (value instanceof AnnotationEditor) {
           return;
         }
@@ -92,7 +92,7 @@ export class AnnotationStorage {
    * Set the value for a given key
    */
   setValue(key: string, value: AnnotStorageValue) {
-    const obj = this._storage.get(key);
+    const obj = this.#storage.get(key);
     let modified = false;
     if (obj !== undefined) {
       for (const [entry, val] of Object.entries(value)) {
@@ -103,7 +103,7 @@ export class AnnotationStorage {
       }
     } else {
       modified = true;
-      this._storage.set(key, value);
+      this.#storage.set(key, value);
     }
     if (modified) {
       this.#setModified();
@@ -123,16 +123,16 @@ export class AnnotationStorage {
    * Check if the storage contains the given key.
    */
   has(key: string): boolean {
-    return this._storage.has(key);
+    return this.#storage.has(key);
   }
 
   getAll() {
-    return this._storage.size > 0 ? objectFromMap(this._storage) : undefined;
+    return this.#storage.size > 0 ? objectFromMap(this.#storage) : undefined;
   }
 
   #setModified() {
-    if (!this._modified) {
-      this._modified = true;
+    if (!this.#modified) {
+      this.#modified = true;
       if (typeof this.onSetModified === "function") {
         this.onSetModified();
       }
@@ -140,8 +140,8 @@ export class AnnotationStorage {
   }
 
   resetModified() {
-    if (this._modified) {
-      this._modified = false;
+    if (this.#modified) {
+      this.#modified = false;
       if (typeof this.onResetModified === "function") {
         this.onResetModified();
       }
@@ -157,12 +157,12 @@ export class AnnotationStorage {
    * @ignore
    */
   get serializable() {
-    if (this._storage.size === 0) {
+    if (this.#storage.size === 0) {
       return undefined;
     }
     const clone: AnnotStorageRecord = new Map();
 
-    for (const [key, val] of this._storage) {
+    for (const [key, val] of this.#storage) {
       const serialized = val instanceof AnnotationEditor
         ? val.serialize()
         : val;

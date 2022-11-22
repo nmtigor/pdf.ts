@@ -63,7 +63,7 @@ export const enum ViewOnLoad {
 /*49-------------------------------------------*/
 
 export const D_base = /*#static*/ DENO && TESTING
-  ? "file:///data/cod/premsys/pdf.ts"
+  ? "file:///data/cod/premsys/premsys-fe"
   : "";
 
 type _DefaultOptions = typeof defaultOptions;

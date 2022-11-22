@@ -23,9 +23,9 @@ export const
 , _INFO = DEV && INFO
 , APP = false // release build
 
-, DENO = true
+, DENO = false
 
-, TESTING = true
+, TESTING = false
   , /** @deprecated */TEST_ALL = false 
 
   // from pdf.js

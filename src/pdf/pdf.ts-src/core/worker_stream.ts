@@ -115,7 +115,7 @@ class PDFWorkerStreamReader implements IPDFStreamReader {
   async read() {
     const { value, done } = await this.#reader.read();
     if (done) {
-      return { value: undefined, done: true } as ReadValue;
+      return { done: true } as ReadValue;
     }
     // `value` is wrapped into Uint8Array, we need to
     // unwrap it to ArrayBuffer for further processing.
@@ -157,7 +157,7 @@ class PDFWorkerStreamRangeReader implements IPDFStreamRangeReader {
   async read() {
     const { value, done } = await this.#reader.read();
     if (done) {
-      return { value: undefined, done: true } as ReadValue;
+      return { done: true } as ReadValue;
     } else return { value: value!.buffer, done: false } as ReadValue;
   }
 

@@ -173,6 +173,7 @@ export const enum AnnotationReplyType {
 // PDF 1.7 Table 165
 // deno-fmt-ignore
 export const enum AnnotationFlag {
+  UNDEFINED      = 0,
   INVISIBLE      = 0b00_0000_0001,
   HIDDEN         = 0b00_0000_0010,
   PRINT          = 0b00_0000_0100,

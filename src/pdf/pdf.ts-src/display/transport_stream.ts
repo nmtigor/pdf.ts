@@ -261,7 +261,7 @@ class PDFDataTransportStreamReader implements IPDFStreamReader {
       return { value: chunk, done: false } as ReadValue;
     }
     if (this.#done) {
-      return { value: undefined, done: true } as ReadValue;
+      return { done: true } as ReadValue;
     }
     const requestCapability = createPromiseCap<ReadValue>();
     this.#requests.push(requestCapability);
@@ -272,7 +272,7 @@ class PDFDataTransportStreamReader implements IPDFStreamReader {
   cancel(reason: object) {
     this.#done = true;
     for (const requestCapability of this.#requests) {
-      requestCapability.resolve({ value: undefined, done: true });
+      requestCapability.resolve({ done: true });
     }
     this.#requests.length = 0;
   }
@@ -318,7 +318,7 @@ class PDFDataTransportStreamRangeReader implements IPDFStreamRangeReader {
       const requestsCapability = this.#requests.shift();
       requestsCapability!.resolve({ value: chunk, done: false });
       for (const requestCapability of this.#requests) {
-        requestCapability.resolve({ value: undefined, done: true });
+        requestCapability.resolve({ done: true });
       }
       this.#requests.length = 0;
     }
@@ -334,7 +334,7 @@ class PDFDataTransportStreamRangeReader implements IPDFStreamRangeReader {
       return { value: chunk, done: false } as ReadValue;
     }
     if (this.#done) {
-      return { value: undefined, done: true } as ReadValue;
+      return { done: true } as ReadValue;
     }
     const requestCapability = createPromiseCap<ReadValue>();
     this.#requests.push(requestCapability);
@@ -345,7 +345,7 @@ class PDFDataTransportStreamRangeReader implements IPDFStreamRangeReader {
   cancel(reason: object) {
     this.#done = true;
     for (const requestCapability of this.#requests) {
-      requestCapability.resolve({ value: undefined, done: true });
+      requestCapability.resolve({ done: true });
     }
     this.#requests.length = 0;
     this.#stream._removeRangeReader(this);

@@ -306,7 +306,7 @@ export class Binder {
           Object.getPrototypeOf(targetParent).constructor,
           [attrs],
         );
-        (<any> targetParent)[name] = obj[name];
+        (targetParent as any)[name] = (obj as any)[name];
         continue;
       }
 

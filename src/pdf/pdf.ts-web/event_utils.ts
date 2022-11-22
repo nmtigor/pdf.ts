@@ -468,11 +468,6 @@ type Listener1Ex = {
 export class EventBus {
   #listeners: Record<EventName, Listener1Ex[]> = Object.create(null);
 
-  #isInAutomation?: boolean;
-
-  constructor() {
-  }
-
   on<EN extends EventName>(
     eventName: EN,
     listener: ListenerMap[EN],
@@ -525,13 +520,11 @@ export class EventBus {
     options?: { external?: boolean; once?: boolean | undefined },
   ) {
     const eventListeners = (this.#listeners[eventName] ||= []);
-    eventListeners.push(
-      <Listener1Ex> {
-        listener,
-        external: options?.external === true,
-        once: options?.once === true,
-      },
-    );
+    eventListeners.push({
+      listener,
+      external: options?.external === true,
+      once: options?.once === true,
+    } as Listener1Ex);
   }
 
   /**

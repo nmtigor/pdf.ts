@@ -30,7 +30,7 @@ It is
 
 ### deno test
 
-* In app_options.ts:67, change `D_base`  to `"file:///path_to/pdf.ts"`;
+* In app_options.ts:66, change `D_base`  to `"file:///path_to/pdf.ts"`;
 * In global.ts, change `DENO`, `TESTING` to `true`.
 * 
   ```bash

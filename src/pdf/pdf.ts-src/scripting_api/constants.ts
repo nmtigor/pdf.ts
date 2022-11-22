@@ -118,15 +118,15 @@ export const Trans = Object.freeze({
   wipeU: "WipeUp",
 });
 
-export const ZoomType = Object.freeze({
-  none: "NoVary",
-  fitP: "FitPage",
-  fitW: "FitWidth",
-  fitH: "FitHeight",
-  fitV: "FitVisibleWidth",
-  pref: "Preferred",
-  refW: "ReflowWidth",
-});
+export const enum ZoomType {
+  none = "NoVary",
+  fitP = "FitPage",
+  fitW = "FitWidth",
+  fitH = "FitHeight",
+  fitV = "FitVisibleWidth",
+  pref = "Preferred",
+  refW = "ReflowWidth",
+}
 
 export const GlobalConstants = Object.freeze({
   IDS_GREATER_THAN: "Invalid value: must be greater than or equal to % s.",
