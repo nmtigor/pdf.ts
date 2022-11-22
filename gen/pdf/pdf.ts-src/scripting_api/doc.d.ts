@@ -3,6 +3,7 @@ import { AnnotActions } from "../core/core_utils.js";
 import { Name } from "../core/primitives.js";
 import { FieldWrapped } from "./app.js";
 import { ScriptingActionName, ScriptingActions } from "./common.js";
+import { ZoomType } from "./constants.js";
 import { EventDispatcher } from "./event.js";
 import { PDFObject, ScriptingData, SendData } from "./pdf_object.js";
 import { PrintParams } from "./print_params.js";
@@ -125,7 +126,7 @@ export declare class Doc extends PDFObject<_SendDocData> {
     get URL(): string;
     set URL(_: string);
     _info: _Info;
-    _zoomType: string;
+    _zoomType: ZoomType;
     _zoom: number;
     get zoom(): number;
     set zoom(value: number);
@@ -211,8 +212,8 @@ export declare class Doc extends PDFObject<_SendDocData> {
     set viewState(_: undefined);
     get XFAForeground(): boolean;
     set XFAForeground(_: boolean);
-    get zoomType(): string;
-    set zoomType(type: string);
+    get zoomType(): ZoomType;
+    set zoomType(type: ZoomType);
     addAnnot(): void;
     addField(): void;
     addIcon(): void;

@@ -115,7 +115,7 @@ export function initSandbox(params) {
     globalThis.scaleWhen = ScaleWhen;
     globalThis.style = Style;
     globalThis.trans = Trans;
-    globalThis.zoomtype = ZoomType;
+    globalThis.zoomtype = ZoomType.none;
     // Avoid to have a popup asking to update Acrobat.
     globalThis.ADBE = {
         Reader_Value_Asked: true,

@@ -13,9 +13,9 @@ declare abstract class BaseLocalCache<CD> {
         onlyRefs: boolean;
     });
     /** @final */
-    getByName(name: string): CD | undefined;
+    getByName(name: string): NonNullable<CD> | undefined;
     /** @final */
-    getByRef(ref: string | Ref): CD | undefined;
+    getByRef(ref: string | Ref): NonNullable<CD> | undefined;
     abstract set(name: string | undefined, ref: Ref | string | undefined, data: CD): void;
 }
 export interface Image_LI_CData {
@@ -33,28 +33,28 @@ export interface SolidColorImageMask_LI_CData {
     args: ImgData[];
     optionalContent: MarkedContentProps | undefined;
 }
-export declare type LI_CData = Image_LI_CData | ImageMask_LI_CData | SolidColorImageMask_LI_CData;
+export type LI_CData = Image_LI_CData | ImageMask_LI_CData | SolidColorImageMask_LI_CData;
 export declare class LocalImageCache extends BaseLocalCache<LI_CData | boolean> {
     /** @implement */
     set(name: string, ref: string | import("./primitives.js").NsRef.Ref | undefined, data: LI_CData | boolean): void;
 }
-declare type LCS_CData = ColorSpace;
+type LCS_CData = ColorSpace;
 export declare class LocalColorSpaceCache extends BaseLocalCache<LCS_CData> {
     /** @implement */
     set(name: string | undefined, ref: string | import("./primitives.js").NsRef.Ref | undefined, data: LCS_CData): void;
 }
-declare type LF_CData = ParsedFunction;
+type LF_CData = ParsedFunction;
 export declare class LocalFunctionCache extends BaseLocalCache<LF_CData> {
     constructor();
     /** @implement */
     set(name: string | undefined, ref: Ref | string | undefined, data: LF_CData): void;
 }
-export declare type LGS_CData = [string, Obj][];
+export type LGS_CData = [string, Obj][];
 export declare class LocalGStateCache extends BaseLocalCache<LGS_CData | boolean> {
     /** @implement */
     set(name: string, ref: string | import("./primitives.js").NsRef.Ref | undefined, data: LGS_CData | boolean): void;
 }
-declare type LTP_CData = {
+type LTP_CData = {
     operatorListIR: OpListIR;
     dict: Dict;
 };
@@ -63,7 +63,7 @@ export declare class LocalTilingPatternCache extends BaseLocalCache<LTP_CData> {
     /** @implement */
     set(name: string | undefined, ref: string | import("./primitives.js").NsRef.Ref | undefined, data: LTP_CData): void;
 }
-declare type GI_CData = Image_LI_CData & {
+type GI_CData = Image_LI_CData & {
     objId: string;
     byteSize?: number;
 };

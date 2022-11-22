@@ -64,6 +64,6 @@ declare namespace NsJpegImage {
     export {};
 }
 export import JpegImage = NsJpegImage.JpegImage;
-export declare type JpegOptions = NsJpegImage.JpegOptions;
+export type JpegOptions = NsJpegImage.JpegOptions;
 export {};
 //# sourceMappingURL=jpg.d.ts.map

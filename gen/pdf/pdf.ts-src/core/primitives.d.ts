@@ -3,9 +3,9 @@ import { BaseStream } from "./base_stream.js";
 import { TranslatedFont } from "./evaluator.js";
 import { XRef } from "./xref.js";
 export declare const CIRCULAR_REF: unique symbol;
-export declare type CIRCULAR_REF = typeof CIRCULAR_REF;
+export type CIRCULAR_REF = typeof CIRCULAR_REF;
 export declare const EOF: unique symbol;
-export declare type EOF = typeof EOF;
+export type EOF = typeof EOF;
 declare namespace XFANsName {
     class Name {
         name: string;
@@ -82,7 +82,7 @@ export declare namespace NsRef {
         static _clearCache(): void;
     }
 }
-export declare type Ref = NsRef.Ref;
+export type Ref = NsRef.Ref;
 export declare var Ref: typeof NsRef.Ref;
 export declare class RefSet {
     #private;
@@ -108,11 +108,11 @@ export declare function isCmd(v: any, cmd?: string): boolean;
 export declare function isDict(v: any, type?: string): boolean;
 export declare function isRefsEqual(v1: Ref, v2: Ref): boolean;
 export declare function clearPrimitiveCaches(): void;
-declare type Prm = boolean | number | string | null | Name | Cmd | CIRCULAR_REF | EOF | Dict | TypedArray | BaseStream | Ref;
-export declare type Obj = Prm | (Obj | undefined)[];
-export declare type ObjNoCmd = Exclude<Obj, Cmd>;
-export declare type ObjNoRef = Exclude<Obj, Ref>;
-export declare type PrmNoRef = Exclude<Prm, Ref>;
-export declare type NoRef = PrmNoRef | (ObjNoRef | undefined)[];
+type Prm = boolean | number | string | null | Name | Cmd | CIRCULAR_REF | EOF | Dict | TypedArray | BaseStream | Ref;
+export type Obj = Prm | (Obj | undefined)[];
+export type ObjNoCmd = Exclude<Obj, Cmd>;
+export type ObjNoRef = Exclude<Obj, Ref>;
+export type PrmNoRef = Exclude<Prm, Ref>;
+export type NoRef = PrmNoRef | (ObjNoRef | undefined)[];
 export {};
 //# sourceMappingURL=primitives.d.ts.map

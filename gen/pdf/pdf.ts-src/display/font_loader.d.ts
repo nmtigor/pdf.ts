@@ -45,7 +45,7 @@ interface _FFOCtorP {
         registerFont(font: FontFaceObject, url?: string): void;
     } | undefined;
 }
-export declare type AddToPath = (c: CanvasRenderingContext2D, size: number) => void;
+export type AddToPath = (c: CanvasRenderingContext2D, size: number) => void;
 export declare class FontFaceObject extends FontExpotDataEx {
     compiledGlyphs: Record<string, AddToPath>;
     isEvalSupported: boolean;

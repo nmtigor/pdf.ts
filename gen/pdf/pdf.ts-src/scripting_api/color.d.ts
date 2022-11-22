@@ -1,6 +1,6 @@
 import { CMYK, CSTag, RGB } from "../shared/scripting_utils.js";
 import { PDFObject, SendData } from "./pdf_object.js";
-export declare type CorrectColor = ["T"] | ["G", number] | ["RGB", ...RGB] | ["CMYK", ...CMYK];
+export type CorrectColor = ["T"] | ["G", number] | ["RGB", ...RGB] | ["CMYK", ...CMYK];
 interface _SendColorData extends SendData {
 }
 export declare class Color extends PDFObject<_SendColorData> {

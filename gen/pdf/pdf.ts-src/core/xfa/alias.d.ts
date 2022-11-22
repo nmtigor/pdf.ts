@@ -15,7 +15,7 @@ export interface XFANsAttrs extends XFAAttrs {
         [key: string]: XFAAttrs;
     };
 }
-export declare type XFAStyleData = Record<string, string>;
+export type XFAStyleData = Record<string, string>;
 export interface AvailableSpace {
     width: number;
     height: number;
@@ -77,10 +77,10 @@ export interface XFAHTMLObj extends XFAElObjBase {
 export interface XFASVGObj extends XFAElObjBase {
     attributes?: XFASVGAttrs;
 }
-export declare type XFAElObj = XFAHTMLObj | XFASVGObj;
-export declare type XFAElData = XFAElObj | string | boolean;
-export declare type XFAIds = Map<string | symbol, XFAObject>;
-export declare type XFAExtra = {
+export type XFAElObj = XFAHTMLObj | XFASVGObj;
+export type XFAElData = XFAElObj | string | boolean;
+export type XFAIds = Map<string | symbol, XFAObject>;
+export type XFAExtra = {
     afterBreakAfter?: HTMLResult;
     children?: XFAElData[];
     currentWidth?: number;

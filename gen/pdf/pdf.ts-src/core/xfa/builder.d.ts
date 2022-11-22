@@ -16,7 +16,7 @@ interface _BuildP {
     namespace: string | undefined;
     prefixes: XFAPrefix[] | undefined;
 }
-declare type XFANs = XFAKnownNs | UnknownNamespace;
+type XFANs = XFAKnownNs | UnknownNamespace;
 export declare class Builder {
     _namespaceStack: XFANs[];
     _nsAgnosticLevel: number;

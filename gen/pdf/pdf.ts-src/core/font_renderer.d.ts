@@ -14,8 +14,8 @@ interface CffInfo {
     fdSelect?: CFFFDSelect | undefined;
     fdArray: CFFTopDict[];
 }
-declare type FontMatrix = [number, number, number, number, number, number];
-declare type C2DCmd = "moveTo" | "lineTo" | "bezierCurveTo" | "quadraticCurveTo" | "transform" | "scale" | "translate" | "save" | "restore";
+type FontMatrix = [number, number, number, number, number, number];
+type C2DCmd = "moveTo" | "lineTo" | "bezierCurveTo" | "quadraticCurveTo" | "transform" | "scale" | "translate" | "save" | "restore";
 export interface CmdArgs {
     cmd: C2DCmd;
     args?: (number | string)[];

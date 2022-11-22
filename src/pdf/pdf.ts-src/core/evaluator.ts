@@ -2060,8 +2060,11 @@ export class PartialEvaluator {
       task.ensureNotTerminated();
       timeSlotManager.reset();
 
-      const operation = <Operation> {};
-      let stop: boolean, i, ii, cs, name: string, isValidName: boolean;
+      const operation = {} as Operation;
+      let stop: boolean,
+        cs,
+        name: string,
+        isValidName: boolean;
       while (!(stop = timeSlotManager.check())) {
         // The arguments parsed by read() are used beyond this loop, so we
         // cannot reuse the same array on each iteration. Therefore we pass
@@ -2078,10 +2081,10 @@ export class PartialEvaluator {
           case OPS.paintXObject:
             // eagerly compile XForm objects
             isValidName = args![0] instanceof Name;
-            name = (<Name> args![0]).name;
+            name = args![0].name;
 
             if (isValidName) {
-              const localImage = <LI_CData> localImageCache.getByName(name);
+              const localImage = localImageCache.getByName(name) as LI_CData;
               if (localImage) {
                 operatorList.addImageOps(
                   localImage.fn,
@@ -2464,7 +2467,7 @@ export class PartialEvaluator {
             break;
           case OPS.setGState:
             isValidName = args![0] instanceof Name;
-            name = (<Name> args![0]).name;
+            name = args![0].name;
 
             if (isValidName) {
               const localGStateObj = localGStateCache.getByName(name);
@@ -2483,12 +2486,12 @@ export class PartialEvaluator {
                   throw new FormatError("GState must be referred to by name.");
                 }
 
-                const extGState = <Dict> resources!.get("ExtGState");
+                const extGState = resources!.get("ExtGState") as Dict;
                 if (!(extGState instanceof Dict)) {
                   throw new FormatError("ExtGState should be a dictionary.");
                 }
 
-                const gState = <Dict> extGState.get(name);
+                const gState = extGState.get(name) as Dict;
                 // TODO: Attempt to lookup cached GStates by reference as well,
                 //       if and only if there are PDF documents where doing so
                 //       would significantly improve performance.
@@ -2601,6 +2604,7 @@ export class PartialEvaluator {
             // those are non-serializable, otherwise postMessage will throw
             // "An object could not be cloned.".
             if (args !== null) {
+              let i, ii;
               for (i = 0, ii = args.length; i < ii; i++) {
                 if (args[i] instanceof Dict) {
                   break;
@@ -3346,7 +3350,9 @@ export class PartialEvaluator {
 
       const operation = <Operation> {};
       let stop,
-        args: ObjNoCmd[] = [];
+        args: ObjNoCmd[] = [],
+        name: string,
+        isValidName: boolean;
       while (!(stop = timeSlotManager.check())) {
         // The arguments parsed by read() are not used beyond this loop, so
         // we can reuse the same array on every iteration, thus avoiding
@@ -3363,8 +3369,8 @@ export class PartialEvaluator {
         switch (fn | 0) {
           case OPS.setFont:
             // Optimization to ignore multiple identical Tf commands.
-            const fontNameArg = (<Name> args[0]).name,
-              fontSizeArg = <number> args[1];
+            const fontNameArg = (args[0] as Name).name,
+              fontSizeArg = args[1] as number;
             if (
               textState.font &&
               fontNameArg === textState.fontName &&
@@ -3379,60 +3385,60 @@ export class PartialEvaluator {
             next(handleSetFont(fontNameArg));
             return;
           case OPS.setTextRise:
-            textState.textRise = <number> args[0];
+            textState.textRise = args[0] as number;
             break;
           case OPS.setHScale:
-            textState.textHScale = <number> args[0] / 100;
+            textState.textHScale = args[0] as number / 100;
             break;
           case OPS.setLeading:
-            textState.leading = <number> args[0];
+            textState.leading = args[0] as number;
             break;
           case OPS.moveText:
             textState.translateTextLineMatrix(
-              <number> args[0],
-              <number> args[1],
+              args[0] as number,
+              args[1] as number,
             );
-            textState.textMatrix = <matrix_t> textState.textLineMatrix.slice();
+            textState.textMatrix = textState.textLineMatrix.slice() as matrix_t;
             break;
           case OPS.setLeadingMoveText:
-            textState.leading = -<number> args[1];
+            textState.leading = -(args[1] as number);
             textState.translateTextLineMatrix(
-              <number> args[0],
-              <number> args[1],
+              args[0] as number,
+              args[1] as number,
             );
-            textState.textMatrix = <matrix_t> textState.textLineMatrix.slice();
+            textState.textMatrix = textState.textLineMatrix.slice() as matrix_t;
             break;
           case OPS.nextLine:
             textState.carriageReturn();
             break;
           case OPS.setTextMatrix:
             textState.setTextMatrix(
-              <number> args[0],
-              <number> args[1],
-              <number> args[2],
-              <number> args[3],
-              <number> args[4],
-              <number> args[5],
+              args[0] as number,
+              args[1] as number,
+              args[2] as number,
+              args[3] as number,
+              args[4] as number,
+              args[5] as number,
             );
             textState.setTextLineMatrix(
-              <number> args[0],
-              <number> args[1],
-              <number> args[2],
-              <number> args[3],
-              <number> args[4],
-              <number> args[5],
+              args[0] as number,
+              args[1] as number,
+              args[2] as number,
+              args[3] as number,
+              args[4] as number,
+              args[5] as number,
             );
             updateAdvanceScale();
             break;
           case OPS.setCharSpacing:
-            textState.charSpacing = <number> args[0];
+            textState.charSpacing = args[0] as number;
             break;
           case OPS.setWordSpacing:
-            textState.wordSpacing = <number> args[0];
+            textState.wordSpacing = args[0] as number;
             break;
           case OPS.beginText:
-            textState.textMatrix = <matrix_t> IDENTITY_MATRIX.slice();
-            textState.textLineMatrix = <matrix_t> IDENTITY_MATRIX.slice();
+            textState.textMatrix = IDENTITY_MATRIX.slice() as matrix_t;
+            textState.textLineMatrix = IDENTITY_MATRIX.slice() as matrix_t;
             break;
           case OPS.showSpacedText:
             if (!stateManager!.state.font) {
@@ -3442,7 +3448,7 @@ export class PartialEvaluator {
 
             const spaceFactor =
               ((textState.font!.vertical ? 1 : -1) * textState.fontSize) / 1000;
-            const elements = <(number | string)[]> args[0];
+            const elements = args[0] as (number | string)[];
             for (let i = 0, ii = elements.length; i < ii - 1; i++) {
               const item = elements[i];
               if (typeof item === "string") {
@@ -3519,8 +3525,8 @@ export class PartialEvaluator {
               xobjs = resources!.get("XObject") as Dict || Dict.empty;
             }
 
-            let isValidName = args[0] instanceof Name;
-            let name = (<Name> args[0]).name;
+            isValidName = args[0] instanceof Name;
+            name = (args[0] as Name).name;
 
             if (isValidName && emptyXObjectCache.getByName(name)) {
               break;

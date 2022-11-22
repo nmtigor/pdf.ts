@@ -261,7 +261,7 @@ export interface MActionMap {
         Sinkchunk: undefined;
     };
 }
-declare type MActionName = keyof MActionMap;
+type MActionName = keyof MActionMap;
 export interface PDFInfo {
     numPages: number;
     fingerprints: [string, string | undefined];
@@ -384,12 +384,12 @@ export interface WActionMap {
         Sinkchunk: undefined;
     };
 }
-declare type WActionName = keyof WActionMap;
+type WActionName = keyof WActionMap;
 export declare const enum Thread {
     main = 0,
     worker = 1
 }
-export declare type ActionName</** thread at */ Ta extends Thread> = Ta extends Thread.main ? MActionName : WActionName;
+export type ActionName</** thread at */ Ta extends Thread> = Ta extends Thread.main ? MActionName : WActionName;
 export interface StreamSink<Ta extends Thread, AN extends ActionName<Ta> = ActionName<Ta>> {
     enqueue(chunk: ActionSinkchunk<Ta, AN>, size?: number, transfers?: Transferable[]): void;
     close?(): void;
@@ -401,12 +401,12 @@ export interface StreamSink<Ta extends Thread, AN extends ActionName<Ta> = Actio
     desiredSize: number | null | undefined;
     ready: Promise<void>;
 }
-declare type MActionHandler<AN extends MActionName> = (data: MActionMap[AN]["Data"], sink: StreamSink<Thread.main, AN>) => MActionMap[AN]["Return"] | Promise<MActionMap[AN]["Return"]>;
-declare type WActionHandler<AN extends WActionName> = (data: WActionMap[AN]["Data"], sink: StreamSink<Thread.worker, AN>) => WActionMap[AN]["Return"] | Promise<WActionMap[AN]["Return"]>;
-export declare type ActionHandler<Ta extends Thread, AN extends ActionName<Ta> = ActionName<Ta>> = Ta extends Thread.main ? MActionHandler<AN & MActionName> : WActionHandler<AN & WActionName>;
-export declare type ActionData<Ta extends Thread, AN extends ActionName<Ta> = ActionName<Ta>> = Ta extends Thread.main ? MActionMap[AN & MActionName]["Data"] : WActionMap[AN & WActionName]["Data"];
-export declare type ActionReturn<Ta extends Thread, AN extends ActionName<Ta> = ActionName<Ta>> = Ta extends Thread.main ? MActionMap[AN & MActionName]["Return"] : WActionMap[AN & WActionName]["Return"];
-export declare type ActionSinkchunk<Ta extends Thread, AN extends ActionName<Ta> = ActionName<Ta>> = Ta extends Thread.main ? MActionMap[AN & MActionName]["Sinkchunk"] : WActionMap[AN & WActionName]["Sinkchunk"];
+type MActionHandler<AN extends MActionName> = (data: MActionMap[AN]["Data"], sink: StreamSink<Thread.main, AN>) => MActionMap[AN]["Return"] | Promise<MActionMap[AN]["Return"]>;
+type WActionHandler<AN extends WActionName> = (data: WActionMap[AN]["Data"], sink: StreamSink<Thread.worker, AN>) => WActionMap[AN]["Return"] | Promise<WActionMap[AN]["Return"]>;
+export type ActionHandler<Ta extends Thread, AN extends ActionName<Ta> = ActionName<Ta>> = Ta extends Thread.main ? MActionHandler<AN & MActionName> : WActionHandler<AN & WActionName>;
+export type ActionData<Ta extends Thread, AN extends ActionName<Ta> = ActionName<Ta>> = Ta extends Thread.main ? MActionMap[AN & MActionName]["Data"] : WActionMap[AN & WActionName]["Data"];
+export type ActionReturn<Ta extends Thread, AN extends ActionName<Ta> = ActionName<Ta>> = Ta extends Thread.main ? MActionMap[AN & MActionName]["Return"] : WActionMap[AN & WActionName]["Return"];
+export type ActionSinkchunk<Ta extends Thread, AN extends ActionName<Ta> = ActionName<Ta>> = Ta extends Thread.main ? MActionMap[AN & MActionName]["Sinkchunk"] : WActionMap[AN & WActionName]["Sinkchunk"];
 interface StreamController<Ta extends Thread, AN extends ActionName<Ta> = ActionName<Ta>> {
     controller: ReadableStreamDefaultController<ActionSinkchunk<Ta, AN>>;
     startCall: PromiseCap;

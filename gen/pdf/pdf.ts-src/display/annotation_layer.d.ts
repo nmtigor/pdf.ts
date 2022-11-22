@@ -109,7 +109,7 @@ export interface ResetForm {
     refs: string[];
     include: boolean;
 }
-declare type Action = (event: CustomEvent) => void;
+type Action = (event: CustomEvent) => void;
 interface Actions {
     value: Action;
     charLimit?: Action;
@@ -184,8 +184,8 @@ export interface AnnotStorageValue {
     value?: string | string[] | number | boolean | undefined;
     valueAsString?: string | string[] | undefined;
 }
-export declare type ASVKey = keyof AnnotStorageValue;
-export declare type AnnotStorageRecord = Map<string, AnnotStorageValue>;
+export type ASVKey = keyof AnnotStorageValue;
+export type AnnotStorageRecord = Map<string, AnnotStorageValue>;
 export declare class AnnotationLayer {
     #private;
     /**

@@ -1,7 +1,7 @@
 export declare const $buildXFAObject: unique symbol;
-declare type NsIds = typeof NamespaceIds;
-export declare type XFANsName = keyof NsIds;
-export declare type XFANsId = NsIds[XFANsName]["id"] | -1;
+type NsIds = typeof NamespaceIds;
+export type XFANsName = keyof NsIds;
+export type XFANsId = NsIds[XFANsName]["id"] | -1;
 export declare const NamespaceIds: {
     readonly config: {
         readonly id: 0;

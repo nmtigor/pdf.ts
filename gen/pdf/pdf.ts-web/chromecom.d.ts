@@ -1,6 +1,6 @@
 import { OverlayManager } from "./overlay_manager.js";
-declare type _ResolvePDFFileCb = (url: string, length?: number, originalUrl?: string) => void;
-declare type _GetOriginCb = (origin?: string) => void;
+type _ResolvePDFFileCb = (url: string, length?: number, originalUrl?: string) => void;
+type _GetOriginCb = (origin?: string) => void;
 export declare const ChromeCom: {
     /**
      * Creates an event that the extension is listening for and will

@@ -106,6 +106,7 @@ export declare const enum AnnotationReplyType {
     REPLY = "R"
 }
 export declare const enum AnnotationFlag {
+    UNDEFINED = 0,
     INVISIBLE = 1,
     HIDDEN = 2,
     PRINT = 4,
@@ -175,9 +176,9 @@ export declare const PageActionEventType: {
     readonly O: "PageOpen";
     readonly C: "PageClose";
 };
-export declare type ActionEventTypeType = typeof AnnotationActionEventType | typeof DocumentActionEventType | typeof PageActionEventType;
-export declare type ActionEventType = keyof typeof AnnotationActionEventType | keyof typeof DocumentActionEventType | keyof typeof PageActionEventType;
-export declare type ActionEventName = (typeof AnnotationActionEventType)[keyof typeof AnnotationActionEventType] | (typeof DocumentActionEventType)[keyof typeof DocumentActionEventType] | (typeof PageActionEventType)[keyof typeof PageActionEventType] | "Action";
+export type ActionEventTypeType = typeof AnnotationActionEventType | typeof DocumentActionEventType | typeof PageActionEventType;
+export type ActionEventType = keyof typeof AnnotationActionEventType | keyof typeof DocumentActionEventType | keyof typeof PageActionEventType;
+export type ActionEventName = (typeof AnnotationActionEventType)[keyof typeof AnnotationActionEventType] | (typeof DocumentActionEventType)[keyof typeof DocumentActionEventType] | (typeof PageActionEventType)[keyof typeof PageActionEventType] | "Action";
 export declare enum StreamType {
     UNKNOWN = "UNKNOWN",
     FLATE = "FLATE",
@@ -304,7 +305,7 @@ export declare enum OPS {
     constructPath = 91,
     group = 92
 }
-export declare type OPSName = keyof typeof OPS;
+export type OPSName = keyof typeof OPS;
 export declare const enum UNSUPPORTED_FEATURES {
     forms = "forms",
     javaScript = "javaScript",
@@ -410,11 +411,11 @@ export declare class FeatureTest {
     static get isEvalSupported(): boolean;
     static get isOffscreenCanvasSupported(): boolean;
 }
-export declare type point_t = [number, number];
-export declare type point3d_t = [number, number, number];
-export declare type rect_t = TupleOf<number, 4>;
-export declare type matrix_t = TupleOf<number, 6>;
-export declare type matrix3d_t = TupleOf<number, 9>;
+export type point_t = [number, number];
+export type point3d_t = [number, number, number];
+export type rect_t = TupleOf<number, 4>;
+export type matrix_t = TupleOf<number, 6>;
+export type matrix3d_t = TupleOf<number, 9>;
 export declare class Util {
     static makeHexColor(r: number, g: number, b: number): string;
     static scaleMinMax(transform: matrix_t, minMax: rect_t): void;

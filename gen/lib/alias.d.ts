@@ -1,15 +1,15 @@
-export declare type int = number;
-export declare type uint = number;
-export declare type int64 = int;
-export declare type int32 = int;
-export declare type int16 = int;
-export declare type int8 = int;
-export declare type uint64 = uint;
-export declare type uint32 = uint;
-export declare type uint16 = uint;
-export declare type uint8 = uint;
+export type int = number;
+export type uint = number;
+export type int64 = int;
+export type int32 = int;
+export type int16 = int;
+export type int8 = int;
+export type uint64 = uint;
+export type uint32 = uint;
+export type uint16 = uint;
+export type uint8 = uint;
 /** 0 is special */
-export declare type id_t = uint32;
+export type id_t = uint32;
 /**
  * ! CHECK
  * Make sense?
@@ -17,37 +17,30 @@ export declare type id_t = uint32;
  * Is it better to just use `int`, `uint` according to contexts?
  * (see sortedarray.ts)
  */
-export declare type Index = uint32;
+export type Index = uint32;
 /** Count one "\t" as 1. */
-export declare type loff_t = int32;
+export type loff_t = int32;
 export declare const loff_UNDEFINED: loff_t;
 export declare const loff_MAX: loff_t;
 /** Count one "\t" as e.g. 2, 4, 8. */
-export declare type lcol_t = loff_t;
-export declare type lnum_t = int32;
+export type lcol_t = loff_t;
+export type lnum_t = int32;
 export declare const lnum_MAX: lnum_t;
 /** type of unix timestamp */
-export declare type ts_t = int64;
+export type ts_t = int64;
 /** recommand [0,1] */
-export declare type Ratio = number;
-export declare type IntegerArray = Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint16Array | Int32Array | Uint32Array;
-export declare type FloatArray = Float32Array | Float64Array;
-export declare type TypedArray = IntegerArray | FloatArray;
-export declare type ReadableStreamDefaultReadResult<T> = {
-    done: false;
-    value: T;
-} | {
-    done: true;
-    value?: undefined;
-};
-export declare type CSSStyleName = keyof {
+export type Ratio = number;
+export type IntegerArray = Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint16Array | Int32Array | Uint32Array;
+export type FloatArray = Float32Array | Float64Array;
+export type TypedArray = IntegerArray | FloatArray;
+export type CSSStyleName = keyof {
     [K in Extract<keyof CSSStyleDeclaration, string> as string extends K ? never : CSSStyleDeclaration[K] extends string ? K : never]: never;
 };
-export declare type CSSStyle = Partial<Record<CSSStyleName, string>>;
+export type CSSStyle = Partial<Record<CSSStyleName, string | number>>;
 /**
  * @deprecated Use `CSSStyle` instead.
  */
-export declare type Style = Record<string, string>;
+export type Style = Record<string, string>;
 export interface Runr {
     run(): void | Promise<void>;
 }
@@ -58,16 +51,16 @@ export declare const enum Sortart {
     asc = 0,
     desc = 1
 }
-export declare type Constructor<T = object> = new (...args: any[]) => T;
-export declare type AbstractConstructor<T = object> = abstract new (...args: any[]) => T;
-export declare type Func<This = any> = (this: This, ...args: any[]) => any;
-declare type _TupleOf<T, N extends number, R extends unknown[]> = R["length"] extends N ? R : _TupleOf<T, N, [...R, T]>;
-export declare type TupleOf<T, N extends number> = N extends N ? number extends N ? T[] : _TupleOf<T, N, []> : never;
-declare type Without<T, U> = {
+export type Constructor<T = object> = new (...args: any[]) => T;
+export type AbstractConstructor<T = object> = abstract new (...args: any[]) => T;
+export type Func<This = any> = (this: This, ...args: any[]) => any;
+type _TupleOf<T, N extends number, R extends unknown[]> = R["length"] extends N ? R : _TupleOf<T, N, [...R, T]>;
+export type TupleOf<T, N extends number> = N extends N ? number extends N ? T[] : _TupleOf<T, N, []> : never;
+type Without<T, U> = {
     [P in Exclude<keyof T, keyof U>]?: never;
 };
-export declare type XOR<T, U> = (T | U) extends object ? (Without<T, U> & U) | (Without<U, T> & T) : T | U;
-export declare type IndexOf<T extends readonly any[], S extends number[] = []> = T["length"] extends S["length"] ? S[number] : IndexOf<T, [S["length"], ...S]>;
-export declare type ArrEl<ArrayType extends readonly unknown[]> = ArrayType extends readonly (infer ElementType)[] ? ElementType : never;
+export type XOR<T, U> = (T | U) extends object ? (Without<T, U> & U) | (Without<U, T> & T) : T | U;
+export type IndexOf<T extends readonly any[], S extends number[] = []> = T["length"] extends S["length"] ? S[number] : IndexOf<T, [S["length"], ...S]>;
+export type ArrEl<ArrayType extends readonly unknown[]> = ArrayType extends readonly (infer ElementType)[] ? ElementType : never;
 export {};
 //# sourceMappingURL=alias.d.ts.map

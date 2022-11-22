@@ -42,7 +42,7 @@ declare global {
         indexOf(element: Element): number;
     }
 }
-export declare type HSElement = HTMLElement | SVGElement;
+export type HSElement = HTMLElement | SVGElement;
 declare global {
     interface DOMRect {
         [$ovlap]: boolean;
@@ -68,11 +68,11 @@ declare global {
  * @const @param tail_ignored_x
  */
 export declare function textnode(text_x: string, loff_x?: loff_t, tail_ignored_x?: boolean): Text;
-declare type _HTMLRet<NN extends string> = NN extends keyof HTMLElementTagNameMap ? HTMLElementTagNameMap[NN] : HTMLElement;
+type _HTMLRet<NN extends string> = NN extends keyof HTMLElementTagNameMap ? HTMLElementTagNameMap[NN] : HTMLElement;
 export declare function html<NN extends string>(nodeName: NN, innerHTML?: string, doc?: Document): _HTMLRet<NN>;
 export declare function div(innerHTML?: string, doc?: Document): HTMLDivElement;
 export declare function span(innerHTML?: string, doc?: Document): HTMLSpanElement;
-declare type _SVGRet<NN extends string> = NN extends keyof SVGElementTagNameMap ? SVGElementTagNameMap[NN] : SVGElement;
+type _SVGRet<NN extends string> = NN extends keyof SVGElementTagNameMap ? SVGElementTagNameMap[NN] : SVGElement;
 export declare function svg<NN extends string>(nodeName: NN, doc?: Document): _SVGRet<NN>;
 declare global {
     interface OnProgressP {

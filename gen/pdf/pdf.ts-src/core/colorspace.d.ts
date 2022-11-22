@@ -3,7 +3,7 @@ import { PDFFunctionFactory } from "./function.js";
 import { LocalColorSpaceCache } from "./image_utils.js";
 import { Dict, Name, Ref } from "./primitives.js";
 import { XRef } from "./xref.js";
-export declare type CS = Ref | Name | Dict | number | [
+export type CS = Ref | Name | Dict | number | [
     Ref | Name,
     Ref | Name | Dict,
     (undefined | Ref | Name | Dict | number)?,

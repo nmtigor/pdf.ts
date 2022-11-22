@@ -1,6 +1,6 @@
 import { IDownloadManager } from "./interfaces.js";
 export declare class DownloadManager implements IDownloadManager {
-    _openBlobUrls: WeakMap<object, any>;
+    #private;
     onerror?: (err: any) => void;
     /** @implement */
     downloadUrl(url: string, filename: string): void;

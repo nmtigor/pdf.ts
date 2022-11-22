@@ -19,10 +19,10 @@ export declare const enum ViewOnLoad {
     INITIAL = 1
 }
 export declare const D_base: string;
-declare type _DefaultOptions = typeof defaultOptions;
-export declare type OptionName = keyof _DefaultOptions;
-declare type _OptionType = number | string | boolean | Worker;
-export declare type UserOptions = {
+type _DefaultOptions = typeof defaultOptions;
+export type OptionName = keyof _DefaultOptions;
+type _OptionType = number | string | boolean | Worker;
+export type UserOptions = {
     [ON in OptionName]?: _OptionType | undefined;
 };
 export declare const compatibilityParams: UserOptions;

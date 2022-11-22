@@ -66,9 +66,6 @@ export function waitOnEventOrTimeout({ target, name, delay = 0, }) {
  */
 export class EventBus {
     #listeners = Object.create(null);
-    #isInAutomation;
-    constructor() {
-    }
     on(eventName, listener, options) {
         this._on(eventName, listener, {
             external: true,

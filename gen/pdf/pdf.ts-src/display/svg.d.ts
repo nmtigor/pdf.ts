@@ -51,7 +51,7 @@ declare class SVGExtraState {
     clone(): any;
     setCurrentPoint(x: number, y: number): void;
 }
-declare type OpTree = {
+type OpTree = {
     fn?: string;
     fnId: OPS;
     args?: unknown;

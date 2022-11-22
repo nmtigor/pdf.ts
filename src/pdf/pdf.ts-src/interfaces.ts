@@ -17,7 +17,6 @@
  * limitations under the License.
  */
 
-import { ReadableStreamDefaultReadResult } from "../../lib/alias.ts";
 import { AbortException } from "./shared/util.ts";
 /*80--------------------------------------------------------------------------*/
 
@@ -45,7 +44,7 @@ export interface IPDFStream {
   cancelAllRequests(reason: AbortException): void;
 }
 
-export type ReadValue = ReadableStreamDefaultReadResult<ArrayBufferLike>;
+export type ReadValue = ReadableStreamReadResult<ArrayBufferLike>;
 
 /**
  * Interface for a PDF binary data reader.

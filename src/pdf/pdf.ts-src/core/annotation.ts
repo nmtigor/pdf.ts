@@ -745,7 +745,7 @@ export class Annotation {
     if (this.data.quadPoints === null) {
       return false;
     }
-    if (<number> this.flags === 0) {
+    if (this.flags === 0) {
       return true;
     }
     return this._isViewable(this.flags);
@@ -884,7 +884,7 @@ export class Annotation {
     this.setAppearance(dict);
     this.setOptionalContent(dict);
 
-    const MK = <Dict | undefined> dict.get("MK"); // Table 187
+    const MK = dict.get("MK") as Dict | undefined; // Table 187
     this.setBorderAndBackgroundColors(MK);
     this.setRotation(MK);
 

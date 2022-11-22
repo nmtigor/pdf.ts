@@ -48,7 +48,7 @@ declare namespace NsPDFFunction {
     };
     export {};
 }
-export declare type ParsedFunction = NsPDFFunction.ParsedFunction;
+export type ParsedFunction = NsPDFFunction.ParsedFunction;
 export declare function isPDFFunction(v: unknown): boolean;
 export declare class PostScriptEvaluator {
     operators: (string | number | null)[];
@@ -60,7 +60,7 @@ declare namespace NsPostScriptCompiler {
         compile(code: (number | string | null)[], domain: number[], range: number[]): string | null;
     }
 }
-export declare type PostScriptCompiler = NsPostScriptCompiler.PostScriptCompiler;
+export type PostScriptCompiler = NsPostScriptCompiler.PostScriptCompiler;
 export declare var PostScriptCompiler: typeof NsPostScriptCompiler.PostScriptCompiler;
 export {};
 //# sourceMappingURL=function.d.ts.map

@@ -17,7 +17,7 @@ export declare const enum PagesCountLimit {
     FORCE_LAZY_PAGE_INIT = 7500,
     PAUSE_EAGER_PAGE_INIT = 250
 }
-export declare type PageColors = {
+export type PageColors = {
     background: string;
     foreground: string;
 };

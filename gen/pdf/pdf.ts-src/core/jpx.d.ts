@@ -81,7 +81,7 @@ interface Resolution {
     subbands: Subband[];
     precinctParameters: PrecinctParameters;
 }
-declare type SubbandType = "LL" | "LH" | "HL" | "HH";
+type SubbandType = "LL" | "LH" | "HL" | "HH";
 interface CodeblockParameters {
     codeblockWidth: number;
     codeblockHeight: number;

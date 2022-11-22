@@ -4,9 +4,7 @@ import { AnnotStorageRecord, type AnnotStorageValue } from "./annotation_layer.j
  */
 export declare class AnnotationStorage {
     #private;
-    _storage: AnnotStorageRecord;
     get size(): number;
-    _modified: boolean;
     onSetModified?: () => void;
     onResetModified?: () => void;
     onAnnotationEditor: ((type?: "freetext" | "ink" | undefined) => void) | undefined;

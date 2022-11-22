@@ -62,15 +62,6 @@ export type FloatArray =
   | Float32Array
   | Float64Array;
 export type TypedArray = IntegerArray | FloatArray;
-
-// From lib.dom.d.ts, which deno does not know about.
-export type ReadableStreamDefaultReadResult<T> = {
-  done: false;
-  value: T;
-} | {
-  done: true;
-  value?: undefined;
-};
 /*80--------------------------------------------------------------------------*/
 
 export type CSSStyleName = keyof {
@@ -82,7 +73,7 @@ export type CSSStyleName = keyof {
 };
 // const cname:CSSStyleName = "length";
 
-export type CSSStyle = Partial<Record<CSSStyleName, string>>;
+export type CSSStyle = Partial<Record<CSSStyleName, string | number>>;
 
 /**
  * @deprecated Use `CSSStyle` instead.

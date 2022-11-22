@@ -90,6 +90,6 @@ declare namespace NsOperatorList {
     }
 }
 export import OperatorList = NsOperatorList.OperatorList;
-export declare type OpListIR = NsOperatorList.OpListIR;
+export type OpListIR = NsOperatorList.OpListIR;
 export {};
 //# sourceMappingURL=operator_list.d.ts.map

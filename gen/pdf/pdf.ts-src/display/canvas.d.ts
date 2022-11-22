@@ -11,7 +11,7 @@ import { PageViewport } from "./display_utils.js";
 import { type AddToPath, FontFaceObject } from "./font_loader.js";
 import { OptionalContentConfig } from "./optional_content_config.js";
 import { PathType, type ShadingPattern, TilingPattern } from "./pattern_helper.js";
-declare type C2D = CanvasRenderingContext2D;
+type C2D = CanvasRenderingContext2D;
 declare global {
     interface CanvasRenderingContext2D {
         _originalSave: C2D["save"];

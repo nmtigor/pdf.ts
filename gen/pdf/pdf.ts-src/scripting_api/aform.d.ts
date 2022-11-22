@@ -3,8 +3,8 @@ import { Color } from "./color.js";
 import { Doc } from "./doc.js";
 import { Event } from "./event.js";
 import { CFormat, Util } from "./util.js";
-declare type _CFunction = "AVG" | "SUM" | "PRD" | "MIN" | "MAX";
-declare type _Action = (n: number, date: Date) => boolean;
+type _CFunction = "AVG" | "SUM" | "PRD" | "MIN" | "MAX";
+type _Action = (n: number, date: Date) => boolean;
 export declare class AForm {
     _document: Doc;
     _app: App;

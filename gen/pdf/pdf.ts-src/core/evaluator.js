@@ -1369,7 +1369,7 @@ export class PartialEvaluator {
             task.ensureNotTerminated();
             timeSlotManager.reset();
             const operation = {};
-            let stop, i, ii, cs, name, isValidName;
+            let stop, cs, name, isValidName;
             while (!(stop = timeSlotManager.check())) {
                 // The arguments parsed by read() are used beyond this loop, so we
                 // cannot reuse the same array on each iteration. Therefore we pass
@@ -1791,6 +1791,7 @@ export class PartialEvaluator {
                         // those are non-serializable, otherwise postMessage will throw
                         // "An object could not be cloned.".
                         if (args !== null) {
+                            let i, ii;
                             for (i = 0, ii = args.length; i < ii; i++) {
                                 if (args[i] instanceof Dict) {
                                     break;
@@ -2394,7 +2395,7 @@ export class PartialEvaluator {
             task.ensureNotTerminated();
             timeSlotManager.reset();
             const operation = {};
-            let stop, args = [];
+            let stop, args = [], name, isValidName;
             while (!(stop = timeSlotManager.check())) {
                 // The arguments parsed by read() are not used beyond this loop, so
                 // we can reuse the same array on every iteration, thus avoiding
@@ -2538,8 +2539,8 @@ export class PartialEvaluator {
                         if (!xobjs) {
                             xobjs = resources.get("XObject") || Dict.empty;
                         }
-                        let isValidName = args[0] instanceof Name;
-                        let name = args[0].name;
+                        isValidName = args[0] instanceof Name;
+                        name = args[0].name;
                         if (isValidName && emptyXObjectCache.getByName(name)) {
                             break;
                         }

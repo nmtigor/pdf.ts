@@ -139,13 +139,13 @@ declare abstract class CFFDict {
     removeByName(name: string): void;
     static createTables(layout: CFFLayout): CFFTables;
 }
-declare type CFFLayoutEntry = [
+type CFFLayoutEntry = [
     key: [number, number] | number,
     name: string,
     types: string[] | string,
     defaults: number[] | number | null
 ];
-declare type CFFLayout = CFFLayoutEntry[];
+type CFFLayout = CFFLayoutEntry[];
 declare namespace NsCFFTopDict {
     /**
      * [CFF] Table 9
@@ -156,7 +156,7 @@ declare namespace NsCFFTopDict {
         constructor(strings?: CFFStrings);
     }
 }
-export declare type CFFTopDict = NsCFFTopDict.CFFTopDict;
+export type CFFTopDict = NsCFFTopDict.CFFTopDict;
 export declare var CFFTopDict: typeof NsCFFTopDict.CFFTopDict;
 declare namespace NsCFFPrivateDict {
     class CFFPrivateDict extends CFFDict {
@@ -165,7 +165,7 @@ declare namespace NsCFFPrivateDict {
         constructor(strings?: CFFStrings);
     }
 }
-export declare type CFFPrivateDict = NsCFFPrivateDict.CFFPrivateDict;
+export type CFFPrivateDict = NsCFFPrivateDict.CFFPrivateDict;
 export declare var CFFPrivateDict: typeof NsCFFPrivateDict.CFFPrivateDict;
 export declare const enum CFFCharsetPredefinedTypes {
     ISO_ADOBE = 0,

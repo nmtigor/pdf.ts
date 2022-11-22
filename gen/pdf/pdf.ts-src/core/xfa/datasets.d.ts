@@ -11,7 +11,7 @@ export declare class Datasets extends XFAObject {
     constructor(attributes: XFAAttrs);
     [$onChild](child: XFAObject): boolean;
 }
-export declare type XFANsDatasets = typeof DatasetsNamespace;
+export type XFANsDatasets = typeof DatasetsNamespace;
 export declare const DatasetsNamespace: {
     [$buildXFAObject](name: string, attributes: XFAAttrs): Datasets | Data | undefined;
     datasets(attrs: XFAAttrs): Datasets;

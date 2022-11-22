@@ -99,7 +99,7 @@ declare class TypeFaces extends XFAObject {
     typeFace: XFAObjectArray;
     constructor(attributes: XFAAttrs);
 }
-export declare type XFANsLocaleSet = typeof LocaleSetNamespace;
+export type XFANsLocaleSet = typeof LocaleSetNamespace;
 export declare const LocaleSetNamespace: {
     [$buildXFAObject](name: string, attributes: XFAAttrs): CalendarSymbols | CurrencySymbol | CurrencySymbols | DatePattern | DatePatterns | DateTimeSymbols | Day | DayNames | Era | EraNames | Locale | LocaleSet | Meridiem | MeridiemNames | Month | MonthNames | NumberPattern | NumberPatterns | NumberSymbol | NumberSymbols | TimePattern | TimePatterns | TypeFace | TypeFaces | undefined;
     calendarSymbols(attrs: XFAAttrs): CalendarSymbols;

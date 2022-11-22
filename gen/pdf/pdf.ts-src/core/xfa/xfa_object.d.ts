@@ -88,16 +88,16 @@ declare const _parent: unique symbol;
 declare const _resolvePrototypesHelper: unique symbol;
 declare const _setAttributes: unique symbol;
 declare const _validator: unique symbol;
-declare type NonattrValue = null | undefined | XFAObject | XFAObjectArray;
-declare type XFAProp = NonattrValue | string;
-export declare type Dumped = {
+type NonattrValue = null | undefined | XFAObject | XFAObjectArray;
+type XFAProp = NonattrValue | string;
+export type Dumped = {
     $content?: string | number | Date | XFAObject | Map<string, string> | string[] | [number, number][] | [number, number];
     $name?: string;
     attributes?: XFAAttrs;
 } & {
     [key: string]: string | Dumped | Dumped[] | number | Date | XFAObject | Record<string, string>;
 };
-declare type PropValueEx = XFAProp | XFAObject[] | XFAAttribute;
+type PropValueEx = XFAProp | XFAObject[] | XFAAttribute;
 export declare abstract class XFAObject {
     [$namespaceId]: XFANsId;
     [$nodeName]: string;

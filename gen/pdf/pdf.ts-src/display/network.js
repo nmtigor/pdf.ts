@@ -297,7 +297,7 @@ class PDFNetworkStreamFullRequestReader {
         if (this._cachedChunks.length > 0)
             return;
         for (const requestCapability of this.#requests) {
-            requestCapability.resolve({ value: undefined, done: true });
+            requestCapability.resolve({ done: true });
         }
         this.#requests.length = 0;
     };
@@ -326,7 +326,7 @@ class PDFNetworkStreamFullRequestReader {
             return { value: chunk, done: false };
         }
         if (this.#done) {
-            return { value: undefined, done: true };
+            return { done: true };
         }
         const requestCapability = createPromiseCap();
         this.#requests.push(requestCapability);
@@ -337,7 +337,7 @@ class PDFNetworkStreamFullRequestReader {
         this.#done = true;
         this.#headersReceivedCapability.reject(reason);
         for (const requestCapability of this.#requests) {
-            requestCapability.resolve({ value: undefined, done: true });
+            requestCapability.resolve({ done: true });
         }
         this.#requests.length = 0;
         if (this.#manager.isPendingRequest(this.#fullRequestId)) {
@@ -383,7 +383,7 @@ class PDFNetworkStreamRangeRequestReader {
         }
         this.#done = true;
         for (const requestCapability of this.#requests) {
-            requestCapability.resolve({ value: undefined, done: true });
+            requestCapability.resolve({ done: true });
         }
         this.#requests.length = 0;
         this.#close();
@@ -412,7 +412,7 @@ class PDFNetworkStreamRangeRequestReader {
             return { value: chunk, done: false };
         }
         if (this.#done) {
-            return { value: undefined, done: true };
+            return { done: true };
         }
         const requestCapability = createPromiseCap();
         this.#requests.push(requestCapability);
@@ -422,7 +422,7 @@ class PDFNetworkStreamRangeRequestReader {
     cancel(reason) {
         this.#done = true;
         for (const requestCapability of this.#requests) {
-            requestCapability.resolve({ value: undefined, done: true });
+            requestCapability.resolve({ done: true });
         }
         this.#requests.length = 0;
         if (this.#manager.isPendingRequest(this.#requestId)) {

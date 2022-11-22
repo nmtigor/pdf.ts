@@ -87,15 +87,15 @@ export declare const Trans: Readonly<{
     wipeR: "WipeRight";
     wipeU: "WipeUp";
 }>;
-export declare const ZoomType: Readonly<{
-    none: "NoVary";
-    fitP: "FitPage";
-    fitW: "FitWidth";
-    fitH: "FitHeight";
-    fitV: "FitVisibleWidth";
-    pref: "Preferred";
-    refW: "ReflowWidth";
-}>;
+export declare const enum ZoomType {
+    none = "NoVary",
+    fitP = "FitPage",
+    fitW = "FitWidth",
+    fitH = "FitHeight",
+    fitV = "FitVisibleWidth",
+    pref = "Preferred",
+    refW = "ReflowWidth"
+}
 export declare const GlobalConstants: Readonly<{
     IDS_GREATER_THAN: "Invalid value: must be greater than or equal to % s.";
     IDS_GT_AND_LT: string;

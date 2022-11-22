@@ -9,7 +9,7 @@ export interface InkEditorP extends AnnotationEditorP {
     thickness?: number;
     opacity?: number;
 }
-declare type _curve_t = TupleOf<point_t, 4>;
+type _curve_t = TupleOf<point_t, 4>;
 export interface InkEditorSerialized extends AnnotationEditorSerialized {
     thickness: number;
     opacity: number;

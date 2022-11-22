@@ -223,7 +223,7 @@ export class PDFPrintService {
         img.src = URL.createObjectURL(blob!);
       });
     } else {
-      img.src = scratchCanvas.toDataURL();
+      img.src = (scratchCanvas as any).toDataURL();
     }
 
     const wrapper = html("div");

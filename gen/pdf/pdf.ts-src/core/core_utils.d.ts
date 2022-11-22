@@ -83,7 +83,7 @@ interface XFAPathCom {
     name: string;
     pos: number;
 }
-export declare type XFAPath = XFAPathCom[];
+export type XFAPath = XFAPathCom[];
 /**
  * AcroForm field names use an array like notation to refer to
  * repeated XFA elements e.g. foo.bar[nnn].
@@ -94,7 +94,7 @@ export declare type XFAPath = XFAPathCom[];
  */
 export declare function parseXFAPath(path: string): XFAPath;
 export declare function escapePDFName(str: string): string;
-export declare type AnnotActions = Record<ActionEventName, string[]>;
+export type AnnotActions = Record<ActionEventName, string[]>;
 export declare function collectActions(xref: XRef, dict: Dict, eventType: ActionEventTypeType): AnnotActions | undefined;
 export declare function encodeToXmlString(str: string): string;
 export declare function validateCSSFont(cssFontInfo: CssFontInfo): boolean;

@@ -14,8 +14,8 @@ interface _ExternalCallMap {
     setInterval: [[number, number], number];
     setTimeout: [[number, number], number];
 }
-declare type ExternalCallName = keyof _ExternalCallMap;
-export declare type ExternalCall = <N extends ExternalCallName>(fn: N, data: _ExternalCallMap[N][0]) => _ExternalCallMap[N][1];
+type ExternalCallName = keyof _ExternalCallMap;
+export type ExternalCall = <N extends ExternalCallName>(fn: N, data: _ExternalCallMap[N][0]) => _ExternalCallMap[N][1];
 declare global {
     var callExternalFunction: ExternalCall;
     var global: object;
@@ -32,7 +32,7 @@ declare global {
     var scaleWhen: typeof ScaleWhen;
     var style: typeof Style;
     var trans: typeof Trans;
-    var zoomtype: typeof ZoomType;
+    var zoomtype: ZoomType;
     var ADBE: {
         Reader_Value_Asked: boolean;
         Viewer_Value_Asked: boolean;

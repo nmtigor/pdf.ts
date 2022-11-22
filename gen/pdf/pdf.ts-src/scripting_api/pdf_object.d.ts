@@ -2,7 +2,7 @@ import { ScriptingDocProperties } from "../../pdf.ts-web/app.js";
 export interface SendData {
     id?: string | undefined;
 }
-export declare type Send<D extends SendData> = (data: D) => void;
+export type Send<D extends SendData> = (data: D) => void;
 export interface ScriptingData<D extends SendData> extends ScriptingDocProperties {
     send?: Send<D>;
     id?: string;

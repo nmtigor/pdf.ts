@@ -16,7 +16,7 @@ interface Listeners {
     begin?: number;
     end?: number;
 }
-declare type PendingRequest = {
+type PendingRequest = {
     xhr: XMLHttpRequest;
     expectedStatus?: HttpStatusCode;
 } & Listeners;

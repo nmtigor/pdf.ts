@@ -1,4 +1,3 @@
-import { ReadableStreamDefaultReadResult } from "../../lib/alias.js";
 import { AbortException } from "./shared/util.js";
 /**
  * Interface that represents PDF data transport. If possible, it allows
@@ -21,7 +20,7 @@ export interface IPDFStream {
      */
     cancelAllRequests(reason: AbortException): void;
 }
-export declare type ReadValue = ReadableStreamDefaultReadResult<ArrayBufferLike>;
+export type ReadValue = ReadableStreamReadResult<ArrayBufferLike>;
 /**
  * Interface for a PDF binary data reader.
  */

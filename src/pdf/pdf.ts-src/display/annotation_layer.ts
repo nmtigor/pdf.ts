@@ -23,7 +23,7 @@
 /** @typedef {import("../../web/interfaces").IPDFLinkService} IPDFLinkService */
 
 import { _PDFDEV } from "../../../global.ts";
-import { CSSStyleName } from "../../../lib/alias.ts";
+import { CSSStyle, CSSStyleName } from "../../../lib/alias.ts";
 import {
   div,
   type HSElement,
@@ -364,8 +364,8 @@ export class AnnotationElement {
       event: CustomEvent<ColorConvertersDetail>,
     ) => {
       const color = event.detail[jsName];
-      (event.target as HSElement).style[styleName] = ColorConverters
-        [`${color[0]}_HTML`](color.slice(1) as any);
+      ((event.target as HSElement).style as CSSStyle)[styleName] =
+        ColorConverters[`${color[0]}_HTML`](color.slice(1) as any);
     };
 
     return shadow(this, "_commonActions", {

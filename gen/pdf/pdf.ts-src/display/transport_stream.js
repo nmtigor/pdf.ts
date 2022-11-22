@@ -186,7 +186,7 @@ class PDFDataTransportStreamReader {
             return { value: chunk, done: false };
         }
         if (this.#done) {
-            return { value: undefined, done: true };
+            return { done: true };
         }
         const requestCapability = createPromiseCap();
         this.#requests.push(requestCapability);
@@ -196,7 +196,7 @@ class PDFDataTransportStreamReader {
     cancel(reason) {
         this.#done = true;
         for (const requestCapability of this.#requests) {
-            requestCapability.resolve({ value: undefined, done: true });
+            requestCapability.resolve({ done: true });
         }
         this.#requests.length = 0;
     }
@@ -237,7 +237,7 @@ class PDFDataTransportStreamRangeReader {
             const requestsCapability = this.#requests.shift();
             requestsCapability.resolve({ value: chunk, done: false });
             for (const requestCapability of this.#requests) {
-                requestCapability.resolve({ value: undefined, done: true });
+                requestCapability.resolve({ done: true });
             }
             this.#requests.length = 0;
         }
@@ -252,7 +252,7 @@ class PDFDataTransportStreamRangeReader {
             return { value: chunk, done: false };
         }
         if (this.#done) {
-            return { value: undefined, done: true };
+            return { done: true };
         }
         const requestCapability = createPromiseCap();
         this.#requests.push(requestCapability);
@@ -262,7 +262,7 @@ class PDFDataTransportStreamRangeReader {
     cancel(reason) {
         this.#done = true;
         for (const requestCapability of this.#requests) {
-            requestCapability.resolve({ value: undefined, done: true });
+            requestCapability.resolve({ done: true });
         }
         this.#requests.length = 0;
         this.#stream._removeRangeReader(this);

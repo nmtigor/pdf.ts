@@ -260,6 +260,6 @@ declare function getViewerConfiguration(): {
     openFileInput: HTMLInputElement | undefined;
     debuggerScriptPath: string;
 };
-export declare type ViewerConfiguration = ReturnType<typeof getViewerConfiguration>;
+export type ViewerConfiguration = ReturnType<typeof getViewerConfiguration>;
 export {};
 //# sourceMappingURL=viewer.d.ts.map

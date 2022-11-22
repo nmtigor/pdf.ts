@@ -1,5 +1,5 @@
 import { PDFObject, SendData } from "./pdf_object.js";
-declare type _Obj = PDFObject<SendData>;
+type _Obj = PDFObject<SendData>;
 export declare class ScriptingProxyHandler implements ProxyHandler<_Obj> {
     /**
      * Don't dispatch an event for those properties.

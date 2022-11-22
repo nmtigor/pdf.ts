@@ -20,7 +20,7 @@
  * IN THE SOFTWARE.
  */
 import { Locale } from "../../lib/Locale.js";
-export declare type Locale_1 = Locale | "fy-NL" | "pa-IN" | "zh-CN";
+export type Locale_1 = Locale | "fy-NL" | "pa-IN" | "zh-CN";
 declare namespace Ns_webL10n {
     export type L10nArgs = Record<string, string>;
     /**
@@ -52,6 +52,6 @@ declare namespace Ns_webL10n {
     export {};
 }
 export import webL10n = Ns_webL10n.webL10n;
-export declare type WebL10nArgs = Ns_webL10n.L10nArgs;
+export type WebL10nArgs = Ns_webL10n.L10nArgs;
 export {};
 //# sourceMappingURL=l10n.d.ts.map

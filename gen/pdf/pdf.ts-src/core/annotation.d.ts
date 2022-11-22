@@ -20,7 +20,7 @@ import { StringStream } from "./stream.js";
 import { WorkerTask } from "./worker.js";
 import { type XFAHTMLObj } from "./xfa/alias.js";
 import { XRef } from "./xref.js";
-declare type AnnotType = "Caret" | "Circle" | "FileAttachment" | "FreeText" | "Ink" | "Line" | "Link" | "Highlight" | "Polygon" | "PolyLine" | "Popup" | "Stamp" | "Square" | "Squiggly" | "StrikeOut" | "Text" | "Underline" | "Widget";
+type AnnotType = "Caret" | "Circle" | "FileAttachment" | "FreeText" | "Ink" | "Line" | "Link" | "Highlight" | "Polygon" | "PolyLine" | "Popup" | "Stamp" | "Square" | "Squiggly" | "StrikeOut" | "Text" | "Underline" | "Widget";
 interface _Dependency {
     ref: Ref;
     data: string;
@@ -74,7 +74,7 @@ export interface RichText {
     str: string | undefined;
     html: XFAHTMLObj;
 }
-export declare type AnnotationData = {
+export type AnnotationData = {
     annotationFlags: AnnotationFlag;
     color: Uint8ClampedArray | undefined;
     backgroundColor: Uint8ClampedArray | undefined;
@@ -146,8 +146,8 @@ export declare type AnnotationData = {
 /**
  * PDF 1.7 Table 56
  */
-export declare type DashArray = [number, number, number] | [number, number] | [number] | [];
-export declare type SaveData = {
+export type DashArray = [number, number, number] | [number, number] | [number] | [];
+export type SaveData = {
     ref: Ref;
     data: string;
     xfa?: {
@@ -155,7 +155,7 @@ export declare type SaveData = {
         value: string;
     };
 };
-export declare type SaveReturn = TupleOf<SaveData, 1 | 2>;
+export type SaveReturn = TupleOf<SaveData, 1 | 2>;
 export interface FieldObject {
     id: string;
     type: string;
@@ -182,8 +182,8 @@ export interface FieldObject {
     appObjects?: Record<string, FieldWrapped>;
     siblings?: string[];
 }
-declare type _LineEndingStr = "None" | "Square" | "Circle" | "Diamond" | "OpenArrow" | "ClosedArrow" | "Butt" | "ROpenArrow" | "RClosedArrow" | "Slash";
-declare type _LineEnding = _LineEndingStr | Name;
+type _LineEndingStr = "None" | "Square" | "Circle" | "Diamond" | "OpenArrow" | "ClosedArrow" | "Butt" | "ROpenArrow" | "RClosedArrow" | "Slash";
+type _LineEnding = _LineEndingStr | Name;
 export declare class Annotation {
     #private;
     _streams: BaseStream[];
@@ -380,7 +380,7 @@ export interface AnnotPoint {
     x: number;
     y: number;
 }
-declare type AColor = TupleOf<number, 0 | 1 | 3 | 4>;
+type AColor = TupleOf<number, 0 | 1 | 3 | 4>;
 interface _SetDefaultAppearanceP {
     xref: XRef;
     extra?: string;

@@ -2,7 +2,7 @@ export declare function writeInt16(dest: Uint8Array, offset: number, num: number
 export declare function writeInt32(dest: Uint8Array, offset: number, num: number): void;
 export declare function writeData(dest: Uint8Array, offset: number, data: Uint8Array | string | number[]): void;
 export declare const VALID_TABLES: readonly ["OS/2", "cmap", "head", "hhea", "hmtx", "maxp", "name", "post", "loca", "glyf", "fpgm", "prep", "cvt ", "CFF "];
-export declare type OTTag = (typeof VALID_TABLES)[number];
+export type OTTag = (typeof VALID_TABLES)[number];
 export interface OTTable {
     tag: OTTag;
     checksum: number;

@@ -43,7 +43,7 @@ export interface PassiveLoadingCbs {
     onError(err?: ErrorMoreInfo): void;
     onProgress(loaded: number, total: number): void;
 }
-declare type TelemetryType = "buttons" | "documentInfo" | "documentStats" | "editing" | "pageInfo" | "print" | "tagged" | "unsupportedFeature";
+type TelemetryType = "buttons" | "documentInfo" | "documentStats" | "editing" | "pageInfo" | "print" | "tagged" | "unsupportedFeature";
 export interface TelemetryData {
     type: TelemetryType;
     data?: {
@@ -105,7 +105,7 @@ export interface ScriptingDocProperties extends DocumentInfo {
     numPages: number;
     URL: string;
 }
-declare type _ViewerAppOpenP_file = string | Uint8Array | {
+type _ViewerAppOpenP_file = string | Uint8Array | {
     url: string;
     originalUrl: string;
 };

@@ -66,7 +66,7 @@ declare class Sup extends XhtmlObject {
 declare class Ul extends XhtmlObject {
     constructor(attributes: XFAAttrs);
 }
-export declare type XFANsXhtml = typeof XhtmlNamespace;
+export type XFANsXhtml = typeof XhtmlNamespace;
 export declare const XhtmlNamespace: {
     [$buildXFAObject](name: string, attributes: XFAAttrs): A | B | Body | Br | Html | I | Li | Ol | P | Span | Sub | Sup | Ul | undefined;
     a(attrs: XFAAttrs): A;

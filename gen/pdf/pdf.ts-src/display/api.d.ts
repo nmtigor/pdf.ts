@@ -35,7 +35,7 @@ export declare const DefaultStandardFontDataFactory: typeof DOMStandardFontDataF
  *   {IPDFStream}.
  * @ignore
  */
-declare type IPDFStreamFactory = (params: DocumentInitP) => Promise<IPDFStream>;
+type IPDFStreamFactory = (params: DocumentInitP) => Promise<IPDFStream>;
 /**
  * Sets the function that instantiates an {IPDFStream} as an alternative PDF
  * data transport.
@@ -46,7 +46,7 @@ declare type IPDFStreamFactory = (params: DocumentInitP) => Promise<IPDFStream>;
  * @ignore
  */
 export declare function setPDFNetworkStreamFactory(pdfNetworkStreamFactory: IPDFStreamFactory): void;
-export declare type BinaryData = TypedArray | ArrayBuffer | number[] | string;
+export type BinaryData = TypedArray | ArrayBuffer | number[] | string;
 export interface RefProxy {
     num: number;
     gen: number;
@@ -246,7 +246,7 @@ export interface DocumentInitP {
     progressiveDone?: boolean;
     contentDispositionFilename?: string | undefined;
 }
-declare type _GetDocumentP = string | URL | TypedArray | ArrayBuffer | PDFDataRangeTransport | DocumentInitP;
+type _GetDocumentP = string | URL | TypedArray | ArrayBuffer | PDFDataRangeTransport | DocumentInitP;
 /**
  * This is the main entry point for loading a PDF and interacting with it.
  *
@@ -304,10 +304,10 @@ export declare class PDFDocumentLoadingTask {
      */
     destroy(): Promise<void>;
 }
-declare type RangeListener = (begin: number, chunk: ArrayBufferLike) => void;
-declare type ProgressListener = (loaded: number, total?: number) => void;
-declare type ProgressiveReadListener = (chunk: ArrayBufferLike) => void;
-declare type ProgressiveDoneListener = () => void;
+type RangeListener = (begin: number, chunk: ArrayBufferLike) => void;
+type ProgressListener = (loaded: number, total?: number) => void;
+type ProgressiveReadListener = (chunk: ArrayBufferLike) => void;
+type ProgressiveDoneListener = () => void;
 /**
  * Abstract class to support range requests file loading.
  */
@@ -851,9 +851,9 @@ export interface StructTreeContent {
      */
     id?: string;
 }
-export declare type AnnotIntent = "display" | "print" | "richText";
-export declare type Intent = AnnotIntent | "any";
-export declare type PDFObjs = ImgData | ShadingPatternIR;
+export type AnnotIntent = "display" | "print" | "richText";
+export type Intent = AnnotIntent | "any";
+export type PDFObjs = ImgData | ShadingPatternIR;
 interface _IntentArgs {
     renderingIntent: RenderingIntentFlag;
     cacheKey: string;
@@ -1060,7 +1060,7 @@ export declare class PDFWorker {
         initializeFromPort(port: IWorker): void;
     }>;
 }
-export declare type PDFCommonObjs = string | FontFaceObject | FontExpotDataEx | {
+export type PDFCommonObjs = string | FontFaceObject | FontExpotDataEx | {
     error: string;
 } | CmdArgs[] | ImgData;
 interface PDFMetadata {

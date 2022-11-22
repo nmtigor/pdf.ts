@@ -87,7 +87,7 @@ class PDFWorkerStreamReader {
     async read() {
         const { value, done } = await this.#reader.read();
         if (done) {
-            return { value: undefined, done: true };
+            return { done: true };
         }
         // `value` is wrapped into Uint8Array, we need to
         // unwrap it to ArrayBuffer for further processing.
@@ -118,7 +118,7 @@ class PDFWorkerStreamRangeReader {
     async read() {
         const { value, done } = await this.#reader.read();
         if (done) {
-            return { value: undefined, done: true };
+            return { done: true };
         }
         else
             return { value: value.buffer, done: false };

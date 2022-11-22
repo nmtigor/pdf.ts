@@ -16,7 +16,7 @@ export declare class Xdp extends XFAObject {
     constructor(attributes: XFAAttrs);
     [$onChildCheck](child: XFAObject): boolean;
 }
-export declare type XFANsXdp = typeof XdpNamespace;
+export type XFANsXdp = typeof XdpNamespace;
 export declare const XdpNamespace: {
     [$buildXFAObject](name: string, attributes: XFAAttrs): Xdp | undefined;
     xdp(attrs: XFAAttrs): Xdp;

@@ -9,7 +9,7 @@ interface Anchor {
     close: boolean;
     eventDetails?: undefined;
 }
-declare type ButtonEventName = "documentproperties" | "download" | "firstpage" | "lastpage" | "openfile" | "presentationmode" | "print" | "rotatecw" | "rotateccw" | "switchscrollmode" | "switchcursortool" | "switchspreadmode";
+type ButtonEventName = "documentproperties" | "download" | "firstpage" | "lastpage" | "openfile" | "presentationmode" | "print" | "rotatecw" | "rotateccw" | "switchscrollmode" | "switchcursortool" | "switchspreadmode";
 interface Button {
     element: HTMLButtonElement;
     eventName: ButtonEventName;

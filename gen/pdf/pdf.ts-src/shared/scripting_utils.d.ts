@@ -5,10 +5,10 @@
  *              unexpected/unnecessary size increase of the *built* files.
  */
 import { type TupleOf } from "../../../lib/alias.js";
-export declare type RGB = TupleOf<number, 3>;
-export declare type CMYK = TupleOf<number, 4>;
-export declare type CSTag = "G" | "RGB" | "T" | "CMYK";
-export declare type ColorConvertersDetail = Record<string, [CSTag, ...number[]]>;
+export type RGB = TupleOf<number, 3>;
+export type CMYK = TupleOf<number, 4>;
+export type CSTag = "G" | "RGB" | "T" | "CMYK";
+export type ColorConvertersDetail = Record<string, [CSTag, ...number[]]>;
 /**
  * PDF specifications section 10.3
  */

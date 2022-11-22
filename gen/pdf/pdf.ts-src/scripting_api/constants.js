@@ -105,15 +105,16 @@ export const Trans = Object.freeze({
     wipeR: "WipeRight",
     wipeU: "WipeUp",
 });
-export const ZoomType = Object.freeze({
-    none: "NoVary",
-    fitP: "FitPage",
-    fitW: "FitWidth",
-    fitH: "FitHeight",
-    fitV: "FitVisibleWidth",
-    pref: "Preferred",
-    refW: "ReflowWidth",
-});
+export var ZoomType;
+(function (ZoomType) {
+    ZoomType["none"] = "NoVary";
+    ZoomType["fitP"] = "FitPage";
+    ZoomType["fitW"] = "FitWidth";
+    ZoomType["fitH"] = "FitHeight";
+    ZoomType["fitV"] = "FitVisibleWidth";
+    ZoomType["pref"] = "Preferred";
+    ZoomType["refW"] = "ReflowWidth";
+})(ZoomType || (ZoomType = {}));
 export const GlobalConstants = Object.freeze({
     IDS_GREATER_THAN: "Invalid value: must be greater than or equal to % s.",
     IDS_GT_AND_LT: "Invalid value: must be greater than or equal to % s " +

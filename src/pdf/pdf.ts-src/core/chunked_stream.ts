@@ -42,12 +42,12 @@ interface ChunkedStreamSubstreamCtor {
 export class ChunkedStream extends Stream {
   chunkSize;
 
-  #loadedChunks = new Set<number>();
+  _loadedChunks = new Set<number>();
   get numChunksLoaded() {
-    return this.#loadedChunks.size;
+    return this._loadedChunks.size;
   }
   hasChunk(chunk: number) {
-    return this.#loadedChunks.has(chunk);
+    return this._loadedChunks.has(chunk);
   }
 
   numChunks: number;
@@ -77,7 +77,7 @@ export class ChunkedStream extends Stream {
   getMissingChunks() {
     const chunks = [];
     for (let chunk = 0, n = this.numChunks; chunk < n; ++chunk) {
-      if (!this.#loadedChunks.has(chunk)) {
+      if (!this._loadedChunks.has(chunk)) {
         chunks.push(chunk);
       }
     }
@@ -104,7 +104,7 @@ export class ChunkedStream extends Stream {
     for (let curChunk = beginChunk; curChunk < endChunk; ++curChunk) {
       // Since a value can only occur *once* in a `Set`, there's no need to
       // manually check `Set.prototype.has()` before adding the value here.
-      this.#loadedChunks.add(curChunk);
+      this._loadedChunks.add(curChunk);
     }
   }
 
@@ -122,7 +122,7 @@ export class ChunkedStream extends Stream {
     for (let curChunk = beginChunk; curChunk < endChunk; ++curChunk) {
       // Since a value can only occur *once* in a `Set`, there's no need to
       // manually check `Set.prototype.has()` before adding the value here.
-      this.#loadedChunks.add(curChunk);
+      this._loadedChunks.add(curChunk);
     }
   }
 
@@ -139,7 +139,7 @@ export class ChunkedStream extends Stream {
       return;
     }
 
-    if (!this.#loadedChunks.has(chunk)) {
+    if (!this._loadedChunks.has(chunk)) {
       throw new MissingDataException(pos, pos + 1);
     }
     this.lastSuccessfulEnsureByteChunk = chunk;
@@ -162,7 +162,7 @@ export class ChunkedStream extends Stream {
       this.numChunks,
     );
     for (let chunk = beginChunk; chunk < endChunk; ++chunk) {
-      if (!this.#loadedChunks.has(chunk)) {
+      if (!this._loadedChunks.has(chunk)) {
         throw new MissingDataException(begin, end);
       }
     }
@@ -172,7 +172,7 @@ export class ChunkedStream extends Stream {
     const numChunks = this.numChunks;
     for (let i = 0; i < numChunks; ++i) {
       const chunk = (beginChunk + i) % numChunks; // Wrap around to beginning.
-      if (!this.#loadedChunks.has(chunk)) {
+      if (!this._loadedChunks.has(chunk)) {
         return chunk;
       }
     }
@@ -257,7 +257,7 @@ export class ChunkedStream extends Stream {
       const endChunk = Math.floor((this.end - 1) / chunkSize) + 1;
       const missingChunks = [];
       for (let chunk = beginChunk; chunk < endChunk; ++chunk) {
-        if (!this.#loadedChunks.has(chunk)) {
+        if (!this._loadedChunks.has(chunk)) {
           missingChunks.push(chunk);
         }
       }

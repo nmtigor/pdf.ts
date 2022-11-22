@@ -22,7 +22,7 @@ declare class FontSelector {
     popFont(): void;
     topFont(): FontInfo | undefined;
 }
-declare type XFAGlyph = [
+type XFAGlyph = [
     glyphWidth: number,
     lineHeight: number,
     firstLineHeight: number,

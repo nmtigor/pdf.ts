@@ -1,4 +1,4 @@
-export declare type BidiDir = "ltr" | "rtl" | "ttb";
+export type BidiDir = "ltr" | "rtl" | "ttb";
 export interface BidiText {
     str: string;
     dir: BidiDir;

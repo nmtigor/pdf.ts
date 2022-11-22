@@ -1,6 +1,6 @@
 import { XOR } from "../../../lib/alias.js";
 import { SimpleDOMNode } from "./xml_parser.js";
-export declare type DatasetReaderCtorP = XOR<{
+export type DatasetReaderCtorP = XOR<{
     datasets: string;
 }, {
     "xdp:xdp": string;

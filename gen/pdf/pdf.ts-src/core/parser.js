@@ -180,7 +180,9 @@ export class Parser {
                 state = ch === I ? 2 : 0;
             }
             else {
-                assert(state === 2, "findDefaultInlineStreamEnd - invalid state.");
+                /*#static*/  {
+                    assert(state === 2, "findDefaultInlineStreamEnd - invalid state.");
+                }
                 if (ch === SPACE || ch === LF || ch === CR) {
                     maybeEIPos = stream.pos;
                     // Let's check that the next `n` bytes are ASCII... just to be sure.

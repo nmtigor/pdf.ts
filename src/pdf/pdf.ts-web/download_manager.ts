@@ -52,7 +52,7 @@ function download(blobUrl: string, filename: string) {
 }
 
 export class DownloadManager implements IDownloadManager {
-  _openBlobUrls = new WeakMap();
+  #openBlobUrls = new WeakMap();
 
   onerror?: (err: any) => void;
 
@@ -90,10 +90,10 @@ export class DownloadManager implements IDownloadManager {
     const contentType = isPdfData ? "application/pdf" : "";
 
     if (isPdfData) {
-      let blobUrl = this._openBlobUrls.get(element);
+      let blobUrl = this.#openBlobUrls.get(element);
       if (!blobUrl) {
         blobUrl = URL.createObjectURL(new Blob([data], { type: contentType }));
-        this._openBlobUrls.set(element, blobUrl);
+        this.#openBlobUrls.set(element, blobUrl);
       }
       const viewerUrl = /*#static*/ GENERIC
         // The current URL is the viewer, let's use it and append the file.
@@ -115,7 +115,7 @@ export class DownloadManager implements IDownloadManager {
         // Release the `blobUrl`, since opening it failed, and fallback to
         // downloading the PDF file.
         URL.revokeObjectURL(blobUrl);
-        this._openBlobUrls.delete(element);
+        this.#openBlobUrls.delete(element);
       }
     }
 

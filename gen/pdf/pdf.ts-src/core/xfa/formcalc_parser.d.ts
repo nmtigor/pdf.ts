@@ -186,7 +186,7 @@ declare class BlockDecl extends Leaf<BlockDeclDump> {
         body: unknown[];
     };
 }
-declare type ExprListDump = unknown[];
+type ExprListDump = unknown[];
 declare class ExprList extends Leaf<ExprListDump> {
     expressions: Leaf<unknown>[];
     constructor(expressions: Leaf[]);

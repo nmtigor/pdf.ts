@@ -1,7 +1,7 @@
 import { Locale_1, WebL10nArgs } from "../../3rd/webL10n/l10n.js";
 import "../extensions/firefox/tools/l10n.js";
 import { IDownloadManager } from "./interfaces.js";
-declare type _L10nData = Record<string, Record<string, string>>;
+type _L10nData = Record<string, Record<string, string>>;
 interface _ELS {
     getLocale(): Lowercase<Locale_1>;
     getStrings(): _L10nData;
@@ -47,8 +47,7 @@ export declare class FirefoxCom {
     static request(action: string, data?: unknown, callback?: (response: unknown) => void): void;
 }
 export declare class DownloadManager implements IDownloadManager {
-    _openBlobUrls: WeakMap<object, any>;
-    constructor();
+    #private;
     /** @implement */
     downloadUrl(url: string, filename: string): void;
     /** @implement */

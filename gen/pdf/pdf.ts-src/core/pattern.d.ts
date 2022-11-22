@@ -29,7 +29,7 @@ declare abstract class BaseShading {
     static get SMALL_NUMBER(): number;
     abstract getIR(): ShadingPatternIR;
 }
-export declare type RadialAxialIR = [
+export type RadialAxialIR = [
     "RadialAxial",
     ...[
         type: ShadingType.AXIAL | ShadingType.RADIAL,
@@ -47,7 +47,7 @@ export interface MeshFigure {
     colors: Int32Array;
     verticesPerRow?: number;
 }
-export declare type MeshIR = [
+export type MeshIR = [
     "Mesh",
     ...[
         shadingType: ShadingType,
@@ -59,9 +59,9 @@ export declare type MeshIR = [
         background: Uint8ClampedArray | undefined
     ]
 ];
-export declare type DummyIR = ["Dummy"];
-export declare type ShadingPatternIR = RadialAxialIR | MeshIR | DummyIR;
-export declare type TilingPatternIR = [
+export type DummyIR = ["Dummy"];
+export type ShadingPatternIR = RadialAxialIR | MeshIR | DummyIR;
+export type TilingPatternIR = [
     "TilingPattern",
     ...[
         color: Uint8ClampedArray | undefined,
@@ -74,7 +74,7 @@ export declare type TilingPatternIR = [
         tilingType: TilingType
     ]
 ];
-export declare type PatternIR = ShadingPatternIR | TilingPatternIR;
+export type PatternIR = ShadingPatternIR | TilingPatternIR;
 /**
  * Radial and axial shading have very similar implementations
  * If needed, the implementations can be broken into two classes.

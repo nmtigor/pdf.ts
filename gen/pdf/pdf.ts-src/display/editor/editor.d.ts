@@ -27,7 +27,7 @@ export interface AnnotationEditorSerialized {
     rect: rect_t;
     rotation: number;
 }
-export declare type PropertyToUpdate = [AnnotationEditorParamsType, string | number];
+export type PropertyToUpdate = [AnnotationEditorParamsType, string | number];
 /**
  * Base class for editors.
  */

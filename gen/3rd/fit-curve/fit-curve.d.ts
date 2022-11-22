@@ -9,11 +9,11 @@
  *  https://github.com/soswow/fit-curves
  */
 /** A point in space represented as an array of numbers, 2D by default, but can be any dimension. */
-declare type Point<Arr extends number[]> = Arr;
+type Point<Arr extends number[]> = Arr;
 /** A vector represented as an array of numbers, 2D by default, but can be any dimension. */
-declare type Vector<Arr extends number[]> = Arr;
+type Vector<Arr extends number[]> = Arr;
 /** A Bezier curve represented by an array of points with elements [first-point, control-point-1, control-point-2, second-point] */
-declare type Curve<Arr extends number[]> = [
+type Curve<Arr extends number[]> = [
     Point<Arr>,
     Point<Arr>,
     Point<Arr>,

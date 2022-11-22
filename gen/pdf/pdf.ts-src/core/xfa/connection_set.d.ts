@@ -53,7 +53,7 @@ declare class XsdConnection extends XFAObject {
     uri: unknown;
     constructor(attributes: XFAAttrs);
 }
-export declare type XFANsConnectionSet = typeof ConnectionSetNamespace;
+export type XFANsConnectionSet = typeof ConnectionSetNamespace;
 export declare const ConnectionSetNamespace: {
     [$buildXFAObject](name: string, attributes: XFAAttrs): ConnectionSet | EffectiveInputPolicy | EffectiveOutputPolicy | Operation | RootElement | SoapAction | SoapAddress | Uri | WsdlAddress | WsdlConnection | XmlConnection | XsdConnection | undefined;
     connectionSet(attrs: XFAAttrs): ConnectionSet;

@@ -10,9 +10,9 @@ export declare class FullScreen extends PDFObject<_SendFullScreenData> {
     _clickAdvances: boolean;
     get clickAdvances(): boolean;
     set clickAdvances(_: boolean);
-    _cursor: number;
-    get cursor(): number;
-    set cursor(_: number);
+    _cursor: 1;
+    get cursor(): 1;
+    set cursor(_: 1);
     _defaultTransition: string;
     get defaultTransition(): string;
     set defaultTransition(_: string);

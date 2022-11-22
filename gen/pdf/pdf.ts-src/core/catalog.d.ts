@@ -11,8 +11,8 @@ import { BasePdfManager } from "./pdf_manager.js";
 import { Dict, Name, type Obj, Ref, RefSet, RefSetCache } from "./primitives.js";
 import { StructTreeRoot } from "./struct_tree.js";
 import { XRef } from "./xref.js";
-declare type DestPage = Ref | number | null;
-export declare type ExplicitDest = [
+type DestPage = Ref | number | null;
+export type ExplicitDest = [
     DestPage,
     {
         name: "XYZ";
@@ -27,7 +27,7 @@ export declare type ExplicitDest = [
 }, number | null] | [DestPage, {
     name: "FitR";
 }, ...rect_t];
-export declare type Destination = ExplicitDest | Name | string;
+export type Destination = ExplicitDest | Name | string;
 export interface SetOCGState {
     state: string[];
     preserveRB: boolean;
@@ -65,7 +65,7 @@ export interface OpenAction {
     dest?: Destination;
     action?: string;
 }
-export declare type Order = (string | {
+export type Order = (string | {
     name: string | null;
     order: Order;
 })[];
@@ -83,8 +83,8 @@ export interface OptionalContentConfigData {
     order: Order | null;
     groups: OptionalContentGroupData[];
 }
-declare type ViewerPrefValue = string | number | number[] | boolean;
-export declare type ViewerPref = Record<string, ViewerPrefValue>;
+type ViewerPrefValue = string | number | number[] | boolean;
+export type ViewerPref = Record<string, ViewerPrefValue>;
 /**
  * Table 321
  */
@@ -93,8 +93,8 @@ export interface MarkInfo {
     UserProperties: boolean;
     Suspects: boolean;
 }
-declare type AllPageDicts = Map<number, [Dict, Ref | undefined] | [Error, undefined]>;
-export declare type Attachments = Record<string, Attachment>;
+type AllPageDicts = Map<number, [Dict, Ref | undefined] | [Error, undefined]>;
+export type Attachments = Record<string, Attachment>;
 /**
  * Table 28
  */

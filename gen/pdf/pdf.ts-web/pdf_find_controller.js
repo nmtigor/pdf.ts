@@ -111,9 +111,7 @@ const DIACRITICS_EXCEPTION = new Set([
     // https://www.compart.com/fr/unicode/combining/132
     0x0f74,
 ]);
-const DIACRITICS_EXCEPTION_STR = [...DIACRITICS_EXCEPTION.values()]
-    .map((x) => String.fromCharCode(x))
-    .join("");
+let DIACRITICS_EXCEPTION_STR; // Lazily initialized, see below.
 const DIACRITICS_REG_EXP = /\p{M}+/gu;
 const SPECIAL_CHARS_REG_EXP = /([.*+?^${}()|[\]\\])|(\p{P})|(\s+)|(\p{M})|(\p{L})/gu;
 const NOT_DIACRITIC_FROM_END_REG_EXP = /([^\p{M}])\p{M}*$/u;
@@ -614,6 +612,7 @@ export class PDFFindController {
         if (matchDiacritics) {
             // aX must not match aXY.
             if (hasDiacritics) {
+                DIACRITICS_EXCEPTION_STR ||= String.fromCharCode(...DIACRITICS_EXCEPTION);
                 isUnicode = true;
                 query = `${query}(?=[${DIACRITICS_EXCEPTION_STR}]|[^\\p{M}]|$)`;
             }

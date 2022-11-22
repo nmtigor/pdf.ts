@@ -59,8 +59,8 @@ declare namespace NsType1Parser {
     export {};
 }
 export import Type1Parser = NsType1Parser.Type1Parser;
-export declare type PrivateData = NsType1Parser.PrivateData;
-export declare type CharStringObject = NsType1Parser.CharStringObject;
-export declare type FontProgram = NsType1Parser.FontProgram;
+export type PrivateData = NsType1Parser.PrivateData;
+export type CharStringObject = NsType1Parser.CharStringObject;
+export type FontProgram = NsType1Parser.FontProgram;
 export {};
 //# sourceMappingURL=type1_parser.d.ts.map

@@ -24,7 +24,7 @@ export interface CMapData {
     cMapData: Uint8Array;
     compressionType: CMapCompressionType;
 }
-export declare type FetchBuiltInCMap = (name: string) => Promise<CMapData>;
+export type FetchBuiltInCMap = (name: string) => Promise<CMapData>;
 export declare abstract class BaseCMapReaderFactory {
     baseUrl: string | undefined;
     isCompressed: boolean;

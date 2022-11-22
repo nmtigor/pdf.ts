@@ -15,8 +15,8 @@ interface _DateData {
     seconds: number;
     am?: boolean;
 }
-declare type _Action = (value: string, data: _DateData) => void;
-export declare type CFormat = 0 | 1 | 2 | string;
+type _Action = (value: string, data: _DateData) => void;
+export type CFormat = 0 | 1 | 2 | string;
 export declare class Util extends PDFObject<_SendUtilData> {
     _scandCache: Map<string, [string, _Action[]]>;
     _months: string[];

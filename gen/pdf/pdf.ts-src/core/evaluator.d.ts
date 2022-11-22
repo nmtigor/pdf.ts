@@ -164,9 +164,9 @@ interface _ParseColorSpaceP {
     resources: Dict;
     localColorSpaceCache: LocalColorSpaceCache;
 }
-declare type FontArgs = [fontName: Name | string, fontSize: number];
-export declare type VMetric = [number, number, number];
-export declare type VisibilityExpressionResult = (string | VisibilityExpressionResult)[];
+type FontArgs = [fontName: Name | string, fontSize: number];
+export type VMetric = [number, number, number];
+export type VisibilityExpressionResult = (string | VisibilityExpressionResult)[];
 export interface MarkedContentProps {
     type: string;
     id?: string | undefined;
@@ -334,8 +334,8 @@ interface OpInfo {
     numArgs: number;
     variableArgs: boolean;
 }
-export declare type OpMap = Record<string, OpInfo | null>;
-export declare type OpArgs = any[] | Uint8ClampedArray | null;
+export type OpMap = Record<string, OpInfo | null>;
+export type OpArgs = any[] | Uint8ClampedArray | null;
 export interface Operation {
     fn: OPS;
     args: OpArgs;

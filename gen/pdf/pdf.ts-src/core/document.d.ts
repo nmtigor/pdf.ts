@@ -143,7 +143,7 @@ interface _XFAStreams {
     stylesheet: string | BaseStream;
     "/xdp:xdp": string | BaseStream;
 }
-export declare type XFAData = _XFAStreams & {
+export type XFAData = _XFAStreams & {
     name: string;
     value: string;
     attributes?: string;

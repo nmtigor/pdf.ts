@@ -1324,7 +1324,7 @@ declare class Variables extends XFAObject {
     constructor(attributes: XFAAttrs);
     [$isTransparent](): boolean;
 }
-export declare type XFANsTemplate = typeof TemplateNamespace;
+export type XFANsTemplate = typeof TemplateNamespace;
 export declare const TemplateNamespace: {
     [$buildXFAObject](name: string, attributes: XFAAttrs): Template | BreakAfter | BreakBefore | Para | Draw | Field | Caption | Value | Margin | Font | Occur | ExData | ExclGroup | Subform | Assist | Border | Area | ContentArea | AppearanceFilter | Arc | Barcode | Bind | BindItems | Bookend | BooleanElement | Break | Button | Calculate | Certificate | Certificates | CheckButton | ChoiceList | Color | Comb | Connect | Corner | DateElement | DateTime | DateTimeEdit | Decimal | DefaultUi | Desc | DigestMethod | DigestMethods | Edge | Encoding | Encodings | Encrypt | EncryptData | Encryption | EncryptionMethod | EncryptionMethods | Event | ExObject | Execute | Extras | Fill | Filter | Float | Format | Handler | Hyphenation | Image | ImageEdit | Integer | Issuers | Items | Keep | KeyUsage | Line | Linear | LockDocument | Manifest | Mdp | Medium | Message | NumericEdit | Oid | Oids | Overflow | PageArea | PageSet | PasswordEdit | Pattern | Picture | Proto | Radial | Reason | Reasons | Rectangle | RefElement | Script | SetProperty | SignData | Signature | Signing | Solid | Speak | Stipple | SubformSet | SubjectDN | SubjectDNs | Submit | Text | TextEdit | Time | TimeStamp | ToolTip | Traversal | Traverse | Ui | Validate | Variables | undefined;
     appearanceFilter(attrs: XFAAttrs): AppearanceFilter;

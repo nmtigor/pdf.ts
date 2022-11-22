@@ -95,8 +95,8 @@ export declare class SVGViewbox<CI extends CooInterface = CooInterface> extends 
      */
     constructor(viewBox_x?: string);
 }
-export declare type MooEq<T extends {} | null> = (a: T, b: T) => boolean;
-export declare type MooHandler<T extends {} | null, D = any> = (newval: T, oldval?: T, data?: D) => void;
+export type MooEq<T extends {} | null> = (a: T, b: T) => boolean;
+export type MooHandler<T extends {} | null, D = any> = (newval: T, oldval?: T, data?: D) => void;
 export declare class Moo<T extends {} | null, D = any> {
     #private;
     get val(): T;

@@ -21,8 +21,8 @@ interface PDFFindControllerOptions {
      */
     eventBus: EventBus;
 }
-export declare type FindType = "again" | "casesensitivitychange" | "diacriticmatchingchange" | "entirewordchange" | "findagain" | "findhighlightallchange" | "highlightallchange";
-export declare type FindCtrlState = {
+export type FindType = "again" | "casesensitivitychange" | "diacriticmatchingchange" | "entirewordchange" | "findagain" | "findhighlightallchange" | "highlightallchange";
+export type FindCtrlState = {
     type: FindType | "";
     query: string;
     phraseSearch: boolean;

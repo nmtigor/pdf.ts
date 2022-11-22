@@ -1,6 +1,6 @@
 import { BaseStream } from "./base_stream.js";
 import { DecodeStream } from "./decode_stream.js";
-declare type FlateTable = [Int32Array, number];
+type FlateTable = [Int32Array, number];
 /** @final */
 export declare class FlateStream extends DecodeStream {
     codeSize: number;

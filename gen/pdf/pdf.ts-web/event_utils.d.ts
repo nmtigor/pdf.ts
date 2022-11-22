@@ -355,8 +355,8 @@ export interface EventMap {
     zoomout: {};
     zoomreset: {};
 }
-export declare type EventName = keyof EventMap;
-export declare type ListenerMap = {
+export type EventName = keyof EventMap;
+export type ListenerMap = {
     [EN in EventName]: (evt: EventMap[EN]) => void;
 };
 /**
@@ -365,7 +365,6 @@ export declare type ListenerMap = {
  */
 export declare class EventBus {
     #private;
-    constructor();
     on<EN extends EventName>(eventName: EN, listener: ListenerMap[EN], options?: {
         once: boolean;
     }): void;

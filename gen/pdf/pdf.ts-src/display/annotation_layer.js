@@ -233,7 +233,8 @@ export class AnnotationElement {
     get _commonActions() {
         const setColor = (jsName, styleName, event) => {
             const color = event.detail[jsName];
-            event.target.style[styleName] = ColorConverters[`${color[0]}_HTML`](color.slice(1));
+            event.target.style[styleName] =
+                ColorConverters[`${color[0]}_HTML`](color.slice(1));
         };
         return shadow(this, "_commonActions", {
             display: (event) => {

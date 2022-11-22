@@ -2,7 +2,7 @@ import { FontFaceObject, OpListIR, OPS } from "../pdf.ts-src/pdf.js";
 interface _PdfjsLib {
     OPS: typeof OPS;
 }
-declare type _Tool = typeof _FontInspector | typeof _StepperManager | typeof _Stats;
+type _Tool = typeof _FontInspector | typeof _StepperManager | typeof _Stats;
 declare namespace _FontInspector {
     const id = "FontInspector";
     const name = "Font Inspector";

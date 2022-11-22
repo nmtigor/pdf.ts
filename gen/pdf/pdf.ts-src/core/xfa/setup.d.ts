@@ -8,7 +8,7 @@ import { type XFANsStylesheet } from "./stylesheet.js";
 import { type XFANsTemplate } from "./template.js";
 import { type XFANsXdp } from "./xdp.js";
 import { type XFANsXhtml } from "./xhtml.js";
-export declare type XFAKnownNs = XFANsConfig | XFANsConnectionSet | XFANsDatasets | XFANsLocaleSet | XFANsSignature | XFANsStylesheet | XFANsTemplate | XFANsXdp | XFANsXhtml;
+export type XFAKnownNs = XFANsConfig | XFANsConnectionSet | XFANsDatasets | XFANsLocaleSet | XFANsSignature | XFANsStylesheet | XFANsTemplate | XFANsXdp | XFANsXhtml;
 export declare const NamespaceSetUp: {
     [_ in XFANsName]?: XFAKnownNs;
 };

@@ -157,6 +157,7 @@ export var AnnotationReplyType;
 // deno-fmt-ignore
 export var AnnotationFlag;
 (function (AnnotationFlag) {
+    AnnotationFlag[AnnotationFlag["UNDEFINED"] = 0] = "UNDEFINED";
     AnnotationFlag[AnnotationFlag["INVISIBLE"] = 1] = "INVISIBLE";
     AnnotationFlag[AnnotationFlag["HIDDEN"] = 2] = "HIDDEN";
     AnnotationFlag[AnnotationFlag["PRINT"] = 4] = "PRINT";
