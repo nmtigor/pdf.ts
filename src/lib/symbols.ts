@@ -91,7 +91,7 @@ export const $rec_utx_a = Symbol("$rec_utx_a");
 export const $selectionvu = Symbol("$selectionvu");
 
 /**
- * For test only
+ * For testing only
  * HTMLImageElement[ $src ] { String }
  * To replace `src` to prevent console error messages
  */
@@ -110,12 +110,12 @@ export const $theme = Symbol("$theme");
 
 /**
  * Reference to test `===`
- * For test only
+ * For testing only
  */
 // export const $ref_test = Symbol("$ref_test");
 /**
  * Test reference?
- * For test only
+ * For testing only
  */
 // export const test_ref_sym = Symbol("test_ref_sym");
 

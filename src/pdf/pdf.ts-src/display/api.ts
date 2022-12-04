@@ -103,6 +103,7 @@ const DEFAULT_RANGE_CHUNK_SIZE = 65536; // 2^16 = 65536
 const RENDERING_CANCELLED_TIMEOUT = 100; // ms
 
 export const DefaultCanvasFactory = DOMCanvasFactory;
+export type DefaultCanvasFactory = DOMCanvasFactory;
 export const DefaultCMapReaderFactory = DOMCMapReaderFactory;
 export const DefaultStandardFontDataFactory = DOMStandardFontDataFactory;
 
@@ -345,7 +346,7 @@ export interface DocumentInitP {
    */
   ownerDocument?: Document | undefined;
 
-  /** For testing only. */
+  /** For testing only */
   styleElement?: HTMLStyleElement;
 
   /**
@@ -1575,7 +1576,7 @@ export class PDFPageProxy {
   _ownerDocument: Document | undefined;
   _transport: WorkerTransport;
 
-  _stats: StatTimer | null;
+  _stats: StatTimer | undefined;
 
   /**
    * @return Returns page stats, if enabled; returns `null` otherwise.
@@ -1615,7 +1616,7 @@ export class PDFPageProxy {
     this._pageInfo = pageInfo;
     this._ownerDocument = ownerDocument;
     this._transport = transport;
-    this._stats = pdfBug ? new StatTimer() : null;
+    this._stats = pdfBug ? new StatTimer() : undefined;
     this._pdfBug = pdfBug;
     this.commonObjs = transport.commonObjs;
   }
@@ -2577,10 +2578,10 @@ export class PDFWorker {
       this.#webWorker = undefined;
     }
     PDFWorker.#workerPorts.delete(this.#port);
-    this.#port = <any> undefined;
+    this.#port = undefined as any;
     if (this.#messageHandler) {
       this.#messageHandler.destroy();
-      this.#messageHandler = <any> undefined;
+      this.#messageHandler = undefined as any;
     }
   }
 
@@ -3721,7 +3722,7 @@ export class InternalRenderTask {
       this.commonObjs,
       this.objs,
       this.canvasFactory,
-      optionalContentConfig,
+      { optionalContentConfig },
       this.annotationCanvasMap,
       this.pageColors,
     );

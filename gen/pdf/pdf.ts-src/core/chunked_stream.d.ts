@@ -7,7 +7,7 @@ interface ChunkedStreamSubstream extends ChunkedStream {
 }
 export declare class ChunkedStream extends Stream {
     chunkSize: number;
-    _loadedChunks: Set<number>;
+    private _loadedChunks;
     get numChunksLoaded(): number;
     hasChunk(chunk: number): boolean;
     numChunks: number;

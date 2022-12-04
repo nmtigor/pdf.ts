@@ -24,11 +24,11 @@ import { AnnotationEditor } from "./editor/editor.js";
  * Key/value storage for annotation data in forms.
  */
 export class AnnotationStorage {
+    #modified = false;
     #storage = new Map();
     get size() {
         return this.#storage.size;
     }
-    #modified = false;
     // Callbacks to signal when the modification state is set or reset.
     // This is used by the viewer to only bind on `beforeunload` if forms
     // are actually edited to prevent doing so unconditionally since that

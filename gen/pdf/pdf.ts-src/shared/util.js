@@ -27,6 +27,7 @@ export const FONT_IDENTITY_MATRIX = [0.001, 0, 0, 0.001, 0, 0];
 // the font size. Acrobat seems to use this value.
 export const LINE_FACTOR = 1.35;
 export const LINE_DESCENT_FACTOR = 0.35;
+export const BASELINE_FACTOR = LINE_DESCENT_FACTOR / LINE_FACTOR;
 /**
  * Refer to the `WorkerTransport.getRenderingIntent`-method in the API, to see
  * how these flags are being used:
@@ -44,6 +45,7 @@ export var RenderingIntentFlag;
     RenderingIntentFlag[RenderingIntentFlag["ANY"] = 1] = "ANY";
     RenderingIntentFlag[RenderingIntentFlag["DISPLAY"] = 2] = "DISPLAY";
     RenderingIntentFlag[RenderingIntentFlag["PRINT"] = 4] = "PRINT";
+    RenderingIntentFlag[RenderingIntentFlag["SAVE"] = 8] = "SAVE";
     RenderingIntentFlag[RenderingIntentFlag["ANNOTATIONS_FORMS"] = 16] = "ANNOTATIONS_FORMS";
     RenderingIntentFlag[RenderingIntentFlag["ANNOTATIONS_STORAGE"] = 32] = "ANNOTATIONS_STORAGE";
     RenderingIntentFlag[RenderingIntentFlag["ANNOTATIONS_DISABLE"] = 64] = "ANNOTATIONS_DISABLE";
@@ -482,13 +484,13 @@ export function createValidAbsoluteUrl(url, baseUrl, options) {
     }
     return null;
 }
-export function shadow(obj, prop, value) {
+export function shadow(obj, prop, value, nonSerializable = false) {
     /*#static*/  {
         assert(prop in obj, `shadow: Property "${prop && prop.toString()}" not found in object.`);
     }
     Object.defineProperty(obj, prop, {
         value,
-        enumerable: true,
+        enumerable: !nonSerializable,
         configurable: true,
         writable: false,
     });
@@ -1070,31 +1072,6 @@ export function stringToPDFString(str) {
         strBuf.push(code ? String.fromCharCode(code) : str.charAt(i));
     }
     return strBuf.join("");
-}
-export function escapeString(str) {
-    // replace "(", ")", "\n", "\r" and "\"
-    // by "\(", "\)", "\\n", "\\r" and "\\"
-    // in order to write it in a PDF file.
-    return str.replace(/([()\\\n\r])/g, (match) => {
-        if (match === "\n") {
-            return "\\n";
-        }
-        else if (match === "\r") {
-            return "\\r";
-        }
-        return `\\${match}`;
-    });
-}
-export function isAscii(str) {
-    return /^[\x00-\x7F]*$/.test(str);
-}
-export function stringToUTF16BEString(str) {
-    const buf = ["\xFE\xFF"];
-    for (let i = 0, ii = str.length; i < ii; i++) {
-        const char = str.charCodeAt(i);
-        buf.push(String.fromCharCode((char >> 8) & 0xff), String.fromCharCode(char & 0xff));
-    }
-    return buf.join("");
 }
 export function stringToUTF8String(str) {
     return decodeURIComponent(escape(str));

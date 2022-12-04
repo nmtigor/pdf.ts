@@ -26,6 +26,7 @@
 import { html } from "../../lib/dom.js";
 import { AnnotationLayer, } from "../pdf.ts-src/pdf.js";
 import { NullL10n } from "./l10n_utils.js";
+import { PresentationModeState } from "./ui_utils.js";
 export class AnnotationLayerBuilder {
     pageDiv;
     pdfPage;
@@ -43,6 +44,8 @@ export class AnnotationLayerBuilder {
     _accessibilityManager;
     div;
     _cancelled = false;
+    _eventBus;
+    #onPresentationModeChanged;
     constructor({ pageDiv, pdfPage, linkService, downloadManager, annotationStorage, imageResourcesPath = "", renderForms = true, l10n = NullL10n, enableScripting = false, hasJSActionsPromise, fieldObjectsPromise, mouseState, annotationCanvasMap, accessibilityManager, }) {
         this.pageDiv = pageDiv;
         this.pdfPage = pdfPage;
@@ -58,6 +61,7 @@ export class AnnotationLayerBuilder {
         this._mouseState = mouseState;
         this._annotationCanvasMap = annotationCanvasMap;
         this._accessibilityManager = accessibilityManager;
+        this._eventBus = linkService.eventBus;
     }
     /**
      * @param viewport
@@ -105,15 +109,51 @@ export class AnnotationLayerBuilder {
             parameters.div = this.div;
             AnnotationLayer.render(parameters);
             this.l10n.translate(this.div);
+            // Ensure that interactive form elements in the annotationLayer are
+            // disabled while PresentationMode is active (see issue 12232).
+            if (this.linkService.isInPresentationMode) {
+                this.#updatePresentationModeState(PresentationModeState.FULLSCREEN);
+            }
+            if (!this.#onPresentationModeChanged) {
+                this.#onPresentationModeChanged = (evt) => {
+                    this.#updatePresentationModeState(evt.state);
+                };
+                this._eventBus?._on("presentationmodechanged", this.#onPresentationModeChanged);
+            }
         }
     }
     cancel() {
         this._cancelled = true;
+        if (this.#onPresentationModeChanged) {
+            this._eventBus?._off("presentationmodechanged", this.#onPresentationModeChanged);
+            this.#onPresentationModeChanged = undefined;
+        }
     }
     hide() {
         if (!this.div)
             return;
         this.div.hidden = true;
+    }
+    #updatePresentationModeState(state) {
+        if (!this.div) {
+            return;
+        }
+        let disableFormElements = false;
+        switch (state) {
+            case PresentationModeState.FULLSCREEN:
+                disableFormElements = true;
+                break;
+            case PresentationModeState.NORMAL:
+                break;
+            default:
+                return;
+        }
+        for (const section of this.div.childNodes) {
+            if (section.hasAttribute("data-internal-link")) {
+                continue;
+            }
+            section.inert = disableFormElements;
+        }
     }
 }
 /*80--------------------------------------------------------------------------*/

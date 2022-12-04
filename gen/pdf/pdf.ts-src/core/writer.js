@@ -15,9 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { bytesToString, escapeString, warn } from "../shared/util.js";
+import { bytesToString, warn } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
-import { escapePDFName, numberToString, parseXFAPath } from "./core_utils.js";
+import { escapePDFName, escapeString, numberToString, parseXFAPath, } from "./core_utils.js";
 import { calculateMD5 } from "./crypto.js";
 import { Dict, Name, Ref } from "./primitives.js";
 import { SimpleDOMNode, SimpleXMLParser } from "./xml_parser.js";
@@ -47,7 +47,7 @@ function writeStream(stream, buffer, transform) {
     if (transform !== undefined) {
         string = transform.encryptString(string);
     }
-    buffer.push(string, "\nendstream\n");
+    buffer.push(string, "\nendstream");
 }
 function writeArray(array, buffer, transform) {
     buffer.push("[");
@@ -154,34 +154,40 @@ function writeXFADataForAcroform(str, newRefs) {
     xml.documentElement.dump(buffer);
     return buffer.join("");
 }
-function updateXFA({ xfaData, xfaDatasetsRef, hasXfaDatasetsEntry, acroFormRef, acroForm, newRefs, xref, xrefInfo, }) {
-    if (xref === undefined) {
+function updateAcroform({ xref, acroForm, acroFormRef, hasXfa, hasXfaDatasetsEntry, xfaDatasetsRef, needAppearances, newRefs, }) {
+    if (hasXfa && !hasXfaDatasetsEntry && !xfaDatasetsRef) {
+        warn("XFA - Cannot save it");
+    }
+    if (!needAppearances && (!hasXfa || !xfaDatasetsRef)) {
         return;
     }
-    if (!hasXfaDatasetsEntry) {
-        if (!acroFormRef) {
-            warn("XFA - Cannot save it");
-            return;
-        }
+    // Clone the acroForm.
+    const dict = new Dict(xref);
+    for (const key of acroForm.getKeys()) {
+        dict.set(key, acroForm.getRaw(key));
+    }
+    if (hasXfa && !hasXfaDatasetsEntry) {
         // We've a XFA array which doesn't contain a datasets entry.
         // So we'll update the AcroForm dictionary to have an XFA containing
         // the datasets.
-        const oldXfa = acroForm.get("XFA");
-        const newXfa = oldXfa.slice();
+        const newXfa = acroForm.get("XFA").slice();
         newXfa.splice(2, 0, "datasets");
         newXfa.splice(3, 0, xfaDatasetsRef);
-        acroForm.set("XFA", newXfa);
-        const encrypt = xref.encrypt;
-        let transform;
-        if (encrypt) {
-            transform = encrypt.createCipherTransform(acroFormRef.num, acroFormRef.gen);
-        }
-        const buffer = [`${acroFormRef.num} ${acroFormRef.gen} obj\n`];
-        writeDict(acroForm, buffer, transform);
-        buffer.push("\n");
-        acroForm.set("XFA", oldXfa);
-        newRefs.push({ ref: acroFormRef, data: buffer.join("") });
+        dict.set("XFA", newXfa);
     }
+    if (needAppearances) {
+        dict.set("NeedAppearances", true);
+    }
+    const encrypt = xref.encrypt;
+    let transform;
+    if (encrypt) {
+        transform = encrypt.createCipherTransform(acroFormRef.num, acroFormRef.gen);
+    }
+    const buffer = [];
+    writeObject(acroFormRef, dict, buffer, transform);
+    newRefs.push({ ref: acroFormRef, data: buffer.join("") });
+}
+function updateXFA({ xfaData, xfaDatasetsRef, newRefs, xref }) {
     if (xfaData === undefined) {
         const datasets = xref.fetchIfRef(xfaDatasetsRef);
         xfaData = writeXFADataForAcroform(datasets.getString(), newRefs);
@@ -197,17 +203,23 @@ function updateXFA({ xfaData, xfaDatasetsRef, hasXfaDatasetsEntry, acroFormRef, 
         "\nendstream\nendobj\n";
     newRefs.push({ ref: xfaDatasetsRef, data });
 }
-export function incrementalUpdate({ originalData, xrefInfo, newRefs, xref, hasXfa = false, xfaDatasetsRef, hasXfaDatasetsEntry = false, acroFormRef, acroForm, xfaData, }) {
+export function incrementalUpdate({ originalData, xrefInfo, newRefs, xref, hasXfa = false, hasXfaDatasetsEntry = false, xfaDatasetsRef, needAppearances, acroFormRef, acroForm, xfaData, }) {
+    updateAcroform({
+        xref,
+        acroForm,
+        acroFormRef,
+        hasXfa,
+        hasXfaDatasetsEntry,
+        xfaDatasetsRef,
+        needAppearances,
+        newRefs,
+    });
     if (hasXfa) {
         updateXFA({
             xfaData,
             xfaDatasetsRef,
-            hasXfaDatasetsEntry,
-            acroFormRef,
-            acroForm,
             newRefs,
             xref,
-            xrefInfo,
         });
     }
     const newXref = new Dict();

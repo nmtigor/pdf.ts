@@ -15,9 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { GENERIC } from "../../../global.js";
 import { html, span } from "../../../lib/dom.js";
 import { createPromiseCap } from "../../../lib/promisecap.js";
-import { AbortException, Util, } from "../shared/util.js";
+import { AbortException, Util } from "../shared/util.js";
+import { deprecated } from "./display_utils.js";
 var Ns_renderTextLayer;
 (function (Ns_renderTextLayer) {
     const MAX_TEXT_DIVS_TO_RENDER = 100000;
@@ -176,269 +178,6 @@ var Ns_renderTextLayer;
         task._renderingDone = true;
         capability.resolve();
     }
-    function findPositiveMin(ts, offset, count) {
-        let result = 0;
-        for (let i = 0; i < count; i++) {
-            const t = ts[offset++];
-            if (t > 0) {
-                result = result ? Math.min(t, result) : t;
-            }
-        }
-        return result;
-    }
-    function expand(task) {
-        const bounds = task._bounds;
-        const viewport = task._viewport;
-        const expanded = expandBounds(viewport.width, viewport.height, bounds);
-        for (let i = 0; i < expanded.length; i++) {
-            const div = bounds[i].div;
-            const divProperties = task._textDivProperties.get(div);
-            if (divProperties.angle === 0) {
-                divProperties.paddingLeft = bounds[i].left - expanded[i].left;
-                divProperties.paddingTop = bounds[i].top - expanded[i].top;
-                divProperties.paddingRight = expanded[i].right - bounds[i].right;
-                divProperties.paddingBottom = expanded[i].bottom - bounds[i].bottom;
-                task._textDivProperties.set(div, divProperties);
-                continue;
-            }
-            // Box is rotated -- trying to find padding so rotated div will not
-            // exceed its expanded bounds.
-            const e = expanded[i], b = bounds[i];
-            const m = b.m, c = m[0], s = m[1];
-            // Finding intersections with expanded box.
-            const points = [
-                [0, 0],
-                [0, b.size[1]],
-                [b.size[0], 0],
-                b.size,
-            ];
-            const ts = new Float64Array(64);
-            for (let j = 0, jj = points.length; j < jj; j++) {
-                const t = Util.applyTransform(points[j], m);
-                ts[j + 0] = c && (e.left - t[0]) / c;
-                ts[j + 4] = s && (e.top - t[1]) / s;
-                ts[j + 8] = c && (e.right - t[0]) / c;
-                ts[j + 12] = s && (e.bottom - t[1]) / s;
-                ts[j + 16] = s && (e.left - t[0]) / -s;
-                ts[j + 20] = c && (e.top - t[1]) / c;
-                ts[j + 24] = s && (e.right - t[0]) / -s;
-                ts[j + 28] = c && (e.bottom - t[1]) / c;
-                ts[j + 32] = c && (e.left - t[0]) / -c;
-                ts[j + 36] = s && (e.top - t[1]) / -s;
-                ts[j + 40] = c && (e.right - t[0]) / -c;
-                ts[j + 44] = s && (e.bottom - t[1]) / -s;
-                ts[j + 48] = s && (e.left - t[0]) / s;
-                ts[j + 52] = c && (e.top - t[1]) / -c;
-                ts[j + 56] = s && (e.right - t[0]) / s;
-                ts[j + 60] = c && (e.bottom - t[1]) / -c;
-            }
-            // Not based on math, but to simplify calculations, using cos and sin
-            // absolute values to not exceed the box (it can but insignificantly).
-            const boxScale = 1 + Math.min(Math.abs(c), Math.abs(s));
-            divProperties.paddingLeft = findPositiveMin(ts, 32, 16) / boxScale;
-            divProperties.paddingTop = findPositiveMin(ts, 48, 16) / boxScale;
-            divProperties.paddingRight = findPositiveMin(ts, 0, 16) / boxScale;
-            divProperties.paddingBottom = findPositiveMin(ts, 16, 16) / boxScale;
-            task._textDivProperties.set(div, divProperties);
-        }
-    }
-    function expandBounds(width, height, boxes) {
-        const bounds = boxes.map((box, i) => {
-            return {
-                x1: box.left,
-                y1: box.top,
-                x2: box.right,
-                y2: box.bottom,
-                index: i,
-                x1New: undefined,
-                x2New: undefined,
-            };
-        });
-        expandBoundsLTR(width, bounds);
-        const expanded = new Array(boxes.length);
-        for (const b of bounds) {
-            const i = b.index;
-            expanded[i] = {
-                left: b.x1New,
-                top: 0,
-                right: b.x2New,
-                bottom: 0,
-            };
-        }
-        // Rotating on 90 degrees and extending extended boxes. Reusing the bounds
-        // array and objects.
-        boxes.map((box, i) => {
-            const e = expanded[i], b = bounds[i];
-            b.x1 = box.top;
-            b.y1 = width - e.right;
-            b.x2 = box.bottom;
-            b.y2 = width - e.left;
-            b.index = i;
-            b.x1New = undefined;
-            b.x2New = undefined;
-        });
-        expandBoundsLTR(height, bounds);
-        for (const b of bounds) {
-            const i = b.index;
-            expanded[i].top = b.x1New;
-            expanded[i].bottom = b.x2New;
-        }
-        return expanded;
-    }
-    function expandBoundsLTR(width, bounds) {
-        // Sorting by x1 coordinate and walk by the bounds in the same order.
-        bounds.sort((a, b) => a.x1 - b.x1 || a.index - b.index);
-        // First we see on the horizon is a fake boundary.
-        const fakeBoundary = {
-            x1: -Infinity,
-            y1: -Infinity,
-            x2: 0,
-            y2: Infinity,
-            index: -1,
-            x1New: 0,
-            x2New: 0,
-        };
-        const horizon = [
-            {
-                start: -Infinity,
-                end: Infinity,
-                boundary: fakeBoundary,
-            },
-        ];
-        for (const boundary of bounds) {
-            // Searching for the affected part of horizon.
-            // TODO red-black tree or simple binary search
-            let i = 0;
-            while (i < horizon.length && horizon[i].end <= boundary.y1) {
-                i++;
-            }
-            let j = horizon.length - 1;
-            while (j >= 0 && horizon[j].start >= boundary.y2) {
-                j--;
-            }
-            let horizonPart, affectedBoundary;
-            let q, k, maxXNew = -Infinity;
-            for (q = i; q <= j; q++) {
-                horizonPart = horizon[q];
-                affectedBoundary = horizonPart.boundary;
-                let xNew;
-                if (affectedBoundary.x2 > boundary.x1) {
-                    // In the middle of the previous element, new x shall be at the
-                    // boundary start. Extending if further if the affected boundary
-                    // placed on top of the current one.
-                    xNew = affectedBoundary.index > boundary.index
-                        ? affectedBoundary.x1New
-                        : boundary.x1;
-                }
-                else if (affectedBoundary.x2New === undefined) {
-                    // We have some space in between, new x in middle will be a fair
-                    // choice.
-                    xNew = (affectedBoundary.x2 + boundary.x1) / 2;
-                }
-                else {
-                    // Affected boundary has x2new set, using it as new x.
-                    xNew = affectedBoundary.x2New;
-                }
-                if (xNew > maxXNew) {
-                    maxXNew = xNew;
-                }
-            }
-            // Set new x1 for current boundary.
-            boundary.x1New = maxXNew;
-            // Adjusts new x2 for the affected boundaries.
-            for (q = i; q <= j; q++) {
-                horizonPart = horizon[q];
-                affectedBoundary = horizonPart.boundary;
-                if (affectedBoundary.x2New === undefined) {
-                    // Was not set yet, choosing new x if possible.
-                    if (affectedBoundary.x2 > boundary.x1) {
-                        // Current and affected boundaries intersect. If affected boundary
-                        // is placed on top of the current, shrinking the affected.
-                        if (affectedBoundary.index > boundary.index) {
-                            affectedBoundary.x2New = affectedBoundary.x2;
-                        }
-                    }
-                    else {
-                        affectedBoundary.x2New = maxXNew;
-                    }
-                }
-                else if (affectedBoundary.x2New > maxXNew) {
-                    // Affected boundary is touching new x, pushing it back.
-                    affectedBoundary.x2New = Math.max(maxXNew, affectedBoundary.x2);
-                }
-            }
-            // Fixing the horizon.
-            const changedHorizon = [];
-            let lastBoundary = null;
-            for (q = i; q <= j; q++) {
-                horizonPart = horizon[q];
-                affectedBoundary = horizonPart.boundary;
-                // Checking which boundary will be visible.
-                const useBoundary = affectedBoundary.x2 > boundary.x2
-                    ? affectedBoundary
-                    : boundary;
-                if (lastBoundary === useBoundary) {
-                    // Merging with previous.
-                    changedHorizon.at(-1).end = horizonPart.end;
-                }
-                else {
-                    changedHorizon.push({
-                        start: horizonPart.start,
-                        end: horizonPart.end,
-                        boundary: useBoundary,
-                    });
-                    lastBoundary = useBoundary;
-                }
-            }
-            if (horizon[i].start < boundary.y1) {
-                changedHorizon[0].start = boundary.y1;
-                changedHorizon.unshift({
-                    start: horizon[i].start,
-                    end: boundary.y1,
-                    boundary: horizon[i].boundary,
-                });
-            }
-            if (boundary.y2 < horizon[j].end) {
-                changedHorizon.at(-1).end = boundary.y2;
-                changedHorizon.push({
-                    start: boundary.y2,
-                    end: horizon[j].end,
-                    boundary: horizon[j].boundary,
-                });
-            }
-            // Set x2 new of boundary that is no longer visible (see overlapping case
-            // above).
-            // TODO more efficient, e.g. via reference counting.
-            for (q = i; q <= j; q++) {
-                horizonPart = horizon[q];
-                affectedBoundary = horizonPart.boundary;
-                if (affectedBoundary.x2New !== undefined) {
-                    continue;
-                }
-                let used = false;
-                for (k = i - 1; !used && k >= 0 && horizon[k].start >= affectedBoundary.y1; k--) {
-                    used = horizon[k].boundary === affectedBoundary;
-                }
-                for (k = j + 1; !used && k < horizon.length && horizon[k].end <= affectedBoundary.y2; k++) {
-                    used = horizon[k].boundary === affectedBoundary;
-                }
-                for (k = 0; !used && k < changedHorizon.length; k++) {
-                    used = changedHorizon[k].boundary === affectedBoundary;
-                }
-                if (!used) {
-                    affectedBoundary.x2New = maxXNew;
-                }
-            }
-            Array.prototype.splice.apply(horizon, [i, j - i + 1, ...changedHorizon]);
-        }
-        // Set new x2 for all unset boundaries.
-        for (const horizonPart of horizon) {
-            const affectedBoundary = horizonPart.boundary;
-            if (affectedBoundary.x2New === undefined) {
-                affectedBoundary.x2New = Math.max(width, affectedBoundary.x2);
-            }
-        }
-    }
     /**
      * Text layer rendering task.
      */
@@ -461,7 +200,6 @@ var Ns_renderTextLayer;
         _canceled = false;
         _capability = createPromiseCap();
         #renderTimer;
-        _bounds = [];
         constructor({ textContent, textContentStream, container, viewport, textDivs, textContentItemsStr, }) {
             this._textContent = textContent;
             this._textContentStream = textContentStream;
@@ -614,6 +352,9 @@ var Ns_renderTextLayer;
                     render(this);
                 }
                 else {
+                    /*#static*/ 
+                    deprecated("The TextLayerRender `timeout` parameter will be removed in the " +
+                        "future, since streaming of textContent has made it obsolete.");
                     // Schedule
                     this.#renderTimer = setTimeout(() => {
                         render(this);

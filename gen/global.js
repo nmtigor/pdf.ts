@@ -1,6 +1,7 @@
 /*80****************************************************************************
  * global
 ** -------------------------------------------------------------------------- */
+import { Hover, Pointer } from "./lib/alias.js";
 import { assert } from "./lib/util/trace.js";
 /*80--------------------------------------------------------------------------*/
 // preprocessor names
@@ -29,14 +30,24 @@ export const global = new class {
     // holdindicatr?: [HoldIndicatr, HoldIndicatr, HoldIndicatr];
     /** @deprecated */
     has_ResizeObserver = false;
+    /** @deprecated */
     can_touchstart = false;
+    pointer = Pointer.none;
+    anyPointer = Pointer.none;
+    get can_touch() {
+        return global.anyPointer === Pointer.coarse;
+    }
+    hover = Hover.none;
+    anyHover = Hover.none;
+    get can_hover() {
+        return global.anyHover === Hover.hover;
+    }
     #tabsize = 2;
     #dent = 0;
     get dent() {
         let ret;
-        if (this.#dent === 0) {
+        if (this.#dent === 0)
             ret = "";
-        }
         else
             ret = new Array(this.#dent).fill(" ", 0).join("");
         return ret;

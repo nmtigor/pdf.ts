@@ -26,8 +26,7 @@ export class BaseTreeViewer {
     constructor(options) {
         this.container = options.container;
         this.eventBus = options.eventBus;
-        // Ref. Access private method in an overriden method called from the base class constructor
-        // (https://stackoverflow.com/questions/61237153/access-private-method-in-an-overriden-method-called-from-the-base-class-construc)
+        // See src/test/jslang_inherit.ts
         // this.reset();
     }
     reset() {

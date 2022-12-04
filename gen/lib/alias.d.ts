@@ -51,6 +51,15 @@ export declare const enum Sortart {
     asc = 0,
     desc = 1
 }
+export declare const enum Hover {
+    none = 0,
+    hover = 1
+}
+export declare const enum Pointer {
+    none = 0,
+    coarse = 1,
+    fine = 2
+}
 export type Constructor<T = object> = new (...args: any[]) => T;
 export type AbstractConstructor<T = object> = abstract new (...args: any[]) => T;
 export type Func<This = any> = (this: This, ...args: any[]) => any;

@@ -1,11 +1,11 @@
 /*80****************************************************************************
  * jslang
-** ------ */
+** -------------------------------------------------------------------------- */
 import { INOUT } from "../global.js";
 import { assert } from "./util/trace.js";
 // Ref. https://lodash.com/docs/4.17.15#isObjectLike
 export function isObjectLike(value) {
-    return value != null && typeof value == "object";
+    return value != null && typeof value === "object";
 }
 let valve = 0;
 /**

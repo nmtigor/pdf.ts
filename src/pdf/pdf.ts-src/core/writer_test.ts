@@ -51,7 +51,7 @@ describe("Writer", () => {
         originalData,
         xrefInfo,
         newRefs,
-      });
+      } as any);
       data = bytesToString(data);
 
       const expected = "\nabc\n" +
@@ -91,7 +91,7 @@ describe("Writer", () => {
         originalData,
         xrefInfo,
         newRefs,
-      });
+      } as any);
       data = bytesToString(data);
 
       const expected = "\nabc\n" +
@@ -143,7 +143,7 @@ describe("Writer", () => {
         "/E (\\(hello\\\\world\\)) /F [1.23 4.5 6] " +
         "/G << /H 123 /I << /Length 8>> stream\n" +
         "a stream\n" +
-        "endstream\n>> /J true /K false " +
+        "endstream>> /J true /K false " +
         "/NullArr [null 10] /NullVal null>>";
 
       assertEquals(buffer.join(""), expected);
@@ -201,13 +201,14 @@ describe("Writer", () => {
         acroFormRef,
         acroForm,
         xfaData,
-        xref: <XRef> {},
-      });
+        xref: {} as XRef,
+      } as any);
       data = bytesToString(data);
 
       const expected = "\n" +
         "789 0 obj\n" +
         "<< /XFA [(preamble) 123 0 R (datasets) 101112 0 R (postamble) 456 0 R]>>\n" +
+        "endobj\n" +
         "101112 0 obj\n" +
         "<< /Type /EmbeddedFile /Length 20>>\n" +
         "stream\n" +
@@ -216,11 +217,11 @@ describe("Writer", () => {
         "endobj\n" +
         "131415 0 obj\n" +
         "<< /Size 131416 /Prev 314 /Type /XRef /Index [0 1 789 1 101112 1 131415 1] /W [1 1 2] /Length 16>> stream\n" +
-        "\u0000\u0001ÿÿ\u0001\u0001\u0000\u0000\u0001T\u0000\u0000\u0001²\u0000\u0000\n" +
+        "\u0000\u0001ÿÿ\u0001\u0001\u0000\u0000\u0001[\u0000\u0000\u0001¹\u0000\u0000\n" +
         "endstream\n" +
         "endobj\n" +
         "startxref\n" +
-        "178\n" +
+        "185\n" +
         "%%EOF\n";
 
       assertEquals(data, expected);

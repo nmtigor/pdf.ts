@@ -4,6 +4,7 @@ export declare const IDENTITY_MATRIX: matrix_t;
 export declare const FONT_IDENTITY_MATRIX: matrix_t;
 export declare const LINE_FACTOR = 1.35;
 export declare const LINE_DESCENT_FACTOR = 0.35;
+export declare const BASELINE_FACTOR: number;
 /**
  * Refer to the `WorkerTransport.getRenderingIntent`-method in the API, to see
  * how these flags are being used:
@@ -20,6 +21,7 @@ export declare const enum RenderingIntentFlag {
     ANY = 1,
     DISPLAY = 2,
     PRINT = 4,
+    SAVE = 8,
     ANNOTATIONS_FORMS = 16,
     ANNOTATIONS_STORAGE = 32,
     ANNOTATIONS_DISABLE = 64,
@@ -178,7 +180,7 @@ export declare const PageActionEventType: {
 };
 export type ActionEventTypeType = typeof AnnotationActionEventType | typeof DocumentActionEventType | typeof PageActionEventType;
 export type ActionEventType = keyof typeof AnnotationActionEventType | keyof typeof DocumentActionEventType | keyof typeof PageActionEventType;
-export type ActionEventName = (typeof AnnotationActionEventType)[keyof typeof AnnotationActionEventType] | (typeof DocumentActionEventType)[keyof typeof DocumentActionEventType] | (typeof PageActionEventType)[keyof typeof PageActionEventType] | "Action";
+export type ActionEventName = (typeof AnnotationActionEventType)[keyof typeof AnnotationActionEventType] | (typeof DocumentActionEventType)[keyof typeof DocumentActionEventType] | (typeof PageActionEventType)[keyof typeof PageActionEventType] | "OpenAction" | "Action";
 export declare enum StreamType {
     UNKNOWN = "UNKNOWN",
     FLATE = "FLATE",
@@ -358,7 +360,7 @@ interface _CreateValidAbsoluteUrlP {
  * @return Either a valid {URL}, or `null` otherwise.
  */
 export declare function createValidAbsoluteUrl(url: URL | string, baseUrl?: URL | string | undefined, options?: _CreateValidAbsoluteUrlP): URL | null;
-export declare function shadow<T>(obj: any, prop: string | symbol, value: T): T;
+export declare function shadow<T>(obj: any, prop: string | symbol, value: T, nonSerializable?: boolean): T;
 export declare abstract class BaseException extends Error {
     constructor(message: string | undefined, name: string);
 }
@@ -430,12 +432,9 @@ export declare class Util {
     static bezierBoundingBox(x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, x3: number, y3: number): rect_t;
 }
 export declare function stringToPDFString(str: string): string;
-export declare function escapeString(str: string): string;
-export declare function isAscii(str: string): boolean;
-export declare function stringToUTF16BEString(str: string): string;
 export declare function stringToUTF8String(str: string): string;
 export declare function utf8StringToString(str: string): string;
-export declare function isArrayBuffer(v: any): boolean;
+export declare function isArrayBuffer(v: any): v is ArrayBufferLike;
 export declare function getModificationDate(date?: Date): string;
 export {};
 //# sourceMappingURL=util.d.ts.map

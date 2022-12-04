@@ -1,5 +1,5 @@
-import { PageColors } from "../../pdf.ts-web/pdf_viewer.js";
 import { Stepper } from "../../pdf.ts-web/debugger.js";
+import { PageColors } from "../../pdf.ts-web/pdf_viewer.js";
 import { type ImgData, type MarkedContentProps, type SmaskOptions } from "../core/evaluator.js";
 import { Glyph } from "../core/fonts.js";
 import { type OpListIR } from "../core/operator_list.js";
@@ -185,7 +185,12 @@ export declare class CanvasGraphics {
     foregroundColor: string | undefined;
     transparentCanvas: HTMLCanvasElement | undefined;
     pendingTextPaths?: TextPath[];
-    constructor(canvasCtx: C2D, commonObjs: PDFObjects<PDFCommonObjs>, objs: PDFObjects<PDFObjs | undefined>, canvasFactory: BaseCanvasFactory, optionalContentConfig?: OptionalContentConfig, annotationCanvasMap?: Map<string, HTMLCanvasElement>, pageColors?: PageColors);
+    constructor(canvasCtx: C2D, commonObjs: PDFObjects<PDFCommonObjs>, objs: PDFObjects<PDFObjs | undefined>, canvasFactory: BaseCanvasFactory, { optionalContentConfig, markedContentStack }: {
+        optionalContentConfig?: OptionalContentConfig | undefined;
+        markedContentStack?: {
+            visible: boolean;
+        }[];
+    }, annotationCanvasMap?: Map<string, HTMLCanvasElement>, pageColors?: PageColors);
     getObject<T extends PDFCommonObjs | PDFObjs>(data: any, fallback?: T | undefined): T | undefined;
     beginDrawing({ transform, viewport, transparency, background, }: _BeginDrawingP): void;
     executeOperatorList(operatorList: OpListIR, executionStartIdx?: number, continueCallback?: () => void, stepper?: Stepper): number;

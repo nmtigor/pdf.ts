@@ -275,7 +275,7 @@ export class Field extends PDFObject {
             if (indices.length > 0) {
                 indices = indices.splice(1, indices.length - 1);
                 this._currentValueIndices = indices[0];
-                // this._value = this._items[this._currentValueIndices];
+                // this._value = this._items[this._currentValueIndices]; kkkk bug?
                 this._value = this._items[this._currentValueIndices].displayValue;
             }
         }

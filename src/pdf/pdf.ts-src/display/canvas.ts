@@ -20,8 +20,8 @@
 import { GENERIC, MOZCENTRAL } from "../../../global.ts";
 import { type Func } from "../../../lib/alias.ts";
 import { assert } from "../../../lib/util/trace.ts";
-import { PageColors } from "../../pdf.ts-web/pdf_viewer.ts";
 import { Stepper } from "../../pdf.ts-web/debugger.ts";
+import { PageColors } from "../../pdf.ts-web/pdf_viewer.ts";
 import {
   type ImgData,
   type MarkedContentProps,
@@ -1250,7 +1250,7 @@ export class CanvasGraphics {
   }
 
   contentVisible = true;
-  markedContentStack: { visible: boolean }[] = [];
+  markedContentStack;
   optionalContentConfig;
   cachedCanvases;
   cachedPatterns = new Map<ShadingType, ShadingPattern>();
@@ -1278,7 +1278,10 @@ export class CanvasGraphics {
     commonObjs: PDFObjects<PDFCommonObjs>,
     objs: PDFObjects<PDFObjs | undefined>,
     canvasFactory: BaseCanvasFactory,
-    optionalContentConfig?: OptionalContentConfig,
+    { optionalContentConfig, markedContentStack = undefined }: {
+      optionalContentConfig?: OptionalContentConfig | undefined;
+      markedContentStack?: { visible: boolean }[];
+    },
     annotationCanvasMap?: Map<string, HTMLCanvasElement>,
     pageColors?: PageColors,
   ) {
@@ -1290,6 +1293,7 @@ export class CanvasGraphics {
     this.commonObjs = commonObjs;
     this.objs = objs;
     this.canvasFactory = canvasFactory;
+    this.markedContentStack = markedContentStack || [];
     this.optionalContentConfig = optionalContentConfig;
     this.cachedCanvases = new CachedCanvases(this.canvasFactory);
 
@@ -2468,7 +2472,7 @@ export class CanvasGraphics {
     let patternTransform: matrix_t;
     if (current.patternFill) {
       ctx.save();
-      const pattern = (<TilingPattern> current.fillColor).getPattern(
+      const pattern = (current.fillColor as TilingPattern).getPattern(
         ctx,
         this,
         getCurrentTransformInverse(ctx),
@@ -2500,6 +2504,21 @@ export class CanvasGraphics {
     }
 
     ctx.lineWidth = lineWidth;
+
+    if (font.isInvalidPDFjsFont) {
+      const chars: string[] = [];
+      let width = 0;
+      for (const glyph of glyphs) {
+        chars.push((glyph as Glyph).unicode);
+        width += (glyph as Glyph).width!;
+      }
+      ctx.fillText(chars.join(""), 0, 0);
+      current.x += width * widthAdvanceScale * textHScale;
+      ctx.restore();
+      this.compose();
+
+      return undefined;
+    }
 
     let x = 0;
     let i;
@@ -2698,6 +2717,10 @@ export class CanvasGraphics {
             this.commonObjs,
             this.objs,
             this.canvasFactory,
+            {
+              optionalContentConfig: this.optionalContentConfig,
+              markedContentStack: this.markedContentStack,
+            },
           );
         },
       };
@@ -3130,7 +3153,14 @@ export class CanvasGraphics {
     ctx.transform(scaleX, skewX, skewY, scaleY, 0, 0);
     const mask = this._createMaskCanvas(img);
 
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.setTransform(
+      1,
+      0,
+      0,
+      1,
+      mask.offsetX - currentTransform[4],
+      mask.offsetY - currentTransform[5],
+    );
     for (let i = 0, ii = positions.length; i < ii; i += 2) {
       const trans = Util.transform(currentTransform, [
         scaleX,

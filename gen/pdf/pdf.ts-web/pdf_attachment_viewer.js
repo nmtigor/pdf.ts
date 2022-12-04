@@ -94,7 +94,8 @@ export class PDFAttachmentViewer extends BaseTreeViewer {
         let attachmentsCount = 0;
         for (const name of names) {
             const item = attachments[name];
-            const content = item.content, filename = getFilenameFromUrl(item.filename);
+            const content = item.content, filename = getFilenameFromUrl(item.filename, 
+            /* onlyStripPath = */ true);
             const div = html("div");
             div.className = "treeItem";
             const element = html("a");

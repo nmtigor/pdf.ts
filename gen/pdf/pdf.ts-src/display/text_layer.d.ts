@@ -1,4 +1,3 @@
-import { type matrix_t } from "../shared/util.js";
 import { type TextContent } from "./api.js";
 import { PageViewport } from "./display_utils.js";
 /**
@@ -66,15 +65,6 @@ declare namespace Ns_renderTextLayer {
         textDivs?: HTMLSpanElement[] | undefined;
         textContentItemsStr?: string[] | undefined;
     }
-    interface TLRTBound {
-        left: number;
-        top: number;
-        right: number;
-        bottom: number;
-        div: HTMLSpanElement;
-        size: [number, number];
-        m?: matrix_t | undefined;
-    }
     /**
      * Text layer rendering task.
      */
@@ -97,7 +87,6 @@ declare namespace Ns_renderTextLayer {
         _renderingDone: boolean;
         _canceled: boolean;
         _capability: import("../../../lib/promisecap.js").PromiseCap<void>;
-        _bounds: TLRTBound[] | undefined;
         constructor({ textContent, textContentStream, container, viewport, textDivs, textContentItemsStr, }: _TLRTCtorP);
         /**
          * Promise for textLayer rendering task completion.

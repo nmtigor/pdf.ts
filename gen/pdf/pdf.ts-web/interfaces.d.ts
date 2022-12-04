@@ -22,12 +22,17 @@ import { TextLayerBuilder } from "./text_layer_builder.js";
 import { RenderingStates } from "./ui_utils.js";
 import { XfaLayerBuilder } from "./xfa_layer_builder.js";
 export interface IPDFLinkService {
-    readonly pagesCount: number;
-    page: number;
-    rotation: number;
+    eventBus?: EventBus;
+    get pagesCount(): number;
+    get page(): number;
+    set page(value: number);
+    get rotation(): number;
+    set rotation(value: number);
+    get isInPresentationMode(): boolean;
     externalLinkTarget: LinkTarget | undefined;
     externalLinkRel: string | undefined;
-    externalLinkEnabled: boolean;
+    get externalLinkEnabled(): boolean;
+    set externalLinkEnabled(value: boolean);
     /**
      * @param dest The named, or explicit, PDF destination.
      */
@@ -61,7 +66,6 @@ export interface IPDFLinkService {
     _cachedPageNumber(pageRef: RefProxy | undefined): number | undefined;
     isPageVisible(pageNumber: number): boolean;
     isPageCached(pageNumber: number): boolean;
-    eventBus?: EventBus;
 }
 export interface HistoryInitP {
     /**

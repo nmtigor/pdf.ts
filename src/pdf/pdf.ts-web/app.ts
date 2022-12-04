@@ -1043,6 +1043,13 @@ export class PDFViewerApplication {
       updateCallback: (password: string | Error) => void,
       reason: PasswordResponses,
     ) => {
+      if (this.isViewerEmbedded) {
+        // The load event can't be triggered until the password is entered, so
+        // if the viewer is in an iframe and its visibility depends on the
+        // onload callback then the viewer never shows (bug 1801341).
+        this.#unblockDocumentLoadEvent();
+      }
+
       this.pdfLinkService!.externalLinkEnabled = false;
       this.passwordPrompt.setUpdateCallback(updateCallback, reason);
       this.passwordPrompt.open();
@@ -2249,13 +2256,13 @@ async function loadPDFBug(self: PDFViewerApplication) {
 }
 
 function reportPageStatsPDFBug({ pageNumber }: { pageNumber: number }) {
-  if (!(<any> globalThis).Stats?.enabled) {
+  if (!(globalThis as any).Stats?.enabled) {
     return;
   }
   const pageView = viewerApp.pdfViewer.getPageView(
     /* index = */ pageNumber - 1,
   );
-  (<any> globalThis).Stats.add(pageNumber, pageView?.pdfPage?.stats);
+  (globalThis as any).Stats.add(pageNumber, pageView?.pdfPage?.stats);
 }
 
 function webViewerInitialized() {

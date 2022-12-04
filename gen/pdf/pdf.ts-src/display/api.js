@@ -750,7 +750,7 @@ export class PDFPageProxy {
         this._pageInfo = pageInfo;
         this._ownerDocument = ownerDocument;
         this._transport = transport;
-        this._stats = pdfBug ? new StatTimer() : null;
+        this._stats = pdfBug ? new StatTimer() : undefined;
         this._pdfBug = pdfBug;
         this.commonObjs = transport.commonObjs;
     }
@@ -2353,7 +2353,7 @@ export class InternalRenderTask {
             this.stepper.nextBreakPoint = this.stepper.getNextBreakPoint();
         }
         const { canvasContext, viewport, transform, background } = this.params;
-        this.gfx = new CanvasGraphics(canvasContext, this.commonObjs, this.objs, this.canvasFactory, optionalContentConfig, this.annotationCanvasMap, this.pageColors);
+        this.gfx = new CanvasGraphics(canvasContext, this.commonObjs, this.objs, this.canvasFactory, { optionalContentConfig }, this.annotationCanvasMap, this.pageColors);
         this.gfx.beginDrawing({
             transform,
             viewport,

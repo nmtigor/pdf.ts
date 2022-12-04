@@ -50,8 +50,8 @@ export class MurmurHash3_64 {
         }
       }
     } else if (isArrayBuffer(input)) {
-      length = (<ArrayBufferLike> input).byteLength;
-      data = new Uint8Array((<ArrayBufferLike> input).slice(0));
+      length = input.byteLength;
+      data = new Uint8Array(input.slice(0));
     } else {
       throw new Error(
         "Wrong data format in MurmurHash3_64_update. " +
@@ -133,9 +133,10 @@ export class MurmurHash3_64 {
       (((((h2 << 16) | (h1 >>> 16)) * 0xb9fe1a85) & MASK_HIGH) >>> 16);
     h1 ^= h2 >>> 1;
 
-    const hex1 = (h1 >>> 0).toString(16),
-      hex2 = (h2 >>> 0).toString(16);
-    return hex1.padStart(8, "0") + hex2.padStart(8, "0");
+    return (
+      (h1 >>> 0).toString(16).padStart(8, "0") +
+      (h2 >>> 0).toString(16).padStart(8, "0")
+    );
   }
 }
 /*80--------------------------------------------------------------------------*/

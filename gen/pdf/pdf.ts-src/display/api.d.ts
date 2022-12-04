@@ -26,6 +26,7 @@ import { FontFaceObject, FontLoader } from "./font_loader.js";
 import { Metadata } from "./metadata.js";
 import { OptionalContentConfig } from "./optional_content_config.js";
 export declare const DefaultCanvasFactory: typeof DOMCanvasFactory;
+export type DefaultCanvasFactory = DOMCanvasFactory;
 export declare const DefaultCMapReaderFactory: typeof DOMCMapReaderFactory;
 export declare const DefaultStandardFontDataFactory: typeof DOMStandardFontDataFactory;
 /**
@@ -214,7 +215,7 @@ export interface DocumentInitP {
      * into. Defaults to the current document.
      */
     ownerDocument?: Document | undefined;
-    /** For testing only. */
+    /** For testing only */
     styleElement?: HTMLStyleElement;
     /**
      * Disable range request loading of PDF
@@ -869,11 +870,11 @@ export declare class PDFPageProxy {
     _pageInfo: PageInfo;
     _ownerDocument: Document | undefined;
     _transport: WorkerTransport;
-    _stats: StatTimer | null;
+    _stats: StatTimer | undefined;
     /**
      * @return Returns page stats, if enabled; returns `null` otherwise.
      */
-    get stats(): StatTimer | null;
+    get stats(): StatTimer | undefined;
     _pdfBug: boolean;
     commonObjs: PDFObjects<PDFCommonObjs>;
     objs: PDFObjects<PDFObjs | undefined>;
@@ -1054,9 +1055,7 @@ export declare class PDFWorker {
     static get _mainThreadWorkerMessageHandler(): any;
     static get _setupFakeWorkerGlobal(): Promise<{
         setup(handler: MessageHandler<Thread.worker, Thread.main>, port: IWorker): void;
-        createDocumentHandler(docParams: import("../shared/message_handler.js").GetDocRequestData, port: IWorker): string; /**
-         * The color in RGB format to use for display purposes.
-         */
+        createDocumentHandler(docParams: import("../shared/message_handler.js").GetDocRequestData, port: IWorker): string;
         initializeFromPort(port: IWorker): void;
     }>;
 }

@@ -17,6 +17,17 @@
  * limitations under the License.
  */
 
+import {
+  assert,
+  assertEquals,
+  fail,
+} from "https://deno.land/std@0.160.0/testing/asserts.ts";
+import {
+  afterAll,
+  beforeAll,
+  describe,
+  it,
+} from "https://deno.land/std@0.160.0/testing/bdd.ts";
 import { createIdFactory, XRefMock } from "../shared/test_utils.ts";
 import { FormatError, OPS } from "../shared/util.ts";
 import { BaseStream } from "./base_stream.ts";
@@ -25,18 +36,6 @@ import { OperatorList } from "./operator_list.ts";
 import { Dict, Name } from "./primitives.ts";
 import { Stream, StringStream } from "./stream.ts";
 import { WorkerTask } from "./worker.ts";
-import {
-  assert,
-  assertEquals,
-  assertNotStrictEquals,
-  assertStrictEquals,
-} from "https://deno.land/std@0.160.0/testing/asserts.ts";
-import {
-  afterAll,
-  beforeAll,
-  describe,
-  it,
-} from "https://deno.land/std@0.160.0/testing/bdd.ts";
 /*80--------------------------------------------------------------------------*/
 
 describe("evaluator", () => {
@@ -310,7 +309,7 @@ describe("evaluator", () => {
           new ResourcesMock(),
         );
 
-        assert(0, "Shouldn't get here.");
+        fail("Shouldn't get here.");
       } catch (reason) {
         assert(reason instanceof FormatError);
         assertEquals(
@@ -345,7 +344,7 @@ describe("evaluator", () => {
           new ResourcesMock(),
         );
 
-        assert(0, "Shouldn't get here.");
+        fail("Shouldn't get here.");
       } catch (reason) {
         assert(reason instanceof FormatError);
         assertEquals(reason.message, "XObject should be a stream");
@@ -390,7 +389,7 @@ describe("evaluator", () => {
           operatorList: result,
         });
 
-        assert(0, "Shouldn't get here.");
+        fail("Shouldn't get here.");
       } catch (_) {
         assert(!!result.fnArray && !!result.argsArray);
         assertEquals(result.fnArray.length, 0);
@@ -410,7 +409,7 @@ describe("evaluator", () => {
           resources,
         } as any);
 
-        assert(0, "Shouldn't get here.");
+        fail("Shouldn't get here.");
       } catch (_) {}
     });
   });

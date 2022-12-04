@@ -892,7 +892,7 @@ export class CanvasGraphics {
         return !!this.suspendedCtx;
     }
     contentVisible = true;
-    markedContentStack = [];
+    markedContentStack;
     optionalContentConfig;
     cachedCanvases;
     cachedPatterns = new Map();
@@ -908,12 +908,13 @@ export class CanvasGraphics {
     #cachedBitmapsMap = new Map();
     transparentCanvas;
     pendingTextPaths;
-    constructor(canvasCtx, commonObjs, objs, canvasFactory, optionalContentConfig, annotationCanvasMap, pageColors) {
+    constructor(canvasCtx, commonObjs, objs, canvasFactory, { optionalContentConfig, markedContentStack = undefined }, annotationCanvasMap, pageColors) {
         this.ctx = canvasCtx;
         this.current = new CanvasExtraState(this.ctx.canvas.width, this.ctx.canvas.height);
         this.commonObjs = commonObjs;
         this.objs = objs;
         this.canvasFactory = canvasFactory;
+        this.markedContentStack = markedContentStack || [];
         this.optionalContentConfig = optionalContentConfig;
         this.cachedCanvases = new CachedCanvases(this.canvasFactory);
         this.annotationCanvasMap = annotationCanvasMap;
@@ -1857,6 +1858,19 @@ export class CanvasGraphics {
             lineWidth /= fontSizeScale;
         }
         ctx.lineWidth = lineWidth;
+        if (font.isInvalidPDFjsFont) {
+            const chars = [];
+            let width = 0;
+            for (const glyph of glyphs) {
+                chars.push(glyph.unicode);
+                width += glyph.width;
+            }
+            ctx.fillText(chars.join(""), 0, 0);
+            current.x += width * widthAdvanceScale * textHScale;
+            ctx.restore();
+            this.compose();
+            return undefined;
+        }
         let x = 0;
         let i;
         for (i = 0; i < glyphsLength; ++i) {
@@ -2013,7 +2027,10 @@ export class CanvasGraphics {
             const baseTransform = this.baseTransform || getCurrentTransform(this.ctx);
             const canvasGraphicsFactory = {
                 createCanvasGraphics: (ctx) => {
-                    return new CanvasGraphics(ctx, this.commonObjs, this.objs, this.canvasFactory);
+                    return new CanvasGraphics(ctx, this.commonObjs, this.objs, this.canvasFactory, {
+                        optionalContentConfig: this.optionalContentConfig,
+                        markedContentStack: this.markedContentStack,
+                    });
                 },
             };
             pattern = new TilingPattern(IR, color, this.ctx, canvasGraphicsFactory, baseTransform);
@@ -2350,7 +2367,7 @@ export class CanvasGraphics {
         const currentTransform = getCurrentTransform(ctx);
         ctx.transform(scaleX, skewX, skewY, scaleY, 0, 0);
         const mask = this._createMaskCanvas(img);
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.setTransform(1, 0, 0, 1, mask.offsetX - currentTransform[4], mask.offsetY - currentTransform[5]);
         for (let i = 0, ii = positions.length; i < ii; i += 2) {
             const trans = Util.transform(currentTransform, [
                 scaleX,

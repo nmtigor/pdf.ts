@@ -303,6 +303,7 @@ declare class TextState {
     ctm: [number, number, number, number, number, number];
     fontName: string | undefined;
     fontSize: number;
+    loadedName: string | undefined;
     font?: Font | ErrorFont;
     fontMatrix: [number, number, number, number, number, number];
     textMatrix: [number, number, number, number, number, number];

@@ -1,6 +1,7 @@
 import { type TupleOf } from "../../../lib/alias.js";
 import { type AnnotStorageRecord, AnnotStorageValue } from "../display/annotation_layer.js";
 import { DocWrapped, FieldWrapped } from "../scripting_api/app.js";
+import { CorrectColor } from "../scripting_api/color.js";
 import { SendData } from "../scripting_api/pdf_object.js";
 import { AnnotationBorderStyleType, AnnotationFieldFlag, AnnotationFlag, AnnotationReplyType, AnnotationType, point_t, type rect_t, RenderingIntentFlag } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
@@ -26,9 +27,10 @@ interface _Dependency {
     data: string;
 }
 interface _CreateNewAnnotationP {
-    evaluator: PartialEvaluator;
-    task: WorkerTask;
+    evaluator?: PartialEvaluator;
+    task?: WorkerTask;
     baseFontRef?: Ref;
+    isOffscreenCanvasSupported?: boolean | undefined;
 }
 export declare class AnnotationFactory {
     #private;
@@ -68,7 +70,9 @@ interface _AnnotationCtorP {
     attachments: Attachments | undefined;
     xfaDatasets: DatasetReader | undefined;
     collectFields: boolean;
+    needAppearances: boolean;
     pageIndex: number;
+    isOffscreenCanvasSupported: boolean;
 }
 export interface RichText {
     str: string | undefined;
@@ -154,27 +158,36 @@ export type SaveData = {
         path: string;
         value: string;
     };
+    needAppearances?: boolean;
 };
 export type SaveReturn = TupleOf<SaveData, 1 | 2>;
+export interface FieldItem {
+    exportValue: string | string[] | undefined;
+    displayValue: string | string[] | undefined;
+}
 export interface FieldObject {
     id: string;
     type: string;
     value?: string | string[] | undefined;
-    defaultValue?: string | string[];
+    defaultValue?: string | string[] | undefined;
     editable?: boolean;
     rect?: rect_t;
-    name?: string;
-    hidden?: boolean;
-    actions?: AnnotActions;
+    name?: string | undefined;
+    hidden?: boolean | undefined;
+    actions?: AnnotActions | undefined;
     kidIds?: string[];
-    page?: number;
-    multiline?: boolean;
+    page?: number | undefined;
+    strokeColor?: Uint8ClampedArray | CorrectColor | undefined;
+    fillColor?: Uint8ClampedArray | CorrectColor | undefined;
+    rotation?: number;
+    multiline?: boolean | undefined;
     password?: boolean;
-    charLimit?: number;
-    comb?: boolean;
-    exportValues?: string;
+    charLimit?: number | undefined;
+    comb?: boolean | undefined;
+    exportValues?: string | undefined;
+    items?: FieldItem[] | undefined;
     numItems?: number;
-    multipleSelection?: boolean;
+    multipleSelection?: boolean | undefined;
     send?: (data: SendData) => void;
     globalEval?: (code: string) => unknown;
     doc?: DocWrapped;
@@ -188,7 +201,9 @@ export declare class Annotation {
     #private;
     _streams: BaseStream[];
     data: AnnotationData;
+    _isOffscreenCanvasSupported: boolean;
     _fallbackFontDict?: Dict;
+    _needAppearances: boolean;
     flags: AnnotationFlag;
     /**
      * Set the flags.
@@ -266,7 +281,9 @@ export declare class Annotation {
     lineEndings: [_LineEndingStr, _LineEndingStr];
     oc: Dict | undefined;
     rotation: number;
+    _defaultAppearance: string;
     constructor(params: _AnnotationCtorP);
+    setDefaultAppearance(params: _AnnotationCtorP): void;
     /**
      * Set the border style (as AnnotationBorderStyle object).
      *
@@ -393,7 +410,7 @@ interface _SetDefaultAppearanceP {
 }
 interface _CreateNewDictP {
     apRef?: Ref;
-    ap?: StringStream;
+    ap?: StringStream | undefined;
 }
 /**
  * 12.5.6.2
@@ -407,16 +424,16 @@ export declare class MarkupAnnotation extends Annotation {
      *  annotation was originally created
      */
     setCreationDate(creationDate: unknown): void;
-    constructor(parameters: _AnnotationCtorP);
+    constructor(params: _AnnotationCtorP);
     static createNewDict(annotation: AnnotStorageValue, xref: XRef, _: _CreateNewDictP): Dict;
-    static createNewAppearanceStream(annotation: AnnotStorageValue, xref: XRef, params?: _CreateNewAnnotationP): Promise<StringStream>;
+    static createNewAppearanceStream(annotation: AnnotStorageValue, xref: XRef, params?: _CreateNewAnnotationP): Promise<StringStream | undefined>;
     /** @final */
     protected setDefaultAppearance$({ xref, extra, strokeColor, fillColor, blendMode, strokeAlpha, fillAlpha, pointsCallback, }: _SetDefaultAppearanceP): void;
     static createNewAnnotation(xref: XRef, annotation: AnnotStorageValue, dependencies: _Dependency[], params?: _CreateNewAnnotationP): Promise<{
         ref: import("./primitives.js").NsRef.Ref;
         data: string;
     }>;
-    static createNewPrintAnnotation(xref: XRef, annotation: AnnotStorageValue, params?: _CreateNewAnnotationP): Promise<MarkupAnnotation>;
+    static createNewPrintAnnotation(xref: XRef, annotation: AnnotStorageValue, params: _CreateNewAnnotationP): Promise<MarkupAnnotation>;
 }
 interface FieldResources {
     localResources?: Dict | undefined;
@@ -432,7 +449,6 @@ interface CachedLines {
 export declare class WidgetAnnotation extends Annotation {
     ref: Ref;
     _hasValueFromXFA?: boolean;
-    _defaultAppearance: string;
     _fieldResources: FieldResources;
     protected _hasText?: boolean;
     constructor(params: _AnnotationCtorP);
@@ -449,7 +465,6 @@ export declare class WidgetAnnotation extends Annotation {
      * @see {@link shared/util.js}
      */
     hasFieldFlag(flag: AnnotationFieldFlag): boolean;
-    static _getRotationMatrix(rotation: number, width: number, height: number): number[];
     getRotationMatrix(annotationStorage: AnnotStorageRecord | undefined): number[];
     getBorderAndBackgroundAppearances(annotationStorage: AnnotStorageRecord | undefined): string;
     getOperatorList(evaluator: PartialEvaluator, task: WorkerTask, intent: RenderingIntentFlag, renderForms?: boolean, annotationStorage?: AnnotStorageRecord): Promise<{
@@ -459,21 +474,27 @@ export declare class WidgetAnnotation extends Annotation {
     }>;
     _getMKDict(rotation: number): Dict | null;
     save(evaluator: PartialEvaluator, task: WorkerTask, annotationStorage?: AnnotStorageRecord): Promise<SaveReturn | undefined>;
-    _getCombAppearance(defaultAppearance: string, font: Font | ErrorFont, text: string, width: number, hPadding: number, vPadding: number, annotationStorage: AnnotStorageRecord | undefined): string;
-    _getMultilineAppearance(defaultAppearance: string, text: string, font: Font | ErrorFont, fontSize: number, width: number, height: number, alignment: number, hPadding: number, vPadding: number, AnnotStorageRecord: AnnotStorageRecord | undefined): string;
+    _getCombAppearance(defaultAppearance: string, font: Font | ErrorFont, text: string, fontSize: number, width: number, height: number, hPadding: number, vPadding: number, descent: number, lineHeight: number, annotationStorage: AnnotStorageRecord | undefined): string;
+    _getMultilineAppearance(defaultAppearance: string, lines: string[], font: Font | ErrorFont, fontSize: number, width: number, height: number, alignment: number, hPadding: number, vPadding: number, descent: number, lineHeight: number, AnnotStorageRecord: AnnotStorageRecord | undefined): string;
     _splitLine(line: string | undefined, font: Font | ErrorFont, fontSize: number, width: number, cache?: CachedLines): string[];
-    protected getAppearance$(evaluator: PartialEvaluator, task: WorkerTask, annotationStorage?: AnnotStorageRecord): Promise<string | undefined>;
-    /** For testing only. */
-    _getAppearance(evaluator: PartialEvaluator, task: WorkerTask, annotationStorage?: AnnotStorageRecord): Promise<string | undefined>;
-    static _getFontData(evaluator: PartialEvaluator, task: WorkerTask, appearanceData: DefaultAppearanceData | undefined, resources: Dict): Promise<Font | ErrorFont>;
+    protected getAppearance$(evaluator: PartialEvaluator, task: WorkerTask, intent: RenderingIntentFlag, annotationStorage?: AnnotStorageRecord): Promise<string | {
+        needAppearances: boolean;
+    } | undefined>;
+    /** For testing only */
+    _getAppearance(evaluator: PartialEvaluator, task: WorkerTask, intent: RenderingIntentFlag, annotationStorage?: AnnotStorageRecord): Promise<string | {
+        needAppearances: boolean;
+    } | undefined>;
+    static _getFontData(evaluator: PartialEvaluator, task: WorkerTask, appearanceData: DefaultAppearanceData, resources: Dict): Promise<Font | ErrorFont>;
     protected getTextWidth$(text: string, font: Font | ErrorFont): number;
-    protected computeFontSize$(height: number, width: number, text: string, font: Font | ErrorFont, lineCount: number): [string, number];
-    _renderText(text: string, font: Font | ErrorFont, fontSize: number, totalWidth: number, alignment: number, hPadding: number, vPadding: number): string;
+    protected computeFontSize$(height: number, width: number, text: string, font: Font | ErrorFont, lineCount: number): [string, number, number];
+    _renderText(text: string, font: Font | ErrorFont, fontSize: number, totalWidth: number, alignment: number, prevInfo: {
+        shift: number;
+    }, hPadding: number, vPadding: number): string;
     _getSaveFieldResources(xref: XRef): Dict;
     getFieldObject(): FieldObject | undefined;
 }
 export declare class PopupAnnotation extends Annotation {
-    constructor(parameters: _AnnotationCtorP);
+    constructor(params: _AnnotationCtorP);
 }
 export {};
 //# sourceMappingURL=annotation.d.ts.map

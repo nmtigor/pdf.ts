@@ -95,6 +95,18 @@ export const enum Sortart {
 }
 /*80--------------------------------------------------------------------------*/
 
+export const enum Hover {
+  none = 0,
+  hover,
+}
+
+export const enum Pointer {
+  none = 0,
+  coarse,
+  fine,
+}
+/*80--------------------------------------------------------------------------*/
+
 export type Constructor<T = object> = new (...args: any[]) => T;
 export type AbstractConstructor<T = object> = abstract new (
   ...args: any[]

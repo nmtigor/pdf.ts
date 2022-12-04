@@ -42,7 +42,7 @@ import { Cmd, Dict, EOF, FontDict, isName, Name, Ref, RefSet, } from "./primitiv
 import { getFontNameToFileMap, getSerifFonts, getStandardFontName, getStdFontMap, getSymbolsFonts, } from "./standard_fonts.js";
 import { NullStream, Stream } from "./stream.js";
 import { IdentityToUnicodeMap, ToUnicodeMap } from "./to_unicode_map.js";
-import { getNormalizedUnicodes, getUnicodeForGlyph, reverseIfRtl, } from "./unicode.js";
+import { getUnicodeForGlyph } from "./unicode.js";
 import { getXfaFontDict, getXfaFontName } from "./xfa_fonts.js";
 /*80--------------------------------------------------------------------------*/
 const DefaultPartialEvaluatorOptions = Object.freeze({
@@ -1839,7 +1839,6 @@ export class PartialEvaluator {
         if (includeMarkedContent) {
             markedContentData = markedContentData || { level: 0 };
         }
-        const NormalizedUnicodes = getNormalizedUnicodes();
         const textContent = {
             items: [],
             styles: Object.create(null),
@@ -1952,7 +1951,7 @@ export class PartialEvaluator {
             if (textContentItem.initialized) {
                 return textContentItem;
             }
-            const font = textState.font, loadedName = font.loadedName;
+            const { font, loadedName } = textState;
             if (!seenStyles.has(loadedName)) {
                 seenStyles.add(loadedName);
                 textContent.styles[loadedName] = {
@@ -2041,6 +2040,7 @@ export class PartialEvaluator {
                     .then(() => translated);
             })
                 .then((translated) => {
+                textState.loadedName = translated.loadedName;
                 textState.font = translated.font;
                 textState.fontMatrix = translated.font.fontMatrix ||
                     FONT_IDENTITY_MATRIX;
@@ -2229,7 +2229,8 @@ export class PartialEvaluator {
             const scale = textState.fontMatrix[0] * textState.fontSize;
             for (let i = 0, ii = glyphs.length; i < ii; i++) {
                 const glyph = glyphs[i];
-                if (glyph.isInvisibleFormatMark) {
+                const { category } = glyph;
+                if (category.isInvisibleFormatMark) {
                     continue;
                 }
                 let charSpacing = textState.charSpacing +
@@ -2239,7 +2240,7 @@ export class PartialEvaluator {
                     glyphWidth = glyph.vmetric ? glyph.vmetric[0] : -glyphWidth;
                 }
                 let scaledDim = glyphWidth * scale;
-                if (glyph.isWhitespace) {
+                if (category.isWhitespace) {
                     // Don't push a " " in the textContentItem
                     // (except when it's between two non-spaces chars),
                     // it will be done (if required) in next call to
@@ -2263,7 +2264,7 @@ export class PartialEvaluator {
                 // Must be called after compareWithLastPosition because
                 // the textContentItem could have been flushed.
                 const textChunk = ensureTextContentItem();
-                if (glyph.isZeroWidthDiacritic) {
+                if (category.isZeroWidthDiacritic) {
                     scaledDim = 0;
                 }
                 if (!font.vertical) {
@@ -2280,9 +2281,7 @@ export class PartialEvaluator {
                     // Save the position of the last visible character.
                     textChunk.prevTransform = getCurrentTextTransform();
                 }
-                let glyphUnicode = glyph.unicode;
-                glyphUnicode = NormalizedUnicodes[glyphUnicode] || glyphUnicode;
-                glyphUnicode = reverseIfRtl(glyphUnicode);
+                const glyphUnicode = glyph.normalizedUnicode;
                 if (saveLastChar(glyphUnicode)) {
                     // The two last chars are a non-whitespace followed by a whitespace
                     // and then this non-whitespace, so we insert a whitespace here.
@@ -2315,7 +2314,7 @@ export class PartialEvaluator {
                     width: 0,
                     height: 0,
                     transform: getCurrentTextTransform(),
-                    fontName: textState.font.loadedName,
+                    fontName: textState.loadedName,
                     hasEOL: true,
                 });
             }
@@ -3854,6 +3853,7 @@ class TextState {
     ctm = IDENTITY_MATRIX;
     fontName;
     fontSize = 0;
+    loadedName;
     font;
     fontMatrix = FONT_IDENTITY_MATRIX;
     textMatrix = IDENTITY_MATRIX.slice();

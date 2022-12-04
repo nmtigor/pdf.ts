@@ -24,6 +24,7 @@ interface AnnotationLayerBuilderOptions {
     accessibilityManager: TextAccessibilityManager | undefined;
 }
 export declare class AnnotationLayerBuilder {
+    #private;
     pageDiv: HTMLDivElement;
     pdfPage: PDFPageProxy;
     linkService: IPDFLinkService;
@@ -40,6 +41,7 @@ export declare class AnnotationLayerBuilder {
     _accessibilityManager: TextAccessibilityManager | undefined;
     div?: HTMLDivElement;
     _cancelled: boolean;
+    _eventBus: import("./event_utils.js").EventBus | undefined;
     constructor({ pageDiv, pdfPage, linkService, downloadManager, annotationStorage, imageResourcesPath, renderForms, l10n, enableScripting, hasJSActionsPromise, fieldObjectsPromise, mouseState, annotationCanvasMap, accessibilityManager, }: AnnotationLayerBuilderOptions);
     /**
      * @param viewport

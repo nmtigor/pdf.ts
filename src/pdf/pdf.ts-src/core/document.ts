@@ -1882,7 +1882,7 @@ export class PDFDocument {
         Promise.all(promises).then((fields) => {
           fields = fields.filter((field) => !!field);
           if (fields.length > 0) {
-            allFields[name] = <FieldObject[]> fields;
+            allFields[name] = fields as FieldObject[];
           }
         }),
       );

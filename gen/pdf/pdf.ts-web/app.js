@@ -730,6 +730,12 @@ export class PDFViewerApplication {
         const loadingTask = getDocument(parameters);
         this.pdfLoadingTask = loadingTask;
         loadingTask.onPassword = (updateCallback, reason) => {
+            if (this.isViewerEmbedded) {
+                // The load event can't be triggered until the password is entered, so
+                // if the viewer is in an iframe and its visibility depends on the
+                // onload callback then the viewer never shows (bug 1801341).
+                this.#unblockDocumentLoadEvent();
+            }
             this.pdfLinkService.externalLinkEnabled = false;
             this.passwordPrompt.setUpdateCallback(updateCallback, reason);
             this.passwordPrompt.open();

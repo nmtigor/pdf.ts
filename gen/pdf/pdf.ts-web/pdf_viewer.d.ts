@@ -200,10 +200,14 @@ export declare class PDFViewer implements IPDFAnnotationLayerFactory, IPDFAnnota
     renderingQueue?: PDFRenderingQueue | undefined;
     scroll: {
         right: boolean;
-        down: boolean;
+        down: boolean; /**
+         * The scripting manager component.
+         */
         lastX: number;
         lastY: number;
-        _eventHandler: (evt: unknown) => void;
+        _eventHandler: (evt: unknown) => void; /**
+         * The rendering queue object.
+         */
     };
     presentationModeState: PresentationModeState;
     _onBeforeDraw: ((evt: EventMap["pagerender"]) => void) | undefined;

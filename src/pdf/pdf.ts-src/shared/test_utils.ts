@@ -68,6 +68,7 @@ export const DefaultFileReaderFactory = DOMFileReaderFactory;
 //   : DOMFileReaderFactory;
 
 export interface BuildGetDocumentParamsOptions {
+  cMapUrl?: string;
   disableFontFace?: boolean;
   docBaseUrl?: string;
   ownerDocument?: unknown;
@@ -107,7 +108,8 @@ interface _XRefMockCtorP {
 export class XRefMock {
   #map: Record<string, _XRefMockCtorP["data"]> = Object.create(null);
   stats = new DocStats(<any> { send: () => {} });
-  #newRefNum?: number;
+  #newTemporaryRefNum: number | undefined;
+  #newPersistentRefNum?: number;
   stream = new NullStream();
 
   newRef?: Ref | undefined;
@@ -119,15 +121,24 @@ export class XRefMock {
     }
   }
 
-  getNewRef() {
-    if (this.#newRefNum === undefined) {
-      this.#newRefNum = Object.keys(this.#map).length || 1;
+  getNewPersistentRef(obj: StringStream | Dict) {
+    if (this.#newPersistentRefNum === undefined) {
+      this.#newPersistentRefNum = Object.keys(this.#map).length || 1;
     }
-    return Ref.get(this.#newRefNum++, 0);
+    const ref = Ref.get(this.#newPersistentRefNum++, 0);
+    this.#map[ref.toString()] = obj;
+    return ref;
   }
 
-  resetNewRef() {
-    this.newRef = undefined;
+  getNewTemporaryRef() {
+    if (this.#newTemporaryRefNum === undefined) {
+      this.#newTemporaryRefNum = Object.keys(this.#map).length || 1;
+    }
+    return Ref.get(this.#newTemporaryRefNum++, 0);
+  }
+
+  resetNewTemporaryRef() {
+    this.#newTemporaryRefNum = undefined;
   }
 
   fetch(ref: Ref) {

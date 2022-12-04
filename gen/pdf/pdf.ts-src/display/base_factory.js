@@ -48,8 +48,8 @@ export class BaseCanvasFactory {
         // resources immediately, which can greatly reduce memory consumption.
         canvasAndContext.canvas.width = 0;
         canvasAndContext.canvas.height = 0;
-        canvasAndContext.canvas = null;
-        canvasAndContext.context = null;
+        canvasAndContext.canvas = undefined;
+        canvasAndContext.context = undefined;
     }
 }
 export class BaseCMapReaderFactory {

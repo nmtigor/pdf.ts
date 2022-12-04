@@ -41,4 +41,7 @@
 
     "src/pdf/pdf.ts-src/core/xfa/formcalc_parser.ts"
   ],
+  "include": [
+    "src/3rd/quickjs/**/*"
+  ]
 }

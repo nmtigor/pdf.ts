@@ -165,7 +165,7 @@ export declare function isPdfFile(filename: unknown): boolean;
 /**
  * Gets the filename from a given URL.
  */
-export declare function getFilenameFromUrl(url: string): string;
+export declare function getFilenameFromUrl(url: string, onlyStripPath?: boolean): string;
 /**
  * Returns the filename or guessed filename from the url (see issue 3455).
  * @param url The original PDF location.

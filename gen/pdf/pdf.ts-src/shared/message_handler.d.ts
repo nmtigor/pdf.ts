@@ -260,6 +260,11 @@ export interface MActionMap {
         Return: void;
         Sinkchunk: undefined;
     };
+    fakeHandler: {
+        Data: {};
+        Return: Promise<number> | void;
+        Sinkchunk: string | rect_t;
+    };
 }
 type MActionName = keyof MActionMap;
 export interface PDFInfo {

@@ -73,7 +73,7 @@ export declare const $rec_utx_a: unique symbol;
  */
 export declare const $selectionvu: unique symbol;
 /**
- * For test only
+ * For testing only
  * HTMLImageElement[ $src ] { String }
  * To replace `src` to prevent console error messages
  */
@@ -89,11 +89,11 @@ export declare const $sync_eran: unique symbol;
 export declare const $theme: unique symbol;
 /**
  * Reference to test `===`
- * For test only
+ * For testing only
  */
 /**
  * Test reference?
- * For test only
+ * For testing only
  */
 /**
  * DOMRect[ $uts ] { boolean }

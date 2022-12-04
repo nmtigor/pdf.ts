@@ -414,6 +414,10 @@ class MooHandlerDB<T extends {} | null, D = any> {
   }
 }
 
+/**
+ * Instance of `Moo` concerns about one value, whether it changes or not.
+ * Instance of `Moo` stores many callbacks.
+ */
 export class Moo<T extends {} | null, D = any> {
   readonly #initval: T;
   readonly #eq: MooEq<T>;

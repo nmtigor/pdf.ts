@@ -97,6 +97,10 @@ export declare class SVGViewbox<CI extends CooInterface = CooInterface> extends 
 }
 export type MooEq<T extends {} | null> = (a: T, b: T) => boolean;
 export type MooHandler<T extends {} | null, D = any> = (newval: T, oldval?: T, data?: D) => void;
+/**
+ * Instance of `Moo` concerns about one value, whether it changes or not.
+ * Instance of `Moo` stores many callbacks.
+ */
 export declare class Moo<T extends {} | null, D = any> {
     #private;
     get val(): T;

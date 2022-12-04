@@ -4,7 +4,7 @@ import { CipherTransformFactory } from "./crypto.js";
 import { Parser } from "./parser.js";
 import { BasePdfManager } from "./pdf_manager.js";
 import { Dict, type Obj, type ObjNoRef, Ref, RefSet } from "./primitives.js";
-import { Stream } from "./stream.js";
+import { Stream, StringStream } from "./stream.js";
 interface XRefEntry {
     offset: number;
     gen: number;
@@ -33,8 +33,9 @@ export declare class XRef {
     xrefstms: number[];
     _pendingRefs: RefSet;
     stats: DocStats;
-    getNewRef(): import("./primitives.js").NsRef.Ref;
-    resetNewRef(): void;
+    getNewPersistentRef(obj: StringStream | Dict): import("./primitives.js").NsRef.Ref;
+    getNewTemporaryRef(): import("./primitives.js").NsRef.Ref;
+    resetNewTemporaryRef(): void;
     startXRefQueue: number[];
     setStartXRef(startXRef: number): void;
     trailer?: Dict;

@@ -39,9 +39,13 @@ interface PDFLinkServiceOptions {
  */
 export declare class PDFLinkService implements IPDFLinkService {
     #private;
+    /** @implement */
     eventBus: EventBus;
+    /** @implement */
     externalLinkTarget: LinkTarget | undefined;
+    /** @implement */
     externalLinkRel: string | undefined;
+    /** @implement */
     externalLinkEnabled: boolean;
     baseUrl: string | undefined;
     pdfDocument: PDFDocumentProxy | undefined;
@@ -51,6 +55,7 @@ export declare class PDFLinkService implements IPDFLinkService {
     setDocument(pdfDocument?: PDFDocumentProxy, baseUrl?: string): void;
     setViewer(pdfViewer: PDFViewer): void;
     setHistory(pdfHistory: PDFHistory): void;
+    /** @implement */
     get pagesCount(): number;
     /** @implement */
     get page(): number;
@@ -58,6 +63,8 @@ export declare class PDFLinkService implements IPDFLinkService {
     /** @implement */
     get rotation(): number;
     set rotation(value: number);
+    /** @implement */
+    get isInPresentationMode(): boolean;
     /**
      * This method will, when available, also update the browser history.
      * @implement
@@ -122,6 +129,8 @@ export declare class SimpleLinkService implements IPDFLinkService {
     /** @implement */
     get rotation(): number;
     set rotation(value: number);
+    /** @implement */
+    get isInPresentationMode(): boolean;
     /**
      * @param dest The named, or explicit, PDF destination.
      */

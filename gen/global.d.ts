@@ -1,3 +1,4 @@
+import { Hover, Pointer } from "./lib/alias.js";
 import { HTMLVCo } from "./lib/mv.js";
 export declare const INOUT = true, DEV = true, INFO = true, RESIZ = false, INTRS = false, EDITOR = true, EDITOR_v = true, EDITOR_vv = false, PDFTS = true, PDFTS_v = true, PDFTS_vv = false, _INFO = true, APP = false, DENO = false, TESTING = false, /** @deprecated */ TEST_ALL = false, GENERIC = true, MOZCENTRAL = false, CHROME = false, PRODUCTION = false, LIB = false, SKIP_BABEL = true, IMAGE_DECODERS = false, COMPONENTS = false, _PDFDEV = true;
 export declare const global: {
@@ -9,7 +10,14 @@ export declare const global: {
     ghvc?: HTMLVCo;
     /** @deprecated */
     has_ResizeObserver: boolean;
+    /** @deprecated */
     can_touchstart: boolean;
+    pointer: Pointer;
+    anyPointer: Pointer;
+    readonly can_touch: boolean;
+    hover: Hover;
+    anyHover: Hover;
+    readonly can_hover: boolean;
     readonly "__#5@#tabsize": 2;
     "__#5@#dent": number;
     readonly dent: string;

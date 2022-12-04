@@ -93,7 +93,10 @@ export interface MarkInfo {
     UserProperties: boolean;
     Suspects: boolean;
 }
-type AllPageDicts = Map<number, [Dict, Ref | undefined] | [Error, undefined]>;
+type AllPageDicts = Map<number, [
+    Dict | Error,
+    Ref | undefined
+] | [Error, undefined]>;
 export type Attachments = Record<string, Attachment>;
 /**
  * Table 28

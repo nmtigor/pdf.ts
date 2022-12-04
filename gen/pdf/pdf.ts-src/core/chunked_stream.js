@@ -21,6 +21,7 @@ import { MissingDataException } from "./core_utils.js";
 import { Stream } from "./stream.js";
 export class ChunkedStream extends Stream {
     chunkSize;
+    //kkkk bug? `#loadedChunks` does not work. Why?
     _loadedChunks = new Set();
     get numChunksLoaded() {
         return this._loadedChunks.size;

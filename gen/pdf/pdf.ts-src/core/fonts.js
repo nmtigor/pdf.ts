@@ -33,7 +33,7 @@ import { getGlyphMapForStandardFonts, getNonStdFontMap, getSerifFonts, getStdFon
 import { Stream } from "./stream.js";
 import { IdentityToUnicodeMap, ToUnicodeMap } from "./to_unicode_map.js";
 import { Type1Font } from "./type1_font.js";
-import { getCharUnicodeCategory, getUnicodeForGlyph, getUnicodeRangeFor, mapSpecialUnicodeValues, } from "./unicode.js";
+import { getCharUnicodeCategory, getNormalizedUnicodes, getUnicodeForGlyph, getUnicodeRangeFor, mapSpecialUnicodeValues, reverseIfRtl, } from "./unicode.js";
 /*80--------------------------------------------------------------------------*/
 // Unicode Private Use Areas:
 const PRIVATE_USE_AREAS = [
@@ -66,6 +66,7 @@ export class FontExpotData {
     isMonospace;
     isSerifFont;
     isType3Font;
+    isInvalidPDFjsFont;
     italic;
     mimetype;
     missingFile = false;
@@ -89,6 +90,7 @@ const EXPORT_DATA_PROPERTIES = [
     "fallbackName",
     "fontMatrix",
     "fontType",
+    "isInvalidPDFjsFont",
     "isType3Font",
     "italic",
     "loadedName",
@@ -203,9 +205,6 @@ export class Glyph {
     operatorListId;
     isSpace;
     isInFont;
-    isWhitespace;
-    isZeroWidthDiacritic;
-    isInvisibleFormatMark;
     compiled;
     constructor(originalCharCode, fontChar, unicode, accent, width, vmetric, operatorListId, isSpace, isInFont) {
         this.originalCharCode = originalCharCode;
@@ -217,10 +216,26 @@ export class Glyph {
         this.operatorListId = operatorListId;
         this.isSpace = isSpace;
         this.isInFont = isInFont;
-        const category = getCharUnicodeCategory(unicode);
-        this.isWhitespace = category.isWhitespace;
-        this.isZeroWidthDiacritic = category.isZeroWidthDiacritic;
-        this.isInvisibleFormatMark = category.isInvisibleFormatMark;
+    }
+    /**
+     * This property, which is only used by `PartialEvaluator.getTextContent`,
+     * is purposely made non-serializable.
+     */
+    get category() {
+        return shadow(this, "category", getCharUnicodeCategory(this.unicode), 
+        /* nonSerializable = */ true);
+    }
+    /**
+     * This property, which is only used by `PartialEvaluator.getTextContent`,
+     * is purposely made non-serializable.
+     * @type {string}
+     */
+    get normalizedUnicode() {
+        return shadow(this, "normalizedUnicode", reverseIfRtl(Glyph._NormalizedUnicodes[this.unicode] || this.unicode), 
+        /* nonSerializable = */ true);
+    }
+    static get _NormalizedUnicodes() {
+        return shadow(this, "_NormalizedUnicodes", getNormalizedUnicodes());
     }
 }
 function int16(b0, b1) {
@@ -837,12 +852,20 @@ export class Font extends FontExpotDataEx {
         let subtype = properties.subtype;
         this.type = type;
         this.subtype = subtype;
-        let fallbackName = "sans-serif";
-        if (this.isMonospace)
-            fallbackName = "monospace";
-        else if (this.isSerifFont)
-            fallbackName = "serif";
-        this.fallbackName = fallbackName;
+        const matches = name.match(/^InvalidPDFjsFont_(.*)_\d+$/);
+        this.isInvalidPDFjsFont = !!matches;
+        if (this.isInvalidPDFjsFont) {
+            this.fallbackName = matches[1];
+        }
+        else if (this.isMonospace) {
+            this.fallbackName = "monospace";
+        }
+        else if (this.isSerifFont) {
+            this.fallbackName = "serif";
+        }
+        else {
+            this.fallbackName = "sans-serif";
+        }
         this.differences = properties.differences;
         this.widths = properties.widths;
         this.defaultWidth = properties.defaultWidth;
@@ -1069,8 +1092,8 @@ export class Font extends FontExpotDataEx {
             // Attempt to improve the glyph mapping for (some) composite fonts that
             // appear to lack meaningful ToUnicode data.
             if (this.composite && this.toUnicode instanceof IdentityToUnicodeMap) {
-                if (/Verdana/i.test(name)) {
-                    // Fixes issue11242_reduced.pdf
+                if (/Tahoma|Verdana/i.test(name)) {
+                    // Fixes issue15719.pdf and issue11242_reduced.pdf.
                     applyStandardFontGlyphMap(map, getGlyphMapForStandardFonts());
                 }
             }

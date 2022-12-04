@@ -74,15 +74,17 @@ import { WorkerTask } from "./worker.ts";
 describe("annotation", () => {
   class PDFManagerMock {
     docBaseUrl;
-    pdfDocument;
+    pdfDocument = {
+      catalog: {
+        acroForm: new Dict(),
+      },
+    };
+    evaluatorOptions = {
+      isOffscreenCanvasSupported: false,
+    };
 
     constructor(params: { docBaseUrl: string | undefined }) {
       this.docBaseUrl = params.docBaseUrl || undefined;
-      this.pdfDocument = {
-        catalog: {
-          acroForm: new Dict(),
-        },
-      };
     }
 
     ensure(obj: unknown, prop: string, args: unknown) {
@@ -1703,12 +1705,13 @@ describe("annotation", () => {
       const appearance = await annotation._getAppearance(
         partialEvaluator,
         task,
+        RenderingIntentFlag.PRINT,
         annotationStorage,
       );
       assertEquals(
         appearance,
         "/Tx BMC q BT /Helv 5 Tf 1 0 0 1 0 0 Tm" +
-          " 2 3.04 Td (test\\\\print) Tj ET Q EMC",
+          " 2 3.07 Td (test\\\\print) Tj ET Q EMC",
       );
     });
 
@@ -1741,6 +1744,7 @@ describe("annotation", () => {
       const appearance = await annotation._getAppearance(
         partialEvaluator,
         task,
+        RenderingIntentFlag.PRINT,
         annotationStorage,
       );
       const utf16String =
@@ -1748,7 +1752,7 @@ describe("annotation", () => {
       assertEquals(
         appearance,
         "/Tx BMC q BT /Goth 5 Tf 1 0 0 1 0 0 Tm" +
-          ` 2 2 Td (${utf16String}) Tj ET Q EMC`,
+          ` 2 3.07 Td (${utf16String}) Tj ET Q EMC`,
       );
     });
 
@@ -1825,12 +1829,13 @@ describe("annotation", () => {
       const appearance = await annotation._getAppearance(
         partialEvaluator,
         task,
+        RenderingIntentFlag.PRINT,
         annotationStorage,
       );
       assertEquals(
         appearance,
         "/Tx BMC q BT /Helv 5.92 Tf 0 g 1 0 0 1 0 0 Tm" +
-          " 2 3.23 Td (test \\(print\\)) Tj ET Q EMC",
+          " 2 3.07 Td (test \\(print\\)) Tj ET Q EMC",
       );
     });
 
@@ -1863,14 +1868,15 @@ describe("annotation", () => {
       const appearance = await annotation._getAppearance(
         partialEvaluator,
         task,
+        RenderingIntentFlag.PRINT,
         annotationStorage,
       );
       const utf16String =
         "\x30\x53\x30\x93\x30\x6b\x30\x61\x30\x6f\x4e\x16\x75\x4c\x30\x6e";
       assertEquals(
         appearance,
-        "/Tx BMC q BT /Goth 3.5 Tf 0 g 1 0 0 1 0 0 Tm" +
-          ` 2 2 Td (${utf16String}) Tj ET Q EMC`,
+        "/Tx BMC q BT /Goth 5.92 Tf 0 g 1 0 0 1 0 0 Tm" +
+          ` 2 3.07 Td (${utf16String}) Tj ET Q EMC`,
       );
     });
 
@@ -1897,6 +1903,7 @@ describe("annotation", () => {
       const appearance = await annotation._getAppearance(
         partialEvaluator,
         task,
+        RenderingIntentFlag.PRINT,
         annotationStorage,
       );
       assertEquals(appearance, undefined);
@@ -1928,18 +1935,19 @@ describe("annotation", () => {
       const appearance = await annotation._getAppearance(
         partialEvaluator,
         task,
+        RenderingIntentFlag.PRINT,
         annotationStorage,
       );
       assertEquals(
         appearance,
         "/Tx BMC q BT /Helv 5 Tf 1 0 0 1 0 10 Tm " +
-          "2 -5 Td (a aa aaa ) Tj\n" +
-          "0 -5 Td (aaaa aaaaa ) Tj\n" +
-          "0 -5 Td (aaaaaa ) Tj\n" +
-          "0 -5 Td (pneumonoultr) Tj\n" +
-          "0 -5 Td (amicroscopi) Tj\n" +
-          "0 -5 Td (csilicovolca) Tj\n" +
-          "0 -5 Td (noconiosis) Tj ET Q EMC",
+          "2 -6.93 Td (a aa aaa ) Tj\n" +
+          "0 -8 Td (aaaa aaaaa ) Tj\n" +
+          "0 -8 Td (aaaaaa ) Tj\n" +
+          "0 -8 Td (pneumonoultr) Tj\n" +
+          "0 -8 Td (amicroscopi) Tj\n" +
+          "0 -8 Td (csilicovolca) Tj\n" +
+          "0 -8 Td (noconiosis) Tj ET Q EMC",
       );
     });
 
@@ -1973,13 +1981,14 @@ describe("annotation", () => {
       const appearance = await annotation._getAppearance(
         partialEvaluator,
         task,
+        RenderingIntentFlag.PRINT,
         annotationStorage,
       );
       assertEquals(
         appearance,
         "/Tx BMC q BT /Goth 5 Tf 1 0 0 1 0 10 Tm " +
-          "2 -5 Td (\x30\x53\x30\x93\x30\x6b\x30\x61\x30\x6f) Tj\n" +
-          "0 -5 Td (\x4e\x16\x75\x4c\x30\x6e) Tj ET Q EMC",
+          "2 -6.93 Td (\x30\x53\x30\x93\x30\x6b\x30\x61\x30\x6f) Tj\n" +
+          "0 -8 Td (\x4e\x16\x75\x4c\x30\x6e) Tj ET Q EMC",
       );
     });
 
@@ -1995,25 +2004,25 @@ describe("annotation", () => {
       const task = new WorkerTask("test print");
       partialEvaluator.xref = xref;
       const expectedAppearance = "/Tx BMC q BT /Helv 5 Tf 1 0 0 1 0 10 Tm " +
-        "2 -5 Td " +
+        "2 -6.93 Td " +
         "(Lorem ipsum dolor sit amet, consectetur adipiscing elit.) Tj\n" +
-        "0 -5 Td " +
+        "0 -8 Td " +
         "(Aliquam vitae felis ac lectus bibendum ultricies quis non) Tj\n" +
-        "0 -5 Td " +
+        "0 -8 Td " +
         "( diam.) Tj\n" +
-        "0 -5 Td " +
+        "0 -8 Td " +
         "(Morbi id porttitor quam, a iaculis dui.) Tj\n" +
-        "0 -5 Td " +
+        "0 -8 Td " +
         "(Pellentesque habitant morbi tristique senectus et netus ) Tj\n" +
-        "0 -5 Td " +
+        "0 -8 Td " +
         "(et malesuada fames ac turpis egestas.) Tj\n" +
-        "0 -5 Td () Tj\n" +
-        "0 -5 Td () Tj\n" +
-        "0 -5 Td " +
+        "0 -8 Td () Tj\n" +
+        "0 -8 Td () Tj\n" +
+        "0 -8 Td " +
         "(Nulla consectetur, ligula in tincidunt placerat, velit ) Tj\n" +
-        "0 -5 Td " +
+        "0 -8 Td " +
         "(augue consectetur orci, sed mattis libero nunc ut massa.) Tj\n" +
-        "0 -5 Td " +
+        "0 -8 Td " +
         "(Etiam facilisis tempus interdum.) Tj ET Q EMC";
 
       const annotation = await AnnotationFactory.create(
@@ -2037,8 +2046,10 @@ describe("annotation", () => {
       const appearance = await annotation._getAppearance(
         partialEvaluator,
         task,
+        RenderingIntentFlag.PRINT,
         annotationStorage,
       );
+
       assertEquals(appearance, expectedAppearance);
     });
 
@@ -2066,11 +2077,12 @@ describe("annotation", () => {
       const appearance = await annotation._getAppearance(
         partialEvaluator,
         task,
+        RenderingIntentFlag.PRINT,
         annotationStorage,
       );
       assertEquals(
         appearance,
-        "/Tx BMC q BT /Helv 5 Tf 1 0 0 1 2 3.035 Tm" +
+        "/Tx BMC q BT /Helv 5 Tf 1 0 0 1 2 3.07 Tm" +
           " (a) Tj 8 0 Td (a) Tj 8 0 Td (\\() Tj" +
           " 8 0 Td (a) Tj 8 0 Td (a) Tj" +
           " 8 0 Td (\\)) Tj 8 0 Td (a) Tj" +
@@ -2110,11 +2122,12 @@ describe("annotation", () => {
       const appearance = await annotation._getAppearance(
         partialEvaluator,
         task,
+        RenderingIntentFlag.PRINT,
         annotationStorage,
       );
       assertEquals(
         appearance,
-        "/Tx BMC q BT /Goth 5 Tf 1 0 0 1 2 2 Tm" +
+        "/Tx BMC q BT /Goth 5 Tf 1 0 0 1 2 3.07 Tm" +
           " (\x30\x53) Tj 8 0 Td (\x30\x93) Tj 8 0 Td (\x30\x6b) Tj" +
           " 8 0 Td (\x30\x61) Tj 8 0 Td (\x30\x6f) Tj" +
           " 8 0 Td (\x4e\x16) Tj 8 0 Td (\x75\x4c) Tj" +
@@ -2162,7 +2175,7 @@ describe("annotation", () => {
         newData!.data,
         "2 0 obj\n<< /Length 74 /Subtype /Form /Resources " +
           "<< /Font << /Helv 314 0 R>>>> /BBox [0 0 32 10]>> stream\n" +
-          "/Tx BMC q BT /Helv 5 Tf 1 0 0 1 0 0 Tm 2 3.04 Td (hello world) Tj " +
+          "/Tx BMC q BT /Helv 5 Tf 1 0 0 1 0 0 Tm 2 3.07 Td (hello world) Tj " +
           "ET Q EMC\nendstream\nendobj\n",
       );
     });
@@ -2204,13 +2217,13 @@ describe("annotation", () => {
         "123 0 obj\n" +
           "<< /Type /Annot /Subtype /Widget /FT /Tx /DA (/Helv 5 Tf) /DR " +
           "<< /Font << /Helv 314 0 R>>>> /Rect [0 0 32 10] " +
-          "/V (hello world) /AP << /N 2 0 R>> /M (date) /MK << /R 90>>>>\nendobj\n",
+          "/V (hello world) /MK << /R 90>> /AP << /N 2 0 R>> /M (date)>>\nendobj\n",
       );
       assertEquals(
         newData!.data,
         "2 0 obj\n<< /Length 74 /Subtype /Form /Resources " +
           "<< /Font << /Helv 314 0 R>>>> /BBox [0 0 32 10] /Matrix [0 1 -1 0 32 0]>> stream\n" +
-          "/Tx BMC q BT /Helv 5 Tf 1 0 0 1 0 0 Tm 2 3.04 Td (hello world) Tj " +
+          "/Tx BMC q BT /Helv 5 Tf 1 0 0 1 0 0 Tm 2 2.94 Td (hello world) Tj " +
           "ET Q EMC\nendstream\nendobj\n",
       );
     });
@@ -2283,8 +2296,8 @@ describe("annotation", () => {
         pdfManagerMock,
         idFactoryMock,
       ) as Annotation;
-      const fieldObject = await annotation.getFieldObject() as FieldObject;
-      const actions = fieldObject.actions!;
+      const fieldObject = await annotation.getFieldObject();
+      const actions = fieldObject!.actions!;
       assertEquals(actions["Mouse Enter"], ["hello()"]);
       assertEquals(actions["Mouse Exit"], [
         "world()",
@@ -2344,9 +2357,9 @@ describe("annotation", () => {
       );
       assertEquals(
         newData!.data,
-        "2 0 obj\n<< /Length 76 /Subtype /Form /Resources " +
+        "2 0 obj\n<< /Length 79 /Subtype /Form /Resources " +
           "<< /Font << /Helv 314 0 R /Goth 159 0 R>>>> /BBox [0 0 32 10]>> stream\n" +
-          `/Tx BMC q BT /Goth 5 Tf 1 0 0 1 0 0 Tm 2 2 Td (${utf16String}) Tj ` +
+          `/Tx BMC q BT /Goth 5 Tf 1 0 0 1 0 0 Tm 2 3.07 Td (${utf16String}) Tj ` +
           "ET Q EMC\nendstream\nendobj\n",
       );
     });
@@ -3585,6 +3598,7 @@ describe("annotation", () => {
       const appearance = await annotation._getAppearance(
         partialEvaluator,
         task,
+        RenderingIntentFlag.PRINT,
         annotationStorage,
       );
       assertEquals(
@@ -3630,6 +3644,7 @@ describe("annotation", () => {
       const appearance = await annotation._getAppearance(
         partialEvaluator,
         task,
+        RenderingIntentFlag.PRINT,
         annotationStorage,
       );
       assertEquals(
@@ -3679,6 +3694,7 @@ describe("annotation", () => {
       const appearance = await annotation._getAppearance(
         partialEvaluator,
         task,
+        RenderingIntentFlag.PRINT,
         annotationStorage,
       );
       assertEquals(
@@ -3737,7 +3753,7 @@ describe("annotation", () => {
           "<< /Type /Annot /Subtype /Widget /FT /Ch /DA (/Helv 5 Tf) /DR " +
           "<< /Font << /Helv 314 0 R>>>> " +
           "/Rect [0 0 32 10] /Opt [(A) (B) (C)] /V (C) " +
-          "/AP << /N 2 0 R>> /M (date) /MK << /R 270>>>>\nendobj\n",
+          "/MK << /R 270>> /AP << /N 2 0 R>> /M (date)>>\nendobj\n",
       );
       assertEquals(
         newData!.data,
@@ -4198,7 +4214,6 @@ describe("annotation", () => {
           "ET\n" +
           "Q\n" +
           "endstream\n" +
-          "\n" +
           "endobj\n",
       );
     });
@@ -4394,7 +4409,6 @@ describe("annotation", () => {
           "922 923 924 925 926 927 c\n" +
           "S\n" +
           "endstream\n" +
-          "\n" +
           "endobj\n",
       );
     });
@@ -4462,7 +4476,6 @@ describe("annotation", () => {
           "922 923 924 925 926 927 c\n" +
           "S\n" +
           "endstream\n" +
-          "\n" +
           "endobj\n",
       );
     });

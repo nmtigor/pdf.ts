@@ -278,6 +278,10 @@ class MooHandlerDB {
         this.#nforce = 0;
     }
 }
+/**
+ * Instance of `Moo` concerns about one value, whether it changes or not.
+ * Instance of `Moo` stores many callbacks.
+ */
 export class Moo {
     #initval;
     #eq;

@@ -72,9 +72,13 @@ function addLinkAttributes(link, { url, target, rel, enabled = true } = {}) {
  * or destination.
  */
 export class PDFLinkService {
+    /** @implement */
     eventBus;
+    /** @implement */
     externalLinkTarget;
+    /** @implement */
     externalLinkRel;
+    /** @implement */
     externalLinkEnabled = true;
     #ignoreDestinationZoom;
     baseUrl;
@@ -99,6 +103,7 @@ export class PDFLinkService {
     setHistory(pdfHistory) {
         this.pdfHistory = pdfHistory;
     }
+    /** @implement */
     get pagesCount() {
         return this.pdfDocument ? this.pdfDocument.numPages : 0;
     }
@@ -115,6 +120,10 @@ export class PDFLinkService {
     }
     set rotation(value) {
         this.pdfViewer.pagesRotation = value;
+    }
+    /** @implement */
+    get isInPresentationMode() {
+        return this.pdfViewer.isInPresentationMode;
     }
     #goToDestinationHelper(rawDest, namedDest, explicitDest) {
         // Dest array looks like that: <page-ref> </XYZ|/FitXXX> <args..>
@@ -526,6 +535,10 @@ export class SimpleLinkService {
         return 0;
     }
     set rotation(value) { }
+    /** @implement */
+    get isInPresentationMode() {
+        return false;
+    }
     /**
      * @param dest The named, or explicit, PDF destination.
      */

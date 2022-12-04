@@ -27,7 +27,7 @@ export class FontLoader {
     styleElement;
     loadingRequests;
     loadTestFontId;
-    constructor({ onUnsupportedFeature, ownerDocument = globalThis.document, styleElement = undefined, // For testing only.
+    constructor({ onUnsupportedFeature, ownerDocument = globalThis.document, styleElement = undefined, // For testing only
      }) {
         this._onUnsupportedFeature = onUnsupportedFeature;
         this._document = ownerDocument;

@@ -42,7 +42,8 @@ interface ChunkedStreamSubstreamCtor {
 export class ChunkedStream extends Stream {
   chunkSize;
 
-  _loadedChunks = new Set<number>();
+  //kkkk bug? `#loadedChunks` does not work. Why?
+  private _loadedChunks = new Set<number>();
   get numChunksLoaded() {
     return this._loadedChunks.size;
   }

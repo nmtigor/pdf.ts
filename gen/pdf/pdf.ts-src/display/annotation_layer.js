@@ -530,6 +530,9 @@ class LinkAnnotationElement extends AnnotationElement {
         }
         return this.container;
     }
+    #setInternalLink() {
+        this.container.setAttribute("data-internal-link", "");
+    }
     /**
      * Bind internal links to the link element.
      */
@@ -542,7 +545,7 @@ class LinkAnnotationElement extends AnnotationElement {
             return false;
         };
         if (destination || destination === /* isTooltipOnly = */ "") {
-            link.className = "internalLink";
+            this.#setInternalLink();
         }
     }
     /**
@@ -554,7 +557,7 @@ class LinkAnnotationElement extends AnnotationElement {
             this.linkService.executeNamedAction(action);
             return false;
         };
-        link.className = "internalLink";
+        this.#setInternalLink();
     }
     /**
      * Bind attachments to the link element.
@@ -565,7 +568,7 @@ class LinkAnnotationElement extends AnnotationElement {
             this.downloadManager?.openOrDownloadData(this.container, attachment.content, attachment.filename);
             return false;
         };
-        link.className = "internalLink";
+        this.#setInternalLink();
     }
     /**
      * Bind SetOCGState actions to the link element.
@@ -576,7 +579,7 @@ class LinkAnnotationElement extends AnnotationElement {
             this.linkService.executeSetOCGState(action);
             return false;
         };
-        link.className = "internalLink";
+        this.#setInternalLink();
     }
     /**
      * Bind JS actions to the link element.
@@ -607,14 +610,14 @@ class LinkAnnotationElement extends AnnotationElement {
         if (!link.onclick) {
             link.onclick = () => false;
         }
-        link.className = "internalLink";
+        this.#setInternalLink();
     }
     #bindResetFormAction(link, resetForm) {
         const otherClickAction = link.onclick;
         if (!otherClickAction) {
             link.href = this.linkService.getAnchorUrl("");
         }
-        link.className = "internalLink";
+        this.#setInternalLink();
         if (!this._fieldObjects) {
             warn(`#bindResetFormAction - "resetForm" action not supported, ` +
                 "ensure that the `fieldObjects` parameter is provided.");
@@ -2083,7 +2086,7 @@ export class FileAttachmentAnnotationElement extends AnnotationElement {
     constructor(parameters) {
         super(parameters, { isRenderable: true });
         const { filename, content } = this.data.file;
-        this.filename = getFilenameFromUrl(filename);
+        this.filename = getFilenameFromUrl(filename, /* onlyStripPath = */ true);
         this.content = content;
         this.linkService.eventBus?.dispatch("fileattachmentannotation", {
             source: this,

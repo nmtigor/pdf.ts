@@ -32,12 +32,12 @@ import { AnnotationEditor } from "./editor/editor.ts";
  * Key/value storage for annotation data in forms.
  */
 export class AnnotationStorage {
+  #modified = false;
+
   #storage: AnnotStorageRecord = new Map<string, AnnotStorageValue>();
   get size() {
     return this.#storage.size;
   }
-
-  #modified = false;
 
   // Callbacks to signal when the modification state is set or reset.
   // This is used by the viewer to only bind on `beforeunload` if forms
@@ -96,9 +96,9 @@ export class AnnotationStorage {
     let modified = false;
     if (obj !== undefined) {
       for (const [entry, val] of Object.entries(value)) {
-        if (obj[<ASVKey> entry] !== val) {
+        if (obj[entry as ASVKey] !== val) {
           modified = true;
-          (<any> obj)[entry] = val;
+          (obj as any)[entry] = val;
         }
       }
     } else {

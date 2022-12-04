@@ -228,7 +228,7 @@ export const WorkerMessageHandler = {
                 }
                 cachedChunks = [];
             };
-            const readPromise = new Promise((resolve, reject) => {
+            new Promise((resolve, reject) => {
                 const readChunk = ({ value, done }) => {
                     try {
                         ensureNotTerminated();
@@ -258,8 +258,7 @@ export const WorkerMessageHandler = {
                     }
                 };
                 fullRequest.read().then(readChunk, reject);
-            });
-            readPromise.catch((e) => {
+            }).catch((e) => {
                 pdfManagerCapability.reject(e);
                 cancelXHRs = undefined;
             });
@@ -480,6 +479,9 @@ export const WorkerMessageHandler = {
                         return stream.bytes;
                     }
                 }
+                const needAppearances = acroFormRef &&
+                    acroForm instanceof Dict &&
+                    newRefs.some((ref) => ref.needAppearances);
                 const xfa = (acroForm instanceof Dict &&
                     acroForm.get("XFA")) || undefined;
                 let xfaDatasetsRef;
@@ -488,16 +490,14 @@ export const WorkerMessageHandler = {
                     for (let i = 0, ii = xfa.length; i < ii; i += 2) {
                         if (xfa[i] === "datasets") {
                             xfaDatasetsRef = xfa[i + 1];
-                            acroFormRef = undefined;
                             hasXfaDatasetsEntry = true;
                         }
                     }
                     if (xfaDatasetsRef === undefined) {
-                        xfaDatasetsRef = xref.getNewRef();
+                        xfaDatasetsRef = xref.getNewTemporaryRef();
                     }
                 }
                 else if (xfa) {
-                    acroFormRef = undefined;
                     // TODO: Support XFA streams.
                     warn("Unsupported XFA type.");
                 }
@@ -516,27 +516,33 @@ export const WorkerMessageHandler = {
                     newXrefInfo = {
                         rootRef: xref.trailer.getRaw("Root") || undefined,
                         encryptRef: xref.trailer.getRaw("Encrypt") || undefined,
-                        newRef: xref.getNewRef(),
+                        newRef: xref.getNewTemporaryRef(),
                         infoRef: xref.trailer.getRaw("Info") || undefined,
                         info: infoObj,
-                        fileIds: xref.trailer.get("ID") || undefined,
+                        fileIds: xref.trailer.get("ID") ||
+                            undefined,
                         startXRef,
                         filename,
                     };
                 }
-                xref.resetNewRef();
-                return incrementalUpdate({
-                    originalData: stream.bytes,
-                    xrefInfo: newXrefInfo,
-                    newRefs,
-                    xref,
-                    hasXfa: !!xfa,
-                    xfaDatasetsRef,
-                    hasXfaDatasetsEntry,
-                    acroFormRef,
-                    acroForm,
-                    xfaData,
-                });
+                try {
+                    return incrementalUpdate({
+                        originalData: stream.bytes,
+                        xrefInfo: newXrefInfo,
+                        newRefs,
+                        xref,
+                        hasXfa: !!xfa,
+                        xfaDatasetsRef,
+                        hasXfaDatasetsEntry,
+                        needAppearances,
+                        acroFormRef,
+                        acroForm,
+                        xfaData,
+                    });
+                }
+                finally {
+                    xref.resetNewTemporaryRef();
+                }
             }));
         });
         handler.on("GetOperatorList", (data, sink) => {

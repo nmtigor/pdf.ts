@@ -94,6 +94,7 @@ export type XFAPath = XFAPathCom[];
  */
 export declare function parseXFAPath(path: string): XFAPath;
 export declare function escapePDFName(str: string): string;
+export declare function escapeString(str: string): string;
 export type AnnotActions = Record<ActionEventName, string[]>;
 export declare function collectActions(xref: XRef, dict: Dict, eventType: ActionEventTypeType): AnnotActions | undefined;
 export declare function encodeToXmlString(str: string): string;
@@ -104,5 +105,9 @@ export declare function recoverJsURL(str: string): {
 } | null;
 export declare function numberToString(value: number): string;
 export declare function getNewAnnotationsMap(annotationStorage: AnnotStorageRecord | undefined): Map<number, AnnotStorageValue[]> | undefined;
+export declare function isAscii(str: string): boolean;
+export declare function stringToUTF16HexString(str: string): string;
+export declare function stringToUTF16String(str: string, bigEndian?: boolean): string;
+export declare function getRotationMatrix(rotation: number, width: number, height: number): number[];
 export {};
 //# sourceMappingURL=core_utils.d.ts.map

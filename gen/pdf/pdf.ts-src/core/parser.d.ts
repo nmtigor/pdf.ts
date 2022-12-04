@@ -27,6 +27,7 @@ export declare class Parser {
     allowStreams: boolean;
     recoveryMode: boolean;
     imageCache: Record<string, any>;
+    _imageId: number;
     buf1: Obj;
     buf2: Obj;
     constructor({ lexer, xref, allowStreams, recoveryMode, }: _ParserCtorP);

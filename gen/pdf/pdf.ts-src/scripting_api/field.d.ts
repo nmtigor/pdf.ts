@@ -1,24 +1,19 @@
-import { FieldObject } from "../core/annotation.js";
+import { FieldItem, FieldObject } from "../core/annotation.js";
 import { AnnotActions } from "../core/core_utils.js";
-import { CMYK, RGB } from "../shared/scripting_utils.js";
 import { DocWrapped, FieldWrapped } from "./app.js";
 import { CorrectColor } from "./color.js";
 import { ScriptingActionName } from "./common.js";
 import { Event } from "./event.js";
 import { PDFObject, ScriptingData, SendData } from "./pdf_object.js";
-interface _Item {
-    displayValue: string;
-    exportValue: string;
-}
 export interface SendFieldData extends SendData {
     indices?: number[];
     clear?: undefined;
     remove?: number;
     insert?: {
         index: number;
-    } & _Item;
+    } & FieldItem;
     focus?: boolean;
-    items?: _Item[];
+    items?: FieldItem[];
     value?: string | number;
     selRange?: [number, number];
     formattedValue?: string | undefined;
@@ -73,10 +68,10 @@ export interface ScriptingFieldData extends ScriptingData<SendFieldData> {
     browseForFileToSubmit?: () => void;
     fieldPath: string;
     fillColor?: CorrectColor;
-    items?: _Item[];
+    items?: FieldItem[];
     page?: number;
-    strokeColor?: [string, number];
-    textColor?: [string, ...([number] | RGB | CMYK)];
+    strokeColor?: CorrectColor;
+    textColor?: CorrectColor;
     value?: string | string[];
     kidIds?: string[];
     siblings?: unknown;
@@ -147,19 +142,19 @@ export declare class Field extends PDFObject<SendFieldData> {
     get charLimit(): number;
     set charLimit(limit: number);
     _isChoice: boolean;
-    _items: _Item[];
+    _items: FieldItem[];
     get numItems(): number;
     set numItems(_: number);
     _hasValue: boolean;
     _page: number;
     get page(): number;
     set page(_: number);
-    _strokeColor: [string, number];
-    get strokeColor(): [string, number];
-    set strokeColor(color: [string, number]);
-    _textColor: [string, number] | [string, number, number, number] | [string, number, number, number, number];
-    get textColor(): [string, number] | [string, number, number, number] | [string, number, number, number, number];
-    set textColor(color: [string, number] | [string, number, number, number] | [string, number, number, number, number]);
+    _strokeColor: CorrectColor;
+    get strokeColor(): CorrectColor;
+    set strokeColor(color: CorrectColor);
+    _textColor: CorrectColor;
+    get textColor(): CorrectColor;
+    set textColor(color: CorrectColor);
     _value: string | string[];
     get valueAsString(): string;
     set valueAsString(_: string);
@@ -174,17 +169,17 @@ export declare class Field extends PDFObject<SendFieldData> {
     constructor(data: ScriptingFieldData);
     get currentValueIndices(): number | (number | undefined)[] | undefined;
     set currentValueIndices(indices: number | (number | undefined)[] | undefined);
-    get borderColor(): [string, number];
-    set borderColor(color: [string, number]);
-    get fgColor(): [string, number] | [string, number, number, number] | [string, number, number, number, number];
-    set fgColor(color: [string, number] | [string, number, number, number] | [string, number, number, number, number]);
+    get borderColor(): CorrectColor;
+    set borderColor(color: CorrectColor);
+    get fgColor(): CorrectColor;
+    set fgColor(color: CorrectColor);
     get value(): string | string[];
     set value(value: string | string[]);
     buttonImportIcon(cPath?: undefined, nPave?: number): void;
     checkThisBox(nWidget: number, bCheckIt?: boolean): void;
     clearItems(): void;
     deleteItemAt(nIdx?: number): void;
-    getItemAt(nIdx?: number, bExportValue?: boolean): string;
+    getItemAt(nIdx?: number, bExportValue?: boolean): string | string[] | undefined;
     getArray(): Field[];
     getLock(): undefined;
     isBoxChecked(nWidget: number): boolean;
@@ -226,5 +221,4 @@ export declare class CheckboxField extends RadioButtonField {
     isDefaultChecked(nWidget: number): boolean;
     checkThisBox(nWidget: number, bCheckIt?: boolean): void;
 }
-export {};
 //# sourceMappingURL=field.d.ts.map

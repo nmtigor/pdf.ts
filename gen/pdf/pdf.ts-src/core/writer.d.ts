@@ -15,9 +15,10 @@ interface _IncrementalUpdateP {
     acroFormRef?: Ref | undefined;
     hasXfa?: boolean;
     hasXfaDatasetsEntry?: boolean;
+    needAppearances: boolean | undefined;
     xfaData?: string | undefined;
     xfaDatasetsRef?: Ref | undefined;
 }
-export declare function incrementalUpdate({ originalData, xrefInfo, newRefs, xref, hasXfa, xfaDatasetsRef, hasXfaDatasetsEntry, acroFormRef, acroForm, xfaData, }: _IncrementalUpdateP): Uint8Array;
+export declare function incrementalUpdate({ originalData, xrefInfo, newRefs, xref, hasXfa, hasXfaDatasetsEntry, xfaDatasetsRef, needAppearances, acroFormRef, acroForm, xfaData, }: _IncrementalUpdateP): Uint8Array;
 export {};
 //# sourceMappingURL=writer.d.ts.map
