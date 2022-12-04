@@ -48,7 +48,7 @@ import {
   Ref,
   RefSet,
 } from "./primitives.ts";
-import { Stream } from "./stream.ts";
+import { Stream, StringStream } from "./stream.ts";
 /*80--------------------------------------------------------------------------*/
 
 interface XRefEntry {
@@ -83,15 +83,32 @@ export class XRef {
   _pendingRefs = new RefSet();
   stats;
 
-  #newRefNum: number | null = null;
-  getNewRef() {
-    if (this.#newRefNum === null) {
-      this.#newRefNum = this.entries.length || 1;
+  #newPersistentRefNum: number | undefined;
+  getNewPersistentRef(obj: StringStream | Dict) {
+    // When printing we don't care that much about the ref number by itself, it
+    // can increase for ever and it allows to keep some re-usable refs.
+    if (this.#newPersistentRefNum === undefined) {
+      this.#newPersistentRefNum = this.entries.length || 1;
     }
-    return Ref.get(this.#newRefNum++, 0);
+    const num = this.#newPersistentRefNum++;
+    this.#cacheMap.set(num, obj);
+    return Ref.get(num, 0);
   }
-  resetNewRef() {
-    this.#newRefNum = null;
+
+  #newTemporaryRefNum: number | undefined;
+  getNewTemporaryRef() {
+    // When saving we want to have some minimal numbers.
+    // Those refs are only created in order to be written in the final pdf
+    // stream.
+    if (this.#newTemporaryRefNum === undefined) {
+      this.#newTemporaryRefNum = this.entries.length || 1;
+    }
+    return Ref.get(this.#newTemporaryRefNum++, 0);
+  }
+
+  resetNewTemporaryRef() {
+    // Called once saving is finished.
+    this.#newTemporaryRefNum = undefined;
   }
 
   startXRefQueue!: number[];
@@ -570,7 +587,7 @@ export class XRef {
         // Find the next "obj" string, rather than "endobj", to ensure that
         // we won't skip over a new 'obj' operator in corrupt files where
         // 'endobj' operators are missing (fixes issue9105_reduced.pdf).
-        while (startPos < buffer.length) {
+        while (startPos < length) {
           const endPos = startPos + skipUntil(buffer, startPos, objBytes) + 4;
           contentLength = endPos - position;
 
@@ -615,7 +632,29 @@ export class XRef {
         (token.length === 7 || /\s/.test(token[7]))
       ) {
         trailers.push(position);
-        position += skipUntil(buffer, position, startxrefBytes);
+
+        const contentLength = skipUntil(buffer, position, startxrefBytes);
+        // Attempt to handle (some) corrupt documents, where no 'startxref'
+        // operators are present (fixes issue15590.pdf).
+        if (position + contentLength >= length) {
+          const endPos = position + skipUntil(buffer, position, objBytes) + 4;
+
+          const checkPos = Math.max(endPos - CHECK_CONTENT_LENGTH, position);
+          const tokenStr = bytesToString(buffer.subarray(checkPos, endPos));
+
+          // Find the first "obj" occurrence after the 'trailer' operator.
+          const objToken = nestedObjRegExp.exec(tokenStr);
+
+          if (objToken && objToken[1]) {
+            warn(
+              'indexObjects: Found first "obj" after "trailer", ' +
+                'caused by missing "startxref" -- trying to recover.',
+            );
+            position = endPos - objToken[1].length;
+            continue;
+          }
+        }
+        position += contentLength;
       } else {
         position += token.length + 1;
       }

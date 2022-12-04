@@ -2,11 +2,11 @@ The purpose of this project is to help learning PDF format and developing PDF to
 
 It is
 
-* based on [pdf.js@v3.0.279](https://github.com/mozilla/pdf.js/tree/v3.0.279),
+* based on [pdf.js@v3.1.81](https://github.com/mozilla/pdf.js/tree/v3.1.81),
 
 * **transpiled using [TypeScript@mymain](https://github.com/nmtigor/TypeScript/tree/mymain/PRs)!**
 
----
+--------------------------------------------------------------------------------
 
 ### viewer.html
 
@@ -26,7 +26,7 @@ It is
 * Start a local web server for <ins>/path_to/pdf.ts</ins> at <ins>h</ins><ins>ttp://localhost:8000</ins>.
 * Visit <ins>h</ins><ins>ttp://localhost:8000/src/pdf/pdf.ts-web/viewer.html</ins>.
 
----
+--------------------------------------------------------------------------------
 
 ### deno test
 
@@ -35,10 +35,11 @@ It is
 * 
   ```bash
   cd /path_to/pdf.ts/src/test
-  deno test  --allow-read ../pdf/pdf.ts-src/core
+  deno test --allow-read --allow-net ../pdf/pdf.ts-src/core # 30 passed (648 steps)
+  deno test ../pdf/pdf.ts-src/shared # 2 passed (16 steps)
   ```
 
----
+--------------------------------------------------------------------------------
 
 ### Current States - TODO
 

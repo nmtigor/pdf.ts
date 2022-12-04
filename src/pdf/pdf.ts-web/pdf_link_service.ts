@@ -144,9 +144,14 @@ interface PDFLinkServiceOptions {
  * or destination.
  */
 export class PDFLinkService implements IPDFLinkService {
+  /** @implement */
   eventBus: EventBus;
+
+  /** @implement */
   externalLinkTarget: LinkTarget | undefined;
+  /** @implement */
   externalLinkRel: string | undefined;
+  /** @implement */
   externalLinkEnabled = true;
   #ignoreDestinationZoom: boolean;
 
@@ -183,6 +188,7 @@ export class PDFLinkService implements IPDFLinkService {
     this.pdfHistory = pdfHistory;
   }
 
+  /** @implement */
   get pagesCount(): number {
     return this.pdfDocument ? this.pdfDocument.numPages : 0;
   }
@@ -201,6 +207,11 @@ export class PDFLinkService implements IPDFLinkService {
   }
   set rotation(value: number) {
     this.pdfViewer!.pagesRotation = value;
+  }
+
+  /** @implement */
+  get isInPresentationMode() {
+    return this.pdfViewer!.isInPresentationMode;
   }
 
   #goToDestinationHelper(
@@ -669,6 +680,11 @@ export class SimpleLinkService implements IPDFLinkService {
     return 0;
   }
   set rotation(value: number) {}
+
+  /** @implement */
+  get isInPresentationMode() {
+    return false;
+  }
 
   /**
    * @param dest The named, or explicit, PDF destination.

@@ -60,8 +60,8 @@ export abstract class BaseCanvasFactory {
     // resources immediately, which can greatly reduce memory consumption.
     canvasAndContext.canvas.width = 0;
     canvasAndContext.canvas.height = 0;
-    (<any> canvasAndContext).canvas = null;
-    (<any> canvasAndContext).context = null;
+    canvasAndContext.canvas = undefined as any;
+    canvasAndContext.context = undefined as any;
   }
 
   /**

@@ -2,6 +2,7 @@
  * global
 ** -------------------------------------------------------------------------- */
 
+import { Hover, Pointer } from "./lib/alias.ts";
 import { HTMLVCo } from "./lib/mv.ts";
 import { assert } from "./lib/util/trace.ts";
 /*80--------------------------------------------------------------------------*/
@@ -54,16 +55,25 @@ export const global = new class {
 
   /** @deprecated */
   has_ResizeObserver = false;
-
+  /** @deprecated */
   can_touchstart = false;
+  pointer = Pointer.none;
+  anyPointer = Pointer.none;
+  get can_touch() {
+    return global.anyPointer === Pointer.coarse;
+  }
+  hover = Hover.none;
+  anyHover = Hover.none;
+  get can_hover() {
+    return global.anyHover === Hover.hover;
+  }
 
   readonly #tabsize = 2;
   #dent = 0;
   get dent() {
     let ret;
-    if (this.#dent === 0) {
-      ret = "";
-    } else ret = new Array(this.#dent).fill(" ", 0).join("");
+    if (this.#dent === 0) ret = "";
+    else ret = new Array(this.#dent).fill(" ", 0).join("");
     return ret;
   }
   get indent() {

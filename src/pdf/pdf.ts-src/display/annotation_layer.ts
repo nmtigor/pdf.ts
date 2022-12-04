@@ -708,6 +708,10 @@ class LinkAnnotationElement extends AnnotationElement {
     return this.container!;
   }
 
+  #setInternalLink() {
+    this.container!.setAttribute("data-internal-link", "");
+  }
+
   /**
    * Bind internal links to the link element.
    */
@@ -720,7 +724,7 @@ class LinkAnnotationElement extends AnnotationElement {
       return false;
     };
     if (destination || destination === /* isTooltipOnly = */ "") {
-      link.className = "internalLink";
+      this.#setInternalLink();
     }
   }
 
@@ -733,7 +737,7 @@ class LinkAnnotationElement extends AnnotationElement {
       this.linkService.executeNamedAction(action);
       return false;
     };
-    link.className = "internalLink";
+    this.#setInternalLink();
   }
 
   /**
@@ -749,7 +753,7 @@ class LinkAnnotationElement extends AnnotationElement {
       );
       return false;
     };
-    link.className = "internalLink";
+    this.#setInternalLink();
   }
 
   /**
@@ -761,7 +765,7 @@ class LinkAnnotationElement extends AnnotationElement {
       this.linkService.executeSetOCGState(action);
       return false;
     };
-    link.className = "internalLink";
+    this.#setInternalLink();
   }
 
   /**
@@ -779,7 +783,7 @@ class LinkAnnotationElement extends AnnotationElement {
       if (!jsName) {
         continue;
       }
-      (<any> link)[jsName] = () => {
+      (link as any)[jsName] = () => {
         this.linkService.eventBus?.dispatch("dispatcheventinsandbox", {
           source: this,
           detail: {
@@ -794,7 +798,7 @@ class LinkAnnotationElement extends AnnotationElement {
     if (!link.onclick) {
       link.onclick = () => false;
     }
-    link.className = "internalLink";
+    this.#setInternalLink();
   }
 
   #bindResetFormAction(link: HTMLAnchorElement, resetForm: ResetForm) {
@@ -802,7 +806,7 @@ class LinkAnnotationElement extends AnnotationElement {
     if (!otherClickAction) {
       link.href = this.linkService.getAnchorUrl("");
     }
-    link.className = "internalLink";
+    this.#setInternalLink();
 
     if (!this._fieldObjects) {
       warn(
@@ -1069,7 +1073,11 @@ class WidgetAnnotationElement extends AnnotationElement {
     }
     style.fontSize = `calc(${computedFontSize}px * var(--scale-factor))`;
 
-    style.color = Util.makeHexColor(fontColor[0], fontColor[1], fontColor[2]);
+    style.color = Util.makeHexColor(
+      fontColor![0],
+      fontColor![1],
+      fontColor![2],
+    );
 
     if (this.data.textAlignment !== null) {
       style.textAlign = TEXT_ALIGNMENT[this.data.textAlignment!];
@@ -2641,7 +2649,7 @@ export class FileAttachmentAnnotationElement extends AnnotationElement {
     super(parameters, { isRenderable: true });
 
     const { filename, content } = this.data.file!;
-    this.filename = getFilenameFromUrl(filename);
+    this.filename = getFilenameFromUrl(filename, /* onlyStripPath = */ true);
     this.content = content;
 
     this.linkService.eventBus?.dispatch("fileattachmentannotation", {

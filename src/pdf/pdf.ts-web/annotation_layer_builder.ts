@@ -43,6 +43,7 @@ import {
 } from "./interfaces.ts";
 import { NullL10n } from "./l10n_utils.ts";
 import { TextAccessibilityManager } from "./text_accessibility.ts";
+import { PresentationModeState } from "./ui_utils.ts";
 /*80--------------------------------------------------------------------------*/
 
 interface AnnotationLayerBuilderOptions {
@@ -92,6 +93,11 @@ export class AnnotationLayerBuilder {
 
   div?: HTMLDivElement;
   _cancelled = false;
+  _eventBus;
+
+  #onPresentationModeChanged:
+    | ((evt: { state: PresentationModeState }) => void)
+    | undefined;
 
   constructor({
     pageDiv,
@@ -123,6 +129,8 @@ export class AnnotationLayerBuilder {
     this._mouseState = mouseState;
     this._annotationCanvasMap = annotationCanvasMap;
     this._accessibilityManager = accessibilityManager;
+
+    this._eventBus = linkService.eventBus;
   }
 
   /**
@@ -176,17 +184,63 @@ export class AnnotationLayerBuilder {
 
       AnnotationLayer.render(parameters);
       this.l10n.translate(this.div);
+
+      // Ensure that interactive form elements in the annotationLayer are
+      // disabled while PresentationMode is active (see issue 12232).
+      if (this.linkService.isInPresentationMode) {
+        this.#updatePresentationModeState(PresentationModeState.FULLSCREEN);
+      }
+      if (!this.#onPresentationModeChanged) {
+        this.#onPresentationModeChanged = (evt) => {
+          this.#updatePresentationModeState(evt.state);
+        };
+        this._eventBus?._on(
+          "presentationmodechanged",
+          this.#onPresentationModeChanged,
+        );
+      }
     }
   }
 
   cancel() {
     this._cancelled = true;
+
+    if (this.#onPresentationModeChanged) {
+      this._eventBus?._off(
+        "presentationmodechanged",
+        this.#onPresentationModeChanged,
+      );
+      this.#onPresentationModeChanged = undefined;
+    }
   }
 
   hide() {
     if (!this.div) return;
 
     this.div.hidden = true;
+  }
+
+  #updatePresentationModeState(state: PresentationModeState) {
+    if (!this.div) {
+      return;
+    }
+    let disableFormElements = false;
+
+    switch (state) {
+      case PresentationModeState.FULLSCREEN:
+        disableFormElements = true;
+        break;
+      case PresentationModeState.NORMAL:
+        break;
+      default:
+        return;
+    }
+    for (const section of this.div.childNodes) {
+      if ((section as HTMLElement).hasAttribute("data-internal-link")) {
+        continue;
+      }
+      (section as HTMLElement).inert = disableFormElements;
+    }
   }
 }
 /*80--------------------------------------------------------------------------*/

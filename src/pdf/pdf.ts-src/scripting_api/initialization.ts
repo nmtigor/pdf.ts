@@ -161,24 +161,24 @@ export function initSandbox(params: { data: CreateSandboxP }) {
       switch (obj!.type) {
         case "radiobutton": {
           const otherButtons = annotations.slice(1);
-          field = new RadioButtonField(otherButtons, <ScriptingFieldData> obj);
+          field = new RadioButtonField(otherButtons, obj as ScriptingFieldData);
           break;
         }
         case "checkbox": {
           const otherButtons = annotations.slice(1);
-          field = new CheckboxField(otherButtons, <ScriptingFieldData> obj);
+          field = new CheckboxField(otherButtons, obj as ScriptingFieldData);
           break;
         }
         case "text":
           if (annotations.length <= 1) {
-            field = new Field(<ScriptingFieldData> obj);
+            field = new Field(obj as ScriptingFieldData);
             break;
           }
           obj!.siblings = annotations.map((x) => x.id).slice(1);
-          field = new Field(<ScriptingFieldData> obj);
+          field = new Field(obj as ScriptingFieldData);
           break;
         default:
-          field = new Field(<ScriptingFieldData> obj);
+          field = new Field(obj as ScriptingFieldData);
       }
 
       const wrapped = new Proxy<Field>(field, proxyHandler);

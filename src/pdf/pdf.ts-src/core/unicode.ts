@@ -3022,13 +3022,13 @@ export function reverseIfRtl(chars: string) {
   return buf.join("");
 }
 
-interface _CharUnicodeCategory {
+export interface CharUnicodeCategory {
   isWhitespace: boolean;
   isZeroWidthDiacritic: boolean;
   isInvisibleFormatMark: boolean;
 }
 
-const CategoryCache = new Map<string, _CharUnicodeCategory>();
+const CategoryCache = new Map<string, CharUnicodeCategory>();
 const SpecialCharRegExp = new RegExp("^(\\s)|(\\p{Mn})|(\\p{Cf})$", "u");
 
 export function getCharUnicodeCategory(char: string) {
@@ -3037,7 +3037,7 @@ export function getCharUnicodeCategory(char: string) {
     return cachedCategory;
   }
   const groups = char.match(SpecialCharRegExp);
-  const category: _CharUnicodeCategory = {
+  const category: CharUnicodeCategory = {
     isWhitespace: !!(groups && groups[1]),
     isZeroWidthDiacritic: !!(groups && groups[2]),
     isInvisibleFormatMark: !!(groups && groups[3]),

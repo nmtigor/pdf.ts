@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-import { FieldObject } from "../core/annotation.ts";
+import { FieldItem, FieldObject } from "../core/annotation.ts";
 import { AnnotActions } from "../core/core_utils.ts";
 import { CMYK, RGB } from "../shared/scripting_utils.ts";
 import { DocWrapped, FieldWrapped } from "./app.ts";
@@ -32,18 +32,13 @@ import { Event } from "./event.ts";
 import { PDFObject, ScriptingData, SendData } from "./pdf_object.ts";
 /*80--------------------------------------------------------------------------*/
 
-interface _Item {
-  displayValue: string;
-  exportValue: string;
-}
-
 export interface SendFieldData extends SendData {
   indices?: number[];
   clear?: undefined;
   remove?: number;
-  insert?: { index: number } & _Item;
+  insert?: { index: number } & FieldItem;
   focus?: boolean;
-  items?: _Item[];
+  items?: FieldItem[];
   value?: string | number;
   selRange?: [number, number];
   formattedValue?: string | undefined;
@@ -101,10 +96,10 @@ export interface ScriptingFieldData extends ScriptingData<SendFieldData> {
   browseForFileToSubmit?: () => void;
   fieldPath: string;
   fillColor?: CorrectColor;
-  items?: _Item[];
+  items?: FieldItem[];
   page?: number;
-  strokeColor?: [string, number];
-  textColor?: [string, ...([number] | RGB | CMYK)];
+  strokeColor?: CorrectColor;
+  textColor?: CorrectColor;
   value?: string | string[];
   kidIds?: string[];
   siblings?: unknown;
@@ -404,20 +399,20 @@ export class Field extends PDFObject<SendFieldData> {
     indices.sort();
 
     if (this.multipleSelection) {
-      this._currentValueIndices = <number[]> indices;
+      this._currentValueIndices = indices as number[];
       this._value = [];
-      (<number[]> indices).forEach((i) => {
-        (<string[]> this._value).push(this._items[i].displayValue);
+      (indices as number[]).forEach((i) => {
+        (this._value as string[]).push(this._items[i].displayValue as string);
       });
     } else {
       if (indices.length > 0) {
         indices = indices.splice(1, indices.length - 1);
         this._currentValueIndices = indices[0]!;
-        // this._value = this._items[this._currentValueIndices];
-        this._value = this._items[this._currentValueIndices].displayValue;
+        // this._value = this._items[this._currentValueIndices]; kkkk bug?
+        this._value = this._items[this._currentValueIndices].displayValue!;
       }
     }
-    this._send!({ id: this._id, indices: <number[]> indices });
+    this._send!({ id: this._id, indices: indices as number[] });
   }
 
   get borderColor() {
@@ -445,8 +440,8 @@ export class Field extends PDFObject<SendFieldData> {
       switch (this._fieldType) {
         case FieldType.number:
         case FieldType.percent:
-          value = <any> parseFloat(value);
-          if (!isNaN(<any> value)) {
+          value = parseFloat(value) as any;
+          if (!isNaN(value as any)) {
             this._value = value;
           }
           break;
@@ -465,8 +460,8 @@ export class Field extends PDFObject<SendFieldData> {
           this._currentValueIndices = [];
         }
         this._items.forEach(({ displayValue }, i) => {
-          if (values.has(displayValue)) {
-            (<number[]> this._currentValueIndices).push(i);
+          if (values.has(displayValue as string)) {
+            (this._currentValueIndices as number[]).push(i);
           }
         });
       } else {
@@ -605,7 +600,7 @@ export class Field extends PDFObject<SendFieldData> {
     if (cExport === undefined) {
       cExport = cName;
     }
-    const data: _Item = { displayValue: cName, exportValue: cExport };
+    const data: FieldItem = { displayValue: cName, exportValue: cExport };
     this._items.splice(nIdx, 0, data);
     if (Array.isArray(this._currentValueIndices)) {
       let index = this._currentValueIndices.findIndex((i) => i >= nIdx);

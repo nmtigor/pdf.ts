@@ -17,10 +17,15 @@
  * limitations under the License.
  */
 
-import { bytesToString, escapeString, warn } from "../shared/util.ts";
+import { bytesToString, warn } from "../shared/util.ts";
 import { type SaveData } from "./annotation.ts";
 import { BaseStream } from "./base_stream.ts";
-import { escapePDFName, numberToString, parseXFAPath } from "./core_utils.ts";
+import {
+  escapePDFName,
+  escapeString,
+  numberToString,
+  parseXFAPath,
+} from "./core_utils.ts";
 import { calculateMD5, CipherTransform } from "./crypto.ts";
 import { Dict, Name, type Obj, Ref } from "./primitives.ts";
 import { type XRefInfo } from "./worker.ts";
@@ -67,7 +72,7 @@ function writeStream(
   if (transform !== undefined) {
     string = transform.encryptString(string);
   }
-  buffer.push(string, "\nendstream\n");
+  buffer.push(string, "\nendstream");
 }
 
 function writeArray(
@@ -186,70 +191,83 @@ function writeXFADataForAcroform(str: string, newRefs: SaveData[]) {
   return buffer.join("");
 }
 
-interface _UpdateXFAP {
-  xfaData: string | undefined;
-  xfaDatasetsRef: Ref | undefined;
-  hasXfaDatasetsEntry?: boolean;
-  acroFormRef: Ref | undefined;
-  acroForm: Dict | undefined;
-  newRefs: SaveData[];
+interface _UpdateAcroformP {
   xref: XRef | undefined;
-  xrefInfo: XRefInfo;
+  acroForm: Dict | undefined;
+  acroFormRef: Ref | undefined;
+  hasXfa?: boolean;
+  hasXfaDatasetsEntry?: boolean;
+  xfaDatasetsRef: Ref | undefined;
+  needAppearances: boolean | undefined;
+  newRefs: SaveData[];
 }
-function updateXFA({
-  xfaData,
-  xfaDatasetsRef,
-  hasXfaDatasetsEntry,
-  acroFormRef,
-  acroForm,
-  newRefs,
+function updateAcroform({
   xref,
-  xrefInfo,
-}: _UpdateXFAP) {
-  if (xref === undefined) {
+  acroForm,
+  acroFormRef,
+  hasXfa,
+  hasXfaDatasetsEntry,
+  xfaDatasetsRef,
+  needAppearances,
+  newRefs,
+}: _UpdateAcroformP) {
+  if (hasXfa && !hasXfaDatasetsEntry && !xfaDatasetsRef) {
+    warn("XFA - Cannot save it");
+  }
+
+  if (!needAppearances && (!hasXfa || !xfaDatasetsRef)) {
     return;
   }
 
-  if (!hasXfaDatasetsEntry) {
-    if (!acroFormRef) {
-      warn("XFA - Cannot save it");
-      return;
-    }
+  // Clone the acroForm.
+  const dict = new Dict(xref);
+  for (const key of acroForm!.getKeys()) {
+    dict.set(key, acroForm!.getRaw(key));
+  }
 
+  if (hasXfa && !hasXfaDatasetsEntry) {
     // We've a XFA array which doesn't contain a datasets entry.
     // So we'll update the AcroForm dictionary to have an XFA containing
     // the datasets.
-    const oldXfa = <Obj[]> acroForm!.get("XFA");
-    const newXfa = oldXfa.slice();
+    const newXfa = (acroForm!.get("XFA") as Obj[]).slice();
     newXfa.splice(2, 0, "datasets");
     newXfa.splice(3, 0, xfaDatasetsRef!);
 
-    acroForm!.set("XFA", newXfa);
-
-    const encrypt = xref.encrypt;
-    let transform: CipherTransform | undefined;
-    if (encrypt) {
-      transform = encrypt.createCipherTransform(
-        acroFormRef.num,
-        acroFormRef.gen,
-      );
-    }
-
-    const buffer = [`${acroFormRef.num} ${acroFormRef.gen} obj\n`];
-    writeDict(acroForm!, buffer, transform);
-    buffer.push("\n");
-
-    acroForm!.set("XFA", oldXfa);
-
-    newRefs.push({ ref: acroFormRef, data: buffer.join("") });
+    dict.set("XFA", newXfa);
   }
 
+  if (needAppearances) {
+    dict.set("NeedAppearances", true);
+  }
+
+  const encrypt = xref!.encrypt;
+  let transform: CipherTransform | undefined;
+  if (encrypt) {
+    transform = encrypt.createCipherTransform(
+      acroFormRef!.num,
+      acroFormRef!.gen,
+    );
+  }
+
+  const buffer: string[] = [];
+  writeObject(acroFormRef!, dict, buffer, transform);
+
+  newRefs.push({ ref: acroFormRef!, data: buffer.join("") });
+}
+
+interface _UpdateXFAP {
+  xfaData: string | undefined;
+  xfaDatasetsRef: Ref | undefined;
+  newRefs: SaveData[];
+  xref: XRef | undefined;
+}
+function updateXFA({ xfaData, xfaDatasetsRef, newRefs, xref }: _UpdateXFAP) {
   if (xfaData === undefined) {
-    const datasets = <BaseStream> xref.fetchIfRef(xfaDatasetsRef!);
+    const datasets = xref!.fetchIfRef(xfaDatasetsRef!) as BaseStream;
     xfaData = writeXFADataForAcroform(datasets.getString(), newRefs);
   }
 
-  const encrypt = xref.encrypt;
+  const encrypt = xref!.encrypt;
   if (encrypt) {
     const transform = encrypt.createCipherTransform(
       xfaDatasetsRef!.num,
@@ -277,6 +295,8 @@ interface _IncrementalUpdateP {
   hasXfa?: boolean;
   hasXfaDatasetsEntry?: boolean;
 
+  needAppearances: boolean | undefined;
+
   xfaData?: string | undefined;
   xfaDatasetsRef?: Ref | undefined;
 }
@@ -286,22 +306,30 @@ export function incrementalUpdate({
   newRefs,
   xref,
   hasXfa = false,
-  xfaDatasetsRef,
   hasXfaDatasetsEntry = false,
+  xfaDatasetsRef,
+  needAppearances,
   acroFormRef,
   acroForm,
   xfaData,
 }: _IncrementalUpdateP) {
+  updateAcroform({
+    xref,
+    acroForm,
+    acroFormRef,
+    hasXfa,
+    hasXfaDatasetsEntry,
+    xfaDatasetsRef,
+    needAppearances,
+    newRefs,
+  });
+
   if (hasXfa) {
     updateXFA({
       xfaData,
       xfaDatasetsRef,
-      hasXfaDatasetsEntry,
-      acroFormRef,
-      acroForm,
       newRefs,
       xref,
-      xrefInfo,
     });
   }
 

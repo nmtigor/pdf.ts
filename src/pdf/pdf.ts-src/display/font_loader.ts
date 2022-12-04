@@ -58,7 +58,7 @@ export class FontLoader {
   constructor({
     onUnsupportedFeature,
     ownerDocument = globalThis.document,
-    styleElement = undefined, // For testing only.
+    styleElement = undefined, // For testing only
   }: _BaseFontLoaderCtorP) {
     this._onUnsupportedFeature = onUnsupportedFeature;
     this._document = ownerDocument;

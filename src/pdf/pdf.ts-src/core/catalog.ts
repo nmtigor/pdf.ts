@@ -169,7 +169,10 @@ export interface MarkInfo {
   Suspects: boolean;
 }
 
-type AllPageDicts = Map<number, [Dict, Ref | undefined] | [Error, undefined]>;
+type AllPageDicts = Map<
+  number,
+  [Dict | Error, Ref | undefined] | [Error, undefined]
+>;
 
 export type Attachments = Record<string, Attachment>;
 
@@ -509,7 +512,7 @@ export class Catalog {
 
     const permissions: PermissionFlag[] = [];
     for (const key in PermissionFlag) {
-      const value = PermissionFlag[<keyof typeof PermissionFlag> key];
+      const value = PermissionFlag[key as keyof typeof PermissionFlag];
       if (flags & value) {
         permissions.push(value);
       }
@@ -1334,6 +1337,8 @@ export class Catalog {
    * Eagerly fetches the entire /Pages-tree; should ONLY be used as a fallback.
    */
   async getAllPageDicts(recoveryMode = false): Promise<AllPageDicts> {
+    const { ignoreErrors } = this.pdfManager.evaluatorOptions;
+
     const queue = [{ currentNode: this.toplevelPagesDict, posInKids: 0 }];
     const visitedNodes = new RefSet();
 
@@ -1354,9 +1359,14 @@ export class Catalog {
 
       map.set(pageIndex++, [pageDict, pageRef]);
     }
-    function addPageError(error: Error) {
+    function addPageError(error: Error | Dict) {
       if (error instanceof XRefEntryException && !recoveryMode) {
         throw error;
+      }
+      if (recoveryMode && ignoreErrors && pageIndex === 0) {
+        // Ensure that the viewer will always load (fixes issue15590.pdf).
+        warn(`getAllPageDicts - Skipping invalid first page: "${error}".`);
+        error = Dict.empty;
       }
 
       map.set(pageIndex++, [error, undefined]);
@@ -1371,7 +1381,7 @@ export class Catalog {
         try {
           kids = await xref.fetchAsync(kids);
         } catch (ex) {
-          addPageError(<Error> ex);
+          addPageError(ex as Error);
           break;
         }
       }
@@ -1402,7 +1412,7 @@ export class Catalog {
         try {
           obj = await xref.fetchAsync(kidObj);
         } catch (ex) {
-          addPageError(<Error> ex);
+          addPageError(ex as Error);
           break;
         }
       } else {
@@ -1425,7 +1435,7 @@ export class Catalog {
         try {
           type = await xref.fetchAsync(type);
         } catch (ex) {
-          addPageError(<Error> ex);
+          addPageError(ex as Error);
           break;
         }
       }

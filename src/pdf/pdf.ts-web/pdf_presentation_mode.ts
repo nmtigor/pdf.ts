@@ -260,21 +260,24 @@ export class PDFPresentationMode {
       evt.preventDefault();
       return;
     }
-    if (evt.button === 0) {
-      // Enable clicking of links in presentation mode. Note: only links
-      // pointing to destinations in the current PDF document work.
-      const isInternalLink = (<any> evt.target).href &&
-        (<Element> evt.target).classList.contains("internalLink");
-      if (!isInternalLink) {
-        // Unless an internal link was clicked, advance one page.
-        evt.preventDefault();
+    if (evt.button !== 0) {
+      return;
+    }
+    // Enable clicking of links in presentation mode. Note: only links
+    // pointing to destinations in the current PDF document work.
+    if (
+      (evt.target as any).href &&
+      (evt.target as any).parentNode?.hasAttribute("data-internal-link")
+    ) {
+      return;
+    }
+    // Unless an internal link was clicked, advance one page.
+    evt.preventDefault();
 
-        if (evt.shiftKey) {
-          this.pdfViewer.previousPage();
-        } else {
-          this.pdfViewer.nextPage();
-        }
-      }
+    if (evt.shiftKey) {
+      this.pdfViewer.previousPage();
+    } else {
+      this.pdfViewer.nextPage();
     }
   };
 

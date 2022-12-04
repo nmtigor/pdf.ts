@@ -354,6 +354,13 @@ export interface MActionMap {
     Return: void;
     Sinkchunk: undefined;
   };
+
+  // For testing only
+  fakeHandler: {
+    Data: {};
+    Return: Promise<number> | void;
+    Sinkchunk: string | rect_t;
+  };
 }
 
 type MActionName = keyof MActionMap;

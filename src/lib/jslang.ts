@@ -1,6 +1,6 @@
 /*80****************************************************************************
  * jslang
-** ------ */
+** -------------------------------------------------------------------------- */
 
 import { INOUT } from "../global.ts";
 import {
@@ -33,7 +33,7 @@ declare global {
 
 // Ref. https://lodash.com/docs/4.17.15#isObjectLike
 export function isObjectLike(value: unknown): value is object {
-  return value != null && typeof value == "object";
+  return value != null && typeof value === "object";
 }
 
 let valve = 0;
@@ -50,7 +50,7 @@ function eq_impl(lhs_x: unknown, rhs_x: unknown): boolean {
   }
   if (
     lhs_x === rhs_x ||
-    Number.isNaN(<any> lhs_x) && Number.isNaN(<any> rhs_x) //! Notice, `NaN === NaN` is false.
+    Number.isNaN(lhs_x) && Number.isNaN(rhs_x) //! Notice, `NaN === NaN` is false.
   ) {
     return true;
   }
@@ -94,7 +94,7 @@ function eq_impl(lhs_x: unknown, rhs_x: unknown): boolean {
     for (const key of keys_lhs) {
       if (
         !Object.hasOwn(rhs_x, key) ||
-        !eq_impl((<any> lhs_x)[key], (<any> rhs_x)[key])
+        !eq_impl(lhs_x[key], rhs_x[key])
       ) {
         return false;
       }

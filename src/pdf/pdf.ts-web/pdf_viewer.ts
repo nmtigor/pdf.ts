@@ -1227,10 +1227,12 @@ export class PDFViewer
   ) {
     const { div, id } = pageView;
 
-    if (this._scrollMode === ScrollMode.PAGE) {
-      // Ensure that `this._currentPageNumber` is correct.
+    // Ensure that `this._currentPageNumber` is correct, when `#scrollIntoView`
+    // is called directly (and not from `#resetCurrentPageView`).
+    if (this._currentPageNumber !== id) {
       this.setCurrentPageNumber$(id);
-
+    }
+    if (this._scrollMode === ScrollMode.PAGE) {
       this.#ensurePageViewVisible();
       // Ensure that rendering always occurs, to avoid showing a blank page,
       // even if the current position doesn't change when the page is scrolled.
@@ -1250,6 +1252,15 @@ export class PDFViewer
       }
     }
     scrollIntoView(div, pageSpot);
+
+    // Ensure that the correct *initial* document position is set, when any
+    // OpenParameters are used, for documents with non-default Scroll/Spread
+    // modes (fixes issue 15695). This is necessary since the scroll-handler
+    // invokes the `update`-method asynchronously, and `this._location` could
+    // thus be wrong when the initial zooming occurs in the default viewer.
+    if (!this.#currentScaleValue && this.#location) {
+      this.#location = undefined;
+    }
   }
 
   /**

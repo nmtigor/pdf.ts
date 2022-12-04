@@ -10,7 +10,6 @@
   "devDependencies": {
     "@types/chrome": "latest",
     "@types/css-font-loading-module": "latest",
-    "@types/resize-observer-browser": "latest",
     "@types/wicg-file-system-access": "latest"
   }
 }

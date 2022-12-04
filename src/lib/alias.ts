@@ -64,15 +64,13 @@ export type FloatArray =
 export type TypedArray = IntegerArray | FloatArray;
 /*80--------------------------------------------------------------------------*/
 
-export type CSSStyleName =
-  | keyof {
-    [
-      K in Extract<keyof CSSStyleDeclaration, string> as string extends K
-        ? never
-        : CSSStyleDeclaration[K] extends string ? K
-        : never
-    ]: never;
-  }
+export type CSSStyleName = keyof {
+  [
+    K in Extract<keyof CSSStyleDeclaration, string> as string extends K ? never
+      : CSSStyleDeclaration[K] extends string ? K
+      : never
+  ]: never;
+};
 // const cname:CSSStyleName = "length";
 
 export type CSSStyle = Partial<Record<CSSStyleName, string | number>>;
@@ -94,6 +92,18 @@ export class DumRuhr implements Runr {
 export const enum Sortart {
   asc,
   desc,
+}
+/*80--------------------------------------------------------------------------*/
+
+export const enum Hover {
+  none = 0,
+  hover,
+}
+
+export const enum Pointer {
+  none = 0,
+  coarse,
+  fine,
 }
 /*80--------------------------------------------------------------------------*/
 

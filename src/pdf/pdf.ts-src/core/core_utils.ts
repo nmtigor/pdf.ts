@@ -363,6 +363,19 @@ export function escapePDFName(str: string) {
   return buffer.join("");
 }
 
+// Replace "(", ")", "\n", "\r" and "\" by "\(", "\)", "\\n", "\\r" and "\\"
+// in order to write it in a PDF file.
+export function escapeString(str: string) {
+  return str.replace(/([()\\\n\r])/g, (match) => {
+    if (match === "\n") {
+      return "\\n";
+    } else if (match === "\r") {
+      return "\\r";
+    }
+    return `\\${match}`;
+  });
+}
+
 function _collectJS(
   entry: Obj | undefined,
   xref: XRef,
@@ -638,5 +651,53 @@ export function getNewAnnotationsMap(
     annotations.push(value);
   }
   return newAnnotationsByPage.size > 0 ? newAnnotationsByPage : undefined;
+}
+
+export function isAscii(str: string) {
+  return /^[\x00-\x7F]*$/.test(str);
+}
+
+export function stringToUTF16HexString(str: string) {
+  const buf = [];
+  for (let i = 0, ii = str.length; i < ii; i++) {
+    const char = str.charCodeAt(i);
+    buf.push(
+      ((char >> 8) & 0xff).toString(16).padStart(2, "0"),
+      (char & 0xff).toString(16).padStart(2, "0"),
+    );
+  }
+  return buf.join("");
+}
+
+export function stringToUTF16String(str: string, bigEndian = false) {
+  const buf = [];
+  if (bigEndian) {
+    buf.push("\xFE\xFF");
+  }
+  for (let i = 0, ii = str.length; i < ii; i++) {
+    const char = str.charCodeAt(i);
+    buf.push(
+      String.fromCharCode((char >> 8) & 0xff),
+      String.fromCharCode(char & 0xff),
+    );
+  }
+  return buf.join("");
+}
+
+export function getRotationMatrix(
+  rotation: number,
+  width: number,
+  height: number,
+) {
+  switch (rotation) {
+    case 90:
+      return [0, 1, -1, 0, width, 0];
+    case 180:
+      return [-1, 0, 0, -1, width, height];
+    case 270:
+      return [0, -1, 1, 0, 0, height];
+    default:
+      throw new Error("Invalid rotation");
+  }
 }
 /*80--------------------------------------------------------------------------*/

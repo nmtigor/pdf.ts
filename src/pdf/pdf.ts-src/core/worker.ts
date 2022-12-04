@@ -342,7 +342,7 @@ export const WorkerMessageHandler = {
         }
         cachedChunks = [];
       };
-      const readPromise = new Promise((resolve, reject) => {
+      new Promise((resolve, reject) => {
         const readChunk = ({ value, done }: ReadValue) => {
           try {
             ensureNotTerminated();
@@ -372,8 +372,7 @@ export const WorkerMessageHandler = {
           }
         };
         fullRequest.read().then(readChunk, reject);
-      });
-      readPromise.catch((e) => {
+      }).catch((e) => {
         pdfManagerCapability.reject(e);
         cancelXHRs = undefined;
       });
@@ -662,6 +661,10 @@ export const WorkerMessageHandler = {
               }
             }
 
+            const needAppearances = acroFormRef &&
+              acroForm instanceof Dict &&
+              newRefs.some((ref) => ref.needAppearances);
+
             const xfa = (acroForm instanceof Dict &&
               <(Ref | string)[]> acroForm.get("XFA")) || undefined;
             let xfaDatasetsRef: Ref | undefined;
@@ -670,15 +673,13 @@ export const WorkerMessageHandler = {
               for (let i = 0, ii = xfa.length; i < ii; i += 2) {
                 if (xfa[i] === "datasets") {
                   xfaDatasetsRef = <Ref> xfa[i + 1];
-                  acroFormRef = undefined;
                   hasXfaDatasetsEntry = true;
                 }
               }
               if (xfaDatasetsRef === undefined) {
-                xfaDatasetsRef = xref.getNewRef();
+                xfaDatasetsRef = xref.getNewTemporaryRef();
               }
             } else if (xfa) {
-              acroFormRef = undefined;
               // TODO: Support XFA streams.
               warn("Unsupported XFA type.");
             }
@@ -697,30 +698,35 @@ export const WorkerMessageHandler = {
               }
 
               newXrefInfo = {
-                rootRef: <Ref> xref.trailer.getRaw("Root") || undefined,
-                encryptRef: <Ref> xref.trailer.getRaw("Encrypt") || undefined,
-                newRef: xref.getNewRef(),
-                infoRef: <Ref> xref.trailer.getRaw("Info") || undefined,
+                rootRef: xref.trailer.getRaw("Root") as Ref || undefined,
+                encryptRef: xref.trailer.getRaw("Encrypt") as Ref || undefined,
+                newRef: xref.getNewTemporaryRef(),
+                infoRef: xref.trailer.getRaw("Info") as Ref || undefined,
                 info: infoObj,
-                fileIds: <[string, string]> xref.trailer.get("ID") || undefined,
+                fileIds: xref.trailer.get("ID") as [string, string] ||
+                  undefined,
                 startXRef,
                 filename,
               };
             }
-            xref.resetNewRef();
 
-            return incrementalUpdate({
-              originalData: stream.bytes,
-              xrefInfo: newXrefInfo,
-              newRefs,
-              xref,
-              hasXfa: !!xfa,
-              xfaDatasetsRef,
-              hasXfaDatasetsEntry,
-              acroFormRef,
-              acroForm,
-              xfaData,
-            });
+            try {
+              return incrementalUpdate({
+                originalData: stream.bytes,
+                xrefInfo: newXrefInfo,
+                newRefs,
+                xref,
+                hasXfa: !!xfa,
+                xfaDatasetsRef,
+                hasXfaDatasetsEntry,
+                needAppearances,
+                acroFormRef,
+                acroForm,
+                xfaData,
+              });
+            } finally {
+              xref.resetNewTemporaryRef();
+            }
           })
         );
       },

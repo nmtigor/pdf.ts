@@ -65,17 +65,24 @@ import { XfaLayerBuilder } from "./xfa_layer_builder.ts";
 /*80--------------------------------------------------------------------------*/
 
 export interface IPDFLinkService {
-  readonly pagesCount: number;
+  eventBus?: EventBus;
 
-  page: number;
+  get pagesCount(): number;
 
-  rotation: number;
+  get page(): number;
+  set page(value: number);
+
+  get rotation(): number;
+  set rotation(value: number);
+
+  get isInPresentationMode(): boolean;
 
   externalLinkTarget: LinkTarget | undefined;
 
   externalLinkRel: string | undefined;
 
-  externalLinkEnabled: boolean;
+  get externalLinkEnabled(): boolean;
+  set externalLinkEnabled(value: boolean);
 
   /**
    * @param dest The named, or explicit, PDF destination.
@@ -125,8 +132,6 @@ export interface IPDFLinkService {
   isPageVisible(pageNumber: number): boolean;
 
   isPageCached(pageNumber: number): boolean;
-
-  eventBus?: EventBus;
 }
 
 export interface HistoryInitP {
