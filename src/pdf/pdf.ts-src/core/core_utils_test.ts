@@ -20,8 +20,8 @@
 import {
   assertEquals,
   assertThrows,
-} from "https://deno.land/std@0.160.0/testing/asserts.ts";
-import { describe, it } from "https://deno.land/std@0.160.0/testing/bdd.ts";
+} from "https://deno.land/std@0.165.0/testing/asserts.ts";
+import { describe, it } from "https://deno.land/std@0.165.0/testing/bdd.ts";
 import { XRefMock } from "../shared/test_utils.ts";
 import {
   encodeToXmlString,
@@ -385,7 +385,10 @@ describe("core_utils", () => {
       it("handles ascii/non-ascii strings", () => {
         assertEquals(isAscii("hello world"), true);
         assertEquals(isAscii("こんにちは世界の"), false);
-        assertEquals(isAscii("hello world in Japanese is こんにちは世界の"), false);
+        assertEquals(
+          isAscii("hello world in Japanese is こんにちは世界の"),
+          false,
+        );
       });
     });
 

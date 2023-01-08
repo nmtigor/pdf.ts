@@ -1,51 +1,81 @@
-/*80****************************************************************************
- * dom
-** --- */
+/** 80**************************************************************************
+ * @module lib/dom
+ * @license Apache-2.0
+ ******************************************************************************/
 
-import { type loff_t } from "./alias.ts";
-import { $loff, $ovlap, $tail_ignored } from "./symbols.ts";
+import { type CSSStyle, type loff_t } from "./alias.ts";
+import { $cssstylesheet, $loff, $ovlap, $tail_ignored } from "./symbols.ts";
 /*80--------------------------------------------------------------------------*/
 
 declare global {
-  interface EventTarget {
-    on(type: string, listener: any, options?: any): void;
-    off(type: string, listener: any, options?: any): void;
-  }
-}
+  interface EventMap
+    extends
+      ElementEventMap,
+      DocumentAndElementEventHandlersEventMap,
+      GlobalEventHandlersEventMap,
+      WindowEventHandlersEventMap,
+      //
+      HTMLVideoElementEventMap,
+      DocumentEventMap,
+      WindowEventMap,
+      WorkerEventMap,
+      ServiceWorkerEventMap,
+      OfflineAudioContextEventMap {}
+  type EventName = keyof EventMap;
+  type EventHandler<E extends EventName> = (ev: EventMap[E]) => any;
 
-EventTarget.prototype.on = function (
-  this: EventTarget,
-  type: string,
-  listener: any,
-  options?: any,
-) {
-  this.addEventListener(type, listener, options);
-};
-EventTarget.prototype.off = function (
-  this: EventTarget,
-  type: string,
-  listener: any,
-  options?: any,
-) {
-  this.removeEventListener(type, listener, options);
-};
-/*64----------------------------------------------------------*/
-
-declare global {
   interface Event {
-    canceled_?: boolean;
     canceled: boolean;
   }
 }
 
-Reflect.defineProperty(Event.prototype, "canceled", {
-  get(this: Event) {
-    return this.canceled_ ?? false;
-  },
-  set(this: Event, canceled_x: boolean) {
-    this.canceled_ = canceled_x;
-  },
-});
+// let canceld_ = true;
+if (globalThis.Event) {
+  let canceld_: boolean | undefined;
+  Reflect.defineProperty(Event.prototype, "canceled", {
+    get(this: Event) {
+      return canceld_ ?? false;
+    },
+    set(this: Event, canceled_x: boolean) {
+      canceld_ = canceled_x;
+    },
+  });
+  // console.log(Event.prototype.canceled);
+}
+/*64----------------------------------------------------------*/
+
+export const enum MouseButton {
+  Main = 0,
+  Auxiliary = 1,
+  Secondary = 2,
+  Back = 3,
+  Forward = 4,
+}
+/*64----------------------------------------------------------*/
+
+declare global {
+  interface EventTarget {
+    on<E extends EventName>(
+      type: E,
+      listener: EventHandler<E>,
+      options?: AddEventListenerOptions | boolean,
+    ): void;
+    off<E extends EventName>(
+      type: E,
+      listener: EventHandler<E>,
+      options?: EventListenerOptions | boolean,
+    ): void;
+  }
+}
+
+if (globalThis.EventTarget) {
+  EventTarget.prototype.on = function (this, type, listener, options?) {
+    return this.addEventListener(type, listener as any, options);
+  };
+  EventTarget.prototype.off = function (this, type, listener, options?) {
+    return this.removeEventListener(type, listener as any, options);
+  };
+}
 /*64----------------------------------------------------------*/
 
 declare global {
@@ -57,7 +87,7 @@ declare global {
   }
 }
 
-if (typeof Node !== "undefined") {
+if (globalThis.Node) {
   Reflect.defineProperty(Node.prototype, "isText", {
     get(this: Node) {
       return this.nodeType === Node.TEXT_NODE;
@@ -70,40 +100,16 @@ if (typeof Node !== "undefined") {
     },
   });
 
-  Node.prototype.removeAllChild = function (this: Node) {
+  Node.prototype.removeAllChild = function (this) {
     while (this.firstChild) this.removeChild(this.lastChild!);
     return this;
   };
-
-  // /**
-  //  * @deprecated - Use Node.isConnected property
-  //  * @return { Boolean }
-  //  */
-  // Node.prototype.attached = function(this:Node)
-  // {
-  //   let ret = false;
-
-  //   let el = this;
-  //   let valve = 1000+1;
-  //   while( el && --valve )
-  //   {
-  //     if( el === document.body )
-  //     {
-  //       ret = true;
-  //       break;
-  //     }
-  //     el = el.parentNode;
-  //   }
-  //   assert(valve);
-
-  //   return ret;
-  // }
 
   /**
    * Only test properties in `rhs`
    * @headconst @param rhs
    */
-  Node.prototype.assert_eq = function (this: Node, rhs) {
+  Node.prototype.assert_eq = function (this, rhs) {
     // if( rhs && rhs[$ref_test] )
     // {
     //   console.assert( this === rhs[$ref_test] );
@@ -113,19 +119,19 @@ if (typeof Node !== "undefined") {
     if (this === rhs) return;
 
     for (const key of Reflect.ownKeys(rhs)) {
-      if (key === "childNodes") {
-        continue;
-      }
+      if (key === "childNodes") continue;
 
-      const rhsval = (<any> rhs)[key];
-      const zisval = (<any> this)[key];
+      const rhsval = (rhs as any)[key];
+      const zisval = (this as any)[key];
       if (Array.isArray(rhsval)) {
-        console.assert((<any[]> rhsval).eq(zisval));
-      } else console.assert(rhsval === zisval);
+        console.assert(rhsval.eq(zisval));
+      } else {
+        console.assert(rhsval === zisval);
+      }
     }
 
-    if ((<any> rhs).childNodes) {
-      const childNodes = (<any> rhs).childNodes;
+    if ((rhs as any).childNodes) {
+      const childNodes = (rhs as any).childNodes;
       console.assert(childNodes.length === this.childNodes.length);
       for (let i = childNodes.length; i--;) {
         this.childNodes[i].assert_eq(childNodes[i]);
@@ -137,19 +143,50 @@ if (typeof Node !== "undefined") {
 }
 /*64----------------------------------------------------------*/
 
+// /*#static*/ if (DENO) {
+//   const { DOMParser } = await import(
+//     "https://deno.land/x/deno_dom/deno-dom-wasm.ts"
+//   );
+//   globalThis.document = new DOMParser().parseFromString(
+//     `<!DOCTYPE html><html lang="en"><head></head><body></body></html>`,
+//     "text/html",
+//   ) as unknown as Document;
+// }
+/*64----------------------------------------------------------*/
+
+declare global {
+  interface Document {
+    /**
+     * Used for adding CSS pseudo-element like `::-webkit-scrollbar`
+     */
+    [$cssstylesheet]: CSSStyleSheet;
+  }
+}
+
+if (globalThis.Document) {
+  let cssstylesheet_: CSSStyleSheet | undefined;
+  Reflect.defineProperty(Document.prototype, $cssstylesheet, {
+    get(this: Document) {
+      cssstylesheet_ ??= this.head.appendChild(html("style")).sheet!;
+      return cssstylesheet_;
+    },
+  });
+}
+/*64----------------------------------------------------------*/
+
 declare global {
   interface Element {
-    setAttrs(attrs_o: Record<string, string>): this;
+    assignAttro(attr_o: Record<string, string>): this;
 
     readonly scrollRight: number;
     readonly scrollBottom: number;
   }
 }
 
-if (typeof Element !== "undefined") {
-  Element.prototype.setAttrs = function (this: Element, attrs_o) {
-    for (const key in attrs_o) {
-      this.setAttribute(key, attrs_o[key]);
+if (globalThis.Element) {
+  Element.prototype.assignAttro = function (this, attr_o) {
+    for (const [key, val] of Object.entries(attr_o)) {
+      this.setAttribute(key, val);
     }
     return this;
   };
@@ -169,28 +206,37 @@ if (typeof Element !== "undefined") {
 
 declare global {
   interface HTMLElement {
+    assignStylo(styl_o: CSSStyle): this;
+
     /**
-     * Return previous visible _HTMLElement_.
+     * Return previous visible _HTMLElement_
+     * jjjj cf. pdf/pdf.ts-web/ui_utils.getVisibleElements()
      */
     readonly prevVisible?: HTMLElement;
 
     readonly pageX: number;
     readonly pageY: number;
+
+    readonly viewLeft: number;
+    readonly viewRight: number;
+    readonly viewTop: number;
+    readonly viewBottom: number;
   }
 }
 
-if (typeof HTMLElement !== "undefined") {
+if (globalThis.HTMLElement) {
+  HTMLElement.prototype.assignStylo = function (this, styl_o) {
+    Object.assign(this.style, styl_o);
+    return this;
+  };
+
   Reflect.defineProperty(HTMLElement.prototype, "prevVisible", {
     get(this: HTMLElement) {
-      let ret = <any> this.previousSibling;
+      let ret = this.previousSibling as any;
       while (ret) {
-        if (!(ret instanceof HTMLElement)) {
-          continue;
-        }
+        if (!(ret instanceof HTMLElement)) continue;
 
-        if (ret.style.display !== "none") {
-          break;
-        }
+        if (ret.style.display !== "none") break;
 
         ret = ret.previousSibling;
       }
@@ -223,6 +269,41 @@ if (typeof HTMLElement !== "undefined") {
       return ret;
     },
   });
+
+  Reflect.defineProperty(HTMLElement.prototype, "viewLeft", {
+    get(this: HTMLElement) {
+      return this.offsetLeft + this.clientLeft;
+    },
+  });
+  Reflect.defineProperty(HTMLElement.prototype, "viewRight", {
+    get(this: HTMLElement) {
+      return this.viewLeft + this.clientWidth;
+    },
+  });
+  Reflect.defineProperty(HTMLElement.prototype, "viewTop", {
+    get(this: HTMLElement) {
+      return this.offsetTop + this.clientTop;
+    },
+  });
+  Reflect.defineProperty(HTMLElement.prototype, "viewBottom", {
+    get(this: HTMLElement) {
+      return this.viewTop + this.clientHeight;
+    },
+  });
+}
+/*64----------------------------------------------------------*/
+
+declare global {
+  interface SVGElement {
+    assignStylo(styl_o: CSSStyle): this;
+  }
+}
+
+if (globalThis.SVGElement) {
+  SVGElement.prototype.assignStylo = function (this, styl_o) {
+    Object.assign(this.style, styl_o);
+    return this;
+  };
 }
 /*64----------------------------------------------------------*/
 
@@ -236,8 +317,8 @@ declare global {
   // }
 }
 
-if (typeof HTMLCollection !== "undefined") {
-  HTMLCollection.prototype.indexOf = function (this: HTMLCollection, element) {
+if (globalThis.HTMLCollection) {
+  HTMLCollection.prototype.indexOf = function (this, element) {
     for (let i = 0; i < this.length; ++i) {
       if (this.item(i) === element) return i;
     }
@@ -265,16 +346,11 @@ declare global {
   }
 }
 
-if (typeof Range !== "undefined") {
-  Range.prototype.getReca = function (
-    this: Range,
-    rec_a: DOMRect[],
-    ovlap = false,
-  ) {
+if (globalThis.Range) {
+  Range.prototype.getReca = function (this, rec_a, ovlap = false) {
     const recs = this.getClientRects();
     if (recs.length) {
-      for (let i = 0; i < recs.length; i++) {
-        const rec = recs[i];
+      for (const rec of recs) {
         if (rec.width === 0) rec.width = rec.height * .1;
         rec[$ovlap] = ovlap;
         rec_a.push(rec);
@@ -287,7 +363,7 @@ if (typeof Range !== "undefined") {
     }
   };
 
-  Range.prototype.reset = function (this: Range) {
+  Range.prototype.reset = function (this) {
     this.setEnd(document, 0);
     this.collapse();
   };
@@ -318,36 +394,33 @@ export function textnode(
 }
 /*64----------------------------------------------------------*/
 
-type _HTMLRet<NN extends string> = NN extends keyof HTMLElementTagNameMap
+type HTMLRet_<NN extends string> = NN extends keyof HTMLElementTagNameMap
   ? HTMLElementTagNameMap[NN]
   : HTMLElement;
 export function html<NN extends string>(
   nodeName: NN,
   innerHTML?: string,
-  doc?: Document,
+  doc = document,
 ) {
-  doc ??= document;
   let ret = doc.createElement(nodeName);
   if (innerHTML) ret.innerHTML = innerHTML;
-  return ret as _HTMLRet<NN>;
+  return ret as HTMLRet_<NN>;
 }
-
-export function div(innerHTML?: string, doc?: Document) {
+export function div(innerHTML?: string, doc = document) {
   return html("div", innerHTML, doc);
 }
-export function span(innerHTML?: string, doc?: Document) {
+export function span(innerHTML?: string, doc = document) {
   return html("span", innerHTML, doc);
 }
 
-type _SVGRet<NN extends string> = NN extends keyof SVGElementTagNameMap
+type SVGRet_<NN extends string> = NN extends keyof SVGElementTagNameMap
   ? SVGElementTagNameMap[NN]
   : SVGElement;
-export function svg<NN extends string>(nodeName: NN, doc?: Document) {
-  doc ??= document;
-  return <_SVGRet<NN>> doc.createElementNS(
+export function svg<NN extends string>(nodeName: NN, doc = document) {
+  return doc.createElementNS(
     "http://www.w3.org/2000/svg",
     nodeName,
-  );
+  ) as SVGRet_<NN>;
 }
 /*64----------------------------------------------------------*/
 

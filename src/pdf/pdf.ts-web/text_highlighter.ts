@@ -119,6 +119,7 @@ export class TextHighlighter {
       );
       this._onUpdateTextLayerMatches = undefined;
     }
+    this._updateMatches(/* reset = */ true);
   }
 
   #convertMatches(matches: number[], matchesLength: number[]) {
@@ -293,9 +294,10 @@ export class TextHighlighter {
     }
   }
 
-  _updateMatches() {
-    if (!this.enabled) return;
-
+  _updateMatches(reset = false) {
+    if (!this.enabled && !reset) {
+      return;
+    }
     const { findController, matches, pageIdx } = this;
     const { textContentItemsStr, textDivs } = this;
     let clearedUntilDivIdx = -1;
@@ -311,7 +313,9 @@ export class TextHighlighter {
       clearedUntilDivIdx = match.end.divIdx + 1;
     }
 
-    if (!findController?.highlightMatches) return;
+    if (!findController?.highlightMatches || reset) {
+      return;
+    }
     // Convert the matches on the `findController` into the match format
     // used for the textLayer.
     const pageMatches = findController.pageMatches[pageIdx] || null;

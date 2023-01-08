@@ -122,6 +122,10 @@ const defaultOptions = {
     value: undefined as string | undefined,
     kind: 0 as OptionKind,
   },
+  defaultZoomDelay: {
+    value: /*#static*/ GENERIC ? 400 : -1,
+    kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
+  },
   defaultZoomValue: {
     value: "",
     kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
@@ -401,6 +405,9 @@ export abstract class AppOptions {
   }
   static get defaultUrl() {
     return this.#get("defaultUrl") as string | undefined;
+  }
+  static get defaultZoomDelay() {
+    return this.#get("defaultZoomDelay") as number;
   }
   static get defaultZoomValue() {
     return this.#get("defaultZoomValue") as string;

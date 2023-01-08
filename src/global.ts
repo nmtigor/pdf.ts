@@ -1,6 +1,7 @@
-/*80****************************************************************************
- * global
-** -------------------------------------------------------------------------- */
+/** 80**************************************************************************
+ * @module global
+ * @license Apache-2.0
+ ******************************************************************************/
 
 import { Hover, Pointer } from "./lib/alias.ts";
 import { HTMLVCo } from "./lib/mv.ts";
@@ -24,15 +25,18 @@ export const
 , _INFO = DEV && INFO
 , APP = false // release build
 
-, DENO = false
-
 , TESTING = false
   , /** @deprecated */TEST_ALL = false 
+
+, DENO = false
+
+, CYPRESS = true
 
   // from pdf.js
 , GENERIC = true
 , MOZCENTRAL = false
 , CHROME = false
+, GECKOVIEW = false
 , PRODUCTION = false
 , LIB = false
 , SKIP_BABEL = true
@@ -67,6 +71,36 @@ export const global = new class {
   get can_hover() {
     return global.anyHover === Hover.hover;
   }
+
+  // /* For testing only */
+  // #_touch: Pointer | undefined;
+  // set _touch(b_x: boolean | undefined) {
+  //   this.#_touch ??= this.anyPointer;
+  //   if (b_x === undefined) {
+  //     global.anyPointer = this.#_touch;
+  //   } else {
+  //     if (b_x) {
+  //       global.anyPointer = Pointer.coarse;
+  //     } else {
+  //       global.anyPointer = Pointer.fine;
+  //     }
+  //   }
+  // }
+
+  // #_hover: Hover | undefined;
+  // set _hover(b_x: boolean | undefined) {
+  //   this.#_hover ??= this.anyHover;
+  //   if (b_x === undefined) {
+  //     global.anyHover = this.#_hover;
+  //   } else {
+  //     if (b_x) {
+  //       global.anyHover = Hover.hover;
+  //     } else {
+  //       global.anyHover = Hover.none;
+  //     }
+  //   }
+  // }
+  // /* ~ */
 
   readonly #tabsize = 2;
   #dent = 0;

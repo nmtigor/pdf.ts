@@ -233,7 +233,6 @@ export function toRomanNumerals(number: number, lowerCase = false) {
   assert(
     Number.isInteger(number) && number > 0,
     "The number should be a positive integer.",
-    import.meta,
   );
   const romanBuf = [];
   let pos;
@@ -545,18 +544,12 @@ export function validateCSSFont(cssFontInfo: CssFontInfo) {
   // See https://developer.mozilla.org/en-US/docs/Web/CSS/string.
   if (/^".*"$/.test(fontFamily)) {
     if (/[^\\]"/.test(fontFamily.slice(1, fontFamily.length - 1))) {
-      warn(
-        `XFA - FontFamily contains some unescaped ": ${fontFamily}.`,
-        import.meta,
-      );
+      warn(`XFA - FontFamily contains some unescaped ": ${fontFamily}.`);
       return false;
     }
   } else if (/^'.*'$/.test(fontFamily)) {
     if (/[^\\]'/.test(fontFamily.slice(1, fontFamily.length - 1))) {
-      warn(
-        `XFA - FontFamily contains some unescaped ': ${fontFamily}.`,
-        import.meta,
-      );
+      warn(`XFA - FontFamily contains some unescaped ': ${fontFamily}.`);
       return false;
     }
   } else {
@@ -565,7 +558,6 @@ export function validateCSSFont(cssFontInfo: CssFontInfo) {
       if (/^(\d|(-(\d|-)))/.test(ident) || !/^[\w-\\]+$/.test(ident)) {
         warn(
           `XFA - FontFamily contains some invalid <custom-ident>: ${fontFamily}.`,
-          import.meta,
         );
         return false;
       }

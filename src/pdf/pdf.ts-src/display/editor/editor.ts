@@ -19,6 +19,8 @@
 
 // eslint-disable-next-line max-len
 /** @typedef {import("./annotation_editor_layer.js").AnnotationEditorLayer} AnnotationEditorLayer */
+// eslint-disable-next-line max-len
+/** @typedef {import("./tools.js").AnnotationEditorUIManager} AnnotationEditorUIManager */
 
 import { Constructor } from "../../../../lib/alias.ts";
 import { html } from "../../../../lib/dom.ts";
@@ -27,14 +29,25 @@ import { RGB } from "../../shared/scripting_utils.ts";
 import {
   AnnotationEditorParamsType,
   AnnotationEditorType,
+  FeatureTest,
   rect_t,
   shadow,
 } from "../../shared/util.ts";
 import { AnnotationEditorLayer } from "./annotation_editor_layer.ts";
-import { bindEvents, ColorManager, KeyboardManager } from "./tools.ts";
+import {
+  AddCommandsP,
+  AnnotationEditorUIManager,
+  bindEvents,
+  ColorManager,
+} from "./tools.ts";
 /*80--------------------------------------------------------------------------*/
 
 export interface AnnotationEditorP {
+  /**
+   * the global manager
+   */
+  uiManager: AnnotationEditorUIManager;
+
   /**
    * the layer containing this editor
    */
@@ -79,9 +92,10 @@ export abstract class AnnotationEditor {
   #hasBeenSelected = false;
   #isEditing = false;
   #isInEditMode = false;
+  _uiManager;
   #zIndex = AnnotationEditor._zIndex++;
 
-  parent;
+  parent: AnnotationEditorLayer | undefined;
   id;
   width?: number;
   height?: number;
@@ -89,9 +103,11 @@ export abstract class AnnotationEditor {
   name;
   div?: HTMLDivElement;
 
+  rotation;
+  pageDimensions;
+  pageTranslation;
   x;
   y;
-  rotation;
 
   isAttachedToDOM = false;
 
@@ -107,11 +123,20 @@ export abstract class AnnotationEditor {
     this.id = parameters.id;
     this.pageIndex = parameters.parent.pageIndex;
     this.name = parameters.name;
+    this._uiManager = parameters.uiManager;
+
+    const {
+      rotation,
+      rawDims: { pageWidth, pageHeight, pageX, pageY },
+    } = this.parent.viewport;
+
+    this.rotation = rotation;
+    this.pageDimensions = [pageWidth, pageHeight];
+    this.pageTranslation = [pageX, pageY];
 
     const [width, height] = this.parent.viewportBaseDimensions;
     this.x = parameters.x / width;
     this.y = parameters.y / height;
-    this.rotation = this.parent.viewport.rotation;
   }
 
   static get _defaultLineColor(): string {
@@ -120,6 +145,17 @@ export abstract class AnnotationEditor {
       "_defaultLineColor",
       this._colorManager.getHexCode("CanvasText"),
     );
+  }
+
+  /**
+   * Add some commands into the CommandManager (undo/redo stuff).
+   */
+  addCommands(params: AddCommandsP) {
+    this._uiManager.addCommands(params);
+  }
+
+  get currentLayer() {
+    return this._uiManager.currentLayer;
   }
 
   /**
@@ -136,12 +172,20 @@ export abstract class AnnotationEditor {
     this.div!.style.zIndex = <any> this.#zIndex;
   }
 
+  setParent(parent: AnnotationEditorLayer | undefined) {
+    if (parent !== undefined) {
+      this.pageIndex = parent.pageIndex;
+      this.pageDimensions = parent.pageDimensions;
+    }
+    this.parent = parent;
+  }
+
   /**
    * onfocus callback.
    */
   focusin(event: FocusEvent) {
     if (!this.#hasBeenSelected) {
-      this.parent.setSelected(this);
+      this.parent!.setSelected(this);
     } else {
       this.#hasBeenSelected = false;
     }
@@ -159,14 +203,14 @@ export abstract class AnnotationEditor {
     // is grabbing the focus.
     // So if the related target is an element under the div for this
     // editor, then the editor isn't unactive.
-    const target = <Element> event.relatedTarget;
+    const target = event.relatedTarget as Element;
     if (target?.closest(`#${this.id}`)) {
       return;
     }
 
     event.preventDefault();
 
-    if (!this.parent.isMultipleSelection) {
+    if (!this.parent?.isMultipleSelection) {
       this.commitOrRemove();
     }
   }
@@ -183,14 +227,18 @@ export abstract class AnnotationEditor {
    * Commit the data contained in this editor.
    */
   commit() {
-    this.parent.addToAnnotationStorage(this);
+    this.addToAnnotationStorage();
+  }
+
+  addToAnnotationStorage() {
+    this._uiManager.addToAnnotationStorage(this);
   }
 
   /**
    * We use drag-and-drop in order to move an editor on a page.
    */
   dragstart(event: DragEvent) {
-    const rect = this.parent.div!.getBoundingClientRect();
+    const rect = this.parent!.div!.getBoundingClientRect();
     this.startX = event.clientX - rect.x;
     this.startY = event.clientY - rect.y;
     event.dataTransfer!.setData("text/plain", this.id);
@@ -203,7 +251,7 @@ export abstract class AnnotationEditor {
    * @param ty y-translation in screen coordinates.
    */
   setAt(x: number, y: number, tx: number, ty: number) {
-    const [width, height] = this.parent.viewportBaseDimensions;
+    const [width, height] = this.parent!.viewportBaseDimensions;
     [tx, ty] = this.screenToPageTranslation(tx, ty);
 
     this.x = (x + tx) / width;
@@ -219,7 +267,7 @@ export abstract class AnnotationEditor {
    * @param y y-translation in screen coordinates.
    */
   translate(x: number, y: number) {
-    const [width, height] = this.parent.viewportBaseDimensions;
+    const [width, height] = this.parentDimensions;
     [x, y] = this.screenToPageTranslation(x, y);
 
     this.x += x / width;
@@ -233,8 +281,7 @@ export abstract class AnnotationEditor {
    * Convert a screen translation into a page one.
    */
   screenToPageTranslation(x: number, y: number) {
-    const { rotation } = this.parent.viewport;
-    switch (rotation) {
+    switch (this.parentRotation) {
       case 90:
         return [y, -x];
       case 180:
@@ -246,11 +293,25 @@ export abstract class AnnotationEditor {
     }
   }
 
+  get parentScale() {
+    return this._uiManager.viewParameters.realScale;
+  }
+
+  get parentRotation() {
+    return this._uiManager.viewParameters.rotation;
+  }
+
+  get parentDimensions() {
+    const { realScale } = this._uiManager.viewParameters;
+    const [pageWidth, pageHeight] = this.pageDimensions;
+    return [pageWidth * realScale, pageHeight * realScale];
+  }
+
   /**
    * Set the dimensions of this editor.
    */
   setDims(width: number, height: number) {
-    const [parentWidth, parentHeight] = this.parent.viewportBaseDimensions;
+    const [parentWidth, parentHeight] = this.parentDimensions;
     this.div!.style.width = `${(100 * width) / parentWidth}%`;
     this.div!.style.height = `${(100 * height) / parentHeight}%`;
   }
@@ -264,7 +325,7 @@ export abstract class AnnotationEditor {
       return;
     }
 
-    const [parentWidth, parentHeight] = this.parent.viewportBaseDimensions;
+    const [parentWidth, parentHeight] = this.parentDimensions;
     if (!widthPercent) {
       style.width = `${(100 * parseFloat(width)) / parentWidth}%`;
     }
@@ -310,7 +371,7 @@ export abstract class AnnotationEditor {
    * Onpointerdown callback.
    */
   pointerdown(event: PointerEvent) {
-    const isMac = KeyboardManager.platform.isMac;
+    const { isMac } = FeatureTest.platform;
     if (event.button !== 0 || (event.ctrlKey && isMac)) {
       // Avoid to focus this editor because of a non-left click.
       event.preventDefault();
@@ -322,19 +383,20 @@ export abstract class AnnotationEditor {
       event.shiftKey ||
       (event.metaKey && isMac)
     ) {
-      this.parent.toggleSelected(this);
+      this.parent!.toggleSelected(this);
     } else {
-      this.parent.setSelected(this);
+      this.parent!.setSelected(this);
     }
 
     this.#hasBeenSelected = true;
   }
 
   getRect(tx: number, ty: number): rect_t {
-    const [parentWidth, parentHeight] = this.parent.viewportBaseDimensions;
-    const [pageWidth, pageHeight] = this.parent.pageDimensions;
-    const shiftX = (pageWidth * tx) / parentWidth;
-    const shiftY = (pageHeight * ty) / parentHeight;
+    const scale = this.parentScale;
+    const [pageWidth, pageHeight] = this.pageDimensions;
+    const [pageX, pageY] = this.pageTranslation;
+    const shiftX = tx / scale;
+    const shiftY = ty / scale;
     const x = this.x * pageWidth;
     const y = this.y * pageHeight;
     const width = this.width! * pageWidth;
@@ -343,31 +405,31 @@ export abstract class AnnotationEditor {
     switch (this.rotation) {
       case 0:
         return [
-          x + shiftX,
-          pageHeight - y - shiftY - height,
-          x + shiftX + width,
-          pageHeight - y - shiftY,
+          x + shiftX + pageX,
+          pageHeight - y - shiftY - height + pageY,
+          x + shiftX + width + pageX,
+          pageHeight - y - shiftY + pageY,
         ];
       case 90:
         return [
-          x + shiftY,
-          pageHeight - y + shiftX,
-          x + shiftY + height,
-          pageHeight - y + shiftX + width,
+          x + shiftY + pageX,
+          pageHeight - y + shiftX + pageY,
+          x + shiftY + height + pageX,
+          pageHeight - y + shiftX + width + pageY,
         ];
       case 180:
         return [
-          x - shiftX - width,
-          pageHeight - y + shiftY,
-          x - shiftX,
-          pageHeight - y + shiftY + height,
+          x - shiftX - width + pageX,
+          pageHeight - y + shiftY + pageY,
+          x - shiftX + pageX,
+          pageHeight - y + shiftY + height + pageY,
         ];
       case 270:
         return [
-          x - shiftY - height,
-          pageHeight - y - shiftX - width,
-          x - shiftY,
-          pageHeight - y - shiftX,
+          x - shiftY - height + pageX,
+          pageHeight - y - shiftX - width + pageY,
+          x - shiftY + pageX,
+          pageHeight - y - shiftX + pageY,
         ];
       default:
         throw new Error("Invalid rotation");
@@ -467,15 +529,17 @@ export abstract class AnnotationEditor {
   static deserialize(
     data: AnnotationEditorSerialized,
     parent: AnnotationEditorLayer,
+    uiManager: AnnotationEditorUIManager,
   ): AnnotationEditor {
     const editor =
-      new (<Constructor<AnnotationEditor>> this.prototype.constructor)({
+      new (this.prototype.constructor as Constructor<AnnotationEditor>)({
         parent,
         id: parent.getNextId(),
+        uiManager,
       });
     editor.rotation = data.rotation;
 
-    const [pageWidth, pageHeight] = parent.pageDimensions;
+    const [pageWidth, pageHeight] = editor.pageDimensions;
     const [x, y, width, height] = editor.getRectInCurrentCoords(
       data.rect,
       pageHeight,
@@ -501,7 +565,7 @@ export abstract class AnnotationEditor {
       // undo/redo so we must commit it before.
       this.commit();
     }
-    this.parent.remove(this);
+    this.parent!.remove(this);
   }
 
   /**
@@ -559,15 +623,14 @@ export abstract class AnnotationEditor {
 
   /**
    * When set to true, it means that this editor is currently edited.
-   * @param {boolean} value
    */
-  set isEditing(value) {
+  set isEditing(value: boolean) {
     this.#isEditing = value;
     if (value) {
-      this.parent.setSelected(this);
-      this.parent.setActiveEditor(this);
+      this.parent!.setSelected(this);
+      this.parent!.setActiveEditor(this);
     } else {
-      this.parent.setActiveEditor(undefined);
+      this.parent!.setActiveEditor(undefined);
     }
   }
 }

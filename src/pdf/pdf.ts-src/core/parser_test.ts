@@ -21,8 +21,8 @@ import {
   assert,
   assertEquals,
   assertThrows,
-} from "https://deno.land/std@0.160.0/testing/asserts.ts";
-import { describe, it } from "https://deno.land/std@0.160.0/testing/bdd.ts";
+} from "https://deno.land/std@0.165.0/testing/asserts.ts";
+import { describe, it } from "https://deno.land/std@0.165.0/testing/bdd.ts";
 import { FormatError } from "../shared/util.ts";
 import { Lexer, Linearization, Parser } from "./parser.ts";
 import { Cmd, EOF, Name } from "./primitives.ts";

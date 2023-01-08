@@ -1,14 +1,14 @@
-/*80****************************************************************************
+/** 80**************************************************************************
  * synbols
-** ------- */
+ ** ------- */
 
 /**
- * document[ $cssstylesheet ] { Function }
- * Getter of document[ $cssstylesheet_ ]
+ * document[ $cssstylesheet ] { Getter }
  */
 export const $cssstylesheet = Symbol("$cssstylesheet");
 /**
  * document[ $cssstylesheet_ ] { CSSStyleSheet }
+ * @deprecated See lib/dom
  */
 export const $cssstylesheet_ = Symbol("$cssstylesheet_");
 
@@ -58,10 +58,10 @@ export const $loff = Symbol("$loff");
  */
 export const $loff1 = Symbol("$loff1");
 
-/**
- * document[ $theme_modified ] { {} }
- */
-export const $theme_modified = Symbol("$theme_modified");
+// /**
+//  * document[ $theme_modified ] { {} }
+//  */
+// export const $theme_modified = Symbol("$theme_modified");
 
 /**
  * DOMRect[ $ovlap ] { boolean }
@@ -104,7 +104,7 @@ export const $src = Symbol("$src");
 export const $sync_eran = Symbol("$sync_eran");
 
 /**
- * document[ $theme ] { Object }
+ * document[ $theme ] { Theme_ }
  */
 export const $theme = Symbol("$theme");
 
@@ -131,6 +131,7 @@ export const $uts = Symbol("$uts");
  */
 export const $vuu = Symbol("$vuu");
 /**
- * this.el$[ $Vuu ] { Constructor<Vuu> }
+ * this.el$[ $Vuu ] { AbstractConstructor<Vuu> }
+ * kkkk check usage
  */
 export const $Vuu = Symbol("$Vuu");

@@ -22,13 +22,13 @@ import {
   assertEquals,
   assertNotEquals,
   assertThrows,
-} from "https://deno.land/std@0.160.0/testing/asserts.ts";
+} from "https://deno.land/std@0.165.0/testing/asserts.ts";
 import {
   afterAll,
   beforeAll,
   describe,
   it,
-} from "https://deno.land/std@0.160.0/testing/bdd.ts";
+} from "https://deno.land/std@0.165.0/testing/bdd.ts";
 import { DefaultCMapReaderFactory } from "../display/api.ts";
 import { CMapData } from "../display/base_factory.ts";
 import { CMAP_PARAMS } from "../shared/test_utils.ts";

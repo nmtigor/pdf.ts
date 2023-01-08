@@ -677,7 +677,7 @@ export function getVisibleElements({
       return a.id - b.id; // ensure stability
     });
   }
-  return <VisibleElements> { first, last, views: visible, ids };
+  return { first, last, views: visible, ids } as VisibleElements;
 }
 
 /**
@@ -797,9 +797,8 @@ export class ProgressBar {
 
   _indeterminate?: boolean;
 
-  constructor(id: string) {
-    const bar = document.getElementById(id);
-    this.#classList = bar!.classList;
+  constructor(bar: HTMLElement) {
+    this.#classList = bar.classList;
   }
 
   setWidth(viewer?: HTMLDivElement) {
@@ -853,9 +852,6 @@ export function getActiveOrFocusedElement() {
 
 /**
  * Converts API PageLayout values to the format used by `BaseViewer`.
- * NOTE: This is supported to the extent that the viewer implements the
- *       necessary Scroll/Spread modes (since SinglePage, TwoPageLeft,
- *       and TwoPageRight all suggests using non-continuous scrolling).
  * @param mode The API PageLayout value.
  * @return A value from {SpreadMode}.
  */
@@ -869,12 +865,12 @@ export function apiPageLayoutToViewerModes(layout: PageLayout) {
       break;
     case PageLayout.OneColumn:
       break;
-    case PageLayout.TwoPageLeft:/* falls through */
+    case PageLayout.TwoPageLeft: /* falls through */
       scrollMode = ScrollMode.PAGE;
     case PageLayout.TwoColumnLeft:
       spreadMode = SpreadMode.ODD;
       break;
-    case PageLayout.TwoPageRight:/* falls through */
+    case PageLayout.TwoPageRight: /* falls through */
       scrollMode = ScrollMode.PAGE;
     case PageLayout.TwoColumnRight:
       spreadMode = SpreadMode.EVEN;

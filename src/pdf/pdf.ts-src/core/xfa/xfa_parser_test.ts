@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-import { assertEquals } from "https://deno.land/std@0.160.0/testing/asserts.ts";
-import { describe, it } from "https://deno.land/std@0.160.0/testing/bdd.ts";
+import { assertEquals } from "https://deno.land/std@0.165.0/testing/asserts.ts";
+import { describe, it } from "https://deno.land/std@0.165.0/testing/bdd.ts";
 import { Binder } from "./bind.ts";
 import { XFAParser } from "./parser.ts";
 import { searchNode } from "./som.ts";

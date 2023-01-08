@@ -2,7 +2,7 @@ The purpose of this project is to help learning PDF format and developing PDF to
 
 It is
 
-* based on [pdf.js@v3.1.81](https://github.com/mozilla/pdf.js/tree/v3.1.81),
+* based on [pdf.js@v3.2.146](https://github.com/mozilla/pdf.js/tree/v3.2.146),
 
 * **transpiled using [TypeScript@mymain](https://github.com/nmtigor/TypeScript/tree/mymain/PRs)!**
 
@@ -35,8 +35,7 @@ It is
 * 
   ```bash
   cd /path_to/pdf.ts/src/test
-  deno test --allow-read --allow-net ../pdf/pdf.ts-src/core # 30 passed (648 steps)
-  deno test ../pdf/pdf.ts-src/shared # 2 passed (16 steps)
+  deno test --allow-read --allow-net ../pdf # 50 passed (1014 steps)
   ```
 
 --------------------------------------------------------------------------------

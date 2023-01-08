@@ -34,7 +34,7 @@ export class TextAccessibilityManager {
 
   #textNodes = new Map<string, number>();
 
-  #waitingElements = new Map();
+  #waitingElements = new Map<HTMLElement, boolean>();
 
   setTextMapping(textDivs: HTMLDivElement[]) {
     this.#textChildren = textDivs;

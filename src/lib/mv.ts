@@ -1,12 +1,13 @@
-/*80****************************************************************************
- * mv
-** -------------------------------------------------------------------------- */
+/** 80**************************************************************************
+ * @module lib/mv
+ * @license Apache-2.0
+ ******************************************************************************/
 
 import { INOUT } from "../global.ts";
-import { AbstractConstructor } from "./alias.ts";
+import { CSSStyle } from "./alias.ts";
 import { svg } from "./dom.ts";
 import { mix } from "./jslang.ts";
-import { $Vuu, $vuu } from "./symbols.ts";
+import { $vuu } from "./symbols.ts";
 import { assert, type ReportedError } from "./util/trace.ts";
 /*80--------------------------------------------------------------------------*/
 
@@ -14,13 +15,13 @@ import { assert, type ReportedError } from "./util/trace.ts";
  * Inwards API, i.e., API called from outside of `Coo`.
  */
 export interface CooInterface {
-  reportError?: (error: unknown) => void | Promise<void>;
+  reportError?(error: unknown): void | Promise<void>;
 }
 
 /**
  * Access rule like scope:
- * Only has access to sibling or child Coo's through `ci`.
- * Child Coo accessing parent Coo has no such restriction.
+ * Only has access to sibling or child `Coo`'s through `ci`.
+ * Child `Coo` accessing parent `Coo` has no such restriction.
  */
 export abstract class Coo<CI extends CooInterface = CooInterface> {
   abstract get ci(): CI;
@@ -49,12 +50,12 @@ export abstract class Coo<CI extends CooInterface = CooInterface> {
 declare global {
   interface Node {
     [$vuu]?: Vuu;
-    [$Vuu]?: AbstractConstructor<Vuu>;
+    // [$Vuu]?: AbstractConstructor<Vuu>;
   }
 }
 
 /**
- * Wrapper of DOM.
+ * Wrapper of DOM
  * Vuu ⊆ Coo
  */
 export abstract class Vuu<C extends Coo = Coo, E extends Element = Element> {
@@ -68,6 +69,9 @@ export abstract class Vuu<C extends Coo = Coo, E extends Element = Element> {
     return this.el$;
   }
 
+  protected observeTheme$?(): void;
+  protected unobserveTheme$?(): void;
+
   /**
    * @headconst @param coo_x
    * @headconst @param el_x
@@ -77,7 +81,7 @@ export abstract class Vuu<C extends Coo = Coo, E extends Element = Element> {
     this.el$ = el_x;
 
     this.el$[$vuu] = this;
-    this.el$[$Vuu] = Vuu;
+    // this.el$[$Vuu] = Vuu;
   }
 
   get parentVuu1(): Vuu | undefined {
@@ -149,27 +153,31 @@ export abstract class Vuu<C extends Coo = Coo, E extends Element = Element> {
   //   return vuu_x && this.el$.parentNode === vuu_x.el;
   // }
 
-  // /**
-  //  * @deprecated - Use `this.el$.attr = 123;` directly
-  //  */
-  // attr( ...args ) { this.el$.setAttribute( ...args ); }
-
-  // on< EN extends keyof GlobalEventHandlersEventMap >( type:EN,
-  //   listener:MyEventListener< GlobalEventHandlersEventMap[EN] >
-  //          | MyEventListenerObject< GlobalEventHandlersEventMap[EN] >
-  //          | null,
-  //   options?:boolean | AddEventListenerOptions
-  // ) {
-  //   this.el$.on( type, <EventListenerOrEventListenerObject|null>listener, options );
-  // }
-  on(...args: [string, any, any?]) {
-    this.el$.on(...args);
+  on<E extends EventName>(
+    type: E,
+    listener: EventHandler<E>,
+    options?: AddEventListenerOptions | boolean,
+  ) {
+    return this.el$.on(type, listener, options);
   }
-  off(...args: [string, any, any?]) {
-    this.el$.off(...args);
+  off<E extends EventName>(
+    type: E,
+    listener: EventHandler<E>,
+    options?: EventListenerOptions | boolean,
+  ) {
+    return this.el$.off(type, listener, options);
+  }
+
+  assignAttro(attr_o: Record<string, string>): this {
+    this.el$.assignAttro(attr_o);
+    return this;
   }
 
   // static Vuufn() {}
+
+  set cyName(name_x: string) {
+    this.el$.setAttribute("data-cy", name_x);
+  }
 }
 // Vuu.def = "def";
 
@@ -183,6 +191,11 @@ export class HTMLVuu<C extends Coo = Coo, E extends HTMLElement = HTMLElement>
   // {
   //   super( coo_x, el_x );
   // }
+
+  assignStylo(styl_o: CSSStyle): this {
+    this.el$.assignStylo(styl_o);
+    return this;
+  }
 }
 
 export class SVGVuu<C extends Coo = Coo, E extends SVGElement = SVGElement>
@@ -195,6 +208,11 @@ export class SVGVuu<C extends Coo = Coo, E extends SVGElement = SVGElement>
   // {
   //   super( coo_x, el_x );
   // }
+
+  assignStylo(styl_o: CSSStyle): this {
+    this.el$.assignStylo(styl_o);
+    return this;
+  }
 }
 
 /**
@@ -205,7 +223,9 @@ export interface HTMLVCo<
   E extends HTMLElement = HTMLElement,
 > extends HTMLVuu<Coo<CI>, E>, Coo<CI> {}
 export abstract class HTMLVCo<CI extends CooInterface, E extends HTMLElement>
-  extends mix(HTMLVuu, Coo) {
+  extends mix(HTMLVuu as any, Coo) {
+  // override coo$: Coo<CI>;
+
   readonly #ci: CI = Object.create(null);
   /** @implement */
   get ci() {
@@ -216,7 +236,7 @@ export abstract class HTMLVCo<CI extends CooInterface, E extends HTMLElement>
    * @headconst @param el_x
    */
   constructor(el_x: E) {
-    super(undefined, el_x);
+    super(undefined as any, el_x);
     this.coo$ = this;
   }
 
@@ -231,7 +251,7 @@ export interface SVGVCo<
   E extends SVGElement = SVGElement,
 > extends SVGVuu<Coo<CI>, E>, Coo<CI> {}
 export abstract class SVGVCo<CI extends CooInterface, E extends SVGElement>
-  extends mix(SVGVuu, Coo) {
+  extends mix(SVGVuu as any, Coo) {
   readonly #ci: CI = Object.create(null);
   /** @implement */
   get ci() {
@@ -242,7 +262,7 @@ export abstract class SVGVCo<CI extends CooInterface, E extends SVGElement>
    * @headconst @param el_x
    */
   constructor(el_x: E) {
-    super(undefined, el_x);
+    super(undefined as any, el_x);
     this.coo$ = this;
   }
 }
@@ -296,7 +316,7 @@ class MooHandlerDB<T extends {} | null, D = any> {
   }
 
   #nforce = 0;
-  get force() {
+  get forcing_$() {
     return this.#nforce > 0;
   }
 
@@ -421,7 +441,7 @@ class MooHandlerDB<T extends {} | null, D = any> {
 export class Moo<T extends {} | null, D = any> {
   readonly #initval: T;
   readonly #eq: MooEq<T>;
-  readonly #force: boolean;
+  readonly #forcing: boolean;
 
   #val!: T;
   get val() {
@@ -439,17 +459,17 @@ export class Moo<T extends {} | null, D = any> {
     return this.#handler_db.len_$;
   }
 
-  #forceOnce = false;
-  set forceOnce(force: boolean) {
-    this.#forceOnce = force;
+  #forcingOnce = false;
+  set forceOnce(force_x: boolean) {
+    this.#forcingOnce = force_x;
   }
-  force() {
-    this.#forceOnce = true;
+  force(): this {
+    this.#forcingOnce = true;
     return this;
   }
 
-  get #forced() {
-    return this.#force || this.#forceOnce;
+  get #forcing_() {
+    return this.#forcing || this.#forcingOnce;
   }
 
   #data: D | undefined;
@@ -463,12 +483,12 @@ export class Moo<T extends {} | null, D = any> {
   /**
    * @headconst @param val_x
    * @headconst @param eq_x
-   * @const @param force
+   * @const @param force_x
    */
   constructor(val_x: T, eq_x = (a: T, b: T) => a === b, force_x?: "force") {
     this.#initval = val_x;
     this.#eq = eq_x;
-    this.#force = force_x === undefined ? false : true;
+    this.#forcing = force_x === undefined ? false : true;
 
     this.reset();
   }
@@ -480,7 +500,8 @@ export class Moo<T extends {} | null, D = any> {
     this.#val = this.#newval = val;
   }
 
-  reset() {
+  /** @final */
+  reset(): this {
     this.set(this.#initval);
     if (!this.#handler_db?.empty) {
       this.#handler_db = new MooHandlerDB<T, D>(this.#eq);
@@ -488,7 +509,7 @@ export class Moo<T extends {} | null, D = any> {
     //! Not `#handler_db.clear()` because `#handler_db` could be shared.
     // if( !this.#handler_db ) this.#handler_db = new MooHandlerDB( this.#eq );
     // this.#handler_db.clear();
-    this.#forceOnce = this.#force;
+    this.#forcingOnce = this.#forcing;
     return this;
   }
 
@@ -571,21 +592,21 @@ export class Moo<T extends {} | null, D = any> {
   set val(val_x: T) {
     if (
       this.#eq(val_x, this.#val) &&
-      !this.#forced &&
-      !this.#handler_db.force
+      !this.#forcing_ &&
+      !this.#handler_db.forcing_$
     ) {
       return;
     }
 
     this.#newval = val_x;
-    this.#handler_db.get(val_x, this.#val, this.#forced)
+    this.#handler_db.get(val_x, this.#val, this.#forcing_)
       .forEach((handler_y) => handler_y(val_x, this.#val, this.#data));
     // for( const handler_y of this.#handler_db )
     // {
     //   handler_y( val_x, this.#val, this );
     // }
     this.#val = val_x;
-    this.#forceOnce = this.#force;
+    this.#forcingOnce = this.#forcing;
     this.#data = undefined; // it is used once
 
     // if( this.once_ ) this.#handler_db.clear();

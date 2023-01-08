@@ -21,47 +21,23 @@
 /** @typedef {import("../src/display/api").PDFPageProxy} PDFPageProxy */
 // eslint-disable-next-line max-len
 /** @typedef {import("../src/display/display_utils").PageViewport} PageViewport */
-// eslint-disable-next-line max-len
-/** @typedef {import("./annotation_layer_builder").AnnotationLayerBuilder} AnnotationLayerBuilder */
-// eslint-disable-next-line max-len
-/** @typedef {import("./annotation_editor_layer_builder").AnnotationEditorLayerBuilder} AnnotationEditorLayerBuilder */
-/** @typedef {import("./event_utils").EventBus} EventBus */
-// eslint-disable-next-line max-len
-/** @typedef {import("./struct_tree_builder").StructTreeLayerBuilder} StructTreeLayerBuilder */
-/** @typedef {import("./text_highlighter").TextHighlighter} TextHighlighter */
-// eslint-disable-next-line max-len
-/** @typedef {import("./text_layer_builder").TextLayerBuilder} TextLayerBuilder */
 /** @typedef {import("./ui_utils").RenderingStates} RenderingStates */
-/** @typedef {import("./xfa_layer_builder").XfaLayerBuilder} XfaLayerBuilder */
-// eslint-disable-next-line max-len
-/** @typedef {import("./text_accessibility.js").TextAccessibilityManager} TextAccessibilityManager */
 
 import { type Locale_1, type WebL10nArgs } from "../../3rd/webL10n/l10n.ts";
 import {
   AnnotActions,
-  AnnotationEditorUIManager,
-  AnnotationStorage,
   AppInfo,
   type Destination,
   DocInfo,
   type ExplicitDest,
   type FieldObject,
-  PageViewport,
-  PDFPageProxy,
   type RefProxy,
   ScriptingActionName,
   type SetOCGState,
 } from "../pdf.ts-src/pdf.ts";
-import { AnnotationEditorLayerBuilder } from "./annotation_editor_layer_builder.ts";
-import { AnnotationLayerBuilder } from "./annotation_layer_builder.ts";
 import { EventBus } from "./event_utils.ts";
 import { LinkTarget } from "./pdf_link_service.ts";
-import { StructTreeLayerBuilder } from "./struct_tree_layer_builder.ts";
-import { TextAccessibilityManager } from "./text_accessibility.ts";
-import { TextHighlighter } from "./text_highlighter.ts";
-import { TextLayerBuilder } from "./text_layer_builder.ts";
 import { RenderingStates } from "./ui_utils.ts";
-import { XfaLayerBuilder } from "./xfa_layer_builder.ts";
 /*80--------------------------------------------------------------------------*/
 
 export interface IPDFLinkService {
@@ -190,108 +166,6 @@ export interface IVisibleView extends IRenderableView {
   readonly id: number;
 
   readonly div: HTMLDivElement;
-}
-
-export interface CreateTextLayerBuilderP {
-  textLayerDiv: HTMLDivElement;
-  pageIndex: number;
-  viewport: PageViewport;
-  eventBus: EventBus;
-  highlighter: TextHighlighter | undefined;
-  accessibilityManager?: TextAccessibilityManager;
-}
-export interface IPDFTextLayerFactory {
-  createTextLayerBuilder(_: CreateTextLayerBuilderP): TextLayerBuilder;
-}
-
-export interface MouseState {
-  isDown?: boolean;
-}
-
-export interface CreateAnnotationLayerBuilderP {
-  pageDiv: HTMLDivElement;
-  pdfPage: PDFPageProxy;
-
-  /**
-   * Storage for annotation data in forms.
-   */
-  annotationStorage?: AnnotationStorage;
-
-  /**
-   * =""
-   * Path for image resources, mainly
-   * for annotation icons. Include trailing slash.
-   */
-  imageResourcesPath?: string;
-
-  /**
-   * =true
-   */
-  renderForms?: boolean;
-
-  l10n?: IL10n;
-
-  /**
-   * =false
-   */
-  enableScripting?: boolean;
-
-  hasJSActionsPromise?: Promise<boolean>;
-  mouseState?: MouseState;
-  fieldObjectsPromise?: Promise<Record<string, FieldObject[]> | undefined>;
-
-  /**
-   * Map some annotation ids with canvases used to render them.
-   */
-  annotationCanvasMap?: Map<string, HTMLCanvasElement>;
-
-  accessibilityManager?: TextAccessibilityManager | undefined;
-}
-export interface IPDFAnnotationLayerFactory {
-  createAnnotationLayerBuilder(
-    _: CreateAnnotationLayerBuilderP,
-  ): AnnotationLayerBuilder;
-}
-
-export interface CreateAnnotationEditorLayerBuilderP {
-  uiManager?: AnnotationEditorUIManager;
-  pageDiv: HTMLDivElement;
-  pdfPage: PDFPageProxy;
-  l10n: IL10n;
-
-  /**
-   * Storage for annotation data in forms.
-   */
-  annotationStorage?: AnnotationStorage;
-
-  accessibilityManager?: TextAccessibilityManager | undefined;
-}
-export interface IPDFAnnotationEditorLayerFactory {
-  createAnnotationEditorLayerBuilder(
-    _: CreateAnnotationEditorLayerBuilderP,
-  ): AnnotationEditorLayerBuilder;
-}
-
-export interface CreateXfaLayerBuilderP {
-  pageDiv: HTMLDivElement;
-  pdfPage: PDFPageProxy;
-
-  /**
-   * Storage for annotation data in forms.
-   */
-  annotationStorage?: AnnotationStorage;
-}
-export interface IPDFXfaLayerFactory {
-  createXfaLayerBuilder(_: CreateXfaLayerBuilderP): XfaLayerBuilder;
-}
-
-export interface CreateStructTreeLayerBuilderP {
-  pdfPage: PDFPageProxy;
-}
-export interface IPDFStructTreeLayerFactory {
-  createStructTreeLayerBuilder(
-    _: CreateStructTreeLayerBuilderP,
-  ): StructTreeLayerBuilder;
 }
 
 export interface IDownloadManager {

@@ -19,7 +19,6 @@
 
 import { FieldItem, FieldObject } from "../core/annotation.ts";
 import { AnnotActions } from "../core/core_utils.ts";
-import { CMYK, RGB } from "../shared/scripting_utils.ts";
 import { DocWrapped, FieldWrapped } from "./app.ts";
 import { Color, CorrectColor } from "./color.ts";
 import {
@@ -39,7 +38,7 @@ export interface SendFieldData extends SendData {
   insert?: { index: number } & FieldItem;
   focus?: boolean;
   items?: FieldItem[];
-  value?: string | number;
+  value?: string | number | string[] | undefined;
   selRange?: [number, number];
   formattedValue?: string | undefined;
 
@@ -271,7 +270,7 @@ export class Field extends PDFObject<SendFieldData> {
     }
   }
 
-  _value;
+  _value: string | number | string[] | undefined;
   get valueAsString() {
     return (this._value ?? "").toString();
   }
@@ -359,7 +358,6 @@ export class Field extends PDFObject<SendFieldData> {
     this._page = data.page || 0;
     this._strokeColor = data.strokeColor || ["G", 0];
     this._textColor = data.textColor || ["G", 0];
-    this._value = data.value || "";
     this._kidIds = data.kidIds;
     this._fieldType = getFieldType(this._actions);
     this._siblings = data.siblings;
@@ -367,6 +365,9 @@ export class Field extends PDFObject<SendFieldData> {
 
     this._globalEval = data.globalEval;
     this._appObjects = data.appObjects;
+
+    // The value is set depending on the field type.
+    this.value = data.value || "";
   }
 
   get currentValueIndices() {
@@ -434,16 +435,22 @@ export class Field extends PDFObject<SendFieldData> {
     return this._value;
   }
   set value(value) {
+    if (this._isChoice) {
+      this._setChoiceValue(value!);
+      return;
+    }
+
     if (value === "") {
       this._value = "";
     } else if (typeof value === "string") {
       switch (this._fieldType) {
+        case FieldType.none:
+          this._value = !isNaN(value as any) ? parseFloat(value) : value;
+          break;
         case FieldType.number:
         case FieldType.percent:
-          value = parseFloat(value) as any;
-          if (!isNaN(value as any)) {
-            this._value = value;
-          }
+          const number = parseFloat(value);
+          this._value = !isNaN(number) ? number : 0;
           break;
         default:
           this._value = value;
@@ -451,23 +458,37 @@ export class Field extends PDFObject<SendFieldData> {
     } else {
       this._value = value;
     }
-    if (this._isChoice) {
-      if (this.multipleSelection) {
-        const values = new Set(value);
-        if (Array.isArray(this._currentValueIndices)) {
-          this._currentValueIndices.length = 0;
-        } else {
-          this._currentValueIndices = [];
-        }
-        this._items.forEach(({ displayValue }, i) => {
-          if (values.has(displayValue as string)) {
-            (this._currentValueIndices as number[]).push(i);
-          }
-        });
+  }
+
+  _setChoiceValue(value: string | number | (string | number)[]) {
+    if (this.multipleSelection) {
+      if (!Array.isArray(value)) {
+        value = [value];
+      }
+      const values = new Set(value);
+      if (Array.isArray(this._currentValueIndices)) {
+        this._currentValueIndices.length = 0;
+        (this._value as string[]).length = 0;
       } else {
-        this._currentValueIndices = this._items.findIndex(
-          ({ displayValue }) => value === displayValue,
-        );
+        this._currentValueIndices = [];
+        this._value = [];
+      }
+      this._items.forEach((item, i) => {
+        if (values.has(item.exportValue as string)) {
+          (this._currentValueIndices as number[]).push(i);
+          (this._value as string[]).push(item.exportValue as string);
+        }
+      });
+    } else {
+      if (Array.isArray(value)) {
+        value = value[0];
+      }
+      const index = this._items.findIndex(
+        ({ exportValue }) => value === exportValue,
+      );
+      if (index !== -1) {
+        this._currentValueIndices = index;
+        this._value = this._items[index].exportValue;
       }
     }
   }
@@ -703,6 +724,8 @@ export class RadioButtonField extends Field {
   _radioIds;
   _radioActions;
 
+  _hasBeenInitialized = true;
+
   constructor(otherButtons: FieldObject[], data: ScriptingFieldData) {
     super(data);
 
@@ -718,12 +741,18 @@ export class RadioButtonField extends Field {
         this._id = radioData.id;
       }
     }
+
+    this._value = data.value || "";
   }
 
   override get value() {
     return this._value;
   }
   override set value(value) {
+    if (!this._hasBeenInitialized) {
+      return;
+    }
+
     if (value === null || value === undefined) {
       this._value = "";
     }

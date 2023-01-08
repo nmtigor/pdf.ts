@@ -28,17 +28,19 @@ import { getFilenameFromContentDispositionHeader } from "./content_disposition.t
 import { isPdfFile } from "./display_utils.ts";
 /*80--------------------------------------------------------------------------*/
 
+export type VRRC_P_ = {
+  getResponseHeader: (name: string) => string | null;
+  isHttp: boolean;
+  rangeChunkSize: number;
+  disableRange: boolean;
+};
+
 export function validateRangeRequestCapabilities({
   getResponseHeader,
   isHttp,
   rangeChunkSize,
   disableRange,
-}: {
-  getResponseHeader: (name: string) => string | null;
-  isHttp: boolean;
-  rangeChunkSize: number;
-  disableRange: boolean;
-}) {
+}: VRRC_P_) {
   /*#static*/ if (_PDFDEV) {
     assert(
       Number.isInteger(rangeChunkSize) && rangeChunkSize > 0,
@@ -51,11 +53,14 @@ export function validateRangeRequestCapabilities({
   } = {
     allowRangeRequests: false,
   };
+  // console.log("run here 0");
 
   const length = parseInt(getResponseHeader("Content-Length")!, 10);
+  // console.log(getResponseHeader("Content-Length"));
   if (!Number.isInteger(length)) {
     return returnValues;
   }
+  // console.log("run here 1");
 
   returnValues.suggestedLength = length;
 
@@ -64,18 +69,22 @@ export function validateRangeRequestCapabilities({
     // make any sense to abort the request and retry with a range request.
     return returnValues;
   }
+  // console.log("run here 2");
 
   if (disableRange || !isHttp) {
     return returnValues;
   }
+  // console.log("run here 3");
   if (getResponseHeader("Accept-Ranges") !== "bytes") {
     return returnValues;
   }
+  // console.log("run here 4");
 
   const contentEncoding = getResponseHeader("Content-Encoding") || "identity";
   if (contentEncoding !== "identity") {
     return returnValues;
   }
+  // console.log("run here 5");
 
   returnValues.allowRangeRequests = true;
   return returnValues;

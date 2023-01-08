@@ -28,10 +28,12 @@ import { RGB } from "../../shared/scripting_utils.ts";
 import {
   AnnotationEditorPrefix,
   AnnotationEditorType,
+  FeatureTest,
   shadow,
   Util,
 } from "../../shared/util.ts";
-import { getColorValues, getRGB } from "../display_utils.ts";
+import { AnnotationStorage } from "../annotation_storage.ts";
+import { getColorValues, getRGB, PixelsPerInch } from "../display_utils.ts";
 import { AnnotationEditorLayer } from "./annotation_editor_layer.ts";
 import { AnnotationEditor, PropertyToUpdate } from "./editor.ts";
 import { FreeTextEditor } from "./freetext.ts";
@@ -217,7 +219,7 @@ export class KeyboardManager {
    * A shortcut is a string like `ctrl+c` or `mac+ctrl+c` for mac OS.
    */
   constructor(callbacks: [string[], () => void][]) {
-    const isMac = KeyboardManager.platform.isMac;
+    const { isMac } = FeatureTest.platform;
     for (const [keys, callback] of callbacks) {
       for (const key of keys) {
         const isMacKey = key.startsWith("mac+");
@@ -230,17 +232,6 @@ export class KeyboardManager {
         }
       }
     }
-  }
-
-  static get platform() {
-    const platform = typeof navigator !== "undefined" && navigator.platform
-      ? navigator.platform
-      : "";
-
-    return shadow(this, "platform", {
-      isWin: platform.includes("Win"),
-      isMac: platform.includes("Mac"),
-    });
   }
 
   /**
@@ -394,9 +385,16 @@ export class AnnotationEditorUIManager {
 
   #allEditors = new Map<string, AnnotationEditor>();
   #allLayers = new Map<number, AnnotationEditorLayer>();
+  #annotationStorage;
   #commandManager = new CommandManager();
+
   #currentPageIndex = 0;
+  get currentPageIndex() {
+    return this.#currentPageIndex;
+  }
+
   #editorTypes!: (typeof InkEditor | typeof FreeTextEditor)[];
+  #editorsToRescale = new Set<InkEditor>();
   #eventBus;
   #idManager = new IdManager();
   #isEnabled = false;
@@ -416,6 +414,8 @@ export class AnnotationEditorUIManager {
   #boundKeydown = this.keydown.bind(this);
   #boundOnEditingAction = this.onEditingAction.bind(this);
   #boundOnPageChanging = this.onPageChanging.bind(this);
+  #boundOnScaleChanging = this.onScaleChanging.bind(this);
+  #boundOnRotationChanging = this.onRotationChanging.bind(this);
   #previousStates = {
     isEditing: false,
     isEmpty: true,
@@ -425,22 +425,37 @@ export class AnnotationEditorUIManager {
   };
   #container;
 
-  constructor(container: HTMLDivElement, eventBus: EventBus) {
+  viewParameters = {
+    realScale: PixelsPerInch.PDF_TO_CSS_UNITS,
+    rotation: 0,
+  };
+
+  constructor(
+    container: HTMLDivElement,
+    eventBus: EventBus,
+    annotationStorage: AnnotationStorage | undefined,
+  ) {
     this.#container = container;
     this.#eventBus = eventBus;
     this.#eventBus._on("editingaction", this.#boundOnEditingAction);
     this.#eventBus._on("pagechanging", this.#boundOnPageChanging);
+    this.#eventBus._on("scalechanging", this.#boundOnScaleChanging);
+    this.#eventBus._on("rotationchanging", this.#boundOnRotationChanging);
+    this.#annotationStorage = annotationStorage;
   }
 
   destroy() {
     this.#removeKeyboardManager();
     this.#eventBus._off("editingaction", this.#boundOnEditingAction);
     this.#eventBus._off("pagechanging", this.#boundOnPageChanging);
+    this.#eventBus._off("scalechanging", this.#boundOnScaleChanging);
+    this.#eventBus._off("rotationchanging", this.#boundOnRotationChanging);
     for (const layer of this.#allLayers.values()) {
       layer.destroy();
     }
     this.#allLayers.clear();
     this.#allEditors.clear();
+    this.#editorsToRescale.clear();
     this.#activeEditor = undefined;
     this.#selectedEditors.clear();
     this.#commandManager.destroy();
@@ -452,6 +467,40 @@ export class AnnotationEditorUIManager {
 
   focusMainContainer() {
     this.#container.focus();
+  }
+
+  addShouldRescale(editor: InkEditor) {
+    this.#editorsToRescale.add(editor);
+  }
+
+  removeShouldRescale(editor: InkEditor) {
+    this.#editorsToRescale.delete(editor);
+  }
+
+  onScaleChanging({ scale }: EventMap["scalechanging"]) {
+    this.commitOrRemove();
+    this.viewParameters.realScale = scale * PixelsPerInch.PDF_TO_CSS_UNITS;
+    for (const editor of this.#editorsToRescale) {
+      editor.onScaleChanging();
+    }
+  }
+
+  onRotationChanging({ pagesRotation }: EventMap["rotationchanging"]) {
+    this.commitOrRemove();
+    this.viewParameters.rotation = pagesRotation;
+  }
+
+  /**
+   * Add an editor in the annotation storage.
+   */
+  addToAnnotationStorage(editor: AnnotationEditor) {
+    if (
+      !editor.isEmpty() &&
+      this.#annotationStorage &&
+      !this.#annotationStorage.has(editor.id)
+    ) {
+      this.#annotationStorage.setValue(editor.id, editor);
+    }
   }
 
   #addKeyboardManager() {
@@ -654,6 +703,10 @@ export class AnnotationEditorUIManager {
     return this.#idManager.getId();
   }
 
+  get currentLayer() {
+    return this.#allLayers.get(this.#currentPageIndex);
+  }
+
   /**
    * Add a new layer for a page which will contains the editors.
    */
@@ -774,6 +827,7 @@ export class AnnotationEditorUIManager {
   removeEditor(editor: AnnotationEditor) {
     this.#allEditors.delete(editor.id);
     this.unselect(editor);
+    this.#annotationStorage?.remove(editor.id);
   }
 
   /**
