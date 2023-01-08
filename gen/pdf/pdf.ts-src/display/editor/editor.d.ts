@@ -1,8 +1,12 @@
 import { RGB } from "../../shared/scripting_utils.js";
 import { AnnotationEditorParamsType, AnnotationEditorType, rect_t } from "../../shared/util.js";
 import { AnnotationEditorLayer } from "./annotation_editor_layer.js";
-import { ColorManager } from "./tools.js";
+import { AddCommandsP, AnnotationEditorUIManager, ColorManager } from "./tools.js";
 export interface AnnotationEditorP {
+    /**
+     * the global manager
+     */
+    uiManager: AnnotationEditorUIManager;
     /**
      * the layer containing this editor
      */
@@ -36,16 +40,19 @@ export declare abstract class AnnotationEditor {
     static readonly _type: "freetext" | "ink";
     static _colorManager: ColorManager;
     static _zIndex: number;
-    parent: AnnotationEditorLayer;
+    _uiManager: AnnotationEditorUIManager;
+    parent: AnnotationEditorLayer | undefined;
     id: string;
     width?: number;
     height?: number;
     pageIndex: number;
     name: string;
     div?: HTMLDivElement;
+    rotation: number;
+    pageDimensions: number[];
+    pageTranslation: number[];
     x: number;
     y: number;
-    rotation: number;
     isAttachedToDOM: boolean;
     startX: number;
     startY: number;
@@ -54,6 +61,11 @@ export declare abstract class AnnotationEditor {
     });
     static get _defaultLineColor(): string;
     /**
+     * Add some commands into the CommandManager (undo/redo stuff).
+     */
+    addCommands(params: AddCommandsP): void;
+    get currentLayer(): AnnotationEditorLayer | undefined;
+    /**
      * This editor will be behind the others.
      */
     setInBackground(): void;
@@ -61,6 +73,7 @@ export declare abstract class AnnotationEditor {
      * This editor will be in the foreground.
      */
     setInForeground(): void;
+    setParent(parent: AnnotationEditorLayer | undefined): void;
     /**
      * onfocus callback.
      */
@@ -74,6 +87,7 @@ export declare abstract class AnnotationEditor {
      * Commit the data contained in this editor.
      */
     commit(): void;
+    addToAnnotationStorage(): void;
     /**
      * We use drag-and-drop in order to move an editor on a page.
      */
@@ -94,6 +108,9 @@ export declare abstract class AnnotationEditor {
      * Convert a screen translation into a page one.
      */
     screenToPageTranslation(x: number, y: number): number[];
+    get parentScale(): number;
+    get parentRotation(): number;
+    get parentDimensions(): number[];
     /**
      * Set the dimensions of this editor.
      */
@@ -160,7 +177,7 @@ export declare abstract class AnnotationEditor {
      * Deserialize the editor.
      * The result of the deserialization is a new editor.
      */
-    static deserialize(data: AnnotationEditorSerialized, parent: AnnotationEditorLayer): AnnotationEditor;
+    static deserialize(data: AnnotationEditorSerialized, parent: AnnotationEditorLayer, uiManager: AnnotationEditorUIManager): AnnotationEditor;
     /**
      * Remove this editor.
      * It's used on ctrl+backspace action.
@@ -203,7 +220,6 @@ export declare abstract class AnnotationEditor {
     get isEditing(): boolean;
     /**
      * When set to true, it means that this editor is currently edited.
-     * @param {boolean} value
      */
     set isEditing(value: boolean);
 }

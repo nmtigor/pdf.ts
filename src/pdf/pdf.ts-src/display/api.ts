@@ -750,11 +750,22 @@ export class PDFDocumentLoadingTask {
    */
   onProgress?: (_: OnProgressP) => void;
 
+  #onUnsupportedFeature?:
+    | ((featureId?: UNSUPPORTED_FEATURES) => void)
+    | undefined;
+  get onUnsupportedFeature() {
+    return this.#onUnsupportedFeature;
+  }
   /**
    * Callback for when an unsupported feature is used in the PDF document.
    * The callback receives an {@link UNSUPPORTED_FEATURES} argument.
    */
-  onUnsupportedFeature?: (featureId?: UNSUPPORTED_FEATURES) => void;
+  set onUnsupportedFeature(callback) {
+    deprecated(
+      "The PDFDocumentLoadingTask onUnsupportedFeature property will be removed in the future.",
+    );
+    this.#onUnsupportedFeature = callback;
+  }
 
   constructor() {
     this.docId = `d${PDFDocumentLoadingTask.#docId++}`;
@@ -940,14 +951,17 @@ export class PDFDocumentProxy {
    * structures, or `null` when no statistics exists.
    */
   get stats(): PDFDocumentStats | undefined {
+    deprecated(
+      "The PDFDocumentProxy stats property will be removed in the future.",
+    );
     return this._transport.stats;
   }
 
   /**
    * @return True if only XFA form.
    */
-  get isPureXfa() {
-    return !!this._transport._htmlForXfa;
+  get isPureXfa(): boolean {
+    return shadow(this, "isPureXfa", !!this._transport._htmlForXfa);
   }
 
   /**
@@ -1064,7 +1078,7 @@ export class PDFDocumentProxy {
    *     - from A or AA entries in the catalog dictionary.
    *   , or `null` if no JavaScript exists.
    */
-  getJSActions() {
+  getJSActions(): Promise<AnnotActions | undefined> {
     return this._transport.getDocJSActions();
   }
 
@@ -1291,7 +1305,7 @@ export interface TextItem {
   /**
    * Transformation matrix.
    */
-  transform: matrix_t | undefined;
+  transform: matrix_t;
 
   /**
    * Width in device space.
@@ -1595,7 +1609,6 @@ export class PDFPageProxy {
   _structTreePromise: Promise<StructTreeNode | undefined> | undefined;
   pendingCleanup = false;
   #intentStates = new Map<string, IntentState>();
-  _annotationPromises = new Map<string, Promise<AnnotationData[]>>();
   destroyed = false;
 
   _annotationsPromise: Promise<AnnotationData[]> | undefined;
@@ -1684,18 +1697,13 @@ export class PDFPageProxy {
    * @return A promise that is resolved with an
    *   {Array} of the annotation objects.
    */
-  getAnnotations({ intent = "display" } = <_GetAnnotationsP> {}) {
+  getAnnotations({ intent = "display" } = {} as _GetAnnotationsP) {
     const intentArgs = this._transport.getRenderingIntent(intent);
 
-    let promise = this._annotationPromises.get(intentArgs.cacheKey);
-    if (!promise) {
-      promise = this._transport.getAnnotations(
-        this._pageIndex,
-        intentArgs.renderingIntent,
-      );
-      this._annotationPromises.set(intentArgs.cacheKey, promise);
-    }
-    return promise;
+    return this._transport.getAnnotations(
+      this._pageIndex,
+      intentArgs.renderingIntent,
+    );
   }
 
   /**
@@ -1703,9 +1711,14 @@ export class PDFPageProxy {
    *   {Object} with JS actions.
    */
   getJSActions() {
-    return (this._jsActionsPromise ||= this._transport.getPageJSActions(
-      this._pageIndex,
-    ));
+    return this._transport.getPageJSActions(this._pageIndex);
+  }
+
+  /**
+   * @return True if only XFA form.
+   */
+  get isPureXfa(): boolean {
+    return shadow(this, "isPureXfa", !!this._transport._htmlForXfa);
   }
 
   /**
@@ -1984,9 +1997,7 @@ export class PDFPageProxy {
    *   or `null` when no structure tree is present for the current page.
    */
   getStructTree(): Promise<StructTreeNode | undefined> {
-    return (this._structTreePromise ||= this._transport.getStructTree(
-      this._pageIndex,
-    ));
+    return this._transport.getStructTree(this._pageIndex);
   }
 
   /**
@@ -2018,9 +2029,6 @@ export class PDFPageProxy {
       bitmap.close();
     }
     this._bitmaps.clear();
-    this._annotationPromises.clear();
-    this._jsActionsPromise = undefined;
-    this._structTreePromise = undefined;
     this.pendingCleanup = false;
     return Promise.all(waitOn);
   }
@@ -2051,9 +2059,6 @@ export class PDFPageProxy {
 
     this.#intentStates.clear();
     this.objs.clear();
-    this._annotationPromises.clear();
-    this._jsActionsPromise = undefined;
-    this._structTreePromise = undefined;
     if (resetStats && this._stats) {
       this._stats = new StatTimer();
     }
@@ -2180,6 +2185,12 @@ export class PDFPageProxy {
     if (!intentState.streamReader) {
       return;
     }
+    // Ensure that a pending `streamReader` cancel timeout is always aborted.
+    if (intentState.streamReaderCancelTimeout) {
+      clearTimeout(intentState.streamReaderCancelTimeout);
+      intentState.streamReaderCancelTimeout = undefined;
+    }
+
     if (!force) {
       // Ensure that an Error occurring in *only* one `InternalRenderTask`, e.g.
       // multiple render() calls on the same canvas, won't break all rendering.
@@ -2190,15 +2201,21 @@ export class PDFPageProxy {
       // cancelled, since that will unnecessarily delay re-rendering when (for
       // partially parsed pages) e.g. zooming/rotation occurs in the viewer.
       if (reason instanceof RenderingCancelledException) {
+        let delay = RENDERING_CANCELLED_TIMEOUT;
+        if (reason.extraDelay > 0 && reason.extraDelay < /* ms = */ 1000) {
+          // Above, we prevent the total delay from becoming arbitrarily large.
+          delay += reason.extraDelay;
+        }
+
         intentState.streamReaderCancelTimeout = setTimeout(() => {
-          this.#abortOperatorList({ intentState, reason, force: true });
           intentState.streamReaderCancelTimeout = undefined;
-        }, RENDERING_CANCELLED_TIMEOUT);
+          this.#abortOperatorList({ intentState, reason, force: true });
+        }, delay);
         return;
       }
     }
     intentState.streamReader
-      .cancel(new AbortException((<any> reason).message))
+      .cancel(new AbortException((reason as any).message))
       .catch(() => {
         // Avoid "Uncaught promise" messages in the console.
       });
@@ -2428,7 +2445,7 @@ export class PDFWorker {
         /*#static*/ if (GENERIC) {
           if (!PDFWorkerUtil.isSameOrigin(window.location.href, workerSrc)) {
             workerSrc = PDFWorkerUtil.createCDNWrapper(
-              new URL(workerSrc, <any> window.location).href,
+              new URL(workerSrc, window.location as any).href,
             );
           }
         }
@@ -3578,8 +3595,8 @@ export class RenderTask {
    * not be cancelled until graphics pauses with a timeout. The promise that
    * this object extends will be rejected when cancelled.
    */
-  cancel() {
-    this.#internalRenderTask.cancel();
+  cancel(extraDelay = 0) {
+    this.#internalRenderTask.cancel(/* error = */ undefined, extraDelay);
   }
 
   /**
@@ -3737,7 +3754,7 @@ export class InternalRenderTask {
     this.graphicsReadyCallback?.();
   }
 
-  cancel = (error: any = null) => {
+  cancel = (error: any = undefined, extraDelay = 0) => {
     this.running = false;
     this.cancelled = true;
     this.gfx?.endDrawing();
@@ -3750,6 +3767,7 @@ export class InternalRenderTask {
         new RenderingCancelledException(
           `Rendering cancelled, page ${this._pageIndex + 1}`,
           "canvas",
+          extraDelay,
         ),
     );
   };

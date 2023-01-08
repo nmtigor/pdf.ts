@@ -1,3 +1,7 @@
+/** 80**************************************************************************
+ * @module lib/jslang
+ * @license Apache-2.0
+ ******************************************************************************/
 import { type AbstractConstructor, type Constructor, type uint, type uint8 } from "./alias.js";
 declare global {
     interface ObjectConstructor {
@@ -139,8 +143,8 @@ declare global {
  * class X extends mix( Y, Z )
  * ! Should always companion with an interface declaration.
  *
- * @param mixins
+ * @param mixins_x
  *  Laat element has the highest precedence, and so on.
  */
-export declare function mix(base: Constructor | AbstractConstructor, ...mixins: (Constructor | AbstractConstructor)[]): AbstractConstructor<object>;
+export declare function mix<C extends Constructor | AbstractConstructor>(Base_x: C, ...mixins_x: (Constructor | AbstractConstructor)[]): (abstract new (...args: any[]) => {}) & C;
 //# sourceMappingURL=jslang.d.ts.map

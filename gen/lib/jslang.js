@@ -1,6 +1,7 @@
-/*80****************************************************************************
- * jslang
-** -------------------------------------------------------------------------- */
+/** 80**************************************************************************
+ * @module lib/jslang
+ * @license Apache-2.0
+ ******************************************************************************/
 import { INOUT } from "../global.js";
 import { assert } from "./util/trace.js";
 // Ref. https://lodash.com/docs/4.17.15#isObjectLike
@@ -17,7 +18,7 @@ let valve = 0;
  */
 function eq_impl(lhs_x, rhs_x) {
     /*#static*/ if (INOUT) {
-        assert(valve--, "There is element referencing its ancestor.", import.meta);
+        assert(valve--, "There is element referencing its ancestor.");
     }
     if (lhs_x === rhs_x ||
         Number.isNaN(lhs_x) && Number.isNaN(rhs_x) //! Notice, `NaN === NaN` is false.
@@ -143,21 +144,11 @@ export function isASCIILetter(cp) {
     return isASCIIUpLetter(cp) || isASCIILoLetter(cp);
 }
 Number.apxE = (f0, f1) => Math.abs(f0 - f1) <= Number.EPSILON;
-Number.apxS = (f0, f1) => {
-    return f0 < f1 - Number.EPSILON;
-};
-Number.apxSE = (f0, f1) => {
-    return f0 <= f1 + Number.EPSILON;
-};
-Number.apxG = (f0, f1) => {
-    return f0 > f1 + Number.EPSILON;
-};
-Number.apxGE = (f0, f1) => {
-    return f0 >= f1 - Number.EPSILON;
-};
-Number.getRandom = (max, min = 0, fixto = 0) => {
-    return min + (Math.random() * (max - min)).fixTo(fixto);
-};
+Number.apxS = (f0, f1) => f0 < f1 - Number.EPSILON;
+Number.apxSE = (f0, f1) => f0 <= f1 + Number.EPSILON;
+Number.apxG = (f0, f1) => f0 > f1 + Number.EPSILON;
+Number.apxGE = (f0, f1) => f0 >= f1 - Number.EPSILON;
+Number.getRandom = (max, min = 0, fixto = 0) => min + (Math.random() * (max - min)).fixTo(fixto);
 Number.prototype.fixTo = function (digits = 0) {
     const mul = 10 ** digits;
     return Math.round(this.valueOf() * mul) / mul;
@@ -385,11 +376,11 @@ Math.clamp = (min_x, val_x, max_x) => Math.max(min_x, Math.min(val_x, max_x));
  * class X extends mix( Y, Z )
  * ! Should always companion with an interface declaration.
  *
- * @param mixins
+ * @param mixins_x
  *  Laat element has the highest precedence, and so on.
  */
-export function mix(base, ...mixins) {
-    class Mix extends base {
+export function mix(Base_x, ...mixins_x) {
+    class Mix extends Base_x {
     }
     // console.log( Mix );
     function copyProperties(source, target) {
@@ -417,9 +408,9 @@ export function mix(base, ...mixins) {
             o = Reflect.getPrototypeOf(o);
         }
     }
-    for (let i = mixins.length; i--;) {
-        deepcopyProperties(mixins[i].prototype, Mix.prototype);
-        deepcopyProperties(mixins[i], Mix); // add static stuff
+    for (let i = mixins_x.length; i--;) {
+        deepcopyProperties(mixins_x[i].prototype, Mix.prototype);
+        deepcopyProperties(mixins_x[i], Mix); // add static stuff
     }
     return Mix;
 }

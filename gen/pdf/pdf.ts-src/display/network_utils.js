@@ -20,7 +20,6 @@ import { assert } from "../../../lib/util/trace.js";
 import { MissingPDFException, UnexpectedResponseException, } from "../shared/util.js";
 import { getFilenameFromContentDispositionHeader } from "./content_disposition.js";
 import { isPdfFile } from "./display_utils.js";
-/*80--------------------------------------------------------------------------*/
 export function validateRangeRequestCapabilities({ getResponseHeader, isHttp, rangeChunkSize, disableRange, }) {
     /*#static*/  {
         assert(Number.isInteger(rangeChunkSize) && rangeChunkSize > 0, "rangeChunkSize must be an integer larger than zero.");
@@ -28,26 +27,33 @@ export function validateRangeRequestCapabilities({ getResponseHeader, isHttp, ra
     const returnValues = {
         allowRangeRequests: false,
     };
+    // console.log("run here 0");
     const length = parseInt(getResponseHeader("Content-Length"), 10);
+    // console.log(getResponseHeader("Content-Length"));
     if (!Number.isInteger(length)) {
         return returnValues;
     }
+    // console.log("run here 1");
     returnValues.suggestedLength = length;
     if (length <= 2 * rangeChunkSize) {
         // The file size is smaller than the size of two chunks, so it does not
         // make any sense to abort the request and retry with a range request.
         return returnValues;
     }
+    // console.log("run here 2");
     if (disableRange || !isHttp) {
         return returnValues;
     }
+    // console.log("run here 3");
     if (getResponseHeader("Accept-Ranges") !== "bytes") {
         return returnValues;
     }
+    // console.log("run here 4");
     const contentEncoding = getResponseHeader("Content-Encoding") || "identity";
     if (contentEncoding !== "identity") {
         return returnValues;
     }
+    // console.log("run here 5");
     returnValues.allowRangeRequests = true;
     return returnValues;
 }

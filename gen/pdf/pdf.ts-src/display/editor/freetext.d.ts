@@ -2,7 +2,7 @@ import { IL10n } from "../../../pdf.ts-web/interfaces.js";
 import { AnnotationEditorParamsType } from "../../shared/util.js";
 import { AnnotationEditorLayer } from "./annotation_editor_layer.js";
 import { AnnotationEditor, AnnotationEditorP, AnnotationEditorSerialized, PropertyToUpdate } from "./editor.js";
-import { KeyboardManager } from "./tools.js";
+import { AnnotationEditorUIManager, KeyboardManager } from "./tools.js";
 export interface FreeTextEditorP extends AnnotationEditorP {
     name: "freeTextEditor";
     color?: string;
@@ -75,7 +75,7 @@ export declare class FreeTextEditor extends AnnotationEditor {
     render(): HTMLDivElement;
     get contentDiv(): HTMLDivElement;
     /** @inheritdoc */
-    static deserialize(data: FreeTextEditorSerialized, parent: AnnotationEditorLayer): FreeTextEditor;
+    static deserialize(data: FreeTextEditorSerialized, parent: AnnotationEditorLayer, uiManager: AnnotationEditorUIManager): FreeTextEditor;
     /**
      * @inheritdoc
      * @implement

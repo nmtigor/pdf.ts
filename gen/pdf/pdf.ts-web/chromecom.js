@@ -17,6 +17,7 @@
  */
 /* globals chrome */
 import { CHROME } from "../../global.js";
+import { MouseButton } from "../../lib/dom.js";
 import { DefaultExternalServices, viewerApp, } from "./app.js";
 import { AppOptions, ViewOnLoad } from "./app_options.js";
 import { DownloadManager } from "./download_manager.js";
@@ -162,7 +163,10 @@ function requestAccessToLocalFile(fileUrl, overlayManager, callback) {
         // Use Chrome's definition of UI language instead of PDF.js's #lang=...,
         // because the shown string should match the UI at chrome://extensions.
         // These strings are from chrome/app/resources/generated_resources_*.xtb.
-        const jo_ = await import("./chrome-i18n-allow-access-to-file-urls.json");
+        const P_base = "../../../res/pdf/pdf.ts-web";
+        const jo_ = (await import(`${P_base}/chrome-i18n-allow-access-to-file-urls.json`, {
+            assert: { type: "json" },
+        })).default;
         const i18nFileAccessLabel = jo_[chrome.i18n.getUILanguage?.()];
         if (i18nFileAccessLabel) {
             document.getElementById("chrome-file-access-label").textContent =
@@ -178,7 +182,8 @@ function requestAccessToLocalFile(fileUrl, overlayManager, callback) {
             // checkbox causes the extension to reload, and Chrome will close all
             // tabs upon reload.
             ChromeCom.request("openExtensionsPageForFileAccess", {
-                newTab: e.ctrlKey || e.metaKey || e.button === 1 || window !== top,
+                newTab: e.ctrlKey || e.metaKey || e.button === MouseButton.Auxiliary ||
+                    window !== top,
             });
         };
         // Show which file is being opened to help the user with understanding

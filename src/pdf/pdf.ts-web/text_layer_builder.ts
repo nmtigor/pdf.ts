@@ -19,45 +19,26 @@
 
 // eslint-disable-next-line max-len
 /** @typedef {import("../src/display/display_utils").PageViewport} PageViewport */
-/** @typedef {import("./event_utils").EventBus} EventBus */
+/** @typedef {import("../src/display/api").TextContent} TextContent */
 /** @typedef {import("./text_highlighter").TextHighlighter} TextHighlighter */
 // eslint-disable-next-line max-len
 /** @typedef {import("./text_accessibility.js").TextAccessibilityManager} TextAccessibilityManager */
 
 import { GENERIC, MOZCENTRAL } from "../../global.ts";
 import { html } from "../../lib/dom.ts";
+import { TextDivProps } from "../pdf.ts-src/display/text_layer.ts";
 import {
   PageViewport,
   renderTextLayer,
   type TextContent,
   TextLayerRenderTask,
+  updateTextLayer,
 } from "../pdf.ts-src/pdf.ts";
-import { EventBus } from "./event_utils.ts";
 import { TextAccessibilityManager } from "./text_accessibility.ts";
 import { TextHighlighter } from "./text_highlighter.ts";
 /*80--------------------------------------------------------------------------*/
 
 interface TextLayerBuilderOptions {
-  /**
-   * The text layer container.
-   */
-  textLayerDiv: HTMLDivElement;
-
-  /**
-   * The application event bus.
-   */
-  eventBus: EventBus;
-
-  /**
-   * The page index.
-   */
-  pageIndex: number;
-
-  /**
-   * The viewport of the text layer.
-   */
-  viewport: PageViewport;
-
   /**
    * Optional object that will handle
    * highlighting text from the find controller.
@@ -65,6 +46,11 @@ interface TextLayerBuilderOptions {
   highlighter: TextHighlighter | undefined;
 
   accessibilityManager: TextAccessibilityManager | undefined;
+
+  /**
+   * Allows to use an OffscreenCanvas if needed.
+   */
+  isOffscreenCanvasSupported?: boolean;
 }
 
 interface TLBMBound {
@@ -82,36 +68,38 @@ interface TextLayerBuilderMatches {
  * contain text that matches the PDF text they are overlaying.
  */
 export class TextLayerBuilder {
-  textLayerDiv;
-  eventBus;
-  textContent?: TextContent | undefined;
   textContentItemsStr: string[] = [];
-  textContentStream?: ReadableStream;
   renderingDone = false;
-  pageNumber;
-  matches: TextLayerBuilderMatches[] = [];
-  viewport;
+
   textDivs: HTMLDivElement[] = [];
+  get numTextDivs() {
+    return this.textDivs.length;
+  }
+
+  textDivProperties = new WeakMap<HTMLElement, TextDivProps>();
   textLayerRenderTask?: TextLayerRenderTask | undefined;
   highlighter;
   accessibilityManager;
+  isOffscreenCanvasSupported;
+
+  div;
+
+  #rotation = 0;
+  #scale = 0;
+  #textContentSource: ReadableStream<TextContent> | TextContent | undefined;
 
   constructor({
-    textLayerDiv,
-    eventBus,
-    pageIndex,
-    viewport,
     highlighter,
     accessibilityManager = undefined,
+    isOffscreenCanvasSupported = undefined,
   }: TextLayerBuilderOptions) {
-    this.textLayerDiv = textLayerDiv;
-    this.eventBus = eventBus;
-    this.pageNumber = pageIndex + 1;
-    this.viewport = viewport;
     this.highlighter = highlighter;
     this.accessibilityManager = accessibilityManager;
+    this.isOffscreenCanvasSupported = isOffscreenCanvasSupported;
 
-    this.#bindMouse();
+    this.div = document.createElement("div");
+    this.div.className = "textLayer";
+    this.hide();
   }
 
   #finishRendering() {
@@ -119,52 +107,79 @@ export class TextLayerBuilder {
 
     const endOfContent = html("div");
     endOfContent.className = "endOfContent";
-    this.textLayerDiv.append(endOfContent);
+    this.div.append(endOfContent);
 
-    this.eventBus.dispatch("textlayerrendered", {
-      source: this,
-      pageNumber: this.pageNumber,
-      numTextDivs: this.textDivs.length,
-    });
+    this.#bindMouse();
   }
 
   /**
    * Renders the text layer.
-   *
-   * @param timeout Wait for a specified amount of milliseconds before rendering.
    */
-  render(timeout = 0) {
-    if (!(this.textContent || this.textContentStream) || this.renderingDone) {
+  async render(viewport: PageViewport) {
+    if (!this.#textContentSource) {
+      throw new Error('No "textContentSource" parameter specified.');
+    }
+
+    const scale = viewport.scale * (globalThis.devicePixelRatio || 1);
+    const { rotation } = viewport;
+    if (this.renderingDone) {
+      const mustRotate = rotation !== this.#rotation;
+      const mustRescale = scale !== this.#scale;
+      if (mustRotate || mustRescale) {
+        this.hide();
+        updateTextLayer({
+          container: this.div,
+          viewport,
+          textDivs: this.textDivs,
+          textDivProperties: this.textDivProperties,
+          isOffscreenCanvasSupported: this.isOffscreenCanvasSupported,
+          mustRescale,
+          mustRotate,
+        });
+        this.#scale = scale;
+        this.#rotation = rotation;
+      }
+      this.show();
       return;
     }
 
     this.cancel();
 
-    this.textDivs.length = 0;
     this.highlighter?.setTextMapping(this.textDivs, this.textContentItemsStr);
     this.accessibilityManager?.setTextMapping(this.textDivs);
 
-    const textLayerFrag = document.createDocumentFragment();
     this.textLayerRenderTask = renderTextLayer({
-      textContent: this.textContent,
-      textContentStream: this.textContentStream,
-      container: textLayerFrag,
-      viewport: this.viewport,
+      textContentSource: this.#textContentSource,
+      container: this.div,
+      viewport,
       textDivs: this.textDivs,
+      textDivProperties: this.textDivProperties,
       textContentItemsStr: this.textContentItemsStr,
-      timeout,
+      isOffscreenCanvasSupported: this.isOffscreenCanvasSupported,
     });
-    this.textLayerRenderTask.promise.then(
-      () => {
-        this.textLayerDiv.append(textLayerFrag);
-        this.#finishRendering();
-        this.highlighter?.enable();
-        this.accessibilityManager?.enable();
-      },
-      (reason) => {
-        // Cancelled or failed to render text layer; skipping errors.
-      },
-    );
+
+    await this.textLayerRenderTask.promise;
+    this.#finishRendering();
+    this.#scale = scale;
+    this.#rotation = rotation;
+    this.show();
+    this.accessibilityManager?.enable();
+  }
+
+  hide() {
+    if (!this.div.hidden) {
+      // We turn off the highlighter in order to avoid to scroll into view an
+      // element of the text layer which could be hidden.
+      this.highlighter?.disable();
+      this.div.hidden = true;
+    }
+  }
+
+  show() {
+    if (this.div.hidden && this.renderingDone) {
+      this.div.hidden = false;
+      this.highlighter?.enable();
+    }
   }
 
   /**
@@ -177,16 +192,14 @@ export class TextLayerBuilder {
     }
     this.highlighter?.disable();
     this.accessibilityManager?.disable();
+    this.textContentItemsStr.length = 0;
+    this.textDivs.length = 0;
+    this.textDivProperties = new WeakMap();
   }
 
-  setTextContentStream(readableStream: ReadableStream) {
+  setTextContentSource(source: ReadableStream | TextContent) {
     this.cancel();
-    this.textContentStream = readableStream;
-  }
-
-  setTextContent(textContent?: TextContent) {
-    this.cancel();
-    this.textContent = textContent;
+    this.#textContentSource = source;
   }
 
   /**
@@ -195,8 +208,7 @@ export class TextLayerBuilder {
    * dragged up or down.
    */
   #bindMouse() {
-    const div = this.textLayerDiv;
-    // let expandDivsTimer: number | undefined;
+    const { div } = this;
 
     div.addEventListener("mousedown", (evt) => {
       const end = div.querySelector<HTMLElement>(".endOfContent");

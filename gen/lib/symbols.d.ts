@@ -1,10 +1,13 @@
+/** 80**************************************************************************
+ * synbols
+ ** ------- */
 /**
- * document[ $cssstylesheet ] { Function }
- * Getter of document[ $cssstylesheet_ ]
+ * document[ $cssstylesheet ] { Getter }
  */
 export declare const $cssstylesheet: unique symbol;
 /**
  * document[ $cssstylesheet_ ] { CSSStyleSheet }
+ * @deprecated See lib/dom
  */
 export declare const $cssstylesheet_: unique symbol;
 /**
@@ -47,10 +50,6 @@ export declare const $loff: unique symbol;
  */
 export declare const $loff1: unique symbol;
 /**
- * document[ $theme_modified ] { {} }
- */
-export declare const $theme_modified: unique symbol;
-/**
  * DOMRect[ $ovlap ] { boolean }
  * Node[ $ovlap ] { boolean }
  */
@@ -84,7 +83,7 @@ export declare const $src: unique symbol;
  */
 export declare const $sync_eran: unique symbol;
 /**
- * document[ $theme ] { Object }
+ * document[ $theme ] { Theme_ }
  */
 export declare const $theme: unique symbol;
 /**
@@ -104,7 +103,8 @@ export declare const $uts: unique symbol;
  */
 export declare const $vuu: unique symbol;
 /**
- * this.el$[ $Vuu ] { Constructor<Vuu> }
+ * this.el$[ $Vuu ] { AbstractConstructor<Vuu> }
+ * kkkk check usage
  */
 export declare const $Vuu: unique symbol;
 //# sourceMappingURL=symbols.d.ts.map

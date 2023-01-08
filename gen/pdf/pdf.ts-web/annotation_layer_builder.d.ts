@@ -1,5 +1,5 @@
 import { AnnotationStorage, type AnnotIntent, type FieldObject, PageViewport, PDFPageProxy } from "../pdf.ts-src/pdf.js";
-import { IDownloadManager, type IL10n, type IPDFLinkService, type MouseState } from "./interfaces.js";
+import { IDownloadManager, type IL10n, type IPDFLinkService } from "./interfaces.js";
 import { TextAccessibilityManager } from "./text_accessibility.js";
 interface AnnotationLayerBuilderOptions {
     pageDiv: HTMLDivElement;
@@ -19,7 +19,6 @@ interface AnnotationLayerBuilderOptions {
     enableScripting?: boolean;
     hasJSActionsPromise?: Promise<boolean> | undefined;
     fieldObjectsPromise: Promise<Record<string, FieldObject[]> | undefined> | undefined;
-    mouseState?: MouseState | undefined;
     annotationCanvasMap: Map<string, HTMLCanvasElement> | undefined;
     accessibilityManager: TextAccessibilityManager | undefined;
 }
@@ -34,15 +33,14 @@ export declare class AnnotationLayerBuilder {
     l10n: IL10n;
     annotationStorage: AnnotationStorage | undefined;
     enableScripting: boolean;
-    _hasJSActionsPromise: Promise<boolean> | undefined;
-    _fieldObjectsPromise: Promise<Record<string, FieldObject[]> | undefined> | undefined;
-    _mouseState: MouseState | undefined;
+    _hasJSActionsPromise: Promise<boolean>;
+    _fieldObjectsPromise: Promise<Record<string, FieldObject[]> | undefined>;
     _annotationCanvasMap: Map<string, HTMLCanvasElement> | undefined;
     _accessibilityManager: TextAccessibilityManager | undefined;
     div?: HTMLDivElement;
     _cancelled: boolean;
     _eventBus: import("./event_utils.js").EventBus | undefined;
-    constructor({ pageDiv, pdfPage, linkService, downloadManager, annotationStorage, imageResourcesPath, renderForms, l10n, enableScripting, hasJSActionsPromise, fieldObjectsPromise, mouseState, annotationCanvasMap, accessibilityManager, }: AnnotationLayerBuilderOptions);
+    constructor({ pageDiv, pdfPage, linkService, downloadManager, annotationStorage, imageResourcesPath, renderForms, l10n, enableScripting, hasJSActionsPromise, fieldObjectsPromise, annotationCanvasMap, accessibilityManager, }: AnnotationLayerBuilderOptions);
     /**
      * @param viewport
      * @param intent (default value is 'display')

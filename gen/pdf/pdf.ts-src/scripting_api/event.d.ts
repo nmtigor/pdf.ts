@@ -9,7 +9,7 @@ interface _SendEventData extends SendData {
 }
 export interface ScriptingEventData extends ScriptingData<_SendEventData> {
     change?: string;
-    changeEx?: unknown;
+    changeEx?: string | string[];
     commitKey?: number;
     fieldFull?: boolean;
     keyDown?: boolean;
@@ -31,7 +31,7 @@ export interface ScriptingEventData extends ScriptingData<_SendEventData> {
 }
 export declare class Event {
     change: string;
-    changeEx: unknown;
+    changeEx: string | string[] | undefined;
     commitKey: number;
     fieldFull: boolean;
     keyDown: boolean;

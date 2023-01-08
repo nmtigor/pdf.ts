@@ -19,7 +19,7 @@ interface _Info {
     moddate: Date | string | undefined;
     trapped: Name | "Unknown";
 }
-interface _SendDocData extends SendData {
+interface SendDocData_ extends SendData {
     command?: string;
     end?: number;
     formattedValue?: undefined;
@@ -31,7 +31,7 @@ interface _SendDocData extends SendData {
 export interface DocInfo extends ScriptingDocProperties {
     actions: AnnotActions;
 }
-interface _ScriptingDocData extends ScriptingData<_SendDocData>, DocInfo {
+interface _ScriptingDocData extends ScriptingData<SendDocData_>, DocInfo {
     globalEval(code: string): unknown;
     docID?: [string, string];
     layout?: string;
@@ -53,7 +53,7 @@ interface _UI {
     printParams: _PrintP;
     bUI: boolean | _UI;
 }
-export declare class Doc extends PDFObject<_SendDocData> {
+export declare class Doc extends PDFObject<SendDocData_> {
     _baseURL: string;
     _calculate: boolean;
     _delay: boolean;
@@ -141,6 +141,7 @@ export declare class Doc extends PDFObject<_SendDocData> {
     set xfa(_: unknown);
     _eventDispatcher?: EventDispatcher;
     constructor(data: _ScriptingDocData);
+    _initActions(): void;
     _dispatchDocEvent(name: ScriptingActionName): void;
     _dispatchPageEvent(name: ScriptingActionName, actions: AnnotActions, pageNumber: number): void;
     _runActions(name: ScriptingActionName): void;

@@ -150,7 +150,7 @@ let denoCanvas:
   | { createCanvas: (width: number, height: number) => unknown }
   | undefined;
 /*#static*/ if (DENO) {
-  const P_mod = "https://deno.land/x/canvas/mod.ts";
+  const P_mod = "https://deno.land/x/canvas@v1.4.1/mod.ts";
   denoCanvas = await import(P_mod);
 }
 

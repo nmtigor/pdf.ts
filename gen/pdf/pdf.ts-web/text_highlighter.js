@@ -77,6 +77,7 @@ export class TextHighlighter {
             this.eventBus._off("updatetextlayermatches", this._onUpdateTextLayerMatches);
             this._onUpdateTextLayerMatches = undefined;
         }
+        this._updateMatches(/* reset = */ true);
     }
     #convertMatches(matches, matchesLength) {
         // Early exit if there is nothing to convert.
@@ -214,9 +215,10 @@ export class TextHighlighter {
             appendTextToDiv(prevEnd.divIdx, prevEnd.offset, infinity.offset);
         }
     }
-    _updateMatches() {
-        if (!this.enabled)
+    _updateMatches(reset = false) {
+        if (!this.enabled && !reset) {
             return;
+        }
         const { findController, matches, pageIdx } = this;
         const { textContentItemsStr, textDivs } = this;
         let clearedUntilDivIdx = -1;
@@ -230,8 +232,9 @@ export class TextHighlighter {
             }
             clearedUntilDivIdx = match.end.divIdx + 1;
         }
-        if (!findController?.highlightMatches)
+        if (!findController?.highlightMatches || reset) {
             return;
+        }
         // Convert the matches on the `findController` into the match format
         // used for the textLayer.
         const pageMatches = findController.pageMatches[pageIdx] || null;

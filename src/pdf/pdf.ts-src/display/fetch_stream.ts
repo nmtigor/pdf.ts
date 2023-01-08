@@ -62,7 +62,7 @@ function createHeaders(httpHeaders: Record<string, string>) {
   const headers = new Headers();
   for (const property in httpHeaders) {
     const value = httpHeaders[property];
-    if (typeof value === "undefined") {
+    if (value === undefined) {
       continue;
     }
     headers.append(property, value);
@@ -181,14 +181,14 @@ class PDFFetchStreamReader implements IPDFStreamReader {
 
     const url = source.url!;
     fetch(
-      url.toString(),
+      url,
       createFetchOptions(
         this.#headers,
         this.#withCredentials,
         this.#abortController,
       ),
     )
-      .then((response: Response) => {
+      .then((response) => {
         if (!validateResponseStatus(response.status)) {
           throw createResponseStatusError(response.status, url);
         }
@@ -205,6 +205,7 @@ class PDFFetchStreamReader implements IPDFStreamReader {
           });
 
         this.#isRangeSupported = allowRangeRequests;
+        // console.log(`#isRangeSupported=${this.#isRangeSupported}`);
         // Setting right content length.
         this.#contentLength = suggestedLength || this.#contentLength;
 
@@ -240,7 +241,7 @@ class PDFFetchStreamReader implements IPDFStreamReader {
   }
 }
 
-class PDFFetchStreamRangeReader implements IPDFStreamRangeReader {
+export class PDFFetchStreamRangeReader implements IPDFStreamRangeReader {
   #stream: PDFFetchStream;
   #reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
   _loaded = 0;

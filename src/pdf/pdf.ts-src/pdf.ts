@@ -18,6 +18,8 @@
  */
 
 // eslint-disable-next-line max-len
+/** @typedef {import("./display/api").OnProgressParameters} OnProgressParameters */
+// eslint-disable-next-line max-len
 /** @typedef {import("./display/api").PDFDocumentLoadingTask} PDFDocumentLoadingTask */
 /** @typedef {import("./display/api").PDFDocumentProxy} PDFDocumentProxy */
 /** @typedef {import("./display/api").PDFPageProxy} PDFPageProxy */
@@ -76,6 +78,7 @@ import {
   getFilenameFromUrl,
   getPdfFilenameFromUrl,
   getXfaPageViewport,
+  isDataScheme,
   isPdfFile,
   isValidFetchUrl,
   loadScript,
@@ -83,6 +86,7 @@ import {
   PDFDateString,
   PixelsPerInch,
   RenderingCancelledException,
+  setLayerDimensions,
   StatTimer,
 } from "./display/display_utils.ts";
 import { AnnotationEditorLayer } from "./display/editor/annotation_editor_layer.ts";
@@ -95,7 +99,11 @@ import { FontFaceObject } from "./display/font_loader.ts";
 import { Metadata } from "./display/metadata.ts";
 import { OptionalContentConfig } from "./display/optional_content_config.ts";
 import { SVGGraphics } from "./display/svg.ts";
-import { renderTextLayer, TextLayerRenderTask } from "./display/text_layer.ts";
+import {
+  renderTextLayer,
+  TextLayerRenderTask,
+  updateTextLayer,
+} from "./display/text_layer.ts";
 import { GlobalWorkerOptions } from "./display/worker_options.ts";
 import { XfaLayer } from "./display/xfa_layer.ts";
 import { QuickJSSandbox } from "./pdf.sandbox.ts";
@@ -103,6 +111,7 @@ import { type AppInfo } from "./scripting_api/app.ts";
 import { type ScriptingActionName } from "./scripting_api/common.ts";
 import { type DocInfo } from "./scripting_api/doc.ts";
 import {
+  AbortException,
   AnnotationEditorParamsType,
   AnnotationEditorType,
   AnnotationMode,
@@ -160,6 +169,7 @@ import {
 /*80--------------------------------------------------------------------------*/
 
 export {
+  AbortException,
   type AnnotActions,
   AnnotationEditorLayer,
   AnnotationEditorParamsType,
@@ -191,6 +201,7 @@ export {
   GlobalWorkerOptions,
   type Intent,
   InvalidPDFException,
+  isDataScheme,
   isPdfFile,
   loadScript,
   type matrix_t,
@@ -225,6 +236,7 @@ export {
   RenderTask,
   renderTextLayer,
   type ScriptingActionName,
+  setLayerDimensions,
   type SetOCGState,
   shadow,
   StatTimer,
@@ -234,6 +246,7 @@ export {
   TextLayerRenderTask,
   UnexpectedResponseException,
   UNSUPPORTED_FEATURES,
+  updateTextLayer,
   Util,
   VerbosityLevel,
   version,

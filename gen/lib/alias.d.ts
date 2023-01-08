@@ -1,5 +1,11 @@
+/** 80**************************************************************************
+ * @module lib/alias
+ * @license Apache-2.0
+ ******************************************************************************/
 export type int = number;
+export declare const zInt: import("../3rd/zod/lib/index.mjs").ZodNumber;
 export type uint = number;
+export declare const zUint: import("../3rd/zod/lib/index.mjs").ZodNumber;
 export type int64 = int;
 export type int32 = int;
 export type int16 = int;
@@ -9,7 +15,8 @@ export type uint32 = uint;
 export type uint16 = uint;
 export type uint8 = uint;
 /** 0 is special */
-export type id_t = uint32;
+export type id_t = uint;
+export declare const zId: import("../3rd/zod/lib/index.mjs").ZodNumber;
 /**
  * ! CHECK
  * Make sense?
@@ -28,8 +35,10 @@ export type lnum_t = int32;
 export declare const lnum_MAX: lnum_t;
 /** type of unix timestamp */
 export type ts_t = int64;
+export declare const zTs: import("../3rd/zod/lib/index.mjs").ZodNumber;
 /** recommand [0,1] */
 export type Ratio = number;
+export declare const zRatio: import("../3rd/zod/lib/index.mjs").ZodNumber;
 export type IntegerArray = Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint16Array | Int32Array | Uint32Array;
 export type FloatArray = Float32Array | Float64Array;
 export type TypedArray = IntegerArray | FloatArray;
@@ -71,5 +80,13 @@ type Without<T, U> = {
 export type XOR<T, U> = (T | U) extends object ? (Without<T, U> & U) | (Without<U, T> & T) : T | U;
 export type IndexOf<T extends readonly any[], S extends number[] = []> = T["length"] extends S["length"] ? S[number] : IndexOf<T, [S["length"], ...S]>;
 export type ArrEl<ArrayType extends readonly unknown[]> = ArrayType extends readonly (infer ElementType)[] ? ElementType : never;
+type None_ = {
+    _type: "none";
+};
+type Some_<T> = {
+    _type: "some";
+    value: T;
+};
+export type Option<T> = None_ | Some_<T>;
 export {};
 //# sourceMappingURL=alias.d.ts.map

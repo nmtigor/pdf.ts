@@ -1635,7 +1635,8 @@ export class WidgetAnnotation extends Annotation {
             : undefined;
         let value, rotation;
         if (storageEntry) {
-            value = storageEntry.formattedValue || storageEntry.value;
+            value = storageEntry.formattedValue ||
+                storageEntry.value;
             rotation = storageEntry.rotation;
         }
         if (rotation === undefined && value === undefined &&
@@ -1658,7 +1659,16 @@ export class WidgetAnnotation extends Annotation {
             value = value[0];
         }
         assert(typeof value === "string", "Expected `value` to be a string.");
-        value = value.trim();
+        if (!this.data.combo) {
+            value = value.trim();
+        }
+        else {
+            // The value is supposed to be one of the exportValue.
+            // deno-fmt-ignore
+            const option = this.data.options.find(({ exportValue }) => value === exportValue) ||
+                this.data.options[0];
+            value = (option && option.displayValue) || "";
+        }
         if (value === "") {
             // the field is empty: nothing to render
             return `/Tx BMC q ${colors}Q EMC`;
@@ -1682,7 +1692,8 @@ export class WidgetAnnotation extends Annotation {
         // situations and then use either FakeUnicodeFont or set the
         // /NeedAppearances flag.
         if (this.data.multiLine) {
-            lines = value.split(/\r\n?|\n/).map((line) => line.normalize("NFC"));
+            lines = value.split(/\r\n?|\n/)
+                .map((line) => line.normalize("NFC"));
             lineCount = lines.length;
         }
         else {
@@ -3385,9 +3396,14 @@ class StampAnnotation extends MarkupAnnotation {
 class FileAttachmentAnnotation extends MarkupAnnotation {
     constructor(params) {
         super(params);
-        const file = new FileSpec(params.dict.get("FS"), params.xref);
+        const { dict, xref } = params;
+        const file = new FileSpec(dict.get("FS"), xref);
         this.data.annotationType = AnnotationType.FILEATTACHMENT;
         this.data.file = file.serializable;
+        const name = dict.get("Name");
+        this.data.name = name instanceof Name
+            ? stringToPDFString(name.name)
+            : "PushPin";
     }
 }
 /*80--------------------------------------------------------------------------*/

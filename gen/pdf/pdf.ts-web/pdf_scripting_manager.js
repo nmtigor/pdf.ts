@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 /** @typedef {import("./event_utils").EventBus} EventBus */
-import { COMPONENTS } from "../../global.js";
+import { COMPONENTS, GECKOVIEW } from "../../global.js";
 import { createPromiseCap } from "../../lib/promisecap.js";
 import { shadow } from "../pdf.ts-src/pdf.js";
 import { apiPageLayoutToViewerModes, RenderingStates, } from "./ui_utils.js";
@@ -32,10 +32,6 @@ export class PDFScriptingManager {
         return this.#destroyCapability?.promise || undefined;
     }
     _scripting;
-    #mouseState = Object.create(null);
-    get mouseState() {
-        return this.#mouseState;
-    }
     _ready = false;
     #eventBus;
     #sandboxBundleSrc;
@@ -114,17 +110,8 @@ export class PDFScriptingManager {
             });
             this.#closeCapability?.resolve();
         });
-        this.#domEvents.set("mousedown", (event) => {
-            this.#mouseState.isDown = true;
-        });
-        this.#domEvents.set("mouseup", (event) => {
-            this.#mouseState.isDown = false;
-        });
         for (const [name, listener] of this.#internalEvents) {
             this.#eventBus._on(name, listener);
-        }
-        for (const [name, listener] of this.#domEvents) {
-            window.addEventListener(name, listener, true);
         }
         try {
             const docProperties = await this.#getDocProperties();
@@ -194,9 +181,6 @@ export class PDFScriptingManager {
     get #internalEvents() {
         return shadow(this, "#internalEvents", new Map());
     }
-    get #domEvents() {
-        return shadow(this, "#domEvents", new Map());
-    }
     get #pageOpenPending() {
         return shadow(this, "#pageOpenPending", new Set());
     }
@@ -216,13 +200,16 @@ export class PDFScriptingManager {
                 case "error":
                     console.error(value);
                     break;
-                case "layout":
-                    if (isInPresentationMode) {
+                case "layout": {
+                    // NOTE: Always ignore the pageLayout in GeckoView since there's
+                    // no UI available to change Scroll/Spread modes for the user.
+                    /*#static*/ 
+                    if (isInPresentationMode)
                         return;
-                    }
                     const modes = apiPageLayoutToViewerModes(value);
                     this.#pdfViewer.spreadMode = modes.spreadMode;
                     break;
+                }
                 case "page-num":
                     this.#pdfViewer.currentPageNumber = value + 1;
                     break;
@@ -395,14 +382,9 @@ export class PDFScriptingManager {
             this.#eventBus._off(name, listener);
         }
         this.#internalEvents.clear();
-        for (const [name, listener] of this.#domEvents) {
-            window.removeEventListener(name, listener, true);
-        }
-        this.#domEvents.clear();
         this.#pageOpenPending.clear();
         this.#visitedPages.clear();
         this._scripting = undefined;
-        delete this.#mouseState.isDown;
         this._ready = false;
         this.#destroyCapability?.resolve();
     }

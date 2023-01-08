@@ -19,12 +19,12 @@
 
 /** @typedef {import("./event_utils").EventBus} EventBus */
 
-import { COMPONENTS } from "../../global.ts";
+import { COMPONENTS, GECKOVIEW } from "../../global.ts";
 import { createPromiseCap, PromiseCap } from "../../lib/promisecap.ts";
 import { PDFDocumentProxy, shadow } from "../pdf.ts-src/pdf.ts";
 import { DefaultExternalServices, type ScriptingDocProperties } from "./app.ts";
 import { EventBus, EventMap } from "./event_utils.ts";
-import { IScripting, type MouseState } from "./interfaces.ts";
+import { IScripting } from "./interfaces.ts";
 import { PDFViewer } from "./pdf_viewer.ts";
 import {
   apiPageLayoutToViewerModes,
@@ -74,7 +74,7 @@ type InternalListenerMap = {
 export class PDFScriptingManager {
   #pdfDocument?: PDFDocumentProxy | undefined;
 
-  #pdfViewer?: PDFViewer;
+  #pdfViewer!: PDFViewer;
   setViewer(pdfViewer: PDFViewer) {
     this.#pdfViewer = pdfViewer;
   }
@@ -87,12 +87,6 @@ export class PDFScriptingManager {
   }
 
   _scripting: IScripting | undefined;
-
-  #mouseState: MouseState = Object.create(null);
-  get mouseState() {
-    return this.#mouseState;
-  }
-
   _ready = false;
 
   #eventBus;
@@ -194,7 +188,7 @@ export class PDFScriptingManager {
         if (!this.#pageOpenPending.has(pageNumber)) {
           return; // No pending "PageOpen" event for the newly rendered page.
         }
-        if (pageNumber !== this.#pdfViewer!.currentPageNumber) {
+        if (pageNumber !== this.#pdfViewer.currentPageNumber) {
           return; // The newly rendered page is no longer the current one.
         }
         this.#dispatchPageOpen(pageNumber);
@@ -203,7 +197,7 @@ export class PDFScriptingManager {
     this.#internalEvents.set(
       "pagesdestroy",
       async (event: EventMap["pagesdestroy"]) => {
-        await this.#dispatchPageClose(this.#pdfViewer!.currentPageNumber);
+        await this.#dispatchPageClose(this.#pdfViewer.currentPageNumber);
 
         await this._scripting?.dispatchEventInSandbox({
           id: "doc",
@@ -214,18 +208,8 @@ export class PDFScriptingManager {
       },
     );
 
-    this.#domEvents.set("mousedown", (event: MouseEvent) => {
-      this.#mouseState.isDown = true;
-    });
-    this.#domEvents.set("mouseup", (event: MouseEvent) => {
-      this.#mouseState.isDown = false;
-    });
-
     for (const [name, listener] of this.#internalEvents) {
       this.#eventBus._on(name, listener);
-    }
-    for (const [name, listener] of this.#domEvents) {
-      window.addEventListener(name, listener, true);
     }
 
     try {
@@ -263,7 +247,7 @@ export class PDFScriptingManager {
       name: "Open",
     });
     await this.#dispatchPageOpen(
-      this.#pdfViewer!.currentPageNumber,
+      this.#pdfViewer.currentPageNumber,
       /* initialize = */ true,
     );
 
@@ -315,14 +299,6 @@ export class PDFScriptingManager {
     );
   }
 
-  get #domEvents() {
-    return shadow(
-      this,
-      "#domEvents",
-      new Map<"mousedown" | "mouseup", (event: MouseEvent) => void>(),
-    );
-  }
-
   get #pageOpenPending() {
     return shadow(this, "#pageOpenPending", new Set<number>());
   }
@@ -337,8 +313,8 @@ export class PDFScriptingManager {
 
   async #updateFromSandbox(detail: EventMap["updatefromsandbox"]["detail"]) {
     // Ignore some events, see below, that don't make sense in PresentationMode.
-    const isInPresentationMode = this.#pdfViewer!.isInPresentationMode ||
-      this.#pdfViewer!.isChangingPresentationMode;
+    const isInPresentationMode = this.#pdfViewer.isInPresentationMode ||
+      this.#pdfViewer.isChangingPresentationMode;
 
     const { id, siblings, command, value } = detail;
     if (!id) {
@@ -349,18 +325,20 @@ export class PDFScriptingManager {
         case "error":
           console.error(value);
           break;
-        case "layout":
-          if (isInPresentationMode) {
-            return;
-          }
+        case "layout": {
+          // NOTE: Always ignore the pageLayout in GeckoView since there's
+          // no UI available to change Scroll/Spread modes for the user.
+          /*#static*/ if (GECKOVIEW) return;
+          if (isInPresentationMode) return;
           const modes = apiPageLayoutToViewerModes(<PageLayout> value);
-          this.#pdfViewer!.spreadMode = modes.spreadMode;
+          this.#pdfViewer.spreadMode = modes.spreadMode;
           break;
+        }
         case "page-num":
-          this.#pdfViewer!.currentPageNumber = <number> value + 1;
+          this.#pdfViewer.currentPageNumber = <number> value + 1;
           break;
         case "print":
-          await this.#pdfViewer!.pagesPromise;
+          await this.#pdfViewer.pagesPromise;
           this.#eventBus.dispatch("print", { source: this });
           break;
         case "println":
@@ -370,34 +348,34 @@ export class PDFScriptingManager {
           if (isInPresentationMode) {
             return;
           }
-          this.#pdfViewer!.currentScaleValue = <string> value;
+          this.#pdfViewer.currentScaleValue = <string> value;
           break;
         case "SaveAs":
           this.#eventBus.dispatch("download", { source: this });
           break;
         case "FirstPage":
-          this.#pdfViewer!.currentPageNumber = 1;
+          this.#pdfViewer.currentPageNumber = 1;
           break;
         case "LastPage":
-          this.#pdfViewer!.currentPageNumber = this.#pdfViewer!.pagesCount;
+          this.#pdfViewer.currentPageNumber = this.#pdfViewer.pagesCount;
           break;
         case "NextPage":
-          this.#pdfViewer!.nextPage();
+          this.#pdfViewer.nextPage();
           break;
         case "PrevPage":
-          this.#pdfViewer!.previousPage();
+          this.#pdfViewer.previousPage();
           break;
         case "ZoomViewIn":
           if (isInPresentationMode) {
             return;
           }
-          this.#pdfViewer!.increaseScale();
+          this.#pdfViewer.increaseScale();
           break;
         case "ZoomViewOut":
           if (isInPresentationMode) {
             return;
           }
-          this.#pdfViewer!.decreaseScale();
+          this.#pdfViewer.decreaseScale();
           break;
       }
       return;
@@ -436,7 +414,7 @@ export class PDFScriptingManager {
     if (!this.#closeCapability) {
       return; // Scripting isn't fully initialized yet.
     }
-    const pageView = this.#pdfViewer!.getPageView(/* index = */ pageNumber - 1);
+    const pageView = this.#pdfViewer.getPageView(/* index = */ pageNumber - 1);
 
     if (pageView?.renderingState !== RenderingStates.FINISHED) {
       this.#pageOpenPending.add(pageNumber);
@@ -560,16 +538,10 @@ export class PDFScriptingManager {
     }
     this.#internalEvents.clear();
 
-    for (const [name, listener] of this.#domEvents) {
-      window.removeEventListener(name, listener, true);
-    }
-    this.#domEvents.clear();
-
     this.#pageOpenPending.clear();
     this.#visitedPages.clear();
 
     this._scripting = undefined;
-    delete this.#mouseState.isDown;
     this._ready = false;
 
     this.#destroyCapability?.resolve();

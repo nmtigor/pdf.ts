@@ -2412,9 +2412,11 @@ export class WidgetAnnotation extends Annotation {
       ? annotationStorage.get(this.data.id)
       : undefined;
 
-    let value, rotation;
+    let value: string | string[] | undefined,
+      rotation: number | undefined;
     if (storageEntry) {
-      value = storageEntry.formattedValue || storageEntry.value;
+      value = storageEntry.formattedValue ||
+        storageEntry.value as string | string[] | undefined;
       rotation = storageEntry.rotation;
     }
 
@@ -2445,7 +2447,16 @@ export class WidgetAnnotation extends Annotation {
 
     assert(typeof value === "string", "Expected `value` to be a string.");
 
-    value = (value as string).trim();
+    if (!this.data.combo) {
+      value = (value as string).trim();
+    } else {
+      // The value is supposed to be one of the exportValue.
+      // deno-fmt-ignore
+      const option = 
+        this.data.options!.find(({ exportValue }) => value === exportValue ) ||
+        this.data.options![0];
+      value = (option && option.displayValue) || "";
+    }
 
     if (value === "") {
       // the field is empty: nothing to render
@@ -2473,10 +2484,11 @@ export class WidgetAnnotation extends Annotation {
     // situations and then use either FakeUnicodeFont or set the
     // /NeedAppearances flag.
     if (this.data.multiLine) {
-      lines = value.split(/\r\n?|\n/).map((line) => line.normalize("NFC"));
+      lines = (value as string).split(/\r\n?|\n/)
+        .map((line) => line.normalize("NFC"));
       lineCount = lines.length;
     } else {
-      lines = [value.replace(/\r\n?|\n/, "").normalize("NFC")];
+      lines = [(value as string).replace(/\r\n?|\n/, "").normalize("NFC")];
     }
 
     const defaultPadding = 1;
@@ -2572,7 +2584,7 @@ export class WidgetAnnotation extends Annotation {
       [defaultAppearance, fontSize, lineHeight] = this.computeFontSize$(
         totalHeight - 2 * defaultPadding,
         totalWidth - 2 * defaultHPadding,
-        value,
+        value as string,
         font,
         lineCount,
       );
@@ -2588,7 +2600,7 @@ export class WidgetAnnotation extends Annotation {
       [defaultAppearance, fontSize, lineHeight] = this.computeFontSize$(
         totalHeight - 2 * defaultPadding,
         totalWidth - 2 * defaultHPadding,
-        value,
+        value as string,
         font,
         lineCount,
       );
@@ -4770,10 +4782,16 @@ class FileAttachmentAnnotation extends MarkupAnnotation {
   constructor(params: _AnnotationCtorP) {
     super(params);
 
-    const file = new FileSpec(params.dict.get("FS") as Dict, params.xref);
+    const { dict, xref } = params;
+    const file = new FileSpec(dict.get("FS") as Dict, xref);
 
     this.data.annotationType = AnnotationType.FILEATTACHMENT;
     this.data.file = file.serializable;
+
+    const name = dict.get("Name");
+    this.data.name = name instanceof Name
+      ? stringToPDFString(name.name)
+      : "PushPin";
   }
 }
 /*80--------------------------------------------------------------------------*/

@@ -22,8 +22,6 @@
 // eslint-disable-next-line max-len
 /** @typedef {import("../src/display/editor/tools.js").AnnotationEditorUIManager} AnnotationEditorUIManager */
 // eslint-disable-next-line max-len
-/** @typedef {import("../annotation_storage.js").AnnotationStorage} AnnotationStorage */
-// eslint-disable-next-line max-len
 /** @typedef {import("./text_accessibility.js").TextAccessibilityManager} TextAccessibilityManager */
 /** @typedef {import("./interfaces").IL10n} IL10n */
 import { html } from "../../lib/dom.js";
@@ -32,7 +30,6 @@ import { NullL10n } from "./l10n_utils.js";
 export class AnnotationEditorLayerBuilder {
     pageDiv;
     pdfPage;
-    annotationStorage;
     accessibilityManager;
     l10n;
     annotationEditorLayer;
@@ -42,7 +39,6 @@ export class AnnotationEditorLayerBuilder {
     constructor(options) {
         this.pageDiv = options.pageDiv;
         this.pdfPage = options.pdfPage;
-        this.annotationStorage = options.annotationStorage || undefined;
         this.accessibilityManager = options.accessibilityManager;
         this.l10n = options.l10n || NullL10n;
         this._cancelled = false;
@@ -65,22 +61,21 @@ export class AnnotationEditorLayerBuilder {
             return;
         }
         // Create an AnnotationEditor layer div
-        this.div = html("div");
-        this.div.className = "annotationEditorLayer";
-        this.div.tabIndex = 0;
-        this.pageDiv.append(this.div);
+        const div = this.div = html("div");
+        div.className = "annotationEditorLayer";
+        div.tabIndex = 0;
+        this.pageDiv.append(div);
         this.annotationEditorLayer = new AnnotationEditorLayer({
             uiManager: this.#uiManager,
-            div: this.div,
-            annotationStorage: this.annotationStorage,
+            div,
             accessibilityManager: this.accessibilityManager,
-            pageIndex: this.pdfPage._pageIndex,
+            pageIndex: this.pdfPage.pageNumber - 1,
             l10n: this.l10n,
             viewport: clonedViewport,
         });
         const parameters = {
             viewport: clonedViewport,
-            div: this.div,
+            div,
             annotations: null,
             intent,
         };
@@ -88,7 +83,12 @@ export class AnnotationEditorLayerBuilder {
     }
     cancel() {
         this._cancelled = true;
-        this.destroy();
+        if (!this.div) {
+            return;
+        }
+        this.pageDiv = undefined;
+        this.annotationEditorLayer.destroy();
+        this.div.remove();
     }
     hide() {
         if (!this.div) {
@@ -102,13 +102,6 @@ export class AnnotationEditorLayerBuilder {
         }
         this.div.hidden = false;
     }
-    destroy() {
-        if (!this.div) {
-            return;
-        }
-        this.pageDiv = undefined;
-        this.annotationEditorLayer.destroy();
-        this.div.remove();
-    }
 }
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=annotation_editor_layer_builder.js.map

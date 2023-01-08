@@ -1,13 +1,20 @@
-/*80****************************************************************************
- * alias
-** -------------------------------------------------------------------------- */
+/** 80**************************************************************************
+ * @module lib/alias
+ * @license Apache-2.0
+ ******************************************************************************/
+
+import { z } from "../3rd/zod/lib/index.mjs";
+/*80--------------------------------------------------------------------------*/
 
 export type int = number;
+export const zInt = z.number().int();
 export type uint = number;
+export const zUint = zInt.min(0);
 // export const Int = BigInt;
 // export const UInt = BigInt;
 
 export type int64 = int;
+const zInt64 = zInt;
 export type int32 = int;
 export type int16 = int;
 export type int8 = int;
@@ -18,7 +25,8 @@ export type uint8 = uint;
 /*49-------------------------------------------*/
 
 /** 0 is special */
-export type id_t = uint32;
+export type id_t = uint;
+export const zId = zUint;
 
 /**
  * ! CHECK
@@ -44,10 +52,21 @@ export const lnum_MAX: lnum_t = 1_000_000_000;
 
 /** type of unix timestamp */
 export type ts_t = int64;
+export const zTs = zInt64;
 /*49-------------------------------------------*/
 
 /** recommand [0,1] */
 export type Ratio = number;
+export const zRatio = z.number().finite();
+/*80--------------------------------------------------------------------------*/
+
+// // deno-fmt-ignore
+// export type DecDigitChar = "0"
+//   | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9";
+// // deno-fmt-ignore
+// export type HexDigitChar = DecDigitChar
+//   | "a" | "A" | "b" | "B" | "c" | "C" | "d" | "D" | "e" | "E" | "f" | "F";
+// export type Hex8 = `${HexDigitChar}${HexDigitChar}`;
 /*80--------------------------------------------------------------------------*/
 
 export type IntegerArray =
@@ -155,5 +174,13 @@ export type IndexOf<T extends readonly any[], S extends number[] = []> =
 
 export type ArrEl<ArrayType extends readonly unknown[]> = ArrayType extends
   readonly (infer ElementType)[] ? ElementType : never;
+//#endregion
+
+//#region Option<>
+// Ref. https://youtu.be/DYtDeasFQkU
+
+type None_ = { _type: "none" };
+type Some_<T> = { _type: "some"; value: T };
+export type Option<T> = None_ | Some_<T>;
 //#endregion
 /*80--------------------------------------------------------------------------*/

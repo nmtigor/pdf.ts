@@ -15,7 +15,6 @@ import { PDFSidebar } from "./pdf_sidebar.js";
 import { PDFSidebarResizer } from "./pdf_sidebar_resizer.js";
 import { PDFLocation, PDFViewer } from "./pdf_viewer.js";
 import { SecondaryToolbar } from "./secondary_toolbar.js";
-import { TextLayerBuilder } from "./text_layer_builder.js";
 import { Toolbar } from "./toolbar.js";
 import { PageLayout, PresentationModeState, ScrollMode, SidebarView, SpreadMode } from "./ui_utils.js";
 export declare const enum WaitOnType {
@@ -101,7 +100,7 @@ export interface EventMap {
             selStart?: number | null;
             selEnd?: number | null;
             change?: unknown;
-            changeEx?: unknown;
+            changeEx?: string | string[] | undefined;
             keyDown?: boolean;
         };
     };
@@ -302,9 +301,10 @@ export interface EventMap {
         mode: SpreadMode;
     };
     textlayerrendered: {
-        source: TextLayerBuilder;
+        source: PDFPageView;
         pageNumber: number;
         numTextDivs: number;
+        error: unknown;
     };
     togglelayerstree: {};
     toggleoutlinetree: {
@@ -354,6 +354,7 @@ export interface EventMap {
     zoomin: {};
     zoomout: {};
     zoomreset: {};
+    test: {};
 }
 export type EventName = keyof EventMap;
 export type ListenerMap = {

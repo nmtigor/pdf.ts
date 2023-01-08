@@ -33,7 +33,7 @@ interface _SendEventData extends SendData {
 
 export interface ScriptingEventData extends ScriptingData<_SendEventData> {
   change?: string;
-  changeEx?: unknown;
+  changeEx?: string | string[];
   commitKey?: number;
   fieldFull?: boolean;
   keyDown?: boolean;
@@ -98,8 +98,9 @@ export class Event {
   }
 }
 
-interface _SavedChange {
+interface SavedChange_ {
   value: string | number;
+  changeEx: string | string[] | undefined;
   change: string;
   selStart: number;
   selEnd: number;
@@ -167,6 +168,10 @@ export class EventDispatcher {
       if (id === "doc") {
         const eventName = event!.name;
         if (eventName === "Open") {
+          // Initialize named actions before calling formatAll to avoid any
+          // errors in the case where a formatter is using one of those named
+          // actions (see #15818).
+          this._document.obj._initActions();
           // Before running the Open event, we format all the fields
           // (see bug 1766987).
           this.formatAll();
@@ -197,7 +202,7 @@ export class EventDispatcher {
     const name = baseEvent.name;
     const source = this._objects[id];
     const event = ((globalThis as any).event = new Event(baseEvent));
-    let savedChange: _SavedChange;
+    let savedChange: SavedChange_;
 
     this.userActivation();
 
@@ -213,6 +218,7 @@ export class EventDispatcher {
       case "Keystroke":
         savedChange = {
           value: event.value,
+          changeEx: event.changeEx,
           change: event.change,
           selStart: event.selStart,
           selEnd: event.selEnd,
@@ -246,6 +252,16 @@ export class EventDispatcher {
       if (event.willCommit) {
         this.runValidation(source, event);
       } else {
+        if (source.obj._isChoice) {
+          source.obj.value = savedChange!.changeEx;
+          source.obj._send!({
+            id: source.obj._id,
+            siblings: source.obj._siblings,
+            value: source.obj.value,
+          });
+          return;
+        }
+
         const value = (source.obj.value = this.mergeChange(event)!);
         let selStart, selEnd;
         if (
@@ -330,6 +346,7 @@ export class EventDispatcher {
         value: "",
         formattedValue: undefined,
         selRange: [0, 0],
+        focus: true, // Stay in the field.
       });
     }
   }

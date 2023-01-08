@@ -20,17 +20,15 @@
 /** @typedef {import("./editor.js").AnnotationEditor} AnnotationEditor */
 // eslint-disable-next-line max-len
 /** @typedef {import("./tools.js").AnnotationEditorUIManager} AnnotationEditorUIManager */
-// eslint-disable-next-line max-len
-/** @typedef {import("../annotation_storage.js").AnnotationStorage} AnnotationStorage */
+/** @typedef {import("../display_utils.js").PageViewport} PageViewport */
 // eslint-disable-next-line max-len
 /** @typedef {import("../../web/text_accessibility.js").TextAccessibilityManager} TextAccessibilityManager */
 /** @typedef {import("../../web/interfaces").IL10n} IL10n */
 
 import { IL10n } from "../../../pdf.ts-web/interfaces.ts";
 import { TextAccessibilityManager } from "../../../pdf.ts-web/text_accessibility.ts";
-import { AnnotationEditorType } from "../../shared/util.ts";
-import { AnnotationStorage } from "../annotation_storage.ts";
-import { PageViewport } from "../display_utils.ts";
+import { AnnotationEditorType, FeatureTest } from "../../shared/util.ts";
+import { PageViewport, setLayerDimensions } from "../display_utils.ts";
 import {
   AnnotationEditor,
   AnnotationEditorP,
@@ -46,13 +44,11 @@ import {
   AddCommandsP,
   AnnotationEditorUIManager,
   bindEvents,
-  KeyboardManager,
 } from "./tools.ts";
 /*80--------------------------------------------------------------------------*/
 
 interface AnnotationEditorLayerOptions {
   accessibilityManager?: TextAccessibilityManager | undefined;
-  annotationStorage: AnnotationStorage;
   div: HTMLDivElement;
   enabled?: boolean;
   l10n: IL10n;
@@ -62,7 +58,7 @@ interface AnnotationEditorLayerOptions {
   viewport: PageViewport;
 }
 
-interface _AnnotationEditorLayerRenderP {
+interface RenderEditorLayerOptions {
   viewport: PageViewport;
   // div:HTMLDivElement;
   // annotations;
@@ -79,15 +75,11 @@ export class AnnotationEditorLayer {
   #allowClick = false;
   #boundPointerup = this.pointerup.bind(this);
   #boundPointerdown = this.pointerdown.bind(this);
-  #editors = new Map();
+  #editors = new Map<string, AnnotationEditor>();
   #hadPointerDown = false;
   #isCleaningUp = false;
-  // #textLayerMap = new WeakMap<HTMLElement, HTMLElement[]>();
-  // #textNodes = new Map<string, HTMLElement>();
   #uiManager;
-  // #waitingEditors = new Set<AnnotationEditor>();
 
-  annotationStorage;
   pageIndex;
   div: HTMLDivElement | undefined;
 
@@ -103,7 +95,6 @@ export class AnnotationEditorLayer {
     }
     options.uiManager.registerEditorTypes([FreeTextEditor, InkEditor]);
     this.#uiManager = options.uiManager;
-    this.annotationStorage = options.annotationStorage;
     this.pageIndex = options.pageIndex;
     this.div = options.div;
     this.#accessibilityManager = options.accessibilityManager;
@@ -239,7 +230,6 @@ export class AnnotationEditorLayer {
 
     this.#uiManager.removeEditor(editor);
     this.detach(editor);
-    this.annotationStorage.remove(editor.id);
     editor.div!.style.display = "none";
     setTimeout(() => {
       // When the div is removed from DOM the focus can move on the
@@ -269,9 +259,8 @@ export class AnnotationEditorLayer {
     }
 
     this.attach(editor);
-    editor.pageIndex = this.pageIndex;
     editor.parent?.detach(editor);
-    editor.parent = this;
+    editor.setParent(this);
     if (editor.div && editor.isAttachedToDOM) {
       editor.div.remove();
       this.div!.append(editor.div);
@@ -294,7 +283,7 @@ export class AnnotationEditorLayer {
 
     this.moveEditorInDOM(editor);
     editor.onceAdded();
-    this.addToAnnotationStorage(editor);
+    this.#uiManager.addToAnnotationStorage(editor);
   }
 
   moveEditorInDOM(editor: AnnotationEditor) {
@@ -304,15 +293,6 @@ export class AnnotationEditorLayer {
       editor.contentDiv!,
       /* isRemovable = */ true,
     );
-  }
-
-  /**
-   * Add an editor in the annotation storage.
-   */
-  addToAnnotationStorage(editor: AnnotationEditor) {
-    if (!editor.isEmpty() && !this.annotationStorage.has(editor.id)) {
-      this.annotationStorage.setValue(editor.id, editor);
-    }
   }
 
   /**
@@ -367,9 +347,9 @@ export class AnnotationEditorLayer {
   #createNewEditor(params: AnnotationEditorP): AnnotationEditor | undefined {
     switch (this.#uiManager.getMode()) {
       case AnnotationEditorType.FREETEXT:
-        return new FreeTextEditor(<FreeTextEditorP> params);
+        return new FreeTextEditor(params as FreeTextEditorP);
       case AnnotationEditorType.INK:
-        return new InkEditor(<InkEditorP> params);
+        return new InkEditor(params as InkEditorP);
     }
     return undefined;
   }
@@ -381,11 +361,16 @@ export class AnnotationEditorLayer {
     switch (data.annotationType) {
       case AnnotationEditorType.FREETEXT:
         return FreeTextEditor.deserialize(
-          <FreeTextEditorSerialized> data,
+          data as FreeTextEditorSerialized,
           this,
+          this.#uiManager,
         );
       case AnnotationEditorType.INK:
-        return InkEditor.deserialize(<InkEditorSerialized> data, this);
+        return InkEditor.deserialize(
+          data as InkEditorSerialized,
+          this,
+          this.#uiManager,
+        );
     }
     return undefined;
   }
@@ -400,6 +385,7 @@ export class AnnotationEditorLayer {
       id,
       x: event.offsetX,
       y: event.offsetY,
+      uiManager: this.#uiManager,
     });
     if (editor) {
       this.add(editor);
@@ -440,7 +426,7 @@ export class AnnotationEditorLayer {
    * Pointerup callback.
    */
   pointerup(event: PointerEvent) {
-    const isMac = KeyboardManager.platform.isMac;
+    const { isMac } = FeatureTest.platform;
     if (event.button !== 0 || (event.ctrlKey && isMac)) {
       // Don't create an editor on right click.
       return;
@@ -471,7 +457,7 @@ export class AnnotationEditorLayer {
    * Pointerdown callback.
    */
   pointerdown(event: PointerEvent) {
-    const isMac = KeyboardManager.platform.isMac;
+    const { isMac } = FeatureTest.platform;
     if (event.button !== 0 || (event.ctrlKey && isMac)) {
       // Do nothing on right click.
       return;
@@ -527,10 +513,10 @@ export class AnnotationEditorLayer {
     }
 
     for (const editor of this.#editors.values()) {
-      this.#accessibilityManager?.removePointerInTextLayer(editor.contentDiv);
+      this.#accessibilityManager?.removePointerInTextLayer(editor.contentDiv!);
+      editor.setParent(undefined);
       editor.isAttachedToDOM = false;
-      editor.div.remove();
-      editor.parent = null;
+      editor.div!.remove();
     }
     this.div = undefined;
     this.#editors.clear();
@@ -553,10 +539,10 @@ export class AnnotationEditorLayer {
   /**
    * Render the main editor.
    */
-  render(parameters: _AnnotationEditorLayerRenderP) {
-    this.viewport = parameters.viewport;
+  render({ viewport }: RenderEditorLayerOptions) {
+    this.viewport = viewport;
+    setLayerDimensions(this.div!, viewport);
     bindEvents(this, this.div!, ["dragover", "drop"]);
-    this.setDimensions();
     for (const editor of this.#uiManager.getEditors(this.pageIndex)) {
       this.add(editor);
     }
@@ -566,22 +552,15 @@ export class AnnotationEditorLayer {
   /**
    * Update the main editor.
    */
-  update(parameters: _AnnotationEditorLayerRenderP) {
+  update({ viewport }: RenderEditorLayerOptions) {
     // Editors have their dimensions/positions in percent so to avoid any
     // issues (see #15582), we must commit the current one before changing
     // the viewport.
     this.#uiManager.commitOrRemove();
 
-    this.viewport = parameters.viewport;
-    this.setDimensions();
+    this.viewport = viewport;
+    setLayerDimensions(this.div!, { rotation: viewport.rotation });
     this.updateMode();
-  }
-
-  /**
-   * Get the scale factor from the viewport.
-   */
-  get scaleFactor(): number {
-    return this.viewport.scale;
   }
 
   /**
@@ -589,31 +568,13 @@ export class AnnotationEditorLayer {
    * @return dimensions.
    */
   get pageDimensions(): [number, number] {
-    const [pageLLx, pageLLy, pageURx, pageURy] = this.viewport.viewBox;
-    const width = pageURx - pageLLx;
-    const height = pageURy - pageLLy;
-
-    return [width, height];
+    const { pageWidth, pageHeight } = this.viewport.rawDims;
+    return [pageWidth, pageHeight];
   }
 
   get viewportBaseDimensions() {
     const { width, height, rotation } = this.viewport;
     return rotation % 180 === 0 ? [width, height] : [height, width];
-  }
-
-  /**
-   * Set the dimensions of the main div.
-   */
-  setDimensions() {
-    const { width, height, rotation } = this.viewport;
-
-    const flipOrientation = rotation % 180 !== 0,
-      widthStr = Math.floor(width) + "px",
-      heightStr = Math.floor(height) + "px";
-
-    this.div!.style.width = flipOrientation ? heightStr : widthStr;
-    this.div!.style.height = flipOrientation ? widthStr : heightStr;
-    this.div!.setAttribute("data-main-rotation", <any> rotation);
   }
 }
 /*80--------------------------------------------------------------------------*/

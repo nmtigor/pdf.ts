@@ -15,7 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/** @typedef {import("../src/display/api").PDFPageProxy} PDFPageProxy */
 import { html } from "../../lib/dom.js";
 /*80--------------------------------------------------------------------------*/
 const PDF_ROLE_TO_HTML_ROLE = {
@@ -75,12 +74,17 @@ const PDF_ROLE_TO_HTML_ROLE = {
 };
 const HEADING_PATTERN = /^H(\d+)$/;
 export class StructTreeLayerBuilder {
-    pdfPage;
-    constructor({ pdfPage }) {
-        this.pdfPage = pdfPage;
+    #treeDom;
+    get renderingDone() {
+        return this.#treeDom !== undefined;
     }
     render(structTree) {
-        return this._walk(structTree);
+        if (this.#treeDom !== undefined) {
+            return this.#treeDom;
+        }
+        const treeDom = this.#walk(structTree);
+        treeDom?.classList.add("structTree");
+        return (this.#treeDom = treeDom);
     }
     #setAttributes(structElement, htmlElement) {
         if (structElement.alt !== undefined) {
@@ -93,7 +97,7 @@ export class StructTreeLayerBuilder {
             htmlElement.setAttribute("lang", structElement.lang);
         }
     }
-    _walk(node) {
+    #walk(node) {
         if (!node)
             return undefined;
         const element = html("span");
@@ -117,7 +121,7 @@ export class StructTreeLayerBuilder {
             }
             else {
                 for (const kid of node.children) {
-                    element.append(this._walk(kid));
+                    element.append(this.#walk(kid));
                 }
             }
         }

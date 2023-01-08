@@ -347,7 +347,7 @@ var NsStepper;
                     table.append(fontCharRow);
                     table.append(unicodeRow);
                 }
-                else if (fn === "restore") {
+                else if (fn === "restore" && this.indentLevel > 0) {
                     this.indentLevel--;
                 }
                 line.append(html("td", " ".repeat(this.indentLevel * 2) + fn));
@@ -504,14 +504,14 @@ export var PDFBug;
         loadCSS();
         enable(ids);
         /*
-          * Basic Layout:
-          * PDFBug
-          *  Controls
-          *  Panels
-          *    Panel
-          *    Panel
-          *    ...
-          */
+         * Basic Layout:
+         * PDFBug
+         *  Controls
+         *  Panels
+         *    Panel
+         *    Panel
+         *    ...
+         */
         const ui = html("div");
         ui.id = "PDFBug";
         const controls = html("div");

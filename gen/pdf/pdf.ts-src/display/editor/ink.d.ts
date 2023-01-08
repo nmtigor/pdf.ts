@@ -3,6 +3,7 @@ import { IL10n } from "../../../pdf.ts-web/interfaces.js";
 import { AnnotationEditorParamsType, point_t } from "../../shared/util.js";
 import { AnnotationEditorLayer } from "./annotation_editor_layer.js";
 import { AnnotationEditor, AnnotationEditorP, AnnotationEditorSerialized, PropertyToUpdate } from "./editor.js";
+import { AnnotationEditorUIManager } from "./tools.js";
 export interface InkEditorP extends AnnotationEditorP {
     name: "inkEditor";
     color?: string;
@@ -51,6 +52,8 @@ export declare class InkEditor extends AnnotationEditor {
     rebuild(): void;
     /** @inheritdoc */
     remove(): void;
+    setParent(parent: AnnotationEditorLayer | undefined): void;
+    onScaleChanging(): void;
     /** @inheritdoc */
     enableEditMode(): void;
     /** @inheritdoc */
@@ -88,11 +91,10 @@ export declare class InkEditor extends AnnotationEditor {
      * renew its dimensions, hence it must redraw its own contents.
      * @param width the new width of the div
      * @param height the new height of the div
-     * @returns
      */
     setDimensions(width: number, height: number): void;
     /** @inheritdoc */
-    static deserialize(data: InkEditorSerialized, parent: AnnotationEditorLayer): InkEditor;
+    static deserialize(data: InkEditorSerialized, parent: AnnotationEditorLayer, uiManager: AnnotationEditorUIManager): InkEditor;
     /**
      * @inheritdoc
      * @implement

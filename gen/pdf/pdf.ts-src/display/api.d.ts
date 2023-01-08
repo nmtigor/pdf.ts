@@ -289,11 +289,12 @@ export declare class PDFDocumentLoadingTask {
      * The callback receives an {@link OnProgressP} argument.
      */
     onProgress?: (_: OnProgressP) => void;
+    get onUnsupportedFeature(): ((featureId?: UNSUPPORTED_FEATURES | undefined) => void) | undefined;
     /**
      * Callback for when an unsupported feature is used in the PDF document.
      * The callback receives an {@link UNSUPPORTED_FEATURES} argument.
      */
-    onUnsupportedFeature?: (featureId?: UNSUPPORTED_FEATURES) => void;
+    set onUnsupportedFeature(callback: ((featureId?: UNSUPPORTED_FEATURES | undefined) => void) | undefined);
     constructor();
     /**
      * Promise for document loading task completion.
@@ -645,7 +646,7 @@ export interface TextItem {
     /**
      * Transformation matrix.
      */
-    transform: matrix_t | undefined;
+    transform: matrix_t;
     /**
      * Width in device space.
      */
@@ -882,7 +883,6 @@ export declare class PDFPageProxy {
     cleanupAfterRender: boolean;
     _structTreePromise: Promise<StructTreeNode | undefined> | undefined;
     pendingCleanup: boolean;
-    _annotationPromises: Map<string, Promise<AnnotationData[]>>;
     destroyed: boolean;
     _annotationsPromise: Promise<AnnotationData[]> | undefined;
     _annotationsIntent: AnnotIntent | undefined;
@@ -927,6 +927,10 @@ export declare class PDFPageProxy {
      *   {Object} with JS actions.
      */
     getJSActions(): Promise<AnnotActions | undefined>;
+    /**
+     * @return True if only XFA form.
+     */
+    get isPureXfa(): boolean;
     /**
      * A promise that is resolved with
      * an {Object} with a fake DOM object (a tree structure where elements
@@ -1174,7 +1178,7 @@ export declare class RenderTask {
      * not be cancelled until graphics pauses with a timeout. The promise that
      * this object extends will be rejected when cancelled.
      */
-    cancel(): void;
+    cancel(extraDelay?: number): void;
     /**
      * Whether form fields are rendered separately from the main operatorList.
      */
@@ -1233,7 +1237,7 @@ export declare class InternalRenderTask {
     constructor({ callback, params, objs, commonObjs, annotationCanvasMap, operatorList, pageIndex, canvasFactory, useRequestAnimationFrame, pdfBug, pageColors, }: _InternalRenderTaskCtorP);
     get completed(): Promise<void>;
     initializeGraphics({ transparency, optionalContentConfig }: _InitializeGraphicsP): void;
-    cancel: (error?: any) => void;
+    cancel: (error?: any, extraDelay?: number) => void;
     operatorListChanged(): void;
     _continue: () => void;
     _scheduleNext: () => void;

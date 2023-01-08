@@ -37,7 +37,7 @@ declare class PDFFetchStreamReader implements IPDFStreamReader {
     /** @implement */
     cancel(reason: object): void;
 }
-declare class PDFFetchStreamRangeReader implements IPDFStreamRangeReader {
+export declare class PDFFetchStreamRangeReader implements IPDFStreamRangeReader {
     #private;
     _loaded: number;
     /** @implement */

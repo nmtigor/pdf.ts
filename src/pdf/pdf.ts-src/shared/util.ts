@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-import { _PDFDEV, DENO, SKIP_BABEL } from "../../../global.ts";
+import { _PDFDEV, DENO, GENERIC, SKIP_BABEL } from "../../../global.ts";
 import { type TupleOf } from "../../../lib/alias.ts";
 import { HttpStatusCode } from "../../../lib/HttpStatusCode.ts";
 import { isObjectLike } from "../../../lib/jslang.ts";
@@ -620,7 +620,6 @@ export function bytesToString(bytes: Uint8Array | Uint8ClampedArray) {
   assert(
     isObjectLike(bytes) && bytes.length !== undefined,
     "Invalid argument for bytesToString",
-    import.meta,
   );
   const length = bytes.length;
   const MAX_ARGUMENT_COUNT = 8192;
@@ -759,8 +758,20 @@ export class FeatureTest {
     return shadow(
       this,
       "isOffscreenCanvasSupported",
-      typeof (<any> globalThis).OffscreenCanvas !== "undefined",
+      !!(globalThis as any).OffscreenCanvas,
     );
+  }
+
+  static get platform() {
+    /*#static*/ if (GENERIC) {
+      if (!globalThis.navigator?.platform) {
+        return shadow(this, "platform", { isWin: false, isMac: false });
+      }
+    }
+    return shadow(this, "platform", {
+      isWin: navigator.platform.includes("Win"),
+      isMac: navigator.platform.includes("Mac"),
+    });
   }
 }
 

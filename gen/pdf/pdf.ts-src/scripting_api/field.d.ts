@@ -14,7 +14,7 @@ export interface SendFieldData extends SendData {
     } & FieldItem;
     focus?: boolean;
     items?: FieldItem[];
-    value?: string | number;
+    value?: string | number | string[] | undefined;
     selRange?: [number, number];
     formattedValue?: string | undefined;
     siblings?: unknown;
@@ -155,7 +155,7 @@ export declare class Field extends PDFObject<SendFieldData> {
     _textColor: CorrectColor;
     get textColor(): CorrectColor;
     set textColor(color: CorrectColor);
-    _value: string | string[];
+    _value: string | number | string[] | undefined;
     get valueAsString(): string;
     set valueAsString(_: string);
     _kidIds: string[] | undefined;
@@ -173,8 +173,9 @@ export declare class Field extends PDFObject<SendFieldData> {
     set borderColor(color: CorrectColor);
     get fgColor(): CorrectColor;
     set fgColor(color: CorrectColor);
-    get value(): string | string[];
-    set value(value: string | string[]);
+    get value(): string | number | string[] | undefined;
+    set value(value: string | number | string[] | undefined);
+    _setChoiceValue(value: string | number | (string | number)[]): void;
     buttonImportIcon(cPath?: undefined, nPave?: number): void;
     checkThisBox(nWidget: number, bCheckIt?: boolean): void;
     clearItems(): void;
@@ -203,9 +204,10 @@ export declare class Field extends PDFObject<SendFieldData> {
 export declare class RadioButtonField extends Field {
     _radioIds: (string | undefined)[];
     _radioActions: import("./common.js").ScriptingActions[];
+    _hasBeenInitialized: boolean;
     constructor(otherButtons: FieldObject[], data: ScriptingFieldData);
-    get value(): string | string[];
-    set value(value: string | string[]);
+    get value(): string | number | string[] | undefined;
+    set value(value: string | number | string[] | undefined);
     checkThisBox(nWidget: number, bCheckIt?: boolean): void;
     isBoxChecked(nWidget: number): boolean;
     isDefaultChecked(nWidget: number): boolean;
@@ -214,8 +216,8 @@ export declare class RadioButtonField extends Field {
     _isButton(): boolean;
 }
 export declare class CheckboxField extends RadioButtonField {
-    get value(): string | string[];
-    set value(value: string | string[]);
+    get value(): string | number | string[] | undefined;
+    set value(value: string | number | string[] | undefined);
     _getExportValue(state: string | number): string;
     isBoxChecked(nWidget: number): boolean;
     isDefaultChecked(nWidget: number): boolean;

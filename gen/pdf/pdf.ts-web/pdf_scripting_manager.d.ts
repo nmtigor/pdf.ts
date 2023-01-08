@@ -1,7 +1,7 @@
 import { PDFDocumentProxy } from "../pdf.ts-src/pdf.js";
 import { DefaultExternalServices, type ScriptingDocProperties } from "./app.js";
 import { EventBus } from "./event_utils.js";
-import { IScripting, type MouseState } from "./interfaces.js";
+import { IScripting } from "./interfaces.js";
 import { PDFViewer } from "./pdf_viewer.js";
 interface PDFScriptingManagerOptions {
     /**
@@ -29,7 +29,6 @@ export declare class PDFScriptingManager {
     setViewer(pdfViewer: PDFViewer): void;
     get destroyPromise(): Promise<void> | undefined;
     _scripting: IScripting | undefined;
-    get mouseState(): MouseState;
     _ready: boolean;
     constructor({ eventBus, sandboxBundleSrc, scriptingFactory, docPropertiesLookup, }: PDFScriptingManagerOptions);
     setDocument(pdfDocument?: PDFDocumentProxy): Promise<void>;

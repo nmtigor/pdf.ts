@@ -1,6 +1,7 @@
-/*80****************************************************************************
- * jslang
-** -------------------------------------------------------------------------- */
+/** 80**************************************************************************
+ * @module lib/jslang
+ * @license Apache-2.0
+ ******************************************************************************/
 
 import { INOUT } from "../global.ts";
 import {
@@ -46,7 +47,7 @@ let valve = 0;
  */
 function eq_impl(lhs_x: unknown, rhs_x: unknown): boolean {
   /*#static*/ if (INOUT) {
-    assert(valve--, "There is element referencing its ancestor.", import.meta);
+    assert(valve--, "There is element referencing its ancestor.");
   }
   if (
     lhs_x === rhs_x ||
@@ -245,21 +246,12 @@ declare global {
 }
 
 Number.apxE = (f0, f1) => Math.abs(f0 - f1) <= Number.EPSILON;
-Number.apxS = (f0, f1) => {
-  return f0 < f1 - Number.EPSILON;
-};
-Number.apxSE = (f0, f1) => {
-  return f0 <= f1 + Number.EPSILON;
-};
-Number.apxG = (f0, f1) => {
-  return f0 > f1 + Number.EPSILON;
-};
-Number.apxGE = (f0, f1) => {
-  return f0 >= f1 - Number.EPSILON;
-};
-Number.getRandom = (max, min = 0, fixto = 0) => {
-  return min + (Math.random() * (max - min)).fixTo(fixto);
-};
+Number.apxS = (f0, f1) => f0 < f1 - Number.EPSILON;
+Number.apxSE = (f0, f1) => f0 <= f1 + Number.EPSILON;
+Number.apxG = (f0, f1) => f0 > f1 + Number.EPSILON;
+Number.apxGE = (f0, f1) => f0 >= f1 - Number.EPSILON;
+Number.getRandom = (max, min = 0, fixto = 0) =>
+  min + (Math.random() * (max - min)).fixTo(fixto);
 
 Number.prototype.fixTo = function (this: Number, digits = 0) {
   const mul = 10 ** digits;
@@ -598,14 +590,14 @@ Math.clamp = (min_x: number, val_x: number, max_x: number) =>
  * class X extends mix( Y, Z )
  * ! Should always companion with an interface declaration.
  *
- * @param mixins
+ * @param mixins_x
  *  Laat element has the highest precedence, and so on.
  */
-export function mix(
-  base: Constructor | AbstractConstructor,
-  ...mixins: (Constructor | AbstractConstructor)[]
+export function mix<C extends Constructor | AbstractConstructor>(
+  Base_x: C,
+  ...mixins_x: (Constructor | AbstractConstructor)[]
 ) {
-  abstract class Mix extends base {}
+  abstract class Mix extends Base_x {}
   // console.log( Mix );
 
   function copyProperties(source: object, target: object) {
@@ -637,11 +629,11 @@ export function mix(
     }
   }
 
-  for (let i = mixins.length; i--;) {
-    deepcopyProperties(mixins[i].prototype, Mix.prototype);
-    deepcopyProperties(mixins[i], Mix); // add static stuff
+  for (let i = mixins_x.length; i--;) {
+    deepcopyProperties(mixins_x[i].prototype, Mix.prototype);
+    deepcopyProperties(mixins_x[i], Mix); // add static stuff
   }
 
-  return Mix as AbstractConstructor;
+  return Mix;
 }
 /*80--------------------------------------------------------------------------*/

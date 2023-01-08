@@ -1,6 +1,10 @@
+/** 80**************************************************************************
+ * @module global
+ * @license Apache-2.0
+ ******************************************************************************/
 import { Hover, Pointer } from "./lib/alias.js";
 import { HTMLVCo } from "./lib/mv.js";
-export declare const INOUT = true, DEV = true, INFO = true, RESIZ = false, INTRS = false, EDITOR = true, EDITOR_v = true, EDITOR_vv = false, PDFTS = true, PDFTS_v = true, PDFTS_vv = false, _INFO = true, APP = false, DENO = false, TESTING = false, /** @deprecated */ TEST_ALL = false, GENERIC = true, MOZCENTRAL = false, CHROME = false, PRODUCTION = false, LIB = false, SKIP_BABEL = true, IMAGE_DECODERS = false, COMPONENTS = false, _PDFDEV = true;
+export declare const INOUT = true, DEV = true, INFO = true, RESIZ = false, INTRS = false, EDITOR = true, EDITOR_v = true, EDITOR_vv = false, PDFTS = true, PDFTS_v = true, PDFTS_vv = false, _INFO = true, APP = false, TESTING = false, /** @deprecated */ TEST_ALL = false, DENO = false, CYPRESS = true, GENERIC = true, MOZCENTRAL = false, CHROME = false, GECKOVIEW = false, PRODUCTION = false, LIB = false, SKIP_BABEL = true, IMAGE_DECODERS = false, COMPONENTS = false, _PDFDEV = true;
 export declare const global: {
     /** @deprecated Use preprocessor. */
     testing: boolean;

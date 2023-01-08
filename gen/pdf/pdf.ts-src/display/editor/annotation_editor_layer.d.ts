@@ -1,18 +1,16 @@
 /** @typedef {import("./editor.js").AnnotationEditor} AnnotationEditor */
 /** @typedef {import("./tools.js").AnnotationEditorUIManager} AnnotationEditorUIManager */
-/** @typedef {import("../annotation_storage.js").AnnotationStorage} AnnotationStorage */
+/** @typedef {import("../display_utils.js").PageViewport} PageViewport */
 /** @typedef {import("../../web/text_accessibility.js").TextAccessibilityManager} TextAccessibilityManager */
 /** @typedef {import("../../web/interfaces").IL10n} IL10n */
 import { IL10n } from "../../../pdf.ts-web/interfaces.js";
 import { TextAccessibilityManager } from "../../../pdf.ts-web/text_accessibility.js";
 import { AnnotationEditorType } from "../../shared/util.js";
-import { AnnotationStorage } from "../annotation_storage.js";
 import { PageViewport } from "../display_utils.js";
 import { AnnotationEditor, AnnotationEditorSerialized } from "./editor.js";
 import { AddCommandsP, AnnotationEditorUIManager } from "./tools.js";
 interface AnnotationEditorLayerOptions {
     accessibilityManager?: TextAccessibilityManager | undefined;
-    annotationStorage: AnnotationStorage;
     div: HTMLDivElement;
     enabled?: boolean;
     l10n: IL10n;
@@ -21,7 +19,7 @@ interface AnnotationEditorLayerOptions {
     uiManager: AnnotationEditorUIManager;
     viewport: PageViewport;
 }
-interface _AnnotationEditorLayerRenderP {
+interface RenderEditorLayerOptions {
     viewport: PageViewport;
 }
 /**
@@ -30,7 +28,6 @@ interface _AnnotationEditorLayerRenderP {
 export declare class AnnotationEditorLayer {
     #private;
     static _initialized: boolean;
-    annotationStorage: AnnotationStorage;
     pageIndex: number;
     div: HTMLDivElement | undefined;
     viewport: PageViewport;
@@ -79,10 +76,6 @@ export declare class AnnotationEditorLayer {
      */
     add(editor: AnnotationEditor): void;
     moveEditorInDOM(editor: AnnotationEditor): void;
-    /**
-     * Add an editor in the annotation storage.
-     */
-    addToAnnotationStorage(editor: AnnotationEditor): void;
     /**
      * Add or rebuild depending if it has been removed or not.
      */
@@ -142,25 +135,17 @@ export declare class AnnotationEditorLayer {
     /**
      * Render the main editor.
      */
-    render(parameters: _AnnotationEditorLayerRenderP): void;
+    render({ viewport }: RenderEditorLayerOptions): void;
     /**
      * Update the main editor.
      */
-    update(parameters: _AnnotationEditorLayerRenderP): void;
-    /**
-     * Get the scale factor from the viewport.
-     */
-    get scaleFactor(): number;
+    update({ viewport }: RenderEditorLayerOptions): void;
     /**
      * Get page dimensions.
      * @return dimensions.
      */
     get pageDimensions(): [number, number];
     get viewportBaseDimensions(): number[];
-    /**
-     * Set the dimensions of the main div.
-     */
-    setDimensions(): void;
 }
 export {};
 //# sourceMappingURL=annotation_editor_layer.d.ts.map

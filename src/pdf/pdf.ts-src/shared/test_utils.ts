@@ -1,6 +1,7 @@
-/*80****************************************************************************
- * test_utils
-** -------------------------------------------------------------------------- */
+/** 80**************************************************************************
+ * @module pdf/pdf.ts-src/shared/test_utils
+ * @license Apache-2.0
+ ******************************************************************************/
 
 import { isObjectLike } from "../../../lib/jslang.ts";
 import { assert } from "../../../lib/util/trace.ts";
@@ -187,7 +188,7 @@ export function createIdFactory(pageIndex: number) {
 }
 
 export function isEmptyObj(obj: object) {
-  assert(isObjectLike(obj), "isEmptyObj - invalid argument.", import.meta);
+  assert(isObjectLike(obj), "isEmptyObj - invalid argument.");
   return Object.keys(obj).length === 0;
 }
 

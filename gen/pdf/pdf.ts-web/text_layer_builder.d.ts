@@ -1,38 +1,18 @@
+import { TextDivProps } from "../pdf.ts-src/display/text_layer.js";
 import { PageViewport, type TextContent, TextLayerRenderTask } from "../pdf.ts-src/pdf.js";
-import { EventBus } from "./event_utils.js";
 import { TextAccessibilityManager } from "./text_accessibility.js";
 import { TextHighlighter } from "./text_highlighter.js";
 interface TextLayerBuilderOptions {
-    /**
-     * The text layer container.
-     */
-    textLayerDiv: HTMLDivElement;
-    /**
-     * The application event bus.
-     */
-    eventBus: EventBus;
-    /**
-     * The page index.
-     */
-    pageIndex: number;
-    /**
-     * The viewport of the text layer.
-     */
-    viewport: PageViewport;
     /**
      * Optional object that will handle
      * highlighting text from the find controller.
      */
     highlighter: TextHighlighter | undefined;
     accessibilityManager: TextAccessibilityManager | undefined;
-}
-interface TLBMBound {
-    divIdx: number;
-    offset?: number;
-}
-interface TextLayerBuilderMatches {
-    begin: TLBMBound;
-    end: TLBMBound;
+    /**
+     * Allows to use an OffscreenCanvas if needed.
+     */
+    isOffscreenCanvasSupported?: boolean;
 }
 /**
  * The text layer builder provides text selection functionality for the PDF.
@@ -41,32 +21,28 @@ interface TextLayerBuilderMatches {
  */
 export declare class TextLayerBuilder {
     #private;
-    textLayerDiv: HTMLDivElement;
-    eventBus: EventBus;
-    textContent?: TextContent | undefined;
     textContentItemsStr: string[];
-    textContentStream?: ReadableStream;
     renderingDone: boolean;
-    pageNumber: number;
-    matches: TextLayerBuilderMatches[];
-    viewport: PageViewport;
     textDivs: HTMLDivElement[];
+    get numTextDivs(): number;
+    textDivProperties: WeakMap<HTMLElement, TextDivProps>;
     textLayerRenderTask?: TextLayerRenderTask | undefined;
     highlighter: TextHighlighter | undefined;
     accessibilityManager: TextAccessibilityManager | undefined;
-    constructor({ textLayerDiv, eventBus, pageIndex, viewport, highlighter, accessibilityManager, }: TextLayerBuilderOptions);
+    isOffscreenCanvasSupported: boolean | undefined;
+    div: HTMLDivElement;
+    constructor({ highlighter, accessibilityManager, isOffscreenCanvasSupported, }: TextLayerBuilderOptions);
     /**
      * Renders the text layer.
-     *
-     * @param timeout Wait for a specified amount of milliseconds before rendering.
      */
-    render(timeout?: number): void;
+    render(viewport: PageViewport): Promise<void>;
+    hide(): void;
+    show(): void;
     /**
      * Cancel rendering of the text layer.
      */
     cancel(): void;
-    setTextContentStream(readableStream: ReadableStream): void;
-    setTextContent(textContent?: TextContent): void;
+    setTextContentSource(source: ReadableStream | TextContent): void;
 }
 export {};
 //# sourceMappingURL=text_layer_builder.d.ts.map

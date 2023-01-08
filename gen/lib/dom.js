@@ -1,22 +1,39 @@
-/*80****************************************************************************
- * dom
-** --- */
-import { $loff, $ovlap, $tail_ignored } from "./symbols.js";
-EventTarget.prototype.on = function (type, listener, options) {
-    this.addEventListener(type, listener, options);
-};
-EventTarget.prototype.off = function (type, listener, options) {
-    this.removeEventListener(type, listener, options);
-};
-Reflect.defineProperty(Event.prototype, "canceled", {
-    get() {
-        return this.canceled_ ?? false;
-    },
-    set(canceled_x) {
-        this.canceled_ = canceled_x;
-    },
-});
-if (typeof Node !== "undefined") {
+/** 80**************************************************************************
+ * @module lib/dom
+ * @license Apache-2.0
+ ******************************************************************************/
+import { $cssstylesheet, $loff, $ovlap, $tail_ignored } from "./symbols.js";
+// let canceld_ = true;
+if (globalThis.Event) {
+    let canceld_;
+    Reflect.defineProperty(Event.prototype, "canceled", {
+        get() {
+            return canceld_ ?? false;
+        },
+        set(canceled_x) {
+            canceld_ = canceled_x;
+        },
+    });
+    // console.log(Event.prototype.canceled);
+}
+/*64----------------------------------------------------------*/
+export var MouseButton;
+(function (MouseButton) {
+    MouseButton[MouseButton["Main"] = 0] = "Main";
+    MouseButton[MouseButton["Auxiliary"] = 1] = "Auxiliary";
+    MouseButton[MouseButton["Secondary"] = 2] = "Secondary";
+    MouseButton[MouseButton["Back"] = 3] = "Back";
+    MouseButton[MouseButton["Forward"] = 4] = "Forward";
+})(MouseButton || (MouseButton = {}));
+if (globalThis.EventTarget) {
+    EventTarget.prototype.on = function (type, listener, options) {
+        return this.addEventListener(type, listener, options);
+    };
+    EventTarget.prototype.off = function (type, listener, options) {
+        return this.removeEventListener(type, listener, options);
+    };
+}
+if (globalThis.Node) {
     Reflect.defineProperty(Node.prototype, "isText", {
         get() {
             return this.nodeType === Node.TEXT_NODE;
@@ -32,27 +49,6 @@ if (typeof Node !== "undefined") {
             this.removeChild(this.lastChild);
         return this;
     };
-    // /**
-    //  * @deprecated - Use Node.isConnected property
-    //  * @return { Boolean }
-    //  */
-    // Node.prototype.attached = function(this:Node)
-    // {
-    //   let ret = false;
-    //   let el = this;
-    //   let valve = 1000+1;
-    //   while( el && --valve )
-    //   {
-    //     if( el === document.body )
-    //     {
-    //       ret = true;
-    //       break;
-    //     }
-    //     el = el.parentNode;
-    //   }
-    //   assert(valve);
-    //   return ret;
-    // }
     /**
      * Only test properties in `rhs`
      * @headconst @param rhs
@@ -66,16 +62,16 @@ if (typeof Node !== "undefined") {
         if (this === rhs)
             return;
         for (const key of Reflect.ownKeys(rhs)) {
-            if (key === "childNodes") {
+            if (key === "childNodes")
                 continue;
-            }
             const rhsval = rhs[key];
             const zisval = this[key];
             if (Array.isArray(rhsval)) {
                 console.assert(rhsval.eq(zisval));
             }
-            else
+            else {
                 console.assert(rhsval === zisval);
+            }
         }
         if (rhs.childNodes) {
             const childNodes = rhs.childNodes;
@@ -87,10 +83,19 @@ if (typeof Node !== "undefined") {
         // if( rhs && rhs[test_ref_sym] ) rhs[ $ref_test ] = this;
     };
 }
-if (typeof Element !== "undefined") {
-    Element.prototype.setAttrs = function (attrs_o) {
-        for (const key in attrs_o) {
-            this.setAttribute(key, attrs_o[key]);
+if (globalThis.Document) {
+    let cssstylesheet_;
+    Reflect.defineProperty(Document.prototype, $cssstylesheet, {
+        get() {
+            cssstylesheet_ ??= this.head.appendChild(html("style")).sheet;
+            return cssstylesheet_;
+        },
+    });
+}
+if (globalThis.Element) {
+    Element.prototype.assignAttro = function (attr_o) {
+        for (const [key, val] of Object.entries(attr_o)) {
+            this.setAttribute(key, val);
         }
         return this;
     };
@@ -105,17 +110,19 @@ if (typeof Element !== "undefined") {
         },
     });
 }
-if (typeof HTMLElement !== "undefined") {
+if (globalThis.HTMLElement) {
+    HTMLElement.prototype.assignStylo = function (styl_o) {
+        Object.assign(this.style, styl_o);
+        return this;
+    };
     Reflect.defineProperty(HTMLElement.prototype, "prevVisible", {
         get() {
             let ret = this.previousSibling;
             while (ret) {
-                if (!(ret instanceof HTMLElement)) {
+                if (!(ret instanceof HTMLElement))
                     continue;
-                }
-                if (ret.style.display !== "none") {
+                if (ret.style.display !== "none")
                     break;
-                }
                 ret = ret.previousSibling;
             }
             ret ??= undefined;
@@ -146,8 +153,34 @@ if (typeof HTMLElement !== "undefined") {
             return ret;
         },
     });
+    Reflect.defineProperty(HTMLElement.prototype, "viewLeft", {
+        get() {
+            return this.offsetLeft + this.clientLeft;
+        },
+    });
+    Reflect.defineProperty(HTMLElement.prototype, "viewRight", {
+        get() {
+            return this.viewLeft + this.clientWidth;
+        },
+    });
+    Reflect.defineProperty(HTMLElement.prototype, "viewTop", {
+        get() {
+            return this.offsetTop + this.clientTop;
+        },
+    });
+    Reflect.defineProperty(HTMLElement.prototype, "viewBottom", {
+        get() {
+            return this.viewTop + this.clientHeight;
+        },
+    });
 }
-if (typeof HTMLCollection !== "undefined") {
+if (globalThis.SVGElement) {
+    SVGElement.prototype.assignStylo = function (styl_o) {
+        Object.assign(this.style, styl_o);
+        return this;
+    };
+}
+if (globalThis.HTMLCollection) {
     HTMLCollection.prototype.indexOf = function (element) {
         for (let i = 0; i < this.length; ++i) {
             if (this.item(i) === element)
@@ -156,12 +189,11 @@ if (typeof HTMLCollection !== "undefined") {
         return -1;
     };
 }
-if (typeof Range !== "undefined") {
+if (globalThis.Range) {
     Range.prototype.getReca = function (rec_a, ovlap = false) {
         const recs = this.getClientRects();
         if (recs.length) {
-            for (let i = 0; i < recs.length; i++) {
-                const rec = recs[i];
+            for (const rec of recs) {
                 if (rec.width === 0)
                     rec.width = rec.height * .1;
                 rec[$ovlap] = ovlap;
@@ -193,21 +225,19 @@ export function textnode(text_x, loff_x, tail_ignored_x) {
         ret[$tail_ignored] = tail_ignored_x;
     return ret;
 }
-export function html(nodeName, innerHTML, doc) {
-    doc ??= document;
+export function html(nodeName, innerHTML, doc = document) {
     let ret = doc.createElement(nodeName);
     if (innerHTML)
         ret.innerHTML = innerHTML;
     return ret;
 }
-export function div(innerHTML, doc) {
+export function div(innerHTML, doc = document) {
     return html("div", innerHTML, doc);
 }
-export function span(innerHTML, doc) {
+export function span(innerHTML, doc = document) {
     return html("span", innerHTML, doc);
 }
-export function svg(nodeName, doc) {
-    doc ??= document;
+export function svg(nodeName, doc = document) {
     return doc.createElementNS("http://www.w3.org/2000/svg", nodeName);
 }
 /*80--------------------------------------------------------------------------*/

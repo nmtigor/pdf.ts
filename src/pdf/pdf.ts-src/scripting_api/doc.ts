@@ -58,7 +58,7 @@ class InfoProxyHandler {
   }
 }
 
-interface _SendDocData extends SendData {
+interface SendDocData_ extends SendData {
   command?: string;
   end?: number;
   formattedValue?: undefined;
@@ -72,7 +72,7 @@ export interface DocInfo extends ScriptingDocProperties {
   actions: AnnotActions;
 }
 
-interface _ScriptingDocData extends ScriptingData<_SendDocData>, DocInfo {
+interface _ScriptingDocData extends ScriptingData<SendDocData_>, DocInfo {
   globalEval(code: string): unknown;
   docID?: [string, string];
   layout?: string;
@@ -97,7 +97,7 @@ interface _UI {
   bUI: boolean | _UI;
 }
 
-export class Doc extends PDFObject<_SendDocData> {
+export class Doc extends PDFObject<SendDocData_> {
   _baseURL;
   _calculate = true;
 
@@ -375,27 +375,33 @@ export class Doc extends PDFObject<_SendDocData> {
     this._globalEval = data.globalEval;
   }
 
+  _initActions() {
+    const dontRun = new Set([
+      "WillClose",
+      "WillSave",
+      "DidSave",
+      "WillPrint",
+      "DidPrint",
+      "OpenAction",
+    ]);
+    // When a pdf has just been opened it doesn't really make sense
+    // to save it: it's up to the user to decide if they want to do that.
+    // A pdf can contain an action /FooBar which will trigger a save
+    // even if there are no WillSave/DidSave (which are themselves triggered
+    // after a save).
+    this._disableSaving = true;
+    for (const actionName of this._actions.keys()) {
+      if (!dontRun.has(actionName)) {
+        this._runActions(actionName);
+      }
+    }
+    this._runActions("OpenAction");
+    this._disableSaving = false;
+  }
+
   _dispatchDocEvent(name: ScriptingActionName) {
     if (name === "Open") {
-      const dontRun = new Set([
-        "WillClose",
-        "WillSave",
-        "DidSave",
-        "WillPrint",
-        "DidPrint",
-        "OpenAction",
-      ]);
-      // When a pdf has just been opened it doesn't really make sense
-      // to save it: it's up to the user to decide if they want to do that.
-      // A pdf can contain an action /FooBar which will trigger a save
-      // even if there are no WillSave/DidSave (which are themselves triggered
-      // after a save).
       this._disableSaving = true;
-      for (const actionName of this._actions.keys()) {
-        if (!dontRun.has(actionName)) {
-          this._runActions(actionName);
-        }
-      }
       this._runActions("OpenAction");
       this._disableSaving = false;
     } else if (name === "WillPrint") {

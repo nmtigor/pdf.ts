@@ -1,20 +1,21 @@
-/*80****************************************************************************
- * mv
-** -------------------------------------------------------------------------- */
+/** 80**************************************************************************
+ * @module lib/mv
+ * @license Apache-2.0
+ ******************************************************************************/
 import { INOUT } from "../global.js";
 import { svg } from "./dom.js";
 import { mix } from "./jslang.js";
-import { $Vuu, $vuu } from "./symbols.js";
+import { $vuu } from "./symbols.js";
 import { assert } from "./util/trace.js";
 /**
  * Access rule like scope:
- * Only has access to sibling or child Coo's through `ci`.
- * Child Coo accessing parent Coo has no such restriction.
+ * Only has access to sibling or child `Coo`'s through `ci`.
+ * Child `Coo` accessing parent `Coo` has no such restriction.
  */
 export class Coo {
 }
 /**
- * Wrapper of DOM.
+ * Wrapper of DOM
  * Vuu ⊆ Coo
  */
 export class Vuu {
@@ -34,7 +35,7 @@ export class Vuu {
         this.coo$ = coo_x;
         this.el$ = el_x;
         this.el$[$vuu] = this;
-        this.el$[$Vuu] = Vuu;
+        // this.el$[$Vuu] = Vuu;
     }
     get parentVuu1() {
         let node = this.el$.parentNode;
@@ -99,31 +100,52 @@ export class Vuu {
     // {
     //   return vuu_x && this.el$.parentNode === vuu_x.el;
     // }
-    // /**
-    //  * @deprecated - Use `this.el$.attr = 123;` directly
-    //  */
-    // attr( ...args ) { this.el$.setAttribute( ...args ); }
-    // on< EN extends keyof GlobalEventHandlersEventMap >( type:EN,
-    //   listener:MyEventListener< GlobalEventHandlersEventMap[EN] >
-    //          | MyEventListenerObject< GlobalEventHandlersEventMap[EN] >
-    //          | null,
-    //   options?:boolean | AddEventListenerOptions
-    // ) {
-    //   this.el$.on( type, <EventListenerOrEventListenerObject|null>listener, options );
-    // }
-    on(...args) {
-        this.el$.on(...args);
+    on(type, listener, options) {
+        return this.el$.on(type, listener, options);
     }
-    off(...args) {
-        this.el$.off(...args);
+    off(type, listener, options) {
+        return this.el$.off(type, listener, options);
+    }
+    assignAttro(attr_o) {
+        this.el$.assignAttro(attr_o);
+        return this;
+    }
+    // static Vuufn() {}
+    set cyName(name_x) {
+        this.el$.setAttribute("data-cy", name_x);
     }
 }
 // Vuu.def = "def";
 export class HTMLVuu extends Vuu {
+    // /**
+    //  * @headconst @param coo_x
+    //  * @headconst @param el_x
+    //  */
+    // constructor( coo_x:C, el_x:E )
+    // {
+    //   super( coo_x, el_x );
+    // }
+    assignStylo(styl_o) {
+        this.el$.assignStylo(styl_o);
+        return this;
+    }
 }
 export class SVGVuu extends Vuu {
+    // /**
+    //  * @headconst @param coo_x
+    //  * @const @param viewBox_x
+    //  */
+    // constructor( coo_x:C, el_x:E )
+    // {
+    //   super( coo_x, el_x );
+    // }
+    assignStylo(styl_o) {
+        this.el$.assignStylo(styl_o);
+        return this;
+    }
 }
 export class HTMLVCo extends mix(HTMLVuu, Coo) {
+    // override coo$: Coo<CI>;
     #ci = Object.create(null);
     /** @implement */
     get ci() {
@@ -179,7 +201,7 @@ class MooHandlerDB {
         return this.#_a.length === 0;
     }
     #nforce = 0;
-    get force() {
+    get forcing_$() {
         return this.#nforce > 0;
     }
     /**
@@ -285,7 +307,7 @@ class MooHandlerDB {
 export class Moo {
     #initval;
     #eq;
-    #force;
+    #forcing;
     #val;
     get val() {
         return this.#val;
@@ -299,16 +321,16 @@ export class Moo {
     get _len() {
         return this.#handler_db.len_$;
     }
-    #forceOnce = false;
-    set forceOnce(force) {
-        this.#forceOnce = force;
+    #forcingOnce = false;
+    set forceOnce(force_x) {
+        this.#forcingOnce = force_x;
     }
     force() {
-        this.#forceOnce = true;
+        this.#forcingOnce = true;
         return this;
     }
-    get #forced() {
-        return this.#force || this.#forceOnce;
+    get #forcing_() {
+        return this.#forcing || this.#forcingOnce;
     }
     #data;
     set data(data_x) {
@@ -320,12 +342,12 @@ export class Moo {
     /**
      * @headconst @param val_x
      * @headconst @param eq_x
-     * @const @param force
+     * @const @param force_x
      */
     constructor(val_x, eq_x = (a, b) => a === b, force_x) {
         this.#initval = val_x;
         this.#eq = eq_x;
-        this.#force = force_x === undefined ? false : true;
+        this.#forcing = force_x === undefined ? false : true;
         this.reset();
     }
     /**
@@ -334,6 +356,7 @@ export class Moo {
     set(val) {
         this.#val = this.#newval = val;
     }
+    /** @final */
     reset() {
         this.set(this.#initval);
         if (!this.#handler_db?.empty) {
@@ -342,7 +365,7 @@ export class Moo {
         //! Not `#handler_db.clear()` because `#handler_db` could be shared.
         // if( !this.#handler_db ) this.#handler_db = new MooHandlerDB( this.#eq );
         // this.#handler_db.clear();
-        this.#forceOnce = this.#force;
+        this.#forcingOnce = this.#forcing;
         return this;
     }
     /** @final */
@@ -377,19 +400,19 @@ export class Moo {
     }
     set val(val_x) {
         if (this.#eq(val_x, this.#val) &&
-            !this.#forced &&
-            !this.#handler_db.force) {
+            !this.#forcing_ &&
+            !this.#handler_db.forcing_$) {
             return;
         }
         this.#newval = val_x;
-        this.#handler_db.get(val_x, this.#val, this.#forced)
+        this.#handler_db.get(val_x, this.#val, this.#forcing_)
             .forEach((handler_y) => handler_y(val_x, this.#val, this.#data));
         // for( const handler_y of this.#handler_db )
         // {
         //   handler_y( val_x, this.#val, this );
         // }
         this.#val = val_x;
-        this.#forceOnce = this.#force;
+        this.#forcingOnce = this.#forcing;
         this.#data = undefined; // it is used once
         // if( this.once_ ) this.#handler_db.clear();
     }

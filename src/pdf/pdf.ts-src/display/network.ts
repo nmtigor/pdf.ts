@@ -125,7 +125,7 @@ class NetworkManager {
     xhr.withCredentials = this.withCredentials;
     for (const property in this.httpHeaders) {
       const value = this.httpHeaders[property];
-      if (typeof value === "undefined") {
+      if (value === undefined) {
         continue;
       }
       xhr.setRequestHeader(property, value);
@@ -473,7 +473,8 @@ class PDFNetworkStreamFullRequestReader implements IPDFStreamReader {
   }
 }
 
-class PDFNetworkStreamRangeRequestReader implements IPDFStreamRangeReader {
+export class PDFNetworkStreamRangeRequestReader
+  implements IPDFStreamRangeReader {
   #manager: NetworkManager;
 
   _url;

@@ -17,39 +17,46 @@
  * limitations under the License.
  */
 
+/** @typedef {import("./display_utils").PageViewport} PageViewport */
+/** @typedef {import("./api").TextContent} TextContent */
+
 import { GENERIC } from "../../../global.ts";
 import { html, span } from "../../../lib/dom.ts";
 import { createPromiseCap } from "../../../lib/promisecap.ts";
-import { AbortException, type matrix_t, Util } from "../shared/util.ts";
+import {
+  AbortException,
+  FeatureTest,
+  type matrix_t,
+  Util,
+} from "../shared/util.ts";
 import {
   type TextContent,
   type TextItem,
   type TextMarkedContent,
   type TextStyle,
 } from "./api.ts";
-import { deprecated, PageViewport } from "./display_utils.ts";
+import {
+  deprecated,
+  PageViewport,
+  setLayerDimensions,
+} from "./display_utils.ts";
 /*80--------------------------------------------------------------------------*/
 
 /**
  * Text layer render parameters.
  */
-interface _TextLayerRenderP {
+type TextLayerRenderP_ = {
   /**
    * Text content to
-   * render (the object is returned by the page's `getTextContent` method).
+   * render, i.e. the value returned by the page's `streamTextContent` or
+   * `getTextContent` method.
    */
-  textContent?: TextContent | undefined;
-
-  /**
-   * Text content stream to
-   * render (the stream is returned by the page's `streamTextContent` method).
-   */
-  textContentStream?: ReadableStream | undefined;
+  textContentSource: ReadableStream<TextContent> | TextContent;
 
   /**
    * The DOM node that will contain the text runs.
    */
-  container: DocumentFragment | HTMLElement;
+  container: HTMLElement;
 
   /**
    * The target viewport to properly layout the text runs.
@@ -61,7 +68,13 @@ interface _TextLayerRenderP {
    * the text items of the textContent input.
    * This is output and shall initially be set to an empty array.
    */
-  textDivs?: HTMLSpanElement[];
+  textDivs?: HTMLElement[];
+
+  /**
+   * Some properties
+   * weakly mapped to the HTML elements used to render the text.
+   */
+  textDivProperties?: WeakMap<HTMLElement, TextDivProps>;
 
   /**
    * Strings that correspond to
@@ -71,17 +84,54 @@ interface _TextLayerRenderP {
   textContentItemsStr?: string[];
 
   /**
-   * Delay in milliseconds before rendering of the text runs occurs.
+   * true if we can use
+   * OffscreenCanvas to measure string widths.
    */
-  timeout?: number;
+  isOffscreenCanvasSupported?: boolean | undefined;
+};
+
+type TextLayerUpdateP_ = {
+  /**
+   * The DOM node that will contain the text runs.
+   */
+  container: HTMLDivElement;
 
   /**
-   * Whether to turn on the text selection enhancement.
+   * The target viewport to properly layout the text runs.
    */
-  enhanceTextSelection?: boolean;
-}
+  viewport: PageViewport;
 
-interface TextDivProps {
+  /**
+   * HTML elements that correspond to
+   * the text items of the textContent input.
+   * This is output and shall initially be set to an empty array.
+   */
+  textDivs?: HTMLElement[];
+
+  /**
+   * Some properties
+   * weakly mapped to the HTML elements used to render the text.
+   */
+  textDivProperties: WeakMap<HTMLElement, TextDivProps>;
+
+  /**
+   * true if we can use
+   * OffscreenCanvas to measure string widths.
+   */
+  isOffscreenCanvasSupported?: boolean | undefined;
+
+  /**
+   * true if the text layer must be rotated.
+   */
+  mustRotate?: boolean;
+
+  /**
+   * true if the text layer contents must be
+   */
+  mustRescale?: boolean;
+};
+
+export type TextDivProps = {
   angle: number;
   canvasWidth: number;
   fontSize: number;
@@ -93,473 +143,492 @@ interface TextDivProps {
   paddingRight?: number;
   paddingTop?: number;
   scale?: number;
-}
+};
 
-namespace Ns_renderTextLayer {
-  const MAX_TEXT_DIVS_TO_RENDER = 100000;
-  const DEFAULT_FONT_SIZE = 30;
-  const DEFAULT_FONT_ASCENT = 0.8;
-  const ascentCache = new Map();
+const MAX_TEXT_DIVS_TO_RENDER = 100000;
+const DEFAULT_FONT_SIZE = 30;
+const DEFAULT_FONT_ASCENT = 0.8;
+const ascentCache = new Map<string, number>();
 
-  function getAscent(fontFamily: string, ctx: CanvasRenderingContext2D) {
-    const cachedAscent = ascentCache.get(fontFamily);
-    if (cachedAscent) return cachedAscent;
-
-    ctx.save();
-    ctx.font = `${DEFAULT_FONT_SIZE}px ${fontFamily}`;
-    const metrics = ctx.measureText("");
-
-    // Both properties aren't available by default in Firefox.
-    let ascent = (<any> metrics).fontBoundingBoxAscent;
-    let descent = Math.abs((<any> metrics).fontBoundingBoxDescent);
-    if (ascent) {
-      ctx.restore();
-      const ratio = ascent / (ascent + descent);
-      ascentCache.set(fontFamily, ratio);
-      return ratio;
-    }
-
-    // Try basic heuristic to guess ascent/descent.
-    // Draw a g with baseline at 0,0 and then get the line
-    // number where a pixel has non-null red component (starting
-    // from bottom).
-    ctx.strokeStyle = "red";
-    ctx.clearRect(0, 0, DEFAULT_FONT_SIZE, DEFAULT_FONT_SIZE);
-    ctx.strokeText("g", 0, 0);
-    let pixels = ctx.getImageData(
-      0,
-      0,
-      DEFAULT_FONT_SIZE,
-      DEFAULT_FONT_SIZE,
-    ).data;
-    descent = 0;
-    for (let i = pixels.length - 1 - 3; i >= 0; i -= 4) {
-      if (pixels[i] > 0) {
-        descent = Math.ceil(i / 4 / DEFAULT_FONT_SIZE);
-        break;
-      }
-    }
-
-    // Draw an A with baseline at 0,DEFAULT_FONT_SIZE and then get the line
-    // number where a pixel has non-null red component (starting
-    // from top).
-    ctx.clearRect(0, 0, DEFAULT_FONT_SIZE, DEFAULT_FONT_SIZE);
-    ctx.strokeText("A", 0, DEFAULT_FONT_SIZE);
-    pixels = ctx.getImageData(0, 0, DEFAULT_FONT_SIZE, DEFAULT_FONT_SIZE).data;
-    ascent = 0;
-    for (let i = 0, ii = pixels.length; i < ii; i += 4) {
-      if (pixels[i] > 0) {
-        ascent = DEFAULT_FONT_SIZE - Math.floor(i / 4 / DEFAULT_FONT_SIZE);
-        break;
-      }
-    }
-
-    ctx.restore();
-
-    if (ascent) {
-      const ratio = ascent / (ascent + descent);
-      ascentCache.set(fontFamily, ratio);
-      return ratio;
-    }
-
-    ascentCache.set(fontFamily, DEFAULT_FONT_ASCENT);
-    return DEFAULT_FONT_ASCENT;
+function getCtx(size: number, isOffscreenCanvasSupported?: boolean) {
+  let ctx;
+  if (isOffscreenCanvasSupported && FeatureTest.isOffscreenCanvasSupported) {
+    ctx = new OffscreenCanvas(size, size).getContext("2d", { alpha: false });
+  } else {
+    const canvas = html("canvas");
+    canvas.width = canvas.height = size;
+    ctx = canvas.getContext("2d", { alpha: false });
   }
 
-  function appendText(
-    task: TextLayerRenderTask,
-    geom: TextItem,
-    styles: Record<string, TextStyle>,
-    ctx: CanvasRenderingContext2D,
-  ) {
-    // Initialize all used properties to keep the caches monomorphic.
-    const textDiv = span();
-    const textDivProperties = {
-      angle: 0,
-      canvasWidth: 0,
-      hasText: geom.str !== "",
-      hasEOL: geom.hasEOL,
-      fontSize: 0,
-    };
-    task._textDivs.push(textDiv);
+  return ctx;
+}
 
-    const tx = Util.transform(task._viewport.transform, geom.transform!);
-    let angle = Math.atan2(tx[1], tx[0]);
-    const style = styles[geom.fontName!];
-    if (style.vertical) {
-      angle += Math.PI / 2;
+function getAscent(fontFamily: string, isOffscreenCanvasSupported?: boolean) {
+  const cachedAscent = ascentCache.get(fontFamily);
+  if (cachedAscent) {
+    return cachedAscent;
+  }
+
+  const ctx = getCtx(DEFAULT_FONT_SIZE, isOffscreenCanvasSupported)!;
+  (ctx as any).font = `${DEFAULT_FONT_SIZE}px ${fontFamily}`;
+  const metrics: TextMetrics = (ctx as any).measureText("");
+
+  // Both properties aren't available by default in Firefox.
+  let ascent = metrics.fontBoundingBoxAscent;
+  let descent = Math.abs(metrics.fontBoundingBoxDescent);
+  if (ascent) {
+    const ratio = ascent / (ascent + descent);
+    ascentCache.set(fontFamily, ratio);
+
+    ctx.canvas.width = ctx.canvas.height = 0;
+    return ratio;
+  }
+
+  // Try basic heuristic to guess ascent/descent.
+  // Draw a g with baseline at 0,0 and then get the line
+  // number where a pixel has non-null red component (starting
+  // from bottom).
+  (ctx as any).strokeStyle = "red";
+  (ctx as any).clearRect(0, 0, DEFAULT_FONT_SIZE, DEFAULT_FONT_SIZE);
+  (ctx as any).strokeText("g", 0, 0);
+  let pixels: Uint8ClampedArray = (ctx as any).getImageData(
+    0,
+    0,
+    DEFAULT_FONT_SIZE,
+    DEFAULT_FONT_SIZE,
+  ).data;
+  descent = 0;
+  for (let i = pixels.length - 1 - 3; i >= 0; i -= 4) {
+    if (pixels[i] > 0) {
+      descent = Math.ceil(i / 4 / DEFAULT_FONT_SIZE);
+      break;
     }
-    const fontHeight = Math.hypot(tx[2], tx[3]);
-    const fontAscent = fontHeight * getAscent(style.fontFamily, ctx);
+  }
 
-    let left, top;
-    if (angle === 0) {
-      left = tx[4];
-      top = tx[5] - fontAscent;
-    } else {
-      left = tx[4] + fontAscent * Math.sin(angle);
-      top = tx[5] - fontAscent * Math.cos(angle);
+  // Draw an A with baseline at 0,DEFAULT_FONT_SIZE and then get the line
+  // number where a pixel has non-null red component (starting
+  // from top).
+  (ctx as any).clearRect(0, 0, DEFAULT_FONT_SIZE, DEFAULT_FONT_SIZE);
+  (ctx as any).strokeText("A", 0, DEFAULT_FONT_SIZE);
+  pixels =
+    (ctx as any).getImageData(0, 0, DEFAULT_FONT_SIZE, DEFAULT_FONT_SIZE).data;
+  ascent = 0;
+  for (let i = 0, ii = pixels.length; i < ii; i += 4) {
+    if (pixels[i] > 0) {
+      ascent = DEFAULT_FONT_SIZE - Math.floor(i / 4 / DEFAULT_FONT_SIZE);
+      break;
     }
-    // Setting the style properties individually, rather than all at once,
-    // should be OK since the `textDiv` isn't appended to the document yet.
-    textDiv.style.left = `${left}px`;
-    textDiv.style.top = `${top}px`;
-    textDiv.style.fontSize = `${fontHeight}px`;
-    textDiv.style.fontFamily = style.fontFamily;
+  }
 
-    textDivProperties.fontSize = fontHeight;
+  ctx.canvas.width = ctx.canvas.height = 0;
 
-    // Keeps screen readers from pausing on every new text span.
-    textDiv.setAttribute("role", "presentation");
+  if (ascent) {
+    const ratio = ascent / (ascent + descent);
+    ascentCache.set(fontFamily, ratio);
+    return ratio;
+  }
 
-    textDiv.textContent = geom.str;
-    // geom.dir may be 'ttb' for vertical texts.
-    textDiv.dir = geom.dir;
+  ascentCache.set(fontFamily, DEFAULT_FONT_ASCENT);
+  return DEFAULT_FONT_ASCENT;
+}
 
-    // `fontName` is only used by the FontInspector, and we only use `dataset`
-    // here to make the font name available in the debugger.
-    if (task._fontInspectorEnabled) {
-      textDiv.dataset.fontName = geom.fontName;
-    }
-    if (angle !== 0) {
-      textDivProperties.angle = angle * (180 / Math.PI);
-    }
-    // We don't bother scaling single-char text divs, because it has very
-    // little effect on text highlighting. This makes scrolling on docs with
-    // lots of such divs a lot faster.
-    let shouldScaleText = false;
-    if (geom.str.length > 1) {
+function appendText(
+  task: TextLayerRenderTask,
+  geom: TextItem,
+  styles: Record<string, TextStyle>,
+) {
+  // Initialize all used properties to keep the caches monomorphic.
+  const textDiv = span();
+  const textDivProperties: TextDivProps = {
+    angle: 0,
+    canvasWidth: 0,
+    hasText: geom.str !== "",
+    hasEOL: geom.hasEOL,
+    fontSize: 0,
+  };
+  task._textDivs.push(textDiv);
+
+  const tx = Util.transform(task._transform, geom.transform);
+  let angle = Math.atan2(tx[1], tx[0]);
+  const style = styles[geom.fontName!];
+  if (style.vertical) {
+    angle += Math.PI / 2;
+  }
+  const fontHeight = Math.hypot(tx[2], tx[3]);
+  const fontAscent = fontHeight *
+    getAscent(style.fontFamily, task._isOffscreenCanvasSupported);
+
+  let left, top;
+  if (angle === 0) {
+    left = tx[4];
+    top = tx[5] - fontAscent;
+  } else {
+    left = tx[4] + fontAscent * Math.sin(angle);
+    top = tx[5] - fontAscent * Math.cos(angle);
+  }
+
+  const scaleFactorStr = "calc(var(--scale-factor)*";
+  const divStyle = textDiv.style;
+  // Setting the style properties individually, rather than all at once,
+  // should be OK since the `textDiv` isn't appended to the document yet.
+  if (task._container === task._rootContainer) {
+    divStyle.left = `${((100 * left) / task._pageWidth).toFixed(2)}%`;
+    divStyle.top = `${((100 * top) / task._pageHeight).toFixed(2)}%`;
+  } else {
+    // We're in a marked content span, hence we can't use percents.
+    divStyle.left = `${scaleFactorStr}${left.toFixed(2)}px)`;
+    divStyle.top = `${scaleFactorStr}${top.toFixed(2)}px)`;
+  }
+  divStyle.fontSize = `${scaleFactorStr}${fontHeight.toFixed(2)}px)`;
+  divStyle.fontFamily = style.fontFamily;
+
+  textDivProperties.fontSize = fontHeight;
+
+  // Keeps screen readers from pausing on every new text span.
+  textDiv.setAttribute("role", "presentation");
+
+  textDiv.textContent = geom.str;
+  // geom.dir may be 'ttb' for vertical texts.
+  textDiv.dir = geom.dir;
+
+  // `fontName` is only used by the FontInspector, and we only use `dataset`
+  // here to make the font name available in the debugger.
+  if (task._fontInspectorEnabled) {
+    textDiv.dataset.fontName = geom.fontName;
+  }
+  if (angle !== 0) {
+    textDivProperties.angle = angle * (180 / Math.PI);
+  }
+  // We don't bother scaling single-char text divs, because it has very
+  // little effect on text highlighting. This makes scrolling on docs with
+  // lots of such divs a lot faster.
+  let shouldScaleText = false;
+  if (geom.str.length > 1) {
+    shouldScaleText = true;
+  } else if (geom.str !== " " && geom.transform[0] !== geom.transform[3]) {
+    const absScaleX = Math.abs(geom.transform[0]),
+      absScaleY = Math.abs(geom.transform[3]);
+    // When the horizontal/vertical scaling differs significantly, also scale
+    // even single-char text to improve highlighting (fixes issue11713.pdf).
+    if (
+      absScaleX !== absScaleY &&
+      Math.max(absScaleX, absScaleY) / Math.min(absScaleX, absScaleY) > 1.5
+    ) {
       shouldScaleText = true;
-    } else if (geom.str !== " " && geom.transform![0] !== geom.transform![3]) {
-      const absScaleX = Math.abs(geom.transform![0]),
-        absScaleY = Math.abs(geom.transform![3]);
-      // When the horizontal/vertical scaling differs significantly, also scale
-      // even single-char text to improve highlighting (fixes issue11713.pdf).
-      if (
-        absScaleX !== absScaleY &&
-        Math.max(absScaleX, absScaleY) / Math.min(absScaleX, absScaleY) > 1.5
-      ) {
-        shouldScaleText = true;
-      }
     }
-    if (shouldScaleText) {
-      if (style.vertical) {
-        textDivProperties.canvasWidth = geom.height * task._viewport.scale;
-      } else {
-        textDivProperties.canvasWidth = geom.width * task._viewport.scale;
-      }
+  }
+  if (shouldScaleText) {
+    textDivProperties.canvasWidth = style.vertical ? geom.height : geom.width;
+  }
+  task._textDivProperties.set(textDiv, textDivProperties);
+  if (task._isReadableStream) {
+    task._layoutText(textDiv);
+  }
+}
+
+type LayoutTextP_ = {
+  prevFontSize?: unknown;
+  prevFontFamily?: unknown;
+  div?: HTMLElement;
+  scale: number;
+  properties?: TextDivProps | undefined;
+  ctx: OffscreenRenderingContext | CanvasRenderingContext2D;
+};
+
+function layout(params: LayoutTextP_) {
+  const { div, scale, properties, ctx, prevFontSize, prevFontFamily } = params;
+  const { style } = div!;
+  let transform = "";
+  if (properties!.canvasWidth !== 0 && properties!.hasText) {
+    const { fontFamily } = style;
+    const { canvasWidth, fontSize } = properties!;
+
+    if (prevFontSize !== fontSize || prevFontFamily !== fontFamily) {
+      (ctx as any).font = `${fontSize * scale}px ${fontFamily}`;
+      params.prevFontSize = fontSize;
+      params.prevFontFamily = fontFamily;
     }
-    task._textDivProperties!.set(textDiv, textDivProperties);
-    if (task._textContentStream) {
+
+    // Only measure the width for multi-char text divs, see `appendText`.
+    const { width } = (ctx as any).measureText(div!.textContent) as TextMetrics;
+
+    if (width > 0) {
+      transform = `scaleX(${(canvasWidth * scale) / width})`;
+    }
+  }
+  if (properties!.angle !== 0) {
+    transform = `rotate(${properties!.angle}deg) ${transform}`;
+  }
+  if (transform.length > 0) {
+    style.transform = transform;
+  }
+}
+
+function render(task: TextLayerRenderTask) {
+  if (task._canceled) {
+    return;
+  }
+  const textDivs = task._textDivs;
+  const capability = task._capability;
+  const textDivsLength = textDivs.length;
+
+  // No point in rendering many divs as it would make the browser
+  // unusable even after the divs are rendered.
+  if (textDivsLength > MAX_TEXT_DIVS_TO_RENDER) {
+    capability.resolve();
+    return;
+  }
+
+  if (!task._isReadableStream) {
+    for (const textDiv of textDivs) {
       task._layoutText(textDiv);
     }
   }
+  capability.resolve();
+}
 
-  function render(task: TextLayerRenderTask) {
-    if (task._canceled) {
-      return;
-    }
-    const textDivs = task._textDivs;
-    const capability = task._capability;
-    const textDivsLength = textDivs.length;
+interface TLRTBound {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+  div: HTMLSpanElement;
+  size: [number, number];
+  m?: matrix_t | undefined;
+}
 
-    // No point in rendering many divs as it would make the browser
-    // unusable even after the divs are rendered.
-    if (textDivsLength > MAX_TEXT_DIVS_TO_RENDER) {
-      task._renderingDone = true;
-      capability.resolve();
-      return;
-    }
+interface TLRTExBound {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  index: number;
+  x1New?: number | undefined;
+  x2New?: number | undefined;
+}
 
-    if (!task._textContentStream) {
-      for (const textDiv of textDivs) {
-        task._layoutText(textDiv);
-      }
-    }
+/**
+ * Text layer rendering task.
+ */
+export class TextLayerRenderTask {
+  _textContentSource;
+  _isReadableStream;
+  _rootContainer;
+  _container;
+  _textDivs: HTMLSpanElement[];
+  _textContentItemsStr: string[];
+  _fontInspectorEnabled: boolean;
+  _isOffscreenCanvasSupported: boolean | undefined;
 
-    task._renderingDone = true;
-    capability.resolve();
+  _reader?: ReadableStreamDefaultReader<TextContent> | undefined;
+  _textDivProperties: WeakMap<HTMLSpanElement, TextDivProps>;
+  _canceled = false;
+
+  _capability = createPromiseCap();
+  /**
+   * Promise for textLayer rendering task completion.
+   */
+  get promise() {
+    return this._capability.promise;
   }
 
-  interface _TLRTCtorP {
-    textContent?: TextContent | undefined;
-    textContentStream?: ReadableStream | undefined;
-    container: DocumentFragment | HTMLElement;
-    viewport: PageViewport;
-    textDivs?: HTMLSpanElement[] | undefined;
-    textContentItemsStr?: string[] | undefined;
-  }
+  _layoutTextParams: LayoutTextP_;
+  _transform;
+  _pageWidth;
+  _pageHeight;
 
-  interface TLRTBound {
-    left: number;
-    top: number;
-    right: number;
-    bottom: number;
-    div: HTMLSpanElement;
-    size: [number, number];
-    m?: matrix_t | undefined;
-  }
+  constructor({
+    textContentSource,
+    container,
+    viewport,
+    textDivs,
+    textDivProperties,
+    textContentItemsStr,
+    isOffscreenCanvasSupported,
+  }: TextLayerRenderP_) {
+    this._textContentSource = textContentSource;
+    this._isReadableStream = textContentSource instanceof ReadableStream;
+    this._container = this._rootContainer = container;
+    this._textDivs = textDivs || [];
+    this._textContentItemsStr = textContentItemsStr || [];
+    this._fontInspectorEnabled = !!(globalThis as any).FontInspector?.enabled;
+    this._isOffscreenCanvasSupported = isOffscreenCanvasSupported;
 
-  interface TLRTExBound {
-    x1: number;
-    y1: number;
-    x2: number;
-    y2: number;
-    index: number;
-    x1New?: number | undefined;
-    x2New?: number | undefined;
+    this._textDivProperties = textDivProperties || new WeakMap();
+    this._layoutTextParams = {
+      scale: viewport.scale * (globalThis.devicePixelRatio || 1),
+      ctx: getCtx(0, isOffscreenCanvasSupported)!,
+    };
+    const { pageWidth, pageHeight, pageX, pageY } = viewport.rawDims;
+    this._transform = [1, 0, 0, -1, -pageX, pageY + pageHeight] as matrix_t;
+    this._pageWidth = pageWidth;
+    this._pageHeight = pageHeight;
+
+    setLayerDimensions(container, viewport);
+
+    // Always clean-up the temporary canvas once rendering is no longer pending.
+    this._capability.promise
+      .finally(() => {
+        this._layoutTextParams = undefined as any;
+      }).catch(() => {
+        // Avoid "Uncaught promise" messages in the console.
+      });
   }
 
   /**
-   * Text layer rendering task.
+   * Cancel rendering of the textLayer.
    */
-  export class TextLayerRenderTask {
-    _textContent?: TextContent | undefined;
-    _textContentStream?: ReadableStream | undefined;
-    _container: DocumentFragment | HTMLElement;
-    _document: Document;
-    _viewport: PageViewport;
-    _textDivs: HTMLSpanElement[];
-    _textContentItemsStr: string[];
-    _fontInspectorEnabled: boolean;
-    _devicePixelRatio;
-
-    _reader?: ReadableStreamDefaultReader | undefined;
-    _layoutTextLastFontSize: number | undefined;
-    _layoutTextLastFontFamily: string | null = null;
-    _layoutTextCtx: CanvasRenderingContext2D | null = null;
-    _textDivProperties: WeakMap<HTMLSpanElement, TextDivProps> | undefined =
-      new WeakMap();
-    _renderingDone = false;
-    _canceled = false;
-    _capability = createPromiseCap();
-    #renderTimer?: number | undefined;
-
-    constructor({
-      textContent,
-      textContentStream,
-      container,
-      viewport,
-      textDivs,
-      textContentItemsStr,
-    }: _TLRTCtorP) {
-      this._textContent = textContent;
-      this._textContentStream = textContentStream;
-      this._container = container;
-      this._document = container.ownerDocument;
-      this._viewport = viewport;
-      this._textDivs = textDivs || [];
-      this._textContentItemsStr = textContentItemsStr || [];
-      this._fontInspectorEnabled = !!(<any> globalThis).FontInspector?.enabled;
-      this._devicePixelRatio = globalThis.devicePixelRatio || 1;
-
-      // Always clean-up the temporary canvas once rendering is no longer pending.
-      this._capability.promise
-        .finally(() => {
-          // The `textDiv` properties are no longer needed.
-          this._textDivProperties = undefined;
-
-          if (this._layoutTextCtx) {
-            // Zeroing the width and height cause Firefox to release graphics
-            // resources immediately, which can greatly reduce memory consumption.
-            this._layoutTextCtx.canvas.width = 0;
-            this._layoutTextCtx.canvas.height = 0;
-            this._layoutTextCtx = null;
-          }
-        }).catch(() => {
+  cancel() {
+    this._canceled = true;
+    if (this._reader) {
+      this._reader
+        .cancel(new AbortException("TextLayer task cancelled."))
+        .catch(() => {
           // Avoid "Uncaught promise" messages in the console.
         });
+      this._reader = undefined;
     }
+    this._capability.reject(new AbortException("TextLayer task cancelled."));
+  }
 
-    /**
-     * Promise for textLayer rendering task completion.
-     */
-    get promise() {
-      return this._capability.promise;
-    }
-
-    /**
-     * Cancel rendering of the textLayer.
-     */
-    cancel() {
-      this._canceled = true;
-      if (this._reader) {
-        this._reader
-          .cancel(new AbortException("TextLayer task cancelled."))
-          .catch(() => {
-            // Avoid "Uncaught promise" messages in the console.
-          });
-        this._reader = undefined;
-      }
-      if (this.#renderTimer !== undefined) {
-        clearTimeout(this.#renderTimer);
-        this.#renderTimer = undefined;
-      }
-      this._capability.reject(new Error("TextLayer task cancelled."));
-    }
-
-    #processItems(
-      items: (TextItem | TextMarkedContent)[],
-      styleCache: Record<string, TextStyle>,
-    ) {
-      for (const item of items) {
-        if ((item as TextItem).str === undefined) {
-          if (
-            (item as TextMarkedContent).type === "beginMarkedContentProps" ||
-            (item as TextMarkedContent).type === "beginMarkedContent"
-          ) {
-            const parent = this._container;
-            this._container = html("span");
-            this._container.classList.add("markedContent");
-            if ((item as TextMarkedContent).id !== undefined) {
-              this._container.setAttribute(
-                "id",
-                `${(item as TextMarkedContent).id}`,
-              );
-            }
-            parent.append(this._container);
-          } else if (
-            (item as TextMarkedContent).type === "endMarkedContent"
-          ) {
-            this._container = <HTMLElement | DocumentFragment> this._container
-              .parentNode;
-          }
-          continue;
-        }
-        this._textContentItemsStr.push((item as TextItem).str);
-        appendText(this, item as TextItem, styleCache, this._layoutTextCtx!);
-      }
-    }
-
-    /**
-     * @private
-     */
-    _layoutText(textDiv: HTMLSpanElement) {
-      const textDivProperties = this._textDivProperties!.get(textDiv)!;
-
-      let transform = "";
-      if (textDivProperties.canvasWidth !== 0 && textDivProperties.hasText) {
-        const { fontFamily } = textDiv.style;
-        const { fontSize } = textDivProperties;
-
-        // Only build font string and set to context if different from last.
+  #processItems(
+    items: (TextItem | TextMarkedContent)[],
+    styleCache: Record<string, TextStyle>,
+  ) {
+    for (const item of items) {
+      if ((item as TextItem).str === undefined) {
         if (
-          fontSize !== this._layoutTextLastFontSize ||
-          fontFamily !== this._layoutTextLastFontFamily
+          (item as TextMarkedContent).type === "beginMarkedContentProps" ||
+          (item as TextMarkedContent).type === "beginMarkedContent"
         ) {
-          this._layoutTextCtx!.font = `${
-            fontSize * this._devicePixelRatio
-          }px ${fontFamily}`;
-          this._layoutTextLastFontSize = fontSize;
-          this._layoutTextLastFontFamily = fontFamily;
-        }
-        // Only measure the width for multi-char text divs, see `appendText`.
-        const { width } = this._layoutTextCtx!.measureText(
-          textDiv.textContent!,
-        );
-
-        if (width > 0) {
-          transform = `scaleX(${
-            (this._devicePixelRatio * textDivProperties.canvasWidth) / width
-          })`;
-        }
-      }
-      if (textDivProperties.angle !== 0) {
-        transform = `rotate(${textDivProperties.angle}deg) ${transform}`;
-      }
-      if (transform.length > 0) {
-        textDiv.style.transform = transform;
-      }
-
-      if (textDivProperties.hasText) {
-        this._container.append(textDiv);
-      }
-      if (textDivProperties.hasEOL) {
-        const br = html("br");
-        br.setAttribute("role", "presentation");
-        this._container.append(br);
-      }
-    }
-
-    /**
-     * @private
-     */
-    _render(timeout?: number) {
-      const capability = createPromiseCap();
-      let styleCache = Object.create(null);
-
-      // The temporary canvas is used to measure text length in the DOM.
-      const canvas = html("canvas", undefined, this._document);
-      canvas.height = canvas.width = DEFAULT_FONT_SIZE;
-
-      this._layoutTextCtx = canvas.getContext("2d", { alpha: false });
-
-      if (this._textContent) {
-        const textItems = this._textContent.items;
-        const textStyles = this._textContent.styles;
-        this.#processItems(textItems, textStyles);
-        capability.resolve();
-      } else if (this._textContentStream) {
-        const pump = () => {
-          this._reader!.read().then(({ value, done }) => {
-            if (done) {
-              capability.resolve();
-              return;
-            }
-
-            Object.assign(styleCache, value.styles);
-            this.#processItems(value.items, styleCache);
-            pump();
-          }, capability.reject);
-        };
-
-        this._reader = this._textContentStream.getReader();
-        pump();
-      } else {
-        throw new Error(
-          'Neither "textContent" nor "textContentStream" parameters specified.',
-        );
-      }
-
-      capability.promise.then(() => {
-        styleCache = null;
-        if (!timeout) {
-          // Render right away
-          render(this);
-        } else {
-          /*#static*/ if (!GENERIC) {
-            throw new Error("The `timeout` parameter was removed.");
+          const parent = this._container;
+          this._container = html("span");
+          this._container.classList.add("markedContent");
+          if ((item as TextMarkedContent).id !== undefined) {
+            this._container.setAttribute(
+              "id",
+              `${(item as TextMarkedContent).id}`,
+            );
           }
-          deprecated(
-            "The TextLayerRender `timeout` parameter will be removed in the " +
-              "future, since streaming of textContent has made it obsolete.",
-          );
-
-          // Schedule
-          this.#renderTimer = setTimeout(() => {
-            render(this);
-            this.#renderTimer = undefined;
-          }, timeout);
+          parent.append(this._container);
+        } else if (
+          (item as TextMarkedContent).type === "endMarkedContent"
+        ) {
+          this._container = this._container.parentNode as HTMLElement;
         }
-      }, this._capability.reject);
+        continue;
+      }
+      this._textContentItemsStr.push((item as TextItem).str);
+      appendText(this, item as TextItem, styleCache);
     }
   }
 
-  export function renderTextLayer(
-    renderParameters: _TextLayerRenderP,
-  ): TextLayerRenderTask {
-    const task = new TextLayerRenderTask({
-      textContent: renderParameters.textContent,
-      textContentStream: renderParameters.textContentStream,
-      container: renderParameters.container,
-      viewport: renderParameters.viewport,
-      textDivs: renderParameters.textDivs,
-      textContentItemsStr: renderParameters.textContentItemsStr,
-    });
-    task._render(renderParameters.timeout);
-    return task;
+  /**
+   * @private
+   */
+  _layoutText(textDiv: HTMLSpanElement) {
+    // deno-fmt-ignore
+    const textDivProperties 
+      = this._layoutTextParams.properties 
+      = this._textDivProperties.get(textDiv)!;
+    this._layoutTextParams.div = textDiv;
+    layout(this._layoutTextParams);
+
+    if (textDivProperties.hasText) {
+      this._container.append(textDiv);
+    }
+    if (textDivProperties.hasEOL) {
+      const br = html("br");
+      br.setAttribute("role", "presentation");
+      this._container.append(br);
+    }
+  }
+
+  /**
+   * @private
+   */
+  _render() {
+    const capability = createPromiseCap();
+    let styleCache = Object.create(null);
+
+    if (this._isReadableStream) {
+      const pump = () => {
+        this._reader!.read().then(({ value, done }) => {
+          if (done) {
+            capability.resolve();
+            return;
+          }
+
+          Object.assign(styleCache, value.styles);
+          this.#processItems(value.items, styleCache);
+          pump();
+        }, capability.reject);
+      };
+
+      this._reader = (this._textContentSource as ReadableStream<TextContent>)
+        .getReader();
+      pump();
+    } else if (this._textContentSource) {
+      const { items, styles } = this._textContentSource as TextContent;
+      this.#processItems(items, styles);
+      capability.resolve();
+    } else {
+      throw new Error('No "textContentSource" parameter specified.');
+    }
+
+    capability.promise.then(() => {
+      styleCache = null;
+      render(this);
+    }, this._capability.reject);
   }
 }
-export import TextLayerRenderTask = Ns_renderTextLayer.TextLayerRenderTask;
-export import renderTextLayer = Ns_renderTextLayer.renderTextLayer;
+
+export function renderTextLayer(
+  params: TextLayerRenderP_,
+): TextLayerRenderTask {
+  /*#static*/ if (GENERIC) {
+    if (
+      !params.textContentSource &&
+      ((params as any).textContent || (params as any).textContentStream)
+    ) {
+      deprecated(
+        "The TextLayerRender `textContent`/`textContentStream` parameters " +
+          "will be removed in the future, please use `textContentSource` instead.",
+      );
+      params.textContentSource = (params as any).textContent ||
+        (params as any).textContentStream;
+    }
+  }
+  const task = new TextLayerRenderTask(params);
+  task._render();
+  return task;
+}
+
+export function updateTextLayer({
+  container,
+  viewport,
+  textDivs,
+  textDivProperties,
+  isOffscreenCanvasSupported,
+  mustRotate = true,
+  mustRescale = true,
+}: TextLayerUpdateP_): void {
+  if (mustRotate) {
+    setLayerDimensions(container, { rotation: viewport.rotation });
+  }
+
+  if (mustRescale) {
+    const ctx = getCtx(0, isOffscreenCanvasSupported)!;
+    const scale = viewport.scale * (globalThis.devicePixelRatio || 1);
+    const params: LayoutTextP_ = {
+      scale,
+      ctx,
+    };
+    for (const div of textDivs!) {
+      params.properties = textDivProperties.get(div);
+      params.div = div;
+      layout(params);
+    }
+  }
+}
 /*80--------------------------------------------------------------------------*/

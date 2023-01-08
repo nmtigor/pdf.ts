@@ -1,12 +1,20 @@
-/*80****************************************************************************
- * alias
-** -------------------------------------------------------------------------- */
+/** 80**************************************************************************
+ * @module lib/alias
+ * @license Apache-2.0
+ ******************************************************************************/
+import { z } from "../3rd/zod/lib/index.mjs";
+export const zInt = z.number().int();
+export const zUint = zInt.min(0);
+const zInt64 = zInt;
+export const zId = zUint;
 // export const Loff_t = Int32;
 export const loff_UNDEFINED = -256;
 export const loff_MAX = 1_000_000_000;
 // export const Lnum_t = Int32;
 // export const lnum_UNDEFINED:lnum_t = -256n;
 export const lnum_MAX = 1_000_000_000;
+export const zTs = zInt64;
+export const zRatio = z.number().finite();
 export class DumRuhr {
     run() { }
 }

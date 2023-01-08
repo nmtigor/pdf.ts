@@ -182,7 +182,7 @@ function normalizeBlendMode(
     case "Overlay":
       return "overlay";
     case "Darken":
-      return "darken";
+      return "untone";
     case "Lighten":
       return "lighten";
     case "ColorDodge":
@@ -2298,7 +2298,7 @@ export class PartialEvaluator {
             operatorList.addOp(OPS.setCharSpacing, [
               (<unknown[]> args).shift()!,
             ]);
-            args![0] = self.handleText(<string> args![0], stateManager.state);
+            args![0] = self.handleText(args![0] as string, stateManager.state);
             fn = OPS.showText;
             break;
           case OPS.setTextRenderingMode:
@@ -2890,7 +2890,7 @@ export class PartialEvaluator {
         dir: bidiResult.dir,
         width: Math.abs(textChunk.totalWidth),
         height: Math.abs(textChunk.totalHeight),
-        transform: textChunk.transform,
+        transform: textChunk.transform!,
         fontName: textChunk.fontName,
         hasEOL: textChunk.hasEOL,
       };
@@ -3486,7 +3486,7 @@ export class PartialEvaluator {
               continue;
             }
             buildTextContentItem({
-              chars: <string> args[0],
+              chars: args[0] as string,
               extraSpacing: 0,
             });
             break;
@@ -3497,7 +3497,7 @@ export class PartialEvaluator {
             }
             textState.carriageReturn();
             buildTextContentItem({
-              chars: <string> args[0],
+              chars: args[0] as string,
               extraSpacing: 0,
             });
             break;
@@ -3510,7 +3510,7 @@ export class PartialEvaluator {
             textState.charSpacing = <number> args[1];
             textState.carriageReturn();
             buildTextContentItem({
-              chars: <string> args[2],
+              chars: args[2] as string,
               extraSpacing: 0,
             });
             break;
@@ -3793,12 +3793,12 @@ export class PartialEvaluator {
       if (cidSystemInfo instanceof Dict) {
         properties.cidSystemInfo = {
           registry: stringToPDFString(
-            <string> (<Dict> cidSystemInfo).get("Registry"),
+            (cidSystemInfo as Dict).get("Registry") as string,
           ),
           ordering: stringToPDFString(
-            <string> (<Dict> cidSystemInfo).get("Ordering"),
+            (cidSystemInfo as Dict).get("Ordering") as string,
           ),
-          supplement: <number> (<Dict> cidSystemInfo).get("Supplement"),
+          supplement: (cidSystemInfo as Dict).get("Supplement") as number,
         };
       }
 
@@ -4133,17 +4133,17 @@ export class PartialEvaluator {
             return;
           }
           const str = [];
-          for (let k = 0; k < (<string> token).length; k += 2) {
-            const w1 = ((<string> token).charCodeAt(k) << 8) |
-              (<string> token).charCodeAt(k + 1);
+          for (let k = 0; k < (token as string).length; k += 2) {
+            const w1 = ((token as string).charCodeAt(k) << 8) |
+              (token as string).charCodeAt(k + 1);
             if ((w1 & 0xf800) !== 0xd800) {
               // w1 < 0xD800 || w1 > 0xDFFF
               str.push(w1);
               continue;
             }
             k += 2;
-            const w2 = ((<string> token).charCodeAt(k) << 8) |
-              (<string> token).charCodeAt(k + 1);
+            const w2 = ((token as string).charCodeAt(k) << 8) |
+              (token as string).charCodeAt(k + 1);
             str.push(((w1 & 0x3ff) << 10) + (w2 & 0x3ff) + 0x10000);
           }
           map[charCode] = String.fromCodePoint(...str);

@@ -1,17 +1,11 @@
 import { AnnotationEditorType, AnnotationMode, type ExplicitDest, OptionalContentConfig, PDFDocumentProxy, PDFPageProxy } from "../pdf.ts-src/pdf.js";
-import { AnnotationEditorLayerBuilder } from "./annotation_editor_layer_builder.js";
-import { AnnotationLayerBuilder } from "./annotation_layer_builder.js";
 import { EventBus, EventMap } from "./event_utils.js";
-import { CreateAnnotationEditorLayerBuilderP, CreateAnnotationLayerBuilderP, CreateStructTreeLayerBuilderP, CreateTextLayerBuilderP, CreateXfaLayerBuilderP, IDownloadManager, type IL10n, IPDFAnnotationEditorLayerFactory, type IPDFAnnotationLayerFactory, type IPDFLinkService, type IPDFStructTreeLayerFactory, type IPDFTextLayerFactory, type IPDFXfaLayerFactory, type MouseState } from "./interfaces.js";
+import { IDownloadManager, type IL10n, type IPDFLinkService } from "./interfaces.js";
 import { PDFFindController } from "./pdf_find_controller.js";
 import { PDFPageView } from "./pdf_page_view.js";
 import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
 import { PDFScriptingManager } from "./pdf_scripting_manager.js";
-import { StructTreeLayerBuilder } from "./struct_tree_layer_builder.js";
-import { TextHighlighter } from "./text_highlighter.js";
-import { TextLayerBuilder } from "./text_layer_builder.js";
 import { PresentationModeState, RendererType, ScrollMode, SpreadMode, TextLayerMode, type VisibleElements } from "./ui_utils.js";
-import { XfaLayerBuilder } from "./xfa_layer_builder.js";
 export declare const enum PagesCountLimit {
     FORCE_SCROLL_MODE_PAGE = 15000,
     FORCE_LAZY_PAGE_INIT = 7500,
@@ -98,6 +92,10 @@ export interface PDFViewerOptions {
      */
     useOnlyCssZoom: boolean | undefined;
     /**
+     * Allows to use an OffscreenCanvas if needed.
+     */
+    isOffscreenCanvasSupported?: boolean;
+    /**
      * The maximum supported canvas size in
      * total pixels, i.e. width * height. Use -1 for no limit. The default value
      * is 4096 * 4096 (16 mega-pixels).
@@ -168,14 +166,15 @@ export interface PageOverview {
     height: number;
     rotation: number;
 }
-interface _CreateTextHighlighterP {
-    pageIndex: number;
-    eventBus: EventBus;
-}
+type SetScaleOptions_ = {
+    noScroll?: boolean;
+    preset?: boolean;
+    drawingDelay?: number;
+};
 /**
  * Simple viewer control to display PDF content/pages.
  */
-export declare class PDFViewer implements IPDFAnnotationLayerFactory, IPDFAnnotationEditorLayerFactory, IPDFStructTreeLayerFactory, IPDFTextLayerFactory, IPDFXfaLayerFactory {
+export declare class PDFViewer {
     #private;
     container: HTMLDivElement;
     viewer: HTMLDivElement;
@@ -183,7 +182,7 @@ export declare class PDFViewer implements IPDFAnnotationLayerFactory, IPDFAnnota
     linkService: IPDFLinkService;
     downloadManager: IDownloadManager | undefined;
     findController: PDFFindController | undefined;
-    _scriptingManager: PDFScriptingManager | null;
+    _scriptingManager: PDFScriptingManager | undefined;
     get enableScripting(): boolean;
     removePageBorders: boolean;
     textLayerMode: TextLayerMode;
@@ -192,22 +191,20 @@ export declare class PDFViewer implements IPDFAnnotationLayerFactory, IPDFAnnota
     enablePrintAutoRotate: boolean;
     renderer: RendererType | undefined;
     useOnlyCssZoom: boolean;
+    isOffscreenCanvasSupported: boolean;
     maxCanvasPixels: number | undefined;
     l10n: IL10n;
     pageColors: PageColors | undefined;
-    _mouseState?: MouseState;
     defaultRenderingQueue: boolean;
     renderingQueue?: PDFRenderingQueue | undefined;
     scroll: {
         right: boolean;
-        down: boolean; /**
-         * The scripting manager component.
-         */
+        down: boolean;
         lastX: number;
-        lastY: number;
-        _eventHandler: (evt: unknown) => void; /**
-         * The rendering queue object.
+        lastY: number; /**
+         * 'canvas' or 'svg'. The default is 'canvas'.
          */
+        _eventHandler: (evt: unknown) => void;
     };
     presentationModeState: PresentationModeState;
     _onBeforeDraw: ((evt: EventMap["pagerender"]) => void) | undefined;
@@ -285,8 +282,9 @@ export declare class PDFViewer implements IPDFAnnotationLayerFactory, IPDFAnnota
     setPageLabels(labels: string[] | null): void;
     protected _resetView(): void;
     _scrollUpdate(): void;
+    _setScaleUpdatePages(newScale: number, newValue: number | string, { noScroll, preset, drawingDelay }: SetScaleOptions_): void;
     protected get _pageWidthScaleFactor(): 1 | 2;
-    _setScale(value: string | number, noScroll?: boolean): void;
+    _setScale(value: string | number, options: SetScaleOptions_): void;
     /**
      * @param label The page label.
      * @return The page number corresponding to the page label,
@@ -313,17 +311,6 @@ export declare class PDFViewer implements IPDFAnnotationLayerFactory, IPDFAnnota
     cleanup(): void;
     protected _cancelRendering(): void;
     forceRendering(currentlyVisiblePages?: VisibleElements): boolean;
-    /** @implement */
-    createTextLayerBuilder({ textLayerDiv, pageIndex, viewport, eventBus, highlighter, accessibilityManager, }: CreateTextLayerBuilderP): TextLayerBuilder;
-    createTextHighlighter({ pageIndex, eventBus }: _CreateTextHighlighterP): TextHighlighter;
-    /** @implement */
-    createAnnotationLayerBuilder({ pageDiv, pdfPage, annotationStorage, imageResourcesPath, renderForms, l10n, enableScripting, hasJSActionsPromise, mouseState, fieldObjectsPromise, annotationCanvasMap, accessibilityManager, }: CreateAnnotationLayerBuilderP): AnnotationLayerBuilder;
-    /** @implement */
-    createAnnotationEditorLayerBuilder({ uiManager, pageDiv, pdfPage, l10n, annotationStorage, accessibilityManager, }: CreateAnnotationEditorLayerBuilderP): AnnotationEditorLayerBuilder;
-    /** @implement */
-    createXfaLayerBuilder({ pageDiv, pdfPage, annotationStorage, }: CreateXfaLayerBuilderP): XfaLayerBuilder;
-    /** @implement */
-    createStructTreeLayerBuilder({ pdfPage }: CreateStructTreeLayerBuilderP): StructTreeLayerBuilder;
     /**
      * @return Whether all pages of the PDF document have identical
      *   widths and heights.
@@ -372,20 +359,20 @@ export declare class PDFViewer implements IPDFAnnotationLayerFactory, IPDFAnnota
      * Increase the current zoom level one, or more, times.
      * @param steps Defaults to zooming once.
      */
-    increaseScale(steps?: number): void;
+    increaseScale(steps?: number, options?: SetScaleOptions_ | undefined): void;
     /**
      * Decrease the current zoom level one, or more, times.
      * @param steps Defaults to zooming once.
      */
-    decreaseScale(steps?: number): void;
-    updateContainerHeightCss(): void;
+    decreaseScale(steps?: number, options?: SetScaleOptions_ | undefined): void;
+    get containerTopLeft(): [number, number];
     get annotationEditorMode(): AnnotationEditorType;
     /**
      * @param AnnotationEditor mode (None, FreeText, Ink, ...)
      */
     set annotationEditorMode(mode: AnnotationEditorType);
     set annotationEditorParams({ type, value }: EventMap["switchannotationeditorparams"]);
-    refresh(): void;
+    refresh(noUpdate?: boolean, updateArgs?: any): void;
 }
 export {};
 //# sourceMappingURL=pdf_viewer.d.ts.map

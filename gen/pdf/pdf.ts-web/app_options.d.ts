@@ -48,6 +48,10 @@ declare const defaultOptions: {
         value: string | undefined;
         kind: OptionKind;
     };
+    defaultZoomDelay: {
+        value: number;
+        kind: number;
+    };
     defaultZoomValue: {
         value: string;
         kind: number;
@@ -239,6 +243,7 @@ export declare abstract class AppOptions {
     static get annotationMode(): AnnotationMode;
     static get cursorToolOnLoad(): CursorTool;
     static get defaultUrl(): string | undefined;
+    static get defaultZoomDelay(): number;
     static get defaultZoomValue(): string;
     static get disableHistory(): boolean;
     static get disablePageLabels(): boolean;

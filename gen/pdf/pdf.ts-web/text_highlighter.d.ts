@@ -48,7 +48,7 @@ export declare class TextHighlighter {
     enable(): void;
     disable(): void;
     _renderMatches(matches: Match[]): void;
-    _updateMatches(): void;
+    _updateMatches(reset?: boolean): void;
 }
 export {};
 //# sourceMappingURL=text_highlighter.d.ts.map

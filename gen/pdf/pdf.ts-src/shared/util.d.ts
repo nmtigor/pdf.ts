@@ -412,6 +412,10 @@ export declare class FeatureTest {
     static get isLittleEndian(): boolean;
     static get isEvalSupported(): boolean;
     static get isOffscreenCanvasSupported(): boolean;
+    static get platform(): {
+        isWin: boolean;
+        isMac: boolean;
+    };
 }
 export type point_t = [number, number];
 export type point3d_t = [number, number, number];

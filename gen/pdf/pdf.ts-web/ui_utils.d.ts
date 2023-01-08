@@ -258,7 +258,7 @@ export declare class ProgressBar {
     get percent(): number;
     set percent(val: number);
     _indeterminate?: boolean;
-    constructor(id: string);
+    constructor(bar: HTMLElement);
     setWidth(viewer?: HTMLDivElement): void;
     hide(): void;
     show(): void;
@@ -274,9 +274,6 @@ export declare class ProgressBar {
 export declare function getActiveOrFocusedElement(): Element | null;
 /**
  * Converts API PageLayout values to the format used by `BaseViewer`.
- * NOTE: This is supported to the extent that the viewer implements the
- *       necessary Scroll/Spread modes (since SinglePage, TwoPageLeft,
- *       and TwoPageRight all suggests using non-continuous scrolling).
  * @param mode The API PageLayout value.
  * @return A value from {SpreadMode}.
  */

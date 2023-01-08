@@ -21,8 +21,8 @@ import {
   assert,
   assertEquals,
   assertThrows,
-} from "https://deno.land/std@0.160.0/testing/asserts.ts";
-import { describe, it } from "https://deno.land/std@0.160.0/testing/bdd.ts";
+} from "https://deno.land/std@0.165.0/testing/asserts.ts";
+import { describe, it } from "https://deno.land/std@0.165.0/testing/bdd.ts";
 import { Lexer, TOKEN, Token } from "./formcalc_lexer.ts";
 import { Errors, Parser } from "./formcalc_parser.ts";
 /*80--------------------------------------------------------------------------*/
@@ -132,7 +132,10 @@ describe("FormCalc expression parser", () => {
       assertEquals(lexer.next(), new Token(TOKEN.identifier, "hello"));
       assertEquals(lexer.next(), new Token(TOKEN.identifier, "こんにちは世界"));
       assertEquals(lexer.next(), new Token(TOKEN.identifier, "$"));
-      assertEquals(lexer.next(), new Token(TOKEN.identifier, "!hello今日は12今日は"));
+      assertEquals(
+        lexer.next(),
+        new Token(TOKEN.identifier, "!hello今日は12今日は"),
+      );
       assertEquals(lexer.next(), EOF);
     });
   });

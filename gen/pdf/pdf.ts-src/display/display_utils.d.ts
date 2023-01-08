@@ -41,7 +41,7 @@ export declare class DOMSVGFactory extends BaseSVGFactory {
      * @ignore
      * @implement
      */
-    _createSVG(type: keyof SVGElementTagNameMap): SVGSymbolElement | SVGClipPathElement | SVGFilterElement | SVGMarkerElement | SVGMaskElement | SVGAElement | SVGScriptElement | SVGStyleElement | SVGTitleElement | SVGAnimateElement | SVGAnimateMotionElement | SVGAnimateTransformElement | SVGCircleElement | SVGDefsElement | SVGDescElement | SVGEllipseElement | SVGFEBlendElement | SVGFEColorMatrixElement | SVGFEComponentTransferElement | SVGFECompositeElement | SVGFEConvolveMatrixElement | SVGFEDiffuseLightingElement | SVGFEDisplacementMapElement | SVGFEDistantLightElement | SVGFEDropShadowElement | SVGFEFloodElement | SVGFEFuncAElement | SVGFEFuncBElement | SVGFEFuncGElement | SVGFEFuncRElement | SVGFEGaussianBlurElement | SVGFEImageElement | SVGFEMergeElement | SVGFEMergeNodeElement | SVGFEMorphologyElement | SVGFEOffsetElement | SVGFEPointLightElement | SVGFESpecularLightingElement | SVGFESpotLightElement | SVGFETileElement | SVGFETurbulenceElement | SVGForeignObjectElement | SVGGElement | SVGImageElement | SVGLineElement | SVGLinearGradientElement | SVGMetadataElement | SVGMPathElement | SVGPathElement | SVGPatternElement | SVGPolygonElement | SVGPolylineElement | SVGRadialGradientElement | SVGRectElement | SVGSetElement | SVGStopElement | SVGSVGElement | SVGSwitchElement | SVGTextElement | SVGTextPathElement | SVGTSpanElement | SVGUseElement | SVGViewElement;
+    _createSVG(type: keyof SVGElementTagNameMap): SVGSymbolElement | SVGSetElement | SVGClipPathElement | SVGFilterElement | SVGMarkerElement | SVGMaskElement | SVGAElement | SVGScriptElement | SVGStyleElement | SVGTitleElement | SVGAnimateElement | SVGAnimateMotionElement | SVGAnimateTransformElement | SVGCircleElement | SVGDefsElement | SVGDescElement | SVGEllipseElement | SVGFEBlendElement | SVGFEColorMatrixElement | SVGFEComponentTransferElement | SVGFECompositeElement | SVGFEConvolveMatrixElement | SVGFEDiffuseLightingElement | SVGFEDisplacementMapElement | SVGFEDistantLightElement | SVGFEDropShadowElement | SVGFEFloodElement | SVGFEFuncAElement | SVGFEFuncBElement | SVGFEFuncGElement | SVGFEFuncRElement | SVGFEGaussianBlurElement | SVGFEImageElement | SVGFEMergeElement | SVGFEMergeNodeElement | SVGFEMorphologyElement | SVGFEOffsetElement | SVGFEPointLightElement | SVGFESpecularLightingElement | SVGFESpotLightElement | SVGFETileElement | SVGFETurbulenceElement | SVGForeignObjectElement | SVGGElement | SVGImageElement | SVGLineElement | SVGLinearGradientElement | SVGMetadataElement | SVGMPathElement | SVGPathElement | SVGPatternElement | SVGPolygonElement | SVGPolylineElement | SVGRadialGradientElement | SVGRectElement | SVGStopElement | SVGSVGElement | SVGSwitchElement | SVGTextElement | SVGTextPathElement | SVGTSpanElement | SVGUseElement | SVGViewElement;
 }
 interface _PageViewportP {
     /**
@@ -122,6 +122,16 @@ export declare class PageViewport {
     height: number;
     constructor({ viewBox, scale, rotation, offsetX, offsetY, dontFlip, }: _PageViewportP);
     /**
+     * The original, un-scaled, viewport dimensions.
+     * @type {Object}
+     */
+    get rawDims(): {
+        pageWidth: number;
+        pageHeight: number;
+        pageX: number;
+        pageY: number;
+    };
+    /**
      * Clones viewport, with optional additional properties.
      * @return Cloned viewport.
      */
@@ -158,7 +168,8 @@ export declare class PageViewport {
 }
 export declare class RenderingCancelledException extends BaseException {
     type: string;
-    constructor(msg: string, type: string);
+    extraDelay: number;
+    constructor(msg: string, type: string, extraDelay?: number);
 }
 export declare function isDataScheme(url: string): boolean;
 export declare function isPdfFile(filename: unknown): boolean;
@@ -216,5 +227,8 @@ export declare function getRGB(color: string): RGB;
 export declare function getColorValues(colors: Map<string, RGB | undefined>): void;
 export declare function getCurrentTransform(ctx: CanvasRenderingContext2D): matrix_t;
 export declare function getCurrentTransformInverse(ctx: CanvasRenderingContext2D): matrix_t;
+export declare function setLayerDimensions(div: HTMLElement, viewport: PageViewport | {
+    rotation: number;
+}, mustFlip?: boolean, mustRotate?: boolean): void;
 export {};
 //# sourceMappingURL=display_utils.d.ts.map

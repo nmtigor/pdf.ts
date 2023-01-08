@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { _PDFDEV, DENO, SKIP_BABEL } from "../../../global.js";
+import { _PDFDEV, DENO, GENERIC, SKIP_BABEL } from "../../../global.js";
 import { isObjectLike } from "../../../lib/jslang.js";
 import { assert, warn as warn_0 } from "../../../lib/util/trace.js";
 /*80--------------------------------------------------------------------------*/
@@ -550,7 +550,7 @@ export class AbortException extends BaseException {
     }
 }
 export function bytesToString(bytes) {
-    assert(isObjectLike(bytes) && bytes.length !== undefined, "Invalid argument for bytesToString", import.meta);
+    assert(isObjectLike(bytes) && bytes.length !== undefined, "Invalid argument for bytesToString");
     const length = bytes.length;
     const MAX_ARGUMENT_COUNT = 8192;
     if (length < MAX_ARGUMENT_COUNT) {
@@ -661,7 +661,18 @@ export class FeatureTest {
         return shadow(this, "isEvalSupported", isEvalSupported());
     }
     static get isOffscreenCanvasSupported() {
-        return shadow(this, "isOffscreenCanvasSupported", typeof globalThis.OffscreenCanvas !== "undefined");
+        return shadow(this, "isOffscreenCanvasSupported", !!globalThis.OffscreenCanvas);
+    }
+    static get platform() {
+        /*#static*/  {
+            if (!globalThis.navigator?.platform) {
+                return shadow(this, "platform", { isWin: false, isMac: false });
+            }
+        }
+        return shadow(this, "platform", {
+            isWin: navigator.platform.includes("Win"),
+            isMac: navigator.platform.includes("Mac"),
+        });
     }
 }
 const hexNumbers = [...Array(256).keys()].map((n) => n.toString(16).padStart(2, "0"));

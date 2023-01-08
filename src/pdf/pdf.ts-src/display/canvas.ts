@@ -2107,7 +2107,6 @@ export class CanvasGraphics {
     this.ctx.closePath();
   }
   [OPS.stroke](consumePath = true) {
-    // consumePath = typeof consumePath !== "undefined" ? consumePath : true;
     const ctx = this.ctx;
     const strokeColor = <ShadingPattern | TilingPattern> this.current
       .strokeColor;
@@ -2139,8 +2138,7 @@ export class CanvasGraphics {
     this[OPS.closePath]();
     this[OPS.stroke]();
   }
-  [OPS.fill](consumePath?: boolean) {
-    consumePath = typeof consumePath !== "undefined" ? consumePath : true;
+  [OPS.fill](consumePath = true) {
     const ctx = this.ctx;
     const fillColor = this.current.fillColor;
     const isPatternFill = this.current.patternFill;

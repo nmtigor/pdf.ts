@@ -67,7 +67,6 @@ const COMMAND_MAP = {
  * highest order bits, the second byte contains the next higher order bits
  * and the fourth byte contain the lowest order bits.
  *
- *
  * CharString Command Encoding:
  *  CharStrings commands are encoded in 1 or 2 bytes.
  *

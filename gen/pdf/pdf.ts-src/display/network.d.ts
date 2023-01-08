@@ -72,7 +72,7 @@ declare class PDFNetworkStreamFullRequestReader implements IPDFStreamReader {
     /** @implement */
     cancel(reason: object): void;
 }
-declare class PDFNetworkStreamRangeRequestReader implements IPDFStreamRangeReader {
+export declare class PDFNetworkStreamRangeRequestReader implements IPDFStreamRangeReader {
     #private;
     _url: string | URL;
     _storedError: MissingPDFException | UnexpectedResponseException | undefined;

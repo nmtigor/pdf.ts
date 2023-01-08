@@ -16,6 +16,8 @@
  * limitations under the License.
  */
 // eslint-disable-next-line max-len
+/** @typedef {import("./display/api").OnProgressParameters} OnProgressParameters */
+// eslint-disable-next-line max-len
 /** @typedef {import("./display/api").PDFDocumentLoadingTask} PDFDocumentLoadingTask */
 /** @typedef {import("./display/api").PDFDocumentProxy} PDFDocumentProxy */
 /** @typedef {import("./display/api").PDFPageProxy} PDFPageProxy */
@@ -29,18 +31,18 @@ import { WorkerMessageHandler } from "./core/worker.js";
 import { AnnotationElement, AnnotationLayer, FileAttachmentAnnotationElement, } from "./display/annotation_layer.js";
 import { AnnotationStorage, PrintAnnotationStorage, } from "./display/annotation_storage.js";
 import { build, getDocument, PDFDataRangeTransport, PDFDocumentLoadingTask, PDFDocumentProxy, PDFPageProxy, PDFWorker, RenderTask, setPDFNetworkStreamFactory, version, } from "./display/api.js";
-import { getFilenameFromUrl, getPdfFilenameFromUrl, getXfaPageViewport, isPdfFile, isValidFetchUrl, loadScript, PageViewport, PDFDateString, PixelsPerInch, RenderingCancelledException, StatTimer, } from "./display/display_utils.js";
+import { getFilenameFromUrl, getPdfFilenameFromUrl, getXfaPageViewport, isDataScheme, isPdfFile, isValidFetchUrl, loadScript, PageViewport, PDFDateString, PixelsPerInch, RenderingCancelledException, setLayerDimensions, StatTimer, } from "./display/display_utils.js";
 import { AnnotationEditorLayer } from "./display/editor/annotation_editor_layer.js";
 import { AnnotationEditorUIManager, } from "./display/editor/tools.js";
 import { FontFaceObject } from "./display/font_loader.js";
 import { Metadata } from "./display/metadata.js";
 import { OptionalContentConfig } from "./display/optional_content_config.js";
 import { SVGGraphics } from "./display/svg.js";
-import { renderTextLayer, TextLayerRenderTask } from "./display/text_layer.js";
+import { renderTextLayer, TextLayerRenderTask, updateTextLayer, } from "./display/text_layer.js";
 import { GlobalWorkerOptions } from "./display/worker_options.js";
 import { XfaLayer } from "./display/xfa_layer.js";
 import { QuickJSSandbox } from "./pdf.sandbox.js";
-import { AnnotationEditorParamsType, AnnotationEditorType, AnnotationMode, CMapCompressionType, createValidAbsoluteUrl, InvalidPDFException, MissingPDFException, OPS, PasswordResponses, PermissionFlag, shadow, UnexpectedResponseException, UNSUPPORTED_FEATURES, Util, VerbosityLevel, } from "./shared/util.js";
+import { AbortException, AnnotationEditorParamsType, AnnotationEditorType, AnnotationMode, CMapCompressionType, createValidAbsoluteUrl, InvalidPDFException, MissingPDFException, OPS, PasswordResponses, PermissionFlag, shadow, UnexpectedResponseException, UNSUPPORTED_FEATURES, Util, VerbosityLevel, } from "./shared/util.js";
 /*80--------------------------------------------------------------------------*/
 // /* eslint-disable-next-line no-unused-vars */
 // const pdfjsVersion =
@@ -62,5 +64,5 @@ import { AnnotationEditorParamsType, AnnotationEditorType, AnnotationMode, CMapC
     });
 }
 /*80--------------------------------------------------------------------------*/
-export { AnnotationEditorLayer, AnnotationEditorParamsType, AnnotationEditorType, AnnotationEditorUIManager, AnnotationElement, AnnotationLayer, AnnotationMode, AnnotationStorage, build, CMapCompressionType, createValidAbsoluteUrl, FileAttachmentAnnotationElement, FontFaceObject, getDocument, getFilenameFromUrl, getPdfFilenameFromUrl, getXfaPageViewport, GlobalWorkerOptions, InvalidPDFException, isPdfFile, loadScript, Metadata, MissingPDFException, OPS, OptionalContentConfig, PageViewport, PasswordResponses, PDFDataRangeTransport, PDFDateString, PDFDocumentLoadingTask, PDFDocumentProxy, PDFPageProxy, PDFWorker, PermissionFlag, PixelsPerInch, PrintAnnotationStorage, QuickJSSandbox, Ref, RenderingCancelledException, RenderTask, renderTextLayer, shadow, StatTimer, SVGGraphics, TextLayerRenderTask, UnexpectedResponseException, UNSUPPORTED_FEATURES, Util, VerbosityLevel, version, WorkerMessageHandler, XfaLayer, };
+export { AbortException, AnnotationEditorLayer, AnnotationEditorParamsType, AnnotationEditorType, AnnotationEditorUIManager, AnnotationElement, AnnotationLayer, AnnotationMode, AnnotationStorage, build, CMapCompressionType, createValidAbsoluteUrl, FileAttachmentAnnotationElement, FontFaceObject, getDocument, getFilenameFromUrl, getPdfFilenameFromUrl, getXfaPageViewport, GlobalWorkerOptions, InvalidPDFException, isDataScheme, isPdfFile, loadScript, Metadata, MissingPDFException, OPS, OptionalContentConfig, PageViewport, PasswordResponses, PDFDataRangeTransport, PDFDateString, PDFDocumentLoadingTask, PDFDocumentProxy, PDFPageProxy, PDFWorker, PermissionFlag, PixelsPerInch, PrintAnnotationStorage, QuickJSSandbox, Ref, RenderingCancelledException, RenderTask, renderTextLayer, setLayerDimensions, shadow, StatTimer, SVGGraphics, TextLayerRenderTask, UnexpectedResponseException, UNSUPPORTED_FEATURES, updateTextLayer, Util, VerbosityLevel, version, WorkerMessageHandler, XfaLayer, };
 //# sourceMappingURL=pdf.js.map

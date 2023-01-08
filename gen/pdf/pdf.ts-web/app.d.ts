@@ -1,6 +1,6 @@
 import "../../lib/jslang.js";
 import { Locale } from "../../lib/Locale.js";
-import { type DocumentInfo, Metadata, OptionalContentConfig, PDFDataRangeTransport, PDFDocumentLoadingTask, PDFDocumentProxy, type PDFDocumentStats, PrintAnnotationStorage, UNSUPPORTED_FEATURES, WorkerMessageHandler } from "../pdf.ts-src/pdf.js";
+import { type DocumentInfo, Metadata, OptionalContentConfig, PDFDataRangeTransport, PDFDocumentLoadingTask, PDFDocumentProxy, type PDFDocumentStats, PrintAnnotationStorage, WorkerMessageHandler } from "../pdf.ts-src/pdf.js";
 import { AnnotationEditorParams } from "./annotation_editor_params.js";
 import { PDFBug } from "./debugger.js";
 import { EventBus, EventMap } from "./event_utils.js";
@@ -50,17 +50,12 @@ export interface TelemetryData {
         type?: "save" | "freetext" | "ink" | "print";
         id?: string;
     };
-    featureId?: UNSUPPORTED_FEATURES | undefined;
     formType?: string;
     generator?: string;
     stats?: PDFDocumentStats | undefined;
     tagged?: boolean;
     timestamp?: number;
     version?: string;
-}
-export interface FallbackParams {
-    featureId: UNSUPPORTED_FEATURES | undefined;
-    url: string;
 }
 export declare class DefaultExternalServices {
     updateFindControlState(data: FindControlState): void;
@@ -130,19 +125,19 @@ export declare class PDFViewerApplication {
     findController: PDFFindController;
     pdfScriptingManager: PDFScriptingManager;
     pdfViewer: PDFViewer;
-    pdfThumbnailViewer: PDFThumbnailViewer;
+    pdfThumbnailViewer?: PDFThumbnailViewer;
     pdfHistory: PDFHistory;
     findBar?: PDFFindBar;
-    pdfDocumentProperties: PDFDocumentProperties;
+    pdfDocumentProperties?: PDFDocumentProperties;
     pdfCursorTools: PDFCursorTools;
-    toolbar: Toolbar;
+    toolbar?: Toolbar;
     secondaryToolbar: SecondaryToolbar;
     pdfPresentationMode?: PDFPresentationMode;
     passwordPrompt: PasswordPrompt;
     pdfOutlineViewer: PDFOutlineViewer;
     pdfAttachmentViewer: PDFAttachmentViewer;
-    pdfLayerViewer: PDFLayerViewer;
-    pdfSidebar: PDFSidebar;
+    pdfLayerViewer?: PDFLayerViewer;
+    pdfSidebar?: PDFSidebar;
     pdfSidebarResizer: PDFSidebarResizer;
     preferences: BasePreferences;
     l10n: IL10n;
@@ -159,7 +154,6 @@ export declare class PDFViewerApplication {
     metadata: Metadata | undefined;
     _contentLength: number | undefined;
     _saveInProgress: boolean;
-    _docStats: PDFDocumentStats | undefined;
     _wheelUnusedTicks: number;
     _PDFBug?: typeof PDFBug;
     _hasAnnotationEditors: boolean;
@@ -185,7 +179,7 @@ export declare class PDFViewerApplication {
     get supportsFullscreen(): boolean;
     get supportsIntegratedFind(): boolean;
     get supportsDocumentFonts(): boolean;
-    get loadingBar(): ProgressBar;
+    get loadingBar(): ProgressBar | null;
     get supportedMouseWheelZoomModifierKeys(): {
         ctrlKey: boolean;
         metaKey: boolean;
@@ -215,7 +209,6 @@ export declare class PDFViewerApplication {
     download(): Promise<void>;
     save(): Promise<void>;
     downloadOrSave(): void;
-    fallback: (featureId?: UNSUPPORTED_FEATURES) => void;
     /**
      * Report the error; used for errors affecting loading and/or parsing of
      * the entire PDF document.
@@ -245,10 +238,6 @@ export declare class PDFViewerApplication {
     unbindEvents(): void;
     unbindWindowEvents(): void;
     accumulateWheelTicks(ticks: number): number;
-    /**
-     * @ignore
-     */
-    _reportDocumentStatsTelemetry(): void;
     /**
      * Used together with the integration-tests, to enable awaiting full
      * initialization of the scripting/sandbox.

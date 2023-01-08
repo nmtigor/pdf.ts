@@ -176,8 +176,12 @@ function normalize(text: string): [string, [number, number][], boolean] {
       "\u3244-\u32bf" + // Circled ideograms/numbers.
       "\u32d0-\u32fe" + // Circled ideograms.
       "\uff00-\uffef"; // Halfwidth, fullwidth forms.
+
+    // 3040-309F: Hiragana
+    // 30A0-30FF: Katakana
+    const CJK = "(?:\\p{Ideographic}|[\u3040-\u30FF])";
     const regexp =
-      `([${replace}])|([${toNormalizeWithNFKC}])|(\\p{M}+(?:-\\n)?)|(\\S-\\n)|(\\p{Ideographic}\\n)|(\\n)`;
+      `([${replace}])|([${toNormalizeWithNFKC}])|(\\p{M}+(?:-\\n)?)|(\\S-\\n)|(${CJK}\\n)|(\\n)`;
 
     if (syllablePositions.length === 0) {
       // Most of the syllables belong to Hangul so there are no need

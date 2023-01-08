@@ -102,7 +102,7 @@ function normalizeBlendMode(value, parsingArray = false) {
         case "Overlay":
             return "overlay";
         case "Darken":
-            return "darken";
+            return "untone";
         case "Lighten":
             return "lighten";
         case "ColorDodge":

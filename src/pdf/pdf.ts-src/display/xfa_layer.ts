@@ -167,7 +167,7 @@ export abstract class XfaLayer {
           html.setAttribute("data-element-id", value);
           break;
         case "style":
-          Object.assign((<HTMLElement> html).style, value);
+          Object.assign((html as HTMLElement).style, value);
           break;
         case "textContent":
           html.textContent = value;

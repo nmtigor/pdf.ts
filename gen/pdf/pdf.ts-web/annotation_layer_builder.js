@@ -1,29 +1,6 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
-/* Copyright 2014 Mozilla Foundation
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-/** @typedef {import("../src/display/api").PDFPageProxy} PDFPageProxy */
-// eslint-disable-next-line max-len
-/** @typedef {import("../src/display/display_utils").PageViewport} PageViewport */
-/** @typedef {import("./interfaces").IDownloadManager} IDownloadManager */
-/** @typedef {import("./interfaces").IL10n} IL10n */
-/** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
-// eslint-disable-next-line max-len
-/** @typedef {import("./textaccessibility.js").TextAccessibilityManager} TextAccessibilityManager */
-import { html } from "../../lib/dom.js";
 import { AnnotationLayer, } from "../pdf.ts-src/pdf.js";
 import { NullL10n } from "./l10n_utils.js";
 import { PresentationModeState } from "./ui_utils.js";
@@ -39,14 +16,14 @@ export class AnnotationLayerBuilder {
     enableScripting;
     _hasJSActionsPromise;
     _fieldObjectsPromise;
-    _mouseState;
     _annotationCanvasMap;
     _accessibilityManager;
     div;
     _cancelled = false;
     _eventBus;
+    #numAnnotations = 0;
     #onPresentationModeChanged;
-    constructor({ pageDiv, pdfPage, linkService, downloadManager, annotationStorage, imageResourcesPath = "", renderForms = true, l10n = NullL10n, enableScripting = false, hasJSActionsPromise, fieldObjectsPromise, mouseState, annotationCanvasMap, accessibilityManager, }) {
+    constructor({ pageDiv, pdfPage, linkService, downloadManager, annotationStorage, imageResourcesPath = "", renderForms = true, l10n = NullL10n, enableScripting = false, hasJSActionsPromise, fieldObjectsPromise, annotationCanvasMap, accessibilityManager, }) {
         this.pageDiv = pageDiv;
         this.pdfPage = pdfPage;
         this.linkService = linkService;
@@ -56,9 +33,9 @@ export class AnnotationLayerBuilder {
         this.l10n = l10n;
         this.annotationStorage = annotationStorage;
         this.enableScripting = enableScripting;
-        this._hasJSActionsPromise = hasJSActionsPromise;
-        this._fieldObjectsPromise = fieldObjectsPromise;
-        this._mouseState = mouseState;
+        this._hasJSActionsPromise = hasJSActionsPromise || Promise.resolve(false);
+        this._fieldObjectsPromise = fieldObjectsPromise ||
+            Promise.resolve(undefined);
         this._annotationCanvasMap = annotationCanvasMap;
         this._accessibilityManager = accessibilityManager;
         this._eventBus = linkService.eventBus;
@@ -70,15 +47,38 @@ export class AnnotationLayerBuilder {
      *   annotations is complete.
      */
     async render(viewport, intent = "display") {
-        const [annotations, hasJSActions = false, fieldObjects] = await Promise.all([
+        if (this.div) {
+            if (this._cancelled || this.#numAnnotations === 0) {
+                return;
+            }
+            // If an annotationLayer already exists, refresh its children's
+            // transformation matrices.
+            AnnotationLayer.update({
+                viewport: viewport.clone({ dontFlip: true }),
+                div: this.div,
+                annotationCanvasMap: this._annotationCanvasMap,
+            });
+            return;
+        }
+        const [annotations, hasJSActions, fieldObjects] = await Promise.all([
             this.pdfPage.getAnnotations({ intent }),
             this._hasJSActionsPromise,
             this._fieldObjectsPromise,
         ]);
-        if (this._cancelled || annotations.length === 0) {
+        if (this._cancelled) {
             return;
         }
-        const parameters = {
+        this.#numAnnotations = annotations.length;
+        // Create an annotation layer div and render the annotations
+        // if there is at least one annotation.
+        this.div = document.createElement("div");
+        this.div.className = "annotationLayer";
+        this.pageDiv.append(this.div);
+        if (this.#numAnnotations === 0) {
+            this.hide();
+            return;
+        }
+        AnnotationLayer.render({
             viewport: viewport.clone({ dontFlip: true }),
             div: this.div,
             annotations,
@@ -91,35 +91,20 @@ export class AnnotationLayerBuilder {
             enableScripting: this.enableScripting,
             hasJSActions,
             fieldObjects,
-            mouseState: this._mouseState,
             annotationCanvasMap: this._annotationCanvasMap,
             accessibilityManager: this._accessibilityManager,
-        };
-        if (this.div) {
-            // If an annotationLayer already exists, refresh its children's
-            // transformation matrices.
-            AnnotationLayer.update(parameters);
+        });
+        this.l10n.translate(this.div);
+        // Ensure that interactive form elements in the annotationLayer are
+        // disabled while PresentationMode is active (see issue 12232).
+        if (this.linkService.isInPresentationMode) {
+            this.#updatePresentationModeState(PresentationModeState.FULLSCREEN);
         }
-        else {
-            // Create an annotation layer div and render the annotations
-            // if there is at least one annotation.
-            this.div = html("div");
-            this.div.className = "annotationLayer";
-            this.pageDiv.append(this.div);
-            parameters.div = this.div;
-            AnnotationLayer.render(parameters);
-            this.l10n.translate(this.div);
-            // Ensure that interactive form elements in the annotationLayer are
-            // disabled while PresentationMode is active (see issue 12232).
-            if (this.linkService.isInPresentationMode) {
-                this.#updatePresentationModeState(PresentationModeState.FULLSCREEN);
-            }
-            if (!this.#onPresentationModeChanged) {
-                this.#onPresentationModeChanged = (evt) => {
-                    this.#updatePresentationModeState(evt.state);
-                };
-                this._eventBus?._on("presentationmodechanged", this.#onPresentationModeChanged);
-            }
+        if (!this.#onPresentationModeChanged) {
+            this.#onPresentationModeChanged = (evt) => {
+                this.#updatePresentationModeState(evt.state);
+            };
+            this._eventBus?._on("presentationmodechanged", this.#onPresentationModeChanged);
         }
     }
     cancel() {

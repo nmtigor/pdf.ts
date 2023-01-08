@@ -26,7 +26,7 @@ export declare class XfaLayerBuilder {
     /**
      * @return A promise that is resolved when rendering
      *   of the XFA layer is complete. The first rendering will return an object
-     *   with a `textDivs` property that  can be used with the TextHighlighter.
+     *   with a `textDivs` property that can be used with the TextHighlighter.
      */
     render(viewport: PageViewport, intent?: AnnotIntent): Promise<void | {
         textDivs: Text[];

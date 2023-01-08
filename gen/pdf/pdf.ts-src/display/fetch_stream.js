@@ -36,7 +36,7 @@ function createHeaders(httpHeaders) {
     const headers = new Headers();
     for (const property in httpHeaders) {
         const value = httpHeaders[property];
-        if (typeof value === "undefined") {
+        if (value === undefined) {
             continue;
         }
         headers.append(property, value);
@@ -128,7 +128,7 @@ class PDFFetchStreamReader {
         this.#isRangeSupported = !source.disableRange;
         this.#headers = createHeaders(this.#stream.httpHeaders);
         const url = source.url;
-        fetch(url.toString(), createFetchOptions(this.#headers, this.#withCredentials, this.#abortController))
+        fetch(url, createFetchOptions(this.#headers, this.#withCredentials, this.#abortController))
             .then((response) => {
             if (!validateResponseStatus(response.status)) {
                 throw createResponseStatusError(response.status, url);
@@ -143,6 +143,7 @@ class PDFFetchStreamReader {
                 disableRange: this.#disableRange,
             });
             this.#isRangeSupported = allowRangeRequests;
+            // console.log(`#isRangeSupported=${this.#isRangeSupported}`);
             // Setting right content length.
             this.#contentLength = suggestedLength || this.#contentLength;
             this.#filename = extractFilenameFromHeader(getResponseHeader);
@@ -174,7 +175,7 @@ class PDFFetchStreamReader {
         this.#abortController.abort();
     }
 }
-class PDFFetchStreamRangeReader {
+export class PDFFetchStreamRangeReader {
     #stream;
     #reader;
     _loaded = 0;

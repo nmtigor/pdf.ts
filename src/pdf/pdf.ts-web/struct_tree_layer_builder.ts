@@ -17,14 +17,11 @@
  * limitations under the License.
  */
 
-/** @typedef {import("../src/display/api").PDFPageProxy} PDFPageProxy */
-
 import { html } from "../../lib/dom.ts";
 import {
   StructTreeContent,
   StructTreeNode,
 } from "../pdf.ts-src/display/api.ts";
-import { PDFPageProxy } from "../pdf.ts-src/pdf.ts";
 /*80--------------------------------------------------------------------------*/
 
 const PDF_ROLE_TO_HTML_ROLE = {
@@ -86,19 +83,19 @@ type _PDFRole = keyof typeof PDF_ROLE_TO_HTML_ROLE;
 
 const HEADING_PATTERN = /^H(\d+)$/;
 
-interface StructTreeLayerBuilderOptions {
-  pdfPage: PDFPageProxy;
-}
-
 export class StructTreeLayerBuilder {
-  pdfPage;
-
-  constructor({ pdfPage }: StructTreeLayerBuilderOptions) {
-    this.pdfPage = pdfPage;
+  #treeDom: HTMLSpanElement | undefined;
+  get renderingDone() {
+    return this.#treeDom !== undefined;
   }
 
-  render(structTree: StructTreeNode) {
-    return this._walk(structTree);
+  render(structTree: StructTreeNode | undefined) {
+    if (this.#treeDom !== undefined) {
+      return this.#treeDom;
+    }
+    const treeDom = this.#walk(structTree);
+    treeDom?.classList.add("structTree");
+    return (this.#treeDom = treeDom);
   }
 
   #setAttributes(
@@ -122,7 +119,7 @@ export class StructTreeLayerBuilder {
     }
   }
 
-  _walk(node?: StructTreeNode) {
+  #walk(node?: StructTreeNode) {
     if (!node) return undefined;
 
     const element = html("span");
@@ -146,7 +143,7 @@ export class StructTreeLayerBuilder {
         this.#setAttributes(node.children[0], element);
       } else {
         for (const kid of node.children) {
-          element.append(this._walk(kid as StructTreeNode)!);
+          element.append(this.#walk(kid as StructTreeNode)!);
         }
       }
     }

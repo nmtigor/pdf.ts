@@ -3,21 +3,17 @@ import { PageViewport } from "./display_utils.js";
 /**
  * Text layer render parameters.
  */
-interface _TextLayerRenderP {
+type TextLayerRenderP_ = {
     /**
      * Text content to
-     * render (the object is returned by the page's `getTextContent` method).
+     * render, i.e. the value returned by the page's `streamTextContent` or
+     * `getTextContent` method.
      */
-    textContent?: TextContent | undefined;
-    /**
-     * Text content stream to
-     * render (the stream is returned by the page's `streamTextContent` method).
-     */
-    textContentStream?: ReadableStream | undefined;
+    textContentSource: ReadableStream<TextContent> | TextContent;
     /**
      * The DOM node that will contain the text runs.
      */
-    container: DocumentFragment | HTMLElement;
+    container: HTMLElement;
     /**
      * The target viewport to properly layout the text runs.
      */
@@ -27,7 +23,12 @@ interface _TextLayerRenderP {
      * the text items of the textContent input.
      * This is output and shall initially be set to an empty array.
      */
-    textDivs?: HTMLSpanElement[];
+    textDivs?: HTMLElement[];
+    /**
+     * Some properties
+     * weakly mapped to the HTML elements used to render the text.
+     */
+    textDivProperties?: WeakMap<HTMLElement, TextDivProps>;
     /**
      * Strings that correspond to
      * the `str` property of the text items of the textContent input.
@@ -35,15 +36,46 @@ interface _TextLayerRenderP {
      */
     textContentItemsStr?: string[];
     /**
-     * Delay in milliseconds before rendering of the text runs occurs.
+     * true if we can use
+     * OffscreenCanvas to measure string widths.
      */
-    timeout?: number;
+    isOffscreenCanvasSupported?: boolean | undefined;
+};
+type TextLayerUpdateP_ = {
     /**
-     * Whether to turn on the text selection enhancement.
+     * The DOM node that will contain the text runs.
      */
-    enhanceTextSelection?: boolean;
-}
-interface TextDivProps {
+    container: HTMLDivElement;
+    /**
+     * The target viewport to properly layout the text runs.
+     */
+    viewport: PageViewport;
+    /**
+     * HTML elements that correspond to
+     * the text items of the textContent input.
+     * This is output and shall initially be set to an empty array.
+     */
+    textDivs?: HTMLElement[];
+    /**
+     * Some properties
+     * weakly mapped to the HTML elements used to render the text.
+     */
+    textDivProperties: WeakMap<HTMLElement, TextDivProps>;
+    /**
+     * true if we can use
+     * OffscreenCanvas to measure string widths.
+     */
+    isOffscreenCanvasSupported?: boolean | undefined;
+    /**
+     * true if the text layer must be rotated.
+     */
+    mustRotate?: boolean;
+    /**
+     * true if the text layer contents must be
+     */
+    mustRescale?: boolean;
+};
+export type TextDivProps = {
     angle: number;
     canvasWidth: number;
     fontSize: number;
@@ -55,60 +87,55 @@ interface TextDivProps {
     paddingRight?: number;
     paddingTop?: number;
     scale?: number;
-}
-declare namespace Ns_renderTextLayer {
-    interface _TLRTCtorP {
-        textContent?: TextContent | undefined;
-        textContentStream?: ReadableStream | undefined;
-        container: DocumentFragment | HTMLElement;
-        viewport: PageViewport;
-        textDivs?: HTMLSpanElement[] | undefined;
-        textContentItemsStr?: string[] | undefined;
-    }
+};
+type LayoutTextP_ = {
+    prevFontSize?: unknown;
+    prevFontFamily?: unknown;
+    div?: HTMLElement;
+    scale: number;
+    properties?: TextDivProps | undefined;
+    ctx: OffscreenRenderingContext | CanvasRenderingContext2D;
+};
+/**
+ * Text layer rendering task.
+ */
+export declare class TextLayerRenderTask {
+    #private;
+    _textContentSource: TextContent | ReadableStream<TextContent>;
+    _isReadableStream: boolean;
+    _rootContainer: HTMLElement;
+    _container: HTMLElement;
+    _textDivs: HTMLSpanElement[];
+    _textContentItemsStr: string[];
+    _fontInspectorEnabled: boolean;
+    _isOffscreenCanvasSupported: boolean | undefined;
+    _reader?: ReadableStreamDefaultReader<TextContent> | undefined;
+    _textDivProperties: WeakMap<HTMLSpanElement, TextDivProps>;
+    _canceled: boolean;
+    _capability: import("../../../lib/promisecap.js").PromiseCap<void>;
     /**
-     * Text layer rendering task.
+     * Promise for textLayer rendering task completion.
      */
-    export class TextLayerRenderTask {
-        #private;
-        _textContent?: TextContent | undefined;
-        _textContentStream?: ReadableStream | undefined;
-        _container: DocumentFragment | HTMLElement;
-        _document: Document;
-        _viewport: PageViewport;
-        _textDivs: HTMLSpanElement[];
-        _textContentItemsStr: string[];
-        _fontInspectorEnabled: boolean;
-        _devicePixelRatio: number;
-        _reader?: ReadableStreamDefaultReader | undefined;
-        _layoutTextLastFontSize: number | undefined;
-        _layoutTextLastFontFamily: string | null;
-        _layoutTextCtx: CanvasRenderingContext2D | null;
-        _textDivProperties: WeakMap<HTMLSpanElement, TextDivProps> | undefined;
-        _renderingDone: boolean;
-        _canceled: boolean;
-        _capability: import("../../../lib/promisecap.js").PromiseCap<void>;
-        constructor({ textContent, textContentStream, container, viewport, textDivs, textContentItemsStr, }: _TLRTCtorP);
-        /**
-         * Promise for textLayer rendering task completion.
-         */
-        get promise(): Promise<void>;
-        /**
-         * Cancel rendering of the textLayer.
-         */
-        cancel(): void;
-        /**
-         * @private
-         */
-        _layoutText(textDiv: HTMLSpanElement): void;
-        /**
-         * @private
-         */
-        _render(timeout?: number): void;
-    }
-    export function renderTextLayer(renderParameters: _TextLayerRenderP): TextLayerRenderTask;
-    export {};
+    get promise(): Promise<void>;
+    _layoutTextParams: LayoutTextP_;
+    _transform: [number, number, number, number, number, number];
+    _pageWidth: number;
+    _pageHeight: number;
+    constructor({ textContentSource, container, viewport, textDivs, textDivProperties, textContentItemsStr, isOffscreenCanvasSupported, }: TextLayerRenderP_);
+    /**
+     * Cancel rendering of the textLayer.
+     */
+    cancel(): void;
+    /**
+     * @private
+     */
+    _layoutText(textDiv: HTMLSpanElement): void;
+    /**
+     * @private
+     */
+    _render(): void;
 }
-export import TextLayerRenderTask = Ns_renderTextLayer.TextLayerRenderTask;
-export import renderTextLayer = Ns_renderTextLayer.renderTextLayer;
+export declare function renderTextLayer(params: TextLayerRenderP_): TextLayerRenderTask;
+export declare function updateTextLayer({ container, viewport, textDivs, textDivProperties, isOffscreenCanvasSupported, mustRotate, mustRescale, }: TextLayerUpdateP_): void;
 export {};
 //# sourceMappingURL=text_layer.d.ts.map

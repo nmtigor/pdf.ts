@@ -191,7 +191,7 @@ export interface EventMap {
       selEnd?: number | null;
 
       change?: unknown;
-      changeEx?: unknown;
+      changeEx?: string | string[] | undefined;
       keyDown?: boolean;
     };
   };
@@ -392,9 +392,10 @@ export interface EventMap {
     mode: SpreadMode;
   };
   textlayerrendered: {
-    source: TextLayerBuilder;
+    source: PDFPageView;
     pageNumber: number;
     numTextDivs: number;
+    error: unknown;
   };
   togglelayerstree: {};
   toggleoutlinetree: {
@@ -446,6 +447,9 @@ export interface EventMap {
   zoomin: {};
   zoomout: {};
   zoomreset: {};
+
+  // For testing only
+  test: {};
 }
 export type EventName = keyof EventMap;
 

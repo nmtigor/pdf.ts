@@ -1,4 +1,4 @@
-import { IDownloadManager, type IPDFLinkService, type MouseState } from "../../pdf.ts-web/interfaces.js";
+import { IDownloadManager, type IPDFLinkService } from "../../pdf.ts-web/interfaces.js";
 import { TextAccessibilityManager } from "../../pdf.ts-web/text_accessibility.js";
 import { type AnnotationData, type FieldObject } from "../core/annotation.js";
 import { ColorConvertersDetail } from "../shared/scripting_utils.js";
@@ -24,7 +24,6 @@ interface _AnnotationElementCtorP {
     enableScripting?: boolean;
     hasJSActions?: boolean;
     fieldObjects: Record<string, FieldObject[]> | undefined;
-    mouseState?: MouseState;
 }
 export declare class AnnotationElement {
     #private;
@@ -42,7 +41,6 @@ export declare class AnnotationElement {
     enableScripting: boolean | undefined;
     hasJSActions: boolean | undefined;
     _fieldObjects: Record<string, FieldObject[]> | undefined;
-    _mouseState: MouseState | undefined;
     container?: HTMLElement;
     quadrilaterals?: HTMLElement[] | undefined;
     constructor(parameters: _AnnotationElementCtorP, { isRenderable, ignoreBorder, createQuadrilaterals, }?: {
@@ -98,10 +96,6 @@ export declare class AnnotationElement {
         exportValue: any;
         domElement: HTMLElement;
     }[];
-    static get platform(): {
-        isWin: boolean;
-        isMac: boolean;
-    };
     _setRequired(lement: HTMLElement, isRequired: boolean): void;
 }
 export interface ResetForm {
@@ -134,7 +128,7 @@ export declare class FileAttachmentAnnotationElement extends AnnotationElement {
     constructor(parameters: _AnnotationElementCtorP);
     render(): HTMLElement;
 }
-interface _AnnotationLayerP {
+export type AnnotationLayerP = {
     viewport: PageViewport;
     div: HTMLDivElement;
     annotations: AnnotationData[];
@@ -158,10 +152,9 @@ interface _AnnotationLayerP {
      */
     hasJSActions: boolean;
     fieldObjects: Record<string, FieldObject[]> | undefined;
-    mouseState?: MouseState | undefined;
     annotationCanvasMap: Map<string, HTMLCanvasElement> | undefined;
-    accessibilityManager: TextAccessibilityManager | undefined;
-}
+    accessibilityManager?: TextAccessibilityManager | undefined;
+};
 export interface AnnotStorageValue {
     annotationType?: AnnotationEditorType;
     charLimit?: number | undefined;
@@ -191,11 +184,11 @@ export declare class AnnotationLayer {
     /**
      * Render a new annotation layer with all annotation elements.
      */
-    static render(parameters: _AnnotationLayerP): void;
+    static render(params: AnnotationLayerP): void;
     /**
      * Update the annotation elements on existing annotation layer.
      */
-    static update(parameters: _AnnotationLayerP): void;
+    static update(params: AnnotationLayerP): void;
 }
 export {};
 //# sourceMappingURL=annotation_layer.d.ts.map

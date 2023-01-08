@@ -1,6 +1,7 @@
 import { EventBus, EventMap } from "../../../pdf.ts-web/event_utils.js";
 import { RGB } from "../../shared/scripting_utils.js";
 import { AnnotationEditorType } from "../../shared/util.js";
+import { AnnotationStorage } from "../annotation_storage.js";
 import { AnnotationEditorLayer } from "./annotation_editor_layer.js";
 import { AnnotationEditor } from "./editor.js";
 import { FreeTextEditor } from "./freetext.js";
@@ -65,10 +66,6 @@ export declare class KeyboardManager {
      * A shortcut is a string like `ctrl+c` or `mac+ctrl+c` for mac OS.
      */
     constructor(callbacks: [string[], () => void][]);
-    static get platform(): {
-        isWin: boolean;
-        isMac: boolean;
-    };
     /**
      * Execute a callback, if any, for a given keyboard event.
      * The self is used as `this` in the callback.
@@ -116,14 +113,27 @@ export declare class AnnotationEditorUIManager {
      * Get the current active editor.
      */
     getActive(): AnnotationEditor | undefined;
+    get currentPageIndex(): number;
     /**
      * Get the current editor mode.
      */
     getMode(): AnnotationEditorType;
-    constructor(container: HTMLDivElement, eventBus: EventBus);
+    viewParameters: {
+        realScale: number;
+        rotation: number;
+    };
+    constructor(container: HTMLDivElement, eventBus: EventBus, annotationStorage: AnnotationStorage | undefined);
     destroy(): void;
     onPageChanging({ pageNumber }: EventMap["pagechanging"]): void;
     focusMainContainer(): void;
+    addShouldRescale(editor: InkEditor): void;
+    removeShouldRescale(editor: InkEditor): void;
+    onScaleChanging({ scale }: EventMap["scalechanging"]): void;
+    onRotationChanging({ pagesRotation }: EventMap["rotationchanging"]): void;
+    /**
+     * Add an editor in the annotation storage.
+     */
+    addToAnnotationStorage(editor: AnnotationEditor): void;
     /**
      * Copy callback.
      */
@@ -159,6 +169,7 @@ export declare class AnnotationEditorUIManager {
      * Get an id.
      */
     getId(): string;
+    get currentLayer(): AnnotationEditorLayer | undefined;
     /**
      * Add a new layer for a page which will contains the editors.
      */

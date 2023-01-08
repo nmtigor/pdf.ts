@@ -193,10 +193,11 @@ export class Util extends PDFObject<_SendUtilData> {
           }
           if (decPart.length > 2) {
             decPart = `${decimalSep}${decPart.substring(2)}`;
-          } else if (cFlags & HASH) {
-            decPart = ".";
           } else {
-            decPart = "";
+            if (decPart === "1") {
+              intPart += Math.sign(arg as number);
+            }
+            decPart = cFlags & HASH ? "." : "";
           }
         }
 
@@ -296,6 +297,7 @@ export class Util extends PDFObject<_SendUtilData> {
 
   printx(cFormat: string, cSource: string) {
     // case
+    cSource = (cSource ?? "").toString();
     const handlers: TupleOf<(x: string) => string, 3> = [
       (x) => x,
       (x) => x.toUpperCase(),

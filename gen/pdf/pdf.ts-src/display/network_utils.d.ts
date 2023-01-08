@@ -1,11 +1,12 @@
 import { HttpStatusCode } from "../../../lib/HttpStatusCode.js";
 import { MissingPDFException, UnexpectedResponseException } from "../shared/util.js";
-export declare function validateRangeRequestCapabilities({ getResponseHeader, isHttp, rangeChunkSize, disableRange, }: {
+export type VRRC_P_ = {
     getResponseHeader: (name: string) => string | null;
     isHttp: boolean;
     rangeChunkSize: number;
     disableRange: boolean;
-}): {
+};
+export declare function validateRangeRequestCapabilities({ getResponseHeader, isHttp, rangeChunkSize, disableRange, }: VRRC_P_): {
     allowRangeRequests: boolean;
     suggestedLength?: number;
 };

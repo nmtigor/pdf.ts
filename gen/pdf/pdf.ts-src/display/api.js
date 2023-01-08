@@ -353,11 +353,18 @@ export class PDFDocumentLoadingTask {
      * The callback receives an {@link OnProgressP} argument.
      */
     onProgress;
+    #onUnsupportedFeature;
+    get onUnsupportedFeature() {
+        return this.#onUnsupportedFeature;
+    }
     /**
      * Callback for when an unsupported feature is used in the PDF document.
      * The callback receives an {@link UNSUPPORTED_FEATURES} argument.
      */
-    onUnsupportedFeature;
+    set onUnsupportedFeature(callback) {
+        deprecated("The PDFDocumentLoadingTask onUnsupportedFeature property will be removed in the future.");
+        this.#onUnsupportedFeature = callback;
+    }
     constructor() {
         this.docId = `d${PDFDocumentLoadingTask.#docId++}`;
     }
@@ -482,13 +489,14 @@ export class PDFDocumentProxy {
      * structures, or `null` when no statistics exists.
      */
     get stats() {
+        deprecated("The PDFDocumentProxy stats property will be removed in the future.");
         return this._transport.stats;
     }
     /**
      * @return True if only XFA form.
      */
     get isPureXfa() {
-        return !!this._transport._htmlForXfa;
+        return shadow(this, "isPureXfa", !!this._transport._htmlForXfa);
     }
     /**
      * NOTE: This is (mostly) intended to support printing of XFA forms.
@@ -739,7 +747,6 @@ export class PDFPageProxy {
     _structTreePromise;
     pendingCleanup = false;
     #intentStates = new Map();
-    _annotationPromises = new Map();
     destroyed = false;
     _annotationsPromise;
     _annotationsIntent;
@@ -807,19 +814,20 @@ export class PDFPageProxy {
      */
     getAnnotations({ intent = "display" } = {}) {
         const intentArgs = this._transport.getRenderingIntent(intent);
-        let promise = this._annotationPromises.get(intentArgs.cacheKey);
-        if (!promise) {
-            promise = this._transport.getAnnotations(this._pageIndex, intentArgs.renderingIntent);
-            this._annotationPromises.set(intentArgs.cacheKey, promise);
-        }
-        return promise;
+        return this._transport.getAnnotations(this._pageIndex, intentArgs.renderingIntent);
     }
     /**
      * @return A promise that is resolved with an
      *   {Object} with JS actions.
      */
     getJSActions() {
-        return (this._jsActionsPromise ||= this._transport.getPageJSActions(this._pageIndex));
+        return this._transport.getPageJSActions(this._pageIndex);
+    }
+    /**
+     * @return True if only XFA form.
+     */
+    get isPureXfa() {
+        return shadow(this, "isPureXfa", !!this._transport._htmlForXfa);
     }
     /**
      * A promise that is resolved with
@@ -1032,7 +1040,7 @@ export class PDFPageProxy {
      *   or `null` when no structure tree is present for the current page.
      */
     getStructTree() {
-        return (this._structTreePromise ||= this._transport.getStructTree(this._pageIndex));
+        return this._transport.getStructTree(this._pageIndex);
     }
     /**
      * Destroys the page object.
@@ -1061,9 +1069,6 @@ export class PDFPageProxy {
             bitmap.close();
         }
         this._bitmaps.clear();
-        this._annotationPromises.clear();
-        this._jsActionsPromise = undefined;
-        this._structTreePromise = undefined;
         this.pendingCleanup = false;
         return Promise.all(waitOn);
     }
@@ -1091,9 +1096,6 @@ export class PDFPageProxy {
         }
         this.#intentStates.clear();
         this.objs.clear();
-        this._annotationPromises.clear();
-        this._jsActionsPromise = undefined;
-        this._structTreePromise = undefined;
         if (resetStats && this._stats) {
             this._stats = new StatTimer();
         }
@@ -1189,6 +1191,11 @@ export class PDFPageProxy {
         if (!intentState.streamReader) {
             return;
         }
+        // Ensure that a pending `streamReader` cancel timeout is always aborted.
+        if (intentState.streamReaderCancelTimeout) {
+            clearTimeout(intentState.streamReaderCancelTimeout);
+            intentState.streamReaderCancelTimeout = undefined;
+        }
         if (!force) {
             // Ensure that an Error occurring in *only* one `InternalRenderTask`, e.g.
             // multiple render() calls on the same canvas, won't break all rendering.
@@ -1199,10 +1206,15 @@ export class PDFPageProxy {
             // cancelled, since that will unnecessarily delay re-rendering when (for
             // partially parsed pages) e.g. zooming/rotation occurs in the viewer.
             if (reason instanceof RenderingCancelledException) {
+                let delay = RENDERING_CANCELLED_TIMEOUT;
+                if (reason.extraDelay > 0 && reason.extraDelay < /* ms = */ 1000) {
+                    // Above, we prevent the total delay from becoming arbitrarily large.
+                    delay += reason.extraDelay;
+                }
                 intentState.streamReaderCancelTimeout = setTimeout(() => {
-                    this.#abortOperatorList({ intentState, reason, force: true });
                     intentState.streamReaderCancelTimeout = undefined;
-                }, RENDERING_CANCELLED_TIMEOUT);
+                    this.#abortOperatorList({ intentState, reason, force: true });
+                }, delay);
                 return;
             }
         }
@@ -2270,8 +2282,8 @@ export class RenderTask {
      * not be cancelled until graphics pauses with a timeout. The promise that
      * this object extends will be rejected when cancelled.
      */
-    cancel() {
-        this.#internalRenderTask.cancel();
+    cancel(extraDelay = 0) {
+        this.#internalRenderTask.cancel(/* error = */ undefined, extraDelay);
     }
     /**
      * Whether form fields are rendered separately from the main operatorList.
@@ -2364,7 +2376,7 @@ export class InternalRenderTask {
         this.graphicsReady = true;
         this.graphicsReadyCallback?.();
     }
-    cancel = (error = null) => {
+    cancel = (error = undefined, extraDelay = 0) => {
         this.running = false;
         this.cancelled = true;
         this.gfx?.endDrawing();
@@ -2372,7 +2384,7 @@ export class InternalRenderTask {
             InternalRenderTask.#canvasInUse.delete(this._canvas);
         }
         this.callback(error ||
-            new RenderingCancelledException(`Rendering cancelled, page ${this._pageIndex + 1}`, "canvas"));
+            new RenderingCancelledException(`Rendering cancelled, page ${this._pageIndex + 1}`, "canvas", extraDelay));
     };
     operatorListChanged() {
         if (!this.graphicsReady) {
