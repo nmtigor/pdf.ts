@@ -17,13 +17,9 @@
  * limitations under the License.
  */
 
+import { type rect_t } from "../../../../lib/alias.ts";
 import { isObjectLike } from "../../../../lib/jslang.ts";
-import {
-  type rect_t,
-  shadow,
-  utf8StringToString,
-  warn,
-} from "../../shared/util.ts";
+import { shadow, utf8StringToString, warn } from "../../shared/util.ts";
 import { encodeToXmlString } from "../core_utils.ts";
 import {
   type AvailableSpace,

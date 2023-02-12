@@ -17,7 +17,10 @@
  * limitations under the License.
  */
 
-import { type Locale_1, type WebL10nArgs } from "../../3rd/webL10n/l10n.ts";
+import {
+  type Locale_1,
+  type WebL10nArgs,
+} from "../../3rd/webL10n-2015-10-24/l10n.ts";
 import { MOZCENTRAL } from "../../global.ts";
 import { Locale } from "../../lib/Locale.ts";
 import { type IL10n } from "./interfaces.ts";

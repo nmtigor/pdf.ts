@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-import { FontType, info } from "../shared/util.ts";
+import { info } from "../shared/util.ts";
 import { getEncoding, StandardEncoding } from "./encodings.ts";
 import { type FontProps } from "./evaluator.ts";
 import { getGlyphsUnicode } from "./glyphlist.ts";
@@ -83,36 +83,6 @@ export const MacStandardGlyphOrdering = [
   "onesuperior", "twosuperior", "threesuperior", "onehalf", "onequarter",
   "threequarters", "franc", "Gbreve", "gbreve", "Idotaccent", "Scedilla",
   "scedilla", "Cacute", "cacute", "Ccaron", "ccaron", "dcroat"];
-
-export function getFontType(
-  type: string,
-  subtype?: string,
-  isStandardFont = false,
-) {
-  switch (type) {
-    case "Type1":
-      if (isStandardFont) {
-        return FontType.TYPE1STANDARD;
-      }
-      return subtype === "Type1C" ? FontType.TYPE1C : FontType.TYPE1;
-    case "CIDFontType0":
-      return subtype === "CIDFontType0C"
-        ? FontType.CIDFONTTYPE0C
-        : FontType.CIDFONTTYPE0;
-    case "OpenType":
-      return FontType.OPENTYPE;
-    case "TrueType":
-      return FontType.TRUETYPE;
-    case "CIDFontType2":
-      return FontType.CIDFONTTYPE2;
-    case "MMType1":
-      return FontType.MMTYPE1;
-    case "Type0":
-      return FontType.TYPE0;
-    default:
-      return FontType.UNKNOWN;
-  }
-}
 
 // Some bad PDF generators, e.g. Scribus PDF, include glyph names
 // in a 'uniXXXX' format -- attempting to recover proper ones.

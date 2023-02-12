@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-import { _PDFDEV, CHROME, MOZCENTRAL } from "../../../global.ts";
+import { _PDFDEV, CHROME, GENERIC, MOZCENTRAL } from "../../../global.ts";
 import { html } from "../../../lib/dom.ts";
 import { assert } from "../../../lib/util/trace.ts";
 import { FontExpotDataEx } from "../core/fonts.ts";
@@ -46,7 +46,9 @@ export interface Request {
 }
 
 export class FontLoader {
-  _onUnsupportedFeature: (_: { featureId: UNSUPPORTED_FEATURES }) => void;
+  _onUnsupportedFeature:
+    | ((_: { featureId: UNSUPPORTED_FEATURES }) => void)
+    | undefined;
   _document: Document;
 
   nativeFontFaces: FontFace[] = [];
@@ -60,7 +62,9 @@ export class FontLoader {
     ownerDocument = globalThis.document,
     styleElement = undefined, // For testing only
   }: _BaseFontLoaderCtorP) {
-    this._onUnsupportedFeature = onUnsupportedFeature;
+    /*#static*/ if (GENERIC) {
+      this._onUnsupportedFeature = onUnsupportedFeature;
+    }
     this._document = ownerDocument;
 
     this.styleElement = /*#static*/ _PDFDEV ? styleElement : undefined;
@@ -114,9 +118,11 @@ export class FontLoader {
         try {
           await nativeFontFace.loaded;
         } catch (ex) {
-          this._onUnsupportedFeature({
-            featureId: UNSUPPORTED_FEATURES.errorFontLoadNative,
-          });
+          /*#static*/ if (GENERIC) {
+            this._onUnsupportedFeature!({
+              featureId: UNSUPPORTED_FEATURES!.errorFontLoadNative,
+            });
+          }
           warn(`Failed to load font '${nativeFontFace.family}': '${ex}'.`);
 
           // When font loading failed, fall back to the built-in font renderer.
@@ -364,7 +370,9 @@ export class FontFaceObject extends FontExpotDataEx {
   isEvalSupported: boolean;
   disableFontFace: boolean;
   ignoreErrors: boolean;
-  _onUnsupportedFeature: (_: { featureId: UNSUPPORTED_FEATURES }) => void;
+  _onUnsupportedFeature:
+    | ((_: { featureId: UNSUPPORTED_FEATURES }) => void)
+    | undefined;
   fontRegistry;
 
   attached?: boolean;
@@ -388,7 +396,9 @@ export class FontFaceObject extends FontExpotDataEx {
     this.isEvalSupported = isEvalSupported !== false;
     this.disableFontFace = disableFontFace === true;
     this.ignoreErrors = ignoreErrors === true;
-    this._onUnsupportedFeature = onUnsupportedFeature;
+    /*#static*/ if (GENERIC) {
+      this._onUnsupportedFeature = onUnsupportedFeature;
+    }
     this.fontRegistry = fontRegistry;
   }
 
@@ -453,9 +463,11 @@ export class FontFaceObject extends FontExpotDataEx {
       if (!this.ignoreErrors) {
         throw ex;
       }
-      this._onUnsupportedFeature({
-        featureId: UNSUPPORTED_FEATURES.errorFontGetPath,
-      });
+      /*#static*/ if (GENERIC) {
+        this._onUnsupportedFeature!({
+          featureId: UNSUPPORTED_FEATURES!.errorFontGetPath,
+        });
+      }
       warn(`getPathGenerator - ignoring character: "${ex}".`);
 
       return (this.compiledGlyphs[character] = (

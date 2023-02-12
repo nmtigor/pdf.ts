@@ -9,6 +9,7 @@ import {
   type Constructor,
   type FloatArray,
   type IntegerArray,
+  Ratio,
   type uint,
   type uint8,
 } from "./alias.ts";
@@ -151,8 +152,8 @@ declare global {
      */
     eq(rhs_x: unknown, valve_x?: uint): boolean;
 
-    fillArray(ary: []): this;
-    fillArrayBack(ary: any[]): this;
+    fillArray(ary: T[]): this;
+    fillArrayBack(ary: T[]): this;
   }
 }
 
@@ -173,7 +174,7 @@ Reflect.defineProperty(Array.prototype, "eq", {
  * @const @param ary
  */
 Reflect.defineProperty(Array.prototype, "fillArray", {
-  value(this: Array<any>, ary: any[]) {
+  value(this: any[], ary: any[]) {
     /*#static*/ if (INOUT) {
       assert(ary.length <= this.length);
     }
@@ -184,7 +185,7 @@ Reflect.defineProperty(Array.prototype, "fillArray", {
   },
 });
 Reflect.defineProperty(Array.prototype, "fillArrayBack", {
-  value(this: Array<any>, ary: any[]) {
+  value(this: any[], ary: any[]) {
     /*#static*/ if (INOUT) {
       assert(ary.length <= this.length);
     }
@@ -228,6 +229,8 @@ declare global {
      * in( 0 <= digits && digits <= 20 )
      */
     fixTo(digits?: uint8): number;
+
+    reprRatio(fixTo_x?: uint8): string;
   }
 
   interface NumberConstructor {
@@ -245,17 +248,29 @@ declare global {
   }
 }
 
-Number.apxE = (f0, f1) => Math.abs(f0 - f1) <= Number.EPSILON;
-Number.apxS = (f0, f1) => f0 < f1 - Number.EPSILON;
-Number.apxSE = (f0, f1) => f0 <= f1 + Number.EPSILON;
-Number.apxG = (f0, f1) => f0 > f1 + Number.EPSILON;
-Number.apxGE = (f0, f1) => f0 >= f1 - Number.EPSILON;
+const Tolerance_ = 2 ** -30; // ~= 0.000_000_001
+Number.apxE = (f0, f1) => Math.abs(f0 - f1) <= Tolerance_;
+Number.apxS = (f0, f1) => f0 < f1 - Tolerance_;
+Number.apxSE = (f0, f1) => f0 <= f1 + Tolerance_;
+Number.apxG = (f0, f1) => f0 > f1 + Tolerance_;
+Number.apxGE = (f0, f1) => f0 >= f1 - Tolerance_;
 Number.getRandom = (max, min = 0, fixto = 0) =>
   min + (Math.random() * (max - min)).fixTo(fixto);
 
 Number.prototype.fixTo = function (this: Number, digits = 0) {
   const mul = 10 ** digits;
   return Math.round(this.valueOf() * mul) / mul;
+};
+
+Number.prototype.reprRatio = function (this: Number, fixTo_x = 2) {
+  let x_ = this.valueOf();
+  const n_ = Number.apxS(x_, 0);
+  x_ = Math.abs(x_);
+  const f_ = Number.apxS(x_, 1);
+  let ret = x_.fixTo(fixTo_x).toString();
+  if (f_) ret = ret.slice(1);
+  if (n_) ret = `-${ret}`;
+  return ret;
 };
 /*81-----------------------------------------------------------------------------
  * TypedArray

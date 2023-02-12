@@ -17,7 +17,8 @@
  * limitations under the License.
  */
 
-import { type matrix_t, type rect_t, warn } from "../shared/util.ts";
+import { type rect_t } from "../../../lib/alias.ts";
+import { type matrix_t, warn } from "../shared/util.ts";
 import { isWhiteSpace } from "./core_utils.ts";
 import { getEncoding } from "./encodings.ts";
 import { type FontProps } from "./evaluator.ts";
@@ -743,8 +744,13 @@ namespace NsType1Parser {
           case "BlueFuzz":
           case "BlueScale":
           case "LanguageGroup":
-          case "ExpansionFactor":
             program.properties.privateData[token] = this.readNumber();
+            break;
+          case "ExpansionFactor":
+            // Firefox doesn't render correctly a font with a null factor on
+            // Windows (see issue 15289), hence we just reset it to its default
+            // value (0.06).
+            program.properties.privateData[token] = this.readNumber() || 0.06;
             break;
           case "ForceBold":
             program.properties.privateData[token] = this.readBoolean();

@@ -18,7 +18,6 @@
  */
 
 import { GENERIC } from "../../../global.ts";
-import { createPromiseCap } from "../../../lib/promisecap.ts";
 import { type ReadValue } from "../interfaces.ts";
 import {
   type GetDocRequestData,
@@ -31,6 +30,7 @@ import {
   arrayByteLength,
   arraysToBytes,
   BaseException,
+  createPromiseCapability,
   getVerbosityLevel,
   info,
   InvalidPDFException,
@@ -70,7 +70,7 @@ export class WorkerTask {
     this.terminated = true;
   }
 
-  #capability = createPromiseCap();
+  #capability = createPromiseCapability();
   get finished() {
     return this.#capability.promise;
   }
@@ -249,7 +249,7 @@ export const WorkerMessageHandler = {
       enableXfa,
       evaluatorOptions,
     }: GetDocRequestData) {
-      const pdfManagerCapability = createPromiseCap<BasePdfManager>();
+      const pdfManagerCapability = createPromiseCapability<BasePdfManager>();
       let newPdfManager: BasePdfManager;
 
       if (data) {

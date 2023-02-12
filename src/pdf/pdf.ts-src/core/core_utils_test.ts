@@ -20,8 +20,8 @@
 import {
   assertEquals,
   assertThrows,
-} from "https://deno.land/std@0.165.0/testing/asserts.ts";
-import { describe, it } from "https://deno.land/std@0.165.0/testing/bdd.ts";
+} from "https://deno.land/std@0.170.0/testing/asserts.ts";
+import { describe, it } from "https://deno.land/std@0.170.0/testing/bdd.ts";
 import { XRefMock } from "../shared/test_utils.ts";
 import {
   encodeToXmlString,
@@ -31,7 +31,9 @@ import {
   isAscii,
   isWhiteSpace,
   log2,
+  numberToString,
   parseXFAPath,
+  recoverJsURL,
   stringToUTF16HexString,
   stringToUTF16String,
   toRomanNumerals,
@@ -212,6 +214,21 @@ describe("core_utils", () => {
     });
   });
 
+  describe("numberToString", function () {
+    it("should stringify integers", function () {
+      assertEquals(numberToString(1), "1");
+      assertEquals(numberToString(0), "0");
+      assertEquals(numberToString(-1), "-1");
+    });
+
+    it("should stringify floats", function () {
+      assertEquals(numberToString(1.0), "1");
+      assertEquals(numberToString(1.2), "1.2");
+      assertEquals(numberToString(1.23), "1.23");
+      assertEquals(numberToString(1.234), "1.23");
+    });
+  });
+
   describe("isWhiteSpace", () => {
     it("handles space characters", () => {
       assertEquals(isWhiteSpace(0x20), true);
@@ -241,6 +258,39 @@ describe("core_utils", () => {
           { name: "BAR", pos: 456 },
         ],
       );
+    });
+  });
+
+  describe("recoverJsURL", function () {
+    it("should get valid URLs without `newWindow` property", function () {
+      const inputs = [
+        "window.open('https://test.local')",
+        "window.open('https://test.local', true)",
+        "app.launchURL('https://test.local')",
+        "app.launchURL('https://test.local', false)",
+        "xfa.host.gotoURL('https://test.local')",
+        "xfa.host.gotoURL('https://test.local', true)",
+      ];
+
+      for (const input of inputs) {
+        assertEquals(recoverJsURL(input), {
+          url: "https://test.local",
+          newWindow: false,
+        });
+      }
+    });
+
+    it("should get valid URLs with `newWindow` property", function () {
+      const input = "app.launchURL('https://test.local', true)";
+      assertEquals(recoverJsURL(input), {
+        url: "https://test.local",
+        newWindow: true,
+      });
+    });
+
+    it("should not get invalid URLs", function () {
+      const input = "navigateToUrl('https://test.local')";
+      assertEquals(recoverJsURL(input), null);
     });
   });
 

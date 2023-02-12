@@ -18,7 +18,6 @@
  */
 
 import { MOZCENTRAL } from "../../../global.ts";
-import { createPromiseCap } from "../../../lib/promisecap.ts";
 import { assert } from "../../../lib/util/trace.ts";
 import {
   type IPDFStream,
@@ -26,7 +25,11 @@ import {
   type IPDFStreamReader,
   type ReadValue,
 } from "../interfaces.ts";
-import { AbortException } from "../shared/util.ts";
+import {
+  AbortException,
+  createPromiseCapability,
+  warn,
+} from "../shared/util.ts";
 import { type DocumentInitP } from "./api.ts";
 import {
   createResponseStatusError,
@@ -68,6 +71,21 @@ function createHeaders(httpHeaders: Record<string, string>) {
     headers.append(property, value);
   }
   return headers;
+}
+
+function getArrayBuffer(val: Uint8Array | ArrayBuffer) {
+  if (val instanceof Uint8Array) {
+    if (val.length !== val.buffer.byteLength) {
+      return val.buffer.slice(val.byteOffset, val.byteOffset + val.length);
+    } else {
+      return val.buffer;
+    }
+  }
+  if (val instanceof ArrayBuffer) {
+    return val;
+  }
+  warn(`getArrayBuffer - unexpected data format: ${val}`);
+  return new Uint8Array(val).buffer;
 }
 
 export class PDFFetchStream implements IPDFStream {
@@ -120,7 +138,7 @@ export class PDFFetchStream implements IPDFStream {
 
 class PDFFetchStreamReader implements IPDFStreamReader {
   #stream: PDFFetchStream;
-  #reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
+  #reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
   _loaded = 0;
 
   #filename: string | undefined;
@@ -136,7 +154,7 @@ class PDFFetchStreamReader implements IPDFStreamReader {
     return this.#contentLength!;
   }
 
-  #headersCapability = createPromiseCap();
+  #headersCapability = createPromiseCapability();
   get headersReady() {
     return this.#headersCapability.promise;
   }
@@ -161,7 +179,7 @@ class PDFFetchStreamReader implements IPDFStreamReader {
   #headers: Headers;
 
   /** @implement */
-  onProgress: ((data: { loaded: number; total: number }) => void) | undefined;
+  onProgress: ((data: OnProgressP) => void) | undefined;
 
   constructor(stream: PDFFetchStream) {
     this.#stream = stream;
@@ -224,14 +242,16 @@ class PDFFetchStreamReader implements IPDFStreamReader {
   async read() {
     await this.#headersCapability.promise;
     const { value, done } = await this.#reader!.read();
-    if (done) return { value, done } as ReadValue;
+    if (done) {
+      return { value, done } as ReadValue;
+    }
     this._loaded += value!.byteLength;
     this.onProgress?.({
       loaded: this._loaded,
       total: this.#contentLength!,
     });
-    const buffer = new Uint8Array(value!).buffer;
-    return { value: buffer, done: false } as ReadValue;
+
+    return { value: getArrayBuffer(value), done: false };
   }
 
   /** @implement */
@@ -246,7 +266,7 @@ export class PDFFetchStreamRangeReader implements IPDFStreamRangeReader {
   #reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
   _loaded = 0;
   #withCredentials: boolean;
-  #readCapability = createPromiseCap();
+  #readCapability = createPromiseCapability();
 
   #isStreamingSupported: boolean;
   /** @implement */
@@ -272,7 +292,7 @@ export class PDFFetchStreamRangeReader implements IPDFStreamRangeReader {
 
     const url = source.url!;
     fetch(
-      url.toString(),
+      url,
       createFetchOptions(
         this.#headers,
         this.#withCredentials,
@@ -293,11 +313,13 @@ export class PDFFetchStreamRangeReader implements IPDFStreamRangeReader {
   async read() {
     await this.#readCapability.promise;
     const { value, done } = await this.#reader!.read();
-    if (done) return { value, done } as ReadValue;
+    if (done) {
+      return { value, done } as ReadValue;
+    }
     this._loaded += value!.byteLength;
     this.onProgress?.({ loaded: this._loaded });
-    const buffer = new Uint8Array(value!).buffer;
-    return { value: buffer, done: false } as ReadValue;
+
+    return { value: getArrayBuffer(value), done: false };
   }
 
   /** @implement */

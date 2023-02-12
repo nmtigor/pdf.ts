@@ -17,21 +17,17 @@
  * limitations under the License.
  */
 
-import { _PDFDEV } from "../../../global.ts";
 import { assert } from "../../../lib/util/trace.ts";
 import {
   AnnotStorageRecord,
   AnnotStorageValue,
 } from "../display/annotation_layer.ts";
-import { MessageHandler, Thread } from "../shared/message_handler.ts";
 import {
   ActionEventName,
   type ActionEventTypeType,
   AnnotationEditorPrefix,
   BaseException,
-  FontType,
   objectSize,
-  StreamType,
   stringToPDFString,
   warn,
 } from "../shared/util.ts";
@@ -103,51 +99,6 @@ export class XRefEntryException extends BaseException {
 export class XRefParseException extends BaseException {
   constructor(msg?: string) {
     super(msg, "XRefParseException");
-  }
-}
-
-export class DocStats {
-  #handler;
-
-  #streamTypes = new Set<StreamType>();
-  #fontTypes = new Set<FontType>();
-
-  constructor(handler: MessageHandler<Thread.worker>) {
-    this.#handler = handler;
-  }
-
-  _send() {
-    const streamTypes = Object.create(null),
-      fontTypes = Object.create(null);
-    for (const type of this.#streamTypes) {
-      streamTypes[type] = true;
-    }
-    for (const type of this.#fontTypes) {
-      fontTypes[type] = true;
-    }
-    this.#handler.send("DocStats", { streamTypes, fontTypes });
-  }
-
-  addStreamType(type: StreamType) {
-    /*#static*/ if (_PDFDEV) {
-      assert(StreamType[type] === type, 'addStreamType: Invalid "type" value.');
-    }
-    if (this.#streamTypes.has(type)) {
-      return;
-    }
-    this.#streamTypes.add(type);
-    this._send();
-  }
-
-  addFontType(type: FontType) {
-    if (_PDFDEV) {
-      assert(FontType[type] === type, 'addFontType: Invalid "type" value.');
-    }
-    if (this.#fontTypes.has(type)) {
-      return;
-    }
-    this.#fontTypes.add(type);
-    this._send();
   }
 }
 

@@ -17,7 +17,8 @@
  * limitations under the License.
  */
 
-import { type rect_t, stringToBytes, Util, warn } from "../../shared/util.ts";
+import { type rect_t } from "../../../../lib/alias.ts";
+import { stringToBytes, Util, warn } from "../../shared/util.ts";
 import { recoverJsURL } from "../core_utils.ts";
 import {
   type AvailableSpace,

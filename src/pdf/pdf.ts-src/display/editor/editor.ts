@@ -22,7 +22,7 @@
 // eslint-disable-next-line max-len
 /** @typedef {import("./tools.js").AnnotationEditorUIManager} AnnotationEditorUIManager */
 
-import { Constructor } from "../../../../lib/alias.ts";
+import { type Constructor, type rect_t } from "../../../../lib/alias.ts";
 import { html } from "../../../../lib/dom.ts";
 import { assert } from "../../../../lib/util/trace.ts";
 import { RGB } from "../../shared/scripting_utils.ts";
@@ -30,7 +30,6 @@ import {
   AnnotationEditorParamsType,
   AnnotationEditorType,
   FeatureTest,
-  rect_t,
   shadow,
 } from "../../shared/util.ts";
 import { AnnotationEditorLayer } from "./annotation_editor_layer.ts";

@@ -31,16 +31,10 @@ interface GlobalWorkerOptionsType {
    *   NOTE: The `workerSrc` option should always be set, in order to prevent any
    *         issues when using the PDF.js library.
    */
-  workerSrc?: string | undefined;
+  workerSrc: string;
 }
 
 export const GlobalWorkerOptions: GlobalWorkerOptionsType = Object.create(null);
 
-GlobalWorkerOptions.workerPort = GlobalWorkerOptions.workerPort === undefined
-  ? undefined
-  : GlobalWorkerOptions.workerPort;
-
-GlobalWorkerOptions.workerSrc = GlobalWorkerOptions.workerSrc === undefined
-  ? ""
-  : GlobalWorkerOptions.workerSrc;
+GlobalWorkerOptions.workerSrc = "";
 /*80--------------------------------------------------------------------------*/

@@ -21,8 +21,8 @@ import {
   assertEquals,
   assertInstanceOf,
   assertNotEquals,
-} from "https://deno.land/std@0.165.0/testing/asserts.ts";
-import { describe, it } from "https://deno.land/std@0.165.0/testing/bdd.ts";
+} from "https://deno.land/std@0.170.0/testing/asserts.ts";
+import { describe, it } from "https://deno.land/std@0.170.0/testing/bdd.ts";
 import { MurmurHash3_64 } from "./murmurhash3.ts";
 /*80--------------------------------------------------------------------------*/
 
@@ -51,7 +51,7 @@ describe("MurmurHash3_64", () => {
   });
   it("correctly generates a hash from a Uint32Array", () => {
     const hash = new MurmurHash3_64();
-    //kkkk "RangeError: Invalid typed array length: 1" @ murmurhash3.ts:65
+    // kkkk "RangeError: Invalid typed array length: 1" @ murmurhash3.ts:65
     // hash.update(new Uint32Array(new Uint8Array(sourceCharCodes).buffer));
     // assertEquals(hash.hexdigest(), hexDigestExpected);
   });

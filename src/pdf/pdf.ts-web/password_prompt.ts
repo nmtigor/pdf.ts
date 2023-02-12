@@ -17,8 +17,11 @@
  * limitations under the License.
  */
 
-import { createPromiseCap, PromiseCap } from "../../lib/promisecap.ts";
-import { PasswordResponses } from "../pdf.ts-src/pdf.ts";
+import {
+  createPromiseCapability,
+  PasswordResponses,
+  type PromiseCapability,
+} from "../pdf.ts-src/pdf.ts";
 import { type IL10n } from "./interfaces.ts";
 import { OverlayManager } from "./overlay_manager.ts";
 import { type ViewerConfiguration } from "./viewer.ts";
@@ -34,7 +37,7 @@ export class PasswordPrompt {
   l10n;
   _isViewerEmbedded;
 
-  #activeCapability: PromiseCap<void> | undefined;
+  #activeCapability: PromiseCapability<void> | undefined;
   #updateCallback!: ((password: string | Error) => void) | undefined;
   #reason?: PasswordResponses;
 
@@ -77,7 +80,7 @@ export class PasswordPrompt {
     if (this.#activeCapability) {
       await this.#activeCapability.promise;
     }
-    this.#activeCapability = createPromiseCap();
+    this.#activeCapability = createPromiseCapability();
 
     try {
       await this.overlayManager.open(this.dialog);

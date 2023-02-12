@@ -17,7 +17,8 @@
  * limitations under the License.
  */
 
-import { type TupleOf } from "../../../lib/alias.ts";
+import { GENERIC } from "../../../global.ts";
+import { type point_t, type rect_t, type TupleOf } from "../../../lib/alias.ts";
 import { assert } from "../../../lib/util/trace.ts";
 import { TilingPaintType, TilingType } from "../display/pattern_helper.ts";
 import { MessageHandler, Thread } from "../shared/message_handler.ts";
@@ -25,8 +26,6 @@ import {
   FormatError,
   info,
   type matrix_t,
-  type point_t,
-  type rect_t,
   shadow,
   UNSUPPORTED_FEATURES,
   Util,
@@ -95,10 +94,12 @@ export abstract class Pattern {
       if (ex instanceof MissingDataException) {
         throw ex;
       }
-      handler.send("UnsupportedFeature", {
-        featureId: UNSUPPORTED_FEATURES.shadingPattern,
-      });
-      warn(<any> ex);
+      /*#static*/ if (GENERIC) {
+        handler.send("UnsupportedFeature", {
+          featureId: UNSUPPORTED_FEATURES!.shadingPattern,
+        });
+      }
+      warn(ex as any);
       return new DummyShading();
     }
   }

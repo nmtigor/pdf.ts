@@ -17,10 +17,10 @@
  * limitations under the License.
  */
 
-import { _INFO, _PDFDEV, global, PDFTS_vv } from "../../../global.ts";
+import { _PDFDEV, _TRACE, global, PDFTS_vv } from "../../../global.ts";
+import { type Id, type rect_t } from "../../../lib/alias.ts";
 import { HttpStatusCode } from "../../../lib/HttpStatusCode.ts";
 import { isObjectLike } from "../../../lib/jslang.ts";
-import { createPromiseCap, PromiseCap } from "../../../lib/promisecap.ts";
 import { assert } from "../../../lib/util/trace.ts";
 import { PageLayout, PageMode } from "../../pdf.ts-web/ui_utils.ts";
 import { type AnnotationData, type FieldObject } from "../core/annotation.ts";
@@ -46,7 +46,6 @@ import { type AnnotStorageRecord } from "../display/annotation_layer.ts";
 import {
   type BinaryData,
   type OutlineNode,
-  type PDFDocumentStats,
   type RefProxy,
   StructTreeNode,
   type TextItem,
@@ -56,12 +55,13 @@ import { type CMapData } from "../display/base_factory.ts";
 import { VerbosityLevel } from "../pdf.ts";
 import {
   AbortException,
+  createPromiseCapability,
   InvalidPDFException,
   MissingPDFException,
   PasswordException,
   PasswordResponses,
   PermissionFlag,
-  type rect_t,
+  type PromiseCapability,
   RenderingIntentFlag,
   UnexpectedResponseException,
   UnknownErrorException,
@@ -295,11 +295,6 @@ export interface MActionMap {
     Return: PermissionFlag[] | undefined;
     Sinkchunk: undefined;
   };
-  GetStats: {
-    Data: null;
-    Return: PDFDocumentStats;
-    Sinkchunk: undefined;
-  };
   GetStructTree: {
     Data: {
       pageIndex: number;
@@ -411,11 +406,6 @@ export interface WActionMap {
     Return: void;
     Sinkchunk: undefined;
   };
-  DocStats: {
-    Data: PDFDocumentStats;
-    Return: void;
-    Sinkchunk: undefined;
-  };
   FetchBuiltInCMap: {
     Data: {
       name: string;
@@ -523,7 +513,7 @@ export interface StreamSink<
   close?(): void;
   error?(reason: reason_t): void;
 
-  sinkCapability?: PromiseCap;
+  sinkCapability?: PromiseCapability;
   onPull?(desiredSize?: number): void;
   onCancel?(reason: object): void;
   isCancelled?: boolean;
@@ -585,7 +575,7 @@ interface Message<
 
   chunk?: ActionSinkchunk<Ta, AN>;
 }
-// #if _INFO && PDFTS
+// #if _TRACE && PDFTS
 function stringof<Ta extends Thread>(msg: Message<Ta>) {
   return `[${msg.sourceName} -> ${msg.targetName}]` +
     (msg.stream ? ` stream_${msg.streamId}: ${StreamKind[msg.stream]}` : "") +
@@ -602,9 +592,9 @@ interface StreamController<
   AN extends ActionName<Ta> = ActionName<Ta>,
 > {
   controller: ReadableStreamDefaultController<ActionSinkchunk<Ta, AN>>;
-  startCall: PromiseCap;
-  pullCall?: PromiseCap;
-  cancelCall?: PromiseCap;
+  startCall: PromiseCapability;
+  pullCall?: PromiseCapability;
+  cancelCall?: PromiseCapability;
   isClosed: boolean;
 }
 
@@ -622,7 +612,7 @@ export class MessageHandler<
   streamId = 1;
   streamSinks: StreamSink<Ta>[] = Object.create(null);
   streamControllers: StreamController<Tn>[] = Object.create(null);
-  callbackCapabilities: PromiseCap<unknown>[] = Object.create(null);
+  callbackCapabilities: PromiseCapability<unknown>[] = Object.create(null);
   actionHandler: Record<ActionName<Tn>, ActionHandler<Tn>> = Object.create(
     null,
   );
@@ -640,18 +630,19 @@ export class MessageHandler<
     if (data.targetName !== this.sourceName) {
       return;
     }
-    /*#static*/ if (_INFO && PDFTS_vv) {
+    let r_: Id<void>;
+    /*#static*/ if (_TRACE && PDFTS_vv) {
       console.log(
         `${global.indent}>>>>>>> MessageHandler_${this.sourceName}_${this.id}.#onComObjOnMessage() >>>>>>>`,
       );
       console.log(`${global.dent}${stringof(event.data)}`);
-    }
+      r_ = () => {
+        global.outdent;
+      };
+    } else r_ = () => {};
     if (data.stream) {
       this.#processStreamMessage(data);
-      /*#static*/ if (_INFO && PDFTS_vv) {
-        global.outdent;
-      }
-      return;
+      return r_();
     }
     if (data.callback) {
       const callbackId = data.callbackId!;
@@ -668,10 +659,7 @@ export class MessageHandler<
       } else {
         throw new Error("Unexpected callback case");
       }
-      /*#static*/ if (_INFO && PDFTS_vv) {
-        global.outdent;
-      }
-      return;
+      return r_();
     }
     const action = this.actionHandler[data.action!];
     if (!action) {
@@ -704,22 +692,14 @@ export class MessageHandler<
           }, undefined);
         },
       );
-      /*#static*/ if (_INFO && PDFTS_vv) {
-        global.outdent;
-      }
-      return;
+      return r_();
     }
     if (data.streamId) {
       this.#createStreamSink(data);
-      /*#static*/ if (_INFO && PDFTS_vv) {
-        global.outdent;
-      }
-      return;
+      return r_();
     }
     action(<any> data.data, <any> undefined);
-    /*#static*/ if (_INFO && PDFTS_vv) {
-      global.outdent;
-    }
+    return r_();
   };
 
   on<AN extends ActionName<Tn>>(
@@ -775,8 +755,10 @@ export class MessageHandler<
     transfers?: Transferable[],
   ): Promise<ActionReturn<Ta, AN>> {
     const callbackId = this.callbackId++;
-    const capability = createPromiseCap<ActionReturn<Ta, AN>>();
-    this.callbackCapabilities[callbackId] = <PromiseCap<unknown>> capability;
+    const capability = createPromiseCapability<ActionReturn<Ta, AN>>();
+    this.callbackCapabilities[callbackId] = <PromiseCapability<
+      unknown
+    >> capability;
     try {
       this.comObj.postMessage(
         {
@@ -817,7 +799,7 @@ export class MessageHandler<
     return new ReadableStream<ActionSinkchunk<Ta, AN>>(
       {
         start: (controller: ReadableStreamDefaultController) => {
-          const startCapability = createPromiseCap();
+          const startCapability = createPromiseCapability();
           this.streamControllers[streamId] = {
             controller,
             startCall: startCapability,
@@ -839,7 +821,7 @@ export class MessageHandler<
         },
 
         pull: (controller: ReadableStreamDefaultController) => {
-          const pullCapability = createPromiseCap();
+          const pullCapability = createPromiseCapability();
           this.streamControllers[streamId].pullCall = pullCapability;
           comObj.postMessage({
             sourceName,
@@ -855,7 +837,7 @@ export class MessageHandler<
 
         cancel: (reason: reason_t) => {
           // assert(reason instanceof Error, "cancel must have a valid reason");
-          const cancelCapability = createPromiseCap();
+          const cancelCapability = createPromiseCapability();
           this.streamControllers[streamId].cancelCall = cancelCapability;
           this.streamControllers[streamId].isClosed = true;
           comObj.postMessage({
@@ -881,7 +863,7 @@ export class MessageHandler<
     const self = this,
       action = this.actionHandler[data.action!];
 
-    const sinkCapability = createPromiseCap();
+    const sinkCapability = createPromiseCapability();
     const streamSink: StreamSink<Ta> = {
       enqueue(chunk, size = 1, transfers) {
         if (this.isCancelled) {
@@ -893,7 +875,7 @@ export class MessageHandler<
         // so when it changes from positive to negative,
         // set ready as unresolved promise.
         if (lastDesiredSize > 0 && this.desiredSize! <= 0) {
-          this.sinkCapability = createPromiseCap();
+          this.sinkCapability = createPromiseCapability();
           this.ready = this.sinkCapability.promise;
         }
         comObj.postMessage(

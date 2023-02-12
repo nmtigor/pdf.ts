@@ -18,6 +18,7 @@
  */
 
 import { DENO, MOZCENTRAL } from "../../../global.ts";
+import { type point_t, type rect_t } from "../../../lib/alias.ts";
 import { html } from "../../../lib/dom.ts";
 import { type XFAElObj } from "../core/xfa/alias.ts";
 import { RGB } from "../shared/scripting_utils.ts";
@@ -25,8 +26,6 @@ import {
   BaseException,
   CMapCompressionType,
   type matrix_t,
-  type point_t,
-  type rect_t,
   shadow,
   stringToBytes,
   Util,
@@ -74,12 +73,10 @@ export class DOMCanvasFactory extends BaseCanvasFactory {
 }
 
 async function fetchData(url: string, asTypedArray = false) {
-  /*#static*/ if (
-    MOZCENTRAL ||
-    isValidFetchUrl(url, globalThis.document?.baseURI)
-  ) {
+  if (MOZCENTRAL || isValidFetchUrl(url, globalThis.document?.baseURI)) {
     const response = await fetch(url);
     if (!response.ok) {
+      response.body?.cancel();
       throw new Error(response.statusText);
     }
     return asTypedArray
@@ -124,9 +121,7 @@ export class DOMCMapReaderFactory extends BaseCMapReaderFactory {
    */
   _fetchData(url: string, compressionType: CMapCompressionType) {
     return fetchData(url, /* asTypedArray = */ this.isCompressed).then(
-      (data) => {
-        return { cMapData: data, compressionType };
-      },
+      (data) => ({ cMapData: data, compressionType }),
     );
   }
 }
@@ -532,13 +527,8 @@ export function isValidFetchUrl(
 ) {
   try {
     const { protocol } = baseUrl ? new URL(url!, baseUrl) : new URL(url!);
-    if (DENO) {
-      return protocol === "http:" || protocol === "https:" ||
-        protocol === "file:";
-    } else {
-      // The Fetch API only supports the http/https protocols, and not file/ftp.
-      return protocol === "http:" || protocol === "https:";
-    }
+    // The Fetch API only supports the http/https protocols, and not file/ftp.
+    return protocol === "http:" || protocol === "https:";
   } catch (ex) {
     return false; // `new URL()` will throw on incorrect data.
   }

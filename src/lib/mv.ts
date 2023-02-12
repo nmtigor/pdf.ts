@@ -168,7 +168,7 @@ export abstract class Vuu<C extends Coo = Coo, E extends Element = Element> {
     return this.el$.off(type, listener, options);
   }
 
-  assignAttro(attr_o: Record<string, string>): this {
+  assignAttro(attr_o: Record<string, string | number>): this {
     this.el$.assignAttro(attr_o);
     return this;
   }
@@ -276,7 +276,7 @@ export abstract class SVGVCo<CI extends CooInterface, E extends SVGElement>
 // console.log( vcoo instanceof Coo ); // false
 
 export class SVGViewbox<CI extends CooInterface = CooInterface>
-  extends SVGVCo<CI> {
+  extends SVGVCo<CI, SVGSVGElement> {
   /**
    * @headconst @param coo_x
    * @const @param viewBox_x
@@ -291,8 +291,9 @@ export class SVGViewbox<CI extends CooInterface = CooInterface>
 export type MooEq<T extends {} | null> = (a: T, b: T) => boolean;
 export type MooHandler<T extends {} | null, D = any> = (
   newval: T,
-  oldval?: T,
+  oldval: T,
   data?: D,
+  // moo?: Moo<T, D>,
 ) => void;
 
 // type IndexedMooHandler< T > = [ uint, MooHandler<T> ];
@@ -301,12 +302,16 @@ interface MooHandlerExt<T extends {} | null, D = any> {
   handler: MooHandler<T, D>;
   match_newval: T | undefined;
   match_oldval: T | undefined;
-  force: boolean;
+  forcing: boolean;
   index: number;
 }
 class MooHandlerDB<T extends {} | null, D = any> {
   readonly #eq: MooEq<T>;
 
+  /**
+   * Soted by `index_x` ascendingly
+   * Same `index_x` elements are sorted by their adding order.
+   */
   readonly #_a: MooHandlerExt<T, D>[] = [];
   get len_$() {
     return this.#_a.length;
@@ -339,12 +344,12 @@ class MooHandlerDB<T extends {} | null, D = any> {
     handler_x: MooHandler<T, D>,
     match_newval_x?: T,
     match_oldval_x?: T,
-    force_x = false,
+    forcing_x = false,
     index_x = 0,
   ) {
-    if (this.#_a.some((_) => _.handler === handler_x)) return false;
+    if (this.#_a.some((_y) => _y.handler === handler_x)) return false;
 
-    if (force_x) ++this.#nforce;
+    if (forcing_x) ++this.#nforce;
 
     let i = this.#_a.findIndex((ext_y) => index_x < ext_y.index);
     if (i < 0) i = this.#_a.length;
@@ -352,7 +357,7 @@ class MooHandlerDB<T extends {} | null, D = any> {
       handler: handler_x,
       match_newval: match_newval_x,
       match_oldval: match_oldval_x,
-      force: force_x,
+      forcing: forcing_x,
       index: index_x,
     });
     this.#got.length = 0; //!
@@ -383,7 +388,7 @@ class MooHandlerDB<T extends {} | null, D = any> {
     const del_ = this.#strict_eq(toDel.match_newval, match_newval_x) &&
       this.#strict_eq(toDel.match_oldval, match_oldval_x);
     if (del_) {
-      if (toDel.force) --this.#nforce;
+      if (toDel.forcing) --this.#nforce;
 
       this.#_a.splice(i, 1);
       this.#got.length = 0; //!
@@ -400,8 +405,12 @@ class MooHandlerDB<T extends {} | null, D = any> {
   #oldval: T | undefined;
   #gforce: boolean | undefined;
   #got: MooHandler<T, D>[] = [];
+  /**
+   * Get a sub-array of `#_a`
+   */
   get(newval_x: T, oldval_x: T, gforce_x: boolean) {
     if (
+      this.#got.length &&
       this.#newval !== undefined && this.#eq(this.#newval, newval_x) &&
       this.#oldval !== undefined && this.#eq(this.#oldval, oldval_x) &&
       this.#gforce === gforce_x
@@ -419,7 +428,7 @@ class MooHandlerDB<T extends {} | null, D = any> {
       if (
         this.#match(ext.match_newval, newval_x) &&
         this.#match(ext.match_oldval, oldval_x) &&
-        (changed_ || gforce_x || ext.force)
+        (changed_ || gforce_x || ext.forcing)
       ) {
         this.#got.push(ext.handler);
       }
@@ -434,13 +443,21 @@ class MooHandlerDB<T extends {} | null, D = any> {
   }
 }
 
+type MooCtorP_<T extends {} | null> = {
+  val: T;
+  eq_?: MooEq<T>;
+  active?: boolean;
+  forcing?: boolean;
+};
+
 /**
- * Instance of `Moo` concerns about one value, whether it changes or not.
- * Instance of `Moo` stores many callbacks.
+ * `Moo` instance concerns about one value, whether it changes or not.
+ * `Moo` instance stores many callbacks.
  */
 export class Moo<T extends {} | null, D = any> {
   readonly #initval: T;
   readonly #eq: MooEq<T>;
+  readonly #active: boolean;
   readonly #forcing: boolean;
 
   #val!: T;
@@ -448,6 +465,7 @@ export class Moo<T extends {} | null, D = any> {
     return this.#val;
   }
 
+  #oldval!: T;
   #newval!: T;
   get newval() {
     return this.#newval;
@@ -460,8 +478,8 @@ export class Moo<T extends {} | null, D = any> {
   }
 
   #forcingOnce = false;
-  set forceOnce(force_x: boolean) {
-    this.#forcingOnce = force_x;
+  set forceOnce(forcing_x: boolean) {
+    this.#forcingOnce = forcing_x;
   }
   force(): this {
     this.#forcingOnce = true;
@@ -480,21 +498,22 @@ export class Moo<T extends {} | null, D = any> {
     this.#data = data_x;
   }
 
-  /**
-   * @headconst @param val_x
-   * @headconst @param eq_x
-   * @const @param force_x
-   */
-  constructor(val_x: T, eq_x = (a: T, b: T) => a === b, force_x?: "force") {
-    this.#initval = val_x;
-    this.#eq = eq_x;
-    this.#forcing = force_x === undefined ? false : true;
+  constructor({
+    val,
+    eq_ = (a: T, b: T) => a === b,
+    active = false,
+    forcing = false,
+  }: MooCtorP_<T>) {
+    this.#initval = val;
+    this.#eq = eq_;
+    this.#active = active;
+    this.#forcing = forcing;
 
     this.reset();
   }
 
   /**
-   * Without invoking any callbacks.
+   * Not invoking any callbacks
    */
   set(val: T) {
     this.#val = this.#newval = val;
@@ -513,19 +532,24 @@ export class Moo<T extends {} | null, D = any> {
     return this;
   }
 
-  /** @final */
+  /**
+   * Small index callbacks will be called first
+   * Same index callbacks will be called by adding order
+   *
+   * @final
+   */
   registHandler(
     handler_x: MooHandler<T, D>,
     match_newval_x?: T,
     match_oldval_x?: T,
-    force_x?: "force",
+    forcing_x?: boolean,
     index_x = 0,
   ) {
     this.#handler_db.add(
       handler_x,
       match_newval_x,
       match_oldval_x,
-      force_x !== undefined,
+      forcing_x,
       index_x,
     );
     // console.log( `this.#handler_db.size=${this.#handler_db.size}` );
@@ -544,10 +568,10 @@ export class Moo<T extends {} | null, D = any> {
     handler_x: MooHandler<T, D>,
     match_newval_x?: T,
     match_oldval_x?: T,
-    force_x?: "force",
+    forcing_x?: boolean,
     index_x = 0,
   ) {
-    const wrap_ = (newval_y: T, oldval_y?: T, data_y?: D) => {
+    const wrap_ = (newval_y: T, oldval_y: T, data_y?: D) => {
       handler_x(newval_y, oldval_y, data_y);
       this.removeHandler(wrap_, match_newval_x, match_oldval_x);
     };
@@ -555,57 +579,68 @@ export class Moo<T extends {} | null, D = any> {
       wrap_,
       match_newval_x,
       match_oldval_x,
-      force_x,
+      forcing_x,
       index_x,
     );
   }
 
-  /** @final */
+  /**
+   * Force `match_newval_x`, ignore `match_oldval_x`
+   * @final
+   */
   on(
     newval_x: T,
     handler_x: MooHandler<T, D>,
-    force_x?: "force",
+    forcing_x?: boolean,
     index_x = 0,
   ) {
-    this.registHandler(handler_x, newval_x, undefined, force_x, index_x);
+    this.registHandler(handler_x, newval_x, undefined, forcing_x, index_x);
   }
-  /** @final */
+  /**
+   * Force `match_newval_x`, ignore `match_oldval_x`
+   * @final
+   */
   off(newval_x: T, handler_x: MooHandler<T, D>) {
     this.removeHandler(handler_x, newval_x);
   }
-  /** @final */
+  /**
+   * Force `match_newval_x`, ignore `match_oldval_x`
+   * @final
+   */
   once(
     newval_x: T,
     handler_x: MooHandler<T, D>,
-    force_x?: "force",
+    forcing_x?: boolean,
     index_x = 0,
   ) {
     this.registOnceHandler(
       handler_x,
       newval_x,
       undefined,
-      force_x,
+      forcing_x,
       index_x,
     );
   }
 
-  set val(val_x: T) {
+  set val(newval_x: T) {
     if (
-      this.#eq(val_x, this.#val) &&
+      this.#eq(newval_x, this.#val) &&
       !this.#forcing_ &&
       !this.#handler_db.forcing_$
     ) {
       return;
     }
 
-    this.#newval = val_x;
-    this.#handler_db.get(val_x, this.#val, this.#forcing_)
-      .forEach((handler_y) => handler_y(val_x, this.#val, this.#data));
+    this.#oldval = this.#val;
+    this.#newval = newval_x;
+    if (this.#active) this.#val = newval_x;
+    this.#handler_db.get(newval_x, this.#oldval, this.#forcing_)
+      .forEach((handler_y) => handler_y(newval_x, this.#val, this.#data));
     // for( const handler_y of this.#handler_db )
     // {
-    //   handler_y( val_x, this.#val, this );
+    //   handler_y( newval_x, this.#val, this );
     // }
-    this.#val = val_x;
+    this.#val = newval_x;
     this.#forcingOnce = this.#forcing;
     this.#data = undefined; // it is used once
 

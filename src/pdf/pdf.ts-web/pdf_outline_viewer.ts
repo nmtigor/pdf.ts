@@ -19,8 +19,13 @@
 
 import { html } from "../../lib/dom.ts";
 import { isObjectLike } from "../../lib/jslang.ts";
-import { createPromiseCap, PromiseCap } from "../../lib/promisecap.ts";
-import { type OutlineNode, PDFDocumentProxy, Ref } from "../pdf.ts-src/pdf.ts";
+import {
+  createPromiseCapability,
+  type OutlineNode,
+  PDFDocumentProxy,
+  type PromiseCapability,
+  Ref,
+} from "../pdf.ts-src/pdf.ts";
 import {
   BaseTreeViewer,
   type BaseTreeViewerCtorP,
@@ -58,13 +63,13 @@ export class PDFOutlineViewer extends BaseTreeViewer {
   #outline: OutlineNode[] | undefined;
 
   #pageNumberToDestHashCapability:
-    | PromiseCap<Map<number, string> | undefined>
+    | PromiseCapability<Map<number, string> | undefined>
     | undefined;
   _currentPageNumber!: number;
   _sidebarView?: SidebarView;
 
   _isPagesLoaded!: boolean | undefined;
-  #currentOutlineItemCapability?: PromiseCap<boolean> | undefined;
+  #currentOutlineItemCapability?: PromiseCapability<boolean> | undefined;
 
   linkService: PDFLinkService;
   downloadManager;
@@ -123,7 +128,7 @@ export class PDFOutlineViewer extends BaseTreeViewer {
 
   /** @implement */
   protected _dispatchEvent(outlineCount: number) {
-    this.#currentOutlineItemCapability = createPromiseCap();
+    this.#currentOutlineItemCapability = createPromiseCapability();
     if (
       outlineCount === 0 ||
       this._pdfDocument?.loadingParams.disableAutoFetch
@@ -333,7 +338,7 @@ export class PDFOutlineViewer extends BaseTreeViewer {
     if (this.#pageNumberToDestHashCapability) {
       return this.#pageNumberToDestHashCapability.promise;
     }
-    this.#pageNumberToDestHashCapability = createPromiseCap();
+    this.#pageNumberToDestHashCapability = createPromiseCapability();
 
     const pageNumberToDestHash = new Map<number, string>(),
       pageNumberNesting = new Map();

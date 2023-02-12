@@ -23,7 +23,10 @@
 /** @typedef {import("../src/display/display_utils").PageViewport} PageViewport */
 /** @typedef {import("./ui_utils").RenderingStates} RenderingStates */
 
-import { type Locale_1, type WebL10nArgs } from "../../3rd/webL10n/l10n.ts";
+import {
+  type Locale_1,
+  type WebL10nArgs,
+} from "../../3rd/webL10n-2015-10-24/l10n.ts";
 import {
   AnnotActions,
   AppInfo,
@@ -207,12 +210,12 @@ export interface IL10n {
   translate(element: HTMLElement): Promise<void>;
 }
 
-export interface CreateSandboxP {
+export type CreateSandboxP = {
   objects: Record<string, FieldObject[]>;
   calculationOrder: string[] | undefined;
   appInfo: AppInfo;
   docInfo: DocInfo;
-}
+};
 
 export interface EventInSandBox {
   id: string;

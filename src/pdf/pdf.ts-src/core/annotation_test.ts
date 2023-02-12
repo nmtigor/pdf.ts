@@ -20,7 +20,7 @@
 import {
   assertEquals,
   assertFalse,
-} from "https://deno.land/std@0.165.0/testing/asserts.ts";
+} from "https://deno.land/std@0.170.0/testing/asserts.ts";
 import {
   afterAll,
   afterEach,
@@ -28,7 +28,8 @@ import {
   beforeEach,
   describe,
   it,
-} from "https://deno.land/std@0.165.0/testing/bdd.ts";
+} from "https://deno.land/std@0.170.0/testing/bdd.ts";
+import { type rect_t } from "../../../lib/alias.ts";
 import {
   DefaultCMapReaderFactory,
   DefaultStandardFontDataFactory,
@@ -48,7 +49,6 @@ import {
   AnnotationReplyType,
   AnnotationType,
   OPS,
-  type rect_t,
   RenderingIntentFlag,
   stringToBytes,
   stringToUTF8String,
@@ -62,6 +62,7 @@ import {
   SaveReturn,
   WidgetAnnotation,
 } from "./annotation.ts";
+import { AnnotStorageRecord } from "../display/annotation_layer.ts";
 import { LocalIdFactory } from "./document.ts";
 import { PartialEvaluator } from "./evaluator.ts";
 import { Lexer, Parser } from "./parser.ts";
@@ -2493,11 +2494,11 @@ describe("annotation", () => {
         buttonWidgetRef,
         pdfManagerMock,
         idFactoryMock,
-      ) as Annotation;
-      const annotationStorage = new Map();
-      annotationStorage.set(annotation.data.id, { value: true });
+      );
+      const annotationStorage: AnnotStorageRecord = new Map();
+      annotationStorage.set(annotation!.data.id, { value: true });
 
-      const { opList } = await annotation.getOperatorList(
+      const { opList } = await annotation!.getOperatorList(
         checkboxEvaluator,
         task,
         RenderingIntentFlag.PRINT,
@@ -2519,8 +2520,7 @@ describe("annotation", () => {
         [1, 0, 0, 1, 0, 0],
         false,
       ]);
-      //kkkk
-      // assertEquals(opList.argsArray[3]![0][0].unicode, "4");
+      assertEquals(opList.argsArray[3]![0][0].unicode, "4");
     });
 
     it("should render checkboxes for printing", async () => {

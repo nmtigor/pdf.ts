@@ -2,7 +2,7 @@ The purpose of this project is to help learning PDF format and developing PDF to
 
 It is
 
-* based on [pdf.js@v3.2.146](https://github.com/mozilla/pdf.js/tree/v3.2.146),
+* based on [pdf.js@v3.3.122](https://github.com/mozilla/pdf.js/tree/v3.3.122),
 
 * **transpiled using [TypeScript@mymain](https://github.com/nmtigor/TypeScript/tree/mymain/PRs)!**
 
@@ -30,12 +30,16 @@ It is
 
 ### deno test
 
-* In app_options.ts:66, change `D_base`  to `"file:///path_to/pdf.ts"`;
 * In global.ts, change `DENO`, `TESTING` to `true`.
 * 
   ```bash
   cd /path_to/pdf.ts/src/test
-  deno test --allow-read --allow-net ../pdf # 50 passed (1014 steps)
+  deno run --allow-net --allow-read test_server.ts # Start a local file server at port 8000
+  ```
+* 
+  ```bash
+  cd /path_to/pdf.ts/src/test
+  deno test --allow-net --allow-read ../pdf # 50 passed (1015 steps)
   ```
 
 --------------------------------------------------------------------------------

@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-import { Locale_1, WebL10nArgs } from "../../3rd/webL10n/l10n.ts";
+import { Locale_1, WebL10nArgs } from "../../3rd/webL10n-2015-10-24/l10n.ts";
 import { MOZCENTRAL } from "../../global.ts";
 import { ArrEl } from "../../lib/alias.ts";
 import { Locale } from "../../lib/Locale.ts";
@@ -517,6 +517,11 @@ class FirefoxExternalServices extends DefaultExternalServices {
 
   override createScripting(options: unknown) {
     return new FirefoxScripting();
+  }
+
+  override get supportsPinchToZoom() {
+    const support = !!FirefoxCom.requestSync("supportsPinchToZoom");
+    return shadow(this, "supportsPinchToZoom", support);
   }
 
   override get supportsIntegratedFind() {

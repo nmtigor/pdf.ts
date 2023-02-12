@@ -29,7 +29,6 @@ import {
 import { BaseStream } from "./base_stream.ts";
 import { ChunkedStream } from "./chunked_stream.ts";
 import {
-  DocStats,
   MissingDataException,
   ParserEOFException,
   XRefEntryException,
@@ -81,7 +80,6 @@ export class XRef {
   xrefstms: number[] = Object.create(null);
   #cacheMap = new Map<number, ObjNoRef>(); // Prepare the XRef cache.
   _pendingRefs = new RefSet();
-  stats;
 
   #newPersistentRefNum: number | undefined;
   getNewPersistentRef(obj: StringStream | Dict) {
@@ -132,7 +130,6 @@ export class XRef {
   constructor(stream: Stream | ChunkedStream, pdfManager: BasePdfManager) {
     this.stream = stream;
     this.pdfManager = pdfManager;
-    this.stats = new DocStats(pdfManager.msgHandler);
   }
 
   parse(recoveryMode = false) {
@@ -646,16 +643,11 @@ export class XRef {
       this.startXRefQueue.push(xrefStm);
       this.readXRef(/* recoveryMode */ true);
     }
-    // finding main trailer
-    let trailerDict: Dict, trailerError;
-    for (const trailer of [...trailers, "generationFallback", ...trailers]) {
-      if (trailer === "generationFallback") {
-        if (!trailerError) {
-          break; // No need to fallback if there were no validation errors.
-        }
-        this.#generationFallback = true;
-        continue;
-      }
+
+    const trailerDicts: Dict[] = [];
+    // Pre-parsing the trailers to check if the document is possibly encrypted.
+    let isEncrypted = false;
+    for (const trailer of trailers) {
       stream.pos = trailer as number;
       const parser = new Parser({
         lexer: new Lexer(stream),
@@ -668,8 +660,27 @@ export class XRef {
         continue;
       }
       // read the trailer dictionary
-      const dict = <Dict> parser.getObj();
+      const dict = parser.getObj();
       if (!(dict instanceof Dict)) {
+        continue;
+      }
+      trailerDicts.push(dict);
+
+      if (dict.has("Encrypt")) {
+        isEncrypted = true;
+      }
+    }
+
+    // finding main trailer
+    let trailerDict: Dict, trailerError;
+    for (
+      const dict of [...trailerDicts, "genFallback", ...trailerDicts] as const
+    ) {
+      if (dict === "genFallback") {
+        if (!trailerError) {
+          break; // No need to fallback if there were no validation errors.
+        }
+        this.#generationFallback = true;
         continue;
       }
       // Do some basic validation of the trailer/root dictionary candidate.
@@ -693,7 +704,11 @@ export class XRef {
         continue;
       }
       // taking the first one with 'ID'
-      if (validPagesDict && dict.has("ID")) {
+      if (
+        validPagesDict &&
+        (!isEncrypted || dict.has("Encrypt")) &&
+        dict.has("ID")
+      ) {
         return dict;
       }
       // The current dictionary is a candidate, but continue searching.

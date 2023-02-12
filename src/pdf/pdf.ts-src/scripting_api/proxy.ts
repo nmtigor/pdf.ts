@@ -21,8 +21,8 @@ import { Field, SendFieldData } from "./field.ts";
 import { PDFObject, SendData } from "./pdf_object.ts";
 /*80--------------------------------------------------------------------------*/
 
-type _Obj = PDFObject<SendData>;
-export class ScriptingProxyHandler implements ProxyHandler<_Obj> {
+type Obj_ = PDFObject<SendData>;
+export class ScriptingProxyHandler implements ProxyHandler<Obj_> {
   /**
    * Don't dispatch an event for those properties.
    *  - delay: allow to delay field redraw until delay is set to false.
@@ -30,7 +30,7 @@ export class ScriptingProxyHandler implements ProxyHandler<_Obj> {
    */
   nosend = new Set(["delay"]);
 
-  get(obj: _Obj, prop: keyof _Obj) {
+  get(obj: Obj_, prop: keyof Obj_) {
     // script may add some properties to the object
     if (prop in obj._expandos) {
       const val = obj._expandos[prop];
@@ -53,12 +53,12 @@ export class ScriptingProxyHandler implements ProxyHandler<_Obj> {
     return undefined;
   }
 
-  set(obj: _Obj, prop: keyof _Obj, value: _Obj[keyof _Obj]) {
+  set(obj: Obj_, prop: keyof Obj_, value: Obj_[keyof Obj_]) {
     if ((<any> obj)._kidIds) {
       // If the field is a container for other fields then
       // dispatch the kids.
-      (<Field> obj)._kidIds!.forEach((id) => {
-        (<Field> obj)._appObjects[id].wrapped[prop] = value;
+      (obj as Field)._kidIds!.forEach((id) => {
+        (obj as Field)._appObjects[id].wrapped[prop] = value;
       });
     }
 
@@ -72,13 +72,15 @@ export class ScriptingProxyHandler implements ProxyHandler<_Obj> {
         typeof old !== "function"
       ) {
         const data: SendData = { id: obj._id };
-        (<any> data)[prop] = obj[prop];
+        (data as any)[prop] = prop as any === "value"
+          ? (obj as Field)._getValue()
+          : obj[prop];
 
         // send the updated value to the other side
-        if (!(<any> obj)._siblings) {
+        if (!(obj as any)._siblings) {
           obj._send(data);
         } else {
-          (<SendFieldData> data).siblings = (<Field> obj)._siblings;
+          (data as SendFieldData).siblings = (<Field> obj)._siblings;
           obj._send(data);
         }
       }
@@ -88,30 +90,30 @@ export class ScriptingProxyHandler implements ProxyHandler<_Obj> {
     return true;
   }
 
-  has(obj: _Obj, prop: keyof _Obj) {
+  has(obj: Obj_, prop: keyof Obj_) {
     return (
       prop in obj._expandos ||
       (typeof prop === "string" && !prop.startsWith("_") && prop in obj)
     );
   }
 
-  getPrototypeOf(obj: _Obj) {
+  getPrototypeOf(obj: Obj_) {
     return null;
   }
 
-  setPrototypeOf(obj: _Obj, proto: null) {
+  setPrototypeOf(obj: Obj_, proto: null) {
     return false;
   }
 
-  isExtensible(obj: _Obj) {
+  isExtensible(obj: Obj_) {
     return true;
   }
 
-  preventExtensions(obj: _Obj) {
+  preventExtensions(obj: Obj_) {
     return false;
   }
 
-  getOwnPropertyDescriptor(obj: _Obj, prop: keyof _Obj) {
+  getOwnPropertyDescriptor(obj: Obj_, prop: keyof Obj_) {
     if (prop in obj._expandos) {
       return {
         configurable: true,
@@ -127,19 +129,19 @@ export class ScriptingProxyHandler implements ProxyHandler<_Obj> {
     return undefined;
   }
 
-  defineProperty(obj: _Obj, key: keyof _Obj, descriptor: PropertyDescriptor) {
+  defineProperty(obj: Obj_, key: keyof Obj_, descriptor: PropertyDescriptor) {
     Object.defineProperty(obj._expandos, key, descriptor);
     return true;
   }
 
-  deleteProperty(obj: _Obj, prop: keyof _Obj) {
+  deleteProperty(obj: Obj_, prop: keyof Obj_) {
     if (prop in obj._expandos) {
       delete obj._expandos[prop];
     }
     return true;
   }
 
-  ownKeys(obj: _Obj) {
+  ownKeys(obj: Obj_) {
     const fromExpandos = Reflect.ownKeys(obj._expandos);
     const fromObj = Reflect.ownKeys(obj).filter((k) =>
       !(<string> k).startsWith("_")

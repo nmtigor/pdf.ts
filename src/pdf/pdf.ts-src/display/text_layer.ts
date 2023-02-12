@@ -22,9 +22,9 @@
 
 import { GENERIC } from "../../../global.ts";
 import { html, span } from "../../../lib/dom.ts";
-import { createPromiseCap } from "../../../lib/promisecap.ts";
 import {
   AbortException,
+  createPromiseCapability,
   FeatureTest,
   type matrix_t,
   Util,
@@ -424,7 +424,7 @@ export class TextLayerRenderTask {
   _textDivProperties: WeakMap<HTMLSpanElement, TextDivProps>;
   _canceled = false;
 
-  _capability = createPromiseCap();
+  _capability = createPromiseCapability();
   /**
    * Promise for textLayer rendering task completion.
    */
@@ -548,7 +548,7 @@ export class TextLayerRenderTask {
    * @private
    */
   _render() {
-    const capability = createPromiseCap();
+    const capability = createPromiseCapability();
     let styleCache = Object.create(null);
 
     if (this._isReadableStream) {

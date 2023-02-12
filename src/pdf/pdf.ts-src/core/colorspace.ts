@@ -18,15 +18,9 @@
  */
 
 import { _PDFDEV } from "../../../global.ts";
-import { type TypedArray } from "../../../lib/alias.ts";
+import { type rect_t, type TypedArray } from "../../../lib/alias.ts";
 import { assert } from "../../../lib/util/trace.ts";
-import {
-  FormatError,
-  info,
-  type rect_t,
-  shadow,
-  warn,
-} from "../shared/util.ts";
+import { FormatError, info, shadow, warn } from "../shared/util.ts";
 import { BaseStream } from "./base_stream.ts";
 import { MissingDataException } from "./core_utils.ts";
 import { type ParsedFunction, PDFFunctionFactory } from "./function.ts";

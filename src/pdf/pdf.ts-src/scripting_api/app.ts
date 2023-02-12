@@ -62,7 +62,7 @@ export interface ScriptingAppData extends ScriptingData<SendAppData>, AppInfo {
   proxyHandler: ScriptingProxyHandler;
 }
 
-interface _Callback {
+interface Callback_ {
   callbackId: number;
   interval: boolean;
 }
@@ -175,7 +175,7 @@ export class App extends PDFObject<SendAppData> {
   _objects;
   _eventDispatcher;
 
-  _timeoutIds = new WeakMap<object, _Callback>();
+  _timeoutIds = new WeakMap<object, Callback_>();
   _timeoutIdsRegistry;
 
   _timeoutCallbackIds = new Map<number, string>();
@@ -233,7 +233,7 @@ export class App extends PDFObject<SendAppData> {
     this._timeoutCallbackIds.delete(id);
   }
 
-  _evalCallback({ callbackId, interval }: _Callback) {
+  _evalCallback({ callbackId, interval }: Callback_) {
     if (callbackId === USERACTIVATION_CALLBACKID) {
       // Special callback id for userActivation stuff.
       this._document.obj._userActivation = false;
@@ -251,7 +251,7 @@ export class App extends PDFObject<SendAppData> {
 
   _registerTimeout(callbackId: number, interval: boolean) {
     const timeout = Object.create(null);
-    const id: _Callback = { callbackId, interval };
+    const id: Callback_ = { callbackId, interval };
     this._timeoutIds.set(timeout, id);
     this._timeoutIdsRegistry?.register(timeout, id);
     return timeout;
@@ -269,7 +269,7 @@ export class App extends PDFObject<SendAppData> {
     this._cleanTimeout(data);
   }
 
-  _cleanTimeout({ callbackId, interval }: _Callback) {
+  _cleanTimeout({ callbackId, interval }: Callback_) {
     this._unregisterTimeoutCallback(callbackId);
 
     if (interval) {

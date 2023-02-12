@@ -176,7 +176,7 @@ if (globalThis.Document) {
 
 declare global {
   interface Element {
-    assignAttro(attr_o: Record<string, string>): this;
+    assignAttro(attr_o: Record<string, string | number>): this;
 
     readonly scrollRight: number;
     readonly scrollBottom: number;
@@ -186,7 +186,7 @@ declare global {
 if (globalThis.Element) {
   Element.prototype.assignAttro = function (this, attr_o) {
     for (const [key, val] of Object.entries(attr_o)) {
-      this.setAttribute(key, val);
+      this.setAttribute(key, val as any);
     }
     return this;
   };
@@ -214,8 +214,8 @@ declare global {
      */
     readonly prevVisible?: HTMLElement;
 
-    readonly pageX: number;
-    readonly pageY: number;
+    // readonly pageX: number;
+    // readonly pageY: number;
 
     readonly viewLeft: number;
     readonly viewRight: number;
@@ -245,30 +245,30 @@ if (globalThis.HTMLElement) {
     },
   });
 
-  Reflect.defineProperty(HTMLElement.prototype, "pageX", {
-    get(this: HTMLElement) {
-      let ret = 0;
-      let el = <any> this;
-      do {
-        ret += el?.offsetLeft ?? 0;
-        ret += el?.clientLeft ?? 0;
-        ret -= el?.scrollLeft ?? 0;
-      } while (el = el.offsetParent);
-      return ret;
-    },
-  });
-  Reflect.defineProperty(HTMLElement.prototype, "pageY", {
-    get(this: HTMLElement) {
-      let ret = 0;
-      let el = <any> this;
-      do {
-        ret += el?.offsetTop ?? 0;
-        ret += el?.clientTop ?? 0;
-        ret -= el?.scrollTop ?? 0;
-      } while (el = el.offsetParent);
-      return ret;
-    },
-  });
+  // Reflect.defineProperty(HTMLElement.prototype, "pageX", {
+  //   get(this: HTMLElement) {
+  //     let ret = 0;
+  //     let el = this as any;
+  //     do {
+  //       ret += el?.offsetLeft ?? 0;
+  //       ret += el?.clientLeft ?? 0;
+  //       ret -= el?.scrollLeft ?? 0;
+  //     } while (el = el.offsetParent);
+  //     return ret;
+  //   },
+  // });
+  // Reflect.defineProperty(HTMLElement.prototype, "pageY", {
+  //   get(this: HTMLElement) {
+  //     let ret = 0;
+  //     let el = this as any;
+  //     do {
+  //       ret += el?.offsetTop ?? 0;
+  //       ret += el?.clientTop ?? 0;
+  //       ret -= el?.scrollTop ?? 0;
+  //     } while (el = el.offsetParent);
+  //     return ret;
+  //   },
+  // });
 
   Reflect.defineProperty(HTMLElement.prototype, "viewLeft", {
     get(this: HTMLElement) {
@@ -303,6 +303,21 @@ if (globalThis.SVGElement) {
   SVGElement.prototype.assignStylo = function (this, styl_o) {
     Object.assign(this.style, styl_o);
     return this;
+  };
+}
+/*64----------------------------------------------------------*/
+
+declare global {
+  interface CSSStyleDeclaration {
+    assignPropo(prop_o: Record<string, string | number>): void;
+  }
+}
+
+if (globalThis.CSSStyleDeclaration) {
+  CSSStyleDeclaration.prototype.assignPropo = function (this, prop_o) {
+    for (const [key, val] of Object.entries(prop_o)) {
+      this.setProperty(key, val as any);
+    }
   };
 }
 /*64----------------------------------------------------------*/

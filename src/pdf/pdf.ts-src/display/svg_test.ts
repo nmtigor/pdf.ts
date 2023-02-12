@@ -18,13 +18,18 @@
  */
 /* globals __non_webpack_require__ */
 
-import { assertThrows } from "https://deno.land/std@0.165.0/testing/asserts.ts";
+import {
+  assert,
+  assertEquals,
+  assertMatch,
+  assertThrows,
+} from "https://deno.land/std@0.170.0/testing/asserts.ts";
 import {
   afterAll,
   beforeAll,
   describe,
   it,
-} from "https://deno.land/std@0.165.0/testing/bdd.ts";
+} from "https://deno.land/std@0.170.0/testing/bdd.ts";
 import { ImgData } from "../core/evaluator.ts";
 import { buildGetDocumentParams } from "../shared/test_utils.ts";
 import { getDocument, PDFDocumentLoadingTask, PDFPageProxy } from "./api.ts";
@@ -141,35 +146,35 @@ describe("SVGGraphics", () => {
       // }
     });
 
-    it("should produce a reasonably small svg:image", async () => {
+    //kkkk "Error: zlib test can only be run in Node.js"
+    it.ignore("should produce a reasonably small svg:image", async () => {
       // if (!isNodeJS) {
       //   pending("zlib.deflateSync is not supported in non-Node environments.");
       // }
-      //kkkk "Error: zlib test can only be run in Node.js"
-      // const svgImg = await withZlib(true, getSVGImage);
-      // assertEquals(svgImg.nodeName, "svg:image");
-      // assertEquals(svgImg.getAttributeNS(null, "width"), "200px");
-      // assertEquals(svgImg.getAttributeNS(null, "height"), "100px");
-      // const imgUrl = svgImg.getAttributeNS(XLINK_NS, "href")!;
-      // // forceDataSchema = true, so the generated URL should be a data:-URL.
-      // assertMatch(imgUrl, /^data:image\/png;base64,/);
-      // // Test whether the generated image has a reasonable file size.
-      // // I obtained a data URL of size 366 with Node 8.1.3 and zlib 1.2.11.
-      // // Without zlib (uncompressed), the size of the data URL was excessive
-      // // (80246).
-      // assert(imgUrl.length < 367);
+      const svgImg = await withZlib(true, getSVGImage);
+      assertEquals(svgImg.nodeName, "svg:image");
+      assertEquals(svgImg.getAttributeNS(null, "width"), "200px");
+      assertEquals(svgImg.getAttributeNS(null, "height"), "100px");
+      const imgUrl = svgImg.getAttributeNS(XLINK_NS, "href")!;
+      // forceDataSchema = true, so the generated URL should be a data:-URL.
+      assertMatch(imgUrl, /^data:image\/png;base64,/);
+      // Test whether the generated image has a reasonable file size.
+      // I obtained a data URL of size 366 with Node 8.1.3 and zlib 1.2.11.
+      // Without zlib (uncompressed), the size of the data URL was excessive
+      // (80246).
+      assert(imgUrl.length < 367);
     });
 
-    it("should be able to produce a svg:image without zlib", async () => {
-      //kkkk "TypeError: Cannot read properties of undefined (reading 'nodeName')"
-      // const svgImg = await withZlib(false, getSVGImage);
-      // assertEquals(svgImg.nodeName, "svg:image");
-      // assertEquals(svgImg.getAttributeNS(null, "width"), "200px");
-      // assertEquals(svgImg.getAttributeNS(null, "height"), "100px");
-      // const imgUrl = svgImg.getAttributeNS(XLINK_NS, "href")!;
-      // assertMatch(imgUrl, /^data:image\/png;base64,/);
-      // // The size of our naively generated PNG file is excessive :(
-      // assertEquals(imgUrl.length, 80246);
+    //kkkk "TypeError: Cannot read properties of undefined (reading 'nodeName')"
+    it.ignore("should be able to produce a svg:image without zlib", async () => {
+      const svgImg = await withZlib(false, getSVGImage);
+      assertEquals(svgImg.nodeName, "svg:image");
+      assertEquals(svgImg.getAttributeNS(null, "width"), "200px");
+      assertEquals(svgImg.getAttributeNS(null, "height"), "100px");
+      const imgUrl = svgImg.getAttributeNS(XLINK_NS, "href")!;
+      assertMatch(imgUrl, /^data:image\/png;base64,/);
+      // The size of our naively generated PNG file is excessive :(
+      assertEquals(imgUrl.length, 80246);
     });
   });
 });

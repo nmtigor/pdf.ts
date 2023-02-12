@@ -244,6 +244,9 @@ namespace NsJbig2Image {
     }
   }
 
+  const MAX_INT_32 = 2 ** 31 - 1;
+  const MIN_INT_32 = -(2 ** 31);
+
   /**
    * Annex A. Arithmetic Integer Decoding Procedure
    * A.2 Procedure for decoding values
@@ -283,10 +286,15 @@ namespace NsJbig2Image {
                     readBits(4) + 4) :
                   readBits(2);
     /* eslint-enable no-nested-ternary */
+    let signedValue: number | undefined;
     if (sign === 0) {
-      return value;
+      signedValue = value;
     } else if (value > 0) {
-      return -value;
+      signedValue = -value;
+    }
+    // Ensure that the integer value doesn't underflow or overflow.
+    if (signedValue! >= MIN_INT_32 && signedValue! <= MAX_INT_32) {
+      return signedValue!;
     }
     return null;
   }

@@ -17,9 +17,9 @@
  * limitations under the License.
  */
 
-import { assertEquals } from "https://deno.land/std@0.165.0/testing/asserts.ts";
-import { describe, it } from "https://deno.land/std@0.165.0/testing/bdd.ts";
-import { fitCurve } from "../../../../3rd/fit-curve/fit-curve.ts";
+import { assertEquals } from "https://deno.land/std@0.170.0/testing/asserts.ts";
+import { describe, it } from "https://deno.land/std@0.170.0/testing/bdd.ts";
+import { fitCurve } from "../../../../3rd/fit-curve-0.2.0/fit-curve.ts";
 import { CommandManager } from "./tools.ts";
 /*80--------------------------------------------------------------------------*/
 

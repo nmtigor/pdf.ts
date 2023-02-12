@@ -17,8 +17,9 @@
  * limitations under the License.
  */
 
-import { _PDFDEV } from "../../../global.ts";
+import { _PDFDEV, GENERIC } from "../../../global.ts";
 import { assert } from "../../../lib/util/trace.ts";
+import { type rect_t } from "../../../lib/alias.ts";
 import {
   type AnnotStorageRecord,
   AnnotStorageValue,
@@ -34,7 +35,6 @@ import {
   info,
   InvalidPDFException,
   PageActionEventType,
-  type rect_t,
   RenderingIntentFlag,
   shadow,
   stringToBytes,
@@ -316,11 +316,13 @@ export class Page {
     objId?: string,
   ) {
     if (this.evaluatorOptions.ignoreErrors) {
-      // Error(s) when reading one of the /Contents sub-streams -- sending
-      // unsupported feature notification and allow parsing to continue.
-      handler.send("UnsupportedFeature", {
-        featureId: UNSUPPORTED_FEATURES.errorContentSubStream,
-      });
+      /*#static*/ if (GENERIC) {
+        // Error(s) when reading one of the /Contents sub-streams -- sending
+        // unsupported feature notification and allow parsing to continue.
+        handler.send("UnsupportedFeature", {
+          featureId: UNSUPPORTED_FEATURES!.errorContentSubStream,
+        });
+      }
       warn(`getContentStream - ignoring sub-stream (${objId}): "${reason}".`);
       return;
     }

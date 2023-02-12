@@ -22,7 +22,8 @@
 // eslint-disable-next-line max-len
 /** @typedef {import("./pdf_thumbnail_viewer").PDFThumbnailViewer} PDFThumbnailViewer */
 
-import { _INFO, global, PDFTS_vv } from "../../global.ts";
+import { _TRACE, global, PDFTS_vv } from "../../global.ts";
+import { Id } from "../../lib/alias.ts";
 import { RenderingCancelledException } from "../pdf.ts-src/pdf.ts";
 import { type IRenderableView, type IVisibleView } from "./interfaces.ts";
 import { PDFThumbnailViewer } from "./pdf_thumbnail_viewer.ts";
@@ -164,18 +165,17 @@ export class PDFRenderingQueue {
    * `false`.
    */
   renderView(view: IRenderableView) {
-    /*#static*/ if (_INFO && PDFTS_vv) {
+    let r_: Id<boolean>;
+    /*#static*/ if (_TRACE && PDFTS_vv) {
       console.log(
         `${global.indent}>>>>>>> PDFRenderingQueue.renderView() >>>>>>>`,
       );
       console.log(`${global.dent}${RenderingStates[view.renderingState]}`);
-    }
+      r_ = (_y) => (global.outdent, _y);
+    } else r_ = (_y) => _y;
     switch (view.renderingState) {
       case RenderingStates.FINISHED:
-        /*#static*/ if (_INFO && PDFTS_vv) {
-          global.outdent;
-        }
-        return false;
+        return r_(false);
       case RenderingStates.PAUSED:
         this.highestPriorityPage = view.renderingId;
         view.resume!();
@@ -198,10 +198,7 @@ export class PDFRenderingQueue {
           });
         break;
     }
-    /*#static*/ if (_INFO && PDFTS_vv) {
-      global.outdent;
-    }
-    return true;
+    return r_(true);
   }
 }
 /*80--------------------------------------------------------------------------*/

@@ -17,14 +17,15 @@
  * limitations under the License.
  */
 
-import { assertEquals } from "https://deno.land/std@0.165.0/testing/asserts.ts";
-import { describe, it } from "https://deno.land/std@0.165.0/testing/bdd.ts";
+import { assertEquals } from "https://deno.land/std@0.170.0/testing/asserts.ts";
+import { describe, it } from "https://deno.land/std@0.170.0/testing/bdd.ts";
 import { getDocument, PDFDocumentProxy } from "../pdf.ts-src/pdf.ts";
 import { buildGetDocumentParams } from "../pdf.ts-src/shared/test_utils.ts";
 import { D_base } from "./app_options.ts";
 import { EventBus, EventMap } from "./event_utils.ts";
 import {
   type FindCtrlState,
+  FindState,
   PDFFindController,
 } from "./pdf_find_controller.ts";
 import { SimpleLinkService } from "./pdf_link_service.ts";
@@ -59,7 +60,10 @@ class MockLinkService extends SimpleLinkService {
   }
 }
 
-async function initPdfFindController(filename?: string) {
+async function initPdfFindController(
+  filename?: string,
+  updateMatchesCountOnProgress = true,
+) {
   const loadingTask = getDocument(
     buildGetDocumentParams(filename || tracemonkeyFileName, {
       ...CMAP_PARAMS,
@@ -75,13 +79,14 @@ async function initPdfFindController(filename?: string) {
   const pdfFindController = new PDFFindController({
     linkService,
     eventBus,
+    updateMatchesCountOnProgress,
   });
   pdfFindController.setDocument(pdfDocument); // Enable searching.
 
   return { eventBus, pdfFindController };
 }
 
-interface _TestSearchP {
+type TestSearchP_ = {
   eventBus: EventBus;
   pdfFindController: PDFFindController;
   state: Partial<FindCtrlState>;
@@ -92,7 +97,9 @@ interface _TestSearchP {
   };
   pageMatches?: number[][];
   pageMatchesLength?: number[][];
-}
+  updateFindMatchesCount?: number[];
+  updateFindControlState?: number[];
+};
 
 function testSearch({
   eventBus,
@@ -102,14 +109,16 @@ function testSearch({
   selectedMatch,
   pageMatches,
   pageMatchesLength,
-}: _TestSearchP) {
+  updateFindMatchesCount,
+  updateFindControlState,
+}: TestSearchP_) {
   return new Promise<void>(function (this: any, resolve) {
     const eventState: EventMap["find"] = Object.assign(
       Object.create(null),
       {
         source: this,
         type: "",
-        query: null,
+        query: undefined,
         caseSensitive: false,
         entireWord: false,
         phraseSearch: true,
@@ -139,15 +148,25 @@ function testSearch({
       }
     }
 
-    const totalMatches = matchesPerPage.reduce((a, b) => {
-      return a + b;
-    });
+    const totalMatches = matchesPerPage.reduce((a, b) => a + b);
+
+    if (updateFindControlState) {
+      eventBus.on(
+        "updatefindcontrolstate",
+        () => {
+          updateFindControlState[0] += 1;
+        },
+      );
+    }
 
     eventBus.on(
       "updatefindmatchescount",
       function onUpdateFindMatchesCount(
         evt: EventMap["updatefindmatchescount"],
       ) {
+        if (updateFindMatchesCount) {
+          updateFindMatchesCount[0] += 1;
+        }
         if (pdfFindController.pageMatches.length !== totalPages) {
           return;
         }
@@ -180,9 +199,52 @@ function testSearch({
   });
 }
 
+type TestEmptySearchP_ = {
+  eventBus: EventBus;
+  pdfFindController: PDFFindController;
+  state: {
+    query: string;
+  };
+};
+
+function testEmptySearch(
+  { eventBus, pdfFindController, state }: TestEmptySearchP_,
+) {
+  return new Promise<void>(function (this: any, resolve) {
+    const eventState = Object.assign(
+      Object.create(null),
+      {
+        source: this,
+        type: "",
+        query: undefined,
+        caseSensitive: false,
+        entireWord: false,
+        phraseSearch: true,
+        findPrevious: false,
+        matchDiacritics: false,
+      },
+      state,
+    );
+    eventBus.dispatch("find", eventState);
+
+    eventBus.on(
+      "updatefindcontrolstate",
+      function onUpdatefindcontrolstate(evt) {
+        if (evt.state !== FindState.NOT_FOUND) {
+          return;
+        }
+        eventBus.off("updatefindcontrolstate", onUpdatefindcontrolstate);
+        assertEquals(evt.matchesCount.total, 0);
+        resolve();
+      },
+    );
+  });
+}
+
 describe("pdf_find_controller", () => {
   it("performs a normal search", async () => {
     const { eventBus, pdfFindController } = await initPdfFindController();
+    const updateFindMatchesCount = [0];
 
     await testSearch({
       eventBus,
@@ -195,7 +257,37 @@ describe("pdf_find_controller", () => {
         pageIndex: 0,
         matchIndex: 0,
       },
+      updateFindMatchesCount,
     });
+
+    assertEquals(updateFindMatchesCount[0], 9);
+  });
+
+  it("performs a normal search but the total counts is only updated one time", async () => {
+    const { eventBus, pdfFindController } = await initPdfFindController(
+      undefined,
+      false,
+    );
+    const updateFindMatchesCount = [0];
+    const updateFindControlState = [0];
+
+    await testSearch({
+      eventBus,
+      pdfFindController,
+      state: {
+        query: "Dynamic",
+      },
+      matchesPerPage: [11, 5, 0, 3, 0, 0, 0, 1, 1, 1, 0, 3, 4, 4],
+      selectedMatch: {
+        pageIndex: 0,
+        matchIndex: 0,
+      },
+      updateFindMatchesCount,
+      updateFindControlState,
+    });
+
+    assertEquals(updateFindMatchesCount[0], 1);
+    assertEquals(updateFindControlState[0], 0);
   });
 
   it("performs a normal search and finds the previous result", async () => {
@@ -714,6 +806,18 @@ describe("pdf_find_controller", () => {
       },
       pageMatches: [[6]],
       pageMatchesLength: [[5]],
+    });
+  });
+
+  it("performs a search with a single diacritic", async function () {
+    const { eventBus, pdfFindController } = await initPdfFindController();
+
+    await testEmptySearch({
+      eventBus,
+      pdfFindController,
+      state: {
+        query: "\u064E",
+      },
     });
   });
 });

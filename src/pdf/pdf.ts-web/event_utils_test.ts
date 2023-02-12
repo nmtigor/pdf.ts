@@ -21,14 +21,15 @@ import {
   assertEquals,
   assertInstanceOf,
   fail,
-} from "https://deno.land/std@0.165.0/testing/asserts.ts";
+} from "https://deno.land/std@0.170.0/testing/asserts.ts";
 import {
   afterAll,
   beforeAll,
   describe,
   it,
-} from "https://deno.land/std@0.165.0/testing/bdd.ts";
+} from "https://deno.land/std@0.170.0/testing/bdd.ts";
 import { EventBus, waitOnEventOrTimeout, WaitOnType } from "./event_utils.ts";
+import { html } from "../../lib/dom.ts";
 /*80--------------------------------------------------------------------------*/
 
 describe("event_utils", () => {
@@ -154,7 +155,8 @@ describe("event_utils", () => {
       assertEquals(onceCount, 1);
     });
 
-    it("should not re-dispatch to DOM", async () => {
+    //kkkk "ReferenceError: document is not defined"
+    it.ignore("should not re-dispatch to DOM", async () => {
       // if (isNodeJS) {
       //   pending("Document is not supported in Node.js.");
       // }
@@ -167,15 +169,14 @@ describe("event_utils", () => {
       function domEventListener() {
         fail("Shouldn't get here.");
       }
-      //kkkk "ReferenceError: document is not defined"
-      // document.addEventListener("test", domEventListener);
+      document.addEventListener("test", domEventListener);
 
-      // (eventBus as any).dispatch("test");
+      (eventBus as any).dispatch("test");
 
-      // await Promise.resolve();
-      // assertEquals(count, 1);
+      await Promise.resolve();
+      assertEquals(count, 1);
 
-      // document.removeEventListener("test", domEventListener);
+      document.removeEventListener("test", domEventListener);
     });
   });
 
@@ -231,41 +232,41 @@ describe("event_utils", () => {
       await Promise.all([invalidTarget, invalidName, invalidDelay]);
     });
 
-    it("should resolve on event, using the DOM", async () => {
+    //kkkk "ReferenceError: document is not defined"
+    it.ignore("should resolve on event, using the DOM", async () => {
       // if (isNodeJS) {
       //   pending("Document is not supported in Node.js.");
       // }
-      //kkkk "ReferenceError: document is not defined"
-      // const button = html("button");
+      const button = html("button");
 
-      // const buttonClicked = waitOnEventOrTimeout({
-      //   target: button,
-      //   name: "click",
-      //   delay: 10000,
-      // } as any);
-      // // Immediately dispatch the expected event.
-      // button.click();
+      const buttonClicked = waitOnEventOrTimeout({
+        target: button,
+        name: "click",
+        delay: 10000,
+      } as any);
+      // Immediately dispatch the expected event.
+      button.click();
 
-      // const type = await buttonClicked;
-      // assertEquals(type, WaitOnType.EVENT);
+      const type = await buttonClicked;
+      assertEquals(type, WaitOnType.EVENT);
     });
 
-    it("should resolve on timeout, using the DOM", async () => {
+    //kkkk "ReferenceError: document is not defined"
+    it.ignore("should resolve on timeout, using the DOM", async () => {
       // if (isNodeJS) {
       //   pending("Document is not supported in Node.js.");
       // }
-      //kkkk "ReferenceError: document is not defined"
-      // const button = document.createElement("button");
+      const button = html("button");
 
-      // const buttonClicked = waitOnEventOrTimeout({
-      //   target: button,
-      //   name: "click",
-      //   delay: 10,
-      // } as any);
-      // // Do *not* dispatch the event, and wait for the timeout.
+      const buttonClicked = waitOnEventOrTimeout({
+        target: button,
+        name: "click",
+        delay: 10,
+      } as any);
+      // Do *not* dispatch the event, and wait for the timeout.
 
-      // const type = await buttonClicked;
-      // assertEquals(type, WaitOnType.TIMEOUT);
+      const type = await buttonClicked;
+      assertEquals(type, WaitOnType.TIMEOUT);
     });
 
     it("should resolve on event, using the EventBus", async () => {

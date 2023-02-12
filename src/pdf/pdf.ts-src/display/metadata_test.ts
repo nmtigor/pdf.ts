@@ -21,8 +21,8 @@ import {
   assert,
   assertEquals,
   assertFalse,
-} from "https://deno.land/std@0.165.0/testing/asserts.ts";
-import { describe, it } from "https://deno.land/std@0.165.0/testing/bdd.ts";
+} from "https://deno.land/std@0.170.0/testing/asserts.ts";
+import { describe, it } from "https://deno.land/std@0.170.0/testing/bdd.ts";
 import { MetadataParser } from "../core/metadata_parser.ts";
 import { isEmptyObj } from "../shared/test_utils.ts";
 import { Metadata } from "./metadata.ts";

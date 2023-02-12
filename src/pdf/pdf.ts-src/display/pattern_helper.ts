@@ -17,7 +17,8 @@
  * limitations under the License.
  */
 
-import type { OpListIR } from "../core/operator_list.ts";
+import { type rect_t } from "../../../lib/alias.ts";
+import { type OpListIR } from "../core/operator_list.ts";
 import {
   type MeshFigure,
   type MeshIR,
@@ -26,14 +27,7 @@ import {
   ShadingType,
   type TilingPatternIR,
 } from "../core/pattern.ts";
-import {
-  FormatError,
-  info,
-  type matrix_t,
-  OPS,
-  type rect_t,
-  Util,
-} from "../shared/util.ts";
+import { FormatError, info, type matrix_t, OPS, Util } from "../shared/util.ts";
 import { CachedCanvases, CanvasGraphics } from "./canvas.ts";
 import { getCurrentTransform } from "./display_utils.ts";
 /*80--------------------------------------------------------------------------*/
@@ -45,8 +39,9 @@ export const enum PathType {
 }
 
 function applyBoundingBox(ctx: CanvasRenderingContext2D, bbox?: rect_t) {
-  if (!bbox) return;
-
+  if (!bbox) {
+    return;
+  }
   const width = bbox[2] - bbox[0];
   const height = bbox[3] - bbox[1];
   const region = new Path2D();

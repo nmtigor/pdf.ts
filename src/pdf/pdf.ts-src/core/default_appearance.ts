@@ -18,14 +18,8 @@
  */
 
 import { DENO } from "../../../global.ts";
-import { id_t } from "../../../lib/alias.ts";
-import {
-  LINE_DESCENT_FACTOR,
-  LINE_FACTOR,
-  OPS,
-  rect_t,
-  warn,
-} from "../shared/util.ts";
+import { type id_t, type rect_t } from "../../../lib/alias.ts";
+import { LINE_DESCENT_FACTOR, LINE_FACTOR, OPS, warn } from "../shared/util.ts";
 import { ColorSpace } from "./colorspace.ts";
 import {
   escapePDFName,

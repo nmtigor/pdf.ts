@@ -16,7 +16,7 @@
   "test": {
     "files": {
       "include": [
-        // "../pdf/pdf.ts-src/core/annotation_test.ts",//kkkk(1)
+        // "../pdf/pdf.ts-src/core/annotation_test.ts",
         // "../pdf/pdf.ts-src/core/bidi_test.ts",
         // "../pdf/pdf.ts-src/core/cff_parser_test.ts",
         // "../pdf/pdf.ts-src/core/cmap_test.ts",
@@ -46,10 +46,10 @@
         // "../pdf/pdf.ts-src/shared/util_test.ts",
 
         // "../pdf/pdf.ts-src/display/annotation_storage_test.ts",
-        // "../pdf/pdf.ts-src/display/api_test.ts",//kkkk(38)
+        // "../pdf/pdf.ts-src/display/api_test.ts",//kkkk(34)
         // "../pdf/pdf.ts-src/display/display_utils_test.ts",//kkkk(5)
         // "../pdf/pdf.ts-src/display/editor/editor_test.ts",
-        // "../pdf/pdf.ts-src/display/fetch_stream_test.ts",//kkkk(3)
+        // "../pdf/pdf.ts-src/display/fetch_stream_test.ts",
         // "../pdf/pdf.ts-src/display/metadata_test.ts",
         // "../pdf/pdf.ts-src/display/network_test.ts",//kkkk(2)
         // "../pdf/pdf.ts-src/display/network_utils_test.ts",
@@ -61,7 +61,7 @@
         // "../pdf/pdf.ts-web/pdf_find_utils_test.ts",
         // "../pdf/pdf.ts-web/pdf_history_test.ts",
         // "../pdf/pdf.ts-web/pdf_viewer_test.ts",
-        // "../pdf/pdf.ts-web/ui_utils_test.ts",
+        // "../pdf/pdf.ts-web/ui_utils_test.ts"
       ]
     }
   }

@@ -21,8 +21,13 @@
 /** @typedef {import("./event_utils").EventBus} EventBus */
 /** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
 
-import { createPromiseCap, PromiseCap } from "../../lib/promisecap.ts";
-import { PDFDocumentProxy, point_t, TextItem } from "../pdf.ts-src/pdf.ts";
+import { point_t } from "../../lib/alias.ts";
+import {
+  createPromiseCapability,
+  PDFDocumentProxy,
+  type PromiseCapability,
+  TextItem,
+} from "../pdf.ts-src/pdf.ts";
 import { EventBus } from "./event_utils.ts";
 import { type IPDFLinkService } from "./interfaces.ts";
 import { getCharacterType } from "./pdf_find_utils.ts";
@@ -140,8 +145,8 @@ const FIRST_CHAR_SYLLABLES_REG_EXP =
 
 const NFKC_CHARS_TO_NORMALIZE = new Map();
 
-let noSyllablesRegExp: RegExp | null = null;
-let withSyllablesRegExp: RegExp | null = null;
+let noSyllablesRegExp: RegExp | undefined;
+let withSyllablesRegExp: RegExp | undefined;
 
 function normalize(text: string): [string, [number, number][], boolean] {
   // The diacritics in the text or in the query can be composed or not.
@@ -395,11 +400,18 @@ interface PDFFindControllerOptions {
    * The application event bus.
    */
   eventBus: EventBus;
+
+  /**
+   * True if the matches
+   * count must be updated on progress or only when the last page is reached.
+   * The default value is `true`.
+   */
+  updateMatchesCountOnProgress: boolean;
 }
 
-interface FindCtrlrOffset {
-  pageIdx: number | null;
-  matchIdx: number | null;
+interface Offset_ {
+  pageIdx: number | undefined;
+  matchIdx: number | undefined;
   wrapped: boolean;
 }
 
@@ -439,6 +451,7 @@ export interface MatchesCount {
 export class PDFFindController {
   #linkService: IPDFLinkService;
   #eventBus: EventBus;
+  #updateMatchesCountOnProgress;
 
   #highlightMatches!: boolean;
   get highlightMatches() {
@@ -458,6 +471,8 @@ export class PDFFindController {
     return this.#pageMatchesLength;
   }
 
+  #visitedPagesCount = 0;
+
   #selected!: {
     pageIdx: number;
     matchIdx: number;
@@ -471,7 +486,7 @@ export class PDFFindController {
     return this.#state;
   }
 
-  #offset!: FindCtrlrOffset;
+  #offset!: Offset_;
   #extractTextPromises!: Promise<void>[];
   #pageContents!: string[]; // Stores the normalized text for each page.
   #pageDiffs!: (Diffs | undefined)[];
@@ -483,7 +498,7 @@ export class PDFFindController {
   #dirtyMatch!: boolean;
   #findTimeout?: number | undefined;
 
-  _firstPageCapability!: PromiseCap;
+  _firstPageCapability!: PromiseCapability;
 
   _rawQuery?: string;
   #normalizedQuery?: string;
@@ -491,9 +506,11 @@ export class PDFFindController {
   constructor({
     linkService,
     eventBus,
+    updateMatchesCountOnProgress = true,
   }: PDFFindControllerOptions) {
     this.#linkService = linkService;
     this.#eventBus = eventBus;
+    this.#updateMatchesCountOnProgress = updateMatchesCountOnProgress;
 
     this.#reset();
     eventBus._on("find", this.#onFind);
@@ -615,6 +632,7 @@ export class PDFFindController {
     this._pdfDocument = undefined;
     this.#pageMatches = [];
     this.#pageMatchesLength = [];
+    this.#visitedPagesCount = 0;
     this.#state = undefined;
     // Currently selected match.
     this.#selected = {
@@ -623,8 +641,8 @@ export class PDFFindController {
     };
     // Where the find algorithm currently is in the document.
     this.#offset = {
-      pageIdx: null,
-      matchIdx: null,
+      pageIdx: undefined,
+      matchIdx: undefined,
       wrapped: false,
     };
     this.#extractTextPromises = [];
@@ -639,7 +657,7 @@ export class PDFFindController {
     clearTimeout(this.#findTimeout);
     this.#findTimeout = undefined;
 
-    this._firstPageCapability = createPromiseCap();
+    this._firstPageCapability = createPromiseCapability();
   }
 
   /**
@@ -717,14 +735,18 @@ export class PDFFindController {
   };
 
   #calculateRegExpMatch(
-    query: RegExp,
+    query: RegExp | undefined,
     entireWord: boolean,
     pageIndex: number,
     pageContent: string,
   ) {
-    const matches = [],
-      matchesLength = [];
-
+    const matches: number[] = (this.#pageMatches[pageIndex] = []);
+    const matchesLength: number[] = (this.#pageMatchesLength[pageIndex] = []);
+    if (!query) {
+      // The query can be empty because some chars like diacritics could have
+      // been stripped out.
+      return;
+    }
     const diffs = this.#pageDiffs[pageIndex];
     let match;
     while ((match = query.exec(pageContent)) !== null) {
@@ -746,8 +768,6 @@ export class PDFFindController {
         matchesLength.push(matchLen);
       }
     }
-    this.#pageMatches[pageIndex] = matches;
-    this.#pageMatchesLength[pageIndex] = matchesLength;
   }
 
   #convertToRegExpString(
@@ -825,8 +845,8 @@ export class PDFFindController {
   }
 
   #calculateMatch(pageIndex: number) {
-    let query: string | RegExp = this.#query!;
-    if (query.length === 0) {
+    let query: string | RegExp | undefined = this.#query!;
+    if (!query) {
       // Do nothing: the matches should be wiped out already.
       return;
     }
@@ -859,7 +879,7 @@ export class PDFFindController {
     }
 
     const flags = `g${isUnicode ? "u" : ""}${caseSensitive ? "" : "i"}`;
-    query = new RegExp(query, flags);
+    query = query ? new RegExp(query, flags) : undefined;
 
     this.#calculateRegExpMatch(query, entireWord, pageIndex, pageContent);
 
@@ -875,21 +895,27 @@ export class PDFFindController {
 
     // Update the match count.
     const pageMatchesCount = this.#pageMatches[pageIndex].length;
-    if (pageMatchesCount > 0) {
-      this.#matchesCountTotal += pageMatchesCount;
+    this.#matchesCountTotal += pageMatchesCount;
+    if (this.#updateMatchesCountOnProgress) {
+      if (pageMatchesCount > 0) {
+        this.#updateUIResultsCount();
+      }
+    } else if (++this.#visitedPagesCount === this.#linkService.pagesCount) {
+      // For example, in GeckoView we want to have only the final update because
+      // the Java side provides only one object to update the counts.
       this.#updateUIResultsCount();
     }
   }
 
   #extractText() {
+    // Perform text extraction once if this method is called multiple times.
     if (this.#extractTextPromises.length > 0) {
-      // Perform text extraction once if this method is called multiple times.
       return;
     }
 
     let promise = Promise.resolve();
     for (let i = 0, ii = this.#linkService.pagesCount; i < ii; i++) {
-      const extractTextCapability = createPromiseCap<void>();
+      const extractTextCapability = createPromiseCapability<void>();
       this.#extractTextPromises[i] = extractTextCapability.promise;
 
       promise = promise.then(() => {
@@ -903,8 +929,8 @@ export class PDFFindController {
               const strBuf = [];
 
               for (const textItem of textContent.items) {
-                strBuf.push((<TextItem> textItem).str);
-                if ((<TextItem> textItem).hasEOL) {
+                strBuf.push((textItem as TextItem).str);
+                if ((textItem as TextItem).hasEOL) {
                   strBuf.push("\n");
                 }
               }
@@ -966,11 +992,12 @@ export class PDFFindController {
       this.#dirtyMatch = false;
       this.#selected.pageIdx = this.#selected.matchIdx = -1;
       this.#offset.pageIdx = currentPageIndex;
-      this.#offset.matchIdx = null;
+      this.#offset.matchIdx = undefined;
       this.#offset.wrapped = false;
       this.#resumePageIdx = undefined;
       this.#pageMatches.length = 0;
       this.#pageMatchesLength.length = 0;
+      this.#visitedPagesCount = 0;
       this.#matchesCountTotal = 0;
 
       this.#updateAllPages(); // Wipe out any previously highlighted matches.
@@ -989,7 +1016,7 @@ export class PDFFindController {
     }
 
     // If there's no query there's no point in searching.
-    if (this.#query === "") {
+    if (!this.#query) {
       this.#updateUIState(FindState.FOUND);
       return;
     }
@@ -1003,7 +1030,7 @@ export class PDFFindController {
     this.#pagesToSearch = numPages;
     // If there's already a `matchIdx` that means we are iterating through a
     // page's matches.
-    if (offset.matchIdx !== null) {
+    if (offset.matchIdx !== undefined) {
       const numPageMatches = this.#pageMatches[offset.pageIdx!].length;
       if (
         (!previous && offset.matchIdx + 1 < numPageMatches) ||
@@ -1037,7 +1064,7 @@ export class PDFFindController {
     // No matches, so attempt to search the next page.
     this.#advanceOffsetPage(previous);
     if (offset.wrapped) {
-      offset.matchIdx = null;
+      offset.matchIdx = undefined;
       if (this.#pagesToSearch! < 0) {
         // No point in wrapping again, there were no matches.
         this.#updateMatch(/* found = */ false);
@@ -1055,7 +1082,7 @@ export class PDFFindController {
       console.error("There can only be one pending page.");
     }
 
-    let matches = null;
+    let matches: number[];
     do {
       const pageIdx = this.#offset.pageIdx!;
       matches = this.#pageMatches[pageIdx];
@@ -1072,7 +1099,7 @@ export class PDFFindController {
     const offset = this.#offset;
     const numPages = this.#linkService.pagesCount;
     offset.pageIdx = previous ? offset.pageIdx! - 1 : offset.pageIdx! + 1;
-    offset.matchIdx = null;
+    offset.matchIdx = undefined;
 
     this.#pagesToSearch!--;
 
@@ -1169,12 +1196,22 @@ export class PDFFindController {
   }
 
   #updateUIState(state: FindState, previous = false) {
+    if (
+      !this.#updateMatchesCountOnProgress &&
+      (this.#visitedPagesCount !== this.#linkService.pagesCount ||
+        state === FindState.PENDING)
+    ) {
+      // When this.#updateMatchesCountOnProgress is false we only send an update
+      // when everything is ready.
+      return;
+    }
+
     this.#eventBus.dispatch("updatefindcontrolstate", {
       source: this,
       state,
       previous,
       matchesCount: this.#requestMatchesCount(),
-      rawQuery: this.#state?.query ?? null,
+      rawQuery: this.#state?.query ?? undefined,
     });
   }
 }
