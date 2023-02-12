@@ -15,11 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { _INFO, _PDFDEV, global, PDFTS_vv } from "../../../global.js";
+import { _PDFDEV, _TRACE, global, PDFTS_vv } from "../../../global.js";
 import { isObjectLike } from "../../../lib/jslang.js";
-import { createPromiseCap } from "../../../lib/promisecap.js";
 import { assert } from "../../../lib/util/trace.js";
-import { AbortException, MissingPDFException, PasswordException, UnexpectedResponseException, UnknownErrorException, } from "./util.js";
+import { AbortException, createPromiseCapability, MissingPDFException, PasswordException, UnexpectedResponseException, UnknownErrorException, } from "./util.js";
 /*80--------------------------------------------------------------------------*/
 var CallbackKind;
 (function (CallbackKind) {
@@ -64,7 +63,7 @@ export var Thread;
     Thread[Thread["main"] = 0] = "main";
     Thread[Thread["worker"] = 1] = "worker";
 })(Thread || (Thread = {}));
-// #if _INFO && PDFTS
+// #if _TRACE && PDFTS
 function stringof(msg) {
     return `[${msg.sourceName} -> ${msg.targetName}]` +
         (msg.stream ? ` stream_${msg.streamId}: ${StreamKind[msg.stream]}` : "") +
@@ -96,11 +95,12 @@ export class MessageHandler {
         if (data.targetName !== this.sourceName) {
             return;
         }
+        let r_;
         /*#static*/ 
+            r_ = () => { };
         if (data.stream) {
             this.#processStreamMessage(data);
-            /*#static*/ 
-            return;
+            return r_();
         }
         if (data.callback) {
             const callbackId = data.callbackId;
@@ -118,8 +118,7 @@ export class MessageHandler {
             else {
                 throw new Error("Unexpected callback case");
             }
-            /*#static*/ 
-            return;
+            return r_();
         }
         const action = this.actionHandler[data.action];
         if (!action) {
@@ -148,16 +147,14 @@ export class MessageHandler {
                     reason: wrapReason(reason),
                 }, undefined);
             });
-            /*#static*/ 
-            return;
+            return r_();
         }
         if (data.streamId) {
             this.#createStreamSink(data);
-            /*#static*/ 
-            return;
+            return r_();
         }
         action(data.data, undefined);
-        /*#static*/ 
+        return r_();
     };
     on(actionName, handler) {
         /*#static*/  {
@@ -193,7 +190,7 @@ export class MessageHandler {
      */
     sendWithPromise(actionName, data, transfers) {
         const callbackId = this.callbackId++;
-        const capability = createPromiseCap();
+        const capability = createPromiseCapability();
         this.callbackCapabilities[callbackId] = capability;
         try {
             this.comObj.postMessage({
@@ -222,7 +219,7 @@ export class MessageHandler {
         const streamId = this.streamId++, sourceName = this.sourceName, targetName = this.targetName, comObj = this.comObj;
         return new ReadableStream({
             start: (controller) => {
-                const startCapability = createPromiseCap();
+                const startCapability = createPromiseCapability();
                 this.streamControllers[streamId] = {
                     controller,
                     startCall: startCapability,
@@ -240,7 +237,7 @@ export class MessageHandler {
                 return startCapability.promise;
             },
             pull: (controller) => {
-                const pullCapability = createPromiseCap();
+                const pullCapability = createPromiseCapability();
                 this.streamControllers[streamId].pullCall = pullCapability;
                 comObj.postMessage({
                     sourceName,
@@ -255,7 +252,7 @@ export class MessageHandler {
             },
             cancel: (reason) => {
                 // assert(reason instanceof Error, "cancel must have a valid reason");
-                const cancelCapability = createPromiseCap();
+                const cancelCapability = createPromiseCapability();
                 this.streamControllers[streamId].cancelCall = cancelCapability;
                 this.streamControllers[streamId].isClosed = true;
                 comObj.postMessage({
@@ -273,7 +270,7 @@ export class MessageHandler {
     #createStreamSink(data) {
         const streamId = data.streamId, sourceName = this.sourceName, targetName = data.sourceName, comObj = this.comObj;
         const self = this, action = this.actionHandler[data.action];
-        const sinkCapability = createPromiseCap();
+        const sinkCapability = createPromiseCapability();
         const streamSink = {
             enqueue(chunk, size = 1, transfers) {
                 if (this.isCancelled) {
@@ -285,7 +282,7 @@ export class MessageHandler {
                 // so when it changes from positive to negative,
                 // set ready as unresolved promise.
                 if (lastDesiredSize > 0 && this.desiredSize <= 0) {
-                    this.sinkCapability = createPromiseCap();
+                    this.sinkCapability = createPromiseCapability();
                     this.ready = this.sinkCapability.promise;
                 }
                 comObj.postMessage({

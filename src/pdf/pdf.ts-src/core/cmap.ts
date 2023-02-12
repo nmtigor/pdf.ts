@@ -1048,14 +1048,14 @@ namespace NsCMapFactory {
     throw new Error(`Invalid CMap "compressionType" value: ${compressionType}`);
   }
 
-  interface _CMapFactoryCreateP {
+  interface CMapFactoryCreateP_ {
     encoding: Name | BaseStream;
     fetchBuiltInCMap: FetchBuiltInCMap;
     useCMap?: string;
   }
 
   export const CMapFactory = {
-    async create(params: _CMapFactoryCreateP) {
+    async create(params: CMapFactoryCreateP_) {
       const encoding = params.encoding;
       const fetchBuiltInCMap = params.fetchBuiltInCMap;
       const useCMap = params.useCMap;

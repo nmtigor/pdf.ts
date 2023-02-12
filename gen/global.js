@@ -9,14 +9,13 @@ import { assert } from "./lib/util/trace.js";
 // deno-fmt-ignore
 export const INOUT = true // contracts
 , DEV = true // debug build
-, INFO = true // info of calling trace, interim results
-, RESIZ = false // "resize", ResizeObserver
-, INTRS = false // IntersectionObserver
-, EDITOR = true, EDITOR_v = true // verbose
+, TRACE = true, XSTATE = true, RESIZ = true // "resize", ResizeObserver
+, INTRS = true // IntersectionObserver
+, THEMESETTING = false, EDITOR = true, EDITOR_v = true // verbose
 , EDITOR_vv = false // very verbose
 , PDFTS = true, PDFTS_v = true // verbose
 , PDFTS_vv = false // very verbose
-, _INFO = DEV && INFO, APP = false // release build
+, _TRACE = DEV && TRACE, APP = false // release build
 , TESTING = false, /** @deprecated */ TEST_ALL = false, DENO = false, CYPRESS = true
 // from pdf.js
 , GENERIC = true, MOZCENTRAL = false, CHROME = false, GECKOVIEW = false, PRODUCTION = false, LIB = false, SKIP_BABEL = true, IMAGE_DECODERS = false, COMPONENTS = false, _PDFDEV = !PRODUCTION || TESTING;

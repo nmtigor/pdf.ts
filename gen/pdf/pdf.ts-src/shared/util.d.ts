@@ -1,4 +1,4 @@
-import { type TupleOf } from "../../../lib/alias.js";
+import { type point_t, type rect_t, type TupleOf } from "../../../lib/alias.js";
 import { HttpStatusCode } from "../../../lib/HttpStatusCode.js";
 export declare const IDENTITY_MATRIX: matrix_t;
 export declare const FONT_IDENTITY_MATRIX: matrix_t;
@@ -181,32 +181,6 @@ export declare const PageActionEventType: {
 export type ActionEventTypeType = typeof AnnotationActionEventType | typeof DocumentActionEventType | typeof PageActionEventType;
 export type ActionEventType = keyof typeof AnnotationActionEventType | keyof typeof DocumentActionEventType | keyof typeof PageActionEventType;
 export type ActionEventName = (typeof AnnotationActionEventType)[keyof typeof AnnotationActionEventType] | (typeof DocumentActionEventType)[keyof typeof DocumentActionEventType] | (typeof PageActionEventType)[keyof typeof PageActionEventType] | "OpenAction" | "Action";
-export declare enum StreamType {
-    UNKNOWN = "UNKNOWN",
-    FLATE = "FLATE",
-    LZW = "LZW",
-    DCT = "DCT",
-    JPX = "JPX",
-    JBIG = "JBIG",
-    A85 = "A85",
-    AHX = "AHX",
-    CCF = "CCF",
-    RLX = "RLX"
-}
-export declare enum FontType {
-    UNKNOWN = "UNKNOWN",
-    TYPE1 = "TYPE1",
-    TYPE1STANDARD = "TYPE1STANDARD",
-    TYPE1C = "TYPE1C",
-    CIDFONTTYPE0 = "CIDFONTTYPE0",
-    CIDFONTTYPE0C = "CIDFONTTYPE0C",
-    TRUETYPE = "TRUETYPE",
-    CIDFONTTYPE2 = "CIDFONTTYPE2",
-    TYPE3 = "TYPE3",
-    OPENTYPE = "OPENTYPE",
-    TYPE0 = "TYPE0",
-    MMTYPE1 = "MMTYPE1"
-}
 export declare const enum VerbosityLevel {
     ERRORS = 0,
     WARNINGS = 1,
@@ -308,28 +282,29 @@ export declare enum OPS {
     group = 92
 }
 export type OPSName = keyof typeof OPS;
-export declare const enum UNSUPPORTED_FEATURES {
-    forms = "forms",
-    javaScript = "javaScript",
-    signatures = "signatures",
-    smask = "smask",
-    shadingPattern = "shadingPattern",
-    errorTilingPattern = "errorTilingPattern",
-    errorExtGState = "errorExtGState",
-    errorXObject = "errorXObject",
-    errorFontLoadType3 = "errorFontLoadType3",
-    errorFontState = "errorFontState",
-    errorFontMissing = "errorFontMissing",
-    errorFontTranslate = "errorFontTranslate",
-    errorColorSpace = "errorColorSpace",
-    errorOperatorList = "errorOperatorList",
-    errorFontToUnicode = "errorFontToUnicode",
-    errorFontLoadNative = "errorFontLoadNative",
-    errorFontBuildPath = "errorFontBuildPath",
-    errorFontGetPath = "errorFontGetPath",
-    errorMarkedContent = "errorMarkedContent",
-    errorContentSubStream = "errorContentSubStream"
-}
+export declare const UNSUPPORTED_FEATURES: {
+    readonly forms: "forms";
+    readonly javaScript: "javaScript";
+    readonly signatures: "signatures";
+    readonly smask: "smask";
+    readonly shadingPattern: "shadingPattern";
+    readonly errorTilingPattern: "errorTilingPattern";
+    readonly errorExtGState: "errorExtGState";
+    readonly errorXObject: "errorXObject";
+    readonly errorFontLoadType3: "errorFontLoadType3";
+    readonly errorFontState: "errorFontState";
+    readonly errorFontMissing: "errorFontMissing";
+    readonly errorFontTranslate: "errorFontTranslate";
+    readonly errorColorSpace: "errorColorSpace";
+    readonly errorOperatorList: "errorOperatorList";
+    readonly errorFontToUnicode: "errorFontToUnicode";
+    readonly errorFontLoadNative: "errorFontLoadNative";
+    readonly errorFontBuildPath: "errorFontBuildPath";
+    readonly errorFontGetPath: "errorFontGetPath";
+    readonly errorMarkedContent: "errorMarkedContent";
+    readonly errorContentSubStream: "errorContentSubStream";
+} | undefined;
+export type UNSUPPORTED_FEATURES = (Exclude<typeof UNSUPPORTED_FEATURES, undefined>)[keyof Exclude<typeof UNSUPPORTED_FEATURES, undefined>];
 export declare const enum PasswordResponses {
     NEED_PASSWORD = 1,
     INCORRECT_PASSWORD = 2
@@ -417,9 +392,7 @@ export declare class FeatureTest {
         isMac: boolean;
     };
 }
-export type point_t = [number, number];
 export type point3d_t = [number, number, number];
-export type rect_t = TupleOf<number, 4>;
 export type matrix_t = TupleOf<number, 6>;
 export type matrix3d_t = TupleOf<number, 9>;
 export declare class Util {
@@ -440,5 +413,34 @@ export declare function stringToUTF8String(str: string): string;
 export declare function utf8StringToString(str: string): string;
 export declare function isArrayBuffer(v: any): v is ArrayBufferLike;
 export declare function getModificationDate(date?: Date): string;
+/**
+ * Promise Capability object.
+ */
+export interface PromiseCapability<T = void> {
+    id: number;
+    /**
+     * A Promise object.
+     */
+    promise: Promise<T>;
+    /**
+     * If the Promise has been fulfilled/rejected.
+     */
+    settled: boolean;
+    /**
+     * Fulfills the Promise.
+     */
+    resolve: (data: T) => void;
+    /**
+     * Rejects the Promise.
+     */
+    reject: (reason: any) => void;
+}
+/**
+ * Creates a promise capability object.
+ *
+ * ! Notice, this could be called in worker thread, where there is no e.g.
+ * ! `Node` as in mv.ts.
+ */
+export declare function createPromiseCapability<T = void>(): PromiseCapability<T>;
 export {};
 //# sourceMappingURL=util.d.ts.map

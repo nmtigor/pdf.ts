@@ -62,10 +62,7 @@ declare class PDFNetworkStreamFullRequestReader implements IPDFStreamReader {
     _storedError?: MissingPDFException | UnexpectedResponseException;
     get filename(): string | undefined;
     /** @implement */
-    onProgress: ((data: {
-        loaded: number;
-        total: number;
-    }) => void) | undefined;
+    onProgress: ((data: OnProgressP) => void) | undefined;
     constructor(manager: NetworkManager, source: DocumentInitP);
     /** @implement */
     read(): Promise<ReadValue>;

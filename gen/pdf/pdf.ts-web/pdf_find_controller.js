@@ -1,24 +1,7 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
-/* Copyright 2012 Mozilla Foundation
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-/** @typedef {import("../src/display/api").PDFDocumentProxy} PDFDocumentProxy */
-/** @typedef {import("./event_utils").EventBus} EventBus */
-/** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
-import { createPromiseCap } from "../../lib/promisecap.js";
+import { createPromiseCapability, } from "../pdf.ts-src/pdf.js";
 import { getCharacterType } from "./pdf_find_utils.js";
 import { binarySearchFirstItem, scrollIntoView } from "./ui_utils.js";
 /*80--------------------------------------------------------------------------*/
@@ -124,8 +107,8 @@ const SYLLABLES_LENGTHS = new Map();
 // with one of the chars in this regexp.
 const FIRST_CHAR_SYLLABLES_REG_EXP = "[\\u1100-\\u1112\\ud7a4-\\ud7af\\ud84a\\ud84c\\ud850\\ud854\\ud857\\ud85f]";
 const NFKC_CHARS_TO_NORMALIZE = new Map();
-let noSyllablesRegExp = null;
-let withSyllablesRegExp = null;
+let noSyllablesRegExp;
+let withSyllablesRegExp;
 function normalize(text) {
     // The diacritics in the text or in the query can be composed or not.
     // So we use a decomposed text using NFD (and the same for the query)
@@ -335,6 +318,7 @@ function getOriginalIndex(diffs, pos, len) {
 export class PDFFindController {
     #linkService;
     #eventBus;
+    #updateMatchesCountOnProgress;
     #highlightMatches;
     get highlightMatches() {
         return this.#highlightMatches;
@@ -349,6 +333,7 @@ export class PDFFindController {
     get pageMatchesLength() {
         return this.#pageMatchesLength;
     }
+    #visitedPagesCount = 0;
     #selected;
     get selected() {
         return this.#selected;
@@ -371,9 +356,10 @@ export class PDFFindController {
     _firstPageCapability;
     _rawQuery;
     #normalizedQuery;
-    constructor({ linkService, eventBus, }) {
+    constructor({ linkService, eventBus, updateMatchesCountOnProgress = true, }) {
         this.#linkService = linkService;
         this.#eventBus = eventBus;
+        this.#updateMatchesCountOnProgress = updateMatchesCountOnProgress;
         this.#reset();
         eventBus._on("find", this.#onFind);
         eventBus._on("findbarclose", this.#onFindBarClose);
@@ -481,6 +467,7 @@ export class PDFFindController {
         this._pdfDocument = undefined;
         this.#pageMatches = [];
         this.#pageMatchesLength = [];
+        this.#visitedPagesCount = 0;
         this.#state = undefined;
         // Currently selected match.
         this.#selected = {
@@ -489,8 +476,8 @@ export class PDFFindController {
         };
         // Where the find algorithm currently is in the document.
         this.#offset = {
-            pageIdx: null,
-            matchIdx: null,
+            pageIdx: undefined,
+            matchIdx: undefined,
             wrapped: false,
         };
         this.#extractTextPromises = [];
@@ -504,7 +491,7 @@ export class PDFFindController {
         this.#dirtyMatch = false;
         clearTimeout(this.#findTimeout);
         this.#findTimeout = undefined;
-        this._firstPageCapability = createPromiseCap();
+        this._firstPageCapability = createPromiseCapability();
     }
     /**
      * @return The (current) normalized search query.
@@ -574,7 +561,13 @@ export class PDFFindController {
         return true;
     };
     #calculateRegExpMatch(query, entireWord, pageIndex, pageContent) {
-        const matches = [], matchesLength = [];
+        const matches = (this.#pageMatches[pageIndex] = []);
+        const matchesLength = (this.#pageMatchesLength[pageIndex] = []);
+        if (!query) {
+            // The query can be empty because some chars like diacritics could have
+            // been stripped out.
+            return;
+        }
         const diffs = this.#pageDiffs[pageIndex];
         let match;
         while ((match = query.exec(pageContent)) !== null) {
@@ -588,8 +581,6 @@ export class PDFFindController {
                 matchesLength.push(matchLen);
             }
         }
-        this.#pageMatches[pageIndex] = matches;
-        this.#pageMatchesLength[pageIndex] = matchesLength;
     }
     #convertToRegExpString(query, hasDiacritics) {
         // const matchesWithLength:MatchWithLength[] = [];
@@ -644,7 +635,7 @@ export class PDFFindController {
     }
     #calculateMatch(pageIndex) {
         let query = this.#query;
-        if (query.length === 0) {
+        if (!query) {
             // Do nothing: the matches should be wiped out already.
             return;
         }
@@ -672,7 +663,7 @@ export class PDFFindController {
             }
         }
         const flags = `g${isUnicode ? "u" : ""}${caseSensitive ? "" : "i"}`;
-        query = new RegExp(query, flags);
+        query = query ? new RegExp(query, flags) : undefined;
         this.#calculateRegExpMatch(query, entireWord, pageIndex, pageContent);
         // When `highlightAll` is set, ensure that the matches on previously
         // rendered (and still active) pages are correctly highlighted.
@@ -685,19 +676,26 @@ export class PDFFindController {
         }
         // Update the match count.
         const pageMatchesCount = this.#pageMatches[pageIndex].length;
-        if (pageMatchesCount > 0) {
-            this.#matchesCountTotal += pageMatchesCount;
+        this.#matchesCountTotal += pageMatchesCount;
+        if (this.#updateMatchesCountOnProgress) {
+            if (pageMatchesCount > 0) {
+                this.#updateUIResultsCount();
+            }
+        }
+        else if (++this.#visitedPagesCount === this.#linkService.pagesCount) {
+            // For example, in GeckoView we want to have only the final update because
+            // the Java side provides only one object to update the counts.
             this.#updateUIResultsCount();
         }
     }
     #extractText() {
+        // Perform text extraction once if this method is called multiple times.
         if (this.#extractTextPromises.length > 0) {
-            // Perform text extraction once if this method is called multiple times.
             return;
         }
         let promise = Promise.resolve();
         for (let i = 0, ii = this.#linkService.pagesCount; i < ii; i++) {
-            const extractTextCapability = createPromiseCap();
+            const extractTextCapability = createPromiseCapability();
             this.#extractTextPromises[i] = extractTextCapability.promise;
             promise = promise.then(() => {
                 return this._pdfDocument
@@ -759,11 +757,12 @@ export class PDFFindController {
             this.#dirtyMatch = false;
             this.#selected.pageIdx = this.#selected.matchIdx = -1;
             this.#offset.pageIdx = currentPageIndex;
-            this.#offset.matchIdx = null;
+            this.#offset.matchIdx = undefined;
             this.#offset.wrapped = false;
             this.#resumePageIdx = undefined;
             this.#pageMatches.length = 0;
             this.#pageMatchesLength.length = 0;
+            this.#visitedPagesCount = 0;
             this.#matchesCountTotal = 0;
             this.#updateAllPages(); // Wipe out any previously highlighted matches.
             for (let i = 0; i < numPages; i++) {
@@ -779,7 +778,7 @@ export class PDFFindController {
             }
         }
         // If there's no query there's no point in searching.
-        if (this.#query === "") {
+        if (!this.#query) {
             this.#updateUIState(FindState.FOUND);
             return;
         }
@@ -792,7 +791,7 @@ export class PDFFindController {
         this.#pagesToSearch = numPages;
         // If there's already a `matchIdx` that means we are iterating through a
         // page's matches.
-        if (offset.matchIdx !== null) {
+        if (offset.matchIdx !== undefined) {
             const numPageMatches = this.#pageMatches[offset.pageIdx].length;
             if ((!previous && offset.matchIdx + 1 < numPageMatches) ||
                 (previous && offset.matchIdx > 0)) {
@@ -822,7 +821,7 @@ export class PDFFindController {
         // No matches, so attempt to search the next page.
         this.#advanceOffsetPage(previous);
         if (offset.wrapped) {
-            offset.matchIdx = null;
+            offset.matchIdx = undefined;
             if (this.#pagesToSearch < 0) {
                 // No point in wrapping again, there were no matches.
                 this.#updateMatch(/* found = */ false);
@@ -838,7 +837,7 @@ export class PDFFindController {
         if (this.#resumePageIdx !== undefined) {
             console.error("There can only be one pending page.");
         }
-        let matches = null;
+        let matches;
         do {
             const pageIdx = this.#offset.pageIdx;
             matches = this.#pageMatches[pageIdx];
@@ -854,7 +853,7 @@ export class PDFFindController {
         const offset = this.#offset;
         const numPages = this.#linkService.pagesCount;
         offset.pageIdx = previous ? offset.pageIdx - 1 : offset.pageIdx + 1;
-        offset.matchIdx = null;
+        offset.matchIdx = undefined;
         this.#pagesToSearch--;
         if (offset.pageIdx >= numPages || offset.pageIdx < 0) {
             offset.pageIdx = previous ? numPages - 1 : 0;
@@ -936,12 +935,19 @@ export class PDFFindController {
         });
     }
     #updateUIState(state, previous = false) {
+        if (!this.#updateMatchesCountOnProgress &&
+            (this.#visitedPagesCount !== this.#linkService.pagesCount ||
+                state === FindState.PENDING)) {
+            // When this.#updateMatchesCountOnProgress is false we only send an update
+            // when everything is ready.
+            return;
+        }
         this.#eventBus.dispatch("updatefindcontrolstate", {
             source: this,
             state,
             previous,
             matchesCount: this.#requestMatchesCount(),
-            rawQuery: this.#state?.query ?? null,
+            rawQuery: this.#state?.query ?? undefined,
         });
     }
 }

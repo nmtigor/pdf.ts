@@ -1,3 +1,4 @@
+import { type point_t } from "../../lib/alias.js";
 import { AnnotationEditorType, AnnotationMode, type ExplicitDest, OptionalContentConfig, PDFDocumentProxy, PDFPageProxy } from "../pdf.ts-src/pdf.js";
 import { EventBus, EventMap } from "./event_utils.js";
 import { IDownloadManager, type IL10n, type IPDFLinkService } from "./interfaces.js";
@@ -170,6 +171,8 @@ type SetScaleOptions_ = {
     noScroll?: boolean;
     preset?: boolean;
     drawingDelay?: number;
+    steps?: number | undefined;
+    scaleFactor?: number | undefined;
 };
 /**
  * Simple viewer control to display PDF content/pages.
@@ -201,9 +204,7 @@ export declare class PDFViewer {
         right: boolean;
         down: boolean;
         lastX: number;
-        lastY: number; /**
-         * 'canvas' or 'svg'. The default is 'canvas'.
-         */
+        lastY: number;
         _eventHandler: (evt: unknown) => void;
     };
     presentationModeState: PresentationModeState;
@@ -357,15 +358,13 @@ export declare class PDFViewer {
     previousPage(): boolean;
     /**
      * Increase the current zoom level one, or more, times.
-     * @param steps Defaults to zooming once.
      */
-    increaseScale(steps?: number, options?: SetScaleOptions_ | undefined): void;
+    increaseScale(options?: SetScaleOptions_ | undefined): void;
     /**
      * Decrease the current zoom level one, or more, times.
-     * @param steps Defaults to zooming once.
      */
-    decreaseScale(steps?: number, options?: SetScaleOptions_ | undefined): void;
-    get containerTopLeft(): [number, number];
+    decreaseScale(options?: SetScaleOptions_ | undefined): void;
+    get containerTopLeft(): point_t;
     get annotationEditorMode(): AnnotationEditorType;
     /**
      * @param AnnotationEditor mode (None, FreeText, Ink, ...)

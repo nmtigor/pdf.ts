@@ -1,5 +1,4 @@
 import { ChunkedStream } from "./chunked_stream.js";
-import { DocStats } from "./core_utils.js";
 import { CipherTransformFactory } from "./crypto.js";
 import { Parser } from "./parser.js";
 import { BasePdfManager } from "./pdf_manager.js";
@@ -32,7 +31,6 @@ export declare class XRef {
     entries: XRefEntry[];
     xrefstms: number[];
     _pendingRefs: RefSet;
-    stats: DocStats;
     getNewPersistentRef(obj: StringStream | Dict): import("./primitives.js").NsRef.Ref;
     getNewTemporaryRef(): import("./primitives.js").NsRef.Ref;
     resetNewTemporaryRef(): void;

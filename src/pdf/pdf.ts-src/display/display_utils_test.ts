@@ -28,13 +28,13 @@ import {
   assertStrictEquals,
   assertThrows,
   fail,
-} from "https://deno.land/std@0.165.0/testing/asserts.ts";
+} from "https://deno.land/std@0.170.0/testing/asserts.ts";
 import {
   afterAll,
   beforeAll,
   describe,
   it,
-} from "https://deno.land/std@0.165.0/testing/bdd.ts";
+} from "https://deno.land/std@0.170.0/testing/bdd.ts";
 import { DENO } from "../../../global.ts";
 import { bytesToString } from "../shared/util.ts";
 import {
@@ -79,17 +79,17 @@ describe("display_utils", () => {
       );
     });
 
-    it("`create` should return a canvas if the dimensions are valid", () => {
+    //kkkk "ReferenceError: document is not defined"
+    it.ignore("`create` should return a canvas if the dimensions are valid", () => {
       // if (isNodeJS) {
       //   pending("Document is not supported in Node.js.");
       // }
 
-      //kkkk "ReferenceError: document is not defined"
-      // const { canvas, context } = canvasFactory.create(20, 40);
-      // assertInstanceOf(canvas, HTMLCanvasElement);
-      // assertInstanceOf(context, CanvasRenderingContext2D);
-      // assertEquals(canvas.width, 20);
-      // assertEquals(canvas.height, 40);
+      const { canvas, context } = canvasFactory.create(20, 40);
+      assertInstanceOf(canvas, HTMLCanvasElement);
+      assertInstanceOf(context, CanvasRenderingContext2D);
+      assertEquals(canvas.width, 20);
+      assertEquals(canvas.height, 40);
     });
 
     it("`reset` should throw an error if no canvas is provided", () => {
@@ -126,20 +126,20 @@ describe("display_utils", () => {
       );
     });
 
-    it("`reset` should alter the canvas/context if the dimensions are valid", () => {
+    //kkkk "ReferenceError: document is not defined"
+    it.ignore("`reset` should alter the canvas/context if the dimensions are valid", () => {
       // if (isNodeJS) {
       //   pending("Document is not supported in Node.js.");
       // }
 
-      //kkkk "ReferenceError: document is not defined"
-      // const canvasAndContext = canvasFactory.create(20, 40);
-      // canvasFactory.reset(canvasAndContext, 60, 80);
+      const canvasAndContext = canvasFactory.create(20, 40);
+      canvasFactory.reset(canvasAndContext, 60, 80);
 
-      // const { canvas, context } = canvasAndContext;
-      // assertInstanceOf(canvas, HTMLCanvasElement);
-      // assertInstanceOf(context, CanvasRenderingContext2D);
-      // assertEquals(canvas.width, 60);
-      // assertEquals(canvas.height, 80);
+      const { canvas, context } = canvasAndContext;
+      assertInstanceOf(canvas, HTMLCanvasElement);
+      assertInstanceOf(context, CanvasRenderingContext2D);
+      assertEquals(canvas.width, 60);
+      assertEquals(canvas.height, 80);
     });
 
     it("`destroy` should throw an error if no canvas is provided", () => {
@@ -152,18 +152,18 @@ describe("display_utils", () => {
       );
     });
 
-    it("`destroy` should clear the canvas/context", () => {
+    //kkkk "ReferenceError: document is not defined"
+    it.ignore("`destroy` should clear the canvas/context", () => {
       // if (isNodeJS) {
       //   pending("Document is not supported in Node.js.");
       // }
 
-      //kkkk "ReferenceError: document is not defined"
-      // const canvasAndContext = canvasFactory.create(20, 40);
-      // canvasFactory.destroy(canvasAndContext);
+      const canvasAndContext = canvasFactory.create(20, 40);
+      canvasFactory.destroy(canvasAndContext);
 
-      // const { canvas, context } = canvasAndContext;
-      // assertEquals(canvas, undefined);
-      // assertEquals(context, undefined);
+      const { canvas, context } = canvasAndContext;
+      assertEquals(canvas, undefined);
+      assertEquals(context, undefined);
     });
   });
 
@@ -198,19 +198,19 @@ describe("display_utils", () => {
       );
     });
 
-    it("`create` should return an SVG element if the dimensions are valid", () => {
+    //kkkk "ReferenceError: document is not defined"
+    it.ignore("`create` should return an SVG element if the dimensions are valid", () => {
       // if (isNodeJS) {
       //   pending("Document is not supported in Node.js.");
       // }
 
-      //kkkk "ReferenceError: document is not defined"
-      // const svg = svgFactory.create(20, 40);
-      // assertInstanceOf(svg, SVGSVGElement);
-      // assertEquals(svg.getAttribute("version"), "1.1");
-      // assertEquals(svg.getAttribute("width"), "20px");
-      // assertEquals(svg.getAttribute("height"), "40px");
-      // assertEquals(svg.getAttribute("preserveAspectRatio"), "none");
-      // assertEquals(svg.getAttribute("viewBox"), "0 0 20 40");
+      const svg = svgFactory.create(20, 40);
+      assertInstanceOf(svg, SVGSVGElement);
+      assertEquals(svg.getAttribute("version"), "1.1");
+      assertEquals(svg.getAttribute("width"), "20px");
+      assertEquals(svg.getAttribute("height"), "40px");
+      assertEquals(svg.getAttribute("preserveAspectRatio"), "none");
+      assertEquals(svg.getAttribute("viewBox"), "0 0 20 40");
     });
 
     it("`createElement` should throw an error if the type is not a string", () => {
@@ -223,14 +223,14 @@ describe("display_utils", () => {
       );
     });
 
-    it("`createElement` should return an SVG element if the type is valid", () => {
+    //kkkk "ReferenceError: document is not defined"
+    it.ignore("`createElement` should return an SVG element if the type is valid", () => {
       // if (isNodeJS) {
       //   pending("Document is not supported in Node.js.");
       // }
 
-      //kkkk "ReferenceError: document is not defined"
-      // const svg = svgFactory.createElement("svg:rect");
-      // assertInstanceOf(svg, SVGRectElement);
+      const svg = svgFactory.createElement("svg:rect");
+      assertInstanceOf(svg, SVGRectElement);
     });
   });
 
@@ -443,18 +443,12 @@ describe("display_utils", () => {
     });
 
     it("handles relative Fetch URLs", () => {
-      assertEquals(
-        isValidFetchUrl("/foo", "file://www.example.com"),
-        /*#static*/ DENO ? true : false,
-      );
+      assertEquals(isValidFetchUrl("/foo", "file://www.example.com"), false);
       assertEquals(isValidFetchUrl("/foo", "http://www.example.com"), true);
     });
 
     it("handles unsupported Fetch protocols", () => {
-      assertEquals(
-        isValidFetchUrl("file://www.example.com"),
-        /*#static*/ DENO ? true : false,
-      );
+      assertEquals(isValidFetchUrl("file://www.example.com"), false);
       assertEquals(isValidFetchUrl("ftp://www.example.com"), false);
     });
 

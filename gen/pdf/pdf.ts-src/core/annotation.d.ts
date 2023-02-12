@@ -1,9 +1,9 @@
-import { type TupleOf } from "../../../lib/alias.js";
+import { type point_t, type rect_t, type TupleOf } from "../../../lib/alias.js";
 import { type AnnotStorageRecord, AnnotStorageValue } from "../display/annotation_layer.js";
 import { DocWrapped, FieldWrapped } from "../scripting_api/app.js";
 import { CorrectColor } from "../scripting_api/color.js";
 import { SendData } from "../scripting_api/pdf_object.js";
-import { AnnotationBorderStyleType, AnnotationFieldFlag, AnnotationFlag, AnnotationReplyType, AnnotationType, point_t, type rect_t, RenderingIntentFlag } from "../shared/util.js";
+import { AnnotationBorderStyleType, AnnotationFieldFlag, AnnotationFlag, AnnotationReplyType, AnnotationType, RenderingIntentFlag } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
 import { type BidiText } from "./bidi.js";
 import { Attachments, type CatParseDestDictRes } from "./catalog.js";

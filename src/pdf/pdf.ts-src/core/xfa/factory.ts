@@ -18,7 +18,8 @@
  */
 
 import { type AnnotStorageRecord } from "../../display/annotation_layer.ts";
-import { type rect_t, warn } from "../../shared/util.ts";
+import { type rect_t } from "../../../../lib/alias.ts";
+import { warn } from "../../shared/util.ts";
 import { type XFAData } from "../document.ts";
 import { ErrorFont, Font } from "../fonts.ts";
 import { type XFAElObj, XFAHTMLAttrs, type XFAHTMLObj } from "./alias.ts";

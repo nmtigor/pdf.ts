@@ -72,7 +72,7 @@ export interface DocInfo extends ScriptingDocProperties {
   actions: AnnotActions;
 }
 
-interface _ScriptingDocData extends ScriptingData<SendDocData_>, DocInfo {
+interface ScriptingDocData_ extends ScriptingData<SendDocData_>, DocInfo {
   globalEval(code: string): unknown;
   docID?: [string, string];
   layout?: string;
@@ -80,12 +80,12 @@ interface _ScriptingDocData extends ScriptingData<SendDocData_>, DocInfo {
   zoom?: number;
 }
 
-interface _PrintP {
+interface PrintP_ {
   firstPage: number;
   lastPage: number;
 }
 
-interface _UI {
+interface UI_ {
   nStart: number;
   nEnd: number;
   bSilent: boolean;
@@ -93,8 +93,8 @@ interface _UI {
   bPrintAsImage: boolean;
   bReverse: boolean;
   bAnnotations: boolean;
-  printParams: _PrintP;
-  bUI: boolean | _UI;
+  printParams: PrintP_;
+  bUI: boolean | UI_;
 }
 
 export class Doc extends PDFObject<SendDocData_> {
@@ -323,7 +323,7 @@ export class Doc extends PDFObject<SendDocData_> {
 
   _eventDispatcher?: EventDispatcher;
 
-  constructor(data: _ScriptingDocData) {
+  constructor(data: ScriptingDocData_) {
     super(data);
 
     // In a script doc === this.
@@ -1148,7 +1148,7 @@ export class Doc extends PDFObject<SendDocData_> {
   }
 
   print(
-    bUI: boolean | _UI = true,
+    bUI: boolean | UI_ = true,
     nStart = 0,
     nEnd = -1,
     bSilent = false,
@@ -1156,7 +1156,7 @@ export class Doc extends PDFObject<SendDocData_> {
     bPrintAsImage = false,
     bReverse = false,
     bAnnotations = true,
-    printParams?: _PrintP,
+    printParams?: PrintP_,
   ) {
     if (this._disablePrinting || !this._userActivation) {
       return;

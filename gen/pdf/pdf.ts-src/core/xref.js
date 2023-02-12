@@ -19,7 +19,7 @@ import { _PDFDEV } from "../../../global.js";
 import { assert } from "../../../lib/util/trace.js";
 import { bytesToString, FormatError, info, InvalidPDFException, warn, } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
-import { DocStats, MissingDataException, ParserEOFException, XRefEntryException, XRefParseException, } from "./core_utils.js";
+import { MissingDataException, ParserEOFException, XRefEntryException, XRefParseException, } from "./core_utils.js";
 import { CipherTransformFactory } from "./crypto.js";
 import { Lexer, Parser } from "./parser.js";
 import { CIRCULAR_REF, Cmd, Dict, isCmd, Ref, RefSet, } from "./primitives.js";
@@ -30,7 +30,6 @@ export class XRef {
     xrefstms = Object.create(null);
     #cacheMap = new Map(); // Prepare the XRef cache.
     _pendingRefs = new RefSet();
-    stats;
     #newPersistentRefNum;
     getNewPersistentRef(obj) {
         // When printing we don't care that much about the ref number by itself, it
@@ -72,7 +71,6 @@ export class XRef {
     constructor(stream, pdfManager) {
         this.stream = stream;
         this.pdfManager = pdfManager;
-        this.stats = new DocStats(pdfManager.msgHandler);
     }
     parse(recoveryMode = false) {
         let trailerDict;
@@ -508,16 +506,10 @@ export class XRef {
             this.startXRefQueue.push(xrefStm);
             this.readXRef(/* recoveryMode */ true);
         }
-        // finding main trailer
-        let trailerDict, trailerError;
-        for (const trailer of [...trailers, "generationFallback", ...trailers]) {
-            if (trailer === "generationFallback") {
-                if (!trailerError) {
-                    break; // No need to fallback if there were no validation errors.
-                }
-                this.#generationFallback = true;
-                continue;
-            }
+        const trailerDicts = [];
+        // Pre-parsing the trailers to check if the document is possibly encrypted.
+        let isEncrypted = false;
+        for (const trailer of trailers) {
             stream.pos = trailer;
             const parser = new Parser({
                 lexer: new Lexer(stream),
@@ -532,6 +524,21 @@ export class XRef {
             // read the trailer dictionary
             const dict = parser.getObj();
             if (!(dict instanceof Dict)) {
+                continue;
+            }
+            trailerDicts.push(dict);
+            if (dict.has("Encrypt")) {
+                isEncrypted = true;
+            }
+        }
+        // finding main trailer
+        let trailerDict, trailerError;
+        for (const dict of [...trailerDicts, "genFallback", ...trailerDicts]) {
+            if (dict === "genFallback") {
+                if (!trailerError) {
+                    break; // No need to fallback if there were no validation errors.
+                }
+                this.#generationFallback = true;
                 continue;
             }
             // Do some basic validation of the trailer/root dictionary candidate.
@@ -556,7 +563,9 @@ export class XRef {
                 continue;
             }
             // taking the first one with 'ID'
-            if (validPagesDict && dict.has("ID")) {
+            if (validPagesDict &&
+                (!isEncrypted || dict.has("Encrypt")) &&
+                dict.has("ID")) {
                 return dict;
             }
             // The current dictionary is a candidate, but continue searching.

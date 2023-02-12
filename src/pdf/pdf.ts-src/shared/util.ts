@@ -18,7 +18,7 @@
  */
 
 import { _PDFDEV, DENO, GENERIC, SKIP_BABEL } from "../../../global.ts";
-import { type TupleOf } from "../../../lib/alias.ts";
+import { type point_t, type rect_t, type TupleOf } from "../../../lib/alias.ts";
 import { HttpStatusCode } from "../../../lib/HttpStatusCode.ts";
 import { isObjectLike } from "../../../lib/jslang.ts";
 import { assert, warn as warn_0 } from "../../../lib/util/trace.ts";
@@ -269,33 +269,33 @@ export type ActionEventName =
   | "OpenAction"
   | "Action";
 
-export enum StreamType {
-  UNKNOWN = "UNKNOWN",
-  FLATE = "FLATE",
-  LZW = "LZW",
-  DCT = "DCT",
-  JPX = "JPX",
-  JBIG = "JBIG",
-  A85 = "A85",
-  AHX = "AHX",
-  CCF = "CCF",
-  RLX = "RLX", // PDF short name is 'RL', but telemetry requires three chars.
-}
+// export enum StreamType {
+//   UNKNOWN = "UNKNOWN",
+//   FLATE = "FLATE",
+//   LZW = "LZW",
+//   DCT = "DCT",
+//   JPX = "JPX",
+//   JBIG = "JBIG",
+//   A85 = "A85",
+//   AHX = "AHX",
+//   CCF = "CCF",
+//   RLX = "RLX", // PDF short name is 'RL', but telemetry requires three chars.
+// }
 
-export enum FontType {
-  UNKNOWN = "UNKNOWN",
-  TYPE1 = "TYPE1",
-  TYPE1STANDARD = "TYPE1STANDARD",
-  TYPE1C = "TYPE1C",
-  CIDFONTTYPE0 = "CIDFONTTYPE0",
-  CIDFONTTYPE0C = "CIDFONTTYPE0C",
-  TRUETYPE = "TRUETYPE",
-  CIDFONTTYPE2 = "CIDFONTTYPE2",
-  TYPE3 = "TYPE3",
-  OPENTYPE = "OPENTYPE",
-  TYPE0 = "TYPE0",
-  MMTYPE1 = "MMTYPE1",
-}
+// export enum FontType {
+//   UNKNOWN = "UNKNOWN",
+//   TYPE1 = "TYPE1",
+//   TYPE1STANDARD = "TYPE1STANDARD",
+//   TYPE1C = "TYPE1C",
+//   CIDFONTTYPE0 = "CIDFONTTYPE0",
+//   CIDFONTTYPE0C = "CIDFONTTYPE0C",
+//   TRUETYPE = "TRUETYPE",
+//   CIDFONTTYPE2 = "CIDFONTTYPE2",
+//   TYPE3 = "TYPE3",
+//   OPENTYPE = "OPENTYPE",
+//   TYPE0 = "TYPE0",
+//   MMTYPE1 = "MMTYPE1",
+// }
 
 export const enum VerbosityLevel {
   ERRORS = 0,
@@ -411,28 +411,34 @@ export enum OPS {
 export type OPSName = keyof typeof OPS;
 // export type OPSValu = (typeof OPS)[OPSName];
 
-export const enum UNSUPPORTED_FEATURES {
-  forms = "forms",
-  javaScript = "javaScript",
-  signatures = "signatures",
-  smask = "smask",
-  shadingPattern = "shadingPattern",
-  errorTilingPattern = "errorTilingPattern",
-  errorExtGState = "errorExtGState",
-  errorXObject = "errorXObject",
-  errorFontLoadType3 = "errorFontLoadType3",
-  errorFontState = "errorFontState",
-  errorFontMissing = "errorFontMissing",
-  errorFontTranslate = "errorFontTranslate",
-  errorColorSpace = "errorColorSpace",
-  errorOperatorList = "errorOperatorList",
-  errorFontToUnicode = "errorFontToUnicode",
-  errorFontLoadNative = "errorFontLoadNative",
-  errorFontBuildPath = "errorFontBuildPath",
-  errorFontGetPath = "errorFontGetPath",
-  errorMarkedContent = "errorMarkedContent",
-  errorContentSubStream = "errorContentSubStream",
-}
+export const UNSUPPORTED_FEATURES = /*#static*/ GENERIC
+  ? {
+    forms: "forms",
+    javaScript: "javaScript",
+    signatures: "signatures",
+    smask: "smask",
+    shadingPattern: "shadingPattern",
+    errorTilingPattern: "errorTilingPattern",
+    errorExtGState: "errorExtGState",
+    errorXObject: "errorXObject",
+    errorFontLoadType3: "errorFontLoadType3",
+    errorFontState: "errorFontState",
+    errorFontMissing: "errorFontMissing",
+    errorFontTranslate: "errorFontTranslate",
+    errorColorSpace: "errorColorSpace",
+    errorOperatorList: "errorOperatorList",
+    errorFontToUnicode: "errorFontToUnicode",
+    errorFontLoadNative: "errorFontLoadNative",
+    errorFontBuildPath: "errorFontBuildPath",
+    errorFontGetPath: "errorFontGetPath",
+    errorMarkedContent: "errorMarkedContent",
+    errorContentSubStream: "errorContentSubStream",
+  } as const
+  : undefined;
+export type UNSUPPORTED_FEATURES =
+  (Exclude<typeof UNSUPPORTED_FEATURES, undefined>)[
+    keyof Exclude<typeof UNSUPPORTED_FEATURES, undefined>
+  ];
 
 export const enum PasswordResponses {
   NEED_PASSWORD = 1,
@@ -775,9 +781,7 @@ export class FeatureTest {
   }
 }
 
-export type point_t = [number, number];
 export type point3d_t = [number, number, number];
-export type rect_t = TupleOf<number, 4>;
 export type matrix_t = TupleOf<number, 6>;
 export type matrix3d_t = TupleOf<number, 9>;
 
@@ -1258,5 +1262,62 @@ export function getModificationDate(date = new Date()) {
   ];
 
   return buffer.join("");
+}
+
+/**
+ * Promise Capability object.
+ */
+export interface PromiseCapability<T = void> {
+  id: number;
+
+  /**
+   * A Promise object.
+   */
+  promise: Promise<T>;
+
+  /**
+   * If the Promise has been fulfilled/rejected.
+   */
+  settled: boolean;
+
+  /**
+   * Fulfills the Promise.
+   */
+  resolve: (data: T) => void;
+
+  /**
+   * Rejects the Promise.
+   */
+  reject: (reason: any) => void;
+}
+let PromiseCap_ID = 0;
+
+/**
+ * Creates a promise capability object.
+ *
+ * ! Notice, this could be called in worker thread, where there is no e.g.
+ * ! `Node` as in mv.ts.
+ */
+export function createPromiseCapability<T = void>(): PromiseCapability<T> {
+  const cap: PromiseCapability<T> = Object.create(null);
+  cap.id = ++PromiseCap_ID;
+  let isSettled = false;
+
+  Object.defineProperty(cap, "settled", {
+    get() {
+      return isSettled;
+    },
+  });
+  cap.promise = new Promise<T>((resolve, reject) => {
+    cap.resolve = (data: T) => {
+      isSettled = true;
+      resolve(data);
+    };
+    cap.reject = (reason: any) => {
+      isSettled = true;
+      reject(reason);
+    };
+  });
+  return cap;
 }
 /*80--------------------------------------------------------------------------*/

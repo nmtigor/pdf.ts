@@ -409,7 +409,7 @@ export interface EventMap {
     state: FindState;
     previous?: boolean | undefined;
     matchesCount: MatchesCount;
-    rawQuery: string | null;
+    rawQuery: string | undefined;
   };
   updatefindmatchescount: {
     source: PDFFindController;
@@ -457,9 +457,9 @@ export type ListenerMap = {
   [EN in EventName]: (evt: EventMap[EN]) => void;
 };
 
-type Listener1 = (evt: Record<string, unknown>) => void;
-type Listener1Ex = {
-  listener: Listener1;
+type Listener_1_ = (evt: Record<string, unknown>) => void;
+type Listener_1Ex_ = {
+  listener: Listener_1_;
   external: boolean;
   once: boolean;
 };
@@ -470,7 +470,7 @@ type Listener1Ex = {
  * and `off` methods. To raise an event, the `dispatch` method shall be used.
  */
 export class EventBus {
-  #listeners: Record<EventName, Listener1Ex[]> = Object.create(null);
+  #listeners: Record<EventName, Listener_1Ex_[]> = Object.create(null);
 
   on<EN extends EventName>(
     eventName: EN,
@@ -492,7 +492,7 @@ export class EventBus {
     if (!eventListeners || eventListeners.length === 0) {
       return;
     }
-    let externalListeners: Listener1[] | undefined;
+    let externalListeners: Listener_1_[] | undefined;
     // Making copy of the listeners array in case if it will be modified
     // during dispatch.
     for (const { listener, external, once } of eventListeners.slice(0)) {
@@ -528,7 +528,7 @@ export class EventBus {
       listener,
       external: options?.external === true,
       once: options?.once === true,
-    } as Listener1Ex);
+    } as Listener_1Ex_);
   }
 
   /**

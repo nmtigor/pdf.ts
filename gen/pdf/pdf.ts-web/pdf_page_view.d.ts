@@ -1,4 +1,5 @@
-import { AnnotationEditorUIManager, AnnotationMode, AnnotationStorage, FieldObject, OptionalContentConfig, PageViewport, PDFPageProxy, type point_t, StatTimer } from "../pdf.ts-src/pdf.js";
+import { type point_t } from "../../lib/alias.js";
+import { AnnotationEditorUIManager, AnnotationMode, AnnotationStorage, FieldObject, OptionalContentConfig, PageViewport, PDFPageProxy, StatTimer } from "../pdf.ts-src/pdf.js";
 import { AnnotationEditorLayerBuilder } from "./annotation_editor_layer_builder.js";
 import { AnnotationLayerBuilder } from "./annotation_layer_builder.js";
 import { type ErrorMoreInfo } from "./app.js";

@@ -63,7 +63,7 @@ export const enum ViewOnLoad {
 /*49-------------------------------------------*/
 
 export const D_base = /*#static*/ DENO && TESTING
-  ? "file:///data/cod/premsys/pdf.ts"
+  ? "http://localhost:8000"
   : "/pdf.ts";
 
 type _DefaultOptions = typeof defaultOptions;
@@ -123,7 +123,7 @@ const defaultOptions = {
     kind: 0 as OptionKind,
   },
   defaultZoomDelay: {
-    value: /*#static*/ GENERIC ? 400 : -1,
+    value: 400,
     kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
   },
   defaultZoomValue: {

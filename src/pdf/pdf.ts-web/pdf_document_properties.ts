@@ -17,8 +17,12 @@
  * limitations under the License.
  */
 
-import { createPromiseCap, PromiseCap } from "../../lib/promisecap.ts";
-import { PDFDateString, PDFDocumentProxy } from "../pdf.ts-src/pdf.ts";
+import {
+  createPromiseCapability,
+  PDFDateString,
+  PDFDocumentProxy,
+  type PromiseCapability,
+} from "../pdf.ts-src/pdf.ts";
 import { EventBus } from "./event_utils.ts";
 import { type IL10n } from "./interfaces.ts";
 import { OverlayManager } from "./overlay_manager.ts";
@@ -95,7 +99,7 @@ export class PDFDocumentProperties {
   url: string | undefined;
 
   maybeFileSize!: number;
-  #dataAvailableCapability!: PromiseCap;
+  #dataAvailableCapability!: PromiseCapability;
   _currentPageNumber!: number;
   _pagesRotation!: number;
 
@@ -257,7 +261,7 @@ export class PDFDocumentProperties {
     this.pdfDocument = undefined;
 
     this.#fieldData = undefined;
-    this.#dataAvailableCapability = createPromiseCap();
+    this.#dataAvailableCapability = createPromiseCapability();
     this._currentPageNumber = 1;
     this._pagesRotation = 0;
   }

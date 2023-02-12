@@ -694,7 +694,10 @@ export class Annotation {
         if (!(as instanceof Name) || !normalAppearanceState.has(as.name)) {
             return;
         }
-        this.appearance = normalAppearanceState.get(as.name);
+        const appearance = normalAppearanceState.get(as.name);
+        if (appearance instanceof BaseStream) {
+            this.appearance = appearance;
+        }
     }
     setOptionalContent(dict) {
         this.oc = undefined;
@@ -2067,11 +2070,11 @@ class ButtonWidgetAnnotation extends WidgetAnnotation {
             annotationStorage);
         }
         let value;
-        let rotation = null;
+        let rotation;
         if (annotationStorage) {
             const storageEntry = annotationStorage.get(this.data.id);
             value = storageEntry ? storageEntry.value : undefined;
-            rotation = storageEntry ? storageEntry.rotation : null;
+            rotation = storageEntry ? storageEntry.rotation : undefined;
         }
         if (value === undefined && this.appearance) {
             // Nothing in the annotationStorage.
@@ -2336,10 +2339,14 @@ class ButtonWidgetAnnotation extends WidgetAnnotation {
             this.data.fieldValue = "Off";
         }
         this.data.exportValue = exportValues[1];
-        this.checkedAppearance =
-            normalAppearance.get(this.data.exportValue) || undefined;
-        this.uncheckedAppearance = normalAppearance.get("Off") ||
-            undefined;
+        const checkedAppearance = normalAppearance.get(this.data.exportValue);
+        this.checkedAppearance = checkedAppearance instanceof BaseStream
+            ? checkedAppearance
+            : undefined;
+        const uncheckedAppearance = normalAppearance.get("Off");
+        this.uncheckedAppearance = uncheckedAppearance instanceof BaseStream
+            ? uncheckedAppearance
+            : undefined;
         if (this.checkedAppearance) {
             this._streams.push(this.checkedAppearance);
         }
@@ -2378,10 +2385,14 @@ class ButtonWidgetAnnotation extends WidgetAnnotation {
                 break;
             }
         }
-        this.checkedAppearance =
-            normalAppearance.get(this.data.buttonValue) || undefined;
-        this.uncheckedAppearance = normalAppearance.get("Off") ||
-            undefined;
+        const checkedAppearance = normalAppearance.get(this.data.buttonValue);
+        this.checkedAppearance = checkedAppearance instanceof BaseStream
+            ? checkedAppearance
+            : undefined;
+        const uncheckedAppearance = normalAppearance.get("Off");
+        this.uncheckedAppearance = uncheckedAppearance instanceof BaseStream
+            ? uncheckedAppearance
+            : undefined;
         if (this.checkedAppearance) {
             this._streams.push(this.checkedAppearance);
         }

@@ -59,7 +59,7 @@ declare namespace NsCFFParser {
         createDict<T extends CFFDict>(Type: Constructor<T>, dict: CFFDictParsed, strings?: CFFStrings): T;
         parseCharString(state: ParseCharStringState, data: Uint8Array | Uint8ClampedArray | number[], localSubrIndex: CFFIndex | undefined, globalSubrIndex: CFFIndex): boolean;
         parseCharStrings({ charStrings, localSubrIndex, globalSubrIndex, fdSelect, fdArray, privateDict, }: _ParseCharStringsP): {
-            charStrings: CFFIndex<Uint8Array | Uint8ClampedArray | number[]>;
+            charStrings: CFFIndex<number[] | Uint8Array | Uint8ClampedArray>;
             seacs: number[][];
             widths: number[];
         };
@@ -127,7 +127,7 @@ declare abstract class CFFDict {
     nameToKeyMap: Record<string, number>;
     defaults: (number | number[] | null)[];
     types: (string | string[])[];
-    opcodes: ([number, number] | [number])[];
+    opcodes: ([number] | [number, number])[];
     order: number[];
     strings: CFFStrings | undefined;
     values: (number[] | number | undefined)[];

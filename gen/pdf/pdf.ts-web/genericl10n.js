@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 /** @typedef {import("./interfaces").IL10n} IL10n */
-import { webL10n } from "../../3rd/webL10n/l10n.js";
+import { webL10n, } from "../../3rd/webL10n-2015-10-24/l10n.js";
 import { fixupLangCode, getL10nFallback } from "./l10n_utils.js";
 /*80--------------------------------------------------------------------------*/
 // const webL10n = document.webL10n;

@@ -1,10 +1,11 @@
+import { type point_t, type rect_t } from "../../../lib/alias.js";
 import { Stepper } from "../../pdf.ts-web/debugger.js";
 import { PageColors } from "../../pdf.ts-web/pdf_viewer.js";
 import { type ImgData, type MarkedContentProps, type SmaskOptions } from "../core/evaluator.js";
 import { Glyph } from "../core/fonts.js";
 import { type OpListIR } from "../core/operator_list.js";
 import { type PatternIR, ShadingType } from "../core/pattern.js";
-import { type matrix_t, OPS, point_t, type rect_t, TextRenderingMode } from "../shared/util.js";
+import { type matrix_t, OPS, TextRenderingMode } from "../shared/util.js";
 import { PDFCommonObjs, PDFObjects, PDFObjs } from "./api.js";
 import { BaseCanvasFactory, type CanvasEntry } from "./base_factory.js";
 import { PageViewport } from "./display_utils.js";

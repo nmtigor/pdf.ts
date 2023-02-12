@@ -17,7 +17,8 @@
  * limitations under the License.
  */
 
-import { type rect_t, shadow } from "../../shared/util.ts";
+import { type rect_t } from "../../../../lib/alias.ts";
+import { shadow } from "../../shared/util.ts";
 import { type XFAElData } from "./alias.ts";
 import { BreakAfter, BreakBefore, Template } from "./template.ts";
 /*80--------------------------------------------------------------------------*/

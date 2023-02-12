@@ -21,12 +21,15 @@ import {
   assertEquals,
   assertInstanceOf,
   fail,
-} from "https://deno.land/std@0.165.0/testing/asserts.ts";
-import { describe, it } from "https://deno.land/std@0.165.0/testing/bdd.ts";
-import { createPromiseCap } from "../../../lib/promisecap.ts";
+} from "https://deno.land/std@0.170.0/testing/asserts.ts";
+import { describe, it } from "https://deno.land/std@0.170.0/testing/bdd.ts";
 import { LoopbackPort } from "../display/api.ts";
 import { MessageHandler, type Thread } from "../shared/message_handler.ts";
-import { AbortException, UnknownErrorException } from "./util.ts";
+import {
+  AbortException,
+  createPromiseCapability,
+  UnknownErrorException,
+} from "./util.ts";
 /*80--------------------------------------------------------------------------*/
 
 describe("message_handler", () => {
@@ -385,7 +388,7 @@ describe("message_handler", () => {
     it("should ignore any pull after close is called", async () => {
       let log = "";
       const port = new LoopbackPort();
-      const capability = createPromiseCap();
+      const capability = createPromiseCapability();
       const messageHandler2 = new MessageHandler<Thread.worker>(
         "worker",
         "main",

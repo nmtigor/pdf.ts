@@ -17,11 +17,8 @@
  * limitations under the License.
  */
 
-import {
-  createValidAbsoluteUrl,
-  type rect_t,
-  warn,
-} from "../../shared/util.ts";
+import { type rect_t } from "../../../../lib/alias.ts";
+import { createValidAbsoluteUrl, warn } from "../../shared/util.ts";
 import {
   type AvailableSpace,
   type XFAElObj,

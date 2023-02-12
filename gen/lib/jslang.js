@@ -143,15 +143,28 @@ export function isASCIILoLetter(cp) {
 export function isASCIILetter(cp) {
     return isASCIIUpLetter(cp) || isASCIILoLetter(cp);
 }
-Number.apxE = (f0, f1) => Math.abs(f0 - f1) <= Number.EPSILON;
-Number.apxS = (f0, f1) => f0 < f1 - Number.EPSILON;
-Number.apxSE = (f0, f1) => f0 <= f1 + Number.EPSILON;
-Number.apxG = (f0, f1) => f0 > f1 + Number.EPSILON;
-Number.apxGE = (f0, f1) => f0 >= f1 - Number.EPSILON;
+const Tolerance_ = 2 ** -30; // ~= 0.000_000_001
+Number.apxE = (f0, f1) => Math.abs(f0 - f1) <= Tolerance_;
+Number.apxS = (f0, f1) => f0 < f1 - Tolerance_;
+Number.apxSE = (f0, f1) => f0 <= f1 + Tolerance_;
+Number.apxG = (f0, f1) => f0 > f1 + Tolerance_;
+Number.apxGE = (f0, f1) => f0 >= f1 - Tolerance_;
 Number.getRandom = (max, min = 0, fixto = 0) => min + (Math.random() * (max - min)).fixTo(fixto);
 Number.prototype.fixTo = function (digits = 0) {
     const mul = 10 ** digits;
     return Math.round(this.valueOf() * mul) / mul;
+};
+Number.prototype.reprRatio = function (fixTo_x = 2) {
+    let x_ = this.valueOf();
+    const n_ = Number.apxS(x_, 0);
+    x_ = Math.abs(x_);
+    const f_ = Number.apxS(x_, 1);
+    let ret = x_.fixTo(fixTo_x).toString();
+    if (f_)
+        ret = ret.slice(1);
+    if (n_)
+        ret = `-${ret}`;
+    return ret;
 };
 /*81-----------------------------------------------------------------------------
  * TypedArray

@@ -31,7 +31,7 @@ import { isPdfFile } from "./display_utils.ts";
 export type VRRC_P_ = {
   getResponseHeader: (name: string) => string | null;
   isHttp: boolean;
-  rangeChunkSize: number;
+  rangeChunkSize: number | undefined;
   disableRange: boolean;
 };
 
@@ -43,7 +43,8 @@ export function validateRangeRequestCapabilities({
 }: VRRC_P_) {
   /*#static*/ if (_PDFDEV) {
     assert(
-      Number.isInteger(rangeChunkSize) && rangeChunkSize > 0,
+      disableRange ||
+        Number.isInteger(rangeChunkSize) && rangeChunkSize! > 0,
       "rangeChunkSize must be an integer larger than zero.",
     );
   }
@@ -64,7 +65,7 @@ export function validateRangeRequestCapabilities({
 
   returnValues.suggestedLength = length;
 
-  if (length <= 2 * rangeChunkSize) {
+  if (length <= 2 * rangeChunkSize!) {
     // The file size is smaller than the size of two chunks, so it does not
     // make any sense to abort the request and retry with a range request.
     return returnValues;
@@ -112,7 +113,10 @@ export function createResponseStatusError(
   status: HttpStatusCode | 0,
   url: string | URL,
 ) {
-  if (status === 404 || (status === 0 && url.toString().startsWith("file:"))) {
+  if (
+    status === HttpStatusCode.NOT_FOUND ||
+    (status === 0 && url.toString().startsWith("file:"))
+  ) {
     return new MissingPDFException(`Missing PDF "${url}".`);
   }
   return new UnexpectedResponseException(
@@ -122,6 +126,7 @@ export function createResponseStatusError(
 }
 
 export function validateResponseStatus(status: HttpStatusCode) {
-  return status === 200 || status === 206;
+  return status === HttpStatusCode.OK ||
+    status === HttpStatusCode.PARTIAL_CONTENT;
 }
 /*80--------------------------------------------------------------------------*/

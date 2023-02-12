@@ -20,15 +20,16 @@
 import {
   assertEquals,
   assertInstanceOf,
-} from "https://deno.land/std@0.165.0/testing/asserts.ts";
-import { describe, it } from "https://deno.land/std@0.165.0/testing/bdd.ts";
+} from "https://deno.land/std@0.170.0/testing/asserts.ts";
+import { describe, it } from "https://deno.land/std@0.170.0/testing/bdd.ts";
 import { getDocument } from "../display/api.ts";
 import { buildGetDocumentParams } from "../shared/test_utils.ts";
 import { renderTextLayer, TextLayerRenderTask } from "./text_layer.ts";
 /*80--------------------------------------------------------------------------*/
 
 describe("textLayer", () => {
-  it("creates textLayer from ReadableStream", async () => {
+  // kkkk "ReferenceError: document is not defined"
+  it.ignore("creates textLayer from ReadableStream", async () => {
     // if (isNodeJS) {
     //   pending("document.createElement is not supported in Node.js.");
     // }
@@ -38,33 +39,32 @@ describe("textLayer", () => {
 
     const textContentItemsStr: string[] = [];
 
-    // kkkk "ReferenceError: document is not defined"
-    // const textLayerRenderTask = renderTextLayer({
-    //   textContentSource: page.streamTextContent(),
-    //   container: document.createElement("div"),
-    //   viewport: page.getViewport({} as any),
-    //   textContentItemsStr,
-    // });
-    // assertInstanceOf(textLayerRenderTask, TextLayerRenderTask);
+    const textLayerRenderTask = renderTextLayer({
+      textContentSource: page.streamTextContent(),
+      container: document.createElement("div"),
+      viewport: page.getViewport({} as any),
+      textContentItemsStr,
+    });
+    assertInstanceOf(textLayerRenderTask, TextLayerRenderTask);
 
-    // await textLayerRenderTask.promise;
-    // assertEquals(textContentItemsStr, [
-    //   "Table Of Content",
-    //   "",
-    //   "Chapter 1",
-    //   " ",
-    //   "..........................................................",
-    //   " ",
-    //   "2",
-    //   "",
-    //   "Paragraph 1.1",
-    //   " ",
-    //   "......................................................",
-    //   " ",
-    //   "3",
-    //   "",
-    //   "page 1 / 3",
-    // ]);
+    await textLayerRenderTask.promise;
+    assertEquals(textContentItemsStr, [
+      "Table Of Content",
+      "",
+      "Chapter 1",
+      " ",
+      "..........................................................",
+      " ",
+      "2",
+      "",
+      "Paragraph 1.1",
+      " ",
+      "......................................................",
+      " ",
+      "3",
+      "",
+      "page 1 / 3",
+    ]);
   });
 });
 /*80--------------------------------------------------------------------------*/

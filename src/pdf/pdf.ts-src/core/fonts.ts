@@ -18,16 +18,14 @@
  */
 
 import { _PDFDEV } from "../../../global.ts";
+import { type point_t, type rect_t } from "../../../lib/alias.ts";
 import { assert } from "../../../lib/util/trace.ts";
 import {
   bytesToString,
   FONT_IDENTITY_MATRIX,
-  FontType,
   FormatError,
   info,
   type matrix_t,
-  point_t,
-  type rect_t,
   shadow,
   string32,
   warn,
@@ -43,6 +41,7 @@ import {
   MacRomanEncoding,
   StandardEncoding,
   SymbolSetEncoding,
+  WinAnsiEncoding,
   ZapfDingbatsEncoding,
 } from "./encodings.ts";
 import {
@@ -52,7 +51,6 @@ import {
 } from "./evaluator.ts";
 import {
   FontFlags,
-  getFontType,
   MacStandardGlyphOrdering,
   recoverGlyphName,
   SEAC_ANALYSIS_ENABLED,
@@ -122,7 +120,6 @@ export abstract class FontExpotData {
   data: Uint8Array | undefined;
   defaultWidth?: number;
   fontMatrix?: matrix_t | undefined;
-  fontType?: FontType;
 
   isMonospace!: boolean;
   isSerifFont!: boolean;
@@ -154,7 +151,6 @@ const EXPORT_DATA_PROPERTIES: readonly (keyof FontExpotData)[] = [
   "descent",
   "fallbackName",
   "fontMatrix",
-  "fontType",
   "isInvalidPDFjsFont",
   "isType3Font",
   "italic",
@@ -214,7 +210,65 @@ function adjustWidths(properties: FontProps) {
   properties.defaultWidth! *= scale;
 }
 
-function adjustToUnicode(properties: FontProps, builtInEncoding?: string[]) {
+function adjustTrueTypeToUnicode(
+  properties: FontProps,
+  isSymbolicFont: boolean,
+  nameRecords: OSNameRecord_[],
+) {
+  if (properties.isInternalFont) {
+    return;
+  }
+  if (properties.hasIncludedToUnicodeMap) {
+    return; // The font dictionary has a `ToUnicode` entry.
+  }
+  if (properties.hasEncoding) {
+    return; // The font dictionary has an `Encoding` entry.
+  }
+  if (properties.toUnicode instanceof IdentityToUnicodeMap) {
+    return;
+  }
+  if (!isSymbolicFont) {
+    return; // A non-symbolic font should default to `StandardEncoding`.
+  }
+  if (nameRecords.length === 0) {
+    return;
+  }
+
+  // Try to infer if the fallback encoding should really be `WinAnsiEncoding`.
+  if (properties.defaultEncoding === WinAnsiEncoding) {
+    return;
+  }
+  for (const r of nameRecords) {
+    if (!isWinNameRecord(r)) {
+      return; // Not Windows, hence `WinAnsiEncoding` wouldn't make sense.
+    }
+  }
+  const encoding = WinAnsiEncoding;
+
+  const toUnicode: string[] = [],
+    glyphsUnicodeMap = getGlyphsUnicode();
+  for (const charCode in encoding) {
+    const glyphName = encoding[charCode];
+    if (glyphName === "") {
+      continue;
+    }
+    const unicode = glyphsUnicodeMap[glyphName];
+    if (unicode === undefined) {
+      continue;
+    }
+    toUnicode[charCode] = String.fromCharCode(unicode);
+  }
+  if (toUnicode.length > 0) {
+    (properties.toUnicode as ToUnicodeMap | IdentityToUnicodeMap).amend(
+      toUnicode,
+    );
+  }
+}
+
+function adjustType1ToUnicode(
+  properties: FontProps,
+  builtInEncoding?: string[],
+) {
   if (properties.isInternalFont) {
     return;
   }
@@ -232,7 +286,7 @@ function adjustToUnicode(properties: FontProps, builtInEncoding?: string[]) {
   for (const charCode in builtInEncoding) {
     if (properties.hasEncoding) {
       if (
-        properties.differences!.length === 0 ||
+        properties.baseEncodingName ||
         properties.differences![+charCode] !== undefined
       ) {
         continue; // The font dictionary has an `Encoding`/`Differences` entry.
@@ -253,7 +307,7 @@ function adjustToUnicode(properties: FontProps, builtInEncoding?: string[]) {
 
 /**
  * NOTE: This function should only be called at the *end* of font-parsing,
- *       after e.g. `adjustToUnicode` has run, to prevent any issues.
+ *       after e.g. `adjustType1ToUnicode` has run, to prevent any issues.
  */
 function amendFallbackToUnicode(properties: FontProps) {
   if (!properties.fallbackToUnicode) {
@@ -513,6 +567,28 @@ interface AdjustMappingReturn {
   charCodeToGlyphId: Record<number, number>;
   toUnicodeExtraMap: Map<number, number>;
   nextAvailableFontCharCode: number;
+}
+
+type OSNameRecord_ = {
+  platform: number;
+  encoding: number;
+  language: number;
+  name: number;
+  length: number;
+  offset: number;
+};
+
+// Please refer to:
+//  - https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6name.html
+function isMacNameRecord(r: OSNameRecord_) {
+  return r.platform === 1 && r.encoding === 0 && r.language === 0;
+}
+
+// Please refer to:
+//  - https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6name.html
+//  - https://learn.microsoft.com/en-us/typography/opentype/spec/name#windows-language-ids
+function isWinNameRecord(r: OSNameRecord_) {
+  return r.platform === 3 && r.encoding === 1 && r.language === 0x409;
 }
 
 function convertCidString(charCode: number, cid: string, shouldThrow = false) {
@@ -1100,8 +1176,7 @@ export class Font extends FontExpotDataEx {
     this.isSymbolicFont = !!(properties.flags & FontFlags.Symbolic);
     this.isMonospace = !!(properties.flags & FontFlags.FixedPitch);
 
-    let type = properties.type;
-    let subtype = properties.subtype;
+    let { type, subtype } = properties;
     this.type = type;
     this.subtype = subtype;
 
@@ -1142,7 +1217,6 @@ export class Font extends FontExpotDataEx {
           this.differences![charCode] || properties.defaultEncoding![charCode]
         );
       }
-      this.fontType = FontType.TYPE3;
       return;
     }
 
@@ -1221,9 +1295,10 @@ export class Font extends FontExpotDataEx {
 
     amendFallbackToUnicode(properties);
     this.data = data;
-    this.fontType = getFontType(type, subtype);
 
     // Transfer some properties again that could change during font conversion
+    this.type = type;
+    this.subtype = subtype;
     this.fontMatrix = properties.fontMatrix;
     this.widths = properties.widths;
     this.defaultWidth = properties.defaultWidth!;
@@ -1261,9 +1336,7 @@ export class Font extends FontExpotDataEx {
     this.missingFile = true;
     // The file data is not specified. Trying to fix the font name
     // to be used with the canvas.font.
-    const name = this.name;
-    const type = this.type;
-    const subtype = this.subtype;
+    const { name, type } = this;
     let fontName = name.replace(/[,_]/g, "-").replace(/\s/g, "");
     const stdFontMap = getStdFontMap(),
       nonStdFontMap = getNonStdFontMap();
@@ -1411,7 +1484,6 @@ export class Font extends FontExpotDataEx {
 
     amendFallbackToUnicode(properties);
     this.loadedName = fontName.split("-")[0];
-    this.fontType = getFontType(type, subtype, properties.isStandardFont);
   }
 
   checkAndRepair(name: string, font: BaseStream, properties: FontProps) {
@@ -1530,7 +1602,7 @@ export class Font extends FontExpotDataEx {
             'TrueType Collection font must contain a "name" table.',
           );
         }
-        const nameTable = readNameTable(potentialTables.name);
+        const [nameTable] = readNameTable(potentialTables.name);
 
         for (let j = 0, jj = nameTable.length; j < jj; j++) {
           for (let k = 0, kk = nameTable[j].length; k < kk; k++) {
@@ -2376,22 +2448,24 @@ export class Font extends FontExpotDataEx {
       return valid;
     }
 
-    function readNameTable(nameTable: OTTable) {
+    function readNameTable(
+      nameTable: OTTable,
+    ): [[string[], string[]], OSNameRecord_[]] {
       const start = (font.start || 0) + nameTable.offset;
       font.pos = start;
 
-      const names: [string[], string[]] = [[], []];
+      const names: [string[], string[]] = [[], []],
+        records: OSNameRecord_[] = [];
       const length = nameTable.length,
         end = start + length;
       const format = font.getUint16();
       const FORMAT_0_HEADER_LENGTH = 6;
       if (format !== 0 || length < FORMAT_0_HEADER_LENGTH) {
         // unsupported name table format or table "too" small
-        return names;
+        return [names, records];
       }
       const numRecords = font.getUint16();
       const stringsStart = font.getUint16();
-      const records = [];
       const NAME_RECORD_LENGTH = 12;
       let i, ii;
 
@@ -2405,10 +2479,7 @@ export class Font extends FontExpotDataEx {
           offset: font.getUint16(),
         };
         // using only Macintosh and Windows platform/encoding names
-        if (
-          (r.platform === 1 && r.encoding === 0 && r.language === 0) ||
-          (r.platform === 3 && r.encoding === 1 && r.language === 0x409)
-        ) {
+        if (isMacNameRecord(r) || isWinNameRecord(r)) {
           records.push(r);
         }
       }
@@ -2434,7 +2505,7 @@ export class Font extends FontExpotDataEx {
           names[0][nameIndex] = font.getString(record.length);
         }
       }
-      return names;
+      return [names, records];
     }
 
     // deno-fmt-ignore
@@ -3199,13 +3270,20 @@ export class Font extends FontExpotDataEx {
     if (!tables.name) {
       tables.name = <OTTable> {
         tag: "name",
-        data: <any> createNameTable(this.name),
+        data: createNameTable(this.name) as any,
       };
     } else {
       // ... using existing 'name' table as prototype
-      const namePrototype = readNameTable(tables.name);
-      tables.name.data = <any> createNameTable(name, namePrototype);
+      const [namePrototype, nameRecords] = readNameTable(tables.name);
+
+      tables.name.data = createNameTable(name, namePrototype) as any;
       this.psName = namePrototype[0][6] || undefined;
+
+      if (!properties.composite) {
+        // For TrueType fonts that do not include `ToUnicode` or `Encoding`
+        // data, attempt to use the name-table to improve text selection.
+        adjustTrueTypeToUnicode(properties, this.isSymbolicFont, nameRecords);
+      }
     }
 
     const builder = new OpenTypeFileBuilder(header.version);
@@ -3222,7 +3300,7 @@ export class Font extends FontExpotDataEx {
     if (properties.builtInEncoding) {
       // For Type1 fonts that do not include either `ToUnicode` or `Encoding`
       // data, attempt to use the `builtInEncoding` to improve text selection.
-      adjustToUnicode(properties, properties.builtInEncoding);
+      adjustType1ToUnicode(properties, properties.builtInEncoding);
     }
 
     // Type 1 fonts have a notdef inserted at the beginning, so glyph 0

@@ -231,34 +231,32 @@ export const PageActionEventType = {
     O: "PageOpen",
     C: "PageClose",
 };
-export var StreamType;
-(function (StreamType) {
-    StreamType["UNKNOWN"] = "UNKNOWN";
-    StreamType["FLATE"] = "FLATE";
-    StreamType["LZW"] = "LZW";
-    StreamType["DCT"] = "DCT";
-    StreamType["JPX"] = "JPX";
-    StreamType["JBIG"] = "JBIG";
-    StreamType["A85"] = "A85";
-    StreamType["AHX"] = "AHX";
-    StreamType["CCF"] = "CCF";
-    StreamType["RLX"] = "RLX";
-})(StreamType || (StreamType = {}));
-export var FontType;
-(function (FontType) {
-    FontType["UNKNOWN"] = "UNKNOWN";
-    FontType["TYPE1"] = "TYPE1";
-    FontType["TYPE1STANDARD"] = "TYPE1STANDARD";
-    FontType["TYPE1C"] = "TYPE1C";
-    FontType["CIDFONTTYPE0"] = "CIDFONTTYPE0";
-    FontType["CIDFONTTYPE0C"] = "CIDFONTTYPE0C";
-    FontType["TRUETYPE"] = "TRUETYPE";
-    FontType["CIDFONTTYPE2"] = "CIDFONTTYPE2";
-    FontType["TYPE3"] = "TYPE3";
-    FontType["OPENTYPE"] = "OPENTYPE";
-    FontType["TYPE0"] = "TYPE0";
-    FontType["MMTYPE1"] = "MMTYPE1";
-})(FontType || (FontType = {}));
+// export enum StreamType {
+//   UNKNOWN = "UNKNOWN",
+//   FLATE = "FLATE",
+//   LZW = "LZW",
+//   DCT = "DCT",
+//   JPX = "JPX",
+//   JBIG = "JBIG",
+//   A85 = "A85",
+//   AHX = "AHX",
+//   CCF = "CCF",
+//   RLX = "RLX", // PDF short name is 'RL', but telemetry requires three chars.
+// }
+// export enum FontType {
+//   UNKNOWN = "UNKNOWN",
+//   TYPE1 = "TYPE1",
+//   TYPE1STANDARD = "TYPE1STANDARD",
+//   TYPE1C = "TYPE1C",
+//   CIDFONTTYPE0 = "CIDFONTTYPE0",
+//   CIDFONTTYPE0C = "CIDFONTTYPE0C",
+//   TRUETYPE = "TRUETYPE",
+//   CIDFONTTYPE2 = "CIDFONTTYPE2",
+//   TYPE3 = "TYPE3",
+//   OPENTYPE = "OPENTYPE",
+//   TYPE0 = "TYPE0",
+//   MMTYPE1 = "MMTYPE1",
+// }
 export var VerbosityLevel;
 (function (VerbosityLevel) {
     VerbosityLevel[VerbosityLevel["ERRORS"] = 0] = "ERRORS";
@@ -371,29 +369,28 @@ export var OPS;
     OPS[OPS["group"] = 92] = "group";
 })(OPS || (OPS = {}));
 // export type OPSValu = (typeof OPS)[OPSName];
-export var UNSUPPORTED_FEATURES;
-(function (UNSUPPORTED_FEATURES) {
-    UNSUPPORTED_FEATURES["forms"] = "forms";
-    UNSUPPORTED_FEATURES["javaScript"] = "javaScript";
-    UNSUPPORTED_FEATURES["signatures"] = "signatures";
-    UNSUPPORTED_FEATURES["smask"] = "smask";
-    UNSUPPORTED_FEATURES["shadingPattern"] = "shadingPattern";
-    UNSUPPORTED_FEATURES["errorTilingPattern"] = "errorTilingPattern";
-    UNSUPPORTED_FEATURES["errorExtGState"] = "errorExtGState";
-    UNSUPPORTED_FEATURES["errorXObject"] = "errorXObject";
-    UNSUPPORTED_FEATURES["errorFontLoadType3"] = "errorFontLoadType3";
-    UNSUPPORTED_FEATURES["errorFontState"] = "errorFontState";
-    UNSUPPORTED_FEATURES["errorFontMissing"] = "errorFontMissing";
-    UNSUPPORTED_FEATURES["errorFontTranslate"] = "errorFontTranslate";
-    UNSUPPORTED_FEATURES["errorColorSpace"] = "errorColorSpace";
-    UNSUPPORTED_FEATURES["errorOperatorList"] = "errorOperatorList";
-    UNSUPPORTED_FEATURES["errorFontToUnicode"] = "errorFontToUnicode";
-    UNSUPPORTED_FEATURES["errorFontLoadNative"] = "errorFontLoadNative";
-    UNSUPPORTED_FEATURES["errorFontBuildPath"] = "errorFontBuildPath";
-    UNSUPPORTED_FEATURES["errorFontGetPath"] = "errorFontGetPath";
-    UNSUPPORTED_FEATURES["errorMarkedContent"] = "errorMarkedContent";
-    UNSUPPORTED_FEATURES["errorContentSubStream"] = "errorContentSubStream";
-})(UNSUPPORTED_FEATURES || (UNSUPPORTED_FEATURES = {}));
+export const UNSUPPORTED_FEATURES = /*#static*/ {
+    forms: "forms",
+    javaScript: "javaScript",
+    signatures: "signatures",
+    smask: "smask",
+    shadingPattern: "shadingPattern",
+    errorTilingPattern: "errorTilingPattern",
+    errorExtGState: "errorExtGState",
+    errorXObject: "errorXObject",
+    errorFontLoadType3: "errorFontLoadType3",
+    errorFontState: "errorFontState",
+    errorFontMissing: "errorFontMissing",
+    errorFontTranslate: "errorFontTranslate",
+    errorColorSpace: "errorColorSpace",
+    errorOperatorList: "errorOperatorList",
+    errorFontToUnicode: "errorFontToUnicode",
+    errorFontLoadNative: "errorFontLoadNative",
+    errorFontBuildPath: "errorFontBuildPath",
+    errorFontGetPath: "errorFontGetPath",
+    errorMarkedContent: "errorMarkedContent",
+    errorContentSubStream: "errorContentSubStream",
+};
 export var PasswordResponses;
 (function (PasswordResponses) {
     PasswordResponses[PasswordResponses["NEED_PASSWORD"] = 1] = "NEED_PASSWORD";
@@ -1103,6 +1100,34 @@ export function getModificationDate(date = new Date()) {
         date.getUTCSeconds().toString().padStart(2, "0"),
     ];
     return buffer.join("");
+}
+let PromiseCap_ID = 0;
+/**
+ * Creates a promise capability object.
+ *
+ * ! Notice, this could be called in worker thread, where there is no e.g.
+ * ! `Node` as in mv.ts.
+ */
+export function createPromiseCapability() {
+    const cap = Object.create(null);
+    cap.id = ++PromiseCap_ID;
+    let isSettled = false;
+    Object.defineProperty(cap, "settled", {
+        get() {
+            return isSettled;
+        },
+    });
+    cap.promise = new Promise((resolve, reject) => {
+        cap.resolve = (data) => {
+            isSettled = true;
+            resolve(data);
+        };
+        cap.reject = (reason) => {
+            isSettled = true;
+            reject(reason);
+        };
+    });
+    return cap;
 }
 /*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=util.js.map

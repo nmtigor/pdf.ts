@@ -7,7 +7,6 @@ import { isObjectLike } from "../../../lib/jslang.ts";
 import { assert } from "../../../lib/util/trace.ts";
 import { D_base } from "../../pdf.ts-web/app_options.ts";
 import { BaseStream } from "../core/base_stream.ts";
-import { DocStats } from "../core/core_utils.ts";
 import { Page, PDFDocument } from "../core/document.ts";
 import { BasePdfManager } from "../core/pdf_manager.ts";
 import { Dict, Name, type Obj, Ref } from "../core/primitives.ts";
@@ -15,6 +14,7 @@ import { NullStream, StringStream } from "../core/stream.ts";
 import { DocumentInitP } from "../display/api.ts";
 import { GlobalWorkerOptions } from "../display/worker_options.ts";
 import { PDFWorker } from "../pdf.ts";
+import { DENO } from "../../../global.ts";
 /*80--------------------------------------------------------------------------*/
 
 const D_pdf = `${D_base}/res/pdf`;
@@ -68,7 +68,7 @@ export const DefaultFileReaderFactory = DOMFileReaderFactory;
 //   ? NodeFileReaderFactory
 //   : DOMFileReaderFactory;
 
-export interface BuildGetDocumentParamsOptions {
+export type BuildGetDocumentParamsOptions = {
   cMapUrl?: string;
   disableFontFace?: boolean;
   docBaseUrl?: string;
@@ -79,43 +79,41 @@ export interface BuildGetDocumentParamsOptions {
   rangeChunkSize?: number;
   withCredentials?: boolean;
   worker?: PDFWorker;
-}
+};
 
 export function buildGetDocumentParams(
   filename: string,
   options?: BuildGetDocumentParamsOptions,
 ) {
   const params = Object.create(null);
-  // params.url = isNodeJS
-  //   ? TEST_PDFS_PATH + filename
-  //   : new URL(TEST_PDFS_PATH + filename, window.location).href;
-  params.url = new URL(TEST_PDFS_PATH + filename, <any> window.location).href;
+  params.url = /*#static*/ DENO
+    ? TEST_PDFS_PATH + filename
+    : new URL(TEST_PDFS_PATH + filename, window.location as any).href;
   params.standardFontDataUrl = STANDARD_FONT_DATA_URL;
 
   for (const option in options) {
-    params[option] = options[<keyof BuildGetDocumentParamsOptions> option];
+    params[option] = options[option as keyof BuildGetDocumentParamsOptions];
   }
   return params as DocumentInitP;
 }
 
-interface _XRefMockCtorP {
+type XRefMockCtorP_ = {
   ref: Ref;
   data: string | number | Name | Dict | BaseStream | [Name, Dict] | [
     string,
     Ref,
   ];
-}
+};
 
 export class XRefMock {
-  #map: Record<string, _XRefMockCtorP["data"]> = Object.create(null);
-  stats = new DocStats(<any> { send: () => {} });
+  #map: Record<string, XRefMockCtorP_["data"]> = Object.create(null);
   #newTemporaryRefNum: number | undefined;
   #newPersistentRefNum?: number;
   stream = new NullStream();
 
   newRef?: Ref | undefined;
 
-  constructor(array?: _XRefMockCtorP[]) {
+  constructor(array?: XRefMockCtorP_[]) {
     for (const key in array!) {
       const obj = array[key];
       this.#map[obj.ref.toString()] = obj.data;

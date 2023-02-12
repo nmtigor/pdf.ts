@@ -725,6 +725,11 @@ var NsCFFParser;
             const dict = this.parseDict(dictData);
             const privateDict = this.createDict(CFFPrivateDict, dict, parentDict.strings);
             parentDict.privateDict = privateDict;
+            if (privateDict.getByName("ExpansionFactor") === 0) {
+                // Firefox doesn't render correctly such a font on Windows (see issue
+                // 15289), hence we just reset it to its default value.
+                privateDict.setByName("ExpansionFactor", 0.06);
+            }
             // Parse the Subrs index also since it's relative to the private dict.
             if (!privateDict.getByName("Subrs")) {
                 return;

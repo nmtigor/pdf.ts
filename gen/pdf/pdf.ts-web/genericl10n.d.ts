@@ -1,5 +1,5 @@
 /** @typedef {import("./interfaces").IL10n} IL10n */
-import { webL10n, type WebL10nArgs } from "../../3rd/webL10n/l10n.js";
+import { webL10n, type WebL10nArgs } from "../../3rd/webL10n-2015-10-24/l10n.js";
 import { Locale } from "../../lib/Locale.js";
 import { type IL10n } from "./interfaces.js";
 export declare class GenericL10n implements IL10n {

@@ -1,4 +1,4 @@
-import { type rect_t } from "../../shared/util.js";
+import { type rect_t } from "../../../../lib/alias.js";
 import { type AvailableSpace, type XFAAttrs, type XFAElData, type XFAExtra, type XFAFontBase, type XFAHTMLObj, type XFAIds, type XFAStyleData, type XFAValue } from "./alias.js";
 import { Builder } from "./builder.js";
 import { type XFALayoutMode } from "./html_utils.js";

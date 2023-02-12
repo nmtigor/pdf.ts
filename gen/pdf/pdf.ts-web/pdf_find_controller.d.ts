@@ -1,8 +1,4 @@
-/** @typedef {import("../src/display/api").PDFDocumentProxy} PDFDocumentProxy */
-/** @typedef {import("./event_utils").EventBus} EventBus */
-/** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
-import { PromiseCap } from "../../lib/promisecap.js";
-import { PDFDocumentProxy } from "../pdf.ts-src/pdf.js";
+import { PDFDocumentProxy, type PromiseCapability } from "../pdf.ts-src/pdf.js";
 import { EventBus } from "./event_utils.js";
 import { type IPDFLinkService } from "./interfaces.js";
 export declare const enum FindState {
@@ -20,6 +16,12 @@ interface PDFFindControllerOptions {
      * The application event bus.
      */
     eventBus: EventBus;
+    /**
+     * True if the matches
+     * count must be updated on progress or only when the last page is reached.
+     * The default value is `true`.
+     */
+    updateMatchesCountOnProgress: boolean;
 }
 export type FindType = "again" | "casesensitivitychange" | "diacriticmatchingchange" | "entirewordchange" | "findagain" | "findhighlightallchange" | "highlightallchange";
 export type FindCtrlState = {
@@ -51,9 +53,9 @@ export declare class PDFFindController {
         matchIdx: number;
     };
     get state(): FindCtrlState | undefined;
-    _firstPageCapability: PromiseCap;
+    _firstPageCapability: PromiseCapability;
     _rawQuery?: string;
-    constructor({ linkService, eventBus, }: PDFFindControllerOptions);
+    constructor({ linkService, eventBus, updateMatchesCountOnProgress, }: PDFFindControllerOptions);
     /**
      * Set a reference to the PDF document in order to search it.
      * Note that searching is not possible if this method is not called.

@@ -1,9 +1,10 @@
-import { PageLayout, PageMode } from "../../../pdf/pdf.ts-web/ui_utils.js";
+import { type rect_t } from "../../../lib/alias.js";
+import { PageLayout, PageMode } from "../../pdf.ts-web/ui_utils.js";
 import { type ResetForm } from "../display/annotation_layer.js";
 import { type OutlineNode } from "../display/api.js";
 import { type CMapData } from "../display/base_factory.js";
 import { MessageHandler, Thread } from "../shared/message_handler.js";
-import { PermissionFlag, type rect_t } from "../shared/util.js";
+import { PermissionFlag } from "../shared/util.js";
 import { TranslatedFont } from "./evaluator.js";
 import { Attachment } from "./file_spec.js";
 import { GlobalImageCache } from "./image_utils.js";

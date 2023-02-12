@@ -19,6 +19,7 @@
 /* globals __non_webpack_require__ */
 
 import { GENERIC, PRODUCTION } from "../../../global.ts";
+import { type rect_t } from "../../../lib/alias.ts";
 import { svg as createSVG } from "../../../lib/dom.ts";
 import { type ImgData } from "../core/evaluator.ts";
 import { FontExpotData, Glyph } from "../core/fonts.ts";
@@ -34,7 +35,6 @@ import {
   ImageKind,
   type matrix_t,
   OPS,
-  type rect_t,
   TextRenderingMode,
   Util,
   warn,

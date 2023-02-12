@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { _PDFDEV, CHROME, MOZCENTRAL } from "../../../global.js";
+import { _PDFDEV, CHROME, GENERIC, MOZCENTRAL } from "../../../global.js";
 import { html } from "../../../lib/dom.js";
 import { assert } from "../../../lib/util/trace.js";
 import { FontExpotDataEx } from "../core/fonts.js";
@@ -29,7 +29,9 @@ export class FontLoader {
     loadTestFontId;
     constructor({ onUnsupportedFeature, ownerDocument = globalThis.document, styleElement = undefined, // For testing only
      }) {
-        this._onUnsupportedFeature = onUnsupportedFeature;
+        /*#static*/  {
+            this._onUnsupportedFeature = onUnsupportedFeature;
+        }
         this._document = ownerDocument;
         this.styleElement = /*#static*/ styleElement;
         /*#static*/  {
@@ -76,9 +78,11 @@ export class FontLoader {
                     await nativeFontFace.loaded;
                 }
                 catch (ex) {
-                    this._onUnsupportedFeature({
-                        featureId: UNSUPPORTED_FEATURES.errorFontLoadNative,
-                    });
+                    /*#static*/  {
+                        this._onUnsupportedFeature({
+                            featureId: UNSUPPORTED_FEATURES.errorFontLoadNative,
+                        });
+                    }
                     warn(`Failed to load font '${nativeFontFace.family}': '${ex}'.`);
                     // When font loading failed, fall back to the built-in font renderer.
                     font.disableFontFace = true;
@@ -271,7 +275,9 @@ export class FontFaceObject extends FontExpotDataEx {
         this.isEvalSupported = isEvalSupported !== false;
         this.disableFontFace = disableFontFace === true;
         this.ignoreErrors = ignoreErrors === true;
-        this._onUnsupportedFeature = onUnsupportedFeature;
+        /*#static*/  {
+            this._onUnsupportedFeature = onUnsupportedFeature;
+        }
         this.fontRegistry = fontRegistry;
     }
     createNativeFontFace() {
@@ -326,9 +332,11 @@ export class FontFaceObject extends FontExpotDataEx {
             if (!this.ignoreErrors) {
                 throw ex;
             }
-            this._onUnsupportedFeature({
-                featureId: UNSUPPORTED_FEATURES.errorFontGetPath,
-            });
+            /*#static*/  {
+                this._onUnsupportedFeature({
+                    featureId: UNSUPPORTED_FEATURES.errorFontGetPath,
+                });
+            }
             warn(`getPathGenerator - ignoring character: "${ex}".`);
             return (this.compiledGlyphs[character] = (c, size) => {
                 // No-op function, to allow rendering to continue.

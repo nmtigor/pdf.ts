@@ -17,13 +17,14 @@
  * limitations under the License.
  */
 
-import { createPromiseCap, PromiseCap } from "../../../lib/promisecap.ts";
 import { type ReadValue } from "../interfaces.ts";
 import { MessageHandler, Thread } from "../shared/message_handler.ts";
 import {
   AbortException,
   arrayByteLength,
   arraysToBytes,
+  createPromiseCapability,
+  type PromiseCapability,
 } from "../shared/util.ts";
 import { MissingDataException } from "./core_utils.ts";
 import { Dict } from "./primitives.ts";
@@ -308,11 +309,11 @@ export class ChunkedStreamManager {
 
   #chunksNeededByRequest = new Map<number, Set<number>>();
   #requestsByChunk = new Map<number, number[]>();
-  #promisesByRequest = new Map<number, PromiseCap>();
+  #promisesByRequest = new Map<number, PromiseCapability>();
   progressiveDataLength = 0;
   aborted = false;
 
-  #loadedStreamCapability = createPromiseCap<ChunkedStream>();
+  #loadedStreamCapability = createPromiseCapability<ChunkedStream>();
 
   constructor(public pdfNetworkStream: PDFWorkerStream, args: {
     msgHandler: MessageHandler<Thread.worker>;
@@ -391,7 +392,7 @@ export class ChunkedStreamManager {
       return Promise.resolve();
     }
 
-    const capability = createPromiseCap();
+    const capability = createPromiseCapability();
     this.#promisesByRequest.set(requestId, capability);
 
     const chunksToRequest: number[] = [];

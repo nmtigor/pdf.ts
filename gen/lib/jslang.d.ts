@@ -32,8 +32,8 @@ declare global {
          * @const @param valve_x
          */
         eq(rhs_x: unknown, valve_x?: uint): boolean;
-        fillArray(ary: []): this;
-        fillArrayBack(ary: any[]): this;
+        fillArray(ary: T[]): this;
+        fillArrayBack(ary: T[]): this;
     }
 }
 /**
@@ -51,6 +51,7 @@ declare global {
          * in( 0 <= digits && digits <= 20 )
          */
         fixTo(digits?: uint8): number;
+        reprRatio(fixTo_x?: uint8): string;
     }
     interface NumberConstructor {
         apxE(f0: number, f1: number): boolean;

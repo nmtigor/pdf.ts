@@ -19,8 +19,7 @@
 /** @typedef {import("./api").TextContent} TextContent */
 import { GENERIC } from "../../../global.js";
 import { html, span } from "../../../lib/dom.js";
-import { createPromiseCap } from "../../../lib/promisecap.js";
-import { AbortException, FeatureTest, Util, } from "../shared/util.js";
+import { AbortException, createPromiseCapability, FeatureTest, Util, } from "../shared/util.js";
 import { deprecated, setLayerDimensions, } from "./display_utils.js";
 const MAX_TEXT_DIVS_TO_RENDER = 100000;
 const DEFAULT_FONT_SIZE = 30;
@@ -235,7 +234,7 @@ export class TextLayerRenderTask {
     _reader;
     _textDivProperties;
     _canceled = false;
-    _capability = createPromiseCap();
+    _capability = createPromiseCapability();
     /**
      * Promise for textLayer rendering task completion.
      */
@@ -331,7 +330,7 @@ export class TextLayerRenderTask {
      * @private
      */
     _render() {
-        const capability = createPromiseCap();
+        const capability = createPromiseCapability();
         let styleCache = Object.create(null);
         if (this._isReadableStream) {
             const pump = () => {

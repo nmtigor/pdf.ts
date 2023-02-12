@@ -1,5 +1,5 @@
+import { type rect_t } from "../../../lib/alias.js";
 import { HttpStatusCode } from "../../../lib/HttpStatusCode.js";
-import { PromiseCap } from "../../../lib/promisecap.js";
 import { PageLayout, PageMode } from "../../pdf.ts-web/ui_utils.js";
 import { type AnnotationData, type FieldObject } from "../core/annotation.js";
 import { type ExplicitDest, type MarkInfo, type OpenAction, type OptionalContentConfigData, type ViewerPref } from "../core/catalog.js";
@@ -15,10 +15,10 @@ import { type ShadingPatternIR } from "../core/pattern.js";
 import { EvaluatorOptions } from "../core/pdf_manager.js";
 import { type XFAElObj } from "../core/xfa/alias.js";
 import { type AnnotStorageRecord } from "../display/annotation_layer.js";
-import { type BinaryData, type OutlineNode, type PDFDocumentStats, type RefProxy, StructTreeNode, type TextItem, type TextMarkedContent } from "../display/api.js";
+import { type BinaryData, type OutlineNode, type RefProxy, StructTreeNode, type TextItem, type TextMarkedContent } from "../display/api.js";
 import { type CMapData } from "../display/base_factory.js";
 import { VerbosityLevel } from "../pdf.js";
-import { InvalidPDFException, MissingPDFException, PasswordException, PasswordResponses, PermissionFlag, type rect_t, RenderingIntentFlag, UnexpectedResponseException, UnknownErrorException, UNSUPPORTED_FEATURES } from "./util.js";
+import { InvalidPDFException, MissingPDFException, PasswordException, PasswordResponses, PermissionFlag, type PromiseCapability, RenderingIntentFlag, UnexpectedResponseException, UnknownErrorException, UNSUPPORTED_FEATURES } from "./util.js";
 interface reason_t {
     name?: string;
     message: string;
@@ -201,11 +201,6 @@ export interface MActionMap {
         Return: PermissionFlag[] | undefined;
         Sinkchunk: undefined;
     };
-    GetStats: {
-        Data: null;
-        Return: PDFDocumentStats;
-        Sinkchunk: undefined;
-    };
     GetStructTree: {
         Data: {
             pageIndex: number;
@@ -302,11 +297,6 @@ export interface WActionMap {
         Return: void;
         Sinkchunk: undefined;
     };
-    DocStats: {
-        Data: PDFDocumentStats;
-        Return: void;
-        Sinkchunk: undefined;
-    };
     FetchBuiltInCMap: {
         Data: {
             name: string;
@@ -399,7 +389,7 @@ export interface StreamSink<Ta extends Thread, AN extends ActionName<Ta> = Actio
     enqueue(chunk: ActionSinkchunk<Ta, AN>, size?: number, transfers?: Transferable[]): void;
     close?(): void;
     error?(reason: reason_t): void;
-    sinkCapability?: PromiseCap;
+    sinkCapability?: PromiseCapability;
     onPull?(desiredSize?: number): void;
     onCancel?(reason: object): void;
     isCancelled?: boolean;
@@ -414,9 +404,9 @@ export type ActionReturn<Ta extends Thread, AN extends ActionName<Ta> = ActionNa
 export type ActionSinkchunk<Ta extends Thread, AN extends ActionName<Ta> = ActionName<Ta>> = Ta extends Thread.main ? MActionMap[AN & MActionName]["Sinkchunk"] : WActionMap[AN & WActionName]["Sinkchunk"];
 interface StreamController<Ta extends Thread, AN extends ActionName<Ta> = ActionName<Ta>> {
     controller: ReadableStreamDefaultController<ActionSinkchunk<Ta, AN>>;
-    startCall: PromiseCap;
-    pullCall?: PromiseCap;
-    cancelCall?: PromiseCap;
+    startCall: PromiseCapability;
+    pullCall?: PromiseCapability;
+    cancelCall?: PromiseCapability;
     isClosed: boolean;
 }
 export declare class MessageHandler<Ta extends Thread, Tn extends Thread = Ta extends Thread.main ? Thread.worker : Thread.main> {
@@ -429,7 +419,7 @@ export declare class MessageHandler<Ta extends Thread, Tn extends Thread = Ta ex
     streamId: number;
     streamSinks: StreamSink<Ta>[];
     streamControllers: StreamController<Tn>[];
-    callbackCapabilities: PromiseCap<unknown>[];
+    callbackCapabilities: PromiseCapability<unknown>[];
     actionHandler: Record<ActionName<Tn>, ActionHandler<Tn>>;
     constructor(sourceName: string, targetName: string, comObj: IWorker);
     on<AN extends ActionName<Tn>>(actionName: AN, handler: ActionHandler<Tn, AN>): void;

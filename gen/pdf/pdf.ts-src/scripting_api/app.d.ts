@@ -30,7 +30,7 @@ export interface ScriptingAppData extends ScriptingData<SendAppData>, AppInfo {
     calculationOrder: string[] | undefined;
     proxyHandler: ScriptingProxyHandler;
 }
-interface _Callback {
+interface Callback_ {
     callbackId: number;
     interval: boolean;
 }
@@ -89,8 +89,8 @@ export declare class App extends PDFObject<SendAppData> {
     _proxyHandler: ScriptingProxyHandler;
     _objects: Record<string, FieldWrapped>;
     _eventDispatcher: EventDispatcher;
-    _timeoutIds: WeakMap<object, _Callback>;
-    _timeoutIdsRegistry: FinalizationRegistry<_Callback> | undefined;
+    _timeoutIds: WeakMap<object, Callback_>;
+    _timeoutIdsRegistry: FinalizationRegistry<Callback_> | undefined;
     _timeoutCallbackIds: Map<number, string>;
     _timeoutCallbackId: number;
     _globalEval: (expr: string) => void;
@@ -99,10 +99,10 @@ export declare class App extends PDFObject<SendAppData> {
     _dispatchEvent(pdfEvent: ScriptingEventData): void;
     _registerTimeoutCallback(cExpr: string): number;
     _unregisterTimeoutCallback(id: number): void;
-    _evalCallback({ callbackId, interval }: _Callback): void;
+    _evalCallback({ callbackId, interval }: Callback_): void;
     _registerTimeout(callbackId: number, interval: boolean): any;
     _unregisterTimeout(timeout: object): void;
-    _cleanTimeout({ callbackId, interval }: _Callback): void;
+    _cleanTimeout({ callbackId, interval }: Callback_): void;
     static _getPlatform(platform: string): "WIN" | "MAC" | "UNIX";
     static _getLanguage(language: string): "CHS" | "CHT" | "DAN" | "DEU" | "ESP" | "FRA" | "ITA" | "KOR" | "JPN" | "NLD" | "NOR" | "PTB" | "ENU" | "SUO" | "SVE";
     get activeDocs(): Doc[];
@@ -145,7 +145,7 @@ export declare class App extends PDFObject<SendAppData> {
     alert(cMsg: string | {
         cMsg: string;
         nType: number;
-    }, nIcon?: number, nType?: number, cTitle?: string, oDoc?: undefined, oCheckbox?: undefined): 0 | 1 | 3 | 4;
+    }, nIcon?: number, nType?: number, cTitle?: string, oDoc?: undefined, oCheckbox?: undefined): 0 | 4 | 1 | 3;
     beep(): void;
     beginPriv(): void;
     browseForDoc(): void;

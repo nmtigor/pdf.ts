@@ -31,18 +31,18 @@ interface SendDocData_ extends SendData {
 export interface DocInfo extends ScriptingDocProperties {
     actions: AnnotActions;
 }
-interface _ScriptingDocData extends ScriptingData<SendDocData_>, DocInfo {
+interface ScriptingDocData_ extends ScriptingData<SendDocData_>, DocInfo {
     globalEval(code: string): unknown;
     docID?: [string, string];
     layout?: string;
     pageNum?: number;
     zoom?: number;
 }
-interface _PrintP {
+interface PrintP_ {
     firstPage: number;
     lastPage: number;
 }
-interface _UI {
+interface UI_ {
     nStart: number;
     nEnd: number;
     bSilent: boolean;
@@ -50,8 +50,8 @@ interface _UI {
     bPrintAsImage: boolean;
     bReverse: boolean;
     bAnnotations: boolean;
-    printParams: _PrintP;
-    bUI: boolean | _UI;
+    printParams: PrintP_;
+    bUI: boolean | UI_;
 }
 export declare class Doc extends PDFObject<SendDocData_> {
     _baseURL: string;
@@ -140,7 +140,7 @@ export declare class Doc extends PDFObject<SendDocData_> {
     get xfa(): unknown;
     set xfa(_: unknown);
     _eventDispatcher?: EventDispatcher;
-    constructor(data: _ScriptingDocData);
+    constructor(data: ScriptingDocData_);
     _initActions(): void;
     _dispatchDocEvent(name: ScriptingActionName): void;
     _dispatchPageEvent(name: ScriptingActionName, actions: AnnotActions, pageNumber: number): void;
@@ -293,7 +293,7 @@ export declare class Doc extends PDFObject<SendDocData_> {
     movePage(): void;
     newPage(): void;
     openDataObject(): void;
-    print(bUI?: boolean | _UI, nStart?: number, nEnd?: number, bSilent?: boolean, bShrinkToFit?: boolean, bPrintAsImage?: boolean, bReverse?: boolean, bAnnotations?: boolean, printParams?: _PrintP): void;
+    print(bUI?: boolean | UI_, nStart?: number, nEnd?: number, bSilent?: boolean, bShrinkToFit?: boolean, bPrintAsImage?: boolean, bReverse?: boolean, bAnnotations?: boolean, printParams?: PrintP_): void;
     removeDataObject(): void;
     removeField(): void;
     removeIcon(): void;

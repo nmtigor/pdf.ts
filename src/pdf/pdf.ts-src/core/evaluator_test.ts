@@ -21,13 +21,13 @@ import {
   assert,
   assertEquals,
   fail,
-} from "https://deno.land/std@0.165.0/testing/asserts.ts";
+} from "https://deno.land/std@0.170.0/testing/asserts.ts";
 import {
   afterAll,
   beforeAll,
   describe,
   it,
-} from "https://deno.land/std@0.165.0/testing/bdd.ts";
+} from "https://deno.land/std@0.170.0/testing/bdd.ts";
 import { createIdFactory, XRefMock } from "../shared/test_utils.ts";
 import { FormatError, OPS } from "../shared/util.ts";
 import { BaseStream } from "./base_stream.ts";

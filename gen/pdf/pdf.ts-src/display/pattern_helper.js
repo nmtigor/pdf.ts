@@ -2,7 +2,7 @@
  * nmtigor (https://github.com/nmtigor) @2022
  */
 import { ShadingType, } from "../core/pattern.js";
-import { FormatError, info, OPS, Util, } from "../shared/util.js";
+import { FormatError, info, OPS, Util } from "../shared/util.js";
 import { getCurrentTransform } from "./display_utils.js";
 /*80--------------------------------------------------------------------------*/
 export var PathType;
@@ -12,8 +12,9 @@ export var PathType;
     PathType["SHADING"] = "Shading";
 })(PathType || (PathType = {}));
 function applyBoundingBox(ctx, bbox) {
-    if (!bbox)
+    if (!bbox) {
         return;
+    }
     const width = bbox[2] - bbox[0];
     const height = bbox[3] - bbox[1];
     const region = new Path2D();

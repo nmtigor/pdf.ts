@@ -1,8 +1,9 @@
+import { type rect_t } from "../../../lib/alias.js";
 import { IDownloadManager, type IPDFLinkService } from "../../pdf.ts-web/interfaces.js";
 import { TextAccessibilityManager } from "../../pdf.ts-web/text_accessibility.js";
 import { type AnnotationData, type FieldObject } from "../core/annotation.js";
 import { ColorConvertersDetail } from "../shared/scripting_utils.js";
-import { AnnotationEditorType, rect_t } from "../shared/util.js";
+import { AnnotationEditorType } from "../shared/util.js";
 import { AnnotationStorage } from "./annotation_storage.js";
 import { PDFPageProxy } from "./api.js";
 import { DOMSVGFactory, PageViewport } from "./display_utils.js";

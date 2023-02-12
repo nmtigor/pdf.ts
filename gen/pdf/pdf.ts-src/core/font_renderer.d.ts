@@ -42,8 +42,8 @@ export declare class TrueTypeCompiled extends CompiledFont {
     compileGlyphImpl(code: Uint8Array, cmds: CmdArgs[], glyphId: number): void;
 }
 export declare class Type2Compiled extends CompiledFont {
-    gsubrs: (Uint8Array | Uint8ClampedArray | number[])[];
-    subrs: (Uint8Array | Uint8ClampedArray | number[])[];
+    gsubrs: (number[] | Uint8Array | Uint8ClampedArray)[];
+    subrs: (number[] | Uint8Array | Uint8ClampedArray)[];
     glyphNameMap: Record<string, string | number>;
     gsubrsBias: number;
     subrsBias: number;

@@ -1,6 +1,7 @@
+import { type point_t, type rect_t } from "../../../lib/alias.js";
 import { type XFAElObj } from "../core/xfa/alias.js";
 import { RGB } from "../shared/scripting_utils.js";
-import { BaseException, CMapCompressionType, type matrix_t, type point_t, type rect_t } from "../shared/util.js";
+import { BaseException, CMapCompressionType, type matrix_t } from "../shared/util.js";
 import { BaseCanvasFactory, BaseCMapReaderFactory, BaseStandardFontDataFactory, BaseSVGFactory } from "./base_factory.js";
 export declare const AnnotationPrefix = "pdfjs_internal_id_";
 export declare class PixelsPerInch {

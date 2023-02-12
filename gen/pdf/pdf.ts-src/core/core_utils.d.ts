@@ -1,6 +1,5 @@
 import { AnnotStorageRecord, AnnotStorageValue } from "../display/annotation_layer.js";
-import { MessageHandler, Thread } from "../shared/message_handler.js";
-import { ActionEventName, type ActionEventTypeType, BaseException, FontType, StreamType } from "../shared/util.js";
+import { ActionEventName, type ActionEventTypeType, BaseException } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
 import { type CssFontInfo } from "./document.js";
 import { Dict, type Obj } from "./primitives.js";
@@ -21,13 +20,6 @@ export declare class XRefEntryException extends BaseException {
 }
 export declare class XRefParseException extends BaseException {
     constructor(msg?: string);
-}
-export declare class DocStats {
-    #private;
-    constructor(handler: MessageHandler<Thread.worker>);
-    _send(): void;
-    addStreamType(type: StreamType): void;
-    addFontType(type: FontType): void;
 }
 interface _GetInheritablePropertyP {
     /**

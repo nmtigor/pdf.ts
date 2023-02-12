@@ -16,11 +16,10 @@
  * limitations under the License.
  */
 /* eslint-disable no-var */
-import { _PDFDEV } from "../../../global.js";
-import { createPromiseCap } from "../../../lib/promisecap.js";
+import { _PDFDEV, GENERIC } from "../../../global.js";
 import { assert } from "../../../lib/util/trace.js";
 import { MurmurHash3_64 } from "../shared/murmurhash3.js";
-import { AbortException, CMapCompressionType, FONT_IDENTITY_MATRIX, FormatError, IDENTITY_MATRIX, info, OPS, shadow, stringToPDFString, TextRenderingMode, UNSUPPORTED_FEATURES, Util, warn, } from "../shared/util.js";
+import { AbortException, CMapCompressionType, createPromiseCapability, FONT_IDENTITY_MATRIX, FormatError, IDENTITY_MATRIX, info, OPS, shadow, stringToPDFString, TextRenderingMode, UNSUPPORTED_FEATURES, Util, warn, } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
 import { bidi } from "./bidi.js";
 import { CMapFactory, IdentityCMap } from "./cmap.js";
@@ -29,7 +28,7 @@ import { getLookupTableFactory, MissingDataException } from "./core_utils.js";
 import { DecodeStream } from "./decode_stream.js";
 import { getEncoding, MacRomanEncoding, StandardEncoding, SymbolSetEncoding, WinAnsiEncoding, ZapfDingbatsEncoding, } from "./encodings.js";
 import { ErrorFont, Font } from "./fonts.js";
-import { FontFlags, getFontType } from "./fonts_utils.js";
+import { FontFlags } from "./fonts_utils.js";
 import { isPDFFunction, PDFFunctionFactory } from "./function.js";
 import { getGlyphsUnicode } from "./glyphlist.js";
 import { PDFImage } from "./image.js";
@@ -201,6 +200,9 @@ export class PartialEvaluator {
         });
         return shadow(this, "_pdfFunctionFactory", pdfFunctionFactory);
     }
+    /**
+     * ! Becuse of this method, use private method "_method" instead of "#methos"
+     */
     clone(newOptions) {
         const newEvaluator = Object.create(this);
         newEvaluator.options = Object.assign(Object.create(null), this.options, newOptions);
@@ -458,7 +460,7 @@ export class PartialEvaluator {
             }
         });
     }
-    #sendImgData(objId, imgData, cacheGlobally = false) {
+    _sendImgData(objId, imgData, cacheGlobally = false) {
         const transfers = imgData
             ? [imgData.bitmap || imgData.data.buffer]
             : undefined;
@@ -548,7 +550,7 @@ export class PartialEvaluator {
             }
             const objId = `mask_${this.idFactory.createObjId()}`;
             operatorList.addDependency(objId);
-            this.#sendImgData(objId, imgData);
+            this._sendImgData(objId, imgData);
             args = [
                 {
                     data: objId,
@@ -616,11 +618,11 @@ export class PartialEvaluator {
             if (cacheKey && imageRef && cacheGlobally) {
                 this.globalImageCache.addByteSize(imageRef, imgData.data.length);
             }
-            return this.#sendImgData(objId, imgData, cacheGlobally);
+            return this._sendImgData(objId, imgData, cacheGlobally);
         })
             .catch((reason) => {
             warn(`Unable to decode image "${objId}": "${reason}".`);
-            return this.#sendImgData(objId, 
+            return this._sendImgData(objId, 
             /* imgData = */ undefined, cacheGlobally);
         });
         operatorList.addImageOps(OPS.paintImageXObject, args, optionalContent);
@@ -747,11 +749,13 @@ export class PartialEvaluator {
                 return;
             }
             if (this.options.ignoreErrors) {
-                // Error(s) in the TilingPattern -- sending unsupported feature
-                // notification and allow rendering to continue.
-                this.handler.send("UnsupportedFeature", {
-                    featureId: UNSUPPORTED_FEATURES.errorTilingPattern,
-                });
+                /*#static*/  {
+                    // Error(s) in the TilingPattern -- sending unsupported feature
+                    // notification and allow rendering to continue.
+                    this.handler.send("UnsupportedFeature", {
+                        featureId: UNSUPPORTED_FEATURES.errorTilingPattern,
+                    });
+                }
                 warn(`handleTilingType - ignoring pattern: "${reason}".`);
                 return;
             }
@@ -776,11 +780,13 @@ export class PartialEvaluator {
                 return translated;
             })
                 .catch((reason) => {
-                // Error in the font data -- sending unsupported feature
-                // notification.
-                this.handler.send("UnsupportedFeature", {
-                    featureId: UNSUPPORTED_FEATURES.errorFontLoadType3,
-                });
+                /*#static*/  {
+                    // Error in the font data -- sending unsupported feature
+                    // notification.
+                    this.handler.send("UnsupportedFeature", {
+                        featureId: UNSUPPORTED_FEATURES.errorFontLoadType3,
+                    });
+                }
                 return new TranslatedFont({
                     loadedName: "g_font_error",
                     font: new ErrorFont(`Type3 font load error: ${reason}`),
@@ -815,11 +821,13 @@ export class PartialEvaluator {
         }
         const reason = new FormatError("Missing setFont (Tf) operator before text rendering operator.");
         if (this.options.ignoreErrors) {
-            // Missing setFont operator before text rendering operator -- sending
-            // unsupported feature notification and allow rendering to continue.
-            this.handler.send("UnsupportedFeature", {
-                featureId: UNSUPPORTED_FEATURES.errorFontState,
-            });
+            /*#static*/  {
+                // Missing setFont operator before text rendering operator -- sending
+                // unsupported feature notification and allow rendering to continue.
+                this.handler.send("UnsupportedFeature", {
+                    featureId: UNSUPPORTED_FEATURES.errorFontState,
+                });
+            }
             warn(`ensureStateFont: "${reason}".`);
             return;
         }
@@ -941,18 +949,21 @@ export class PartialEvaluator {
                 warn(`${partialMsg}.`);
                 return errorFont();
             }
-            // Font not found -- sending unsupported feature notification.
-            this.handler.send("UnsupportedFeature", {
-                featureId: UNSUPPORTED_FEATURES.errorFontMissing,
-            });
+            /*#static*/  {
+                // Font not found -- sending unsupported feature notification.
+                this.handler.send("UnsupportedFeature", {
+                    featureId: UNSUPPORTED_FEATURES.errorFontMissing,
+                });
+            }
             warn(`${partialMsg} -- attempting to fallback to a default font.`);
             // Falling back to a default font to avoid completely broken rendering,
             // but note that there're no guarantees that things will look "correct".
             if (fallbackFontDict) {
                 fontRef = fallbackFontDict;
             }
-            else
+            else {
                 fontRef = PartialEvaluator.fallbackFontDict;
+            }
         }
         if (this.parsingType3Font && this.type3FontRefs.has(fontRef)) {
             return errorFont();
@@ -971,7 +982,7 @@ export class PartialEvaluator {
             this.fontCache.has(fontDict.cacheKey)) {
             return this.fontCache.get(fontDict.cacheKey);
         }
-        const fontCapability = createPromiseCap();
+        const fontCapability = createPromiseCapability();
         let preEvaluatedFont;
         try {
             preEvaluatedFont = this.preEvaluateFont(fontDict);
@@ -1040,9 +1051,6 @@ export class PartialEvaluator {
         fontDict.loadedName = `${this.idFactory.getDocId()}_${fontID}`;
         this.translateFont(preEvaluatedFont)
             .then((translatedFont) => {
-            if (translatedFont.fontType !== undefined) {
-                xref.stats.addFontType(translatedFont.fontType);
-            }
             fontCapability.resolve(new TranslatedFont({
                 loadedName: fontDict.loadedName,
                 font: translatedFont,
@@ -1052,21 +1060,13 @@ export class PartialEvaluator {
         })
             .catch((reason) => {
             // TODO fontCapability.reject?
-            // Error in the font data -- sending unsupported feature notification.
-            this.handler.send("UnsupportedFeature", {
-                featureId: UNSUPPORTED_FEATURES.errorFontTranslate,
-            });
-            warn(`loadFont - translateFont failed: "${reason}".`);
-            try {
-                // error, but it's still nice to have font type reported
-                const fontFile3 = descriptor?.get("FontFile3");
-                const subtype = fontFile3?.get("Subtype");
-                const fontType = getFontType(preEvaluatedFont.type, subtype && subtype.name);
-                if (fontType !== undefined) {
-                    xref.stats.addFontType(fontType);
-                }
+            /*#static*/  {
+                // Error in the font data -- sending unsupported feature notification.
+                this.handler.send("UnsupportedFeature", {
+                    featureId: UNSUPPORTED_FEATURES.errorFontTranslate,
+                });
             }
-            catch (ex) { }
+            warn(`loadFont - translateFont failed: "${reason}".`);
             fontCapability.resolve(new TranslatedFont({
                 loadedName: fontDict.loadedName,
                 font: new ErrorFont(reason instanceof Error ? reason.message : reason),
@@ -1160,11 +1160,13 @@ export class PartialEvaluator {
                 return undefined;
             }
             if (this.options.ignoreErrors) {
-                // Error(s) in the ColorSpace -- sending unsupported feature
-                // notification and allow rendering to continue.
-                this.handler.send("UnsupportedFeature", {
-                    featureId: UNSUPPORTED_FEATURES.errorColorSpace,
-                });
+                /*#static*/  {
+                    // Error(s) in the ColorSpace -- sending unsupported feature
+                    // notification and allow rendering to continue.
+                    this.handler.send("UnsupportedFeature", {
+                        featureId: UNSUPPORTED_FEATURES.errorColorSpace,
+                    });
+                }
                 warn(`parseColorSpace - ignoring ColorSpace: "${reason}".`);
                 return undefined;
             }
@@ -1461,11 +1463,13 @@ export class PartialEvaluator {
                                 return;
                             }
                             if (self.options.ignoreErrors) {
-                                // Error(s) in the XObject -- sending unsupported feature
-                                // notification and allow rendering to continue.
-                                self.handler.send("UnsupportedFeature", {
-                                    featureId: UNSUPPORTED_FEATURES.errorXObject,
-                                });
+                                /*#static*/  {
+                                    // Error(s) in the XObject -- sending unsupported feature
+                                    // notification and allow rendering to continue.
+                                    self.handler.send("UnsupportedFeature", {
+                                        featureId: UNSUPPORTED_FEATURES.errorXObject,
+                                    });
+                                }
                                 warn(`getOperatorList - ignoring XObject: "${reason}".`);
                                 return;
                             }
@@ -1718,11 +1722,13 @@ export class PartialEvaluator {
                                 return;
                             }
                             if (self.options.ignoreErrors) {
-                                // Error(s) in the ExtGState -- sending unsupported feature
-                                // notification and allow parsing/rendering to continue.
-                                self.handler.send("UnsupportedFeature", {
-                                    featureId: UNSUPPORTED_FEATURES.errorExtGState,
-                                });
+                                /*#static*/  {
+                                    // Error(s) in the ExtGState -- sending unsupported feature
+                                    // notification and allow parsing/rendering to continue.
+                                    self.handler.send("UnsupportedFeature", {
+                                        featureId: UNSUPPORTED_FEATURES.errorExtGState,
+                                    });
+                                }
                                 warn(`getOperatorList - ignoring ExtGState: "${reason}".`);
                                 return;
                             }
@@ -1768,9 +1774,11 @@ export class PartialEvaluator {
                                     return;
                                 }
                                 if (self.options.ignoreErrors) {
-                                    self.handler.send("UnsupportedFeature", {
-                                        featureId: UNSUPPORTED_FEATURES.errorMarkedContent,
-                                    });
+                                    /*#static*/  {
+                                        self.handler.send("UnsupportedFeature", {
+                                            featureId: UNSUPPORTED_FEATURES.errorMarkedContent,
+                                        });
+                                    }
                                     warn(`getOperatorList - ignoring beginMarkedContentProps: "${reason}".`);
                                     return;
                                 }
@@ -1818,11 +1826,13 @@ export class PartialEvaluator {
                 return;
             }
             if (this.options.ignoreErrors) {
-                // Error(s) in the OperatorList -- sending unsupported feature
-                // notification and allow rendering to continue.
-                this.handler.send("UnsupportedFeature", {
-                    featureId: UNSUPPORTED_FEATURES.errorOperatorList,
-                });
+                /*#static*/  {
+                    // Error(s) in the OperatorList -- sending unsupported feature
+                    // notification and allow rendering to continue.
+                    this.handler.send("UnsupportedFeature", {
+                        featureId: UNSUPPORTED_FEATURES.errorOperatorList,
+                    });
+                }
                 warn(`getOperatorList - ignoring errors during "${task.name}" ` +
                     `task: "${reason}".`);
                 closePendingRestoreOPS();
@@ -2869,7 +2879,7 @@ export class PartialEvaluator {
             return properties;
         });
     }
-    #simpleFontToUnicode(properties, forceGlyphs = false) {
+    _simpleFontToUnicode(properties, forceGlyphs = false) {
         assert(!properties.composite, "Must be a simple font.");
         const toUnicode = [];
         const encoding = properties.defaultEncoding.slice();
@@ -2929,7 +2939,7 @@ export class PartialEvaluator {
                         // In that case we need to re-parse the *entire* encoding to
                         // prevent broken text-selection (fixes issue9655_reduced.pdf).
                         if (Number.isNaN(code) && Number.isInteger(parseInt(codeStr, 16))) {
-                            return this.#simpleFontToUnicode(properties, 
+                            return this._simpleFontToUnicode(properties, 
                             /* forceGlyphs */ true);
                         }
                     }
@@ -2972,7 +2982,7 @@ export class PartialEvaluator {
             // text-extraction. For simple fonts, containing encoding information,
             // use a fallback ToUnicode map to improve this (fixes issue8229.pdf).
             if (!properties.composite && properties.hasEncoding) {
-                properties.fallbackToUnicode = this.#simpleFontToUnicode(properties);
+                properties.fallbackToUnicode = this._simpleFontToUnicode(properties);
             }
             return properties.toUnicode;
         }
@@ -2982,7 +2992,7 @@ export class PartialEvaluator {
         // in pratice it seems better to always try to create a toUnicode map
         // based of the default encoding.
         if (!properties.composite /* is simple font */) {
-            return new ToUnicodeMap(this.#simpleFontToUnicode(properties));
+            return new ToUnicodeMap(this._simpleFontToUnicode(properties));
         }
         // If the font is a composite font that uses one of the predefined CMaps
         // listed in Table 118 (except Identity–H and Identity–V) or whose
@@ -3089,11 +3099,13 @@ export class PartialEvaluator {
                     return undefined;
                 }
                 if (this.options.ignoreErrors) {
-                    // Error in the ToUnicode data -- sending unsupported feature
-                    // notification and allow font parsing to continue.
-                    this.handler.send("UnsupportedFeature", {
-                        featureId: UNSUPPORTED_FEATURES.errorFontToUnicode,
-                    });
+                    /*#static*/  {
+                        // Error in the ToUnicode data -- sending unsupported feature
+                        // notification and allow font parsing to continue.
+                        this.handler.send("UnsupportedFeature", {
+                            featureId: UNSUPPORTED_FEATURES.errorFontToUnicode,
+                        });
+                    }
                     warn(`readToUnicode - ignoring ToUnicode data: "${reason}".`);
                     return undefined;
                 }
@@ -3616,11 +3628,13 @@ export class PartialEvaluator {
             }
             catch (reason) {
                 if (evaluatorOptions.ignoreErrors) {
-                    // Error in the font data -- sending unsupported feature notification
-                    // and allow glyph path building to continue.
-                    handler.send("UnsupportedFeature", {
-                        featureId: UNSUPPORTED_FEATURES.errorFontBuildPath,
-                    });
+                    /*#static*/  {
+                        // Error in the font data -- sending unsupported feature notification
+                        // and allow glyph path building to continue.
+                        handler.send("UnsupportedFeature", {
+                            featureId: UNSUPPORTED_FEATURES.errorFontBuildPath,
+                        });
+                    }
                     warn(`buildFontPaths - ignoring ${glyphName} glyph: "${reason}".`);
                     return;
                 }

@@ -19,7 +19,7 @@
 /** @typedef {import("./pdf_viewer").PDFViewer} PDFViewer */
 // eslint-disable-next-line max-len
 /** @typedef {import("./pdf_thumbnail_viewer").PDFThumbnailViewer} PDFThumbnailViewer */
-import { _INFO, global, PDFTS_vv } from "../../global.js";
+import { _TRACE, global, PDFTS_vv } from "../../global.js";
 import { RenderingCancelledException } from "../pdf.ts-src/pdf.js";
 import { RenderingStates } from "./ui_utils.js";
 /*80--------------------------------------------------------------------------*/
@@ -131,11 +131,12 @@ export class PDFRenderingQueue {
      * `false`.
      */
     renderView(view) {
+        let r_;
         /*#static*/ 
+            r_ = (_y) => _y;
         switch (view.renderingState) {
             case RenderingStates.FINISHED:
-                /*#static*/ 
-                return false;
+                return r_(false);
             case RenderingStates.PAUSED:
                 this.highestPriorityPage = view.renderingId;
                 view.resume();
@@ -158,8 +159,7 @@ export class PDFRenderingQueue {
                 });
                 break;
         }
-        /*#static*/ 
-        return true;
+        return r_(true);
     }
 }
 /*80--------------------------------------------------------------------------*/

@@ -16,9 +16,8 @@
  * limitations under the License.
  */
 import { GENERIC } from "../../../global.js";
-import { createPromiseCap } from "../../../lib/promisecap.js";
 import { MessageHandler, } from "../shared/message_handler.js";
-import { AbortException, arrayByteLength, arraysToBytes, getVerbosityLevel, info, InvalidPDFException, MissingPDFException, PasswordException, setVerbosityLevel, stringToPDFString, UnexpectedResponseException, UnknownErrorException, VerbosityLevel, warn, } from "../shared/util.js";
+import { AbortException, arrayByteLength, arraysToBytes, createPromiseCapability, getVerbosityLevel, info, InvalidPDFException, MissingPDFException, PasswordException, setVerbosityLevel, stringToPDFString, UnexpectedResponseException, UnknownErrorException, VerbosityLevel, warn, } from "../shared/util.js";
 import { clearGlobalCaches } from "./cleanup_helper.js";
 import { getNewAnnotationsMap, XRefParseException } from "./core_utils.js";
 import { LocalPdfManager, NetworkPdfManager, } from "./pdf_manager.js";
@@ -32,7 +31,7 @@ export class WorkerTask {
     terminate() {
         this.terminated = true;
     }
-    #capability = createPromiseCap();
+    #capability = createPromiseCapability();
     get finished() {
         return this.#capability.promise;
     }
@@ -162,7 +161,7 @@ export const WorkerMessageHandler = {
             return { numPages, fingerprints, htmlForXfa };
         }
         function getPdfManager({ data, password, disableAutoFetch, rangeChunkSize, length, docBaseUrl, enableXfa, evaluatorOptions, }) {
-            const pdfManagerCapability = createPromiseCap();
+            const pdfManagerCapability = createPromiseCapability();
             let newPdfManager;
             if (data) {
                 try {

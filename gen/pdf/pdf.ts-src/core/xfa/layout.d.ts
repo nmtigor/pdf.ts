@@ -1,4 +1,4 @@
-import { type rect_t } from "../../shared/util.js";
+import { type rect_t } from "../../../../lib/alias.js";
 import { type AvailableSpace, type XFAElData, type XFAHTMLObj } from "./alias.js";
 import { Draw, ExclGroup, Field, Subform } from "./template.js";
 export declare function flushHTML(node: ExclGroup | Subform): XFAHTMLObj | undefined;

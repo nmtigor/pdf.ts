@@ -17,7 +17,6 @@
  * limitations under the License.
  */
 
-import { createPromiseCap, PromiseCap } from "../../../lib/promisecap.ts";
 import { assert } from "../../../lib/util/trace.ts";
 import {
   type IPDFStream,
@@ -26,11 +25,15 @@ import {
   type ReadValue,
 } from "../interfaces.ts";
 import { PDFDataRangeTransport } from "../pdf.ts";
-import { AbortException } from "../shared/util.ts";
+import {
+  AbortException,
+  createPromiseCapability,
+  type PromiseCapability,
+} from "../shared/util.ts";
 import { isPdfFile } from "./display_utils.ts";
 /*80--------------------------------------------------------------------------*/
 
-interface _StreamInitP {
+interface StreamInitP_ {
   length: number;
   initialData: ArrayLike<number> | undefined;
   progressiveDone: boolean | undefined;
@@ -52,23 +55,31 @@ export class PDFDataTransportStream implements IPDFStream {
   _fullRequestReader?: PDFDataTransportStreamReader;
   #rangeReaders: PDFDataTransportStreamRangeReader[] = [];
 
-  constructor(
-    params: _StreamInitP,
-    pdfDataRangeTransport: PDFDataRangeTransport,
-  ) {
-    this.#progressiveDone = params.progressiveDone || false;
-    this._contentDispositionFilename = params.contentDispositionFilename;
+  constructor({
+    length,
+    initialData,
+    progressiveDone = false,
+    contentDispositionFilename,
+    disableRange = false,
+    disableStream = false,
+  }: StreamInitP_, pdfDataRangeTransport: PDFDataRangeTransport) {
+    this.#progressiveDone = progressiveDone;
+    this._contentDispositionFilename = contentDispositionFilename;
 
-    const initialData = params.initialData;
-    if (initialData!.length > 0) {
-      const buffer = new Uint8Array(initialData!).buffer;
+    if (initialData?.length as any > 0) {
+      // Prevent any possible issues by only transferring a Uint8Array that
+      // completely "utilizes" its underlying ArrayBuffer.
+      const buffer = initialData instanceof Uint8Array &&
+          initialData.byteLength === initialData.buffer.byteLength
+        ? initialData.buffer
+        : new Uint8Array(initialData!).buffer;
       this.#queuedChunks!.push(buffer);
     }
 
     this.#pdfDataRangeTransport = pdfDataRangeTransport;
-    this._isStreamingSupported = !params.disableStream;
-    this._isRangeSupported = !params.disableRange;
-    this._contentLength = params.length;
+    this._isStreamingSupported = !disableStream;
+    this._isRangeSupported = !disableRange;
+    this._contentLength = length;
 
     this.#pdfDataRangeTransport.addRangeListener(
       (begin: number, chunk: ArrayBufferLike) => {
@@ -95,12 +106,15 @@ export class PDFDataTransportStream implements IPDFStream {
     this.#pdfDataRangeTransport.transportReady();
   }
 
-  #onReceiveData = (args: {
-    begin?: number;
-    chunk: ArrayBufferLike;
-  }) => {
-    const buffer = new Uint8Array(args.chunk).buffer;
-    if (args.begin === undefined) {
+  #onReceiveData({ begin, chunk }: { begin?: number; chunk: ArrayBufferLike }) {
+    // Prevent any possible issues by only transferring a Uint8Array that
+    // completely "utilizes" its underlying ArrayBuffer.
+    const buffer = chunk instanceof Uint8Array &&
+        chunk.byteLength === chunk.buffer.byteLength
+      ? chunk.buffer
+      : new Uint8Array(chunk).buffer;
+
+    if (begin === undefined) {
       if (this._fullRequestReader) {
         this._fullRequestReader._enqueue(buffer);
       } else {
@@ -108,7 +122,7 @@ export class PDFDataTransportStream implements IPDFStream {
       }
     } else {
       const found = this.#rangeReaders.some((rangeReader) => {
-        if (rangeReader._begin !== args.begin) {
+        if (rangeReader._begin !== begin) {
           return false;
         }
         rangeReader._enqueue(buffer);
@@ -119,7 +133,7 @@ export class PDFDataTransportStream implements IPDFStream {
         "#onReceiveData - no `PDFDataTransportStreamRangeReader` instance found.",
       );
     }
-  };
+  }
 
   get _progressiveDataLength() {
     return this._fullRequestReader?._loaded ?? 0;
@@ -199,7 +213,7 @@ class PDFDataTransportStreamReader implements IPDFStreamReader {
 
   #queuedChunks: ArrayBufferLike[];
   _loaded = 0;
-  #requests: PromiseCap<ReadValue>[] = [];
+  #requests: PromiseCapability<ReadValue>[] = [];
 
   #headersReady = Promise.resolve();
   get headersReady() {
@@ -207,7 +221,7 @@ class PDFDataTransportStreamReader implements IPDFStreamReader {
   }
 
   /** @implement */
-  onProgress: ((data: { loaded: number; total: number }) => void) | undefined;
+  onProgress: ((data: OnProgressP) => void) | undefined;
 
   constructor(
     stream: PDFDataTransportStream,
@@ -263,7 +277,7 @@ class PDFDataTransportStreamReader implements IPDFStreamReader {
     if (this.#done) {
       return { done: true } as ReadValue;
     }
-    const requestCapability = createPromiseCap<ReadValue>();
+    const requestCapability = createPromiseCapability<ReadValue>();
     this.#requests.push(requestCapability);
     return requestCapability.promise;
   }
@@ -290,7 +304,7 @@ class PDFDataTransportStreamRangeReader implements IPDFStreamRangeReader {
   _begin: number;
   _end: number;
   #queuedChunk: ArrayBufferLike | undefined;
-  #requests: PromiseCap<ReadValue>[] = [];
+  #requests: PromiseCapability<ReadValue>[] = [];
   #done = false;
 
   /** @implement */
@@ -336,7 +350,7 @@ class PDFDataTransportStreamRangeReader implements IPDFStreamRangeReader {
     if (this.#done) {
       return { done: true } as ReadValue;
     }
-    const requestCapability = createPromiseCap<ReadValue>();
+    const requestCapability = createPromiseCapability<ReadValue>();
     this.#requests.push(requestCapability);
     return requestCapability.promise;
   }

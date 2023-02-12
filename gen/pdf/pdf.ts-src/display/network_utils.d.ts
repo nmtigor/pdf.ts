@@ -3,7 +3,7 @@ import { MissingPDFException, UnexpectedResponseException } from "../shared/util
 export type VRRC_P_ = {
     getResponseHeader: (name: string) => string | null;
     isHttp: boolean;
-    rangeChunkSize: number;
+    rangeChunkSize: number | undefined;
     disableRange: boolean;
 };
 export declare function validateRangeRequestCapabilities({ getResponseHeader, isHttp, rangeChunkSize, disableRange, }: VRRC_P_): {

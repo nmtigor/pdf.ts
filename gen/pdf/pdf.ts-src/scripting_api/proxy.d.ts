@@ -1,27 +1,27 @@
 import { PDFObject, SendData } from "./pdf_object.js";
-type _Obj = PDFObject<SendData>;
-export declare class ScriptingProxyHandler implements ProxyHandler<_Obj> {
+type Obj_ = PDFObject<SendData>;
+export declare class ScriptingProxyHandler implements ProxyHandler<Obj_> {
     /**
      * Don't dispatch an event for those properties.
      *  - delay: allow to delay field redraw until delay is set to false.
      *    Likely it's useless to implement that stuff.
      */
     nosend: Set<string>;
-    get(obj: _Obj, prop: keyof _Obj): any;
-    set(obj: _Obj, prop: keyof _Obj, value: _Obj[keyof _Obj]): boolean;
-    has(obj: _Obj, prop: keyof _Obj): boolean;
-    getPrototypeOf(obj: _Obj): null;
-    setPrototypeOf(obj: _Obj, proto: null): boolean;
-    isExtensible(obj: _Obj): boolean;
-    preventExtensions(obj: _Obj): boolean;
-    getOwnPropertyDescriptor(obj: _Obj, prop: keyof _Obj): {
+    get(obj: Obj_, prop: keyof Obj_): any;
+    set(obj: Obj_, prop: keyof Obj_, value: Obj_[keyof Obj_]): boolean;
+    has(obj: Obj_, prop: keyof Obj_): boolean;
+    getPrototypeOf(obj: Obj_): null;
+    setPrototypeOf(obj: Obj_, proto: null): boolean;
+    isExtensible(obj: Obj_): boolean;
+    preventExtensions(obj: Obj_): boolean;
+    getOwnPropertyDescriptor(obj: Obj_, prop: keyof Obj_): {
         configurable: boolean;
         enumerable: boolean;
         value: any;
     } | undefined;
-    defineProperty(obj: _Obj, key: keyof _Obj, descriptor: PropertyDescriptor): boolean;
-    deleteProperty(obj: _Obj, prop: keyof _Obj): boolean;
-    ownKeys(obj: _Obj): (string | symbol)[];
+    defineProperty(obj: Obj_, key: keyof Obj_, descriptor: PropertyDescriptor): boolean;
+    deleteProperty(obj: Obj_, prop: keyof Obj_): boolean;
+    ownKeys(obj: Obj_): (string | symbol)[];
 }
 export {};
 //# sourceMappingURL=proxy.d.ts.map

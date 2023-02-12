@@ -349,6 +349,10 @@ class FirefoxExternalServices extends DefaultExternalServices {
     createScripting(options) {
         return new FirefoxScripting();
     }
+    get supportsPinchToZoom() {
+        const support = !!FirefoxCom.requestSync("supportsPinchToZoom");
+        return shadow(this, "supportsPinchToZoom", support);
+    }
     get supportsIntegratedFind() {
         const support = FirefoxCom.requestSync("supportsIntegratedFind");
         return shadow(this, "supportsIntegratedFind", support);

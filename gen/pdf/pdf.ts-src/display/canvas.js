@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { GENERIC, MOZCENTRAL } from "../../../global.js";
+import { MOZCENTRAL } from "../../../global.js";
 import { assert } from "../../../lib/util/trace.js";
 import { applyMaskImageData } from "../shared/image_utils.js";
 import { FeatureTest, FONT_IDENTITY_MATRIX, IDENTITY_MATRIX, ImageKind, info, OPS, shadow, TextRenderingMode, Util, warn, } from "../shared/util.js";
@@ -34,7 +34,7 @@ const EXECUTION_TIME = 15; // ms
 // Defines the number of steps before checking the execution time.
 const EXECUTION_STEPS = 10;
 // To disable Type3 compilation, set the value to `-1`.
-const MAX_SIZE_TO_COMPILE = /*#static*/ typeof Path2D === "undefined" ? -1 : 1000;
+const MAX_SIZE_TO_COMPILE = 1000;
 const FULL_CHUNK_HEIGHT = 16;
 /**
  * Overrides certain methods on a 2d ctx so that when they are called they

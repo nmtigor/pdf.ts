@@ -15,8 +15,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { createPromiseCap } from "../../../lib/promisecap.js";
 import { assert } from "../../../lib/util/trace.js";
+import { createPromiseCapability, } from "../shared/util.js";
 import { isPdfFile } from "./display_utils.js";
 export class PDFDataTransportStream {
     #queuedChunks = [];
@@ -28,18 +28,22 @@ export class PDFDataTransportStream {
     _contentLength;
     _fullRequestReader;
     #rangeReaders = [];
-    constructor(params, pdfDataRangeTransport) {
-        this.#progressiveDone = params.progressiveDone || false;
-        this._contentDispositionFilename = params.contentDispositionFilename;
-        const initialData = params.initialData;
-        if (initialData.length > 0) {
-            const buffer = new Uint8Array(initialData).buffer;
+    constructor({ length, initialData, progressiveDone = false, contentDispositionFilename, disableRange = false, disableStream = false, }, pdfDataRangeTransport) {
+        this.#progressiveDone = progressiveDone;
+        this._contentDispositionFilename = contentDispositionFilename;
+        if (initialData?.length > 0) {
+            // Prevent any possible issues by only transferring a Uint8Array that
+            // completely "utilizes" its underlying ArrayBuffer.
+            const buffer = initialData instanceof Uint8Array &&
+                initialData.byteLength === initialData.buffer.byteLength
+                ? initialData.buffer
+                : new Uint8Array(initialData).buffer;
             this.#queuedChunks.push(buffer);
         }
         this.#pdfDataRangeTransport = pdfDataRangeTransport;
-        this._isStreamingSupported = !params.disableStream;
-        this._isRangeSupported = !params.disableRange;
-        this._contentLength = params.length;
+        this._isStreamingSupported = !disableStream;
+        this._isRangeSupported = !disableRange;
+        this._contentLength = length;
         this.#pdfDataRangeTransport.addRangeListener((begin, chunk) => {
             this.#onReceiveData({ begin, chunk });
         });
@@ -54,9 +58,14 @@ export class PDFDataTransportStream {
         });
         this.#pdfDataRangeTransport.transportReady();
     }
-    #onReceiveData = (args) => {
-        const buffer = new Uint8Array(args.chunk).buffer;
-        if (args.begin === undefined) {
+    #onReceiveData({ begin, chunk }) {
+        // Prevent any possible issues by only transferring a Uint8Array that
+        // completely "utilizes" its underlying ArrayBuffer.
+        const buffer = chunk instanceof Uint8Array &&
+            chunk.byteLength === chunk.buffer.byteLength
+            ? chunk.buffer
+            : new Uint8Array(chunk).buffer;
+        if (begin === undefined) {
             if (this._fullRequestReader) {
                 this._fullRequestReader._enqueue(buffer);
             }
@@ -66,7 +75,7 @@ export class PDFDataTransportStream {
         }
         else {
             const found = this.#rangeReaders.some((rangeReader) => {
-                if (rangeReader._begin !== args.begin) {
+                if (rangeReader._begin !== begin) {
                     return false;
                 }
                 rangeReader._enqueue(buffer);
@@ -74,7 +83,7 @@ export class PDFDataTransportStream {
             });
             assert(found, "#onReceiveData - no `PDFDataTransportStreamRangeReader` instance found.");
         }
-    };
+    }
     get _progressiveDataLength() {
         return this._fullRequestReader?._loaded ?? 0;
     }
@@ -188,7 +197,7 @@ class PDFDataTransportStreamReader {
         if (this.#done) {
             return { done: true };
         }
-        const requestCapability = createPromiseCap();
+        const requestCapability = createPromiseCapability();
         this.#requests.push(requestCapability);
         return requestCapability.promise;
     }
@@ -254,7 +263,7 @@ class PDFDataTransportStreamRangeReader {
         if (this.#done) {
             return { done: true };
         }
-        const requestCapability = createPromiseCap();
+        const requestCapability = createPromiseCapability();
         this.#requests.push(requestCapability);
         return requestCapability.promise;
     }

@@ -1,4 +1,4 @@
-import { rect_t } from "../shared/util.js";
+import { type rect_t } from "../../../lib/alias.js";
 import { Dict, Name } from "./primitives.js";
 import { StringStream } from "./stream.js";
 import { XRef } from "./xref.js";

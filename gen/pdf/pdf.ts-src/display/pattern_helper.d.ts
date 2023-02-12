@@ -1,4 +1,4 @@
-import type { OpListIR } from "../core/operator_list.js";
+import { type OpListIR } from "../core/operator_list.js";
 import { type RadialAxialIR, type ShadingPatternIR, ShadingType, type TilingPatternIR } from "../core/pattern.js";
 import { type matrix_t } from "../shared/util.js";
 import { CanvasGraphics } from "./canvas.js";
@@ -19,8 +19,8 @@ export declare class RadialAxialShadingPattern implements RadialAxialPattern {
     _type: ShadingType.AXIAL | ShadingType.RADIAL;
     _bbox: [number, number, number, number] | undefined;
     _colorStops: [number, string][];
-    _p0: import("../shared/util.js").point_t;
-    _p1: import("../shared/util.js").point_t;
+    _p0: import("../../../lib/alias.js").point_t;
+    _p1: import("../../../lib/alias.js").point_t;
     _r0: number;
     _r1: number;
     matrix: matrix_t | undefined;

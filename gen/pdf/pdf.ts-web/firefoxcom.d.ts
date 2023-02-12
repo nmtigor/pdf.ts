@@ -1,4 +1,4 @@
-import { Locale_1, WebL10nArgs } from "../../3rd/webL10n/l10n.js";
+import { Locale_1, WebL10nArgs } from "../../3rd/webL10n-2015-10-24/l10n.js";
 import "../extensions/firefox/tools/l10n.js";
 import { IDownloadManager } from "./interfaces.js";
 type _L10nData = Record<string, Record<string, string>>;

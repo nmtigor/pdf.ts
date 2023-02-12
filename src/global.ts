@@ -13,16 +13,20 @@ import { assert } from "./lib/util/trace.ts";
 export const 
   INOUT = true // contracts
 , DEV = true // debug build
-  , INFO = true // info of calling trace, interim results
-    , RESIZ = false // "resize", ResizeObserver
-    , INTRS = false // IntersectionObserver
-    , EDITOR = true
-      , EDITOR_v = true // verbose
+  , TRACE = true
+  
+  , XSTATE = true
+  , RESIZ = true // "resize", ResizeObserver
+  , INTRS = true // IntersectionObserver
+
+  , THEMESETTING = false
+  , EDITOR = true
+    , EDITOR_v = true // verbose
       , EDITOR_vv = false // very verbose
-    , PDFTS = true
-      , PDFTS_v = true // verbose
-        , PDFTS_vv = false // very verbose
-, _INFO = DEV && INFO
+  , PDFTS = true
+    , PDFTS_v = true // verbose
+      , PDFTS_vv = false // very verbose
+, _TRACE = DEV && TRACE
 , APP = false // release build
 
 , TESTING = false

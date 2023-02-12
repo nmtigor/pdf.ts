@@ -1,4 +1,4 @@
-import { type rect_t } from "../../shared/util.js";
+import { type rect_t } from "../../../../lib/alias.js";
 import { type AvailableSpace, type XFAAttrs, type XFACleanup, type XFAElData, type XFAExtra, type XFAGlobalData, type XFAHTMLObj, type XFAIds, type XFANsAttrs, type XFAStyleData, type XFAValue } from "./alias.js";
 import { Builder } from "./builder.js";
 import { type XFANsId } from "./namespaces.js";

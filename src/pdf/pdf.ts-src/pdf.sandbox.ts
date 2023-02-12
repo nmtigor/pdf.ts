@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-import ModuleLoader from "../../3rd/quickjs/quickjs-eval.js";
+import ModuleLoader from "../../3rd/quickjs-2022-05-02/quickjs-eval.js";
 import { _PDFDEV } from "../../global.ts";
 import { EventInSandBox } from "../pdf.ts-web/interfaces.ts";
 import { SandboxSupportBase } from "./pdf.sandbox.external.ts";
@@ -65,7 +65,7 @@ export class Sandbox {
     // are finally used here:
     // https://github.com/mozilla/pdf.js.quickjs/blob/main/src/myjs.js
     // They're called from the sandbox only.
-    (<any> module).externalCall = this.support.createSandboxExternals();
+    (module as any).externalCall = this.support.createSandboxExternals();
 
     this._module = module;
   }

@@ -3,7 +3,7 @@
  * @license Apache-2.0
  ******************************************************************************/
 
-import { z } from "../3rd/zod/lib/index.mjs";
+import { z } from "../3rd/zod-3.20.0/lib/index.mjs";
 /*80--------------------------------------------------------------------------*/
 
 export type int = number;
@@ -69,6 +69,9 @@ export const zRatio = z.number().finite();
 // export type Hex8 = `${HexDigitChar}${HexDigitChar}`;
 /*80--------------------------------------------------------------------------*/
 
+export type point_t = [number, number];
+export type rect_t = TupleOf<number, 4>;
+
 export type IntegerArray =
   | Int8Array
   | Uint8Array
@@ -103,9 +106,9 @@ export type Style = Record<string, string>;
 export interface Runr {
   run(): void | Promise<void>;
 }
-export class DumRuhr implements Runr {
-  run() {}
-}
+// export class DumRunr implements Runr {
+//   run() {}
+// }
 /*80--------------------------------------------------------------------------*/
 
 export const enum Sortart {
@@ -131,6 +134,7 @@ export type AbstractConstructor<T = object> = abstract new (
   ...args: any[]
 ) => T;
 export type Func<This = any> = (this: This, ...args: any[]) => any;
+export type Id<T> = (_x: T) => T;
 /*80--------------------------------------------------------------------------*/
 
 //#region TupleOf<>

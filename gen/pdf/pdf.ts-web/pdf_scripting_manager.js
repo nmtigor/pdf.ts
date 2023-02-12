@@ -17,8 +17,7 @@
  */
 /** @typedef {import("./event_utils").EventBus} EventBus */
 import { COMPONENTS, GECKOVIEW } from "../../global.js";
-import { createPromiseCap } from "../../lib/promisecap.js";
-import { shadow } from "../pdf.ts-src/pdf.js";
+import { createPromiseCapability, shadow, } from "../pdf.ts-src/pdf.js";
 import { apiPageLayoutToViewerModes, RenderingStates, } from "./ui_utils.js";
 export class PDFScriptingManager {
     #pdfDocument;
@@ -278,7 +277,7 @@ export class PDFScriptingManager {
     async #dispatchPageOpen(pageNumber, initialize = false) {
         const pdfDocument = this.#pdfDocument, visitedPages = this.#visitedPages;
         if (initialize) {
-            this.#closeCapability = createPromiseCap();
+            this.#closeCapability = createPromiseCapability();
         }
         if (!this.#closeCapability) {
             return; // Scripting isn't fully initialized yet.
@@ -343,7 +342,7 @@ export class PDFScriptingManager {
         throw new Error("#getDocProperties: Unable to lookup properties.");
     };
     #createScripting = async () => {
-        this.#destroyCapability = createPromiseCap();
+        this.#destroyCapability = createPromiseCapability();
         if (this._scripting) {
             throw new Error("#createScripting: Scripting already exists.");
         }

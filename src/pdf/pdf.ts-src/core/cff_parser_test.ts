@@ -20,7 +20,7 @@
 import {
   assert,
   assertEquals,
-} from "https://deno.land/std@0.165.0/testing/asserts.ts";
+} from "https://deno.land/std@0.170.0/testing/asserts.ts";
 import {
   afterAll,
   afterEach,
@@ -28,7 +28,7 @@ import {
   beforeEach,
   describe,
   it,
-} from "https://deno.land/std@0.165.0/testing/bdd.ts";
+} from "https://deno.land/std@0.170.0/testing/bdd.ts";
 import {
   CFF,
   CFFCharset,
@@ -55,11 +55,11 @@ describe("CFFParser", () => {
   }
 
   // Stub that returns `0` for any privateDict key.
-  const privateDictStub = <CFFPrivateDict> {
+  const privateDictStub = {
     getByName(name: string) {
       return 0;
     },
-  };
+  } as CFFPrivateDict;
 
   let fontData!: Stream,
     parser!: CFFParser,

@@ -22,9 +22,8 @@
   --pdfViewer-padding-bottom: 0;
   --page-margin: 1px auto -8px;
   --page-border: 9px solid transparent;
-  --page-border-image: url(images/shadow.png) 9 9 repeat;
   --spreadHorizontalWrapped-margin-LR: -3.5px;
-  --scale-factor: 1;
+  --loading-icon-delay: 400ms;
 }
 
 @media screen and (forced-colors: active) {
@@ -32,7 +31,6 @@
     --pdfViewer-padding-bottom: 9px;
     --page-margin: 8px auto -1px;
     --page-border: 1px solid CanvasText;
-    --page-border-image: none;
     --spreadHorizontalWrapped-margin-LR: 3.5px;
   }
 }
@@ -48,6 +46,10 @@
 }
 
 .pdfViewer {
+  /* Define this variable here and not in :root to avoid to reflow all the UI
+     when scaling (see #15929). */
+  --scale-factor: 1;
+
   padding-bottom: var(--pdfViewer-padding-bottom);
 }
 
@@ -66,7 +68,6 @@
   position: relative;
   overflow: visible;
   border: var(--page-border);
-  border-image: var(--page-border-image);
   background-clip: content-box;
   background-color: rgba(255, 255, 255, 1);
 }
@@ -157,10 +158,16 @@
   right: 0;
   bottom: 0;
   background: url("images/loading-icon.gif") center no-repeat;
+  visibility: visible;
+  /* Using a delay with background-image doesn't work,
+     consequently we use the visibility. */
+  transition-property: visibility;
+  transition-delay: var(--loading-icon-delay);
   z-index: 5;
 }
 .pdfViewer .page .loadingIcon.notVisible {
-  background: none;
+  transition-property: none;
+  visibility: hidden;
 }
 
 .pdfViewer.enablePermissions .textLayer span {

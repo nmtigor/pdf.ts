@@ -1,7 +1,8 @@
+import { type rect_t } from "../../../lib/alias.js";
 import { type AnnotStorageRecord, AnnotStorageValue } from "../display/annotation_layer.js";
 import { type CMapData } from "../display/base_factory.js";
 import { MessageHandler, type StreamSink, Thread } from "../shared/message_handler.js";
-import { type rect_t, RenderingIntentFlag } from "../shared/util.js";
+import { RenderingIntentFlag } from "../shared/util.js";
 import { Annotation, type FieldObject, type SaveReturn } from "./annotation.js";
 import { BaseStream } from "./base_stream.js";
 import { Catalog } from "./catalog.js";

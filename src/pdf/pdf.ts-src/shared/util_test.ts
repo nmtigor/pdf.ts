@@ -21,11 +21,11 @@ import {
   assertEquals,
   assertInstanceOf,
   assertThrows,
-} from "https://deno.land/std@0.165.0/testing/asserts.ts";
-import { describe, it } from "https://deno.land/std@0.165.0/testing/bdd.ts";
-import { createPromiseCap } from "../../../lib/promisecap.ts";
+} from "https://deno.land/std@0.170.0/testing/asserts.ts";
+import { describe, it } from "https://deno.land/std@0.170.0/testing/bdd.ts";
 import {
   bytesToString,
+  createPromiseCapability,
   createValidAbsoluteUrl,
   getModificationDate,
   isArrayBuffer,
@@ -235,9 +235,9 @@ describe("util", () => {
     });
   });
 
-  describe("createPromiseCap", () => {
+  describe("createPromiseCapability", () => {
     it("should resolve with correct data", async () => {
-      const promiseCapability = createPromiseCap<{ test: string }>();
+      const promiseCapability = createPromiseCapability<{ test: string }>();
       assertEquals(promiseCapability.settled, false);
 
       promiseCapability.resolve({ test: "abc" });
@@ -248,7 +248,7 @@ describe("util", () => {
     });
 
     it("should reject with correct reason", async () => {
-      const promiseCapability = createPromiseCap();
+      const promiseCapability = createPromiseCapability();
       assertEquals(promiseCapability.settled, false);
 
       promiseCapability.reject(new Error("reason"));

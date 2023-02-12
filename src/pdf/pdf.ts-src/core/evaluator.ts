@@ -18,8 +18,8 @@
  */
 /* eslint-disable no-var */
 
-import { _PDFDEV } from "../../../global.ts";
-import { createPromiseCap } from "../../../lib/promisecap.ts";
+import { _PDFDEV, GENERIC } from "../../../global.ts";
+import { type rect_t } from "../../../lib/alias.ts";
 import { assert } from "../../../lib/util/trace.ts";
 import { type TextItem, TextMarkedContent } from "../display/api.ts";
 import { type CMapData } from "../display/base_factory.ts";
@@ -34,6 +34,7 @@ import { MurmurHash3_64 } from "../shared/murmurhash3.ts";
 import {
   AbortException,
   CMapCompressionType,
+  createPromiseCapability,
   FONT_IDENTITY_MATRIX,
   FormatError,
   IDENTITY_MATRIX,
@@ -41,7 +42,6 @@ import {
   info,
   type matrix_t,
   OPS,
-  type rect_t,
   shadow,
   stringToPDFString,
   TextRenderingMode,
@@ -65,7 +65,7 @@ import {
   ZapfDingbatsEncoding,
 } from "./encodings.ts";
 import { ErrorFont, Font, Glyph, type Seac } from "./fonts.ts";
-import { FontFlags, getFontType } from "./fonts_utils.ts";
+import { FontFlags } from "./fonts_utils.ts";
 import { isPDFFunction, PDFFunctionFactory } from "./function.ts";
 import { getGlyphsUnicode } from "./glyphlist.ts";
 import { PDFImage } from "./image.ts";
@@ -256,7 +256,7 @@ class TimeSlotManager {
   }
 }
 
-interface _PartialEvaluatorCtorP {
+interface PartialEvaluatorCtorP_ {
   xref: XRef;
   handler: MessageHandler<Thread.worker>;
   pageIndex: number;
@@ -295,7 +295,7 @@ interface _BuildPaintImageXObjectP {
   localColorSpaceCache: LocalColorSpaceCache;
 }
 
-interface _GetOperatorListP {
+interface GetOperatorListP_ {
   stream: BaseStream;
   task: WorkerTask;
   resources?: Dict | undefined;
@@ -369,7 +369,7 @@ export interface FontProps extends FontfileType {
   // from extractDataStructures()
   defaultEncoding?: string[] | undefined;
   differences?: string[];
-  baseEncodingName?: string;
+  baseEncodingName?: string | undefined;
   hasEncoding?: boolean;
   dict?: FontDict;
   toUnicode:
@@ -514,7 +514,7 @@ export class PartialEvaluator {
   builtInCMapCache;
   standardFontDataCache;
   globalImageCache;
-  options;
+  options: EvaluatorOptions;
   parsingType3Font = false;
   type3FontRefs?: RefSet;
 
@@ -528,7 +528,7 @@ export class PartialEvaluator {
     standardFontDataCache,
     globalImageCache,
     options,
-  }: _PartialEvaluatorCtorP) {
+  }: PartialEvaluatorCtorP_) {
     this.xref = xref;
     this.handler = handler;
     this.pageIndex = pageIndex;
@@ -552,7 +552,10 @@ export class PartialEvaluator {
     return shadow(this, "_pdfFunctionFactory", pdfFunctionFactory);
   }
 
-  clone(newOptions?: Partial<EvaluatorOptions>) {
+  /**
+   * ! Becuse of this method, use private method "_method" instead of "#methos"
+   */
+  clone(newOptions?: Partial<EvaluatorOptions>): PartialEvaluator {
     const newEvaluator = Object.create(this);
     newEvaluator.options = Object.assign(
       Object.create(null),
@@ -858,7 +861,11 @@ export class PartialEvaluator {
     });
   }
 
-  #sendImgData(objId: string, imgData?: ImgData, cacheGlobally = false) {
+  private _sendImgData(
+    objId: string,
+    imgData?: ImgData,
+    cacheGlobally = false,
+  ) {
     const transfers = imgData
       ? [imgData.bitmap || (<Uint8Array> imgData.data).buffer]
       : undefined;
@@ -992,7 +999,7 @@ export class PartialEvaluator {
 
       const objId = `mask_${this.idFactory.createObjId!()}`;
       operatorList.addDependency(objId);
-      this.#sendImgData(objId, imgData);
+      this._sendImgData(objId, imgData);
 
       args = [
         {
@@ -1080,12 +1087,12 @@ export class PartialEvaluator {
         if (cacheKey && imageRef && cacheGlobally) {
           this.globalImageCache!.addByteSize(imageRef, imgData.data!.length);
         }
-        return this.#sendImgData(objId, imgData, cacheGlobally);
+        return this._sendImgData(objId, imgData, cacheGlobally);
       })
       .catch((reason) => {
         warn(`Unable to decode image "${objId}": "${reason}".`);
 
-        return this.#sendImgData(
+        return this._sendImgData(
           objId,
           /* imgData = */ undefined,
           cacheGlobally,
@@ -1264,11 +1271,13 @@ export class PartialEvaluator {
           return;
         }
         if (this.options.ignoreErrors) {
-          // Error(s) in the TilingPattern -- sending unsupported feature
-          // notification and allow rendering to continue.
-          this.handler.send("UnsupportedFeature", {
-            featureId: UNSUPPORTED_FEATURES.errorTilingPattern,
-          });
+          /*#static*/ if (GENERIC) {
+            // Error(s) in the TilingPattern -- sending unsupported feature
+            // notification and allow rendering to continue.
+            this.handler.send("UnsupportedFeature", {
+              featureId: UNSUPPORTED_FEATURES!.errorTilingPattern,
+            });
+          }
           warn(`handleTilingType - ignoring pattern: "${reason}".`);
           return;
         }
@@ -1311,11 +1320,13 @@ export class PartialEvaluator {
             return translated;
           })
           .catch((reason) => {
-            // Error in the font data -- sending unsupported feature
-            // notification.
-            this.handler.send("UnsupportedFeature", {
-              featureId: UNSUPPORTED_FEATURES.errorFontLoadType3,
-            });
+            /*#static*/ if (GENERIC) {
+              // Error in the font data -- sending unsupported feature
+              // notification.
+              this.handler.send("UnsupportedFeature", {
+                featureId: UNSUPPORTED_FEATURES!.errorFontLoadType3,
+              });
+            }
             return new TranslatedFont({
               loadedName: "g_font_error",
               font: new ErrorFont(`Type3 font load error: ${reason}`),
@@ -1342,11 +1353,11 @@ export class PartialEvaluator {
       if (
         isAddToPathSet ||
         state.fillColorSpace!.name === "Pattern" ||
-        (<Font> font).disableFontFace ||
+        (font as Font).disableFontFace ||
         this.options.disableFontFace
       ) {
         PartialEvaluator.buildFontPaths(
-          <Font> font,
+          font as Font,
           glyphs,
           this.handler,
           this.options,
@@ -1365,11 +1376,13 @@ export class PartialEvaluator {
     );
 
     if (this.options.ignoreErrors) {
-      // Missing setFont operator before text rendering operator -- sending
-      // unsupported feature notification and allow rendering to continue.
-      this.handler.send("UnsupportedFeature", {
-        featureId: UNSUPPORTED_FEATURES.errorFontState,
-      });
+      /*#static*/ if (GENERIC) {
+        // Missing setFont operator before text rendering operator -- sending
+        // unsupported feature notification and allow rendering to continue.
+        this.handler.send("UnsupportedFeature", {
+          featureId: UNSUPPORTED_FEATURES!.errorFontState,
+        });
+      }
       warn(`ensureStateFont: "${reason}".`);
       return;
     }
@@ -1513,9 +1526,9 @@ export class PartialEvaluator {
       }
     } else {
       // Loading by name.
-      const fontRes = <Dict | undefined> resources.get("Font");
+      const fontRes = resources.get("Font") as Dict | undefined;
       if (fontRes) {
-        fontRef = <Ref | undefined> fontRes.getRaw(fontName!);
+        fontRef = fontRes.getRaw(fontName!) as Ref | undefined;
       }
     }
     if (!fontRef) {
@@ -1527,29 +1540,33 @@ export class PartialEvaluator {
         warn(`${partialMsg}.`);
         return errorFont();
       }
-      // Font not found -- sending unsupported feature notification.
-      this.handler.send("UnsupportedFeature", {
-        featureId: UNSUPPORTED_FEATURES.errorFontMissing,
-      });
+      /*#static*/ if (GENERIC) {
+        // Font not found -- sending unsupported feature notification.
+        this.handler.send("UnsupportedFeature", {
+          featureId: UNSUPPORTED_FEATURES!.errorFontMissing,
+        });
+      }
       warn(`${partialMsg} -- attempting to fallback to a default font.`);
 
       // Falling back to a default font to avoid completely broken rendering,
       // but note that there're no guarantees that things will look "correct".
       if (fallbackFontDict) {
         fontRef = fallbackFontDict;
-      } else fontRef = PartialEvaluator.fallbackFontDict;
+      } else {
+        fontRef = PartialEvaluator.fallbackFontDict;
+      }
     }
 
-    if (this.parsingType3Font && this.type3FontRefs!.has(<Ref> fontRef)) {
+    if (this.parsingType3Font && this.type3FontRefs!.has(fontRef as Ref)) {
       return errorFont();
     }
 
-    if (this.fontCache.has(<Ref> fontRef)) {
-      return this.fontCache.get(<Ref> fontRef)!;
+    if (this.fontCache.has(fontRef as Ref)) {
+      return this.fontCache.get(fontRef as Ref)!;
     }
 
     // Table 111,
-    const fontDict = <FontDict> xref.fetchIfRef(fontRef);
+    const fontDict = xref.fetchIfRef(fontRef) as FontDict;
     if (!(fontDict instanceof Dict)) {
       return errorFont(fontDict);
     }
@@ -1563,7 +1580,7 @@ export class PartialEvaluator {
       return this.fontCache.get(fontDict.cacheKey)!;
     }
 
-    const fontCapability = createPromiseCap<TranslatedFont>();
+    const fontCapability = createPromiseCapability<TranslatedFont>();
 
     let preEvaluatedFont: PreEvaluatedFont;
     try {
@@ -1621,7 +1638,7 @@ export class PartialEvaluator {
     //       keys. Also, since `fontRef` is used when getting cached fonts,
     //       we'll not accidentally match fonts cached with the `fontID`.
     if (fontRefIsRef) {
-      this.fontCache.put(<Ref> fontRef, fontCapability.promise);
+      this.fontCache.put(fontRef as Ref, fontCapability.promise);
     } else {
       if (!fontID) {
         fontID = this.idFactory.createFontId();
@@ -1640,10 +1657,6 @@ export class PartialEvaluator {
 
     this.translateFont(preEvaluatedFont)
       .then((translatedFont) => {
-        if (translatedFont.fontType !== undefined) {
-          xref.stats.addFontType(translatedFont.fontType);
-        }
-
         fontCapability.resolve(
           new TranslatedFont({
             loadedName: fontDict.loadedName!,
@@ -1655,24 +1668,13 @@ export class PartialEvaluator {
       })
       .catch((reason) => {
         // TODO fontCapability.reject?
-        // Error in the font data -- sending unsupported feature notification.
-        this.handler.send("UnsupportedFeature", {
-          featureId: UNSUPPORTED_FEATURES.errorFontTranslate,
-        });
+        /*#static*/ if (GENERIC) {
+          // Error in the font data -- sending unsupported feature notification.
+          this.handler.send("UnsupportedFeature", {
+            featureId: UNSUPPORTED_FEATURES!.errorFontTranslate,
+          });
+        }
         warn(`loadFont - translateFont failed: "${reason}".`);
-
-        try {
-          // error, but it's still nice to have font type reported
-          const fontFile3 = <Dict | undefined> descriptor?.get("FontFile3");
-          const subtype = <Name | undefined> fontFile3?.get("Subtype");
-          const fontType = getFontType(
-            preEvaluatedFont.type,
-            subtype && subtype.name,
-          );
-          if (fontType !== undefined) {
-            xref.stats.addFontType(fontType);
-          }
-        } catch (ex) {}
 
         fontCapability.resolve(
           new TranslatedFont({
@@ -1786,11 +1788,13 @@ export class PartialEvaluator {
         return undefined;
       }
       if (this.options.ignoreErrors) {
-        // Error(s) in the ColorSpace -- sending unsupported feature
-        // notification and allow rendering to continue.
-        this.handler.send("UnsupportedFeature", {
-          featureId: UNSUPPORTED_FEATURES.errorColorSpace,
-        });
+        /*#static*/ if (GENERIC) {
+          // Error(s) in the ColorSpace -- sending unsupported feature
+          // notification and allow rendering to continue.
+          this.handler.send("UnsupportedFeature", {
+            featureId: UNSUPPORTED_FEATURES!.errorColorSpace,
+          });
+        }
         warn(`parseColorSpace - ignoring ColorSpace: "${reason}".`);
         return undefined;
       }
@@ -1900,7 +1904,7 @@ export class PartialEvaluator {
     throw new FormatError(`Unknown PatternName: ${patternName}`);
   }
 
-  _parseVisibilityExpression(
+  private _parseVisibilityExpression(
     array: (Obj | undefined)[],
     nestingCounter: number,
     currentResult: VisibilityExpressionResult,
@@ -2012,7 +2016,7 @@ export class PartialEvaluator {
     operatorList,
     initialState,
     fallbackFontDict,
-  }: _GetOperatorListP) {
+  }: GetOperatorListP_) {
     // Ensure that `resources`/`initialState` is correctly initialized,
     // even if the provided parameter is e.g. `null`.
     resources = resources || Dict.empty;
@@ -2031,8 +2035,8 @@ export class PartialEvaluator {
     const localTilingPatternCache = new LocalTilingPatternCache();
     const localShadingPatternCache = new Map<Dict | Stream, string>();
 
-    const xobjs = <Dict> resources.get("XObject") ?? Dict.empty;
-    const patterns = <Dict> resources.get("Pattern") ?? Dict.empty;
+    const xobjs = resources.get("XObject") as Dict ?? Dict.empty;
+    const patterns = resources.get("Pattern") as Dict ?? Dict.empty;
     const stateManager = new StateManager(initialState);
     const preprocessor = new EvaluatorPreprocessor(stream, xref, stateManager);
     const timeSlotManager = new TimeSlotManager();
@@ -2066,7 +2070,7 @@ export class PartialEvaluator {
         // cannot reuse the same array on each iteration. Therefore we pass
         // in |null| as the initial value (see the comment on
         // EvaluatorPreprocessor_read() for why).
-        operation.args = <OpArgs> null;
+        operation.args = null as OpArgs;
         if (!preprocessor.read(operation)) {
           break;
         }
@@ -2187,11 +2191,13 @@ export class PartialEvaluator {
                   return;
                 }
                 if (self.options.ignoreErrors) {
-                  // Error(s) in the XObject -- sending unsupported feature
-                  // notification and allow rendering to continue.
-                  self.handler.send("UnsupportedFeature", {
-                    featureId: UNSUPPORTED_FEATURES.errorXObject,
-                  });
+                  /*#static*/ if (GENERIC) {
+                    // Error(s) in the XObject -- sending unsupported feature
+                    // notification and allow rendering to continue.
+                    self.handler.send("UnsupportedFeature", {
+                      featureId: UNSUPPORTED_FEATURES!.errorXObject,
+                    });
+                  }
                   warn(`getOperatorList - ignoring XObject: "${reason}".`);
                   return;
                 }
@@ -2200,13 +2206,13 @@ export class PartialEvaluator {
             );
             return;
           case OPS.setFont:
-            const fontSize = (<FontArgs> args)[1];
+            const fontSize = (args as FontArgs)[1];
             // eagerly collect all fonts
             next(
               self
                 .handleSetFont(
                   resources!,
-                  <FontArgs> args,
+                  args as FontArgs,
                   undefined,
                   operatorList,
                   task,
@@ -2258,7 +2264,7 @@ export class PartialEvaluator {
               self.ensureStateFont(stateManager.state);
               continue;
             }
-            args![0] = self.handleText(<string> args![0], stateManager.state);
+            args![0] = self.handleText(args![0] as string, stateManager.state);
             break;
           case OPS.showSpacedText:
             if (!stateManager.state.font) {
@@ -2512,11 +2518,13 @@ export class PartialEvaluator {
                   return;
                 }
                 if (self.options.ignoreErrors) {
-                  // Error(s) in the ExtGState -- sending unsupported feature
-                  // notification and allow parsing/rendering to continue.
-                  self.handler.send("UnsupportedFeature", {
-                    featureId: UNSUPPORTED_FEATURES.errorExtGState,
-                  });
+                  /*#static*/ if (GENERIC) {
+                    // Error(s) in the ExtGState -- sending unsupported feature
+                    // notification and allow parsing/rendering to continue.
+                    self.handler.send("UnsupportedFeature", {
+                      featureId: UNSUPPORTED_FEATURES!.errorExtGState,
+                    });
+                  }
                   warn(`getOperatorList - ignoring ExtGState: "${reason}".`);
                   return;
                 }
@@ -2573,9 +2581,11 @@ export class PartialEvaluator {
                       return;
                     }
                     if (self.options.ignoreErrors) {
-                      self.handler.send("UnsupportedFeature", {
-                        featureId: UNSUPPORTED_FEATURES.errorMarkedContent,
-                      });
+                      /*#static*/ if (GENERIC) {
+                        self.handler.send("UnsupportedFeature", {
+                          featureId: UNSUPPORTED_FEATURES!.errorMarkedContent,
+                        });
+                      }
                       warn(
                         `getOperatorList - ignoring beginMarkedContentProps: "${reason}".`,
                       );
@@ -2627,11 +2637,13 @@ export class PartialEvaluator {
         return;
       }
       if (this.options.ignoreErrors) {
-        // Error(s) in the OperatorList -- sending unsupported feature
-        // notification and allow rendering to continue.
-        this.handler.send("UnsupportedFeature", {
-          featureId: UNSUPPORTED_FEATURES.errorOperatorList,
-        });
+        /*#static*/ if (GENERIC) {
+          // Error(s) in the OperatorList -- sending unsupported feature
+          // notification and allow rendering to continue.
+          this.handler.send("UnsupportedFeature", {
+            featureId: UNSUPPORTED_FEATURES!.errorOperatorList,
+          });
+        }
         warn(
           `getOperatorList - ignoring errors during "${task.name}" ` +
             `task: "${reason}".`,
@@ -3781,10 +3793,10 @@ export class PartialEvaluator {
     let cidToGidBytes: Uint8Array | Uint8ClampedArray;
     // 9.10.2
     const toUnicodePromise = this.readToUnicode(
-      <Name | DecodeStream | undefined> (
+      (
         properties.toUnicode || dict.get("ToUnicode") ||
         baseDict.get("ToUnicode")
-      ),
+      ) as Name | DecodeStream | undefined,
     );
 
     if (properties.composite) {
@@ -3825,15 +3837,15 @@ export class PartialEvaluator {
     let baseEncodingName: Name | string | undefined;
     let encoding;
     if (dict.has("Encoding")) {
-      encoding = <Dict | Name> dict.get("Encoding");
+      encoding = dict.get("Encoding") as Dict | Name;
       if (encoding instanceof Dict) {
-        baseEncodingName = <Name | undefined> encoding.get("BaseEncoding");
+        baseEncodingName = encoding.get("BaseEncoding") as Name | undefined;
         baseEncodingName = baseEncodingName instanceof Name
           ? baseEncodingName.name
           : undefined;
         // Load the differences between the base and original
         if (encoding.has("Differences")) {
-          const diffEncoding = <Obj[]> encoding.get("Differences");
+          const diffEncoding = encoding.get("Differences") as Obj[];
           let index = 0;
           for (const entry of diffEncoding) {
             const data = xref.fetchIfRef(entry);
@@ -3843,7 +3855,7 @@ export class PartialEvaluator {
               differences[index++] = data.name;
             } else {
               throw new FormatError(
-                `Invalid entry in 'Differences' array: ${<any> data}`,
+                `Invalid entry in 'Differences' array: ${data as any}`,
               );
             }
           }
@@ -3870,7 +3882,7 @@ export class PartialEvaluator {
     }
 
     if (baseEncodingName) {
-      properties.defaultEncoding = getEncoding(<string> baseEncodingName);
+      properties.defaultEncoding = getEncoding(baseEncodingName as string);
     } else {
       const isSymbolicFont = !!(properties.flags & FontFlags.Symbolic);
       const isNonsymbolicFont = !!(properties.flags & FontFlags.Nonsymbolic);
@@ -3897,7 +3909,7 @@ export class PartialEvaluator {
     }
 
     properties.differences = differences;
-    properties.baseEncodingName = <string> baseEncodingName;
+    properties.baseEncodingName = baseEncodingName as string | undefined;
     properties.hasEncoding = !!baseEncodingName || differences.length > 0;
     properties.dict = dict;
     return toUnicodePromise
@@ -3917,7 +3929,10 @@ export class PartialEvaluator {
       });
   }
 
-  #simpleFontToUnicode(properties: FontProps, forceGlyphs = false): string[] {
+  private _simpleFontToUnicode(
+    properties: FontProps,
+    forceGlyphs = false,
+  ): string[] {
     assert(!properties.composite, "Must be a simple font.");
 
     const toUnicode: string[] = [];
@@ -3980,7 +3995,7 @@ export class PartialEvaluator {
             // In that case we need to re-parse the *entire* encoding to
             // prevent broken text-selection (fixes issue9655_reduced.pdf).
             if (Number.isNaN(code) && Number.isInteger(parseInt(codeStr, 16))) {
-              return this.#simpleFontToUnicode(
+              return this._simpleFontToUnicode(
                 properties,
                 /* forceGlyphs */ true,
               );
@@ -4021,7 +4036,7 @@ export class PartialEvaluator {
    */
   async buildToUnicode(properties: FontProps) {
     properties.hasIncludedToUnicodeMap = !!properties.toUnicode &&
-      (<IdentityToUnicodeMap | ToUnicodeMap> properties.toUnicode).length > 0;
+      (properties.toUnicode as IdentityToUnicodeMap | ToUnicodeMap).length > 0;
 
     // Section 9.10.2 Mapping Character Codes to Unicode Values
     if (properties.hasIncludedToUnicodeMap) {
@@ -4029,9 +4044,9 @@ export class PartialEvaluator {
       // text-extraction. For simple fonts, containing encoding information,
       // use a fallback ToUnicode map to improve this (fixes issue8229.pdf).
       if (!properties.composite && properties.hasEncoding) {
-        properties.fallbackToUnicode = this.#simpleFontToUnicode(properties);
+        properties.fallbackToUnicode = this._simpleFontToUnicode(properties);
       }
-      return <IdentityToUnicodeMap | ToUnicodeMap> properties.toUnicode;
+      return properties.toUnicode as IdentityToUnicodeMap | ToUnicodeMap;
     }
 
     // According to the spec if the font is a simple font we should only map
@@ -4040,7 +4055,7 @@ export class PartialEvaluator {
     // in pratice it seems better to always try to create a toUnicode map
     // based of the default encoding.
     if (!properties.composite /* is simple font */) {
-      return new ToUnicodeMap(this.#simpleFontToUnicode(properties));
+      return new ToUnicodeMap(this._simpleFontToUnicode(properties));
     }
 
     // If the font is a composite font that uses one of the predefined CMaps
@@ -4154,11 +4169,13 @@ export class PartialEvaluator {
           return undefined;
         }
         if (this.options.ignoreErrors) {
-          // Error in the ToUnicode data -- sending unsupported feature
-          // notification and allow font parsing to continue.
-          this.handler.send("UnsupportedFeature", {
-            featureId: UNSUPPORTED_FEATURES.errorFontToUnicode,
-          });
+          /*#static*/ if (GENERIC) {
+            // Error in the ToUnicode data -- sending unsupported feature
+            // notification and allow font parsing to continue.
+            this.handler.send("UnsupportedFeature", {
+              featureId: UNSUPPORTED_FEATURES!.errorFontToUnicode,
+            });
+          }
           warn(`readToUnicode - ignoring ToUnicode data: "${reason}".`);
           return undefined;
         }
@@ -4373,7 +4390,7 @@ export class PartialEvaluator {
       if (!df) {
         throw new FormatError("Descendant fonts are not specified");
       }
-      dict = <FontDict> (Array.isArray(df) ? this.xref.fetchIfRef(df[0]) : df);
+      dict = (Array.isArray(df) ? this.xref.fetchIfRef(df[0]) : df) as FontDict;
 
       if (!(dict instanceof Dict)) {
         throw new FormatError("Descendant font is not a dictionary.");
@@ -4385,10 +4402,10 @@ export class PartialEvaluator {
       composite = true;
     }
 
-    const firstChar = <number> dict.get("FirstChar") || 0,
-      lastChar = <number> dict.get("LastChar") || (composite ? 0xffff : 0xff);
+    const firstChar = dict.get("FirstChar") as number || 0,
+      lastChar = dict.get("LastChar") as number || (composite ? 0xffff : 0xff);
     // Table 122
-    const descriptor = <FontDict | undefined> dict.get("FontDescriptor");
+    const descriptor = dict.get("FontDescriptor") as FontDict | undefined;
     if (descriptor) {
       hash = new MurmurHash3_64();
 
@@ -4566,7 +4583,7 @@ export class PartialEvaluator {
           italicAngle: 0,
           isType3Font,
         };
-        const widths = <(number | Ref)[] | undefined> dict.get("Widths");
+        const widths = dict.get("Widths") as (number | Ref)[] | undefined;
 
         const standardFontName = getStandardFontName(baseFontName);
         let file: Stream | undefined;
@@ -4590,7 +4607,7 @@ export class PartialEvaluator {
                 newProperties,
               );
             }
-            return new Font(<string> baseFontName, file, newProperties);
+            return new Font(baseFontName as string, file, newProperties);
           },
         );
       }
@@ -4769,11 +4786,13 @@ export class PartialEvaluator {
         ]);
       } catch (reason) {
         if (evaluatorOptions.ignoreErrors) {
-          // Error in the font data -- sending unsupported feature notification
-          // and allow glyph path building to continue.
-          handler.send("UnsupportedFeature", {
-            featureId: UNSUPPORTED_FEATURES.errorFontBuildPath,
-          });
+          /*#static*/ if (GENERIC) {
+            // Error in the font data -- sending unsupported feature notification
+            // and allow glyph path building to continue.
+            handler.send("UnsupportedFeature", {
+              featureId: UNSUPPORTED_FEATURES!.errorFontBuildPath,
+            });
+          }
           warn(`buildFontPaths - ignoring ${glyphName} glyph: "${reason}".`);
           return;
         }
@@ -4804,7 +4823,7 @@ export class PartialEvaluator {
   }
 }
 
-interface _TranslatedFontCtorP {
+interface TranslatedFontCtorP_ {
   loadedName: string;
   font: Font | ErrorFont;
   dict: FontDict | undefined;
@@ -4823,7 +4842,7 @@ export class TranslatedFont {
   _bbox?: rect_t;
 
   constructor(
-    { loadedName, font, dict, evaluatorOptions }: _TranslatedFontCtorP,
+    { loadedName, font, dict, evaluatorOptions }: TranslatedFontCtorP_,
   ) {
     this.loadedName = loadedName;
     this.font = font;
@@ -4850,7 +4869,7 @@ export class TranslatedFont {
       return;
     }
     // When font loading failed, fall back to the built-in font renderer.
-    (<Font> this.font).disableFontFace = true;
+    (this.font as Font).disableFontFace = true;
     // An arbitrary number of text rendering operators could have been
     // encountered between the point in time when the 'Font' message was sent
     // to the main-thread, and the point in time when the 'FontFallback'
@@ -4858,8 +4877,8 @@ export class TranslatedFont {
     // To ensure that all 'FontPath's are available on the main-thread, when
     // font loading failed, attempt to resend *all* previously parsed glyphs.
     PartialEvaluator.buildFontPaths(
-      <Font> this.font,
-      /* glyphs = */ (<Font> this.font).glyphCacheValues,
+      this.font as Font,
+      /* glyphs = */ (this.font as Font).glyphCacheValues,
       handler,
       this._evaluatorOptions,
     );
@@ -4891,8 +4910,8 @@ export class TranslatedFont {
     const translatedFont = this.font,
       type3Dependencies = this.type3Dependencies;
     let loadCharProcsPromise = Promise.resolve();
-    const charProcs = <Dict> this.dict!.get("CharProcs");
-    const fontResources = this.dict!.get("Resources") || resources;
+    const charProcs = this.dict!.get("CharProcs") as Dict;
+    const fontResources = this.dict!.get("Resources") as Dict || resources;
     const charProcOperatorList = Object.create(null);
 
     const fontBBox = Util.normalizeRect(translatedFont.bbox || [0, 0, 0, 0]),
@@ -4902,7 +4921,7 @@ export class TranslatedFont {
 
     for (const key of charProcs.getKeys()) {
       loadCharProcsPromise = loadCharProcsPromise.then(() => {
-        const glyphStream = charProcs.get(key);
+        const glyphStream = charProcs.get(key) as BaseStream;
         const operatorList = new OperatorList();
         return type3Evaluator
           .getOperatorList({

@@ -16,13 +16,15 @@
  * limitations under the License.
  */
 import { _PDFDEV } from "../../../global.js";
+import { HttpStatusCode } from "../../../lib/HttpStatusCode.js";
 import { assert } from "../../../lib/util/trace.js";
 import { MissingPDFException, UnexpectedResponseException, } from "../shared/util.js";
 import { getFilenameFromContentDispositionHeader } from "./content_disposition.js";
 import { isPdfFile } from "./display_utils.js";
 export function validateRangeRequestCapabilities({ getResponseHeader, isHttp, rangeChunkSize, disableRange, }) {
     /*#static*/  {
-        assert(Number.isInteger(rangeChunkSize) && rangeChunkSize > 0, "rangeChunkSize must be an integer larger than zero.");
+        assert(disableRange ||
+            Number.isInteger(rangeChunkSize) && rangeChunkSize > 0, "rangeChunkSize must be an integer larger than zero.");
     }
     const returnValues = {
         allowRangeRequests: false,
@@ -74,13 +76,15 @@ export function extractFilenameFromHeader(getResponseHeader) {
     return undefined;
 }
 export function createResponseStatusError(status, url) {
-    if (status === 404 || (status === 0 && url.toString().startsWith("file:"))) {
+    if (status === HttpStatusCode.NOT_FOUND ||
+        (status === 0 && url.toString().startsWith("file:"))) {
         return new MissingPDFException(`Missing PDF "${url}".`);
     }
     return new UnexpectedResponseException(`Unexpected server response (${status}) while retrieving PDF "${url}".`, status);
 }
 export function validateResponseStatus(status) {
-    return status === 200 || status === 206;
+    return status === HttpStatusCode.OK ||
+        status === HttpStatusCode.PARTIAL_CONTENT;
 }
 /*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=network_utils.js.map

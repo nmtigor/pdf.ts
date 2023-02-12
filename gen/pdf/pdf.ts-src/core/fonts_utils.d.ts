@@ -1,4 +1,3 @@
-import { FontType } from "../shared/util.js";
 import { type FontProps } from "./evaluator.js";
 export declare const SEAC_ANALYSIS_ENABLED = true;
 export declare const enum FontFlags {
@@ -13,7 +12,6 @@ export declare const enum FontFlags {
     ForceBold = 262144
 }
 export declare const MacStandardGlyphOrdering: string[];
-export declare function getFontType(type: string, subtype?: string, isStandardFont?: boolean): FontType.UNKNOWN | FontType.TYPE1 | FontType.TYPE1STANDARD | FontType.TYPE1C | FontType.CIDFONTTYPE0 | FontType.CIDFONTTYPE0C | FontType.TRUETYPE | FontType.CIDFONTTYPE2 | FontType.OPENTYPE | FontType.TYPE0 | FontType.MMTYPE1;
 export declare function recoverGlyphName(name: string, glyphsUnicodeMap: Record<string, number>): string;
 /**
  * Shared logic for building a char code to glyph id mapping for Type1 and

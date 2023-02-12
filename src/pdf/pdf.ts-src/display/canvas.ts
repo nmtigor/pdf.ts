@@ -18,7 +18,7 @@
  */
 
 import { GENERIC, MOZCENTRAL } from "../../../global.ts";
-import { type Func } from "../../../lib/alias.ts";
+import { type Func, type point_t, type rect_t } from "../../../lib/alias.ts";
 import { assert } from "../../../lib/util/trace.ts";
 import { Stepper } from "../../pdf.ts-web/debugger.ts";
 import { PageColors } from "../../pdf.ts-web/pdf_viewer.ts";
@@ -44,8 +44,6 @@ import {
   info,
   type matrix_t,
   OPS,
-  point_t,
-  type rect_t,
   shadow,
   TextRenderingMode,
   Util,
@@ -128,9 +126,7 @@ const EXECUTION_TIME = 15; // ms
 const EXECUTION_STEPS = 10;
 
 // To disable Type3 compilation, set the value to `-1`.
-const MAX_SIZE_TO_COMPILE = /*#static*/ GENERIC
-  ? typeof Path2D === "undefined" ? -1 : 1000
-  : 1000;
+const MAX_SIZE_TO_COMPILE = 1000;
 
 const FULL_CHUNK_HEIGHT = 16;
 

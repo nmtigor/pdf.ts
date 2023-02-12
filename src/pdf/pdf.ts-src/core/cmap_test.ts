@@ -20,15 +20,17 @@
 import {
   assert,
   assertEquals,
+  assertInstanceOf,
   assertNotEquals,
   assertThrows,
-} from "https://deno.land/std@0.165.0/testing/asserts.ts";
+  fail,
+} from "https://deno.land/std@0.170.0/testing/asserts.ts";
 import {
   afterAll,
   beforeAll,
   describe,
   it,
-} from "https://deno.land/std@0.165.0/testing/bdd.ts";
+} from "https://deno.land/std@0.170.0/testing/bdd.ts";
 import { DefaultCMapReaderFactory } from "../display/api.ts";
 import { CMapData } from "../display/base_factory.ts";
 import { CMAP_PARAMS } from "../shared/test_utils.ts";
@@ -147,7 +149,7 @@ describe("cmap", () => {
       encoding: stream,
       fetchBuiltInCMap,
     });
-    assert(cmap instanceof CMap);
+    assertInstanceOf(cmap, CMap);
     assertNotEquals(cmap.useCMap, undefined);
     assertEquals(cmap.builtInCMap, false);
     assertEquals(cmap.length, 0x20a7);
@@ -173,7 +175,7 @@ describe("cmap", () => {
       encoding: Name.get("Adobe-Japan1-1"),
       fetchBuiltInCMap,
     });
-    assert(cmap instanceof CMap);
+    assertInstanceOf(cmap, CMap);
     assertEquals(cmap.useCMap, undefined);
     assertEquals(cmap.builtInCMap, true);
     assertEquals(cmap.length, 0x20a7);
@@ -185,7 +187,7 @@ describe("cmap", () => {
       encoding: Name.get("Identity-H"),
       fetchBuiltInCMap,
     });
-    assert(cmap instanceof IdentityCMap);
+    assertInstanceOf(cmap, IdentityCMap);
     assertEquals(cmap.vertical, false);
     assertEquals(cmap.length, 0x10000);
     assertThrows(
@@ -202,9 +204,9 @@ describe("cmap", () => {
         fetchBuiltInCMap,
       });
 
-      assert(0, "Shouldn't get here.");
+      fail("Shouldn't get here.");
     } catch (reason) {
-      assert(reason instanceof Error);
+      assertInstanceOf(reason, Error);
       assertEquals(reason.message, "Unknown CMap name: null");
     }
   });
@@ -221,9 +223,9 @@ describe("cmap", () => {
         fetchBuiltInCMap: tmpFetchBuiltInCMap,
       });
 
-      assert(0, "Shouldn't get here.");
+      fail("Shouldn't get here.");
     } catch (reason) {
-      assert(reason instanceof Error);
+      assertInstanceOf(reason, Error);
       assertEquals(
         reason.message,
         'The CMap "baseUrl" parameter must be specified, ensure that ' +
@@ -247,9 +249,9 @@ describe("cmap", () => {
         fetchBuiltInCMap: tmpFetchBuiltInCMap,
       });
 
-      assert(0, "Shouldn't get here.");
+      fail("Shouldn't get here.");
     } catch (reason) {
-      assert(reason instanceof Error);
+      assertInstanceOf(reason, Error);
       const message = reason.message;
       assert(message.startsWith("Unable to load CMap at: "));
       assert(

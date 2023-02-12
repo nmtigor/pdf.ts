@@ -1,4 +1,4 @@
-import { type IPDFStream, type IPDFStreamRangeReader, type IPDFStreamReader, type ReadValue } from "../interfaces.js";
+import { type IPDFStream, type IPDFStreamRangeReader, type IPDFStreamReader } from "../interfaces.js";
 import { AbortException } from "../shared/util.js";
 import { type DocumentInitP } from "./api.js";
 export declare class PDFFetchStream implements IPDFStream {
@@ -27,13 +27,13 @@ declare class PDFFetchStreamReader implements IPDFStreamReader {
     /** @implement */
     get isRangeSupported(): boolean;
     /** @implement */
-    onProgress: ((data: {
-        loaded: number;
-        total: number;
-    }) => void) | undefined;
+    onProgress: ((data: OnProgressP) => void) | undefined;
     constructor(stream: PDFFetchStream);
     /** @implement */
-    read(): Promise<ReadValue>;
+    read(): Promise<ReadableStreamReadDoneResult<ArrayBufferLike> | {
+        value: ArrayBufferLike;
+        done: boolean;
+    }>;
     /** @implement */
     cancel(reason: object): void;
 }
@@ -48,7 +48,10 @@ export declare class PDFFetchStreamRangeReader implements IPDFStreamRangeReader 
     }) => void) | undefined;
     constructor(stream: PDFFetchStream, begin: number, end: number);
     /** @implement */
-    read(): Promise<ReadValue>;
+    read(): Promise<ReadableStreamReadDoneResult<ArrayBufferLike> | {
+        value: ArrayBufferLike;
+        done: boolean;
+    }>;
     /** @implement */
     cancel(reason: object): void;
 }

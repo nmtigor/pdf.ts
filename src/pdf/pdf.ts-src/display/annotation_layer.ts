@@ -23,7 +23,11 @@
 /** @typedef {import("../../web/interfaces").IPDFLinkService} IPDFLinkService */
 
 import { _PDFDEV } from "../../../global.ts";
-import { CSSStyle, CSSStyleName } from "../../../lib/alias.ts";
+import {
+  type CSSStyle,
+  type CSSStyleName,
+  type rect_t,
+} from "../../../lib/alias.ts";
 import {
   div,
   type HSElement,
@@ -58,7 +62,6 @@ import {
   AnnotationType,
   FeatureTest,
   LINE_FACTOR,
-  rect_t,
   shadow,
   Util,
   warn,

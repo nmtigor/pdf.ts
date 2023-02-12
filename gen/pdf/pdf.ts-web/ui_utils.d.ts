@@ -260,6 +260,7 @@ export declare class ProgressBar {
     _indeterminate?: boolean;
     constructor(bar: HTMLElement);
     setWidth(viewer?: HTMLDivElement): void;
+    setDisableAutoFetch(delay?: number): void;
     hide(): void;
     show(): void;
 }

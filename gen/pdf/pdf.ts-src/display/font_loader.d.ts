@@ -15,9 +15,9 @@ export interface Request {
     callback: (request: Request) => void;
 }
 export declare class FontLoader {
-    _onUnsupportedFeature: (_: {
+    _onUnsupportedFeature: ((_: {
         featureId: UNSUPPORTED_FEATURES;
-    }) => void;
+    }) => void) | undefined;
     _document: Document;
     nativeFontFaces: FontFace[];
     styleElement: HTMLStyleElement | undefined;
@@ -51,9 +51,9 @@ export declare class FontFaceObject extends FontExpotDataEx {
     isEvalSupported: boolean;
     disableFontFace: boolean;
     ignoreErrors: boolean;
-    _onUnsupportedFeature: (_: {
+    _onUnsupportedFeature: ((_: {
         featureId: UNSUPPORTED_FEATURES;
-    }) => void;
+    }) => void) | undefined;
     fontRegistry: {
         registerFont(font: FontFaceObject, url?: string | undefined): void;
     } | undefined;

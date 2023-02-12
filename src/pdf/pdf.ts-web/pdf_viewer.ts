@@ -25,19 +25,20 @@
 /** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
 
 import { GENERIC, MOZCENTRAL, PRODUCTION } from "../../global.ts";
+import { type point_t } from "../../lib/alias.ts";
 import { div, html } from "../../lib/dom.ts";
-import { createPromiseCap, PromiseCap } from "../../lib/promisecap.ts";
 import {
   AnnotationEditorType,
   AnnotationEditorUIManager,
   AnnotationMode,
+  createPromiseCapability,
   type ExplicitDest,
   OptionalContentConfig,
   PDFDocumentProxy,
   PDFPageProxy,
   PermissionFlag,
   PixelsPerInch,
-  point_t,
+  type PromiseCapability,
   version,
 } from "../pdf.ts-src/pdf.ts";
 import { compatibilityParams } from "./app_options.ts";
@@ -358,6 +359,8 @@ type SetScaleOptions_ = {
   noScroll?: boolean;
   preset?: boolean;
   drawingDelay?: number;
+  steps?: number | undefined;
+  scaleFactor?: number | undefined;
 };
 
 /**
@@ -515,17 +518,17 @@ export class PDFViewer {
     | Promise<OptionalContentConfig | undefined>
     | undefined;
 
-  #firstPageCapability!: PromiseCap<PDFPageProxy>;
+  #firstPageCapability!: PromiseCapability<PDFPageProxy>;
   get firstPagePromise(): Promise<PDFPageProxy> | null {
     return this.pdfDocument ? this.#firstPageCapability.promise : null;
   }
 
-  #onePageRenderedCapability!: PromiseCap<{ timestamp: number }>;
+  #onePageRenderedCapability!: PromiseCapability<{ timestamp: number }>;
   get onePageRendered() {
     return this.pdfDocument ? this.#onePageRenderedCapability.promise : null;
   }
 
-  #pagesCapability!: PromiseCap;
+  #pagesCapability!: PromiseCapability;
   get pagesPromise() {
     return this.pdfDocument ? this.#pagesCapability.promise : undefined;
   }
@@ -565,16 +568,11 @@ export class PDFViewer {
       );
     }
     this.container = options.container;
-    this.#resizeObserver.observe(this.container);
-
     this.viewer = options.viewer ||
       options.container.firstElementChild as HTMLDivElement;
 
     /*#static*/ if (!PRODUCTION || GENERIC) {
-      if (
-        !(this.container?.tagName.toUpperCase() === "DIV" &&
-          this.viewer?.tagName.toUpperCase() === "DIV")
-      ) {
+      if (this.container?.tagName !== "DIV" || this.viewer?.tagName !== "DIV") {
         throw new Error("Invalid `container` and/or `viewer` option.");
       }
 
@@ -585,6 +583,8 @@ export class PDFViewer {
         throw new Error("The `container` must be absolutely positioned.");
       }
     }
+    this.#resizeObserver.observe(this.container);
+
     this.eventBus = options.eventBus;
     this.linkService = options.linkService || new SimpleLinkService();
     this.downloadManager = options.downloadManager;
@@ -959,7 +959,7 @@ export class PDFViewer {
         });
         // Ensure that the various layers always get the correct initial size,
         // see issue 15795.
-        docStyle!.setProperty("--scale-factor", viewport.scale as any);
+        this.viewer.style.setProperty("--scale-factor", viewport.scale as any);
 
         for (let pageNum = 1; pageNum <= pagesCount; ++pageNum) {
           const pageView = new PDFPageView({
@@ -1114,9 +1114,9 @@ export class PDFViewer {
     this.#location = undefined;
     this._pagesRotation = 0;
     this._optionalContentConfigPromise = undefined;
-    this.#firstPageCapability = createPromiseCap();
-    this.#onePageRenderedCapability = createPromiseCap();
-    this.#pagesCapability = createPromiseCap();
+    this.#firstPageCapability = createPromiseCapability();
+    this.#onePageRenderedCapability = createPromiseCapability();
+    this.#pagesCapability = createPromiseCapability();
     this._scrollMode = ScrollMode.VERTICAL;
     this._previousScrollMode = ScrollMode.UNKNOWN;
     this._spreadMode = SpreadMode.NONE;
@@ -1293,7 +1293,7 @@ export class PDFViewer {
       return;
     }
 
-    docStyle!.setProperty(
+    this.viewer.style.setProperty(
       "--scale-factor",
       newScale * PixelsPerInch.PDF_TO_CSS_UNITS as any,
     );
@@ -1358,7 +1358,7 @@ export class PDFViewer {
   }
 
   _setScale(value: string | number, options: SetScaleOptions_) {
-    let scale = parseFloat(<any> value);
+    let scale = parseFloat(value as any);
 
     if (scale > 0) {
       options.preset = false;
@@ -2145,34 +2145,76 @@ export class PDFViewer {
 
   /**
    * Increase the current zoom level one, or more, times.
-   * @param steps Defaults to zooming once.
    */
-  increaseScale(steps = 1, options?: SetScaleOptions_ | undefined) {
-    let newScale: number | string = this._currentScale;
-    do {
-      newScale = (newScale * DEFAULT_SCALE_DELTA).toFixed(2);
-      newScale = Math.ceil(+newScale * 10) / 10;
-      newScale = Math.min(MAX_SCALE, newScale);
-    } while (--steps > 0 && newScale < MAX_SCALE);
+  increaseScale(options?: SetScaleOptions_ | undefined) {
+    /*#static*/ if (GENERIC) {
+      if (typeof options === "number") {
+        console.error(
+          "The `increaseScale` method-signature was updated, please use an object instead.",
+        );
+        options = { steps: options };
+      }
+    }
+
+    if (!this.pdfDocument) {
+      return;
+    }
 
     options ||= Object.create(null);
+
+    let newScale: string | number = this._currentScale;
+    if (options!.scaleFactor! > 1) {
+      newScale = Math.min(
+        MAX_SCALE,
+        Math.round(newScale * options!.scaleFactor! * 100) / 100,
+      );
+    } else {
+      let steps = options!.steps ?? 1;
+      do {
+        newScale = (newScale * DEFAULT_SCALE_DELTA).toFixed(2);
+        newScale = Math.ceil(newScale as any * 10) / 10;
+        newScale = Math.min(MAX_SCALE, newScale);
+      } while (--steps > 0 && newScale < MAX_SCALE);
+    }
+
     options!.noScroll = false;
     this._setScale(newScale, options!);
   }
 
   /**
    * Decrease the current zoom level one, or more, times.
-   * @param steps Defaults to zooming once.
    */
-  decreaseScale(steps = 1, options?: SetScaleOptions_ | undefined) {
-    let newScale: number | string = this._currentScale;
-    do {
-      newScale = (newScale / DEFAULT_SCALE_DELTA).toFixed(2);
-      newScale = Math.floor(+newScale * 10) / 10;
-      newScale = Math.max(MIN_SCALE, newScale);
-    } while (--steps > 0 && newScale > MIN_SCALE);
+  decreaseScale(options?: SetScaleOptions_ | undefined) {
+    /*#static*/ if (GENERIC) {
+      if (typeof options === "number") {
+        console.error(
+          "The `decreaseScale` method-signature was updated, please use an object instead.",
+        );
+        options = { steps: options };
+      }
+    }
+
+    if (!this.pdfDocument) {
+      return;
+    }
 
     options ||= Object.create(null);
+
+    let newScale: string | number = this._currentScale;
+    if (options!.scaleFactor! > 0 && options!.scaleFactor! < 1) {
+      newScale = Math.max(
+        MIN_SCALE,
+        Math.round(newScale * options!.scaleFactor! * 100) / 100,
+      );
+    } else {
+      let steps = options!.steps ?? 1;
+      do {
+        newScale = (newScale / DEFAULT_SCALE_DELTA).toFixed(2);
+        newScale = Math.floor(newScale as any * 10) / 10;
+        newScale = Math.max(MIN_SCALE, newScale);
+      } while (--steps > 0 && newScale > MIN_SCALE);
+    }
+
     options!.noScroll = false;
     this._setScale(newScale, options!);
   }

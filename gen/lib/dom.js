@@ -129,30 +129,30 @@ if (globalThis.HTMLElement) {
             return ret;
         },
     });
-    Reflect.defineProperty(HTMLElement.prototype, "pageX", {
-        get() {
-            let ret = 0;
-            let el = this;
-            do {
-                ret += el?.offsetLeft ?? 0;
-                ret += el?.clientLeft ?? 0;
-                ret -= el?.scrollLeft ?? 0;
-            } while (el = el.offsetParent);
-            return ret;
-        },
-    });
-    Reflect.defineProperty(HTMLElement.prototype, "pageY", {
-        get() {
-            let ret = 0;
-            let el = this;
-            do {
-                ret += el?.offsetTop ?? 0;
-                ret += el?.clientTop ?? 0;
-                ret -= el?.scrollTop ?? 0;
-            } while (el = el.offsetParent);
-            return ret;
-        },
-    });
+    // Reflect.defineProperty(HTMLElement.prototype, "pageX", {
+    //   get(this: HTMLElement) {
+    //     let ret = 0;
+    //     let el = this as any;
+    //     do {
+    //       ret += el?.offsetLeft ?? 0;
+    //       ret += el?.clientLeft ?? 0;
+    //       ret -= el?.scrollLeft ?? 0;
+    //     } while (el = el.offsetParent);
+    //     return ret;
+    //   },
+    // });
+    // Reflect.defineProperty(HTMLElement.prototype, "pageY", {
+    //   get(this: HTMLElement) {
+    //     let ret = 0;
+    //     let el = this as any;
+    //     do {
+    //       ret += el?.offsetTop ?? 0;
+    //       ret += el?.clientTop ?? 0;
+    //       ret -= el?.scrollTop ?? 0;
+    //     } while (el = el.offsetParent);
+    //     return ret;
+    //   },
+    // });
     Reflect.defineProperty(HTMLElement.prototype, "viewLeft", {
         get() {
             return this.offsetLeft + this.clientLeft;
@@ -178,6 +178,13 @@ if (globalThis.SVGElement) {
     SVGElement.prototype.assignStylo = function (styl_o) {
         Object.assign(this.style, styl_o);
         return this;
+    };
+}
+if (globalThis.CSSStyleDeclaration) {
+    CSSStyleDeclaration.prototype.assignPropo = function (prop_o) {
+        for (const [key, val] of Object.entries(prop_o)) {
+            this.setProperty(key, val);
+        }
     };
 }
 if (globalThis.HTMLCollection) {

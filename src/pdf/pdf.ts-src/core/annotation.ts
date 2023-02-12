@@ -18,7 +18,12 @@
  */
 
 import { _PDFDEV } from "../../../global.ts";
-import { Constructor, type TupleOf } from "../../../lib/alias.ts";
+import {
+  Constructor,
+  type point_t,
+  type rect_t,
+  type TupleOf,
+} from "../../../lib/alias.ts";
 import { assert } from "../../../lib/util/trace.ts";
 import {
   type AnnotStorageRecord,
@@ -45,8 +50,6 @@ import {
   LINE_FACTOR,
   type matrix_t,
   OPS,
-  point_t,
-  type rect_t,
   RenderingIntentFlag,
   shadow,
   stringToPDFString,
@@ -504,7 +507,11 @@ export function getQuadPoints(
   return quadPointsLists;
 }
 
-function getTransformMatrix(rect: rect_t, bbox: rect_t, matrix: matrix_t) {
+function getTransformMatrix(
+  rect: rect_t,
+  bbox: rect_t,
+  matrix: matrix_t,
+): matrix_t {
   // 12.5.5: Algorithm: Appearance streams
   const [minX, minY, maxX, maxY] = Util.getAxialAlignedBoundingBox(
     bbox,
@@ -1143,7 +1150,10 @@ export class Annotation {
     if (!(as instanceof Name) || !normalAppearanceState.has(as.name)) {
       return;
     }
-    this.appearance = <BaseStream> normalAppearanceState.get(as.name);
+    const appearance = normalAppearanceState.get(as.name);
+    if (appearance instanceof BaseStream) {
+      this.appearance = appearance;
+    }
   }
 
   setOptionalContent(dict: Dict) {
@@ -1197,8 +1207,8 @@ export class Annotation {
       ["ExtGState", "ColorSpace", "Pattern", "Shading", "XObject", "Font"],
       appearance,
     );
-    const bbox = <rect_t> appearanceDict.getArray("BBox") || [0, 0, 1, 1];
-    const matrix = <matrix_t> appearanceDict.getArray("Matrix") ||
+    const bbox = appearanceDict.getArray("BBox") as rect_t || [0, 0, 1, 1];
+    const matrix = appearanceDict.getArray("Matrix") as matrix_t ||
       [1, 0, 0, 1, 0, 0];
     const transform = getTransformMatrix(data.rect, bbox, matrix);
 
@@ -3105,11 +3115,11 @@ class ButtonWidgetAnnotation extends WidgetAnnotation {
     }
 
     let value;
-    let rotation = null;
+    let rotation;
     if (annotationStorage) {
       const storageEntry = annotationStorage.get(this.data.id);
       value = storageEntry ? storageEntry.value : undefined;
-      rotation = storageEntry ? storageEntry.rotation : null;
+      rotation = storageEntry ? storageEntry.rotation : undefined;
     }
 
     if (value === undefined && this.appearance) {
@@ -3461,10 +3471,14 @@ class ButtonWidgetAnnotation extends WidgetAnnotation {
 
     this.data.exportValue = exportValues[1];
 
-    this.checkedAppearance =
-      <BaseStream> normalAppearance.get(this.data.exportValue) || undefined;
-    this.uncheckedAppearance = <BaseStream> normalAppearance.get("Off") ||
-      undefined;
+    const checkedAppearance = normalAppearance.get(this.data.exportValue);
+    this.checkedAppearance = checkedAppearance instanceof BaseStream
+      ? checkedAppearance
+      : undefined;
+    const uncheckedAppearance = normalAppearance.get("Off");
+    this.uncheckedAppearance = uncheckedAppearance instanceof BaseStream
+      ? uncheckedAppearance
+      : undefined;
 
     if (this.checkedAppearance) {
       this._streams.push(this.checkedAppearance);
@@ -3507,10 +3521,14 @@ class ButtonWidgetAnnotation extends WidgetAnnotation {
       }
     }
 
-    this.checkedAppearance =
-      <BaseStream> normalAppearance.get(this.data.buttonValue!) || undefined;
-    this.uncheckedAppearance = <BaseStream> normalAppearance.get("Off") ||
-      undefined;
+    const checkedAppearance = normalAppearance.get(this.data.buttonValue!);
+    this.checkedAppearance = checkedAppearance instanceof BaseStream
+      ? checkedAppearance
+      : undefined;
+    const uncheckedAppearance = normalAppearance.get("Off");
+    this.uncheckedAppearance = uncheckedAppearance instanceof BaseStream
+      ? uncheckedAppearance
+      : undefined;
 
     if (this.checkedAppearance) {
       this._streams.push(this.checkedAppearance);

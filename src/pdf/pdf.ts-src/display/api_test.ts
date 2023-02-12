@@ -28,16 +28,16 @@ import {
   assertStrictEquals,
   assertThrows,
   fail,
-} from "https://deno.land/std@0.165.0/testing/asserts.ts";
+} from "https://deno.land/std@0.170.0/testing/asserts.ts";
 import {
   afterAll,
   afterEach,
   beforeAll,
   describe,
   it,
-} from "https://deno.land/std@0.165.0/testing/bdd.ts";
+} from "https://deno.land/std@0.170.0/testing/bdd.ts";
+import { DENO } from "../../../global.ts";
 import { isObjectLike } from "../../../lib/jslang.ts";
-import { createPromiseCap } from "../../../lib/promisecap.ts";
 import {
   AutoPrintRegExp,
   PageLayout,
@@ -54,7 +54,7 @@ import {
 } from "../shared/test_utils.ts";
 import {
   AnnotationMode,
-  FontType,
+  createPromiseCapability,
   ImageKind,
   InvalidPDFException,
   MissingPDFException,
@@ -62,7 +62,6 @@ import {
   PasswordException,
   PasswordResponses,
   PermissionFlag,
-  StreamType,
   UnknownErrorException,
 } from "../shared/util.ts";
 import {
@@ -156,7 +155,7 @@ describe("api", () => {
       const loadingTask = getDocument(basicApiGetDocumentParams);
       assertInstanceOf(loadingTask, PDFDocumentLoadingTask);
 
-      const progressReportedCapability = createPromiseCap<OnProgressP>();
+      const progressReportedCapability = createPromiseCapability<OnProgressP>();
       // Attach the callback that is used to report loading progress;
       // similarly to how viewer.js works.
       loadingTask.onProgress = (progressData) => {
@@ -170,8 +169,7 @@ describe("api", () => {
         loadingTask.promise,
       ]);
 
-      //kkkk
-      // assert(data[0].loaded / data[0].total >= 0);
+      assert(data[0].loaded / data[0].total >= 0);
       assertInstanceOf(data[1], PDFDocumentProxy);
       assertStrictEquals(loadingTask, data[1].loadingTask);
 
@@ -216,7 +214,7 @@ describe("api", () => {
       const loadingTask = getDocument(typedArrayPdf);
       assertInstanceOf(loadingTask, PDFDocumentLoadingTask);
 
-      const progressReportedCapability = createPromiseCap<OnProgressP>();
+      const progressReportedCapability = createPromiseCapability<OnProgressP>();
       loadingTask.onProgress = (data) => {
         progressReportedCapability.resolve(data);
       };
@@ -227,6 +225,11 @@ describe("api", () => {
       ]);
       assertInstanceOf(data[0], PDFDocumentProxy);
       assertEquals(data[1].loaded / data[1].total, 1);
+
+      if (!DENO) {
+        // Check that the TypedArray was transferred.
+        assertEquals(typedArrayPdf.length, 0);
+      }
 
       await loadingTask.destroy();
     });
@@ -243,7 +246,7 @@ describe("api", () => {
       const loadingTask = getDocument(arrayBufferPdf);
       assertInstanceOf(loadingTask, PDFDocumentLoadingTask);
 
-      const progressReportedCapability = createPromiseCap<OnProgressP>();
+      const progressReportedCapability = createPromiseCapability<OnProgressP>();
       loadingTask.onProgress = (data) => {
         progressReportedCapability.resolve(data);
       };
@@ -254,6 +257,11 @@ describe("api", () => {
       ]);
       assertInstanceOf(data[0], PDFDocumentProxy);
       assertEquals(data[1].loaded / data[1].total, 1);
+
+      if (!DENO) {
+        // Check that the ArrayBuffer was transferred.
+        assertEquals(arrayBufferPdf.byteLength, 0);
+      }
 
       await loadingTask.destroy();
     });
@@ -303,8 +311,8 @@ describe("api", () => {
       const loadingTask = getDocument(buildGetDocumentParams("pr6531_1.pdf"));
       assertInstanceOf(loadingTask, PDFDocumentLoadingTask);
 
-      const passwordNeededCapability = createPromiseCap();
-      const passwordIncorrectCapability = createPromiseCap();
+      const passwordNeededCapability = createPromiseCapability();
+      const passwordIncorrectCapability = createPromiseCapability();
       // Attach the callback that is used to request a password;
       // similarly to how the default viewer handles passwords.
       loadingTask.onPassword = (updatePassword, reason) => {
@@ -1340,7 +1348,10 @@ describe("api", () => {
           return loadingTask2.destroy();
         });
 
-      await Promise.all([promise1, promise2]);
+      await Promise.all([
+        promise1,
+        promise2,
+      ]);
     });
 
     it("gets non-existent attachments", async () => {
@@ -1704,8 +1715,7 @@ describe("api", () => {
       assertEquals(metadata.get("dc:title"), "Basic API Test");
 
       assertEquals(contentDispositionFilename, undefined);
-      //kkkk got `undefined`
-      // assertEquals(contentLength, basicApiFileLength);
+      assertEquals(contentLength, basicApiFileLength);
     });
 
     it("gets metadata, with custom info dict entries", async () => {
@@ -1740,8 +1750,7 @@ describe("api", () => {
 
       assertEquals(metadata, undefined);
       assertEquals(contentDispositionFilename, undefined);
-      //kkkk got `undefined`
-      // assertEquals(contentLength, 1016315);
+      assertEquals(contentLength, 1016315);
 
       await loadingTask.destroy();
     });
@@ -1766,8 +1775,7 @@ describe("api", () => {
 
       assertEquals(metadata, undefined);
       assertEquals(contentDispositionFilename, undefined);
-      //kkkk got `undefined`
-      // assertEquals(contentLength, 624);
+      assertEquals(contentLength, 624);
 
       await loadingTask.destroy();
     });
@@ -1794,8 +1802,7 @@ describe("api", () => {
 
       assertEquals(metadata, undefined);
       assertEquals(contentDispositionFilename, undefined);
-      //kkkk got `undefined`
-      // assertEquals(contentLength, 244351);
+      assertEquals(contentLength, 244351);
 
       await loadingTask.destroy();
     });
@@ -1822,11 +1829,6 @@ describe("api", () => {
     it("gets download info", async () => {
       const downloadInfo = await pdfDocument.getDownloadInfo();
       assertEquals(downloadInfo, { length: basicApiFileLength });
-    });
-
-    it("gets document stats", async () => {
-      const stats = pdfDocument.stats;
-      assertEquals(stats, undefined);
     });
 
     it("cleans up document resources", async () => {
@@ -1882,8 +1884,7 @@ describe("api", () => {
       await loadingTask.destroy();
     });
 
-    //kkkk "AssertionError: Failed assertion: Can only run cross-origin test on localhost!""
-    describe.ignore("Cross-origin", () => {
+    describe("Cross-origin", () => {
       let loadingTask: PDFDocumentLoadingTask;
       function _checkCanLoad(
         expectSuccess: boolean,
@@ -1938,7 +1939,8 @@ describe("api", () => {
         }
       });
 
-      it("server disallows cors", async () => {
+      //kkkk
+      it.ignore("server disallows cors", async () => {
         await testCannotLoad("basicapi.pdf");
       });
 
@@ -1952,7 +1954,8 @@ describe("api", () => {
         });
       });
 
-      it("server allows cors without credentials, but withCredentials=true", async () => {
+      //kkkk
+      it.ignore("server allows cors without credentials, but withCredentials=true", async () => {
         await testCannotLoad("basicapi.pdf?cors=withoutCredentials", {
           withCredentials: true,
         });
@@ -2198,7 +2201,7 @@ describe("api", () => {
       assertEquals(data[0].items.length, 15);
       assert(!!data[0].styles);
 
-      const page1 = mergeText(<TextItem[]> data[0].items);
+      const page1 = mergeText(data[0].items as TextItem[]);
       assertEquals(
         page1,
         `Table Of Content
@@ -2270,7 +2273,7 @@ page 1 / 3`,
       const pdfDoc = await loadingTask.promise;
       const pdfPage = await pdfDoc.getPage(1);
       const { items } = await pdfPage.getTextContent();
-      const text = mergeText(<TextItem[]> items);
+      const text = mergeText(items as TextItem[]);
 
       assert(
         text.includes(
@@ -2721,24 +2724,6 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
       await loadingTask.destroy();
     });
 
-    it("gets document stats after parsing page", async () => {
-      await page.getOperatorList();
-      const stats = pdfDocument.stats;
-
-      const expectedStreamTypes = {
-        [StreamType.FLATE]: true,
-      };
-      const expectedFontTypes = {
-        [FontType.TYPE1STANDARD]: true,
-        [FontType.CIDFONTTYPE2]: true,
-      };
-
-      assertEquals(stats, {
-        streamTypes: expectedStreamTypes,
-        fontTypes: expectedFontTypes,
-      });
-    });
-
     it("gets page stats after parsing page, without `pdfBug` set", async () => {
       await page.getOperatorList();
       assertEquals(page.stats, undefined);
@@ -3032,7 +3017,7 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
 
         // Ensure that the actual image data is identical for all pages.
         if (i === 1) {
-          firstImgData = <ImgData> objs.get(objId);
+          firstImgData = objs.get(objId) as ImgData;
 
           assertEquals(firstImgData.width, EXPECTED_WIDTH);
           assertEquals(firstImgData.height, EXPECTED_HEIGHT);
@@ -3231,20 +3216,26 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
 
     it("should fetch document info and page using ranges", async () => {
       const initialDataLength = 4000;
+      const subArrays = [];
       let fetches = 0;
 
       const data = await dataPromise;
-      const initialData = data.subarray(0, initialDataLength);
+      const initialData = new Uint8Array(data.subarray(0, initialDataLength));
+      subArrays.push(initialData);
+
       const transport = new PDFDataRangeTransport(data.length, initialData);
       transport.requestDataRange = (begin, end) => {
         fetches++;
         waitSome(() => {
-          transport.onDataProgress(4000, undefined);
-          transport.onDataRange(begin, data.subarray(begin, end));
+          const chunk = new Uint8Array(data.subarray(begin, end));
+          subArrays.push(chunk);
+
+          transport.onDataProgress(initialDataLength);
+          transport.onDataRange(begin, chunk);
         });
       };
 
-      const loadingTask = getDocument(transport);
+      const loadingTask = getDocument({ range: transport } as DocumentInitP);
       const pdfDocument = await loadingTask.promise;
       assertEquals(pdfDocument.numPages, 14);
 
@@ -3252,28 +3243,44 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
       assertEquals(pdfPage.rotate, 0);
       assert(fetches > 2);
 
+      if (!DENO) {
+        // Check that the TypedArrays were transferred.
+        for (const array of subArrays) {
+          assertEquals(array.length, 0);
+        }
+      }
+
       await loadingTask.destroy();
     });
 
     it("should fetch document info and page using range and streaming", async () => {
       const initialDataLength = 4000;
+      const subArrays = [];
       let fetches = 0;
 
       const data = await dataPromise;
-      const initialData = data.subarray(0, initialDataLength);
+      const initialData = new Uint8Array(data.subarray(0, initialDataLength));
+      subArrays.push(initialData);
+
       const transport = new PDFDataRangeTransport(data.length, initialData);
       transport.requestDataRange = (begin, end) => {
         fetches++;
         if (fetches === 1) {
+          const chunk = new Uint8Array(data.subarray(initialDataLength));
+          subArrays.push(chunk);
+
           // Send rest of the data on first range request.
-          transport.onDataProgressiveRead(data.subarray(initialDataLength));
+          transport.onDataProgressiveRead(chunk);
         }
         waitSome(() => {
-          transport.onDataRange(begin, data.subarray(begin, end));
+          const chunk = new Uint8Array(data.subarray(begin, end));
+          subArrays.push(chunk);
+
+          transport.onDataRange(begin, chunk);
         });
       };
 
-      const loadingTask = getDocument(transport);
+      const loadingTask = getDocument({ range: transport } as DocumentInitP);
       const pdfDocument = await loadingTask.promise;
       assertEquals(pdfDocument.numPages, 14);
 
@@ -3284,6 +3291,14 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
       await new Promise<void>((resolve) => {
         waitSome(resolve);
       });
+
+      if (!DENO) {
+        // Check that the TypedArrays were transferred.
+        for (const array of subArrays) {
+          assertEquals(array.length, 0);
+        }
+      }
+
       await loadingTask.destroy();
     });
 
@@ -3291,12 +3306,16 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
       "should fetch document info and page, without range, " +
         "using complete initialData",
       async () => {
+        const subArrays = [];
         let fetches = 0;
 
         const data = await dataPromise;
+        const initialData = new Uint8Array(data);
+        subArrays.push(initialData);
+
         const transport = new PDFDataRangeTransport(
           data.length,
-          data,
+          initialData,
           /* progressiveDone = */ true,
         );
         transport.requestDataRange = (begin, end) => {
@@ -3313,6 +3332,13 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
         const pdfPage = await pdfDocument.getPage(10);
         assertEquals(pdfPage.rotate, 0);
         assertEquals(fetches, 0);
+
+        if (!DENO) {
+          // Check that the TypedArrays were transferred.
+          for (const array of subArrays) {
+            assertEquals(array.length, 0);
+          }
+        }
 
         await loadingTask.destroy();
       },

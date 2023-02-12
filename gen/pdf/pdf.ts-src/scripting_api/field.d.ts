@@ -155,6 +155,7 @@ export declare class Field extends PDFObject<SendFieldData> {
     _textColor: CorrectColor;
     get textColor(): CorrectColor;
     set textColor(color: CorrectColor);
+    _originalValue?: string;
     _value: string | number | string[] | undefined;
     get valueAsString(): string;
     set valueAsString(_: string);
@@ -175,6 +176,7 @@ export declare class Field extends PDFObject<SendFieldData> {
     set fgColor(color: CorrectColor);
     get value(): string | number | string[] | undefined;
     set value(value: string | number | string[] | undefined);
+    _getValue(): string | number | string[] | undefined;
     _setChoiceValue(value: string | number | (string | number)[]): void;
     buttonImportIcon(cPath?: undefined, nPave?: number): void;
     checkThisBox(nWidget: number, bCheckIt?: boolean): void;

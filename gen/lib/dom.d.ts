@@ -44,7 +44,7 @@ declare global {
 }
 declare global {
     interface Element {
-        assignAttro(attr_o: Record<string, string>): this;
+        assignAttro(attr_o: Record<string, string | number>): this;
         readonly scrollRight: number;
         readonly scrollBottom: number;
     }
@@ -57,8 +57,6 @@ declare global {
          * jjjj cf. pdf/pdf.ts-web/ui_utils.getVisibleElements()
          */
         readonly prevVisible?: HTMLElement;
-        readonly pageX: number;
-        readonly pageY: number;
         readonly viewLeft: number;
         readonly viewRight: number;
         readonly viewTop: number;
@@ -68,6 +66,11 @@ declare global {
 declare global {
     interface SVGElement {
         assignStylo(styl_o: CSSStyle): this;
+    }
+}
+declare global {
+    interface CSSStyleDeclaration {
+        assignPropo(prop_o: Record<string, string | number>): void;
     }
 }
 declare global {

@@ -26,8 +26,7 @@
 /** @typedef {import("./pdf_rendering_queue").PDFRenderingQueue} PDFRenderingQueue */
 import { COMPONENTS, GENERIC, PRODUCTION } from "../../global.js";
 import { html } from "../../lib/dom.js";
-import { createPromiseCap } from "../../lib/promisecap.js";
-import { AbortException, AnnotationMode, PixelsPerInch, RenderingCancelledException, setLayerDimensions, shadow, SVGGraphics, } from "../pdf.ts-src/pdf.js";
+import { AbortException, AnnotationMode, createPromiseCapability, PixelsPerInch, RenderingCancelledException, setLayerDimensions, shadow, SVGGraphics, } from "../pdf.ts-src/pdf.js";
 import { AnnotationEditorLayerBuilder } from "./annotation_editor_layer_builder.js";
 import { AnnotationLayerBuilder } from "./annotation_layer_builder.js";
 import { compatibilityParams } from "./app_options.js";
@@ -37,7 +36,7 @@ import { StructTreeLayerBuilder } from "./struct_tree_layer_builder.js";
 import { TextAccessibilityManager } from "./text_accessibility.js";
 import { TextHighlighter } from "./text_highlighter.js";
 import { TextLayerBuilder } from "./text_layer_builder.js";
-import { approximateFraction, DEFAULT_SCALE, docStyle, OutputScale, RendererType, RenderingStates, roundToDivide, TextLayerMode, } from "./ui_utils.js";
+import { approximateFraction, DEFAULT_SCALE, OutputScale, RendererType, RenderingStates, roundToDivide, TextLayerMode, } from "./ui_utils.js";
 import { XfaLayerBuilder } from "./xfa_layer_builder.js";
 const MAX_CANVAS_PIXELS = compatibilityParams.maxCanvasPixels || 16777216;
 const DEFAULT_LAYER_PROPERTIES = () => {
@@ -152,7 +151,7 @@ export class PDFPageView {
             if (this._isStandalone) {
                 // Ensure that the various layers always get the correct initial size,
                 // see issue 15795.
-                docStyle.setProperty("--scale-factor", this.scale * PixelsPerInch.PDF_TO_CSS_UNITS);
+                container?.style.setProperty("--scale-factor", this.scale * PixelsPerInch.PDF_TO_CSS_UNITS);
                 const { optionalContentConfigPromise } = options;
                 if (optionalContentConfigPromise) {
                     // Ensure that the thumbnails always display the *initial* document
@@ -444,7 +443,7 @@ export class PDFPageView {
         this.#setDimensions();
         /*#static*/  {
             if (this._isStandalone) {
-                docStyle.setProperty("--scale-factor", this.viewport.scale);
+                this.div.parentNode?.style.setProperty("--scale-factor", this.viewport.scale);
             }
         }
         /*#static*/  {
@@ -765,7 +764,7 @@ export class PDFPageView {
         return resultPromise;
     }
     paintOnCanvas(canvasWrapper) {
-        const renderCapability = createPromiseCap();
+        const renderCapability = createPromiseCapability();
         const result = {
             promise: renderCapability.promise,
             onRenderContinue(cont) {
@@ -852,7 +851,12 @@ export class PDFPageView {
             showCanvas();
             renderCapability.resolve();
         }, (error) => {
-            showCanvas();
+            // When zooming with a `drawingDelay` set, avoid temporarily showing
+            // a black canvas if rendering was cancelled before the `onContinue`-
+            // callback had been invoked at least once.
+            if (!(error instanceof RenderingCancelledException)) {
+                showCanvas();
+            }
             renderCapability.reject(error);
         });
         return result;

@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-import { type rect_t } from "../../shared/util.ts";
+import { type rect_t } from "../../../../lib/alias.ts";
 import {
   type AvailableSpace,
   type XFAElData,

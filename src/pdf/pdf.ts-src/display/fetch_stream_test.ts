@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-import { assertEquals } from "https://deno.land/std@0.165.0/testing/asserts.ts";
-import { describe, it } from "https://deno.land/std@0.165.0/testing/bdd.ts";
+import { assertEquals } from "https://deno.land/std@0.170.0/testing/asserts.ts";
+import { describe, it } from "https://deno.land/std@0.170.0/testing/bdd.ts";
 import { D_base } from "../../pdf.ts-web/app_options.ts";
 import { AbortException } from "../shared/util.ts";
 import { DocumentInitP } from "./api.ts";
@@ -49,7 +49,7 @@ describe("fetch_stream", () => {
 
     let len = 0;
     const read = (): Promise<undefined> => {
-      return fullReader.read().then(function (result) {
+      return fullReader.read().then((result) => {
         if (result.done) {
           return undefined;
         }
@@ -83,7 +83,6 @@ describe("fetch_stream", () => {
     const promise = fullReader.headersReady.then(() => {
       isStreamingSupported = fullReader.isStreamingSupported;
       isRangeSupported = fullReader.isRangeSupported;
-      // console.log({isStreamingSupported,isRangeSupported});
       // We shall be able to close full reader without any issue.
       fullReader.cancel(new AbortException("Don't need fullReader."));
       fullReaderCancelled = true;
@@ -122,13 +121,10 @@ describe("fetch_stream", () => {
     ]);
 
     assertEquals(isStreamingSupported, true);
-    //kkkk
-    // assertEquals(isRangeSupported, true);
+    assertEquals(isRangeSupported, true);
     assertEquals(fullReaderCancelled, true);
-    //kkkk
-    // assertEquals(result1.value, rangeSize);
-    //kkkk
-    // assertEquals(result2.value, tailSize);
+    assertEquals(result1.value, rangeSize);
+    assertEquals(result2.value, tailSize);
   });
 });
 /*80--------------------------------------------------------------------------*/

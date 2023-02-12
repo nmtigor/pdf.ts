@@ -21,10 +21,16 @@
  * @module pdfjsLib
  */
 
-import { _PDFDEV, GENERIC, PRODUCTION } from "../../../global.ts";
+import {
+  _PDFDEV,
+  CHROME,
+  DENO,
+  GENERIC,
+  MOZCENTRAL,
+  PRODUCTION,
+} from "../../../global.ts";
 import { TypedArray } from "../../../lib/alias.ts";
 import { isObjectLike } from "../../../lib/jslang.ts";
-import { createPromiseCap, PromiseCap } from "../../../lib/promisecap.ts";
 import { assert } from "../../../lib/util/trace.ts";
 import { Stepper } from "../../pdf.ts-web/debugger.ts";
 import { PageColors } from "../../pdf.ts-web/pdf_viewer.ts";
@@ -53,7 +59,7 @@ import {
 import {
   AbortException,
   AnnotationMode,
-  FontType,
+  createPromiseCapability,
   getVerbosityLevel,
   info,
   InvalidPDFException,
@@ -62,10 +68,10 @@ import {
   MissingPDFException,
   PasswordException,
   PasswordResponses,
+  type PromiseCapability,
   RenderingIntentFlag,
   setVerbosityLevel,
   shadow,
-  StreamType,
   stringToBytes,
   UnexpectedResponseException,
   UnknownErrorException,
@@ -86,6 +92,7 @@ import {
   DOMCMapReaderFactory,
   DOMStandardFontDataFactory,
   isDataScheme,
+  isValidFetchUrl,
   loadScript,
   PageViewport,
   RenderingCancelledException,
@@ -119,34 +126,41 @@ export const DefaultStandardFontDataFactory = DOMStandardFontDataFactory;
 //   DefaultStandardFontDataFactory = NodeStandardFontDataFactory;
 // }
 
-/**
- * @param params The document initialization
- *   parameters. The "url" key is always present.
- * @return A promise, which is resolved with an instance of
- *   {IPDFStream}.
- * @ignore
- */
-type IPDFStreamFactory = (params: DocumentInitP) => Promise<IPDFStream>;
+const createPDFNetworkStream = /*#static*/ !PRODUCTION
+  ? (() => {
+    const streamsPromise = Promise.all([
+      import("./network.ts"),
+      import("./fetch_stream.ts"),
+    ]);
 
-/**
- * @private
- */
-let createPDFNetworkStream: IPDFStreamFactory;
+    return async (params: DocumentInitP) => {
+      const [{ PDFNetworkStream }, { PDFFetchStream }] = await streamsPromise;
 
-/**
- * Sets the function that instantiates an {IPDFStream} as an alternative PDF
- * data transport.
- *
- * @param pdfNetworkStreamFactory - The factory function
- *   that takes document initialization parameters (including a "url") and
- *   returns a promise which is resolved with an instance of {IPDFStream}.
- * @ignore
- */
-export function setPDFNetworkStreamFactory(
-  pdfNetworkStreamFactory: IPDFStreamFactory,
-) {
-  createPDFNetworkStream = pdfNetworkStreamFactory;
-}
+      return isValidFetchUrl(params.url)
+        ? new PDFFetchStream(params)
+        : new PDFNetworkStream(params);
+    };
+  })()
+  : /*#static*/ GENERIC || CHROME
+  ? await (async () => {
+    // if (PDFJSDev.test("GENERIC") && isNodeJS) {
+    //   const { PDFNodeStream } = require("./node_stream.js");
+
+    //   createPDFNetworkStream = (params) => {
+    //     return new PDFNodeStream(params);
+    //   };
+    // } else {
+    const { PDFNetworkStream } = await import("./network.ts");
+    const { PDFFetchStream } = await import("./fetch_stream.ts");
+
+    return async (params: DocumentInitP) => {
+      return isValidFetchUrl(params.url)
+        ? new PDFFetchStream(params)
+        : new PDFNetworkStream(params);
+    };
+    // }
+  })()
+  : undefined;
 
 export type BinaryData = TypedArray | ArrayBuffer | number[] | string;
 
@@ -166,8 +180,12 @@ export interface DocumentInitP {
 
   /**
    * Binary PDF data.
-   * Use typed arrays (Uint8Array) to improve the memory usage. If PDF data is
+   * Use TypedArrays (Uint8Array) to improve the memory usage. If PDF data is
    * BASE64-encoded, use `atob()` to convert it to a binary string first.
+   *
+   * NOTE: If TypedArrays are used they will generally be transferred to the
+   * worker-thread. This will help reduce main-thread memory usage, however
+   * it will take ownership of the TypedArrays.
    */
   data?: BinaryData | undefined;
 
@@ -385,7 +403,7 @@ export interface DocumentInitP {
   contentDispositionFilename?: string | undefined;
 }
 
-type _GetDocumentP =
+type GetDocumentP_ =
   | string
   | URL
   | TypedArray
@@ -400,63 +418,82 @@ type _GetDocumentP =
  * XHR as fallback) is used, which means it must follow same origin rules,
  * e.g. no cross-domain requests without CORS.
  *
- * @param src Can be a URL where a PDF file is located, a typed array (Uint8Array)
- *  already populated with data, or a parameter object.
+ * @headconst @param src_x Can be a URL where a PDF file is located, a typed
+ *    array (Uint8Array) already populated with data, or a parameter object.
  */
-export function getDocument(src: _GetDocumentP): PDFDocumentLoadingTask {
+export function getDocument(src_x: GetDocumentP_): PDFDocumentLoadingTask {
+  let src;
+  /*#static*/ if (GENERIC) {
+    if (typeof src_x === "string" || src_x instanceof URL) {
+      src = { url: src_x };
+    } else if (isArrayBuffer(src_x)) {
+      src = { data: src_x };
+    } else if (src_x instanceof PDFDataRangeTransport) {
+      deprecated(
+        "`PDFDataRangeTransport`-instance, " +
+          "please use a parameter object with `range`-property instead.",
+      );
+      src = { range: src_x };
+    } else {
+      if (typeof src_x !== "object") {
+        throw new Error(
+          "Invalid parameter in getDocument, " +
+            "need either string, URL, TypedArray, or parameter object.",
+        );
+      }
+      src = src_x;
+    }
+  } else {
+    if (typeof src_x !== "object") {
+      throw new Error(
+        "Invalid parameter in getDocument, need parameter object.",
+      );
+    }
+    src = src_x;
+  }
+  if (!(src as any).url && !(src as any).data && !(src as any).range) {
+    throw new Error(
+      "Invalid parameter object: need either .data, .range or .url",
+    );
+  }
   const task = new PDFDocumentLoadingTask();
 
-  let source;
-  if (typeof src === "string" || src instanceof URL) {
-    source = { url: src };
-  } else if (isArrayBuffer(src)) {
-    source = { data: src };
-  } else if (src instanceof PDFDataRangeTransport) {
-    source = { range: src };
-  } else {
-    if (typeof src !== "object") {
-      throw new Error(
-        "Invalid parameter in getDocument, " +
-          "need either string, URL, TypedArray, or parameter object.",
-      );
-    }
-    if (!(<any> src).url && !(<any> src).data && !(<any> src).range) {
-      throw new Error(
-        "Invalid parameter object: need either .data, .range or .url",
-      );
-    }
-    source = src;
-  }
   const params: DocumentInitP = Object.create(null);
-  let rangeTransport: PDFDataRangeTransport | undefined;
-  let worker: PDFWorker | undefined;
+  let rangeTransport: PDFDataRangeTransport | undefined,
+    worker: PDFWorker | undefined;
 
-  for (const key in source) {
-    const value = (<any> source)[key];
+  for (const key in src) {
+    const val = (src as any)[key];
 
     switch (key) {
       case "url":
-        if (typeof window !== "undefined") {
-          try {
-            // The full path is required in the 'url' field.
-            params[key] = new URL(value, <any> window.location).href;
-            continue;
-          } catch (ex) {
-            warn(`Cannot create valid URL: "${ex}".`);
-          }
-        } else if (typeof value === "string" || value instanceof URL) {
-          params[key] = value.toString(); // Support Node.js environments.
+        if (val instanceof URL) {
+          params[key] = val.href;
           continue;
+        }
+        try {
+          // The full path is required in the 'url' field.
+          params[key] = new URL(val, window.location as any).href;
+          continue;
+        } catch (ex) {
+          // if (
+          //   typeof PDFJSDev !== "undefined" &&
+          //   PDFJSDev.test("GENERIC") &&
+          //   isNodeJS &&
+          //   typeof val === "string"
+          // ) {
+          //   break; // Use the url as-is in Node.js environments.
+          // }
         }
         throw new Error(
           "Invalid PDF url data: " +
             "either string or URL-object is expected in the url property.",
         );
       case "range":
-        rangeTransport = value;
+        rangeTransport = val;
         continue;
       case "worker":
-        worker = value;
+        worker = val;
         continue;
       case "data":
         // Converting string or array-like data to Uint8Array.
@@ -465,19 +502,25 @@ export function getDocument(src: _GetDocumentP): PDFDocumentLoadingTask {
         //   PDFJSDev.test("GENERIC") &&
         //   isNodeJS &&
         //   typeof Buffer !== "undefined" && // eslint-disable-line no-undef
-        //   value instanceof Buffer // eslint-disable-line no-undef
+        //   val instanceof Buffer // eslint-disable-line no-undef
         // ) {
-        //   params[key] = new Uint8Array(value);
-        // }
-        // else
-        if (value instanceof Uint8Array) {
-          break; // Use the data as-is when it's already a Uint8Array.
-        } else if (typeof value === "string") {
-          params[key] = stringToBytes(value);
-        } else if (isObjectLike(value) && !isNaN((<any> value).length)) {
-          params[key] = new Uint8Array(<any> value);
-        } else if (isArrayBuffer(value)) {
-          params[key] = new Uint8Array(value);
+        //   params[key] = new Uint8Array(val);
+        // } else
+        if (
+          val instanceof Uint8Array &&
+          val.byteLength === val.buffer.byteLength
+        ) {
+          // Use the data as-is when it's already a Uint8Array that completely
+          // "utilizes" its underlying ArrayBuffer, to prevent any possible
+          // issues when transferring it to the worker-thread.
+          break;
+        } else if (typeof val === "string") {
+          params[key] = stringToBytes(val);
+        } else if (
+          (isObjectLike(val) && !isNaN((val as any).length)) ||
+          isArrayBuffer(val)
+        ) {
+          params[key] = new Uint8Array(val as any);
         } else {
           throw new Error(
             "Invalid PDF binary data: either TypedArray, " +
@@ -486,7 +529,7 @@ export function getDocument(src: _GetDocumentP): PDFDocumentLoadingTask {
         }
         continue;
     }
-    (params as any)[key] = value;
+    (params as any)[key] = val;
   }
 
   params.CMapReaderFactory = params.CMapReaderFactory ||
@@ -520,8 +563,15 @@ export function getDocument(src: _GetDocumentP): PDFDocumentLoadingTask {
     params.standardFontDataUrl = undefined;
   }
   if (typeof params.useWorkerFetch !== "boolean") {
-    params.useWorkerFetch = params.CMapReaderFactory === DOMCMapReaderFactory &&
-      params.StandardFontDataFactory === DOMStandardFontDataFactory;
+    params.useWorkerFetch = /*#static*/ MOZCENTRAL
+      ? true
+      : (params.CMapReaderFactory === DOMCMapReaderFactory &&
+        params.StandardFontDataFactory === DOMStandardFontDataFactory &&
+        isValidFetchUrl(params.cMapUrl, globalThis.document?.baseURI) &&
+        isValidFetchUrl(
+          params.standardFontDataUrl,
+          globalThis.document?.baseURI,
+        ));
   }
   if (typeof params.isEvalSupported !== "boolean") {
     params.isEvalSupported = true;
@@ -601,7 +651,10 @@ export function getDocument(src: _GetDocumentP): PDFDocumentLoadingTask {
               rangeTransport,
             );
           } else if (!params.data) {
-            networkStream = createPDFNetworkStream({
+            /*#static*/ if (MOZCENTRAL) {
+              throw new Error("Not implemented: createPDFNetworkStream");
+            }
+            networkStream = createPDFNetworkStream!({
               url: params.url,
               length: params.length,
               httpHeaders: params.httpHeaders,
@@ -667,6 +720,10 @@ async function _fetchDocument(
     source.contentDispositionFilename =
       pdfDataRangeTransport.contentDispositionFilename;
   }
+  const transfers = source.data
+    ? [(source.data as TypedArray).buffer]
+    : undefined;
+
   const workerId = await worker.messageHandler.sendWithPromise(
     "GetDocRequest",
     // Only send the required properties, and *not* the entire `source` object.
@@ -697,13 +754,8 @@ async function _fetchDocument(
           : undefined,
       },
     },
+    transfers,
   );
-
-  // Release the TypedArray data, when it exists, since it's no longer needed
-  // on the main-thread *after* it's been sent to the worker-thread.
-  if (source.data) {
-    source.data = undefined;
-  }
 
   if (worker.destroyed) {
     throw new Error("Worker was destroyed");
@@ -719,7 +771,7 @@ async function _fetchDocument(
 export class PDFDocumentLoadingTask {
   static #docId = 0;
 
-  _capability = createPromiseCap<PDFDocumentProxy>();
+  _capability = createPromiseCapability<PDFDocumentProxy>();
   _transport: WorkerTransport | undefined;
   _worker: PDFWorker | undefined;
 
@@ -761,10 +813,12 @@ export class PDFDocumentLoadingTask {
    * The callback receives an {@link UNSUPPORTED_FEATURES} argument.
    */
   set onUnsupportedFeature(callback) {
-    deprecated(
-      "The PDFDocumentLoadingTask onUnsupportedFeature property will be removed in the future.",
-    );
-    this.#onUnsupportedFeature = callback;
+    /*#static*/ if (GENERIC) {
+      deprecated(
+        "The PDFDocumentLoadingTask onUnsupportedFeature property will be removed in the future.",
+      );
+      this.#onUnsupportedFeature = callback;
+    }
   }
 
   constructor() {
@@ -801,6 +855,10 @@ type ProgressiveDoneListener = () => void;
 
 /**
  * Abstract class to support range requests file loading.
+ *
+ * NOTE: The TypedArrays passed to the constructor and relevant methods below
+ * will generally be transferred to the worker-thread. This will help reduce
+ * main-thread memory usage, however it will take ownership of the TypedArrays.
  */
 export class PDFDataRangeTransport {
   #rangeListeners: RangeListener[] = [];
@@ -823,7 +881,7 @@ export class PDFDataRangeTransport {
     this.#progressiveDoneListeners.push(listener);
   }
 
-  #readyCapability = createPromiseCap();
+  #readyCapability = createPromiseCapability();
 
   constructor(
     public length: number,
@@ -894,22 +952,6 @@ export interface OutlineNode {
   url: string | undefined;
 }
 
-export interface PDFDocumentStats {
-  /**
-   * Used stream types in the
-   * document (an item is set to true if specific stream ID was used in the
-   * document).
-   */
-  streamTypes: Record<StreamType, boolean>;
-
-  /**
-   * Used font types in the
-   * document (an item is set to true if specific font ID was used in the
-   * document).
-   */
-  fontTypes: Record<FontType, boolean>;
-}
-
 /**
  * Proxy to a `PDFDocument` in the worker thread.
  */
@@ -944,17 +986,6 @@ export class PDFDocumentProxy {
    */
   get fingerprints() {
     return this.#pdfInfo.fingerprints;
-  }
-
-  /**
-   * The current statistics about document
-   * structures, or `null` when no statistics exists.
-   */
-  get stats(): PDFDocumentStats | undefined {
-    deprecated(
-      "The PDFDocumentProxy stats property will be removed in the future.",
-    );
-    return this._transport.stats;
   }
 
   /**
@@ -1273,7 +1304,7 @@ interface _GetTextContentP {
 /**
  * Page text content.
  */
-export interface TextContent {
+export type TextContent = {
   /**
    * Array of
    * {@link TextItem} and {@link TextMarkedContent} objects. TextMarkedContent
@@ -1286,12 +1317,12 @@ export interface TextContent {
    * indexed by font name.
    */
   styles: Record<string, TextStyle>;
-}
+};
 
 /**
  * Page text content part.
  */
-export interface TextItem {
+export type TextItem = {
   /**
    * Text content.
    */
@@ -1326,12 +1357,12 @@ export interface TextItem {
    * Indicating if the text content is followed by a line-break.
    */
   hasEOL: boolean;
-}
+};
 
 /**
  * Page text marked content part.
  */
-export interface TextMarkedContent {
+export type TextMarkedContent = {
   type: "beginMarkedContent" | "beginMarkedContentProps" | "endMarkedContent";
 
   /**
@@ -1341,7 +1372,7 @@ export interface TextMarkedContent {
   id?: string | undefined;
 
   tag?: string | undefined;
-}
+};
 
 /**
  * Text style.
@@ -1550,8 +1581,8 @@ export interface StructTreeContent {
 
 interface IntentState {
   streamReaderCancelTimeout: number | undefined;
-  displayReadyCapability?: PromiseCap<boolean>;
-  opListReadCapability?: PromiseCap<OpListIR>;
+  displayReadyCapability?: PromiseCapability<boolean>;
+  opListReadCapability?: PromiseCapability<OpListIR>;
   operatorList?: OpListIR;
   streamReader:
     | ReadableStreamDefaultReader<
@@ -1787,7 +1818,7 @@ export class PDFPageProxy {
     // If there's no displayReadyCapability yet, then the operatorList
     // was never requested before. Make the request and create the promise.
     if (!intentState.displayReadyCapability) {
-      intentState.displayReadyCapability = createPromiseCap<boolean>();
+      intentState.displayReadyCapability = createPromiseCapability<boolean>();
       intentState.operatorList = {
         fnArray: [],
         argsArray: [],
@@ -1903,7 +1934,7 @@ export class PDFPageProxy {
     if (!intentState!.opListReadCapability) {
       opListTask = Object.create(null);
       opListTask.operatorListChanged = operatorListChanged;
-      intentState!.opListReadCapability = createPromiseCap();
+      intentState!.opListReadCapability = createPromiseCapability();
       (intentState!.renderTasks ||= new Set()).add(opListTask);
       intentState!.operatorList = {
         fnArray: [],
@@ -2360,7 +2391,7 @@ export class PDFWorker {
   destroyed = false;
   verbosity: VerbosityLevel;
 
-  #readyCapability = createPromiseCap();
+  #readyCapability = createPromiseCapability();
   /**
    * Promise for worker initialization completion.
    */
@@ -2721,21 +2752,16 @@ class WorkerTransport {
   StandardFontDataFactory;
 
   destroyed = false;
-  destroyCapability?: PromiseCap;
-  _passwordCapability?: PromiseCap<{ password: string }>;
+  destroyCapability?: PromiseCapability;
+  _passwordCapability?: PromiseCapability<{ password: string }>;
 
   #networkStream: IPDFStream | undefined;
   #fullReader?: IPDFStreamReader;
   #lastProgress?: OnProgressP;
 
-  #docStats?: PDFDocumentStats;
-  get stats() {
-    return this.#docStats;
-  }
-
   #pageCache = new Map<number, PDFPageProxy>();
   #pagePromises = new Map<number, Promise<PDFPageProxy>>();
-  downloadInfoCapability = createPromiseCap<{ length: number }>();
+  downloadInfoCapability = createPromiseCapability<{ length: number }>();
 
   #numPages?: number;
 
@@ -2841,7 +2867,7 @@ class WorkerTransport {
     }
 
     this.destroyed = true;
-    this.destroyCapability = createPromiseCap();
+    this.destroyCapability = createPromiseCapability();
 
     if (this._passwordCapability) {
       this._passwordCapability.reject(
@@ -2912,7 +2938,7 @@ class WorkerTransport {
               return;
             }
             assert(
-              isArrayBuffer(value),
+              value instanceof ArrayBuffer,
               "GetReader - expected an ArrayBuffer.",
             );
             // Enqueue data chunk into sink, and transfer it
@@ -2938,7 +2964,7 @@ class WorkerTransport {
     });
 
     messageHandler.on("ReaderHeadersReady", () => {
-      const headersCapability = createPromiseCap<ReaderHeaders>();
+      const headersCapability = createPromiseCapability<ReaderHeaders>();
       const fullReader = this.#fullReader!;
       fullReader.headersReady.then(() => {
         // If stream or range are disabled, it's our only way to report
@@ -2999,7 +3025,7 @@ class WorkerTransport {
               return;
             }
             assert(
-              isArrayBuffer(value),
+              value instanceof ArrayBuffer,
               "GetRangeReader - expected an ArrayBuffer.",
             );
             sink.enqueue(new Uint8Array(value!), 1, [value!]);
@@ -3025,7 +3051,7 @@ class WorkerTransport {
     messageHandler.on("GetDoc", ({ pdfInfo }) => {
       this.#numPages = pdfInfo.numPages;
       this._htmlForXfa = pdfInfo.htmlForXfa;
-      delete (<any> pdfInfo).htmlForXfa;
+      delete (pdfInfo as any).htmlForXfa;
       loadingTask._capability.resolve(new PDFDocumentProxy(pdfInfo, this));
     });
 
@@ -3035,7 +3061,7 @@ class WorkerTransport {
         case "PasswordException":
           reason = new PasswordException(
             ex.message,
-            (<PasswordException> ex).code,
+            (ex as PasswordException).code,
           );
           break;
         case "InvalidPDFException":
@@ -3047,13 +3073,13 @@ class WorkerTransport {
         case "UnexpectedResponseException":
           reason = new UnexpectedResponseException(
             ex.message,
-            (<UnexpectedResponseException> ex).status,
+            (ex as UnexpectedResponseException).status,
           );
           break;
         case "UnknownErrorException":
           reason = new UnknownErrorException(
             ex.message,
-            (<UnknownErrorException> ex).details,
+            (ex as UnknownErrorException).details,
           );
           break;
         default:
@@ -3063,7 +3089,9 @@ class WorkerTransport {
     });
 
     messageHandler.on("PasswordRequest", (exception) => {
-      this._passwordCapability = createPromiseCap<{ password: string }>();
+      this._passwordCapability = createPromiseCapability<
+        { password: string }
+      >();
 
       if (loadingTask.onPassword) {
         const updatePassword = (password: string | Error) => {
@@ -3222,20 +3250,9 @@ class WorkerTransport {
       });
     });
 
-    messageHandler.on("DocStats", (data) => {
-      if (this.destroyed) {
-        // Ignore any pending requests if the worker was terminated.
-        return;
-      }
-      // Ensure that a `PDFDocumentProxy.stats` call-site cannot accidentally
-      // modify this internal data.
-      this.#docStats = Object.freeze({
-        streamTypes: Object.freeze(data.streamTypes),
-        fontTypes: Object.freeze(data.fontTypes),
-      });
-    });
-
-    messageHandler.on("UnsupportedFeature", this.#onUnsupportedFeature);
+    /*#static*/ if (GENERIC) {
+      messageHandler.on("UnsupportedFeature", this.#onUnsupportedFeature);
+    }
 
     messageHandler.on("FetchBuiltInCMap", (data) => {
       if (this.destroyed) {
@@ -3269,11 +3286,13 @@ class WorkerTransport {
   #onUnsupportedFeature = (
     { featureId }: { featureId: UNSUPPORTED_FEATURES },
   ) => {
-    if (this.destroyed) {
-      // Ignore any pending requests if the worker was terminated.
-      return;
+    /*#static*/ if (GENERIC) {
+      if (this.destroyed) {
+        // Ignore any pending requests if the worker was terminated.
+        return;
+      }
+      this.loadingTask.onUnsupportedFeature?.(featureId);
     }
-    this.loadingTask.onUnsupportedFeature?.(featureId);
   };
 
   getData() {
@@ -3493,7 +3512,7 @@ class WorkerTransport {
 }
 
 interface Objs_<T> {
-  capability: PromiseCap<T | undefined>;
+  capability: PromiseCapability<T | undefined>;
   data: T | undefined;
   // resolved:boolean;
 }
@@ -3514,7 +3533,7 @@ export class PDFObjects<T> {
     if (obj) return obj;
 
     return (this.#objs[objId] = {
-      capability: createPromiseCap(),
+      capability: createPromiseCapability(),
       data: undefined,
     });
   }
@@ -3665,7 +3684,7 @@ export class InternalRenderTask {
   graphicsReady = false;
   _useRequestAnimationFrame;
   cancelled = false;
-  capability = createPromiseCap();
+  capability = createPromiseCapability();
   task;
   _canvas;
 

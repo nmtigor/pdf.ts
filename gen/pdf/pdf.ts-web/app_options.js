@@ -84,7 +84,7 @@ const defaultOptions = {
         kind: 0,
     },
     defaultZoomDelay: {
-        value: /*#static*/ 400,
+        value: 400,
         kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
     },
     defaultZoomValue: {

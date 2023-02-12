@@ -1,5 +1,8 @@
+/** @typedef {import("./annotation_editor_layer.js").AnnotationEditorLayer} AnnotationEditorLayer */
+/** @typedef {import("./tools.js").AnnotationEditorUIManager} AnnotationEditorUIManager */
+import { type rect_t } from "../../../../lib/alias.js";
 import { RGB } from "../../shared/scripting_utils.js";
-import { AnnotationEditorParamsType, AnnotationEditorType, rect_t } from "../../shared/util.js";
+import { AnnotationEditorParamsType, AnnotationEditorType } from "../../shared/util.js";
 import { AnnotationEditorLayer } from "./annotation_editor_layer.js";
 import { AddCommandsP, AnnotationEditorUIManager, ColorManager } from "./tools.js";
 export interface AnnotationEditorP {

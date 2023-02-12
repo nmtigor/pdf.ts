@@ -28,20 +28,20 @@
 /** @typedef {import("./pdf_rendering_queue").PDFRenderingQueue} PDFRenderingQueue */
 
 import { COMPONENTS, GENERIC, PRODUCTION } from "../../global.ts";
+import { type point_t } from "../../lib/alias.ts";
 import { type HSElement, html } from "../../lib/dom.ts";
-import { createPromiseCap } from "../../lib/promisecap.ts";
 import {
   AbortException,
   AnnotationEditorUIManager,
   AnnotationMode,
   AnnotationStorage,
+  createPromiseCapability,
   FieldObject,
   type matrix_t,
   OptionalContentConfig,
   PageViewport,
   PDFPageProxy,
   PixelsPerInch,
-  type point_t,
   RenderingCancelledException,
   type RenderP,
   setLayerDimensions,
@@ -73,7 +73,6 @@ import { TextLayerBuilder } from "./text_layer_builder.ts";
 import {
   approximateFraction,
   DEFAULT_SCALE,
-  docStyle,
   OutputScale,
   RendererType,
   RenderingStates,
@@ -373,7 +372,7 @@ export class PDFPageView implements IVisibleView {
       if (this._isStandalone) {
         // Ensure that the various layers always get the correct initial size,
         // see issue 15795.
-        docStyle!.setProperty(
+        container?.style.setProperty(
           "--scale-factor",
           this.scale * PixelsPerInch.PDF_TO_CSS_UNITS as any,
         );
@@ -723,7 +722,10 @@ export class PDFPageView implements IVisibleView {
 
     /*#static*/ if (!PRODUCTION || GENERIC) {
       if (this._isStandalone) {
-        docStyle!.setProperty("--scale-factor", <any> this.viewport.scale);
+        (this.div.parentNode as HTMLElement | SVGElement)?.style.setProperty(
+          "--scale-factor",
+          this.viewport.scale as any,
+        );
       }
     }
 
@@ -1124,7 +1126,7 @@ export class PDFPageView implements IVisibleView {
   }
 
   paintOnCanvas(canvasWrapper: HTMLDivElement): PaintTask {
-    const renderCapability = createPromiseCap();
+    const renderCapability = createPromiseCapability();
     const result = {
       promise: renderCapability.promise,
       onRenderContinue(cont: () => void) {
@@ -1221,7 +1223,12 @@ export class PDFPageView implements IVisibleView {
         renderCapability.resolve();
       },
       (error) => {
-        showCanvas();
+        // When zooming with a `drawingDelay` set, avoid temporarily showing
+        // a black canvas if rendering was cancelled before the `onContinue`-
+        // callback had been invoked at least once.
+        if (!(error instanceof RenderingCancelledException)) {
+          showCanvas();
+        }
         renderCapability.reject(error);
       },
     );

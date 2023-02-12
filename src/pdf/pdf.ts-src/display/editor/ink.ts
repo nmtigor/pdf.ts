@@ -17,15 +17,17 @@
  * limitations under the License.
  */
 
-import { fitCurve } from "../../../../3rd/fit-curve/fit-curve.ts";
-import { TupleOf } from "../../../../lib/alias.ts";
+import { fitCurve } from "../../../../3rd/fit-curve-0.2.0/fit-curve.ts";
+import {
+  type point_t,
+  type rect_t,
+  type TupleOf,
+} from "../../../../lib/alias.ts";
 import { html } from "../../../../lib/dom.ts";
 import { IL10n } from "../../../pdf.ts-web/interfaces.ts";
 import {
   AnnotationEditorParamsType,
   AnnotationEditorType,
-  point_t,
-  rect_t,
   Util,
 } from "../../shared/util.ts";
 import { AnnotationEditorLayer } from "./annotation_editor_layer.ts";

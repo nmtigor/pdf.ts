@@ -44,7 +44,9 @@ export class ScriptingProxyHandler {
                 obj._id !== null &&
                 typeof old !== "function") {
                 const data = { id: obj._id };
-                data[prop] = obj[prop];
+                data[prop] = prop === "value"
+                    ? obj._getValue()
+                    : obj[prop];
                 // send the updated value to the other side
                 if (!obj._siblings) {
                     obj._send(data);

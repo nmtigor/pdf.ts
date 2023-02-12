@@ -15,8 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { createPromiseCap } from "../../lib/promisecap.js";
-import { PasswordResponses } from "../pdf.ts-src/pdf.js";
+import { createPromiseCapability, PasswordResponses, } from "../pdf.ts-src/pdf.js";
 /*80--------------------------------------------------------------------------*/
 export class PasswordPrompt {
     dialog;
@@ -60,7 +59,7 @@ export class PasswordPrompt {
         if (this.#activeCapability) {
             await this.#activeCapability.promise;
         }
-        this.#activeCapability = createPromiseCap();
+        this.#activeCapability = createPromiseCapability();
         try {
             await this.overlayManager.open(this.dialog);
         }

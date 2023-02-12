@@ -20,8 +20,12 @@
 /** @typedef {import("./event_utils").EventBus} EventBus */
 
 import { COMPONENTS, GECKOVIEW } from "../../global.ts";
-import { createPromiseCap, PromiseCap } from "../../lib/promisecap.ts";
-import { PDFDocumentProxy, shadow } from "../pdf.ts-src/pdf.ts";
+import {
+  createPromiseCapability,
+  PDFDocumentProxy,
+  type PromiseCapability,
+  shadow,
+} from "../pdf.ts-src/pdf.ts";
 import { DefaultExternalServices, type ScriptingDocProperties } from "./app.ts";
 import { EventBus, EventMap } from "./event_utils.ts";
 import { IScripting } from "./interfaces.ts";
@@ -79,9 +83,9 @@ export class PDFScriptingManager {
     this.#pdfViewer = pdfViewer;
   }
 
-  #closeCapability?: PromiseCap | undefined;
+  #closeCapability?: PromiseCapability | undefined;
 
-  #destroyCapability?: PromiseCap;
+  #destroyCapability?: PromiseCapability;
   get destroyPromise() {
     return this.#destroyCapability?.promise || undefined;
   }
@@ -408,7 +412,7 @@ export class PDFScriptingManager {
       visitedPages = this.#visitedPages;
 
     if (initialize) {
-      this.#closeCapability = createPromiseCap();
+      this.#closeCapability = createPromiseCapability();
     }
 
     if (!this.#closeCapability) {
@@ -490,7 +494,7 @@ export class PDFScriptingManager {
   };
 
   #createScripting = async () => {
-    this.#destroyCapability = createPromiseCap();
+    this.#destroyCapability = createPromiseCapability();
 
     if (this._scripting) {
       throw new Error("#createScripting: Scripting already exists.");

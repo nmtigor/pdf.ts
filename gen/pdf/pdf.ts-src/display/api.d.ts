@@ -1,5 +1,4 @@
 import { TypedArray } from "../../../lib/alias.js";
-import { PromiseCap } from "../../../lib/promisecap.js";
 import { Stepper } from "../../pdf.ts-web/debugger.js";
 import { PageColors } from "../../pdf.ts-web/pdf_viewer.js";
 import { type AnnotationData, type FieldObject } from "../core/annotation.js";
@@ -16,7 +15,7 @@ import { type ShadingPatternIR } from "../core/pattern.js";
 import { type XFAElObj } from "../core/xfa/alias.js";
 import { type IPDFStream } from "../interfaces.js";
 import { MessageHandler, type PageInfo, type PDFInfo, Thread } from "../shared/message_handler.js";
-import { AnnotationMode, FontType, type matrix_t, PasswordResponses, RenderingIntentFlag, StreamType, UNSUPPORTED_FEATURES, VerbosityLevel } from "../shared/util.js";
+import { AnnotationMode, type matrix_t, PasswordResponses, type PromiseCapability, RenderingIntentFlag, UNSUPPORTED_FEATURES, VerbosityLevel } from "../shared/util.js";
 import { AnnotStorageRecord } from "./annotation_layer.js";
 import { AnnotationStorage, PrintAnnotationStorage } from "./annotation_storage.js";
 import { BaseCanvasFactory } from "./base_factory.js";
@@ -29,24 +28,6 @@ export declare const DefaultCanvasFactory: typeof DOMCanvasFactory;
 export type DefaultCanvasFactory = DOMCanvasFactory;
 export declare const DefaultCMapReaderFactory: typeof DOMCMapReaderFactory;
 export declare const DefaultStandardFontDataFactory: typeof DOMStandardFontDataFactory;
-/**
- * @param params The document initialization
- *   parameters. The "url" key is always present.
- * @return A promise, which is resolved with an instance of
- *   {IPDFStream}.
- * @ignore
- */
-type IPDFStreamFactory = (params: DocumentInitP) => Promise<IPDFStream>;
-/**
- * Sets the function that instantiates an {IPDFStream} as an alternative PDF
- * data transport.
- *
- * @param pdfNetworkStreamFactory - The factory function
- *   that takes document initialization parameters (including a "url") and
- *   returns a promise which is resolved with an instance of {IPDFStream}.
- * @ignore
- */
-export declare function setPDFNetworkStreamFactory(pdfNetworkStreamFactory: IPDFStreamFactory): void;
 export type BinaryData = TypedArray | ArrayBuffer | number[] | string;
 export interface RefProxy {
     num: number;
@@ -62,8 +43,12 @@ export interface DocumentInitP {
     url: string | URL | undefined;
     /**
      * Binary PDF data.
-     * Use typed arrays (Uint8Array) to improve the memory usage. If PDF data is
+     * Use TypedArrays (Uint8Array) to improve the memory usage. If PDF data is
      * BASE64-encoded, use `atob()` to convert it to a binary string first.
+     *
+     * NOTE: If TypedArrays are used they will generally be transferred to the
+     * worker-thread. This will help reduce main-thread memory usage, however
+     * it will take ownership of the TypedArrays.
      */
     data?: BinaryData | undefined;
     /**
@@ -247,7 +232,7 @@ export interface DocumentInitP {
     progressiveDone?: boolean;
     contentDispositionFilename?: string | undefined;
 }
-type _GetDocumentP = string | URL | TypedArray | ArrayBuffer | PDFDataRangeTransport | DocumentInitP;
+type GetDocumentP_ = string | URL | TypedArray | ArrayBuffer | PDFDataRangeTransport | DocumentInitP;
 /**
  * This is the main entry point for loading a PDF and interacting with it.
  *
@@ -255,10 +240,10 @@ type _GetDocumentP = string | URL | TypedArray | ArrayBuffer | PDFDataRangeTrans
  * XHR as fallback) is used, which means it must follow same origin rules,
  * e.g. no cross-domain requests without CORS.
  *
- * @param src Can be a URL where a PDF file is located, a typed array (Uint8Array)
- *  already populated with data, or a parameter object.
+ * @headconst @param src_x Can be a URL where a PDF file is located, a typed
+ *    array (Uint8Array) already populated with data, or a parameter object.
  */
-export declare function getDocument(src: _GetDocumentP): PDFDocumentLoadingTask;
+export declare function getDocument(src_x: GetDocumentP_): PDFDocumentLoadingTask;
 /**
  * The loading task controls the operations required to load a PDF document
  * (such as network requests) and provides a way to listen for completion,
@@ -266,7 +251,7 @@ export declare function getDocument(src: _GetDocumentP): PDFDocumentLoadingTask;
  */
 export declare class PDFDocumentLoadingTask {
     #private;
-    _capability: PromiseCap<PDFDocumentProxy>;
+    _capability: PromiseCapability<PDFDocumentProxy>;
     _transport: WorkerTransport | undefined;
     _worker: PDFWorker | undefined;
     /**
@@ -312,6 +297,10 @@ type ProgressiveReadListener = (chunk: ArrayBufferLike) => void;
 type ProgressiveDoneListener = () => void;
 /**
  * Abstract class to support range requests file loading.
+ *
+ * NOTE: The TypedArrays passed to the constructor and relevant methods below
+ * will generally be transferred to the worker-thread. This will help reduce
+ * main-thread memory usage, however it will take ownership of the TypedArrays.
  */
 export declare class PDFDataRangeTransport {
     #private;
@@ -350,20 +339,6 @@ export interface OutlineNode {
     unsafeUrl: string | undefined;
     url: string | undefined;
 }
-export interface PDFDocumentStats {
-    /**
-     * Used stream types in the
-     * document (an item is set to true if specific stream ID was used in the
-     * document).
-     */
-    streamTypes: Record<StreamType, boolean>;
-    /**
-     * Used font types in the
-     * document (an item is set to true if specific font ID was used in the
-     * document).
-     */
-    fontTypes: Record<FontType, boolean>;
-}
 /**
  * Proxy to a `PDFDocument` in the worker thread.
  */
@@ -386,11 +361,6 @@ export declare class PDFDocumentProxy {
      * whereas the second element is only defined for *modified* PDF documents.
      */
     get fingerprints(): [string, string | undefined];
-    /**
-     * The current statistics about document
-     * structures, or `null` when no statistics exists.
-     */
-    get stats(): PDFDocumentStats | undefined;
     /**
      * @return True if only XFA form.
      */
@@ -618,7 +588,7 @@ interface _GetTextContentP {
 /**
  * Page text content.
  */
-export interface TextContent {
+export type TextContent = {
     /**
      * Array of
      * {@link TextItem} and {@link TextMarkedContent} objects. TextMarkedContent
@@ -630,11 +600,11 @@ export interface TextContent {
      * indexed by font name.
      */
     styles: Record<string, TextStyle>;
-}
+};
 /**
  * Page text content part.
  */
-export interface TextItem {
+export type TextItem = {
     /**
      * Text content.
      */
@@ -663,11 +633,11 @@ export interface TextItem {
      * Indicating if the text content is followed by a line-break.
      */
     hasEOL: boolean;
-}
+};
 /**
  * Page text marked content part.
  */
-export interface TextMarkedContent {
+export type TextMarkedContent = {
     type: "beginMarkedContent" | "beginMarkedContentProps" | "endMarkedContent";
     /**
      * The marked content identifier. Only used for type
@@ -675,7 +645,7 @@ export interface TextMarkedContent {
      */
     id?: string | undefined;
     tag?: string | undefined;
-}
+};
 /**
  * Text style.
  */
@@ -1089,12 +1059,11 @@ declare class WorkerTransport {
     CMapReaderFactory: DOMCMapReaderFactory | undefined;
     StandardFontDataFactory: DOMStandardFontDataFactory | undefined;
     destroyed: boolean;
-    destroyCapability?: PromiseCap;
-    _passwordCapability?: PromiseCap<{
+    destroyCapability?: PromiseCapability;
+    _passwordCapability?: PromiseCapability<{
         password: string;
     }>;
-    get stats(): PDFDocumentStats | undefined;
-    downloadInfoCapability: PromiseCap<{
+    downloadInfoCapability: PromiseCapability<{
         length: number;
     }>;
     _htmlForXfa: XFAElObj | undefined;
@@ -1229,7 +1198,7 @@ export declare class InternalRenderTask {
     graphicsReady: boolean;
     _useRequestAnimationFrame: boolean;
     cancelled: boolean;
-    capability: PromiseCap<void>;
+    capability: PromiseCapability<void>;
     task: RenderTask;
     _canvas: HTMLCanvasElement;
     stepper?: Stepper;

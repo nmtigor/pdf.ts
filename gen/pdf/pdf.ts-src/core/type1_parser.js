@@ -1,20 +1,6 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
-/* Copyright 2012 Mozilla Foundation
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 import { warn } from "../shared/util.js";
 import { isWhiteSpace } from "./core_utils.js";
 import { getEncoding } from "./encodings.js";
@@ -632,8 +618,13 @@ var NsType1Parser;
                     case "BlueFuzz":
                     case "BlueScale":
                     case "LanguageGroup":
-                    case "ExpansionFactor":
                         program.properties.privateData[token] = this.readNumber();
+                        break;
+                    case "ExpansionFactor":
+                        // Firefox doesn't render correctly a font with a null factor on
+                        // Windows (see issue 15289), hence we just reset it to its default
+                        // value (0.06).
+                        program.properties.privateData[token] = this.readNumber() || 0.06;
                         break;
                     case "ForceBold":
                         program.properties.privateData[token] = this.readBoolean();

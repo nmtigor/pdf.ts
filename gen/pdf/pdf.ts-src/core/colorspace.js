@@ -17,7 +17,7 @@
  */
 import { _PDFDEV } from "../../../global.js";
 import { assert } from "../../../lib/util/trace.js";
-import { FormatError, info, shadow, warn, } from "../shared/util.js";
+import { FormatError, info, shadow, warn } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
 import { MissingDataException } from "./core_utils.js";
 import { Dict, Name, Ref } from "./primitives.js";

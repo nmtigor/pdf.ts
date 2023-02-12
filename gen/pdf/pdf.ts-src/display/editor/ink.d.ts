@@ -1,6 +1,6 @@
-import { TupleOf } from "../../../../lib/alias.js";
+import { type point_t, type TupleOf } from "../../../../lib/alias.js";
 import { IL10n } from "../../../pdf.ts-web/interfaces.js";
-import { AnnotationEditorParamsType, point_t } from "../../shared/util.js";
+import { AnnotationEditorParamsType } from "../../shared/util.js";
 import { AnnotationEditorLayer } from "./annotation_editor_layer.js";
 import { AnnotationEditor, AnnotationEditorP, AnnotationEditorSerialized, PropertyToUpdate } from "./editor.js";
 import { AnnotationEditorUIManager } from "./tools.js";

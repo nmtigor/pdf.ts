@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { _PDFDEV } from "../../../global.js";
+import { _PDFDEV, GENERIC } from "../../../global.js";
 import { assert } from "../../../lib/util/trace.js";
 import { FormatError, info, InvalidPDFException, PageActionEventType, RenderingIntentFlag, shadow, stringToBytes, stringToPDFString, stringToUTF8String, UNSUPPORTED_FEATURES, Util, warn, } from "../shared/util.js";
 import { AnnotationFactory, PopupAnnotation, } from "./annotation.js";
@@ -170,11 +170,13 @@ export class Page {
     }
     #onSubStreamError(handler, reason, objId) {
         if (this.evaluatorOptions.ignoreErrors) {
-            // Error(s) when reading one of the /Contents sub-streams -- sending
-            // unsupported feature notification and allow parsing to continue.
-            handler.send("UnsupportedFeature", {
-                featureId: UNSUPPORTED_FEATURES.errorContentSubStream,
-            });
+            /*#static*/  {
+                // Error(s) when reading one of the /Contents sub-streams -- sending
+                // unsupported feature notification and allow parsing to continue.
+                handler.send("UnsupportedFeature", {
+                    featureId: UNSUPPORTED_FEATURES.errorContentSubStream,
+                });
+            }
             warn(`getContentStream - ignoring sub-stream (${objId}): "${reason}".`);
             return;
         }

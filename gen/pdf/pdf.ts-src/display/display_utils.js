@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { DENO, MOZCENTRAL } from "../../../global.js";
+import { MOZCENTRAL } from "../../../global.js";
 import { html } from "../../../lib/dom.js";
 import { BaseException, shadow, stringToBytes, Util, warn, } from "../shared/util.js";
 import { BaseCanvasFactory, BaseCMapReaderFactory, BaseStandardFontDataFactory, BaseSVGFactory, } from "./base_factory.js";
@@ -45,10 +45,10 @@ export class DOMCanvasFactory extends BaseCanvasFactory {
     }
 }
 async function fetchData(url, asTypedArray = false) {
-    /*#static*/ if (MOZCENTRAL ||
-        isValidFetchUrl(url, globalThis.document?.baseURI)) {
+    if (MOZCENTRAL || isValidFetchUrl(url, globalThis.document?.baseURI)) {
         const response = await fetch(url);
         if (!response.ok) {
+            response.body?.cancel();
             throw new Error(response.statusText);
         }
         return asTypedArray
@@ -89,9 +89,7 @@ export class DOMCMapReaderFactory extends BaseCMapReaderFactory {
      * @implement
      */
     _fetchData(url, compressionType) {
-        return fetchData(url, /* asTypedArray = */ this.isCompressed).then((data) => {
-            return { cMapData: data, compressionType };
-        });
+        return fetchData(url, /* asTypedArray = */ this.isCompressed).then((data) => ({ cMapData: data, compressionType }));
     }
 }
 export class DOMStandardFontDataFactory extends BaseStandardFontDataFactory {
@@ -378,14 +376,8 @@ export class StatTimer {
 export function isValidFetchUrl(url, baseUrl) {
     try {
         const { protocol } = baseUrl ? new URL(url, baseUrl) : new URL(url);
-        if (DENO) {
-            return protocol === "http:" || protocol === "https:" ||
-                protocol === "file:";
-        }
-        else {
-            // The Fetch API only supports the http/https protocols, and not file/ftp.
-            return protocol === "http:" || protocol === "https:";
-        }
+        // The Fetch API only supports the http/https protocols, and not file/ftp.
+        return protocol === "http:" || protocol === "https:";
     }
     catch (ex) {
         return false; // `new URL()` will throw on incorrect data.

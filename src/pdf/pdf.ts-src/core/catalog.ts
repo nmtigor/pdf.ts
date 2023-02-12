@@ -17,7 +17,8 @@
  * limitations under the License.
  */
 
-import { PageLayout, PageMode } from "../../../pdf/pdf.ts-web/ui_utils.ts";
+import { type rect_t } from "../../../lib/alias.ts";
+import { PageLayout, PageMode } from "../../pdf.ts-web/ui_utils.ts";
 import { type ResetForm } from "../display/annotation_layer.ts";
 import { type OutlineNode } from "../display/api.ts";
 import { type CMapData } from "../display/base_factory.ts";
@@ -30,7 +31,6 @@ import {
   info,
   objectSize,
   PermissionFlag,
-  type rect_t,
   shadow,
   stringToPDFString,
   stringToUTF8String,

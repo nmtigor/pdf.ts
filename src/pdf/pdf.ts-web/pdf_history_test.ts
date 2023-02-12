@@ -20,8 +20,8 @@
 import {
   assertEquals,
   assertNotStrictEquals,
-} from "https://deno.land/std@0.165.0/testing/asserts.ts";
-import { describe, it } from "https://deno.land/std@0.165.0/testing/bdd.ts";
+} from "https://deno.land/std@0.170.0/testing/asserts.ts";
+import { describe, it } from "https://deno.land/std@0.170.0/testing/bdd.ts";
 import { type ExplicitDest } from "../pdf.ts-src/pdf.ts";
 import { isDestArraysEqual, isDestHashesEqual } from "./pdf_history.ts";
 /*80--------------------------------------------------------------------------*/

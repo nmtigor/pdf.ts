@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { fitCurve } from "../../../../3rd/fit-curve/fit-curve.js";
+import { fitCurve } from "../../../../3rd/fit-curve-0.2.0/fit-curve.js";
 import { html } from "../../../../lib/dom.js";
 import { AnnotationEditorParamsType, AnnotationEditorType, Util, } from "../../shared/util.js";
 import { AnnotationEditor, } from "./editor.js";

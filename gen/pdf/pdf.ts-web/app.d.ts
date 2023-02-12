@@ -1,6 +1,6 @@
 import "../../lib/jslang.js";
 import { Locale } from "../../lib/Locale.js";
-import { type DocumentInfo, Metadata, OptionalContentConfig, PDFDataRangeTransport, PDFDocumentLoadingTask, PDFDocumentProxy, type PDFDocumentStats, PrintAnnotationStorage, WorkerMessageHandler } from "../pdf.ts-src/pdf.js";
+import { type DocumentInfo, Metadata, OptionalContentConfig, PDFDataRangeTransport, PDFDocumentLoadingTask, PDFDocumentProxy, PrintAnnotationStorage, WorkerMessageHandler } from "../pdf.ts-src/pdf.js";
 import { AnnotationEditorParams } from "./annotation_editor_params.js";
 import { PDFBug } from "./debugger.js";
 import { EventBus, EventMap } from "./event_utils.js";
@@ -11,7 +11,7 @@ import { PDFAttachmentViewer } from "./pdf_attachment_viewer.js";
 import { PDFCursorTools } from "./pdf_cursor_tools.js";
 import { PDFDocumentProperties } from "./pdf_document_properties.js";
 import { PDFFindBar } from "./pdf_find_bar.js";
-import { FindState, type MatchesCount, PDFFindController } from "./pdf_find_controller.js";
+import { type FindState, type MatchesCount, PDFFindController } from "./pdf_find_controller.js";
 import { PDFHistory } from "./pdf_history.js";
 import { PDFLayerViewer } from "./pdf_layer_viewer.js";
 import { PDFLinkService } from "./pdf_link_service.js";
@@ -34,11 +34,11 @@ export interface FindControlState {
     result: FindState;
     findPrevious?: boolean | undefined;
     matchesCount: MatchesCount;
-    rawQuery: string | null;
+    rawQuery: string | undefined;
 }
 export interface PassiveLoadingCbs {
-    onOpenWithTransport(url: _ViewerAppOpenP_file, length: number, transport: PDFDataRangeTransport): void;
-    onOpenWithData(data: _ViewerAppOpenP_file, contentDispositionFilename: string): void;
+    onOpenWithTransport(url: string, length: number, transport: PDFDataRangeTransport): void;
+    onOpenWithData(data: ArrayBuffer, contentDispositionFilename: string): void;
     onOpenWithURL(url: string, length?: number, originalUrl?: string): void;
     onError(err?: ErrorMoreInfo): void;
     onProgress(loaded: number, total: number): void;
@@ -52,7 +52,6 @@ export interface TelemetryData {
     };
     formType?: string;
     generator?: string;
-    stats?: PDFDocumentStats | undefined;
     tagged?: boolean;
     timestamp?: number;
     version?: string;
@@ -70,6 +69,7 @@ export declare class DefaultExternalServices {
     createScripting(options: {
         sandboxBundleSrc?: string | undefined;
     }): IScripting;
+    get supportsPinchToZoom(): boolean;
     get supportsIntegratedFind(): boolean;
     get supportsDocumentFonts(): boolean;
     get supportedMouseWheelZoomModifierKeys(): {
@@ -100,14 +100,19 @@ export interface ScriptingDocProperties extends DocumentInfo {
     numPages: number;
     URL: string;
 }
-type _ViewerAppOpenP_file = string | Uint8Array | {
-    url: string;
-    originalUrl: string;
-};
-interface _ViewerAppOpenP_args {
-    length: number;
+type OpenP_ = {
+    url?: string;
+    length?: number | undefined;
+    data?: ArrayBuffer;
     range?: PDFDataRangeTransport;
-}
+    originalUrl?: string | undefined;
+};
+type TouchInfo_ = {
+    touch0X: number;
+    touch0Y: number;
+    touch1X: number;
+    touch1Y: number;
+};
 export declare class PDFViewerApplication {
     #private;
     initialBookmark: string | undefined;
@@ -155,10 +160,15 @@ export declare class PDFViewerApplication {
     _contentLength: number | undefined;
     _saveInProgress: boolean;
     _wheelUnusedTicks: number;
+    _wheelUnusedFactor: number;
+    _touchUnusedTicks: number;
+    _touchUnusedFactor: number;
     _PDFBug?: typeof PDFBug;
     _hasAnnotationEditors: boolean;
     _title: string;
     _printAnnotationStoragePromise: Promise<PrintAnnotationStorage | undefined> | undefined;
+    _touchInfo: TouchInfo_ | undefined;
+    _isCtrlKeyDown: boolean;
     disableAutoFetchLoadingBarTimeout: number | undefined;
     _annotationStorageModified?: boolean;
     constructor();
@@ -169,14 +179,15 @@ export declare class PDFViewerApplication {
     run(config: ViewerConfiguration): void;
     get initialized(): boolean;
     get initializedPromise(): Promise<void>;
-    zoomIn(steps?: number): void;
-    zoomOut(steps?: number): void;
+    zoomIn(steps?: number, scaleFactor?: number): void;
+    zoomOut(steps?: number, scaleFactor?: number): void;
     zoomReset(): void;
     get pagesCount(): number;
     get page(): number;
     set page(val: number);
     get supportsPrinting(): boolean;
     get supportsFullscreen(): boolean;
+    get supportsPinchToZoom(): boolean;
     get supportsIntegratedFind(): boolean;
     get supportsDocumentFonts(): boolean;
     get loadingBar(): ProgressBar | null;
@@ -205,7 +216,13 @@ export declare class PDFViewerApplication {
      *  e.g. HTTP headers ('httpHeaders') or alternative data transport ('range').
      * @return Returns the promise, which is resolved when document is opened.
      */
-    open(file: _ViewerAppOpenP_file, args?: _ViewerAppOpenP_args): Promise<void | undefined>;
+    /**
+     * Opens a new PDF document.
+     * @headconst @param args_x - Accepts any/all of the properties from
+     *   {@link DocumentInitParameters}, and also a `originalUrl` string.
+     * @return Promise that is resolved when the document is opened.
+     */
+    open(args_x: OpenP_ | string | ArrayBuffer): Promise<void | undefined>;
     download(): Promise<void>;
     save(): Promise<void>;
     downloadOrSave(): void;
@@ -237,7 +254,9 @@ export declare class PDFViewerApplication {
     bindWindowEvents(): void;
     unbindEvents(): void;
     unbindWindowEvents(): void;
-    accumulateWheelTicks(ticks: number): number;
+    _accumulateTicks(ticks: number, prop: "_wheelUnusedTicks" | "_touchUnusedTicks"): number;
+    _accumulateFactor(previousScale: number, factor: number, prop: "_wheelUnusedFactor" | "_touchUnusedFactor"): number;
+    _centerAtPos(previousScale: number, x: number, y: number): void;
     /**
      * Used together with the integration-tests, to enable awaiting full
      * initialization of the scripting/sandbox.

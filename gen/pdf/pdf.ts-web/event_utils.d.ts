@@ -318,7 +318,7 @@ export interface EventMap {
         state: FindState;
         previous?: boolean | undefined;
         matchesCount: MatchesCount;
-        rawQuery: string | null;
+        rawQuery: string | undefined;
     };
     updatefindmatchescount: {
         source: PDFFindController;

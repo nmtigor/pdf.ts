@@ -2,7 +2,7 @@
  * @module lib/alias
  * @license Apache-2.0
  ******************************************************************************/
-import { z } from "../3rd/zod/lib/index.mjs";
+import { z } from "../3rd/zod-3.20.0/lib/index.mjs";
 export const zInt = z.number().int();
 export const zUint = zInt.min(0);
 const zInt64 = zInt;
@@ -15,9 +15,9 @@ export const loff_MAX = 1_000_000_000;
 export const lnum_MAX = 1_000_000_000;
 export const zTs = zInt64;
 export const zRatio = z.number().finite();
-export class DumRuhr {
-    run() { }
-}
+// export class DumRunr implements Runr {
+//   run() {}
+// }
 /*80--------------------------------------------------------------------------*/
 export var Sortart;
 (function (Sortart) {

@@ -1,6 +1,7 @@
+import { type point_t, type rect_t } from "../../../lib/alias.js";
 import { TilingPaintType, TilingType } from "../display/pattern_helper.js";
 import { MessageHandler, Thread } from "../shared/message_handler.js";
-import { type matrix_t, type point_t, type rect_t } from "../shared/util.js";
+import { type matrix_t } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
 import { ColorSpace } from "./colorspace.js";
 import { type ParsedFunction, PDFFunctionFactory } from "./function.js";

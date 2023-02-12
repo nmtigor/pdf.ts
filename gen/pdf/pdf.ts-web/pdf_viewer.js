@@ -24,8 +24,7 @@
 /** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
 import { GENERIC, MOZCENTRAL, PRODUCTION } from "../../global.js";
 import { div, html } from "../../lib/dom.js";
-import { createPromiseCap } from "../../lib/promisecap.js";
-import { AnnotationEditorType, AnnotationEditorUIManager, AnnotationMode, PermissionFlag, PixelsPerInch, version, } from "../pdf.ts-src/pdf.js";
+import { AnnotationEditorType, AnnotationEditorUIManager, AnnotationMode, createPromiseCapability, PermissionFlag, PixelsPerInch, version, } from "../pdf.ts-src/pdf.js";
 import { compatibilityParams } from "./app_options.js";
 import { NullL10n } from "./l10n_utils.js";
 import { SimpleLinkService } from "./pdf_link_service.js";
@@ -277,12 +276,10 @@ export class PDFViewer {
             throw new Error(`The API version "${version}" does not match the Viewer version "${viewerVersion}".`);
         }
         this.container = options.container;
-        this.#resizeObserver.observe(this.container);
         this.viewer = options.viewer ||
             options.container.firstElementChild;
         /*#static*/  {
-            if (!(this.container?.tagName.toUpperCase() === "DIV" &&
-                this.viewer?.tagName.toUpperCase() === "DIV")) {
+            if (this.container?.tagName !== "DIV" || this.viewer?.tagName !== "DIV") {
                 throw new Error("Invalid `container` and/or `viewer` option.");
             }
             if (this.container.offsetParent &&
@@ -290,6 +287,7 @@ export class PDFViewer {
                 throw new Error("The `container` must be absolutely positioned.");
             }
         }
+        this.#resizeObserver.observe(this.container);
         this.eventBus = options.eventBus;
         this.linkService = options.linkService || new SimpleLinkService();
         this.downloadManager = options.downloadManager;
@@ -602,7 +600,7 @@ export class PDFViewer {
             });
             // Ensure that the various layers always get the correct initial size,
             // see issue 15795.
-            docStyle.setProperty("--scale-factor", viewport.scale);
+            this.viewer.style.setProperty("--scale-factor", viewport.scale);
             for (let pageNum = 1; pageNum <= pagesCount; ++pageNum) {
                 const pageView = new PDFPageView({
                     container: viewerElement,
@@ -735,9 +733,9 @@ export class PDFViewer {
         this.#location = undefined;
         this._pagesRotation = 0;
         this._optionalContentConfigPromise = undefined;
-        this.#firstPageCapability = createPromiseCap();
-        this.#onePageRenderedCapability = createPromiseCap();
-        this.#pagesCapability = createPromiseCap();
+        this.#firstPageCapability = createPromiseCapability();
+        this.#onePageRenderedCapability = createPromiseCapability();
+        this.#pagesCapability = createPromiseCapability();
         this._scrollMode = ScrollMode.VERTICAL;
         this._previousScrollMode = ScrollMode.UNKNOWN;
         this._spreadMode = SpreadMode.NONE;
@@ -877,7 +875,7 @@ export class PDFViewer {
             }
             return;
         }
-        docStyle.setProperty("--scale-factor", newScale * PixelsPerInch.PDF_TO_CSS_UNITS);
+        this.viewer.style.setProperty("--scale-factor", newScale * PixelsPerInch.PDF_TO_CSS_UNITS);
         const postponeDrawing = drawingDelay >= 0 && drawingDelay < 1000;
         this.refresh(true, {
             scale: newScale,
@@ -1602,31 +1600,59 @@ export class PDFViewer {
     }
     /**
      * Increase the current zoom level one, or more, times.
-     * @param steps Defaults to zooming once.
      */
-    increaseScale(steps = 1, options) {
-        let newScale = this._currentScale;
-        do {
-            newScale = (newScale * DEFAULT_SCALE_DELTA).toFixed(2);
-            newScale = Math.ceil(+newScale * 10) / 10;
-            newScale = Math.min(MAX_SCALE, newScale);
-        } while (--steps > 0 && newScale < MAX_SCALE);
+    increaseScale(options) {
+        /*#static*/  {
+            if (typeof options === "number") {
+                console.error("The `increaseScale` method-signature was updated, please use an object instead.");
+                options = { steps: options };
+            }
+        }
+        if (!this.pdfDocument) {
+            return;
+        }
         options ||= Object.create(null);
+        let newScale = this._currentScale;
+        if (options.scaleFactor > 1) {
+            newScale = Math.min(MAX_SCALE, Math.round(newScale * options.scaleFactor * 100) / 100);
+        }
+        else {
+            let steps = options.steps ?? 1;
+            do {
+                newScale = (newScale * DEFAULT_SCALE_DELTA).toFixed(2);
+                newScale = Math.ceil(newScale * 10) / 10;
+                newScale = Math.min(MAX_SCALE, newScale);
+            } while (--steps > 0 && newScale < MAX_SCALE);
+        }
         options.noScroll = false;
         this._setScale(newScale, options);
     }
     /**
      * Decrease the current zoom level one, or more, times.
-     * @param steps Defaults to zooming once.
      */
-    decreaseScale(steps = 1, options) {
-        let newScale = this._currentScale;
-        do {
-            newScale = (newScale / DEFAULT_SCALE_DELTA).toFixed(2);
-            newScale = Math.floor(+newScale * 10) / 10;
-            newScale = Math.max(MIN_SCALE, newScale);
-        } while (--steps > 0 && newScale > MIN_SCALE);
+    decreaseScale(options) {
+        /*#static*/  {
+            if (typeof options === "number") {
+                console.error("The `decreaseScale` method-signature was updated, please use an object instead.");
+                options = { steps: options };
+            }
+        }
+        if (!this.pdfDocument) {
+            return;
+        }
         options ||= Object.create(null);
+        let newScale = this._currentScale;
+        if (options.scaleFactor > 0 && options.scaleFactor < 1) {
+            newScale = Math.max(MIN_SCALE, Math.round(newScale * options.scaleFactor * 100) / 100);
+        }
+        else {
+            let steps = options.steps ?? 1;
+            do {
+                newScale = (newScale / DEFAULT_SCALE_DELTA).toFixed(2);
+                newScale = Math.floor(newScale * 10) / 10;
+                newScale = Math.max(MIN_SCALE, newScale);
+            } while (--steps > 0 && newScale > MIN_SCALE);
+        }
         options.noScroll = false;
         this._setScale(newScale, options);
     }

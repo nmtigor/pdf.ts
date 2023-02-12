@@ -112,7 +112,7 @@ export declare class TextLayerRenderTask {
     _reader?: ReadableStreamDefaultReader<TextContent> | undefined;
     _textDivProperties: WeakMap<HTMLSpanElement, TextDivProps>;
     _canceled: boolean;
-    _capability: import("../../../lib/promisecap.js").PromiseCap<void>;
+    _capability: import("../shared/util.js").PromiseCapability<void>;
     /**
      * Promise for textLayer rendering task completion.
      */

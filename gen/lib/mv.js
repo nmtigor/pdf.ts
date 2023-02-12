@@ -193,6 +193,10 @@ export class SVGViewbox extends SVGVCo {
 }
 class MooHandlerDB {
     #eq;
+    /**
+     * Soted by `index_x` ascendingly
+     * Same `index_x` elements are sorted by their adding order.
+     */
     #_a = [];
     get len_$() {
         return this.#_a.length;
@@ -218,10 +222,10 @@ class MooHandlerDB {
      * @const @param index_x
      * @return `true` if added, `false` if not.
      */
-    add(handler_x, match_newval_x, match_oldval_x, force_x = false, index_x = 0) {
-        if (this.#_a.some((_) => _.handler === handler_x))
+    add(handler_x, match_newval_x, match_oldval_x, forcing_x = false, index_x = 0) {
+        if (this.#_a.some((_y) => _y.handler === handler_x))
             return false;
-        if (force_x)
+        if (forcing_x)
             ++this.#nforce;
         let i = this.#_a.findIndex((ext_y) => index_x < ext_y.index);
         if (i < 0)
@@ -230,7 +234,7 @@ class MooHandlerDB {
             handler: handler_x,
             match_newval: match_newval_x,
             match_oldval: match_oldval_x,
-            force: force_x,
+            forcing: forcing_x,
             index: index_x,
         });
         this.#got.length = 0; //!
@@ -259,7 +263,7 @@ class MooHandlerDB {
         const del_ = this.#strict_eq(toDel.match_newval, match_newval_x) &&
             this.#strict_eq(toDel.match_oldval, match_oldval_x);
         if (del_) {
-            if (toDel.force)
+            if (toDel.forcing)
                 --this.#nforce;
             this.#_a.splice(i, 1);
             this.#got.length = 0; //!
@@ -274,8 +278,12 @@ class MooHandlerDB {
     #oldval;
     #gforce;
     #got = [];
+    /**
+     * Get a sub-array of `#_a`
+     */
     get(newval_x, oldval_x, gforce_x) {
-        if (this.#newval !== undefined && this.#eq(this.#newval, newval_x) &&
+        if (this.#got.length &&
+            this.#newval !== undefined && this.#eq(this.#newval, newval_x) &&
             this.#oldval !== undefined && this.#eq(this.#oldval, oldval_x) &&
             this.#gforce === gforce_x) {
             return this.#got;
@@ -288,7 +296,7 @@ class MooHandlerDB {
         this.#_a.forEach((ext) => {
             if (this.#match(ext.match_newval, newval_x) &&
                 this.#match(ext.match_oldval, oldval_x) &&
-                (changed_ || gforce_x || ext.force)) {
+                (changed_ || gforce_x || ext.forcing)) {
                 this.#got.push(ext.handler);
             }
         });
@@ -301,17 +309,19 @@ class MooHandlerDB {
     }
 }
 /**
- * Instance of `Moo` concerns about one value, whether it changes or not.
- * Instance of `Moo` stores many callbacks.
+ * `Moo` instance concerns about one value, whether it changes or not.
+ * `Moo` instance stores many callbacks.
  */
 export class Moo {
     #initval;
     #eq;
+    #active;
     #forcing;
     #val;
     get val() {
         return this.#val;
     }
+    #oldval;
     #newval;
     get newval() {
         return this.#newval;
@@ -322,8 +332,8 @@ export class Moo {
         return this.#handler_db.len_$;
     }
     #forcingOnce = false;
-    set forceOnce(force_x) {
-        this.#forcingOnce = force_x;
+    set forceOnce(forcing_x) {
+        this.#forcingOnce = forcing_x;
     }
     force() {
         this.#forcingOnce = true;
@@ -339,19 +349,15 @@ export class Moo {
         // // #endif
         this.#data = data_x;
     }
-    /**
-     * @headconst @param val_x
-     * @headconst @param eq_x
-     * @const @param force_x
-     */
-    constructor(val_x, eq_x = (a, b) => a === b, force_x) {
-        this.#initval = val_x;
-        this.#eq = eq_x;
-        this.#forcing = force_x === undefined ? false : true;
+    constructor({ val, eq_ = (a, b) => a === b, active = false, forcing = false, }) {
+        this.#initval = val;
+        this.#eq = eq_;
+        this.#active = active;
+        this.#forcing = forcing;
         this.reset();
     }
     /**
-     * Without invoking any callbacks.
+     * Not invoking any callbacks
      */
     set(val) {
         this.#val = this.#newval = val;
@@ -368,9 +374,14 @@ export class Moo {
         this.#forcingOnce = this.#forcing;
         return this;
     }
-    /** @final */
-    registHandler(handler_x, match_newval_x, match_oldval_x, force_x, index_x = 0) {
-        this.#handler_db.add(handler_x, match_newval_x, match_oldval_x, force_x !== undefined, index_x);
+    /**
+     * Small index callbacks will be called first
+     * Same index callbacks will be called by adding order
+     *
+     * @final
+     */
+    registHandler(handler_x, match_newval_x, match_oldval_x, forcing_x, index_x = 0) {
+        this.#handler_db.add(handler_x, match_newval_x, match_oldval_x, forcing_x, index_x);
         // console.log( `this.#handler_db.size=${this.#handler_db.size}` );
     }
     /** @final */
@@ -379,39 +390,51 @@ export class Moo {
         // console.log( `this.#handler_db.size=${this.#handler_db.size}` );
     }
     /** @final */
-    registOnceHandler(handler_x, match_newval_x, match_oldval_x, force_x, index_x = 0) {
+    registOnceHandler(handler_x, match_newval_x, match_oldval_x, forcing_x, index_x = 0) {
         const wrap_ = (newval_y, oldval_y, data_y) => {
             handler_x(newval_y, oldval_y, data_y);
             this.removeHandler(wrap_, match_newval_x, match_oldval_x);
         };
-        this.registHandler(wrap_, match_newval_x, match_oldval_x, force_x, index_x);
+        this.registHandler(wrap_, match_newval_x, match_oldval_x, forcing_x, index_x);
     }
-    /** @final */
-    on(newval_x, handler_x, force_x, index_x = 0) {
-        this.registHandler(handler_x, newval_x, undefined, force_x, index_x);
+    /**
+     * Force `match_newval_x`, ignore `match_oldval_x`
+     * @final
+     */
+    on(newval_x, handler_x, forcing_x, index_x = 0) {
+        this.registHandler(handler_x, newval_x, undefined, forcing_x, index_x);
     }
-    /** @final */
+    /**
+     * Force `match_newval_x`, ignore `match_oldval_x`
+     * @final
+     */
     off(newval_x, handler_x) {
         this.removeHandler(handler_x, newval_x);
     }
-    /** @final */
-    once(newval_x, handler_x, force_x, index_x = 0) {
-        this.registOnceHandler(handler_x, newval_x, undefined, force_x, index_x);
+    /**
+     * Force `match_newval_x`, ignore `match_oldval_x`
+     * @final
+     */
+    once(newval_x, handler_x, forcing_x, index_x = 0) {
+        this.registOnceHandler(handler_x, newval_x, undefined, forcing_x, index_x);
     }
-    set val(val_x) {
-        if (this.#eq(val_x, this.#val) &&
+    set val(newval_x) {
+        if (this.#eq(newval_x, this.#val) &&
             !this.#forcing_ &&
             !this.#handler_db.forcing_$) {
             return;
         }
-        this.#newval = val_x;
-        this.#handler_db.get(val_x, this.#val, this.#forcing_)
-            .forEach((handler_y) => handler_y(val_x, this.#val, this.#data));
+        this.#oldval = this.#val;
+        this.#newval = newval_x;
+        if (this.#active)
+            this.#val = newval_x;
+        this.#handler_db.get(newval_x, this.#oldval, this.#forcing_)
+            .forEach((handler_y) => handler_y(newval_x, this.#val, this.#data));
         // for( const handler_y of this.#handler_db )
         // {
-        //   handler_y( val_x, this.#val, this );
+        //   handler_y( newval_x, this.#val, this );
         // }
-        this.#val = val_x;
+        this.#val = newval_x;
         this.#forcingOnce = this.#forcing;
         this.#data = undefined; // it is used once
         // if( this.once_ ) this.#handler_db.clear();

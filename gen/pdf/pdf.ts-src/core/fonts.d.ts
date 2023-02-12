@@ -1,4 +1,5 @@
-import { FontType, type matrix_t, point_t, type rect_t } from "../shared/util.js";
+import { type point_t, type rect_t } from "../../../lib/alias.js";
+import { type matrix_t } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
 import { CFFFont } from "./cff_font.js";
 import { CMap } from "./cmap.js";
@@ -28,7 +29,6 @@ export declare abstract class FontExpotData {
     data: Uint8Array | undefined;
     defaultWidth?: number;
     fontMatrix?: matrix_t | undefined;
-    fontType?: FontType;
     isMonospace: boolean;
     isSerifFont: boolean;
     isType3Font?: boolean | undefined;

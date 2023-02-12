@@ -17,9 +17,8 @@
  */
 import { MOZCENTRAL } from "../../../global.js";
 import { HttpStatusCode } from "../../../lib/HttpStatusCode.js";
-import { createPromiseCap } from "../../../lib/promisecap.js";
 import { assert } from "../../../lib/util/trace.js";
-import { stringToBytes, } from "../shared/util.js";
+import { createPromiseCapability, stringToBytes, } from "../shared/util.js";
 import { createResponseStatusError, extractFilenameFromHeader, validateRangeRequestCapabilities, } from "./network_utils.js";
 /*80--------------------------------------------------------------------------*/
 /*#static*/ 
@@ -28,8 +27,7 @@ function getArrayBuffer(xhr) {
     if (typeof data !== "string") {
         return data;
     }
-    const array = stringToBytes(data);
-    return array.buffer;
+    return stringToBytes(data).buffer;
 }
 class NetworkManager {
     url;
@@ -210,7 +208,7 @@ class PDFNetworkStreamFullRequestReader {
     #manager;
     #url;
     #fullRequestId;
-    #headersReceivedCapability = createPromiseCap();
+    #headersReceivedCapability = createPromiseCapability();
     get headersReady() {
         return this.#headersReceivedCapability.promise;
     }
@@ -248,7 +246,7 @@ class PDFNetworkStreamFullRequestReader {
         };
         this.#url = source.url;
         this.#fullRequestId = manager.requestFull(args);
-        // this.#headersReceivedCapability = createPromiseCap();
+        // this.#headersReceivedCapability = createPromiseCapability();
         this.#disableRange = source.disableRange || false;
         this.#contentLength = source.length; // Optional
         this.#rangeChunkSize = source.rangeChunkSize;
@@ -328,7 +326,7 @@ class PDFNetworkStreamFullRequestReader {
         if (this.#done) {
             return { done: true };
         }
-        const requestCapability = createPromiseCap();
+        const requestCapability = createPromiseCapability();
         this.#requests.push(requestCapability);
         return requestCapability.promise;
     }
@@ -414,7 +412,7 @@ export class PDFNetworkStreamRangeRequestReader {
         if (this.#done) {
             return { done: true };
         }
-        const requestCapability = createPromiseCap();
+        const requestCapability = createPromiseCapability();
         this.#requests.push(requestCapability);
         return requestCapability.promise;
     }

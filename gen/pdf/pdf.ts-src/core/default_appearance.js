@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 import { DENO } from "../../../global.js";
-import { LINE_DESCENT_FACTOR, LINE_FACTOR, OPS, warn, } from "../shared/util.js";
+import { LINE_DESCENT_FACTOR, LINE_FACTOR, OPS, warn } from "../shared/util.js";
 import { ColorSpace } from "./colorspace.js";
 import { escapePDFName, getRotationMatrix, numberToString, stringToUTF16HexString, } from "./core_utils.js";
 import { EvaluatorPreprocessor } from "./evaluator.js";

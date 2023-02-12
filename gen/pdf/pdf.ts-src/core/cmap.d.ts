@@ -63,13 +63,13 @@ export declare class IdentityCMap extends CMap {
     get isIdentityCMap(): boolean;
 }
 declare namespace NsCMapFactory {
-    interface _CMapFactoryCreateP {
+    interface CMapFactoryCreateP_ {
         encoding: Name | BaseStream;
         fetchBuiltInCMap: FetchBuiltInCMap;
         useCMap?: string;
     }
     export const CMapFactory: {
-        create(params: _CMapFactoryCreateP): Promise<CMap | IdentityCMap>;
+        create(params: CMapFactoryCreateP_): Promise<CMap | IdentityCMap>;
     };
     export {};
 }

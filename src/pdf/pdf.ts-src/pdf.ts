@@ -28,7 +28,6 @@
 // eslint-disable-next-line max-len
 /** @typedef {import("./display/text_layer").TextLayerRenderTask} TextLayerRenderTask */
 
-import { CHROME, GENERIC, PRODUCTION } from "../../global.ts";
 import { type FieldObject } from "./core/annotation.ts";
 import {
   type Destination,
@@ -63,13 +62,11 @@ import {
   PDFDataRangeTransport,
   PDFDocumentLoadingTask,
   PDFDocumentProxy,
-  type PDFDocumentStats,
   PDFPageProxy,
   PDFWorker,
   type RefProxy,
   type RenderP,
   RenderTask,
-  setPDFNetworkStreamFactory,
   type TextContent,
   type TextItem,
   version,
@@ -80,7 +77,6 @@ import {
   getXfaPageViewport,
   isDataScheme,
   isPdfFile,
-  isValidFetchUrl,
   loadScript,
   PageViewport,
   PDFDateString,
@@ -116,6 +112,7 @@ import {
   AnnotationEditorType,
   AnnotationMode,
   CMapCompressionType,
+  createPromiseCapability,
   createValidAbsoluteUrl,
   InvalidPDFException,
   type matrix_t,
@@ -124,7 +121,7 @@ import {
   type OPSName,
   PasswordResponses,
   PermissionFlag,
-  type point_t,
+  type PromiseCapability,
   shadow,
   UnexpectedResponseException,
   UNSUPPORTED_FEATURES,
@@ -139,33 +136,6 @@ import {
 // /* eslint-disable-next-line no-unused-vars */
 // const pdfjsBuild =
 //   typeof PDFJSDev !== "undefined" ? PDFJSDev.eval("BUNDLE_BUILD") : void 0;
-
-/*#static*/ if (!PRODUCTION) {
-  const streamsPromise = Promise.all([
-    import("./display/network.ts"),
-    import("./display/fetch_stream.ts"),
-  ]);
-
-  setPDFNetworkStreamFactory(async (params: DocumentInitP) => {
-    const [{ PDFNetworkStream }, { PDFFetchStream }] = await streamsPromise;
-    if (isValidFetchUrl(params.url)) {
-      return new PDFFetchStream(params);
-    }
-    return new PDFNetworkStream(params);
-  });
-} else {
-  /*#static*/ if (GENERIC || CHROME) {
-    const { PDFNetworkStream } = await import("./display/network.ts");
-    const { PDFFetchStream } = await import("./display/fetch_stream.ts");
-
-    setPDFNetworkStreamFactory(async (params: DocumentInitP) => {
-      if (isValidFetchUrl(params.url)) {
-        return new PDFFetchStream(params);
-      }
-      return new PDFNetworkStream(params);
-    });
-  }
-}
 /*80--------------------------------------------------------------------------*/
 
 export {
@@ -184,6 +154,7 @@ export {
   type Attachment,
   build,
   CMapCompressionType,
+  createPromiseCapability,
   createValidAbsoluteUrl,
   type Destination,
   type DispatchUpdateStatesP,
@@ -220,13 +191,12 @@ export {
   PDFDateString,
   PDFDocumentLoadingTask,
   PDFDocumentProxy,
-  type PDFDocumentStats,
   PDFPageProxy,
   PDFWorker,
   PermissionFlag,
   PixelsPerInch,
-  type point_t,
   PrintAnnotationStorage,
+  type PromiseCapability,
   type PropertyToUpdate,
   QuickJSSandbox,
   Ref,

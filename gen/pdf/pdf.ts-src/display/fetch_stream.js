@@ -16,9 +16,8 @@
  * limitations under the License.
  */
 import { MOZCENTRAL } from "../../../global.js";
-import { createPromiseCap } from "../../../lib/promisecap.js";
 import { assert } from "../../../lib/util/trace.js";
-import { AbortException } from "../shared/util.js";
+import { AbortException, createPromiseCapability, warn, } from "../shared/util.js";
 import { createResponseStatusError, extractFilenameFromHeader, validateRangeRequestCapabilities, validateResponseStatus, } from "./network_utils.js";
 /*80--------------------------------------------------------------------------*/
 /*#static*/ 
@@ -42,6 +41,21 @@ function createHeaders(httpHeaders) {
         headers.append(property, value);
     }
     return headers;
+}
+function getArrayBuffer(val) {
+    if (val instanceof Uint8Array) {
+        if (val.length !== val.buffer.byteLength) {
+            return val.buffer.slice(val.byteOffset, val.byteOffset + val.length);
+        }
+        else {
+            return val.buffer;
+        }
+    }
+    if (val instanceof ArrayBuffer) {
+        return val;
+    }
+    warn(`getArrayBuffer - unexpected data format: ${val}`);
+    return new Uint8Array(val).buffer;
 }
 export class PDFFetchStream {
     source;
@@ -82,7 +96,7 @@ export class PDFFetchStream {
 }
 class PDFFetchStreamReader {
     #stream;
-    #reader = null;
+    #reader;
     _loaded = 0;
     #filename;
     get filename() {
@@ -94,7 +108,7 @@ class PDFFetchStreamReader {
     get contentLength() {
         return this.#contentLength;
     }
-    #headersCapability = createPromiseCap();
+    #headersCapability = createPromiseCapability();
     get headersReady() {
         return this.#headersCapability.promise;
     }
@@ -159,15 +173,15 @@ class PDFFetchStreamReader {
     async read() {
         await this.#headersCapability.promise;
         const { value, done } = await this.#reader.read();
-        if (done)
+        if (done) {
             return { value, done };
+        }
         this._loaded += value.byteLength;
         this.onProgress?.({
             loaded: this._loaded,
             total: this.#contentLength,
         });
-        const buffer = new Uint8Array(value).buffer;
-        return { value: buffer, done: false };
+        return { value: getArrayBuffer(value), done: false };
     }
     /** @implement */
     cancel(reason) {
@@ -180,7 +194,7 @@ export class PDFFetchStreamRangeReader {
     #reader;
     _loaded = 0;
     #withCredentials;
-    #readCapability = createPromiseCap();
+    #readCapability = createPromiseCapability();
     #isStreamingSupported;
     /** @implement */
     get isStreamingSupported() {
@@ -198,7 +212,7 @@ export class PDFFetchStreamRangeReader {
         this.#headers = createHeaders(this.#stream.httpHeaders);
         this.#headers.append("Range", `bytes=${begin}-${end - 1}`);
         const url = source.url;
-        fetch(url.toString(), createFetchOptions(this.#headers, this.#withCredentials, this.#abortController))
+        fetch(url, createFetchOptions(this.#headers, this.#withCredentials, this.#abortController))
             .then((response) => {
             if (!validateResponseStatus(response.status)) {
                 throw createResponseStatusError(response.status, url);
@@ -212,12 +226,12 @@ export class PDFFetchStreamRangeReader {
     async read() {
         await this.#readCapability.promise;
         const { value, done } = await this.#reader.read();
-        if (done)
+        if (done) {
             return { value, done };
+        }
         this._loaded += value.byteLength;
         this.onProgress?.({ loaded: this._loaded });
-        const buffer = new Uint8Array(value).buffer;
-        return { value: buffer, done: false };
+        return { value: getArrayBuffer(value), done: false };
     }
     /** @implement */
     cancel(reason) {

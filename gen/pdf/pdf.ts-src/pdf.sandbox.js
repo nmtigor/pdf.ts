@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import ModuleLoader from "../../3rd/quickjs/quickjs-eval.js";
+import ModuleLoader from "../../3rd/quickjs-2022-05-02/quickjs-eval.js";
 import { _PDFDEV } from "../../global.js";
 import { SandboxSupportBase } from "./pdf.sandbox.external.js";
 /*80--------------------------------------------------------------------------*/

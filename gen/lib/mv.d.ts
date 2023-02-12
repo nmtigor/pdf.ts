@@ -57,7 +57,7 @@ export declare abstract class Vuu<C extends Coo = Coo, E extends Element = Eleme
     detach<V extends Vuu<C>>(ret_x: V): V;
     on<E extends EventName>(type: E, listener: EventHandler<E>, options?: AddEventListenerOptions | boolean): void;
     off<E extends EventName>(type: E, listener: EventHandler<E>, options?: EventListenerOptions | boolean): void;
-    assignAttro(attr_o: Record<string, string>): this;
+    assignAttro(attr_o: Record<string, string | number>): this;
     set cyName(name_x: string);
 }
 export declare class HTMLVuu<C extends Coo = Coo, E extends HTMLElement = HTMLElement> extends Vuu<C, E> {
@@ -97,7 +97,7 @@ export declare abstract class SVGVCo<CI extends CooInterface, E extends SVGEleme
      */
     constructor(el_x: E);
 }
-export declare class SVGViewbox<CI extends CooInterface = CooInterface> extends SVGVCo<CI> {
+export declare class SVGViewbox<CI extends CooInterface = CooInterface> extends SVGVCo<CI, SVGSVGElement> {
     /**
      * @headconst @param coo_x
      * @const @param viewBox_x
@@ -105,44 +105,59 @@ export declare class SVGViewbox<CI extends CooInterface = CooInterface> extends 
     constructor(viewBox_x?: string);
 }
 export type MooEq<T extends {} | null> = (a: T, b: T) => boolean;
-export type MooHandler<T extends {} | null, D = any> = (newval: T, oldval?: T, data?: D) => void;
+export type MooHandler<T extends {} | null, D = any> = (newval: T, oldval: T, data?: D) => void;
+type MooCtorP_<T extends {} | null> = {
+    val: T;
+    eq_?: MooEq<T>;
+    active?: boolean;
+    forcing?: boolean;
+};
 /**
- * Instance of `Moo` concerns about one value, whether it changes or not.
- * Instance of `Moo` stores many callbacks.
+ * `Moo` instance concerns about one value, whether it changes or not.
+ * `Moo` instance stores many callbacks.
  */
 export declare class Moo<T extends {} | null, D = any> {
     #private;
     get val(): T;
     get newval(): T;
     get _len(): number;
-    set forceOnce(force_x: boolean);
+    set forceOnce(forcing_x: boolean);
     force(): this;
     set data(data_x: D);
+    constructor({ val, eq_, active, forcing, }: MooCtorP_<T>);
     /**
-     * @headconst @param val_x
-     * @headconst @param eq_x
-     * @const @param force_x
-     */
-    constructor(val_x: T, eq_x?: (a: T, b: T) => boolean, force_x?: "force");
-    /**
-     * Without invoking any callbacks.
+     * Not invoking any callbacks
      */
     set(val: T): void;
     /** @final */
     reset(): this;
-    /** @final */
-    registHandler(handler_x: MooHandler<T, D>, match_newval_x?: T, match_oldval_x?: T, force_x?: "force", index_x?: number): void;
+    /**
+     * Small index callbacks will be called first
+     * Same index callbacks will be called by adding order
+     *
+     * @final
+     */
+    registHandler(handler_x: MooHandler<T, D>, match_newval_x?: T, match_oldval_x?: T, forcing_x?: boolean, index_x?: number): void;
     /** @final */
     removeHandler(handler_x: MooHandler<T, D>, match_newval_x?: T, match_oldval_x?: T): void;
     /** @final */
-    registOnceHandler(handler_x: MooHandler<T, D>, match_newval_x?: T, match_oldval_x?: T, force_x?: "force", index_x?: number): void;
-    /** @final */
-    on(newval_x: T, handler_x: MooHandler<T, D>, force_x?: "force", index_x?: number): void;
-    /** @final */
+    registOnceHandler(handler_x: MooHandler<T, D>, match_newval_x?: T, match_oldval_x?: T, forcing_x?: boolean, index_x?: number): void;
+    /**
+     * Force `match_newval_x`, ignore `match_oldval_x`
+     * @final
+     */
+    on(newval_x: T, handler_x: MooHandler<T, D>, forcing_x?: boolean, index_x?: number): void;
+    /**
+     * Force `match_newval_x`, ignore `match_oldval_x`
+     * @final
+     */
     off(newval_x: T, handler_x: MooHandler<T, D>): void;
-    /** @final */
-    once(newval_x: T, handler_x: MooHandler<T, D>, force_x?: "force", index_x?: number): void;
-    set val(val_x: T);
+    /**
+     * Force `match_newval_x`, ignore `match_oldval_x`
+     * @final
+     */
+    once(newval_x: T, handler_x: MooHandler<T, D>, forcing_x?: boolean, index_x?: number): void;
+    set val(newval_x: T);
     refresh(): void;
     shareHandlerTo(rhs: Moo<T, D>): void;
 }
