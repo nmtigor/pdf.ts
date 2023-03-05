@@ -15,10 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { CHROME, DENO, GENERIC, MOZCENTRAL, PRODUCTION } from "../../global.js";
-import { html } from "../../lib/dom.js";
+// import "web-com";
+// import "web-print_service";
+import { CHROME, GENERIC, MOZCENTRAL } from "../../global.js";
 import { viewerApp } from "./app.js";
-import { AppOptions } from "./app_options.js";
 /*80--------------------------------------------------------------------------*/
 // /* eslint-disable-next-line no-unused-vars */
 // const pdfjsVersion =
@@ -26,20 +26,19 @@ import { AppOptions } from "./app_options.js";
 // /* eslint-disable-next-line no-unused-vars */
 // const pdfjsBuild =
 //   typeof PDFJSDev !== "undefined" ? PDFJSDev.eval("BUNDLE_BUILD") : void 0;
-// const AppConstants = /*#static*/ GENERIC
-//   ? { LinkTarget, RenderingStates, ScrollMode, SpreadMode }
-//   : undefined;
+// const AppConstants =
+//   typeof PDFJSDev === "undefined" || PDFJSDev.test("GENERIC")
+//     ? { LinkTarget, RenderingStates, ScrollMode, SpreadMode }
+//     : null;
 // window.PDFViewerApplication = PDFViewerApplication;
 // window.PDFViewerApplicationConstants = AppConstants;
 // window.PDFViewerApplicationOptions = AppOptions;
-/*#static*/ 
-/*#static*/ 
+// Ref. gulpfile.js of pdf.js
 /*#static*/  {
-    import("./genericcom.js");
-}
-/*#static*/ 
-/*#static*/  {
-    import("./pdf_print_service.js");
+    /*#static*/  {
+        await import("./genericcom.js");
+        await import("./pdf_print_service.js");
+    }
 }
 function getViewerConfiguration() {
     return {
@@ -312,20 +311,30 @@ function getViewerConfiguration() {
 function webViewerLoad() {
     const config = getViewerConfiguration();
     /*#static*/  {
-        if (window.chrome) {
-            const link = html("link");
-            link.rel = "stylesheet";
-            // link.href = "../build/dev-css/viewer.css";
-            link.href = "res/pdf/pdf.ts-web/viewer.css";
-            document.head.append(link);
-        }
-        Promise.all([
-            import("./genericcom.js"),
-            import("./pdf_print_service.js"),
-        ]).then(([genericCom, pdfPrintService]) => {
-            viewerApp.run(config);
+        // Give custom implementations of the default viewer a simpler way to
+        // set various `AppOptions`, by dispatching an event once all viewer
+        // files are loaded but *before* the viewer initialization has run.
+        const event = new CustomEvent("webviewerloaded", {
+            bubbles: true,
+            cancelable: true,
+            detail: {
+                source: window,
+            },
         });
+        try {
+            // Attempt to dispatch the event at the embedding `document`,
+            // in order to support cases where the viewer is embedded in
+            // a *dynamically* created <iframe> element.
+            parent.document.dispatchEvent(event);
+        }
+        catch (ex) {
+            // The viewer could be in e.g. a cross-origin <iframe> element,
+            // fallback to dispatching the event at the current `document`.
+            console.error(`webviewerloaded: ${ex}`);
+            document.dispatchEvent(event);
+        }
     }
+    viewerApp.run(config);
 }
 // Block the "load" event until all pages are loaded, to ensure that printing
 // works in Firefox; see https://bugzilla.mozilla.org/show_bug.cgi?id=1618553

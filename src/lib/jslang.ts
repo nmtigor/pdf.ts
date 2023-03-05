@@ -266,7 +266,7 @@ Number.prototype.reprRatio = function (this: Number, fixTo_x = 2) {
   let x_ = this.valueOf();
   const n_ = Number.apxS(x_, 0);
   x_ = Math.abs(x_);
-  const f_ = Number.apxS(x_, 1);
+  const f_ = Number.apxG(x_, 0) && Number.apxS(x_, 1);
   let ret = x_.fixTo(fixTo_x).toString();
   if (f_) ret = ret.slice(1);
   if (n_) ret = `-${ret}`;

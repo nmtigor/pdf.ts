@@ -55,7 +55,7 @@ export class BaseCanvasFactory {
 export class BaseCMapReaderFactory {
     baseUrl;
     isCompressed;
-    constructor({ baseUrl, isCompressed = false }) {
+    constructor({ baseUrl, isCompressed = true }) {
         this.baseUrl = baseUrl;
         this.isCompressed = isCompressed;
     }

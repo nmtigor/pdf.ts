@@ -33,6 +33,7 @@ export declare class AnnotationEditorLayer {
     viewport: PageViewport;
     isMultipleSelection?: boolean;
     constructor(options: AnnotationEditorLayerOptions);
+    get isEmpty(): boolean;
     /**
      * Update the toolbar if it's required to reflect the tool currently used.
      */

@@ -71,7 +71,6 @@ export declare const enum Pointer {
 export type Constructor<T = object> = new (...args: any[]) => T;
 export type AbstractConstructor<T = object> = abstract new (...args: any[]) => T;
 export type Func<This = any> = (this: This, ...args: any[]) => any;
-export type Id<T> = (_x: T) => T;
 type _TupleOf<T, N extends number, R extends unknown[]> = R["length"] extends N ? R : _TupleOf<T, N, [...R, T]>;
 export type TupleOf<T, N extends number> = N extends N ? number extends N ? T[] : _TupleOf<T, N, []> : never;
 type Without<T, U> = {

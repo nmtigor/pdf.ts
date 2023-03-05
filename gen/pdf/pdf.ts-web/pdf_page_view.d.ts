@@ -1,4 +1,5 @@
 import { type point_t } from "../../lib/alias.js";
+import { MetadataEx } from "../pdf.ts-src/display/api.js";
 import { AnnotationEditorUIManager, AnnotationMode, AnnotationStorage, FieldObject, OptionalContentConfig, PageViewport, PDFPageProxy, StatTimer } from "../pdf.ts-src/pdf.js";
 import { AnnotationEditorLayerBuilder } from "./annotation_editor_layer_builder.js";
 import { AnnotationLayerBuilder } from "./annotation_layer_builder.js";
@@ -101,7 +102,7 @@ type LayerPropsR_ = {
     annotationStorage?: AnnotationStorage | undefined;
     downloadManager?: IDownloadManager | undefined;
     enableScripting: boolean;
-    fieldObjectsPromise?: Promise<Record<string, FieldObject[]> | undefined> | undefined;
+    fieldObjectsPromise?: Promise<boolean | Record<string, FieldObject[]> | MetadataEx | undefined> | undefined;
     findController?: PDFFindController | undefined;
     hasJSActionsPromise?: Promise<boolean> | undefined;
     linkService: IPDFLinkService;

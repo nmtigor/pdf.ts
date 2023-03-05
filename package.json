@@ -8,8 +8,6 @@
   "license": "Apache-2.0",
   "dependencies": {},
   "devDependencies": {
-    "@types/chrome": "latest",
-    "@types/css-font-loading-module": "latest",
-    "@types/wicg-file-system-access": "latest"
+    "@types/chrome": "latest"
   }
 }

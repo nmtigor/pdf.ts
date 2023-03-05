@@ -20,14 +20,8 @@
 import { AnnotationEditorType } from "../pdf.ts-src/pdf.ts";
 import { EventBus } from "./event_utils.ts";
 import { GrabToPan } from "./grab_to_pan.ts";
-import { PresentationModeState } from "./ui_utils.ts";
+import { CursorTool, PresentationModeState } from "./ui_utils.ts";
 /*80--------------------------------------------------------------------------*/
-
-export const enum CursorTool {
-  SELECT = 0, // The default value.
-  HAND = 1,
-  ZOOM = 2,
-}
 
 interface PDFCursorToolsOptions {
   /**

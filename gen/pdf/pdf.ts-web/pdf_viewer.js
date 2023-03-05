@@ -293,7 +293,6 @@ export class PDFViewer {
         this.downloadManager = options.downloadManager;
         this.findController = options.findController;
         this._scriptingManager = options.scriptingManager || undefined;
-        this.removePageBorders = options.removePageBorders || false;
         this.textLayerMode = options.textLayerMode ?? TextLayerMode.ENABLE;
         this.#annotationMode = options.annotationMode ??
             AnnotationMode.ENABLE_FORMS;
@@ -302,6 +301,7 @@ export class PDFViewer {
         this.imageResourcesPath = options.imageResourcesPath || "";
         this.enablePrintAutoRotate = options.enablePrintAutoRotate || false;
         /*#static*/  {
+            this.removePageBorders = options.removePageBorders || false;
             this.renderer = options.renderer || RendererType.CANVAS;
         }
         this.useOnlyCssZoom = options.useOnlyCssZoom || false;
@@ -334,8 +334,10 @@ export class PDFViewer {
         this.presentationModeState = PresentationModeState.UNKNOWN;
         this._onBeforeDraw = this._onAfterDraw = undefined;
         this._resetView();
-        if (this.removePageBorders) {
-            this.viewer.classList.add("removePageBorders");
+        /*#static*/  {
+            if (this.removePageBorders) {
+                this.viewer.classList.add("removePageBorders");
+            }
         }
         this.#updateContainerHeightCss();
     }
@@ -946,7 +948,7 @@ export class PDFViewer {
                     hPadding *= 2;
                 }
             }
-            else if (this.removePageBorders) {
+            else if (GENERIC && this.removePageBorders) {
                 hPadding = vPadding = 0;
             }
             else if (this._scrollMode === ScrollMode.HORIZONTAL) {
@@ -1083,8 +1085,12 @@ export class PDFViewer {
                 y = destArray[3];
                 width = destArray[4] - x;
                 height = destArray[5] - y;
-                const hPadding = this.removePageBorders ? 0 : SCROLLBAR_PADDING;
-                const vPadding = this.removePageBorders ? 0 : VERTICAL_PADDING;
+                let hPadding = SCROLLBAR_PADDING, vPadding = VERTICAL_PADDING;
+                /*#static*/  {
+                    if (this.removePageBorders) {
+                        hPadding = vPadding = 0;
+                    }
+                }
                 widthScale = (this.container.clientWidth - hPadding) /
                     width /
                     PixelsPerInch.PDF_TO_CSS_UNITS;

@@ -111,6 +111,7 @@ type MooCtorP_<T extends {} | null> = {
     eq_?: MooEq<T>;
     active?: boolean;
     forcing?: boolean;
+    name?: string;
 };
 /**
  * `Moo` instance concerns about one value, whether it changes or not.
@@ -118,13 +119,15 @@ type MooCtorP_<T extends {} | null> = {
  */
 export declare class Moo<T extends {} | null, D = any> {
     #private;
+    readonly id: number;
+    readonly name: string | undefined;
     get val(): T;
     get newval(): T;
-    get _len(): number;
+    get _nCb(): number;
     set forceOnce(forcing_x: boolean);
     force(): this;
     set data(data_x: D);
-    constructor({ val, eq_, active, forcing, }: MooCtorP_<T>);
+    constructor({ val, eq_, active, forcing, name, }: MooCtorP_<T>);
     /**
      * Not invoking any callbacks
      */
@@ -157,6 +160,7 @@ export declare class Moo<T extends {} | null, D = any> {
      * @final
      */
     once(newval_x: T, handler_x: MooHandler<T, D>, forcing_x?: boolean, index_x?: number): void;
+    static _count: number;
     set val(newval_x: T);
     refresh(): void;
     shareHandlerTo(rhs: Moo<T, D>): void;

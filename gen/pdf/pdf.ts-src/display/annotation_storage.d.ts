@@ -29,6 +29,7 @@ export declare class AnnotationStorage {
      */
     has(key: string): boolean;
     getAll(): Record<string, AnnotStorageValue> | undefined;
+    setAll(obj: Record<string, AnnotStorageValue>): void;
     resetModified(): void;
     get print(): PrintAnnotationStorage;
     /**

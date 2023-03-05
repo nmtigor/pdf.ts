@@ -16,7 +16,6 @@
  * limitations under the License.
  */
 /** @typedef {import("../src/display/api").PDFDocumentProxy} PDFDocumentProxy */
-/** @typedef {import("./event_utils").EventBus} EventBus */
 /** @typedef {import("./interfaces").IL10n} IL10n */
 /** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
 // eslint-disable-next-line max-len
@@ -69,7 +68,7 @@ export class PDFThumbnailViewer {
     _pagesRequests;
     _setImageDisabled;
     pdfDocument;
-    constructor({ container, eventBus, linkService, renderingQueue, l10n, pageColors, }) {
+    constructor({ container, linkService, renderingQueue, l10n, pageColors, }) {
         this.container = container;
         this.linkService = linkService;
         this.renderingQueue = renderingQueue;

@@ -107,8 +107,8 @@ export declare class TextLayerRenderTask {
     _container: HTMLElement;
     _textDivs: HTMLSpanElement[];
     _textContentItemsStr: string[];
-    _fontInspectorEnabled: boolean;
     _isOffscreenCanvasSupported: boolean | undefined;
+    _fontInspectorEnabled: boolean;
     _reader?: ReadableStreamDefaultReader<TextContent> | undefined;
     _textDivProperties: WeakMap<HTMLSpanElement, TextDivProps>;
     _canceled: boolean;

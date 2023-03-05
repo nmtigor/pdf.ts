@@ -4,6 +4,7 @@ import { PageColors } from "../../pdf.ts-web/pdf_viewer.js";
 import { type AnnotationData, type FieldObject } from "../core/annotation.js";
 import { type ExplicitDest, SetOCGState } from "../core/catalog.js";
 import { type AnnotActions } from "../core/core_utils.js";
+import { DatasetReader } from "../core/dataset_reader.js";
 import { DocumentInfo, type XFAData } from "../core/document.js";
 import { type ImgData } from "../core/evaluator.js";
 import { type Attachment } from "../core/file_spec.js";
@@ -14,7 +15,7 @@ import { type OpListIR } from "../core/operator_list.js";
 import { type ShadingPatternIR } from "../core/pattern.js";
 import { type XFAElObj } from "../core/xfa/alias.js";
 import { type IPDFStream } from "../interfaces.js";
-import { MessageHandler, type PageInfo, type PDFInfo, Thread } from "../shared/message_handler.js";
+import { GetDocRequestData, MessageHandler, type PageInfo, type PDFInfo, Thread } from "../shared/message_handler.js";
 import { AnnotationMode, type matrix_t, PasswordResponses, type PromiseCapability, RenderingIntentFlag, UNSUPPORTED_FEATURES, VerbosityLevel } from "../shared/util.js";
 import { AnnotStorageRecord } from "./annotation_layer.js";
 import { AnnotationStorage, PrintAnnotationStorage } from "./annotation_storage.js";
@@ -109,7 +110,7 @@ export interface DocumentInitP {
     cMapUrl?: string | undefined;
     /**
      * Specifies if the Adobe CMaps are binary
-     * packed or not.
+     * packed or not. The default value is `true`.
      */
     cMapPacked?: boolean;
     /**
@@ -233,6 +234,21 @@ export interface DocumentInitP {
     contentDispositionFilename?: string | undefined;
 }
 type GetDocumentP_ = string | URL | TypedArray | ArrayBuffer | PDFDataRangeTransport | DocumentInitP;
+type TransportParams_ = {
+    ignoreErrors: boolean;
+    isEvalSupported: boolean;
+    disableFontFace: boolean;
+    fontExtraProperties: boolean;
+    enableXfa: boolean;
+    ownerDocument: Document;
+    disableAutoFetch: boolean;
+    pdfBug: boolean;
+    styleElement: HTMLStyleElement | undefined;
+};
+type TransportFactory_ = {
+    cMapReaderFactory: DOMCMapReaderFactory;
+    standardFontDataFactory: DOMStandardFontDataFactory;
+};
 /**
  * This is the main entry point for loading a PDF and interacting with it.
  *
@@ -339,6 +355,12 @@ export interface OutlineNode {
     unsafeUrl: string | undefined;
     url: string | undefined;
 }
+export type MetadataEx = {
+    info: DocumentInfo;
+    metadata: Metadata | undefined;
+    contentDispositionFilename: string | undefined;
+    contentLength: number | undefined;
+};
 /**
  * Proxy to a `PDFDocument` in the worker thread.
  */
@@ -468,7 +490,7 @@ export declare class PDFDocumentProxy {
      *   dictionary and similarly `metadata` is a {Metadata} object with
      *   information from the metadata section of the PDF.
      */
-    getMetadata(): Promise<PDFMetadata>;
+    getMetadata(): Promise<MetadataEx>;
     /**
      * @return A promise that is resolved with
      *   a {MarkInfo} object that contains the MarkInfo flags for the PDF
@@ -515,8 +537,8 @@ export declare class PDFDocumentProxy {
      * {DocumentInitParameters}, which are needed in the viewer.
      */
     get loadingParams(): {
-        disableAutoFetch: boolean | undefined;
-        enableXfa: boolean | undefined;
+        disableAutoFetch: boolean;
+        enableXfa: boolean;
     };
     /**
      * The loadingTask for the current document.
@@ -527,7 +549,7 @@ export declare class PDFDocumentProxy {
      *   resolved with an {Object} containing /AcroForm field data for the JS
      *   sandbox, or `null` when no field data is present in the PDF file.
      */
-    getFieldObjects(): Promise<Record<string, FieldObject[]> | undefined>;
+    getFieldObjects(): Promise<boolean | Record<string, FieldObject[]> | MetadataEx | undefined>;
     /**
      * @return A promise that is resolved with `true`
      *   if some /AcroForm fields have JavaScript actions.
@@ -539,6 +561,7 @@ export declare class PDFDocumentProxy {
      *   action, or `null` when no such annotations are present in the PDF file.
      */
     getCalculationOrderIds(): Promise<string[] | undefined>;
+    getXFADatasets: () => Promise<DatasetReader | undefined>;
 }
 /**
  * Page getViewport parameters.
@@ -849,7 +872,6 @@ export declare class PDFPageProxy {
     _pdfBug: boolean;
     commonObjs: PDFObjects<PDFCommonObjs>;
     objs: PDFObjects<PDFObjs | undefined>;
-    _bitmaps: Set<ImageBitmap>;
     cleanupAfterRender: boolean;
     _structTreePromise: Promise<StructTreeNode | undefined> | undefined;
     pendingCleanup: boolean;
@@ -967,7 +989,7 @@ export declare class LoopbackPort {
     removeEventListener(name: string, listener: EventListener): void;
     terminate(): void;
 }
-interface _PDFWorkerP {
+interface PDFWorkerP_ {
     /**
      * The name of the worker.
      */
@@ -1013,7 +1035,7 @@ export declare class PDFWorker {
      * The current MessageHandler-instance.
      */
     get messageHandler(): MessageHandler<Thread.main, Thread.worker>;
-    constructor({ name, port, verbosity, }?: _PDFWorkerP);
+    constructor({ name, port, verbosity, }?: PDFWorkerP_);
     /**
      * Destroys the worker instance.
      */
@@ -1021,7 +1043,7 @@ export declare class PDFWorker {
     /**
      * @param params The worker initialization parameters.
      */
-    static fromPort(params: _PDFWorkerP): PDFWorker | undefined;
+    static fromPort(params: PDFWorkerP_): PDFWorker | undefined;
     /**
      * The current `workerSrc`, when it exists.
      */
@@ -1029,19 +1051,13 @@ export declare class PDFWorker {
     static get _mainThreadWorkerMessageHandler(): any;
     static get _setupFakeWorkerGlobal(): Promise<{
         setup(handler: MessageHandler<Thread.worker, Thread.main>, port: IWorker): void;
-        createDocumentHandler(docParams: import("../shared/message_handler.js").GetDocRequestData, port: IWorker): string;
+        createDocumentHandler(docParams: GetDocRequestData, port: IWorker): string;
         initializeFromPort(port: IWorker): void;
     }>;
 }
 export type PDFCommonObjs = string | FontFaceObject | FontExpotDataEx | {
     error: string;
 } | CmdArgs[] | ImgData;
-interface PDFMetadata {
-    info: DocumentInfo;
-    metadata: Metadata | undefined;
-    contentDispositionFilename: string | undefined;
-    contentLength: number | undefined;
-}
 /**
  * For internal use only.
  * @ignore
@@ -1053,11 +1069,9 @@ declare class WorkerTransport {
     loadingTask: PDFDocumentLoadingTask;
     commonObjs: PDFObjects<PDFCommonObjs>;
     fontLoader: FontLoader;
-    _getFieldObjectsPromise: Promise<Record<string, FieldObject[]> | undefined> | undefined;
-    _hasJSActionsPromise: Promise<boolean> | undefined;
-    _params: DocumentInitP;
-    CMapReaderFactory: DOMCMapReaderFactory | undefined;
-    StandardFontDataFactory: DOMStandardFontDataFactory | undefined;
+    _params: TransportParams_;
+    cMapReaderFactory: DOMCMapReaderFactory | undefined;
+    standardFontDataFactory: DOMStandardFontDataFactory | undefined;
     destroyed: boolean;
     destroyCapability?: PromiseCapability;
     _passwordCapability?: PromiseCapability<{
@@ -1067,7 +1081,7 @@ declare class WorkerTransport {
         length: number;
     }>;
     _htmlForXfa: XFAElObj | undefined;
-    constructor(messageHandler: MessageHandler<Thread.main>, loadingTask: PDFDocumentLoadingTask, networkStream: IPDFStream | undefined, params: DocumentInitP);
+    constructor(messageHandler: MessageHandler<Thread.main>, loadingTask: PDFDocumentLoadingTask, networkStream: IPDFStream | undefined, params: TransportParams_, factory: TransportFactory_ | undefined);
     get annotationStorage(): AnnotationStorage;
     getRenderingIntent(intent: Intent, annotationMode?: AnnotationMode, printAnnotationStorage?: PrintAnnotationStorage | undefined, isOpList?: boolean): _IntentArgs;
     destroy(): Promise<void>;
@@ -1077,7 +1091,7 @@ declare class WorkerTransport {
     getPage(pageNumber: unknown): Promise<PDFPageProxy>;
     getPageIndex(ref: RefProxy): Promise<number>;
     getAnnotations(pageIndex: number, intent: RenderingIntentFlag): Promise<AnnotationData[]>;
-    getFieldObjects(): Promise<Record<string, FieldObject[]> | undefined>;
+    getFieldObjects(): Promise<boolean | Record<string, FieldObject[]> | MetadataEx | undefined>;
     hasJSActions(): Promise<boolean>;
     getCalculationOrderIds(): Promise<string[] | undefined>;
     getDestinations(): Promise<Record<string, ExplicitDest>>;
@@ -1095,13 +1109,14 @@ declare class WorkerTransport {
     getOutline(): Promise<OutlineNode[] | undefined>;
     getOptionalContentConfig(): Promise<OptionalContentConfig>;
     getPermissions(): Promise<import("../shared/util.js").PermissionFlag[] | undefined>;
-    getMetadata(): Promise<PDFMetadata>;
+    getMetadata(): Promise<MetadataEx>;
     getMarkInfo(): Promise<import("../core/catalog.js").MarkInfo | undefined>;
     startCleanup(keepLoadedFonts?: boolean): Promise<void>;
     get loadingParams(): {
-        disableAutoFetch: boolean | undefined;
-        enableXfa: boolean | undefined;
+        disableAutoFetch: boolean;
+        enableXfa: boolean;
     };
+    getXFADatasets: () => Promise<DatasetReader | undefined>;
 }
 /**
  * A PDF document and page is built of many objects. E.g. there are objects for

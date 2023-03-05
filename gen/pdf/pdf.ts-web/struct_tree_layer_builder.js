@@ -86,6 +86,16 @@ export class StructTreeLayerBuilder {
         treeDom?.classList.add("structTree");
         return (this.#treeDom = treeDom);
     }
+    hide() {
+        if (this.#treeDom && !this.#treeDom.hidden) {
+            this.#treeDom.hidden = true;
+        }
+    }
+    show() {
+        if (this.#treeDom?.hidden) {
+            this.#treeDom.hidden = false;
+        }
+    }
     #setAttributes(structElement, htmlElement) {
         if (structElement.alt !== undefined) {
             htmlElement.setAttribute("aria-label", structElement.alt);

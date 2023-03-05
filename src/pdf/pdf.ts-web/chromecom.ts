@@ -18,6 +18,7 @@
  */
 /* globals chrome */
 
+// @deno-types="npm:@types/chrome"
 import { CHROME } from "../../global.ts";
 import { MouseButton } from "../../lib/dom.ts";
 import { Locale } from "../../lib/Locale.ts";
@@ -32,9 +33,9 @@ import { GenericL10n } from "./genericl10n.ts";
 import { GenericScripting } from "./generic_scripting.ts";
 import { IScripting } from "./interfaces.ts";
 import { OverlayManager } from "./overlay_manager.ts";
-import { CursorTool } from "./pdf_cursor_tools.ts";
 import { HistoryState } from "./pdf_history.ts";
 import { BasePreferences } from "./preferences.ts";
+import { CursorTool } from "./ui_utils.ts";
 /*80--------------------------------------------------------------------------*/
 
 /*#static*/ if (!CHROME) {
@@ -42,6 +43,23 @@ import { BasePreferences } from "./preferences.ts";
     'Module "pdfjs-web/chromecom" shall not be used outside CHROME build.',
   );
 }
+
+(/* rewriteUrlClosure */ () => {
+  // Run this code outside DOMContentLoaded to make sure that the URL
+  // is rewritten as soon as possible.
+  const queryString = document.location.search.slice(1);
+  const m = /(^|&)file=([^&]*)/.exec(queryString);
+  const defaultUrl = m ? decodeURIComponent(m[2]) : "";
+
+  // Example: chrome-extension://.../http://example.com/file.pdf
+  const humanReadableUrl = "/" + defaultUrl + location.hash;
+  history.replaceState(history.state, "", humanReadableUrl);
+  if (top === window) {
+    chrome.runtime.sendMessage("showPageAction");
+  }
+
+  AppOptions.set("defaultUrl", defaultUrl);
+})();
 
 type _ResolvePDFFileCb = (
   url: string,

@@ -4,6 +4,7 @@ import { PageLayout, PageMode } from "../../pdf.ts-web/ui_utils.js";
 import { type AnnotationData, type FieldObject } from "../core/annotation.js";
 import { type ExplicitDest, type MarkInfo, type OpenAction, type OptionalContentConfigData, type ViewerPref } from "../core/catalog.js";
 import { type AnnotActions } from "../core/core_utils.js";
+import { DatasetReader } from "../core/dataset_reader.js";
 import { type DocumentInfo, type XFAData } from "../core/document.js";
 import { type FontStyle, type ImgData } from "../core/evaluator.js";
 import { FontExpotDataEx } from "../core/fonts.js";
@@ -15,7 +16,7 @@ import { type ShadingPatternIR } from "../core/pattern.js";
 import { EvaluatorOptions } from "../core/pdf_manager.js";
 import { type XFAElObj } from "../core/xfa/alias.js";
 import { type AnnotStorageRecord } from "../display/annotation_layer.js";
-import { type BinaryData, type OutlineNode, type RefProxy, StructTreeNode, type TextItem, type TextMarkedContent } from "../display/api.js";
+import { type OutlineNode, type RefProxy, StructTreeNode, type TextItem, type TextMarkedContent } from "../display/api.js";
 import { type CMapData } from "../display/base_factory.js";
 import { VerbosityLevel } from "../pdf.js";
 import { InvalidPDFException, MissingPDFException, PasswordException, PasswordResponses, PermissionFlag, type PromiseCapability, RenderingIntentFlag, UnexpectedResponseException, UnknownErrorException, UNSUPPORTED_FEATURES } from "./util.js";
@@ -28,14 +29,14 @@ interface reason_t {
 }
 export interface GetDocRequestData {
     docId: string;
-    apiVersion: number;
-    data: BinaryData | undefined;
+    apiVersion: number | undefined;
+    data: Uint8Array | undefined;
     password: string | undefined;
     disableAutoFetch: boolean | undefined;
     rangeChunkSize: number | undefined;
-    length: number | undefined;
+    length: number;
     docBaseUrl: string | undefined;
-    enableXfa: boolean | undefined;
+    enableXfa: boolean;
     evaluatorOptions: EvaluatorOptions;
 }
 interface _PumpOperatorListP {
@@ -223,6 +224,11 @@ export interface MActionMap {
     GetViewerPreferences: {
         Data: null;
         Return: ViewerPref | undefined;
+        Sinkchunk: undefined;
+    };
+    GetXFADatasets: {
+        Data: null;
+        Return: DatasetReader | undefined;
         Sinkchunk: undefined;
     };
     HasJSActions: {

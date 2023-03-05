@@ -298,7 +298,7 @@ class FirefoxExternalServices extends DefaultExternalServices {
                         break;
                     }
                     pdfDataRangeTransport = new FirefoxComDataRangeTransport(args.length, args.data, args.done, args.filename);
-                    callbacks.onOpenWithTransport(args.pdfUrl, args.length, pdfDataRangeTransport);
+                    callbacks.onOpenWithTransport(pdfDataRangeTransport);
                     break;
                 case "range":
                     pdfDataRangeTransport.onDataRange(args.begin, args.chunk);

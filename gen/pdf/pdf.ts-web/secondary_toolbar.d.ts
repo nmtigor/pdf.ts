@@ -1,7 +1,6 @@
 import { DefaultExternalServices } from "./app.js";
 import { EventBus } from "./event_utils.js";
-import { CursorTool } from "./pdf_cursor_tools.js";
-import { ScrollMode, SpreadMode } from "./ui_utils.js";
+import { CursorTool, ScrollMode, SpreadMode } from "./ui_utils.js";
 import { type ViewerConfiguration } from "./viewer.js";
 interface Anchor {
     element: HTMLAnchorElement;

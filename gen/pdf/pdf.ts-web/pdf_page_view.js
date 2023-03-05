@@ -46,7 +46,6 @@ const DEFAULT_LAYER_PROPERTIES = () => {
     return {
         enableScripting: false,
         get linkService() {
-            // const { SimpleLinkService } = require("./pdf_link_service.js");
             return new SimpleLinkService();
         },
     };
@@ -57,6 +56,7 @@ export class PDFPageView {
     /** @implement */
     renderingId;
     #layerProperties;
+    #loadingId;
     pdfPage;
     pageLabel;
     rotation = 0;
@@ -172,20 +172,32 @@ export class PDFPageView {
         return this.#renderingState;
     }
     set renderingState(state) {
+        if (state === this.#renderingState) {
+            return;
+        }
         this.#renderingState = state;
+        if (this.#loadingId) {
+            clearTimeout(this.#loadingId);
+            this.#loadingId = undefined;
+        }
         switch (state) {
-            case RenderingStates.INITIAL:
             case RenderingStates.PAUSED:
-                this.loadingIconDiv?.classList.add("notVisible");
+                this.div.classList.remove("loading");
                 break;
             case RenderingStates.RUNNING:
-                this.loadingIconDiv?.classList.remove("notVisible");
+                this.div.classList.add("loadingIcon");
+                this.#loadingId = setTimeout(() => {
+                    // Adding the loading class is slightly postponed in order to not have
+                    // it with loadingIcon.
+                    // If we don't do that the visibility of the background is changed but
+                    // the transition isn't triggered.
+                    this.div.classList.add("loading");
+                    this.#loadingId = undefined;
+                }, 0);
                 break;
+            case RenderingStates.INITIAL:
             case RenderingStates.FINISHED:
-                if (this.loadingIconDiv) {
-                    this.loadingIconDiv.remove();
-                    delete this.loadingIconDiv;
-                }
+                this.div.classList.remove("loadingIcon", "loading");
                 break;
         }
     }
@@ -326,6 +338,7 @@ export class PDFPageView {
         if (treeDom) {
             this.canvas?.append(treeDom);
         }
+        this.structTreeLayer?.show();
     }
     async #buildXfaTextContentItems(textDivs) {
         const text = await this.pdfPage.getTextContent();
@@ -369,7 +382,6 @@ export class PDFPageView {
                 case annotationEditorLayerNode:
                 case xfaLayerNode:
                 case textLayerNode:
-                case this.loadingIconDiv:
                     continue;
             }
             node.remove();
@@ -391,6 +403,7 @@ export class PDFPageView {
         if (textLayerNode) {
             this.textLayer.hide();
         }
+        this.structTreeLayer?.hide();
         if (!zoomLayerNode) {
             if (this.canvas) {
                 this.paintedViewportMap.delete(this.canvas);
@@ -407,15 +420,6 @@ export class PDFPageView {
                 this.paintedViewportMap.delete(this.svg);
                 delete this.svg;
             }
-        }
-        if (!this.loadingIconDiv) {
-            this.loadingIconDiv = html("div");
-            this.loadingIconDiv.className = "loadingIcon notVisible";
-            this.loadingIconDiv.setAttribute("role", "img");
-            this.l10n.get("loading").then((msg) => {
-                this.loadingIconDiv?.setAttribute("aria-label", msg);
-            });
-            div.append(this.loadingIconDiv);
         }
     }
     update({ scale = 0, rotation, optionalContentConfigPromise, drawingDelay = -1, }) {
@@ -615,6 +619,7 @@ export class PDFPageView {
         if (this.textLayer) {
             if (hideTextLayer) {
                 this.textLayer.hide();
+                this.structTreeLayer?.hide();
             }
             else if (redrawTextLayer) {
                 this.#renderTextLayer();
@@ -670,10 +675,6 @@ export class PDFPageView {
                 annotationCanvasMap: this._annotationCanvasMap,
                 accessibilityManager: this._accessibilityManager,
             });
-        }
-        if (this.xfaLayer?.div) {
-            // The xfa layer needs to stay on top.
-            div.append(this.xfaLayer.div);
         }
         let renderContinueCallback;
         if (this.renderingQueue) {
@@ -753,6 +754,10 @@ export class PDFPageView {
                     annotationStorage,
                     linkService,
                 });
+            }
+            else if (this.xfaLayer.div) {
+                // The xfa layer needs to stay on top.
+                div.append(this.xfaLayer.div);
             }
             this.#renderXfaLayer();
         }

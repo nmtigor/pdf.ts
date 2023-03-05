@@ -16,9 +16,8 @@
  * limitations under the License.
  */
 import { GENERIC } from "../../global.js";
-import { CursorTool } from "./pdf_cursor_tools.js";
 import { PagesCountLimit } from "./pdf_viewer.js";
-import { ScrollMode, SpreadMode } from "./ui_utils.js";
+import { CursorTool, ScrollMode, SpreadMode } from "./ui_utils.js";
 export class SecondaryToolbar {
     toolbar;
     toggleButton;

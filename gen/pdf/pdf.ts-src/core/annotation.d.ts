@@ -155,7 +155,7 @@ export type SaveData = {
     ref: Ref;
     data: string;
     xfa?: {
-        path: string;
+        path: string | undefined;
         value: string;
     };
     needAppearances?: boolean;
@@ -473,6 +473,7 @@ export declare class WidgetAnnotation extends Annotation {
         separateCanvas: boolean;
     }>;
     _getMKDict(rotation: number): Dict | null;
+    amendSavedDict(annotationStorage: AnnotStorageRecord | undefined, dict: Dict): void;
     save(evaluator: PartialEvaluator, task: WorkerTask, annotationStorage?: AnnotStorageRecord): Promise<SaveReturn | undefined>;
     _getCombAppearance(defaultAppearance: string, font: Font | ErrorFont, text: string, fontSize: number, width: number, height: number, hPadding: number, vPadding: number, descent: number, lineHeight: number, annotationStorage: AnnotStorageRecord | undefined): string;
     _getMultilineAppearance(defaultAppearance: string, lines: string[], font: Font | ErrorFont, fontSize: number, width: number, height: number, alignment: number, hPadding: number, vPadding: number, descent: number, lineHeight: number, AnnotStorageRecord: AnnotStorageRecord | undefined): string;

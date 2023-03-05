@@ -198,7 +198,7 @@ class MooHandlerDB {
      * Same `index_x` elements are sorted by their adding order.
      */
     #_a = [];
-    get len_$() {
+    get len() {
         return this.#_a.length;
     }
     get empty() {
@@ -313,6 +313,9 @@ class MooHandlerDB {
  * `Moo` instance stores many callbacks.
  */
 export class Moo {
+    static #ID = 0;
+    id = ++Moo.#ID;
+    name;
     #initval;
     #eq;
     #active;
@@ -328,8 +331,8 @@ export class Moo {
     }
     // #handler_db = new Set< MooHandler<T> >();
     #handler_db;
-    get _len() {
-        return this.#handler_db.len_$;
+    get _nCb() {
+        return this.#handler_db.len;
     }
     #forcingOnce = false;
     set forceOnce(forcing_x) {
@@ -349,11 +352,12 @@ export class Moo {
         // // #endif
         this.#data = data_x;
     }
-    constructor({ val, eq_ = (a, b) => a === b, active = false, forcing = false, }) {
+    constructor({ val, eq_ = (a, b) => a === b, active = false, forcing = false, name, }) {
         this.#initval = val;
         this.#eq = eq_;
         this.#active = active;
         this.#forcing = forcing;
+        this.name = name;
         this.reset();
     }
     /**
@@ -418,6 +422,7 @@ export class Moo {
     once(newval_x, handler_x, forcing_x, index_x = 0) {
         this.registOnceHandler(handler_x, newval_x, undefined, forcing_x, index_x);
     }
+    static _count = 0;
     set val(newval_x) {
         if (this.#eq(newval_x, this.#val) &&
             !this.#forcing_ &&
@@ -429,15 +434,19 @@ export class Moo {
         if (this.#active)
             this.#val = newval_x;
         this.#handler_db.get(newval_x, this.#oldval, this.#forcing_)
-            .forEach((handler_y) => handler_y(newval_x, this.#val, this.#data));
-        // for( const handler_y of this.#handler_db )
-        // {
-        //   handler_y( newval_x, this.#val, this );
-        // }
+            .forEach((handler_y) => {
+            handler_y(newval_x, this.#val, this.#data);
+            // /*#static*/ if (DEV) Moo._count += 1;
+        });
         this.#val = newval_x;
         this.#forcingOnce = this.#forcing;
         this.#data = undefined; // it is used once
         // if( this.once_ ) this.#handler_db.clear();
+        // /*#static*/ if (DEV) {
+        //   console.log(
+        //     `[${this.name ?? `Moo_${this.id}`}]\t\tMoo._count = ${Moo._count}`,
+        //   );
+        // }
     }
     refresh() {
         this.force().val = this.#val;

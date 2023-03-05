@@ -131,12 +131,10 @@ export class PDFRenderingQueue {
      * `false`.
      */
     renderView(view) {
-        let r_;
         /*#static*/ 
-            r_ = (_y) => _y;
         switch (view.renderingState) {
             case RenderingStates.FINISHED:
-                return r_(false);
+                return /*#static*/ false;
             case RenderingStates.PAUSED:
                 this.highestPriorityPage = view.renderingId;
                 view.resume();
@@ -159,7 +157,7 @@ export class PDFRenderingQueue {
                 });
                 break;
         }
-        return r_(true);
+        return /*#static*/ true;
     }
 }
 /*80--------------------------------------------------------------------------*/

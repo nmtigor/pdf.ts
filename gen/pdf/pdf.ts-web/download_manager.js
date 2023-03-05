@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 /** @typedef {import("./interfaces").IDownloadManager} IDownloadManager */
-import { CHROME, GENERIC } from "../../global.js";
+import { CHROME, COMPONENTS, GENERIC } from "../../global.js";
 import { html } from "../../lib/dom.js";
 import { createValidAbsoluteUrl, isPdfFile } from "../pdf.ts-src/pdf.js";
 /*80--------------------------------------------------------------------------*/
@@ -62,23 +62,25 @@ export class DownloadManager {
     openOrDownloadData(element, data, filename) {
         const isPdfData = isPdfFile(filename);
         const contentType = isPdfData ? "application/pdf" : "";
-        if (isPdfData) {
-            let blobUrl = this.#openBlobUrls.get(element);
-            if (!blobUrl) {
-                blobUrl = URL.createObjectURL(new Blob([data], { type: contentType }));
-                this.#openBlobUrls.set(element, blobUrl);
-            }
-            const viewerUrl = /*#static*/ "?file=" + encodeURIComponent(blobUrl + "#" + filename);
-            try {
-                window.open(viewerUrl);
-                return true;
-            }
-            catch (ex) {
-                console.error(`openOrDownloadData: ${ex}`);
-                // Release the `blobUrl`, since opening it failed, and fallback to
-                // downloading the PDF file.
-                URL.revokeObjectURL(blobUrl);
-                this.#openBlobUrls.delete(element);
+        /*#static*/  {
+            if (isPdfData) {
+                let blobUrl = this.#openBlobUrls.get(element);
+                if (!blobUrl) {
+                    blobUrl = URL.createObjectURL(new Blob([data], { type: contentType }));
+                    this.#openBlobUrls.set(element, blobUrl);
+                }
+                const viewerUrl = /*#static*/ "?file=" + encodeURIComponent(blobUrl + "#" + filename);
+                try {
+                    window.open(viewerUrl);
+                    return true;
+                }
+                catch (ex) {
+                    console.error(`openOrDownloadData: ${ex}`);
+                    // Release the `blobUrl`, since opening it failed, and fallback to
+                    // downloading the PDF file.
+                    URL.revokeObjectURL(blobUrl);
+                    this.#openBlobUrls.delete(element);
+                }
             }
         }
         this.downloadData(data, filename, contentType);

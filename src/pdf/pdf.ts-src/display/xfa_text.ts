@@ -54,16 +54,12 @@ export abstract class XfaText {
         str = node.value;
       }
       if (str !== undefined) {
-        items.push(
-          <TextItem> {
-            str,
-          },
-        );
+        items.push({ str } as TextItem);
       }
       if (!node.children) return;
 
       for (const child of node.children) {
-        walk(<XFAElObj> child);
+        walk(child as XFAElObj);
       }
     }
     walk(xfa);

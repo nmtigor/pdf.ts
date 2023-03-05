@@ -36,6 +36,9 @@ export class AnnotationEditorLayer {
         this.#accessibilityManager = options.accessibilityManager;
         this.#uiManager.addLayer(this);
     }
+    get isEmpty() {
+        return this.#editors.size === 0;
+    }
     /**
      * Update the toolbar if it's required to reflect the tool currently used.
      */
@@ -56,8 +59,11 @@ export class AnnotationEditorLayer {
             this.enableClick();
         }
         this.#uiManager.unselectAll();
-        this.div.classList.toggle("freeTextEditing", mode === AnnotationEditorType.FREETEXT);
-        this.div.classList.toggle("inkEditing", mode === AnnotationEditorType.INK);
+        if (mode !== AnnotationEditorType.NONE) {
+            this.div.classList.toggle("freeTextEditing", mode === AnnotationEditorType.FREETEXT);
+            this.div.classList.toggle("inkEditing", mode === AnnotationEditorType.INK);
+            this.div.hidden = false;
+        }
     }
     addInkEditorIfNeeded(isCommitting) {
         if (!isCommitting &&
@@ -106,6 +112,10 @@ export class AnnotationEditorLayer {
         this.div.style.pointerEvents = "none";
         for (const editor of this.#editors.values()) {
             editor.disableEditing();
+        }
+        this.#cleanup();
+        if (this.isEmpty) {
+            this.div.hidden = true;
         }
     }
     /**

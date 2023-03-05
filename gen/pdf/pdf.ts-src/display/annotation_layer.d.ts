@@ -5,7 +5,7 @@ import { type AnnotationData, type FieldObject } from "../core/annotation.js";
 import { ColorConvertersDetail } from "../shared/scripting_utils.js";
 import { AnnotationEditorType } from "../shared/util.js";
 import { AnnotationStorage } from "./annotation_storage.js";
-import { PDFPageProxy } from "./api.js";
+import { MetadataEx, PDFPageProxy } from "./api.js";
 import { DOMSVGFactory, PageViewport } from "./display_utils.js";
 interface _AnnotationElementCtorP {
     data: AnnotationData;
@@ -152,7 +152,7 @@ export type AnnotationLayerP = {
      * The default value is `false`.
      */
     hasJSActions: boolean;
-    fieldObjects: Record<string, FieldObject[]> | undefined;
+    fieldObjects: boolean | Record<string, FieldObject[]> | MetadataEx | undefined;
     annotationCanvasMap: Map<string, HTMLCanvasElement> | undefined;
     accessibilityManager?: TextAccessibilityManager | undefined;
 };

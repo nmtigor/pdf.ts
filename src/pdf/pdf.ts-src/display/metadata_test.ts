@@ -24,9 +24,10 @@ import {
 } from "https://deno.land/std@0.170.0/testing/asserts.ts";
 import { describe, it } from "https://deno.land/std@0.170.0/testing/bdd.ts";
 import { MetadataParser } from "../core/metadata_parser.ts";
-import { isEmptyObj } from "../shared/test_utils.ts";
 import { Metadata } from "./metadata.ts";
 /*80--------------------------------------------------------------------------*/
+
+const emptyObj = Object.create(null);
 
 function createMetadata(data: string) {
   const metadataParser = new MetadataParser(data);
@@ -144,7 +145,7 @@ describe("metadata", () => {
       '<?xpacket end="w"?>';
     const metadata = createMetadata(data);
 
-    assertEquals(isEmptyObj(metadata.getAll()), true);
+    assertEquals(metadata.getAll(), emptyObj);
   });
 
   it('should gracefully handle "junk" before the actual metadata (issue 10395)', () => {
@@ -233,7 +234,7 @@ describe("metadata", () => {
       '</rdf:RDF></x:xmpmeta><?xpacket end="w"?>';
     const metadata = createMetadata(data);
 
-    assertEquals(isEmptyObj(metadata.getAll()), true);
+    assertEquals(metadata.getAll(), emptyObj);
   });
 
   it("should not be vulnerable to the billion laughs attack", () => {

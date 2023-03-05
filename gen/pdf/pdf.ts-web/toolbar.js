@@ -18,7 +18,7 @@
 import { GENERIC } from "../../global.js";
 import { html } from "../../lib/dom.js";
 import { AnnotationEditorType } from "../pdf.ts-src/pdf.js";
-import { animationStarted, DEFAULT_SCALE, DEFAULT_SCALE_VALUE, docStyle, MAX_SCALE, MIN_SCALE, noContextMenuHandler, } from "./ui_utils.js";
+import { animationStarted, DEFAULT_SCALE, DEFAULT_SCALE_VALUE, MAX_SCALE, MIN_SCALE, noContextMenuHandler, } from "./ui_utils.js";
 /*80--------------------------------------------------------------------------*/
 const PAGE_NUMBER_LOADING_INDICATOR = "visiblePageIsLoading";
 export class Toolbar {
@@ -291,7 +291,8 @@ export class Toolbar {
         // between the text and the icon.
         maxWidth += 0.3 * scaleSelectWidth;
         if (maxWidth > scaleSelectWidth) {
-            docStyle.setProperty("--scale-select-width", `${maxWidth}px`);
+            const container = items.scaleSelect.parentNode;
+            container.style.setProperty("--scale-select-width", `${maxWidth}px`);
         }
         // Zeroing the width and height cause Firefox to release graphics resources
         // immediately, which can greatly reduce memory consumption.

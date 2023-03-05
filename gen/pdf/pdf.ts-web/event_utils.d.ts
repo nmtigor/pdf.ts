@@ -2,7 +2,7 @@ import { AnnotationEditorParamsType, AnnotationEditorType, AnnotationEditorUIMan
 import { AnnotationEditorParams } from "./annotation_editor_params.js";
 import { ErrorMoreInfo, PDFViewerApplication } from "./app.js";
 import { PDFAttachmentViewer } from "./pdf_attachment_viewer.js";
-import { CursorTool, PDFCursorTools } from "./pdf_cursor_tools.js";
+import { PDFCursorTools } from "./pdf_cursor_tools.js";
 import { PDFFindBar } from "./pdf_find_bar.js";
 import { FindCtrlState, FindState, MatchesCount, PDFFindController } from "./pdf_find_controller.js";
 import { PDFLayerViewer } from "./pdf_layer_viewer.js";
@@ -16,7 +16,7 @@ import { PDFSidebarResizer } from "./pdf_sidebar_resizer.js";
 import { PDFLocation, PDFViewer } from "./pdf_viewer.js";
 import { SecondaryToolbar } from "./secondary_toolbar.js";
 import { Toolbar } from "./toolbar.js";
-import { PageLayout, PresentationModeState, ScrollMode, SidebarView, SpreadMode } from "./ui_utils.js";
+import { CursorTool, PageLayout, PresentationModeState, ScrollMode, SidebarView, SpreadMode } from "./ui_utils.js";
 export declare const enum WaitOnType {
     EVENT = "event",
     TIMEOUT = "timeout"

@@ -206,7 +206,8 @@ export declare class PartialEvaluator {
      */
     get _pdfFunctionFactory(): PDFFunctionFactory;
     /**
-     * ! Becuse of this method, use private method "_method" instead of "#methos"
+     * ! Because of this method, use private method "private _method" instead of
+     * ! "#methos"
      */
     clone(newOptions?: Partial<EvaluatorOptions>): PartialEvaluator;
     hasBlendModes(resources: Dict, nonBlendModesSet: RefSet): boolean;

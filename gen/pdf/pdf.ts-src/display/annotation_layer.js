@@ -1481,7 +1481,8 @@ class ChoiceWidgetAnnotationElement extends WidgetAnnotationElement {
                 ["mouseleave", "Mouse Exit"],
                 ["mouseup", "Mouse Up"],
                 ["input", "Action"],
-            ], (event) => event.target.checked);
+                ["input", "Validate"],
+            ], (event) => event.target.value);
         }
         else {
             selectElement.addEventListener("input", (event) => {

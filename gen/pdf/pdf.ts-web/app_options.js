@@ -18,9 +18,8 @@
 import { CHROME, DENO, GENERIC, LIB, PRODUCTION, TESTING, } from "../../global.js";
 import { Locale } from "../../lib/Locale.js";
 import { AnnotationEditorType, AnnotationMode, VerbosityLevel, } from "../pdf.ts-src/pdf.js";
-import { CursorTool } from "./pdf_cursor_tools.js";
 import { LinkTarget } from "./pdf_link_service.js";
-import { RendererType, ScrollMode, SidebarView, SpreadMode, TextLayerMode, } from "./ui_utils.js";
+import { CursorTool, RendererType, ScrollMode, SidebarView, SpreadMode, TextLayerMode, } from "./ui_utils.js";
 /*80--------------------------------------------------------------------------*/
 export var OptionKind;
 (function (OptionKind) {
@@ -514,12 +513,12 @@ export class AppOptions {
     static remove(name) {
         delete userOptions[name];
     }
-    /**
-     * @ignore
-     */
-    static _hasUserOptions() {
+    static _hasUserOptions;
+}
+/*#static*/  {
+    AppOptions._hasUserOptions = () => {
         return Object.keys(userOptions).length > 0;
-    }
+    };
 }
 /*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=app_options.js.map

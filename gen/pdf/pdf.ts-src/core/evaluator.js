@@ -201,7 +201,8 @@ export class PartialEvaluator {
         return shadow(this, "_pdfFunctionFactory", pdfFunctionFactory);
     }
     /**
-     * ! Becuse of this method, use private method "_method" instead of "#methos"
+     * ! Because of this method, use private method "private _method" instead of
+     * ! "#methos"
      */
     clone(newOptions) {
         const newEvaluator = Object.create(this);
@@ -2267,7 +2268,7 @@ export class PartialEvaluator {
                     saveLastChar(" ");
                     continue;
                 }
-                if (!compareWithLastPosition()) {
+                if (!category.isZeroWidthDiacritic && !compareWithLastPosition()) {
                     // The glyph is not in page so just skip it.
                     continue;
                 }

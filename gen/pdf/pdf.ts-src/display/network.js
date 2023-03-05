@@ -246,7 +246,6 @@ class PDFNetworkStreamFullRequestReader {
         };
         this.#url = source.url;
         this.#fullRequestId = manager.requestFull(args);
-        // this.#headersReceivedCapability = createPromiseCapability();
         this.#disableRange = source.disableRange || false;
         this.#contentLength = source.length; // Optional
         this.#rangeChunkSize = source.rangeChunkSize;

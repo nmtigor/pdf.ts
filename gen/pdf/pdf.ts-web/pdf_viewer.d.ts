@@ -187,7 +187,7 @@ export declare class PDFViewer {
     findController: PDFFindController | undefined;
     _scriptingManager: PDFScriptingManager | undefined;
     get enableScripting(): boolean;
-    removePageBorders: boolean;
+    removePageBorders: boolean | undefined;
     textLayerMode: TextLayerMode;
     get renderForms(): boolean;
     imageResourcesPath: string;
@@ -203,6 +203,9 @@ export declare class PDFViewer {
     scroll: {
         right: boolean;
         down: boolean;
+        /**
+         * 'canvas' or 'svg'. The default is 'canvas'.
+         */
         lastX: number;
         lastY: number;
         _eventHandler: (evt: unknown) => void;

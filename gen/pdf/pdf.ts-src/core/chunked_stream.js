@@ -1,18 +1,33 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
-import { arrayByteLength, arraysToBytes, createPromiseCapability, } from "../shared/util.js";
-import { MissingDataException } from "./core_utils.js";
+/* Copyright 2012 Mozilla Foundation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import { _PDFDEV } from "../../../global.js";
+import { assert } from "../../../lib/util/trace.js";
+import { createPromiseCapability, } from "../shared/util.js";
+import { arrayBuffersToBytes, MissingDataException } from "./core_utils.js";
 import { Stream } from "./stream.js";
 export class ChunkedStream extends Stream {
     chunkSize;
-    //kkkk bug? `#loadedChunks` does not work. Why?
-    _loadedChunks = new Set();
+    #loadedChunks = new Set();
     get numChunksLoaded() {
-        return this._loadedChunks.size;
+        return this.#loadedChunks.size;
     }
     hasChunk(chunk) {
-        return this._loadedChunks.has(chunk);
+        return this.#loadedChunks.has(chunk);
     }
     numChunks;
     get isDataLoaded() {
@@ -32,7 +47,7 @@ export class ChunkedStream extends Stream {
     getMissingChunks() {
         const chunks = [];
         for (let chunk = 0, n = this.numChunks; chunk < n; ++chunk) {
-            if (!this._loadedChunks.has(chunk)) {
+            if (!this.#loadedChunks.has(chunk)) {
                 chunks.push(chunk);
             }
         }
@@ -55,7 +70,7 @@ export class ChunkedStream extends Stream {
         for (let curChunk = beginChunk; curChunk < endChunk; ++curChunk) {
             // Since a value can only occur *once* in a `Set`, there's no need to
             // manually check `Set.prototype.has()` before adding the value here.
-            this._loadedChunks.add(curChunk);
+            this.#loadedChunks.add(curChunk);
         }
     }
     onReceiveProgressiveData(data) {
@@ -70,7 +85,7 @@ export class ChunkedStream extends Stream {
         for (let curChunk = beginChunk; curChunk < endChunk; ++curChunk) {
             // Since a value can only occur *once* in a `Set`, there's no need to
             // manually check `Set.prototype.has()` before adding the value here.
-            this._loadedChunks.add(curChunk);
+            this.#loadedChunks.add(curChunk);
         }
     }
     ensureByte(pos) {
@@ -84,7 +99,7 @@ export class ChunkedStream extends Stream {
         if (chunk === this.lastSuccessfulEnsureByteChunk) {
             return;
         }
-        if (!this._loadedChunks.has(chunk)) {
+        if (!this.#loadedChunks.has(chunk)) {
             throw new MissingDataException(pos, pos + 1);
         }
         this.lastSuccessfulEnsureByteChunk = chunk;
@@ -102,7 +117,7 @@ export class ChunkedStream extends Stream {
         }
         const endChunk = Math.min(Math.floor((end - 1) / this.chunkSize) + 1, this.numChunks);
         for (let chunk = beginChunk; chunk < endChunk; ++chunk) {
-            if (!this._loadedChunks.has(chunk)) {
+            if (!this.#loadedChunks.has(chunk)) {
                 throw new MissingDataException(begin, end);
             }
         }
@@ -111,7 +126,7 @@ export class ChunkedStream extends Stream {
         const numChunks = this.numChunks;
         for (let i = 0; i < numChunks; ++i) {
             const chunk = (beginChunk + i) % numChunks; // Wrap around to beginning.
-            if (!this._loadedChunks.has(chunk)) {
+            if (!this.#loadedChunks.has(chunk)) {
                 return chunk;
             }
         }
@@ -187,7 +202,7 @@ export class ChunkedStream extends Stream {
             const endChunk = Math.floor((this.end - 1) / chunkSize) + 1;
             const missingChunks = [];
             for (let chunk = beginChunk; chunk < endChunk; ++chunk) {
-                if (!this._loadedChunks.has(chunk)) {
+                if (!this.#loadedChunks.has(chunk)) {
                     missingChunks.push(chunk);
                 }
             }
@@ -242,24 +257,25 @@ export class ChunkedStreamManager {
         if (!rangeReader.isStreamingSupported) {
             rangeReader.onProgress = this.onProgress.bind(this);
         }
-        let chunks = [];
-        let loaded = 0;
+        let chunks = [], loaded = 0;
         return new Promise((resolve, reject) => {
-            const readChunk = (chunk) => {
+            const readChunk = ({ value, done }) => {
                 try {
-                    if (!chunk.done) {
-                        const data = chunk.value;
-                        chunks.push(data);
-                        loaded += arrayByteLength(data);
-                        if (rangeReader.isStreamingSupported) {
-                            this.onProgress({ loaded });
-                        }
-                        rangeReader.read().then(readChunk, reject);
+                    if (done) {
+                        const chunkData = arrayBuffersToBytes(chunks);
+                        chunks = undefined;
+                        resolve(chunkData);
                         return;
                     }
-                    const chunkData = arraysToBytes(chunks);
-                    chunks = null;
-                    resolve(chunkData);
+                    /*#static*/  {
+                        assert(value instanceof ArrayBuffer, "readChunk (sendRequest) - expected an ArrayBuffer.");
+                    }
+                    loaded += value.byteLength;
+                    if (rangeReader.isStreamingSupported) {
+                        this.onProgress({ loaded });
+                    }
+                    chunks.push(value);
+                    rangeReader.read().then(readChunk, reject);
                 }
                 catch (e) {
                     reject(e);

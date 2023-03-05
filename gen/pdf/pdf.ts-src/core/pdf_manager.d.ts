@@ -1,5 +1,4 @@
 import { type AnnotStorageRecord } from "../display/annotation_layer.js";
-import { type BinaryData } from "../display/api.js";
 import { MessageHandler, Thread } from "../shared/message_handler.js";
 import { AbortException } from "../shared/util.js";
 import { AnnotationFactory } from "./annotation.js";
@@ -21,20 +20,27 @@ export interface EvaluatorOptions {
     cMapUrl?: string | undefined;
     standardFontDataUrl: string | undefined;
 }
+interface BasePdfManagerCtorP_ {
+    docBaseUrl?: string;
+    docId: string;
+    password?: string;
+    enableXfa?: boolean;
+    evaluatorOptions: EvaluatorOptions;
+}
 export declare abstract class BasePdfManager {
-    protected _docId: string;
+    private _docBaseUrl;
+    get docBaseUrl(): string | undefined;
+    private _docId;
     /** @final */
     get docId(): string;
-    protected _password?: string | undefined;
+    protected _password: string | undefined;
     /** @final */
     get password(): string | undefined;
     msgHandler: MessageHandler<Thread.worker>;
-    protected _docBaseUrl: URL | string | undefined;
-    get docBaseUrl(): string | URL | undefined;
+    enableXfa: boolean | undefined;
     evaluatorOptions: EvaluatorOptions;
-    enableXfa?: boolean | undefined;
     pdfDocument: PDFDocument;
-    constructor(docId: string, docBaseUrl?: string);
+    constructor(args: BasePdfManagerCtorP_);
     /** @fianl */
     ensureDoc<P extends keyof PDFDocument, A = PDFDocument[P] extends (...args: any) => any ? Parameters<PDFDocument[P]> : undefined>(prop: P, args?: A): Promise<Awaited<PDFDocument[P] extends (...args: any) => any ? ReturnType<PDFDocument[P]> : PDFDocument[P]>>;
     /** @fianl */
@@ -54,9 +60,12 @@ export declare abstract class BasePdfManager {
     updatePassword(password: string): void;
     abstract terminate(reason: AbortException): void;
 }
+export interface LocalPdfManagerCtorP extends BasePdfManagerCtorP_ {
+    source: Uint8Array | ArrayBuffer | number[];
+}
 export declare class LocalPdfManager extends BasePdfManager {
     #private;
-    constructor(docId: string, data: BinaryData, password: string | undefined, msgHandler: MessageHandler<Thread.worker>, evaluatorOptions: EvaluatorOptions, enableXfa?: boolean, docBaseUrl?: string);
+    constructor(args: LocalPdfManagerCtorP);
     /** @implement */
     ensure<O extends PDFDocument | Page | XRef | Catalog | AnnotationFactory, P extends keyof O, A = O[P] extends (...args: any) => any ? Parameters<O[P]> : undefined, R = O[P] extends (...args: any) => any ? ReturnType<O[P]> : O[P]>(obj: O, prop: P, args: A): Promise<Awaited<R>>;
     /** @implement */
@@ -66,16 +75,16 @@ export declare class LocalPdfManager extends BasePdfManager {
     /** @implement */
     terminate(reason: AbortException): void;
 }
-interface _NetworkPdfManagerCtorP {
-    msgHandler: MessageHandler<Thread.worker>;
-    password: string | undefined;
+export interface NetworkPdfManagerCtorP extends BasePdfManagerCtorP_ {
+    source: PDFWorkerStream;
+    handler: MessageHandler<Thread.worker>;
     length: number;
     disableAutoFetch: boolean;
     rangeChunkSize: number;
 }
 export declare class NetworkPdfManager extends BasePdfManager {
     streamManager: ChunkedStreamManager;
-    constructor(docId: string, pdfNetworkStream: PDFWorkerStream, args: _NetworkPdfManagerCtorP, evaluatorOptions: EvaluatorOptions, enableXfa?: boolean, docBaseUrl?: string);
+    constructor(args: NetworkPdfManagerCtorP);
     /** @implement */
     ensure<O extends PDFDocument | Page | XRef | Catalog | AnnotationFactory, P extends keyof O, A = O[P] extends (...args: any) => any ? Parameters<O[P]> : undefined, R = O[P] extends (...args: any) => any ? ReturnType<O[P]> : O[P]>(obj: O, prop: P, args: A): Promise<Awaited<R>>;
     /** @implement */

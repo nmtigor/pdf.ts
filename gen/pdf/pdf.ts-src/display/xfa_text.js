@@ -34,9 +34,7 @@ export class XfaText {
                 str = node.value;
             }
             if (str !== undefined) {
-                items.push({
-                    str,
-                });
+                items.push({ str });
             }
             if (!node.children)
                 return;

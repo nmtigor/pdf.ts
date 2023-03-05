@@ -18,6 +18,11 @@ function parseDocBaseUrl(url) {
     return undefined;
 }
 export class BasePdfManager {
+    _docBaseUrl;
+    get docBaseUrl() {
+        const catalog = this.pdfDocument.catalog;
+        return shadow(this, "docBaseUrl", catalog.baseUrl || this._docBaseUrl);
+    }
     _docId;
     /** @final */
     get docId() {
@@ -29,17 +34,15 @@ export class BasePdfManager {
         return this._password;
     }
     msgHandler;
-    _docBaseUrl;
-    get docBaseUrl() {
-        const catalog = this.pdfDocument.catalog;
-        return shadow(this, "docBaseUrl", catalog.baseUrl || this._docBaseUrl);
-    }
-    evaluatorOptions;
     enableXfa;
+    evaluatorOptions;
     pdfDocument;
-    constructor(docId, docBaseUrl) {
-        this._docId = docId;
-        this._docBaseUrl = parseDocBaseUrl(docBaseUrl);
+    constructor(args) {
+        this._docBaseUrl = parseDocBaseUrl(args.docBaseUrl);
+        this._docId = args.docId;
+        this._password = args.password;
+        this.enableXfa = args.enableXfa;
+        this.evaluatorOptions = args.evaluatorOptions;
     }
     /** @fianl */
     ensureDoc(prop, args) {
@@ -77,13 +80,9 @@ export class BasePdfManager {
 }
 export class LocalPdfManager extends BasePdfManager {
     #loadedStreamPromise;
-    constructor(docId, data, password, msgHandler, evaluatorOptions, enableXfa, docBaseUrl) {
-        super(docId, docBaseUrl);
-        this._password = password;
-        this.msgHandler = msgHandler;
-        this.evaluatorOptions = evaluatorOptions;
-        this.enableXfa = enableXfa;
-        const stream = new Stream(data);
+    constructor(args) {
+        super(args);
+        const stream = new Stream(args.source);
         this.pdfDocument = new PDFDocument(this, stream);
         this.#loadedStreamPromise = Promise.resolve(stream);
     }
@@ -95,14 +94,6 @@ export class LocalPdfManager extends BasePdfManager {
         }
         return value;
     }
-    // ensure = ( obj, prop, args ) =>
-    // {
-    //   const value = obj[prop];
-    //   if (typeof value === "function") {
-    //     return value.apply(obj, args);
-    //   }
-    //   return value;
-    // }
     /** @implement */
     requestRange(begin, end) {
         return Promise.resolve();
@@ -116,14 +107,10 @@ export class LocalPdfManager extends BasePdfManager {
 }
 export class NetworkPdfManager extends BasePdfManager {
     streamManager;
-    constructor(docId, pdfNetworkStream, args, evaluatorOptions, enableXfa, docBaseUrl) {
-        super(docId, docBaseUrl);
-        this._password = args.password;
-        this.msgHandler = args.msgHandler;
-        this.evaluatorOptions = evaluatorOptions;
-        this.enableXfa = enableXfa;
-        this.streamManager = new ChunkedStreamManager(pdfNetworkStream, {
-            msgHandler: args.msgHandler,
+    constructor(args) {
+        super(args);
+        this.streamManager = new ChunkedStreamManager(args.source, {
+            msgHandler: args.handler,
             length: args.length,
             disableAutoFetch: args.disableAutoFetch,
             rangeChunkSize: args.rangeChunkSize,

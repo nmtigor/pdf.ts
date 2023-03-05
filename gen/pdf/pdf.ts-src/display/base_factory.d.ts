@@ -16,9 +16,9 @@ export declare abstract class BaseCanvasFactory {
      */
     protected abstract _createCanvas(width: number, height: number): HTMLCanvasElement;
 }
-interface _BaseCMapReaderFactoryCtorP {
+interface BaseCMapReaderFactoryCtorP_ {
     baseUrl: string | undefined;
-    isCompressed: boolean | undefined;
+    isCompressed?: boolean | undefined;
 }
 export interface CMapData {
     cMapData: Uint8Array;
@@ -28,7 +28,7 @@ export type FetchBuiltInCMap = (name: string) => Promise<CMapData>;
 export declare abstract class BaseCMapReaderFactory {
     baseUrl: string | undefined;
     isCompressed: boolean;
-    constructor({ baseUrl, isCompressed }: _BaseCMapReaderFactoryCtorP);
+    constructor({ baseUrl, isCompressed }: BaseCMapReaderFactoryCtorP_);
     /** @final */
     fetch({ name }: {
         name: string;

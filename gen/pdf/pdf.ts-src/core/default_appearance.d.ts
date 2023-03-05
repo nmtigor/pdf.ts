@@ -32,6 +32,6 @@ export declare class FakeUnicodeFont {
     get resources(): Dict;
     _createContext(): any;
     createFontResources(text: string): Dict;
-    createAppearance(text: string, rect: rect_t, rotation: number, fontSize: number, bgColor: Uint8ClampedArray): StringStream;
+    createAppearance(text: string, rect: rect_t, rotation: number, fontSize: number, bgColor: Uint8ClampedArray, strokeAlpha: number | undefined): StringStream;
 }
 //# sourceMappingURL=default_appearance.d.ts.map

@@ -553,7 +553,8 @@ export class PartialEvaluator {
   }
 
   /**
-   * ! Becuse of this method, use private method "_method" instead of "#methos"
+   * ! Because of this method, use private method "private _method" instead of
+   * ! "#methos"
    */
   clone(newOptions?: Partial<EvaluatorOptions>): PartialEvaluator {
     const newEvaluator = Object.create(this);
@@ -3197,7 +3198,7 @@ export class PartialEvaluator {
           continue;
         }
 
-        if (!compareWithLastPosition()) {
+        if (!category.isZeroWidthDiacritic && !compareWithLastPosition()) {
           // The glyph is not in page so just skip it.
           continue;
         }

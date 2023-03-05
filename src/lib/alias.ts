@@ -134,7 +134,7 @@ export type AbstractConstructor<T = object> = abstract new (
   ...args: any[]
 ) => T;
 export type Func<This = any> = (this: This, ...args: any[]) => any;
-export type Id<T> = (_x: T) => T;
+// export type Id<T> = (_x: T) => T;
 /*80--------------------------------------------------------------------------*/
 
 //#region TupleOf<>

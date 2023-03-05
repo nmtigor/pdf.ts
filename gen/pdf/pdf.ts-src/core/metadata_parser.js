@@ -55,7 +55,7 @@ export class MetadataParser {
                 }
                 throw new Error(`_repair: ${name} isn't defined.`);
             });
-            const charBuf = [];
+            const charBuf = [">"];
             for (let i = 0, ii = bytes.length; i < ii; i += 2) {
                 const code = bytes.charCodeAt(i) * 256 + bytes.charCodeAt(i + 1);
                 if (code >= /* Space = */ 32 &&
@@ -69,7 +69,7 @@ export class MetadataParser {
                     charBuf.push("&#x" + (0x10000 + code).toString(16).substring(1) + ";");
                 }
             }
-            return ">" + charBuf.join("");
+            return charBuf.join("");
         });
     }
     _getSequence(entry) {

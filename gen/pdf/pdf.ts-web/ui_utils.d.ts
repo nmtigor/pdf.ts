@@ -65,6 +65,11 @@ export declare const enum PageLayout {
     TwoPageLeft = 5,
     TwoPageRight = 6
 }
+export declare const enum CursorTool {
+    SELECT = 0,
+    HAND = 1,
+    ZOOM = 2
+}
 /**
  * Used by `PDFViewerApplication`, and by the API unit-tests.
  */

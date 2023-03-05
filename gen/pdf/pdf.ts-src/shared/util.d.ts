@@ -371,15 +371,6 @@ export declare class AbortException extends BaseException {
 }
 export declare function bytesToString(bytes: Uint8Array | Uint8ClampedArray): string;
 export declare function stringToBytes(str: string): Uint8Array;
-/**
- * Gets length of the array (Array, Uint8Array, or string) in bytes.
- */
-export declare function arrayByteLength(arr: any[] | Uint8Array | string | ArrayBufferLike): number;
-/**
- * Combines array items (arrays) into single Uint8Array object.
- * @param arr the array of the arrays (Array, Uint8Array, or string).
- */
-export declare function arraysToBytes(arr: (any[] | Uint8Array | string | ArrayBufferLike)[]): Uint8Array;
 export declare function string32(value: number): string;
 export declare function objectSize(obj: {}): number;
 export declare function objectFromMap<K extends string | number, V>(map: Iterable<readonly [K, V]>): Record<K, V>;

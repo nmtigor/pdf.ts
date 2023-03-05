@@ -31,9 +31,9 @@ import {
   AnnotationMode,
   VerbosityLevel,
 } from "../pdf.ts-src/pdf.ts";
-import { CursorTool } from "./pdf_cursor_tools.ts";
 import { LinkTarget } from "./pdf_link_service.ts";
 import {
+  CursorTool,
   RendererType,
   ScrollMode,
   SidebarView,
@@ -595,11 +595,12 @@ export abstract class AppOptions {
     delete userOptions[name];
   }
 
-  /**
-   * @ignore
-   */
-  static _hasUserOptions() {
+  static _hasUserOptions: () => boolean;
+}
+
+/*#static*/ if (GENERIC) {
+  AppOptions._hasUserOptions = () => {
     return Object.keys(userOptions).length > 0;
-  }
+  };
 }
 /*80--------------------------------------------------------------------------*/

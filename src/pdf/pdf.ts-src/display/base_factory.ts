@@ -73,9 +73,9 @@ export abstract class BaseCanvasFactory {
   ): HTMLCanvasElement;
 }
 
-interface _BaseCMapReaderFactoryCtorP {
+interface BaseCMapReaderFactoryCtorP_ {
   baseUrl: string | undefined;
-  isCompressed: boolean | undefined;
+  isCompressed?: boolean | undefined;
 }
 
 export interface CMapData {
@@ -88,7 +88,7 @@ export abstract class BaseCMapReaderFactory {
   baseUrl;
   isCompressed;
 
-  constructor({ baseUrl, isCompressed = false }: _BaseCMapReaderFactoryCtorP) {
+  constructor({ baseUrl, isCompressed = true }: BaseCMapReaderFactoryCtorP_) {
     this.baseUrl = baseUrl;
     this.isCompressed = isCompressed;
   }

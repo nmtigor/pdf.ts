@@ -16,6 +16,7 @@
  * limitations under the License.
  */
 /* globals chrome */
+// @deno-types="npm:@types/chrome"
 import { CHROME } from "../../global.js";
 import { MouseButton } from "../../lib/dom.js";
 import { DefaultExternalServices, viewerApp, } from "./app.js";
@@ -23,12 +24,26 @@ import { AppOptions, ViewOnLoad } from "./app_options.js";
 import { DownloadManager } from "./download_manager.js";
 import { GenericL10n } from "./genericl10n.js";
 import { GenericScripting } from "./generic_scripting.js";
-import { CursorTool } from "./pdf_cursor_tools.js";
 import { BasePreferences } from "./preferences.js";
+import { CursorTool } from "./ui_utils.js";
 /*80--------------------------------------------------------------------------*/
 /*#static*/  {
     throw new Error('Module "pdfjs-web/chromecom" shall not be used outside CHROME build.');
 }
+( /* rewriteUrlClosure */() => {
+    // Run this code outside DOMContentLoaded to make sure that the URL
+    // is rewritten as soon as possible.
+    const queryString = document.location.search.slice(1);
+    const m = /(^|&)file=([^&]*)/.exec(queryString);
+    const defaultUrl = m ? decodeURIComponent(m[2]) : "";
+    // Example: chrome-extension://.../http://example.com/file.pdf
+    const humanReadableUrl = "/" + defaultUrl + location.hash;
+    history.replaceState(history.state, "", humanReadableUrl);
+    if (top === window) {
+        chrome.runtime.sendMessage("showPageAction");
+    }
+    AppOptions.set("defaultUrl", defaultUrl);
+})();
 export const ChromeCom = {
     /**
      * Creates an event that the extension is listening for and will

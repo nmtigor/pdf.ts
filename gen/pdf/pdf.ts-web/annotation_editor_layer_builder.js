@@ -64,6 +64,7 @@ export class AnnotationEditorLayerBuilder {
         const div = this.div = html("div");
         div.className = "annotationEditorLayer";
         div.tabIndex = 0;
+        div.hidden = true;
         this.pageDiv.append(div);
         this.annotationEditorLayer = new AnnotationEditorLayer({
             uiManager: this.#uiManager,
@@ -80,6 +81,7 @@ export class AnnotationEditorLayerBuilder {
             intent,
         };
         this.annotationEditorLayer.render(parameters);
+        this.show();
     }
     cancel() {
         this._cancelled = true;
@@ -97,7 +99,7 @@ export class AnnotationEditorLayerBuilder {
         this.div.hidden = true;
     }
     show() {
-        if (!this.div) {
+        if (!this.div || this.annotationEditorLayer.isEmpty) {
             return;
         }
         this.div.hidden = false;

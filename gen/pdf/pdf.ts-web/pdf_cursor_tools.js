@@ -17,14 +17,7 @@
  */
 import { AnnotationEditorType } from "../pdf.ts-src/pdf.js";
 import { GrabToPan } from "./grab_to_pan.js";
-import { PresentationModeState } from "./ui_utils.js";
-/*80--------------------------------------------------------------------------*/
-export var CursorTool;
-(function (CursorTool) {
-    CursorTool[CursorTool["SELECT"] = 0] = "SELECT";
-    CursorTool[CursorTool["HAND"] = 1] = "HAND";
-    CursorTool[CursorTool["ZOOM"] = 2] = "ZOOM";
-})(CursorTool || (CursorTool = {}));
+import { CursorTool, PresentationModeState } from "./ui_utils.js";
 export class PDFCursorTools {
     container;
     eventBus;

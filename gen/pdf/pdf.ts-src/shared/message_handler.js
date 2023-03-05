@@ -95,12 +95,11 @@ export class MessageHandler {
         if (data.targetName !== this.sourceName) {
             return;
         }
-        let r_;
         /*#static*/ 
-            r_ = () => { };
         if (data.stream) {
             this.#processStreamMessage(data);
-            return r_();
+            /*#static*/ 
+            return;
         }
         if (data.callback) {
             const callbackId = data.callbackId;
@@ -118,7 +117,8 @@ export class MessageHandler {
             else {
                 throw new Error("Unexpected callback case");
             }
-            return r_();
+            /*#static*/ 
+            return;
         }
         const action = this.actionHandler[data.action];
         if (!action) {
@@ -147,14 +147,17 @@ export class MessageHandler {
                     reason: wrapReason(reason),
                 }, undefined);
             });
-            return r_();
+            /*#static*/ 
+            return;
         }
         if (data.streamId) {
             this.#createStreamSink(data);
-            return r_();
+            /*#static*/ 
+            return;
         }
         action(data.data, undefined);
-        return r_();
+        /*#static*/ 
+        return;
     };
     on(actionName, handler) {
         /*#static*/  {

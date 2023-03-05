@@ -229,8 +229,8 @@ export class TextLayerRenderTask {
     _container;
     _textDivs;
     _textContentItemsStr;
-    _fontInspectorEnabled;
     _isOffscreenCanvasSupported;
+    _fontInspectorEnabled;
     _reader;
     _textDivProperties;
     _canceled = false;
@@ -251,8 +251,8 @@ export class TextLayerRenderTask {
         this._container = this._rootContainer = container;
         this._textDivs = textDivs || [];
         this._textContentItemsStr = textContentItemsStr || [];
-        this._fontInspectorEnabled = !!globalThis.FontInspector?.enabled;
         this._isOffscreenCanvasSupported = isOffscreenCanvasSupported;
+        this._fontInspectorEnabled = !!globalThis.FontInspector?.enabled;
         this._textDivProperties = textDivProperties || new WeakMap();
         this._layoutTextParams = {
             scale: viewport.scale * (globalThis.devicePixelRatio || 1),

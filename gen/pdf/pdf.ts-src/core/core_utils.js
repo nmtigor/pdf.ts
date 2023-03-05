@@ -15,6 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { _PDFDEV } from "../../../global.js";
 import { assert } from "../../../lib/util/trace.js";
 import { AnnotationEditorPrefix, BaseException, objectSize, stringToPDFString, warn, } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
@@ -70,6 +71,36 @@ export class XRefParseException extends BaseException {
     constructor(msg) {
         super(msg, "XRefParseException");
     }
+}
+/**
+ * Combines multiple ArrayBuffers into a single Uint8Array.
+ * @param arr An array of ArrayBuffers.
+ */
+export function arrayBuffersToBytes(arr) {
+    /*#static*/  {
+        for (const item of arr) {
+            assert(item instanceof ArrayBuffer, "arrayBuffersToBytes - expected an ArrayBuffer.");
+        }
+    }
+    const length = arr.length;
+    if (length === 0) {
+        return new Uint8Array(0);
+    }
+    if (length === 1) {
+        return new Uint8Array(arr[0]);
+    }
+    let dataLength = 0;
+    for (let i = 0; i < length; i++) {
+        dataLength += arr[i].byteLength;
+    }
+    const data = new Uint8Array(dataLength);
+    let pos = 0;
+    for (let i = 0; i < length; i++) {
+        const item = new Uint8Array(arr[i]);
+        data.set(item, pos);
+        pos += item.byteLength;
+    }
+    return data;
 }
 /**
  * Get the value of an inheritable property.

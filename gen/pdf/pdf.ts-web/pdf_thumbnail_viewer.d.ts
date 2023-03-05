@@ -1,5 +1,4 @@
 import { OptionalContentConfig, PDFDocumentProxy, PDFPageProxy } from "../pdf.ts-src/pdf.js";
-import { EventBus } from "./event_utils.js";
 import { type IL10n, type IPDFLinkService } from "./interfaces.js";
 import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
 import { PDFThumbnailView } from "./pdf_thumbnail_view.js";
@@ -9,10 +8,6 @@ interface PDFThumbnailViewerOptions {
      * The container for the thumbnail elements.
      */
     container: HTMLDivElement;
-    /**
-     * The application event bus.
-     */
-    eventBus: EventBus;
     /**
      * The navigation/linking service.
      */
@@ -59,7 +54,7 @@ export declare class PDFThumbnailViewer {
     _pagesRequests: WeakMap<PDFThumbnailView, Promise<void | PDFPageProxy>>;
     _setImageDisabled: boolean;
     pdfDocument?: PDFDocumentProxy | undefined;
-    constructor({ container, eventBus, linkService, renderingQueue, l10n, pageColors, }: PDFThumbnailViewerOptions);
+    constructor({ container, linkService, renderingQueue, l10n, pageColors, }: PDFThumbnailViewerOptions);
     scrollThumbnailIntoView(pageNumber: number): void;
     cleanup(): void;
     protected _resetView(): void;

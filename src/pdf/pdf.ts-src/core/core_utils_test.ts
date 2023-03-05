@@ -19,11 +19,13 @@
 
 import {
   assertEquals,
+  assertStrictEquals,
   assertThrows,
 } from "https://deno.land/std@0.170.0/testing/asserts.ts";
 import { describe, it } from "https://deno.land/std@0.170.0/testing/bdd.ts";
 import { XRefMock } from "../shared/test_utils.ts";
 import {
+  arrayBuffersToBytes,
   encodeToXmlString,
   escapePDFName,
   escapeString,
@@ -44,6 +46,32 @@ import { Dict, Ref } from "./primitives.ts";
 /*80--------------------------------------------------------------------------*/
 
 describe("core_utils", () => {
+  describe("arrayBuffersToBytes", () => {
+    it("handles zero ArrayBuffers", () => {
+      const bytes = arrayBuffersToBytes([]);
+
+      assertEquals(bytes, new Uint8Array(0));
+    });
+
+    it("handles one ArrayBuffer", () => {
+      const buffer = new Uint8Array([1, 2, 3]).buffer;
+      const bytes = arrayBuffersToBytes([buffer]);
+
+      assertEquals(bytes, new Uint8Array([1, 2, 3]));
+      // Ensure that the fast-path works correctly.
+      assertStrictEquals(bytes.buffer, buffer);
+    });
+
+    it("handles multiple ArrayBuffers", () => {
+      const buffer1 = new Uint8Array([1, 2, 3]).buffer,
+        buffer2 = new Uint8Array(0).buffer,
+        buffer3 = new Uint8Array([4, 5]).buffer;
+      const bytes = arrayBuffersToBytes([buffer1, buffer2, buffer3]);
+
+      assertEquals(bytes, new Uint8Array([1, 2, 3, 4, 5]));
+    });
+  });
+
   describe("getInheritableProperty", () => {
     it("handles non-dictionary arguments", () => {
       assertEquals(
@@ -214,14 +242,14 @@ describe("core_utils", () => {
     });
   });
 
-  describe("numberToString", function () {
-    it("should stringify integers", function () {
+  describe("numberToString", () => {
+    it("should stringify integers", () => {
       assertEquals(numberToString(1), "1");
       assertEquals(numberToString(0), "0");
       assertEquals(numberToString(-1), "-1");
     });
 
-    it("should stringify floats", function () {
+    it("should stringify floats", () => {
       assertEquals(numberToString(1.0), "1");
       assertEquals(numberToString(1.2), "1.2");
       assertEquals(numberToString(1.23), "1.23");
@@ -261,8 +289,8 @@ describe("core_utils", () => {
     });
   });
 
-  describe("recoverJsURL", function () {
-    it("should get valid URLs without `newWindow` property", function () {
+  describe("recoverJsURL", () => {
+    it("should get valid URLs without `newWindow` property", () => {
       const inputs = [
         "window.open('https://test.local')",
         "window.open('https://test.local', true)",
@@ -280,7 +308,7 @@ describe("core_utils", () => {
       }
     });
 
-    it("should get valid URLs with `newWindow` property", function () {
+    it("should get valid URLs with `newWindow` property", () => {
       const input = "app.launchURL('https://test.local', true)";
       assertEquals(recoverJsURL(input), {
         url: "https://test.local",
@@ -288,7 +316,7 @@ describe("core_utils", () => {
       });
     });
 
-    it("should not get invalid URLs", function () {
+    it("should not get invalid URLs", () => {
       const input = "navigateToUrl('https://test.local')";
       assertEquals(recoverJsURL(input), null);
     });

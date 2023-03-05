@@ -6,8 +6,8 @@ import { PDFWorkerStream } from "./worker_stream.js";
 interface ChunkedStreamSubstream extends ChunkedStream {
 }
 export declare class ChunkedStream extends Stream {
+    #private;
     chunkSize: number;
-    private _loadedChunks;
     get numChunksLoaded(): number;
     hasChunk(chunk: number): boolean;
     numChunks: number;

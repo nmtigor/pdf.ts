@@ -27,7 +27,7 @@ export declare class RadialAxialShadingPattern implements RadialAxialPattern {
     constructor(IR: RadialAxialIR);
     _createGradient(ctx: CanvasRenderingContext2D): CanvasGradient | null;
     /** @implement */
-    getPattern(ctx: CanvasRenderingContext2D, owner: CanvasGraphics, inverse: matrix_t, pathType: PathType): CanvasGradient | CanvasPattern | null;
+    getPattern(ctx: CanvasRenderingContext2D, owner: CanvasGraphics, inverse: matrix_t, pathType: PathType): CanvasPattern | CanvasGradient | null;
 }
 export interface MeshCanvasContext {
     coords: Float32Array;

@@ -310,7 +310,7 @@ export abstract class XFAObject {
       if (node !== undefined) {
         this[$removeChild](node);
       }
-      (<any> this)[name] = child;
+      (this as any)[name] = child;
       this[$appendChild](child);
       return true;
     }

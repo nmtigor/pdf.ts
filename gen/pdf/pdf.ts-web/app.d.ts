@@ -37,7 +37,7 @@ export interface FindControlState {
     rawQuery: string | undefined;
 }
 export interface PassiveLoadingCbs {
-    onOpenWithTransport(url: string, length: number, transport: PDFDataRangeTransport): void;
+    onOpenWithTransport(_x: PDFDataRangeTransport): void;
     onOpenWithData(data: ArrayBuffer, contentDispositionFilename: string): void;
     onOpenWithURL(url: string, length?: number, originalUrl?: string): void;
     onError(err?: ErrorMoreInfo): void;

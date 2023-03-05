@@ -97,6 +97,12 @@ export const enum PageLayout {
   TwoPageRight,
 }
 
+export const enum CursorTool {
+  SELECT = 0, // The default value.
+  HAND = 1,
+  ZOOM = 2,
+}
+
 /**
  * Used by `PDFViewerApplication`, and by the API unit-tests.
  */

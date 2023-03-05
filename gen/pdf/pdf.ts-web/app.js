@@ -19,14 +19,14 @@ import { CHROME, GECKOVIEW, GENERIC, INOUT, MOZCENTRAL, PRODUCTION, } from "../.
 import "../../lib/jslang.js";
 import { Locale } from "../../lib/Locale.js";
 import { assert } from "../../lib/util/trace.js";
-import { AnnotationEditorType, build, createPromiseCapability, getDocument, getFilenameFromUrl, getPdfFilenameFromUrl, GlobalWorkerOptions, InvalidPDFException, isDataScheme, isPdfFile, loadScript, MissingPDFException, OPS, PDFWorker, shadow, UnexpectedResponseException, version, } from "../pdf.ts-src/pdf.js";
+import { AnnotationEditorType, build, createPromiseCapability, FeatureTest, getDocument, getFilenameFromUrl, getPdfFilenameFromUrl, GlobalWorkerOptions, InvalidPDFException, isDataScheme, isPdfFile, loadScript, MissingPDFException, OPS, PDFWorker, shadow, UnexpectedResponseException, version, } from "../pdf.ts-src/pdf.js";
 import { AnnotationEditorParams } from "./annotation_editor_params.js";
 import { AppOptions, OptionKind, ViewerCssTheme, ViewOnLoad, } from "./app_options.js";
 import { AutomationEventBus, EventBus } from "./event_utils.js";
 import { OverlayManager } from "./overlay_manager.js";
 import { PasswordPrompt } from "./password_prompt.js";
 import { PDFAttachmentViewer } from "./pdf_attachment_viewer.js";
-import { CursorTool, PDFCursorTools } from "./pdf_cursor_tools.js";
+import { PDFCursorTools } from "./pdf_cursor_tools.js";
 import { PDFDocumentProperties } from "./pdf_document_properties.js";
 import { PDFFindBar } from "./pdf_find_bar.js";
 import { PDFFindController, } from "./pdf_find_controller.js";
@@ -43,7 +43,7 @@ import { PDFThumbnailViewer } from "./pdf_thumbnail_viewer.js";
 import { PDFViewer } from "./pdf_viewer.js";
 import { SecondaryToolbar } from "./secondary_toolbar.js";
 import { Toolbar } from "./toolbar.js";
-import { animationStarted, apiPageLayoutToViewerModes, apiPageModeToSidebarView, AutoPrintRegExp, DEFAULT_SCALE_VALUE, getActiveOrFocusedElement, isValidRotation, isValidScrollMode, isValidSpreadMode, normalizeWheelEventDirection, parseQueryString, ProgressBar, RendererType, RenderingStates, ScrollMode, SidebarView, SpreadMode, TextLayerMode, } from "./ui_utils.js";
+import { animationStarted, apiPageLayoutToViewerModes, apiPageModeToSidebarView, AutoPrintRegExp, CursorTool, DEFAULT_SCALE_VALUE, getActiveOrFocusedElement, isValidRotation, isValidScrollMode, isValidSpreadMode, normalizeWheelEventDirection, parseQueryString, ProgressBar, RendererType, RenderingStates, ScrollMode, SidebarView, SpreadMode, TextLayerMode, } from "./ui_utils.js";
 import { ViewHistory } from "./view_history.js";
 /*80--------------------------------------------------------------------------*/
 const FORCE_PAGES_LOADED_TIMEOUT = 10000; // ms
@@ -160,8 +160,7 @@ export class PDFViewerApplication {
     async initialize(appConfig) {
         this.preferences = this.externalServices.createPreferences();
         this.appConfig = appConfig;
-        await this.#readPreferences();
-        await this.#parseHashParameters();
+        await this.#initializeOptions();
         this.#forceCssTheme();
         await this.#initializeL10n();
         if (this.isViewerEmbedded &&
@@ -184,15 +183,18 @@ export class PDFViewerApplication {
         });
         this.#initializedCapability.resolve();
     }
-    async #readPreferences() {
+    async #initializeOptions() {
         /*#static*/  {
             if (AppOptions.disablePreferences) {
+                if (AppOptions.pdfBugEnabled) {
+                    await this.#parseHashParams();
+                }
                 // Give custom implementations of the default viewer a simpler way to
                 // opt-out of having the `Preferences` override existing `AppOptions`.
                 return;
             }
             if (AppOptions._hasUserOptions()) {
-                console.warn("_readPreferences: The Preferences may override manually set AppOptions; " +
+                console.warn("#initializeOptions: The Preferences may override manually set AppOptions; " +
                     'please use the "disablePreferences"-option in order to prevent that.');
             }
         }
@@ -200,25 +202,29 @@ export class PDFViewerApplication {
             AppOptions.setAll(await this.preferences.getAll());
         }
         catch (reason) {
-            console.error(`_readPreferences: "${reason?.message}".`);
+            console.error(`#initializeOptions: "${reason.message}".`);
+        }
+        if (AppOptions.pdfBugEnabled) {
+            await this.#parseHashParams();
         }
     }
     /**
      * Potentially parse special debugging flags in the hash section of the URL.
      */
-    async #parseHashParameters() {
-        if (!AppOptions.pdfBugEnabled)
-            return;
+    async #parseHashParams() {
         const hash = document.location.hash.substring(1);
         if (!hash)
             return;
         const { mainContainer, viewerContainer } = this.appConfig, params = parseQueryString(hash);
-        if (params.get("disableworker") === "true") {
+        if (!PRODUCTION && params.get("workermodules") === "true") {
+            AppOptions.set("workerSrc", "../src/pdf.worker.js");
+        }
+        else if (params.get("disableworker") === "true") {
             try {
                 await loadFakeWorker();
             }
             catch (ex) {
-                console.error(`_parseHashParameters: "${ex.message}".`);
+                console.error(`#parseHashParams: "${ex.message}".`);
             }
         }
         if (params.has("disablerange")) {
@@ -253,7 +259,7 @@ export class PDFViewerApplication {
                         this._PDFBug.loadCSS();
                     }
                     catch (ex) {
-                        console.error(`_parseHashParameters: "${ex.message}".`);
+                        console.error(`#parseHashParams: "${ex.message}".`);
                     }
                     break;
             }
@@ -267,7 +273,7 @@ export class PDFViewerApplication {
                 this._PDFBug.init({ OPS }, mainContainer, enabled);
             }
             catch (ex) {
-                console.error(`_parseHashParameters: "${ex.message}".`);
+                console.error(`#parseHashParams: "${ex.message}".`);
             }
         }
         // It is not possible to change locale for the (various) extension builds.
@@ -337,6 +343,10 @@ export class PDFViewerApplication {
         const findController = new PDFFindController({
             linkService: pdfLinkService,
             eventBus,
+            // updateMatchesCountOnProgress:
+            //   typeof PDFJSDev === "undefined"
+            //     ? !window.isGECKOVIEW
+            //     : !PDFJSDev.test("GECKOVIEW"),
             updateMatchesCountOnProgress: /*#static*/ true,
         });
         this.findController = findController;
@@ -384,7 +394,6 @@ export class PDFViewerApplication {
         if (appConfig.sidebar?.thumbnailView) {
             this.pdfThumbnailViewer = new PDFThumbnailViewer({
                 container: appConfig.sidebar.thumbnailView,
-                eventBus,
                 renderingQueue: pdfRenderingQueue,
                 linkService: pdfLinkService,
                 l10n: this.l10n,
@@ -420,18 +429,23 @@ export class PDFViewerApplication {
                 return this._docFilename;
             });
         }
-        this.pdfCursorTools = new PDFCursorTools({
-            container,
-            eventBus,
-            cursorToolOnLoad: AppOptions.cursorToolOnLoad,
-        });
+        // NOTE: The cursor-tools are unlikely to be helpful/useful in GeckoView,
+        // in particular the `HandTool` which basically simulates touch scrolling.
+        if (appConfig.secondaryToolbar?.cursorHandToolButton) {
+            this.pdfCursorTools = new PDFCursorTools({
+                container,
+                eventBus,
+                cursorToolOnLoad: AppOptions.cursorToolOnLoad,
+            });
+        }
         if (appConfig.toolbar) {
             this.toolbar = new Toolbar(appConfig.toolbar, eventBus, this.l10n);
         }
         if (appConfig.secondaryToolbar) {
             this.secondaryToolbar = new SecondaryToolbar(appConfig.secondaryToolbar, eventBus, this.externalServices);
         }
-        if (this.supportsFullscreen) {
+        if (this.supportsFullscreen &&
+            appConfig.secondaryToolbar?.presentationModeButton) {
             this.pdfPresentationMode = new PDFPresentationMode({
                 container,
                 pdfViewer: this.pdfViewer,
@@ -547,8 +561,8 @@ export class PDFViewerApplication {
             throw new Error("Not implemented: initPassiveLoading");
         }
         this.externalServices.initPassiveLoading({
-            onOpenWithTransport: (url, length, transport) => {
-                this.open({ url, length, range: transport });
+            onOpenWithTransport: (range) => {
+                this.open({ range });
             },
             onOpenWithData: (data, contentDispositionFilename) => {
                 if (isPdfFile(contentDispositionFilename)) {
@@ -718,40 +732,23 @@ export class PDFViewerApplication {
             await this.close();
         }
         // Set the necessary global worker parameters, using the available options.
-        const workerParameters = AppOptions.getAll(OptionKind.WORKER);
-        for (const key in workerParameters) {
-            GlobalWorkerOptions[key] = workerParameters[key];
-        }
-        const parameters = Object.create(null);
+        const workerParams = AppOptions.getAll(OptionKind.WORKER);
+        Object.assign(GlobalWorkerOptions, workerParams);
         /*#static*/  {
             if (args.url) {
                 // The Firefox built-in viewer always calls `setTitleUsingUrl`, before
                 // `initPassiveLoading`, and it never provides an `originalUrl` here.
-                if (args.originalUrl) {
-                    this.setTitleUsingUrl(args.originalUrl, /* downloadUrl = */ args.url);
-                    delete args.originalUrl;
-                }
-                else {
-                    this.setTitleUsingUrl(args.url, /* downloadUrl = */ args.url);
-                }
+                this.setTitleUsingUrl(args.originalUrl || args.url, 
+                /* downloadUrl = */ args.url);
             }
         }
-        // Set the necessary API parameters, using the available options.
-        const apiParameters = AppOptions.getAll(OptionKind.API);
-        for (const key in apiParameters) {
-            let value = apiParameters[key];
-            if (key === "docBaseUrl") {
-                /*#static*/  {
-                    value ||= document.URL.split("#")[0];
-                }
-            }
-            parameters[key] = value;
+        // Set the necessary API parameters, using all the available options.
+        const apiParams = AppOptions.getAll(OptionKind.API);
+        const params = { ...apiParams, ...args };
+        /*#static*/  {
+            params.docBaseUrl ||= document.URL.split("#")[0];
         }
-        // Finally, update the API parameters with the arguments.
-        for (const key in args) {
-            parameters[key] = args[key];
-        }
-        const loadingTask = getDocument(parameters);
+        const loadingTask = getDocument(params);
         this.pdfLoadingTask = loadingTask;
         loadingTask.onPassword = (updateCallback, reason) => {
             if (this.isViewerEmbedded) {
@@ -1000,13 +997,18 @@ export class PDFViewerApplication {
                         spreadMode = stored.spreadMode | 0;
                     }
                 }
-                // Always let the user preference/view history take precedence.
-                if (pageMode && sidebarView === SidebarView.UNKNOWN) {
-                    sidebarView = apiPageModeToSidebarView(pageMode);
-                }
-                // NOTE: Always ignore the pageLayout in GeckoView since there's
-                // no UI available to change Scroll/Spread modes for the user.
+                // NOTE: Ignore the pageMode/pageLayout in GeckoView since there's no
+                // sidebar available, nor any UI for changing the Scroll/Spread modes.
+                // if (
+                //   typeof PDFJSDev === "undefined"
+                //     ? !window.isGECKOVIEW
+                //     : !PDFJSDev.test("GECKOVIEW")
+                // ) {
                 /*#static*/  {
+                    // Always let the user preference/view history take precedence.
+                    if (pageMode && sidebarView === SidebarView.UNKNOWN) {
+                        sidebarView = apiPageModeToSidebarView(pageMode);
+                    }
                     if (pageLayout &&
                         scrollMode === ScrollMode.UNKNOWN &&
                         spreadMode === SpreadMode.UNKNOWN) {
@@ -1076,26 +1078,32 @@ export class PDFViewerApplication {
                 type: "pageInfo",
                 timestamp: data.timestamp,
             });
-            pdfDocument.getOutline().then((outline) => {
-                if (pdfDocument !== this.pdfDocument) {
-                    return; // The document was closed while the outline resolved.
-                }
-                this.pdfOutlineViewer?.render({ outline, pdfDocument });
-            });
-            pdfDocument.getAttachments().then((attachments) => {
-                if (pdfDocument !== this.pdfDocument) {
-                    return; // The document was closed while the attachments resolved.
-                }
-                this.pdfAttachmentViewer?.render({ attachments });
-            });
-            // Ensure that the layers accurately reflects the current state in the
-            // viewer itself, rather than the default state provided by the API.
-            pdfViewer.optionalContentConfigPromise.then((optionalContentConfig) => {
-                if (pdfDocument !== this.pdfDocument) {
-                    return; // The document was closed while the layers resolved.
-                }
-                this.pdfLayerViewer?.render({ optionalContentConfig, pdfDocument });
-            });
+            if (this.pdfOutlineViewer) {
+                pdfDocument.getOutline().then((outline) => {
+                    if (pdfDocument !== this.pdfDocument) {
+                        return; // The document was closed while the outline resolved.
+                    }
+                    this.pdfOutlineViewer.render({ outline, pdfDocument });
+                });
+            }
+            if (this.pdfAttachmentViewer) {
+                pdfDocument.getAttachments().then((attachments) => {
+                    if (pdfDocument !== this.pdfDocument) {
+                        return; // The document was closed while the attachments resolved.
+                    }
+                    this.pdfAttachmentViewer.render({ attachments });
+                });
+            }
+            if (this.pdfLayerViewer) {
+                // Ensure that the layers accurately reflects the current state in the
+                // viewer itself, rather than the default state provided by the API.
+                pdfViewer.optionalContentConfigPromise.then((optionalContentConfig) => {
+                    if (pdfDocument !== this.pdfDocument) {
+                        return; // The document was closed while the layers resolved.
+                    }
+                    this.pdfLayerViewer?.render({ optionalContentConfig, pdfDocument });
+                });
+            }
         });
         this.#initializePageLabels(pdfDocument);
         this.#initializeMetadata(pdfDocument);
@@ -1224,6 +1232,14 @@ export class PDFViewerApplication {
         this.eventBus.dispatch("metadataloaded", { source: this });
     }
     async #initializePageLabels(pdfDocument) {
+        // if (
+        //   typeof PDFJSDev === "undefined"
+        //     ? window.isGECKOVIEW
+        //     : PDFJSDev.test("GECKOVIEW")
+        // ) {
+        /*#static*/  {
+            return;
+        }
         const labels = await pdfDocument.getPageLabels();
         if (pdfDocument !== this.pdfDocument) {
             return; // The document was closed while the page labels resolved.
@@ -1713,7 +1729,8 @@ let validateFileURL;
 async function loadFakeWorker() {
     GlobalWorkerOptions.workerSrc ||= AppOptions.workerSrc;
     /*#static*/  {
-        window.pdfjsWorker = await import("../pdf.ts-src/core/worker.js");
+        window.pdfjsWorker = await import("../pdf.ts-src/pdf.worker.js");
+        // window.pdfjsWorker = await import("../pdf.ts-src/core/worker.ts");
     }
 }
 async function loadPDFBug(self) {
@@ -1732,7 +1749,7 @@ function reportPageStatsPDFBug({ pageNumber }) {
     globalThis.Stats.add(pageNumber, pageView?.pdfPage?.stats);
 }
 function webViewerInitialized() {
-    const { appConfig, eventBus } = viewerApp;
+    const { appConfig, eventBus, l10n } = viewerApp;
     const file = /*#static*/ (() => {
         const queryString = document.location.search.substring(1);
         const params = parseQueryString(queryString);
@@ -1774,7 +1791,7 @@ function webViewerInitialized() {
     }
     if (!viewerApp.supportsDocumentFonts) {
         AppOptions.set("disableFontFace", true);
-        viewerApp.l10n.get("web_fonts_disabled").then((msg) => {
+        l10n.get("web_fonts_disabled").then((msg) => {
             console.warn(msg);
         });
     }
@@ -1804,7 +1821,7 @@ function webViewerInitialized() {
         }
     }
     catch (reason) {
-        viewerApp.l10n.get("loading_error").then((msg) => {
+        l10n.get("loading_error").then((msg) => {
             viewerApp._documentError(msg, reason);
         });
     }
@@ -2001,14 +2018,10 @@ function webViewerDownload() {
     viewerApp.downloadOrSave();
 }
 function webViewerFirstPage() {
-    if (viewerApp.pdfDocument) {
-        viewerApp.page = 1;
-    }
+    viewerApp.page = 1;
 }
 function webViewerLastPage() {
-    if (viewerApp.pdfDocument) {
-        viewerApp.page = viewerApp.pagesCount;
-    }
+    viewerApp.page = viewerApp.pagesCount;
 }
 function webViewerNextPage() {
     viewerApp.pdfViewer.nextPage();
@@ -2154,11 +2167,12 @@ function webViewerWheel(evt) {
     // The following formula is a bit strange but it comes from:
     // https://searchfox.org/mozilla-central/rev/d62c4c4d5547064487006a1506287da394b64724/widget/InputData.cpp#618-626
     let scaleFactor = Math.exp(-evt.deltaY / 100);
+    const isBuiltInMac = /*#static*/ false;
     const isPinchToZoom = evt.ctrlKey &&
         !viewerApp._isCtrlKeyDown &&
         deltaMode === WheelEvent.DOM_DELTA_PIXEL &&
         evt.deltaX === 0 &&
-        Math.abs(scaleFactor - 1) < 0.05 &&
+        (Math.abs(scaleFactor - 1) < 0.05 || isBuiltInMac) &&
         evt.deltaZ === 0;
     if (isPinchToZoom ||
         (evt.ctrlKey && supportedMouseWheelZoomModifierKeys.ctrlKey) ||
@@ -2387,12 +2401,12 @@ function webViewerKeyDown(evt) {
                 if (!viewerApp.supportsIntegratedFind) {
                     const { state } = viewerApp.findController;
                     if (state) {
-                        const eventState = Object.assign(Object.create(null), state, {
+                        const newState = {
                             source: window,
                             type: "again",
                             findPrevious: cmd === 5 || cmd === 12,
-                        });
-                        eventBus.dispatch("find", eventState);
+                        };
+                        eventBus.dispatch("find", { ...state, ...newState });
                     }
                     handled = true;
                 }
@@ -2401,9 +2415,7 @@ function webViewerKeyDown(evt) {
             case 107: // FF '+' and '='
             case 187: // Chrome '+'
             case 171: // FF with German keyboard
-                if (!isViewerInPresentationMode) {
-                    viewerApp.zoomIn();
-                }
+                viewerApp.zoomIn();
                 handled = true;
                 break;
             case 173: // FF/Mac '-'

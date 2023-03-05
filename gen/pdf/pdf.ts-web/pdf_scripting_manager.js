@@ -115,8 +115,7 @@ export class PDFScriptingManager {
         try {
             const docProperties = await this.#getDocProperties();
             if (pdfDocument !== this.#pdfDocument) {
-                // The document was closed while the properties resolved.
-                return;
+                return; // The document was closed while the properties resolved.
             }
             await this._scripting?.createSandbox({
                 objects: objects,
@@ -202,9 +201,9 @@ export class PDFScriptingManager {
                 case "layout": {
                     // NOTE: Always ignore the pageLayout in GeckoView since there's
                     // no UI available to change Scroll/Spread modes for the user.
-                    /*#static*/ 
-                    if (isInPresentationMode)
+                    if (GECKOVIEW || isInPresentationMode) {
                         return;
+                    }
                     const modes = apiPageLayoutToViewerModes(value);
                     this.#pdfViewer.spreadMode = modes.spreadMode;
                     break;

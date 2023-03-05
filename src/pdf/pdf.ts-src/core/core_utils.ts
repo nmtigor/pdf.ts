@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+import { _PDFDEV } from "../../../global.ts";
 import { assert } from "../../../lib/util/trace.ts";
 import {
   AnnotStorageRecord,
@@ -102,7 +103,41 @@ export class XRefParseException extends BaseException {
   }
 }
 
-interface _GetInheritablePropertyP {
+/**
+ * Combines multiple ArrayBuffers into a single Uint8Array.
+ * @param arr An array of ArrayBuffers.
+ */
+export function arrayBuffersToBytes(arr: ArrayBuffer[]): Uint8Array {
+  /*#static*/ if (_PDFDEV) {
+    for (const item of arr) {
+      assert(
+        item instanceof ArrayBuffer,
+        "arrayBuffersToBytes - expected an ArrayBuffer.",
+      );
+    }
+  }
+  const length = arr.length;
+  if (length === 0) {
+    return new Uint8Array(0);
+  }
+  if (length === 1) {
+    return new Uint8Array(arr[0]);
+  }
+  let dataLength = 0;
+  for (let i = 0; i < length; i++) {
+    dataLength += arr[i].byteLength;
+  }
+  const data = new Uint8Array(dataLength);
+  let pos = 0;
+  for (let i = 0; i < length; i++) {
+    const item = new Uint8Array(arr[i]);
+    data.set(item, pos);
+    pos += item.byteLength;
+  }
+  return data;
+}
+
+interface GetInheritablePropertyP_ {
   /**
    * Dictionary from where to start the traversal.
    */
@@ -143,7 +178,7 @@ export function getInheritableProperty({
   key,
   getArray = false,
   stopWhenFound = true,
-}: _GetInheritablePropertyP) {
+}: GetInheritablePropertyP_) {
   let values: ObjNoRef[] | undefined;
   const visited = new RefSet();
 

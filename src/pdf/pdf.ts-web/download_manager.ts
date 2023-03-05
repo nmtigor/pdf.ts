@@ -19,7 +19,7 @@
 
 /** @typedef {import("./interfaces").IDownloadManager} IDownloadManager */
 
-import { CHROME, GENERIC } from "../../global.ts";
+import { CHROME, COMPONENTS, GENERIC } from "../../global.ts";
 import { html } from "../../lib/dom.ts";
 import { createValidAbsoluteUrl, isPdfFile } from "../pdf.ts-src/pdf.ts";
 import { IDownloadManager } from "./interfaces.ts";
@@ -89,33 +89,37 @@ export class DownloadManager implements IDownloadManager {
     const isPdfData = isPdfFile(filename);
     const contentType = isPdfData ? "application/pdf" : "";
 
-    if (isPdfData) {
-      let blobUrl = this.#openBlobUrls.get(element);
-      if (!blobUrl) {
-        blobUrl = URL.createObjectURL(new Blob([data], { type: contentType }));
-        this.#openBlobUrls.set(element, blobUrl);
-      }
-      const viewerUrl = /*#static*/ GENERIC
-        // The current URL is the viewer, let's use it and append the file.
-        ? "?file=" + encodeURIComponent(blobUrl + "#" + filename)
-        : /*#static*/ CHROME
-        // In the Chrome extension, the URL is rewritten using the history API
-        // in viewer.js, so an absolute URL must be generated.
-        ? (globalThis as any).chrome.runtime.getURL(
-          "/content/web/viewer.html",
-        ) + "?file=" +
-          encodeURIComponent(blobUrl + "#" + filename)
-        : undefined;
+    /*#static*/ if (!COMPONENTS) {
+      if (isPdfData) {
+        let blobUrl = this.#openBlobUrls.get(element);
+        if (!blobUrl) {
+          blobUrl = URL.createObjectURL(
+            new Blob([data], { type: contentType }),
+          );
+          this.#openBlobUrls.set(element, blobUrl);
+        }
+        const viewerUrl = /*#static*/ GENERIC
+          // The current URL is the viewer, let's use it and append the file.
+          ? "?file=" + encodeURIComponent(blobUrl + "#" + filename)
+          : /*#static*/ CHROME
+          // In the Chrome extension, the URL is rewritten using the history API
+          // in viewer.js, so an absolute URL must be generated.
+          ? (globalThis as any).chrome.runtime.getURL(
+            "/content/web/viewer.html",
+          ) + "?file=" +
+            encodeURIComponent(blobUrl + "#" + filename)
+          : undefined;
 
-      try {
-        window.open(viewerUrl);
-        return true;
-      } catch (ex) {
-        console.error(`openOrDownloadData: ${ex}`);
-        // Release the `blobUrl`, since opening it failed, and fallback to
-        // downloading the PDF file.
-        URL.revokeObjectURL(blobUrl);
-        this.#openBlobUrls.delete(element);
+        try {
+          window.open(viewerUrl);
+          return true;
+        } catch (ex) {
+          console.error(`openOrDownloadData: ${ex}`);
+          // Release the `blobUrl`, since opening it failed, and fallback to
+          // downloading the PDF file.
+          URL.revokeObjectURL(blobUrl);
+          this.#openBlobUrls.delete(element);
+        }
       }
     }
 

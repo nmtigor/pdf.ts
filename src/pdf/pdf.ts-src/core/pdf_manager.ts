@@ -18,7 +18,6 @@
  */
 
 import { type AnnotStorageRecord } from "../display/annotation_layer.ts";
-import { type BinaryData } from "../display/api.ts";
 import { MessageHandler, Thread } from "../shared/message_handler.ts";
 import {
   AbortException,
@@ -60,14 +59,27 @@ export interface EvaluatorOptions {
   standardFontDataUrl: string | undefined;
 }
 
+interface BasePdfManagerCtorP_ {
+  docBaseUrl?: string;
+  docId: string;
+  password?: string;
+  enableXfa?: boolean;
+  evaluatorOptions: EvaluatorOptions;
+}
 export abstract class BasePdfManager {
-  protected _docId: string;
+  private _docBaseUrl;
+  get docBaseUrl() {
+    const catalog = this.pdfDocument.catalog!;
+    return shadow(this, "docBaseUrl", catalog.baseUrl || this._docBaseUrl);
+  }
+
+  private _docId;
   /** @final */
   get docId() {
     return this._docId;
   }
 
-  protected _password?: string | undefined;
+  protected _password;
   /** @final */
   get password() {
     return this._password;
@@ -75,20 +87,17 @@ export abstract class BasePdfManager {
 
   msgHandler!: MessageHandler<Thread.worker>;
 
-  protected _docBaseUrl: URL | string | undefined;
-  get docBaseUrl() {
-    const catalog = this.pdfDocument.catalog!;
-    return shadow(this, "docBaseUrl", catalog.baseUrl || this._docBaseUrl);
-  }
-
-  evaluatorOptions!: EvaluatorOptions;
-  enableXfa?: boolean | undefined;
+  enableXfa;
+  evaluatorOptions;
 
   pdfDocument!: PDFDocument;
 
-  constructor(docId: string, docBaseUrl?: string) {
-    this._docId = docId;
-    this._docBaseUrl = parseDocBaseUrl(docBaseUrl);
+  constructor(args: BasePdfManagerCtorP_) {
+    this._docBaseUrl = parseDocBaseUrl(args.docBaseUrl);
+    this._docId = args.docId;
+    this._password = args.password;
+    this.enableXfa = args.enableXfa;
+    this.evaluatorOptions = args.evaluatorOptions;
   }
 
   /** @fianl */
@@ -162,26 +171,16 @@ export abstract class BasePdfManager {
   abstract terminate(reason: AbortException): void;
 }
 
+export interface LocalPdfManagerCtorP extends BasePdfManagerCtorP_ {
+  source: Uint8Array | ArrayBuffer | number[];
+}
 export class LocalPdfManager extends BasePdfManager {
   #loadedStreamPromise: Promise<Stream>;
 
-  constructor(
-    docId: string,
-    data: BinaryData,
-    password: string | undefined,
-    msgHandler: MessageHandler<Thread.worker>,
-    evaluatorOptions: EvaluatorOptions,
-    enableXfa?: boolean,
-    docBaseUrl?: string,
-  ) {
-    super(docId, docBaseUrl);
+  constructor(args: LocalPdfManagerCtorP) {
+    super(args);
 
-    this._password = password;
-    this.msgHandler = msgHandler;
-    this.evaluatorOptions = evaluatorOptions;
-    this.enableXfa = enableXfa;
-
-    const stream = new Stream(data as Uint8Array | ArrayBuffer | number[]);
+    const stream = new Stream(args.source);
     this.pdfDocument = new PDFDocument(this, stream);
     this.#loadedStreamPromise = Promise.resolve(stream);
   }
@@ -197,17 +196,8 @@ export class LocalPdfManager extends BasePdfManager {
     if (typeof value === "function") {
       return value.apply(obj, args);
     }
-    return <any> value;
+    return value as any;
   }
-
-  // ensure = ( obj, prop, args ) =>
-  // {
-  //   const value = obj[prop];
-  //   if (typeof value === "function") {
-  //     return value.apply(obj, args);
-  //   }
-  //   return value;
-  // }
 
   /** @implement */
   requestRange(begin: number, end: number) {
@@ -223,34 +213,21 @@ export class LocalPdfManager extends BasePdfManager {
   terminate(reason: AbortException) {}
 }
 
-interface _NetworkPdfManagerCtorP {
-  msgHandler: MessageHandler<Thread.worker>;
-  password: string | undefined;
+export interface NetworkPdfManagerCtorP extends BasePdfManagerCtorP_ {
+  source: PDFWorkerStream;
+  handler: MessageHandler<Thread.worker>;
   length: number;
   disableAutoFetch: boolean;
   rangeChunkSize: number;
 }
-
 export class NetworkPdfManager extends BasePdfManager {
   streamManager: ChunkedStreamManager;
 
-  constructor(
-    docId: string,
-    pdfNetworkStream: PDFWorkerStream,
-    args: _NetworkPdfManagerCtorP,
-    evaluatorOptions: EvaluatorOptions,
-    enableXfa?: boolean,
-    docBaseUrl?: string,
-  ) {
-    super(docId, docBaseUrl);
+  constructor(args: NetworkPdfManagerCtorP) {
+    super(args);
 
-    this._password = args.password;
-    this.msgHandler = args.msgHandler;
-    this.evaluatorOptions = evaluatorOptions;
-    this.enableXfa = enableXfa;
-
-    this.streamManager = new ChunkedStreamManager(pdfNetworkStream, {
-      msgHandler: args.msgHandler,
+    this.streamManager = new ChunkedStreamManager(args.source, {
+      msgHandler: args.handler,
       length: args.length,
       disableAutoFetch: args.disableAutoFetch,
       rangeChunkSize: args.rangeChunkSize,
@@ -270,7 +247,7 @@ export class NetworkPdfManager extends BasePdfManager {
       if (typeof value === "function") {
         return value.apply(obj, args);
       }
-      return <any> value;
+      return value as any;
     } catch (ex) {
       if (!(ex instanceof MissingDataException)) {
         throw ex;

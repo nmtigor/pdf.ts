@@ -1,7 +1,6 @@
 import { AnnotationEditorType, AnnotationMode, VerbosityLevel } from "../pdf.ts-src/pdf.js";
-import { CursorTool } from "./pdf_cursor_tools.js";
 import { LinkTarget } from "./pdf_link_service.js";
-import { RendererType, ScrollMode, SidebarView, SpreadMode, TextLayerMode } from "./ui_utils.js";
+import { CursorTool, RendererType, ScrollMode, SidebarView, SpreadMode, TextLayerMode } from "./ui_utils.js";
 export declare const enum OptionKind {
     VIEWER = 2,
     API = 4,
@@ -294,10 +293,7 @@ export declare abstract class AppOptions {
     static set<ON extends OptionName>(name: ON, value: _OptionType | undefined): void;
     static setAll(options: UserOptions): void;
     static remove(name: OptionName): void;
-    /**
-     * @ignore
-     */
-    static _hasUserOptions(): boolean;
+    static _hasUserOptions: () => boolean;
 }
 export {};
 //# sourceMappingURL=app_options.d.ts.map

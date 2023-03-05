@@ -18,7 +18,7 @@
  */
 
 import { _PDFDEV, _TRACE, global, PDFTS_vv } from "../../../global.ts";
-import { type Id, type rect_t } from "../../../lib/alias.ts";
+import { type rect_t } from "../../../lib/alias.ts";
 import { HttpStatusCode } from "../../../lib/HttpStatusCode.ts";
 import { isObjectLike } from "../../../lib/jslang.ts";
 import { assert } from "../../../lib/util/trace.ts";
@@ -32,6 +32,7 @@ import {
   type ViewerPref,
 } from "../core/catalog.ts";
 import { type AnnotActions } from "../core/core_utils.ts";
+import { DatasetReader } from "../core/dataset_reader.ts";
 import { type DocumentInfo, type XFAData } from "../core/document.ts";
 import { type FontStyle, type ImgData } from "../core/evaluator.ts";
 import { FontExpotDataEx } from "../core/fonts.ts";
@@ -44,7 +45,6 @@ import { EvaluatorOptions } from "../core/pdf_manager.ts";
 import { type XFAElObj } from "../core/xfa/alias.ts";
 import { type AnnotStorageRecord } from "../display/annotation_layer.ts";
 import {
-  type BinaryData,
   type OutlineNode,
   type RefProxy,
   StructTreeNode,
@@ -119,14 +119,16 @@ function wrapReason(reason: reason_t) {
 
 export interface GetDocRequestData {
   docId: string;
-  apiVersion: number;
-  data: BinaryData | undefined;
+  apiVersion: number | undefined;
+  data: Uint8Array | undefined;
   password: string | undefined;
   disableAutoFetch: boolean | undefined;
   rangeChunkSize: number | undefined;
-  length: number | undefined;
+  // length: number | undefined;
+  length: number;
   docBaseUrl: string | undefined;
-  enableXfa: boolean | undefined;
+  // enableXfa: boolean | undefined;
+  enableXfa: boolean;
   evaluatorOptions: EvaluatorOptions;
 }
 
@@ -317,6 +319,11 @@ export interface MActionMap {
   GetViewerPreferences: {
     Data: null;
     Return: ViewerPref | undefined;
+    Sinkchunk: undefined;
+  };
+  GetXFADatasets: {
+    Data: null;
+    Return: DatasetReader | undefined;
     Sinkchunk: undefined;
   };
   HasJSActions: {
@@ -630,19 +637,16 @@ export class MessageHandler<
     if (data.targetName !== this.sourceName) {
       return;
     }
-    let r_: Id<void>;
     /*#static*/ if (_TRACE && PDFTS_vv) {
       console.log(
         `${global.indent}>>>>>>> MessageHandler_${this.sourceName}_${this.id}.#onComObjOnMessage() >>>>>>>`,
       );
       console.log(`${global.dent}${stringof(event.data)}`);
-      r_ = () => {
-        global.outdent;
-      };
-    } else r_ = () => {};
+    }
     if (data.stream) {
       this.#processStreamMessage(data);
-      return r_();
+      /*#static*/ if (_TRACE && PDFTS_vv) global.outdent;
+      return;
     }
     if (data.callback) {
       const callbackId = data.callbackId!;
@@ -659,7 +663,8 @@ export class MessageHandler<
       } else {
         throw new Error("Unexpected callback case");
       }
-      return r_();
+      /*#static*/ if (_TRACE && PDFTS_vv) global.outdent;
+      return;
     }
     const action = this.actionHandler[data.action!];
     if (!action) {
@@ -692,14 +697,17 @@ export class MessageHandler<
           }, undefined);
         },
       );
-      return r_();
+      /*#static*/ if (_TRACE && PDFTS_vv) global.outdent;
+      return;
     }
     if (data.streamId) {
       this.#createStreamSink(data);
-      return r_();
+      /*#static*/ if (_TRACE && PDFTS_vv) global.outdent;
+      return;
     }
-    action(<any> data.data, <any> undefined);
-    return r_();
+    action(data.data as any, undefined as any);
+    /*#static*/ if (_TRACE && PDFTS_vv) global.outdent;
+    return;
   };
 
   on<AN extends ActionName<Tn>>(

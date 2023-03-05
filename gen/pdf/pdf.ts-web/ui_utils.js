@@ -92,6 +92,12 @@ export var PageLayout;
     PageLayout[PageLayout["TwoPageLeft"] = 5] = "TwoPageLeft";
     PageLayout[PageLayout["TwoPageRight"] = 6] = "TwoPageRight";
 })(PageLayout || (PageLayout = {}));
+export var CursorTool;
+(function (CursorTool) {
+    CursorTool[CursorTool["SELECT"] = 0] = "SELECT";
+    CursorTool[CursorTool["HAND"] = 1] = "HAND";
+    CursorTool[CursorTool["ZOOM"] = 2] = "ZOOM";
+})(CursorTool || (CursorTool = {}));
 /**
  * Used by `PDFViewerApplication`, and by the API unit-tests.
  */
