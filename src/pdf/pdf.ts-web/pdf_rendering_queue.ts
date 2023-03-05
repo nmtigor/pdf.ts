@@ -23,7 +23,6 @@
 /** @typedef {import("./pdf_thumbnail_viewer").PDFThumbnailViewer} PDFThumbnailViewer */
 
 import { _TRACE, global, PDFTS_vv } from "../../global.ts";
-import { Id } from "../../lib/alias.ts";
 import { RenderingCancelledException } from "../pdf.ts-src/pdf.ts";
 import { type IRenderableView, type IVisibleView } from "./interfaces.ts";
 import { PDFThumbnailViewer } from "./pdf_thumbnail_viewer.ts";
@@ -165,17 +164,15 @@ export class PDFRenderingQueue {
    * `false`.
    */
   renderView(view: IRenderableView) {
-    let r_: Id<boolean>;
     /*#static*/ if (_TRACE && PDFTS_vv) {
       console.log(
         `${global.indent}>>>>>>> PDFRenderingQueue.renderView() >>>>>>>`,
       );
       console.log(`${global.dent}${RenderingStates[view.renderingState]}`);
-      r_ = (_y) => (global.outdent, _y);
-    } else r_ = (_y) => _y;
+    }
     switch (view.renderingState) {
       case RenderingStates.FINISHED:
-        return r_(false);
+        return /*#static*/ _TRACE && PDFTS_vv ? (global.outdent, false) : false;
       case RenderingStates.PAUSED:
         this.highestPriorityPage = view.renderingId;
         view.resume!();
@@ -198,7 +195,7 @@ export class PDFRenderingQueue {
           });
         break;
     }
-    return r_(true);
+    return /*#static*/ _TRACE && PDFTS_vv ? (global.outdent, true) : true;
   }
 }
 /*80--------------------------------------------------------------------------*/

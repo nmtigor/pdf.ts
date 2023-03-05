@@ -652,56 +652,6 @@ export function stringToBytes(str: string) {
   return bytes;
 }
 
-/**
- * Gets length of the array (Array, Uint8Array, or string) in bytes.
- */
-// eslint-disable-next-line consistent-return
-export function arrayByteLength(
-  arr: any[] | Uint8Array | string | ArrayBufferLike,
-): number {
-  if ((<any[] | Uint8Array | string> arr).length !== undefined) {
-    return (<any[] | Uint8Array | string> arr).length;
-  }
-  if ((<ArrayBufferLike> arr).byteLength !== undefined) {
-    return (<ArrayBufferLike> arr).byteLength;
-  }
-  assert(0, "Invalid argument for arrayByteLength");
-  return 0;
-}
-
-/**
- * Combines array items (arrays) into single Uint8Array object.
- * @param arr the array of the arrays (Array, Uint8Array, or string).
- */
-export function arraysToBytes(
-  arr: (any[] | Uint8Array | string | ArrayBufferLike)[],
-): Uint8Array {
-  const length = arr.length;
-  // Shortcut: if first and only item is Uint8Array, return it.
-  if (length === 1 && arr[0] instanceof Uint8Array) return arr[0];
-
-  let resultLength = 0;
-  for (let i = 0; i < length; i++) {
-    resultLength += arrayByteLength(arr[i]);
-  }
-  let pos = 0;
-  const data = new Uint8Array(resultLength);
-  for (let i = 0; i < length; i++) {
-    let item = arr[i];
-    if (!(item instanceof Uint8Array)) {
-      if (typeof item === "string") {
-        item = stringToBytes(item);
-      } else {
-        item = new Uint8Array(item);
-      }
-    }
-    const itemLength = item.byteLength;
-    data.set(<Uint8Array> item, pos);
-    pos += itemLength;
-  }
-  return data;
-}
-
 export function string32(value: number) {
   /*#static*/ if (_PDFDEV) {
     assert(

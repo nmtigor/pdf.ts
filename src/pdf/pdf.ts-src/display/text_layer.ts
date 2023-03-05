@@ -417,8 +417,8 @@ export class TextLayerRenderTask {
   _container;
   _textDivs: HTMLSpanElement[];
   _textContentItemsStr: string[];
-  _fontInspectorEnabled: boolean;
   _isOffscreenCanvasSupported: boolean | undefined;
+  _fontInspectorEnabled: boolean;
 
   _reader?: ReadableStreamDefaultReader<TextContent> | undefined;
   _textDivProperties: WeakMap<HTMLSpanElement, TextDivProps>;
@@ -451,8 +451,8 @@ export class TextLayerRenderTask {
     this._container = this._rootContainer = container;
     this._textDivs = textDivs || [];
     this._textContentItemsStr = textContentItemsStr || [];
-    this._fontInspectorEnabled = !!(globalThis as any).FontInspector?.enabled;
     this._isOffscreenCanvasSupported = isOffscreenCanvasSupported;
+    this._fontInspectorEnabled = !!(globalThis as any).FontInspector?.enabled;
 
     this._textDivProperties = textDivProperties || new WeakMap();
     this._layoutTextParams = {

@@ -26,7 +26,6 @@ import {
   animationStarted,
   DEFAULT_SCALE,
   DEFAULT_SCALE_VALUE,
-  docStyle,
   MAX_SCALE,
   MIN_SCALE,
   noContextMenuHandler,
@@ -375,7 +374,8 @@ export class Toolbar {
     maxWidth += 0.3 * scaleSelectWidth;
 
     if (maxWidth > scaleSelectWidth) {
-      docStyle!.setProperty("--scale-select-width", `${maxWidth}px`);
+      const container = items.scaleSelect.parentNode as HTMLElement;
+      container.style.setProperty("--scale-select-width", `${maxWidth}px`);
     }
     // Zeroing the width and height cause Firefox to release graphics resources
     // immediately, which can greatly reduce memory consumption.

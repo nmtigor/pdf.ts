@@ -17,16 +17,16 @@
  * limitations under the License.
  */
 
+import { _PDFDEV } from "../../../global.ts";
+import { assert } from "../../../lib/util/trace.ts";
 import { type ReadValue } from "../interfaces.ts";
 import { MessageHandler, Thread } from "../shared/message_handler.ts";
 import {
   AbortException,
-  arrayByteLength,
-  arraysToBytes,
   createPromiseCapability,
   type PromiseCapability,
 } from "../shared/util.ts";
-import { MissingDataException } from "./core_utils.ts";
+import { arrayBuffersToBytes, MissingDataException } from "./core_utils.ts";
 import { Dict } from "./primitives.ts";
 import { Stream } from "./stream.ts";
 import { PDFWorkerStream } from "./worker_stream.ts";
@@ -43,13 +43,12 @@ interface ChunkedStreamSubstreamCtor {
 export class ChunkedStream extends Stream {
   chunkSize;
 
-  //kkkk bug? `#loadedChunks` does not work. Why?
-  private _loadedChunks = new Set<number>();
+  #loadedChunks = new Set<number>();
   get numChunksLoaded() {
-    return this._loadedChunks.size;
+    return this.#loadedChunks.size;
   }
   hasChunk(chunk: number) {
-    return this._loadedChunks.has(chunk);
+    return this.#loadedChunks.has(chunk);
   }
 
   numChunks: number;
@@ -79,7 +78,7 @@ export class ChunkedStream extends Stream {
   getMissingChunks() {
     const chunks = [];
     for (let chunk = 0, n = this.numChunks; chunk < n; ++chunk) {
-      if (!this._loadedChunks.has(chunk)) {
+      if (!this.#loadedChunks.has(chunk)) {
         chunks.push(chunk);
       }
     }
@@ -106,7 +105,7 @@ export class ChunkedStream extends Stream {
     for (let curChunk = beginChunk; curChunk < endChunk; ++curChunk) {
       // Since a value can only occur *once* in a `Set`, there's no need to
       // manually check `Set.prototype.has()` before adding the value here.
-      this._loadedChunks.add(curChunk);
+      this.#loadedChunks.add(curChunk);
     }
   }
 
@@ -124,7 +123,7 @@ export class ChunkedStream extends Stream {
     for (let curChunk = beginChunk; curChunk < endChunk; ++curChunk) {
       // Since a value can only occur *once* in a `Set`, there's no need to
       // manually check `Set.prototype.has()` before adding the value here.
-      this._loadedChunks.add(curChunk);
+      this.#loadedChunks.add(curChunk);
     }
   }
 
@@ -141,7 +140,7 @@ export class ChunkedStream extends Stream {
       return;
     }
 
-    if (!this._loadedChunks.has(chunk)) {
+    if (!this.#loadedChunks.has(chunk)) {
       throw new MissingDataException(pos, pos + 1);
     }
     this.lastSuccessfulEnsureByteChunk = chunk;
@@ -164,7 +163,7 @@ export class ChunkedStream extends Stream {
       this.numChunks,
     );
     for (let chunk = beginChunk; chunk < endChunk; ++chunk) {
-      if (!this._loadedChunks.has(chunk)) {
+      if (!this.#loadedChunks.has(chunk)) {
         throw new MissingDataException(begin, end);
       }
     }
@@ -174,7 +173,7 @@ export class ChunkedStream extends Stream {
     const numChunks = this.numChunks;
     for (let i = 0; i < numChunks; ++i) {
       const chunk = (beginChunk + i) % numChunks; // Wrap around to beginning.
-      if (!this._loadedChunks.has(chunk)) {
+      if (!this.#loadedChunks.has(chunk)) {
         return chunk;
       }
     }
@@ -259,7 +258,7 @@ export class ChunkedStream extends Stream {
       const endChunk = Math.floor((this.end - 1) / chunkSize) + 1;
       const missingChunks = [];
       for (let chunk = beginChunk; chunk < endChunk; ++chunk) {
-        if (!this._loadedChunks.has(chunk)) {
+        if (!this.#loadedChunks.has(chunk)) {
           missingChunks.push(chunk);
         }
       }
@@ -334,24 +333,31 @@ export class ChunkedStreamManager {
       rangeReader.onProgress = this.onProgress.bind(this);
     }
 
-    let chunks: ArrayBufferLike[] | null = [];
-    let loaded = 0;
+    let chunks: ArrayBufferLike[] | undefined = [],
+      loaded = 0;
     return new Promise<Uint8Array>((resolve, reject) => {
-      const readChunk = (chunk: ReadValue) => {
+      const readChunk = ({ value, done }: ReadValue) => {
         try {
-          if (!chunk.done) {
-            const data = chunk.value!;
-            chunks!.push(data);
-            loaded += arrayByteLength(data);
-            if (rangeReader.isStreamingSupported) {
-              this.onProgress({ loaded });
-            }
-            rangeReader.read().then(readChunk, reject);
+          if (done) {
+            const chunkData = arrayBuffersToBytes(chunks!);
+            chunks = undefined;
+            resolve(chunkData);
             return;
           }
-          const chunkData = arraysToBytes(chunks!);
-          chunks = null;
-          resolve(chunkData);
+          /*#static*/ if (_PDFDEV) {
+            assert(
+              value instanceof ArrayBuffer,
+              "readChunk (sendRequest) - expected an ArrayBuffer.",
+            );
+          }
+          loaded += value.byteLength;
+
+          if (rangeReader.isStreamingSupported) {
+            this.onProgress({ loaded });
+          }
+
+          chunks!.push(value);
+          rangeReader.read().then(readChunk, reject);
         } catch (e) {
           reject(e);
         }

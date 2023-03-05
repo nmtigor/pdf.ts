@@ -27,6 +27,7 @@
 /** @typedef {import("./textaccessibility.js").TextAccessibilityManager} TextAccessibilityManager */
 
 import { AnnotationLayerP } from "../pdf.ts-src/display/annotation_layer.ts";
+import { MetadataEx } from "../pdf.ts-src/display/api.ts";
 import {
   AnnotationLayer,
   AnnotationStorage,
@@ -67,7 +68,7 @@ interface AnnotationLayerBuilderOptions {
   enableScripting?: boolean;
   hasJSActionsPromise?: Promise<boolean> | undefined;
   fieldObjectsPromise:
-    | Promise<Record<string, FieldObject[]> | undefined>
+    | Promise<boolean | Record<string, FieldObject[]> | MetadataEx | undefined>
     | undefined;
   annotationCanvasMap: Map<string, HTMLCanvasElement> | undefined;
   accessibilityManager: TextAccessibilityManager | undefined;

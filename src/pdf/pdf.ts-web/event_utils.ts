@@ -32,7 +32,7 @@ import {
 import { AnnotationEditorParams } from "./annotation_editor_params.ts";
 import { ErrorMoreInfo, PDFViewerApplication } from "./app.ts";
 import { PDFAttachmentViewer } from "./pdf_attachment_viewer.ts";
-import { CursorTool, PDFCursorTools } from "./pdf_cursor_tools.ts";
+import { PDFCursorTools } from "./pdf_cursor_tools.ts";
 import { PDFFindBar } from "./pdf_find_bar.ts";
 import {
   FindCtrlState,
@@ -50,9 +50,9 @@ import { PDFSidebar } from "./pdf_sidebar.ts";
 import { PDFSidebarResizer } from "./pdf_sidebar_resizer.ts";
 import { PDFLocation, PDFViewer } from "./pdf_viewer.ts";
 import { SecondaryToolbar } from "./secondary_toolbar.ts";
-import { TextLayerBuilder } from "./text_layer_builder.ts";
 import { Toolbar } from "./toolbar.ts";
 import {
+  CursorTool,
   PageLayout,
   PresentationModeState,
   ScrollMode,

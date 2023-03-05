@@ -83,5 +83,33 @@
     "https://deno.land/x/canvas@v1.4.1/src/lib.js": "bb21711589bfbc8997b455cdf53e3150e23289f3b44809188041b1d2fc7924fa",
     "https://deno.land/x/canvas@v1.4.1/src/types.ts": "67d5800f8f4b0a407e0251676a03ae91b5f50a3ed53e6b72dc5984113cb93128",
     "https://deno.land/x/canvas@v1.4.1/src/wasm.js": "449d72cc14fc4142a5853f944df49a744d852981d09c5515528ede8aebb0afda"
+  },
+  "npm": {
+    "specifiers": {
+      "@types/chrome": "@types/chrome@0.0.219"
+    },
+    "packages": {
+      "@types/chrome@0.0.219": {
+        "integrity": "sha512-3j4Baa7DKrH2kJ5NLJIntpiqu4l7W0na0nrW9Y5y38HsLCXa4ydK8Y8Vicqq8ZZk/LLHKU7aarmUeqdBQmamAA==",
+        "dependencies": {
+          "@types/filesystem": "@types/filesystem@0.0.32",
+          "@types/har-format": "@types/har-format@1.2.10"
+        }
+      },
+      "@types/filesystem@0.0.32": {
+        "integrity": "sha512-Yuf4jR5YYMR2DVgwuCiP11s0xuVRyPKmz8vo6HBY3CGdeMj8af93CFZX+T82+VD1+UqHOxTq31lO7MI7lepBtQ==",
+        "dependencies": {
+          "@types/filewriter": "@types/filewriter@0.0.29"
+        }
+      },
+      "@types/filewriter@0.0.29": {
+        "integrity": "sha512-BsPXH/irW0ht0Ji6iw/jJaK8Lj3FJemon2gvEqHKpCdDCeemHa+rI3WBGq5z7cDMZgoLjY40oninGxqk+8NzNQ==",
+        "dependencies": {}
+      },
+      "@types/har-format@1.2.10": {
+        "integrity": "sha512-o0J30wqycjF5miWDKYKKzzOU1ZTLuA42HZ4HE7/zqTOc/jTLdQ5NhYWvsRQo45Nfi1KHoRdNhteSI4BAxTF1Pg==",
+        "dependencies": {}
+      }
+    }
   }
 }

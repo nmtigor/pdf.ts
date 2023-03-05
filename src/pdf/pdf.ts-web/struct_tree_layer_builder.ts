@@ -98,6 +98,18 @@ export class StructTreeLayerBuilder {
     return (this.#treeDom = treeDom);
   }
 
+  hide() {
+    if (this.#treeDom && !this.#treeDom.hidden) {
+      this.#treeDom.hidden = true;
+    }
+  }
+
+  show() {
+    if (this.#treeDom?.hidden) {
+      this.#treeDom.hidden = false;
+    }
+  }
+
   #setAttributes(
     structElement: StructTreeNode | StructTreeContent,
     htmlElement: HTMLSpanElement,

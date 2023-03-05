@@ -67,7 +67,7 @@ import {
   warn,
 } from "../shared/util.ts";
 import { AnnotationStorage } from "./annotation_storage.ts";
-import { PDFPageProxy } from "./api.ts";
+import { MetadataEx, PDFPageProxy } from "./api.ts";
 import {
   AnnotationPrefix,
   DOMSVGFactory,
@@ -1874,9 +1874,9 @@ class ChoiceWidgetAnnotationElement extends WidgetAnnotationElement {
           ["mouseleave", "Mouse Exit"],
           ["mouseup", "Mouse Up"],
           ["input", "Action"],
+          ["input", "Validate"],
         ],
-        (event) => (event.target as any).checked, //kkkk bug?
-        // event => (<El>event.target).selectedIndex
+        (event) => (event.target as El).value,
       );
     } else {
       selectElement.addEventListener("input", (event) => {
@@ -2730,7 +2730,11 @@ export type AnnotationLayerP = {
    */
   hasJSActions: boolean;
 
-  fieldObjects: Record<string, FieldObject[]> | undefined;
+  fieldObjects:
+    | boolean
+    | Record<string, FieldObject[]>
+    | MetadataEx
+    | undefined;
 
   annotationCanvasMap: Map<string, HTMLCanvasElement> | undefined;
   accessibilityManager?: TextAccessibilityManager | undefined;

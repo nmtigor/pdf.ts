@@ -14,6 +14,7 @@ export const
   INOUT = true // contracts
 , DEV = true // debug build
   , TRACE = true
+  , INFO = true
   
   , XSTATE = true
   , RESIZ = true // "resize", ResizeObserver
@@ -27,6 +28,7 @@ export const
     , PDFTS_v = true // verbose
       , PDFTS_vv = false // very verbose
 , _TRACE = DEV && TRACE
+, _INFO = DEV && INFO
 , APP = false // release build
 
 , TESTING = false

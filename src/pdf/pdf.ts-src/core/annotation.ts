@@ -672,7 +672,7 @@ export type SaveData = {
   ref: Ref;
   data: string;
   xfa?: {
-    path: string;
+    path: string | undefined;
     value: string;
   };
   needAppearances?: boolean;
@@ -1375,14 +1375,14 @@ export class Annotation {
 
     // If no parent exists, the partial and fully qualified names are equal.
     if (!dict.has("Parent")) {
-      return stringToPDFString(<string> dict.get("T"));
+      return stringToPDFString(dict.get("T") as string);
     }
 
     // Form the fully qualified field name by appending the partial name to
     // the parent's fully qualified name, separated by a period.
     const fieldName = [];
     if (dict.has("T")) {
-      fieldName.unshift(stringToPDFString(<string> dict.get("T")));
+      fieldName.unshift(stringToPDFString(dict.get("T") as string));
     }
 
     let loopDict = dict;
@@ -1409,7 +1409,12 @@ export class Annotation {
       }
 
       if (loopDict.has("T")) {
-        fieldName.unshift(stringToPDFString(<string> loopDict.get("T")));
+        const t = stringToPDFString(loopDict.get("T") as string);
+        if (!t.startsWith("#")) {
+          // If it starts with a # then it's a class which is not a concept for
+          // datasets elements (https://www.pdfa.org/norm-refs/XFA-3_3.pdf#page=96).
+          fieldName.unshift(t);
+        }
       }
     }
     return fieldName.join(".");
@@ -2149,6 +2154,11 @@ export class WidgetAnnotation extends Annotation {
     return mk.size > 0 ? mk : null;
   }
 
+  amendSavedDict(
+    annotationStorage: AnnotStorageRecord | undefined,
+    dict: Dict,
+  ) {}
+
   override async save(
     evaluator: PartialEvaluator,
     task: WorkerTask,
@@ -2220,7 +2230,7 @@ export class WidgetAnnotation extends Annotation {
     }
 
     const xfa = {
-      path: stringToPDFString(dict.get("T") as string || ""),
+      path: this.data.fieldName,
       value: value as string,
     };
 
@@ -2233,6 +2243,7 @@ export class WidgetAnnotation extends Annotation {
       "V",
       Array.isArray(value) ? value.map(encoder) : encoder(value as string),
     );
+    this.amendSavedDict(annotationStorage, dict);
 
     const maybeMK = this._getMKDict(rotation);
     if (maybeMK) {
@@ -2259,13 +2270,11 @@ export class WidgetAnnotation extends Annotation {
       let newTransform: CipherTransform | undefined;
       if (encrypt) {
         newTransform = encrypt.createCipherTransform(newRef.num, newRef.gen);
-        appearance = newTransform.encryptString(appearance as string);
       }
 
       const resources = this._getSaveFieldResources(xref);
       const appearanceStream = new StringStream(appearance as string);
       const appearanceDict = (appearanceStream.dict = new Dict(xref));
-      appearanceDict.set("Length", (appearance as string).length);
       appearanceDict.set("Subtype", Name.get("Form"));
       appearanceDict.set("Resources", resources);
       appearanceDict.set("BBox", [
@@ -2456,16 +2465,14 @@ export class WidgetAnnotation extends Annotation {
     }
 
     assert(typeof value === "string", "Expected `value` to be a string.");
+    value = (value as string).trim();
 
-    if (!this.data.combo) {
-      value = (value as string).trim();
-    } else {
-      // The value is supposed to be one of the exportValue.
-      // deno-fmt-ignore
-      const option = 
-        this.data.options!.find(({ exportValue }) => value === exportValue ) ||
-        this.data.options![0];
-      value = (option && option.displayValue) || "";
+    if (this.data.combo) {
+      // The value can be one of the exportValue or any other values.
+      const option = this.data.options!.find(
+        ({ exportValue }) => value === exportValue,
+      );
+      value = (option && option.displayValue) || value;
     }
 
     if (value === "") {
@@ -3233,7 +3240,7 @@ class ButtonWidgetAnnotation extends WidgetAnnotation {
     }
 
     const xfa = {
-      path: stringToPDFString(<string> dict.get("T") || ""),
+      path: this.data.fieldName,
       value: value ? this.data.exportValue! : "",
     };
 
@@ -3300,7 +3307,7 @@ class ButtonWidgetAnnotation extends WidgetAnnotation {
     }
 
     const xfa = {
-      path: stringToPDFString(<string> dict.get("T") || ""),
+      path: this.data.fieldName,
       value: value ? this.data.buttonValue! : "",
     };
 
@@ -3601,10 +3608,17 @@ class ButtonWidgetAnnotation extends WidgetAnnotation {
 }
 
 class ChoiceWidgetAnnotation extends WidgetAnnotation {
+  indices;
+  hasIndices;
+
   constructor(params: _AnnotationCtorP) {
     super(params);
 
     const { dict, xref } = params;
+
+    this.indices = dict.getArray("I");
+    this.hasIndices = Array.isArray(this.indices) && this.indices.length > 0;
+
     // Determine the options. The options array may consist of strings or
     // arrays. If the array consists of arrays, then the first element of
     // each array is the export value and the second element of each array is
@@ -3633,14 +3647,30 @@ class ChoiceWidgetAnnotation extends WidgetAnnotation {
       }
     }
 
-    // The field value can be `null` if no item is selected, a string if one
-    // item is selected or an array of strings if multiple items are selected.
-    // For consistency in the API and convenience in the display layer, we
-    // always make the field value an array with zero, one or multiple items.
-    if (typeof this.data.fieldValue === "string") {
-      this.data.fieldValue = [<string> this.data.fieldValue];
-    } else if (!this.data.fieldValue) {
+    if (!this.hasIndices) {
+      // The field value can be `null` if no item is selected, a string if one
+      // item is selected or an array of strings if multiple items are selected.
+      // For consistency in the API and convenience in the display layer, we
+      // always make the field value an array with zero, one or multiple items.
+      if (typeof this.data.fieldValue === "string") {
+        this.data.fieldValue = [<string> this.data.fieldValue];
+      } else if (!this.data.fieldValue) {
+        this.data.fieldValue = [];
+      }
+    } else {
+      // The specs say that we should have an indices array only with
+      // multiselectable Choice and the "V" entry should have the
+      // precedence, but Acrobat itself is using it whatever the
+      // the "V" entry is (see bug 1770750).
       this.data.fieldValue = [];
+      const ii = this.data.options.length;
+      for (const i of this.indices as unknown[]) {
+        if (Number.isInteger(i) && (i as number) >= 0 && (i as number) < ii) {
+          this.data.fieldValue.push(
+            this.data.options[i as number].exportValue as string,
+          );
+        }
+      }
     }
 
     // Process field flags for the display layer.
@@ -3672,6 +3702,31 @@ class ChoiceWidgetAnnotation extends WidgetAnnotation {
       rotation: this.rotation,
       type,
     };
+  }
+
+  override amendSavedDict(
+    annotationStorage: AnnotStorageRecord | undefined,
+    dict: Dict,
+  ) {
+    if (!this.hasIndices) {
+      return;
+    }
+    const storageEntry = annotationStorage
+      ? annotationStorage.get(this.data.id)
+      : undefined;
+    let values = storageEntry && storageEntry.value as string | string[];
+    if (!Array.isArray(values)) {
+      values = [values!];
+    }
+    const indices = [];
+    const { options } = this.data;
+    for (let i = 0, j = 0, ii = options!.length; i < ii; i++) {
+      if (options![i].exportValue === values[j]) {
+        indices.push(i);
+        j += 1;
+      }
+    }
+    dict.set("I", indices);
   }
 
   protected override async getAppearance$(
@@ -3984,8 +4039,8 @@ class FreeTextAnnotation extends MarkupAnnotation {
     const { xref } = params;
     this.data.annotationType = AnnotationType.FREETEXT;
     this.setDefaultAppearance(params);
-
     if (!this.appearance && this._isOffscreenCanvasSupported) {
+      const strokeAlpha = params.dict.get("CA") as number | undefined;
       const fakeUnicodeFont = new FakeUnicodeFont(xref, "sans-serif");
       const fontData = this.data.defaultAppearanceData!;
       this.appearance = fakeUnicodeFont.createAppearance(
@@ -3994,6 +4049,7 @@ class FreeTextAnnotation extends MarkupAnnotation {
         this.rotation,
         fontData.fontSize || 10,
         fontData.fontColor!,
+        strokeAlpha,
       );
       this._streams.push(this.appearance!, FakeUnicodeFont.toUnicodeStream);
     } else if (!this._isOffscreenCanvasSupported) {
@@ -4152,7 +4208,6 @@ class FreeTextAnnotation extends MarkupAnnotation {
     appearanceStreamDict.set("Subtype", Name.get("Form"));
     appearanceStreamDict.set("Type", Name.get("XObject"));
     appearanceStreamDict.set("BBox", [0, 0, w, h]);
-    appearanceStreamDict.set("Length", appearance.length);
     appearanceStreamDict.set("Resources", resources);
 
     if (rotation) {

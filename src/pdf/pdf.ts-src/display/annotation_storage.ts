@@ -130,6 +130,12 @@ export class AnnotationStorage {
     return this.#storage.size > 0 ? objectFromMap(this.#storage) : undefined;
   }
 
+  setAll(obj: Record<string, AnnotStorageValue>) {
+    for (const [key, val] of Object.entries(obj)) {
+      this.setValue(key, val);
+    }
+  }
+
   #setModified() {
     if (!this.#modified) {
       this.#modified = true;

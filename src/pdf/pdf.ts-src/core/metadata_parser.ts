@@ -73,7 +73,7 @@ export class MetadataParser {
             throw new Error(`_repair: ${name} isn't defined.`);
           });
 
-        const charBuf = [];
+        const charBuf = [">"];
         for (let i = 0, ii = bytes.length; i < ii; i += 2) {
           const code = bytes.charCodeAt(i) * 256 + bytes.charCodeAt(i + 1);
           if (
@@ -90,7 +90,7 @@ export class MetadataParser {
             );
           }
         }
-        return ">" + charBuf.join("");
+        return charBuf.join("");
       });
   }
 

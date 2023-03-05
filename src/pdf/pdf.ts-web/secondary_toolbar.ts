@@ -20,9 +20,8 @@
 import { GENERIC } from "../../global.ts";
 import { DefaultExternalServices } from "./app.ts";
 import { EventBus, EventMap } from "./event_utils.ts";
-import { CursorTool } from "./pdf_cursor_tools.ts";
 import { PagesCountLimit } from "./pdf_viewer.ts";
-import { ScrollMode, SpreadMode } from "./ui_utils.ts";
+import { CursorTool, ScrollMode, SpreadMode } from "./ui_utils.ts";
 import { type ViewerConfiguration } from "./viewer.ts";
 /*80--------------------------------------------------------------------------*/
 

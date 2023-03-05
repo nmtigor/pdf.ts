@@ -3,7 +3,8 @@
  * @license Apache-2.0
  ******************************************************************************/
 
-import { INOUT } from "../global.ts";
+import { DEV, INOUT } from "../global.ts";
+import { id_t } from "./alias.ts";
 import { CSSStyle } from "./alias.ts";
 import { svg } from "./dom.ts";
 import { mix } from "./jslang.ts";
@@ -313,7 +314,7 @@ class MooHandlerDB<T extends {} | null, D = any> {
    * Same `index_x` elements are sorted by their adding order.
    */
   readonly #_a: MooHandlerExt<T, D>[] = [];
-  get len_$() {
+  get len() {
     return this.#_a.length;
   }
   get empty() {
@@ -448,6 +449,7 @@ type MooCtorP_<T extends {} | null> = {
   eq_?: MooEq<T>;
   active?: boolean;
   forcing?: boolean;
+  name?: string;
 };
 
 /**
@@ -455,6 +457,10 @@ type MooCtorP_<T extends {} | null> = {
  * `Moo` instance stores many callbacks.
  */
 export class Moo<T extends {} | null, D = any> {
+  static #ID: id_t = 0;
+  readonly id = ++Moo.#ID;
+  readonly name: string | undefined;
+
   readonly #initval: T;
   readonly #eq: MooEq<T>;
   readonly #active: boolean;
@@ -473,8 +479,8 @@ export class Moo<T extends {} | null, D = any> {
 
   // #handler_db = new Set< MooHandler<T> >();
   #handler_db!: MooHandlerDB<T, D>;
-  get _len() {
-    return this.#handler_db.len_$;
+  get _nCb() {
+    return this.#handler_db.len;
   }
 
   #forcingOnce = false;
@@ -503,11 +509,13 @@ export class Moo<T extends {} | null, D = any> {
     eq_ = (a: T, b: T) => a === b,
     active = false,
     forcing = false,
+    name,
   }: MooCtorP_<T>) {
     this.#initval = val;
     this.#eq = eq_;
     this.#active = active;
     this.#forcing = forcing;
+    this.name = name;
 
     this.reset();
   }
@@ -622,6 +630,7 @@ export class Moo<T extends {} | null, D = any> {
     );
   }
 
+  static _count = 0;
   set val(newval_x: T) {
     if (
       this.#eq(newval_x, this.#val) &&
@@ -635,16 +644,21 @@ export class Moo<T extends {} | null, D = any> {
     this.#newval = newval_x;
     if (this.#active) this.#val = newval_x;
     this.#handler_db.get(newval_x, this.#oldval, this.#forcing_)
-      .forEach((handler_y) => handler_y(newval_x, this.#val, this.#data));
-    // for( const handler_y of this.#handler_db )
-    // {
-    //   handler_y( newval_x, this.#val, this );
-    // }
+      .forEach((handler_y) => {
+        handler_y(newval_x, this.#val, this.#data);
+        // /*#static*/ if (DEV) Moo._count += 1;
+      });
     this.#val = newval_x;
     this.#forcingOnce = this.#forcing;
     this.#data = undefined; // it is used once
 
     // if( this.once_ ) this.#handler_db.clear();
+
+    // /*#static*/ if (DEV) {
+    //   console.log(
+    //     `[${this.name ?? `Moo_${this.id}`}]\t\tMoo._count = ${Moo._count}`,
+    //   );
+    // }
   }
 
   refresh() {

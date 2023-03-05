@@ -3,8 +3,7 @@
  * @license Apache-2.0
  ******************************************************************************/
 
-import { isObjectLike } from "../../../lib/jslang.ts";
-import { assert } from "../../../lib/util/trace.ts";
+import { DENO } from "../../../global.ts";
 import { D_base } from "../../pdf.ts-web/app_options.ts";
 import { BaseStream } from "../core/base_stream.ts";
 import { Page, PDFDocument } from "../core/document.ts";
@@ -14,7 +13,6 @@ import { NullStream, StringStream } from "../core/stream.ts";
 import { DocumentInitP } from "../display/api.ts";
 import { GlobalWorkerOptions } from "../display/worker_options.ts";
 import { PDFWorker } from "../pdf.ts";
-import { DENO } from "../../../global.ts";
 /*80--------------------------------------------------------------------------*/
 
 const D_pdf = `${D_base}/res/pdf`;
@@ -23,16 +21,13 @@ const D_external = `${D_pdf}/pdf.ts-external`;
 // const TEST_PDFS_PATH = isNodeJS ? "./test/pdfs/" : "../pdfs/";
 export const TEST_PDFS_PATH = `${D_pdf}/test/pdfs/`;
 
-export const CMAP_PARAMS = {
-  cMapUrl: `${D_external}/bcmaps/`,
-  // cMapUrl: isNodeJS ? "./external/bcmaps/" : "../../external/bcmaps/",
-  cMapPacked: true,
-};
+// export const CMAP_URL = isNodeJS ? "./external/bcmaps/" : "../../external/bcmaps/";
+export const CMAP_URL = `${D_external}/bcmaps/`;
 
-export const STANDARD_FONT_DATA_URL = `${D_external}/standard_fonts/`;
 // const STANDARD_FONT_DATA_URL = isNodeJS
 //   ? "./external/standard_fonts/"
 //   : "../../external/standard_fonts/";
+export const STANDARD_FONT_DATA_URL = `${D_external}/standard_fonts/`;
 
 class DOMFileReaderFactory {
   static async fetch(params: { path: string }) {
@@ -183,11 +178,6 @@ export function createIdFactory(pageIndex: number) {
     nonBlendModesSet: undefined as any,
   });
   return page._localIdFactory;
-}
-
-export function isEmptyObj(obj: object) {
-  assert(isObjectLike(obj), "isEmptyObj - invalid argument.");
-  return Object.keys(obj).length === 0;
 }
 
 GlobalWorkerOptions.workerSrc = `${D_base}/gen/pdf/pdf.ts-src/pdf.worker.js`;

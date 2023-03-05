@@ -66,13 +66,13 @@ function writeStream(
   buffer: string[],
   transform?: CipherTransform,
 ) {
-  writeDict(stream.dict!, buffer, transform);
-  buffer.push(" stream\n");
   let string = stream.getString();
   if (transform !== undefined) {
     string = transform.encryptString(string);
   }
-  buffer.push(string, "\nendstream");
+  stream.dict!.set("Length", string.length);
+  writeDict(stream.dict!, buffer, transform);
+  buffer.push(" stream\n", string, "\nendstream");
 }
 
 function writeArray(
@@ -175,7 +175,12 @@ function writeXFADataForAcroform(str: string, newRefs: SaveData[]) {
     if (!path) {
       continue;
     }
-    const node = xml.documentElement.searchNode(parseXFAPath(path), 0);
+    const nodePath = parseXFAPath(path);
+    let node = xml.documentElement.searchNode(nodePath, 0);
+    if (!node && nodePath.length > 1) {
+      // If we're lucky the last element in the path will identify the node.
+      node = xml.documentElement.searchNode([nodePath.at(-1)!], 0);
+    }
     if (node) {
       if (Array.isArray(value)) {
         node.childNodes = value.map((val) => new SimpleDOMNode("value", val));

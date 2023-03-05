@@ -18,7 +18,6 @@
  */
 
 /** @typedef {import("../src/display/api").PDFDocumentProxy} PDFDocumentProxy */
-/** @typedef {import("./event_utils").EventBus} EventBus */
 /** @typedef {import("./interfaces").IL10n} IL10n */
 /** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
 // eslint-disable-next-line max-len
@@ -30,7 +29,6 @@ import {
   PDFDocumentProxy,
   PDFPageProxy,
 } from "../pdf.ts-src/pdf.ts";
-import { EventBus } from "./event_utils.ts";
 import { type IL10n, type IPDFLinkService } from "./interfaces.ts";
 import { PDFRenderingQueue } from "./pdf_rendering_queue.ts";
 import { PDFThumbnailView, TempImageFactory } from "./pdf_thumbnail_view.ts";
@@ -53,11 +51,6 @@ interface PDFThumbnailViewerOptions {
    * The container for the thumbnail elements.
    */
   container: HTMLDivElement;
-
-  /**
-   * The application event bus.
-   */
-  eventBus: EventBus;
 
   /**
    * The navigation/linking service.
@@ -134,7 +127,6 @@ export class PDFThumbnailViewer {
 
   constructor({
     container,
-    eventBus,
     linkService,
     renderingQueue,
     l10n,

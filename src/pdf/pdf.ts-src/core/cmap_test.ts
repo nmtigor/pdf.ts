@@ -33,7 +33,7 @@ import {
 } from "https://deno.land/std@0.170.0/testing/bdd.ts";
 import { DefaultCMapReaderFactory } from "../display/api.ts";
 import { CMapData } from "../display/base_factory.ts";
-import { CMAP_PARAMS } from "../shared/test_utils.ts";
+import { CMAP_URL } from "../shared/test_utils.ts";
 import { type CharCodeOut, CMap, CMapFactory, IdentityCMap } from "./cmap.ts";
 import { Name } from "./primitives.ts";
 import { StringStream } from "./stream.ts";
@@ -45,8 +45,7 @@ describe("cmap", () => {
   beforeAll(() => {
     // Allow CMap testing in Node.js, e.g. for Travis.
     const CMapReaderFactory = new DefaultCMapReaderFactory({
-      baseUrl: CMAP_PARAMS.cMapUrl,
-      isCompressed: CMAP_PARAMS.cMapPacked,
+      baseUrl: CMAP_URL,
     });
 
     fetchBuiltInCMap = (name: string) => CMapReaderFactory.fetch({ name });
@@ -237,7 +236,7 @@ describe("cmap", () => {
   it("attempts to load a built-in CMap with inconsistent API parameters", async () => {
     function tmpFetchBuiltInCMap(name: string) {
       const CMapReaderFactory = new DefaultCMapReaderFactory({
-        baseUrl: CMAP_PARAMS.cMapUrl,
+        baseUrl: CMAP_URL,
         isCompressed: false,
       });
       return CMapReaderFactory.fetch({ name });

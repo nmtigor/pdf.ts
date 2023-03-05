@@ -87,6 +87,7 @@ import {
   StatTimer,
 } from "./display_utils.ts";
 import { Metadata } from "./metadata.ts";
+import { SimpleDOMNode } from "../core/xml_parser.ts";
 import { GlobalWorkerOptions } from "./worker_options.ts";
 /*80--------------------------------------------------------------------------*/
 
@@ -116,6 +117,21 @@ describe("api", () => {
     return items
       .map((chunk) => (chunk.str ?? "") + (chunk.hasEOL ? "\n" : ""))
       .join("");
+  }
+
+  function getNamedNodeInXML(node: SimpleDOMNode, path: string) {
+    for (const component of path.split(".")) {
+      if (!node.childNodes) {
+        break;
+      }
+      for (const child of node.childNodes) {
+        if (child.nodeName === component) {
+          node = child;
+          break;
+        }
+      }
+    }
+    return node;
   }
 
   describe("getDocument", () => {
@@ -234,7 +250,7 @@ describe("api", () => {
       await loadingTask.destroy();
     });
 
-    it("creates pdf doc from ArrayBuffer", async function () {
+    it("creates pdf doc from ArrayBuffer", async () => {
       const { buffer: arrayBufferPdf } = await DefaultFileReaderFactory.fetch({
         path: TEST_PDFS_PATH + basicApiFileName,
       });
@@ -1884,6 +1900,70 @@ describe("api", () => {
       await loadingTask.destroy();
     });
 
+    //kkkk
+    it.ignore("write a value in an annotation, save the pdf and check the value in xfa datasets (1)", async () => {
+      // if (isNodeJS) {
+      //   pending("Linked test-cases are not supported in Node.js.");
+      // }
+
+      let loadingTask = getDocument(buildGetDocumentParams("issue16081.pdf"));
+      let pdfDoc = await loadingTask.promise;
+      const value = "Hello World";
+
+      pdfDoc.annotationStorage.setValue("2055R", { value });
+
+      const data = await pdfDoc.saveDocument();
+      await loadingTask.destroy();
+
+      loadingTask = getDocument(data);
+      pdfDoc = await loadingTask.promise;
+      const datasets = await pdfDoc.getXFADatasets();
+
+      const surName = getNamedNodeInXML(
+        datasets!.node!,
+        "xfa:data.PPTC_153.Page1.PersonalInformation.TitleAndNameInformation.PersonalInfo.Surname.#text",
+      );
+      assertEquals(surName.nodeValue, value);
+
+      await loadingTask.destroy();
+    });
+
+    //kkkk
+    it.ignore("write a value in an annotation, save the pdf and check the value in xfa datasets (2)", async () => {
+      // if (isNodeJS) {
+      //   pending("Linked test-cases are not supported in Node.js.");
+      // }
+
+      // In this file the path to the fields are wrong but the last path element
+      // is unique so we can guess what the node is.
+      let loadingTask = getDocument(buildGetDocumentParams("f1040_2022.pdf"));
+      let pdfDoc = await loadingTask.promise;
+
+      pdfDoc.annotationStorage.setValue("1573R", { value: "hello" });
+      pdfDoc.annotationStorage.setValue("1577R", { value: "world" });
+
+      const data = await pdfDoc.saveDocument();
+      await loadingTask.destroy();
+
+      loadingTask = getDocument(data);
+      pdfDoc = await loadingTask.promise;
+      const datasets = await pdfDoc.getXFADatasets();
+
+      const firstName = getNamedNodeInXML(
+        datasets!.node!,
+        "xfa:data.topmostSubform.f1_02.#text",
+      );
+      assertEquals(firstName.nodeValue, "hello");
+
+      const lastName = getNamedNodeInXML(
+        datasets!.node!,
+        "xfa:data.topmostSubform.f1_06.#text",
+      );
+      assertEquals(lastName.nodeValue, "world");
+
+      await loadingTask.destroy();
+    });
+
     describe("Cross-origin", () => {
       let loadingTask: PDFDocumentLoadingTask;
       function _checkCanLoad(
@@ -2240,8 +2320,8 @@ page 1 / 3`,
         fontFamily: "serif",
         // `useSystemFonts` has a different value in web environments
         // and in Node.js.
-        ascent: 0.683,
-        descent: -0.217,
+        ascent: /*#static*/ DENO ? NaN : 0.683,
+        descent: /*#static*/ DENO ? NaN : -0.217,
         vertical: false,
       });
 
