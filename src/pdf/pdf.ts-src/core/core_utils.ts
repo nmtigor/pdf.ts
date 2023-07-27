@@ -17,9 +17,9 @@
  * limitations under the License.
  */
 
-import { _PDFDEV } from "../../../global.ts";
+import { PDFJSDev, TESTING } from "../../../global.ts";
 import { assert } from "../../../lib/util/trace.ts";
-import {
+import type {
   AnnotStorageRecord,
   AnnotStorageValue,
 } from "../display/annotation_layer.ts";
@@ -33,15 +33,9 @@ import {
   warn,
 } from "../shared/util.ts";
 import { BaseStream } from "./base_stream.ts";
-import { type CssFontInfo } from "./document.ts";
-import {
-  Dict,
-  isName,
-  type Obj,
-  type ObjNoRef,
-  Ref,
-  RefSet,
-} from "./primitives.ts";
+import type { CssFontInfo } from "./document.ts";
+import type { Obj, ObjNoRef } from "./primitives.ts";
+import { Dict, isName, Ref, RefSet } from "./primitives.ts";
 import { XRef } from "./xref.ts";
 /*80--------------------------------------------------------------------------*/
 
@@ -56,24 +50,6 @@ export function getLookupTableFactory<
       lookup = Object.create(null);
       initializer(lookup);
       initializer = undefined;
-    }
-    return lookup;
-  };
-}
-
-export function getArrayLookupTableFactory<T extends string | number>(
-  initializer?: () => (string | T)[],
-) {
-  let lookup: Record<string, T>;
-  return () => {
-    if (initializer) {
-      let arr = initializer();
-      initializer = undefined;
-      lookup = Object.create(null);
-      for (let i = 0, ii = arr.length; i < ii; i += 2) {
-        lookup[<string> arr[i]] = <T> arr[i + 1];
-      }
-      arr = <any> undefined;
     }
     return lookup;
   };
@@ -108,7 +84,7 @@ export class XRefParseException extends BaseException {
  * @param arr An array of ArrayBuffers.
  */
 export function arrayBuffersToBytes(arr: ArrayBuffer[]): Uint8Array {
-  /*#static*/ if (_PDFDEV) {
+  /*#static*/ if (PDFJSDev || TESTING) {
     for (const item of arr) {
       assert(
         item instanceof ArrayBuffer,
@@ -193,10 +169,9 @@ export function getInheritableProperty({
       if (stopWhenFound) {
         return value;
       }
-      if (!values) values = [];
-      values.push(value);
+      (values ||= []).push(value);
     }
-    dict = <Dict | undefined> dict.get("Parent");
+    dict = dict.get("Parent") as Dict | undefined;
   }
   return values;
 }
@@ -351,7 +326,7 @@ export function escapePDFName(str: string) {
 // Replace "(", ")", "\n", "\r" and "\" by "\(", "\)", "\\n", "\\r" and "\\"
 // in order to write it in a PDF file.
 export function escapeString(str: string) {
-  return str.replace(/([()\\\n\r])/g, (match) => {
+  return str.replaceAll(/([()\\\n\r])/g, (match) => {
     if (match === "\n") {
       return "\\n";
     } else if (match === "\r") {
@@ -394,7 +369,7 @@ function _collectJS(
       } else if (typeof js === "string") {
         code = <string> js;
       }
-      code = code && stringToPDFString(code).replace(/\u0000/g, "");
+      code &&= stringToPDFString(code).replaceAll("\x00", "");
       if (code) {
         list.push(code);
       }
@@ -528,14 +503,11 @@ export function validateCSSFont(cssFontInfo: CssFontInfo) {
   const { fontFamily, fontWeight, italicAngle } = cssFontInfo;
 
   // See https://developer.mozilla.org/en-US/docs/Web/CSS/string.
-  if (/^".*"$/.test(fontFamily)) {
-    if (/[^\\]"/.test(fontFamily.slice(1, fontFamily.length - 1))) {
-      warn(`XFA - FontFamily contains some unescaped ": ${fontFamily}.`);
-      return false;
-    }
-  } else if (/^'.*'$/.test(fontFamily)) {
-    if (/[^\\]'/.test(fontFamily.slice(1, fontFamily.length - 1))) {
-      warn(`XFA - FontFamily contains some unescaped ': ${fontFamily}.`);
+  const m = /^("|').*("|')$/.exec(fontFamily);
+  if (m && m[1] === m[2]) {
+    const re = new RegExp(`[^\\\\]${m[1]}`);
+    if (re.test(fontFamily.slice(1, -1))) {
+      warn(`XFA - FontFamily contains unescaped ${m[1]}: ${fontFamily}.`);
       return false;
     }
   } else {
@@ -543,7 +515,7 @@ export function validateCSSFont(cssFontInfo: CssFontInfo) {
     for (const ident of fontFamily.split(/[ \t]+/)) {
       if (/^(\d|(-(\d|-)))/.test(ident) || !/^[\w-\\]+$/.test(ident)) {
         warn(
-          `XFA - FontFamily contains some invalid <custom-ident>: ${fontFamily}.`,
+          `XFA - FontFamily contains invalid <custom-ident>: ${fontFamily}.`,
         );
         return false;
       }
@@ -572,7 +544,7 @@ export function recoverJsURL(str: string) {
   const URL_OPEN_METHODS = ["app.launchURL", "window.open", "xfa.host.gotoURL"];
   const regex = new RegExp(
     "^\\s*(" +
-      URL_OPEN_METHODS.join("|").split(".").join("\\.") +
+      URL_OPEN_METHODS.join("|").replaceAll(".", "\\.") +
       ")\\((?:'|\")([^'\"]*)(?:'|\")(?:,\\s*(\\w+)\\)|\\))",
     "i",
   );

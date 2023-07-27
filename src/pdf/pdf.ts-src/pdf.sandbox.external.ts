@@ -194,12 +194,4 @@ export class SandboxSupportBase {
     };
   }
 }
-
-// /*#static*/if( !MOZCENTRAL)
-// {
-//   exports.SandboxSupportBase = SandboxSupportBase;
-// } else {
-//   /* eslint-disable-next-line no-unused-vars, no-var */
-//   var EXPORTED_SYMBOLS = ["SandboxSupportBase"];
-// }
 /*80--------------------------------------------------------------------------*/

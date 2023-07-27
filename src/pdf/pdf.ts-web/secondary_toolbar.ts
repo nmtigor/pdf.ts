@@ -17,12 +17,17 @@
  * limitations under the License.
  */
 
-import { GENERIC } from "../../global.ts";
-import { DefaultExternalServices } from "./app.ts";
-import { EventBus, EventMap } from "./event_utils.ts";
+import { GENERIC, PDFJSDev } from "../../global.ts";
+import type { DefaultExternalServices } from "./app.ts";
+import type { EventBus, EventMap } from "./event_utils.ts";
 import { PagesCountLimit } from "./pdf_viewer.ts";
-import { CursorTool, ScrollMode, SpreadMode } from "./ui_utils.ts";
-import { type ViewerConfiguration } from "./viewer.ts";
+import {
+  CursorTool,
+  ScrollMode,
+  SpreadMode,
+  toggleCheckedBtn,
+} from "./ui_utils.ts";
+import type { ViewerConfiguration } from "./viewer.ts";
 /*80--------------------------------------------------------------------------*/
 
 interface Anchor {
@@ -165,7 +170,7 @@ export class SecondaryToolbar {
         close: true,
       },
     ];
-    /*#static*/ if (GENERIC) {
+    /*#static*/ if (PDFJSDev || GENERIC) {
       this.buttons.push({
         element: options.openFileButton!,
         eventName: "openfile",
@@ -230,11 +235,7 @@ export class SecondaryToolbar {
     for (const { element, eventName, close, eventDetails } of this.buttons) {
       element.addEventListener("click", (evt: unknown) => {
         if (eventName !== undefined) {
-          const details = { source: this };
-          for (const property in eventDetails) {
-            (<any> details)[property] = (<any> eventDetails)[property];
-          }
-          this.eventBus.dispatch(eventName, details);
+          this.eventBus.dispatch(eventName, { source: this, ...eventDetails });
         }
         if (close) {
           this.close();
@@ -252,14 +253,8 @@ export class SecondaryToolbar {
     cursorHandToolButton,
   }: ViewerConfiguration["secondaryToolbar"]) {
     this.eventBus._on("cursortoolchanged", ({ tool }) => {
-      const isSelect = tool === CursorTool.SELECT,
-        isHand = tool === CursorTool.HAND;
-
-      cursorSelectToolButton.classList.toggle("toggled", isSelect);
-      cursorHandToolButton.classList.toggle("toggled", isHand);
-
-      cursorSelectToolButton.setAttribute("aria-checked", <any> isSelect);
-      cursorHandToolButton.setAttribute("aria-checked", <any> isHand);
+      toggleCheckedBtn(cursorSelectToolButton, tool === CursorTool.SELECT);
+      toggleCheckedBtn(cursorHandToolButton, tool === CursorTool.HAND);
     });
   }
 

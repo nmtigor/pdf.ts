@@ -71,6 +71,10 @@
   cursor: var(--editorInk-editing-cursor);
 }
 
+.annotationEditorLayer :is(.freeTextEditor, .inkEditor)[draggable="true"] {
+  cursor: move;
+}
+
 .annotationEditorLayer .selectedEditor {
   outline: var(--focus-outline);
   resize: none;
@@ -133,8 +137,8 @@
   resize: horizontal;
 }
 
-.annotationEditorLayer .freeTextEditor:hover:not(.selectedEditor),
-.annotationEditorLayer .inkEditor:hover:not(.selectedEditor) {
+.annotationEditorLayer
+  :is(.freeTextEditor, .inkEditor):hover:not(.selectedEditor) {
   outline: var(--hover-outline);
 }
 

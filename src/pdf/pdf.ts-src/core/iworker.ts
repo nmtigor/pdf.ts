@@ -18,8 +18,8 @@
  */
 
 export interface IWorker {
-  postMessage(message: any, transfer: Transferable[]): void;
-  postMessage(message: any, options?: StructuredSerializeOptions): void;
+  postMessage(message: any, transfer?: Transferable[]): void;
+  // postMessage(message: any, options?: StructuredSerializeOptions): void;
 
   addEventListener<K extends keyof WorkerEventMap>(
     type: K,

@@ -34,6 +34,7 @@ function makeColorComp(n: number) {
 }
 
 export type RGB = TupleOf<number, 3>;
+export type XYZ = TupleOf<number, 3>;
 export type CMYK = TupleOf<number, 4>;
 
 export type CSTag = "G" | "RGB" | "T" | "CMYK";

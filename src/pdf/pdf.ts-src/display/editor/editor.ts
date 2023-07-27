@@ -22,23 +22,18 @@
 // eslint-disable-next-line max-len
 /** @typedef {import("./tools.js").AnnotationEditorUIManager} AnnotationEditorUIManager */
 
-import { type Constructor, type rect_t } from "../../../../lib/alias.ts";
+import type { Constructor, rect_t } from "../../../../lib/alias.ts";
 import { html } from "../../../../lib/dom.ts";
 import { assert } from "../../../../lib/util/trace.ts";
-import { RGB } from "../../shared/scripting_utils.ts";
-import {
+import type { RGB } from "../../shared/scripting_utils.ts";
+import type {
   AnnotationEditorParamsType,
   AnnotationEditorType,
-  FeatureTest,
-  shadow,
 } from "../../shared/util.ts";
-import { AnnotationEditorLayer } from "./annotation_editor_layer.ts";
-import {
-  AddCommandsP,
-  AnnotationEditorUIManager,
-  bindEvents,
-  ColorManager,
-} from "./tools.ts";
+import { FeatureTest, shadow } from "../../shared/util.ts";
+import type { AnnotationEditorLayer } from "./annotation_editor_layer.ts";
+import type { AddCommandsP, AnnotationEditorUIManager } from "./tools.ts";
+import { bindEvents, ColorManager } from "./tools.ts";
 /*80--------------------------------------------------------------------------*/
 
 export interface AnnotationEditorP {
@@ -103,6 +98,7 @@ export abstract class AnnotationEditor {
   div?: HTMLDivElement;
 
   rotation;
+  pageRotation;
   pageDimensions;
   pageTranslation;
   x;
@@ -130,6 +126,8 @@ export abstract class AnnotationEditor {
     } = this.parent.viewport;
 
     this.rotation = rotation;
+    this.pageRotation =
+      (360 + rotation - this._uiManager.viewParameters.rotation) % 360;
     this.pageDimensions = [pageWidth, pageHeight];
     this.pageTranslation = [pageX, pageY];
 
@@ -297,7 +295,7 @@ export abstract class AnnotationEditor {
   }
 
   get parentRotation() {
-    return this._uiManager.viewParameters.rotation;
+    return (this._uiManager.viewParameters.rotation + this.pageRotation) % 360;
   }
 
   get parentDimensions() {

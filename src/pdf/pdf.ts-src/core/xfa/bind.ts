@@ -476,7 +476,7 @@ export class Binder {
     }
 
     const { occur } = formNode;
-    if (!occur || occur.initial <= 1) {
+    if (!occur || +occur.initial <= 1) {
       return;
     }
 
@@ -513,14 +513,14 @@ export class Binder {
     }
   }
 
-  #getOccurInfo(formNode: ExclGroup | Field | Subform) {
+  #getOccurInfo(formNode: ExclGroup | Field | Subform): [number, number] {
     const { occur } = formNode;
     const dataName = formNode.name;
     if (!occur || !dataName) {
       return [1, 1];
     }
-    const max = occur.max === -1 ? Infinity : occur.max;
-    return [occur.min, max];
+    const max = occur.max === -1 ? Infinity : +occur.max;
+    return [+occur.min, max];
   }
 
   #setAndBind(formNode: ExclGroup | Field | Subform, dataNode: XmlObject) {
@@ -644,7 +644,7 @@ export class Binder {
             );
           }
           if (match.length > max) {
-            match = match.slice(0, +max);
+            match = match.slice(0, max);
           } else if (match.length === 0) {
             match = undefined;
           }

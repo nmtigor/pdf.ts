@@ -14,7 +14,7 @@
  */
 
 import { FormatError, shadow } from "../shared/util.ts";
-import { BaseStream } from "./base_stream.ts";
+import type { BaseStream } from "./base_stream.ts";
 import { isWhiteSpace } from "./core_utils.ts";
 import { EOF } from "./primitives.ts";
 /*80--------------------------------------------------------------------------*/
@@ -115,64 +115,58 @@ const enum PostScriptTokenTypes {
   IFELSE = 5,
 }
 
-namespace NsPostScriptToken {
-  const opCache: Record<string, PostScriptToken> = Object.create(null);
+export class PostScriptToken {
+  static get opCache(): Record<string, PostScriptToken> {
+    return shadow(this, "opCache", Object.create(null));
+  }
 
-  // eslint-disable-next-line no-shadow
-  export class PostScriptToken {
-    type;
-    value;
+  type;
+  value;
 
-    constructor(type: PostScriptTokenTypes, value: string | number) {
-      this.type = type;
-      this.value = value;
-    }
+  constructor(type: PostScriptTokenTypes, value: string | number) {
+    this.type = type;
+    this.value = value;
+  }
 
-    static getOperator(op: string) {
-      const opValue = opCache[op];
-      if (opValue) {
-        return opValue;
-      }
-      return (opCache[op] = new PostScriptToken(
-        PostScriptTokenTypes.OPERATOR,
-        op,
-      ));
-    }
+  static getOperator(op: string) {
+    return (PostScriptToken.opCache[op] ||= new PostScriptToken(
+      PostScriptTokenTypes.OPERATOR,
+      op,
+    ));
+  }
 
-    static get LBRACE() {
-      return shadow(
-        this,
-        "LBRACE",
-        new PostScriptToken(PostScriptTokenTypes.LBRACE, "{"),
-      );
-    }
+  static get LBRACE() {
+    return shadow(
+      this,
+      "LBRACE",
+      new PostScriptToken(PostScriptTokenTypes.LBRACE, "{"),
+    );
+  }
 
-    static get RBRACE() {
-      return shadow(
-        this,
-        "RBRACE",
-        new PostScriptToken(PostScriptTokenTypes.RBRACE, "}"),
-      );
-    }
+  static get RBRACE() {
+    return shadow(
+      this,
+      "RBRACE",
+      new PostScriptToken(PostScriptTokenTypes.RBRACE, "}"),
+    );
+  }
 
-    static get IF() {
-      return shadow(
-        this,
-        "IF",
-        new PostScriptToken(PostScriptTokenTypes.IF, "IF"),
-      );
-    }
+  static get IF() {
+    return shadow(
+      this,
+      "IF",
+      new PostScriptToken(PostScriptTokenTypes.IF, "IF"),
+    );
+  }
 
-    static get IFELSE() {
-      return shadow(
-        this,
-        "IFELSE",
-        new PostScriptToken(PostScriptTokenTypes.IFELSE, "IFELSE"),
-      );
-    }
+  static get IFELSE() {
+    return shadow(
+      this,
+      "IFELSE",
+      new PostScriptToken(PostScriptTokenTypes.IFELSE, "IFELSE"),
+    );
   }
 }
-import PostScriptToken = NsPostScriptToken.PostScriptToken;
 
 export class PostScriptLexer {
   stream: BaseStream;

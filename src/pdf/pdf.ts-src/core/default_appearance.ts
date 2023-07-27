@@ -18,7 +18,7 @@
  */
 
 import { DENO } from "../../../global.ts";
-import { type id_t, type rect_t } from "../../../lib/alias.ts";
+import type { id_t, OC2D, rect_t } from "../../../lib/alias.ts";
 import { LINE_DESCENT_FACTOR, LINE_FACTOR, OPS, warn } from "../shared/util.ts";
 import { ColorSpace } from "./colorspace.ts";
 import {
@@ -216,13 +216,10 @@ endcmap CMapName currentdict /CMap defineresource pop end end`;
     this.xref = xref;
     this.fontFamily = fontFamily;
 
-    let canvas;
-    /*#static*/ if (DENO) {
-      canvas = denoCanvas!.createCanvas(1, 1);
-    } else {
-      canvas = new (globalThis as any).OffscreenCanvas(1, 1);
-    }
-    this.ctxMeasure = (canvas as any).getContext("2d");
+    const canvas = /*#static*/ DENO
+      ? denoCanvas!.createCanvas(1, 1) as OffscreenCanvas
+      : new OffscreenCanvas(1, 1);
+    this.ctxMeasure = canvas.getContext("2d") as OC2D;
 
     if (!FakeUnicodeFont.#fontNameId) {
       FakeUnicodeFont.#fontNameId = 1;

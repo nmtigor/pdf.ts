@@ -17,55 +17,58 @@
  * limitations under the License.
  */
 
-import { _PDFDEV, _TRACE, global, PDFTS_vv } from "../../../global.ts";
-import { type rect_t } from "../../../lib/alias.ts";
-import { HttpStatusCode } from "../../../lib/HttpStatusCode.ts";
+import {
+  _TRACE,
+  global,
+  PDFJSDev,
+  PDFTS_vv,
+  TESTING,
+} from "../../../global.ts";
+import type { rect_t } from "../../../lib/alias.ts";
+import type { HttpStatusCode } from "../../../lib/HttpStatusCode.ts";
 import { isObjectLike } from "../../../lib/jslang.ts";
-import { assert } from "../../../lib/util/trace.ts";
-import { PageLayout, PageMode } from "../../pdf.ts-web/ui_utils.ts";
-import { type AnnotationData, type FieldObject } from "../core/annotation.ts";
-import {
-  type ExplicitDest,
-  type MarkInfo,
-  type OpenAction,
-  type OptionalContentConfigData,
-  type ViewerPref,
+import { PromiseCap } from "../../../lib/util/PromiseCap.ts";
+import { assert, type ErrorJ } from "../../../lib/util/trace.ts";
+import type { PageLayout, PageMode } from "../../pdf.ts-web/ui_utils.ts";
+import type { AnnotationData, FieldObject } from "../core/annotation.ts";
+import type {
+  ExplicitDest,
+  MarkInfo,
+  OpenAction,
+  OptionalContentConfigData,
+  ViewerPref,
 } from "../core/catalog.ts";
-import { type AnnotActions } from "../core/core_utils.ts";
-import { DatasetReader } from "../core/dataset_reader.ts";
-import { type DocumentInfo, type XFAData } from "../core/document.ts";
-import { type FontStyle, type ImgData } from "../core/evaluator.ts";
-import { FontExpotDataEx } from "../core/fonts.ts";
-import { type CmdArgs } from "../core/font_renderer.ts";
-import { type IWorker } from "../core/iworker.ts";
-import { type SerializedMetadata } from "../core/metadata_parser.ts";
-import { type OpListIR } from "../core/operator_list.ts";
-import { type ShadingPatternIR } from "../core/pattern.ts";
-import { EvaluatorOptions } from "../core/pdf_manager.ts";
-import { type XFAElObj } from "../core/xfa/alias.ts";
-import { type AnnotStorageRecord } from "../display/annotation_layer.ts";
-import {
-  type OutlineNode,
-  type RefProxy,
+import type { AnnotActions } from "../core/core_utils.ts";
+import type { DatasetReader } from "../core/dataset_reader.ts";
+import type { DocumentInfo, XFAData } from "../core/document.ts";
+import type { ImgData } from "../core/evaluator.ts";
+import type { FontExpotDataEx } from "../core/fonts.ts";
+import type { CmdArgs } from "../core/font_renderer.ts";
+import type { IWorker } from "../core/iworker.ts";
+import type { SerializedMetadata } from "../core/metadata_parser.ts";
+import type { OpListIR } from "../core/operator_list.ts";
+import type { ShadingPatternIR } from "../core/pattern.ts";
+import type { EvaluatorOptions } from "../core/pdf_manager.ts";
+import type { XFAElObj } from "../core/xfa/alias.ts";
+import type { AnnotStorageRecord } from "../display/annotation_layer.ts";
+import type {
+  OutlineNode,
+  RefProxy,
   StructTreeNode,
-  type TextItem,
-  type TextMarkedContent,
+  TextItem,
+  TextMarkedContent,
+  TextStyle,
 } from "../display/api.ts";
-import { type CMapData } from "../display/base_factory.ts";
-import { VerbosityLevel } from "../pdf.ts";
+import type { CMapData } from "../display/base_factory.ts";
+import type { VerbosityLevel } from "../pdf.ts";
+import type { PermissionFlag, RenderingIntentFlag } from "./util.ts";
 import {
   AbortException,
-  createPromiseCapability,
-  InvalidPDFException,
   MissingPDFException,
   PasswordException,
   PasswordResponses,
-  PermissionFlag,
-  type PromiseCapability,
-  RenderingIntentFlag,
   UnexpectedResponseException,
   UnknownErrorException,
-  UNSUPPORTED_FEATURES,
 } from "./util.ts";
 /*80--------------------------------------------------------------------------*/
 
@@ -132,7 +135,7 @@ export interface GetDocRequestData {
   evaluatorOptions: EvaluatorOptions;
 }
 
-interface _PumpOperatorListP {
+interface PumpOperatorListP_ {
   pageIndex: number;
   intent: RenderingIntentFlag;
   cacheKey: string;
@@ -237,7 +240,7 @@ export interface MActionMap {
     Sinkchunk: undefined;
   };
   GetOperatorList: {
-    Data: _PumpOperatorListP;
+    Data: PumpOperatorListP_;
     Return: void;
     Sinkchunk: OpListIR;
   };
@@ -307,13 +310,13 @@ export interface MActionMap {
   GetTextContent: {
     Data: {
       pageIndex: number;
-      combineTextItems: boolean;
       includeMarkedContent: boolean;
+      disableNormalization: boolean;
     };
     Return: void;
     Sinkchunk: {
       items: (TextItem | TextMarkedContent)[];
-      styles: Record<string, FontStyle>;
+      styles: Record<string, TextStyle>;
     };
   };
   GetViewerPreferences: {
@@ -324,6 +327,11 @@ export interface MActionMap {
   GetXFADatasets: {
     Data: null;
     Return: DatasetReader | undefined;
+    Sinkchunk: undefined;
+  };
+  GetXRefPrevValue: {
+    Data: null;
+    Return: number | undefined;
     Sinkchunk: undefined;
   };
   HasJSActions: {
@@ -387,7 +395,8 @@ export interface WActionMap {
     Data:
       | [string, "Font", FontExpotDataEx | { error: string }]
       | [string, "FontPath", CmdArgs[]]
-      | [string, "Image", ImgData | undefined];
+      | [string, "Image", ImgData | undefined]
+      | [string, "Pattern", ShadingPatternIR];
     Return: void;
     Sinkchunk: undefined;
   };
@@ -399,12 +408,7 @@ export interface WActionMap {
     Sinkchunk: undefined;
   };
   DocException: {
-    Data:
-      | PasswordException
-      | InvalidPDFException
-      | MissingPDFException
-      | UnexpectedResponseException
-      | UnknownErrorException;
+    Data: ErrorJ;
     Return: void;
     Sinkchunk: undefined;
   };
@@ -487,13 +491,6 @@ export interface WActionMap {
     Return: void;
     Sinkchunk: undefined;
   };
-  UnsupportedFeature: {
-    Data: {
-      featureId: UNSUPPORTED_FEATURES;
-    };
-    Return: void;
-    Sinkchunk: undefined;
-  };
 }
 
 type WActionName = keyof WActionMap;
@@ -520,7 +517,7 @@ export interface StreamSink<
   close?(): void;
   error?(reason: reason_t): void;
 
-  sinkCapability?: PromiseCapability;
+  sinkCapability?: PromiseCap;
   onPull?(desiredSize?: number): void;
   onCancel?(reason: object): void;
   isCancelled?: boolean;
@@ -599,9 +596,9 @@ interface StreamController<
   AN extends ActionName<Ta> = ActionName<Ta>,
 > {
   controller: ReadableStreamDefaultController<ActionSinkchunk<Ta, AN>>;
-  startCall: PromiseCapability;
-  pullCall?: PromiseCapability;
-  cancelCall?: PromiseCapability;
+  startCall: PromiseCap;
+  pullCall?: PromiseCap;
+  cancelCall?: PromiseCap;
   isClosed: boolean;
 }
 
@@ -619,7 +616,7 @@ export class MessageHandler<
   streamId = 1;
   streamSinks: StreamSink<Ta>[] = Object.create(null);
   streamControllers: StreamController<Tn>[] = Object.create(null);
-  callbackCapabilities: PromiseCapability<unknown>[] = Object.create(null);
+  callbackCapabilities: PromiseCap<unknown>[] = Object.create(null);
   actionHandler: Record<ActionName<Tn>, ActionHandler<Tn>> = Object.create(
     null,
   );
@@ -641,7 +638,7 @@ export class MessageHandler<
       console.log(
         `${global.indent}>>>>>>> MessageHandler_${this.sourceName}_${this.id}.#onComObjOnMessage() >>>>>>>`,
       );
-      console.log(`${global.dent}${stringof(event.data)}`);
+      console.log(`${global.dent}${stringof(data)}`);
     }
     if (data.stream) {
       this.#processStreamMessage(data);
@@ -676,7 +673,7 @@ export class MessageHandler<
       const cbTargetName = data.sourceName;
 
       new Promise((resolve) => {
-        resolve(action(<any> data.data, <any> undefined));
+        resolve(action(data.data as any, undefined as any));
       }).then(
         (result) => {
           comObj.postMessage({
@@ -714,7 +711,7 @@ export class MessageHandler<
     actionName: AN,
     handler: ActionHandler<Tn, AN>,
   ) {
-    /*#static*/ if (_PDFDEV) {
+    /*#static*/ if (PDFJSDev || TESTING) {
       assert(
         typeof handler === "function",
         'MessageHandler.on: Expected "handler" to be a function.',
@@ -745,7 +742,7 @@ export class MessageHandler<
         action: actionName,
         data,
       },
-      <any> transfers,
+      transfers,
     );
   }
 
@@ -763,8 +760,8 @@ export class MessageHandler<
     transfers?: Transferable[],
   ): Promise<ActionReturn<Ta, AN>> {
     const callbackId = this.callbackId++;
-    const capability = createPromiseCapability<ActionReturn<Ta, AN>>();
-    this.callbackCapabilities[callbackId] = <PromiseCapability<
+    const capability = new PromiseCap<ActionReturn<Ta, AN>>();
+    this.callbackCapabilities[callbackId] = <PromiseCap<
       unknown
     >> capability;
     try {
@@ -776,7 +773,7 @@ export class MessageHandler<
           callbackId,
           data,
         },
-        <any> transfers,
+        transfers,
       );
     } catch (ex) {
       capability.reject(ex);
@@ -807,7 +804,7 @@ export class MessageHandler<
     return new ReadableStream<ActionSinkchunk<Ta, AN>>(
       {
         start: (controller: ReadableStreamDefaultController) => {
-          const startCapability = createPromiseCapability();
+          const startCapability = new PromiseCap();
           this.streamControllers[streamId] = {
             controller,
             startCall: startCapability,
@@ -822,14 +819,14 @@ export class MessageHandler<
               data,
               desiredSize: controller.desiredSize,
             },
-            <any> transfers,
+            transfers,
           );
           // Return Promise for Async process, to signal success/failure.
           return startCapability.promise;
         },
 
         pull: (controller: ReadableStreamDefaultController) => {
-          const pullCapability = createPromiseCapability();
+          const pullCapability = new PromiseCap();
           this.streamControllers[streamId].pullCall = pullCapability;
           comObj.postMessage({
             sourceName,
@@ -845,7 +842,7 @@ export class MessageHandler<
 
         cancel: (reason: reason_t) => {
           // assert(reason instanceof Error, "cancel must have a valid reason");
-          const cancelCapability = createPromiseCapability();
+          const cancelCapability = new PromiseCap();
           this.streamControllers[streamId].cancelCall = cancelCapability;
           this.streamControllers[streamId].isClosed = true;
           comObj.postMessage({
@@ -871,7 +868,7 @@ export class MessageHandler<
     const self = this,
       action = this.actionHandler[data.action!];
 
-    const sinkCapability = createPromiseCapability();
+    const sinkCapability = new PromiseCap();
     const streamSink: StreamSink<Ta> = {
       enqueue(chunk, size = 1, transfers) {
         if (this.isCancelled) {
@@ -883,7 +880,7 @@ export class MessageHandler<
         // so when it changes from positive to negative,
         // set ready as unresolved promise.
         if (lastDesiredSize > 0 && this.desiredSize! <= 0) {
-          this.sinkCapability = createPromiseCapability();
+          this.sinkCapability = new PromiseCap();
           this.ready = this.sinkCapability.promise;
         }
         comObj.postMessage(
@@ -894,7 +891,7 @@ export class MessageHandler<
             streamId,
             chunk,
           },
-          <any> transfers,
+          transfers,
         );
       },
 
@@ -1004,7 +1001,7 @@ export class MessageHandler<
         streamSink.desiredSize = data.desiredSize;
 
         new Promise((resolve) => {
-          resolve(streamSink.onPull && streamSink.onPull());
+          resolve(streamSink.onPull?.());
         }).then(
           () => {
             comObj.postMessage({
@@ -1061,10 +1058,7 @@ export class MessageHandler<
         }
 
         new Promise((resolve) => {
-          resolve(
-            streamSink.onCancel &&
-              streamSink.onCancel(wrapReason(data.reason!)),
-          );
+          resolve(streamSink.onCancel?.(wrapReason(data.reason!)));
         }).then(
           () => {
             comObj.postMessage({
@@ -1101,9 +1095,9 @@ export class MessageHandler<
     // Delete the `streamController` only when the start, pull, and cancel
     // capabilities have settled, to prevent `TypeError`s.
     await Promise.allSettled([
-      streamController.startCall && streamController.startCall.promise,
-      streamController.pullCall && streamController.pullCall.promise,
-      streamController.cancelCall && streamController.cancelCall.promise,
+      streamController.startCall?.promise,
+      streamController.pullCall?.promise,
+      streamController.cancelCall?.promise,
     ]);
     delete this.streamControllers[streamId];
   }

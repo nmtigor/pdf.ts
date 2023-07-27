@@ -23,7 +23,7 @@ import {
   XMLParserBase,
   XMLParserErrorCode,
 } from "../xml_parser.ts";
-import { type XFANsAttrs, type XFAPrefix } from "./alias.ts";
+import type { XFANsAttrs, XFAPrefix } from "./alias.ts";
 import { Builder, Root } from "./builder.ts";
 import {
   $acceptWhitespace,
@@ -38,7 +38,7 @@ import {
   $setId,
   XFAObject,
 } from "./xfa_object.ts";
-import { type XFANsXhtml } from "./xhtml.ts";
+import type { XFANsXhtml } from "./xhtml.ts";
 /*80--------------------------------------------------------------------------*/
 
 export class XFAParser extends XMLParserBase {
@@ -122,10 +122,7 @@ export class XFAParser extends XMLParserBase {
             nsAttrs = attributeObj[$nsAttributes] = Object.create(null);
           }
           const [ns, attrName] = [name.slice(0, i), name.slice(i + 1)];
-          let attrs = nsAttrs![ns];
-          if (!attrs) {
-            attrs = nsAttrs![ns] = Object.create(null);
-          }
+          const attrs = (nsAttrs![ns] ||= Object.create(null));
           attrs[attrName] = value;
         }
       }

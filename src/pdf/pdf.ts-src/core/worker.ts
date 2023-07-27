@@ -17,19 +17,15 @@
  * limitations under the License.
  */
 
-import { _PDFDEV, GENERIC, TESTING } from "../../../global.ts";
+import { DENO, GENERIC, PDFJSDev, TESTING } from "../../../global.ts";
+import { PromiseCap } from "../../../lib/util/PromiseCap.ts";
 import { assert } from "../../../lib/util/trace.ts";
-import { type ReadValue } from "../interfaces.ts";
-import {
-  type GetDocRequestData,
-  MessageHandler,
-  type PDFInfo,
-  Thread,
-} from "../shared/message_handler.ts";
+import type { ReadValue } from "../interfaces.ts";
+import type { GetDocRequestData, PDFInfo } from "../shared/message_handler.ts";
+import { MessageHandler, Thread } from "../shared/message_handler.ts";
 import {
   AbortException,
   BaseException,
-  createPromiseCapability,
   getVerbosityLevel,
   info,
   InvalidPDFException,
@@ -42,7 +38,7 @@ import {
   VerbosityLevel,
   warn,
 } from "../shared/util.ts";
-import { type SaveData, type SaveReturn } from "./annotation.ts";
+import type { SaveData, SaveReturn } from "./annotation.ts";
 import { clearGlobalCaches } from "./cleanup_helper.ts";
 import {
   arrayBuffersToBytes,
@@ -75,7 +71,7 @@ export class WorkerTask {
     this.terminated = true;
   }
 
-  #capability = createPromiseCapability();
+  #capability = new PromiseCap();
   get finished() {
     return this.#capability.promise;
   }
@@ -148,7 +144,7 @@ export const WorkerMessageHandler = {
       );
     }
 
-    /*#static*/ if (GENERIC) {
+    /*#static*/ if (PDFJSDev || GENERIC) {
       // Fail early, and predictably, rather than having (some) fonts fail to
       // load/render with slightly cryptic error messages in environments where
       // the `Array.prototype` has been *incorrectly* extended.
@@ -170,14 +166,18 @@ export const WorkerMessageHandler = {
       // Ensure that (primarily) Node.js users won't accidentally attempt to use
       // a non-translated/non-polyfilled build of the library, since that would
       // quickly fail anyway because of missing functionality.
-      if (typeof ReadableStream === "undefined") {
+      if (
+        !DENO && typeof Path2D === "undefined" ||
+        typeof ReadableStream === "undefined"
+      ) {
         const partialMsg =
           "The browser/environment lacks native support for critical " +
-          "functionality used by the PDF.js library (e.g. `ReadableStream`); ";
+          "functionality used by the PDF.js library " +
+          "(e.g. `Path2D` and/or `ReadableStream`); ";
 
-        // if (isNodeJS) {
-        //   throw new Error(partialMsg + "please use a `legacy`-build instead.");
-        // }
+        if (DENO) {
+          throw new Error(partialMsg + "please use a `legacy`-build instead.");
+        }
         throw new Error(partialMsg + "please update to a supported browser.");
       }
     }
@@ -264,7 +264,7 @@ export const WorkerMessageHandler = {
         password,
         rangeChunkSize,
       } as LocalPdfManagerCtorP | NetworkPdfManagerCtorP;
-      const pdfManagerCapability = createPromiseCapability<BasePdfManager>();
+      const pdfManagerCapability = new PromiseCap<BasePdfManager>();
       let newPdfManager: BasePdfManager;
 
       if (data) {
@@ -303,8 +303,7 @@ export const WorkerMessageHandler = {
           (pdfManagerArgs as NetworkPdfManagerCtorP).length = fullRequest
             .contentLength!;
           // We don't need auto-fetch when streaming is enabled.
-          (pdfManagerArgs as NetworkPdfManagerCtorP).disableAutoFetch =
-            (pdfManagerArgs as NetworkPdfManagerCtorP).disableAutoFetch ||
+          (pdfManagerArgs as NetworkPdfManagerCtorP).disableAutoFetch ||=
             fullRequest.isStreamingSupported;
 
           newPdfManager = new NetworkPdfManager(
@@ -350,11 +349,13 @@ export const WorkerMessageHandler = {
           try {
             ensureNotTerminated();
             if (done) {
-              if (!newPdfManager) flushChunks();
+              if (!newPdfManager) {
+                flushChunks();
+              }
               cancelXHRs = undefined;
               return;
             }
-            /*#static*/ if (_PDFDEV) {
+            /*#static*/ if (PDFJSDev || TESTING) {
               assert(
                 value instanceof ArrayBuffer,
                 "readChunk (getPdfManager) - expected an ArrayBuffer.",
@@ -399,13 +400,15 @@ export const WorkerMessageHandler = {
       }
 
       function onFailure(ex: BaseException) {
+        // console.log(ex.name);
+        // console.log(ex);
         ensureNotTerminated();
 
         if (ex instanceof PasswordException) {
           const task = new WorkerTask(`PasswordException: response ${ex.code}`);
           startWorkerTask(task);
 
-          (<MessageHandler<Thread.worker>> <unknown> handler)
+          handler
             .sendWithPromise("PasswordRequest", ex)
             .then(({ password }) => {
               finishWorkerTask(task);
@@ -414,7 +417,7 @@ export const WorkerMessageHandler = {
             })
             .catch(() => {
               finishWorkerTask(task);
-              handler.send("DocException", ex);
+              handler.send("DocException", ex.toJ());
             });
         } else if (
           ex instanceof InvalidPDFException ||
@@ -422,11 +425,11 @@ export const WorkerMessageHandler = {
           ex instanceof UnexpectedResponseException ||
           ex instanceof UnknownErrorException
         ) {
-          handler.send("DocException", ex);
+          handler.send("DocException", ex.toJ());
         } else {
           handler.send(
             "DocException",
-            new UnknownErrorException(ex.message, ex.toString()),
+            new UnknownErrorException(ex.message, ex.toString()).toJ(),
           );
         }
       }
@@ -712,7 +715,7 @@ export const WorkerMessageHandler = {
                 info: infoObj,
                 fileIds: xref.trailer.get("ID") as [string, string] ||
                   undefined,
-                startXRef,
+                startXRef: xref.lastXRefStreamPos ?? startXRef,
                 filename,
               };
             }
@@ -787,7 +790,7 @@ export const WorkerMessageHandler = {
     });
 
     handler.on("GetTextContent", (data, sink) => {
-      const pageIndex = data.pageIndex;
+      const { pageIndex, includeMarkedContent, disableNormalization } = data;
 
       pdfManager.getPage(pageIndex).then((page) => {
         const task = new WorkerTask("GetTextContent: page " + pageIndex);
@@ -801,8 +804,8 @@ export const WorkerMessageHandler = {
             handler,
             task,
             sink,
-            includeMarkedContent: data.includeMarkedContent,
-            combineTextItems: data.combineTextItems,
+            includeMarkedContent,
+            disableNormalization,
           })
           .then(() => {
             finishWorkerTask(task);
@@ -877,9 +880,14 @@ export const WorkerMessageHandler = {
       docParams = undefined as any; // we don't need docParams anymore -- saving memory.
     });
 
-    /*#static*/ if (TESTING) {
+    /*#static*/ if (PDFJSDev || TESTING) {
       handler.on("GetXFADatasets", (data) => {
         return pdfManager.ensureDoc("xfaDatasets");
+      });
+      handler.on("GetXRefPrevValue", (data) => {
+        return pdfManager
+          .ensureXRef("trailer")
+          .then((trailer) => trailer!.get("Prev") as number);
       });
     }
 

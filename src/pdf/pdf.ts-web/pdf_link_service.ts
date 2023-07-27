@@ -22,18 +22,18 @@
 
 import { isObjectLike } from "../../lib/jslang.ts";
 import { assert } from "../../lib/util/trace.ts";
-import {
-  type Destination,
-  type ExplicitDest,
+import type {
+  Destination,
+  ExplicitDest,
   PDFDocumentProxy,
   Ref,
-  type RefProxy,
+  RefProxy,
   SetOCGState,
 } from "../pdf.ts-src/pdf.ts";
-import { EventBus } from "./event_utils.ts";
-import { type IPDFLinkService } from "./interfaces.ts";
-import { PDFHistory } from "./pdf_history.ts";
-import { PDFViewer } from "./pdf_viewer.ts";
+import type { EventBus } from "./event_utils.ts";
+import type { IPDFLinkService } from "./interfaces.ts";
+import type { PDFHistory } from "./pdf_history.ts";
+import type { PDFViewer } from "./pdf_viewer.ts";
 import { parseQueryString, removeNullCharacters } from "./ui_utils.ts";
 /*80--------------------------------------------------------------------------*/
 
@@ -230,9 +230,9 @@ export class PDFLinkService implements IPDFLinkService {
         // Fetch the page reference if it's not yet available. This could
         // only occur during loading, before all pages have been resolved.
         this.pdfDocument!
-          .getPageIndex(<Ref> destRef)
+          .getPageIndex(destRef as Ref)
           .then((pageIndex) => {
-            this.cachePageRef(pageIndex + 1, <Ref> destRef);
+            this.cachePageRef(pageIndex + 1, destRef as Ref);
             this.#goToDestinationHelper(rawDest, namedDest, explicitDest);
           })
           .catch(() => {
@@ -371,21 +371,24 @@ export class PDFLinkService implements IPDFLinkService {
    * @return The hyperlink to the PDF object.
    */
   getAnchorUrl(anchor: string): string {
-    return (this.baseUrl || "") + anchor;
+    return this.baseUrl ? this.baseUrl + anchor : anchor;
   }
 
   /** @implement */
   setHash(hash: string) {
-    if (!this.pdfDocument) return;
-
+    if (!this.pdfDocument) {
+      return;
+    }
     let pageNumber, dest: ExplicitDest;
     if (hash.includes("=")) {
       const params = parseQueryString(hash);
       if (params.has("search")) {
+        const query = params.get("search")!.replaceAll('"', ""),
+          phrase = params.get("phrase") === "true";
+
         this.eventBus.dispatch("findfromurlhash", {
           source: this,
-          query: params.get("search")!.replace(/"/g, ""),
-          phraseSearch: params.get("phrase") === "true",
+          query: phrase ? query : query.match(/\S+/g),
         });
       }
       // borrowing syntax from "Parameters for Opening PDF Files"

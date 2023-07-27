@@ -29,7 +29,7 @@ import { PageViewport } from "./display_utils.ts";
 import { XfaText } from "./xfa_text.ts";
 /*80--------------------------------------------------------------------------*/
 
-interface _XfaLayerP {
+interface XfaLayerP_ {
   viewport?: PageViewport;
   div: HTMLDivElement;
   xfaHtml: XFAElObj;
@@ -196,7 +196,7 @@ export abstract class XfaLayer {
   /**
    * Render the XFA layer.
    */
-  static render(parameters: _XfaLayerP) {
+  static render(parameters: XfaLayerP_) {
     const storage = parameters.annotationStorage;
     const linkService = parameters.linkService!;
     const root = parameters.xfaHtml;
@@ -309,7 +309,7 @@ export abstract class XfaLayer {
   /**
    * Update the XFA layer.
    */
-  static update(parameters: _XfaLayerP) {
+  static update(parameters: XfaLayerP_) {
     const transform = `matrix(${parameters.viewport!.transform.join(",")})`;
     parameters.div.style.transform = transform;
     parameters.div.hidden = false;

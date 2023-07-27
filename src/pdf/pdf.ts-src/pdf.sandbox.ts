@@ -18,8 +18,8 @@
  */
 
 import ModuleLoader from "../../3rd/quickjs-2022-05-02/quickjs-eval.js";
-import { _PDFDEV } from "../../global.ts";
-import { EventInSandBox } from "../pdf.ts-web/interfaces.ts";
+import { TESTING } from "../../global.ts";
+import type { EventInSandBox } from "../pdf.ts-web/interfaces.ts";
 import { SandboxSupportBase } from "./pdf.sandbox.external.ts";
 /*80--------------------------------------------------------------------------*/
 
@@ -71,14 +71,14 @@ export class Sandbox {
   }
 
   create(data: unknown) {
-    /*#static*/ if (_PDFDEV) {
+    /*#static*/ if (TESTING) {
       (this._module as any).ccall("nukeSandbox", null, []);
     }
     // const code = [PDFJSDev.eval( "PDF_SCRIPTING_JS_SOURCE")];
     // const code = [PDF_SCRIPTING_JS_SOURCE];
     const code = [""];
 
-    /*#static*/ if (_PDFDEV) {
+    /*#static*/ if (TESTING) {
       code.push(
         `globalThis.sendResultForTesting = callExternalFunction.bind( null, "send");`,
       );
@@ -133,15 +133,15 @@ export class Sandbox {
   nukeSandbox() {
     if (this._module !== null) {
       this.support.destroy();
-      (<any> this).support = undefined;
-      (<any> this._module).ccall("nukeSandbox", null, []);
+      (this as any).support = undefined;
+      (this._module as any).ccall("nukeSandbox", null, []);
       this._module = undefined;
     }
   }
 
   evalForTesting(code: unknown, key: unknown) {
-    /*#static*/ if (_PDFDEV) {
-      (<any> this._module).ccall(
+    /*#static*/ if (TESTING) {
+      (this._module as any).ccall(
         "evalInSandbox",
         null,
         ["string", "int"],

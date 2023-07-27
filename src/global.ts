@@ -4,7 +4,7 @@
  ******************************************************************************/
 
 import { Hover, Pointer } from "./lib/alias.ts";
-import { HTMLVCo } from "./lib/mv.ts";
+import type { HTMLVCo } from "./lib/mv.ts";
 import { assert } from "./lib/util/trace.ts";
 /*80--------------------------------------------------------------------------*/
 
@@ -15,6 +15,7 @@ export const
 , DEV = true // debug build
   , TRACE = true
   , INFO = true
+  , COLR = true
   
   , XSTATE = true
   , RESIZ = true // "resize", ResizeObserver
@@ -22,38 +23,35 @@ export const
 
   , THEMESETTING = false
   , EDITOR = true
-    , EDITOR_v = true // verbose
-      , EDITOR_vv = false // very verbose
+    , /** @deprecated */EDITOR_v = true // verbose
   , PDFTS = true
     , PDFTS_v = true // verbose
       , PDFTS_vv = false // very verbose
 , _TRACE = DEV && TRACE
 , _INFO = DEV && INFO
-, APP = false // release build
+, _COLR = DEV && COLR
+, /** @deprecated */APP = false // release build
 
 , TESTING = false
-  , /** @deprecated */TEST_ALL = false 
-
 , DENO = false
 
 , CYPRESS = true
 
   // from pdf.js
+, PDFJSDev = true
 , GENERIC = true
 , MOZCENTRAL = false
 , CHROME = false
 , GECKOVIEW = false
-, PRODUCTION = false
 , LIB = false
 , SKIP_BABEL = true
 , IMAGE_DECODERS = false
 , COMPONENTS = false
-, _PDFDEV = !PRODUCTION || TESTING
 ;
 /*80-------------------------------------------------------------------------*/
 
 export const global = new class {
-  /** @deprecated Use preprocessor. */
+  /** @deprecated Use preprocessor */
   testing = false;
 
   readonly LASTUPDATE_NOT = "2020-07-10 22:17:59 +0200";

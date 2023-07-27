@@ -18,18 +18,14 @@
  */
 
 import { html } from "../../lib/dom.ts";
-import {
-  Attachment,
-  createPromiseCapability,
-  getFilenameFromUrl,
-  type PromiseCapability,
-} from "../pdf.ts-src/pdf.ts";
+import { PromiseCap } from "../../lib/util/PromiseCap.ts";
+import { type Attachment, getFilenameFromUrl } from "../pdf.ts-src/pdf.ts";
 import {
   BaseTreeViewer,
   type BaseTreeViewerCtorP,
 } from "./base_tree_viewer.ts";
-import { EventMap, waitOnEventOrTimeout } from "./event_utils.ts";
-import { IDownloadManager } from "./interfaces.ts";
+import { type EventMap, waitOnEventOrTimeout } from "./event_utils.ts";
+import type { IDownloadManager } from "./interfaces.ts";
 /*80--------------------------------------------------------------------------*/
 
 interface PDFAttachmentViewerOptions extends BaseTreeViewerCtorP {
@@ -50,7 +46,7 @@ interface _PDFAttachmentViewerRenderP {
 
 export class PDFAttachmentViewer extends BaseTreeViewer {
   _attachments?: Record<string, Attachment> | undefined;
-  #renderedCapability?: PromiseCapability<void>;
+  #renderedCapability?: PromiseCap<void>;
   #pendingDispatchEvent!: boolean;
 
   downloadManager: IDownloadManager;
@@ -77,7 +73,7 @@ export class PDFAttachmentViewer extends BaseTreeViewer {
     if (!keepRenderedCapability) {
       // The only situation in which the `#renderedCapability` should *not* be
       // replaced is when appending FileAttachment annotations.
-      this.#renderedCapability = createPromiseCapability();
+      this.#renderedCapability = new PromiseCap();
     }
     this.#pendingDispatchEvent = false;
   }
@@ -181,7 +177,7 @@ export class PDFAttachmentViewer extends BaseTreeViewer {
         return;
       }
       const attachments = this._attachments ||
-        <Record<string, Attachment>> Object.create(null);
+        Object.create(null) as Record<string, Attachment>;
 
       for (const name in attachments) {
         if (filename === name) {

@@ -20,25 +20,25 @@
 // eslint-disable-next-line max-len
 /** @typedef {import("./annotation_editor_layer.js").AnnotationEditorLayer} AnnotationEditorLayer */
 
-import { _PDFDEV } from "../../../../global.ts";
+import { PDFJSDev, TESTING } from "../../../../global.ts";
 import { html } from "../../../../lib/dom.ts";
 import { assert } from "../../../../lib/util/trace.ts";
-import { IL10n } from "../../../pdf.ts-web/interfaces.ts";
+import type { IL10n } from "../../../pdf.ts-web/interfaces.ts";
 import {
   AnnotationEditorParamsType,
   AnnotationEditorType,
   LINE_FACTOR,
   Util,
 } from "../../shared/util.ts";
-import { AnnotationEditorLayer } from "./annotation_editor_layer.ts";
+import type { AnnotationEditorLayer } from "./annotation_editor_layer.ts";
 import {
   AnnotationEditor,
   AnnotationEditorP,
   AnnotationEditorSerialized,
-  PropertyToUpdate,
+  type PropertyToUpdate,
 } from "./editor.ts";
 import {
-  AnnotationEditorUIManager,
+  type AnnotationEditorUIManager,
   bindEvents,
   KeyboardManager,
 } from "./tools.ts";
@@ -102,7 +102,7 @@ export class FreeTextEditor extends AnnotationEditor {
 
     const style = getComputedStyle(document.documentElement);
 
-    /*#static*/ if (_PDFDEV) {
+    /*#static*/ if (PDFJSDev || TESTING) {
       const lineHeight = parseFloat(
         style.getPropertyValue("--freetext-line-height"),
       );

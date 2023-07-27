@@ -61,7 +61,7 @@ export abstract class XMLParserBase {
   _errorCode = XMLParserErrorCode.NoError;
 
   #resolveEntities(s: string) {
-    return s.replace(/&([^;]+);/g, (all, entity: string) => {
+    return s.replaceAll(/&([^;]+);/g, (all, entity) => {
       if (entity.substring(0, 2) === "#x") {
         return String.fromCodePoint(parseInt(entity.substring(2), 16));
       } else if (entity.substring(0, 1) === "#") {

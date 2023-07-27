@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-import { GENERIC, LIB } from "../../global.ts";
-import { type IVisibleView } from "./interfaces.ts";
+import { LIB } from "../../global.ts";
+import type { IVisibleView } from "./interfaces.ts";
 /*80--------------------------------------------------------------------------*/
 
 export const DEFAULT_SCALE_VALUE = "auto";
@@ -54,14 +54,10 @@ export const enum SidebarView {
   LAYERS = 4,
 }
 
-export const enum RendererType {
-  CANVAS = "canvas",
-  SVG = "svg",
-}
-
 export const enum TextLayerMode {
   DISABLE = 0,
   ENABLE = 1,
+  ENABLE_PERMISSIONS = 2,
 }
 
 export enum ScrollMode {
@@ -244,7 +240,6 @@ export function parseQueryString(query: string) {
   return params;
 }
 
-const NullCharactersRegExp = /\x00/g;
 const InvisibleCharactersRegExp = /[\x01-\x1F]/g;
 
 export function removeNullCharacters(str: string, replaceInvisible = false) {
@@ -253,9 +248,9 @@ export function removeNullCharacters(str: string, replaceInvisible = false) {
     return str;
   }
   if (replaceInvisible) {
-    str = str.replace(InvisibleCharactersRegExp, " ");
+    str = str.replaceAll(InvisibleCharactersRegExp, " ");
   }
-  return str.replace(NullCharactersRegExp, "");
+  return str.replaceAll("\x00", "");
 }
 
 /**
@@ -929,5 +924,16 @@ export function apiPageModeToSidebarView(mode: PageMode) {
       return SidebarView.LAYERS;
   }
   return SidebarView.NONE; // Default value.
+}
+
+export function toggleCheckedBtn(
+  button: HTMLButtonElement,
+  toggle: boolean,
+  view?: HTMLDivElement | HTMLButtonElement,
+) {
+  button.classList.toggle("toggled", toggle);
+  button.setAttribute("aria-checked", toggle as any);
+
+  view?.classList.toggle("hidden", !toggle);
 }
 /*80--------------------------------------------------------------------------*/

@@ -3,44 +3,68 @@
  * @license Apache-2.0
  ******************************************************************************/
 
-import { type CSSStyle, type loff_t } from "./alias.ts";
+import type { CSSStyle, llen_t } from "./alias.ts";
+import type { Vuu } from "./mv.ts";
 import { $cssstylesheet, $loff, $ovlap, $tail_ignored } from "./symbols.ts";
 /*80--------------------------------------------------------------------------*/
 
 declare global {
-  interface EventMap
-    extends
-      ElementEventMap,
-      DocumentAndElementEventHandlersEventMap,
-      GlobalEventHandlersEventMap,
-      WindowEventHandlersEventMap,
-      //
-      HTMLVideoElementEventMap,
-      DocumentEventMap,
-      WindowEventMap,
-      WorkerEventMap,
-      ServiceWorkerEventMap,
-      OfflineAudioContextEventMap {}
+  interface EventMap extends
+    ElementEventMap,
+    // DocumentAndElementEventHandlersEventMap,
+    GlobalEventHandlersEventMap,
+    WindowEventHandlersEventMap,
+    //
+    HTMLVideoElementEventMap,
+    DocumentEventMap,
+    WindowEventMap,
+    WorkerEventMap,
+    ServiceWorkerEventMap,
+    OfflineAudioContextEventMap {}
   type EventName = keyof EventMap;
   type EventHandler<E extends EventName> = (ev: EventMap[E]) => any;
 
   interface Event {
+    _canceled: boolean | undefined;
     canceled: boolean;
+
+    targetVuu?: Vuu;
+  }
+
+  interface WheelEvent {
+    _repr(): {
+      deltaMode: string;
+      deltaX: number;
+      deltaY: number;
+    };
   }
 }
 
-// let canceld_ = true;
 if (globalThis.Event) {
-  let canceld_: boolean | undefined;
   Reflect.defineProperty(Event.prototype, "canceled", {
     get(this: Event) {
-      return canceld_ ?? false;
+      return this._canceled ?? false;
     },
     set(this: Event, canceled_x: boolean) {
-      canceld_ = canceled_x;
+      this._canceled = canceled_x;
     },
   });
   // console.log(Event.prototype.canceled);
+}
+
+if (globalThis.WheelEvent) {
+  WheelEvent.prototype._repr = function (this) {
+    const m_ = /* final switch */ ({
+      [WheelEvent.DOM_DELTA_PIXEL]: () => "DOM_DELTA_PIXEL",
+      [WheelEvent.DOM_DELTA_LINE]: () => "DOM_DELTA_LINE",
+      [WheelEvent.DOM_DELTA_PAGE]: () => "DOM_DELTA_PAGE",
+    } as Record<number, () => string>)[this.deltaMode]();
+    return {
+      deltaMode: m_ ? `"${m_}"` : "undefined",
+      deltaX: this.deltaX,
+      deltaY: this.deltaY,
+    };
+  };
 }
 /*64----------------------------------------------------------*/
 
@@ -76,6 +100,8 @@ if (globalThis.EventTarget) {
     return this.removeEventListener(type, listener as any, options);
   };
 }
+
+export const ClickHoldTo = 10_000;
 /*64----------------------------------------------------------*/
 
 declare global {
@@ -180,6 +206,8 @@ declare global {
 
     readonly scrollRight: number;
     readonly scrollBottom: number;
+
+    cyName: string;
   }
 }
 
@@ -199,6 +227,15 @@ if (globalThis.Element) {
   Reflect.defineProperty(Element.prototype, "scrollBottom", {
     get(this: Element) {
       return this.scrollTop + this.clientHeight;
+    },
+  });
+
+  Reflect.defineProperty(Element.prototype, "cyName", {
+    get(this: Element) {
+      return this.getAttribute("data-cy");
+    },
+    set(this: Element, name_x: string) {
+      this.setAttribute("data-cy", name_x);
     },
   });
 }
@@ -347,34 +384,43 @@ export type HSElement = HTMLElement | SVGElement;
 
 declare global {
   interface DOMRect {
+    contain(x_x: number, y_x: number): boolean;
+
     [$ovlap]: boolean;
   }
 
   interface Range {
     /**
-     * @out @param rec_a
-     * @const @param ovlap
+     * @out @param rec_a_x
+     * @const @param ovlap_x
      */
-    getReca(rec_a: DOMRect[], ovlap?: boolean): void;
+    getSticka(rec_a_x: DOMRect[], ovlap_x?: boolean): void;
 
     reset(): void;
   }
 }
 
+if (globalThis.DOMRect) {
+  DOMRect.prototype.contain = function (this, x_x, y_x) {
+    return this.left <= x_x && x_x < this.right &&
+      this.top <= y_x && y_x < this.bottom;
+  };
+}
+
 if (globalThis.Range) {
-  Range.prototype.getReca = function (this, rec_a, ovlap = false) {
+  Range.prototype.getSticka = function (this, rec_a_x, ovlap_x = false) {
     const recs = this.getClientRects();
     if (recs.length) {
       for (const rec of recs) {
         if (rec.width === 0) rec.width = rec.height * .1;
-        rec[$ovlap] = ovlap;
-        rec_a.push(rec);
+        rec[$ovlap] = ovlap_x;
+        rec_a_x.push(rec);
       }
     } else {
       const rec = this.getBoundingClientRect();
       rec.width = rec.height * .1;
-      rec[$ovlap] = ovlap;
-      rec_a.push(rec);
+      rec[$ovlap] = ovlap_x;
+      rec_a_x.push(rec);
     }
   };
 
@@ -387,8 +433,8 @@ if (globalThis.Range) {
 
 declare global {
   interface Text {
-    [$loff]: loff_t;
-    [$tail_ignored]: boolean;
+    [$loff]?: llen_t;
+    [$tail_ignored]?: boolean;
   }
 }
 
@@ -399,7 +445,7 @@ declare global {
  */
 export function textnode(
   text_x: string,
-  loff_x?: loff_t,
+  loff_x?: llen_t,
   tail_ignored_x?: boolean,
 ) {
   const ret = document.createTextNode(text_x);

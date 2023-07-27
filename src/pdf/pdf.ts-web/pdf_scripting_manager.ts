@@ -19,21 +19,17 @@
 
 /** @typedef {import("./event_utils").EventBus} EventBus */
 
-import { COMPONENTS, GECKOVIEW } from "../../global.ts";
-import {
-  createPromiseCapability,
-  FieldObject,
-  PDFDocumentProxy,
-  type PromiseCapability,
-  shadow,
-} from "../pdf.ts-src/pdf.ts";
-import { DefaultExternalServices, type ScriptingDocProperties } from "./app.ts";
-import { EventBus, EventMap } from "./event_utils.ts";
-import { IScripting } from "./interfaces.ts";
-import { PDFViewer } from "./pdf_viewer.ts";
+import { COMPONENTS, GECKOVIEW, PDFJSDev } from "../../global.ts";
+import { PromiseCap } from "../../lib/util/PromiseCap.ts";
+import type { FieldObject, PDFDocumentProxy } from "../pdf.ts-src/pdf.ts";
+import { shadow } from "../pdf.ts-src/pdf.ts";
+import type { DefaultExternalServices, ScriptingDocProperties } from "./app.ts";
+import type { EventBus, EventMap } from "./event_utils.ts";
+import type { IScripting } from "./interfaces.ts";
+import type { PDFViewer } from "./pdf_viewer.ts";
 import {
   apiPageLayoutToViewerModes,
-  PageLayout,
+  type PageLayout,
   RenderingStates,
 } from "./ui_utils.ts";
 /*80--------------------------------------------------------------------------*/
@@ -84,9 +80,9 @@ export class PDFScriptingManager {
     this.#pdfViewer = pdfViewer;
   }
 
-  #closeCapability?: PromiseCapability | undefined;
+  #closeCapability?: PromiseCap | undefined;
 
-  #destroyCapability?: PromiseCapability;
+  #destroyCapability?: PromiseCap;
   get destroyPromise() {
     return this.#destroyCapability?.promise || undefined;
   }
@@ -332,15 +328,18 @@ export class PDFScriptingManager {
         case "layout": {
           // NOTE: Always ignore the pageLayout in GeckoView since there's
           // no UI available to change Scroll/Spread modes for the user.
-          if (GECKOVIEW || isInPresentationMode) {
+          if (
+            (PDFJSDev ? (window as any).isGECKOVIEW : GECKOVIEW) ||
+            isInPresentationMode
+          ) {
             return;
           }
-          const modes = apiPageLayoutToViewerModes(<PageLayout> value);
+          const modes = apiPageLayoutToViewerModes(value as PageLayout);
           this.#pdfViewer.spreadMode = modes.spreadMode;
           break;
         }
         case "page-num":
-          this.#pdfViewer.currentPageNumber = <number> value + 1;
+          this.#pdfViewer.currentPageNumber = value as number + 1;
           break;
         case "print":
           await this.#pdfViewer.pagesPromise;
@@ -413,7 +412,7 @@ export class PDFScriptingManager {
       visitedPages = this.#visitedPages;
 
     if (initialize) {
-      this.#closeCapability = createPromiseCapability();
+      this.#closeCapability = new PromiseCap();
     }
 
     if (!this.#closeCapability) {
@@ -495,7 +494,7 @@ export class PDFScriptingManager {
   };
 
   #createScripting = async () => {
-    this.#destroyCapability = createPromiseCapability();
+    this.#destroyCapability = new PromiseCap();
 
     if (this._scripting) {
       throw new Error("#createScripting: Scripting already exists.");

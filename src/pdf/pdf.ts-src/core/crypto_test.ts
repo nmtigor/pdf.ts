@@ -20,13 +20,13 @@
 import {
   assert,
   assertEquals,
-} from "https://deno.land/std@0.170.0/testing/asserts.ts";
+} from "https://deno.land/std@0.190.0/testing/asserts.ts";
 import {
   afterAll,
   beforeAll,
   describe,
   it,
-} from "https://deno.land/std@0.170.0/testing/bdd.ts";
+} from "https://deno.land/std@0.190.0/testing/bdd.ts";
 import {
   PasswordException,
   PasswordResponses,

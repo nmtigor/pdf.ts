@@ -18,8 +18,8 @@
  */
 
 import { AnnotationEditorParamsType } from "../pdf.ts-src/pdf.ts";
-import { EventBus } from "./event_utils.ts";
-import { ViewerConfiguration } from "./viewer.ts";
+import type { EventBus } from "./event_utils.ts";
+import type { ViewerConfiguration } from "./viewer.ts";
 /*80--------------------------------------------------------------------------*/
 
 export class AnnotationEditorParams {
@@ -40,40 +40,36 @@ export class AnnotationEditorParams {
     editorInkThickness,
     editorInkOpacity,
   }: ViewerConfiguration["annotationEditorParams"]) {
-    editorFreeTextFontSize.addEventListener("input", (evt) => {
+    const dispatchEvent = (
+      typeStr: AnnotationEditorParamsType,
+      value: string | number,
+    ) => {
       this.eventBus.dispatch("switchannotationeditorparams", {
         source: this,
-        type: AnnotationEditorParamsType.FREETEXT_SIZE,
-        value: editorFreeTextFontSize.valueAsNumber,
+        type: typeStr,
+        value,
       });
+    };
+    editorFreeTextFontSize.addEventListener("input", function () {
+      dispatchEvent(
+        AnnotationEditorParamsType.FREETEXT_SIZE,
+        this.valueAsNumber,
+      );
     });
-    editorFreeTextColor.addEventListener("input", (evt) => {
-      this.eventBus.dispatch("switchannotationeditorparams", {
-        source: this,
-        type: AnnotationEditorParamsType.FREETEXT_COLOR,
-        value: editorFreeTextColor.value,
-      });
+    editorFreeTextColor.addEventListener("input", function () {
+      dispatchEvent(AnnotationEditorParamsType.FREETEXT_COLOR, this.value);
     });
-    editorInkColor.addEventListener("input", (evt) => {
-      this.eventBus.dispatch("switchannotationeditorparams", {
-        source: this,
-        type: AnnotationEditorParamsType.INK_COLOR,
-        value: editorInkColor.value,
-      });
+    editorInkColor.addEventListener("input", function () {
+      dispatchEvent(AnnotationEditorParamsType.INK_COLOR, this.value);
     });
-    editorInkThickness.addEventListener("input", (evt) => {
-      this.eventBus.dispatch("switchannotationeditorparams", {
-        source: this,
-        type: AnnotationEditorParamsType.INK_THICKNESS,
-        value: editorInkThickness.valueAsNumber,
-      });
+    editorInkThickness.addEventListener("input", function () {
+      dispatchEvent(
+        AnnotationEditorParamsType.INK_THICKNESS,
+        this.valueAsNumber,
+      );
     });
-    editorInkOpacity.addEventListener("input", (evt) => {
-      this.eventBus.dispatch("switchannotationeditorparams", {
-        source: this,
-        type: AnnotationEditorParamsType.INK_OPACITY,
-        value: editorInkOpacity.valueAsNumber,
-      });
+    editorInkOpacity.addEventListener("input", function () {
+      dispatchEvent(AnnotationEditorParamsType.INK_OPACITY, this.valueAsNumber);
     });
 
     this.eventBus._on("annotationeditorparamschanged", (evt) => {

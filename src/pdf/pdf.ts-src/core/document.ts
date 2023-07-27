@@ -17,17 +17,17 @@
  * limitations under the License.
  */
 
-import { _PDFDEV, GENERIC } from "../../../global.ts";
+import { PDFJSDev, TESTING } from "../../../global.ts";
+import type { rect_t } from "../../../lib/alias.ts";
 import { assert } from "../../../lib/util/trace.ts";
-import { type rect_t } from "../../../lib/alias.ts";
-import {
-  type AnnotStorageRecord,
+import type {
+  AnnotStorageRecord,
   AnnotStorageValue,
 } from "../display/annotation_layer.ts";
-import { type CMapData } from "../display/base_factory.ts";
-import {
+import type { CMapData } from "../display/base_factory.ts";
+import type {
   MessageHandler,
-  type StreamSink,
+  StreamSink,
   Thread,
 } from "../shared/message_handler.ts";
 import {
@@ -40,18 +40,16 @@ import {
   stringToBytes,
   stringToPDFString,
   stringToUTF8String,
-  UNSUPPORTED_FEATURES,
   Util,
   warn,
 } from "../shared/util.ts";
-import {
+import type {
   Annotation,
-  AnnotationFactory,
-  type FieldObject,
+  FieldObject,
   MarkupAnnotation,
-  PopupAnnotation,
-  type SaveReturn,
+  SaveReturn,
 } from "./annotation.ts";
+import { AnnotationFactory, PopupAnnotation } from "./annotation.ts";
 import { BaseStream } from "./base_stream.ts";
 import { Catalog } from "./catalog.ts";
 import { clearGlobalCaches } from "./cleanup_helper.ts";
@@ -66,28 +64,21 @@ import {
   XRefEntryException,
   XRefParseException,
 } from "./core_utils.ts";
-import { calculateMD5, CipherTransform } from "./crypto.ts";
-import { DatasetReader, DatasetReaderCtorP } from "./dataset_reader.ts";
+import { calculateMD5, type CipherTransform } from "./crypto.ts";
+import { DatasetReader, type DatasetReaderCtorP } from "./dataset_reader.ts";
 import { StreamsSequenceStream } from "./decode_stream.ts";
-import { PartialEvaluator, TranslatedFont } from "./evaluator.ts";
-import { ErrorFont, Font } from "./fonts.ts";
-import { GlobalImageCache } from "./image_utils.ts";
+import { PartialEvaluator, type TranslatedFont } from "./evaluator.ts";
+import type { ErrorFont, Font } from "./fonts.ts";
+import type { GlobalImageCache } from "./image_utils.ts";
 import { ObjectLoader } from "./object_loader.ts";
 import { OperatorList } from "./operator_list.ts";
 import { Linearization } from "./parser.ts";
-import { BasePdfManager } from "./pdf_manager.ts";
-import {
-  Dict,
-  isName,
-  Name,
-  type Obj,
-  Ref,
-  RefSet,
-  RefSetCache,
-} from "./primitives.ts";
-import { NullStream, Stream } from "./stream.ts";
-import { StructTreePage, StructTreeRoot } from "./struct_tree.ts";
-import { WorkerTask } from "./worker.ts";
+import type { BasePdfManager } from "./pdf_manager.ts";
+import type { Obj, RefSet } from "./primitives.ts";
+import { Dict, isName, Name, Ref, RefSetCache } from "./primitives.ts";
+import { NullStream, type Stream } from "./stream.ts";
+import { StructTreePage, type StructTreeRoot } from "./struct_tree.ts";
+import type { WorkerTask } from "./worker.ts";
 import { writeObject } from "./writer.ts";
 import { XFAFactory } from "./xfa/factory.ts";
 import {
@@ -129,12 +120,12 @@ interface _PageGetOperatorListP {
   annotationStorage: AnnotStorageRecord | undefined;
 }
 
-interface _ExtractTextContentP {
+interface ExtractTextContentP_ {
   handler: MessageHandler<Thread.worker>;
   task: WorkerTask;
-  sink: StreamSink<Thread.main, "GetTextContent">;
   includeMarkedContent: boolean;
-  combineTextItems: boolean;
+  disableNormalization: boolean;
+  sink: StreamSink<Thread.main, "GetTextContent">;
 }
 
 export class Page {
@@ -211,9 +202,10 @@ export class Page {
   }
 
   get content() {
-    return <Stream | (Ref | Stream)[] | undefined> this.pageDict.getArray(
-      "Contents",
-    );
+    return this.pageDict.getArray("Contents") as
+      | Stream
+      | (Ref | Stream)[]
+      | undefined;
   }
 
   /**
@@ -311,27 +303,17 @@ export class Page {
   }
 
   #onSubStreamError(
-    handler: MessageHandler<Thread.worker>,
     reason: unknown,
     objId?: string,
   ) {
     if (this.evaluatorOptions.ignoreErrors) {
-      /*#static*/ if (GENERIC) {
-        // Error(s) when reading one of the /Contents sub-streams -- sending
-        // unsupported feature notification and allow parsing to continue.
-        handler.send("UnsupportedFeature", {
-          featureId: UNSUPPORTED_FEATURES!.errorContentSubStream,
-        });
-      }
       warn(`getContentStream - ignoring sub-stream (${objId}): "${reason}".`);
       return;
     }
     throw reason;
   }
 
-  getContentStream(
-    handler: MessageHandler<Thread.worker>,
-  ): Promise<BaseStream> {
+  getContentStream(): Promise<BaseStream> {
     return this.pdfManager.ensure(this, "content").then((content) => {
       if (content instanceof BaseStream) {
         return content;
@@ -339,7 +321,7 @@ export class Page {
       if (Array.isArray(content)) {
         return new StreamsSequenceStream(
           content,
-          this.#onSubStreamError.bind(this, handler),
+          this.#onSubStreamError.bind(this),
         );
       }
       // Replace non-existent page content with empty content.
@@ -479,7 +461,7 @@ export class Page {
     cacheKey,
     annotationStorage = undefined,
   }: _PageGetOperatorListP) {
-    const contentStreamPromise = this.getContentStream(handler);
+    const contentStreamPromise = this.getContentStream();
     const resourcesPromise = this.loadResources([
       "ColorSpace",
       "ExtGState",
@@ -609,12 +591,8 @@ export class Page {
         ) {
           pageOpList.addOpList(opList);
 
-          if (separateForm) {
-            form = separateForm;
-          }
-          if (separateCanvas) {
-            canvas = separateCanvas;
-          }
+          form ||= separateForm;
+          canvas ||= separateCanvas;
         }
         pageOpList.flush(
           /* lastChunk = */ true,
@@ -629,10 +607,10 @@ export class Page {
     handler,
     task,
     includeMarkedContent,
+    disableNormalization,
     sink,
-    combineTextItems,
-  }: _ExtractTextContentP) {
-    const contentStreamPromise = this.getContentStream(handler);
+  }: ExtractTextContentP_) {
+    const contentStreamPromise = this.getContentStream();
     const resourcesPromise = this.loadResources([
       "ExtGState",
       "Font",
@@ -659,7 +637,7 @@ export class Page {
         task,
         resources: this.resources,
         includeMarkedContent,
-        combineTextItems,
+        disableNormalization,
         sink,
         viewBox: this.view,
       });
@@ -702,8 +680,8 @@ export class Page {
       return [];
     }
 
-    const textContentPromises = [];
-    const annotationsData = [];
+    const annotationsData = [],
+      textContentPromises = [];
     let partialEvaluator;
 
     const intentAny = !!(intent & RenderingIntentFlag.ANY),
@@ -719,19 +697,18 @@ export class Page {
       }
 
       if (annotation!.hasTextContent && isVisible) {
-        if (!partialEvaluator) {
-          partialEvaluator = new PartialEvaluator({
-            xref: this.xref,
-            handler,
-            pageIndex: this.pageIndex,
-            idFactory: this._localIdFactory,
-            fontCache: this.fontCache,
-            builtInCMapCache: this.builtInCMapCache,
-            standardFontDataCache: this.standardFontDataCache,
-            globalImageCache: this.globalImageCache,
-            options: this.evaluatorOptions,
-          });
-        }
+        partialEvaluator ||= new PartialEvaluator({
+          xref: this.xref,
+          handler,
+          pageIndex: this.pageIndex,
+          idFactory: this._localIdFactory,
+          fontCache: this.fontCache,
+          builtInCMapCache: this.builtInCMapCache,
+          standardFontDataCache: this.standardFontDataCache,
+          globalImageCache: this.globalImageCache,
+          options: this.evaluatorOptions,
+        });
+
         textContentPromises.push(
           annotation!
             .extractTextContent(partialEvaluator, task, this.view)
@@ -791,10 +768,7 @@ export class Page {
               continue;
             }
             if (annotation instanceof PopupAnnotation) {
-              if (!popupAnnotations) {
-                popupAnnotations = [];
-              }
-              popupAnnotations.push(annotation);
+              (popupAnnotations ||= []).push(annotation);
               continue;
             }
             sortedAnnotations.push(annotation);
@@ -844,7 +818,7 @@ function find(
   limit = 1024,
   backwards = false,
 ) {
-  /*#static*/ if (_PDFDEV) {
+  /*#static*/ if (PDFJSDev || TESTING) {
     assert(limit > 0, 'The "limit" must be a positive integer.');
   }
   const signatureLength = signature.length;
@@ -980,7 +954,7 @@ export class PDFDocument {
   #localIdFactory?: LocalIdFactory;
 
   constructor(pdfManager: BasePdfManager, stream: Stream) {
-    /*#static*/ if (_PDFDEV) {
+    /*#static*/ if (PDFJSDev || TESTING) {
       assert(
         stream instanceof BaseStream,
         'PDFDocument: Invalid "stream" argument.',
@@ -1144,7 +1118,7 @@ export class PDFDocument {
           return false;
         }
         return this.#hasOnlyDocumentSignatures(
-          <Ref[]> field_.get("Kids"),
+          field_.get("Kids") as Ref[],
           recursionDepth,
         );
       }
@@ -1216,7 +1190,7 @@ export class PDFDocument {
       }
       try {
         const str = stringToUTF8String((<BaseStream> stream).getString());
-        const data = <DatasetReaderCtorP> { [key]: str };
+        const data = { [key]: str } as DatasetReaderCtorP;
         return shadow(this, "xfaDatasets", new DatasetReader(data));
       } catch (_) {
         warn("XFA - Invalid utf-8 string.");
@@ -1348,8 +1322,8 @@ export class PDFDocument {
       }
       let fontFamily = <string> descriptor.get("FontFamily");
       // For example, "Wingdings 3" is not a valid font name in the css specs.
-      fontFamily = fontFamily.replace(/[ ]+(\d)/g, "$1");
-      const fontWeight = <number | undefined> descriptor.get("FontWeight");
+      fontFamily = fontFamily.replaceAll(/[ ]+(\d)/g, "$1");
+      const fontWeight = descriptor.get("FontWeight") as number | undefined;
 
       // Angle is expressed in degrees counterclockwise in PDF
       // when it's clockwise in CSS
@@ -1472,7 +1446,7 @@ export class PDFDocument {
     }
 
     try {
-      const fields = <Ref[]> acroForm.get("Fields");
+      const fields = acroForm.get("Fields") as Ref[];
       const hasFields = Array.isArray(fields) && fields.length > 0;
       formInfo.hasFields = hasFields; // Used by the `fieldObjects` getter.
 
@@ -1637,7 +1611,7 @@ export class PDFDocument {
 
   async #getLinearizationPage(pageIndex: number) {
     const { catalog, linearization, xref } = this;
-    /*#static*/ if (_PDFDEV) {
+    /*#static*/ if (PDFJSDev || TESTING) {
       assert(
         linearization && linearization.pageFirst === pageIndex,
         "#getLinearizationPage - invalid pageIndex argument.",
@@ -1825,9 +1799,9 @@ export class PDFDocument {
   }
 
   #collectFieldObjects(name: string, fieldRef: Ref, promises: FieldPromises) {
-    const field = <Dict> this.xref.fetchIfRef(fieldRef);
+    const field = this.xref.fetchIfRef(fieldRef) as Dict;
     if (field.has("T")) {
-      const partName = stringToPDFString(<string> field.get("T"));
+      const partName = stringToPDFString(field.get("T") as string);
       if (name === "") {
         name = partName;
       } else {
@@ -1854,7 +1828,7 @@ export class PDFDocument {
     );
 
     if (field.has("Kids")) {
-      const kids = <Ref[]> field.get("Kids");
+      const kids = field.get("Kids") as Ref[];
       for (const kid of kids) {
         this.#collectFieldObjects(name, kid, promises);
       }
@@ -1868,7 +1842,7 @@ export class PDFDocument {
 
     const allFields: Record<string, FieldObject[]> = Object.create(null);
     const fieldPromises: FieldPromises = new Map();
-    for (const fieldRef of <Ref[]> this.catalog!.acroForm!.get("Fields")) {
+    for (const fieldRef of this.catalog!.acroForm!.get("Fields") as Ref[]) {
       this.#collectFieldObjects("", fieldRef, fieldPromises);
     }
 

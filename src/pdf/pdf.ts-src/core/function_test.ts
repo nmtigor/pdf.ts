@@ -21,8 +21,8 @@ import {
   assertEquals,
   assertNotEquals,
   assertThrows,
-} from "https://deno.land/std@0.170.0/testing/asserts.ts";
-import { describe, it } from "https://deno.land/std@0.170.0/testing/bdd.ts";
+} from "https://deno.land/std@0.190.0/testing/asserts.ts";
+import { describe, it } from "https://deno.land/std@0.190.0/testing/bdd.ts";
 import { PostScriptCompiler, PostScriptEvaluator } from "./function.ts";
 import { PostScriptLexer, PostScriptParser } from "./ps_parser.ts";
 import { StringStream } from "./stream.ts";
@@ -150,9 +150,9 @@ describe("function", () => {
       const expectedStack = [254 & 1];
       assertEquals(stack, expectedStack);
     });
-    it("calculates the inverse tangent of a number", () => {
-      const stack = evaluate("{ 90 atan }");
-      const expectedStack = [Math.atan(90)];
+    it("the angle in degrees (0-360) whose tangent is num/den.", () => {
+      const stack = evaluate("{ 1 -1 atan }");
+      const expectedStack = [135];
       assertEquals(stack, expectedStack);
     });
     it("handles bitshifting ", () => {
@@ -170,9 +170,9 @@ describe("function", () => {
       const expectedStack = [99, 98, 99, 98];
       assertEquals(stack, expectedStack);
     });
-    it("calculates the cosine of a number", () => {
-      const stack = evaluate("{ 90 cos }");
-      const expectedStack = [Math.cos(90)];
+    it("calculates the cosine of an angle in degrees", function () {
+      const stack = evaluate("{ 180 cos }");
+      const expectedStack = [-1];
       assertEquals(stack, expectedStack);
     });
     it("converts to int", () => {
@@ -370,9 +370,9 @@ describe("function", () => {
       const expectedStack = [10];
       assertEquals(stack, expectedStack);
     });
-    it("calculates the sine of a number", () => {
+    it("calculates the sine of an angle in degrees", () => {
       const stack = evaluate("{ 90 sin }");
-      const expectedStack = [Math.sin(90)];
+      const expectedStack = [1];
       assertEquals(stack, expectedStack);
     });
     it("calculates a square root (integer)", () => {

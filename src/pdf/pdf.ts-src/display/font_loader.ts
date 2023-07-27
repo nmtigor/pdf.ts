@@ -17,24 +17,23 @@
  * limitations under the License.
  */
 
-import { _PDFDEV, CHROME, GENERIC, MOZCENTRAL } from "../../../global.ts";
+import { CHROME, MOZCENTRAL, PDFJSDev, TESTING } from "../../../global.ts";
+import type { C2D } from "../../../lib/alias.ts";
 import { html } from "../../../lib/dom.ts";
 import { assert } from "../../../lib/util/trace.ts";
 import { FontExpotDataEx } from "../core/fonts.ts";
-import { type CmdArgs } from "../core/font_renderer.ts";
+import type { CmdArgs } from "../core/font_renderer.ts";
 import {
   bytesToString,
   FeatureTest,
   shadow,
   string32,
-  UNSUPPORTED_FEATURES,
   warn,
 } from "../shared/util.ts";
-import { PDFObjects } from "./api.ts";
+import type { PDFObjects } from "./api.ts";
 /*80--------------------------------------------------------------------------*/
 
 interface _BaseFontLoaderCtorP {
-  onUnsupportedFeature: (_: { featureId: UNSUPPORTED_FEATURES }) => void;
   ownerDocument: Document | undefined;
   styleElement?: HTMLStyleElement | undefined;
 }
@@ -46,9 +45,6 @@ export interface Request {
 }
 
 export class FontLoader {
-  _onUnsupportedFeature:
-    | ((_: { featureId: UNSUPPORTED_FEATURES }) => void)
-    | undefined;
   _document: Document;
 
   nativeFontFaces: FontFace[] = [];
@@ -58,18 +54,16 @@ export class FontLoader {
   loadTestFontId!: number;
 
   constructor({
-    onUnsupportedFeature,
     ownerDocument = globalThis.document,
     styleElement = undefined, // For testing only
   }: _BaseFontLoaderCtorP) {
-    /*#static*/ if (GENERIC) {
-      this._onUnsupportedFeature = onUnsupportedFeature;
-    }
     this._document = ownerDocument;
 
-    this.styleElement = /*#static*/ _PDFDEV ? styleElement : undefined;
+    this.styleElement = /*#static*/ PDFJSDev || TESTING
+      ? styleElement
+      : undefined;
 
-    /*#static*/ if (!MOZCENTRAL) {
+    /*#static*/ if (PDFJSDev || !MOZCENTRAL) {
       this.loadingRequests = [];
       this.loadTestFontId = 0;
     }
@@ -118,11 +112,6 @@ export class FontLoader {
         try {
           await nativeFontFace.loaded;
         } catch (ex) {
-          /*#static*/ if (GENERIC) {
-            this._onUnsupportedFeature!({
-              featureId: UNSUPPORTED_FEATURES!.errorFontLoadNative,
-            });
-          }
           warn(`Failed to load font '${nativeFontFace.family}': '${ex}'.`);
 
           // When font loading failed, fall back to the built-in font renderer.
@@ -154,7 +143,7 @@ export class FontLoader {
 
   get isFontLoadingAPISupported() {
     const hasFonts = !!this._document?.fonts;
-    /*#static*/ if (_PDFDEV) {
+    /*#static*/ if (PDFJSDev || TESTING) {
       return shadow(
         this,
         "isFontLoadingAPISupported",
@@ -171,7 +160,7 @@ export class FontLoader {
     }
 
     let supported = false;
-    /*#static*/ if (!CHROME) {
+    /*#static*/ if (PDFJSDev || !CHROME) {
       if (
         globalThis.navigator &&
         // User agent string sniffing is bad, but there is no reliable way to
@@ -353,27 +342,21 @@ export class FontLoader {
   }
 }
 
-interface _FFOCtorP {
+interface FFOCtorP_ {
   isEvalSupported: boolean | undefined;
   disableFontFace: boolean | undefined;
   ignoreErrors: boolean | undefined;
-  onUnsupportedFeature: (_: { featureId: UNSUPPORTED_FEATURES }) => void;
-  fontRegistry: {
-    registerFont(font: FontFaceObject, url?: string): void;
-  } | undefined;
+  inspectFont: ((font: FontFaceObject, url?: string) => void) | undefined;
 }
 
-export type AddToPath = (c: CanvasRenderingContext2D, size: number) => void;
+export type AddToPath = (c: C2D, size: number) => void;
 
 export class FontFaceObject extends FontExpotDataEx {
   compiledGlyphs: Record<string, AddToPath> = Object.create(null);
   isEvalSupported: boolean;
   disableFontFace: boolean;
   ignoreErrors: boolean;
-  _onUnsupportedFeature:
-    | ((_: { featureId: UNSUPPORTED_FEATURES }) => void)
-    | undefined;
-  fontRegistry;
+  _inspectFont;
 
   attached?: boolean;
 
@@ -383,9 +366,8 @@ export class FontFaceObject extends FontExpotDataEx {
       isEvalSupported = true,
       disableFontFace = false,
       ignoreErrors = false,
-      onUnsupportedFeature,
-      fontRegistry,
-    }: _FFOCtorP,
+      inspectFont = undefined,
+    }: FFOCtorP_,
   ) {
     super();
 
@@ -396,10 +378,7 @@ export class FontFaceObject extends FontExpotDataEx {
     this.isEvalSupported = isEvalSupported !== false;
     this.disableFontFace = disableFontFace === true;
     this.ignoreErrors = ignoreErrors === true;
-    /*#static*/ if (GENERIC) {
-      this._onUnsupportedFeature = onUnsupportedFeature;
-    }
-    this.fontRegistry = fontRegistry;
+    this._inspectFont = inspectFont;
   }
 
   createNativeFontFace() {
@@ -422,7 +401,7 @@ export class FontFaceObject extends FontExpotDataEx {
       );
     }
 
-    this.fontRegistry?.registerFont(this);
+    this._inspectFont?.(this);
     return nativeFontFace;
   }
 
@@ -444,7 +423,7 @@ export class FontFaceObject extends FontExpotDataEx {
         `@font-face {font-family:"${this.cssFontInfo.fontFamily}";${css}src:${url}}`;
     }
 
-    this.fontRegistry?.registerFont(this, url);
+    this._inspectFont?.(this, url);
     return rule;
   }
 
@@ -463,17 +442,9 @@ export class FontFaceObject extends FontExpotDataEx {
       if (!this.ignoreErrors) {
         throw ex;
       }
-      /*#static*/ if (GENERIC) {
-        this._onUnsupportedFeature!({
-          featureId: UNSUPPORTED_FEATURES!.errorFontGetPath,
-        });
-      }
       warn(`getPathGenerator - ignoring character: "${ex}".`);
 
-      return (this.compiledGlyphs[character] = (
-        c: CanvasRenderingContext2D,
-        size: number,
-      ) => {
+      return (this.compiledGlyphs[character] = (c: C2D, size: number) => {
         // No-op function, to allow rendering to continue.
       });
     }
@@ -494,20 +465,13 @@ export class FontFaceObject extends FontExpotDataEx {
     }
     // ... but fall back on using Function.prototype.apply() if we're
     // blocked from using eval() for whatever reason (like CSP policies).
-    return (this.compiledGlyphs[character] = (
-      c: CanvasRenderingContext2D,
-      size: number,
-    ) => {
+    return (this.compiledGlyphs[character] = (c: C2D, size: number) => {
       for (const current of cmds) {
         if (current.cmd === "scale") {
           current.args = [size, -size];
         }
         // eslint-disable-next-line prefer-spread
-        c[current.cmd].apply<
-          CanvasRenderingContext2D,
-          number[],
-          void
-        >(c, current.args as number[]);
+        c[current.cmd].apply<C2D, number[], void>(c, current.args as number[]);
       }
     });
   }

@@ -17,11 +17,11 @@
  * limitations under the License.
  */
 
-import { type rect_t } from "../../../lib/alias.ts";
+import type { rect_t } from "../../../lib/alias.ts";
 import { PageLayout, PageMode } from "../../pdf.ts-web/ui_utils.ts";
-import { type ResetForm } from "../display/annotation_layer.ts";
-import { type OutlineNode } from "../display/api.ts";
-import { type CMapData } from "../display/base_factory.ts";
+import type { ResetForm } from "../display/annotation_layer.ts";
+import type { OutlineNode } from "../display/api.ts";
+import type { CMapData } from "../display/base_factory.ts";
 import { MessageHandler, Thread } from "../shared/message_handler.ts";
 import {
   ActionEventName,
@@ -108,7 +108,7 @@ export interface CatParseDestDictRes {
   url?: string;
 }
 
-interface _ParseDestDictionaryP {
+interface ParseDestDictionaryP_ {
   /**
    * The dictionary containing the destination.
    */
@@ -123,7 +123,7 @@ interface _ParseDestDictionaryP {
    * The document base URL that is used when
    * attempting to recover valid absolute URLs from relative ones.
    */
-  docBaseUrl?: string | URL | undefined;
+  docBaseUrl?: string | undefined;
 
   /**
    * The document attachments (may not exist in most PDF documents).
@@ -1023,8 +1023,8 @@ export class Catalog {
           }
           break;
         case "NumCopies":
-          if (Number.isInteger(value) && value > 0) {
-            prefValue = <number> value;
+          if (Number.isInteger(value) && value as number > 0) {
+            prefValue = value as number;
           }
           break;
         default:
@@ -1126,12 +1126,8 @@ export class Catalog {
       } else if (typeof js !== "string") {
         return;
       }
-
-      if (javaScript === undefined) {
-        javaScript = new Map();
-      }
-      js = stringToPDFString(js).replace(/\u0000/g, "");
-      javaScript.set(name, js);
+      js = stringToPDFString(js).replaceAll("\x00", "");
+      (javaScript ||= new Map()).set(name, js);
     }
 
     if (obj instanceof Dict && obj.has("JavaScript")) {
@@ -1568,7 +1564,7 @@ export class Catalog {
   /**
    * Helper function used to parse the contents of destination dictionaries.
    */
-  static parseDestDictionary(params: _ParseDestDictionaryP) {
+  static parseDestDictionary(params: ParseDestDictionaryP_) {
     const destDict = params.destDict;
     if (!(destDict instanceof Dict)) {
       warn("parseDestDictionary: `destDict` must be a dictionary.");
@@ -1736,7 +1732,7 @@ export class Catalog {
           break;
 
         case "JavaScript":
-          const jsAction = (<Dict> action).get("JS");
+          const jsAction = (action as Dict).get("JS");
           let js;
 
           if (jsAction instanceof BaseStream) {

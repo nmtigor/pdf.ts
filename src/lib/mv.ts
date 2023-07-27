@@ -70,6 +70,9 @@ export abstract class Vuu<C extends Coo = Coo, E extends Element = Element> {
     return this.el$;
   }
 
+  /**
+   * ! If any, not call in the `constructor()`
+   */
   protected observeTheme$?(): void;
   protected unobserveTheme$?(): void;
 
@@ -125,6 +128,7 @@ export abstract class Vuu<C extends Coo = Coo, E extends Element = Element> {
   // }
 
   /**
+   * @deprecated
    * @headconst @param ret_x
    * @headconst @param refvuu
    */
@@ -138,6 +142,7 @@ export abstract class Vuu<C extends Coo = Coo, E extends Element = Element> {
   }
 
   /**
+   * @deprecated
    * @headconst @param ret_x
    */
   detach<V extends Vuu<C>>(ret_x: V) {
@@ -175,10 +180,6 @@ export abstract class Vuu<C extends Coo = Coo, E extends Element = Element> {
   }
 
   // static Vuufn() {}
-
-  set cyName(name_x: string) {
-    this.el$.setAttribute("data-cy", name_x);
-  }
 }
 // Vuu.def = "def";
 
@@ -276,13 +277,15 @@ export abstract class SVGVCo<CI extends CooInterface, E extends SVGElement>
 // console.log( vcoo instanceof Coo1 ); // false
 // console.log( vcoo instanceof Coo ); // false
 
+export type ViewBox = `${number} ${number} ${number} ${number}`;
+
 export class SVGViewbox<CI extends CooInterface = CooInterface>
   extends SVGVCo<CI, SVGSVGElement> {
   /**
    * @headconst @param coo_x
    * @const @param viewBox_x
    */
-  constructor(viewBox_x = "0 0 100 100") {
+  constructor(viewBox_x: ViewBox = "0 0 100 100") {
     super(svg("svg"));
     this.el$.setAttribute("viewBox", viewBox_x);
   }
@@ -449,7 +452,7 @@ type MooCtorP_<T extends {} | null> = {
   eq_?: MooEq<T>;
   active?: boolean;
   forcing?: boolean;
-  name?: string;
+  _name?: string;
 };
 
 /**
@@ -509,13 +512,13 @@ export class Moo<T extends {} | null, D = any> {
     eq_ = (a: T, b: T) => a === b,
     active = false,
     forcing = false,
-    name,
+    _name,
   }: MooCtorP_<T>) {
     this.#initval = val;
     this.#eq = eq_;
     this.#active = active;
     this.#forcing = forcing;
-    this.name = name;
+    this.name = _name;
 
     this.reset();
   }
@@ -645,7 +648,7 @@ export class Moo<T extends {} | null, D = any> {
     if (this.#active) this.#val = newval_x;
     this.#handler_db.get(newval_x, this.#oldval, this.#forcing_)
       .forEach((handler_y) => {
-        handler_y(newval_x, this.#val, this.#data);
+        handler_y(newval_x, this.#oldval, this.#data);
         // /*#static*/ if (DEV) Moo._count += 1;
       });
     this.#val = newval_x;

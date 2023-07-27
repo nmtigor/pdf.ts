@@ -17,13 +17,9 @@
  * limitations under the License.
  */
 
-import { CHROME, PRODUCTION } from "../../global.ts";
-import {
-  AppOptions,
-  OptionKind,
-  type OptionName,
-  type UserOptions,
-} from "./app_options.ts";
+import { CHROME, PDFJSDev } from "../../global.ts";
+import type { OptionName, UserOptions } from "./app_options.ts";
+import { AppOptions, OptionKind } from "./app_options.ts";
 /*80--------------------------------------------------------------------------*/
 
 /**
@@ -33,7 +29,7 @@ import {
  */
 export abstract class BasePreferences {
   #defaults = Object.freeze(
-    /*#static*/ !PRODUCTION
+    /*#static*/ PDFJSDev
       ? AppOptions.getAll(OptionKind.PREFERENCE)
       : AppOptions.getAll(OptionKind.PREFERENCE),
     // : PDFJSDev.eval("DEFAULT_PREFERENCES")

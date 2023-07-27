@@ -23,13 +23,13 @@ import {
   assertEquals,
   assertMatch,
   assertThrows,
-} from "https://deno.land/std@0.170.0/testing/asserts.ts";
+} from "https://deno.land/std@0.190.0/testing/asserts.ts";
 import {
   afterAll,
   beforeAll,
   describe,
   it,
-} from "https://deno.land/std@0.170.0/testing/bdd.ts";
+} from "https://deno.land/std@0.190.0/testing/bdd.ts";
 import { ImgData } from "../core/evaluator.ts";
 import { buildGetDocumentParams } from "../shared/test_utils.ts";
 import { getDocument, PDFDocumentLoadingTask, PDFPageProxy } from "./api.ts";
@@ -78,7 +78,11 @@ describe("SVGGraphics", () => {
   let page: PDFPageProxy;
 
   beforeAll(async () => {
-    loadingTask = getDocument(buildGetDocumentParams("xobject-image.pdf"));
+    loadingTask = getDocument(
+      buildGetDocumentParams("xobject-image.pdf", {
+        isOffscreenCanvasSupported: false,
+      }),
+    );
     const doc = await loadingTask.promise;
     page = await doc.getPage(1);
   });

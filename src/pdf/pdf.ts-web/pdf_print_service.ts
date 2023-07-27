@@ -18,19 +18,18 @@
  */
 
 import { html } from "../../lib/dom.ts";
-import {
-  AnnotationMode,
-  type Intent,
-  type matrix_t,
+import type {
+  Intent,
+  matrix_t,
   OptionalContentConfig,
   PDFDocumentProxy,
-  PixelsPerInch,
   PrintAnnotationStorage,
 } from "../pdf.ts-src/pdf.ts";
+import { AnnotationMode, PixelsPerInch } from "../pdf.ts-src/pdf.ts";
 import { PDFPrintServiceFactory, viewerApp } from "./app.ts";
-import { type PageOverview } from "./pdf_viewer.ts";
-import { type IL10n } from "./interfaces.ts";
-import { OverlayManager } from "./overlay_manager.ts";
+import type { IL10n } from "./interfaces.ts";
+import type { OverlayManager } from "./overlay_manager.ts";
+import type { PageOverview } from "./pdf_viewer.ts";
 import { getXfaHtmlForPrinting } from "./print_utils.ts";
 /*80--------------------------------------------------------------------------*/
 
@@ -124,16 +123,13 @@ export class PDFPrintService {
     const body = document.querySelector("body")!;
     body.setAttribute("data-pdfjsprinting", <any> true);
 
-    const hasEqualPageSizes = this.pagesOverview.every((size) => {
-      return (
-        size.width === this.pagesOverview[0].width &&
-        size.height === this.pagesOverview[0].height
-      );
-    });
+    const { width, height } = this.pagesOverview[0];
+    const hasEqualPageSizes = this.pagesOverview.every(
+      (size) => size.width === width && size.height === height,
+    );
     if (!hasEqualPageSizes) {
       console.warn(
-        "Not all pages have the same size. The printed " +
-          "result may be incorrect!",
+        "Not all pages have the same size. The printed result may be incorrect!",
       );
     }
 
@@ -143,13 +139,11 @@ export class PDFPrintService {
     // TODO(robwu): Use named pages when size calculation bugs get resolved
     // (e.g. https://crbug.com/355116) AND when support for named pages is
     // added (http://www.w3.org/TR/css3-page/#using-named-pages).
-    // In browsers where @page + size is not supported (such as Firefox,
-    // https://bugzil.la/851441), the next stylesheet will be ignored and the
-    // user has to select the correct paper size in the UI if wanted.
+    // In browsers where @page + size is not supported, the next stylesheet
+    // will be ignored and the user has to select the correct paper size in
+    // the UI if wanted.
     this.pageStyleSheet = html("style");
-    const pageSize = this.pagesOverview[0];
-    this.pageStyleSheet.textContent = "@page { size: " + pageSize.width +
-      "pt " + pageSize.height + "pt;}";
+    this.pageStyleSheet.textContent = `@page { size: ${width}pt ${height}pt;}`;
     body.append(this.pageStyleSheet);
   }
 
@@ -313,8 +307,6 @@ window.print = () => {
 };
 
 function dispatchEvent(eventType: string) {
-  // const event = document.createEvent("CustomEvent");
-  // event.initCustomEvent(eventType, false, false, "custom");
   const event = new CustomEvent(eventType, {
     bubbles: false,
     cancelable: false,

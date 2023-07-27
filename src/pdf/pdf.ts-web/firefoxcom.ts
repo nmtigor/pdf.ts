@@ -18,21 +18,20 @@
  */
 
 import { Locale_1, WebL10nArgs } from "../../3rd/webL10n-2015-10-24/l10n.ts";
-import { MOZCENTRAL } from "../../global.ts";
-import { ArrEl } from "../../lib/alias.ts";
-import { Locale } from "../../lib/Locale.ts";
-import "../extensions/firefox/tools/l10n.ts";
+import { MOZCENTRAL, PDFJSDev } from "../../global.ts";
+import type { ArrEl } from "../../lib/alias.ts";
+import type { Locale } from "../../lib/Locale.ts";
+// import "../extensions/firefox/tools/l10n.ts";
 import { isPdfFile, PDFDataRangeTransport, shadow } from "../pdf.ts-src/pdf.ts";
-import {
-  DefaultExternalServices,
+import type {
   FindControlState,
   PassiveLoadingCbs,
   TelemetryData,
-  viewerApp,
 } from "./app.ts";
-import { UserOptions } from "./app_options.ts";
-import { EventMap } from "./event_utils.ts";
-import {
+import { DefaultExternalServices, viewerApp } from "./app.ts";
+import type { UserOptions } from "./app_options.ts";
+import type { EventMap } from "./event_utils.ts";
+import type {
   CreateSandboxP,
   EventInSandBox,
   IDownloadManager,
@@ -40,7 +39,7 @@ import {
   IScripting,
 } from "./interfaces.ts";
 import { getL10nFallback } from "./l10n_utils.ts";
-import {
+import type {
   FindCtrlState,
   FindType,
   MatchesCount,
@@ -49,7 +48,7 @@ import { BasePreferences } from "./preferences.ts";
 import { DEFAULT_SCALE_VALUE } from "./ui_utils.ts";
 /*80--------------------------------------------------------------------------*/
 
-/*#static*/ if (!MOZCENTRAL) {
+/*#static*/ if (PDFJSDev || !MOZCENTRAL) {
   throw new Error(
     'Module "./firefoxcom.js" shall not be used outside MOZCENTRAL builds.',
   );
@@ -174,10 +173,11 @@ export class DownloadManager implements IDownloadManager {
   #openBlobUrls = new WeakMap();
 
   /** @implement */
-  downloadUrl(url: string, filename: string) {
+  downloadUrl(url: string, filename: string, options: object = {}) {
     FirefoxCom.request("download", {
       originalUrl: url,
       filename,
+      options,
     });
   }
 
@@ -237,13 +237,14 @@ export class DownloadManager implements IDownloadManager {
   }
 
   /** @implement */
-  download(blob: Blob, url: string, filename: string) {
+  download(blob: Blob, url: string, filename: string, options: object = {}) {
     const blobUrl = URL.createObjectURL(blob);
 
     FirefoxCom.request("download", {
       blobUrl,
       originalUrl: url,
       filename,
+      options,
     });
   }
 }
@@ -322,7 +323,6 @@ class MozL10n implements IL10n {
       source: window,
       type: type.substring(findLen) as FindType,
       query: detail!.query,
-      phraseSearch: true,
       caseSensitive: !!detail!.caseSensitive,
       entireWord: !!detail!.entireWord,
       highlightAll: !!detail!.highlightAll,
@@ -543,6 +543,11 @@ class FirefoxExternalServices extends DefaultExternalServices {
     // various test-suites are running in mozilla-central.
     const isInAutomation = <boolean> FirefoxCom.requestSync("isInAutomation");
     return shadow(this, "isInAutomation", isInAutomation);
+  }
+
+  static get canvasMaxAreaInBytes() {
+    const maxArea = FirefoxCom.requestSync("getCanvasMaxArea");
+    return shadow(this, "canvasMaxAreaInBytes", maxArea);
   }
 }
 viewerApp.externalServices = new FirefoxExternalServices();

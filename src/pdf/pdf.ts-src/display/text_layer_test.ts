@@ -20,8 +20,8 @@
 import {
   assertEquals,
   assertInstanceOf,
-} from "https://deno.land/std@0.170.0/testing/asserts.ts";
-import { describe, it } from "https://deno.land/std@0.170.0/testing/bdd.ts";
+} from "https://deno.land/std@0.190.0/testing/asserts.ts";
+import { describe, it } from "https://deno.land/std@0.190.0/testing/bdd.ts";
 import { getDocument } from "../display/api.ts";
 import { buildGetDocumentParams } from "../shared/test_utils.ts";
 import { renderTextLayer, TextLayerRenderTask } from "./text_layer.ts";
@@ -42,7 +42,7 @@ describe("textLayer", () => {
     const textLayerRenderTask = renderTextLayer({
       textContentSource: page.streamTextContent(),
       container: document.createElement("div"),
-      viewport: page.getViewport({} as any),
+      viewport: page.getViewport({ scale: 1 }),
       textContentItemsStr,
     });
     assertInstanceOf(textLayerRenderTask, TextLayerRenderTask);

@@ -20,7 +20,8 @@
 import { FeatureTest, FormatError, info, shadow } from "../shared/util.ts";
 import { BaseStream } from "./base_stream.ts";
 import { LocalFunctionCache } from "./image_utils.ts";
-import { Dict, type Obj, type ObjNoRef, Ref } from "./primitives.ts";
+import type { Obj, ObjNoRef } from "./primitives.ts";
+import { Dict, Ref } from "./primitives.ts";
 import { PostScriptLexer, PostScriptParser } from "./ps_parser.ts";
 import { XRef } from "./xref.ts";
 /*80--------------------------------------------------------------------------*/
@@ -45,7 +46,7 @@ export class PDFFunctionFactory {
     const parsedFunction = PDFFunction.parse({
       xref: this.xref,
       isEvalSupported: this.isEvalSupported,
-      fn: fn instanceof Ref ? <BaseStream | Dict> this.xref.fetch(fn) : fn,
+      fn: fn instanceof Ref ? this.xref.fetch(fn) as BaseStream | Dict : fn,
     });
 
     // Attempt to cache the parsed Function, by reference.
@@ -348,8 +349,8 @@ namespace NsPDFFunction {
       range = toMultiArray(range);
 
       const size = toNumberArray(dict.getArray("Size"))!;
-      const bps = <number> dict.get("BitsPerSample");
-      const order = <number> dict.get("Order") || 1;
+      const bps = dict.get("BitsPerSample") as number;
+      const order = dict.get("Order") as number || 1;
       if (order !== 1) {
         // No description how cubic spline interpolation works in PDF32000:2008
         // As in poppler, ignoring order, linear interpolation may work as good
@@ -471,7 +472,7 @@ namespace NsPDFFunction {
     constructInterpolated({ xref, isEvalSupported, dict }: _TypeP) {
       const c0 = toNumberArray(dict.getArray("C0")) || [0];
       const c1 = toNumberArray(dict.getArray("C1")) || [1];
-      const n = <number> dict.get("N");
+      const n = dict.get("N") as number;
 
       const diff: number[] = [];
       for (let i = 0, ii = c0.length; i < ii; ++i) {
@@ -669,15 +670,15 @@ namespace NsPDFFunction {
         for (i = 0; i < numOutputs; i++) {
           value = stack[stackIndex + i];
           let bound = range[i * 2];
-          if (value < bound) {
+          if (value as number < bound) {
             value = bound;
           } else {
             bound = range[i * 2 + 1];
-            if (value > bound) {
+            if (value as number > bound) {
               value = bound;
             }
           }
-          output[i] = <number> value;
+          output[i] = value as number;
         }
         if (cache_available > 0) {
           cache_available--;
@@ -777,9 +778,7 @@ var PDFFunction = NsPDFFunction.PDFFunction;
 
 export function isPDFFunction(v: unknown) {
   let fnDict;
-  if (typeof v !== "object") {
-    return false;
-  } else if (v instanceof Dict) {
+  if (v instanceof Dict) {
     fnDict = v;
   } else if (v instanceof BaseStream) {
     fnDict = v.dict!;
@@ -789,72 +788,69 @@ export function isPDFFunction(v: unknown) {
   return fnDict.has("FunctionType");
 }
 
-namespace NsPostScriptStack {
-  const MAX_STACK_SIZE = 100;
+export class PostScriptStack {
+  static MAX_STACK_SIZE = 100;
 
-  export class PostScriptStack {
-    stack: (number | boolean)[];
+  stack: (number | boolean)[];
 
-    constructor(initialStack?: Float32Array) {
-      this.stack = initialStack ? Array.from(initialStack) : [];
+  constructor(initialStack?: Float32Array) {
+    this.stack = initialStack ? Array.from(initialStack) : [];
+  }
+
+  push(value: number | boolean) {
+    if (this.stack.length >= PostScriptStack.MAX_STACK_SIZE) {
+      throw new Error("PostScript function stack overflow.");
     }
+    this.stack.push(value);
+  }
 
-    push(value: number | boolean) {
-      if (this.stack.length >= MAX_STACK_SIZE) {
-        throw new Error("PostScript function stack overflow.");
-      }
-      this.stack.push(value);
+  pop() {
+    if (this.stack.length <= 0) {
+      throw new Error("PostScript function stack underflow.");
     }
+    return this.stack.pop()!;
+  }
 
-    pop() {
-      if (this.stack.length <= 0) {
-        throw new Error("PostScript function stack underflow.");
-      }
-      return this.stack.pop()!;
+  copy(n: number) {
+    if (this.stack.length + n >= PostScriptStack.MAX_STACK_SIZE) {
+      throw new Error("PostScript function stack overflow.");
     }
-
-    copy(n: number) {
-      if (this.stack.length + n >= MAX_STACK_SIZE) {
-        throw new Error("PostScript function stack overflow.");
-      }
-      const stack = this.stack;
-      for (let i = stack.length - n, j = n - 1; j >= 0; j--, i++) {
-        stack.push(stack[i]);
-      }
+    const stack = this.stack;
+    for (let i = stack.length - n, j = n - 1; j >= 0; j--, i++) {
+      stack.push(stack[i]);
     }
+  }
 
-    index(n: number) {
-      this.push(this.stack[this.stack.length - n - 1]);
+  index(n: number) {
+    this.push(this.stack[this.stack.length - n - 1]);
+  }
+
+  /**
+   * rotate the last n stack elements p times
+   */
+  roll(n: number, p: number) {
+    const stack = this.stack;
+    const l = stack.length - n;
+    const r = stack.length - 1;
+    const c = l + (p - Math.floor(p / n) * n);
+
+    for (let i = l, j = r; i < j; i++, j--) {
+      const t = stack[i];
+      stack[i] = stack[j];
+      stack[j] = t;
     }
-
-    /**
-     * rotate the last n stack elements p times
-     */
-    roll(n: number, p: number) {
-      const stack = this.stack;
-      const l = stack.length - n;
-      const r = stack.length - 1;
-      const c = l + (p - Math.floor(p / n) * n);
-
-      for (let i = l, j = r; i < j; i++, j--) {
-        const t = stack[i];
-        stack[i] = stack[j];
-        stack[j] = t;
-      }
-      for (let i = l, j = c - 1; i < j; i++, j--) {
-        const t = stack[i];
-        stack[i] = stack[j];
-        stack[j] = t;
-      }
-      for (let i = c, j = r; i < j; i++, j--) {
-        const t = stack[i];
-        stack[i] = stack[j];
-        stack[j] = t;
-      }
+    for (let i = l, j = c - 1; i < j; i++, j--) {
+      const t = stack[i];
+      stack[i] = stack[j];
+      stack[j] = t;
+    }
+    for (let i = c, j = r; i < j; i++, j--) {
+      const t = stack[i];
+      stack[i] = stack[j];
+      stack[j] = t;
     }
   }
 }
-import PostScriptStack = NsPostScriptStack.PostScriptStack;
 
 export class PostScriptEvaluator {
   operators;
@@ -882,23 +878,23 @@ export class PostScriptEvaluator {
           b = stack.pop();
           a = stack.pop();
           if (!a) {
-            counter = <number> b;
+            counter = b as number;
           }
           break;
         case "j": // jump
           a = stack.pop();
-          counter = <number> a;
+          counter = a as number;
           break;
 
         // all ps operators in alphabetical order (excluding if/ifelse)
 
         case "abs":
           a = stack.pop();
-          stack.push(Math.abs(<number> a));
+          stack.push(Math.abs(a as number));
           break;
         case "add":
-          b = <number> stack.pop();
-          a = <number> stack.pop();
+          b = stack.pop() as number;
+          a = stack.pop() as number;
           stack.push(a + b);
           break;
         case "and":
@@ -907,16 +903,21 @@ export class PostScriptEvaluator {
           if (typeof a === "boolean" && typeof b === "boolean") {
             stack.push(a && b);
           } else {
-            stack.push((<number> a) & (<number> b));
+            stack.push((a as number) & (b as number));
           }
           break;
         case "atan":
+          b = stack.pop();
           a = stack.pop();
-          stack.push(Math.atan(<number> a));
+          a = (Math.atan2(a as number, b as number) / Math.PI) * 180;
+          if (a < 0) {
+            a += 360;
+          }
+          stack.push(a);
           break;
         case "bitshift":
-          b = <number> stack.pop();
-          a = <number> stack.pop();
+          b = stack.pop() as number;
+          a = stack.pop() as number;
           if (a > 0) {
             stack.push(a << b);
           } else {
@@ -925,15 +926,15 @@ export class PostScriptEvaluator {
           break;
         case "ceiling":
           a = stack.pop();
-          stack.push(Math.ceil(<number> a));
+          stack.push(Math.ceil(a as number));
           break;
         case "copy":
           a = stack.pop();
-          stack.copy(<number> a);
+          stack.copy(a as number);
           break;
         case "cos":
           a = stack.pop();
-          stack.push(Math.cos(<number> a));
+          stack.push(Math.cos(((a as number % 360) / 180) * Math.PI));
           break;
         case "cvi":
           a = +stack.pop() | 0;
@@ -943,8 +944,8 @@ export class PostScriptEvaluator {
           // noop
           break;
         case "div":
-          b = <number> stack.pop();
-          a = <number> stack.pop();
+          b = stack.pop() as number;
+          a = stack.pop() as number;
           stack.push(a / b);
           break;
         case "dup":
@@ -959,8 +960,8 @@ export class PostScriptEvaluator {
           stack.roll(2, 1);
           break;
         case "exp":
-          b = <number> stack.pop();
-          a = <number> stack.pop();
+          b = stack.pop() as number;
+          a = stack.pop() as number;
           stack.push(a ** b);
           break;
         case "false":
@@ -968,7 +969,7 @@ export class PostScriptEvaluator {
           break;
         case "floor":
           a = stack.pop();
-          stack.push(Math.floor(<number> a));
+          stack.push(Math.floor(a as number));
           break;
         case "ge":
           b = stack.pop();
@@ -981,13 +982,13 @@ export class PostScriptEvaluator {
           stack.push(a > b);
           break;
         case "idiv":
-          b = <number> stack.pop();
-          a = <number> stack.pop();
+          b = stack.pop() as number;
+          a = stack.pop() as number;
           stack.push((a / b) | 0);
           break;
         case "index":
           a = stack.pop();
-          stack.index(<number> a);
+          stack.index(a as number);
           break;
         case "le":
           b = stack.pop();
@@ -996,11 +997,11 @@ export class PostScriptEvaluator {
           break;
         case "ln":
           a = stack.pop();
-          stack.push(Math.log(<number> a));
+          stack.push(Math.log(a as number));
           break;
         case "log":
           a = stack.pop();
-          stack.push(Math.log(<number> a) / Math.LN10);
+          stack.push(Math.log(a as number) / Math.LN10);
           break;
         case "lt":
           b = stack.pop();
@@ -1008,13 +1009,13 @@ export class PostScriptEvaluator {
           stack.push(a < b);
           break;
         case "mod":
-          b = <number> stack.pop();
-          a = <number> stack.pop();
+          b = stack.pop() as number;
+          a = stack.pop() as number;
           stack.push(a % b);
           break;
         case "mul":
-          b = <number> stack.pop();
-          a = <number> stack.pop();
+          b = stack.pop() as number;
+          a = stack.pop() as number;
           stack.push(a * b);
           break;
         case "ne":
@@ -1040,7 +1041,7 @@ export class PostScriptEvaluator {
           if (typeof a === "boolean" && typeof b === "boolean") {
             stack.push(a || b);
           } else {
-            stack.push((<number> a) | (<number> b));
+            stack.push((a as number) | (b as number));
           }
           break;
         case "pop":
@@ -1049,30 +1050,30 @@ export class PostScriptEvaluator {
         case "roll":
           b = stack.pop();
           a = stack.pop();
-          stack.roll(<number> a, <number> b);
+          stack.roll(a as number, b as number);
           break;
         case "round":
           a = stack.pop();
-          stack.push(Math.round(<number> a));
+          stack.push(Math.round(a as number));
           break;
         case "sin":
           a = stack.pop();
-          stack.push(Math.sin(<number> a));
+          stack.push(Math.sin(((a as number % 360) / 180) * Math.PI));
           break;
         case "sqrt":
           a = stack.pop();
-          stack.push(Math.sqrt(<number> a));
+          stack.push(Math.sqrt(a as number));
           break;
         case "sub":
-          b = <number> stack.pop();
-          a = <number> stack.pop();
+          b = stack.pop() as number;
+          a = stack.pop() as number;
           stack.push(a - b);
           break;
         case "true":
           stack.push(true);
           break;
         case "truncate":
-          a = <number> stack.pop();
+          a = stack.pop() as number;
           a = a < 0 ? Math.ceil(a) : Math.floor(a);
           stack.push(a);
           break;
@@ -1082,7 +1083,7 @@ export class PostScriptEvaluator {
           if (typeof a === "boolean" && typeof b === "boolean") {
             stack.push(a !== b);
           } else {
-            stack.push((<number> a) ^ (<number> b));
+            stack.push((a as number) ^ (b as number));
           }
           break;
         default:
@@ -1391,7 +1392,7 @@ namespace NsPostScriptCompiler {
             }
             num2 = stack.pop();
             num1 = stack.pop();
-            stack.push(buildAddOperation(<AstMinMax> num1, <AstMinMax> num2));
+            stack.push(buildAddOperation(num1 as AstMinMax, num2 as AstMinMax));
             break;
           case "cvr":
             if (stack.length < 1) {
@@ -1404,7 +1405,7 @@ namespace NsPostScriptCompiler {
             }
             num2 = stack.pop();
             num1 = stack.pop();
-            stack.push(buildMulOperation(<AstMinMax> num1, <AstMinMax> num2));
+            stack.push(buildMulOperation(num1 as AstMinMax, num2 as AstMinMax));
             break;
           case "sub":
             if (stack.length < 2) {
@@ -1412,7 +1413,7 @@ namespace NsPostScriptCompiler {
             }
             num2 = stack.pop();
             num1 = stack.pop();
-            stack.push(buildSubOperation(<AstMinMax> num1, <AstMinMax> num2));
+            stack.push(buildSubOperation(num1 as AstMinMax, num2 as AstMinMax));
             break;
           case "exch":
             if (stack.length < 2) {
@@ -1449,8 +1450,8 @@ namespace NsPostScriptCompiler {
             }
             tmpVar = new AstVariable(
               lastRegister++,
-              (<AstMinMax> ast1).min,
-              (<AstMinMax> ast1).max,
+              (ast1 as AstMinMax).min,
+              (ast1 as AstMinMax).max,
             );
             stack[stack.length - n - 1] = tmpVar;
             stack.push(tmpVar);
@@ -1471,7 +1472,7 @@ namespace NsPostScriptCompiler {
               // special case of the commands sequence for the min operation
               num1 = stack.pop();
               stack.push(
-                buildMinOperation(<AstMinMax> num1, <number> code[i + 1]),
+                buildMinOperation(num1 as AstMinMax, code[i + 1] as number),
               );
               i += 6;
               break;
@@ -1487,8 +1488,8 @@ namespace NsPostScriptCompiler {
             }
             tmpVar = new AstVariable(
               lastRegister++,
-              (<AstMinMax> ast1).min,
-              (<AstMinMax> ast1).max,
+              (ast1 as AstMinMax).min,
+              (ast1 as AstMinMax).max,
             );
             stack[stack.length - 1] = tmpVar;
             stack.push(tmpVar);
@@ -1546,11 +1547,11 @@ namespace NsPostScriptCompiler {
         const min = range[i * 2],
           max = range[i * 2 + 1];
         const out: (number | string)[] = [statementBuilder.toString()];
-        if (min > (<AstMinMax> expr).min) {
+        if (min > (expr as AstMinMax).min) {
           out.unshift("Math.max(", min, ", ");
           out.push(")");
         }
-        if (max < (<AstMinMax> expr).max) {
+        if (max < (expr as AstMinMax).max) {
           out.unshift("Math.min(", max, ", ");
           out.push(")");
         }
