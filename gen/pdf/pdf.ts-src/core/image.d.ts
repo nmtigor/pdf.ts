@@ -1,12 +1,13 @@
+import { ImageKind } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
 import { ColorSpace } from "./colorspace.js";
 import { ImageStream } from "./decode_stream.js";
-import { type ImgData } from "./evaluator.js";
-import { PDFFunctionFactory } from "./function.js";
-import { LocalColorSpaceCache } from "./image_utils.js";
-import { Dict } from "./primitives.js";
-import { XRef } from "./xref.js";
-interface _PDFImageCtorP {
+import type { ImgData } from "./evaluator.js";
+import type { PDFFunctionFactory } from "./function.js";
+import type { LocalColorSpaceCache } from "./image_utils.js";
+import { type Dict } from "./primitives.js";
+import type { XRef } from "./xref.js";
+interface PDFImageCtorP_ {
     xref: XRef;
     res: Dict;
     image: ImageStream;
@@ -17,7 +18,7 @@ interface _PDFImageCtorP {
     pdfFunctionFactory: PDFFunctionFactory;
     localColorSpaceCache: LocalColorSpaceCache;
 }
-interface _CreateMaskP {
+interface CreateMaskP_ {
     imgArray: Uint8Array | Uint8ClampedArray;
     width: number;
     height: number;
@@ -26,7 +27,7 @@ interface _CreateMaskP {
     interpolate: boolean | undefined;
     isOffscreenCanvasSupported?: boolean | undefined;
 }
-interface _BuildImageP {
+interface BuildImageP_ {
     xref: XRef;
     res: Dict;
     image: ImageStream;
@@ -34,9 +35,10 @@ interface _BuildImageP {
     pdfFunctionFactory: PDFFunctionFactory;
     localColorSpaceCache: LocalColorSpaceCache;
 }
-interface _GetImageBytesP {
+interface GetImageBytesP_ {
     drawWidth?: number;
     drawHeight?: number;
+    forceRGBA?: boolean;
     forceRGB?: boolean;
     internal?: boolean;
 }
@@ -59,23 +61,24 @@ export declare class PDFImage {
     decodeAddends?: number[];
     smask?: PDFImage;
     mask?: PDFImage | number[];
-    constructor({ xref, res, image, isInline, smask, mask, isMask, pdfFunctionFactory, localColorSpaceCache, }: _PDFImageCtorP);
+    constructor({ xref, res, image, isInline, smask, mask, isMask, pdfFunctionFactory, localColorSpaceCache, }: PDFImageCtorP_);
     /**
      * Handles processing of image data and returns the Promise that is resolved
      * with a PDFImage when the image is ready to be used.
      */
-    static buildImage({ xref, res, image, isInline, pdfFunctionFactory, localColorSpaceCache, }: _BuildImageP): Promise<PDFImage>;
-    static createRawMask({ imgArray, width, height, imageIsFromDecodeStream, inverseDecode, interpolate, }: _CreateMaskP): ImgData;
-    static createMask({ imgArray, width, height, imageIsFromDecodeStream, inverseDecode, interpolate, isOffscreenCanvasSupported, }: _CreateMaskP): ImgData;
+    static buildImage({ xref, res, image, isInline, pdfFunctionFactory, localColorSpaceCache, }: BuildImageP_): Promise<PDFImage>;
+    static createRawMask({ imgArray, width, height, imageIsFromDecodeStream, inverseDecode, interpolate, }: CreateMaskP_): ImgData;
+    static createMask({ imgArray, width, height, imageIsFromDecodeStream, inverseDecode, interpolate, isOffscreenCanvasSupported, }: CreateMaskP_): Promise<ImgData>;
     get drawWidth(): number;
     get drawHeight(): number;
     decodeBuffer(buffer: Uint8Array | Uint8ClampedArray | Uint16Array | Uint32Array): void;
     getComponents(buffer: Uint8Array | Uint8ClampedArray): Uint8Array | Uint8ClampedArray | Uint16Array | Uint32Array;
     fillOpacity(rgbaBuf: Uint8ClampedArray, width: number, height: number, actualHeight: number, image: Uint8Array | Uint8ClampedArray | Uint16Array | Uint32Array): void;
     undoPreblend(buffer: Uint8ClampedArray, width: number, height: number): void;
-    createImageData(forceRGBA?: boolean): ImgData;
+    createImageData(forceRGBA?: boolean, isOffscreenCanvasSupported?: boolean): Promise<ImgData>;
     fillGrayBuffer(buffer: Uint8ClampedArray): void;
-    getImageBytes(length: number, { drawWidth, drawHeight, forceRGB, internal }: _GetImageBytesP): Uint8Array | Uint8ClampedArray;
+    createBitmap(kind: ImageKind, width: number, height: number, src: Uint8Array | Uint8ClampedArray): ImgData;
+    getImageBytes(length: number, { drawWidth, drawHeight, forceRGBA, forceRGB, internal, }: GetImageBytesP_): Uint8Array | Uint8ClampedArray;
 }
 export {};
 //# sourceMappingURL=image.d.ts.map

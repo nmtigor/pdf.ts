@@ -1,5 +1,5 @@
-import { type rect_t } from "../../../../lib/alias.js";
-import { type XFAElData } from "./alias.js";
+import type { rect_t } from "../../../../lib/alias.js";
+import type { XFAElData } from "./alias.js";
 import { BreakAfter, BreakBefore, Template } from "./template.js";
 export declare function stripQuotes(str: string): string;
 interface _GetIntegerP {

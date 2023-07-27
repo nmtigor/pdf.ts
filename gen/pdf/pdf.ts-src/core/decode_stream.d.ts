@@ -63,6 +63,7 @@ export declare abstract class ImageStream extends DecodeStream {
     numComps?: number | undefined;
     drawWidth?: number;
     drawHeight?: number;
+    forceRGBA?: boolean;
     forceRGB?: boolean;
     constructor(stream: BaseStream, maybeLength?: number, params?: Dict);
 }

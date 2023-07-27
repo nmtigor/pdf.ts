@@ -1,6 +1,7 @@
 /** 80**************************************************************************
- * synbols
- ** ------- */
+ * @module lib/symbols
+ * @license Apache-2.0
+ ******************************************************************************/
 /**
  * document[ $cssstylesheet ] { Getter }
  */
@@ -35,18 +36,18 @@ export declare const $inuse: unique symbol;
  */
 export declare const $lidx: unique symbol;
 /**
- * BlockVuu.el[ $lidx1 ] { lnum_t }
+ * BlockVuu.el[ $lidx_1 ] { lnum_t }
  * Last line index of the `Element`
  */
-export declare const $lidx1: unique symbol;
+export declare const $lidx_1: unique symbol;
 /**
- * SpanVuu.el[ $loff ]:loff_t
- * Start offset of the `Element` or `Text` in the `Line`
+ * SpanVuu.el[ $loff ]:llen_t
+ * Start offset of the `Element` or `Text` in the `TokLine`
  */
 export declare const $loff: unique symbol;
 /**
- * SpanVuu.el[ $loff1 ] { loff_t }
- * Stop offset of the `Element` in the `Line`
+ * SpanVuu.el[ $loff1 ] { llen_t }
+ * Stop offset of the `Element` in the `TokLine`
  */
 export declare const $loff1: unique symbol;
 /**
@@ -55,6 +56,7 @@ export declare const $loff1: unique symbol;
  */
 export declare const $ovlap: unique symbol;
 /**
+ * @deprecated
  * document[ $palename ] { {} }
  */
 export declare const $palename: unique symbol;

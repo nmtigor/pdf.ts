@@ -17,13 +17,26 @@
  * limitations under the License.
  */
 
+import type { C2D } from "../../../lib/alias.ts";
 import { CMapCompressionType } from "../shared/util.ts";
 /*80--------------------------------------------------------------------------*/
 
+export abstract class BaseFilterFactory {
+  addFilter(maps?: number[][]): string {
+    return "none";
+  }
+
+  addHCMFilter(fgColor: string, bgColor: string): string {
+    return "none";
+  }
+
+  destroy(keepHCM = false) {}
+}
+
 export interface CanvasEntry {
   canvas: HTMLCanvasElement;
-  context: CanvasRenderingContext2D;
-  savedCtx?: CanvasRenderingContext2D;
+  context: C2D;
+  savedCtx?: C2D;
 }
 
 export abstract class BaseCanvasFactory {

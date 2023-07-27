@@ -52,9 +52,9 @@ export class FileSpec {
         if (!this.#filename && this.root) {
             const filename = pickPlatformItem(this.root) || "unnamed";
             this.#filename = stringToPDFString(filename)
-                .replace(/\\\\/g, "\\")
-                .replace(/\\\//g, "/")
-                .replace(/\\/g, "/");
+                .replaceAll("\\\\", "\\")
+                .replaceAll("\\/", "/")
+                .replaceAll("\\", "/");
         }
         return this.#filename;
     }

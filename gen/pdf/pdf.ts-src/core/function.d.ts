@@ -1,6 +1,7 @@
 import { BaseStream } from "./base_stream.js";
 import { LocalFunctionCache } from "./image_utils.js";
-import { Dict, type ObjNoRef, Ref } from "./primitives.js";
+import type { ObjNoRef } from "./primitives.js";
+import { Dict, Ref } from "./primitives.js";
 import { XRef } from "./xref.js";
 export declare class PDFFunctionFactory {
     #private;
@@ -50,6 +51,19 @@ declare namespace NsPDFFunction {
 }
 export type ParsedFunction = NsPDFFunction.ParsedFunction;
 export declare function isPDFFunction(v: unknown): boolean;
+export declare class PostScriptStack {
+    static MAX_STACK_SIZE: number;
+    stack: (number | boolean)[];
+    constructor(initialStack?: Float32Array);
+    push(value: number | boolean): void;
+    pop(): number | boolean;
+    copy(n: number): void;
+    index(n: number): void;
+    /**
+     * rotate the last n stack elements p times
+     */
+    roll(n: number, p: number): void;
+}
 export declare class PostScriptEvaluator {
     operators: (string | number | null)[];
     constructor(operators: (number | string | null)[]);

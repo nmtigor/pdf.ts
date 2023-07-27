@@ -15,10 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { _PDFDEV, GENERIC, TESTING } from "../../../global.js";
+import { DENO, GENERIC, PDFJSDev, TESTING } from "../../../global.js";
+import { PromiseCap } from "../../../lib/util/PromiseCap.js";
 import { assert } from "../../../lib/util/trace.js";
-import { MessageHandler, } from "../shared/message_handler.js";
-import { AbortException, createPromiseCapability, getVerbosityLevel, info, InvalidPDFException, MissingPDFException, PasswordException, setVerbosityLevel, stringToPDFString, UnexpectedResponseException, UnknownErrorException, VerbosityLevel, warn, } from "../shared/util.js";
+import { MessageHandler } from "../shared/message_handler.js";
+import { AbortException, getVerbosityLevel, info, InvalidPDFException, MissingPDFException, PasswordException, setVerbosityLevel, stringToPDFString, UnexpectedResponseException, UnknownErrorException, VerbosityLevel, warn, } from "../shared/util.js";
 import { clearGlobalCaches } from "./cleanup_helper.js";
 import { arrayBuffersToBytes, getNewAnnotationsMap, XRefParseException, } from "./core_utils.js";
 import { LocalPdfManager, NetworkPdfManager, } from "./pdf_manager.js";
@@ -32,7 +33,7 @@ export class WorkerTask {
     terminate() {
         this.terminated = true;
     }
-    #capability = createPromiseCapability();
+    #capability = new PromiseCap();
     get finished() {
         return this.#capability.promise;
     }
@@ -103,12 +104,14 @@ export const WorkerMessageHandler = {
             // Ensure that (primarily) Node.js users won't accidentally attempt to use
             // a non-translated/non-polyfilled build of the library, since that would
             // quickly fail anyway because of missing functionality.
-            if (typeof ReadableStream === "undefined") {
+            if (!DENO && typeof Path2D === "undefined" ||
+                typeof ReadableStream === "undefined") {
                 const partialMsg = "The browser/environment lacks native support for critical " +
-                    "functionality used by the PDF.js library (e.g. `ReadableStream`); ";
-                // if (isNodeJS) {
-                //   throw new Error(partialMsg + "please use a `legacy`-build instead.");
-                // }
+                    "functionality used by the PDF.js library " +
+                    "(e.g. `Path2D` and/or `ReadableStream`); ";
+                if (DENO) {
+                    throw new Error(partialMsg + "please use a `legacy`-build instead.");
+                }
                 throw new Error(partialMsg + "please update to a supported browser.");
             }
         }
@@ -172,7 +175,7 @@ export const WorkerMessageHandler = {
                 password,
                 rangeChunkSize,
             };
-            const pdfManagerCapability = createPromiseCapability();
+            const pdfManagerCapability = new PromiseCap();
             let newPdfManager;
             if (data) {
                 try {
@@ -203,9 +206,8 @@ export const WorkerMessageHandler = {
                 pdfManagerArgs.length = fullRequest
                     .contentLength;
                 // We don't need auto-fetch when streaming is enabled.
-                pdfManagerArgs.disableAutoFetch =
-                    pdfManagerArgs.disableAutoFetch ||
-                        fullRequest.isStreamingSupported;
+                pdfManagerArgs.disableAutoFetch ||=
+                    fullRequest.isStreamingSupported;
                 newPdfManager = new NetworkPdfManager(pdfManagerArgs);
                 // There may be a chance that `newPdfManager` is not initialized for
                 // the first few runs of `readchunk` block of code. Be sure to send
@@ -243,8 +245,9 @@ export const WorkerMessageHandler = {
                     try {
                         ensureNotTerminated();
                         if (done) {
-                            if (!newPdfManager)
+                            if (!newPdfManager) {
                                 flushChunks();
+                            }
                             cancelXHRs = undefined;
                             return;
                         }
@@ -286,6 +289,8 @@ export const WorkerMessageHandler = {
                 handler.send("GetDoc", { pdfInfo: doc });
             }
             function onFailure(ex) {
+                // console.log(ex.name);
+                // console.log(ex);
                 ensureNotTerminated();
                 if (ex instanceof PasswordException) {
                     const task = new WorkerTask(`PasswordException: response ${ex.code}`);
@@ -299,17 +304,17 @@ export const WorkerMessageHandler = {
                     })
                         .catch(() => {
                         finishWorkerTask(task);
-                        handler.send("DocException", ex);
+                        handler.send("DocException", ex.toJ());
                     });
                 }
                 else if (ex instanceof InvalidPDFException ||
                     ex instanceof MissingPDFException ||
                     ex instanceof UnexpectedResponseException ||
                     ex instanceof UnknownErrorException) {
-                    handler.send("DocException", ex);
+                    handler.send("DocException", ex.toJ());
                 }
                 else {
-                    handler.send("DocException", new UnknownErrorException(ex.message, ex.toString()));
+                    handler.send("DocException", new UnknownErrorException(ex.message, ex.toString()).toJ());
                 }
             }
             function pdfManagerReady() {
@@ -533,7 +538,7 @@ export const WorkerMessageHandler = {
                         info: infoObj,
                         fileIds: xref.trailer.get("ID") ||
                             undefined,
-                        startXRef,
+                        startXRef: xref.lastXRefStreamPos ?? startXRef,
                         filename,
                     };
                 }
@@ -592,7 +597,7 @@ export const WorkerMessageHandler = {
             });
         });
         handler.on("GetTextContent", (data, sink) => {
-            const pageIndex = data.pageIndex;
+            const { pageIndex, includeMarkedContent, disableNormalization } = data;
             pdfManager.getPage(pageIndex).then((page) => {
                 const task = new WorkerTask("GetTextContent: page " + pageIndex);
                 startWorkerTask(task);
@@ -603,8 +608,8 @@ export const WorkerMessageHandler = {
                     handler,
                     task,
                     sink,
-                    includeMarkedContent: data.includeMarkedContent,
-                    combineTextItems: data.combineTextItems,
+                    includeMarkedContent,
+                    disableNormalization,
                 })
                     .then(() => {
                     finishWorkerTask(task);
@@ -663,7 +668,16 @@ export const WorkerMessageHandler = {
             setupDoc(docParams);
             docParams = undefined; // we don't need docParams anymore -- saving memory.
         });
-        /*#static*/ 
+        /*#static*/  {
+            handler.on("GetXFADatasets", (data) => {
+                return pdfManager.ensureDoc("xfaDatasets");
+            });
+            handler.on("GetXRefPrevValue", (data) => {
+                return pdfManager
+                    .ensureXRef("trailer")
+                    .then((trailer) => trailer.get("Prev"));
+            });
+        }
         return workerHandlerName;
     },
     initializeFromPort(port) {

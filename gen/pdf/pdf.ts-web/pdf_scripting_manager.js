@@ -16,8 +16,9 @@
  * limitations under the License.
  */
 /** @typedef {import("./event_utils").EventBus} EventBus */
-import { COMPONENTS, GECKOVIEW } from "../../global.js";
-import { createPromiseCapability, shadow, } from "../pdf.ts-src/pdf.js";
+import { COMPONENTS, GECKOVIEW, PDFJSDev } from "../../global.js";
+import { PromiseCap } from "../../lib/util/PromiseCap.js";
+import { shadow } from "../pdf.ts-src/pdf.js";
 import { apiPageLayoutToViewerModes, RenderingStates, } from "./ui_utils.js";
 export class PDFScriptingManager {
     #pdfDocument;
@@ -201,7 +202,8 @@ export class PDFScriptingManager {
                 case "layout": {
                     // NOTE: Always ignore the pageLayout in GeckoView since there's
                     // no UI available to change Scroll/Spread modes for the user.
-                    if (GECKOVIEW || isInPresentationMode) {
+                    if ((PDFJSDev ? window.isGECKOVIEW : GECKOVIEW) ||
+                        isInPresentationMode) {
                         return;
                     }
                     const modes = apiPageLayoutToViewerModes(value);
@@ -276,7 +278,7 @@ export class PDFScriptingManager {
     async #dispatchPageOpen(pageNumber, initialize = false) {
         const pdfDocument = this.#pdfDocument, visitedPages = this.#visitedPages;
         if (initialize) {
-            this.#closeCapability = createPromiseCapability();
+            this.#closeCapability = new PromiseCap();
         }
         if (!this.#closeCapability) {
             return; // Scripting isn't fully initialized yet.
@@ -341,7 +343,7 @@ export class PDFScriptingManager {
         throw new Error("#getDocProperties: Unable to lookup properties.");
     };
     #createScripting = async () => {
-        this.#destroyCapability = createPromiseCapability();
+        this.#destroyCapability = new PromiseCap();
         if (this._scripting) {
             throw new Error("#createScripting: Scripting already exists.");
         }

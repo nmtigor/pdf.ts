@@ -1,4 +1,4 @@
-import { EventInSandBox } from "../pdf.ts-web/interfaces.js";
+import type { EventInSandBox } from "../pdf.ts-web/interfaces.js";
 import { SandboxSupportBase } from "./pdf.sandbox.external.js";
 declare class SandboxSupport extends SandboxSupportBase {
     exportValueToSandbox(val: object): string;

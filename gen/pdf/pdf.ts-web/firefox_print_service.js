@@ -1,20 +1,6 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
-/* Copyright 2016 Mozilla Foundation
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 import { div, html } from "../../lib/dom.js";
 import { AnnotationMode, PixelsPerInch, RenderingCancelledException, shadow, } from "../pdf.ts-src/pdf.js";
 import { PDFPrintServiceFactory } from "./app.js";
@@ -99,6 +85,17 @@ export class FirefoxPrintService extends PDFPrintService {
         const { pdfDocument, pagesOverview, printContainer, _printResolution, _optionalContentConfigPromise, _printAnnotationStoragePromise, } = this;
         const body = document.querySelector("body");
         body.setAttribute("data-pdfjsprinting", true);
+        const { width, height } = this.pagesOverview[0];
+        const hasEqualPageSizes = this.pagesOverview.every((size) => size.width === width && size.height === height);
+        if (!hasEqualPageSizes) {
+            console.warn("Not all pages have the same size. The printed result may be incorrect!");
+        }
+        // Insert a @page + size rule to make sure that the page size is correctly
+        // set. Note that we assume that all pages have the same size, because
+        // variable-size pages are scaled down to the initial page size in Firefox.
+        this.pageStyleSheet = html("style");
+        this.pageStyleSheet.textContent = `@page { size: ${width}pt ${height}pt;}`;
+        body.append(this.pageStyleSheet);
         if (pdfDocument.isPureXfa) {
             getXfaHtmlForPrinting(printContainer, pdfDocument);
             return;
@@ -112,6 +109,10 @@ export class FirefoxPrintService extends PDFPrintService {
         this.printContainer.textContent = "";
         const body = document.querySelector("body");
         body.removeAttribute("data-pdfjsprinting");
+        if (this.pageStyleSheet) {
+            this.pageStyleSheet.remove();
+            this.pageStyleSheet = undefined;
+        }
     }
 }
 PDFPrintServiceFactory.instance = {

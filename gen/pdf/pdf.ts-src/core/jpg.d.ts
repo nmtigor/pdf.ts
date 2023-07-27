@@ -18,6 +18,7 @@ declare namespace NsJpegImage {
     interface JpegData {
         width: number;
         height: number;
+        forceRGBA: boolean | undefined;
         forceRGB: boolean | undefined;
         isSourcePDF?: boolean;
     }
@@ -59,7 +60,10 @@ declare namespace NsJpegImage {
         parse(data: Uint8Array | Uint8ClampedArray, { dnlScanLines }?: {
             dnlScanLines?: number;
         }): undefined;
-        getData({ width, height, forceRGB, isSourcePDF }: JpegData): Uint8ClampedArray;
+        _convertYccToRgba(data: Uint8ClampedArray, out: Uint8ClampedArray): Uint8ClampedArray;
+        _convertYcckToRgba(data: Uint8ClampedArray): Uint8ClampedArray;
+        _convertCmykToRgba(data: Uint8ClampedArray): Uint8ClampedArray;
+        getData({ width, height, forceRGBA, forceRGB, isSourcePDF, }: JpegData): Uint8ClampedArray;
     }
     export {};
 }

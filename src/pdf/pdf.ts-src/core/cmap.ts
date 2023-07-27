@@ -17,11 +17,12 @@
  * limitations under the License.
  */
 
-import { type TupleOf } from "../../../lib/alias.ts";
+import type { TupleOf } from "../../../lib/alias.ts";
 import { assert } from "../../../lib/util/trace.ts";
-import { type FetchBuiltInCMap } from "../display/base_factory.ts";
+import type { FetchBuiltInCMap } from "../display/base_factory.ts";
 import { CMapCompressionType, FormatError, warn } from "../shared/util.ts";
 import { BaseStream } from "./base_stream.ts";
+import { BinaryCMapReader } from "./binary_cmap.ts";
 import { MissingDataException } from "./core_utils.ts";
 import { Lexer } from "./parser.ts";
 import { Cmd, EOF, isCmd, Name, type ObjNoCmd } from "./primitives.ts";
@@ -459,321 +460,6 @@ export class IdentityCMap extends CMap {
   }
 }
 
-namespace NsBinaryCMapReader {
-  function hexToInt(a: Uint8Array, size: number) {
-    let n = 0;
-    for (let i = 0; i <= size; i++) {
-      n = (n << 8) | a[i];
-    }
-    return n >>> 0;
-  }
-
-  function hexToStr(a: Uint8Array, size: number) {
-    // This code is hot. Special-case some common values to avoid creating an
-    // object with subarray().
-    if (size === 1) {
-      return String.fromCharCode(a[0], a[1]);
-    }
-    if (size === 3) {
-      return String.fromCharCode(a[0], a[1], a[2], a[3]);
-    }
-    return String.fromCharCode(...a.subarray(0, size + 1));
-  }
-
-  function addHex(a: Uint8Array, b: Uint8Array, size: number) {
-    let c = 0;
-    for (let i = size; i >= 0; i--) {
-      c += a[i] + b[i];
-      a[i] = c & 255;
-      c >>= 8;
-    }
-  }
-
-  function incHex(a: Uint8Array, size: number) {
-    let c = 1;
-    for (let i = size; i >= 0 && c > 0; i--) {
-      c += a[i];
-      a[i] = c & 255;
-      c >>= 8;
-    }
-  }
-
-  const MAX_NUM_SIZE = 16;
-  const MAX_ENCODED_NUM_SIZE = 19; // ceil(MAX_NUM_SIZE * 7 / 8)
-
-  class BinaryCMapStream {
-    buffer;
-    pos = 0;
-    end: number;
-    tmpBuf = new Uint8Array(MAX_ENCODED_NUM_SIZE);
-
-    constructor(data: Uint8Array) {
-      this.buffer = data;
-      // this.pos = 0;
-      this.end = data.length;
-      // this.tmpBuf = new Uint8Array(MAX_ENCODED_NUM_SIZE);
-    }
-
-    readByte() {
-      if (this.pos >= this.end) {
-        return -1;
-      }
-      return this.buffer[this.pos++];
-    }
-    readNumber() {
-      let n = 0;
-      let last;
-      do {
-        const b = this.readByte();
-        if (b < 0) {
-          throw new FormatError("unexpected EOF in bcmap");
-        }
-        last = !(b & 0x80);
-        n = (n << 7) | (b & 0x7f);
-      } while (!last);
-      return n;
-    }
-    readSigned() {
-      const n = this.readNumber();
-      return n & 1 ? ~(n >>> 1) : n >>> 1;
-    }
-    readHex(num: Uint8Array, size: number) {
-      num.set(this.buffer.subarray(this.pos, this.pos + size + 1));
-      this.pos += size + 1;
-    }
-    readHexNumber(num: Uint8Array, size: number) {
-      let last;
-      const stack = this.tmpBuf;
-      let sp = 0;
-      do {
-        const b = this.readByte();
-        if (b < 0) {
-          throw new FormatError("unexpected EOF in bcmap");
-        }
-        last = !(b & 0x80);
-        stack[sp++] = b & 0x7f;
-      } while (!last);
-      let i = size;
-      let buffer = 0;
-      let bufferSize = 0;
-      while (i >= 0) {
-        while (bufferSize < 8 && stack.length > 0) {
-          buffer |= stack[--sp] << bufferSize;
-          bufferSize += 7;
-        }
-        num[i] = buffer & 255;
-        i--;
-        buffer >>= 8;
-        bufferSize -= 8;
-      }
-    }
-    readHexSigned(num: Uint8Array, size: number) {
-      this.readHexNumber(num, size);
-      const sign = num[size] & 1 ? 255 : 0;
-      let c = 0;
-      for (let i = 0; i <= size; i++) {
-        c = ((c & 1) << 8) | num[i];
-        num[i] = (c >> 1) ^ sign;
-      }
-    }
-    readString() {
-      const len = this.readNumber();
-      let s = "";
-      for (let i = 0; i < len; i++) {
-        s += String.fromCharCode(this.readNumber());
-      }
-      return s;
-    }
-  }
-
-  // eslint-disable-next-line no-shadow
-  export class BinaryCMapReader {
-    async process(
-      data: Uint8Array,
-      cMap: CMap,
-      extend: (useCMap: string) => Promise<CMap>,
-    ) {
-      const stream = new BinaryCMapStream(data);
-      const header = stream.readByte();
-      cMap.vertical = !!(header & 1);
-
-      let useCMap = null;
-      const start = new Uint8Array(MAX_NUM_SIZE);
-      const end = new Uint8Array(MAX_NUM_SIZE);
-      const char = new Uint8Array(MAX_NUM_SIZE);
-      const charCode = new Uint8Array(MAX_NUM_SIZE);
-      const tmp = new Uint8Array(MAX_NUM_SIZE);
-      let code;
-
-      let b;
-      while ((b = stream.readByte()) >= 0) {
-        const type = b >> 5;
-        if (type === 7) {
-          // metadata, e.g. comment or usecmap
-          switch (b & 0x1f) {
-            case 0:
-              stream.readString(); // skipping comment
-              break;
-            case 1:
-              useCMap = stream.readString();
-              break;
-          }
-          continue;
-        }
-        const sequence = !!(b & 0x10);
-        const dataSize = b & 15;
-
-        if (dataSize + 1 > MAX_NUM_SIZE) {
-          throw new Error("BinaryCMapReader.process: Invalid dataSize.");
-        }
-
-        const ucs2DataSize = 1;
-        const subitemsCount = stream.readNumber();
-        switch (type) {
-          case 0: // codespacerange
-            stream.readHex(start, dataSize);
-            stream.readHexNumber(end, dataSize);
-            addHex(end, start, dataSize);
-            cMap.addCodespaceRange(
-              dataSize + 1,
-              hexToInt(start, dataSize),
-              hexToInt(end, dataSize),
-            );
-            for (let i = 1; i < subitemsCount; i++) {
-              incHex(end, dataSize);
-              stream.readHexNumber(start, dataSize);
-              addHex(start, end, dataSize);
-              stream.readHexNumber(end, dataSize);
-              addHex(end, start, dataSize);
-              cMap.addCodespaceRange(
-                dataSize + 1,
-                hexToInt(start, dataSize),
-                hexToInt(end, dataSize),
-              );
-            }
-            break;
-          case 1: // notdefrange
-            stream.readHex(start, dataSize);
-            stream.readHexNumber(end, dataSize);
-            addHex(end, start, dataSize);
-            stream.readNumber(); // code
-            // undefined range, skipping
-            for (let i = 1; i < subitemsCount; i++) {
-              incHex(end, dataSize);
-              stream.readHexNumber(start, dataSize);
-              addHex(start, end, dataSize);
-              stream.readHexNumber(end, dataSize);
-              addHex(end, start, dataSize);
-              stream.readNumber(); // code
-              // nop
-            }
-            break;
-          case 2: // cidchar
-            stream.readHex(char, dataSize);
-            code = stream.readNumber();
-            cMap.mapOne(hexToInt(char, dataSize), code);
-            for (let i = 1; i < subitemsCount; i++) {
-              incHex(char, dataSize);
-              if (!sequence) {
-                stream.readHexNumber(tmp, dataSize);
-                addHex(char, tmp, dataSize);
-              }
-              code = stream.readSigned() + (code + 1);
-              cMap.mapOne(hexToInt(char, dataSize), code);
-            }
-            break;
-          case 3: // cidrange
-            stream.readHex(start, dataSize);
-            stream.readHexNumber(end, dataSize);
-            addHex(end, start, dataSize);
-            code = stream.readNumber();
-            cMap.mapCidRange(
-              hexToInt(start, dataSize),
-              hexToInt(end, dataSize),
-              code,
-            );
-            for (let i = 1; i < subitemsCount; i++) {
-              incHex(end, dataSize);
-              if (!sequence) {
-                stream.readHexNumber(start, dataSize);
-                addHex(start, end, dataSize);
-              } else {
-                start.set(end);
-              }
-              stream.readHexNumber(end, dataSize);
-              addHex(end, start, dataSize);
-              code = stream.readNumber();
-              cMap.mapCidRange(
-                hexToInt(start, dataSize),
-                hexToInt(end, dataSize),
-                code,
-              );
-            }
-            break;
-          case 4: // bfchar
-            stream.readHex(char, ucs2DataSize);
-            stream.readHex(charCode, dataSize);
-            cMap.mapOne(
-              hexToInt(char, ucs2DataSize),
-              hexToStr(charCode, dataSize),
-            );
-            for (let i = 1; i < subitemsCount; i++) {
-              incHex(char, ucs2DataSize);
-              if (!sequence) {
-                stream.readHexNumber(tmp, ucs2DataSize);
-                addHex(char, tmp, ucs2DataSize);
-              }
-              incHex(charCode, dataSize);
-              stream.readHexSigned(tmp, dataSize);
-              addHex(charCode, tmp, dataSize);
-              cMap.mapOne(
-                hexToInt(char, ucs2DataSize),
-                hexToStr(charCode, dataSize),
-              );
-            }
-            break;
-          case 5: // bfrange
-            stream.readHex(start, ucs2DataSize);
-            stream.readHexNumber(end, ucs2DataSize);
-            addHex(end, start, ucs2DataSize);
-            stream.readHex(charCode, dataSize);
-            cMap.mapBfRange(
-              hexToInt(start, ucs2DataSize),
-              hexToInt(end, ucs2DataSize),
-              hexToStr(charCode, dataSize),
-            );
-            for (let i = 1; i < subitemsCount; i++) {
-              incHex(end, ucs2DataSize);
-              if (!sequence) {
-                stream.readHexNumber(start, ucs2DataSize);
-                addHex(start, end, ucs2DataSize);
-              } else {
-                start.set(end);
-              }
-              stream.readHexNumber(end, ucs2DataSize);
-              addHex(end, start, ucs2DataSize);
-              stream.readHex(charCode, dataSize);
-              cMap.mapBfRange(
-                hexToInt(start, ucs2DataSize),
-                hexToInt(end, ucs2DataSize),
-                hexToStr(charCode, dataSize),
-              );
-            }
-            break;
-          default:
-            throw new Error(`BinaryCMapReader.process - unknown type: ${type}`);
-        }
-      }
-
-      if (useCMap) {
-        return extend(useCMap);
-      }
-      return cMap;
-    }
-  }
-}
-import BinaryCMapReader = NsBinaryCMapReader.BinaryCMapReader;
-
 namespace NsCMapFactory {
   function strToInt(str: string) {
     let a = 0;
@@ -1054,12 +740,10 @@ namespace NsCMapFactory {
     useCMap?: string;
   }
 
-  export const CMapFactory = {
-    async create(params: CMapFactoryCreateP_) {
-      const encoding = params.encoding;
-      const fetchBuiltInCMap = params.fetchBuiltInCMap;
-      const useCMap = params.useCMap;
-
+  export class CMapFactory {
+    static async create(
+      { encoding, fetchBuiltInCMap, useCMap }: CMapFactoryCreateP_,
+    ) {
       if (encoding instanceof Name) {
         return createBuiltInCMap(encoding.name, fetchBuiltInCMap);
       } else if (encoding instanceof BaseStream) {
@@ -1076,8 +760,8 @@ namespace NsCMapFactory {
         return parsedCMap;
       }
       throw new Error("Encoding required.");
-    },
-  };
+    }
+  }
 }
 export import CMapFactory = NsCMapFactory.CMapFactory;
 /*80--------------------------------------------------------------------------*/

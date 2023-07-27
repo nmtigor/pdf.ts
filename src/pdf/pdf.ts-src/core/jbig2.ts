@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-import { IMAGE_DECODERS } from "../../../global.ts";
+import { IMAGE_DECODERS, PDFJSDev } from "../../../global.ts";
 import { BaseException, shadow } from "../shared/util.ts";
 import { ArithmeticDecoder } from "./arithmetic_decoder.ts";
 import { CCITTFaxDecoder, type CCITTFaxDecoderOptions } from "./ccitt.ts";
@@ -1741,7 +1741,7 @@ namespace NsJbig2Image {
   }
 
   function parseJbig2(data: Uint8Array | Uint8ClampedArray) {
-    /*#static*/ if (!IMAGE_DECODERS) {
+    /*#static*/ if (PDFJSDev || !IMAGE_DECODERS) {
       throw new Error("Not implemented: parseJbig2");
     }
     const end = data.length;
@@ -2878,7 +2878,7 @@ namespace NsJbig2Image {
     }
 
     parse(data: Uint8Array | Uint8ClampedArray) {
-      /*#static*/ if (!IMAGE_DECODERS) {
+      /*#static*/ if (PDFJSDev || !IMAGE_DECODERS) {
         throw new Error("Not implemented: Jbig2Image.parse");
       }
       const { imgData, width, height } = parseJbig2(data);

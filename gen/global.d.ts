@@ -3,10 +3,10 @@
  * @license Apache-2.0
  ******************************************************************************/
 import { Hover, Pointer } from "./lib/alias.js";
-import { HTMLVCo } from "./lib/mv.js";
-export declare const INOUT = true, DEV = true, TRACE = true, INFO = true, XSTATE = true, RESIZ = true, INTRS = true, THEMESETTING = false, EDITOR = true, EDITOR_v = true, EDITOR_vv = false, PDFTS = true, PDFTS_v = true, PDFTS_vv = false, _TRACE = true, _INFO = true, APP = false, TESTING = false, /** @deprecated */ TEST_ALL = false, DENO = false, CYPRESS = true, GENERIC = true, MOZCENTRAL = false, CHROME = false, GECKOVIEW = false, PRODUCTION = false, LIB = false, SKIP_BABEL = true, IMAGE_DECODERS = false, COMPONENTS = false, _PDFDEV = true;
+import type { HTMLVCo } from "./lib/mv.js";
+export declare const INOUT = true, DEV = true, TRACE = true, INFO = true, COLR = true, XSTATE = true, RESIZ = true, INTRS = true, THEMESETTING = false, EDITOR = true, /** @deprecated */ EDITOR_v = true, PDFTS = true, PDFTS_v = true, PDFTS_vv = false, _TRACE = true, _INFO = true, _COLR = true, /** @deprecated */ APP = false, TESTING = false, DENO = false, CYPRESS = true, PDFJSDev = true, GENERIC = true, MOZCENTRAL = false, CHROME = false, GECKOVIEW = false, LIB = false, SKIP_BABEL = true, IMAGE_DECODERS = false, COMPONENTS = false;
 export declare const global: {
-    /** @deprecated Use preprocessor. */
+    /** @deprecated Use preprocessor */
     testing: boolean;
     readonly LASTUPDATE_NOT: "2020-07-10 22:17:59 +0200";
     readonly LASTUPDATE_DATNI: "2020-07-24 01:59:51 +0200";

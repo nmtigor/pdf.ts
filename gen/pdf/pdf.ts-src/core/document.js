@@ -15,10 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { _PDFDEV, GENERIC } from "../../../global.js";
+import { PDFJSDev, TESTING } from "../../../global.js";
 import { assert } from "../../../lib/util/trace.js";
-import { FormatError, info, InvalidPDFException, PageActionEventType, RenderingIntentFlag, shadow, stringToBytes, stringToPDFString, stringToUTF8String, UNSUPPORTED_FEATURES, Util, warn, } from "../shared/util.js";
-import { AnnotationFactory, PopupAnnotation, } from "./annotation.js";
+import { FormatError, info, InvalidPDFException, PageActionEventType, RenderingIntentFlag, shadow, stringToBytes, stringToPDFString, stringToUTF8String, Util, warn, } from "../shared/util.js";
+import { AnnotationFactory, PopupAnnotation } from "./annotation.js";
 import { BaseStream } from "./base_stream.js";
 import { Catalog } from "./catalog.js";
 import { clearGlobalCaches } from "./cleanup_helper.js";
@@ -30,7 +30,7 @@ import { PartialEvaluator } from "./evaluator.js";
 import { ObjectLoader } from "./object_loader.js";
 import { OperatorList } from "./operator_list.js";
 import { Linearization } from "./parser.js";
-import { Dict, isName, Name, Ref, } from "./primitives.js";
+import { Dict, isName, Name, Ref } from "./primitives.js";
 import { NullStream } from "./stream.js";
 import { StructTreePage } from "./struct_tree.js";
 import { writeObject } from "./writer.js";
@@ -168,27 +168,20 @@ export class Page {
         }
         return shadow(this, "rotate", rotate);
     }
-    #onSubStreamError(handler, reason, objId) {
+    #onSubStreamError(reason, objId) {
         if (this.evaluatorOptions.ignoreErrors) {
-            /*#static*/  {
-                // Error(s) when reading one of the /Contents sub-streams -- sending
-                // unsupported feature notification and allow parsing to continue.
-                handler.send("UnsupportedFeature", {
-                    featureId: UNSUPPORTED_FEATURES.errorContentSubStream,
-                });
-            }
             warn(`getContentStream - ignoring sub-stream (${objId}): "${reason}".`);
             return;
         }
         throw reason;
     }
-    getContentStream(handler) {
+    getContentStream() {
         return this.pdfManager.ensure(this, "content").then((content) => {
             if (content instanceof BaseStream) {
                 return content;
             }
             if (Array.isArray(content)) {
-                return new StreamsSequenceStream(content, this.#onSubStreamError.bind(this, handler));
+                return new StreamsSequenceStream(content, this.#onSubStreamError.bind(this));
             }
             // Replace non-existent page content with empty content.
             return new NullStream();
@@ -277,7 +270,7 @@ export class Page {
         });
     }
     getOperatorList({ handler, sink, task, intent, cacheKey, annotationStorage = undefined, }) {
-        const contentStreamPromise = this.getContentStream(handler);
+        const contentStreamPromise = this.getContentStream();
         const resourcesPromise = this.loadResources([
             "ColorSpace",
             "ExtGState",
@@ -366,12 +359,8 @@ export class Page {
                 let form = false, canvas = false;
                 for (const { opList, separateForm, separateCanvas } of opLists) {
                     pageOpList.addOpList(opList);
-                    if (separateForm) {
-                        form = separateForm;
-                    }
-                    if (separateCanvas) {
-                        canvas = separateCanvas;
-                    }
+                    form ||= separateForm;
+                    canvas ||= separateCanvas;
                 }
                 pageOpList.flush(
                 /* lastChunk = */ true, 
@@ -380,8 +369,8 @@ export class Page {
             });
         });
     }
-    extractTextContent({ handler, task, includeMarkedContent, sink, combineTextItems, }) {
-        const contentStreamPromise = this.getContentStream(handler);
+    extractTextContent({ handler, task, includeMarkedContent, disableNormalization, sink, }) {
+        const contentStreamPromise = this.getContentStream();
         const resourcesPromise = this.loadResources([
             "ExtGState",
             "Font",
@@ -406,7 +395,7 @@ export class Page {
                 task,
                 resources: this.resources,
                 includeMarkedContent,
-                combineTextItems,
+                disableNormalization,
                 sink,
                 viewBox: this.view,
             });
@@ -435,8 +424,7 @@ export class Page {
         if (annotations.length === 0) {
             return [];
         }
-        const textContentPromises = [];
-        const annotationsData = [];
+        const annotationsData = [], textContentPromises = [];
         let partialEvaluator;
         const intentAny = !!(intent & RenderingIntentFlag.ANY), intentDisplay = !!(intent & RenderingIntentFlag.DISPLAY), intentPrint = !!(intent & RenderingIntentFlag.PRINT);
         for (const annotation of annotations) {
@@ -447,19 +435,17 @@ export class Page {
                 annotationsData.push(annotation.data);
             }
             if (annotation.hasTextContent && isVisible) {
-                if (!partialEvaluator) {
-                    partialEvaluator = new PartialEvaluator({
-                        xref: this.xref,
-                        handler,
-                        pageIndex: this.pageIndex,
-                        idFactory: this._localIdFactory,
-                        fontCache: this.fontCache,
-                        builtInCMapCache: this.builtInCMapCache,
-                        standardFontDataCache: this.standardFontDataCache,
-                        globalImageCache: this.globalImageCache,
-                        options: this.evaluatorOptions,
-                    });
-                }
+                partialEvaluator ||= new PartialEvaluator({
+                    xref: this.xref,
+                    handler,
+                    pageIndex: this.pageIndex,
+                    idFactory: this._localIdFactory,
+                    fontCache: this.fontCache,
+                    builtInCMapCache: this.builtInCMapCache,
+                    standardFontDataCache: this.standardFontDataCache,
+                    globalImageCache: this.globalImageCache,
+                    options: this.evaluatorOptions,
+                });
                 textContentPromises.push(annotation
                     .extractTextContent(partialEvaluator, task, this.view)
                     .catch(function (reason) {
@@ -499,10 +485,7 @@ export class Page {
                         continue;
                     }
                     if (annotation instanceof PopupAnnotation) {
-                        if (!popupAnnotations) {
-                            popupAnnotations = [];
-                        }
-                        popupAnnotations.push(annotation);
+                        (popupAnnotations ||= []).push(annotation);
                         continue;
                     }
                     sortedAnnotations.push(annotation);
@@ -920,7 +903,7 @@ export class PDFDocument {
             }
             let fontFamily = descriptor.get("FontFamily");
             // For example, "Wingdings 3" is not a valid font name in the css specs.
-            fontFamily = fontFamily.replace(/[ ]+(\d)/g, "$1");
+            fontFamily = fontFamily.replaceAll(/[ ]+(\d)/g, "$1");
             const fontWeight = descriptor.get("FontWeight");
             // Angle is expressed in degrees counterclockwise in PDF
             // when it's clockwise in CSS

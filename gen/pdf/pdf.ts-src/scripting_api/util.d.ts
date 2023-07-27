@@ -15,10 +15,10 @@ interface _DateData {
     seconds: number;
     am?: boolean;
 }
-type _Action = (value: string, data: _DateData) => void;
+type Action_ = (value: string, data: _DateData) => void;
 export type CFormat = 0 | 1 | 2 | string;
 export declare class Util extends PDFObject<_SendUtilData> {
-    _scandCache: Map<string, [string, _Action[]]>;
+    _scandCache: Map<string, [string, Action_[]]>;
     _months: string[];
     _days: string[];
     readonly MILLISECONDS_IN_DAY = 86400000;

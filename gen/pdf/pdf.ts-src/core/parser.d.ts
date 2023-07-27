@@ -1,19 +1,19 @@
 import { Ascii85Stream } from "./ascii_85_stream.js";
 import { AsciiHexStream } from "./ascii_hex_stream.js";
-import { BaseStream } from "./base_stream.js";
+import type { BaseStream } from "./base_stream.js";
 import { CCITTFaxStream } from "./ccitt_stream.js";
-import { CipherTransform } from "./crypto.js";
-import { type OpMap } from "./evaluator.js";
+import type { CipherTransform } from "./crypto.js";
+import type { OpMap } from "./evaluator.js";
 import { FlateStream } from "./flate_stream.js";
 import { Jbig2Stream } from "./jbig2_stream.js";
 import { JpegStream } from "./jpeg_stream.js";
 import { JpxStream } from "./jpx_stream.js";
 import { LZWStream } from "./lzw_stream.js";
 import { PredictorStream } from "./predictor_stream.js";
-import { Cmd, Dict, EOF, Name, type Obj } from "./primitives.js";
+import { Cmd, Dict, EOF, Name, type Obj, Ref } from "./primitives.js";
 import { RunLengthStream } from "./run_length_stream.js";
 import { Stream } from "./stream.js";
-import { XRef } from "./xref.js";
+import type { XRef } from "./xref.js";
 interface _ParserCtorP {
     lexer: Lexer;
     xref?: XRef | undefined;
@@ -97,7 +97,7 @@ export declare class Lexer {
     getName(): Name;
     getHexString(): string;
     getObj(): Obj;
-    peekObj(): string | number | boolean | Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint16Array | Int32Array | Uint32Array | Float32Array | Float64Array | BaseStream | Dict | Name | Cmd | typeof import("./primitives.js").CIRCULAR_REF | typeof EOF | import("./primitives.js").NsRef.Ref | (Obj | undefined)[];
+    peekObj(): string | number | boolean | Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint16Array | Int32Array | Uint32Array | Float32Array | Float64Array | BaseStream | Dict | Name | Cmd | typeof import("./primitives.js").CIRCULAR_REF | typeof EOF | Ref | (Obj | undefined)[];
     skipToNextLine(): void;
 }
 export declare class Linearization {

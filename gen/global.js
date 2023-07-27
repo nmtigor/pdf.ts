@@ -9,19 +9,18 @@ import { assert } from "./lib/util/trace.js";
 // deno-fmt-ignore
 export const INOUT = true // contracts
 , DEV = true // debug build
-, TRACE = true, INFO = true, XSTATE = true, RESIZ = true // "resize", ResizeObserver
+, TRACE = true, INFO = true, COLR = true, XSTATE = true, RESIZ = true // "resize", ResizeObserver
 , INTRS = true // IntersectionObserver
-, THEMESETTING = false, EDITOR = true, EDITOR_v = true // verbose
-, EDITOR_vv = false // very verbose
+, THEMESETTING = false, EDITOR = true, /** @deprecated */ EDITOR_v = true // verbose
 , PDFTS = true, PDFTS_v = true // verbose
 , PDFTS_vv = false // very verbose
-, _TRACE = DEV && TRACE, _INFO = DEV && INFO, APP = false // release build
-, TESTING = false, /** @deprecated */ TEST_ALL = false, DENO = false, CYPRESS = true
+, _TRACE = DEV && TRACE, _INFO = DEV && INFO, _COLR = DEV && COLR, /** @deprecated */ APP = false // release build
+, TESTING = false, DENO = false, CYPRESS = true
 // from pdf.js
-, GENERIC = true, MOZCENTRAL = false, CHROME = false, GECKOVIEW = false, PRODUCTION = false, LIB = false, SKIP_BABEL = true, IMAGE_DECODERS = false, COMPONENTS = false, _PDFDEV = !PRODUCTION || TESTING;
+, PDFJSDev = true, GENERIC = true, MOZCENTRAL = false, CHROME = false, GECKOVIEW = false, LIB = false, SKIP_BABEL = true, IMAGE_DECODERS = false, COMPONENTS = false;
 /*80-------------------------------------------------------------------------*/
 export const global = new class {
-    /** @deprecated Use preprocessor. */
+    /** @deprecated Use preprocessor */
     testing = false;
     LASTUPDATE_NOT = "2020-07-10 22:17:59 +0200";
     LASTUPDATE_DATNI = "2020-07-24 01:59:51 +0200";

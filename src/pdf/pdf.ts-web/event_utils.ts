@@ -18,7 +18,7 @@
  */
 
 import { MOZCENTRAL } from "../../global.ts";
-import {
+import type {
   AnnotationEditorParamsType,
   AnnotationEditorType,
   AnnotationEditorUIManager,
@@ -29,29 +29,29 @@ import {
   PropertyToUpdate,
   ScriptingActionName,
 } from "../pdf.ts-src/pdf.ts";
-import { AnnotationEditorParams } from "./annotation_editor_params.ts";
-import { ErrorMoreInfo, PDFViewerApplication } from "./app.ts";
-import { PDFAttachmentViewer } from "./pdf_attachment_viewer.ts";
-import { PDFCursorTools } from "./pdf_cursor_tools.ts";
-import { PDFFindBar } from "./pdf_find_bar.ts";
-import {
+import type { AnnotationEditorParams } from "./annotation_editor_params.ts";
+import type { ErrorMoreInfo, PDFViewerApplication } from "./app.ts";
+import type { PDFAttachmentViewer } from "./pdf_attachment_viewer.ts";
+import type { PDFCursorTools } from "./pdf_cursor_tools.ts";
+import type { PDFFindBar } from "./pdf_find_bar.ts";
+import type {
   FindCtrlState,
   FindState,
   MatchesCount,
   PDFFindController,
 } from "./pdf_find_controller.ts";
-import { PDFLayerViewer } from "./pdf_layer_viewer.ts";
-import { PDFLinkService } from "./pdf_link_service.ts";
-import { PDFOutlineViewer } from "./pdf_outline_viewer.ts";
-import { PDFPageView } from "./pdf_page_view.ts";
-import { PDFPresentationMode } from "./pdf_presentation_mode.ts";
-import { PDFScriptingManager } from "./pdf_scripting_manager.ts";
-import { PDFSidebar } from "./pdf_sidebar.ts";
-import { PDFSidebarResizer } from "./pdf_sidebar_resizer.ts";
-import { PDFLocation, PDFViewer } from "./pdf_viewer.ts";
-import { SecondaryToolbar } from "./secondary_toolbar.ts";
-import { Toolbar } from "./toolbar.ts";
-import {
+import type { PDFLayerViewer } from "./pdf_layer_viewer.ts";
+import type { PDFLinkService } from "./pdf_link_service.ts";
+import type { PDFOutlineViewer } from "./pdf_outline_viewer.ts";
+import type { PDFPageView } from "./pdf_page_view.ts";
+import type { PDFPresentationMode } from "./pdf_presentation_mode.ts";
+import type { PDFScriptingManager } from "./pdf_scripting_manager.ts";
+import type { PDFSidebar } from "./pdf_sidebar.ts";
+import type { PDFSidebarResizer } from "./pdf_sidebar_resizer.ts";
+import type { PDFLocation, PDFViewer } from "./pdf_viewer.ts";
+import type { SecondaryToolbar } from "./secondary_toolbar.ts";
+import type { Toolbar } from "./toolbar.ts";
+import type {
   CursorTool,
   PageLayout,
   PresentationModeState,
@@ -66,7 +66,7 @@ export const enum WaitOnType {
   TIMEOUT = "timeout",
 }
 
-interface _WaitOnEventOrTimeoutP {
+interface WaitOnEventOrTimeoutP_ {
   /**
    * The event target, can for example be:
    * `window`, `document`, a DOM element, or an {EventBus} instance.
@@ -97,7 +97,7 @@ export function waitOnEventOrTimeout({
   target,
   name,
   delay = 0,
-}: _WaitOnEventOrTimeoutP): Promise<unknown> {
+}: WaitOnEventOrTimeoutP_): Promise<unknown> {
   return new Promise((resolve, reject) => {
     if (
       typeof target !== "object" ||
@@ -208,7 +208,7 @@ export interface EventMap {
   };
   documentproperties: {};
   download: {
-    source: typeof window | PDFScriptingManager;
+    // source: typeof window | PDFScriptingManager;
   };
   editingaction: {
     source: typeof window;
@@ -222,8 +222,7 @@ export interface EventMap {
   };
   findfromurlhash: {
     source: PDFLinkService;
-    query: string;
-    phraseSearch: boolean;
+    query: string | RegExpMatchArray | null;
   };
   fileattachmentannotation: {
     source: FileAttachmentAnnotationElement;
@@ -262,6 +261,7 @@ export interface EventMap {
   openfile: {
     source: typeof window;
   };
+  openinexternalapp: {};
   optionalcontentconfig: {
     source: PDFLayerViewer;
     promise: Promise<OptionalContentConfig | undefined>;
@@ -409,7 +409,7 @@ export interface EventMap {
     state: FindState;
     previous?: boolean | undefined;
     matchesCount: MatchesCount;
-    rawQuery: string | undefined;
+    rawQuery: string | string[] | RegExpMatchArray | null;
   };
   updatefindmatchescount: {
     source: PDFFindController;
@@ -558,7 +558,7 @@ export class AutomationEventBus extends EventBus {
     }
     super.dispatch(eventName, data);
 
-    const details = Object.create(null);
+    const detail = Object.create(null);
     if (data) {
       for (const key in data) {
         const value = data[key];
@@ -569,15 +569,13 @@ export class AutomationEventBus extends EventBus {
           }
           continue; // Ignore the `source` property.
         }
-        details[key] = value;
+        detail[key] = value;
       }
     }
-    // const event = document.createEvent("CustomEvent");
-    // event.initCustomEvent(eventName, true, true, details);
     const event = new CustomEvent(eventName, {
       bubbles: true,
       cancelable: true,
-      detail: details,
+      detail,
     });
     document.dispatchEvent(event);
   }

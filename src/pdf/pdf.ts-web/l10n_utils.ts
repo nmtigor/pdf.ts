@@ -17,13 +17,13 @@
  * limitations under the License.
  */
 
-import {
-  type Locale_1,
-  type WebL10nArgs,
+import type {
+  Locale_1,
+  WebL10nArgs,
 } from "../../3rd/webL10n-2015-10-24/l10n.ts";
-import { MOZCENTRAL } from "../../global.ts";
+import { MOZCENTRAL, PDFJSDev } from "../../global.ts";
 import { Locale } from "../../lib/Locale.ts";
-import { type IL10n } from "./interfaces.ts";
+import type { IL10n } from "./interfaces.ts";
 /*80--------------------------------------------------------------------------*/
 
 /**
@@ -87,7 +87,7 @@ const DEFAULT_L10N_STRINGS: Record<string, string> = {
   editor_ink2_aria_label: "Draw Editor",
   editor_ink_canvas_aria_label: "User-created image",
 };
-/*#static*/ if (!MOZCENTRAL) {
+/*#static*/ if (PDFJSDev || !MOZCENTRAL) {
   DEFAULT_L10N_STRINGS.print_progress_percent = "{{progress}}%";
 }
 
@@ -130,7 +130,7 @@ export function formatL10nValue(text: string, args?: WebL10nArgs) {
   if (!args) {
     return text;
   }
-  return text.replace(/\{\{\s*(\w+)\s*\}\}/g, (all, name) => {
+  return text.replaceAll(/\{\{\s*(\w+)\s*\}\}/g, (all, name) => {
     return name in args ? args[name] : "{{" + name + "}}";
   });
 }
@@ -140,7 +140,7 @@ export function formatL10nValue(text: string, args?: WebL10nArgs) {
  */
 export const NullL10n: IL10n = {
   async getLanguage() {
-    return <Lowercase<Locale>> Locale.en_US.toLowerCase();
+    return Locale.en_US.toLowerCase() as Lowercase<Locale>;
   },
 
   async getDirection() {

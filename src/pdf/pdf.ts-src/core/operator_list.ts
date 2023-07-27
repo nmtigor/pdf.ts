@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+import type { OC2D } from "../../../lib/alias.ts";
 import { type StreamSink, Thread } from "../shared/message_handler.ts";
 import {
   ImageKind,
@@ -34,6 +35,7 @@ namespace NsQueueOptimizer {
     fnArray: OPS[];
     // argsArray:([] | null)[];
     argsArray: unknown[];
+    isOffscreenCanvasSupported: boolean;
   }
 
   type CheckFn = (context: QueueOptimizerContext) => boolean;
@@ -63,7 +65,7 @@ namespace NsQueueOptimizer {
     let state = parentState;
     for (let i = 0, ii = pattern.length - 1; i < ii; i++) {
       const item = pattern[i];
-      state = <State> state[item] || (state[item] = <State> <unknown> []);
+      state = (state[item] as State) ||= [] as unknown as State;
     }
     state[pattern.at(-1)!] = {
       checkFn,
@@ -174,17 +176,32 @@ namespace NsQueueOptimizer {
         }
       }
 
+      const img = {
+        width: imgWidth,
+        height: imgHeight,
+      } as ImgData;
+      if (context.isOffscreenCanvasSupported) {
+        const canvas = new OffscreenCanvas(imgWidth, imgHeight);
+        const ctx = canvas.getContext("2d") as OC2D;
+        ctx.putImageData(
+          new ImageData(
+            new Uint8ClampedArray(imgData.buffer),
+            imgWidth,
+            imgHeight,
+          ),
+          0,
+          0,
+        );
+        img.bitmap = canvas.transferToImageBitmap();
+        img.data = undefined;
+      } else {
+        img.kind = ImageKind.RGBA_32BPP;
+        img.data = imgData;
+      }
+
       // Replace queue items.
       fnArray.splice(iFirstSave, count * 4, OPS.paintInlineImageXObjectGroup);
-      argsArray.splice(iFirstSave, count * 4, [
-        {
-          width: imgWidth,
-          height: imgHeight,
-          kind: ImageKind.RGBA_32BPP,
-          data: imgData,
-        },
-        map,
-      ]);
+      argsArray.splice(iFirstSave, count * 4, [img, map]);
 
       return iFirstSave + 1;
     },
@@ -510,6 +527,9 @@ namespace NsQueueOptimizer {
       this.queue = queue;
     }
 
+    set isOffscreenCanvasSupported(value: boolean) {
+    }
+
     _optimize() {}
 
     push(fn: OPS, args?: OpArgs) {
@@ -536,7 +556,13 @@ namespace NsQueueOptimizer {
         iCurr: 0,
         fnArray: queue.fnArray,
         argsArray: queue.argsArray,
+        isOffscreenCanvasSupported: false,
       };
+    }
+
+    // eslint-disable-next-line accessor-pairs
+    override set isOffscreenCanvasSupported(value: boolean) {
+      this.context.isOffscreenCanvasSupported = value;
     }
 
     override _optimize() {
@@ -614,194 +640,199 @@ namespace NsQueueOptimizer {
 import QueueOptimizer = NsQueueOptimizer.QueueOptimizer;
 import NullOptimizer = NsQueueOptimizer.NullOptimizer;
 
-namespace NsOperatorList {
-  const CHUNK_SIZE = 1000;
-  const CHUNK_SIZE_ABOUT = CHUNK_SIZE - 5; // close to chunk size
+/**
+ * PDF page operator list.
+ */
+export interface OpListIR {
+  /**
+   * Array containing the operator functions.
+   */
+  fnArray: OPS[];
 
   /**
-   * PDF page operator list.
+   * Array containing the arguments of the functions.
    */
-  export interface OpListIR {
-    /**
-     * Array containing the operator functions.
-     */
-    fnArray: OPS[];
+  // argsArray:(Uint8ClampedArray | OpArgs | undefined)[];
+  argsArray: (OpArgs | undefined)[];
 
-    /**
-     * Array containing the arguments of the functions.
-     */
-    // argsArray:(Uint8ClampedArray | OpArgs | undefined)[];
-    argsArray: (OpArgs | undefined)[];
+  length?: number;
+  lastChunk: boolean | undefined;
+  separateAnnots: {
+    form: boolean;
+    canvas: boolean;
+  } | undefined;
+}
 
-    length?: number;
-    lastChunk: boolean | undefined;
-    separateAnnots: {
-      form: boolean;
-      canvas: boolean;
-    } | undefined;
+/** @final */
+export class OperatorList {
+  static CHUNK_SIZE = 1000;
+
+  // Close to chunk size.
+  static CHUNK_SIZE_ABOUT = this.CHUNK_SIZE - 5;
+
+  #streamSink;
+  fnArray: OPS[] = [];
+
+  // argsArray:(unknown[] | Uint8ClampedArray | null | undefined)[] = [];
+  // argsArray:(Uint8ClampedArray | OpArgs | undefined)[] = [];
+  argsArray: (OpArgs | undefined)[] = [];
+  get length() {
+    return this.argsArray.length;
   }
 
-  /** @final */
-  export class OperatorList {
-    #streamSink;
-    fnArray: OPS[] = [];
+  optimizer: NullOptimizer;
+  dependencies = new Set<string>();
 
-    // argsArray:(unknown[] | Uint8ClampedArray | null | undefined)[] = [];
-    // argsArray:(Uint8ClampedArray | OpArgs | undefined)[] = [];
-    argsArray: (OpArgs | undefined)[] = [];
-    get length() {
-      return this.argsArray.length;
+  #totalLength = 0;
+  /**
+   * @return The total length of the entire operator list, since
+   *  `this.length === 0` after flushing.
+   */
+  get totalLength() {
+    return this.#totalLength + this.length;
+  }
+
+  weight = 0;
+  #resolved: Promise<void> | undefined;
+
+  constructor(
+    intent: RenderingIntentFlag = 0,
+    streamSink?: StreamSink<Thread.main, "GetOperatorList">,
+  ) {
+    this.#streamSink = streamSink;
+    if (streamSink && !(intent & RenderingIntentFlag.OPLIST)) {
+      this.optimizer = new QueueOptimizer(this);
+    } else {
+      this.optimizer = new NullOptimizer(this);
     }
+    this.#resolved = streamSink ? undefined : Promise.resolve();
+  }
 
-    optimizer: QueueOptimizer | NullOptimizer;
-    dependencies = new Set<string>();
+  // eslint-disable-next-line accessor-pairs
+  set isOffscreenCanvasSupported(value: boolean) {
+    this.optimizer.isOffscreenCanvasSupported = value;
+  }
 
-    #totalLength = 0;
-    /**
-     * @return The total length of the entire operator list, since
-     *  `this.length === 0` after flushing.
-     */
-    get totalLength() {
-      return this.#totalLength + this.length;
-    }
+  get ready() {
+    return this.#resolved || this.#streamSink!.ready;
+  }
 
-    weight = 0;
-    #resolved: Promise<void> | undefined;
-
-    constructor(
-      intent: RenderingIntentFlag = 0,
-      streamSink?: StreamSink<Thread.main, "GetOperatorList">,
-    ) {
-      this.#streamSink = streamSink;
-      if (streamSink && !(intent & RenderingIntentFlag.OPLIST)) {
-        this.optimizer = new QueueOptimizer(this);
-      } else this.optimizer = new NullOptimizer(this);
-      this.#resolved = streamSink ? undefined : Promise.resolve();
-    }
-
-    get ready() {
-      return this.#resolved || this.#streamSink!.ready;
-    }
-
-    // args?:Uint8ClampedArray | OpArgs | [ImgData]
-    // args?:unknown[] | Uint8ClampedArray | null
-    addOp(fn: OPS, args?: OpArgs) {
-      this.optimizer.push(fn, args);
-      this.weight++;
-      if (this.#streamSink) {
-        if (this.weight >= CHUNK_SIZE) {
-          this.flush();
-        } else if (
-          this.weight >= CHUNK_SIZE_ABOUT &&
-          (fn === OPS.restore || fn === OPS.endText)
-        ) {
-          // Heuristic to flush on boundary of restore or endText.
-          this.flush();
-        }
+  // args?:Uint8ClampedArray | OpArgs | [ImgData]
+  // args?:unknown[] | Uint8ClampedArray | null
+  addOp(fn: OPS, args?: OpArgs) {
+    this.optimizer.push(fn, args);
+    this.weight++;
+    if (this.#streamSink) {
+      if (this.weight >= OperatorList.CHUNK_SIZE) {
+        this.flush();
+      } else if (
+        this.weight >= OperatorList.CHUNK_SIZE_ABOUT &&
+        (fn === OPS.restore || fn === OPS.endText)
+      ) {
+        // Heuristic to flush on boundary of restore or endText.
+        this.flush();
       }
     }
+  }
 
-    addImageOps(
-      fn: OPS,
-      args: OpArgs | undefined,
-      optionalContent: MarkedContentProps | undefined,
-    ) {
-      if (optionalContent !== undefined) {
-        this.addOp(OPS.beginMarkedContentProps, ["OC", optionalContent]);
-      }
-
-      this.addOp(fn, args);
-
-      if (optionalContent !== undefined) {
-        this.addOp(OPS.endMarkedContent, []);
-      }
+  addImageOps(
+    fn: OPS,
+    args: OpArgs | undefined,
+    optionalContent: MarkedContentProps | undefined,
+  ) {
+    if (optionalContent !== undefined) {
+      this.addOp(OPS.beginMarkedContentProps, ["OC", optionalContent]);
     }
 
-    addDependency(dependency: string) {
-      if (this.dependencies.has(dependency)) {
-        return;
-      }
+    this.addOp(fn, args);
+
+    if (optionalContent !== undefined) {
+      this.addOp(OPS.endMarkedContent, []);
+    }
+  }
+
+  addDependency(dependency: string) {
+    if (this.dependencies.has(dependency)) {
+      return;
+    }
+    this.dependencies.add(dependency);
+    this.addOp(OPS.dependency, [dependency]);
+  }
+
+  addDependencies(dependencies: Set<string>) {
+    for (const dependency of dependencies) {
+      this.addDependency(dependency);
+    }
+  }
+
+  addOpList(opList: OperatorList) {
+    if (!(opList instanceof OperatorList)) {
+      warn('addOpList - ignoring invalid "opList" parameter.');
+      return;
+    }
+    for (const dependency of opList.dependencies) {
       this.dependencies.add(dependency);
-      this.addOp(OPS.dependency, [dependency]);
     }
+    for (let i = 0, ii = opList.length; i < ii; i++) {
+      this.addOp(opList.fnArray[i], opList.argsArray[i]);
+    }
+  }
 
-    addDependencies(dependencies: Set<string>) {
-      for (const dependency of dependencies) {
-        this.addDependency(dependency);
+  getIR() {
+    return <OpListIR> {
+      fnArray: this.fnArray,
+      argsArray: this.argsArray,
+      length: this.length,
+    };
+  }
+
+  get _transfers() {
+    const transfers = [];
+    const { fnArray, argsArray, length } = this;
+    for (let i = 0; i < length; i++) {
+      switch (fnArray[i]) {
+        case OPS.paintInlineImageXObject:
+        case OPS.paintInlineImageXObjectGroup:
+        case OPS.paintImageMaskXObject:
+          const arg = (<any> argsArray[i])[0]; // First parameter in imgData.
+          if (
+            !arg.cached &&
+            arg.data &&
+            arg.data.buffer instanceof ArrayBuffer
+          ) {
+            transfers.push(arg.data.buffer);
+          }
+          break;
       }
     }
+    return transfers;
+  }
 
-    addOpList(opList: OperatorList) {
-      if (!(opList instanceof OperatorList)) {
-        warn('addOpList - ignoring invalid "opList" parameter.');
-        return;
-      }
-      for (const dependency of opList.dependencies) {
-        this.dependencies.add(dependency);
-      }
-      for (let i = 0, ii = opList.length; i < ii; i++) {
-        this.addOp(opList.fnArray[i], opList.argsArray[i]);
-      }
-    }
+  flush(
+    lastChunk = false,
+    separateAnnots?: { form: boolean; canvas: boolean },
+  ) {
+    this.optimizer.flush();
+    const length = this.length;
+    this.#totalLength += length;
 
-    getIR() {
-      return <OpListIR> {
+    this.#streamSink!.enqueue(
+      {
         fnArray: this.fnArray,
         argsArray: this.argsArray,
-        length: this.length,
-      };
-    }
+        lastChunk,
+        separateAnnots,
+        length,
+      },
+      1,
+      this._transfers,
+    );
 
-    get _transfers() {
-      const transfers = [];
-      const { fnArray, argsArray, length } = this;
-      for (let i = 0; i < length; i++) {
-        switch (fnArray[i]) {
-          case OPS.paintInlineImageXObject:
-          case OPS.paintInlineImageXObjectGroup:
-          case OPS.paintImageMaskXObject:
-            const arg = (<any> argsArray[i])[0]; // First parameter in imgData.
-            if (
-              !arg.cached &&
-              arg.data &&
-              arg.data.buffer instanceof ArrayBuffer
-            ) {
-              transfers.push(arg.data.buffer);
-            }
-            break;
-        }
-      }
-      return transfers;
-    }
-
-    flush(
-      lastChunk = false,
-      separateAnnots?: { form: boolean; canvas: boolean },
-    ) {
-      this.optimizer.flush();
-      const length = this.length;
-      this.#totalLength += length;
-
-      this.#streamSink!.enqueue(
-        {
-          fnArray: this.fnArray,
-          argsArray: this.argsArray,
-          lastChunk,
-          separateAnnots,
-          length,
-        },
-        1,
-        this._transfers,
-      );
-
-      this.dependencies.clear();
-      this.fnArray.length = 0;
-      this.argsArray.length = 0;
-      this.weight = 0;
-      this.optimizer.reset();
-    }
+    this.dependencies.clear();
+    this.fnArray.length = 0;
+    this.argsArray.length = 0;
+    this.weight = 0;
+    this.optimizer.reset();
   }
 }
-export import OperatorList = NsOperatorList.OperatorList;
-export type OpListIR = NsOperatorList.OpListIR;
 /*80--------------------------------------------------------------------------*/

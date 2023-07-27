@@ -1,6 +1,8 @@
 /** 80**************************************************************************
- * synbols
- ** ------- */
+ * @module lib/symbols
+ * @license Apache-2.0
+ ******************************************************************************/
+/*80--------------------------------------------------------------------------*/
 /**
  * document[ $cssstylesheet ] { Getter }
  */
@@ -36,18 +38,18 @@ export const $inuse = Symbol("$inuse");
  */
 export const $lidx = Symbol("$lidx");
 /**
- * BlockVuu.el[ $lidx1 ] { lnum_t }
+ * BlockVuu.el[ $lidx_1 ] { lnum_t }
  * Last line index of the `Element`
  */
-export const $lidx1 = Symbol("$lidx1");
+export const $lidx_1 = Symbol("$lidx_1");
 /**
- * SpanVuu.el[ $loff ]:loff_t
- * Start offset of the `Element` or `Text` in the `Line`
+ * SpanVuu.el[ $loff ]:llen_t
+ * Start offset of the `Element` or `Text` in the `TokLine`
  */
 export const $loff = Symbol("$loff");
 /**
- * SpanVuu.el[ $loff1 ] { loff_t }
- * Stop offset of the `Element` in the `Line`
+ * SpanVuu.el[ $loff1 ] { llen_t }
+ * Stop offset of the `Element` in the `TokLine`
  */
 export const $loff1 = Symbol("$loff1");
 // /**
@@ -60,6 +62,7 @@ export const $loff1 = Symbol("$loff1");
  */
 export const $ovlap = Symbol("$ovlap");
 /**
+ * @deprecated
  * document[ $palename ] { {} }
  */
 export const $palename = Symbol("$palename");
@@ -115,4 +118,5 @@ export const $vuu = Symbol("$vuu");
  * kkkk check usage
  */
 export const $Vuu = Symbol("$Vuu");
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=symbols.js.map

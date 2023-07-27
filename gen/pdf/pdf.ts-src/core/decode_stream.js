@@ -210,6 +210,7 @@ export class ImageStream extends DecodeStream {
     numComps;
     drawWidth;
     drawHeight;
+    forceRGBA;
     forceRGB;
     constructor(stream, maybeLength, params) {
         super(maybeLength);

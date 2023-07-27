@@ -15,11 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { CHROME, DENO, GENERIC, LIB, PRODUCTION, TESTING, } from "../../global.js";
+import { CHROME, DENO, GENERIC, LIB, MOZCENTRAL, PDFJSDev, TESTING, } from "../../global.js";
 import { Locale } from "../../lib/Locale.js";
 import { AnnotationEditorType, AnnotationMode, VerbosityLevel, } from "../pdf.ts-src/pdf.js";
 import { LinkTarget } from "./pdf_link_service.js";
-import { CursorTool, RendererType, ScrollMode, SidebarView, SpreadMode, TextLayerMode, } from "./ui_utils.js";
+import { CursorTool, ScrollMode, SidebarView, SpreadMode, TextLayerMode, } from "./ui_utils.js";
 /*80--------------------------------------------------------------------------*/
 export var OptionKind;
 (function (OptionKind) {
@@ -102,6 +102,10 @@ const defaultOptions = {
         value: false,
         kind: 0,
     },
+    enableFloatingToolbar: {
+        value: PDFJSDev,
+        kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
+    },
     enablePermissions: {
         value: false,
         kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
@@ -131,8 +135,10 @@ const defaultOptions = {
         kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
     },
     imageResourcesPath: {
-        value: `${D_base}/res/pdf/pdf.ts-web/images/`,
-        // value: "./images/",
+        value: /*#static*/ `${D_base}/res/pdf/pdf.ts-web/images/`,
+        // value: typeof PDFJSDev !== "undefined" && PDFJSDev.test("MOZCENTRAL")
+        //   ? "resource://pdf.js/web/images/"
+        //   : "./images/",
         kind: OptionKind.VIEWER,
     },
     locale: {
@@ -156,16 +162,12 @@ const defaultOptions = {
         kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
     },
     pdfBugEnabled: {
-        value: /*#static*/ true,
+        value: PDFJSDev,
         kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
     },
     printResolution: {
         value: 150,
         kind: OptionKind.VIEWER,
-    },
-    renderer: {
-        value: undefined,
-        kind: 0,
     },
     sidebarViewOnLoad: {
         value: SidebarView.UNKNOWN,
@@ -265,7 +267,9 @@ const defaultOptions = {
         kind: OptionKind.WORKER,
     },
     workerSrc: {
-        value: /*#static*/ `${D_base}/gen/pdf/pdf.ts-src/pdf.worker.js`,
+        value: 
+        // eslint-disable-next-line no-nested-ternary
+        /*#static*/ `${D_base}/gen/pdf/pdf.ts-src/pdf.worker.js`,
         kind: OptionKind.WORKER,
     },
     sandboxBundleSrc: {
@@ -289,10 +293,6 @@ const defaultOptions = {
     defaultOptions.locale = {
         value: navigator.language || Locale.en_US,
         kind: OptionKind.VIEWER,
-    };
-    defaultOptions.renderer = {
-        value: RendererType.CANVAS,
-        kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
     };
     defaultOptions.sandboxBundleSrc = {
         value: /*#static*/ `${D_base}/gen/pdf/pdf.ts-src/pdf.sandbox.js`,
@@ -349,6 +349,9 @@ export class AppOptions {
     static get disablePreferences() {
         return this.#get("disablePreferences");
     }
+    static get enableFloatingToolbar() {
+        return this.#get("enableFloatingToolbar");
+    }
     static get enablePermissions() {
         return this.#get("enablePermissions");
     }
@@ -393,9 +396,6 @@ export class AppOptions {
     }
     static get printResolution() {
         return this.#get("printResolution");
-    }
-    static get renderer() {
-        return this.#get("renderer");
     }
     static get sidebarViewOnLoad() {
         return this.#get("sidebarViewOnLoad");

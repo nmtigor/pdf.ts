@@ -1,5 +1,5 @@
-import { type rect_t } from "../../../lib/alias.js";
-import { Dict, Name } from "./primitives.js";
+import type { rect_t } from "../../../lib/alias.js";
+import { Dict, Name, Ref } from "./primitives.js";
 import { StringStream } from "./stream.js";
 import { XRef } from "./xref.js";
 export interface DefaultAppearanceData {
@@ -21,16 +21,16 @@ export declare class FakeUnicodeFont {
     firstChar: number;
     lastChar: number;
     fontFamily: "monospace" | "sans-serif";
-    ctxMeasure: any;
+    ctxMeasure: OffscreenCanvasRenderingContext2D;
     fontName: Name;
     static toUnicodeStream: StringStream;
-    get toUnicodeRef(): import("./primitives.js").NsRef.Ref;
-    get fontDescriptorRef(): import("./primitives.js").NsRef.Ref;
+    get toUnicodeRef(): Ref;
+    get fontDescriptorRef(): Ref;
     constructor(xref: XRef, fontFamily: "monospace" | "sans-serif");
-    get descendantFontRef(): import("./primitives.js").NsRef.Ref;
-    get baseFontRef(): import("./primitives.js").NsRef.Ref;
+    get descendantFontRef(): Ref;
+    get baseFontRef(): Ref;
     get resources(): Dict;
-    _createContext(): any;
+    _createContext(): OffscreenCanvasRenderingContext2D;
     createFontResources(text: string): Dict;
     createAppearance(text: string, rect: rect_t, rotation: number, fontSize: number, bgColor: Uint8ClampedArray, strokeAlpha: number | undefined): StringStream;
 }

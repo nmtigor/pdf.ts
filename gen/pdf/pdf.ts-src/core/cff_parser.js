@@ -1288,7 +1288,14 @@ export class CFFCompiler {
             data: [],
             length: 0,
             add(data) {
-                this.data = this.data.concat(data);
+                if (data.length <= 65536) {
+                    // The number of arguments is limited, hence we just take 65536 as
+                    // limit because it isn't too high or too low.
+                    this.data.push(...data);
+                }
+                else {
+                    this.data = this.data.concat(data);
+                }
                 this.length = this.data.length;
             },
         };
@@ -1585,11 +1592,6 @@ export class CFFCompiler {
         }
         return this.compileIndex(stringIndex);
     }
-    // compileGlobalSubrIndex()
-    // {
-    //   const globalSubrIndex = this.cff.globalSubrIndex!;
-    //   this.out.writeByteArray( this.compileIndex(globalSubrIndex) );
-    // }
     compileCharStrings(charStrings) {
         const charStringsIndex = new CFFIndex();
         for (let i = 0; i < charStrings.count; i++) {
@@ -1690,11 +1692,7 @@ export class CFFCompiler {
         return this.compileTypedArray(out);
     }
     compileTypedArray(data) {
-        const out = [];
-        for (let i = 0, ii = data.length; i < ii; ++i) {
-            out[i] = data[i];
-        }
-        return out;
+        return Array.from(data);
     }
     compileIndex(index, trackers = []) {
         const objects = index.objects;

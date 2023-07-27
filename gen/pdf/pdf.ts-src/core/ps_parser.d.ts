@@ -1,4 +1,4 @@
-import { BaseStream } from "./base_stream.js";
+import type { BaseStream } from "./base_stream.js";
 import { EOF } from "./primitives.js";
 export declare class PostScriptParser {
     lexer: PostScriptLexer;
@@ -21,19 +21,17 @@ declare const enum PostScriptTokenTypes {
     IF = 4,
     IFELSE = 5
 }
-declare namespace NsPostScriptToken {
-    class PostScriptToken {
-        type: PostScriptTokenTypes;
-        value: string | number;
-        constructor(type: PostScriptTokenTypes, value: string | number);
-        static getOperator(op: string): PostScriptToken;
-        static get LBRACE(): PostScriptToken;
-        static get RBRACE(): PostScriptToken;
-        static get IF(): PostScriptToken;
-        static get IFELSE(): PostScriptToken;
-    }
+export declare class PostScriptToken {
+    static get opCache(): Record<string, PostScriptToken>;
+    type: PostScriptTokenTypes;
+    value: string | number;
+    constructor(type: PostScriptTokenTypes, value: string | number);
+    static getOperator(op: string): PostScriptToken;
+    static get LBRACE(): PostScriptToken;
+    static get RBRACE(): PostScriptToken;
+    static get IF(): PostScriptToken;
+    static get IFELSE(): PostScriptToken;
 }
-import PostScriptToken = NsPostScriptToken.PostScriptToken;
 export declare class PostScriptLexer {
     stream: BaseStream;
     strBuf: string[];

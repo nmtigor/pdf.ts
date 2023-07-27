@@ -47,7 +47,7 @@ export class AForm {
         if (!actions) {
             actions = [];
             this._dateActionsCache.set(cFormat, actions);
-            cFormat.replace(/(d+)|(m+)|(y+)|(H+)|(M+)|(s+)/g, (match, d, m, y, H, M, s) => {
+            cFormat.replaceAll(/(d+)|(m+)|(y+)|(H+)|(M+)|(s+)/g, (match, d, m, y, H, M, s) => {
                 if (d) {
                     actions.push((n, date) => {
                         if (n >= 1 && n <= 31) {

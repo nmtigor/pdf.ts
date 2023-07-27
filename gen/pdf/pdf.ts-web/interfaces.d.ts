@@ -1,11 +1,11 @@
 /** @typedef {import("../src/display/api").PDFPageProxy} PDFPageProxy */
 /** @typedef {import("../src/display/display_utils").PageViewport} PageViewport */
 /** @typedef {import("./ui_utils").RenderingStates} RenderingStates */
-import { type Locale_1, type WebL10nArgs } from "../../3rd/webL10n-2015-10-24/l10n.js";
-import { AnnotActions, AppInfo, type Destination, DocInfo, type ExplicitDest, type FieldObject, type RefProxy, ScriptingActionName, type SetOCGState } from "../pdf.ts-src/pdf.js";
-import { EventBus } from "./event_utils.js";
-import { LinkTarget } from "./pdf_link_service.js";
-import { RenderingStates } from "./ui_utils.js";
+import type { Locale_1, WebL10nArgs } from "../../3rd/webL10n-2015-10-24/l10n.js";
+import type { AnnotActions, AppInfo, Destination, DocInfo, ExplicitDest, FieldObject, RefProxy, ScriptingActionName, SetOCGState } from "../pdf.ts-src/pdf.js";
+import type { EventBus } from "./event_utils.js";
+import type { LinkTarget } from "./pdf_link_service.js";
+import type { RenderingStates } from "./ui_utils.js";
 export interface IPDFLinkService {
     eventBus?: EventBus;
     get pagesCount(): number;
@@ -92,20 +92,20 @@ export interface IRenderableView {
      * @return Resolved on draw completion.
      */
     draw(): Promise<void>;
-    resume?(): void;
+    resume: (() => void) | undefined;
 }
 export interface IVisibleView extends IRenderableView {
     readonly id: number;
     readonly div: HTMLDivElement;
 }
 export interface IDownloadManager {
-    downloadUrl(url: string, filename: string): void;
+    downloadUrl(url: string, filename: string, _options?: object): void;
     downloadData(data: Uint8Array | Uint8ClampedArray, filename: string, contentType: string): void;
     /**
      * @return Indicating if the data was opened.
      */
     openOrDownloadData(element: HTMLElement, data: Uint8Array | Uint8ClampedArray, filename: string): boolean;
-    download(blob: Blob, url: string, filename: string): void;
+    download(blob: Blob, url: string, filename: string, _options?: object): void;
 }
 export interface IL10n {
     getLanguage(): Promise<Lowercase<Locale_1> | "">;

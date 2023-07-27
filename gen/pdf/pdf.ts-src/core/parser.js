@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { _PDFDEV } from "../../../global.js";
+import { PDFJSDev, TESTING } from "../../../global.js";
 import { assert } from "../../../lib/util/trace.js";
 import { bytesToString, FormatError, info, warn } from "../shared/util.js";
 import { Ascii85Stream } from "./ascii_85_stream.js";
@@ -816,7 +816,7 @@ export class Lexer {
             }
             throw new FormatError(msg);
         }
-        sign = sign || 1;
+        sign ||= 1;
         let baseValue = ch - 0x30; // '0'
         let powerValue = 0;
         let powerValueSign = 1;

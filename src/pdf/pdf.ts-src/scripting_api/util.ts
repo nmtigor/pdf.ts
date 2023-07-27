@@ -40,16 +40,16 @@ interface _DateData {
   am?: boolean;
 }
 
-type _Action = (value: string, data: _DateData) => void;
+type Action_ = (value: string, data: _DateData) => void;
 interface _Handler {
   pattern: string;
-  action: _Action;
+  action: Action_;
 }
 
 export type CFormat = 0 | 1 | 2 | string;
 
 export class Util extends PDFObject<_SendUtilData> {
-  _scandCache = new Map<string, [string, _Action[]]>();
+  _scandCache = new Map<string, [string, Action_[]]>();
   _months = [
     "January",
     "February",
@@ -102,7 +102,7 @@ export class Util extends PDFObject<_SendUtilData> {
     const ZERO = 4;
     const HASH = 8;
     let i = 0;
-    return args[0].replace(
+    return args[0].replaceAll(
       pattern,
       (match, nDecSep, cFlags, nWidth, nPrecision, cConvChar) => {
         // cConvChar must be one of d, f, s, x
@@ -287,7 +287,7 @@ export class Util extends PDFObject<_SendUtilData> {
 
     const patterns =
       /(mmmm|mmm|mm|m|dddd|ddd|dd|d|yyyy|yy|HH|H|hh|h|MM|M|ss|s|tt|t|\\.)/g;
-    return cFormat.replace(patterns, (match, pattern) => {
+    return cFormat.replaceAll(patterns, (match, pattern) => {
       if (pattern in handlers) {
         return handlers[<keyof typeof handlers> pattern](data);
       }
@@ -529,12 +529,12 @@ export class Util extends PDFObject<_SendUtilData> {
       };
 
       // escape the string
-      const escapedFormat = cFormat.replace(/[.*+\-?^${}()|[\]\\]/g, "\\$&");
+      const escapedFormat = cFormat.replaceAll(/[.*+\-?^${}()|[\]\\]/g, "\\$&");
       const patterns =
         /(mmmm|mmm|mm|m|dddd|ddd|dd|d|yyyy|yy|HH|H|hh|h|MM|M|ss|s|tt|t)/g;
-      const actions: _Action[] = [];
+      const actions: Action_[] = [];
 
-      const re = escapedFormat.replace(
+      const re = escapedFormat.replaceAll(
         patterns,
         (match, patternElement) => {
           const { pattern, action } = handlers[patternElement];
@@ -561,7 +561,7 @@ export class Util extends PDFObject<_SendUtilData> {
       minutes: 0,
       seconds: 0,
     };
-    actions.forEach((action: _Action, i: number) =>
+    actions.forEach((action: Action_, i: number) =>
       action(matches[i + 1], data)
     );
     if (data.am !== undefined) {

@@ -56,8 +56,8 @@ export class JpegStream extends ImageStream {
     const jpegOptions: JpegOptions = {};
 
     // Checking if values need to be transformed before conversion.
-    const decodeArr = <number[]> this.dict!.getArray("D", "Decode");
-    if (this.forceRGB && Array.isArray(decodeArr)) {
+    const decodeArr = this.dict!.getArray("D", "Decode") as number[];
+    if ((this.forceRGBA || this.forceRGB) && Array.isArray(decodeArr)) {
       const bitsPerComponent =
         <number> this.dict!.get("BPC", "BitsPerComponent") || 8;
       const decodeArrLength = decodeArr.length;
@@ -88,6 +88,7 @@ export class JpegStream extends ImageStream {
     const data = jpegImage.getData({
       width: this.drawWidth!,
       height: this.drawHeight!,
+      forceRGBA: this.forceRGBA,
       forceRGB: this.forceRGB,
       isSourcePDF: true,
     });

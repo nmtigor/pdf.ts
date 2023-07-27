@@ -9,7 +9,7 @@ export type CS = Ref | Name | Dict | number | [
     (undefined | Ref | Name | Dict | number)?,
     (undefined | Ref | BaseStream | string)?
 ];
-interface _ParseP {
+interface ParseP_ {
     cs: CS;
     xref: XRef;
     resources: Dict | undefined;
@@ -77,8 +77,8 @@ export declare abstract class ColorSpace {
     get usesZeroToOneRange(): boolean;
     private static _cache;
     static getCached(cacheKey: unknown, xref: XRef, localColorSpaceCache: LocalColorSpaceCache): ColorSpace | undefined;
-    static parseAsync({ cs, xref, resources, pdfFunctionFactory, localColorSpaceCache, }: _ParseP): Promise<ColorSpace>;
-    static parse({ cs, xref, resources, pdfFunctionFactory, localColorSpaceCache, }: _ParseP): ColorSpace;
+    static parseAsync({ cs, xref, resources, pdfFunctionFactory, localColorSpaceCache, }: ParseP_): Promise<ColorSpace>;
+    static parse({ cs, xref, resources, pdfFunctionFactory, localColorSpaceCache, }: ParseP_): ColorSpace;
     private static _parse;
     /**
      * Checks if a decode map matches the default decode map for a color space.

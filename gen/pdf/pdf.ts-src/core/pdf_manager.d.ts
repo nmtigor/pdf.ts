@@ -1,20 +1,21 @@
-import { type AnnotStorageRecord } from "../display/annotation_layer.js";
+import type { AnnotStorageRecord } from "../display/annotation_layer.js";
 import { MessageHandler, Thread } from "../shared/message_handler.js";
 import { AbortException } from "../shared/util.js";
-import { AnnotationFactory } from "./annotation.js";
-import { Catalog } from "./catalog.js";
+import type { AnnotationFactory } from "./annotation.js";
+import type { Catalog } from "./catalog.js";
 import { ChunkedStreamManager } from "./chunked_stream.js";
 import { Page, PDFDocument } from "./document.js";
 import { Stream } from "./stream.js";
-import { WorkerTask } from "./worker.js";
-import { PDFWorkerStream } from "./worker_stream.js";
-import { XRef } from "./xref.js";
+import type { WorkerTask } from "./worker.js";
+import type { PDFWorkerStream } from "./worker_stream.js";
+import type { XRef } from "./xref.js";
 export interface EvaluatorOptions {
     maxImageSize: number | undefined;
     disableFontFace: boolean | undefined;
     ignoreErrors: boolean | undefined;
     isEvalSupported: boolean | undefined;
     isOffscreenCanvasSupported: boolean | undefined;
+    canvasMaxAreaInBytes: number;
     fontExtraProperties: boolean | undefined;
     useSystemFonts: boolean | undefined;
     cMapUrl?: string | undefined;

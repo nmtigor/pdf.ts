@@ -1,7 +1,7 @@
 import { HttpStatusCode } from "../../../lib/HttpStatusCode.js";
-import { type IPDFStream, type IPDFStreamRangeReader, type IPDFStreamReader, type ReadValue } from "../interfaces.js";
+import type { IPDFStream, IPDFStreamRangeReader, IPDFStreamReader, ReadValue } from "../interfaces.js";
 import { AbortException, MissingPDFException, UnexpectedResponseException } from "../shared/util.js";
-import { type DocumentInitP } from "./api.js";
+import type { DocumentInitP } from "./api.js";
 interface Listeners {
     onHeadersReceived?: (() => void) | undefined;
     onDone?: ((data: {
@@ -25,13 +25,11 @@ declare class NetworkManager {
     isHttp: boolean;
     httpHeaders: Record<string, string>;
     withCredentials: boolean;
-    getXhr: () => XMLHttpRequest;
     currXhrId: number;
     pendingRequests: PendingRequest[];
     constructor(url: string | URL, args?: {
         httpHeaders?: Record<string, string> | undefined;
         withCredentials?: boolean | undefined;
-        getXhr?: () => XMLHttpRequest;
     });
     requestRange(begin: number, end: number, listeners: Listeners): number;
     requestFull(listeners: Listeners): number;

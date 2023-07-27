@@ -1,4 +1,4 @@
-import { type point_t, type TupleOf } from "../../../../lib/alias.js";
+import type { C2D, point_t, TupleOf } from "../../../../lib/alias.js";
 import { IL10n } from "../../../pdf.ts-web/interfaces.js";
 import { AnnotationEditorParamsType } from "../../shared/util.js";
 import { AnnotationEditorLayer } from "./annotation_editor_layer.js";
@@ -39,7 +39,7 @@ export declare class InkEditor extends AnnotationEditor {
     translationX: number;
     translationY: number;
     canvas: HTMLCanvasElement | undefined;
-    ctx: CanvasRenderingContext2D;
+    ctx: C2D;
     constructor(params: InkEditorP);
     static initialize(l10n: IL10n): void;
     static updateDefaultParams(type: AnnotationEditorParamsType, value: number | string): void;

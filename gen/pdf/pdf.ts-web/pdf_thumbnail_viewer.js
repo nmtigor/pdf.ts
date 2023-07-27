@@ -20,7 +20,7 @@
 /** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
 // eslint-disable-next-line max-len
 /** @typedef {import("./pdf_rendering_queue").PDFRenderingQueue} PDFRenderingQueue */
-import { MOZCENTRAL } from "../../global.js";
+import { MOZCENTRAL, PDFJSDev } from "../../global.js";
 import { PDFThumbnailView, TempImageFactory } from "./pdf_thumbnail_view.js";
 import { getVisibleElements, isValidRotation, RenderingStates, scrollIntoView, watchScroll, } from "./ui_utils.js";
 /*80--------------------------------------------------------------------------*/

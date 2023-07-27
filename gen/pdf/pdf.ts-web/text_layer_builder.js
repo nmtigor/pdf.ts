@@ -21,9 +21,10 @@
 /** @typedef {import("./text_highlighter").TextHighlighter} TextHighlighter */
 // eslint-disable-next-line max-len
 /** @typedef {import("./text_accessibility.js").TextAccessibilityManager} TextAccessibilityManager */
-import { GENERIC, MOZCENTRAL } from "../../global.js";
+import { GENERIC, MOZCENTRAL, PDFJSDev } from "../../global.js";
 import { html } from "../../lib/dom.js";
-import { renderTextLayer, updateTextLayer, } from "../pdf.ts-src/pdf.js";
+import { normalizeUnicode, renderTextLayer, updateTextLayer, } from "../pdf.ts-src/pdf.js";
+import { removeNullCharacters } from "./ui_utils.js";
 /**
  * The text layer builder provides text selection functionality for the PDF.
  * It does this by creating overlay divs over the PDF's text. These divs
@@ -41,14 +42,16 @@ export class TextLayerBuilder {
     highlighter;
     accessibilityManager;
     isOffscreenCanvasSupported;
+    #enablePermissions;
     div;
     #rotation = 0;
     #scale = 0;
     #textContentSource;
-    constructor({ highlighter, accessibilityManager = undefined, isOffscreenCanvasSupported = undefined, }) {
+    constructor({ highlighter, accessibilityManager = undefined, isOffscreenCanvasSupported = undefined, enablePermissions = false, }) {
         this.highlighter = highlighter;
         this.accessibilityManager = accessibilityManager;
         this.isOffscreenCanvasSupported = isOffscreenCanvasSupported;
+        this.#enablePermissions = enablePermissions === true;
         this.div = document.createElement("div");
         this.div.className = "textLayer";
         this.hide();
@@ -180,6 +183,14 @@ export class TextLayerBuilder {
                 end.style.top = "";
             }
             end.classList.remove("active");
+        });
+        div.addEventListener("copy", (event) => {
+            if (!this.#enablePermissions) {
+                const selection = document.getSelection();
+                event.clipboardData.setData("text/plain", removeNullCharacters(normalizeUnicode(selection.toString())));
+            }
+            event.preventDefault();
+            event.stopPropagation();
         });
     }
 }

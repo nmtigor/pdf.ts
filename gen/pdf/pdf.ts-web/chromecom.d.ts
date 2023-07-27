@@ -1,4 +1,4 @@
-import { OverlayManager } from "./overlay_manager.js";
+import type { OverlayManager } from "./overlay_manager.js";
 type _ResolvePDFFileCb = (url: string, length?: number, originalUrl?: string) => void;
 type _GetOriginCb = (origin?: string) => void;
 export declare const ChromeCom: {

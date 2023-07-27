@@ -1,8 +1,8 @@
-import { IL10n } from "../../../pdf.ts-web/interfaces.js";
+import type { IL10n } from "../../../pdf.ts-web/interfaces.js";
 import { AnnotationEditorParamsType } from "../../shared/util.js";
-import { AnnotationEditorLayer } from "./annotation_editor_layer.js";
-import { AnnotationEditor, AnnotationEditorP, AnnotationEditorSerialized, PropertyToUpdate } from "./editor.js";
-import { AnnotationEditorUIManager, KeyboardManager } from "./tools.js";
+import type { AnnotationEditorLayer } from "./annotation_editor_layer.js";
+import { AnnotationEditor, AnnotationEditorP, AnnotationEditorSerialized, type PropertyToUpdate } from "./editor.js";
+import { type AnnotationEditorUIManager, KeyboardManager } from "./tools.js";
 export interface FreeTextEditorP extends AnnotationEditorP {
     name: "freeTextEditor";
     color?: string;

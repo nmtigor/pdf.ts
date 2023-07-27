@@ -1,4 +1,4 @@
-import { type IVisibleView } from "./interfaces.js";
+import type { IVisibleView } from "./interfaces.js";
 export declare const DEFAULT_SCALE_VALUE = "auto";
 export declare const DEFAULT_SCALE = 1;
 export declare const DEFAULT_SCALE_DELTA = 1.1;
@@ -28,13 +28,10 @@ export declare const enum SidebarView {
     ATTACHMENTS = 3,
     LAYERS = 4
 }
-export declare const enum RendererType {
-    CANVAS = "canvas",
-    SVG = "svg"
-}
 export declare const enum TextLayerMode {
     DISABLE = 0,
-    ENABLE = 1
+    ENABLE = 1,
+    ENABLE_PERMISSIONS = 2
 }
 export declare enum ScrollMode {
     UNKNOWN = -1,
@@ -296,5 +293,6 @@ export declare function apiPageLayoutToViewerModes(layout: PageLayout): {
  * @return A value from {SidebarView}.
  */
 export declare function apiPageModeToSidebarView(mode: PageMode): SidebarView.NONE | SidebarView.THUMBS | SidebarView.OUTLINE | SidebarView.ATTACHMENTS | SidebarView.LAYERS;
+export declare function toggleCheckedBtn(button: HTMLButtonElement, toggle: boolean, view?: HTMLDivElement | HTMLButtonElement): void;
 export {};
 //# sourceMappingURL=ui_utils.d.ts.map

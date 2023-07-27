@@ -1,12 +1,12 @@
-import { AnnotStorageRecord, AnnotStorageValue } from "../display/annotation_layer.js";
+import type { AnnotStorageRecord, AnnotStorageValue } from "../display/annotation_layer.js";
 import { ActionEventName, type ActionEventTypeType, BaseException } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
-import { type CssFontInfo } from "./document.js";
-import { Dict, type Obj } from "./primitives.js";
+import type { CssFontInfo } from "./document.js";
+import type { Obj } from "./primitives.js";
+import { Dict } from "./primitives.js";
 import { XRef } from "./xref.js";
 export declare const PDF_VERSION_REGEXP: RegExp;
 export declare function getLookupTableFactory<T extends object = Record<string, number>>(initializer?: (lookup: T) => void): () => T;
-export declare function getArrayLookupTableFactory<T extends string | number>(initializer?: () => (string | T)[]): () => Record<string, T>;
 export declare class MissingDataException extends BaseException {
     begin: number;
     end: number;
@@ -59,7 +59,7 @@ interface GetInheritablePropertyP_ {
  * the value for the key is returned or, if `stopWhenFound` is `false`, a list
  * of values is returned.
  */
-export declare function getInheritableProperty({ dict, key, getArray, stopWhenFound, }: GetInheritablePropertyP_): string | number | boolean | Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint16Array | Int32Array | Uint32Array | Float32Array | Float64Array | BaseStream | Dict | XFANsName.Name | NsCmd.Cmd | typeof import("./primitives.js").CIRCULAR_REF | typeof import("./primitives.js").EOF | (Obj | undefined)[] | null | undefined;
+export declare function getInheritableProperty({ dict, key, getArray, stopWhenFound, }: GetInheritablePropertyP_): string | number | boolean | Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint16Array | Int32Array | Uint32Array | Float32Array | Float64Array | BaseStream | Dict | import("./primitives.js").Name | import("./primitives.js").Cmd | typeof import("./primitives.js").CIRCULAR_REF | typeof import("./primitives.js").EOF | (Obj | undefined)[] | null | undefined;
 /**
  * Converts positive integers to (upper case) Roman numerals.
  * @param number The number that should be converted.

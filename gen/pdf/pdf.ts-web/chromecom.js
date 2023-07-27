@@ -17,7 +17,7 @@
  */
 /* globals chrome */
 // @deno-types="npm:@types/chrome"
-import { CHROME } from "../../global.js";
+import { CHROME, PDFJSDev } from "../../global.js";
 import { MouseButton } from "../../lib/dom.js";
 import { DefaultExternalServices, viewerApp, } from "./app.js";
 import { AppOptions, ViewOnLoad } from "./app_options.js";

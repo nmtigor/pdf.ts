@@ -1,8 +1,8 @@
-import { PDFDocumentProxy } from "../pdf.ts-src/pdf.js";
-import { DefaultExternalServices, type ScriptingDocProperties } from "./app.js";
-import { EventBus } from "./event_utils.js";
-import { IScripting } from "./interfaces.js";
-import { PDFViewer } from "./pdf_viewer.js";
+import type { PDFDocumentProxy } from "../pdf.ts-src/pdf.js";
+import type { DefaultExternalServices, ScriptingDocProperties } from "./app.js";
+import type { EventBus } from "./event_utils.js";
+import type { IScripting } from "./interfaces.js";
+import type { PDFViewer } from "./pdf_viewer.js";
 interface PDFScriptingManagerOptions {
     /**
      * The application event bus.

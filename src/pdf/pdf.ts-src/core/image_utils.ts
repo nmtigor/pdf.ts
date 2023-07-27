@@ -17,14 +17,15 @@
  * limitations under the License.
  */
 
-import { _PDFDEV } from "../../../global.ts";
+import { PDFJSDev, TESTING } from "../../../global.ts";
 import { assert } from "../../../lib/util/trace.ts";
-import { OPS, shadow, warn } from "../shared/util.ts";
-import { ColorSpace } from "./colorspace.ts";
-import { type ImgData, MarkedContentProps } from "./evaluator.ts";
-import { type ParsedFunction } from "./function.ts";
-import { type OpListIR } from "./operator_list.ts";
-import { Dict, type Obj, Ref, RefSetCache } from "./primitives.ts";
+import { MAX_IMAGE_SIZE_TO_CACHE, OPS, warn } from "../shared/util.ts";
+import type { ColorSpace } from "./colorspace.ts";
+import type { ImgData, MarkedContentProps } from "./evaluator.ts";
+import type { ParsedFunction } from "./function.ts";
+import type { OpListIR } from "./operator_list.ts";
+import type { Dict, Obj, Ref } from "./primitives.ts";
+import { RefSetCache } from "./primitives.ts";
 /*80--------------------------------------------------------------------------*/
 
 abstract class BaseLocalCache<CD> {
@@ -217,28 +218,43 @@ export class LocalTilingPatternCache extends BaseLocalCache<LTP_CData> {
   }
 }
 
+type RIC_CData = unknown;
+export class RegionalImageCache extends BaseLocalCache<RIC_CData> {
+  constructor() {
+    super({ onlyRefs: true });
+  }
+
+  set(
+    name: string | undefined,
+    ref: Ref | string | undefined,
+    data: RIC_CData,
+  ) {
+    if (!ref) {
+      throw new Error('RegionalImageCache.set - expected "ref" argument.');
+    }
+    if (this.imageCache$.has(ref)) {
+      return;
+    }
+    this.imageCache$.put(ref, data);
+  }
+}
+
 type GI_CData = Image_LI_CData & {
   objId: string;
   byteSize?: number;
 };
 export class GlobalImageCache {
-  static get NUM_PAGES_THRESHOLD() {
-    return shadow(this, "NUM_PAGES_THRESHOLD", 2);
-  }
+  static readonly NUM_PAGES_THRESHOLD = 2;
 
-  static get MIN_IMAGES_TO_CACHE() {
-    return shadow(this, "MIN_IMAGES_TO_CACHE", 10);
-  }
+  static readonly MIN_IMAGES_TO_CACHE = 10;
 
-  static get MAX_BYTE_SIZE() {
-    return shadow(this, "MAX_BYTE_SIZE", /* Forty megabytes = */ 40e6);
-  }
+  static readonly MAX_BYTE_SIZE = 5 * MAX_IMAGE_SIZE_TO_CACHE;
 
   #refCache = new RefSetCache<Set<number>>();
   #imageCache = new RefSetCache<GI_CData>();
 
   constructor() {
-    /*#static*/ if (_PDFDEV) {
+    /*#static*/ if (PDFJSDev || TESTING) {
       assert(
         GlobalImageCache.NUM_PAGES_THRESHOLD > 1,
         "GlobalImageCache - invalid NUM_PAGES_THRESHOLD constant.",
@@ -266,28 +282,20 @@ export class GlobalImageCache {
 
   /** @final */
   shouldCache(ref: string | Ref, pageIndex: number) {
-    const pageIndexSet = this.#refCache.get(ref);
-    const numPages = pageIndexSet
-      ? pageIndexSet.size + (pageIndexSet.has(pageIndex) ? 0 : 1)
-      : 1;
+    let pageIndexSet = this.#refCache.get(ref);
+    if (!pageIndexSet) {
+      pageIndexSet = new Set();
+      this.#refCache.put(ref, pageIndexSet);
+    }
+    pageIndexSet.add(pageIndex);
 
-    if (numPages < GlobalImageCache.NUM_PAGES_THRESHOLD) {
+    if (pageIndexSet.size < GlobalImageCache.NUM_PAGES_THRESHOLD) {
       return false;
     }
     if (!this.#imageCache.has(ref) && this._cacheLimitReached) {
       return false;
     }
     return true;
-  }
-
-  /** @final */
-  addPageIndex(ref: Ref | string, pageIndex: number) {
-    let pageIndexSet = this.#refCache.get(ref);
-    if (!pageIndexSet) {
-      pageIndexSet = new Set<number>();
-      this.#refCache.put(ref, pageIndexSet);
-    }
-    pageIndexSet.add(pageIndex);
   }
 
   /**
@@ -328,7 +336,7 @@ export class GlobalImageCache {
   setData(ref: Ref | string, data: GI_CData) {
     if (!this.#refCache.has(ref)) {
       throw new Error(
-        'GlobalImageCache.setData - expected "addPageIndex" to have been called.',
+        'GlobalImageCache.setData - expected "shouldCache" to have been called.',
       );
     }
     if (this.#imageCache.has(ref)) {

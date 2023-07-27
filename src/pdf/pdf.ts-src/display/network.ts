@@ -19,22 +19,21 @@
 
 import { MOZCENTRAL } from "../../../global.ts";
 import { HttpStatusCode } from "../../../lib/HttpStatusCode.ts";
+import { PromiseCap } from "../../../lib/util/PromiseCap.ts";
 import { assert } from "../../../lib/util/trace.ts";
-import {
-  type IPDFStream,
-  type IPDFStreamRangeReader,
-  type IPDFStreamReader,
-  type ReadValue,
+import type {
+  IPDFStream,
+  IPDFStreamRangeReader,
+  IPDFStreamReader,
+  ReadValue,
 } from "../interfaces.ts";
 import {
   AbortException,
-  createPromiseCapability,
   MissingPDFException,
-  type PromiseCapability,
   stringToBytes,
   UnexpectedResponseException,
 } from "../shared/util.ts";
-import { type DocumentInitP } from "./api.ts";
+import type { DocumentInitP } from "./api.ts";
 import {
   createResponseStatusError,
   extractFilenameFromHeader,
@@ -85,7 +84,6 @@ class NetworkManager {
   isHttp: boolean;
   httpHeaders: Record<string, string>;
   withCredentials: boolean;
-  getXhr: () => XMLHttpRequest;
 
   currXhrId = 0;
   pendingRequests: PendingRequest[] = Object.create(null);
@@ -93,13 +91,11 @@ class NetworkManager {
   constructor(url: string | URL, args: {
     httpHeaders?: Record<string, string> | undefined;
     withCredentials?: boolean | undefined;
-    getXhr?: () => XMLHttpRequest;
   } = {}) {
     this.url = url;
     this.isHttp = /^https?:/i.test(url.toString());
     this.httpHeaders = (this.isHttp && args.httpHeaders) || Object.create(null);
     this.withCredentials = args.withCredentials || false;
-    this.getXhr = args.getXhr || (() => new XMLHttpRequest());
   }
 
   requestRange(begin: number, end: number, listeners: Listeners) {
@@ -116,7 +112,7 @@ class NetworkManager {
   }
 
   request(args: Listeners) {
-    const xhr = this.getXhr();
+    const xhr = new XMLHttpRequest();
     const xhrId = this.currXhrId++;
     const pendingRequest: PendingRequest =
       (this.pendingRequests[xhrId] = { xhr });
@@ -189,7 +185,7 @@ class NetworkManager {
     delete this.pendingRequests[xhrId];
 
     // Success status == 0 can be on ftp, file and other protocols.
-    if (xhr.status === 0 && this.isHttp) {
+    if (xhr.status === HttpStatusCode._0 && this.isHttp) {
       pendingRequest.onError?.(xhr.status);
       return;
     }
@@ -308,7 +304,7 @@ class PDFNetworkStreamFullRequestReader implements IPDFStreamReader {
   #url;
   #fullRequestId;
 
-  #headersReceivedCapability = createPromiseCapability();
+  #headersReceivedCapability = new PromiseCap();
   get headersReady() {
     return this.#headersReceivedCapability.promise;
   }
@@ -333,7 +329,7 @@ class PDFNetworkStreamFullRequestReader implements IPDFStreamReader {
   }
 
   _cachedChunks: ArrayBufferLike[] = [];
-  #requests: PromiseCapability<ReadValue>[] = [];
+  #requests: PromiseCap<ReadValue>[] = [];
   #done = false;
   _storedError?: MissingPDFException | UnexpectedResponseException;
 
@@ -452,7 +448,7 @@ class PDFNetworkStreamFullRequestReader implements IPDFStreamReader {
     if (this.#done) {
       return { done: true } as ReadValue;
     }
-    const requestCapability = createPromiseCapability<ReadValue>();
+    const requestCapability = new PromiseCap<ReadValue>();
     this.#requests.push(requestCapability);
     return requestCapability.promise;
   }
@@ -478,7 +474,7 @@ export class PDFNetworkStreamRangeRequestReader
 
   _url;
   #requestId: number;
-  #requests: PromiseCapability<ReadValue>[] = [];
+  #requests: PromiseCap<ReadValue>[] = [];
   #queuedChunk: ArrayBufferLike | undefined;
   #done = false;
   _storedError: MissingPDFException | UnexpectedResponseException | undefined;
@@ -553,7 +549,7 @@ export class PDFNetworkStreamRangeRequestReader
     if (this.#done) {
       return { done: true } as ReadValue;
     }
-    const requestCapability = createPromiseCapability<ReadValue>();
+    const requestCapability = new PromiseCap<ReadValue>();
     this.#requests.push(requestCapability);
     return requestCapability.promise;
   }

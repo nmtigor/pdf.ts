@@ -260,9 +260,9 @@ export abstract class XhtmlObject extends XmlObject {
 
   override [$onText](str: string, richText = false) {
     if (!richText) {
-      str = str.replace(crlfRegExp, "");
+      str = str.replaceAll(crlfRegExp, "");
       if (!this.style.includes("xfa-spacerun:yes")) {
-        str = str.replace(spacesRegExp, " ");
+        str = str.replaceAll(spacesRegExp, " ");
       }
     } else {
       this[$richText] = true;
@@ -382,7 +382,7 @@ export abstract class XhtmlObject extends XmlObject {
     let value;
     if (this[$richText]) {
       value = this[$content]
-        ? this[$content].replace(crlfForRichTextRegExp, "\n")
+        ? this[$content].replaceAll(crlfForRichTextRegExp, "\n")
         : undefined;
     } else {
       value = this[$content] || undefined;

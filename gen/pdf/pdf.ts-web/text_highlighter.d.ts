@@ -1,5 +1,5 @@
-import { EventBus, EventMap } from "./event_utils.js";
-import { PDFFindController } from "./pdf_find_controller.js";
+import type { EventBus, EventMap } from "./event_utils.js";
+import type { PDFFindController } from "./pdf_find_controller.js";
 interface TextHighlighterOptions {
     findController: PDFFindController | undefined;
     /**

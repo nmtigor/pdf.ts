@@ -28,13 +28,13 @@
 // eslint-disable-next-line max-len
 /** @typedef {import("./display/text_layer").TextLayerRenderTask} TextLayerRenderTask */
 
-import { type FieldObject } from "./core/annotation.ts";
-import {
-  type Destination,
-  type ExplicitDest,
-  type OpenAction,
-  type Order,
-  type SetOCGState,
+import type { FieldObject } from "./core/annotation.ts";
+import type {
+  Destination,
+  ExplicitDest,
+  OpenAction,
+  Order,
+  SetOCGState,
 } from "./core/catalog.ts";
 import { type AnnotActions } from "./core/core_utils.ts";
 import { type DocumentInfo, type XFAData } from "./core/document.ts";
@@ -42,7 +42,7 @@ import { type Attachment } from "./core/file_spec.ts";
 import { type OpListIR } from "./core/operator_list.ts";
 import { Ref } from "./core/primitives.ts";
 import { WorkerMessageHandler } from "./core/worker.ts";
-import { type XFAElData, type XFAElObj } from "./core/xfa/alias.ts";
+import type { XFAElData, XFAElObj } from "./core/xfa/alias.ts";
 import {
   AnnotationElement,
   AnnotationLayer,
@@ -52,23 +52,25 @@ import {
   AnnotationStorage,
   PrintAnnotationStorage,
 } from "./display/annotation_storage.ts";
+import type {
+  AnnotIntent,
+  DocumentInitP,
+  Intent,
+  OutlineNode,
+  RefProxy,
+  RenderP,
+  TextContent,
+  TextItem,
+} from "./display/api.ts";
 import {
-  type AnnotIntent,
   build,
-  type DocumentInitP,
   getDocument,
-  type Intent,
-  type OutlineNode,
   PDFDataRangeTransport,
   PDFDocumentLoadingTask,
   PDFDocumentProxy,
   PDFPageProxy,
   PDFWorker,
-  type RefProxy,
-  type RenderP,
   RenderTask,
-  type TextContent,
-  type TextItem,
   version,
 } from "./display/api.ts";
 import {
@@ -86,11 +88,9 @@ import {
   StatTimer,
 } from "./display/display_utils.ts";
 import { AnnotationEditorLayer } from "./display/editor/annotation_editor_layer.ts";
-import { type PropertyToUpdate } from "./display/editor/editor.ts";
-import {
-  AnnotationEditorUIManager,
-  type DispatchUpdateStatesP,
-} from "./display/editor/tools.ts";
+import type { PropertyToUpdate } from "./display/editor/editor.ts";
+import type { DispatchUpdateStatesP } from "./display/editor/tools.ts";
+import { AnnotationEditorUIManager } from "./display/editor/tools.ts";
 import { FontFaceObject } from "./display/font_loader.ts";
 import { Metadata } from "./display/metadata.ts";
 import { OptionalContentConfig } from "./display/optional_content_config.ts";
@@ -103,29 +103,26 @@ import {
 import { GlobalWorkerOptions } from "./display/worker_options.ts";
 import { XfaLayer } from "./display/xfa_layer.ts";
 import { QuickJSSandbox } from "./pdf.sandbox.ts";
-import { type AppInfo } from "./scripting_api/app.ts";
-import { type ScriptingActionName } from "./scripting_api/common.ts";
-import { type DocInfo } from "./scripting_api/doc.ts";
+import type { AppInfo } from "./scripting_api/app.ts";
+import type { ScriptingActionName } from "./scripting_api/common.ts";
+import type { DocInfo } from "./scripting_api/doc.ts";
+import type { matrix_t, OPSName } from "./shared/util.ts";
 import {
   AbortException,
   AnnotationEditorParamsType,
   AnnotationEditorType,
   AnnotationMode,
   CMapCompressionType,
-  createPromiseCapability,
   createValidAbsoluteUrl,
   FeatureTest,
   InvalidPDFException,
-  type matrix_t,
   MissingPDFException,
+  normalizeUnicode,
   OPS,
-  type OPSName,
   PasswordResponses,
   PermissionFlag,
-  type PromiseCapability,
   shadow,
   UnexpectedResponseException,
-  UNSUPPORTED_FEATURES,
   Util,
   VerbosityLevel,
 } from "./shared/util.ts";
@@ -155,7 +152,6 @@ export {
   type Attachment,
   build,
   CMapCompressionType,
-  createPromiseCapability,
   createValidAbsoluteUrl,
   type Destination,
   type DispatchUpdateStatesP,
@@ -180,6 +176,7 @@ export {
   type matrix_t,
   Metadata,
   MissingPDFException,
+  normalizeUnicode,
   type OpenAction,
   type OpListIR,
   OPS,
@@ -198,7 +195,6 @@ export {
   PermissionFlag,
   PixelsPerInch,
   PrintAnnotationStorage,
-  type PromiseCapability,
   type PropertyToUpdate,
   QuickJSSandbox,
   Ref,
@@ -217,7 +213,6 @@ export {
   type TextItem,
   TextLayerRenderTask,
   UnexpectedResponseException,
-  UNSUPPORTED_FEATURES,
   updateTextLayer,
   Util,
   VerbosityLevel,

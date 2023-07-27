@@ -17,23 +17,24 @@
  * limitations under the License.
  */
 
-import { type AnnotStorageRecord } from "../display/annotation_layer.ts";
+import type { AnnotStorageRecord } from "../display/annotation_layer.ts";
 import { MessageHandler, Thread } from "../shared/message_handler.ts";
 import {
   AbortException,
   createValidAbsoluteUrl,
+  FeatureTest,
   shadow,
   warn,
 } from "../shared/util.ts";
-import { AnnotationFactory } from "./annotation.ts";
-import { Catalog } from "./catalog.ts";
+import type { AnnotationFactory } from "./annotation.ts";
+import type { Catalog } from "./catalog.ts";
 import { ChunkedStreamManager } from "./chunked_stream.ts";
 import { MissingDataException } from "./core_utils.ts";
 import { Page, PDFDocument } from "./document.ts";
 import { Stream } from "./stream.ts";
-import { WorkerTask } from "./worker.ts";
-import { PDFWorkerStream } from "./worker_stream.ts";
-import { XRef } from "./xref.ts";
+import type { WorkerTask } from "./worker.ts";
+import type { PDFWorkerStream } from "./worker_stream.ts";
+import type { XRef } from "./xref.ts";
 /*80--------------------------------------------------------------------------*/
 
 function parseDocBaseUrl(url?: string) {
@@ -53,6 +54,7 @@ export interface EvaluatorOptions {
   ignoreErrors: boolean | undefined;
   isEvalSupported: boolean | undefined;
   isOffscreenCanvasSupported: boolean | undefined;
+  canvasMaxAreaInBytes: number;
   fontExtraProperties: boolean | undefined;
   useSystemFonts: boolean | undefined;
   cMapUrl?: string | undefined;
@@ -97,6 +99,11 @@ export abstract class BasePdfManager {
     this._docId = args.docId;
     this._password = args.password;
     this.enableXfa = args.enableXfa;
+
+    // Check `OffscreenCanvas` support once, rather than repeatedly throughout
+    // the worker-thread code.
+    args.evaluatorOptions.isOffscreenCanvasSupported &&=
+      FeatureTest.isOffscreenCanvasSupported;
     this.evaluatorOptions = args.evaluatorOptions;
   }
 
@@ -194,7 +201,7 @@ export class LocalPdfManager extends BasePdfManager {
   >(obj: O, prop: P, args: A): Promise<Awaited<R>> {
     const value = obj[prop];
     if (typeof value === "function") {
-      return value.apply(obj, args);
+      return (value as Function).apply(obj, args);
     }
     return value as any;
   }
@@ -245,7 +252,7 @@ export class NetworkPdfManager extends BasePdfManager {
     try {
       const value = obj[prop];
       if (typeof value === "function") {
-        return value.apply(obj, args);
+        return (value as Function).apply(obj, args);
       }
       return value as any;
     } catch (ex) {

@@ -1,9 +1,9 @@
-import { EventBus } from "./event_utils.js";
-import { type IL10n } from "./interfaces.js";
-import { PDFThumbnailViewer } from "./pdf_thumbnail_viewer.js";
-import { PDFViewer } from "./pdf_viewer.js";
+import type { EventBus } from "./event_utils.js";
+import type { IL10n } from "./interfaces.js";
+import type { PDFThumbnailViewer } from "./pdf_thumbnail_viewer.js";
+import type { PDFViewer } from "./pdf_viewer.js";
 import { SidebarView } from "./ui_utils.js";
-import { type ViewerConfiguration } from "./viewer.js";
+import type { ViewerConfiguration } from "./viewer.js";
 interface PDFSidebarOptions {
     /**
      * The DOM elements.

@@ -17,9 +17,9 @@
  * limitations under the License.
  */
 
-import { type rect_t } from "../../../../lib/alias.ts";
+import type { rect_t } from "../../../../lib/alias.ts";
 import { shadow } from "../../shared/util.ts";
-import { type XFAElData } from "./alias.ts";
+import type { XFAElData } from "./alias.ts";
 import { BreakAfter, BreakBefore, Template } from "./template.ts";
 /*80--------------------------------------------------------------------------*/
 
@@ -34,7 +34,7 @@ const measurementPattern = /([+-]?\d+\.?\d*)(.*)/;
 
 export function stripQuotes(str: string) {
   if (str.startsWith("'") || str.startsWith('"')) {
-    return str.slice(1, str.length - 1);
+    return str.slice(1, -1);
   }
   return str;
 }
@@ -98,7 +98,7 @@ export function getStringOption(data: string | undefined, options: string[]) {
 }
 
 export function getMeasurement(str: string | undefined, def = "0"): number {
-  def = def || "0";
+  def ||= "0";
   if (!str) {
     return getMeasurement(def);
   }

@@ -19,7 +19,7 @@
 /** @typedef {import("./display_utils").PageViewport} PageViewport */
 /** @typedef {import("./interfaces").IDownloadManager} IDownloadManager */
 /** @typedef {import("../../web/interfaces").IPDFLinkService} IPDFLinkService */
-import { _PDFDEV } from "../../../global.js";
+import { PDFJSDev, TESTING } from "../../../global.js";
 import { div, html, span, svg as createSVG, textnode, } from "../../../lib/dom.js";
 import { assert } from "../../../lib/util/trace.js";
 import { ColorConverters, } from "../shared/scripting_utils.js";
@@ -144,6 +144,9 @@ export class AnnotationElement {
         const { data, page, viewport } = this;
         const container = html("section");
         container.setAttribute("data-annotation-id", data.id);
+        if (data.noRotate) {
+            container.classList.add("norotate");
+        }
         const { pageWidth, pageHeight, pageX, pageY } = viewport.rawDims;
         const { width, height } = getRectDims(data.rect);
         // Do *not* modify `data.rect`, since that will corrupt the annotation
@@ -359,13 +362,13 @@ export class AnnotationElement {
         let container = this.container;
         let trigger = trigger_x;
         if (this.quadrilaterals) {
-            trigger = trigger || this.quadrilaterals;
+            trigger ||= this.quadrilaterals;
             container = this.quadrilaterals[0];
         }
         // If no trigger element is specified, create it.
         if (!trigger) {
             trigger = div();
-            trigger.className = "popupTriggerArea";
+            trigger.classList.add("popupTriggerArea");
             container.append(trigger);
         }
         const popupElement = new PopupElement({
@@ -392,7 +395,7 @@ export class AnnotationElement {
             assert(this.quadrilaterals, "Missing quadrilaterals during rendering");
         }
         for (const quadrilateral of this.quadrilaterals) {
-            quadrilateral.className = className;
+            quadrilateral.classList.add(className);
         }
         return this.quadrilaterals;
     }
@@ -509,7 +512,7 @@ class LinkAnnotationElement extends AnnotationElement {
                 return quadrilateral;
             });
         }
-        this.container.className = "linkAnnotation";
+        this.container.classList.add("linkAnnotation");
         if (isBound) {
             this.container.append(link);
         }
@@ -696,7 +699,7 @@ class TextAnnotationElement extends AnnotationElement {
         super(parameters, { isRenderable });
     }
     render() {
-        this.container.className = "textAnnotation";
+        this.container.classList.add("textAnnotation");
         const image = html("img");
         image.src = this.imageResourcesPath +
             "annotation-" +
@@ -719,6 +722,14 @@ class WidgetAnnotationElement extends AnnotationElement {
             this.container.title = this.data.alternativeText;
         }
         return this.container;
+    }
+    showElementAndHideCanvas(element) {
+        if (this.data.hasOwnCanvas) {
+            if (element.previousSibling?.nodeName === "CANVAS") {
+                element.previousSibling.hidden = true;
+            }
+            element.hidden = false;
+        }
     }
     #getKeyModifier(event) {
         const { isWin, isMac } = FeatureTest.platform;
@@ -833,7 +844,7 @@ class TextWidgetAnnotationElement extends WidgetAnnotationElement {
     render() {
         const storage = this.annotationStorage;
         const id = this.data.id;
-        this.container.className = "textWidgetAnnotation";
+        this.container.classList.add("textWidgetAnnotation");
         let element;
         if (this.renderForms) {
             // NOTE: We cannot set the values using `element.value` below, since it
@@ -869,6 +880,9 @@ class TextWidgetAnnotationElement extends WidgetAnnotationElement {
                 if (this.data.doNotScroll) {
                     element.style.overflowX = "hidden";
                 }
+            }
+            if (this.data.hasOwnCanvas) {
+                element.hidden = true;
             }
             GetElementsByNameSet.add(element);
             element.setAttribute("data-element-id", id);
@@ -906,6 +920,7 @@ class TextWidgetAnnotationElement extends WidgetAnnotationElement {
                     elementData.commitKey = 1;
                 });
                 element.addEventListener("updatefromsandbox", (jsEvent) => {
+                    this.showElementAndHideCanvas(jsEvent.target);
                     const actions = {
                         value(event) {
                             elementData.userValue = event.detail.value ?? "";
@@ -1125,7 +1140,7 @@ class CheckboxWidgetAnnotationElement extends WidgetAnnotationElement {
             value = value !== "Off";
             storage.setValue(id, { value });
         }
-        this.container.className = "buttonWidgetAnnotation checkBox";
+        this.container.classList.add("buttonWidgetAnnotation", "checkBox");
         const element = html("input");
         GetElementsByNameSet.add(element);
         element.setAttribute("data-element-id", id);
@@ -1185,7 +1200,7 @@ class RadioButtonWidgetAnnotationElement extends WidgetAnnotationElement {
         super(parameters, { isRenderable: parameters.renderForms });
     }
     render() {
-        this.container.className = "buttonWidgetAnnotation radioButton";
+        this.container.classList.add("buttonWidgetAnnotation", "radioButton");
         const storage = this.annotationStorage;
         const data = this.data;
         const id = data.id;
@@ -1264,7 +1279,7 @@ class PushButtonWidgetAnnotationElement extends LinkAnnotationElement {
         // equal to that of a link annotation, but may have more functionality, such
         // as performing actions on form fields (resetting, submitting, et cetera).
         const container = super.render();
-        container.className = "buttonWidgetAnnotation pushButton";
+        container.classList.add("buttonWidgetAnnotation", "pushButton");
         if (this.data.alternativeText) {
             container.title = this.data.alternativeText;
         }
@@ -1285,7 +1300,7 @@ class ChoiceWidgetAnnotationElement extends WidgetAnnotationElement {
         });
     }
     render() {
-        this.container.className = "choiceWidgetAnnotation";
+        this.container.classList.add("choiceWidgetAnnotation");
         const storage = this.annotationStorage;
         const id = this.data.id;
         const storedData = storage.getValue(id, {
@@ -1526,7 +1541,7 @@ class PopupAnnotationElement extends AnnotationElement {
         super(parameters, { isRenderable });
     }
     render() {
-        this.container.className = "popupAnnotation";
+        this.container.classList.add("popupAnnotation");
         const parentElements = this.layer.querySelectorAll(`[data-annotation-id="${this.data.parentId}"]`);
         if (parentElements.length === 0) {
             return this.container;
@@ -1584,7 +1599,7 @@ class PopupElement {
     render() {
         const BACKGROUND_ENLIGHT = 0.7;
         const wrapper = div();
-        wrapper.className = "popupWrapper";
+        wrapper.classList.add("popupWrapper");
         // For Popup annotations we hide the entire section because it contains
         // only the popup. However, for Text annotations without a separate Popup
         // annotation, we cannot hide the entire container as the image would
@@ -1592,7 +1607,7 @@ class PopupElement {
         this.hideElement = this.hideWrapper ? wrapper : this.container;
         this.hideElement.hidden = true;
         const popup = div();
-        popup.className = "popup";
+        popup.classList.add("popup");
         const color = this.color;
         if (color) {
             // Enlighten the color.
@@ -1611,7 +1626,7 @@ class PopupElement {
         const dateObject = PDFDateString.toDateObject(this.modificationDate);
         if (dateObject) {
             const modificationDate = span();
-            modificationDate.className = "popupDate";
+            modificationDate.classList.add("popupDate");
             modificationDate.textContent = "{{date}}, {{time}}";
             modificationDate.dataset.l10nId = "annotation_date_string";
             modificationDate.dataset.l10nArgs = JSON.stringify({
@@ -1627,7 +1642,7 @@ class PopupElement {
                 intent: "richText",
                 div: popup,
             });
-            popup.lastChild.className = "richText popupContent";
+            popup.lastChild.classList.add("richText", "popupContent");
         }
         else {
             const contents = this.#formatContents(this.contentsObj);
@@ -1651,7 +1666,7 @@ class PopupElement {
      */
     #formatContents({ str, dir }) {
         const p = html("p");
-        p.className = "popupContent";
+        p.classList.add("popupContent");
         p.dir = dir;
         const lines = str.split(/(?:\r\n?|\n)/);
         for (let i = 0, ii = lines.length; i < ii; ++i) {
@@ -1715,10 +1730,10 @@ class FreeTextAnnotationElement extends AnnotationElement {
      * Render the free text annotation's HTML element in the empty container.
      */
     render() {
-        this.container.className = "freeTextAnnotation";
+        this.container.classList.add("freeTextAnnotation");
         if (this.textContent) {
-            const content = document.createElement("div");
-            content.className = "annotationTextContent";
+            const content = div();
+            content.classList.add("annotationTextContent");
             content.setAttribute("role", "comment");
             for (const line of this.textContent) {
                 const lineSpan = document.createElement("span");
@@ -1742,7 +1757,7 @@ class LineAnnotationElement extends AnnotationElement {
         super(parameters, { isRenderable, ignoreBorder: true });
     }
     render() {
-        this.container.className = "lineAnnotation";
+        this.container.classList.add("lineAnnotation");
         // Create an invisible line with the same starting and ending coordinates
         // that acts as the trigger for the popup. Only the line itself should
         // trigger the popup, not the entire container.
@@ -1779,7 +1794,7 @@ class SquareAnnotationElement extends AnnotationElement {
         super(parameters, { isRenderable, ignoreBorder: true });
     }
     render() {
-        this.container.className = "squareAnnotation";
+        this.container.classList.add("squareAnnotation");
         // Create an invisible square with the same rectangle that acts as the
         // trigger for the popup. Only the square itself should trigger the
         // popup, not the entire container.
@@ -1818,7 +1833,7 @@ class CircleAnnotationElement extends AnnotationElement {
         super(parameters, { isRenderable, ignoreBorder: true });
     }
     render() {
-        this.container.className = "circleAnnotation";
+        this.container.classList.add("circleAnnotation");
         // Create an invisible circle with the same ellipse that acts as the
         // trigger for the popup. Only the circle itself should trigger the
         // popup, not the entire container.
@@ -1859,7 +1874,7 @@ class PolylineAnnotationElement extends AnnotationElement {
         super(parameters, { isRenderable, ignoreBorder: true });
     }
     render() {
-        this.container.className = this.containerClassName;
+        this.container.classList.add(this.containerClassName);
         // Create an invisible polyline with the same points that acts as the
         // trigger for the popup. Only the polyline itself should trigger the
         // popup, not the entire container.
@@ -1910,7 +1925,7 @@ class CaretAnnotationElement extends AnnotationElement {
         super(parameters, { isRenderable, ignoreBorder: true });
     }
     render() {
-        this.container.className = "caretAnnotation";
+        this.container.classList.add("caretAnnotation");
         if (!this.data.hasPopup) {
             this._createPopup(undefined, this.data);
         }
@@ -1932,7 +1947,7 @@ class InkAnnotationElement extends AnnotationElement {
         super(parameters, { isRenderable, ignoreBorder: true });
     }
     render() {
-        this.container.className = this.containerClassName;
+        this.container.classList.add(this.containerClassName);
         // Create an invisible polyline with the same points that acts as the
         // trigger for the popup.
         const data = this.data;
@@ -1986,7 +2001,7 @@ class HighlightAnnotationElement extends AnnotationElement {
         if (this.quadrilaterals) {
             return this._renderQuadrilaterals("highlightAnnotation");
         }
-        this.container.className = "highlightAnnotation";
+        this.container.classList.add("highlightAnnotation");
         return this.container;
     }
 }
@@ -2009,7 +2024,7 @@ class UnderlineAnnotationElement extends AnnotationElement {
         if (this.quadrilaterals) {
             return this._renderQuadrilaterals("underlineAnnotation");
         }
-        this.container.className = "underlineAnnotation";
+        this.container.classList.add("underlineAnnotation");
         return this.container;
     }
 }
@@ -2032,7 +2047,7 @@ class SquigglyAnnotationElement extends AnnotationElement {
         if (this.quadrilaterals) {
             return this._renderQuadrilaterals("squigglyAnnotation");
         }
-        this.container.className = "squigglyAnnotation";
+        this.container.classList.add("squigglyAnnotation");
         return this.container;
     }
 }
@@ -2055,7 +2070,7 @@ class StrikeOutAnnotationElement extends AnnotationElement {
         if (this.quadrilaterals) {
             return this._renderQuadrilaterals("strikeoutAnnotation");
         }
-        this.container.className = "strikeoutAnnotation";
+        this.container.classList.add("strikeoutAnnotation");
         return this.container;
     }
 }
@@ -2068,7 +2083,7 @@ class StampAnnotationElement extends AnnotationElement {
         super(parameters, { isRenderable, ignoreBorder: true });
     }
     render() {
-        this.container.className = "stampAnnotation";
+        this.container.classList.add("stampAnnotation");
         if (!this.data.hasPopup) {
             this._createPopup(undefined, this.data);
         }
@@ -2090,7 +2105,7 @@ export class FileAttachmentAnnotationElement extends AnnotationElement {
         });
     }
     render() {
-        this.container.className = "fileAttachmentAnnotation";
+        this.container.classList.add("fileAttachmentAnnotation");
         // const trigger = div();
         let trigger;
         if (this.data.hasAppearance) {
@@ -2105,7 +2120,7 @@ export class FileAttachmentAnnotationElement extends AnnotationElement {
             trigger = html("img");
             trigger.src = `${this.imageResourcesPath}annotation-${/paperclip/i.test(this.data.name) ? "paperclip" : "pushpin"}.svg`;
         }
-        trigger.className = "popupTriggerArea";
+        trigger.classList.add("popupTriggerArea");
         trigger.addEventListener("dblclick", this.#download);
         if (!this.data.hasPopup &&
             (this.data.titleObj?.str ||
@@ -2153,6 +2168,9 @@ export class AnnotationLayer {
         };
         let zIndex = 0;
         for (const data of params.annotations) {
+            if (data.noHTML) {
+                continue;
+            }
             if (data.annotationType !== AnnotationType.POPUP) {
                 const { width, height } = getRectDims(data.rect);
                 if (width <= 0 || height <= 0) {

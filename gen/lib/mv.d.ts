@@ -34,6 +34,9 @@ export declare abstract class Vuu<C extends Coo = Coo, E extends Element = Eleme
     get coo(): C;
     protected el$: E;
     get el(): E;
+    /**
+     * ! If any, not call in the `constructor()`
+     */
     protected observeTheme$?(): void;
     protected unobserveTheme$?(): void;
     /**
@@ -47,18 +50,19 @@ export declare abstract class Vuu<C extends Coo = Coo, E extends Element = Eleme
      */
     static of(node_x: Node): Vuu | undefined;
     /**
+     * @deprecated
      * @headconst @param ret_x
      * @headconst @param refvuu
      */
     attachBefore<V extends Vuu<C>>(ret_x: V, refvuu?: Vuu): V;
     /**
+     * @deprecated
      * @headconst @param ret_x
      */
     detach<V extends Vuu<C>>(ret_x: V): V;
     on<E extends EventName>(type: E, listener: EventHandler<E>, options?: AddEventListenerOptions | boolean): void;
     off<E extends EventName>(type: E, listener: EventHandler<E>, options?: EventListenerOptions | boolean): void;
     assignAttro(attr_o: Record<string, string | number>): this;
-    set cyName(name_x: string);
 }
 export declare class HTMLVuu<C extends Coo = Coo, E extends HTMLElement = HTMLElement> extends Vuu<C, E> {
     assignStylo(styl_o: CSSStyle): this;
@@ -97,12 +101,13 @@ export declare abstract class SVGVCo<CI extends CooInterface, E extends SVGEleme
      */
     constructor(el_x: E);
 }
+export type ViewBox = `${number} ${number} ${number} ${number}`;
 export declare class SVGViewbox<CI extends CooInterface = CooInterface> extends SVGVCo<CI, SVGSVGElement> {
     /**
      * @headconst @param coo_x
      * @const @param viewBox_x
      */
-    constructor(viewBox_x?: string);
+    constructor(viewBox_x?: ViewBox);
 }
 export type MooEq<T extends {} | null> = (a: T, b: T) => boolean;
 export type MooHandler<T extends {} | null, D = any> = (newval: T, oldval: T, data?: D) => void;
@@ -111,7 +116,7 @@ type MooCtorP_<T extends {} | null> = {
     eq_?: MooEq<T>;
     active?: boolean;
     forcing?: boolean;
-    name?: string;
+    _name?: string;
 };
 /**
  * `Moo` instance concerns about one value, whether it changes or not.
@@ -127,7 +132,7 @@ export declare class Moo<T extends {} | null, D = any> {
     set forceOnce(forcing_x: boolean);
     force(): this;
     set data(data_x: D);
-    constructor({ val, eq_, active, forcing, name, }: MooCtorP_<T>);
+    constructor({ val, eq_, active, forcing, _name, }: MooCtorP_<T>);
     /**
      * Not invoking any callbacks
      */

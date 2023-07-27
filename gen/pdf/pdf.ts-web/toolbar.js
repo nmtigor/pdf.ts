@@ -15,10 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { GENERIC } from "../../global.js";
+import { GENERIC, PDFJSDev } from "../../global.js";
 import { html } from "../../lib/dom.js";
 import { AnnotationEditorType } from "../pdf.ts-src/pdf.js";
-import { animationStarted, DEFAULT_SCALE, DEFAULT_SCALE_VALUE, MAX_SCALE, MIN_SCALE, noContextMenuHandler, } from "./ui_utils.js";
+import { animationStarted, DEFAULT_SCALE, DEFAULT_SCALE_VALUE, MAX_SCALE, MIN_SCALE, noContextMenuHandler, toggleCheckedBtn, } from "./ui_utils.js";
 /*80--------------------------------------------------------------------------*/
 const PAGE_NUMBER_LOADING_INDICATOR = "visiblePageIsLoading";
 export class Toolbar {
@@ -121,14 +121,7 @@ export class Toolbar {
         for (const { element, eventName, eventDetails } of this.buttons) {
             element.addEventListener("click", (evt) => {
                 if (eventName !== null) {
-                    const details = { source: this };
-                    if (eventDetails) {
-                        for (const property in eventDetails) {
-                            details[property] =
-                                eventDetails[property];
-                        }
-                    }
-                    this.eventBus.dispatch(eventName, details);
+                    this.eventBus.dispatch(eventName, { source: this, ...eventDetails });
                 }
             });
         }
@@ -171,34 +164,19 @@ export class Toolbar {
         this.#bindEditorToolsListener(options);
     }
     #bindEditorToolsListener({ editorFreeTextButton, editorFreeTextParamsToolbar, editorInkButton, editorInkParamsToolbar, }) {
-        const editorModeChanged = (evt, disableButtons = false) => {
-            const editorButtons = [
-                {
-                    mode: AnnotationEditorType.FREETEXT,
-                    button: editorFreeTextButton,
-                    toolbar: editorFreeTextParamsToolbar,
-                },
-                {
-                    mode: AnnotationEditorType.INK,
-                    button: editorInkButton,
-                    toolbar: editorInkParamsToolbar,
-                },
-            ];
-            for (const { mode, button, toolbar } of editorButtons) {
-                const checked = mode === evt.mode;
-                button.classList.toggle("toggled", checked);
-                button.setAttribute("aria-checked", checked);
-                button.disabled = disableButtons;
-                toolbar?.classList.toggle("hidden", !checked);
-            }
+        const editorModeChanged = ({ mode }) => {
+            toggleCheckedBtn(editorFreeTextButton, mode === AnnotationEditorType.FREETEXT, editorFreeTextParamsToolbar);
+            toggleCheckedBtn(editorInkButton, mode === AnnotationEditorType.INK, editorInkParamsToolbar);
+            const isDisable = mode === AnnotationEditorType.DISABLE;
+            editorFreeTextButton.disabled = isDisable;
+            editorInkButton.disabled = isDisable;
         };
         this.eventBus._on("annotationeditormodechanged", editorModeChanged);
         this.eventBus._on("toolbarreset", (evt) => {
             if (evt.source === this) {
                 editorModeChanged({
-                    mode: AnnotationEditorType.NONE,
-                }, 
-                /* disableButtons = */ true);
+                    mode: AnnotationEditorType.DISABLE,
+                });
             }
         });
     }

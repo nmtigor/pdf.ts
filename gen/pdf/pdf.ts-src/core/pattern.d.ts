@@ -1,14 +1,13 @@
-import { type point_t, type rect_t } from "../../../lib/alias.js";
+import type { C2D, point_t, rect_t } from "../../../lib/alias.js";
 import { TilingPaintType, TilingType } from "../display/pattern_helper.js";
-import { MessageHandler, Thread } from "../shared/message_handler.js";
 import { type matrix_t } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
 import { ColorSpace } from "./colorspace.js";
-import { type ParsedFunction, PDFFunctionFactory } from "./function.js";
-import { LocalColorSpaceCache } from "./image_utils.js";
-import { type OpListIR } from "./operator_list.js";
-import { Dict } from "./primitives.js";
-import { XRef } from "./xref.js";
+import type { ParsedFunction, PDFFunctionFactory } from "./function.js";
+import type { LocalColorSpaceCache } from "./image_utils.js";
+import type { OpListIR } from "./operator_list.js";
+import type { Dict } from "./primitives.js";
+import type { XRef } from "./xref.js";
 export declare const enum ShadingType {
     FUNCTION_BASED = 1,
     AXIAL = 2,
@@ -19,15 +18,15 @@ export declare const enum ShadingType {
     TENSOR_PATCH_MESH = 7
 }
 export declare abstract class Pattern {
-    abstract getPattern(ctx: CanvasRenderingContext2D): unknown;
-    static parseShading(shading: Dict | BaseStream, xref: XRef, res: Dict, handler: MessageHandler<Thread.worker>, pdfFunctionFactory: PDFFunctionFactory, localColorSpaceCache: LocalColorSpaceCache): RadialAxialShading | MeshShading | DummyShading;
+    abstract getPattern(ctx: C2D): unknown;
+    static parseShading(shading: Dict | BaseStream, xref: XRef, res: Dict, pdfFunctionFactory: PDFFunctionFactory, localColorSpaceCache: LocalColorSpaceCache): RadialAxialShading | MeshShading | DummyShading;
 }
 declare abstract class BaseShading {
     /**
      * A small number to offset the first/last color stops so we can insert ones
      * to support extend. Number.MIN_VALUE is too small and breaks the extend.
      */
-    static get SMALL_NUMBER(): number;
+    static readonly SMALL_NUMBER = 0.000001;
     abstract getIR(): ShadingPatternIR;
 }
 export type RadialAxialIR = [
@@ -120,12 +119,12 @@ interface DecodeContext {
     numComps: number;
 }
 export declare class MeshShading extends BaseShading {
-    static get MIN_SPLIT_PATCH_CHUNKS_AMOUNT(): number;
-    static get MAX_SPLIT_PATCH_CHUNKS_AMOUNT(): number;
+    static readonly MIN_SPLIT_PATCH_CHUNKS_AMOUNT = 3;
+    static readonly MAX_SPLIT_PATCH_CHUNKS_AMOUNT = 20;
     /**
      * Count of triangles per entire mesh bounds.
      */
-    static get TRIANGLE_DENSITY(): number;
+    static readonly TRIANGLE_DENSITY = 20;
     shadingType: ShadingType;
     bbox: rect_t | undefined;
     cs: ColorSpace;

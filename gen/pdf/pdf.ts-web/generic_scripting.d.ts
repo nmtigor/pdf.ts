@@ -19,13 +19,13 @@ export declare function docPropertiesLookup(pdfDocument: PDFDocumentProxy): Prom
     EncryptFilterName: string | undefined;
     CreationDate?: string;
     ModDate?: string;
-    Trapped?: XFANsName.Name;
+    Trapped?: import("../pdf.ts-src/core/primitives.js").Name;
     IsAcroFormPresent: boolean;
     IsCollectionPresent: boolean;
     IsLinearized: boolean;
     IsSignaturesPresent: boolean;
     IsXFAPresent: boolean;
-    Custom?: Record<string, string | number | boolean | XFANsName.Name>;
+    Custom?: Record<string, string | number | boolean | import("../pdf.ts-src/core/primitives.js").Name>;
 }>;
 export declare class GenericScripting implements IScripting {
     _ready: Promise<import("../pdf.ts-src/pdf.sandbox.js").Sandbox>;

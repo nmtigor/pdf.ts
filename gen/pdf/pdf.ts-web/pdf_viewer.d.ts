@@ -1,12 +1,15 @@
-import { type point_t } from "../../lib/alias.js";
-import { AnnotationEditorType, AnnotationMode, type ExplicitDest, OptionalContentConfig, PDFDocumentProxy, PDFPageProxy } from "../pdf.ts-src/pdf.js";
-import { EventBus, EventMap } from "./event_utils.js";
-import { IDownloadManager, type IL10n, type IPDFLinkService } from "./interfaces.js";
-import { PDFFindController } from "./pdf_find_controller.js";
+import type { point_t } from "../../lib/alias.js";
+import type { ExplicitDest, OptionalContentConfig, PDFDocumentProxy, PDFPageProxy } from "../pdf.ts-src/pdf.js";
+import { AnnotationEditorType, AnnotationMode } from "../pdf.ts-src/pdf.js";
+import type { EventBus, EventMap } from "./event_utils.js";
+import type { IDownloadManager, IL10n, IPDFLinkService } from "./interfaces.js";
+import type { PDFFindController } from "./pdf_find_controller.js";
+import { SimpleLinkService } from "./pdf_link_service.js";
 import { PDFPageView } from "./pdf_page_view.js";
 import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
-import { PDFScriptingManager } from "./pdf_scripting_manager.js";
-import { PresentationModeState, RendererType, ScrollMode, SpreadMode, TextLayerMode, type VisibleElements } from "./ui_utils.js";
+import type { PDFScriptingManager } from "./pdf_scripting_manager.js";
+import type { VisibleElements } from "./ui_utils.js";
+import { PresentationModeState, ScrollMode, SpreadMode, TextLayerMode } from "./ui_utils.js";
 export declare const enum PagesCountLimit {
     FORCE_SCROLL_MODE_PAGE = 15000,
     FORCE_LAZY_PAGE_INIT = 7500,
@@ -32,7 +35,7 @@ export interface PDFViewerOptions {
     /**
      * The navigation/linking service.
      */
-    linkService: IPDFLinkService;
+    linkService?: IPDFLinkService;
     /**
      * The download manager component.
      */
@@ -85,10 +88,6 @@ export interface PDFViewerOptions {
      */
     enablePrintAutoRotate: boolean | undefined;
     /**
-     * 'canvas' or 'svg'. The default is 'canvas'.
-     */
-    renderer?: RendererType | undefined;
-    /**
      * Enables CSS only zooming. The default value is `false`.
      */
     useOnlyCssZoom: boolean | undefined;
@@ -133,7 +132,7 @@ export declare class PDFPageViewBuffer {
      */
     resize(newSize: number, idsToKeep?: Set<number>): void;
 }
-interface _ScrollPageIntoViewP {
+interface ScrollPageIntoViewP_ {
     /**
      * The page number.
      */
@@ -167,12 +166,12 @@ export interface PageOverview {
     height: number;
     rotation: number;
 }
-type SetScaleOptions_ = {
+type ChangeScaleOptions = {
     noScroll?: boolean;
     preset?: boolean;
     drawingDelay?: number;
-    steps?: number | undefined;
     scaleFactor?: number | undefined;
+    steps?: number | undefined;
 };
 /**
  * Simple viewer control to display PDF content/pages.
@@ -182,17 +181,15 @@ export declare class PDFViewer {
     container: HTMLDivElement;
     viewer: HTMLDivElement;
     eventBus: EventBus;
-    linkService: IPDFLinkService;
+    linkService: IPDFLinkService | SimpleLinkService;
     downloadManager: IDownloadManager | undefined;
     findController: PDFFindController | undefined;
     _scriptingManager: PDFScriptingManager | undefined;
     get enableScripting(): boolean;
-    removePageBorders: boolean | undefined;
-    textLayerMode: TextLayerMode;
     get renderForms(): boolean;
     imageResourcesPath: string;
     enablePrintAutoRotate: boolean;
-    renderer: RendererType | undefined;
+    removePageBorders: boolean | undefined;
     useOnlyCssZoom: boolean;
     isOffscreenCanvasSupported: boolean;
     maxCanvasPixels: number | undefined;
@@ -203,9 +200,6 @@ export declare class PDFViewer {
     scroll: {
         right: boolean;
         down: boolean;
-        /**
-         * 'canvas' or 'svg'. The default is 'canvas'.
-         */
         lastX: number;
         lastY: number;
         _eventHandler: (evt: unknown) => void;
@@ -281,14 +275,12 @@ export declare class PDFViewer {
      * @param rotation The rotation of the pages (0, 90, 180, 270).
      */
     set pagesRotation(rotation: number);
+    getAllText(): Promise<string | null>;
     /** @final */
     setDocument(pdfDocument?: PDFDocumentProxy): void;
     setPageLabels(labels: string[] | null): void;
     protected _resetView(): void;
     _scrollUpdate(): void;
-    _setScaleUpdatePages(newScale: number, newValue: number | string, { noScroll, preset, drawingDelay }: SetScaleOptions_): void;
-    protected get _pageWidthScaleFactor(): 1 | 2;
-    _setScale(value: string | number, options: SetScaleOptions_): void;
     /**
      * @param label The page label.
      * @return The page number corresponding to the page label,
@@ -298,7 +290,7 @@ export declare class PDFViewer {
     /**
      * Scrolls page into view.
      */
-    scrollPageIntoView({ pageNumber, destArray, allowNegativeOffset, ignoreDestinationZoom, }: _ScrollPageIntoViewP): void;
+    scrollPageIntoView({ pageNumber, destArray, allowNegativeOffset, ignoreDestinationZoom, }: ScrollPageIntoViewP_): void;
     /** @final */
     update(): void;
     containsElement(element: Node | null): boolean;
@@ -351,22 +343,22 @@ export declare class PDFViewer {
     _getPageAdvance(currentPageNumber: number, previous?: boolean): number;
     /**
      * Go to the next page, taking scroll/spread-modes into account.
-     * @return Whether navigation occured.
+     * @return Whether navigation occurred.
      */
     nextPage(): boolean;
     /**
      * Go to the previous page, taking scroll/spread-modes into account.
-     * @return Whether navigation occured.
+     * @return Whether navigation occurred.
      */
     previousPage(): boolean;
     /**
      * Increase the current zoom level one, or more, times.
      */
-    increaseScale(options?: SetScaleOptions_ | undefined): void;
+    increaseScale({ drawingDelay, scaleFactor, steps }?: ChangeScaleOptions): void;
     /**
      * Decrease the current zoom level one, or more, times.
      */
-    decreaseScale(options?: SetScaleOptions_ | undefined): void;
+    decreaseScale({ drawingDelay, scaleFactor, steps }?: ChangeScaleOptions): void;
     get containerTopLeft(): point_t;
     get annotationEditorMode(): AnnotationEditorType;
     /**

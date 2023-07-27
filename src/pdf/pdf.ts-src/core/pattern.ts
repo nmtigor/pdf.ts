@@ -17,28 +17,24 @@
  * limitations under the License.
  */
 
-import { GENERIC } from "../../../global.ts";
-import { type point_t, type rect_t, type TupleOf } from "../../../lib/alias.ts";
+import type { C2D, point_t, rect_t, TupleOf } from "../../../lib/alias.ts";
 import { assert } from "../../../lib/util/trace.ts";
 import { TilingPaintType, TilingType } from "../display/pattern_helper.ts";
-import { MessageHandler, Thread } from "../shared/message_handler.ts";
 import {
   FormatError,
   info,
   type matrix_t,
-  shadow,
-  UNSUPPORTED_FEATURES,
   Util,
   warn,
 } from "../shared/util.ts";
 import { BaseStream } from "./base_stream.ts";
 import { ColorSpace, type CS } from "./colorspace.ts";
 import { MissingDataException } from "./core_utils.ts";
-import { type ParsedFunction, PDFFunctionFactory } from "./function.ts";
-import { LocalColorSpaceCache } from "./image_utils.ts";
-import { type OpListIR } from "./operator_list.ts";
-import { Dict, Ref } from "./primitives.ts";
-import { XRef } from "./xref.ts";
+import type { ParsedFunction, PDFFunctionFactory } from "./function.ts";
+import type { LocalColorSpaceCache } from "./image_utils.ts";
+import type { OpListIR } from "./operator_list.ts";
+import type { Dict, Ref } from "./primitives.ts";
+import type { XRef } from "./xref.ts";
 /*80--------------------------------------------------------------------------*/
 
 export const enum ShadingType {
@@ -52,13 +48,12 @@ export const enum ShadingType {
 }
 
 export abstract class Pattern {
-  abstract getPattern(ctx: CanvasRenderingContext2D): unknown;
+  abstract getPattern(ctx: C2D): unknown;
 
   static parseShading(
     shading: Dict | BaseStream,
     xref: XRef,
     res: Dict,
-    handler: MessageHandler<Thread.worker>,
     pdfFunctionFactory: PDFFunctionFactory,
     localColorSpaceCache: LocalColorSpaceCache,
   ) {
@@ -94,11 +89,6 @@ export abstract class Pattern {
       if (ex instanceof MissingDataException) {
         throw ex;
       }
-      /*#static*/ if (GENERIC) {
-        handler.send("UnsupportedFeature", {
-          featureId: UNSUPPORTED_FEATURES!.shadingPattern,
-        });
-      }
       warn(ex as any);
       return new DummyShading();
     }
@@ -110,9 +100,7 @@ abstract class BaseShading {
    * A small number to offset the first/last color stops so we can insert ones
    * to support extend. Number.MIN_VALUE is too small and breaks the extend.
    */
-  static get SMALL_NUMBER() {
-    return shadow(this, "SMALL_NUMBER", 1e-6);
-  }
+  static readonly SMALL_NUMBER = 1e-6;
 
   abstract getIR(): ShadingPatternIR;
 }
@@ -197,16 +185,16 @@ class RadialAxialShading extends BaseShading {
     localColorSpaceCache: LocalColorSpaceCache,
   ) {
     super();
-    this.coordsArr = <TupleOf<number, 4 | 6>> dict.getArray("Coords");
-    this.shadingType = <ShadingType> dict.get("ShadingType");
+    this.coordsArr = dict.getArray("Coords") as TupleOf<number, 4 | 6>;
+    this.shadingType = dict.get("ShadingType") as ShadingType;
     const cs = ColorSpace.parse({
-      cs: <CS> (dict.getRaw("CS") || dict.getRaw("ColorSpace")),
+      cs: (dict.getRaw("CS") || dict.getRaw("ColorSpace")) as CS,
       xref,
       resources,
       pdfFunctionFactory,
       localColorSpaceCache,
     });
-    const bbox = <rect_t> dict.getArray("BBox");
+    const bbox = dict.getArray("BBox") as rect_t;
     if (Array.isArray(bbox) && bbox.length === 4) {
       this.bbox = Util.normalizeRect(bbox);
     } else {
@@ -245,13 +233,12 @@ class RadialAxialShading extends BaseShading {
     this.extendStart = extendStart;
     this.extendEnd = extendEnd;
 
-    const fnObj = <Ref | Dict | BaseStream> dict.getRaw("Function");
+    const fnObj = dict.getRaw("Function") as Ref | Dict | BaseStream;
     const fn = pdfFunctionFactory.createFromArray(fnObj);
 
-    // 10 samples seems good enough for now, but probably won't work
-    // if there are sharp color changes. Ideally, we would implement
-    // the spec faithfully and add lossless optimizations.
-    const NUMBER_OF_SAMPLES = 10;
+    // Use lcm(1,2,3,4,5,6,7,8,10) = 840 (including 9 increases this to 2520)
+    // to catch evenly spaced stops. oeis.org/A003418
+    const NUMBER_OF_SAMPLES = 840;
     const step = (t1 - t0) / NUMBER_OF_SAMPLES;
 
     const colorStops: [number, string][] = (this.colorStops = []);
@@ -264,16 +251,82 @@ class RadialAxialShading extends BaseShading {
       return;
     }
 
-    const color = new Float32Array(cs.numComps!);
-    const ratio = new Float32Array(1);
+    const color = new Float32Array(cs.numComps!),
+      ratio = new Float32Array(1);
     let rgbColor;
-    for (let i = 0; i <= NUMBER_OF_SAMPLES; i++) {
+
+    let iBase = 0;
+    ratio[0] = t0;
+    fn(ratio, 0, color, 0);
+    let rgbBase = cs.getRgb(color, 0);
+    const cssColorBase = Util.makeHexColor(rgbBase[0], rgbBase[1], rgbBase[2]);
+    colorStops.push([0, cssColorBase]);
+
+    let iPrev = 1;
+    ratio[0] = t0 + step;
+    fn(ratio, 0, color, 0);
+    let rgbPrev = cs.getRgb(color, 0);
+
+    // Slopes are rise / run.
+    // A max slope is from the least value the base component could have been
+    // to the greatest value the current component could have been.
+    // A min slope is from the greatest value the base component could have been
+    // to the least value the current component could have been.
+    // Each component could have been rounded up to .5 from its original value
+    // so the conservative deltas are +-1 (+-.5 for base and -+.5 for current).
+
+    // The run is iPrev - iBase = 1, so omitted.
+    let maxSlopeR = rgbPrev[0] - rgbBase[0] + 1;
+    let maxSlopeG = rgbPrev[1] - rgbBase[1] + 1;
+    let maxSlopeB = rgbPrev[2] - rgbBase[2] + 1;
+    let minSlopeR = rgbPrev[0] - rgbBase[0] - 1;
+    let minSlopeG = rgbPrev[1] - rgbBase[1] - 1;
+    let minSlopeB = rgbPrev[2] - rgbBase[2] - 1;
+
+    for (let i = 2; i < NUMBER_OF_SAMPLES; i++) {
       ratio[0] = t0 + i * step;
       fn(ratio, 0, color, 0);
       rgbColor = cs.getRgb(color, 0);
-      const cssColor = Util.makeHexColor(rgbColor[0], rgbColor[1], rgbColor[2]);
-      colorStops.push([i / NUMBER_OF_SAMPLES, cssColor]);
+
+      // Keep going if the maximum minimum slope <= the minimum maximum slope.
+      // Otherwise add a rgbPrev color stop and make it the new base.
+
+      const run = i - iBase;
+      maxSlopeR = Math.min(maxSlopeR, (rgbColor[0] - rgbBase[0] + 1) / run);
+      maxSlopeG = Math.min(maxSlopeG, (rgbColor[1] - rgbBase[1] + 1) / run);
+      maxSlopeB = Math.min(maxSlopeB, (rgbColor[2] - rgbBase[2] + 1) / run);
+      minSlopeR = Math.max(minSlopeR, (rgbColor[0] - rgbBase[0] - 1) / run);
+      minSlopeG = Math.max(minSlopeG, (rgbColor[1] - rgbBase[1] - 1) / run);
+      minSlopeB = Math.max(minSlopeB, (rgbColor[2] - rgbBase[2] - 1) / run);
+
+      const slopesExist = minSlopeR <= maxSlopeR &&
+        minSlopeG <= maxSlopeG &&
+        minSlopeB <= maxSlopeB;
+
+      if (!slopesExist) {
+        const cssColor = Util.makeHexColor(rgbPrev[0], rgbPrev[1], rgbPrev[2]);
+        colorStops.push([iPrev / NUMBER_OF_SAMPLES, cssColor]);
+
+        // TODO: When fn frequency is high (iPrev - iBase === 1 twice in a row),
+        // send the color space and function to do the sampling display side.
+
+        // The run is i - iPrev = 1, so omitted.
+        maxSlopeR = rgbColor[0] - rgbPrev[0] + 1;
+        maxSlopeG = rgbColor[1] - rgbPrev[1] + 1;
+        maxSlopeB = rgbColor[2] - rgbPrev[2] + 1;
+        minSlopeR = rgbColor[0] - rgbPrev[0] - 1;
+        minSlopeG = rgbColor[1] - rgbPrev[1] - 1;
+        minSlopeB = rgbColor[2] - rgbPrev[2] - 1;
+
+        iBase = iPrev;
+        rgbBase = rgbPrev;
+      }
+
+      iPrev = i;
+      rgbPrev = rgbColor;
     }
+    const cssColor = Util.makeHexColor(rgbPrev[0], rgbPrev[1], rgbPrev[2]);
+    colorStops.push([1, cssColor]);
 
     let background = "transparent";
     if (dict.has("Background")) {
@@ -473,14 +526,9 @@ const getB = (() => {
     }
     return lut;
   }
-  const cache: Float32Array[][] = [];
+  const cache: Float32Array[][] = Object.create(null);
 
-  return (count: number) => {
-    if (!cache[count]) {
-      cache[count] = buildB(count);
-    }
-    return cache[count];
-  };
+  return (count: number) => (cache[count] ||= buildB(count));
 })();
 
 interface DecodeContext {
@@ -494,20 +542,14 @@ interface DecodeContext {
 }
 
 export class MeshShading extends BaseShading {
-  static get MIN_SPLIT_PATCH_CHUNKS_AMOUNT() {
-    return shadow(this, "MIN_SPLIT_PATCH_CHUNKS_AMOUNT", 3);
-  }
+  static readonly MIN_SPLIT_PATCH_CHUNKS_AMOUNT = 3;
 
-  static get MAX_SPLIT_PATCH_CHUNKS_AMOUNT() {
-    return shadow(this, "MAX_SPLIT_PATCH_CHUNKS_AMOUNT", 20);
-  }
+  static readonly MAX_SPLIT_PATCH_CHUNKS_AMOUNT = 20;
 
   /**
    * Count of triangles per entire mesh bounds.
    */
-  static get TRIANGLE_DENSITY() {
-    return shadow(this, "TRIANGLE_DENSITY", 20);
-  }
+  static readonly TRIANGLE_DENSITY = 20;
 
   shadingType: ShadingType;
   bbox: rect_t | undefined;
@@ -551,7 +593,7 @@ export class MeshShading extends BaseShading {
       ? cs.getRgb(<number[]> dict.get("Background"), 0)
       : undefined;
 
-    const fnObj = <Ref | Dict | BaseStream> dict.getRaw("Function");
+    const fnObj = dict.getRaw("Function") as Ref | Dict | BaseStream;
     const fn = fnObj ? pdfFunctionFactory.createFromArray(fnObj) : undefined;
 
     const decodeContext = <DecodeContext> {

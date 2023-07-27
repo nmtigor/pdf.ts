@@ -483,17 +483,13 @@ export class PDFHistory {
     #popState = ({ state }) => {
         const newHash = getCurrentHash(), hashChanged = this._currentHash !== newHash;
         this._currentHash = newHash;
-        const rn_ = () => {
+        if (CHROME && state?.chromecomState && !this.#isValidState(state) || !state) {
             // This case corresponds to the user changing the hash of the document.
             this.#uid++;
             const { hash, page, rotation } = this.#parseCurrentHash();
             this.#pushOrReplaceState({ hash, page, rotation }, 
             /* forceReplace = */ true);
             return;
-        };
-        /*#static*/ 
-        if (!state) {
-            return rn_();
         }
         if (!this.#isValidState(state)) {
             // This should only occur in viewers with support for opening more than

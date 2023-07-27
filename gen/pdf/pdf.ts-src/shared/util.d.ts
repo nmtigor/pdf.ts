@@ -1,7 +1,9 @@
-import { type point_t, type rect_t, type TupleOf } from "../../../lib/alias.js";
+import type { point_t, rect_t, TupleOf } from "../../../lib/alias.js";
 import { HttpStatusCode } from "../../../lib/HttpStatusCode.js";
+import { ErrorJ } from "../../../lib/util/trace.js";
 export declare const IDENTITY_MATRIX: matrix_t;
 export declare const FONT_IDENTITY_MATRIX: matrix_t;
+export declare const MAX_IMAGE_SIZE_TO_CACHE = 10000000;
 export declare const LINE_FACTOR = 1.35;
 export declare const LINE_DESCENT_FACTOR = 0.35;
 export declare const BASELINE_FACTOR: number;
@@ -18,6 +20,7 @@ export declare const BASELINE_FACTOR: number;
  *    `OperatorList`-constructor (on the worker-thread).
  */
 export declare const enum RenderingIntentFlag {
+    _0 = 0,
     ANY = 1,
     DISPLAY = 2,
     PRINT = 4,
@@ -282,29 +285,6 @@ export declare enum OPS {
     group = 92
 }
 export type OPSName = keyof typeof OPS;
-export declare const UNSUPPORTED_FEATURES: {
-    readonly forms: "forms";
-    readonly javaScript: "javaScript";
-    readonly signatures: "signatures";
-    readonly smask: "smask";
-    readonly shadingPattern: "shadingPattern";
-    readonly errorTilingPattern: "errorTilingPattern";
-    readonly errorExtGState: "errorExtGState";
-    readonly errorXObject: "errorXObject";
-    readonly errorFontLoadType3: "errorFontLoadType3";
-    readonly errorFontState: "errorFontState";
-    readonly errorFontMissing: "errorFontMissing";
-    readonly errorFontTranslate: "errorFontTranslate";
-    readonly errorColorSpace: "errorColorSpace";
-    readonly errorOperatorList: "errorOperatorList";
-    readonly errorFontToUnicode: "errorFontToUnicode";
-    readonly errorFontLoadNative: "errorFontLoadNative";
-    readonly errorFontBuildPath: "errorFontBuildPath";
-    readonly errorFontGetPath: "errorFontGetPath";
-    readonly errorMarkedContent: "errorMarkedContent";
-    readonly errorContentSubStream: "errorContentSubStream";
-} | undefined;
-export type UNSUPPORTED_FEATURES = (Exclude<typeof UNSUPPORTED_FEATURES, undefined>)[keyof Exclude<typeof UNSUPPORTED_FEATURES, undefined>];
 export declare const enum PasswordResponses {
     NEED_PASSWORD = 1,
     INCORRECT_PASSWORD = 2
@@ -339,13 +319,13 @@ export declare function shadow<T>(obj: any, prop: string | symbol, value: T, non
 export declare abstract class BaseException extends Error {
     constructor(message: string | undefined, name: string);
 }
+export interface PasswordExceptionJ extends ErrorJ {
+    code: number;
+}
 export declare class PasswordException extends BaseException {
     code: number;
     constructor(msg: string, code: number);
-}
-export declare class UnknownErrorException extends BaseException {
-    details?: string | undefined;
-    constructor(msg: string, details?: string | undefined);
+    toJ(): PasswordExceptionJ;
 }
 export declare class InvalidPDFException extends BaseException {
     constructor(msg: string);
@@ -353,9 +333,21 @@ export declare class InvalidPDFException extends BaseException {
 export declare class MissingPDFException extends BaseException {
     constructor(msg: string);
 }
+export interface UnexpectedResponseExceptionJ extends ErrorJ {
+    status: HttpStatusCode;
+}
 export declare class UnexpectedResponseException extends BaseException {
     status: HttpStatusCode;
     constructor(msg: string, status: HttpStatusCode);
+    toJ(): UnexpectedResponseExceptionJ;
+}
+export interface UnknownErrorExceptionJ extends ErrorJ {
+    details: string | undefined;
+}
+export declare class UnknownErrorException extends BaseException {
+    details?: string | undefined;
+    constructor(msg: string, details?: string | undefined);
+    toJ(): UnknownErrorExceptionJ;
 }
 /**
  * Error caused during parsing PDF data.
@@ -404,34 +396,6 @@ export declare function stringToUTF8String(str: string): string;
 export declare function utf8StringToString(str: string): string;
 export declare function isArrayBuffer(v: any): v is ArrayBufferLike;
 export declare function getModificationDate(date?: Date): string;
-/**
- * Promise Capability object.
- */
-export interface PromiseCapability<T = void> {
-    id: number;
-    /**
-     * A Promise object.
-     */
-    promise: Promise<T>;
-    /**
-     * If the Promise has been fulfilled/rejected.
-     */
-    settled: boolean;
-    /**
-     * Fulfills the Promise.
-     */
-    resolve: (data: T) => void;
-    /**
-     * Rejects the Promise.
-     */
-    reject: (reason: any) => void;
-}
-/**
- * Creates a promise capability object.
- *
- * ! Notice, this could be called in worker thread, where there is no e.g.
- * ! `Node` as in mv.ts.
- */
-export declare function createPromiseCapability<T = void>(): PromiseCapability<T>;
+export declare function normalizeUnicode(str: string): string;
 export {};
 //# sourceMappingURL=util.d.ts.map

@@ -2,15 +2,25 @@
  * @module lib/dom
  * @license Apache-2.0
  ******************************************************************************/
-import { type CSSStyle, type loff_t } from "./alias.js";
+import type { CSSStyle, llen_t } from "./alias.js";
+import type { Vuu } from "./mv.js";
 import { $cssstylesheet, $loff, $ovlap, $tail_ignored } from "./symbols.js";
 declare global {
-    interface EventMap extends ElementEventMap, DocumentAndElementEventHandlersEventMap, GlobalEventHandlersEventMap, WindowEventHandlersEventMap, HTMLVideoElementEventMap, DocumentEventMap, WindowEventMap, WorkerEventMap, ServiceWorkerEventMap, OfflineAudioContextEventMap {
+    interface EventMap extends ElementEventMap, GlobalEventHandlersEventMap, WindowEventHandlersEventMap, HTMLVideoElementEventMap, DocumentEventMap, WindowEventMap, WorkerEventMap, ServiceWorkerEventMap, OfflineAudioContextEventMap {
     }
     type EventName = keyof EventMap;
     type EventHandler<E extends EventName> = (ev: EventMap[E]) => any;
     interface Event {
+        _canceled: boolean | undefined;
         canceled: boolean;
+        targetVuu?: Vuu;
+    }
+    interface WheelEvent {
+        _repr(): {
+            deltaMode: string;
+            deltaX: number;
+            deltaY: number;
+        };
     }
 }
 export declare const enum MouseButton {
@@ -26,6 +36,7 @@ declare global {
         off<E extends EventName>(type: E, listener: EventHandler<E>, options?: EventListenerOptions | boolean): void;
     }
 }
+export declare const ClickHoldTo = 10000;
 declare global {
     interface Node {
         readonly isText: boolean;
@@ -47,6 +58,7 @@ declare global {
         assignAttro(attr_o: Record<string, string | number>): this;
         readonly scrollRight: number;
         readonly scrollBottom: number;
+        cyName: string;
     }
 }
 declare global {
@@ -81,21 +93,22 @@ declare global {
 export type HSElement = HTMLElement | SVGElement;
 declare global {
     interface DOMRect {
+        contain(x_x: number, y_x: number): boolean;
         [$ovlap]: boolean;
     }
     interface Range {
         /**
-         * @out @param rec_a
-         * @const @param ovlap
+         * @out @param rec_a_x
+         * @const @param ovlap_x
          */
-        getReca(rec_a: DOMRect[], ovlap?: boolean): void;
+        getSticka(rec_a_x: DOMRect[], ovlap_x?: boolean): void;
         reset(): void;
     }
 }
 declare global {
     interface Text {
-        [$loff]: loff_t;
-        [$tail_ignored]: boolean;
+        [$loff]?: llen_t;
+        [$tail_ignored]?: boolean;
     }
 }
 /**
@@ -103,7 +116,7 @@ declare global {
  * @const @param loff_x
  * @const @param tail_ignored_x
  */
-export declare function textnode(text_x: string, loff_x?: loff_t, tail_ignored_x?: boolean): Text;
+export declare function textnode(text_x: string, loff_x?: llen_t, tail_ignored_x?: boolean): Text;
 type HTMLRet_<NN extends string> = NN extends keyof HTMLElementTagNameMap ? HTMLElementTagNameMap[NN] : HTMLElement;
 export declare function html<NN extends string>(nodeName: NN, innerHTML?: string, doc?: Document): HTMLRet_<NN>;
 export declare function div(innerHTML?: string, doc?: Document): HTMLDivElement;

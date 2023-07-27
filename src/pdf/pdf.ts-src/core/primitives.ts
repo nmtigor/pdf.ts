@@ -17,13 +17,13 @@
  * limitations under the License.
  */
 
-import { _PDFDEV } from "../../../global.ts";
-import { type TypedArray } from "../../../lib/alias.ts";
+import { PDFJSDev, TESTING } from "../../../global.ts";
+import type { TypedArray } from "../../../lib/alias.ts";
 import { assert } from "../../../lib/util/trace.ts";
 import { shadow } from "../shared/util.ts";
-import { BaseStream } from "./base_stream.ts";
-import { TranslatedFont } from "./evaluator.ts";
-import { XRef } from "./xref.ts";
+import type { BaseStream } from "./base_stream.ts";
+import type { TranslatedFont } from "./evaluator.ts";
+import type { XRef } from "./xref.ts";
 /*80--------------------------------------------------------------------------*/
 
 export const CIRCULAR_REF = Symbol("CIRCULAR_REF");
@@ -31,59 +31,51 @@ export type CIRCULAR_REF = typeof CIRCULAR_REF;
 export const EOF = Symbol("EOF");
 export type EOF = typeof EOF;
 
-namespace XFANsName {
-  let nameCache: Record<string, Name> = Object.create(null);
+let CmdCache: Record<string, Cmd> = Object.create(null);
+let NameCache: Record<string, Name> = Object.create(null);
+let RefCache: Record<string, Ref> = Object.create(null);
 
-  export class Name {
-    name;
+export function clearPrimitiveCaches() {
+  CmdCache = Object.create(null);
+  NameCache = Object.create(null);
+  RefCache = Object.create(null);
+}
 
-    constructor(name: string) {
-      /*#static*/ if (_PDFDEV) {
-        if (typeof name !== "string") {
-          assert(0, 'Name: The "name" must be a string.');
-        }
+export class Name {
+  name;
+
+  constructor(name: string) {
+    /*#static*/ if (PDFJSDev || TESTING) {
+      if (typeof name !== "string") {
+        assert(0, 'Name: The "name" must be a string.');
       }
-      this.name = name;
     }
+    this.name = name;
+  }
 
-    static get(name: string) {
-      // eslint-disable-next-line no-restricted-syntax
-      return nameCache[name] || (nameCache[name] = new Name(name));
-    }
-
-    static _clearCache() {
-      nameCache = Object.create(null);
-    }
+  static get(name: string) {
+    // eslint-disable-next-line no-restricted-syntax
+    return (NameCache[name] ||= new Name(name));
   }
 }
-export import Name = XFANsName.Name;
 
-namespace NsCmd {
-  let cmdCache: Record<string, Cmd> = Object.create(null);
+export class Cmd {
+  cmd;
 
-  export class Cmd {
-    cmd;
-
-    constructor(cmd: string) {
-      /*#static*/ if (_PDFDEV) {
-        if (typeof cmd !== "string") {
-          assert(0, 'Cmd: The "cmd" must be a string.');
-        }
+  constructor(cmd: string) {
+    /*#static*/ if (PDFJSDev || TESTING) {
+      if (typeof cmd !== "string") {
+        assert(0, 'Cmd: The "cmd" must be a string.');
       }
-      this.cmd = cmd;
     }
+    this.cmd = cmd;
+  }
 
-    static get(cmd: string) {
-      // eslint-disable-next-line no-restricted-syntax
-      return cmdCache[cmd] || (cmdCache[cmd] = new Cmd(cmd));
-    }
-
-    static _clearCache() {
-      cmdCache = Object.create(null);
-    }
+  static get(cmd: string) {
+    // eslint-disable-next-line no-restricted-syntax
+    return (CmdCache[cmd] ||= new Cmd(cmd));
   }
 }
-export import Cmd = NsCmd.Cmd;
 
 export class Dict {
   /* #map */
@@ -104,7 +96,7 @@ export class Dict {
     return Object.values(this.#map);
   }
   set(key: string, value: Obj | undefined) {
-    /*#static*/ if (_PDFDEV) {
+    /*#static*/ if (PDFJSDev || TESTING) {
       if (typeof key !== "string") {
         assert(0, 'Dict.set: The "key" must be a string.');
       } else if (value === undefined) {
@@ -136,14 +128,14 @@ export class Dict {
   get(key1: string, key2?: string, key3?: string): Obj | undefined {
     let value = this.#map[key1];
     if (value === undefined && key2 !== undefined) {
-      /*#static*/ if (_PDFDEV) {
+      /*#static*/ if (PDFJSDev || TESTING) {
         if (key2.length < key1.length) {
           assert(0, "Dict.get: Expected keys to be ordered by length.");
         }
       }
       value = this.#map[key2];
       if (value === undefined && key3 !== undefined) {
-        /*#static*/ if (_PDFDEV) {
+        /*#static*/ if (PDFJSDev || TESTING) {
           if (key3.length < key2.length) {
             assert(0, "Dict.get: Expected keys to be ordered by length.");
           }
@@ -167,14 +159,14 @@ export class Dict {
   ): Promise<T> {
     let value = this.#map[key1];
     if (value === undefined && key2 !== undefined) {
-      /*#static*/ if (_PDFDEV) {
+      /*#static*/ if (PDFJSDev || TESTING) {
         if (key2.length < key1.length) {
           assert(0, "Dict.getAsync: Expected keys to be ordered by length.");
         }
       }
       value = this.#map[key2];
       if (value === undefined && key3 !== undefined) {
-        /*#static*/ if (_PDFDEV) {
+        /*#static*/ if (PDFJSDev || TESTING) {
           if (key3.length < key2.length) {
             assert(0, "Dict.getAsync: Expected keys to be ordered by length.");
           }
@@ -185,7 +177,7 @@ export class Dict {
     if (value instanceof Ref && this.xref) {
       return this.xref.fetchAsync(value, this.suppressEncryption);
     }
-    return <T> value;
+    return value as T;
   }
 
   /**
@@ -194,14 +186,14 @@ export class Dict {
   getArray(key1: string, key2?: string, key3?: string): NoRef | undefined {
     let value = this.#map[key1];
     if (value === undefined && key2 !== undefined) {
-      /*#static*/ if (_PDFDEV) {
+      /*#static*/ if (PDFJSDev || TESTING) {
         if (key2.length < key1.length) {
           assert(0, "Dict.getArray: Expected keys to be ordered by length.");
         }
       }
       value = this.#map[key2];
       if (value === undefined && key3 !== undefined) {
-        /*#static*/ if (_PDFDEV) {
+        /*#static*/ if (PDFJSDev || TESTING) {
           if (key3.length < key2.length) {
             assert(0, "Dict.getArray: Expected keys to be ordered by length.");
           }
@@ -221,7 +213,7 @@ export class Dict {
         }
       }
     }
-    return <(ObjNoRef | undefined)[]> value;
+    return value as (ObjNoRef | undefined)[];
   }
 
   forEach(callback: (k: string, v: any) => any) {
@@ -303,43 +295,32 @@ export class FontDict extends Dict {
   cacheKey?: Ref | string;
 }
 
-export namespace NsRef {
-  let refCache: Record<string, Ref> = Object.create(null);
+export class Ref {
+  /** object number */
+  num;
+  /** generation number */
+  gen;
 
-  export class Ref {
-    /** object number */
-    num;
-    /** generation number */
-    gen;
+  constructor(num: number, gen: number) {
+    this.num = num;
+    this.gen = gen;
+  }
 
-    constructor(num: number, gen: number) {
-      this.num = num;
-      this.gen = gen;
+  toString() {
+    // This function is hot, so we make the string as compact as possible.
+    // |this.gen| is almost always zero, so we treat that case specially.
+    if (this.gen === 0) {
+      return `${this.num}R`;
     }
+    return `${this.num}R${this.gen}`;
+  }
 
-    toString() {
-      // This function is hot, so we make the string as compact as possible.
-      // |this.gen| is almost always zero, so we treat that case specially.
-      if (this.gen === 0) {
-        return `${this.num}R`;
-      }
-      return `${this.num}R${this.gen}`;
-    }
-
-    static get(num: number, gen: number) {
-      const key = gen === 0 ? `${num}R` : `${num}R${gen}`;
-      // eslint-disable-next-line no-restricted-syntax
-      return refCache[key] || (refCache[key] = new Ref(num, gen));
-    }
-
-    static _clearCache() {
-      refCache = Object.create(null);
-    }
+  static get(num: number, gen: number) {
+    const key = gen === 0 ? `${num}R` : `${num}R${gen}`;
+    // eslint-disable-next-line no-restricted-syntax
+    return (RefCache[key] ||= new Ref(num, gen));
   }
 }
-export type Ref = NsRef.Ref;
-// Hoisting for deno.
-export var Ref = NsRef.Ref;
 
 // The reference is identified by number and generation.
 // This structure stores only one instance of the reference.
@@ -362,7 +343,7 @@ export class RefSet {
   }
 
   constructor(parent?: RefSet) {
-    /*#static*/ if (_PDFDEV) {
+    /*#static*/ if (PDFJSDev || TESTING) {
       if (parent && !(parent instanceof RefSet)) {
         assert(0, 'RefSet: Invalid "parent" value.');
       }
@@ -380,9 +361,11 @@ export class RefSetCache<T = Obj> {
   get(ref: Ref | string) {
     return this.#map.get(ref.toString());
   }
+
   has(ref: Ref | string) {
     return this.#map.has(ref.toString());
   }
+
   put(ref: Ref | string, obj: T) {
     this.#map.set(ref.toString(), obj);
   }
@@ -414,13 +397,13 @@ export function isDict(v: any, type?: string) {
 }
 
 export function isRefsEqual(v1: Ref, v2: Ref) {
+  /*#static*/ if (PDFJSDev || TESTING) {
+    assert(
+      v1 instanceof Ref && v2 instanceof Ref,
+      "isRefsEqual: Both parameters should be `Ref`s.",
+    );
+  }
   return v1.num === v2.num && v1.gen === v2.gen;
-}
-
-export function clearPrimitiveCaches() {
-  Cmd._clearCache();
-  Name._clearCache();
-  Ref._clearCache();
 }
 
 type Prm =

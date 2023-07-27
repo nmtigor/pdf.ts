@@ -18,14 +18,11 @@
  */
 
 import { MOZCENTRAL } from "../../global.ts";
-import { EventBus } from "./event_utils.ts";
-import { type IL10n } from "./interfaces.ts";
-import {
-  FindState,
-  type FindType,
-  type MatchesCount,
-} from "./pdf_find_controller.ts";
-import { type ViewerConfiguration } from "./viewer.ts";
+import type { EventBus } from "./event_utils.ts";
+import type { IL10n } from "./interfaces.ts";
+import type { FindType, MatchesCount } from "./pdf_find_controller.ts";
+import { FindState } from "./pdf_find_controller.ts";
+import type { ViewerConfiguration } from "./viewer.ts";
 /*80--------------------------------------------------------------------------*/
 
 const MATCHES_COUNT_LIMIT = 1000;
@@ -126,7 +123,6 @@ export class PDFFindBar {
       source: this,
       type,
       query: this.findField.value,
-      phraseSearch: true,
       caseSensitive: this.caseSensitive.checked,
       entireWord: this.entireWord.checked,
       highlightAll: this.highlightAll.checked,
@@ -164,6 +160,7 @@ export class PDFFindBar {
     );
 
     findMsg.then((msg) => {
+      this.findMsg.setAttribute("data-status", status);
       this.findMsg.textContent = msg;
       this.#adjustWidth();
     });

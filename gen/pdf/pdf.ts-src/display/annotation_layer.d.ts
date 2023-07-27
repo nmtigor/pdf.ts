@@ -1,13 +1,13 @@
-import { type rect_t } from "../../../lib/alias.js";
-import { IDownloadManager, type IPDFLinkService } from "../../pdf.ts-web/interfaces.js";
-import { TextAccessibilityManager } from "../../pdf.ts-web/text_accessibility.js";
-import { type AnnotationData, type FieldObject } from "../core/annotation.js";
+import type { rect_t } from "../../../lib/alias.js";
+import type { IDownloadManager, IPDFLinkService } from "../../pdf.ts-web/interfaces.js";
+import type { TextAccessibilityManager } from "../../pdf.ts-web/text_accessibility.js";
+import type { AnnotationData, FieldObject } from "../core/annotation.js";
 import { ColorConvertersDetail } from "../shared/scripting_utils.js";
-import { AnnotationEditorType } from "../shared/util.js";
+import type { AnnotationEditorType } from "../shared/util.js";
 import { AnnotationStorage } from "./annotation_storage.js";
-import { MetadataEx, PDFPageProxy } from "./api.js";
+import type { MetadataEx, PDFPageProxy } from "./api.js";
 import { DOMSVGFactory, PageViewport } from "./display_utils.js";
-interface _AnnotationElementCtorP {
+interface AnnotationElementCtorP_ {
     data: AnnotationData;
     layer: HTMLDivElement;
     page: PDFPageProxy;
@@ -44,7 +44,7 @@ export declare class AnnotationElement {
     _fieldObjects: Record<string, FieldObject[]> | undefined;
     container?: HTMLElement;
     quadrilaterals?: HTMLElement[] | undefined;
-    constructor(parameters: _AnnotationElementCtorP, { isRenderable, ignoreBorder, createQuadrilaterals, }?: {
+    constructor(parameters: AnnotationElementCtorP_, { isRenderable, ignoreBorder, createQuadrilaterals, }?: {
         isRenderable?: boolean | undefined;
         ignoreBorder?: boolean | undefined;
         createQuadrilaterals?: boolean | undefined;
@@ -126,7 +126,7 @@ export declare class FileAttachmentAnnotationElement extends AnnotationElement {
     #private;
     filename: string;
     content: Uint8Array | Uint8ClampedArray | undefined;
-    constructor(parameters: _AnnotationElementCtorP);
+    constructor(parameters: AnnotationElementCtorP_);
     render(): HTMLElement;
 }
 export type AnnotationLayerP = {

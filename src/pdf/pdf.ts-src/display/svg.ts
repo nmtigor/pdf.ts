@@ -18,17 +18,14 @@
  */
 /* globals __non_webpack_require__ */
 
-import { GENERIC, PRODUCTION } from "../../../global.ts";
-import { type rect_t } from "../../../lib/alias.ts";
+import { GENERIC, PDFJSDev } from "../../../global.ts";
+import type { rect_t } from "../../../lib/alias.ts";
 import { svg as createSVG } from "../../../lib/dom.ts";
-import { type ImgData } from "../core/evaluator.ts";
-import { FontExpotData, Glyph } from "../core/fonts.ts";
-import { type OpListIR } from "../core/operator_list.ts";
-import {
-  type ShadingPatternIR,
-  ShadingType,
-  type TilingPatternIR,
-} from "../core/pattern.ts";
+import type { ImgData } from "../core/evaluator.ts";
+import type { FontExpotData, Glyph } from "../core/fonts.ts";
+import type { OpListIR } from "../core/operator_list.ts";
+import type { ShadingPatternIR, TilingPatternIR } from "../core/pattern.ts";
+import { ShadingType } from "../core/pattern.ts";
 import {
   FONT_IDENTITY_MATRIX,
   IDENTITY_MATRIX,
@@ -43,9 +40,9 @@ import { PDFCommonObjs, PDFObjects, PDFObjs } from "./api.ts";
 import { deprecated, DOMSVGFactory, PageViewport } from "./display_utils.ts";
 /*80--------------------------------------------------------------------------*/
 
-/*#static*/ if (PRODUCTION && !GENERIC) {
+/*#static*/ if (!GENERIC) {
   throw new Error(
-    'Module "./svg.js" shall not be used with PRODUCTION && !GENERIC builds.',
+    'Module "./svg.js" shall not be used with !GENERIC builds.',
   );
 }
 
@@ -684,10 +681,10 @@ export class SVGGraphics {
           this[OPS.setFont](<[string, number]> args);
           break;
         case OPS.showText:
-          this[OPS.showText](<(Glyph | number | null)[]> (<any> args)[0]);
+          this[OPS.showText]((args as any)[0] as (Glyph | number | null)[]);
           break;
         case OPS.showSpacedText:
-          this[OPS.showText](<(Glyph | number | null)[]> (<any> args)[0]);
+          this[OPS.showText]((args as any)[0] as (Glyph | number | null)[]);
           break;
         case OPS.endText:
           this[OPS.endText]();
@@ -697,13 +694,13 @@ export class SVGGraphics {
           // this.moveText(args[0], args[1]);
           break;
         case OPS.setCharSpacing:
-          this[OPS.setCharSpacing](<number> (<any> args)[0]);
+          this[OPS.setCharSpacing]((args as any)[0] as number);
           break;
         case OPS.setWordSpacing:
-          this[OPS.setWordSpacing](<number> (<any> args)[0]);
+          this[OPS.setWordSpacing]((args as any)[0] as number);
           break;
         case OPS.setHScale:
-          this[OPS.setHScale](<number> (<any> args)[0]);
+          this[OPS.setHScale]((args as any)[0] as number);
           break;
         case OPS.setTextMatrix:
           this[OPS.setTextMatrix](...<matrix_t> args);
@@ -947,14 +944,15 @@ export class SVGGraphics {
         continue;
       }
 
-      const spacing = ((<Glyph> glyph).isSpace ? wordSpacing : 0) + charSpacing;
-      const character = (<Glyph> glyph).fontChar;
+      const spacing = ((glyph as Glyph).isSpace ? wordSpacing : 0) +
+        charSpacing;
+      const character = (glyph as Glyph).fontChar;
       let scaledX, scaledY;
-      let width = (<Glyph> glyph).width;
+      let width = (glyph as Glyph).width;
       if (vertical) {
         let vx;
-        const vmetric = (<Glyph> glyph).vmetric || defaultVMetrics!;
-        vx = (<Glyph> glyph).vmetric ? vmetric[1] : width! * 0.5;
+        const vmetric = (glyph as Glyph).vmetric || defaultVMetrics!;
+        vx = (glyph as Glyph).vmetric ? vmetric[1] : width! * 0.5;
         vx = -vx * widthAdvanceScale;
         const vy = vmetric[2] * widthAdvanceScale;
 
@@ -966,7 +964,7 @@ export class SVGGraphics {
         scaledY = 0;
       }
 
-      if ((<Glyph> glyph).isInFont || font.missingFile) {
+      if ((glyph as Glyph).isInFont || font.missingFile) {
         current.xcoords!.push(current.x + scaledX);
         if (vertical) {
           current.ycoords!.push(-current.y + scaledY);
@@ -1105,7 +1103,7 @@ export class SVGGraphics {
 
   [OPS.setFont](details: [string, number]) {
     const current = this.current;
-    const fontObj = <FontExpotData> this.commonObjs.get(details[0]);
+    const fontObj = this.commonObjs.get(details[0]) as FontExpotData;
     let size = details[1];
     current.font = fontObj;
 

@@ -3,8 +3,8 @@
  */
 import { html } from "../../../../lib/dom.js";
 import { assert } from "../../../../lib/util/trace.js";
-import { FeatureTest, shadow, } from "../../shared/util.js";
-import { bindEvents, ColorManager, } from "./tools.js";
+import { FeatureTest, shadow } from "../../shared/util.js";
+import { bindEvents, ColorManager } from "./tools.js";
 /**
  * Base class for editors.
  */
@@ -27,6 +27,7 @@ export class AnnotationEditor {
     name;
     div;
     rotation;
+    pageRotation;
     pageDimensions;
     pageTranslation;
     x;
@@ -45,6 +46,8 @@ export class AnnotationEditor {
         this._uiManager = parameters.uiManager;
         const { rotation, rawDims: { pageWidth, pageHeight, pageX, pageY }, } = this.parent.viewport;
         this.rotation = rotation;
+        this.pageRotation =
+            (360 + rotation - this._uiManager.viewParameters.rotation) % 360;
         this.pageDimensions = [pageWidth, pageHeight];
         this.pageTranslation = [pageX, pageY];
         const [width, height] = this.parent.viewportBaseDimensions;
@@ -185,7 +188,7 @@ export class AnnotationEditor {
         return this._uiManager.viewParameters.realScale;
     }
     get parentRotation() {
-        return this._uiManager.viewParameters.rotation;
+        return (this._uiManager.viewParameters.rotation + this.pageRotation) % 360;
     }
     get parentDimensions() {
         const { realScale } = this._uiManager.viewParameters;

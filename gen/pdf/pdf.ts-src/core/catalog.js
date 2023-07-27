@@ -865,11 +865,8 @@ export class Catalog {
             else if (typeof js !== "string") {
                 return;
             }
-            if (javaScript === undefined) {
-                javaScript = new Map();
-            }
-            js = stringToPDFString(js).replace(/\u0000/g, "");
-            javaScript.set(name, js);
+            js = stringToPDFString(js).replaceAll("\x00", "");
+            (javaScript ||= new Map()).set(name, js);
         }
         if (obj instanceof Dict && obj.has("JavaScript")) {
             const nameTree = new NameTree(obj.getRaw("JavaScript"), this.xref);

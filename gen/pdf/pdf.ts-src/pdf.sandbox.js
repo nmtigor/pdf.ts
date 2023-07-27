@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 import ModuleLoader from "../../3rd/quickjs-2022-05-02/quickjs-eval.js";
-import { _PDFDEV } from "../../global.js";
+import { TESTING } from "../../global.js";
 import { SandboxSupportBase } from "./pdf.sandbox.external.js";
 /*80--------------------------------------------------------------------------*/
 // /* eslint-disable-next-line no-unused-vars */
@@ -56,14 +56,12 @@ export class Sandbox {
         this._module = module;
     }
     create(data) {
-        /*#static*/  {
-            this._module.ccall("nukeSandbox", null, []);
-        }
+        /*#static*/ 
         // const code = [PDFJSDev.eval( "PDF_SCRIPTING_JS_SOURCE")];
         // const code = [PDF_SCRIPTING_JS_SOURCE];
         const code = [""];
         /*#static*/  {
-            code.push(`globalThis.sendResultForTesting = callExternalFunction.bind( null, "send");`);
+            code.push("delete dump;");
         }
         let success = false;
         let buf = 0;
@@ -112,14 +110,7 @@ export class Sandbox {
     }
     evalForTesting(code, key) {
         /*#static*/  {
-            this._module.ccall("evalInSandbox", null, ["string", "int"], [
-                `try {
-             sendResultForTesting([{ id: "${key}", result: ${code} }]);
-          } catch( error) {
-             sendResultForTesting([{ id: "${key}", result: error.message }]);
-          }`,
-                this._alertOnError,
-            ]);
+            throw new Error("Not implemented: evalForTesting");
         }
     }
 }

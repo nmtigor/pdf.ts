@@ -24,18 +24,22 @@
 // eslint-disable-next-line max-len
 /** @typedef {import("./text_accessibility.js").TextAccessibilityManager} TextAccessibilityManager */
 
-import { GENERIC, MOZCENTRAL } from "../../global.ts";
+import { GENERIC, MOZCENTRAL, PDFJSDev } from "../../global.ts";
 import { html } from "../../lib/dom.ts";
-import { TextDivProps } from "../pdf.ts-src/display/text_layer.ts";
-import {
+import type { TextDivProps } from "../pdf.ts-src/display/text_layer.ts";
+import type {
   PageViewport,
-  renderTextLayer,
-  type TextContent,
+  TextContent,
   TextLayerRenderTask,
+} from "../pdf.ts-src/pdf.ts";
+import {
+  normalizeUnicode,
+  renderTextLayer,
   updateTextLayer,
 } from "../pdf.ts-src/pdf.ts";
-import { TextAccessibilityManager } from "./text_accessibility.ts";
-import { TextHighlighter } from "./text_highlighter.ts";
+import type { TextAccessibilityManager } from "./text_accessibility.ts";
+import type { TextHighlighter } from "./text_highlighter.ts";
+import { removeNullCharacters } from "./ui_utils.ts";
 /*80--------------------------------------------------------------------------*/
 
 interface TextLayerBuilderOptions {
@@ -51,6 +55,8 @@ interface TextLayerBuilderOptions {
    * Allows to use an OffscreenCanvas if needed.
    */
   isOffscreenCanvasSupported?: boolean;
+
+  enablePermissions?: boolean;
 }
 
 interface TLBMBound {
@@ -81,6 +87,7 @@ export class TextLayerBuilder {
   highlighter;
   accessibilityManager;
   isOffscreenCanvasSupported;
+  #enablePermissions;
 
   div;
 
@@ -92,10 +99,12 @@ export class TextLayerBuilder {
     highlighter,
     accessibilityManager = undefined,
     isOffscreenCanvasSupported = undefined,
+    enablePermissions = false,
   }: TextLayerBuilderOptions) {
     this.highlighter = highlighter;
     this.accessibilityManager = accessibilityManager;
     this.isOffscreenCanvasSupported = isOffscreenCanvasSupported;
+    this.#enablePermissions = enablePermissions === true;
 
     this.div = document.createElement("div");
     this.div.className = "textLayer";
@@ -215,13 +224,13 @@ export class TextLayerBuilder {
       if (!end) {
         return;
       }
-      /*#static*/ if (!MOZCENTRAL) {
+      /*#static*/ if (PDFJSDev || !MOZCENTRAL) {
         // On non-Firefox browsers, the selection will feel better if the height
         // of the `endOfContent` div is adjusted to start at mouse click
         // location. This avoids flickering when the selection moves up.
         // However it does not work when selection is started on empty space.
         let adjustTop = evt.target !== div;
-        /*#static*/ if (GENERIC) {
+        /*#static*/ if (PDFJSDev || GENERIC) {
           adjustTop &&=
             getComputedStyle(end).getPropertyValue("-moz-user-select") !==
               "none";
@@ -240,10 +249,22 @@ export class TextLayerBuilder {
       if (!end) {
         return;
       }
-      /*#static*/ if (!MOZCENTRAL) {
+      /*#static*/ if (PDFJSDev || !MOZCENTRAL) {
         end.style.top = "";
       }
       end.classList.remove("active");
+    });
+
+    div.addEventListener("copy", (event) => {
+      if (!this.#enablePermissions) {
+        const selection = document.getSelection()!;
+        event.clipboardData!.setData(
+          "text/plain",
+          removeNullCharacters(normalizeUnicode(selection.toString())),
+        );
+      }
+      event.preventDefault();
+      event.stopPropagation();
     });
   }
 }

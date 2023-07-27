@@ -21,16 +21,13 @@
 /** @typedef {import("./event_utils").EventBus} EventBus */
 /** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
 
-import { point_t } from "../../lib/alias.ts";
-import {
-  createPromiseCapability,
-  PDFDocumentProxy,
-  type PromiseCapability,
-  TextItem,
-} from "../pdf.ts-src/pdf.ts";
-import { EventBus } from "./event_utils.ts";
-import { type IPDFLinkService } from "./interfaces.ts";
-import { getCharacterType } from "./pdf_find_utils.ts";
+import { GENERIC, PDFJSDev } from "../../global.ts";
+import type { point_t } from "../../lib/alias.ts";
+import { PromiseCap } from "../../lib/util/PromiseCap.ts";
+import type { PDFDocumentProxy, TextItem } from "../pdf.ts-src/pdf.ts";
+import type { EventBus } from "./event_utils.ts";
+import type { IPDFLinkService } from "./interfaces.ts";
+import { getCharacterType, getNormalizeWithNFKC } from "./pdf_find_utils.ts";
 import { binarySearchFirstItem, scrollIntoView } from "./ui_utils.ts";
 /*80--------------------------------------------------------------------------*/
 
@@ -176,11 +173,7 @@ function normalize(text: string): [string, [number, number][], boolean] {
   } else {
     // Compile the regular expression for text normalization once.
     const replace = Object.keys(CHARACTERS_TO_NORMALIZE).join("");
-    const toNormalizeWithNFKC = "\u2460-\u2473" + // Circled numbers.
-      "\u24b6-\u24ff" + // Circled letters/numbers.
-      "\u3244-\u32bf" + // Circled ideograms/numbers.
-      "\u32d0-\u32fe" + // Circled ideograms.
-      "\uff00-\uffef"; // Halfwidth, fullwidth forms.
+    const toNormalizeWithNFKC = getNormalizeWithNFKC();
 
     // 3040-309F: Hiragana
     // 30A0-30FF: Katakana
@@ -340,21 +333,26 @@ function normalize(text: string): [string, [number, number][], boolean] {
         // "X-\n" is removed because an hyphen at the end of a line
         // with not a space before is likely here to mark a break
         // in a word.
-        // The \n isn't in the original text so here y = i, n = 1 and o = 2.
-        positions.push([i - shift + 1, 1 + shift]);
+        // If X is encoded with UTF-32 then it can have a length greater than 1.
+        // The \n isn't in the original text so here y = i, n = X.len - 2 and
+        // o = X.len - 1.
+        const len = p5.length - 2;
+        positions.push([i - shift + len, 1 + shift]);
         shift += 1;
         shiftOrigin += 1;
         eol += 1;
-        return p5.charAt(0);
+        return p5.slice(0, -2);
       }
 
       if (p6) {
         // An ideographic at the end of a line doesn't imply adding an extra
         // white space.
-        positions.push([i - shift + 1, shift]);
+        // A CJK can be encoded in UTF-32, hence their length isn't always 1.
+        const len = p6.length - 1;
+        positions.push([i - shift + len, shift]);
         shiftOrigin += 1;
         eol += 1;
-        return p6.charAt(0);
+        return p6.slice(0, -1);
       }
 
       if (p7) {
@@ -398,10 +396,14 @@ function getOriginalIndex(
   pos: number,
   len: number,
 ): [number, number] {
-  if (!diffs) return [pos, len];
+  if (!diffs) {
+    return [pos, len];
+  }
 
+  // First char in the new string.
   const start = pos;
-  const end = pos + len;
+  // Last char in the new string.
+  const end = pos + len - 1;
   let i = binarySearchFirstItem(diffs, (x) => x[0] >= start);
   if (diffs[i][0] > start) {
     --i;
@@ -412,7 +414,14 @@ function getOriginalIndex(
     --j;
   }
 
-  return [start + diffs[i][1], len + diffs[j][1] - diffs[i][1]];
+  // First char in the old string.
+  const oldStart = start + diffs[i][1];
+
+  // Last char in the old string.
+  const oldEnd = end + diffs[j][1];
+  const oldLen = oldEnd + 1 - oldStart;
+
+  return [oldStart, oldLen];
 }
 
 interface PDFFindControllerOptions {
@@ -431,7 +440,7 @@ interface PDFFindControllerOptions {
    * count must be updated on progress or only when the last page is reached.
    * The default value is `true`.
    */
-  updateMatchesCountOnProgress: boolean;
+  updateMatchesCountOnProgress?: boolean;
 }
 
 interface Offset_ {
@@ -450,12 +459,11 @@ export type FindType =
   | "highlightallchange";
 export type FindCtrlState = {
   type: FindType | "";
-  query: string;
-  phraseSearch: boolean;
+  query: string | string[] | RegExpMatchArray | null;
   caseSensitive: boolean;
   entireWord: boolean;
-  highlightAll: boolean;
   findPrevious?: boolean | undefined;
+  highlightAll: boolean;
   matchDiacritics: boolean;
 };
 
@@ -469,6 +477,13 @@ export interface MatchesCount {
   current: number;
   total: number;
 }
+
+type PDFFindControllerScrollMatchIntoViewParams = {
+  element?: HTMLElement;
+  selectedLeft?: number;
+  pageIndex?: number;
+  matchIndex?: number;
+};
 
 /**
  * Provides search functionality to find a given string in a PDF document.
@@ -523,7 +538,7 @@ export class PDFFindController {
   #dirtyMatch!: boolean;
   #findTimeout?: number | undefined;
 
-  _firstPageCapability!: PromiseCapability;
+  _firstPageCapability!: PromiseCap;
 
   _rawQuery?: string;
   #normalizedQuery?: string;
@@ -563,7 +578,17 @@ export class PDFFindController {
     if (!state) {
       return;
     }
-
+    /*#static*/ if ((PDFJSDev || GENERIC)) {
+      if ((state as any).phraseSearch === false) {
+        console.error(
+          "The `phraseSearch`-parameter was removed, please provide " +
+            "an Array of strings in the `query`-parameter instead.",
+        );
+        if (typeof state.query === "string") {
+          state.query = state.query.match(/\S+/g) as any;
+        }
+      }
+    }
     const pdfDocument = this._pdfDocument;
     const { type } = state;
 
@@ -571,7 +596,7 @@ export class PDFFindController {
       this.#dirtyMatch = true;
     }
     this.#state = state;
-    if (type !== "findhighlightallchange") {
+    if (type !== "highlightallchange") {
       this.#updateUIState(FindState.PENDING);
     }
 
@@ -604,7 +629,7 @@ export class PDFFindController {
         // Immediately trigger searching for non-'find' operations, when the
         // current state needs to be reset and matches re-calculated.
         this.#nextMatch();
-      } else if (type === "findagain") {
+      } else if (type === "again") {
         this.#nextMatch();
 
         // When the findbar was previously closed, and `highlightAll` is set,
@@ -612,7 +637,7 @@ export class PDFFindController {
         if (findbarClosed && this.#state!.highlightAll) {
           this.#updateAllPages();
         }
-      } else if (type === "findhighlightallchange") {
+      } else if (type === "highlightallchange") {
         // If there was a pending search operation, synchronously trigger a new
         // search *first* to ensure that the correct matches are highlighted.
         if (pendingTimeout) {
@@ -628,12 +653,8 @@ export class PDFFindController {
   };
 
   scrollMatchIntoView(
-    { element, selectedLeft = 0, pageIndex = -1, matchIndex = -1 }: {
-      element?: HTMLElement;
-      selectedLeft: number;
-      pageIndex?: number;
-      matchIndex?: number;
-    },
+    { element, selectedLeft = 0, pageIndex = -1, matchIndex = -1 }:
+      PDFFindControllerScrollMatchIntoViewParams,
   ) {
     if (!this._scrollMatches || !element) {
       return;
@@ -682,26 +703,48 @@ export class PDFFindController {
     clearTimeout(this.#findTimeout);
     this.#findTimeout = undefined;
 
-    this._firstPageCapability = createPromiseCapability();
+    this._firstPageCapability = new PromiseCap();
   }
 
   /**
    * @return The (current) normalized search query.
    */
   get #query() {
-    if (this.#state!.query !== this._rawQuery) {
-      this._rawQuery = this.#state!.query;
-      [this.#normalizedQuery] = normalize(this.#state!.query);
+    const { query } = this.#state!;
+    if (typeof query === "string") {
+      if (query !== this._rawQuery) {
+        this._rawQuery = query;
+        [this.#normalizedQuery] = normalize(query);
+      }
+      return this.#normalizedQuery;
     }
-    return this.#normalizedQuery;
+    // We don't bother caching the normalized search query in the Array-case,
+    // since this code-path is *essentially* unused in the default viewer.
+    return (query || []).filter((q) => !!q).map((q) => normalize(q)[0]);
   }
 
   #shouldDirtyMatch(state: FindCtrlState) {
     // When the search query changes, regardless of the actual search command
     // used, always re-calculate matches to avoid errors (fixes bug 1030622).
-    if (state.query !== this.#state!.query) {
+    const newQuery = state.query,
+      prevQuery = this.#state!.query;
+    const newType = typeof newQuery,
+      prevType = typeof prevQuery;
+
+    if (newType !== prevType) {
       return true;
     }
+    if (newType === "string") {
+      if (newQuery !== prevQuery) {
+        return true;
+      }
+    } else {
+      // Array
+      if (JSON.stringify(newQuery) !== JSON.stringify(prevQuery)) {
+        return true;
+      }
+    }
+
     switch (state.type) {
       case "again":
         const pageNumber = this.#selected.pageIdx + 1;
@@ -802,7 +845,7 @@ export class PDFFindController {
     // const matchesWithLength:MatchWithLength[] = [];
     const { matchDiacritics } = this.#state!;
     let isUnicode = false;
-    query = query.replace(
+    query = query.replaceAll(
       SPECIAL_CHARS_REG_EXP,
       (
         match,
@@ -870,43 +913,42 @@ export class PDFFindController {
   }
 
   #calculateMatch(pageIndex: number) {
-    let query: string | RegExp | undefined = this.#query!;
-    if (!query) {
-      // Do nothing: the matches should be wiped out already.
-      return;
+    let query = this.#query!;
+    if (query.length === 0) {
+      return; // Do nothing: the matches should be wiped out already.
     }
-
-    const { caseSensitive, entireWord, phraseSearch } = this.#state!;
+    const { caseSensitive, entireWord } = this.#state!;
     const pageContent = this.#pageContents[pageIndex];
     const hasDiacritics = this.#hasDiacritics[pageIndex];
 
     let isUnicode = false;
-    if (phraseSearch) {
+    if (typeof query === "string") {
       [isUnicode, query] = this.#convertToRegExpString(query, hasDiacritics);
     } else {
       // Words are sorted in reverse order to be sure that "foobar" is matched
       // before "foo" in case the query is "foobar foo".
-      const match = query.match(/\S+/g);
-      if (match) {
-        query = match
-          .sort()
-          .reverse()
-          .map((q) => {
-            const [isUnicodePart, queryPart] = this.#convertToRegExpString(
-              q,
-              hasDiacritics,
-            );
-            isUnicode ||= isUnicodePart;
-            return `(${queryPart})`;
-          })
-          .join("|");
-      }
+      query = query
+        .sort()
+        .reverse()
+        .map((q) => {
+          const [isUnicodePart, queryPart] = this.#convertToRegExpString(
+            q,
+            hasDiacritics,
+          );
+          isUnicode ||= isUnicodePart;
+          return `(${queryPart})`;
+        })
+        .join("|");
     }
 
     const flags = `g${isUnicode ? "u" : ""}${caseSensitive ? "" : "i"}`;
-    query = query ? new RegExp(query, flags) : undefined;
 
-    this.#calculateRegExpMatch(query, entireWord, pageIndex, pageContent);
+    this.#calculateRegExpMatch(
+      query ? new RegExp(query, flags) : undefined,
+      entireWord,
+      pageIndex,
+      pageContent,
+    );
 
     // When `highlightAll` is set, ensure that the matches on previously
     // rendered (and still active) pages are correctly highlighted.
@@ -939,16 +981,15 @@ export class PDFFindController {
     }
 
     let promise = Promise.resolve();
+    const textOptions = { disableNormalization: true };
     for (let i = 0, ii = this.#linkService.pagesCount; i < ii; i++) {
-      const extractTextCapability = createPromiseCapability<void>();
+      const extractTextCapability = new PromiseCap<void>();
       this.#extractTextPromises[i] = extractTextCapability.promise;
 
       promise = promise.then(() => {
         return this._pdfDocument!
           .getPage(i + 1)
-          .then((pdfPage) => {
-            return pdfPage.getTextContent();
-          })
+          .then((pdfPage) => pdfPage.getTextContent(textOptions))
           .then(
             (textContent) => {
               const strBuf = [];
@@ -1041,7 +1082,8 @@ export class PDFFindController {
     }
 
     // If there's no query there's no point in searching.
-    if (!this.#query) {
+    const query = this.#query!;
+    if (query.length === 0) {
       this.#updateUIState(FindState.FOUND);
       return;
     }
@@ -1236,7 +1278,7 @@ export class PDFFindController {
       state,
       previous,
       matchesCount: this.#requestMatchesCount(),
-      rawQuery: this.#state?.query ?? undefined,
+      rawQuery: this.#state?.query ?? null,
     });
   }
 }

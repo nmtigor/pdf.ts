@@ -1,7 +1,7 @@
-import { TextDivProps } from "../pdf.ts-src/display/text_layer.js";
-import { PageViewport, type TextContent, TextLayerRenderTask } from "../pdf.ts-src/pdf.js";
-import { TextAccessibilityManager } from "./text_accessibility.js";
-import { TextHighlighter } from "./text_highlighter.js";
+import type { TextDivProps } from "../pdf.ts-src/display/text_layer.js";
+import type { PageViewport, TextContent, TextLayerRenderTask } from "../pdf.ts-src/pdf.js";
+import type { TextAccessibilityManager } from "./text_accessibility.js";
+import type { TextHighlighter } from "./text_highlighter.js";
 interface TextLayerBuilderOptions {
     /**
      * Optional object that will handle
@@ -13,6 +13,7 @@ interface TextLayerBuilderOptions {
      * Allows to use an OffscreenCanvas if needed.
      */
     isOffscreenCanvasSupported?: boolean;
+    enablePermissions?: boolean;
 }
 /**
  * The text layer builder provides text selection functionality for the PDF.
@@ -31,7 +32,7 @@ export declare class TextLayerBuilder {
     accessibilityManager: TextAccessibilityManager | undefined;
     isOffscreenCanvasSupported: boolean | undefined;
     div: HTMLDivElement;
-    constructor({ highlighter, accessibilityManager, isOffscreenCanvasSupported, }: TextLayerBuilderOptions);
+    constructor({ highlighter, accessibilityManager, isOffscreenCanvasSupported, enablePermissions, }: TextLayerBuilderOptions);
     /**
      * Renders the text layer.
      */

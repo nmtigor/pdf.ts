@@ -1,20 +1,21 @@
-import { type rect_t } from "../../../lib/alias.js";
-import { type AnnotStorageRecord, AnnotStorageValue } from "../display/annotation_layer.js";
-import { type CMapData } from "../display/base_factory.js";
-import { MessageHandler, type StreamSink, Thread } from "../shared/message_handler.js";
+import type { rect_t } from "../../../lib/alias.js";
+import type { AnnotStorageRecord, AnnotStorageValue } from "../display/annotation_layer.js";
+import type { CMapData } from "../display/base_factory.js";
+import type { MessageHandler, StreamSink, Thread } from "../shared/message_handler.js";
 import { RenderingIntentFlag } from "../shared/util.js";
-import { Annotation, type FieldObject, type SaveReturn } from "./annotation.js";
+import type { Annotation, FieldObject, SaveReturn } from "./annotation.js";
 import { BaseStream } from "./base_stream.js";
 import { Catalog } from "./catalog.js";
 import { DatasetReader } from "./dataset_reader.js";
-import { TranslatedFont } from "./evaluator.js";
-import { GlobalImageCache } from "./image_utils.js";
+import { type TranslatedFont } from "./evaluator.js";
+import type { GlobalImageCache } from "./image_utils.js";
 import { Linearization } from "./parser.js";
-import { BasePdfManager } from "./pdf_manager.js";
-import { Dict, Name, Ref, RefSet, RefSetCache } from "./primitives.js";
-import { Stream } from "./stream.js";
-import { StructTreePage, StructTreeRoot } from "./struct_tree.js";
-import { WorkerTask } from "./worker.js";
+import type { BasePdfManager } from "./pdf_manager.js";
+import type { RefSet } from "./primitives.js";
+import { Dict, Name, Ref, RefSetCache } from "./primitives.js";
+import { type Stream } from "./stream.js";
+import { StructTreePage, type StructTreeRoot } from "./struct_tree.js";
+import type { WorkerTask } from "./worker.js";
 import { XFAFactory } from "./xfa/factory.js";
 import { type XFAFontMetrics } from "./xfa_fonts.js";
 import { XRef } from "./xref.js";
@@ -43,12 +44,12 @@ interface _PageGetOperatorListP {
     cacheKey: string;
     annotationStorage: AnnotStorageRecord | undefined;
 }
-interface _ExtractTextContentP {
+interface ExtractTextContentP_ {
     handler: MessageHandler<Thread.worker>;
     task: WorkerTask;
-    sink: StreamSink<Thread.main, "GetTextContent">;
     includeMarkedContent: boolean;
-    combineTextItems: boolean;
+    disableNormalization: boolean;
+    sink: StreamSink<Thread.main, "GetTextContent">;
 }
 export declare class Page {
     #private;
@@ -56,7 +57,7 @@ export declare class Page {
     pageIndex: number;
     pageDict: Dict;
     xref: XRef;
-    ref: import("./primitives.js").NsRef.Ref | undefined;
+    ref: Ref | undefined;
     fontCache: RefSetCache<Promise<TranslatedFont>>;
     builtInCMapCache: Map<string, CMapData>;
     standardFontDataCache: Map<string, Uint8Array | ArrayBuffer>;
@@ -67,7 +68,7 @@ export declare class Page {
     get _localIdFactory(): LocalIdFactory;
     resourcesPromise?: Promise<Dict>;
     constructor({ pdfManager, xref, pageIndex, pageDict, ref, globalIdFactory, fontCache, builtInCMapCache, standardFontDataCache, globalImageCache, nonBlendModesSet, xfaFactory, }: _PageCtorP);
-    get content(): Stream | (Stream | import("./primitives.js").NsRef.Ref)[] | undefined;
+    get content(): Stream | (Stream | Ref)[] | undefined;
     /**
      * Table 33
      */
@@ -78,12 +79,12 @@ export declare class Page {
     get userUnit(): number;
     get view(): rect_t;
     get rotate(): number;
-    getContentStream(handler: MessageHandler<Thread.worker>): Promise<BaseStream>;
+    getContentStream(): Promise<BaseStream>;
     get xfaData(): {
         bbox: [number, number, number, number];
     } | null;
     saveNewAnnotations(handler: MessageHandler<Thread.worker>, task: WorkerTask, annotations: AnnotStorageValue[]): Promise<{
-        ref: import("./primitives.js").NsRef.Ref;
+        ref: Ref;
         data: string;
     }[]>;
     save(handler: MessageHandler<Thread.worker>, task: WorkerTask, annotationStorage?: AnnotStorageRecord): Promise<SaveReturn[]>;
@@ -91,14 +92,14 @@ export declare class Page {
     getOperatorList({ handler, sink, task, intent, cacheKey, annotationStorage, }: _PageGetOperatorListP): Promise<{
         length: number;
     }>;
-    extractTextContent({ handler, task, includeMarkedContent, sink, combineTextItems, }: _ExtractTextContentP): Promise<void>;
+    extractTextContent({ handler, task, includeMarkedContent, disableNormalization, sink, }: ExtractTextContentP_): Promise<void>;
     getStructTree(): Promise<import("../display/api.js").StructTreeNode | undefined>;
     /**
      * @private
      */
     _parseStructTree(structTreeRoot: StructTreeRoot): StructTreePage;
     getAnnotationsData(handler: MessageHandler<Thread.worker>, task: WorkerTask, intent: RenderingIntentFlag): Promise<import("./annotation.js").AnnotationData[]>;
-    get annotations(): import("./primitives.js").NsRef.Ref[];
+    get annotations(): Ref[];
     get _parsedAnnotations(): Promise<(Annotation | undefined)[]>;
     get jsActions(): import("./core_utils.js").AnnotActions | undefined;
 }

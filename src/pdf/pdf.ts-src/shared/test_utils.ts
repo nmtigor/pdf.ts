@@ -67,11 +67,13 @@ export type BuildGetDocumentParamsOptions = {
   cMapUrl?: string;
   disableFontFace?: boolean;
   docBaseUrl?: string;
+  isOffscreenCanvasSupported?: boolean;
   ownerDocument?: unknown;
   password?: string;
   pdfBug?: boolean;
   stopAtErrors?: boolean;
   rangeChunkSize?: number;
+  useWorkerFetch?: boolean;
   withCredentials?: boolean;
   worker?: PDFWorker;
 };

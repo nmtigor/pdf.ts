@@ -15,9 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { _PDFDEV } from "../../../global.js";
+import { PDFJSDev, TESTING } from "../../../global.js";
 import { assert } from "../../../lib/util/trace.js";
-import { AnnotationActionEventType, AnnotationBorderStyleType, AnnotationEditorType, AnnotationFieldFlag, AnnotationFlag, AnnotationReplyType, AnnotationType, BASELINE_FACTOR, FeatureTest, getModificationDate, IDENTITY_MATRIX, LINE_DESCENT_FACTOR, LINE_FACTOR, OPS, RenderingIntentFlag, shadow, stringToPDFString, Util, warn, } from "../shared/util.js";
+import { AnnotationActionEventType, AnnotationBorderStyleType, AnnotationEditorType, AnnotationFieldFlag, AnnotationFlag, AnnotationReplyType, AnnotationType, BASELINE_FACTOR, getModificationDate, IDENTITY_MATRIX, LINE_DESCENT_FACTOR, LINE_FACTOR, OPS, RenderingIntentFlag, shadow, stringToPDFString, Util, warn, } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
 import { bidi } from "./bidi.js";
 import { Catalog } from "./catalog.js";
@@ -94,8 +94,8 @@ export class AnnotationFactory {
             needAppearances: !collectFields &&
                 acroFormDict.get("NeedAppearances") === true,
             pageIndex,
-            isOffscreenCanvasSupported: FeatureTest.isOffscreenCanvasSupported &&
-                !!pdfManager.evaluatorOptions.isOffscreenCanvasSupported,
+            isOffscreenCanvasSupported: !!pdfManager.evaluatorOptions
+                .isOffscreenCanvasSupported,
         };
         switch (subtype) {
             case "Link":
@@ -216,9 +216,8 @@ export class AnnotationFactory {
             return undefined;
         }
         const xref = evaluator.xref;
+        const { isOffscreenCanvasSupported } = evaluator.options;
         const promises = [];
-        const isOffscreenCanvasSupported = FeatureTest.isOffscreenCanvasSupported &&
-            evaluator.options.isOffscreenCanvasSupported;
         for (const annotation of annotations) {
             switch (annotation.annotationType) {
                 case AnnotationEditorType.FREETEXT:
@@ -504,6 +503,12 @@ export class Annotation {
         if (this.appearance) {
             this._streams.push(this.appearance);
         }
+        // The annotation cannot be changed (neither its position/visibility nor its
+        // contents), hence we can just display its appearance and don't generate
+        // a HTML element for it.
+        const isLocked = !!(this.flags & AnnotationFlag.LOCKED);
+        const isContentLocked = !!(this.flags & AnnotationFlag.LOCKEDCONTENTS);
+        // Expose public properties using a data object.
         // Expose public properties using a data object.
         this.data = {
             annotationFlags: this.flags,
@@ -519,6 +524,8 @@ export class Annotation {
             rect: this.rectangle,
             subtype: params.subtype,
             hasOwnCanvas: false,
+            noRotate: !!(this.flags & AnnotationFlag.NOROTATE),
+            noHTML: isLocked && isContentLocked,
         };
         if (params.collectFields) {
             // Fields can act as container for other fields and have
@@ -802,7 +809,6 @@ export class Annotation {
             task,
             resources,
             includeMarkedContent: true,
-            combineTextItems: true,
             sink,
             viewBox,
         });
@@ -1275,10 +1281,9 @@ export class WidgetAnnotation extends Annotation {
         }
         data.alternativeText = stringToPDFString(dict.get("TU") || "");
         this.setDefaultAppearance(params);
-        data.hasAppearance = (this._needAppearances &&
+        data.hasAppearance ||= this._needAppearances &&
             data.fieldValue !== undefined &&
-            data.fieldValue !== null) ||
-            data.hasAppearance;
+            data.fieldValue !== null;
         const fieldType = getInheritableProperty({ dict, key: "FT" });
         data.fieldType = fieldType instanceof Name ? fieldType.name : undefined;
         const localResources = getInheritableProperty({
@@ -1382,7 +1387,10 @@ export class WidgetAnnotation extends Annotation {
     async getOperatorList(evaluator, task, intent, renderForms, annotationStorage) {
         // Do not render form elements on the canvas when interactive forms are
         // enabled. The display layer is responsible for rendering them instead.
-        if (renderForms && !(this instanceof SignatureWidgetAnnotation)) {
+        if (renderForms &&
+            !(this instanceof SignatureWidgetAnnotation) &&
+            !this.data.noHTML &&
+            !this.data.hasOwnCanvas) {
             return {
                 opList: new OperatorList(),
                 separateForm: true,
@@ -1462,7 +1470,7 @@ export class WidgetAnnotation extends Annotation {
             if (!this._hasValueFromXFA && rotation === undefined) {
                 return undefined;
             }
-            value = value || this.data.fieldValue;
+            value ||= this.data.fieldValue;
         }
         // Value can be an array (with choice list and multiple selections)
         if (rotation === undefined &&
@@ -1954,6 +1962,7 @@ export class WidgetAnnotation extends Annotation {
 class TextWidgetAnnotation extends WidgetAnnotation {
     constructor(params) {
         super(params);
+        this.data.hasOwnCanvas = !!this.data.readOnly && !this.data.noHTML;
         this._hasText = true;
         const dict = params.dict;
         // The field value is always a string.
@@ -2673,6 +2682,7 @@ class SignatureWidgetAnnotation extends WidgetAnnotation {
         // non-serializable and will thus cause errors when sending annotations
         // to the main-thread (issue 10347).
         this.data.fieldValue = undefined;
+        this.data.hasOwnCanvas = this.data.noRotate;
     }
     getFieldObject() {
         return {
@@ -2686,6 +2696,9 @@ class TextAnnotation extends MarkupAnnotation {
     constructor(params) {
         const DEFAULT_ICON_SIZE = 22; // px
         super(params);
+        // No rotation for Text (see 12.5.6.4).
+        this.data.noRotate = true;
+        this.data.hasOwnCanvas = this.data.noRotate;
         const { dict } = params;
         this.data.annotationType = AnnotationType.TEXT;
         if (this.data.hasAppearance) {
@@ -2717,7 +2730,7 @@ class LinkAnnotation extends Annotation {
             this.data.quadPoints = quadPoints;
         }
         // The color entry for a link annotation is the color of the border.
-        this.data.borderColor = this.data.borderColor || this.data.color;
+        this.data.borderColor ||= this.data.color;
         Catalog.parseDestDictionary({
             destDict: params.dict,
             resultObj: this.data,
@@ -2793,6 +2806,7 @@ export class PopupAnnotation extends Annotation {
 class FreeTextAnnotation extends MarkupAnnotation {
     constructor(params) {
         super(params);
+        this.data.hasOwnCanvas = this.data.noRotate;
         const { xref } = params;
         this.data.annotationType = AnnotationType.FREETEXT;
         this.setDefaultAppearance(params);
@@ -2935,6 +2949,7 @@ class LineAnnotation extends MarkupAnnotation {
         super(params);
         const { dict, xref } = params;
         this.data.annotationType = AnnotationType.LINE;
+        this.data.hasOwnCanvas = this.data.noRotate;
         const lineCoordinates = dict.getArray("L");
         this.data.lineCoordinates = Util.normalizeRect(lineCoordinates);
         this.setLineEndings(dict.getArray("LE"));
@@ -2989,6 +3004,7 @@ class SquareAnnotation extends MarkupAnnotation {
         super(params);
         const { dict, xref } = params;
         this.data.annotationType = AnnotationType.SQUARE;
+        this.data.hasOwnCanvas = this.data.noRotate;
         if (!this.appearance) {
             // The default stroke color is black.
             const strokeColor = this.color
@@ -3089,6 +3105,7 @@ class PolylineAnnotation extends MarkupAnnotation {
         super(params);
         const { dict, xref } = params;
         this.data.annotationType = AnnotationType.POLYLINE;
+        this.data.hasOwnCanvas = this.data.noRotate;
         this.data.vertices = [];
         if (!(this instanceof PolygonAnnotation)) {
             // Only meaningful for polyline annotations.
@@ -3160,6 +3177,7 @@ class CaretAnnotation extends MarkupAnnotation {
 class InkAnnotation extends MarkupAnnotation {
     constructor(params) {
         super(params);
+        this.data.hasOwnCanvas = this.data.noRotate;
         const { dict, xref } = params;
         this.data.annotationType = AnnotationType.INK;
         this.data.inkLists = [];
@@ -3443,6 +3461,7 @@ class StampAnnotation extends MarkupAnnotation {
     constructor(params) {
         super(params);
         this.data.annotationType = AnnotationType.STAMP;
+        this.data.hasOwnCanvas = this.data.noRotate;
     }
 }
 class FileAttachmentAnnotation extends MarkupAnnotation {
@@ -3451,6 +3470,7 @@ class FileAttachmentAnnotation extends MarkupAnnotation {
         const { dict, xref } = params;
         const file = new FileSpec(dict.get("FS"), xref);
         this.data.annotationType = AnnotationType.FILEATTACHMENT;
+        this.data.hasOwnCanvas = this.data.noRotate;
         this.data.file = file.serializable;
         const name = dict.get("Name");
         this.data.name = name instanceof Name

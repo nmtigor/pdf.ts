@@ -17,9 +17,10 @@
  * limitations under the License.
  */
 
-import { _PDFDEV } from "../../../global.ts";
-import { type rect_t, type TypedArray } from "../../../lib/alias.ts";
+import { PDFJSDev, TESTING } from "../../../global.ts";
+import type { rect_t, TypedArray } from "../../../lib/alias.ts";
 import { assert } from "../../../lib/util/trace.ts";
+import type { XYZ } from "../shared/scripting_utils.ts";
 import { FormatError, info, shadow, warn } from "../shared/util.ts";
 import { BaseStream } from "./base_stream.ts";
 import { MissingDataException } from "./core_utils.ts";
@@ -79,7 +80,7 @@ export type CS = Ref | Name | Dict | number | [
   (undefined | Ref | BaseStream | string)?,
 ];
 
-interface _ParseP {
+interface ParseP_ {
   cs: CS;
   xref: XRef;
   resources: Dict | undefined;
@@ -183,7 +184,7 @@ export abstract class ColorSpace {
     comps: Uint8ClampedArray | Uint8Array | Uint16Array | Uint32Array,
     alpha01: number,
   ) {
-    /*#static*/ if (_PDFDEV) {
+    /*#static*/ if (PDFJSDev || TESTING) {
       assert(
         dest instanceof Uint8ClampedArray,
         'ColorSpace.fillRgb: Unsupported "dest" type.',
@@ -370,8 +371,8 @@ export abstract class ColorSpace {
     resources,
     pdfFunctionFactory,
     localColorSpaceCache,
-  }: _ParseP) {
-    /*#static*/ if (_PDFDEV) {
+  }: ParseP_) {
+    /*#static*/ if (PDFJSDev || TESTING) {
       assert(
         !this.getCached(<any> cs, xref, localColorSpaceCache),
         "Expected `ColorSpace.getCached` to have been manually checked " +
@@ -397,7 +398,7 @@ export abstract class ColorSpace {
     resources,
     pdfFunctionFactory,
     localColorSpaceCache,
-  }: _ParseP) {
+  }: ParseP_) {
     const cachedColorSpace = this.getCached(cs, xref, localColorSpaceCache);
     if (cachedColorSpace) {
       return cachedColorSpace;
@@ -526,10 +527,10 @@ export abstract class ColorSpace {
           const tintFn = pdfFunctionFactory.create(<Ref> cs[3]);
           return new AlternateCS(numComps, baseCS, tintFn);
         case "Lab":
-          params = <Dict> xref.fetchIfRef(cs[1]);
-          whitePoint = <Float32Array> params.getArray("WhitePoint");
-          blackPoint = <Float32Array | undefined> params.getArray("BlackPoint");
-          const range = <rect_t | undefined> params.getArray("Range");
+          params = xref.fetchIfRef(cs[1]) as Dict;
+          whitePoint = params.getArray("WhitePoint") as XYZ;
+          blackPoint = params.getArray("BlackPoint") as XYZ | undefined;
+          const range = params.getArray("Range") as rect_t | undefined;
           return new LabCS(whitePoint, blackPoint, range);
         default:
           throw new FormatError(`Unimplemented ColorSpace object: ${mode}`);
@@ -604,7 +605,7 @@ class AlternateCS extends ColorSpace {
     dest: Uint8ClampedArray,
     destOffset: number,
   ) {
-    /*#static*/ if (_PDFDEV) {
+    /*#static*/ if (PDFJSDev || TESTING) {
       assert(
         dest instanceof Uint8ClampedArray,
         'AlternateCS.getRgbItem: Unsupported "dest" type.',
@@ -625,7 +626,7 @@ class AlternateCS extends ColorSpace {
     bits: number,
     alpha01: number,
   ) {
-    /*#static*/ if (_PDFDEV) {
+    /*#static*/ if (PDFJSDev || TESTING) {
       assert(
         dest instanceof Uint8ClampedArray,
         'AlternateCS.getRgbBuffer: Unsupported "dest" type.',
@@ -743,7 +744,7 @@ class IndexedCS extends ColorSpace {
     dest: Uint8ClampedArray,
     destOffset: number,
   ) {
-    /*#static*/ if (_PDFDEV) {
+    /*#static*/ if (PDFJSDev || TESTING) {
       assert(
         dest instanceof Uint8ClampedArray,
         'IndexedCS.getRgbItem: Unsupported "dest" type.',
@@ -764,7 +765,7 @@ class IndexedCS extends ColorSpace {
     bits: number,
     alpha01: number,
   ) {
-    /*#static*/ if (_PDFDEV) {
+    /*#static*/ if (PDFJSDev || TESTING) {
       assert(
         dest instanceof Uint8ClampedArray,
         'IndexedCS.getRgbBuffer: Unsupported "dest" type.',
@@ -820,7 +821,7 @@ export class DeviceGrayCS extends ColorSpace {
     dest: Uint8ClampedArray,
     destOffset: number,
   ) {
-    /*#static*/ if (_PDFDEV) {
+    /*#static*/ if (PDFJSDev || TESTING) {
       assert(
         dest instanceof Uint8ClampedArray,
         'DeviceGrayCS.getRgbItem: Unsupported "dest" type.',
@@ -840,7 +841,7 @@ export class DeviceGrayCS extends ColorSpace {
     bits: number,
     alpha01: number,
   ) {
-    /*#static*/ if (_PDFDEV) {
+    /*#static*/ if (PDFJSDev || TESTING) {
       assert(
         dest instanceof Uint8ClampedArray,
         'DeviceGrayCS.getRgbBuffer: Unsupported "dest" type.',
@@ -878,7 +879,7 @@ class DeviceRgbCS extends ColorSpace {
     dest: Uint8ClampedArray,
     destOffset: number,
   ) {
-    /*#static*/ if (_PDFDEV) {
+    /*#static*/ if (PDFJSDev || TESTING) {
       assert(
         dest instanceof Uint8ClampedArray,
         'DeviceRgbCS.getRgbItem: Unsupported "dest" type.',
@@ -899,7 +900,7 @@ class DeviceRgbCS extends ColorSpace {
     bits: number,
     alpha01: number,
   ) {
-    /*#static*/ if (_PDFDEV) {
+    /*#static*/ if (PDFJSDev || TESTING) {
       assert(
         dest instanceof Uint8ClampedArray,
         'DeviceRgbCS.getRgbBuffer: Unsupported "dest" type.',
@@ -1020,7 +1021,7 @@ namespace NsDeviceCmykCS {
       dest: Uint8ClampedArray,
       destOffset: number,
     ) {
-      /*#static*/ if (_PDFDEV) {
+      /*#static*/ if (PDFJSDev || TESTING) {
         assert(
           dest instanceof Uint8ClampedArray,
           'DeviceCmykCS.getRgbItem: Unsupported "dest" type.',
@@ -1039,7 +1040,7 @@ namespace NsDeviceCmykCS {
       bits: number,
       alpha01: number,
     ) {
-      /*#static*/ if (_PDFDEV) {
+      /*#static*/ if (PDFJSDev || TESTING) {
         assert(
           dest instanceof Uint8ClampedArray,
           'DeviceCmykCS.getRgbBuffer: Unsupported "dest" type.',
@@ -1172,7 +1173,7 @@ namespace NsCalGrayCS {
       dest: Uint8ClampedArray,
       destOffset: number,
     ) {
-      /*#static*/ if (_PDFDEV) {
+      /*#static*/ if (PDFJSDev || TESTING) {
         assert(
           dest instanceof Uint8ClampedArray,
           'CalGrayCS.getRgbItem: Unsupported "dest" type.',
@@ -1191,7 +1192,7 @@ namespace NsCalGrayCS {
       bits: number,
       alpha01: number,
     ) {
-      /*#static*/ if (_PDFDEV) {
+      /*#static*/ if (PDFJSDev || TESTING) {
         assert(
           dest instanceof Uint8ClampedArray,
           'CalGrayCS.getRgbBuffer: Unsupported "dest" type.',
@@ -1487,9 +1488,9 @@ namespace NsCalRGBCS {
           "WhitePoint missing - required for color space CalRGB",
         );
       }
-      blackPoint = blackPoint || new Float32Array(3);
-      gamma = gamma || new Float32Array([1, 1, 1]);
-      matrix = matrix || new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1]);
+      blackPoint ||= new Float32Array(3);
+      gamma ||= new Float32Array([1, 1, 1]);
+      matrix ||= new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1]);
 
       // Translate arguments to spec variables.
       const XW = whitePoint[0];
@@ -1546,7 +1547,7 @@ namespace NsCalRGBCS {
       dest: Uint8ClampedArray,
       destOffset: number,
     ) {
-      /*#static*/ if (_PDFDEV) {
+      /*#static*/ if (PDFJSDev || TESTING) {
         assert(
           dest instanceof Uint8ClampedArray,
           'CalRGBCS.getRgbItem: Unsupported "dest" type.',
@@ -1565,7 +1566,7 @@ namespace NsCalRGBCS {
       bits: number,
       alpha01: number,
     ) {
-      /*#static*/ if (_PDFDEV) {
+      /*#static*/ if (PDFJSDev || TESTING) {
         assert(
           dest instanceof Uint8ClampedArray,
           'CalRGBCS.getRgbBuffer: Unsupported "dest" type.',
@@ -1690,9 +1691,9 @@ namespace NsLabCS {
     ZB: number;
 
     constructor(
-      whitePoint: Float32Array,
-      blackPoint?: Float32Array,
-      range?: [number, number, number, number],
+      whitePoint: XYZ,
+      blackPoint?: XYZ,
+      range?: rect_t,
     ) {
       super("Lab", 3);
 
@@ -1701,8 +1702,8 @@ namespace NsLabCS {
           "WhitePoint missing - required for color space Lab",
         );
       }
-      blackPoint = blackPoint || new Float32Array(3);
-      range = range || [-100, 100, -100, 100];
+      blackPoint ||= [0, 0, 0];
+      range ||= [-100, 100, -100, 100];
 
       // Translate args to spec variables
       this.XW = whitePoint[0];
@@ -1747,7 +1748,7 @@ namespace NsLabCS {
       dest: Uint8ClampedArray,
       destOffset: number,
     ) {
-      /*#static*/ if (_PDFDEV) {
+      /*#static*/ if (PDFJSDev || TESTING) {
         assert(
           dest instanceof Uint8ClampedArray,
           'LabCS.getRgbItem: Unsupported "dest" type.',
@@ -1766,7 +1767,7 @@ namespace NsLabCS {
       bits: number,
       alpha01: number,
     ) {
-      /*#static*/ if (_PDFDEV) {
+      /*#static*/ if (PDFJSDev || TESTING) {
         assert(
           dest instanceof Uint8ClampedArray,
           'LabCS.getRgbBuffer: Unsupported "dest" type.',

@@ -1,8 +1,8 @@
-import { type Destination, type ExplicitDest, PDFDocumentProxy, type RefProxy, SetOCGState } from "../pdf.ts-src/pdf.js";
-import { EventBus } from "./event_utils.js";
-import { type IPDFLinkService } from "./interfaces.js";
-import { PDFHistory } from "./pdf_history.js";
-import { PDFViewer } from "./pdf_viewer.js";
+import type { Destination, ExplicitDest, PDFDocumentProxy, RefProxy, SetOCGState } from "../pdf.ts-src/pdf.js";
+import type { EventBus } from "./event_utils.js";
+import type { IPDFLinkService } from "./interfaces.js";
+import type { PDFHistory } from "./pdf_history.js";
+import type { PDFViewer } from "./pdf_viewer.js";
 export declare const enum LinkTarget {
     NONE = 0,
     SELF = 1,

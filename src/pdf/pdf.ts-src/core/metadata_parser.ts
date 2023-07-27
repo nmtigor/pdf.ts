@@ -49,29 +49,32 @@ export class MetadataParser {
     // Start by removing any "junk" before the first tag (see issue 10395).
     return data
       .replace(/^[^<]+/, "")
-      .replace(/>\\376\\377([^<]+)/g, (all, codes) => {
+      .replaceAll(/>\\376\\377([^<]+)/g, (all, codes) => {
         const bytes = codes
-          .replace(
+          .replaceAll(
             /\\([0-3])([0-7])([0-7])/g,
             (code: unknown, d1: number, d2: number, d3: number) => {
               return String.fromCharCode(d1 * 64 + d2 * 8 + d3 * 1);
             },
           )
-          .replace(/&(amp|apos|gt|lt|quot);/g, (str: unknown, name: string) => {
-            switch (name) {
-              case "amp":
-                return "&";
-              case "apos":
-                return "'";
-              case "gt":
-                return ">";
-              case "lt":
-                return "<";
-              case "quot":
-                return '"';
-            }
-            throw new Error(`_repair: ${name} isn't defined.`);
-          });
+          .replaceAll(
+            /&(amp|apos|gt|lt|quot);/g,
+            (str: unknown, name: string) => {
+              switch (name) {
+                case "amp":
+                  return "&";
+                case "apos":
+                  return "'";
+                case "gt":
+                  return ">";
+                case "lt":
+                  return "<";
+                case "quot":
+                  return '"';
+              }
+              throw new Error(`_repair: ${name} isn't defined.`);
+            },
+          );
 
         const charBuf = [">"];
         for (let i = 0, ii = bytes.length; i < ii; i += 2) {

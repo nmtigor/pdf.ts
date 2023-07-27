@@ -1,4 +1,4 @@
-import { JpxStream } from "./jpx_stream.js";
+import type { JpxStream } from "./jpx_stream.js";
 interface PrecinctsSize {
     PPx: number;
     PPy: number;

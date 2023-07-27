@@ -17,9 +17,9 @@
  * limitations under the License.
  */
 
-import { assertEquals } from "https://deno.land/std@0.170.0/testing/asserts.ts";
-import { describe, it } from "https://deno.land/std@0.170.0/testing/bdd.ts";
-import { getDocument, StructTreeNode } from "../display/api.ts";
+import { assertEquals } from "https://deno.land/std@0.190.0/testing/asserts.ts";
+import { describe, it } from "https://deno.land/std@0.190.0/testing/bdd.ts";
+import { getDocument, type StructTreeNode } from "../display/api.ts";
 import { buildGetDocumentParams } from "../shared/test_utils.ts";
 /*80--------------------------------------------------------------------------*/
 

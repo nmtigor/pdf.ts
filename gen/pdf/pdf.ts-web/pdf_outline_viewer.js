@@ -17,7 +17,7 @@
  */
 import { html } from "../../lib/dom.js";
 import { isObjectLike } from "../../lib/jslang.js";
-import { createPromiseCapability, } from "../pdf.ts-src/pdf.js";
+import { PromiseCap } from "../../lib/util/PromiseCap.js";
 import { BaseTreeViewer, } from "./base_tree_viewer.js";
 import { SidebarView } from "./ui_utils.js";
 export class PDFOutlineViewer extends BaseTreeViewer {
@@ -71,7 +71,7 @@ export class PDFOutlineViewer extends BaseTreeViewer {
     }
     /** @implement */
     _dispatchEvent(outlineCount) {
-        this.#currentOutlineItemCapability = createPromiseCapability();
+        this.#currentOutlineItemCapability = new PromiseCap();
         if (outlineCount === 0 ||
             this._pdfDocument?.loadingParams.disableAutoFetch) {
             this.#currentOutlineItemCapability.resolve(/* enabled = */ false);
@@ -240,7 +240,7 @@ export class PDFOutlineViewer extends BaseTreeViewer {
         if (this.#pageNumberToDestHashCapability) {
             return this.#pageNumberToDestHashCapability.promise;
         }
-        this.#pageNumberToDestHashCapability = createPromiseCapability();
+        this.#pageNumberToDestHashCapability = new PromiseCap();
         const pageNumberToDestHash = new Map(), pageNumberNesting = new Map();
         const queue = [{ nesting: 0, items: this.#outline }];
         while (queue.length > 0) {

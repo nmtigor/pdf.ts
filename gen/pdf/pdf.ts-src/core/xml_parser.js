@@ -32,7 +32,7 @@ function isWhitespaceString(s) {
 export class XMLParserBase {
     _errorCode = XMLParserErrorCode.NoError;
     #resolveEntities(s) {
-        return s.replace(/&([^;]+);/g, (all, entity) => {
+        return s.replaceAll(/&([^;]+);/g, (all, entity) => {
             if (entity.substring(0, 2) === "#x") {
                 return String.fromCodePoint(parseInt(entity.substring(2), 16));
             }

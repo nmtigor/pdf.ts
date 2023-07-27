@@ -35,12 +35,12 @@ export class MetadataParser {
         // Start by removing any "junk" before the first tag (see issue 10395).
         return data
             .replace(/^[^<]+/, "")
-            .replace(/>\\376\\377([^<]+)/g, (all, codes) => {
+            .replaceAll(/>\\376\\377([^<]+)/g, (all, codes) => {
             const bytes = codes
-                .replace(/\\([0-3])([0-7])([0-7])/g, (code, d1, d2, d3) => {
+                .replaceAll(/\\([0-3])([0-7])([0-7])/g, (code, d1, d2, d3) => {
                 return String.fromCharCode(d1 * 64 + d2 * 8 + d3 * 1);
             })
-                .replace(/&(amp|apos|gt|lt|quot);/g, (str, name) => {
+                .replaceAll(/&(amp|apos|gt|lt|quot);/g, (str, name) => {
                 switch (name) {
                     case "amp":
                         return "&";

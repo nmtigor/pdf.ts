@@ -1,8 +1,8 @@
-import { OptionalContentConfig, PDFDocumentProxy, PDFPageProxy } from "../pdf.ts-src/pdf.js";
-import { type IL10n, type IPDFLinkService } from "./interfaces.js";
-import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
+import type { OptionalContentConfig, PDFDocumentProxy, PDFPageProxy } from "../pdf.ts-src/pdf.js";
+import type { IL10n, IPDFLinkService } from "./interfaces.js";
+import type { PDFRenderingQueue } from "./pdf_rendering_queue.js";
 import { PDFThumbnailView } from "./pdf_thumbnail_view.js";
-import { PageColors } from "./pdf_viewer.js";
+import type { PageColors } from "./pdf_viewer.js";
 interface PDFThumbnailViewerOptions {
     /**
      * The container for the thumbnail elements.

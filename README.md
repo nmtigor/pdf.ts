@@ -2,7 +2,7 @@ The purpose of [this project](https://nmtigor.github.io/pdf.ts/) is to help lear
 
 It is
 
-* based on [pdf.js@v3.4.120](https://github.com/mozilla/pdf.js/tree/v3.4.120),
+* based on [pdf.js@v3.6.172](https://github.com/mozilla/pdf.js/tree/v3.6.172),
 
 * **transpiled using [TypeScript@mymain](https://github.com/nmtigor/TypeScript/tree/mymain/PRs)!**
 

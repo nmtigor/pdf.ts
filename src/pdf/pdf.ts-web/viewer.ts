@@ -19,7 +19,7 @@
 
 // import "web-com";
 // import "web-print_service";
-import { CHROME, GENERIC, MOZCENTRAL } from "../../global.ts";
+import { CHROME, GENERIC, MOZCENTRAL, PDFJSDev } from "../../global.ts";
 import { viewerApp } from "./app.ts";
 /*80--------------------------------------------------------------------------*/
 
@@ -87,43 +87,45 @@ function getViewerConfiguration() {
       /**
        * Button to go to the previous page.
        */
-      previous: <HTMLButtonElement> document.getElementById("previous"),
+      previous: document.getElementById("previous") as HTMLButtonElement,
       /**
        * Button to go to the next page.
        */
-      next: <HTMLButtonElement> document.getElementById("next"),
+      next: document.getElementById("next") as HTMLButtonElement,
       /**
        * Button to zoom in the pages.
        */
-      zoomIn: <HTMLButtonElement> document.getElementById("zoomIn"),
+      zoomIn: document.getElementById("zoomIn") as HTMLButtonElement,
       /**
        * Button to zoom out the pages.
        */
-      zoomOut: <HTMLButtonElement> document.getElementById("zoomOut"),
+      zoomOut: document.getElementById("zoomOut") as HTMLButtonElement,
       /**
        * Button to open find bar.
        */
-      viewFind: <HTMLButtonElement> document.getElementById("viewFind"),
+      viewFind: document.getElementById("viewFind") as HTMLButtonElement,
       /**
        * Button to open a new document.
        */
-      openFile: /*#static*/ GENERIC
-        ? <HTMLButtonElement> document.getElementById("openFile")
+      openFile: /*#static*/ PDFJSDev || GENERIC
+        ? document.getElementById("openFile") as HTMLButtonElement
         : undefined,
-      print: <HTMLButtonElement> document.getElementById("print"),
+      print: document.getElementById("print") as HTMLButtonElement,
       /**
        * Button to switch to FreeText editing.
        */
-      editorFreeTextButton: <HTMLButtonElement> document.getElementById(
+      editorFreeTextButton: document.getElementById(
         "editorFreeText",
-      ),
-      editorFreeTextParamsToolbar: <HTMLDivElement> document.getElementById(
+      ) as HTMLButtonElement,
+      editorFreeTextParamsToolbar: document.getElementById(
         "editorFreeTextParamsToolbar",
-      ),
-      editorInkButton: <HTMLButtonElement> document.getElementById("editorInk"),
-      editorInkParamsToolbar: <HTMLButtonElement> document.getElementById(
+      ) as HTMLDivElement,
+      editorInkButton: document.getElementById(
+        "editorInk",
+      ) as HTMLButtonElement,
+      editorInkParamsToolbar: document.getElementById(
         "editorInkParamsToolbar",
-      ),
+      ) as HTMLButtonElement,
       /**
        * Button to download the document.
        */
@@ -133,170 +135,176 @@ function getViewerConfiguration() {
       /**
        * Container for the secondary toolbar.
        */
-      toolbar: <HTMLDivElement> document.getElementById("secondaryToolbar"),
+      toolbar: document.getElementById("secondaryToolbar") as HTMLDivElement,
       /**
        * Button to toggle the visibility of the secondary toolbar.
        */
-      toggleButton: <HTMLButtonElement> document.getElementById(
+      toggleButton: document.getElementById(
         "secondaryToolbarToggle",
-      ),
+      ) as HTMLButtonElement,
       /**
        * Button for entering presentation mode.
        */
-      presentationModeButton: <HTMLButtonElement> document.getElementById(
+      presentationModeButton: document.getElementById(
         "presentationMode",
-      ),
+      ) as HTMLButtonElement,
       /**
        * Button to open a file.
        */
-      openFileButton: /*#static*/ GENERIC
-        ? <HTMLButtonElement> document.getElementById("secondaryOpenFile")
+      openFileButton: /*#static*/ PDFJSDev || GENERIC
+        ? document.getElementById("secondaryOpenFile") as HTMLButtonElement
         : undefined,
       /**
        * Button to print the document.
        */
-      printButton: <HTMLButtonElement> document.getElementById(
+      printButton: document.getElementById(
         "secondaryPrint",
-      ),
+      ) as HTMLButtonElement,
       /**
        * Button to download the document.
        */
-      downloadButton: <HTMLButtonElement> document.getElementById(
+      downloadButton: document.getElementById(
         "secondaryDownload",
-      ),
+      ) as HTMLButtonElement,
       /**
        * Button to obtain a bookmark link to the current location in the document.
        */
-      viewBookmarkButton: <HTMLAnchorElement> document.getElementById(
+      viewBookmarkButton: document.getElementById(
         "viewBookmark",
-      ),
+      ) as HTMLAnchorElement,
       /**
        * Button to go to the first page in the document.
        */
-      firstPageButton: <HTMLButtonElement> document.getElementById("firstPage"),
+      firstPageButton: document.getElementById(
+        "firstPage",
+      ) as HTMLButtonElement,
       /**
        * Button to go to the first page in the document.
        */
-      lastPageButton: <HTMLButtonElement> document.getElementById("lastPage"),
+      lastPageButton: document.getElementById("lastPage") as HTMLButtonElement,
       /**
        * Button to rotate the pages clockwise.
        */
-      pageRotateCwButton: <HTMLButtonElement> document.getElementById(
+      pageRotateCwButton: document.getElementById(
         "pageRotateCw",
-      ),
+      ) as HTMLButtonElement,
       /**
        * Button to rotate the pages counterclockwise.
        */
-      pageRotateCcwButton: <HTMLButtonElement> document.getElementById(
+      pageRotateCcwButton: document.getElementById(
         "pageRotateCcw",
-      ),
+      ) as HTMLButtonElement,
       /**
        * Button to enable the select tool.
        */
-      cursorSelectToolButton: <HTMLButtonElement> document.getElementById(
+      cursorSelectToolButton: document.getElementById(
         "cursorSelectTool",
-      ),
+      ) as HTMLButtonElement,
       /**
        * Button to enable the hand tool.
        */
-      cursorHandToolButton: <HTMLButtonElement> document.getElementById(
+      cursorHandToolButton: document.getElementById(
         "cursorHandTool",
-      ),
-      scrollPageButton: <HTMLButtonElement> document.getElementById(
+      ) as HTMLButtonElement,
+      scrollPageButton: document.getElementById(
         "scrollPage",
-      ),
-      scrollVerticalButton: <HTMLButtonElement> document.getElementById(
+      ) as HTMLButtonElement,
+      scrollVerticalButton: document.getElementById(
         "scrollVertical",
-      ),
-      scrollHorizontalButton: <HTMLButtonElement> document.getElementById(
+      ) as HTMLButtonElement,
+      scrollHorizontalButton: document.getElementById(
         "scrollHorizontal",
-      ),
-      scrollWrappedButton: <HTMLButtonElement> document.getElementById(
+      ) as HTMLButtonElement,
+      scrollWrappedButton: document.getElementById(
         "scrollWrapped",
-      ),
-      spreadNoneButton: <HTMLButtonElement> document.getElementById(
+      ) as HTMLButtonElement,
+      spreadNoneButton: document.getElementById(
         "spreadNone",
-      ),
-      spreadOddButton: <HTMLButtonElement> document.getElementById("spreadOdd"),
-      spreadEvenButton: <HTMLButtonElement> document.getElementById(
+      ) as HTMLButtonElement,
+      spreadOddButton: document.getElementById(
+        "spreadOdd",
+      ) as HTMLButtonElement,
+      spreadEvenButton: document.getElementById(
         "spreadEven",
-      ),
+      ) as HTMLButtonElement,
       /**
        * Button for opening the document properties dialog.
        */
-      documentPropertiesButton: <HTMLButtonElement> document.getElementById(
+      documentPropertiesButton: document.getElementById(
         "documentProperties",
-      ),
+      ) as HTMLButtonElement,
     },
     sidebar: {
       // Divs (and sidebar button)
       /**
        * The outer container (encasing both the viewer and sidebar elements).
        */
-      outerContainer: <HTMLDivElement> document.getElementById(
+      outerContainer: document.getElementById(
         "outerContainer",
-      ),
+      ) as HTMLDivElement,
       /**
        * The sidebar container (in which the views are placed).
        */
-      sidebarContainer: <HTMLDivElement> document.getElementById(
+      sidebarContainer: document.getElementById(
         "sidebarContainer",
-      ),
+      ) as HTMLDivElement,
       /**
        * The button used for opening/closing the sidebar.
        */
-      toggleButton: <HTMLButtonElement> document.getElementById(
+      toggleButton: document.getElementById(
         "sidebarToggle",
-      ),
+      ) as HTMLButtonElement,
 
       // Buttons
       /**
        * The button used to show the thumbnail view.
        */
-      thumbnailButton: <HTMLButtonElement> document.getElementById(
+      thumbnailButton: document.getElementById(
         "viewThumbnail",
-      ),
+      ) as HTMLButtonElement,
       /**
        * The button used to show the outline view.
        */
-      outlineButton: <HTMLButtonElement> document.getElementById("viewOutline"),
+      outlineButton: document.getElementById(
+        "viewOutline",
+      ) as HTMLButtonElement,
       /**
        * The button used to show the attachments view.
        */
-      attachmentsButton: <HTMLButtonElement> document.getElementById(
+      attachmentsButton: document.getElementById(
         "viewAttachments",
-      ),
+      ) as HTMLButtonElement,
       /**
        * The button used to show the layers view.
        */
-      layersButton: <HTMLButtonElement> document.getElementById("viewLayers"),
+      layersButton: document.getElementById("viewLayers") as HTMLButtonElement,
 
       // Views
       /**
        * The container in which the thumbnails are placed.
        */
-      thumbnailView: <HTMLDivElement> document.getElementById("thumbnailView"),
+      thumbnailView: document.getElementById("thumbnailView") as HTMLDivElement,
       /**
        * The container in which the outline is placed.
        */
-      outlineView: <HTMLDivElement> document.getElementById("outlineView"),
+      outlineView: document.getElementById("outlineView") as HTMLDivElement,
       /**
        * The container in which the attachments are placed.
        */
-      attachmentsView: <HTMLDivElement> document.getElementById(
+      attachmentsView: document.getElementById(
         "attachmentsView",
-      ),
+      ) as HTMLDivElement,
       /**
        * The container in which the layers are placed.
        */
-      layersView: <HTMLDivElement> document.getElementById("layersView"),
+      layersView: document.getElementById("layersView") as HTMLDivElement,
       // View-specific options
-      outlineOptionsContainer: <HTMLDivElement> document.getElementById(
+      outlineOptionsContainer: document.getElementById(
         "outlineOptionsContainer",
-      ),
-      currentOutlineItemButton: <HTMLButtonElement> document.getElementById(
+      ) as HTMLDivElement,
+      currentOutlineItemButton: document.getElementById(
         "currentOutlineItem",
-      ),
+      ) as HTMLButtonElement,
     },
     sidebarResizer: {
       /**
@@ -352,15 +360,15 @@ function getViewerConfiguration() {
       /**
        * Button for submitting the password.
        */
-      submitButton: <HTMLButtonElement> document.getElementById(
+      submitButton: document.getElementById(
         "passwordSubmit",
-      ),
+      ) as HTMLButtonElement,
       /**
        * Button for cancelling password entry.
        */
-      cancelButton: <HTMLButtonElement> document.getElementById(
+      cancelButton: document.getElementById(
         "passwordCancel",
-      ),
+      ) as HTMLButtonElement,
     },
     documentProperties: {
       /**
@@ -379,60 +387,66 @@ function getViewerConfiguration() {
        * Names and elements of the overlay's fields.
        */
       fields: {
-        fileName: <HTMLParagraphElement> document.getElementById(
+        fileName: document.getElementById(
           "fileNameField",
-        ),
-        fileSize: <HTMLParagraphElement> document.getElementById(
+        ) as HTMLParagraphElement,
+        fileSize: document.getElementById(
           "fileSizeField",
-        ),
-        title: <HTMLParagraphElement> document.getElementById("titleField"),
-        author: <HTMLParagraphElement> document.getElementById("authorField"),
-        subject: <HTMLParagraphElement> document.getElementById("subjectField"),
-        keywords: <HTMLParagraphElement> document.getElementById(
+        ) as HTMLParagraphElement,
+        title: document.getElementById("titleField") as HTMLParagraphElement,
+        author: document.getElementById("authorField") as HTMLParagraphElement,
+        subject: document.getElementById(
+          "subjectField",
+        ) as HTMLParagraphElement,
+        keywords: document.getElementById(
           "keywordsField",
-        ),
-        creationDate: <HTMLParagraphElement> document.getElementById(
+        ) as HTMLParagraphElement,
+        creationDate: document.getElementById(
           "creationDateField",
-        ),
-        modificationDate: <HTMLParagraphElement> document.getElementById(
+        ) as HTMLParagraphElement,
+        modificationDate: document.getElementById(
           "modificationDateField",
-        ),
-        creator: <HTMLParagraphElement> document.getElementById("creatorField"),
-        producer: <HTMLParagraphElement> document.getElementById(
+        ) as HTMLParagraphElement,
+        creator: document.getElementById(
+          "creatorField",
+        ) as HTMLParagraphElement,
+        producer: document.getElementById(
           "producerField",
-        ),
-        version: <HTMLParagraphElement> document.getElementById("versionField"),
-        pageCount: <HTMLParagraphElement> document.getElementById(
+        ) as HTMLParagraphElement,
+        version: document.getElementById(
+          "versionField",
+        ) as HTMLParagraphElement,
+        pageCount: document.getElementById(
           "pageCountField",
-        ),
-        pageSize: <HTMLParagraphElement> document.getElementById(
+        ) as HTMLParagraphElement,
+        pageSize: document.getElementById(
           "pageSizeField",
-        ),
-        linearized: <HTMLParagraphElement> document.getElementById(
+        ) as HTMLParagraphElement,
+        linearized: document.getElementById(
           "linearizedField",
-        ),
+        ) as HTMLParagraphElement,
       },
     },
     annotationEditorParams: {
-      editorFreeTextFontSize: <HTMLInputElement> document.getElementById(
+      editorFreeTextFontSize: document.getElementById(
         "editorFreeTextFontSize",
-      ),
-      editorFreeTextColor: <HTMLInputElement> document.getElementById(
+      ) as HTMLInputElement,
+      editorFreeTextColor: document.getElementById(
         "editorFreeTextColor",
-      ),
-      editorInkColor: <HTMLInputElement> document.getElementById(
+      ) as HTMLInputElement,
+      editorInkColor: document.getElementById(
         "editorInkColor",
-      ),
-      editorInkThickness: <HTMLInputElement> document.getElementById(
+      ) as HTMLInputElement,
+      editorInkThickness: document.getElementById(
         "editorInkThickness",
-      ),
-      editorInkOpacity: <HTMLInputElement> document.getElementById(
+      ) as HTMLInputElement,
+      editorInkOpacity: document.getElementById(
         "editorInkOpacity",
-      ),
+      ) as HTMLInputElement,
     },
-    printContainer: <HTMLDivElement> document.getElementById("printContainer"),
-    openFileInput: /*#static*/ GENERIC
-      ? <HTMLInputElement> document.getElementById("fileInput")
+    printContainer: document.getElementById("printContainer") as HTMLDivElement,
+    openFileInput: /*#static*/ PDFJSDev || GENERIC
+      ? document.getElementById("fileInput") as HTMLInputElement
       : undefined,
     debuggerScriptPath: "./debugger.js",
   };

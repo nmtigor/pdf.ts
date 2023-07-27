@@ -1,5 +1,5 @@
-import { EventBus } from "./event_utils.js";
-import { ViewerConfiguration } from "./viewer.js";
+import type { EventBus } from "./event_utils.js";
+import type { ViewerConfiguration } from "./viewer.js";
 export declare class AnnotationEditorParams {
     #private;
     eventBus: EventBus;

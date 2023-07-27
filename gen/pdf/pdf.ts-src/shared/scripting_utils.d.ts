@@ -6,6 +6,7 @@
  */
 import { type TupleOf } from "../../../lib/alias.js";
 export type RGB = TupleOf<number, 3>;
+export type XYZ = TupleOf<number, 3>;
 export type CMYK = TupleOf<number, 4>;
 export type CSTag = "G" | "RGB" | "T" | "CMYK";
 export type ColorConvertersDetail = Record<string, [CSTag, ...number[]]>;

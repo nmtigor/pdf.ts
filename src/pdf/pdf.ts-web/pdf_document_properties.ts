@@ -17,17 +17,13 @@
  * limitations under the License.
  */
 
-import {
-  createPromiseCapability,
-  PDFDateString,
-  PDFDocumentProxy,
-  type PromiseCapability,
-} from "../pdf.ts-src/pdf.ts";
-import { EventBus } from "./event_utils.ts";
-import { type IL10n } from "./interfaces.ts";
-import { OverlayManager } from "./overlay_manager.ts";
+import { PromiseCap } from "../../lib/util/PromiseCap.ts";
+import { PDFDateString, type PDFDocumentProxy } from "../pdf.ts-src/pdf.ts";
+import type { EventBus } from "./event_utils.ts";
+import type { IL10n } from "./interfaces.ts";
+import type { OverlayManager } from "./overlay_manager.ts";
 import { getPageSizeInches, isPortraitOrientation } from "./ui_utils.ts";
-import { type ViewerConfiguration } from "./viewer.ts";
+import type { ViewerConfiguration } from "./viewer.ts";
 /*80--------------------------------------------------------------------------*/
 
 const DEFAULT_FIELD_CONTENT = "-";
@@ -62,7 +58,7 @@ function getPageName(
   return pageNames[`${width}x${height}`];
 }
 
-interface _FreezeFieldDataP {
+interface FreezeFieldDataP_ {
   fileName: string;
   fileSize?: string | undefined;
 
@@ -90,7 +86,7 @@ type Fields = ViewerConfiguration["documentProperties"]["fields"];
 export class PDFDocumentProperties {
   dialog;
   fields: Fields;
-  #fieldData: _FreezeFieldDataP | undefined;
+  #fieldData: FreezeFieldDataP_ | undefined;
   overlayManager;
   l10n;
   _fileNameLookup;
@@ -99,7 +95,7 @@ export class PDFDocumentProperties {
   url: string | undefined;
 
   maybeFileSize!: number;
-  #dataAvailableCapability!: PromiseCapability;
+  #dataAvailableCapability!: PromiseCap;
   _currentPageNumber!: number;
   _pagesRotation!: number;
 
@@ -261,7 +257,7 @@ export class PDFDocumentProperties {
     this.pdfDocument = undefined;
 
     this.#fieldData = undefined;
-    this.#dataAvailableCapability = createPromiseCapability();
+    this.#dataAvailableCapability = new PromiseCap();
     this._currentPageNumber = 1;
     this._pagesRotation = 0;
   }

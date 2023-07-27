@@ -15,10 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { _PDFDEV, _TRACE, global, PDFTS_vv } from "../../../global.js";
+import { _TRACE, global, PDFJSDev, PDFTS_vv, TESTING, } from "../../../global.js";
 import { isObjectLike } from "../../../lib/jslang.js";
+import { PromiseCap } from "../../../lib/util/PromiseCap.js";
 import { assert } from "../../../lib/util/trace.js";
-import { AbortException, createPromiseCapability, MissingPDFException, PasswordException, UnexpectedResponseException, UnknownErrorException, } from "./util.js";
+import { AbortException, MissingPDFException, PasswordException, UnexpectedResponseException, UnknownErrorException, } from "./util.js";
 /*80--------------------------------------------------------------------------*/
 var CallbackKind;
 (function (CallbackKind) {
@@ -193,7 +194,7 @@ export class MessageHandler {
      */
     sendWithPromise(actionName, data, transfers) {
         const callbackId = this.callbackId++;
-        const capability = createPromiseCapability();
+        const capability = new PromiseCap();
         this.callbackCapabilities[callbackId] = capability;
         try {
             this.comObj.postMessage({
@@ -222,7 +223,7 @@ export class MessageHandler {
         const streamId = this.streamId++, sourceName = this.sourceName, targetName = this.targetName, comObj = this.comObj;
         return new ReadableStream({
             start: (controller) => {
-                const startCapability = createPromiseCapability();
+                const startCapability = new PromiseCap();
                 this.streamControllers[streamId] = {
                     controller,
                     startCall: startCapability,
@@ -240,7 +241,7 @@ export class MessageHandler {
                 return startCapability.promise;
             },
             pull: (controller) => {
-                const pullCapability = createPromiseCapability();
+                const pullCapability = new PromiseCap();
                 this.streamControllers[streamId].pullCall = pullCapability;
                 comObj.postMessage({
                     sourceName,
@@ -255,7 +256,7 @@ export class MessageHandler {
             },
             cancel: (reason) => {
                 // assert(reason instanceof Error, "cancel must have a valid reason");
-                const cancelCapability = createPromiseCapability();
+                const cancelCapability = new PromiseCap();
                 this.streamControllers[streamId].cancelCall = cancelCapability;
                 this.streamControllers[streamId].isClosed = true;
                 comObj.postMessage({
@@ -273,7 +274,7 @@ export class MessageHandler {
     #createStreamSink(data) {
         const streamId = data.streamId, sourceName = this.sourceName, targetName = data.sourceName, comObj = this.comObj;
         const self = this, action = this.actionHandler[data.action];
-        const sinkCapability = createPromiseCapability();
+        const sinkCapability = new PromiseCap();
         const streamSink = {
             enqueue(chunk, size = 1, transfers) {
                 if (this.isCancelled) {
@@ -285,7 +286,7 @@ export class MessageHandler {
                 // so when it changes from positive to negative,
                 // set ready as unresolved promise.
                 if (lastDesiredSize > 0 && this.desiredSize <= 0) {
-                    this.sinkCapability = createPromiseCapability();
+                    this.sinkCapability = new PromiseCap();
                     this.ready = this.sinkCapability.promise;
                 }
                 comObj.postMessage({
@@ -390,7 +391,7 @@ export class MessageHandler {
                 // Reset desiredSize property of sink on every pull.
                 streamSink.desiredSize = data.desiredSize;
                 new Promise((resolve) => {
-                    resolve(streamSink.onPull && streamSink.onPull());
+                    resolve(streamSink.onPull?.());
                 }).then(() => {
                     comObj.postMessage({
                         sourceName,
@@ -444,8 +445,7 @@ export class MessageHandler {
                     break;
                 }
                 new Promise((resolve) => {
-                    resolve(streamSink.onCancel &&
-                        streamSink.onCancel(wrapReason(data.reason)));
+                    resolve(streamSink.onCancel?.(wrapReason(data.reason)));
                 }).then(() => {
                     comObj.postMessage({
                         sourceName,
@@ -475,9 +475,9 @@ export class MessageHandler {
         // Delete the `streamController` only when the start, pull, and cancel
         // capabilities have settled, to prevent `TypeError`s.
         await Promise.allSettled([
-            streamController.startCall && streamController.startCall.promise,
-            streamController.pullCall && streamController.pullCall.promise,
-            streamController.cancelCall && streamController.cancelCall.promise,
+            streamController.startCall?.promise,
+            streamController.pullCall?.promise,
+            streamController.cancelCall?.promise,
         ]);
         delete this.streamControllers[streamId];
     }

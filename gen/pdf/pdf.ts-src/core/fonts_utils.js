@@ -182,7 +182,7 @@ export function type1FontGlyphMapping(properties, builtInEncoding, glyphNames) {
     return charCodeToGlyphId;
 }
 export function normalizeFontName(name) {
-    return name.replace(/[,_]/g, "-").replace(/\s/g, "");
+    return name.replaceAll(/[,_]/g, "-").replaceAll(/\s/g, "");
 }
 /*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=fonts_utils.js.map

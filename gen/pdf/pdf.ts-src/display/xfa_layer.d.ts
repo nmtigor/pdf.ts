@@ -3,7 +3,7 @@ import { type XFAElObj } from "../core/xfa/alias.js";
 import { AnnotationStorage } from "./annotation_storage.js";
 import { type AnnotIntent, PDFPageProxy } from "./api.js";
 import { PageViewport } from "./display_utils.js";
-interface _XfaLayerP {
+interface XfaLayerP_ {
     viewport?: PageViewport;
     div: HTMLDivElement;
     xfaHtml: XFAElObj;
@@ -28,13 +28,13 @@ export declare abstract class XfaLayer {
     /**
      * Render the XFA layer.
      */
-    static render(parameters: _XfaLayerP): {
+    static render(parameters: XfaLayerP_): {
         textDivs: Text[];
     };
     /**
      * Update the XFA layer.
      */
-    static update(parameters: _XfaLayerP): void;
+    static update(parameters: XfaLayerP_): void;
 }
 export {};
 //# sourceMappingURL=xfa_layer.d.ts.map

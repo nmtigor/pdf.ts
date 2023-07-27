@@ -1,12 +1,13 @@
 import { OPS } from "../shared/util.js";
-import { ColorSpace } from "./colorspace.js";
-import { type ImgData, MarkedContentProps } from "./evaluator.js";
-import { type ParsedFunction } from "./function.js";
-import { type OpListIR } from "./operator_list.js";
-import { Dict, type Obj, Ref, RefSetCache } from "./primitives.js";
+import type { ColorSpace } from "./colorspace.js";
+import type { ImgData, MarkedContentProps } from "./evaluator.js";
+import type { ParsedFunction } from "./function.js";
+import type { OpListIR } from "./operator_list.js";
+import type { Dict, Obj, Ref } from "./primitives.js";
+import { RefSetCache } from "./primitives.js";
 declare abstract class BaseLocalCache<CD> {
     #private;
-    protected nameRefMap$: Map<string, string | import("./primitives.js").NsRef.Ref> | undefined;
+    protected nameRefMap$: Map<string, string | Ref> | undefined;
     protected imageMap$: Map<string, CD> | undefined;
     protected imageCache$: RefSetCache<CD>;
     constructor(options?: {
@@ -36,12 +37,12 @@ export interface SolidColorImageMask_LI_CData {
 export type LI_CData = Image_LI_CData | ImageMask_LI_CData | SolidColorImageMask_LI_CData;
 export declare class LocalImageCache extends BaseLocalCache<LI_CData | boolean> {
     /** @implement */
-    set(name: string, ref: string | import("./primitives.js").NsRef.Ref | undefined, data: LI_CData | boolean): void;
+    set(name: string, ref: string | Ref | undefined, data: LI_CData | boolean): void;
 }
 type LCS_CData = ColorSpace;
 export declare class LocalColorSpaceCache extends BaseLocalCache<LCS_CData> {
     /** @implement */
-    set(name: string | undefined, ref: string | import("./primitives.js").NsRef.Ref | undefined, data: LCS_CData): void;
+    set(name: string | undefined, ref: string | Ref | undefined, data: LCS_CData): void;
 }
 type LF_CData = ParsedFunction;
 export declare class LocalFunctionCache extends BaseLocalCache<LF_CData> {
@@ -52,7 +53,7 @@ export declare class LocalFunctionCache extends BaseLocalCache<LF_CData> {
 export type LGS_CData = [string, Obj][];
 export declare class LocalGStateCache extends BaseLocalCache<LGS_CData | boolean> {
     /** @implement */
-    set(name: string, ref: string | import("./primitives.js").NsRef.Ref | undefined, data: LGS_CData | boolean): void;
+    set(name: string, ref: string | Ref | undefined, data: LGS_CData | boolean): void;
 }
 type LTP_CData = {
     operatorListIR: OpListIR;
@@ -61,7 +62,12 @@ type LTP_CData = {
 export declare class LocalTilingPatternCache extends BaseLocalCache<LTP_CData> {
     constructor(options?: unknown);
     /** @implement */
-    set(name: string | undefined, ref: string | import("./primitives.js").NsRef.Ref | undefined, data: LTP_CData): void;
+    set(name: string | undefined, ref: string | Ref | undefined, data: LTP_CData): void;
+}
+type RIC_CData = unknown;
+export declare class RegionalImageCache extends BaseLocalCache<RIC_CData> {
+    constructor();
+    set(name: string | undefined, ref: Ref | string | undefined, data: RIC_CData): void;
 }
 type GI_CData = Image_LI_CData & {
     objId: string;
@@ -69,16 +75,14 @@ type GI_CData = Image_LI_CData & {
 };
 export declare class GlobalImageCache {
     #private;
-    static get NUM_PAGES_THRESHOLD(): number;
-    static get MIN_IMAGES_TO_CACHE(): number;
-    static get MAX_BYTE_SIZE(): number;
+    static readonly NUM_PAGES_THRESHOLD = 2;
+    static readonly MIN_IMAGES_TO_CACHE = 10;
+    static readonly MAX_BYTE_SIZE: number;
     constructor();
     get _byteSize(): number;
     get _cacheLimitReached(): boolean;
     /** @final */
     shouldCache(ref: string | Ref, pageIndex: number): boolean;
-    /** @final */
-    addPageIndex(ref: Ref | string, pageIndex: number): void;
     /**
      * PLEASE NOTE: Must be called *after* the `setData` method.
      * @final

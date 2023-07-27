@@ -1,25 +1,28 @@
-import { type rect_t } from "../../../lib/alias.js";
-import { type CMapData } from "../display/base_factory.js";
-import { MessageHandler, type StreamSink, Thread } from "../shared/message_handler.js";
-import { ImageKind, type matrix_t, OPS, TextRenderingMode } from "../shared/util.js";
+import type { rect_t } from "../../../lib/alias.js";
+import type { CMapData } from "../display/base_factory.js";
+import type { MessageHandler, StreamSink, Thread } from "../shared/message_handler.js";
+import type { ImageKind, matrix_t } from "../shared/util.js";
+import { OPS, TextRenderingMode } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
-import { CMap } from "./cmap.js";
+import { type CMap } from "./cmap.js";
 import { ColorSpace } from "./colorspace.js";
 import { DecodeStream } from "./decode_stream.js";
-import { type CssFontInfo, type GlobalIdFactory } from "./document.js";
-import { ErrorFont, Font, Glyph, type Seac } from "./fonts.js";
+import type { CssFontInfo, GlobalIdFactory } from "./document.js";
+import type { Glyph, Seac } from "./fonts.js";
+import { ErrorFont, Font } from "./fonts.js";
 import { FontFlags } from "./fonts_utils.js";
 import { PDFFunctionFactory } from "./function.js";
-import { GlobalImageCache, LocalColorSpaceCache, LocalGStateCache, LocalImageCache, LocalTilingPatternCache } from "./image_utils.js";
+import { GlobalImageCache, LocalColorSpaceCache, LocalGStateCache, LocalImageCache, LocalTilingPatternCache, RegionalImageCache } from "./image_utils.js";
 import { OperatorList } from "./operator_list.js";
 import { Parser } from "./parser.js";
-import { type EvaluatorOptions } from "./pdf_manager.js";
-import { Dict, FontDict, Name, type Obj, Ref, RefSet, RefSetCache } from "./primitives.js";
+import type { EvaluatorOptions } from "./pdf_manager.js";
+import type { Obj } from "./primitives.js";
+import { Dict, FontDict, Name, Ref, RefSet, type RefSetCache } from "./primitives.js";
 import { Stream } from "./stream.js";
 import { IdentityToUnicodeMap, ToUnicodeMap } from "./to_unicode_map.js";
-import { type PrivateData } from "./type1_parser.js";
-import { WorkerTask } from "./worker.js";
-import { XRef } from "./xref.js";
+import type { PrivateData } from "./type1_parser.js";
+import type { WorkerTask } from "./worker.js";
+import type { XRef } from "./xref.js";
 interface PartialEvaluatorCtorP_ {
     xref: XRef;
     handler: MessageHandler<Thread.worker>;
@@ -70,7 +73,7 @@ interface _SetGStateP {
     localGStateCache: LocalGStateCache;
     localColorSpaceCache: LocalColorSpaceCache;
 }
-interface _GetTextContentP {
+interface GetTextContentP_ {
     stream: BaseStream;
     task: WorkerTask;
     resources: Dict | undefined;
@@ -78,6 +81,7 @@ interface _GetTextContentP {
     normalizeWhitespace?: boolean;
     combineTextItems?: boolean;
     includeMarkedContent?: boolean;
+    disableNormalization?: boolean;
     sink: StreamSink<Thread.main, "GetTextContent">;
     seenStyles?: Set<string>;
     viewBox: rect_t;
@@ -154,12 +158,6 @@ interface PreEvaluatedFont {
     hash: string;
     cssFontInfo?: CssFontInfo | undefined;
 }
-export interface FontStyle {
-    fontFamily: string;
-    ascent: number;
-    descent: number;
-    vertical: boolean | undefined;
-}
 interface _ParseColorSpaceP {
     cs: Name | Ref;
     resources: Dict;
@@ -198,6 +196,7 @@ export declare class PartialEvaluator {
     globalImageCache: GlobalImageCache | undefined;
     options: EvaluatorOptions;
     parsingType3Font: boolean;
+    _regionalImageCache: RegionalImageCache;
     type3FontRefs?: RefSet;
     constructor({ xref, handler, pageIndex, idFactory, fontCache, builtInCMapCache, standardFontDataCache, globalImageCache, options, }: PartialEvaluatorCtorP_);
     /**
@@ -231,7 +230,7 @@ export declare class PartialEvaluator {
     private _parseVisibilityExpression;
     parseMarkedContentProps(contentProperties: Dict | Name, resources: Dict | undefined): Promise<MarkedContentProps | undefined>;
     getOperatorList({ stream, task, resources, operatorList, initialState, fallbackFontDict, }: GetOperatorListP_): Promise<void>;
-    getTextContent({ stream, task, resources, stateManager, combineTextItems, includeMarkedContent, sink, seenStyles, viewBox, markedContentData, }: _GetTextContentP): Promise<void>;
+    getTextContent({ stream, task, resources, stateManager, includeMarkedContent, disableNormalization, sink, seenStyles, viewBox, markedContentData, }: GetTextContentP_): Promise<void>;
     extractDataStructures(dict: FontDict, baseDict: FontDict, properties: FontProps): Promise<FontProps>;
     private _simpleFontToUnicode;
     /**
@@ -272,7 +271,8 @@ export declare class TranslatedFont {
         disableFontFace: false;
         ignoreErrors: false;
         isEvalSupported: true;
-        isOffscreenCanvasSupported: true;
+        isOffscreenCanvasSupported: false;
+        canvasMaxAreaInBytes: -1;
         fontExtraProperties: false;
         useSystemFonts: true;
         cMapUrl: undefined;
@@ -340,7 +340,7 @@ export interface Operation {
 export declare class EvaluatorPreprocessor {
     #private;
     static get opMap(): OpMap;
-    static get MAX_INVALID_PATH_OPS(): number;
+    static readonly MAX_INVALID_PATH_OPS = 10;
     parser: Parser;
     stateManager: StateManager<EvalState | TextState>;
     nonProcessedArgs: any[];

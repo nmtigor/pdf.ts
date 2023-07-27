@@ -1,11 +1,8 @@
+import type { C2D } from "../../../lib/alias.js";
 import { FontExpotDataEx } from "../core/fonts.js";
-import { type CmdArgs } from "../core/font_renderer.js";
-import { UNSUPPORTED_FEATURES } from "../shared/util.js";
-import { PDFObjects } from "./api.js";
+import type { CmdArgs } from "../core/font_renderer.js";
+import type { PDFObjects } from "./api.js";
 interface _BaseFontLoaderCtorP {
-    onUnsupportedFeature: (_: {
-        featureId: UNSUPPORTED_FEATURES;
-    }) => void;
     ownerDocument: Document | undefined;
     styleElement?: HTMLStyleElement | undefined;
 }
@@ -15,15 +12,12 @@ export interface Request {
     callback: (request: Request) => void;
 }
 export declare class FontLoader {
-    _onUnsupportedFeature: ((_: {
-        featureId: UNSUPPORTED_FEATURES;
-    }) => void) | undefined;
     _document: Document;
     nativeFontFaces: FontFace[];
     styleElement: HTMLStyleElement | undefined;
     loadingRequests: Request[] | undefined;
     loadTestFontId: number;
-    constructor({ onUnsupportedFeature, ownerDocument, styleElement, }: _BaseFontLoaderCtorP);
+    constructor({ ownerDocument, styleElement, }: _BaseFontLoaderCtorP);
     addNativeFontFace(nativeFontFace: FontFace): void;
     insertRule(rule: string): void;
     clear(): void;
@@ -34,31 +28,21 @@ export declare class FontLoader {
     get _loadTestFont(): string;
     _prepareFontLoadEvent(font: FontFaceObject, request: Request): void;
 }
-interface _FFOCtorP {
+interface FFOCtorP_ {
     isEvalSupported: boolean | undefined;
     disableFontFace: boolean | undefined;
     ignoreErrors: boolean | undefined;
-    onUnsupportedFeature: (_: {
-        featureId: UNSUPPORTED_FEATURES;
-    }) => void;
-    fontRegistry: {
-        registerFont(font: FontFaceObject, url?: string): void;
-    } | undefined;
+    inspectFont: ((font: FontFaceObject, url?: string) => void) | undefined;
 }
-export type AddToPath = (c: CanvasRenderingContext2D, size: number) => void;
+export type AddToPath = (c: C2D, size: number) => void;
 export declare class FontFaceObject extends FontExpotDataEx {
     compiledGlyphs: Record<string, AddToPath>;
     isEvalSupported: boolean;
     disableFontFace: boolean;
     ignoreErrors: boolean;
-    _onUnsupportedFeature: ((_: {
-        featureId: UNSUPPORTED_FEATURES;
-    }) => void) | undefined;
-    fontRegistry: {
-        registerFont(font: FontFaceObject, url?: string | undefined): void;
-    } | undefined;
+    _inspectFont: ((font: FontFaceObject, url?: string | undefined) => void) | undefined;
     attached?: boolean;
-    constructor(translatedData: FontExpotDataEx, { isEvalSupported, disableFontFace, ignoreErrors, onUnsupportedFeature, fontRegistry, }: _FFOCtorP);
+    constructor(translatedData: FontExpotDataEx, { isEvalSupported, disableFontFace, ignoreErrors, inspectFont, }: FFOCtorP_);
     createNativeFontFace(): FontFace | null;
     createFontFaceRule(): string | null;
     getPathGenerator(objs: PDFObjects<CmdArgs[] | FontFaceObject>, character: string): AddToPath;

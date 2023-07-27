@@ -9,7 +9,7 @@ var NsQueueOptimizer;
         let state = parentState;
         for (let i = 0, ii = pattern.length - 1; i < ii; i++) {
             const item = pattern[i];
-            state = state[item] || (state[item] = []);
+            state = state[item] ||= [];
         }
         state[pattern.at(-1)] = {
             checkFn,
@@ -105,17 +105,24 @@ var NsQueueOptimizer;
                 offset -= imgRowSize;
             }
         }
+        const img = {
+            width: imgWidth,
+            height: imgHeight,
+        };
+        if (context.isOffscreenCanvasSupported) {
+            const canvas = new OffscreenCanvas(imgWidth, imgHeight);
+            const ctx = canvas.getContext("2d");
+            ctx.putImageData(new ImageData(new Uint8ClampedArray(imgData.buffer), imgWidth, imgHeight), 0, 0);
+            img.bitmap = canvas.transferToImageBitmap();
+            img.data = undefined;
+        }
+        else {
+            img.kind = ImageKind.RGBA_32BPP;
+            img.data = imgData;
+        }
         // Replace queue items.
         fnArray.splice(iFirstSave, count * 4, OPS.paintInlineImageXObjectGroup);
-        argsArray.splice(iFirstSave, count * 4, [
-            {
-                width: imgWidth,
-                height: imgHeight,
-                kind: ImageKind.RGBA_32BPP,
-                data: imgData,
-            },
-            map,
-        ]);
+        argsArray.splice(iFirstSave, count * 4, [img, map]);
         return iFirstSave + 1;
     });
     // This replaces (save, transform, paintImageMaskXObject, restore)+
@@ -375,6 +382,8 @@ var NsQueueOptimizer;
         constructor(queue) {
             this.queue = queue;
         }
+        set isOffscreenCanvasSupported(value) {
+        }
         _optimize() { }
         push(fn, args) {
             this.queue.fnArray.push(fn);
@@ -396,7 +405,12 @@ var NsQueueOptimizer;
                 iCurr: 0,
                 fnArray: queue.fnArray,
                 argsArray: queue.argsArray,
+                isOffscreenCanvasSupported: false,
             };
+        }
+        // eslint-disable-next-line accessor-pairs
+        set isOffscreenCanvasSupported(value) {
+            this.context.isOffscreenCanvasSupported = value;
         }
         _optimize() {
             // Process new fnArray item(s) chunk.
@@ -470,139 +484,140 @@ var NsQueueOptimizer;
 })(NsQueueOptimizer || (NsQueueOptimizer = {}));
 var QueueOptimizer = NsQueueOptimizer.QueueOptimizer;
 var NullOptimizer = NsQueueOptimizer.NullOptimizer;
-var NsOperatorList;
-(function (NsOperatorList) {
-    const CHUNK_SIZE = 1000;
-    const CHUNK_SIZE_ABOUT = CHUNK_SIZE - 5; // close to chunk size
-    /** @final */
-    class OperatorList {
-        #streamSink;
-        fnArray = [];
-        // argsArray:(unknown[] | Uint8ClampedArray | null | undefined)[] = [];
-        // argsArray:(Uint8ClampedArray | OpArgs | undefined)[] = [];
-        argsArray = [];
-        get length() {
-            return this.argsArray.length;
+/** @final */
+export class OperatorList {
+    static CHUNK_SIZE = 1000;
+    // Close to chunk size.
+    static CHUNK_SIZE_ABOUT = this.CHUNK_SIZE - 5;
+    #streamSink;
+    fnArray = [];
+    // argsArray:(unknown[] | Uint8ClampedArray | null | undefined)[] = [];
+    // argsArray:(Uint8ClampedArray | OpArgs | undefined)[] = [];
+    argsArray = [];
+    get length() {
+        return this.argsArray.length;
+    }
+    optimizer;
+    dependencies = new Set();
+    #totalLength = 0;
+    /**
+     * @return The total length of the entire operator list, since
+     *  `this.length === 0` after flushing.
+     */
+    get totalLength() {
+        return this.#totalLength + this.length;
+    }
+    weight = 0;
+    #resolved;
+    constructor(intent = 0, streamSink) {
+        this.#streamSink = streamSink;
+        if (streamSink && !(intent & RenderingIntentFlag.OPLIST)) {
+            this.optimizer = new QueueOptimizer(this);
         }
-        optimizer;
-        dependencies = new Set();
-        #totalLength = 0;
-        /**
-         * @return The total length of the entire operator list, since
-         *  `this.length === 0` after flushing.
-         */
-        get totalLength() {
-            return this.#totalLength + this.length;
+        else {
+            this.optimizer = new NullOptimizer(this);
         }
-        weight = 0;
-        #resolved;
-        constructor(intent = 0, streamSink) {
-            this.#streamSink = streamSink;
-            if (streamSink && !(intent & RenderingIntentFlag.OPLIST)) {
-                this.optimizer = new QueueOptimizer(this);
+        this.#resolved = streamSink ? undefined : Promise.resolve();
+    }
+    // eslint-disable-next-line accessor-pairs
+    set isOffscreenCanvasSupported(value) {
+        this.optimizer.isOffscreenCanvasSupported = value;
+    }
+    get ready() {
+        return this.#resolved || this.#streamSink.ready;
+    }
+    // args?:Uint8ClampedArray | OpArgs | [ImgData]
+    // args?:unknown[] | Uint8ClampedArray | null
+    addOp(fn, args) {
+        this.optimizer.push(fn, args);
+        this.weight++;
+        if (this.#streamSink) {
+            if (this.weight >= OperatorList.CHUNK_SIZE) {
+                this.flush();
             }
-            else
-                this.optimizer = new NullOptimizer(this);
-            this.#resolved = streamSink ? undefined : Promise.resolve();
-        }
-        get ready() {
-            return this.#resolved || this.#streamSink.ready;
-        }
-        // args?:Uint8ClampedArray | OpArgs | [ImgData]
-        // args?:unknown[] | Uint8ClampedArray | null
-        addOp(fn, args) {
-            this.optimizer.push(fn, args);
-            this.weight++;
-            if (this.#streamSink) {
-                if (this.weight >= CHUNK_SIZE) {
-                    this.flush();
-                }
-                else if (this.weight >= CHUNK_SIZE_ABOUT &&
-                    (fn === OPS.restore || fn === OPS.endText)) {
-                    // Heuristic to flush on boundary of restore or endText.
-                    this.flush();
-                }
+            else if (this.weight >= OperatorList.CHUNK_SIZE_ABOUT &&
+                (fn === OPS.restore || fn === OPS.endText)) {
+                // Heuristic to flush on boundary of restore or endText.
+                this.flush();
             }
-        }
-        addImageOps(fn, args, optionalContent) {
-            if (optionalContent !== undefined) {
-                this.addOp(OPS.beginMarkedContentProps, ["OC", optionalContent]);
-            }
-            this.addOp(fn, args);
-            if (optionalContent !== undefined) {
-                this.addOp(OPS.endMarkedContent, []);
-            }
-        }
-        addDependency(dependency) {
-            if (this.dependencies.has(dependency)) {
-                return;
-            }
-            this.dependencies.add(dependency);
-            this.addOp(OPS.dependency, [dependency]);
-        }
-        addDependencies(dependencies) {
-            for (const dependency of dependencies) {
-                this.addDependency(dependency);
-            }
-        }
-        addOpList(opList) {
-            if (!(opList instanceof OperatorList)) {
-                warn('addOpList - ignoring invalid "opList" parameter.');
-                return;
-            }
-            for (const dependency of opList.dependencies) {
-                this.dependencies.add(dependency);
-            }
-            for (let i = 0, ii = opList.length; i < ii; i++) {
-                this.addOp(opList.fnArray[i], opList.argsArray[i]);
-            }
-        }
-        getIR() {
-            return {
-                fnArray: this.fnArray,
-                argsArray: this.argsArray,
-                length: this.length,
-            };
-        }
-        get _transfers() {
-            const transfers = [];
-            const { fnArray, argsArray, length } = this;
-            for (let i = 0; i < length; i++) {
-                switch (fnArray[i]) {
-                    case OPS.paintInlineImageXObject:
-                    case OPS.paintInlineImageXObjectGroup:
-                    case OPS.paintImageMaskXObject:
-                        const arg = argsArray[i][0]; // First parameter in imgData.
-                        if (!arg.cached &&
-                            arg.data &&
-                            arg.data.buffer instanceof ArrayBuffer) {
-                            transfers.push(arg.data.buffer);
-                        }
-                        break;
-                }
-            }
-            return transfers;
-        }
-        flush(lastChunk = false, separateAnnots) {
-            this.optimizer.flush();
-            const length = this.length;
-            this.#totalLength += length;
-            this.#streamSink.enqueue({
-                fnArray: this.fnArray,
-                argsArray: this.argsArray,
-                lastChunk,
-                separateAnnots,
-                length,
-            }, 1, this._transfers);
-            this.dependencies.clear();
-            this.fnArray.length = 0;
-            this.argsArray.length = 0;
-            this.weight = 0;
-            this.optimizer.reset();
         }
     }
-    NsOperatorList.OperatorList = OperatorList;
-})(NsOperatorList || (NsOperatorList = {}));
-export var OperatorList = NsOperatorList.OperatorList;
+    addImageOps(fn, args, optionalContent) {
+        if (optionalContent !== undefined) {
+            this.addOp(OPS.beginMarkedContentProps, ["OC", optionalContent]);
+        }
+        this.addOp(fn, args);
+        if (optionalContent !== undefined) {
+            this.addOp(OPS.endMarkedContent, []);
+        }
+    }
+    addDependency(dependency) {
+        if (this.dependencies.has(dependency)) {
+            return;
+        }
+        this.dependencies.add(dependency);
+        this.addOp(OPS.dependency, [dependency]);
+    }
+    addDependencies(dependencies) {
+        for (const dependency of dependencies) {
+            this.addDependency(dependency);
+        }
+    }
+    addOpList(opList) {
+        if (!(opList instanceof OperatorList)) {
+            warn('addOpList - ignoring invalid "opList" parameter.');
+            return;
+        }
+        for (const dependency of opList.dependencies) {
+            this.dependencies.add(dependency);
+        }
+        for (let i = 0, ii = opList.length; i < ii; i++) {
+            this.addOp(opList.fnArray[i], opList.argsArray[i]);
+        }
+    }
+    getIR() {
+        return {
+            fnArray: this.fnArray,
+            argsArray: this.argsArray,
+            length: this.length,
+        };
+    }
+    get _transfers() {
+        const transfers = [];
+        const { fnArray, argsArray, length } = this;
+        for (let i = 0; i < length; i++) {
+            switch (fnArray[i]) {
+                case OPS.paintInlineImageXObject:
+                case OPS.paintInlineImageXObjectGroup:
+                case OPS.paintImageMaskXObject:
+                    const arg = argsArray[i][0]; // First parameter in imgData.
+                    if (!arg.cached &&
+                        arg.data &&
+                        arg.data.buffer instanceof ArrayBuffer) {
+                        transfers.push(arg.data.buffer);
+                    }
+                    break;
+            }
+        }
+        return transfers;
+    }
+    flush(lastChunk = false, separateAnnots) {
+        this.optimizer.flush();
+        const length = this.length;
+        this.#totalLength += length;
+        this.#streamSink.enqueue({
+            fnArray: this.fnArray,
+            argsArray: this.argsArray,
+            lastChunk,
+            separateAnnots,
+            length,
+        }, 1, this._transfers);
+        this.dependencies.clear();
+        this.fnArray.length = 0;
+        this.argsArray.length = 0;
+        this.weight = 0;
+        this.optimizer.reset();
+    }
+}
 /*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=operator_list.js.map

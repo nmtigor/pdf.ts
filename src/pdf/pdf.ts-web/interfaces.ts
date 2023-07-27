@@ -23,24 +23,24 @@
 /** @typedef {import("../src/display/display_utils").PageViewport} PageViewport */
 /** @typedef {import("./ui_utils").RenderingStates} RenderingStates */
 
-import {
-  type Locale_1,
-  type WebL10nArgs,
+import type {
+  Locale_1,
+  WebL10nArgs,
 } from "../../3rd/webL10n-2015-10-24/l10n.ts";
-import {
+import type {
   AnnotActions,
   AppInfo,
-  type Destination,
+  Destination,
   DocInfo,
-  type ExplicitDest,
-  type FieldObject,
-  type RefProxy,
+  ExplicitDest,
+  FieldObject,
+  RefProxy,
   ScriptingActionName,
-  type SetOCGState,
+  SetOCGState,
 } from "../pdf.ts-src/pdf.ts";
-import { EventBus } from "./event_utils.ts";
-import { LinkTarget } from "./pdf_link_service.ts";
-import { RenderingStates } from "./ui_utils.ts";
+import type { EventBus } from "./event_utils.ts";
+import type { LinkTarget } from "./pdf_link_service.ts";
+import type { RenderingStates } from "./ui_utils.ts";
 /*80--------------------------------------------------------------------------*/
 
 export interface IPDFLinkService {
@@ -162,7 +162,7 @@ export interface IRenderableView {
    */
   draw(): Promise<void>;
 
-  resume?(): void;
+  resume: (() => void) | undefined;
 }
 
 export interface IVisibleView extends IRenderableView {
@@ -172,7 +172,7 @@ export interface IVisibleView extends IRenderableView {
 }
 
 export interface IDownloadManager {
-  downloadUrl(url: string, filename: string): void;
+  downloadUrl(url: string, filename: string, _options?: object): void;
 
   downloadData(
     data: Uint8Array | Uint8ClampedArray,
@@ -189,7 +189,7 @@ export interface IDownloadManager {
     filename: string,
   ): boolean;
 
-  download(blob: Blob, url: string, filename: string): void;
+  download(blob: Blob, url: string, filename: string, _options?: object): void;
 }
 
 export interface IL10n {

@@ -1,8 +1,8 @@
-import { PDFDocumentProxy } from "../pdf.ts-src/pdf.js";
-import { EventBus } from "./event_utils.js";
-import { type IL10n } from "./interfaces.js";
-import { OverlayManager } from "./overlay_manager.js";
-import { type ViewerConfiguration } from "./viewer.js";
+import { type PDFDocumentProxy } from "../pdf.ts-src/pdf.js";
+import type { EventBus } from "./event_utils.js";
+import type { IL10n } from "./interfaces.js";
+import type { OverlayManager } from "./overlay_manager.js";
+import type { ViewerConfiguration } from "./viewer.js";
 type Fields = ViewerConfiguration["documentProperties"]["fields"];
 export declare class PDFDocumentProperties {
     #private;

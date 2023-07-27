@@ -1,4 +1,6 @@
-import { type TextContent } from "./api.js";
+import type { C2D, OC2D } from "../../../lib/alias.js";
+import { PromiseCap } from "../../../lib/util/PromiseCap.js";
+import type { TextContent } from "./api.js";
 import { PageViewport } from "./display_utils.js";
 /**
  * Text layer render parameters.
@@ -94,7 +96,7 @@ type LayoutTextP_ = {
     div?: HTMLElement;
     scale: number;
     properties?: TextDivProps | undefined;
-    ctx: OffscreenRenderingContext | CanvasRenderingContext2D;
+    ctx: OC2D | C2D;
 };
 /**
  * Text layer rendering task.
@@ -112,7 +114,7 @@ export declare class TextLayerRenderTask {
     _reader?: ReadableStreamDefaultReader<TextContent> | undefined;
     _textDivProperties: WeakMap<HTMLSpanElement, TextDivProps>;
     _canceled: boolean;
-    _capability: import("../shared/util.js").PromiseCapability<void>;
+    _capability: PromiseCap<void>;
     /**
      * Promise for textLayer rendering task completion.
      */

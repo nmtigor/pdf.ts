@@ -1,6 +1,5 @@
 import { Locale_1, WebL10nArgs } from "../../3rd/webL10n-2015-10-24/l10n.js";
-import "../extensions/firefox/tools/l10n.js";
-import { IDownloadManager } from "./interfaces.js";
+import type { IDownloadManager } from "./interfaces.js";
 type _L10nData = Record<string, Record<string, string>>;
 interface _ELS {
     getLocale(): Lowercase<Locale_1>;
@@ -49,7 +48,7 @@ export declare class FirefoxCom {
 export declare class DownloadManager implements IDownloadManager {
     #private;
     /** @implement */
-    downloadUrl(url: string, filename: string): void;
+    downloadUrl(url: string, filename: string, options?: object): void;
     /** @implement */
     downloadData(data: Uint8Array | Uint8ClampedArray, filename: string, contentType: string): void;
     /**
@@ -58,7 +57,7 @@ export declare class DownloadManager implements IDownloadManager {
      */
     openOrDownloadData(element: HTMLElement, data: Uint8Array | Uint8ClampedArray, filename: string): boolean;
     /** @implement */
-    download(blob: Blob, url: string, filename: string): void;
+    download(blob: Blob, url: string, filename: string, options?: object): void;
 }
 export {};
 //# sourceMappingURL=firefoxcom.d.ts.map

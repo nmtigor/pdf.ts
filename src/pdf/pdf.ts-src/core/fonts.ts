@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-import { _PDFDEV } from "../../../global.ts";
-import { type point_t, type rect_t } from "../../../lib/alias.ts";
+import { PDFJSDev, TESTING } from "../../../global.ts";
+import type { C2D, point_t, rect_t } from "../../../lib/alias.ts";
 import { assert } from "../../../lib/util/trace.ts";
 import {
   bytesToString,
@@ -80,11 +80,9 @@ import { Type1Font } from "./type1_font.ts";
 import {
   CharUnicodeCategory,
   getCharUnicodeCategory,
-  getNormalizedUnicodes,
   getUnicodeForGlyph,
   getUnicodeRangeFor,
   mapSpecialUnicodeValues,
-  reverseIfRtl,
 } from "./unicode.ts";
 /*80--------------------------------------------------------------------------*/
 
@@ -205,7 +203,7 @@ function adjustWidths(properties: FontProps) {
   const scale = 0.001 / properties.fontMatrix[0];
   const glyphsWidths = properties.widths;
   for (const glyph in glyphsWidths) {
-    glyphsWidths[<number> <unknown> glyph] *= scale;
+    glyphsWidths[glyph] *= scale;
   }
   properties.defaultWidth! *= scale;
 }
@@ -340,7 +338,7 @@ interface Accent {
 }
 
 export class Glyph {
-  compiled?: ((c: CanvasRenderingContext2D) => void) | undefined;
+  compiled?: ((c: C2D) => void) | undefined;
 
   constructor(
     public originalCharCode: number,
@@ -366,24 +364,6 @@ export class Glyph {
       getCharUnicodeCategory(this.unicode),
       /* nonSerializable = */ true,
     );
-  }
-
-  /**
-   * This property, which is only used by `PartialEvaluator.getTextContent`,
-   * is purposely made non-serializable.
-   * @type {string}
-   */
-  get normalizedUnicode() {
-    return shadow(
-      this,
-      "normalizedUnicode",
-      reverseIfRtl(Glyph._NormalizedUnicodes[this.unicode] || this.unicode),
-      /* nonSerializable = */ true,
-    );
-  }
-
-  static get _NormalizedUnicodes() {
-    return shadow(this, "_NormalizedUnicodes", getNormalizedUnicodes());
   }
 }
 
@@ -416,7 +396,7 @@ function int32(b0: number, b1: number, b2: number, b3: number) {
 }
 
 function string16(value: number) {
-  /*#static*/ if (_PDFDEV) {
+  /*#static*/ if (PDFJSDev || TESTING) {
     assert(
       typeof value === "number" && Math.abs(value) < 2 ** 16,
       `string16: Unexpected input "${value}".`,
@@ -426,7 +406,7 @@ function string16(value: number) {
 }
 
 function safeString16(value: number) {
-  /*#static*/ if (_PDFDEV) {
+  /*#static*/ if (PDFJSDev || TESTING) {
     assert(
       typeof value === "number" && !Number.isNaN(value),
       `safeString16: Unexpected input "${value}".`,
@@ -631,6 +611,9 @@ function adjustMapping(
   const privateUseOffetStart = PRIVATE_USE_AREAS[privateUseAreaIndex][0];
   let nextAvailableFontCharCode = privateUseOffetStart;
   let privateUseOffetEnd = PRIVATE_USE_AREAS[privateUseAreaIndex][1];
+  const isInPrivateArea = (code: number) =>
+    (PRIVATE_USE_AREAS[0][0] <= code && code <= PRIVATE_USE_AREAS[0][1]) ||
+    (PRIVATE_USE_AREAS[1][0] <= code && code <= PRIVATE_USE_AREAS[1][1]);
   let originalCharCode: number;
   for (const originalCharCode_s in charCodeToGlyphId) {
     originalCharCode = +originalCharCode_s | 0;
@@ -642,7 +625,7 @@ function adjustMapping(
     if (nextAvailableFontCharCode > privateUseOffetEnd) {
       privateUseAreaIndex++;
       if (privateUseAreaIndex >= PRIVATE_USE_AREAS.length) {
-        warn("Ran out of space in font private use area.");
+        warn("TokRan out of space in font private use area.");
         break;
       }
       nextAvailableFontCharCode = PRIVATE_USE_AREAS[privateUseAreaIndex][0];
@@ -663,11 +646,7 @@ function adjustMapping(
     if (typeof unicode === "string") {
       unicode = unicode.codePointAt(0);
     }
-    if (
-      unicode &&
-      unicode < privateUseOffetStart &&
-      !usedGlyphIds.has(glyphId)
-    ) {
+    if (unicode && !isInPrivateArea(unicode) && !usedGlyphIds.has(glyphId)) {
       toUnicodeExtraMap.set(unicode, glyphId);
       usedGlyphIds.add(glyphId);
     }
@@ -741,7 +720,7 @@ function createCmapTable(
   numGlyphs: number,
 ) {
   const ranges = getRanges(glyphs, toUnicodeExtraMap, numGlyphs);
-  const numTables = ranges.at(-1)![1] > 0xffff ? 2 : 1;
+  const numTables = +ranges.at(-1)![1] > 0xffff ? 2 : 1;
   let cmap = "\x00\x00" + // version
     string16(numTables) + // numTables
     "\x00\x03" + // platformID
@@ -750,16 +729,16 @@ function createCmapTable(
 
   let i, ii, j, jj;
   for (i = ranges.length - 1; i >= 0; --i) {
-    if (ranges[i][0] <= 0xffff) {
+    if (+ranges[i][0] <= 0xffff) {
       break;
     }
   }
   const bmpLength = i + 1;
 
-  if (ranges[i][0] < 0xffff && ranges[i][1] === 0xffff) {
+  if (+ranges[i][0] < 0xffff && ranges[i][1] === 0xffff) {
     ranges[i][1] = 0xfffe;
   }
-  const trailingRangesCount = ranges[i][1] < 0xffff ? 1 : 0;
+  const trailingRangesCount = +ranges[i][1] < 0xffff ? 1 : 0;
   const segCount = bmpLength + trailingRangesCount;
   const searchParams = OpenTypeFileBuilder.getSearchParams(segCount, 2);
 
@@ -777,11 +756,11 @@ function createCmapTable(
     end: number;
   for (i = 0, ii = bmpLength; i < ii; i++) {
     range = ranges[i];
-    start = <number> range[0];
-    end = <number> range[1];
+    start = +range[0];
+    end = +range[1];
     startCount += string16(start);
     endCount += string16(end);
-    codes = <number[]> range[2];
+    codes = range[2] as number[];
     let contiguous = true;
     for (j = 1, jj = codes.length; j < jj; ++j) {
       if (codes[j] !== codes[j - 1] + 1) {
@@ -835,12 +814,12 @@ function createCmapTable(
     format31012 = "";
     for (i = 0, ii = ranges.length; i < ii; i++) {
       range = ranges[i];
-      start = <number> range[0];
-      codes = <number[]> range[2];
+      start = +range[0];
+      codes = range[2] as number[];
       let code = codes[0];
       for (j = 1, jj = codes.length; j < jj; ++j) {
         if (codes[j] !== codes[j - 1] + 1) {
-          end = <number> range[0] + j - 1;
+          end = +range[0] + j - 1;
           format31012 += string32(start) + // startCharCode
             string32(end) + // endCharCode
             string32(code); // startGlyphID
@@ -849,7 +828,7 @@ function createCmapTable(
         }
       }
       format31012 += string32(start) + // startCharCode
-        string32(<number> range[1]) + // endCharCode
+        string32(+range[1]) + // endCharCode
         string32(code); // startGlyphID
     }
     header31012 = "\x00\x0C" + // format
@@ -910,7 +889,7 @@ function createOS2Table(
   charstrings: Record<number, number>,
   override?: MetricsOverride,
 ) {
-  override = override || {
+  override ||= {
     unitsPerEm: 0,
     yMax: 0,
     yMin: 0,
@@ -924,7 +903,8 @@ function createOS2Table(
     ulUnicodeRange4 = 0;
 
   let firstCharIndex = null,
-    lastCharIndex = 0;
+    lastCharIndex = 0,
+    position = -1;
 
   if (charstrings) {
     let code: number;
@@ -937,7 +917,7 @@ function createOS2Table(
         lastCharIndex = code;
       }
 
-      const position = getUnicodeRangeFor(code);
+      position = getUnicodeRangeFor(code, position);
       if (position < 32) {
         ulUnicodeRange1 |= 1 << position;
       } else if (position < 64) {
@@ -1043,7 +1023,7 @@ function createPostTable(properties: FontProps) {
 
 function createPostscriptName(name: string) {
   // See https://docs.microsoft.com/en-us/typography/opentype/spec/recom#name.
-  return name.replace(/[^\x21-\x7E]|[[\](){}<>/%]/g, "").slice(0, 63);
+  return name.replaceAll(/[^\x21-\x7E]|[[\](){}<>/%]/g, "").slice(0, 63);
 }
 
 function createNameTable(name: string, proto?: [string[], string[]]) {
@@ -1162,7 +1142,7 @@ export class Font extends FontExpotDataEx {
     // Fallback to checking the font name, in order to improve text-selection,
     // since the /Flags-entry is often wrong (fixes issue13845.pdf).
     if (!isSerifFont && !properties.isSimulatedFlags) {
-      const baseName = name.replace(/[,_]/g, "-").split("-")[0],
+      const baseName = name.replaceAll(/[,_]/g, "-").split("-")[0],
         serifFonts = getSerifFonts();
       for (const namePart of baseName.split("+")) {
         if (serifFonts[namePart]) {
@@ -1607,7 +1587,7 @@ export class Font extends FontExpotDataEx {
         for (let j = 0, jj = nameTable.length; j < jj; j++) {
           for (let k = 0, kk = nameTable[j].length; k < kk; k++) {
             const nameEntry = nameTable[j][k] &&
-              nameTable[j][k].replace(/\s/g, "");
+              nameTable[j][k] && nameTable[j][k].replaceAll(/\s/g, "");
             if (!nameEntry) {
               continue;
             }
@@ -3047,14 +3027,14 @@ export class Font extends FontExpotDataEx {
         if (typeof cid === "string") {
           cid = convertCidString(charCode, cid, /* shouldThrow = */ true);
         }
-        if (cid > 0xffff) {
+        if (+cid > 0xffff) {
           throw new FormatError("Max size of CID is 65,535");
         }
         let glyphId = -1;
         if (isCidToGidMapEmpty) {
-          glyphId = <number> cid;
-        } else if (cidToGidMap[<number> cid] !== undefined) {
-          glyphId = cidToGidMap[<number> cid];
+          glyphId = +cid;
+        } else if (cidToGidMap[+cid] !== undefined) {
+          glyphId = cidToGidMap[+cid];
         }
 
         if (glyphId >= 0 && glyphId < numGlyphs && hasGlyph(glyphId)) {
@@ -3337,10 +3317,7 @@ export class Font extends FontExpotDataEx {
       let charCodes: number[] | undefined;
       for (const charCode in charCodeToGlyphId) {
         if (glyphId === charCodeToGlyphId[charCode]) {
-          if (!charCodes) {
-            charCodes = [];
-          }
-          charCodes.push(+charCode | 0);
+          (charCodes ||= []).push(charCode as any | 0);
         }
       }
       return charCodes;
@@ -3413,7 +3390,7 @@ export class Font extends FontExpotDataEx {
 
     const builder = new OpenTypeFileBuilder("\x4F\x54\x54\x4F");
     // PostScript Font Program
-    builder.addTable("CFF ", <number[]> font.data);
+    builder.addTable("CFF ", font.data as number[]);
     // OS/2 and Windows Specific metrics
     builder.addTable("OS/2", createOS2Table(properties, newCharCodeToGlyphId));
     // Character to glyphs mapping
@@ -3510,7 +3487,7 @@ export class Font extends FontExpotDataEx {
     for (const glyphName of possibleSpaceReplacements) {
       // if possible, getting width by glyph name
       if (glyphName in this.widths!) {
-        width = this.widths![<number> <unknown> glyphName];
+        width = this.widths![glyphName];
         break;
       }
       const glyphsUnicodeMap = getGlyphsUnicode();
@@ -3518,7 +3495,7 @@ export class Font extends FontExpotDataEx {
       // finding the charcode via unicodeToCID map
       let charcode: number | string = 0;
       if (this.composite && this.cMap!.contains(glyphUnicode)) {
-        charcode = <number> this.cMap!.lookup(glyphUnicode);
+        charcode = +this.cMap!.lookup(glyphUnicode)!;
 
         if (typeof charcode === "string") {
           charcode = convertCidString(glyphUnicode, charcode);
@@ -3529,7 +3506,7 @@ export class Font extends FontExpotDataEx {
         charcode = this.toUnicode.charCodeOf(glyphUnicode);
       }
       // setting it to unicode if negative or undefined
-      if (charcode <= 0) {
+      if (+charcode <= 0) {
         charcode = glyphUnicode;
       }
       // trying to get width via charcode
@@ -3538,8 +3515,7 @@ export class Font extends FontExpotDataEx {
         break; // the non-zero width found
       }
     }
-    width = width || this.defaultWidth!;
-    return shadow(this, "spaceWidth", width);
+    return shadow(this, "spaceWidth", width || this.defaultWidth);
   }
 
   #charToGlyph(charcode: number, isSpace = false) {
@@ -3553,7 +3529,7 @@ export class Font extends FontExpotDataEx {
 
     let widthCode: number | string = charcode;
     if (this.cMap && this.cMap.contains(charcode)) {
-      widthCode = <number> this.cMap.lookup(charcode);
+      widthCode = +this.cMap.lookup(charcode)!;
 
       if (typeof widthCode === "string") {
         widthCode = convertCidString(charcode, widthCode);
@@ -3585,7 +3561,7 @@ export class Font extends FontExpotDataEx {
         // replace them with spaces.
         fontCharCode = 0x20;
       }
-      fontCharCode = mapSpecialUnicodeValues(<number> fontCharCode);
+      fontCharCode = mapSpecialUnicodeValues(fontCharCode);
     }
 
     if (this.isType3Font) {

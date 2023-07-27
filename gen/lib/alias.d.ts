@@ -17,33 +17,78 @@ export type uint8 = uint;
 /** 0 is special */
 export type id_t = uint;
 export declare const zId: import("../3rd/zod-3.20.0/lib/index.mjs").ZodNumber;
-/**
- * ! CHECK
- * Make sense?
- * Index-similar value can very likely be `-1`.
- * Is it better to just use `int`, `uint` according to contexts?
- * (see sortedarray.ts)
- */
-export type Index = uint32;
-/** Count one "\t" as 1. */
+/** Count one "\t" as 1 */
+export type llen_t = uint32;
 export type loff_t = int32;
-export declare const loff_UNDEFINED: loff_t;
-export declare const loff_MAX: loff_t;
-/** Count one "\t" as e.g. 2, 4, 8. */
-export type lcol_t = loff_t;
-export type lnum_t = int32;
+export declare const loff_UNDEFINED: llen_t;
+export declare const loff_MAX: llen_t;
+/** Count one "\t" as e.g. 2, 4, 8 */
+export type lcol_t = llen_t;
+export type lnum_t = uint32;
 export declare const lnum_MAX: lnum_t;
-/** type of unix timestamp */
+/** Type of unix timestamp */
 export type ts_t = int64;
 export declare const zTs: import("../3rd/zod-3.20.0/lib/index.mjs").ZodNumber;
-/** recommand [0,1] */
+/** Recommand [0,1] */
 export type Ratio = number;
 export declare const zRatio: import("../3rd/zod-3.20.0/lib/index.mjs").ZodNumber;
+/**
+ * Dull string
+ * String of characters 0x20 ~ 0x0_126
+ */
+export type Dulstr = string;
+/**
+ * Type of `"(😄)"[0]`, `"(😄)"[1]`, `"(😄)"[2]`, etc
+ */
+export type UChr = string;
+/**
+ * Type of each element of `[..."(😄)"]`
+ */
+export type Chr = string;
+/**
+ * Ref. http://www.unicode.org/reports/tr9/#Table_Bidirectional_Character_Types
+ */
+export declare enum ChrTyp {
+    L = 1,
+    R = 2,
+    AL = 4,
+    EN = 8,
+    ES = 16,
+    ET = 32,
+    AN = 64,
+    CS = 128,
+    NSM = 256,
+    BN = 512,
+    B = 1024,
+    S = 2048,
+    WS = 4096,
+    ON = 8192,
+    LRE = 16384,
+    LRO = 32768,
+    RLE = 65536,
+    RLO = 131072,
+    PDF = 262144,
+    LRI = 524288,
+    RLI = 1048576,
+    FSI = 2097152,
+    PDI = 4194304
+}
+export type ChrTypName = keyof typeof ChrTyp;
 export type point_t = [number, number];
 export type rect_t = TupleOf<number, 4>;
 export type IntegerArray = Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint16Array | Int32Array | Uint32Array;
 export type FloatArray = Float32Array | Float64Array;
 export type TypedArray = IntegerArray | FloatArray;
+export type C2D = CanvasRenderingContext2D;
+export declare const C2D: {
+    new (): CanvasRenderingContext2D;
+    prototype: CanvasRenderingContext2D;
+};
+export type OC2D = OffscreenCanvasRenderingContext2D;
+export declare const OC2D: {
+    new (): OffscreenCanvasRenderingContext2D;
+    prototype: OffscreenCanvasRenderingContext2D;
+};
 export type CSSStyleName = keyof {
     [K in Extract<keyof CSSStyleDeclaration, string> as string extends K ? never : CSSStyleDeclaration[K] extends string ? K : never]: never;
 };

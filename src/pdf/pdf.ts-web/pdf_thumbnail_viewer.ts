@@ -23,16 +23,16 @@
 // eslint-disable-next-line max-len
 /** @typedef {import("./pdf_rendering_queue").PDFRenderingQueue} PDFRenderingQueue */
 
-import { MOZCENTRAL } from "../../global.ts";
-import {
+import { MOZCENTRAL, PDFJSDev } from "../../global.ts";
+import type {
   OptionalContentConfig,
   PDFDocumentProxy,
   PDFPageProxy,
 } from "../pdf.ts-src/pdf.ts";
-import { type IL10n, type IPDFLinkService } from "./interfaces.ts";
-import { PDFRenderingQueue } from "./pdf_rendering_queue.ts";
+import type { IL10n, IPDFLinkService } from "./interfaces.ts";
+import type { PDFRenderingQueue } from "./pdf_rendering_queue.ts";
 import { PDFThumbnailView, TempImageFactory } from "./pdf_thumbnail_view.ts";
-import { PageColors } from "./pdf_viewer.ts";
+import type { PageColors } from "./pdf_viewer.ts";
 import {
   getVisibleElements,
   isValidRotation,
@@ -138,7 +138,7 @@ export class PDFThumbnailViewer {
     this.l10n = l10n;
     this.pageColors = pageColors || undefined;
 
-    /*#static*/ if (!MOZCENTRAL) {
+    /*#static*/ if (PDFJSDev || !MOZCENTRAL) {
       if (
         this.pageColors &&
         !(

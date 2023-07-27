@@ -1,7 +1,7 @@
-import { type OutlineNode, PDFDocumentProxy } from "../pdf.ts-src/pdf.js";
+import type { OutlineNode, PDFDocumentProxy } from "../pdf.ts-src/pdf.js";
 import { BaseTreeViewer, type BaseTreeViewerCtorP } from "./base_tree_viewer.js";
-import { IDownloadManager } from "./interfaces.js";
-import { PDFLinkService } from "./pdf_link_service.js";
+import type { IDownloadManager } from "./interfaces.js";
+import type { PDFLinkService } from "./pdf_link_service.js";
 import { SidebarView } from "./ui_utils.js";
 interface PDFOutlineViewerOptions extends BaseTreeViewerCtorP {
     /**

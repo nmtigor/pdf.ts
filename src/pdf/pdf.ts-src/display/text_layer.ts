@@ -20,20 +20,21 @@
 /** @typedef {import("./display_utils").PageViewport} PageViewport */
 /** @typedef {import("./api").TextContent} TextContent */
 
-import { GENERIC } from "../../../global.ts";
+import { GENERIC, PDFJSDev, TESTING } from "../../../global.ts";
+import type { C2D, OC2D } from "../../../lib/alias.ts";
 import { html, span } from "../../../lib/dom.ts";
+import { PromiseCap } from "../../../lib/util/PromiseCap.ts";
 import {
   AbortException,
-  createPromiseCapability,
   FeatureTest,
   type matrix_t,
   Util,
 } from "../shared/util.ts";
-import {
-  type TextContent,
-  type TextItem,
-  type TextMarkedContent,
-  type TextStyle,
+import type {
+  TextContent,
+  TextItem,
+  TextMarkedContent,
+  TextStyle,
 } from "./api.ts";
 import {
   deprecated,
@@ -150,14 +151,18 @@ const DEFAULT_FONT_SIZE = 30;
 const DEFAULT_FONT_ASCENT = 0.8;
 const ascentCache = new Map<string, number>();
 
-function getCtx(size: number, isOffscreenCanvasSupported?: boolean) {
+function getCtx(
+  size: number,
+  isOffscreenCanvasSupported?: boolean,
+): OC2D | C2D {
   let ctx;
   if (isOffscreenCanvasSupported && FeatureTest.isOffscreenCanvasSupported) {
-    ctx = new OffscreenCanvas(size, size).getContext("2d", { alpha: false });
+    ctx = new OffscreenCanvas(size, size)
+      .getContext("2d", { alpha: false }) as OC2D;
   } else {
     const canvas = html("canvas");
     canvas.width = canvas.height = size;
-    ctx = canvas.getContext("2d", { alpha: false });
+    ctx = canvas.getContext("2d", { alpha: false })!;
   }
 
   return ctx;
@@ -170,8 +175,8 @@ function getAscent(fontFamily: string, isOffscreenCanvasSupported?: boolean) {
   }
 
   const ctx = getCtx(DEFAULT_FONT_SIZE, isOffscreenCanvasSupported)!;
-  (ctx as any).font = `${DEFAULT_FONT_SIZE}px ${fontFamily}`;
-  const metrics: TextMetrics = (ctx as any).measureText("");
+  ctx.font = `${DEFAULT_FONT_SIZE}px ${fontFamily}`;
+  const metrics: TextMetrics = ctx.measureText("");
 
   // Both properties aren't available by default in Firefox.
   let ascent = metrics.fontBoundingBoxAscent;
@@ -332,7 +337,7 @@ type LayoutTextP_ = {
   div?: HTMLElement;
   scale: number;
   properties?: TextDivProps | undefined;
-  ctx: OffscreenRenderingContext | CanvasRenderingContext2D;
+  ctx: OC2D | C2D;
 };
 
 function layout(params: LayoutTextP_) {
@@ -424,7 +429,7 @@ export class TextLayerRenderTask {
   _textDivProperties: WeakMap<HTMLSpanElement, TextDivProps>;
   _canceled = false;
 
-  _capability = createPromiseCapability();
+  _capability = new PromiseCap();
   /**
    * Promise for textLayer rendering task completion.
    */
@@ -548,7 +553,7 @@ export class TextLayerRenderTask {
    * @private
    */
   _render() {
-    const capability = createPromiseCapability();
+    const capability = new PromiseCap();
     let styleCache = Object.create(null);
 
     if (this._isReadableStream) {
@@ -586,7 +591,7 @@ export class TextLayerRenderTask {
 export function renderTextLayer(
   params: TextLayerRenderP_,
 ): TextLayerRenderTask {
-  /*#static*/ if (GENERIC) {
+  /*#static*/ if (PDFJSDev || GENERIC) {
     if (
       !params.textContentSource &&
       ((params as any).textContent || (params as any).textContentStream)
@@ -597,6 +602,23 @@ export function renderTextLayer(
       );
       params.textContentSource = (params as any).textContent ||
         (params as any).textContentStream;
+    }
+  }
+  /*#static*/ if (GENERIC && !TESTING) {
+    const { container, viewport } = params;
+    const style = getComputedStyle(container);
+    const visibility = style.getPropertyValue("visibility");
+    const scaleFactor = parseFloat(style.getPropertyValue("--scale-factor"));
+
+    if (
+      visibility === "visible" &&
+      (!scaleFactor || Math.abs(scaleFactor - viewport.scale) > 1e-5)
+    ) {
+      console.error(
+        "The `--scale-factor` CSS-variable must be set, " +
+          "to the same value as `viewport.scale`, " +
+          "either on the `container`-element itself or higher up in the DOM.",
+      );
     }
   }
   const task = new TextLayerRenderTask(params);
@@ -620,10 +642,7 @@ export function updateTextLayer({
   if (mustRescale) {
     const ctx = getCtx(0, isOffscreenCanvasSupported)!;
     const scale = viewport.scale * (globalThis.devicePixelRatio || 1);
-    const params: LayoutTextP_ = {
-      scale,
-      ctx,
-    };
+    const params: LayoutTextP_ = { scale, ctx };
     for (const div of textDivs!) {
       params.properties = textDivProperties.get(div);
       params.div = div;

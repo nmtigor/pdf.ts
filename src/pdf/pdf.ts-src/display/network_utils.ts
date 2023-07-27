@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-import { _PDFDEV } from "../../../global.ts";
+import { PDFJSDev, TESTING } from "../../../global.ts";
 import { HttpStatusCode } from "../../../lib/HttpStatusCode.ts";
 import { assert } from "../../../lib/util/trace.ts";
 import {
@@ -41,7 +41,7 @@ export function validateRangeRequestCapabilities({
   rangeChunkSize,
   disableRange,
 }: VRRC_P_) {
-  /*#static*/ if (_PDFDEV) {
+  /*#static*/ if (PDFJSDev || TESTING) {
     assert(
       disableRange ||
         Number.isInteger(rangeChunkSize) && rangeChunkSize! > 0,
@@ -110,7 +110,7 @@ export function extractFilenameFromHeader(
 }
 
 export function createResponseStatusError(
-  status: HttpStatusCode | 0,
+  status: HttpStatusCode,
   url: string | URL,
 ) {
   if (

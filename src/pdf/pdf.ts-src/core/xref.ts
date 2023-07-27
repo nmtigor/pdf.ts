@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-import { _PDFDEV } from "../../../global.ts";
+import { PDFJSDev, TESTING } from "../../../global.ts";
 import { assert } from "../../../lib/util/trace.ts";
 import {
   bytesToString,
@@ -27,7 +27,7 @@ import {
   warn,
 } from "../shared/util.ts";
 import { BaseStream } from "./base_stream.ts";
-import { ChunkedStream } from "./chunked_stream.ts";
+import type { ChunkedStream } from "./chunked_stream.ts";
 import {
   MissingDataException,
   ParserEOFException,
@@ -36,18 +36,10 @@ import {
 } from "./core_utils.ts";
 import { CipherTransformFactory } from "./crypto.ts";
 import { Lexer, Parser } from "./parser.ts";
-import { BasePdfManager } from "./pdf_manager.ts";
-import {
-  CIRCULAR_REF,
-  Cmd,
-  Dict,
-  isCmd,
-  type Obj,
-  type ObjNoRef,
-  Ref,
-  RefSet,
-} from "./primitives.ts";
-import { Stream, StringStream } from "./stream.ts";
+import type { BasePdfManager } from "./pdf_manager.ts";
+import type { Obj, ObjNoRef } from "./primitives.ts";
+import { CIRCULAR_REF, Cmd, Dict, isCmd, Ref, RefSet } from "./primitives.ts";
+import type { Stream, StringStream } from "./stream.ts";
 /*80--------------------------------------------------------------------------*/
 
 interface XRefEntry {
@@ -77,7 +69,7 @@ export class XRef {
   stream;
   pdfManager;
   entries: XRefEntry[] = [];
-  xrefstms: number[] = Object.create(null);
+  _xrefStms = new Set<number>();
   #cacheMap = new Map<number, ObjNoRef>(); // Prepare the XRef cache.
   _pendingRefs = new RefSet();
 
@@ -602,7 +594,7 @@ export class XRef {
           content[xrefTagOffset + 5] < 64
         ) {
           xrefStms.push(position - stream.start);
-          this.xrefstms[position - stream.start] = 1; // Avoid recursion
+          this._xrefStms.add(position - stream.start); // Avoid recursion
         }
 
         position += contentLength!;
@@ -764,14 +756,11 @@ export class XRef {
 
           // Recursively get other XRefs 'XRefStm', if any
           obj = dict.get("XRefStm");
-          if (Number.isInteger(obj)) {
-            const pos = <number> obj;
+          if (Number.isInteger(obj) && !this._xrefStms.has(obj as number)) {
             // ignore previously loaded xref streams
             // (possible infinite recursion)
-            if (!(pos in this.xrefstms)) {
-              this.xrefstms[pos] = 1;
-              this.startXRefQueue.push(pos);
-            }
+            this._xrefStms.add(obj as number);
+            this.startXRefQueue.push(obj as number);
           }
         } else if (Number.isInteger(obj)) {
           // Parse in-stream XRef
@@ -782,7 +771,7 @@ export class XRef {
           ) {
             throw new FormatError("Invalid XRef stream");
           }
-          dict = this.processXRefStream(<Stream> obj);
+          dict = this.processXRefStream(obj as Stream);
           if (!this.topDict) {
             this.topDict = dict;
           }
@@ -818,6 +807,10 @@ export class XRef {
       return undefined;
     }
     throw new XRefParseException();
+  }
+
+  get lastXRefStreamPos() {
+    return this._xrefStms.size > 0 ? Math.max(...this._xrefStms) : undefined;
   }
 
   getEntry(i: number) {
@@ -944,7 +937,7 @@ export class XRef {
       obj1 = parser.getObj() as ObjNoRef;
     }
     if (!(obj1 instanceof BaseStream)) {
-      /*#static*/ if (_PDFDEV) {
+      /*#static*/ if (PDFJSDev || TESTING) {
         assert(
           obj1 !== undefined,
           'fetchUncompressed: The "obj1" cannot be undefined.',
@@ -957,7 +950,7 @@ export class XRef {
 
   fetchCompressed(ref: Ref, xrefEntry: XRefEntry, suppressEncryption = false) {
     const tableOffset = xrefEntry.offset;
-    const stream = <BaseStream> this.fetch(Ref.get(tableOffset, 0));
+    const stream = this.fetch(Ref.get(tableOffset, 0)) as BaseStream;
     if (!(stream instanceof BaseStream)) {
       throw new FormatError("bad ObjStm stream");
     }
@@ -1017,7 +1010,7 @@ export class XRef {
       const num = nums[i];
       const entry = this.entries[num];
       if (entry && entry.offset === tableOffset && entry.gen === i) {
-        /*#static*/ if (_PDFDEV) {
+        /*#static*/ if (PDFJSDev || TESTING) {
           assert(
             obj !== undefined,
             'fetchCompressed: The "obj" cannot be undefined.',

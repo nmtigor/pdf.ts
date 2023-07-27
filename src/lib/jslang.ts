@@ -4,6 +4,7 @@
  ******************************************************************************/
 
 import { INOUT } from "../global.ts";
+import { int } from "./alias.ts";
 import {
   type AbstractConstructor,
   type Constructor,
@@ -38,7 +39,7 @@ export function isObjectLike(value: unknown): value is object {
   return value != null && typeof value === "object";
 }
 
-let valve = 0;
+let valve_ = 0;
 /**
  * ! Compare deeply Object, Array only.
  * ! Compare enumerable own string-properties only.
@@ -48,7 +49,7 @@ let valve = 0;
  */
 function eq_impl(lhs_x: unknown, rhs_x: unknown): boolean {
   /*#static*/ if (INOUT) {
-    assert(valve--, "There is element referencing its ancestor.");
+    assert(valve_--, "There is element referencing its ancestor.");
   }
   if (
     lhs_x === rhs_x ||
@@ -107,7 +108,7 @@ function eq_impl(lhs_x: unknown, rhs_x: unknown): boolean {
   return false;
 }
 export function eq(lhs_x: unknown, rhs_x: unknown, valve_x = 100): boolean {
-  valve = valve_x;
+  valve_ = valve_x;
   return eq_impl(lhs_x, rhs_x);
 }
 
@@ -123,12 +124,12 @@ declare global {
  */
 Reflect.defineProperty(Object.prototype, "eq", {
   value(this: Object, rhs_x: unknown, valve_x = 100) {
-    valve = valve_x;
+    valve_ = valve_x;
     return eq_impl(this, rhs_x);
   },
 });
 
-// Reflect.defineProperty( Object.prototype, "toString_eq", {
+// Reflect.defineProperty( Object.prototype, "_toString_eq", {
 //   enumerable: false,
 //   value: function( rhs_x:string )
 //   {
@@ -152,46 +153,64 @@ declare global {
      */
     eq(rhs_x: unknown, valve_x?: uint): boolean;
 
-    fillArray(ary: T[]): this;
-    fillArrayBack(ary: T[]): this;
+    /**
+     * @const @param ary_x
+     */
+    fillArray(ary_x: T[]): this;
+    fillArrayBack(ary_x: T[]): this;
+    become(ary_x: T[]): this;
+
+    swap(i_x: uint, j_x: uint): this;
   }
 }
 
 Reflect.defineProperty(Array.prototype, "last", {
-  get(this: Array<any>) {
+  get(this: any[]) {
     return this[this.length - 1];
   },
 });
 
 Reflect.defineProperty(Array.prototype, "eq", {
-  value(this: Array<any>, rhs_x: unknown, valve_x = 100) {
-    valve = valve_x;
+  value(this: any[], rhs_x: unknown, valve_x = 100) {
+    valve_ = valve_x;
     return eq_impl(this, rhs_x);
   },
 });
 
-/**
- * @const @param ary
- */
 Reflect.defineProperty(Array.prototype, "fillArray", {
-  value(this: any[], ary: any[]) {
+  value(this: any[], ary_x: any[]) {
     /*#static*/ if (INOUT) {
-      assert(ary.length <= this.length);
+      assert(ary_x.length <= this.length);
     }
     for (let i = 0, LEN = this.length; i < LEN; ++i) {
-      this[i] = ary[i];
+      this[i] = ary_x[i];
     }
     return this;
   },
 });
 Reflect.defineProperty(Array.prototype, "fillArrayBack", {
-  value(this: any[], ary: any[]) {
+  value(this: any[], ary_x: any[]) {
     /*#static*/ if (INOUT) {
-      assert(ary.length <= this.length);
+      assert(ary_x.length <= this.length);
     }
     for (let i = this.length; i--;) {
-      this[i] = ary[i];
+      this[i] = ary_x[i];
     }
+    return this;
+  },
+});
+Reflect.defineProperty(Array.prototype, "become", {
+  value(this: any[], ary_x: any[]) {
+    this.length = ary_x.length;
+    return this.fillArrayBack(ary_x);
+  },
+});
+
+Reflect.defineProperty(Array.prototype, "swap", {
+  value(this: any[], i_x: uint, j_x: uint) {
+    const t_ = this[j_x];
+    this[j_x] = this[i_x];
+    this[i_x] = t_;
     return this;
   },
 });
@@ -226,7 +245,7 @@ export function isASCIILetter(cp: uint): boolean {
 declare global {
   interface Number {
     /**
-     * in( 0 <= digits && digits <= 20 )
+     * `in( 0 <= digits && digits <= 20 )`
      */
     fixTo(digits?: uint8): number;
 
@@ -245,6 +264,13 @@ declare global {
      * ! [min,max) normaally, but could achieve `max` because of `Math.round()`.
      */
     getRandom(max: number, min?: number, fixt?: uint): number;
+
+    /**
+     * Ref. https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/slice#parameters
+     * @const @param in_x
+     * @const @param to_x
+     */
+    normalize(in_x: int, to_x: uint): uint;
   }
 }
 
@@ -256,6 +282,18 @@ Number.apxG = (f0, f1) => f0 > f1 + Tolerance_;
 Number.apxGE = (f0, f1) => f0 >= f1 - Tolerance_;
 Number.getRandom = (max, min = 0, fixto = 0) =>
   min + (Math.random() * (max - min)).fixTo(fixto);
+// Number.normalize = (in_x, to_x) => {
+//   if (!to_x) return -1;
+
+//   let ret = in_x % to_x;
+//   if (ret < 0) ret += to_x;
+//   return ret;
+// };
+Number.normalize = (in_x, to_x) => {
+  let ret = Math.clamp(-to_x, in_x, to_x);
+  if (ret < 0) ret += to_x;
+  return ret;
+};
 
 Number.prototype.fixTo = function (this: Number, digits = 0) {
   const mul = 10 ** digits;
@@ -646,7 +684,7 @@ export function mix<C extends Constructor | AbstractConstructor>(
 
   for (let i = mixins_x.length; i--;) {
     deepcopyProperties(mixins_x[i].prototype, Mix.prototype);
-    deepcopyProperties(mixins_x[i], Mix); // add static stuff
+    deepcopyProperties(mixins_x[i], Mix); // Add static stuff
   }
 
   return Mix;

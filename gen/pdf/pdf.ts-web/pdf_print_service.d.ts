@@ -1,6 +1,6 @@
-import { OptionalContentConfig, PDFDocumentProxy, PrintAnnotationStorage } from "../pdf.ts-src/pdf.js";
-import { type PageOverview } from "./pdf_viewer.js";
-import { type IL10n } from "./interfaces.js";
+import type { OptionalContentConfig, PDFDocumentProxy, PrintAnnotationStorage } from "../pdf.ts-src/pdf.js";
+import type { IL10n } from "./interfaces.js";
+import type { PageOverview } from "./pdf_viewer.js";
 export declare class PDFPrintService {
     #private;
     pdfDocument: PDFDocumentProxy;

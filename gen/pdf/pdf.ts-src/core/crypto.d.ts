@@ -61,17 +61,14 @@ export declare class PDF17 {
     getOwnerKey(password: Uint8Array, ownerKeySalt: Uint8Array, userBytes: Uint8Array, ownerEncryption: Uint8Array): Uint8Array | Uint8ClampedArray;
     getUserKey(password: Uint8Array, userKeySalt: Uint8Array, userEncryption: Uint8Array): Uint8Array | Uint8ClampedArray;
 }
-declare namespace NsPDF20 {
-    /** @final */
-    class PDF20 {
-        hash(password: Uint8Array, concatBytes: Uint8Array, userBytes: Uint8Array): Uint8Array;
-        checkOwnerPassword(password: Uint8Array, ownerValidationSalt: Uint8Array, userBytes: Uint8Array, ownerPassword: Uint8Array): boolean;
-        checkUserPassword(password: Uint8Array, userValidationSalt: Uint8Array, userPassword: Uint8Array): boolean;
-        getOwnerKey(password: Uint8Array, ownerKeySalt: Uint8Array, userBytes: Uint8Array, ownerEncryption: Uint8Array): Uint8Array | Uint8ClampedArray;
-        getUserKey(password: Uint8Array, userKeySalt: Uint8Array, userEncryption: Uint8Array): Uint8Array | Uint8ClampedArray;
-    }
+/** @final */
+export declare class PDF20 {
+    _hash(password: Uint8Array, input: Uint8Array, userBytes: Uint8Array): Uint8Array;
+    checkOwnerPassword(password: Uint8Array, ownerValidationSalt: Uint8Array, userBytes: Uint8Array, ownerPassword: Uint8Array): boolean;
+    checkUserPassword(password: Uint8Array, userValidationSalt: Uint8Array, userPassword: Uint8Array): boolean;
+    getOwnerKey(password: Uint8Array, ownerKeySalt: Uint8Array, userBytes: Uint8Array, ownerEncryption: Uint8Array): Uint8Array | Uint8ClampedArray;
+    getUserKey(password: Uint8Array, userKeySalt: Uint8Array, userEncryption: Uint8Array): Uint8Array | Uint8ClampedArray;
 }
-export import PDF20 = NsPDF20.PDF20;
 export declare class CipherTransform {
     StringCipherConstructor: (() => NullCipher) | (() => AES128Cipher) | (() => AES256Cipher);
     StreamCipherConstructor: (() => NullCipher) | (() => AES128Cipher) | (() => AES256Cipher);

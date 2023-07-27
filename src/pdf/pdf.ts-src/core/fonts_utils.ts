@@ -194,6 +194,6 @@ export function type1FontGlyphMapping(
 }
 
 export function normalizeFontName(name: string) {
-  return name.replace(/[,_]/g, "-").replace(/\s/g, "");
+  return name.replaceAll(/[,_]/g, "-").replaceAll(/\s/g, "");
 }
 /*80--------------------------------------------------------------------------*/

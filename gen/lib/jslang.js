@@ -8,7 +8,7 @@ import { assert } from "./util/trace.js";
 export function isObjectLike(value) {
     return value != null && typeof value === "object";
 }
-let valve = 0;
+let valve_ = 0;
 /**
  * ! Compare deeply Object, Array only.
  * ! Compare enumerable own string-properties only.
@@ -18,7 +18,7 @@ let valve = 0;
  */
 function eq_impl(lhs_x, rhs_x) {
     /*#static*/ if (INOUT) {
-        assert(valve--, "There is element referencing its ancestor.");
+        assert(valve_--, "There is element referencing its ancestor.");
     }
     if (lhs_x === rhs_x ||
         Number.isNaN(lhs_x) && Number.isNaN(rhs_x) //! Notice, `NaN === NaN` is false.
@@ -70,7 +70,7 @@ function eq_impl(lhs_x, rhs_x) {
     return false;
 }
 export function eq(lhs_x, rhs_x, valve_x = 100) {
-    valve = valve_x;
+    valve_ = valve_x;
     return eq_impl(lhs_x, rhs_x);
 }
 /**
@@ -79,7 +79,7 @@ export function eq(lhs_x, rhs_x, valve_x = 100) {
  */
 Reflect.defineProperty(Object.prototype, "eq", {
     value(rhs_x, valve_x = 100) {
-        valve = valve_x;
+        valve_ = valve_x;
         return eq_impl(this, rhs_x);
     },
 });
@@ -90,32 +90,43 @@ Reflect.defineProperty(Array.prototype, "last", {
 });
 Reflect.defineProperty(Array.prototype, "eq", {
     value(rhs_x, valve_x = 100) {
-        valve = valve_x;
+        valve_ = valve_x;
         return eq_impl(this, rhs_x);
     },
 });
-/**
- * @const @param ary
- */
 Reflect.defineProperty(Array.prototype, "fillArray", {
-    value(ary) {
+    value(ary_x) {
         /*#static*/ if (INOUT) {
-            assert(ary.length <= this.length);
+            assert(ary_x.length <= this.length);
         }
         for (let i = 0, LEN = this.length; i < LEN; ++i) {
-            this[i] = ary[i];
+            this[i] = ary_x[i];
         }
         return this;
     },
 });
 Reflect.defineProperty(Array.prototype, "fillArrayBack", {
-    value(ary) {
+    value(ary_x) {
         /*#static*/ if (INOUT) {
-            assert(ary.length <= this.length);
+            assert(ary_x.length <= this.length);
         }
         for (let i = this.length; i--;) {
-            this[i] = ary[i];
+            this[i] = ary_x[i];
         }
+        return this;
+    },
+});
+Reflect.defineProperty(Array.prototype, "become", {
+    value(ary_x) {
+        this.length = ary_x.length;
+        return this.fillArrayBack(ary_x);
+    },
+});
+Reflect.defineProperty(Array.prototype, "swap", {
+    value(i_x, j_x) {
+        const t_ = this[j_x];
+        this[j_x] = this[i_x];
+        this[i_x] = t_;
         return this;
     },
 });
@@ -150,6 +161,18 @@ Number.apxSE = (f0, f1) => f0 <= f1 + Tolerance_;
 Number.apxG = (f0, f1) => f0 > f1 + Tolerance_;
 Number.apxGE = (f0, f1) => f0 >= f1 - Tolerance_;
 Number.getRandom = (max, min = 0, fixto = 0) => min + (Math.random() * (max - min)).fixTo(fixto);
+// Number.normalize = (in_x, to_x) => {
+//   if (!to_x) return -1;
+//   let ret = in_x % to_x;
+//   if (ret < 0) ret += to_x;
+//   return ret;
+// };
+Number.normalize = (in_x, to_x) => {
+    let ret = Math.clamp(-to_x, in_x, to_x);
+    if (ret < 0)
+        ret += to_x;
+    return ret;
+};
 Number.prototype.fixTo = function (digits = 0) {
     const mul = 10 ** digits;
     return Math.round(this.valueOf() * mul) / mul;
@@ -423,7 +446,7 @@ export function mix(Base_x, ...mixins_x) {
     }
     for (let i = mixins_x.length; i--;) {
         deepcopyProperties(mixins_x[i].prototype, Mix.prototype);
-        deepcopyProperties(mixins_x[i], Mix); // add static stuff
+        deepcopyProperties(mixins_x[i], Mix); // Add static stuff
     }
     return Mix;
 }

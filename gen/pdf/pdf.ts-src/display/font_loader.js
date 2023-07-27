@@ -15,23 +15,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { _PDFDEV, CHROME, GENERIC, MOZCENTRAL } from "../../../global.js";
+import { CHROME, MOZCENTRAL, PDFJSDev, TESTING } from "../../../global.js";
 import { html } from "../../../lib/dom.js";
 import { assert } from "../../../lib/util/trace.js";
 import { FontExpotDataEx } from "../core/fonts.js";
-import { bytesToString, FeatureTest, shadow, string32, UNSUPPORTED_FEATURES, warn, } from "../shared/util.js";
+import { bytesToString, FeatureTest, shadow, string32, warn, } from "../shared/util.js";
 export class FontLoader {
-    _onUnsupportedFeature;
     _document;
     nativeFontFaces = [];
     styleElement;
     loadingRequests;
     loadTestFontId;
-    constructor({ onUnsupportedFeature, ownerDocument = globalThis.document, styleElement = undefined, // For testing only
+    constructor({ ownerDocument = globalThis.document, styleElement = undefined, // For testing only
      }) {
-        /*#static*/  {
-            this._onUnsupportedFeature = onUnsupportedFeature;
-        }
         this._document = ownerDocument;
         this.styleElement = /*#static*/ styleElement;
         /*#static*/  {
@@ -78,11 +74,6 @@ export class FontLoader {
                     await nativeFontFace.loaded;
                 }
                 catch (ex) {
-                    /*#static*/  {
-                        this._onUnsupportedFeature({
-                            featureId: UNSUPPORTED_FEATURES.errorFontLoadNative,
-                        });
-                    }
                     warn(`Failed to load font '${nativeFontFace.family}': '${ex}'.`);
                     // When font loading failed, fall back to the built-in font renderer.
                     font.disableFontFace = true;
@@ -263,10 +254,9 @@ export class FontFaceObject extends FontExpotDataEx {
     isEvalSupported;
     disableFontFace;
     ignoreErrors;
-    _onUnsupportedFeature;
-    fontRegistry;
+    _inspectFont;
     attached;
-    constructor(translatedData, { isEvalSupported = true, disableFontFace = false, ignoreErrors = false, onUnsupportedFeature, fontRegistry, }) {
+    constructor(translatedData, { isEvalSupported = true, disableFontFace = false, ignoreErrors = false, inspectFont = undefined, }) {
         super();
         // importing translated data
         for (const i in translatedData) {
@@ -275,10 +265,7 @@ export class FontFaceObject extends FontExpotDataEx {
         this.isEvalSupported = isEvalSupported !== false;
         this.disableFontFace = disableFontFace === true;
         this.ignoreErrors = ignoreErrors === true;
-        /*#static*/  {
-            this._onUnsupportedFeature = onUnsupportedFeature;
-        }
-        this.fontRegistry = fontRegistry;
+        this._inspectFont = inspectFont;
     }
     createNativeFontFace() {
         if (!this.data || this.disableFontFace)
@@ -296,7 +283,7 @@ export class FontFaceObject extends FontExpotDataEx {
             }
             nativeFontFace = new FontFace(this.cssFontInfo.fontFamily, this.data, css);
         }
-        this.fontRegistry?.registerFont(this);
+        this._inspectFont?.(this);
         return nativeFontFace;
     }
     createFontFaceRule() {
@@ -317,7 +304,7 @@ export class FontFaceObject extends FontExpotDataEx {
             rule =
                 `@font-face {font-family:"${this.cssFontInfo.fontFamily}";${css}src:${url}}`;
         }
-        this.fontRegistry?.registerFont(this, url);
+        this._inspectFont?.(this, url);
         return rule;
     }
     getPathGenerator(objs, character) {
@@ -331,11 +318,6 @@ export class FontFaceObject extends FontExpotDataEx {
         catch (ex) {
             if (!this.ignoreErrors) {
                 throw ex;
-            }
-            /*#static*/  {
-                this._onUnsupportedFeature({
-                    featureId: UNSUPPORTED_FEATURES.errorFontGetPath,
-                });
             }
             warn(`getPathGenerator - ignoring character: "${ex}".`);
             return (this.compiledGlyphs[character] = (c, size) => {

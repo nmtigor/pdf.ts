@@ -17,15 +17,12 @@
  * limitations under the License.
  */
 
-import { _PDFDEV } from "../../../global.ts";
+import { PDFJSDev, TESTING } from "../../../global.ts";
+import { PromiseCap } from "../../../lib/util/PromiseCap.ts";
 import { assert } from "../../../lib/util/trace.ts";
 import { type ReadValue } from "../interfaces.ts";
 import { MessageHandler, Thread } from "../shared/message_handler.ts";
-import {
-  AbortException,
-  createPromiseCapability,
-  type PromiseCapability,
-} from "../shared/util.ts";
+import { AbortException } from "../shared/util.ts";
 import { arrayBuffersToBytes, MissingDataException } from "./core_utils.ts";
 import { Dict } from "./primitives.ts";
 import { Stream } from "./stream.ts";
@@ -308,11 +305,11 @@ export class ChunkedStreamManager {
 
   #chunksNeededByRequest = new Map<number, Set<number>>();
   #requestsByChunk = new Map<number, number[]>();
-  #promisesByRequest = new Map<number, PromiseCapability>();
+  #promisesByRequest = new Map<number, PromiseCap>();
   progressiveDataLength = 0;
   aborted = false;
 
-  #loadedStreamCapability = createPromiseCapability<ChunkedStream>();
+  #loadedStreamCapability = new PromiseCap<ChunkedStream>();
 
   constructor(public pdfNetworkStream: PDFWorkerStream, args: {
     msgHandler: MessageHandler<Thread.worker>;
@@ -344,7 +341,7 @@ export class ChunkedStreamManager {
             resolve(chunkData);
             return;
           }
-          /*#static*/ if (_PDFDEV) {
+          /*#static*/ if (PDFJSDev || TESTING) {
             assert(
               value instanceof ArrayBuffer,
               "readChunk (sendRequest) - expected an ArrayBuffer.",
@@ -398,7 +395,7 @@ export class ChunkedStreamManager {
       return Promise.resolve();
     }
 
-    const capability = createPromiseCapability();
+    const capability = new PromiseCap();
     this.#promisesByRequest.set(requestId, capability);
 
     const chunksToRequest: number[] = [];

@@ -1,32 +1,32 @@
-import { type point_t, type rect_t, type TupleOf } from "../../../lib/alias.js";
-import { type AnnotStorageRecord, AnnotStorageValue } from "../display/annotation_layer.js";
-import { DocWrapped, FieldWrapped } from "../scripting_api/app.js";
-import { CorrectColor } from "../scripting_api/color.js";
-import { SendData } from "../scripting_api/pdf_object.js";
+import type { point_t, rect_t, TupleOf } from "../../../lib/alias.js";
+import type { AnnotStorageRecord, AnnotStorageValue } from "../display/annotation_layer.js";
+import type { DocWrapped, FieldWrapped } from "../scripting_api/app.js";
+import type { CorrectColor } from "../scripting_api/color.js";
+import type { SendData } from "../scripting_api/pdf_object.js";
 import { AnnotationBorderStyleType, AnnotationFieldFlag, AnnotationFlag, AnnotationReplyType, AnnotationType, RenderingIntentFlag } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
 import { type BidiText } from "./bidi.js";
-import { Attachments, type CatParseDestDictRes } from "./catalog.js";
+import type { Attachments, CatParseDestDictRes } from "./catalog.js";
 import { type AnnotActions } from "./core_utils.js";
-import { DatasetReader } from "./dataset_reader.js";
+import type { DatasetReader } from "./dataset_reader.js";
 import { type DefaultAppearanceData } from "./default_appearance.js";
-import { type LocalIdFactory } from "./document.js";
+import type { LocalIdFactory } from "./document.js";
 import { PartialEvaluator } from "./evaluator.js";
 import { type Attachment } from "./file_spec.js";
-import { ErrorFont, Font, Glyph } from "./fonts.js";
+import type { ErrorFont, Font, Glyph } from "./fonts.js";
 import { OperatorList } from "./operator_list.js";
-import { BasePdfManager } from "./pdf_manager.js";
+import type { BasePdfManager } from "./pdf_manager.js";
 import { Dict, Name, Ref } from "./primitives.js";
 import { StringStream } from "./stream.js";
-import { WorkerTask } from "./worker.js";
-import { type XFAHTMLObj } from "./xfa/alias.js";
-import { XRef } from "./xref.js";
+import type { WorkerTask } from "./worker.js";
+import type { XFAHTMLObj } from "./xfa/alias.js";
+import type { XRef } from "./xref.js";
 type AnnotType = "Caret" | "Circle" | "FileAttachment" | "FreeText" | "Ink" | "Line" | "Link" | "Highlight" | "Polygon" | "PolyLine" | "Popup" | "Stamp" | "Square" | "Squiggly" | "StrikeOut" | "Text" | "Underline" | "Widget";
-interface _Dependency {
+interface Dependency_ {
     ref: Ref;
     data: string;
 }
-interface _CreateNewAnnotationP {
+interface CreateNewAnnotationP_ {
     evaluator?: PartialEvaluator;
     task?: WorkerTask;
     baseFontRef?: Ref;
@@ -48,11 +48,11 @@ export declare class AnnotationFactory {
     static _create(xref: XRef, ref: Ref, pdfManager: BasePdfManager, idFactory: LocalIdFactory, acroForm: Dict | undefined, attachments: Attachments | undefined, xfaDatasets: DatasetReader | undefined, collectFields: boolean, pageIndex?: number): Annotation | undefined;
     static saveNewAnnotations(evaluator: PartialEvaluator, task: WorkerTask, annotations: AnnotStorageValue[]): Promise<{
         annotations: {
-            ref: import("./primitives.js").NsRef.Ref;
+            ref: Ref;
             data: string;
         }[];
         dependencies: {
-            ref: import("./primitives.js").NsRef.Ref;
+            ref: Ref;
             data: string;
         }[];
     }>;
@@ -93,6 +93,8 @@ export type AnnotationData = {
     rect: rect_t;
     subtype?: AnnotType | undefined;
     hasOwnCanvas: boolean;
+    noRotate: boolean;
+    noHTML: boolean;
     kidIds?: string[];
     actions?: AnnotActions | undefined;
     fieldName?: string;
@@ -426,14 +428,14 @@ export declare class MarkupAnnotation extends Annotation {
     setCreationDate(creationDate: unknown): void;
     constructor(params: _AnnotationCtorP);
     static createNewDict(annotation: AnnotStorageValue, xref: XRef, _: _CreateNewDictP): Dict;
-    static createNewAppearanceStream(annotation: AnnotStorageValue, xref: XRef, params?: _CreateNewAnnotationP): Promise<StringStream | undefined>;
+    static createNewAppearanceStream(annotation: AnnotStorageValue, xref: XRef, params?: CreateNewAnnotationP_): Promise<StringStream | undefined>;
     /** @final */
     protected setDefaultAppearance$({ xref, extra, strokeColor, fillColor, blendMode, strokeAlpha, fillAlpha, pointsCallback, }: _SetDefaultAppearanceP): void;
-    static createNewAnnotation(xref: XRef, annotation: AnnotStorageValue, dependencies: _Dependency[], params?: _CreateNewAnnotationP): Promise<{
-        ref: import("./primitives.js").NsRef.Ref;
+    static createNewAnnotation(xref: XRef, annotation: AnnotStorageValue, dependencies: Dependency_[], params?: CreateNewAnnotationP_): Promise<{
+        ref: Ref;
         data: string;
     }>;
-    static createNewPrintAnnotation(xref: XRef, annotation: AnnotStorageValue, params: _CreateNewAnnotationP): Promise<MarkupAnnotation>;
+    static createNewPrintAnnotation(xref: XRef, annotation: AnnotStorageValue, params: CreateNewAnnotationP_): Promise<MarkupAnnotation>;
 }
 interface FieldResources {
     localResources?: Dict | undefined;

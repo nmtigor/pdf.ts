@@ -602,9 +602,9 @@ export abstract class XFAObject {
       // - URI
       // For now we don't handle URI other than "." (current document).
       if (usehref.startsWith("#som(") && usehref.endsWith(")")) {
-        somExpression = usehref.slice("#som(".length, usehref.length - 1);
+        somExpression = usehref.slice("#som(".length, -1);
       } else if (usehref.startsWith(".#som(") && usehref.endsWith(")")) {
-        somExpression = usehref.slice(".#som(".length, usehref.length - 1);
+        somExpression = usehref.slice(".#som(".length, -1);
       } else if (usehref.startsWith("#")) {
         id = usehref.slice(1);
       } else if (usehref.startsWith(".#")) {

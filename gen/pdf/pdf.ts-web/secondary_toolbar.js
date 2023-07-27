@@ -15,9 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { GENERIC } from "../../global.js";
+import { GENERIC, PDFJSDev } from "../../global.js";
 import { PagesCountLimit } from "./pdf_viewer.js";
-import { CursorTool, ScrollMode, SpreadMode } from "./ui_utils.js";
+import { CursorTool, ScrollMode, SpreadMode, toggleCheckedBtn, } from "./ui_utils.js";
 export class SecondaryToolbar {
     toolbar;
     toggleButton;
@@ -169,11 +169,7 @@ export class SecondaryToolbar {
         for (const { element, eventName, close, eventDetails } of this.buttons) {
             element.addEventListener("click", (evt) => {
                 if (eventName !== undefined) {
-                    const details = { source: this };
-                    for (const property in eventDetails) {
-                        details[property] = eventDetails[property];
-                    }
-                    this.eventBus.dispatch(eventName, details);
+                    this.eventBus.dispatch(eventName, { source: this, ...eventDetails });
                 }
                 if (close) {
                     this.close();
@@ -187,11 +183,8 @@ export class SecondaryToolbar {
     }
     #bindCursorToolsListener({ cursorSelectToolButton, cursorHandToolButton, }) {
         this.eventBus._on("cursortoolchanged", ({ tool }) => {
-            const isSelect = tool === CursorTool.SELECT, isHand = tool === CursorTool.HAND;
-            cursorSelectToolButton.classList.toggle("toggled", isSelect);
-            cursorHandToolButton.classList.toggle("toggled", isHand);
-            cursorSelectToolButton.setAttribute("aria-checked", isSelect);
-            cursorHandToolButton.setAttribute("aria-checked", isHand);
+            toggleCheckedBtn(cursorSelectToolButton, tool === CursorTool.SELECT);
+            toggleCheckedBtn(cursorHandToolButton, tool === CursorTool.HAND);
         });
     }
     #bindScrollModeListener({ scrollPageButton, scrollVerticalButton, scrollHorizontalButton, scrollWrappedButton, spreadNoneButton, spreadOddButton, spreadEvenButton, }) {

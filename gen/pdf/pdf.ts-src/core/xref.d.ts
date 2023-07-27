@@ -1,9 +1,10 @@
-import { ChunkedStream } from "./chunked_stream.js";
+import type { ChunkedStream } from "./chunked_stream.js";
 import { CipherTransformFactory } from "./crypto.js";
 import { Parser } from "./parser.js";
-import { BasePdfManager } from "./pdf_manager.js";
-import { Dict, type Obj, type ObjNoRef, Ref, RefSet } from "./primitives.js";
-import { Stream, StringStream } from "./stream.js";
+import type { BasePdfManager } from "./pdf_manager.js";
+import type { Obj, ObjNoRef } from "./primitives.js";
+import { Dict, Ref, RefSet } from "./primitives.js";
+import type { Stream, StringStream } from "./stream.js";
 interface XRefEntry {
     offset: number;
     gen: number;
@@ -29,10 +30,10 @@ export declare class XRef {
     stream: Stream | ChunkedStream;
     pdfManager: BasePdfManager;
     entries: XRefEntry[];
-    xrefstms: number[];
+    _xrefStms: Set<number>;
     _pendingRefs: RefSet;
-    getNewPersistentRef(obj: StringStream | Dict): import("./primitives.js").NsRef.Ref;
-    getNewTemporaryRef(): import("./primitives.js").NsRef.Ref;
+    getNewPersistentRef(obj: StringStream | Dict): Ref;
+    getNewTemporaryRef(): Ref;
     resetNewTemporaryRef(): void;
     startXRefQueue: number[];
     setStartXRef(startXRef: number): void;
@@ -50,6 +51,7 @@ export declare class XRef {
     readXRefStream(stream: Stream): void;
     indexObjects(): Dict;
     readXRef(recoveryMode?: boolean): Dict | undefined;
+    get lastXRefStreamPos(): number | undefined;
     getEntry(i: number): XRefEntry | null;
     fetchIfRef(obj: Obj | undefined, suppressEncryption?: boolean): ObjNoRef | undefined;
     fetch(ref: Ref, suppressEncryption?: boolean): ObjNoRef;

@@ -1,5 +1,5 @@
-import { type TupleOf } from "../../../lib/alias.js";
-import { type FetchBuiltInCMap } from "../display/base_factory.js";
+import type { TupleOf } from "../../../lib/alias.js";
+import type { FetchBuiltInCMap } from "../display/base_factory.js";
 import { BaseStream } from "./base_stream.js";
 import { Name, type ObjNoCmd } from "./primitives.js";
 export interface CharCodeOut {
@@ -68,9 +68,9 @@ declare namespace NsCMapFactory {
         fetchBuiltInCMap: FetchBuiltInCMap;
         useCMap?: string;
     }
-    export const CMapFactory: {
-        create(params: CMapFactoryCreateP_): Promise<CMap | IdentityCMap>;
-    };
+    export class CMapFactory {
+        static create({ encoding, fetchBuiltInCMap, useCMap }: CMapFactoryCreateP_): Promise<CMap | IdentityCMap>;
+    }
     export {};
 }
 export import CMapFactory = NsCMapFactory.CMapFactory;

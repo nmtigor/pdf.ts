@@ -28,45 +28,67 @@ export type uint8 = uint;
 export type id_t = uint;
 export const zId = zUint;
 
-/**
- * ! CHECK
- * Make sense?
- * Index-similar value can very likely be `-1`.
- * Is it better to just use `int`, `uint` according to contexts?
- * (see sortedarray.ts)
- */
-export type Index = uint32;
-
-/** Count one "\t" as 1. */
+/** Count one "\t" as 1 */
+export type llen_t = uint32;
 export type loff_t = int32;
-// export const Loff_t = Int32;
-export const loff_UNDEFINED: loff_t = -256;
-export const loff_MAX: loff_t = 1_000_000_000;
-/** Count one "\t" as e.g. 2, 4, 8. */
-export type lcol_t = loff_t;
+export const loff_UNDEFINED: llen_t = -1_000_000_001;
+export const loff_MAX: llen_t = 1_000_000_000;
+/** Count one "\t" as e.g. 2, 4, 8 */
+export type lcol_t = llen_t;
 
-export type lnum_t = int32;
-// export const Lnum_t = Int32;
+export type lnum_t = uint32;
 // export const lnum_UNDEFINED:lnum_t = -256n;
-export const lnum_MAX: lnum_t = 1_000_000_000;
+export const lnum_MAX: lnum_t = 1_000_000;
 
-/** type of unix timestamp */
+/** Type of unix timestamp */
 export type ts_t = int64;
 export const zTs = zInt64;
 /*49-------------------------------------------*/
 
-/** recommand [0,1] */
+/** Recommand [0,1] */
 export type Ratio = number;
 export const zRatio = z.number().finite();
 /*80--------------------------------------------------------------------------*/
 
-// // deno-fmt-ignore
 // export type DecDigitChar = "0"
 //   | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9";
-// // deno-fmt-ignore
 // export type HexDigitChar = DecDigitChar
 //   | "a" | "A" | "b" | "B" | "c" | "C" | "d" | "D" | "e" | "E" | "f" | "F";
 // export type Hex8 = `${HexDigitChar}${HexDigitChar}`;
+
+/**
+ * Dull string
+ * String of characters 0x20 ~ 0x0_126
+ */
+export type Dulstr = string;
+
+/**
+ * Type of `"(😄)"[0]`, `"(😄)"[1]`, `"(😄)"[2]`, etc
+ */
+export type UChr = string;
+
+/**
+ * Type of each element of `[..."(😄)"]`
+ */
+export type Chr = string;
+
+// deno-fmt-ignore
+/**
+ * Ref. http://www.unicode.org/reports/tr9/#Table_Bidirectional_Character_Types
+ */
+export enum ChrTyp {
+  // Strong
+  L = 1, R = 2, AL = 4,
+  // Weak
+  EN = 8, ES = 0x10, ET = 0x20, AN = 0x40, CS = 0x80,
+  NSM = 0x0_100, BN = 0x0_200,
+  // Neutral
+  B = 0x0_400, S = 0x0_800, WS = 0x1_000, ON = 0x2_000,
+  // Explicit Formatting
+  LRE = 0x4_000, LRO = 0x8_000, RLE = 0x10_000, RLO = 0x20_000, PDF = 0x40_000,
+  LRI = 0x80_000, RLI = 0x100_000, FSI = 0x200_000, PDI = 0x400_000,
+}
+export type ChrTypName = keyof typeof ChrTyp;
 /*80--------------------------------------------------------------------------*/
 
 export type point_t = [number, number];
@@ -84,6 +106,12 @@ export type FloatArray =
   | Float32Array
   | Float64Array;
 export type TypedArray = IntegerArray | FloatArray;
+/*80--------------------------------------------------------------------------*/
+
+export type C2D = CanvasRenderingContext2D;
+export const C2D = globalThis.CanvasRenderingContext2D;
+export type OC2D = OffscreenCanvasRenderingContext2D;
+export const OC2D = globalThis.OffscreenCanvasRenderingContext2D;
 /*80--------------------------------------------------------------------------*/
 
 export type CSSStyleName = keyof {

@@ -28,36 +28,40 @@ import {
   assertStrictEquals,
   assertThrows,
   fail,
-} from "https://deno.land/std@0.170.0/testing/asserts.ts";
+} from "https://deno.land/std@0.190.0/testing/asserts.ts";
 import {
   afterAll,
   afterEach,
   beforeAll,
   describe,
   it,
-} from "https://deno.land/std@0.170.0/testing/bdd.ts";
+} from "https://deno.land/std@0.190.0/testing/bdd.ts";
 import { DENO } from "../../../global.ts";
 import { isObjectLike } from "../../../lib/jslang.ts";
+import { PromiseCap } from "../../../lib/util/PromiseCap.ts";
 import {
   AutoPrintRegExp,
   PageLayout,
   PageMode,
 } from "../../pdf.ts-web/ui_utils.ts";
-import { AnnotActions } from "../core/core_utils.ts";
-import { ImgData } from "../core/evaluator.ts";
+import type { AnnotActions } from "../core/core_utils.ts";
+import type { ImgData } from "../core/evaluator.ts";
 import { GlobalImageCache } from "../core/image_utils.ts";
+import type { SimpleDOMNode } from "../core/xml_parser.ts";
 import {
   buildGetDocumentParams,
   BuildGetDocumentParamsOptions,
+  CMAP_URL,
   DefaultFileReaderFactory,
   TEST_PDFS_PATH,
 } from "../shared/test_utils.ts";
 import {
+  AnnotationEditorType,
   AnnotationMode,
-  createPromiseCapability,
   ImageKind,
   InvalidPDFException,
   MissingPDFException,
+  objectSize,
   OPS,
   PasswordException,
   PasswordResponses,
@@ -66,11 +70,11 @@ import {
 } from "../shared/util.ts";
 import {
   AnnotationStorage,
-  PrintAnnotationStorage,
+  type PrintAnnotationStorage,
 } from "./annotation_storage.ts";
+import type { DocumentInitP, TextItem } from "./api.ts";
 import {
   DefaultCanvasFactory,
-  type DocumentInitP,
   getDocument,
   PDFDataRangeTransport,
   PDFDocumentLoadingTask,
@@ -79,7 +83,6 @@ import {
   PDFWorker,
   PDFWorkerUtil,
   RenderTask,
-  type TextItem,
 } from "./api.ts";
 import {
   PageViewport,
@@ -87,7 +90,6 @@ import {
   StatTimer,
 } from "./display_utils.ts";
 import { Metadata } from "./metadata.ts";
-import { SimpleDOMNode } from "../core/xml_parser.ts";
 import { GlobalWorkerOptions } from "./worker_options.ts";
 /*80--------------------------------------------------------------------------*/
 
@@ -171,7 +173,7 @@ describe("api", () => {
       const loadingTask = getDocument(basicApiGetDocumentParams);
       assertInstanceOf(loadingTask, PDFDocumentLoadingTask);
 
-      const progressReportedCapability = createPromiseCapability<OnProgressP>();
+      const progressReportedCapability = new PromiseCap<OnProgressP>();
       // Attach the callback that is used to report loading progress;
       // similarly to how viewer.js works.
       loadingTask.onProgress = (progressData) => {
@@ -230,7 +232,7 @@ describe("api", () => {
       const loadingTask = getDocument(typedArrayPdf);
       assertInstanceOf(loadingTask, PDFDocumentLoadingTask);
 
-      const progressReportedCapability = createPromiseCapability<OnProgressP>();
+      const progressReportedCapability = new PromiseCap<OnProgressP>();
       loadingTask.onProgress = (data) => {
         progressReportedCapability.resolve(data);
       };
@@ -242,10 +244,8 @@ describe("api", () => {
       assertInstanceOf(data[0], PDFDocumentProxy);
       assertEquals(data[1].loaded / data[1].total, 1);
 
-      if (!DENO) {
-        // Check that the TypedArray was transferred.
-        assertEquals(typedArrayPdf.length, 0);
-      }
+      // Check that the TypedArray was transferred.
+      assertEquals(typedArrayPdf.length, 0);
 
       await loadingTask.destroy();
     });
@@ -262,7 +262,7 @@ describe("api", () => {
       const loadingTask = getDocument(arrayBufferPdf);
       assertInstanceOf(loadingTask, PDFDocumentLoadingTask);
 
-      const progressReportedCapability = createPromiseCapability<OnProgressP>();
+      const progressReportedCapability = new PromiseCap<OnProgressP>();
       loadingTask.onProgress = (data) => {
         progressReportedCapability.resolve(data);
       };
@@ -274,16 +274,13 @@ describe("api", () => {
       assertInstanceOf(data[0], PDFDocumentProxy);
       assertEquals(data[1].loaded / data[1].total, 1);
 
-      if (!DENO) {
-        // Check that the ArrayBuffer was transferred.
-        assertEquals(arrayBufferPdf.byteLength, 0);
-      }
+      // Check that the ArrayBuffer was transferred.
+      assertEquals(arrayBufferPdf.byteLength, 0);
 
       await loadingTask.destroy();
     });
 
-    //kkkk
-    it.ignore("creates pdf doc from invalid PDF file", async () => {
+    it("creates pdf doc from invalid PDF file", async () => {
       // A severely corrupt PDF file (even Adobe Reader fails to open it).
       const loadingTask = getDocument(buildGetDocumentParams("bug1020226.pdf"));
       assertInstanceOf(loadingTask, PDFDocumentLoadingTask);
@@ -327,8 +324,8 @@ describe("api", () => {
       const loadingTask = getDocument(buildGetDocumentParams("pr6531_1.pdf"));
       assertInstanceOf(loadingTask, PDFDocumentLoadingTask);
 
-      const passwordNeededCapability = createPromiseCapability();
-      const passwordIncorrectCapability = createPromiseCapability();
+      const passwordNeededCapability = new PromiseCap();
+      const passwordIncorrectCapability = new PromiseCap();
       // Attach the callback that is used to request a password;
       // similarly to how the default viewer handles passwords.
       loadingTask.onPassword = (updatePassword, reason) => {
@@ -363,8 +360,7 @@ describe("api", () => {
       await loadingTask.destroy();
     });
 
-    //kkkk
-    it.ignore("creates pdf doc from PDF file protected with only a user password", async () => {
+    it("creates pdf doc from PDF file protected with only a user password", async () => {
       const filename = "pr6531_2.pdf";
 
       const passwordNeededLoadingTask = getDocument(
@@ -420,8 +416,7 @@ describe("api", () => {
       await Promise.all([result1, result2, result3]);
     });
 
-    //kkkk
-    it.ignore(
+    it(
       "creates pdf doc from password protected PDF file and aborts/throws " +
         "in the onPassword callback (issue 7806)",
       async () => {
@@ -481,8 +476,7 @@ describe("api", () => {
       },
     );
 
-    //kkkk
-    it.ignore(
+    it(
       "creates pdf doc from password protected PDF file and passes an Error " +
         "(asynchronously) to the onPassword callback (bug 1754421)",
       async () => {
@@ -513,8 +507,7 @@ describe("api", () => {
       },
     );
 
-    //kkkk
-    it.ignore("creates pdf doc from empty TypedArray", async () => {
+    it("creates pdf doc from empty TypedArray", async () => {
       const loadingTask = getDocument(new Uint8Array(0));
       assertInstanceOf(loadingTask, PDFDocumentLoadingTask);
 
@@ -598,8 +591,7 @@ describe("api", () => {
       await loadingTask.destroy();
     });
 
-    //kkkk
-    it.ignore("creates pdf doc from PDF file with bad XRef byteWidths", async () => {
+    it("creates pdf doc from PDF file with bad XRef byteWidths", async () => {
       // A corrupt PDF file, where the XRef /W-array have (some) bogus entries.
       const loadingTask = getDocument(
         buildGetDocumentParams("REDHAT-1531897-0.pdf"),
@@ -618,8 +610,7 @@ describe("api", () => {
       await loadingTask.destroy();
     });
 
-    //kkkk
-    it.ignore("creates pdf doc from PDF file with inaccessible /Pages tree", async () => {
+    it("creates pdf doc from PDF file with inaccessible /Pages tree", async () => {
       const loadingTask = getDocument(
         buildGetDocumentParams("poppler-395-0-fuzzed.pdf"),
       );
@@ -1964,6 +1955,36 @@ describe("api", () => {
       await loadingTask.destroy();
     });
 
+    //kkkk
+    it.ignore("write a a new annotation, save the pdf and check that the prev entry in xref stream is correct", async () => {
+      // if (isNodeJS) {
+      //   pending("Linked test-cases are not supported in Node.js.");
+      // }
+
+      let loadingTask = getDocument(buildGetDocumentParams("bug1823296.pdf"));
+      let pdfDoc = await loadingTask.promise;
+      pdfDoc.annotationStorage.setValue("pdfjs_internal_editor_0", {
+        annotationType: AnnotationEditorType.FREETEXT,
+        rect: [12, 34, 56, 78],
+        rotation: 0,
+        fontSize: 10,
+        color: [0, 0, 0] as any,
+        value: "Hello PDF.js World!",
+        pageIndex: 0,
+      });
+
+      const data = await pdfDoc.saveDocument();
+      await loadingTask.destroy();
+
+      loadingTask = getDocument(data);
+      pdfDoc = await loadingTask.promise;
+      const xrefPrev = await pdfDoc.getXRefPrevValue();
+
+      assertEquals(xrefPrev, 143954);
+
+      await loadingTask.destroy();
+    });
+
     describe("Cross-origin", () => {
       let loadingTask: PDFDocumentLoadingTask;
       function _checkCanLoad(
@@ -2270,29 +2291,19 @@ describe("api", () => {
     });
 
     it("gets text content", async () => {
-      const defaultPromise = page.getTextContent();
-      const parametersPromise = page.getTextContent({
-        disableCombineTextItems: true,
-      });
+      const { items, styles } = await page.getTextContent();
 
-      const data = await Promise.all([defaultPromise, parametersPromise]);
+      assertEquals(items.length, 15);
+      assertEquals(objectSize(styles), 5);
 
-      assert(!!data[0].items);
-      assertEquals(data[0].items.length, 15);
-      assert(!!data[0].styles);
-
-      const page1 = mergeText(data[0].items as TextItem[]);
+      const text = mergeText(items as TextItem[]);
       assertEquals(
-        page1,
+        text,
         `Table Of Content
 Chapter 1 .......................................................... 2
 Paragraph 1.1 ...................................................... 3
 page 1 / 3`,
       );
-
-      assert(!!data[1].items);
-      assertEquals(data[1].items.length, 6);
-      assert(!!data[1].styles);
     });
 
     it("gets text content, with correct properties (issue 8276)", async () => {
@@ -2301,7 +2312,9 @@ page 1 / 3`,
       );
       const pdfDoc = await loadingTask.promise;
       const pdfPage = await pdfDoc.getPage(1);
-      const { items, styles } = await pdfPage.getTextContent();
+      const { items, styles } = await pdfPage.getTextContent({
+        disableNormalization: true,
+      });
       assertEquals(items.length, 1);
       // Font name will be a random object id.
       const fontName = (items[0] as TextItem).fontName;
@@ -2337,8 +2350,10 @@ page 1 / 3`,
       const loadingTask = getDocument(buildGetDocumentParams("issue13226.pdf"));
       const pdfDoc = await loadingTask.promise;
       const pdfPage = await pdfDoc.getPage(1);
-      const { items } = await pdfPage.getTextContent();
-      const text = mergeText(<TextItem[]> items);
+      const { items } = await pdfPage.getTextContent({
+        disableNormalization: true,
+      });
+      const text = mergeText(items as TextItem[]);
 
       assertEquals(
         text,
@@ -2348,11 +2363,37 @@ page 1 / 3`,
       await loadingTask.destroy();
     });
 
+    //kkkk
+    it.ignore("gets text content, with no extra spaces (issue 16119)", async () => {
+      // if (isNodeJS) {
+      //   pending("Linked test-cases are not supported in Node.js.");
+      // }
+
+      const loadingTask = getDocument(buildGetDocumentParams("issue16119.pdf"));
+      const pdfDoc = await loadingTask.promise;
+      const pdfPage = await pdfDoc.getPage(1);
+      const { items } = await pdfPage.getTextContent({
+        disableNormalization: true,
+      });
+      const text = mergeText(items as TextItem[]);
+
+      assertEquals(
+        text.includes(
+          "Engang var der i Samvirke en opskrift på en fiskelagkage, som jeg med",
+        ),
+        true,
+      );
+
+      await loadingTask.destroy();
+    });
+
     it("gets text content, with merged spaces (issue 13201)", async () => {
       const loadingTask = getDocument(buildGetDocumentParams("issue13201.pdf"));
       const pdfDoc = await loadingTask.promise;
       const pdfPage = await pdfDoc.getPage(1);
-      const { items } = await pdfPage.getTextContent();
+      const { items } = await pdfPage.getTextContent({
+        disableNormalization: true,
+      });
       const text = mergeText(items as TextItem[]);
 
       assert(
@@ -2378,7 +2419,9 @@ page 1 / 3`,
       const loadingTask = getDocument(buildGetDocumentParams("issue11913.pdf"));
       const pdfDoc = await loadingTask.promise;
       const pdfPage = await pdfDoc.getPage(1);
-      const { items } = await pdfPage.getTextContent();
+      const { items } = await pdfPage.getTextContent({
+        disableNormalization: true,
+      });
       const text = mergeText(items as TextItem[]);
 
       assert(
@@ -2398,8 +2441,10 @@ page 1 / 3`,
       const loadingTask = getDocument(buildGetDocumentParams("issue10900.pdf"));
       const pdfDoc = await loadingTask.promise;
       const pdfPage = await pdfDoc.getPage(1);
-      const { items } = await pdfPage.getTextContent();
-      const text = mergeText(<TextItem[]> items);
+      const { items } = await pdfPage.getTextContent({
+        disableNormalization: true,
+      });
+      const text = mergeText(items as TextItem[]);
 
       assert(text.includes(`3 3 3 3
 851.5 854.9 839.3 837.5
@@ -2415,10 +2460,28 @@ page 1 / 3`,
       const loadingTask = getDocument(buildGetDocumentParams("issue10640.pdf"));
       const pdfDoc = await loadingTask.promise;
       const pdfPage = await pdfDoc.getPage(1);
-      const { items } = await pdfPage.getTextContent();
-      const text = mergeText(items as TextItem[]);
+      let { items } = await pdfPage.getTextContent({
+        disableNormalization: true,
+      });
+      let text = mergeText(items as TextItem[]);
+      let expected =
+        `Open Sans is a humanist sans serif typeface designed by Steve Matteson.
+Open Sans was designed with an upright stress, open forms and a neu-
+tral, yet friendly appearance. It was optimized for print, web, and mobile
+interfaces, and has excellent legibility characteristics in its letterforms (see
+ﬁgure \x81 on the following page). This font is available from the Google Font
+Directory [\x81] as TrueType ﬁles licensed under the Apache License version \x82.\x80.
+This package provides support for this font in LATEX. It includes Type \x81
+versions of the fonts, converted for this package using FontForge from its
+sources, for full support with Dvips.`;
 
-      assert(text.includes(
+      assertEquals(text.includes(expected), true);
+
+      ({ items } = await pdfPage.getTextContent({
+        disableNormalization: false,
+      }));
+      text = mergeText(items as TextItem[]);
+      expected =
         `Open Sans is a humanist sans serif typeface designed by Steve Matteson.
 Open Sans was designed with an upright stress, open forms and a neu-
 tral, yet friendly appearance. It was optimized for print, web, and mobile
@@ -2427,8 +2490,8 @@ figure \x81 on the following page). This font is available from the Google Font
 Directory [\x81] as TrueType files licensed under the Apache License version \x82.\x80.
 This package provides support for this font in LATEX. It includes Type \x81
 versions of the fonts, converted for this package using FontForge from its
-sources, for full support with Dvips.`,
-      ));
+sources, for full support with Dvips.`;
+      assertEquals(text.includes(expected), true);
 
       await loadingTask.destroy();
     });
@@ -2442,7 +2505,9 @@ sources, for full support with Dvips.`,
       const loadingTask = getDocument(buildGetDocumentParams("bug931481.pdf"));
       const pdfDoc = await loadingTask.promise;
       const pdfPage = await pdfDoc.getPage(1);
-      const { items } = await pdfPage.getTextContent();
+      const { items } = await pdfPage.getTextContent({
+        disableNormalization: true,
+      });
       const text = mergeText(items as TextItem[]);
 
       assert(text.includes(`Kathrin Nachbaur
@@ -2469,7 +2534,9 @@ sozialökonomische Gerechtigkeit.`));
       const loadingTask = getDocument(buildGetDocumentParams("issue9186.pdf"));
       const pdfDoc = await loadingTask.promise;
       const pdfPage = await pdfDoc.getPage(1);
-      const { items } = await pdfPage.getTextContent();
+      const { items } = await pdfPage.getTextContent({
+        disableNormalization: true,
+      });
       const text = mergeText(items as TextItem[]);
 
       assert(text.includes(
@@ -2490,7 +2557,9 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
       );
       const pdfDoc = await loadingTask.promise;
       const pdfPage = await pdfDoc.getPage(1);
-      const { items } = await pdfPage.getTextContent();
+      const { items } = await pdfPage.getTextContent({
+        disableNormalization: true,
+      });
       const text = mergeText(items as TextItem[]);
 
       assertEquals(
@@ -2510,7 +2579,9 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
       const loadingTask = getDocument(buildGetDocumentParams("bug1755201.pdf"));
       const pdfDoc = await loadingTask.promise;
       const pdfPage = await pdfDoc.getPage(6);
-      const { items } = await pdfPage.getTextContent();
+      const { items } = await pdfPage.getTextContent({
+        disableNormalization: true,
+      });
       const text = mergeText(items as TextItem[]);
 
       assertNotMatch(text, /win aisle/);
@@ -2529,14 +2600,65 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
       const pdfPage = await pdfDoc.getPage(568);
       let { items } = await pdfPage.getTextContent({
         includeMarkedContent: false,
+        disableNormalization: true,
       });
       const textWithoutMC = mergeText(items as TextItem[]);
       ({ items } = await pdfPage.getTextContent({
         includeMarkedContent: true,
+        disableNormalization: true,
       }));
       const textWithMC = mergeText(items as TextItem[]);
 
       assertEquals(textWithoutMC, textWithMC);
+
+      await loadingTask.destroy();
+    });
+
+    it("gets text content with multi-byte entries, using predefined CMaps (issue 16176)", async () => {
+      const loadingTask = getDocument(
+        buildGetDocumentParams("issue16176.pdf", {
+          cMapUrl: CMAP_URL,
+          useWorkerFetch: false,
+        }),
+      );
+      const pdfDoc = await loadingTask.promise;
+      const pdfPage = await pdfDoc.getPage(1);
+      const { items } = await pdfPage.getTextContent({
+        disableNormalization: true,
+      });
+      const text = mergeText(items as TextItem[]);
+
+      assertEquals(text, "𠮷");
+
+      await loadingTask.destroy();
+    });
+
+    it("gets text content with a rised text", async () => {
+      const loadingTask = getDocument(buildGetDocumentParams("issue16221.pdf"));
+      const pdfDoc = await loadingTask.promise;
+      const pdfPage = await pdfDoc.getPage(1);
+      const { items } = await pdfPage.getTextContent({
+        disableNormalization: true,
+      });
+
+      assertEquals(
+        (items as TextItem[]).map((i) => i.str),
+        ["Hello ", "World"],
+      );
+
+      await loadingTask.destroy();
+    });
+
+    it("gets text content with a specific view box", async () => {
+      const loadingTask = getDocument(buildGetDocumentParams("issue16316.pdf"));
+      const pdfDoc = await loadingTask.promise;
+      const pdfPage = await pdfDoc.getPage(1);
+      const { items } = await pdfPage.getTextContent({
+        disableNormalization: true,
+      });
+      const text = mergeText(items as TextItem[]);
+
+      assertEquals(text, "Experimentation,");
 
       await loadingTask.destroy();
     });
@@ -2616,7 +2738,11 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
     });
 
     it("gets operatorList with JPEG image (issue 4888)", async () => {
-      const loadingTask = getDocument(buildGetDocumentParams("cmykjpeg.pdf"));
+      const loadingTask = getDocument(
+        buildGetDocumentParams("cmykjpeg.pdf", {
+          isOffscreenCanvasSupported: false,
+        }),
+      );
 
       const pdfDoc = await loadingTask.promise;
       const pdfPage = await pdfDoc.getPage(1);
@@ -2844,7 +2970,6 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
       // );
       // const renderTask = pdfPage.render({
       //   canvasContext: canvasAndCtx.context,
-      //   canvasFactory: CanvasFactory,
       //   viewport,
       // });
       // assertInstanceOf(renderTask, RenderTask);
@@ -2881,7 +3006,6 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
       );
       const renderTask = page.render({
         canvasContext: canvasAndCtx.context,
-        canvasFactory: CanvasFactory,
         viewport,
       });
       assertInstanceOf(renderTask, RenderTask);
@@ -2913,7 +3037,6 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
       );
       const renderTask = page.render({
         canvasContext: canvasAndCtx.context,
-        canvasFactory: CanvasFactory,
         viewport,
       });
       assertInstanceOf(renderTask, RenderTask);
@@ -2930,7 +3053,6 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
 
       const reRenderTask = page.render({
         canvasContext: canvasAndCtx.context,
-        canvasFactory: CanvasFactory,
         viewport,
       });
       assertInstanceOf(reRenderTask, RenderTask);
@@ -2955,7 +3077,6 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
       );
       const renderTask1 = page.render({
         canvasContext: canvasAndCtx.context,
-        canvasFactory: CanvasFactory,
         viewport,
         optionalContentConfigPromise,
       });
@@ -2963,7 +3084,6 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
 
       const renderTask2 = page.render({
         canvasContext: canvasAndCtx.context,
-        canvasFactory: CanvasFactory,
         viewport,
         optionalContentConfigPromise,
       });
@@ -2998,7 +3118,6 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
       );
       const renderTask = pdfPage.render({
         canvasContext: canvasAndCtx.context,
-        canvasFactory: CanvasFactory,
         viewport,
       });
       assertInstanceOf(renderTask, RenderTask);
@@ -3029,7 +3148,6 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
       );
       const renderTask = pdfPage.render({
         canvasContext: canvasAndCtx.context,
-        canvasFactory: CanvasFactory,
         viewport,
       });
       assertInstanceOf(renderTask, RenderTask);
@@ -3061,7 +3179,11 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
         EXPECTED_WIDTH = 2550,
         EXPECTED_HEIGHT = 3300;
 
-      const loadingTask = getDocument(buildGetDocumentParams("issue11878.pdf"));
+      const loadingTask = getDocument(
+        buildGetDocumentParams("issue11878.pdf", {
+          isOffscreenCanvasSupported: false,
+        }),
+      );
       const pdfDoc = await loadingTask.promise;
       let firstImgData: ImgData | undefined;
 
@@ -3137,7 +3259,6 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
         );
         const renderTask = pdfPage.render({
           canvasContext: canvasAndCtx.context,
-          canvasFactory: CanvasFactory,
           viewport,
           intent: "print",
           annotationMode: AnnotationMode.ENABLE_STORAGE,
@@ -3227,7 +3348,6 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
       );
       const renderTask = page.render({
         canvasContext: canvasAndCtx.context,
-        canvasFactory: CanvasFactory,
         viewport,
       });
       await renderTask.promise;
@@ -3323,11 +3443,9 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
       assertEquals(pdfPage.rotate, 0);
       assert(fetches > 2);
 
-      if (!DENO) {
-        // Check that the TypedArrays were transferred.
-        for (const array of subArrays) {
-          assertEquals(array.length, 0);
-        }
+      // Check that the TypedArrays were transferred.
+      for (const array of subArrays) {
+        assertEquals(array.length, 0);
       }
 
       await loadingTask.destroy();
@@ -3372,11 +3490,9 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
         waitSome(resolve);
       });
 
-      if (!DENO) {
-        // Check that the TypedArrays were transferred.
-        for (const array of subArrays) {
-          assertEquals(array.length, 0);
-        }
+      // Check that the TypedArrays were transferred.
+      for (const array of subArrays) {
+        assertEquals(array.length, 0);
       }
 
       await loadingTask.destroy();
@@ -3413,11 +3529,9 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
         assertEquals(pdfPage.rotate, 0);
         assertEquals(fetches, 0);
 
-        if (!DENO) {
-          // Check that the TypedArrays were transferred.
-          for (const array of subArrays) {
-            assertEquals(array.length, 0);
-          }
+        // Check that the TypedArrays were transferred.
+        for (const array of subArrays) {
+          assertEquals(array.length, 0);
         }
 
         await loadingTask.destroy();

@@ -49,15 +49,11 @@ export var SidebarView;
     SidebarView[SidebarView["ATTACHMENTS"] = 3] = "ATTACHMENTS";
     SidebarView[SidebarView["LAYERS"] = 4] = "LAYERS";
 })(SidebarView || (SidebarView = {}));
-export var RendererType;
-(function (RendererType) {
-    RendererType["CANVAS"] = "canvas";
-    RendererType["SVG"] = "svg";
-})(RendererType || (RendererType = {}));
 export var TextLayerMode;
 (function (TextLayerMode) {
     TextLayerMode[TextLayerMode["DISABLE"] = 0] = "DISABLE";
     TextLayerMode[TextLayerMode["ENABLE"] = 1] = "ENABLE";
+    TextLayerMode[TextLayerMode["ENABLE_PERMISSIONS"] = 2] = "ENABLE_PERMISSIONS";
 })(TextLayerMode || (TextLayerMode = {}));
 export var ScrollMode;
 (function (ScrollMode) {
@@ -214,7 +210,6 @@ export function parseQueryString(query) {
     }
     return params;
 }
-const NullCharactersRegExp = /\x00/g;
 const InvisibleCharactersRegExp = /[\x01-\x1F]/g;
 export function removeNullCharacters(str, replaceInvisible = false) {
     if (typeof str !== "string") {
@@ -222,9 +217,9 @@ export function removeNullCharacters(str, replaceInvisible = false) {
         return str;
     }
     if (replaceInvisible) {
-        str = str.replace(InvisibleCharactersRegExp, " ");
+        str = str.replaceAll(InvisibleCharactersRegExp, " ");
     }
-    return str.replace(NullCharactersRegExp, "");
+    return str.replaceAll("\x00", "");
 }
 /**
  * Use binary search to find the index of the first item in a given array which
@@ -726,6 +721,11 @@ export function apiPageModeToSidebarView(mode) {
             return SidebarView.LAYERS;
     }
     return SidebarView.NONE; // Default value.
+}
+export function toggleCheckedBtn(button, toggle, view) {
+    button.classList.toggle("toggled", toggle);
+    button.setAttribute("aria-checked", toggle);
+    view?.classList.toggle("hidden", !toggle);
 }
 /*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=ui_utils.js.map

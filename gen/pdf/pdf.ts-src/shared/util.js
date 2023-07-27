@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { _PDFDEV, DENO, GENERIC, SKIP_BABEL } from "../../../global.js";
+import { GENERIC, PDFJSDev, SKIP_BABEL, TESTING } from "../../../global.js";
 import { isObjectLike } from "../../../lib/jslang.js";
 import { assert, warn as warn_0 } from "../../../lib/util/trace.js";
 /*80--------------------------------------------------------------------------*/
@@ -23,6 +23,7 @@ import { assert, warn as warn_0 } from "../../../lib/util/trace.js";
 /*#static*/ 
 export const IDENTITY_MATRIX = [1, 0, 0, 1, 0, 0];
 export const FONT_IDENTITY_MATRIX = [0.001, 0, 0, 0.001, 0, 0];
+export const MAX_IMAGE_SIZE_TO_CACHE = 10e6; // Ten megabytes.
 // Represent the percentage of the height of a single-line field over
 // the font size. Acrobat seems to use this value.
 export const LINE_FACTOR = 1.35;
@@ -42,6 +43,7 @@ export const BASELINE_FACTOR = LINE_DESCENT_FACTOR / LINE_FACTOR;
  */
 export var RenderingIntentFlag;
 (function (RenderingIntentFlag) {
+    RenderingIntentFlag[RenderingIntentFlag["_0"] = 0] = "_0";
     RenderingIntentFlag[RenderingIntentFlag["ANY"] = 1] = "ANY";
     RenderingIntentFlag[RenderingIntentFlag["DISPLAY"] = 2] = "DISPLAY";
     RenderingIntentFlag[RenderingIntentFlag["PRINT"] = 4] = "PRINT";
@@ -369,28 +371,6 @@ export var OPS;
     OPS[OPS["group"] = 92] = "group";
 })(OPS || (OPS = {}));
 // export type OPSValu = (typeof OPS)[OPSName];
-export const UNSUPPORTED_FEATURES = /*#static*/ {
-    forms: "forms",
-    javaScript: "javaScript",
-    signatures: "signatures",
-    smask: "smask",
-    shadingPattern: "shadingPattern",
-    errorTilingPattern: "errorTilingPattern",
-    errorExtGState: "errorExtGState",
-    errorXObject: "errorXObject",
-    errorFontLoadType3: "errorFontLoadType3",
-    errorFontState: "errorFontState",
-    errorFontMissing: "errorFontMissing",
-    errorFontTranslate: "errorFontTranslate",
-    errorColorSpace: "errorColorSpace",
-    errorOperatorList: "errorOperatorList",
-    errorFontToUnicode: "errorFontToUnicode",
-    errorFontLoadNative: "errorFontLoadNative",
-    errorFontBuildPath: "errorFontBuildPath",
-    errorFontGetPath: "errorFontGetPath",
-    errorMarkedContent: "errorMarkedContent",
-    errorContentSubStream: "errorContentSubStream",
-};
 export var PasswordResponses;
 (function (PasswordResponses) {
     PasswordResponses[PasswordResponses["NEED_PASSWORD"] = 1] = "NEED_PASSWORD";
@@ -426,10 +406,7 @@ export function warn(msg, meta) {
 // }
 // Checks if URLs use one of the allowed protocols, e.g. to avoid XSS.
 function _isValidProtocol(url) {
-    if (!url) {
-        return false;
-    }
-    switch (url.protocol) {
+    switch (url?.protocol) {
         case "http:":
         case "https:":
         case "ftp:":
@@ -458,7 +435,7 @@ export function createValidAbsoluteUrl(url, baseUrl, options) {
                 const dots = url.match(/\./g);
                 // Avoid accidentally matching a *relative* URL pointing to a file named
                 // e.g. "www.pdf" or similar.
-                if (dots && dots.length >= 2) {
+                if (dots?.length >= 2) {
                     url = `http://${url}`;
                 }
             }
@@ -505,12 +482,10 @@ export class PasswordException extends BaseException {
         super(msg, "PasswordException");
         this.code = code;
     }
-}
-export class UnknownErrorException extends BaseException {
-    details;
-    constructor(msg, details) {
-        super(msg, "UnknownErrorException");
-        this.details = details;
+    toJ() {
+        const ret = super.toJ();
+        ret.code = this.code;
+        return ret;
     }
 }
 export class InvalidPDFException extends BaseException {
@@ -528,6 +503,23 @@ export class UnexpectedResponseException extends BaseException {
     constructor(msg, status) {
         super(msg, "UnexpectedResponseException");
         this.status = status;
+    }
+    toJ() {
+        const ret = super.toJ();
+        ret.status = this.status;
+        return ret;
+    }
+}
+export class UnknownErrorException extends BaseException {
+    details;
+    constructor(msg, details) {
+        super(msg, "UnknownErrorException");
+        this.details = details;
+    }
+    toJ() {
+        const ret = super.toJ();
+        ret.details = this.details;
+        return ret;
     }
 }
 /**
@@ -1056,33 +1048,23 @@ export function getModificationDate(date = new Date()) {
     ];
     return buffer.join("");
 }
-let PromiseCap_ID = 0;
-/**
- * Creates a promise capability object.
- *
- * ! Notice, this could be called in worker thread, where there is no e.g.
- * ! `Node` as in mv.ts.
- */
-export function createPromiseCapability() {
-    const cap = Object.create(null);
-    cap.id = ++PromiseCap_ID;
-    let isSettled = false;
-    Object.defineProperty(cap, "settled", {
-        get() {
-            return isSettled;
-        },
+let NormalizeRegex;
+let NormalizationMap;
+export function normalizeUnicode(str) {
+    if (!NormalizeRegex) {
+        // In order to generate the following regex:
+        //  - create a PDF containing all the chars in the range 0000-FFFF with
+        //    a NFKC which is different of the char.
+        //  - copy and paste all those chars and get the ones where NFKC is
+        //    required.
+        // It appears that most the chars here contain some ligatures.
+        NormalizeRegex =
+            /([\u00a0\u00b5\u037e\u0eb3\u2000-\u200a\u202f\u2126\ufb00-\ufb04\ufb06\ufb20-\ufb36\ufb38-\ufb3c\ufb3e\ufb40-\ufb41\ufb43-\ufb44\ufb46-\ufba1\ufba4-\ufba9\ufbae-\ufbb1\ufbd3-\ufbdc\ufbde-\ufbe7\ufbea-\ufbf8\ufbfc-\ufbfd\ufc00-\ufc5d\ufc64-\ufcf1\ufcf5-\ufd3d\ufd88\ufdf4\ufdfa-\ufdfb\ufe71\ufe77\ufe79\ufe7b\ufe7d]+)|(\ufb05+)/gu;
+        NormalizationMap = new Map([["ﬅ", "ſt"]]);
+    }
+    return str.replaceAll(NormalizeRegex, (_, p1, p2) => {
+        return p1 ? p1.normalize("NFKC") : NormalizationMap.get(p2);
     });
-    cap.promise = new Promise((resolve, reject) => {
-        cap.resolve = (data) => {
-            isSettled = true;
-            resolve(data);
-        };
-        cap.reject = (reason) => {
-            isSettled = true;
-            reject(reason);
-        };
-    });
-    return cap;
 }
 /*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=util.js.map

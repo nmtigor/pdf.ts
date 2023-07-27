@@ -19,26 +19,26 @@
 /* globals chrome */
 
 // @deno-types="npm:@types/chrome"
-import { CHROME } from "../../global.ts";
+import { CHROME, PDFJSDev } from "../../global.ts";
 import { MouseButton } from "../../lib/dom.ts";
-import { Locale } from "../../lib/Locale.ts";
+import type { Locale } from "../../lib/Locale.ts";
 import {
   DefaultExternalServices,
-  PassiveLoadingCbs,
+  type PassiveLoadingCbs,
   viewerApp,
 } from "./app.ts";
 import { AppOptions, UserOptions, ViewOnLoad } from "./app_options.ts";
 import { DownloadManager } from "./download_manager.ts";
 import { GenericL10n } from "./genericl10n.ts";
 import { GenericScripting } from "./generic_scripting.ts";
-import { IScripting } from "./interfaces.ts";
-import { OverlayManager } from "./overlay_manager.ts";
-import { HistoryState } from "./pdf_history.ts";
+import type { IScripting } from "./interfaces.ts";
+import type { OverlayManager } from "./overlay_manager.ts";
+import type { HistoryState } from "./pdf_history.ts";
 import { BasePreferences } from "./preferences.ts";
 import { CursorTool } from "./ui_utils.ts";
 /*80--------------------------------------------------------------------------*/
 
-/*#static*/ if (!CHROME) {
+/*#static*/ if (PDFJSDev || !CHROME) {
   throw new Error(
     'Module "pdfjs-web/chromecom" shall not be used outside CHROME build.',
   );
@@ -350,7 +350,7 @@ function setReferer(url: string, callback: () => void) {
       // back and forward, the background page will not observe a HTTP request
       // with Referer. To make sure that the Referer is preserved, store it in
       // history.state, which is preserved across reloads/navigations.
-      const state = <HistoryState> (window.history.state || {});
+      const state = (window.history.state || {}) as HistoryState;
       state.chromecomState = referer;
       window.history.replaceState(state, "");
     }

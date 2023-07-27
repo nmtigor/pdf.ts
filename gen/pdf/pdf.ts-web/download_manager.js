@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 /** @typedef {import("./interfaces").IDownloadManager} IDownloadManager */
-import { CHROME, COMPONENTS, GENERIC } from "../../global.js";
+import { CHROME, COMPONENTS, GENERIC, PDFJSDev } from "../../global.js";
 import { html } from "../../lib/dom.js";
 import { createValidAbsoluteUrl, isPdfFile } from "../pdf.ts-src/pdf.js";
 /*80--------------------------------------------------------------------------*/
@@ -43,7 +43,7 @@ export class DownloadManager {
     #openBlobUrls = new WeakMap();
     onerror;
     /** @implement */
-    downloadUrl(url, filename) {
+    downloadUrl(url, filename, _options) {
         if (!createValidAbsoluteUrl(url, "http://example.com")) {
             console.error(`downloadUrl - not a valid URL: ${url}`);
             return; // restricted/invalid URL
@@ -87,7 +87,7 @@ export class DownloadManager {
         return false;
     }
     /** @implement */
-    download(blob, url, filename) {
+    download(blob, url, filename, _options) {
         const blobUrl = URL.createObjectURL(blob);
         download(blobUrl, filename);
     }

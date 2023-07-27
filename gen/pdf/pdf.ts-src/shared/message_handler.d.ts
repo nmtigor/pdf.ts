@@ -1,25 +1,28 @@
-import { type rect_t } from "../../../lib/alias.js";
-import { HttpStatusCode } from "../../../lib/HttpStatusCode.js";
-import { PageLayout, PageMode } from "../../pdf.ts-web/ui_utils.js";
-import { type AnnotationData, type FieldObject } from "../core/annotation.js";
-import { type ExplicitDest, type MarkInfo, type OpenAction, type OptionalContentConfigData, type ViewerPref } from "../core/catalog.js";
-import { type AnnotActions } from "../core/core_utils.js";
-import { DatasetReader } from "../core/dataset_reader.js";
-import { type DocumentInfo, type XFAData } from "../core/document.js";
-import { type FontStyle, type ImgData } from "../core/evaluator.js";
-import { FontExpotDataEx } from "../core/fonts.js";
-import { type CmdArgs } from "../core/font_renderer.js";
-import { type IWorker } from "../core/iworker.js";
-import { type SerializedMetadata } from "../core/metadata_parser.js";
-import { type OpListIR } from "../core/operator_list.js";
-import { type ShadingPatternIR } from "../core/pattern.js";
-import { EvaluatorOptions } from "../core/pdf_manager.js";
-import { type XFAElObj } from "../core/xfa/alias.js";
-import { type AnnotStorageRecord } from "../display/annotation_layer.js";
-import { type OutlineNode, type RefProxy, StructTreeNode, type TextItem, type TextMarkedContent } from "../display/api.js";
-import { type CMapData } from "../display/base_factory.js";
-import { VerbosityLevel } from "../pdf.js";
-import { InvalidPDFException, MissingPDFException, PasswordException, PasswordResponses, PermissionFlag, type PromiseCapability, RenderingIntentFlag, UnexpectedResponseException, UnknownErrorException, UNSUPPORTED_FEATURES } from "./util.js";
+import type { rect_t } from "../../../lib/alias.js";
+import type { HttpStatusCode } from "../../../lib/HttpStatusCode.js";
+import { PromiseCap } from "../../../lib/util/PromiseCap.js";
+import { type ErrorJ } from "../../../lib/util/trace.js";
+import type { PageLayout, PageMode } from "../../pdf.ts-web/ui_utils.js";
+import type { AnnotationData, FieldObject } from "../core/annotation.js";
+import type { ExplicitDest, MarkInfo, OpenAction, OptionalContentConfigData, ViewerPref } from "../core/catalog.js";
+import type { AnnotActions } from "../core/core_utils.js";
+import type { DatasetReader } from "../core/dataset_reader.js";
+import type { DocumentInfo, XFAData } from "../core/document.js";
+import type { ImgData } from "../core/evaluator.js";
+import type { FontExpotDataEx } from "../core/fonts.js";
+import type { CmdArgs } from "../core/font_renderer.js";
+import type { IWorker } from "../core/iworker.js";
+import type { SerializedMetadata } from "../core/metadata_parser.js";
+import type { OpListIR } from "../core/operator_list.js";
+import type { ShadingPatternIR } from "../core/pattern.js";
+import type { EvaluatorOptions } from "../core/pdf_manager.js";
+import type { XFAElObj } from "../core/xfa/alias.js";
+import type { AnnotStorageRecord } from "../display/annotation_layer.js";
+import type { OutlineNode, RefProxy, StructTreeNode, TextItem, TextMarkedContent, TextStyle } from "../display/api.js";
+import type { CMapData } from "../display/base_factory.js";
+import type { VerbosityLevel } from "../pdf.js";
+import type { PermissionFlag, RenderingIntentFlag } from "./util.js";
+import { PasswordException, PasswordResponses } from "./util.js";
 interface reason_t {
     name?: string;
     message: string;
@@ -39,7 +42,7 @@ export interface GetDocRequestData {
     enableXfa: boolean;
     evaluatorOptions: EvaluatorOptions;
 }
-interface _PumpOperatorListP {
+interface PumpOperatorListP_ {
     pageIndex: number;
     intent: RenderingIntentFlag;
     cacheKey: string;
@@ -142,7 +145,7 @@ export interface MActionMap {
         Sinkchunk: undefined;
     };
     GetOperatorList: {
-        Data: _PumpOperatorListP;
+        Data: PumpOperatorListP_;
         Return: void;
         Sinkchunk: OpListIR;
     };
@@ -212,13 +215,13 @@ export interface MActionMap {
     GetTextContent: {
         Data: {
             pageIndex: number;
-            combineTextItems: boolean;
             includeMarkedContent: boolean;
+            disableNormalization: boolean;
         };
         Return: void;
         Sinkchunk: {
             items: (TextItem | TextMarkedContent)[];
-            styles: Record<string, FontStyle>;
+            styles: Record<string, TextStyle>;
         };
     };
     GetViewerPreferences: {
@@ -229,6 +232,11 @@ export interface MActionMap {
     GetXFADatasets: {
         Data: null;
         Return: DatasetReader | undefined;
+        Sinkchunk: undefined;
+    };
+    GetXRefPrevValue: {
+        Data: null;
+        Return: number | undefined;
         Sinkchunk: undefined;
     };
     HasJSActions: {
@@ -282,7 +290,7 @@ export interface WActionMap {
     commonobj: {
         Data: [string, "Font", FontExpotDataEx | {
             error: string;
-        }] | [string, "FontPath", CmdArgs[]] | [string, "Image", ImgData | undefined];
+        }] | [string, "FontPath", CmdArgs[]] | [string, "Image", ImgData | undefined] | [string, "Pattern", ShadingPatternIR];
         Return: void;
         Sinkchunk: undefined;
     };
@@ -294,7 +302,7 @@ export interface WActionMap {
         Sinkchunk: undefined;
     };
     DocException: {
-        Data: PasswordException | InvalidPDFException | MissingPDFException | UnexpectedResponseException | UnknownErrorException;
+        Data: ErrorJ;
         Return: void;
         Sinkchunk: undefined;
     };
@@ -377,13 +385,6 @@ export interface WActionMap {
         Return: void;
         Sinkchunk: undefined;
     };
-    UnsupportedFeature: {
-        Data: {
-            featureId: UNSUPPORTED_FEATURES;
-        };
-        Return: void;
-        Sinkchunk: undefined;
-    };
 }
 type WActionName = keyof WActionMap;
 export declare const enum Thread {
@@ -395,7 +396,7 @@ export interface StreamSink<Ta extends Thread, AN extends ActionName<Ta> = Actio
     enqueue(chunk: ActionSinkchunk<Ta, AN>, size?: number, transfers?: Transferable[]): void;
     close?(): void;
     error?(reason: reason_t): void;
-    sinkCapability?: PromiseCapability;
+    sinkCapability?: PromiseCap;
     onPull?(desiredSize?: number): void;
     onCancel?(reason: object): void;
     isCancelled?: boolean;
@@ -410,9 +411,9 @@ export type ActionReturn<Ta extends Thread, AN extends ActionName<Ta> = ActionNa
 export type ActionSinkchunk<Ta extends Thread, AN extends ActionName<Ta> = ActionName<Ta>> = Ta extends Thread.main ? MActionMap[AN & MActionName]["Sinkchunk"] : WActionMap[AN & WActionName]["Sinkchunk"];
 interface StreamController<Ta extends Thread, AN extends ActionName<Ta> = ActionName<Ta>> {
     controller: ReadableStreamDefaultController<ActionSinkchunk<Ta, AN>>;
-    startCall: PromiseCapability;
-    pullCall?: PromiseCapability;
-    cancelCall?: PromiseCapability;
+    startCall: PromiseCap;
+    pullCall?: PromiseCap;
+    cancelCall?: PromiseCap;
     isClosed: boolean;
 }
 export declare class MessageHandler<Ta extends Thread, Tn extends Thread = Ta extends Thread.main ? Thread.worker : Thread.main> {
@@ -425,7 +426,7 @@ export declare class MessageHandler<Ta extends Thread, Tn extends Thread = Ta ex
     streamId: number;
     streamSinks: StreamSink<Ta>[];
     streamControllers: StreamController<Tn>[];
-    callbackCapabilities: PromiseCapability<unknown>[];
+    callbackCapabilities: PromiseCap<unknown>[];
     actionHandler: Record<ActionName<Tn>, ActionHandler<Tn>>;
     constructor(sourceName: string, targetName: string, comObj: IWorker);
     on<AN extends ActionName<Tn>>(actionName: AN, handler: ActionHandler<Tn, AN>): void;

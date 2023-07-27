@@ -1,8 +1,14 @@
+import type { C2D } from "../../../lib/alias.js";
 import { CMapCompressionType } from "../shared/util.js";
+export declare abstract class BaseFilterFactory {
+    addFilter(maps?: number[][]): string;
+    addHCMFilter(fgColor: string, bgColor: string): string;
+    destroy(keepHCM?: boolean): void;
+}
 export interface CanvasEntry {
     canvas: HTMLCanvasElement;
-    context: CanvasRenderingContext2D;
-    savedCtx?: CanvasRenderingContext2D;
+    context: C2D;
+    savedCtx?: C2D;
 }
 export declare abstract class BaseCanvasFactory {
     /** @final */

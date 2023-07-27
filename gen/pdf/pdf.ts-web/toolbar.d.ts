@@ -1,7 +1,7 @@
 import { AnnotationEditorType } from "../pdf.ts-src/pdf.js";
-import { EventBus, EventName } from "./event_utils.js";
-import { type IL10n } from "./interfaces.js";
-import { type ViewerConfiguration } from "./viewer.js";
+import type { EventBus, EventName } from "./event_utils.js";
+import type { IL10n } from "./interfaces.js";
+import type { ViewerConfiguration } from "./viewer.js";
 interface ToolbarButton {
     element: HTMLElement;
     eventName: EventName | null;

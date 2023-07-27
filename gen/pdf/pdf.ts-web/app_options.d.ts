@@ -1,6 +1,6 @@
 import { AnnotationEditorType, AnnotationMode, VerbosityLevel } from "../pdf.ts-src/pdf.js";
 import { LinkTarget } from "./pdf_link_service.js";
-import { CursorTool, RendererType, ScrollMode, SidebarView, SpreadMode, TextLayerMode } from "./ui_utils.js";
+import { CursorTool, ScrollMode, SidebarView, SpreadMode, TextLayerMode } from "./ui_utils.js";
 export declare const enum OptionKind {
     VIEWER = 2,
     API = 4,
@@ -67,6 +67,10 @@ declare const defaultOptions: {
         value: boolean;
         kind: OptionKind;
     };
+    enableFloatingToolbar: {
+        value: boolean;
+        kind: number;
+    };
     enablePermissions: {
         value: boolean;
         kind: number;
@@ -125,10 +129,6 @@ declare const defaultOptions: {
     };
     printResolution: {
         value: number;
-        kind: OptionKind;
-    };
-    renderer: {
-        value: RendererType | undefined;
         kind: OptionKind;
     };
     sidebarViewOnLoad: {
@@ -247,6 +247,7 @@ export declare abstract class AppOptions {
     static get disableHistory(): boolean;
     static get disablePageLabels(): boolean;
     static get disablePreferences(): boolean;
+    static get enableFloatingToolbar(): boolean;
     static get enablePermissions(): boolean;
     static get enablePrintAutoRotate(): boolean;
     static get enableScripting(): boolean;
@@ -262,7 +263,6 @@ export declare abstract class AppOptions {
     static get pageColorsForeground(): string;
     static get pdfBugEnabled(): boolean;
     static get printResolution(): number;
-    static get renderer(): RendererType | undefined;
     static get sidebarViewOnLoad(): SidebarView;
     static get scrollModeOnLoad(): ScrollMode;
     static get spreadModeOnLoad(): SpreadMode;

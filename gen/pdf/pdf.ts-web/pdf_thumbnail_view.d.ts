@@ -1,8 +1,8 @@
-import { OptionalContentConfig, PageViewport, PDFPageProxy, RenderTask } from "../pdf.ts-src/pdf.js";
-import { type IL10n, type IPDFLinkService, type IVisibleView } from "./interfaces.js";
-import { PDFPageView } from "./pdf_page_view.js";
-import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
-import { PageColors } from "./pdf_viewer.js";
+import type { OptionalContentConfig, PageViewport, PDFPageProxy, RenderTask } from "../pdf.ts-src/pdf.js";
+import type { IL10n, IPDFLinkService, IVisibleView } from "./interfaces.js";
+import type { PDFPageView } from "./pdf_page_view.js";
+import type { PDFRenderingQueue } from "./pdf_rendering_queue.js";
+import type { PageColors } from "./pdf_viewer.js";
 import { RenderingStates } from "./ui_utils.js";
 interface PDFThumbnailViewOptions {
     /**
@@ -61,14 +61,14 @@ export declare class PDFThumbnailView implements IVisibleView {
     renderingQueue: PDFRenderingQueue;
     renderTask?: RenderTask | undefined;
     renderingState: RenderingStates;
-    resume?: (() => void) | undefined; /** @implement */
-    canvasWidth: number;
-    canvasHeight: number;
-    scale: number;
+    resume: (() => void) | undefined; /** @implement */
     l10n: IL10n;
     anchor: HTMLAnchorElement;
     div: HTMLDivElement; /** @implement */
-    ring: HTMLDivElement;
+    canvasWidth: number;
+    canvasHeight: number;
+    scale: number;
+    _placeholderImg: HTMLDivElement;
     canvas?: HTMLCanvasElement;
     image?: HTMLImageElement;
     constructor({ container, id, defaultViewport, optionalContentConfigPromise, linkService, renderingQueue, l10n, pageColors, }: PDFThumbnailViewOptions);

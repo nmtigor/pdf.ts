@@ -15,8 +15,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { CHROME, PRODUCTION } from "../../global.js";
-import { AppOptions, OptionKind, } from "./app_options.js";
+import { CHROME, PDFJSDev } from "../../global.js";
+import { AppOptions, OptionKind } from "./app_options.js";
 /*80--------------------------------------------------------------------------*/
 /**
  * BasePreferences - Abstract base class for storing persistent settings.

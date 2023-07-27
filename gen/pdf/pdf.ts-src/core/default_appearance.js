@@ -149,10 +149,7 @@ endcmap CMapName currentdict /CMap defineresource pop end end`;
     constructor(xref, fontFamily) {
         this.xref = xref;
         this.fontFamily = fontFamily;
-        let canvas;
-        /*#static*/  {
-            canvas = new globalThis.OffscreenCanvas(1, 1);
-        }
+        const canvas = /*#static*/ new OffscreenCanvas(1, 1);
         this.ctxMeasure = canvas.getContext("2d");
         if (!FakeUnicodeFont.#fontNameId) {
             FakeUnicodeFont.#fontNameId = 1;

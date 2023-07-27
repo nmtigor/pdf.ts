@@ -1,40 +1,42 @@
 import "../../lib/jslang.js";
 import { Locale } from "../../lib/Locale.js";
-import { type DocumentInfo, Metadata, OptionalContentConfig, PDFDataRangeTransport, PDFDocumentLoadingTask, PDFDocumentProxy, PrintAnnotationStorage, WorkerMessageHandler } from "../pdf.ts-src/pdf.js";
+import type { DocumentInfo, Metadata, OptionalContentConfig, PDFDataRangeTransport, PDFDocumentLoadingTask, PDFDocumentProxy, PrintAnnotationStorage } from "../pdf.ts-src/pdf.js";
+import { WorkerMessageHandler } from "../pdf.ts-src/pdf.js";
 import { AnnotationEditorParams } from "./annotation_editor_params.js";
 import { PDFBug } from "./debugger.js";
-import { EventBus, EventMap } from "./event_utils.js";
-import { IDownloadManager, type IL10n, IScripting } from "./interfaces.js";
+import { EventBus, type EventMap } from "./event_utils.js";
+import type { IDownloadManager, IL10n, IScripting } from "./interfaces.js";
 import { OverlayManager } from "./overlay_manager.js";
 import { PasswordPrompt } from "./password_prompt.js";
 import { PDFAttachmentViewer } from "./pdf_attachment_viewer.js";
 import { PDFCursorTools } from "./pdf_cursor_tools.js";
 import { PDFDocumentProperties } from "./pdf_document_properties.js";
 import { PDFFindBar } from "./pdf_find_bar.js";
-import { type FindState, type MatchesCount, PDFFindController } from "./pdf_find_controller.js";
+import type { FindState, MatchesCount } from "./pdf_find_controller.js";
+import { PDFFindController } from "./pdf_find_controller.js";
 import { PDFHistory } from "./pdf_history.js";
 import { PDFLayerViewer } from "./pdf_layer_viewer.js";
 import { PDFLinkService } from "./pdf_link_service.js";
 import { PDFOutlineViewer } from "./pdf_outline_viewer.js";
 import { PDFPresentationMode } from "./pdf_presentation_mode.js";
-import { PDFPrintService } from "./pdf_print_service.js";
+import type { PDFPrintService } from "./pdf_print_service.js";
 import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
 import { PDFScriptingManager } from "./pdf_scripting_manager.js";
 import { PDFSidebar } from "./pdf_sidebar.js";
 import { PDFSidebarResizer } from "./pdf_sidebar_resizer.js";
 import { PDFThumbnailViewer } from "./pdf_thumbnail_viewer.js";
 import { type PageOverview, PDFViewer } from "./pdf_viewer.js";
-import { BasePreferences } from "./preferences.js";
+import type { BasePreferences } from "./preferences.js";
 import { SecondaryToolbar } from "./secondary_toolbar.js";
 import { Toolbar } from "./toolbar.js";
 import { ProgressBar, ScrollMode, SidebarView, SpreadMode } from "./ui_utils.js";
-import { type ViewerConfiguration } from "./viewer.js";
+import type { ViewerConfiguration } from "./viewer.js";
 import { ViewHistory } from "./view_history.js";
 export interface FindControlState {
     result: FindState;
     findPrevious?: boolean | undefined;
     matchesCount: MatchesCount;
-    rawQuery: string | undefined;
+    rawQuery: string | string[] | RegExpMatchArray | null;
 }
 export interface PassiveLoadingCbs {
     onOpenWithTransport(_x: PDFDataRangeTransport): void;
@@ -78,8 +80,9 @@ export declare class DefaultExternalServices {
     };
     get isInAutomation(): boolean;
     updateEditorStates(data: EventMap["annotationeditorstateschanged"]): void;
+    get canvasMaxAreaInBytes(): number;
 }
-interface _SetInitialViewP {
+interface SetInitialViewP_ {
     rotation?: number | undefined;
     sidebarView?: SidebarView | undefined;
     scrollMode?: ScrollMode | undefined;
@@ -223,9 +226,10 @@ export declare class PDFViewerApplication {
      * @return Promise that is resolved when the document is opened.
      */
     open(args_x: OpenP_ | string | ArrayBuffer): Promise<void | undefined>;
-    download(): Promise<void>;
-    save(): Promise<void>;
-    downloadOrSave(): void;
+    download(options?: {}): Promise<void>;
+    save(options?: {}): Promise<void>;
+    downloadOrSave(options?: {}): void;
+    openInExternalApp(): void;
     /**
      * Report the error; used for errors affecting loading and/or parsing of
      * the entire PDF document.
@@ -242,7 +246,7 @@ export declare class PDFViewerApplication {
     _otherError(message: string, moreInfo?: ErrorMoreInfo): void;
     progress(level: number): void;
     load(pdfDocument: PDFDocumentProxy): void;
-    setInitialView(storedHash?: string, { rotation, sidebarView, scrollMode, spreadMode }?: _SetInitialViewP): void;
+    setInitialView(storedHash?: string, { rotation, sidebarView, scrollMode, spreadMode }?: SetInitialViewP_): void;
     _cleanup: () => void;
     forceRendering: () => void;
     beforePrint: () => void;

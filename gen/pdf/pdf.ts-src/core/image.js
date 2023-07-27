@@ -15,13 +15,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { _PDFDEV } from "../../../global.js";
+import { PDFJSDev, TESTING } from "../../../global.js";
 import { assert } from "../../../lib/util/trace.js";
-import { applyMaskImageData } from "../shared/image_utils.js";
+import { convertBlackAndWhiteToRGBA, convertToRGBA, } from "../shared/image_utils.js";
 import { FeatureTest, FormatError, ImageKind, info, warn, } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
 import { ColorSpace } from "./colorspace.js";
 import { DecodeStream } from "./decode_stream.js";
+import { ImageResizer } from "./image_resizer.js";
 import { JpegStream } from "./jpeg_stream.js";
 import { JpxImage } from "./jpx.js";
 import { Name } from "./primitives.js";
@@ -314,22 +315,41 @@ export class PDFImage {
         }
         return { data, width, height, interpolate };
     }
-    static createMask({ imgArray, width, height, imageIsFromDecodeStream, inverseDecode, interpolate, isOffscreenCanvasSupported = true, }) {
+    static async createMask({ imgArray, width, height, imageIsFromDecodeStream, inverseDecode, interpolate, isOffscreenCanvasSupported = false, }) {
         const isSingleOpaquePixel = width === 1 &&
             height === 1 &&
             inverseDecode === (imgArray.length === 0 || !!(imgArray[0] & 128));
         if (isSingleOpaquePixel) {
             return { isSingleOpaquePixel };
         }
-        if (isOffscreenCanvasSupported && FeatureTest.isOffscreenCanvasSupported) {
-            const canvas = new globalThis.OffscreenCanvas(width, height);
+        if (isOffscreenCanvasSupported) {
+            if (ImageResizer.needsToBeResized(width, height)) {
+                const data = new Uint8ClampedArray(width * height * 4);
+                convertBlackAndWhiteToRGBA({
+                    src: imgArray,
+                    dest: data,
+                    width,
+                    height,
+                    nonBlackColor: 0,
+                    inverseDecode,
+                });
+                return ImageResizer.createImage({
+                    kind: ImageKind.RGBA_32BPP,
+                    data,
+                    width,
+                    height,
+                    interpolate,
+                });
+            }
+            const canvas = new OffscreenCanvas(width, height);
             const ctx = canvas.getContext("2d");
             const imgData = ctx.createImageData(width, height);
-            applyMaskImageData({
+            convertBlackAndWhiteToRGBA({
                 src: imgArray,
                 dest: imgData.data,
                 width,
                 height,
+                nonBlackColor: 0,
                 inverseDecode,
             });
             ctx.putImageData(imgData, 0, 0);
@@ -557,7 +577,7 @@ export class PDFImage {
             buffer[i + 2] = (buffer[i + 2] - matteB) * k + matteB;
         }
     }
-    createImageData(forceRGBA = false) {
+    async createImageData(forceRGBA = false, isOffscreenCanvasSupported = false) {
         const drawWidth = this.drawWidth;
         const drawHeight = this.drawHeight;
         const imgData = {
@@ -574,6 +594,8 @@ export class PDFImage {
         const bpc = this.bpc;
         // Rows start at byte boundary.
         const rowBytes = (originalWidth * numComps * bpc + 7) >> 3;
+        const mustBeResized = isOffscreenCanvasSupported &&
+            ImageResizer.needsToBeResized(drawWidth, drawHeight);
         if (!forceRGBA) {
             // If it is a 1-bit-per-pixel grayscale (i.e. black-and-white) image
             // without any complications, we pass a same-sized copy to the main
@@ -595,8 +617,21 @@ export class PDFImage {
                 !this.mask &&
                 drawWidth === originalWidth &&
                 drawHeight === originalHeight) {
+                const data = this.getImageBytes(originalHeight * rowBytes, {});
+                if (isOffscreenCanvasSupported) {
+                    if (mustBeResized) {
+                        return ImageResizer.createImage({
+                            data,
+                            kind,
+                            width: drawWidth,
+                            height: drawHeight,
+                            interpolate: this.interpolate,
+                        }, this.needsDecode);
+                    }
+                    return this.createBitmap(kind, originalWidth, originalHeight, data);
+                }
                 imgData.kind = kind;
-                imgData.data = this.getImageBytes(originalHeight * rowBytes, {});
+                imgData.data = data;
                 if (this.needsDecode) {
                     // Invert the buffer (which must be grayscale if we reached here).
                     assert(kind === ImageKind.GRAYSCALE_1BPP, "PDFImage.createImageData: The image must be grayscale.");
@@ -607,23 +642,56 @@ export class PDFImage {
                 }
                 return imgData;
             }
-            if (this.image instanceof JpegStream && !this.smask && !this.mask) {
+            if (this.image instanceof JpegStream &&
+                !this.smask &&
+                !this.mask &&
+                !this.needsDecode) {
                 let imageLength = originalHeight * rowBytes;
-                switch (this.colorSpace.name) {
-                    case "DeviceGray":
-                        // Avoid truncating the image, since `JpegImage.getData`
-                        // will expand the image data when `forceRGB === true`.
-                        imageLength *= 3;
-                    /* falls through */
-                    case "DeviceRGB":
-                    case "DeviceCMYK":
-                        imgData.kind = ImageKind.RGB_24BPP;
-                        imgData.data = this.getImageBytes(imageLength, {
+                if (isOffscreenCanvasSupported && !mustBeResized) {
+                    let isHandled = false;
+                    switch (this.colorSpace.name) {
+                        case "DeviceGray":
+                            // Avoid truncating the image, since `JpegImage.getData`
+                            // will expand the image data when `forceRGB === true`.
+                            imageLength *= 4;
+                            isHandled = true;
+                            break;
+                        case "DeviceRGB":
+                            imageLength = (imageLength / 3) * 4;
+                            isHandled = true;
+                            break;
+                        case "DeviceCMYK":
+                            isHandled = true;
+                            break;
+                    }
+                    if (isHandled) {
+                        const rgba = this.getImageBytes(imageLength, {
                             drawWidth,
                             drawHeight,
-                            forceRGB: true,
+                            forceRGBA: true,
                         });
-                        return imgData;
+                        return this.createBitmap(ImageKind.RGBA_32BPP, drawWidth, drawHeight, rgba);
+                    }
+                }
+                else {
+                    switch (this.colorSpace.name) {
+                        case "DeviceGray":
+                            imageLength *= 3;
+                        /* falls through */
+                        case "DeviceRGB":
+                        case "DeviceCMYK":
+                            imgData.kind = ImageKind.RGB_24BPP;
+                            imgData.data = this.getImageBytes(imageLength, {
+                                drawWidth,
+                                drawHeight,
+                                forceRGB: true,
+                            });
+                            if (mustBeResized) {
+                                // The image is too big so we resize it.
+                                return ImageResizer.createImage(imgData);
+                            }
+                            return imgData;
+                    }
                 }
             }
         }
@@ -637,26 +705,56 @@ export class PDFImage {
         // If opacity data is present, use RGBA_32BPP form. Otherwise, use the
         // more compact RGB_24BPP form if allowable.
         let alpha01, maybeUndoPreblend;
+        let canvas, ctx, canvasImgData, data;
+        if (isOffscreenCanvasSupported && !mustBeResized) {
+            canvas = new OffscreenCanvas(drawWidth, drawHeight);
+            ctx = canvas.getContext("2d");
+            canvasImgData = ctx.createImageData(drawWidth, drawHeight);
+            data = canvasImgData.data;
+        }
+        imgData.kind = ImageKind.RGBA_32BPP;
         if (!forceRGBA && !this.smask && !this.mask) {
-            imgData.kind = ImageKind.RGB_24BPP;
-            imgData.data = new Uint8ClampedArray(drawWidth * drawHeight * 3);
-            alpha01 = 0;
+            if (!isOffscreenCanvasSupported || mustBeResized) {
+                imgData.kind = ImageKind.RGB_24BPP;
+                data = new Uint8ClampedArray(drawWidth * drawHeight * 3);
+                alpha01 = 0;
+            }
+            else {
+                const arr = new Uint32Array(data.buffer);
+                arr.fill(FeatureTest.isLittleEndian ? 0xff000000 : 0x000000ff);
+                alpha01 = 1;
+            }
             maybeUndoPreblend = false;
         }
         else {
-            imgData.kind = ImageKind.RGBA_32BPP;
-            imgData.data = new Uint8ClampedArray(drawWidth * drawHeight * 4);
+            if (!isOffscreenCanvasSupported || mustBeResized) {
+                data = new Uint8ClampedArray(drawWidth * drawHeight * 4);
+            }
             alpha01 = 1;
             maybeUndoPreblend = true;
             // Color key masking (opacity) must be performed before decoding.
-            this.fillOpacity(imgData.data, drawWidth, drawHeight, actualHeight, comps);
+            this.fillOpacity(data, drawWidth, drawHeight, actualHeight, comps);
         }
         if (this.needsDecode) {
             this.decodeBuffer(comps);
         }
-        this.colorSpace.fillRgb(imgData.data, originalWidth, originalHeight, drawWidth, drawHeight, actualHeight, bpc, comps, alpha01);
+        this.colorSpace.fillRgb(data, originalWidth, originalHeight, drawWidth, drawHeight, actualHeight, bpc, comps, alpha01);
         if (maybeUndoPreblend) {
-            this.undoPreblend(imgData.data, drawWidth, actualHeight);
+            this.undoPreblend(data, drawWidth, actualHeight);
+        }
+        if (isOffscreenCanvasSupported && !mustBeResized) {
+            ctx.putImageData(canvasImgData, 0, 0);
+            const bitmap = canvas.transferToImageBitmap();
+            return {
+                width: drawWidth,
+                height: drawHeight,
+                bitmap,
+                interpolate: this.interpolate,
+            };
+        }
+        imgData.data = data;
+        if (mustBeResized) {
+            return ImageResizer.createImage(imgData);
         }
         return imgData;
     }
@@ -703,10 +801,38 @@ export class PDFImage {
             buffer[i] = scale * comps[i];
         }
     }
-    getImageBytes(length, { drawWidth, drawHeight, forceRGB = false, internal = false }) {
+    createBitmap(kind, width, height, src) {
+        const canvas = new OffscreenCanvas(width, height);
+        const ctx = canvas.getContext("2d");
+        let imgData;
+        if (kind === ImageKind.RGBA_32BPP) {
+            imgData = new ImageData(src, width, height);
+        }
+        else {
+            imgData = ctx.createImageData(width, height);
+            convertToRGBA({
+                kind,
+                src,
+                dest: new Uint32Array(imgData.data.buffer),
+                width,
+                height,
+                inverseDecode: this.needsDecode,
+            });
+        }
+        ctx.putImageData(imgData, 0, 0);
+        const bitmap = canvas.transferToImageBitmap();
+        return {
+            width,
+            height,
+            bitmap,
+            interpolate: this.interpolate,
+        };
+    }
+    getImageBytes(length, { drawWidth, drawHeight, forceRGBA = false, forceRGB = false, internal = false, }) {
         this.image.reset();
         this.image.drawWidth = drawWidth || this.width;
         this.image.drawHeight = drawHeight || this.height;
+        this.image.forceRGBA = !!forceRGBA;
         this.image.forceRGB = !!forceRGB;
         const imageBytes = this.image.getBytes(length);
         // If imageBytes came from a DecodeStream, we're safe to transfer it

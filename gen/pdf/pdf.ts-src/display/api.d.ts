@@ -1,33 +1,40 @@
-import { TypedArray } from "../../../lib/alias.js";
+import type { C2D, TypedArray } from "../../../lib/alias.js";
+import { PromiseCap } from "../../../lib/util/PromiseCap.js";
 import { Stepper } from "../../pdf.ts-web/debugger.js";
-import { PageColors } from "../../pdf.ts-web/pdf_viewer.js";
-import { type AnnotationData, type FieldObject } from "../core/annotation.js";
-import { type ExplicitDest, SetOCGState } from "../core/catalog.js";
-import { type AnnotActions } from "../core/core_utils.js";
-import { DatasetReader } from "../core/dataset_reader.js";
-import { DocumentInfo, type XFAData } from "../core/document.js";
-import { type ImgData } from "../core/evaluator.js";
-import { type Attachment } from "../core/file_spec.js";
-import { FontExpotDataEx } from "../core/fonts.js";
-import { type CmdArgs } from "../core/font_renderer.js";
-import { type IWorker } from "../core/iworker.js";
-import { type OpListIR } from "../core/operator_list.js";
-import { type ShadingPatternIR } from "../core/pattern.js";
-import { type XFAElObj } from "../core/xfa/alias.js";
-import { type IPDFStream } from "../interfaces.js";
-import { GetDocRequestData, MessageHandler, type PageInfo, type PDFInfo, Thread } from "../shared/message_handler.js";
-import { AnnotationMode, type matrix_t, PasswordResponses, type PromiseCapability, RenderingIntentFlag, UNSUPPORTED_FEATURES, VerbosityLevel } from "../shared/util.js";
-import { AnnotStorageRecord } from "./annotation_layer.js";
+import type { PageColors } from "../../pdf.ts-web/pdf_viewer.js";
+import type { FieldObject } from "../core/annotation.js";
+import type { ExplicitDest, SetOCGState } from "../core/catalog.js";
+import type { AnnotActions } from "../core/core_utils.js";
+import type { DatasetReader } from "../core/dataset_reader.js";
+import type { DocumentInfo } from "../core/document.js";
+import type { ImgData } from "../core/evaluator.js";
+import type { Attachment } from "../core/file_spec.js";
+import type { FontExpotDataEx } from "../core/fonts.js";
+import type { CmdArgs } from "../core/font_renderer.js";
+import type { IWorker } from "../core/iworker.js";
+import type { OpListIR } from "../core/operator_list.js";
+import type { ShadingPatternIR } from "../core/pattern.js";
+import type { XFAElObj } from "../core/xfa/alias.js";
+import type { IPDFStream } from "../interfaces.js";
+import type { GetDocRequestData, PageInfo, PDFInfo, Thread } from "../shared/message_handler.js";
+import { MessageHandler } from "../shared/message_handler.js";
+import type { matrix_t } from "../shared/util.js";
+import { AnnotationMode, PasswordResponses, RenderingIntentFlag, VerbosityLevel } from "../shared/util.js";
+import type { AnnotStorageRecord } from "./annotation_layer.js";
 import { AnnotationStorage, PrintAnnotationStorage } from "./annotation_storage.js";
-import { BaseCanvasFactory } from "./base_factory.js";
+import type { BaseCanvasFactory } from "./base_factory.js";
 import { CanvasGraphics } from "./canvas.js";
-import { DOMCanvasFactory, DOMCMapReaderFactory, DOMStandardFontDataFactory, PageViewport, StatTimer } from "./display_utils.js";
+import { DOMCanvasFactory, DOMCMapReaderFactory, DOMFilterFactory, DOMStandardFontDataFactory, PageViewport, StatTimer } from "./display_utils.js";
 import { FontFaceObject, FontLoader } from "./font_loader.js";
 import { Metadata } from "./metadata.js";
 import { OptionalContentConfig } from "./optional_content_config.js";
-export declare const DefaultCanvasFactory: typeof DOMCanvasFactory;
 export type DefaultCanvasFactory = DOMCanvasFactory;
+export declare const DefaultCanvasFactory: typeof DOMCanvasFactory;
+export type DefaultCMapReaderFactory = DOMCMapReaderFactory;
 export declare const DefaultCMapReaderFactory: typeof DOMCMapReaderFactory;
+export type DefaultFilterFactory = DOMFilterFactory;
+export declare const DefaultFilterFactory: typeof DOMFilterFactory;
+export type DefaultStandardFontDataFactory = DOMStandardFontDataFactory;
 export declare const DefaultStandardFontDataFactory: typeof DOMStandardFontDataFactory;
 export type BinaryData = TypedArray | ArrayBuffer | number[] | string;
 export interface RefProxy {
@@ -175,6 +182,12 @@ export interface DocumentInitP {
      */
     isOffscreenCanvasSupported?: boolean;
     /**
+     * The integer value is used to
+     * know when an image must be resized (uses `OffscreenCanvas` in the worker).
+     * If it's -1 then a possibly slow algorithm is used to guess the max value.
+     */
+    canvasMaxAreaInBytes?: number;
+    /**
      * By default fonts are converted to
      * OpenType fonts and loaded via the Font Loading API or `@font-face` rules.
      * If disabled, fonts will be rendered using a built-in font renderer that
@@ -230,6 +243,16 @@ export interface DocumentInitP {
      * (see `web/debugger.js`). The default value is `false`.
      */
     pdfBug?: boolean;
+    /**
+     * The factory instance that will be used
+     * when creating canvases. The default value is {new DOMCanvasFactory()}.
+     */
+    canvasFactory?: DefaultCanvasFactory;
+    /**
+     * A factory instance that will be used
+     * to create SVG filters when rendering some images on the main canvas.
+     */
+    filterFactory?: DefaultFilterFactory;
     progressiveDone?: boolean;
     contentDispositionFilename?: string | undefined;
 }
@@ -246,6 +269,8 @@ type TransportParams_ = {
     styleElement: HTMLStyleElement | undefined;
 };
 type TransportFactory_ = {
+    canvasFactory: DefaultCanvasFactory;
+    filterFactory: DefaultFilterFactory;
     cMapReaderFactory: DOMCMapReaderFactory;
     standardFontDataFactory: DOMStandardFontDataFactory;
 };
@@ -267,7 +292,7 @@ export declare function getDocument(src_x: GetDocumentP_): PDFDocumentLoadingTas
  */
 export declare class PDFDocumentLoadingTask {
     #private;
-    _capability: PromiseCapability<PDFDocumentProxy>;
+    _capability: PromiseCap<PDFDocumentProxy>;
     _transport: WorkerTransport | undefined;
     _worker: PDFWorker | undefined;
     /**
@@ -290,12 +315,6 @@ export declare class PDFDocumentLoadingTask {
      * The callback receives an {@link OnProgressP} argument.
      */
     onProgress?: (_: OnProgressP) => void;
-    get onUnsupportedFeature(): ((featureId?: UNSUPPORTED_FEATURES | undefined) => void) | undefined;
-    /**
-     * Callback for when an unsupported feature is used in the PDF document.
-     * The callback receives an {@link UNSUPPORTED_FEATURES} argument.
-     */
-    set onUnsupportedFeature(callback: ((featureId?: UNSUPPORTED_FEATURES | undefined) => void) | undefined);
     constructor();
     /**
      * Promise for document loading task completion.
@@ -372,6 +391,10 @@ export declare class PDFDocumentProxy {
      * @return Storage for annotation data in forms.
      */
     get annotationStorage(): AnnotationStorage;
+    /**
+     * @return The filter factory instance.
+     */
+    get filterFactory(): DOMFilterFactory;
     /**
      * @return Total number of pages in the PDF file.
      */
@@ -562,6 +585,7 @@ export declare class PDFDocumentProxy {
      */
     getCalculationOrderIds(): Promise<string[] | undefined>;
     getXFADatasets: () => Promise<DatasetReader | undefined>;
+    getXRefPrevValue: () => Promise<number | undefined>;
 }
 /**
  * Page getViewport parameters.
@@ -596,17 +620,17 @@ interface _GetViewportP {
 /**
  * Page getTextContent parameters.
  */
-interface _GetTextContentP {
-    /**
-     * Do not attempt to combine
-     * same line {@link TextItem}'s. The default value is `false`.
-     */
-    disableCombineTextItems?: boolean;
+interface GetTextContentP_ {
     /**
      * When true include marked
      * content items in the items array of TextContent. The default is `false`.
      */
     includeMarkedContent?: boolean;
+    /**
+     * When true the text is *not*
+     * normalized in the worker-thread. The default is `false`.
+     */
+    disableNormalization?: boolean;
 }
 /**
  * Page text content.
@@ -684,7 +708,7 @@ export interface TextStyle {
     /**
      * Whether or not the text is in vertical mode.
      */
-    vertical: boolean;
+    vertical: boolean | undefined;
     /**
      * The possible font family.
      */
@@ -719,7 +743,7 @@ export interface RenderP {
     /**
      * A 2D context of a DOM Canvas object.
      */
-    canvasContext: CanvasRenderingContext2D;
+    canvasContext: C2D;
     /**
      * Rendering viewport obtained by calling
      * the `PDFPageProxy.getViewport` method.
@@ -756,11 +780,6 @@ export interface RenderP {
      * before viewport transform.
      */
     transform?: matrix_t | undefined;
-    /**
-     * The factory instance that will be used
-     * when creating canvases. The default value is {new DOMCanvasFactory()}.
-     */
-    canvasFactory?: BaseCanvasFactory;
     /**
      * Background to use for the canvas.
      * Any valid `canvas.fillStyle` can be used: a `DOMString` parsed as CSS
@@ -849,7 +868,7 @@ export interface StructTreeContent {
 export type AnnotIntent = "display" | "print" | "richText";
 export type Intent = AnnotIntent | "any";
 export type PDFObjs = ImgData | ShadingPatternIR;
-interface _IntentArgs {
+interface IntentArgs_ {
     renderingIntent: RenderingIntentFlag;
     cacheKey: string;
     annotationStorageMap: AnnotStorageRecord | undefined;
@@ -862,25 +881,18 @@ export declare class PDFPageProxy {
     #private;
     _pageIndex: number;
     _pageInfo: PageInfo;
-    _ownerDocument: Document | undefined;
     _transport: WorkerTransport;
     _stats: StatTimer | undefined;
     /**
-     * @return Returns page stats, if enabled; returns `null` otherwise.
+     * @return Returns page stats, if enabled; returns `undefined` otherwise.
      */
     get stats(): StatTimer | undefined;
     _pdfBug: boolean;
     commonObjs: PDFObjects<PDFCommonObjs>;
     objs: PDFObjects<PDFObjs | undefined>;
-    cleanupAfterRender: boolean;
-    _structTreePromise: Promise<StructTreeNode | undefined> | undefined;
-    pendingCleanup: boolean;
+    _maybeCleanupAfterRender: boolean;
     destroyed: boolean;
-    _annotationsPromise: Promise<AnnotationData[]> | undefined;
-    _annotationsIntent: AnnotIntent | undefined;
-    _jsActionsPromise: Promise<AnnotActions | undefined> | undefined;
-    _xfaPromise: Promise<XFAData | undefined> | undefined;
-    constructor(pageIndex: number, pageInfo: PageInfo, transport: WorkerTransport, ownerDocument?: Document, pdfBug?: boolean);
+    constructor(pageIndex: number, pageInfo: PageInfo, transport: WorkerTransport, pdfBug?: boolean);
     /**
      * @return Page number of the page. First page is 1.
      */
@@ -913,7 +925,7 @@ export declare class PDFPageProxy {
      * @return A promise that is resolved with an
      *   {Array} of the annotation objects.
      */
-    getAnnotations({ intent }?: _GetAnnotationsP): Promise<AnnotationData[]>;
+    getAnnotations({ intent }?: _GetAnnotationsP): Promise<import("../core/annotation.js").AnnotationData[]>;
     /**
      * @return A promise that is resolved with an
      *   {Object} with JS actions.
@@ -937,7 +949,7 @@ export declare class PDFPageProxy {
      * @return An object that contains a promise that is
      *   resolved when the page finishes rendering.
      */
-    render({ canvasContext, viewport, intent, annotationMode, transform, canvasFactory, background, optionalContentConfigPromise, annotationCanvasMap, pageColors, printAnnotationStorage, }: RenderP): RenderTask;
+    render({ canvasContext, viewport, intent, annotationMode, transform, background, optionalContentConfigPromise, annotationCanvasMap, pageColors, printAnnotationStorage, }: RenderP): RenderTask;
     /**
      * @param params Page getOperatorList parameters.
      * @return A promise resolved with an
@@ -951,7 +963,7 @@ export declare class PDFPageProxy {
      * @param params getTextContent parameters.
      * @return Stream for reading text content chunks.
      */
-    streamTextContent({ disableCombineTextItems, includeMarkedContent, }?: _GetTextContentP): ReadableStream;
+    streamTextContent({ includeMarkedContent, disableNormalization, }?: GetTextContentP_): ReadableStream<TextContent>;
     /**
      * NOTE: All occurrences of whitespace will be replaced by
      * standard spaces (0x20).
@@ -960,7 +972,7 @@ export declare class PDFPageProxy {
      * @return A promise that is resolved with a
      *   {@link TextContent} object that represents the page's text content.
      */
-    getTextContent(params?: _GetTextContentP): Promise<TextContent>;
+    getTextContent(params?: GetTextContentP_): Promise<TextContent>;
     /**
      * @return A promise that is resolved with a
      *   {@link StructTreeNode} object that represents the page's structure tree,
@@ -984,7 +996,7 @@ export declare class PDFPageProxy {
 }
 export declare class LoopbackPort {
     #private;
-    postMessage(obj: any, transfers?: Transferable[] | StructuredSerializeOptions): void;
+    postMessage(message: any, transfer?: Transferable[]): void;
     addEventListener(name: string, listener: EventListener): void;
     removeEventListener(name: string, listener: EventListener): void;
     terminate(): void;
@@ -1070,27 +1082,29 @@ declare class WorkerTransport {
     commonObjs: PDFObjects<PDFCommonObjs>;
     fontLoader: FontLoader;
     _params: TransportParams_;
-    cMapReaderFactory: DOMCMapReaderFactory | undefined;
-    standardFontDataFactory: DOMStandardFontDataFactory | undefined;
+    canvasFactory: DOMCanvasFactory;
+    filterFactory: DOMFilterFactory;
+    cMapReaderFactory: DOMCMapReaderFactory;
+    standardFontDataFactory: DOMStandardFontDataFactory;
     destroyed: boolean;
-    destroyCapability?: PromiseCapability;
-    _passwordCapability?: PromiseCapability<{
+    destroyCapability?: PromiseCap;
+    _passwordCapability?: PromiseCap<{
         password: string;
     }>;
-    downloadInfoCapability: PromiseCapability<{
+    downloadInfoCapability: PromiseCap<{
         length: number;
     }>;
     _htmlForXfa: XFAElObj | undefined;
-    constructor(messageHandler: MessageHandler<Thread.main>, loadingTask: PDFDocumentLoadingTask, networkStream: IPDFStream | undefined, params: TransportParams_, factory: TransportFactory_ | undefined);
+    constructor(messageHandler: MessageHandler<Thread.main>, loadingTask: PDFDocumentLoadingTask, networkStream: IPDFStream | undefined, params: TransportParams_, factory: TransportFactory_);
     get annotationStorage(): AnnotationStorage;
-    getRenderingIntent(intent: Intent, annotationMode?: AnnotationMode, printAnnotationStorage?: PrintAnnotationStorage | undefined, isOpList?: boolean): _IntentArgs;
+    getRenderingIntent(intent: Intent, annotationMode?: AnnotationMode, printAnnotationStorage?: PrintAnnotationStorage | undefined, isOpList?: boolean): IntentArgs_;
     destroy(): Promise<void>;
     setupMessageHandler(): void;
     getData(): Promise<Uint8Array>;
     saveDocument(): Promise<Uint8Array>;
     getPage(pageNumber: unknown): Promise<PDFPageProxy>;
     getPageIndex(ref: RefProxy): Promise<number>;
-    getAnnotations(pageIndex: number, intent: RenderingIntentFlag): Promise<AnnotationData[]>;
+    getAnnotations(pageIndex: number, intent: RenderingIntentFlag): Promise<import("../core/annotation.js").AnnotationData[]>;
     getFieldObjects(): Promise<boolean | Record<string, FieldObject[]> | MetadataEx | undefined>;
     hasJSActions(): Promise<boolean>;
     getCalculationOrderIds(): Promise<string[] | undefined>;
@@ -1117,6 +1131,7 @@ declare class WorkerTransport {
         enableXfa: boolean;
     };
     getXFADatasets: () => Promise<DatasetReader | undefined>;
+    getXRefPrevValue: () => Promise<number | undefined>;
 }
 /**
  * A PDF document and page is built of many objects. E.g. there are objects for
@@ -1168,26 +1183,27 @@ export declare class RenderTask {
      */
     get separateAnnots(): boolean;
 }
-interface _IRTCtorP_paraams {
-    canvasContext: CanvasRenderingContext2D;
+interface IRTCtorP_Paraams_ {
+    canvasContext: C2D;
     viewport: PageViewport;
     transform: matrix_t | undefined;
     background: string | CanvasGradient | CanvasPattern | undefined;
 }
-interface _InternalRenderTaskCtorP {
+interface InternalRenderTaskCtorP_ {
     callback: (error?: unknown) => void;
-    params: _IRTCtorP_paraams;
+    params: IRTCtorP_Paraams_;
     objs: PDFObjects<PDFObjs | undefined>;
     commonObjs: PDFObjects<PDFCommonObjs>;
     annotationCanvasMap: Map<string, HTMLCanvasElement> | undefined;
     operatorList: OpListIR;
     pageIndex: number;
     canvasFactory: BaseCanvasFactory;
+    filterFactory: DefaultFilterFactory;
     useRequestAnimationFrame?: boolean;
     pdfBug?: boolean;
     pageColors: PageColors | undefined;
 }
-interface _InitializeGraphicsP {
+interface InitializeGraphicsP_ {
     transparency?: boolean;
     optionalContentConfig: OptionalContentConfig | undefined;
 }
@@ -1198,7 +1214,7 @@ interface _InitializeGraphicsP {
 export declare class InternalRenderTask {
     #private;
     callback: (error?: unknown) => void;
-    params: _IRTCtorP_paraams;
+    params: IRTCtorP_Paraams_;
     objs: PDFObjects<PDFObjs | undefined>;
     commonObjs: PDFObjects<PDFCommonObjs>;
     annotationCanvasMap: Map<string, HTMLCanvasElement> | undefined;
@@ -1206,6 +1222,7 @@ export declare class InternalRenderTask {
     operatorList: OpListIR;
     _pageIndex: number;
     canvasFactory: BaseCanvasFactory;
+    filterFactory: DOMFilterFactory;
     _pdfBug: boolean;
     pageColors: PageColors | undefined;
     running: boolean;
@@ -1213,14 +1230,14 @@ export declare class InternalRenderTask {
     graphicsReady: boolean;
     _useRequestAnimationFrame: boolean;
     cancelled: boolean;
-    capability: PromiseCapability<void>;
+    capability: PromiseCap<void>;
     task: RenderTask;
     _canvas: HTMLCanvasElement;
     stepper?: Stepper;
     gfx?: CanvasGraphics;
-    constructor({ callback, params, objs, commonObjs, annotationCanvasMap, operatorList, pageIndex, canvasFactory, useRequestAnimationFrame, pdfBug, pageColors, }: _InternalRenderTaskCtorP);
+    constructor({ callback, params, objs, commonObjs, annotationCanvasMap, operatorList, pageIndex, canvasFactory, filterFactory, useRequestAnimationFrame, pdfBug, pageColors, }: InternalRenderTaskCtorP_);
     get completed(): Promise<void>;
-    initializeGraphics({ transparency, optionalContentConfig }: _InitializeGraphicsP): void;
+    initializeGraphics({ transparency, optionalContentConfig }: InitializeGraphicsP_): void;
     cancel: (error?: any, extraDelay?: number) => void;
     operatorListChanged(): void;
     _continue: () => void;

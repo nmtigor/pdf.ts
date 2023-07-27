@@ -19,10 +19,10 @@
 
 /** @typedef {import("./interfaces").IDownloadManager} IDownloadManager */
 
-import { CHROME, COMPONENTS, GENERIC } from "../../global.ts";
+import { CHROME, COMPONENTS, GENERIC, PDFJSDev } from "../../global.ts";
 import { html } from "../../lib/dom.ts";
 import { createValidAbsoluteUrl, isPdfFile } from "../pdf.ts-src/pdf.ts";
-import { IDownloadManager } from "./interfaces.ts";
+import type { IDownloadManager } from "./interfaces.ts";
 /*80--------------------------------------------------------------------------*/
 
 /*#static*/ if (!(CHROME || GENERIC)) {
@@ -57,7 +57,7 @@ export class DownloadManager implements IDownloadManager {
   onerror?: (err: any) => void;
 
   /** @implement */
-  downloadUrl(url: string, filename: string) {
+  downloadUrl(url: string, filename: string, _options?: object) {
     if (!createValidAbsoluteUrl(url, "http://example.com")) {
       console.error(`downloadUrl - not a valid URL: ${url}`);
       return; // restricted/invalid URL
@@ -89,7 +89,7 @@ export class DownloadManager implements IDownloadManager {
     const isPdfData = isPdfFile(filename);
     const contentType = isPdfData ? "application/pdf" : "";
 
-    /*#static*/ if (!COMPONENTS) {
+    /*#static*/ if (PDFJSDev || !COMPONENTS) {
       if (isPdfData) {
         let blobUrl = this.#openBlobUrls.get(element);
         if (!blobUrl) {
@@ -98,7 +98,7 @@ export class DownloadManager implements IDownloadManager {
           );
           this.#openBlobUrls.set(element, blobUrl);
         }
-        const viewerUrl = /*#static*/ GENERIC
+        const viewerUrl = /*#static*/ PDFJSDev || GENERIC
           // The current URL is the viewer, let's use it and append the file.
           ? "?file=" + encodeURIComponent(blobUrl + "#" + filename)
           : /*#static*/ CHROME
@@ -128,7 +128,7 @@ export class DownloadManager implements IDownloadManager {
   }
 
   /** @implement */
-  download(blob: Blob, url: string, filename: string) {
+  download(blob: Blob, url: string, filename: string, _options?: object) {
     const blobUrl = URL.createObjectURL(blob);
     download(blobUrl, filename);
   }

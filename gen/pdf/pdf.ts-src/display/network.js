@@ -17,8 +17,9 @@
  */
 import { MOZCENTRAL } from "../../../global.js";
 import { HttpStatusCode } from "../../../lib/HttpStatusCode.js";
+import { PromiseCap } from "../../../lib/util/PromiseCap.js";
 import { assert } from "../../../lib/util/trace.js";
-import { createPromiseCapability, stringToBytes, } from "../shared/util.js";
+import { stringToBytes, } from "../shared/util.js";
 import { createResponseStatusError, extractFilenameFromHeader, validateRangeRequestCapabilities, } from "./network_utils.js";
 /*80--------------------------------------------------------------------------*/
 /*#static*/ 
@@ -34,7 +35,6 @@ class NetworkManager {
     isHttp;
     httpHeaders;
     withCredentials;
-    getXhr;
     currXhrId = 0;
     pendingRequests = Object.create(null);
     constructor(url, args = {}) {
@@ -42,7 +42,6 @@ class NetworkManager {
         this.isHttp = /^https?:/i.test(url.toString());
         this.httpHeaders = (this.isHttp && args.httpHeaders) || Object.create(null);
         this.withCredentials = args.withCredentials || false;
-        this.getXhr = args.getXhr || (() => new XMLHttpRequest());
     }
     requestRange(begin, end, listeners) {
         const args = {
@@ -56,7 +55,7 @@ class NetworkManager {
         return this.request(listeners);
     }
     request(args) {
-        const xhr = this.getXhr();
+        const xhr = new XMLHttpRequest();
         const xhrId = this.currXhrId++;
         const pendingRequest = (this.pendingRequests[xhrId] = { xhr });
         xhr.open("GET", this.url.toString());
@@ -117,7 +116,7 @@ class NetworkManager {
         }
         delete this.pendingRequests[xhrId];
         // Success status == 0 can be on ftp, file and other protocols.
-        if (xhr.status === 0 && this.isHttp) {
+        if (xhr.status === HttpStatusCode._0 && this.isHttp) {
             pendingRequest.onError?.(xhr.status);
             return;
         }
@@ -208,7 +207,7 @@ class PDFNetworkStreamFullRequestReader {
     #manager;
     #url;
     #fullRequestId;
-    #headersReceivedCapability = createPromiseCapability();
+    #headersReceivedCapability = new PromiseCap();
     get headersReady() {
         return this.#headersReceivedCapability.promise;
     }
@@ -325,7 +324,7 @@ class PDFNetworkStreamFullRequestReader {
         if (this.#done) {
             return { done: true };
         }
-        const requestCapability = createPromiseCapability();
+        const requestCapability = new PromiseCap();
         this.#requests.push(requestCapability);
         return requestCapability.promise;
     }
@@ -411,7 +410,7 @@ export class PDFNetworkStreamRangeRequestReader {
         if (this.#done) {
             return { done: true };
         }
-        const requestCapability = createPromiseCapability();
+        const requestCapability = new PromiseCap();
         this.#requests.push(requestCapability);
         return requestCapability.promise;
     }

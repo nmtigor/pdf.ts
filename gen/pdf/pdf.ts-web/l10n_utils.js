@@ -1,7 +1,7 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
-import { MOZCENTRAL } from "../../global.js";
+import { MOZCENTRAL, PDFJSDev } from "../../global.js";
 import { Locale } from "../../lib/Locale.js";
 /*80--------------------------------------------------------------------------*/
 /**
@@ -93,7 +93,7 @@ export function formatL10nValue(text, args) {
     if (!args) {
         return text;
     }
-    return text.replace(/\{\{\s*(\w+)\s*\}\}/g, (all, name) => {
+    return text.replaceAll(/\{\{\s*(\w+)\s*\}\}/g, (all, name) => {
         return name in args ? args[name] : "{{" + name + "}}";
     });
 }

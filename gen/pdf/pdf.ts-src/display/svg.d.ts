@@ -1,8 +1,9 @@
-import { type rect_t } from "../../../lib/alias.js";
-import { type ImgData } from "../core/evaluator.js";
-import { FontExpotData, Glyph } from "../core/fonts.js";
-import { type OpListIR } from "../core/operator_list.js";
-import { type ShadingPatternIR, ShadingType, type TilingPatternIR } from "../core/pattern.js";
+import type { rect_t } from "../../../lib/alias.js";
+import type { ImgData } from "../core/evaluator.js";
+import type { FontExpotData, Glyph } from "../core/fonts.js";
+import type { OpListIR } from "../core/operator_list.js";
+import type { ShadingPatternIR, TilingPatternIR } from "../core/pattern.js";
+import { ShadingType } from "../core/pattern.js";
 import { type matrix_t, OPS, TextRenderingMode } from "../shared/util.js";
 import { PDFCommonObjs, PDFObjects, PDFObjs } from "./api.js";
 import { DOMSVGFactory, PageViewport } from "./display_utils.js";

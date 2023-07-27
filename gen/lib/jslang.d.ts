@@ -2,6 +2,7 @@
  * @module lib/jslang
  * @license Apache-2.0
  ******************************************************************************/
+import { int } from "./alias.js";
 import { type AbstractConstructor, type Constructor, type uint, type uint8 } from "./alias.js";
 declare global {
     interface ObjectConstructor {
@@ -32,8 +33,13 @@ declare global {
          * @const @param valve_x
          */
         eq(rhs_x: unknown, valve_x?: uint): boolean;
-        fillArray(ary: T[]): this;
-        fillArrayBack(ary: T[]): this;
+        /**
+         * @const @param ary_x
+         */
+        fillArray(ary_x: T[]): this;
+        fillArrayBack(ary_x: T[]): this;
+        become(ary_x: T[]): this;
+        swap(i_x: uint, j_x: uint): this;
     }
 }
 /**
@@ -48,7 +54,7 @@ export declare function isASCIILetter(cp: uint): boolean;
 declare global {
     interface Number {
         /**
-         * in( 0 <= digits && digits <= 20 )
+         * `in( 0 <= digits && digits <= 20 )`
          */
         fixTo(digits?: uint8): number;
         reprRatio(fixTo_x?: uint8): string;
@@ -64,6 +70,12 @@ declare global {
          * ! [min,max) normaally, but could achieve `max` because of `Math.round()`.
          */
         getRandom(max: number, min?: number, fixt?: uint): number;
+        /**
+         * Ref. https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/slice#parameters
+         * @const @param in_x
+         * @const @param to_x
+         */
+        normalize(in_x: int, to_x: uint): uint;
     }
 }
 declare global {

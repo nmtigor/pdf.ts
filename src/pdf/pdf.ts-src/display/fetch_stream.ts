@@ -18,19 +18,16 @@
  */
 
 import { MOZCENTRAL } from "../../../global.ts";
+import { PromiseCap } from "../../../lib/util/PromiseCap.ts";
 import { assert } from "../../../lib/util/trace.ts";
-import {
-  type IPDFStream,
-  type IPDFStreamRangeReader,
-  type IPDFStreamReader,
-  type ReadValue,
+import type {
+  IPDFStream,
+  IPDFStreamRangeReader,
+  IPDFStreamReader,
+  ReadValue,
 } from "../interfaces.ts";
-import {
-  AbortException,
-  createPromiseCapability,
-  warn,
-} from "../shared/util.ts";
-import { type DocumentInitP } from "./api.ts";
+import { AbortException, warn } from "../shared/util.ts";
+import type { DocumentInitP } from "./api.ts";
 import {
   createResponseStatusError,
   extractFilenameFromHeader,
@@ -154,7 +151,7 @@ class PDFFetchStreamReader implements IPDFStreamReader {
     return this.#contentLength!;
   }
 
-  #headersCapability = createPromiseCapability();
+  #headersCapability = new PromiseCap();
   get headersReady() {
     return this.#headersCapability.promise;
   }
@@ -266,7 +263,7 @@ export class PDFFetchStreamRangeReader implements IPDFStreamRangeReader {
   #reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
   _loaded = 0;
   #withCredentials: boolean;
-  #readCapability = createPromiseCapability();
+  #readCapability = new PromiseCap();
 
   #isStreamingSupported: boolean;
   /** @implement */

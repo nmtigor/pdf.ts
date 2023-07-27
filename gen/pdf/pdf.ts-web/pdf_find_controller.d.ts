@@ -1,6 +1,7 @@
-import { PDFDocumentProxy, type PromiseCapability } from "../pdf.ts-src/pdf.js";
-import { EventBus } from "./event_utils.js";
-import { type IPDFLinkService } from "./interfaces.js";
+import { PromiseCap } from "../../lib/util/PromiseCap.js";
+import type { PDFDocumentProxy } from "../pdf.ts-src/pdf.js";
+import type { EventBus } from "./event_utils.js";
+import type { IPDFLinkService } from "./interfaces.js";
 export declare const enum FindState {
     FOUND = 0,
     NOT_FOUND = 1,
@@ -21,23 +22,28 @@ interface PDFFindControllerOptions {
      * count must be updated on progress or only when the last page is reached.
      * The default value is `true`.
      */
-    updateMatchesCountOnProgress: boolean;
+    updateMatchesCountOnProgress?: boolean;
 }
 export type FindType = "again" | "casesensitivitychange" | "diacriticmatchingchange" | "entirewordchange" | "findagain" | "findhighlightallchange" | "highlightallchange";
 export type FindCtrlState = {
     type: FindType | "";
-    query: string;
-    phraseSearch: boolean;
+    query: string | string[] | RegExpMatchArray | null;
     caseSensitive: boolean;
     entireWord: boolean;
-    highlightAll: boolean;
     findPrevious?: boolean | undefined;
+    highlightAll: boolean;
     matchDiacritics: boolean;
 };
 export interface MatchesCount {
     current: number;
     total: number;
 }
+type PDFFindControllerScrollMatchIntoViewParams = {
+    element?: HTMLElement;
+    selectedLeft?: number;
+    pageIndex?: number;
+    matchIndex?: number;
+};
 /**
  * Provides search functionality to find a given string in a PDF document.
  */
@@ -53,7 +59,7 @@ export declare class PDFFindController {
         matchIdx: number;
     };
     get state(): FindCtrlState | undefined;
-    _firstPageCapability: PromiseCapability;
+    _firstPageCapability: PromiseCap;
     _rawQuery?: string;
     constructor({ linkService, eventBus, updateMatchesCountOnProgress, }: PDFFindControllerOptions);
     /**
@@ -63,12 +69,7 @@ export declare class PDFFindController {
      * @param pdfDocument The PDF document to search.
      */
     setDocument(pdfDocument?: PDFDocumentProxy): void;
-    scrollMatchIntoView({ element, selectedLeft, pageIndex, matchIndex }: {
-        element?: HTMLElement;
-        selectedLeft: number;
-        pageIndex?: number;
-        matchIndex?: number;
-    }): void;
+    scrollMatchIntoView({ element, selectedLeft, pageIndex, matchIndex }: PDFFindControllerScrollMatchIntoViewParams): void;
 }
 export {};
 //# sourceMappingURL=pdf_find_controller.d.ts.map

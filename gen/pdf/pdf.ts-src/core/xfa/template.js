@@ -3814,7 +3814,7 @@ export class PageArea extends XFAObject {
         }
         return (!this.occur ||
             this.occur.max === -1 ||
-            this[$extra].numberOfUse < this.occur.max);
+            this[$extra].numberOfUse < +this.occur.max);
     }
     [$cleanPage]() {
         delete this[$extra];
@@ -3926,7 +3926,7 @@ class PageSet extends XFAObject {
     [$isUsable]() {
         return (!this.occur ||
             this.occur.max === -1 ||
-            this[$extra].numberOfUse < this.occur.max);
+            this[$extra].numberOfUse < +this.occur.max);
     }
     [$getNextPage]() {
         if (!this[$extra]) {
@@ -4076,7 +4076,7 @@ export class Para extends XFAObject {
             style.textIndent = measureToString(this.textIndent);
             fixTextIndent(style);
         }
-        if (this.lineHeight > 0) {
+        if (+this.lineHeight > 0) {
             style.lineHeight = measureToString(this.lineHeight);
         }
         if (this.tabDefault !== "") {
@@ -5222,8 +5222,7 @@ export class Template extends XFAObject {
             const flush = (index) => {
                 const html = root[$flushHTML]();
                 if (html) {
-                    hasSomething = hasSomething ||
-                        !!(html.children && html.children.length !== 0);
+                    hasSomething ||= !!html.children && html.children.length !== 0;
                     htmlContentAreas[index].children.push(html);
                 }
             };
@@ -5245,9 +5244,8 @@ export class Template extends XFAObject {
                 const html = root[$toHTML](space);
                 if (html.success) {
                     if (html.html) {
-                        hasSomething = hasSomething ||
-                            !!(html.html.children &&
-                                html.html.children.length !== 0);
+                        hasSomething ||= !!html.html.children &&
+                            html.html.children.length !== 0;
                         htmlContentAreas[i].children.push(html.html);
                     }
                     else if (!hasSomething && mainHtml.children.length > 1) {
@@ -5373,7 +5371,7 @@ export class Text extends ContentObject {
     }
     [$finalize]() {
         if (typeof this[$content] === "string") {
-            this[$content] = this[$content].replace(/\r\n/g, "\n");
+            this[$content] = this[$content].replaceAll("\r\n", "\n");
         }
     }
     [$getExtra]() {

@@ -1,29 +1,22 @@
-import { type TypedArray } from "../../../lib/alias.js";
-import { BaseStream } from "./base_stream.js";
-import { TranslatedFont } from "./evaluator.js";
-import { XRef } from "./xref.js";
+import type { TypedArray } from "../../../lib/alias.js";
+import type { BaseStream } from "./base_stream.js";
+import type { TranslatedFont } from "./evaluator.js";
+import type { XRef } from "./xref.js";
 export declare const CIRCULAR_REF: unique symbol;
 export type CIRCULAR_REF = typeof CIRCULAR_REF;
 export declare const EOF: unique symbol;
 export type EOF = typeof EOF;
-declare namespace XFANsName {
-    class Name {
-        name: string;
-        constructor(name: string);
-        static get(name: string): Name;
-        static _clearCache(): void;
-    }
+export declare function clearPrimitiveCaches(): void;
+export declare class Name {
+    name: string;
+    constructor(name: string);
+    static get(name: string): Name;
 }
-export import Name = XFANsName.Name;
-declare namespace NsCmd {
-    class Cmd {
-        cmd: string;
-        constructor(cmd: string);
-        static get(cmd: string): Cmd;
-        static _clearCache(): void;
-    }
+export declare class Cmd {
+    cmd: string;
+    constructor(cmd: string);
+    static get(cmd: string): Cmd;
 }
-export import Cmd = NsCmd.Cmd;
 export declare class Dict {
     #private;
     get size(): number;
@@ -70,20 +63,15 @@ export declare class FontDict extends Dict {
     };
     cacheKey?: Ref | string;
 }
-export declare namespace NsRef {
-    class Ref {
-        /** object number */
-        num: number;
-        /** generation number */
-        gen: number;
-        constructor(num: number, gen: number);
-        toString(): string;
-        static get(num: number, gen: number): Ref;
-        static _clearCache(): void;
-    }
+export declare class Ref {
+    /** object number */
+    num: number;
+    /** generation number */
+    gen: number;
+    constructor(num: number, gen: number);
+    toString(): string;
+    static get(num: number, gen: number): Ref;
 }
-export type Ref = NsRef.Ref;
-export declare var Ref: typeof NsRef.Ref;
 export declare class RefSet {
     #private;
     has(ref: Ref | string): boolean;
@@ -107,7 +95,6 @@ export declare function isName(v: any, name?: string): boolean;
 export declare function isCmd(v: any, cmd?: string): boolean;
 export declare function isDict(v: any, type?: string): boolean;
 export declare function isRefsEqual(v1: Ref, v2: Ref): boolean;
-export declare function clearPrimitiveCaches(): void;
 type Prm = boolean | number | string | null | Name | Cmd | CIRCULAR_REF | EOF | Dict | TypedArray | BaseStream | Ref;
 export type Obj = Prm | (Obj | undefined)[];
 export type ObjNoCmd = Exclude<Obj, Cmd>;

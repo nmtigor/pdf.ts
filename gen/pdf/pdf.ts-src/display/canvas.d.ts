@@ -1,18 +1,18 @@
-import { type point_t, type rect_t } from "../../../lib/alias.js";
-import { Stepper } from "../../pdf.ts-web/debugger.js";
-import { PageColors } from "../../pdf.ts-web/pdf_viewer.js";
-import { type ImgData, type MarkedContentProps, type SmaskOptions } from "../core/evaluator.js";
-import { Glyph } from "../core/fonts.js";
-import { type OpListIR } from "../core/operator_list.js";
-import { type PatternIR, ShadingType } from "../core/pattern.js";
+import type { C2D, point_t, rect_t } from "../../../lib/alias.js";
+import type { Stepper } from "../../pdf.ts-web/debugger.js";
+import type { PageColors } from "../../pdf.ts-web/pdf_viewer.js";
+import type { ImgData, MarkedContentProps, SmaskOptions } from "../core/evaluator.js";
+import type { Glyph } from "../core/fonts.js";
+import type { OpListIR } from "../core/operator_list.js";
+import type { PatternIR, ShadingType } from "../core/pattern.js";
 import { type matrix_t, OPS, TextRenderingMode } from "../shared/util.js";
-import { PDFCommonObjs, PDFObjects, PDFObjs } from "./api.js";
-import { BaseCanvasFactory, type CanvasEntry } from "./base_factory.js";
-import { PageViewport } from "./display_utils.js";
-import { type AddToPath, FontFaceObject } from "./font_loader.js";
-import { OptionalContentConfig } from "./optional_content_config.js";
-import { PathType, type ShadingPattern, TilingPattern } from "./pattern_helper.js";
-type C2D = CanvasRenderingContext2D;
+import { DefaultFilterFactory, PDFCommonObjs, PDFObjects, PDFObjs } from "./api.js";
+import type { BaseCanvasFactory, CanvasEntry } from "./base_factory.js";
+import { type PageViewport } from "./display_utils.js";
+import type { AddToPath, FontFaceObject } from "./font_loader.js";
+import type { OptionalContentConfig } from "./optional_content_config.js";
+import type { ShadingPattern } from "./pattern_helper.js";
+import { PathType, TilingPattern } from "./pattern_helper.js";
 declare global {
     interface CanvasRenderingContext2D {
         _originalSave: C2D["save"];
@@ -91,7 +91,7 @@ declare class CanvasExtraState {
     strokeAlpha: number;
     lineWidth: number;
     activeSMask: SMask | undefined;
-    transferMaps?: (Uint8Array | null)[] | undefined;
+    transferMaps: string;
     clipBox: rect_t;
     minX: number;
     minY: number;
@@ -123,7 +123,7 @@ declare const enum ClipType {
     NORMAL_CLIP = 0,
     EO_CLIP = 1
 }
-interface _BeginDrawingP {
+interface BeginDrawingP_ {
     transform: matrix_t | undefined;
     viewport: PageViewport;
     transparency?: boolean;
@@ -156,6 +156,7 @@ export declare class CanvasGraphics {
     commonObjs: PDFObjects<PDFCommonObjs>;
     objs: PDFObjects<PDFObjs | undefined>;
     canvasFactory: BaseCanvasFactory;
+    filterFactory: import("./display_utils.js").DOMFilterFactory;
     groupStack: C2D[];
     processingType3: Glyph | undefined;
     /**
@@ -182,27 +183,26 @@ export declare class CanvasGraphics {
     viewportScale: number;
     outputScaleX: number;
     outputScaleY: number;
-    backgroundColor: string | undefined;
-    foregroundColor: string | undefined;
+    pageColors: PageColors | undefined;
     transparentCanvas: HTMLCanvasElement | undefined;
     pendingTextPaths?: TextPath[];
-    constructor(canvasCtx: C2D, commonObjs: PDFObjects<PDFCommonObjs>, objs: PDFObjects<PDFObjs | undefined>, canvasFactory: BaseCanvasFactory, { optionalContentConfig, markedContentStack }: {
+    constructor(canvasCtx: C2D, commonObjs: PDFObjects<PDFCommonObjs>, objs: PDFObjects<PDFObjs | undefined>, canvasFactory: BaseCanvasFactory, filterFactory: DefaultFilterFactory, { optionalContentConfig, markedContentStack }: {
         optionalContentConfig?: OptionalContentConfig | undefined;
         markedContentStack?: {
             visible: boolean;
         }[];
-    }, annotationCanvasMap?: Map<string, HTMLCanvasElement>, pageColors?: PageColors);
+    }, annotationCanvasMap?: Map<string, HTMLCanvasElement>, pageColors?: PageColors | undefined);
     getObject<T extends PDFCommonObjs | PDFObjs>(data: any, fallback?: T | undefined): T | undefined;
-    beginDrawing({ transform, viewport, transparency, background, }: _BeginDrawingP): void;
+    beginDrawing({ transform, viewport, transparency, background, }: BeginDrawingP_): void;
     executeOperatorList(operatorList: OpListIR, executionStartIdx?: number, continueCallback?: () => void, stepper?: Stepper): number;
     endDrawing(): void;
-    _scaleImage(img: HTMLCanvasElement, inverseTransform: matrix_t): {
-        img: HTMLCanvasElement;
+    _scaleImage(img: HTMLCanvasElement | ImageBitmap, inverseTransform: matrix_t): {
+        img: HTMLCanvasElement | ImageBitmap;
         paintWidth: number;
         paintHeight: number;
     };
     _createMaskCanvas(img: ImgData): {
-        canvas: HTMLCanvasElement;
+        canvas: HTMLCanvasElement | ImageBitmap;
         offsetX: number;
         offsetY: number;
     };
@@ -282,7 +282,9 @@ export declare class CanvasGraphics {
     [OPS.paintImageMaskXObjectGroup](images: ImgData[]): void;
     [OPS.paintImageXObject](objId: string): void;
     [OPS.paintImageXObjectRepeat](objId: string, scaleX: number, scaleY: number, positions: number[]): void;
-    [OPS.paintInlineImageXObject](imgData: ImgData | HTMLCanvasElement): void;
+    applyTransferMapsToCanvas(ctx: C2D): HTMLCanvasElement;
+    applyTransferMapsToBitmap(imgData: ImgData): HTMLCanvasElement | ImageBitmap;
+    [OPS.paintInlineImageXObject](imgData: ImgData): void;
     [OPS.paintInlineImageXObjectGroup](imgData: ImgData, map: PIImgXObjG_map[]): void;
     [OPS.paintSolidColorImageMask](): void;
     [OPS.markPoint](tag: string): void;

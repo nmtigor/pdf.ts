@@ -17,22 +17,25 @@
  * limitations under the License.
  */
 
+import type { C2D } from "../../lib/alias.ts";
 import { div, html } from "../../lib/dom.ts";
-import {
-  AnnotationMode,
+import type {
   Intent,
   matrix_t,
   OptionalContentConfig,
   PDFDocumentProxy,
-  PixelsPerInch,
   PrintAnnotationStorage,
-  RenderingCancelledException,
   RenderTask,
+} from "../pdf.ts-src/pdf.ts";
+import {
+  AnnotationMode,
+  PixelsPerInch,
+  RenderingCancelledException,
   shadow,
 } from "../pdf.ts-src/pdf.ts";
 import { PDFPrintServiceFactory } from "./app.ts";
 import { PDFPrintService } from "./pdf_print_service.ts";
-import { PageOverview } from "./pdf_viewer.ts";
+import type { PageOverview } from "./pdf_viewer.ts";
 import { getXfaHtmlForPrinting } from "./print_utils.ts";
 /*80--------------------------------------------------------------------------*/
 
@@ -66,11 +69,9 @@ function composePage(
   // keep track of the last scheduled task in order to properly cancel it before
   // starting the next one.
   let currentRenderTask: RenderTask | undefined;
-  (<any> canvas).mozPrintCallback = (obj: {
-    context: CanvasRenderingContext2D;
-    done(): void;
-    abort?(): void;
-  }) => {
+  (<any> canvas).mozPrintCallback = (
+    obj: { context: C2D; done(): void; abort?(): void },
+  ) => {
     // Printing/rendering the page.
     const ctx = obj.context;
 
@@ -143,6 +144,23 @@ export class FirefoxPrintService extends PDFPrintService {
     const body = document.querySelector("body")!;
     body.setAttribute("data-pdfjsprinting", <any> true);
 
+    const { width, height } = this.pagesOverview[0];
+    const hasEqualPageSizes = this.pagesOverview.every(
+      (size) => size.width === width && size.height === height,
+    );
+    if (!hasEqualPageSizes) {
+      console.warn(
+        "Not all pages have the same size. The printed result may be incorrect!",
+      );
+    }
+
+    // Insert a @page + size rule to make sure that the page size is correctly
+    // set. Note that we assume that all pages have the same size, because
+    // variable-size pages are scaled down to the initial page size in Firefox.
+    this.pageStyleSheet = html("style");
+    this.pageStyleSheet.textContent = `@page { size: ${width}pt ${height}pt;}`;
+    body.append(this.pageStyleSheet);
+
     if (pdfDocument.isPureXfa) {
       getXfaHtmlForPrinting(printContainer, pdfDocument);
       return;
@@ -166,6 +184,11 @@ export class FirefoxPrintService extends PDFPrintService {
 
     const body = document.querySelector("body")!;
     body.removeAttribute("data-pdfjsprinting");
+
+    if (this.pageStyleSheet) {
+      this.pageStyleSheet.remove();
+      this.pageStyleSheet = undefined;
+    }
   }
 }
 

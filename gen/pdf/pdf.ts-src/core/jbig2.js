@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { IMAGE_DECODERS } from "../../../global.js";
+import { IMAGE_DECODERS, PDFJSDev } from "../../../global.js";
 import { BaseException, shadow } from "../shared/util.js";
 import { ArithmeticDecoder } from "./arithmetic_decoder.js";
 import { CCITTFaxDecoder } from "./ccitt.js";

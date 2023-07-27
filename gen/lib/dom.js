@@ -3,18 +3,30 @@
  * @license Apache-2.0
  ******************************************************************************/
 import { $cssstylesheet, $loff, $ovlap, $tail_ignored } from "./symbols.js";
-// let canceld_ = true;
 if (globalThis.Event) {
-    let canceld_;
     Reflect.defineProperty(Event.prototype, "canceled", {
         get() {
-            return canceld_ ?? false;
+            return this._canceled ?? false;
         },
         set(canceled_x) {
-            canceld_ = canceled_x;
+            this._canceled = canceled_x;
         },
     });
     // console.log(Event.prototype.canceled);
+}
+if (globalThis.WheelEvent) {
+    WheelEvent.prototype._repr = function () {
+        const m_ = /* final switch */ {
+            [WheelEvent.DOM_DELTA_PIXEL]: () => "DOM_DELTA_PIXEL",
+            [WheelEvent.DOM_DELTA_LINE]: () => "DOM_DELTA_LINE",
+            [WheelEvent.DOM_DELTA_PAGE]: () => "DOM_DELTA_PAGE",
+        }[this.deltaMode]();
+        return {
+            deltaMode: m_ ? `"${m_}"` : "undefined",
+            deltaX: this.deltaX,
+            deltaY: this.deltaY,
+        };
+    };
 }
 /*64----------------------------------------------------------*/
 export var MouseButton;
@@ -33,6 +45,7 @@ if (globalThis.EventTarget) {
         return this.removeEventListener(type, listener, options);
     };
 }
+export const ClickHoldTo = 10_000;
 if (globalThis.Node) {
     Reflect.defineProperty(Node.prototype, "isText", {
         get() {
@@ -107,6 +120,14 @@ if (globalThis.Element) {
     Reflect.defineProperty(Element.prototype, "scrollBottom", {
         get() {
             return this.scrollTop + this.clientHeight;
+        },
+    });
+    Reflect.defineProperty(Element.prototype, "cyName", {
+        get() {
+            return this.getAttribute("data-cy");
+        },
+        set(name_x) {
+            this.setAttribute("data-cy", name_x);
         },
     });
 }
@@ -196,22 +217,28 @@ if (globalThis.HTMLCollection) {
         return -1;
     };
 }
+if (globalThis.DOMRect) {
+    DOMRect.prototype.contain = function (x_x, y_x) {
+        return this.left <= x_x && x_x < this.right &&
+            this.top <= y_x && y_x < this.bottom;
+    };
+}
 if (globalThis.Range) {
-    Range.prototype.getReca = function (rec_a, ovlap = false) {
+    Range.prototype.getSticka = function (rec_a_x, ovlap_x = false) {
         const recs = this.getClientRects();
         if (recs.length) {
             for (const rec of recs) {
                 if (rec.width === 0)
                     rec.width = rec.height * .1;
-                rec[$ovlap] = ovlap;
-                rec_a.push(rec);
+                rec[$ovlap] = ovlap_x;
+                rec_a_x.push(rec);
             }
         }
         else {
             const rec = this.getBoundingClientRect();
             rec.width = rec.height * .1;
-            rec[$ovlap] = ovlap;
-            rec_a.push(rec);
+            rec[$ovlap] = ovlap_x;
+            rec_a_x.push(rec);
         }
     };
     Range.prototype.reset = function () {

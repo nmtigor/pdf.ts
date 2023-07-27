@@ -1,6 +1,6 @@
-import { Attachment } from "../pdf.ts-src/pdf.js";
+import { type Attachment } from "../pdf.ts-src/pdf.js";
 import { BaseTreeViewer, type BaseTreeViewerCtorP } from "./base_tree_viewer.js";
-import { IDownloadManager } from "./interfaces.js";
+import type { IDownloadManager } from "./interfaces.js";
 interface PDFAttachmentViewerOptions extends BaseTreeViewerCtorP {
     /**
      * The download manager.

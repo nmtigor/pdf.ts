@@ -1,10 +1,11 @@
 /** @typedef {import("./annotation_editor_layer.js").AnnotationEditorLayer} AnnotationEditorLayer */
 /** @typedef {import("./tools.js").AnnotationEditorUIManager} AnnotationEditorUIManager */
-import { type rect_t } from "../../../../lib/alias.js";
-import { RGB } from "../../shared/scripting_utils.js";
-import { AnnotationEditorParamsType, AnnotationEditorType } from "../../shared/util.js";
-import { AnnotationEditorLayer } from "./annotation_editor_layer.js";
-import { AddCommandsP, AnnotationEditorUIManager, ColorManager } from "./tools.js";
+import type { rect_t } from "../../../../lib/alias.js";
+import type { RGB } from "../../shared/scripting_utils.js";
+import type { AnnotationEditorParamsType, AnnotationEditorType } from "../../shared/util.js";
+import type { AnnotationEditorLayer } from "./annotation_editor_layer.js";
+import type { AddCommandsP, AnnotationEditorUIManager } from "./tools.js";
+import { ColorManager } from "./tools.js";
 export interface AnnotationEditorP {
     /**
      * the global manager
@@ -52,6 +53,7 @@ export declare abstract class AnnotationEditor {
     name: string;
     div?: HTMLDivElement;
     rotation: number;
+    pageRotation: number;
     pageDimensions: number[];
     pageTranslation: number[];
     x: number;

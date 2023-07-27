@@ -17,7 +17,7 @@
  */
 // eslint-disable-next-line max-len
 /** @typedef {import("./annotation_editor_layer.js").AnnotationEditorLayer} AnnotationEditorLayer */
-import { _PDFDEV } from "../../../../global.js";
+import { PDFJSDev, TESTING } from "../../../../global.js";
 import { html } from "../../../../lib/dom.js";
 import { assert } from "../../../../lib/util/trace.js";
 import { AnnotationEditorParamsType, AnnotationEditorType, LINE_FACTOR, Util, } from "../../shared/util.js";

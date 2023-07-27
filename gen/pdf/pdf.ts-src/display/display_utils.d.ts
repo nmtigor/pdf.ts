@@ -1,13 +1,33 @@
-import { type point_t, type rect_t } from "../../../lib/alias.js";
-import { type XFAElObj } from "../core/xfa/alias.js";
+import type { C2D, point_t, rect_t } from "../../../lib/alias.js";
+import type { XFAElObj } from "../core/xfa/alias.js";
 import { RGB } from "../shared/scripting_utils.js";
 import { BaseException, CMapCompressionType, type matrix_t } from "../shared/util.js";
-import { BaseCanvasFactory, BaseCMapReaderFactory, BaseStandardFontDataFactory, BaseSVGFactory } from "./base_factory.js";
+import { BaseCanvasFactory, BaseCMapReaderFactory, BaseFilterFactory, BaseStandardFontDataFactory, BaseSVGFactory } from "./base_factory.js";
 export declare const AnnotationPrefix = "pdfjs_internal_id_";
 export declare class PixelsPerInch {
     static CSS: number;
     static PDF: number;
     static PDF_TO_CSS_UNITS: number;
+}
+type DOMFilterFactoryCtorP_ = {
+    docId?: string;
+    ownerDocument?: Document;
+};
+/**
+ * FilterFactory aims to create some SVG filters we can use when drawing an
+ * image (or whatever) on a canvas.
+ * Filters aren't applied with ctx.putImageData because it just overwrites the
+ * underlying pixels.
+ * With these filters, it's possible for example to apply some transfer maps on
+ * an image without the need to apply them on the pixel arrays: the renderer
+ * does the magic for us.
+ */
+export declare class DOMFilterFactory extends BaseFilterFactory {
+    #private;
+    constructor({ docId, ownerDocument }?: DOMFilterFactoryCtorP_);
+    addFilter(maps?: number[][]): string;
+    addHCMFilter(fgColor: string, bgColor: string): string;
+    destroy(keepHCM?: boolean): void;
 }
 export declare class DOMCanvasFactory extends BaseCanvasFactory {
     _document: Document;
@@ -44,7 +64,7 @@ export declare class DOMSVGFactory extends BaseSVGFactory {
      */
     _createSVG(type: keyof SVGElementTagNameMap): SVGSymbolElement | SVGSetElement | SVGClipPathElement | SVGFilterElement | SVGMarkerElement | SVGMaskElement | SVGAElement | SVGScriptElement | SVGStyleElement | SVGTitleElement | SVGAnimateElement | SVGAnimateMotionElement | SVGAnimateTransformElement | SVGCircleElement | SVGDefsElement | SVGDescElement | SVGEllipseElement | SVGFEBlendElement | SVGFEColorMatrixElement | SVGFEComponentTransferElement | SVGFECompositeElement | SVGFEConvolveMatrixElement | SVGFEDiffuseLightingElement | SVGFEDisplacementMapElement | SVGFEDistantLightElement | SVGFEDropShadowElement | SVGFEFloodElement | SVGFEFuncAElement | SVGFEFuncBElement | SVGFEFuncGElement | SVGFEFuncRElement | SVGFEGaussianBlurElement | SVGFEImageElement | SVGFEMergeElement | SVGFEMergeNodeElement | SVGFEMorphologyElement | SVGFEOffsetElement | SVGFEPointLightElement | SVGFESpecularLightingElement | SVGFESpotLightElement | SVGFETileElement | SVGFETurbulenceElement | SVGForeignObjectElement | SVGGElement | SVGImageElement | SVGLineElement | SVGLinearGradientElement | SVGMetadataElement | SVGMPathElement | SVGPathElement | SVGPatternElement | SVGPolygonElement | SVGPolylineElement | SVGRadialGradientElement | SVGRectElement | SVGStopElement | SVGSVGElement | SVGSwitchElement | SVGTextElement | SVGTextPathElement | SVGTSpanElement | SVGUseElement | SVGViewElement;
 }
-interface _PageViewportP {
+interface PageViewportP_ {
     /**
      * The xMin, yMin, xMax and yMax coordinates.
      */
@@ -73,7 +93,7 @@ interface _PageViewportP {
      */
     dontFlip?: boolean;
 }
-interface _PageViewportCloneP {
+interface PageViewportCloneP_ {
     /**
      * The scale, overriding the one in the cloned
      * viewport. The default value is `this.scale`.
@@ -121,7 +141,7 @@ export declare class PageViewport {
     transform: matrix_t;
     width: number;
     height: number;
-    constructor({ viewBox, scale, rotation, offsetX, offsetY, dontFlip, }: _PageViewportP);
+    constructor({ viewBox, scale, rotation, offsetX, offsetY, dontFlip, }: PageViewportP_);
     /**
      * The original, un-scaled, viewport dimensions.
      * @type {Object}
@@ -136,13 +156,13 @@ export declare class PageViewport {
      * Clones viewport, with optional additional properties.
      * @return Cloned viewport.
      */
-    clone({ scale, rotation, offsetX, offsetY, dontFlip, }?: _PageViewportCloneP): PageViewport;
+    clone({ scale, rotation, offsetX, offsetY, dontFlip, }?: PageViewportCloneP_): PageViewport;
     /**
      * Converts PDF point to the viewport coordinates. For examples, useful for
      * converting PDF location into canvas pixel coordinates.
      * @param x The x-coordinate.
      * @param y The y-coordinate.
-     * @return Object containing `x` and `y` properties of the
+     * @return Array containing `x`- and `y`-coordinates of the
      *   point in the viewport coordinate space.
      * @see {@link convertToPdfPoint}
      * @see {@link convertToViewportRectangle}
@@ -161,7 +181,7 @@ export declare class PageViewport {
      * for converting canvas pixel location into PDF one.
      * @param x The x-coordinate.
      * @param y The y-coordinate.
-     * @return Object containing `x` and `y` properties of the
+     * @return Array containing `x`- and `y`-coordinates of the
      *   point in the PDF coordinate space.
      * @see {@link convertToViewportPoint}
      */
@@ -226,8 +246,8 @@ export declare function getXfaPageViewport(xfaPage: XFAElObj, { scale, rotation 
 }): PageViewport;
 export declare function getRGB(color: string): RGB;
 export declare function getColorValues(colors: Map<string, RGB | undefined>): void;
-export declare function getCurrentTransform(ctx: CanvasRenderingContext2D): matrix_t;
-export declare function getCurrentTransformInverse(ctx: CanvasRenderingContext2D): matrix_t;
+export declare function getCurrentTransform(ctx: C2D): matrix_t;
+export declare function getCurrentTransformInverse(ctx: C2D): matrix_t;
 export declare function setLayerDimensions(div: HTMLElement, viewport: PageViewport | {
     rotation: number;
 }, mustFlip?: boolean, mustRotate?: boolean): void;

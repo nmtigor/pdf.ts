@@ -1,27 +1,27 @@
-import { AnnotationEditorParamsType, AnnotationEditorType, AnnotationEditorUIManager, AnnotationElement, DispatchUpdateStatesP, FileAttachmentAnnotationElement, OptionalContentConfig, PropertyToUpdate, ScriptingActionName } from "../pdf.ts-src/pdf.js";
-import { AnnotationEditorParams } from "./annotation_editor_params.js";
-import { ErrorMoreInfo, PDFViewerApplication } from "./app.js";
-import { PDFAttachmentViewer } from "./pdf_attachment_viewer.js";
-import { PDFCursorTools } from "./pdf_cursor_tools.js";
-import { PDFFindBar } from "./pdf_find_bar.js";
-import { FindCtrlState, FindState, MatchesCount, PDFFindController } from "./pdf_find_controller.js";
-import { PDFLayerViewer } from "./pdf_layer_viewer.js";
-import { PDFLinkService } from "./pdf_link_service.js";
-import { PDFOutlineViewer } from "./pdf_outline_viewer.js";
-import { PDFPageView } from "./pdf_page_view.js";
-import { PDFPresentationMode } from "./pdf_presentation_mode.js";
-import { PDFScriptingManager } from "./pdf_scripting_manager.js";
-import { PDFSidebar } from "./pdf_sidebar.js";
-import { PDFSidebarResizer } from "./pdf_sidebar_resizer.js";
-import { PDFLocation, PDFViewer } from "./pdf_viewer.js";
-import { SecondaryToolbar } from "./secondary_toolbar.js";
-import { Toolbar } from "./toolbar.js";
-import { CursorTool, PageLayout, PresentationModeState, ScrollMode, SidebarView, SpreadMode } from "./ui_utils.js";
+import type { AnnotationEditorParamsType, AnnotationEditorType, AnnotationEditorUIManager, AnnotationElement, DispatchUpdateStatesP, FileAttachmentAnnotationElement, OptionalContentConfig, PropertyToUpdate, ScriptingActionName } from "../pdf.ts-src/pdf.js";
+import type { AnnotationEditorParams } from "./annotation_editor_params.js";
+import type { ErrorMoreInfo, PDFViewerApplication } from "./app.js";
+import type { PDFAttachmentViewer } from "./pdf_attachment_viewer.js";
+import type { PDFCursorTools } from "./pdf_cursor_tools.js";
+import type { PDFFindBar } from "./pdf_find_bar.js";
+import type { FindCtrlState, FindState, MatchesCount, PDFFindController } from "./pdf_find_controller.js";
+import type { PDFLayerViewer } from "./pdf_layer_viewer.js";
+import type { PDFLinkService } from "./pdf_link_service.js";
+import type { PDFOutlineViewer } from "./pdf_outline_viewer.js";
+import type { PDFPageView } from "./pdf_page_view.js";
+import type { PDFPresentationMode } from "./pdf_presentation_mode.js";
+import type { PDFScriptingManager } from "./pdf_scripting_manager.js";
+import type { PDFSidebar } from "./pdf_sidebar.js";
+import type { PDFSidebarResizer } from "./pdf_sidebar_resizer.js";
+import type { PDFLocation, PDFViewer } from "./pdf_viewer.js";
+import type { SecondaryToolbar } from "./secondary_toolbar.js";
+import type { Toolbar } from "./toolbar.js";
+import type { CursorTool, PageLayout, PresentationModeState, ScrollMode, SidebarView, SpreadMode } from "./ui_utils.js";
 export declare const enum WaitOnType {
     EVENT = "event",
     TIMEOUT = "timeout"
 }
-interface _WaitOnEventOrTimeoutP {
+interface WaitOnEventOrTimeoutP_ {
     /**
      * The event target, can for example be:
      * `window`, `document`, a DOM element, or an {EventBus} instance.
@@ -44,7 +44,7 @@ interface _WaitOnEventOrTimeoutP {
  *
 = * @return A promise that is resolved with a {WaitOnType} value.
  */
-export declare function waitOnEventOrTimeout({ target, name, delay, }: _WaitOnEventOrTimeoutP): Promise<unknown>;
+export declare function waitOnEventOrTimeout({ target, name, delay, }: WaitOnEventOrTimeoutP_): Promise<unknown>;
 export interface EventMap {
     afterprint: {};
     annotationeditorlayerrendered: {
@@ -116,9 +116,7 @@ export interface EventMap {
         source: PDFViewerApplication;
     };
     documentproperties: {};
-    download: {
-        source: typeof window | PDFScriptingManager;
-    };
+    download: {};
     editingaction: {
         source: typeof window;
         name: string;
@@ -131,8 +129,7 @@ export interface EventMap {
     };
     findfromurlhash: {
         source: PDFLinkService;
-        query: string;
-        phraseSearch: boolean;
+        query: string | RegExpMatchArray | null;
     };
     fileattachmentannotation: {
         source: FileAttachmentAnnotationElement;
@@ -171,6 +168,7 @@ export interface EventMap {
     openfile: {
         source: typeof window;
     };
+    openinexternalapp: {};
     optionalcontentconfig: {
         source: PDFLayerViewer;
         promise: Promise<OptionalContentConfig | undefined>;
@@ -318,7 +316,7 @@ export interface EventMap {
         state: FindState;
         previous?: boolean | undefined;
         matchesCount: MatchesCount;
-        rawQuery: string | undefined;
+        rawQuery: string | string[] | RegExpMatchArray | null;
     };
     updatefindmatchescount: {
         source: PDFFindController;

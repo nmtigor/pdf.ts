@@ -16,8 +16,9 @@
  * limitations under the License.
  */
 import { MOZCENTRAL } from "../../../global.js";
+import { PromiseCap } from "../../../lib/util/PromiseCap.js";
 import { assert } from "../../../lib/util/trace.js";
-import { AbortException, createPromiseCapability, warn, } from "../shared/util.js";
+import { AbortException, warn } from "../shared/util.js";
 import { createResponseStatusError, extractFilenameFromHeader, validateRangeRequestCapabilities, validateResponseStatus, } from "./network_utils.js";
 /*80--------------------------------------------------------------------------*/
 /*#static*/ 
@@ -108,7 +109,7 @@ class PDFFetchStreamReader {
     get contentLength() {
         return this.#contentLength;
     }
-    #headersCapability = createPromiseCapability();
+    #headersCapability = new PromiseCap();
     get headersReady() {
         return this.#headersCapability.promise;
     }
@@ -194,7 +195,7 @@ export class PDFFetchStreamRangeReader {
     #reader;
     _loaded = 0;
     #withCredentials;
-    #readCapability = createPromiseCapability();
+    #readCapability = new PromiseCap();
     #isStreamingSupported;
     /** @implement */
     get isStreamingSupported() {

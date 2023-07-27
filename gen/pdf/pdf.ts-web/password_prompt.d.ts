@@ -1,7 +1,7 @@
 import { PasswordResponses } from "../pdf.ts-src/pdf.js";
-import { type IL10n } from "./interfaces.js";
-import { OverlayManager } from "./overlay_manager.js";
-import { type ViewerConfiguration } from "./viewer.js";
+import type { IL10n } from "./interfaces.js";
+import type { OverlayManager } from "./overlay_manager.js";
+import type { ViewerConfiguration } from "./viewer.js";
 export declare class PasswordPrompt {
     #private;
     dialog: HTMLDialogElement;

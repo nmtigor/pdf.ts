@@ -15,7 +15,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { createPromiseCapability, PDFDateString, } from "../pdf.ts-src/pdf.js";
+import { PromiseCap } from "../../lib/util/PromiseCap.js";
+import { PDFDateString } from "../pdf.ts-src/pdf.js";
 import { getPageSizeInches, isPortraitOrientation } from "./ui_utils.js";
 /*80--------------------------------------------------------------------------*/
 const DEFAULT_FIELD_CONTENT = "-";
@@ -169,7 +170,7 @@ export class PDFDocumentProperties {
     #reset() {
         this.pdfDocument = undefined;
         this.#fieldData = undefined;
-        this.#dataAvailableCapability = createPromiseCapability();
+        this.#dataAvailableCapability = new PromiseCap();
         this._currentPageNumber = 1;
         this._pagesRotation = 0;
     }

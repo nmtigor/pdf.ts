@@ -1,8 +1,8 @@
-import { type rect_t } from "../../../lib/alias.js";
+import type { rect_t } from "../../../lib/alias.js";
 import { PageLayout, PageMode } from "../../pdf.ts-web/ui_utils.js";
-import { type ResetForm } from "../display/annotation_layer.js";
-import { type OutlineNode } from "../display/api.js";
-import { type CMapData } from "../display/base_factory.js";
+import type { ResetForm } from "../display/annotation_layer.js";
+import type { OutlineNode } from "../display/api.js";
+import type { CMapData } from "../display/base_factory.js";
 import { MessageHandler, Thread } from "../shared/message_handler.js";
 import { PermissionFlag } from "../shared/util.js";
 import { TranslatedFont } from "./evaluator.js";
@@ -43,7 +43,7 @@ export interface CatParseDestDictRes {
     unsafeUrl?: string;
     url?: string;
 }
-interface _ParseDestDictionaryP {
+interface ParseDestDictionaryP_ {
     /**
      * The dictionary containing the destination.
      */
@@ -56,7 +56,7 @@ interface _ParseDestDictionaryP {
      * The document base URL that is used when
      * attempting to recover valid absolute URLs from relative ones.
      */
-    docBaseUrl?: string | URL | undefined;
+    docBaseUrl?: string | undefined;
     /**
      * The document attachments (may not exist in most PDF documents).
      */
@@ -124,7 +124,7 @@ export declare class Catalog {
     get needsRendering(): boolean;
     get collection(): Dict | null;
     get acroForm(): Dict | undefined;
-    get acroFormRef(): import("./primitives.js").NsRef.Ref | undefined;
+    get acroFormRef(): Ref | undefined;
     get metadata(): import("./metadata_parser.js").SerializedMetadata | undefined;
     get markInfo(): MarkInfo | undefined;
     get structTreeRoot(): StructTreeRoot | undefined;
@@ -165,7 +165,7 @@ export declare class Catalog {
     /**
      * Helper function used to parse the contents of destination dictionaries.
      */
-    static parseDestDictionary(params: _ParseDestDictionaryP): void;
+    static parseDestDictionary(params: ParseDestDictionaryP_): void;
 }
 export {};
 //# sourceMappingURL=catalog.d.ts.map

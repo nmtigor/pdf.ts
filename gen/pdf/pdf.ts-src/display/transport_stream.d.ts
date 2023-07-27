@@ -1,5 +1,5 @@
-import { type IPDFStream, type IPDFStreamRangeReader, type IPDFStreamReader, type ReadValue } from "../interfaces.js";
-import { PDFDataRangeTransport } from "../pdf.js";
+import type { IPDFStream, IPDFStreamRangeReader, IPDFStreamReader, ReadValue } from "../interfaces.js";
+import type { PDFDataRangeTransport } from "../pdf.js";
 import { AbortException } from "../shared/util.js";
 interface StreamInitP_ {
     length: number;

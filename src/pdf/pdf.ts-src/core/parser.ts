@@ -17,20 +17,20 @@
  * limitations under the License.
  */
 
-import { _PDFDEV } from "../../../global.ts";
+import { PDFJSDev, TESTING } from "../../../global.ts";
 import { assert } from "../../../lib/util/trace.ts";
 import { bytesToString, FormatError, info, warn } from "../shared/util.ts";
 import { Ascii85Stream } from "./ascii_85_stream.ts";
 import { AsciiHexStream } from "./ascii_hex_stream.ts";
-import { BaseStream } from "./base_stream.ts";
+import type { BaseStream } from "./base_stream.ts";
 import { CCITTFaxStream } from "./ccitt_stream.ts";
 import {
   isWhiteSpace,
   MissingDataException,
   ParserEOFException,
 } from "./core_utils.ts";
-import { CipherTransform } from "./crypto.ts";
-import { type OpMap } from "./evaluator.ts";
+import type { CipherTransform } from "./crypto.ts";
+import type { OpMap } from "./evaluator.ts";
 import { FlateStream } from "./flate_stream.ts";
 import { Jbig2Stream } from "./jbig2_stream.ts";
 import { JpegStream } from "./jpeg_stream.ts";
@@ -40,7 +40,7 @@ import { PredictorStream } from "./predictor_stream.ts";
 import { Cmd, Dict, EOF, isCmd, Name, type Obj, Ref } from "./primitives.ts";
 import { RunLengthStream } from "./run_length_stream.ts";
 import { NullStream, Stream } from "./stream.ts";
-import { XRef } from "./xref.ts";
+import type { XRef } from "./xref.ts";
 /*80--------------------------------------------------------------------------*/
 
 const MAX_LENGTH_TO_CACHE = 1000;
@@ -229,7 +229,7 @@ export class Parser {
       } else if (state === 1) {
         state = ch === I ? 2 : 0;
       } else {
-        /*#static*/ if (_PDFDEV) {
+        /*#static*/ if (PDFJSDev || TESTING) {
           assert(state === 2, "findDefaultInlineStreamEnd - invalid state.");
         }
         if (ch === SPACE || ch === LF || ch === CR) {
@@ -946,7 +946,7 @@ export class Lexer {
       throw new FormatError(msg);
     }
 
-    sign = sign || 1;
+    sign ||= 1;
     let baseValue = ch - 0x30; // '0'
     let powerValue = 0;
     let powerValueSign = 1;

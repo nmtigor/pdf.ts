@@ -17,11 +17,11 @@
  * limitations under the License.
  */
 
-import { GENERIC } from "../../global.ts";
+import { GENERIC, PDFJSDev } from "../../global.ts";
 import { html } from "../../lib/dom.ts";
 import { AnnotationEditorType } from "../pdf.ts-src/pdf.ts";
-import { EventBus, EventMap, EventName } from "./event_utils.ts";
-import { type IL10n } from "./interfaces.ts";
+import type { EventBus, EventMap, EventName } from "./event_utils.ts";
+import type { IL10n } from "./interfaces.ts";
 import {
   animationStarted,
   DEFAULT_SCALE,
@@ -29,8 +29,9 @@ import {
   MAX_SCALE,
   MIN_SCALE,
   noContextMenuHandler,
+  toggleCheckedBtn,
 } from "./ui_utils.ts";
-import { type ViewerConfiguration } from "./viewer.ts";
+import type { ViewerConfiguration } from "./viewer.ts";
 /*80--------------------------------------------------------------------------*/
 
 const PAGE_NUMBER_LOADING_INDICATOR = "visiblePageIsLoading";
@@ -110,7 +111,7 @@ export class Toolbar {
         },
       },
     ];
-    /*#static*/ if (GENERIC) {
+    /*#static*/ if (PDFJSDev || GENERIC) {
       this.buttons.push({ element: options.openFile!, eventName: "openfile" });
     }
     this.items = {
@@ -170,14 +171,7 @@ export class Toolbar {
     for (const { element, eventName, eventDetails } of this.buttons) {
       element.addEventListener("click", (evt) => {
         if (eventName !== null) {
-          const details = { source: this };
-          if (eventDetails) {
-            for (const property in eventDetails) {
-              (<any> details)[property] =
-                eventDetails[<keyof typeof eventDetails> property];
-            }
-          }
-          this.eventBus.dispatch(eventName, details);
+          this.eventBus.dispatch(eventName, { source: this, ...eventDetails });
         }
       });
     }
@@ -232,29 +226,22 @@ export class Toolbar {
     editorInkParamsToolbar,
   }: ViewerConfiguration["toolbar"]) {
     const editorModeChanged = (
-      evt: EventMap["annotationeditormodechanged"],
-      disableButtons = false,
+      { mode }: EventMap["annotationeditormodechanged"],
     ) => {
-      const editorButtons = [
-        {
-          mode: AnnotationEditorType.FREETEXT,
-          button: editorFreeTextButton,
-          toolbar: editorFreeTextParamsToolbar,
-        },
-        {
-          mode: AnnotationEditorType.INK,
-          button: editorInkButton,
-          toolbar: editorInkParamsToolbar,
-        },
-      ];
+      toggleCheckedBtn(
+        editorFreeTextButton,
+        mode === AnnotationEditorType.FREETEXT,
+        editorFreeTextParamsToolbar,
+      );
+      toggleCheckedBtn(
+        editorInkButton,
+        mode === AnnotationEditorType.INK,
+        editorInkParamsToolbar,
+      );
 
-      for (const { mode, button, toolbar } of editorButtons) {
-        const checked = mode === evt.mode;
-        button.classList.toggle("toggled", checked);
-        button.setAttribute("aria-checked", <any> checked);
-        button.disabled = disableButtons;
-        toolbar?.classList.toggle("hidden", !checked);
-      }
+      const isDisable = mode === AnnotationEditorType.DISABLE;
+      editorFreeTextButton.disabled = isDisable;
+      editorInkButton.disabled = isDisable;
     };
     this.eventBus._on("annotationeditormodechanged", editorModeChanged);
 
@@ -262,9 +249,8 @@ export class Toolbar {
       if (evt.source === this) {
         editorModeChanged(
           {
-            mode: AnnotationEditorType.NONE,
+            mode: AnnotationEditorType.DISABLE,
           } as EventMap["annotationeditormodechanged"],
-          /* disableButtons = */ true,
         );
       }
     });

@@ -1,10 +1,10 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
-import { MOZCENTRAL } from "../../global.js";
-import "../extensions/firefox/tools/l10n.js";
+import { MOZCENTRAL, PDFJSDev } from "../../global.js";
+// import "../extensions/firefox/tools/l10n.ts";
 import { isPdfFile, PDFDataRangeTransport, shadow } from "../pdf.ts-src/pdf.js";
-import { DefaultExternalServices, viewerApp, } from "./app.js";
+import { DefaultExternalServices, viewerApp } from "./app.js";
 import { getL10nFallback } from "./l10n_utils.js";
 import { BasePreferences } from "./preferences.js";
 import { DEFAULT_SCALE_VALUE } from "./ui_utils.js";
@@ -83,10 +83,11 @@ export class FirefoxCom {
 export class DownloadManager {
     #openBlobUrls = new WeakMap();
     /** @implement */
-    downloadUrl(url, filename) {
+    downloadUrl(url, filename, options = {}) {
         FirefoxCom.request("download", {
             originalUrl: url,
             filename,
+            options,
         });
     }
     /** @implement */
@@ -130,12 +131,13 @@ export class DownloadManager {
         return false;
     }
     /** @implement */
-    download(blob, url, filename) {
+    download(blob, url, filename, options = {}) {
         const blobUrl = URL.createObjectURL(blob);
         FirefoxCom.request("download", {
             blobUrl,
             originalUrl: url,
             filename,
+            options,
         });
     }
 }
@@ -195,7 +197,6 @@ class MozL10n {
             source: window,
             type: type.substring(findLen),
             query: detail.query,
-            phraseSearch: true,
             caseSensitive: !!detail.caseSensitive,
             entireWord: !!detail.entireWord,
             highlightAll: !!detail.highlightAll,
@@ -371,6 +372,10 @@ class FirefoxExternalServices extends DefaultExternalServices {
         // various test-suites are running in mozilla-central.
         const isInAutomation = FirefoxCom.requestSync("isInAutomation");
         return shadow(this, "isInAutomation", isInAutomation);
+    }
+    static get canvasMaxAreaInBytes() {
+        const maxArea = FirefoxCom.requestSync("getCanvasMaxArea");
+        return shadow(this, "canvasMaxAreaInBytes", maxArea);
     }
 }
 viewerApp.externalServices = new FirefoxExternalServices();

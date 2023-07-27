@@ -17,23 +17,23 @@
  * limitations under the License.
  */
 
-import { _PDFDEV } from "../../../global.ts";
-import {
+import { PDFJSDev, TESTING } from "../../../global.ts";
+import type {
   Constructor,
-  type point_t,
-  type rect_t,
-  type TupleOf,
+  point_t,
+  rect_t,
+  TupleOf,
 } from "../../../lib/alias.ts";
 import { assert } from "../../../lib/util/trace.ts";
-import {
-  type AnnotStorageRecord,
+import type {
+  AnnotStorageRecord,
   AnnotStorageValue,
 } from "../display/annotation_layer.ts";
-import { type TextItem } from "../display/api.ts";
-import { DocWrapped, FieldWrapped } from "../scripting_api/app.ts";
-import { CorrectColor } from "../scripting_api/color.ts";
-import { SendData } from "../scripting_api/pdf_object.ts";
-import { MActionMap } from "../shared/message_handler.ts";
+import type { TextItem } from "../display/api.ts";
+import type { DocWrapped, FieldWrapped } from "../scripting_api/app.ts";
+import type { CorrectColor } from "../scripting_api/color.ts";
+import type { SendData } from "../scripting_api/pdf_object.ts";
+import type { MActionMap } from "../shared/message_handler.ts";
 import {
   AnnotationActionEventType,
   AnnotationBorderStyleType,
@@ -43,7 +43,6 @@ import {
   AnnotationReplyType,
   AnnotationType,
   BASELINE_FACTOR,
-  FeatureTest,
   getModificationDate,
   IDENTITY_MATRIX,
   LINE_DESCENT_FACTOR,
@@ -58,7 +57,8 @@ import {
 } from "../shared/util.ts";
 import { BaseStream } from "./base_stream.ts";
 import { bidi, type BidiText } from "./bidi.ts";
-import { Attachments, Catalog, type CatParseDestDictRes } from "./catalog.ts";
+import type { Attachments, CatParseDestDictRes } from "./catalog.ts";
+import { Catalog } from "./catalog.ts";
 import { ColorSpace } from "./colorspace.ts";
 import {
   type AnnotActions,
@@ -70,8 +70,8 @@ import {
   numberToString,
   stringToUTF16String,
 } from "./core_utils.ts";
-import { CipherTransform } from "./crypto.ts";
-import { DatasetReader } from "./dataset_reader.ts";
+import type { CipherTransform } from "./crypto.ts";
+import type { DatasetReader } from "./dataset_reader.ts";
 import {
   createDefaultAppearance,
   type DefaultAppearanceData,
@@ -79,20 +79,20 @@ import {
   getPdfColor,
   parseDefaultAppearance,
 } from "./default_appearance.ts";
-import { type LocalIdFactory } from "./document.ts";
+import type { LocalIdFactory } from "./document.ts";
 import { EvalState, PartialEvaluator } from "./evaluator.ts";
 import { type Attachment, FileSpec } from "./file_spec.ts";
-import { ErrorFont, Font, Glyph } from "./fonts.ts";
+import type { ErrorFont, Font, Glyph } from "./fonts.ts";
 import { ObjectLoader } from "./object_loader.ts";
 import { OperatorList } from "./operator_list.ts";
-import { BasePdfManager } from "./pdf_manager.ts";
+import type { BasePdfManager } from "./pdf_manager.ts";
 import { Dict, Name, type Obj, Ref, RefSet } from "./primitives.ts";
 import { StringStream } from "./stream.ts";
-import { WorkerTask } from "./worker.ts";
+import type { WorkerTask } from "./worker.ts";
 import { writeDict, writeObject } from "./writer.ts";
-import { type XFAHTMLObj } from "./xfa/alias.ts";
+import type { XFAHTMLObj } from "./xfa/alias.ts";
 import { XFAFactory } from "./xfa/factory.ts";
-import { XRef } from "./xref.ts";
+import type { XRef } from "./xref.ts";
 /*80--------------------------------------------------------------------------*/
 
 type AnnotType =
@@ -115,12 +115,12 @@ type AnnotType =
   | "Underline"
   | "Widget";
 
-interface _Dependency {
+interface Dependency_ {
   ref: Ref;
   data: string;
 }
 
-interface _CreateNewAnnotationP {
+interface CreateNewAnnotationP_ {
   evaluator?: PartialEvaluator;
   task?: WorkerTask;
   baseFontRef?: Ref;
@@ -213,8 +213,8 @@ export class AnnotationFactory {
       needAppearances: !collectFields &&
         acroFormDict.get("NeedAppearances") === true,
       pageIndex,
-      isOffscreenCanvasSupported: FeatureTest.isOffscreenCanvasSupported &&
-        !!pdfManager.evaluatorOptions.isOffscreenCanvasSupported,
+      isOffscreenCanvasSupported: !!pdfManager.evaluatorOptions
+        .isOffscreenCanvasSupported,
     };
 
     switch (subtype) {
@@ -382,9 +382,8 @@ export class AnnotationFactory {
     }
 
     const xref = evaluator.xref;
+    const { isOffscreenCanvasSupported } = evaluator.options;
     const promises: Promise<MarkupAnnotation>[] = [];
-    const isOffscreenCanvasSupported = FeatureTest.isOffscreenCanvasSupported &&
-      evaluator.options.isOffscreenCanvasSupported;
     for (const annotation of annotations) {
       switch (annotation.annotationType) {
         case AnnotationEditorType.FREETEXT:
@@ -572,6 +571,8 @@ export type AnnotationData =
     rect: rect_t;
     subtype?: AnnotType | undefined;
     hasOwnCanvas: boolean;
+    noRotate: boolean;
+    noHTML: boolean;
 
     kidIds?: string[];
     actions?: AnnotActions | undefined;
@@ -928,6 +929,13 @@ export class Annotation {
       this._streams.push(this.appearance);
     }
 
+    // The annotation cannot be changed (neither its position/visibility nor its
+    // contents), hence we can just display its appearance and don't generate
+    // a HTML element for it.
+    const isLocked = !!(this.flags & AnnotationFlag.LOCKED);
+    const isContentLocked = !!(this.flags & AnnotationFlag.LOCKEDCONTENTS);
+
+    // Expose public properties using a data object.
     // Expose public properties using a data object.
     this.data = {
       annotationFlags: this.flags,
@@ -943,6 +951,8 @@ export class Annotation {
       rect: this.rectangle,
       subtype: params.subtype,
       hasOwnCanvas: false,
+      noRotate: !!(this.flags & AnnotationFlag.NOROTATE),
+      noHTML: isLocked && isContentLocked,
     };
 
     if (params.collectFields) {
@@ -995,7 +1005,7 @@ export class Annotation {
    * @param borderStyle - The border style dictionary
    */
   setBorderStyle(borderStyle: Dict) {
-    /*#static*/ if (_PDFDEV) {
+    /*#static*/ if (PDFJSDev || TESTING) {
       assert(this.rectangle, "setRectangle must have been called previously.");
     }
 
@@ -1299,7 +1309,6 @@ export class Annotation {
       task,
       resources,
       includeMarkedContent: true,
-      combineTextItems: true,
       sink,
       viewBox,
     });
@@ -1344,7 +1353,7 @@ export class Annotation {
    * annotation instance or created during its construction.
    */
   reset() {
-    /*#static*/ if (_PDFDEV) {
+    /*#static*/ if (PDFJSDev || TESTING) {
       if (
         this.appearance &&
         !this._streams.includes(this.appearance)
@@ -1438,7 +1447,7 @@ export class AnnotationBorderStyle {
    * @param rect The annotation `Rect` entry.
    */
   setWidth(width?: number | Name, rect: rect_t = [0, 0, 0, 0]) {
-    /*#static*/ if (_PDFDEV) {
+    /*#static*/ if (PDFJSDev || TESTING) {
       assert(
         Array.isArray(rect) && rect.length === 4,
         "A valid `rect` parameter must be provided.",
@@ -1697,7 +1706,7 @@ export class MarkupAnnotation extends Annotation {
   static async createNewAppearanceStream(
     annotation: AnnotStorageValue,
     xref: XRef,
-    params?: _CreateNewAnnotationP,
+    params?: CreateNewAnnotationP_,
   ): Promise<StringStream | undefined> {
     assert(0);
     return 0 as any;
@@ -1799,8 +1808,8 @@ export class MarkupAnnotation extends Annotation {
   static async createNewAnnotation(
     xref: XRef,
     annotation: AnnotStorageValue,
-    dependencies: _Dependency[],
-    params?: _CreateNewAnnotationP,
+    dependencies: Dependency_[],
+    params?: CreateNewAnnotationP_,
   ) {
     const annotationRef = xref.getNewTemporaryRef();
     const ap = await this.createNewAppearanceStream(annotation, xref, params);
@@ -1831,7 +1840,7 @@ export class MarkupAnnotation extends Annotation {
   static async createNewPrintAnnotation(
     xref: XRef,
     annotation: AnnotStorageValue,
-    params: _CreateNewAnnotationP,
+    params: CreateNewAnnotationP_,
   ) {
     const ap = await this.createNewAppearanceStream(annotation, xref, params);
     const annotationDict = this.createNewDict(annotation, xref, { ap });
@@ -1915,10 +1924,9 @@ export class WidgetAnnotation extends Annotation {
 
     this.setDefaultAppearance(params);
 
-    data.hasAppearance = (this._needAppearances &&
+    data.hasAppearance ||= this._needAppearances &&
       data.fieldValue !== undefined &&
-      data.fieldValue !== null) ||
-      data.hasAppearance;
+      data.fieldValue !== null;
 
     const fieldType = getInheritableProperty({ dict, key: "FT" });
     data.fieldType = fieldType instanceof Name ? fieldType.name : undefined;
@@ -1943,12 +1951,12 @@ export class WidgetAnnotation extends Annotation {
       }),
     };
 
-    data.fieldFlags = <AnnotationFieldFlag> getInheritableProperty({
+    data.fieldFlags = getInheritableProperty({
       dict,
       key: "Ff",
-    });
+    }) as AnnotationFieldFlag;
     if (!Number.isInteger(data.fieldFlags) || data.fieldFlags < 0) {
-      data.fieldFlags = 0;
+      data.fieldFlags = 0 as any;
     }
 
     data.readOnly = this.hasFieldFlag(AnnotationFieldFlag.READONLY);
@@ -2055,7 +2063,12 @@ export class WidgetAnnotation extends Annotation {
   ) {
     // Do not render form elements on the canvas when interactive forms are
     // enabled. The display layer is responsible for rendering them instead.
-    if (renderForms && !(this instanceof SignatureWidgetAnnotation)) {
+    if (
+      renderForms &&
+      !(this instanceof SignatureWidgetAnnotation) &&
+      !this.data.noHTML &&
+      !this.data.hasOwnCanvas
+    ) {
       return {
         opList: new OperatorList(),
         separateForm: true,
@@ -2173,7 +2186,7 @@ export class WidgetAnnotation extends Annotation {
       if (!this._hasValueFromXFA && rotation === undefined) {
         return undefined;
       }
-      value = value || this.data.fieldValue;
+      value ||= this.data.fieldValue;
     }
 
     // Value can be an array (with choice list and multiple selections)
@@ -2882,7 +2895,7 @@ export class WidgetAnnotation extends Annotation {
   }
 
   _getSaveFieldResources(xref: XRef) {
-    /*#static*/ if (_PDFDEV) {
+    /*#static*/ if (PDFJSDev || TESTING) {
       assert(
         this.data.defaultAppearanceData,
         "Expected `_defaultAppearanceData` to have been set.",
@@ -2933,6 +2946,7 @@ class TextWidgetAnnotation extends WidgetAnnotation {
   constructor(params: _AnnotationCtorP) {
     super(params);
 
+    this.data.hasOwnCanvas = !!this.data.readOnly && !this.data.noHTML;
     this._hasText = true;
 
     const dict = params.dict;
@@ -3894,6 +3908,7 @@ class SignatureWidgetAnnotation extends WidgetAnnotation {
     // non-serializable and will thus cause errors when sending annotations
     // to the main-thread (issue 10347).
     this.data.fieldValue = undefined;
+    this.data.hasOwnCanvas = this.data.noRotate;
   }
 
   override getFieldObject(): FieldObject {
@@ -3910,6 +3925,10 @@ class TextAnnotation extends MarkupAnnotation {
     const DEFAULT_ICON_SIZE = 22; // px
 
     super(params);
+
+    // No rotation for Text (see 12.5.6.4).
+    this.data.noRotate = true;
+    this.data.hasOwnCanvas = this.data.noRotate;
 
     const { dict } = params;
     this.data.annotationType = AnnotationType.TEXT;
@@ -3946,7 +3965,7 @@ class LinkAnnotation extends Annotation {
     }
 
     // The color entry for a link annotation is the color of the border.
-    this.data.borderColor = this.data.borderColor || this.data.color;
+    this.data.borderColor ||= this.data.color;
 
     Catalog.parseDestDictionary({
       destDict: params.dict,
@@ -4036,6 +4055,8 @@ class FreeTextAnnotation extends MarkupAnnotation {
   constructor(params: _AnnotationCtorP) {
     super(params);
 
+    this.data.hasOwnCanvas = this.data.noRotate;
+
     const { xref } = params;
     this.data.annotationType = AnnotationType.FREETEXT;
     this.setDefaultAppearance(params);
@@ -4112,7 +4133,7 @@ class FreeTextAnnotation extends MarkupAnnotation {
   static override async createNewAppearanceStream(
     annotation: AnnotStorageValue,
     xref: XRef,
-    params?: _CreateNewAnnotationP,
+    params?: CreateNewAnnotationP_,
   ) {
     const { baseFontRef, evaluator, task } = params!;
     const { color, fontSize, rect, rotation, value } = annotation;
@@ -4228,6 +4249,7 @@ class LineAnnotation extends MarkupAnnotation {
 
     const { dict, xref } = params;
     this.data.annotationType = AnnotationType.LINE;
+    this.data.hasOwnCanvas = this.data.noRotate;
 
     const lineCoordinates = dict.getArray("L") as rect_t;
     this.data.lineCoordinates = Util.normalizeRect(lineCoordinates);
@@ -4296,6 +4318,7 @@ class SquareAnnotation extends MarkupAnnotation {
 
     const { dict, xref } = params;
     this.data.annotationType = AnnotationType.SQUARE;
+    this.data.hasOwnCanvas = this.data.noRotate;
 
     if (!this.appearance) {
       // The default stroke color is black.
@@ -4415,6 +4438,7 @@ class PolylineAnnotation extends MarkupAnnotation {
 
     const { dict, xref } = params;
     this.data.annotationType = AnnotationType.POLYLINE;
+    this.data.hasOwnCanvas = this.data.noRotate;
     this.data.vertices = [];
 
     if (!(this instanceof PolygonAnnotation)) {
@@ -4501,6 +4525,8 @@ class CaretAnnotation extends MarkupAnnotation {
 class InkAnnotation extends MarkupAnnotation {
   constructor(params: _AnnotationCtorP) {
     super(params);
+
+    this.data.hasOwnCanvas = this.data.noRotate;
 
     const { dict, xref } = params;
     this.data.annotationType = AnnotationType.INK;
@@ -4607,7 +4633,7 @@ class InkAnnotation extends MarkupAnnotation {
   static override async createNewAppearanceStream(
     annotation: AnnotStorageValue,
     xref: XRef,
-    params?: _CreateNewAnnotationP,
+    params?: CreateNewAnnotationP_,
   ) {
     const { color, rect, rotation, paths, thickness, opacity } = annotation;
     const [x1, y1, x2, y2] = rect!;
@@ -4848,6 +4874,7 @@ class StampAnnotation extends MarkupAnnotation {
     super(params);
 
     this.data.annotationType = AnnotationType.STAMP;
+    this.data.hasOwnCanvas = this.data.noRotate;
   }
 }
 
@@ -4859,6 +4886,7 @@ class FileAttachmentAnnotation extends MarkupAnnotation {
     const file = new FileSpec(dict.get("FS") as Dict, xref);
 
     this.data.annotationType = AnnotationType.FILEATTACHMENT;
+    this.data.hasOwnCanvas = this.data.noRotate;
     this.data.file = file.serializable;
 
     const name = dict.get("Name");

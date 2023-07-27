@@ -15,9 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { _PDFDEV } from "../../../global.js";
+import { PDFJSDev, TESTING } from "../../../global.js";
 import { assert } from "../../../lib/util/trace.js";
-import { shadow, warn } from "../shared/util.js";
+import { MAX_IMAGE_SIZE_TO_CACHE, warn } from "../shared/util.js";
 import { RefSetCache } from "./primitives.js";
 /*80--------------------------------------------------------------------------*/
 class BaseLocalCache {
@@ -144,16 +144,24 @@ export class LocalTilingPatternCache extends BaseLocalCache {
         this.imageCache$.put(ref, data);
     }
 }
+export class RegionalImageCache extends BaseLocalCache {
+    constructor() {
+        super({ onlyRefs: true });
+    }
+    set(name, ref, data) {
+        if (!ref) {
+            throw new Error('RegionalImageCache.set - expected "ref" argument.');
+        }
+        if (this.imageCache$.has(ref)) {
+            return;
+        }
+        this.imageCache$.put(ref, data);
+    }
+}
 export class GlobalImageCache {
-    static get NUM_PAGES_THRESHOLD() {
-        return shadow(this, "NUM_PAGES_THRESHOLD", 2);
-    }
-    static get MIN_IMAGES_TO_CACHE() {
-        return shadow(this, "MIN_IMAGES_TO_CACHE", 10);
-    }
-    static get MAX_BYTE_SIZE() {
-        return shadow(this, "MAX_BYTE_SIZE", /* Forty megabytes = */ 40e6);
-    }
+    static NUM_PAGES_THRESHOLD = 2;
+    static MIN_IMAGES_TO_CACHE = 10;
+    static MAX_BYTE_SIZE = 5 * MAX_IMAGE_SIZE_TO_CACHE;
     #refCache = new RefSetCache();
     #imageCache = new RefSetCache();
     constructor() {
@@ -179,26 +187,19 @@ export class GlobalImageCache {
     }
     /** @final */
     shouldCache(ref, pageIndex) {
-        const pageIndexSet = this.#refCache.get(ref);
-        const numPages = pageIndexSet
-            ? pageIndexSet.size + (pageIndexSet.has(pageIndex) ? 0 : 1)
-            : 1;
-        if (numPages < GlobalImageCache.NUM_PAGES_THRESHOLD) {
-            return false;
-        }
-        if (!this.#imageCache.has(ref) && this._cacheLimitReached) {
-            return false;
-        }
-        return true;
-    }
-    /** @final */
-    addPageIndex(ref, pageIndex) {
         let pageIndexSet = this.#refCache.get(ref);
         if (!pageIndexSet) {
             pageIndexSet = new Set();
             this.#refCache.put(ref, pageIndexSet);
         }
         pageIndexSet.add(pageIndex);
+        if (pageIndexSet.size < GlobalImageCache.NUM_PAGES_THRESHOLD) {
+            return false;
+        }
+        if (!this.#imageCache.has(ref) && this._cacheLimitReached) {
+            return false;
+        }
+        return true;
     }
     /**
      * PLEASE NOTE: Must be called *after* the `setData` method.
@@ -234,7 +235,7 @@ export class GlobalImageCache {
     /** @final */
     setData(ref, data) {
         if (!this.#refCache.has(ref)) {
-            throw new Error('GlobalImageCache.setData - expected "addPageIndex" to have been called.');
+            throw new Error('GlobalImageCache.setData - expected "shouldCache" to have been called.');
         }
         if (this.#imageCache.has(ref)) {
             return;

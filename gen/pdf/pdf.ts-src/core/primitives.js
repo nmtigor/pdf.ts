@@ -15,60 +15,50 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { _PDFDEV } from "../../../global.js";
+import { PDFJSDev, TESTING } from "../../../global.js";
 import { assert } from "../../../lib/util/trace.js";
 import { shadow } from "../shared/util.js";
 /*80--------------------------------------------------------------------------*/
 export const CIRCULAR_REF = Symbol("CIRCULAR_REF");
 export const EOF = Symbol("EOF");
-var XFANsName;
-(function (XFANsName) {
-    let nameCache = Object.create(null);
-    class Name {
-        name;
-        constructor(name) {
-            /*#static*/  {
-                if (typeof name !== "string") {
-                    assert(0, 'Name: The "name" must be a string.');
-                }
+let CmdCache = Object.create(null);
+let NameCache = Object.create(null);
+let RefCache = Object.create(null);
+export function clearPrimitiveCaches() {
+    CmdCache = Object.create(null);
+    NameCache = Object.create(null);
+    RefCache = Object.create(null);
+}
+export class Name {
+    name;
+    constructor(name) {
+        /*#static*/  {
+            if (typeof name !== "string") {
+                assert(0, 'Name: The "name" must be a string.');
             }
-            this.name = name;
         }
-        static get(name) {
-            // eslint-disable-next-line no-restricted-syntax
-            return nameCache[name] || (nameCache[name] = new Name(name));
-        }
-        static _clearCache() {
-            nameCache = Object.create(null);
-        }
+        this.name = name;
     }
-    XFANsName.Name = Name;
-})(XFANsName || (XFANsName = {}));
-export var Name = XFANsName.Name;
-var NsCmd;
-(function (NsCmd) {
-    let cmdCache = Object.create(null);
-    class Cmd {
-        cmd;
-        constructor(cmd) {
-            /*#static*/  {
-                if (typeof cmd !== "string") {
-                    assert(0, 'Cmd: The "cmd" must be a string.');
-                }
+    static get(name) {
+        // eslint-disable-next-line no-restricted-syntax
+        return (NameCache[name] ||= new Name(name));
+    }
+}
+export class Cmd {
+    cmd;
+    constructor(cmd) {
+        /*#static*/  {
+            if (typeof cmd !== "string") {
+                assert(0, 'Cmd: The "cmd" must be a string.');
             }
-            this.cmd = cmd;
         }
-        static get(cmd) {
-            // eslint-disable-next-line no-restricted-syntax
-            return cmdCache[cmd] || (cmdCache[cmd] = new Cmd(cmd));
-        }
-        static _clearCache() {
-            cmdCache = Object.create(null);
-        }
+        this.cmd = cmd;
     }
-    NsCmd.Cmd = Cmd;
-})(NsCmd || (NsCmd = {}));
-export var Cmd = NsCmd.Cmd;
+    static get(cmd) {
+        // eslint-disable-next-line no-restricted-syntax
+        return (CmdCache[cmd] ||= new Cmd(cmd));
+    }
+}
 export class Dict {
     /* #map */
     // Map should only be used internally, use functions below to access.
@@ -257,39 +247,29 @@ export class FontDict extends Dict {
     fontAliases;
     cacheKey;
 }
-export var NsRef;
-(function (NsRef) {
-    let refCache = Object.create(null);
-    class Ref {
-        /** object number */
-        num;
-        /** generation number */
-        gen;
-        constructor(num, gen) {
-            this.num = num;
-            this.gen = gen;
-        }
-        toString() {
-            // This function is hot, so we make the string as compact as possible.
-            // |this.gen| is almost always zero, so we treat that case specially.
-            if (this.gen === 0) {
-                return `${this.num}R`;
-            }
-            return `${this.num}R${this.gen}`;
-        }
-        static get(num, gen) {
-            const key = gen === 0 ? `${num}R` : `${num}R${gen}`;
-            // eslint-disable-next-line no-restricted-syntax
-            return refCache[key] || (refCache[key] = new Ref(num, gen));
-        }
-        static _clearCache() {
-            refCache = Object.create(null);
-        }
+export class Ref {
+    /** object number */
+    num;
+    /** generation number */
+    gen;
+    constructor(num, gen) {
+        this.num = num;
+        this.gen = gen;
     }
-    NsRef.Ref = Ref;
-})(NsRef || (NsRef = {}));
-// Hoisting for deno.
-export var Ref = NsRef.Ref;
+    toString() {
+        // This function is hot, so we make the string as compact as possible.
+        // |this.gen| is almost always zero, so we treat that case specially.
+        if (this.gen === 0) {
+            return `${this.num}R`;
+        }
+        return `${this.num}R${this.gen}`;
+    }
+    static get(num, gen) {
+        const key = gen === 0 ? `${num}R` : `${num}R${gen}`;
+        // eslint-disable-next-line no-restricted-syntax
+        return (RefCache[key] ||= new Ref(num, gen));
+    }
+}
 // The reference is identified by number and generation.
 // This structure stores only one instance of the reference.
 export class RefSet {
@@ -353,12 +333,10 @@ export function isDict(v, type) {
         (type === undefined || isName(v.get("Type"), type));
 }
 export function isRefsEqual(v1, v2) {
+    /*#static*/  {
+        assert(v1 instanceof Ref && v2 instanceof Ref, "isRefsEqual: Both parameters should be `Ref`s.");
+    }
     return v1.num === v2.num && v1.gen === v2.gen;
-}
-export function clearPrimitiveCaches() {
-    Cmd._clearCache();
-    Name._clearCache();
-    Ref._clearCache();
 }
 /*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=primitives.js.map

@@ -15,9 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { _PDFDEV } from "../../../global.js";
+import { PDFJSDev, TESTING } from "../../../global.js";
+import { PromiseCap } from "../../../lib/util/PromiseCap.js";
 import { assert } from "../../../lib/util/trace.js";
-import { createPromiseCapability, } from "../shared/util.js";
 import { arrayBuffersToBytes, MissingDataException } from "./core_utils.js";
 import { Stream } from "./stream.js";
 export class ChunkedStream extends Stream {
@@ -243,7 +243,7 @@ export class ChunkedStreamManager {
     #promisesByRequest = new Map();
     progressiveDataLength = 0;
     aborted = false;
-    #loadedStreamCapability = createPromiseCapability();
+    #loadedStreamCapability = new PromiseCap();
     constructor(pdfNetworkStream, args) {
         this.pdfNetworkStream = pdfNetworkStream;
         this.length = args.length;
@@ -312,7 +312,7 @@ export class ChunkedStreamManager {
         if (chunksNeeded.size === 0) {
             return Promise.resolve();
         }
-        const capability = createPromiseCapability();
+        const capability = new PromiseCap();
         this.#promisesByRequest.set(requestId, capability);
         const chunksToRequest = [];
         for (const chunk of chunksNeeded) {

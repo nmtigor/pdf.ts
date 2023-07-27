@@ -13,4 +13,5 @@ export declare const enum CharacterType {
  * https://hg.mozilla.org/mozilla-central/file/tip/intl/lwbrk/WordBreaker.cpp
  */
 export declare function getCharacterType(charCode: number): CharacterType;
+export declare function getNormalizeWithNFKC(): any;
 //# sourceMappingURL=pdf_find_utils.d.ts.map

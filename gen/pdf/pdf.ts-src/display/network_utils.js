@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { _PDFDEV } from "../../../global.js";
+import { PDFJSDev, TESTING } from "../../../global.js";
 import { HttpStatusCode } from "../../../lib/HttpStatusCode.js";
 import { assert } from "../../../lib/util/trace.js";
 import { MissingPDFException, UnexpectedResponseException, } from "../shared/util.js";

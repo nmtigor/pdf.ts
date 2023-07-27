@@ -15,19 +15,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { _PDFDEV } from "../../../global.js";
+import { PDFJSDev, TESTING } from "../../../global.js";
 import { assert } from "../../../lib/util/trace.js";
 import { bytesToString, FormatError, info, InvalidPDFException, warn, } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
 import { MissingDataException, ParserEOFException, XRefEntryException, XRefParseException, } from "./core_utils.js";
 import { CipherTransformFactory } from "./crypto.js";
 import { Lexer, Parser } from "./parser.js";
-import { CIRCULAR_REF, Cmd, Dict, isCmd, Ref, RefSet, } from "./primitives.js";
+import { CIRCULAR_REF, Cmd, Dict, isCmd, Ref, RefSet } from "./primitives.js";
 export class XRef {
     stream;
     pdfManager;
     entries = [];
-    xrefstms = Object.create(null);
+    _xrefStms = new Set();
     #cacheMap = new Map(); // Prepare the XRef cache.
     _pendingRefs = new RefSet();
     #newPersistentRefNum;
@@ -470,7 +470,7 @@ export class XRef {
                 if (xrefTagOffset < contentLength &&
                     content[xrefTagOffset + 5] < 64) {
                     xrefStms.push(position - stream.start);
-                    this.xrefstms[position - stream.start] = 1; // Avoid recursion
+                    this._xrefStms.add(position - stream.start); // Avoid recursion
                 }
                 position += contentLength;
             }
@@ -614,14 +614,11 @@ export class XRef {
                     }
                     // Recursively get other XRefs 'XRefStm', if any
                     obj = dict.get("XRefStm");
-                    if (Number.isInteger(obj)) {
-                        const pos = obj;
+                    if (Number.isInteger(obj) && !this._xrefStms.has(obj)) {
                         // ignore previously loaded xref streams
                         // (possible infinite recursion)
-                        if (!(pos in this.xrefstms)) {
-                            this.xrefstms[pos] = 1;
-                            this.startXRefQueue.push(pos);
-                        }
+                        this._xrefStms.add(obj);
+                        this.startXRefQueue.push(obj);
                     }
                 }
                 else if (Number.isInteger(obj)) {
@@ -668,6 +665,9 @@ export class XRef {
             return undefined;
         }
         throw new XRefParseException();
+    }
+    get lastXRefStreamPos() {
+        return this._xrefStms.size > 0 ? Math.max(...this._xrefStms) : undefined;
     }
     getEntry(i) {
         const xrefEntry = this.entries[i];

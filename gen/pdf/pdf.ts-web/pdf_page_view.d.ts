@@ -1,19 +1,19 @@
-import { type point_t } from "../../lib/alias.js";
-import { MetadataEx } from "../pdf.ts-src/display/api.js";
-import { AnnotationEditorUIManager, AnnotationMode, AnnotationStorage, FieldObject, OptionalContentConfig, PageViewport, PDFPageProxy, StatTimer } from "../pdf.ts-src/pdf.js";
+import type { point_t } from "../../lib/alias.js";
+import type { MetadataEx, RenderTask } from "../pdf.ts-src/display/api.js";
+import type { AnnotationEditorUIManager, AnnotationStorage, FieldObject, OptionalContentConfig, PageViewport, PDFPageProxy, StatTimer } from "../pdf.ts-src/pdf.js";
+import { AnnotationMode } from "../pdf.ts-src/pdf.js";
 import { AnnotationEditorLayerBuilder } from "./annotation_editor_layer_builder.js";
 import { AnnotationLayerBuilder } from "./annotation_layer_builder.js";
-import { type ErrorMoreInfo } from "./app.js";
-import { EventBus, EventMap } from "./event_utils.js";
-import { IDownloadManager, type IL10n, IPDFLinkService, type IVisibleView } from "./interfaces.js";
-import { PDFFindController } from "./pdf_find_controller.js";
-import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
-import { PageColors } from "./pdf_viewer.js";
+import type { EventBus, EventMap } from "./event_utils.js";
+import type { IDownloadManager, IL10n, IPDFLinkService, IVisibleView } from "./interfaces.js";
+import type { PDFFindController } from "./pdf_find_controller.js";
+import type { PDFRenderingQueue } from "./pdf_rendering_queue.js";
+import type { PageColors } from "./pdf_viewer.js";
 import { StructTreeLayerBuilder } from "./struct_tree_layer_builder.js";
 import { TextAccessibilityManager } from "./text_accessibility.js";
 import { TextHighlighter } from "./text_highlighter.js";
 import { TextLayerBuilder } from "./text_layer_builder.js";
-import { OutputScale, RendererType, RenderingStates, TextLayerMode } from "./ui_utils.js";
+import { OutputScale, RenderingStates, TextLayerMode } from "./ui_utils.js";
 import { XfaLayerBuilder } from "./xfa_layer_builder.js";
 interface PDFPageViewOptions {
     /**
@@ -65,10 +65,6 @@ interface PDFPageViewOptions {
      */
     imageResourcesPath?: string;
     /**
-     * 'canvas' or 'svg'. The default is 'canvas'.
-     */
-    renderer?: RendererType | undefined;
-    /**
      * Enables CSS only zooming. The default value is `false`.
      */
     useOnlyCssZoom?: boolean;
@@ -107,13 +103,7 @@ type LayerPropsR_ = {
     hasJSActionsPromise?: Promise<boolean> | undefined;
     linkService: IPDFLinkService;
 };
-interface PaintTask {
-    promise: Promise<void>;
-    onRenderContinue: ((cont: () => void) => void) | undefined;
-    cancel(extraDelay?: number): void;
-    separateAnnots: boolean;
-}
-interface _CSSTransformP {
+interface CSSTransformP_ {
     target: HTMLCanvasElement | SVGElement;
     redrawAnnotationLayer?: boolean;
     redrawAnnotationEditorLayer?: boolean;
@@ -121,9 +111,19 @@ interface _CSSTransformP {
     redrawTextLayer?: boolean;
     hideTextLayer?: boolean;
 }
-interface _PDFPageViewUpdateP {
+interface PDFPageViewUpdateP_ {
+    /**
+     * The new scale, if specified.
+     */
     scale?: number;
+    /**
+     * The new rotation, if specified.
+     */
     rotation?: number;
+    /**
+     * A promise that is resolved with an {@link OptionalContentConfig}
+     * instance. The default value is `null`.
+     */
     optionalContentConfigPromise?: Promise<OptionalContentConfig | undefined>;
     drawingDelay?: number;
 }
@@ -152,7 +152,6 @@ export declare class PDFPageView implements IVisibleView {
     _annotationStorage?: AnnotationStorage;
     _optionalContentConfigPromise: Promise<OptionalContentConfig | undefined> | undefined;
     hasRestrictedScaling: boolean;
-    textLayerMode: TextLayerMode;
     imageResourcesPath: string;
     useOnlyCssZoom: boolean;
     isOffscreenCanvasSupported: boolean;
@@ -160,12 +159,9 @@ export declare class PDFPageView implements IVisibleView {
     pageColors: PageColors | undefined;
     eventBus: EventBus;
     renderingQueue: PDFRenderingQueue | undefined;
-    renderer: RendererType | undefined;
     l10n: IL10n;
-    paintTask: PaintTask | undefined;
-    paintedViewportMap: WeakMap<SVGElement | HTMLCanvasElement, PageViewport>;
-    resume?: (() => void) | undefined; /** @implement */
-    _renderError?: ErrorMoreInfo | undefined;
+    renderTask: RenderTask | undefined;
+    resume: (() => void) | undefined; /** @implement */
     _isStandalone: boolean | undefined;
     _annotationCanvasMap: Map<string, HTMLCanvasElement> | undefined;
     annotationLayer: AnnotationLayerBuilder | undefined;
@@ -195,17 +191,16 @@ export declare class PDFPageView implements IVisibleView {
         keepXfaLayer?: boolean | undefined;
         keepTextLayer?: boolean | undefined;
     }): void;
-    update({ scale, rotation, optionalContentConfigPromise, drawingDelay, }: _PDFPageViewUpdateP): void;
+    update({ scale, rotation, optionalContentConfigPromise, drawingDelay, }: PDFPageViewUpdateP_): void;
     /**
      * PLEASE NOTE: Most likely you want to use the `this.reset()` method,
      *              rather than calling this one directly.
      */
     cancelRendering({ keepAnnotationLayer, keepAnnotationEditorLayer, keepXfaLayer, keepTextLayer, cancelExtraDelay, }?: CancelRenderingP_): void;
-    cssTransform({ target, redrawAnnotationLayer, redrawAnnotationEditorLayer, redrawXfaLayer, redrawTextLayer, hideTextLayer, }: _CSSTransformP): void;
+    cssTransform({ target, redrawAnnotationLayer, redrawAnnotationEditorLayer, redrawXfaLayer, redrawTextLayer, hideTextLayer, }: CSSTransformP_): void;
     getPagePoint(x: number, y: number): point_t;
+    /** @implement */
     draw(): Promise<void>;
-    paintOnCanvas(canvasWrapper: HTMLDivElement): PaintTask;
-    paintOnSvg(wrapper: HTMLDivElement): PaintTask;
     setPageLabel(label?: string): void;
     /**
      * For use by the `PDFThumbnailView.setImage`-method.

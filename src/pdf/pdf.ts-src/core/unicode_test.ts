@@ -17,21 +17,19 @@
  * limitations under the License.
  */
 
-import { assertEquals } from "https://deno.land/std@0.170.0/testing/asserts.ts";
+import { assertEquals } from "https://deno.land/std@0.190.0/testing/asserts.ts";
 import {
   afterAll,
   beforeAll,
   describe,
   it,
-} from "https://deno.land/std@0.170.0/testing/bdd.ts";
+} from "https://deno.land/std@0.190.0/testing/bdd.ts";
 import { getDingbatsGlyphsUnicode, getGlyphsUnicode } from "./glyphlist.ts";
 import {
   getCharUnicodeCategory,
-  getNormalizedUnicodes,
   getUnicodeForGlyph,
   getUnicodeRangeFor,
   mapSpecialUnicodeValues,
-  reverseIfRtl,
 } from "./unicode.ts";
 /*80--------------------------------------------------------------------------*/
 
@@ -162,69 +160,12 @@ describe("unicode", () => {
       assertEquals(getUnicodeRangeFor(0x0041), 0);
       // fi (Alphabetic Presentation Forms)
       assertEquals(getUnicodeRangeFor(0xfb01), 62);
+      // Combining diacritic (Cyrillic Extended-A)
+      assertEquals(getUnicodeRangeFor(0x2dff), 9);
     });
 
     it("should not get a Unicode range", () => {
-      assertEquals(getUnicodeRangeFor(0x05ff), -1);
-    });
-  });
-
-  describe("getNormalizedUnicodes", () => {
-    let NormalizedUnicodes: Record<string, string>;
-
-    beforeAll(() => {
-      NormalizedUnicodes = getNormalizedUnicodes();
-    });
-
-    afterAll(() => {
-      NormalizedUnicodes = undefined as any;
-    });
-
-    it("should get normalized Unicode values for ligatures", () => {
-      // fi => f + i
-      assertEquals(NormalizedUnicodes["\uFB01"], "fi");
-      // Arabic
-      assertEquals(NormalizedUnicodes["\u0675"], "\u0627\u0674");
-    });
-
-    it("should not normalize standard characters", () => {
-      assertEquals(NormalizedUnicodes.A, undefined);
-    });
-  });
-
-  describe("reverseIfRtl", () => {
-    let NormalizedUnicodes: Record<string, string>;
-
-    function getGlyphUnicode(char: string) {
-      if (NormalizedUnicodes[char] !== undefined) {
-        return NormalizedUnicodes[char];
-      }
-      return char;
-    }
-
-    beforeAll(() => {
-      NormalizedUnicodes = getNormalizedUnicodes();
-    });
-
-    afterAll(() => {
-      NormalizedUnicodes = undefined as any;
-    });
-
-    it("should not reverse LTR characters", () => {
-      const A = getGlyphUnicode("A");
-      assertEquals(reverseIfRtl(A), "A");
-
-      const fi = getGlyphUnicode("\uFB01");
-      assertEquals(reverseIfRtl(fi), "fi");
-    });
-
-    it("should reverse RTL characters", () => {
-      // Hebrew (no-op, since it's not a combined character)
-      const heAlef = getGlyphUnicode("\u05D0");
-      assertEquals(reverseIfRtl(heAlef), "\u05D0");
-      // Arabic
-      const arAlef = getGlyphUnicode("\u0675");
-      assertEquals(reverseIfRtl(arAlef), "\u0674\u0627");
+      assertEquals(getUnicodeRangeFor(0xaa60), -1);
     });
   });
 });

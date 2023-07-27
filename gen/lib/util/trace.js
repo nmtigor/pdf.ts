@@ -8,28 +8,30 @@ import { global, TESTING } from "../../global.js";
  * @const @param assertion
  * @const @param msg
  */
-export const assert = (assertion, msg, meta) => {
-    if (!assertion && meta) {
-        const match = meta.url.match(/\/([^\/]+\.js)/);
-        // console.log(match);
-        if (match)
-            msg += ` (${match[1]})`;
-    }
+export const assert = (assertion, ...data
+// meta?: { url: string },
+) => {
+    // if (!assertion && meta) {
+    //   const match = meta.url.match(/\/([^\/]+\.js)/);
+    //   // console.log(match);
+    //   if (match) msg += ` (${match[1]})`;
+    // }
     /*#static*/ if (!TESTING) {
-        console.assert(assertion, msg);
+        console.assert(assertion, ...data);
     }
     if (!assertion)
-        throw new Error(msg);
+        throw new Error(data[0], { cause: data });
 };
-export const warn = (msg, meta) => {
+export const warn = (...data
+// meta?: { url: string }
+) => {
     /*#static*/ if (TESTING)
         return;
-    if (meta) {
-        const match = meta.url.match(/\/([^\/]+\.js)/);
-        if (match)
-            msg += ` (${match[1]})`;
-    }
-    console.warn(msg);
+    // if (meta) {
+    //   const match = meta.url.match(/\/([^\/]+\.js)/);
+    //   if (match) msg += ` (${match[1]})`;
+    // }
+    console.warn(...data);
 };
 let reporting_;
 let count_reported_ = 0;
@@ -37,7 +39,7 @@ const MAX_reported_ = 2;
 Reflect.defineProperty(Error.prototype, "toJ", {
     value() {
         return {
-            ts: Date.now(),
+            // ts: Date.now(),
             name: this.name,
             message: this.message,
             // actionlist: actionlist_.toval(),
@@ -58,7 +60,7 @@ export const reportError = async (err_x) => {
     // console.log(err_j);
     global.ghvc?.showReportedError?.({
         err_j,
-        ts: err_j?.ts ?? Date.now(),
+        ts: Date.now(),
     });
     reporting_ = undefined;
     // const url = new URL( `/logerr`, window.location.toString() );

@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 import { MOZCENTRAL } from "../../global.js";
-import { FindState, } from "./pdf_find_controller.js";
+import { FindState } from "./pdf_find_controller.js";
 /*80--------------------------------------------------------------------------*/
 const MATCHES_COUNT_LIMIT = 1000;
 /**
@@ -101,7 +101,6 @@ export class PDFFindBar {
             source: this,
             type,
             query: this.findField.value,
-            phraseSearch: true,
             caseSensitive: this.caseSensitive.checked,
             entireWord: this.entireWord.checked,
             highlightAll: this.highlightAll.checked,
@@ -129,6 +128,7 @@ export class PDFFindBar {
         this.findField.setAttribute("data-status", status);
         this.findField.setAttribute("aria-invalid", (state === FindState.NOT_FOUND));
         findMsg.then((msg) => {
+            this.findMsg.setAttribute("data-status", status);
             this.findMsg.textContent = msg;
             this.#adjustWidth();
         });

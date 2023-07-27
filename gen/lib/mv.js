@@ -73,6 +73,7 @@ export class Vuu {
     //   return ret_x;
     // }
     /**
+     * @deprecated
      * @headconst @param ret_x
      * @headconst @param refvuu
      */
@@ -86,6 +87,7 @@ export class Vuu {
         return ret_x;
     }
     /**
+     * @deprecated
      * @headconst @param ret_x
      */
     detach(ret_x) {
@@ -109,10 +111,6 @@ export class Vuu {
     assignAttro(attr_o) {
         this.el$.assignAttro(attr_o);
         return this;
-    }
-    // static Vuufn() {}
-    set cyName(name_x) {
-        this.el$.setAttribute("data-cy", name_x);
     }
 }
 // Vuu.def = "def";
@@ -173,14 +171,6 @@ export class SVGVCo extends mix(SVGVuu, Coo) {
         this.coo$ = this;
     }
 }
-// console.log( VCoo );
-// console.log( VCoo.def );
-// console.log( VCoo.abc );
-// let vcoo = new VCoo();
-// vcoo.Coofn1111111();
-// console.log( vcoo instanceof Vuu ); // true
-// console.log( vcoo instanceof Coo1 ); // false
-// console.log( vcoo instanceof Coo ); // false
 export class SVGViewbox extends SVGVCo {
     /**
      * @headconst @param coo_x
@@ -352,12 +342,12 @@ export class Moo {
         // // #endif
         this.#data = data_x;
     }
-    constructor({ val, eq_ = (a, b) => a === b, active = false, forcing = false, name, }) {
+    constructor({ val, eq_ = (a, b) => a === b, active = false, forcing = false, _name, }) {
         this.#initval = val;
         this.#eq = eq_;
         this.#active = active;
         this.#forcing = forcing;
-        this.name = name;
+        this.name = _name;
         this.reset();
     }
     /**
@@ -435,7 +425,7 @@ export class Moo {
             this.#val = newval_x;
         this.#handler_db.get(newval_x, this.#oldval, this.#forcing_)
             .forEach((handler_y) => {
-            handler_y(newval_x, this.#val, this.#data);
+            handler_y(newval_x, this.#oldval, this.#data);
             // /*#static*/ if (DEV) Moo._count += 1;
         });
         this.#val = newval_x;

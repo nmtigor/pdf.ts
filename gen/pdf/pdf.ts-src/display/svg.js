@@ -16,9 +16,9 @@
  * limitations under the License.
  */
 /* globals __non_webpack_require__ */
-import { GENERIC, PRODUCTION } from "../../../global.js";
+import { GENERIC } from "../../../global.js";
 import { svg as createSVG } from "../../../lib/dom.js";
-import { ShadingType, } from "../core/pattern.js";
+import { ShadingType } from "../core/pattern.js";
 import { FONT_IDENTITY_MATRIX, IDENTITY_MATRIX, ImageKind, OPS, TextRenderingMode, Util, warn, } from "../shared/util.js";
 import { deprecated, DOMSVGFactory } from "./display_utils.js";
 /*80--------------------------------------------------------------------------*/
@@ -773,7 +773,8 @@ export class SVGGraphics {
                 x += (spacingDir * glyph * fontSize) / 1000;
                 continue;
             }
-            const spacing = (glyph.isSpace ? wordSpacing : 0) + charSpacing;
+            const spacing = (glyph.isSpace ? wordSpacing : 0) +
+                charSpacing;
             const character = glyph.fontChar;
             let scaledX, scaledY;
             let width = glyph.width;

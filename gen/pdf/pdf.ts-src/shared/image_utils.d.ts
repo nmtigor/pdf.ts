@@ -1,15 +1,24 @@
-interface _ApplyMaskImageDataP {
+import { ImageKind } from "./util.js";
+type ImageDataP_ = {
     src: Uint8Array | Uint8ClampedArray;
     srcPos?: number;
     dest: Uint8ClampedArray | Uint32Array;
     destPos?: number;
     width: number;
     height: number;
+    nonBlackColor?: number;
     inverseDecode?: boolean;
-}
-export declare function applyMaskImageData({ src, srcPos, dest, destPos, width, height, inverseDecode, }: _ApplyMaskImageDataP): {
+};
+export declare function convertToRGBA(params: ImageDataP_ & {
+    kind: ImageKind;
+}): {
+    srcPos: number;
+    destPos: number;
+} | null;
+export declare function convertBlackAndWhiteToRGBA({ src, srcPos, dest, width, height, nonBlackColor, inverseDecode, }: ImageDataP_): {
     srcPos: number;
     destPos: number;
 };
+export declare function grayToRGBA(src: Uint8ClampedArray, dest: Uint32Array): void;
 export {};
 //# sourceMappingURL=image_utils.d.ts.map

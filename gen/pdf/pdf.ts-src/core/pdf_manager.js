@@ -1,7 +1,7 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
-import { createValidAbsoluteUrl, shadow, warn, } from "../shared/util.js";
+import { createValidAbsoluteUrl, FeatureTest, shadow, warn, } from "../shared/util.js";
 import { ChunkedStreamManager } from "./chunked_stream.js";
 import { MissingDataException } from "./core_utils.js";
 import { PDFDocument } from "./document.js";
@@ -42,6 +42,10 @@ export class BasePdfManager {
         this._docId = args.docId;
         this._password = args.password;
         this.enableXfa = args.enableXfa;
+        // Check `OffscreenCanvas` support once, rather than repeatedly throughout
+        // the worker-thread code.
+        args.evaluatorOptions.isOffscreenCanvasSupported &&=
+            FeatureTest.isOffscreenCanvasSupported;
         this.evaluatorOptions = args.evaluatorOptions;
     }
     /** @fianl */

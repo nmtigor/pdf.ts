@@ -2,34 +2,28 @@
  * @module lib/util/trace
  * @license Apache-2.0
  ******************************************************************************/
-import { ts_t } from "../alias.js";
+import type { ts_t } from "../alias.js";
 /**
  * @const @param assertion
  * @const @param msg
  */
-export declare const assert: (assertion: any, msg?: string, meta?: {
-    url: string;
-}) => void;
-export declare const warn: (msg: string, meta?: {
-    url: string;
-}) => void;
-interface ErrorJ_ {
-    ts: ts_t;
+export declare const assert: (assertion: any, ...data: any[]) => void;
+export declare const warn: (...data: any[]) => void;
+export interface ErrorJ {
     name: string;
     message: string;
 }
 export interface ReportedError {
-    err_j: ErrorJ_ | undefined;
+    err_j: ErrorJ | undefined;
     ts: ts_t;
 }
 declare global {
     interface Error {
-        toJ(): ErrorJ_;
+        toJ(): ErrorJ;
     }
 }
 /**
  * @headconst @param err_x
  */
 export declare const reportError: <E extends Error>(err_x: E) => Promise<void>;
-export {};
 //# sourceMappingURL=trace.d.ts.map

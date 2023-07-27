@@ -17,24 +17,24 @@
  * limitations under the License.
  */
 
-import { type rect_t } from "../../../../lib/alias.ts";
+import type { rect_t } from "../../../../lib/alias.ts";
 import { stringToBytes, Util, warn } from "../../shared/util.ts";
 import { recoverJsURL } from "../core_utils.ts";
-import {
-  type AvailableSpace,
-  type XFAAttrs,
-  type XFAElData,
-  type XFAElObj,
-  type XFAElObjBase,
-  type XFAExtra,
-  type XFAFontBase,
-  type XFAHTMLAttrs,
-  type XFAHTMLObj,
-  type XFAIds,
-  type XFAStyleData,
-  type XFASVGAttrs,
-  type XFASVGObj,
-  type XFAValue,
+import type {
+  AvailableSpace,
+  XFAAttrs,
+  XFAElData,
+  XFAElObj,
+  XFAElObjBase,
+  XFAExtra,
+  XFAFontBase,
+  XFAHTMLAttrs,
+  XFAHTMLObj,
+  XFAIds,
+  XFAStyleData,
+  XFASVGAttrs,
+  XFASVGObj,
+  XFAValue,
 } from "./alias.ts";
 import { Builder } from "./builder.ts";
 import { getMetrics } from "./fonts.ts";
@@ -4476,7 +4476,7 @@ export class PageArea extends XFAObject {
     return (
       !this.occur ||
       this.occur.max === -1 ||
-      this[$extra]!.numberOfUse! < this.occur.max
+      this[$extra]!.numberOfUse! < +this.occur.max
     );
   }
 
@@ -4605,7 +4605,7 @@ class PageSet extends XFAObject {
     return (
       !this.occur ||
       this.occur.max === -1 ||
-      this[$extra]!.numberOfUse! < this.occur.max
+      this[$extra]!.numberOfUse! < +this.occur.max
     );
   }
 
@@ -4780,7 +4780,7 @@ export class Para extends XFAObject {
       fixTextIndent(style);
     }
 
-    if (this.lineHeight > 0) {
+    if (+this.lineHeight > 0) {
       style.lineHeight = measureToString(this.lineHeight);
     }
 
@@ -6091,7 +6091,7 @@ export class Template extends XFAObject {
       if (leader) {
         this[$extra].noLayoutFailure = true;
         page.children!.push(
-          (<HTMLResult> leader[$toHTML](pageArea![$extra]!.space)).html!,
+          (leader[$toHTML](pageArea![$extra]!.space) as HTMLResult).html!,
         );
         leader = undefined;
       }
@@ -6099,7 +6099,7 @@ export class Template extends XFAObject {
       if (trailer) {
         this[$extra].noLayoutFailure = true;
         page.children!.push(
-          (<HTMLResult> trailer[$toHTML](pageArea![$extra]!.space)).html!,
+          (trailer[$toHTML](pageArea![$extra]!.space) as HTMLResult).html!,
         );
         trailer = undefined;
       }
@@ -6116,8 +6116,7 @@ export class Template extends XFAObject {
       const flush = (index: number) => {
         const html = root[$flushHTML]();
         if (html) {
-          hasSomething = hasSomething ||
-            !!(html.children && html.children.length !== 0);
+          hasSomething ||= !!html.children && html.children.length !== 0;
           htmlContentAreas[index].children!.push(html);
         }
       };
@@ -6147,9 +6146,8 @@ export class Template extends XFAObject {
         const html = root[$toHTML](space);
         if (html.success) {
           if (html.html) {
-            hasSomething = hasSomething ||
-              !!((<XFAElObj> html.html).children &&
-                (<XFAElObj> html.html).children!.length !== 0);
+            hasSomething ||= !!(html.html as XFAElObj).children &&
+              (html.html as XFAElObj).children!.length !== 0;
             htmlContentAreas[i].children!.push(html.html);
           } else if (!hasSomething && mainHtml.children.length > 1) {
             mainHtml.children.pop();
@@ -6291,13 +6289,13 @@ export class Text extends ContentObject implements XFAValue {
 
   override [$finalize]() {
     if (typeof this[$content] === "string") {
-      this[$content] = (<string> this[$content]).replace(/\r\n/g, "\n");
+      this[$content] = this[$content].replaceAll("\r\n", "\n");
     }
   }
 
   [$getExtra]() {
     if (typeof this[$content] === "string") {
-      return (<string> this[$content])
+      return this[$content]
         .split(/[\u2029\u2028\n]/)
         .reduce((acc, line) => {
           if (line) {

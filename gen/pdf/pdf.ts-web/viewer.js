@@ -17,7 +17,7 @@
  */
 // import "web-com";
 // import "web-print_service";
-import { CHROME, GENERIC, MOZCENTRAL } from "../../global.js";
+import { CHROME, GENERIC, MOZCENTRAL, PDFJSDev } from "../../global.js";
 import { viewerApp } from "./app.js";
 /*80--------------------------------------------------------------------------*/
 // /* eslint-disable-next-line no-unused-vars */

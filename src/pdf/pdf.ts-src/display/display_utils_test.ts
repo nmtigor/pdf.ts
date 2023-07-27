@@ -28,13 +28,13 @@ import {
   assertStrictEquals,
   assertThrows,
   fail,
-} from "https://deno.land/std@0.170.0/testing/asserts.ts";
+} from "https://deno.land/std@0.190.0/testing/asserts.ts";
 import {
   afterAll,
   beforeAll,
   describe,
   it,
-} from "https://deno.land/std@0.170.0/testing/bdd.ts";
+} from "https://deno.land/std@0.190.0/testing/bdd.ts";
 import { DENO } from "../../../global.ts";
 import { bytesToString } from "../shared/util.ts";
 import {
@@ -45,6 +45,7 @@ import {
   isValidFetchUrl,
   PDFDateString,
 } from "./display_utils.ts";
+import { C2D } from "../../../lib/alias.ts";
 /*80--------------------------------------------------------------------------*/
 
 describe("display_utils", () => {
@@ -87,7 +88,7 @@ describe("display_utils", () => {
 
       const { canvas, context } = canvasFactory.create(20, 40);
       assertInstanceOf(canvas, HTMLCanvasElement);
-      assertInstanceOf(context, CanvasRenderingContext2D);
+      assertInstanceOf(context, C2D);
       assertEquals(canvas.width, 20);
       assertEquals(canvas.height, 40);
     });
@@ -137,7 +138,7 @@ describe("display_utils", () => {
 
       const { canvas, context } = canvasAndContext;
       assertInstanceOf(canvas, HTMLCanvasElement);
-      assertInstanceOf(context, CanvasRenderingContext2D);
+      assertInstanceOf(context, C2D);
       assertEquals(canvas.width, 60);
       assertEquals(canvas.height, 80);
     });

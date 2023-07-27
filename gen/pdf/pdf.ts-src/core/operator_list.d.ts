@@ -6,6 +6,7 @@ declare namespace NsQueueOptimizer {
         iCurr: number;
         fnArray: OPS[];
         argsArray: unknown[];
+        isOffscreenCanvasSupported: boolean;
     }
     type CheckFn = (context: QueueOptimizerContext) => boolean;
     type IterateFn = (context: QueueOptimizerContext, i: number) => boolean;
@@ -21,6 +22,7 @@ declare namespace NsQueueOptimizer {
     export class NullOptimizer {
         queue: OperatorList;
         constructor(queue: OperatorList);
+        set isOffscreenCanvasSupported(value: boolean);
         _optimize(): void;
         push(fn: OPS, args?: OpArgs): void;
         flush(): void;
@@ -32,64 +34,63 @@ declare namespace NsQueueOptimizer {
         match: Match | undefined;
         lastProcessed: number;
         constructor(queue: OperatorList);
+        set isOffscreenCanvasSupported(value: boolean);
         _optimize(): void;
         flush(): void;
         reset(): void;
     }
     export {};
 }
-import QueueOptimizer = NsQueueOptimizer.QueueOptimizer;
 import NullOptimizer = NsQueueOptimizer.NullOptimizer;
-declare namespace NsOperatorList {
+/**
+ * PDF page operator list.
+ */
+export interface OpListIR {
     /**
-     * PDF page operator list.
+     * Array containing the operator functions.
      */
-    interface OpListIR {
-        /**
-         * Array containing the operator functions.
-         */
-        fnArray: OPS[];
-        /**
-         * Array containing the arguments of the functions.
-         */
-        argsArray: (OpArgs | undefined)[];
-        length?: number;
-        lastChunk: boolean | undefined;
-        separateAnnots: {
-            form: boolean;
-            canvas: boolean;
-        } | undefined;
-    }
-    /** @final */
-    class OperatorList {
-        #private;
-        fnArray: OPS[];
-        argsArray: (OpArgs | undefined)[];
-        get length(): number;
-        optimizer: QueueOptimizer | NullOptimizer;
-        dependencies: Set<string>;
-        /**
-         * @return The total length of the entire operator list, since
-         *  `this.length === 0` after flushing.
-         */
-        get totalLength(): number;
-        weight: number;
-        constructor(intent?: RenderingIntentFlag, streamSink?: StreamSink<Thread.main, "GetOperatorList">);
-        get ready(): Promise<void>;
-        addOp(fn: OPS, args?: OpArgs): void;
-        addImageOps(fn: OPS, args: OpArgs | undefined, optionalContent: MarkedContentProps | undefined): void;
-        addDependency(dependency: string): void;
-        addDependencies(dependencies: Set<string>): void;
-        addOpList(opList: OperatorList): void;
-        getIR(): OpListIR;
-        get _transfers(): any[];
-        flush(lastChunk?: boolean, separateAnnots?: {
-            form: boolean;
-            canvas: boolean;
-        }): void;
-    }
+    fnArray: OPS[];
+    /**
+     * Array containing the arguments of the functions.
+     */
+    argsArray: (OpArgs | undefined)[];
+    length?: number;
+    lastChunk: boolean | undefined;
+    separateAnnots: {
+        form: boolean;
+        canvas: boolean;
+    } | undefined;
 }
-export import OperatorList = NsOperatorList.OperatorList;
-export type OpListIR = NsOperatorList.OpListIR;
+/** @final */
+export declare class OperatorList {
+    #private;
+    static CHUNK_SIZE: number;
+    static CHUNK_SIZE_ABOUT: number;
+    fnArray: OPS[];
+    argsArray: (OpArgs | undefined)[];
+    get length(): number;
+    optimizer: NullOptimizer;
+    dependencies: Set<string>;
+    /**
+     * @return The total length of the entire operator list, since
+     *  `this.length === 0` after flushing.
+     */
+    get totalLength(): number;
+    weight: number;
+    constructor(intent?: RenderingIntentFlag, streamSink?: StreamSink<Thread.main, "GetOperatorList">);
+    set isOffscreenCanvasSupported(value: boolean);
+    get ready(): Promise<void>;
+    addOp(fn: OPS, args?: OpArgs): void;
+    addImageOps(fn: OPS, args: OpArgs | undefined, optionalContent: MarkedContentProps | undefined): void;
+    addDependency(dependency: string): void;
+    addDependencies(dependencies: Set<string>): void;
+    addOpList(opList: OperatorList): void;
+    getIR(): OpListIR;
+    get _transfers(): any[];
+    flush(lastChunk?: boolean, separateAnnots?: {
+        form: boolean;
+        canvas: boolean;
+    }): void;
+}
 export {};
 //# sourceMappingURL=operator_list.d.ts.map

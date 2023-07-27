@@ -17,15 +17,20 @@
  * limitations under the License.
  */
 
-import { _PDFDEV, DENO, GENERIC, SKIP_BABEL } from "../../../global.ts";
-import { type point_t, type rect_t, type TupleOf } from "../../../lib/alias.ts";
+import { GENERIC, PDFJSDev, SKIP_BABEL, TESTING } from "../../../global.ts";
+import type {
+  Constructor,
+  point_t,
+  rect_t,
+  TupleOf,
+} from "../../../lib/alias.ts";
 import { HttpStatusCode } from "../../../lib/HttpStatusCode.ts";
 import { isObjectLike } from "../../../lib/jslang.ts";
-import { assert, warn as warn_0 } from "../../../lib/util/trace.ts";
+import { assert, ErrorJ, warn as warn_0 } from "../../../lib/util/trace.ts";
 /*80--------------------------------------------------------------------------*/
 
 // Skip compatibility checks for modern builds and if we already ran the module.
-/*#static*/ if (!SKIP_BABEL && !DENO) {
+/*#static*/ if (!SKIP_BABEL) {
   if (!(globalThis as any)._pdfjsCompatibilityChecked) {
     (globalThis as any)._pdfjsCompatibilityChecked = true;
     (globalThis as any).require("./compatibility.js");
@@ -34,6 +39,8 @@ import { assert, warn as warn_0 } from "../../../lib/util/trace.ts";
 
 export const IDENTITY_MATRIX: matrix_t = [1, 0, 0, 1, 0, 0];
 export const FONT_IDENTITY_MATRIX: matrix_t = [0.001, 0, 0, 0.001, 0, 0];
+
+export const MAX_IMAGE_SIZE_TO_CACHE = 10e6; // Ten megabytes.
 
 // Represent the percentage of the height of a single-line field over
 // the font size. Acrobat seems to use this value.
@@ -54,6 +61,7 @@ export const BASELINE_FACTOR = LINE_DESCENT_FACTOR / LINE_FACTOR;
  *    `OperatorList`-constructor (on the worker-thread).
  */
 export const enum RenderingIntentFlag {
+  _0 = 0,
   ANY = 0x01,
   DISPLAY = 0x02,
   PRINT = 0x04,
@@ -411,35 +419,6 @@ export enum OPS {
 export type OPSName = keyof typeof OPS;
 // export type OPSValu = (typeof OPS)[OPSName];
 
-export const UNSUPPORTED_FEATURES = /*#static*/ GENERIC
-  ? {
-    forms: "forms",
-    javaScript: "javaScript",
-    signatures: "signatures",
-    smask: "smask",
-    shadingPattern: "shadingPattern",
-    errorTilingPattern: "errorTilingPattern",
-    errorExtGState: "errorExtGState",
-    errorXObject: "errorXObject",
-    errorFontLoadType3: "errorFontLoadType3",
-    errorFontState: "errorFontState",
-    errorFontMissing: "errorFontMissing",
-    errorFontTranslate: "errorFontTranslate",
-    errorColorSpace: "errorColorSpace",
-    errorOperatorList: "errorOperatorList",
-    errorFontToUnicode: "errorFontToUnicode",
-    errorFontLoadNative: "errorFontLoadNative",
-    errorFontBuildPath: "errorFontBuildPath",
-    errorFontGetPath: "errorFontGetPath",
-    errorMarkedContent: "errorMarkedContent",
-    errorContentSubStream: "errorContentSubStream",
-  } as const
-  : undefined;
-export type UNSUPPORTED_FEATURES =
-  (Exclude<typeof UNSUPPORTED_FEATURES, undefined>)[
-    keyof Exclude<typeof UNSUPPORTED_FEATURES, undefined>
-  ];
-
 export const enum PasswordResponses {
   NEED_PASSWORD = 1,
   INCORRECT_PASSWORD = 2,
@@ -479,10 +458,7 @@ export function warn(msg: string, meta?: { url: string }) {
 
 // Checks if URLs use one of the allowed protocols, e.g. to avoid XSS.
 function _isValidProtocol(url: URL) {
-  if (!url) {
-    return false;
-  }
-  switch (url.protocol) {
+  switch (url?.protocol) {
     case "http:":
     case "https:":
     case "ftp:":
@@ -522,7 +498,7 @@ export function createValidAbsoluteUrl(
         const dots = url.match(/\./g);
         // Avoid accidentally matching a *relative* URL pointing to a file named
         // e.g. "www.pdf" or similar.
-        if (dots && dots.length >= 2) {
+        if ((dots?.length as any) >= 2) {
           url = `http://${url}`;
         }
       }
@@ -552,7 +528,7 @@ export function shadow<T>(
   value: T,
   nonSerializable = false,
 ): T {
-  /*#static*/ if (_PDFDEV) {
+  /*#static*/ if (PDFJSDev || TESTING) {
     assert(
       prop in obj,
       `shadow: Property "${prop && prop.toString()}" not found in object.`,
@@ -574,15 +550,18 @@ export abstract class BaseException extends Error {
   }
 }
 
+export interface PasswordExceptionJ extends ErrorJ {
+  code: number;
+}
 export class PasswordException extends BaseException {
   constructor(msg: string, public code: number) {
     super(msg, "PasswordException");
   }
-}
 
-export class UnknownErrorException extends BaseException {
-  constructor(msg: string, public details?: string) {
-    super(msg, "UnknownErrorException");
+  override toJ(): PasswordExceptionJ {
+    const ret = super.toJ() as PasswordExceptionJ;
+    ret.code = this.code;
+    return ret;
   }
 }
 
@@ -598,9 +577,33 @@ export class MissingPDFException extends BaseException {
   }
 }
 
+export interface UnexpectedResponseExceptionJ extends ErrorJ {
+  status: HttpStatusCode;
+}
 export class UnexpectedResponseException extends BaseException {
   constructor(msg: string, public status: HttpStatusCode) {
     super(msg, "UnexpectedResponseException");
+  }
+
+  override toJ(): UnexpectedResponseExceptionJ {
+    const ret = super.toJ() as UnexpectedResponseExceptionJ;
+    ret.status = this.status;
+    return ret;
+  }
+}
+
+export interface UnknownErrorExceptionJ extends ErrorJ {
+  details: string | undefined;
+}
+export class UnknownErrorException extends BaseException {
+  constructor(msg: string, public details?: string) {
+    super(msg, "UnknownErrorException");
+  }
+
+  override toJ(): UnknownErrorExceptionJ {
+    const ret = super.toJ() as UnknownErrorExceptionJ;
+    ret.details = this.details;
+    return ret;
   }
 }
 
@@ -653,7 +656,7 @@ export function stringToBytes(str: string) {
 }
 
 export function string32(value: number) {
-  /*#static*/ if (_PDFDEV) {
+  /*#static*/ if (PDFJSDev || TESTING) {
     assert(
       typeof value === "number" && Math.abs(value) < 2 ** 32,
       `string32: Unexpected input "${value}".`,
@@ -719,7 +722,7 @@ export class FeatureTest {
   }
 
   static get platform() {
-    /*#static*/ if (GENERIC) {
+    /*#static*/ if (PDFJSDev || GENERIC) {
       if (!globalThis.navigator?.platform) {
         return shadow(this, "platform", { isWin: false, isMac: false });
       }
@@ -1214,60 +1217,22 @@ export function getModificationDate(date = new Date()) {
   return buffer.join("");
 }
 
-/**
- * Promise Capability object.
- */
-export interface PromiseCapability<T = void> {
-  id: number;
-
-  /**
-   * A Promise object.
-   */
-  promise: Promise<T>;
-
-  /**
-   * If the Promise has been fulfilled/rejected.
-   */
-  settled: boolean;
-
-  /**
-   * Fulfills the Promise.
-   */
-  resolve: (data: T) => void;
-
-  /**
-   * Rejects the Promise.
-   */
-  reject: (reason: any) => void;
-}
-let PromiseCap_ID = 0;
-
-/**
- * Creates a promise capability object.
- *
- * ! Notice, this could be called in worker thread, where there is no e.g.
- * ! `Node` as in mv.ts.
- */
-export function createPromiseCapability<T = void>(): PromiseCapability<T> {
-  const cap: PromiseCapability<T> = Object.create(null);
-  cap.id = ++PromiseCap_ID;
-  let isSettled = false;
-
-  Object.defineProperty(cap, "settled", {
-    get() {
-      return isSettled;
-    },
+let NormalizeRegex: RegExp | undefined;
+let NormalizationMap: Map<string, string> | undefined;
+export function normalizeUnicode(str: string) {
+  if (!NormalizeRegex) {
+    // In order to generate the following regex:
+    //  - create a PDF containing all the chars in the range 0000-FFFF with
+    //    a NFKC which is different of the char.
+    //  - copy and paste all those chars and get the ones where NFKC is
+    //    required.
+    // It appears that most the chars here contain some ligatures.
+    NormalizeRegex =
+      /([\u00a0\u00b5\u037e\u0eb3\u2000-\u200a\u202f\u2126\ufb00-\ufb04\ufb06\ufb20-\ufb36\ufb38-\ufb3c\ufb3e\ufb40-\ufb41\ufb43-\ufb44\ufb46-\ufba1\ufba4-\ufba9\ufbae-\ufbb1\ufbd3-\ufbdc\ufbde-\ufbe7\ufbea-\ufbf8\ufbfc-\ufbfd\ufc00-\ufc5d\ufc64-\ufcf1\ufcf5-\ufd3d\ufd88\ufdf4\ufdfa-\ufdfb\ufe71\ufe77\ufe79\ufe7b\ufe7d]+)|(\ufb05+)/gu;
+    NormalizationMap = new Map([["ﬅ", "ſt"]]);
+  }
+  return str.replaceAll(NormalizeRegex, (_, p1, p2) => {
+    return p1 ? p1.normalize("NFKC") : NormalizationMap!.get(p2);
   });
-  cap.promise = new Promise<T>((resolve, reject) => {
-    cap.resolve = (data: T) => {
-      isSettled = true;
-      resolve(data);
-    };
-    cap.reject = (reason: any) => {
-      isSettled = true;
-      reject(reason);
-    };
-  });
-  return cap;
 }
 /*80--------------------------------------------------------------------------*/

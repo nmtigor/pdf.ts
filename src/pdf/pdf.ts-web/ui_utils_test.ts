@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-import { assertEquals } from "https://deno.land/std@0.170.0/testing/asserts.ts";
-import { describe, it } from "https://deno.land/std@0.170.0/testing/bdd.ts";
+import { assertEquals } from "https://deno.land/std@0.190.0/testing/asserts.ts";
+import { describe, it } from "https://deno.land/std@0.190.0/testing/bdd.ts";
 import { type point_t } from "../../lib/alias.ts";
 import { type IVisibleView } from "./interfaces.ts";
 import {
@@ -171,9 +171,10 @@ describe("ui_utils", () => {
     });
 
     it("should modify string with non-displayable characters", () => {
-      const str = Array.from(Array(32).keys())
-        .map((x) => String.fromCharCode(x) + "a")
-        .join("");
+      const str = Array.from(
+        Array(32).keys(),
+        (x) => String.fromCharCode(x) + "a",
+      ).join("");
       // \x00 is replaced by an empty string.
       const expected =
         "a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a a";

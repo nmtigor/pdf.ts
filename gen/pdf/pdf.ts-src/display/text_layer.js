@@ -17,9 +17,10 @@
  */
 /** @typedef {import("./display_utils").PageViewport} PageViewport */
 /** @typedef {import("./api").TextContent} TextContent */
-import { GENERIC } from "../../../global.js";
+import { GENERIC, PDFJSDev, TESTING } from "../../../global.js";
 import { html, span } from "../../../lib/dom.js";
-import { AbortException, createPromiseCapability, FeatureTest, Util, } from "../shared/util.js";
+import { PromiseCap } from "../../../lib/util/PromiseCap.js";
+import { AbortException, FeatureTest, Util, } from "../shared/util.js";
 import { deprecated, setLayerDimensions, } from "./display_utils.js";
 const MAX_TEXT_DIVS_TO_RENDER = 100000;
 const DEFAULT_FONT_SIZE = 30;
@@ -28,7 +29,8 @@ const ascentCache = new Map();
 function getCtx(size, isOffscreenCanvasSupported) {
     let ctx;
     if (isOffscreenCanvasSupported && FeatureTest.isOffscreenCanvasSupported) {
-        ctx = new OffscreenCanvas(size, size).getContext("2d", { alpha: false });
+        ctx = new OffscreenCanvas(size, size)
+            .getContext("2d", { alpha: false });
     }
     else {
         const canvas = html("canvas");
@@ -234,7 +236,7 @@ export class TextLayerRenderTask {
     _reader;
     _textDivProperties;
     _canceled = false;
-    _capability = createPromiseCapability();
+    _capability = new PromiseCap();
     /**
      * Promise for textLayer rendering task completion.
      */
@@ -330,7 +332,7 @@ export class TextLayerRenderTask {
      * @private
      */
     _render() {
-        const capability = createPromiseCapability();
+        const capability = new PromiseCap();
         let styleCache = Object.create(null);
         if (this._isReadableStream) {
             const pump = () => {
@@ -372,6 +374,18 @@ export function renderTextLayer(params) {
                 params.textContentStream;
         }
     }
+    /*#static*/  {
+        const { container, viewport } = params;
+        const style = getComputedStyle(container);
+        const visibility = style.getPropertyValue("visibility");
+        const scaleFactor = parseFloat(style.getPropertyValue("--scale-factor"));
+        if (visibility === "visible" &&
+            (!scaleFactor || Math.abs(scaleFactor - viewport.scale) > 1e-5)) {
+            console.error("The `--scale-factor` CSS-variable must be set, " +
+                "to the same value as `viewport.scale`, " +
+                "either on the `container`-element itself or higher up in the DOM.");
+        }
+    }
     const task = new TextLayerRenderTask(params);
     task._render();
     return task;
@@ -383,10 +397,7 @@ export function updateTextLayer({ container, viewport, textDivs, textDivProperti
     if (mustRescale) {
         const ctx = getCtx(0, isOffscreenCanvasSupported);
         const scale = viewport.scale * (globalThis.devicePixelRatio || 1);
-        const params = {
-            scale,
-            ctx,
-        };
+        const params = { scale, ctx };
         for (const div of textDivs) {
             params.properties = textDivProperties.get(div);
             params.div = div;

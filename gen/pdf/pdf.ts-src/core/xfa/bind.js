@@ -313,7 +313,7 @@ export class Binder {
             return;
         }
         const { occur } = formNode;
-        if (!occur || occur.initial <= 1) {
+        if (!occur || +occur.initial <= 1) {
             return;
         }
         const parent = formNode[$getParent]();
@@ -349,8 +349,8 @@ export class Binder {
         if (!occur || !dataName) {
             return [1, 1];
         }
-        const max = occur.max === -1 ? Infinity : occur.max;
-        return [occur.min, max];
+        const max = occur.max === -1 ? Infinity : +occur.max;
+        return [+occur.min, max];
     }
     #setAndBind(formNode, dataNode) {
         this.#setProperties(formNode, dataNode);
@@ -450,7 +450,7 @@ export class Binder {
                         match = match.filter((node) => !node[$consumed]);
                     }
                     if (match.length > max) {
-                        match = match.slice(0, +max);
+                        match = match.slice(0, max);
                     }
                     else if (match.length === 0) {
                         match = undefined;
