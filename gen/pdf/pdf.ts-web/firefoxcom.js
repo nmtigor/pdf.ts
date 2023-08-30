@@ -20,7 +20,7 @@ export class FirefoxCom {
      *       not be able to synchronously reply.
      * @param action The action to trigger.
      * @param data The data to send.
-     * @returns {*} The response.
+     * @return {*} The response.
      */
     static requestSync(action, data) {
         const request = document.createTextNode("");
@@ -44,7 +44,7 @@ export class FirefoxCom {
      * asynchronously respond to.
      * @param action The action to trigger.
      * @param data The data to send.
-     * @returns {Promise<any>} A promise that is resolved with the response data.
+     * @return {Promise<any>} A promise that is resolved with the response data.
      */
     static requestAsync(action, data) {
         return new Promise((resolve) => {
@@ -143,13 +143,8 @@ export class DownloadManager {
 }
 class FirefoxPreferences extends BasePreferences {
     /** @implement */
-    async _writeToStorage(prefObj) {
-        FirefoxCom.requestAsync("setPreferences", prefObj);
-    }
-    /** @implement */
     async _readFromStorage(prefObj) {
-        const prefStr = await FirefoxCom.requestAsync("getPreferences", prefObj);
-        return JSON.parse(prefStr);
+        return FirefoxCom.requestAsync("getPreferences", prefObj);
     }
 }
 class MozL10n {
@@ -270,7 +265,7 @@ class FirefoxScripting {
     }
     /** @implement */
     async destroySandbox() {
-        FirefoxCom.request("destroySandbox", null);
+        FirefoxCom.request("destroySandbox", undefined);
     }
 }
 class FirefoxExternalServices extends DefaultExternalServices {
@@ -376,6 +371,10 @@ class FirefoxExternalServices extends DefaultExternalServices {
     static get canvasMaxAreaInBytes() {
         const maxArea = FirefoxCom.requestSync("getCanvasMaxArea");
         return shadow(this, "canvasMaxAreaInBytes", maxArea);
+    }
+    static async getNimbusExperimentData() {
+        const nimbusData = await FirefoxCom.requestAsync("getNimbusExperimentData", undefined);
+        return nimbusData && JSON.parse(nimbusData);
     }
 }
 viewerApp.externalServices = new FirefoxExternalServices();

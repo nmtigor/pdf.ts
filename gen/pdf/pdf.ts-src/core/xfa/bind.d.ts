@@ -1,6 +1,7 @@
-import { Datasets } from "./datasets.js";
-import { Subform, Template } from "./template.js";
-import { XFAObject, XmlObject } from "./xfa_object.js";
+import type { Datasets } from "./datasets.js";
+import type { Subform, Template } from "./template.js";
+import type { XFAObject } from "./xfa_object.js";
+import { XmlObject } from "./xfa_object.js";
 export declare class Binder {
     #private;
     root: XFAObject;

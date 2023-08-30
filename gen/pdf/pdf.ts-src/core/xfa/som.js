@@ -16,8 +16,7 @@
  * limitations under the License.
  */
 import { warn } from "../../shared/util.js";
-import { NamespaceIds } from "./namespaces.js";
-import { $appendChild, $getChildren, $getChildrenByClass, $getChildrenByName, $getParent, $namespaceId, XFAObject, XFAObjectArray, XmlObject, } from "./xfa_object.js";
+import { $getChildren, $getChildrenByClass, $getChildrenByName, $getParent, } from "./symbol_utils.js";
 /*80--------------------------------------------------------------------------*/
 const namePattern = /^[^.[]+/;
 const indexPattern = /^[^\]]+/;
@@ -50,7 +49,6 @@ const shortcuts = new Map([
     ["$", (root, current) => current],
 ]);
 const somCache = new WeakMap();
-const NS_DATASETS = NamespaceIds.datasets.id;
 function parseIndex(index) {
     index = index.trim();
     if (index === "*") {
@@ -164,7 +162,7 @@ export function searchNode(root, container, expr, dotDotAllowed = true, useCache
         const { name, cacheName, operator, index } = parsed[i];
         const nodes = [];
         for (const node of root_1) {
-            if (!(node instanceof XFAObject)) {
+            if (!node.isXFAObject) {
                 continue;
             }
             let children, cached;
@@ -186,11 +184,8 @@ export function searchNode(root, container, expr, dotDotAllowed = true, useCache
                         break;
                     case operators.dotHash:
                         const children_1 = node[$getChildrenByClass](name);
-                        if (children_1 instanceof XFAObjectArray) {
+                        if (children_1.isXFAObjectArray) {
                             children = children_1.children;
-                        }
-                        else if (Array.isArray(children_1)) {
-                            children = children_1;
                         }
                         else {
                             children = [children_1];
@@ -231,18 +226,6 @@ export function searchNode(root, container, expr, dotDotAllowed = true, useCache
     }
     return root_1;
 }
-function createNodes(root, path) {
-    let node;
-    for (const { name, index } of path) {
-        for (let i = 0, ii = !isFinite(index) ? 0 : index; i <= ii; i++) {
-            const nsId = root[$namespaceId] === NS_DATASETS ? -1 : root[$namespaceId];
-            node = new XmlObject(nsId, name);
-            root[$appendChild](node);
-        }
-        root = node;
-    }
-    return node;
-}
 export function createDataNode(root, container, expr) {
     const parsed = parseExpression(expr);
     if (!parsed)
@@ -262,7 +245,7 @@ export function createDataNode(root, container, expr) {
         const { name, operator, index } = parsed[i];
         if (!isFinite(index)) {
             parsed[i].index = 0;
-            return createNodes(root, parsed.slice(i));
+            return root.createNodes(parsed.slice(i));
         }
         let children;
         switch (operator) {
@@ -274,11 +257,8 @@ export function createDataNode(root, container, expr) {
                 break;
             case operators.dotHash:
                 const children_1 = root[$getChildrenByClass](name);
-                if (children_1 instanceof XFAObjectArray) {
+                if (children_1.isXFAObjectArray) {
                     children = children_1.children;
-                }
-                else if (Array.isArray(children_1)) {
-                    children = children_1;
                 }
                 else {
                     children = [children_1];
@@ -288,11 +268,11 @@ export function createDataNode(root, container, expr) {
                 break;
         }
         if (children.length === 0) {
-            return createNodes(root, parsed.slice(i));
+            return root.createNodes(parsed.slice(i));
         }
         if (index < children.length) {
             const child = children[index];
-            if (!(child instanceof XFAObject)) {
+            if (!child.isXFAObject) {
                 warn(`XFA - Cannot create a node.`);
                 return undefined;
             }
@@ -300,7 +280,7 @@ export function createDataNode(root, container, expr) {
         }
         else {
             parsed[i].index = index - children.length;
-            return createNodes(root, parsed.slice(i));
+            return root.createNodes(parsed.slice(i));
         }
     }
     return undefined;

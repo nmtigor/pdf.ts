@@ -11,11 +11,6 @@ export declare class OverlayManager {
     register(dialog: HTMLDialogElement, canForceClose?: boolean): Promise<void>;
     /**
      * @param dialog The overlay's DOM element.
-     * @return A promise that is resolved when the overlay has been unregistered.
-     */
-    unregister(dialog: HTMLDialogElement): Promise<void>;
-    /**
-     * @param dialog The overlay's DOM element.
      * @return A promise that is resolved when the overlay has been opened.
      */
     open(dialog: HTMLDialogElement): Promise<void>;

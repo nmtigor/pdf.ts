@@ -15,4 +15,5 @@ export declare const getGlyphMapForStandardFonts: () => Record<string, number>;
 export declare const getSupplementalGlyphMapForArialBlack: () => Record<number, number>;
 export declare const getSupplementalGlyphMapForCalibri: () => Record<number, number>;
 export declare function getStandardFontName(name: string): string;
+export declare function isKnownFontName(name: string): boolean;
 //# sourceMappingURL=standard_fonts.d.ts.map

@@ -17,7 +17,7 @@
  */
 import { warn } from "../../shared/util.js";
 import { stripQuotes } from "./utils.js";
-import { $globalData } from "./xfa_object.js";
+import { $globalData } from "./symbol_utils.js";
 export class FontFinder {
     fonts = new Map();
     cache = new Map();
@@ -64,14 +64,13 @@ export class FontFinder {
             property = "bold";
         }
         if (!property) {
-            if (pdfFont.name.includes("Bold") ||
-                (pdfFont.psName && pdfFont.psName.includes("Bold"))) {
+            if (pdfFont.name.includes("Bold") || pdfFont.psName?.includes("Bold")) {
                 property = "bold";
             }
             if (pdfFont.name.includes("Italic") ||
                 pdfFont.name.endsWith("It") ||
-                (pdfFont.psName &&
-                    (pdfFont.psName.includes("Italic") || pdfFont.psName.endsWith("It")))) {
+                pdfFont.psName?.includes("Italic") ||
+                pdfFont.psName?.endsWith("It")) {
                 property += "italic";
             }
         }
@@ -105,7 +104,7 @@ export class FontFinder {
         if (maybe.length === 0) {
             for (const [, pdfFont] of this.fonts.entries()) {
                 if (pdfFont.regular.name
-                    .replaceAll(pattern, "")
+                    ?.replaceAll(pattern, "")
                     .toLowerCase()
                     .startsWith(name)) {
                     maybe.push(pdfFont);
@@ -123,7 +122,7 @@ export class FontFinder {
         if (maybe.length === 0) {
             for (const pdfFont of this.fonts.values()) {
                 if (pdfFont.regular.name
-                    .replaceAll(pattern, "")
+                    ?.replaceAll(pattern, "")
                     .toLowerCase()
                     .startsWith(name)) {
                     maybe.push(pdfFont);

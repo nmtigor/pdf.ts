@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-import { DENO, GENERIC, PDFJSDev, TESTING } from "../../../global.ts";
+import { GENERIC, PDFJSDev, TESTING } from "../../../global.ts";
 import { PromiseCap } from "../../../lib/util/PromiseCap.ts";
 import { assert } from "../../../lib/util/trace.ts";
 import type { ReadValue } from "../interfaces.ts";
@@ -39,21 +39,21 @@ import {
   warn,
 } from "../shared/util.ts";
 import type { SaveData, SaveReturn } from "./annotation.ts";
+import { AnnotationFactory } from "./annotation.ts";
 import { clearGlobalCaches } from "./cleanup_helper.ts";
 import {
   arrayBuffersToBytes,
   getNewAnnotationsMap,
   XRefParseException,
 } from "./core_utils.ts";
-import { Page } from "./document.ts";
-import { DedicatedWorkerGlobalScope, IWorker } from "./iworker.ts";
-import {
+import type { Page } from "./document.ts";
+import type { DedicatedWorkerGlobalScope, IWorker } from "./iworker.ts";
+import type {
   BasePdfManager,
-  LocalPdfManager,
   LocalPdfManagerCtorP,
-  NetworkPdfManager,
   NetworkPdfManagerCtorP,
 } from "./pdf_manager.ts";
+import { LocalPdfManager, NetworkPdfManager } from "./pdf_manager.ts";
 import { Dict, Ref } from "./primitives.ts";
 import { PDFWorkerStream } from "./worker_stream.ts";
 import { incrementalUpdate } from "./writer.ts";
@@ -161,24 +161,6 @@ export const WorkerMessageHandler = {
             enumerableProperties.join(", ") +
             "; thus breaking e.g. `for...in` iteration of `Array`s.",
         );
-      }
-
-      // Ensure that (primarily) Node.js users won't accidentally attempt to use
-      // a non-translated/non-polyfilled build of the library, since that would
-      // quickly fail anyway because of missing functionality.
-      if (
-        !DENO && typeof Path2D === "undefined" ||
-        typeof ReadableStream === "undefined"
-      ) {
-        const partialMsg =
-          "The browser/environment lacks native support for critical " +
-          "functionality used by the PDF.js library " +
-          "(e.g. `Path2D` and/or `ReadableStream`); ";
-
-        if (DENO) {
-          throw new Error(partialMsg + "please use a `legacy`-build instead.");
-        }
-        throw new Error(partialMsg + "please update to a supported browser.");
       }
     }
     const workerHandlerName = docId + "_worker";
@@ -599,12 +581,11 @@ export const WorkerMessageHandler = {
 
     handler.on(
       "SaveDocument",
-      ({ isPureXfa, numPages, annotationStorage, filename }) => {
+      async ({ isPureXfa, numPages, annotationStorage, filename }) => {
         const promises = [
           pdfManager.requestLoadedStream(),
           pdfManager.ensureCatalog("acroForm"),
           pdfManager.ensureCatalog("acroFormRef"),
-          pdfManager.ensureDoc("xref"),
           pdfManager.ensureDoc("startXRef"),
         ] as const;
 
@@ -612,16 +593,24 @@ export const WorkerMessageHandler = {
           ? getNewAnnotationsMap(annotationStorage)
           : undefined;
 
+        const xref = await pdfManager.ensureDoc("xref");
+
         const promises_1: Promise<
           SaveReturn[] | SaveData[] | string | undefined
         >[] = [];
         if (newAnnotationsByPage) {
+          const imagePromises = AnnotationFactory.generateImages(
+            annotationStorage.values(),
+            xref,
+            pdfManager.evaluatorOptions.isOffscreenCanvasSupported,
+          );
+
           for (const [pageIndex, annotations] of newAnnotationsByPage) {
             promises_1.push(
               pdfManager.getPage(pageIndex).then((page) => {
                 const task = new WorkerTask(`Save (editor): page ${pageIndex}`);
                 return page
-                  .saveNewAnnotations(handler, task, annotations)
+                  .saveNewAnnotations(handler, task, annotations, imagePromises)
                   .finally(() => {
                     finishWorkerTask(task);
                   });
@@ -651,7 +640,6 @@ export const WorkerMessageHandler = {
           stream,
           acroForm,
           acroFormRef,
-          xref,
           startXRef,
         ]) =>
           Promise.all(promises_1).then((refs) => {
@@ -663,7 +651,7 @@ export const WorkerMessageHandler = {
                 return stream.bytes;
               }
             } else {
-              newRefs = <SaveData[]> refs.flat(2);
+              newRefs = refs.flat(2) as SaveData[];
 
               if (newRefs.length === 0) {
                 // No new refs so just return the initial bytes
@@ -676,13 +664,13 @@ export const WorkerMessageHandler = {
               newRefs.some((ref) => ref.needAppearances);
 
             const xfa = (acroForm instanceof Dict &&
-              <(Ref | string)[]> acroForm.get("XFA")) || undefined;
+              acroForm.get("XFA") as (Ref | string)[]) || undefined;
             let xfaDatasetsRef: Ref | undefined;
             let hasXfaDatasetsEntry = false;
             if (Array.isArray(xfa)) {
               for (let i = 0, ii = xfa.length; i < ii; i += 2) {
                 if (xfa[i] === "datasets") {
-                  xfaDatasetsRef = <Ref> xfa[i + 1];
+                  xfaDatasetsRef = xfa[i + 1] as Ref;
                   hasXfaDatasetsEntry = true;
                 }
               }
@@ -888,6 +876,11 @@ export const WorkerMessageHandler = {
         return pdfManager
           .ensureXRef("trailer")
           .then((trailer) => trailer!.get("Prev") as number);
+      });
+      handler.on("GetAnnotArray", function (data) {
+        return pdfManager.getPage(data.pageIndex).then(function (page) {
+          return page.annotations.map((a) => a.toString());
+        });
       });
     }
 

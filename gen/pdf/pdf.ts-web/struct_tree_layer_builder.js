@@ -118,7 +118,7 @@ export class StructTreeLayerBuilder {
                 element.setAttribute("role", "heading");
                 element.setAttribute("aria-level", match[1]);
             }
-            else if ((PDF_ROLE_TO_HTML_ROLE)[role]) {
+            else if (PDF_ROLE_TO_HTML_ROLE[role]) {
                 element.setAttribute("role", PDF_ROLE_TO_HTML_ROLE[role]);
             }
         }

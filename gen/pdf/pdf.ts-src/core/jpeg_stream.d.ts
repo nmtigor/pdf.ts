@@ -1,4 +1,4 @@
-import { BaseStream } from "./base_stream.js";
+import type { BaseStream } from "./base_stream.js";
 import { ImageStream } from "./decode_stream.js";
 import { Dict } from "./primitives.js";
 /**

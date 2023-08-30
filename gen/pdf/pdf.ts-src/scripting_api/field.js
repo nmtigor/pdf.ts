@@ -2,7 +2,7 @@
  * nmtigor (https://github.com/nmtigor) @2022
  */
 import { Color } from "./color.js";
-import { createActionsMap, FieldType, getFieldType, } from "./common.js";
+import { createActionsMap, getFieldType, } from "./common.js";
 import { PDFObject } from "./pdf_object.js";
 export class Field extends PDFObject {
     alignment;
@@ -303,31 +303,14 @@ export class Field extends PDFObject {
             this._setChoiceValue(value);
             return;
         }
-        if (value === "") {
-            this._value = "";
-        }
-        else if (typeof value === "string") {
-            switch (this._fieldType) {
-                case FieldType.none: {
-                    this._originalValue = value;
-                    const _value = value.trim().replace(",", ".");
-                    this._value = !isNaN(_value) ? parseFloat(_value) : value;
-                    break;
-                }
-                case FieldType.number:
-                case FieldType.percent: {
-                    const _value = value.trim().replace(",", ".");
-                    const number = parseFloat(_value);
-                    this._value = !isNaN(number) ? number : 0;
-                    break;
-                }
-                default:
-                    this._value = value;
-            }
-        }
-        else {
+        if (value === "" || typeof value !== "string") {
+            this._originalValue = undefined;
             this._value = value;
+            return;
         }
+        this._originalValue = value;
+        const _value = value.trim().replace(",", ".");
+        this._value = !isNaN(_value) ? parseFloat(_value) : value;
     }
     _getValue() {
         return this._originalValue ?? this.value;
@@ -387,7 +370,7 @@ export class Field extends PDFObject {
             nIdx = Array.isArray(this._currentValueIndices)
                 ? this._currentValueIndices[0]
                 : this._currentValueIndices;
-            nIdx = nIdx || 0;
+            nIdx ||= 0;
         }
         if (nIdx < 0 || nIdx >= this.numItems) {
             nIdx = this.numItems - 1;

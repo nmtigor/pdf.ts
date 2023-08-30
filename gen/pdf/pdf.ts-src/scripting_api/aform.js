@@ -133,7 +133,7 @@ export class AForm {
         try {
             date = this._util.scand(cFormat, cDate);
         }
-        catch (error) { }
+        catch { }
         if (!date) {
             date = Date.parse(cDate);
             if (isNaN(date)) {

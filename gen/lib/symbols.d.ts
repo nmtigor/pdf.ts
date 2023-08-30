@@ -69,10 +69,10 @@ export declare const $redirect_focus: unique symbol;
  */
 export declare const $rec_utx_a: unique symbol;
 /**
- * document[ $selectionvu ] { HTMLVuu }
+ * document[ $selection_vu ] { HTMLVuu }
  * Used in document.onSelectionchange callback
  */
-export declare const $selectionvu: unique symbol;
+export declare const $selection_vu: unique symbol;
 /**
  * For testing only
  * HTMLImageElement[ $src ] { String }

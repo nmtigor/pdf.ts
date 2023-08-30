@@ -49,6 +49,10 @@ type PDFFindControllerScrollMatchIntoViewParams = {
  */
 export declare class PDFFindController {
     #private;
+    /**
+     * Callback used to check if a `pageNumber` is currently visible.
+     */
+    onIsPageVisible?(pageNumber_x: number): boolean;
     get highlightMatches(): boolean;
     _scrollMatches: boolean;
     _pdfDocument?: PDFDocumentProxy | undefined;

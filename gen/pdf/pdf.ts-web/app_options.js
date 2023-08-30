@@ -102,10 +102,6 @@ const defaultOptions = {
         value: false,
         kind: 0,
     },
-    enableFloatingToolbar: {
-        value: PDFJSDev,
-        kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
-    },
     enablePermissions: {
         value: false,
         kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
@@ -202,7 +198,9 @@ const defaultOptions = {
         kind: OptionKind.API,
     },
     cMapUrl: {
-        value: /*#static*/ `${D_base}/res/pdf/pdf.ts-external/bcmaps/`,
+        value: 
+        // eslint-disable-next-line no-nested-ternary
+        /*#static*/ `${D_base}/res/pdf/pdf.ts-external/bcmaps/`,
         kind: OptionKind.API,
     },
     disableAutoFetch: {
@@ -254,7 +252,9 @@ const defaultOptions = {
         kind: OptionKind.API,
     },
     standardFontDataUrl: {
-        value: /*#static*/ `${D_base}/res/pdf/pdf.ts-external/standard_fonts/`,
+        value: 
+        // eslint-disable-next-line no-nested-ternary
+        /*#static*/ `${D_base}/res/pdf/pdf.ts-external/standard_fonts/`,
         kind: OptionKind.API,
     },
     verbosity: {
@@ -348,9 +348,6 @@ export class AppOptions {
     }
     static get disablePreferences() {
         return this.#get("disablePreferences");
-    }
-    static get enableFloatingToolbar() {
-        return this.#get("enableFloatingToolbar");
     }
     static get enablePermissions() {
         return this.#get("enablePermissions");

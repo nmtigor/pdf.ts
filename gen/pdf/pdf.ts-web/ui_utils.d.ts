@@ -294,5 +294,6 @@ export declare function apiPageLayoutToViewerModes(layout: PageLayout): {
  */
 export declare function apiPageModeToSidebarView(mode: PageMode): SidebarView.NONE | SidebarView.THUMBS | SidebarView.OUTLINE | SidebarView.ATTACHMENTS | SidebarView.LAYERS;
 export declare function toggleCheckedBtn(button: HTMLButtonElement, toggle: boolean, view?: HTMLDivElement | HTMLButtonElement): void;
+export declare function toggleExpandedBtn(button: HTMLButtonElement, toggle: boolean, view?: HTMLButtonElement | HTMLDivElement): void;
 export {};
 //# sourceMappingURL=ui_utils.d.ts.map

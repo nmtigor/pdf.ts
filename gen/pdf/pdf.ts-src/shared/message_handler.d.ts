@@ -82,6 +82,13 @@ export interface MActionMap {
         Return: AnnotationData[];
         Sinkchunk: undefined;
     };
+    GetAnnotArray: {
+        Data: {
+            pageIndex: number;
+        };
+        Return: unknown;
+        Sinkchunk: unknown;
+    };
     GetAttachments: {
         Data: null;
         Return: unknown;
@@ -253,7 +260,7 @@ export interface MActionMap {
         Data: {
             isPureXfa: boolean;
             numPages: number;
-            annotationStorage: AnnotStorageRecord | undefined;
+            annotationStorage: AnnotStorageRecord;
             filename: string | undefined;
         };
         Return: Uint8Array;
@@ -455,7 +462,7 @@ export declare class MessageHandler<Ta extends Thread, Tn extends Thread = Ta ex
      * @param transfers List of transfers/ArrayBuffers.
      * @return ReadableStream to read data in chunks.
      */
-    sendWithStream<AN extends ActionName<Ta>>(actionName: AN, data: ActionData<Ta, AN>, queueingStrategy?: QueuingStrategy<ActionSinkchunk<Ta, AN>>, transfers?: Transferable[]): ReadableStream<ActionSinkchunk<Ta, AN>>;
+    sendWithStream<AN extends ActionName<Ta>>(actionName: AN, data: ActionData<Ta, AN>, queueingStrategy?: QueuingStrategy<ActionSinkchunk<Ta, AN>> | undefined, transfers?: Transferable[]): ReadableStream<ActionSinkchunk<Ta, AN>>;
     destroy(): void;
 }
 export {};

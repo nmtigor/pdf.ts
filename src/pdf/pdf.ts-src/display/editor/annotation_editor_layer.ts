@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+// eslint-disable-next-line max-len
 /** @typedef {import("./editor.js").AnnotationEditor} AnnotationEditor */
 // eslint-disable-next-line max-len
 /** @typedef {import("./tools.js").AnnotationEditorUIManager} AnnotationEditorUIManager */
@@ -24,38 +25,36 @@
 // eslint-disable-next-line max-len
 /** @typedef {import("../../web/text_accessibility.js").TextAccessibilityManager} TextAccessibilityManager */
 /** @typedef {import("../../web/interfaces").IL10n} IL10n */
+// eslint-disable-next-line max-len
+/** @typedef {import("../src/display/annotation_layer.js").AnnotationLayer} AnnotationLayer */
 
 import { IL10n } from "../../../pdf.ts-web/interfaces.ts";
 import { TextAccessibilityManager } from "../../../pdf.ts-web/text_accessibility.ts";
 import { AnnotationEditorType, FeatureTest } from "../../shared/util.ts";
+import type {
+  AnnotationLayer,
+  AnnotStorageValue,
+} from "../annotation_layer.ts";
 import { PageViewport, setLayerDimensions } from "../display_utils.ts";
-import {
-  AnnotationEditor,
-  AnnotationEditorP,
-  AnnotationEditorSerialized,
-} from "./editor.ts";
-import {
-  FreeTextEditor,
-  FreeTextEditorP,
-  FreeTextEditorSerialized,
-} from "./freetext.ts";
-import { InkEditor, InkEditorP, InkEditorSerialized } from "./ink.ts";
-import {
-  AddCommandsP,
-  AnnotationEditorUIManager,
-  bindEvents,
-} from "./tools.ts";
+import { AnnotationEditor, type AnnotationEditorP } from "./editor.ts";
+import type { FreeTextEditorP, FreeTextEditorSerialized } from "./freetext.ts";
+import { FreeTextEditor } from "./freetext.ts";
+import type { InkEditorP, InkEditorSerialized } from "./ink.ts";
+import { InkEditor } from "./ink.ts";
+import type { AddCommandsP, AnnotationEditorUIManager } from "./tools.ts";
+import { bindEvents } from "./tools.ts";
 /*80--------------------------------------------------------------------------*/
 
 interface AnnotationEditorLayerOptions {
-  accessibilityManager?: TextAccessibilityManager | undefined;
-  div: HTMLDivElement;
-  enabled?: boolean;
-  l10n: IL10n;
   mode?: unknown;
-  pageIndex: number;
+  div: HTMLDivElement;
   uiManager: AnnotationEditorUIManager;
+  enabled?: boolean;
+  accessibilityManager?: TextAccessibilityManager | undefined;
+  pageIndex: number;
+  l10n: IL10n;
   viewport: PageViewport;
+  annotationLayer?: AnnotationLayer | undefined;
 }
 
 interface RenderEditorLayerOptions {
@@ -73,11 +72,13 @@ export class AnnotationEditorLayer {
 
   #accessibilityManager;
   #allowClick = false;
+  #annotationLayer;
   #boundPointerup = this.pointerup.bind(this);
   #boundPointerdown = this.pointerdown.bind(this);
   #editors = new Map<string, AnnotationEditor>();
   #hadPointerDown = false;
   #isCleaningUp = false;
+  #isDisabling = false;
   #uiManager;
 
   pageIndex;
@@ -98,6 +99,8 @@ export class AnnotationEditorLayer {
     this.pageIndex = options.pageIndex;
     this.div = options.div;
     this.#accessibilityManager = options.accessibilityManager;
+    this.#annotationLayer = options.annotationLayer;
+    this.viewport = options.viewport;
 
     this.#uiManager.addLayer(this);
   }
@@ -185,7 +188,33 @@ export class AnnotationEditorLayer {
    */
   enable() {
     this.div!.style.pointerEvents = "auto";
+    const annotationElementIds = new Set<string>();
     for (const editor of this.#editors.values()) {
+      editor.enableEditing();
+      if (editor.annotationElementId) {
+        annotationElementIds.add(editor.annotationElementId);
+      }
+    }
+
+    if (!this.#annotationLayer) {
+      return;
+    }
+
+    const editables = this.#annotationLayer.getEditableAnnotations();
+    for (const editable of editables) {
+      // The element must be hidden whatever its state is.
+      editable.hide();
+      if (this.#uiManager.isDeletedAnnotationElement(editable.data.id)) {
+        continue;
+      }
+      if (annotationElementIds.has(editable.data.id)) {
+        continue;
+      }
+      const editor = this.deserialize(editable);
+      if (!editor) {
+        continue;
+      }
+      this.addOrRebuild(editor);
       editor.enableEditing();
     }
   }
@@ -194,14 +223,43 @@ export class AnnotationEditorLayer {
    * Disable editor creation.
    */
   disable() {
+    this.#isDisabling = true;
     this.div!.style.pointerEvents = "none";
+    const hiddenAnnotationIds = new Set();
     for (const editor of this.#editors.values()) {
       editor.disableEditing();
+      if (!editor.annotationElementId || editor.serialize() !== null) {
+        hiddenAnnotationIds.add(editor.annotationElementId);
+        continue;
+      }
+      this.getEditableAnnotation(editor.annotationElementId)?.show();
+      editor.remove();
     }
+
+    if (this.#annotationLayer) {
+      // Show the annotations that were hidden in enable().
+      const editables = this.#annotationLayer.getEditableAnnotations();
+      for (const editable of editables) {
+        const { id } = editable.data;
+        if (
+          hiddenAnnotationIds.has(id) ||
+          this.#uiManager.isDeletedAnnotationElement(id)
+        ) {
+          continue;
+        }
+        editable.show();
+      }
+    }
+
     this.#cleanup();
     if (this.isEmpty) {
       this.div!.hidden = true;
     }
+    this.#isDisabling = false;
+  }
+
+  getEditableAnnotation(id: string) {
+    return this.#annotationLayer?.getEditableAnnotation(id);
   }
 
   /**
@@ -228,11 +286,22 @@ export class AnnotationEditorLayer {
 
   attach(editor: AnnotationEditor) {
     this.#editors.set(editor.id, editor);
+    const { annotationElementId } = editor;
+    if (
+      annotationElementId &&
+      this.#uiManager.isDeletedAnnotationElement(annotationElementId)
+    ) {
+      this.#uiManager.removeDeletedAnnotationElement(editor);
+    }
   }
 
   detach(editor: AnnotationEditor) {
     this.#editors.delete(editor.id);
     this.#accessibilityManager?.removePointerInTextLayer(editor.contentDiv!);
+
+    if (!this.#isDisabling && editor.annotationElementId) {
+      this.#uiManager.addDeletedAnnotationElement(editor);
+    }
   }
 
   /**
@@ -242,8 +311,8 @@ export class AnnotationEditorLayer {
     // Since we can undo a removal we need to keep the
     // parent property as it is, so don't null it!
 
-    this.#uiManager.removeEditor(editor);
     this.detach(editor);
+    this.#uiManager.removeEditor(editor);
     editor.div!.style.display = "none";
     setTimeout(() => {
       // When the div is removed from DOM the focus can move on the
@@ -270,6 +339,13 @@ export class AnnotationEditorLayer {
   #changeParent(editor: AnnotationEditor) {
     if (editor.parent === this) {
       return;
+    }
+
+    if (editor.annotationElementId) {
+      // this.#uiManager.addDeletedAnnotationElement(editor.annotationElementId); //kkkk bug?
+      this.#uiManager.addDeletedAnnotationElement(editor);
+      AnnotationEditor.deleteAnnotationElement(editor);
+      editor.annotationElementId = undefined;
     }
 
     this.attach(editor);
@@ -321,34 +397,6 @@ export class AnnotationEditorLayer {
   }
 
   /**
-   * Add a new editor and make this addition undoable.
-   */
-  addANewEditor(editor: AnnotationEditor) {
-    const cmd = () => {
-      this.addOrRebuild(editor);
-    };
-    const undo = () => {
-      editor.remove();
-    };
-
-    this.addCommands({ cmd, undo, mustExec: true });
-  }
-
-  /**
-   * Add a new editor and make this addition undoable.
-   */
-  addUndoableEditor(editor: AnnotationEditor) {
-    const cmd = () => {
-      this.addOrRebuild(editor);
-    };
-    const undo = () => {
-      editor.remove();
-    };
-
-    this.addCommands({ cmd, undo, mustExec: false });
-  }
-
-  /**
    * Get an id for an editor.
    */
   getNextId(): string {
@@ -371,8 +419,8 @@ export class AnnotationEditorLayer {
   /**
    * Create a new editor
    */
-  deserialize(data: AnnotationEditorSerialized): AnnotationEditor | undefined {
-    switch (data.annotationType) {
+  deserialize(data: AnnotStorageValue): AnnotationEditor | undefined {
+    switch (data.annotationType ?? data.annotationEditorType) {
       case AnnotationEditorType.FREETEXT:
         return FreeTextEditor.deserialize(
           data as FreeTextEditorSerialized,

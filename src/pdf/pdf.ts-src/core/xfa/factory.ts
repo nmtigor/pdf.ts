@@ -17,18 +17,16 @@
  * limitations under the License.
  */
 
-import { type AnnotStorageRecord } from "../../display/annotation_layer.ts";
-import { type rect_t } from "../../../../lib/alias.ts";
+import type { rect_t } from "../../../../lib/alias.ts";
+import type { AnnotStorageRecord } from "../../display/annotation_layer.ts";
 import { warn } from "../../shared/util.ts";
-import { type XFAData } from "../document.ts";
-import { ErrorFont, Font } from "../fonts.ts";
-import { type XFAElObj, XFAHTMLAttrs, type XFAHTMLObj } from "./alias.ts";
+import type { XFAData } from "../document.ts";
+import type { ErrorFont, Font } from "../fonts.ts";
+import type { XFAHTMLAttrs, XFAHTMLObj } from "./alias.ts";
 import { Binder } from "./bind.ts";
 import { DataHandler } from "./data.ts";
 import { FontFinder } from "./fonts.ts";
 import { XFAParser } from "./parser.ts";
-import { Template } from "./template.ts";
-import { HTMLResult, stripQuotes } from "./utils.ts";
 import {
   $appendChild,
   $globalData,
@@ -36,7 +34,9 @@ import {
   $text,
   $toHTML,
   $toPages,
-} from "./xfa_object.ts";
+} from "./symbol_utils.ts";
+import type { Template } from "./template.ts";
+import { type HTMLResult, stripQuotes } from "./utils.ts";
 import { XhtmlNamespace } from "./xhtml.ts";
 /*80--------------------------------------------------------------------------*/
 
@@ -177,11 +177,11 @@ export class XFAFactory {
         root = newRoot;
       }
 
-      const result = <HTMLResult> root[$toHTML]();
+      const result = root[$toHTML]() as HTMLResult;
       if (!result.success) return undefined;
 
       const { html } = result;
-      const { attributes } = <XFAHTMLObj> html;
+      const { attributes } = html as XFAHTMLObj;
       if (attributes) {
         if (attributes.class) {
           attributes.class = attributes.class.filter(
@@ -191,7 +191,7 @@ export class XFAFactory {
         attributes.dir = "auto";
       }
 
-      return { html: <XFAHTMLObj> html, str: root[$text]() };
+      return { html: html as XFAHTMLObj, str: root[$text]() };
     } catch (e) {
       warn(`XFA - an error occurred during parsing of rich text: ${e}`);
     }

@@ -5,17 +5,17 @@
 import { Hover, Pointer } from "./lib/alias.js";
 import { assert } from "./lib/util/trace.js";
 /*80--------------------------------------------------------------------------*/
-// preprocessor names
 // deno-fmt-ignore
+// preprocessor names
 export const INOUT = true // contracts
 , DEV = true // debug build
-, TRACE = true, INFO = true, COLR = true, XSTATE = true, RESIZ = true // "resize", ResizeObserver
+, TRACE = true, INFO = true, COLR = false, XSTATE = true, RESIZ = true // "resize", ResizeObserver
 , INTRS = true // IntersectionObserver
 , THEMESETTING = false, EDITOR = true, /** @deprecated */ EDITOR_v = true // verbose
 , PDFTS = true, PDFTS_v = true // verbose
 , PDFTS_vv = false // very verbose
-, _TRACE = DEV && TRACE, _INFO = DEV && INFO, _COLR = DEV && COLR, /** @deprecated */ APP = false // release build
-, TESTING = false, DENO = false, CYPRESS = true
+, _INFO = DEV && INFO, _COLR = DEV && COLR, /** @deprecated */ APP = false // release build
+, TESTING = false, DENO = false, _TRACE = DEV && TRACE && !TESTING, CYPRESS = true
 // from pdf.js
 , PDFJSDev = true, GENERIC = true, MOZCENTRAL = false, CHROME = false, GECKOVIEW = false, LIB = false, SKIP_BABEL = true, IMAGE_DECODERS = false, COMPONENTS = false;
 /*80-------------------------------------------------------------------------*/
@@ -34,12 +34,12 @@ export const global = new class {
     pointer = Pointer.none;
     anyPointer = Pointer.none;
     get can_touch() {
-        return global.anyPointer === Pointer.coarse;
+        return this.anyPointer === Pointer.coarse;
     }
     hover = Hover.none;
     anyHover = Hover.none;
     get can_hover() {
-        return global.anyHover === Hover.hover;
+        return this.anyHover === Hover.hover;
     }
     // /* For testing only */
     // #_touch: Pointer | undefined;
@@ -69,7 +69,7 @@ export const global = new class {
     //   }
     // }
     // /* ~ */
-    #tabsize = 2;
+    #tabsize = 4;
     #dent = 0;
     get dent() {
         let ret;

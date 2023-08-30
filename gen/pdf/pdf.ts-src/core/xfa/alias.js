@@ -12,6 +12,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { $content, $nsAttributes } from "./xfa_object.js";
+import { $content, $nsAttributes } from "./symbol_utils.js";
 /*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=alias.js.map

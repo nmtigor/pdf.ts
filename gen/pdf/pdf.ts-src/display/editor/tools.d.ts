@@ -1,9 +1,9 @@
-import { EventBus, EventMap } from "../../../pdf.ts-web/event_utils.js";
-import { RGB } from "../../shared/scripting_utils.js";
+import type { EventBus, EventMap } from "../../../pdf.ts-web/event_utils.js";
+import type { rgb_t } from "../../../../lib/color/alias.js";
 import { AnnotationEditorType } from "../../shared/util.js";
-import { AnnotationStorage } from "../annotation_storage.js";
-import { AnnotationEditorLayer } from "./annotation_editor_layer.js";
-import { AnnotationEditor } from "./editor.js";
+import type { AnnotationStorage } from "../annotation_storage.js";
+import type { AnnotationEditorLayer } from "./annotation_editor_layer.js";
+import type { AnnotationEditor } from "./editor.js";
 import { FreeTextEditor } from "./freetext.js";
 import { InkEditor } from "./ink.js";
 export declare function bindEvents<T extends AnnotationEditor | AnnotationEditorLayer>(obj: T, element: HTMLElement, names: (keyof HTMLElementEventMap & keyof T)[]): void;
@@ -57,7 +57,10 @@ export declare class CommandManager {
 export declare class KeyboardManager {
     #private;
     buffer: string[];
-    callbacks: Map<string, () => void>;
+    callbacks: Map<string, {
+        callback: () => void;
+        bubbles: boolean;
+    }>;
     allKeys: Set<string>;
     /**
      * Create a new keyboard manager class.
@@ -65,24 +68,24 @@ export declare class KeyboardManager {
      * and a callback to call.
      * A shortcut is a string like `ctrl+c` or `mac+ctrl+c` for mac OS.
      */
-    constructor(callbacks: [string[], () => void][]);
+    constructor(callbacks: [string[], () => void, boolean?][]);
     /**
      * Execute a callback, if any, for a given keyboard event.
      * The self is used as `this` in the callback.
-     * @returns
+     * @return
      */
     exec(self: unknown, event: KeyboardEvent): void;
 }
 export declare class ColorManager {
-    static _colorsMapping: Map<string, [number, number, number]>;
-    get _colors(): Map<string, RGB>;
+    static _colorsMapping: Map<string, rgb_t>;
+    get _colors(): Map<string, rgb_t>;
     /**
      * In High Contrast Mode, the color on the screen is not always the
      * real color used in the pdf.
      * For example in some cases white can appear to be black but when saving
      * we want to have white.
      */
-    convert(color: string): RGB;
+    convert(color: string): rgb_t;
     /**
      * An input element must have its color value as a hex string
      * and not as color name.
@@ -108,7 +111,7 @@ export interface DispatchUpdateStatesP {
  */
 export declare class AnnotationEditorUIManager {
     #private;
-    static _keyboardManager: KeyboardManager;
+    static get _keyboardManager(): KeyboardManager;
     /**
      * Get the current active editor.
      */
@@ -206,6 +209,18 @@ export declare class AnnotationEditorUIManager {
      * Remove an editor.
      */
     removeEditor(editor: AnnotationEditor): void;
+    /**
+     * The annotation element with the given id has been deleted.
+     */
+    addDeletedAnnotationElement(editor: AnnotationEditor): void;
+    /**
+     * Check if the annotation element with the given id has been deleted.
+     */
+    isDeletedAnnotationElement(annotationElementId: string): boolean;
+    /**
+     * The annotation element with the given id have been restored.
+     */
+    removeDeletedAnnotationElement(editor: AnnotationEditor): void;
     /**
      * Set the given editor as the active one.
      */

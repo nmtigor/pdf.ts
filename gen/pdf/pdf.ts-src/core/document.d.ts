@@ -3,16 +3,16 @@ import type { AnnotStorageRecord, AnnotStorageValue } from "../display/annotatio
 import type { CMapData } from "../display/base_factory.js";
 import type { MessageHandler, StreamSink, Thread } from "../shared/message_handler.js";
 import { RenderingIntentFlag } from "../shared/util.js";
-import type { Annotation, FieldObject, SaveReturn } from "./annotation.js";
+import type { Annotation, AnnotImage, FieldObject, SaveReturn } from "./annotation.js";
 import { BaseStream } from "./base_stream.js";
 import { Catalog } from "./catalog.js";
 import { DatasetReader } from "./dataset_reader.js";
 import { type TranslatedFont } from "./evaluator.js";
+import type { SubstitutionInfo } from "./font_substitutions.js";
 import type { GlobalImageCache } from "./image_utils.js";
 import { Linearization } from "./parser.js";
 import type { BasePdfManager } from "./pdf_manager.js";
-import type { RefSet } from "./primitives.js";
-import { Dict, Name, Ref, RefSetCache } from "./primitives.js";
+import { Dict, Name, Ref, RefSet, RefSetCache } from "./primitives.js";
 import { type Stream } from "./stream.js";
 import { StructTreePage, type StructTreeRoot } from "./struct_tree.js";
 import type { WorkerTask } from "./worker.js";
@@ -22,7 +22,7 @@ import { XRef } from "./xref.js";
 export interface LocalIdFactory extends GlobalIdFactory {
     createObjId(): string;
 }
-interface _PageCtorP {
+interface PageCtorP_ {
     pdfManager: BasePdfManager;
     xref: XRef;
     pageIndex: number;
@@ -33,10 +33,11 @@ interface _PageCtorP {
     builtInCMapCache: Map<string, CMapData>;
     standardFontDataCache: Map<string, Uint8Array | ArrayBuffer>;
     globalImageCache: GlobalImageCache;
+    systemFontCache: Map<string, SubstitutionInfo>;
     nonBlendModesSet: RefSet;
     xfaFactory?: XFAFactory | undefined;
 }
-interface _PageGetOperatorListP {
+interface PageGetOperatorListP_ {
     handler: MessageHandler<Thread.worker>;
     sink: StreamSink<Thread.main, "GetOperatorList">;
     task: WorkerTask;
@@ -62,12 +63,13 @@ export declare class Page {
     builtInCMapCache: Map<string, CMapData>;
     standardFontDataCache: Map<string, Uint8Array | ArrayBuffer>;
     globalImageCache: GlobalImageCache;
+    systemFontCache: Map<string, SubstitutionInfo>;
     nonBlendModesSet: RefSet;
     evaluatorOptions: import("./pdf_manager.js").EvaluatorOptions;
     xfaFactory: XFAFactory | undefined;
     get _localIdFactory(): LocalIdFactory;
     resourcesPromise?: Promise<Dict>;
-    constructor({ pdfManager, xref, pageIndex, pageDict, ref, globalIdFactory, fontCache, builtInCMapCache, standardFontDataCache, globalImageCache, nonBlendModesSet, xfaFactory, }: _PageCtorP);
+    constructor({ pdfManager, xref, pageIndex, pageDict, ref, globalIdFactory, fontCache, builtInCMapCache, standardFontDataCache, globalImageCache, systemFontCache, nonBlendModesSet, xfaFactory, }: PageCtorP_);
     get content(): Stream | (Stream | Ref)[] | undefined;
     /**
      * Table 33
@@ -83,13 +85,13 @@ export declare class Page {
     get xfaData(): {
         bbox: [number, number, number, number];
     } | null;
-    saveNewAnnotations(handler: MessageHandler<Thread.worker>, task: WorkerTask, annotations: AnnotStorageValue[]): Promise<{
+    saveNewAnnotations(handler: MessageHandler<Thread.worker>, task: WorkerTask, annotations: AnnotStorageValue[], imagePromises: Map<string, Promise<AnnotImage>> | undefined): Promise<{
         ref: Ref;
         data: string;
     }[]>;
     save(handler: MessageHandler<Thread.worker>, task: WorkerTask, annotationStorage?: AnnotStorageRecord): Promise<SaveReturn[]>;
     loadResources(keys: string[]): Promise<import("./chunked_stream.js").ChunkedStream | undefined>;
-    getOperatorList({ handler, sink, task, intent, cacheKey, annotationStorage, }: _PageGetOperatorListP): Promise<{
+    getOperatorList({ handler, sink, task, intent, cacheKey, annotationStorage, }: PageGetOperatorListP_): Promise<{
         length: number;
     }>;
     extractTextContent({ handler, task, includeMarkedContent, disableNormalization, sink, }: ExtractTextContentP_): Promise<void>;
@@ -152,12 +154,13 @@ export type XFAData = _XFAStreams & {
     children: (XFAData | null)[];
     [key: string]: unknown;
 };
-export interface CssFontInfo {
+export type CssFontInfo = {
     fontFamily: string;
-    metrics?: XFAFontMetrics | undefined;
     fontWeight: number | string | undefined;
     italicAngle: number | string;
-}
+    lineHeight?: number;
+    metrics?: XFAFontMetrics | undefined;
+};
 /**
  * The `PDFDocument` class holds all the (worker-thread) data of the PDF file.
  */

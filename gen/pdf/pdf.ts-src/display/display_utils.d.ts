@@ -1,6 +1,6 @@
 import type { C2D, point_t, rect_t } from "../../../lib/alias.js";
+import type { rgb_t } from "../../../lib/color/alias.js";
 import type { XFAElObj } from "../core/xfa/alias.js";
-import { RGB } from "../shared/scripting_utils.js";
 import { BaseException, CMapCompressionType, type matrix_t } from "../shared/util.js";
 import { BaseCanvasFactory, BaseCMapReaderFactory, BaseFilterFactory, BaseStandardFontDataFactory, BaseSVGFactory } from "./base_factory.js";
 export declare const AnnotationPrefix = "pdfjs_internal_id_";
@@ -27,6 +27,7 @@ export declare class DOMFilterFactory extends BaseFilterFactory {
     constructor({ docId, ownerDocument }?: DOMFilterFactoryCtorP_);
     addFilter(maps?: number[][]): string;
     addHCMFilter(fgColor: string, bgColor: string): string;
+    addHighlightHCMFilter(fgColor: string, bgColor: string, newFgColor: string, newBgColor: string): string;
     destroy(keepHCM?: boolean): void;
 }
 export declare class DOMCanvasFactory extends BaseCanvasFactory {
@@ -188,9 +189,8 @@ export declare class PageViewport {
     convertToPdfPoint(x: number, y: number): point_t;
 }
 export declare class RenderingCancelledException extends BaseException {
-    type: string;
     extraDelay: number;
-    constructor(msg: string, type: string, extraDelay?: number);
+    constructor(msg: string, extraDelay?: number);
 }
 export declare function isDataScheme(url: string): boolean;
 export declare function isPdfFile(filename: unknown): boolean;
@@ -235,7 +235,7 @@ export declare class PDFDateString {
      * and doesn't use the user's time zone (effectively ignoring the HH' and mm'
      * parts of the date string).
      */
-    static toDateObject(input: string): Date | null;
+    static toDateObject(input: string | undefined): Date | null;
 }
 /**
  * NOTE: This is (mostly) intended to support printing of XFA forms.
@@ -244,8 +244,8 @@ export declare function getXfaPageViewport(xfaPage: XFAElObj, { scale, rotation 
     scale?: number | undefined;
     rotation?: number | undefined;
 }): PageViewport;
-export declare function getRGB(color: string): RGB;
-export declare function getColorValues(colors: Map<string, RGB | undefined>): void;
+export declare function getRGB(color: string): rgb_t;
+export declare function getColorValues(colors: Map<string, rgb_t | undefined>): void;
 export declare function getCurrentTransform(ctx: C2D): matrix_t;
 export declare function getCurrentTransformInverse(ctx: C2D): matrix_t;
 export declare function setLayerDimensions(div: HTMLElement, viewport: PageViewport | {

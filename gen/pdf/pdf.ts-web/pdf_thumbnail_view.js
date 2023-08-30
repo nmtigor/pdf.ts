@@ -15,6 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/** @typedef {import("./event_utils").EventBus} EventBus */
 /** @typedef {import("./interfaces").IL10n} IL10n */
 /** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
 /** @typedef {import("./interfaces").IRenderableView} IRenderableView */
@@ -63,6 +64,7 @@ export class PDFThumbnailView {
     pdfPageRotate;
     _optionalContentConfigPromise;
     pageColors;
+    eventBus;
     linkService;
     renderingQueue;
     renderTask;
@@ -77,7 +79,7 @@ export class PDFThumbnailView {
     _placeholderImg;
     canvas;
     image;
-    constructor({ container, id, defaultViewport, optionalContentConfigPromise, linkService, renderingQueue, l10n, pageColors, }) {
+    constructor({ container, eventBus, id, defaultViewport, optionalContentConfigPromise, linkService, renderingQueue, l10n, pageColors, }) {
         this.id = id;
         this.renderingId = "thumbnail" + id;
         // this.pageLabel = null;
@@ -87,6 +89,7 @@ export class PDFThumbnailView {
         this.pdfPageRotate = defaultViewport.rotation;
         this._optionalContentConfigPromise = optionalContentConfigPromise;
         this.pageColors = pageColors || undefined;
+        this.eventBus = eventBus;
         this.linkService = linkService;
         this.renderingQueue = renderingQueue;
         this.l10n = l10n;
@@ -256,12 +259,11 @@ export class PDFThumbnailView {
             // resources immediately, which can greatly reduce memory consumption.
             canvas.width = 0;
             canvas.height = 0;
-            // Only trigger cleanup, once rendering has finished, when the current
-            // pageView is *not* cached on the `BaseViewer`-instance.
-            const pageCached = this.linkService.isPageCached(this.id);
-            if (!pageCached) {
-                this.pdfPage?.cleanup();
-            }
+            this.eventBus.dispatch("thumbnailrendered", {
+                source: this,
+                pageNumber: this.id,
+                pdfPage: this.pdfPage,
+            });
         });
         return resultPromise;
     }

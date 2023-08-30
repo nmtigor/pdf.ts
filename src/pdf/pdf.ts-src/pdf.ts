@@ -28,6 +28,7 @@
 // eslint-disable-next-line max-len
 /** @typedef {import("./display/text_layer").TextLayerRenderTask} TextLayerRenderTask */
 
+import { GENERIC } from "../../global.ts";
 import type { FieldObject } from "./core/annotation.ts";
 import type {
   Destination,
@@ -49,7 +50,7 @@ import {
   FileAttachmentAnnotationElement,
 } from "./display/annotation_layer.ts";
 import {
-  AnnotationStorage,
+  type AnnotationStorage,
   PrintAnnotationStorage,
 } from "./display/annotation_storage.ts";
 import type {
@@ -67,8 +68,8 @@ import {
   getDocument,
   PDFDataRangeTransport,
   PDFDocumentLoadingTask,
-  PDFDocumentProxy,
-  PDFPageProxy,
+  type PDFDocumentProxy,
+  type PDFPageProxy,
   PDFWorker,
   RenderTask,
   version,
@@ -80,7 +81,7 @@ import {
   isDataScheme,
   isPdfFile,
   loadScript,
-  PageViewport,
+  type PageViewport,
   PDFDateString,
   PixelsPerInch,
   RenderingCancelledException,
@@ -94,7 +95,6 @@ import { AnnotationEditorUIManager } from "./display/editor/tools.ts";
 import { FontFaceObject } from "./display/font_loader.ts";
 import { Metadata } from "./display/metadata.ts";
 import { OptionalContentConfig } from "./display/optional_content_config.ts";
-import { SVGGraphics } from "./display/svg.ts";
 import {
   renderTextLayer,
   TextLayerRenderTask,
@@ -115,6 +115,7 @@ import {
   CMapCompressionType,
   createValidAbsoluteUrl,
   FeatureTest,
+  ImageKind,
   InvalidPDFException,
   MissingPDFException,
   normalizeUnicode,
@@ -134,6 +135,10 @@ import {
 // /* eslint-disable-next-line no-unused-vars */
 // const pdfjsBuild =
 //   typeof PDFJSDev !== "undefined" ? PDFJSDev.eval("BUNDLE_BUILD") : void 0;
+
+const SVGGraphics = /*#static*/ GENERIC
+  ? (await import("./display/svg.ts")).SVGGraphics
+  : undefined;
 /*80--------------------------------------------------------------------------*/
 
 export {
@@ -146,7 +151,7 @@ export {
   AnnotationElement,
   AnnotationLayer,
   AnnotationMode,
-  AnnotationStorage,
+  type AnnotationStorage,
   type AnnotIntent,
   type AppInfo,
   type Attachment,
@@ -168,6 +173,7 @@ export {
   getPdfFilenameFromUrl,
   getXfaPageViewport,
   GlobalWorkerOptions,
+  ImageKind,
   type Intent,
   InvalidPDFException,
   isDataScheme,
@@ -184,13 +190,13 @@ export {
   OptionalContentConfig,
   type Order,
   type OutlineNode,
-  PageViewport,
+  type PageViewport,
   PasswordResponses,
   PDFDataRangeTransport,
   PDFDateString,
   PDFDocumentLoadingTask,
-  PDFDocumentProxy,
-  PDFPageProxy,
+  type PDFDocumentProxy,
+  type PDFPageProxy,
   PDFWorker,
   PermissionFlag,
   PixelsPerInch,

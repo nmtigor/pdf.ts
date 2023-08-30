@@ -891,7 +891,7 @@ namespace NsJpegImage {
         let endOffset = offset + length - 2;
 
         const fileMarker = findNextFileMarker(data, endOffset, offset);
-        if (fileMarker && fileMarker.invalid) {
+        if (fileMarker?.invalid) {
           warn(
             "readDataBlock - incorrect length, current marker is: " +
               fileMarker.invalid,
@@ -1185,7 +1185,7 @@ namespace NsJpegImage {
               /* currentPos = */ offset - 2,
               /* startPos = */ offset - 3,
             );
-            if (nextFileMarker && nextFileMarker.invalid) {
+            if (nextFileMarker?.invalid) {
               warn(
                 "JpegImage.parse - unexpected data, current marker is: " +
                   nextFileMarker.invalid,

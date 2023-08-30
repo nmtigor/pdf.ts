@@ -17,99 +17,90 @@
  * limitations under the License.
  */
 
-import { type rect_t } from "../../../../lib/alias.ts";
+import type { rect_t } from "../../../../lib/alias.ts";
 import { isObjectLike } from "../../../../lib/jslang.ts";
 import { shadow, utf8StringToString, warn } from "../../shared/util.ts";
 import { encodeToXmlString } from "../core_utils.ts";
-import {
-  type AvailableSpace,
-  type XFAAttrs,
-  type XFACleanup,
-  type XFAElData,
-  type XFAExtra,
-  type XFAGlobalData,
-  type XFAHTMLObj,
-  type XFAIds,
-  type XFANsAttrs,
-  type XFAStyleData,
-  type XFAValue,
+import type {
+  AvailableSpace,
+  XFAAttrs,
+  XFACleanup,
+  XFAElData,
+  XFAExtra,
+  XFAGlobalData,
+  XFAHTMLObj,
+  XFAIds,
+  XFANsAttrs,
+  XFAStyleData,
+  XFAValue,
 } from "./alias.ts";
-import { Builder } from "./builder.ts";
+import type { Builder } from "./builder.ts";
 import { NamespaceIds, type XFANsId } from "./namespaces.ts";
+import type { Parsed } from "./som.ts";
 import { searchNode } from "./som.ts";
+import {
+  $acceptWhitespace,
+  $addHTML,
+  $appendChild,
+  $childrenToHTML,
+  $clean,
+  $cleanup,
+  $clone,
+  $consumed,
+  $content,
+  $dump,
+  $extra,
+  $finalize,
+  $flushHTML,
+  $getAttributeIt,
+  $getAttributes,
+  $getAvailableSpace,
+  $getChildren,
+  $getChildrenByClass,
+  $getChildrenByName,
+  $getChildrenByNameIt,
+  $getContainedChildren,
+  $getDataValue,
+  $getParent,
+  $getRealChildrenByNameIt,
+  $getSubformParent,
+  $getTemplateRoot,
+  $globalData,
+  $hasSettableValue,
+  $indexOf,
+  $insertAt,
+  $isBindable,
+  $isCDATAXml,
+  $isDataValue,
+  $isDescendent,
+  $isNsAgnostic,
+  $isSplittable,
+  $isThereMoreWidth,
+  $isTransparent,
+  $lastAttribute,
+  $namespaceId,
+  $nodeName,
+  $nsAttributes,
+  $onChild,
+  $onChildCheck,
+  $onText,
+  $popPara,
+  $pushPara,
+  $removeChild,
+  $resolvePrototypes,
+  $root,
+  $setId,
+  $setSetAttributes,
+  $setValue,
+  $tabIndex,
+  $text,
+  $toHTML,
+  $toString,
+  $toStyle,
+  $uid,
+} from "./symbol_utils.ts";
 import { getInteger, getKeyword, HTMLResult } from "./utils.ts";
 /*80--------------------------------------------------------------------------*/
-
-// We use these symbols to avoid name conflict between tags
-// and properties/methods names.
-export const $acceptWhitespace = Symbol();
-export const $addHTML = Symbol();
-export const $appendChild = Symbol();
-export const $childrenToHTML = Symbol();
-export const $clean = Symbol();
-export const $cleanPage = Symbol();
-export const $cleanup = Symbol();
-export const $clone = Symbol();
-export const $consumed = Symbol();
-export const $content = Symbol("content");
-export const $data = Symbol("data");
-export const $dump = Symbol();
-export const $extra = Symbol("extra");
-export const $finalize = Symbol();
-export const $flushHTML = Symbol();
-export const $getAttributeIt = Symbol();
-export const $getAttributes = Symbol();
-export const $getAvailableSpace = Symbol();
-export const $getChildrenByClass = Symbol();
-export const $getChildrenByName = Symbol();
-export const $getChildrenByNameIt = Symbol();
-export const $getDataValue = Symbol();
-export const $getExtra = Symbol();
-export const $getRealChildrenByNameIt = Symbol();
-export const $getChildren = Symbol();
-export const $getContainedChildren = Symbol();
-export const $getNextPage = Symbol();
-export const $getSubformParent = Symbol();
-export const $getParent = Symbol();
-export const $getTemplateRoot = Symbol();
-export const $globalData = Symbol();
-export const $hasSettableValue = Symbol();
-export const $ids = Symbol();
-export const $indexOf = Symbol();
-export const $insertAt = Symbol();
-export const $isCDATAXml = Symbol();
-export const $isBindable = Symbol();
-export const $isDataValue = Symbol();
-export const $isDescendent = Symbol();
-export const $isNsAgnostic = Symbol();
-export const $isSplittable = Symbol();
-export const $isThereMoreWidth = Symbol();
-export const $isTransparent = Symbol();
-export const $isUsable = Symbol();
-export const $lastAttribute = Symbol();
-export const $namespaceId = Symbol("namespaceId");
-export const $nodeName = Symbol("nodeName");
-export const $nsAttributes = Symbol();
-export const $onChild = Symbol();
-export const $onChildCheck = Symbol();
-export const $onText = Symbol();
-export const $pushGlyphs = Symbol();
-export const $popPara = Symbol();
-export const $pushPara = Symbol();
-export const $removeChild = Symbol();
-export const $root = Symbol("root");
-export const $resolvePrototypes = Symbol();
-export const $searchNode = Symbol();
-export const $setId = Symbol();
-export const $setSetAttributes = Symbol();
-export const $setValue = Symbol();
-export const $tabIndex = Symbol();
-export const $text = Symbol();
-export const $toPages = Symbol();
-export const $toHTML = Symbol();
-export const $toString = Symbol();
-export const $toStyle = Symbol();
-export const $uid = Symbol("uid");
 
 const _applyPrototype = Symbol();
 const _attributes = Symbol();
@@ -162,7 +153,9 @@ export type Dumped = {
 type PropValueEx =
   | XFAProp
   | XFAObject[]
-  | XFAAttribute;
+  | XFAAttribute
+  | XFAObject
+  | XFAObjectArray;
 
 export abstract class XFAObject {
   [$namespaceId]: XFANsId;
@@ -233,10 +226,10 @@ export abstract class XFAObject {
       const attributes = (proto._attributes = new Set());
       for (const name of Object.getOwnPropertyNames(this)) {
         if (
-          (<any> this)[name] === null ||
-          (<any> this)[name] === undefined ||
-          (<any> this)[name] instanceof XFAObject ||
-          (<any> this)[name] instanceof XFAObjectArray
+          (this as any)[name] === null ||
+          (this as any)[name] === undefined ||
+          (this as any)[name] instanceof XFAObject ||
+          (this as any)[name] instanceof XFAObjectArray
         ) {
           break;
         }
@@ -289,6 +282,30 @@ export abstract class XFAObject {
     this[$nodeName] = name;
     this[_hasChildren] = hasChildren;
     this[$uid] = `${name}${uid++}`;
+  }
+
+  get isXFAObject() {
+    return true;
+  }
+
+  get isXFAObjectArray() {
+    return false;
+  }
+
+  createNodes(path: Parsed[]) {
+    let root: XFAObject = this,
+      node: XmlObject | undefined;
+    for (const { name, index } of path) {
+      for (let i = 0, ii = isFinite(index) ? index : 0; i <= ii; i++) {
+        const nsId = root[$namespaceId] === NS_DATASETS
+          ? -1
+          : root[$namespaceId];
+        node = new XmlObject(nsId, name);
+        root[$appendChild](node);
+      }
+      root = node!;
+    }
+    return node;
   }
 
   [$onChild](child: XFAObject) {
@@ -755,24 +772,24 @@ export abstract class XFAObject {
     const clone: XFAObject = Object.create(Object.getPrototypeOf(this));
     for (const $symbol of Object.getOwnPropertySymbols(this)) {
       try {
-        (<any> clone)[$symbol] = (<any> this)[$symbol];
-      } catch (_) {
-        shadow(clone, $symbol, (<any> this)[$symbol]);
+        (clone as any)[$symbol] = (this as any)[$symbol];
+      } catch {
+        shadow(clone, $symbol, (this as any)[$symbol]);
       }
     }
     clone[$uid] = `${clone[$nodeName]}${uid++}`;
-    clone[_children] = <XFAObject[]> [];
+    clone[_children] = [] as XFAObject[];
 
     for (const name of Object.getOwnPropertyNames(this)) {
       if (this[_attributeNames].has(name)) {
-        (<any> clone)[name] = XFAObject[_cloneAttribute]((<any> this)[name]);
+        (clone as any)[name] = XFAObject[_cloneAttribute]((this as any)[name]);
         continue;
       }
-      const value = (<any> this)[name];
+      const value = (this as any)[name];
       if (value instanceof XFAObjectArray) {
-        (<any> clone)[name] = new XFAObjectArray(value[_max]);
+        (clone as any)[name] = new XFAObjectArray(value[_max]);
       } else {
-        (<any> clone)[name] = undefined;
+        (clone as any)[name] = undefined;
       }
     }
 
@@ -800,7 +817,7 @@ export abstract class XFAObject {
   }
 
   [$getChildrenByClass](name: string): PropValueEx {
-    return <XFAProp> (<any> this)[name];
+    return (this as any)[name] as XFAProp;
   }
 
   /** @final */
@@ -859,6 +876,14 @@ export class XFAObjectArray {
 
   constructor(max = Infinity) {
     this[_max] = max;
+  }
+
+  get isXFAObject() {
+    return false;
+  }
+
+  get isXFAObjectArray() {
+    return true;
   }
 
   push(child: XFAObject) {
@@ -1096,7 +1121,7 @@ export class XmlObject extends XFAObject {
       yield value;
     }
     for (const child of this[_children]) {
-      yield* (<XmlObject> child)[$getAttributeIt](name, skipConsumed);
+      yield* (child as XmlObject)[$getAttributeIt](name, skipConsumed);
     }
   }
 
@@ -1124,14 +1149,14 @@ export class XmlObject extends XFAObject {
   [$getDataValue]() {
     if (this[_dataValue] === undefined) {
       if (this[_children].length === 0) {
-        return (<string> this[$content]).trim();
+        return (this[$content] as string).trim();
       }
       if (this[_children][0][$namespaceId] === NamespaceIds.xhtml.id) {
         return this[_children][0][$text]()!.trim();
       }
       return undefined;
     }
-    return (<string> this[$content]).trim();
+    return (this[$content] as string).trim();
   }
 
   override [$dump](hasNS = false) {

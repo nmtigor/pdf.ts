@@ -1,4 +1,4 @@
-import { BaseStream } from "./base_stream.js";
+import type { BaseStream } from "./base_stream.js";
 import { DecryptStream } from "./decrypt_stream.js";
 import { Dict, Name } from "./primitives.js";
 export declare class ARCFourCipher {

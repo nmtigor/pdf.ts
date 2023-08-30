@@ -1,15 +1,16 @@
 import type { C2D, point_t, rect_t } from "../../../lib/alias.js";
 import { type matrix_t } from "../shared/util.js";
-import { BaseStream } from "./base_stream.js";
+import type { BaseStream } from "./base_stream.js";
 import { CFFFont } from "./cff_font.js";
-import { CMap } from "./cmap.js";
-import { type CssFontInfo } from "./document.js";
-import { type FontProps, type VMetric } from "./evaluator.js";
-import { type OpListIR } from "./operator_list.js";
+import type { CMap } from "./cmap.js";
+import type { CssFontInfo } from "./document.js";
+import type { FontProps, VMetric } from "./evaluator.js";
+import type { SubstitutionInfo } from "./font_substitutions.js";
+import type { OpListIR } from "./operator_list.js";
 import { Stream } from "./stream.js";
 import { IdentityToUnicodeMap, ToUnicodeMap } from "./to_unicode_map.js";
 import { Type1Font } from "./type1_font.js";
-import { CharUnicodeCategory } from "./unicode.js";
+import { type CharUnicodeCategory } from "./unicode.js";
 export declare abstract class FontExpotData {
     name: string;
     loadedName: string | undefined;
@@ -40,6 +41,7 @@ export declare abstract class FontExpotData {
     vertical?: boolean;
     defaultVMetrics?: VMetric | undefined;
     cssFontInfo?: CssFontInfo | undefined;
+    systemFontInfo: SubstitutionInfo | undefined;
 }
 export declare abstract class FontExpotDataEx extends FontExpotData {
     differences?: string[] | undefined;

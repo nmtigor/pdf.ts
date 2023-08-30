@@ -3,8 +3,8 @@
  * @license Apache-2.0
  ******************************************************************************/
 import { Hover, Pointer } from "./lib/alias.js";
-import type { HTMLVCo } from "./lib/mv.js";
-export declare const INOUT = true, DEV = true, TRACE = true, INFO = true, COLR = true, XSTATE = true, RESIZ = true, INTRS = true, THEMESETTING = false, EDITOR = true, /** @deprecated */ EDITOR_v = true, PDFTS = true, PDFTS_v = true, PDFTS_vv = false, _TRACE = true, _INFO = true, _COLR = true, /** @deprecated */ APP = false, TESTING = false, DENO = false, CYPRESS = true, PDFJSDev = true, GENERIC = true, MOZCENTRAL = false, CHROME = false, GECKOVIEW = false, LIB = false, SKIP_BABEL = true, IMAGE_DECODERS = false, COMPONENTS = false;
+import type { HTMLVCo } from "./lib/cv.js";
+export declare const INOUT = true, DEV = true, TRACE = true, INFO = true, COLR = false, XSTATE = true, RESIZ = true, INTRS = true, THEMESETTING = false, EDITOR = true, /** @deprecated */ EDITOR_v = true, PDFTS = true, PDFTS_v = true, PDFTS_vv = false, _INFO = true, _COLR = false, /** @deprecated */ APP = false, TESTING = false, DENO = false, _TRACE = true, CYPRESS = true, PDFJSDev = true, GENERIC = true, MOZCENTRAL = false, CHROME = false, GECKOVIEW = false, LIB = false, SKIP_BABEL = true, IMAGE_DECODERS = false, COMPONENTS = false;
 export declare const global: {
     /** @deprecated Use preprocessor */
     testing: boolean;
@@ -22,8 +22,8 @@ export declare const global: {
     hover: Hover;
     anyHover: Hover;
     readonly can_hover: boolean;
-    readonly "__#5@#tabsize": 2;
-    "__#5@#dent": number;
+    readonly "__#3@#tabsize": 4;
+    "__#3@#dent": number;
     readonly dent: string;
     readonly indent: string;
     readonly outdent: number;

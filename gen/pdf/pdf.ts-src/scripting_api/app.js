@@ -15,17 +15,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { FORMS_VERSION, USERACTIVATION_CALLBACKID, VIEWER_TYPE, VIEWER_VARIATION, VIEWER_VERSION, } from "./app_utils.js";
 import { Color } from "./color.js";
 import { EventDispatcher } from "./event.js";
 import { FullScreen } from "./fullscreen.js";
 import { PDFObject } from "./pdf_object.js";
 import { Thermometer } from "./thermometer.js";
-/*80--------------------------------------------------------------------------*/
-const VIEWER_TYPE = "PDF.js";
-const VIEWER_VARIATION = "Full";
-const VIEWER_VERSION = 21.00720099;
-const FORMS_VERSION = 21.00720099;
-export const USERACTIVATION_CALLBACKID = 0;
 export class App extends PDFObject {
     _constants;
     get constants() {

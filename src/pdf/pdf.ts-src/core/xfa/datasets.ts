@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-import { type XFAAttrs } from "./alias.ts";
+import type { XFAAttrs } from "./alias.ts";
 import { $buildXFAObject, NamespaceIds } from "./namespaces.ts";
 import {
   $appendChild,
@@ -25,9 +25,8 @@ import {
   $namespaceId,
   $nodeName,
   $onChild,
-  XFAObject,
-  XmlObject,
-} from "./xfa_object.ts";
+} from "./symbol_utils.ts";
+import { XFAObject, XmlObject } from "./xfa_object.ts";
 /*80--------------------------------------------------------------------------*/
 
 const DATASETS_NS_ID = NamespaceIds.datasets.id;

@@ -1,8 +1,9 @@
 import type { C2D } from "../../../lib/alias.js";
 import { FontExpotDataEx } from "../core/fonts.js";
 import type { CmdArgs } from "../core/font_renderer.js";
+import type { SubstitutionInfo } from "../core/font_substitutions.js";
 import type { PDFObjects } from "./api.js";
-interface _BaseFontLoaderCtorP {
+interface BaseFontLoaderCtorP_ {
     ownerDocument: Document | undefined;
     styleElement?: HTMLStyleElement | undefined;
 }
@@ -12,15 +13,18 @@ export interface Request {
     callback: (request: Request) => void;
 }
 export declare class FontLoader {
+    #private;
     _document: Document;
-    nativeFontFaces: FontFace[];
+    nativeFontFaces: Set<FontFace>;
     styleElement: HTMLStyleElement | undefined;
     loadingRequests: Request[] | undefined;
     loadTestFontId: number;
-    constructor({ ownerDocument, styleElement, }: _BaseFontLoaderCtorP);
+    constructor({ ownerDocument, styleElement, }: BaseFontLoaderCtorP_);
     addNativeFontFace(nativeFontFace: FontFace): void;
+    removeNativeFontFace(nativeFontFace: FontFace): void;
     insertRule(rule: string): void;
     clear(): void;
+    loadSystemFont(info: SubstitutionInfo): Promise<void>;
     bind(font: FontFaceObject): Promise<void>;
     get isFontLoadingAPISupported(): boolean;
     get isSyncFontLoadingSupported(): boolean;
@@ -44,7 +48,7 @@ export declare class FontFaceObject extends FontExpotDataEx {
     attached?: boolean;
     constructor(translatedData: FontExpotDataEx, { isEvalSupported, disableFontFace, ignoreErrors, inspectFont, }: FFOCtorP_);
     createNativeFontFace(): FontFace | null;
-    createFontFaceRule(): string | null;
+    createFontFaceRule(): string | undefined;
     getPathGenerator(objs: PDFObjects<CmdArgs[] | FontFaceObject>, character: string): AddToPath;
 }
 export {};

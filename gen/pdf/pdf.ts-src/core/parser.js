@@ -30,7 +30,7 @@ import { LZWStream } from "./lzw_stream.js";
 import { PredictorStream } from "./predictor_stream.js";
 import { Cmd, Dict, EOF, isCmd, Name, Ref } from "./primitives.js";
 import { RunLengthStream } from "./run_length_stream.js";
-import { NullStream } from "./stream.js";
+import { NullStream, Stream } from "./stream.js";
 /*80--------------------------------------------------------------------------*/
 const MAX_LENGTH_TO_CACHE = 1000;
 function getInlineImageCacheKey(bytes) {
@@ -173,7 +173,7 @@ export class Parser {
      */
     findDefaultInlineStreamEnd(stream) {
         const E = 0x45, I = 0x49, SPACE = 0x20, LF = 0xa, CR = 0xd, NUL = 0x0;
-        const lexer = this.lexer, startPos = stream.pos, n = 10;
+        const { knownCommands } = this.lexer, startPos = stream.pos, n = 15;
         let state = 0, ch, maybeEIPos;
         while ((ch = stream.getByte()) !== -1) {
             if (state === 0) {
@@ -190,7 +190,11 @@ export class Parser {
                     maybeEIPos = stream.pos;
                     // Let's check that the next `n` bytes are ASCII... just to be sure.
                     const followingBytes = stream.peekBytes(n);
-                    for (let i = 0, ii = followingBytes.length; i < ii; i++) {
+                    const ii = followingBytes.length;
+                    if (ii === 0) {
+                        break; // The end of the stream was reached, nothing to check.
+                    }
+                    for (let i = 0; i < ii; i++) {
                         ch = followingBytes[i];
                         if (ch === NUL && followingBytes[i + 1] !== NUL) {
                             // NUL bytes are not supposed to occur *outside* of inline
@@ -215,18 +219,39 @@ export class Parser {
                     if (state !== 2) {
                         continue;
                     }
+                    if (!knownCommands) {
+                        warn("findDefaultInlineStreamEnd - `lexer.knownCommands` is undefined.");
+                        continue;
+                    }
                     // Check that the "EI" sequence isn't part of the image data, since
                     // that would cause the image to be truncated (fixes issue11124.pdf).
-                    if (lexer.knownCommands) {
-                        const nextObj = lexer.peekObj();
-                        if (nextObj instanceof Cmd && !lexer.knownCommands[nextObj.cmd]) {
-                            // Not a valid command, i.e. the inline image data *itself*
-                            // contains an "EI" sequence. Resetting the state.
-                            state = 0;
+                    const tmpLexer = new Lexer(new Stream(followingBytes.slice()), knownCommands);
+                    // Reduce the number of (potential) warning messages.
+                    tmpLexer._hexStringWarn = () => { };
+                    let numArgs = 0;
+                    while (true) {
+                        const nextObj = tmpLexer.getObj();
+                        if (nextObj === EOF) {
+                            state = 0; // No valid command found, resetting the state.
+                            break;
                         }
-                    }
-                    else {
-                        warn("findDefaultInlineStreamEnd - `lexer.knownCommands` is undefined.");
+                        if (nextObj instanceof Cmd) {
+                            const knownCommand = knownCommands[nextObj.cmd];
+                            if (!knownCommand) {
+                                // Not a valid command, i.e. the inline image data *itself*
+                                // contains an "EI" sequence. Resetting the state.
+                                state = 0;
+                                break;
+                            }
+                            else if (knownCommand.variableArgs
+                                ? numArgs <= knownCommand.numArgs
+                                : numArgs === knownCommand.numArgs) {
+                                break; // Valid command found.
+                            }
+                            numArgs = 0;
+                            continue;
+                        }
+                        numArgs++;
                     }
                     if (state === 2) {
                         break; // Finished!
@@ -783,7 +808,7 @@ export class Lexer {
         let ch = this.currentChar;
         let eNotation = false;
         let divideBy = 0; // Different from 0 if it's a floating point value.
-        let sign = 0;
+        let sign = 1;
         if (ch === /* '-' = */ 0x2d) {
             sign = -1;
             ch = this.nextChar();
@@ -793,7 +818,6 @@ export class Lexer {
             }
         }
         else if (ch === /* '+' = */ 0x2b) {
-            sign = 1;
             ch = this.nextChar();
         }
         if (ch === /* LF = */ 0x0a || ch === /* CR = */ 0x0d) {
@@ -816,7 +840,6 @@ export class Lexer {
             }
             throw new FormatError(msg);
         }
-        sign ||= 1;
         let baseValue = ch - 0x30; // '0'
         let powerValue = 0;
         let powerValueSign = 1;
@@ -1018,7 +1041,10 @@ export class Lexer {
         }
         return Name.get(strBuf.join(""));
     }
-    #hexStringWarn(ch) {
+    /**
+     * @private
+     */
+    _hexStringWarn(ch) {
         const MAX_HEX_STRING_NUM_WARN = 5;
         if (this.#hexStringNumWarn++ === MAX_HEX_STRING_NUM_WARN) {
             warn("getHexString - ignoring additional invalid characters.");
@@ -1056,7 +1082,7 @@ export class Lexer {
                 if (isFirstHex) {
                     firstDigit = toHexDigit(ch);
                     if (firstDigit === -1) {
-                        this.#hexStringWarn(ch);
+                        this._hexStringWarn(ch);
                         ch = this.nextChar();
                         continue;
                     }
@@ -1064,7 +1090,7 @@ export class Lexer {
                 else {
                     secondDigit = toHexDigit(ch);
                     if (secondDigit === -1) {
-                        this.#hexStringWarn(ch);
+                        this._hexStringWarn(ch);
                         ch = this.nextChar();
                         continue;
                     }
@@ -1167,7 +1193,7 @@ export class Lexer {
             }
         }
         const knownCommands = this.knownCommands;
-        let knownCommandFound = knownCommands && knownCommands[str] !== undefined;
+        let knownCommandFound = knownCommands?.[str] !== undefined;
         while ((ch = this.nextChar()) >= 0 && !specialChars[ch]) {
             // Stop if a known command is found and next character does not make
             // the string a command.
@@ -1179,7 +1205,7 @@ export class Lexer {
                 throw new FormatError(`Command token too long: ${str.length}`);
             }
             str = possibleCommand;
-            knownCommandFound = knownCommands && knownCommands[str] !== undefined;
+            knownCommandFound = knownCommands?.[str] !== undefined;
         }
         if (str === "true") {
             return true;
@@ -1196,24 +1222,6 @@ export class Lexer {
             this.beginInlineImagePos = this.stream.pos;
         }
         return Cmd.get(str);
-    }
-    peekObj() {
-        const streamPos = this.stream.pos, currentChar = this.currentChar, beginInlineImagePos = this.beginInlineImagePos;
-        let nextObj;
-        try {
-            nextObj = this.getObj();
-        }
-        catch (ex) {
-            if (ex instanceof MissingDataException) {
-                throw ex;
-            }
-            warn(`peekObj: ${ex}`);
-        }
-        // Ensure that we reset *all* relevant `Lexer`-instance state.
-        this.stream.pos = streamPos;
-        this.currentChar = currentChar;
-        this.beginInlineImagePos = beginInlineImagePos;
-        return nextObj;
     }
     skipToNextLine() {
         let ch = this.currentChar;

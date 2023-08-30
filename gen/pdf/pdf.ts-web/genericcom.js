@@ -27,7 +27,6 @@ import { BasePreferences } from "./preferences.js";
 /*#static*/ 
 export const GenericCom = {};
 class GenericPreferences extends BasePreferences {
-    /** @implement */
     async _writeToStorage(prefObj) {
         localStorage.setItem("pdfjs.preferences", JSON.stringify(prefObj));
     }

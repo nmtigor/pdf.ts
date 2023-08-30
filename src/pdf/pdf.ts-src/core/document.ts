@@ -31,6 +31,7 @@ import type {
   Thread,
 } from "../shared/message_handler.ts";
 import {
+  AnnotationEditorPrefix,
   FormatError,
   info,
   InvalidPDFException,
@@ -45,6 +46,7 @@ import {
 } from "../shared/util.ts";
 import type {
   Annotation,
+  AnnotImage,
   FieldObject,
   MarkupAnnotation,
   SaveReturn,
@@ -69,13 +71,22 @@ import { DatasetReader, type DatasetReaderCtorP } from "./dataset_reader.ts";
 import { StreamsSequenceStream } from "./decode_stream.ts";
 import { PartialEvaluator, type TranslatedFont } from "./evaluator.ts";
 import type { ErrorFont, Font } from "./fonts.ts";
+import type { SubstitutionInfo } from "./font_substitutions.ts";
 import type { GlobalImageCache } from "./image_utils.ts";
 import { ObjectLoader } from "./object_loader.ts";
 import { OperatorList } from "./operator_list.ts";
 import { Linearization } from "./parser.ts";
 import type { BasePdfManager } from "./pdf_manager.ts";
-import type { Obj, RefSet } from "./primitives.ts";
-import { Dict, isName, Name, Ref, RefSetCache } from "./primitives.ts";
+import {
+  Dict,
+  isName,
+  isRefsEqual,
+  Name,
+  type Obj,
+  Ref,
+  RefSet,
+  RefSetCache,
+} from "./primitives.ts";
 import { NullStream, type Stream } from "./stream.ts";
 import { StructTreePage, type StructTreeRoot } from "./struct_tree.ts";
 import type { WorkerTask } from "./worker.ts";
@@ -96,7 +107,7 @@ export interface LocalIdFactory extends GlobalIdFactory {
   createObjId(): string;
 }
 
-interface _PageCtorP {
+interface PageCtorP_ {
   pdfManager: BasePdfManager;
   xref: XRef;
   pageIndex: number;
@@ -107,11 +118,12 @@ interface _PageCtorP {
   builtInCMapCache: Map<string, CMapData>;
   standardFontDataCache: Map<string, Uint8Array | ArrayBuffer>;
   globalImageCache: GlobalImageCache;
+  systemFontCache: Map<string, SubstitutionInfo>;
   nonBlendModesSet: RefSet;
   xfaFactory?: XFAFactory | undefined;
 }
 
-interface _PageGetOperatorListP {
+interface PageGetOperatorListP_ {
   handler: MessageHandler<Thread.worker>;
   sink: StreamSink<Thread.main, "GetOperatorList">;
   task: WorkerTask;
@@ -138,6 +150,7 @@ export class Page {
   builtInCMapCache;
   standardFontDataCache;
   globalImageCache;
+  systemFontCache;
   nonBlendModesSet;
   evaluatorOptions;
   xfaFactory;
@@ -160,9 +173,10 @@ export class Page {
     builtInCMapCache,
     standardFontDataCache,
     globalImageCache,
+    systemFontCache,
     nonBlendModesSet,
     xfaFactory,
-  }: _PageCtorP) {
+  }: PageCtorP_) {
     this.pdfManager = pdfManager;
     this.pageIndex = pageIndex;
     this.pageDict = pageDict;
@@ -172,6 +186,7 @@ export class Page {
     this.builtInCMapCache = builtInCMapCache;
     this.standardFontDataCache = standardFontDataCache;
     this.globalImageCache = globalImageCache;
+    this.systemFontCache = systemFontCache;
     this.nonBlendModesSet = nonBlendModesSet;
     this.evaluatorOptions = pdfManager.evaluatorOptions;
     this.xfaFactory = xfaFactory;
@@ -181,7 +196,7 @@ export class Page {
     };
     this.#localIdFactory = Object.assign(globalIdFactory, {
       createObjId: () => `p${pageIndex}_${++idCounters.obj}`,
-      getPageObjId: () => `page${ref!.toString()}`,
+      getPageObjId: () => `p${ref!.toString()}`,
     });
   }
 
@@ -339,10 +354,34 @@ export class Page {
     );
   }
 
+  #replaceIdByRef(
+    annotations: AnnotStorageValue[],
+    deletedAnnotations: RefSet,
+    existingAnnotations: RefSet | undefined,
+  ) {
+    for (const annotation of annotations) {
+      if (annotation.id) {
+        const ref = Ref.fromString(annotation.id);
+        if (!ref) {
+          warn(`A non-linked annotation cannot be modified: ${annotation.id}`);
+          continue;
+        }
+        if (annotation.deleted) {
+          deletedAnnotations.put(ref);
+          continue;
+        }
+        existingAnnotations?.put(ref);
+        annotation.ref = ref;
+        delete annotation.id;
+      }
+    }
+  }
+
   async saveNewAnnotations(
     handler: MessageHandler<Thread.worker>,
     task: WorkerTask,
     annotations: AnnotStorageValue[],
+    imagePromises: Map<string, Promise<AnnotImage>> | undefined,
   ) {
     if (this.xfaFactory) {
       throw new Error("XFA: Cannot save new annotations.");
@@ -357,19 +396,30 @@ export class Page {
       builtInCMapCache: this.builtInCMapCache,
       standardFontDataCache: this.standardFontDataCache,
       globalImageCache: this.globalImageCache,
+      systemFontCache: this.systemFontCache,
       options: this.evaluatorOptions,
     });
 
+    const deletedAnnotations = new RefSet();
+    const existingAnnotations = new RefSet();
+    this.#replaceIdByRef(annotations, deletedAnnotations, existingAnnotations);
+
     const pageDict = this.pageDict;
-    const annotationsArray = this.annotations.slice();
+    const annotationsArray = this.annotations.filter(
+      (a) => !(a instanceof Ref && deletedAnnotations.has(a)),
+    );
     const newData = await AnnotationFactory.saveNewAnnotations(
       partialEvaluator,
       task,
       annotations,
+      imagePromises,
     );
 
     for (const { ref } of newData.annotations) {
-      annotationsArray.push(ref);
+      // Don't add an existing annotation ref to the annotations array.
+      if (ref instanceof Ref && !existingAnnotations.has(ref)) {
+        annotationsArray.push(ref);
+      }
     }
 
     const savedDict = pageDict.get("Annots");
@@ -384,7 +434,7 @@ export class Page {
       );
     }
 
-    writeObject(this.ref!, pageDict, buffer, transform);
+    await writeObject(this.ref!, pageDict, buffer, transform);
     if (savedDict) {
       pageDict.set("Annots", savedDict);
     }
@@ -412,6 +462,7 @@ export class Page {
       builtInCMapCache: this.builtInCMapCache,
       standardFontDataCache: this.standardFontDataCache,
       globalImageCache: this.globalImageCache,
+      systemFontCache: this.systemFontCache,
       options: this.evaluatorOptions,
     });
 
@@ -460,7 +511,7 @@ export class Page {
     intent,
     cacheKey,
     annotationStorage = undefined,
-  }: _PageGetOperatorListP) {
+  }: PageGetOperatorListP_) {
     const contentStreamPromise = this.getContentStream();
     const resourcesPromise = this.loadResources([
       "ColorSpace",
@@ -481,22 +532,64 @@ export class Page {
       builtInCMapCache: this.builtInCMapCache,
       standardFontDataCache: this.standardFontDataCache,
       globalImageCache: this.globalImageCache,
+      systemFontCache: this.systemFontCache,
       options: this.evaluatorOptions,
     });
 
     const newAnnotationsByPage = !this.xfaFactory
       ? getNewAnnotationsMap(annotationStorage)
       : undefined;
+    let deletedAnnotations: RefSet | undefined;
 
     let newAnnotationsPromise: Promise<MarkupAnnotation[] | undefined> = Promise
       .resolve(undefined);
     if (newAnnotationsByPage) {
+      let imagePromises: Map<string, Promise<AnnotImage>> | undefined;
       const newAnnotations = newAnnotationsByPage.get(this.pageIndex);
       if (newAnnotations) {
+        // An annotation can contain a reference to a bitmap, but this bitmap
+        // is defined in another annotation. So we need to find this annotation
+        // and generate the bitmap.
+        const missingBitmaps = new Set();
+        for (const { bitmapId, bitmap } of newAnnotations) {
+          if (bitmapId && !bitmap && !missingBitmaps.has(bitmapId)) {
+            missingBitmaps.add(bitmapId);
+          }
+        }
+
+        const { isOffscreenCanvasSupported } = this.evaluatorOptions;
+        if (missingBitmaps.size > 0) {
+          const annotationWithBitmaps: AnnotStorageValue[] = [];
+          for (const [key, annotation] of annotationStorage!) {
+            if (!key.startsWith(AnnotationEditorPrefix)) {
+              continue;
+            }
+            if (annotation.bitmap && missingBitmaps.has(annotation.bitmapId)) {
+              annotationWithBitmaps.push(annotation);
+            }
+          }
+          // The array annotationWithBitmaps cannot be empty: the check above
+          // makes sure to have at least one annotation containing the bitmap.
+          imagePromises = AnnotationFactory.generateImages(
+            annotationWithBitmaps,
+            this.xref,
+            isOffscreenCanvasSupported,
+          );
+        } else {
+          imagePromises = AnnotationFactory.generateImages(
+            newAnnotations,
+            this.xref,
+            isOffscreenCanvasSupported,
+          );
+        }
+
+        deletedAnnotations = new RefSet();
+        this.#replaceIdByRef(newAnnotations, deletedAnnotations, undefined);
         newAnnotationsPromise = AnnotationFactory.printNewAnnotations(
           partialEvaluator,
           task,
           newAnnotations,
+          imagePromises,
         );
       }
     }
@@ -531,6 +624,25 @@ export class Page {
       newAnnotationsPromise,
     ]).then(([pageOpList, annotations, newAnnotations]) => {
       if (newAnnotations) {
+        // Some annotations can already exist (if it has the refToReplace
+        // property). In this case, we replace the old annotation by the new
+        // one.
+        annotations = annotations.filter(
+          (a) => !(a?.ref && deletedAnnotations!.has(a.ref)),
+        );
+        for (let i = 0, ii = newAnnotations.length; i < ii; i++) {
+          const newAnnotation = newAnnotations[i];
+          if (newAnnotation.refToReplace) {
+            const j = annotations.findIndex(
+              (a) => a?.ref && isRefsEqual(a.ref, newAnnotation.refToReplace!),
+            );
+            if (j >= 0) {
+              annotations.splice(j, 1, newAnnotation);
+              newAnnotations.splice(i--, 1);
+              ii--;
+            }
+          }
+        }
         annotations = annotations.concat(newAnnotations);
       }
       if (
@@ -629,6 +741,7 @@ export class Page {
         builtInCMapCache: this.builtInCMapCache,
         standardFontDataCache: this.standardFontDataCache,
         globalImageCache: this.globalImageCache,
+        systemFontCache: this.systemFontCache,
         options: this.evaluatorOptions,
       });
 
@@ -706,12 +819,18 @@ export class Page {
           builtInCMapCache: this.builtInCMapCache,
           standardFontDataCache: this.standardFontDataCache,
           globalImageCache: this.globalImageCache,
+          systemFontCache: this.systemFontCache,
           options: this.evaluatorOptions,
         });
 
         textContentPromises.push(
           annotation!
-            .extractTextContent(partialEvaluator, task, this.view)
+            .extractTextContent(partialEvaluator, task, [
+              -Infinity,
+              -Infinity,
+              Infinity,
+              Infinity,
+            ])
             .catch(function (reason) {
               warn(
                 `getAnnotationsData - ignoring textContent during "${task.name}" task: "${reason}".`,
@@ -928,12 +1047,13 @@ export type XFAData = _XFAStreams & {
   [key: string]: unknown; //kkkk
 };
 
-export interface CssFontInfo {
+export type CssFontInfo = {
   fontFamily: string;
-  metrics?: XFAFontMetrics | undefined;
   fontWeight: number | string | undefined;
   italicAngle: number | string;
-}
+  lineHeight?: number;
+  metrics?: XFAFontMetrics | undefined;
+};
 
 /**
  * The `PDFDocument` class holds all the (worker-thread) data of the PDF file.
@@ -1189,10 +1309,10 @@ export class PDFDocument {
         continue;
       }
       try {
-        const str = stringToUTF8String((<BaseStream> stream).getString());
+        const str = stringToUTF8String((stream as BaseStream).getString());
         const data = { [key]: str } as DatasetReaderCtorP;
         return shadow(this, "xfaDatasets", new DatasetReader(data));
-      } catch (_) {
+      } catch {
         warn("XFA - Invalid utf-8 string.");
         break;
       }
@@ -1212,7 +1332,7 @@ export class PDFDocument {
       }
       try {
         data[key] = stringToUTF8String(stream.getString());
-      } catch (_) {
+      } catch {
         warn("XFA - Invalid utf-8 string.");
         return null;
       }
@@ -1320,7 +1440,7 @@ export class PDFDocument {
       if (!(descriptor instanceof Dict)) {
         continue;
       }
-      let fontFamily = <string> descriptor.get("FontFamily");
+      let fontFamily = descriptor.get("FontFamily") as string;
       // For example, "Wingdings 3" is not a valid font name in the css specs.
       fontFamily = fontFamily.replaceAll(/[ ]+(\d)/g, "$1");
       const fontWeight = descriptor.get("FontWeight") as number | undefined;
@@ -1328,7 +1448,7 @@ export class PDFDocument {
       // Angle is expressed in degrees counterclockwise in PDF
       // when it's clockwise in CSS
       // (see https://drafts.csswg.org/css-fonts-4/#valdef-font-style-oblique-angle)
-      const italicAngle = <number> descriptor.get("ItalicAngle");
+      const italicAngle = descriptor.get("ItalicAngle") as number;
       const cssFontInfo: CssFontInfo = { fontFamily, fontWeight, italicAngle };
 
       if (!validateCSSFont(cssFontInfo)) {
@@ -1613,7 +1733,7 @@ export class PDFDocument {
     const { catalog, linearization, xref } = this;
     /*#static*/ if (PDFJSDev || TESTING) {
       assert(
-        linearization && linearization.pageFirst === pageIndex,
+        linearization?.pageFirst === pageIndex,
         "#getLinearizationPage - invalid pageIndex argument.",
       );
     }
@@ -1658,7 +1778,7 @@ export class PDFDocument {
     let promise;
     if (xfaFactory) {
       promise = Promise.resolve([Dict.empty, undefined] as const);
-    } else if (linearization && linearization.pageFirst === pageIndex) {
+    } else if (linearization?.pageFirst === pageIndex) {
       promise = this.#getLinearizationPage(pageIndex);
     } else {
       promise = catalog!.getPageDict(pageIndex);
@@ -1675,6 +1795,7 @@ export class PDFDocument {
         builtInCMapCache: catalog!.builtInCMapCache,
         standardFontDataCache: catalog!.standardFontDataCache,
         globalImageCache: catalog!.globalImageCache,
+        systemFontCache: catalog!.systemFontCache,
         nonBlendModesSet: catalog!.nonBlendModesSet,
         xfaFactory,
       });
@@ -1776,6 +1897,7 @@ export class PDFDocument {
               builtInCMapCache: catalog!.builtInCMapCache,
               standardFontDataCache: catalog!.standardFontDataCache,
               globalImageCache: catalog!.globalImageCache,
+              systemFontCache: catalog!.systemFontCache,
               nonBlendModesSet: catalog!.nonBlendModesSet,
               xfaFactory: undefined,
             }),
@@ -1809,6 +1931,11 @@ export class PDFDocument {
       }
     }
 
+    if (!field.has("Kids") && /\[\d+\]$/.test(name)) {
+      // We've a terminal node: strip the index.
+      name = name.substring(0, name.lastIndexOf("["));
+    }
+
     if (!promises.has(name)) {
       promises.set(name, []);
     }
@@ -1820,7 +1947,7 @@ export class PDFDocument {
         this.#localIdFactory!, //kkkk bug? (never set)
         /* collectFields */ true,
       )
-        .then((annotation) => annotation && annotation.getFieldObject())
+        .then((annotation) => annotation?.getFieldObject())
         .catch((reason) => {
           warn(`#collectFieldObjects: "${reason}".`);
           return undefined;
@@ -1895,7 +2022,7 @@ export class PDFDocument {
 
   get calculationOrderIds() {
     const acroForm = this.catalog!.acroForm;
-    if (!acroForm || !acroForm.has("CO")) {
+    if (!acroForm?.has("CO")) {
       return shadow(this, "calculationOrderIds", undefined);
     }
 

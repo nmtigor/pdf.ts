@@ -1,5 +1,5 @@
-import { EventBus } from "./event_utils.js";
-import { PDFViewer } from "./pdf_viewer.js";
+import type { EventBus } from "./event_utils.js";
+import type { PDFViewer } from "./pdf_viewer.js";
 interface PDFPresentationModeOptions {
     /**
      * The container for the viewer element.

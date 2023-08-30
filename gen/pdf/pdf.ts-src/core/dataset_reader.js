@@ -3,7 +3,7 @@
  */
 import { stringToUTF8String, warn } from "../shared/util.js";
 import { parseXFAPath } from "./core_utils.js";
-import { SimpleXMLParser, } from "./xml_parser.js";
+import { SimpleXMLParser } from "./xml_parser.js";
 /*80--------------------------------------------------------------------------*/
 function decodeString(str) {
     try {
@@ -40,7 +40,7 @@ export class DatasetReader {
             try {
                 parser.parseFromString(data["xdp:xdp"]);
             }
-            catch (_) { }
+            catch { }
             this.node = parser.node;
         }
     }
@@ -53,7 +53,7 @@ export class DatasetReader {
             return "";
         }
         const first = node.firstChild;
-        if (first && first.nodeName === "value") {
+        if (first?.nodeName === "value") {
             return node.children.map((child) => decodeString(child.textContent));
         }
         return decodeString(node.textContent);

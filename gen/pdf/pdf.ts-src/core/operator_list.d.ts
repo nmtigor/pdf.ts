@@ -1,6 +1,6 @@
-import { type StreamSink, Thread } from "../shared/message_handler.js";
+import type { StreamSink, Thread } from "../shared/message_handler.js";
 import { OPS, RenderingIntentFlag } from "../shared/util.js";
-import { MarkedContentProps, OpArgs } from "./evaluator.js";
+import type { MarkedContentProps, OpArgs } from "./evaluator.js";
 declare namespace NsQueueOptimizer {
     interface QueueOptimizerContext {
         iCurr: number;

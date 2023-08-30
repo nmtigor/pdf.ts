@@ -840,7 +840,7 @@ export class CanvasGraphics {
     outputScaleX = 1;
     outputScaleY = 1;
     pageColors;
-    #cachedScaleForStroking;
+    #cachedScaleForStroking = [-1, 0];
     #cachedGetSinglePixelWidth;
     #cachedBitmapsMap = new Map();
     transparentCanvas;
@@ -1135,7 +1135,7 @@ export class CanvasGraphics {
     // Graphics state
     [OPS.setLineWidth](width) {
         if (width !== this.current.lineWidth) {
-            this.#cachedScaleForStroking = undefined;
+            this.#cachedScaleForStroking[0] = -1;
         }
         this.current.lineWidth = width;
         this.ctx.lineWidth = width;
@@ -1319,13 +1319,13 @@ export class CanvasGraphics {
             this.checkSMaskState();
             // Ensure that the clipping path is reset (fixes issue6413.pdf).
             this.pendingClip = undefined;
-            this.#cachedScaleForStroking = undefined;
+            this.#cachedScaleForStroking[0] = -1;
             this.#cachedGetSinglePixelWidth = undefined;
         }
     }
     [OPS.transform](a, b, c, d, e, f) {
         this.ctx.transform(a, b, c, d, e, f);
-        this.#cachedScaleForStroking = undefined;
+        this.#cachedScaleForStroking[0] = -1;
         this.#cachedGetSinglePixelWidth = undefined;
     }
     // Path
@@ -1572,10 +1572,12 @@ export class CanvasGraphics {
         }
         this.current.font = fontObj;
         this.current.fontSize = size;
-        // we don't need ctx.font for Type3 fonts
-        if (fontObj.isType3Font)
-            return;
+        if (fontObj.isType3Font) {
+            return; // we don't need ctx.font for Type3 fonts
+        }
         const name = fontObj.loadedName || "sans-serif";
+        const typeface = fontObj.systemFontInfo?.css ||
+            `"${name}", ${fontObj.fallbackName}`;
         let bold = "normal";
         if (fontObj.black) {
             bold = "900";
@@ -1584,7 +1586,6 @@ export class CanvasGraphics {
             bold = "bold";
         }
         const italic = fontObj.italic ? "italic" : "normal";
-        const typeface = `"${name}", ${fontObj.fallbackName}`;
         // Some font backends cannot handle fonts below certain size.
         // Keeping the font at minimal size and using the fontSizeScale to change
         // the current transformation matrix before the fillText/strokeText.
@@ -1665,7 +1666,7 @@ export class CanvasGraphics {
             }
         }
         if (isAddToPathSet) {
-            const paths = this.pendingTextPaths || (this.pendingTextPaths = []);
+            const paths = (this.pendingTextPaths ||= []);
             paths.push({
                 transform: getCurrentTransform(ctx),
                 x,
@@ -1865,7 +1866,7 @@ export class CanvasGraphics {
         let i, glyph, width, spacingLength;
         if (isTextInvisible || fontSize === 0)
             return;
-        this.#cachedScaleForStroking = undefined;
+        this.#cachedScaleForStroking[0] = -1;
         this.#cachedGetSinglePixelWidth = undefined;
         ctx.save();
         ctx.transform(...current.textMatrix);
@@ -1973,17 +1974,8 @@ export class CanvasGraphics {
         ctx.fillStyle = pattern.getPattern(ctx, this, getCurrentTransformInverse(ctx), PathType.SHADING);
         const inv = getCurrentTransformInverse(ctx);
         if (inv) {
-            const canvas = ctx.canvas;
-            const width = canvas.width;
-            const height = canvas.height;
-            const bl = Util.applyTransform([0, 0], inv);
-            const br = Util.applyTransform([0, height], inv);
-            const ul = Util.applyTransform([width, 0], inv);
-            const ur = Util.applyTransform([width, height], inv);
-            const x0 = Math.min(bl[0], br[0], ul[0], ur[0]);
-            const y0 = Math.min(bl[1], br[1], ul[1], ur[1]);
-            const x1 = Math.max(bl[0], br[0], ul[0], ur[0]);
-            const y1 = Math.max(bl[1], br[1], ul[1], ur[1]);
+            const { width, height } = ctx.canvas;
+            const [x0, y0, x1, y1] = Util.getAxialAlignedBoundingBox([0, 0, width, height], inv);
             this.ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
         }
         else {
@@ -2516,15 +2508,24 @@ export class CanvasGraphics {
         // The goal of this function is to rescale before setting the
         // lineWidth in order to have both thicknesses greater or equal
         // to 1 after transform.
-        if (!this.#cachedScaleForStroking) {
+        if (this.#cachedScaleForStroking[0] === -1) {
             const { lineWidth } = this.current;
-            const m = getCurrentTransform(this.ctx);
+            const { a, b, c, d } = this.ctx.getTransform();
             let scaleX, scaleY;
-            if (m[1] === 0 && m[2] === 0) {
+            if (b === 0 && c === 0) {
                 // Fast path
-                const normX = Math.abs(m[0]);
-                const normY = Math.abs(m[3]);
-                if (lineWidth === 0) {
+                const normX = Math.abs(a);
+                const normY = Math.abs(d);
+                if (normX === normY) {
+                    if (lineWidth === 0) {
+                        scaleX = scaleY = 1 / normX;
+                    }
+                    else {
+                        const scaledLineWidth = normX * lineWidth;
+                        scaleX = scaleY = scaledLineWidth < 1 ? 1 / scaledLineWidth : 1;
+                    }
+                }
+                else if (lineWidth === 0) {
                     scaleX = 1 / normX;
                     scaleY = 1 / normY;
                 }
@@ -2542,9 +2543,9 @@ export class CanvasGraphics {
                 //  - heightX (orthogonal to My) has a length: |det(M)| / norm(My).
                 // heightX and heightY are the thicknesses of the transformed pixel
                 // and they must be both greater or equal to 1.
-                const absDet = Math.abs(m[0] * m[3] - m[2] * m[1]);
-                const normX = Math.hypot(m[0], m[1]);
-                const normY = Math.hypot(m[2], m[3]);
+                const absDet = Math.abs(a * d - b * c);
+                const normX = Math.hypot(a, b);
+                const normY = Math.hypot(c, d);
                 if (lineWidth === 0) {
                     scaleX = normY / absDet;
                     scaleY = normX / absDet;
@@ -2555,7 +2556,8 @@ export class CanvasGraphics {
                     scaleY = normX > baseArea ? normX / baseArea : 1;
                 }
             }
-            this.#cachedScaleForStroking = [scaleX, scaleY];
+            this.#cachedScaleForStroking[0] = scaleX;
+            this.#cachedScaleForStroking[1] = scaleY;
         }
         return this.#cachedScaleForStroking;
     }
@@ -2570,11 +2572,9 @@ export class CanvasGraphics {
             ctx.stroke();
             return;
         }
-        let savedMatrix, savedDashes, savedDashOffset;
+        const dashes = ctx.getLineDash();
         if (saveRestore) {
-            savedMatrix = getCurrentTransform(ctx);
-            savedDashes = ctx.getLineDash().slice();
-            savedDashOffset = ctx.lineDashOffset;
+            ctx.save();
         }
         ctx.scale(scaleX, scaleY);
         // How the dashed line is rendered depends on the current transform...
@@ -2584,14 +2584,14 @@ export class CanvasGraphics {
         // else we'll have some bugs (but only with too thin lines).
         // Here we take the max... why not taking the min... or something else.
         // Anyway, as said it's buggy when scaleX !== scaleY.
-        const scale = Math.max(scaleX, scaleY);
-        ctx.setLineDash(ctx.getLineDash().map((x) => x / scale));
-        ctx.lineDashOffset /= scale;
+        if (dashes.length > 0) {
+            const scale = Math.max(scaleX, scaleY);
+            ctx.setLineDash(dashes.map((x) => x / scale));
+            ctx.lineDashOffset /= scale;
+        }
         ctx.stroke();
         if (saveRestore) {
-            ctx.setTransform(...savedMatrix);
-            ctx.setLineDash(savedDashes);
-            ctx.lineDashOffset = savedDashOffset;
+            ctx.restore();
         }
     }
     isContentVisible() {

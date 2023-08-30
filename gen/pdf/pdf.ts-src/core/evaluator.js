@@ -30,6 +30,7 @@ import { DecodeStream } from "./decode_stream.js";
 import { getEncoding, MacRomanEncoding, StandardEncoding, SymbolSetEncoding, WinAnsiEncoding, ZapfDingbatsEncoding, } from "./encodings.js";
 import { ErrorFont, Font } from "./fonts.js";
 import { FontFlags } from "./fonts_utils.js";
+import { getFontSubstitution } from "./font_substitutions.js";
 import { isPDFFunction, PDFFunctionFactory } from "./function.js";
 import { getGlyphsUnicode } from "./glyphlist.js";
 import { PDFImage } from "./image.js";
@@ -40,7 +41,7 @@ import { OperatorList } from "./operator_list.js";
 import { Lexer, Parser } from "./parser.js";
 import { getTilingPatternIR, Pattern, } from "./pattern.js";
 import { Cmd, Dict, EOF, FontDict, isName, Name, Ref, RefSet, } from "./primitives.js";
-import { getFontNameToFileMap, getSerifFonts, getStandardFontName, getStdFontMap, getSymbolsFonts, } from "./standard_fonts.js";
+import { getFontNameToFileMap, getSerifFonts, getStandardFontName, getStdFontMap, getSymbolsFonts, isKnownFontName, } from "./standard_fonts.js";
 import { NullStream, Stream } from "./stream.js";
 import { IdentityToUnicodeMap, ToUnicodeMap } from "./to_unicode_map.js";
 import { getUnicodeForGlyph } from "./unicode.js";
@@ -135,9 +136,7 @@ function normalizeBlendMode(value, parsingArray = false) {
     return "source-over";
 }
 function incrementCachedImageMaskCount(data) {
-    if (data.fn === OPS.paintImageMaskXObject &&
-        data.args[0] &&
-        data.args[0].count > 0) {
+    if (data.fn === OPS.paintImageMaskXObject && data.args[0]?.count > 0) {
         data.args[0].count++;
     }
 }
@@ -174,11 +173,12 @@ export class PartialEvaluator {
     builtInCMapCache;
     standardFontDataCache;
     globalImageCache;
+    systemFontCache;
     options;
     parsingType3Font = false;
     _regionalImageCache;
     type3FontRefs;
-    constructor({ xref, handler, pageIndex, idFactory, fontCache, builtInCMapCache, standardFontDataCache, globalImageCache, options, }) {
+    constructor({ xref, handler, pageIndex, idFactory, fontCache, builtInCMapCache, standardFontDataCache, globalImageCache, systemFontCache, options, }) {
         this.xref = xref;
         this.handler = handler;
         this.pageIndex = pageIndex;
@@ -187,6 +187,7 @@ export class PartialEvaluator {
         this.builtInCMapCache = builtInCMapCache;
         this.standardFontDataCache = standardFontDataCache;
         this.globalImageCache = globalImageCache;
+        this.systemFontCache = systemFontCache;
         this.options = options || DefaultPartialEvaluatorOptions;
         this._regionalImageCache = new RegionalImageCache();
         ImageResizer.setMaxArea(this.options.canvasMaxAreaInBytes);
@@ -436,7 +437,7 @@ export class PartialEvaluator {
                     }
                 }
             }
-            if (smask && smask.backdrop) {
+            if (smask?.backdrop) {
                 colorSpace ||= ColorSpace.singletons.rgb;
                 smask.backdrop = colorSpace.getRgb(smask.backdrop, 0);
             }
@@ -539,7 +540,7 @@ export class PartialEvaluator {
                 width: w,
                 height: h,
                 imageIsFromDecodeStream: image instanceof DecodeStream,
-                inverseDecode: !!decode && decode[0] > 0,
+                inverseDecode: decode?.[0] > 0,
                 interpolate,
                 isOffscreenCanvasSupported: this.options.isOffscreenCanvasSupported,
             });
@@ -588,11 +589,12 @@ export class PartialEvaluator {
             }
             return;
         }
-        const softMask = dict.get("SM", "SMask") || false;
-        const mask = dict.get("Mask") || false;
         const SMALL_IMAGE_DIMENSIONS = 200;
         // Inlining small images into the queue as RGB data
-        if (isInline && !softMask && !mask && w + h < SMALL_IMAGE_DIMENSIONS) {
+        if (isInline &&
+            !dict.has("SMask") &&
+            !dict.has("Mask") &&
+            w + h < SMALL_IMAGE_DIMENSIONS) {
             const imageObj = new PDFImage({
                 xref: this.xref,
                 res: resources,
@@ -790,7 +792,7 @@ export class PartialEvaluator {
         });
     }
     handleSetFont(resources, fontArgs, fontRef, operatorList, task, state, fallbackFontDict, cssFontInfo) {
-        const fontName = fontArgs && fontArgs[0] instanceof Name
+        const fontName = fontArgs?.[0] instanceof Name
             ? fontArgs[0].name
             : undefined;
         return this.loadFont(fontName, fontRef, resources, fallbackFontDict, cssFontInfo)
@@ -941,7 +943,6 @@ export class PartialEvaluator {
                 evaluatorOptions: this.options,
             });
         };
-        const xref = this.xref;
         let fontRef;
         if (font) {
             // Loading by ref.
@@ -956,32 +957,26 @@ export class PartialEvaluator {
                 fontRef = fontRes.getRaw(fontName);
             }
         }
-        if (!fontRef) {
-            const partialMsg = `Font "${fontName || font?.toString()}" is not available`;
-            if (!this.options.ignoreErrors && !this.parsingType3Font) {
-                warn(`${partialMsg}.`);
+        let fontDict = font;
+        if (fontRef) {
+            if (this.parsingType3Font && this.type3FontRefs.has(fontRef)) {
                 return errorFont();
             }
-            warn(`${partialMsg} -- attempting to fallback to a default font.`);
+            if (this.fontCache.has(fontRef)) {
+                return this.fontCache.get(fontRef);
+            }
+            // Table 111,
+            fontDict = this.xref.fetchIfRef(fontRef);
+        }
+        if (!(fontDict instanceof Dict)) {
+            if (!this.options.ignoreErrors && !this.parsingType3Font) {
+                warn(`Font "${fontName}" is not available.`);
+                return errorFont();
+            }
+            warn(`Font "${fontName}" is not available -- attempting to fallback to a default font.`);
             // Falling back to a default font to avoid completely broken rendering,
             // but note that there're no guarantees that things will look "correct".
-            if (fallbackFontDict) {
-                fontRef = fallbackFontDict;
-            }
-            else {
-                fontRef = PartialEvaluator.fallbackFontDict;
-            }
-        }
-        if (this.parsingType3Font && this.type3FontRefs.has(fontRef)) {
-            return errorFont();
-        }
-        if (this.fontCache.has(fontRef)) {
-            return this.fontCache.get(fontRef);
-        }
-        // Table 111,
-        const fontDict = xref.fetchIfRef(fontRef);
-        if (!(fontDict instanceof Dict)) {
-            return errorFont(fontDict);
+            fontDict = fallbackFontDict || PartialEvaluator.fallbackFontDict;
         }
         // We are holding `fontDict.cacheKey` references only for `fontRef`s that
         // are not actually `Ref`s, but rather `Dict`s. See explanation below.
@@ -1001,9 +996,6 @@ export class PartialEvaluator {
         const { descriptor, hash } = preEvaluatedFont;
         const fontRefIsRef = fontRef instanceof Ref;
         let fontID;
-        if (fontRefIsRef) {
-            fontID = `f${fontRef.toString()}`;
-        }
         if (hash && descriptor instanceof Dict) {
             const fontAliases = (descriptor.fontAliases ||= Object.create(null));
             if (fontAliases[hash]) {
@@ -1023,6 +1015,10 @@ export class PartialEvaluator {
             }
             fontID = fontAliases[hash].fontID;
         }
+        else {
+            fontID = this.idFactory.createFontId();
+        }
+        assert(fontID?.startsWith("f"), 'The "fontID" must be (correctly) defined.');
         // Workaround for bad PDF generators that reference fonts incorrectly,
         // where `fontRef` is a `Dict` rather than a `Ref` (fixes bug946506.pdf).
         // In this case we cannot put the font into `this.fontCache` (which is
@@ -1042,13 +1038,9 @@ export class PartialEvaluator {
             this.fontCache.put(fontRef, fontCapability.promise);
         }
         else {
-            if (!fontID) {
-                fontID = this.idFactory.createFontId();
-            }
             fontDict.cacheKey = `cacheKey_${fontID}`;
             this.fontCache.put(fontDict.cacheKey, fontCapability.promise);
         }
-        assert(fontID?.startsWith("f"), 'The "fontID" must be (correctly) defined.');
         // Keep track of each font we translated so the caller can
         // load them asynchronously before calling display on a page.
         fontDict.loadedName = `${this.idFactory.getDocId()}_${fontID}`;
@@ -1201,7 +1193,7 @@ export class PartialEvaluator {
                     operatorList.addOp(fn, tilingPatternIR);
                     return undefined;
                 }
-                catch (ex) {
+                catch {
                     // Handle any errors during normal TilingPattern parsing.
                 }
             }
@@ -2063,7 +2055,7 @@ export class PartialEvaluator {
             let posX = currentTransform[4];
             let posY = currentTransform[5];
             // Check if the glyph is in the viewbox.
-            if (textState.font && textState.font.vertical) {
+            if (textState.font?.vertical) {
                 if (posX < viewBox[0] ||
                     posX > viewBox[2] ||
                     posY + glyphWidth < viewBox[1] ||
@@ -2426,6 +2418,7 @@ export class PartialEvaluator {
                 if (!preprocessor.read(operation)) {
                     break;
                 }
+                const previousState = textState;
                 textState = stateManager.state;
                 const fn = operation.fn;
                 args = operation.args;
@@ -2486,7 +2479,7 @@ export class PartialEvaluator {
                         }
                         const spaceFactor = ((textState.font.vertical ? 1 : -1) * textState.fontSize) / 1000;
                         const elements = args[0];
-                        for (let i = 0, ii = elements.length; i < ii - 1; i++) {
+                        for (let i = 0, ii = elements.length; i < ii; i++) {
                             const item = elements[i];
                             if (typeof item === "string") {
                                 showSpacedTextBuffer.push(item);
@@ -2507,10 +2500,6 @@ export class PartialEvaluator {
                                     extraSpacing: item * spaceFactor,
                                 });
                             }
-                        }
-                        const item = elements.at(-1);
-                        if (typeof item === "string") {
-                            showSpacedTextBuffer.push(item);
                         }
                         if (showSpacedTextBuffer.length > 0) {
                             const str = showSpacedTextBuffer.join("");
@@ -2717,7 +2706,7 @@ export class PartialEvaluator {
                             textContent.items.push({
                                 type: "beginMarkedContentProps",
                                 id: Number.isInteger(mcid)
-                                    ? `${self.idFactory.getPageObjId()}_mcid${mcid}`
+                                    ? `${self.idFactory.getPageObjId()}_mc${mcid}`
                                     : undefined,
                                 tag: args[0] instanceof Name ? args[0].name : undefined,
                             });
@@ -2735,6 +2724,14 @@ export class PartialEvaluator {
                             textContent.items.push({
                                 type: "endMarkedContent",
                             });
+                        }
+                        break;
+                    case OPS.restore:
+                        if (previousState &&
+                            (previousState.font !== textState.font ||
+                                previousState.fontSize !== textState.fontSize ||
+                                previousState.fontName !== textState.fontName)) {
+                            flushTextContentItem();
                         }
                         break;
                 } // switch
@@ -2846,6 +2843,12 @@ export class PartialEvaluator {
                 baseEncodingName = undefined;
             }
         }
+        const nonEmbeddedFont = !properties.file || properties.isInternalFont, isSymbolsFontName = getSymbolsFonts()[properties.name];
+        // Ignore an incorrectly specified named encoding for non-embedded
+        // symbol fonts (fixes issue16464.pdf).
+        if (baseEncodingName && nonEmbeddedFont && isSymbolsFontName) {
+            baseEncodingName = undefined;
+        }
         if (baseEncodingName) {
             properties.defaultEncoding = getEncoding(baseEncodingName);
         }
@@ -2861,14 +2864,17 @@ export class PartialEvaluator {
             }
             // The Symbolic attribute can be misused for regular fonts
             // Heuristic: we have to check if the font is a standard one also
-            if (isSymbolicFont) {
+            if (isSymbolicFont || isSymbolsFontName) {
                 encoding = MacRomanEncoding;
-                if (!properties.file || properties.isInternalFont) {
+                if (nonEmbeddedFont) {
                     if (/Symbol/i.test(properties.name)) {
                         encoding = SymbolSetEncoding;
                     }
-                    else if (/Dingbats|Wingdings/i.test(properties.name)) {
+                    else if (/Dingbats/i.test(properties.name)) {
                         encoding = ZapfDingbatsEncoding;
+                    }
+                    else if (/Wingdings/i.test(properties.name)) {
+                        encoding = WinAnsiEncoding;
                     }
                 }
             }
@@ -3251,6 +3257,10 @@ export class PartialEvaluator {
         if (isMonospace) {
             properties.flags |= FontFlags.FixedPitch;
         }
+        else {
+            // Clear the flag.
+            properties.flags &= ~FontFlags.FixedPitch;
+        }
         properties.defaultWidth = defaultWidth;
         properties.widths = glyphsWidths;
         properties.defaultVMetrics = defaultVMetrics;
@@ -3492,6 +3502,9 @@ export class PartialEvaluator {
                     file = await this.fetchStandardFontData(standardFontName);
                     properties.isInternalFont = !!file;
                 }
+                if (!properties.isInternalFont && this.options.useSystemFonts) {
+                    properties.systemFontInfo = getFontSubstitution(this.systemFontCache, this.idFactory, this.options.standardFontDataUrl, baseFontName, standardFontName);
+                }
                 return this.extractDataStructures(dict, dict, properties).then((newProperties) => {
                     if (widths) {
                         const glyphWidths = [];
@@ -3522,17 +3535,21 @@ export class PartialEvaluator {
         if (typeof baseFont === "string") {
             baseFont = Name.get(baseFont);
         }
-        if (!isType3Font) {
-            const fontNameStr = fontName && fontName.name;
-            const baseFontStr = baseFont && baseFont.name;
-            if (fontNameStr !== baseFontStr) {
-                info(`The FontDescriptor's FontName is "${fontNameStr}" but ` +
-                    `should be the same as the Font's BaseFont "${baseFontStr}".`);
-                // Workaround for cases where e.g. fontNameStr = 'Arial' and
-                // baseFontStr = 'Arial,Bold' (needed when no font file is embedded).
-                if (fontNameStr && baseFontStr && baseFontStr.startsWith(fontNameStr)) {
-                    fontName = baseFont;
-                }
+        const fontNameStr = fontName?.name;
+        const baseFontStr = baseFont?.name;
+        if (!isType3Font && fontNameStr !== baseFontStr) {
+            info(`The FontDescriptor's FontName is "${fontNameStr}" but ` +
+                `should be the same as the Font's BaseFont "${baseFontStr}".`);
+            // - Workaround for cases where e.g. fontNameStr = 'Arial' and
+            //   baseFontStr = 'Arial,Bold' (needed when no font file is embedded).
+            //
+            // - Workaround for cases where e.g. fontNameStr = 'wg09np' and
+            //   baseFontStr = 'Wingdings-Regular' (fixes issue7454.pdf).
+            if (fontNameStr &&
+                baseFontStr &&
+                (baseFontStr.startsWith(fontNameStr) ||
+                    (!isKnownFontName(fontNameStr) && isKnownFontName(baseFontStr)))) {
+                fontName = undefined;
             }
         }
         fontName ||= baseFont;
@@ -3552,6 +3569,7 @@ export class PartialEvaluator {
         }
         let isInternalFont = false;
         let glyphScaleFactors;
+        let systemFontInfo;
         if (fontFile) {
             if (fontFile.dict) { // Table 127
                 const subtypeEntry = fontFile.dict.get("Subtype");
@@ -3562,29 +3580,32 @@ export class PartialEvaluator {
                 length2 = fontFile.dict.get("Length2");
                 length3 = fontFile.dict.get("Length3");
             }
-            else if (cssFontInfo) {
-                // We've a missing XFA font.
-                const standardFontName = getXfaFontName(fontName.name);
-                if (standardFontName) {
-                    cssFontInfo.fontFamily = `${cssFontInfo.fontFamily}-PdfJS-XFA`;
-                    cssFontInfo.metrics = standardFontName.metrics || undefined;
-                    glyphScaleFactors = standardFontName.factors || undefined;
-                    fontFile = await this.fetchStandardFontData(standardFontName.name);
-                    isInternalFont = !!fontFile;
-                    // We're using a substitution font but for example widths (if any)
-                    // are related to the glyph positions in the font.
-                    // So we overwrite everything here to be sure that widths are
-                    // correct.
-                    baseDict = dict = getXfaFontDict(fontName.name);
-                    composite = true;
-                }
+        }
+        else if (cssFontInfo) {
+            // We've a missing XFA font.
+            const standardFontName = getXfaFontName(fontName.name);
+            if (standardFontName) {
+                cssFontInfo.fontFamily = `${cssFontInfo.fontFamily}-PdfJS-XFA`;
+                cssFontInfo.metrics = standardFontName.metrics || undefined;
+                glyphScaleFactors = standardFontName.factors || undefined;
+                fontFile = await this.fetchStandardFontData(standardFontName.name);
+                isInternalFont = !!fontFile;
+                // We're using a substitution font but for example widths (if any)
+                // are related to the glyph positions in the font.
+                // So we overwrite everything here to be sure that widths are
+                // correct.
+                baseDict = dict = getXfaFontDict(fontName.name);
+                composite = true;
             }
-            else if (!isType3Font) {
-                const standardFontName = getStandardFontName(fontName.name);
-                if (standardFontName) {
-                    fontFile = await this.fetchStandardFontData(standardFontName);
-                    isInternalFont = !!fontFile;
-                }
+        }
+        else if (!isType3Font) {
+            const standardFontName = getStandardFontName(fontName.name);
+            if (standardFontName) {
+                fontFile = await this.fetchStandardFontData(standardFontName);
+                isInternalFont = !!fontFile;
+            }
+            if (!isInternalFont && this.options.useSystemFonts) {
+                systemFontInfo = getFontSubstitution(this.systemFontCache, this.idFactory, this.options.standardFontDataUrl, fontName.name, standardFontName);
             }
         }
         properties = {
@@ -3614,6 +3635,7 @@ export class PartialEvaluator {
             isType3Font,
             cssFontInfo,
             scaleFactors: glyphScaleFactors,
+            systemFontInfo,
         };
         if (composite) {
             const cidEncoding = baseDict.get("Encoding");
@@ -3666,7 +3688,7 @@ export class PartialEvaluator {
     }
     static get fallbackFontDict() {
         const dict = new FontDict();
-        dict.set("BaseFont", Name.get("PDFJS-FallbackFont"));
+        dict.set("BaseFont", Name.get("Helvetica"));
         dict.set("Type", Name.get("FallbackType"));
         dict.set("Subtype", Name.get("FallbackType"));
         dict.set("Encoding", Name.get("WinAnsiEncoding"));

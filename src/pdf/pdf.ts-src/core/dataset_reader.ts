@@ -17,14 +17,11 @@
  * limitations under the License.
  */
 
-import { XOR } from "../../../lib/alias.ts";
+import type { XOR } from "../../../lib/alias.ts";
 import { stringToUTF8String, warn } from "../shared/util.ts";
 import { parseXFAPath } from "./core_utils.ts";
-import {
-  SimpleDOMNode,
-  SimpleXMLParser,
-  SimpleXMLParserCtorP,
-} from "./xml_parser.ts";
+import type { SimpleDOMNode, SimpleXMLParserCtorP } from "./xml_parser.ts";
+import { SimpleXMLParser } from "./xml_parser.ts";
 /*80--------------------------------------------------------------------------*/
 
 function decodeString(str: string) {
@@ -73,7 +70,7 @@ export class DatasetReader {
       const parser = new DatasetXMLParser({ hasAttributes: true });
       try {
         parser.parseFromString(data["xdp:xdp"]!);
-      } catch (_) {}
+      } catch {}
       this.node = parser.node;
     }
   }
@@ -89,7 +86,7 @@ export class DatasetReader {
     }
 
     const first = node.firstChild;
-    if (first && first.nodeName === "value") {
+    if (first?.nodeName === "value") {
       return node.children.map((child) => decodeString(child.textContent));
     }
 

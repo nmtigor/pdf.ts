@@ -1,22 +1,23 @@
-import { type IRenderableView, type IVisibleView } from "./interfaces.js";
-import { PDFThumbnailViewer } from "./pdf_thumbnail_viewer.js";
-import { PDFViewer } from "./pdf_viewer.js";
+import type { IRenderableView, IVisibleView } from "./interfaces.js";
+import type { PDFThumbnailViewer } from "./pdf_thumbnail_viewer.js";
+import type { PDFViewer } from "./pdf_viewer.js";
 import { type VisibleElements } from "./ui_utils.js";
 /**
  * Controls rendering of the views for pages and thumbnails.
  */
 export declare class PDFRenderingQueue {
     pdfViewer?: PDFViewer;
+    setViewer(pdfViewer: PDFViewer): void;
+    hasViewer: () => boolean;
     pdfThumbnailViewer?: PDFThumbnailViewer;
+    setThumbnailViewer(pdfThumbnailViewer: PDFThumbnailViewer): void;
     onIdle?: () => void;
     highestPriorityPage?: string;
+    isHighestPriority(view: IRenderableView): boolean;
     idleTimeout?: number | undefined;
     printing: boolean;
     isThumbnailViewEnabled: boolean;
-    setViewer(pdfViewer: PDFViewer): void;
-    setThumbnailViewer(pdfThumbnailViewer: PDFThumbnailViewer): void;
-    isHighestPriority(view: IRenderableView): boolean;
-    hasViewer(): boolean;
+    constructor();
     renderHighestPriority(currentlyVisiblePages?: VisibleElements): void;
     getHighestPriority(visible: VisibleElements, views: IVisibleView[], scrolledDown: boolean, preRenderExtra?: boolean): IVisibleView | undefined;
     isViewFinished(view: IRenderableView): boolean;

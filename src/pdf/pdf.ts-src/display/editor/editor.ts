@@ -25,15 +25,12 @@
 import type { Constructor, rect_t } from "../../../../lib/alias.ts";
 import { html } from "../../../../lib/dom.ts";
 import { assert } from "../../../../lib/util/trace.ts";
-import type { RGB } from "../../shared/scripting_utils.ts";
-import type {
-  AnnotationEditorParamsType,
-  AnnotationEditorType,
-} from "../../shared/util.ts";
+import type { AnnotationEditorParamsType } from "../../shared/util.ts";
 import { FeatureTest, shadow } from "../../shared/util.ts";
 import type { AnnotationEditorLayer } from "./annotation_editor_layer.ts";
 import type { AddCommandsP, AnnotationEditorUIManager } from "./tools.ts";
 import { bindEvents, ColorManager } from "./tools.ts";
+import type { AnnotStorageValue } from "../annotation_layer.ts";
 /*80--------------------------------------------------------------------------*/
 
 export interface AnnotationEditorP {
@@ -48,7 +45,7 @@ export interface AnnotationEditorP {
   parent: AnnotationEditorLayer;
 
   /**
-   * editor if
+   * editor id
    */
   id: string;
 
@@ -61,14 +58,9 @@ export interface AnnotationEditorP {
    * y-coordinate
    */
   y: number;
-}
 
-export interface AnnotationEditorSerialized {
-  annotationType: AnnotationEditorType;
-  color: RGB;
-  pageIndex: number;
-  rect: rect_t;
-  rotation: number;
+  name?: string;
+  annotationElementId?: string;
 }
 
 export type PropertyToUpdate = [AnnotationEditorParamsType, string | number];
@@ -81,14 +73,6 @@ export abstract class AnnotationEditor {
   static _colorManager = new ColorManager();
   static _zIndex = 1;
 
-  #boundFocusin = this.focusin.bind(this);
-  #boundFocusout = this.focusout.bind(this);
-  #hasBeenSelected = false;
-  #isEditing = false;
-  #isInEditMode = false;
-  _uiManager;
-  #zIndex = AnnotationEditor._zIndex++;
-
   parent: AnnotationEditorLayer | undefined;
   id;
   width?: number;
@@ -96,6 +80,8 @@ export abstract class AnnotationEditor {
   pageIndex;
   name;
   div?: HTMLDivElement;
+  _uiManager;
+  annotationElementId: string | undefined;
 
   rotation;
   pageRotation;
@@ -105,11 +91,18 @@ export abstract class AnnotationEditor {
   y;
 
   isAttachedToDOM = false;
+  deleted = false;
+  #boundFocusin = this.focusin.bind(this);
+  #boundFocusout = this.focusout.bind(this);
+  #hasBeenSelected = false;
+  #isEditing = false;
+  #isInEditMode = false;
+  #zIndex = AnnotationEditor._zIndex++;
 
   startX!: number;
   startY!: number;
 
-  constructor(parameters: AnnotationEditorP & { name: string }) {
+  constructor(parameters: AnnotationEditorP) {
     if (this.constructor === AnnotationEditor) {
       assert(0, "Cannot initialize AnnotationEditor.");
     }
@@ -142,6 +135,17 @@ export abstract class AnnotationEditor {
       "_defaultLineColor",
       this._colorManager.getHexCode("CanvasText"),
     );
+  }
+
+  static deleteAnnotationElement(editor: AnnotationEditor) {
+    const fakeEditor = new FakeEditor({
+      id: editor.parent!.getNextId(),
+      parent: editor.parent!,
+      uiManager: editor._uiManager,
+    } as AnnotationEditorP);
+    fakeEditor.annotationElementId = editor.annotationElementId;
+    fakeEditor.deleted = true;
+    fakeEditor._uiManager.addToAnnotationStorage(fakeEditor);
   }
 
   /**
@@ -347,7 +351,7 @@ export abstract class AnnotationEditor {
       "data-editor-rotation",
       (360 - this.rotation) % 360 as any,
     );
-    this.div.className = this.name;
+    this.div.className = this.name!;
     this.div.setAttribute("id", this.id);
     this.div.setAttribute("tabIndex", <any> 0);
 
@@ -507,7 +511,8 @@ export abstract class AnnotationEditor {
    * To implement in subclasses.
    */
   rebuild() {
-    this.div?.addEventListener("focusin", this.#boundFocusin);
+    this.div?.on("focusin", this.#boundFocusin);
+    this.div?.on("focusout", this.#boundFocusout);
   }
 
   /**
@@ -517,28 +522,30 @@ export abstract class AnnotationEditor {
    *
    * To implement in subclasses.
    */
-  abstract serialize(): AnnotationEditorSerialized | undefined;
+  abstract serialize(
+    _isForCopying?: boolean,
+  ): AnnotStorageValue | undefined;
 
   /**
    * Deserialize the editor.
    * The result of the deserialization is a new editor.
    */
   static deserialize(
-    data: AnnotationEditorSerialized,
+    data: AnnotStorageValue,
     parent: AnnotationEditorLayer,
     uiManager: AnnotationEditorUIManager,
-  ): AnnotationEditor {
+  ): AnnotationEditor | undefined {
     const editor =
       new (this.prototype.constructor as Constructor<AnnotationEditor>)({
         parent,
         id: parent.getNextId(),
         uiManager,
       });
-    editor.rotation = data.rotation;
+    editor.rotation = data.rotation!;
 
     const [pageWidth, pageHeight] = editor.pageDimensions;
     const [x, y, width, height] = editor.getRectInCurrentCoords(
-      data.rect,
+      data.rect!,
       pageHeight,
     );
     editor.x = x / pageWidth;
@@ -629,6 +636,23 @@ export abstract class AnnotationEditor {
     } else {
       this.parent!.setActiveEditor(undefined);
     }
+  }
+}
+
+// This class is used to fake an editor which has been deleted.
+class FakeEditor extends AnnotationEditor {
+  constructor(params: AnnotationEditorP) {
+    super(params);
+    this.annotationElementId = params.annotationElementId;
+    this.deleted = true;
+  }
+
+  serialize() {
+    return {
+      id: this.annotationElementId,
+      deleted: true,
+      pageIndex: this.pageIndex,
+    } as AnnotStorageValue;
   }
 }
 /*80--------------------------------------------------------------------------*/

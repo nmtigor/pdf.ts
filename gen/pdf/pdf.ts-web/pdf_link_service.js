@@ -364,7 +364,7 @@ export class PDFLinkService {
                     dest = dest.toString();
                 }
             }
-            catch (ex) { }
+            catch { }
             if (typeof dest === "string" ||
                 PDFLinkService.#isValidExplicitDestination(dest)) {
                 this.goToDestination(dest);
@@ -457,13 +457,6 @@ export class PDFLinkService {
             ? `${pageRef.num}R`
             : `${pageRef.num}R${pageRef.gen}`;
         return this.#pagesRefCache.get(refStr) || undefined;
-    }
-    /** @implement */
-    isPageVisible(pageNumber) {
-        return this.pdfViewer.isPageVisible(pageNumber);
-    }
-    isPageCached(pageNumber) {
-        return this.pdfViewer.isPageCached(pageNumber);
     }
     static #isValidExplicitDestination(dest) {
         if (!Array.isArray(dest))
@@ -585,17 +578,6 @@ export class SimpleLinkService {
     _cachedPageNumber(pageRef) {
         assert(0);
         return undefined;
-    }
-    /** @implement */
-    isPageVisible(pageNumber) {
-        return true;
-    }
-    /**
-     * @implement
-     * @param {number} pageNumber
-     */
-    isPageCached(pageNumber) {
-        return true;
     }
 }
 /*80--------------------------------------------------------------------------*/

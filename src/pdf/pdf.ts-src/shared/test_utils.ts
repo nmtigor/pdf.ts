@@ -177,6 +177,7 @@ export function createIdFactory(pageIndex: number) {
     builtInCMapCache: undefined as any,
     standardFontDataCache: undefined as any,
     globalImageCache: undefined as any,
+    systemFontCache: undefined as any,
     nonBlendModesSet: undefined as any,
   });
   return page._localIdFactory;

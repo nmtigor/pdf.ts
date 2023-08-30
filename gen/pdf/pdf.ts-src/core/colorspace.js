@@ -768,8 +768,8 @@ var NsCalGrayCS;
             if (!whitePoint) {
                 throw new FormatError("WhitePoint missing - required for color space CalGray");
             }
-            blackPoint = blackPoint || new Float32Array(3);
-            gamma = gamma || 1;
+            blackPoint ||= new Float32Array(3);
+            gamma ||= 1;
             // Translate arguments to spec variables.
             this.XW = whitePoint[0];
             this.YW = whitePoint[1];

@@ -2,7 +2,7 @@ import { BaseStream } from "./base_stream.js";
 import { LocalFunctionCache } from "./image_utils.js";
 import type { ObjNoRef } from "./primitives.js";
 import { Dict, Ref } from "./primitives.js";
-import { XRef } from "./xref.js";
+import type { XRef } from "./xref.js";
 export declare class PDFFunctionFactory {
     #private;
     xref: XRef;

@@ -1,4 +1,4 @@
-import type { AnnotationEditorParamsType, AnnotationEditorType, AnnotationEditorUIManager, AnnotationElement, DispatchUpdateStatesP, FileAttachmentAnnotationElement, OptionalContentConfig, PropertyToUpdate, ScriptingActionName } from "../pdf.ts-src/pdf.js";
+import type { AnnotationEditorParamsType, AnnotationEditorType, AnnotationEditorUIManager, AnnotationElement, DispatchUpdateStatesP, FileAttachmentAnnotationElement, OptionalContentConfig, PDFPageProxy, PropertyToUpdate, ScriptingActionName } from "../pdf.ts-src/pdf.js";
 import type { AnnotationEditorParams } from "./annotation_editor_params.js";
 import type { ErrorMoreInfo, PDFViewerApplication } from "./app.js";
 import type { PDFAttachmentViewer } from "./pdf_attachment_viewer.js";
@@ -12,7 +12,7 @@ import type { PDFPageView } from "./pdf_page_view.js";
 import type { PDFPresentationMode } from "./pdf_presentation_mode.js";
 import type { PDFScriptingManager } from "./pdf_scripting_manager.js";
 import type { PDFSidebar } from "./pdf_sidebar.js";
-import type { PDFSidebarResizer } from "./pdf_sidebar_resizer.js";
+import type { PDFThumbnailView } from "./pdf_thumbnail_view.js";
 import type { PDFLocation, PDFViewer } from "./pdf_viewer.js";
 import type { SecondaryToolbar } from "./secondary_toolbar.js";
 import type { Toolbar } from "./toolbar.js";
@@ -239,7 +239,7 @@ export interface EventMap {
         source: PDFSidebar;
     };
     resize: {
-        source: typeof window | HTMLDivElement | PDFSidebarResizer;
+        source: typeof window | HTMLDivElement | PDFSidebar;
     };
     rotatecw: {
         source: PDFPresentationMode;
@@ -303,6 +303,11 @@ export interface EventMap {
         pageNumber: number;
         numTextDivs: number;
         error: unknown;
+    };
+    thumbnailrendered: {
+        source: PDFThumbnailView;
+        pageNumber: number;
+        pdfPage: PDFPageProxy | undefined;
     };
     togglelayerstree: {};
     toggleoutlinetree: {

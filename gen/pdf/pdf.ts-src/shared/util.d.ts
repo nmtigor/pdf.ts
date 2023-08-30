@@ -41,6 +41,7 @@ export declare enum AnnotationEditorType {
     DISABLE = -1,
     NONE = 0,
     FREETEXT = 3,
+    STAMP = 13,
     INK = 15
 }
 export declare const enum AnnotationEditorParamsType {

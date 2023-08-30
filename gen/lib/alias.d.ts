@@ -21,7 +21,7 @@ export declare const zId: import("../3rd/zod-3.20.0/lib/index.mjs").ZodNumber;
 export type llen_t = uint32;
 export type loff_t = int32;
 export declare const loff_UNDEFINED: llen_t;
-export declare const loff_MAX: llen_t;
+export declare const llen_MAX: llen_t;
 /** Count one "\t" as e.g. 2, 4, 8 */
 export type lcol_t = llen_t;
 export type lnum_t = uint32;

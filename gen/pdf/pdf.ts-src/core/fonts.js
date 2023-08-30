@@ -28,7 +28,7 @@ import { FontRendererFactory } from "./font_renderer.js";
 import { GlyfTable } from "./glyf.js";
 import { getDingbatsGlyphsUnicode, getGlyphsUnicode } from "./glyphlist.js";
 import { getFontBasicMetrics } from "./metrics.js";
-import { OpenTypeFileBuilder, VALID_TABLES, } from "./opentype_file_builder.js";
+import { OpenTypeFileBuilder, VALID_TABLES } from "./opentype_file_builder.js";
 import { getGlyphMapForStandardFonts, getNonStdFontMap, getSerifFonts, getStdFontMap, getSupplementalGlyphMapForArialBlack, getSupplementalGlyphMapForCalibri, } from "./standard_fonts.js";
 import { Stream } from "./stream.js";
 import { IdentityToUnicodeMap, ToUnicodeMap } from "./to_unicode_map.js";
@@ -73,6 +73,7 @@ export class FontExpotData {
     vertical;
     defaultVMetrics;
     cssFontInfo;
+    systemFontInfo;
 }
 const EXPORT_DATA_PROPERTIES = [
     "ascent",
@@ -97,6 +98,7 @@ const EXPORT_DATA_PROPERTIES = [
     "name",
     "remeasure",
     "subtype",
+    "systemFontInfo",
     "type",
     "vertical",
 ];
@@ -893,6 +895,7 @@ export class Font extends FontExpotDataEx {
         let { type, subtype } = properties;
         this.type = type;
         this.subtype = subtype;
+        this.systemFontInfo = properties.systemFontInfo;
         const matches = name.match(/^InvalidPDFjsFont_(.*)_\d+$/);
         this.isInvalidPDFjsFont = !!matches;
         if (this.isInvalidPDFjsFont) {
@@ -906,6 +909,11 @@ export class Font extends FontExpotDataEx {
         }
         else {
             this.fallbackName = "sans-serif";
+        }
+        if (this.systemFontInfo?.guessFallback) {
+            // Once the fallback name is guessed, we don't want to guess it again.
+            this.systemFontInfo.guessFallback = false;
+            this.systemFontInfo.css += `,${this.fallbackName}`;
         }
         this.differences = properties.differences;
         this.widths = properties.widths;
@@ -1098,9 +1106,6 @@ export class Font extends FontExpotDataEx {
             this.toFontChar = buildToFontChar(SymbolSetEncoding, getGlyphsUnicode(), this.differences);
         }
         else if (/Dingbats/i.test(fontName)) {
-            if (/Wingdings/i.test(name)) {
-                warn("Non-embedded Wingdings font, falling back to ZapfDingbats.");
-            }
             this.toFontChar = buildToFontChar(ZapfDingbatsEncoding, getDingbatsGlyphsUnicode(), this.differences);
         }
         else if (isStandardFont) {
@@ -1243,8 +1248,7 @@ export class Font extends FontExpotDataEx {
                 const [nameTable] = readNameTable(potentialTables.name);
                 for (let j = 0, jj = nameTable.length; j < jj; j++) {
                     for (let k = 0, kk = nameTable[j].length; k < kk; k++) {
-                        const nameEntry = nameTable[j][k] &&
-                            nameTable[j][k] && nameTable[j][k].replaceAll(/\s/g, "");
+                        const nameEntry = nameTable[j][k]?.replaceAll(/\s/g, "");
                         if (!nameEntry) {
                             continue;
                         }
@@ -1313,9 +1317,8 @@ export class Font extends FontExpotDataEx {
                 let useTable = false;
                 // Sometimes there are multiple of the same type of table. Default
                 // to choosing the first table and skip the rest.
-                if (potentialTable &&
-                    potentialTable.platformId === platformId &&
-                    potentialTable.encodingId === encodingId) {
+                if (potentialTable?.platformId === platformId &&
+                    potentialTable?.encodingId === encodingId) {
                     continue;
                 }
                 if (platformId === 0 &&
@@ -1616,16 +1619,36 @@ export class Font extends FontExpotDataEx {
                 length: 0,
                 sizeOfInstructions: 0,
             };
-            if (sourceEnd - sourceStart <= 12) {
-                // glyph with data less than 12 is invalid one
+            if (sourceStart < 0 ||
+                sourceStart >= source.length ||
+                sourceEnd > source.length ||
+                sourceEnd - sourceStart <= 12) {
+                // If the offsets are wrong or the glyph is too small, remove it.
                 return glyphProfile;
             }
             const glyf = source.subarray(sourceStart, sourceEnd);
-            let contoursCount = signedInt16(glyf[0], glyf[1]);
+            // Sanitize the glyph bounding box.
+            const xMin = signedInt16(glyf[2], glyf[3]);
+            const yMin = signedInt16(glyf[4], glyf[5]);
+            const xMax = signedInt16(glyf[6], glyf[7]);
+            const yMax = signedInt16(glyf[8], glyf[9]);
+            if (xMin > xMax) {
+                writeSignedInt16(glyf, 2, xMax);
+                writeSignedInt16(glyf, 6, xMin);
+            }
+            if (yMin > yMax) {
+                writeSignedInt16(glyf, 4, yMax);
+                writeSignedInt16(glyf, 8, yMin);
+            }
+            const contoursCount = signedInt16(glyf[0], glyf[1]);
             if (contoursCount < 0) {
-                // OTS doesn't like contour count to be less than -1.
-                contoursCount = -1;
-                writeSignedInt16(glyf, 0, contoursCount);
+                if (contoursCount < -1) {
+                    // OTS doesn't like contour count to be less than -1.
+                    // The glyph data offsets are very likely wrong and
+                    // having something lower than -1, very likely, implies
+                    // to have some garbage data.
+                    return glyphProfile;
+                }
                 // complex glyph, writing as is
                 dest.set(glyf, destStart);
                 glyphProfile.length = glyf.length;
@@ -1669,6 +1692,10 @@ export class Font extends FontExpotDataEx {
                 coordinatesLength += xyLength;
                 if (flag & 8) {
                     const repeat = glyf[j++];
+                    if (repeat === 0) {
+                        // The repeat count should be non-zero when the repeat flag is set.
+                        glyf[j - 1] ^= 8;
+                    }
                     i += repeat;
                     coordinatesLength += repeat * xyLength;
                 }
@@ -2020,7 +2047,6 @@ export class Font extends FontExpotDataEx {
             -2, -999, -999, -999, -999, -999, -1, -1, -2, -2, 0, 0, 0, 0, -1, -1,
             -999, -2, -2, 0, 0, -1, -2, -2, 0, 0, 0, -1, -1, -1, -2
         ];
-        // 0xC0-DF == -1 and 0xE0-FF == -2
         function sanitizeTTProgram(table, ttContext) {
             let data = table.data;
             let i = 0, j, n, b, funcId, pc, lastEndf = 0, lastDeff = 0;
@@ -2307,7 +2333,7 @@ export class Font extends FontExpotDataEx {
         const isTrueType = !tables["CFF "];
         if (!isTrueType) {
             const isComposite = properties.composite &&
-                ((properties.cidToGidMap || []).length > 0 ||
+                (properties.cidToGidMap?.length > 0 ||
                     !(properties.cMap instanceof IdentityCMap));
             // OpenType font (skip composite fonts with non-default glyph mapping).
             if ((header.version === "OTTO" && !isComposite) ||
@@ -2348,9 +2374,7 @@ export class Font extends FontExpotDataEx {
         font.pos = (font.start || 0) + tables.maxp.offset;
         const version = font.getInt32();
         const numGlyphs = font.getUint16();
-        if (properties.scaleFactors &&
-            properties.scaleFactors.length === numGlyphs &&
-            isTrueType) {
+        if (properties.scaleFactors?.length === numGlyphs && isTrueType) {
             const { scaleFactors } = properties;
             const isGlyphLocationsLong = int16(tables.head.data[50], tables.head.data[51]);
             const glyphs = new GlyfTable({
@@ -2441,7 +2465,7 @@ export class Font extends FontExpotDataEx {
         // hhea tables; yMin and descent value are always negative.
         const metricsOverride = {
             unitsPerEm: int16(tables.head.data[18], tables.head.data[19]),
-            yMax: int16(tables.head.data[42], tables.head.data[43]),
+            yMax: signedInt16(tables.head.data[42], tables.head.data[43]),
             yMin: signedInt16(tables.head.data[38], tables.head.data[39]),
             ascent: signedInt16(tables.hhea.data[4], tables.hhea.data[5]),
             descent: signedInt16(tables.hhea.data[6], tables.hhea.data[7]),
@@ -2451,7 +2475,7 @@ export class Font extends FontExpotDataEx {
         this.ascent = metricsOverride.ascent / metricsOverride.unitsPerEm;
         this.descent = metricsOverride.descent / metricsOverride.unitsPerEm;
         this.lineGap = metricsOverride.lineGap / metricsOverride.unitsPerEm;
-        if (this.cssFontInfo?.metrics?.lineHeight) {
+        if (this.cssFontInfo?.lineHeight) {
             this.lineHeight = this.cssFontInfo.metrics.lineHeight;
             this.lineGap = this.cssFontInfo.metrics.lineGap;
         }
@@ -2650,7 +2674,7 @@ export class Font extends FontExpotDataEx {
                 const compiler = new CFFCompiler(cff);
                 tables["CFF "].data = compiler.compile();
             }
-            catch (e) {
+            catch {
                 warn("Failed to compile font " + properties.loadedName);
             }
         }
@@ -2726,7 +2750,7 @@ export class Font extends FontExpotDataEx {
             return newMapping.nextAvailableFontCharCode++;
         }
         const seacs = font.seacs;
-        if (SEAC_ANALYSIS_ENABLED && seacs && seacs.length) {
+        if (newMapping && SEAC_ANALYSIS_ENABLED && seacs?.length) {
             const matrix = properties.fontMatrix || FONT_IDENTITY_MATRIX;
             const charset = font.getCharset();
             const seacMap = Object.create(null);
@@ -2877,12 +2901,12 @@ export class Font extends FontExpotDataEx {
         let glyph = this._glyphCache[charcode];
         // All `Glyph`-properties, except `isSpace` in multi-byte strings,
         // depend indirectly on the `charcode`.
-        if (glyph && glyph.isSpace === isSpace) {
+        if (glyph?.isSpace === isSpace) {
             return glyph;
         }
         let fontCharCode, width, operatorListId;
         let widthCode = charcode;
-        if (this.cMap && this.cMap.contains(charcode)) {
+        if (this.cMap?.contains(charcode)) {
             widthCode = +this.cMap.lookup(charcode);
             if (typeof widthCode === "string") {
                 widthCode = convertCidString(charcode, widthCode);
@@ -2892,7 +2916,7 @@ export class Font extends FontExpotDataEx {
         if (typeof width !== "number") {
             width = this.defaultWidth;
         }
-        const vmetric = this.vmetrics?.[+widthCode];
+        const vmetric = this.vmetrics?.[widthCode];
         let unicode = this.toUnicode.get(charcode) || charcode;
         if (typeof unicode === "number") {
             unicode = String.fromCharCode(unicode);
@@ -2917,7 +2941,7 @@ export class Font extends FontExpotDataEx {
             operatorListId = fontCharCode;
         }
         let accent;
-        if (this.seacMap && this.seacMap[charcode]) {
+        if (this.seacMap?.[charcode]) {
             isInFont = true;
             const seac = this.seacMap[charcode];
             fontCharCode = seac.baseFontCharCode;

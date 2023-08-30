@@ -142,10 +142,6 @@ const defaultOptions = {
     value: false,
     kind: 0 as OptionKind,
   },
-  enableFloatingToolbar: {
-    value: PDFJSDev,
-    kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
-  },
   enablePermissions: {
     value: false,
     kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
@@ -245,10 +241,15 @@ const defaultOptions = {
     kind: OptionKind.API,
   },
   cMapUrl: {
-    value: /*#static*/ PDFJSDev
-      ? `${D_base}/res/pdf/pdf.ts-external/bcmaps/`
-      // ? "../external/bcmaps/"
-      : `${D_base}/res/pdf/pdf.ts-external/bcmaps/`,
+    value:
+      // eslint-disable-next-line no-nested-ternary
+      /*#static*/ PDFJSDev
+        // ? "../external/bcmaps/"
+        ? `${D_base}/res/pdf/pdf.ts-external/bcmaps/`
+        : /*#static*/ MOZCENTRAL
+        // ? "resource://pdf.js/web/cmaps/"
+        ? `${D_base}/res/pdf/pdf.ts-external/bcmaps/`
+        : `${D_base}/res/pdf/pdf.ts-external/bcmaps/`,
     kind: OptionKind.API,
   },
   disableAutoFetch: {
@@ -300,10 +301,15 @@ const defaultOptions = {
     kind: OptionKind.API,
   },
   standardFontDataUrl: {
-    value: /*#static*/ PDFJSDev
-      ? `${D_base}/res/pdf/pdf.ts-external/standard_fonts/`
-      // ? "../external/standard_fonts/"
-      : `${D_base}/res/pdf/pdf.ts-external/standard_fonts/`,
+    value:
+      // eslint-disable-next-line no-nested-ternary
+      /*#static*/ PDFJSDev
+        // ? "../external/standard_fonts/"
+        ? `${D_base}/res/pdf/pdf.ts-external/standard_fonts/`
+        : /*#static*/ MOZCENTRAL
+        // ? "resource://pdf.js/web/standard_fonts/"
+        ? `${D_base}/res/pdf/pdf.ts-external/standard_fonts/`
+        : `${D_base}/res/pdf/pdf.ts-external/standard_fonts/`,
     kind: OptionKind.API,
   },
   verbosity: {
@@ -424,9 +430,6 @@ export abstract class AppOptions {
   }
   static get disablePreferences() {
     return this.#get("disablePreferences") as boolean;
-  }
-  static get enableFloatingToolbar() {
-    return this.#get("enableFloatingToolbar") as boolean;
   }
   static get enablePermissions() {
     return this.#get("enablePermissions") as boolean;

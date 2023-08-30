@@ -5,6 +5,12 @@ import { MOZCENTRAL, PDFJSDev } from "../../global.js";
 import { Locale } from "../../lib/Locale.js";
 /*80--------------------------------------------------------------------------*/
 /**
+ * PLEASE NOTE: This file is currently imported in both the `web/` and
+ *              `src/display/` folders, hence be EXTREMELY careful about
+ *              introducing any dependencies here since that can lead to an
+ *              unexpected/unnecessary size increase of the *built* files.
+ */
+/**
  * A subset of the l10n strings in the `l10n/en-US/viewer.properties` file.
  */
 const DEFAULT_L10N_STRINGS = {
@@ -46,6 +52,7 @@ const DEFAULT_L10N_STRINGS = {
     missing_file_error: "Missing PDF file.",
     unexpected_response_error: "Unexpected server response.",
     rendering_error: "An error occurred while rendering the page.",
+    annotation_date_string: "{{date}}, {{time}}",
     printing_not_supported: "Warning: Printing is not fully supported by this browser.",
     printing_not_ready: "Warning: The PDF is not fully loaded for printing.",
     web_fonts_disabled: "Web fonts are disabled: unable to use embedded PDF fonts.",
@@ -67,26 +74,6 @@ export function getL10nFallback(key, args) {
             break;
     }
     return DEFAULT_L10N_STRINGS[key] || "";
-}
-const PARTIAL_LANG_CODES = {
-    en: "en-US",
-    es: "es-ES",
-    fy: "fy-NL",
-    ga: "ga-IE",
-    gu: "gu-IN",
-    hi: "hi-IN",
-    hy: "hy-AM",
-    nb: "nb-NO",
-    ne: "ne-NP",
-    nn: "nn-NO",
-    pa: "pa-IN",
-    pt: "pt-PT",
-    sv: "sv-SE",
-    zh: "zh-CN",
-};
-// Try to support "incompletely" specified language codes (see issue 13689).
-export function fixupLangCode(langCode) {
-    return PARTIAL_LANG_CODES[langCode?.toLowerCase()] || langCode;
 }
 // Replaces {{arguments}} with their values.
 export function formatL10nValue(text, args) {

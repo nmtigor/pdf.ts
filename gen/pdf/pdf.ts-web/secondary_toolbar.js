@@ -17,7 +17,7 @@
  */
 import { GENERIC, PDFJSDev } from "../../global.js";
 import { PagesCountLimit } from "./pdf_viewer.js";
-import { CursorTool, ScrollMode, SpreadMode, toggleCheckedBtn, } from "./ui_utils.js";
+import { CursorTool, ScrollMode, SpreadMode, toggleCheckedBtn, toggleExpandedBtn, } from "./ui_utils.js";
 export class SecondaryToolbar {
     toolbar;
     toggleButton;
@@ -240,18 +240,14 @@ export class SecondaryToolbar {
             return;
         }
         this.opened = true;
-        this.toggleButton.classList.add("toggled");
-        this.toggleButton.setAttribute("aria-expanded", "true");
-        this.toolbar.classList.remove("hidden");
+        toggleExpandedBtn(this.toggleButton, true, this.toolbar);
     }
     close() {
         if (!this.opened) {
             return;
         }
         this.opened = false;
-        this.toolbar.classList.add("hidden");
-        this.toggleButton.classList.remove("toggled");
-        this.toggleButton.setAttribute("aria-expanded", "false");
+        toggleExpandedBtn(this.toggleButton, false, this.toolbar);
     }
     toggle() {
         if (this.opened) {

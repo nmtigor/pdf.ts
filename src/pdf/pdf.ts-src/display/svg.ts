@@ -18,7 +18,7 @@
  */
 /* globals __non_webpack_require__ */
 
-import { GENERIC, PDFJSDev } from "../../../global.ts";
+import { GENERIC } from "../../../global.ts";
 import type { rect_t } from "../../../lib/alias.ts";
 import { svg as createSVG } from "../../../lib/dom.ts";
 import type { ImgData } from "../core/evaluator.ts";
@@ -36,13 +36,17 @@ import {
   Util,
   warn,
 } from "../shared/util.ts";
-import { PDFCommonObjs, PDFObjects, PDFObjs } from "./api.ts";
-import { deprecated, DOMSVGFactory, PageViewport } from "./display_utils.ts";
+import type { PDFCommonObjs, PDFObjects, PDFObjs } from "./api.ts";
+import {
+  deprecated,
+  DOMSVGFactory,
+  type PageViewport,
+} from "./display_utils.ts";
 /*80--------------------------------------------------------------------------*/
 
 /*#static*/ if (!GENERIC) {
   throw new Error(
-    'Module "./svg.js" shall not be used with !GENERIC builds.',
+    'Module "SVGGraphics" shall not be used outside GENERIC builds.',
   );
 }
 
@@ -61,11 +65,7 @@ const createObjectURL = (
   contentType = "",
   forceDataSchema = false,
 ) => {
-  if (
-    URL.createObjectURL! &&
-    typeof Blob !== "undefined" &&
-    !forceDataSchema
-  ) {
+  if (URL.createObjectURL && typeof Blob !== "undefined" && !forceDataSchema) {
     return URL.createObjectURL(new Blob([data], { type: contentType }));
   }
   // Blob/createObjectURL is not available, falling back to data schema.
@@ -190,8 +190,7 @@ const convertImgDataToPng = (() => {
     //   // eslint-disable-next-line no-undef
     //   if (parseInt(process.versions.node) >= 8) {
     //     input = literals;
-    //   }
-    //   else {
+    //   } else {
     //     // eslint-disable-next-line no-undef
     //     input = Buffer.from(literals);
     //   }
@@ -200,9 +199,7 @@ const convertImgDataToPng = (() => {
     //   });
     //   return output instanceof Uint8Array ? output : new Uint8Array(output);
     // } catch (e) {
-    //   warn(
-    //     "Not compressing PNG because zlib.deflateSync is unavailable: " + e
-    //   );
+    //   warn("Not compressing PNG because zlib.deflateSync is unavailable: " + e);
     // }
 
     // return deflateSyncUncompressed(literals);
@@ -430,7 +427,6 @@ type OpTree = {
   items?: OpTree;
 }[];
 
-// eslint-disable-next-line no-inner-declarations
 function opListToTree(opList: { fnId: OPS; args: unknown }[]) {
   let opTree: OpTree = [];
   const tmp: OpTree[] = [];
@@ -457,7 +453,6 @@ function opListToTree(opList: { fnId: OPS; args: unknown }[]) {
  *
  * @param value The float number to format.
  */
-// eslint-disable-next-line no-inner-declarations
 function pf(value: number): string {
   if (Number.isInteger(value)) {
     return value.toString();
@@ -482,8 +477,7 @@ function pf(value: number): string {
  *
  * @param m The transform matrix to format.
  */
-// eslint-disable-next-line no-inner-declarations
-function pm(m: matrix_t) {
+function pm(m: matrix_t): string {
   if (m[4] === 0 && m[5] === 0) {
     if (m[1] === 0 && m[2] === 0) {
       if (m[0] === 1 && m[3] === 1) {
@@ -795,8 +789,10 @@ export class SVGGraphics {
           this[OPS.paintImageMaskXObject]((args as any)[0] as ImgData);
           break;
         case OPS.paintFormXObjectBegin:
-          this[OPS.paintFormXObjectBegin](...<[matrix_t, rect_t]> args);
-          // this.paintFormXObjectBegin(args[0], args[1]);
+          this[OPS.paintFormXObjectBegin](
+            (args as [matrix_t, rect_t])[0],
+            (args as [matrix_t, rect_t])[1],
+          );
           break;
         case OPS.paintFormXObjectEnd:
           this[OPS.paintFormXObjectEnd]();
@@ -817,19 +813,20 @@ export class SVGGraphics {
           this[OPS.nextLine]();
           break;
         case OPS.transform:
-          this[OPS.transform](...<matrix_t> args);
-          // this.transform(
-          //   args[0],
-          //   args[1],
-          //   args[2],
-          //   args[3],
-          //   args[4],
-          //   args[5]
-          // );
+          this[OPS.transform](
+            (args as matrix_t)[0],
+            (args as matrix_t)[1],
+            (args as matrix_t)[2],
+            (args as matrix_t)[3],
+            (args as matrix_t)[4],
+            (args as matrix_t)[5],
+          );
           break;
         case OPS.constructPath:
-          this[OPS.constructPath](...<[OPS[], number[]]> args);
-          // this.constructPath(args[0], args[1]);
+          this[OPS.constructPath](
+            (args as [OPS[], number[]])[0],
+            (args as [OPS[], number[]])[1],
+          );
           break;
         case OPS.endPath:
           this[OPS.endPath]();
@@ -1202,27 +1199,22 @@ export class SVGGraphics {
   }
 
   [OPS.shadingFill](args: ShadingPatternIR) {
-    const width = this.viewport!.width;
-    const height = this.viewport!.height;
+    const { width, height } = this.viewport!;
     const inv = Util.inverseTransform(this.transformMatrix);
-    const bl = Util.applyTransform([0, 0], inv);
-    const br = Util.applyTransform([0, height], inv);
-    const ul = Util.applyTransform([width, 0], inv);
-    const ur = Util.applyTransform([width, height], inv);
-    const x0 = Math.min(bl[0], br[0], ul[0], ur[0]);
-    const y0 = Math.min(bl[1], br[1], ul[1], ur[1]);
-    const x1 = Math.max(bl[0], br[0], ul[0], ur[0]);
-    const y1 = Math.max(bl[1], br[1], ul[1], ur[1]);
+    const [x0, y0, x1, y1] = Util.getAxialAlignedBoundingBox(
+      [0, 0, width, height],
+      inv,
+    );
 
     const rect = createSVG("rect");
-    rect.setAttributeNS(null, "x", <any> x0);
-    rect.setAttributeNS(null, "y", <any> y0);
-    rect.setAttributeNS(null, "width", <any> (x1 - x0));
-    rect.setAttributeNS(null, "height", <any> (y1 - y0));
-    rect.setAttributeNS(null, "fill", this.#makeShadingPattern(args)!);
-    if (this.current.fillAlpha < 1) {
-      rect.setAttributeNS(null, "fill-opacity", <any> this.current.fillAlpha);
-    }
+    rect.assignAttro({
+      x: x0,
+      y: y0,
+      width: x1 - x0,
+      height: y1 - y0,
+      fill: this.#makeShadingPattern(args)!,
+      "fill-opacity": this.current.fillAlpha < 1 ? this.current.fillAlpha : 1,
+    });
     this.#ensureTransformGroup().append(rect);
   }
 
@@ -1422,15 +1414,7 @@ export class SVGGraphics {
         case OPS.curveTo3:
           x = args[j + 2];
           y = args[j + 3];
-          d.push(
-            "C",
-            pf(args[j]),
-            pf(args[j + 1]),
-            pf(x),
-            pf(y),
-            pf(x),
-            pf(y),
-          );
+          d.push("C", pf(args[j]), pf(args[j + 1]), pf(x), pf(y), pf(x), pf(y));
           j += 4;
           break;
         case OPS.closePath:

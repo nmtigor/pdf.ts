@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-import { AnnotationEditorType } from "../pdf.ts-src/pdf.ts";
-import { EventBus } from "./event_utils.ts";
+import { AnnotationEditorType, shadow } from "../pdf.ts-src/pdf.ts";
+import type { EventBus } from "./event_utils.ts";
 import { GrabToPan } from "./grab_to_pan.ts";
 import { CursorTool, PresentationModeState } from "./ui_utils.ts";
 /*80--------------------------------------------------------------------------*/
@@ -46,13 +46,21 @@ export class PDFCursorTools {
   container: HTMLDivElement;
   eventBus: EventBus;
 
-  active = CursorTool.SELECT;
+  #active = CursorTool.SELECT;
   get activeTool() {
-    return this.active;
+    return this.#active;
   }
-  previouslyActive?: CursorTool | undefined;
+  #prevActive?: CursorTool | undefined;
 
-  handTool: GrabToPan;
+  private get _handTool() {
+    return shadow(
+      this,
+      "_handTool",
+      new GrabToPan({
+        element: this.container,
+      }),
+    );
+  }
 
   constructor({
     container,
@@ -61,10 +69,6 @@ export class PDFCursorTools {
   }: PDFCursorToolsOptions) {
     this.container = container;
     this.eventBus = eventBus;
-
-    this.handTool = new GrabToPan({
-      element: this.container,
-    });
 
     this.#addEventListeners();
 
@@ -76,25 +80,24 @@ export class PDFCursorTools {
   }
 
   /**
-   * NOTE: This method is ignored while Presentation Mode is active.
-   * @param tool - The cursor mode that should be switched to,
+   * @param tool The cursor mode that should be switched to,
    *   must be one of the values in {CursorTool}.
    */
   switchTool(tool?: CursorTool) {
-    if (this.previouslyActive !== undefined) {
+    if (this.#prevActive !== undefined) {
       // Cursor tools cannot be used in PresentationMode/AnnotationEditor.
       return;
     }
-    if (tool === this.active) {
-      return; // The requested tool is already active.
+    if (tool === this.#active) {
+      return; // The requested tool is already #active.
     }
 
     const disableActiveTool = () => {
-      switch (this.active) {
+      switch (this.#active) {
         case CursorTool.SELECT:
           break;
         case CursorTool.HAND:
-          this.handTool.deactivate();
+          this._handTool.deactivate();
           break;
         case CursorTool.ZOOM:
           /* falls through */
@@ -108,7 +111,7 @@ export class PDFCursorTools {
         break;
       case CursorTool.HAND:
         disableActiveTool();
-        this.handTool.activate();
+        this._handTool.activate();
         break;
       case CursorTool.ZOOM:
       /* falls through */
@@ -116,17 +119,13 @@ export class PDFCursorTools {
         console.error(`switchTool: "${tool}" is an unsupported value.`);
         return;
     }
-    // Update the active tool *after* it has been validated above,
+    // Update the #active tool *after* it has been validated above,
     // in order to prevent setting it to an invalid state.
-    this.active = tool;
+    this.#active = tool;
 
-    this.#dispatchEvent();
-  }
-
-  #dispatchEvent() {
     this.eventBus.dispatch("cursortoolchanged", {
       source: this,
-      tool: this.active,
+      tool,
     });
   }
 
@@ -135,48 +134,30 @@ export class PDFCursorTools {
       this.switchTool(evt.tool);
     });
 
-    // this.eventBus._on("presentationmodechanged", (evt) => {
-    //   switch (evt.state) {
-    //     case PresentationModeState.FULLSCREEN: {
-    //       const previouslyActive = this.active;
-
-    //       this.switchTool(CursorTool.SELECT);
-    //       this.activeBeforePresentationMode = previouslyActive;
-    //       break;
-    //     }
-    //     case PresentationModeState.NORMAL: {
-    //       const previouslyActive = this.activeBeforePresentationMode;
-
-    //       this.activeBeforePresentationMode = undefined;
-    //       this.switchTool(previouslyActive);
-    //       break;
-    //     }
-    //   }
-    // });
     let annotationEditorMode = AnnotationEditorType.NONE,
       presentationModeState = PresentationModeState.NORMAL;
 
     const disableActive = () => {
-      const previouslyActive = this.active;
+      const prevActive = this.#active;
 
       this.switchTool(CursorTool.SELECT);
-      this.previouslyActive ??= previouslyActive; // Keep track of the first one.
+      this.#prevActive ??= prevActive; // Keep track of the first one.
     };
     const enableActive = () => {
-      const previouslyActive = this.previouslyActive;
+      const prevActive = this.#prevActive;
 
       if (
-        previouslyActive !== undefined &&
+        prevActive !== undefined &&
         annotationEditorMode === AnnotationEditorType.NONE &&
         presentationModeState === PresentationModeState.NORMAL
       ) {
-        this.previouslyActive = undefined;
-        this.switchTool(previouslyActive);
+        this.#prevActive = undefined;
+        this.switchTool(prevActive);
       }
     };
 
     this.eventBus._on("secondarytoolbarreset", (evt) => {
-      if (this.previouslyActive !== undefined) {
+      if (this.#prevActive !== undefined) {
         annotationEditorMode = AnnotationEditorType.NONE;
         presentationModeState = PresentationModeState.NORMAL;
 

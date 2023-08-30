@@ -1,11 +1,12 @@
 import type { rect_t } from "../../../../lib/alias.js";
 import type { AvailableSpace, XFAAttrs, XFAElData, XFAExtra, XFAFontBase, XFAHTMLObj, XFAIds, XFAStyleData, XFAValue } from "./alias.js";
-import { Builder } from "./builder.js";
+import type { Builder } from "./builder.js";
 import { type XFALayoutMode } from "./html_utils.js";
 import { $buildXFAObject } from "./namespaces.js";
+import { $acceptWhitespace, $addHTML, $clean, $cleanPage, $content, $data, $extra, $finalize, $flushHTML, $getAvailableSpace, $getContainedChildren, $getExtra, $getNextPage, $getSubformParent, $hasSettableValue, $ids, $isBindable, $isCDATAXml, $isSplittable, $isThereMoreWidth, $isTransparent, $isUsable, $onChild, $onText, $searchNode, $setValue, $text, $toHTML, $toPages, $toStyle } from "./symbol_utils.js";
 import { HTMLResult, type XFAColor } from "./utils.js";
-import { $acceptWhitespace, $addHTML, $clean, $cleanPage, $content, $data, $extra, $finalize, $flushHTML, $getAvailableSpace, $getContainedChildren, $getExtra, $getNextPage, $getSubformParent, $hasSettableValue, $ids, $isBindable, $isCDATAXml, $isSplittable, $isThereMoreWidth, $isTransparent, $isUsable, $onChild, $onText, $searchNode, $setValue, $text, $toHTML, $toPages, $toStyle, ContentObject, Option01, OptionObject, StringObject, XFAObject, XFAObjectArray, XmlObject } from "./xfa_object.js";
-import { XhtmlObject } from "./xhtml.js";
+import { ContentObject, Option01, OptionObject, StringObject, XFAObject, XFAObjectArray, type XmlObject } from "./xfa_object.js";
+import type { XhtmlObject } from "./xhtml.js";
 declare class AppearanceFilter extends StringObject {
     type: string;
     constructor(attributes: XFAAttrs);

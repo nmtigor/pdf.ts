@@ -243,7 +243,7 @@ export class StructTreePage {
         let save = false;
         for (let i = 0; i < obj.length; i++) {
             const kidRef = obj[i];
-            if (kidRef && kidRef.toString() === dict.objId) {
+            if (kidRef?.toString() === dict.objId) {
                 this.nodes[i] = element;
                 save = true;
             }
@@ -284,7 +284,7 @@ export class StructTreePage {
                     kid.type === StructElementType.STREAM_CONTENT) {
                     obj.children.push({
                         type: "content",
-                        id: `page${kid.pageObjId}_mcid${kid.mcid}`,
+                        id: `p${kid.pageObjId}_mc${kid.mcid}`,
                     });
                 }
                 else if (kid.type === StructElementType.OBJECT) {

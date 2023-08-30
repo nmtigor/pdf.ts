@@ -32,7 +32,7 @@ export const zId = zUint;
 export type llen_t = uint32;
 export type loff_t = int32;
 export const loff_UNDEFINED: llen_t = -1_000_000_001;
-export const loff_MAX: llen_t = 1_000_000_000;
+export const llen_MAX: llen_t = 1_000_000_000;
 /** Count one "\t" as e.g. 2, 4, 8 */
 export type lcol_t = llen_t;
 

@@ -26,17 +26,20 @@
 // eslint-disable-next-line max-len
 /** @typedef {import("./text_accessibility.js").TextAccessibilityManager} TextAccessibilityManager */
 /** @typedef {import("./interfaces").IL10n} IL10n */
+// eslint-disable-next-line max-len
+/** @typedef {import("../src/display/annotation_layer.js").AnnotationLayer} AnnotationLayer */
 
 import { html } from "../../lib/dom.ts";
-import {
-  AnnotationEditorLayer,
+import type {
   AnnotationEditorUIManager,
+  AnnotationLayer,
   PageViewport,
   PDFPageProxy,
 } from "../pdf.ts-src/pdf.ts";
-import { IL10n } from "./interfaces.ts";
+import { AnnotationEditorLayer } from "../pdf.ts-src/pdf.ts";
+import type { IL10n } from "./interfaces.ts";
 import { NullL10n } from "./l10n_utils.ts";
-import { TextAccessibilityManager } from "./text_accessibility.ts";
+import type { TextAccessibilityManager } from "./text_accessibility.ts";
 /*80--------------------------------------------------------------------------*/
 
 interface AnnotationEditorLayerBuilderOptions {
@@ -45,6 +48,7 @@ interface AnnotationEditorLayerBuilderOptions {
   pdfPage: PDFPageProxy;
   l10n?: IL10n;
   accessibilityManager: TextAccessibilityManager | undefined;
+  annotationLayer?: AnnotationLayer | undefined;
 }
 
 export class AnnotationEditorLayerBuilder {
@@ -57,6 +61,7 @@ export class AnnotationEditorLayerBuilder {
 
   _cancelled;
   #uiManager;
+  #annotationLayer;
 
   constructor(options: AnnotationEditorLayerBuilderOptions) {
     this.pageDiv = options.pageDiv;
@@ -65,6 +70,7 @@ export class AnnotationEditorLayerBuilder {
     this.l10n = options.l10n || NullL10n;
     this._cancelled = false;
     this.#uiManager = options.uiManager;
+    this.#annotationLayer = options.annotationLayer;
   }
 
   /**
@@ -100,6 +106,7 @@ export class AnnotationEditorLayerBuilder {
       pageIndex: this.pdfPage.pageNumber - 1,
       l10n: this.l10n,
       viewport: clonedViewport,
+      annotationLayer: this.#annotationLayer,
     });
 
     const parameters = {

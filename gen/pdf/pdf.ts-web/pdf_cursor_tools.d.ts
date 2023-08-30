@@ -1,5 +1,4 @@
-import { EventBus } from "./event_utils.js";
-import { GrabToPan } from "./grab_to_pan.js";
+import type { EventBus } from "./event_utils.js";
 import { CursorTool } from "./ui_utils.js";
 interface PDFCursorToolsOptions {
     /**
@@ -21,14 +20,11 @@ export declare class PDFCursorTools {
     #private;
     container: HTMLDivElement;
     eventBus: EventBus;
-    active: CursorTool;
     get activeTool(): CursorTool;
-    previouslyActive?: CursorTool | undefined;
-    handTool: GrabToPan;
+    private get _handTool();
     constructor({ container, eventBus, cursorToolOnLoad, }: PDFCursorToolsOptions);
     /**
-     * NOTE: This method is ignored while Presentation Mode is active.
-     * @param tool - The cursor mode that should be switched to,
+     * @param tool The cursor mode that should be switched to,
      *   must be one of the values in {CursorTool}.
      */
     switchTool(tool?: CursorTool): void;

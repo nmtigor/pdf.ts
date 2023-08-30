@@ -7,6 +7,7 @@ import { MessageHandler, Thread } from "../shared/message_handler.js";
 import { PermissionFlag } from "../shared/util.js";
 import { TranslatedFont } from "./evaluator.js";
 import { Attachment } from "./file_spec.js";
+import type { SubstitutionInfo } from "./font_substitutions.js";
 import { GlobalImageCache } from "./image_utils.js";
 import { BasePdfManager } from "./pdf_manager.js";
 import { Dict, Name, type Obj, Ref, RefSet, RefSetCache } from "./primitives.js";
@@ -114,6 +115,7 @@ export declare class Catalog {
     pageKidsCountCache: RefSetCache<number>;
     pageIndexCache: RefSetCache<Obj>;
     nonBlendModesSet: RefSet;
+    systemFontCache: Map<string, SubstitutionInfo>;
     constructor(pdfManager: BasePdfManager, xref: XRef);
     get version(): string | null;
     get lang(): string | undefined;

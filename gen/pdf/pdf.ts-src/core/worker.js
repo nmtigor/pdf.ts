@@ -15,14 +15,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { DENO, GENERIC, PDFJSDev, TESTING } from "../../../global.js";
+import { GENERIC, PDFJSDev, TESTING } from "../../../global.js";
 import { PromiseCap } from "../../../lib/util/PromiseCap.js";
 import { assert } from "../../../lib/util/trace.js";
 import { MessageHandler } from "../shared/message_handler.js";
 import { AbortException, getVerbosityLevel, info, InvalidPDFException, MissingPDFException, PasswordException, setVerbosityLevel, stringToPDFString, UnexpectedResponseException, UnknownErrorException, VerbosityLevel, warn, } from "../shared/util.js";
+import { AnnotationFactory } from "./annotation.js";
 import { clearGlobalCaches } from "./cleanup_helper.js";
 import { arrayBuffersToBytes, getNewAnnotationsMap, XRefParseException, } from "./core_utils.js";
-import { LocalPdfManager, NetworkPdfManager, } from "./pdf_manager.js";
+import { LocalPdfManager, NetworkPdfManager } from "./pdf_manager.js";
 import { Dict, Ref } from "./primitives.js";
 import { PDFWorkerStream } from "./worker_stream.js";
 import { incrementalUpdate } from "./writer.js";
@@ -100,19 +101,6 @@ export const WorkerMessageHandler = {
                 throw new Error("The `Array.prototype` contains unexpected enumerable properties: " +
                     enumerableProperties.join(", ") +
                     "; thus breaking e.g. `for...in` iteration of `Array`s.");
-            }
-            // Ensure that (primarily) Node.js users won't accidentally attempt to use
-            // a non-translated/non-polyfilled build of the library, since that would
-            // quickly fail anyway because of missing functionality.
-            if (!DENO && typeof Path2D === "undefined" ||
-                typeof ReadableStream === "undefined") {
-                const partialMsg = "The browser/environment lacks native support for critical " +
-                    "functionality used by the PDF.js library " +
-                    "(e.g. `Path2D` and/or `ReadableStream`); ";
-                if (DENO) {
-                    throw new Error(partialMsg + "please use a `legacy`-build instead.");
-                }
-                throw new Error(partialMsg + "please update to a supported browser.");
             }
         }
         const workerHandlerName = docId + "_worker";
@@ -441,24 +429,25 @@ export const WorkerMessageHandler = {
         handler.on("GetCalculationOrderIds", (data) => {
             return pdfManager.ensureDoc("calculationOrderIds");
         });
-        handler.on("SaveDocument", ({ isPureXfa, numPages, annotationStorage, filename }) => {
+        handler.on("SaveDocument", async ({ isPureXfa, numPages, annotationStorage, filename }) => {
             const promises = [
                 pdfManager.requestLoadedStream(),
                 pdfManager.ensureCatalog("acroForm"),
                 pdfManager.ensureCatalog("acroFormRef"),
-                pdfManager.ensureDoc("xref"),
                 pdfManager.ensureDoc("startXRef"),
             ];
             const newAnnotationsByPage = !isPureXfa
                 ? getNewAnnotationsMap(annotationStorage)
                 : undefined;
+            const xref = await pdfManager.ensureDoc("xref");
             const promises_1 = [];
             if (newAnnotationsByPage) {
+                const imagePromises = AnnotationFactory.generateImages(annotationStorage.values(), xref, pdfManager.evaluatorOptions.isOffscreenCanvasSupported);
                 for (const [pageIndex, annotations] of newAnnotationsByPage) {
                     promises_1.push(pdfManager.getPage(pageIndex).then((page) => {
                         const task = new WorkerTask(`Save (editor): page ${pageIndex}`);
                         return page
-                            .saveNewAnnotations(handler, task, annotations)
+                            .saveNewAnnotations(handler, task, annotations, imagePromises)
                             .finally(() => {
                             finishWorkerTask(task);
                         });
@@ -480,7 +469,7 @@ export const WorkerMessageHandler = {
                     }));
                 }
             }
-            return Promise.all(promises).then(([stream, acroForm, acroFormRef, xref, startXRef,]) => Promise.all(promises_1).then((refs) => {
+            return Promise.all(promises).then(([stream, acroForm, acroFormRef, startXRef,]) => Promise.all(promises_1).then((refs) => {
                 let newRefs = [];
                 let xfaData;
                 if (isPureXfa) {
@@ -676,6 +665,11 @@ export const WorkerMessageHandler = {
                 return pdfManager
                     .ensureXRef("trailer")
                     .then((trailer) => trailer.get("Prev"));
+            });
+            handler.on("GetAnnotArray", function (data) {
+                return pdfManager.getPage(data.pageIndex).then(function (page) {
+                    return page.annotations.map((a) => a.toString());
+                });
             });
         }
         return workerHandlerName;

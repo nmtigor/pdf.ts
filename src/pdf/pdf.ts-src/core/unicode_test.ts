@@ -17,13 +17,13 @@
  * limitations under the License.
  */
 
-import { assertEquals } from "https://deno.land/std@0.190.0/testing/asserts.ts";
+import { assertEquals } from "https://deno.land/std@0.195.0/assert/mod.ts";
 import {
   afterAll,
   beforeAll,
   describe,
   it,
-} from "https://deno.land/std@0.190.0/testing/bdd.ts";
+} from "https://deno.land/std@0.195.0/testing/bdd.ts";
 import { getDingbatsGlyphsUnicode, getGlyphsUnicode } from "./glyphlist.ts";
 import {
   getCharUnicodeCategory,

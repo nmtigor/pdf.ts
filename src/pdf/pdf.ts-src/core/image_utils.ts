@@ -35,7 +35,7 @@ abstract class BaseLocalCache<CD> {
   protected imageCache$ = new RefSetCache<CD>();
 
   constructor(options?: { onlyRefs: boolean }) {
-    this.#onlyRefs = (options && options.onlyRefs) === true;
+    this.#onlyRefs = options?.onlyRefs === true;
 
     if (!this.#onlyRefs) {
       this.nameRefMap$ = new Map<string, string | Ref>();

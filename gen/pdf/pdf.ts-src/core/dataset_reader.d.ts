@@ -1,5 +1,5 @@
-import { XOR } from "../../../lib/alias.js";
-import { SimpleDOMNode } from "./xml_parser.js";
+import type { XOR } from "../../../lib/alias.js";
+import type { SimpleDOMNode } from "./xml_parser.js";
 export type DatasetReaderCtorP = XOR<{
     datasets: string;
 }, {

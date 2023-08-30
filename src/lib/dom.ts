@@ -4,7 +4,7 @@
  ******************************************************************************/
 
 import type { CSSStyle, llen_t } from "./alias.ts";
-import type { Vuu } from "./mv.ts";
+import type { Vuu } from "./cv.ts";
 import { $cssstylesheet, $loff, $ovlap, $tail_ignored } from "./symbols.ts";
 /*80--------------------------------------------------------------------------*/
 

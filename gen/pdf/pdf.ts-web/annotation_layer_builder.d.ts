@@ -1,7 +1,8 @@
 import { MetadataEx } from "../pdf.ts-src/display/api.js";
-import { AnnotationStorage, type AnnotIntent, type FieldObject, PageViewport, PDFPageProxy } from "../pdf.ts-src/pdf.js";
-import { IDownloadManager, type IL10n, type IPDFLinkService } from "./interfaces.js";
-import { TextAccessibilityManager } from "./text_accessibility.js";
+import type { AnnotationStorage, AnnotIntent, FieldObject, PageViewport, PDFPageProxy } from "../pdf.ts-src/pdf.js";
+import { AnnotationLayer } from "../pdf.ts-src/pdf.js";
+import type { IDownloadManager, IL10n, IPDFLinkService } from "./interfaces.js";
+import type { TextAccessibilityManager } from "./text_accessibility.js";
 interface AnnotationLayerBuilderOptions {
     pageDiv: HTMLDivElement;
     pdfPage: PDFPageProxy;
@@ -38,6 +39,7 @@ export declare class AnnotationLayerBuilder {
     _fieldObjectsPromise: Promise<boolean | Record<string, FieldObject[]> | MetadataEx | undefined>;
     _annotationCanvasMap: Map<string, HTMLCanvasElement> | undefined;
     _accessibilityManager: TextAccessibilityManager | undefined;
+    annotationLayer: AnnotationLayer | undefined;
     div?: HTMLDivElement;
     _cancelled: boolean;
     _eventBus: import("./event_utils.js").EventBus | undefined;

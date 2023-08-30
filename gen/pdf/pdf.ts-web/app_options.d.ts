@@ -67,10 +67,6 @@ declare const defaultOptions: {
         value: boolean;
         kind: OptionKind;
     };
-    enableFloatingToolbar: {
-        value: boolean;
-        kind: number;
-    };
     enablePermissions: {
         value: boolean;
         kind: number;
@@ -247,7 +243,6 @@ export declare abstract class AppOptions {
     static get disableHistory(): boolean;
     static get disablePageLabels(): boolean;
     static get disablePreferences(): boolean;
-    static get enableFloatingToolbar(): boolean;
     static get enablePermissions(): boolean;
     static get enablePrintAutoRotate(): boolean;
     static get enableScripting(): boolean;

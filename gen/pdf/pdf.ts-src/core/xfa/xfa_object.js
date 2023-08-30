@@ -6,78 +6,9 @@ import { shadow, utf8StringToString, warn } from "../../shared/util.js";
 import { encodeToXmlString } from "../core_utils.js";
 import { NamespaceIds } from "./namespaces.js";
 import { searchNode } from "./som.js";
+import { $acceptWhitespace, $addHTML, $appendChild, $childrenToHTML, $clean, $cleanup, $clone, $consumed, $content, $dump, $extra, $finalize, $flushHTML, $getAttributeIt, $getAttributes, $getAvailableSpace, $getChildren, $getChildrenByClass, $getChildrenByName, $getChildrenByNameIt, $getContainedChildren, $getDataValue, $getParent, $getRealChildrenByNameIt, $getSubformParent, $getTemplateRoot, $globalData, $hasSettableValue, $indexOf, $insertAt, $isBindable, $isCDATAXml, $isDataValue, $isDescendent, $isNsAgnostic, $isSplittable, $isThereMoreWidth, $isTransparent, $lastAttribute, $namespaceId, $nodeName, $nsAttributes, $onChild, $onChildCheck, $onText, $popPara, $pushPara, $removeChild, $resolvePrototypes, $root, $setId, $setSetAttributes, $setValue, $tabIndex, $text, $toHTML, $toString, $toStyle, $uid, } from "./symbol_utils.js";
 import { getInteger, getKeyword, HTMLResult } from "./utils.js";
 /*80--------------------------------------------------------------------------*/
-// We use these symbols to avoid name conflict between tags
-// and properties/methods names.
-export const $acceptWhitespace = Symbol();
-export const $addHTML = Symbol();
-export const $appendChild = Symbol();
-export const $childrenToHTML = Symbol();
-export const $clean = Symbol();
-export const $cleanPage = Symbol();
-export const $cleanup = Symbol();
-export const $clone = Symbol();
-export const $consumed = Symbol();
-export const $content = Symbol("content");
-export const $data = Symbol("data");
-export const $dump = Symbol();
-export const $extra = Symbol("extra");
-export const $finalize = Symbol();
-export const $flushHTML = Symbol();
-export const $getAttributeIt = Symbol();
-export const $getAttributes = Symbol();
-export const $getAvailableSpace = Symbol();
-export const $getChildrenByClass = Symbol();
-export const $getChildrenByName = Symbol();
-export const $getChildrenByNameIt = Symbol();
-export const $getDataValue = Symbol();
-export const $getExtra = Symbol();
-export const $getRealChildrenByNameIt = Symbol();
-export const $getChildren = Symbol();
-export const $getContainedChildren = Symbol();
-export const $getNextPage = Symbol();
-export const $getSubformParent = Symbol();
-export const $getParent = Symbol();
-export const $getTemplateRoot = Symbol();
-export const $globalData = Symbol();
-export const $hasSettableValue = Symbol();
-export const $ids = Symbol();
-export const $indexOf = Symbol();
-export const $insertAt = Symbol();
-export const $isCDATAXml = Symbol();
-export const $isBindable = Symbol();
-export const $isDataValue = Symbol();
-export const $isDescendent = Symbol();
-export const $isNsAgnostic = Symbol();
-export const $isSplittable = Symbol();
-export const $isThereMoreWidth = Symbol();
-export const $isTransparent = Symbol();
-export const $isUsable = Symbol();
-export const $lastAttribute = Symbol();
-export const $namespaceId = Symbol("namespaceId");
-export const $nodeName = Symbol("nodeName");
-export const $nsAttributes = Symbol();
-export const $onChild = Symbol();
-export const $onChildCheck = Symbol();
-export const $onText = Symbol();
-export const $pushGlyphs = Symbol();
-export const $popPara = Symbol();
-export const $pushPara = Symbol();
-export const $removeChild = Symbol();
-export const $root = Symbol("root");
-export const $resolvePrototypes = Symbol();
-export const $searchNode = Symbol();
-export const $setId = Symbol();
-export const $setSetAttributes = Symbol();
-export const $setValue = Symbol();
-export const $tabIndex = Symbol();
-export const $text = Symbol();
-export const $toPages = Symbol();
-export const $toHTML = Symbol();
-export const $toString = Symbol();
-export const $toStyle = Symbol();
-export const $uid = Symbol("uid");
 const _applyPrototype = Symbol();
 const _attributes = Symbol();
 const _attributeNames = Symbol();
@@ -192,6 +123,26 @@ export class XFAObject {
         this[$nodeName] = name;
         this[_hasChildren] = hasChildren;
         this[$uid] = `${name}${uid++}`;
+    }
+    get isXFAObject() {
+        return true;
+    }
+    get isXFAObjectArray() {
+        return false;
+    }
+    createNodes(path) {
+        let root = this, node;
+        for (const { name, index } of path) {
+            for (let i = 0, ii = isFinite(index) ? index : 0; i <= ii; i++) {
+                const nsId = root[$namespaceId] === NS_DATASETS
+                    ? -1
+                    : root[$namespaceId];
+                node = new XmlObject(nsId, name);
+                root[$appendChild](node);
+            }
+            root = node;
+        }
+        return node;
     }
     [$onChild](child) {
         if (!this[_hasChildren] || !this[$onChildCheck](child)) {
@@ -585,7 +536,7 @@ export class XFAObject {
             try {
                 clone[$symbol] = this[$symbol];
             }
-            catch (_) {
+            catch {
                 shadow(clone, $symbol, this[$symbol]);
             }
         }
@@ -667,6 +618,12 @@ export class XFAObjectArray {
     }
     constructor(max = Infinity) {
         this[_max] = max;
+    }
+    get isXFAObject() {
+        return false;
+    }
+    get isXFAObjectArray() {
+        return true;
     }
     push(child) {
         const len = this[_children].length;

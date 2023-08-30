@@ -1,5 +1,5 @@
-import { CFFFDSelect, CFFTopDict } from "./cff_parser.js";
-import { Font } from "./fonts.js";
+import type { CFFFDSelect, CFFTopDict } from "./cff_parser.js";
+import type { Font } from "./fonts.js";
 interface Range {
     start: number;
     end: number;

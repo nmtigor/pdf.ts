@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { CHROME, PDFJSDev } from "../../global.js";
+import { CHROME, MOZCENTRAL, PDFJSDev } from "../../global.js";
 import { AppOptions, OptionKind } from "./app_options.js";
 /*80--------------------------------------------------------------------------*/
 /**
@@ -42,11 +42,21 @@ export class BasePreferences {
         });
     }
     /**
+     * Stub function for writing preferences to storage.
+     * @param prefObj The preferences that should be written to storage.
+     * @return A promise that is resolved when the preference values
+     *    have been written.
+     */
+    _writeToStorage(prefObj) {
+        throw new Error("Not implemented: _writeToStorage");
+    }
+    /**
      * Reset the preferences to their default values and update storage.
      * @return A promise that is resolved when the preference values
      *  have been reset.
      */
     async reset() {
+        /*#static*/ 
         await this.#initializedPromise;
         const prefs = this.#prefs;
         this.#prefs = Object.create(null);
@@ -64,6 +74,7 @@ export class BasePreferences {
      *  provided that the preference exists and the types match.
      */
     async set(name, value) {
+        /*#static*/ 
         await this.#initializedPromise;
         const defaultValue = this.#defaults[name], prefs = this.#prefs;
         if (defaultValue === undefined) {

@@ -5,6 +5,7 @@ import { WorkerMessageHandler } from "../pdf.ts-src/pdf.js";
 import { AnnotationEditorParams } from "./annotation_editor_params.js";
 import { PDFBug } from "./debugger.js";
 import { EventBus, type EventMap } from "./event_utils.js";
+import type { NimbusExperimentData } from "./firefoxcom.js";
 import type { IDownloadManager, IL10n, IScripting } from "./interfaces.js";
 import { OverlayManager } from "./overlay_manager.js";
 import { PasswordPrompt } from "./password_prompt.js";
@@ -23,11 +24,11 @@ import type { PDFPrintService } from "./pdf_print_service.js";
 import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
 import { PDFScriptingManager } from "./pdf_scripting_manager.js";
 import { PDFSidebar } from "./pdf_sidebar.js";
-import { PDFSidebarResizer } from "./pdf_sidebar_resizer.js";
 import { PDFThumbnailViewer } from "./pdf_thumbnail_viewer.js";
 import { type PageOverview, PDFViewer } from "./pdf_viewer.js";
 import type { BasePreferences } from "./preferences.js";
 import { SecondaryToolbar } from "./secondary_toolbar.js";
+import { Toolbar as GeckoviewToolbar } from "./toolbar-geckoview.js";
 import { Toolbar } from "./toolbar.js";
 import { ProgressBar, ScrollMode, SidebarView, SpreadMode } from "./ui_utils.js";
 import type { ViewerConfiguration } from "./viewer.js";
@@ -45,7 +46,7 @@ export interface PassiveLoadingCbs {
     onError(err?: ErrorMoreInfo): void;
     onProgress(loaded: number, total: number): void;
 }
-type TelemetryType = "buttons" | "documentInfo" | "documentStats" | "editing" | "pageInfo" | "print" | "tagged" | "unsupportedFeature";
+type TelemetryType = "buttons" | "documentInfo" | "documentStats" | "editing" | "gv-buttons" | "pageInfo" | "print" | "tagged" | "unsupportedFeature";
 export interface TelemetryData {
     type: TelemetryType;
     data?: {
@@ -81,6 +82,7 @@ export declare class DefaultExternalServices {
     get isInAutomation(): boolean;
     updateEditorStates(data: EventMap["annotationeditorstateschanged"]): void;
     get canvasMaxAreaInBytes(): number;
+    getNimbusExperimentData(): Promise<NimbusExperimentData | undefined>;
 }
 interface SetInitialViewP_ {
     rotation?: number | undefined;
@@ -138,7 +140,7 @@ export declare class PDFViewerApplication {
     findBar?: PDFFindBar;
     pdfDocumentProperties?: PDFDocumentProperties;
     pdfCursorTools: PDFCursorTools;
-    toolbar?: Toolbar;
+    toolbar?: Toolbar | GeckoviewToolbar;
     secondaryToolbar: SecondaryToolbar;
     pdfPresentationMode?: PDFPresentationMode;
     passwordPrompt: PasswordPrompt;
@@ -146,7 +148,6 @@ export declare class PDFViewerApplication {
     pdfAttachmentViewer: PDFAttachmentViewer;
     pdfLayerViewer?: PDFLayerViewer;
     pdfSidebar?: PDFSidebar;
-    pdfSidebarResizer: PDFSidebarResizer;
     preferences: BasePreferences;
     l10n: IL10n;
     annotationEditorParams?: AnnotationEditorParams;
@@ -172,6 +173,7 @@ export declare class PDFViewerApplication {
     _printAnnotationStoragePromise: Promise<PrintAnnotationStorage | undefined> | undefined;
     _touchInfo: TouchInfo_ | undefined;
     _isCtrlKeyDown: boolean;
+    _nimbusDataPromise?: Promise<NimbusExperimentData | undefined>;
     disableAutoFetchLoadingBarTimeout: number | undefined;
     _annotationStorageModified?: boolean;
     constructor();
@@ -179,7 +181,7 @@ export declare class PDFViewerApplication {
      * Called once when the document is loaded.
      */
     initialize(appConfig: ViewerConfiguration): Promise<void>;
-    run(config: ViewerConfiguration): void;
+    run(config: ViewerConfiguration): Promise<void>;
     get initialized(): boolean;
     get initializedPromise(): Promise<void>;
     zoomIn(steps?: number, scaleFactor?: number): void;
@@ -198,7 +200,7 @@ export declare class PDFViewerApplication {
         ctrlKey: boolean;
         metaKey: boolean;
     };
-    initPassiveLoading(): void;
+    initPassiveLoading(file: string | undefined): void;
     setTitleUsingUrl(url?: string, downloadUrl?: string): void;
     setTitle(title?: string): void;
     get _docFilename(): string;

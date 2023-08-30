@@ -18,19 +18,9 @@
  */
 
 import { warn } from "../../shared/util.ts";
-import { Datasets } from "./datasets.ts";
+import type { Datasets } from "./datasets.ts";
 import { NamespaceIds } from "./namespaces.ts";
 import { createDataNode, searchNode } from "./som.ts";
-import {
-  BindItems,
-  ExclGroup,
-  Field,
-  Items,
-  SetProperty,
-  Subform,
-  Template,
-  Text,
-} from "./template.ts";
 import {
   $appendChild,
   $clone,
@@ -54,11 +44,11 @@ import {
   $removeChild,
   $setValue,
   $text,
-  XFAAttribute,
-  XFAObject,
-  XFAObjectArray,
-  XmlObject,
-} from "./xfa_object.ts";
+} from "./symbol_utils.ts";
+import type { ExclGroup, Subform, Template } from "./template.ts";
+import { BindItems, Field, Items, SetProperty, Text } from "./template.ts";
+import type { XFAObject } from "./xfa_object.ts";
+import { XFAAttribute, XFAObjectArray, XmlObject } from "./xfa_object.ts";
 /*80--------------------------------------------------------------------------*/
 
 const NS_DATASETS = NamespaceIds.datasets.id;
@@ -85,16 +75,16 @@ export class Binder {
 
   constructor(root: XFAObject) {
     this.root = root;
-    this.datasets = <Datasets | undefined> root.datasets;
-    if (root.datasets && (<Datasets> root.datasets).data) {
-      this.data = (<Datasets> root.datasets).data!;
+    this.datasets = root.datasets as Datasets | undefined;
+    if ((root.datasets as Datasets | undefined)?.data) {
+      this.data = (root.datasets as Datasets).data!;
     } else {
       this.data = new XmlObject(NamespaceIds.datasets.id, "data");
     }
     this.emptyMerge = this.data[$getChildren]().length === 0;
 
-    this.root.form = this.form = <Subform> (<XFAObject> root.template)
-      [$clone]();
+    this.root.form = this.form = (root.template as XFAObject)
+      [$clone]() as Subform;
   }
 
   #isConsumeData = () => {
@@ -106,8 +96,8 @@ export class Binder {
   };
 
   bind() {
-    this.#bindElement(<Subform> this.form, this.data);
-    return <Template> this.form;
+    this.#bindElement(this.form as Subform, this.data);
+    return this.form as Template;
   }
 
   #bindValue(
@@ -128,12 +118,10 @@ export class Binder {
         formNode[$setValue](createText(value));
       } else if (
         formNode instanceof Field &&
-        formNode.ui &&
-        formNode.ui.choiceList &&
-        formNode.ui.choiceList.open === "multiSelect"
+        formNode.ui?.choiceList?.open === "multiSelect"
       ) {
         const value = data[$getChildren]()
-          .map((child) => (<string> child[$content]).trim())
+          .map((child) => (child[$content] as string).trim())
           .join("\n");
         formNode[$setValue](createText(value));
       } else if (this.#isConsumeData()) {
@@ -207,7 +195,7 @@ export class Binder {
     // Thirdly, try to find it in attributes.
     generator = this.data[$getAttributeIt](name, /* skipConsumed = */ true);
     match = generator.next().value;
-    if (match && match[$isDataValue]()) {
+    if (match?.[$isDataValue]()) {
       return match;
     }
 
@@ -227,8 +215,8 @@ export class Binder {
     }
 
     for (
-      const { ref, target, connection } of <SetProperty[]> formNode.setProperty
-        .children
+      const { ref, target, connection } of formNode.setProperty
+        .children as SetProperty[]
     ) {
       if (connection) {
         // TODO: evaluate if we should implement this feature.
@@ -250,7 +238,7 @@ export class Binder {
         warn(`XFA - Invalid reference: ${ref}.`);
         continue;
       }
-      const [node] = <XFAObject[]> nodes;
+      const [node] = nodes as XFAObject[];
 
       if (!node[$isDescendent](this.data)) {
         warn(`XFA - Invalid node: must be a data node.`);
@@ -268,7 +256,7 @@ export class Binder {
         warn(`XFA - Invalid target: ${target}.`);
         continue;
       }
-      const [targetNode] = <XFAObject[]> targetNodes;
+      const [targetNode] = targetNodes as XFAObject[];
 
       if (!targetNode[$isDescendent](formNode)) {
         warn(`XFA - Invalid target: must be a property or subproperty.`);
@@ -377,14 +365,14 @@ export class Binder {
         continue;
       }
       for (const node of nodes) {
-        if (!(<XFAObject> node)[$isDescendent](this.datasets!)) {
+        if (!(node as XFAObject)[$isDescendent](this.datasets!)) {
           warn(`XFA - Invalid ref (${ref}): must be a datasets child.`);
           continue;
         }
 
         const labelNodes = searchNode(
           this.root,
-          <XFAObject> node,
+          node as XFAObject,
           labelRef,
           true, /* = dotDotAllowed */
           false, /* = useCache */
@@ -393,20 +381,20 @@ export class Binder {
           warn(`XFA - Invalid label: ${labelRef}.`);
           continue;
         }
-        const [labelNode] = <XFAObject[]> labelNodes;
+        const [labelNode] = labelNodes as XFAObject[];
 
         if (!labelNode[$isDescendent](this.datasets!)) {
           warn(`XFA - Invalid label: must be a datasets child.`);
           continue;
         }
 
-        const valueNodes = <(XFAObject | XFAAttribute)[]> searchNode(
+        const valueNodes = searchNode(
           this.root,
-          <XFAObject> node,
+          node as XFAObject,
           valueRef,
           true, /* = dotDotAllowed */
           false, /* = useCache */
-        );
+        ) as (XFAObject | XFAAttribute)[];
         if (!valueNodes) {
           warn(`XFA - Invalid value: ${valueRef}.`);
           continue;
@@ -483,17 +471,17 @@ export class Binder {
     const parent = formNode[$getParent]()!;
     const name = formNode[$nodeName];
 
-    if (!((<any> parent)[name] instanceof XFAObjectArray)) {
+    if (!((parent as any)[name] instanceof XFAObjectArray)) {
       return;
     }
 
     let currentNumber;
     if (formNode.name) {
-      currentNumber = (<any> parent)[name].children.filter(
+      currentNumber = (parent as any)[name].children.filter(
         (e: XFAObject) => e.name === formNode.name,
       ).length;
     } else {
-      currentNumber = (<any> parent)[name].children.length;
+      currentNumber = (parent as any)[name].children.length;
     }
 
     const pos = parent[$indexOf](formNode) + 1;
@@ -538,13 +526,13 @@ export class Binder {
     this.#createOccurrences(formNode);
 
     for (const child of formNode[$getChildren]()) {
-      if ((<ExclGroup | Field | Subform> child)[$data]) {
+      if ((child as ExclGroup | Field | Subform)[$data]) {
         // Already bound.
         continue;
       }
 
       if (this._mergeMode === undefined && child[$nodeName] === "subform") {
-        this._mergeMode = (<Subform> child).mergeMode === "consumeData";
+        this._mergeMode = (child as Subform).mergeMode === "consumeData";
 
         // XFA specs p. 182:
         // The highest-level subform and the data node representing
@@ -634,7 +622,7 @@ export class Binder {
           }
 
           // Don't bind the value in newly created node because it's empty.
-          this.#setAndBind(<ExclGroup | Field | Subform> child, match);
+          this.#setAndBind(child as ExclGroup | Field | Subform, match);
           continue;
         } else {
           if (this.#isConsumeData()) {
@@ -656,7 +644,7 @@ export class Binder {
         }
       } else {
         if (!child.name) {
-          this.#setAndBind(<ExclGroup | Field | Subform> child, dataNode);
+          this.#setAndBind(child as ExclGroup | Field | Subform, dataNode);
           continue;
         }
         if (this.#isConsumeData()) {

@@ -10,7 +10,7 @@ import { JpegStream } from "./jpeg_stream.js";
 import { JpxStream } from "./jpx_stream.js";
 import { LZWStream } from "./lzw_stream.js";
 import { PredictorStream } from "./predictor_stream.js";
-import { Cmd, Dict, EOF, Name, type Obj, Ref } from "./primitives.js";
+import { Dict, Name, type Obj } from "./primitives.js";
 import { RunLengthStream } from "./run_length_stream.js";
 import { Stream } from "./stream.js";
 import type { XRef } from "./xref.js";
@@ -95,9 +95,12 @@ export declare class Lexer {
     getNumber(): number;
     getString(): string;
     getName(): Name;
+    /**
+     * @private
+     */
+    _hexStringWarn(ch: number): void;
     getHexString(): string;
     getObj(): Obj;
-    peekObj(): string | number | boolean | Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint16Array | Int32Array | Uint32Array | Float32Array | Float64Array | BaseStream | Dict | Name | Cmd | typeof import("./primitives.js").CIRCULAR_REF | typeof EOF | Ref | (Obj | undefined)[];
     skipToNextLine(): void;
 }
 export declare class Linearization {

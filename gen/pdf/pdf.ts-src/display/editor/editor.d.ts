@@ -1,11 +1,11 @@
 /** @typedef {import("./annotation_editor_layer.js").AnnotationEditorLayer} AnnotationEditorLayer */
 /** @typedef {import("./tools.js").AnnotationEditorUIManager} AnnotationEditorUIManager */
 import type { rect_t } from "../../../../lib/alias.js";
-import type { RGB } from "../../shared/scripting_utils.js";
-import type { AnnotationEditorParamsType, AnnotationEditorType } from "../../shared/util.js";
+import type { AnnotationEditorParamsType } from "../../shared/util.js";
 import type { AnnotationEditorLayer } from "./annotation_editor_layer.js";
 import type { AddCommandsP, AnnotationEditorUIManager } from "./tools.js";
 import { ColorManager } from "./tools.js";
+import type { AnnotStorageValue } from "../annotation_layer.js";
 export interface AnnotationEditorP {
     /**
      * the global manager
@@ -16,7 +16,7 @@ export interface AnnotationEditorP {
      */
     parent: AnnotationEditorLayer;
     /**
-     * editor if
+     * editor id
      */
     id: string;
     /**
@@ -27,13 +27,8 @@ export interface AnnotationEditorP {
      * y-coordinate
      */
     y: number;
-}
-export interface AnnotationEditorSerialized {
-    annotationType: AnnotationEditorType;
-    color: RGB;
-    pageIndex: number;
-    rect: rect_t;
-    rotation: number;
+    name?: string;
+    annotationElementId?: string;
 }
 export type PropertyToUpdate = [AnnotationEditorParamsType, string | number];
 /**
@@ -44,14 +39,15 @@ export declare abstract class AnnotationEditor {
     static readonly _type: "freetext" | "ink";
     static _colorManager: ColorManager;
     static _zIndex: number;
-    _uiManager: AnnotationEditorUIManager;
     parent: AnnotationEditorLayer | undefined;
     id: string;
     width?: number;
     height?: number;
     pageIndex: number;
-    name: string;
+    name: string | undefined;
     div?: HTMLDivElement;
+    _uiManager: AnnotationEditorUIManager;
+    annotationElementId: string | undefined;
     rotation: number;
     pageRotation: number;
     pageDimensions: number[];
@@ -59,12 +55,12 @@ export declare abstract class AnnotationEditor {
     x: number;
     y: number;
     isAttachedToDOM: boolean;
+    deleted: boolean;
     startX: number;
     startY: number;
-    constructor(parameters: AnnotationEditorP & {
-        name: string;
-    });
+    constructor(parameters: AnnotationEditorP);
     static get _defaultLineColor(): string;
+    static deleteAnnotationElement(editor: AnnotationEditor): void;
     /**
      * Add some commands into the CommandManager (undo/redo stuff).
      */
@@ -177,12 +173,12 @@ export declare abstract class AnnotationEditor {
      *
      * To implement in subclasses.
      */
-    abstract serialize(): AnnotationEditorSerialized | undefined;
+    abstract serialize(_isForCopying?: boolean): AnnotStorageValue | undefined;
     /**
      * Deserialize the editor.
      * The result of the deserialization is a new editor.
      */
-    static deserialize(data: AnnotationEditorSerialized, parent: AnnotationEditorLayer, uiManager: AnnotationEditorUIManager): AnnotationEditor;
+    static deserialize(data: AnnotStorageValue, parent: AnnotationEditorLayer, uiManager: AnnotationEditorUIManager): AnnotationEditor | undefined;
     /**
      * Remove this editor.
      * It's used on ctrl+backspace action.

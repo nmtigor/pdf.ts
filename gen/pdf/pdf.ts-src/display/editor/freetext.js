@@ -20,9 +20,10 @@
 import { PDFJSDev, TESTING } from "../../../../global.js";
 import { html } from "../../../../lib/dom.js";
 import { assert } from "../../../../lib/util/trace.js";
-import { AnnotationEditorParamsType, AnnotationEditorType, LINE_FACTOR, Util, } from "../../shared/util.js";
-import { AnnotationEditor, } from "./editor.js";
-import { bindEvents, KeyboardManager, } from "./tools.js";
+import { AnnotationEditorParamsType, AnnotationEditorType, LINE_FACTOR, shadow, Util, } from "../../shared/util.js";
+import { FreeTextAnnotationElement, } from "../annotation_layer.js";
+import { AnnotationEditor } from "./editor.js";
+import { bindEvents, KeyboardManager } from "./tools.js";
 /**
  * Basic text editor in order to create a FreeTex annotation.
  */
@@ -32,12 +33,22 @@ export class FreeTextEditor extends AnnotationEditor {
     static _internalPadding = 0;
     static _defaultColor;
     static _defaultFontSize = 10;
-    static _keyboardManager = new KeyboardManager([
-        [
-            ["ctrl+Enter", "mac+meta+Enter", "Escape", "mac+Escape"],
-            FreeTextEditor.prototype.commitOrRemove,
-        ],
-    ]);
+    static get _keyboardManager() {
+        return shadow(this, "_keyboardManager", new KeyboardManager([
+            [
+                // Commit the text in case the user use ctrl+s to save the document.
+                // The event must bubble in order to be caught by the viewer.
+                // See bug 1831574.
+                ["ctrl+s", "mac+meta+s", "ctrl+p", "mac+meta+p"],
+                FreeTextEditor.prototype.commitOrRemove,
+                /* bubbles = */ true,
+            ],
+            [
+                ["ctrl+Enter", "mac+meta+Enter", "Escape", "mac+Escape"],
+                FreeTextEditor.prototype.commitOrRemove,
+            ],
+        ]));
+    }
     static _type = "freetext";
     #boundEditorDivBlur = this.editorDivBlur.bind(this);
     #boundEditorDivFocus = this.editorDivFocus.bind(this);
@@ -46,8 +57,8 @@ export class FreeTextEditor extends AnnotationEditor {
     #color;
     #content = "";
     #editorDivId = `${this.id}-editor`;
-    #hasAlreadyBeenCommitted = false;
     #fontSize;
+    #initialData;
     overlayDiv;
     editorDiv;
     constructor(params) {
@@ -180,10 +191,10 @@ export class FreeTextEditor extends AnnotationEditor {
         this.editorDiv.contentEditable = true;
         this.div.draggable = false;
         this.div.removeAttribute("aria-activedescendant");
-        this.editorDiv.addEventListener("keydown", this.#boundEditorDivKeydown);
-        this.editorDiv.addEventListener("focus", this.#boundEditorDivFocus);
-        this.editorDiv.addEventListener("blur", this.#boundEditorDivBlur);
-        this.editorDiv.addEventListener("input", this.#boundEditorDivInput);
+        this.editorDiv.on("keydown", this.#boundEditorDivKeydown);
+        this.editorDiv.on("focus", this.#boundEditorDivFocus);
+        this.editorDiv.on("blur", this.#boundEditorDivBlur);
+        this.editorDiv.on("input", this.#boundEditorDivInput);
     }
     /** @inheritdoc */
     disableEditMode() {
@@ -217,6 +228,7 @@ export class FreeTextEditor extends AnnotationEditor {
     /** @inheritdoc */
     onceAdded() {
         if (this.width) {
+            this.#cheatInitialRect();
             // The editor was created in using ctrl+c.
             return;
         }
@@ -276,14 +288,31 @@ export class FreeTextEditor extends AnnotationEditor {
             return;
         }
         super.commit();
-        if (!this.#hasAlreadyBeenCommitted) {
-            // This editor has something and it's the first time
-            // it's commited so we can add it in the undo/redo stack.
-            this.#hasAlreadyBeenCommitted = true;
-            this.parent.addUndoableEditor(this);
-        }
         this.disableEditMode();
-        this.#content = this.#extractText().trimEnd();
+        const savedText = this.#content;
+        const newText = (this.#content = this.#extractText().trimEnd());
+        if (savedText === newText) {
+            return;
+        }
+        const setText = (text) => {
+            this.#content = text;
+            if (!text) {
+                this.remove();
+                return;
+            }
+            this.#setContent();
+            this.rebuild();
+            this.#setEditorDimensions();
+        };
+        this.addCommands({
+            cmd: () => {
+                setText(newText);
+            },
+            undo: () => {
+                setText(savedText);
+            },
+            mustExec: false,
+        });
         this.#setEditorDimensions();
     }
     /** @inheritdoc */
@@ -364,12 +393,14 @@ export class FreeTextEditor extends AnnotationEditor {
         if (this.width) {
             // This editor was created in using copy (ctrl+c).
             const [parentWidth, parentHeight] = this.parentDimensions;
-            this.setAt(baseX * parentWidth, baseY * parentHeight, this.width * parentWidth, this.height * parentHeight);
-            for (const line of this.#content.split("\n")) {
-                const div = document.createElement("div");
-                div.append(line ? document.createTextNode(line) : document.createElement("br"));
-                this.editorDiv.append(div);
+            if (this.annotationElementId) {
+                const [tx] = this.getInitialTranslation();
+                this.setAt(baseX * parentWidth, baseY * parentHeight, tx, tx);
             }
+            else {
+                this.setAt(baseX * parentWidth, baseY * parentHeight, this.width * parentWidth, this.height * parentHeight);
+            }
+            this.#setContent();
             this.div.draggable = true;
             this.editorDiv.contentEditable = false;
         }
@@ -379,31 +410,73 @@ export class FreeTextEditor extends AnnotationEditor {
         }
         return this.div;
     }
+    #setContent() {
+        this.editorDiv.replaceChildren();
+        if (!this.#content) {
+            return;
+        }
+        for (const line of this.#content.split("\n")) {
+            const div = document.createElement("div");
+            div.append(line ? document.createTextNode(line) : document.createElement("br"));
+            this.editorDiv.append(div);
+        }
+    }
     get contentDiv() {
         return this.editorDiv;
     }
     /** @inheritdoc */
     static deserialize(data, parent, uiManager) {
+        let initialData;
+        if (data instanceof FreeTextAnnotationElement) {
+            const { data: { defaultAppearanceData: { fontSize, fontColor }, rect, rotation, id, }, textContent, parent: { page: { pageNumber }, }, } = data;
+            // textContent is supposed to be an array of strings containing each line
+            // of text. However, it can be null or empty.
+            if (!textContent || textContent.length === 0) {
+                // Empty annotation.
+                return undefined;
+            }
+            initialData = data = {
+                annotationType: AnnotationEditorType.FREETEXT,
+                color: Array.from(fontColor),
+                fontSize,
+                value: textContent.join("\n"),
+                pageIndex: pageNumber - 1,
+                rect,
+                rotation,
+                id,
+                deleted: false,
+            };
+        }
         const editor = super.deserialize(data, parent, uiManager);
         editor.#fontSize = data.fontSize;
-        editor.#color = Util.makeHexColor(...data.color);
+        // editor.#color = Util.makeHexColor(...data.color!);
+        editor.#color = Util.makeHexColor(data.color[0], data.color[1], data.color[2]);
         editor.#content = data.value;
+        editor.annotationElementId = data.id || undefined;
+        editor.#initialData = initialData;
         return editor;
     }
     /**
      * @inheritdoc
      * @implement
      */
-    serialize() {
+    serialize(isForCopying = false) {
         if (this.isEmpty()) {
             return undefined;
+        }
+        if (this.deleted) {
+            return {
+                pageIndex: this.pageIndex,
+                id: this.annotationElementId,
+                deleted: true,
+            };
         }
         const padding = FreeTextEditor._internalPadding * this.parentScale;
         const rect = this.getRect(padding, padding);
         const color = AnnotationEditor._colorManager.convert(this.isAttachedToDOM
             ? getComputedStyle(this.editorDiv).color
             : this.#color);
-        return {
+        const serialized = {
             annotationType: AnnotationEditorType.FREETEXT,
             color,
             fontSize: this.#fontSize,
@@ -412,6 +485,40 @@ export class FreeTextEditor extends AnnotationEditor {
             rect,
             rotation: this.rotation,
         };
+        if (isForCopying) {
+            // Don't add the id when copying because the pasted editor mustn't be
+            // linked to an existing annotation.
+            return serialized;
+        }
+        if (this.annotationElementId && !this.#hasElementChanged(serialized)) {
+            return undefined;
+        }
+        serialized.id = this.annotationElementId;
+        return serialized;
+    }
+    #hasElementChanged(serialized) {
+        const { value, fontSize, color, rect, pageIndex } = this.#initialData;
+        return (serialized.value !== value ||
+            serialized.fontSize !== fontSize ||
+            serialized.rect.some((x, i) => Math.abs(x - rect[i]) >= 1) ||
+            serialized.color.some((c, i) => c !== color[i]) ||
+            serialized.pageIndex !== pageIndex);
+    }
+    #cheatInitialRect(delayed = false) {
+        // The annotation has a rect but the editor has an other one.
+        // When we want to know if the annotation has changed (e.g. has been moved)
+        // we must compare the editor initial rect with the current one.
+        // So this method is a hack to have a way to compare the real rects.
+        if (!this.annotationElementId) {
+            return;
+        }
+        this.#setEditorDimensions();
+        if (!delayed && (this.width === 0 || this.height === 0)) {
+            setTimeout(() => this.#cheatInitialRect(/* delayed = */ true), 0);
+            return;
+        }
+        const padding = FreeTextEditor._internalPadding * this.parentScale;
+        this.#initialData.rect = this.getRect(padding, padding);
     }
 }
 /*80--------------------------------------------------------------------------*/

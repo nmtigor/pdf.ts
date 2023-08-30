@@ -2,7 +2,8 @@
  * nmtigor (https://github.com/nmtigor) @2022
  */
 import { $buildXFAObject, NamespaceIds } from "./namespaces.js";
-import { $namespaceId, $nodeName, $onChildCheck, XFAObject, XFAObjectArray, } from "./xfa_object.js";
+import { $namespaceId, $nodeName, $onChildCheck } from "./symbol_utils.js";
+import { XFAObject, XFAObjectArray } from "./xfa_object.js";
 /*80--------------------------------------------------------------------------*/
 const XDP_NS_ID = NamespaceIds.xdp.id;
 export class Xdp extends XFAObject {

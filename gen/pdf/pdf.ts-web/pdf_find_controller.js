@@ -598,13 +598,10 @@ export class PDFFindController {
                 // there's a risk that consecutive 'findagain' operations could "skip"
                 // over matches at the top/bottom of pages thus making them completely
                 // inaccessible when there's multiple pages visible in the viewer.
-                if (pageNumber >= 1 &&
+                return (pageNumber >= 1 &&
                     pageNumber <= linkService.pagesCount &&
                     pageNumber !== linkService.page &&
-                    !linkService.isPageVisible(pageNumber)) {
-                    return true;
-                }
-                return false;
+                    !(this.onIsPageVisible?.(pageNumber) ?? true));
             case "highlightallchange":
                 return false;
         }

@@ -1,6 +1,6 @@
 import { type XMLAttr, XMLParserBase, XMLParserErrorCode } from "../xml_parser.js";
 import type { XFANsAttrs, XFAPrefix } from "./alias.js";
-import { XFAObject } from "./xfa_object.js";
+import type { XFAObject } from "./xfa_object.js";
 import type { XFANsXhtml } from "./xhtml.js";
 export declare class XFAParser extends XMLParserBase {
     #private;

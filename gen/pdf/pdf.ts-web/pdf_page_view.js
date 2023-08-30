@@ -82,6 +82,7 @@ export class PDFPageView {
     maxCanvasPixels;
     pageColors;
     #useThumbnailCanvas = {
+        directDrawing: true,
         initialOptionalContent: true,
         regularAnnotations: true,
     };
@@ -93,6 +94,7 @@ export class PDFPageView {
     resume; /** @implement */
     #renderError;
     _isStandalone;
+    _container;
     _annotationCanvasMap;
     annotationLayer;
     textLayer;
@@ -132,6 +134,7 @@ export class PDFPageView {
         this.l10n = options.l10n || NullL10n;
         /*#static*/  {
             this._isStandalone = !this.renderingQueue?.hasViewer();
+            this._container = container;
         }
         const div = html("div");
         div.className = "page";
@@ -210,6 +213,13 @@ export class PDFPageView {
         /* mustRotate = */ false);
     }
     setPdfPage(pdfPage) {
+        /*#static*/  {
+            if (this._isStandalone &&
+                (this.pageColors?.foreground === "CanvasText" ||
+                    this.pageColors?.background === "Canvas")) {
+                this._container?.style.setProperty("--hcm-highligh-filter", pdfPage.filterFactory.addHighlightHCMFilter("CanvasText", "Canvas", "HighlightText", "Highlight"));
+            }
+        }
         this.pdfPage = pdfPage;
         this.pdfPageRotate = pdfPage.rotate;
         const totalRotation = (this.rotation + this.pdfPageRotate) % 360;
@@ -430,6 +440,7 @@ export class PDFPageView {
                     optionalContentConfig.hasInitialVisibility;
             });
         }
+        this.#useThumbnailCanvas.directDrawing = true;
         const totalRotation = (this.rotation + this.pdfPageRotate) % 360;
         this.viewport = this.viewport.clone({
             scale: this.scale * PixelsPerInch.PDF_TO_CSS_UNITS,
@@ -438,7 +449,7 @@ export class PDFPageView {
         this.#setDimensions();
         /*#static*/  {
             if (this._isStandalone) {
-                this.div.parentNode?.style.setProperty("--scale-factor", this.viewport.scale);
+                this._container?.style.setProperty("--scale-factor", this.viewport.scale);
             }
         }
         let isScalingRestricted = false;
@@ -471,6 +482,9 @@ export class PDFPageView {
                     // the rendering state to INITIAL, hence the next call to
                     // PDFViewer.update() will trigger a redraw (if it's mandatory).
                     this.renderingState = RenderingStates.FINISHED;
+                    // Ensure that the thumbnails won't become partially (or fully) blank,
+                    // if the sidebar is opened before the actual rendering is done.
+                    this.#useThumbnailCanvas.directDrawing = false;
                 }
                 this.cssTransform({
                     target: this.canvas,
@@ -480,6 +494,11 @@ export class PDFPageView {
                     redrawTextLayer: !postponeDrawing,
                     hideTextLayer: postponeDrawing,
                 });
+                if (postponeDrawing) {
+                    // The "pagerendered"-event will be dispatched once the actual
+                    // rendering is done, hence don't dispatch it here as well.
+                    return;
+                }
                 this.eventBus.dispatch("pagerendered", {
                     source: this,
                     pageNumber: this.id,
@@ -763,6 +782,7 @@ export class PDFPageView {
                     pdfPage,
                     l10n,
                     accessibilityManager: this._accessibilityManager,
+                    annotationLayer: this.annotationLayer?.annotationLayer,
                 });
             }
             this.#renderAnnotationEditorLayer();
@@ -812,8 +832,10 @@ export class PDFPageView {
      * @ignore
      */
     get thumbnailCanvas() {
-        const { initialOptionalContent, regularAnnotations } = this.#useThumbnailCanvas;
-        return initialOptionalContent && regularAnnotations ? this.canvas : null;
+        const { directDrawing, initialOptionalContent, regularAnnotations } = this.#useThumbnailCanvas;
+        return directDrawing && initialOptionalContent && regularAnnotations
+            ? this.canvas
+            : undefined;
     }
 }
 /*80--------------------------------------------------------------------------*/

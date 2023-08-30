@@ -100,7 +100,7 @@ export function extractFilenameFromHeader(
     if (filename.includes("%")) {
       try {
         filename = decodeURIComponent(filename);
-      } catch (ex) {}
+      } catch {}
     }
     if (isPdfFile(filename)) {
       return filename;

@@ -163,6 +163,7 @@ export declare class PDFPageView implements IVisibleView {
     renderTask: RenderTask | undefined;
     resume: (() => void) | undefined; /** @implement */
     _isStandalone: boolean | undefined;
+    _container: HTMLDivElement | undefined;
     _annotationCanvasMap: Map<string, HTMLCanvasElement> | undefined;
     annotationLayer: AnnotationLayerBuilder | undefined;
     textLayer: TextLayerBuilder | undefined;
@@ -206,7 +207,7 @@ export declare class PDFPageView implements IVisibleView {
      * For use by the `PDFThumbnailView.setImage`-method.
      * @ignore
      */
-    get thumbnailCanvas(): HTMLCanvasElement | null | undefined;
+    get thumbnailCanvas(): HTMLCanvasElement | undefined;
 }
 export {};
 //# sourceMappingURL=pdf_page_view.d.ts.map

@@ -17,18 +17,13 @@
  * limitations under the License.
  */
 
-import { type XFAAttrs } from "./alias.ts";
-import { ConnectionSet } from "./connection_set.ts";
-import { Datasets } from "./datasets.ts";
+import type { XFAAttrs } from "./alias.ts";
+import type { ConnectionSet } from "./connection_set.ts";
+import type { Datasets } from "./datasets.ts";
 import { $buildXFAObject, NamespaceIds, type XFANsName } from "./namespaces.ts";
+import { $namespaceId, $nodeName, $onChildCheck } from "./symbol_utils.ts";
 import { Template } from "./template.ts";
-import {
-  $namespaceId,
-  $nodeName,
-  $onChildCheck,
-  XFAObject,
-  XFAObjectArray,
-} from "./xfa_object.ts";
+import { XFAObject, XFAObjectArray } from "./xfa_object.ts";
 /*80--------------------------------------------------------------------------*/
 
 const XDP_NS_ID = NamespaceIds.xdp.id;

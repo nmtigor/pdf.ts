@@ -17,16 +17,27 @@
  * limitations under the License.
  */
 
+import { PDFJSDev, SKIP_BABEL, TESTING } from "../../../global.ts";
 import { assert } from "../../../lib/util/trace.ts";
 import { MurmurHash3_64 } from "../shared/murmurhash3.ts";
 import { objectFromMap } from "../shared/util.ts";
-import {
+import type {
   AnnotStorageRecord,
-  type AnnotStorageValue,
-  type ASVKey,
+  AnnotStorageValue,
+  ASVKey,
 } from "./annotation_layer.ts";
 import { AnnotationEditor } from "./editor/editor.ts";
 /*80--------------------------------------------------------------------------*/
+
+export type Serializable = {
+  map?: AnnotStorageRecord | undefined;
+  hash: string;
+  transfers?: Transferable[] | undefined;
+};
+
+export const SerializableEmpty: Serializable = Object.freeze({
+  hash: "",
+});
 
 /**
  * Key/value storage for annotation data in forms.
@@ -34,7 +45,7 @@ import { AnnotationEditor } from "./editor/editor.ts";
 export class AnnotationStorage {
   #modified = false;
 
-  #storage: AnnotStorageRecord = new Map<string, AnnotStorageValue>();
+  #storage: AnnotStorageRecord = new Map();
   get size() {
     return this.#storage.size;
   }
@@ -162,37 +173,30 @@ export class AnnotationStorage {
    * PLEASE NOTE: Only intended for usage within the API itself.
    * @ignore
    */
-  get serializable() {
+  get serializable(): Serializable {
     if (this.#storage.size === 0) {
-      return undefined;
+      return SerializableEmpty;
     }
-    const clone: AnnotStorageRecord = new Map();
-
+    const map: AnnotStorageRecord = new Map(),
+      hash = new MurmurHash3_64(),
+      transfers = [];
     for (const [key, val] of this.#storage) {
       const serialized = val instanceof AnnotationEditor
         ? val.serialize()
         : val;
       if (serialized) {
-        clone.set(key, <AnnotStorageValue> serialized);
+        map.set(key, serialized);
+
+        hash.update(`${key}:${JSON.stringify(serialized)}`);
+
+        if (serialized.bitmap) {
+          transfers.push(serialized.bitmap);
+        }
       }
     }
-    return clone;
-  }
-
-  /**
-   * PLEASE NOTE: Only intended for usage within the API itself.
-   * @ignore
-   */
-  static getHash(map: AnnotStorageRecord | undefined) {
-    if (!map) {
-      return "";
-    }
-    const hash = new MurmurHash3_64();
-
-    for (const [key, val] of map) {
-      hash.update(`${key}:${JSON.stringify(val)}`);
-    }
-    return hash.hexdigest();
+    return map.size > 0
+      ? { map, hash: hash.hexdigest(), transfers }
+      : SerializableEmpty;
   }
 }
 
@@ -202,12 +206,19 @@ export class AnnotationStorage {
  * contents. (Necessary since printing is triggered synchronously in browsers.)
  */
 export class PrintAnnotationStorage extends AnnotationStorage {
-  #serializable: AnnotStorageRecord | undefined;
+  #serializable: Serializable;
 
   constructor(parent: AnnotationStorage) {
     super();
+    const { map, hash, transfers } = parent.serializable;
     // Create a *copy* of the data, since Objects are passed by reference in JS.
-    this.#serializable = structuredClone(parent.serializable);
+    const clone = structuredClone(
+      map,
+      (PDFJSDev || SKIP_BABEL || TESTING) && transfers
+        ? { transfer: transfers }
+        : undefined,
+    );
+    this.#serializable = { map: clone, hash, transfers };
   }
 
   // eslint-disable-next-line getter-return

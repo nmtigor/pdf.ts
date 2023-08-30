@@ -1,4 +1,4 @@
-import { Lexer, Token } from "./formcalc_lexer.js";
+import { Lexer, type Token } from "./formcalc_lexer.js";
 export declare const enum Errors {
     assignment = "Invalid token in assignment.",
     block = "Invalid token in do ... end declaration.",

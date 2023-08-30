@@ -3,7 +3,7 @@
  * @license Apache-2.0
  ******************************************************************************/
 import { int } from "./alias.js";
-import { type AbstractConstructor, type Constructor, type uint, type uint8 } from "./alias.js";
+import type { AbstractConstructor, Constructor, uint, uint8 } from "./alias.js";
 declare global {
     interface ObjectConstructor {
         /**

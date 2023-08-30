@@ -1,9 +1,10 @@
-import { type AvailableSpace, type XFAAttrs } from "./alias.js";
-import { Builder } from "./builder.js";
+import type { AvailableSpace, XFAAttrs } from "./alias.js";
+import type { Builder } from "./builder.js";
 import { $buildXFAObject } from "./namespaces.js";
-import { TextMeasure } from "./text.js";
+import { $acceptWhitespace, $clean, $content, $onText, $pushGlyphs, $text, $toHTML } from "./symbol_utils.js";
+import type { TextMeasure } from "./text.js";
 import { HTMLResult } from "./utils.js";
-import { $acceptWhitespace, $clean, $content, $onText, $pushGlyphs, $text, $toHTML, XmlObject } from "./xfa_object.js";
+import { XmlObject } from "./xfa_object.js";
 declare const $richText: unique symbol;
 export declare abstract class XhtmlObject extends XmlObject {
     [$content]?: string;

@@ -26,6 +26,7 @@ import type {
   DispatchUpdateStatesP,
   FileAttachmentAnnotationElement,
   OptionalContentConfig,
+  PDFPageProxy,
   PropertyToUpdate,
   ScriptingActionName,
 } from "../pdf.ts-src/pdf.ts";
@@ -47,7 +48,7 @@ import type { PDFPageView } from "./pdf_page_view.ts";
 import type { PDFPresentationMode } from "./pdf_presentation_mode.ts";
 import type { PDFScriptingManager } from "./pdf_scripting_manager.ts";
 import type { PDFSidebar } from "./pdf_sidebar.ts";
-import type { PDFSidebarResizer } from "./pdf_sidebar_resizer.ts";
+import type { PDFThumbnailView } from "./pdf_thumbnail_view.ts";
 import type { PDFLocation, PDFViewer } from "./pdf_viewer.ts";
 import type { SecondaryToolbar } from "./secondary_toolbar.ts";
 import type { Toolbar } from "./toolbar.ts";
@@ -261,7 +262,9 @@ export interface EventMap {
   openfile: {
     source: typeof window;
   };
-  openinexternalapp: {};
+  openinexternalapp: {
+    // sorce: Toolbar;
+  };
   optionalcontentconfig: {
     source: PDFLayerViewer;
     promise: Promise<OptionalContentConfig | undefined>;
@@ -332,7 +335,7 @@ export interface EventMap {
     source: PDFSidebar;
   };
   resize: {
-    source: typeof window | HTMLDivElement | PDFSidebarResizer;
+    source: typeof window | HTMLDivElement | PDFSidebar;
   };
   rotatecw: {
     source: PDFPresentationMode;
@@ -396,6 +399,11 @@ export interface EventMap {
     pageNumber: number;
     numTextDivs: number;
     error: unknown;
+  };
+  thumbnailrendered: {
+    source: PDFThumbnailView;
+    pageNumber: number;
+    pdfPage: PDFPageProxy | undefined;
   };
   togglelayerstree: {};
   toggleoutlinetree: {

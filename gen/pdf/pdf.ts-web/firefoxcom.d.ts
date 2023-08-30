@@ -26,7 +26,7 @@ export declare class FirefoxCom {
      *       not be able to synchronously reply.
      * @param action The action to trigger.
      * @param data The data to send.
-     * @returns {*} The response.
+     * @return {*} The response.
      */
     static requestSync(action: string, data?: unknown): unknown;
     /**
@@ -34,16 +34,16 @@ export declare class FirefoxCom {
      * asynchronously respond to.
      * @param action The action to trigger.
      * @param data The data to send.
-     * @returns {Promise<any>} A promise that is resolved with the response data.
+     * @return {Promise<any>} A promise that is resolved with the response data.
      */
-    static requestAsync(action: string, data?: unknown): Promise<unknown>;
+    static requestAsync<D extends Record<string, any> | string>(action: string, data?: D): Promise<D>;
     /**
      * Creates an event that the extension is listening for and will, optionally,
      * asynchronously respond to.
      * @param action The action to trigger.
      * @param data The data to send.
      */
-    static request(action: string, data?: unknown, callback?: (response: unknown) => void): void;
+    static request<D extends Record<string, any> | string>(action: string, data?: D, callback?: (response: D) => void): void;
 }
 export declare class DownloadManager implements IDownloadManager {
     #private;
@@ -59,5 +59,9 @@ export declare class DownloadManager implements IDownloadManager {
     /** @implement */
     download(blob: Blob, url: string, filename: string, options?: object): void;
 }
+export type NimbusExperimentData = {
+    "download-button"?: unknown;
+    "open-in-app-button"?: unknown;
+};
 export {};
 //# sourceMappingURL=firefoxcom.d.ts.map

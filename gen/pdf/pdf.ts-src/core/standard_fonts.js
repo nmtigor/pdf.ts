@@ -59,6 +59,9 @@ export const getStdFontMap = getLookupTableFactory((t) => {
     t["Arial-BoldItalicMT"] = "Helvetica-BoldOblique";
     t["Arial-BoldMT"] = "Helvetica-Bold";
     t["Arial-ItalicMT"] = "Helvetica-Oblique";
+    t["Arial-BoldItalicMT-BoldItalic"] = "Helvetica-BoldOblique";
+    t["Arial-BoldMT-Bold"] = "Helvetica-Bold";
+    t["Arial-ItalicMT-Italic"] = "Helvetica-Oblique";
     t.ArialUnicodeMS = "Helvetica";
     t["ArialUnicodeMS-Bold"] = "Helvetica-Bold";
     t["ArialUnicodeMS-BoldItalic"] = "Helvetica-BoldOblique";
@@ -100,10 +103,10 @@ export const getFontNameToFileMap = getLookupTableFactory((t) => {
     t["Courier-Bold"] = "FoxitFixedBold.pfb";
     t["Courier-BoldOblique"] = "FoxitFixedBoldItalic.pfb";
     t["Courier-Oblique"] = "FoxitFixedItalic.pfb";
-    t.Helvetica = "FoxitSans.pfb";
-    t["Helvetica-Bold"] = "FoxitSansBold.pfb";
-    t["Helvetica-BoldOblique"] = "FoxitSansBoldItalic.pfb";
-    t["Helvetica-Oblique"] = "FoxitSansItalic.pfb";
+    t.Helvetica = "LiberationSans-Regular.ttf";
+    t["Helvetica-Bold"] = "LiberationSans-Bold.ttf";
+    t["Helvetica-BoldOblique"] = "LiberationSans-BoldItalic.ttf";
+    t["Helvetica-Oblique"] = "LiberationSans-Italic.ttf";
     t["Times-Roman"] = "FoxitSerif.pfb";
     t["Times-Bold"] = "FoxitSerifBold.pfb";
     t["Times-BoldItalic"] = "FoxitSerifBoldItalic.pfb";
@@ -132,6 +135,7 @@ export const getNonStdFontMap = getLookupTableFactory((t) => {
     t["ComicSansMS-Bold"] = "Comic Sans MS-Bold";
     t["ComicSansMS-BoldItalic"] = "Comic Sans MS-BoldItalic";
     t["ComicSansMS-Italic"] = "Comic Sans MS-Italic";
+    t.Impact = "Helvetica";
     t["ItcSymbol-Bold"] = "Helvetica-Bold";
     t["ItcSymbol-BoldItalic"] = "Helvetica-BoldOblique";
     t["ItcSymbol-Book"] = "Helvetica";
@@ -161,8 +165,6 @@ export const getNonStdFontMap = getLookupTableFactory((t) => {
     t["MS-PMincho-Italic"] = "MS PMincho-Italic";
     t.NuptialScript = "Times-Italic";
     t.SegoeUISymbol = "Helvetica";
-    t.Wingdings = "ZapfDingbats";
-    t["Wingdings-Regular"] = "ZapfDingbats";
 });
 export const getSerifFonts = getLookupTableFactory((t) => {
     t["Adobe Jenson"] = true;
@@ -304,6 +306,9 @@ export const getSymbolsFonts = getLookupTableFactory((t) => {
     t.Dingbats = true;
     t.Symbol = true;
     t.ZapfDingbats = true;
+    t.Wingdings = true;
+    t["Wingdings-Bold"] = true;
+    t["Wingdings-Regular"] = true;
 });
 // Glyph map for well-known standard fonts. Sometimes Ghostscript uses CID
 // fonts, but does not embed the CID to GID mapping. The mapping is incomplete
@@ -875,6 +880,13 @@ export function getStandardFontName(name) {
     const fontName = normalizeFontName(name);
     const stdFontMap = getStdFontMap();
     return stdFontMap[fontName];
+}
+export function isKnownFontName(name) {
+    const fontName = normalizeFontName(name);
+    return !!(getStdFontMap()[fontName] ||
+        getNonStdFontMap()[fontName] ||
+        getSerifFonts()[fontName] ||
+        getSymbolsFonts()[fontName]);
 }
 /*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=standard_fonts.js.map

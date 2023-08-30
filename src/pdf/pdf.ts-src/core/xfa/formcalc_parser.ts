@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-import { Lexer, TOKEN, Token } from "./formcalc_lexer.ts";
+import { Lexer, TOKEN, type Token } from "./formcalc_lexer.ts";
 /*80--------------------------------------------------------------------------*/
 
 export const enum Errors {
@@ -1535,7 +1535,7 @@ export class Parser {
     tok = tok2 || this.lexer.next();
     if (tok.id === TOKEN.step) {
       [tok, step] = this.parseSimpleExpr();
-      tok = tok || this.lexer.next();
+      tok ||= this.lexer.next();
     }
 
     if (tok.id !== TOKEN.do) {

@@ -1,6 +1,6 @@
-import { type AvailableSpace, type XFAElObj, type XFAFontBase, type XFAHTMLObj, type XFAStyleData } from "./alias.js";
-import { FontFinder } from "./fonts.js";
-import { Area, Border, Caption, ContentArea, Draw, ExclGroup, Field, Subform } from "./template.js";
+import type { AvailableSpace, XFAElObj, XFAFontBase, XFAHTMLObj, XFAStyleData } from "./alias.js";
+import { type FontFinder } from "./fonts.js";
+import type { Area, Border, Caption, ContentArea, Draw, ExclGroup, Field, Subform } from "./template.js";
 import { XFAObject } from "./xfa_object.js";
 export declare function measureToString(m: string | number): string;
 export declare function setMinMaxDimensions(node: Draw | Field, style: XFAStyleData): void;

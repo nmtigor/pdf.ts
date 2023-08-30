@@ -17,22 +17,24 @@
  * limitations under the License.
  */
 
+import {
+  FORMS_VERSION,
+  USERACTIVATION_CALLBACKID,
+  VIEWER_TYPE,
+  VIEWER_VARIATION,
+  VIEWER_VERSION,
+} from "./app_utils.ts";
 import { Color } from "./color.ts";
-import { Doc } from "./doc.ts";
-import { EventDispatcher, ScriptingEventData } from "./event.ts";
-import { Field } from "./field.ts";
-import { FullScreen, ScriptingFullScreenData } from "./fullscreen.ts";
-import { ExternalCall } from "./initialization.ts";
-import { PDFObject, ScriptingData, SendData } from "./pdf_object.ts";
-import { ScriptingProxyHandler } from "./proxy.ts";
-import { ScriptingThermometerData, Thermometer } from "./thermometer.ts";
+import type { Doc } from "./doc.ts";
+import { EventDispatcher, type ScriptingEventData } from "./event.ts";
+import type { Field } from "./field.ts";
+import { FullScreen, type ScriptingFullScreenData } from "./fullscreen.ts";
+import type { ExternalCall } from "./initialization.ts";
+import type { ScriptingData, SendData } from "./pdf_object.ts";
+import { PDFObject } from "./pdf_object.ts";
+import type { ScriptingProxyHandler } from "./proxy.ts";
+import { type ScriptingThermometerData, Thermometer } from "./thermometer.ts";
 /*80--------------------------------------------------------------------------*/
-
-const VIEWER_TYPE = "PDF.js";
-const VIEWER_VARIATION = "Full";
-const VIEWER_VERSION = 21.00720099;
-const FORMS_VERSION = 21.00720099;
-export const USERACTIVATION_CALLBACKID = 0;
 
 export interface DocWrapped {
   obj: Doc;
@@ -101,7 +103,7 @@ export class App extends PDFObject<SendAppData> {
   get fs() {
     if (this._fs === undefined) {
       this._fs = new Proxy<FullScreen>(
-        new FullScreen(<ScriptingFullScreenData> { send: this._send }),
+        new FullScreen({ send: this._send } as ScriptingFullScreenData),
         this._proxyHandler,
       );
     }
@@ -152,7 +154,7 @@ export class App extends PDFObject<SendAppData> {
   get thermometer() {
     if (this._thermometer === undefined) {
       this._thermometer = new Proxy<Thermometer>(
-        new Thermometer(<ScriptingThermometerData> { send: this._send }),
+        new Thermometer({ send: this._send } as ScriptingThermometerData),
         this._proxyHandler,
       );
     }

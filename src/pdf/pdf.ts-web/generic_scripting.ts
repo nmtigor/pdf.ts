@@ -17,16 +17,20 @@
  * limitations under the License.
  */
 
+import type { PDFDocumentProxy } from "../pdf.ts-src/pdf.ts";
 import {
   getPdfFilenameFromUrl,
   loadScript,
-  PDFDocumentProxy,
   QuickJSSandbox,
 } from "../pdf.ts-src/pdf.ts";
-import { CreateSandboxP, EventInSandBox, IScripting } from "./interfaces.ts";
+import type {
+  CreateSandboxP,
+  EventInSandBox,
+  IScripting,
+} from "./interfaces.ts";
 /*80--------------------------------------------------------------------------*/
 
-export async function docPropertiesLookup(pdfDocument: PDFDocumentProxy) {
+export async function docProperties(pdfDocument: PDFDocumentProxy) {
   const url = "",
     baseUrl = url.split("#")[0];
   // eslint-disable-next-line prefer-const

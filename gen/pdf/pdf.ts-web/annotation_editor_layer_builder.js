@@ -24,8 +24,10 @@
 // eslint-disable-next-line max-len
 /** @typedef {import("./text_accessibility.js").TextAccessibilityManager} TextAccessibilityManager */
 /** @typedef {import("./interfaces").IL10n} IL10n */
+// eslint-disable-next-line max-len
+/** @typedef {import("../src/display/annotation_layer.js").AnnotationLayer} AnnotationLayer */
 import { html } from "../../lib/dom.js";
-import { AnnotationEditorLayer, } from "../pdf.ts-src/pdf.js";
+import { AnnotationEditorLayer } from "../pdf.ts-src/pdf.js";
 import { NullL10n } from "./l10n_utils.js";
 export class AnnotationEditorLayerBuilder {
     pageDiv;
@@ -36,6 +38,7 @@ export class AnnotationEditorLayerBuilder {
     div;
     _cancelled;
     #uiManager;
+    #annotationLayer;
     constructor(options) {
         this.pageDiv = options.pageDiv;
         this.pdfPage = options.pdfPage;
@@ -43,6 +46,7 @@ export class AnnotationEditorLayerBuilder {
         this.l10n = options.l10n || NullL10n;
         this._cancelled = false;
         this.#uiManager = options.uiManager;
+        this.#annotationLayer = options.annotationLayer;
     }
     /**
      * @param intent (default value is 'display')
@@ -73,6 +77,7 @@ export class AnnotationEditorLayerBuilder {
             pageIndex: this.pdfPage.pageNumber - 1,
             l10n: this.l10n,
             viewport: clonedViewport,
+            annotationLayer: this.#annotationLayer,
         });
         const parameters = {
             viewport: clonedViewport,

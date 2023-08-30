@@ -20,7 +20,7 @@ import type { GetDocRequestData, PageInfo, PDFInfo, Thread } from "../shared/mes
 import { MessageHandler } from "../shared/message_handler.js";
 import type { matrix_t } from "../shared/util.js";
 import { AnnotationMode, PasswordResponses, RenderingIntentFlag, VerbosityLevel } from "../shared/util.js";
-import type { AnnotStorageRecord } from "./annotation_layer.js";
+import type { Serializable } from "./annotation_storage.js";
 import { AnnotationStorage, PrintAnnotationStorage } from "./annotation_storage.js";
 import type { BaseCanvasFactory } from "./base_factory.js";
 import { CanvasGraphics } from "./canvas.js";
@@ -586,6 +586,7 @@ export declare class PDFDocumentProxy {
     getCalculationOrderIds(): Promise<string[] | undefined>;
     getXFADatasets: () => Promise<DatasetReader | undefined>;
     getXRefPrevValue: () => Promise<number | undefined>;
+    getAnnotArray: (pageIndex: number) => Promise<unknown>;
 }
 /**
  * Page getViewport parameters.
@@ -813,7 +814,7 @@ export interface RenderP {
 /**
  * Page getOperatorList parameters.
  */
-interface _GetOperatorListP {
+interface GetOperatorListP_ {
     /**
      * Rendering intent, can be 'display', 'print',
      * or 'any'. The default value is 'display'.
@@ -871,7 +872,7 @@ export type PDFObjs = ImgData | ShadingPatternIR;
 interface IntentArgs_ {
     renderingIntent: RenderingIntentFlag;
     cacheKey: string;
-    annotationStorageMap: AnnotStorageRecord | undefined;
+    annotationStorageSerializable: Serializable;
     isOpList?: boolean;
 }
 /**
@@ -932,6 +933,10 @@ export declare class PDFPageProxy {
      */
     getJSActions(): Promise<AnnotActions | undefined>;
     /**
+     * @return The filter factory instance.
+     */
+    get filterFactory(): DefaultFilterFactory;
+    /**
      * @return True if only XFA form.
      */
     get isPureXfa(): boolean;
@@ -955,7 +960,7 @@ export declare class PDFPageProxy {
      * @return A promise resolved with an
      *   {@link PDFOperatorList} object that represents the page's operator list.
      */
-    getOperatorList({ intent, annotationMode, printAnnotationStorage, }?: _GetOperatorListP): Promise<OpListIR>;
+    getOperatorList({ intent, annotationMode, printAnnotationStorage, }?: GetOperatorListP_): Promise<OpListIR>;
     /**
      * NOTE: All occurrences of whitespace will be replaced by
      * standard spaces (0x20).
@@ -1132,6 +1137,7 @@ declare class WorkerTransport {
     };
     getXFADatasets: () => Promise<DatasetReader | undefined>;
     getXRefPrevValue: () => Promise<number | undefined>;
+    getAnnotArray: (pageIndex: number) => Promise<unknown>;
 }
 /**
  * A PDF document and page is built of many objects. E.g. there are objects for

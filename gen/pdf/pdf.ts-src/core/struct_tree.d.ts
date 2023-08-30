@@ -1,4 +1,4 @@
-import { StructTreeNode } from "../display/api.js";
+import type { StructTreeNode } from "../display/api.js";
 import { Dict, Ref } from "./primitives.js";
 declare const enum StructElementType {
     PAGE_CONTENT = "PAGE_CONTENT",

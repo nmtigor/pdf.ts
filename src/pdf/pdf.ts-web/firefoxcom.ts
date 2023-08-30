@@ -81,7 +81,7 @@ export class FirefoxCom {
    *       not be able to synchronously reply.
    * @param action The action to trigger.
    * @param data The data to send.
-   * @returns {*} The response.
+   * @return {*} The response.
    */
   static requestSync(action: string, data?: unknown) {
     const request = document.createTextNode("");
@@ -113,10 +113,13 @@ export class FirefoxCom {
    * asynchronously respond to.
    * @param action The action to trigger.
    * @param data The data to send.
-   * @returns {Promise<any>} A promise that is resolved with the response data.
+   * @return {Promise<any>} A promise that is resolved with the response data.
    */
-  static requestAsync(action: string, data?: unknown) {
-    return new Promise<unknown>((resolve) => {
+  static requestAsync<D extends Record<string, any> | string>(
+    action: string,
+    data?: D,
+  ) {
+    return new Promise<D>((resolve) => {
       this.request(action, data, resolve);
     });
   }
@@ -127,25 +130,25 @@ export class FirefoxCom {
    * @param action The action to trigger.
    * @param data The data to send.
    */
-  static request(
+  static request<D extends Record<string, any> | string>(
     action: string,
-    data?: unknown,
-    callback?: (response: unknown) => void,
+    data?: D,
+    callback?: (response: D) => void,
   ) {
     type Detail_ = {
       action: string;
-      data?: unknown;
+      data?: D | undefined;
       sync: false;
       responseExpected: boolean;
-      response?: unknown;
+      response?: D;
     };
     const request = document.createTextNode("");
     if (callback) {
       request.addEventListener(
         "pdf.js.response",
         (event) => {
-          const response = (<CustomEvent<Detail_>> event).detail.response;
-          (<Text> event.target).remove();
+          const response = (event as CustomEvent<Detail_>).detail.response!;
+          (event.target as Text).remove();
 
           callback(response);
         },
@@ -251,17 +254,8 @@ export class DownloadManager implements IDownloadManager {
 
 class FirefoxPreferences extends BasePreferences {
   /** @implement */
-  protected async _writeToStorage(prefObj: UserOptions) {
-    FirefoxCom.requestAsync("setPreferences", prefObj);
-  }
-
-  /** @implement */
   protected async _readFromStorage(prefObj: UserOptions) {
-    const prefStr = <string> await FirefoxCom.requestAsync(
-      "getPreferences",
-      prefObj,
-    );
-    return JSON.parse(prefStr);
+    return FirefoxCom.requestAsync("getPreferences", prefObj);
   }
 }
 
@@ -416,9 +410,14 @@ class FirefoxScripting implements IScripting {
 
   /** @implement */
   async destroySandbox() {
-    FirefoxCom.request("destroySandbox", null);
+    FirefoxCom.request("destroySandbox", undefined);
   }
 }
+
+export type NimbusExperimentData = {
+  "download-button"?: unknown;
+  "open-in-app-button"?: unknown;
+};
 
 class FirefoxExternalServices extends DefaultExternalServices {
   override updateFindControlState(data: FindControlState) {
@@ -541,13 +540,21 @@ class FirefoxExternalServices extends DefaultExternalServices {
   override get isInAutomation() {
     // Returns the value of `Cu.isInAutomation`, which is only `true` when e.g.
     // various test-suites are running in mozilla-central.
-    const isInAutomation = <boolean> FirefoxCom.requestSync("isInAutomation");
+    const isInAutomation = FirefoxCom.requestSync("isInAutomation") as boolean;
     return shadow(this, "isInAutomation", isInAutomation);
   }
 
   static get canvasMaxAreaInBytes() {
     const maxArea = FirefoxCom.requestSync("getCanvasMaxArea");
     return shadow(this, "canvasMaxAreaInBytes", maxArea);
+  }
+
+  static async getNimbusExperimentData() {
+    const nimbusData = await FirefoxCom.requestAsync<string>(
+      "getNimbusExperimentData",
+      undefined,
+    );
+    return nimbusData && JSON.parse(nimbusData) as NimbusExperimentData;
   }
 }
 viewerApp.externalServices = new FirefoxExternalServices();

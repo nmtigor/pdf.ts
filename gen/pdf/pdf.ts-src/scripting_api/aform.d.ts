@@ -1,7 +1,7 @@
-import { App } from "./app.js";
-import { Color } from "./color.js";
-import { Doc } from "./doc.js";
-import { Event } from "./event.js";
+import type { App } from "./app.js";
+import type { Color } from "./color.js";
+import type { Doc } from "./doc.js";
+import type { Event } from "./event.js";
 import { CFormat, Util } from "./util.js";
 type _CFunction = "AVG" | "SUM" | "PRD" | "MIN" | "MAX";
 type _Action = (n: number, date: Date) => boolean;

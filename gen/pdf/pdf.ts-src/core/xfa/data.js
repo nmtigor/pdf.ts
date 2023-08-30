@@ -1,7 +1,7 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
-import { $getAttributes, $getChildren, $nodeName, $setValue, $toString, $uid, } from "./xfa_object.js";
+import { $getAttributes, $getChildren, $nodeName, $setValue, $toString, $uid, } from "./symbol_utils.js";
 /*80--------------------------------------------------------------------------*/
 export class DataHandler {
     data;

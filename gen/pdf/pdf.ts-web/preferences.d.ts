@@ -12,9 +12,9 @@ export declare abstract class BasePreferences {
      * Stub function for writing preferences to storage.
      * @param prefObj The preferences that should be written to storage.
      * @return A promise that is resolved when the preference values
-     *  have been written.
+     *    have been written.
      */
-    protected abstract _writeToStorage(prefObj: UserOptions): Promise<void>;
+    protected _writeToStorage(prefObj: UserOptions): Promise<void>;
     /**
      * Stub function for reading preferences from storage.
      * @param prefObj The preferences that should be read from storage.

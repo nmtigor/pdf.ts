@@ -67,7 +67,7 @@ export function extractFilenameFromHeader(getResponseHeader) {
             try {
                 filename = decodeURIComponent(filename);
             }
-            catch (ex) { }
+            catch { }
         }
         if (isPdfFile(filename)) {
             return filename;

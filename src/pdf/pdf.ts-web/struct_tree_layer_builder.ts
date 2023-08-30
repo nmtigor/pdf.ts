@@ -141,7 +141,7 @@ export class StructTreeLayerBuilder {
       if (match) {
         element.setAttribute("role", "heading");
         element.setAttribute("aria-level", match[1]);
-      } else if ((PDF_ROLE_TO_HTML_ROLE)[role as _PDFRole]) {
+      } else if (PDF_ROLE_TO_HTML_ROLE[role as _PDFRole]) {
         element.setAttribute("role", PDF_ROLE_TO_HTML_ROLE[role as _PDFRole]!);
       }
     }

@@ -1,4 +1,10 @@
-import { AnnotStorageRecord, type AnnotStorageValue } from "./annotation_layer.js";
+import type { AnnotStorageRecord, AnnotStorageValue } from "./annotation_layer.js";
+export type Serializable = {
+    map?: AnnotStorageRecord | undefined;
+    hash: string;
+    transfers?: Transferable[] | undefined;
+};
+export declare const SerializableEmpty: Serializable;
 /**
  * Key/value storage for annotation data in forms.
  */
@@ -36,12 +42,7 @@ export declare class AnnotationStorage {
      * PLEASE NOTE: Only intended for usage within the API itself.
      * @ignore
      */
-    get serializable(): AnnotStorageRecord | undefined;
-    /**
-     * PLEASE NOTE: Only intended for usage within the API itself.
-     * @ignore
-     */
-    static getHash(map: AnnotStorageRecord | undefined): string;
+    get serializable(): Serializable;
 }
 /**
  * A special `AnnotationStorage` for use during printing, where the serializable
@@ -56,6 +57,6 @@ export declare class PrintAnnotationStorage extends AnnotationStorage {
      * PLEASE NOTE: Only intended for usage within the API itself.
      * @ignore
      */
-    get serializable(): AnnotStorageRecord | undefined;
+    get serializable(): Serializable;
 }
 //# sourceMappingURL=annotation_storage.d.ts.map

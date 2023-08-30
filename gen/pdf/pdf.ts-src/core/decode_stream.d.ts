@@ -1,5 +1,5 @@
 import { BaseStream } from "./base_stream.js";
-import { Dict } from "./primitives.js";
+import type { Dict } from "./primitives.js";
 import { Stream } from "./stream.js";
 /**
  * Super class for the decoding streams.

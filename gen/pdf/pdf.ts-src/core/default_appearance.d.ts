@@ -1,7 +1,10 @@
 import type { rect_t } from "../../../lib/alias.js";
-import { Dict, Name, Ref } from "./primitives.js";
+import type { rgb_t } from "../../../lib/color/alias.js";
+import type { BaseStream } from "./base_stream.js";
+import type { Ref } from "./primitives.js";
+import { Dict, Name } from "./primitives.js";
 import { StringStream } from "./stream.js";
-import { XRef } from "./xref.js";
+import type { XRef } from "./xref.js";
 export interface DefaultAppearanceData {
     fontSize: number;
     fontName: string;
@@ -12,7 +15,14 @@ export declare function parseDefaultAppearance(str: string): {
     fontName: string;
     fontColor: Uint8ClampedArray;
 };
-export declare function getPdfColor(color: Uint8ClampedArray, isFill: boolean): string;
+type AppearanceStreamParsed = {
+    scaleFactor: number;
+    fontSize: number;
+    fontName: string;
+    fontColor: Uint8ClampedArray;
+};
+export declare function parseAppearanceStream(stream: BaseStream): AppearanceStreamParsed;
+export declare function getPdfColor(color: Uint8ClampedArray | rgb_t, isFill: boolean): string;
 export declare function createDefaultAppearance({ fontSize, fontName, fontColor }: DefaultAppearanceData): string;
 export declare class FakeUnicodeFont {
     #private;
@@ -20,7 +30,7 @@ export declare class FakeUnicodeFont {
     widths: Map<number, number> | undefined;
     firstChar: number;
     lastChar: number;
-    fontFamily: "monospace" | "sans-serif";
+    fontFamily: "sans-serif" | "monospace";
     ctxMeasure: OffscreenCanvasRenderingContext2D;
     fontName: Name;
     static toUnicodeStream: StringStream;
@@ -34,4 +44,5 @@ export declare class FakeUnicodeFont {
     createFontResources(text: string): Dict;
     createAppearance(text: string, rect: rect_t, rotation: number, fontSize: number, bgColor: Uint8ClampedArray, strokeAlpha: number | undefined): StringStream;
 }
+export {};
 //# sourceMappingURL=default_appearance.d.ts.map

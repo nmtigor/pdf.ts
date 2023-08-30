@@ -1,16 +1,6 @@
-interface _GrabToPanCtorP {
+type GrabToPanCtorP_ = {
     element: HTMLDivElement;
-    /**
-     * See `ignoreTarget(node)`
-     */
-    ignoreTarget?: (node: Element) => boolean;
-    /**
-     * Called when
-     * grab-to-pan is (de)activated. The first argument is a boolean that
-     * shows whether grab-to-pan is activated.
-     */
-    onActiveChanged?: (_: boolean) => unknown;
-}
+};
 export declare class GrabToPan {
     #private;
     element: HTMLDivElement;
@@ -25,7 +15,7 @@ export declare class GrabToPan {
     /**
      * Construct a GrabToPan instance for a given HTML element.
      */
-    constructor(options: _GrabToPanCtorP);
+    constructor({ element }: GrabToPanCtorP_);
     /**
      * Bind a mousedown event to the element to enable grab-detection.
      */

@@ -110,9 +110,6 @@ export declare class PDFLinkService implements IPDFLinkService {
     cachePageRef(pageNum: number, pageRef: RefProxy | undefined): void;
     /** @implement */
     _cachedPageNumber(pageRef: RefProxy | undefined): number | undefined;
-    /** @implement */
-    isPageVisible(pageNumber: number): boolean;
-    isPageCached(pageNumber: number): boolean;
 }
 export declare class SimpleLinkService implements IPDFLinkService {
     /** @implement */
@@ -168,13 +165,6 @@ export declare class SimpleLinkService implements IPDFLinkService {
     cachePageRef(pageNum: number, pageRef: RefProxy | undefined): void;
     /** @implement */
     _cachedPageNumber(pageRef: RefProxy): undefined;
-    /** @implement */
-    isPageVisible(pageNumber: number): boolean;
-    /**
-     * @implement
-     * @param {number} pageNumber
-     */
-    isPageCached(pageNumber: number): boolean;
 }
 export {};
 //# sourceMappingURL=pdf_link_service.d.ts.map

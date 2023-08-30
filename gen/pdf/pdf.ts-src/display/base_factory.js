@@ -10,6 +10,9 @@ export class BaseFilterFactory {
     addHCMFilter(fgColor, bgColor) {
         return "none";
     }
+    addHighlightHCMFilter(fgColor, bgColor, newFgColor, newBgColor) {
+        return "none";
+    }
     destroy(keepHCM = false) { }
 }
 export class BaseCanvasFactory {

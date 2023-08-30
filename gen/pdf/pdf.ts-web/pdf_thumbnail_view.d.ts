@@ -1,4 +1,5 @@
 import type { OptionalContentConfig, PageViewport, PDFPageProxy, RenderTask } from "../pdf.ts-src/pdf.js";
+import type { EventBus } from "./event_utils.js";
 import type { IL10n, IPDFLinkService, IVisibleView } from "./interfaces.js";
 import type { PDFPageView } from "./pdf_page_view.js";
 import type { PDFRenderingQueue } from "./pdf_rendering_queue.js";
@@ -9,6 +10,10 @@ interface PDFThumbnailViewOptions {
      * The viewer element.
      */
     container: HTMLDivElement;
+    /**
+     * The application event bus.
+     */
+    eventBus: EventBus;
     /**
      * The thumbnail's unique ID (normally its number).
      */
@@ -57,6 +62,7 @@ export declare class PDFThumbnailView implements IVisibleView {
     pdfPageRotate: number;
     _optionalContentConfigPromise: Promise<OptionalContentConfig> | undefined;
     pageColors: PageColors | undefined;
+    eventBus: EventBus;
     linkService: IPDFLinkService;
     renderingQueue: PDFRenderingQueue;
     renderTask?: RenderTask | undefined;
@@ -71,7 +77,7 @@ export declare class PDFThumbnailView implements IVisibleView {
     _placeholderImg: HTMLDivElement;
     canvas?: HTMLCanvasElement;
     image?: HTMLImageElement;
-    constructor({ container, id, defaultViewport, optionalContentConfigPromise, linkService, renderingQueue, l10n, pageColors, }: PDFThumbnailViewOptions);
+    constructor({ container, eventBus, id, defaultViewport, optionalContentConfigPromise, linkService, renderingQueue, l10n, pageColors, }: PDFThumbnailViewOptions);
     setPdfPage(pdfPage: PDFPageProxy): void;
     reset(): void;
     update({ rotation }: {

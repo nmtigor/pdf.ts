@@ -58,7 +58,7 @@ function getHeaderBlock(stream, suggestedLength) {
         headerBytes = stream.getBytes(suggestedLength);
         headerBytesLength = headerBytes.length;
     }
-    catch (ex) {
+    catch {
         // Ignore errors if the `suggestedLength` is huge enough that a Uint8Array
         // cannot hold the result of `getBytes`, and fallback to simply checking
         // the entire stream (fixes issue3928.pdf).

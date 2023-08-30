@@ -1078,7 +1078,7 @@ namespace Ns_webL10n {
     }
 
     for (const k in data) {
-      (<any> element)[k] = data[k];
+      (element as any)[k] = data[k];
     }
   }
 

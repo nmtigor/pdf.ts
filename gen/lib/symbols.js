@@ -75,10 +75,10 @@ export const $redirect_focus = Symbol("$redirect_focus");
  */
 export const $rec_utx_a = Symbol("$rec_utx_a");
 /**
- * document[ $selectionvu ] { HTMLVuu }
+ * document[ $selection_vu ] { HTMLVuu }
  * Used in document.onSelectionchange callback
  */
-export const $selectionvu = Symbol("$selectionvu");
+export const $selection_vu = Symbol("$selection_vu");
 /**
  * For testing only
  * HTMLImageElement[ $src ] { String }

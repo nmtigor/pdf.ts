@@ -19,7 +19,7 @@
 /** @typedef {import("./pdf_viewer").PDFViewer} PDFViewer */
 // eslint-disable-next-line max-len
 /** @typedef {import("./pdf_thumbnail_viewer").PDFThumbnailViewer} PDFThumbnailViewer */
-import { _TRACE, global, PDFTS_vv } from "../../global.js";
+import { _TRACE, GENERIC, global, PDFJSDev, PDFTS_vv } from "../../global.js";
 import { RenderingCancelledException } from "../pdf.ts-src/pdf.js";
 import { RenderingStates } from "./ui_utils.js";
 /*80--------------------------------------------------------------------------*/
@@ -29,23 +29,28 @@ const CLEANUP_TIMEOUT = 30000;
  */
 export class PDFRenderingQueue {
     pdfViewer;
-    pdfThumbnailViewer;
-    onIdle;
-    highestPriorityPage;
-    idleTimeout;
-    printing = false;
-    isThumbnailViewEnabled = false;
     setViewer(pdfViewer) {
         this.pdfViewer = pdfViewer;
     }
+    hasViewer;
+    pdfThumbnailViewer;
     setThumbnailViewer(pdfThumbnailViewer) {
         this.pdfThumbnailViewer = pdfThumbnailViewer;
     }
+    onIdle;
+    highestPriorityPage;
     isHighestPriority(view) {
         return this.highestPriorityPage === view.renderingId;
     }
-    hasViewer() {
-        return !!this.pdfViewer;
+    idleTimeout;
+    printing = false;
+    isThumbnailViewEnabled = false;
+    constructor() {
+        /*#static*/  {
+            Object.defineProperty(this, "hasViewer", {
+                value: () => !!this.pdfViewer,
+            });
+        }
     }
     renderHighestPriority(currentlyVisiblePages) {
         if (this.idleTimeout) {

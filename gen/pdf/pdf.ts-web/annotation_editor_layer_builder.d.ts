@@ -1,12 +1,14 @@
-import { AnnotationEditorLayer, AnnotationEditorUIManager, PageViewport, PDFPageProxy } from "../pdf.ts-src/pdf.js";
-import { IL10n } from "./interfaces.js";
-import { TextAccessibilityManager } from "./text_accessibility.js";
+import type { AnnotationEditorUIManager, AnnotationLayer, PageViewport, PDFPageProxy } from "../pdf.ts-src/pdf.js";
+import { AnnotationEditorLayer } from "../pdf.ts-src/pdf.js";
+import type { IL10n } from "./interfaces.js";
+import type { TextAccessibilityManager } from "./text_accessibility.js";
 interface AnnotationEditorLayerBuilderOptions {
     uiManager: AnnotationEditorUIManager;
     pageDiv: HTMLDivElement;
     pdfPage: PDFPageProxy;
     l10n?: IL10n;
     accessibilityManager: TextAccessibilityManager | undefined;
+    annotationLayer?: AnnotationLayer | undefined;
 }
 export declare class AnnotationEditorLayerBuilder {
     #private;

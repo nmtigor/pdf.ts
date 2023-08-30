@@ -19,7 +19,7 @@
 
 import { assert } from "../../../lib/util/trace.ts";
 import { BaseStream } from "./base_stream.ts";
-import { Dict } from "./primitives.ts";
+import type { Dict } from "./primitives.ts";
 import { Stream } from "./stream.ts";
 /*80--------------------------------------------------------------------------*/
 
@@ -207,7 +207,7 @@ export class StreamsSequenceStream extends DecodeStream {
       chunk = stream.getBytes();
     } catch (reason) {
       if (this._onError) {
-        this._onError(reason, stream.dict && stream.dict.objId);
+        this._onError(reason, stream.dict?.objId);
         return;
       }
       throw reason;

@@ -87,7 +87,7 @@ export class PDFFunctionFactory {
             fnRef = cacheKey.objId;
         }
         else if (cacheKey instanceof BaseStream) {
-            fnRef = cacheKey.dict && cacheKey.dict.objId;
+            fnRef = cacheKey.dict?.objId;
         }
         if (fnRef) {
             this._localFunctionCache.set(

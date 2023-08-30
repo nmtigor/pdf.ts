@@ -34,6 +34,7 @@ export class Catalog {
     pageKidsCountCache = new RefSetCache();
     pageIndexCache = new RefSetCache();
     nonBlendModesSet = new RefSet();
+    systemFontCache = new Map();
     constructor(pdfManager, xref) {
         this.pdfManager = pdfManager;
         this.xref = xref;
@@ -110,10 +111,9 @@ export class Catalog {
         }
         let metadata;
         try {
-            const suppressEncryption = !(this.xref.encrypt && this.xref.encrypt.encryptMetadata);
-            const stream = this.xref.fetch(streamRef, suppressEncryption);
-            if ((stream instanceof BaseStream) &&
-                (stream.dict instanceof Dict)) {
+            const stream = this.xref.fetch(streamRef, 
+            /* suppressEncryption = */ !this.xref.encrypt?.encryptMetadata);
+            if (stream instanceof BaseStream && stream.dict instanceof Dict) {
                 const type = stream.dict.get("Type");
                 const subtype = stream.dict.get("Subtype");
                 if (isName(type, "Metadata") && isName(subtype, "XML")) {
@@ -511,7 +511,7 @@ export class Catalog {
     }
     #readDests() {
         const obj = this.#catDict.get("Names"); // Table 31
-        if (obj && obj.has("Dests")) {
+        if (obj?.has("Dests")) {
             return new NameTree(obj.getRaw("Dests"), this.xref);
         }
         else if (this.#catDict.has("Dests")) {
@@ -925,6 +925,7 @@ export class Catalog {
         this.fontCache.clear();
         this.builtInCMapCache.clear();
         this.standardFontDataCache.clear();
+        this.systemFontCache.clear();
     }
     /**
      * Dict: Ref. 7.7.3.3 Page Objects

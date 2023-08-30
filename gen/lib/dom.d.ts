@@ -3,7 +3,7 @@
  * @license Apache-2.0
  ******************************************************************************/
 import type { CSSStyle, llen_t } from "./alias.js";
-import type { Vuu } from "./mv.js";
+import type { Vuu } from "./cv.js";
 import { $cssstylesheet, $loff, $ovlap, $tail_ignored } from "./symbols.js";
 declare global {
     interface EventMap extends ElementEventMap, GlobalEventHandlersEventMap, WindowEventHandlersEventMap, HTMLVideoElementEventMap, DocumentEventMap, WindowEventMap, WorkerEventMap, ServiceWorkerEventMap, OfflineAudioContextEventMap {

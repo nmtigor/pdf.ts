@@ -1,7 +1,8 @@
-import { type XFACleanup, type XFAIds, type XFANsAttrs, type XFAPrefix } from "./alias.js";
+import type { XFACleanup, XFAIds, XFANsAttrs, XFAPrefix } from "./alias.js";
 import { type XFAKnownNs } from "./setup.js";
 import { UnknownNamespace } from "./unknown.js";
-import { $finalize, $ids, $onChild, XFAObject } from "./xfa_object.js";
+import { $finalize, $ids, $onChild } from "./symbol_utils.js";
+import { XFAObject } from "./xfa_object.js";
 export declare class Root extends XFAObject {
     element?: XFAObject;
     [$ids]: XFAIds;

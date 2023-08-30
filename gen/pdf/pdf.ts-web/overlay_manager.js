@@ -15,8 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { GENERIC, SKIP_BABEL } from "../../global.js";
-import { html } from "../../lib/dom.js";
 import { isObjectLike } from "../../lib/jslang.js";
 /*80--------------------------------------------------------------------------*/
 export class OverlayManager {
@@ -40,23 +38,9 @@ export class OverlayManager {
             throw new Error("The overlay is already registered.");
         }
         this.#overlays.set(dialog, { canForceClose });
-        /*#static*/ 
         dialog.addEventListener("cancel", (evt) => {
             this.#active = undefined;
         });
-    }
-    /**
-     * @param dialog The overlay's DOM element.
-     * @return A promise that is resolved when the overlay has been unregistered.
-     */
-    async unregister(dialog) {
-        if (!this.#overlays.has(dialog)) {
-            throw new Error("The overlay does not exist.");
-        }
-        else if (this.#active === dialog) {
-            throw new Error("The overlay cannot be removed while it is active.");
-        }
-        this.#overlays.delete(dialog);
     }
     /**
      * @param dialog The overlay's DOM element.

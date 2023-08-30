@@ -11,8 +11,9 @@ import type { CssFontInfo, GlobalIdFactory } from "./document.js";
 import type { Glyph, Seac } from "./fonts.js";
 import { ErrorFont, Font } from "./fonts.js";
 import { FontFlags } from "./fonts_utils.js";
+import type { SubstitutionInfo } from "./font_substitutions.js";
 import { PDFFunctionFactory } from "./function.js";
-import { GlobalImageCache, LocalColorSpaceCache, LocalGStateCache, LocalImageCache, LocalTilingPatternCache, RegionalImageCache } from "./image_utils.js";
+import { type GlobalImageCache, LocalColorSpaceCache, LocalGStateCache, LocalImageCache, LocalTilingPatternCache, RegionalImageCache } from "./image_utils.js";
 import { OperatorList } from "./operator_list.js";
 import { Parser } from "./parser.js";
 import type { EvaluatorOptions } from "./pdf_manager.js";
@@ -32,6 +33,7 @@ interface PartialEvaluatorCtorP_ {
     builtInCMapCache: Map<string, CMapData>;
     standardFontDataCache: Map<string, Uint8Array | ArrayBuffer>;
     globalImageCache?: GlobalImageCache;
+    systemFontCache?: Map<string, SubstitutionInfo>;
     options?: EvaluatorOptions;
 }
 export interface ImgData {
@@ -145,6 +147,7 @@ export interface FontProps extends FontfileType {
     glyphNames?: string[] | undefined;
     cssFontInfo?: CssFontInfo | undefined;
     scaleFactors?: number[] | undefined;
+    systemFontInfo?: SubstitutionInfo | undefined;
 }
 interface PreEvaluatedFont {
     descriptor: FontDict | undefined;
@@ -194,11 +197,12 @@ export declare class PartialEvaluator {
     builtInCMapCache: Map<string, CMapData>;
     standardFontDataCache: Map<string, Uint8Array | ArrayBuffer>;
     globalImageCache: GlobalImageCache | undefined;
+    systemFontCache: Map<string, SubstitutionInfo> | undefined;
     options: EvaluatorOptions;
     parsingType3Font: boolean;
     _regionalImageCache: RegionalImageCache;
     type3FontRefs?: RefSet;
-    constructor({ xref, handler, pageIndex, idFactory, fontCache, builtInCMapCache, standardFontDataCache, globalImageCache, options, }: PartialEvaluatorCtorP_);
+    constructor({ xref, handler, pageIndex, idFactory, fontCache, builtInCMapCache, standardFontDataCache, globalImageCache, systemFontCache, options, }: PartialEvaluatorCtorP_);
     /**
      * Since Functions are only cached (locally) by reference, we can share one
      * `PDFFunctionFactory` instance within this `PartialEvaluator` instance.

@@ -1,10 +1,10 @@
-import { type AnnotStorageRecord } from "../../display/annotation_layer.js";
-import { type rect_t } from "../../../../lib/alias.js";
-import { type XFAData } from "../document.js";
-import { ErrorFont, Font } from "../fonts.js";
-import { XFAHTMLAttrs, type XFAHTMLObj } from "./alias.js";
+import type { rect_t } from "../../../../lib/alias.js";
+import type { AnnotStorageRecord } from "../../display/annotation_layer.js";
+import type { XFAData } from "../document.js";
+import type { ErrorFont, Font } from "../fonts.js";
+import type { XFAHTMLAttrs, XFAHTMLObj } from "./alias.js";
 import { DataHandler } from "./data.js";
-import { Template } from "./template.js";
+import type { Template } from "./template.js";
 export interface XFAPages {
     xfaName: string;
     name: string;

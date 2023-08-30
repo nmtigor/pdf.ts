@@ -1,9 +1,7 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
-import { USERACTIVATION_CALLBACKID } from "./app.js";
-/*80--------------------------------------------------------------------------*/
-const USERACTIVATION_MAXTIME_VALIDITY = 5000;
+import { USERACTIVATION_CALLBACKID, USERACTIVATION_MAXTIME_VALIDITY, } from "./app_utils.js";
 export class Event {
     change;
     changeEx;
@@ -102,8 +100,9 @@ export class EventDispatcher {
                     // errors in the case where a formatter is using one of those named
                     // actions (see #15818).
                     this._document.obj._initActions();
-                    // Before running the Open event, we format all the fields
-                    // (see bug 1766987).
+                    // Before running the Open event, we run the format callbacks but
+                    // without changing the value of the fields.
+                    // Acrobat does the same thing.
                     this.formatAll();
                 }
                 if (!["DidPrint", "DidSave", "WillPrint", "WillSave"].includes(eventName)) {
@@ -225,13 +224,7 @@ export class EventDispatcher {
         const event = (globalThis.event = new Event({}));
         for (const source of Object.values(this._objects)) {
             event.value = source.obj.value;
-            if (this.runActions(source, source, event, "Format")) {
-                source.obj._send({
-                    id: source.obj._id,
-                    siblings: source.obj._siblings,
-                    formattedValue: event.value?.toString?.(),
-                });
-            }
+            this.runActions(source, source, event, "Format");
         }
     }
     runValidation(source, event) {

@@ -6,7 +6,7 @@ import type { Glyph } from "../core/fonts.js";
 import type { OpListIR } from "../core/operator_list.js";
 import type { PatternIR, ShadingType } from "../core/pattern.js";
 import { type matrix_t, OPS, TextRenderingMode } from "../shared/util.js";
-import { DefaultFilterFactory, PDFCommonObjs, PDFObjects, PDFObjs } from "./api.js";
+import type { DefaultFilterFactory, PDFCommonObjs, PDFObjects, PDFObjs } from "./api.js";
 import type { BaseCanvasFactory, CanvasEntry } from "./base_factory.js";
 import { type PageViewport } from "./display_utils.js";
 import type { AddToPath, FontFaceObject } from "./font_loader.js";

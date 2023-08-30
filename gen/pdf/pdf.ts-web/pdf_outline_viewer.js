@@ -18,7 +18,7 @@
 import { html } from "../../lib/dom.js";
 import { isObjectLike } from "../../lib/jslang.js";
 import { PromiseCap } from "../../lib/util/PromiseCap.js";
-import { BaseTreeViewer, } from "./base_tree_viewer.js";
+import { BaseTreeViewer } from "./base_tree_viewer.js";
 import { SidebarView } from "./ui_utils.js";
 export class PDFOutlineViewer extends BaseTreeViewer {
     #outline;
@@ -268,7 +268,7 @@ export class PDFOutlineViewer extends BaseTreeViewer {
                                 }
                                 this.linkService.cachePageRef(pageNumber, destRef);
                             }
-                            catch (ex) {
+                            catch {
                                 // Invalid page reference, ignore it and continue parsing.
                             }
                         }

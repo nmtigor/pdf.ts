@@ -3,21 +3,24 @@
 /** @typedef {import("../display_utils.js").PageViewport} PageViewport */
 /** @typedef {import("../../web/text_accessibility.js").TextAccessibilityManager} TextAccessibilityManager */
 /** @typedef {import("../../web/interfaces").IL10n} IL10n */
+/** @typedef {import("../src/display/annotation_layer.js").AnnotationLayer} AnnotationLayer */
 import { IL10n } from "../../../pdf.ts-web/interfaces.js";
 import { TextAccessibilityManager } from "../../../pdf.ts-web/text_accessibility.js";
 import { AnnotationEditorType } from "../../shared/util.js";
+import type { AnnotationLayer, AnnotStorageValue } from "../annotation_layer.js";
 import { PageViewport } from "../display_utils.js";
-import { AnnotationEditor, AnnotationEditorSerialized } from "./editor.js";
-import { AddCommandsP, AnnotationEditorUIManager } from "./tools.js";
+import { AnnotationEditor } from "./editor.js";
+import type { AddCommandsP, AnnotationEditorUIManager } from "./tools.js";
 interface AnnotationEditorLayerOptions {
-    accessibilityManager?: TextAccessibilityManager | undefined;
-    div: HTMLDivElement;
-    enabled?: boolean;
-    l10n: IL10n;
     mode?: unknown;
-    pageIndex: number;
+    div: HTMLDivElement;
     uiManager: AnnotationEditorUIManager;
+    enabled?: boolean;
+    accessibilityManager?: TextAccessibilityManager | undefined;
+    pageIndex: number;
+    l10n: IL10n;
     viewport: PageViewport;
+    annotationLayer?: AnnotationLayer | undefined;
 }
 interface RenderEditorLayerOptions {
     viewport: PageViewport;
@@ -60,6 +63,7 @@ export declare class AnnotationEditorLayer {
      * Disable editor creation.
      */
     disable(): void;
+    getEditableAnnotation(id: string): import("../annotation_layer.js").AnnotationElement | undefined;
     /**
      * Set the current editor.
      */
@@ -82,21 +86,13 @@ export declare class AnnotationEditorLayer {
      */
     addOrRebuild(editor: AnnotationEditor): void;
     /**
-     * Add a new editor and make this addition undoable.
-     */
-    addANewEditor(editor: AnnotationEditor): void;
-    /**
-     * Add a new editor and make this addition undoable.
-     */
-    addUndoableEditor(editor: AnnotationEditor): void;
-    /**
      * Get an id for an editor.
      */
     getNextId(): string;
     /**
      * Create a new editor
      */
-    deserialize(data: AnnotationEditorSerialized): AnnotationEditor | undefined;
+    deserialize(data: AnnotStorageValue): AnnotationEditor | undefined;
     /**
      * Set the last selected editor.
      */

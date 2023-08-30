@@ -17,20 +17,20 @@
  * limitations under the License.
  */
 
-import { assertEquals } from "https://deno.land/std@0.190.0/testing/asserts.ts";
-import { describe, it } from "https://deno.land/std@0.190.0/testing/bdd.ts";
+import { assertEquals } from "https://deno.land/std@0.195.0/assert/mod.ts";
+import { describe, it } from "https://deno.land/std@0.195.0/testing/bdd.ts";
 import { bytesToString } from "../shared/util.ts";
-import { type SaveData } from "./annotation.ts";
+import type { SaveData } from "./annotation.ts";
 import { Dict, Name, Ref } from "./primitives.ts";
 import { StringStream } from "./stream.ts";
-import { type XRefInfo } from "./worker.ts";
+import type { XRefInfo } from "./worker.ts";
 import { incrementalUpdate, writeDict } from "./writer.ts";
 import { XRef } from "./xref.ts";
 /*80--------------------------------------------------------------------------*/
 
 describe("Writer", () => {
   describe("Incremental update", () => {
-    it("should update a file with new objects", () => {
+    it("should update a file with new objects", async () => {
       const originalData = new Uint8Array();
       const newRefs = [
         { ref: Ref.get(123, 0x2d), data: "abc\n" },
@@ -47,7 +47,7 @@ describe("Writer", () => {
         info: {},
       };
 
-      let data: Uint8Array | string = incrementalUpdate({
+      let data: Uint8Array | string = await incrementalUpdate({
         originalData,
         xrefInfo,
         newRefs,
@@ -73,7 +73,7 @@ describe("Writer", () => {
       assertEquals(data, expected);
     });
 
-    it("should update a file, missing the /ID-entry, with new objects", () => {
+    it("should update a file, missing the /ID-entry, with new objects", async () => {
       const originalData = new Uint8Array();
       const newRefs = [{ ref: Ref.get(123, 0x2d), data: "abc\n" }];
       const xrefInfo: XRefInfo = {
@@ -87,7 +87,7 @@ describe("Writer", () => {
         info: {},
       };
 
-      let data: Uint8Array | string = incrementalUpdate({
+      let data: Uint8Array | string = await incrementalUpdate({
         originalData,
         xrefInfo,
         newRefs,
@@ -112,7 +112,7 @@ describe("Writer", () => {
   });
 
   describe("writeDict", () => {
-    it("should write a Dict", () => {
+    it("should write a Dict", async () => {
       const dict = new Dict();
       dict.set("A", Name.get("B"));
       dict.set("B", Ref.get(123, 456));
@@ -137,7 +137,7 @@ describe("Writer", () => {
       dict.set("NullVal", null);
 
       const buffer: string[] = [];
-      writeDict(dict, buffer);
+      await writeDict(dict, buffer);
 
       const expected = "<< /A /B /B 123 456 R /C 789 /D (hello world) " +
         "/E (\\(hello\\\\world\\)) /F [1.23 4.5 6] " +
@@ -149,14 +149,14 @@ describe("Writer", () => {
       assertEquals(buffer.join(""), expected);
     });
 
-    it("should write a Dict in escaping PDF names", () => {
+    it("should write a Dict in escaping PDF names", async () => {
       const dict = new Dict();
       dict.set("\xfeA#", Name.get("hello"));
       dict.set("B", Name.get("#hello"));
       dict.set("C", Name.get("he\xfello\xff"));
 
       const buffer: string[] = [];
-      writeDict(dict, buffer);
+      await writeDict(dict, buffer);
 
       const expected = "<< /#feA#23 /hello /B /#23hello /C /he#fello#ff>>";
 
@@ -165,7 +165,7 @@ describe("Writer", () => {
   });
 
   describe("XFA", () => {
-    it("should update AcroForm when no datasets in XFA array", () => {
+    it("should update AcroForm when no datasets in XFA array", async () => {
       const originalData = new Uint8Array();
       const newRefs: SaveData[] = [];
 
@@ -191,7 +191,7 @@ describe("Writer", () => {
         info: {},
       };
 
-      let data: Uint8Array | string = incrementalUpdate({
+      let data: Uint8Array | string = await incrementalUpdate({
         originalData,
         xrefInfo,
         newRefs,

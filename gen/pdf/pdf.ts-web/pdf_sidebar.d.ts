@@ -1,7 +1,5 @@
 import type { EventBus } from "./event_utils.js";
 import type { IL10n } from "./interfaces.js";
-import type { PDFThumbnailViewer } from "./pdf_thumbnail_viewer.js";
-import type { PDFViewer } from "./pdf_viewer.js";
 import { SidebarView } from "./ui_utils.js";
 import type { ViewerConfiguration } from "./viewer.js";
 interface PDFSidebarOptions {
@@ -9,14 +7,6 @@ interface PDFSidebarOptions {
      * The DOM elements.
      */
     elements: ViewerConfiguration["sidebar"];
-    /**
-     * The document viewer.
-     */
-    pdfViewer: PDFViewer;
-    /**
-     * The thumbnail viewer.
-     */
-    pdfThumbnailViewer: PDFThumbnailViewer;
     /**
      * The application event bus.
      */
@@ -37,11 +27,11 @@ export declare class PDFSidebar {
      * the viewers (PDFViewer/PDFThumbnailViewer) are updated correctly.
      */
     onToggled?: () => void;
-    pdfViewer: PDFViewer;
-    pdfThumbnailViewer: PDFThumbnailViewer;
+    onUpdateThumbnails?: () => void;
     outerContainer: HTMLDivElement;
     sidebarContainer: HTMLDivElement;
     toggleButton: HTMLButtonElement;
+    resizer: HTMLDivElement;
     thumbnailButton: HTMLButtonElement;
     outlineButton: HTMLButtonElement;
     attachmentsButton: HTMLButtonElement;
@@ -54,7 +44,7 @@ export declare class PDFSidebar {
     _currentOutlineItemButton: HTMLButtonElement;
     eventBus: EventBus;
     l10n: IL10n;
-    constructor({ elements, pdfViewer, pdfThumbnailViewer, eventBus, l10n, }: PDFSidebarOptions);
+    constructor({ elements, eventBus, l10n, }: PDFSidebarOptions);
     reset(): void;
     /**
      * @return One of the values in {SidebarView}.
@@ -74,6 +64,7 @@ export declare class PDFSidebar {
     open(): void;
     close(): void;
     toggle(): void;
+    get outerContainerWidth(): number;
 }
 export {};
 //# sourceMappingURL=pdf_sidebar.d.ts.map

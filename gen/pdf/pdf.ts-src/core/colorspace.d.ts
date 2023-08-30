@@ -1,8 +1,8 @@
 import { BaseStream } from "./base_stream.js";
-import { PDFFunctionFactory } from "./function.js";
-import { LocalColorSpaceCache } from "./image_utils.js";
+import type { PDFFunctionFactory } from "./function.js";
+import type { LocalColorSpaceCache } from "./image_utils.js";
 import { Dict, Name, Ref } from "./primitives.js";
-import { XRef } from "./xref.js";
+import type { XRef } from "./xref.js";
 export type CS = Ref | Name | Dict | number | [
     Ref | Name,
     Ref | Name | Dict,

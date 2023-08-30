@@ -15,11 +15,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { PDFJSDev, SKIP_BABEL, TESTING } from "../../../global.js";
 import { assert } from "../../../lib/util/trace.js";
 import { MurmurHash3_64 } from "../shared/murmurhash3.js";
 import { objectFromMap } from "../shared/util.js";
 import { AnnotationEditor } from "./editor/editor.js";
-/*80--------------------------------------------------------------------------*/
+export const SerializableEmpty = Object.freeze({
+    hash: "",
+});
 /**
  * Key/value storage for annotation data in forms.
  */
@@ -134,32 +137,24 @@ export class AnnotationStorage {
      */
     get serializable() {
         if (this.#storage.size === 0) {
-            return undefined;
+            return SerializableEmpty;
         }
-        const clone = new Map();
+        const map = new Map(), hash = new MurmurHash3_64(), transfers = [];
         for (const [key, val] of this.#storage) {
             const serialized = val instanceof AnnotationEditor
                 ? val.serialize()
                 : val;
             if (serialized) {
-                clone.set(key, serialized);
+                map.set(key, serialized);
+                hash.update(`${key}:${JSON.stringify(serialized)}`);
+                if (serialized.bitmap) {
+                    transfers.push(serialized.bitmap);
+                }
             }
         }
-        return clone;
-    }
-    /**
-     * PLEASE NOTE: Only intended for usage within the API itself.
-     * @ignore
-     */
-    static getHash(map) {
-        if (!map) {
-            return "";
-        }
-        const hash = new MurmurHash3_64();
-        for (const [key, val] of map) {
-            hash.update(`${key}:${JSON.stringify(val)}`);
-        }
-        return hash.hexdigest();
+        return map.size > 0
+            ? { map, hash: hash.hexdigest(), transfers }
+            : SerializableEmpty;
     }
 }
 /**
@@ -171,8 +166,12 @@ export class PrintAnnotationStorage extends AnnotationStorage {
     #serializable;
     constructor(parent) {
         super();
+        const { map, hash, transfers } = parent.serializable;
         // Create a *copy* of the data, since Objects are passed by reference in JS.
-        this.#serializable = structuredClone(parent.serializable);
+        const clone = structuredClone(map, (PDFJSDev || SKIP_BABEL || TESTING) && transfers
+            ? { transfer: transfers }
+            : undefined);
+        this.#serializable = { map: clone, hash, transfers };
     }
     // eslint-disable-next-line getter-return
     get print() {

@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-import { BaseStream } from "./base_stream.ts";
+import type { BaseStream } from "./base_stream.ts";
 import { DecodeStream } from "./decode_stream.ts";
 /*80--------------------------------------------------------------------------*/
 

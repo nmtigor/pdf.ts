@@ -374,6 +374,31 @@ export function encodeToXmlString(str) {
     }
     return buffer.join("");
 }
+export function validateFontName(fontFamily, mustWarn = false) {
+    // See https://developer.mozilla.org/en-US/docs/Web/CSS/string.
+    const m = /^("|').*("|')$/.exec(fontFamily);
+    if (m && m[1] === m[2]) {
+        const re = new RegExp(`[^\\\\]${m[1]}`);
+        if (re.test(fontFamily.slice(1, -1))) {
+            if (mustWarn) {
+                warn(`FontFamily contains unescaped ${m[1]}: ${fontFamily}.`);
+            }
+            return false;
+        }
+    }
+    else {
+        // See https://developer.mozilla.org/en-US/docs/Web/CSS/custom-ident.
+        for (const ident of fontFamily.split(/[ \t]+/)) {
+            if (/^(\d|(-(\d|-)))/.test(ident) || !/^[\w-\\]+$/.test(ident)) {
+                if (mustWarn) {
+                    warn(`FontFamily contains invalid <custom-ident>: ${fontFamily}.`);
+                }
+                return false;
+            }
+        }
+    }
+    return true;
+}
 export function validateCSSFont(cssFontInfo) {
     // See https://developer.mozilla.org/en-US/docs/Web/CSS/font-style.
     const DEFAULT_CSS_FONT_OBLIQUE = "14";
@@ -396,23 +421,8 @@ export function validateCSSFont(cssFontInfo) {
         "lighter",
     ]);
     const { fontFamily, fontWeight, italicAngle } = cssFontInfo;
-    // See https://developer.mozilla.org/en-US/docs/Web/CSS/string.
-    const m = /^("|').*("|')$/.exec(fontFamily);
-    if (m && m[1] === m[2]) {
-        const re = new RegExp(`[^\\\\]${m[1]}`);
-        if (re.test(fontFamily.slice(1, -1))) {
-            warn(`XFA - FontFamily contains unescaped ${m[1]}: ${fontFamily}.`);
-            return false;
-        }
-    }
-    else {
-        // See https://developer.mozilla.org/en-US/docs/Web/CSS/custom-ident.
-        for (const ident of fontFamily.split(/[ \t]+/)) {
-            if (/^(\d|(-(\d|-)))/.test(ident) || !/^[\w-\\]+$/.test(ident)) {
-                warn(`XFA - FontFamily contains invalid <custom-ident>: ${fontFamily}.`);
-                return false;
-            }
-        }
+    if (!validateFontName(fontFamily, true)) {
+        return false;
     }
     const weight = fontWeight ? fontWeight.toString() : "";
     cssFontInfo.fontWeight = CSS_FONT_WEIGHT_VALUES.has(weight)
@@ -435,7 +445,7 @@ export function recoverJsURL(str) {
         URL_OPEN_METHODS.join("|").replaceAll(".", "\\.") +
         ")\\((?:'|\")([^'\"]*)(?:'|\")(?:,\\s*(\\w+)\\)|\\))", "i");
     const jsUrl = regex.exec(str);
-    if (jsUrl && jsUrl[2]) {
+    if (jsUrl?.[2]) {
         const url = jsUrl[2];
         let newWindow = false;
         if (jsUrl[3] === "true" && jsUrl[1] === "app.launchURL") {

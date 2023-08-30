@@ -21,13 +21,13 @@ import {
   assert,
   assertEquals,
   fail,
-} from "https://deno.land/std@0.190.0/testing/asserts.ts";
+} from "https://deno.land/std@0.195.0/assert/mod.ts";
 import {
   afterAll,
   beforeAll,
   describe,
   it,
-} from "https://deno.land/std@0.190.0/testing/bdd.ts";
+} from "https://deno.land/std@0.195.0/testing/bdd.ts";
 import { createIdFactory, XRefMock } from "../shared/test_utils.ts";
 import { FormatError, OPS } from "../shared/util.ts";
 import { BaseStream } from "./base_stream.ts";
@@ -390,7 +390,7 @@ describe("evaluator", () => {
         });
 
         fail("Shouldn't get here.");
-      } catch (_) {
+      } catch {
         assert(!!result.fnArray && !!result.argsArray);
         assertEquals(result.fnArray.length, 0);
       }
@@ -410,7 +410,7 @@ describe("evaluator", () => {
         } as any);
 
         fail("Shouldn't get here.");
-      } catch (_) {}
+      } catch {}
     });
   });
 

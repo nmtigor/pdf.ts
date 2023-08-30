@@ -3,9 +3,10 @@
  */
 import { createValidAbsoluteUrl, warn } from "../../shared/util.js";
 import { selectFont } from "./fonts.js";
+import { $content, $extra, $getParent, $getSubformParent, $getTemplateRoot, $globalData, $nodeName, $pushGlyphs, $text, $toStyle, } from "./symbol_utils.js";
 import { TextMeasure } from "./text.js";
 import { getMeasurement, stripQuotes } from "./utils.js";
-import { $content, $extra, $getParent, $getSubformParent, $getTemplateRoot, $globalData, $nodeName, $pushGlyphs, $text, $toStyle, XFAObject, } from "./xfa_object.js";
+import { XFAObject } from "./xfa_object.js";
 /*80--------------------------------------------------------------------------*/
 export function measureToString(m) {
     if (typeof m === "string")
@@ -89,7 +90,7 @@ const converters = {
     },
     position(node, style) {
         const parent = node[$getSubformParent]();
-        if (parent && parent.layout && parent.layout !== "position") {
+        if (parent?.layout && parent.layout !== "position") {
             // IRL, we've some x/y in tb layout.
             // Specs say x/y is only used in positioned layout.
             return;
@@ -289,7 +290,7 @@ export function computeBbox(node, html, availableSpace) {
 }
 export function fixDimensions(node) {
     const parent = node[$getSubformParent]();
-    if (parent?.layout?.includes("row")) {
+    if (parent.layout?.includes("row")) {
         const extra = parent[$extra];
         const colSpan = node.colSpan;
         let width;
@@ -497,7 +498,7 @@ function getCurrentPara(node) {
     return stack.length ? stack.at(-1) : undefined;
 }
 export function setPara(node, nodeStyle, value) {
-    if (value.attributes?.class?.includes("xfaRich")) {
+    if (value.attributes.class?.includes("xfaRich")) {
         if (nodeStyle) {
             if (node.h === "") {
                 nodeStyle.height = "auto";

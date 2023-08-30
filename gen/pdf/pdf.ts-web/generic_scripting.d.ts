@@ -1,6 +1,6 @@
-import { PDFDocumentProxy } from "../pdf.ts-src/pdf.js";
-import { CreateSandboxP, EventInSandBox, IScripting } from "./interfaces.js";
-export declare function docPropertiesLookup(pdfDocument: PDFDocumentProxy): Promise<{
+import type { PDFDocumentProxy } from "../pdf.ts-src/pdf.js";
+import type { CreateSandboxP, EventInSandBox, IScripting } from "./interfaces.js";
+export declare function docProperties(pdfDocument: PDFDocumentProxy): Promise<{
     baseURL: string;
     filesize: number;
     filename: string;

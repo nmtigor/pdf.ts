@@ -241,6 +241,7 @@ export declare class PDFViewer {
      * @param val The page label.
      */
     set currentPageLabel(val: string | undefined);
+    getCachedPageViews(): Set<PDFPageView>;
     _pagesRotation: number;
     get pagesRotation(): number;
     _optionalContentConfigPromise?: Promise<OptionalContentConfig | undefined> | undefined;
@@ -302,8 +303,6 @@ export declare class PDFViewer {
     get isVerticalScrollbarEnabled(): boolean;
     /** @final */
     protected getVisiblePages$(): VisibleElements;
-    isPageVisible(pageNumber: number): boolean;
-    isPageCached(pageNumber: number): boolean;
     cleanup(): void;
     protected _cancelRendering(): void;
     forceRendering(currentlyVisiblePages?: VisibleElements): boolean;

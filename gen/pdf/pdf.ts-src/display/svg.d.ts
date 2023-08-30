@@ -5,8 +5,8 @@ import type { OpListIR } from "../core/operator_list.js";
 import type { ShadingPatternIR, TilingPatternIR } from "../core/pattern.js";
 import { ShadingType } from "../core/pattern.js";
 import { type matrix_t, OPS, TextRenderingMode } from "../shared/util.js";
-import { PDFCommonObjs, PDFObjects, PDFObjs } from "./api.js";
-import { DOMSVGFactory, PageViewport } from "./display_utils.js";
+import type { PDFCommonObjs, PDFObjects, PDFObjs } from "./api.js";
+import { DOMSVGFactory, type PageViewport } from "./display_utils.js";
 declare class SVGExtraState {
     font?: FontExpotData;
     fontSize: number;

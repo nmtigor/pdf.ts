@@ -18,7 +18,8 @@
 import { shadow, warn } from "../../shared/util.js";
 import { $buildXFAObject, NamespaceIds } from "./namespaces.js";
 import { getInteger, getStringOption } from "./utils.js";
-import { $content, $finalize, ContentObject, IntegerObject, Option01, Option10, OptionObject, StringObject, XFAObject, XFAObjectArray, } from "./xfa_object.js";
+import { $content, $finalize } from "./symbol_utils.js";
+import { ContentObject, IntegerObject, Option01, Option10, OptionObject, StringObject, XFAObject, XFAObjectArray, } from "./xfa_object.js";
 /*80--------------------------------------------------------------------------*/
 const CONFIG_NS_ID = NamespaceIds.config.id;
 class Acrobat extends XFAObject {

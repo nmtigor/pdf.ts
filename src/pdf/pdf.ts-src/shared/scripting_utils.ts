@@ -24,7 +24,8 @@
  *              unexpected/unnecessary size increase of the *built* files.
  */
 
-import { type TupleOf } from "../../../lib/alias.ts";
+import type { rgb_t } from "../../../lib/color/alias.ts";
+import type { TupleOf } from "../../../lib/alias.ts";
 /*80--------------------------------------------------------------------------*/
 
 function makeColorComp(n: number) {
@@ -33,7 +34,6 @@ function makeColorComp(n: number) {
     .padStart(2, "0");
 }
 
-export type RGB = TupleOf<number, 3>;
 export type XYZ = TupleOf<number, 3>;
 export type CMYK = TupleOf<number, 4>;
 
@@ -59,7 +59,7 @@ export namespace ColorConverters {
   }
 
   export function G_RGB([g]: [number]) {
-    return <["RGB", ...RGB]> ["RGB", g, g, g];
+    return <["RGB", ...rgb_t]> ["RGB", g, g, g];
   }
 
   export function G_HTML([g]: [number]) {
@@ -67,11 +67,11 @@ export namespace ColorConverters {
     return `#${G}${G}${G}`;
   }
 
-  export function RGB_G([r, g, b]: RGB) {
+  export function RGB_G([r, g, b]: rgb_t) {
     return <["G", number]> ["G", 0.3 * r + 0.59 * g + 0.11 * b];
   }
 
-  export function RGB_HTML([r, g, b]: RGB) {
+  export function RGB_HTML([r, g, b]: rgb_t) {
     const R = makeColorComp(r);
     const G = makeColorComp(g);
     const B = makeColorComp(b);
@@ -83,7 +83,7 @@ export namespace ColorConverters {
   }
 
   export function CMYK_RGB([c, y, m, k]: CMYK) {
-    return <["RGB", ...RGB]> [
+    return <["RGB", ...rgb_t]> [
       "RGB",
       1 - Math.min(1, c + k),
       1 - Math.min(1, m + k),
@@ -92,11 +92,11 @@ export namespace ColorConverters {
   }
 
   export function CMYK_HTML(components: CMYK) {
-    const rgb = <RGB> CMYK_RGB(components).slice(1);
+    const rgb = CMYK_RGB(components).slice(1) as rgb_t;
     return RGB_HTML(rgb);
   }
 
-  export function RGB_CMYK([r, g, b]: RGB) {
+  export function RGB_CMYK([r, g, b]: rgb_t) {
     const c = 1 - r;
     const m = 1 - g;
     const y = 1 - b;

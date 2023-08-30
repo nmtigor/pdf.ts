@@ -163,15 +163,15 @@ export class KeyboardManager {
      */
     constructor(callbacks) {
         const { isMac } = FeatureTest.platform;
-        for (const [keys, callback] of callbacks) {
+        for (const [keys, callback, bubbles = false] of callbacks) {
             for (const key of keys) {
                 const isMacKey = key.startsWith("mac+");
                 if (isMac && isMacKey) {
-                    this.callbacks.set(key.slice(4), callback);
+                    this.callbacks.set(key.slice(4), { callback, bubbles });
                     this.allKeys.add(key.split("+").at(-1));
                 }
                 else if (!isMac && !isMacKey) {
-                    this.callbacks.set(key, callback);
+                    this.callbacks.set(key, { callback, bubbles });
                     this.allKeys.add(key.split("+").at(-1));
                 }
             }
@@ -202,19 +202,24 @@ export class KeyboardManager {
     /**
      * Execute a callback, if any, for a given keyboard event.
      * The self is used as `this` in the callback.
-     * @returns
+     * @return
      */
     exec(self, event) {
         if (!this.allKeys.has(event.key)) {
             return;
         }
-        const callback = this.callbacks.get(this.#serialize(event));
-        if (!callback) {
+        const info = this.callbacks.get(this.#serialize(event));
+        if (!info) {
             return;
         }
+        const { callback, bubbles } = info;
         callback.bind(self)();
-        event.stopPropagation();
-        event.preventDefault();
+        // For example, ctrl+s in a FreeText must be handled by the viewer, hence
+        // the event must bubble.
+        if (!bubbles) {
+            event.stopPropagation();
+            event.preventDefault();
+        }
     }
 }
 export class ColorManager {
@@ -271,30 +276,38 @@ export class ColorManager {
  * some action like copy/paste, undo/redo, ...
  */
 export class AnnotationEditorUIManager {
-    static _keyboardManager = new KeyboardManager([
-        [["ctrl+a", "mac+meta+a"], AnnotationEditorUIManager.prototype.selectAll],
-        [["ctrl+z", "mac+meta+z"], AnnotationEditorUIManager.prototype.undo],
-        [
-            ["ctrl+y", "ctrl+shift+Z", "mac+meta+shift+Z"],
-            AnnotationEditorUIManager.prototype.redo,
-        ],
-        [
+    static get _keyboardManager() {
+        return shadow(this, "_keyboardManager", new KeyboardManager([
             [
-                "Backspace",
-                "alt+Backspace",
-                "ctrl+Backspace",
-                "shift+Backspace",
-                "mac+Backspace",
-                "mac+alt+Backspace",
-                "mac+ctrl+Backspace",
-                "Delete",
-                "ctrl+Delete",
-                "shift+Delete",
+                ["ctrl+a", "mac+meta+a"],
+                AnnotationEditorUIManager.prototype.selectAll,
             ],
-            AnnotationEditorUIManager.prototype.delete,
-        ],
-        [["Escape", "mac+Escape"], AnnotationEditorUIManager.prototype.unselectAll],
-    ]);
+            [["ctrl+z", "mac+meta+z"], AnnotationEditorUIManager.prototype.undo],
+            [
+                ["ctrl+y", "ctrl+shift+Z", "mac+meta+shift+Z"],
+                AnnotationEditorUIManager.prototype.redo,
+            ],
+            [
+                [
+                    "Backspace",
+                    "alt+Backspace",
+                    "ctrl+Backspace",
+                    "shift+Backspace",
+                    "mac+Backspace",
+                    "mac+alt+Backspace",
+                    "mac+ctrl+Backspace",
+                    "Delete",
+                    "ctrl+Delete",
+                    "shift+Delete",
+                ],
+                AnnotationEditorUIManager.prototype.delete,
+            ],
+            [
+                ["Escape", "mac+Escape"],
+                AnnotationEditorUIManager.prototype.unselectAll,
+            ],
+        ]));
+    }
     #activeEditor;
     /**
      * Get the current active editor.
@@ -310,6 +323,7 @@ export class AnnotationEditorUIManager {
     get currentPageIndex() {
         return this.#currentPageIndex;
     }
+    #deletedAnnotationsElementIds = new Set();
     #editorTypes;
     #editorsToRescale = new Set();
     #eventBus;
@@ -433,8 +447,9 @@ export class AnnotationEditorUIManager {
         }
         const editors = [];
         for (const editor of this.#selectedEditors) {
-            if (!editor.isEmpty()) {
-                editors.push(editor.serialize());
+            const serialized = editor.serialize(/* isForCopying = */ true);
+            if (serialized) {
+                editors.push(serialized);
             }
         }
         if (editors.length === 0) {
@@ -687,7 +702,30 @@ export class AnnotationEditorUIManager {
     removeEditor(editor) {
         this.#allEditors.delete(editor.id);
         this.unselect(editor);
-        this.#annotationStorage?.remove(editor.id);
+        if (!editor.annotationElementId ||
+            !this.#deletedAnnotationsElementIds.has(editor.annotationElementId)) {
+            this.#annotationStorage?.remove(editor.id);
+        }
+    }
+    /**
+     * The annotation element with the given id has been deleted.
+     */
+    addDeletedAnnotationElement(editor) {
+        this.#deletedAnnotationsElementIds.add(editor.annotationElementId);
+        editor.deleted = true;
+    }
+    /**
+     * Check if the annotation element with the given id has been deleted.
+     */
+    isDeletedAnnotationElement(annotationElementId) {
+        return this.#deletedAnnotationsElementIds.has(annotationElementId);
+    }
+    /**
+     * The annotation element with the given id have been restored.
+     */
+    removeDeletedAnnotationElement(editor) {
+        this.#deletedAnnotationsElementIds.delete(editor.annotationElementId);
+        editor.deleted = false;
     }
     /**
      * Add an editor to the layer it belongs to or add it to the global map.

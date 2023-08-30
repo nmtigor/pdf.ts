@@ -13,19 +13,20 @@
  * limitations under the License.
  */
 
-import { FontFinder } from "./fonts.ts";
-import { type XFALayoutMode } from "./html_utils.ts";
-import {
-  type BorderExtra,
+import type { FontFinder } from "./fonts.ts";
+import type { XFALayoutMode } from "./html_utils.ts";
+import { $content, $nsAttributes } from "./symbol_utils.ts";
+import type {
+  BorderExtra,
   ContentArea,
   Overflow,
-  type OverflowExtra,
+  OverflowExtra,
   PageArea,
   Para,
   Template,
 } from "./template.ts";
-import { HTMLResult } from "./utils.ts";
-import { $content, $nsAttributes, XFAObject } from "./xfa_object.ts";
+import type { HTMLResult } from "./utils.ts";
+import type { XFAObject } from "./xfa_object.ts";
 /*80--------------------------------------------------------------------------*/
 
 export interface XFAAttrs {
@@ -33,12 +34,8 @@ export interface XFAAttrs {
 }
 export interface XFANsAttrs extends XFAAttrs {
   [$nsAttributes]?: {
-    xfa: {
-      dataNode?: "dataGroup" | "dataValue";
-    };
-  } & {
-    [key: string]: XFAAttrs;
-  };
+    xfa: { dataNode?: "dataGroup" | "dataValue" };
+  } & { [key: string]: XFAAttrs };
 }
 
 export type XFAStyleData = Record<string, string>;

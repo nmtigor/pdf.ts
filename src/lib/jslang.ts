@@ -5,14 +5,13 @@
 
 import { INOUT } from "../global.ts";
 import { int } from "./alias.ts";
-import {
-  type AbstractConstructor,
-  type Constructor,
-  type FloatArray,
-  type IntegerArray,
-  Ratio,
-  type uint,
-  type uint8,
+import type {
+  AbstractConstructor,
+  Constructor,
+  FloatArray,
+  IntegerArray,
+  uint,
+  uint8,
 } from "./alias.ts";
 import { assert } from "./util/trace.ts";
 /*80--------------------------------------------------------------------------*/

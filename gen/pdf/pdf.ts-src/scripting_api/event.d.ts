@@ -1,10 +1,10 @@
-import { AnnotActions } from "../core/core_utils.js";
-import { DocWrapped, FieldWrapped } from "./app.js";
-import { ScriptingActionName } from "./common.js";
-import { Doc } from "./doc.js";
-import { Field } from "./field.js";
-import { ExternalCall } from "./initialization.js";
-import { ScriptingData, SendData } from "./pdf_object.js";
+import type { AnnotActions } from "../core/core_utils.js";
+import type { DocWrapped, FieldWrapped } from "./app.js";
+import type { ScriptingActionName } from "./common.js";
+import type { Doc } from "./doc.js";
+import type { Field } from "./field.js";
+import type { ExternalCall } from "./initialization.js";
+import type { ScriptingData, SendData } from "./pdf_object.js";
 interface _SendEventData extends SendData {
 }
 export interface ScriptingEventData extends ScriptingData<_SendEventData> {

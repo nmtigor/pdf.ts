@@ -1,17 +1,19 @@
 import type { C2D, point_t, TupleOf } from "../../../../lib/alias.js";
-import { IL10n } from "../../../pdf.ts-web/interfaces.js";
+import type { IL10n } from "../../../pdf.ts-web/interfaces.js";
 import { AnnotationEditorParamsType } from "../../shared/util.js";
-import { AnnotationEditorLayer } from "./annotation_editor_layer.js";
-import { AnnotationEditor, AnnotationEditorP, AnnotationEditorSerialized, PropertyToUpdate } from "./editor.js";
-import { AnnotationEditorUIManager } from "./tools.js";
+import { type AnnotStorageValue } from "../annotation_layer.js";
+import type { AnnotationEditorLayer } from "./annotation_editor_layer.js";
+import type { AnnotationEditorP, PropertyToUpdate } from "./editor.js";
+import { AnnotationEditor } from "./editor.js";
+import { type AnnotationEditorUIManager } from "./tools.js";
 export interface InkEditorP extends AnnotationEditorP {
     name: "inkEditor";
     color?: string;
     thickness?: number;
     opacity?: number;
 }
-type _curve_t = TupleOf<point_t, 4>;
-export interface InkEditorSerialized extends AnnotationEditorSerialized {
+type curve_t_ = TupleOf<point_t, 4>;
+export interface InkEditorSerialized extends AnnotStorageValue {
     thickness: number;
     opacity: number;
     paths: {
@@ -32,8 +34,9 @@ export declare class InkEditor extends AnnotationEditor {
     color: string | undefined;
     thickness: number | undefined;
     opacity: number | undefined;
-    paths: _curve_t[][];
+    paths: curve_t_[][];
     bezierPath2D: Path2D[];
+    allRawPaths: unknown[];
     currentPath: point_t[];
     scaleFactor: number;
     translationX: number;
@@ -73,6 +76,10 @@ export declare class InkEditor extends AnnotationEditor {
      */
     canvasPointerdown(event: PointerEvent): void;
     /**
+     * oncontextmenu callback for the canvas we're drawing on.
+     */
+    canvasContextMenu(event: MouseEvent): void;
+    /**
      * onpointermove callback for the canvas we're drawing on.
      */
     canvasPointermove(event: PointerEvent): void;
@@ -94,12 +101,12 @@ export declare class InkEditor extends AnnotationEditor {
      */
     setDimensions(width: number, height: number): void;
     /** @inheritdoc */
-    static deserialize(data: InkEditorSerialized, parent: AnnotationEditorLayer, uiManager: AnnotationEditorUIManager): InkEditor;
+    static deserialize(data: InkEditorSerialized, parent: AnnotationEditorLayer, uiManager: AnnotationEditorUIManager): InkEditor | undefined;
     /**
      * @inheritdoc
      * @implement
      */
-    serialize(): InkEditorSerialized | undefined;
+    serialize(isForCopying?: boolean): InkEditorSerialized | undefined;
 }
 export {};
 //# sourceMappingURL=ink.d.ts.map

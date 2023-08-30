@@ -140,6 +140,11 @@ declare function getViewerConfiguration(): {
          */
         toggleButton: HTMLButtonElement;
         /**
+         * The DOM element that can be dragged in
+         * order to adjust the width of the sidebar.
+         */
+        resizer: HTMLDivElement;
+        /**
          * The button used to show the thumbnail view.
          */
         thumbnailButton: HTMLButtonElement;
@@ -173,17 +178,6 @@ declare function getViewerConfiguration(): {
         layersView: HTMLDivElement;
         outlineOptionsContainer: HTMLDivElement;
         currentOutlineItemButton: HTMLButtonElement;
-    };
-    sidebarResizer: {
-        /**
-         * The outer container (encasing both the viewer and sidebar elements).
-         */
-        outerContainer: HTMLDivElement;
-        /**
-         * The DOM element that can be dragged in
-         * order to adjust the width of the sidebar.
-         */
-        resizer: HTMLDivElement;
     };
     findBar: {
         bar: HTMLDivElement;
@@ -261,5 +255,6 @@ declare function getViewerConfiguration(): {
     debuggerScriptPath: string;
 };
 export type ViewerConfiguration = ReturnType<typeof getViewerConfiguration>;
+export type ToolbarOptions = ViewerConfiguration["toolbar"];
 export {};
 //# sourceMappingURL=viewer.d.ts.map

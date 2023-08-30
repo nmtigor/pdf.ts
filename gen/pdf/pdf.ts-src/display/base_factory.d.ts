@@ -3,6 +3,7 @@ import { CMapCompressionType } from "../shared/util.js";
 export declare abstract class BaseFilterFactory {
     addFilter(maps?: number[][]): string;
     addHCMFilter(fgColor: string, bgColor: string): string;
+    addHighlightHCMFilter(fgColor: string, bgColor: string, newFgColor: string, newBgColor: string): string;
     destroy(keepHCM?: boolean): void;
 }
 export interface CanvasEntry {

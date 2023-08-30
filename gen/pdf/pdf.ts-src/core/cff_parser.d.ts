@@ -1,6 +1,6 @@
-import { type Constructor } from "../../../lib/alias.js";
-import { type FontProps } from "./evaluator.js";
-import { Stream } from "./stream.js";
+import type { Constructor } from "../../../lib/alias.js";
+import type { FontProps } from "./evaluator.js";
+import type { Stream } from "./stream.js";
 /**
  * The CFF class takes a Type1 file and wrap it into a
  * 'Compact Font Format' which itself embed Type2 charstrings.

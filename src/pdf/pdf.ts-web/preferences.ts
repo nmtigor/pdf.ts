@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-import { CHROME, PDFJSDev } from "../../global.ts";
+import { CHROME, MOZCENTRAL, PDFJSDev } from "../../global.ts";
 import type { OptionName, UserOptions } from "./app_options.ts";
 import { AppOptions, OptionKind } from "./app_options.ts";
 /*80--------------------------------------------------------------------------*/
@@ -65,9 +65,11 @@ export abstract class BasePreferences {
    * Stub function for writing preferences to storage.
    * @param prefObj The preferences that should be written to storage.
    * @return A promise that is resolved when the preference values
-   *  have been written.
+   *    have been written.
    */
-  protected abstract _writeToStorage(prefObj: UserOptions): Promise<void>;
+  protected _writeToStorage(prefObj: UserOptions): Promise<void> {
+    throw new Error("Not implemented: _writeToStorage");
+  }
 
   /**
    * Stub function for reading preferences from storage.
@@ -85,6 +87,9 @@ export abstract class BasePreferences {
    *  have been reset.
    */
   async reset(): Promise<void> {
+    /*#static*/ if (MOZCENTRAL) {
+      throw new Error("Please use `about:config` to change preferences.");
+    }
     await this.#initializedPromise;
     const prefs = this.#prefs;
 
@@ -107,6 +112,9 @@ export abstract class BasePreferences {
     name: OptionName,
     value: boolean | number | string,
   ): Promise<unknown> {
+    /*#static*/ if (MOZCENTRAL) {
+      throw new Error("Please use `about:config` to change preferences.");
+    }
     await this.#initializedPromise;
     const defaultValue = this.#defaults[name],
       prefs = this.#prefs;

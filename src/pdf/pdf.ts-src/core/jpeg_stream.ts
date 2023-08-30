@@ -18,7 +18,7 @@
  */
 
 import { shadow } from "../shared/util.ts";
-import { BaseStream } from "./base_stream.ts";
+import type { BaseStream } from "./base_stream.ts";
 import { ImageStream } from "./decode_stream.ts";
 import { JpegImage, type JpegOptions } from "./jpg.ts";
 import { Dict } from "./primitives.ts";

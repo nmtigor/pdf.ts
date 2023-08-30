@@ -22,10 +22,11 @@ import { FontExpotDataEx } from "../core/fonts.js";
 import { bytesToString, FeatureTest, shadow, string32, warn, } from "../shared/util.js";
 export class FontLoader {
     _document;
-    nativeFontFaces = [];
+    nativeFontFaces = new Set();
     styleElement;
     loadingRequests;
     loadTestFontId;
+    #systemFonts = new Set();
     constructor({ ownerDocument = globalThis.document, styleElement = undefined, // For testing only
      }) {
         this._document = ownerDocument;
@@ -36,8 +37,12 @@ export class FontLoader {
         }
     }
     addNativeFontFace(nativeFontFace) {
-        this.nativeFontFaces.push(nativeFontFace);
+        this.nativeFontFaces.add(nativeFontFace);
         this._document.fonts.add(nativeFontFace);
+    }
+    removeNativeFontFace(nativeFontFace) {
+        this.nativeFontFaces.delete(nativeFontFace);
+        this._document.fonts.delete(nativeFontFace);
     }
     insertRule(rule) {
         if (!this.styleElement) {
@@ -53,19 +58,45 @@ export class FontLoader {
         for (const nativeFontFace of this.nativeFontFaces) {
             this._document.fonts.delete(nativeFontFace);
         }
-        this.nativeFontFaces.length = 0;
+        this.nativeFontFaces.clear();
+        this.#systemFonts.clear();
         if (this.styleElement) {
             // Note: ChildNode.remove doesn't throw if the parentNode is undefined.
             this.styleElement.remove();
             this.styleElement = undefined;
         }
     }
+    async loadSystemFont(info) {
+        if (!info || this.#systemFonts.has(info.loadedName)) {
+            return;
+        }
+        assert(!this.disableFontFace, "loadSystemFont shouldn't be called when `disableFontFace` is set.");
+        if (this.isFontLoadingAPISupported) {
+            const { loadedName, src, style } = info;
+            const fontFace = new FontFace(loadedName, src, style);
+            this.addNativeFontFace(fontFace);
+            try {
+                await fontFace.load();
+                this.#systemFonts.add(loadedName);
+            }
+            catch {
+                warn(`Cannot load system font: ${info.baseFontName}, installing it could help to improve PDF rendering.`);
+                this.removeNativeFontFace(fontFace);
+            }
+            return;
+        }
+        assert(0, "Not implemented: loadSystemFont without the Font Loading API.");
+    }
     async bind(font) {
         // Add the font to the DOM only once; skip if the font is already loaded.
-        if (font.attached || font.missingFile) {
+        if (font.attached || (font.missingFile && !font.systemFontInfo)) {
             return;
         }
         font.attached = true;
+        if (font.systemFontInfo) {
+            await this.loadSystemFont(font.systemFontInfo);
+            return;
+        }
         if (this.isFontLoadingAPISupported) {
             const nativeFontFace = font.createNativeFontFace();
             if (nativeFontFace) {
@@ -288,7 +319,7 @@ export class FontFaceObject extends FontExpotDataEx {
     }
     createFontFaceRule() {
         if (!this.data || this.disableFontFace)
-            return null;
+            return undefined;
         const data = bytesToString(this.data);
         // Add the @font-face rule to the document.
         const url = `url(data:${this.mimetype};base64,${btoa(data)});`;

@@ -1,8 +1,9 @@
-import { FontFinder } from "./fonts.js";
-import { type XFALayoutMode } from "./html_utils.js";
-import { type BorderExtra, ContentArea, Overflow, type OverflowExtra, PageArea, Para, Template } from "./template.js";
-import { HTMLResult } from "./utils.js";
-import { $content, $nsAttributes, XFAObject } from "./xfa_object.js";
+import type { FontFinder } from "./fonts.js";
+import type { XFALayoutMode } from "./html_utils.js";
+import { $content, $nsAttributes } from "./symbol_utils.js";
+import type { BorderExtra, ContentArea, Overflow, OverflowExtra, PageArea, Para, Template } from "./template.js";
+import type { HTMLResult } from "./utils.js";
+import type { XFAObject } from "./xfa_object.js";
 export interface XFAAttrs {
     [key: string]: string;
 }

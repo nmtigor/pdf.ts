@@ -727,5 +727,10 @@ export function toggleCheckedBtn(button, toggle, view) {
     button.setAttribute("aria-checked", toggle);
     view?.classList.toggle("hidden", !toggle);
 }
+export function toggleExpandedBtn(button, toggle, view) {
+    button.classList.toggle("toggled", toggle);
+    button.setAttribute("aria-expanded", toggle);
+    view?.classList.toggle("hidden", !toggle);
+}
 /*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=ui_utils.js.map

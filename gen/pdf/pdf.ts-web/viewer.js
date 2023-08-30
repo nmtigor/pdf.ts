@@ -183,6 +183,11 @@ function getViewerConfiguration() {
              * The button used for opening/closing the sidebar.
              */
             toggleButton: document.getElementById("sidebarToggle"),
+            /**
+             * The DOM element that can be dragged in
+             * order to adjust the width of the sidebar.
+             */
+            resizer: document.getElementById("sidebarResizer"),
             // Buttons
             /**
              * The button used to show the thumbnail view.
@@ -220,17 +225,6 @@ function getViewerConfiguration() {
             // View-specific options
             outlineOptionsContainer: document.getElementById("outlineOptionsContainer"),
             currentOutlineItemButton: document.getElementById("currentOutlineItem"),
-        },
-        sidebarResizer: {
-            /**
-             * The outer container (encasing both the viewer and sidebar elements).
-             */
-            outerContainer: document.getElementById("outerContainer"),
-            /**
-             * The DOM element that can be dragged in
-             * order to adjust the width of the sidebar.
-             */
-            resizer: document.getElementById("sidebarResizer"),
         },
         findBar: {
             bar: document.getElementById("findbar"),

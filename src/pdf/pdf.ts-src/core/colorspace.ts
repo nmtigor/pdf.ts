@@ -24,10 +24,10 @@ import type { XYZ } from "../shared/scripting_utils.ts";
 import { FormatError, info, shadow, warn } from "../shared/util.ts";
 import { BaseStream } from "./base_stream.ts";
 import { MissingDataException } from "./core_utils.ts";
-import { type ParsedFunction, PDFFunctionFactory } from "./function.ts";
-import { LocalColorSpaceCache } from "./image_utils.ts";
+import type { ParsedFunction, PDFFunctionFactory } from "./function.ts";
+import type { LocalColorSpaceCache } from "./image_utils.ts";
 import { Dict, Name, Ref } from "./primitives.ts";
-import { XRef } from "./xref.ts";
+import type { XRef } from "./xref.ts";
 /*80--------------------------------------------------------------------------*/
 
 /**
@@ -321,7 +321,7 @@ export abstract class ColorSpace {
       csRef = cacheKey;
 
       // If parsing succeeded, we know that this call cannot throw.
-      cacheKey = <Name> xref.fetch(cacheKey);
+      cacheKey = xref.fetch(cacheKey) as Name;
     }
     if (cacheKey instanceof Name) {
       csName = cacheKey.name;
@@ -473,23 +473,27 @@ export abstract class ColorSpace {
         case "DeviceCMYK":
           return this.singletons.cmyk;
         case "CalGray":
-          params = <Dict> xref.fetchIfRef(cs[1]);
-          whitePoint = <Float32Array> params.getArray("WhitePoint");
-          blackPoint = <Float32Array | undefined> params.getArray("BlackPoint");
-          gamma = <number | undefined> params.get("Gamma");
+          params = xref.fetchIfRef(cs[1]) as Dict;
+          whitePoint = params.getArray("WhitePoint") as Float32Array;
+          blackPoint = params.getArray("BlackPoint") as
+            | Float32Array
+            | undefined;
+          gamma = params.get("Gamma") as number | undefined;
           return new CalGrayCS(whitePoint, blackPoint, gamma);
         case "CalRGB":
-          params = <Dict> xref.fetchIfRef(cs[1]);
-          whitePoint = <Float32Array> params.getArray("WhitePoint");
-          blackPoint = <Float32Array | undefined> params.getArray("BlackPoint");
-          gamma = <Float32Array | undefined> params.getArray("Gamma");
-          const matrix = <Float32Array | undefined> params.getArray("Matrix");
+          params = xref.fetchIfRef(cs[1]) as Dict;
+          whitePoint = params.getArray("WhitePoint") as Float32Array;
+          blackPoint = params.getArray("BlackPoint") as
+            | Float32Array
+            | undefined;
+          gamma = params.getArray("Gamma") as Float32Array | undefined;
+          const matrix = params.getArray("Matrix") as Float32Array | undefined;
           return new CalRGBCS(whitePoint, blackPoint, gamma, matrix);
         case "ICCBased":
-          const stream = <BaseStream> xref.fetchIfRef(cs[1]);
+          const stream = xref.fetchIfRef(cs[1]) as BaseStream;
           const dict = stream.dict!;
           numComps = dict.get("N");
-          const alt = <CS | undefined> dict.get("Alternate");
+          const alt = dict.get("Alternate") as CS | undefined;
           if (alt) {
             const altCS = this._parse(alt, xref, resources, pdfFunctionFactory);
             // Ensure that the number of components are correct,
@@ -516,8 +520,8 @@ export abstract class ColorSpace {
         case "I":
         case "Indexed":
           baseCS = this._parse(cs[1], xref, resources, pdfFunctionFactory);
-          const hiVal = <number> xref.fetchIfRef(cs[2]) + 1;
-          const lookup = <BaseStream | string> xref.fetchIfRef(cs[3]);
+          const hiVal = xref.fetchIfRef(cs[2]) as number + 1;
+          const lookup = xref.fetchIfRef(cs[3]) as BaseStream | string;
           return new IndexedCS(baseCS, hiVal, lookup);
         case "Separation":
         case "DeviceN":
@@ -1123,8 +1127,8 @@ namespace NsCalGrayCS {
           "WhitePoint missing - required for color space CalGray",
         );
       }
-      blackPoint = blackPoint || new Float32Array(3);
-      gamma = gamma || 1;
+      blackPoint ||= new Float32Array(3);
+      gamma ||= 1;
 
       // Translate arguments to spec variables.
       this.XW = whitePoint[0];

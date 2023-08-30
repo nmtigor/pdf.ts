@@ -84,7 +84,7 @@ export function getFilenameFromContentDispositionHeader(contentDisposition) {
                 value = decoder.decode(buffer);
                 needsEncodingFixup = false;
             }
-            catch (e) {
+            catch {
                 // TextDecoder constructor threw - unrecognized encoding.
             }
         }
@@ -197,7 +197,7 @@ export function getFilenameFromContentDispositionHeader(contentDisposition) {
             try {
                 text = atob(text);
             }
-            catch (e) { }
+            catch { }
             return textdecode(charset, text);
         });
     }

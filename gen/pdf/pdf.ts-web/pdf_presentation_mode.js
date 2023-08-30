@@ -81,7 +81,7 @@ export class PDFPresentationMode {
             pdfViewer.focus(); // Fixes bug 1787456.
             return true;
         }
-        catch (reason) {
+        catch {
             this.#removeFullscreenChangeListeners();
             this.#notifyStateChange(PresentationModeState.NORMAL);
         }

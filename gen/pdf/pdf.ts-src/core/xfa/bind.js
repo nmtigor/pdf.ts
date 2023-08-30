@@ -18,8 +18,9 @@
 import { warn } from "../../shared/util.js";
 import { NamespaceIds } from "./namespaces.js";
 import { createDataNode, searchNode } from "./som.js";
-import { BindItems, Field, Items, SetProperty, Text, } from "./template.js";
-import { $appendChild, $clone, $consumed, $content, $data, $finalize, $getAttributeIt, $getChildren, $getDataValue, $getParent, $getRealChildrenByNameIt, $hasSettableValue, $indexOf, $insertAt, $isBindable, $isDataValue, $isDescendent, $namespaceId, $nodeName, $removeChild, $setValue, $text, XFAAttribute, XFAObjectArray, XmlObject, } from "./xfa_object.js";
+import { $appendChild, $clone, $consumed, $content, $data, $finalize, $getAttributeIt, $getChildren, $getDataValue, $getParent, $getRealChildrenByNameIt, $hasSettableValue, $indexOf, $insertAt, $isBindable, $isDataValue, $isDescendent, $namespaceId, $nodeName, $removeChild, $setValue, $text, } from "./symbol_utils.js";
+import { BindItems, Field, Items, SetProperty, Text } from "./template.js";
+import { XFAAttribute, XFAObjectArray, XmlObject } from "./xfa_object.js";
 /*80--------------------------------------------------------------------------*/
 const NS_DATASETS = NamespaceIds.datasets.id;
 function createText(content) {
@@ -40,7 +41,7 @@ export class Binder {
     constructor(root) {
         this.root = root;
         this.datasets = root.datasets;
-        if (root.datasets && root.datasets.data) {
+        if (root.datasets?.data) {
             this.data = root.datasets.data;
         }
         else {
@@ -72,9 +73,7 @@ export class Binder {
                 formNode[$setValue](createText(value));
             }
             else if (formNode instanceof Field &&
-                formNode.ui &&
-                formNode.ui.choiceList &&
-                formNode.ui.choiceList.open === "multiSelect") {
+                formNode.ui?.choiceList?.open === "multiSelect") {
                 const value = data[$getChildren]()
                     .map((child) => child[$content].trim())
                     .join("\n");
@@ -135,7 +134,7 @@ export class Binder {
         // Thirdly, try to find it in attributes.
         generator = this.data[$getAttributeIt](name, /* skipConsumed = */ true);
         match = generator.next().value;
-        if (match && match[$isDataValue]()) {
+        if (match?.[$isDataValue]()) {
             return match;
         }
         return undefined;

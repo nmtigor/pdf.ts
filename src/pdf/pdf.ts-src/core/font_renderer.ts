@@ -24,10 +24,11 @@ import {
   type matrix_t,
   warn,
 } from "../shared/util.ts";
-import { CFFFDSelect, CFFParser, CFFTopDict } from "./cff_parser.ts";
+import type { CFFFDSelect, CFFTopDict } from "./cff_parser.ts";
+import { CFFParser } from "./cff_parser.ts";
 import { StandardEncoding } from "./encodings.ts";
-import { type FontProps } from "./evaluator.ts";
-import { Font } from "./fonts.ts";
+import type { FontProps } from "./evaluator.ts";
+import type { Font } from "./fonts.ts";
 import { getGlyphsUnicode } from "./glyphlist.ts";
 import { Stream } from "./stream.ts";
 /*80--------------------------------------------------------------------------*/
@@ -617,7 +618,7 @@ function compileCharString(
             let cmap = lookupCmap(
               font.cmap!,
               String.fromCharCode(
-                <any> font.glyphNameMap[StandardEncoding[achar]],
+                font.glyphNameMap[StandardEncoding[achar]] as any,
               ),
             );
             compileCharString(

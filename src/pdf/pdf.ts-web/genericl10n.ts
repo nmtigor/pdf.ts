@@ -19,22 +19,44 @@
 
 /** @typedef {import("./interfaces").IL10n} IL10n */
 
-import {
-  webL10n,
-  type WebL10nArgs,
+import type {
+  Locale_1,
+  WebL10nArgs,
 } from "../../3rd/webL10n-2015-10-24/l10n.ts";
-import { Locale } from "../../lib/Locale.ts";
-import { type IL10n } from "./interfaces.ts";
-import { fixupLangCode, getL10nFallback } from "./l10n_utils.ts";
+import { webL10n } from "../../3rd/webL10n-2015-10-24/l10n.ts";
+import type { Locale } from "../../lib/Locale.ts";
+import type { IL10n } from "./interfaces.ts";
+import { getL10nFallback } from "./l10n_utils.ts";
 /*80--------------------------------------------------------------------------*/
 
-// const webL10n = document.webL10n;
+const PARTIAL_LANG_CODES = <Record<string, Locale_1>> {
+  en: "en-US",
+  es: "es-ES",
+  fy: "fy-NL",
+  ga: "ga-IE",
+  gu: "gu-IN",
+  hi: "hi-IN",
+  hy: "hy-AM",
+  nb: "nb-NO",
+  ne: "ne-NP",
+  nn: "nn-NO",
+  pa: "pa-IN",
+  pt: "pt-PT",
+  sv: "sv-SE",
+  zh: "zh-CN",
+};
+
+// Try to support "incompletely" specified language codes (see issue 13689).
+export function fixupLangCode(langCode?: Locale) {
+  return PARTIAL_LANG_CODES[langCode?.toLowerCase()!] || langCode;
+}
 
 export class GenericL10n implements IL10n {
   _lang: Locale;
   _ready: Promise<typeof webL10n>;
 
   constructor(lang: Locale) {
+    // const { webL10n } = document;
     this._lang = lang;
     this._ready = new Promise((resolve, reject) => {
       webL10n.setLanguage(fixupLangCode(lang), () => {

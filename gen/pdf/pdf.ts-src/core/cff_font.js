@@ -34,7 +34,7 @@ export class CFFFont {
         try {
             this.data = compiler.compile();
         }
-        catch (e) {
+        catch {
             warn("Failed to compile font " + properties.loadedName);
             // There may have just been an issue with the compiler, set the data
             // anyway and hope the font loaded.
@@ -74,7 +74,7 @@ export class CFFFont {
                 for (glyphId = 0; glyphId < charsets.length; glyphId++) {
                     const cid = charsets[glyphId];
                     charCode = cMap.charCodeOf(cid);
-                    if (invCidToGidMap && invCidToGidMap[charCode] !== undefined) {
+                    if (invCidToGidMap?.[charCode] !== undefined) {
                         // According to the PDF specification, see Table 117, it's not clear
                         // that a /CIDToGIDMap should be used with any non-TrueType fonts,
                         // however it's necessary to do so in order to fix issue 15559.

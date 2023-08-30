@@ -6,8 +6,8 @@ import { Binder } from "./bind.js";
 import { DataHandler } from "./data.js";
 import { FontFinder } from "./fonts.js";
 import { XFAParser } from "./parser.js";
+import { $appendChild, $globalData, $nodeName, $text, $toHTML, $toPages, } from "./symbol_utils.js";
 import { stripQuotes } from "./utils.js";
-import { $appendChild, $globalData, $nodeName, $text, $toHTML, $toPages, } from "./xfa_object.js";
 import { XhtmlNamespace } from "./xhtml.js";
 export class XFAFactory {
     root;

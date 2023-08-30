@@ -26,7 +26,7 @@ class BaseLocalCache {
     imageMap$;
     imageCache$ = new RefSetCache();
     constructor(options) {
-        this.#onlyRefs = (options && options.onlyRefs) === true;
+        this.#onlyRefs = options?.onlyRefs === true;
         if (!this.#onlyRefs) {
             this.nameRefMap$ = new Map();
             this.imageMap$ = new Map();

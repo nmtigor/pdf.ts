@@ -1,10 +1,11 @@
-import { FieldItem, FieldObject } from "../core/annotation.js";
-import { AnnotActions } from "../core/core_utils.js";
-import { DocWrapped, FieldWrapped } from "./app.js";
-import { CorrectColor } from "./color.js";
-import { ScriptingActionName } from "./common.js";
-import { Event } from "./event.js";
-import { PDFObject, ScriptingData, SendData } from "./pdf_object.js";
+import type { FieldItem, FieldObject } from "../core/annotation.js";
+import type { AnnotActions } from "../core/core_utils.js";
+import type { DocWrapped, FieldWrapped } from "./app.js";
+import { type CorrectColor } from "./color.js";
+import { type ScriptingActionName } from "./common.js";
+import type { Event } from "./event.js";
+import type { ScriptingData, SendData } from "./pdf_object.js";
+import { PDFObject } from "./pdf_object.js";
 export interface SendFieldData extends SendData {
     indices?: number[];
     clear?: undefined;
@@ -155,7 +156,7 @@ export declare class Field extends PDFObject<SendFieldData> {
     _textColor: CorrectColor;
     get textColor(): CorrectColor;
     set textColor(color: CorrectColor);
-    _originalValue?: string;
+    _originalValue: string | undefined;
     _value: string | number | string[] | undefined;
     get valueAsString(): string;
     set valueAsString(_: string);

@@ -24,7 +24,7 @@ import {
   XMLParserErrorCode,
 } from "../xml_parser.ts";
 import type { XFANsAttrs, XFAPrefix } from "./alias.ts";
-import { Builder, Root } from "./builder.ts";
+import { Builder, type Root } from "./builder.ts";
 import {
   $acceptWhitespace,
   $clean,
@@ -36,8 +36,8 @@ import {
   $onChild,
   $onText,
   $setId,
-  XFAObject,
-} from "./xfa_object.ts";
+} from "./symbol_utils.ts";
+import type { XFAObject } from "./xfa_object.ts";
 import type { XFANsXhtml } from "./xhtml.ts";
 /*80--------------------------------------------------------------------------*/
 
@@ -69,7 +69,7 @@ export class XFAParser extends XMLParserBase {
 
     this.#current[$finalize]();
 
-    return (<Root> this.#current).element;
+    return (this.#current as Root).element;
   }
 
   onText(text: string) {

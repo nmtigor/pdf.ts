@@ -1,4 +1,4 @@
-import { type XFAPath } from "../core/core_utils.js";
+import type { XFAPath } from "../core/core_utils.js";
 export declare const enum XMLParserErrorCode {
     NoError = 0,
     EndOfDocument = -1,
@@ -40,7 +40,7 @@ export declare class SimpleDOMNode {
     childNodes?: SimpleDOMNode[];
     get firstChild(): SimpleDOMNode | undefined;
     get children(): SimpleDOMNode[];
-    hasChildNodes(): boolean | undefined;
+    hasChildNodes(): boolean;
     attributes?: XMLAttr[];
     constructor(nodeName: string, nodeValue?: string);
     get nextSibling(): SimpleDOMNode | undefined;

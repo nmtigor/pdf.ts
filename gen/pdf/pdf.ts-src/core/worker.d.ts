@@ -1,6 +1,6 @@
 import type { GetDocRequestData } from "../shared/message_handler.js";
 import { MessageHandler, Thread } from "../shared/message_handler.js";
-import { IWorker } from "./iworker.js";
+import type { IWorker } from "./iworker.js";
 import { Ref } from "./primitives.js";
 export declare class WorkerTask {
     #private;

@@ -936,4 +936,15 @@ export function toggleCheckedBtn(
 
   view?.classList.toggle("hidden", !toggle);
 }
+
+export function toggleExpandedBtn(
+  button: HTMLButtonElement,
+  toggle: boolean,
+  view?: HTMLButtonElement | HTMLDivElement,
+) {
+  button.classList.toggle("toggled", toggle);
+  button.setAttribute("aria-expanded", toggle as any);
+
+  view?.classList.toggle("hidden", !toggle);
+}
 /*80--------------------------------------------------------------------------*/

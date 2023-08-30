@@ -1,6 +1,6 @@
-import { type AnnotStorageRecord } from "../../display/annotation_layer.js";
+import type { AnnotStorageRecord } from "../../display/annotation_layer.js";
 import { Datasets } from "./datasets.js";
-import { XFAObject, XmlObject } from "./xfa_object.js";
+import type { XFAObject, XmlObject } from "./xfa_object.js";
 export declare class DataHandler {
     data: XmlObject;
     dataset: Datasets | undefined;

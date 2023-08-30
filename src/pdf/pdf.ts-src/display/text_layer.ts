@@ -516,9 +516,7 @@ export class TextLayerRenderTask {
             );
           }
           parent.append(this._container);
-        } else if (
-          (item as TextMarkedContent).type === "endMarkedContent"
-        ) {
+        } else if ((item as TextMarkedContent).type === "endMarkedContent") {
           this._container = this._container.parentNode as HTMLElement;
         }
         continue;

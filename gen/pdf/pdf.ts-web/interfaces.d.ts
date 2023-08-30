@@ -49,8 +49,6 @@ export interface IPDFLinkService {
      */
     cachePageRef(pageNum: number, pageRef: RefProxy | undefined): void;
     _cachedPageNumber(pageRef: RefProxy | undefined): number | undefined;
-    isPageVisible(pageNumber: number): boolean;
-    isPageCached(pageNumber: number): boolean;
 }
 export interface HistoryInitP {
     /**

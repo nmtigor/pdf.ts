@@ -1,10 +1,11 @@
 import type { AnnotStorageRecord, AnnotStorageValue } from "../display/annotation_layer.js";
-import { ActionEventName, type ActionEventTypeType, BaseException } from "../shared/util.js";
+import type { ActionEventName, ActionEventTypeType } from "../shared/util.js";
+import { BaseException } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
 import type { CssFontInfo } from "./document.js";
 import type { Obj } from "./primitives.js";
 import { Dict } from "./primitives.js";
-import { XRef } from "./xref.js";
+import type { XRef } from "./xref.js";
 export declare const PDF_VERSION_REGEXP: RegExp;
 export declare function getLookupTableFactory<T extends object = Record<string, number>>(initializer?: (lookup: T) => void): () => T;
 export declare class MissingDataException extends BaseException {
@@ -95,6 +96,7 @@ export declare function escapeString(str: string): string;
 export type AnnotActions = Record<ActionEventName, string[]>;
 export declare function collectActions(xref: XRef, dict: Dict, eventType: ActionEventTypeType): AnnotActions | undefined;
 export declare function encodeToXmlString(str: string): string;
+export declare function validateFontName(fontFamily: string, mustWarn?: boolean): boolean;
 export declare function validateCSSFont(cssFontInfo: CssFontInfo): boolean;
 export declare function recoverJsURL(str: string): {
     url: string;

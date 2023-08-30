@@ -23,9 +23,8 @@ import type {
   AnnotStorageRecord,
   AnnotStorageValue,
 } from "../display/annotation_layer.ts";
+import type { ActionEventName, ActionEventTypeType } from "../shared/util.ts";
 import {
-  ActionEventName,
-  type ActionEventTypeType,
   AnnotationEditorPrefix,
   BaseException,
   objectSize,
@@ -36,7 +35,7 @@ import { BaseStream } from "./base_stream.ts";
 import type { CssFontInfo } from "./document.ts";
 import type { Obj, ObjNoRef } from "./primitives.ts";
 import { Dict, isName, Ref, RefSet } from "./primitives.ts";
-import { XRef } from "./xref.ts";
+import type { XRef } from "./xref.ts";
 /*80--------------------------------------------------------------------------*/
 
 export const PDF_VERSION_REGEXP = /^[1-9]\.\d$/;
@@ -390,11 +389,11 @@ export function collectActions(
   eventType: ActionEventTypeType,
 ) {
   const actions: AnnotActions = Object.create(null);
-  const additionalActionsDicts = <Dict[]> getInheritableProperty({
+  const additionalActionsDicts = getInheritableProperty({
     dict,
     key: "AA",
     stopWhenFound: false,
-  });
+  }) as Dict[];
   if (additionalActionsDicts) {
     // additionalActionsDicts contains dicts from ancestors
     // as they're found in the tree from bottom to top.
@@ -407,7 +406,7 @@ export function collectActions(
         continue;
       }
       for (const key of additionalActions.getKeys()) {
-        const action: ActionEventName = (<any> eventType)[key];
+        const action: ActionEventName = (eventType as any)[key];
         if (!action) {
           continue;
         }
@@ -478,6 +477,31 @@ export function encodeToXmlString(str: string) {
   return buffer.join("");
 }
 
+export function validateFontName(fontFamily: string, mustWarn = false) {
+  // See https://developer.mozilla.org/en-US/docs/Web/CSS/string.
+  const m = /^("|').*("|')$/.exec(fontFamily);
+  if (m && m[1] === m[2]) {
+    const re = new RegExp(`[^\\\\]${m[1]}`);
+    if (re.test(fontFamily.slice(1, -1))) {
+      if (mustWarn) {
+        warn(`FontFamily contains unescaped ${m[1]}: ${fontFamily}.`);
+      }
+      return false;
+    }
+  } else {
+    // See https://developer.mozilla.org/en-US/docs/Web/CSS/custom-ident.
+    for (const ident of fontFamily.split(/[ \t]+/)) {
+      if (/^(\d|(-(\d|-)))/.test(ident) || !/^[\w-\\]+$/.test(ident)) {
+        if (mustWarn) {
+          warn(`FontFamily contains invalid <custom-ident>: ${fontFamily}.`);
+        }
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
 export function validateCSSFont(cssFontInfo: CssFontInfo) {
   // See https://developer.mozilla.org/en-US/docs/Web/CSS/font-style.
   const DEFAULT_CSS_FONT_OBLIQUE = "14";
@@ -502,24 +526,8 @@ export function validateCSSFont(cssFontInfo: CssFontInfo) {
 
   const { fontFamily, fontWeight, italicAngle } = cssFontInfo;
 
-  // See https://developer.mozilla.org/en-US/docs/Web/CSS/string.
-  const m = /^("|').*("|')$/.exec(fontFamily);
-  if (m && m[1] === m[2]) {
-    const re = new RegExp(`[^\\\\]${m[1]}`);
-    if (re.test(fontFamily.slice(1, -1))) {
-      warn(`XFA - FontFamily contains unescaped ${m[1]}: ${fontFamily}.`);
-      return false;
-    }
-  } else {
-    // See https://developer.mozilla.org/en-US/docs/Web/CSS/custom-ident.
-    for (const ident of fontFamily.split(/[ \t]+/)) {
-      if (/^(\d|(-(\d|-)))/.test(ident) || !/^[\w-\\]+$/.test(ident)) {
-        warn(
-          `XFA - FontFamily contains invalid <custom-ident>: ${fontFamily}.`,
-        );
-        return false;
-      }
-    }
+  if (!validateFontName(fontFamily, true)) {
+    return false;
   }
 
   const weight = fontWeight ? fontWeight.toString() : "";
@@ -527,7 +535,7 @@ export function validateCSSFont(cssFontInfo: CssFontInfo) {
     ? weight
     : DEFAULT_CSS_FONT_WEIGHT;
 
-  const angle = parseFloat(<string> italicAngle);
+  const angle = parseFloat(italicAngle as string);
   cssFontInfo.italicAngle = isNaN(angle) || angle < -90 || angle > 90
     ? DEFAULT_CSS_FONT_OBLIQUE
     : italicAngle.toString();
@@ -550,7 +558,7 @@ export function recoverJsURL(str: string) {
   );
 
   const jsUrl = regex.exec(str);
-  if (jsUrl && jsUrl[2]) {
+  if (jsUrl?.[2]) {
     const url = jsUrl[2];
     let newWindow = false;
 

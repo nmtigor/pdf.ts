@@ -1,9 +1,10 @@
-import { type XFAAttrs } from "./alias.js";
-import { ConnectionSet } from "./connection_set.js";
-import { Datasets } from "./datasets.js";
+import type { XFAAttrs } from "./alias.js";
+import type { ConnectionSet } from "./connection_set.js";
+import type { Datasets } from "./datasets.js";
 import { $buildXFAObject } from "./namespaces.js";
+import { $onChildCheck } from "./symbol_utils.js";
 import { Template } from "./template.js";
-import { $onChildCheck, XFAObject, XFAObjectArray } from "./xfa_object.js";
+import { XFAObject, XFAObjectArray } from "./xfa_object.js";
 export declare class Xdp extends XFAObject {
     uuid: string;
     timeStamp: string;

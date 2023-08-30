@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-import { StructTreeNode } from "../display/api.ts";
+import type { StructTreeNode } from "../display/api.ts";
 import { stringToPDFString, warn } from "../shared/util.ts";
 import { NumberTree } from "./name_number_tree.ts";
 import { Dict, isName, Name, Ref } from "./primitives.ts";
@@ -45,7 +45,7 @@ export class StructTreeRoot {
   }
 
   readRoleMap() {
-    const roleMapDict = <Dict> this.dict.get("RoleMap");
+    const roleMapDict = this.dict.get("RoleMap") as Dict;
     if (!(roleMapDict instanceof Dict)) {
       return;
     }
@@ -298,7 +298,7 @@ export class StructTreePage {
     let save = false;
     for (let i = 0; i < obj.length; i++) {
       const kidRef = obj[i];
-      if (kidRef && kidRef.toString() === dict.objId) {
+      if (kidRef?.toString() === dict.objId) {
         this.nodes[i] = element;
         save = true;
       }
@@ -346,7 +346,7 @@ export class StructTreePage {
         ) {
           obj.children.push({
             type: "content",
-            id: `page${kid.pageObjId}_mcid${kid.mcid}`,
+            id: `p${kid.pageObjId}_mc${kid.mcid}`,
           });
         } else if (kid.type === StructElementType.OBJECT) {
           obj.children.push({

@@ -20,7 +20,7 @@ import { GENERIC } from "../../../global.js";
 import { svg as createSVG } from "../../../lib/dom.js";
 import { ShadingType } from "../core/pattern.js";
 import { FONT_IDENTITY_MATRIX, IDENTITY_MATRIX, ImageKind, OPS, TextRenderingMode, Util, warn, } from "../shared/util.js";
-import { deprecated, DOMSVGFactory } from "./display_utils.js";
+import { deprecated, DOMSVGFactory, } from "./display_utils.js";
 /*80--------------------------------------------------------------------------*/
 /*#static*/ 
 const SVG_DEFAULTS = {
@@ -33,9 +33,7 @@ const XLINK_NS = "http://www.w3.org/1999/xlink";
 const LINE_CAP_STYLES = ["butt", "round", "square"];
 const LINE_JOIN_STYLES = ["miter", "round", "bevel"];
 const createObjectURL = (data, contentType = "", forceDataSchema = false) => {
-    if (URL.createObjectURL &&
-        typeof Blob !== "undefined" &&
-        !forceDataSchema) {
+    if (URL.createObjectURL && typeof Blob !== "undefined" && !forceDataSchema) {
         return URL.createObjectURL(new Blob([data], { type: contentType }));
     }
     // Blob/createObjectURL is not available, falling back to data schema.
@@ -143,8 +141,7 @@ const convertImgDataToPng = (() => {
         //   // eslint-disable-next-line no-undef
         //   if (parseInt(process.versions.node) >= 8) {
         //     input = literals;
-        //   }
-        //   else {
+        //   } else {
         //     // eslint-disable-next-line no-undef
         //     input = Buffer.from(literals);
         //   }
@@ -153,9 +150,7 @@ const convertImgDataToPng = (() => {
         //   });
         //   return output instanceof Uint8Array ? output : new Uint8Array(output);
         // } catch (e) {
-        //   warn(
-        //     "Not compressing PNG because zlib.deflateSync is unavailable: " + e
-        //   );
+        //   warn("Not compressing PNG because zlib.deflateSync is unavailable: " + e);
         // }
         // return deflateSyncUncompressed(literals);
     }
@@ -333,7 +328,6 @@ class SVGExtraState {
         this.y = y;
     }
 }
-// eslint-disable-next-line no-inner-declarations
 function opListToTree(opList) {
     let opTree = [];
     const tmp = [];
@@ -358,7 +352,6 @@ function opListToTree(opList) {
  *
  * @param value The float number to format.
  */
-// eslint-disable-next-line no-inner-declarations
 function pf(value) {
     if (Number.isInteger(value)) {
         return value.toString();
@@ -381,7 +374,6 @@ function pf(value) {
  *
  * @param m The transform matrix to format.
  */
-// eslint-disable-next-line no-inner-declarations
 function pm(m) {
     if (m[4] === 0 && m[5] === 0) {
         if (m[1] === 0 && m[2] === 0) {
@@ -651,8 +643,7 @@ export class SVGGraphics {
                     this[OPS.paintImageMaskXObject](args[0]);
                     break;
                 case OPS.paintFormXObjectBegin:
-                    this[OPS.paintFormXObjectBegin](...args);
-                    // this.paintFormXObjectBegin(args[0], args[1]);
+                    this[OPS.paintFormXObjectBegin](args[0], args[1]);
                     break;
                 case OPS.paintFormXObjectEnd:
                     this[OPS.paintFormXObjectEnd]();
@@ -673,19 +664,10 @@ export class SVGGraphics {
                     this[OPS.nextLine]();
                     break;
                 case OPS.transform:
-                    this[OPS.transform](...args);
-                    // this.transform(
-                    //   args[0],
-                    //   args[1],
-                    //   args[2],
-                    //   args[3],
-                    //   args[4],
-                    //   args[5]
-                    // );
+                    this[OPS.transform](args[0], args[1], args[2], args[3], args[4], args[5]);
                     break;
                 case OPS.constructPath:
-                    this[OPS.constructPath](...args);
-                    // this.constructPath(args[0], args[1]);
+                    this[OPS.constructPath](args[0], args[1]);
                     break;
                 case OPS.endPath:
                     this[OPS.endPath]();
@@ -975,26 +957,18 @@ export class SVGGraphics {
         this.current.fillColor = this.#makeColorN_Pattern(args);
     }
     [OPS.shadingFill](args) {
-        const width = this.viewport.width;
-        const height = this.viewport.height;
+        const { width, height } = this.viewport;
         const inv = Util.inverseTransform(this.transformMatrix);
-        const bl = Util.applyTransform([0, 0], inv);
-        const br = Util.applyTransform([0, height], inv);
-        const ul = Util.applyTransform([width, 0], inv);
-        const ur = Util.applyTransform([width, height], inv);
-        const x0 = Math.min(bl[0], br[0], ul[0], ur[0]);
-        const y0 = Math.min(bl[1], br[1], ul[1], ur[1]);
-        const x1 = Math.max(bl[0], br[0], ul[0], ur[0]);
-        const y1 = Math.max(bl[1], br[1], ul[1], ur[1]);
+        const [x0, y0, x1, y1] = Util.getAxialAlignedBoundingBox([0, 0, width, height], inv);
         const rect = createSVG("rect");
-        rect.setAttributeNS(null, "x", x0);
-        rect.setAttributeNS(null, "y", y0);
-        rect.setAttributeNS(null, "width", (x1 - x0));
-        rect.setAttributeNS(null, "height", (y1 - y0));
-        rect.setAttributeNS(null, "fill", this.#makeShadingPattern(args));
-        if (this.current.fillAlpha < 1) {
-            rect.setAttributeNS(null, "fill-opacity", this.current.fillAlpha);
-        }
+        rect.assignAttro({
+            x: x0,
+            y: y0,
+            width: x1 - x0,
+            height: y1 - y0,
+            fill: this.#makeShadingPattern(args),
+            "fill-opacity": this.current.fillAlpha < 1 ? this.current.fillAlpha : 1,
+        });
         this.#ensureTransformGroup().append(rect);
     }
     #makeColorN_Pattern(args) {

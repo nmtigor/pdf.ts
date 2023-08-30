@@ -14,10 +14,11 @@ import type { LocalIdFactory } from "./document.js";
 import { PartialEvaluator } from "./evaluator.js";
 import { type Attachment } from "./file_spec.js";
 import type { ErrorFont, Font, Glyph } from "./fonts.js";
+import { JpegStream } from "./jpeg_stream.js";
 import { OperatorList } from "./operator_list.js";
 import type { BasePdfManager } from "./pdf_manager.js";
 import { Dict, Name, Ref } from "./primitives.js";
-import { StringStream } from "./stream.js";
+import { Stream, StringStream } from "./stream.js";
 import type { WorkerTask } from "./worker.js";
 import type { XFAHTMLObj } from "./xfa/alias.js";
 import type { XRef } from "./xref.js";
@@ -26,12 +27,12 @@ interface Dependency_ {
     ref: Ref;
     data: string;
 }
-interface CreateNewAnnotationP_ {
+type CreateNewAnnotationP_ = {
     evaluator?: PartialEvaluator;
     task?: WorkerTask;
     baseFontRef?: Ref;
     isOffscreenCanvasSupported?: boolean | undefined;
-}
+} & Partial<AnnotImage>;
 export declare class AnnotationFactory {
     #private;
     /**
@@ -46,7 +47,8 @@ export declare class AnnotationFactory {
      * @private
      */
     static _create(xref: XRef, ref: Ref, pdfManager: BasePdfManager, idFactory: LocalIdFactory, acroForm: Dict | undefined, attachments: Attachments | undefined, xfaDatasets: DatasetReader | undefined, collectFields: boolean, pageIndex?: number): Annotation | undefined;
-    static saveNewAnnotations(evaluator: PartialEvaluator, task: WorkerTask, annotations: AnnotStorageValue[]): Promise<{
+    static generateImages(annotations: IterableIterator<AnnotStorageValue> | AnnotStorageValue[], xref: XRef, isOffscreenCanvasSupported: boolean | undefined): Map<string, Promise<AnnotImage>> | undefined;
+    static saveNewAnnotations(evaluator: PartialEvaluator, task: WorkerTask, annotations: AnnotStorageValue[], imagePromises: Map<string, Promise<AnnotImage>> | undefined): Promise<{
         annotations: {
             ref: Ref;
             data: string;
@@ -56,7 +58,7 @@ export declare class AnnotationFactory {
             data: string;
         }[];
     }>;
-    static printNewAnnotations(evaluator: PartialEvaluator, task: WorkerTask, annotations: AnnotStorageValue[]): Promise<MarkupAnnotation[] | undefined>;
+    static printNewAnnotations(evaluator: PartialEvaluator, task: WorkerTask, annotations: AnnotStorageValue[], imagePromises: Map<string, Promise<AnnotImage>> | undefined): Promise<MarkupAnnotation[] | undefined>;
 }
 export declare function getQuadPoints(dict: Dict, rect?: rect_t): TupleOf<AnnotPoint, 4>[] | null;
 interface _AnnotationCtorP {
@@ -90,13 +92,14 @@ export type AnnotationData = {
     hasAppearance: boolean;
     id: string;
     modificationDate: string | undefined;
-    rect: rect_t;
+    rect: rect_t | undefined;
     subtype?: AnnotType | undefined;
     hasOwnCanvas: boolean;
     noRotate: boolean;
     noHTML: boolean;
     kidIds?: string[];
     actions?: AnnotActions | undefined;
+    baseFieldName?: string;
     fieldName?: string;
     pageIndex?: number;
     annotationType?: AnnotationType;
@@ -135,18 +138,19 @@ export type AnnotationData = {
     replyType?: AnnotationReplyType;
     titleObj?: BidiText;
     creationDate?: string | undefined;
-    hasPopup?: boolean;
+    popupRef?: string | undefined;
     lineCoordinates?: rect_t;
     vertices?: AnnotPoint[];
     lineEndings?: [
-        _LineEndingStr,
-        _LineEndingStr
+        LineEndingStr_,
+        LineEndingStr_
     ];
     inkLists?: AnnotPoint[][];
     file?: Attachment;
     parentType?: string | undefined;
     parentId?: string | undefined;
-    parentRect?: rect_t;
+    parentRect?: rect_t | undefined;
+    open?: boolean | undefined;
     textContent?: string[];
 } & CatParseDestDictRes;
 /**
@@ -173,7 +177,7 @@ export interface FieldObject {
     value?: string | string[] | undefined;
     defaultValue?: string | string[] | undefined;
     editable?: boolean;
-    rect?: rect_t;
+    rect?: rect_t | undefined;
     name?: string | undefined;
     hidden?: boolean | undefined;
     actions?: AnnotActions | undefined;
@@ -197,10 +201,11 @@ export interface FieldObject {
     appObjects?: Record<string, FieldWrapped>;
     siblings?: string[];
 }
-type _LineEndingStr = "None" | "Square" | "Circle" | "Diamond" | "OpenArrow" | "ClosedArrow" | "Butt" | "ROpenArrow" | "RClosedArrow" | "Slash";
-type _LineEnding = _LineEndingStr | Name;
+type LineEndingStr_ = "None" | "Square" | "Circle" | "Diamond" | "OpenArrow" | "ClosedArrow" | "Butt" | "ROpenArrow" | "RClosedArrow" | "Slash";
+type LineEnding_ = LineEndingStr_ | Name;
 export declare class Annotation {
     #private;
+    ref: Ref | undefined;
     _streams: BaseStream[];
     data: AnnotationData;
     _isOffscreenCanvasSupported: boolean;
@@ -280,7 +285,7 @@ export declare class Annotation {
      * @param rectangle The rectangle array with exactly four entries
      */
     setRectangle(rectangle: unknown): void;
-    lineEndings: [_LineEndingStr, _LineEndingStr];
+    lineEndings: [LineEndingStr_, LineEndingStr_];
     oc: Dict | undefined;
     rotation: number;
     _defaultAppearance: string;
@@ -304,7 +309,7 @@ export declare class Annotation {
      * Set the line endings; should only be used with specific annotation types.
      * @param lineEndings The line endings array.
      */
-    setLineEndings(lineEndings: [_LineEnding, _LineEnding]): void;
+    setLineEndings(lineEndings: [LineEnding_, LineEnding_]): void;
     setRotation(mk: Dict | undefined): void;
     /**
      * Set the color for background and border if any.
@@ -410,7 +415,7 @@ interface _SetDefaultAppearanceP {
     blendMode?: string;
     pointsCallback: (buffer: string[], points: TupleOf<AnnotPoint, 4>) => rect_t;
 }
-interface _CreateNewDictP {
+interface CreateNewDictP_ {
     apRef?: Ref;
     ap?: StringStream | undefined;
 }
@@ -426,8 +431,9 @@ export declare class MarkupAnnotation extends Annotation {
      *  annotation was originally created
      */
     setCreationDate(creationDate: unknown): void;
+    refToReplace?: Ref;
     constructor(params: _AnnotationCtorP);
-    static createNewDict(annotation: AnnotStorageValue, xref: XRef, _: _CreateNewDictP): Dict;
+    static createNewDict(annotation: AnnotStorageValue, xref: XRef, _: CreateNewDictP_): Dict;
     static createNewAppearanceStream(annotation: AnnotStorageValue, xref: XRef, params?: CreateNewAnnotationP_): Promise<StringStream | undefined>;
     /** @final */
     protected setDefaultAppearance$({ xref, extra, strokeColor, fillColor, blendMode, strokeAlpha, fillAlpha, pointsCallback, }: _SetDefaultAppearanceP): void;
@@ -449,7 +455,6 @@ interface CachedLines {
     positions: point_t[];
 }
 export declare class WidgetAnnotation extends Annotation {
-    ref: Ref;
     _hasValueFromXFA?: boolean;
     _fieldResources: FieldResources;
     protected _hasText?: boolean;
@@ -499,5 +504,12 @@ export declare class WidgetAnnotation extends Annotation {
 export declare class PopupAnnotation extends Annotation {
     constructor(params: _AnnotationCtorP);
 }
+export type AnnotImage = {
+    imageStream: Stream | undefined;
+    smaskStream: Stream | undefined;
+    width: number;
+    height: number;
+    imageRef?: Ref | JpegStream;
+};
 export {};
 //# sourceMappingURL=annotation.d.ts.map

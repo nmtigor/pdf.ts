@@ -1,5 +1,5 @@
 /** 80**************************************************************************
- * @module lib/mv
+ * @module lib/cv
  * @license Apache-2.0
  ******************************************************************************/
 import { CSSStyle } from "./alias.js";
@@ -52,9 +52,9 @@ export declare abstract class Vuu<C extends Coo = Coo, E extends Element = Eleme
     /**
      * @deprecated
      * @headconst @param ret_x
-     * @headconst @param refvuu
+     * @headconst @param refvuu_x
      */
-    attachBefore<V extends Vuu<C>>(ret_x: V, refvuu?: Vuu): V;
+    attachBefore<V extends Vuu<C>>(ret_x: V, refvuu_x?: Vuu): V;
     /**
      * @deprecated
      * @headconst @param ret_x
@@ -109,66 +109,5 @@ export declare class SVGViewbox<CI extends CooInterface = CooInterface> extends 
      */
     constructor(viewBox_x?: ViewBox);
 }
-export type MooEq<T extends {} | null> = (a: T, b: T) => boolean;
-export type MooHandler<T extends {} | null, D = any> = (newval: T, oldval: T, data?: D) => void;
-type MooCtorP_<T extends {} | null> = {
-    val: T;
-    eq_?: MooEq<T>;
-    active?: boolean;
-    forcing?: boolean;
-    _name?: string;
-};
-/**
- * `Moo` instance concerns about one value, whether it changes or not.
- * `Moo` instance stores many callbacks.
- */
-export declare class Moo<T extends {} | null, D = any> {
-    #private;
-    readonly id: number;
-    readonly name: string | undefined;
-    get val(): T;
-    get newval(): T;
-    get _nCb(): number;
-    set forceOnce(forcing_x: boolean);
-    force(): this;
-    set data(data_x: D);
-    constructor({ val, eq_, active, forcing, _name, }: MooCtorP_<T>);
-    /**
-     * Not invoking any callbacks
-     */
-    set(val: T): void;
-    /** @final */
-    reset(): this;
-    /**
-     * Small index callbacks will be called first
-     * Same index callbacks will be called by adding order
-     *
-     * @final
-     */
-    registHandler(handler_x: MooHandler<T, D>, match_newval_x?: T, match_oldval_x?: T, forcing_x?: boolean, index_x?: number): void;
-    /** @final */
-    removeHandler(handler_x: MooHandler<T, D>, match_newval_x?: T, match_oldval_x?: T): void;
-    /** @final */
-    registOnceHandler(handler_x: MooHandler<T, D>, match_newval_x?: T, match_oldval_x?: T, forcing_x?: boolean, index_x?: number): void;
-    /**
-     * Force `match_newval_x`, ignore `match_oldval_x`
-     * @final
-     */
-    on(newval_x: T, handler_x: MooHandler<T, D>, forcing_x?: boolean, index_x?: number): void;
-    /**
-     * Force `match_newval_x`, ignore `match_oldval_x`
-     * @final
-     */
-    off(newval_x: T, handler_x: MooHandler<T, D>): void;
-    /**
-     * Force `match_newval_x`, ignore `match_oldval_x`
-     * @final
-     */
-    once(newval_x: T, handler_x: MooHandler<T, D>, forcing_x?: boolean, index_x?: number): void;
-    static _count: number;
-    set val(newval_x: T);
-    refresh(): void;
-    shareHandlerTo(rhs: Moo<T, D>): void;
-}
 export {};
-//# sourceMappingURL=mv.d.ts.map
+//# sourceMappingURL=cv.d.ts.map

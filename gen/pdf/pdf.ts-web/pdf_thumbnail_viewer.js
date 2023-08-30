@@ -1,26 +1,6 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
-/* Copyright 2012 Mozilla Foundation
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-/** @typedef {import("../src/display/api").PDFDocumentProxy} PDFDocumentProxy */
-/** @typedef {import("./interfaces").IL10n} IL10n */
-/** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
-// eslint-disable-next-line max-len
-/** @typedef {import("./pdf_rendering_queue").PDFRenderingQueue} PDFRenderingQueue */
-import { MOZCENTRAL, PDFJSDev } from "../../global.js";
 import { PDFThumbnailView, TempImageFactory } from "./pdf_thumbnail_view.js";
 import { getVisibleElements, isValidRotation, RenderingStates, scrollIntoView, watchScroll, } from "./ui_utils.js";
 /*80--------------------------------------------------------------------------*/
@@ -31,6 +11,7 @@ const THUMBNAIL_SELECTED_CLASS = "selected";
  */
 export class PDFThumbnailViewer {
     container;
+    eventBus;
     linkService;
     renderingQueue;
     l10n;
@@ -68,22 +49,13 @@ export class PDFThumbnailViewer {
     _pagesRequests;
     _setImageDisabled;
     pdfDocument;
-    constructor({ container, linkService, renderingQueue, l10n, pageColors, }) {
+    constructor({ container, eventBus, linkService, renderingQueue, l10n, pageColors, }) {
         this.container = container;
+        this.eventBus = eventBus;
         this.linkService = linkService;
         this.renderingQueue = renderingQueue;
         this.l10n = l10n;
         this.pageColors = pageColors || undefined;
-        /*#static*/  {
-            if (this.pageColors &&
-                !(CSS.supports("color", this.pageColors.background) &&
-                    CSS.supports("color", this.pageColors.foreground))) {
-                if (this.pageColors.background || this.pageColors.foreground) {
-                    console.warn("PDFThumbnailViewer: Ignoring `pageColors`-option, since the browser doesn't support the values used.");
-                }
-                this.pageColors = undefined;
-            }
-        }
         this.scroll = watchScroll(this.container, this.#scrollUpdated);
         this._resetView();
     }
@@ -168,6 +140,7 @@ export class PDFThumbnailViewer {
             for (let pageNum = 1; pageNum <= pagesCount; ++pageNum) {
                 const thumbnail = new PDFThumbnailView({
                     container: this.container,
+                    eventBus: this.eventBus,
                     id: pageNum,
                     defaultViewport: viewport.clone(),
                     optionalContentConfigPromise,

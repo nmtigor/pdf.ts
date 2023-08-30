@@ -8,8 +8,9 @@ import { computeBbox, createWrapper, fixDimensions, fixTextIndent, fixURL, isPri
 import { addHTML, checkDimensions, flushHTML, getAvailableSpace, } from "./layout.js";
 import { $buildXFAObject, NamespaceIds } from "./namespaces.js";
 import { searchNode } from "./som.js";
+import { $acceptWhitespace, $addHTML, $appendChild, $childrenToHTML, $clean, $cleanPage, $content, $data, $extra, $finalize, $flushHTML, $getAvailableSpace, $getChildren, $getContainedChildren, $getExtra, $getNextPage, $getParent, $getSubformParent, $getTemplateRoot, $globalData, $hasSettableValue, $ids, $isBindable, $isCDATAXml, $isSplittable, $isThereMoreWidth, $isTransparent, $isUsable, $namespaceId, $nodeName, $onChild, $onText, $popPara, $pushPara, $removeChild, $searchNode, $setSetAttributes, $setValue, $tabIndex, $text, $toHTML, $toPages, $toStyle, $uid, } from "./symbol_utils.js";
 import { getBBox, getColor, getFloat, getInteger, getKeyword, getMeasurement, getRatio, getRelevant, getStringOption, HTMLResult, } from "./utils.js";
-import { $acceptWhitespace, $addHTML, $appendChild, $childrenToHTML, $clean, $cleanPage, $content, $data, $extra, $finalize, $flushHTML, $getAvailableSpace, $getChildren, $getContainedChildren, $getExtra, $getNextPage, $getParent, $getSubformParent, $getTemplateRoot, $globalData, $hasSettableValue, $ids, $isBindable, $isCDATAXml, $isSplittable, $isThereMoreWidth, $isTransparent, $isUsable, $namespaceId, $nodeName, $onChild, $onText, $popPara, $pushPara, $removeChild, $searchNode, $setSetAttributes, $setValue, $tabIndex, $text, $toHTML, $toPages, $toStyle, $uid, ContentObject, Option01, OptionObject, StringObject, XFAObject, XFAObjectArray, } from "./xfa_object.js";
+import { ContentObject, Option01, OptionObject, StringObject, XFAObject, XFAObjectArray, } from "./xfa_object.js";
 /*80--------------------------------------------------------------------------*/
 const TEMPLATE_NS_ID = NamespaceIds.template.id;
 const SVG_NS = "http://www.w3.org/2000/svg";
@@ -94,7 +95,7 @@ function* getContainedChildren(node) {
     }
 }
 function isRequired(node) {
-    return node.validate && node.validate.nullTest === "error";
+    return node.validate?.nullTest === "error";
 }
 function setTabIndex(node) {
     while (node) {
@@ -152,7 +153,7 @@ function applyAssist(obj, attributes) {
     else {
         const parent = obj[$getParent]();
         if (parent.layout === "row") {
-            if (parent.assist && parent.assist.role === "TH") {
+            if (parent.assist?.role === "TH") {
                 attributes.role = "columnheader";
             }
             else {
@@ -331,7 +332,7 @@ class Arc extends XFAObject {
         const edge = this.edge || new Edge({});
         const edgeStyle = edge[$toStyle]();
         const style = Object.create(null);
-        if (this.fill && this.fill.presence === "visible") {
+        if (this.fill?.presence === "visible") {
             Object.assign(style, this.fill[$toStyle]());
         }
         else {
@@ -806,7 +807,7 @@ export class Border extends XFAObject {
         const { edges } = this[$getExtra]();
         const edgeStyles = edges.map((node) => {
             const style = node[$toStyle]();
-            style.color = style.color || "#000000";
+            style.color ||= "#000000";
             return style;
         });
         const style = Object.create(null);
@@ -1203,11 +1204,12 @@ class CheckButton extends XFAObject {
             field.items.children[0][$toHTML]().html) ||
             [];
         const exportedValue = {
-            on: (items[0] !== undefined ? items[0] : "on").toString(),
+            on: (items[0] !== undefined ? items[0] : "on")
+                .toString(),
             off: (items[1] !== undefined ? items[1] : "off")
                 .toString(),
         };
-        const value = (field.value && field.value[$text]()) || "off";
+        const value = field.value?.[$text]() || "off";
         const checked = value === exportedValue.on || undefined;
         const container = field[$getSubformParent]();
         const fieldId = field[$uid];
@@ -1284,7 +1286,7 @@ class ChoiceList extends XFAObject {
         const style = toStyle(this, "border", "margin");
         const ui = this[$getParent]();
         const field = ui[$getParent]();
-        const fontSize = (field.font && field.font.size) || 10;
+        const fontSize = field.font?.size || 10;
         const optionStyle = {
             fontSize: `calc(${fontSize}px * var(--scale-factor))`,
         };
@@ -2774,7 +2776,7 @@ export class Field extends XFAObject {
                 }
             }
         }
-        if (!this.ui.imageEdit && ui.children && ui.children[0] && this.h) {
+        if (!this.ui.imageEdit && ui.children?.[0] && this.h) {
             borderDims = borderDims || getBorderDims(this.ui[$getExtra]());
             let captionHeight = 0;
             if (this.caption && ["top", "bottom"].includes(this.caption.placement)) {
@@ -2898,7 +2900,7 @@ class Fill extends XFAObject {
             }
             return style;
         }
-        if (this.color && this.color.value) {
+        if (this.color?.value) {
             const color = this.color[$toStyle]();
             style[color.startsWith("#") ? propName : altPropName] = color;
         }
@@ -4332,7 +4334,7 @@ class Rectangle extends XFAObject {
             : new Edge({});
         const edgeStyle = edge[$toStyle]();
         const style = Object.create(null);
-        if (this.fill && this.fill.presence === "visible") {
+        if (this.fill?.presence === "visible") {
             Object.assign(style, this.fill[$toStyle]());
         }
         else {
@@ -4774,7 +4776,7 @@ export class Subform extends XFAObject {
                 return HTMLResult.breakNode(breakBefore);
             }
         }
-        if (this[$extra] && this[$extra].afterBreakAfter) {
+        if (this[$extra]?.afterBreakAfter) {
             return HTMLResult.EMPTY;
         }
         // TODO: incomplete.
@@ -5147,9 +5149,8 @@ export class Template extends XFAObject {
         else if (root.subform.children.length >= 1 &&
             root.subform.children[0].breakBefore.children
                 .length >= 1) {
-            breakBefore =
-                root.subform.children[0]
-                    .breakBefore.children[0];
+            breakBefore = root.subform.children[0]
+                .breakBefore.children[0];
             breakBeforeTarget = breakBefore.target;
         }
         else if (root.break?.beforeTarget) {
@@ -5222,7 +5223,7 @@ export class Template extends XFAObject {
             const flush = (index) => {
                 const html = root[$flushHTML]();
                 if (html) {
-                    hasSomething ||= !!html.children && html.children.length !== 0;
+                    hasSomething ||= html.children?.length > 0;
                     htmlContentAreas[index].children.push(html);
                 }
             };
@@ -5244,8 +5245,10 @@ export class Template extends XFAObject {
                 const html = root[$toHTML](space);
                 if (html.success) {
                     if (html.html) {
-                        hasSomething ||= !!html.html.children &&
-                            html.html.children.length !== 0;
+                        // hasSomething ||= !!(html.html as XFAElObj).children &&
+                        //   (html.html as XFAElObj).children!.length !== 0;
+                        hasSomething ||=
+                            html.html.children?.length > 0;
                         htmlContentAreas[i].children.push(html.html);
                     }
                     else if (!hasSomething && mainHtml.children.length > 1) {
@@ -5710,7 +5713,7 @@ export class Value extends XFAObject {
     [$setValue](value) {
         const parent = this[$getParent]();
         if (parent instanceof Field) {
-            if (parent.ui && parent.ui.imageEdit) {
+            if (parent.ui?.imageEdit) {
                 if (!this.image) {
                     this.image = new Image({});
                     this[$appendChild](this.image);

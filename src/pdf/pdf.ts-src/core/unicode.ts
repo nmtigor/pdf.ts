@@ -279,9 +279,9 @@ export function getCharUnicodeCategory(char: string) {
   }
   const groups = char.match(SpecialCharRegExp);
   const category: CharUnicodeCategory = {
-    isWhitespace: !!(groups && groups[1]),
-    isZeroWidthDiacritic: !!(groups && groups[2]),
-    isInvisibleFormatMark: !!(groups && groups[3]),
+    isWhitespace: !!groups?.[1],
+    isZeroWidthDiacritic: !!groups?.[2],
+    isInvisibleFormatMark: !!groups?.[3],
   };
   CategoryCache.set(char, category);
   return category;

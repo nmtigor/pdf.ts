@@ -1,14 +1,17 @@
 import type { IL10n } from "../../../pdf.ts-web/interfaces.js";
 import { AnnotationEditorParamsType } from "../../shared/util.js";
+import { type AnnotStorageValue } from "../annotation_layer.js";
 import type { AnnotationEditorLayer } from "./annotation_editor_layer.js";
-import { AnnotationEditor, AnnotationEditorP, AnnotationEditorSerialized, type PropertyToUpdate } from "./editor.js";
-import { type AnnotationEditorUIManager, KeyboardManager } from "./tools.js";
+import type { AnnotationEditorP, PropertyToUpdate } from "./editor.js";
+import { AnnotationEditor } from "./editor.js";
+import type { AnnotationEditorUIManager } from "./tools.js";
+import { KeyboardManager } from "./tools.js";
 export interface FreeTextEditorP extends AnnotationEditorP {
     name: "freeTextEditor";
     color?: string;
     fontSize?: number;
 }
-export interface FreeTextEditorSerialized extends AnnotationEditorSerialized {
+export interface FreeTextEditorSerialized extends AnnotStorageValue {
     fontSize: number;
     value: string;
 }
@@ -22,7 +25,7 @@ export declare class FreeTextEditor extends AnnotationEditor {
     static _internalPadding: number;
     static _defaultColor: string | undefined;
     static _defaultFontSize: number;
-    static _keyboardManager: KeyboardManager;
+    static get _keyboardManager(): KeyboardManager;
     static readonly _type = "freetext";
     overlayDiv: HTMLDivElement;
     editorDiv: HTMLDivElement;
@@ -75,11 +78,11 @@ export declare class FreeTextEditor extends AnnotationEditor {
     render(): HTMLDivElement;
     get contentDiv(): HTMLDivElement;
     /** @inheritdoc */
-    static deserialize(data: FreeTextEditorSerialized, parent: AnnotationEditorLayer, uiManager: AnnotationEditorUIManager): FreeTextEditor;
+    static deserialize(data: FreeTextEditorSerialized, parent: AnnotationEditorLayer, uiManager: AnnotationEditorUIManager): FreeTextEditor | undefined;
     /**
      * @inheritdoc
      * @implement
      */
-    serialize(): FreeTextEditorSerialized | undefined;
+    serialize(isForCopying?: boolean): FreeTextEditorSerialized | undefined;
 }
 //# sourceMappingURL=freetext.d.ts.map

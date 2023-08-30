@@ -144,7 +144,7 @@ function isRuntimeAvailable() {
             return true;
         }
     }
-    catch (e) { }
+    catch { }
     return false;
 }
 function reloadIfRuntimeIsUnavailable() {
@@ -303,7 +303,6 @@ function setReferer(url, callback) {
 // chrome.storage.local to chrome.storage.sync when needed.
 const storageArea = chrome.storage.sync || chrome.storage.local;
 class ChromePreferences extends BasePreferences {
-    /** @implement */
     async _writeToStorage(prefObj) {
         return new Promise((resolve) => {
             if (prefObj === this.defaults) {
@@ -348,7 +347,7 @@ class ChromePreferences extends BasePreferences {
                     disablePageMode: false,
                 }, this.defaults);
                 chrome.storage.managed.get(defaultManagedPrefs, (items) => {
-                    items = items || defaultManagedPrefs;
+                    items ||= defaultManagedPrefs;
                     // Migration logic for deprecated preferences: If the new preference
                     // is not defined by an administrator (i.e. the value is the same as
                     // the default value), and a deprecated preference is set with a

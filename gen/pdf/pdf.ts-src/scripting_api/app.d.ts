@@ -1,12 +1,12 @@
-import { Doc } from "./doc.js";
-import { EventDispatcher, ScriptingEventData } from "./event.js";
-import { Field } from "./field.js";
+import type { Doc } from "./doc.js";
+import { EventDispatcher, type ScriptingEventData } from "./event.js";
+import type { Field } from "./field.js";
 import { FullScreen } from "./fullscreen.js";
-import { ExternalCall } from "./initialization.js";
-import { PDFObject, ScriptingData, SendData } from "./pdf_object.js";
-import { ScriptingProxyHandler } from "./proxy.js";
+import type { ExternalCall } from "./initialization.js";
+import type { ScriptingData, SendData } from "./pdf_object.js";
+import { PDFObject } from "./pdf_object.js";
+import type { ScriptingProxyHandler } from "./proxy.js";
 import { Thermometer } from "./thermometer.js";
-export declare const USERACTIVATION_CALLBACKID = 0;
 export interface DocWrapped {
     obj: Doc;
     wrapped: Doc;

@@ -1,7 +1,7 @@
-import { ErrorFont, Font } from "../fonts.js";
-import { type XFAFontMetrics } from "../xfa_fonts.js";
-import { type XFAFontBase } from "./alias.js";
-import { Font as XFAFont } from "./template.js";
+import type { ErrorFont, Font } from "../fonts.js";
+import type { XFAFontMetrics } from "../xfa_fonts.js";
+import type { XFAFontBase } from "./alias.js";
+import type { Font as XFAFont } from "./template.js";
 interface PDFFont {
     bold?: Font | ErrorFont;
     bolditalic?: Font | ErrorFont;

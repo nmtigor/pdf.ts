@@ -3,8 +3,9 @@
  */
 import { fixTextIndent, fixURL, measureToString, setFontFamily, } from "./html_utils.js";
 import { $buildXFAObject, NamespaceIds } from "./namespaces.js";
+import { $acceptWhitespace, $childrenToHTML, $clean, $content, $extra, $getChildren, $getParent, $globalData, $nodeName, $onText, $pushGlyphs, $text, $toHTML, } from "./symbol_utils.js";
 import { getMeasurement, HTMLResult, stripQuotes } from "./utils.js";
-import { $acceptWhitespace, $childrenToHTML, $clean, $content, $extra, $getChildren, $getParent, $globalData, $nodeName, $onText, $pushGlyphs, $text, $toHTML, XmlObject, } from "./xfa_object.js";
+import { XmlObject } from "./xfa_object.js";
 /*80--------------------------------------------------------------------------*/
 const XHTML_NS_ID = NamespaceIds.xhtml.id;
 const $richText = Symbol();
@@ -383,7 +384,7 @@ class Html extends XhtmlObject {
         }
         if (children.length === 1) {
             const child = children[0];
-            if (child.attributes && child.attributes.class.includes("xfaRich")) {
+            if (child.attributes?.class.includes("xfaRich")) {
                 return HTMLResult.success(child);
             }
         }

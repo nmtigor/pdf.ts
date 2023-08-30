@@ -2,7 +2,8 @@
  * nmtigor (https://github.com/nmtigor) @2022
  */
 import { $buildXFAObject, NamespaceIds } from "./namespaces.js";
-import { $appendChild, $isNsAgnostic, $namespaceId, $nodeName, $onChild, XFAObject, XmlObject, } from "./xfa_object.js";
+import { $appendChild, $isNsAgnostic, $namespaceId, $nodeName, $onChild, } from "./symbol_utils.js";
+import { XFAObject, XmlObject } from "./xfa_object.js";
 /*80--------------------------------------------------------------------------*/
 const DATASETS_NS_ID = NamespaceIds.datasets.id;
 class Data extends XmlObject {

@@ -18,7 +18,7 @@
 import { warn } from "../../shared/util.js";
 import { XMLParserBase, XMLParserErrorCode, } from "../xml_parser.js";
 import { Builder } from "./builder.js";
-import { $acceptWhitespace, $clean, $content, $finalize, $globalData, $isCDATAXml, $nsAttributes, $onChild, $onText, $setId, } from "./xfa_object.js";
+import { $acceptWhitespace, $clean, $content, $finalize, $globalData, $isCDATAXml, $nsAttributes, $onChild, $onText, $setId, } from "./symbol_utils.js";
 /*80--------------------------------------------------------------------------*/
 export class XFAParser extends XMLParserBase {
     #builder;

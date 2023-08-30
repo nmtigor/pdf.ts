@@ -86,7 +86,7 @@ export class ImageResizer {
             canvas.width = canvas.height = 1;
             return opacity !== 0;
         }
-        catch (e) {
+        catch {
             return false;
         }
     }

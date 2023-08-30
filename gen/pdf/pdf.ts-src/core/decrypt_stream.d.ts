@@ -1,4 +1,4 @@
-import { BaseStream } from "./base_stream.js";
+import type { BaseStream } from "./base_stream.js";
 import { DecodeStream } from "./decode_stream.js";
 type Decrypt = (data: Uint8Array | Uint8ClampedArray, finalize: boolean) => Uint8Array | Uint8ClampedArray;
 /** @final */

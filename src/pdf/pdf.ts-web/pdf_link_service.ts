@@ -478,7 +478,7 @@ export class PDFLinkService implements IPDFLinkService {
           // e.g. "4.3" or "true", because `JSON.parse` converted its type.
           dest = dest.toString();
         }
-      } catch (ex) {}
+      } catch {}
 
       if (
         typeof dest === "string" ||
@@ -594,15 +594,6 @@ export class PDFLinkService implements IPDFLinkService {
       ? `${pageRef.num}R`
       : `${pageRef.num}R${pageRef.gen}`;
     return this.#pagesRefCache.get(refStr) || undefined;
-  }
-
-  /** @implement */
-  isPageVisible(pageNumber: number) {
-    return this.pdfViewer!.isPageVisible(pageNumber);
-  }
-
-  isPageCached(pageNumber: number) {
-    return this.pdfViewer!.isPageCached(pageNumber);
   }
 
   static #isValidExplicitDestination(dest: unknown) {
@@ -743,19 +734,6 @@ export class SimpleLinkService implements IPDFLinkService {
   _cachedPageNumber(pageRef: RefProxy) {
     assert(0);
     return undefined;
-  }
-
-  /** @implement */
-  isPageVisible(pageNumber: number) {
-    return true;
-  }
-
-  /**
-   * @implement
-   * @param {number} pageNumber
-   */
-  isPageCached(pageNumber: number) {
-    return true;
   }
 }
 /*80--------------------------------------------------------------------------*/

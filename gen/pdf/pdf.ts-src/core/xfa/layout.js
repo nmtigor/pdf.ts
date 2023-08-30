@@ -2,7 +2,7 @@
  * nmtigor (https://github.com/nmtigor) @2022
  */
 import { measureToString } from "./html_utils.js";
-import { $extra, $flushHTML, $getSubformParent, $getTemplateRoot, $isSplittable, $isThereMoreWidth, } from "./xfa_object.js";
+import { $extra, $flushHTML, $getSubformParent, $getTemplateRoot, $isSplittable, $isThereMoreWidth, } from "./symbol_utils.js";
 /*80--------------------------------------------------------------------------*/
 // Subform and ExclGroup have a layout so they share these functions.
 /**
@@ -235,7 +235,7 @@ export function checkDimensions(node, space) {
     }
     const ERROR = 2;
     const parent = node[$getSubformParent]();
-    const attempt = (parent[$extra] && parent[$extra].attempt) || 0;
+    const attempt = parent[$extra]?.attempt || 0;
     const [, y, w, h] = getTransformedBBox(node);
     switch (parent.layout) {
         case "lr-tb":
