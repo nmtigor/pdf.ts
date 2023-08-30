@@ -25,17 +25,18 @@ import {
   assertMatch,
   assertNotEquals,
   assertNotMatch,
+  assertObjectMatch,
   assertStrictEquals,
   assertThrows,
   fail,
-} from "https://deno.land/std@0.190.0/testing/asserts.ts";
+} from "https://deno.land/std@0.195.0/assert/mod.ts";
 import {
   afterAll,
   afterEach,
   beforeAll,
   describe,
   it,
-} from "https://deno.land/std@0.190.0/testing/bdd.ts";
+} from "https://deno.land/std@0.195.0/testing/bdd.ts";
 import { DENO } from "../../../global.ts";
 import { isObjectLike } from "../../../lib/jslang.ts";
 import { PromiseCap } from "../../../lib/util/PromiseCap.ts";
@@ -91,6 +92,7 @@ import {
 } from "./display_utils.ts";
 import { Metadata } from "./metadata.ts";
 import { GlobalWorkerOptions } from "./worker_options.ts";
+import type { FieldObject } from "../core/annotation.ts";
 /*80--------------------------------------------------------------------------*/
 
 describe("api", () => {
@@ -203,7 +205,7 @@ describe("api", () => {
         await loadingTask.promise;
 
         fail("Shouldn't get here.");
-      } catch (reason) {
+      } catch {
         await destroyed;
       }
     });
@@ -373,7 +375,7 @@ describe("api", () => {
       const result1 = passwordNeededLoadingTask.promise.then(
         () => {
           fail("Shouldn't get here.");
-          return Promise.reject(new Error("loadingTask should be rejected"));
+          throw new Error("loadingTask should be rejected");
         },
         (data) => {
           assertInstanceOf(data, PasswordException);
@@ -392,7 +394,7 @@ describe("api", () => {
       const result2 = passwordIncorrectLoadingTask.promise.then(
         () => {
           fail("Shouldn't get here.");
-          return Promise.reject(new Error("loadingTask should be rejected"));
+          throw new Error("loadingTask should be rejected");
         },
         (data) => {
           assertInstanceOf(data, PasswordException);
@@ -445,7 +447,7 @@ describe("api", () => {
         const result1 = passwordNeededLoadingTask.promise.then(
           () => {
             fail("Shouldn't get here.");
-            return Promise.reject(new Error("loadingTask should be rejected"));
+            throw new Error("loadingTask should be rejected");
           },
           (reason) => {
             assertInstanceOf(reason, PasswordException);
@@ -463,7 +465,7 @@ describe("api", () => {
         const result2 = passwordIncorrectLoadingTask.promise.then(
           () => {
             fail("Shouldn't get here.");
-            return Promise.reject(new Error("loadingTask should be rejected"));
+            throw new Error("loadingTask should be rejected");
           },
           (reason) => {
             assertInstanceOf(reason, PasswordException);
@@ -1514,6 +1516,26 @@ describe("api", () => {
       await loadingTask.destroy();
     });
 
+    //kkkk
+    it.ignore("check field object for group of buttons", async () => {
+      // if (isNodeJS) {
+      //   pending("Linked test-cases are not supported in Node.js.");
+      // }
+
+      const loadingTask = getDocument(buildGetDocumentParams("f1040_2022.pdf"));
+      const pdfDoc = await loadingTask.promise;
+      const fieldObjects = await pdfDoc.getFieldObjects();
+
+      assertEquals(
+        (fieldObjects as Record<string, FieldObject[]>)[
+          "topmostSubform[0].Page1[0].c1_01"
+        ].map((o) => o.id),
+        ["1566R", "1568R", "1569R", "1570R", "1571R"],
+      );
+
+      await loadingTask.destroy();
+    });
+
     it("gets non-existent calculationOrder", async () => {
       const calculationOrder = await pdfDocument.getCalculationOrderIds();
       assertEquals(calculationOrder, undefined);
@@ -1956,7 +1978,7 @@ describe("api", () => {
     });
 
     //kkkk
-    it.ignore("write a a new annotation, save the pdf and check that the prev entry in xref stream is correct", async () => {
+    it.ignore("write a new annotation, save the pdf and check that the prev entry in xref stream is correct", async () => {
       // if (isNodeJS) {
       //   pending("Linked test-cases are not supported in Node.js.");
       // }
@@ -1981,6 +2003,144 @@ describe("api", () => {
       const xrefPrev = await pdfDoc.getXRefPrevValue();
 
       assertEquals(xrefPrev, 143954);
+
+      await loadingTask.destroy();
+    });
+
+    it("edit and write an existing annotation, save the pdf and check that the Annot array doesn't contain dup entries", async () => {
+      let loadingTask = getDocument(buildGetDocumentParams("issue14438.pdf"));
+      let pdfDoc = await loadingTask.promise;
+      pdfDoc.annotationStorage.setValue("pdfjs_internal_editor_0", {
+        annotationType: AnnotationEditorType.FREETEXT,
+        rect: [12, 34, 56, 78],
+        rotation: 0,
+        fontSize: 10,
+        color: [0, 0, 0],
+        value: "Hello PDF.js World!",
+        pageIndex: 0,
+        id: "10R",
+      });
+      pdfDoc.annotationStorage.setValue("pdfjs_internal_editor_1", {
+        annotationType: AnnotationEditorType.FREETEXT,
+        rect: [12, 34, 56, 78],
+        rotation: 0,
+        fontSize: 10,
+        color: [0, 0, 0],
+        value: "Hello PDF.js World!",
+        pageIndex: 0,
+      });
+
+      const data = await pdfDoc.saveDocument();
+      await loadingTask.destroy();
+
+      loadingTask = getDocument(data);
+      pdfDoc = await loadingTask.promise;
+      const annotations = await pdfDoc.getAnnotArray(0);
+
+      // deno-fmt-ignore
+      assertEquals(annotations, [
+        "4R", "10R", "17R", "20R", "21R", "22R", "25R", "28R", "29R", "30R", 
+        "33R", "36R", "37R", "42R", "43R", "44R", "47R", "50R", "51R", "54R", 
+        "55R", "58R", "59R", "62R", "63R", "66R", "69R", "72R", "75R", "78R", 
+        "140R",
+      ]);
+
+      await loadingTask.destroy();
+    });
+
+    it("write a new annotation, save the pdf and check that the text content is correct", async () => {
+      // This test helps to check that the text stream is correctly compressed
+      // when saving.
+      const manifesto = `
+      The Mozilla Manifesto Addendum
+      Pledge for a Healthy Internet
+      
+      The open, global internet is the most powerful communication and collaboration resource we have ever seen.
+      It embodies some of our deepest hopes for human progress.
+      It enables new opportunities for learning, building a sense of shared humanity, and solving the pressing problems
+      facing people everywhere.
+      
+      Over the last decade we have seen this promise fulfilled in many ways.
+      We have also seen the power of the internet used to magnify divisiveness,
+      incite violence, promote hatred, and intentionally manipulate fact and reality.
+      We have learned that we should more explicitly set out our aspirations for the human experience of the internet.
+      We do so now.
+      `.repeat(100);
+      let loadingTask = getDocument(buildGetDocumentParams("empty.pdf"));
+      let pdfDoc = await loadingTask.promise;
+      pdfDoc.annotationStorage.setValue("pdfjs_internal_editor_0", {
+        annotationType: AnnotationEditorType.FREETEXT,
+        rect: [10, 10, 500, 500],
+        rotation: 0,
+        fontSize: 1,
+        color: [0, 0, 0],
+        value: manifesto,
+        pageIndex: 0,
+      });
+
+      const data = await pdfDoc.saveDocument();
+      await loadingTask.destroy();
+
+      loadingTask = getDocument(data);
+      pdfDoc = await loadingTask.promise;
+      const page = await pdfDoc.getPage(1);
+      const annotations = await page.getAnnotations();
+
+      assertEquals(annotations[0].contentsObj.str, manifesto);
+
+      await loadingTask.destroy();
+    });
+
+    //kkkk
+    it.ignore("write a new stamp annotation, save the pdf and check that the same image has the same ref", async () => {
+      // if (isNodeJS) {
+      //   pending("Cannot create a bitmap from Node.js.");
+      // }
+
+      const TEST_IMAGES_PATH = "../images/";
+      const filename = "firefox_logo.png";
+      const path =
+        new URL(TEST_IMAGES_PATH + filename, window.location.toString()).href;
+
+      const response = await fetch(path);
+      const blob = await response.blob();
+      const bitmap = await createImageBitmap(blob);
+
+      let loadingTask = getDocument(buildGetDocumentParams("empty.pdf"));
+      let pdfDoc = await loadingTask.promise;
+      pdfDoc.annotationStorage.setValue("pdfjs_internal_editor_0", {
+        annotationType: AnnotationEditorType.STAMP,
+        rect: [12, 34, 56, 78],
+        rotation: 0,
+        bitmap,
+        bitmapId: "im1",
+        pageIndex: 0,
+      });
+      pdfDoc.annotationStorage.setValue("pdfjs_internal_editor_1", {
+        annotationType: AnnotationEditorType.STAMP,
+        rect: [112, 134, 156, 178],
+        rotation: 0,
+        bitmapId: "im1",
+        pageIndex: 0,
+      });
+
+      const data = await pdfDoc.saveDocument();
+      await loadingTask.destroy();
+
+      loadingTask = getDocument(data);
+      pdfDoc = await loadingTask.promise;
+      const page = await pdfDoc.getPage(1);
+      const opList = await page.getOperatorList();
+
+      // The pdf contains two stamp annotations with the same image.
+      // The image should be stored only once in the pdf and referenced twice.
+      // So we can verify that the image is referenced twice in the opList.
+
+      for (let i = 0; i < opList.fnArray.length; i++) {
+        if (opList.fnArray[i] === OPS.paintImageXObject) {
+          assertEquals(opList.argsArray[i]![0], "img_p0_1");
+        }
+      }
 
       await loadingTask.destroy();
     });
@@ -2663,6 +2823,49 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
       await loadingTask.destroy();
     });
 
+    it("check that a chunk is pushed when font is restored", async () => {
+      const loadingTask = getDocument(buildGetDocumentParams("issue14755.pdf"));
+      const pdfDoc = await loadingTask.promise;
+      const pdfPage = await pdfDoc.getPage(1);
+      const { items } = await pdfPage.getTextContent({
+        disableNormalization: true,
+      });
+      assertObjectMatch(items, [
+        {
+          str: "ABC",
+          dir: "ltr",
+          width: 20.56,
+          height: 10,
+          transform: [10, 0, 0, 10, 100, 100],
+          hasEOL: false,
+        },
+        {
+          str: "DEF",
+          dir: "ltr",
+          width: 20,
+          height: 10,
+          transform: [10, 0, 0, 10, 120, 100],
+          hasEOL: false,
+        },
+        {
+          str: "GHI",
+          dir: "ltr",
+          width: 17.78,
+          height: 10,
+          transform: [10, 0, 0, 10, 140, 100],
+          hasEOL: false,
+        },
+      ] as any);
+      assertEquals(
+        (items[0] as TextItem).fontName,
+        (items[2] as TextItem).fontName,
+      );
+      assertNotEquals(
+        (items[1] as TextItem).fontName,
+        (items[0] as TextItem).fontName,
+      );
+    });
+
     it("gets empty structure tree", async () => {
       const tree = await page.getStructTree();
 
@@ -2689,7 +2892,7 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
                 children: [
                   {
                     role: "NonStruct",
-                    children: [{ type: "content", id: "page2R_mcid0" }],
+                    children: [{ type: "content", id: "p2R_mc0" }],
                   },
                 ],
               },
@@ -2698,7 +2901,7 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
                 children: [
                   {
                     role: "NonStruct",
-                    children: [{ type: "content", id: "page2R_mcid1" }],
+                    children: [{ type: "content", id: "p2R_mc1" }],
                   },
                 ],
               },
@@ -2707,7 +2910,7 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
                 children: [
                   {
                     role: "NonStruct",
-                    children: [{ type: "content", id: "page2R_mcid2" }],
+                    children: [{ type: "content", id: "p2R_mc2" }],
                   },
                 ],
               },
@@ -2716,7 +2919,7 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
                 children: [
                   {
                     role: "NonStruct",
-                    children: [{ type: "content", id: "page2R_mcid3" }],
+                    children: [{ type: "content", id: "p2R_mc3" }],
                   },
                 ],
               },
@@ -3019,7 +3222,6 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
       } catch (reason) {
         assertInstanceOf(reason, RenderingCancelledException);
         assertEquals(reason.message, "Rendering cancelled, page 1");
-        assertEquals(reason.type, "canvas");
         assertEquals(reason.extraDelay, 0);
       }
 
@@ -3193,11 +3395,8 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
 
         const { commonObjs, objs } = pdfPage;
         const imgIndex = opList.fnArray.indexOf(OPS.paintImageXObject);
-        const [objId, width, height] = opList.argsArray[imgIndex] as [
-          string,
-          number,
-          number,
-        ];
+        const [objId, width, height] = opList
+          .argsArray[imgIndex] as [string, number, number];
 
         if (i < NUM_PAGES_THRESHOLD) {
           //kkkk got `img_p19_1`
@@ -3293,12 +3492,8 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
       // Update the contents of the form-field again.
       annotationStorage.setValue("22R", { value: "Printing again..." });
 
-      const annotationHash = AnnotationStorage.getHash(
-        annotationStorage.serializable,
-      );
-      const printAnnotationHash = AnnotationStorage.getHash(
-        printAnnotationStorage.serializable,
-      );
+      const { hash: annotationHash } = annotationStorage.serializable;
+      const { hash: printAnnotationHash } = printAnnotationStorage.serializable;
       // Sanity check to ensure that the print-storage didn't change,
       // after the form-field was updated.
       assertNotEquals(printAnnotationHash, annotationHash);

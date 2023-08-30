@@ -17,8 +17,6 @@
  * limitations under the License.
  */
 
-import { GENERIC, SKIP_BABEL } from "../../global.ts";
-import { html } from "../../lib/dom.ts";
 import { isObjectLike } from "../../lib/jslang.ts";
 /*80--------------------------------------------------------------------------*/
 
@@ -46,41 +44,9 @@ export class OverlayManager {
     }
     this.#overlays.set(dialog, { canForceClose });
 
-    /*#static*/ if (GENERIC && !SKIP_BABEL) {
-      if (!dialog.showModal) {
-        const dialogPolyfill = (<any> globalThis).require(
-          "dialog-polyfill/dist/dialog-polyfill.js",
-        );
-        dialogPolyfill.registerDialog(dialog);
-
-        if (!this._dialogPolyfillCSS) {
-          this._dialogPolyfillCSS = true;
-
-          const style = html("style");
-          // style.textContent = PDFJSDev.eval( "DIALOG_POLYFILL_CSS");
-          style.textContent = "";
-
-          document.head.prepend(style);
-        }
-      }
-    }
-
     dialog.addEventListener("cancel", (evt) => {
       this.#active = undefined;
     });
-  }
-
-  /**
-   * @param dialog The overlay's DOM element.
-   * @return A promise that is resolved when the overlay has been unregistered.
-   */
-  async unregister(dialog: HTMLDialogElement) {
-    if (!this.#overlays.has(dialog)) {
-      throw new Error("The overlay does not exist.");
-    } else if (this.#active === dialog) {
-      throw new Error("The overlay cannot be removed while it is active.");
-    }
-    this.#overlays.delete(dialog);
   }
 
   /**

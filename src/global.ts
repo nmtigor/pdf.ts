@@ -4,18 +4,18 @@
  ******************************************************************************/
 
 import { Hover, Pointer } from "./lib/alias.ts";
-import type { HTMLVCo } from "./lib/mv.ts";
+import type { HTMLVCo } from "./lib/cv.ts";
 import { assert } from "./lib/util/trace.ts";
 /*80--------------------------------------------------------------------------*/
 
-// preprocessor names
 // deno-fmt-ignore
+// preprocessor names
 export const 
   INOUT = true // contracts
 , DEV = true // debug build
   , TRACE = true
   , INFO = true
-  , COLR = true
+  , COLR = false
   
   , XSTATE = true
   , RESIZ = true // "resize", ResizeObserver
@@ -27,13 +27,13 @@ export const
   , PDFTS = true
     , PDFTS_v = true // verbose
       , PDFTS_vv = false // very verbose
-, _TRACE = DEV && TRACE
 , _INFO = DEV && INFO
 , _COLR = DEV && COLR
 , /** @deprecated */APP = false // release build
 
 , TESTING = false
 , DENO = false
+, _TRACE = DEV && TRACE && !TESTING
 
 , CYPRESS = true
 
@@ -68,12 +68,12 @@ export const global = new class {
   pointer = Pointer.none;
   anyPointer = Pointer.none;
   get can_touch() {
-    return global.anyPointer === Pointer.coarse;
+    return this.anyPointer === Pointer.coarse;
   }
   hover = Hover.none;
   anyHover = Hover.none;
   get can_hover() {
-    return global.anyHover === Hover.hover;
+    return this.anyHover === Hover.hover;
   }
 
   // /* For testing only */
@@ -106,7 +106,7 @@ export const global = new class {
   // }
   // /* ~ */
 
-  readonly #tabsize = 2;
+  readonly #tabsize = 4;
   #dent = 0;
   get dent() {
     let ret;

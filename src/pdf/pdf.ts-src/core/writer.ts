@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-import { bytesToString, warn } from "../shared/util.ts";
-import { type SaveData } from "./annotation.ts";
+import { bytesToString, info, stringToBytes, warn } from "../shared/util.ts";
+import type { SaveData } from "./annotation.ts";
 import { BaseStream } from "./base_stream.ts";
 import {
   escapePDFName,
@@ -26,14 +26,14 @@ import {
   numberToString,
   parseXFAPath,
 } from "./core_utils.ts";
-import { calculateMD5, CipherTransform } from "./crypto.ts";
-import { Dict, Name, type Obj, Ref } from "./primitives.ts";
-import { type XRefInfo } from "./worker.ts";
+import { calculateMD5, type CipherTransform } from "./crypto.ts";
+import { Dict, isName, Name, type Obj, Ref } from "./primitives.ts";
+import type { XRefInfo } from "./worker.ts";
 import { SimpleDOMNode, SimpleXMLParser } from "./xml_parser.ts";
-import { XRef } from "./xref.ts";
+import type { XRef } from "./xref.ts";
 /*80--------------------------------------------------------------------------*/
 
-export function writeObject(
+export async function writeObject(
   ref: Ref,
   obj: Dict | BaseStream,
   buffer: string[],
@@ -41,14 +41,14 @@ export function writeObject(
 ) {
   buffer.push(`${ref.num} ${ref.gen} obj\n`);
   if (obj instanceof Dict) {
-    writeDict(obj, buffer, transform);
+    await writeDict(obj, buffer, transform);
   } else if (obj instanceof BaseStream) {
-    writeStream(obj, buffer, transform);
+    await writeStream(obj, buffer, transform);
   }
   buffer.push("\nendobj\n");
 }
 
-export function writeDict(
+export async function writeDict(
   dict: Dict,
   buffer: string[],
   transform?: CipherTransform,
@@ -56,12 +56,12 @@ export function writeDict(
   buffer.push("<<");
   for (const key of dict.getKeys()) {
     buffer.push(` /${escapePDFName(key)} `);
-    writeValue(dict.getRaw(key), buffer, transform);
+    await writeValue(dict.getRaw(key), buffer, transform);
   }
   buffer.push(">>");
 }
 
-function writeStream(
+async function writeStream(
   stream: BaseStream,
   buffer: string[],
   transform?: CipherTransform,
@@ -70,12 +70,72 @@ function writeStream(
   if (transform !== undefined) {
     string = transform.encryptString(string);
   }
-  stream.dict!.set("Length", string.length);
-  writeDict(stream.dict!, buffer, transform);
+  const { dict } = stream;
+
+  // eslint-disable-next-line no-undef
+  if (typeof (globalThis as any).CompressionStream === "undefined") {
+    dict!.set("Length", string.length);
+    await writeDict(dict!, buffer, transform);
+    buffer.push(" stream\n", string, "\nendstream");
+    return;
+  }
+
+  // Table 5
+  const filter = (await dict!.getAsync("Filter")) as Name | Name[];
+  const params = (await dict!.getAsync("DecodeParms")) as Dict | Dict[];
+
+  const filterZero = Array.isArray(filter)
+    ? await dict!.xref!.fetchIfRefAsync(filter[0]!)
+    : filter;
+  const isFilterZeroFlateDecode = isName(filterZero, "FlateDecode");
+
+  // If the string is too small there is no real benefit in compressing it.
+  // The number 256 is arbitrary, but it should be reasonable.
+  const MIN_LENGTH_FOR_COMPRESSING = 256;
+
+  if (string.length >= MIN_LENGTH_FOR_COMPRESSING || isFilterZeroFlateDecode) {
+    try {
+      const byteArray = stringToBytes(string);
+      // eslint-disable-next-line no-undef
+      const cs = new (globalThis as any).CompressionStream("deflate");
+      const writer = cs.writable.getWriter();
+      writer.write(byteArray);
+      writer.close();
+
+      // Response::text doesn't return the correct data.
+      const buf = await new Response(cs.readable).arrayBuffer();
+      string = bytesToString(new Uint8Array(buf));
+
+      let newFilter, newParams;
+      if (!filter) {
+        newFilter = Name.get("FlateDecode");
+      } else if (!isFilterZeroFlateDecode) {
+        newFilter = Array.isArray(filter)
+          ? [Name.get("FlateDecode"), ...filter]
+          : [Name.get("FlateDecode"), filter];
+        if (params) {
+          newParams = Array.isArray(params)
+            ? [null, ...params]
+            : [null, params];
+        }
+      }
+      if (newFilter) {
+        dict!.set("Filter", newFilter);
+      }
+      if (newParams) {
+        dict!.set("DecodeParms", newParams);
+      }
+    } catch (ex) {
+      info(`writeStream - cannot compress data: "${ex}".`);
+    }
+  }
+
+  dict!.set("Length", string.length);
+  await writeDict(dict!, buffer, transform);
   buffer.push(" stream\n", string, "\nendstream");
 }
 
-function writeArray(
+async function writeArray(
   array: (Obj | undefined)[],
   buffer: string[],
   transform?: CipherTransform,
@@ -88,12 +148,12 @@ function writeArray(
     } else {
       first = false;
     }
-    writeValue(val, buffer, transform);
+    await writeValue(val, buffer, transform);
   }
   buffer.push("]");
 }
 
-function writeValue(
+async function writeValue(
   value: Obj | undefined,
   buffer: string[],
   transform?: CipherTransform,
@@ -103,7 +163,7 @@ function writeValue(
   } else if ((value instanceof Ref)) {
     buffer.push(`${value.num} ${value.gen} R`);
   } else if (Array.isArray(value)) {
-    writeArray(value, buffer, transform);
+    await writeArray(value, buffer, transform);
   } else if (typeof value === "string") {
     if (transform !== undefined) {
       value = transform.encryptString(value);
@@ -114,9 +174,9 @@ function writeValue(
   } else if (typeof value === "boolean") {
     buffer.push(value.toString());
   } else if (value instanceof Dict) {
-    writeDict(value, buffer, transform);
+    await writeDict(value, buffer, transform);
   } else if (value instanceof BaseStream) {
-    writeStream(value, buffer, transform);
+    await writeStream(value, buffer, transform);
   } else if (value === null || value === undefined) {
     buffer.push("null");
   } else {
@@ -196,7 +256,7 @@ function writeXFADataForAcroform(str: string, newRefs: SaveData[]) {
   return buffer.join("");
 }
 
-interface _UpdateAcroformP {
+interface UpdateAcroformP_ {
   xref: XRef | undefined;
   acroForm: Dict | undefined;
   acroFormRef: Ref | undefined;
@@ -206,7 +266,7 @@ interface _UpdateAcroformP {
   needAppearances: boolean | undefined;
   newRefs: SaveData[];
 }
-function updateAcroform({
+async function updateAcroform({
   xref,
   acroForm,
   acroFormRef,
@@ -215,7 +275,7 @@ function updateAcroform({
   xfaDatasetsRef,
   needAppearances,
   newRefs,
-}: _UpdateAcroformP) {
+}: UpdateAcroformP_) {
   if (hasXfa && !hasXfaDatasetsEntry && !xfaDatasetsRef) {
     warn("XFA - Cannot save it");
   }
@@ -255,7 +315,7 @@ function updateAcroform({
   }
 
   const buffer: string[] = [];
-  writeObject(acroFormRef!, dict, buffer, transform);
+  await writeObject(acroFormRef!, dict, buffer, transform);
 
   newRefs.push({ ref: acroFormRef!, data: buffer.join("") });
 }
@@ -288,7 +348,7 @@ function updateXFA({ xfaData, xfaDatasetsRef, newRefs, xref }: _UpdateXFAP) {
   newRefs.push({ ref: xfaDatasetsRef!, data });
 }
 
-interface _IncrementalUpdateP {
+interface IncrementalUpdateP_ {
   originalData: Uint8Array;
   xrefInfo: XRefInfo;
   newRefs: SaveData[];
@@ -305,7 +365,7 @@ interface _IncrementalUpdateP {
   xfaData?: string | undefined;
   xfaDatasetsRef?: Ref | undefined;
 }
-export function incrementalUpdate({
+export async function incrementalUpdate({
   originalData,
   xrefInfo,
   newRefs,
@@ -317,8 +377,8 @@ export function incrementalUpdate({
   acroFormRef,
   acroForm,
   xfaData,
-}: _IncrementalUpdateP) {
-  updateAcroform({
+}: IncrementalUpdateP_) {
+  await updateAcroform({
     xref,
     acroForm,
     acroFormRef,
@@ -399,7 +459,7 @@ export function incrementalUpdate({
   newXref.set("Length", tableLength);
 
   buffer.push(`${refForXrefTable.num} ${refForXrefTable.gen} obj\n`);
-  writeDict(newXref, buffer);
+  await writeDict(newXref, buffer);
   buffer.push(" stream\n");
 
   const bufferLen = buffer.reduce((a, str) => a + str.length, 0);

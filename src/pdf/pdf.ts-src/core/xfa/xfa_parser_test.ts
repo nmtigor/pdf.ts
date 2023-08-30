@@ -17,18 +17,20 @@
  * limitations under the License.
  */
 
-import { assertEquals } from "https://deno.land/std@0.190.0/testing/asserts.ts";
-import { describe, it } from "https://deno.land/std@0.190.0/testing/bdd.ts";
+import { assertEquals } from "https://deno.land/std@0.195.0/assert/mod.ts";
+import { describe, it } from "https://deno.land/std@0.195.0/testing/bdd.ts";
 import { Binder } from "./bind.ts";
 import { XFAParser } from "./parser.ts";
 import { searchNode } from "./som.ts";
-import { Template } from "./template.ts";
+import type { Template } from "./template.ts";
 import {
   $dump,
   $getChildren,
   $getChildrenByClass,
   $getChildrenByName,
   $text,
+} from "./symbol_utils.ts";
+import type {
   Dumped,
   XFAAttribute,
   XFAObject,

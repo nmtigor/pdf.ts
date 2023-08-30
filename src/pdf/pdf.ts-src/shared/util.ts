@@ -85,6 +85,7 @@ export enum AnnotationEditorType {
   DISABLE = -1,
   NONE = 0,
   FREETEXT = 3,
+  STAMP = 13,
   INK = 15,
 }
 
@@ -156,24 +157,6 @@ export const enum AnnotationType {
   THREED,
   REDACT,
 }
-
-// const AnnotationStateModelType = {
-//   MARKED: "Marked",
-//   REVIEW: "Review",
-// };
-
-// const AnnotationMarkedState = {
-//   MARKED: "Marked",
-//   UNMARKED: "Unmarked",
-// };
-
-// const AnnotationReviewState = {
-//   ACCEPTED: "Accepted",
-//   REJECTED: "Rejected",
-//   CANCELLED: "Cancelled",
-//   COMPLETED: "Completed",
-//   NONE: "None",
-// };
 
 export const enum AnnotationReplyType {
   GROUP = "Group",
@@ -508,7 +491,7 @@ export function createValidAbsoluteUrl(
       if (options.tryConvertEncoding) {
         try {
           url = stringToUTF8String(url);
-        } catch (ex) {}
+        } catch {}
       }
     }
 
@@ -516,7 +499,7 @@ export function createValidAbsoluteUrl(
     if (_isValidProtocol(absoluteUrl)) {
       return absoluteUrl;
     }
-  } catch (ex) {
+  } catch {
     /* `new URL()` will throw on incorrect data. */
   }
   return null;
@@ -699,7 +682,7 @@ function isEvalSupported() {
   try {
     new Function(""); // eslint-disable-line no-new, no-new-func
     return true;
-  } catch (e) {
+  } catch {
     return false;
   }
 }
@@ -827,10 +810,10 @@ export class Util {
   // Applies the transform to the rectangle and finds the minimum axially
   // aligned bounding box.
   static getAxialAlignedBoundingBox(r: rect_t, m: matrix_t): rect_t {
-    const p1 = Util.applyTransform(r, m);
-    const p2 = Util.applyTransform(<point_t> r.slice(2, 4), m);
-    const p3 = Util.applyTransform([r[0], r[3]], m);
-    const p4 = Util.applyTransform([r[2], r[1]], m);
+    const p1 = this.applyTransform(r, m);
+    const p2 = this.applyTransform(r.slice(2, 4) as point_t, m);
+    const p3 = this.applyTransform([r[0], r[3]], m);
+    const p4 = this.applyTransform([r[2], r[1]], m);
     return [
       Math.min(p1[0], p2[0], p3[0], p4[0]),
       Math.min(p1[1], p2[1], p3[1], p4[1]),

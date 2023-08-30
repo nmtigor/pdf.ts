@@ -28,7 +28,7 @@
 /** @typedef {import("./interfaces").IL10n} IL10n */
 /** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
 
-import { GENERIC, MOZCENTRAL, PDFJSDev, SKIP_BABEL } from "../../global.ts";
+import { GECKOVIEW, GENERIC, PDFJSDev } from "../../global.ts";
 import type { point_t } from "../../lib/alias.ts";
 import { div, html } from "../../lib/dom.ts";
 import { PromiseCap } from "../../lib/util/PromiseCap.ts";
@@ -493,6 +493,10 @@ export class PDFViewer {
   }
 
   #buffer!: PDFPageViewBuffer;
+  getCachedPageViews() {
+    return new Set(this.#buffer);
+  }
+
   #location?: PDFLocation | undefined;
 
   _pagesRotation!: number;
@@ -580,6 +584,11 @@ export class PDFViewer {
     this.linkService = options.linkService || new SimpleLinkService();
     this.downloadManager = options.downloadManager;
     this.findController = options.findController;
+
+    if (this.findController) {
+      this.findController.onIsPageVisible = (pageNumber) =>
+        this.getVisiblePages$().ids!.has(pageNumber);
+    }
     this._scriptingManager = options.scriptingManager || undefined;
     this.#textLayerMode = options.textLayerMode ?? TextLayerMode.ENABLE;
     this.#annotationMode = options.annotationMode ??
@@ -599,25 +608,8 @@ export class PDFViewer {
     this.#enablePermissions = options.enablePermissions || false;
     this.pageColors = options?.pageColors;
 
-    /*#static*/ if (PDFJSDev || !MOZCENTRAL) {
-      if (
-        this.pageColors &&
-        !(
-          CSS.supports("color", this.pageColors.background) &&
-          CSS.supports("color", this.pageColors.foreground)
-        )
-      ) {
-        if (this.pageColors.background || this.pageColors.foreground) {
-          console.warn(
-            "PDFViewer: Ignoring `pageColors`-option, since the browser doesn't support the values used.",
-          );
-        }
-        this.pageColors = undefined;
-      }
-    }
-
     this.defaultRenderingQueue = !options.renderingQueue;
-    if (this.defaultRenderingQueue) {
+    if ((PDFJSDev || GENERIC) && this.defaultRenderingQueue) {
       // Custom rendering queue is not specified, using default one
       this.renderingQueue = new PDFRenderingQueue();
       this.renderingQueue.setViewer(this);
@@ -637,6 +629,15 @@ export class PDFViewer {
     }
 
     this.#updateContainerHeightCss();
+
+    // Trigger API-cleanup, once thumbnail rendering has finished,
+    // if the relevant pageView is *not* cached in the buffer.
+    this.eventBus._on("thumbnailrendered", ({ pageNumber, pdfPage }) => {
+      const pageView = this._pages[pageNumber - 1];
+      if (!this.#buffer.has(pageView)) {
+        pdfPage?.cleanup();
+      }
+    });
   }
 
   /**
@@ -1055,6 +1056,20 @@ export class PDFViewer {
         // Ensure that the various layers always get the correct initial size,
         // see issue 15795.
         this.viewer.style.setProperty("--scale-factor", viewport.scale as any);
+        if (
+          this.pageColors?.foreground === "CanvasText" ||
+          this.pageColors?.background === "Canvas"
+        ) {
+          this.viewer.style.setProperty(
+            "--hcm-highligh-filter",
+            pdfDocument.filterFactory.addHighlightHCMFilter(
+              "CanvasText",
+              "Canvas",
+              "HighlightText",
+              "Highlight",
+            ),
+          );
+        }
 
         for (let pageNum = 1; pageNum <= pagesCount; ++pageNum) {
           const pageView = new PDFPageView({
@@ -1817,37 +1832,6 @@ export class PDFViewer {
     });
   }
 
-  isPageVisible(pageNumber: number) {
-    if (!this.pdfDocument) {
-      return false;
-    }
-    if (
-      !(Number.isInteger(pageNumber) &&
-        pageNumber > 0 &&
-        pageNumber <= this.pagesCount)
-    ) {
-      console.error(`isPageVisible: "${pageNumber}" is not a valid page.`);
-      return false;
-    }
-    return this.getVisiblePages$().ids!.has(pageNumber);
-  }
-
-  isPageCached(pageNumber: number) {
-    if (!this.pdfDocument) {
-      return false;
-    }
-    if (
-      !(Number.isInteger(pageNumber) &&
-        pageNumber > 0 &&
-        pageNumber <= this.pagesCount)
-    ) {
-      console.error(`isPageCached: "${pageNumber}" is not a valid page.`);
-      return false;
-    }
-    const pageView = this._pages[pageNumber - 1];
-    return this.#buffer.has(pageView);
-  }
-
   cleanup() {
     for (const pageView of this._pages) {
       if (pageView.renderingState !== RenderingStates.FINISHED) {
@@ -2013,6 +1997,11 @@ export class PDFViewer {
    *   The constants from {ScrollMode} should be used.
    */
   set scrollMode(mode: ScrollMode) {
+    if (PDFJSDev ? (window as any).isGECKOVIEW : GECKOVIEW) {
+      // NOTE: Always ignore the pageLayout in GeckoView since there's
+      // no UI available to change Scroll/Spread modes for the user.
+      return;
+    }
     if (this._scrollMode === mode) {
       return; // The Scroll mode didn't change.
     }
@@ -2068,6 +2057,11 @@ export class PDFViewer {
    *   The constants from {SpreadMode} should be used.
    */
   set spreadMode(mode: SpreadMode) {
+    if (PDFJSDev ? (window as any).isGECKOVIEW : GECKOVIEW) {
+      // NOTE: Always ignore the pageLayout in GeckoView since there's
+      // no UI available to change Scroll/Spread modes for the user.
+      return;
+    }
     if (this._spreadMode === mode) {
       return; // The Spread mode didn't change.
     }
@@ -2317,12 +2311,7 @@ export class PDFViewer {
     for (const entry of entries) {
       if (entry.target === this.container) {
         this.#updateContainerHeightCss(
-          // Safari doesn't support `borderBoxSize` until version 15.4.
-          Math.floor(
-            !SKIP_BABEL && !entry.borderBoxSize?.length
-              ? entry.contentRect.height
-              : entry.borderBoxSize[0].blockSize,
-          ),
+          Math.floor(entry.borderBoxSize[0].blockSize),
         );
         this.#containerTopLeft = undefined;
         break;

@@ -17,19 +17,17 @@
  * limitations under the License.
  */
 
-import {
-  CMYK,
-  ColorConverters,
-  CSTag,
-  RGB,
-} from "../shared/scripting_utils.ts";
-import { PDFObject, ScriptingData, SendData } from "./pdf_object.ts";
+import type { rgb_t } from "../../../lib/color/alias.ts";
+import type { CMYK, CSTag } from "../shared/scripting_utils.ts";
+import { ColorConverters } from "../shared/scripting_utils.ts";
+import type { ScriptingData, SendData } from "./pdf_object.ts";
+import { PDFObject } from "./pdf_object.ts";
 /*80--------------------------------------------------------------------------*/
 
 export type CorrectColor =
   | ["T"]
   | ["G", number]
-  | ["RGB", ...RGB]
+  | ["RGB", ...rgb_t]
   | ["CMYK", ...CMYK];
 
 interface _SendColorData extends SendData {
@@ -42,9 +40,9 @@ export class Color extends PDFObject<_SendColorData> {
   transparent = <[string]> ["T"];
   black = <["G", number]> ["G", 0];
   white = <["G", number]> ["G", 1];
-  red = <["RGB", ...RGB]> ["RGB", 1, 0, 0];
-  green = <["RGB", ...RGB]> ["RGB", 0, 1, 0];
-  blue = <["RGB", ...RGB]> ["RGB", 0, 0, 1];
+  red = <["RGB", ...rgb_t]> ["RGB", 1, 0, 0];
+  green = <["RGB", ...rgb_t]> ["RGB", 0, 1, 0];
+  blue = <["RGB", ...rgb_t]> ["RGB", 0, 0, 1];
   cyan = <["CMYK", ...CMYK]> ["CMYK", 1, 0, 0, 0];
   magenta = <["CMYK", ...CMYK]> ["CMYK", 0, 1, 0, 0];
   yellow = <["CMYK", ...CMYK]> ["CMYK", 0, 0, 1, 0];
@@ -146,7 +144,7 @@ export class Color extends PDFObject<_SendColorData> {
       colorArray2 = this.convert(colorArray2, colorArray1[0]);
     }
 
-    return (<[] | [number] | RGB | CMYK> colorArray1.slice(1))
+    return (<[] | [number] | rgb_t | CMYK> colorArray1.slice(1))
       .every((c, i) => c === colorArray2[i + 1]);
   }
 }

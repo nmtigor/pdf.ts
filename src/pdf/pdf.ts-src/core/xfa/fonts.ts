@@ -18,12 +18,12 @@
  */
 
 import { warn } from "../../shared/util.ts";
-import { ErrorFont, Font } from "../fonts.ts";
-import { type XFAFontMetrics } from "../xfa_fonts.ts";
-import { type XFAFontBase } from "./alias.ts";
-import { Font as XFAFont } from "./template.ts";
+import type { ErrorFont, Font } from "../fonts.ts";
+import type { XFAFontMetrics } from "../xfa_fonts.ts";
+import type { XFAFontBase } from "./alias.ts";
+import type { Font as XFAFont } from "./template.ts";
 import { stripQuotes } from "./utils.ts";
-import { $globalData } from "./xfa_object.ts";
+import { $globalData } from "./symbol_utils.ts";
 /*80--------------------------------------------------------------------------*/
 
 interface PDFFont {
@@ -75,25 +75,22 @@ export class FontFinder {
       }
     }
     let property: keyof PDFFont | "" = "";
-    const fontWeight = parseFloat(<any> cssFontInfo.fontWeight);
-    if (parseFloat(<any> cssFontInfo.italicAngle) !== 0) {
+    const fontWeight = parseFloat(cssFontInfo.fontWeight as any);
+    if (parseFloat(cssFontInfo.italicAngle as any) !== 0) {
       property = fontWeight >= 700 ? "bolditalic" : "italic";
     } else if (fontWeight >= 700) {
       property = "bold";
     }
 
     if (!property) {
-      if (
-        pdfFont.name.includes("Bold") ||
-        (pdfFont.psName && pdfFont.psName.includes("Bold"))
-      ) {
+      if (pdfFont.name.includes("Bold") || pdfFont.psName?.includes("Bold")) {
         property = "bold";
       }
       if (
         pdfFont.name.includes("Italic") ||
         pdfFont.name.endsWith("It") ||
-        (pdfFont.psName &&
-          (pdfFont.psName.includes("Italic") || pdfFont.psName.endsWith("It")))
+        pdfFont.psName?.includes("Italic") ||
+        pdfFont.psName?.endsWith("It")
       ) {
         property += "italic";
       }
@@ -136,7 +133,7 @@ export class FontFinder {
       for (const [, pdfFont] of this.fonts.entries()) {
         if (
           pdfFont!.regular!.name
-            .replaceAll(pattern, "")
+            ?.replaceAll(pattern, "")
             .toLowerCase()
             .startsWith(name)
         ) {
@@ -158,7 +155,7 @@ export class FontFinder {
       for (const pdfFont of this.fonts.values()) {
         if (
           pdfFont!.regular!.name
-            .replaceAll(pattern, "")
+            ?.replaceAll(pattern, "")
             .toLowerCase()
             .startsWith(name)
         ) {

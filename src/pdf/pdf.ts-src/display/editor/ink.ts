@@ -17,23 +17,23 @@
  * limitations under the License.
  */
 
-import { fitCurve } from "../../../../3rd/fit-curve-0.2.0/fit-curve.ts";
+import { MOZCENTRAL } from "../../../../global.ts";
 import type { C2D, point_t, rect_t, TupleOf } from "../../../../lib/alias.ts";
 import { html } from "../../../../lib/dom.ts";
-import { IL10n } from "../../../pdf.ts-web/interfaces.ts";
+import type { IL10n } from "../../../pdf.ts-web/interfaces.ts";
 import {
   AnnotationEditorParamsType,
   AnnotationEditorType,
   Util,
 } from "../../shared/util.ts";
-import { AnnotationEditorLayer } from "./annotation_editor_layer.ts";
 import {
-  AnnotationEditor,
-  AnnotationEditorP,
-  AnnotationEditorSerialized,
-  PropertyToUpdate,
-} from "./editor.ts";
-import { AnnotationEditorUIManager, opacityToHex } from "./tools.ts";
+  type AnnotStorageValue,
+  InkAnnotationElement,
+} from "../annotation_layer.ts";
+import type { AnnotationEditorLayer } from "./annotation_editor_layer.ts";
+import type { AnnotationEditorP, PropertyToUpdate } from "./editor.ts";
+import { AnnotationEditor } from "./editor.ts";
+import { type AnnotationEditorUIManager, opacityToHex } from "./tools.ts";
 /*80--------------------------------------------------------------------------*/
 
 // The dimensions of the resizer is 15x15:
@@ -48,9 +48,9 @@ export interface InkEditorP extends AnnotationEditorP {
   opacity?: number;
 }
 
-type _curve_t = TupleOf<point_t, 4>;
+type curve_t_ = TupleOf<point_t, 4>;
 
-export interface InkEditorSerialized extends AnnotationEditorSerialized {
+export interface InkEditorSerialized extends AnnotStorageValue {
   thickness: number;
   opacity: number;
   paths: {
@@ -72,13 +72,15 @@ export class InkEditor extends AnnotationEditor {
   #aspectRatio = 0;
   #baseHeight = 0;
   #baseWidth = 0;
+  #boundCanvasContextMenu = this.canvasContextMenu.bind(this);
   #boundCanvasPointermove = this.canvasPointermove.bind(this);
   #boundCanvasPointerleave = this.canvasPointerleave.bind(this);
   #boundCanvasPointerup = this.canvasPointerup.bind(this);
   #boundCanvasPointerdown = this.canvasPointerdown.bind(this);
+  #currentPath2D = new Path2D();
   #disableEditing = false;
+  #hasSomethingToDraw = false;
   #isCanvasInitialized = false;
-  #lastPoint: point_t | undefined;
   #observer: ResizeObserver | undefined;
   #realWidth = 0;
   #realHeight = 0;
@@ -87,8 +89,9 @@ export class InkEditor extends AnnotationEditor {
   color;
   thickness;
   opacity;
-  paths: _curve_t[][] = [];
+  paths: curve_t_[][] = [];
   bezierPath2D: Path2D[] = [];
+  allRawPaths: unknown[] = [];
   currentPath: point_t[] = [];
   scaleFactor = 1;
   translationX = 0;
@@ -318,7 +321,6 @@ export class InkEditor extends AnnotationEditor {
     super.enableEditMode();
     this.div!.draggable = false;
     this.canvas.addEventListener("pointerdown", this.#boundCanvasPointerdown);
-    this.canvas.addEventListener("pointerup", this.#boundCanvasPointerup);
   }
 
   /** @inheritdoc */
@@ -335,7 +337,6 @@ export class InkEditor extends AnnotationEditor {
       "pointerdown",
       this.#boundCanvasPointerdown,
     );
-    this.canvas.removeEventListener("pointerup", this.#boundCanvasPointerup);
   }
 
   /** @inheritdoc */
@@ -384,6 +385,18 @@ export class InkEditor extends AnnotationEditor {
    * Start to draw on the canvas.
    */
   #startDrawing(x: number, y: number) {
+    this.canvas!.addEventListener("contextmenu", this.#boundCanvasContextMenu);
+    this.canvas!.addEventListener(
+      "pointerleave",
+      this.#boundCanvasPointerleave,
+    );
+    this.canvas!.addEventListener("pointermove", this.#boundCanvasPointermove);
+    this.canvas!.addEventListener("pointerup", this.#boundCanvasPointerup);
+    this.canvas!.removeEventListener(
+      "pointerdown",
+      this.#boundCanvasPointerdown,
+    );
+
     this.isEditing = true;
     if (!this.#isCanvasInitialized) {
       this.#isCanvasInitialized = true;
@@ -394,30 +407,14 @@ export class InkEditor extends AnnotationEditor {
       this.opacity ??= InkEditor._defaultOpacity;
     }
     this.currentPath.push([x, y]);
-    this.#lastPoint = undefined;
+    this.#hasSomethingToDraw = false;
     this.#setStroke();
-    this.ctx.beginPath();
-    this.ctx.moveTo(x, y);
 
     this.#requestFrameCallback = () => {
-      if (!this.#requestFrameCallback) {
-        return;
+      this.#drawPoints();
+      if (this.#requestFrameCallback) {
+        globalThis.requestAnimationFrame(this.#requestFrameCallback);
       }
-
-      if (this.#lastPoint) {
-        if (this.isEmpty()) {
-          this.ctx.setTransform(1, 0, 0, 1, 0, 0);
-          this.ctx.clearRect(0, 0, this.canvas!.width, this.canvas!.height);
-        } else {
-          this.#redraw();
-        }
-
-        this.ctx.lineTo(...this.#lastPoint);
-        this.#lastPoint = undefined;
-        this.ctx.stroke();
-      }
-
-      globalThis.requestAnimationFrame(this.#requestFrameCallback);
     };
     globalThis.requestAnimationFrame(this.#requestFrameCallback);
   }
@@ -427,49 +424,79 @@ export class InkEditor extends AnnotationEditor {
    */
   #draw(x: number, y: number) {
     const [lastX, lastY] = this.currentPath.at(-1)!;
-    if (x === lastX && y === lastY) {
+    if (this.currentPath.length > 1 && x === lastX && y === lastY) {
       return;
     }
-    this.currentPath.push([x, y]);
-    this.#lastPoint = [x, y];
+    const currentPath = this.currentPath;
+    let path2D = this.#currentPath2D;
+    currentPath.push([x, y]);
+    this.#hasSomethingToDraw = true;
+
+    if (currentPath.length <= 2) {
+      path2D.moveTo(...currentPath[0]);
+      path2D.lineTo(x, y);
+      return;
+    }
+
+    if (currentPath.length === 3) {
+      this.#currentPath2D = path2D = new Path2D();
+      path2D.moveTo(...currentPath[0]);
+    }
+
+    this.#makeBezierCurve(
+      path2D,
+      ...currentPath.at(-3)!,
+      ...currentPath.at(-2)!,
+      x,
+      y,
+    );
+  }
+
+  #endPath() {
+    if (this.currentPath.length === 0) {
+      return;
+    }
+    const lastPoint = this.currentPath.at(-1)!;
+    this.#currentPath2D.lineTo(...lastPoint);
   }
 
   /**
    * Stop to draw on the canvas.
    */
   #stopDrawing(x: number, y: number) {
-    this.ctx.closePath();
     this.#requestFrameCallback = undefined;
 
     x = Math.min(Math.max(x, 0), this.canvas!.width);
     y = Math.min(Math.max(y, 0), this.canvas!.height);
 
-    const [lastX, lastY] = this.currentPath.at(-1)!;
-    if (x !== lastX || y !== lastY) {
-      this.currentPath.push([x, y]);
-    }
+    this.#draw(x, y);
+    this.#endPath();
 
     // Interpolate the path entered by the user with some
     // Bezier's curves in order to have a smoother path and
     // to reduce the data size used to draw it in the PDF.
-    let bezier: _curve_t[];
+    let bezier: curve_t_[];
     if (this.currentPath.length !== 1) {
-      bezier = fitCurve(this.currentPath, 30);
+      bezier = this.#generateBezierPoints();
     } else {
       // We have only one point finally.
       const xy: point_t = [x, y];
-      bezier = [[xy, <point_t> xy.slice(), <point_t> xy.slice(), xy]];
+      bezier = [[xy, xy.slice() as point_t, xy.slice() as point_t, xy]];
     }
-    const path2D = InkEditor.#buildPath2D(bezier);
-    this.currentPath.length = 0;
+    const path2D = this.#currentPath2D;
+    const currentPath = this.currentPath;
+    this.currentPath = [];
+    this.#currentPath2D = new Path2D();
 
     const cmd = () => {
+      this.allRawPaths.push(currentPath);
       this.paths.push(bezier);
       this.bezierPath2D.push(path2D);
       this.rebuild();
     };
 
     const undo = () => {
+      this.allRawPaths.pop();
       this.paths.pop();
       this.bezierPath2D.pop();
       if (this.paths.length === 0) {
@@ -486,6 +513,103 @@ export class InkEditor extends AnnotationEditor {
     this.addCommands({ cmd, undo, mustExec: true });
   }
 
+  #drawPoints() {
+    if (!this.#hasSomethingToDraw) {
+      return;
+    }
+    this.#hasSomethingToDraw = false;
+
+    const thickness = Math.ceil(this.thickness! * this.parentScale);
+    const lastPoints = this.currentPath.slice(-3);
+    const x = lastPoints.map((xy) => xy[0]);
+    const y = lastPoints.map((xy) => xy[1]);
+    const xMin = Math.min(...x) - thickness;
+    const xMax = Math.max(...x) + thickness;
+    const yMin = Math.min(...y) - thickness;
+    const yMax = Math.max(...y) + thickness;
+
+    const { ctx } = this;
+    ctx.save();
+
+    /*#static*/ if (MOZCENTRAL) {
+      // In Chrome, the clip() method doesn't work as expected.
+      ctx.clearRect(xMin, yMin, xMax - xMin, yMax - yMin);
+      ctx.beginPath();
+      ctx.rect(xMin, yMin, xMax - xMin, yMax - yMin);
+      ctx.clip();
+    } else {
+      ctx.clearRect(0, 0, this.canvas!.width, this.canvas!.height);
+    }
+
+    for (const path of this.bezierPath2D) {
+      ctx.stroke(path);
+    }
+    ctx.stroke(this.#currentPath2D);
+
+    ctx.restore();
+  }
+
+  #makeBezierCurve(
+    path2D: Path2D,
+    x0: number,
+    y0: number,
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+  ) {
+    const prevX = (x0 + x1) / 2;
+    const prevY = (y0 + y1) / 2;
+    const x3 = (x1 + x2) / 2;
+    const y3 = (y1 + y2) / 2;
+
+    path2D.bezierCurveTo(
+      prevX + (2 * (x1 - prevX)) / 3,
+      prevY + (2 * (y1 - prevY)) / 3,
+      x3 + (2 * (x1 - x3)) / 3,
+      y3 + (2 * (y1 - y3)) / 3,
+      x3,
+      y3,
+    );
+  }
+
+  #generateBezierPoints(): curve_t_[] {
+    const path = this.currentPath;
+    if (path.length <= 2) {
+      return [[path[0], path[0], path.at(-1)!, path.at(-1)!]];
+    }
+
+    const bezierPoints: curve_t_[] = [];
+    let i;
+    let [x0, y0] = path[0];
+    for (i = 1; i < path.length - 2; i++) {
+      const [x1, y1] = path[i];
+      const [x2, y2] = path[i + 1];
+      const x3 = (x1 + x2) / 2;
+      const y3 = (y1 + y2) / 2;
+
+      // The quadratic is: [[x0, y0], [x1, y1], [x3, y3]].
+      // Convert the quadratic to a cubic
+      // (see https://fontforge.org/docs/techref/bezier.html#converting-truetype-to-postscript)
+      const control1 = [x0 + (2 * (x1 - x0)) / 3, y0 + (2 * (y1 - y0)) / 3];
+      const control2 = [x3 + (2 * (x1 - x3)) / 3, y3 + (2 * (y1 - y3)) / 3];
+
+      bezierPoints.push([[x0, y0], control1, control2, [x3, y3]] as curve_t_);
+
+      [x0, y0] = [x3, y3];
+    }
+
+    const [x1, y1] = path[i];
+    const [x2, y2] = path[i + 1];
+
+    // The quadratic is: [[x0, y0], [x1, y1], [x2, y2]].
+    const control1 = [x0 + (2 * (x1 - x0)) / 3, y0 + (2 * (y1 - y0)) / 3];
+    const control2 = [x2 + (2 * (x1 - x2)) / 3, y2 + (2 * (y1 - y2)) / 3];
+
+    bezierPoints.push([[x0, y0], control1, control2, [x2, y2]] as curve_t_);
+    return bezierPoints;
+  }
+
   /**
    * Redraw all the paths.
    */
@@ -500,6 +624,7 @@ export class InkEditor extends AnnotationEditor {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas!.width, canvas!.height);
     this.#updateTransform();
+
     for (const path of this.bezierPath2D) {
       ctx.stroke(path);
     }
@@ -552,26 +677,27 @@ export class InkEditor extends AnnotationEditor {
     // Since it's the last child, there's no need to give it a higher z-index.
     this.setInForeground();
 
+    event.preventDefault();
+
     if (event.type !== "mouse") {
       this.div!.focus();
     }
 
-    event.stopPropagation();
-
-    this.canvas!.addEventListener(
-      "pointerleave",
-      this.#boundCanvasPointerleave,
-    );
-    this.canvas!.addEventListener("pointermove", this.#boundCanvasPointermove);
-
     this.#startDrawing(event.offsetX, event.offsetY);
+  }
+
+  /**
+   * oncontextmenu callback for the canvas we're drawing on.
+   */
+  canvasContextMenu(event: MouseEvent) {
+    event.preventDefault();
   }
 
   /**
    * onpointermove callback for the canvas we're drawing on.
    */
   canvasPointermove(event: PointerEvent) {
-    event.stopPropagation();
+    event.preventDefault();
     this.#draw(event.offsetX, event.offsetY);
   }
 
@@ -579,17 +705,8 @@ export class InkEditor extends AnnotationEditor {
    * onpointerup callback for the canvas we're drawing on.
    */
   canvasPointerup(event: PointerEvent) {
-    if (event.button !== 0) {
-      return;
-    }
-    if (this.isInEditMode() && this.currentPath.length !== 0) {
-      event.stopPropagation();
-      this.#endDrawing(event);
-
-      // Since the ink editor covers all of the page and we want to be able
-      // to select another editor, we just put this one in the background.
-      this.setInBackground();
-    }
+    event.preventDefault();
+    this.#endDrawing(event);
   }
 
   /**
@@ -597,15 +714,12 @@ export class InkEditor extends AnnotationEditor {
    */
   canvasPointerleave(event: PointerEvent) {
     this.#endDrawing(event);
-    this.setInBackground();
   }
 
   /**
    * End the drawing.
    */
   #endDrawing(event: PointerEvent) {
-    this.#stopDrawing(event.offsetX, event.offsetY);
-
     this.canvas!.removeEventListener(
       "pointerleave",
       this.#boundCanvasPointerleave,
@@ -614,8 +728,25 @@ export class InkEditor extends AnnotationEditor {
       "pointermove",
       this.#boundCanvasPointermove,
     );
+    this.canvas!.removeEventListener("pointerup", this.#boundCanvasPointerup);
+    this.canvas!.addEventListener("pointerdown", this.#boundCanvasPointerdown);
+
+    // Slight delay to avoid the context menu to appear (it can happen on a long
+    // tap with a pen).
+    setTimeout(() => {
+      this.canvas!.removeEventListener(
+        "contextmenu",
+        this.#boundCanvasContextMenu,
+      );
+    }, 10);
+
+    this.#stopDrawing(event.offsetX, event.offsetY);
 
     this.addToAnnotationStorage();
+
+    // Since the ink editor covers all of the page and we want to be able
+    // to select another editor, we just put this one in the background.
+    this.setInBackground();
   }
 
   /**
@@ -775,9 +906,9 @@ export class InkEditor extends AnnotationEditor {
   }
 
   /**
-   * Convert the output of fitCurve in some Path2D.
+   * Convert into a Path2D.
    */
-  static #buildPath2D(bezier: _curve_t[]): Path2D {
+  static #buildPath2D(bezier: curve_t_[]): Path2D {
     const path2D = new Path2D();
     for (let i = 0, ii = bezier.length; i < ii; i++) {
       const [first, control1, control2, second] = bezier[i];
@@ -796,135 +927,125 @@ export class InkEditor extends AnnotationEditor {
     return path2D;
   }
 
+  static #toPDFCoordinates(points: number[], rect: rect_t, rotation: number) {
+    const [blX, blY, trX, trY] = rect;
+
+    switch (rotation) {
+      case 0:
+        for (let i = 0, ii = points.length; i < ii; i += 2) {
+          points[i] += blX;
+          points[i + 1] = trY - points[i + 1];
+        }
+        break;
+      case 90:
+        for (let i = 0, ii = points.length; i < ii; i += 2) {
+          const x = points[i];
+          points[i] = points[i + 1] + blX;
+          points[i + 1] = x + blY;
+        }
+        break;
+      case 180:
+        for (let i = 0, ii = points.length; i < ii; i += 2) {
+          points[i] = trX - points[i];
+          points[i + 1] += blY;
+        }
+        break;
+      case 270:
+        for (let i = 0, ii = points.length; i < ii; i += 2) {
+          const x = points[i];
+          points[i] = trX - points[i + 1];
+          points[i + 1] = trY - x;
+        }
+        break;
+      default:
+        throw new Error("Invalid rotation");
+    }
+    return points;
+  }
+
+  static #fromPDFCoordinates(
+    points: number[],
+    rect: rect_t,
+    rotation: number | undefined,
+  ) {
+    const [blX, blY, trX, trY] = rect;
+
+    switch (rotation) {
+      case 0:
+        for (let i = 0, ii = points.length; i < ii; i += 2) {
+          points[i] -= blX;
+          points[i + 1] = trY - points[i + 1];
+        }
+        break;
+      case 90:
+        for (let i = 0, ii = points.length; i < ii; i += 2) {
+          const x = points[i];
+          points[i] = points[i + 1] - blY;
+          points[i + 1] = x - blX;
+        }
+        break;
+      case 180:
+        for (let i = 0, ii = points.length; i < ii; i += 2) {
+          points[i] = trX - points[i];
+          points[i + 1] -= blY;
+        }
+        break;
+      case 270:
+        for (let i = 0, ii = points.length; i < ii; i += 2) {
+          const x = points[i];
+          points[i] = trY - points[i + 1];
+          points[i + 1] = trX - x;
+        }
+        break;
+      default:
+        throw new Error("Invalid rotation");
+    }
+    return points;
+  }
+
   /**
    * Transform and serialize the paths.
    * @param s scale factor
    * @param tx abscissa of the translation
    * @param ty ordinate of the translation
-   * @param h height of the bounding box
+   * @param rect the bounding box of the annotation
    */
-  #serializePaths(s: number, tx: number, ty: number, h: number) {
-    const NUMBER_OF_POINTS_ON_BEZIER_CURVE = 4;
+  #serializePaths(s: number, tx: number, ty: number, rect: rect_t) {
     const paths = [];
     const padding = this.thickness! / 2;
-    let buffer: number[], points: number[];
-
+    const shiftX = s * tx + padding;
+    const shiftY = s * ty + padding;
     for (const bezier of this.paths) {
-      buffer = [];
-      points = [];
-      for (let i = 0, ii = bezier.length; i < ii; i++) {
-        const [first, control1, control2, second] = bezier[i];
-        const p10 = s * (first[0] + tx) + padding;
-        const p11 = h - s * (first[1] + ty) - padding;
-        const p20 = s * (control1[0] + tx) + padding;
-        const p21 = h - s * (control1[1] + ty) - padding;
-        const p30 = s * (control2[0] + tx) + padding;
-        const p31 = h - s * (control2[1] + ty) - padding;
-        const p40 = s * (second[0] + tx) + padding;
-        const p41 = h - s * (second[1] + ty) - padding;
+      const buffer = [];
+      const points = [];
+      for (let j = 0, jj = bezier.length; j < jj; j++) {
+        const [first, control1, control2, second] = bezier[j];
+        const p10 = s * first[0] + shiftX;
+        const p11 = s * first[1] + shiftY;
+        const p20 = s * control1[0] + shiftX;
+        const p21 = s * control1[1] + shiftY;
+        const p30 = s * control2[0] + shiftX;
+        const p31 = s * control2[1] + shiftY;
+        const p40 = s * second[0] + shiftX;
+        const p41 = s * second[1] + shiftY;
 
-        if (i === 0) {
+        if (j === 0) {
           buffer.push(p10, p11);
           points.push(p10, p11);
         }
         buffer.push(p20, p21, p30, p31, p40, p41);
-        this.#extractPointsOnBezier(
-          p10,
-          p11,
-          p20,
-          p21,
-          p30,
-          p31,
-          p40,
-          p41,
-          NUMBER_OF_POINTS_ON_BEZIER_CURVE,
-          points,
-        );
+        points.push(p20, p21);
+        if (j === jj - 1) {
+          points.push(p40, p41);
+        }
       }
-      paths.push({ bezier: buffer, points });
+      paths.push({
+        bezier: InkEditor.#toPDFCoordinates(buffer, rect, this.rotation),
+        points: InkEditor.#toPDFCoordinates(points, rect, this.rotation),
+      });
     }
 
     return paths;
-  }
-
-  /**
-   * Extract n-1 points from the cubic Bezier curve.
-   */
-  #extractPointsOnBezier(
-    p10: number,
-    p11: number,
-    p20: number,
-    p21: number,
-    p30: number,
-    p31: number,
-    p40: number,
-    p41: number,
-    n: number,
-    points: number[],
-  ) {
-    // If we can save few points thanks to the flatness we must do it.
-    if (this.#isAlmostFlat(p10, p11, p20, p21, p30, p31, p40, p41)) {
-      points.push(p40, p41);
-      return;
-    }
-
-    // Apply the de Casteljau's algorithm in order to get n points belonging
-    // to the Bezier's curve:
-    // https://en.wikipedia.org/wiki/De_Casteljau%27s_algorithm
-
-    // The first point is the last point of the previous Bezier curve
-    // so no need to push the first point.
-    for (let i = 1; i < n - 1; i++) {
-      const t = i / n;
-      const mt = 1 - t;
-
-      let q10 = t * p10 + mt * p20;
-      let q11 = t * p11 + mt * p21;
-
-      let q20 = t * p20 + mt * p30;
-      let q21 = t * p21 + mt * p31;
-
-      const q30 = t * p30 + mt * p40;
-      const q31 = t * p31 + mt * p41;
-
-      q10 = t * q10 + mt * q20;
-      q11 = t * q11 + mt * q21;
-
-      q20 = t * q20 + mt * q30;
-      q21 = t * q21 + mt * q31;
-
-      q10 = t * q10 + mt * q20;
-      q11 = t * q11 + mt * q21;
-
-      points.push(q10, q11);
-    }
-
-    points.push(p40, p41);
-  }
-
-  /**
-   * Check if a cubic Bezier curve is almost flat.
-   */
-  #isAlmostFlat(
-    p10: number,
-    p11: number,
-    p20: number,
-    p21: number,
-    p30: number,
-    p31: number,
-    p40: number,
-    p41: number,
-  ): boolean {
-    // For reference:
-    //   https://jeremykun.com/tag/bezier-curves/
-    const tol = 10;
-
-    const ax = (3 * p20 - 2 * p10 - p40) ** 2;
-    const ay = (3 * p21 - 2 * p11 - p41) ** 2;
-    const bx = (3 * p30 - p10 - 2 * p40) ** 2;
-    const by = (3 * p31 - p11 - 2 * p41) ** 2;
-
-    return Math.max(ax, bx) + Math.max(ay, by) <= tol;
   }
 
   /**
@@ -1030,11 +1151,19 @@ export class InkEditor extends AnnotationEditor {
     data: InkEditorSerialized,
     parent: AnnotationEditorLayer,
     uiManager: AnnotationEditorUIManager,
-  ) {
+  ): InkEditor | undefined {
+    if (data instanceof InkAnnotationElement) {
+      return undefined;
+    }
     const editor = super.deserialize(data, parent, uiManager) as InkEditor;
 
     editor.thickness = data.thickness;
-    editor.color = Util.makeHexColor(...data.color);
+    // editor.color = Util.makeHexColor(...data.color!);
+    editor.color = Util.makeHexColor(
+      data.color![0],
+      data.color![1],
+      data.color![2],
+    );
     editor.opacity = data.opacity;
 
     const [pageWidth, pageHeight] = editor.pageDimensions;
@@ -1048,18 +1177,21 @@ export class InkEditor extends AnnotationEditor {
     editor.#realWidth = Math.round(width);
     editor.#realHeight = Math.round(height);
 
-    for (const { bezier } of data.paths) {
-      const path: _curve_t[] = [];
+    const { paths, rect, rotation } = data;
+
+    for (let { bezier } of paths) {
+      bezier = InkEditor.#fromPDFCoordinates(bezier, rect!, rotation);
+      const path: curve_t_[] = [];
       editor.paths.push(path);
       let p0 = scaleFactor * (bezier[0] - padding);
-      let p1 = scaleFactor * (height - bezier[1] - padding);
+      let p1 = scaleFactor * (bezier[1] - padding);
       for (let i = 2, ii = bezier.length; i < ii; i += 6) {
         const p10 = scaleFactor * (bezier[i] - padding);
-        const p11 = scaleFactor * (height - bezier[i + 1] - padding);
+        const p11 = scaleFactor * (bezier[i + 1] - padding);
         const p20 = scaleFactor * (bezier[i + 2] - padding);
-        const p21 = scaleFactor * (height - bezier[i + 3] - padding);
+        const p21 = scaleFactor * (bezier[i + 3] - padding);
         const p30 = scaleFactor * (bezier[i + 4] - padding);
-        const p31 = scaleFactor * (height - bezier[i + 5] - padding);
+        const p31 = scaleFactor * (bezier[i + 5] - padding);
         path.push([
           [p0, p1],
           [p10, p11],
@@ -1085,18 +1217,14 @@ export class InkEditor extends AnnotationEditor {
    * @inheritdoc
    * @implement
    */
-  serialize(): InkEditorSerialized | undefined {
+  serialize(isForCopying = false): InkEditorSerialized | undefined {
     if (this.isEmpty()) {
       return undefined;
     }
 
     const rect = this.getRect(0, 0);
-    const height = this.rotation % 180 === 0
-      ? rect[3] - rect[1]
-      : rect[2] - rect[0];
-
     const color = AnnotationEditor._colorManager.convert(
-      <string> this.ctx.strokeStyle,
+      this.ctx.strokeStyle as string,
     );
 
     return {
@@ -1108,7 +1236,7 @@ export class InkEditor extends AnnotationEditor {
         this.scaleFactor / this.parentScale,
         this.translationX,
         this.translationY,
-        height,
+        rect,
       ),
       pageIndex: this.pageIndex,
       rect,

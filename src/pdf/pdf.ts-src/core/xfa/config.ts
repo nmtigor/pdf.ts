@@ -18,12 +18,11 @@
  */
 
 import { shadow, warn } from "../../shared/util.ts";
-import { type XFAAttrs } from "./alias.ts";
+import type { XFAAttrs } from "./alias.ts";
 import { $buildXFAObject, NamespaceIds } from "./namespaces.ts";
 import { getInteger, getStringOption } from "./utils.ts";
+import { $content, $finalize } from "./symbol_utils.ts";
 import {
-  $content,
-  $finalize,
   ContentObject,
   IntegerObject,
   Option01,

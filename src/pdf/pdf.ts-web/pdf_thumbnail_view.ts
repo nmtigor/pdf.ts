@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+/** @typedef {import("./event_utils").EventBus} EventBus */
 /** @typedef {import("./interfaces").IL10n} IL10n */
 /** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
 /** @typedef {import("./interfaces").IRenderableView} IRenderableView */
@@ -32,6 +33,7 @@ import type {
   RenderTask,
 } from "../pdf.ts-src/pdf.ts";
 import { RenderingCancelledException } from "../pdf.ts-src/pdf.ts";
+import type { EventBus } from "./event_utils.ts";
 import type { IL10n, IPDFLinkService, IVisibleView } from "./interfaces.ts";
 import type { PDFPageView } from "./pdf_page_view.ts";
 import type { PDFRenderingQueue } from "./pdf_rendering_queue.ts";
@@ -48,6 +50,11 @@ interface PDFThumbnailViewOptions {
    * The viewer element.
    */
   container: HTMLDivElement;
+
+  /**
+   * The application event bus.
+   */
+  eventBus: EventBus;
 
   /**
    * The thumbnail's unique ID (normally its number).
@@ -130,6 +137,7 @@ export class PDFThumbnailView implements IVisibleView {
   _optionalContentConfigPromise;
   pageColors;
 
+  eventBus;
   linkService;
   renderingQueue;
 
@@ -151,6 +159,7 @@ export class PDFThumbnailView implements IVisibleView {
 
   constructor({
     container,
+    eventBus,
     id,
     defaultViewport,
     optionalContentConfigPromise,
@@ -170,6 +179,7 @@ export class PDFThumbnailView implements IVisibleView {
     this._optionalContentConfigPromise = optionalContentConfigPromise;
     this.pageColors = pageColors || undefined;
 
+    this.eventBus = eventBus;
     this.linkService = linkService;
     this.renderingQueue = renderingQueue;
 
@@ -380,12 +390,11 @@ export class PDFThumbnailView implements IVisibleView {
       canvas.width = 0;
       canvas.height = 0;
 
-      // Only trigger cleanup, once rendering has finished, when the current
-      // pageView is *not* cached on the `BaseViewer`-instance.
-      const pageCached = this.linkService.isPageCached(this.id);
-      if (!pageCached) {
-        this.pdfPage?.cleanup();
-      }
+      this.eventBus.dispatch("thumbnailrendered", {
+        source: this,
+        pageNumber: this.id,
+        pdfPage: this.pdfPage,
+      });
     });
 
     return resultPromise;

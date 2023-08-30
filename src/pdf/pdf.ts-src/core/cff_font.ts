@@ -18,10 +18,10 @@
  */
 
 import { warn } from "../shared/util.ts";
-import { CFF, CFFCompiler, CFFParser } from "./cff_parser.ts";
-import { type FontProps } from "./evaluator.ts";
+import { type CFF, CFFCompiler, CFFParser } from "./cff_parser.ts";
+import type { FontProps } from "./evaluator.ts";
 import { SEAC_ANALYSIS_ENABLED, type1FontGlyphMapping } from "./fonts_utils.ts";
-import { Stream } from "./stream.ts";
+import type { Stream } from "./stream.ts";
 /*80--------------------------------------------------------------------------*/
 
 export class CFFFont {
@@ -41,7 +41,7 @@ export class CFFFont {
     this.seacs = this.cff.seacs;
     try {
       this.data = compiler.compile();
-    } catch (e) {
+    } catch {
       warn("Failed to compile font " + properties.loadedName);
       // There may have just been an issue with the compiler, set the data
       // anyway and hope the font loaded.
@@ -87,7 +87,7 @@ export class CFFFont {
           const cid = charsets[glyphId];
           charCode = cMap!.charCodeOf(cid);
 
-          if (invCidToGidMap && invCidToGidMap[charCode] !== undefined) {
+          if (invCidToGidMap?.[charCode] !== undefined) {
             // According to the PDF specification, see Table 117, it's not clear
             // that a /CIDToGIDMap should be used with any non-TrueType fonts,
             // however it's necessary to do so in order to fix issue 15559.

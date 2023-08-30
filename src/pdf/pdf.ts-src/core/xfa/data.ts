@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-import { type AnnotStorageRecord } from "../../display/annotation_layer.ts";
+import type { AnnotStorageRecord } from "../../display/annotation_layer.ts";
 import { Datasets } from "./datasets.ts";
 import {
   $getAttributes,
@@ -26,9 +26,8 @@ import {
   $setValue,
   $toString,
   $uid,
-  XFAObject,
-  XmlObject,
-} from "./xfa_object.ts";
+} from "./symbol_utils.ts";
+import type { XFAObject, XmlObject } from "./xfa_object.ts";
 /*80--------------------------------------------------------------------------*/
 
 export class DataHandler {
@@ -51,16 +50,16 @@ export class DataHandler {
         continue;
       }
 
-      const child = <XmlObject> children[++last[0]];
+      const child = children[++last[0]] as XmlObject;
       const storageEntry = storage!.get(child[$uid]);
       if (storageEntry) {
-        child[$setValue](<any> storageEntry); //kkkk
+        child[$setValue](storageEntry as any); //kkkk
       } else {
         const attributes = child[$getAttributes]();
         for (const value of attributes!.values()) {
           const entry = storage!.get(value[$uid]);
           if (entry) {
-            value[$setValue](<any> entry); //kkkk
+            value[$setValue](entry as any); //kkkk
             break;
           }
         }
@@ -80,7 +79,7 @@ export class DataHandler {
       // some data for choice lists.
       for (const child of this.dataset[$getChildren]()) {
         if (child[$nodeName] !== "data") {
-          (<XmlObject> child)[$toString](buf);
+          (child as XmlObject)[$toString](buf);
         }
       }
     }

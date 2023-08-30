@@ -18,8 +18,8 @@
  */
 
 import { AnnotationEditorType } from "../pdf.ts-src/pdf.ts";
-import { EventBus } from "./event_utils.ts";
-import { PDFViewer } from "./pdf_viewer.ts";
+import type { EventBus } from "./event_utils.ts";
+import type { PDFViewer } from "./pdf_viewer.ts";
 import {
   normalizeWheelEventDelta,
   PresentationModeState,
@@ -145,7 +145,7 @@ export class PDFPresentationMode {
       await promise;
       pdfViewer.focus(); // Fixes bug 1787456.
       return true;
-    } catch (reason) {
+    } catch {
       this.#removeFullscreenChangeListeners();
       this.#notifyStateChange(PresentationModeState.NORMAL);
     }

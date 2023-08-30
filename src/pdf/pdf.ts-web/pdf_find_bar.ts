@@ -22,6 +22,7 @@ import type { EventBus } from "./event_utils.ts";
 import type { IL10n } from "./interfaces.ts";
 import type { FindType, MatchesCount } from "./pdf_find_controller.ts";
 import { FindState } from "./pdf_find_controller.ts";
+import { toggleExpandedBtn } from "./ui_utils.ts";
 import type { ViewerConfiguration } from "./viewer.ts";
 /*80--------------------------------------------------------------------------*/
 
@@ -207,9 +208,7 @@ export class PDFFindBar {
   open() {
     if (!this.opened) {
       this.opened = true;
-      this.toggleButton.classList.add("toggled");
-      this.toggleButton.setAttribute("aria-expanded", "true");
-      this.bar.classList.remove("hidden");
+      toggleExpandedBtn(this.toggleButton, true, this.bar);
     }
     this.findField.select();
     this.findField.focus();
@@ -222,9 +221,7 @@ export class PDFFindBar {
       return;
     }
     this.opened = false;
-    this.toggleButton.classList.remove("toggled");
-    this.toggleButton.setAttribute("aria-expanded", "false");
-    this.bar.classList.add("hidden");
+    toggleExpandedBtn(this.toggleButton, false, this.bar);
 
     this.eventBus.dispatch("findbarclose", { source: this });
   }

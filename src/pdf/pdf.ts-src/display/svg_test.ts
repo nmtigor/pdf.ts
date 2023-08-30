@@ -23,13 +23,13 @@ import {
   assertEquals,
   assertMatch,
   assertThrows,
-} from "https://deno.land/std@0.190.0/testing/asserts.ts";
+} from "https://deno.land/std@0.195.0/testing/asserts.ts";
 import {
   afterAll,
   beforeAll,
   describe,
   it,
-} from "https://deno.land/std@0.190.0/testing/bdd.ts";
+} from "https://deno.land/std@0.195.0/testing/bdd.ts";
 import { ImgData } from "../core/evaluator.ts";
 import { buildGetDocumentParams } from "../shared/test_utils.ts";
 import { getDocument, PDFDocumentLoadingTask, PDFPageProxy } from "./api.ts";

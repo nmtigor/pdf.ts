@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-import { type XFAFontBase, type XFAMargin } from "./alias.ts";
-import { FontFinder, selectFont } from "./fonts.ts";
+import type { XFAFontBase, XFAMargin } from "./alias.ts";
+import { type FontFinder, selectFont } from "./fonts.ts";
 /*80--------------------------------------------------------------------------*/
 
 const WIDTH_FACTOR = 1.02;

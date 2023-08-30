@@ -23,8 +23,8 @@
 
 import { LIB } from "../../../../global.ts";
 import { warn } from "../../../../lib/util/trace.ts";
-import { EventBus, EventMap } from "../../../pdf.ts-web/event_utils.ts";
-import { RGB } from "../../shared/scripting_utils.ts";
+import type { EventBus, EventMap } from "../../../pdf.ts-web/event_utils.ts";
+import type { rgb_t } from "../../../../lib/color/alias.ts";
 import {
   AnnotationEditorPrefix,
   AnnotationEditorType,
@@ -32,10 +32,10 @@ import {
   shadow,
   Util,
 } from "../../shared/util.ts";
-import { AnnotationStorage } from "../annotation_storage.ts";
+import type { AnnotationStorage } from "../annotation_storage.ts";
 import { getColorValues, getRGB, PixelsPerInch } from "../display_utils.ts";
-import { AnnotationEditorLayer } from "./annotation_editor_layer.ts";
-import { AnnotationEditor, PropertyToUpdate } from "./editor.ts";
+import type { AnnotationEditorLayer } from "./annotation_editor_layer.ts";
+import type { AnnotationEditor, PropertyToUpdate } from "./editor.ts";
 import { FreeTextEditor } from "./freetext.ts";
 import { InkEditor } from "./ink.ts";
 /*80--------------------------------------------------------------------------*/
@@ -209,7 +209,7 @@ export class CommandManager {
  */
 export class KeyboardManager {
   buffer: string[] = [];
-  callbacks = new Map<string, () => void>();
+  callbacks = new Map<string, { callback: () => void; bubbles: boolean }>();
   allKeys = new Set<string>();
 
   /**
@@ -218,16 +218,16 @@ export class KeyboardManager {
    * and a callback to call.
    * A shortcut is a string like `ctrl+c` or `mac+ctrl+c` for mac OS.
    */
-  constructor(callbacks: [string[], () => void][]) {
+  constructor(callbacks: [string[], () => void, boolean?][]) {
     const { isMac } = FeatureTest.platform;
-    for (const [keys, callback] of callbacks) {
+    for (const [keys, callback, bubbles = false] of callbacks) {
       for (const key of keys) {
         const isMacKey = key.startsWith("mac+");
         if (isMac && isMacKey) {
-          this.callbacks.set(key.slice(4), callback);
+          this.callbacks.set(key.slice(4), { callback, bubbles });
           this.allKeys.add(key.split("+").at(-1)!);
         } else if (!isMac && !isMacKey) {
-          this.callbacks.set(key, callback);
+          this.callbacks.set(key, { callback, bubbles });
           this.allKeys.add(key.split("+").at(-1)!);
         }
       }
@@ -261,41 +261,47 @@ export class KeyboardManager {
   /**
    * Execute a callback, if any, for a given keyboard event.
    * The self is used as `this` in the callback.
-   * @returns
+   * @return
    */
   exec(self: unknown, event: KeyboardEvent) {
     if (!this.allKeys.has(event.key)) {
       return;
     }
-    const callback = this.callbacks.get(this.#serialize(event));
-    if (!callback) {
+    const info = this.callbacks.get(this.#serialize(event));
+    if (!info) {
       return;
     }
+    const { callback, bubbles } = info;
     callback.bind(self)();
-    event.stopPropagation();
-    event.preventDefault();
+
+    // For example, ctrl+s in a FreeText must be handled by the viewer, hence
+    // the event must bubble.
+    if (!bubbles) {
+      event.stopPropagation();
+      event.preventDefault();
+    }
   }
 }
 
 export class ColorManager {
   static _colorsMapping = new Map([
-    ["CanvasText", <RGB> [0, 0, 0]],
-    ["Canvas", <RGB> [255, 255, 255]],
+    ["CanvasText", [0, 0, 0] as rgb_t],
+    ["Canvas", [255, 255, 255] as rgb_t],
   ]);
 
-  get _colors(): Map<string, RGB> {
+  get _colors(): Map<string, rgb_t> {
     /*#static*/ if (LIB) {
       if (typeof document === "undefined") {
         return shadow(this, "_colors", ColorManager._colorsMapping);
       }
     }
 
-    const colors = new Map<string, undefined | RGB>([
+    const colors = new Map<string, undefined | rgb_t>([
       ["CanvasText", undefined],
       ["Canvas", undefined],
     ]);
     getColorValues(colors);
-    return shadow(this, "_colors", <Map<string, RGB>> colors);
+    return shadow(this, "_colors", colors as Map<string, rgb_t>);
   }
 
   /**
@@ -304,7 +310,7 @@ export class ColorManager {
    * For example in some cases white can appear to be black but when saving
    * we want to have white.
    */
-  convert(color: string): RGB {
+  convert(color: string): rgb_t {
     const rgb = getRGB(color);
     if (!window.matchMedia("(forced-colors: active)").matches) {
       return rgb;
@@ -350,30 +356,42 @@ export interface DispatchUpdateStatesP {
  * some action like copy/paste, undo/redo, ...
  */
 export class AnnotationEditorUIManager {
-  static _keyboardManager = new KeyboardManager([
-    [["ctrl+a", "mac+meta+a"], AnnotationEditorUIManager.prototype.selectAll],
-    [["ctrl+z", "mac+meta+z"], AnnotationEditorUIManager.prototype.undo],
-    [
-      ["ctrl+y", "ctrl+shift+Z", "mac+meta+shift+Z"],
-      AnnotationEditorUIManager.prototype.redo,
-    ],
-    [
-      [
-        "Backspace",
-        "alt+Backspace",
-        "ctrl+Backspace",
-        "shift+Backspace",
-        "mac+Backspace",
-        "mac+alt+Backspace",
-        "mac+ctrl+Backspace",
-        "Delete",
-        "ctrl+Delete",
-        "shift+Delete",
-      ],
-      AnnotationEditorUIManager.prototype.delete,
-    ],
-    [["Escape", "mac+Escape"], AnnotationEditorUIManager.prototype.unselectAll],
-  ]);
+  static get _keyboardManager() {
+    return shadow(
+      this,
+      "_keyboardManager",
+      new KeyboardManager([
+        [
+          ["ctrl+a", "mac+meta+a"],
+          AnnotationEditorUIManager.prototype.selectAll,
+        ],
+        [["ctrl+z", "mac+meta+z"], AnnotationEditorUIManager.prototype.undo],
+        [
+          ["ctrl+y", "ctrl+shift+Z", "mac+meta+shift+Z"],
+          AnnotationEditorUIManager.prototype.redo,
+        ],
+        [
+          [
+            "Backspace",
+            "alt+Backspace",
+            "ctrl+Backspace",
+            "shift+Backspace",
+            "mac+Backspace",
+            "mac+alt+Backspace",
+            "mac+ctrl+Backspace",
+            "Delete",
+            "ctrl+Delete",
+            "shift+Delete",
+          ],
+          AnnotationEditorUIManager.prototype.delete,
+        ],
+        [
+          ["Escape", "mac+Escape"],
+          AnnotationEditorUIManager.prototype.unselectAll,
+        ],
+      ]),
+    );
+  }
 
   #activeEditor: AnnotationEditor | undefined;
   /**
@@ -393,6 +411,7 @@ export class AnnotationEditorUIManager {
     return this.#currentPageIndex;
   }
 
+  #deletedAnnotationsElementIds = new Set();
   #editorTypes!: (typeof InkEditor | typeof FreeTextEditor)[];
   #editorsToRescale = new Set<InkEditor>();
   #eventBus;
@@ -542,8 +561,9 @@ export class AnnotationEditorUIManager {
 
     const editors = [];
     for (const editor of this.#selectedEditors) {
-      if (!editor.isEmpty()) {
-        editors.push(editor.serialize());
+      const serialized = editor.serialize(/* isForCopying = */ true);
+      if (serialized) {
+        editors.push(serialized);
       }
     }
     if (editors.length === 0) {
@@ -827,7 +847,35 @@ export class AnnotationEditorUIManager {
   removeEditor(editor: AnnotationEditor) {
     this.#allEditors.delete(editor.id);
     this.unselect(editor);
-    this.#annotationStorage?.remove(editor.id);
+    if (
+      !editor.annotationElementId ||
+      !this.#deletedAnnotationsElementIds.has(editor.annotationElementId)
+    ) {
+      this.#annotationStorage?.remove(editor.id);
+    }
+  }
+
+  /**
+   * The annotation element with the given id has been deleted.
+   */
+  addDeletedAnnotationElement(editor: AnnotationEditor) {
+    this.#deletedAnnotationsElementIds.add(editor.annotationElementId);
+    editor.deleted = true;
+  }
+
+  /**
+   * Check if the annotation element with the given id has been deleted.
+   */
+  isDeletedAnnotationElement(annotationElementId: string): boolean {
+    return this.#deletedAnnotationsElementIds.has(annotationElementId);
+  }
+
+  /**
+   * The annotation element with the given id have been restored.
+   */
+  removeDeletedAnnotationElement(editor: AnnotationEditor) {
+    this.#deletedAnnotationsElementIds.delete(editor.annotationElementId);
+    editor.deleted = false;
   }
 
   /**

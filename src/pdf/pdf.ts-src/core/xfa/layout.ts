@@ -17,16 +17,15 @@
  * limitations under the License.
  */
 
-import { type rect_t } from "../../../../lib/alias.ts";
-import {
-  type AvailableSpace,
-  type XFAElData,
-  type XFAElObj,
-  type XFAExtra,
-  type XFAHTMLObj,
+import type { rect_t } from "../../../../lib/alias.ts";
+import type {
+  AvailableSpace,
+  XFAElData,
+  XFAElObj,
+  XFAExtra,
+  XFAHTMLObj,
 } from "./alias.ts";
 import { measureToString } from "./html_utils.ts";
-import { Draw, ExclGroup, Field, Subform } from "./template.ts";
 import {
   $extra,
   $flushHTML,
@@ -34,7 +33,8 @@ import {
   $getTemplateRoot,
   $isSplittable,
   $isThereMoreWidth,
-} from "./xfa_object.ts";
+} from "./symbol_utils.ts";
+import type { Draw, ExclGroup, Field, Subform } from "./template.ts";
 /*80--------------------------------------------------------------------------*/
 
 // Subform and ExclGroup have a layout so they share these functions.
@@ -67,13 +67,13 @@ import {
  */
 
 function createLine(node: ExclGroup | Subform, children: XFAHTMLObj[]) {
-  return <XFAHTMLObj> {
+  return {
     name: "div",
     attributes: {
       class: [node.layout === "lr-tb" ? "xfaLr" : "xfaRl"],
     },
     children,
-  };
+  } as XFAHTMLObj;
 }
 
 export function flushHTML(node: ExclGroup | Subform) {
@@ -292,7 +292,7 @@ export function checkDimensions(
 
   const ERROR = 2;
   const parent = node[$getSubformParent]()!;
-  const attempt = (parent[$extra] && (<XFAExtra> parent[$extra]).attempt) || 0;
+  const attempt = (parent[$extra] as XFAExtra | undefined)?.attempt || 0;
 
   const [, y, w, h] = getTransformedBBox(node);
   switch (parent.layout) {

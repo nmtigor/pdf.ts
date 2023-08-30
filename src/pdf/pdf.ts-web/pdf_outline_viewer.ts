@@ -21,10 +21,8 @@ import { html } from "../../lib/dom.ts";
 import { isObjectLike } from "../../lib/jslang.ts";
 import { PromiseCap } from "../../lib/util/PromiseCap.ts";
 import type { OutlineNode, PDFDocumentProxy, Ref } from "../pdf.ts-src/pdf.ts";
-import {
-  BaseTreeViewer,
-  type BaseTreeViewerCtorP,
-} from "./base_tree_viewer.ts";
+import type { BaseTreeViewerCtorP } from "./base_tree_viewer.ts";
+import { BaseTreeViewer } from "./base_tree_viewer.ts";
 import type { IDownloadManager } from "./interfaces.ts";
 import type { PDFLinkService } from "./pdf_link_service.ts";
 import { SidebarView } from "./ui_utils.ts";
@@ -366,7 +364,7 @@ export class PDFOutlineViewer extends BaseTreeViewer {
                   return undefined; // The document was closed while the data resolved.
                 }
                 this.linkService.cachePageRef(pageNumber, destRef as Ref);
-              } catch (ex) {
+              } catch {
                 // Invalid page reference, ignore it and continue parsing.
               }
             }

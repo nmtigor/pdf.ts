@@ -184,7 +184,7 @@ function isRuntimeAvailable() {
     if (chrome.runtime?.getManifest()) {
       return true;
     }
-  } catch (e) {}
+  } catch {}
   return false;
 }
 
@@ -382,8 +382,7 @@ interface _ManagedPrefs extends UserOptions {
 }
 
 class ChromePreferences extends BasePreferences {
-  /** @implement */
-  protected async _writeToStorage(prefObj: UserOptions) {
+  protected override async _writeToStorage(prefObj: UserOptions) {
     return new Promise<void>((resolve) => {
       if (prefObj === this.defaults) {
         const keysToRemove = Object.keys(this.defaults);
@@ -433,7 +432,7 @@ class ChromePreferences extends BasePreferences {
         );
 
         chrome.storage.managed.get(defaultManagedPrefs, (items) => {
-          items = items || defaultManagedPrefs;
+          items ||= defaultManagedPrefs;
           // Migration logic for deprecated preferences: If the new preference
           // is not defined by an administrator (i.e. the value is the same as
           // the default value), and a deprecated preference is set with a

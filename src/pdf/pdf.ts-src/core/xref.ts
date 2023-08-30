@@ -137,7 +137,7 @@ export class XRef {
 
     let encrypt: Dict;
     try {
-      encrypt = <Dict> trailerDict.get("Encrypt");
+      encrypt = trailerDict.get("Encrypt") as Dict;
     } catch (ex) {
       if (ex instanceof MissingDataException) {
         throw ex;
@@ -145,8 +145,8 @@ export class XRef {
       warn(`XRef.parse - Invalid "Encrypt" reference: "${ex}".`);
     }
     if (encrypt! instanceof Dict) {
-      const ids = <string[]> trailerDict.get("ID");
-      const fileId = ids && ids.length ? ids[0] : "";
+      const ids = trailerDict.get("ID") as string[];
+      const fileId = ids?.length ? ids[0] : "";
       // The 'Encrypt' dictionary itself should not be encrypted, and by
       // setting `suppressEncryption` we can prevent an infinite loop inside
       // of `XRef_fetchUncompressed` if the dictionary contains indirect

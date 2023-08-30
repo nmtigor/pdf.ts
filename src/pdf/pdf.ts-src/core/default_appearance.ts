@@ -19,7 +19,9 @@
 
 import { DENO } from "../../../global.ts";
 import type { id_t, OC2D, rect_t } from "../../../lib/alias.ts";
+import type { rgb_t } from "../../../lib/color/alias.ts";
 import { LINE_DESCENT_FACTOR, LINE_FACTOR, OPS, warn } from "../shared/util.ts";
+import type { BaseStream } from "./base_stream.ts";
 import { ColorSpace } from "./colorspace.ts";
 import {
   escapePDFName,
@@ -28,9 +30,10 @@ import {
   stringToUTF16HexString,
 } from "./core_utils.ts";
 import { EvaluatorPreprocessor } from "./evaluator.ts";
-import { Dict, Name, type ObjNoCmd, Ref } from "./primitives.ts";
+import type { ObjNoCmd, Ref } from "./primitives.ts";
+import { Dict, Name } from "./primitives.ts";
 import { StringStream } from "./stream.ts";
-import { XRef } from "./xref.ts";
+import type { XRef } from "./xref.ts";
 /*80--------------------------------------------------------------------------*/
 
 class DefaultAppearanceEvaluator extends EvaluatorPreprocessor {
@@ -41,7 +44,7 @@ class DefaultAppearanceEvaluator extends EvaluatorPreprocessor {
   parse() {
     const operation = {
       fn: 0,
-      args: <ObjNoCmd[]> [],
+      args: [] as ObjNoCmd[],
     };
     const result = {
       fontSize: 0,
@@ -74,7 +77,7 @@ class DefaultAppearanceEvaluator extends EvaluatorPreprocessor {
             break;
           case OPS.setFillRGBColor:
             ColorSpace.singletons.rgb.getRgbItem(
-              <number[]> args,
+              args as number[],
               0,
               result.fontColor,
               0,
@@ -82,7 +85,7 @@ class DefaultAppearanceEvaluator extends EvaluatorPreprocessor {
             break;
           case OPS.setFillGray:
             ColorSpace.singletons.gray.getRgbItem(
-              <number[]> args,
+              args as number[],
               0,
               result.fontColor,
               0,
@@ -117,7 +120,120 @@ export function parseDefaultAppearance(str: string) {
   return new DefaultAppearanceEvaluator(str).parse();
 }
 
-export function getPdfColor(color: Uint8ClampedArray, isFill: boolean) {
+type AppearanceStreamParsed = {
+  scaleFactor: number;
+  fontSize: number;
+  fontName: string;
+  fontColor: Uint8ClampedArray;
+};
+
+class AppearanceStreamEvaluator extends EvaluatorPreprocessor {
+  stream;
+
+  constructor(stream: BaseStream) {
+    super(stream);
+    this.stream = stream;
+  }
+
+  parse(): AppearanceStreamParsed {
+    const operation = {
+      fn: 0,
+      args: [] as ObjNoCmd[],
+    };
+    let result = {
+      scaleFactor: 1,
+      fontSize: 0,
+      fontName: "",
+      fontColor: /* black = */ new Uint8ClampedArray(3),
+    };
+    let breakLoop = false;
+    const stack: AppearanceStreamParsed[] = [];
+
+    try {
+      while (true) {
+        operation.args.length = 0; // Ensure that `args` it's always reset.
+
+        if (breakLoop || !this.read(operation)) {
+          break;
+        }
+        const { fn, args } = operation;
+
+        switch (fn | 0) {
+          case OPS.save:
+            stack.push({
+              scaleFactor: result.scaleFactor,
+              fontSize: result.fontSize,
+              fontName: result.fontName,
+              fontColor: result.fontColor.slice(),
+            });
+            break;
+          case OPS.restore:
+            result = stack.pop() || result;
+            break;
+          case OPS.setTextMatrix:
+            result.scaleFactor *= Math.hypot(
+              args[0] as number,
+              args[1] as number,
+            );
+            break;
+          case OPS.setFont:
+            const [fontName, fontSize] = args;
+            if (fontName instanceof Name) {
+              result.fontName = fontName.name;
+            }
+            if (typeof fontSize === "number" && fontSize > 0) {
+              result.fontSize = fontSize * result.scaleFactor;
+            }
+            break;
+          case OPS.setFillRGBColor:
+            ColorSpace.singletons.rgb.getRgbItem(
+              args as number[],
+              0,
+              result.fontColor,
+              0,
+            );
+            break;
+          case OPS.setFillGray:
+            ColorSpace.singletons.gray.getRgbItem(
+              args as number[],
+              0,
+              result.fontColor,
+              0,
+            );
+            break;
+          case OPS.setFillColorSpace:
+            ColorSpace.singletons.cmyk.getRgbItem(
+              args as number[],
+              0,
+              result.fontColor,
+              0,
+            );
+            break;
+          case OPS.showText:
+          case OPS.showSpacedText:
+          case OPS.nextLineShowText:
+          case OPS.nextLineSetSpacingShowText:
+            breakLoop = true;
+            break;
+        }
+      }
+    } catch (reason) {
+      warn(`parseAppearanceStream - ignoring errors: "${reason}".`);
+    }
+    this.stream.reset();
+    delete (result as any).scaleFactor;
+
+    return result;
+  }
+}
+
+// Parse appearance stream to extract font and color information.
+// It returns the font properties used to render the first text object.
+export function parseAppearanceStream(stream: BaseStream) {
+  return new AppearanceStreamEvaluator(stream).parse();
+}
+
+export function getPdfColor(color: Uint8ClampedArray | rgb_t, isFill: boolean) {
   if (color[0] === color[1] && color[1] === color[2]) {
     const gray = color[0] / 255;
     return `${numberToString(gray)} ${isFill ? "g" : "G"}`;
@@ -336,13 +452,13 @@ endcmap CMapName currentdict /CMap defineresource pop end end`;
       lines.push(line);
       // The line width isn't the sum of the char widths, because in some
       // languages, like arabic, it'd be wrong because of ligatures.
-      const lineWidth = (ctx as any).measureText(line).width;
+      const lineWidth = ctx.measureText(line).width;
       maxWidth = Math.max(maxWidth, lineWidth);
       for (const char of line.split("")) {
         const code = char.charCodeAt(0);
         let width = this.widths!.get(code);
         if (width === undefined) {
-          const metrics = (ctx as any).measureText(char);
+          const metrics = ctx.measureText(char);
           width = Math.ceil(metrics.width);
           this.widths!.set(code, width);
           this.firstChar = Math.min(code, this.firstChar);

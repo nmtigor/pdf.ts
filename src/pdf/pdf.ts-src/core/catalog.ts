@@ -49,6 +49,7 @@ import {
 } from "./core_utils.ts";
 import { TranslatedFont } from "./evaluator.ts";
 import { Attachment, FileSpec } from "./file_spec.ts";
+import type { SubstitutionInfo } from "./font_substitutions.ts";
 import { GlobalImageCache } from "./image_utils.ts";
 import { MetadataParser } from "./metadata_parser.ts";
 import { NameTree, NumberTree } from "./name_number_tree.ts";
@@ -194,6 +195,7 @@ export class Catalog {
   pageKidsCountCache = new RefSetCache<number>();
   pageIndexCache = new RefSetCache();
   nonBlendModesSet = new RefSet();
+  systemFontCache = new Map<string, SubstitutionInfo>();
 
   constructor(pdfManager: BasePdfManager, xref: XRef) {
     this.pdfManager = pdfManager;
@@ -290,15 +292,12 @@ export class Catalog {
 
     let metadata;
     try {
-      const suppressEncryption = !(
-        this.xref.encrypt && this.xref.encrypt.encryptMetadata
+      const stream = this.xref.fetch(
+        streamRef,
+        /* suppressEncryption = */ !this.xref.encrypt?.encryptMetadata,
       );
-      const stream = this.xref.fetch(streamRef, suppressEncryption);
 
-      if (
-        (stream instanceof BaseStream) &&
-        (stream.dict instanceof Dict)
-      ) {
+      if (stream instanceof BaseStream && stream.dict instanceof Dict) {
         const type = stream.dict.get("Type");
         const subtype = stream.dict.get("Subtype");
 
@@ -731,12 +730,12 @@ export class Catalog {
   }
 
   #readDests() {
-    const obj = <Dict> this.#catDict.get("Names"); // Table 31
-    if (obj && obj.has("Dests")) {
-      return new NameTree(<Ref> obj.getRaw("Dests"), this.xref);
+    const obj = this.#catDict.get("Names") as Dict; // Table 31
+    if (obj?.has("Dests")) {
+      return new NameTree(obj.getRaw("Dests") as Ref, this.xref);
     } else if (this.#catDict.has("Dests")) {
       // Simple destination dictionary.
-      return <Dict> this.#catDict.get("Dests");
+      return this.#catDict.get("Dests") as Dict;
     }
     return undefined;
   }
@@ -1202,6 +1201,7 @@ export class Catalog {
     this.fontCache.clear();
     this.builtInCMapCache.clear();
     this.standardFontDataCache.clear();
+    this.systemFontCache.clear();
   }
 
   /**

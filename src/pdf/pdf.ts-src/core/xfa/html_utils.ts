@@ -17,19 +17,31 @@
  * limitations under the License.
  */
 
-import { type rect_t } from "../../../../lib/alias.ts";
+import type { rect_t } from "../../../../lib/alias.ts";
 import { createValidAbsoluteUrl, warn } from "../../shared/util.ts";
-import {
-  type AvailableSpace,
-  type XFAElObj,
-  type XFAExtra,
-  type XFAFontBase,
-  type XFAHTMLObj,
-  type XFAMargin,
-  type XFAStyleData,
+import type {
+  AvailableSpace,
+  XFAElObj,
+  XFAExtra,
+  XFAFontBase,
+  XFAHTMLObj,
+  XFAMargin,
+  XFAStyleData,
 } from "./alias.ts";
-import { FontFinder, selectFont } from "./fonts.ts";
+import { type FontFinder, selectFont } from "./fonts.ts";
 import {
+  $content,
+  $extra,
+  $getParent,
+  $getSubformParent,
+  $getTemplateRoot,
+  $globalData,
+  $nodeName,
+  $pushGlyphs,
+  $text,
+  $toStyle,
+} from "./symbol_utils.ts";
+import type {
   Area,
   Border,
   Caption,
@@ -42,19 +54,7 @@ import {
 } from "./template.ts";
 import { TextMeasure } from "./text.ts";
 import { getMeasurement, stripQuotes } from "./utils.ts";
-import {
-  $content,
-  $extra,
-  $getParent,
-  $getSubformParent,
-  $getTemplateRoot,
-  $globalData,
-  $nodeName,
-  $pushGlyphs,
-  $text,
-  $toStyle,
-  XFAObject,
-} from "./xfa_object.ts";
+import { XFAObject } from "./xfa_object.ts";
 import { XhtmlObject } from "./xhtml.ts";
 /*80--------------------------------------------------------------------------*/
 
@@ -105,10 +105,10 @@ const converters = {
   },
   dimensions(node: XFAObject, style: XFAStyleData) {
     const parent = node[$getSubformParent]()!;
-    let width = <string | number> node.w;
-    const height = <string | number> node.h;
+    let width = node.w as string | number;
+    const height = node.h as string | number;
     if (parent.layout?.includes("row")) {
-      const extra = <XFAExtra> parent[$extra];
+      const extra = parent[$extra] as XFAExtra;
       const colSpan = node.colSpan;
       let w;
       if (colSpan === -1) {
@@ -143,7 +143,7 @@ const converters = {
   },
   position(node: XFAObject, style: XFAStyleData) {
     const parent = node[$getSubformParent]();
-    if (parent && parent.layout && parent.layout !== "position") {
+    if (parent?.layout && parent.layout !== "position") {
       // IRL, we've some x/y in tb layout.
       // Specs say x/y is only used in positioned layout.
       return;
@@ -202,7 +202,7 @@ const converters = {
   },
   margin(node: XFAObject, style: XFAStyleData) {
     if (node.margin) {
-      style.margin = (<Margin> node.margin)[$toStyle]().margin;
+      style.margin = (node.margin as Margin)[$toStyle]().margin;
     }
   },
 };
@@ -268,7 +268,7 @@ export function layoutNode(
     let lineHeight: string | number | undefined;
     let margin: XFAMargin | undefined;
     if (node.para) {
-      margin = <XFAMargin> Object.create(null);
+      margin = Object.create(null) as XFAMargin;
       lineHeight = node.para.lineHeight === ""
         ? undefined
         : node.para.lineHeight;
@@ -352,7 +352,7 @@ export function computeBbox(
     let width = node.w;
     if (width === "") {
       if (node.maxW === 0) {
-        const parent = <ExclGroup | Subform> node[$getSubformParent]();
+        const parent = node[$getSubformParent]() as ExclGroup | Subform;
         if (parent.layout === "position" && parent.w !== "") {
           width = 0;
         } else {
@@ -367,7 +367,7 @@ export function computeBbox(
     let height = node.h;
     if (height === "") {
       if (node.maxH === 0) {
-        const parent = <ExclGroup | Subform> node[$getSubformParent]();
+        const parent = node[$getSubformParent]() as ExclGroup | Subform;
         if (parent.layout === "position" && parent.h !== "") {
           height = 0;
         } else {
@@ -386,8 +386,8 @@ export function computeBbox(
 
 export function fixDimensions(node: XFAObject) {
   const parent = node[$getSubformParent]()!;
-  if (parent?.layout?.includes("row")) {
-    const extra = <XFAExtra> parent[$extra];
+  if (parent.layout?.includes("row")) {
+    const extra = parent[$extra] as XFAExtra;
     const colSpan = node.colSpan;
     let width;
     if (colSpan === -1) {
@@ -628,7 +628,7 @@ export function setPara(
   nodeStyle: XFAStyleData | undefined,
   value: XFAElObj,
 ) {
-  if (value.attributes?.class?.includes("xfaRich")) {
+  if (value.attributes!.class?.includes("xfaRich")) {
     if (nodeStyle) {
       if (node.h === "") {
         nodeStyle.height = "auto";
@@ -642,7 +642,7 @@ export function setPara(
     if (para) {
       // By definition exData are external data so para
       // has no effect on it.
-      const valueStyle = value.attributes.style!;
+      const valueStyle = value.attributes!.style!;
       valueStyle.display = "flex";
       valueStyle.flexDirection = "column";
       switch (para.vAlign) {

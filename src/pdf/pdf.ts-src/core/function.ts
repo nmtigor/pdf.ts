@@ -23,7 +23,7 @@ import { LocalFunctionCache } from "./image_utils.ts";
 import type { Obj, ObjNoRef } from "./primitives.ts";
 import { Dict, Ref } from "./primitives.ts";
 import { PostScriptLexer, PostScriptParser } from "./ps_parser.ts";
-import { XRef } from "./xref.ts";
+import type { XRef } from "./xref.ts";
 /*80--------------------------------------------------------------------------*/
 
 export class PDFFunctionFactory {
@@ -102,7 +102,7 @@ export class PDFFunctionFactory {
     } else if (cacheKey instanceof Dict) {
       fnRef = cacheKey.objId;
     } else if (cacheKey instanceof BaseStream) {
-      fnRef = cacheKey.dict && cacheKey.dict.objId;
+      fnRef = cacheKey.dict?.objId;
     }
     if (fnRef) {
       this._localFunctionCache.set(

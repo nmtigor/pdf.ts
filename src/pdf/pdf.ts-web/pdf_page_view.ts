@@ -280,6 +280,7 @@ export class PDFPageView implements IVisibleView {
   pageColors: PageColors | undefined;
 
   #useThumbnailCanvas = {
+    directDrawing: true,
     initialOptionalContent: true,
     regularAnnotations: true,
   };
@@ -296,6 +297,7 @@ export class PDFPageView implements IVisibleView {
   resume: (() => void) | undefined; /** @implement */
   #renderError?: ErrorMoreInfo | undefined;
   _isStandalone;
+  _container;
 
   _annotationCanvasMap: Map<string, HTMLCanvasElement> | undefined;
 
@@ -352,6 +354,7 @@ export class PDFPageView implements IVisibleView {
 
     /*#static*/ if (PDFJSDev || GENERIC) {
       this._isStandalone = !this.renderingQueue?.hasViewer();
+      this._container = container;
     }
 
     const div = html("div");
@@ -449,6 +452,23 @@ export class PDFPageView implements IVisibleView {
   }
 
   setPdfPage(pdfPage: PDFPageProxy) {
+    /*#static*/ if (PDFJSDev || GENERIC) {
+      if (
+        this._isStandalone &&
+        (this.pageColors?.foreground === "CanvasText" ||
+          this.pageColors?.background === "Canvas")
+      ) {
+        this._container?.style.setProperty(
+          "--hcm-highligh-filter",
+          pdfPage.filterFactory.addHighlightHCMFilter(
+            "CanvasText",
+            "Canvas",
+            "HighlightText",
+            "Highlight",
+          ),
+        );
+      }
+    }
     this.pdfPage = pdfPage;
     this.pdfPageRotate = pdfPage.rotate;
 
@@ -590,8 +610,8 @@ export class PDFPageView implements IVisibleView {
   async #buildXfaTextContentItems(textDivs: Text[]) {
     const text = await this.pdfPage!.getTextContent();
     const items = [];
-    for (const item of text.items) {
-      items.push((item as TextItem).str);
+    for (const item of text.items as TextItem[]) {
+      items.push(item.str);
     }
     this._textHighlighter.setTextMapping(textDivs, items);
     this._textHighlighter.enable();
@@ -709,6 +729,7 @@ export class PDFPageView implements IVisibleView {
           optionalContentConfig!.hasInitialVisibility;
       });
     }
+    this.#useThumbnailCanvas.directDrawing = true;
 
     const totalRotation = (this.rotation + this.pdfPageRotate) % 360;
     this.viewport = this.viewport.clone({
@@ -719,7 +740,7 @@ export class PDFPageView implements IVisibleView {
 
     /*#static*/ if (PDFJSDev || GENERIC) {
       if (this._isStandalone) {
-        (this.div.parentNode as HTMLElement | SVGElement)?.style.setProperty(
+        this._container?.style.setProperty(
           "--scale-factor",
           this.viewport.scale as any,
         );
@@ -761,6 +782,9 @@ export class PDFPageView implements IVisibleView {
           // the rendering state to INITIAL, hence the next call to
           // PDFViewer.update() will trigger a redraw (if it's mandatory).
           this.renderingState = RenderingStates.FINISHED;
+          // Ensure that the thumbnails won't become partially (or fully) blank,
+          // if the sidebar is opened before the actual rendering is done.
+          this.#useThumbnailCanvas.directDrawing = false;
         }
 
         this.cssTransform({
@@ -772,6 +796,11 @@ export class PDFPageView implements IVisibleView {
           hideTextLayer: postponeDrawing,
         });
 
+        if (postponeDrawing) {
+          // The "pagerendered"-event will be dispatched once the actual
+          // rendering is done, hence don't dispatch it here as well.
+          return;
+        }
         this.eventBus.dispatch("pagerendered", {
           source: this,
           pageNumber: this.id,
@@ -1122,6 +1151,7 @@ export class PDFPageView implements IVisibleView {
             pdfPage,
             l10n,
             accessibilityManager: this._accessibilityManager,
+            annotationLayer: this.annotationLayer?.annotationLayer,
           });
         }
         this.#renderAnnotationEditorLayer();
@@ -1178,9 +1208,11 @@ export class PDFPageView implements IVisibleView {
    * @ignore
    */
   get thumbnailCanvas() {
-    const { initialOptionalContent, regularAnnotations } =
+    const { directDrawing, initialOptionalContent, regularAnnotations } =
       this.#useThumbnailCanvas;
-    return initialOptionalContent && regularAnnotations ? this.canvas : null;
+    return directDrawing && initialOptionalContent && regularAnnotations
+      ? this.canvas
+      : undefined;
   }
 }
 /*80--------------------------------------------------------------------------*/

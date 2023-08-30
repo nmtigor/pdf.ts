@@ -18,12 +18,12 @@
  */
 
 import { warn } from "../../shared/util.ts";
-import {
-  type XFAAttrs,
-  type XFACleanup,
-  type XFAIds,
-  type XFANsAttrs,
-  type XFAPrefix,
+import type {
+  XFAAttrs,
+  XFACleanup,
+  XFAIds,
+  XFANsAttrs,
+  XFAPrefix,
 } from "./alias.ts";
 import { $buildXFAObject, NamespaceIds, type XFANsName } from "./namespaces.ts";
 import { NamespaceSetUp, type XFAKnownNs } from "./setup.ts";
@@ -38,8 +38,8 @@ import {
   $onChild,
   $resolvePrototypes,
   $root,
-  XFAObject,
-} from "./xfa_object.ts";
+} from "./symbol_utils.ts";
+import { XFAObject } from "./xfa_object.ts";
 /*80--------------------------------------------------------------------------*/
 
 export class Root extends XFAObject {

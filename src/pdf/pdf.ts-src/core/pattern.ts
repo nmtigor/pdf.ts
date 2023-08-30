@@ -330,7 +330,7 @@ class RadialAxialShading extends BaseShading {
 
     let background = "transparent";
     if (dict.has("Background")) {
-      rgbColor = cs.getRgb(<number[]> dict.get("Background"), 0);
+      rgbColor = cs.getRgb(dict.get("Background") as number[], 0);
       background = Util.makeHexColor(rgbColor[0], rgbColor[1], rgbColor[2]);
     }
 

@@ -17,16 +17,18 @@
  * limitations under the License.
  */
 
-import { AnnotActions } from "../core/core_utils.ts";
-import { DocWrapped, FieldWrapped, USERACTIVATION_CALLBACKID } from "./app.ts";
-import { ScriptingActionName } from "./common.ts";
-import { Doc } from "./doc.ts";
-import { Field } from "./field.ts";
-import { ExternalCall } from "./initialization.ts";
-import { ScriptingData, SendData } from "./pdf_object.ts";
+import type { AnnotActions } from "../core/core_utils.ts";
+import type { DocWrapped, FieldWrapped } from "./app.ts";
+import {
+  USERACTIVATION_CALLBACKID,
+  USERACTIVATION_MAXTIME_VALIDITY,
+} from "./app_utils.ts";
+import type { ScriptingActionName } from "./common.ts";
+import type { Doc } from "./doc.ts";
+import type { Field } from "./field.ts";
+import type { ExternalCall } from "./initialization.ts";
+import type { ScriptingData, SendData } from "./pdf_object.ts";
 /*80--------------------------------------------------------------------------*/
-
-const USERACTIVATION_MAXTIME_VALIDITY = 5000;
 
 interface _SendEventData extends SendData {
 }
@@ -175,8 +177,9 @@ export class EventDispatcher {
           // errors in the case where a formatter is using one of those named
           // actions (see #15818).
           this._document.obj._initActions();
-          // Before running the Open event, we format all the fields
-          // (see bug 1766987).
+          // Before running the Open event, we run the format callbacks but
+          // without changing the value of the fields.
+          // Acrobat does the same thing.
           this.formatAll();
         }
         if (
@@ -307,23 +310,17 @@ export class EventDispatcher {
   formatAll() {
     // Run format actions if any for all the fields.
     const event =
-      ((<any> globalThis).event = new Event(<ScriptingEventData> {}));
+      ((globalThis as any).event = new Event(<ScriptingEventData> {}));
     for (const source of Object.values(this._objects)) {
-      event.value = <string> source.obj.value;
-      if (this.runActions(source, source, event, "Format")) {
-        source.obj._send!({
-          id: source.obj._id,
-          siblings: source.obj._siblings,
-          formattedValue: event.value?.toString?.(),
-        });
-      }
+      event.value = source.obj.value as string;
+      this.runActions(source, source, event, "Format");
     }
   }
 
   runValidation(source: FieldWrapped, event: Event) {
     const didValidateRun = this.runActions(source, source, event, "Validate");
     if (event.rc) {
-      source.obj.value = <string> event.value;
+      source.obj.value = event.value as string;
 
       this.runCalculate(source, event);
 

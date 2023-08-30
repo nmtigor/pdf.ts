@@ -20,7 +20,7 @@
 // The code for XMLParserBase copied from
 // https://github.com/mozilla/shumway/blob/16451d8836fa85f4b16eeda8b4bda2fa9e2b22b0/src/avm2/natives/xml.ts
 
-import { type XFAPath } from "../core/core_utils.ts";
+import type { XFAPath } from "../core/core_utils.ts";
 import { encodeToXmlString } from "./core_utils.ts";
 /*80--------------------------------------------------------------------------*/
 
@@ -326,7 +326,7 @@ export class SimpleDOMNode {
     return this.childNodes || [];
   }
   hasChildNodes() {
-    return this.childNodes && this.childNodes.length > 0;
+    return this.childNodes?.length as any > 0;
   }
 
   attributes?: XMLAttr[];
@@ -406,9 +406,9 @@ export class SimpleDOMNode {
         }
       }
 
-      if (node.childNodes && node.childNodes.length !== 0) {
+      if (node.childNodes?.length as any > 0) {
         stack.push([node, 0]);
-        node = node.childNodes[0];
+        node = node.childNodes![0];
       } else if (stack.length === 0) {
         return undefined;
       } else {

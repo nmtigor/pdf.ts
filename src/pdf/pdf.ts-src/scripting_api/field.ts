@@ -17,18 +17,18 @@
  * limitations under the License.
  */
 
-import { FieldItem, FieldObject } from "../core/annotation.ts";
-import { AnnotActions } from "../core/core_utils.ts";
-import { DocWrapped, FieldWrapped } from "./app.ts";
-import { Color, CorrectColor } from "./color.ts";
+import type { FieldItem, FieldObject } from "../core/annotation.ts";
+import type { AnnotActions } from "../core/core_utils.ts";
+import type { DocWrapped, FieldWrapped } from "./app.ts";
+import { Color, type CorrectColor } from "./color.ts";
 import {
   createActionsMap,
-  FieldType,
   getFieldType,
-  ScriptingActionName,
+  type ScriptingActionName,
 } from "./common.ts";
-import { Event } from "./event.ts";
-import { PDFObject, ScriptingData, SendData } from "./pdf_object.ts";
+import type { Event } from "./event.ts";
+import type { ScriptingData, SendData } from "./pdf_object.ts";
+import { PDFObject } from "./pdf_object.ts";
 /*80--------------------------------------------------------------------------*/
 
 export interface SendFieldData extends SendData {
@@ -206,7 +206,7 @@ export class Field extends PDFObject<SendFieldData> {
   }
   set fillColor(color) {
     if (Color._isValidColor(color)) {
-      this._fillColor = <CorrectColor> color;
+      this._fillColor = color as CorrectColor;
     }
   }
   get bgColor() {
@@ -270,7 +270,7 @@ export class Field extends PDFObject<SendFieldData> {
     }
   }
 
-  _originalValue?: string;
+  _originalValue: string | undefined;
 
   _value: string | number | string[] | undefined;
   get valueAsString() {
@@ -442,29 +442,15 @@ export class Field extends PDFObject<SendFieldData> {
       return;
     }
 
-    if (value === "") {
-      this._value = "";
-    } else if (typeof value === "string") {
-      switch (this._fieldType) {
-        case FieldType.none: {
-          this._originalValue = value;
-          const _value = value.trim().replace(",", ".");
-          this._value = !isNaN(_value as any) ? parseFloat(_value) : value;
-          break;
-        }
-        case FieldType.number:
-        case FieldType.percent: {
-          const _value = value.trim().replace(",", ".");
-          const number = parseFloat(_value);
-          this._value = !isNaN(number) ? number : 0;
-          break;
-        }
-        default:
-          this._value = value;
-      }
-    } else {
+    if (value === "" || typeof value !== "string") {
+      this._originalValue = undefined;
       this._value = value;
+      return;
     }
+
+    this._originalValue = value;
+    const _value = value.trim().replace(",", ".");
+    this._value = !isNaN(_value as any) ? parseFloat(_value) : value;
   }
 
   _getValue() {
@@ -531,7 +517,7 @@ export class Field extends PDFObject<SendFieldData> {
       nIdx = Array.isArray(this._currentValueIndices)
         ? this._currentValueIndices[0]
         : this._currentValueIndices;
-      nIdx = nIdx || 0;
+      nIdx ||= 0;
     }
 
     if (nIdx < 0 || nIdx >= this.numItems) {

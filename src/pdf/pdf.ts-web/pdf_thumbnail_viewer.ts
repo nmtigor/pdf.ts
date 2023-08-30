@@ -18,17 +18,18 @@
  */
 
 /** @typedef {import("../src/display/api").PDFDocumentProxy} PDFDocumentProxy */
+/** @typedef {import("./event_utils").EventBus} EventBus */
 /** @typedef {import("./interfaces").IL10n} IL10n */
 /** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
 // eslint-disable-next-line max-len
 /** @typedef {import("./pdf_rendering_queue").PDFRenderingQueue} PDFRenderingQueue */
 
-import { MOZCENTRAL, PDFJSDev } from "../../global.ts";
 import type {
   OptionalContentConfig,
   PDFDocumentProxy,
   PDFPageProxy,
 } from "../pdf.ts-src/pdf.ts";
+import type { EventBus } from "./event_utils.ts";
 import type { IL10n, IPDFLinkService } from "./interfaces.ts";
 import type { PDFRenderingQueue } from "./pdf_rendering_queue.ts";
 import { PDFThumbnailView, TempImageFactory } from "./pdf_thumbnail_view.ts";
@@ -51,6 +52,11 @@ interface PDFThumbnailViewerOptions {
    * The container for the thumbnail elements.
    */
   container: HTMLDivElement;
+
+  /**
+   * The application event bus.
+   */
+  eventBus: EventBus;
 
   /**
    * The navigation/linking service.
@@ -80,6 +86,7 @@ interface PDFThumbnailViewerOptions {
  */
 export class PDFThumbnailViewer {
   container;
+  eventBus;
   linkService;
   renderingQueue;
   l10n;
@@ -127,33 +134,18 @@ export class PDFThumbnailViewer {
 
   constructor({
     container,
+    eventBus,
     linkService,
     renderingQueue,
     l10n,
     pageColors,
   }: PDFThumbnailViewerOptions) {
     this.container = container;
+    this.eventBus = eventBus;
     this.linkService = linkService;
     this.renderingQueue = renderingQueue;
     this.l10n = l10n;
     this.pageColors = pageColors || undefined;
-
-    /*#static*/ if (PDFJSDev || !MOZCENTRAL) {
-      if (
-        this.pageColors &&
-        !(
-          CSS.supports("color", this.pageColors.background) &&
-          CSS.supports("color", this.pageColors.foreground)
-        )
-      ) {
-        if (this.pageColors.background || this.pageColors.foreground) {
-          console.warn(
-            "PDFThumbnailViewer: Ignoring `pageColors`-option, since the browser doesn't support the values used.",
-          );
-        }
-        this.pageColors = undefined;
-      }
-    }
 
     this.scroll = watchScroll(this.container, this.#scrollUpdated);
     this._resetView();
@@ -252,6 +244,7 @@ export class PDFThumbnailViewer {
         for (let pageNum = 1; pageNum <= pagesCount; ++pageNum) {
           const thumbnail = new PDFThumbnailView({
             container: this.container,
+            eventBus: this.eventBus,
             id: pageNum,
             defaultViewport: viewport.clone(),
             optionalContentConfigPromise,

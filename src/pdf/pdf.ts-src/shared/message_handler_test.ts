@@ -21,8 +21,8 @@ import {
   assertEquals,
   assertInstanceOf,
   fail,
-} from "https://deno.land/std@0.190.0/testing/asserts.ts";
-import { describe, it } from "https://deno.land/std@0.190.0/testing/bdd.ts";
+} from "https://deno.land/std@0.195.0/testing/asserts.ts";
+import { describe, it } from "https://deno.land/std@0.195.0/testing/bdd.ts";
 import { PromiseCap } from "../../../lib/util/PromiseCap.ts";
 import { LoopbackPort } from "../display/api.ts";
 import { MessageHandler, type Thread } from "../shared/message_handler.ts";

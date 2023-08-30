@@ -24,21 +24,9 @@ import { html } from "../../lib/dom.ts";
 // Class name of element which can be grabbed.
 const CSS_CLASS_GRAB = "grab-to-pan-grab";
 
-interface _GrabToPanCtorP {
+type GrabToPanCtorP_ = {
   element: HTMLDivElement;
-
-  /**
-   * See `ignoreTarget(node)`
-   */
-  ignoreTarget?: (node: Element) => boolean;
-
-  /**
-   * Called when
-   * grab-to-pan is (de)activated. The first argument is a boolean that
-   * shows whether grab-to-pan is activated.
-   */
-  onActiveChanged?: (_: boolean) => unknown;
-}
+};
 export class GrabToPan {
   element;
   document;
@@ -57,13 +45,9 @@ export class GrabToPan {
   /**
    * Construct a GrabToPan instance for a given HTML element.
    */
-  constructor(options: _GrabToPanCtorP) {
-    this.element = options.element;
-    this.document = options.element.ownerDocument;
-    if (typeof options.ignoreTarget === "function") {
-      this.ignoreTarget = options.ignoreTarget;
-    }
-    this.onActiveChanged = options.onActiveChanged;
+  constructor({ element }: GrabToPanCtorP_) {
+    this.element = element;
+    this.document = element.ownerDocument;
 
     // This overlay will be inserted in the document when the mouse moves during
     // a grab operation, to ensure that the cursor has the desired appearance.
@@ -79,8 +63,6 @@ export class GrabToPan {
       this.active = true;
       this.element.addEventListener("mousedown", this.#onMouseDown, true);
       this.element.classList.add(CSS_CLASS_GRAB);
-
-      this.onActiveChanged?.(true);
     }
   };
 
@@ -93,8 +75,6 @@ export class GrabToPan {
       this.element.removeEventListener("mousedown", this.#onMouseDown, true);
       this.#endPan();
       this.element.classList.remove(CSS_CLASS_GRAB);
-
-      this.onActiveChanged?.(false);
     }
   };
 
@@ -123,11 +103,11 @@ export class GrabToPan {
       return;
     }
 
-    if ((<any> event).originalTarget) {
+    if ((event as any).originalTarget) {
       try {
         // eslint-disable-next-line no-unused-expressions
-        (<any> event).originalTarget.tagName;
-      } catch (e) {
+        (event as any).originalTarget.tagName;
+      } catch {
         // Mozilla-specific: element is a scrollbar (XUL element)
         return;
       }
@@ -163,18 +143,12 @@ export class GrabToPan {
     }
     const xDiff = event.clientX - this.clientXStart!;
     const yDiff = event.clientY - this.clientYStart!;
-    const scrollTop = this.scrollTopStart! - yDiff;
-    const scrollLeft = this.scrollLeftStart! - xDiff;
-    if (this.element.scrollTo) {
-      this.element.scrollTo({
-        top: scrollTop,
-        left: scrollLeft,
-        behavior: <ScrollBehavior> "instant",
-      });
-    } else {
-      this.element.scrollTop = scrollTop;
-      this.element.scrollLeft = scrollLeft;
-    }
+    this.element.scrollTo({
+      top: this.scrollTopStart! - yDiff,
+      left: this.scrollLeftStart! - xDiff,
+      behavior: "instant" as ScrollBehavior,
+    });
+
     if (!this.overlay.parentNode) {
       document.body.append(this.overlay);
     }

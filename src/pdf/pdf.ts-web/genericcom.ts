@@ -37,8 +37,7 @@ import { BasePreferences } from "./preferences.ts";
 export const GenericCom = {};
 
 class GenericPreferences extends BasePreferences {
-  /** @implement */
-  protected async _writeToStorage(prefObj: UserOptions) {
+  protected override async _writeToStorage(prefObj: UserOptions) {
     localStorage.setItem("pdfjs.preferences", JSON.stringify(prefObj));
   }
 

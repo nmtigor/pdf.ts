@@ -26,7 +26,7 @@ import {
   utf8StringToString,
   warn,
 } from "../shared/util.ts";
-import { BaseStream } from "./base_stream.ts";
+import type { BaseStream } from "./base_stream.ts";
 import { DecryptStream } from "./decrypt_stream.ts";
 import { Dict, isName, Name } from "./primitives.ts";
 /*80--------------------------------------------------------------------------*/
@@ -2901,8 +2901,10 @@ namespace NsCipherTransformFactory {
           const streamCryptoName = dict.get("StmF");
           if (cfDict instanceof Dict && (streamCryptoName instanceof Name)) {
             cfDict.suppressEncryption = true; // See comment below.
-            const handlerDict = <Dict> cfDict.get(streamCryptoName.name);
-            keyLength = <number> handlerDict.get("Length") || 128;
+            const handlerDict = cfDict.get(streamCryptoName.name) as
+              | Dict
+              | undefined;
+            keyLength = handlerDict?.get("Length") as number || 128;
             if (keyLength < 40) {
               // Sometimes it's incorrect value of bits, generators specify
               // bytes.
@@ -2937,7 +2939,7 @@ namespace NsCipherTransformFactory {
         if (revision === 6) {
           try {
             password = utf8StringToString(password);
-          } catch (ex) {
+          } catch {
             warn(
               "CipherTransformFactory: Unable to convert UTF8 encoded password.",
             );

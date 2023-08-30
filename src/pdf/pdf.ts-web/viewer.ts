@@ -58,32 +58,32 @@ import { viewerApp } from "./app.ts";
 function getViewerConfiguration() {
   return {
     appContainer: document.body,
-    mainContainer: <HTMLDivElement> document.getElementById("viewerContainer"),
-    viewerContainer: <HTMLDivElement> document.getElementById("viewer"),
+    mainContainer: document.getElementById("viewerContainer") as HTMLDivElement,
+    viewerContainer: document.getElementById("viewer") as HTMLDivElement,
     toolbar: {
       /**
        * Container for the secondary toolbar.
        */
-      container: <HTMLDivElement> document.getElementById("toolbarViewer"),
+      container: document.getElementById("toolbarViewer") as HTMLDivElement,
       /**
        * Label that contains number of pages.
        */
-      numPages: <HTMLSpanElement> document.getElementById("numPages"),
+      numPages: document.getElementById("numPages") as HTMLSpanElement,
       /**
        * Control for display and user input of the current page number.
        */
-      pageNumber: <HTMLInputElement> document.getElementById("pageNumber"),
+      pageNumber: document.getElementById("pageNumber") as HTMLInputElement,
       /**
        * Scale selection control.
        * Its width is adjusted, when necessary, on UI localization.
        */
-      scaleSelect: <HTMLSelectElement> document.getElementById("scaleSelect"),
+      scaleSelect: document.getElementById("scaleSelect") as HTMLSelectElement,
       /**
        * The item used to display a non-predefined scale.
        */
-      customScaleOption: <HTMLOptionElement> document.getElementById(
+      customScaleOption: document.getElementById(
         "customScaleOption",
-      ),
+      ) as HTMLOptionElement,
       /**
        * Button to go to the previous page.
        */
@@ -129,7 +129,7 @@ function getViewerConfiguration() {
       /**
        * Button to download the document.
        */
-      download: <HTMLButtonElement> document.getElementById("download"),
+      download: document.getElementById("download") as HTMLButtonElement,
     },
     secondaryToolbar: {
       /**
@@ -254,6 +254,11 @@ function getViewerConfiguration() {
       toggleButton: document.getElementById(
         "sidebarToggle",
       ) as HTMLButtonElement,
+      /**
+       * The DOM element that can be dragged in
+       * order to adjust the width of the sidebar.
+       */
+      resizer: document.getElementById("sidebarResizer") as HTMLDivElement,
 
       // Buttons
       /**
@@ -305,19 +310,6 @@ function getViewerConfiguration() {
       currentOutlineItemButton: document.getElementById(
         "currentOutlineItem",
       ) as HTMLButtonElement,
-    },
-    sidebarResizer: {
-      /**
-       * The outer container (encasing both the viewer and sidebar elements).
-       */
-      outerContainer: <HTMLDivElement> document.getElementById(
-        "outerContainer",
-      ),
-      /**
-       * The DOM element that can be dragged in
-       * order to adjust the width of the sidebar.
-       */
-      resizer: <HTMLDivElement> document.getElementById("sidebarResizer"),
     },
     findBar: {
       bar: <HTMLDivElement> document.getElementById("findbar"),
@@ -452,6 +444,7 @@ function getViewerConfiguration() {
   };
 }
 export type ViewerConfiguration = ReturnType<typeof getViewerConfiguration>;
+export type ToolbarOptions = ViewerConfiguration["toolbar"];
 
 function webViewerLoad() {
   const config = getViewerConfiguration();

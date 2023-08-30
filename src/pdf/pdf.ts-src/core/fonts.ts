@@ -30,12 +30,13 @@ import {
   string32,
   warn,
 } from "../shared/util.ts";
-import { BaseStream } from "./base_stream.ts";
+import type { BaseStream } from "./base_stream.ts";
 import { CFFFont } from "./cff_font.ts";
 import { CFFCompiler, CFFParser } from "./cff_parser.ts";
-import { type CharCodeOut, CMap, IdentityCMap } from "./cmap.ts";
+import type { CharCodeOut, CMap } from "./cmap.ts";
+import { IdentityCMap } from "./cmap.ts";
 import { readUint32 } from "./core_utils.ts";
-import { type CssFontInfo } from "./document.ts";
+import type { CssFontInfo } from "./document.ts";
 import {
   getEncoding,
   MacRomanEncoding,
@@ -44,11 +45,7 @@ import {
   WinAnsiEncoding,
   ZapfDingbatsEncoding,
 } from "./encodings.ts";
-import {
-  type FontfileType,
-  type FontProps,
-  type VMetric,
-} from "./evaluator.ts";
+import type { FontfileType, FontProps, VMetric } from "./evaluator.ts";
 import {
   FontFlags,
   MacStandardGlyphOrdering,
@@ -56,16 +53,13 @@ import {
   SEAC_ANALYSIS_ENABLED,
 } from "./fonts_utils.ts";
 import { FontRendererFactory } from "./font_renderer.ts";
+import type { SubstitutionInfo } from "./font_substitutions.ts";
 import { GlyfTable } from "./glyf.ts";
 import { getDingbatsGlyphsUnicode, getGlyphsUnicode } from "./glyphlist.ts";
 import { getFontBasicMetrics } from "./metrics.ts";
-import {
-  OpenTypeFileBuilder,
-  type OTTable,
-  type OTTag,
-  VALID_TABLES,
-} from "./opentype_file_builder.ts";
-import { type OpListIR } from "./operator_list.ts";
+import type { OTTable, OTTag } from "./opentype_file_builder.ts";
+import { OpenTypeFileBuilder, VALID_TABLES } from "./opentype_file_builder.ts";
+import type { OpListIR } from "./operator_list.ts";
 import {
   getGlyphMapForStandardFonts,
   getNonStdFontMap,
@@ -78,7 +72,7 @@ import { Stream } from "./stream.ts";
 import { IdentityToUnicodeMap, ToUnicodeMap } from "./to_unicode_map.ts";
 import { Type1Font } from "./type1_font.ts";
 import {
-  CharUnicodeCategory,
+  type CharUnicodeCategory,
   getCharUnicodeCategory,
   getUnicodeForGlyph,
   getUnicodeRangeFor,
@@ -134,6 +128,7 @@ export abstract class FontExpotData {
   defaultVMetrics?: VMetric | undefined;
 
   cssFontInfo?: CssFontInfo | undefined;
+  systemFontInfo: SubstitutionInfo | undefined;
 }
 const EXPORT_DATA_PROPERTIES: readonly (keyof FontExpotData)[] = [
   "ascent",
@@ -158,6 +153,7 @@ const EXPORT_DATA_PROPERTIES: readonly (keyof FontExpotData)[] = [
   "name",
   "remeasure",
   "subtype",
+  "systemFontInfo",
   "type",
   "vertical",
 ];
@@ -207,6 +203,15 @@ function adjustWidths(properties: FontProps) {
   }
   properties.defaultWidth! *= scale;
 }
+
+type OSNameRecord_ = {
+  platform: number;
+  encoding: number;
+  language: number;
+  name: number;
+  length: number;
+  offset: number;
+};
 
 function adjustTrueTypeToUnicode(
   properties: FontProps,
@@ -317,7 +322,7 @@ function amendFallbackToUnicode(properties: FontProps) {
   const toUnicode: string[] = [];
   for (const charCode in properties.fallbackToUnicode) {
     if (
-      (<ToUnicodeMap | IdentityToUnicodeMap> properties.toUnicode).has(
+      (properties.toUnicode as ToUnicodeMap | IdentityToUnicodeMap).has(
         +charCode,
       )
     ) {
@@ -326,7 +331,7 @@ function amendFallbackToUnicode(properties: FontProps) {
     toUnicode[charCode] = properties.fallbackToUnicode[charCode];
   }
   if (toUnicode.length > 0) {
-    (<ToUnicodeMap | IdentityToUnicodeMap> properties.toUnicode).amend(
+    (properties.toUnicode as ToUnicodeMap | IdentityToUnicodeMap).amend(
       toUnicode,
     );
   }
@@ -548,15 +553,6 @@ interface AdjustMappingReturn {
   toUnicodeExtraMap: Map<number, number>;
   nextAvailableFontCharCode: number;
 }
-
-type OSNameRecord_ = {
-  platform: number;
-  encoding: number;
-  language: number;
-  name: number;
-  length: number;
-  offset: number;
-};
 
 // Please refer to:
 //  - https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6name.html
@@ -1089,25 +1085,6 @@ function createNameTable(name: string, proto?: [string[], string[]]) {
   return nameTable;
 }
 
-interface TTContext {
-  functionsDefined: { data: Uint8Array; i: number }[];
-  functionsUsed: boolean[];
-  functionsStackDeltas: number[];
-  tooComplexToFollowFunctions: boolean;
-  hintsValid: boolean;
-}
-
-interface HeaderXXX {
-  ttcTag: string;
-  majorVersion: number;
-  minorVersion: number;
-  numFonts: number;
-  offsetTable: number[];
-  dsigTag?: number;
-  dsigLength?: number;
-  dsigOffset?: number;
-}
-
 /**
  * 'Font' is the class the outside world should use, it encapsulate all the font
  * decoding logics whatever type it is (assuming the font type is supported).
@@ -1159,6 +1136,7 @@ export class Font extends FontExpotDataEx {
     let { type, subtype } = properties;
     this.type = type;
     this.subtype = subtype;
+    this.systemFontInfo = properties.systemFontInfo;
 
     const matches = name.match(/^InvalidPDFjsFont_(.*)_\d+$/);
     this.isInvalidPDFjsFont = !!matches;
@@ -1170,6 +1148,12 @@ export class Font extends FontExpotDataEx {
       this.fallbackName = "serif";
     } else {
       this.fallbackName = "sans-serif";
+    }
+
+    if (this.systemFontInfo?.guessFallback) {
+      // Once the fallback name is guessed, we don't want to guess it again.
+      this.systemFontInfo.guessFallback = false;
+      this.systemFontInfo.css += `,${this.fallbackName}`;
     }
 
     this.differences = properties.differences;
@@ -1185,11 +1169,10 @@ export class Font extends FontExpotDataEx {
     this.bbox = properties.bbox;
     this.defaultEncoding = properties.defaultEncoding;
 
-    this.toUnicode = <
+    this.toUnicode = properties.toUnicode as
       | IdentityToUnicodeMap
       | ToUnicodeMap
-      | undefined
-    > properties.toUnicode;
+      | undefined;
 
     if (properties.type === "Type3") {
       for (let charCode = 0; charCode < 256; charCode++) {
@@ -1268,7 +1251,7 @@ export class Font extends FontExpotDataEx {
           throw new FormatError(`Font ${type} is not supported`);
       }
     } catch (e) {
-      warn(<string> e);
+      warn(e as string);
       this.fallbackToSystemFont(properties);
       return;
     }
@@ -1282,11 +1265,10 @@ export class Font extends FontExpotDataEx {
     this.fontMatrix = properties.fontMatrix;
     this.widths = properties.widths;
     this.defaultWidth = properties.defaultWidth!;
-    this.toUnicode = <
+    this.toUnicode = properties.toUnicode as
       | IdentityToUnicodeMap
       | ToUnicodeMap
-      | undefined
-    > properties.toUnicode;
+      | undefined;
     this.seacMap = properties.seacMap;
   }
 
@@ -1306,7 +1288,7 @@ export class Font extends FontExpotDataEx {
       value = this[property];
       // Ignore properties that haven't been explicitly set.
       if (value !== undefined) {
-        (<any> data)[property] = value;
+        (data as any)[property] = value;
       }
     }
     return data;
@@ -1411,9 +1393,6 @@ export class Font extends FontExpotDataEx {
         this.differences,
       );
     } else if (/Dingbats/i.test(fontName)) {
-      if (/Wingdings/i.test(name)) {
-        warn("Non-embedded Wingdings font, falling back to ZapfDingbats.");
-      }
       this.toFontChar = buildToFontChar(
         ZapfDingbatsEncoding,
         getDingbatsGlyphsUnicode(),
@@ -1534,6 +1513,17 @@ export class Font extends FontExpotDataEx {
       };
     }
 
+    type Header_ = {
+      ttcTag: string;
+      majorVersion: number;
+      minorVersion: number;
+      numFonts: number;
+      offsetTable: number[];
+      dsigTag?: number;
+      dsigLength?: number;
+      dsigOffset?: number;
+    };
+
     function readTrueTypeCollectionHeader(ttc: BaseStream) {
       const ttcTag = ttc.getString(4);
       assert(ttcTag === "ttcf", "Must be a TrueType Collection font.");
@@ -1546,7 +1536,7 @@ export class Font extends FontExpotDataEx {
         offsetTable.push(ttc.getInt32() >>> 0);
       }
 
-      const header: HeaderXXX = {
+      const header: Header_ = {
         ttcTag,
         majorVersion,
         minorVersion,
@@ -1586,8 +1576,7 @@ export class Font extends FontExpotDataEx {
 
         for (let j = 0, jj = nameTable.length; j < jj; j++) {
           for (let k = 0, kk = nameTable[j].length; k < kk; k++) {
-            const nameEntry = nameTable[j][k] &&
-              nameTable[j][k] && nameTable[j][k].replaceAll(/\s/g, "");
+            const nameEntry = nameTable[j][k]?.replaceAll(/\s/g, "");
             if (!nameEntry) {
               continue;
             }
@@ -1627,12 +1616,18 @@ export class Font extends FontExpotDataEx {
       );
     }
 
-    interface Segment {
+    type Segment_ = {
       start?: number;
       end: number;
       delta?: number;
       offsetIndex?: number;
-    }
+    };
+
+    type PotentialTable_ = {
+      platformId: number;
+      encodingId: number;
+      offset: number;
+    };
 
     /**
      * Read the appropriate subtable from the cmap according to 9.6.6.4 from
@@ -1660,7 +1655,7 @@ export class Font extends FontExpotDataEx {
       file.skip(2); // version
       const numTables = file.getUint16();
 
-      let potentialTable;
+      let potentialTable: PotentialTable_ | undefined;
       let canBreak = false;
       // There's an order of preference in terms of which cmap subtable to
       // use:
@@ -1677,9 +1672,8 @@ export class Font extends FontExpotDataEx {
         // Sometimes there are multiple of the same type of table. Default
         // to choosing the first table and skip the rest.
         if (
-          potentialTable &&
-          potentialTable.platformId === platformId &&
-          potentialTable.encodingId === encodingId
+          potentialTable?.platformId === platformId &&
+          potentialTable?.encodingId === encodingId
         ) {
           continue;
         }
@@ -1825,7 +1819,7 @@ export class Font extends FontExpotDataEx {
         // might be changed
         const segCount = file.getUint16() >> 1;
         file.skip(6); // skipping range fields
-        const segments: Segment[] = [];
+        const segments: Segment_[] = [];
         let segIndex;
         for (segIndex = 0; segIndex < segCount; segIndex++) {
           segments.push({ end: file.getUint16() });
@@ -2031,16 +2025,41 @@ export class Font extends FontExpotDataEx {
         length: 0,
         sizeOfInstructions: 0,
       };
-      if (sourceEnd - sourceStart <= 12) {
-        // glyph with data less than 12 is invalid one
+      if (
+        sourceStart < 0 ||
+        sourceStart >= source.length ||
+        sourceEnd > source.length ||
+        sourceEnd - sourceStart <= 12
+      ) {
+        // If the offsets are wrong or the glyph is too small, remove it.
         return glyphProfile;
       }
       const glyf = source.subarray(sourceStart, sourceEnd);
-      let contoursCount = signedInt16(glyf[0], glyf[1]);
+
+      // Sanitize the glyph bounding box.
+      const xMin = signedInt16(glyf[2], glyf[3]);
+      const yMin = signedInt16(glyf[4], glyf[5]);
+      const xMax = signedInt16(glyf[6], glyf[7]);
+      const yMax = signedInt16(glyf[8], glyf[9]);
+
+      if (xMin > xMax) {
+        writeSignedInt16(glyf, 2, xMax);
+        writeSignedInt16(glyf, 6, xMin);
+      }
+      if (yMin > yMax) {
+        writeSignedInt16(glyf, 4, yMax);
+        writeSignedInt16(glyf, 8, yMin);
+      }
+
+      const contoursCount = signedInt16(glyf[0], glyf[1]);
       if (contoursCount < 0) {
-        // OTS doesn't like contour count to be less than -1.
-        contoursCount = -1;
-        writeSignedInt16(glyf, 0, contoursCount);
+        if (contoursCount < -1) {
+          // OTS doesn't like contour count to be less than -1.
+          // The glyph data offsets are very likely wrong and
+          // having something lower than -1, very likely, implies
+          // to have some garbage data.
+          return glyphProfile;
+        }
         // complex glyph, writing as is
         dest.set(glyf, destStart);
         glyphProfile.length = glyf.length;
@@ -2085,6 +2104,10 @@ export class Font extends FontExpotDataEx {
         coordinatesLength += xyLength;
         if (flag & 8) {
           const repeat = glyf[j++];
+          if (repeat === 0) {
+            // The repeat count should be non-zero when the repeat flag is set.
+            glyf[j - 1] ^= 8;
+          }
           i += repeat;
           coordinatesLength += repeat * xyLength;
         }
@@ -2501,7 +2524,15 @@ export class Font extends FontExpotDataEx {
       -999, -2, -2, 0, 0, -1, -2, -2, 0, 0, 0, -1, -1, -1, -2];
     // 0xC0-DF == -1 and 0xE0-FF == -2
 
-    function sanitizeTTProgram(table: OTTable, ttContext: TTContext) {
+    type TTContext_ = {
+      functionsDefined: { data: Uint8Array; i: number }[];
+      functionsUsed: boolean[];
+      functionsStackDeltas: number[];
+      tooComplexToFollowFunctions: boolean;
+      hintsValid: boolean;
+    };
+
+    function sanitizeTTProgram(table: OTTable, ttContext: TTContext_) {
       let data = table.data;
       let i = 0,
         j,
@@ -2699,7 +2730,7 @@ export class Font extends FontExpotDataEx {
     }
 
     function checkInvalidFunctions(
-      ttContext: TTContext,
+      ttContext: TTContext_,
       maxFunctionDefs: number,
     ) {
       if (ttContext.tooComplexToFollowFunctions) {
@@ -2753,7 +2784,7 @@ export class Font extends FontExpotDataEx {
       cvt: OTTable | undefined,
       maxFunctionDefs: number,
     ) {
-      const ttContext: TTContext = {
+      const ttContext: TTContext_ = {
         functionsDefined: [],
         functionsUsed: [],
         functionsStackDeltas: [],
@@ -2794,7 +2825,7 @@ export class Font extends FontExpotDataEx {
     const isTrueType = !tables["CFF "];
     if (!isTrueType) {
       const isComposite = properties.composite &&
-        ((properties.cidToGidMap || []).length > 0 ||
+        (properties.cidToGidMap?.length as any > 0 ||
           !(properties.cMap instanceof IdentityCMap));
       // OpenType font (skip composite fonts with non-default glyph mapping).
       if (
@@ -2842,11 +2873,7 @@ export class Font extends FontExpotDataEx {
     const version = font.getInt32();
     const numGlyphs = font.getUint16();
 
-    if (
-      properties.scaleFactors &&
-      properties.scaleFactors.length === numGlyphs &&
-      isTrueType
-    ) {
+    if (properties.scaleFactors?.length === numGlyphs && isTrueType) {
       const { scaleFactors } = properties;
       const isGlyphLocationsLong = int16(
         tables.head!.data[50],
@@ -2982,7 +3009,7 @@ export class Font extends FontExpotDataEx {
     // hhea tables; yMin and descent value are always negative.
     const metricsOverride: MetricsOverride = {
       unitsPerEm: int16(tables.head.data[18], tables.head.data[19]),
-      yMax: int16(tables.head.data[42], tables.head.data[43]),
+      yMax: signedInt16(tables.head.data[42], tables.head.data[43]),
       yMin: signedInt16(tables.head.data[38], tables.head.data[39]),
       ascent: signedInt16(tables.hhea.data[4], tables.hhea.data[5]),
       descent: signedInt16(tables.hhea.data[6], tables.hhea.data[7]),
@@ -2994,9 +3021,9 @@ export class Font extends FontExpotDataEx {
     this.descent = metricsOverride.descent / metricsOverride.unitsPerEm;
     this.lineGap = metricsOverride.lineGap! / metricsOverride.unitsPerEm;
 
-    if (this.cssFontInfo?.metrics?.lineHeight) {
-      this.lineHeight = this.cssFontInfo.metrics.lineHeight;
-      this.lineGap = this.cssFontInfo.metrics.lineGap;
+    if (this.cssFontInfo?.lineHeight) {
+      this.lineHeight = this.cssFontInfo.metrics!.lineHeight;
+      this.lineGap = this.cssFontInfo.metrics!.lineGap;
     } else {
       this.lineHeight = this.ascent - this.descent + this.lineGap;
     }
@@ -3240,8 +3267,8 @@ export class Font extends FontExpotDataEx {
         cff = parser.parse();
         cff.duplicateFirstGlyph();
         const compiler = new CFFCompiler(cff);
-        tables["CFF "]!.data = <any> compiler.compile();
-      } catch (e) {
+        tables["CFF "]!.data = compiler.compile() as any;
+      } catch {
         warn("Failed to compile font " + properties.loadedName);
       }
     }
@@ -3339,7 +3366,7 @@ export class Font extends FontExpotDataEx {
     }
 
     const seacs = font.seacs;
-    if (SEAC_ANALYSIS_ENABLED && seacs && seacs.length) {
+    if (newMapping && SEAC_ANALYSIS_ENABLED && seacs?.length) {
       const matrix = properties.fontMatrix || FONT_IDENTITY_MATRIX;
       const charset = font.getCharset();
       const seacMap: Seac[] = Object.create(null);
@@ -3522,13 +3549,13 @@ export class Font extends FontExpotDataEx {
     let glyph = this._glyphCache[charcode];
     // All `Glyph`-properties, except `isSpace` in multi-byte strings,
     // depend indirectly on the `charcode`.
-    if (glyph && glyph.isSpace === isSpace) {
+    if (glyph?.isSpace === isSpace) {
       return glyph;
     }
     let fontCharCode, width, operatorListId;
 
     let widthCode: number | string = charcode;
-    if (this.cMap && this.cMap.contains(charcode)) {
+    if (this.cMap?.contains(charcode)) {
       widthCode = +this.cMap.lookup(charcode)!;
 
       if (typeof widthCode === "string") {
@@ -3539,7 +3566,7 @@ export class Font extends FontExpotDataEx {
     if (typeof width !== "number") {
       width = this.defaultWidth;
     }
-    const vmetric = this.vmetrics?.[+widthCode];
+    const vmetric = this.vmetrics?.[widthCode as number];
 
     let unicode = this.toUnicode!.get(charcode) || charcode;
     if (typeof unicode === "number") {
@@ -3570,7 +3597,7 @@ export class Font extends FontExpotDataEx {
     }
 
     let accent;
-    if (this.seacMap && this.seacMap[charcode]) {
+    if (this.seacMap?.[charcode]) {
       isInFont = true;
       const seac = this.seacMap[charcode];
       fontCharCode = seac.baseFontCharCode;

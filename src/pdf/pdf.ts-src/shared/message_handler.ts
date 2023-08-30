@@ -177,6 +177,13 @@ export interface MActionMap {
     Return: AnnotationData[];
     Sinkchunk: undefined;
   };
+  GetAnnotArray: {
+    Data: {
+      pageIndex: number;
+    };
+    Return: unknown;
+    Sinkchunk: unknown;
+  };
   GetAttachments: {
     Data: null;
     Return: unknown;
@@ -348,7 +355,7 @@ export interface MActionMap {
     Data: {
       isPureXfa: boolean;
       numPages: number;
-      annotationStorage: AnnotStorageRecord | undefined;
+      annotationStorage: AnnotStorageRecord;
       filename: string | undefined;
     };
     Return: Uint8Array;
@@ -793,7 +800,7 @@ export class MessageHandler<
   sendWithStream<AN extends ActionName<Ta>>(
     actionName: AN,
     data: ActionData<Ta, AN>,
-    queueingStrategy?: QueuingStrategy<ActionSinkchunk<Ta, AN>>,
+    queueingStrategy?: QueuingStrategy<ActionSinkchunk<Ta, AN>> | undefined,
     transfers?: Transferable[],
   ) {
     const streamId = this.streamId++,

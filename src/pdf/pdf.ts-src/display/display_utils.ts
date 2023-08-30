@@ -19,9 +19,9 @@
 
 import { MOZCENTRAL } from "../../../global.ts";
 import type { C2D, point_t, rect_t, uint } from "../../../lib/alias.ts";
+import type { red_t, rgb_t } from "../../../lib/color/alias.ts";
 import { div as createDiv, html, svg as createSVG } from "../../../lib/dom.ts";
 import type { XFAElObj } from "../core/xfa/alias.ts";
-import { RGB } from "../shared/scripting_utils.ts";
 import {
   BaseException,
   CMapCompressionType,
@@ -68,19 +68,15 @@ type DOMFilterFactoryCtorP_ = {
  */
 export class DOMFilterFactory extends BaseFilterFactory {
   #_cache: Map<number[][] | string, string> | undefined;
-
   #_defs: SVGDefsElement | undefined;
-
   #docId;
-
   #document;
-
   #hcmFilter: SVGFilterElement | undefined;
-
   #hcmKey: string | undefined;
-
   #hcmUrl: string | undefined;
-
+  #hcmHighlightFilter?: SVGFilterElement;
+  #hcmHighlightKey?: string;
+  #hcmHighlightUrl?: string;
   #id = 0;
 
   constructor(
@@ -120,19 +116,6 @@ export class DOMFilterFactory extends BaseFilterFactory {
       this.#document.body.append(div);
     }
     return this.#_defs;
-  }
-
-  #appendFeFunc(
-    feComponentTransfer: SVGFEComponentTransferElement,
-    func: "feFuncR" | "feFuncG" | "feFuncB",
-    table: string,
-  ) {
-    const feFunc = createSVG(func, this.#document);
-    feFunc.assignAttro({
-      type: "discrete",
-      tableValues: table,
-    });
-    feComponentTransfer.append(feFunc);
   }
 
   override addFilter(maps?: number[][]): string {
@@ -189,22 +172,8 @@ export class DOMFilterFactory extends BaseFilterFactory {
     this.#cache.set(maps, url);
     this.#cache.set(key, url);
 
-    const filter = createSVG("filter", this.#document);
-    filter.assignAttro({
-      id,
-      "color-interpolation-filters": "sRGB",
-    });
-    const feComponentTransfer = createSVG(
-      "feComponentTransfer",
-      this.#document,
-    );
-    filter.append(feComponentTransfer);
-
-    this.#appendFeFunc(feComponentTransfer, "feFuncR", tableR);
-    this.#appendFeFunc(feComponentTransfer, "feFuncG", tableG);
-    this.#appendFeFunc(feComponentTransfer, "feFuncB", tableB);
-
-    this.#defs.append(filter);
+    const filter = this.#createFilter(id);
+    this.#addTransferMapConversion(tableR, tableG, tableB, filter);
 
     return url;
   }
@@ -223,13 +192,9 @@ export class DOMFilterFactory extends BaseFilterFactory {
       return this.#hcmUrl!;
     }
 
-    this.#defs.style.color = fgColor;
-    fgColor = getComputedStyle(this.#defs).getPropertyValue("color");
-    const fgRGB = getRGB(fgColor);
+    const fgRGB = this.#getRGB(fgColor);
     fgColor = Util.makeHexColor(...fgRGB);
-    this.#defs.style.color = bgColor;
-    bgColor = getComputedStyle(this.#defs).getPropertyValue("color");
-    const bgRGB = getRGB(bgColor);
+    const bgRGB = this.#getRGB(bgColor);
     bgColor = Util.makeHexColor(...bgRGB);
     this.#defs.style.color = "";
 
@@ -257,28 +222,9 @@ export class DOMFilterFactory extends BaseFilterFactory {
     const table = map.join(",");
 
     const id = `g_${this.#docId}_hcm_filter`;
-    const filter = this.#hcmFilter = createSVG("filter", this.#document);
-    filter.assignAttro({
-      id,
-      "color-interpolation-filters": "sRGB",
-    });
-    let feComponentTransfer = createSVG("feComponentTransfer", this.#document);
-    filter.append(feComponentTransfer);
-
-    this.#appendFeFunc(feComponentTransfer, "feFuncR", table);
-    this.#appendFeFunc(feComponentTransfer, "feFuncG", table);
-    this.#appendFeFunc(feComponentTransfer, "feFuncB", table);
-
-    const feColorMatrix = createSVG("feColorMatrix", this.#document);
-    feColorMatrix.assignAttro({
-      type: "matrix",
-      values:
-        "0.2126 0.7152 0.0722 0 0 0.2126 0.7152 0.0722 0 0 0.2126 0.7152 0.0722 0 0 0 0 0 1 0",
-    });
-    filter.append(feColorMatrix);
-
-    feComponentTransfer = createSVG("feComponentTransfer", this.#document);
-    filter.append(feComponentTransfer);
+    const filter = (this.#hcmHighlightFilter = this.#createFilter(id));
+    this.#addTransferMapConversion(table, table, table, filter);
+    this.#addGrayConversion(filter);
 
     const getSteps = (c: uint, n: uint) => {
       const start = fgRGB[c] / 255;
@@ -289,18 +235,106 @@ export class DOMFilterFactory extends BaseFilterFactory {
       }
       return arr.join(",");
     };
-    this.#appendFeFunc(feComponentTransfer, "feFuncR", getSteps(0, 5));
-    this.#appendFeFunc(feComponentTransfer, "feFuncG", getSteps(1, 5));
-    this.#appendFeFunc(feComponentTransfer, "feFuncB", getSteps(2, 5));
-
-    this.#defs.append(filter);
+    this.#addTransferMapConversion(
+      getSteps(0, 5),
+      getSteps(1, 5),
+      getSteps(2, 5),
+      filter,
+    );
 
     this.#hcmUrl = `url(#${id})`;
     return this.#hcmUrl;
   }
 
+  override addHighlightHCMFilter(
+    fgColor: string,
+    bgColor: string,
+    newFgColor: string,
+    newBgColor: string,
+  ): string {
+    const key = `${fgColor}-${bgColor}-${newFgColor}-${newBgColor}`;
+    if (this.#hcmHighlightKey === key) {
+      return this.#hcmHighlightUrl!;
+    }
+
+    this.#hcmHighlightKey = key;
+    this.#hcmHighlightUrl = "none";
+    this.#hcmHighlightFilter?.remove();
+
+    if (!fgColor || !bgColor) {
+      return this.#hcmHighlightUrl;
+    }
+
+    const [fgRGB, bgRGB] = [fgColor, bgColor].map(this.#getRGB.bind(this));
+    let fgGray = Math.round(
+      0.2126 * fgRGB[0] + 0.7152 * fgRGB[1] + 0.0722 * fgRGB[2],
+    );
+    let bgGray = Math.round(
+      0.2126 * bgRGB[0] + 0.7152 * bgRGB[1] + 0.0722 * bgRGB[2],
+    );
+    let [newFgRGB, newBgRGB] = [newFgColor, newBgColor].map(
+      this.#getRGB.bind(this),
+    );
+    if (bgGray < fgGray) {
+      [fgGray, bgGray, newFgRGB, newBgRGB] = [
+        bgGray,
+        fgGray,
+        newBgRGB,
+        newFgRGB,
+      ];
+    }
+    this.#defs.style.color = "";
+
+    // Now we can create the filters to highlight some canvas parts.
+    // The colors in the pdf will almost be Canvas and CanvasText, hence we
+    // want to filter them to finally get Highlight and HighlightText.
+    // Since we're in HCM the background color and the foreground color should
+    // be really different when converted to grayscale (if they're not then it
+    // means that we've a poor contrast). Once the canvas colors are converted
+    // to grayscale we can easily map them on their new colors.
+    // The grayscale step is important because if we've something like:
+    //   fgColor = #FF....
+    //   bgColor = #FF....
+    //   then we are enable to map the red component on the new red components
+    //   which can be different.
+
+    const getSteps = (fg: red_t, bg: red_t, n: uint) => {
+      const arr = new Array(256);
+      const step = (bgGray - fgGray) / n;
+      const newStart = fg / 255;
+      const newStep = (bg - fg) / (255 * n);
+      let prev = 0;
+      for (let i = 0; i <= n; i++) {
+        const k = Math.round(fgGray + i * step);
+        const value = newStart + i * newStep;
+        for (let j = prev; j <= k; j++) {
+          arr[j] = value;
+        }
+        prev = k + 1;
+      }
+      for (let i = prev; i < 256; i++) {
+        arr[i] = arr[prev - 1];
+      }
+      return arr.join(",");
+    };
+
+    const id = `g_${this.#docId}_hcm_highlight_filter`;
+    const filter = (this.#hcmHighlightFilter = this.#createFilter(id));
+
+    this.#addGrayConversion(filter);
+    this.#addTransferMapConversion(
+      getSteps(newFgRGB[0], newBgRGB[0], 5),
+      getSteps(newFgRGB[1], newBgRGB[1], 5),
+      getSteps(newFgRGB[2], newBgRGB[2], 5),
+      filter,
+    );
+
+    this.#hcmHighlightUrl = `url(#${id})`;
+    return this.#hcmHighlightUrl;
+  }
+
   override destroy(keepHCM = false) {
-    if (keepHCM && this.#hcmUrl) {
+    if (keepHCM && (this.#hcmUrl || this.#hcmHighlightUrl)) {
       return;
     }
     if (this.#_defs) {
@@ -312,6 +346,61 @@ export class DOMFilterFactory extends BaseFilterFactory {
       this.#_cache = undefined;
     }
     this.#id = 0;
+  }
+
+  #addGrayConversion(filter: SVGFilterElement) {
+    const feColorMatrix = createSVG("feColorMatrix", this.#document);
+    feColorMatrix.assignAttro({
+      typs: "matrix",
+      values:
+        "0.2126 0.7152 0.0722 0 0 0.2126 0.7152 0.0722 0 0 0.2126 0.7152 0.0722 0 0 0 0 0 1 0",
+    });
+    filter.append(feColorMatrix);
+  }
+
+  #createFilter(id: string) {
+    const filter = createSVG("filter", this.#document);
+    filter.assignAttro({
+      "color-interpolation-filters": "sRGB",
+      id,
+    });
+    this.#defs.append(filter);
+
+    return filter;
+  }
+
+  #appendFeFunc(
+    feComponentTransfer: SVGFEComponentTransferElement,
+    func: "feFuncR" | "feFuncG" | "feFuncB",
+    table: string,
+  ) {
+    const feFunc = createSVG(func, this.#document);
+    feFunc.assignAttro({
+      type: "discrete",
+      tableValues: table,
+    });
+    feComponentTransfer.append(feFunc);
+  }
+
+  #addTransferMapConversion(
+    rTable: string,
+    gTable: string,
+    bTable: string,
+    filter: SVGFilterElement,
+  ) {
+    const feComponentTransfer = createSVG(
+      "feComponentTransfer",
+      this.#document,
+    );
+    filter.append(feComponentTransfer);
+    this.#appendFeFunc(feComponentTransfer, "feFuncR", rTable);
+    this.#appendFeFunc(feComponentTransfer, "feFuncG", gTable);
+    this.#appendFeFunc(feComponentTransfer, "feFuncB", bTable);
+  }
+
+  #getRGB(color: string) {
+    this.#defs.style.color = color;
+    return getRGB(getComputedStyle(this.#defs).getPropertyValue("color"));
   }
 }
 
@@ -669,7 +758,7 @@ export class PageViewport {
 }
 
 export class RenderingCancelledException extends BaseException {
-  constructor(msg: string, public type: string, public extraDelay = 0) {
+  constructor(msg: string, public extraDelay = 0) {
     super(msg, "RenderingCancelledException");
   }
 }
@@ -731,7 +820,7 @@ export function getPdfFilenameFromUrl(
         suggestedFilename = reFilename.exec(
           decodeURIComponent(suggestedFilename),
         )![0];
-      } catch (ex) {
+      } catch {
         // Possible (extremely rare) errors:
         // URIError "Malformed URI", e.g. for "%AA.pdf"
         // TypeError "null has no properties", e.g. for "%2F.pdf"
@@ -789,11 +878,14 @@ export function isValidFetchUrl(
   url: string | URL | undefined,
   baseUrl?: string | URL,
 ) {
+  /*#static*/ if (MOZCENTRAL) {
+    throw new Error("Not implemented: isValidFetchUrl");
+  }
   try {
     const { protocol } = baseUrl ? new URL(url!, baseUrl) : new URL(url!);
     // The Fetch API only supports the http/https protocols, and not file/ftp.
     return protocol === "http:" || protocol === "https:";
-  } catch (ex) {
+  } catch {
     return false; // `new URL()` will throw on incorrect data.
   }
 }
@@ -837,26 +929,24 @@ export class PDFDateString {
    * and doesn't use the user's time zone (effectively ignoring the HH' and mm'
    * parts of the date string).
    */
-  static toDateObject(input: string) {
+  static toDateObject(input: string | undefined) {
     if (!input || !(typeof input === "string")) return null;
 
     // Lazily initialize the regular expression.
-    if (!pdfDateStringRegex) {
-      pdfDateStringRegex = new RegExp(
-        "^D:" + // Prefix (required)
-          "(\\d{4})" + // Year (required)
-          "(\\d{2})?" + // Month (optional)
-          "(\\d{2})?" + // Day (optional)
-          "(\\d{2})?" + // Hour (optional)
-          "(\\d{2})?" + // Minute (optional)
-          "(\\d{2})?" + // Second (optional)
-          "([Z|+|-])?" + // Universal time relation (optional)
-          "(\\d{2})?" + // Offset hour (optional)
-          "'?" + // Splitting apostrophe (optional)
-          "(\\d{2})?" + // Offset minute (optional)
-          "'?", // Trailing apostrophe (optional)
-      );
-    }
+    pdfDateStringRegex ||= new RegExp(
+      "^D:" + // Prefix (required)
+        "(\\d{4})" + // Year (required)
+        "(\\d{2})?" + // Month (optional)
+        "(\\d{2})?" + // Day (optional)
+        "(\\d{2})?" + // Hour (optional)
+        "(\\d{2})?" + // Minute (optional)
+        "(\\d{2})?" + // Second (optional)
+        "([Z|+|-])?" + // Universal time relation (optional)
+        "(\\d{2})?" + // Offset hour (optional)
+        "'?" + // Splitting apostrophe (optional)
+        "(\\d{2})?" + // Offset minute (optional)
+        "'?", // Trailing apostrophe (optional)
+    );
 
     // Optional fields that don't satisfy the requirements from the regular
     // expression (such as incorrect digit counts or numbers that are out of
@@ -919,7 +1009,7 @@ export function getXfaPageViewport(
   });
 }
 
-export function getRGB(color: string): RGB {
+export function getRGB(color: string): rgb_t {
   if (color.startsWith("#")) {
     const colorRGB = parseInt(color.slice(1), 16);
     return [
@@ -934,7 +1024,7 @@ export function getRGB(color: string): RGB {
     return color
       .slice(/* "rgb(".length */ 4, -1) // Strip out "rgb(" and ")".
       .split(",")
-      .map((x) => parseInt(x)) as RGB;
+      .map((x) => parseInt(x)) as rgb_t;
   }
 
   if (color.startsWith("rgba(")) {
@@ -942,14 +1032,14 @@ export function getRGB(color: string): RGB {
       .slice(/* "rgba(".length */ 5, -1) // Strip out "rgba(" and ")".
       .split(",")
       .map((x) => parseInt(x))
-      .slice(0, 3) as RGB;
+      .slice(0, 3) as rgb_t;
   }
 
   warn(`Not a valid color format: "${color}"`);
   return [0, 0, 0];
 }
 
-export function getColorValues(colors: Map<string, RGB | undefined>) {
+export function getColorValues(colors: Map<string, rgb_t | undefined>) {
   const span = html("span");
   span.style.visibility = "hidden";
   document.body.append(span);

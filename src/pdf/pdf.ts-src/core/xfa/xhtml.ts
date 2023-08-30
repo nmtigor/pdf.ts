@@ -17,16 +17,16 @@
  * limitations under the License.
  */
 
-import {
-  type AvailableSpace,
-  type XFAAttrs,
-  type XFAElData,
-  type XFAFontBase,
-  type XFAHTMLObj,
-  type XFAMargin,
-  type XFAStyleData,
+import type {
+  AvailableSpace,
+  XFAAttrs,
+  XFAElData,
+  XFAFontBase,
+  XFAHTMLObj,
+  XFAMargin,
+  XFAStyleData,
 } from "./alias.ts";
-import { Builder } from "./builder.ts";
+import type { Builder } from "./builder.ts";
 import {
   fixTextIndent,
   fixURL,
@@ -34,8 +34,6 @@ import {
   setFontFamily,
 } from "./html_utils.ts";
 import { $buildXFAObject, NamespaceIds } from "./namespaces.ts";
-import { TextMeasure } from "./text.ts";
-import { getMeasurement, HTMLResult, stripQuotes } from "./utils.ts";
 import {
   $acceptWhitespace,
   $childrenToHTML,
@@ -50,8 +48,10 @@ import {
   $pushGlyphs,
   $text,
   $toHTML,
-  XmlObject,
-} from "./xfa_object.ts";
+} from "./symbol_utils.ts";
+import type { TextMeasure } from "./text.ts";
+import { getMeasurement, HTMLResult, stripQuotes } from "./utils.ts";
+import { XmlObject } from "./xfa_object.ts";
 /*80--------------------------------------------------------------------------*/
 
 const XHTML_NS_ID = NamespaceIds.xhtml.id;
@@ -488,8 +488,8 @@ class Html extends XhtmlObject {
     }
 
     if (children.length === 1) {
-      const child = <XFAHTMLObj> children[0];
-      if (child.attributes && child.attributes.class!.includes("xfaRich")) {
+      const child = children[0] as XFAHTMLObj;
+      if (child.attributes?.class!.includes("xfaRich")) {
         return HTMLResult.success(child);
       }
     }

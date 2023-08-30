@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-import { type Constructor, type rect_t } from "../../../lib/alias.ts";
+import type { Constructor, rect_t } from "../../../lib/alias.ts";
 import {
   bytesToString,
   FormatError,
@@ -34,8 +34,8 @@ import {
   ISOAdobeCharset,
 } from "./charsets.ts";
 import { ExpertEncoding, StandardEncoding } from "./encodings.ts";
-import { type FontProps } from "./evaluator.ts";
-import { Stream } from "./stream.ts";
+import type { FontProps } from "./evaluator.ts";
+import type { Stream } from "./stream.ts";
 /*80--------------------------------------------------------------------------*/
 
 // Maximum subroutine call depth of type 2 charstrings. Matches OTS.
@@ -629,6 +629,13 @@ namespace NsCFFParser {
           stackSize++;
         } else if (value === 19 || value === 20) {
           state.hints += stackSize >> 1;
+          if (state.hints === 0) {
+            // Not a valid value (see bug 1529502): just remove it.
+            data.copyWithin(j - 1, j, -1);
+            j -= 1;
+            length -= 1;
+            continue;
+          }
           // skipping right amount of hints flag data
           j += (state.hints + 7) >> 3;
           stackSize %= 2;
@@ -1533,11 +1540,12 @@ export class CFFCompiler {
       data: [],
       length: 0,
       add(data: number[]) {
-        if (data.length <= 65536) {
-          // The number of arguments is limited, hence we just take 65536 as
-          // limit because it isn't too high or too low.
+        try {
+          // It's possible to exceed the call stack maximum size when trying
+          // to push too much elements.
+          // In case of failure, we fallback to the `concat` method.
           this.data.push(...data);
-        } else {
+        } catch {
           this.data = this.data.concat(data);
         }
         this.length = this.data.length;
@@ -1565,23 +1573,23 @@ export class CFFCompiler {
       // To make this work on all platforms we move the top matrix into each
       // sub top dict and concat if necessary.
       if (cff.topDict!.hasName("FontMatrix")) {
-        const base = <number[]> cff.topDict!.getByName("FontMatrix");
+        const base = cff.topDict!.getByName("FontMatrix") as number[];
         cff.topDict!.removeByName("FontMatrix");
         for (const subDict of cff.fdArray) {
           let matrix = base.slice(0);
           if (subDict.hasName("FontMatrix")) {
             matrix = Util.transform(
-              <matrix_t> matrix,
-              <matrix_t> subDict.getByName("FontMatrix"),
+              matrix as matrix_t,
+              subDict.getByName("FontMatrix") as matrix_t,
             );
           }
-          subDict.setByName("FontMatrix", <matrix_t> matrix);
+          subDict.setByName("FontMatrix", matrix as matrix_t);
         }
       }
     }
 
     const xuid = cff.topDict!.getByName("XUID");
-    if (xuid && (<number[]> xuid).length > 16) {
+    if (xuid && (xuid as number[]).length > 16) {
       // Length of XUID array must not be greater than 16 (issue #12399).
       cff.topDict!.removeByName("XUID");
     }

@@ -30,6 +30,15 @@ export abstract class BaseFilterFactory {
     return "none";
   }
 
+  addHighlightHCMFilter(
+    fgColor: string,
+    bgColor: string,
+    newFgColor: string,
+    newBgColor: string,
+  ) {
+    return "none";
+  }
+
   destroy(keepHCM = false) {}
 }
 

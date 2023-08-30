@@ -17,9 +17,8 @@
  * limitations under the License.
  */
 
-import { assertEquals } from "https://deno.land/std@0.190.0/testing/asserts.ts";
-import { describe, it } from "https://deno.land/std@0.190.0/testing/bdd.ts";
-import { fitCurve } from "../../../../3rd/fit-curve-0.2.0/fit-curve.ts";
+import { assertEquals } from "https://deno.land/std@0.195.0/assert/mod.ts";
+import { describe, it } from "https://deno.land/std@0.195.0/testing/bdd.ts";
 import { CommandManager } from "./tools.ts";
 /*80--------------------------------------------------------------------------*/
 
@@ -103,30 +102,6 @@ describe("editor", function () {
     assertEquals(x, 6);
     manager.add({ ...makeDoUndo(5), mustExec: true });
     assertEquals(x, 11);
-  });
-
-  describe("fitCurve", function () {
-    it("should return a function", function () {
-      assertEquals(typeof fitCurve, "function");
-    });
-
-    it("should compute an Array of bezier curves", function () {
-      const bezier = fitCurve(
-        [
-          [1, 2],
-          [4, 5],
-        ],
-        30,
-      );
-      assertEquals(bezier, [
-        [
-          [1, 2],
-          [2, 3],
-          [3, 4],
-          [4, 5],
-        ],
-      ]);
-    });
   });
 });
 /*80--------------------------------------------------------------------------*/

@@ -17,12 +17,12 @@
  * limitations under the License.
  */
 
-import { App } from "./app.ts";
-import { Color } from "./color.ts";
+import type { App } from "./app.ts";
+import type { Color } from "./color.ts";
 import { GlobalConstants } from "./constants.ts";
-import { Doc } from "./doc.ts";
-import { Event } from "./event.ts";
-import { Field } from "./field.ts";
+import type { Doc } from "./doc.ts";
+import type { Event } from "./event.ts";
+import type { Field } from "./field.ts";
 import { CFormat, Util } from "./util.ts";
 /*80--------------------------------------------------------------------------*/
 
@@ -172,7 +172,7 @@ export class AForm {
     let date = undefined;
     try {
       date = this._util.scand(cFormat, cDate);
-    } catch (error) {}
+    } catch {}
     if (!date) {
       date = Date.parse(cDate);
       if (isNaN(date)) {
@@ -184,7 +184,7 @@ export class AForm {
     return date;
   }
 
-  AFMergeChange(event = <Event> (<any> globalThis).event) {
+  AFMergeChange(event = (globalThis as any).event as Event) {
     if (event.willCommit) {
       return event.value.toString();
     }
@@ -249,7 +249,7 @@ export class AForm {
     strCurrency: string,
     bCurrencyPrepend: boolean,
   ) {
-    const event = <Event> (<any> globalThis).event;
+    const event = (globalThis as any).event as Event;
     if (!event.value) {
       return;
     }
@@ -291,7 +291,7 @@ export class AForm {
     }
 
     if (negStyle === 1 || negStyle === 3) {
-      (<Field> event.target).textColor = sign === 1
+      (event.target as Field).textColor = sign === 1
         ? this._color.black
         : this._color.red;
     }
@@ -312,7 +312,7 @@ export class AForm {
     strCurrency: string, /* unused */
     bCurrencyPrepend: boolean, /* unused */
   ) {
-    const event = <Event> (<any> globalThis).event;
+    const event = (globalThis as any).event as Event;
     let value = this.AFMergeChange(event);
     if (!value) {
       return;
@@ -360,7 +360,7 @@ export class AForm {
       throw new Error("Invalid nDec value in AFPercent_Format");
     }
 
-    const event = <Event> (<any> globalThis).event;
+    const event = (globalThis as any).event as Event;
     if (nDec > 512) {
       event.value = "%";
       return;
@@ -392,13 +392,13 @@ export class AForm {
   }
 
   AFDate_FormatEx(cFormat: CFormat) {
-    const event = <Event> (<any> globalThis).event;
+    const event = (globalThis as any).event as Event;
     const value = event.value;
     if (!value) {
       return;
     }
 
-    const date = this._parseDate(cFormat, <string> value);
+    const date = this._parseDate(cFormat, value as string);
     if (date !== undefined) {
       event.value = this._util.printd(cFormat, date);
     }
@@ -411,7 +411,7 @@ export class AForm {
   }
 
   AFDate_KeystrokeEx(cFormat: CFormat) {
-    const event = <Event> (<any> globalThis).event;
+    const event = (globalThis as any).event as Event;
     if (!event.willCommit) {
       return;
     }
@@ -446,7 +446,7 @@ export class AForm {
     bLessThan: boolean,
     nLessThan: number,
   ) {
-    const event = <Event> (<any> globalThis).event;
+    const event = (globalThis as any).event as Event;
     if (!event.value) {
       return;
     }
@@ -568,7 +568,7 @@ export class AForm {
   }
 
   AFSpecial_Format(psf: number) {
-    const event = <Event> (<any> globalThis).event;
+    const event = (globalThis as any).event as Event;
     if (!event.value) {
       return;
     }
@@ -607,7 +607,7 @@ export class AForm {
       return;
     }
 
-    const event = <Event> (<any> globalThis).event;
+    const event = (globalThis as any).event as Event;
     const value = this.AFMergeChange(event);
     if (!value) {
       return;
@@ -680,7 +680,7 @@ export class AForm {
   }
 
   AFSpecial_Keystroke(psf: number) {
-    const event = <Event> (<any> globalThis).event;
+    const event = (globalThis as any).event as Event;
     psf = this.AFMakeNumber(psf)!;
 
     let formatStr;

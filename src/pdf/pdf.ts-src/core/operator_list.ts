@@ -18,7 +18,7 @@
  */
 
 import type { OC2D } from "../../../lib/alias.ts";
-import { type StreamSink, Thread } from "../shared/message_handler.ts";
+import type { StreamSink, Thread } from "../shared/message_handler.ts";
 import {
   ImageKind,
   type matrix_t,
@@ -26,7 +26,7 @@ import {
   RenderingIntentFlag,
   warn,
 } from "../shared/util.ts";
-import { type ImgData, MarkedContentProps, OpArgs } from "./evaluator.ts";
+import type { ImgData, MarkedContentProps, OpArgs } from "./evaluator.ts";
 /*80--------------------------------------------------------------------------*/
 
 namespace NsQueueOptimizer {
@@ -795,11 +795,7 @@ export class OperatorList {
         case OPS.paintInlineImageXObjectGroup:
         case OPS.paintImageMaskXObject:
           const arg = (<any> argsArray[i])[0]; // First parameter in imgData.
-          if (
-            !arg.cached &&
-            arg.data &&
-            arg.data.buffer instanceof ArrayBuffer
-          ) {
+          if (!arg.cached && arg.data?.buffer instanceof ArrayBuffer) {
             transfers.push(arg.data.buffer);
           }
           break;
