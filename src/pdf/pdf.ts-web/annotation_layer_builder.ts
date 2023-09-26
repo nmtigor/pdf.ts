@@ -30,6 +30,7 @@ import { html } from "../../lib/dom.ts";
 import type { AnnotationLayerP } from "../pdf.ts-src/display/annotation_layer.ts";
 import { MetadataEx } from "../pdf.ts-src/display/api.ts";
 import type {
+  AnnotActions,
   AnnotationStorage,
   AnnotIntent,
   FieldObject,
@@ -65,7 +66,13 @@ interface AnnotationLayerBuilderOptions {
   enableScripting?: boolean;
   hasJSActionsPromise?: Promise<boolean> | undefined;
   fieldObjectsPromise:
-    | Promise<boolean | Record<string, FieldObject[]> | MetadataEx | undefined>
+    | Promise<
+      | boolean
+      | AnnotActions
+      | Record<string, FieldObject[]>
+      | MetadataEx
+      | undefined
+    >
     | undefined;
   annotationCanvasMap: Map<string, HTMLCanvasElement> | undefined;
   accessibilityManager: TextAccessibilityManager | undefined;

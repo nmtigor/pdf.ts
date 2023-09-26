@@ -16,26 +16,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/* globals process */
 
-import { GENERIC, PDFJSDev, SKIP_BABEL, TESTING } from "../../../global.ts";
-import type {
-  Constructor,
-  point_t,
-  rect_t,
-  TupleOf,
-} from "../../../lib/alias.ts";
-import { HttpStatusCode } from "../../../lib/HttpStatusCode.ts";
+import { GENERIC, MOZCENTRAL, PDFJSDev, TESTING } from "../../../global.ts";
+import type { dot2d_t, rect_t, TupleOf } from "../../../lib/alias.ts";
+import type { HttpStatusCode } from "../../../lib/HttpStatusCode.ts";
 import { isObjectLike } from "../../../lib/jslang.ts";
 import { assert, ErrorJ, warn as warn_0 } from "../../../lib/util/trace.ts";
 /*80--------------------------------------------------------------------------*/
 
-// Skip compatibility checks for modern builds and if we already ran the module.
-/*#static*/ if (!SKIP_BABEL) {
-  if (!(globalThis as any)._pdfjsCompatibilityChecked) {
-    (globalThis as any)._pdfjsCompatibilityChecked = true;
-    (globalThis as any).require("./compatibility.js");
-  }
-}
+// NW.js / Electron is a browser context, but copies some Node.js objects; see
+// http://docs.nwjs.io/en/latest/For%20Users/Advanced/JavaScript%20Contexts%20in%20NW.js/#access-nodejs-and-nwjs-api-in-browser-context
+// https://www.electronjs.org/docs/api/process#processversionselectron-readonly
+// https://www.electronjs.org/docs/api/process#processtype-readonly
+export const isNodeJS = (PDFJSDev || GENERIC) &&
+  typeof (globalThis as any).process === "object" &&
+  (globalThis as any).process + "" === "[object process]" &&
+  !(globalThis as any).process.versions.nw &&
+  !((globalThis as any).process.versions.electron &&
+    (globalThis as any).process.type &&
+    (globalThis as any).process.type !== "browser");
 
 export const IDENTITY_MATRIX: matrix_t = [1, 0, 0, 1, 0, 0];
 export const FONT_IDENTITY_MATRIX: matrix_t = [0.001, 0, 0, 0.001, 0, 0];
@@ -90,12 +90,14 @@ export enum AnnotationEditorType {
 }
 
 export const enum AnnotationEditorParamsType {
-  FREETEXT_SIZE = 1,
-  FREETEXT_COLOR = 2,
-  FREETEXT_OPACITY = 3,
-  INK_COLOR = 11,
-  INK_THICKNESS = 12,
-  INK_OPACITY = 13,
+  RESIZE = 1,
+  CREATE = 2,
+  FREETEXT_SIZE = 11,
+  FREETEXT_COLOR = 12,
+  FREETEXT_OPACITY = 13,
+  INK_COLOR = 21,
+  INK_THICKNESS = 22,
+  INK_OPACITY = 23,
 }
 
 // Permission flags from Table 22, Section 7.6.3.2 of the PDF specification.
@@ -715,6 +717,14 @@ export class FeatureTest {
       isMac: navigator.platform.includes("Mac"),
     });
   }
+
+  static get isCSSRoundSupported() {
+    return shadow(
+      this,
+      "isCSSRoundSupported",
+      globalThis.CSS?.supports?.("width: round(1.5px, 1px)"),
+    );
+  }
 }
 
 export type point3d_t = [number, number, number];
@@ -794,13 +804,13 @@ export class Util {
   }
 
   // For 2d affine transforms
-  static applyTransform(p: point_t | rect_t, m: matrix_t): point_t {
+  static applyTransform(p: dot2d_t | rect_t, m: matrix_t): dot2d_t {
     const xt = p[0] * m[0] + p[1] * m[2] + m[4];
     const yt = p[0] * m[1] + p[1] * m[3] + m[5];
     return [xt, yt];
   }
 
-  static applyInverseTransform(p: point_t, m: matrix_t): point_t {
+  static applyInverseTransform(p: dot2d_t, m: matrix_t): dot2d_t {
     const d = m[0] * m[3] - m[1] * m[2];
     const xt = (p[0] * m[3] - p[1] * m[2] + m[2] * m[5] - m[4] * m[3]) / d;
     const yt = (-p[0] * m[1] + p[1] * m[0] + m[4] * m[1] - m[5] * m[0]) / d;
@@ -811,7 +821,7 @@ export class Util {
   // aligned bounding box.
   static getAxialAlignedBoundingBox(r: rect_t, m: matrix_t): rect_t {
     const p1 = this.applyTransform(r, m);
-    const p2 = this.applyTransform(r.slice(2, 4) as point_t, m);
+    const p2 = this.applyTransform(r.slice(2, 4) as dot2d_t, m);
     const p3 = this.applyTransform([r[0], r[3]], m);
     const p4 = this.applyTransform([r[2], r[1]], m);
     return [
@@ -1217,5 +1227,26 @@ export function normalizeUnicode(str: string) {
   return str.replaceAll(NormalizeRegex, (_, p1, p2) => {
     return p1 ? p1.normalize("NFKC") : NormalizationMap!.get(p2);
   });
+}
+
+export function getUuid() {
+  if (
+    MOZCENTRAL ||
+    (typeof crypto !== "undefined" && typeof crypto?.randomUUID === "function")
+  ) {
+    return crypto.randomUUID();
+  }
+  const buf = new Uint8Array(32);
+  if (
+    typeof crypto !== "undefined" &&
+    typeof crypto?.getRandomValues === "function"
+  ) {
+    crypto.getRandomValues(buf);
+  } else {
+    for (let i = 0; i < 32; i++) {
+      buf[i] = Math.floor(Math.random() * 255);
+    }
+  }
+  return bytesToString(buf);
 }
 /*80--------------------------------------------------------------------------*/

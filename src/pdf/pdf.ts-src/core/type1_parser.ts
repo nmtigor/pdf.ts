@@ -17,11 +17,11 @@
  * limitations under the License.
  */
 
-import { type rect_t } from "../../../lib/alias.ts";
+import type { rect_t } from "@fe-src/lib/alias.ts";
 import { type matrix_t, warn } from "../shared/util.ts";
 import { isWhiteSpace } from "./core_utils.ts";
 import { getEncoding } from "./encodings.ts";
-import { type FontProps } from "./evaluator.ts";
+import type { FontProps } from "./evaluator.ts";
 import { Stream } from "./stream.ts";
 /*80--------------------------------------------------------------------------*/
 
@@ -556,7 +556,7 @@ namespace NsType1Parser {
       const array = [];
       while (true) {
         const token = this.getToken();
-        if (token === null || token === "]" || token === "}") {
+        if (token === undefined || token === "]" || token === "}") {
           break;
         }
         array.push(parseFloat(token || "0"));
@@ -592,13 +592,13 @@ namespace NsType1Parser {
       return (this.currentChar = this.stream.getByte());
     }
 
-    getToken() {
+    getToken(): string | undefined {
       // Eat whitespace and comments.
       let comment = false;
       let ch = this.currentChar;
       while (true) {
         if (ch === -1) {
-          return null;
+          return undefined;
         }
 
         if (comment) {
@@ -642,20 +642,20 @@ namespace NsType1Parser {
 
       const subrs: (Uint8Array | Uint8ClampedArray)[] = [];
       const charstrings: CharString[] = [];
-      const privateData = <PrivateData> Object.create(null);
+      const privateData = Object.create(null) as PrivateData;
       privateData.lenIV = 4;
-      const program = <FontProgram> {
+      const program = {
         subrs: [],
         charstrings: [],
         properties: {
           privateData,
         },
-      };
-      let token: string | null;
+      } as FontProgram;
+      let token: string | undefined;
       let length: number;
       let data;
       let lenIV: number;
-      while ((token = this.getToken()) !== null) {
+      while ((token = this.getToken()) !== undefined) {
         if (token !== "/") {
           continue;
         }
@@ -670,7 +670,7 @@ namespace NsType1Parser {
             this.getToken(); // read in 'begin'
             while (true) {
               token = this.getToken();
-              if (token === null || token === "end") {
+              if (token === undefined || token === "end") {
                 break;
               }
 
@@ -805,8 +805,8 @@ namespace NsType1Parser {
     }
 
     extractFontHeader(properties: FontProps) {
-      let token;
-      while ((token = this.getToken()) !== null) {
+      let token: string | undefined;
+      while ((token = this.getToken()) !== undefined) {
         if (token !== "/") {
           continue;
         }
@@ -832,7 +832,7 @@ namespace NsType1Parser {
                 // skipping till first dup or def (e.g. ignoring for statement)
                 while (token !== "dup" && token !== "def") {
                   token = this.getToken();
-                  if (token === null) {
+                  if (token === undefined) {
                     return; // invalid header
                   }
                 }

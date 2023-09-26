@@ -1,3 +1,7 @@
+/* Converted from JavaScript to TypeScript by
+ * nmtigor (https://github.com/nmtigor) @2023
+ */
+
 /* Copyright 2019 Mozilla Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,14 +17,14 @@
  * limitations under the License.
  */
 
-import { assert } from "../../../lib/util/trace.ts";
-import {
-  type IPDFStream,
-  type IPDFStreamRangeReader,
-  type IPDFStreamReader,
-  type ReadValue,
+import { assert } from "@fe-src/lib/util/trace.ts";
+import type {
+  IPDFStream,
+  IPDFStreamRangeReader,
+  IPDFStreamReader,
+  ReadValue,
 } from "../interfaces.ts";
-import { MessageHandler, Thread } from "../shared/message_handler.ts";
+import type { MessageHandler, Thread } from "../shared/message_handler.ts";
 import { AbortException } from "../shared/util.ts";
 /*80--------------------------------------------------------------------------*/
 
@@ -53,9 +57,8 @@ export class PDFWorkerStream implements IPDFStream {
 
   /** @implement */
   cancelAllRequests(reason: AbortException) {
-    if (this.#fullRequestReader) {
-      this.#fullRequestReader.cancel(reason);
-    }
+    this.#fullRequestReader?.cancel(reason);
+
     for (const reader of this.#rangeRequestReaders.slice(0)) {
       reader.cancel(reason);
     }

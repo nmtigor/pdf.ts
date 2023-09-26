@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-import { PDFJSDev, TESTING } from "../../../global.ts";
-import { assert } from "../../../lib/util/trace.ts";
+import { PDFJSDev, TESTING } from "@fe-src/global.ts";
+import { assert } from "@fe-src/lib/util/trace.ts";
 import {
   bytesToString,
   FormatError,
@@ -65,11 +65,13 @@ interface XRefStreamState {
   streamPos: number;
 }
 
+/** @final */
 export class XRef {
   stream;
   pdfManager;
   entries: XRefEntry[] = [];
-  _xrefStms = new Set<number>();
+  #firstXRefStmPos: number | undefined;
+  #xrefStms = new Set<number>();
   #cacheMap = new Map<number, ObjNoRef>(); // Prepare the XRef cache.
   _pendingRefs = new RefSet();
 
@@ -480,7 +482,7 @@ export class XRef {
       }
       return skipped;
     }
-    const gEndobjRegExp = /\b(endobj|\d+\s+\d+\s+obj|xref|trailer)\b/g;
+    const gEndobjRegExp = /\b(endobj|\d+\s+\d+\s+obj|xref|trailer\s*<<)\b/g;
     const gStartxrefRegExp = /\b(startxref|\d+\s+\d+\s+obj)\b/g;
     const objRegExp = /^(\d+)\s+(\d+)\s+obj\b/;
 
@@ -594,7 +596,7 @@ export class XRef {
           content[xrefTagOffset + 5] < 64
         ) {
           xrefStms.push(position - stream.start);
-          this._xrefStms.add(position - stream.start); // Avoid recursion
+          this.#xrefStms.add(position - stream.start); // Avoid recursion
         }
 
         position += contentLength!;
@@ -756,11 +758,12 @@ export class XRef {
 
           // Recursively get other XRefs 'XRefStm', if any
           obj = dict.get("XRefStm");
-          if (Number.isInteger(obj) && !this._xrefStms.has(obj as number)) {
+          if (Number.isInteger(obj) && !this.#xrefStms.has(obj as number)) {
             // ignore previously loaded xref streams
             // (possible infinite recursion)
-            this._xrefStms.add(obj as number);
+            this.#xrefStms.add(obj as number);
             this.startXRefQueue.push(obj as number);
+            this.#firstXRefStmPos ??= obj as number;
           }
         } else if (Number.isInteger(obj)) {
           // Parse in-stream XRef
@@ -810,15 +813,18 @@ export class XRef {
   }
 
   get lastXRefStreamPos() {
-    return this._xrefStms.size > 0 ? Math.max(...this._xrefStms) : undefined;
+    return (
+      this.#firstXRefStmPos ??
+        (this.#xrefStms.size > 0 ? Math.max(...this.#xrefStms) : undefined)
+    );
   }
 
-  getEntry(i: number) {
+  getEntry(i: number): XRefEntry | undefined {
     const xrefEntry = this.entries[i];
     if (xrefEntry && !xrefEntry.free && xrefEntry.offset) {
       return xrefEntry;
     }
-    return null;
+    return undefined;
   }
 
   fetchIfRef(
@@ -851,10 +857,10 @@ export class XRef {
     }
     let xrefEntry = this.getEntry(num);
 
-    if (xrefEntry === null) {
+    if (xrefEntry === undefined) {
       // The referenced entry can be free.
-      this.#cacheMap.set(num, xrefEntry);
-      return xrefEntry;
+      this.#cacheMap.set(num, null);
+      return null;
     }
     // Prevent circular references, in corrupt PDF documents, from hanging the
     // worker-thread. This relies, implicitly, on the parsing being synchronous.
@@ -866,22 +872,22 @@ export class XRef {
     }
     this._pendingRefs.put(ref);
 
-    let obj1: ObjNoRef;
+    let obj_1: ObjNoRef;
     try {
-      if (xrefEntry.uncompressed) {
-        obj1 = this.fetchUncompressed(ref, xrefEntry, suppressEncryption);
-      } else obj1 = this.fetchCompressed(ref, xrefEntry, suppressEncryption);
+      obj_1 = xrefEntry.uncompressed
+        ? this.fetchUncompressed(ref, xrefEntry, suppressEncryption)
+        : this.fetchCompressed(ref, xrefEntry, suppressEncryption);
       this._pendingRefs.remove(ref);
     } catch (ex) {
       this._pendingRefs.remove(ref);
       throw ex;
     }
-    if (obj1 instanceof Dict) {
-      obj1.objId = ref.toString();
-    } else if (obj1 instanceof BaseStream) {
-      obj1.dict!.objId = ref.toString();
+    if (obj_1 instanceof Dict) {
+      obj_1.objId = ref.toString();
+    } else if (obj_1 instanceof BaseStream) {
+      obj_1.dict!.objId = ref.toString();
     }
-    return obj1;
+    return obj_1;
   }
 
   fetchUncompressed(
@@ -912,7 +918,7 @@ export class XRef {
       xref: this,
       allowStreams: true,
     });
-    let obj1 = <ObjNoRef> parser.getObj();
+    let obj1 = parser.getObj() as ObjNoRef;
     const obj2 = parser.getObj();
     const obj3 = parser.getObj();
 
@@ -929,13 +935,9 @@ export class XRef {
       }
       throw new XRefEntryException(`Bad (uncompressed) XRef entry: ${ref}`);
     }
-    if (this.encrypt && !suppressEncryption) {
-      obj1 = parser.getObj(
-        this.encrypt.createCipherTransform(num, gen),
-      ) as ObjNoRef;
-    } else {
-      obj1 = parser.getObj() as ObjNoRef;
-    }
+    obj1 = this.encrypt && !suppressEncryption
+      ? parser.getObj(this.encrypt.createCipherTransform(num, gen)) as ObjNoRef
+      : parser.getObj() as ObjNoRef;
     if (!(obj1 instanceof BaseStream)) {
       /*#static*/ if (PDFJSDev || TESTING) {
         assert(

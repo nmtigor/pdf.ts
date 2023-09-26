@@ -18,10 +18,10 @@
  */
 /* eslint-disable no-var */
 
-import { TESTING } from "../../../global.ts";
-import type { rect_t } from "../../../lib/alias.ts";
-import { PromiseCap } from "../../../lib/util/PromiseCap.ts";
-import { assert } from "../../../lib/util/trace.ts";
+import { TESTING } from "@fe-src/global.ts";
+import type { rect_t } from "@fe-src/lib/alias.ts";
+import { PromiseCap } from "@fe-src/lib/util/PromiseCap.ts";
+import { assert } from "@fe-src/lib/util/trace.ts";
 import type { TextItem, TextMarkedContent, TextStyle } from "../display/api.ts";
 import type { CMapData } from "../display/base_factory.ts";
 import type { GroupOptions } from "../display/canvas.ts";
@@ -63,11 +63,11 @@ import {
   WinAnsiEncoding,
   ZapfDingbatsEncoding,
 } from "./encodings.ts";
+import type { SubstitutionInfo } from "./font_substitutions.ts";
+import { getFontSubstitution } from "./font_substitutions.ts";
 import type { Glyph, Seac } from "./fonts.ts";
 import { ErrorFont, Font } from "./fonts.ts";
 import { FontFlags } from "./fonts_utils.ts";
-import type { SubstitutionInfo } from "./font_substitutions.ts";
-import { getFontSubstitution } from "./font_substitutions.ts";
 import { isPDFFunction, PDFFunctionFactory } from "./function.ts";
 import { getGlyphsUnicode } from "./glyphlist.ts";
 import { PDFImage } from "./image.ts";
@@ -282,7 +282,7 @@ export interface ImgData {
   isSingleOpaquePixel?: boolean;
 }
 
-interface _BuildPaintImageXObjectP {
+interface BuildPaintImageXObjectP_ {
   resources: Dict;
   image: BaseStream;
   isInline?: boolean;
@@ -776,13 +776,12 @@ export class PartialEvaluator {
     localColorSpaceCache: LocalColorSpaceCache,
   ) {
     const dict = xobj.dict!;
-    const matrix = <matrix_t | undefined> dict.getArray("Matrix");
-    let bbox = <rect_t | undefined> dict.getArray("BBox");
-    if (Array.isArray(bbox) && bbox.length === 4) {
-      bbox = Util.normalizeRect(<rect_t> bbox);
-    } else {
-      bbox = undefined;
-    }
+    const matrix = dict.getArray("Matrix") as matrix_t | undefined;
+    let bbox = dict.getArray("BBox") as rect_t | undefined;
+    bbox = Array.isArray(bbox) && bbox.length === 4
+      ? Util.normalizeRect(bbox)
+      : undefined;
+
     let optionalContent: MarkedContentProps | undefined,
       groupOptions: GroupOptions;
 
@@ -893,7 +892,7 @@ export class PartialEvaluator {
     cacheKey,
     localImageCache,
     localColorSpaceCache,
-  }: _BuildPaintImageXObjectP) {
+  }: BuildPaintImageXObjectP_) {
     const dict = image.dict!; // Table 89
     const imageRef = dict.objId;
     const w = dict.get("W", "Width");
@@ -1124,12 +1123,9 @@ export class PartialEvaluator {
         );
 
         if (cacheKey && imageRef && cacheGlobally) {
-          let length = 0;
-          if (imgData.bitmap) {
-            length = imgData.width! * imgData.height! * 4;
-          } else {
-            length = imgData.data!.length;
-          }
+          const length = imgData.bitmap
+            ? imgData.width! * imgData.height! * 4
+            : imgData.data!.length;
           this.globalImageCache!.addByteSize(imageRef, length);
         }
 
@@ -2584,10 +2580,10 @@ export class PartialEvaluator {
               return;
             }
             // Other marked content types aren't supported yet.
-            args = <ObjNoCmd[]> [
-              (<Name> args![0]).name,
+            args = [
+              (args![0] as Name).name,
               args![1] instanceof Dict ? args![1].get("MCID") : null,
-            ];
+            ] as ObjNoCmd[];
 
             break;
           case OPS.beginMarkedContent:
@@ -2669,15 +2665,12 @@ export class PartialEvaluator {
       width: 0,
       height: 0,
       vertical: false,
-      // prevTransform: null,
       textAdvanceScale: 0,
       spaceInFlowMin: 0,
       spaceInFlowMax: 0,
       trackingSpaceMin: Infinity,
       negativeSpaceMax: -Infinity,
       notASpace: -Infinity,
-      // transform: null,
-      // fontName: null,
       hasEOL: false,
     };
 
@@ -3746,7 +3739,7 @@ export class PartialEvaluator {
             if (includeMarkedContent) {
               markedContentData!.level++;
 
-              let mcid = null;
+              let mcid;
               if (args[1] instanceof Dict) {
                 mcid = args[1].get("MCID");
               }
@@ -4387,11 +4380,7 @@ export class PartialEvaluator {
     if (!(lookupName in Metrics)) {
       // Use default fonts for looking up font metrics if the passed
       // font is not a base font
-      if (this.isSerifFont(name)) {
-        lookupName = "Times-Roman";
-      } else {
-        lookupName = "Helvetica";
-      }
+      lookupName = this.isSerifFont(name) ? "Times-Roman" : "Helvetica";
     }
     const glyphWidths = Metrics[lookupName];
 
@@ -5453,14 +5442,14 @@ export class EvaluatorPreprocessor {
           if (argsLength !== numArgs) {
             const nonProcessedArgs = this.nonProcessedArgs;
             while (argsLength > numArgs) {
-              nonProcessedArgs.push((<any[]> args).shift()!);
+              nonProcessedArgs.push((args as any[]).shift()!);
               argsLength--;
             }
             while (argsLength < numArgs && nonProcessedArgs.length !== 0) {
               if (args === null) {
                 args = [];
               }
-              (<any[]> args).unshift(nonProcessedArgs.pop());
+              (args as any[]).unshift(nonProcessedArgs.pop());
               argsLength++;
             }
           }
@@ -5484,7 +5473,7 @@ export class EvaluatorPreprocessor {
             // the command, hence we skip the command.
             warn(`Skipping ${partialMsg}`);
             if (args !== null) {
-              (<any[]> args).length = 0;
+              (args as any[]).length = 0;
             }
             continue;
           }
@@ -5510,7 +5499,7 @@ export class EvaluatorPreprocessor {
         if (args === null) {
           args = [];
         }
-        (<any[]> args).push(obj);
+        (args as any[]).push(obj);
         if (args.length > 33) {
           throw new FormatError("Too many arguments");
         }

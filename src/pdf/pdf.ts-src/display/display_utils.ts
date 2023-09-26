@@ -17,14 +17,15 @@
  * limitations under the License.
  */
 
-import { MOZCENTRAL } from "../../../global.ts";
-import type { C2D, point_t, rect_t, uint } from "../../../lib/alias.ts";
-import type { red_t, rgb_t } from "../../../lib/color/alias.ts";
-import { div as createDiv, html, svg as createSVG } from "../../../lib/dom.ts";
+import { MOZCENTRAL } from "@fe-src/global.ts";
+import type { C2D, dot2d_t, rect_t, uint } from "@fe-src/lib/alias.ts";
+import type { red_t, rgb_t } from "@fe-src/lib/color/alias.ts";
+import { div as createDiv, html, svg as createSVG } from "@fe-src/lib/dom.ts";
 import type { XFAElObj } from "../core/xfa/alias.ts";
 import {
   BaseException,
   CMapCompressionType,
+  FeatureTest,
   type matrix_t,
   shadow,
   stringToBytes,
@@ -726,7 +727,7 @@ export class PageViewport {
    * @see {@link convertToPdfPoint}
    * @see {@link convertToViewportRectangle}
    */
-  convertToViewportPoint(x: number, y: number): point_t {
+  convertToViewportPoint(x: number, y: number): dot2d_t {
     return Util.applyTransform([x, y], this.transform);
   }
 
@@ -752,7 +753,7 @@ export class PageViewport {
    *   point in the PDF coordinate space.
    * @see {@link convertToViewportPoint}
    */
-  convertToPdfPoint(x: number, y: number): point_t {
+  convertToPdfPoint(x: number, y: number): dot2d_t {
     return Util.applyInverseTransform([x, y], this.transform);
   }
 }
@@ -1070,15 +1071,12 @@ export function setLayerDimensions(
   if (viewport instanceof PageViewport) {
     const { pageWidth, pageHeight } = viewport.rawDims;
     const { style } = div;
+    const useRound = FeatureTest.isCSSRoundSupported;
 
-    // TODO: Investigate if it could be interesting to use the css round
-    // function (https://developer.mozilla.org/en-US/docs/Web/CSS/round):
-    // const widthStr =
-    //   `round(down, var(--scale-factor) * ${pageWidth}px, 1px)`;
-    // const heightStr =
-    //   `round(down, var(--scale-factor) * ${pageHeight}px, 1px)`;
-    const widthStr = `calc(var(--scale-factor) * ${pageWidth}px)`;
-    const heightStr = `calc(var(--scale-factor) * ${pageHeight}px)`;
+    const w = `var(--scale-factor) * ${pageWidth}px`,
+      h = `var(--scale-factor) * ${pageHeight}px`;
+    const widthStr = useRound ? `round(${w}, 1px)` : `calc(${w})`,
+      heightStr = useRound ? `round(${h}, 1px)` : `calc(${h})`;
 
     if (!mustFlip || viewport.rotation % 180 === 0) {
       style.width = widthStr;

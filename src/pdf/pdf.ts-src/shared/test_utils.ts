@@ -3,19 +3,18 @@
  * @license Apache-2.0
  ******************************************************************************/
 
-import { DENO } from "../../../global.ts";
-import { D_base } from "../../pdf.ts-web/app_options.ts";
+import { D_base } from "../../alias.ts";
 import { BaseStream } from "../core/base_stream.ts";
 import { Page, PDFDocument } from "../core/document.ts";
 import { BasePdfManager } from "../core/pdf_manager.ts";
 import { Dict, Name, type Obj, Ref } from "../core/primitives.ts";
 import { NullStream, StringStream } from "../core/stream.ts";
 import { DocumentInitP } from "../display/api.ts";
-import { GlobalWorkerOptions } from "../display/worker_options.ts";
 import { PDFWorker } from "../pdf.ts";
+import { isNodeJS } from "./util.ts";
 /*80--------------------------------------------------------------------------*/
 
-const D_pdf = `${D_base}/res/pdf`;
+export const D_pdf = `${D_base}/res/pdf`;
 const D_external = `${D_pdf}/pdf.ts-external`;
 
 // const TEST_PDFS_PATH = isNodeJS ? "./test/pdfs/" : "../pdfs/";
@@ -58,10 +57,10 @@ class DOMFileReaderFactory {
 //   }
 // }
 
-export const DefaultFileReaderFactory = DOMFileReaderFactory;
 // const DefaultFileReaderFactory = isNodeJS
 //   ? NodeFileReaderFactory
 //   : DOMFileReaderFactory;
+export const DefaultFileReaderFactory = DOMFileReaderFactory;
 
 export type BuildGetDocumentParamsOptions = {
   cMapUrl?: string;
@@ -83,7 +82,7 @@ export function buildGetDocumentParams(
   options?: BuildGetDocumentParamsOptions,
 ) {
   const params = Object.create(null);
-  params.url = /*#static*/ DENO
+  params.url = isNodeJS
     ? TEST_PDFS_PATH + filename
     : new URL(TEST_PDFS_PATH + filename, window.location as any).href;
   params.standardFontDataUrl = STANDARD_FONT_DATA_URL;
@@ -182,6 +181,4 @@ export function createIdFactory(pageIndex: number) {
   });
   return page._localIdFactory;
 }
-
-GlobalWorkerOptions.workerSrc = `${D_base}/gen/pdf/pdf.ts-src/pdf.worker.js`;
 /*80--------------------------------------------------------------------------*/

@@ -17,16 +17,11 @@
  * limitations under the License.
  */
 
-import type { C2D, point_t, rect_t, TupleOf } from "../../../lib/alias.ts";
-import { assert } from "../../../lib/util/trace.ts";
+import type { C2D, dot2d_t, rect_t, TupleOf } from "@fe-src/lib/alias.ts";
+import { assert, fail } from "@fe-src/lib/util/trace.ts";
 import { TilingPaintType, TilingType } from "../display/pattern_helper.ts";
-import {
-  FormatError,
-  info,
-  type matrix_t,
-  Util,
-  warn,
-} from "../shared/util.ts";
+import type { matrix_t } from "../shared/util.ts";
+import { FormatError, info, Util, warn } from "../shared/util.ts";
 import { BaseStream } from "./base_stream.ts";
 import { ColorSpace, type CS } from "./colorspace.ts";
 import { MissingDataException } from "./core_utils.ts";
@@ -111,8 +106,8 @@ export type RadialAxialIR = [
     type: ShadingType.AXIAL | ShadingType.RADIAL,
     bbox: rect_t | undefined,
     colorStops: [number, string][],
-    p0: point_t,
-    p1: point_t,
+    p0: dot2d_t,
+    p1: dot2d_t,
     r0: number,
     r1: number,
   ],
@@ -195,16 +190,14 @@ class RadialAxialShading extends BaseShading {
       localColorSpaceCache,
     });
     const bbox = dict.getArray("BBox") as rect_t;
-    if (Array.isArray(bbox) && bbox.length === 4) {
-      this.bbox = Util.normalizeRect(bbox);
-    } else {
-      this.bbox = undefined;
-    }
+    this.bbox = Array.isArray(bbox) && bbox.length === 4
+      ? Util.normalizeRect(bbox)
+      : undefined;
 
     let t0 = 0.0;
     let t1 = 1.0;
     if (dict.has("Domain")) {
-      const domainArr = <[number, number]> dict.getArray("Domain");
+      const domainArr = dict.getArray("Domain") as [number, number];
       t0 = domainArr[0];
       t1 = domainArr[1];
     }
@@ -212,7 +205,7 @@ class RadialAxialShading extends BaseShading {
     let extendStart = false;
     let extendEnd = false;
     if (dict.has("Extend")) {
-      const extendArr = <[boolean, boolean]> dict.getArray("Extend");
+      const extendArr = dict.getArray("Extend") as [boolean, boolean];
       extendStart = extendArr[0];
       extendEnd = extendArr[1];
     }
@@ -354,8 +347,8 @@ class RadialAxialShading extends BaseShading {
     const coordsArr = this.coordsArr;
     const shadingType = this.shadingType;
     let type: ShadingType.AXIAL | ShadingType.RADIAL;
-    let p0: point_t;
-    let p1: point_t;
+    let p0: dot2d_t;
+    let p1: dot2d_t;
     let r0: number | undefined;
     let r1: number | undefined;
     if (shadingType === ShadingType.AXIAL) {
@@ -371,10 +364,10 @@ class RadialAxialShading extends BaseShading {
       r1 = coordsArr[5];
       type = ShadingType.RADIAL;
     } else {
-      assert(0, `getPattern type unknown: ${shadingType}`);
+      fail(`getPattern type unknown: ${shadingType}`);
     }
 
-    return <RadialAxialIR> [
+    return [
       "RadialAxial",
       type!,
       this.bbox,
@@ -383,7 +376,7 @@ class RadialAxialShading extends BaseShading {
       p1!,
       r0,
       r1,
-    ];
+    ] as RadialAxialIR;
   }
 }
 
@@ -483,7 +476,7 @@ class MeshStreamReader {
     const scale = bitsPerCoordinate < 32
       ? 1 / ((1 << bitsPerCoordinate) - 1)
       : 2.3283064365386963e-10; // 2 ^ -32
-    return <point_t> [
+    return <dot2d_t> [
       xi * scale * (decode[1] - decode[0]) + decode[0],
       yi * scale * (decode[3] - decode[2]) + decode[2],
     ];
@@ -556,7 +549,7 @@ export class MeshShading extends BaseShading {
   cs: ColorSpace;
   background: Uint8ClampedArray | undefined;
 
-  coords: point_t[] = [];
+  coords: dot2d_t[] = [];
   colors: (Uint8Array | Uint8ClampedArray)[] = [];
   figures: MeshFigure[] = [];
 
@@ -574,15 +567,13 @@ export class MeshShading extends BaseShading {
       throw new FormatError("Mesh data is not a stream");
     }
     const dict = stream.dict!;
-    this.shadingType = <ShadingType> dict.get("ShadingType");
-    const bbox = <rect_t> dict.getArray("BBox");
-    if (Array.isArray(bbox) && bbox.length === 4) {
-      this.bbox = Util.normalizeRect(bbox);
-    } else {
-      this.bbox = undefined;
-    }
+    this.shadingType = dict.get("ShadingType") as ShadingType;
+    const bbox = dict.getArray("BBox") as rect_t;
+    this.bbox = Array.isArray(bbox) && bbox.length === 4
+      ? Util.normalizeRect(bbox)
+      : undefined;
     const cs = ColorSpace.parse({
-      cs: <CS> (dict.getRaw("CS") || dict.getRaw("ColorSpace")),
+      cs: (dict.getRaw("CS") || dict.getRaw("ColorSpace")) as CS,
       xref,
       resources,
       pdfFunctionFactory,
@@ -628,8 +619,7 @@ export class MeshShading extends BaseShading {
         patchMesh = true;
         break;
       default:
-        assert(0, "Unsupported mesh type.");
-        break;
+        fail("Unsupported mesh type.");
     }
 
     if (patchMesh) {

@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-import { IMAGE_DECODERS, PDFJSDev } from "../../../global.ts";
+import { IMAGE_DECODERS, PDFJSDev } from "@fe-src/global.ts";
 import { BaseException, shadow } from "../shared/util.ts";
 import { ArithmeticDecoder } from "./arithmetic_decoder.ts";
 import { CCITTFaxDecoder, type CCITTFaxDecoderOptions } from "./ccitt.ts";
@@ -255,7 +255,7 @@ namespace NsJbig2Image {
     contextCache: ContextCacheType,
     procedure: string,
     decoder: ArithmeticDecoder,
-  ) {
+  ): number | undefined {
     const contexts = contextCache.getContexts(procedure);
     let prev = 1;
 
@@ -296,7 +296,7 @@ namespace NsJbig2Image {
     if (signedValue! >= MIN_INT_32 && signedValue! <= MAX_INT_32) {
       return signedValue!;
     }
-    return null;
+    return undefined;
   }
 
   // A.3 The IAID decoding procedure
@@ -549,7 +549,7 @@ namespace NsJbig2Image {
     height: number,
     templateIndex: number,
     prediction: boolean,
-    skip: null,
+    skip: undefined,
     at: { x: number; y: number }[],
     decodingContext: DecodingContext,
   ) {
@@ -709,8 +709,8 @@ namespace NsJbig2Image {
     height: number,
     templateIndex: number,
     referenceBitmap: Uint8Array[],
-    offsetX: number | null,
-    offsetY: number | null,
+    offsetX: number | undefined,
+    offsetY: number | undefined,
     prediction: boolean,
     at: At,
     decodingContext: DecodingContext,
@@ -840,7 +840,7 @@ namespace NsJbig2Image {
         const deltaWidth = huffman
           ? huffmanTables.tableDeltaWidth.decode(huffmanInput)
           : decodeInteger(contextCache, "IADW", decoder); // 6.5.7
-        if (deltaWidth === null) {
+        if (deltaWidth === undefined) {
           break; // OOB
         }
         currentWidth += deltaWidth;
@@ -911,7 +911,7 @@ namespace NsJbig2Image {
             currentHeight,
             templateIndex,
             false,
-            null,
+            undefined,
             at,
             decodingContext,
           );
@@ -1041,32 +1041,32 @@ namespace NsJbig2Image {
     const contextCache = decodingContext.contextCache;
 
     let stripT = huffman
-      ? -<number> huffmanTables.tableDeltaT.decode(huffmanInput)
-      : -<number> decodeInteger(contextCache, "IADT", decoder); // 6.4.6
+      ? -huffmanTables.tableDeltaT.decode(huffmanInput)!
+      : -decodeInteger(contextCache, "IADT", decoder)!; // 6.4.6
     let firstS = 0;
     i = 0;
     while (i < numberOfSymbolInstances) {
       const deltaT = huffman
-        ? <number> huffmanTables.tableDeltaT.decode(huffmanInput)
-        : <number> decodeInteger(contextCache, "IADT", decoder); // 6.4.6
+        ? huffmanTables.tableDeltaT.decode(huffmanInput)!
+        : decodeInteger(contextCache, "IADT", decoder)!; // 6.4.6
       stripT += deltaT;
 
       const deltaFirstS = huffman
-        ? <number> huffmanTables.tableFirstS.decode(huffmanInput)
-        : <number> decodeInteger(contextCache, "IAFS", decoder); // 6.4.7
+        ? huffmanTables.tableFirstS.decode(huffmanInput)!
+        : decodeInteger(contextCache, "IAFS", decoder)!; // 6.4.7
       firstS += deltaFirstS;
       let currentS = firstS;
       do {
         let currentT = 0; // 6.4.9
         if (stripSize > 1) {
           currentT = huffman
-            ? <number> huffmanInput.readBits(logStripSize)
-            : <number> decodeInteger(contextCache, "IAIT", decoder);
+            ? huffmanInput.readBits(logStripSize)!
+            : decodeInteger(contextCache, "IAIT", decoder)!;
         }
         const t = stripSize * stripT + currentT;
         const symbolId = huffman
-          ? <number> huffmanTables.symbolIDTable.decode(huffmanInput)
-          : <number> decodeIAID(contextCache, decoder, symbolCodeLength);
+          ? huffmanTables.symbolIDTable.decode(huffmanInput)!
+          : decodeIAID(contextCache, decoder, symbolCodeLength)!;
         const applyRefinement = refinement &&
           (huffman
             ? huffmanInput.readBit()
@@ -1075,10 +1075,10 @@ namespace NsJbig2Image {
         let symbolWidth = symbolBitmap[0].length;
         let symbolHeight = symbolBitmap.length;
         if (applyRefinement) {
-          const rdw = <number> decodeInteger(contextCache, "IARDW", decoder); // 6.4.11.1
-          const rdh = <number> decodeInteger(contextCache, "IARDH", decoder); // 6.4.11.2
-          const rdx = <number> decodeInteger(contextCache, "IARDX", decoder); // 6.4.11.3
-          const rdy = <number> decodeInteger(contextCache, "IARDY", decoder); // 6.4.11.4
+          const rdw = decodeInteger(contextCache, "IARDW", decoder)!; // 6.4.11.1
+          const rdh = decodeInteger(contextCache, "IARDH", decoder)!; // 6.4.11.2
+          const rdx = decodeInteger(contextCache, "IARDX", decoder)!; // 6.4.11.3
+          const rdy = decodeInteger(contextCache, "IARDY", decoder)!; // 6.4.11.4
           symbolWidth += rdw;
           symbolHeight += rdh;
           symbolBitmap = decodeRefinement(
@@ -1155,7 +1155,7 @@ namespace NsJbig2Image {
         const deltaS = huffman
           ? huffmanTables.tableDeltaS.decode(huffmanInput)
           : decodeInteger(contextCache, "IADS", decoder); // 6.4.8
-        if (deltaS === null) {
+        if (deltaS === undefined) {
           break; // OOB
         }
         currentS += deltaS + dsOffset;
@@ -1198,7 +1198,7 @@ namespace NsJbig2Image {
       patternHeight,
       template,
       false,
-      null,
+      undefined,
       at,
       decodingContext,
     );
@@ -1233,7 +1233,7 @@ namespace NsJbig2Image {
     gridVectorY: number,
     decodingContext: DecodingContext,
   ) {
-    const skip = null;
+    const skip = undefined;
     if (enableSkip) {
       throw new Jbig2Error("skip is not supported");
     }
@@ -1881,7 +1881,7 @@ namespace NsJbig2Image {
         regionInfo.height,
         region.template,
         region.prediction,
-        null,
+        undefined,
         region.at,
         decodingContext,
       );
@@ -2107,7 +2107,7 @@ namespace NsJbig2Image {
     isLowerRange?: boolean;
     isOOB?: boolean;
 
-    constructor(line: HuffmanLine | null) {
+    constructor(line?: HuffmanLine) {
       this.children = [];
       if (line) {
         // Leaf node
@@ -2131,16 +2131,16 @@ namespace NsJbig2Image {
         // Create an intermediate node and continue recursively.
         let node = this.children[bit];
         if (!node) {
-          this.children[bit] = node = new HuffmanTreeNode(null);
+          this.children[bit] = node = new HuffmanTreeNode();
         }
         node.buildTree(line, shift - 1);
       }
     }
 
-    decodeNode(reader: Reader): number | null {
+    decodeNode(reader: Reader): number | undefined {
       if (this.isLeaf) {
         if (this.isOOB) {
-          return null;
+          return undefined;
         }
         const htOffset = reader.readBits(this.rangeLength!);
         return this.rangeLow! + (this.isLowerRange ? -htOffset : htOffset);
@@ -2161,7 +2161,7 @@ namespace NsJbig2Image {
         this.assignPrefixCodes(lines);
       }
       // Create Huffman tree.
-      this.rootNode = new HuffmanTreeNode(null);
+      this.rootNode = new HuffmanTreeNode();
       for (let i = 0, ii = lines.length; i < ii; i++) {
         const line = lines[i];
         if (line.prefixLength > 0) {

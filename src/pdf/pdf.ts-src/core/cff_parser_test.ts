@@ -17,10 +17,7 @@
  * limitations under the License.
  */
 
-import {
-  assert,
-  assertEquals,
-} from "https://deno.land/std@0.195.0/testing/asserts.ts";
+import { assertEquals, fail } from "@std/assert/mod.ts";
 import {
   afterAll,
   afterEach,
@@ -28,7 +25,7 @@ import {
   beforeEach,
   describe,
   it,
-} from "https://deno.land/std@0.195.0/testing/bdd.ts";
+} from "@std/testing/bdd.ts";
 import {
   CFF,
   CFFCharset,
@@ -155,7 +152,7 @@ describe("CFFParser", () => {
       try {
         parsePrivateDict();
       } catch {
-        assert(0, "Should not throw.");
+        fail("Should not throw.");
       }
 
       const privateDict = topDict.privateDict!;
@@ -268,7 +265,7 @@ describe("CFFParser", () => {
   });
 
   it("parses predefined charsets", () => {
-    const charset = parser.parseCharsets(0, 0, <any> null, true);
+    const charset = parser.parseCharsets(0, 0, null as any, true);
     assertEquals(charset.predefined, true);
   });
 

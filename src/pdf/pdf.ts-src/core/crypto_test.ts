@@ -17,16 +17,8 @@
  * limitations under the License.
  */
 
-import {
-  assert,
-  assertEquals,
-} from "https://deno.land/std@0.195.0/assert/mod.ts";
-import {
-  afterAll,
-  beforeAll,
-  describe,
-  it,
-} from "https://deno.land/std@0.195.0/testing/bdd.ts";
+import { assert, assertEquals, fail } from "@std/assert/mod.ts";
+import { afterAll, beforeAll, describe, it } from "@std/testing/bdd.ts";
 import {
   PasswordException,
   PasswordResponses,
@@ -616,7 +608,7 @@ describe("CipherTransformFactory", () => {
       // eslint-disable-next-line no-new
       new CipherTransformFactory(dict, fileId, password);
 
-      assert(0, "Shouldn't get here.");
+      fail("Shouldn't get here.");
     } catch (ex) {
       assert(ex instanceof PasswordException);
       assertEquals(ex.code, PasswordResponses.NEED_PASSWORD);
@@ -632,7 +624,7 @@ describe("CipherTransformFactory", () => {
       // eslint-disable-next-line no-new
       new CipherTransformFactory(dict, fileId, password);
 
-      assert(0, "Shouldn't get here.");
+      fail("Shouldn't get here.");
     } catch (ex) {
       assert(ex instanceof PasswordException);
       assertEquals(ex.code, PasswordResponses.INCORRECT_PASSWORD);

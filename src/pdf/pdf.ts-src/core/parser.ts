@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-import { PDFJSDev, TESTING } from "../../../global.ts";
-import { assert } from "../../../lib/util/trace.ts";
+import { PDFJSDev, TESTING } from "@fe-src/global.ts";
+import { assert } from "@fe-src/lib/util/trace.ts";
 import { bytesToString, FormatError, info, warn } from "../shared/util.ts";
 import { Ascii85Stream } from "./ascii_85_stream.ts";
 import { AsciiHexStream } from "./ascii_hex_stream.ts";
@@ -551,7 +551,7 @@ export class Parser {
       }
       const key = this.buf1.name;
       this.shift();
-      if (this.buf1 == <any> EOF) {
+      if (this.buf1 === EOF as any) {
         break;
       }
       dictMap[key] = this.getObj(cipherTransform);
@@ -1392,7 +1392,7 @@ export class Linearization {
   mainXRefEntriesOffset!: number;
   pageFirst!: number;
 
-  static create(stream: Stream): Linearization | null {
+  static create(stream: Stream): Linearization | undefined {
     function getInt(
       linDict: Dict,
       name: string,
@@ -1401,9 +1401,9 @@ export class Linearization {
       const obj = linDict.get(name);
       if (
         Number.isInteger(obj) &&
-        (allowZeroValue ? <number> obj >= 0 : <number> obj > 0)
+        (allowZeroValue ? obj as number >= 0 : obj as number > 0)
       ) {
-        return <number> obj;
+        return obj as number;
       }
       throw new Error(
         `The "${name}" parameter in the linearization ` +
@@ -1438,7 +1438,7 @@ export class Linearization {
     const obj1 = parser.getObj();
     const obj2 = parser.getObj();
     const obj3 = parser.getObj();
-    const linDict = <Dict> parser.getObj();
+    const linDict = parser.getObj() as Dict;
     let obj;
     let length: number;
     if (
@@ -1451,7 +1451,7 @@ export class Linearization {
         obj > 0
       )
     ) {
-      return null; // No valid linearization dictionary found.
+      return undefined; // No valid linearization dictionary found.
     } else if ((length = getInt(linDict, "L")) !== stream.length) {
       throw new Error(
         'The "L" parameter in the linearization dictionary ' +

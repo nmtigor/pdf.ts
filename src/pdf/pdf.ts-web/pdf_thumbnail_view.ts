@@ -301,7 +301,7 @@ export class PDFThumbnailView implements IVisibleView {
     image.src = reducedCanvas.toDataURL();
     this.image = image;
 
-    this.div.setAttribute("data-loaded", <any> true);
+    this.div.setAttribute("data-loaded", true as any);
     this._placeholderImg.replaceWith(image);
 
     // Zeroing the width and height causes Firefox to release graphics

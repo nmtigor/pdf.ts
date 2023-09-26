@@ -17,15 +17,15 @@
  * limitations under the License.
  */
 
-import { PDFJSDev, TESTING } from "../../../global.ts";
-import type { C2D, point_t, rect_t } from "../../../lib/alias.ts";
-import { assert } from "../../../lib/util/trace.ts";
+import { PDFJSDev, TESTING } from "@fe-src/global.ts";
+import type { C2D, dot2d_t, rect_t } from "@fe-src/lib/alias.ts";
+import { assert } from "@fe-src/lib/util/trace.ts";
+import type { matrix_t } from "../shared/util.ts";
 import {
   bytesToString,
   FONT_IDENTITY_MATRIX,
   FormatError,
   info,
-  type matrix_t,
   shadow,
   string32,
   warn,
@@ -46,14 +46,14 @@ import {
   ZapfDingbatsEncoding,
 } from "./encodings.ts";
 import type { FontfileType, FontProps, VMetric } from "./evaluator.ts";
+import { FontRendererFactory } from "./font_renderer.ts";
+import type { SubstitutionInfo } from "./font_substitutions.ts";
 import {
   FontFlags,
   MacStandardGlyphOrdering,
   recoverGlyphName,
   SEAC_ANALYSIS_ENABLED,
 } from "./fonts_utils.ts";
-import { FontRendererFactory } from "./font_renderer.ts";
-import type { SubstitutionInfo } from "./font_substitutions.ts";
 import { GlyfTable } from "./glyf.ts";
 import { getDingbatsGlyphsUnicode, getGlyphsUnicode } from "./glyphlist.ts";
 import { getFontBasicMetrics } from "./metrics.ts";
@@ -482,17 +482,9 @@ function getFontFileType(
   let fileType, fileSubtype;
 
   if (isTrueTypeFile(file) || isTrueTypeCollectionFile(file)) {
-    if (composite) {
-      fileType = "CIDFontType2";
-    } else {
-      fileType = "TrueType";
-    }
+    fileType = composite ? "CIDFontType2" : "TrueType";
   } else if (isOpenTypeFile(file)) {
-    if (composite) {
-      fileType = "CIDFontType2";
-    } else {
-      fileType = "OpenType";
-    }
+    fileType = composite ? "CIDFontType2" : "OpenType";
   } else if (isType1File(file)) {
     if (composite) {
       fileType = "CIDFontType0";
@@ -898,7 +890,7 @@ function createOS2Table(
     ulUnicodeRange3 = 0,
     ulUnicodeRange4 = 0;
 
-  let firstCharIndex = null,
+  let firstCharIndex: number | undefined,
     lastCharIndex = 0,
     position = -1;
 
@@ -906,7 +898,7 @@ function createOS2Table(
     let code: number;
     for (const code_s in charstrings) {
       code = +code_s | 0;
-      if (<any> firstCharIndex > code || !firstCharIndex) {
+      if (firstCharIndex! > code || !firstCharIndex) {
         firstCharIndex = code;
       }
       if (lastCharIndex < code) {
@@ -3672,10 +3664,10 @@ export class Font extends FontExpotDataEx {
    * @param a string encoded with font encoding.
    * @return the positions of each char in the string.
    */
-  getCharPositions(chars: string): point_t[] {
+  getCharPositions(chars: string): dot2d_t[] {
     // This function doesn't use a cache because
     // it's called only when saving or printing.
-    const positions: point_t[] = [];
+    const positions: dot2d_t[] = [];
 
     if (this.cMap) {
       const c: CharCodeOut = Object.create(null);

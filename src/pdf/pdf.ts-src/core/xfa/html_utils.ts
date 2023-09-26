@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-import type { rect_t } from "../../../../lib/alias.ts";
+import type { rect_t } from "@fe-src/lib/alias.ts";
 import { createValidAbsoluteUrl, warn } from "../../shared/util.ts";
 import type {
   AvailableSpace,
@@ -55,7 +55,7 @@ import type {
 import { TextMeasure } from "./text.ts";
 import { getMeasurement, stripQuotes } from "./utils.ts";
 import { XFAObject } from "./xfa_object.ts";
-import { XhtmlObject } from "./xhtml.ts";
+import type { XhtmlObject } from "./xhtml.ts";
 /*80--------------------------------------------------------------------------*/
 
 export function measureToString(m: string | number) {
@@ -129,17 +129,9 @@ const converters = {
       }
     }
 
-    if (width !== "") {
-      style.width = measureToString(width);
-    } else {
-      style.width = "auto";
-    }
+    style.width = width !== "" ? measureToString(width) : "auto";
 
-    if (height !== "") {
-      style.height = measureToString(height);
-    } else {
-      style.height = "auto";
-    }
+    style.height = height !== "" ? measureToString(height) : "auto";
   },
   position(node: XFAObject, style: XFAStyleData) {
     const parent = node[$getSubformParent]();
@@ -353,11 +345,7 @@ export function computeBbox(
     if (width === "") {
       if (node.maxW === 0) {
         const parent = node[$getSubformParent]() as ExclGroup | Subform;
-        if (parent.layout === "position" && parent.w !== "") {
-          width = 0;
-        } else {
-          width = node.minW;
-        }
+        width = parent.layout === "position" && parent.w !== "" ? 0 : node.minW;
       } else {
         width = Math.min(node.maxW, availableSpace.width);
       }
@@ -368,11 +356,9 @@ export function computeBbox(
     if (height === "") {
       if (node.maxH === 0) {
         const parent = node[$getSubformParent]() as ExclGroup | Subform;
-        if (parent.layout === "position" && parent.h !== "") {
-          height = 0;
-        } else {
-          height = node.minH;
-        }
+        height = parent.layout === "position" && parent.h !== ""
+          ? 0
+          : node.minH;
       } else {
         height = Math.min(node.maxH, availableSpace.height);
       }
@@ -440,7 +426,7 @@ export function layoutClass(node: XFAObject) {
 export function toStyle(node: XFAObject, ...names: string[]) {
   const style: XFAStyleData = Object.create(null);
   for (const name of names) {
-    const value = (<any> node)[name];
+    const value = (node as any)[name];
     if (value === null || value === undefined) {
       continue;
     }
@@ -561,20 +547,18 @@ export function createWrapper(
   ) {
     if (style![key] !== undefined) {
       wrapper.attributes!.style![key] = style![key];
-      delete (<any> style)[key];
+      delete (style as any)[key];
     }
   }
 
-  if (style!.position === "absolute") {
-    wrapper.attributes!.style!.position = "absolute";
-  } else {
-    wrapper.attributes!.style!.position = "relative";
-  }
-  delete (<any> style).position;
+  wrapper.attributes!.style!.position = style!.position === "absolute"
+    ? "absolute"
+    : "relative";
+  delete (style as any).position;
 
   if (style!.alignSelf) {
     wrapper.attributes!.style!.alignSelf = style!.alignSelf;
-    delete (<any> style).alignSelf;
+    delete (style as any).alignSelf;
   }
 
   return wrapper;

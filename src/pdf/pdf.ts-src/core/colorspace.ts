@@ -17,10 +17,9 @@
  * limitations under the License.
  */
 
-import { PDFJSDev, TESTING } from "../../../global.ts";
-import type { rect_t, TypedArray } from "../../../lib/alias.ts";
-import { assert } from "../../../lib/util/trace.ts";
-import type { XYZ } from "../shared/scripting_utils.ts";
+import { PDFJSDev, TESTING } from "@fe-src/global.ts";
+import type { Ratio, rect_t, TupleOf, TypedArray } from "@fe-src/lib/alias.ts";
+import { assert, fail } from "@fe-src/lib/util/trace.ts";
 import { FormatError, info, shadow, warn } from "../shared/util.ts";
 import { BaseStream } from "./base_stream.ts";
 import { MissingDataException } from "./core_utils.ts";
@@ -87,6 +86,8 @@ interface ParseP_ {
   pdfFunctionFactory: PDFFunctionFactory;
   localColorSpaceCache: LocalColorSpaceCache;
 }
+
+type XYZ_ = TupleOf<Ratio, 3>;
 
 /**
  * PDF 1.7 8.6
@@ -191,7 +192,7 @@ export abstract class ColorSpace {
       );
     }
     const count = originalWidth * originalHeight;
-    let rgbBuf = null;
+    let rgbBuf;
     const numComponentColors = 1 << bpc;
     const needsResizing = originalHeight !== height || originalWidth !== width;
 
@@ -249,22 +250,12 @@ export abstract class ColorSpace {
           rgbBuf[rgbPos++] = colorMap[key + 2];
         }
       }
+    } else if (!needsResizing) {
+      // Fill in the RGB values directly into |dest|.
+      this.getRgbBuffer(comps, 0, width * actualHeight, dest, 0, bpc, alpha01);
     } else {
-      if (!needsResizing) {
-        // Fill in the RGB values directly into |dest|.
-        this.getRgbBuffer(
-          comps,
-          0,
-          width * actualHeight,
-          dest,
-          0,
-          bpc,
-          alpha01,
-        );
-      } else {
-        rgbBuf = new Uint8ClampedArray(count * 3);
-        this.getRgbBuffer(comps, 0, count, rgbBuf, 0, bpc, /* alpha01 = */ 0);
-      }
+      rgbBuf = new Uint8ClampedArray(count * 3);
+      this.getRgbBuffer(comps, 0, count, rgbBuf, 0, bpc, /* alpha01 = */ 0);
     }
 
     if (rgbBuf) {
@@ -348,7 +339,7 @@ export abstract class ColorSpace {
       }
 
       try {
-        cacheKey = <Name> xref.fetch(cacheKey);
+        cacheKey = xref.fetch(cacheKey) as Name;
       } catch (ex) {
         if (ex instanceof MissingDataException) {
           throw ex;
@@ -374,7 +365,7 @@ export abstract class ColorSpace {
   }: ParseP_) {
     /*#static*/ if (PDFJSDev || TESTING) {
       assert(
-        !this.getCached(<any> cs, xref, localColorSpaceCache),
+        !this.getCached(cs as any, xref, localColorSpaceCache),
         "Expected `ColorSpace.getCached` to have been manually checked " +
           "before calling `ColorSpace.parseAsync`.",
       );
@@ -422,7 +413,7 @@ export abstract class ColorSpace {
     resources: Dict | undefined,
     pdfFunctionFactory: PDFFunctionFactory,
   ): ColorSpace {
-    cs = <Exclude<CS, Ref>> xref.fetchIfRef(cs);
+    cs = xref.fetchIfRef(cs) as Exclude<CS, Ref>;
     if (cs instanceof Name) {
       switch (cs.name) {
         case "G":
@@ -440,7 +431,7 @@ export abstract class ColorSpace {
           if (resources instanceof Dict) {
             const colorSpaces = resources.get("ColorSpace");
             if (colorSpaces instanceof Dict) {
-              const resourcesCS = <CS | undefined> colorSpaces.get(cs.name);
+              const resourcesCS = colorSpaces.get(cs.name) as CS | undefined;
               if (resourcesCS) {
                 if (resourcesCS instanceof Name) {
                   return this._parse(
@@ -532,8 +523,8 @@ export abstract class ColorSpace {
           return new AlternateCS(numComps, baseCS, tintFn);
         case "Lab":
           params = xref.fetchIfRef(cs[1]) as Dict;
-          whitePoint = params.getArray("WhitePoint") as XYZ;
-          blackPoint = params.getArray("BlackPoint") as XYZ | undefined;
+          whitePoint = params.getArray("WhitePoint") as XYZ_;
+          blackPoint = params.getArray("BlackPoint") as XYZ_ | undefined;
           const range = params.getArray("Range") as rect_t | undefined;
           return new LabCS(whitePoint, blackPoint, range);
         default:
@@ -691,23 +682,21 @@ class PatternCS extends ColorSpace {
 
   /** @implement */
   getRgbItem() {
-    assert(0, "Should not call PatternCS.getRgbItem");
+    fail("Should not call PatternCS.getRgbItem");
   }
 
   /** @implement */
   getRgbBuffer() {
-    assert(0, "Should not call PatternCS.getRgbBuffer");
+    fail("Should not call PatternCS.getRgbBuffer");
   }
 
   /** @implement */
   getOutputLength(inputLength: number, alpha01: number) {
-    assert(0, "Should not call ColorSpace.getOutputLength");
-    return 0;
+    return fail("Should not call ColorSpace.getOutputLength");
   }
 
   override isDefaultDecode(decodeMap: unknown, bpc?: number) {
-    assert(0, "Should not call PatternCS.isDefaultDecode");
-    return false;
+    return fail("Should not call PatternCS.isDefaultDecode");
   }
 }
 
@@ -1440,13 +1429,13 @@ namespace NsCalRGBCS {
     // The following calculations are based on this document:
     // http://www.adobe.com/content/dam/Adobe/en/devnet/photoshop/sdk/
     // AdobeBPC.pdf.
-    const XYZ = tempConvertMatrix1;
-    XYZ[0] = X;
-    XYZ[1] = Y;
-    XYZ[2] = Z;
+    const XYZ_ = tempConvertMatrix1;
+    XYZ_[0] = X;
+    XYZ_[1] = Y;
+    XYZ_[2] = Z;
     const XYZ_Flat = tempConvertMatrix2;
 
-    normalizeWhitePointToFlat(cs.whitePoint, XYZ, XYZ_Flat);
+    normalizeWhitePointToFlat(cs.whitePoint, XYZ_, XYZ_Flat);
 
     const XYZ_Black = tempConvertMatrix1;
     compensateBlackPoint(cs.blackPoint!, XYZ_Flat, XYZ_Black);
@@ -1602,13 +1591,7 @@ var CalRGBCS = NsCalRGBCS.CalRGBCS;
 namespace NsLabCS {
   // Function g(x) from spec
   function fn_g(x: number) {
-    let result;
-    if (x >= 6 / 29) {
-      result = x ** 3;
-    } else {
-      result = (108 / 841) * (x - 4 / 29);
-    }
-    return result;
+    return x >= 6 / 29 ? x ** 3 : (108 / 841) * (x - 4 / 29);
   }
 
   function decode(value: number, high1: number, low2: number, high2: number) {
@@ -1695,8 +1678,8 @@ namespace NsLabCS {
     ZB: number;
 
     constructor(
-      whitePoint: XYZ,
-      blackPoint?: XYZ,
+      whitePoint: XYZ_,
+      blackPoint?: XYZ_,
       range?: rect_t,
     ) {
       super("Lab", 3);

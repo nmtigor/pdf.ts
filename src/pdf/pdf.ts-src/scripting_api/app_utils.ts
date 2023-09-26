@@ -25,4 +25,9 @@ export const FORMS_VERSION = 21.00720099;
 
 export const USERACTIVATION_CALLBACKID = 0;
 export const USERACTIVATION_MAXTIME_VALIDITY = 5000;
+
+export function serializeError(error: any) {
+  const value = `${error.toString()}\n${error.stack}`;
+  return { command: "error", value };
+}
 /*80--------------------------------------------------------------------------*/

@@ -1,12 +1,15 @@
 {
   "compilerOptions": {
-    "outDir": "gen",
-
+    "paths": {
+      "@fe-src/*": ["./src/*"],
+      "@zod": ["./src/3rd/zod-3.22.2/lib/index.mjs"]
+    },
+    "rootDir": "src",
     "module": "ESNext",
-    "moduleResolution": "NodeNext",
+    "moduleResolution": "bundler",
     "resolveJsonModule": true,
 
-    "target": "ESNext",
+    "target": "ES2022",
     "lib": [
       "ESNext",
       "DOM",
@@ -20,17 +23,18 @@
     "noImplicitOverride": true,
     "isolatedModules": true,
 
+    "outDir": "gen",
     "declaration": true,
     "declarationMap": true,
     "declarationDir": "gen",
+    "sourceMap": true,
+
     "allowJs": true,
     "checkJs": false,
 
-    "sourceMap": true,
-
-    "preprocessorFile": "src/global.ts",
-    "appendJsImport": "ts",
     "allowTsImport": true,
+    "preprocessorFile": "src/global.ts",
+    "unaliasImportPaths": true
   },
 
   "files": [
@@ -41,7 +45,4 @@
 
     "src/pdf/pdf.ts-src/core/xfa/formcalc_parser.ts"
   ],
-  "include": [
-    // "src/3rd/quickjs/**/*"
-  ]
 }

@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-import type { rect_t } from "../../../../lib/alias.ts";
+import type { rect_t } from "@fe-src/lib/alias.ts";
 import { stringToBytes, Util, warn } from "../../shared/util.ts";
 import { recoverJsURL } from "../core_utils.ts";
 import type {
@@ -306,11 +306,9 @@ function applyAssist(
   } else {
     const parent = obj[$getParent]()!;
     if (parent.layout === "row") {
-      if ((parent.assist as Assist | undefined)?.role === "TH") {
-        attributes.role = "columnheader";
-      } else {
-        attributes.role = "cell";
-      }
+      attributes.role = (parent.assist as Assist | undefined)?.role === "TH"
+        ? "columnheader"
+        : "cell";
     }
   }
 }
@@ -1224,15 +1222,15 @@ class Button extends XFAObject {
         class: ["xfaButton"],
         style: {},
       },
-      children: <XFAElObj[]> [],
+      children: [] as XFAElObj[],
     };
 
     for (const event of grandpa.event.children) {
       // if (true) break;
-      if ((<Event> event).activity !== "click" || !(<Event> event).script) {
+      if ((event as Event).activity !== "click" || !(event as Event).script) {
         continue;
       }
-      const jsURL = recoverJsURL(<string> (<Event> event).script![$content]);
+      const jsURL = recoverJsURL((event as Event).script![$content] as string);
       if (!jsURL) {
         continue;
       }
@@ -4019,18 +4017,16 @@ class Line extends XFAObject {
     let width = "100%";
     let height = "100%";
 
-    if (<number> parent.w <= thickness) {
+    if ((parent.w as number) <= thickness) {
       [x1, y1, x2, y2] = ["50%", 0, "50%", "100%"];
       width = style.strokeWidth;
-    } else if (<number> parent.h <= thickness) {
+    } else if ((parent.h as number) <= thickness) {
       [x1, y1, x2, y2] = [0, "50%", "100%", "50%"];
       height = style.strokeWidth;
+    } else if (this.slope === "\\") {
+      [x1, y1, x2, y2] = [0, 0, "100%", "100%"];
     } else {
-      if (this.slope === "\\") {
-        [x1, y1, x2, y2] = [0, 0, "100%", "100%"];
-      } else {
-        [x1, y1, x2, y2] = [0, "100%", "100%", 0];
-      }
+      [x1, y1, x2, y2] = [0, "100%", "100%", 0];
     }
 
     const line = {

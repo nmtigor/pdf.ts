@@ -230,11 +230,11 @@ export class SecondaryToolbar {
 
   #bindClickListeners() {
     // Button to toggle the visibility of the secondary toolbar.
-    this.toggleButton.addEventListener("click", this.toggle.bind(this));
+    this.toggleButton.on("click", this.toggle.bind(this));
 
     // All items within the secondary toolbar.
     for (const { element, eventName, close, eventDetails } of this.buttons) {
-      element.addEventListener("click", (evt: unknown) => {
+      element.on("click", (evt: unknown) => {
         if (eventName !== undefined) {
           this.eventBus.dispatch(eventName, { source: this, ...eventDetails });
         }
@@ -279,10 +279,10 @@ export class SecondaryToolbar {
       scrollHorizontalButton.classList.toggle("toggled", isHorizontal);
       scrollWrappedButton.classList.toggle("toggled", isWrapped);
 
-      scrollPageButton.setAttribute("aria-checked", <any> isPage);
-      scrollVerticalButton.setAttribute("aria-checked", <any> isVertical);
-      scrollHorizontalButton.setAttribute("aria-checked", <any> isHorizontal);
-      scrollWrappedButton.setAttribute("aria-checked", <any> isWrapped);
+      scrollPageButton.setAttribute("aria-checked", isPage as any);
+      scrollVerticalButton.setAttribute("aria-checked", isVertical as any);
+      scrollHorizontalButton.setAttribute("aria-checked", isHorizontal as any);
+      scrollWrappedButton.setAttribute("aria-checked", isWrapped as any);
 
       // Permanently *disable* the Scroll buttons when PAGE-scrolling is being
       // enforced for *very* long/large documents; please see the `BaseViewer`.
@@ -325,9 +325,9 @@ export class SecondaryToolbar {
       spreadOddButton.classList.toggle("toggled", isOdd);
       spreadEvenButton.classList.toggle("toggled", isEven);
 
-      spreadNoneButton.setAttribute("aria-checked", <any> isNone);
-      spreadOddButton.setAttribute("aria-checked", <any> isOdd);
-      spreadEvenButton.setAttribute("aria-checked", <any> isEven);
+      spreadNoneButton.setAttribute("aria-checked", isNone as any);
+      spreadOddButton.setAttribute("aria-checked", isOdd as any);
+      spreadEvenButton.setAttribute("aria-checked", isEven as any);
     }
     this.eventBus._on("spreadmodechanged", spreadModeChanged);
 

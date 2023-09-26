@@ -21,9 +21,9 @@ import { warn } from "../../shared/util.ts";
 import type { ErrorFont, Font } from "../fonts.ts";
 import type { XFAFontMetrics } from "../xfa_fonts.ts";
 import type { XFAFontBase } from "./alias.ts";
+import { $globalData } from "./symbol_utils.ts";
 import type { Font as XFAFont } from "./template.ts";
 import { stripQuotes } from "./utils.ts";
-import { $globalData } from "./symbol_utils.ts";
 /*80--------------------------------------------------------------------------*/
 
 interface PDFFont {

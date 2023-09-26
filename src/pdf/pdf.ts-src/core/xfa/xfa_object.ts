@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-import type { rect_t } from "../../../../lib/alias.ts";
-import { isObjectLike } from "../../../../lib/jslang.ts";
+import type { rect_t } from "@fe-src/lib/alias.ts";
+import { isObjectLike } from "@fe-src/lib/jslang.ts";
 import { shadow, utf8StringToString, warn } from "../../shared/util.ts";
 import { encodeToXmlString } from "../core_utils.ts";
 import type {
@@ -476,7 +476,7 @@ export abstract class XFAObject {
     }
 
     for (const name of Object.getOwnPropertyNames(this)) {
-      const value: XFAProp = (<any> this)[name];
+      const value: XFAProp = (this as any)[name];
       if (value === null || value === undefined) {
         continue;
       }
@@ -721,7 +721,7 @@ export abstract class XFAObject {
         for (
           let i = value[_children].length,
             ii =
-              (<XFAObjectArray | XFAObjectArray> protoValue)[_children].length;
+              (protoValue as XFAObjectArray | XFAObjectArray)[_children].length;
           i < ii;
           i++
         ) {
@@ -742,15 +742,15 @@ export abstract class XFAObject {
         value[$resolvePrototypes](ids, ancestors);
         if (protoValue) {
           // protoValue must be treated as a prototype for value.
-          value[_applyPrototype](<XFAObject> protoValue, ids, ancestors);
+          value[_applyPrototype](protoValue as XFAObject, ids, ancestors);
         }
         continue;
       }
 
       if (protoValue !== null && protoValue !== undefined) {
-        const child = (<XFAObject> protoValue)[$clone]();
+        const child = (protoValue as XFAObject)[$clone]();
         child[_parent] = this;
-        (<any> this)[name] = child;
+        (this as any)[name] = child;
         this[_children].push(child);
         child[_resolvePrototypesHelper](ids, ancestors);
       }
@@ -786,11 +786,9 @@ export abstract class XFAObject {
         continue;
       }
       const value = (this as any)[name];
-      if (value instanceof XFAObjectArray) {
-        (clone as any)[name] = new XFAObjectArray(value[_max]);
-      } else {
-        (clone as any)[name] = undefined;
-      }
+      (clone as any)[name] = value instanceof XFAObjectArray
+        ? new XFAObjectArray(value[_max])
+        : undefined;
     }
 
     for (const child of this[_children]) {
@@ -798,14 +796,14 @@ export abstract class XFAObject {
       const clonedChild = child[$clone]();
       clone[_children].push(clonedChild);
       clonedChild[_parent] = clone;
-      if ((<any> clone)[name] === undefined) {
-        (<any> clone)[name] = clonedChild;
+      if ((clone as any)[name] === undefined) {
+        (clone as any)[name] = clonedChild;
       } else {
-        (<XFAObjectArray> (<any> clone)[name])[_children].push(clonedChild);
+        ((clone as any)[name] as XFAObjectArray)[_children].push(clonedChild);
       }
     }
 
-    return <T> clone;
+    return clone as T;
   }
 
   [$getChildren](name?: string): XFAObject[] {

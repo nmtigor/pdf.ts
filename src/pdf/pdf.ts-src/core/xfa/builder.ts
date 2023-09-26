@@ -27,8 +27,6 @@ import type {
 } from "./alias.ts";
 import { $buildXFAObject, NamespaceIds, type XFANsName } from "./namespaces.ts";
 import { NamespaceSetUp, type XFAKnownNs } from "./setup.ts";
-import { Template } from "./template.ts";
-import { UnknownNamespace } from "./unknown.ts";
 import {
   $cleanup,
   $finalize,
@@ -39,6 +37,8 @@ import {
   $resolvePrototypes,
   $root,
 } from "./symbol_utils.ts";
+import { Template } from "./template.ts";
+import { UnknownNamespace } from "./unknown.ts";
 import { XFAObject } from "./xfa_object.ts";
 /*80--------------------------------------------------------------------------*/
 
@@ -210,7 +210,7 @@ export class Builder {
     }
 
     warn(`Unknown namespace prefix: ${prefix}.`);
-    return null;
+    return undefined;
   }
 
   clean(data: XFACleanup) {

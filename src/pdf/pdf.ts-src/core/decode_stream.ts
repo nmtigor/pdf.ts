@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-import { assert } from "../../../lib/util/trace.ts";
+import { fail } from "@fe-src/lib/util/trace.ts";
 import { BaseStream } from "./base_stream.ts";
 import type { Dict } from "./primitives.ts";
 import { Stream } from "./stream.ts";
@@ -41,8 +41,7 @@ export abstract class DecodeStream extends BaseStream {
   eof = false;
   /** @implement */
   get length() {
-    assert(0, "Abstract getter `length` accessed");
-    return <any> undefined;
+    return fail("Abstract getter `length` accessed");
   }
   /**
    * @implement
@@ -140,13 +139,12 @@ export abstract class DecodeStream extends BaseStream {
 
   /** @implement */
   getByteRange(begin: number, end: number) {
-    assert(0, "Abstract method `getByteRange` called");
-    return <any> undefined;
+    return fail("Abstract method `getByteRange` called");
   }
 
   /** @implement */
   moveStart() {
-    assert(0, "Abstract method `moveStart` called");
+    fail("Abstract method `moveStart` called");
   }
 
   /**

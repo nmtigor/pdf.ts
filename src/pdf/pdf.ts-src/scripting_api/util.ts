@@ -17,9 +17,10 @@
  * limitations under the License.
  */
 
-import { TupleOf } from "../../../lib/alias.ts";
-import { ExternalCall } from "./initialization.ts";
-import { PDFObject, ScriptingData, SendData } from "./pdf_object.ts";
+import type { TupleOf } from "../../../lib/alias.ts";
+import type { ExternalCall } from "./initialization.ts";
+import type { ScriptingData, SendData } from "./pdf_object.ts";
+import { PDFObject } from "./pdf_object.ts";
 /*80--------------------------------------------------------------------------*/
 
 interface _SendUtilData extends SendData {
@@ -186,11 +187,9 @@ export class Util extends PDFObject<_SendUtilData> {
 
         let decPart = "";
         if (cConvChar === "f") {
-          if (nPrecision !== undefined) {
-            decPart = Math.abs(+arg - intPart).toFixed(nPrecision);
-          } else {
-            decPart = Math.abs(+arg - intPart).toString();
-          }
+          decPart = nPrecision !== undefined
+            ? Math.abs(arg as number - intPart).toFixed(nPrecision)
+            : Math.abs(arg as number - intPart).toString();
           if (decPart.length > 2) {
             decPart = `${decimalSep}${decPart.substring(2)}`;
           } else {

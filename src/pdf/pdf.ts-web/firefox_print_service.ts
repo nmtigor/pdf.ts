@@ -142,7 +142,7 @@ export class FirefoxPrintService extends PDFPrintService {
     } = this;
 
     const body = document.querySelector("body")!;
-    body.setAttribute("data-pdfjsprinting", <any> true);
+    body.setAttribute("data-pdfjsprinting", true as any);
 
     const { width, height } = this.pagesOverview[0];
     const hasEqualPageSizes = this.pagesOverview.every(

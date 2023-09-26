@@ -19,14 +19,14 @@
 
 import {
   CHROME,
-  DENO,
   GENERIC,
   LIB,
   MOZCENTRAL,
   PDFJSDev,
   TESTING,
-} from "../../global.ts";
-import { Locale } from "../../lib/Locale.ts";
+} from "@fe-src/global.ts";
+import { Locale } from "@fe-src/lib/Locale.ts";
+import { D_base } from "../alias.ts";
 import {
   AnnotationEditorType,
   AnnotationMode,
@@ -61,10 +61,6 @@ export const enum ViewOnLoad {
   INITIAL = 1,
 }
 /*49-------------------------------------------*/
-
-export const D_base = /*#static*/ DENO && TESTING
-  ? "http://localhost:8000"
-  : "";
 
 type _DefaultOptions = typeof defaultOptions;
 export type OptionName = keyof _DefaultOptions;
@@ -154,6 +150,13 @@ const defaultOptions = {
     value: /*#static*/ PDFJSDev || !CHROME ? true : false,
     kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
   },
+  enableStampEditor: {
+    // We'll probably want to make some experiments before enabling this
+    // in Firefox release, but it has to be temporary.
+    // TODO: remove it when unnecessary.
+    value: true,
+    kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
+  },
   externalLinkRel: {
     value: "noopener noreferrer nofollow",
     kind: OptionKind.VIEWER,
@@ -221,10 +224,6 @@ const defaultOptions = {
   },
   textLayerMode: {
     value: TextLayerMode.ENABLE,
-    kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
-  },
-  useOnlyCssZoom: {
-    value: false,
     kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
   },
   viewerCssTheme: {
@@ -440,6 +439,9 @@ export abstract class AppOptions {
   static get enableScripting() {
     return this.#get("enableScripting") as boolean;
   }
+  static get enableStampEditor() {
+    return this.#get("enableStampEditor") as boolean;
+  }
   static get externalLinkRel() {
     return this.#get("externalLinkRel") as string;
   }
@@ -487,9 +489,6 @@ export abstract class AppOptions {
   }
   static get textLayerMode() {
     return this.#get("textLayerMode") as TextLayerMode;
-  }
-  static get useOnlyCssZoom() {
-    return this.#get("useOnlyCssZoom") as boolean;
   }
   static get viewerCssTheme() {
     return this.#get("viewerCssTheme") as ViewerCssTheme;

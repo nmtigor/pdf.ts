@@ -21,8 +21,8 @@ import {
   assertEquals,
   assertStrictEquals,
   assertThrows,
-} from "https://deno.land/std@0.195.0/testing/asserts.ts";
-import { describe, it } from "https://deno.land/std@0.195.0/testing/bdd.ts";
+} from "@std/testing/asserts.ts";
+import { describe, it } from "@std/testing/bdd.ts";
 import { XRefMock } from "../shared/test_utils.ts";
 import {
   arrayBuffersToBytes,
@@ -318,7 +318,7 @@ describe("core_utils", () => {
 
     it("should not get invalid URLs", () => {
       const input = "navigateToUrl('https://test.local')";
-      assertEquals(recoverJsURL(input), null);
+      assertEquals(recoverJsURL(input), undefined);
     });
   });
 

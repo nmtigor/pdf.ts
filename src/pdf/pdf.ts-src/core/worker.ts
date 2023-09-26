@@ -17,23 +17,25 @@
  * limitations under the License.
  */
 
-import { GENERIC, PDFJSDev, TESTING } from "../../../global.ts";
-import { PromiseCap } from "../../../lib/util/PromiseCap.ts";
-import { assert } from "../../../lib/util/trace.ts";
+import { GENERIC, PDFJSDev, TESTING } from "@fe-src/global.ts";
+import { PromiseCap } from "@fe-src/lib/util/PromiseCap.ts";
+import { assert } from "@fe-src/lib/util/trace.ts";
 import type { ReadValue } from "../interfaces.ts";
-import type { GetDocRequestData, PDFInfo } from "../shared/message_handler.ts";
+import type {
+  GetDocRequestData,
+  PDFInfo,
+  reason_t,
+} from "../shared/message_handler.ts";
 import { MessageHandler, Thread } from "../shared/message_handler.ts";
 import {
   AbortException,
   BaseException,
   getVerbosityLevel,
   info,
-  InvalidPDFException,
-  MissingPDFException,
   PasswordException,
+  PasswordExceptionJ,
   setVerbosityLevel,
   stringToPDFString,
-  UnexpectedResponseException,
   UnknownErrorException,
   VerbosityLevel,
   warn,
@@ -381,17 +383,20 @@ export const WorkerMessageHandler = {
         handler.send("GetDoc", { pdfInfo: doc });
       }
 
-      function onFailure(ex: BaseException) {
+      function onFailure(ex: reason_t) {
         // console.log(ex.name);
         // console.log(ex);
         ensureNotTerminated();
 
-        if (ex instanceof PasswordException) {
+        if (ex.name === "PasswordException") {
           const task = new WorkerTask(`PasswordException: response ${ex.code}`);
           startWorkerTask(task);
 
+          const exJ = (ex instanceof PasswordException)
+            ? ex.toJ()
+            : ex as PasswordExceptionJ;
           handler
-            .sendWithPromise("PasswordRequest", ex)
+            .sendWithPromise("PasswordRequest", exJ)
             .then(({ password }) => {
               finishWorkerTask(task);
               pdfManager.updatePassword(password);
@@ -399,15 +404,18 @@ export const WorkerMessageHandler = {
             })
             .catch(() => {
               finishWorkerTask(task);
-              handler.send("DocException", ex.toJ());
+              handler.send("DocException", exJ);
             });
         } else if (
-          ex instanceof InvalidPDFException ||
-          ex instanceof MissingPDFException ||
-          ex instanceof UnexpectedResponseException ||
-          ex instanceof UnknownErrorException
+          ex.name === "InvalidPDFException" ||
+          ex.name === "MissingPDFException" ||
+          ex.name === "UnexpectedResponseException" ||
+          ex.name === "UnknownErrorException"
         ) {
-          handler.send("DocException", ex.toJ());
+          handler.send(
+            "DocException",
+            (ex instanceof BaseException) ? ex.toJ() : ex,
+          );
         } else {
           handler.send(
             "DocException",
@@ -508,10 +516,6 @@ export const WorkerMessageHandler = {
       return pdfManager.ensureCatalog("attachments");
     });
 
-    handler.on("GetJavaScript", () => {
-      return pdfManager.ensureCatalog("javaScript");
-    });
-
     handler.on("GetDocJSActions", (data) => {
       return pdfManager.ensureCatalog("jsActions");
     });
@@ -587,6 +591,7 @@ export const WorkerMessageHandler = {
           pdfManager.ensureCatalog("acroForm"),
           pdfManager.ensureCatalog("acroFormRef"),
           pdfManager.ensureDoc("startXRef"),
+          pdfManager.ensureDoc("linearization"),
         ] as const;
 
         const newAnnotationsByPage = !isPureXfa
@@ -641,12 +646,13 @@ export const WorkerMessageHandler = {
           acroForm,
           acroFormRef,
           startXRef,
+          linearization,
         ]) =>
           Promise.all(promises_1).then((refs) => {
             let newRefs: SaveData[] = [];
             let xfaData: string | undefined;
             if (isPureXfa) {
-              xfaData = <string | undefined> refs[0];
+              xfaData = refs[0] as string | undefined;
               if (!xfaData) {
                 return stream.bytes;
               }
@@ -703,28 +709,28 @@ export const WorkerMessageHandler = {
                 info: infoObj,
                 fileIds: xref.trailer.get("ID") as [string, string] ||
                   undefined,
-                startXRef: xref.lastXRefStreamPos ?? startXRef,
+                startXRef: linearization
+                  ? startXRef
+                  : xref.lastXRefStreamPos ?? startXRef,
                 filename,
               };
             }
 
-            try {
-              return incrementalUpdate({
-                originalData: stream.bytes,
-                xrefInfo: newXrefInfo,
-                newRefs,
-                xref,
-                hasXfa: !!xfa,
-                xfaDatasetsRef,
-                hasXfaDatasetsEntry,
-                needAppearances,
-                acroFormRef,
-                acroForm,
-                xfaData,
-              });
-            } finally {
+            return incrementalUpdate({
+              originalData: stream.bytes,
+              xrefInfo: newXrefInfo,
+              newRefs,
+              xref,
+              hasXfa: !!xfa,
+              xfaDatasetsRef,
+              hasXfaDatasetsEntry,
+              needAppearances,
+              acroFormRef,
+              acroForm,
+              xfaData,
+            }).finally(() => {
               xref.resetNewTemporaryRef();
-            }
+            });
           })
         );
       },

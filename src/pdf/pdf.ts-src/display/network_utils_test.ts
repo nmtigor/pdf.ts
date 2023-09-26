@@ -17,11 +17,8 @@
  * limitations under the License.
  */
 
-import {
-  assertEquals,
-  assertThrows,
-} from "https://deno.land/std@0.195.0/testing/asserts.ts";
-import { describe, it } from "https://deno.land/std@0.195.0/testing/bdd.ts";
+import { assertEquals, assertThrows } from "@std/testing/asserts.ts";
+import { describe, it } from "@std/testing/bdd.ts";
 import { HttpStatusCode } from "../../../lib/HttpStatusCode.ts";
 import {
   MissingPDFException,

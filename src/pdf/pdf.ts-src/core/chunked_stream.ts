@@ -17,16 +17,16 @@
  * limitations under the License.
  */
 
-import { PDFJSDev, TESTING } from "../../../global.ts";
-import { PromiseCap } from "../../../lib/util/PromiseCap.ts";
-import { assert } from "../../../lib/util/trace.ts";
-import { type ReadValue } from "../interfaces.ts";
-import { MessageHandler, Thread } from "../shared/message_handler.ts";
-import { AbortException } from "../shared/util.ts";
+import { PDFJSDev, TESTING } from "@fe-src/global.ts";
+import { PromiseCap } from "@fe-src/lib/util/PromiseCap.ts";
+import { assert } from "@fe-src/lib/util/trace.ts";
+import type { ReadValue } from "../interfaces.ts";
+import type { MessageHandler, Thread } from "../shared/message_handler.ts";
+import type { AbortException } from "../shared/util.ts";
 import { arrayBuffersToBytes, MissingDataException } from "./core_utils.ts";
-import { Dict } from "./primitives.ts";
+import type { Dict } from "./primitives.ts";
 import { Stream } from "./stream.ts";
-import { PDFWorkerStream } from "./worker_stream.ts";
+import type { PDFWorkerStream } from "./worker_stream.ts";
 /*80--------------------------------------------------------------------------*/
 
 interface ChunkedStreamSubstream extends ChunkedStream {
@@ -40,12 +40,12 @@ interface ChunkedStreamSubstreamCtor {
 export class ChunkedStream extends Stream {
   chunkSize;
 
-  #loadedChunks = new Set<number>();
+  _loadedChunks = new Set<number>();
   get numChunksLoaded() {
-    return this.#loadedChunks.size;
+    return this._loadedChunks.size;
   }
   hasChunk(chunk: number) {
-    return this.#loadedChunks.has(chunk);
+    return this._loadedChunks.has(chunk);
   }
 
   numChunks: number;
@@ -75,7 +75,7 @@ export class ChunkedStream extends Stream {
   getMissingChunks() {
     const chunks = [];
     for (let chunk = 0, n = this.numChunks; chunk < n; ++chunk) {
-      if (!this.#loadedChunks.has(chunk)) {
+      if (!this._loadedChunks.has(chunk)) {
         chunks.push(chunk);
       }
     }
@@ -102,7 +102,7 @@ export class ChunkedStream extends Stream {
     for (let curChunk = beginChunk; curChunk < endChunk; ++curChunk) {
       // Since a value can only occur *once* in a `Set`, there's no need to
       // manually check `Set.prototype.has()` before adding the value here.
-      this.#loadedChunks.add(curChunk);
+      this._loadedChunks.add(curChunk);
     }
   }
 
@@ -120,7 +120,7 @@ export class ChunkedStream extends Stream {
     for (let curChunk = beginChunk; curChunk < endChunk; ++curChunk) {
       // Since a value can only occur *once* in a `Set`, there's no need to
       // manually check `Set.prototype.has()` before adding the value here.
-      this.#loadedChunks.add(curChunk);
+      this._loadedChunks.add(curChunk);
     }
   }
 
@@ -137,7 +137,7 @@ export class ChunkedStream extends Stream {
       return;
     }
 
-    if (!this.#loadedChunks.has(chunk)) {
+    if (!this._loadedChunks.has(chunk)) {
       throw new MissingDataException(pos, pos + 1);
     }
     this.lastSuccessfulEnsureByteChunk = chunk;
@@ -160,7 +160,7 @@ export class ChunkedStream extends Stream {
       this.numChunks,
     );
     for (let chunk = beginChunk; chunk < endChunk; ++chunk) {
-      if (!this.#loadedChunks.has(chunk)) {
+      if (!this._loadedChunks.has(chunk)) {
         throw new MissingDataException(begin, end);
       }
     }
@@ -170,11 +170,11 @@ export class ChunkedStream extends Stream {
     const numChunks = this.numChunks;
     for (let i = 0; i < numChunks; ++i) {
       const chunk = (beginChunk + i) % numChunks; // Wrap around to beginning.
-      if (!this.#loadedChunks.has(chunk)) {
+      if (!this._loadedChunks.has(chunk)) {
         return chunk;
       }
     }
-    return null;
+    return undefined;
   }
 
   override getByte() {
@@ -230,7 +230,7 @@ export class ChunkedStream extends Stream {
       if (start + length > this.progressiveDataLength) {
         this.ensureRange(start, start + length);
       }
-    } else {
+    } else if (start >= this.progressiveDataLength) {
       // When the `length` is undefined you do *not*, under any circumstances,
       // want to fallback on calling `this.ensureRange(start, this.end)` since
       // that would force the *entire* PDF file to be loaded, thus completely
@@ -240,9 +240,8 @@ export class ChunkedStream extends Stream {
       // time/resources during e.g. parsing, since `MissingDataException`s will
       // require data to be re-parsed, which we attempt to minimize by at least
       // checking that the *beginning* of the data is available here.
-      if (start >= this.progressiveDataLength) {
-        this.ensureByte(start);
-      }
+
+      this.ensureByte(start);
     }
 
     function ChunkedStreamSubstream() {}
@@ -255,7 +254,7 @@ export class ChunkedStream extends Stream {
       const endChunk = Math.floor((this.end - 1) / chunkSize) + 1;
       const missingChunks = [];
       for (let chunk = beginChunk; chunk < endChunk; ++chunk) {
-        if (!this.#loadedChunks.has(chunk)) {
+        if (!this._loadedChunks.has(chunk)) {
           missingChunks.push(chunk);
         }
       }
@@ -547,7 +546,7 @@ export class ChunkedStreamManager {
     // If there are no pending requests, automatically fetch the next
     // unfetched chunk of the PDF file.
     if (!this.disableAutoFetch && this.#requestsByChunk.size === 0) {
-      let nextEmptyChunk: number | null | undefined;
+      let nextEmptyChunk: number | undefined;
       if (this.stream.numChunksLoaded === 1) {
         // This is a special optimization so that after fetching the first
         // chunk, rather than fetching the second chunk, we fetch the last
@@ -590,9 +589,7 @@ export class ChunkedStreamManager {
 
   abort(reason: AbortException) {
     this.aborted = true;
-    if (this.pdfNetworkStream) {
-      this.pdfNetworkStream.cancelAllRequests(reason);
-    }
+    this.pdfNetworkStream?.cancelAllRequests(reason);
     for (const capability of this.#promisesByRequest.values()) {
       capability.reject(reason);
     }

@@ -219,7 +219,7 @@ export class TextLayerBuilder {
   #bindMouse() {
     const { div } = this;
 
-    div.addEventListener("mousedown", (evt) => {
+    div.on("mousedown", (evt) => {
       const end = div.querySelector<HTMLElement>(".endOfContent");
       if (!end) {
         return;
@@ -244,7 +244,7 @@ export class TextLayerBuilder {
       end.classList.add("active");
     });
 
-    div.addEventListener("mouseup", () => {
+    div.on("mouseup", () => {
       const end = div.querySelector<HTMLElement>(".endOfContent");
       if (!end) {
         return;
@@ -255,7 +255,7 @@ export class TextLayerBuilder {
       end.classList.remove("active");
     });
 
-    div.addEventListener("copy", (event) => {
+    div.on("copy", (event) => {
       if (!this.#enablePermissions) {
         const selection = document.getSelection()!;
         event.clipboardData!.setData(

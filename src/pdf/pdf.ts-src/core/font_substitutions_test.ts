@@ -17,11 +17,8 @@
  * limitations under the License.
  */
 
-import {
-  assertMatch,
-  assertObjectMatch,
-} from "https://deno.land/std@0.195.0/assert/mod.ts";
-import { describe, it } from "https://deno.land/std@0.195.0/testing/bdd.ts";
+import { assertMatch, assertObjectMatch } from "@std/assert/mod.ts";
+import { describe, it } from "@std/testing/bdd.ts";
 import { createIdFactory } from "../shared/test_utils.ts";
 import { getFontSubstitution } from "./font_substitutions.ts";
 /*80--------------------------------------------------------------------------*/

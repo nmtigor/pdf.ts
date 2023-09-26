@@ -22,18 +22,18 @@
 /** @typedef {import("./interfaces").IDownloadManager} IDownloadManager */
 /** @typedef {import("../../web/interfaces").IPDFLinkService} IPDFLinkService */
 
-import { GENERIC, MOZCENTRAL, PDFJSDev, TESTING } from "../../../global.ts";
-import type { CSSStyle, CSSStyleName, rect_t } from "../../../lib/alias.ts";
-import type { red_t, rgb_t } from "../../../lib/color/alias.ts";
+import { GENERIC, MOZCENTRAL, TESTING } from "@fe-src/global.ts";
+import type { CSSStyleName, rect_t } from "@fe-src/lib/alias.ts";
+import type { red_t, rgb_t } from "@fe-src/lib/color/alias.ts";
+import type { HSElement } from "@fe-src/lib/dom.ts";
 import {
   div,
-  type HSElement,
   html,
   span,
   svg as createSVG,
   textnode,
-} from "../../../lib/dom.ts";
-import { assert } from "../../../lib/util/trace.ts";
+} from "@fe-src/lib/dom.ts";
+import { assert, fail } from "@fe-src/lib/util/trace.ts";
 import type {
   IDownloadManager,
   IL10n,
@@ -50,10 +50,7 @@ import type { Destination, SetOCGState } from "../core/catalog.ts";
 import type { Attachment } from "../core/file_spec.ts";
 import type { Ref } from "../pdf.ts";
 import type { ScriptingActionName } from "../scripting_api/common.ts";
-import {
-  ColorConverters,
-  ColorConvertersDetail,
-} from "../shared/scripting_utils.ts";
+import { ColorConverters, type CSTag } from "../shared/scripting_utils.ts";
 import type { ActionEventName } from "../shared/util.ts";
 import {
   AnnotationBorderStyleType,
@@ -67,15 +64,20 @@ import {
 } from "../shared/util.ts";
 import { AnnotationStorage } from "./annotation_storage.ts";
 import type { MetadataEx, PDFPageProxy } from "./api.ts";
+import type { PageViewport } from "./display_utils.ts";
 import {
   AnnotationPrefix,
   DOMSVGFactory,
   getFilenameFromUrl,
-  type PageViewport,
   PDFDateString,
   setLayerDimensions,
 } from "./display_utils.ts";
 import { XfaLayer } from "./xfa_layer.ts";
+
+// Ref. gulpfile.mjs of pdf.js
+const { NullL10n } = /*#static*/ GENERIC
+  ? await import("../../pdf.ts-web/l10n_utils.ts")
+  : await import("./stubs.ts");
 /*80--------------------------------------------------------------------------*/
 
 const DEFAULT_TAB_INDEX = 1000;
@@ -204,6 +206,8 @@ class AnnotationElementFactory {
   }
 }
 
+type ColorConvertersDetail_ = Record<string, [CSTag, ...number[]]>;
+
 export class AnnotationElement {
   isRenderable;
   data;
@@ -218,15 +222,11 @@ export class AnnotationElement {
   hasJSActions;
   _fieldObjects;
   parent;
-
   container!: HTMLElement;
-
-  firstQuadRect: rect_t | undefined;
-  quadrilaterals?: HTMLElement[] | undefined;
-
   popup?: PopupElement;
-
   annotationEditorType?: AnnotationEditorType;
+
+  #hasBorder = false;
 
   constructor(
     parameters: AnnotationElementCtorP_,
@@ -254,7 +254,7 @@ export class AnnotationElement {
       this.container = this.#createContainer(ignoreBorder);
     }
     if (createQuadrilaterals) {
-      this.quadrilaterals = this.#createQuadrilaterals(ignoreBorder);
+      this.#createQuadrilaterals();
     }
   }
 
@@ -346,6 +346,7 @@ export class AnnotationElement {
 
       const borderColor = data.borderColor || undefined;
       if (borderColor) {
+        this.#hasBorder = true;
         container.style.borderColor = Util.makeHexColor(
           borderColor[0] | 0,
           borderColor[1] | 0,
@@ -371,7 +372,10 @@ export class AnnotationElement {
     return container;
   }
 
-  setRotation(angle: number, container = this.container!) {
+  setRotation(angle: number, container = this.container) {
+    if (!this.data.rect) {
+      return;
+    }
     const { pageWidth, pageHeight } = this.parent.viewport.rawDims;
     const { width, height } = getRectDims(this.data.rect!);
 
@@ -394,33 +398,41 @@ export class AnnotationElement {
     const setColor = (
       jsName: string,
       styleName: CSSStyleName,
-      event: CustomEvent<ColorConvertersDetail>,
+      event: CustomEvent<ColorConvertersDetail_>,
     ) => {
       const color = event.detail[jsName];
-      ((event.target as HSElement).style as CSSStyle)[styleName] =
-        ColorConverters[`${color[0]}_HTML`](color.slice(1) as any);
+      const colorType = color[0];
+      const colorArray = color.slice(1);
+      (event.target as HSElement).style[styleName] = ColorConverters
+        [`${colorType}_HTML`](colorArray as any);
+      this.annotationStorage.setValue(this.data.id, {
+        [styleName]: ColorConverters[`${colorType}_rgb`](colorArray as any),
+      });
     };
 
     return shadow(this, "_commonActions", {
       display: (event: CustomEvent) => {
-        const hidden = event.detail.display % 2 === 1;
-        this.container!.style.visibility = hidden ? "hidden" : "visible";
+        const { display } = event.detail;
+        // See scripting/constants.js for the values of `Display`.
+        // 0 = visible, 1 = hidden, 2 = noPrint and 3 = noView.
+        const hidden = display % 2 === 1;
+        this.container.style.visibility = hidden ? "hidden" : "visible";
         this.annotationStorage.setValue(this.data.id, {
-          hidden,
-          print: event.detail.display === 0 || event.detail.display === 3,
+          noView: hidden,
+          noPrint: display === 1 || display === 2,
         });
       },
       print: (event: CustomEvent) => {
         this.annotationStorage.setValue(this.data.id, {
-          print: event.detail.print,
+          noPrint: !event.detail.print,
         });
       },
       hidden: (event: CustomEvent) => {
-        this.container!.style.visibility = event.detail.hidden
-          ? "hidden"
-          : "visible";
+        const { hidden } = event.detail;
+        this.container.style.visibility = hidden ? "hidden" : "visible";
         this.annotationStorage.setValue(this.data.id, {
-          hidden: event.detail.hidden,
+          noPrint: hidden,
+          noView: hidden,
         });
       },
       focus: (event: CustomEvent) => {
@@ -431,34 +443,30 @@ export class AnnotationElement {
       },
       userName: (event: CustomEvent) => {
         // tooltip
-        (<HTMLElement> event.target).title = event.detail.userName;
+        (event.target as HTMLElement).title = event.detail.userName;
       },
-      readonly: (event: CustomEvent) => {
-        if (event.detail.readonly) {
-          (event.target as Element).setAttribute("readonly", "");
-        } else {
-          (event.target as Element).removeAttribute("readonly");
-        }
+      readonly: (event: CustomEvent<{ readonly: boolean }>) => {
+        (event.target as any).disabled = event.detail.readonly;
       },
       required: (event: CustomEvent<{ required: boolean }>) => {
         this._setRequired(event.target as HTMLElement, event.detail.required);
       },
-      bgColor: (event: CustomEvent<ColorConvertersDetail>) => {
+      bgColor: (event: CustomEvent<ColorConvertersDetail_>) => {
         setColor("bgColor", "backgroundColor", event);
       },
-      fillColor: (event: CustomEvent<ColorConvertersDetail>) => {
+      fillColor: (event: CustomEvent<ColorConvertersDetail_>) => {
         setColor("fillColor", "backgroundColor", event);
       },
-      fgColor: (event: CustomEvent<ColorConvertersDetail>) => {
+      fgColor: (event: CustomEvent<ColorConvertersDetail_>) => {
         setColor("fgColor", "color", event);
       },
-      textColor: (event: CustomEvent<ColorConvertersDetail>) => {
+      textColor: (event: CustomEvent<ColorConvertersDetail_>) => {
         setColor("textColor", "color", event);
       },
-      borderColor: (event: CustomEvent<ColorConvertersDetail>) => {
+      borderColor: (event: CustomEvent<ColorConvertersDetail_>) => {
         setColor("borderColor", "borderColor", event);
       },
-      strokeColor: (event: CustomEvent<ColorConvertersDetail>) => {
+      strokeColor: (event: CustomEvent<ColorConvertersDetail_>) => {
         setColor("strokeColor", "borderColor", event);
       },
       rotation: (event: CustomEvent<{ rotation: number }>) => {
@@ -510,29 +518,116 @@ export class AnnotationElement {
 
   /**
    * Create quadrilaterals from the annotation's quadpoints.
-   * @return An array of section elements.
    */
-  #createQuadrilaterals(ignoreBorder = false) {
-    if (!this.data.quadPoints) {
-      return undefined;
+  #createQuadrilaterals(): void {
+    // if (!this.data.quadPoints) {
+    //   return undefined;
+    // }
+
+    // const quadrilaterals: HTMLElement[] = [];
+    // const savedRect = this.data.rect;
+    // let firstQuadRect: rect_t | undefined;
+    // for (const quadPoint of this.data.quadPoints) {
+    //   this.data.rect = [
+    //     quadPoint[2].x,
+    //     quadPoint[2].y,
+    //     quadPoint[1].x,
+    //     quadPoint[1].y,
+    //   ];
+    //   quadrilaterals.push(this.#createContainer(ignoreBorder));
+    //   firstQuadRect ||= this.data.rect;
+    // }
+    // this.data.rect = savedRect;
+    // this.firstQuadRect = firstQuadRect;
+    // return quadrilaterals;
+
+    if (!this.container) {
+      return;
+    }
+    const { quadPoints } = this.data;
+    if (!quadPoints) {
+      return;
     }
 
-    const quadrilaterals: HTMLElement[] = [];
-    const savedRect = this.data.rect;
-    let firstQuadRect: rect_t | undefined;
-    for (const quadPoint of this.data.quadPoints) {
-      this.data.rect = [
-        quadPoint[2].x,
-        quadPoint[2].y,
-        quadPoint[1].x,
-        quadPoint[1].y,
-      ];
-      quadrilaterals.push(this.#createContainer(ignoreBorder));
-      firstQuadRect ||= this.data.rect;
+    const [rectBlX, rectBlY, rectTrX, rectTrY] = this.data.rect!;
+
+    if (quadPoints.length === 1) {
+      const [, { x: trX, y: trY }, { x: blX, y: blY }] = quadPoints[0];
+      if (
+        rectTrX === trX &&
+        rectTrY === trY &&
+        rectBlX === blX &&
+        rectBlY === blY
+      ) {
+        // The quadpoints cover the whole annotation rectangle, so no need to
+        // create a quadrilateral.
+        return;
+      }
     }
-    this.data.rect = savedRect;
-    this.firstQuadRect = firstQuadRect;
-    return quadrilaterals;
+
+    const { style } = this.container;
+    let svgBuffer: string[] | undefined;
+    if (this.#hasBorder) {
+      const { borderColor, borderWidth } = style;
+      style.borderWidth = 0 as any;
+      svgBuffer = [
+        "url('data:image/svg+xml;utf8,",
+        `<svg xmlns="http://www.w3.org/2000/svg"`,
+        ` preserveAspectRatio="none" viewBox="0 0 1 1">`,
+        `<g fill="transparent" stroke="${borderColor}" stroke-width="${borderWidth}">`,
+      ];
+      this.container.classList.add("hasBorder");
+    }
+
+    /*#static*/ if (TESTING) {
+      this.container.classList.add("hasClipPath");
+    }
+
+    const width = rectTrX - rectBlX;
+    const height = rectTrY - rectBlY;
+
+    // const { svgFactory } = this;
+    const svg = createSVG("svg");
+    svg.classList.add("quadrilateralsContainer");
+    svg.assignAttro({
+      width: 0,
+      height: 0,
+    });
+    const defs = createSVG("defs");
+    svg.append(defs);
+    const clipPath = createSVG("clipPath");
+    const id = `clippath_${this.data.id}`;
+    clipPath.assignAttro({
+      id,
+      clipPathUnits: "objectBoundingBox",
+    });
+    defs.append(clipPath);
+
+    for (const [, { x: trX, y: trY }, { x: blX, y: blY }] of quadPoints) {
+      const rect = createSVG("rect");
+      const x = (blX - rectBlX) / width;
+      const y = (rectTrY - trY) / height;
+      const rectWidth = (trX - blX) / width;
+      const rectHeight = (trY - blY) / height;
+      rect.assignAttro({
+        x: x,
+        y: y,
+        width: rectWidth,
+        height: rectHeight,
+      });
+      clipPath.append(rect);
+      svgBuffer?.push(
+        `<rect vector-effect="non-scaling-stroke" x="${x}" y="${y}" width="${rectWidth}" height="${rectHeight}"/>`,
+      );
+    }
+
+    if (this.#hasBorder) {
+      svgBuffer!.push(`</g></svg>')`);
+      style.backgroundImage = svgBuffer!.join("");
+    }
+
+    this.container.append(svg);
+    this.container.style.clipPath = `url(#${id})`;
   }
 
   /**
@@ -551,7 +646,7 @@ export class AnnotationElement {
         modificationDate: data.modificationDate,
         contentsObj: data.contentsObj,
         richText: data.richText,
-        parentRect: this.firstQuadRect || data.rect,
+        parentRect: data.rect,
         // borderStyle: 0,
         id: `popup_${data.id}`,
         rotation: data.rotation,
@@ -563,27 +658,12 @@ export class AnnotationElement {
   }
 
   /**
-   * Render the quadrilaterals of the annotation.
-   * @return An array of section elements.
-   */
-  protected _renderQuadrilaterals(className: string) {
-    /*#static*/ if (PDFJSDev || TESTING) {
-      assert(this.quadrilaterals, "Missing quadrilaterals during rendering");
-    }
-
-    for (const quadrilateral of this.quadrilaterals!) {
-      quadrilateral.classList.add(className);
-    }
-    return this.quadrilaterals!;
-  }
-
-  /**
    * Render the annotation's HTML element(s).
+   *
    * @return A section element or an array of section elements.
    */
   render(): HTMLElement | HTMLElement[] | undefined {
-    assert(0, "Abstract method `AnnotationElement.render` called");
-    return undefined;
+    fail("Abstract method `AnnotationElement.render` called");
   }
 
   protected _getElementsByName(name: string, skipId?: string) {
@@ -649,8 +729,13 @@ export class AnnotationElement {
     this.popup?.forceHide();
   }
 
-  getElementsToTriggerPopup(): HSElement | HSElement[] {
-    return this.quadrilaterals || this.container;
+  /**
+   * Get the HTML element(s) which can trigger a popup when clicked or hovered.
+   *
+   * @return An array of elements or an element.
+   */
+  getElementsToTriggerPopup(): HSElement[] | HSElement {
+    return this.container;
   }
 
   addHighlightArea() {
@@ -662,6 +747,20 @@ export class AnnotationElement {
     } else {
       triggers.classList.add("highlightArea");
     }
+  }
+
+  protected editOnDoubleClick$() {
+    const {
+      annotationEditorType: mode,
+      data: { id: editId },
+    } = this;
+    this.container.on("dblclick", () => {
+      this.linkService.eventBus?.dispatch("switchannotationeditormode", {
+        source: this,
+        mode,
+        editId,
+      });
+    });
   }
 }
 
@@ -732,26 +831,16 @@ class LinkAnnotationElement extends AnnotationElement {
       }
     }
 
-    if (this.quadrilaterals) {
-      return this._renderQuadrilaterals("linkAnnotation").map(
-        (quadrilateral, index) => {
-          const linkElement = index === 0 ? link : link.cloneNode();
-          quadrilateral.append(linkElement);
-          return quadrilateral;
-        },
-      );
-    }
-
-    this.container!.classList.add("linkAnnotation");
+    this.container.classList.add("linkAnnotation");
     if (isBound) {
-      this.container!.append(link);
+      this.container.append(link);
     }
 
-    return this.container!;
+    return this.container;
   }
 
   #setInternalLink() {
-    this.container!.setAttribute("data-internal-link", "");
+    this.container.setAttribute("data-internal-link", "");
   }
 
   /**
@@ -789,7 +878,7 @@ class LinkAnnotationElement extends AnnotationElement {
     link.href = this.linkService.getAnchorUrl("");
     link.onclick = () => {
       this.downloadManager?.openOrDownloadData(
-        this.container!,
+        this.container,
         attachment.content!,
         attachment.filename,
       );
@@ -958,7 +1047,7 @@ class TextAnnotationElement extends AnnotationElement {
   }
 
   override render() {
-    this.container!.classList.add("textAnnotation");
+    this.container.classList.add("textAnnotation");
 
     const image = html("img");
     image.src = this.imageResourcesPath +
@@ -973,8 +1062,8 @@ class TextAnnotationElement extends AnnotationElement {
       this._createPopup();
     }
 
-    this.container!.append(image);
-    return this.container!;
+    this.container.append(image);
+    return this.container;
   }
 }
 
@@ -998,10 +1087,10 @@ class WidgetAnnotationElement extends AnnotationElement {
   override render() {
     // Show only the container for unsupported field types.
     if (this.data.alternativeText) {
-      this.container!.title = this.data.alternativeText;
+      this.container.title = this.data.alternativeText;
     }
 
-    return this.container!;
+    return this.container;
   }
 
   showElementAndHideCanvas(element: HTMLElement) {
@@ -1130,7 +1219,7 @@ class WidgetAnnotationElement extends AnnotationElement {
       fontColor![2],
     );
 
-    if (this.data.textAlignment !== null) {
+    if (this.data.textAlignment !== undefined) {
       style.textAlign = TEXT_ALIGNMENT[this.data.textAlignment!];
     }
   }
@@ -1179,7 +1268,7 @@ class TextWidgetAnnotationElement extends WidgetAnnotationElement {
     const storage = this.annotationStorage!;
     const id = this.data.id;
 
-    this.container!.classList.add("textWidgetAnnotation");
+    this.container.classList.add("textWidgetAnnotation");
 
     let element: HTMLElement;
     if (this.renderForms) {
@@ -1236,7 +1325,7 @@ class TextWidgetAnnotationElement extends WidgetAnnotationElement {
       element.setAttribute("data-element-id", id);
 
       (element as El).disabled = this.data.readOnly!;
-      (element as El).name = this.data.baseFieldName || this.data.fieldName!;
+      (element as El).name = this.data.fieldName!;
       element.tabIndex = DEFAULT_TAB_INDEX;
 
       this._setRequired(element as El, this.data.required!);
@@ -1501,8 +1590,8 @@ class TextWidgetAnnotationElement extends WidgetAnnotationElement {
     this._setBackgroundColor(element);
     this._setDefaultPropertiesFromJS(element);
 
-    this.container!.append(element);
-    return this.container!;
+    this.container.append(element);
+    return this.container;
   }
 }
 
@@ -1530,7 +1619,7 @@ class CheckboxWidgetAnnotationElement extends WidgetAnnotationElement {
       storage.setValue(id, { value });
     }
 
-    this.container!.classList.add("buttonWidgetAnnotation", "checkBox");
+    this.container.classList.add("buttonWidgetAnnotation", "checkBox");
 
     const element = html("input");
     type El = typeof element;
@@ -1540,7 +1629,7 @@ class CheckboxWidgetAnnotationElement extends WidgetAnnotationElement {
     element.disabled = data.readOnly!;
     this._setRequired(element, this.data.required!);
     element.type = "checkbox";
-    element.name = data.baseFieldName || data.fieldName!;
+    element.name = data.fieldName!;
     if (value) {
       element.setAttribute("checked", true as any);
     }
@@ -1594,8 +1683,8 @@ class CheckboxWidgetAnnotationElement extends WidgetAnnotationElement {
     this._setBackgroundColor(element);
     this._setDefaultPropertiesFromJS(element);
 
-    this.container!.append(element);
-    return this.container!;
+    this.container.append(element);
+    return this.container;
   }
 }
 
@@ -1605,7 +1694,7 @@ class RadioButtonWidgetAnnotationElement extends WidgetAnnotationElement {
   }
 
   override render() {
-    this.container!.classList.add("buttonWidgetAnnotation", "radioButton");
+    this.container.classList.add("buttonWidgetAnnotation", "radioButton");
     const storage = this.annotationStorage!;
     const data = this.data;
     const id = data.id;
@@ -1626,9 +1715,9 @@ class RadioButtonWidgetAnnotationElement extends WidgetAnnotationElement {
     element.disabled = data.readOnly!;
     this._setRequired(element, this.data.required!);
     element.type = "radio";
-    element.name = data.baseFieldName || data.fieldName!;
+    element.name = data.fieldName!;
     if (value) {
-      element.setAttribute("checked", <any> true);
+      element.setAttribute("checked", true as any);
     }
     element.tabIndex = DEFAULT_TAB_INDEX;
 
@@ -1686,8 +1775,8 @@ class RadioButtonWidgetAnnotationElement extends WidgetAnnotationElement {
     this._setBackgroundColor(element);
     this._setDefaultPropertiesFromJS(element);
 
-    this.container!.append(element);
-    return this.container!;
+    this.container.append(element);
+    return this.container;
   }
 }
 
@@ -1709,10 +1798,10 @@ class PushButtonWidgetAnnotationElement extends LinkAnnotationElement {
 
     const linkElement = container.lastChild;
     if (this.enableScripting && this.hasJSActions && linkElement) {
-      this._setDefaultPropertiesFromJS(<HTMLElement> linkElement);
+      this._setDefaultPropertiesFromJS(linkElement as HTMLElement);
 
       linkElement.addEventListener("updatefromsandbox", (jsEvent) => {
-        this._dispatchEventFromSandbox(<Actions> {}, <CustomEvent> jsEvent);
+        this._dispatchEventFromSandbox({} as Actions, jsEvent as CustomEvent);
       });
     }
 
@@ -1733,7 +1822,7 @@ class ChoiceWidgetAnnotationElement extends WidgetAnnotationElement {
   }
 
   override render() {
-    this.container!.classList.add("choiceWidgetAnnotation");
+    this.container.classList.add("choiceWidgetAnnotation");
     const storage = this.annotationStorage!;
     const id = this.data.id;
 
@@ -1748,7 +1837,7 @@ class ChoiceWidgetAnnotationElement extends WidgetAnnotationElement {
 
     selectElement.disabled = this.data.readOnly!;
     this._setRequired(selectElement, this.data.required!);
-    selectElement.name = this.data.baseFieldName || this.data.fieldName!;
+    selectElement.name = this.data.fieldName!;
     selectElement.tabIndex = DEFAULT_TAB_INDEX;
 
     let addAnEmptyEntry = this.data.combo && this.data.options!.length > 0;
@@ -1771,10 +1860,12 @@ class ChoiceWidgetAnnotationElement extends WidgetAnnotationElement {
     // Insert the options into the choice field.
     for (const option of this.data.options!) {
       const optionElement = html("option");
-      optionElement.textContent = <string> option.displayValue;
-      optionElement.value = <string> option.exportValue;
-      if ((<string[]> storedData.value).includes(<string> option.exportValue)) {
-        optionElement.setAttribute("selected", <any> true);
+      optionElement.textContent = option.displayValue as string;
+      optionElement.value = option.exportValue as string;
+      if (
+        (storedData.value as string[]).includes(option.exportValue as string)
+      ) {
+        optionElement.setAttribute("selected", true as any);
         addAnEmptyEntry = false;
       }
       selectElement.append(optionElement);
@@ -1784,8 +1875,8 @@ class ChoiceWidgetAnnotationElement extends WidgetAnnotationElement {
     if (addAnEmptyEntry) {
       const noneOptionElement = html("option");
       noneOptionElement.value = " ";
-      noneOptionElement.setAttribute("hidden", <any> true);
-      noneOptionElement.setAttribute("selected", <any> true);
+      noneOptionElement.setAttribute("hidden", true as any);
+      noneOptionElement.setAttribute("selected", true as any);
       selectElement.prepend(noneOptionElement);
 
       removeEmptyEntry = () => {
@@ -1974,8 +2065,8 @@ class ChoiceWidgetAnnotationElement extends WidgetAnnotationElement {
     this._setBackgroundColor(selectElement);
     this._setDefaultPropertiesFromJS(selectElement);
 
-    this.container!.append(selectElement);
-    return this.container!;
+    this.container.append(selectElement);
+    return this.container;
   }
 }
 
@@ -1994,10 +2085,10 @@ class PopupAnnotationElement extends AnnotationElement {
   }
 
   override render() {
-    this.container!.classList.add("popupAnnotation");
+    this.container.classList.add("popupAnnotation");
 
     const popup = new PopupElement({
-      container: this.container!,
+      container: this.container,
       color: this.data.color,
       titleObj: this.data.titleObj,
       modificationDate: this.data.modificationDate,
@@ -2019,7 +2110,7 @@ class PopupAnnotationElement extends AnnotationElement {
 
     this.container.setAttribute("aria-controls", elementIds.join(","));
 
-    return this.container!;
+    return this.container;
   }
 }
 
@@ -2280,7 +2371,7 @@ class PopupElement {
    */
   #hide = () => {
     this.#container.classList.remove("focused");
-    if (this.#pinned) {
+    if (this.#pinned || !this.isVisible) {
       return;
     }
     this.#container.hidden = true;
@@ -2311,6 +2402,7 @@ class PopupElement {
 
 export class FreeTextAnnotationElement extends AnnotationElement {
   textContent;
+  textPosition;
 
   constructor(parameters: AnnotationElementCtorP_) {
     const isRenderable = !!(
@@ -2321,11 +2413,12 @@ export class FreeTextAnnotationElement extends AnnotationElement {
     );
     super(parameters, { isRenderable, ignoreBorder: true });
     this.textContent = parameters.data.textContent;
+    this.textPosition = parameters.data.textPosition;
     this.annotationEditorType = AnnotationEditorType.FREETEXT;
   }
 
   override render() {
-    this.container!.classList.add("freeTextAnnotation");
+    this.container.classList.add("freeTextAnnotation");
 
     if (this.textContent) {
       const content = div();
@@ -2336,13 +2429,16 @@ export class FreeTextAnnotationElement extends AnnotationElement {
         lineSpan.textContent = line;
         content.append(lineSpan);
       }
-      this.container!.append(content);
+      this.container.append(content);
     }
 
     if (!this.data.popupRef) {
       this._createPopup();
     }
-    return this.container!;
+
+    this.editOnDoubleClick$();
+
+    return this.container;
   }
 }
 
@@ -2360,7 +2456,7 @@ class LineAnnotationElement extends AnnotationElement {
   }
 
   override render() {
-    this.container!.classList.add("lineAnnotation");
+    this.container.classList.add("lineAnnotation");
 
     // Create an invisible line with the same starting and ending coordinates
     // that acts as the trigger for the popup. Only the line itself should
@@ -2389,7 +2485,7 @@ class LineAnnotationElement extends AnnotationElement {
     });
 
     svg.append(line);
-    this.container!.append(svg);
+    this.container.append(svg);
 
     // Create the popup ourselves so that we can bind it to the line instead
     // of to the entire container (which is the default).
@@ -2397,7 +2493,7 @@ class LineAnnotationElement extends AnnotationElement {
       this._createPopup();
     }
 
-    return this.container!;
+    return this.container;
   }
 
   override getElementsToTriggerPopup() {
@@ -2423,7 +2519,7 @@ class SquareAnnotationElement extends AnnotationElement {
   }
 
   override render() {
-    this.container!.classList.add("squareAnnotation");
+    this.container.classList.add("squareAnnotation");
 
     // Create an invisible square with the same rectangle that acts as the
     // trigger for the popup. Only the square itself should trigger the
@@ -2454,7 +2550,7 @@ class SquareAnnotationElement extends AnnotationElement {
     });
 
     svg.append(square);
-    this.container!.append(svg);
+    this.container.append(svg);
 
     // Create the popup ourselves so that we can bind it to the square instead
     // of to the entire container (which is the default).
@@ -2462,7 +2558,7 @@ class SquareAnnotationElement extends AnnotationElement {
       this._createPopup();
     }
 
-    return this.container!;
+    return this.container;
   }
 
   override getElementsToTriggerPopup() {
@@ -2488,7 +2584,7 @@ class CircleAnnotationElement extends AnnotationElement {
   }
 
   override render() {
-    this.container!.classList.add("circleAnnotation");
+    this.container.classList.add("circleAnnotation");
 
     // Create an invisible circle with the same ellipse that acts as the
     // trigger for the popup. Only the circle itself should trigger the
@@ -2519,7 +2615,7 @@ class CircleAnnotationElement extends AnnotationElement {
     });
 
     svg.append(circle);
-    this.container!.append(svg);
+    this.container.append(svg);
 
     // Create the popup ourselves so that we can bind it to the circle instead
     // of to the entire container (which is the default).
@@ -2527,7 +2623,7 @@ class CircleAnnotationElement extends AnnotationElement {
       this._createPopup();
     }
 
-    return this.container!;
+    return this.container;
   }
 
   override getElementsToTriggerPopup() {
@@ -2558,7 +2654,7 @@ class PolylineAnnotationElement extends AnnotationElement {
   }
 
   override render() {
-    this.container!.classList.add(this.containerClassName);
+    this.container.classList.add(this.containerClassName);
 
     // Create an invisible polyline with the same points that acts as the
     // trigger for the popup. Only the polyline itself should trigger the
@@ -2594,7 +2690,7 @@ class PolylineAnnotationElement extends AnnotationElement {
     });
 
     svg.append(polyline);
-    this.container!.append(svg);
+    this.container.append(svg);
 
     // Create the popup ourselves so that we can bind it to the polyline
     // instead of to the entire container (which is the default).
@@ -2603,7 +2699,7 @@ class PolylineAnnotationElement extends AnnotationElement {
       this._createPopup();
     }
 
-    return this.container!;
+    return this.container;
   }
 
   override getElementsToTriggerPopup() {
@@ -2637,12 +2733,12 @@ class CaretAnnotationElement extends AnnotationElement {
   }
 
   override render() {
-    this.container!.classList.add("caretAnnotation");
+    this.container.classList.add("caretAnnotation");
 
     if (!this.data.popupRef) {
       this._createPopup();
     }
-    return this.container!;
+    return this.container;
   }
 }
 
@@ -2668,7 +2764,7 @@ export class InkAnnotationElement extends AnnotationElement {
   }
 
   override render() {
-    this.container!.classList.add(this.containerClassName);
+    this.container.classList.add(this.containerClassName);
 
     // Create an invisible polyline with the same points that acts as the
     // trigger for the popup.
@@ -2714,8 +2810,8 @@ export class InkAnnotationElement extends AnnotationElement {
       svg.append(polyline);
     }
 
-    this.container!.append(svg);
-    return this.container!;
+    this.container.append(svg);
+    return this.container;
   }
 
   override getElementsToTriggerPopup() {
@@ -2747,12 +2843,8 @@ class HighlightAnnotationElement extends AnnotationElement {
       this._createPopup();
     }
 
-    if (this.quadrilaterals) {
-      return this._renderQuadrilaterals("highlightAnnotation");
-    }
-
-    this.container!.classList.add("highlightAnnotation");
-    return this.container!;
+    this.container.classList.add("highlightAnnotation");
+    return this.container;
   }
 }
 
@@ -2776,12 +2868,8 @@ class UnderlineAnnotationElement extends AnnotationElement {
       this._createPopup();
     }
 
-    if (this.quadrilaterals) {
-      return this._renderQuadrilaterals("underlineAnnotation");
-    }
-
-    this.container!.classList.add("underlineAnnotation");
-    return this.container!;
+    this.container.classList.add("underlineAnnotation");
+    return this.container;
   }
 }
 
@@ -2805,12 +2893,8 @@ class SquigglyAnnotationElement extends AnnotationElement {
       this._createPopup();
     }
 
-    if (this.quadrilaterals) {
-      return this._renderQuadrilaterals("squigglyAnnotation");
-    }
-
-    this.container!.classList.add("squigglyAnnotation");
-    return this.container!;
+    this.container.classList.add("squigglyAnnotation");
+    return this.container;
   }
 }
 
@@ -2834,16 +2918,12 @@ class StrikeOutAnnotationElement extends AnnotationElement {
       this._createPopup();
     }
 
-    if (this.quadrilaterals) {
-      return this._renderQuadrilaterals("strikeoutAnnotation");
-    }
-
-    this.container!.classList.add("strikeoutAnnotation");
-    return this.container!;
+    this.container.classList.add("strikeoutAnnotation");
+    return this.container;
   }
 }
 
-class StampAnnotationElement extends AnnotationElement {
+export class StampAnnotationElement extends AnnotationElement {
   constructor(parameters: AnnotationElementCtorP_) {
     const isRenderable = !!(
       parameters.data.popupRef ||
@@ -2855,12 +2935,12 @@ class StampAnnotationElement extends AnnotationElement {
   }
 
   override render() {
-    this.container!.classList.add("stampAnnotation");
+    this.container.classList.add("stampAnnotation");
 
     if (!this.data.popupRef) {
       this._createPopup();
     }
-    return this.container!;
+    return this.container;
   }
 }
 
@@ -2885,11 +2965,11 @@ export class FileAttachmentAnnotationElement extends AnnotationElement {
   }
 
   override render() {
-    this.container!.classList.add("fileAttachmentAnnotation");
+    this.container.classList.add("fileAttachmentAnnotation");
 
-    // const trigger = div();
+    const { data } = this;
     let trigger;
-    if (this.data.hasAppearance) {
+    if (data.hasAppearance || data.fillAlpha === 0) {
       trigger = div();
     } else {
       // Unfortunately it seems that it's not clearly specified exactly what
@@ -2899,24 +2979,33 @@ export class FileAttachmentAnnotationElement extends AnnotationElement {
       //   Additional names may be supported as well. Default value: PushPin.
       trigger = html("img");
       trigger.src = `${this.imageResourcesPath}annotation-${
-        /paperclip/i.test(this.data.name!) ? "paperclip" : "pushpin"
+        /paperclip/i.test(data.name!) ? "paperclip" : "pushpin"
       }.svg`;
+
+      if (data.fillAlpha && data.fillAlpha < 1) {
+        // trigger.style = `filter: opacity(${Math.round(
+        //   data.fillAlpha * 100
+        // )}%);`;
+        trigger.style.filter = `opacity(${Math.round(data.fillAlpha * 100)}%)`;
+
+        /*#static*/ if (TESTING) {
+          this.container.classList.add("hasFillAlpha");
+        }
+      }
     }
     trigger.classList.add("popupTriggerArea");
     trigger.on("dblclick", this.#download);
     this.#trigger = trigger;
 
     if (
-      !this.data.popupRef &&
-      (this.data.titleObj?.str ||
-        this.data.contentsObj?.str ||
-        this.data.richText)
+      !data.popupRef &&
+      (data.titleObj?.str || data.contentsObj?.str || data.richText)
     ) {
       this._createPopup();
     }
 
-    this.container!.append(trigger);
-    return this.container!;
+    this.container.append(trigger);
+    return this.container;
   }
 
   override getElementsToTriggerPopup() {
@@ -2932,7 +3021,7 @@ export class FileAttachmentAnnotationElement extends AnnotationElement {
    */
   #download = () => {
     this.downloadManager?.openOrDownloadData(
-      this.container!,
+      this.container,
       this.content!,
       this.filename,
     );
@@ -2983,7 +3072,7 @@ export interface AnnotStorageValue {
   annotationType?: AnnotationEditorType;
   annotationEditorType?: AnnotationEditorType;
   bitmap?: ImageBitmap;
-  bitmapId?: string;
+  bitmapId?: string | undefined;
   charLimit?: number | undefined;
   color?: Uint8ClampedArray | rgb_t;
   deleted?: boolean;
@@ -2992,6 +3081,8 @@ export interface AnnotStorageValue {
   hidden?: boolean;
   id?: string | undefined;
   items?: Item[];
+  noPrint?: unknown;
+  noView?: unknown;
   opacity?: number;
   pageIndex?: number;
   paths?: {
@@ -3042,9 +3133,7 @@ export class AnnotationLayer {
     this.viewport = viewport;
 
     /*#static*/ if (GENERIC && !TESTING) {
-      import("../../pdf.ts-web/l10n_utils.ts").then(({ NullL10n }) => {
-        this.l10n ||= NullL10n;
-      });
+      this.l10n ||= NullL10n;
     }
     /*#static*/ if (TESTING) {
       // For testing purposes.
@@ -3136,18 +3225,12 @@ export class AnnotationLayer {
       if (data.hidden) {
         (rendered as HSElement).style.visibility = "hidden";
       }
-      if (Array.isArray(rendered)) {
-        for (const renderedElement of rendered) {
-          this.#appendElement(renderedElement as HTMLDivElement, data.id);
-        }
-      } else {
-        this.#appendElement(rendered as HTMLDivElement, data.id);
-      }
+      this.#appendElement(rendered as HTMLDivElement, data.id);
     }
 
     this.#setAnnotationCanvasMap();
 
-    await this.l10n.translate(layer);
+    await this.l10n!.translate(layer);
   }
 
   /**

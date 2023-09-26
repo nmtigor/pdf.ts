@@ -17,10 +17,7 @@
  * limitations under the License.
  */
 
-import {
-  assertEquals,
-  assertFalse,
-} from "https://deno.land/std@0.195.0/assert/mod.ts";
+import { assertEquals, assertFalse } from "@std/assert/mod.ts";
 import {
   afterAll,
   afterEach,
@@ -28,7 +25,7 @@ import {
   beforeEach,
   describe,
   it,
-} from "https://deno.land/std@0.195.0/testing/bdd.ts";
+} from "@std/testing/bdd.ts";
 import { type rect_t } from "../../../lib/alias.ts";
 import { AnnotStorageRecord } from "../display/annotation_layer.ts";
 import {
@@ -80,6 +77,7 @@ describe("annotation", () => {
       },
     };
     evaluatorOptions = {
+      isEvalSupported: true,
       isOffscreenCanvasSupported: false,
     };
 
@@ -349,35 +347,55 @@ describe("annotation", () => {
     });
 
     it("should set and get valid contents", () => {
-      const annotation = new Annotation({ dict, ref } as any);
+      const annotation = new Annotation({
+        dict,
+        ref,
+        evaluatorOptions: pdfManagerMock.evaluatorOptions,
+      } as any);
       annotation.setContents("Foo bar baz");
 
       assertEquals(annotation._contents, { str: "Foo bar baz", dir: "ltr" });
     });
 
     it("should not set and get invalid contents", () => {
-      const annotation = new Annotation({ dict, ref } as any);
+      const annotation = new Annotation({
+        dict,
+        ref,
+        evaluatorOptions: pdfManagerMock.evaluatorOptions,
+      } as any);
       annotation.setContents(undefined);
 
       assertEquals(annotation._contents, { str: "", dir: "ltr" });
     });
 
     it("should set and get a valid modification date", () => {
-      const annotation = new Annotation({ dict, ref } as any);
+      const annotation = new Annotation({
+        dict,
+        ref,
+        evaluatorOptions: pdfManagerMock.evaluatorOptions,
+      } as any);
       annotation.setModificationDate("D:20190422");
 
       assertEquals(annotation.modificationDate, "D:20190422");
     });
 
     it("should not set and get an invalid modification date", () => {
-      const annotation = new Annotation({ dict, ref } as any);
+      const annotation = new Annotation({
+        dict,
+        ref,
+        evaluatorOptions: pdfManagerMock.evaluatorOptions,
+      } as any);
       annotation.setModificationDate(undefined);
 
       assertEquals(annotation.modificationDate, undefined);
     });
 
     it("should set and get flags", () => {
-      const annotation = new Annotation({ dict, ref } as any);
+      const annotation = new Annotation({
+        dict,
+        ref,
+        evaluatorOptions: pdfManagerMock.evaluatorOptions,
+      } as any);
       annotation.setFlags(13);
 
       assertEquals(annotation.hasFlag(AnnotationFlag.INVISIBLE), true);
@@ -388,63 +406,99 @@ describe("annotation", () => {
     });
 
     it("should be viewable and not printable by default", () => {
-      const annotation = new Annotation({ dict, ref } as any);
+      const annotation = new Annotation({
+        dict,
+        ref,
+        evaluatorOptions: pdfManagerMock.evaluatorOptions,
+      } as any);
 
       assertEquals(annotation.viewable, true);
       assertEquals(annotation.printable, false);
     });
 
     it("should set and get a valid rectangle", () => {
-      const annotation = new Annotation({ dict, ref } as any);
+      const annotation = new Annotation({
+        dict,
+        ref,
+        evaluatorOptions: pdfManagerMock.evaluatorOptions,
+      } as any);
       annotation.setRectangle([117, 694, 164.298, 720]);
 
       assertEquals(annotation.rectangle, [117, 694, 164.298, 720]);
     });
 
     it("should not set and get an invalid rectangle", () => {
-      const annotation = new Annotation({ dict, ref } as any);
+      const annotation = new Annotation({
+        dict,
+        ref,
+        evaluatorOptions: pdfManagerMock.evaluatorOptions,
+      } as any);
       annotation.setRectangle([117, 694, 164.298]);
 
       assertEquals(annotation.rectangle, [0, 0, 0, 0]);
     });
 
     it("should reject a color if it is not an array", () => {
-      const annotation = new Annotation({ dict, ref } as any);
+      const annotation = new Annotation({
+        dict,
+        ref,
+        evaluatorOptions: pdfManagerMock.evaluatorOptions,
+      } as any);
       annotation.setColor("red" as any);
 
       assertEquals(annotation.color, new Uint8ClampedArray([0, 0, 0]));
     });
 
     it("should set and get a transparent color", () => {
-      const annotation = new Annotation({ dict, ref } as any);
+      const annotation = new Annotation({
+        dict,
+        ref,
+        evaluatorOptions: pdfManagerMock.evaluatorOptions,
+      } as any);
       annotation.setColor([]);
 
       assertEquals(annotation.color, undefined);
     });
 
     it("should set and get a grayscale color", () => {
-      const annotation = new Annotation({ dict, ref } as any);
+      const annotation = new Annotation({
+        dict,
+        ref,
+        evaluatorOptions: pdfManagerMock.evaluatorOptions,
+      } as any);
       annotation.setColor([0.4]);
 
       assertEquals(annotation.color, new Uint8ClampedArray([102, 102, 102]));
     });
 
     it("should set and get an RGB color", () => {
-      const annotation = new Annotation({ dict, ref } as any);
+      const annotation = new Annotation({
+        dict,
+        ref,
+        evaluatorOptions: pdfManagerMock.evaluatorOptions,
+      } as any);
       annotation.setColor([0, 0, 1]);
 
       assertEquals(annotation.color, new Uint8ClampedArray([0, 0, 255]));
     });
 
     it("should set and get a CMYK color", () => {
-      const annotation = new Annotation({ dict, ref } as any);
+      const annotation = new Annotation({
+        dict,
+        ref,
+        evaluatorOptions: pdfManagerMock.evaluatorOptions,
+      } as any);
       annotation.setColor([0.1, 0.92, 0.84, 0.02]);
 
       assertEquals(annotation.color, new Uint8ClampedArray([234, 59, 48]));
     });
 
     it("should not set and get an invalid color", () => {
-      const annotation = new Annotation({ dict, ref } as any);
+      const annotation = new Annotation({
+        dict,
+        ref,
+        evaluatorOptions: pdfManagerMock.evaluatorOptions,
+      } as any);
       annotation.setColor([0.4, 0.6]);
 
       assertEquals(annotation.color, new Uint8ClampedArray([0, 0, 0]));
@@ -550,14 +604,22 @@ describe("annotation", () => {
     });
 
     it("should set and get a valid creation date", () => {
-      const markupAnnotation = new MarkupAnnotation({ dict, ref } as any);
+      const markupAnnotation = new MarkupAnnotation({
+        dict,
+        ref,
+        evaluatorOptions: pdfManagerMock.evaluatorOptions,
+      } as any);
       markupAnnotation.setCreationDate("D:20190422");
 
       assertEquals(markupAnnotation.creationDate, "D:20190422");
     });
 
     it("should not set and get an invalid creation date", () => {
-      const markupAnnotation = new MarkupAnnotation({ dict, ref } as any);
+      const markupAnnotation = new MarkupAnnotation({
+        dict,
+        ref,
+        evaluatorOptions: pdfManagerMock.evaluatorOptions,
+      } as any);
       markupAnnotation.setCreationDate(undefined);
 
       assertEquals(markupAnnotation.creationDate, undefined);
@@ -659,7 +721,7 @@ describe("annotation", () => {
       assertEquals(data.creationDate, "D:20180423");
       assertEquals(data.modificationDate, "D:20190423");
       assertEquals(data.color, new Uint8ClampedArray([0, 0, 255]));
-      //kkkk `undefined`
+      // kkkk `undefined`
       // assertEquals(data.popupRef, "820R");
     });
 
@@ -2281,7 +2343,7 @@ describe("annotation", () => {
       //   newData!.data,
       //   "2 0 obj\n<< /Subtype /Form /Resources " +
       //     "<< /Font << /Helv 314 0 R>>>> /BBox [0 0 32 10] /Filter /FlateDecode /Length 68>> stream\n" +
-      //     `${compressedStream}\nendstream\nendobj\n`
+      //     `${compressedStream}\nendstream\nendobj\n`,
       // );
     });
 
@@ -4260,14 +4322,16 @@ describe("annotation", () => {
       assertEquals(
         appearance,
         "3 0 obj\n" +
-          "<< /FormType 1 /Subtype /Form /Type /XObject /BBox [0 0 44 44] " +
-          "/Resources << /Font << /Helv 1 0 R>>>> /Length 101>> stream\n" +
+          "<< /FormType 1 /Subtype /Form /Type /XObject /BBox [12 34 56 78] " +
+          "/Resources << /Font << /Helv 1 0 R>>>> /Matrix [1 0 0 1 -12 -34] " +
+          "/Length 98>> stream\n" +
           "q\n" +
-          "0 0 44 44 re W n\n" +
+          "1 0 0 1 0 0 cm\n" +
+          "12 34 44 44 re W n\n" +
           "BT\n" +
-          "1 0 0 1 0 47.5 Tm 0 Tc 0 g\n" +
-          "/Helv 10 Tf\n" +
-          "0 -13.5 Td (Hello PDF.js World!) Tj\n" +
+          "0 g\n" +
+          "0 Tc /Helv 10 Tf\n" +
+          "12 68 Td (Hello PDF.js World!) Tj\n" +
           "ET\n" +
           "Q\n" +
           "endstream\n" +
@@ -4302,13 +4366,13 @@ describe("annotation", () => {
       assertEquals(opList.fnArray, [
         OPS.beginAnnotation,
         OPS.save,
+        OPS.transform,
         OPS.constructPath,
         OPS.clip,
         OPS.endPath,
         OPS.beginText,
-        OPS.setTextMatrix,
-        OPS.setCharSpacing,
         OPS.setFillRGBColor,
+        OPS.setCharSpacing,
         OPS.dependency,
         OPS.setFont,
         OPS.moveText,

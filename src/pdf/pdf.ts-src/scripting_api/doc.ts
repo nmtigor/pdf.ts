@@ -17,22 +17,21 @@
  * limitations under the License.
  */
 
-import { ScriptingDocProperties } from "../../pdf.ts-web/app.ts";
-import { AnnotActions } from "../core/core_utils.ts";
-import { Name } from "../core/primitives.ts";
-import { FieldWrapped } from "./app.ts";
-import {
-  createActionsMap,
-  ScriptingActionName,
-  ScriptingActions,
-} from "./common.ts";
+import type { ScriptingDocProperties } from "../../pdf.ts-web/app.ts";
+import type { AnnotActions } from "../core/core_utils.ts";
+import type { Name } from "../core/primitives.ts";
+import type { FieldWrapped } from "./app.ts";
+import type { ScriptingActionName, ScriptingActions } from "./common.ts";
+import { createActionsMap } from "./common.ts";
 import { ZoomType } from "./constants.ts";
-import { EventDispatcher } from "./event.ts";
-import { PDFObject, ScriptingData, SendData } from "./pdf_object.ts";
+import type { EventDispatcher } from "./event.ts";
+import type { ScriptingData, SendData } from "./pdf_object.ts";
+import { PDFObject } from "./pdf_object.ts";
 import { PrintParams } from "./print_params.ts";
+import { serializeError } from "./app_utils.ts";
 /*80--------------------------------------------------------------------------*/
 
-interface _Info {
+interface Info_ {
   title: string;
   author: string;
   authors: string | string[];
@@ -48,11 +47,11 @@ interface _Info {
 const DOC_EXTERNAL = false;
 
 class InfoProxyHandler {
-  static get(obj: _Info, prop: keyof _Info) {
-    return obj[<keyof _Info> prop.toLowerCase()];
+  static get(obj: Info_, prop: keyof Info_) {
+    return obj[<keyof Info_> prop.toLowerCase()];
   }
 
-  static set(obj: _Info, prop: keyof _Info, value: _Info[keyof _Info]) {
+  static set(obj: Info_, prop: keyof Info_, value: Info_[keyof Info_]) {
     throw new Error(`doc.info.${prop} is read-only`);
     return false;
   }
@@ -353,7 +352,7 @@ export class Doc extends PDFObject<SendDocData_> {
 
     // info has case insensitive properties
     // and they are read-only.
-    this._info = new Proxy<_Info>(
+    this._info = new Proxy<Info_>(
       {
         title: this._title,
         author: this._author,
@@ -400,20 +399,29 @@ export class Doc extends PDFObject<SendDocData_> {
   }
 
   _dispatchDocEvent(name: ScriptingActionName) {
-    if (name === "Open") {
-      this._disableSaving = true;
-      this._runActions("OpenAction");
-      this._disableSaving = false;
-    } else if (name === "WillPrint") {
-      this._disablePrinting = true;
-      this._runActions(name);
-      this._disablePrinting = false;
-    } else if (name === "WillSave") {
-      this._disableSaving = true;
-      this._runActions(name);
-      this._disableSaving = false;
-    } else {
-      this._runActions(name);
+    switch (name) {
+      case "Open":
+        this._disableSaving = true;
+        this._runActions("OpenAction");
+        this._disableSaving = false;
+        break;
+      case "WillPrint":
+        this._disablePrinting = true;
+        try {
+          this._runActions(name);
+        } catch (error) {
+          this._send!(serializeError(error));
+        }
+        this._send!({ command: "WillPrintFinished" });
+        this._disablePrinting = false;
+        break;
+      case "WillSave":
+        this._disableSaving = true;
+        this._runActions(name);
+        this._disableSaving = false;
+        break;
+      default:
+        this._runActions(name);
     }
   }
 
@@ -1183,17 +1191,9 @@ export class Doc extends PDFObject<SendDocData_> {
       nEnd = printParams.lastPage;
     }
 
-    if (typeof nStart === "number") {
-      nStart = Math.max(0, Math.trunc(nStart));
-    } else {
-      nStart = 0;
-    }
+    nStart = typeof nStart === "number" ? Math.max(0, Math.trunc(nStart)) : 0;
 
-    if (typeof nEnd === "number") {
-      nEnd = Math.max(0, Math.trunc(nEnd));
-    } else {
-      nEnd = -1;
-    }
+    nEnd = typeof nEnd === "number" ? Math.max(0, Math.trunc(nEnd)) : -1;
 
     this._send!({ command: "print", start: nStart, end: nEnd });
   }

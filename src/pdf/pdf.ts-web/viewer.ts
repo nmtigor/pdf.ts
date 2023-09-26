@@ -17,10 +17,24 @@
  * limitations under the License.
  */
 
-// import "web-com";
-// import "web-print_service";
-import { CHROME, GENERIC, MOZCENTRAL, PDFJSDev } from "../../global.ts";
+import { CHROME, GENERIC, MOZCENTRAL, PDFJSDev } from "@fe-src/global.ts";
 import { viewerApp } from "./app.ts";
+
+// Ref. gulpfile.mjs of pdf.js
+/*#static*/ if (CHROME) {
+  await import("./chromecom.ts");
+  await import("./pdf_print_service.ts");
+} else {
+  /*#static*/ if (GENERIC) {
+    await import("./genericcom.ts");
+    await import("./pdf_print_service.ts");
+  } else {
+    /*#static*/ if (MOZCENTRAL) {
+      await import("./firefoxcom.ts");
+      await import("./firefox_print_service.ts");
+    }
+  }
+}
 /*80--------------------------------------------------------------------------*/
 
 // /* eslint-disable-next-line no-unused-vars */
@@ -38,22 +52,6 @@ import { viewerApp } from "./app.ts";
 // window.PDFViewerApplication = PDFViewerApplication;
 // window.PDFViewerApplicationConstants = AppConstants;
 // window.PDFViewerApplicationOptions = AppOptions;
-
-// Ref. gulpfile.js of pdf.js
-/*#static*/ if (CHROME) {
-  await import("./chromecom.ts");
-  await import("./pdf_print_service.ts");
-} else {
-  /*#static*/ if (GENERIC) {
-    await import("./genericcom.ts");
-    await import("./pdf_print_service.ts");
-  } else {
-    /*#static*/ if (MOZCENTRAL) {
-      await import("./firefoxcom.ts");
-      await import("./firefox_print_service.ts");
-    }
-  }
-}
 
 function getViewerConfiguration() {
   return {
@@ -126,6 +124,12 @@ function getViewerConfiguration() {
       editorInkParamsToolbar: document.getElementById(
         "editorInkParamsToolbar",
       ) as HTMLButtonElement,
+      editorStampButton: document.getElementById(
+        "editorStamp",
+      ) as HTMLButtonElement,
+      editorStampParamsToolbar: document.getElementById(
+        "editorStampParamsToolbar",
+      ) as HTMLDivElement,
       /**
        * Button to download the document.
        */
@@ -435,6 +439,9 @@ function getViewerConfiguration() {
       editorInkOpacity: document.getElementById(
         "editorInkOpacity",
       ) as HTMLInputElement,
+      editorStampAddImage: document.getElementById(
+        "editorStampAddImage",
+      ) as HTMLButtonElement,
     },
     printContainer: document.getElementById("printContainer") as HTMLDivElement,
     openFileInput: /*#static*/ PDFJSDev || GENERIC
@@ -476,7 +483,7 @@ function webViewerLoad() {
 
 // Block the "load" event until all pages are loaded, to ensure that printing
 // works in Firefox; see https://bugzilla.mozilla.org/show_bug.cgi?id=1618553
-(<any> document).blockUnblockOnload?.(true);
+(document as any).blockUnblockOnload?.(true);
 
 if (
   document.readyState === "interactive" ||
@@ -484,6 +491,6 @@ if (
 ) {
   webViewerLoad();
 } else {
-  document.addEventListener("DOMContentLoaded", webViewerLoad, true);
+  document.on("DOMContentLoaded", webViewerLoad, true);
 }
 /*80--------------------------------------------------------------------------*/

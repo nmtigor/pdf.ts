@@ -17,12 +17,12 @@
  * limitations under the License.
  */
 
-import type { Constructor, rect_t } from "../../../lib/alias.ts";
+import type { Constructor, rect_t } from "@fe-src/lib/alias.ts";
+import type { matrix_t } from "../shared/util.ts";
 import {
   bytesToString,
   FormatError,
   info,
-  type matrix_t,
   shadow,
   stringToBytes,
   Util,
@@ -641,12 +641,7 @@ namespace NsCFFParser {
           stackSize %= 2;
           validationCommand = CharstringValidationData[value];
         } else if (value === 10 || value === 29) {
-          let subrsIndex;
-          if (value === 10) {
-            subrsIndex = localSubrIndex;
-          } else {
-            subrsIndex = globalSubrIndex;
-          }
+          const subrsIndex = value === 10 ? localSubrIndex : globalSubrIndex;
           if (!subrsIndex) {
             validationCommand = CharstringValidationData[value];
             warn("Missing subrsIndex for " + validationCommand!.id);
@@ -824,14 +819,14 @@ namespace NsCFFParser {
           );
         }
         if (state.width !== null) {
-          const nominalWidth = <number> privateDictToUse.getByName(
+          const nominalWidth = privateDictToUse.getByName(
             "nominalWidthX",
-          );
+          ) as number;
           widths[i] = nominalWidth + state.width;
         } else {
-          const defaultWidth = <number> privateDictToUse.getByName(
+          const defaultWidth = privateDictToUse.getByName(
             "defaultWidthX",
-          );
+          ) as number;
           widths[i] = defaultWidth;
         }
         if (state.seac !== null) {

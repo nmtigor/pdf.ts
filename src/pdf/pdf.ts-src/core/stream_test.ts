@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-import { assertEquals } from "https://deno.land/std@0.195.0/testing/asserts.ts";
-import { describe, it } from "https://deno.land/std@0.195.0/testing/bdd.ts";
+import { assertEquals } from "@std/testing/asserts.ts";
+import { describe, it } from "@std/testing/bdd.ts";
 import { PredictorStream } from "./predictor_stream.ts";
 import { Dict } from "./primitives.ts";
 import { Stream } from "./stream.ts";

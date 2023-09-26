@@ -2,48 +2,48 @@ The purpose of this project is to help learning PDF format and developing PDF to
 
 It is
 
-* based on [pdf.js@v3.8.162](https://github.com/mozilla/pdf.js/tree/v3.8.162),
+* based on [pdf.js-3.10.111](https://github.com/mozilla/pdf.js/tree/v3.10.111),
 
-* **transpiled using [TypeScript@mymain](https://github.com/nmtigor/TypeScript/tree/mymain/PRs)!**
+* **transpiled using TypeScript-5.2.2[@mymain](https://github.com/nmtigor/TypeScript/tree/mymain/PRs)!**
 
 --------------------------------------------------------------------------------
 
-### viewer.html
-
-* Extract [TypeScript@mymain](https://github.com/nmtigor/TypeScript) onto <ins>/path_to/TypeScript</ins>.
+* Extract [@mymain](https://github.com/nmtigor/TypeScript) onto <ins>/path_to/TypeScript</ins>.
+* 
+  ```bash
+  cd /path_to/TypeScript
+  npm i
+  hereby LKG
+  ```
 * Extract this project onto <ins>/path_to/pdf.ts</ins>.
   * In vscode, in the workspace setting, add `"typescript.tsdk": "/path_to/TypeScript/lib"`.
 * 
   ```bash
+  cd /path_to/pdf.ts/src/test
+  # Start a local file server at port 8001
+  deno run --allow-net --allow-read test_server.ts 
+  ```
+
+### viewer.html
+
+* 
+  ```bash
   cd /path_to/pdf.ts
   npm i
+  /path_to/TypeScript/bin/tsc --preprocessorNames ~DENO,~TESTING
   ```
-* In global.ts, change `DENO`, `TESTING` to `false`.
-* 
-  ```bash
-  /path_to/TypeScript/bin/tsc
-  ```
-* 
-  ```bash
-  cd /path_to/pdf.ts/src/test
-  deno run --allow-net --allow-read test_server.ts # Start a local file server at port 8000
-  ```
-* Visit <ins>h</ins><ins>ttp://localhost:8000/src/pdf/pdf.ts-web/viewer.html</ins>.
-
---------------------------------------------------------------------------------
+* Visit <ins>h</ins><ins>ttp://localhost:8001/src/pdf/pdf.ts-web/viewer.html</ins>.
 
 ### deno test
 
-* In global.ts, change `DENO`, `TESTING` to `true`.
 * 
   ```bash
+  cd /path_to/pdf.ts
+  # Bundle "pdf.worker.js" for "api_test.ts"
+  /path_to/TypeScript/bin/tsc && deno run --allow-read --allow-sys --allow-env --allow-run util/bundle.ts gen/pdf/pdf.ts-src/pdf.worker.js
   cd /path_to/pdf.ts/src/test
-  deno run --allow-net --allow-read test_server.ts # Start a local file server at port 8000
-  ```
-* 
-  ```bash
-  cd /path_to/pdf.ts/src/test
-  deno test --allow-net --allow-read ../pdf # 52 passed (1049 steps)
+  deno test --allow-net --allow-read --reporter=dot ../pdf
+  # Deno-1.36.4: 53 passed (1068 steps)
   ```
 
 --------------------------------------------------------------------------------

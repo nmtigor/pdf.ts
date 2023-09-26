@@ -21,11 +21,11 @@
 /** @typedef {import("../../web/interfaces").IPDFLinkService} IPDFLinkService */
 
 import { html as createHTML, textnode } from "../../../lib/dom.ts";
-import { type IPDFLinkService } from "../../pdf.ts-web/interfaces.ts";
-import { type XFAElObj, type XFAHTMLObj } from "../core/xfa/alias.ts";
-import { AnnotationStorage } from "./annotation_storage.ts";
-import { type AnnotIntent, PDFPageProxy } from "./api.ts";
-import { PageViewport } from "./display_utils.ts";
+import type { IPDFLinkService } from "../../pdf.ts-web/interfaces.ts";
+import type { XFAElObj, XFAHTMLObj } from "../core/xfa/alias.ts";
+import type { AnnotationStorage } from "./annotation_storage.ts";
+import type { AnnotIntent, PDFPageProxy } from "./api.ts";
+import type { PageViewport } from "./display_utils.ts";
 import { XfaText } from "./xfa_text.ts";
 /*80--------------------------------------------------------------------------*/
 
@@ -70,19 +70,19 @@ export abstract class XfaLayer {
           break;
         }
 
-        html.addEventListener("input", (event) => {
+        html.on("input", (event) => {
           storage.setValue(id, {
-            value: (<HTMLTextAreaElement> event.target).value,
+            value: (event.target as HTMLTextAreaElement).value,
           });
         });
         break;
       case "input":
         if (
-          (<XFAHTMLObj> element).attributes!.type === "radio" ||
-          (<XFAHTMLObj> element).attributes!.type === "checkbox"
+          (element as XFAHTMLObj).attributes!.type === "radio" ||
+          (element as XFAHTMLObj).attributes!.type === "checkbox"
         ) {
           if (storedData.value === element.attributes!.xfaOn) {
-            html.setAttribute("checked", <any> true);
+            html.setAttribute("checked", true as any);
           } else if (storedData.value === element.attributes!.xfaOff) {
             // The checked attribute may have been set when opening the file,
             // unset through the UI and we're here because of printing.
@@ -91,42 +91,47 @@ export abstract class XfaLayer {
           if (intent === "print") {
             break;
           }
-          html.addEventListener("change", (event) => {
+          html.on("change", (event) => {
             storage.setValue(id, {
-              value: (<any> event.target).checked
-                ? (<Element> event.target).getAttribute("xfaOn") ?? undefined
-                : (<Element> event.target).getAttribute("xfaOff") ?? undefined,
+              value: (event.target as any).checked
+                ? (event.target as Element).getAttribute("xfaOn") ?? undefined
+                : (event.target as Element).getAttribute("xfaOff") ?? undefined,
             });
           });
-          html.addEventListener("change", (event) => {
+          html.on("change", (event) => {
             storage.setValue(id, {
-              value: (<Element> event.target).getAttribute("xfaOn")!,
+              value: (event.target as Element).getAttribute("xfaOn")!,
             });
           });
         } else {
           if (storedData.value !== null && storedData.value !== undefined) {
-            html.setAttribute("value", <any> storedData.value);
+            html.setAttribute("value", storedData.value as any);
           }
           if (intent === "print") {
             break;
           }
-          html.addEventListener("input", (event) => {
+          html.on("input", (event) => {
             storage.setValue(id, {
-              value: (<HTMLInputElement> event.target).value,
+              value: (event.target as HTMLInputElement).value,
             });
           });
         }
         break;
       case "select":
-        if (storedData.value !== null && storedData.value !== undefined) {
+        if (storedData.value !== undefined) {
+          html.setAttribute("value", storedData.value as any);
           for (const option of element.children!) {
-            if ((<XFAHTMLObj> option).attributes!.value === storedData.value) {
-              (<XFAHTMLObj> option).attributes!.selected = true;
+            if ((option as XFAHTMLObj).attributes!.value === storedData.value) {
+              (option as XFAHTMLObj).attributes!.selected = true;
+            } else if (
+              (option as XFAHTMLObj).attributes!.hasOwnProperty("selected")
+            ) {
+              delete (option as XFAHTMLObj).attributes!.selected;
             }
           }
         }
-        html.addEventListener("input", (event) => {
-          const options = (<HTMLSelectElement> event.target).options;
+        html.on("input", (event) => {
+          const options = (event.target as HTMLSelectElement).options;
           const value = options.selectedIndex === -1
             ? ""
             : options[options.selectedIndex].value;
@@ -235,25 +240,22 @@ export abstract class XfaLayer {
         continue;
       }
 
-      const child = <XFAElObj> parent.children![++stack.at(-1)![1]];
+      const child = parent.children![++stack.at(-1)![1]] as XFAElObj;
       if (child === undefined) {
         continue;
       }
 
       const { name } = child;
       if (name === "#text") {
-        const node = textnode((<XFAHTMLObj> child).value!);
+        const node = textnode((child as XFAHTMLObj).value!);
         textDivs.push(node);
         html.append(node);
         continue;
       }
 
-      let childHtml;
-      if (child?.attributes?.xmlns) {
-        childHtml = document.createElementNS(child.attributes.xmlns, name);
-      } else {
-        childHtml = createHTML(name);
-      }
+      const childHtml = child?.attributes?.xmlns
+        ? document.createElementNS(child.attributes.xmlns, name)
+        : createHTML(name);
 
       html.append(childHtml);
       if (child.attributes) {
@@ -298,7 +300,7 @@ export abstract class XfaLayer {
         ".xfaNonInteractive input, .xfaNonInteractive textarea",
       )
     ) {
-      el.setAttribute("readOnly", <any> true);
+      el.setAttribute("readOnly", true as any);
     }
 
     return {

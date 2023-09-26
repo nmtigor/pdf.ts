@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-import { PDFJSDev, TESTING } from "../../../global.ts";
-import { assert } from "../../../lib/util/trace.ts";
+import { PDFJSDev, TESTING } from "@fe-src/global.ts";
+import { assert } from "@fe-src/lib/util/trace.ts";
 import { grayToRGBA } from "../shared/image_utils.ts";
 import { BaseException, warn } from "../shared/util.ts";
 import { readUint16 } from "./core_utils.ts";
@@ -453,15 +453,11 @@ namespace NsJpegImage {
       decodeFn = decodeBaseline;
     }
 
-    let mcu = 0;
-    let fileMarker;
-    let mcuExpected;
-    if (componentsLength === 1) {
-      mcuExpected = components[0].blocksPerLine! *
-        components[0].blocksPerColumn!;
-    } else {
-      mcuExpected = mcusPerLine * frame.mcusPerColumn;
-    }
+    let mcu = 0,
+      fileMarker;
+    const mcuExpected = componentsLength === 1
+      ? components[0].blocksPerLine! * components[0].blocksPerColumn!
+      : mcusPerLine * frame.mcusPerColumn;
 
     let h, v;
     while (mcu <= mcuExpected) {
@@ -801,12 +797,12 @@ namespace NsJpegImage {
     let newPos = startPos < currentPos ? startPos : currentPos;
 
     if (currentPos >= maxPos) {
-      return null; // Don't attempt to read non-existent data and just return.
+      return undefined; // Don't attempt to read non-existent data and just return.
     }
     const currentMarker = readUint16(data, currentPos);
     if (currentMarker >= 0xffc0 && currentMarker <= 0xfffe) {
       return {
-        invalid: null,
+        // invalid: null,
         marker: currentMarker,
         offset: currentPos,
       };
@@ -814,7 +810,7 @@ namespace NsJpegImage {
     let newMarker = readUint16(data, newPos);
     while (!(newMarker >= 0xffc0 && newMarker <= 0xfffe)) {
       if (++newPos >= maxPos) {
-        return null; // Don't attempt to read non-existent data and just return.
+        return undefined; // Don't attempt to read non-existent data and just return.
       }
       newMarker = readUint16(data, newPos);
     }

@@ -22,11 +22,8 @@
 import { CHROME, PDFJSDev } from "../../global.ts";
 import { MouseButton } from "../../lib/dom.ts";
 import type { Locale } from "../../lib/Locale.ts";
-import {
-  DefaultExternalServices,
-  type PassiveLoadingCbs,
-  viewerApp,
-} from "./app.ts";
+import type { PassiveLoadingCbs } from "./app.ts";
+import { DefaultExternalServices, viewerApp } from "./app.ts";
 import { AppOptions, UserOptions, ViewOnLoad } from "./app_options.ts";
 import { DownloadManager } from "./download_manager.ts";
 import { GenericL10n } from "./genericl10n.ts";
@@ -59,6 +56,9 @@ import { CursorTool } from "./ui_utils.ts";
   }
 
   AppOptions.set("defaultUrl", defaultUrl);
+  // Ensure that viewerApp.initialBookmark reflects the current hash,
+  // in case the URL rewrite above results in a different hash.
+  viewerApp.initialBookmark = location.hash.slice(1);
 })();
 
 type _ResolvePDFFileCb = (
@@ -211,9 +211,9 @@ function requestAccessToLocalFile(
     // Top-level frames are closed by Chrome upon reload, so there is no need
     // for detecting unload of the top-level frame. Should this ever change
     // (crbug.com/511670), then the user can just reload the tab.
-    window.addEventListener("focus", reloadIfRuntimeIsUnavailable);
-    dialog.addEventListener("close", () => {
-      window.removeEventListener("focus", reloadIfRuntimeIsUnavailable);
+    window.on("focus", reloadIfRuntimeIsUnavailable);
+    dialog.on("close", () => {
+      window.off("focus", reloadIfRuntimeIsUnavailable);
       reloadIfRuntimeIsUnavailable();
     });
   }

@@ -23,16 +23,15 @@
 
 import {
   CHROME,
-  DENO,
   GENERIC,
   MOZCENTRAL,
   PDFJSDev,
   SKIP_BABEL,
   TESTING,
-} from "../../../global.ts";
-import type { C2D, TypedArray } from "../../../lib/alias.ts";
-import { PromiseCap } from "../../../lib/util/PromiseCap.ts";
-import { assert } from "../../../lib/util/trace.ts";
+} from "@fe-src/global.ts";
+import type { C2D, TypedArray } from "@fe-src/lib/alias.ts";
+import { PromiseCap } from "@fe-src/lib/util/PromiseCap.ts";
+import { assert, fail } from "@fe-src/lib/util/trace.ts";
 import { Stepper } from "../../pdf.ts-web/debugger.ts";
 import type { PageColors } from "../../pdf.ts-web/pdf_viewer.ts";
 import type { FieldObject } from "../core/annotation.ts";
@@ -42,8 +41,8 @@ import type { DatasetReader } from "../core/dataset_reader.ts";
 import type { DocumentInfo } from "../core/document.ts";
 import type { ImgData } from "../core/evaluator.ts";
 import type { Attachment } from "../core/file_spec.ts";
-import type { FontExpotDataEx } from "../core/fonts.ts";
 import type { CmdArgs } from "../core/font_renderer.ts";
+import type { FontExpotDataEx } from "../core/fonts.ts";
 import type { IWorker } from "../core/iworker.ts";
 import type { OpListIR } from "../core/operator_list.ts";
 import type { ShadingPatternIR } from "../core/pattern.ts";
@@ -60,6 +59,7 @@ import type {
 } from "../shared/message_handler.ts";
 import { MessageHandler } from "../shared/message_handler.ts";
 import type {
+  ActionEventName,
   matrix_t,
   PasswordExceptionJ,
   UnexpectedResponseExceptionJ,
@@ -72,6 +72,7 @@ import {
   info,
   InvalidPDFException,
   isArrayBuffer,
+  isNodeJS,
   MAX_IMAGE_SIZE_TO_CACHE,
   MissingPDFException,
   PasswordException,
@@ -112,12 +113,52 @@ import { OptionalContentConfig } from "./optional_content_config.ts";
 import { PDFDataTransportStream } from "./transport_stream.ts";
 import { GlobalWorkerOptions } from "./worker_options.ts";
 import { XfaText } from "./xfa_text.ts";
+
+// Ref. gulpfile.mjs of pdf.js
+const { PDFFetchStream } = /*#static*/ GENERIC || CHROME
+  ? await import("./fetch_stream.ts")
+  : await import("./stubs.ts");
+const { PDFNetworkStream } = /*#static*/ GENERIC || CHROME
+  ? await import("./network.ts")
+  : await import("./stubs.ts");
+export const { SVGGraphics } = /*#static*/ GENERIC
+  ? await import("./svg.ts")
+  : await import("./stubs.ts");
+const { PDFNodeStream } = /*#static*/ GENERIC
+  // ? await import("./node_stream.ts")
+  ? await import("./stubs.ts")
+  : await import("./stubs.ts");
+const {
+  NodeCanvasFactory,
+  NodeCMapReaderFactory,
+  NodeFilterFactory,
+  NodeStandardFontDataFactory,
+} = /*#static*/ GENERIC
+  // ? await import("./node_utils.ts")
+  ? await import("./stubs.ts")
+  : await import("./stubs.ts");
 /*80--------------------------------------------------------------------------*/
 
 const DEFAULT_RANGE_CHUNK_SIZE = 65536; // 2^16 = 65536
 const RENDERING_CANCELLED_TIMEOUT = 100; // ms
 const DELAYED_CLEANUP_TIMEOUT = 5000; // ms
 
+// const DefaultCanvasFactory =
+//   typeof PDFJSDev !== "undefined" && PDFJSDev.test("GENERIC") && isNodeJS
+//     ? NodeCanvasFactory
+//     : DOMCanvasFactory;
+// const DefaultCMapReaderFactory =
+//   typeof PDFJSDev !== "undefined" && PDFJSDev.test("GENERIC") && isNodeJS
+//     ? NodeCMapReaderFactory
+//     : DOMCMapReaderFactory;
+// const DefaultFilterFactory =
+//   typeof PDFJSDev !== "undefined" && PDFJSDev.test("GENERIC") && isNodeJS
+//     ? NodeFilterFactory
+//     : DOMFilterFactory;
+// const DefaultStandardFontDataFactory =
+//   typeof PDFJSDev !== "undefined" && PDFJSDev.test("GENERIC") && isNodeJS
+//     ? NodeStandardFontDataFactory
+//     : DOMStandardFontDataFactory;
 export type DefaultCanvasFactory = DOMCanvasFactory;
 export const DefaultCanvasFactory = DOMCanvasFactory;
 export type DefaultCMapReaderFactory = DOMCMapReaderFactory;
@@ -127,59 +168,42 @@ export const DefaultFilterFactory = DOMFilterFactory;
 export type DefaultStandardFontDataFactory = DOMStandardFontDataFactory;
 export const DefaultStandardFontDataFactory = DOMStandardFontDataFactory;
 
-// const DefaultCanvasFactory =
-//   typeof PDFJSDev !== "undefined" && PDFJSDev.test("GENERIC") && isNodeJS
-//     ? require("./node_utils.js").NodeCanvasFactory
-//     : DOMCanvasFactory;
-// const DefaultCMapReaderFactory =
-//   typeof PDFJSDev !== "undefined" && PDFJSDev.test("GENERIC") && isNodeJS
-//     ? require("./node_utils.js").NodeCMapReaderFactory
-//     : DOMCMapReaderFactory;
-// const DefaultFilterFactory =
-//   typeof PDFJSDev !== "undefined" && PDFJSDev.test("GENERIC") && isNodeJS
-//     ? require("./node_utils.js").NodeFilterFactory
-//     : DOMFilterFactory;
-// const DefaultStandardFontDataFactory =
-//   typeof PDFJSDev !== "undefined" && PDFJSDev.test("GENERIC") && isNodeJS
-//     ? require("./node_utils.js").NodeStandardFontDataFactory
-//     : DOMStandardFontDataFactory;
+// const createPDFNetworkStream = /*#static*/ PDFJSDev
+//   ? (() => {
+//     const streamsPromise = Promise.all([
+//       import("./network.ts"),
+//       import("./fetch_stream.ts"),
+//     ]);
 
-const createPDFNetworkStream = /*#static*/ PDFJSDev
-  ? (() => {
-    const streamsPromise = Promise.all([
-      import("./network.ts"),
-      import("./fetch_stream.ts"),
-    ]);
+//     return async (params: DocumentInitP) => {
+//       const [{ PDFNetworkStream }, { PDFFetchStream }] = await streamsPromise;
 
-    return async (params: DocumentInitP) => {
-      const [{ PDFNetworkStream }, { PDFFetchStream }] = await streamsPromise;
+//       return isValidFetchUrl(params.url)
+//         ? new PDFFetchStream(params)
+//         : new PDFNetworkStream(params);
+//     };
+//   })()
+//   : /*#static*/ GENERIC || CHROME
+//   ? await (async () => {
+//     /*#static*/ if (GENERIC && DENO) {
+//       // const { PDFNodeStream } = await import("./node_stream.js");
 
-      return isValidFetchUrl(params.url)
-        ? new PDFFetchStream(params)
-        : new PDFNetworkStream(params);
-    };
-  })()
-  : /*#static*/ GENERIC || CHROME
-  ? await (async () => {
-    /*#static*/ if (GENERIC && DENO) {
-      // const { PDFNodeStream } = await import("./node_stream.js");
+//       // return async (params: DocumentInitP) => {
+//       //   return new PDFNodeStream(params);
+//       // };
+//       return undefined;
+//     } else {
+//       const { PDFNetworkStream } = await import("./network.ts");
+//       const { PDFFetchStream } = await import("./fetch_stream.ts");
 
-      // return async (params: DocumentInitP) => {
-      //   return new PDFNodeStream(params);
-      // };
-      return undefined;
-    } else {
-      const { PDFNetworkStream } = await import("./network.ts");
-      const { PDFFetchStream } = await import("./fetch_stream.ts");
-
-      return async (params: DocumentInitP) => {
-        return isValidFetchUrl(params.url)
-          ? new PDFFetchStream(params)
-          : new PDFNetworkStream(params);
-      };
-    }
-  })()
-  : undefined;
+//       return async (params: DocumentInitP) => {
+//         return isValidFetchUrl(params.url)
+//           ? new PDFFetchStream(params)
+//           : new PDFNetworkStream(params);
+//       };
+//     }
+//   })()
+//   : undefined;
 
 export type BinaryData = TypedArray | ArrayBuffer | number[] | string;
 
@@ -537,13 +561,13 @@ export function getDocument(src_x: GetDocumentP_): PDFDocumentLoadingTask {
   const isOffscreenCanvasSupported =
     typeof src.isOffscreenCanvasSupported === "boolean"
       ? src.isOffscreenCanvasSupported
-      : !DENO;
+      : !isNodeJS;
   const canvasMaxAreaInBytes = Number.isInteger(src.canvasMaxAreaInBytes)
     ? src.canvasMaxAreaInBytes!
     : -1;
   const disableFontFace = typeof src.disableFontFace === "boolean"
     ? src.disableFontFace
-    : DENO;
+    : isNodeJS;
   const fontExtraProperties = src.fontExtraProperties === true;
   const enableXfa = src.enableXfa === true;
   const ownerDocument = src.ownerDocument || globalThis.document;
@@ -556,12 +580,14 @@ export function getDocument(src_x: GetDocumentP_): PDFDocumentLoadingTask {
   const length = rangeTransport ? rangeTransport.length : src.length ?? NaN;
   const useSystemFonts = typeof src.useSystemFonts === "boolean"
     ? src.useSystemFonts
-    : !DENO && !disableFontFace;
+    : !isNodeJS && !disableFontFace;
   const useWorkerFetch = typeof src.useWorkerFetch === "boolean"
     ? src.useWorkerFetch
     : MOZCENTRAL ||
       (CMapReaderFactory === DOMCMapReaderFactory &&
         StandardFontDataFactory === DOMStandardFontDataFactory &&
+        cMapUrl &&
+        standardFontDataUrl &&
         isValidFetchUrl(cMapUrl, globalThis.document?.baseURI) &&
         isValidFetchUrl(standardFontDataUrl, globalThis.document?.baseURI));
   const canvasFactory = src.canvasFactory ||
@@ -655,7 +681,8 @@ export function getDocument(src_x: GetDocumentP_): PDFDocumentLoadingTask {
         (resolve) => {
           let networkStream:
             | PDFDataTransportStream
-            | Promise<IPDFStream>
+            | import("./fetch_stream.ts").PDFFetchStream
+            | import("./network.ts").PDFNetworkStream
             | undefined;
           if (rangeTransport) {
             networkStream = new PDFDataTransportStream(
@@ -674,6 +701,18 @@ export function getDocument(src_x: GetDocumentP_): PDFDocumentLoadingTask {
             /*#static*/ if (MOZCENTRAL) {
               throw new Error("Not implemented: createPDFNetworkStream");
             }
+            const createPDFNetworkStream = (params: DocumentInitP) => {
+              if (GENERIC) {
+                if (isNodeJS) {
+                  // return new PDFNodeStream(params);
+                  return undefined;
+                }
+              }
+              return isValidFetchUrl(params.url)
+                ? new PDFFetchStream!(params)
+                : new PDFNetworkStream!(params);
+            };
+
             networkStream = createPDFNetworkStream!({
               url,
               length,
@@ -754,8 +793,8 @@ function getUrlProp(val: string | URL) {
     // The full path is required in the 'url' field.
     return new URL(val, window.location as any).href;
   } catch {
-    /*#static*/ if (GENERIC && DENO) {
-      if (typeof val === "string") {
+    /*#static*/ if (GENERIC) {
+      if (isNodeJS && typeof val === "string") {
         return val; // Use the url as-is in Node.js environments.
       }
     }
@@ -768,8 +807,9 @@ function getUrlProp(val: string | URL) {
 
 function getDataProp(val: BinaryData) {
   // Converting string or array-like data to Uint8Array.
-  /*#static*/ if (GENERIC && DENO) {
+  /*#static*/ if (GENERIC) {
     if (
+      isNodeJS &&
       (globalThis as any).Buffer && // eslint-disable-line no-undef
       val instanceof (globalThis as any).Buffer // eslint-disable-line no-undef
     ) {
@@ -855,7 +895,17 @@ export class PDFDocumentLoadingTask {
    */
   async destroy() {
     this.destroyed = true;
-    await this._transport?.destroy();
+    try {
+      if (this._worker?.port) {
+        this._worker._pendingDestroy = true;
+      }
+      await this._transport?.destroy();
+    } catch (ex) {
+      if (this._worker?.port) {
+        delete this._worker._pendingDestroy;
+      }
+      throw ex;
+    }
 
     this._transport = undefined;
     if (this._worker) {
@@ -942,7 +992,7 @@ export class PDFDataRangeTransport {
   }
 
   requestDataRange(begin: number, end: number): void {
-    assert(0, "Abstract method PDFDataRangeTransport.requestDataRange");
+    fail("Abstract method PDFDataRangeTransport.requestDataRange");
   }
 
   abort() {}
@@ -987,6 +1037,26 @@ export class PDFDocumentProxy {
     this.#pdfInfo = pdfInfo;
     this._transport = transport;
 
+    /*#static*/ if (PDFJSDev || GENERIC) {
+      Object.defineProperty(this, "getJavaScript", {
+        value: () => {
+          deprecated(
+            "`PDFDocumentProxy.getJavaScript`, " +
+              "please use `PDFDocumentProxy.getJSActions` instead.",
+          );
+          return this.getJSActions().then((js) => {
+            if (!js) {
+              return js;
+            }
+            const jsArr: string[] = [];
+            for (const name in js) {
+              jsArr.push(...js[name as ActionEventName]);
+            }
+            return jsArr;
+          });
+        },
+      });
+    }
     /*#static*/ if (PDFJSDev || TESTING) {
       // For testing purposes.
       Object.defineProperty(this, "getXFADatasets", {
@@ -1145,17 +1215,8 @@ export class PDFDocumentProxy {
 
   /**
    * @return A promise that is resolved with
-   *   an {Array} of all the JavaScript strings in the name tree, or `null`
-   *   if no JavaScript exists.
-   */
-  getJavaScript() {
-    return this._transport.getJavaScript();
-  }
-
-  /**
-   * @return A promise that is resolved with
    *   an {Object} with the JavaScript actions:
-   *     - from the name tree (like getJavaScript);
+   *     - from the name tree.
    *     - from A or AA entries in the catalog dictionary.
    *   , or `null` if no JavaScript exists.
    */
@@ -2355,14 +2416,22 @@ export class LoopbackPort {
     message: any,
     transfer?: Transferable[],
   ) {
+    // if (message?.reason) {
+    //   console.log(message.reason.name);
+    //   // console.log(message.reason instanceof BaseException);
+    // }
     const event: any = {
       data: structuredClone(
         message,
-        /*#static*/ PDFJSDev || SKIP_BABEL || TESTING
-          ? transfer ? { transfer } : undefined
+        (PDFJSDev || SKIP_BABEL || TESTING) && transfer
+          ? { transfer }
           : undefined,
       ),
     };
+    // if (event.data?.reason) {
+    //   console.log(event.data.reason.name);
+    //   // console.log(event.data.reason instanceof BaseException);
+    // }
 
     this.#deferred.then(() => {
       for (const listener of this.#listeners) {
@@ -2425,7 +2494,7 @@ export const PDFWorkerUtil = <{
   // }
   // else
   if (typeof document === "object") {
-    const pdfjsFilePath = (<HTMLScriptElement> document?.currentScript)?.src;
+    const pdfjsFilePath = (document?.currentScript as HTMLScriptElement)?.src;
     if (pdfjsFilePath) {
       PDFWorkerUtil.fallbackWorkerSrc = pdfjsFilePath.replace(
         /(\.(?:min\.)?js)(\?.*)?$/i,
@@ -2466,7 +2535,7 @@ export const PDFWorkerUtil = <{
  * worker is not possible, a "fake" worker will be used instead.
  */
 export class PDFWorker {
-  static #workerPorts = new WeakMap<IWorker, PDFWorker>();
+  static #workerPorts?: WeakMap<IWorker, PDFWorker>;
 
   name: string | undefined;
   destroyed = false;
@@ -2488,6 +2557,8 @@ export class PDFWorker {
     return this.#port;
   }
 
+  _pendingDestroy?: boolean;
+
   #webWorker: Worker | undefined;
   get _webWorker() {
     return this.#webWorker;
@@ -2506,22 +2577,26 @@ export class PDFWorker {
     port,
     verbosity = getVerbosityLevel(),
   }: PDFWorkerP_ = {}) {
-    if (port && PDFWorker.#workerPorts.has(port)) {
-      throw new Error("Cannot use more than one PDFWorker per port.");
-    }
-
     this.name = name;
     this.verbosity = verbosity;
 
-    if (port) {
-      PDFWorker.#workerPorts.set(port, this);
-      this.#initializeFromPort(port);
-      return;
+    /*#static*/ if (PDFJSDev || !MOZCENTRAL) {
+      if (port) {
+        if (PDFWorker.#workerPorts?.has(port)) {
+          throw new Error("Cannot use more than one PDFWorker per port.");
+        }
+        (PDFWorker.#workerPorts ||= new WeakMap()).set(port, this);
+        this.#initializeFromPort(port);
+        return;
+      }
     }
     this.#initialize();
   }
 
   #initializeFromPort(port: Worker) {
+    /*#static*/ if (MOZCENTRAL) {
+      throw new Error("Not implemented: _initializeFromPort");
+    }
     this.#port = port;
     this.#messageHandler = new MessageHandler<Thread.main>(
       "main",
@@ -2709,7 +2784,7 @@ export class PDFWorker {
       this.#webWorker.terminate();
       this.#webWorker = undefined;
     }
-    PDFWorker.#workerPorts.delete(this.#port);
+    PDFWorker.#workerPorts?.delete(this.#port);
     this.#port = undefined as any;
     if (this.#messageHandler) {
       this.#messageHandler.destroy();
@@ -2721,11 +2796,21 @@ export class PDFWorker {
    * @param params The worker initialization parameters.
    */
   static fromPort(params: PDFWorkerP_) {
+    /*#static*/ if (MOZCENTRAL) {
+      throw new Error("Not implemented: fromPort");
+    }
     if (!params?.port) {
       throw new Error("PDFWorker.fromPort - invalid method signature.");
     }
-    if (this.#workerPorts.has(params.port)) {
-      return this.#workerPorts.get(params.port);
+    const cachedPort = this.#workerPorts?.get(params.port);
+    if (cachedPort) {
+      if (cachedPort._pendingDestroy) {
+        throw new Error(
+          "PDFWorker.fromPort - the worker is being destroyed.\n" +
+            "Please remember to await `PDFDocumentLoadingTask.destroy()`-calls.",
+        );
+      }
+      return cachedPort;
     }
     return new PDFWorker(params);
   }
@@ -2739,7 +2824,7 @@ export class PDFWorker {
     }
     /*#static*/ if (PDFJSDev || GENERIC) {
       if (PDFWorkerUtil.fallbackWorkerSrc !== undefined) {
-        /*#static*/ if (!DENO) {
+        /*#static*/ if (!isNodeJS) {
           deprecated('No "GlobalWorkerOptions.workerSrc" specified.');
         }
         return PDFWorkerUtil.fallbackWorkerSrc;
@@ -2839,7 +2924,6 @@ class WorkerTransport {
 
   destroyed = false;
   destroyCapability?: PromiseCap;
-  _passwordCapability?: PromiseCap<{ password: string }>;
 
   #networkStream: IPDFStream | undefined;
   #fullReader?: IPDFStreamReader;
@@ -2851,11 +2935,13 @@ class WorkerTransport {
       | boolean
       | Record<string, FieldObject[]>
       | MetadataEx
+      | AnnotActions
       | undefined
     >
   >();
   #pageCache = new Map<number, PDFPageProxy>();
   #pagePromises = new Map<number, Promise<PDFPageProxy>>();
+  #passwordCapability?: PromiseCap<{ password: string }>;
   downloadInfoCapability = new PromiseCap<{ length: number }>();
 
   #numPages?: number;
@@ -2908,7 +2994,10 @@ class WorkerTransport {
     }
   }
 
-  #cacheSimpleMethod(name: "GetFieldObjects" | "HasJSActions", data = null) {
+  #cacheSimpleMethod(
+    name: "GetFieldObjects" | "HasJSActions" | "GetDocJSActions",
+    data = null,
+  ) {
     const cachedPromise = this.#methodPromises.get(name);
     if (cachedPromise) {
       return cachedPromise;
@@ -2987,11 +3076,9 @@ class WorkerTransport {
     this.destroyed = true;
     this.destroyCapability = new PromiseCap();
 
-    if (this._passwordCapability) {
-      this._passwordCapability.reject(
-        new Error("Worker was destroyed during onPassword callback"),
-      );
-    }
+    this.#passwordCapability?.reject(
+      new Error("Worker was destroyed during onPassword callback"),
+    );
 
     const waitOn: Promise<any>[] = [];
     // We need to wait for all renderings to be completed, e.g.
@@ -3015,11 +3102,9 @@ class WorkerTransport {
       this.#methodPromises.clear();
       this.filterFactory.destroy();
 
-      if (this.#networkStream) {
-        this.#networkStream.cancelAllRequests(
-          new AbortException("Worker was terminated."),
-        );
-      }
+      this.#networkStream?.cancelAllRequests(
+        new AbortException("Worker was terminated."),
+      );
 
       if (this.messageHandler) {
         this.messageHandler.destroy();
@@ -3173,62 +3258,51 @@ class WorkerTransport {
     });
 
     messageHandler.on("DocException", (ex_y) => {
-      // console.log(ex_y.name);
-      // console.log(ex_y);
-      let reason;
-      switch (ex_y.name) {
-        case "PasswordException":
-          reason = new PasswordException(
-            ex_y.message,
-            (ex_y as PasswordExceptionJ).code,
-          );
-          break;
-        case "InvalidPDFException":
-          reason = new InvalidPDFException(ex_y.message);
-          break;
-        case "MissingPDFException":
-          reason = new MissingPDFException(ex_y.message);
-          break;
-        case "UnexpectedResponseException":
-          reason = new UnexpectedResponseException(
-            ex_y.message,
-            (ex_y as UnexpectedResponseExceptionJ).status,
-          );
-          break;
-        case "UnknownErrorException":
-          reason = new UnknownErrorException(
-            ex_y.message,
-            (ex_y as UnknownErrorExceptionJ).details,
-          );
-          break;
-        default:
-          assert(0, "DocException - expected a valid Error.");
+      // console.dir(ex_y);
+      const ex_ = /* final switch */ {
+        PasswordException: new PasswordException(
+          ex_y.message,
+          (ex_y as PasswordExceptionJ).code,
+        ),
+        InvalidPDFException: new InvalidPDFException(ex_y.message),
+        MissingPDFException: new MissingPDFException(ex_y.message),
+        UnexpectedResponseException: new UnexpectedResponseException(
+          ex_y.message,
+          (ex_y as UnexpectedResponseExceptionJ).status,
+        ),
+        UnknownErrorException: new UnknownErrorException(
+          ex_y.message,
+          (ex_y as UnknownErrorExceptionJ).details,
+        ),
+      }[ex_y.name];
+      if (!ex_) {
+        fail("DocException - expected a valid Error.");
       }
-      loadingTask._capability.reject(reason);
+      loadingTask._capability.reject(ex_.toJ());
     });
 
     messageHandler.on("PasswordRequest", (exception) => {
-      this._passwordCapability = new PromiseCap<{ password: string }>();
+      this.#passwordCapability = new PromiseCap<{ password: string }>();
 
       if (loadingTask.onPassword) {
         const updatePassword = (password: string | Error) => {
           if (password instanceof Error) {
-            this._passwordCapability!.reject(password);
+            this.#passwordCapability!.reject(password);
           } else {
-            this._passwordCapability!.resolve({ password });
+            this.#passwordCapability!.resolve({ password });
           }
         };
         try {
           loadingTask.onPassword(updatePassword, exception.code);
         } catch (ex) {
-          this._passwordCapability.reject(ex);
+          this.#passwordCapability.reject(ex);
         }
       } else {
-        this._passwordCapability.reject(
+        this.#passwordCapability.reject(
           new PasswordException(exception.message, exception.code),
         );
       }
-      return this._passwordCapability.promise;
+      return this.#passwordCapability.promise;
     });
 
     messageHandler.on("DataLoaded", (data) => {
@@ -3520,12 +3594,10 @@ class WorkerTransport {
     return this.messageHandler.sendWithPromise("GetAttachments", null);
   }
 
-  getJavaScript() {
-    return this.messageHandler.sendWithPromise("GetJavaScript", null);
-  }
-
   getDocJSActions() {
-    return this.messageHandler.sendWithPromise("GetDocJSActions", null);
+    return this.#cacheSimpleMethod("GetDocJSActions") as Promise<
+      AnnotActions | undefined
+    >;
   }
 
   getPageJSActions(pageIndex: number) {
@@ -3636,10 +3708,7 @@ export class PDFObjects<T> {
    * Ensures there is an object defined for `objId`.
    */
   #ensureObj(objId: string) {
-    const obj = this.#objs[objId];
-    if (obj) return obj;
-
-    return (this.#objs[objId] = {
+    return (this.#objs[objId] ||= {
       capability: new PromiseCap(),
       data: undefined,
     });

@@ -17,16 +17,17 @@
  * limitations under the License.
  */
 
-import { CHROME, MOZCENTRAL, PDFJSDev, TESTING } from "../../../global.ts";
-import type { C2D } from "../../../lib/alias.ts";
-import { html } from "../../../lib/dom.ts";
-import { assert } from "../../../lib/util/trace.ts";
-import { FontExpotDataEx } from "../core/fonts.ts";
+import { CHROME, MOZCENTRAL, PDFJSDev, TESTING } from "@fe-src/global.ts";
+import type { C2D } from "@fe-src/lib/alias.ts";
+import { html } from "@fe-src/lib/dom.ts";
+import { assert, fail } from "@fe-src/lib/util/trace.ts";
 import type { CmdArgs } from "../core/font_renderer.ts";
 import type { SubstitutionInfo } from "../core/font_substitutions.ts";
+import { FontExpotDataEx } from "../core/fonts.ts";
 import {
   bytesToString,
   FeatureTest,
+  isNodeJS,
   shadow,
   string32,
   warn,
@@ -133,7 +134,7 @@ export class FontLoader {
       return;
     }
 
-    assert(0, "Not implemented: loadSystemFont without the Font Loading API.");
+    fail("Not implemented: loadSystemFont without the Font Loading API.");
   }
 
   async bind(font: FontFaceObject) {
@@ -204,7 +205,10 @@ export class FontLoader {
 
     let supported = false;
     /*#static*/ if (PDFJSDev || !CHROME) {
-      if (
+      if (isNodeJS) {
+        // Node.js - we can pretend that sync font loading is supported.
+        supported = true;
+      } else if (
         globalThis.navigator &&
         // User agent string sniffing is bad, but there is no reliable way to
         // tell if the font is fully loaded and ready to be used with canvas.

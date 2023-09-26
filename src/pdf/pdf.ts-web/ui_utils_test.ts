@@ -17,9 +17,9 @@
  * limitations under the License.
  */
 
-import { assertEquals } from "https://deno.land/std@0.195.0/testing/asserts.ts";
-import { describe, it } from "https://deno.land/std@0.195.0/testing/bdd.ts";
-import { type point_t } from "../../lib/alias.ts";
+import { assertEquals } from "@std/testing/asserts.ts";
+import { describe, it } from "@std/testing/bdd.ts";
+import { type dot2d_t } from "../../lib/alias.ts";
 import { type IVisibleView } from "./interfaces.ts";
 import {
   backtrackBeforeAllVisibleElements,
@@ -243,7 +243,7 @@ describe("ui_utils", () => {
     // -9. If everything is working correctly, this detail won't leak out into
     // the tests themselves, and so the tests shouldn't use the value of
     // BORDER_WIDTH at all.
-    function makePages(lines: point_t[][]): IVisibleView[] {
+    function makePages(lines: dot2d_t[][]): IVisibleView[] {
       const result = [];
       let lineTop = 0,
         id = 0;
@@ -516,8 +516,8 @@ describe("ui_utils", () => {
     // getVisibleElements.
     describe("backtrackBeforeAllVisibleElements", () => {
       // Layout elements common to all tests
-      const tallPage: point_t = [10, 50];
-      const shortPage: point_t = [10, 10];
+      const tallPage: dot2d_t = [10, 50];
+      const shortPage: dot2d_t = [10, 10];
 
       // A scroll position that ensures that only the tall pages in the second
       // row are visible

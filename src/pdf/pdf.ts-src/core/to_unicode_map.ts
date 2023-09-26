@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-import { assert } from "../../../lib/util/trace.ts";
+import { fail } from "@fe-src/lib/util/trace.ts";
 /*80--------------------------------------------------------------------------*/
 
 export class ToUnicodeMap {
@@ -110,7 +110,7 @@ export class IdentityToUnicodeMap {
   }
 
   amend(map: string[]) {
-    assert(0, "Should not call amend()");
+    fail("Should not call amend()");
   }
 }
 /*80--------------------------------------------------------------------------*/

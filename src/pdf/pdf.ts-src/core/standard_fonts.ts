@@ -104,7 +104,9 @@ export const getStdFontMap = getLookupTableFactory(
   },
 );
 
-// Contains mapping for standard fonts and xfa fonts.
+/**
+ * Contains mapping for standard fonts and xfa fonts.
+ */
 export const getFontNameToFileMap = getLookupTableFactory(
   (t: Record<string, string>) => {
     t.Courier = "FoxitFixed.pfb";
@@ -329,9 +331,11 @@ export const getSymbolsFonts = getLookupTableFactory(
   },
 );
 
-// Glyph map for well-known standard fonts. Sometimes Ghostscript uses CID
-// fonts, but does not embed the CID to GID mapping. The mapping is incomplete
-// for all glyphs, but common for some set of the standard fonts.
+/**
+ * Glyph map for well-known standard fonts. Sometimes Ghostscript uses CID
+ * fonts, but does not embed the CID to GID mapping. The mapping is incomplete
+ * for all glyphs, but common for some set of the standard fonts.
+ */
 export const getGlyphMapForStandardFonts = getLookupTableFactory((t) => {
   t[2] = 10;
   t[3] = 32;
@@ -767,9 +771,11 @@ export const getGlyphMapForStandardFonts = getLookupTableFactory((t) => {
   t[3416] = 8377;
 });
 
-// The glyph map for ArialBlack differs slightly from the glyph map used for
-// other well-known standard fonts. Hence we use this (incomplete) CID to GID
-// mapping to adjust the glyph map for non-embedded ArialBlack fonts.
+/**
+ * The glyph map for ArialBlack differs slightly from the glyph map used for
+ * other well-known standard fonts. Hence we use this (incomplete) CID to GID
+ * mapping to adjust the glyph map for non-embedded ArialBlack fonts.
+ */
 export const getSupplementalGlyphMapForArialBlack = getLookupTableFactory(
   (t: Record<number, number>) => {
     t[227] = 322;
@@ -778,9 +784,11 @@ export const getSupplementalGlyphMapForArialBlack = getLookupTableFactory(
   },
 );
 
-// The glyph map for Calibri (a Windows font) differs from the glyph map used
-// in the standard fonts. Hence we use this (incomplete) CID to GID mapping to
-// adjust the glyph map for non-embedded Calibri fonts.
+/**
+ * The glyph map for Calibri (a Windows font) differs from the glyph map used
+ * in the standard fonts. Hence we use this (incomplete) CID to GID mapping to
+ * adjust the glyph map for non-embedded Calibri fonts.
+ */
 export const getSupplementalGlyphMapForCalibri = getLookupTableFactory(
   (t: Record<number, number>) => {
     t[1] = 32;

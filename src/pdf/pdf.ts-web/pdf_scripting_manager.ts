@@ -19,8 +19,8 @@
 
 /** @typedef {import("./event_utils").EventBus} EventBus */
 
-import { CHROME, COMPONENTS, GENERIC, PDFJSDev } from "../../global.ts";
-import { PromiseCap } from "../../lib/util/PromiseCap.ts";
+import { CHROME, GENERIC, PDFJSDev } from "@fe-src/global.ts";
+import { PromiseCap } from "@fe-src/lib/util/PromiseCap.ts";
 import type { FieldObject, PDFDocumentProxy } from "../pdf.ts-src/pdf.ts";
 import { shadow } from "../pdf.ts-src/pdf.ts";
 import type { DefaultExternalServices, ScriptingDocProperties } from "./app.ts";
@@ -85,6 +85,7 @@ export class PDFScriptingManager {
   }
 
   #scripting: IScripting | undefined;
+  #willPrintCapability: PromiseCap | undefined;
 
   #ready = false;
   get ready() {
@@ -108,32 +109,6 @@ export class PDFScriptingManager {
     }
     this.#externalServices = externalServices;
     this.#docProperties = docProperties;
-
-    /*#static*/ if (COMPONENTS) {
-      import("./generic_scripting.ts").then((gs) => {
-        this.#externalServices ||= {
-          createScripting: (
-            options: { sandboxBundleSrc: string },
-          ) => {
-            return new gs.GenericScripting(options.sandboxBundleSrc);
-          },
-        } as any;
-        this.#docProperties ||= (pdfDocument: PDFDocumentProxy) => {
-          return gs.docProperties(pdfDocument);
-        };
-
-        // The default viewer already handles adding/removing of DOM events,
-        // hence limit this to only the viewer components.
-        if (!externalServices) {
-          window.addEventListener("updatefromsandbox", (event) => {
-            this.#eventBus.dispatch("updatefromsandbox", {
-              source: window,
-              detail: (event as CustomEvent).detail,
-            });
-          });
-        }
-      });
-    }
   }
 
   async setDocument(pdfDocument?: PDFDocumentProxy) {
@@ -282,10 +257,23 @@ export class PDFScriptingManager {
   }
 
   async dispatchWillPrint() {
-    return this.#scripting?.dispatchEventInSandbox({
-      id: "doc",
-      name: "WillPrint",
-    });
+    if (!this.#scripting) {
+      return;
+    }
+    await this.#willPrintCapability?.promise;
+    this.#willPrintCapability = new PromiseCap();
+    try {
+      await this.#scripting.dispatchEventInSandbox({
+        id: "doc",
+        name: "WillPrint",
+      });
+    } catch (ex) {
+      this.#willPrintCapability.resolve();
+      this.#willPrintCapability = undefined;
+      throw ex;
+    }
+
+    await this.#willPrintCapability.promise;
   }
 
   async dispatchDidPrint() {
@@ -375,6 +363,10 @@ export class PDFScriptingManager {
           if (!isInPresentationMode) {
             pdfViewer.decreaseScale();
           }
+          break;
+        case "WillPrintFinished":
+          this.#willPrintCapability?.resolve();
+          this.#willPrintCapability = undefined;
           break;
       }
       return;
@@ -502,6 +494,9 @@ export class PDFScriptingManager {
     try {
       await this.#scripting.destroySandbox();
     } catch (ex) {}
+
+    this.#willPrintCapability?.reject(new Error("Scripting destroyed."));
+    this.#willPrintCapability = undefined;
 
     for (const [name, listener] of this.#internalEvents) {
       this.#eventBus._off(name, listener);

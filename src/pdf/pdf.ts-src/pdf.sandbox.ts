@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-import ModuleLoader from "../../3rd/quickjs-2022-05-02/quickjs-eval.js";
-import { TESTING } from "../../global.ts";
+import ModuleLoader from "@fe-src/3rd/quickjs-2022-05-02/quickjs-eval.js";
+import { TESTING } from "@fe-src/global.ts";
 import type { EventInSandBox } from "../pdf.ts-web/interfaces.ts";
 import { SandboxSupportBase } from "./pdf.sandbox.external.ts";
 /*80--------------------------------------------------------------------------*/
@@ -125,9 +125,7 @@ export class Sandbox {
   }
 
   dumpMemoryUse() {
-    if (this._module) {
-      (<any> this._module).ccall("dumpMemoryUse", null, []);
-    }
+    (this._module as any)?.ccall("dumpMemoryUse", null, []);
   }
 
   nukeSandbox() {

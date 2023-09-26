@@ -11,11 +11,11 @@ import type { ts_t } from "../alias.ts";
  * @const @param assertion
  * @const @param msg
  */
-export const assert = (
+export function assert(
   assertion: any,
   ...data: any[]
   // meta?: { url: string },
-) => {
+) {
   // if (!assertion && meta) {
   //   const match = meta.url.match(/\/([^\/]+\.js)/);
   //   // console.log(match);
@@ -26,7 +26,15 @@ export const assert = (
   }
 
   if (!assertion) throw new Error(data[0], { cause: data });
-};
+}
+
+export function fail(...data: any[]): never {
+  /*#static*/ if (!TESTING) {
+    console.assert(false, ...data);
+  }
+
+  throw new Error(data[0], { cause: data });
+}
 
 export const warn = (
   ...data: any[]

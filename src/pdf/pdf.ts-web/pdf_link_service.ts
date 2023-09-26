@@ -20,8 +20,8 @@
 /** @typedef {import("./event_utils").EventBus} EventBus */
 /** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
 
-import { isObjectLike } from "../../lib/jslang.ts";
-import { assert } from "../../lib/util/trace.ts";
+import { isObjectLike } from "@fe-src/lib/jslang.ts";
+import { assert } from "@fe-src/lib/util/trace.ts";
 import type {
   Destination,
   ExplicitDest,
@@ -411,40 +411,38 @@ export class PDFLinkService implements IPDFLinkService {
             zoomArgs.length > 2 ? +zoomArgs[2] | 0 : null,
             zoomArgNumber ? zoomArgNumber / 100 : zoomArg,
           ];
-        } else {
-          if (zoomArg === "Fit" || zoomArg === "FitB") {
-            dest = [null, { name: zoomArg }];
-          } else if (
-            zoomArg === "FitH" ||
-            zoomArg === "FitBH" ||
-            zoomArg === "FitV" ||
-            zoomArg === "FitBV"
-          ) {
+        } else if (zoomArg === "Fit" || zoomArg === "FitB") {
+          dest = [null, { name: zoomArg }];
+        } else if (
+          zoomArg === "FitH" ||
+          zoomArg === "FitBH" ||
+          zoomArg === "FitV" ||
+          zoomArg === "FitBV"
+        ) {
+          dest = [
+            null,
+            { name: zoomArg },
+            zoomArgs.length > 1 ? +zoomArgs[1] | 0 : null,
+          ];
+        } else if (zoomArg === "FitR") {
+          if (zoomArgs.length !== 5) {
+            console.error(
+              'PDFLinkService.setHash: Not enough parameters for "FitR".',
+            );
+          } else {
             dest = [
               null,
               { name: zoomArg },
-              zoomArgs.length > 1 ? +zoomArgs[1] | 0 : null,
+              +zoomArgs[1] | 0,
+              +zoomArgs[2] | 0,
+              +zoomArgs[3] | 0,
+              +zoomArgs[4] | 0,
             ];
-          } else if (zoomArg === "FitR") {
-            if (zoomArgs.length !== 5) {
-              console.error(
-                'PDFLinkService.setHash: Not enough parameters for "FitR".',
-              );
-            } else {
-              dest = [
-                null,
-                { name: zoomArg },
-                +zoomArgs[1] | 0,
-                +zoomArgs[2] | 0,
-                +zoomArgs[3] | 0,
-                +zoomArgs[4] | 0,
-              ];
-            }
-          } else {
-            console.error(
-              `PDFLinkService.setHash: "${zoomArg}" is not a valid zoom value.`,
-            );
           }
+        } else {
+          console.error(
+            `PDFLinkService.setHash: "${zoomArg}" is not a valid zoom value.`,
+          );
         }
       }
       if (dest!) {

@@ -3,7 +3,7 @@
  * @license Apache-2.0
  ******************************************************************************/
 
-import { z } from "../3rd/zod-3.20.0/lib/index.mjs";
+import { z } from "@zod";
 /*80--------------------------------------------------------------------------*/
 
 export type int = number;
@@ -91,7 +91,8 @@ export enum ChrTyp {
 export type ChrTypName = keyof typeof ChrTyp;
 /*80--------------------------------------------------------------------------*/
 
-export type point_t = [number, number];
+export type dot2d_t = [x: number, y: number];
+export type dim2d_t = [widt: number, high: number];
 export type rect_t = TupleOf<number, 4>;
 
 export type IntegerArray =

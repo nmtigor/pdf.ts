@@ -1,3 +1,7 @@
+/* Converted from JavaScript to TypeScript by
+ * nmtigor (https://github.com/nmtigor) @2023
+ */
+
 /* Copyright 2014 Mozilla Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,8 +25,8 @@ import { EOF } from "./primitives.ts";
 
 export class PostScriptParser {
   operators: (number | string | null)[] = [];
-  token: PostScriptToken | EOF | null = null;
-  prev: PostScriptToken | EOF | null = null;
+  token: PostScriptToken | EOF | undefined;
+  prev: PostScriptToken | EOF | undefined;
 
   constructor(public lexer: PostScriptLexer) {
   }
@@ -33,7 +37,7 @@ export class PostScriptParser {
   }
 
   accept(type: PostScriptTokenTypes) {
-    if ((<PostScriptToken> this.token).type === type) {
+    if ((this.token as PostScriptToken).type === type) {
       this.nextToken();
       return true;
     }
@@ -46,7 +50,7 @@ export class PostScriptParser {
     }
     throw new FormatError(
       `Unexpected symbol: found ${
-        (<PostScriptToken> this.token).type
+        (this.token as PostScriptToken).type
       } expected ${type}.`,
     );
   }
@@ -62,10 +66,10 @@ export class PostScriptParser {
   parseBlock() {
     while (true) {
       if (this.accept(PostScriptTokenTypes.NUMBER)) {
-        this.operators.push(<number> (<PostScriptToken> this.prev).value);
+        this.operators.push((this.prev as PostScriptToken).value as number);
       } else if (this.accept(PostScriptTokenTypes.OPERATOR)) {
         this.operators.push(
-          <PostScriptTokenTypes> (<PostScriptToken> this.prev).value,
+          (this.prev as PostScriptToken).value as PostScriptTokenTypes,
         );
       } else if (this.accept(PostScriptTokenTypes.LBRACE)) {
         this.parseCondition();

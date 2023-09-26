@@ -17,14 +17,16 @@
  * limitations under the License.
  */
 
-import { assertEquals } from "https://deno.land/std@0.195.0/assert/mod.ts";
-import { describe, it } from "https://deno.land/std@0.195.0/testing/bdd.ts";
+import { assertEquals } from "@std/assert/mod.ts";
+import { afterAll, beforeAll, describe, it } from "@std/testing/bdd.ts";
+import { XRefMock } from "../shared/test_utils.ts";
 import {
   createDefaultAppearance,
   parseAppearanceStream,
   parseDefaultAppearance,
 } from "./default_appearance.ts";
-import { StringStream } from "./stream.ts";
+import { Dict, Name } from "./primitives.ts";
+import { NullStream, StringStream } from "./stream.ts";
 /*80--------------------------------------------------------------------------*/
 
 describe("Default appearance", () => {
@@ -62,6 +64,21 @@ describe("Default appearance", () => {
   });
 
   describe("parseAppearanceStream", () => {
+    let evaluatorOptions: any, xref: any;
+
+    beforeAll(() => {
+      evaluatorOptions = {
+        isEvalSupported: true,
+        isOffscreenCanvasSupported: false,
+      };
+      xref = new XRefMock();
+    });
+
+    afterAll(() => {
+      evaluatorOptions = undefined;
+      xref = undefined;
+    });
+
     it("should parse a FreeText (from Acrobat) appearance", () => {
       const appearance = new StringStream(`
       0 w
@@ -92,7 +109,10 @@ describe("Default appearance", () => {
         fontName: "Helv",
         fontColor: new Uint8ClampedArray([107, 217, 41]),
       };
-      assertEquals(parseAppearanceStream(appearance), result);
+      assertEquals(
+        parseAppearanceStream(appearance, evaluatorOptions, xref),
+        result,
+      );
       assertEquals(appearance.pos, 0);
     });
 
@@ -111,23 +131,48 @@ describe("Default appearance", () => {
         fontName: "Helv",
         fontColor: new Uint8ClampedArray([237, 43, 112]),
       };
-      assertEquals(parseAppearanceStream(appearance), result);
+      assertEquals(
+        parseAppearanceStream(appearance, evaluatorOptions, xref),
+        result,
+      );
       assertEquals(appearance.pos, 0);
     });
 
     it("should parse a FreeText (from Preview) appearance", () => {
+      const indexedDict = new Dict(xref);
+      indexedDict.set("Alternate", Name.get("DeviceRGB"));
+      indexedDict.set("N", 3);
+      indexedDict.set("Length", 0);
+
+      const indexedStream = new NullStream();
+      indexedStream.dict = indexedDict;
+
+      const colorSpaceDict = new Dict(xref);
+      colorSpaceDict.set("Cs1", [Name.get("ICCBased"), indexedStream]);
+
+      const resourcesDict = new Dict(xref);
+      resourcesDict.set("ColorSpace", colorSpaceDict);
+
+      const appearanceDict = new Dict(xref);
+      appearanceDict.set("Resources", resourcesDict);
+
       const appearance = new StringStream(`
       q Q q 2.128482 2.128482 247.84 26 re W n /Cs1 cs 0.52799 0.3071 0.99498 sc
       q 1 0 0 -1 -108.3364 459.8485 cm BT 22.00539 0 0 -22.00539 110.5449 452.72
       Tm /TT1 1 Tf [ (H) -0.2 (e) -0.2 (l) -0.2 (l) -0.2 (o) -0.2 ( ) 0.2 (W) 17.7
       (o) -0.2 (rl) -0.2 (d) -0.2 ( ) 0.2 (f) 0.2 (ro) -0.2 (m ) 0.2 (Pre) -0.2
       (vi) -0.2 (e) -0.2 (w) ] TJ ET Q Q`);
+      appearance.dict = appearanceDict;
+
       const result = {
         fontSize: 22.00539,
         fontName: "TT1",
-        fontColor: new Uint8ClampedArray([0, 0, 0]),
+        fontColor: new Uint8ClampedArray([135, 78, 254]),
       };
-      assertEquals(parseAppearanceStream(appearance), result);
+      assertEquals(
+        parseAppearanceStream(appearance, evaluatorOptions, xref),
+        result,
+      );
       assertEquals(appearance.pos, 0);
     });
 
@@ -148,7 +193,10 @@ describe("Default appearance", () => {
         fontName: "Helv",
         fontColor: new Uint8ClampedArray([16, 124, 16]),
       };
-      assertEquals(parseAppearanceStream(appearance), result);
+      assertEquals(
+        parseAppearanceStream(appearance, evaluatorOptions, xref),
+        result,
+      );
       assertEquals(appearance.pos, 0);
     });
 
@@ -172,7 +220,10 @@ describe("Default appearance", () => {
         fontName: "FXF0",
         fontColor: new Uint8ClampedArray([149, 63, 60]),
       };
-      assertEquals(parseAppearanceStream(appearance), result);
+      assertEquals(
+        parseAppearanceStream(appearance, evaluatorOptions, xref),
+        result,
+      );
       assertEquals(appearance.pos, 0);
     });
 
@@ -194,7 +245,10 @@ describe("Default appearance", () => {
         fontName: "Invalid_font",
         fontColor: new Uint8ClampedArray([0, 85, 127]),
       };
-      assertEquals(parseAppearanceStream(appearance), result);
+      assertEquals(
+        parseAppearanceStream(appearance, evaluatorOptions, xref),
+        result,
+      );
       assertEquals(appearance.pos, 0);
     });
   });

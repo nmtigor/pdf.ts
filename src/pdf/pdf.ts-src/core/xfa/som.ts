@@ -236,11 +236,9 @@ export function searchNode(
             break;
           case operators.dotHash:
             const children_1 = node[$getChildrenByClass](name);
-            if ((children_1 as XFAObjectArray).isXFAObjectArray) {
-              children = (children_1 as XFAObjectArray).children;
-            } else {
-              children = [children_1 as XFAObject];
-            }
+            children = (children_1 as XFAObjectArray).isXFAObjectArray
+              ? (children_1 as XFAObjectArray).children
+              : [children_1 as XFAObject];
             break;
           default:
             break;
@@ -268,13 +266,9 @@ export function searchNode(
       continue;
     }
 
-    if (isFinite(index)) {
-      root_1 = nodes.filter((node) => index < node!.length).map((node) =>
-        node[index]
-      );
-    } else {
-      root_1 = nodes.flat();
-    }
+    root_1 = isFinite(index)
+      ? nodes.filter((node) => index < node.length).map((node) => node[index])
+      : nodes.flat();
   }
 
   if (root_1.length === 0) {
@@ -320,11 +314,9 @@ export function createDataNode(
         break;
       case operators.dotHash:
         const children_1 = root[$getChildrenByClass](name);
-        if ((children_1 as XFAObjectArray).isXFAObjectArray) {
-          children = (children_1 as XFAObjectArray).children;
-        } else {
-          children = [children_1 as XFAObject];
-        }
+        children = (children_1 as XFAObjectArray).isXFAObjectArray
+          ? (children_1 as XFAObjectArray).children
+          : [children_1 as XFAObject];
         break;
       default:
         break;

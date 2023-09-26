@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-import { assertEquals } from "https://deno.land/std@0.195.0/assert/mod.ts";
-import { describe, it } from "https://deno.land/std@0.195.0/testing/bdd.ts";
+import { assertEquals } from "@std/assert/mod.ts";
+import { describe, it } from "@std/testing/bdd.ts";
 import { bidi } from "./bidi.ts";
 /*80--------------------------------------------------------------------------*/
 

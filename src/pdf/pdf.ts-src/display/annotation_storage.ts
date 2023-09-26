@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-import { PDFJSDev, SKIP_BABEL, TESTING } from "../../../global.ts";
-import { assert } from "../../../lib/util/trace.ts";
+import { PDFJSDev, SKIP_BABEL, TESTING } from "@fe-src/global.ts";
+import { fail } from "@fe-src/lib/util/trace.ts";
 import { MurmurHash3_64 } from "../shared/murmurhash3.ts";
 import { objectFromMap } from "../shared/util.ts";
 import type {
@@ -57,7 +57,7 @@ export class AnnotationStorage {
   onSetModified?: () => void;
   onResetModified?: () => void;
   onAnnotationEditor:
-    | ((type?: "freetext" | "ink" | undefined) => void)
+    | ((type?: "freetext" | "ink" | "stamp" | undefined) => void)
     | undefined;
 
   /**
@@ -180,20 +180,31 @@ export class AnnotationStorage {
     const map: AnnotStorageRecord = new Map(),
       hash = new MurmurHash3_64(),
       transfers = [];
+    const context = Object.create(null);
+    let hasBitmap = false;
+
     for (const [key, val] of this.#storage) {
       const serialized = val instanceof AnnotationEditor
-        ? val.serialize()
+        ? val.serialize(/* isForCopying = */ false, context)
         : val;
       if (serialized) {
         map.set(key, serialized);
 
         hash.update(`${key}:${JSON.stringify(serialized)}`);
+        hasBitmap ||= !!serialized.bitmap;
+      }
+    }
 
-        if (serialized.bitmap) {
-          transfers.push(serialized.bitmap);
+    if (hasBitmap) {
+      // We must transfer the bitmap data separately, since it can be changed
+      // during serialization with SVG images.
+      for (const value of map.values()) {
+        if (value.bitmap) {
+          transfers.push(value.bitmap);
         }
       }
     }
+
     return map.size > 0
       ? { map, hash: hash.hexdigest(), transfers }
       : SerializableEmpty;
@@ -223,8 +234,7 @@ export class PrintAnnotationStorage extends AnnotationStorage {
 
   // eslint-disable-next-line getter-return
   override get print(): PrintAnnotationStorage {
-    assert(0, "Should not call PrintAnnotationStorage.print");
-    return <any> 0;
+    return fail("Should not call PrintAnnotationStorage.print");
   }
 
   /**

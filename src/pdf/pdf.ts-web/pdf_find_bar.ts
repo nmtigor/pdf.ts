@@ -67,15 +67,15 @@ export class PDFFindBar {
     this.findNextButton = options.findNextButton;
 
     // Add event listeners to the DOM elements.
-    this.toggleButton.addEventListener("click", () => {
+    this.toggleButton.on("click", () => {
       this.toggle();
     });
 
-    this.findField.addEventListener("input", () => {
+    this.findField.on("input", () => {
       this.dispatchEvent("");
     });
 
-    this.bar.addEventListener("keydown", (e) => {
+    this.bar.on("keydown", (e) => {
       switch (e.keyCode) {
         case 13: // Enter
           if (e.target === this.findField) {
@@ -88,27 +88,27 @@ export class PDFFindBar {
       }
     });
 
-    this.findPreviousButton.addEventListener("click", () => {
+    this.findPreviousButton.on("click", () => {
       this.dispatchEvent("again", true);
     });
 
-    this.findNextButton.addEventListener("click", () => {
+    this.findNextButton.on("click", () => {
       this.dispatchEvent("again", false);
     });
 
-    this.highlightAll.addEventListener("click", () => {
+    this.highlightAll.on("click", () => {
       this.dispatchEvent("highlightallchange");
     });
 
-    this.caseSensitive.addEventListener("click", () => {
+    this.caseSensitive.on("click", () => {
       this.dispatchEvent("casesensitivitychange");
     });
 
-    this.entireWord.addEventListener("click", () => {
+    this.entireWord.on("click", () => {
       this.dispatchEvent("entirewordchange");
     });
 
-    this.matchDiacritics.addEventListener("click", () => {
+    this.matchDiacritics.on("click", () => {
       this.dispatchEvent("diacriticmatchingchange");
     });
 
@@ -157,7 +157,7 @@ export class PDFFindBar {
     this.findField.setAttribute("data-status", status);
     this.findField.setAttribute(
       "aria-invalid",
-      <any> (state === FindState.NOT_FOUND),
+      (state === FindState.NOT_FOUND) as any,
     );
 
     findMsg.then((msg) => {

@@ -17,12 +17,8 @@
  * limitations under the License.
  */
 
-import {
-  assert,
-  assertEquals,
-  assertThrows,
-} from "https://deno.land/std@0.195.0/testing/asserts.ts";
-import { describe, it } from "https://deno.land/std@0.195.0/testing/bdd.ts";
+import { assert, assertEquals, assertThrows } from "@std/testing/asserts.ts";
+import { describe, it } from "@std/testing/bdd.ts";
 import { Lexer, TOKEN, Token } from "./formcalc_lexer.ts";
 import { Errors, Parser } from "./formcalc_parser.ts";
 /*80--------------------------------------------------------------------------*/

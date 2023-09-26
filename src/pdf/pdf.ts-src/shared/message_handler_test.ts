@@ -17,16 +17,12 @@
  * limitations under the License.
  */
 
-import {
-  assertEquals,
-  assertInstanceOf,
-  fail,
-} from "https://deno.land/std@0.195.0/testing/asserts.ts";
-import { describe, it } from "https://deno.land/std@0.195.0/testing/bdd.ts";
-import { PromiseCap } from "../../../lib/util/PromiseCap.ts";
+import { PromiseCap } from "@fe-src/lib/util/PromiseCap.ts";
+import { assertEquals, fail } from "@std/assert/mod.ts";
+import { describe, it } from "@std/testing/bdd.ts";
 import { LoopbackPort } from "../display/api.ts";
 import { MessageHandler, type Thread } from "../shared/message_handler.ts";
-import { AbortException, UnknownErrorException } from "./util.ts";
+import { AbortException } from "./util.ts";
 /*80--------------------------------------------------------------------------*/
 
 describe("message_handler", () => {
@@ -228,7 +224,8 @@ describe("message_handler", () => {
         fail("Shouldn't get here.");
       } catch (reason) {
         assertEquals(log, "01pe");
-        assertInstanceOf(reason, UnknownErrorException);
+        // assertInstanceOf(reason, UnknownErrorException);
+        assertEquals(reason?.name, "UnknownErrorException");
         assertEquals(reason.message, "should not read when errored");
       }
     });

@@ -23,17 +23,13 @@ import {
   assertEquals,
   assertMatch,
   assertThrows,
-} from "https://deno.land/std@0.195.0/testing/asserts.ts";
-import {
-  afterAll,
-  beforeAll,
-  describe,
-  it,
-} from "https://deno.land/std@0.195.0/testing/bdd.ts";
+} from "@std/assert/mod.ts";
+import { afterAll, beforeAll, describe, it } from "@std/testing/bdd.ts";
 import { ImgData } from "../core/evaluator.ts";
 import { buildGetDocumentParams } from "../shared/test_utils.ts";
 import { getDocument, PDFDocumentLoadingTask, PDFPageProxy } from "./api.ts";
 import { SVGGraphics } from "./svg.ts";
+import { isNodeJS } from "../shared/util.ts";
 /*80--------------------------------------------------------------------------*/
 
 const XLINK_NS = "http://www.w3.org/1999/xlink";
@@ -45,9 +41,9 @@ function withZlib(isZlibRequired: boolean, callback: () => Promise<Element>) {
   if (isZlibRequired) {
     // We could try to polyfill zlib in the browser, e.g. using pako.
     // For now, only support zlib functionality on Node.js
-    // if (!isNodeJS) {
-    throw new Error("zlib test can only be run in Node.js");
-    // }
+    if (!isNodeJS) {
+      throw new Error("zlib test can only be run in Node.js");
+    }
 
     return callback();
   }
@@ -139,15 +135,15 @@ describe("SVGGraphics", () => {
         // __non_webpack_require__("zlib");
         throw undefined;
       }
-      // if (isNodeJS) {
-      //   // Verifies that the script loader replaces __non_webpack_require__ with
-      //   // require.
-      //   assertMatch(testFunc.toString(), /\srequire\(["']zlib["']\)/);
-      //   // expect(testFunc).not.toThrow();
-      // } else {
-      // require not defined, require('zlib') not a module, etc.
-      assertThrows(testFunc);
-      // }
+      if (isNodeJS) {
+        // Verifies that the script loader replaces __non_webpack_require__ with
+        // require.
+        assertMatch(testFunc.toString(), /\srequire\(["']zlib["']\)/);
+        // expect(testFunc).not.toThrow();
+      } else {
+        // require not defined, require('zlib') not a module, etc.
+        assertThrows(testFunc);
+      }
     });
 
     //kkkk "Error: zlib test can only be run in Node.js"

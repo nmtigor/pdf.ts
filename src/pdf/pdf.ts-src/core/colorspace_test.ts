@@ -21,13 +21,8 @@ import {
   assertEquals,
   assertNotStrictEquals,
   assertStrictEquals,
-} from "https://deno.land/std@0.195.0/testing/asserts.ts";
-import {
-  afterAll,
-  beforeAll,
-  describe,
-  it,
-} from "https://deno.land/std@0.195.0/testing/bdd.ts";
+} from "@std/testing/asserts.ts";
+import { afterAll, beforeAll, describe, it } from "@std/testing/bdd.ts";
 import { XRefMock } from "../shared/test_utils.ts";
 import { ColorSpace } from "./colorspace.ts";
 import { PDFFunctionFactory } from "./function.ts";

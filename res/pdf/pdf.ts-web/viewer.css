@@ -53,6 +53,7 @@
   --toggled-btn-color: rgba(0, 0, 0, 1);
   --toggled-btn-bg-color: rgba(0, 0, 0, 0.3);
   --toggled-hover-active-btn-color: rgba(0, 0, 0, 0.4);
+  --toggled-hover-btn-outline: none;
   --dropdown-btn-bg-color: rgba(215, 215, 219, 1);
   --dropdown-btn-border: none;
   --separator-color: rgba(0, 0, 0, 0.3);
@@ -80,6 +81,7 @@
   --treeitem-collapsed-icon: url(images/treeitem-collapsed.svg);
   --toolbarButton-editorFreeText-icon: url(images/toolbarButton-editorFreeText.svg);
   --toolbarButton-editorInk-icon: url(images/toolbarButton-editorInk.svg);
+  --toolbarButton-editorStamp-icon: url(images/toolbarButton-editorStamp.svg);
   --toolbarButton-menuArrow-icon: url(images/toolbarButton-menuArrow.svg);
   --toolbarButton-sidebarToggle-icon: url(images/toolbarButton-sidebarToggle.svg);
   --toolbarButton-secondaryToolbarToggle-icon: url(images/toolbarButton-secondaryToolbarToggle.svg);
@@ -116,6 +118,7 @@
   --secondaryToolbarButton-spreadOdd-icon: url(images/secondaryToolbarButton-spreadOdd.svg);
   --secondaryToolbarButton-spreadEven-icon: url(images/secondaryToolbarButton-spreadEven.svg);
   --secondaryToolbarButton-documentProperties-icon: url(images/secondaryToolbarButton-documentProperties.svg);
+  --editorParams-stampAddImage-icon: url(images/toolbarButton-zoomIn.svg);
 }
 
 :root:dir(rtl) {
@@ -180,6 +183,8 @@
     --toolbar-icon-opacity: 1;
     --toolbar-icon-bg-color: ButtonText;
     --toolbar-icon-hover-bg-color: ButtonFace;
+    --toggled-hover-active-btn-color: ButtonText;
+    --toggled-hover-btn-outline: 2px solid ButtonBorder;
     --toolbar-border-color: CanvasText;
     --toolbar-border-bottom: 1px solid var(--toolbar-border-color);
     --toolbar-box-shadow: none;
@@ -572,20 +577,30 @@ body {
   margin-bottom: -4px;
 }
 
-#editorInkParamsToolbar {
+#editorStampParamsToolbar {
   inset-inline-end: 40px;
   background-color: var(--toolbar-bg-color);
 }
 
-#editorFreeTextParamsToolbar {
+#editorInkParamsToolbar {
   inset-inline-end: 68px;
   background-color: var(--toolbar-bg-color);
+}
+
+#editorFreeTextParamsToolbar {
+  inset-inline-end: 96px;
+  background-color: var(--toolbar-bg-color);
+}
+
+#editorStampAddImage::before {
+  mask-image: var(--editorParams-stampAddImage-icon);
 }
 
 .doorHanger,
 .doorHangerRight {
   border-radius: 2px;
-  box-shadow: 0 1px 5px var(--doorhanger-border-color),
+  box-shadow:
+    0 1px 5px var(--doorhanger-border-color),
     0 0 0 1px var(--doorhanger-border-color);
   border: var(--doorhanger-border-color-whcm);
 }
@@ -762,6 +777,11 @@ body {
   color: var(--toggled-btn-color);
 }
 
+:is(.toolbarButton, .secondaryToolbarButton).toggled:hover,
+.splitToolbarButton.toggled > .toolbarButton.toggled:hover {
+  outline: var(--toggled-hover-btn-outline) !important;
+}
+
 :is(.toolbarButton, .secondaryToolbarButton).toggled::before {
   background-color: var(--toggled-btn-color);
 }
@@ -894,6 +914,10 @@ body {
 
 #editorInk::before {
   mask-image: var(--toolbarButton-editorInk-icon);
+}
+
+#editorStamp::before {
+  mask-image: var(--toolbarButton-editorStamp-icon);
 }
 
 #print::before,

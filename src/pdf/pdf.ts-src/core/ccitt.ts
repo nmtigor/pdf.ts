@@ -824,11 +824,9 @@ namespace NsCCITTFaxDecoder {
           }
         }
 
-        if (codingLine[0] > 0) {
-          this.outputBits = codingLine[this.codingPos = 0];
-        } else {
-          this.outputBits = codingLine[this.codingPos = 1];
-        }
+        this.outputBits = codingLine[0] > 0
+          ? codingLine[this.codingPos = 0]
+          : codingLine[this.codingPos = 1];
         this.row++;
       }
 
@@ -994,11 +992,7 @@ namespace NsCCITTFaxDecoder {
           return 1;
         }
 
-        if (code >> 5 === 0) {
-          p = whiteTable1[code];
-        } else {
-          p = whiteTable2[code >> 3];
-        }
+        p = code >> 5 === 0 ? whiteTable1[code] : whiteTable2[code >> 3];
 
         if (p[0] > 0) {
           this.#eatBits(p[0]);

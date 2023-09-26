@@ -105,12 +105,12 @@ class StructElementNode {
     // A direct link to content, the integer is an mcid.
     if (Number.isInteger(kid)) {
       if (this.tree.pageDict.objId !== pageObjId) {
-        return null;
+        return undefined;
       }
 
       return new StructElement({
         type: StructElementType.PAGE_CONTENT,
-        mcid: <number> kid,
+        mcid: kid as number,
         pageObjId,
       });
     }
@@ -118,12 +118,12 @@ class StructElementNode {
     // Find the dictionary for the kid.
     let kidDict; // Table 324
     if (kid instanceof Ref) {
-      kidDict = <Dict> this.dict.xref!.fetch(kid);
+      kidDict = this.dict.xref!.fetch(kid) as Dict;
     } else if (kid instanceof Dict) {
       kidDict = kid;
     }
     if (!kidDict) {
-      return null;
+      return undefined;
     }
     const pageRef = kidDict.getRaw("Pg");
     if (pageRef instanceof Ref) {
@@ -131,11 +131,11 @@ class StructElementNode {
     }
 
     const type = kidDict.get("Type") instanceof Name
-      ? (<Name> kidDict.get("Type")).name
-      : null;
+      ? (kidDict.get("Type") as Name).name
+      : undefined;
     if (type === "MCR") {
       if (this.tree.pageDict.objId !== pageObjId) {
-        return null;
+        return undefined;
       }
       return new StructElement({
         type: StructElementType.STREAM_CONTENT,
@@ -143,13 +143,13 @@ class StructElementNode {
           ? kidDict.getRaw("Stm")!.toString()
           : undefined,
         pageObjId,
-        mcid: <number> kidDict.get("MCID"),
+        mcid: kidDict.get("MCID") as number,
       });
     }
 
     if (type === "OBJR") {
       if (this.tree.pageDict.objId !== pageObjId) {
-        return null;
+        return undefined;
       }
       return new StructElement({
         type: StructElementType.OBJECT,

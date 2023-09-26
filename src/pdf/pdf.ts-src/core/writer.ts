@@ -67,22 +67,13 @@ async function writeStream(
   transform?: CipherTransform,
 ) {
   let string = stream.getString();
-  if (transform !== undefined) {
-    string = transform.encryptString(string);
-  }
   const { dict } = stream;
 
-  // eslint-disable-next-line no-undef
-  if (typeof (globalThis as any).CompressionStream === "undefined") {
-    dict!.set("Length", string.length);
-    await writeDict(dict!, buffer, transform);
-    buffer.push(" stream\n", string, "\nendstream");
-    return;
-  }
-
   // Table 5
-  const filter = (await dict!.getAsync("Filter")) as Name | Name[];
-  const params = (await dict!.getAsync("DecodeParms")) as Dict | Dict[];
+  const [filter, params] = await Promise.all([
+    dict!.getAsync("Filter") as Promise<Name | Name[]>,
+    dict!.getAsync("DecodeParms") as Promise<Dict | Dict[]>,
+  ]);
 
   const filterZero = Array.isArray(filter)
     ? await dict!.xref!.fetchIfRefAsync(filter[0]!)
@@ -93,10 +84,12 @@ async function writeStream(
   // The number 256 is arbitrary, but it should be reasonable.
   const MIN_LENGTH_FOR_COMPRESSING = 256;
 
-  if (string.length >= MIN_LENGTH_FOR_COMPRESSING || isFilterZeroFlateDecode) {
+  if (
+    typeof (globalThis as any).CompressionStream !== "undefined" &&
+    (string.length >= MIN_LENGTH_FOR_COMPRESSING || isFilterZeroFlateDecode)
+  ) {
     try {
       const byteArray = stringToBytes(string);
-      // eslint-disable-next-line no-undef
       const cs = new (globalThis as any).CompressionStream("deflate");
       const writer = cs.writable.getWriter();
       writer.write(byteArray);
@@ -128,6 +121,10 @@ async function writeStream(
     } catch (ex) {
       info(`writeStream - cannot compress data: "${ex}".`);
     }
+  }
+
+  if (transform !== undefined) {
+    string = transform.encryptString(string);
   }
 
   dict!.set("Length", string.length);
@@ -242,11 +239,9 @@ function writeXFADataForAcroform(str: string, newRefs: SaveData[]) {
       node = xml.documentElement.searchNode([nodePath.at(-1)!], 0);
     }
     if (node) {
-      if (Array.isArray(value)) {
-        node.childNodes = value.map((val) => new SimpleDOMNode("value", val));
-      } else {
-        node.childNodes = [new SimpleDOMNode("#text", value)];
-      }
+      node.childNodes = Array.isArray(value)
+        ? value.map((val) => new SimpleDOMNode("value", val))
+        : [new SimpleDOMNode("#text", value)];
     } else {
       warn(`Node not found for path: ${path}`);
     }
@@ -280,7 +275,7 @@ async function updateAcroform({
     warn("XFA - Cannot save it");
   }
 
-  if (!needAppearances && (!hasXfa || !xfaDatasetsRef)) {
+  if (!needAppearances && (!hasXfa || !xfaDatasetsRef || hasXfaDatasetsEntry)) {
     return;
   }
 
@@ -320,13 +315,13 @@ async function updateAcroform({
   newRefs.push({ ref: acroFormRef!, data: buffer.join("") });
 }
 
-interface _UpdateXFAP {
+interface UpdateXFAP_ {
   xfaData: string | undefined;
   xfaDatasetsRef: Ref | undefined;
   newRefs: SaveData[];
   xref: XRef | undefined;
 }
-function updateXFA({ xfaData, xfaDatasetsRef, newRefs, xref }: _UpdateXFAP) {
+function updateXFA({ xfaData, xfaDatasetsRef, newRefs, xref }: UpdateXFAP_) {
   if (xfaData === undefined) {
     const datasets = xref!.fetchIfRef(xfaDatasetsRef!) as BaseStream;
     xfaData = writeXFADataForAcroform(datasets.getString(), newRefs);

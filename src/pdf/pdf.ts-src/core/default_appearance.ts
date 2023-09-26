@@ -20,9 +20,15 @@
 import { DENO } from "../../../global.ts";
 import type { id_t, OC2D, rect_t } from "../../../lib/alias.ts";
 import type { rgb_t } from "../../../lib/color/alias.ts";
-import { LINE_DESCENT_FACTOR, LINE_FACTOR, OPS, warn } from "../shared/util.ts";
+import {
+  LINE_DESCENT_FACTOR,
+  LINE_FACTOR,
+  OPS,
+  shadow,
+  warn,
+} from "../shared/util.ts";
 import type { BaseStream } from "./base_stream.ts";
-import { ColorSpace } from "./colorspace.ts";
+import { ColorSpace, CS, type DeviceGrayCS } from "./colorspace.ts";
 import {
   escapePDFName,
   getRotationMatrix,
@@ -30,6 +36,9 @@ import {
   stringToUTF16HexString,
 } from "./core_utils.ts";
 import { EvaluatorPreprocessor } from "./evaluator.ts";
+import { PDFFunctionFactory } from "./function.ts";
+import { LocalColorSpaceCache } from "./image_utils.ts";
+import type { EvaluatorOptions } from "./pdf_manager.ts";
 import type { ObjNoCmd, Ref } from "./primitives.ts";
 import { Dict, Name } from "./primitives.ts";
 import { StringStream } from "./stream.ts";
@@ -91,9 +100,9 @@ class DefaultAppearanceEvaluator extends EvaluatorPreprocessor {
               0,
             );
             break;
-          case OPS.setFillColorSpace:
+          case OPS.setFillCMYKColor:
             ColorSpace.singletons.cmyk.getRgbItem(
-              <number[]> args,
+              args as number[],
               0,
               result.fontColor,
               0,
@@ -125,14 +134,27 @@ type AppearanceStreamParsed = {
   fontSize: number;
   fontName: string;
   fontColor: Uint8ClampedArray;
+  fillColorSpace: DeviceGrayCS;
 };
 
 class AppearanceStreamEvaluator extends EvaluatorPreprocessor {
   stream;
+  evaluatorOptions;
+  xref;
 
-  constructor(stream: BaseStream) {
+  resources;
+
+  constructor(
+    stream: BaseStream,
+    evaluatorOptions?: EvaluatorOptions,
+    xref?: XRef,
+  ) {
     super(stream);
     this.stream = stream;
+    this.evaluatorOptions = evaluatorOptions;
+    this.xref = xref;
+
+    this.resources = stream.dict?.get("Resources");
   }
 
   parse(): AppearanceStreamParsed {
@@ -145,6 +167,7 @@ class AppearanceStreamEvaluator extends EvaluatorPreprocessor {
       fontSize: 0,
       fontName: "",
       fontColor: /* black = */ new Uint8ClampedArray(3),
+      fillColorSpace: ColorSpace.singletons.gray,
     };
     let breakLoop = false;
     const stack: AppearanceStreamParsed[] = [];
@@ -165,6 +188,7 @@ class AppearanceStreamEvaluator extends EvaluatorPreprocessor {
               fontSize: result.fontSize,
               fontName: result.fontName,
               fontColor: result.fontColor.slice(),
+              fillColorSpace: result.fillColorSpace,
             });
             break;
           case OPS.restore:
@@ -185,6 +209,19 @@ class AppearanceStreamEvaluator extends EvaluatorPreprocessor {
               result.fontSize = fontSize * result.scaleFactor;
             }
             break;
+          case OPS.setFillColorSpace:
+            result.fillColorSpace = ColorSpace.parse({
+              cs: args[0] as CS,
+              xref: this.xref!,
+              resources: this.resources as Dict | undefined,
+              pdfFunctionFactory: this._pdfFunctionFactory,
+              localColorSpaceCache: this._localColorSpaceCache,
+            });
+            break;
+          case OPS.setFillColor:
+            const cs = result.fillColorSpace;
+            cs.getRgbItem(args as number[], 0, result.fontColor, 0);
+            break;
           case OPS.setFillRGBColor:
             ColorSpace.singletons.rgb.getRgbItem(
               args as number[],
@@ -201,7 +238,7 @@ class AppearanceStreamEvaluator extends EvaluatorPreprocessor {
               0,
             );
             break;
-          case OPS.setFillColorSpace:
+          case OPS.setFillCMYKColor:
             ColorSpace.singletons.cmyk.getRgbItem(
               args as number[],
               0,
@@ -222,15 +259,32 @@ class AppearanceStreamEvaluator extends EvaluatorPreprocessor {
     }
     this.stream.reset();
     delete (result as any).scaleFactor;
+    delete (result as any).fillColorSpace;
 
     return result;
+  }
+
+  get _localColorSpaceCache() {
+    return shadow(this, "_localColorSpaceCache", new LocalColorSpaceCache());
+  }
+
+  get _pdfFunctionFactory() {
+    const pdfFunctionFactory = new PDFFunctionFactory({
+      xref: this.xref!,
+      isEvalSupported: this.evaluatorOptions!.isEvalSupported,
+    });
+    return shadow(this, "_pdfFunctionFactory", pdfFunctionFactory);
   }
 }
 
 // Parse appearance stream to extract font and color information.
 // It returns the font properties used to render the first text object.
-export function parseAppearanceStream(stream: BaseStream) {
-  return new AppearanceStreamEvaluator(stream).parse();
+export function parseAppearanceStream(
+  stream: BaseStream,
+  evaluatorOptions?: EvaluatorOptions,
+  xref?: XRef,
+) {
+  return new AppearanceStreamEvaluator(stream, evaluatorOptions, xref).parse();
 }
 
 export function getPdfColor(color: Uint8ClampedArray | rgb_t, isFill: boolean) {

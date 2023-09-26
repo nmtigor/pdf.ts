@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+import { D_base } from "../../alias.ts";
 /*80--------------------------------------------------------------------------*/
 
 interface GlobalWorkerOptionsType {
@@ -36,5 +37,5 @@ interface GlobalWorkerOptionsType {
 
 export const GlobalWorkerOptions: GlobalWorkerOptionsType = Object.create(null);
 
-GlobalWorkerOptions.workerSrc = "";
+GlobalWorkerOptions.workerSrc = `${D_base}/gen/pdf/pdf.ts-src/pdf.worker.js`;
 /*80--------------------------------------------------------------------------*/
