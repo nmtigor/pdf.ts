@@ -1,3 +1,6 @@
+/* Converted from JavaScript to TypeScript by
+ * nmtigor (https://github.com/nmtigor) @2023
+ */
 /* Copyright 2014 Mozilla Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,8 +22,8 @@ import { EOF } from "./primitives.js";
 export class PostScriptParser {
     lexer;
     operators = [];
-    token = null;
-    prev = null;
+    token;
+    prev;
     constructor(lexer) {
         this.lexer = lexer;
     }

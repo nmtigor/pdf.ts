@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-import type { TupleOf } from "../../../lib/alias.ts";
-import { assert } from "../../../lib/util/trace.ts";
+import type { TupleOf } from "@fe-src/lib/alias.ts";
+import { fail } from "@fe-src/lib/util/trace.ts";
 import type { FetchBuiltInCMap } from "../display/base_factory.ts";
 import { CMapCompressionType, FormatError, warn } from "../shared/util.ts";
 import { BaseStream } from "./base_stream.ts";
@@ -407,19 +407,19 @@ export class IdentityCMap extends CMap {
   }
 
   override mapCidRange(low: number, high: number, dstLow: number) {
-    assert(0, "should not call mapCidRange");
+    fail("should not call mapCidRange");
   }
 
   override mapBfRange(low: number, high: number, dstLow: string) {
-    assert(0, "should not call mapBfRange");
+    fail("should not call mapBfRange");
   }
 
   override mapBfRangeToArray(low: number, high: number, array: ObjNoCmd[]) {
-    assert(0, "should not call mapBfRangeToArray");
+    fail("should not call mapBfRangeToArray");
   }
 
   override mapOne(src: number, dst: number | string) {
-    assert(0, "should not call mapCidOne");
+    fail("should not call mapCidOne");
   }
 
   override lookup(code: number) {
@@ -455,8 +455,7 @@ export class IdentityCMap extends CMap {
 
   // eslint-disable-next-line getter-return
   override get isIdentityCMap() {
-    assert(0, "should not access .isIdentityCMap");
-    return false;
+    return fail("should not access .isIdentityCMap");
   }
 }
 

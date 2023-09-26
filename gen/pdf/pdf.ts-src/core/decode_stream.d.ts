@@ -10,7 +10,7 @@ export declare abstract class DecodeStream extends BaseStream {
     bufferLength: number;
     eof: boolean;
     /** @implement */
-    get length(): any;
+    get length(): never;
     /**
      * @implement
      * @final
@@ -34,7 +34,7 @@ export declare abstract class DecodeStream extends BaseStream {
     /** @implement */
     reset(): void;
     /** @implement */
-    getByteRange(begin: number, end: number): any;
+    getByteRange(begin: number, end: number): never;
     /** @implement */
     moveStart(): void;
     /**

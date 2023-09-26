@@ -71,13 +71,12 @@ export class PDFPageView {
     pdfPageRotate;
     _annotationStorage;
     _optionalContentConfigPromise;
-    hasRestrictedScaling = false;
+    #hasRestrictedScaling = false;
     #textLayerMode;
     #annotationMode;
     #previousRotation;
     #renderingState = RenderingStates.INITIAL;
     imageResourcesPath;
-    useOnlyCssZoom;
     isOffscreenCanvasSupported;
     maxCanvasPixels;
     pageColors;
@@ -124,10 +123,9 @@ export class PDFPageView {
         this.#annotationMode = options.annotationMode ??
             AnnotationMode.ENABLE_FORMS;
         this.imageResourcesPath = options.imageResourcesPath || "";
-        this.useOnlyCssZoom = options.useOnlyCssZoom || false;
         this.isOffscreenCanvasSupported = options.isOffscreenCanvasSupported ??
             true;
-        this.maxCanvasPixels = options.maxCanvasPixels || MAX_CANVAS_PIXELS;
+        this.maxCanvasPixels = options.maxCanvasPixels ?? MAX_CANVAS_PIXELS;
         this.pageColors = options.pageColors;
         this.eventBus = options.eventBus;
         this.renderingQueue = options.renderingQueue;
@@ -135,11 +133,17 @@ export class PDFPageView {
         /*#static*/  {
             this._isStandalone = !this.renderingQueue?.hasViewer();
             this._container = container;
+            if (options.useOnlyCssZoom) {
+                console.error("useOnlyCssZoom was removed, please use `maxCanvasPixels = 0` instead.");
+                this.maxCanvasPixels = 0;
+            }
         }
         const div = html("div");
         div.className = "page";
-        div.setAttribute("data-page-number", this.id);
-        div.setAttribute("role", "region");
+        div.assignAttro({
+            "data-page-number": this.id,
+            role: "region",
+        });
         this.l10n.get("page_landmark", { page: this.id }).then((msg) => {
             div.setAttribute("aria-label", msg);
         });
@@ -452,20 +456,22 @@ export class PDFPageView {
                 this._container?.style.setProperty("--scale-factor", this.viewport.scale);
             }
         }
-        let isScalingRestricted = false;
-        if (this.canvas && this.maxCanvasPixels > 0) {
-            const { width, height } = this.viewport;
-            const { sx, sy } = this.outputScale;
-            if (((Math.floor(width) * sx) | 0) * ((Math.floor(height) * sy) | 0) >
-                this.maxCanvasPixels) {
-                isScalingRestricted = true;
-            }
-        }
-        const onlyCssZoom = this.useOnlyCssZoom ||
-            (this.hasRestrictedScaling && isScalingRestricted);
-        const postponeDrawing = !onlyCssZoom && drawingDelay >= 0 &&
-            drawingDelay < 1000;
         if (this.canvas) {
+            let onlyCssZoom = false;
+            if (this.#hasRestrictedScaling) {
+                if ((PDFJSDev || GENERIC) && this.maxCanvasPixels === 0) {
+                    onlyCssZoom = true;
+                }
+                else if (this.maxCanvasPixels > 0) {
+                    const { width, height } = this.viewport;
+                    const { sx, sy } = this.outputScale;
+                    onlyCssZoom =
+                        ((Math.floor(width) * sx) | 0) * ((Math.floor(height) * sy) | 0) >
+                            this.maxCanvasPixels;
+                }
+            }
+            const postponeDrawing = !onlyCssZoom &&
+                drawingDelay >= 0 && drawingDelay < 1000;
             if (postponeDrawing || onlyCssZoom) {
                 if (postponeDrawing &&
                     this.renderingState !== RenderingStates.FINISHED) {
@@ -719,25 +725,24 @@ export class PDFPageView {
         this.canvas = canvas;
         const ctx = canvas.getContext("2d", { alpha: false });
         const outputScale = (this.outputScale = new OutputScale());
-        if (this.useOnlyCssZoom) {
-            const actualSizeViewport = viewport.clone({
-                scale: PixelsPerInch.PDF_TO_CSS_UNITS,
-            });
+        if ((PDFJSDev || GENERIC) && this.maxCanvasPixels === 0) {
+            const invScale = 1 / this.scale;
             // Use a scale that makes the canvas have the originally intended size
             // of the page.
-            outputScale.sx *= actualSizeViewport.width / width;
-            outputScale.sy *= actualSizeViewport.height / height;
+            outputScale.sx *= invScale;
+            outputScale.sy *= invScale;
+            this.#hasRestrictedScaling = true;
         }
-        if (this.maxCanvasPixels > 0) {
+        else if (this.maxCanvasPixels > 0) {
             const pixelsInViewport = width * height;
             const maxScale = Math.sqrt(this.maxCanvasPixels / pixelsInViewport);
             if (outputScale.sx > maxScale || outputScale.sy > maxScale) {
                 outputScale.sx = maxScale;
                 outputScale.sy = maxScale;
-                this.hasRestrictedScaling = true;
+                this.#hasRestrictedScaling = true;
             }
             else {
-                this.hasRestrictedScaling = false;
+                this.#hasRestrictedScaling = false;
             }
         }
         const sfx = approximateFraction(outputScale.sx);

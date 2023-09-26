@@ -87,7 +87,7 @@ export class PDFFunctionFactory {
         return localFunction;
       }
     }
-    return null;
+    return undefined;
   }
 
   #cache(cacheKey: Ref | BaseStream | Dict, parsedFunction: ParsedFunction) {
@@ -118,9 +118,9 @@ export class PDFFunctionFactory {
   }
 }
 
-function toNumberArray(arr: unknown): number[] | null {
+function toNumberArray(arr: unknown): number[] | undefined {
   if (!Array.isArray(arr)) {
-    return null;
+    return undefined;
   }
   const length = arr.length;
   for (let i = 0; i < length; i++) {
@@ -144,7 +144,7 @@ namespace NsPDFFunction {
     CONSTRUCT_POSTSCRIPT = 4,
   }
 
-  interface _ParseP {
+  interface ParseP_ {
     xref: XRef;
     isEvalSupported: boolean;
     fn: Dict | BaseStream;
@@ -243,8 +243,8 @@ namespace NsPDFFunction {
       return array;
     },
 
-    parse({ xref, isEvalSupported, fn }: _ParseP): ParsedFunction {
-      const dict = (<BaseStream> fn).dict || <Dict> fn;
+    parse({ xref, isEvalSupported, fn }: ParseP_): ParsedFunction {
+      const dict = (fn as BaseStream).dict || fn as Dict;
       const typeNum = dict.get("FunctionType");
 
       switch (typeNum) {
@@ -252,7 +252,7 @@ namespace NsPDFFunction {
           return PDFFunction.constructSampled({
             xref,
             isEvalSupported,
-            fn: <BaseStream> fn,
+            fn: fn as BaseStream,
             dict,
           });
         case 1:
@@ -331,9 +331,9 @@ namespace NsPDFFunction {
         return ymin + (x - xmin) * ((ymax - ymin) / (xmax - xmin));
       }
 
-      let domain: null | number[] | (readonly [number, number])[] =
+      let domain: undefined | number[] | (readonly [number, number])[] =
         toNumberArray(dict.getArray("Domain"));
-      let range: null | number[] | (readonly [number, number])[] =
+      let range: undefined | number[] | (readonly [number, number])[] =
         toNumberArray(
           dict.getArray("Range"),
         );
@@ -357,10 +357,10 @@ namespace NsPDFFunction {
         info("No support for cubic spline interpolation: " + order);
       }
 
-      let encode: null | number[] | (readonly [number, number])[] =
+      let encode: undefined | number[] | (readonly [number, number])[] =
         toNumberArray(dict.getArray("Encode"));
       if (!encode) {
-        encode = <[number, number][]> [];
+        encode = [] as [number, number][];
         for (let i = 0; i < inputSize; ++i) {
           encode.push([0, size[i] - 1]);
         }
@@ -368,13 +368,9 @@ namespace NsPDFFunction {
         encode = toMultiArray(encode);
       }
 
-      let decode: null | number[] | (readonly [number, number])[] =
+      let decode: undefined | number[] | (readonly [number, number])[] =
         toNumberArray(dict.getArray("Decode"));
-      if (!decode) {
-        decode = range;
-      } else {
-        decode = toMultiArray(decode);
-      }
+      decode = !decode ? range : toMultiArray(decode);
 
       const samples = this.getSampleArray(size, outputSize, bps, fn!);
       // const mask = 2 ** bps - 1;
@@ -415,8 +411,8 @@ namespace NsPDFFunction {
             xi,
             domain_2i,
             domain_2i_1,
-            (<[number, number][]> encode)[i][0],
-            (<[number, number][]> encode)[i][1],
+            (encode as [number, number][])[i][0],
+            (encode as [number, number][])[i][1],
           );
 
           // e_i' = min(max(e_i, 0), Size_i - 1)
@@ -620,13 +616,13 @@ namespace NsPDFFunction {
           // subtraction, Math.max, and also contains 'var' and 'return'
           // statements. See the generation in the PostScriptCompiler below.
           // eslint-disable-next-line no-new-func
-          return <ParsedFunction> new Function(
+          return new Function(
             "src",
             "srcOffset",
             "dest",
             "destOffset",
             compiled,
-          );
+          ) as ParsedFunction;
         }
       }
       info("Unable to compile PS function");
@@ -1001,7 +997,7 @@ export class PostScriptEvaluator {
           break;
         case "log":
           a = stack.pop();
-          stack.push(Math.log(a as number) / Math.LN10);
+          stack.push(Math.log10(a as number));
           break;
         case "lt":
           b = stack.pop();
@@ -1251,11 +1247,15 @@ namespace NsPostScriptCompiler {
   }
 
   function buildAddOperation(num1: AstMinMax, num2: AstMinMax) {
-    if (num2.type === AstNodeType.literal && (<AstLiteral> num2).number === 0) {
+    if (
+      num2.type === AstNodeType.literal && (num2 as AstLiteral).number === 0
+    ) {
       // optimization: second operand is 0
       return num1;
     }
-    if (num1.type === AstNodeType.literal && (<AstLiteral> num1).number === 0) {
+    if (
+      num1.type === AstNodeType.literal && (num1 as AstLiteral).number === 0
+    ) {
       // optimization: first operand is 0
       return num2;
     }
@@ -1264,7 +1264,7 @@ namespace NsPostScriptCompiler {
     ) {
       // optimization: operands operand are literals
       return new AstLiteral(
-        (<AstLiteral> num1).number + (<AstLiteral> num2).number,
+        (num1 as AstLiteral).number + (num2 as AstLiteral).number,
       );
     }
     return new AstBinaryOperation(
@@ -1279,14 +1279,14 @@ namespace NsPostScriptCompiler {
   function buildMulOperation(num1: AstMinMax, num2: AstMinMax) {
     if (num2.type === AstNodeType.literal) {
       // optimization: second operands is a literal...
-      if ((<AstLiteral> num2).number === 0) {
+      if ((num2 as AstLiteral).number === 0) {
         return new AstLiteral(0); // and it's 0
-      } else if ((<AstLiteral> num2).number === 1) {
+      } else if ((num2 as AstLiteral).number === 1) {
         return num1; // and it's 1
       } else if (num1.type === AstNodeType.literal) {
         // ... and first operands is a literal too
         return new AstLiteral(
-          (<AstLiteral> num1).number * (<AstLiteral> num2).number,
+          (num1 as AstLiteral).number * (num2 as AstLiteral).number,
         );
       }
     }
@@ -1388,7 +1388,7 @@ namespace NsPostScriptCompiler {
         switch (item) {
           case "add":
             if (stack.length < 2) {
-              return null;
+              return undefined;
             }
             num2 = stack.pop();
             num1 = stack.pop();
@@ -1396,12 +1396,12 @@ namespace NsPostScriptCompiler {
             break;
           case "cvr":
             if (stack.length < 1) {
-              return null;
+              return undefined;
             }
             break;
           case "mul":
             if (stack.length < 2) {
-              return null;
+              return undefined;
             }
             num2 = stack.pop();
             num1 = stack.pop();
@@ -1409,7 +1409,7 @@ namespace NsPostScriptCompiler {
             break;
           case "sub":
             if (stack.length < 2) {
-              return null;
+              return undefined;
             }
             num2 = stack.pop();
             num1 = stack.pop();
@@ -1417,7 +1417,7 @@ namespace NsPostScriptCompiler {
             break;
           case "exch":
             if (stack.length < 2) {
-              return null;
+              return undefined;
             }
             ast1 = stack.pop()!;
             ast2 = stack.pop()!;
@@ -1425,21 +1425,21 @@ namespace NsPostScriptCompiler {
             break;
           case "pop":
             if (stack.length < 1) {
-              return null;
+              return undefined;
             }
             stack.pop();
             break;
           case "index":
             if (stack.length < 1) {
-              return null;
+              return undefined;
             }
             num1 = stack.pop()!;
             if (num1.type !== AstNodeType.literal) {
-              return null;
+              return undefined;
             }
-            n = (<AstLiteral> num1).number;
+            n = (num1 as AstLiteral).number;
             if (n < 0 || !Number.isInteger(n) || stack.length < n) {
-              return null;
+              return undefined;
             }
             ast1 = stack[stack.length - n - 1];
             if (
@@ -1459,7 +1459,7 @@ namespace NsPostScriptCompiler {
             break;
           case "dup":
             if (stack.length < 1) {
-              return null;
+              return undefined;
             }
             if (
               typeof code[i + 1] === "number" &&
@@ -1497,7 +1497,7 @@ namespace NsPostScriptCompiler {
             break;
           case "roll":
             if (stack.length < 2) {
-              return null;
+              return undefined;
             }
             num2 = stack.pop()!;
             num1 = stack.pop()!;
@@ -1506,10 +1506,10 @@ namespace NsPostScriptCompiler {
               num1.type !== AstNodeType.literal
             ) {
               // both roll operands must be numbers
-              return null;
+              return undefined;
             }
-            j = (<AstLiteral> num2).number;
-            n = (<AstLiteral> num1).number;
+            j = (num2 as AstLiteral).number;
+            n = (num1 as AstLiteral).number;
             if (
               n <= 0 ||
               !Number.isInteger(n) ||
@@ -1517,7 +1517,7 @@ namespace NsPostScriptCompiler {
               stack.length < n
             ) {
               // ... and integers
-              return null;
+              return undefined;
             }
             j = ((j % n) + n) % n;
             if (j === 0) {
@@ -1526,12 +1526,12 @@ namespace NsPostScriptCompiler {
             stack.push(...stack.splice(stack.length - n, n - j));
             break;
           default:
-            return null; // unsupported operator
+            return undefined; // unsupported operator
         }
       }
 
       if (stack.length !== outputSize) {
-        return null;
+        return undefined;
       }
 
       const result: string[] = [];

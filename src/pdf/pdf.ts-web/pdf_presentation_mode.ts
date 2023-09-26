@@ -20,6 +20,7 @@
 import { AnnotationEditorType } from "../pdf.ts-src/pdf.ts";
 import type { EventBus } from "./event_utils.ts";
 import type { PDFViewer } from "./pdf_viewer.ts";
+import type { EventMap } from "./event_utils.ts";
 import {
   normalizeWheelEventDelta,
   PresentationModeState,
@@ -211,7 +212,9 @@ export class PDFPresentationMode {
       this.pdfViewer.currentScaleValue = "page-fit";
 
       if (this.#args!.annotationEditorMode !== undefined) {
-        this.pdfViewer.annotationEditorMode = AnnotationEditorType.NONE;
+        this.pdfViewer.annotationEditorMode = {
+          mode: AnnotationEditorType.NONE,
+        } as EventMap["switchannotationeditormode"];
       }
     }, 0);
 
@@ -243,7 +246,9 @@ export class PDFPresentationMode {
       this.pdfViewer.currentPageNumber = pageNumber;
 
       if (this.#args!.annotationEditorMode !== undefined) {
-        this.pdfViewer.annotationEditorMode = this.#args!.annotationEditorMode;
+        this.pdfViewer.annotationEditorMode = {
+          mode: this.#args!.annotationEditorMode,
+        } as EventMap["switchannotationeditormode"];
       }
       this.#args = undefined;
     }, 0);
@@ -381,32 +386,32 @@ export class PDFPresentationMode {
     // this.contextMenuBind = this.#contextMenu.bind(this);
     // this.touchSwipeBind = this.#touchSwipe.bind(this);
 
-    window.addEventListener("mousemove", this.#showControls);
-    window.addEventListener("mousedown", this.#mouseDown);
-    window.addEventListener("wheel", this.#mouseWheel, { passive: false });
-    window.addEventListener("keydown", this.#resetMouseScrollState);
-    window.addEventListener("contextmenu", this.#contextMenu);
-    window.addEventListener("touchstart", this.#touchSwipe);
-    window.addEventListener("touchmove", this.#touchSwipe);
-    window.addEventListener("touchend", this.#touchSwipe);
+    window.on("mousemove", this.#showControls);
+    window.on("mousedown", this.#mouseDown);
+    window.on("wheel", this.#mouseWheel, { passive: false });
+    window.on("keydown", this.#resetMouseScrollState);
+    window.on("contextmenu", this.#contextMenu);
+    window.on("touchstart", this.#touchSwipe);
+    window.on("touchmove", this.#touchSwipe);
+    window.on("touchend", this.#touchSwipe);
   };
 
   #removeWindowListeners = () => {
-    window.removeEventListener("mousemove", this.#showControls);
-    window.removeEventListener("mousedown", this.#mouseDown);
-    window.removeEventListener("wheel", this.#mouseWheel);
-    window.removeEventListener("keydown", this.#resetMouseScrollState);
-    window.removeEventListener("contextmenu", this.#contextMenu);
-    window.removeEventListener("touchstart", this.#touchSwipe);
-    window.removeEventListener("touchmove", this.#touchSwipe);
-    window.removeEventListener("touchend", this.#touchSwipe);
+    window.off("mousemove", this.#showControls);
+    window.off("mousedown", this.#mouseDown);
+    window.off("wheel", this.#mouseWheel);
+    window.off("keydown", this.#resetMouseScrollState);
+    window.off("contextmenu", this.#contextMenu);
+    window.off("touchstart", this.#touchSwipe);
+    window.off("touchmove", this.#touchSwipe);
+    window.off("touchend", this.#touchSwipe);
 
-    delete (<any> this).showControlsBind;
-    delete (<any> this).mouseDownBind;
-    delete (<any> this).mouseWheelBind;
-    delete (<any> this).resetMouseScrollStateBind;
-    delete (<any> this).contextMenuBind;
-    delete (<any> this).touchSwipeBind;
+    delete (this as any).showControlsBind;
+    delete (this as any).mouseDownBind;
+    delete (this as any).mouseWheelBind;
+    delete (this as any).resetMouseScrollStateBind;
+    delete (this as any).contextMenuBind;
+    delete (this as any).touchSwipeBind;
   };
 
   #fullscreenChange = () => {
@@ -419,14 +424,12 @@ export class PDFPresentationMode {
 
   #addFullscreenChangeListeners() {
     // this.fullscreenChangeBind = this._fullscreenChange.bind(this);
-
-    window.addEventListener("fullscreenchange", this.#fullscreenChange);
+    window.on("fullscreenchange", this.#fullscreenChange);
   }
 
   #removeFullscreenChangeListeners = () => {
-    window.removeEventListener("fullscreenchange", this.#fullscreenChange);
-
-    // delete this.fullscreenChangeBind;
+    window.off("fullscreenchange", this.#fullscreenChange);
+    // delete (this as any).fullscreenChangeBind;
   };
 }
 /*80--------------------------------------------------------------------------*/

@@ -1,8 +1,8 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
-import { assert } from "../../../lib/util/trace.js";
-import { FormatError, info, Util, warn, } from "../shared/util.js";
+import { assert, fail } from "../../../lib/util/trace.js";
+import { FormatError, info, Util, warn } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
 import { ColorSpace } from "./colorspace.js";
 import { MissingDataException } from "./core_utils.js";
@@ -74,12 +74,9 @@ class RadialAxialShading extends BaseShading {
             localColorSpaceCache,
         });
         const bbox = dict.getArray("BBox");
-        if (Array.isArray(bbox) && bbox.length === 4) {
-            this.bbox = Util.normalizeRect(bbox);
-        }
-        else {
-            this.bbox = undefined;
-        }
+        this.bbox = Array.isArray(bbox) && bbox.length === 4
+            ? Util.normalizeRect(bbox)
+            : undefined;
         let t0 = 0.0;
         let t1 = 1.0;
         if (dict.has("Domain")) {
@@ -224,7 +221,7 @@ class RadialAxialShading extends BaseShading {
             type = ShadingType.RADIAL;
         }
         else {
-            assert(0, `getPattern type unknown: ${shadingType}`);
+            fail(`getPattern type unknown: ${shadingType}`);
         }
         return [
             "RadialAxial",
@@ -386,12 +383,9 @@ export class MeshShading extends BaseShading {
         const dict = stream.dict;
         this.shadingType = dict.get("ShadingType");
         const bbox = dict.getArray("BBox");
-        if (Array.isArray(bbox) && bbox.length === 4) {
-            this.bbox = Util.normalizeRect(bbox);
-        }
-        else {
-            this.bbox = undefined;
-        }
+        this.bbox = Array.isArray(bbox) && bbox.length === 4
+            ? Util.normalizeRect(bbox)
+            : undefined;
         const cs = ColorSpace.parse({
             cs: (dict.getRaw("CS") || dict.getRaw("ColorSpace")),
             xref,
@@ -436,8 +430,7 @@ export class MeshShading extends BaseShading {
                 patchMesh = true;
                 break;
             default:
-                assert(0, "Unsupported mesh type.");
-                break;
+                fail("Unsupported mesh type.");
         }
         if (patchMesh) {
             // dirty bounds calculation for determining, how dense shall be triangles

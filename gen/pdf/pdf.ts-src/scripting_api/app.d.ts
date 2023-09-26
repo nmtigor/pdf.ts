@@ -145,7 +145,7 @@ export declare class App extends PDFObject<SendAppData> {
     alert(cMsg: string | {
         cMsg: string;
         nType: number;
-    }, nIcon?: number, nType?: number, cTitle?: string, oDoc?: undefined, oCheckbox?: undefined): 0 | 4 | 1 | 3;
+    }, nIcon?: number, nType?: number, cTitle?: string, oDoc?: undefined, oCheckbox?: undefined): 0 | 1 | 4 | 3;
     beep(): void;
     beginPriv(): void;
     browseForDoc(): void;

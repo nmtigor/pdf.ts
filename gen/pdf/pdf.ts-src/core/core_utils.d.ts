@@ -101,7 +101,7 @@ export declare function validateCSSFont(cssFontInfo: CssFontInfo): boolean;
 export declare function recoverJsURL(str: string): {
     url: string;
     newWindow: boolean;
-} | null;
+} | undefined;
 export declare function numberToString(value: number): string;
 export declare function getNewAnnotationsMap(annotationStorage: AnnotStorageRecord | undefined): Map<number, AnnotStorageValue[]> | undefined;
 export declare function isAscii(str: string): boolean;

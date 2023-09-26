@@ -1,10 +1,11 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
-import { createActionsMap, } from "./common.js";
+import { createActionsMap } from "./common.js";
 import { ZoomType } from "./constants.js";
 import { PDFObject } from "./pdf_object.js";
 import { PrintParams } from "./print_params.js";
+import { serializeError } from "./app_utils.js";
 const DOC_EXTERNAL = false;
 class InfoProxyHandler {
     static get(obj, prop) {
@@ -272,23 +273,30 @@ export class Doc extends PDFObject {
         this._disableSaving = false;
     }
     _dispatchDocEvent(name) {
-        if (name === "Open") {
-            this._disableSaving = true;
-            this._runActions("OpenAction");
-            this._disableSaving = false;
-        }
-        else if (name === "WillPrint") {
-            this._disablePrinting = true;
-            this._runActions(name);
-            this._disablePrinting = false;
-        }
-        else if (name === "WillSave") {
-            this._disableSaving = true;
-            this._runActions(name);
-            this._disableSaving = false;
-        }
-        else {
-            this._runActions(name);
+        switch (name) {
+            case "Open":
+                this._disableSaving = true;
+                this._runActions("OpenAction");
+                this._disableSaving = false;
+                break;
+            case "WillPrint":
+                this._disablePrinting = true;
+                try {
+                    this._runActions(name);
+                }
+                catch (error) {
+                    this._send(serializeError(error));
+                }
+                this._send({ command: "WillPrintFinished" });
+                this._disablePrinting = false;
+                break;
+            case "WillSave":
+                this._disableSaving = true;
+                this._runActions(name);
+                this._disableSaving = false;
+                break;
+            default:
+                this._runActions(name);
         }
     }
     _dispatchPageEvent(name, actions, pageNumber) {
@@ -909,18 +917,8 @@ export class Doc extends PDFObject {
             nStart = printParams.firstPage;
             nEnd = printParams.lastPage;
         }
-        if (typeof nStart === "number") {
-            nStart = Math.max(0, Math.trunc(nStart));
-        }
-        else {
-            nStart = 0;
-        }
-        if (typeof nEnd === "number") {
-            nEnd = Math.max(0, Math.trunc(nEnd));
-        }
-        else {
-            nEnd = -1;
-        }
+        nStart = typeof nStart === "number" ? Math.max(0, Math.trunc(nStart)) : 0;
+        nEnd = typeof nEnd === "number" ? Math.max(0, Math.trunc(nEnd)) : -1;
         this._send({ command: "print", start: nStart, end: nEnd });
     }
     removeDataObject() {

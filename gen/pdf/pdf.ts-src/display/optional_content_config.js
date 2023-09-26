@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { assert } from "../../../lib/util/trace.js";
+import { fail } from "../../../lib/util/trace.js";
 import { MurmurHash3_64 } from "../shared/murmurhash3.js";
 import { objectFromMap, warn } from "../shared/util.js";
 /*80--------------------------------------------------------------------------*/
@@ -30,7 +30,7 @@ class OptionalContentGroup {
     /** @ignore */
     _setVisible(internal, visible) {
         if (internal !== INTERNAL) {
-            assert(0, "Internal method `_setVisible` called.");
+            fail("Internal method `_setVisible` called.");
         }
         this.#visible = visible;
     }
@@ -40,12 +40,12 @@ class OptionalContentGroup {
     }
 }
 export class OptionalContentConfig {
-    name = null;
-    creator = null;
+    name;
+    creator;
     #cachedGetHash;
     #groups = new Map();
     #initialHash;
-    #order = null;
+    #order;
     constructor(data) {
         if (data === undefined) {
             return;
@@ -192,11 +192,12 @@ export class OptionalContentConfig {
         this.#cachedGetHash = undefined;
     }
     get hasInitialVisibility() {
-        return this.getHash() === this.#initialHash;
+        return this.#initialHash === undefined ||
+            this.getHash() === this.#initialHash;
     }
     getOrder() {
         if (!this.#groups.size) {
-            return null;
+            return undefined;
         }
         if (this.#order) {
             return this.#order.slice();
@@ -204,10 +205,10 @@ export class OptionalContentConfig {
         return [...this.#groups.keys()];
     }
     getGroups() {
-        return this.#groups.size > 0 ? objectFromMap(this.#groups) : null;
+        return this.#groups.size > 0 ? objectFromMap(this.#groups) : undefined;
     }
     getGroup(id) {
-        return this.#groups.get(id) || null;
+        return this.#groups.get(id) || undefined;
     }
     getHash() {
         if (this.#cachedGetHash !== undefined) {

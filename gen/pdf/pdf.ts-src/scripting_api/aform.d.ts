@@ -2,7 +2,7 @@ import type { App } from "./app.js";
 import type { Color } from "./color.js";
 import type { Doc } from "./doc.js";
 import type { Event } from "./event.js";
-import { CFormat, Util } from "./util.js";
+import type { CFormat, Util } from "./util.js";
 type _CFunction = "AVG" | "SUM" | "PRD" | "MIN" | "MAX";
 type _Action = (n: number, date: Date) => boolean;
 export declare class AForm {

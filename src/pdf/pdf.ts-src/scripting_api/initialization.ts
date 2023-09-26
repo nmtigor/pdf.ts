@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+import { serializeError } from "./app_utils.ts";
 import { CreateSandboxP } from "../../pdf.ts-web/interfaces.ts";
 import { FieldObject } from "../core/annotation.ts";
 import { AForm } from "./aform.ts";
@@ -264,7 +265,7 @@ export function initSandbox(params: { data: CreateSandboxP }) {
       };
     } else {
       properties[name] = {
-        value: (<any> Doc.prototype)[name].bind(doc),
+        value: (Doc.prototype as any)[name].bind(doc),
       };
     }
   }
@@ -277,10 +278,9 @@ export function initSandbox(params: { data: CreateSandboxP }) {
 
   return (name: keyof typeof functions, args: unknown) => {
     try {
-      functions[name](<any> args);
-    } catch (error: any) {
-      const value = `${error.toString()}\n${error.stack}`;
-      (<any> send)({ command: "error", value });
+      functions[name](args as any);
+    } catch (error) {
+      (send as any)(serializeError(error));
     }
   };
 }

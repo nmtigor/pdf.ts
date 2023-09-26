@@ -113,12 +113,7 @@ export function type1FontGlyphMapping(properties, builtInEncoding, glyphNames) {
         baseEncoding = builtInEncoding;
         for (charCode = 0; charCode < baseEncoding.length; charCode++) {
             glyphId = glyphNames.indexOf(baseEncoding[charCode]);
-            if (glyphId >= 0) {
-                charCodeToGlyphId[charCode] = glyphId;
-            }
-            else {
-                charCodeToGlyphId[charCode] = 0; // notdef
-            }
+            charCodeToGlyphId[charCode] = glyphId >= 0 ? glyphId : /* notdef = */ 0;
         }
     }
     else if (properties.baseEncodingName) {
@@ -127,12 +122,7 @@ export function type1FontGlyphMapping(properties, builtInEncoding, glyphNames) {
         baseEncoding = getEncoding(properties.baseEncodingName);
         for (charCode = 0; charCode < baseEncoding.length; charCode++) {
             glyphId = glyphNames.indexOf(baseEncoding[charCode]);
-            if (glyphId >= 0) {
-                charCodeToGlyphId[charCode] = glyphId;
-            }
-            else {
-                charCodeToGlyphId[charCode] = 0; // notdef
-            }
+            charCodeToGlyphId[charCode] = glyphId >= 0 ? glyphId : /* notdef = */ 0;
         }
     }
     else if (isSymbolicFont) {
@@ -147,12 +137,7 @@ export function type1FontGlyphMapping(properties, builtInEncoding, glyphNames) {
         baseEncoding = StandardEncoding;
         for (charCode = 0; charCode < baseEncoding.length; charCode++) {
             glyphId = glyphNames.indexOf(baseEncoding[charCode]);
-            if (glyphId >= 0) {
-                charCodeToGlyphId[charCode] = glyphId;
-            }
-            else {
-                charCodeToGlyphId[charCode] = 0; // notdef
-            }
+            charCodeToGlyphId[charCode] = glyphId >= 0 ? glyphId : /* notdef = */ 0;
         }
     }
     // Lastly, merge in the differences.
@@ -171,12 +156,7 @@ export function type1FontGlyphMapping(properties, builtInEncoding, glyphNames) {
                     glyphId = glyphNames.indexOf(standardGlyphName);
                 }
             }
-            if (glyphId >= 0) {
-                charCodeToGlyphId[charCode] = glyphId;
-            }
-            else {
-                charCodeToGlyphId[charCode] = 0; // notdef
-            }
+            charCodeToGlyphId[charCode] = glyphId >= 0 ? glyphId : /* notdef = */ 0;
         }
     }
     return charCodeToGlyphId;

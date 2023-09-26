@@ -10,7 +10,8 @@ import { Attachment } from "./file_spec.js";
 import type { SubstitutionInfo } from "./font_substitutions.js";
 import { GlobalImageCache } from "./image_utils.js";
 import { BasePdfManager } from "./pdf_manager.js";
-import { Dict, Name, type Obj, Ref, RefSet, RefSetCache } from "./primitives.js";
+import type { Obj } from "./primitives.js";
+import { Dict, Name, Ref, RefSet, RefSetCache } from "./primitives.js";
 import { StructTreeRoot } from "./struct_tree.js";
 import { XRef } from "./xref.js";
 type DestPage = Ref | number | null;
@@ -68,23 +69,23 @@ export interface OpenAction {
     action?: string;
 }
 export type Order = (string | {
-    name: string | null;
+    name: string | undefined;
     order: Order;
 })[];
-interface OptionalContentGroupData {
+type OptionalContentGroupData_ = {
     id: string;
-    name: string | null;
-    intent: string | null;
-}
-export interface OptionalContentConfigData {
-    name: string | null;
-    creator: string | null;
-    baseState: string | null;
+    name: string | undefined;
+    intent: string | undefined;
+};
+export type OptionalContentConfigData = {
+    name: string | undefined;
+    creator: string | undefined;
+    baseState: string | undefined;
     on: string[];
     off: string[];
-    order: Order | null;
-    groups: OptionalContentGroupData[];
-}
+    order: Order | undefined;
+    groups: OptionalContentGroupData_[];
+};
 type ViewerPrefValue = string | number | number[] | boolean;
 export type ViewerPref = Record<string, ViewerPrefValue>;
 /**
@@ -117,14 +118,14 @@ export declare class Catalog {
     nonBlendModesSet: RefSet;
     systemFontCache: Map<string, SubstitutionInfo>;
     constructor(pdfManager: BasePdfManager, xref: XRef);
-    get version(): string | null;
+    get version(): string | undefined;
     get lang(): string | undefined;
     /**
      * @return `true` for pure XFA documents,
      *   `false` for XFA Foreground documents.
      */
     get needsRendering(): boolean;
-    get collection(): Dict | null;
+    get collection(): Dict | undefined;
     get acroForm(): Dict | undefined;
     get acroFormRef(): Ref | undefined;
     get metadata(): import("./metadata_parser.js").SerializedMetadata | undefined;
@@ -149,8 +150,7 @@ export declare class Catalog {
     get viewerPreferences(): ViewerPref | undefined;
     get openAction(): OpenAction | undefined;
     get attachments(): Attachments | undefined;
-    get xfaImages(): Dict | null;
-    get javaScript(): string[] | undefined;
+    get xfaImages(): Dict | undefined;
     get jsActions(): import("./core_utils.js").AnnotActions | undefined;
     fontFallback(id: string, handler: MessageHandler<Thread.worker>): Promise<void>;
     cleanup(manuallyTriggered?: boolean): Promise<void>;

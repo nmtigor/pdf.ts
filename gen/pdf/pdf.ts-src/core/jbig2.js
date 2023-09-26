@@ -101,7 +101,7 @@ var NsJbig2Image;
         if (signedValue >= MIN_INT_32 && signedValue <= MAX_INT_32) {
             return signedValue;
         }
-        return null;
+        return undefined;
     }
     // A.3 The IAID decoding procedure
     function decodeIAID(contextCache, decoder, codeLength) {
@@ -551,7 +551,7 @@ var NsJbig2Image;
                 const deltaWidth = huffman
                     ? huffmanTables.tableDeltaWidth.decode(huffmanInput)
                     : decodeInteger(contextCache, "IADW", decoder); // 6.5.7
-                if (deltaWidth === null) {
+                if (deltaWidth === undefined) {
                     break; // OOB
                 }
                 currentWidth += deltaWidth;
@@ -586,7 +586,7 @@ var NsJbig2Image;
                 }
                 else {
                     // 6.5.8.1 Direct-coded symbol bitmap
-                    bitmap = decodeBitmap(false, currentWidth, currentHeight, templateIndex, false, null, at, decodingContext);
+                    bitmap = decodeBitmap(false, currentWidth, currentHeight, templateIndex, false, undefined, at, decodingContext);
                     newSymbols.push(bitmap);
                 }
             }
@@ -773,7 +773,7 @@ var NsJbig2Image;
                 const deltaS = huffman
                     ? huffmanTables.tableDeltaS.decode(huffmanInput)
                     : decodeInteger(contextCache, "IADS", decoder); // 6.4.8
-                if (deltaS === null) {
+                if (deltaS === undefined) {
                     break; // OOB
                 }
                 currentS += deltaS + dsOffset;
@@ -802,7 +802,7 @@ var NsJbig2Image;
             }
         }
         const collectiveWidth = (maxPatternIndex + 1) * patternWidth;
-        const collectiveBitmap = decodeBitmap(mmr, collectiveWidth, patternHeight, template, false, null, at, decodingContext);
+        const collectiveBitmap = decodeBitmap(mmr, collectiveWidth, patternHeight, template, false, undefined, at, decodingContext);
         // Divide collective bitmap into patterns.
         const patterns = [];
         for (let i = 0; i <= maxPatternIndex; i++) {
@@ -817,7 +817,7 @@ var NsJbig2Image;
         return patterns;
     }
     function decodeHalftoneRegion(mmr, patterns, template, regionWidth, regionHeight, defaultPixelValue, enableSkip, combinationOperator, gridWidth, gridHeight, gridOffsetX, gridOffsetY, gridVectorX, gridVectorY, decodingContext) {
-        const skip = null;
+        const skip = undefined;
         if (enableSkip) {
             throw new Jbig2Error("skip is not supported");
         }
@@ -1400,7 +1400,7 @@ var NsJbig2Image;
         onImmediateGenericRegion = (region, data, start, end) => {
             const regionInfo = region.info;
             const decodingContext = new DecodingContext(data, start, end);
-            const bitmap = decodeBitmap(region.mmr, regionInfo.width, regionInfo.height, region.template, region.prediction, null, region.at, decodingContext);
+            const bitmap = decodeBitmap(region.mmr, regionInfo.width, regionInfo.height, region.template, region.prediction, undefined, region.at, decodingContext);
             this.#drawBitmap(regionInfo, bitmap);
         };
         onImmediateLosslessGenericRegion = this.onImmediateGenericRegion;
@@ -1539,7 +1539,7 @@ var NsJbig2Image;
                 // Create an intermediate node and continue recursively.
                 let node = this.children[bit];
                 if (!node) {
-                    this.children[bit] = node = new HuffmanTreeNode(null);
+                    this.children[bit] = node = new HuffmanTreeNode();
                 }
                 node.buildTree(line, shift - 1);
             }
@@ -1547,7 +1547,7 @@ var NsJbig2Image;
         decodeNode(reader) {
             if (this.isLeaf) {
                 if (this.isOOB) {
-                    return null;
+                    return undefined;
                 }
                 const htOffset = reader.readBits(this.rangeLength);
                 return this.rangeLow + (this.isLowerRange ? -htOffset : htOffset);
@@ -1566,7 +1566,7 @@ var NsJbig2Image;
                 this.assignPrefixCodes(lines);
             }
             // Create Huffman tree.
-            this.rootNode = new HuffmanTreeNode(null);
+            this.rootNode = new HuffmanTreeNode();
             for (let i = 0, ii = lines.length; i < ii; i++) {
                 const line = lines[i];
                 if (line.prefixLength > 0) {

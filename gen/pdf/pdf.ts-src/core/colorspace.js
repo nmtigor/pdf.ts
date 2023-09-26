@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 import { PDFJSDev, TESTING } from "../../../global.js";
-import { assert } from "../../../lib/util/trace.js";
+import { assert, fail } from "../../../lib/util/trace.js";
 import { FormatError, info, shadow, warn } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
 import { MissingDataException } from "./core_utils.js";
@@ -101,7 +101,7 @@ export class ColorSpace {
             assert(dest instanceof Uint8ClampedArray, 'ColorSpace.fillRgb: Unsupported "dest" type.');
         }
         const count = originalWidth * originalHeight;
-        let rgbBuf = null;
+        let rgbBuf;
         const numComponentColors = 1 << bpc;
         const needsResizing = originalHeight !== height || originalWidth !== width;
         if (this.isPassthrough(bpc)) {
@@ -151,15 +151,13 @@ export class ColorSpace {
                 }
             }
         }
+        else if (!needsResizing) {
+            // Fill in the RGB values directly into |dest|.
+            this.getRgbBuffer(comps, 0, width * actualHeight, dest, 0, bpc, alpha01);
+        }
         else {
-            if (!needsResizing) {
-                // Fill in the RGB values directly into |dest|.
-                this.getRgbBuffer(comps, 0, width * actualHeight, dest, 0, bpc, alpha01);
-            }
-            else {
-                rgbBuf = new Uint8ClampedArray(count * 3);
-                this.getRgbBuffer(comps, 0, count, rgbBuf, 0, bpc, /* alpha01 = */ 0);
-            }
+            rgbBuf = new Uint8ClampedArray(count * 3);
+            this.getRgbBuffer(comps, 0, count, rgbBuf, 0, bpc, /* alpha01 = */ 0);
         }
         if (rgbBuf) {
             if (needsResizing) {
@@ -479,20 +477,18 @@ class PatternCS extends ColorSpace {
     }
     /** @implement */
     getRgbItem() {
-        assert(0, "Should not call PatternCS.getRgbItem");
+        fail("Should not call PatternCS.getRgbItem");
     }
     /** @implement */
     getRgbBuffer() {
-        assert(0, "Should not call PatternCS.getRgbBuffer");
+        fail("Should not call PatternCS.getRgbBuffer");
     }
     /** @implement */
     getOutputLength(inputLength, alpha01) {
-        assert(0, "Should not call ColorSpace.getOutputLength");
-        return 0;
+        return fail("Should not call ColorSpace.getOutputLength");
     }
     isDefaultDecode(decodeMap, bpc) {
-        assert(0, "Should not call PatternCS.isDefaultDecode");
-        return false;
+        return fail("Should not call PatternCS.isDefaultDecode");
     }
 }
 /**
@@ -977,12 +973,12 @@ var NsCalRGBCS;
         // The following calculations are based on this document:
         // http://www.adobe.com/content/dam/Adobe/en/devnet/photoshop/sdk/
         // AdobeBPC.pdf.
-        const XYZ = tempConvertMatrix1;
-        XYZ[0] = X;
-        XYZ[1] = Y;
-        XYZ[2] = Z;
+        const XYZ_ = tempConvertMatrix1;
+        XYZ_[0] = X;
+        XYZ_[1] = Y;
+        XYZ_[2] = Z;
         const XYZ_Flat = tempConvertMatrix2;
-        normalizeWhitePointToFlat(cs.whitePoint, XYZ, XYZ_Flat);
+        normalizeWhitePointToFlat(cs.whitePoint, XYZ_, XYZ_Flat);
         const XYZ_Black = tempConvertMatrix1;
         compensateBlackPoint(cs.blackPoint, XYZ_Flat, XYZ_Black);
         const XYZ_D65 = tempConvertMatrix2;
@@ -1091,14 +1087,7 @@ var NsLabCS;
 (function (NsLabCS) {
     // Function g(x) from spec
     function fn_g(x) {
-        let result;
-        if (x >= 6 / 29) {
-            result = x ** 3;
-        }
-        else {
-            result = (108 / 841) * (x - 4 / 29);
-        }
-        return result;
+        return x >= 6 / 29 ? x ** 3 : (108 / 841) * (x - 4 / 29);
     }
     function decode(value, high1, low2, high2) {
         return low2 + (value * (high2 - low2)) / high1;

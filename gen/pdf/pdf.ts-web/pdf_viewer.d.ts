@@ -1,4 +1,4 @@
-import type { point_t } from "../../lib/alias.js";
+import type { dot2d_t } from "../../lib/alias.js";
 import type { ExplicitDest, OptionalContentConfig, PDFDocumentProxy, PDFPageProxy } from "../pdf.ts-src/pdf.js";
 import { AnnotationEditorType, AnnotationMode } from "../pdf.ts-src/pdf.js";
 import type { EventBus, EventMap } from "./event_utils.js";
@@ -88,17 +88,13 @@ export interface PDFViewerOptions {
      */
     enablePrintAutoRotate: boolean | undefined;
     /**
-     * Enables CSS only zooming. The default value is `false`.
-     */
-    useOnlyCssZoom: boolean | undefined;
-    /**
      * Allows to use an OffscreenCanvas if needed.
      */
     isOffscreenCanvasSupported?: boolean;
     /**
      * The maximum supported canvas size in
-     * total pixels, i.e. width * height. Use -1 for no limit. The default value
-     * is 4096 * 4096 (16 mega-pixels).
+     * total pixels, i.e. width * height. Use `-1` for no limit, or `0` for
+     * CSS-only zooming. The default value is 4096 * 4096 (16 mega-pixels).
      */
     maxCanvasPixels: number | undefined;
     /**
@@ -190,7 +186,6 @@ export declare class PDFViewer {
     imageResourcesPath: string;
     enablePrintAutoRotate: boolean;
     removePageBorders: boolean | undefined;
-    useOnlyCssZoom: boolean;
     isOffscreenCanvasSupported: boolean;
     maxCanvasPixels: number | undefined;
     l10n: IL10n;
@@ -358,12 +353,12 @@ export declare class PDFViewer {
      * Decrease the current zoom level one, or more, times.
      */
     decreaseScale({ drawingDelay, scaleFactor, steps }?: ChangeScaleOptions): void;
-    get containerTopLeft(): point_t;
+    get containerTopLeft(): dot2d_t;
     get annotationEditorMode(): AnnotationEditorType;
     /**
      * @param AnnotationEditor mode (None, FreeText, Ink, ...)
      */
-    set annotationEditorMode(mode: AnnotationEditorType);
+    set annotationEditorMode({ mode, editId }: EventMap["switchannotationeditormode"]);
     set annotationEditorParams({ type, value }: EventMap["switchannotationeditorparams"]);
     refresh(noUpdate?: boolean, updateArgs?: any): void;
 }

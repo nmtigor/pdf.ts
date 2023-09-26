@@ -22,7 +22,7 @@
 /** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
 
 import { GENERIC, PDFJSDev } from "../../global.ts";
-import type { point_t } from "../../lib/alias.ts";
+import type { dot2d_t } from "../../lib/alias.ts";
 import { PromiseCap } from "../../lib/util/PromiseCap.ts";
 import type { PDFDocumentProxy, TextItem } from "../pdf.ts-src/pdf.ts";
 import type { EventBus } from "./event_utils.ts";
@@ -226,7 +226,7 @@ function normalize(text: string): [string, [number, number][], boolean] {
   // Thirdly, if o > n, then we push the element: [y - (s - n), o + s - n]
 
   // Collect diacritics length and positions.
-  const rawDiacriticsPositions: point_t[] = [];
+  const rawDiacriticsPositions: dot2d_t[] = [];
   while ((m = DIACRITICS_REG_EXP.exec(text)) !== null) {
     rawDiacriticsPositions.push([m[0].length, m.index]);
   }
@@ -743,11 +743,10 @@ export class PDFFindController {
       if (newQuery !== prevQuery) {
         return true;
       }
-    } else {
-      // Array
-      if (JSON.stringify(newQuery) !== JSON.stringify(prevQuery)) {
-        return true;
-      }
+    } else if (
+      /* isArray && */ JSON.stringify(newQuery) !== JSON.stringify(prevQuery)
+    ) {
+      return true;
     }
 
     switch (state.type) {

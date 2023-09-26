@@ -75,18 +75,8 @@ const converters = {
                 width = node.w = w;
             }
         }
-        if (width !== "") {
-            style.width = measureToString(width);
-        }
-        else {
-            style.width = "auto";
-        }
-        if (height !== "") {
-            style.height = measureToString(height);
-        }
-        else {
-            style.height = "auto";
-        }
+        style.width = width !== "" ? measureToString(width) : "auto";
+        style.height = height !== "" ? measureToString(height) : "auto";
     },
     position(node, style) {
         const parent = node[$getSubformParent]();
@@ -256,12 +246,7 @@ export function computeBbox(node, html, availableSpace) {
         if (width === "") {
             if (node.maxW === 0) {
                 const parent = node[$getSubformParent]();
-                if (parent.layout === "position" && parent.w !== "") {
-                    width = 0;
-                }
-                else {
-                    width = node.minW;
-                }
+                width = parent.layout === "position" && parent.w !== "" ? 0 : node.minW;
             }
             else {
                 width = Math.min(node.maxW, availableSpace.width);
@@ -272,12 +257,9 @@ export function computeBbox(node, html, availableSpace) {
         if (height === "") {
             if (node.maxH === 0) {
                 const parent = node[$getSubformParent]();
-                if (parent.layout === "position" && parent.h !== "") {
-                    height = 0;
-                }
-                else {
-                    height = node.minH;
-                }
+                height = parent.layout === "position" && parent.h !== ""
+                    ? 0
+                    : node.minH;
             }
             else {
                 height = Math.min(node.maxH, availableSpace.height);
@@ -452,12 +434,9 @@ export function createWrapper(node, html) {
             delete style[key];
         }
     }
-    if (style.position === "absolute") {
-        wrapper.attributes.style.position = "absolute";
-    }
-    else {
-        wrapper.attributes.style.position = "relative";
-    }
+    wrapper.attributes.style.position = style.position === "absolute"
+        ? "absolute"
+        : "relative";
     delete style.position;
     if (style.alignSelf) {
         wrapper.attributes.style.alignSelf = style.alignSelf;

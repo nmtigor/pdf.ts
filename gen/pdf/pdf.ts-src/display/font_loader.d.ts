@@ -1,7 +1,7 @@
 import type { C2D } from "../../../lib/alias.js";
-import { FontExpotDataEx } from "../core/fonts.js";
 import type { CmdArgs } from "../core/font_renderer.js";
 import type { SubstitutionInfo } from "../core/font_substitutions.js";
+import { FontExpotDataEx } from "../core/fonts.js";
 import type { PDFObjects } from "./api.js";
 interface BaseFontLoaderCtorP_ {
     ownerDocument: Document | undefined;

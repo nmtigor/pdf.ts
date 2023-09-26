@@ -1,13 +1,13 @@
-import { MessageHandler, Thread } from "../shared/message_handler.js";
-import { AbortException } from "../shared/util.js";
-import { Dict } from "./primitives.js";
+import type { MessageHandler, Thread } from "../shared/message_handler.js";
+import type { AbortException } from "../shared/util.js";
+import type { Dict } from "./primitives.js";
 import { Stream } from "./stream.js";
-import { PDFWorkerStream } from "./worker_stream.js";
+import type { PDFWorkerStream } from "./worker_stream.js";
 interface ChunkedStreamSubstream extends ChunkedStream {
 }
 export declare class ChunkedStream extends Stream {
-    #private;
     chunkSize: number;
+    _loadedChunks: Set<number>;
     get numChunksLoaded(): number;
     hasChunk(chunk: number): boolean;
     numChunks: number;
@@ -21,7 +21,7 @@ export declare class ChunkedStream extends Stream {
     onReceiveProgressiveData(data: ArrayBufferLike): void;
     ensureByte(pos: number): void;
     ensureRange(begin: number, end: number): void;
-    nextEmptyChunk(beginChunk: number): number | null;
+    nextEmptyChunk(beginChunk: number): number | undefined;
     getByte(): number;
     getBytes(length?: number): Uint8Array;
     getByteRange(begin: number, end: number): Uint8Array;

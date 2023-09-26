@@ -15,10 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { _TRACE, global, PDFJSDev, PDFTS_vv, TESTING, } from "../../../global.js";
+import { _TRACE, global, PDFJSDev, PDFTS_vv, TESTING } from "../../../global.js";
 import { isObjectLike } from "../../../lib/jslang.js";
 import { PromiseCap } from "../../../lib/util/PromiseCap.js";
-import { assert } from "../../../lib/util/trace.js";
+import { assert, fail } from "../../../lib/util/trace.js";
 import { AbortException, MissingPDFException, PasswordException, UnexpectedResponseException, UnknownErrorException, } from "./util.js";
 /*80--------------------------------------------------------------------------*/
 var CallbackKind;
@@ -41,22 +41,17 @@ var StreamKind;
 })(StreamKind || (StreamKind = {}));
 function wrapReason(reason) {
     if (!(reason instanceof Error || isObjectLike(reason))) {
-        assert(0, 'wrapReason: Expected "reason" to be a (possibly cloned) Error.');
+        fail('wrapReason: Expected "reason" to be a (possibly cloned) Error.');
     }
-    switch (reason.name) {
-        case "AbortException":
-            return new AbortException(reason.message);
-        case "MissingPDFException":
-            return new MissingPDFException(reason.message);
-        case "PasswordException":
-            return new PasswordException(reason.message, reason.code);
-        case "UnexpectedResponseException":
-            return new UnexpectedResponseException(reason.message, reason.status);
-        case "UnknownErrorException":
-            return new UnknownErrorException(reason.message, reason.details);
-        default:
-            return new UnknownErrorException(reason.message, reason.toString());
-    }
+    const ex_ = /* final switch */ {
+        AbortException: new AbortException(reason.message),
+        MissingPDFException: new MissingPDFException(reason.message),
+        PasswordException: new PasswordException(reason.message, reason.code),
+        UnexpectedResponseException: new UnexpectedResponseException(reason.message, reason.status),
+        UnknownErrorException: new UnknownErrorException(reason.message, reason.details),
+    }[reason.name] ??
+        new UnknownErrorException(reason.message, reason.toString());
+    return ex_.toJ();
 }
 /*25-------------------*/
 export var Thread;

@@ -19,8 +19,8 @@
 
 import { FormatError } from "../shared/util.ts";
 import { DecodeStream } from "./decode_stream.ts";
-import { FlateStream } from "./flate_stream.ts";
-import { LZWStream } from "./lzw_stream.ts";
+import type { FlateStream } from "./flate_stream.ts";
+import type { LZWStream } from "./lzw_stream.ts";
 import { Dict } from "./primitives.ts";
 /*80--------------------------------------------------------------------------*/
 
@@ -49,31 +49,27 @@ export class PredictorStream extends DecodeStream {
     super(maybeLength);
 
     if (!(params instanceof Dict)) {
-      return <any> str; // no prediction
+      return str as any; // no prediction
     }
     const predictor =
       (this.predictor = <number | undefined> params.get("Predictor") || 1);
 
     if (predictor <= 1) {
-      return <any> str; // no prediction
+      return str as any; // no prediction
     }
     if (predictor !== 2 && (predictor < 10 || predictor > 15)) {
       throw new FormatError(`Unsupported predictor: ${predictor}`);
     }
 
-    if (predictor === 2) {
-      this.readBlock = this.readBlockTiff;
-    } else {
-      this.readBlock = this.readBlockPng;
-    }
+    this.readBlock = predictor === 2 ? this.readBlockTiff : this.readBlockPng;
 
     this.str = str;
     this.dict = str.dict;
 
-    const colors = (this.colors = <number> params.get("Colors") || 1);
+    const colors = (this.colors = params.get("Colors") as number || 1);
     const bits =
-      (this.bits = <number> params.get("BPC", "BitsPerComponent") || 8);
-    const columns = (this.columns = <number> params.get("Columns") || 1);
+      (this.bits = params.get("BPC", "BitsPerComponent") as number || 8);
+    const columns = (this.columns = params.get("Columns") as number || 1);
 
     this.pixBytes = (colors * bits + 7) >> 3;
     this.rowBytes = (columns * colors * bits + 7) >> 3;

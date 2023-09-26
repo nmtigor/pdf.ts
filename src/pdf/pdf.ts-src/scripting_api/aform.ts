@@ -23,7 +23,7 @@ import { GlobalConstants } from "./constants.ts";
 import type { Doc } from "./doc.ts";
 import type { Event } from "./event.ts";
 import type { Field } from "./field.ts";
-import { CFormat, Util } from "./util.ts";
+import type { CFormat, Util } from "./util.ts";
 /*80--------------------------------------------------------------------------*/
 
 type _CFunction =
@@ -175,11 +175,9 @@ export class AForm {
     } catch {}
     if (!date) {
       date = Date.parse(cDate);
-      if (isNaN(date)) {
-        date = this._tryToGuessDate(cFormat as string, cDate);
-      } else {
-        date = new Date(date);
-      }
+      date = isNaN(date)
+        ? this._tryToGuessDate(cFormat as string, cDate)
+        : new Date(date);
     }
     return date;
   }
@@ -380,11 +378,7 @@ export class AForm {
     const formatStr = `%,${sepStyle}.${nDec}f`;
     value = this._util.printf(formatStr, value * 100);
 
-    if (percentPrepend) {
-      event.value = `%${value}`;
-    } else {
-      event.value = `${value}%`;
-    }
+    event.value = percentPrepend ? `%${value}` : `${value}%`;
   }
 
   AFPercent_Keystroke(nDec: number, sepStyle: number) {
@@ -584,13 +578,10 @@ export class AForm {
         formatStr = "99999-9999";
         break;
       case 2:
-        if (
-          this._util.printx("9999999999", <string> event.value).length >= 10
-        ) {
-          formatStr = "(999) 999-9999";
-        } else {
-          formatStr = "999-9999";
-        }
+        formatStr =
+          this._util.printx("9999999999", event.value as string).length >= 10
+            ? "(999) 999-9999"
+            : "999-9999";
         break;
       case 3:
         formatStr = "999-99-9999";
@@ -693,11 +684,9 @@ export class AForm {
         break;
       case 2:
         const value = this.AFMergeChange(event)!;
-        if (value.length > 8 || (<string> value).startsWith("(")) {
-          formatStr = "(999) 999-9999";
-        } else {
-          formatStr = "999-9999";
-        }
+        formatStr = value.length > 8 || value.startsWith("(")
+          ? "(999) 999-9999"
+          : "999-9999";
         break;
       case 3:
         formatStr = "999-99-9999";

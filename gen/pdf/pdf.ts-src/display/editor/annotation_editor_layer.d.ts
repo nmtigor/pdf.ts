@@ -1,14 +1,8 @@
-/** @typedef {import("./editor.js").AnnotationEditor} AnnotationEditor */
-/** @typedef {import("./tools.js").AnnotationEditorUIManager} AnnotationEditorUIManager */
-/** @typedef {import("../display_utils.js").PageViewport} PageViewport */
-/** @typedef {import("../../web/text_accessibility.js").TextAccessibilityManager} TextAccessibilityManager */
-/** @typedef {import("../../web/interfaces").IL10n} IL10n */
-/** @typedef {import("../src/display/annotation_layer.js").AnnotationLayer} AnnotationLayer */
-import { IL10n } from "../../../pdf.ts-web/interfaces.js";
-import { TextAccessibilityManager } from "../../../pdf.ts-web/text_accessibility.js";
+import type { IL10n } from "../../../pdf.ts-web/interfaces.js";
+import type { TextAccessibilityManager } from "../../../pdf.ts-web/text_accessibility.js";
 import { AnnotationEditorType } from "../../shared/util.js";
 import type { AnnotationLayer, AnnotStorageValue } from "../annotation_layer.js";
-import { PageViewport } from "../display_utils.js";
+import { type PageViewport } from "../display_utils.js";
 import { AnnotationEditor } from "./editor.js";
 import type { AddCommandsP, AnnotationEditorUIManager } from "./tools.js";
 interface AnnotationEditorLayerOptions {
@@ -19,12 +13,15 @@ interface AnnotationEditorLayerOptions {
     accessibilityManager?: TextAccessibilityManager | undefined;
     pageIndex: number;
     l10n: IL10n;
-    viewport: PageViewport;
     annotationLayer?: AnnotationLayer | undefined;
+    viewport: PageViewport;
 }
 interface RenderEditorLayerOptions {
     viewport: PageViewport;
 }
+type PasteEditorP_ = {
+    bitmapFile: File | null;
+};
 /**
  * Manage all the different editors on a page.
  */
@@ -35,7 +32,7 @@ export declare class AnnotationEditorLayer {
     div: HTMLDivElement | undefined;
     viewport: PageViewport;
     isMultipleSelection?: boolean;
-    constructor(options: AnnotationEditorLayerOptions);
+    constructor({ uiManager, pageIndex, div, accessibilityManager, annotationLayer, viewport, l10n, }: AnnotationEditorLayerOptions);
     get isEmpty(): boolean;
     /**
      * Update the toolbar if it's required to reflect the tool currently used.
@@ -77,6 +74,11 @@ export declare class AnnotationEditorLayer {
      */
     remove(editor: AnnotationEditor): void;
     /**
+     * An editor can have a different parent, for example after having
+     * being dragged and droped from a page to another.
+     */
+    changeParent(editor: AnnotationEditor): void;
+    /**
      * Add a new editor in the current view.
      */
     add(editor: AnnotationEditor): void;
@@ -86,13 +88,25 @@ export declare class AnnotationEditorLayer {
      */
     addOrRebuild(editor: AnnotationEditor): void;
     /**
+     * Add a new editor and make this addition undoable.
+     */
+    addUndoableEditor(editor: AnnotationEditor): void;
+    /**
      * Get an id for an editor.
      */
     getNextId(): string;
     /**
+     * Paste some content into a new editor.
+     */
+    pasteEditor(mode: number, params: PasteEditorP_): void;
+    /**
      * Create a new editor
      */
     deserialize(data: AnnotStorageValue): AnnotationEditor | undefined;
+    /**
+     * Create and add a new editor.
+     */
+    addNewEditor(): void;
     /**
      * Set the last selected editor.
      */
@@ -117,14 +131,7 @@ export declare class AnnotationEditorLayer {
      * Pointerdown callback.
      */
     pointerdown(event: PointerEvent): void;
-    /**
-     * Drag callback.
-     */
-    drop(event: DragEvent): void;
-    /**
-     * Dragover callback.
-     */
-    dragover(event: DragEvent): void;
+    findNewParent(editor: AnnotationEditor, x: number, y: number): boolean;
     /**
      * Destroy the main editor.
      */

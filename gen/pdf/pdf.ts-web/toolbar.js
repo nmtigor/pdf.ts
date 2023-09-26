@@ -69,6 +69,18 @@ export class Toolbar {
                     },
                 },
             },
+            {
+                element: options.editorStampButton,
+                eventName: "switchannotationeditormode",
+                eventDetails: {
+                    get mode() {
+                        const { classList } = options.editorStampButton;
+                        return classList.contains("toggled")
+                            ? AnnotationEditorType.NONE
+                            : AnnotationEditorType.STAMP;
+                    },
+                },
+            },
         ];
         /*#static*/  {
             this.buttons.push({ element: options.openFile, eventName: "openfile" });
@@ -119,23 +131,23 @@ export class Toolbar {
         const self = this;
         // The buttons within the toolbar.
         for (const { element, eventName, eventDetails } of this.buttons) {
-            element.addEventListener("click", (evt) => {
+            element.on("click", (evt) => {
                 if (eventName !== null) {
                     this.eventBus.dispatch(eventName, { source: this, ...eventDetails });
                 }
             });
         }
         // The non-button elements within the toolbar.
-        pageNumber.addEventListener("click", function () {
+        pageNumber.on("click", function () {
             this.select();
         });
-        pageNumber.addEventListener("change", function () {
+        pageNumber.on("change", function () {
             self.eventBus.dispatch("pagenumberchanged", {
                 source: self,
                 value: this.value,
             });
         });
-        scaleSelect.addEventListener("change", function () {
+        scaleSelect.on("change", function () {
             if (this.value === "custom")
                 return;
             self.eventBus.dispatch("scalechanged", {
@@ -145,7 +157,7 @@ export class Toolbar {
         });
         // Here we depend on browsers dispatching the "click" event *after* the
         // "change" event, when the <select>-element changes.
-        scaleSelect.addEventListener("click", function (evt) {
+        scaleSelect.on("click", function (evt) {
             const target = evt.target;
             // Remove focus when an <option>-element was *clicked*, to improve the UX
             // for mouse users (fixes bug 1300525 and issue 4923).
@@ -163,13 +175,15 @@ export class Toolbar {
         });
         this.#bindEditorToolsListener(options);
     }
-    #bindEditorToolsListener({ editorFreeTextButton, editorFreeTextParamsToolbar, editorInkButton, editorInkParamsToolbar, }) {
+    #bindEditorToolsListener({ editorFreeTextButton, editorFreeTextParamsToolbar, editorInkButton, editorInkParamsToolbar, editorStampButton, editorStampParamsToolbar, }) {
         const editorModeChanged = ({ mode }) => {
             toggleCheckedBtn(editorFreeTextButton, mode === AnnotationEditorType.FREETEXT, editorFreeTextParamsToolbar);
             toggleCheckedBtn(editorInkButton, mode === AnnotationEditorType.INK, editorInkParamsToolbar);
+            toggleCheckedBtn(editorStampButton, mode === AnnotationEditorType.STAMP, editorStampParamsToolbar);
             const isDisable = mode === AnnotationEditorType.DISABLE;
             editorFreeTextButton.disabled = isDisable;
             editorInkButton.disabled = isDisable;
+            editorStampButton.disabled = isDisable;
         };
         this.eventBus._on("annotationeditormodechanged", editorModeChanged);
         this.eventBus._on("toolbarreset", (evt) => {

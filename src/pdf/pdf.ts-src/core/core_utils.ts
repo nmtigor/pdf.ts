@@ -568,7 +568,7 @@ export function recoverJsURL(str: string) {
     return { url, newWindow };
   }
 
-  return null;
+  return undefined;
 }
 
 export function numberToString(value: number) {

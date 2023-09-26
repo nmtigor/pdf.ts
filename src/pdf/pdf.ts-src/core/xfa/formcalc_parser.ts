@@ -860,7 +860,7 @@ class AstString extends Leaf<AstStringDump> {
   }
 
   override toNumber() {
-    return !isNaN(<any> this.str) ? parseFloat(this.str) : 0;
+    return !isNaN(this.str as any) ? parseFloat(this.str) : 0;
   }
 
   override toComparable() {

@@ -191,15 +191,13 @@ function compileGlyf(code, cmds, font) {
                 }
                 i += 4;
             }
+            else if (flags & 0x02) {
+                arg1 = getInt8(code, i++);
+                arg2 = getInt8(code, i++);
+            }
             else {
-                if (flags & 0x02) {
-                    arg1 = getInt8(code, i++);
-                    arg2 = getInt8(code, i++);
-                }
-                else {
-                    arg1 = code[i++];
-                    arg2 = code[i++];
-                }
+                arg1 = code[i++];
+                arg2 = code[i++];
             }
             if (flags & 0x02) {
                 x = arg1;
@@ -411,7 +409,7 @@ function compileCharString(charStringCode, cmds, font, glyphId) {
                     break;
                 case 10: // callsubr
                     n = stack.pop();
-                    subrCode = null;
+                    subrCode = undefined;
                     if (font.isCFFCIDFont) {
                         const fdIndex = font.fdSelect.getFDIndex(glyphId);
                         if (fdIndex >= 0 && fdIndex < font.fdArray.length) {

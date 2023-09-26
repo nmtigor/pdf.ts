@@ -6,7 +6,8 @@ import type { ShadingPatternIR, TilingPatternIR } from "../core/pattern.js";
 import { ShadingType } from "../core/pattern.js";
 import { type matrix_t, OPS, TextRenderingMode } from "../shared/util.js";
 import type { PDFCommonObjs, PDFObjects, PDFObjs } from "./api.js";
-import { DOMSVGFactory, type PageViewport } from "./display_utils.js";
+import type { PageViewport } from "./display_utils.js";
+import { DOMSVGFactory } from "./display_utils.js";
 declare class SVGExtraState {
     font?: FontExpotData;
     fontSize: number;
@@ -84,7 +85,7 @@ export declare class SVGGraphics {
     svg?: SVGElement | undefined;
     tgrp?: SVGGElement | undefined;
     constructor(commonObjs: PDFObjects<PDFCommonObjs>, objs: PDFObjects<PDFObjs | undefined>, forceDataSchema?: boolean);
-    getObject(data: unknown, fallback?: PDFCommonObjs | PDFObjs | undefined): string | import("../core/fonts.js").FontExpotDataEx | import("../core/font_renderer.js").CmdArgs[] | ImgData | ["RadialAxial", ShadingType.AXIAL | ShadingType.RADIAL, [number, number, number, number] | undefined, [number, string][], import("../../../lib/alias.js").point_t, import("../../../lib/alias.js").point_t, number, number] | ["Mesh", ShadingType, Float32Array, Uint8Array, import("../core/pattern.js").MeshFigure[], [number, number, number, number], [number, number, number, number] | undefined, Uint8ClampedArray | undefined] | import("../core/pattern.js").DummyIR | {
+    getObject(data: unknown, fallback?: PDFCommonObjs | PDFObjs | undefined): string | import("../core/fonts.js").FontExpotDataEx | import("../core/font_renderer.js").CmdArgs[] | ImgData | ["RadialAxial", type: ShadingType.AXIAL | ShadingType.RADIAL, bbox: [number, number, number, number] | undefined, colorStops: [number, string][], p0: import("../../../lib/alias.js").dot2d_t, p1: import("../../../lib/alias.js").dot2d_t, r0: number, r1: number] | ["Mesh", shadingType: ShadingType, coords: Float32Array, colors: Uint8Array, figures: import("../core/pattern.js").MeshFigure[], bounds: [number, number, number, number], bbox: [number, number, number, number] | undefined, background: Uint8ClampedArray | undefined] | import("../core/pattern.js").DummyIR | {
         error: string;
     } | undefined;
     [OPS.save](): void;

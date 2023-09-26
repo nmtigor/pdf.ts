@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+import { PDFJSDev } from "../../global.ts";
 import { html } from "../../lib/dom.ts";
 import type {
   Intent,
@@ -121,7 +122,7 @@ export class PDFPrintService {
     this.throwIfInactive();
 
     const body = document.querySelector("body")!;
-    body.setAttribute("data-pdfjsprinting", <any> true);
+    body.setAttribute("data-pdfjsprinting", true as any);
 
     const { width, height } = this.pagesOverview[0];
     const hasEqualPageSizes = this.pagesOverview.every(
@@ -323,7 +324,10 @@ function abort() {
 }
 
 function renderProgress(index: number, total: number, l10n: IL10n) {
-  dialog ||= <HTMLDialogElement> document.getElementById("printServiceDialog");
+  if (PDFJSDev && (window as any).isGECKOVIEW) {
+    return;
+  }
+  dialog ||= document.getElementById("printServiceDialog") as HTMLDialogElement;
   const progress = Math.round((100 * index) / total);
   const progressBar = dialog.querySelector("progress")!;
   const progressPerc = dialog.querySelector(".relative-progress")!;
@@ -335,7 +339,7 @@ function renderProgress(index: number, total: number, l10n: IL10n) {
   );
 }
 
-window.addEventListener(
+window.on(
   "keydown",
   (event) => {
     // Intercept Cmd/Ctrl + P in all browsers.
@@ -363,12 +367,17 @@ if ("onbeforeprint" in window) {
       event.stopImmediatePropagation();
     }
   };
-  window.addEventListener("beforeprint", stopPropagationIfNeeded);
-  window.addEventListener("afterprint", stopPropagationIfNeeded);
+  window.on("beforeprint", stopPropagationIfNeeded);
+  window.on("afterprint", stopPropagationIfNeeded);
 }
 
 let overlayPromise: Promise<void>;
 function ensureOverlay() {
+  if (PDFJSDev && (window as any).isGECKOVIEW) {
+    return Promise.reject(
+      new Error("ensureOverlay not implemented in GECKOVIEW development mode."),
+    );
+  }
   if (!overlayPromise) {
     overlayManager = viewerApp.overlayManager;
     if (!overlayManager) {
@@ -384,7 +393,7 @@ function ensureOverlay() {
     );
 
     document.getElementById("printCancel")!.onclick = abort;
-    dialog.addEventListener("close", abort);
+    dialog.on("close", abort);
   }
   return overlayPromise;
 }

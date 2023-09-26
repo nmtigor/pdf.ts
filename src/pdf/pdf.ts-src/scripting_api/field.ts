@@ -21,11 +21,8 @@ import type { FieldItem, FieldObject } from "../core/annotation.ts";
 import type { AnnotActions } from "../core/core_utils.ts";
 import type { DocWrapped, FieldWrapped } from "./app.ts";
 import { Color, type CorrectColor } from "./color.ts";
-import {
-  createActionsMap,
-  getFieldType,
-  type ScriptingActionName,
-} from "./common.ts";
+import type { ScriptingActionName } from "./common.ts";
+import { createActionsMap, getFieldType } from "./common.ts";
 import type { Event } from "./event.ts";
 import type { ScriptingData, SendData } from "./pdf_object.ts";
 import { PDFObject } from "./pdf_object.ts";
@@ -407,13 +404,11 @@ export class Field extends PDFObject<SendFieldData> {
       (indices as number[]).forEach((i) => {
         (this._value as string[]).push(this._items[i].displayValue as string);
       });
-    } else {
-      if (indices.length > 0) {
-        indices = indices.splice(1, indices.length - 1);
-        this._currentValueIndices = indices[0]!;
-        // this._value = this._items[this._currentValueIndices]; kkkk bug?
-        this._value = this._items[this._currentValueIndices].displayValue!;
-      }
+    } else if (indices.length > 0) {
+      indices = indices.splice(1, indices.length - 1);
+      this._currentValueIndices = indices[0]!;
+      // this._value = this._items[this._currentValueIndices]; kkkk bug?
+      this._value = this._items[this._currentValueIndices].displayValue!;
     }
     this._send!({ id: this._id, indices: indices as number[] });
   }
@@ -535,12 +530,10 @@ export class Field extends PDFObject<SendFieldData> {
           --this._currentValueIndices[index];
         }
       }
-    } else {
-      if (this._currentValueIndices === nIdx) {
-        this._currentValueIndices = this.numItems > 0 ? 0 : -1;
-      } else if (this._currentValueIndices > nIdx) {
-        --this._currentValueIndices;
-      }
+    } else if (this._currentValueIndices === nIdx) {
+      this._currentValueIndices = this.numItems > 0 ? 0 : -1;
+    } else if (this._currentValueIndices > nIdx) {
+      --this._currentValueIndices;
     }
 
     this._send!({ id: this._id, remove: nIdx });

@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-import type { rect_t } from "../../../../lib/alias.ts";
+import type { rect_t } from "@fe-src/lib/alias.ts";
 import type {
   AvailableSpace,
   XFAElData,
@@ -282,7 +282,7 @@ export function checkDimensions(
   node: Draw | ExclGroup | Field | Subform,
   space: AvailableSpace,
 ) {
-  if (node[$getTemplateRoot]()![$extra].firstUnsplittable === null) {
+  if (node[$getTemplateRoot]()![$extra].firstUnsplittable === undefined) {
     return true;
   }
 

@@ -1,4 +1,4 @@
-import type { C2D, point_t, rect_t } from "../../../lib/alias.js";
+import type { C2D, dot2d_t, rect_t } from "../../../lib/alias.js";
 import type { rgb_t } from "../../../lib/color/alias.js";
 import type { XFAElObj } from "../core/xfa/alias.js";
 import { BaseException, CMapCompressionType, type matrix_t } from "../shared/util.js";
@@ -168,7 +168,7 @@ export declare class PageViewport {
      * @see {@link convertToPdfPoint}
      * @see {@link convertToViewportRectangle}
      */
-    convertToViewportPoint(x: number, y: number): point_t;
+    convertToViewportPoint(x: number, y: number): dot2d_t;
     /**
      * Converts PDF rectangle to the viewport coordinates.
      * @param rect The xMin, yMin, xMax and yMax coordinates.
@@ -186,7 +186,7 @@ export declare class PageViewport {
      *   point in the PDF coordinate space.
      * @see {@link convertToViewportPoint}
      */
-    convertToPdfPoint(x: number, y: number): point_t;
+    convertToPdfPoint(x: number, y: number): dot2d_t;
 }
 export declare class RenderingCancelledException extends BaseException {
     extraDelay: number;

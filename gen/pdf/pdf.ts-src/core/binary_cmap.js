@@ -135,7 +135,7 @@ export class BinaryCMapReader {
         const stream = new BinaryCMapStream(data);
         const header = stream.readByte();
         cMap.vertical = !!(header & 1);
-        let useCMap = null;
+        let useCMap;
         const start = new Uint8Array(MAX_NUM_SIZE);
         const end = new Uint8Array(MAX_NUM_SIZE);
         const char = new Uint8Array(MAX_NUM_SIZE);

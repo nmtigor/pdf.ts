@@ -17,12 +17,8 @@
  * limitations under the License.
  */
 
-import {
-  assert,
-  assertEquals,
-  assertThrows,
-} from "https://deno.land/std@0.195.0/testing/asserts.ts";
-import { describe, it } from "https://deno.land/std@0.195.0/testing/bdd.ts";
+import { assert, assertEquals, assertThrows } from "@std/assert/mod.ts";
+import { describe, it } from "@std/testing/bdd.ts";
 import { FormatError } from "../shared/util.ts";
 import { Lexer, Linearization, Parser } from "./parser.ts";
 import { Cmd, EOF, Name } from "./primitives.ts";
@@ -273,7 +269,7 @@ describe("parser", () => {
           ">>\n" +
           "endobj",
       );
-      assertEquals(Linearization.create(stream1), null);
+      assertEquals(Linearization.create(stream1), undefined);
 
       // Linearization dictionary with invalid version number.
       // prettier-ignore
@@ -284,7 +280,7 @@ describe("parser", () => {
           ">>\n" +
           "endobj",
       );
-      assertEquals(Linearization.create(stream2), null);
+      assertEquals(Linearization.create(stream2), undefined);
     });
 
     it("should accept a valid linearization dictionary", () => {

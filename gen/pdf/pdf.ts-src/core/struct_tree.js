@@ -83,7 +83,7 @@ class StructElementNode {
         // A direct link to content, the integer is an mcid.
         if (Number.isInteger(kid)) {
             if (this.tree.pageDict.objId !== pageObjId) {
-                return null;
+                return undefined;
             }
             return new StructElement({
                 type: StructElementType.PAGE_CONTENT,
@@ -100,7 +100,7 @@ class StructElementNode {
             kidDict = kid;
         }
         if (!kidDict) {
-            return null;
+            return undefined;
         }
         const pageRef = kidDict.getRaw("Pg");
         if (pageRef instanceof Ref) {
@@ -108,10 +108,10 @@ class StructElementNode {
         }
         const type = kidDict.get("Type") instanceof Name
             ? kidDict.get("Type").name
-            : null;
+            : undefined;
         if (type === "MCR") {
             if (this.tree.pageDict.objId !== pageObjId) {
-                return null;
+                return undefined;
             }
             return new StructElement({
                 type: StructElementType.STREAM_CONTENT,
@@ -124,7 +124,7 @@ class StructElementNode {
         }
         if (type === "OBJR") {
             if (this.tree.pageDict.objId !== pageObjId) {
-                return null;
+                return undefined;
             }
             return new StructElement({
                 type: StructElementType.OBJECT,

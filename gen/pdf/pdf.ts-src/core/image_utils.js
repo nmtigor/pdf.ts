@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 import { PDFJSDev, TESTING } from "../../../global.js";
-import { assert } from "../../../lib/util/trace.js";
+import { assert, fail } from "../../../lib/util/trace.js";
 import { MAX_IMAGE_SIZE_TO_CACHE, warn } from "../shared/util.js";
 import { RefSetCache } from "./primitives.js";
 /*80--------------------------------------------------------------------------*/
@@ -35,7 +35,7 @@ class BaseLocalCache {
     /** @final */
     getByName(name) {
         if (this.#onlyRefs) {
-            assert(0, "Should not call `getByName` method.");
+            fail("Should not call `getByName` method.");
         }
         const ref = this.nameRefMap$.get(name);
         if (ref) {

@@ -17,16 +17,11 @@
  * limitations under the License.
  */
 
-import { html } from "../../lib/dom.ts";
-import {
-  OptionalContentConfig,
-  type Order,
-  PDFDocumentProxy,
-} from "../pdf.ts-src/pdf.ts";
-import {
-  BaseTreeViewer,
-  type BaseTreeViewerCtorP,
-} from "./base_tree_viewer.ts";
+import { html } from "@fe-src/lib/dom.ts";
+import type { Order } from "../pdf.ts-src/pdf.ts";
+import { OptionalContentConfig, PDFDocumentProxy } from "../pdf.ts-src/pdf.ts";
+import type { BaseTreeViewerCtorP } from "./base_tree_viewer.ts";
+import { BaseTreeViewer } from "./base_tree_viewer.ts";
 import { type IL10n } from "./interfaces.ts";
 /*80--------------------------------------------------------------------------*/
 
@@ -117,10 +112,10 @@ export class PDFLayerViewer extends BaseTreeViewer {
 
   #setNestedName = async (
     element: HTMLAnchorElement,
-    { name = null }: { name: string | null },
+    { name = undefined }: { name: string | undefined },
   ) => {
     if (typeof name === "string") {
-      element.textContent = this._normalizeTextContent(<string> name);
+      element.textContent = this._normalizeTextContent(name);
       return;
     }
     element.textContent = await this.l10n!.get("additional_layers");
@@ -129,9 +124,9 @@ export class PDFLayerViewer extends BaseTreeViewer {
 
   #addToggleButton = (
     div: HTMLDivElement,
-    { name = null }: { name: string | null },
+    { name = undefined }: { name: string | undefined },
   ) => {
-    super._addToggleButton(div, /* hidden = */ name === null);
+    super._addToggleButton(div, /* hidden = */ name === undefined);
   };
 
   protected override toggleAllTreeItems$() {

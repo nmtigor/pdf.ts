@@ -1,6 +1,7 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
+var _a;
 /* Copyright 2022 Mozilla Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,24 +19,13 @@
 import { MOZCENTRAL } from "../../../../global.js";
 import { html } from "../../../../lib/dom.js";
 import { AnnotationEditorParamsType, AnnotationEditorType, Util, } from "../../shared/util.js";
-import { InkAnnotationElement, } from "../annotation_layer.js";
+import { InkAnnotationElement } from "../annotation_layer.js";
 import { AnnotationEditor } from "./editor.js";
 import { opacityToHex } from "./tools.js";
-/*80--------------------------------------------------------------------------*/
-// The dimensions of the resizer is 15x15:
-// https://searchfox.org/mozilla-central/rev/1ce190047b9556c3c10ab4de70a0e61d893e2954/toolkit/content/minimal-xul.css#136-137
-// so each dimension must be greater than RESIZER_SIZE.
-const RESIZER_SIZE = 16;
 /**
  * Basic draw editor in order to generate an Ink annotation.
  */
 export class InkEditor extends AnnotationEditor {
-    static _defaultColor;
-    static _defaultOpacity = 1;
-    static _defaultThickness = 1;
-    static _l10nPromise;
-    static _type = "ink";
-    #aspectRatio = 0;
     #baseHeight = 0;
     #baseWidth = 0;
     #boundCanvasContextMenu = this.canvasContextMenu.bind(this);
@@ -63,28 +53,38 @@ export class InkEditor extends AnnotationEditor {
     translationY = 0;
     canvas;
     ctx;
+    static _defaultColor;
+    static _defaultOpacity = 1;
+    static _defaultThickness = 1;
+    static _l10nPromise;
+    static _type = "ink";
     constructor(params) {
         super({ ...params, name: "inkEditor" });
         this.color = params.color || undefined;
         this.thickness = params.thickness || undefined;
         this.opacity = params.opacity || undefined;
+        this.x = 0;
+        this.y = 0;
+        this._willKeepAspectRatio = true;
     }
+    /** @inheritdoc */
     static initialize(l10n) {
         this._l10nPromise = new Map(["editor_ink_canvas_aria_label", "editor_ink2_aria_label"].map((str) => [
             str,
             l10n.get(str),
         ]));
     }
+    /** @inheritdoc */
     static updateDefaultParams(type, value) {
         switch (type) {
             case AnnotationEditorParamsType.INK_THICKNESS:
-                InkEditor._defaultThickness = +value;
+                _a._defaultThickness = value;
                 break;
             case AnnotationEditorParamsType.INK_COLOR:
-                InkEditor._defaultColor = value;
+                _a._defaultColor = value;
                 break;
             case AnnotationEditorParamsType.INK_OPACITY:
-                InkEditor._defaultOpacity = +value / 100;
+                _a._defaultOpacity = value / 100;
                 break;
         }
     }
@@ -92,26 +92,27 @@ export class InkEditor extends AnnotationEditor {
     updateParams(type, value) {
         switch (type) {
             case AnnotationEditorParamsType.INK_THICKNESS:
-                this.#updateThickness(+value);
+                this.#updateThickness(value);
                 break;
             case AnnotationEditorParamsType.INK_COLOR:
                 this.#updateColor(value);
                 break;
             case AnnotationEditorParamsType.INK_OPACITY:
-                this.#updateOpacity(+value);
+                this.#updateOpacity(value);
                 break;
         }
     }
+    /** @inheritdoc */
     static get defaultPropertiesToUpdate() {
         return [
-            [AnnotationEditorParamsType.INK_THICKNESS, InkEditor._defaultThickness],
+            [AnnotationEditorParamsType.INK_THICKNESS, _a._defaultThickness],
             [
                 AnnotationEditorParamsType.INK_COLOR,
-                InkEditor._defaultColor || AnnotationEditor._defaultLineColor,
+                _a._defaultColor || AnnotationEditor._defaultLineColor,
             ],
             [
                 AnnotationEditorParamsType.INK_OPACITY,
-                Math.round(InkEditor._defaultOpacity * 100),
+                Math.round(_a._defaultOpacity * 100),
             ],
         ];
     }
@@ -120,17 +121,17 @@ export class InkEditor extends AnnotationEditor {
         return [
             [
                 AnnotationEditorParamsType.INK_THICKNESS,
-                this.thickness || InkEditor._defaultThickness,
+                this.thickness || _a._defaultThickness,
             ],
             [
                 AnnotationEditorParamsType.INK_COLOR,
                 this.color ||
-                    InkEditor._defaultColor ||
+                    _a._defaultColor ||
                     AnnotationEditor._defaultLineColor,
             ],
             [
                 AnnotationEditorParamsType.INK_OPACITY,
-                Math.round(100 * (this.opacity ?? InkEditor._defaultOpacity)),
+                Math.round(100 * (this.opacity ?? _a._defaultOpacity)),
             ],
         ];
     }
@@ -197,6 +198,9 @@ export class InkEditor extends AnnotationEditor {
     }
     /** @inheritdoc */
     rebuild() {
+        if (!this.parent) {
+            return;
+        }
         super.rebuild();
         if (this.div === undefined) {
             return;
@@ -235,7 +239,7 @@ export class InkEditor extends AnnotationEditor {
             // ResizeObserver.
             this._uiManager.removeShouldRescale(this);
         }
-        else if (this.parent && parent === null) {
+        else if (this.parent && parent === undefined) {
             // The editor is removed from the DOM, hence we handle the rescale thanks
             // to the onScaleChanging callback.
             // This way, it'll be saved/printed correctly.
@@ -255,8 +259,8 @@ export class InkEditor extends AnnotationEditor {
             return;
         }
         super.enableEditMode();
-        this.div.draggable = false;
-        this.canvas.addEventListener("pointerdown", this.#boundCanvasPointerdown);
+        this._isDraggable = false;
+        this.canvas.on("pointerdown", this.#boundCanvasPointerdown);
     }
     /** @inheritdoc */
     disableEditMode() {
@@ -264,13 +268,13 @@ export class InkEditor extends AnnotationEditor {
             return;
         }
         super.disableEditMode();
-        this.div.draggable = !this.isEmpty();
+        this._isDraggable = !this.isEmpty();
         this.div.classList.remove("editing");
-        this.canvas.removeEventListener("pointerdown", this.#boundCanvasPointerdown);
+        this.canvas.off("pointerdown", this.#boundCanvasPointerdown);
     }
     /** @inheritdoc */
     onceAdded() {
-        this.div.draggable = !this.isEmpty();
+        this._isDraggable = !this.isEmpty();
     }
     /** @inheritdoc */
     isEmpty() {
@@ -305,19 +309,19 @@ export class InkEditor extends AnnotationEditor {
      * Start to draw on the canvas.
      */
     #startDrawing(x, y) {
-        this.canvas.addEventListener("contextmenu", this.#boundCanvasContextMenu);
-        this.canvas.addEventListener("pointerleave", this.#boundCanvasPointerleave);
-        this.canvas.addEventListener("pointermove", this.#boundCanvasPointermove);
-        this.canvas.addEventListener("pointerup", this.#boundCanvasPointerup);
-        this.canvas.removeEventListener("pointerdown", this.#boundCanvasPointerdown);
+        this.canvas.on("contextmenu", this.#boundCanvasContextMenu);
+        this.canvas.on("pointerleave", this.#boundCanvasPointerleave);
+        this.canvas.on("pointermove", this.#boundCanvasPointermove);
+        this.canvas.on("pointerup", this.#boundCanvasPointerup);
+        this.canvas.off("pointerdown", this.#boundCanvasPointerdown);
         this.isEditing = true;
         if (!this.#isCanvasInitialized) {
             this.#isCanvasInitialized = true;
             this.#setCanvasDims();
-            this.thickness ||= InkEditor._defaultThickness;
-            this.color ||= InkEditor._defaultColor ||
+            this.thickness ||= _a._defaultThickness;
+            this.color ||= _a._defaultColor ||
                 AnnotationEditor._defaultLineColor;
-            this.opacity ??= InkEditor._defaultOpacity;
+            this.opacity ??= _a._defaultOpacity;
         }
         this.currentPath.push([x, y]);
         this.#hasSomethingToDraw = false;
@@ -500,14 +504,18 @@ export class InkEditor extends AnnotationEditor {
         this.#disableEditing = true;
         this.div.classList.add("disabled");
         this.#fitToContent(/* firstTime = */ true);
+        this.makeResizable();
         this.parent.addInkEditorIfNeeded(/* isCommitting = */ true);
         // When commiting, the position of this editor is changed, hence we must
         // move it to the right position in the DOM.
-        this.parent.moveEditorInDOM(this);
+        this.moveInDOM();
         this.div.focus({ preventScroll: true /* See issue #15744 */ });
     }
     /** @inheritdoc */
     focusin(event) {
+        if (!this._focusEventsAllowed) {
+            return;
+        }
         super.focusin(event);
         this.enableEditMode();
     }
@@ -557,14 +565,14 @@ export class InkEditor extends AnnotationEditor {
      * End the drawing.
      */
     #endDrawing(event) {
-        this.canvas.removeEventListener("pointerleave", this.#boundCanvasPointerleave);
-        this.canvas.removeEventListener("pointermove", this.#boundCanvasPointermove);
-        this.canvas.removeEventListener("pointerup", this.#boundCanvasPointerup);
-        this.canvas.addEventListener("pointerdown", this.#boundCanvasPointerdown);
+        this.canvas.off("pointerleave", this.#boundCanvasPointerleave);
+        this.canvas.off("pointermove", this.#boundCanvasPointermove);
+        this.canvas.off("pointerup", this.#boundCanvasPointerup);
+        this.canvas.on("pointerdown", this.#boundCanvasPointerdown);
         // Slight delay to avoid the context menu to appear (it can happen on a long
         // tap with a pen).
         setTimeout(() => {
-            this.canvas.removeEventListener("contextmenu", this.#boundCanvasContextMenu);
+            this.canvas.off("contextmenu", this.#boundCanvasContextMenu);
         }, 10);
         this.#stopDrawing(event.offsetX, event.offsetY);
         this.addToAnnotationStorage();
@@ -579,7 +587,7 @@ export class InkEditor extends AnnotationEditor {
         this.canvas = html("canvas");
         this.canvas.width = this.canvas.height = 0;
         this.canvas.className = "inkEditorCanvas";
-        InkEditor._l10nPromise
+        _a._l10nPromise
             .get("editor_ink_canvas_aria_label")
             .then((msg) => this.canvas?.setAttribute("aria-label", msg));
         this.div.append(this.canvas);
@@ -598,6 +606,10 @@ export class InkEditor extends AnnotationEditor {
         this.#observer.observe(this.div);
     }
     /** @inheritdoc */
+    get isResizable() {
+        return !this.isEmpty() && this.#disableEditing;
+    }
+    /** @inheritdoc */
     render() {
         if (this.div) {
             return this.div;
@@ -608,7 +620,7 @@ export class InkEditor extends AnnotationEditor {
             baseY = this.y;
         }
         super.render();
-        InkEditor._l10nPromise
+        _a._l10nPromise
             .get("editor_ink2_aria_label")
             .then((msg) => this.div?.setAttribute("aria-label", msg));
         const [x, y, w, h] = this.#getInitialBBox();
@@ -618,12 +630,12 @@ export class InkEditor extends AnnotationEditor {
         if (this.width) {
             // This editor was created in using copy (ctrl+c).
             const [parentWidth, parentHeight] = this.parentDimensions;
+            this.setAspectRatio(this.width * parentWidth, this.height * parentHeight);
             this.setAt(baseX * parentWidth, baseY * parentHeight, this.width * parentWidth, this.height * parentHeight);
             this.#isCanvasInitialized = true;
             this.#setCanvasDims();
             this.setDims(this.width * parentWidth, this.height * parentHeight);
             this.#redraw();
-            this.#setMinDims();
             this.div.classList.add("disabled");
         }
         else {
@@ -658,14 +670,10 @@ export class InkEditor extends AnnotationEditor {
         this.#realWidth = roundedWidth;
         this.#realHeight = roundedHeight;
         this.canvas.style.visibility = "hidden";
-        if (this.#aspectRatio &&
-            Math.abs(this.#aspectRatio - width / height) > 1e-2) {
-            height = Math.ceil(width / this.#aspectRatio);
-            this.setDims(width, height);
-        }
         const [parentWidth, parentHeight] = this.parentDimensions;
         this.width = width / parentWidth;
         this.height = height / parentHeight;
+        this.fixAndSetPosition();
         if (this.#disableEditing) {
             this.#setScaleFactor(width, height);
         }
@@ -807,8 +815,8 @@ export class InkEditor extends AnnotationEditor {
                 }
             }
             paths.push({
-                bezier: InkEditor.#toPDFCoordinates(buffer, rect, this.rotation),
-                points: InkEditor.#toPDFCoordinates(points, rect, this.rotation),
+                bezier: _a.#toPDFCoordinates(buffer, rect, this.rotation),
+                points: _a.#toPDFCoordinates(points, rect, this.rotation),
             });
         }
         return paths;
@@ -857,15 +865,14 @@ export class InkEditor extends AnnotationEditor {
         }
         const bbox = this.#getBbox();
         const padding = this.#getPadding();
-        this.#baseWidth = Math.max(RESIZER_SIZE, bbox[2] - bbox[0]);
-        this.#baseHeight = Math.max(RESIZER_SIZE, bbox[3] - bbox[1]);
+        this.#baseWidth = Math.max(AnnotationEditor.MIN_SIZE, bbox[2] - bbox[0]);
+        this.#baseHeight = Math.max(AnnotationEditor.MIN_SIZE, bbox[3] - bbox[1]);
         const width = Math.ceil(padding + this.#baseWidth * this.scaleFactor);
         const height = Math.ceil(padding + this.#baseHeight * this.scaleFactor);
         const [parentWidth, parentHeight] = this.parentDimensions;
         this.width = width / parentWidth;
         this.height = height / parentHeight;
-        this.#aspectRatio = width / height;
-        this.#setMinDims();
+        this.setAspectRatio(width, height);
         const prevTranslationX = this.translationX;
         const prevTranslationY = this.translationY;
         this.translationX = -bbox[0];
@@ -877,17 +884,6 @@ export class InkEditor extends AnnotationEditor {
         this.setDims(width, height);
         const unscaledPadding = firstTime ? padding / this.scaleFactor / 2 : 0;
         this.translate(prevTranslationX - this.translationX - unscaledPadding, prevTranslationY - this.translationY - unscaledPadding);
-    }
-    #setMinDims() {
-        const { style } = this.div;
-        if (this.#aspectRatio >= 1) {
-            style.minHeight = `${RESIZER_SIZE}px`;
-            style.minWidth = `${Math.round(this.#aspectRatio * RESIZER_SIZE)}px`;
-        }
-        else {
-            style.minWidth = `${RESIZER_SIZE}px`;
-            style.minHeight = `${Math.round(RESIZER_SIZE / this.#aspectRatio)}px`;
-        }
     }
     /** @inheritdoc */
     static deserialize(data, parent, uiManager) {
@@ -904,13 +900,12 @@ export class InkEditor extends AnnotationEditor {
         const height = editor.height * pageHeight;
         const scaleFactor = editor.parentScale;
         const padding = data.thickness / 2;
-        editor.#aspectRatio = width / height;
         editor.#disableEditing = true;
         editor.#realWidth = Math.round(width);
         editor.#realHeight = Math.round(height);
         const { paths, rect, rotation } = data;
         for (let { bezier } of paths) {
-            bezier = InkEditor.#fromPDFCoordinates(bezier, rect, rotation);
+            bezier = _a.#fromPDFCoordinates(bezier, rect, rotation);
             const path = [];
             editor.paths.push(path);
             let p0 = scaleFactor * (bezier[0] - padding);
@@ -935,8 +930,8 @@ export class InkEditor extends AnnotationEditor {
             editor.bezierPath2D.push(path2D);
         }
         const bbox = editor.#getBbox();
-        editor.#baseWidth = Math.max(RESIZER_SIZE, bbox[2] - bbox[0]);
-        editor.#baseHeight = Math.max(RESIZER_SIZE, bbox[3] - bbox[1]);
+        editor.#baseWidth = Math.max(AnnotationEditor.MIN_SIZE, bbox[2] - bbox[0]);
+        editor.#baseHeight = Math.max(AnnotationEditor.MIN_SIZE, bbox[3] - bbox[1]);
         editor.#setScaleFactor(width, height);
         return editor;
     }
@@ -962,5 +957,6 @@ export class InkEditor extends AnnotationEditor {
         };
     }
 }
+_a = InkEditor;
 /*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=ink.js.map

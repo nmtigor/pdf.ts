@@ -76,11 +76,8 @@ export class Binder {
   constructor(root: XFAObject) {
     this.root = root;
     this.datasets = root.datasets as Datasets | undefined;
-    if ((root.datasets as Datasets | undefined)?.data) {
-      this.data = (root.datasets as Datasets).data!;
-    } else {
-      this.data = new XmlObject(NamespaceIds.datasets.id, "data");
-    }
+    this.data = (root.datasets as Datasets | undefined)?.data ||
+      new XmlObject(NamespaceIds.datasets.id, "data");
     this.emptyMerge = this.data[$getChildren]().length === 0;
 
     this.root.form = this.form = (root.template as XFAObject)

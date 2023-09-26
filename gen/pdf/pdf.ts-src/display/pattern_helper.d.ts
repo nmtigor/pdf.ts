@@ -21,8 +21,8 @@ export declare class RadialAxialShadingPattern implements RadialAxialPattern {
     _type: ShadingType.AXIAL | ShadingType.RADIAL;
     _bbox: [number, number, number, number] | undefined;
     _colorStops: [number, string][];
-    _p0: import("../../../lib/alias.js").point_t;
-    _p1: import("../../../lib/alias.js").point_t;
+    _p0: import("../../../lib/alias.js").dot2d_t;
+    _p1: import("../../../lib/alias.js").dot2d_t;
     _r0: number;
     _r1: number;
     matrix: matrix_t | undefined;

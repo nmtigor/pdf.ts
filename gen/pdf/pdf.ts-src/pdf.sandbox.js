@@ -96,9 +96,7 @@ export class Sandbox {
         this.support?.callSandboxFunction("dispatchEvent", event);
     }
     dumpMemoryUse() {
-        if (this._module) {
-            this._module.ccall("dumpMemoryUse", null, []);
-        }
+        this._module?.ccall("dumpMemoryUse", null, []);
     }
     nukeSandbox() {
         if (this._module !== null) {

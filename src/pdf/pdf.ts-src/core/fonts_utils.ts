@@ -19,7 +19,7 @@
 
 import { info } from "../shared/util.ts";
 import { getEncoding, StandardEncoding } from "./encodings.ts";
-import { type FontProps } from "./evaluator.ts";
+import type { FontProps } from "./evaluator.ts";
 import { getGlyphsUnicode } from "./glyphlist.ts";
 import { getUnicodeForGlyph } from "./unicode.ts";
 /*80--------------------------------------------------------------------------*/
@@ -129,11 +129,7 @@ export function type1FontGlyphMapping(
     baseEncoding = builtInEncoding!;
     for (charCode = 0; charCode < baseEncoding.length; charCode++) {
       glyphId = glyphNames.indexOf(baseEncoding[charCode]);
-      if (glyphId >= 0) {
-        charCodeToGlyphId[charCode] = glyphId;
-      } else {
-        charCodeToGlyphId[charCode] = 0; // notdef
-      }
+      charCodeToGlyphId[charCode] = glyphId >= 0 ? glyphId : /* notdef = */ 0;
     }
   } else if (properties.baseEncodingName) {
     // If a valid base encoding name was used, the mapping is initialized with
@@ -141,11 +137,7 @@ export function type1FontGlyphMapping(
     baseEncoding = getEncoding(properties.baseEncodingName)!;
     for (charCode = 0; charCode < baseEncoding.length; charCode++) {
       glyphId = glyphNames.indexOf(baseEncoding[charCode]);
-      if (glyphId >= 0) {
-        charCodeToGlyphId[charCode] = glyphId;
-      } else {
-        charCodeToGlyphId[charCode] = 0; // notdef
-      }
+      charCodeToGlyphId[charCode] = glyphId >= 0 ? glyphId : /* notdef = */ 0;
     }
   } else if (isSymbolicFont) {
     // For a symbolic font the encoding should be the fonts built-in encoding.
@@ -158,11 +150,7 @@ export function type1FontGlyphMapping(
     baseEncoding = StandardEncoding;
     for (charCode = 0; charCode < baseEncoding.length; charCode++) {
       glyphId = glyphNames.indexOf(baseEncoding[charCode]);
-      if (glyphId >= 0) {
-        charCodeToGlyphId[charCode] = glyphId;
-      } else {
-        charCodeToGlyphId[charCode] = 0; // notdef
-      }
+      charCodeToGlyphId[charCode] = glyphId >= 0 ? glyphId : /* notdef = */ 0;
     }
   }
 
@@ -183,11 +171,7 @@ export function type1FontGlyphMapping(
           glyphId = glyphNames.indexOf(standardGlyphName);
         }
       }
-      if (glyphId >= 0) {
-        charCodeToGlyphId[charCode] = glyphId;
-      } else {
-        charCodeToGlyphId[charCode] = 0; // notdef
-      }
+      charCodeToGlyphId[charCode] = glyphId >= 0 ? glyphId : /* notdef = */ 0;
     }
   }
   return charCodeToGlyphId;

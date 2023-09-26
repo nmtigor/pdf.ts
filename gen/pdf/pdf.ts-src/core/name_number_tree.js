@@ -73,7 +73,7 @@ class NameOrNumberTree {
     }
     get(key) {
         if (!this.root) {
-            return null;
+            return undefined;
         }
         const xref = this.xref;
         let kidsOrEntries = xref.fetchIfRef(this.root);
@@ -84,11 +84,11 @@ class NameOrNumberTree {
         while (kidsOrEntries.has("Kids")) {
             if (++loopCount > MAX_LEVELS) {
                 warn(`Search depth limit reached for "${this.#type}" tree.`);
-                return null;
+                return undefined;
             }
             const kids = kidsOrEntries.get("Kids");
             if (!Array.isArray(kids)) {
-                return null;
+                return undefined;
             }
             let l = 0;
             let r = kids.length - 1;
@@ -108,7 +108,7 @@ class NameOrNumberTree {
                 }
             }
             if (l > r) {
-                return null;
+                return undefined;
             }
         }
         // If we get here, then we have found the right entry. Now go through the
@@ -133,7 +133,7 @@ class NameOrNumberTree {
                 }
             }
         }
-        return null;
+        return undefined;
     }
 }
 export class NameTree extends NameOrNumberTree {

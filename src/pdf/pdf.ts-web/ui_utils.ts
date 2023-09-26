@@ -225,7 +225,7 @@ export function watchScroll(
   };
 
   let rAF: number | undefined;
-  viewAreaElement.addEventListener("scroll", debounceScroll, true);
+  viewAreaElement.on("scroll", debounceScroll, true);
   return state;
 }
 

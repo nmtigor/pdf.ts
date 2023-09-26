@@ -17,9 +17,9 @@
  * limitations under the License.
  */
 
-import { PDFJSDev, TESTING } from "../../../global.ts";
-import type { rect_t } from "../../../lib/alias.ts";
-import { assert } from "../../../lib/util/trace.ts";
+import { PDFJSDev, TESTING } from "@fe-src/global.ts";
+import type { rect_t } from "@fe-src/lib/alias.ts";
+import { assert, fail } from "@fe-src/lib/util/trace.ts";
 import type {
   AnnotStorageRecord,
   AnnotStorageValue,
@@ -70,8 +70,8 @@ import { calculateMD5, type CipherTransform } from "./crypto.ts";
 import { DatasetReader, type DatasetReaderCtorP } from "./dataset_reader.ts";
 import { StreamsSequenceStream } from "./decode_stream.ts";
 import { PartialEvaluator, type TranslatedFont } from "./evaluator.ts";
-import type { ErrorFont, Font } from "./fonts.ts";
 import type { SubstitutionInfo } from "./font_substitutions.ts";
+import type { ErrorFont, Font } from "./fonts.ts";
 import type { GlobalImageCache } from "./image_utils.ts";
 import { ObjectLoader } from "./object_loader.ts";
 import { OperatorList } from "./operator_list.ts";
@@ -255,7 +255,7 @@ export class Page {
       }
       warn(`Empty, or invalid, /${name} entry.`);
     }
-    return null;
+    return undefined;
   }
 
   get mediaBox() {
@@ -350,7 +350,7 @@ export class Page {
       "xfaData",
       this.xfaFactory
         ? { bbox: this.xfaFactory.getBoundingBox(this.pageIndex) }
-        : null,
+        : undefined,
     );
   }
 
@@ -559,7 +559,7 @@ export class Page {
 
         const { isOffscreenCanvasSupported } = this.evaluatorOptions;
         if (missingBitmaps.size > 0) {
-          const annotationWithBitmaps: AnnotStorageValue[] = [];
+          const annotationWithBitmaps = newAnnotations.slice();
           for (const [key, annotation] of annotationStorage!) {
             if (!key.startsWith(AnnotationEditorPrefix)) {
               continue;
@@ -663,7 +663,8 @@ export class Page {
       for (const annotation of annotations) {
         if (
           intentAny ||
-          (intentDisplay && annotation!.mustBeViewed(annotationStorage)) ||
+          (intentDisplay &&
+            annotation!.mustBeViewed(annotationStorage, renderForms)) ||
           (intentPrint && annotation!.mustBePrinted(annotationStorage))
         ) {
           opListPromises.push(
@@ -681,7 +682,7 @@ export class Page {
                     `"${task.name}" task: "${reason}".`,
                 );
                 return {
-                  opList: null,
+                  // opList: null,
                   separateForm: false,
                   separateCanvas: false,
                 };
@@ -1027,7 +1028,7 @@ interface FormInfo {
 
 type FieldPromises = Map<string, Promise<FieldObject | undefined>[]>;
 
-interface _XFAStreams {
+interface XFAStreams_ {
   "xdp:xdp": string | BaseStream;
   template: string | BaseStream;
   datasets: string | BaseStream;
@@ -1037,7 +1038,7 @@ interface _XFAStreams {
   stylesheet: string | BaseStream;
   "/xdp:xdp": string | BaseStream;
 }
-export type XFAData = _XFAStreams & {
+export type XFAData = XFAStreams_ & {
   name: string;
   value: string;
   attributes?: string;
@@ -1098,8 +1099,7 @@ export class PDFDocument {
       createFontId: () => `f${++idCounters.font}`,
 
       getPageObjId() {
-        assert(0, "Abstract method `getPageObjId` called.");
-        return "";
+        fail("Abstract method `getPageObjId` called.");
       },
     };
   }
@@ -1110,14 +1110,14 @@ export class PDFDocument {
   }
 
   get linearization() {
-    let linearization = null;
+    let linearization: Linearization | undefined;
     try {
       linearization = Linearization.create(this.stream);
     } catch (err) {
       if (err instanceof MissingDataException) {
         throw err;
       }
-      info(<string> err);
+      info(err as string);
     }
     return shadow(this, "linearization", linearization);
   }
@@ -1257,7 +1257,7 @@ export class PDFDocument {
     }
 
     const xfa = acroForm.get("XFA");
-    const entries: _XFAStreams = {
+    const entries: XFAStreams_ = {
       "xdp:xdp": "",
       template: "",
       datasets: "",
@@ -1293,7 +1293,7 @@ export class PDFDocument {
       if (!(data instanceof BaseStream) || data.isEmpty) {
         continue;
       }
-      entries[<keyof _XFAStreams> name] = data;
+      entries[<keyof XFAStreams_> name] = data;
     }
     return entries;
   }
@@ -1323,7 +1323,7 @@ export class PDFDocument {
   get xfaData() {
     const streams = this._xfaStreams;
     if (!streams) {
-      return null;
+      return undefined;
     }
     const data = Object.create(null);
     for (const [key, stream] of Object.entries(streams)) {
@@ -1334,7 +1334,7 @@ export class PDFDocument {
         data[key] = stringToUTF8String(stream.getString());
       } catch {
         warn("XFA - Invalid utf-8 string.");
-        return null;
+        return undefined;
       }
     }
     return data;
@@ -1468,7 +1468,7 @@ export class PDFDocument {
           )
           .catch((reason) => {
             warn(`loadXfaFonts: "${reason}".`);
-            return null;
+            return undefined;
           }),
       );
     }
@@ -1529,7 +1529,7 @@ export class PDFDocument {
             )
             .catch((reason) => {
               warn(`loadXfaFonts: "${reason}".`);
-              return null;
+              return undefined;
             }),
         );
       }
@@ -1924,16 +1924,7 @@ export class PDFDocument {
     const field = this.xref.fetchIfRef(fieldRef) as Dict;
     if (field.has("T")) {
       const partName = stringToPDFString(field.get("T") as string);
-      if (name === "") {
-        name = partName;
-      } else {
-        name = `${name}.${partName}`;
-      }
-    }
-
-    if (!field.has("Kids") && /\[\d+\]$/.test(name)) {
-      // We've a terminal node: strip the index.
-      name = name.substring(0, name.lastIndexOf("["));
+      name = name === "" ? partName : `${name}.${partName}`;
     }
 
     if (!promises.has(name)) {

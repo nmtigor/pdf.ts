@@ -17,19 +17,17 @@
  * limitations under the License.
  */
 
-import { assertEquals } from "https://deno.land/std@0.195.0/testing/asserts.ts";
-import { describe, it } from "https://deno.land/std@0.195.0/testing/bdd.ts";
+import { assertEquals } from "@std/assert/mod.ts";
+import { afterEach, describe, it } from "@std/testing/bdd.ts";
+import { GlobalWorkerOptions } from "../pdf.ts-src/display/worker_options.ts";
 import { getDocument, type PDFDocumentProxy } from "../pdf.ts-src/pdf.ts";
 import {
   buildGetDocumentParams,
   CMAP_URL,
 } from "../pdf.ts-src/shared/test_utils.ts";
 import { EventBus, type EventMap } from "./event_utils.ts";
-import {
-  type FindCtrlState,
-  FindState,
-  PDFFindController,
-} from "./pdf_find_controller.ts";
+import type { FindCtrlState } from "./pdf_find_controller.ts";
+import { FindState, PDFFindController } from "./pdf_find_controller.ts";
 import { SimpleLinkService } from "./pdf_link_service.ts";
 /*80--------------------------------------------------------------------------*/
 
@@ -237,6 +235,12 @@ function testEmptySearch(
 }
 
 describe("pdf_find_controller", () => {
+  afterEach(() => {
+    /* Running by `deno test`, there could be "Leaking async ops" without
+    this. */
+    GlobalWorkerOptions.workerPort?.terminate();
+  });
+
   it("performs a normal search", async () => {
     const { eventBus, pdfFindController } = await initPdfFindController();
     const updateFindMatchesCount = [0];
@@ -751,8 +755,7 @@ describe("pdf_find_controller", () => {
     });
   });
 
-  //kkkk
-  it.ignore("performs a search in a text containing diacritics before -\\n", async () => {
+  it("performs a search in a text containing diacritics before -\\n", async () => {
     // if (isNodeJS) {
     //   pending("Linked test-cases are not supported in Node.js.");
     // }
@@ -894,8 +897,7 @@ describe("pdf_find_controller", () => {
     });
   });
 
-  //kkkk
-  it.ignore("performs a search in a text containing combining diacritics", async () => {
+  it("performs a search in a text containing combining diacritics", async () => {
     // if (isNodeJS) {
     //   pending("Linked test-cases are not supported in Node.js.");
     // }
@@ -969,8 +971,7 @@ describe("pdf_find_controller", () => {
     });
   });
 
-  //kkkk
-  it.ignore("performs a search in a text with some UTF-32 chars", async () => {
+  it("performs a search in a text with some UTF-32 chars", async () => {
     // if (isNodeJS) {
     //   pending("Linked test-cases are not supported in Node.js.");
     // }

@@ -149,7 +149,7 @@ export declare abstract class XFAObject {
     [$childrenToHTML]({ filter, include }: {
         filter?: Set<string>;
         include?: boolean;
-    }): HTMLResult;
+    }): any;
     /**
      * Update the node with properties coming from a prototype and apply
      * this function recursively to all children.

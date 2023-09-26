@@ -28,10 +28,10 @@
 /** @typedef {import("./interfaces").IL10n} IL10n */
 /** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
 
-import { GECKOVIEW, GENERIC, PDFJSDev } from "../../global.ts";
-import type { point_t } from "../../lib/alias.ts";
-import { div, html } from "../../lib/dom.ts";
-import { PromiseCap } from "../../lib/util/PromiseCap.ts";
+import { GECKOVIEW, GENERIC, PDFJSDev } from "@fe-src/global.ts";
+import type { dot2d_t } from "@fe-src/lib/alias.ts";
+import { div, html } from "@fe-src/lib/dom.ts";
+import { PromiseCap } from "@fe-src/lib/util/PromiseCap.ts";
 import type {
   ExplicitDest,
   OptionalContentConfig,
@@ -192,19 +192,14 @@ export interface PDFViewerOptions {
   enablePrintAutoRotate: boolean | undefined;
 
   /**
-   * Enables CSS only zooming. The default value is `false`.
-   */
-  useOnlyCssZoom: boolean | undefined;
-
-  /**
    * Allows to use an OffscreenCanvas if needed.
    */
   isOffscreenCanvasSupported?: boolean;
 
   /**
    * The maximum supported canvas size in
-   * total pixels, i.e. width * height. Use -1 for no limit. The default value
-   * is 4096 * 4096 (16 mega-pixels).
+   * total pixels, i.e. width * height. Use `-1` for no limit, or `0` for
+   * CSS-only zooming. The default value is 4096 * 4096 (16 mega-pixels).
    */
   maxCanvasPixels: number | undefined;
 
@@ -383,11 +378,10 @@ export class PDFViewer {
   imageResourcesPath;
   enablePrintAutoRotate;
   removePageBorders;
-  useOnlyCssZoom;
   isOffscreenCanvasSupported;
   maxCanvasPixels;
   l10n;
-  #containerTopLeft: point_t | undefined;
+  #containerTopLeft: dot2d_t | undefined;
   #enablePermissions;
   pageColors: PageColors | undefined;
 
@@ -599,8 +593,14 @@ export class PDFViewer {
     this.enablePrintAutoRotate = options.enablePrintAutoRotate || false;
     /*#static*/ if (PDFJSDev || GENERIC) {
       this.removePageBorders = options.removePageBorders || false;
+
+      if ((options as any).useOnlyCssZoom) {
+        console.error(
+          "useOnlyCssZoom was removed, please use `maxCanvasPixels = 0` instead.",
+        );
+        options.maxCanvasPixels = 0;
+      }
     }
-    this.useOnlyCssZoom = options.useOnlyCssZoom || false;
     this.isOffscreenCanvasSupported = options.isOffscreenCanvasSupported ??
       true;
     this.maxCanvasPixels = options.maxCanvasPixels;
@@ -817,13 +817,10 @@ export class PDFViewer {
         }
         resolve();
 
-        document.removeEventListener(
-          "visibilitychange",
-          this.#onVisibilityChange!,
-        );
+        document.off("visibilitychange", this.#onVisibilityChange!);
         this.#onVisibilityChange = undefined;
       };
-      document.addEventListener("visibilitychange", this.#onVisibilityChange);
+      document.on("visibilitychange", this.#onVisibilityChange);
     });
 
     return Promise.race([
@@ -898,7 +895,7 @@ export class PDFViewer {
       const interruptCopy = (ev: KeyboardEvent) => (
         this.#interruptCopyCondition = ev.key === "Escape"
       );
-      window.addEventListener("keydown", interruptCopy);
+      window.on("keydown", interruptCopy);
 
       this.getAllText()
         .then(async (text) => {
@@ -914,7 +911,7 @@ export class PDFViewer {
         .finally(() => {
           this.#getAllTextInProgress = false;
           this.#interruptCopyCondition = false;
-          window.removeEventListener("keydown", interruptCopy);
+          window.off("keydown", interruptCopy);
           this.container.style.cursor = savedCursor;
         });
 
@@ -995,10 +992,7 @@ export class PDFViewer {
       this._onAfterDraw = undefined;
 
       if (this.#onVisibilityChange) {
-        document.removeEventListener(
-          "visibilitychange",
-          this.#onVisibilityChange,
-        );
+        document.off("visibilitychange", this.#onVisibilityChange);
         this.#onVisibilityChange = undefined;
       }
     };
@@ -1034,8 +1028,10 @@ export class PDFViewer {
           } else if (isValidAnnotationEditorMode(mode)) {
             this.#annotationEditorUIManager = new AnnotationEditorUIManager(
               this.container,
+              this.viewer,
               this.eventBus,
-              pdfDocument?.annotationStorage,
+              pdfDocument,
+              this.pageColors,
             );
             if (mode !== AnnotationEditorType.NONE) {
               this.#annotationEditorUIManager.updateMode(mode);
@@ -1083,7 +1079,6 @@ export class PDFViewer {
             textLayerMode,
             annotationMode,
             imageResourcesPath: this.imageResourcesPath,
-            useOnlyCssZoom: this.useOnlyCssZoom,
             isOffscreenCanvasSupported: this.isOffscreenCanvasSupported,
             maxCanvasPixels: this.maxCanvasPixels,
             pageColors: this.pageColors,
@@ -1120,7 +1115,7 @@ export class PDFViewer {
               this,
               textLayerMode,
             );
-            document.addEventListener("copy", this.#copyCallbackBound);
+            document.on("copy", this.#copyCallbackBound);
           }
 
           if (this.#annotationEditorUIManager) {
@@ -1251,10 +1246,7 @@ export class PDFViewer {
       this._onAfterDraw = undefined;
     }
     if (this.#onVisibilityChange) {
-      document.removeEventListener(
-        "visibilitychange",
-        this.#onVisibilityChange,
-      );
+      document.off("visibilitychange", this.#onVisibilityChange);
       this.#onVisibilityChange = undefined;
     }
     // Remove the pages from the DOM...
@@ -1265,7 +1257,7 @@ export class PDFViewer {
     this.viewer.removeAttribute("lang");
 
     if (this.#hiddenCopyElement) {
-      document.removeEventListener("copy", this.#copyCallbackBound!);
+      document.off("copy", this.#copyCallbackBound!);
       this.#copyCallbackBound = undefined;
 
       this.#hiddenCopyElement.remove();
@@ -2335,26 +2327,28 @@ export class PDFViewer {
   /**
    * @param AnnotationEditor mode (None, FreeText, Ink, ...)
    */
-  set annotationEditorMode(mode: AnnotationEditorType) {
+  set annotationEditorMode(
+    { mode, editId }: EventMap["switchannotationeditormode"],
+  ) {
     if (!this.#annotationEditorUIManager) {
       throw new Error(`The AnnotationEditor is not enabled.`);
     }
     if (this.#annotationEditorMode === mode) {
       return; // The AnnotationEditor mode didn't change.
     }
-    if (!isValidAnnotationEditorMode(mode)) {
+    if (!isValidAnnotationEditorMode(mode!)) {
       throw new Error(`Invalid AnnotationEditor mode: ${mode}`);
     }
     if (!this.pdfDocument) {
       return;
     }
-    this.#annotationEditorMode = mode;
+    this.#annotationEditorMode = mode!;
     this.eventBus.dispatch("annotationeditormodechanged", {
       source: this,
       mode,
     });
 
-    this.#annotationEditorUIManager.updateMode(mode);
+    this.#annotationEditorUIManager.updateMode(mode!, editId);
   }
 
   // eslint-disable-next-line accessor-pairs

@@ -1,9 +1,7 @@
 # /gen/
+/built/
+# /res/
 
 # /node_modules/
-
 .vscode/
-
-# TOCHECK
-# /res/
 

@@ -3,11 +3,11 @@
  * @license Apache-2.0
  ******************************************************************************/
 
-import { CSSStyle } from "./alias.ts";
+import type { CSSStyle } from "./alias.ts";
 import { svg } from "./dom.ts";
 import { mix } from "./jslang.ts";
 import { $vuu } from "./symbols.ts";
-import { type ReportedError } from "./util/trace.ts";
+import type { ReportedError } from "./util/trace.ts";
 /*80--------------------------------------------------------------------------*/
 
 /**
@@ -86,7 +86,7 @@ export abstract class Vuu<C extends Coo = Coo, E extends Element = Element> {
     // this.el$[$Vuu] = Vuu;
   }
 
-  get parentVuu1(): Vuu | undefined {
+  get parentVuu_1(): Vuu | undefined {
     let node = this.el$.parentNode;
     while (node && !node[$vuu]) node = node.parentNode;
     return node?.[$vuu];

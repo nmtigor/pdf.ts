@@ -37,7 +37,7 @@ import {
   assertNotStrictEquals,
   assertStrictEquals,
   assertThrows,
-} from "https://deno.land/std@0.195.0/testing/asserts.ts";
+} from "@std/testing/asserts.ts";
 import {
   afterAll,
   afterEach,
@@ -45,12 +45,8 @@ import {
   beforeEach,
   describe,
   it,
-} from "https://deno.land/std@0.195.0/testing/bdd.ts";
-import {
-  assertSpyCall,
-  assertSpyCalls,
-  spy,
-} from "https://deno.land/std@0.195.0/testing/mock.ts";
+} from "@std/testing/bdd.ts";
+import { assertSpyCall, assertSpyCalls, spy } from "@std/testing/mock.ts";
 /*80--------------------------------------------------------------------------*/
 
 describe("primitives", () => {

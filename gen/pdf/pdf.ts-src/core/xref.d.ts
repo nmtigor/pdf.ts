@@ -25,12 +25,12 @@ interface XRefStreamState {
     entryNum: number;
     streamPos: number;
 }
+/** @final */
 export declare class XRef {
     #private;
     stream: Stream | ChunkedStream;
     pdfManager: BasePdfManager;
     entries: XRefEntry[];
-    _xrefStms: Set<number>;
     _pendingRefs: RefSet;
     getNewPersistentRef(obj: StringStream | Dict): Ref;
     getNewTemporaryRef(): Ref;
@@ -52,7 +52,7 @@ export declare class XRef {
     indexObjects(): Dict;
     readXRef(recoveryMode?: boolean): Dict | undefined;
     get lastXRefStreamPos(): number | undefined;
-    getEntry(i: number): XRefEntry | null;
+    getEntry(i: number): XRefEntry | undefined;
     fetchIfRef(obj: Obj | undefined, suppressEncryption?: boolean): ObjNoRef | undefined;
     fetch(ref: Ref, suppressEncryption?: boolean): ObjNoRef;
     fetchUncompressed(ref: Ref, xrefEntry: XRefEntry, suppressEncryption?: boolean): ObjNoRef;

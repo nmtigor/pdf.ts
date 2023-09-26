@@ -17,11 +17,8 @@
  * limitations under the License.
  */
 
-import {
-  assertEquals,
-  assertNotStrictEquals,
-} from "https://deno.land/std@0.195.0/testing/asserts.ts";
-import { describe, it } from "https://deno.land/std@0.195.0/testing/bdd.ts";
+import { assertEquals, assertNotStrictEquals } from "@std/testing/asserts.ts";
+import { describe, it } from "@std/testing/bdd.ts";
 import { type ExplicitDest } from "../pdf.ts-src/pdf.ts";
 import { isDestArraysEqual, isDestHashesEqual } from "./pdf_history.ts";
 /*80--------------------------------------------------------------------------*/

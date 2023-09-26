@@ -75,7 +75,7 @@ export declare class Page {
      * Table 33
      */
     get resources(): Dict;
-    _getBoundingBox(name: string): [number, number, number, number] | null;
+    _getBoundingBox(name: string): [number, number, number, number] | undefined;
     get mediaBox(): [number, number, number, number];
     get cropBox(): [number, number, number, number];
     get userUnit(): number;
@@ -84,7 +84,7 @@ export declare class Page {
     getContentStream(): Promise<BaseStream>;
     get xfaData(): {
         bbox: [number, number, number, number];
-    } | null;
+    } | undefined;
     saveNewAnnotations(handler: MessageHandler<Thread.worker>, task: WorkerTask, annotations: AnnotStorageValue[], imagePromises: Map<string, Promise<AnnotImage>> | undefined): Promise<{
         ref: Ref;
         data: string;
@@ -137,7 +137,7 @@ interface FormInfo {
     hasXfa: boolean;
     hasSignatures: boolean;
 }
-interface _XFAStreams {
+interface XFAStreams_ {
     "xdp:xdp": string | BaseStream;
     template: string | BaseStream;
     datasets: string | BaseStream;
@@ -147,7 +147,7 @@ interface _XFAStreams {
     stylesheet: string | BaseStream;
     "/xdp:xdp": string | BaseStream;
 }
-export type XFAData = _XFAStreams & {
+export type XFAData = XFAStreams_ & {
     name: string;
     value: string;
     attributes?: string;
@@ -173,7 +173,7 @@ export declare class PDFDocument {
     get _globalIdFactory(): GlobalIdFactory;
     constructor(pdfManager: BasePdfManager, stream: Stream);
     parse(recoveryMode: boolean): void;
-    get linearization(): Linearization | null;
+    get linearization(): Linearization | undefined;
     get startXRef(): number;
     /**
      * Find the header, get the PDF format version and setup the
@@ -182,7 +182,7 @@ export declare class PDFDocument {
     checkHeader(): void;
     parseStartXRef(): void;
     get numPages(): number | Promise<number>;
-    get _xfaStreams(): _XFAStreams | undefined;
+    get _xfaStreams(): XFAStreams_ | undefined;
     get xfaDatasets(): DatasetReader | undefined;
     get xfaData(): any;
     get xfaFactory(): XFAFactory | undefined;

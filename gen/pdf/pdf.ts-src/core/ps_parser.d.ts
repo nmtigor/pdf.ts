@@ -3,8 +3,8 @@ import { EOF } from "./primitives.js";
 export declare class PostScriptParser {
     lexer: PostScriptLexer;
     operators: (number | string | null)[];
-    token: PostScriptToken | EOF | null;
-    prev: PostScriptToken | EOF | null;
+    token: PostScriptToken | EOF | undefined;
+    prev: PostScriptToken | EOF | undefined;
     constructor(lexer: PostScriptLexer);
     nextToken(): void;
     accept(type: PostScriptTokenTypes): boolean;

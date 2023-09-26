@@ -23,8 +23,8 @@ import { CFFCompiler, CFFParser } from "./cff_parser.js";
 import { IdentityCMap } from "./cmap.js";
 import { readUint32 } from "./core_utils.js";
 import { getEncoding, MacRomanEncoding, StandardEncoding, SymbolSetEncoding, WinAnsiEncoding, ZapfDingbatsEncoding, } from "./encodings.js";
-import { FontFlags, MacStandardGlyphOrdering, recoverGlyphName, SEAC_ANALYSIS_ENABLED, } from "./fonts_utils.js";
 import { FontRendererFactory } from "./font_renderer.js";
+import { FontFlags, MacStandardGlyphOrdering, recoverGlyphName, SEAC_ANALYSIS_ENABLED, } from "./fonts_utils.js";
 import { GlyfTable } from "./glyf.js";
 import { getDingbatsGlyphsUnicode, getGlyphsUnicode } from "./glyphlist.js";
 import { getFontBasicMetrics } from "./metrics.js";
@@ -348,20 +348,10 @@ function isCFFFile(file) {
 function getFontFileType(file, { type, subtype, composite }) {
     let fileType, fileSubtype;
     if (isTrueTypeFile(file) || isTrueTypeCollectionFile(file)) {
-        if (composite) {
-            fileType = "CIDFontType2";
-        }
-        else {
-            fileType = "TrueType";
-        }
+        fileType = composite ? "CIDFontType2" : "TrueType";
     }
     else if (isOpenTypeFile(file)) {
-        if (composite) {
-            fileType = "CIDFontType2";
-        }
-        else {
-            fileType = "OpenType";
-        }
+        fileType = composite ? "CIDFontType2" : "OpenType";
     }
     else if (isType1File(file)) {
         if (composite) {
@@ -690,7 +680,7 @@ function createOS2Table(properties, charstrings, override) {
         descent: 0,
     };
     let ulUnicodeRange1 = 0, ulUnicodeRange2 = 0, ulUnicodeRange3 = 0, ulUnicodeRange4 = 0;
-    let firstCharIndex = null, lastCharIndex = 0, position = -1;
+    let firstCharIndex, lastCharIndex = 0, position = -1;
     if (charstrings) {
         let code;
         for (const code_s in charstrings) {

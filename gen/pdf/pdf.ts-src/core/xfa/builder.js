@@ -18,9 +18,9 @@
 import { warn } from "../../shared/util.js";
 import { $buildXFAObject, NamespaceIds } from "./namespaces.js";
 import { NamespaceSetUp } from "./setup.js";
+import { $cleanup, $finalize, $ids, $isNsAgnostic, $nsAttributes, $onChild, $resolvePrototypes, $root, } from "./symbol_utils.js";
 import { Template } from "./template.js";
 import { UnknownNamespace } from "./unknown.js";
-import { $cleanup, $finalize, $ids, $isNsAgnostic, $nsAttributes, $onChild, $resolvePrototypes, $root, } from "./symbol_utils.js";
 import { XFAObject } from "./xfa_object.js";
 /*80--------------------------------------------------------------------------*/
 export class Root extends XFAObject {
@@ -155,7 +155,7 @@ export class Builder {
             return prefixStack.at(-1);
         }
         warn(`Unknown namespace prefix: ${prefix}.`);
-        return null;
+        return undefined;
     }
     clean(data) {
         const { hasNamespace, prefixes, nsAgnostic } = data;

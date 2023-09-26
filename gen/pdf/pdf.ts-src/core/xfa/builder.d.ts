@@ -1,7 +1,7 @@
 import type { XFACleanup, XFAIds, XFANsAttrs, XFAPrefix } from "./alias.js";
 import { type XFAKnownNs } from "./setup.js";
-import { UnknownNamespace } from "./unknown.js";
 import { $finalize, $ids, $onChild } from "./symbol_utils.js";
+import { UnknownNamespace } from "./unknown.js";
 import { XFAObject } from "./xfa_object.js";
 export declare class Root extends XFAObject {
     element?: XFAObject;
@@ -31,7 +31,7 @@ export declare class Builder {
     isNsAgnostic(): boolean;
     _searchNamespace(nsName: string): XFANs;
     _addNamespacePrefix(prefixes: XFAPrefix[]): void;
-    _getNamespaceToUse(prefix?: string): XFANs | null | undefined;
+    _getNamespaceToUse(prefix?: string): XFANs | undefined;
     clean(data: XFACleanup): void;
 }
 export {};

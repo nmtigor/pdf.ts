@@ -472,7 +472,7 @@ export class Parser {
             }
             const key = this.buf1.name;
             this.shift();
-            if (this.buf1 == EOF) {
+            if (this.buf1 === EOF) {
                 break;
             }
             dictMap[key] = this.getObj(cipherTransform);
@@ -1289,7 +1289,7 @@ export class Linearization {
             linDict instanceof Dict &&
             typeof (obj = linDict.get("Linearized")) === "number" &&
             obj > 0)) {
-            return null; // No valid linearization dictionary found.
+            return undefined; // No valid linearization dictionary found.
         }
         else if ((length = getInt(linDict, "L")) !== stream.length) {
             throw new Error('The "L" parameter in the linearization dictionary ' +

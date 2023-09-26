@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 import { html } from "../../lib/dom.js";
-import { BaseTreeViewer, } from "./base_tree_viewer.js";
+import { BaseTreeViewer } from "./base_tree_viewer.js";
 export class PDFLayerViewer extends BaseTreeViewer {
     l10n;
     #optionalContentConfig;
@@ -72,7 +72,7 @@ export class PDFLayerViewer extends BaseTreeViewer {
             return false;
         };
     }
-    #setNestedName = async (element, { name = null }) => {
+    #setNestedName = async (element, { name = undefined }) => {
         if (typeof name === "string") {
             element.textContent = this._normalizeTextContent(name);
             return;
@@ -80,8 +80,8 @@ export class PDFLayerViewer extends BaseTreeViewer {
         element.textContent = await this.l10n.get("additional_layers");
         element.style.fontStyle = "italic";
     };
-    #addToggleButton = (div, { name = null }) => {
-        super._addToggleButton(div, /* hidden = */ name === null);
+    #addToggleButton = (div, { name = undefined }) => {
+        super._addToggleButton(div, /* hidden = */ name === undefined);
     };
     toggleAllTreeItems$() {
         if (!this.#optionalContentConfig) {

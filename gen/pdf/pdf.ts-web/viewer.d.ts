@@ -56,6 +56,8 @@ declare function getViewerConfiguration(): {
         editorFreeTextParamsToolbar: HTMLDivElement;
         editorInkButton: HTMLButtonElement;
         editorInkParamsToolbar: HTMLButtonElement;
+        editorStampButton: HTMLButtonElement;
+        editorStampParamsToolbar: HTMLDivElement;
         /**
          * Button to download the document.
          */
@@ -249,6 +251,7 @@ declare function getViewerConfiguration(): {
         editorInkColor: HTMLInputElement;
         editorInkThickness: HTMLInputElement;
         editorInkOpacity: HTMLInputElement;
+        editorStampAddImage: HTMLButtonElement;
     };
     printContainer: HTMLDivElement;
     openFileInput: HTMLInputElement | undefined;

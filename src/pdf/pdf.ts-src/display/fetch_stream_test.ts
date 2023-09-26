@@ -17,9 +17,9 @@
  * limitations under the License.
  */
 
-import { assertEquals } from "https://deno.land/std@0.195.0/testing/asserts.ts";
-import { describe, it } from "https://deno.land/std@0.195.0/testing/bdd.ts";
-import { D_base } from "../../pdf.ts-web/app_options.ts";
+import { assertEquals } from "@std/testing/asserts.ts";
+import { describe, it } from "@std/testing/bdd.ts";
+import { D_base } from "../../alias.ts";
 import { AbortException } from "../shared/util.ts";
 import { DocumentInitP } from "./api.ts";
 import { PDFFetchStream, PDFFetchStreamRangeReader } from "./fetch_stream.ts";

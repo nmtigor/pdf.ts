@@ -60,7 +60,7 @@ export declare class IdentityCMap extends CMap {
     charCodeOf(value: number): number;
     getMap(): any[];
     get length(): number;
-    get isIdentityCMap(): boolean;
+    get isIdentityCMap(): never;
 }
 declare namespace NsCMapFactory {
     interface CMapFactoryCreateP_ {

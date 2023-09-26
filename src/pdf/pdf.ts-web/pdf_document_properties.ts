@@ -128,7 +128,7 @@ export class PDFDocumentProperties {
 
     this.#reset();
     // Bind the event listener for the Close button.
-    closeButton.addEventListener("click", this.close.bind(this));
+    closeButton.on("click", this.close.bind(this));
 
     this.overlayManager.register(this.dialog);
 

@@ -6,7 +6,7 @@ import type { CSSStyle, llen_t } from "./alias.js";
 import type { Vuu } from "./cv.js";
 import { $cssstylesheet, $loff, $ovlap, $tail_ignored } from "./symbols.js";
 declare global {
-    interface EventMap extends ElementEventMap, GlobalEventHandlersEventMap, WindowEventHandlersEventMap, HTMLVideoElementEventMap, DocumentEventMap, WindowEventMap, WorkerEventMap, ServiceWorkerEventMap, OfflineAudioContextEventMap {
+    interface EventMap extends ElementEventMap, GlobalEventHandlersEventMap, WindowEventHandlersEventMap, DocumentEventMap, HTMLVideoElementEventMap, OfflineAudioContextEventMap, ServiceWorkerEventMap, WindowEventMap, WorkerEventMap {
     }
     type EventName = keyof EventMap;
     type EventHandler<E extends EventName> = (ev: EventMap[E]) => any;
@@ -42,6 +42,7 @@ declare global {
         readonly isText: boolean;
         readonly secondChild: Node | null;
         removeAllChild: () => this;
+        /** @deprecated */
         assert_eq: (rhs: object) => void | never;
     }
 }

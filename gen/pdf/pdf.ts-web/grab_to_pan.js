@@ -47,7 +47,7 @@ export class GrabToPan {
     activate = () => {
         if (!this.active) {
             this.active = true;
-            this.element.addEventListener("mousedown", this.#onMouseDown, true);
+            this.element.on("mousedown", this.#onMouseDown, true);
             this.element.classList.add(CSS_CLASS_GRAB);
         }
     };
@@ -57,7 +57,7 @@ export class GrabToPan {
     deactivate = () => {
         if (this.active) {
             this.active = false;
-            this.element.removeEventListener("mousedown", this.#onMouseDown, true);
+            this.element.off("mousedown", this.#onMouseDown, true);
             this.#endPan();
             this.element.classList.remove(CSS_CLASS_GRAB);
         }
@@ -98,12 +98,12 @@ export class GrabToPan {
         this.scrollTopStart = this.element.scrollTop;
         this.clientXStart = event.clientX;
         this.clientYStart = event.clientY;
-        this.document.addEventListener("mousemove", this.#onMouseMove, true);
-        this.document.addEventListener("mouseup", this.#endPan, true);
+        this.document.on("mousemove", this.#onMouseMove, true);
+        this.document.on("mouseup", this.#endPan, true);
         // When a scroll event occurs before a mousemove, assume that the user
         // dragged a scrollbar (necessary for Opera Presto, Safari and IE)
         // (not needed for Chrome/Firefox)
-        this.element.addEventListener("scroll", this.#endPan, true);
+        this.element.on("scroll", this.#endPan, true);
         event.preventDefault();
         event.stopPropagation();
         const focusedElement = document.activeElement;
@@ -112,7 +112,7 @@ export class GrabToPan {
         }
     };
     #onMouseMove = (event) => {
-        this.element.removeEventListener("scroll", this.#endPan, true);
+        this.element.off("scroll", this.#endPan, true);
         if (!(event.buttons & 1)) {
             // The left mouse button is released.
             this.#endPan();
@@ -130,9 +130,9 @@ export class GrabToPan {
         }
     };
     #endPan = () => {
-        this.element.removeEventListener("scroll", this.#endPan, true);
-        this.document.removeEventListener("mousemove", this.#onMouseMove, true);
-        this.document.removeEventListener("mouseup", this.#endPan, true);
+        this.element.off("scroll", this.#endPan, true);
+        this.document.off("mousemove", this.#onMouseMove, true);
+        this.document.off("mouseup", this.#endPan, true);
         // Note: ChildNode.remove doesn't throw if the parentNode is undefined.
         this.overlay.remove();
     };

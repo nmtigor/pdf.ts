@@ -1,7 +1,7 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
-import { assert } from "../../../lib/util/trace.js";
+import { fail } from "../../../lib/util/trace.js";
 import { CMapCompressionType, FormatError, warn } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
 import { BinaryCMapReader } from "./binary_cmap.js";
@@ -366,16 +366,16 @@ export class IdentityCMap extends CMap {
         this.addCodespaceRange(n, 0, 0xffff);
     }
     mapCidRange(low, high, dstLow) {
-        assert(0, "should not call mapCidRange");
+        fail("should not call mapCidRange");
     }
     mapBfRange(low, high, dstLow) {
-        assert(0, "should not call mapBfRange");
+        fail("should not call mapBfRange");
     }
     mapBfRangeToArray(low, high, array) {
-        assert(0, "should not call mapBfRangeToArray");
+        fail("should not call mapBfRangeToArray");
     }
     mapOne(src, dst) {
-        assert(0, "should not call mapCidOne");
+        fail("should not call mapCidOne");
     }
     lookup(code) {
         return Number.isInteger(code) && code <= 0xffff ? code : undefined;
@@ -404,8 +404,7 @@ export class IdentityCMap extends CMap {
     }
     // eslint-disable-next-line getter-return
     get isIdentityCMap() {
-        assert(0, "should not access .isIdentityCMap");
-        return false;
+        return fail("should not access .isIdentityCMap");
     }
 }
 var NsCMapFactory;

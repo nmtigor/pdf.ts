@@ -15,12 +15,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { GENERIC, PDFJSDev, SKIP_BABEL, TESTING } from "../../../global.js";
+/* globals process */
+import { GENERIC, MOZCENTRAL, PDFJSDev, TESTING } from "../../../global.js";
 import { isObjectLike } from "../../../lib/jslang.js";
 import { assert, warn as warn_0 } from "../../../lib/util/trace.js";
 /*80--------------------------------------------------------------------------*/
-// Skip compatibility checks for modern builds and if we already ran the module.
-/*#static*/ 
+// NW.js / Electron is a browser context, but copies some Node.js objects; see
+// http://docs.nwjs.io/en/latest/For%20Users/Advanced/JavaScript%20Contexts%20in%20NW.js/#access-nodejs-and-nwjs-api-in-browser-context
+// https://www.electronjs.org/docs/api/process#processversionselectron-readonly
+// https://www.electronjs.org/docs/api/process#processtype-readonly
+export const isNodeJS = (PDFJSDev || GENERIC) &&
+    typeof globalThis.process === "object" &&
+    globalThis.process + "" === "[object process]" &&
+    !globalThis.process.versions.nw &&
+    !(globalThis.process.versions.electron &&
+        globalThis.process.type &&
+        globalThis.process.type !== "browser");
 export const IDENTITY_MATRIX = [1, 0, 0, 1, 0, 0];
 export const FONT_IDENTITY_MATRIX = [0.001, 0, 0, 0.001, 0, 0];
 export const MAX_IMAGE_SIZE_TO_CACHE = 10e6; // Ten megabytes.
@@ -71,12 +81,14 @@ export var AnnotationEditorType;
 })(AnnotationEditorType || (AnnotationEditorType = {}));
 export var AnnotationEditorParamsType;
 (function (AnnotationEditorParamsType) {
-    AnnotationEditorParamsType[AnnotationEditorParamsType["FREETEXT_SIZE"] = 1] = "FREETEXT_SIZE";
-    AnnotationEditorParamsType[AnnotationEditorParamsType["FREETEXT_COLOR"] = 2] = "FREETEXT_COLOR";
-    AnnotationEditorParamsType[AnnotationEditorParamsType["FREETEXT_OPACITY"] = 3] = "FREETEXT_OPACITY";
-    AnnotationEditorParamsType[AnnotationEditorParamsType["INK_COLOR"] = 11] = "INK_COLOR";
-    AnnotationEditorParamsType[AnnotationEditorParamsType["INK_THICKNESS"] = 12] = "INK_THICKNESS";
-    AnnotationEditorParamsType[AnnotationEditorParamsType["INK_OPACITY"] = 13] = "INK_OPACITY";
+    AnnotationEditorParamsType[AnnotationEditorParamsType["RESIZE"] = 1] = "RESIZE";
+    AnnotationEditorParamsType[AnnotationEditorParamsType["CREATE"] = 2] = "CREATE";
+    AnnotationEditorParamsType[AnnotationEditorParamsType["FREETEXT_SIZE"] = 11] = "FREETEXT_SIZE";
+    AnnotationEditorParamsType[AnnotationEditorParamsType["FREETEXT_COLOR"] = 12] = "FREETEXT_COLOR";
+    AnnotationEditorParamsType[AnnotationEditorParamsType["FREETEXT_OPACITY"] = 13] = "FREETEXT_OPACITY";
+    AnnotationEditorParamsType[AnnotationEditorParamsType["INK_COLOR"] = 21] = "INK_COLOR";
+    AnnotationEditorParamsType[AnnotationEditorParamsType["INK_THICKNESS"] = 22] = "INK_THICKNESS";
+    AnnotationEditorParamsType[AnnotationEditorParamsType["INK_OPACITY"] = 23] = "INK_OPACITY";
 })(AnnotationEditorParamsType || (AnnotationEditorParamsType = {}));
 // Permission flags from Table 22, Section 7.6.3.2 of the PDF specification.
 export var PermissionFlag;
@@ -604,6 +616,9 @@ export class FeatureTest {
             isMac: navigator.platform.includes("Mac"),
         });
     }
+    static get isCSSRoundSupported() {
+        return shadow(this, "isCSSRoundSupported", globalThis.CSS?.supports?.("width: round(1.5px, 1px)"));
+    }
 }
 const hexNumbers = [...Array(256).keys()].map((n) => n.toString(16).padStart(2, "0"));
 export class Util {
@@ -1051,6 +1066,23 @@ export function normalizeUnicode(str) {
     return str.replaceAll(NormalizeRegex, (_, p1, p2) => {
         return p1 ? p1.normalize("NFKC") : NormalizationMap.get(p2);
     });
+}
+export function getUuid() {
+    if (MOZCENTRAL ||
+        (typeof crypto !== "undefined" && typeof crypto?.randomUUID === "function")) {
+        return crypto.randomUUID();
+    }
+    const buf = new Uint8Array(32);
+    if (typeof crypto !== "undefined" &&
+        typeof crypto?.getRandomValues === "function") {
+        crypto.getRandomValues(buf);
+    }
+    else {
+        for (let i = 0; i < 32; i++) {
+            buf[i] = Math.floor(Math.random() * 255);
+        }
+    }
+    return bytesToString(buf);
 }
 /*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=util.js.map

@@ -15,10 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { DENO, MOZCENTRAL } from "../../../global.js";
-import { assert } from "../../../lib/util/trace.js";
+import { MOZCENTRAL } from "../../../global.js";
+import { fail } from "../../../lib/util/trace.js";
 import { convertBlackAndWhiteToRGBA } from "../shared/image_utils.js";
-import { FeatureTest, FONT_IDENTITY_MATRIX, IDENTITY_MATRIX, ImageKind, info, OPS, shadow, TextRenderingMode, Util, warn, } from "../shared/util.js";
+import { FeatureTest, FONT_IDENTITY_MATRIX, IDENTITY_MATRIX, ImageKind, info, isNodeJS, OPS, shadow, TextRenderingMode, Util, warn, } from "../shared/util.js";
 import { getCurrentTransform, getCurrentTransformInverse, PixelsPerInch, } from "./display_utils.js";
 import { getShadingPattern, PathType, TilingPattern, } from "./pattern_helper.js";
 // <canvas> contexts store most of the state we need natively.
@@ -481,7 +481,7 @@ class CanvasExtraState {
         const box = [this.minX, this.minY, this.maxX, this.maxY];
         if (pathType === PathType.STROKE) {
             if (!transform) {
-                assert(0, "Stroke bounding box must include transform.");
+                fail("Stroke bounding box must include transform.");
             }
             // Stroked paths can be outside of the path bounding box by 1/2 the line
             // width.
@@ -694,7 +694,12 @@ function resetCtxToDefault(ctx) {
         ctx.setLineDash([]);
         ctx.lineDashOffset = 0;
     }
-    /*#static*/ 
+    if (MOZCENTRAL || !isNodeJS) {
+        const { filter } = ctx;
+        if (filter !== "none" && filter !== "") {
+            ctx.filter = "none";
+        }
+    }
 }
 function composeSMaskBackdrop(bytes, r0, g0, b0) {
     const length = bytes.length;
@@ -737,13 +742,9 @@ function genericComposeSMask(maskCtx, layerCtx, width, height, subtype, backdrop
     const r0 = hasBackdrop ? backdrop[0] : 0;
     const g0 = hasBackdrop ? backdrop[1] : 0;
     const b0 = hasBackdrop ? backdrop[2] : 0;
-    let composeFn;
-    if (subtype === "Luminosity") {
-        composeFn = composeSMaskLuminosity;
-    }
-    else {
-        composeFn = composeSMaskAlpha;
-    }
+    const composeFn = subtype === "Luminosity"
+        ? composeSMaskLuminosity
+        : composeSMaskAlpha;
     // processing image in chunks to save memory
     const PIXELS_TO_PROCESS = 1048576;
     const chunkSize = Math.min(height, Math.ceil(PIXELS_TO_PROCESS / width));
@@ -1827,13 +1828,9 @@ export class CanvasGraphics {
                     }
                 }
             }
-            let charWidth;
-            if (vertical) {
-                charWidth = width * widthAdvanceScale - spacing * fontDirection;
-            }
-            else {
-                charWidth = width * widthAdvanceScale + spacing * fontDirection;
-            }
+            const charWidth = vertical
+                ? width * widthAdvanceScale - spacing * fontDirection
+                : width * widthAdvanceScale + spacing * fontDirection;
             x += charWidth;
             if (restoreNeeded) {
                 ctx.restore();
@@ -1991,10 +1988,10 @@ export class CanvasGraphics {
     }
     // Images
     [OPS.beginInlineImage]() {
-        assert(0, "Should not call beginInlineImage");
+        fail("Should not call beginInlineImage");
     }
     [OPS.beginImageData]() {
-        assert(0, "Should not call beginImageData");
+        fail("Should not call beginImageData");
     }
     [OPS.paintFormXObjectBegin](matrix, bbox) {
         if (!this.contentVisible) {
@@ -2361,12 +2358,15 @@ export class CanvasGraphics {
         const height = imgData.height;
         const ctx = this.ctx;
         this[OPS.save]();
-        /*#static*/  {
+        if (MOZCENTRAL || !isNodeJS) {
             // The filter, if any, will be applied in applyTransferMapsToBitmap.
             // It must be applied to the image before rescaling else some artifacts
             // could appear.
             // The final restore will reset it to its value.
-            ctx.filter = "none";
+            const { filter } = ctx;
+            if (filter !== "none" && filter !== "") {
+                ctx.filter = "none";
+            }
         }
         // scale the image to the unit square
         ctx.scale(1 / width, -1 / height);

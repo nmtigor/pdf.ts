@@ -17,9 +17,9 @@
  * limitations under the License.
  */
 
-import { DENO, MOZCENTRAL } from "../../../global.ts";
-import type { C2D, Func, point_t, rect_t } from "../../../lib/alias.ts";
-import { assert } from "../../../lib/util/trace.ts";
+import { MOZCENTRAL } from "@fe-src/global.ts";
+import type { C2D, dot2d_t, Func, rect_t } from "@fe-src/lib/alias.ts";
+import { fail } from "@fe-src/lib/util/trace.ts";
 import type { Stepper } from "../../pdf.ts-web/debugger.ts";
 import type { PageColors } from "../../pdf.ts-web/pdf_viewer.ts";
 import type {
@@ -27,8 +27,8 @@ import type {
   MarkedContentProps,
   SmaskOptions,
 } from "../core/evaluator.ts";
-import type { Glyph } from "../core/fonts.ts";
 import type { CmdArgs } from "../core/font_renderer.ts";
+import type { Glyph } from "../core/fonts.ts";
 import type { OpListIR } from "../core/operator_list.ts";
 import type {
   PatternIR,
@@ -42,6 +42,7 @@ import {
   IDENTITY_MATRIX,
   ImageKind,
   info,
+  isNodeJS,
   type matrix_t,
   OPS,
   shadow,
@@ -653,7 +654,7 @@ class CanvasExtraState {
 
   updateRectMinMax(transform: matrix_t, rect: rect_t) {
     const p1 = Util.applyTransform(rect, transform);
-    const p2 = Util.applyTransform(<point_t> rect.slice(2), transform);
+    const p2 = Util.applyTransform(<dot2d_t> rect.slice(2), transform);
     this.minX = Math.min(this.minX, p1[0], p2[0]);
     this.minY = Math.min(this.minY, p1[1], p2[1]);
     this.maxX = Math.max(this.maxX, p1[0], p2[0]);
@@ -695,7 +696,7 @@ class CanvasExtraState {
     const box: rect_t = [this.minX, this.minY, this.maxX, this.maxY];
     if (pathType === PathType.STROKE) {
       if (!transform) {
-        assert(0, "Stroke bounding box must include transform.");
+        fail("Stroke bounding box must include transform.");
       }
       // Stroked paths can be outside of the path bounding box by 1/2 the line
       // width.
@@ -944,8 +945,11 @@ function resetCtxToDefault(ctx: C2D) {
     ctx.setLineDash([]);
     ctx.lineDashOffset = 0;
   }
-  /*#static*/ if (MOZCENTRAL || DENO) {
-    ctx.filter = "none";
+  if (MOZCENTRAL || !isNodeJS) {
+    const { filter } = ctx;
+    if (filter !== "none" && filter !== "") {
+      ctx.filter = "none";
+    }
   }
 }
 
@@ -1018,12 +1022,9 @@ function genericComposeSMask(
   const g0 = hasBackdrop ? backdrop[1] : 0;
   const b0 = hasBackdrop ? backdrop[2] : 0;
 
-  let composeFn;
-  if (subtype === "Luminosity") {
-    composeFn = composeSMaskLuminosity;
-  } else {
-    composeFn = composeSMaskAlpha;
-  }
+  const composeFn = subtype === "Luminosity"
+    ? composeSMaskLuminosity
+    : composeSMaskAlpha;
 
   // processing image in chunks to save memory
   const PIXELS_TO_PROCESS = 1048576;
@@ -1183,7 +1184,7 @@ export class CanvasGraphics {
   outputScaleY = 1;
   pageColors;
 
-  #cachedScaleForStroking: point_t = [-1, 0];
+  #cachedScaleForStroking: dot2d_t = [-1, 0];
   #cachedGetSinglePixelWidth: number | undefined;
   #cachedBitmapsMap = new Map<
     ImageBitmap | ArrayBuffer,
@@ -2478,12 +2479,9 @@ export class CanvasGraphics {
         }
       }
 
-      let charWidth;
-      if (vertical) {
-        charWidth = width * widthAdvanceScale - spacing * fontDirection;
-      } else {
-        charWidth = width * widthAdvanceScale + spacing * fontDirection;
-      }
+      const charWidth = vertical
+        ? width * widthAdvanceScale - spacing * fontDirection
+        : width * widthAdvanceScale + spacing * fontDirection;
       x += charWidth;
 
       if (restoreNeeded) {
@@ -2694,10 +2692,10 @@ export class CanvasGraphics {
 
   // Images
   [OPS.beginInlineImage]() {
-    assert(0, "Should not call beginInlineImage");
+    fail("Should not call beginInlineImage");
   }
   [OPS.beginImageData]() {
-    assert(0, "Should not call beginImageData");
+    fail("Should not call beginImageData");
   }
 
   [OPS.paintFormXObjectBegin](
@@ -3192,12 +3190,15 @@ export class CanvasGraphics {
 
     this[OPS.save]();
 
-    /*#static*/ if (MOZCENTRAL || !DENO) {
+    if (MOZCENTRAL || !isNodeJS) {
       // The filter, if any, will be applied in applyTransferMapsToBitmap.
       // It must be applied to the image before rescaling else some artifacts
       // could appear.
       // The final restore will reset it to its value.
-      ctx.filter = "none";
+      const { filter } = ctx;
+      if (filter !== "none" && filter !== "") {
+        ctx.filter = "none";
+      }
     }
 
     // scale the image to the unit square

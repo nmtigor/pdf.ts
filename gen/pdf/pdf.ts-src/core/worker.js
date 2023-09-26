@@ -19,7 +19,7 @@ import { GENERIC, PDFJSDev, TESTING } from "../../../global.js";
 import { PromiseCap } from "../../../lib/util/PromiseCap.js";
 import { assert } from "../../../lib/util/trace.js";
 import { MessageHandler } from "../shared/message_handler.js";
-import { AbortException, getVerbosityLevel, info, InvalidPDFException, MissingPDFException, PasswordException, setVerbosityLevel, stringToPDFString, UnexpectedResponseException, UnknownErrorException, VerbosityLevel, warn, } from "../shared/util.js";
+import { AbortException, BaseException, getVerbosityLevel, info, PasswordException, setVerbosityLevel, stringToPDFString, UnknownErrorException, VerbosityLevel, warn, } from "../shared/util.js";
 import { AnnotationFactory } from "./annotation.js";
 import { clearGlobalCaches } from "./cleanup_helper.js";
 import { arrayBuffersToBytes, getNewAnnotationsMap, XRefParseException, } from "./core_utils.js";
@@ -280,11 +280,14 @@ export const WorkerMessageHandler = {
                 // console.log(ex.name);
                 // console.log(ex);
                 ensureNotTerminated();
-                if (ex instanceof PasswordException) {
+                if (ex.name === "PasswordException") {
                     const task = new WorkerTask(`PasswordException: response ${ex.code}`);
                     startWorkerTask(task);
+                    const exJ = (ex instanceof PasswordException)
+                        ? ex.toJ()
+                        : ex;
                     handler
-                        .sendWithPromise("PasswordRequest", ex)
+                        .sendWithPromise("PasswordRequest", exJ)
                         .then(({ password }) => {
                         finishWorkerTask(task);
                         pdfManager.updatePassword(password);
@@ -292,14 +295,14 @@ export const WorkerMessageHandler = {
                     })
                         .catch(() => {
                         finishWorkerTask(task);
-                        handler.send("DocException", ex.toJ());
+                        handler.send("DocException", exJ);
                     });
                 }
-                else if (ex instanceof InvalidPDFException ||
-                    ex instanceof MissingPDFException ||
-                    ex instanceof UnexpectedResponseException ||
-                    ex instanceof UnknownErrorException) {
-                    handler.send("DocException", ex.toJ());
+                else if (ex.name === "InvalidPDFException" ||
+                    ex.name === "MissingPDFException" ||
+                    ex.name === "UnexpectedResponseException" ||
+                    ex.name === "UnknownErrorException") {
+                    handler.send("DocException", (ex instanceof BaseException) ? ex.toJ() : ex);
                 }
                 else {
                     handler.send("DocException", new UnknownErrorException(ex.message, ex.toString()).toJ());
@@ -375,9 +378,6 @@ export const WorkerMessageHandler = {
         handler.on("GetAttachments", () => {
             return pdfManager.ensureCatalog("attachments");
         });
-        handler.on("GetJavaScript", () => {
-            return pdfManager.ensureCatalog("javaScript");
-        });
         handler.on("GetDocJSActions", (data) => {
             return pdfManager.ensureCatalog("jsActions");
         });
@@ -435,6 +435,7 @@ export const WorkerMessageHandler = {
                 pdfManager.ensureCatalog("acroForm"),
                 pdfManager.ensureCatalog("acroFormRef"),
                 pdfManager.ensureDoc("startXRef"),
+                pdfManager.ensureDoc("linearization"),
             ];
             const newAnnotationsByPage = !isPureXfa
                 ? getNewAnnotationsMap(annotationStorage)
@@ -469,7 +470,7 @@ export const WorkerMessageHandler = {
                     }));
                 }
             }
-            return Promise.all(promises).then(([stream, acroForm, acroFormRef, startXRef,]) => Promise.all(promises_1).then((refs) => {
+            return Promise.all(promises).then(([stream, acroForm, acroFormRef, startXRef, linearization,]) => Promise.all(promises_1).then((refs) => {
                 let newRefs = [];
                 let xfaData;
                 if (isPureXfa) {
@@ -527,28 +528,27 @@ export const WorkerMessageHandler = {
                         info: infoObj,
                         fileIds: xref.trailer.get("ID") ||
                             undefined,
-                        startXRef: xref.lastXRefStreamPos ?? startXRef,
+                        startXRef: linearization
+                            ? startXRef
+                            : xref.lastXRefStreamPos ?? startXRef,
                         filename,
                     };
                 }
-                try {
-                    return incrementalUpdate({
-                        originalData: stream.bytes,
-                        xrefInfo: newXrefInfo,
-                        newRefs,
-                        xref,
-                        hasXfa: !!xfa,
-                        xfaDatasetsRef,
-                        hasXfaDatasetsEntry,
-                        needAppearances,
-                        acroFormRef,
-                        acroForm,
-                        xfaData,
-                    });
-                }
-                finally {
+                return incrementalUpdate({
+                    originalData: stream.bytes,
+                    xrefInfo: newXrefInfo,
+                    newRefs,
+                    xref,
+                    hasXfa: !!xfa,
+                    xfaDatasetsRef,
+                    hasXfaDatasetsEntry,
+                    needAppearances,
+                    acroFormRef,
+                    acroForm,
+                    xfaData,
+                }).finally(() => {
                     xref.resetNewTemporaryRef();
-                }
+                });
             }));
         });
         handler.on("GetOperatorList", (data, sink) => {

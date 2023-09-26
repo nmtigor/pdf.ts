@@ -69,7 +69,7 @@ export class Jbig2Stream extends ImageStream {
   override ensureBuffer(requested: number) {
     // No-op, since `this.readBlock` will always parse the entire image and
     // directly insert all of its data into `this.buffer`.
-    return <any> undefined;
+    return undefined as any;
   }
 }
 /*80--------------------------------------------------------------------------*/

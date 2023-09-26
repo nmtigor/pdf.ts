@@ -16,8 +16,8 @@
  * limitations under the License.
  */
 import { warn } from "../../shared/util.js";
-import { stripQuotes } from "./utils.js";
 import { $globalData } from "./symbol_utils.js";
+import { stripQuotes } from "./utils.js";
 export class FontFinder {
     fonts = new Map();
     cache = new Map();

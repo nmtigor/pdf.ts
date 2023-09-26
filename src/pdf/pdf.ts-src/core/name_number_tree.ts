@@ -54,7 +54,7 @@ abstract class NameOrNumberTree<T extends string | number> {
         continue;
       }
       if (obj.has("Kids")) {
-        const kids = <Ref[]> obj.get("Kids");
+        const kids = obj.get("Kids") as Ref[];
         if (!Array.isArray(kids)) {
           continue;
         }
@@ -73,8 +73,8 @@ abstract class NameOrNumberTree<T extends string | number> {
       }
       for (let i = 0, ii = entries.length; i < ii; i += 2) {
         map.set(
-          <T> xref.fetchIfRef(entries[i]),
-          <Dict> xref.fetchIfRef(entries[i + 1]),
+          xref.fetchIfRef(entries[i]) as T,
+          xref.fetchIfRef(entries[i + 1]) as Dict,
         );
       }
     }
@@ -83,10 +83,10 @@ abstract class NameOrNumberTree<T extends string | number> {
 
   get(key: number) {
     if (!this.root) {
-      return null;
+      return undefined;
     }
     const xref = this.xref;
-    let kidsOrEntries = <Dict> xref.fetchIfRef(this.root);
+    let kidsOrEntries = xref.fetchIfRef(this.root) as Dict;
     let loopCount = 0;
     const MAX_LEVELS = 10;
 
@@ -95,24 +95,24 @@ abstract class NameOrNumberTree<T extends string | number> {
     while (kidsOrEntries.has("Kids")) {
       if (++loopCount > MAX_LEVELS) {
         warn(`Search depth limit reached for "${this.#type}" tree.`);
-        return null;
+        return undefined;
       }
 
-      const kids = <Ref[]> kidsOrEntries.get("Kids");
+      const kids = kidsOrEntries.get("Kids") as Ref[];
       if (!Array.isArray(kids)) {
-        return null;
+        return undefined;
       }
 
       let l = 0;
       let r = kids.length - 1;
       while (l <= r) {
         const m = (l + r) >> 1;
-        const kid = <Dict> xref.fetchIfRef(kids[m]);
-        const limits = <[number | Ref, number | Ref]> kid.get("Limits");
+        const kid = xref.fetchIfRef(kids[m]) as Dict;
+        const limits = kid.get("Limits") as [number | Ref, number | Ref];
 
-        if (key < <number> xref.fetchIfRef(limits[0])) {
+        if (key < (xref.fetchIfRef(limits[0]) as number)) {
           r = m - 1;
-        } else if (key > <number> xref.fetchIfRef(limits[1])) {
+        } else if (key > (xref.fetchIfRef(limits[1]) as number)) {
           l = m + 1;
         } else {
           kidsOrEntries = kid;
@@ -120,7 +120,7 @@ abstract class NameOrNumberTree<T extends string | number> {
         }
       }
       if (l > r) {
-        return null;
+        return undefined;
       }
     }
 
@@ -146,7 +146,7 @@ abstract class NameOrNumberTree<T extends string | number> {
         }
       }
     }
-    return null;
+    return undefined;
   }
 }
 

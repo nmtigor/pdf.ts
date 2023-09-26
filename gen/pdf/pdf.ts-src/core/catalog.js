@@ -1,6 +1,7 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
+var _a;
 import { PageLayout, PageMode } from "../../pdf.ts-web/ui_utils.js";
 import { createValidAbsoluteUrl, DocumentActionEventType, FormatError, info, objectSize, PermissionFlag, shadow, stringToPDFString, stringToUTF8String, warn, } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
@@ -54,7 +55,7 @@ export class Catalog {
             }
             warn(`Invalid PDF catalog version: ${version.name}`);
         }
-        return shadow(this, "version", null);
+        return shadow(this, "version", undefined);
     }
     get lang() {
         const lang = this.#catDict.get("Lang");
@@ -69,7 +70,7 @@ export class Catalog {
         return shadow(this, "needsRendering", typeof needsRendering === "boolean" ? needsRendering : false);
     }
     get collection() {
-        let collection = null;
+        let collection;
         try {
             const obj = this.#catDict.get("Collection");
             if (obj instanceof Dict && obj.size > 0) {
@@ -235,7 +236,7 @@ export class Catalog {
                 throw new FormatError("Invalid outline item encountered.");
             }
             const data = {};
-            Catalog.parseDestDictionary({
+            _a.parseDestDictionary({
                 destDict: outlineDict,
                 resultObj: data,
                 docBaseUrl: this.pdfManager.docBaseUrl,
@@ -348,10 +349,10 @@ export class Catalog {
                     id: groupRef.toString(),
                     name: typeof (v = group.get("Name")) == "string"
                         ? stringToPDFString(v)
-                        : null,
+                        : undefined,
                     intent: typeof (v = group.get("Intent")) === "string"
                         ? stringToPDFString(v)
-                        : null,
+                        : undefined,
                 });
             }
             config = this.#readOptionalContentConfig(defaultConfig, groupRefs);
@@ -385,7 +386,7 @@ export class Catalog {
         }
         function parseOrder(refs, nestedLevels = 0) {
             if (!Array.isArray(refs)) {
-                return null;
+                return undefined;
             }
             const order = [];
             for (const value of refs) {
@@ -411,26 +412,26 @@ export class Catalog {
                 hiddenGroups.push(groupRef.toString());
             }
             if (hiddenGroups.length) {
-                order.push({ name: null, order: hiddenGroups });
+                order.push({ name: undefined, order: hiddenGroups });
             }
             return order;
         }
         function parseNestedOrder(ref, nestedLevels) {
             if (++nestedLevels > MAX_NESTED_LEVELS) {
                 warn("parseNestedOrder - reached MAX_NESTED_LEVELS.");
-                return null;
+                return undefined;
             }
             const value = xref.fetchIfRef(ref);
             if (!Array.isArray(value)) {
-                return null;
+                return undefined;
             }
             const nestedName = xref.fetchIfRef(value[0]);
             if (typeof nestedName !== "string") {
-                return null;
+                return undefined;
             }
             const nestedOrder = parseOrder(value.slice(1), nestedLevels);
             if (!nestedOrder || !nestedOrder.length) {
-                return null;
+                return undefined;
             }
             return { name: stringToPDFString(nestedName), order: nestedOrder };
         }
@@ -439,11 +440,13 @@ export class Catalog {
         return {
             name: typeof (v = config.get("Name")) === "string"
                 ? stringToPDFString(v)
-                : null,
+                : undefined,
             creator: typeof (v = config.get("Creator")) === "string"
                 ? stringToPDFString(v)
-                : null,
-            baseState: (v = config.get("BaseState")) instanceof Name ? v.name : null,
+                : undefined,
+            baseState: (v = config.get("BaseState")) instanceof Name
+                ? v.name
+                : undefined,
             on: parseOnOff(config.get("ON")),
             off: parseOnOff(config.get("OFF")),
             order: parseOrder(config.get("Order")),
@@ -806,7 +809,7 @@ export class Catalog {
             const destDict = new Dict(this.xref);
             destDict.set("A", obj);
             const resultObj = {};
-            Catalog.parseDestDictionary({ destDict, resultObj });
+            _a.parseDestDictionary({ destDict, resultObj });
             if (Array.isArray(resultObj.dest)) {
                 openAction.dest = resultObj.dest;
             }
@@ -836,7 +839,7 @@ export class Catalog {
     }
     get xfaImages() {
         const obj = this.#catDict.get("Names");
-        let xfaImages = null;
+        let xfaImages;
         if (obj instanceof Dict && obj.has("XFAImages")) {
             const nameTree = new NameTree(obj.getRaw("XFAImages"), this.xref);
             for (const [key, value] of nameTree.getAll()) {
@@ -866,7 +869,10 @@ export class Catalog {
                 return;
             }
             js = stringToPDFString(js).replaceAll("\x00", "");
-            (javaScript ||= new Map()).set(name, js);
+            // Skip empty entries, similar to the `_collectJS` function.
+            if (js) {
+                (javaScript ||= new Map()).set(name, js);
+            }
         }
         if (obj instanceof Dict && obj.has("JavaScript")) {
             const nameTree = new NameTree(obj.getRaw("JavaScript"), this.xref);
@@ -881,17 +887,11 @@ export class Catalog {
         }
         return javaScript;
     }
-    get javaScript() {
-        const javaScript = this.#collectJavaScript();
-        return shadow(this, "javaScript", javaScript ? [...javaScript.values()] : undefined);
-    }
     get jsActions() {
         const javaScript = this.#collectJavaScript();
         let actions = collectActions(this.xref, this.#catDict, DocumentActionEventType);
         if (javaScript) {
-            if (!actions) {
-                actions = Object.create(null);
-            }
+            actions ||= Object.create(null);
             for (const [key, val] of javaScript) {
                 if (key in actions) {
                     actions[key].push(val);
@@ -1154,7 +1154,7 @@ export class Catalog {
                     throw new FormatError("The reference does not point to a /Page dictionary.");
                 }
                 if (!node) {
-                    return null;
+                    return undefined;
                 }
                 if (!(node instanceof Dict)) {
                     throw new FormatError("Node must be a dictionary.");
@@ -1164,7 +1164,7 @@ export class Catalog {
             })
                 .then((parent) => {
                 if (!parent) {
-                    return null;
+                    return undefined;
                 }
                 if (!(parent instanceof Dict)) {
                     throw new FormatError("Parent must be a dictionary.");
@@ -1173,7 +1173,7 @@ export class Catalog {
             })
                 .then((kids) => {
                 if (!kids) {
-                    return null;
+                    return undefined;
                 }
                 const kidPromises = [];
                 let found = false;
@@ -1311,7 +1311,7 @@ export class Catalog {
                     if (urlDict instanceof Dict) {
                         // We assume that we found a FileSpec dictionary
                         // and fetch the URL without checking any further.
-                        url = urlDict.get("F") || null;
+                        url = urlDict.get("F") || undefined;
                     }
                     else if (typeof urlDict === "string") {
                         url = urlDict;
@@ -1443,5 +1443,6 @@ export class Catalog {
         }
     }
 }
+_a = Catalog;
 /*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=catalog.js.map

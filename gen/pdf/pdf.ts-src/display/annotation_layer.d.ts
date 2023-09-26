@@ -1,16 +1,17 @@
 import type { rect_t } from "../../../lib/alias.js";
 import type { rgb_t } from "../../../lib/color/alias.js";
-import { type HSElement } from "../../../lib/dom.js";
+import type { HSElement } from "../../../lib/dom.js";
 import type { IDownloadManager, IL10n, IPDFLinkService } from "../../pdf.ts-web/interfaces.js";
 import type { TextAccessibilityManager } from "../../pdf.ts-web/text_accessibility.js";
 import type { AnnotationData, FieldObject, RichText } from "../core/annotation.js";
 import type { BidiText } from "../core/bidi.js";
 import type { Ref } from "../pdf.js";
-import { ColorConvertersDetail } from "../shared/scripting_utils.js";
+import { type CSTag } from "../shared/scripting_utils.js";
 import { AnnotationEditorType } from "../shared/util.js";
 import { AnnotationStorage } from "./annotation_storage.js";
 import type { MetadataEx, PDFPageProxy } from "./api.js";
-import { DOMSVGFactory, type PageViewport } from "./display_utils.js";
+import type { PageViewport } from "./display_utils.js";
+import { DOMSVGFactory } from "./display_utils.js";
 type Parent_ = {
     page: PDFPageProxy;
     viewport: PageViewport;
@@ -38,6 +39,7 @@ type AnnotationElementCtorP_ = {
     parent: Parent_;
     elements: AnnotationElement[];
 };
+type ColorConvertersDetail_ = Record<string, [CSTag, ...number[]]>;
 export declare class AnnotationElement {
     #private;
     isRenderable: boolean;
@@ -54,8 +56,6 @@ export declare class AnnotationElement {
     _fieldObjects: Record<string, FieldObject[]> | undefined;
     parent: Parent_;
     container: HTMLElement;
-    firstQuadRect: rect_t | undefined;
-    quadrilaterals?: HTMLElement[] | undefined;
     popup?: PopupElement;
     annotationEditorType?: AnnotationEditorType;
     constructor(parameters: AnnotationElementCtorP_, { isRenderable, ignoreBorder, createQuadrilaterals, }?: {
@@ -70,16 +70,18 @@ export declare class AnnotationElement {
         hidden: (event: CustomEvent) => void;
         focus: (event: CustomEvent) => void;
         userName: (event: CustomEvent) => void;
-        readonly: (event: CustomEvent) => void;
+        readonly: (event: CustomEvent<{
+            readonly: boolean;
+        }>) => void;
         required: (event: CustomEvent<{
             required: boolean;
         }>) => void;
-        bgColor: (event: CustomEvent<ColorConvertersDetail>) => void;
-        fillColor: (event: CustomEvent<ColorConvertersDetail>) => void;
-        fgColor: (event: CustomEvent<ColorConvertersDetail>) => void;
-        textColor: (event: CustomEvent<ColorConvertersDetail>) => void;
-        borderColor: (event: CustomEvent<ColorConvertersDetail>) => void;
-        strokeColor: (event: CustomEvent<ColorConvertersDetail>) => void;
+        bgColor: (event: CustomEvent<ColorConvertersDetail_>) => void;
+        fillColor: (event: CustomEvent<ColorConvertersDetail_>) => void;
+        fgColor: (event: CustomEvent<ColorConvertersDetail_>) => void;
+        textColor: (event: CustomEvent<ColorConvertersDetail_>) => void;
+        borderColor: (event: CustomEvent<ColorConvertersDetail_>) => void;
+        strokeColor: (event: CustomEvent<ColorConvertersDetail_>) => void;
         rotation: (event: CustomEvent<{
             rotation: number;
         }>) => void;
@@ -93,12 +95,8 @@ export declare class AnnotationElement {
      */
     protected _createPopup(): void;
     /**
-     * Render the quadrilaterals of the annotation.
-     * @return An array of section elements.
-     */
-    protected _renderQuadrilaterals(className: string): HTMLElement[];
-    /**
      * Render the annotation's HTML element(s).
+     *
      * @return A section element or an array of section elements.
      */
     render(): HTMLElement | HTMLElement[] | undefined;
@@ -114,8 +112,14 @@ export declare class AnnotationElement {
     _setRequired(lement: HTMLElement, isRequired: boolean): void;
     show(): void;
     hide(): void;
-    getElementsToTriggerPopup(): HSElement | HSElement[];
+    /**
+     * Get the HTML element(s) which can trigger a popup when clicked or hovered.
+     *
+     * @return An array of elements or an element.
+     */
+    getElementsToTriggerPopup(): HSElement[] | HSElement;
     addHighlightArea(): void;
+    protected editOnDoubleClick$(): void;
 }
 export interface ResetForm {
     fields: string[];
@@ -165,6 +169,7 @@ declare class PopupElement {
 }
 export declare class FreeTextAnnotationElement extends AnnotationElement {
     textContent: string[] | undefined;
+    textPosition: import("@fe-src/lib/alias.js").dot2d_t | undefined;
     constructor(parameters: AnnotationElementCtorP_);
     render(): HTMLElement;
 }
@@ -180,6 +185,10 @@ export declare class InkAnnotationElement extends AnnotationElement {
     render(): HTMLElement;
     getElementsToTriggerPopup(): SVGPolylineElement[];
     addHighlightArea(): void;
+}
+export declare class StampAnnotationElement extends AnnotationElement {
+    constructor(parameters: AnnotationElementCtorP_);
+    render(): HTMLElement;
 }
 export declare class FileAttachmentAnnotationElement extends AnnotationElement {
     #private;
@@ -222,7 +231,7 @@ export interface AnnotStorageValue {
     annotationType?: AnnotationEditorType;
     annotationEditorType?: AnnotationEditorType;
     bitmap?: ImageBitmap;
-    bitmapId?: string;
+    bitmapId?: string | undefined;
     charLimit?: number | undefined;
     color?: Uint8ClampedArray | rgb_t;
     deleted?: boolean;
@@ -231,6 +240,8 @@ export interface AnnotStorageValue {
     hidden?: boolean;
     id?: string | undefined;
     items?: Item[];
+    noPrint?: unknown;
+    noView?: unknown;
     opacity?: number;
     pageIndex?: number;
     paths?: {
@@ -254,7 +265,7 @@ export type AnnotStorageRecord = Map<string, AnnotStorageValue>;
 export declare class AnnotationLayer {
     #private;
     div: HTMLDivElement;
-    l10n: IL10n;
+    l10n: IL10n | undefined;
     page: PDFPageProxy;
     viewport: PageViewport;
     zIndex: number;

@@ -164,10 +164,10 @@ export class SecondaryToolbar {
     }
     #bindClickListeners() {
         // Button to toggle the visibility of the secondary toolbar.
-        this.toggleButton.addEventListener("click", this.toggle.bind(this));
+        this.toggleButton.on("click", this.toggle.bind(this));
         // All items within the secondary toolbar.
         for (const { element, eventName, close, eventDetails } of this.buttons) {
-            element.addEventListener("click", (evt) => {
+            element.on("click", (evt) => {
                 if (eventName !== undefined) {
                     this.eventBus.dispatch(eventName, { source: this, ...eventDetails });
                 }

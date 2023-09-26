@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { assert } from "../../../lib/util/trace.js";
+import { fail } from "../../../lib/util/trace.js";
 import { BaseStream } from "./base_stream.js";
 import { Stream } from "./stream.js";
 /*80--------------------------------------------------------------------------*/
@@ -34,8 +34,7 @@ export class DecodeStream extends BaseStream {
     eof = false;
     /** @implement */
     get length() {
-        assert(0, "Abstract getter `length` accessed");
-        return undefined;
+        return fail("Abstract getter `length` accessed");
     }
     /**
      * @implement
@@ -119,12 +118,11 @@ export class DecodeStream extends BaseStream {
     }
     /** @implement */
     getByteRange(begin, end) {
-        assert(0, "Abstract method `getByteRange` called");
-        return undefined;
+        return fail("Abstract method `getByteRange` called");
     }
     /** @implement */
     moveStart() {
-        assert(0, "Abstract method `moveStart` called");
+        fail("Abstract method `moveStart` called");
     }
     /**
      * @implement

@@ -1,4 +1,4 @@
-import { type FontProps } from "./evaluator.js";
+import type { FontProps } from "./evaluator.js";
 import { Stream } from "./stream.js";
 declare namespace NsType1Parser {
     export interface PrivateData {
@@ -51,7 +51,7 @@ declare namespace NsType1Parser {
         readBoolean(): 0 | 1;
         nextChar(): number;
         prevChar(): number;
-        getToken(): string | null;
+        getToken(): string | undefined;
         readCharStrings(bytes: Uint8Array | Uint8ClampedArray, lenIV: number): Uint8Array | Uint8ClampedArray;
         extractFontProgram(properties: FontProps): FontProgram;
         extractFontHeader(properties: FontProps): void;

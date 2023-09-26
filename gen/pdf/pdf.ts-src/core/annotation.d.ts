@@ -1,4 +1,4 @@
-import type { point_t, rect_t, TupleOf } from "../../../lib/alias.js";
+import type { dot2d_t, rect_t, TupleOf } from "../../../lib/alias.js";
 import type { AnnotStorageRecord, AnnotStorageValue } from "../display/annotation_layer.js";
 import type { DocWrapped, FieldWrapped } from "../scripting_api/app.js";
 import type { CorrectColor } from "../scripting_api/color.js";
@@ -7,16 +7,16 @@ import { AnnotationBorderStyleType, AnnotationFieldFlag, AnnotationFlag, Annotat
 import { BaseStream } from "./base_stream.js";
 import { type BidiText } from "./bidi.js";
 import type { Attachments, CatParseDestDictRes } from "./catalog.js";
-import { type AnnotActions } from "./core_utils.js";
+import type { AnnotActions } from "./core_utils.js";
 import type { DatasetReader } from "./dataset_reader.js";
-import { type DefaultAppearanceData } from "./default_appearance.js";
+import type { DefaultAppearanceData } from "./default_appearance.js";
 import type { LocalIdFactory } from "./document.js";
 import { PartialEvaluator } from "./evaluator.js";
 import { type Attachment } from "./file_spec.js";
 import type { ErrorFont, Font, Glyph } from "./fonts.js";
 import { JpegStream } from "./jpeg_stream.js";
 import { OperatorList } from "./operator_list.js";
-import type { BasePdfManager } from "./pdf_manager.js";
+import type { BasePdfManager, EvaluatorOptions } from "./pdf_manager.js";
 import { Dict, Name, Ref } from "./primitives.js";
 import { Stream, StringStream } from "./stream.js";
 import type { WorkerTask } from "./worker.js";
@@ -31,8 +31,9 @@ type CreateNewAnnotationP_ = {
     evaluator?: PartialEvaluator;
     task?: WorkerTask;
     baseFontRef?: Ref;
-    isOffscreenCanvasSupported?: boolean | undefined;
-} & Partial<AnnotImage>;
+    evaluatorOptions?: EvaluatorOptions;
+    image?: AnnotImage | undefined;
+};
 export declare class AnnotationFactory {
     #private;
     /**
@@ -61,7 +62,7 @@ export declare class AnnotationFactory {
     static printNewAnnotations(evaluator: PartialEvaluator, task: WorkerTask, annotations: AnnotStorageValue[], imagePromises: Map<string, Promise<AnnotImage>> | undefined): Promise<MarkupAnnotation[] | undefined>;
 }
 export declare function getQuadPoints(dict: Dict, rect?: rect_t): TupleOf<AnnotPoint, 4>[] | null;
-interface _AnnotationCtorP {
+interface AnnotationCtorP_ {
     xref: XRef;
     ref: Ref;
     dict: Dict;
@@ -74,7 +75,7 @@ interface _AnnotationCtorP {
     collectFields: boolean;
     needAppearances: boolean;
     pageIndex: number;
-    isOffscreenCanvasSupported: boolean;
+    evaluatorOptions: EvaluatorOptions;
 }
 export interface RichText {
     str: string | undefined;
@@ -147,10 +148,12 @@ export type AnnotationData = {
     ];
     inkLists?: AnnotPoint[][];
     file?: Attachment;
+    fillAlpha?: number | undefined;
     parentType?: string | undefined;
     parentId?: string | undefined;
     parentRect?: rect_t | undefined;
     open?: boolean | undefined;
+    textPosition?: dot2d_t;
     textContent?: string[];
 } & CatParseDestDictRes;
 /**
@@ -208,7 +211,7 @@ export declare class Annotation {
     ref: Ref | undefined;
     _streams: BaseStream[];
     data: AnnotationData;
-    _isOffscreenCanvasSupported: boolean;
+    _isOffscreenCanvasSupported: boolean | undefined;
     _fallbackFontDict?: Dict;
     _needAppearances: boolean;
     flags: AnnotationFlag;
@@ -235,8 +238,10 @@ export declare class Annotation {
      * through JS.
      *
      * @param annotationStorage Storage for annotation
+     * @param _renderForms if true widgets are rendered thanks to
+     *    the annotation layer.
      */
-    mustBeViewed(annotationStorage?: AnnotStorageRecord): boolean;
+    mustBeViewed(annotationStorage?: AnnotStorageRecord, _renderForms?: boolean): boolean;
     get printable(): boolean;
     /**
      * Check if the annotation must be printed by taking into account
@@ -289,8 +294,8 @@ export declare class Annotation {
     oc: Dict | undefined;
     rotation: number;
     _defaultAppearance: string;
-    constructor(params: _AnnotationCtorP);
-    setDefaultAppearance(params: _AnnotationCtorP): void;
+    constructor(params: AnnotationCtorP_);
+    setDefaultAppearance(params: AnnotationCtorP_): void;
     /**
      * Set the border style (as AnnotationBorderStyle object).
      *
@@ -310,7 +315,7 @@ export declare class Annotation {
      * @param lineEndings The line endings array.
      */
     setLineEndings(lineEndings: [LineEnding_, LineEnding_]): void;
-    setRotation(mk: Dict | undefined): void;
+    setRotation(mk: Dict | undefined, dict: Dict): void;
     /**
      * Set the color for background and border if any.
      * The default values are transparent.
@@ -405,7 +410,7 @@ export interface AnnotPoint {
     y: number;
 }
 type AColor = TupleOf<number, 0 | 1 | 3 | 4>;
-interface _SetDefaultAppearanceP {
+interface SetDefaultAppearanceP_ {
     xref: XRef;
     extra?: string;
     strokeColor?: AColor;
@@ -432,11 +437,11 @@ export declare class MarkupAnnotation extends Annotation {
      */
     setCreationDate(creationDate: unknown): void;
     refToReplace?: Ref;
-    constructor(params: _AnnotationCtorP);
+    constructor(params: AnnotationCtorP_);
     static createNewDict(annotation: AnnotStorageValue, xref: XRef, _: CreateNewDictP_): Dict;
     static createNewAppearanceStream(annotation: AnnotStorageValue, xref: XRef, params?: CreateNewAnnotationP_): Promise<StringStream | undefined>;
     /** @final */
-    protected setDefaultAppearance$({ xref, extra, strokeColor, fillColor, blendMode, strokeAlpha, fillAlpha, pointsCallback, }: _SetDefaultAppearanceP): void;
+    protected setDefaultAppearance$({ xref, extra, strokeColor, fillColor, blendMode, strokeAlpha, fillAlpha, pointsCallback, }: SetDefaultAppearanceP_): void;
     static createNewAnnotation(xref: XRef, annotation: AnnotStorageValue, dependencies: Dependency_[], params?: CreateNewAnnotationP_): Promise<{
         ref: Ref;
         data: string;
@@ -452,13 +457,13 @@ interface FieldResources {
 interface CachedLines {
     line: string;
     glyphs: Glyph[];
-    positions: point_t[];
+    positions: dot2d_t[];
 }
 export declare class WidgetAnnotation extends Annotation {
     _hasValueFromXFA?: boolean;
     _fieldResources: FieldResources;
     protected _hasText?: boolean;
-    constructor(params: _AnnotationCtorP);
+    constructor(params: AnnotationCtorP_);
     /**
      * Decode the given form value.
      *
@@ -472,6 +477,10 @@ export declare class WidgetAnnotation extends Annotation {
      * @see {@link shared/util.js}
      */
     hasFieldFlag(flag: AnnotationFieldFlag): boolean;
+    /** @inheritdoc */
+    _isViewable(flags: AnnotationFlag): boolean;
+    /** @inheritdoc */
+    mustBeViewed(annotationStorage?: AnnotStorageRecord, renderForms?: boolean): boolean;
     getRotationMatrix(annotationStorage: AnnotStorageRecord | undefined): number[];
     getBorderAndBackgroundAppearances(annotationStorage: AnnotStorageRecord | undefined): string;
     getOperatorList(evaluator: PartialEvaluator, task: WorkerTask, intent: RenderingIntentFlag, renderForms?: boolean, annotationStorage?: AnnotStorageRecord): Promise<{
@@ -479,7 +488,7 @@ export declare class WidgetAnnotation extends Annotation {
         separateForm: boolean;
         separateCanvas: boolean;
     }>;
-    _getMKDict(rotation: number): Dict | null;
+    _getMKDict(rotation: number): Dict | undefined;
     amendSavedDict(annotationStorage: AnnotStorageRecord | undefined, dict: Dict): void;
     save(evaluator: PartialEvaluator, task: WorkerTask, annotationStorage?: AnnotStorageRecord): Promise<SaveReturn | undefined>;
     _getCombAppearance(defaultAppearance: string, font: Font | ErrorFont, text: string, fontSize: number, width: number, height: number, hPadding: number, vPadding: number, descent: number, lineHeight: number, annotationStorage: AnnotStorageRecord | undefined): string;
@@ -502,7 +511,7 @@ export declare class WidgetAnnotation extends Annotation {
     getFieldObject(): FieldObject | undefined;
 }
 export declare class PopupAnnotation extends Annotation {
-    constructor(params: _AnnotationCtorP);
+    constructor(params: AnnotationCtorP_);
 }
 export type AnnotImage = {
     imageStream: Stream | undefined;

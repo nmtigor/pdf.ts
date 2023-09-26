@@ -24,7 +24,7 @@ declare class StructElementNode {
     constructor(tree: StructTreePage, dict: Dict);
     get role(): string;
     parseKids(): void;
-    parseKid(pageObjId: string | undefined, kid: number | Ref | Dict): StructElement | null;
+    parseKid(pageObjId: string | undefined, kid: number | Ref | Dict): StructElement | undefined;
 }
 interface _StructElementCtorP {
     type: StructElementType;

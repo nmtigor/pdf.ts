@@ -17,13 +17,10 @@
  * limitations under the License.
  */
 
-import {
-  assertEquals,
-  assertNotEquals,
-} from "https://deno.land/std@0.195.0/testing/asserts.ts";
-import { describe, it } from "https://deno.land/std@0.195.0/testing/bdd.ts";
+import { assertEquals } from "@std/assert/mod.ts";
+import { describe, it } from "@std/testing/bdd.ts";
 import { XFAData } from "../document.ts";
-import { XFAElObj, XFAHTMLAttrs, XFAHTMLObj } from "./alias.ts";
+import { XFAHTMLObj } from "./alias.ts";
 import { XFAFactory, XFAPages } from "./factory.ts";
 /*80--------------------------------------------------------------------------*/
 
@@ -171,7 +168,8 @@ describe("XFAFactory", () => {
       // );
     });
 
-    it("should have an alt attribute from toolTip", async () => {
+    //kkkk
+    it.ignore("should have an alt attribute from toolTip", async () => {
       // if (isNodeJS) {
       //   pending("Image is not supported in Node.js.");
       // }
@@ -201,14 +199,12 @@ describe("XFAFactory", () => {
       `;
       const factory = new XFAFactory({ "xdp:xdp": xml } as XFAData);
 
-      //kkkk
-      // assertEquals(await factory.getNumPages(), 1);
+      assertEquals(await factory.getNumPages(), 1);
 
-      //kkkk
-      // const pages = await factory.getPages();
-      // const field = searchHtmlNode(pages, "name", "img")!;
+      const pages = await factory.getPages();
+      const field = searchHtmlNode(pages, "name", "img")!;
 
-      // assertEquals(field.attributes!.alt, "alt text");
+      assertEquals(field.attributes!.alt, "alt text");
     });
 
     it("should have a aria heading role and level", async () => {

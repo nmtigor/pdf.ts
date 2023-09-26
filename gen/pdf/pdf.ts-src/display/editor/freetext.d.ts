@@ -1,11 +1,11 @@
+import type { dot2d_t } from "../../../../lib/alias.js";
 import type { IL10n } from "../../../pdf.ts-web/interfaces.js";
 import { AnnotationEditorParamsType } from "../../shared/util.js";
-import { type AnnotStorageValue } from "../annotation_layer.js";
+import type { AnnotStorageValue } from "../annotation_layer.js";
 import type { AnnotationEditorLayer } from "./annotation_editor_layer.js";
 import type { AnnotationEditorP, PropertyToUpdate } from "./editor.js";
 import { AnnotationEditor } from "./editor.js";
-import type { AnnotationEditorUIManager } from "./tools.js";
-import { KeyboardManager } from "./tools.js";
+import { AnnotationEditorUIManager, KeyboardManager } from "./tools.js";
 export interface FreeTextEditorP extends AnnotationEditorP {
     name: "freeTextEditor";
     color?: string;
@@ -13,6 +13,7 @@ export interface FreeTextEditorP extends AnnotationEditorP {
 }
 export interface FreeTextEditorSerialized extends AnnotStorageValue {
     fontSize: number;
+    position: dot2d_t;
     value: string;
 }
 /**
@@ -20,24 +21,34 @@ export interface FreeTextEditorSerialized extends AnnotStorageValue {
  */
 export declare class FreeTextEditor extends AnnotationEditor {
     #private;
+    overlayDiv: HTMLDivElement;
+    editorDiv: HTMLDivElement;
     static _freeTextDefaultContent: string;
     static _l10nPromise: Map<string, Promise<string>>;
     static _internalPadding: number;
     static _defaultColor: string | undefined;
     static _defaultFontSize: number;
-    static get _keyboardManager(): KeyboardManager;
+    static get _keyboardManager(): KeyboardManager<FreeTextEditor>;
     static readonly _type = "freetext";
-    overlayDiv: HTMLDivElement;
-    editorDiv: HTMLDivElement;
     constructor(params: FreeTextEditorP);
+    /** @inheritdoc */
     static initialize(l10n: IL10n): void;
-    static updateDefaultParams(type: AnnotationEditorParamsType, value: number | string): void;
+    /** @inheritdoc */
+    static updateDefaultParams(type: AnnotationEditorParamsType, value: number | string | undefined): void;
     /** @inheritdoc */
     updateParams(type: AnnotationEditorParamsType, value: number | string): void;
-    static get defaultPropertiesToUpdate(): PropertyToUpdate[];
-    get propertiesToUpdate(): PropertyToUpdate[];
     /** @inheritdoc */
-    getInitialTranslation(): number[];
+    static get defaultPropertiesToUpdate(): PropertyToUpdate[];
+    /** @inheritdoc */
+    get propertiesToUpdate(): PropertyToUpdate[];
+    /**
+     * Helper to translate the editor with the keyboard when it's empty.
+     * @param x in page units.
+     * @param y in page units.
+     */
+    _translateEmpty(x?: number, y?: number): void;
+    /** @inheritdoc */
+    getInitialTranslation(): dot2d_t;
     /** @inheritdoc */
     rebuild(): void;
     /** @inheritdoc */
@@ -58,6 +69,8 @@ export declare class FreeTextEditor extends AnnotationEditor {
     commit(): void;
     /** @inheritdoc */
     shouldGetKeyboardEvents(): boolean;
+    /** @inheritdoc */
+    enterInEditMode(): void;
     /**
      * ondblclick callback.
      */

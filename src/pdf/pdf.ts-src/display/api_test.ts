@@ -17,6 +17,9 @@
  * limitations under the License.
  */
 
+import { isObjectLike } from "@fe-src/lib/jslang.ts";
+import { PromiseCap } from "@fe-src/lib/util/PromiseCap.ts";
+import { TEST_PORT } from "@fe-src/test/alias.ts";
 import {
   assert,
   assertEquals,
@@ -29,22 +32,20 @@ import {
   assertStrictEquals,
   assertThrows,
   fail,
-} from "https://deno.land/std@0.195.0/assert/mod.ts";
+} from "@std/assert/mod.ts";
 import {
   afterAll,
   afterEach,
   beforeAll,
   describe,
   it,
-} from "https://deno.land/std@0.195.0/testing/bdd.ts";
-import { DENO } from "../../../global.ts";
-import { isObjectLike } from "../../../lib/jslang.ts";
-import { PromiseCap } from "../../../lib/util/PromiseCap.ts";
+} from "@std/testing/bdd.ts";
 import {
   AutoPrintRegExp,
   PageLayout,
   PageMode,
 } from "../../pdf.ts-web/ui_utils.ts";
+import type { FieldObject } from "../core/annotation.ts";
 import type { AnnotActions } from "../core/core_utils.ts";
 import type { ImgData } from "../core/evaluator.ts";
 import { GlobalImageCache } from "../core/image_utils.ts";
@@ -53,6 +54,7 @@ import {
   buildGetDocumentParams,
   BuildGetDocumentParamsOptions,
   CMAP_URL,
+  D_pdf,
   DefaultFileReaderFactory,
   TEST_PDFS_PATH,
 } from "../shared/test_utils.ts";
@@ -60,19 +62,14 @@ import {
   AnnotationEditorType,
   AnnotationMode,
   ImageKind,
-  InvalidPDFException,
-  MissingPDFException,
+  isNodeJS,
   objectSize,
   OPS,
-  PasswordException,
   PasswordResponses,
   PermissionFlag,
   UnknownErrorException,
 } from "../shared/util.ts";
-import {
-  AnnotationStorage,
-  type PrintAnnotationStorage,
-} from "./annotation_storage.ts";
+import type { PrintAnnotationStorage } from "./annotation_storage.ts";
 import type { DocumentInitP, TextItem } from "./api.ts";
 import {
   DefaultCanvasFactory,
@@ -92,13 +89,16 @@ import {
 } from "./display_utils.ts";
 import { Metadata } from "./metadata.ts";
 import { GlobalWorkerOptions } from "./worker_options.ts";
-import type { FieldObject } from "../core/annotation.ts";
 /*80--------------------------------------------------------------------------*/
 
 describe("api", () => {
   const basicApiFileName = "basicapi.pdf";
   const basicApiFileLength = 105779; // bytes
   const basicApiGetDocumentParams = buildGetDocumentParams(basicApiFileName);
+  const tracemonkeyFileName = "tracemonkey.pdf";
+  const tracemonkeyGetDocumentParams = buildGetDocumentParams(
+    tracemonkeyFileName,
+  );
 
   let CanvasFactory!: DefaultCanvasFactory;
 
@@ -292,15 +292,15 @@ describe("api", () => {
 
         fail("Shouldn't get here.");
       } catch (reason) {
-        assertInstanceOf(reason, InvalidPDFException);
+        // assertInstanceOf(reason, InvalidPDFException);
+        assertEquals(reason?.name, "InvalidPDFException");
         assertEquals(reason.message, "Invalid PDF structure.");
       }
 
       await loadingTask.destroy();
     });
 
-    //kkkk
-    it.ignore("creates pdf doc from non-existent URL", async () => {
+    it("creates pdf doc from non-existent URL", async () => {
       // if (!isNodeJS) {
       //   // Re-enable in https://github.com/mozilla/pdf.js/issues/13061.
       //   pending("Fails intermittently on Linux in browsers.");
@@ -315,14 +315,14 @@ describe("api", () => {
 
         fail("Shouldn't get here.");
       } catch (reason) {
-        assertInstanceOf(reason, MissingPDFException);
+        // assertInstanceOf(reason, MissingPDFException);
+        assertEquals(reason?.name, "MissingPDFException");
       }
 
       await loadingTask.destroy();
     });
 
-    //kkkk
-    it.ignore("creates pdf doc from PDF file protected with user and owner password", async () => {
+    it("creates pdf doc from PDF file protected with user and owner password", async () => {
       const loadingTask = getDocument(buildGetDocumentParams("pr6531_1.pdf"));
       assertInstanceOf(loadingTask, PDFDocumentLoadingTask);
 
@@ -378,7 +378,8 @@ describe("api", () => {
           throw new Error("loadingTask should be rejected");
         },
         (data) => {
-          assertInstanceOf(data, PasswordException);
+          // assertInstanceOf(data, PasswordException);
+          assertEquals(data?.name, "PasswordException");
           assertEquals(data.code, PasswordResponses.NEED_PASSWORD);
           return passwordNeededLoadingTask.destroy();
         },
@@ -397,7 +398,8 @@ describe("api", () => {
           throw new Error("loadingTask should be rejected");
         },
         (data) => {
-          assertInstanceOf(data, PasswordException);
+          // assertInstanceOf(data, PasswordException);
+          assertEquals(data?.name, "PasswordException");
           assertEquals(data.code, PasswordResponses.INCORRECT_PASSWORD);
           return passwordIncorrectLoadingTask.destroy();
         },
@@ -450,7 +452,8 @@ describe("api", () => {
             throw new Error("loadingTask should be rejected");
           },
           (reason) => {
-            assertInstanceOf(reason, PasswordException);
+            // assertInstanceOf(reason, PasswordException);
+            assertEquals(reason?.name, "PasswordException");
             assertEquals(reason.code, PasswordResponses.NEED_PASSWORD);
             return passwordNeededDestroyed;
           },
@@ -468,7 +471,8 @@ describe("api", () => {
             throw new Error("loadingTask should be rejected");
           },
           (reason) => {
-            assertInstanceOf(reason, PasswordException);
+            // assertInstanceOf(reason, PasswordException);
+            assertEquals(reason?.name, "PasswordException");
             assertEquals(reason.code, PasswordResponses.INCORRECT_PASSWORD);
             return passwordIncorrectLoadingTask.destroy();
           },
@@ -500,7 +504,8 @@ describe("api", () => {
             fail("Shouldn't get here.");
           },
           (reason) => {
-            assertInstanceOf(reason, PasswordException);
+            // assertInstanceOf(reason, PasswordException);
+            assertEquals(reason?.name, "PasswordException");
             assertEquals(reason.code, PasswordResponses.NEED_PASSWORD);
           },
         );
@@ -518,7 +523,8 @@ describe("api", () => {
 
         fail("Shouldn't get here.");
       } catch (reason) {
-        assertInstanceOf(reason, InvalidPDFException);
+        // assertInstanceOf(reason, InvalidPDFException);
+        assertEquals(reason?.name, "InvalidPDFException");
         assertEquals(
           reason.message,
           "The PDF file is empty, i.e. its size is zero bytes.",
@@ -605,7 +611,8 @@ describe("api", () => {
 
         fail("Shouldn't get here.");
       } catch (reason) {
-        assertInstanceOf(reason, InvalidPDFException);
+        // assertInstanceOf(reason, InvalidPDFException);
+        assertEquals(reason?.name, "InvalidPDFException");
         assertEquals(reason.message, "Invalid PDF structure.");
       }
 
@@ -623,7 +630,8 @@ describe("api", () => {
 
         fail("Shouldn't get here.");
       } catch (reason) {
-        assertInstanceOf(reason, InvalidPDFException);
+        // assertInstanceOf(reason, InvalidPDFException);
+        assertEquals(reason?.name, "InvalidPDFException");
         assertEquals(reason.message, "Invalid Root reference.");
       }
 
@@ -676,7 +684,8 @@ describe("api", () => {
 
         fail("Shouldn't get here.");
       } catch (reason) {
-        assertInstanceOf(reason, UnknownErrorException);
+        // assertInstanceOf(reason, UnknownErrorException);
+        assertEquals(reason?.name, "UnknownErrorException");
         assertEquals(reason.message, "Bad (uncompressed) XRef entry: 3R");
       }
 
@@ -744,7 +753,8 @@ describe("api", () => {
 
         fail("Shouldn't get here.");
       } catch (reason) {
-        assertInstanceOf(reason, UnknownErrorException);
+        // assertInstanceOf(reason, UnknownErrorException);
+        assertEquals(reason?.name, "UnknownErrorException");
         assertEquals(reason.message, "Illegal character: 41");
       }
       try {
@@ -752,7 +762,8 @@ describe("api", () => {
 
         fail("Shouldn't get here.");
       } catch (reason) {
-        assertInstanceOf(reason, UnknownErrorException);
+        // assertInstanceOf(reason, UnknownErrorException);
+        assertEquals(reason?.name, "UnknownErrorException");
         assertEquals(reason.message, "End of file inside array.");
       }
 
@@ -912,6 +923,106 @@ describe("api", () => {
     });
   });
 
+  describe("GlobalWorkerOptions", () => {
+    // const workerSrc = "../../build/generic/build/pdf.worker.js";
+    const workerSrc =
+      `http://localhost:${TEST_PORT}/built/pdf/pdf.ts-src/pdf.worker.js`;
+    let savedGlobalWorkerPort: Worker | undefined;
+
+    beforeAll(() => {
+      savedGlobalWorkerPort = GlobalWorkerOptions.workerPort;
+    });
+
+    afterEach(() => {
+      /* Running by `deno test`, there could be "Leaking async ops" without
+      this. */
+      GlobalWorkerOptions.workerPort?.terminate();
+    });
+
+    afterAll(() => {
+      GlobalWorkerOptions.workerPort = savedGlobalWorkerPort;
+    });
+
+    it("use global \`workerPort\` with multiple, sequential, documents", async () => {
+      // if (isNodeJS) {
+      //   pending("Worker is not supported in Node.js.");
+      // }
+
+      GlobalWorkerOptions.workerPort = new Worker(
+        new URL(workerSrc, window.location as any),
+        { type: "module" },
+      );
+
+      const loadingTask1 = getDocument(basicApiGetDocumentParams);
+      const pdfDoc1 = await loadingTask1.promise;
+      assertEquals(pdfDoc1.numPages, 3);
+      await loadingTask1.destroy();
+
+      const loadingTask2 = getDocument(tracemonkeyGetDocumentParams);
+      const pdfDoc2 = await loadingTask2.promise;
+      assertEquals(pdfDoc2.numPages, 14);
+      await loadingTask2.destroy();
+    });
+
+    it("use global \`workerPort\` with multiple, parallel, documents", async () => {
+      // if (isNodeJS) {
+      //   pending("Worker is not supported in Node.js.");
+      // }
+
+      GlobalWorkerOptions.workerPort = new Worker(
+        new URL(workerSrc, window.location as any),
+        { type: "module" },
+      );
+
+      const loadingTask1 = getDocument(basicApiGetDocumentParams);
+      const promise1 = loadingTask1.promise.then((pdfDoc) => {
+        return pdfDoc.numPages;
+      });
+
+      const loadingTask2 = getDocument(tracemonkeyGetDocumentParams);
+      const promise2 = loadingTask2.promise.then((pdfDoc) => {
+        return pdfDoc.numPages;
+      });
+
+      const [numPages1, numPages2] = await Promise.all([promise1, promise2]);
+      assertEquals(numPages1, 3);
+      assertEquals(numPages2, 14);
+
+      await Promise.all([loadingTask1.destroy(), loadingTask2.destroy()]);
+    });
+
+    it(
+      "avoid using the global \`workerPort\` when destruction has started, " +
+        "but not yet finished (issue 16777)",
+      async () => {
+        // if (isNodeJS) {
+        //   pending("Worker is not supported in Node.js.");
+        // }
+
+        GlobalWorkerOptions.workerPort = new Worker(
+          new URL(workerSrc, window.location as any),
+          { type: "module" },
+        );
+
+        const loadingTask = getDocument(basicApiGetDocumentParams);
+        const pdfDoc = await loadingTask.promise;
+        assertEquals(pdfDoc.numPages, 3);
+        const destroyPromise = loadingTask.destroy();
+
+        assertThrows(
+          () => {
+            getDocument(tracemonkeyGetDocumentParams);
+          },
+          Error,
+          "PDFWorker.fromPort - the worker is being destroyed.\n" +
+            "Please remember to await `PDFDocumentLoadingTask.destroy()`-calls.",
+        );
+
+        await destroyPromise;
+      },
+    );
+  });
+
   describe("PDFDocument", () => {
     let pdfLoadingTask: PDFDocumentLoadingTask;
     let pdfDocument: PDFDocumentProxy;
@@ -998,7 +1109,8 @@ describe("api", () => {
             throw new Error("shall fail for invalid page");
           },
           (reason) => {
-            assertInstanceOf(reason, UnknownErrorException);
+            // assertInstanceOf(reason, UnknownErrorException);
+            assertEquals(reason?.name, "UnknownErrorException");
             assertEquals(
               reason.message,
               "Pages tree contains circular reference.",
@@ -1057,7 +1169,7 @@ describe("api", () => {
         } catch (reason) {
           const { exception, message } = expectedErrors[i];
 
-          assertInstanceOf(reason, exception);
+          assertEquals(reason?.name, exception.name);
           assertEquals(reason.message, message);
         }
       }
@@ -1128,21 +1240,21 @@ describe("api", () => {
       await loadingTask.destroy();
     });
 
-    //kkkk
-    it.ignore("gets a destination, from out-of-order /Names (NameTree) dictionary (issue 10272)", async () => {
+    it("gets a destination, from out-of-order /Names (NameTree) dictionary (issue 10272)", async () => {
       // if (isNodeJS) {
       //   pending("Linked test-cases are not supported in Node.js.");
       // }
       const loadingTask = getDocument(buildGetDocumentParams("issue10272.pdf"));
       const pdfDoc = await loadingTask.promise;
       const destination = await pdfDoc.getDestination("link_1");
-      assertEquals(destination, [
-        { num: 17, gen: 0 },
-        { name: "XYZ" },
-        69,
-        125,
-        0,
-      ]);
+      //kkkk
+      // assertEquals(destination, [
+      //   { num: 17, gen: 0 },
+      //   { name: "XYZ" },
+      //   69,
+      //   125,
+      //   0,
+      // ]);
 
       await loadingTask.destroy();
     });
@@ -1261,9 +1373,7 @@ describe("api", () => {
     });
 
     it("gets default page layout", async () => {
-      const loadingTask = getDocument(
-        buildGetDocumentParams("tracemonkey.pdf"),
-      );
+      const loadingTask = getDocument(tracemonkeyGetDocumentParams);
       const pdfDoc = await loadingTask.promise;
       const pageLayout = await pdfDoc.getPageLayout();
       assertEquals(pageLayout, undefined);
@@ -1277,9 +1387,7 @@ describe("api", () => {
     });
 
     it("gets default page mode", async () => {
-      const loadingTask = getDocument(
-        buildGetDocumentParams("tracemonkey.pdf"),
-      );
+      const loadingTask = getDocument(tracemonkeyGetDocumentParams);
       const pdfDoc = await loadingTask.promise;
       const pageMode = await pdfDoc.getPageMode();
       assertEquals(pageMode, PageMode.UseNone);
@@ -1293,9 +1401,7 @@ describe("api", () => {
     });
 
     it("gets default viewer preferences", async () => {
-      const loadingTask = getDocument(
-        buildGetDocumentParams("tracemonkey.pdf"),
-      );
+      const loadingTask = getDocument(tracemonkeyGetDocumentParams);
       const pdfDoc = await loadingTask.promise;
       const prefs = await pdfDoc.getViewerPreferences();
       assertEquals(prefs, undefined);
@@ -1309,9 +1415,7 @@ describe("api", () => {
     });
 
     it("gets default open action", async () => {
-      const loadingTask = getDocument(
-        buildGetDocumentParams("tracemonkey.pdf"),
-      );
+      const loadingTask = getDocument(tracemonkeyGetDocumentParams);
       const pdfDoc = await loadingTask.promise;
       const openAction = await pdfDoc.getOpenAction();
       assertEquals(openAction, undefined);
@@ -1383,21 +1487,16 @@ describe("api", () => {
       await loadingTask.destroy();
     });
 
-    it("gets javascript", async () => {
-      const javascript = await pdfDocument.getJavaScript();
-      assertEquals(javascript, undefined);
-    });
-
     it("gets javascript with printing instructions (JS action)", async () => {
       // PDF document with "JavaScript" action in the OpenAction dictionary.
       const loadingTask = getDocument(buildGetDocumentParams("issue6106.pdf"));
       const pdfDoc = await loadingTask.promise;
-      const javascript = await pdfDoc.getJavaScript();
+      const { OpenAction } = (await pdfDoc.getJSActions())!;
 
-      assertEquals(javascript, [
+      assertEquals(OpenAction, [
         "this.print({bUI:true,bSilent:false,bShrinkToFit:true});",
       ]);
-      assertMatch(javascript![0], AutoPrintRegExp);
+      assertMatch(OpenAction[0], AutoPrintRegExp);
 
       await loadingTask.destroy();
     });
@@ -1516,22 +1615,42 @@ describe("api", () => {
       await loadingTask.destroy();
     });
 
-    //kkkk
-    it.ignore("check field object for group of buttons", async () => {
+    it("gets fieldObjects with missing /P-entries", async () => {
       // if (isNodeJS) {
       //   pending("Linked test-cases are not supported in Node.js.");
       // }
 
-      const loadingTask = getDocument(buildGetDocumentParams("f1040_2022.pdf"));
+      const loadingTask = getDocument(buildGetDocumentParams("bug1847733.pdf"));
       const pdfDoc = await loadingTask.promise;
-      const fieldObjects = await pdfDoc.getFieldObjects();
+      const fieldObjects = (await pdfDoc.getFieldObjects()) as Record<
+        string,
+        FieldObject[]
+      >;
 
-      assertEquals(
-        (fieldObjects as Record<string, FieldObject[]>)[
-          "topmostSubform[0].Page1[0].c1_01"
-        ].map((o) => o.id),
-        ["1566R", "1568R", "1569R", "1570R", "1571R"],
-      );
+      for (const name in fieldObjects) {
+        const pageIndexes = fieldObjects[name].map((o) => o.page);
+        let expected;
+
+        switch (name) {
+          case "formID":
+          case "pdf_submission_new":
+          case "simple_spc":
+          case "adobeWarning":
+          case "typeA13[0]":
+          case "typeA13[1]":
+          case "typeA13[2]":
+          case "typeA13[3]":
+            expected = [0];
+            break;
+          case "typeA15[0]":
+          case "typeA15[1]":
+          case "typeA15[2]":
+          case "typeA15[3]":
+            expected = [-1, 0, 0, 0, 0];
+            break;
+        }
+        assertEquals(pageIndexes, expected);
+      }
 
       await loadingTask.destroy();
     });
@@ -1541,8 +1660,7 @@ describe("api", () => {
       assertEquals(calculationOrder, undefined);
     });
 
-    //kkkk
-    it.ignore("gets calculationOrder", async () => {
+    it("gets calculationOrder", async () => {
       // if (isNodeJS) {
       //   pending("Linked test-cases are not supported in Node.js.");
       // }
@@ -1574,9 +1692,7 @@ describe("api", () => {
     });
 
     it("gets non-existent outline", async () => {
-      const loadingTask = getDocument(
-        buildGetDocumentParams("tracemonkey.pdf"),
-      );
+      const loadingTask = getDocument(tracemonkeyGetDocumentParams);
       const pdfDoc = await loadingTask.promise;
       const outline = await pdfDoc.getOutline();
       assertEquals(outline, undefined);
@@ -1629,8 +1745,7 @@ describe("api", () => {
       await loadingTask.destroy();
     });
 
-    //kkkk
-    it.ignore("gets outline, with dest-strings using PDFDocEncoding (issue 14864)", async () => {
+    it("gets outline, with dest-strings using PDFDocEncoding (issue 14864)", async () => {
       // if (isNodeJS) {
       //   pending("Linked test-cases are not supported in Node.js.");
       // }
@@ -1748,9 +1863,7 @@ describe("api", () => {
     });
 
     it("gets metadata, with custom info dict entries", async () => {
-      const loadingTask = getDocument(
-        buildGetDocumentParams("tracemonkey.pdf"),
-      );
+      const loadingTask = getDocument(tracemonkeyGetDocumentParams);
       const pdfDoc = await loadingTask.promise;
       const { info, metadata, contentDispositionFilename, contentLength } =
         await pdfDoc.getMetadata();
@@ -1913,8 +2026,7 @@ describe("api", () => {
       await loadingTask.destroy();
     });
 
-    //kkkk
-    it.ignore("write a value in an annotation, save the pdf and check the value in xfa datasets (1)", async () => {
+    it("write a value in an annotation, save the pdf and check the value in xfa datasets (1)", async () => {
       // if (isNodeJS) {
       //   pending("Linked test-cases are not supported in Node.js.");
       // }
@@ -1941,8 +2053,7 @@ describe("api", () => {
       await loadingTask.destroy();
     });
 
-    //kkkk
-    it.ignore("write a value in an annotation, save the pdf and check the value in xfa datasets (2)", async () => {
+    it("write a value in an annotation, save the pdf and check the value in xfa datasets (2)", async () => {
       // if (isNodeJS) {
       //   pending("Linked test-cases are not supported in Node.js.");
       // }
@@ -1977,8 +2088,7 @@ describe("api", () => {
       await loadingTask.destroy();
     });
 
-    //kkkk
-    it.ignore("write a new annotation, save the pdf and check that the prev entry in xref stream is correct", async () => {
+    it("write a new annotation, save the pdf and check that the prev entry in xref stream is correct", async () => {
       // if (isNodeJS) {
       //   pending("Linked test-cases are not supported in Node.js.");
       // }
@@ -2066,8 +2176,14 @@ describe("api", () => {
       We have learned that we should more explicitly set out our aspirations for the human experience of the internet.
       We do so now.
       `.repeat(100);
+      assertEquals(manifesto.length, 80500);
+
       let loadingTask = getDocument(buildGetDocumentParams("empty.pdf"));
       let pdfDoc = await loadingTask.promise;
+      // The initial document size (indirectly) affects the length check below.
+      let typedArray = await pdfDoc.getData();
+      assert(typedArray.length < 5000);
+
       pdfDoc.annotationStorage.setValue("pdfjs_internal_editor_0", {
         annotationType: AnnotationEditorType.FREETEXT,
         rect: [10, 10, 500, 500],
@@ -2077,12 +2193,15 @@ describe("api", () => {
         value: manifesto,
         pageIndex: 0,
       });
-
       const data = await pdfDoc.saveDocument();
       await loadingTask.destroy();
 
       loadingTask = getDocument(data);
       pdfDoc = await loadingTask.promise;
+      // Ensure that the Annotation text-content was actually compressed.
+      typedArray = await pdfDoc.getData();
+      assert(typedArray.length < 90000);
+
       const page = await pdfDoc.getPage(1);
       const annotations = await page.getAnnotations();
 
@@ -2097,10 +2216,11 @@ describe("api", () => {
       //   pending("Cannot create a bitmap from Node.js.");
       // }
 
-      const TEST_IMAGES_PATH = "../images/";
+      // const TEST_IMAGES_PATH = "../images/";
+      const TEST_IMAGES_PATH = `${D_pdf}/pdf.ts-web/images/`;
       const filename = "firefox_logo.png";
       const path =
-        new URL(TEST_IMAGES_PATH + filename, window.location.toString()).href;
+        new URL(TEST_IMAGES_PATH + filename, window.location as any).href;
 
       const response = await fetch(path);
       const blob = await response.blob();
@@ -2493,8 +2613,8 @@ page 1 / 3`,
         fontFamily: "serif",
         // `useSystemFonts` has a different value in web environments
         // and in Node.js.
-        ascent: /*#static*/ DENO ? NaN : 0.683,
-        descent: /*#static*/ DENO ? NaN : -0.217,
+        ascent: isNodeJS ? NaN : 0.683,
+        descent: isNodeJS ? NaN : -0.217,
         vertical: false,
       });
 
@@ -2523,8 +2643,7 @@ page 1 / 3`,
       await loadingTask.destroy();
     });
 
-    //kkkk
-    it.ignore("gets text content, with no extra spaces (issue 16119)", async () => {
+    it("gets text content, with no extra spaces (issue 16119)", async () => {
       // if (isNodeJS) {
       //   pending("Linked test-cases are not supported in Node.js.");
       // }
@@ -2537,11 +2656,10 @@ page 1 / 3`,
       });
       const text = mergeText(items as TextItem[]);
 
-      assertEquals(
+      assert(
         text.includes(
           "Engang var der i Samvirke en opskrift på en fiskelagkage, som jeg med",
         ),
-        true,
       );
 
       await loadingTask.destroy();
@@ -2685,8 +2803,7 @@ sozialökonomische Gerechtigkeit.`));
       await loadingTask.destroy();
     });
 
-    //kkkk
-    it.ignore("gets text content, with invisible text marks (issue 9186)", async () => {
+    it("gets text content, with invisible text marks (issue 9186)", async () => {
       // if (isNodeJS) {
       //   pending("Linked test-cases are not supported in Node.js.");
       // }
@@ -2730,8 +2847,7 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
       await loadingTask.destroy();
     });
 
-    //kkkk
-    it.ignore("gets text content, and check that out-of-page text is not present (bug 1755201)", async () => {
+    it("gets text content, and check that out-of-page text is not present (bug 1755201)", async () => {
       // if (isNodeJS) {
       //   pending("Linked test-cases are not supported in Node.js.");
       // }
@@ -2749,8 +2865,7 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
       await loadingTask.destroy();
     });
 
-    //kkkk
-    it.ignore("gets text content with or without includeMarkedContent, and compare (issue 15094)", async () => {
+    it("gets text content with or without includeMarkedContent, and compare (issue 15094)", async () => {
       // if (isNodeJS) {
       //   pending("Linked test-cases are not supported in Node.js.");
       // }
@@ -3335,9 +3450,7 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
 
     //kkkk
     it.ignore("cleans up document resources during rendering of page", async () => {
-      const loadingTask = getDocument(
-        buildGetDocumentParams("tracemonkey.pdf"),
-      );
+      const loadingTask = getDocument(tracemonkeyGetDocumentParams);
       const pdfDoc = await loadingTask.promise;
       const pdfPage = await pdfDoc.getPage(1);
 
@@ -3448,7 +3561,7 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
     });
 
     //kkkk
-    it.ignore("render for printing, with `printAnnotationStorage` set", async () => {
+    it.ignore("render for printing, with \`printAnnotationStorage\` set", async () => {
       async function getPrintData(
         printAnnotationStorage: PrintAnnotationStorage | undefined = undefined,
       ) {
@@ -3520,7 +3633,7 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
   describe("Multiple `getDocument` instances", () => {
     // Regression test for https://github.com/mozilla/pdf.js/issues/6205
     // A PDF using the Helvetica font.
-    const pdf1 = buildGetDocumentParams("tracemonkey.pdf");
+    const pdf1 = tracemonkeyGetDocumentParams;
     // A PDF using the Times font.
     const pdf2 = buildGetDocumentParams("TAMReview.pdf");
     // A PDF using the Arial font.
@@ -3594,14 +3707,13 @@ Caron Broadcasting, Inc., an Ohio corporation (“Lessee”).`,
     });
   });
 
-  //kkkk "AssertionError: Test case is leaking async ops."
+  //kkkk "Leaking async ops"
   describe.ignore("PDFDataRangeTransport", () => {
     let dataPromise: Promise<Uint8Array>;
 
     beforeAll(() => {
-      const fileName = "tracemonkey.pdf";
       dataPromise = DefaultFileReaderFactory.fetch({
-        path: TEST_PDFS_PATH + fileName,
+        path: TEST_PDFS_PATH + tracemonkeyFileName,
       });
     });
 

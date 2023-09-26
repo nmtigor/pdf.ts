@@ -1,5 +1,5 @@
-import { type IPDFStream, type IPDFStreamRangeReader, type IPDFStreamReader, type ReadValue } from "../interfaces.js";
-import { MessageHandler, Thread } from "../shared/message_handler.js";
+import type { IPDFStream, IPDFStreamRangeReader, IPDFStreamReader, ReadValue } from "../interfaces.js";
+import type { MessageHandler, Thread } from "../shared/message_handler.js";
 import { AbortException } from "../shared/util.js";
 export declare class PDFWorkerStream implements IPDFStream {
     #private;

@@ -2,9 +2,9 @@
  * @module lib/cv
  * @license Apache-2.0
  ******************************************************************************/
-import { CSSStyle } from "./alias.js";
+import type { CSSStyle } from "./alias.js";
 import { $vuu } from "./symbols.js";
-import { type ReportedError } from "./util/trace.js";
+import type { ReportedError } from "./util/trace.js";
 /**
  * Inwards API, i.e., API called from outside of `Coo`.
  */
@@ -44,7 +44,7 @@ export declare abstract class Vuu<C extends Coo = Coo, E extends Element = Eleme
      * @headconst @param el_x
      */
     constructor(coo_x: C, el_x: E);
-    get parentVuu1(): Vuu | undefined;
+    get parentVuu_1(): Vuu | undefined;
     /**
      * @headconst @param node_x
      */

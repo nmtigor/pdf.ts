@@ -1,5 +1,6 @@
-import { ExternalCall } from "./initialization.js";
-import { PDFObject, ScriptingData, SendData } from "./pdf_object.js";
+import type { ExternalCall } from "./initialization.js";
+import type { ScriptingData, SendData } from "./pdf_object.js";
+import { PDFObject } from "./pdf_object.js";
 interface _SendUtilData extends SendData {
 }
 export interface ScriptingUtilData extends ScriptingData<_SendUtilData> {

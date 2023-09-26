@@ -17,17 +17,8 @@
  * limitations under the License.
  */
 
-import {
-  assert,
-  assertEquals,
-  fail,
-} from "https://deno.land/std@0.195.0/assert/mod.ts";
-import {
-  afterAll,
-  beforeAll,
-  describe,
-  it,
-} from "https://deno.land/std@0.195.0/testing/bdd.ts";
+import { assert, assertEquals, fail } from "@std/assert/mod.ts";
+import { afterAll, beforeAll, describe, it } from "@std/testing/bdd.ts";
 import { createIdFactory, XRefMock } from "../shared/test_utils.ts";
 import { FormatError, OPS } from "../shared/util.ts";
 import { BaseStream } from "./base_stream.ts";

@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 /** @typedef {import("./event_utils").EventBus} EventBus */
-import { CHROME, COMPONENTS, GENERIC, PDFJSDev } from "../../global.js";
+import { CHROME, GENERIC, PDFJSDev } from "../../global.js";
 import { PromiseCap } from "../../lib/util/PromiseCap.js";
 import { shadow } from "../pdf.ts-src/pdf.js";
 import { apiPageLayoutToViewerModes, RenderingStates } from "./ui_utils.js";
@@ -32,6 +32,7 @@ export class PDFScriptingManager {
         return this.#destroyCapability?.promise || undefined;
     }
     #scripting;
+    #willPrintCapability;
     #ready = false;
     get ready() {
         return this.#ready;
@@ -47,7 +48,6 @@ export class PDFScriptingManager {
         }
         this.#externalServices = externalServices;
         this.#docProperties = docProperties;
-        /*#static*/ 
     }
     async setDocument(pdfDocument) {
         if (this.#pdfDocument) {
@@ -163,10 +163,23 @@ export class PDFScriptingManager {
         });
     }
     async dispatchWillPrint() {
-        return this.#scripting?.dispatchEventInSandbox({
-            id: "doc",
-            name: "WillPrint",
-        });
+        if (!this.#scripting) {
+            return;
+        }
+        await this.#willPrintCapability?.promise;
+        this.#willPrintCapability = new PromiseCap();
+        try {
+            await this.#scripting.dispatchEventInSandbox({
+                id: "doc",
+                name: "WillPrint",
+            });
+        }
+        catch (ex) {
+            this.#willPrintCapability.resolve();
+            this.#willPrintCapability = undefined;
+            throw ex;
+        }
+        await this.#willPrintCapability.promise;
     }
     async dispatchDidPrint() {
         return this.#scripting?.dispatchEventInSandbox({
@@ -242,6 +255,10 @@ export class PDFScriptingManager {
                     if (!isInPresentationMode) {
                         pdfViewer.decreaseScale();
                     }
+                    break;
+                case "WillPrintFinished":
+                    this.#willPrintCapability?.resolve();
+                    this.#willPrintCapability = undefined;
                     break;
             }
             return;
@@ -350,6 +367,8 @@ export class PDFScriptingManager {
             await this.#scripting.destroySandbox();
         }
         catch (ex) { }
+        this.#willPrintCapability?.reject(new Error("Scripting destroyed."));
+        this.#willPrintCapability = undefined;
         for (const [name, listener] of this.#internalEvents) {
             this.#eventBus._off(name, listener);
         }

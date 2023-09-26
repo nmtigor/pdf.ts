@@ -153,12 +153,9 @@ function applyAssist(obj, attributes) {
     else {
         const parent = obj[$getParent]();
         if (parent.layout === "row") {
-            if (parent.assist?.role === "TH") {
-                attributes.role = "columnheader";
-            }
-            else {
-                attributes.role = "cell";
-            }
+            attributes.role = parent.assist?.role === "TH"
+                ? "columnheader"
+                : "cell";
         }
     }
 }
@@ -3411,13 +3408,11 @@ class Line extends XFAObject {
             [x1, y1, x2, y2] = [0, "50%", "100%", "50%"];
             height = style.strokeWidth;
         }
+        else if (this.slope === "\\") {
+            [x1, y1, x2, y2] = [0, 0, "100%", "100%"];
+        }
         else {
-            if (this.slope === "\\") {
-                [x1, y1, x2, y2] = [0, 0, "100%", "100%"];
-            }
-            else {
-                [x1, y1, x2, y2] = [0, "100%", "100%", 0];
-            }
+            [x1, y1, x2, y2] = [0, "100%", "100%", 0];
         }
         const line = {
             name: "line",

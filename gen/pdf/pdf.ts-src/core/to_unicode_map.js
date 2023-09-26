@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { assert } from "../../../lib/util/trace.js";
+import { fail } from "../../../lib/util/trace.js";
 /*80--------------------------------------------------------------------------*/
 export class ToUnicodeMap {
     /**
@@ -91,7 +91,7 @@ export class IdentityToUnicodeMap {
             : -1;
     }
     amend(map) {
-        assert(0, "Should not call amend()");
+        fail("Should not call amend()");
     }
 }
 /*80--------------------------------------------------------------------------*/

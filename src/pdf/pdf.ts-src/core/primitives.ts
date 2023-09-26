@@ -17,9 +17,9 @@
  * limitations under the License.
  */
 
-import { PDFJSDev, TESTING } from "../../../global.ts";
-import type { TypedArray } from "../../../lib/alias.ts";
-import { assert } from "../../../lib/util/trace.ts";
+import { PDFJSDev, TESTING } from "@fe-src/global.ts";
+import type { TypedArray } from "@fe-src/lib/alias.ts";
+import { assert, fail } from "@fe-src/lib/util/trace.ts";
 import { shadow } from "../shared/util.ts";
 import type { BaseStream } from "./base_stream.ts";
 import type { TranslatedFont } from "./evaluator.ts";
@@ -47,7 +47,7 @@ export class Name {
   constructor(name: string) {
     /*#static*/ if (PDFJSDev || TESTING) {
       if (typeof name !== "string") {
-        assert(0, 'Name: The "name" must be a string.');
+        fail('Name: The "name" must be a string.');
       }
     }
     this.name = name;
@@ -65,7 +65,7 @@ export class Cmd {
   constructor(cmd: string) {
     /*#static*/ if (PDFJSDev || TESTING) {
       if (typeof cmd !== "string") {
-        assert(0, 'Cmd: The "cmd" must be a string.');
+        fail('Cmd: The "cmd" must be a string.');
       }
     }
     this.cmd = cmd;
@@ -98,9 +98,9 @@ export class Dict {
   set(key: string, value: Obj | undefined) {
     /*#static*/ if (PDFJSDev || TESTING) {
       if (typeof key !== "string") {
-        assert(0, 'Dict.set: The "key" must be a string.');
+        fail('Dict.set: The "key" must be a string.');
       } else if (value === undefined) {
-        assert(0, 'Dict.set: The "value" cannot be undefined.');
+        fail('Dict.set: The "value" cannot be undefined.');
       }
     }
     this.#map[key] = value;
@@ -130,14 +130,14 @@ export class Dict {
     if (value === undefined && key2 !== undefined) {
       /*#static*/ if (PDFJSDev || TESTING) {
         if (key2.length < key1.length) {
-          assert(0, "Dict.get: Expected keys to be ordered by length.");
+          fail("Dict.get: Expected keys to be ordered by length.");
         }
       }
       value = this.#map[key2];
       if (value === undefined && key3 !== undefined) {
         /*#static*/ if (PDFJSDev || TESTING) {
           if (key3.length < key2.length) {
-            assert(0, "Dict.get: Expected keys to be ordered by length.");
+            fail("Dict.get: Expected keys to be ordered by length.");
           }
         }
         value = this.#map[key3];
@@ -161,14 +161,14 @@ export class Dict {
     if (value === undefined && key2 !== undefined) {
       /*#static*/ if (PDFJSDev || TESTING) {
         if (key2.length < key1.length) {
-          assert(0, "Dict.getAsync: Expected keys to be ordered by length.");
+          fail("Dict.getAsync: Expected keys to be ordered by length.");
         }
       }
       value = this.#map[key2];
       if (value === undefined && key3 !== undefined) {
         /*#static*/ if (PDFJSDev || TESTING) {
           if (key3.length < key2.length) {
-            assert(0, "Dict.getAsync: Expected keys to be ordered by length.");
+            fail("Dict.getAsync: Expected keys to be ordered by length.");
           }
         }
         value = this.#map[key3];
@@ -188,14 +188,14 @@ export class Dict {
     if (value === undefined && key2 !== undefined) {
       /*#static*/ if (PDFJSDev || TESTING) {
         if (key2.length < key1.length) {
-          assert(0, "Dict.getArray: Expected keys to be ordered by length.");
+          fail("Dict.getArray: Expected keys to be ordered by length.");
         }
       }
       value = this.#map[key2];
       if (value === undefined && key3 !== undefined) {
         /*#static*/ if (PDFJSDev || TESTING) {
           if (key3.length < key2.length) {
-            assert(0, "Dict.getArray: Expected keys to be ordered by length.");
+            fail("Dict.getArray: Expected keys to be ordered by length.");
           }
         }
         value = this.#map[key3];
@@ -226,7 +226,7 @@ export class Dict {
     const emptyDict = new Dict();
 
     emptyDict.set = (key, value) => {
-      assert(0, "Should not call `set` on the empty dictionary.");
+      fail("Should not call `set` on the empty dictionary.");
     };
     return shadow(this, "empty", emptyDict);
   }
@@ -315,14 +315,14 @@ export class Ref {
     return `${this.num}R${this.gen}`;
   }
 
-  static fromString(str: string) {
+  static fromString(str: string): Ref | undefined {
     const ref = RefCache[str];
     if (ref) {
       return ref;
     }
     const m = /^(\d+)R(\d*)$/.exec(str);
     if (!m || m[1] === "0") {
-      return null;
+      return undefined;
     }
 
     // eslint-disable-next-line no-restricted-syntax
@@ -362,7 +362,7 @@ export class RefSet {
   constructor(parent?: RefSet) {
     /*#static*/ if (PDFJSDev || TESTING) {
       if (parent && !(parent instanceof RefSet)) {
-        assert(0, 'RefSet: Invalid "parent" value.');
+        fail('RefSet: Invalid "parent" value.');
       }
     }
     // TS18030: An optional chain cannot contain private identifiers

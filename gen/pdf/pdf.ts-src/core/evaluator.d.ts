@@ -8,10 +8,10 @@ import { type CMap } from "./cmap.js";
 import { ColorSpace } from "./colorspace.js";
 import { DecodeStream } from "./decode_stream.js";
 import type { CssFontInfo, GlobalIdFactory } from "./document.js";
+import type { SubstitutionInfo } from "./font_substitutions.js";
 import type { Glyph, Seac } from "./fonts.js";
 import { ErrorFont, Font } from "./fonts.js";
 import { FontFlags } from "./fonts_utils.js";
-import type { SubstitutionInfo } from "./font_substitutions.js";
 import { PDFFunctionFactory } from "./function.js";
 import { type GlobalImageCache, LocalColorSpaceCache, LocalGStateCache, LocalImageCache, LocalTilingPatternCache, RegionalImageCache } from "./image_utils.js";
 import { OperatorList } from "./operator_list.js";
@@ -48,7 +48,7 @@ export interface ImgData {
     transform?: matrix_t;
     isSingleOpaquePixel?: boolean;
 }
-interface _BuildPaintImageXObjectP {
+interface BuildPaintImageXObjectP_ {
     resources: Dict;
     image: BaseStream;
     isInline?: boolean;
@@ -218,7 +218,7 @@ export declare class PartialEvaluator {
     fetchStandardFontData(name: string): Promise<Stream | undefined>;
     buildFormXObject(resources: Dict, xobj: BaseStream, smask: SmaskOptions | undefined, operatorList: OperatorList, task: WorkerTask, initialState: Partial<EvalState | TextState>, localColorSpaceCache: LocalColorSpaceCache): Promise<void>;
     private _sendImgData;
-    buildPaintImageXObject({ resources, image, isInline, operatorList, cacheKey, localImageCache, localColorSpaceCache, }: _BuildPaintImageXObjectP): Promise<void>;
+    buildPaintImageXObject({ resources, image, isInline, operatorList, cacheKey, localImageCache, localColorSpaceCache, }: BuildPaintImageXObjectP_): Promise<void>;
     handleSMask(smask: Dict, resources: Dict, operatorList: OperatorList, task: WorkerTask, stateManager: StateManager<EvalState>, localColorSpaceCache: LocalColorSpaceCache): Promise<void>;
     handleTransferFunction(tr?: Obj): (Uint8Array | null)[] | null;
     handleTilingType(fn: OPS, color: Uint8ClampedArray | undefined, resources: Dict, pattern: BaseStream, patternDict: Dict, operatorList: OperatorList, task: WorkerTask, localTilingPatternCache: LocalTilingPatternCache): Promise<void>;

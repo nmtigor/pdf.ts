@@ -134,7 +134,8 @@ export class PDFCursorTools {
       this.switchTool(evt.tool);
     });
 
-    let annotationEditorMode = AnnotationEditorType.NONE,
+    let annotationEditorMode: AnnotationEditorType | undefined =
+        AnnotationEditorType.NONE,
       presentationModeState = PresentationModeState.NORMAL;
 
     const disableActive = () => {

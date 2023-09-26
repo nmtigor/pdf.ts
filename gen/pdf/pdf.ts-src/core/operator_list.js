@@ -1,7 +1,7 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
-import { ImageKind, OPS, RenderingIntentFlag, warn, } from "../shared/util.js";
+import { ImageKind, OPS, RenderingIntentFlag, warn } from "../shared/util.js";
 /*80--------------------------------------------------------------------------*/
 var NsQueueOptimizer;
 (function (NsQueueOptimizer) {
@@ -511,12 +511,9 @@ export class OperatorList {
     #resolved;
     constructor(intent = 0, streamSink) {
         this.#streamSink = streamSink;
-        if (streamSink && !(intent & RenderingIntentFlag.OPLIST)) {
-            this.optimizer = new QueueOptimizer(this);
-        }
-        else {
-            this.optimizer = new NullOptimizer(this);
-        }
+        this.optimizer = streamSink && !(intent & RenderingIntentFlag.OPLIST)
+            ? new QueueOptimizer(this)
+            : new NullOptimizer(this);
         this.#resolved = streamSink ? undefined : Promise.resolve();
     }
     // eslint-disable-next-line accessor-pairs

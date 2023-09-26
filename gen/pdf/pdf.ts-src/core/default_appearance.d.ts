@@ -1,6 +1,8 @@
 import type { rect_t } from "../../../lib/alias.js";
 import type { rgb_t } from "../../../lib/color/alias.js";
 import type { BaseStream } from "./base_stream.js";
+import { type DeviceGrayCS } from "./colorspace.js";
+import type { EvaluatorOptions } from "./pdf_manager.js";
 import type { Ref } from "./primitives.js";
 import { Dict, Name } from "./primitives.js";
 import { StringStream } from "./stream.js";
@@ -20,8 +22,9 @@ type AppearanceStreamParsed = {
     fontSize: number;
     fontName: string;
     fontColor: Uint8ClampedArray;
+    fillColorSpace: DeviceGrayCS;
 };
-export declare function parseAppearanceStream(stream: BaseStream): AppearanceStreamParsed;
+export declare function parseAppearanceStream(stream: BaseStream, evaluatorOptions?: EvaluatorOptions, xref?: XRef): AppearanceStreamParsed;
 export declare function getPdfColor(color: Uint8ClampedArray | rgb_t, isFill: boolean): string;
 export declare function createDefaultAppearance({ fontSize, fontName, fontColor }: DefaultAppearanceData): string;
 export declare class FakeUnicodeFont {

@@ -3,13 +3,14 @@
  * @license Apache-2.0
  ******************************************************************************/
 
-import { serveDir } from "https://deno.land/std@0.195.0/http/file_server.ts";
-import { serve } from "https://deno.land/std@0.195.0/http/server.ts";
+import { serveDir } from "@std/http/file_server.ts";
+import { serve } from "@std/http/server.ts";
+import { TEST_PORT } from "./alias.ts";
 /*80--------------------------------------------------------------------------*/
 
 await serve(async (req: Request) =>
   serveDir(req, {
     fsRoot: "../..",
     // showDirListing: true,
-  }), { port: 8000 });
+  }), { port: TEST_PORT });
 /*80--------------------------------------------------------------------------*/

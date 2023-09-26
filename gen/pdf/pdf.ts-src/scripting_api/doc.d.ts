@@ -1,13 +1,14 @@
-import { ScriptingDocProperties } from "../../pdf.ts-web/app.js";
-import { AnnotActions } from "../core/core_utils.js";
-import { Name } from "../core/primitives.js";
-import { FieldWrapped } from "./app.js";
-import { ScriptingActionName, ScriptingActions } from "./common.js";
+import type { ScriptingDocProperties } from "../../pdf.ts-web/app.js";
+import type { AnnotActions } from "../core/core_utils.js";
+import type { Name } from "../core/primitives.js";
+import type { FieldWrapped } from "./app.js";
+import type { ScriptingActionName, ScriptingActions } from "./common.js";
 import { ZoomType } from "./constants.js";
-import { EventDispatcher } from "./event.js";
-import { PDFObject, ScriptingData, SendData } from "./pdf_object.js";
+import type { EventDispatcher } from "./event.js";
+import type { ScriptingData, SendData } from "./pdf_object.js";
+import { PDFObject } from "./pdf_object.js";
 import { PrintParams } from "./print_params.js";
-interface _Info {
+interface Info_ {
     title: string;
     author: string;
     authors: string | string[];
@@ -125,7 +126,7 @@ export declare class Doc extends PDFObject<SendDocData_> {
     _URL: string;
     get URL(): string;
     set URL(_: string);
-    _info: _Info;
+    _info: Info_;
     _zoomType: ZoomType;
     _zoom: number;
     get zoom(): number;
@@ -167,8 +168,8 @@ export declare class Doc extends PDFObject<SendDocData_> {
     set hostContainer(_: undefined);
     get icons(): undefined;
     set icons(_: undefined);
-    get info(): _Info;
-    set info(_: _Info);
+    get info(): Info_;
+    set info(_: Info_);
     get innerAppWindowRect(): number[];
     set innerAppWindowRect(_: number[]);
     get innerDocWindowRect(): number[];

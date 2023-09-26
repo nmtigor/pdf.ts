@@ -17,7 +17,7 @@
  */
 import { MOZCENTRAL } from "../../../global.js";
 import { div as createDiv, html, svg as createSVG } from "../../../lib/dom.js";
-import { BaseException, shadow, stringToBytes, Util, warn, } from "../shared/util.js";
+import { BaseException, FeatureTest, shadow, stringToBytes, Util, warn, } from "../shared/util.js";
 import { BaseCanvasFactory, BaseCMapReaderFactory, BaseFilterFactory, BaseStandardFontDataFactory, BaseSVGFactory, } from "./base_factory.js";
 /*80--------------------------------------------------------------------------*/
 const SVG_NS = "http://www.w3.org/2000/svg";
@@ -807,14 +807,9 @@ export function setLayerDimensions(div, viewport, mustFlip = false, mustRotate =
     if (viewport instanceof PageViewport) {
         const { pageWidth, pageHeight } = viewport.rawDims;
         const { style } = div;
-        // TODO: Investigate if it could be interesting to use the css round
-        // function (https://developer.mozilla.org/en-US/docs/Web/CSS/round):
-        // const widthStr =
-        //   `round(down, var(--scale-factor) * ${pageWidth}px, 1px)`;
-        // const heightStr =
-        //   `round(down, var(--scale-factor) * ${pageHeight}px, 1px)`;
-        const widthStr = `calc(var(--scale-factor) * ${pageWidth}px)`;
-        const heightStr = `calc(var(--scale-factor) * ${pageHeight}px)`;
+        const useRound = FeatureTest.isCSSRoundSupported;
+        const w = `var(--scale-factor) * ${pageWidth}px`, h = `var(--scale-factor) * ${pageHeight}px`;
+        const widthStr = useRound ? `round(${w}, 1px)` : `calc(${w})`, heightStr = useRound ? `round(${h}, 1px)` : `calc(${h})`;
         if (!mustFlip || viewport.rotation % 180 === 0) {
             style.width = widthStr;
             style.height = heightStr;

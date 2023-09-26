@@ -13,11 +13,11 @@ export declare class PDFFunctionFactory {
     });
     create(fn: Ref | BaseStream | Dict): NsPDFFunction.ParsedFunction;
     createFromArray(fnObj: Ref | Dict | BaseStream): NsPDFFunction.ParsedFunction;
-    getCached(cacheKey: Ref | Dict | BaseStream): NsPDFFunction.ParsedFunction | null;
+    getCached(cacheKey: Ref | Dict | BaseStream): NsPDFFunction.ParsedFunction | undefined;
     get _localFunctionCache(): LocalFunctionCache;
 }
 declare namespace NsPDFFunction {
-    interface _ParseP {
+    interface ParseP_ {
         xref: XRef;
         isEvalSupported: boolean;
         fn: Dict | BaseStream;
@@ -33,7 +33,7 @@ declare namespace NsPDFFunction {
     export type ParsedFunction = (src: Float32Array | number[], srcOffset: number, dest: Float32Array, destOffset: number) => void;
     export const PDFFunction: {
         getSampleArray(size: number[], outputSize: number, bps: number, stream: BaseStream): any[];
-        parse({ xref, isEvalSupported, fn }: _ParseP): ParsedFunction;
+        parse({ xref, isEvalSupported, fn }: ParseP_): ParsedFunction;
         parseArray({ xref, isEvalSupported, fnObj }: {
             xref: XRef;
             isEvalSupported: boolean;
@@ -71,7 +71,7 @@ export declare class PostScriptEvaluator {
 }
 declare namespace NsPostScriptCompiler {
     class PostScriptCompiler {
-        compile(code: (number | string | null)[], domain: number[], range: number[]): string | null;
+        compile(code: (number | string | null)[], domain: number[], range: number[]): string | undefined;
     }
 }
 export type PostScriptCompiler = NsPostScriptCompiler.PostScriptCompiler;

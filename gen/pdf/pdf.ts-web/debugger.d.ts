@@ -1,25 +1,22 @@
-import { FontFaceObject, OpListIR, OPS } from "../pdf.ts-src/pdf.js";
-interface _PdfjsLib {
-    OPS: typeof OPS;
-}
-type _Tool = typeof _FontInspector | typeof _StepperManager | typeof _Stats;
-declare namespace _FontInspector {
+import type { FontFaceObject, OpListIR } from "../pdf.ts-src/pdf.js";
+type Tool_ = typeof FontInspector_ | typeof StepperManager_ | typeof Stats_;
+declare namespace FontInspector_ {
     const id = "FontInspector";
     const name = "Font Inspector";
     let panel: HTMLDivElement;
     let manager: typeof PDFBug;
-    function init(pdfjsLib: _PdfjsLib): void;
+    function init(): void;
     function cleanup(): void;
     let enabled: boolean;
     let active: boolean;
     function fontAdded(fontObj: FontFaceObject, url?: string): void;
 }
-declare namespace _StepperManager {
+declare namespace StepperManager_ {
     const id = "Stepper";
     const name = "Stepper";
     let panel: HTMLDivElement;
     let manager: typeof PDFBug;
-    function init(pdfjsLib: _PdfjsLib): void;
+    function init(): void;
     function cleanup(): void;
     let enabled: boolean;
     let active: boolean;
@@ -47,7 +44,7 @@ declare namespace NsStepper {
     }
 }
 export import Stepper = NsStepper.Stepper;
-declare namespace _Stats {
+declare namespace Stats_ {
     interface _Stat {
         pageNumber: number;
         div: HTMLDivElement;
@@ -56,7 +53,7 @@ declare namespace _Stats {
     export const name = "Stats";
     export let panel: HTMLDivElement;
     export let manager: typeof PDFBug;
-    export function init(pdfjsLib: _PdfjsLib): void;
+    export function init(): void;
     export let enabled: boolean;
     export let active: boolean;
     export function add(pageNumber: number, stat: _Stat): void;
@@ -64,17 +61,17 @@ declare namespace _Stats {
     export {};
 }
 export declare namespace PDFBug {
-    const tools: (typeof _FontInspector | typeof _StepperManager | typeof _Stats)[];
+    const tools: (typeof FontInspector_ | typeof StepperManager_ | typeof Stats_)[];
     function enable(ids: string[]): void;
-    function init(pdfjsLib: _PdfjsLib, container: HTMLDivElement, ids: string[]): void;
+    function init(container: HTMLDivElement, ids: string[]): void;
     function loadCSS(): void;
     function cleanup(): void;
-    function selectPanel(index: number | _Tool): void;
+    function selectPanel(index: number | Tool_): void;
 }
 declare global {
-    var FontInspector: typeof _FontInspector;
-    var StepperManager: typeof _StepperManager;
-    var Stats: typeof _Stats;
+    var FontInspector: typeof FontInspector_;
+    var StepperManager: typeof StepperManager_;
+    var Stats: typeof Stats_;
 }
 export {};
 //# sourceMappingURL=debugger.d.ts.map

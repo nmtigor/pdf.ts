@@ -548,12 +548,9 @@ export class XFAObject {
                 continue;
             }
             const value = this[name];
-            if (value instanceof XFAObjectArray) {
-                clone[name] = new XFAObjectArray(value[_max]);
-            }
-            else {
-                clone[name] = undefined;
-            }
+            clone[name] = value instanceof XFAObjectArray
+                ? new XFAObjectArray(value[_max])
+                : undefined;
         }
         for (const child of this[_children]) {
             const name = child[$nodeName];

@@ -44,7 +44,7 @@ export class OverlayManager {
     }
     this.#overlays.set(dialog, { canForceClose });
 
-    dialog.addEventListener("cancel", (evt) => {
+    dialog.on("cancel", (evt) => {
       this.#active = undefined;
     });
   }

@@ -4,25 +4,29 @@
  *              introducing any dependencies here since that can lead to an
  *              unexpected/unnecessary size increase of the *built* files.
  */
+import type { Ratio, TupleOf } from "../../../lib/alias.js";
 import type { rgb_t } from "../../../lib/color/alias.js";
-import type { TupleOf } from "../../../lib/alias.js";
-export type XYZ = TupleOf<number, 3>;
-export type CMYK = TupleOf<number, 4>;
+import "../../../lib/jslang.js";
+export type RGB = TupleOf<Ratio, 3>;
+export type CMYK = TupleOf<Ratio, 4>;
 export type CSTag = "G" | "RGB" | "T" | "CMYK";
-export type ColorConvertersDetail = Record<string, [CSTag, ...number[]]>;
 /**
  * PDF specifications section 10.3
  */
-export declare namespace ColorConverters {
-    function CMYK_G([c, y, m, k]: CMYK): ["G", number];
-    function G_CMYK([g]: [number]): ["CMYK", number, number, number, number];
-    function G_RGB([g]: [number]): ["RGB", number, number, number];
-    function G_HTML([g]: [number]): string;
-    function RGB_G([r, g, b]: rgb_t): ["G", number];
-    function RGB_HTML([r, g, b]: rgb_t): string;
-    function T_HTML(): string;
-    function CMYK_RGB([c, y, m, k]: CMYK): ["RGB", number, number, number];
-    function CMYK_HTML(components: CMYK): string;
-    function RGB_CMYK([r, g, b]: rgb_t): ["CMYK", number, number, number, number];
+export declare class ColorConverters {
+    static CMYK_G([c, y, m, k]: CMYK): ["G", number];
+    static G_CMYK([g]: [Ratio]): ["CMYK", number, number, number, number];
+    static G_RGB([g]: [Ratio]): ["RGB", number, number, number];
+    static G_rgb([g]: [Ratio]): rgb_t;
+    static G_HTML([g]: [Ratio]): string;
+    static RGB_G([r, g, b]: RGB): ["G", number];
+    static RGB_rgb(color: RGB): rgb_t;
+    static RGB_HTML(color: RGB): string;
+    static T_HTML(): string;
+    static T_rgb(): never[];
+    static CMYK_RGB([c, y, m, k]: CMYK): ["RGB", number, number, number];
+    static CMYK_rgb([c, y, m, k]: CMYK): rgb_t;
+    static CMYK_HTML(components: CMYK): string;
+    static RGB_CMYK([r, g, b]: RGB): ["CMYK", number, number, number, number];
 }
 //# sourceMappingURL=scripting_utils.d.ts.map

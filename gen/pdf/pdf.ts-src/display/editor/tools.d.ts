@@ -1,16 +1,45 @@
-import type { EventBus, EventMap } from "../../../pdf.ts-web/event_utils.js";
 import type { rgb_t } from "../../../../lib/color/alias.js";
+import type { EventBus, EventMap } from "../../../pdf.ts-web/event_utils.js";
+import type { PageColors } from "../../../pdf.ts-web/pdf_viewer.js";
 import { AnnotationEditorType } from "../../shared/util.js";
-import type { AnnotationStorage } from "../annotation_storage.js";
+import type { PDFDocumentProxy } from "../api.js";
 import type { AnnotationEditorLayer } from "./annotation_editor_layer.js";
 import type { AnnotationEditor } from "./editor.js";
 import { FreeTextEditor } from "./freetext.js";
 import { InkEditor } from "./ink.js";
+import { StampEditor } from "./stamp.js";
 export declare function bindEvents<T extends AnnotationEditor | AnnotationEditorLayer>(obj: T, element: HTMLElement, names: (keyof HTMLElementEventMap & keyof T)[]): void;
 /**
  * Convert a number between 0 and 100 into an hex number between 0 and 255.
  */
 export declare function opacityToHex(opacity: number): string;
+export type BitmapData = {
+    bitmap?: HTMLImageElement | ImageBitmap | undefined;
+    id: `image_${string}_${number}`;
+    refCounter: number;
+    isSvg: boolean;
+    svgUrl: string;
+    url: string;
+    file?: File;
+};
+/**
+ * Class to manage the images used by the editors.
+ * The main idea is to try to minimize the memory used by the images.
+ * The images are cached and reused when possible
+ * We use a refCounter to know when an image is not used anymore but we need to
+ * be able to restore an image after a remove+undo, so we keep a file reference
+ * or an url one.
+ */
+declare class ImageManager {
+    #private;
+    static get _isSVGFittingCanvas(): Promise<boolean>;
+    getFromFile(file: File): Promise<BitmapData | undefined>;
+    getFromUrl(url: string): Promise<BitmapData | undefined>;
+    getFromId(id: string): Promise<BitmapData | undefined>;
+    getSvgUrl(id: string): string | undefined;
+    deleteId(id: string): void;
+    isValidId(id: string): boolean;
+}
 export interface AddCommandsP {
     cmd: () => void;
     undo: () => void;
@@ -50,16 +79,22 @@ export declare class CommandManager {
     hasSomethingToRedo(): boolean;
     destroy(): void;
 }
+type KeyboardCallback_ = (translateX?: number, translateY?: number, noCommit?: boolean) => void;
+type KeyboardCallbackOptions_<S extends AnnotationEditorUIManager | FreeTextEditor> = {
+    bubbles?: boolean;
+    args?: [number?, number?, boolean?];
+    checker?: (self: S, event?: unknown) => boolean | undefined;
+};
 /**
  * Class to handle the different keyboards shortcuts we can have on mac or
  * non-mac OSes.
  */
-export declare class KeyboardManager {
+export declare class KeyboardManager<S extends AnnotationEditorUIManager | FreeTextEditor> {
     #private;
     buffer: string[];
     callbacks: Map<string, {
-        callback: () => void;
-        bubbles: boolean;
+        callback: KeyboardCallback_;
+        options: KeyboardCallbackOptions_<S>;
     }>;
     allKeys: Set<string>;
     /**
@@ -68,13 +103,12 @@ export declare class KeyboardManager {
      * and a callback to call.
      * A shortcut is a string like `ctrl+c` or `mac+ctrl+c` for mac OS.
      */
-    constructor(callbacks: [string[], () => void, boolean?][]);
+    constructor(callbacks: [string[], KeyboardCallback_, KeyboardCallbackOptions_<S>?][]);
     /**
      * Execute a callback, if any, for a given keyboard event.
      * The self is used as `this` in the callback.
-     * @return
      */
-    exec(self: unknown, event: KeyboardEvent): void;
+    exec(self: S, event: KeyboardEvent): void;
 }
 export declare class ColorManager {
     static _colorsMapping: Map<string, rgb_t>;
@@ -111,24 +145,34 @@ export interface DispatchUpdateStatesP {
  */
 export declare class AnnotationEditorUIManager {
     #private;
-    static get _keyboardManager(): KeyboardManager;
     /**
      * Get the current active editor.
      */
     getActive(): AnnotationEditor | undefined;
     get currentPageIndex(): number;
     /**
+     * Get an id.
+     */
+    getId(): string;
+    /**
      * Get the current editor mode.
      */
     getMode(): AnnotationEditorType;
+    get hasSelection(): boolean;
     viewParameters: {
         realScale: number;
         rotation: number;
     };
-    constructor(container: HTMLDivElement, eventBus: EventBus, annotationStorage: AnnotationStorage | undefined);
+    static TRANSLATE_SMALL: number;
+    static TRANSLATE_BIG: number;
+    static get _keyboardManager(): KeyboardManager<AnnotationEditorUIManager>;
+    constructor(container: HTMLDivElement, viewer: HTMLDivElement, eventBus: EventBus, pdfDocument: PDFDocumentProxy, pageColors: PageColors | undefined);
     destroy(): void;
+    get hcmFilter(): string;
     onPageChanging({ pageNumber }: EventMap["pagechanging"]): void;
     focusMainContainer(): void;
+    findParent(x: number, y: number): AnnotationEditorLayer | undefined;
+    disableUserSelect(value?: boolean): void;
     addShouldRescale(editor: InkEditor): void;
     removeShouldRescale(editor: InkEditor): void;
     onScaleChanging({ scale }: EventMap["scalechanging"]): void;
@@ -137,6 +181,8 @@ export declare class AnnotationEditorUIManager {
      * Add an editor in the annotation storage.
      */
     addToAnnotationStorage(editor: AnnotationEditor): void;
+    blur(): void;
+    focus(): void;
     /**
      * Copy callback.
      */
@@ -167,12 +213,9 @@ export declare class AnnotationEditorUIManager {
      * FreeText annotation.
      */
     setEditingState(isEditing: boolean): void;
-    registerEditorTypes(types: (typeof InkEditor | typeof FreeTextEditor)[]): void;
-    /**
-     * Get an id.
-     */
-    getId(): string;
+    registerEditorTypes(types: (typeof InkEditor | typeof FreeTextEditor | typeof StampEditor)[]): void;
     get currentLayer(): AnnotationEditorLayer | undefined;
+    getLayer(pageIndex: number): AnnotationEditorLayer | undefined;
     /**
      * Add a new layer for a page which will contains the editors.
      */
@@ -184,7 +227,7 @@ export declare class AnnotationEditorUIManager {
     /**
      * Change the editor mode (None, FreeText, Ink, ...)
      */
-    updateMode(mode: number): void;
+    updateMode(mode: number, editId?: string | undefined): void;
     /**
      * Update the toolbar if it's required to reflect the tool currently used.
      */
@@ -192,9 +235,10 @@ export declare class AnnotationEditorUIManager {
     /**
      * Update a parameter in the current editor or globally.
      */
-    updateParams(type: number, value: string | number): void;
+    updateParams(type: number, value: string | number | undefined): void;
+    enableWaiting(mustWait?: boolean): void;
     /**
-     * Get all the editors belonging to a give page.
+     * Get all the editors belonging to a given page.
      */
     getEditors(pageIndex: number): AnnotationEditor[];
     /**
@@ -241,7 +285,6 @@ export declare class AnnotationEditorUIManager {
      * Unselect an editor.
      */
     unselect(editor: AnnotationEditor): void;
-    get hasSelection(): boolean;
     /**
      * Undo the last command.
      */
@@ -259,6 +302,7 @@ export declare class AnnotationEditorUIManager {
      */
     delete(): void;
     commitOrRemove(): void;
+    hasSomethingToControl(): boolean;
     /**
      * Select all the editors.
      */
@@ -267,9 +311,30 @@ export declare class AnnotationEditorUIManager {
      * Unselect all the selected editors.
      */
     unselectAll(): void;
+    translateSelectedEditors(x?: number, y?: number, noCommit?: boolean): void;
+    /**
+     * Set up the drag session for moving the selected editors.
+     */
+    setUpDragSession(): void;
+    /**
+     * Ends the drag session.
+     * @return {boolean} true if at least one editor has been moved.
+     */
+    endDragSession(): boolean;
+    /**
+     * Drag the set of selected editors.
+     */
+    dragSelectedEditors(tx: number, ty: number): void;
+    /**
+     * Rebuild the editor (usually on undo/redo actions) on a potentially
+     * non-rendered page.
+     */
+    rebuild(editor: AnnotationEditor): void;
     /**
      * Is the current editor the one passed as argument?
      */
     isActive(editor: AnnotationEditor): boolean;
+    get imageManager(): ImageManager;
 }
+export {};
 //# sourceMappingURL=tools.d.ts.map

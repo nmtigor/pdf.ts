@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-import type { rgb_t } from "../../../lib/color/alias.ts";
-import type { CMYK, CSTag } from "../shared/scripting_utils.ts";
+import type { Ratio } from "@fe-src/lib/alias.ts";
+import type { CMYK, CSTag, RGB } from "../shared/scripting_utils.ts";
 import { ColorConverters } from "../shared/scripting_utils.ts";
 import type { ScriptingData, SendData } from "./pdf_object.ts";
 import { PDFObject } from "./pdf_object.ts";
@@ -26,32 +26,32 @@ import { PDFObject } from "./pdf_object.ts";
 
 export type CorrectColor =
   | ["T"]
-  | ["G", number]
-  | ["RGB", ...rgb_t]
+  | ["G", Ratio]
+  | ["RGB", ...RGB]
   | ["CMYK", ...CMYK];
 
-interface _SendColorData extends SendData {
+interface SendColorData_ extends SendData {
 }
 
-interface _ScriptingColorData extends ScriptingData<_SendColorData> {
+interface ScriptingColorData_ extends ScriptingData<SendColorData_> {
 }
 
-export class Color extends PDFObject<_SendColorData> {
-  transparent = <[string]> ["T"];
-  black = <["G", number]> ["G", 0];
-  white = <["G", number]> ["G", 1];
-  red = <["RGB", ...rgb_t]> ["RGB", 1, 0, 0];
-  green = <["RGB", ...rgb_t]> ["RGB", 0, 1, 0];
-  blue = <["RGB", ...rgb_t]> ["RGB", 0, 0, 1];
-  cyan = <["CMYK", ...CMYK]> ["CMYK", 1, 0, 0, 0];
-  magenta = <["CMYK", ...CMYK]> ["CMYK", 0, 1, 0, 0];
-  yellow = <["CMYK", ...CMYK]> ["CMYK", 0, 0, 1, 0];
-  dkGray = <["G", number]> ["G", 0.25];
-  gray = <["G", number]> ["G", 0.5];
-  ltGray = <["G", number]> ["G", 0.75];
+export class Color extends PDFObject<SendColorData_> {
+  transparent = ["T"] as const;
+  black = ["G", 0] as ["G", Ratio];
+  white = ["G", 1] as ["G", Ratio];
+  red = ["RGB", 1, 0, 0] as ["RGB", ...RGB];
+  green = ["RGB", 0, 1, 0] as ["RGB", ...RGB];
+  blue = ["RGB", 0, 0, 1] as ["RGB", ...RGB];
+  cyan = ["CMYK", 1, 0, 0, 0] as ["CMYK", ...CMYK];
+  magenta = ["CMYK", 0, 1, 0, 0] as ["CMYK", ...CMYK];
+  yellow = ["CMYK", 0, 0, 1, 0] as ["CMYK", ...CMYK];
+  dkGray = ["G", 0.25] as ["G", Ratio];
+  gray = ["G", 0.5] as ["G", Ratio];
+  ltGray = ["G", 0.75] as ["G", Ratio];
 
   constructor() {
-    super(<_ScriptingColorData> {});
+    super({} as ScriptingColorData_);
   }
 
   static _isValidSpace(cColorSpace: unknown) {
@@ -105,7 +105,7 @@ export class Color extends PDFObject<_SendColorData> {
 
   static _getCorrectColor(colorArray: unknown): CorrectColor {
     return Color._isValidColor(colorArray)
-      ? <CorrectColor> colorArray
+      ? colorArray as CorrectColor
       : ["G", 0];
   }
 
@@ -127,7 +127,7 @@ export class Color extends PDFObject<_SendColorData> {
       return this.convert(this.black, cColorSpace);
     }
 
-    return (<any> ColorConverters)[`${colorArray[0]}_${cColorSpace}`](
+    return (ColorConverters as any)[`${colorArray[0]}_${cColorSpace}`](
       colorArray.slice(1),
     );
   }
@@ -144,7 +144,7 @@ export class Color extends PDFObject<_SendColorData> {
       colorArray2 = this.convert(colorArray2, colorArray1[0]);
     }
 
-    return (<[] | [number] | rgb_t | CMYK> colorArray1.slice(1))
+    return (colorArray1.slice(1) as [] | [Ratio] | RGB | CMYK)
       .every((c, i) => c === colorArray2[i + 1]);
   }
 }

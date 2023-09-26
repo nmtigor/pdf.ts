@@ -130,7 +130,6 @@ export class PDFViewer {
     imageResourcesPath;
     enablePrintAutoRotate;
     removePageBorders;
-    useOnlyCssZoom;
     isOffscreenCanvasSupported;
     maxCanvasPixels;
     l10n;
@@ -314,8 +313,11 @@ export class PDFViewer {
         this.enablePrintAutoRotate = options.enablePrintAutoRotate || false;
         /*#static*/  {
             this.removePageBorders = options.removePageBorders || false;
+            if (options.useOnlyCssZoom) {
+                console.error("useOnlyCssZoom was removed, please use `maxCanvasPixels = 0` instead.");
+                options.maxCanvasPixels = 0;
+            }
         }
-        this.useOnlyCssZoom = options.useOnlyCssZoom || false;
         this.isOffscreenCanvasSupported = options.isOffscreenCanvasSupported ??
             true;
         this.maxCanvasPixels = options.maxCanvasPixels;
@@ -501,10 +503,10 @@ export class PDFViewer {
                     return;
                 }
                 resolve();
-                document.removeEventListener("visibilitychange", this.#onVisibilityChange);
+                document.off("visibilitychange", this.#onVisibilityChange);
                 this.#onVisibilityChange = undefined;
             };
-            document.addEventListener("visibilitychange", this.#onVisibilityChange);
+            document.on("visibilitychange", this.#onVisibilityChange);
         });
         return Promise.race([
             this.#onePageRenderedCapability.promise,
@@ -561,7 +563,7 @@ export class PDFViewer {
             const savedCursor = this.container.style.cursor;
             this.container.style.cursor = "wait";
             const interruptCopy = (ev) => (this.#interruptCopyCondition = ev.key === "Escape");
-            window.addEventListener("keydown", interruptCopy);
+            window.on("keydown", interruptCopy);
             this.getAllText()
                 .then(async (text) => {
                 if (text !== null) {
@@ -574,7 +576,7 @@ export class PDFViewer {
                 .finally(() => {
                 this.#getAllTextInProgress = false;
                 this.#interruptCopyCondition = false;
-                window.removeEventListener("keydown", interruptCopy);
+                window.off("keydown", interruptCopy);
                 this.container.style.cursor = savedCursor;
             });
             event.preventDefault();
@@ -639,7 +641,7 @@ export class PDFViewer {
             this.eventBus._off("pagerendered", this._onAfterDraw);
             this._onAfterDraw = undefined;
             if (this.#onVisibilityChange) {
-                document.removeEventListener("visibilitychange", this.#onVisibilityChange);
+                document.off("visibilitychange", this.#onVisibilityChange);
                 this.#onVisibilityChange = undefined;
             }
         };
@@ -665,7 +667,7 @@ export class PDFViewer {
                     console.warn("Warning: XFA-editing is not implemented.");
                 }
                 else if (isValidAnnotationEditorMode(mode)) {
-                    this.#annotationEditorUIManager = new AnnotationEditorUIManager(this.container, this.eventBus, pdfDocument?.annotationStorage);
+                    this.#annotationEditorUIManager = new AnnotationEditorUIManager(this.container, this.viewer, this.eventBus, pdfDocument, this.pageColors);
                     if (mode !== AnnotationEditorType.NONE) {
                         this.#annotationEditorUIManager.updateMode(mode);
                     }
@@ -701,7 +703,6 @@ export class PDFViewer {
                     textLayerMode,
                     annotationMode,
                     imageResourcesPath: this.imageResourcesPath,
-                    useOnlyCssZoom: this.useOnlyCssZoom,
                     isOffscreenCanvasSupported: this.isOffscreenCanvasSupported,
                     maxCanvasPixels: this.maxCanvasPixels,
                     pageColors: this.pageColors,
@@ -733,7 +734,7 @@ export class PDFViewer {
                 this._scriptingManager?.setDocument(pdfDocument); // Enable scripting.
                 if (this.#hiddenCopyElement) {
                     this.#copyCallbackBound = this.#copyCallback.bind(this, textLayerMode);
-                    document.addEventListener("copy", this.#copyCallbackBound);
+                    document.on("copy", this.#copyCallbackBound);
                 }
                 if (this.#annotationEditorUIManager) {
                     // Ensure that the Editor buttons, in the toolbar, are updated.
@@ -844,7 +845,7 @@ export class PDFViewer {
             this._onAfterDraw = undefined;
         }
         if (this.#onVisibilityChange) {
-            document.removeEventListener("visibilitychange", this.#onVisibilityChange);
+            document.off("visibilitychange", this.#onVisibilityChange);
             this.#onVisibilityChange = undefined;
         }
         // Remove the pages from the DOM...
@@ -853,7 +854,7 @@ export class PDFViewer {
         this._updateScrollMode();
         this.viewer.removeAttribute("lang");
         if (this.#hiddenCopyElement) {
-            document.removeEventListener("copy", this.#copyCallbackBound);
+            document.off("copy", this.#copyCallbackBound);
             this.#copyCallbackBound = undefined;
             this.#hiddenCopyElement.remove();
             this.#hiddenCopyElement = undefined;
@@ -1763,7 +1764,7 @@ export class PDFViewer {
     /**
      * @param AnnotationEditor mode (None, FreeText, Ink, ...)
      */
-    set annotationEditorMode(mode) {
+    set annotationEditorMode({ mode, editId }) {
         if (!this.#annotationEditorUIManager) {
             throw new Error(`The AnnotationEditor is not enabled.`);
         }
@@ -1781,7 +1782,7 @@ export class PDFViewer {
             source: this,
             mode,
         });
-        this.#annotationEditorUIManager.updateMode(mode);
+        this.#annotationEditorUIManager.updateMode(mode, editId);
     }
     // eslint-disable-next-line accessor-pairs
     set annotationEditorParams({ type, value }) {

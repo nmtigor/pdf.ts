@@ -16,11 +16,11 @@
  * limitations under the License.
  */
 import { CHROME, GECKOVIEW, GENERIC, INOUT, MOZCENTRAL, PDFJSDev, } from "../../global.js";
-import "../../lib/jslang.js";
 import { Locale } from "../../lib/Locale.js";
+import "../../lib/jslang.js";
 import { PromiseCap } from "../../lib/util/PromiseCap.js";
 import { assert } from "../../lib/util/trace.js";
-import { AnnotationEditorType, build, FeatureTest, getDocument, getFilenameFromUrl, getPdfFilenameFromUrl, GlobalWorkerOptions, InvalidPDFException, isDataScheme, isPdfFile, loadScript, MissingPDFException, OPS, PDFWorker, shadow, UnexpectedResponseException, version, } from "../pdf.ts-src/pdf.js";
+import { AnnotationEditorType, build, FeatureTest, getDocument, getFilenameFromUrl, getPdfFilenameFromUrl, GlobalWorkerOptions, isDataScheme, isPdfFile, loadScript, PDFWorker, shadow, version, } from "../pdf.ts-src/pdf.js";
 import { AnnotationEditorParams } from "./annotation_editor_params.js";
 import { AppOptions, OptionKind, ViewerCssTheme, ViewOnLoad, } from "./app_options.js";
 import { AutomationEventBus, EventBus } from "./event_utils.js";
@@ -277,7 +277,7 @@ export class PDFViewerApplication {
             const enabled = params.get("pdfbug").split(",");
             try {
                 await loadPDFBug(this);
-                this._PDFBug.init({ OPS }, mainContainer, enabled);
+                this._PDFBug.init(mainContainer, enabled);
             }
             catch (ex) {
                 console.error(`#parseHashParams: "${ex.message}".`);
@@ -366,6 +366,8 @@ export class PDFViewerApplication {
         this.pdfScriptingManager = pdfScriptingManager;
         const container = appConfig.mainContainer, viewer = appConfig.viewerContainer;
         const annotationEditorMode = AppOptions.annotationEditorMode;
+        const isOffscreenCanvasSupported = AppOptions.isOffscreenCanvasSupported &&
+            FeatureTest.isOffscreenCanvasSupported;
         const pageColors = AppOptions.forcePageColors ||
             window.matchMedia("(forced-colors: active)").matches
             ? {
@@ -388,8 +390,7 @@ export class PDFViewerApplication {
             annotationEditorMode,
             imageResourcesPath: AppOptions.imageResourcesPath,
             enablePrintAutoRotate: AppOptions.enablePrintAutoRotate,
-            useOnlyCssZoom: AppOptions.useOnlyCssZoom,
-            isOffscreenCanvasSupported: AppOptions.isOffscreenCanvasSupported,
+            isOffscreenCanvasSupported,
             maxCanvasPixels: AppOptions.maxCanvasPixels,
             enablePermissions: AppOptions.enablePermissions,
             pageColors,
@@ -423,6 +424,9 @@ export class PDFViewerApplication {
         }
         if (appConfig.annotationEditorParams) {
             if (annotationEditorMode !== AnnotationEditorType.DISABLE) {
+                if (AppOptions.enableStampEditor && isOffscreenCanvasSupported) {
+                    appConfig.toolbar?.editorStampButton?.classList.remove("hidden");
+                }
                 this.annotationEditorParams = new AnnotationEditorParams(appConfig.annotationEditorParams, eventBus);
             }
             else {
@@ -510,7 +514,7 @@ export class PDFViewerApplication {
     }
     async run(config) {
         await this.initialize(config);
-        const { appConfig, eventBus, l10n } = this;
+        const { appConfig, eventBus } = this;
         const file = /*#static*/ (() => {
             const queryString = document.location.search.substring(1);
             const params = parseQueryString(queryString);
@@ -551,7 +555,7 @@ export class PDFViewerApplication {
         }
         if (!this.supportsDocumentFonts) {
             AppOptions.set("disableFontFace", true);
-            l10n.get("web_fonts_disabled").then((msg) => {
+            this.l10n.get("web_fonts_disabled").then((msg) => {
                 console.warn(msg);
             });
         }
@@ -570,20 +574,13 @@ export class PDFViewerApplication {
                 eventBus.dispatch("resize", { source: this });
             }
         }, true);
-        try {
-            /*#static*/  {
-                if (file) {
-                    this.open({ url: file });
-                }
-                else {
-                    this._hideViewBookmark();
-                }
+        /*#static*/  {
+            if (file) {
+                this.open({ url: file });
             }
-        }
-        catch (reason) {
-            l10n.get("loading_error").then((msg) => {
-                this._documentError(msg, reason);
-            });
+            else {
+                this._hideViewBookmark();
+            }
         }
     }
     get initialized() {
@@ -775,7 +772,7 @@ export class PDFViewerApplication {
         this._contentLength = undefined;
         this._saveInProgress = false;
         this._hasAnnotationEditors = false;
-        promises.push(this.pdfScriptingManager.destroyPromise);
+        promises.push(this.pdfScriptingManager.destroyPromise, this.passwordPrompt.close());
         this.setTitle();
         this.pdfSidebar?.reset();
         this.pdfOutlineViewer?.reset();
@@ -869,16 +866,12 @@ export class PDFViewerApplication {
             if (loadingTask !== this.pdfLoadingTask) {
                 return undefined; // Ignore errors for previously opened PDF files.
             }
-            let key = "loading_error";
-            if (reason instanceof InvalidPDFException) {
-                key = "invalid_file_error";
-            }
-            else if (reason instanceof MissingPDFException) {
-                key = "missing_file_error";
-            }
-            else if (reason instanceof UnexpectedResponseException) {
-                key = "unexpected_response_error";
-            }
+            // console.dir(reason);
+            const key = /* final switch */ {
+                InvalidPDFException: "invalid_file_error",
+                MissingPDFException: "missing_file_error",
+                UnexpectedResponseException: "unexpected_response_error",
+            }[reason?.name] ?? "loading_error";
             return this.l10n.get(key).then((msg) => {
                 this._documentError(msg, { message: reason?.message });
                 throw reason;
@@ -1021,9 +1014,9 @@ export class PDFViewerApplication {
         });
         // Since the `setInitialView` call below depends on this being resolved,
         // fetch it early to avoid delaying initial rendering of the PDF document.
-        const pageLayoutPromise = pdfDocument.getPageLayout().catch(() => 
-        /* Avoid breaking initial rendering; ignoring errors. */
-        undefined);
+        const pageLayoutPromise = pdfDocument.getPageLayout().catch(() => {
+            /* Avoid breaking initial rendering; ignoring errors. */
+        });
         const pageModePromise = pdfDocument.getPageMode().catch(() => {
             /* Avoid breaking initial rendering; ignoring errors. */
         });
@@ -1053,7 +1046,6 @@ export class PDFViewerApplication {
         })
             .catch(() => {
             /* Unable to read from storage; ignoring errors. */
-            return Object.create(null);
         });
         firstPagePromise.then((pdfPage) => {
             this.loadingBar?.setWidth(this.appConfig.viewerContainer);
@@ -1080,7 +1072,7 @@ export class PDFViewerApplication {
                 let sidebarView = AppOptions.sidebarViewOnLoad;
                 let scrollMode = AppOptions.scrollModeOnLoad;
                 let spreadMode = AppOptions.spreadModeOnLoad;
-                if (stored.page && viewOnLoad !== ViewOnLoad.INITIAL) {
+                if (stored?.page && viewOnLoad !== ViewOnLoad.INITIAL) {
                     hash = `page=${stored.page}&zoom=${zoom || stored.zoom},` +
                         `${stored.scrollLeft},${stored.scrollTop}`;
                     rotation = parseInt(stored.rotation, 10);
@@ -1233,36 +1225,30 @@ export class PDFViewerApplication {
         };
     };
     async #initializeAutoPrint(pdfDocument, openActionPromise) {
-        const [openAction, javaScript] = await Promise.all([
+        const [openAction, jsActions] = await Promise.all([
             openActionPromise,
-            !this.pdfViewer.enableScripting
-                ? pdfDocument.getJavaScript()
-                : undefined,
+            this.pdfViewer.enableScripting ? null : pdfDocument.getJSActions(),
         ]);
         if (pdfDocument !== this.pdfDocument) {
             return; // The document was closed while the auto print data resolved.
         }
-        let triggerAutoPrint = false;
-        if (openAction?.action === "Print") {
-            triggerAutoPrint = true;
-        }
-        if (javaScript) {
-            javaScript.some((js) => {
-                if (!js) {
-                    // Don't warn/fallback for empty JavaScript actions.
-                    return false;
+        let triggerAutoPrint = openAction?.action === "Print";
+        if (jsActions) {
+            console.warn("Warning: JavaScript support is not enabled");
+            // Hack to support auto printing.
+            for (const name in jsActions) {
+                if (triggerAutoPrint) {
+                    break;
                 }
-                console.warn("Warning: JavaScript support is not enabled");
-                return true;
-            });
-            if (!triggerAutoPrint) {
-                // Hack to support auto printing.
-                for (const js of javaScript) {
-                    if (js && AutoPrintRegExp.test(js)) {
-                        triggerAutoPrint = true;
-                        break;
-                    }
+                switch (name) {
+                    case "WillClose":
+                    case "WillSave":
+                    case "DidSave":
+                    case "WillPrint":
+                    case "DidPrint":
+                        continue;
                 }
+                triggerAutoPrint = jsActions[name].some((js) => AutoPrintRegExp.test(js));
             }
         }
         if (triggerAutoPrint) {
@@ -1385,7 +1371,7 @@ export class PDFViewerApplication {
             return;
         const { annotationStorage } = pdfDocument;
         annotationStorage.onSetModified = () => {
-            window.addEventListener("beforeunload", beforeUnload);
+            window.on("beforeunload", beforeUnload);
             /*#static*/  {
                 this._annotationStorageModified = true;
             }
@@ -1628,24 +1614,18 @@ export class PDFViewerApplication {
                 detail: event.detail,
             });
         };
-        window.addEventListener("visibilitychange", webViewerVisibilityChange);
-        window.addEventListener("wheel", webViewerWheel, { passive: false });
-        window.addEventListener("touchstart", webViewerTouchStart, {
-            passive: false,
-        });
-        window.addEventListener("touchmove", webViewerTouchMove, {
-            passive: false,
-        });
-        window.addEventListener("touchend", webViewerTouchEnd, {
-            passive: false,
-        });
-        window.addEventListener("click", webViewerClick);
-        window.addEventListener("keydown", webViewerKeyDown);
-        window.addEventListener("keyup", webViewerKeyUp);
-        window.addEventListener("resize", _boundEvents.windowResize);
-        window.addEventListener("hashchange", _boundEvents.windowHashChange);
-        window.addEventListener("beforeprint", _boundEvents.windowBeforePrint);
-        window.addEventListener("afterprint", _boundEvents.windowAfterPrint);
+        window.on("visibilitychange", webViewerVisibilityChange);
+        window.on("wheel", webViewerWheel, { passive: false });
+        window.on("touchstart", webViewerTouchStart, { passive: false });
+        window.on("touchmove", webViewerTouchMove, { passive: false });
+        window.on("touchend", webViewerTouchEnd, { passive: false });
+        window.on("click", webViewerClick);
+        window.on("keydown", webViewerKeyDown);
+        window.on("keyup", webViewerKeyUp);
+        window.on("resize", _boundEvents.windowResize);
+        window.on("hashchange", _boundEvents.windowHashChange);
+        window.on("beforeprint", _boundEvents.windowBeforePrint);
+        window.on("afterprint", _boundEvents.windowAfterPrint);
         window.addEventListener("updatefromsandbox", _boundEvents.windowUpdateFromSandbox);
     }
     unbindEvents() {
@@ -2009,7 +1989,7 @@ function webViewerPresentationMode() {
     viewerApp.requestPresentationMode();
 }
 function webViewerSwitchAnnotationEditorMode(evt) {
-    viewerApp.pdfViewer.annotationEditorMode = evt.mode;
+    viewerApp.pdfViewer.annotationEditorMode = evt;
 }
 function webViewerSwitchAnnotationEditorParams(evt) {
     viewerApp.pdfViewer.annotationEditorParams = evt;

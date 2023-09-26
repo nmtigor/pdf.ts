@@ -70,7 +70,7 @@ export declare class Ref {
     gen: number;
     constructor(num: number, gen: number);
     toString(): string;
-    static fromString(str: string): Ref | null;
+    static fromString(str: string): Ref | undefined;
     static get(num: number, gen: number): Ref;
 }
 export declare class RefSet {

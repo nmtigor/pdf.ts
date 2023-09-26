@@ -120,12 +120,9 @@ export class Util extends PDFObject {
             const [thousandSep, decimalSep] = separators[nDecSep];
             let decPart = "";
             if (cConvChar === "f") {
-                if (nPrecision !== undefined) {
-                    decPart = Math.abs(+arg - intPart).toFixed(nPrecision);
-                }
-                else {
-                    decPart = Math.abs(+arg - intPart).toString();
-                }
+                decPart = nPrecision !== undefined
+                    ? Math.abs(arg - intPart).toFixed(nPrecision)
+                    : Math.abs(arg - intPart).toString();
                 if (decPart.length > 2) {
                     decPart = `${decimalSep}${decPart.substring(2)}`;
                 }

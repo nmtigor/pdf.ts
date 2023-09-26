@@ -15,8 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { CHROME, DENO, GENERIC, LIB, MOZCENTRAL, PDFJSDev, TESTING, } from "../../global.js";
+import { CHROME, GENERIC, LIB, MOZCENTRAL, PDFJSDev, TESTING, } from "../../global.js";
 import { Locale } from "../../lib/Locale.js";
+import { D_base } from "../alias.js";
 import { AnnotationEditorType, AnnotationMode, VerbosityLevel, } from "../pdf.ts-src/pdf.js";
 import { LinkTarget } from "./pdf_link_service.js";
 import { CursorTool, ScrollMode, SidebarView, SpreadMode, TextLayerMode, } from "./ui_utils.js";
@@ -40,8 +41,6 @@ export var ViewOnLoad;
     ViewOnLoad[ViewOnLoad["PREVIOUS"] = 0] = "PREVIOUS";
     ViewOnLoad[ViewOnLoad["INITIAL"] = 1] = "INITIAL";
 })(ViewOnLoad || (ViewOnLoad = {}));
-/*49-------------------------------------------*/
-export const D_base = /*#static*/ "/pdf.ts";
 const userOptions = Object.create(null);
 export const compatibilityParams = Object.create(null);
 /*#static*/  {
@@ -114,6 +113,13 @@ const defaultOptions = {
         value: /*#static*/ true,
         kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
     },
+    enableStampEditor: {
+        // We'll probably want to make some experiments before enabling this
+        // in Firefox release, but it has to be temporary.
+        // TODO: remove it when unnecessary.
+        value: true,
+        kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
+    },
     externalLinkRel: {
         value: "noopener noreferrer nofollow",
         kind: OptionKind.VIEWER,
@@ -179,10 +185,6 @@ const defaultOptions = {
     },
     textLayerMode: {
         value: TextLayerMode.ENABLE,
-        kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
-    },
-    useOnlyCssZoom: {
-        value: false,
         kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
     },
     viewerCssTheme: {
@@ -358,6 +360,9 @@ export class AppOptions {
     static get enableScripting() {
         return this.#get("enableScripting");
     }
+    static get enableStampEditor() {
+        return this.#get("enableStampEditor");
+    }
     static get externalLinkRel() {
         return this.#get("externalLinkRel");
     }
@@ -405,9 +410,6 @@ export class AppOptions {
     }
     static get textLayerMode() {
         return this.#get("textLayerMode");
-    }
-    static get useOnlyCssZoom() {
-        return this.#get("useOnlyCssZoom");
     }
     static get viewerCssTheme() {
         return this.#get("viewerCssTheme");

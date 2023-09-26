@@ -227,7 +227,7 @@ function getTransformedBBox(node) {
  * in case of lr-tb or changing content area...).
  */
 export function checkDimensions(node, space) {
-    if (node[$getTemplateRoot]()[$extra].firstUnsplittable === null) {
+    if (node[$getTemplateRoot]()[$extra].firstUnsplittable === undefined) {
         return true;
     }
     if (node.w === 0 || node.h === 0) {

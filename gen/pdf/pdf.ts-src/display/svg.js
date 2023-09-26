@@ -19,8 +19,8 @@
 import { GENERIC } from "../../../global.js";
 import { svg as createSVG } from "../../../lib/dom.js";
 import { ShadingType } from "../core/pattern.js";
-import { FONT_IDENTITY_MATRIX, IDENTITY_MATRIX, ImageKind, OPS, TextRenderingMode, Util, warn, } from "../shared/util.js";
-import { deprecated, DOMSVGFactory, } from "./display_utils.js";
+import { FONT_IDENTITY_MATRIX, IDENTITY_MATRIX, ImageKind, isNodeJS, OPS, TextRenderingMode, Util, warn, } from "../shared/util.js";
+import { deprecated, DOMSVGFactory } from "./display_utils.js";
 /*80--------------------------------------------------------------------------*/
 /*#static*/ 
 const SVG_DEFAULTS = {
@@ -66,12 +66,7 @@ const convertImgDataToPng = (() => {
     for (let i = 0; i < 256; i++) {
         let c = i;
         for (let h = 0; h < 8; h++) {
-            if (c & 1) {
-                c = 0xedb88320 ^ ((c >> 1) & 0x7fffffff);
-            }
-            else {
-                c = (c >> 1) & 0x7fffffff;
-            }
+            c = c & 1 ? 0xedb88320 ^ ((c >> 1) & 0x7fffffff) : (c >> 1) & 0x7fffffff;
         }
         crcTable[i] = c;
     }
@@ -121,12 +116,12 @@ const convertImgDataToPng = (() => {
      *   http://www.libpng.org/pub/png/spec/1.2/PNG-Compression.html
      */
     function deflateSync(literals) {
-        // if (!isNodeJS) {
-        // zlib is certainly not available outside of Node.js. We can either use
-        // the pako library for client-side DEFLATE compression, or use the
-        // canvas API of the browser to obtain a more optimal PNG file.
-        return deflateSyncUncompressed(literals);
-        // }
+        if (!isNodeJS) {
+            // zlib is certainly not available outside of Node.js. We can either use
+            // the pako library for client-side DEFLATE compression, or use the
+            // canvas API of the browser to obtain a more optimal PNG file.
+            return deflateSyncUncompressed(literals);
+        }
         // try {
         //   // NOTE: This implementation is far from perfect, but already way better
         //   // than not applying any compression.
@@ -137,14 +132,9 @@ const convertImgDataToPng = (() => {
         //   // Node v0.11.12 zlib.deflateSync is introduced (and returns a Buffer).
         //   // Node v3.0.0   Buffer inherits from Uint8Array.
         //   // Node v8.0.0   zlib.deflateSync accepts Uint8Array as input.
-        //   let input;
-        //   // eslint-disable-next-line no-undef
-        //   if (parseInt(process.versions.node) >= 8) {
-        //     input = literals;
-        //   } else {
+        //   const input =
         //     // eslint-disable-next-line no-undef
-        //     input = Buffer.from(literals);
-        //   }
+        //     parseInt(process.versions.node) >= 8 ? literals : Buffer.from(literals);
         //   const output = __non_webpack_require__("zlib").deflateSync(input, {
         //     level: 9,
         //   });
@@ -152,7 +142,7 @@ const convertImgDataToPng = (() => {
         // } catch (e) {
         //   warn("Not compressing PNG because zlib.deflateSync is unavailable: " + e);
         // }
-        // return deflateSyncUncompressed(literals);
+        return deflateSyncUncompressed(literals);
     }
     // An implementation of DEFLATE with compression level 0 (Z_NO_COMPRESSION).
     function deflateSyncUncompressed(literals) {
@@ -387,10 +377,8 @@ function pm(m) {
             return `rotate(${pf(a)})`;
         }
     }
-    else {
-        if (m[0] === 1 && m[1] === 0 && m[2] === 0 && m[3] === 1) {
-            return `translate(${pf(m[4])} ${pf(m[5])})`;
-        }
+    else if (m[0] === 1 && m[1] === 0 && m[2] === 0 && m[3] === 1) {
+        return `translate(${pf(m[4])} ${pf(m[5])})`;
     }
     return (`matrix(${pf(m[0])} ${pf(m[1])} ${pf(m[2])} ${pf(m[3])} ${pf(m[4])} ` +
         `${pf(m[5])})`);
@@ -787,13 +775,9 @@ export class SVGGraphics {
                 // But we cannot just do "character = ' '", because the ' ' character
                 // might actually map to a different glyph.
             }
-            let charWidth;
-            if (vertical) {
-                charWidth = width * widthAdvanceScale - spacing * fontDirection;
-            }
-            else {
-                charWidth = width * widthAdvanceScale + spacing * fontDirection;
-            }
+            const charWidth = vertical
+                ? width * widthAdvanceScale - spacing * fontDirection
+                : width * widthAdvanceScale + spacing * fontDirection;
             x += charWidth;
         }
         current.tspan.setAttributeNS(null, "x", current.xcoords.map(pf).join(" "));

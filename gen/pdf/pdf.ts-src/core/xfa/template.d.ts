@@ -45,7 +45,7 @@ export declare class Area extends XFAObject {
     [$isBindable](): boolean;
     [$addHTML](html: XFAElData, bbox: rect_t): void;
     [$getAvailableSpace](): AvailableSpace | undefined;
-    [$toHTML](availableSpace?: AvailableSpace): HTMLResult;
+    [$toHTML](availableSpace?: AvailableSpace): any;
 }
 declare class Assist extends XFAObject {
     role: string;
@@ -490,7 +490,7 @@ export declare class ExclGroup extends XFAObject {
     [$flushHTML](): XFAHTMLObj | undefined;
     [$addHTML](html: XFAElData, bbox: rect_t): void;
     [$getAvailableSpace](): AvailableSpace;
-    [$toHTML](availableSpace: AvailableSpace): HTMLResult;
+    [$toHTML](availableSpace: AvailableSpace): any;
 }
 declare class Execute extends XFAObject {
     connection: string;
@@ -1134,7 +1134,7 @@ export declare class Subform extends XFAObject {
     [$addHTML](html: XFAElData, bbox: rect_t): void;
     [$getAvailableSpace](): AvailableSpace;
     [$isSplittable](): boolean;
-    [$toHTML](availableSpace?: AvailableSpace): HTMLResult;
+    [$toHTML](availableSpace?: AvailableSpace): any;
 }
 declare class SubformSet extends XFAObject {
     relation: string;
@@ -1327,7 +1327,7 @@ declare class Variables extends XFAObject {
 }
 export type XFANsTemplate = typeof TemplateNamespace;
 export declare const TemplateNamespace: {
-    [$buildXFAObject](name: string, attributes: XFAAttrs): Template | BreakAfter | BreakBefore | Para | Draw | Field | Caption | Value | Margin | Font | Occur | ExData | ExclGroup | Subform | Assist | Border | Area | ContentArea | AppearanceFilter | Arc | Barcode | Bind | BindItems | Bookend | BooleanElement | Break | Button | Calculate | Certificate | Certificates | CheckButton | ChoiceList | Color | Comb | Connect | Corner | DateElement | DateTime | DateTimeEdit | Decimal | DefaultUi | Desc | DigestMethod | DigestMethods | Edge | Encoding | Encodings | Encrypt | EncryptData | Encryption | EncryptionMethod | EncryptionMethods | Event | ExObject | Execute | Extras | Fill | Filter | Float | Format | Handler | Hyphenation | Image | ImageEdit | Integer | Issuers | Items | Keep | KeyUsage | Line | Linear | LockDocument | Manifest | Mdp | Medium | Message | NumericEdit | Oid | Oids | Overflow | PageArea | PageSet | PasswordEdit | Pattern | Picture | Proto | Radial | Reason | Reasons | Rectangle | RefElement | Script | SetProperty | SignData | Signature | Signing | Solid | Speak | Stipple | SubformSet | SubjectDN | SubjectDNs | Submit | Text | TextEdit | Time | TimeStamp | ToolTip | Traversal | Traverse | Ui | Validate | Variables | undefined;
+    [$buildXFAObject](name: string, attributes: XFAAttrs): Template | BreakAfter | BreakBefore | Para | Draw | Field | Caption | Value | Margin | Font | Occur | ExData | ExclGroup | Subform | Border | Area | ContentArea | Assist | AppearanceFilter | Arc | Barcode | Bind | BindItems | Bookend | BooleanElement | Break | Button | Calculate | Certificate | Certificates | CheckButton | ChoiceList | Color | Comb | Connect | Corner | DateElement | DateTime | DateTimeEdit | Decimal | DefaultUi | Desc | DigestMethod | DigestMethods | Edge | Encoding | Encodings | Encrypt | EncryptData | Encryption | EncryptionMethod | EncryptionMethods | Event | ExObject | Execute | Extras | Fill | Filter | Float | Format | Handler | Hyphenation | Image | ImageEdit | Integer | Issuers | Items | Keep | KeyUsage | Line | Linear | LockDocument | Manifest | Mdp | Medium | Message | NumericEdit | Oid | Oids | Overflow | PageArea | PageSet | PasswordEdit | Pattern | Picture | Proto | Radial | Reason | Reasons | Rectangle | RefElement | Script | SetProperty | SignData | Signature | Signing | Solid | Speak | Stipple | SubformSet | SubjectDN | SubjectDNs | Submit | Text | TextEdit | Time | TimeStamp | ToolTip | Traversal | Traverse | Ui | Validate | Variables | undefined;
     appearanceFilter(attrs: XFAAttrs): AppearanceFilter;
     arc(attrs: XFAAttrs): Arc;
     area(attrs: XFAAttrs): Area;

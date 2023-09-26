@@ -13,7 +13,7 @@ export declare class AnnotationStorage {
     get size(): number;
     onSetModified?: () => void;
     onResetModified?: () => void;
-    onAnnotationEditor: ((type?: "freetext" | "ink" | undefined) => void) | undefined;
+    onAnnotationEditor: ((type?: "freetext" | "ink" | "stamp" | undefined) => void) | undefined;
     /**
      * Get the value for a given key if it exists, or return the default value.
      */

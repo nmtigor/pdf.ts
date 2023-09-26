@@ -2,15 +2,15 @@
  * @module lib/alias
  * @license Apache-2.0
  ******************************************************************************/
-import { z } from "../3rd/zod-3.20.0/lib/index.mjs";
+import { z } from "../3rd/zod-3.22.2/lib/index.mjs";
 export const zInt = z.number().int();
 export const zUint = zInt.min(0);
 const zInt64 = zInt;
 export const zId = zUint;
-export const loff_UNDEFINED = -1_000_000_001;
-export const llen_MAX = 1_000_000_000;
+export const loff_UNDEFINED = -1000000001;
+export const llen_MAX = 1000000000;
 // export const lnum_UNDEFINED:lnum_t = -256n;
-export const lnum_MAX = 1_000_000;
+export const lnum_MAX = 1000000;
 export const zTs = zInt64;
 export const zRatio = z.number().finite();
 // deno-fmt-ignore

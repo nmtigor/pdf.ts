@@ -783,7 +783,7 @@ var NsJpxImage;
                                 const resolution = component.resolutions[r];
                                 const sizeInImageScale = precinctsSizes.components[c].resolutions[r];
                                 const k = getPrecinctIndexIfExist(px, py, sizeInImageScale, precinctsIterationSizes, resolution);
-                                if (k === null) {
+                                if (k === undefined) {
                                     continue;
                                 }
                                 for (; l < layersCount;) {
@@ -826,7 +826,7 @@ var NsJpxImage;
                                 const resolution = component.resolutions[r];
                                 const sizeInImageScale = precinctsIterationSizes.resolutions[r];
                                 const k = getPrecinctIndexIfExist(px, py, sizeInImageScale, precinctsIterationSizes, resolution);
-                                if (k === null) {
+                                if (k === undefined) {
                                     continue;
                                 }
                                 for (; l < layersCount;) {
@@ -852,7 +852,7 @@ var NsJpxImage;
         const posY = pyIndex * precinctIterationSizes.minHeight;
         if (posX % sizeInImageScale.width !== 0 ||
             posY % sizeInImageScale.height !== 0) {
-            return null;
+            return undefined;
         }
         const startPrecinctRowIndex = (posY / sizeInImageScale.width) *
             resolution.precinctParameters.numprecinctswide;
@@ -1276,12 +1276,9 @@ var NsJpxImage;
                         }
                         nb = bitsDecoded[position];
                         const pos = interleave ? levelOffset + (offset << 1) : offset;
-                        if (reversible && nb >= mb) {
-                            coefficients[pos] = n;
-                        }
-                        else {
-                            coefficients[pos] = n * (1 << (mb - nb));
-                        }
+                        coefficients[pos] = reversible && nb >= mb
+                            ? n
+                            : n * (1 << (mb - nb));
                     }
                     offset++;
                     position++;
@@ -1382,7 +1379,7 @@ var NsJpxImage;
                 const y0items = transformedTiles[0].items;
                 const y1items = transformedTiles[1].items;
                 const y2items = transformedTiles[2].items;
-                const y3items = fourComponents ? transformedTiles[3].items : null;
+                const y3items = fourComponents ? transformedTiles[3].items : undefined;
                 // HACK: The multiple component transform formulas below assume that
                 // all components have the same precision. With this in mind, we
                 // compute shift and offset only once.
@@ -1972,7 +1969,7 @@ var NsJpxImage;
                 }
             }
             // The LL band is not needed anymore.
-            llItems = ll.items = null;
+            llItems = ll.items = undefined;
             const bufferPadding = 4;
             const rowBuffer = new Float32Array(width + 2 * bufferPadding);
             // Section F.3.4 HOR_SR

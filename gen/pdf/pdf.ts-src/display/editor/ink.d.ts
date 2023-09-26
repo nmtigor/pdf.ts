@@ -1,7 +1,7 @@
-import type { C2D, point_t, TupleOf } from "../../../../lib/alias.js";
+import type { C2D, dot2d_t, TupleOf } from "../../../../lib/alias.js";
 import type { IL10n } from "../../../pdf.ts-web/interfaces.js";
 import { AnnotationEditorParamsType } from "../../shared/util.js";
-import { type AnnotStorageValue } from "../annotation_layer.js";
+import type { AnnotStorageValue } from "../annotation_layer.js";
 import type { AnnotationEditorLayer } from "./annotation_editor_layer.js";
 import type { AnnotationEditorP, PropertyToUpdate } from "./editor.js";
 import { AnnotationEditor } from "./editor.js";
@@ -12,7 +12,7 @@ export interface InkEditorP extends AnnotationEditorP {
     thickness?: number;
     opacity?: number;
 }
-type curve_t_ = TupleOf<point_t, 4>;
+type curve_t_ = TupleOf<dot2d_t, 4>;
 export interface InkEditorSerialized extends AnnotStorageValue {
     thickness: number;
     opacity: number;
@@ -26,28 +26,31 @@ export interface InkEditorSerialized extends AnnotStorageValue {
  */
 export declare class InkEditor extends AnnotationEditor {
     #private;
-    static _defaultColor: string | undefined;
-    static _defaultOpacity: number;
-    static _defaultThickness: number;
-    static _l10nPromise: Map<string, Promise<string>>;
-    static readonly _type = "ink";
     color: string | undefined;
     thickness: number | undefined;
     opacity: number | undefined;
     paths: curve_t_[][];
     bezierPath2D: Path2D[];
     allRawPaths: unknown[];
-    currentPath: point_t[];
+    currentPath: dot2d_t[];
     scaleFactor: number;
     translationX: number;
     translationY: number;
     canvas: HTMLCanvasElement | undefined;
     ctx: C2D;
+    static _defaultColor: string | undefined;
+    static _defaultOpacity: number;
+    static _defaultThickness: number;
+    static _l10nPromise: Map<string, Promise<string>>;
+    static readonly _type = "ink";
     constructor(params: InkEditorP);
+    /** @inheritdoc */
     static initialize(l10n: IL10n): void;
-    static updateDefaultParams(type: AnnotationEditorParamsType, value: number | string): void;
+    /** @inheritdoc */
+    static updateDefaultParams(type: AnnotationEditorParamsType, value: number | string | undefined): void;
     /** @inheritdoc */
     updateParams(type: AnnotationEditorParamsType, value: number | string): void;
+    /** @inheritdoc */
     static get defaultPropertiesToUpdate(): PropertyToUpdate[];
     /** @inheritdoc */
     get propertiesToUpdate(): PropertyToUpdate[];
@@ -91,6 +94,8 @@ export declare class InkEditor extends AnnotationEditor {
      * onpointerleave callback for the canvas we're drawing on.
      */
     canvasPointerleave(event: PointerEvent): void;
+    /** @inheritdoc */
+    get isResizable(): boolean;
     /** @inheritdoc */
     render(): HTMLDivElement;
     /**

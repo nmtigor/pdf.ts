@@ -27,17 +27,17 @@ export const
   , PDFTS = true
     , PDFTS_v = true // verbose
       , PDFTS_vv = false // very verbose
-, _INFO = DEV && INFO
-, _COLR = DEV && COLR
 , /** @deprecated */APP = false // release build
 
-, TESTING = false
-, DENO = false
-, _TRACE = DEV && TRACE && !TESTING
-
+, DENO = true
+, TESTING = true
 , CYPRESS = true
 
-  // from pdf.js
+, _INFO = DEV && INFO
+, _COLR = DEV && COLR
+, _TRACE = DEV && TRACE && !TESTING
+
+// from pdf.js
 , PDFJSDev = true
 , GENERIC = true
 , MOZCENTRAL = false
@@ -137,4 +137,13 @@ export const global = new class {
   //   else console.log( `%c${this.dent}${s_x}`, `color:${c_x}` );
   // }
 }();
+/*80--------------------------------------------------------------------------*/
+
+/*
+Before runtimes support it natively...
+
+Ref. https://devblogs.microsoft.com/typescript/announcing-typescript-5-2/#using-declarations-and-explicit-resource-management
+*/
+(Symbol as any).dispose ??= Symbol("Symbol.dispose");
+(Symbol as any).asyncDispose ??= Symbol("Symbol.asyncDispose");
 /*80--------------------------------------------------------------------------*/

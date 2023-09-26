@@ -441,7 +441,7 @@ var NsType1Parser;
             const array = [];
             while (true) {
                 const token = this.getToken();
-                if (token === null || token === "]" || token === "}") {
+                if (token === undefined || token === "]" || token === "}") {
                     break;
                 }
                 array.push(parseFloat(token || "0"));
@@ -476,7 +476,7 @@ var NsType1Parser;
             let ch = this.currentChar;
             while (true) {
                 if (ch === -1) {
-                    return null;
+                    return undefined;
                 }
                 if (comment) {
                     if (ch === 0x0a || ch === 0x0d) {
@@ -531,7 +531,7 @@ var NsType1Parser;
             let length;
             let data;
             let lenIV;
-            while ((token = this.getToken()) !== null) {
+            while ((token = this.getToken()) !== undefined) {
                 if (token !== "/") {
                     continue;
                 }
@@ -546,7 +546,7 @@ var NsType1Parser;
                         this.getToken(); // read in 'begin'
                         while (true) {
                             token = this.getToken();
-                            if (token === null || token === "end") {
+                            if (token === undefined || token === "end") {
                                 break;
                             }
                             if (token !== "/") {
@@ -671,7 +671,7 @@ var NsType1Parser;
         }
         extractFontHeader(properties) {
             let token;
-            while ((token = this.getToken()) !== null) {
+            while ((token = this.getToken()) !== undefined) {
                 if (token !== "/") {
                     continue;
                 }
@@ -697,7 +697,7 @@ var NsType1Parser;
                                 // skipping till first dup or def (e.g. ignoring for statement)
                                 while (token !== "dup" && token !== "def") {
                                     token = this.getToken();
-                                    if (token === null) {
+                                    if (token === undefined) {
                                         return; // invalid header
                                     }
                                 }

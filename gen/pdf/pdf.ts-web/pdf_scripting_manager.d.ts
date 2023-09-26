@@ -32,7 +32,7 @@ export declare class PDFScriptingManager {
     setDocument(pdfDocument?: PDFDocumentProxy): Promise<void>;
     dispatchWillSave(): Promise<void | undefined>;
     dispatchDidSave(): Promise<void | undefined>;
-    dispatchWillPrint(): Promise<void | undefined>;
+    dispatchWillPrint(): Promise<void>;
     dispatchDidPrint(): Promise<void | undefined>;
 }
 export {};

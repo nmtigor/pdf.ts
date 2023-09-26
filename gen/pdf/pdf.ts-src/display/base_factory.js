@@ -102,13 +102,15 @@ export class BaseSVGFactory {
             throw new Error("Invalid SVG dimensions");
         }
         const svg = this._createSVG("svg:svg");
-        svg.setAttribute("version", "1.1");
+        svg.assignAttro({
+            version: "1.1",
+            preserveAspectRatio: "none",
+            viewBox: `0 0 ${width} ${height}`,
+        });
         if (!skipDimensions) {
             svg.setAttribute("width", `${width}px`);
             svg.setAttribute("height", `${height}px`);
         }
-        svg.setAttribute("preserveAspectRatio", "none");
-        svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
         return svg;
     }
     /** @final */

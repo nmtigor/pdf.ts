@@ -17,10 +17,10 @@ if (globalThis.Event) {
 if (globalThis.WheelEvent) {
     WheelEvent.prototype._repr = function () {
         const m_ = /* final switch */ {
-            [WheelEvent.DOM_DELTA_PIXEL]: () => "DOM_DELTA_PIXEL",
-            [WheelEvent.DOM_DELTA_LINE]: () => "DOM_DELTA_LINE",
-            [WheelEvent.DOM_DELTA_PAGE]: () => "DOM_DELTA_PAGE",
-        }[this.deltaMode]();
+            [WheelEvent.DOM_DELTA_PIXEL]: "DOM_DELTA_PIXEL",
+            [WheelEvent.DOM_DELTA_LINE]: "DOM_DELTA_LINE",
+            [WheelEvent.DOM_DELTA_PAGE]: "DOM_DELTA_PAGE",
+        }[this.deltaMode];
         return {
             deltaMode: m_ ? `"${m_}"` : "undefined",
             deltaX: this.deltaX,
@@ -45,7 +45,7 @@ if (globalThis.EventTarget) {
         return this.removeEventListener(type, listener, options);
     };
 }
-export const ClickHoldTo = 10_000;
+export const ClickHoldTo = 10000;
 if (globalThis.Node) {
     Reflect.defineProperty(Node.prototype, "isText", {
         get() {

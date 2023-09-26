@@ -24,84 +24,106 @@
  *              unexpected/unnecessary size increase of the *built* files.
  */
 
-import type { rgb_t } from "../../../lib/color/alias.ts";
-import type { TupleOf } from "../../../lib/alias.ts";
+import type { Ratio, TupleOf } from "@fe-src/lib/alias.ts";
+import type { red_t, rgb_t } from "@fe-src/lib/color/alias.ts";
+import "@fe-src/lib/jslang.ts";
 /*80--------------------------------------------------------------------------*/
 
-function makeColorComp(n: number) {
-  return Math.floor(Math.max(0, Math.min(1, n)) * 255)
-    .toString(16)
-    .padStart(2, "0");
-}
-
-export type XYZ = TupleOf<number, 3>;
-export type CMYK = TupleOf<number, 4>;
+export type RGB = TupleOf<Ratio, 3>;
+export type CMYK = TupleOf<Ratio, 4>;
 
 export type CSTag = "G" | "RGB" | "T" | "CMYK";
 // export type ColorConvertersDetail = {
 //   [ C in CSTag ]:[ C, ...number[]];
 // }
-export type ColorConvertersDetail = Record<string, [CSTag, ...number[]]>;
+
+function makeColorComp(n: Ratio) {
+  return Math.floor(Math.clamp(0, n, 1) * 255)
+    .toString(16)
+    .padStart(2, "0");
+}
+
+function scaleAndClamp(x: Ratio): red_t {
+  return Math.clamp(0, 255 * x, 255);
+}
 
 /**
  * PDF specifications section 10.3
  */
-export namespace ColorConverters {
-  export function CMYK_G([c, y, m, k]: CMYK) {
-    return <["G", number]> [
+export class ColorConverters {
+  static CMYK_G([c, y, m, k]: CMYK) {
+    return [
       "G",
       1 - Math.min(1, 0.3 * c + 0.59 * m + 0.11 * y + k),
-    ];
+    ] as ["G", Ratio];
   }
 
-  export function G_CMYK([g]: [number]) {
-    return <["CMYK", ...CMYK]> ["CMYK", 0, 0, 0, 1 - g];
+  static G_CMYK([g]: [Ratio]) {
+    return ["CMYK", 0, 0, 0, 1 - g] as ["CMYK", ...CMYK];
   }
 
-  export function G_RGB([g]: [number]) {
-    return <["RGB", ...rgb_t]> ["RGB", g, g, g];
+  static G_RGB([g]: [Ratio]) {
+    return ["RGB", g, g, g] as ["RGB", ...RGB];
   }
 
-  export function G_HTML([g]: [number]) {
+  static G_rgb([g]: [Ratio]) {
+    g = scaleAndClamp(g);
+    return [g, g, g] as rgb_t;
+  }
+
+  static G_HTML([g]: [Ratio]) {
     const G = makeColorComp(g);
     return `#${G}${G}${G}`;
   }
 
-  export function RGB_G([r, g, b]: rgb_t) {
-    return <["G", number]> ["G", 0.3 * r + 0.59 * g + 0.11 * b];
+  static RGB_G([r, g, b]: RGB) {
+    return ["G", 0.3 * r + 0.59 * g + 0.11 * b] as ["G", Ratio];
   }
 
-  export function RGB_HTML([r, g, b]: rgb_t) {
-    const R = makeColorComp(r);
-    const G = makeColorComp(g);
-    const B = makeColorComp(b);
-    return `#${R}${G}${B}`;
+  static RGB_rgb(color: RGB) {
+    return color.map(scaleAndClamp) as rgb_t;
   }
 
-  export function T_HTML() {
+  static RGB_HTML(color: RGB) {
+    return `#${color.map(makeColorComp).join("")}`;
+  }
+
+  static T_HTML() {
     return "#00000000";
   }
 
-  export function CMYK_RGB([c, y, m, k]: CMYK) {
-    return <["RGB", ...rgb_t]> [
+  static T_rgb() {
+    return [];
+  }
+
+  static CMYK_RGB([c, y, m, k]: CMYK) {
+    return [
       "RGB",
       1 - Math.min(1, c + k),
       1 - Math.min(1, m + k),
       1 - Math.min(1, y + k),
-    ];
+    ] as ["RGB", ...RGB];
   }
 
-  export function CMYK_HTML(components: CMYK) {
-    const rgb = CMYK_RGB(components).slice(1) as rgb_t;
-    return RGB_HTML(rgb);
+  static CMYK_rgb([c, y, m, k]: CMYK) {
+    return [
+      scaleAndClamp(1 - Math.min(1, c + k)),
+      scaleAndClamp(1 - Math.min(1, m + k)),
+      scaleAndClamp(1 - Math.min(1, y + k)),
+    ] as rgb_t;
   }
 
-  export function RGB_CMYK([r, g, b]: rgb_t) {
+  static CMYK_HTML(components: CMYK) {
+    const rgb = this.CMYK_RGB(components).slice(1) as RGB;
+    return this.RGB_HTML(rgb);
+  }
+
+  static RGB_CMYK([r, g, b]: RGB) {
     const c = 1 - r;
     const m = 1 - g;
     const y = 1 - b;
     const k = Math.min(c, m, y);
-    return <["CMYK", ...CMYK]> ["CMYK", c, m, y, k];
+    return ["CMYK", c, m, y, k] as ["CMYK", ...CMYK];
   }
 }
 /*80--------------------------------------------------------------------------*/

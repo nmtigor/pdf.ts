@@ -15,7 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/* no-babel-preset */
 import { getLookupTableFactory } from "./core_utils.js";
 /*80--------------------------------------------------------------------------*/
 export const getGlyphsUnicode = getLookupTableFactory((t) => {
@@ -3071,6 +3070,8 @@ export const getGlyphsUnicode = getLookupTableFactory((t) => {
     t.pikatakana = 0x30d4;
     t.pisymbolgreek = 0x03d6;
     t.piwrarmenian = 0x0583;
+    t.planckover2pi = 0x210f;
+    t.planckover2pi1 = 0x210f;
     t.plus = 0x002b;
     t.plusbelowcmb = 0x031f;
     t.pluscircle = 0x2295;

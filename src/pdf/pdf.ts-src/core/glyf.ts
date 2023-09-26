@@ -693,15 +693,13 @@ class CompositeGlyph {
       ) {
         size += 2;
       }
-    } else {
-      if (
-        !(this.argument1 >= 0 &&
-          this.argument1 <= 255 &&
-          this.argument2 >= 0 &&
-          this.argument2 <= 255)
-      ) {
-        size += 2;
-      }
+    } else if (
+      !(this.argument1 >= 0 &&
+        this.argument1 <= 255 &&
+        this.argument2 >= 0 &&
+        this.argument2 <= 255)
+    ) {
+      size += 2;
     }
 
     return size;
@@ -720,15 +718,13 @@ class CompositeGlyph {
       ) {
         this.flags |= ARG_1_AND_2_ARE_WORDS;
       }
-    } else {
-      if (
-        !(this.argument1 >= 0 &&
-          this.argument1 <= 255 &&
-          this.argument2 >= 0 &&
-          this.argument2 <= 255)
-      ) {
-        this.flags |= ARG_1_AND_2_ARE_WORDS;
-      }
+    } else if (
+      !(this.argument1 >= 0 &&
+        this.argument1 <= 255 &&
+        this.argument2 >= 0 &&
+        this.argument2 <= 255)
+    ) {
+      this.flags |= ARG_1_AND_2_ARE_WORDS;
     }
 
     buf.setUint16(pos, this.flags);

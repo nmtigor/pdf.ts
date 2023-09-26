@@ -18,18 +18,20 @@
  */
 
 import { html } from "../../lib/dom.ts";
-import { FontFaceObject, OpListIR, OPS, OPSName } from "../pdf.ts-src/pdf.ts";
+import type { FontFaceObject, OpListIR, OPSName } from "../pdf.ts-src/pdf.ts";
+import { OPS } from "../pdf.ts-src/pdf.ts";
 /*80--------------------------------------------------------------------------*/
 
-interface _PdfjsLib {
-  OPS: typeof OPS;
+// const { OPS } = (globalThis as any).pdfjsLib || (await import("../pdf.ts-src/pdf.ts"));
+
+const opMap: Record<OPS, OPSName> = Object.create(null);
+for (const key in OPS) {
+  opMap[OPS[key as OPSName]] = key as OPSName;
 }
 
-type _Tool = typeof _FontInspector | typeof _StepperManager | typeof _Stats;
+type Tool_ = typeof FontInspector_ | typeof StepperManager_ | typeof Stats_;
 
-let opMap: Record<OPS, OPSName>;
-
-namespace _FontInspector {
+namespace FontInspector_ {
   let fonts: HTMLDivElement;
   let _active = false;
   const fontAttribute = "data-font-name";
@@ -55,12 +57,12 @@ namespace _FontInspector {
   }
   function textLayerClick(e: MouseEvent) {
     if (
-      !(<HTMLElement> e.target).dataset.fontName ||
-      (<HTMLElement> e.target).tagName.toUpperCase() !== "SPAN"
+      !(e.target as HTMLElement).dataset.fontName ||
+      (e.target as HTMLElement).tagName.toUpperCase() !== "SPAN"
     ) {
       return;
     }
-    const fontName = (<HTMLElement> e.target).dataset.fontName;
+    const fontName = (e.target as HTMLElement).dataset.fontName;
     const selects = document.getElementsByTagName("input");
     for (const select of selects) {
       if (select.dataset.fontName !== fontName) {
@@ -77,10 +79,10 @@ namespace _FontInspector {
   export const name = "Font Inspector";
   export let panel: HTMLDivElement;
   export let manager: typeof PDFBug;
-  export function init(pdfjsLib: _PdfjsLib) {
-    const panel = _FontInspector.panel;
+  export function init() {
+    const panel = FontInspector_.panel;
     const tmp = html("button");
-    tmp.addEventListener("click", resetSelection);
+    tmp.on("click", resetSelection);
     tmp.textContent = "Refresh";
     panel.append(tmp);
 
@@ -92,14 +94,14 @@ namespace _FontInspector {
   }
   export let enabled = false;
   export declare let active: boolean;
-  Object.defineProperty(_FontInspector, "active", {
+  Object.defineProperty(FontInspector_, "active", {
     set: function (value: boolean) {
       _active = value;
       if (_active) {
-        document.body.addEventListener("click", textLayerClick, true);
+        document.body.on("click", textLayerClick, true);
         resetSelection();
       } else {
-        document.body.removeEventListener("click", textLayerClick, true);
+        document.body.off("click", textLayerClick, true);
         removeSelection();
       }
     },
@@ -115,7 +117,7 @@ namespace _FontInspector {
         td1.textContent = entry;
         tr.append(td1);
         const td2 = html("td");
-        td2.textContent = obj[<keyof FontFaceObject> entry]!.toString();
+        td2.textContent = obj[entry as keyof FontFaceObject]!.toString();
         tr.append(td2);
         moreInfo.append(tr);
       }
@@ -138,14 +140,14 @@ namespace _FontInspector {
     const logIt = html("a");
     logIt.href = "";
     logIt.textContent = "Log";
-    logIt.addEventListener("click", (event) => {
+    logIt.on("click", (event) => {
       event.preventDefault();
       console.log(fontObj);
     });
     const select = html("input");
     select.setAttribute("type", "checkbox");
     select.dataset.fontName = fontName;
-    select.addEventListener("click", () => {
+    select.on("click", () => {
       selectFont(fontName, select.checked);
     });
     font.append(select, name, " ", download, " ", logIt, moreInfo);
@@ -153,7 +155,7 @@ namespace _FontInspector {
     // Somewhat of a hack, should probably add a hook for when the text layer
     // is done rendering.
     setTimeout(() => {
-      if (_FontInspector.active) {
+      if (FontInspector_.active) {
         resetSelection();
       }
     }, 2000);
@@ -161,7 +163,7 @@ namespace _FontInspector {
 }
 
 // Manages all the page steppers.
-namespace _StepperManager {
+namespace StepperManager_ {
   let steppers: Stepper[] = [];
   let stepperDiv: HTMLDivElement;
   let stepperControls: HTMLDivElement;
@@ -173,23 +175,18 @@ namespace _StepperManager {
   export const name = "Stepper";
   export let panel: HTMLDivElement;
   export let manager: typeof PDFBug;
-  export function init(pdfjsLib: _PdfjsLib) {
+  export function init() {
     stepperControls = html("div");
     stepperChooser = html("select");
-    stepperChooser.addEventListener("change", function (event) {
-      _StepperManager.selectStepper(+this.value);
+    stepperChooser.on("change", function (this: HTMLSelectElement) {
+      StepperManager_.selectStepper(this.value as any);
     });
     stepperControls.append(stepperChooser);
     stepperDiv = html("div");
-    _StepperManager.panel.append(stepperControls);
-    _StepperManager.panel.append(stepperDiv);
+    StepperManager_.panel.append(stepperControls);
+    StepperManager_.panel.append(stepperDiv);
     if (sessionStorage.getItem("pdfjsBreakPoints")) {
       breakPoints = JSON.parse(sessionStorage.getItem("pdfjsBreakPoints")!);
-    }
-
-    opMap = Object.create(null);
-    for (const key in pdfjsLib.OPS) {
-      opMap[pdfjsLib.OPS[<OPSName> key]] = <OPSName> key;
     }
   }
   export function cleanup() {
@@ -214,14 +211,14 @@ namespace _StepperManager {
     const stepper = new Stepper(debug, pageIndex, initBreakPoints);
     steppers.push(stepper);
     if (steppers.length === 1) {
-      _StepperManager.selectStepper(pageIndex, false);
+      StepperManager_.selectStepper(pageIndex, false);
     }
     return stepper;
   }
   export function selectStepper(pageIndex: number, selectPanel?: boolean) {
     pageIndex |= 0;
     if (selectPanel) {
-      _StepperManager.manager.selectPanel(_StepperManager);
+      StepperManager_.manager.selectPanel(StepperManager_);
     }
     for (const stepper of steppers) {
       stepper.panel.hidden = stepper.pageIndex !== pageIndex;
@@ -324,7 +321,7 @@ namespace NsStepper {
         } else {
           self.breakPoints.splice(self.breakPoints.indexOf(x), 1);
         }
-        _StepperManager.saveBreakPoints(self.pageIndex, self.breakPoints);
+        StepperManager_.saveBreakPoints(self.pageIndex, self.breakPoints);
       }
 
       const MAX_OPERATORS_COUNT = 15000;
@@ -340,7 +337,7 @@ namespace NsStepper {
       for (let i = this.operatorListIdx; i < operatorsToDisplay; i++) {
         const line = html("tr");
         line.className = "line";
-        line.dataset.idx = <any> i;
+        line.dataset.idx = i as any;
         chunk.append(line);
         const checked = this.breakPoints.includes(i);
         const args = operatorList.argsArray[i] || [];
@@ -350,8 +347,8 @@ namespace NsStepper {
         cbox.type = "checkbox";
         cbox.className = "points";
         cbox.checked = checked;
-        cbox.dataset.idx = <any> i;
-        cbox.onclick = <typeof cbox.onclick> cboxOnClick;
+        cbox.dataset.idx = i as any;
+        cbox.onclick = cboxOnClick as typeof cbox.onclick;
 
         breakCell.append(cbox);
         line.append(breakCell, html("td", i.toString()));
@@ -417,26 +414,26 @@ namespace NsStepper {
     }
 
     breakIt(idx: number, callback: () => void) {
-      _StepperManager.selectStepper(this.pageIndex, true);
+      StepperManager_.selectStepper(this.pageIndex, true);
       this.currentIdx = idx;
 
       const listener = (evt: KeyboardEvent) => {
         switch (evt.keyCode) {
           case 83: // step
-            document.removeEventListener("keydown", listener);
+            document.off("keydown", listener);
             this.nextBreakPoint = this.currentIdx + 1;
             this.goTo(-1);
             callback();
             break;
           case 67: // continue
-            document.removeEventListener("keydown", listener);
+            document.off("keydown", listener);
             this.nextBreakPoint = this.getNextBreakPoint();
             this.goTo(-1);
             callback();
             break;
         }
       };
-      document.addEventListener("keydown", listener);
+      document.on("keydown", listener);
       this.goTo(idx);
     }
 
@@ -444,11 +441,11 @@ namespace NsStepper {
       const allRows = <HTMLCollectionOf<SVGLineElement>> this.panel
         .getElementsByClassName("line");
       for (const row of allRows) {
-        if ((<any> row.dataset.idx | 0) === idx) {
+        if ((row.dataset.idx as any | 0) === idx) {
           row.style.backgroundColor = "rgb(251,250,207)";
           row.scrollIntoView();
         } else {
-          row.style.backgroundColor = <any> undefined;
+          row.style.backgroundColor = undefined as any;
         }
       }
     }
@@ -456,7 +453,7 @@ namespace NsStepper {
 }
 export import Stepper = NsStepper.Stepper;
 
-namespace _Stats {
+namespace Stats_ {
   interface _Stat {
     pageNumber: number;
     div: HTMLDivElement;
@@ -480,7 +477,7 @@ namespace _Stats {
   export const name = "Stats";
   export let panel: HTMLDivElement;
   export let manager: typeof PDFBug;
-  export function init(pdfjsLib: _PdfjsLib) {}
+  export function init() {}
   export let enabled = false;
   export let active = false;
   // Stats specific functions.
@@ -503,14 +500,14 @@ namespace _Stats {
     wrapper.append(title, statsDiv);
     stats.push({ pageNumber, div: wrapper });
     stats.sort((a, b) => a.pageNumber - b.pageNumber);
-    clear(_Stats.panel);
+    clear(Stats_.panel);
     for (const entry of stats) {
-      _Stats.panel.append(entry.div);
+      Stats_.panel.append(entry.div);
     }
   }
   export function cleanup() {
     stats = [];
-    clear(_Stats.panel);
+    clear(Stats_.panel);
   }
 }
 
@@ -521,9 +518,9 @@ export namespace PDFBug {
   let activePanel: number;
 
   export const tools = [
-    _FontInspector,
-    _StepperManager,
-    _Stats,
+    FontInspector_,
+    StepperManager_,
+    Stats_,
   ];
   export function enable(ids: string[]) {
     const all = ids.length === 1 && ids[0] === "all";
@@ -543,11 +540,7 @@ export namespace PDFBug {
       });
     }
   }
-  export function init(
-    pdfjsLib: _PdfjsLib,
-    container: HTMLDivElement,
-    ids: string[],
-  ) {
+  export function init(container: HTMLDivElement, ids: string[]) {
     loadCSS();
     enable(ids);
     /*
@@ -578,7 +571,7 @@ export namespace PDFBug {
       const panel = html("div");
       const panelButton = html("button");
       panelButton.textContent = tool.name;
-      panelButton.addEventListener("click", (event) => {
+      panelButton.on("click", (event) => {
         event.preventDefault();
         PDFBug.selectPanel(tool);
       });
@@ -587,7 +580,7 @@ export namespace PDFBug {
       tool.panel = panel;
       tool.manager = PDFBug;
       if (tool.enabled) {
-        tool.init(pdfjsLib);
+        tool.init();
       } else {
         panel.textContent =
           `${tool.name} is disabled. To enable add "${tool.id}" to ` +
@@ -613,7 +606,7 @@ export namespace PDFBug {
       }
     }
   }
-  export function selectPanel(index: number | _Tool) {
+  export function selectPanel(index: number | Tool_) {
     if (typeof index !== "number") {
       index = PDFBug.tools.indexOf(index);
     }
@@ -631,11 +624,11 @@ export namespace PDFBug {
 }
 
 declare global {
-  var FontInspector: typeof _FontInspector;
-  var StepperManager: typeof _StepperManager;
-  var Stats: typeof _Stats;
+  var FontInspector: typeof FontInspector_;
+  var StepperManager: typeof StepperManager_;
+  var Stats: typeof Stats_;
 }
-(<any> globalThis).FontInspector = _FontInspector;
-(<any> globalThis).StepperManager = _StepperManager;
-(<any> globalThis).Stats = _Stats;
+(globalThis as any).FontInspector = FontInspector_;
+(globalThis as any).StepperManager = StepperManager_;
+(globalThis as any).Stats = Stats_;
 /*80--------------------------------------------------------------------------*/

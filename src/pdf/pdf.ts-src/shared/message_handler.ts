@@ -17,18 +17,12 @@
  * limitations under the License.
  */
 
-import {
-  _TRACE,
-  global,
-  PDFJSDev,
-  PDFTS_vv,
-  TESTING,
-} from "../../../global.ts";
-import type { rect_t } from "../../../lib/alias.ts";
-import type { HttpStatusCode } from "../../../lib/HttpStatusCode.ts";
-import { isObjectLike } from "../../../lib/jslang.ts";
-import { PromiseCap } from "../../../lib/util/PromiseCap.ts";
-import { assert, type ErrorJ } from "../../../lib/util/trace.ts";
+import { _TRACE, global, PDFJSDev, PDFTS_vv, TESTING } from "@fe-src/global.ts";
+import type { rect_t } from "@fe-src/lib/alias.ts";
+import type { HttpStatusCode } from "@fe-src/lib/HttpStatusCode.ts";
+import { isObjectLike } from "@fe-src/lib/jslang.ts";
+import { PromiseCap } from "@fe-src/lib/util/PromiseCap.ts";
+import { assert, type ErrorJ, fail } from "@fe-src/lib/util/trace.ts";
 import type { PageLayout, PageMode } from "../../pdf.ts-web/ui_utils.ts";
 import type { AnnotationData, FieldObject } from "../core/annotation.ts";
 import type {
@@ -42,8 +36,8 @@ import type { AnnotActions } from "../core/core_utils.ts";
 import type { DatasetReader } from "../core/dataset_reader.ts";
 import type { DocumentInfo, XFAData } from "../core/document.ts";
 import type { ImgData } from "../core/evaluator.ts";
-import type { FontExpotDataEx } from "../core/fonts.ts";
 import type { CmdArgs } from "../core/font_renderer.ts";
+import type { FontExpotDataEx } from "../core/fonts.ts";
 import type { IWorker } from "../core/iworker.ts";
 import type { SerializedMetadata } from "../core/metadata_parser.ts";
 import type { OpListIR } from "../core/operator_list.ts";
@@ -61,7 +55,11 @@ import type {
 } from "../display/api.ts";
 import type { CMapData } from "../display/base_factory.ts";
 import type { VerbosityLevel } from "../pdf.ts";
-import type { PermissionFlag, RenderingIntentFlag } from "./util.ts";
+import type {
+  PasswordExceptionJ,
+  PermissionFlag,
+  RenderingIntentFlag,
+} from "./util.ts";
 import {
   AbortException,
   MissingPDFException,
@@ -90,8 +88,8 @@ enum StreamKind {
   START_COMPLETE,
 }
 
-interface reason_t {
-  name?: string;
+export interface reason_t {
+  name: string;
   message: string;
 
   code?: PasswordResponses;
@@ -99,24 +97,25 @@ interface reason_t {
   details?: string;
 }
 
-function wrapReason(reason: reason_t) {
+function wrapReason(reason: reason_t): ErrorJ {
   if (!(reason instanceof Error || isObjectLike(reason))) {
-    assert(0, 'wrapReason: Expected "reason" to be a (possibly cloned) Error.');
+    fail('wrapReason: Expected "reason" to be a (possibly cloned) Error.');
   }
-  switch (reason.name) {
-    case "AbortException":
-      return new AbortException(reason.message);
-    case "MissingPDFException":
-      return new MissingPDFException(reason.message);
-    case "PasswordException":
-      return new PasswordException(reason.message, reason.code!);
-    case "UnexpectedResponseException":
-      return new UnexpectedResponseException(reason.message, reason.status!);
-    case "UnknownErrorException":
-      return new UnknownErrorException(reason.message, reason.details);
-    default:
-      return new UnknownErrorException(reason.message, reason.toString());
-  }
+  const ex_ = /* final switch */ {
+    AbortException: new AbortException(reason.message),
+    MissingPDFException: new MissingPDFException(reason.message),
+    PasswordException: new PasswordException(reason.message, reason.code!),
+    UnexpectedResponseException: new UnexpectedResponseException(
+      reason.message,
+      reason.status!,
+    ),
+    UnknownErrorException: new UnknownErrorException(
+      reason.message,
+      reason.details,
+    ),
+  }[reason.name] ??
+    new UnknownErrorException(reason.message, reason.toString());
+  return ex_.toJ();
 }
 /*49-------------------------------------------*/
 
@@ -468,7 +467,7 @@ export interface WActionMap {
     Sinkchunk: undefined;
   };
   PasswordRequest: {
-    Data: PasswordException;
+    Data: PasswordExceptionJ;
     Return: {
       password: string;
     };

@@ -1,12 +1,12 @@
-import type { rgb_t } from "../../../lib/color/alias.js";
-import type { CMYK, CSTag } from "../shared/scripting_utils.js";
+import type { Ratio } from "../../../lib/alias.js";
+import type { CMYK, CSTag, RGB } from "../shared/scripting_utils.js";
 import type { SendData } from "./pdf_object.js";
 import { PDFObject } from "./pdf_object.js";
-export type CorrectColor = ["T"] | ["G", number] | ["RGB", ...rgb_t] | ["CMYK", ...CMYK];
-interface _SendColorData extends SendData {
+export type CorrectColor = ["T"] | ["G", Ratio] | ["RGB", ...RGB] | ["CMYK", ...CMYK];
+interface SendColorData_ extends SendData {
 }
-export declare class Color extends PDFObject<_SendColorData> {
-    transparent: [string];
+export declare class Color extends PDFObject<SendColorData_> {
+    transparent: readonly ["T"];
     black: ["G", number];
     white: ["G", number];
     red: ["RGB", number, number, number];

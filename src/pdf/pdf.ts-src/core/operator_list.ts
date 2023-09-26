@@ -17,15 +17,10 @@
  * limitations under the License.
  */
 
-import type { OC2D } from "../../../lib/alias.ts";
+import type { OC2D } from "@fe-src/lib/alias.ts";
 import type { StreamSink, Thread } from "../shared/message_handler.ts";
-import {
-  ImageKind,
-  type matrix_t,
-  OPS,
-  RenderingIntentFlag,
-  warn,
-} from "../shared/util.ts";
+import type { matrix_t } from "../shared/util.ts";
+import { ImageKind, OPS, RenderingIntentFlag, warn } from "../shared/util.ts";
 import type { ImgData, MarkedContentProps, OpArgs } from "./evaluator.ts";
 /*80--------------------------------------------------------------------------*/
 
@@ -700,11 +695,9 @@ export class OperatorList {
     streamSink?: StreamSink<Thread.main, "GetOperatorList">,
   ) {
     this.#streamSink = streamSink;
-    if (streamSink && !(intent & RenderingIntentFlag.OPLIST)) {
-      this.optimizer = new QueueOptimizer(this);
-    } else {
-      this.optimizer = new NullOptimizer(this);
-    }
+    this.optimizer = streamSink && !(intent & RenderingIntentFlag.OPLIST)
+      ? new QueueOptimizer(this)
+      : new NullOptimizer(this);
     this.#resolved = streamSink ? undefined : Promise.resolve();
   }
 

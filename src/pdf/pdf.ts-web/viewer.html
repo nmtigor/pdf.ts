@@ -62,6 +62,13 @@ See https://github.com/adobe-type-tools/cmap-resources
           "pdfjs-lib": "../src/pdf.js",
           "pdfjs-web/": "./",
 
+          "display-fetch_stream": "../src/display/fetch_stream.js",
+          "display-l10n_utils": "../src/display/stubs.js",
+          "display-network": "../src/display/network.js",
+          "display-node_stream": "../src/display/stubs.js",
+          "display-node_utils": "../src/display/stubs.js",
+          "display-svg": "../src/display/stubs.js",
+
           "web-annotation_editor_params": "./annotation_editor_params.js",
           "web-com": "./genericcom.js",
           "web-pdf_attachment_viewer": "./pdf_attachment_viewer.js",
@@ -208,6 +215,15 @@ See https://github.com/adobe-type-tools/cmap-resources
             <input type="range" id="editorInkOpacity" class="editorParamsSlider" value="100" min="1" max="100" step="1"
               tabindex="104">
           </div>
+        </div>
+      </div>
+
+      <div class="editorParamsToolbar hidden doorHangerRight" id="editorStampParamsToolbar">
+        <div class="editorParamsToolbarContainer">
+          <button id="editorStampAddImage" class="secondaryToolbarButton" title="Add image" tabindex="105"
+            data-l10n-id="editor_stamp_add_image">
+            <span data-l10n-id="editor_stamp_add_image_label">Add image</span>
+          </button>
         </div>
       </div>
 
@@ -385,6 +401,11 @@ See https://github.com/adobe-type-tools/cmap-resources
                 <button id="editorInk" class="toolbarButton" disabled="disabled" title="Draw" role="radio"
                   aria-checked="false" aria-controls="editorInkParamsToolbar" tabindex="35" data-l10n-id="editor_ink2">
                   <span data-l10n-id="editor_ink2_label">Draw</span>
+                </button>
+                <button id="editorStamp" class="toolbarButton hidden" disabled="disabled" title="Add or edit images"
+                  role="radio" aria-checked="false" aria-controls="editorStampParamsToolbar" tabindex="36"
+                  data-l10n-id="editor_stamp1">
+                  <span data-l10n-id="editor_stamp1_label">Add or edit images</span>
                 </button>
               </div>
 

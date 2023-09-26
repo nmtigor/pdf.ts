@@ -28,9 +28,9 @@ import { ColorSpace } from "./colorspace.js";
 import { getLookupTableFactory, MissingDataException } from "./core_utils.js";
 import { DecodeStream } from "./decode_stream.js";
 import { getEncoding, MacRomanEncoding, StandardEncoding, SymbolSetEncoding, WinAnsiEncoding, ZapfDingbatsEncoding, } from "./encodings.js";
+import { getFontSubstitution } from "./font_substitutions.js";
 import { ErrorFont, Font } from "./fonts.js";
 import { FontFlags } from "./fonts_utils.js";
-import { getFontSubstitution } from "./font_substitutions.js";
 import { isPDFFunction, PDFFunctionFactory } from "./function.js";
 import { getGlyphsUnicode } from "./glyphlist.js";
 import { PDFImage } from "./image.js";
@@ -395,12 +395,9 @@ export class PartialEvaluator {
         const dict = xobj.dict;
         const matrix = dict.getArray("Matrix");
         let bbox = dict.getArray("BBox");
-        if (Array.isArray(bbox) && bbox.length === 4) {
-            bbox = Util.normalizeRect(bbox);
-        }
-        else {
-            bbox = undefined;
-        }
+        bbox = Array.isArray(bbox) && bbox.length === 4
+            ? Util.normalizeRect(bbox)
+            : undefined;
         let optionalContent, groupOptions;
         if (dict.has("OC")) {
             optionalContent = await this.parseMarkedContentProps(dict.get("OC"), resources);
@@ -643,13 +640,9 @@ export class PartialEvaluator {
             /* isOffscreenCanvasSupported = */ this.options
                 .isOffscreenCanvasSupported);
             if (cacheKey && imageRef && cacheGlobally) {
-                let length = 0;
-                if (imgData.bitmap) {
-                    length = imgData.width * imgData.height * 4;
-                }
-                else {
-                    length = imgData.data.length;
-                }
+                const length = imgData.bitmap
+                    ? imgData.width * imgData.height * 4
+                    : imgData.data.length;
                 this.globalImageCache.addByteSize(imageRef, length);
             }
             return this._sendImgData(objId, imgData, cacheGlobally);
@@ -1828,15 +1821,12 @@ export class PartialEvaluator {
             width: 0,
             height: 0,
             vertical: false,
-            // prevTransform: null,
             textAdvanceScale: 0,
             spaceInFlowMin: 0,
             spaceInFlowMax: 0,
             trackingSpaceMin: Infinity,
             negativeSpaceMax: -Infinity,
             notASpace: -Infinity,
-            // transform: null,
-            // fontName: null,
             hasEOL: false,
         };
         // Use a circular buffer (length === 2) to save the last chars in the
@@ -2699,7 +2689,7 @@ export class PartialEvaluator {
                         flushTextContentItem();
                         if (includeMarkedContent) {
                             markedContentData.level++;
-                            let mcid = null;
+                            let mcid;
                             if (args[1] instanceof Dict) {
                                 mcid = args[1].get("MCID");
                             }
@@ -3281,12 +3271,7 @@ export class PartialEvaluator {
         if (!(lookupName in Metrics)) {
             // Use default fonts for looking up font metrics if the passed
             // font is not a base font
-            if (this.isSerifFont(name)) {
-                lookupName = "Times-Roman";
-            }
-            else {
-                lookupName = "Helvetica";
-            }
+            lookupName = this.isSerifFont(name) ? "Times-Roman" : "Helvetica";
         }
         const glyphWidths = Metrics[lookupName];
         if (typeof glyphWidths === "number") {

@@ -27,14 +27,14 @@ declare namespace NsJbig2Image {
         rangeLow?: number;
         isLowerRange?: boolean;
         isOOB?: boolean;
-        constructor(line: HuffmanLine | null);
+        constructor(line?: HuffmanLine);
         buildTree(line: HuffmanLine, shift: number): void;
-        decodeNode(reader: Reader): number | null;
+        decodeNode(reader: Reader): number | undefined;
     }
     export class HuffmanTable {
         rootNode: HuffmanTreeNode;
         constructor(lines: HuffmanLine[], prefixCodesDone: boolean);
-        decode(reader: Reader): number | null;
+        decode(reader: Reader): number | undefined;
         assignPrefixCodes(lines: HuffmanLine[]): void;
     }
     class Reader {

@@ -1,6 +1,6 @@
-import type { point_t } from "../../lib/alias.js";
+import type { dot2d_t } from "../../lib/alias.js";
 import type { MetadataEx, RenderTask } from "../pdf.ts-src/display/api.js";
-import type { AnnotationEditorUIManager, AnnotationStorage, FieldObject, OptionalContentConfig, PageViewport, PDFPageProxy, StatTimer } from "../pdf.ts-src/pdf.js";
+import type { AnnotActions, AnnotationEditorUIManager, AnnotationStorage, FieldObject, OptionalContentConfig, PageViewport, PDFPageProxy, StatTimer } from "../pdf.ts-src/pdf.js";
 import { AnnotationMode } from "../pdf.ts-src/pdf.js";
 import { AnnotationEditorLayerBuilder } from "./annotation_editor_layer_builder.js";
 import { AnnotationLayerBuilder } from "./annotation_layer_builder.js";
@@ -65,17 +65,13 @@ interface PDFPageViewOptions {
      */
     imageResourcesPath?: string;
     /**
-     * Enables CSS only zooming. The default value is `false`.
-     */
-    useOnlyCssZoom?: boolean;
-    /**
      * Allows to use an OffscreenCanvas if needed.
      */
     isOffscreenCanvasSupported?: boolean;
     /**
      * The maximum supported canvas size in
-     * total pixels, i.e. width * height. Use -1 for no limit. The default value
-     * is 4096 * 4096 (16 mega-pixels).
+     * total pixels, i.e. width * height. Use `-1` for no limit, or `0` for
+     * CSS-only zooming. The default value is 4096 * 4096 (16 mega-pixels).
      */
     maxCanvasPixels?: number | undefined;
     /**
@@ -98,7 +94,7 @@ type LayerPropsR_ = {
     annotationStorage?: AnnotationStorage | undefined;
     downloadManager?: IDownloadManager | undefined;
     enableScripting: boolean;
-    fieldObjectsPromise?: Promise<boolean | Record<string, FieldObject[]> | MetadataEx | undefined> | undefined;
+    fieldObjectsPromise?: Promise<boolean | Record<string, FieldObject[]> | AnnotActions | MetadataEx | undefined> | undefined;
     findController?: PDFFindController | undefined;
     hasJSActionsPromise?: Promise<boolean> | undefined;
     linkService: IPDFLinkService;
@@ -151,9 +147,7 @@ export declare class PDFPageView implements IVisibleView {
     pdfPageRotate: number;
     _annotationStorage?: AnnotationStorage;
     _optionalContentConfigPromise: Promise<OptionalContentConfig | undefined> | undefined;
-    hasRestrictedScaling: boolean;
     imageResourcesPath: string;
-    useOnlyCssZoom: boolean;
     isOffscreenCanvasSupported: boolean;
     maxCanvasPixels: number;
     pageColors: PageColors | undefined;
@@ -199,7 +193,7 @@ export declare class PDFPageView implements IVisibleView {
      */
     cancelRendering({ keepAnnotationLayer, keepAnnotationEditorLayer, keepXfaLayer, keepTextLayer, cancelExtraDelay, }?: CancelRenderingP_): void;
     cssTransform({ target, redrawAnnotationLayer, redrawAnnotationEditorLayer, redrawXfaLayer, redrawTextLayer, hideTextLayer, }: CSSTransformP_): void;
-    getPagePoint(x: number, y: number): point_t;
+    getPagePoint(x: number, y: number): dot2d_t;
     /** @implement */
     draw(): Promise<void>;
     setPageLabel(label?: string): void;

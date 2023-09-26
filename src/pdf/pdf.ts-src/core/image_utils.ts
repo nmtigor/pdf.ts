@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-import { PDFJSDev, TESTING } from "../../../global.ts";
-import { assert } from "../../../lib/util/trace.ts";
+import { PDFJSDev, TESTING } from "@fe-src/global.ts";
+import { assert, fail } from "@fe-src/lib/util/trace.ts";
 import { MAX_IMAGE_SIZE_TO_CACHE, OPS, warn } from "../shared/util.ts";
 import type { ColorSpace } from "./colorspace.ts";
 import type { ImgData, MarkedContentProps } from "./evaluator.ts";
@@ -46,7 +46,7 @@ abstract class BaseLocalCache<CD> {
   /** @final */
   getByName(name: string) {
     if (this.#onlyRefs) {
-      assert(0, "Should not call `getByName` method.");
+      fail("Should not call `getByName` method.");
     }
     const ref = this.nameRefMap$!.get(name);
     if (ref) {

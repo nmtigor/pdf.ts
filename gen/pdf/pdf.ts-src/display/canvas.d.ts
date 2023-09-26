@@ -1,4 +1,4 @@
-import type { C2D, point_t, rect_t } from "../../../lib/alias.js";
+import type { C2D, dot2d_t, rect_t } from "../../../lib/alias.js";
 import type { Stepper } from "../../pdf.ts-web/debugger.js";
 import type { PageColors } from "../../pdf.ts-web/pdf_viewer.js";
 import type { ImgData, MarkedContentProps, SmaskOptions } from "../core/evaluator.js";
@@ -296,7 +296,7 @@ export declare class CanvasGraphics {
     [OPS.endCompat](): void;
     consumePath(clipBox?: rect_t): void;
     getSinglePixelWidth(): number;
-    getScaleForStroking(): point_t;
+    getScaleForStroking(): dot2d_t;
     rescaleAndStroke(saveRestore: boolean): void;
     isContentVisible(): boolean;
 }

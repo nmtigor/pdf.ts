@@ -38,7 +38,7 @@ export class OverlayManager {
             throw new Error("The overlay is already registered.");
         }
         this.#overlays.set(dialog, { canForceClose });
-        dialog.addEventListener("cancel", (evt) => {
+        dialog.on("cancel", (evt) => {
             this.#active = undefined;
         });
     }

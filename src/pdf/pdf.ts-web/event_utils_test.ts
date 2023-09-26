@@ -17,17 +17,8 @@
  * limitations under the License.
  */
 
-import {
-  assertEquals,
-  assertInstanceOf,
-  fail,
-} from "https://deno.land/std@0.195.0/testing/asserts.ts";
-import {
-  afterAll,
-  beforeAll,
-  describe,
-  it,
-} from "https://deno.land/std@0.195.0/testing/bdd.ts";
+import { assertEquals, assertInstanceOf, fail } from "@std/assert/mod.ts";
+import { afterAll, beforeAll, describe, it } from "@std/testing/bdd.ts";
 import { EventBus, waitOnEventOrTimeout, WaitOnType } from "./event_utils.ts";
 import { html } from "../../lib/dom.ts";
 /*80--------------------------------------------------------------------------*/

@@ -3,9 +3,9 @@
  * @license Apache-2.0
  ******************************************************************************/
 export type int = number;
-export declare const zInt: import("../3rd/zod-3.20.0/lib/index.mjs").ZodNumber;
+export declare const zInt: import("../3rd/zod-3.22.2/lib/index.mjs").ZodNumber;
 export type uint = number;
-export declare const zUint: import("../3rd/zod-3.20.0/lib/index.mjs").ZodNumber;
+export declare const zUint: import("../3rd/zod-3.22.2/lib/index.mjs").ZodNumber;
 export type int64 = int;
 export type int32 = int;
 export type int16 = int;
@@ -16,7 +16,7 @@ export type uint16 = uint;
 export type uint8 = uint;
 /** 0 is special */
 export type id_t = uint;
-export declare const zId: import("../3rd/zod-3.20.0/lib/index.mjs").ZodNumber;
+export declare const zId: import("../3rd/zod-3.22.2/lib/index.mjs").ZodNumber;
 /** Count one "\t" as 1 */
 export type llen_t = uint32;
 export type loff_t = int32;
@@ -28,10 +28,10 @@ export type lnum_t = uint32;
 export declare const lnum_MAX: lnum_t;
 /** Type of unix timestamp */
 export type ts_t = int64;
-export declare const zTs: import("../3rd/zod-3.20.0/lib/index.mjs").ZodNumber;
+export declare const zTs: import("../3rd/zod-3.22.2/lib/index.mjs").ZodNumber;
 /** Recommand [0,1] */
 export type Ratio = number;
-export declare const zRatio: import("../3rd/zod-3.20.0/lib/index.mjs").ZodNumber;
+export declare const zRatio: import("../3rd/zod-3.22.2/lib/index.mjs").ZodNumber;
 /**
  * Dull string
  * String of characters 0x20 ~ 0x0_126
@@ -74,7 +74,8 @@ export declare enum ChrTyp {
     PDI = 4194304
 }
 export type ChrTypName = keyof typeof ChrTyp;
-export type point_t = [number, number];
+export type dot2d_t = [x: number, y: number];
+export type dim2d_t = [widt: number, high: number];
 export type rect_t = TupleOf<number, 4>;
 export type IntegerArray = Int8Array | Uint8Array | Uint8ClampedArray | Int16Array | Uint16Array | Int32Array | Uint32Array;
 export type FloatArray = Float32Array | Float64Array;

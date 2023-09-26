@@ -15,12 +15,13 @@ declare global {
     GlobalEventHandlersEventMap,
     WindowEventHandlersEventMap,
     //
-    HTMLVideoElementEventMap,
     DocumentEventMap,
-    WindowEventMap,
-    WorkerEventMap,
+    HTMLVideoElementEventMap,
+    // MediaQueryListEventMap,
+    OfflineAudioContextEventMap,
     ServiceWorkerEventMap,
-    OfflineAudioContextEventMap {}
+    WindowEventMap,
+    WorkerEventMap {}
   type EventName = keyof EventMap;
   type EventHandler<E extends EventName> = (ev: EventMap[E]) => any;
 
@@ -55,10 +56,10 @@ if (globalThis.Event) {
 if (globalThis.WheelEvent) {
   WheelEvent.prototype._repr = function (this) {
     const m_ = /* final switch */ ({
-      [WheelEvent.DOM_DELTA_PIXEL]: () => "DOM_DELTA_PIXEL",
-      [WheelEvent.DOM_DELTA_LINE]: () => "DOM_DELTA_LINE",
-      [WheelEvent.DOM_DELTA_PAGE]: () => "DOM_DELTA_PAGE",
-    } as Record<number, () => string>)[this.deltaMode]();
+      [WheelEvent.DOM_DELTA_PIXEL]: "DOM_DELTA_PIXEL",
+      [WheelEvent.DOM_DELTA_LINE]: "DOM_DELTA_LINE",
+      [WheelEvent.DOM_DELTA_PAGE]: "DOM_DELTA_PAGE",
+    } as Record<number, string>)[this.deltaMode];
     return {
       deltaMode: m_ ? `"${m_}"` : "undefined",
       deltaX: this.deltaX,
@@ -109,6 +110,7 @@ declare global {
     readonly isText: boolean;
     readonly secondChild: Node | null;
     removeAllChild: () => this;
+    /** @deprecated */
     assert_eq: (rhs: object) => void | never;
   }
 }

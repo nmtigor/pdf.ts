@@ -17,11 +17,11 @@
  * limitations under the License.
  */
 
-import { Locale_1, WebL10nArgs } from "../../3rd/webL10n-2015-10-24/l10n.ts";
-import { MOZCENTRAL, PDFJSDev } from "../../global.ts";
-import type { ArrEl } from "../../lib/alias.ts";
-import type { Locale } from "../../lib/Locale.ts";
 // import "../extensions/firefox/tools/l10n.ts";
+import { Locale_1, WebL10nArgs } from "@fe-src/3rd/webL10n-2015-10-24/l10n.ts";
+import { GECKOVIEW, MOZCENTRAL, PDFJSDev } from "@fe-src/global.ts";
+import type { ArrEl } from "@fe-src/lib/alias.ts";
+import type { Locale } from "@fe-src/lib/Locale.ts";
 import { isPdfFile, PDFDataRangeTransport, shadow } from "../pdf.ts-src/pdf.ts";
 import type {
   FindControlState,
@@ -350,7 +350,7 @@ class MozL10n implements IL10n {
   };
 
   for (const event of events) {
-    window.addEventListener(event, <any> handleEvent);
+    window.addEventListener(event, handleEvent as any);
   }
 })();
 
@@ -364,7 +364,7 @@ class MozL10n implements IL10n {
     viewerApp.eventBus.dispatch("download", { source: window });
   };
 
-  window.addEventListener("save", <any> handleEvent);
+  window.addEventListener("save", handleEvent as any);
 })();
 
 (/* listenEditingEvent */ () => {
@@ -380,8 +380,55 @@ class MozL10n implements IL10n {
     });
   };
 
-  window.addEventListener("editingaction", <any> handleEvent);
+  window.addEventListener("editingaction", handleEvent as any);
 })();
+
+/*#static*/ if (GECKOVIEW) {
+  (function listenQueryEvents() {
+    window.addEventListener(
+      "pdf.js.query" as any,
+      async ({ detail: { queryId } }) => {
+        let result = null;
+        if (queryId === "canDownloadInsteadOfPrint") {
+          result = false;
+          const { pdfDocument, pdfViewer } = viewerApp;
+          if (pdfDocument) {
+            try {
+              const hasUnchangedAnnotations =
+                pdfDocument.annotationStorage.size === 0;
+              // WillPrint is called just before printing the document and could
+              // lead to have modified annotations.
+              const hasWillPrint = pdfViewer.enableScripting &&
+                !!(await pdfDocument.getJSActions())?.WillPrint;
+              const hasUnchangedOptionalContent = (
+                await pdfViewer.optionalContentConfigPromise
+              )!.hasInitialVisibility;
+
+              result = hasUnchangedAnnotations &&
+                !hasWillPrint &&
+                hasUnchangedOptionalContent;
+            } catch {
+              console.warn(
+                "Unable to check if the document can be downloaded.",
+              );
+            }
+          }
+        }
+
+        window.dispatchEvent(
+          new CustomEvent("pdf.js.query.answer", {
+            bubbles: true,
+            cancelable: false,
+            detail: {
+              queryId,
+              value: result,
+            },
+          }),
+        );
+      },
+    );
+  })();
+}
 
 class FirefoxComDataRangeTransport extends PDFDataRangeTransport {
   override requestDataRange(begin: number, end: number) {

@@ -57,7 +57,7 @@ export class Toolbar {
     #bindListeners(options) {
         // The buttons within the toolbar.
         for (const { element, eventName, eventDetails } of this.#buttons) {
-            element.addEventListener("click", (evt) => {
+            element.on("click", (evt) => {
                 if (eventName !== null) {
                     this.#eventBus.dispatch(eventName, { source: this, ...eventDetails });
                     this.#externalServices.reportTelemetry({

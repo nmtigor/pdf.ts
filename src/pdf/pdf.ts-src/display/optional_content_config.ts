@@ -17,11 +17,11 @@
  * limitations under the License.
  */
 
-import { assert } from "../../../lib/util/trace.ts";
-import { type OptionalContentConfigData, type Order } from "../core/catalog.ts";
-import {
-  type MarkedContentProps,
-  type VisibilityExpressionResult,
+import { fail } from "@fe-src/lib/util/trace.ts";
+import type { OptionalContentConfigData, Order } from "../core/catalog.ts";
+import type {
+  MarkedContentProps,
+  VisibilityExpressionResult,
 } from "../core/evaluator.ts";
 import { MurmurHash3_64 } from "../shared/murmurhash3.ts";
 import { objectFromMap, warn } from "../shared/util.ts";
@@ -40,26 +40,26 @@ class OptionalContentGroup {
   /** @ignore */
   _setVisible(internal: typeof INTERNAL, visible: boolean) {
     if (internal !== INTERNAL) {
-      assert(0, "Internal method `_setVisible` called.");
+      fail("Internal method `_setVisible` called.");
     }
     this.#visible = visible;
   }
 
-  constructor(name: string | null, intent: string | null) {
+  constructor(name?: string, intent?: string) {
     this.name = name;
     this.intent = intent;
   }
 }
 
 export class OptionalContentConfig {
-  name: string | null = null;
-  creator: string | null = null;
+  name?: string | undefined;
+  creator?: string | undefined;
 
   #cachedGetHash: string | undefined;
   #groups = new Map<string, OptionalContentGroup>();
   #initialHash: string | undefined;
 
-  #order: Order | null = null;
+  #order?: Order | undefined;
 
   constructor(data?: OptionalContentConfigData) {
     if (data === undefined) {
@@ -213,12 +213,13 @@ export class OptionalContentConfig {
   }
 
   get hasInitialVisibility() {
-    return this.getHash() === this.#initialHash;
+    return this.#initialHash === undefined ||
+      this.getHash() === this.#initialHash;
   }
 
   getOrder() {
     if (!this.#groups.size) {
-      return null;
+      return undefined;
     }
     if (this.#order) {
       return this.#order.slice();
@@ -227,11 +228,11 @@ export class OptionalContentConfig {
   }
 
   getGroups() {
-    return this.#groups.size > 0 ? objectFromMap(this.#groups) : null;
+    return this.#groups.size > 0 ? objectFromMap(this.#groups) : undefined;
   }
 
   getGroup(id: string) {
-    return this.#groups.get(id) || null;
+    return this.#groups.get(id) || undefined;
   }
 
   getHash() {

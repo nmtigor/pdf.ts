@@ -20,22 +20,11 @@
 import {
   assert,
   assertEquals,
-  assertFalse,
   assertInstanceOf,
-  assertMatch,
-  assertNotEquals,
-  assertNotMatch,
-  assertStrictEquals,
   assertThrows,
-  fail,
-} from "https://deno.land/std@0.195.0/testing/asserts.ts";
-import {
-  afterAll,
-  beforeAll,
-  describe,
-  it,
-} from "https://deno.land/std@0.195.0/testing/bdd.ts";
-import { DENO } from "../../../global.ts";
+} from "@std/assert/mod.ts";
+import { afterAll, beforeAll, describe, it } from "@std/testing/bdd.ts";
+import { C2D } from "../../../lib/alias.ts";
 import { bytesToString } from "../shared/util.ts";
 import {
   DOMCanvasFactory,
@@ -45,7 +34,6 @@ import {
   isValidFetchUrl,
   PDFDateString,
 } from "./display_utils.ts";
-import { C2D } from "../../../lib/alias.ts";
 /*80--------------------------------------------------------------------------*/
 
 describe("display_utils", () => {

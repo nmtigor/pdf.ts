@@ -288,7 +288,7 @@ interface Level {
 interface SubbandCoefficient {
   width: number;
   height: number;
-  items: Float32Array | null;
+  items: Float32Array | undefined;
 }
 
 interface TransformedTile {
@@ -296,7 +296,7 @@ interface TransformedTile {
   top: number;
   width: number;
   height: number;
-  items: Float32Array | null;
+  items: Float32Array | undefined;
 }
 /*49-------------------------------------------*/
 
@@ -1147,7 +1147,7 @@ namespace NsJpxImage {
                   precinctsIterationSizes,
                   resolution,
                 );
-                if (k === null) {
+                if (k === undefined) {
                   continue;
                 }
                 for (; l < layersCount;) {
@@ -1202,7 +1202,7 @@ namespace NsJpxImage {
                   precinctsIterationSizes,
                   resolution,
                 );
-                if (k === null) {
+                if (k === undefined) {
                   continue;
                 }
                 for (; l < layersCount;) {
@@ -1228,14 +1228,14 @@ namespace NsJpxImage {
     sizeInImageScale: ResolutionSize,
     precinctIterationSizes: PrecinctSize | ComponentSize,
     resolution: Resolution,
-  ) {
+  ): number | undefined {
     const posX = pxIndex * precinctIterationSizes.minWidth;
     const posY = pyIndex * precinctIterationSizes.minHeight;
     if (
       posX % sizeInImageScale.width !== 0 ||
       posY % sizeInImageScale.height !== 0
     ) {
-      return null;
+      return undefined;
     }
     const startPrecinctRowIndex = (posY / sizeInImageScale.width) *
       resolution.precinctParameters.numprecinctswide;
@@ -1719,11 +1719,9 @@ namespace NsJpxImage {
             }
             nb = bitsDecoded[position];
             const pos = interleave ? levelOffset + (offset << 1) : offset;
-            if (reversible && nb >= mb) {
-              coefficients[pos] = n;
-            } else {
-              coefficients[pos] = n * (1 << (mb - nb));
-            }
+            coefficients[pos] = reversible && nb >= mb
+              ? n
+              : n * (1 << (mb - nb));
           }
           offset++;
           position++;
@@ -1836,13 +1834,13 @@ namespace NsJpxImage {
       }
       const tile0 = transformedTiles[0];
       const out = new Uint8ClampedArray(tile0.items!.length * componentsCount);
-      const result = <Tile> {
+      const result = {
         left: tile0.left,
         top: tile0.top,
         width: tile0.width,
         height: tile0.height,
         items: out,
-      };
+      } as Tile;
 
       // Section G.2.2 Inverse multi component transform
       let shift, offset;
@@ -1857,7 +1855,7 @@ namespace NsJpxImage {
         const y0items = transformedTiles[0].items!;
         const y1items = transformedTiles[1].items!;
         const y2items = transformedTiles[2].items!;
-        const y3items = fourComponents ? transformedTiles[3].items : null;
+        const y3items = fourComponents ? transformedTiles[3].items : undefined;
 
         // HACK: The multiple component transform formulas below assume that
         // all components have the same precision. With this in mind, we
@@ -1939,11 +1937,11 @@ namespace NsJpxImage {
     constructor(width: number, height: number) {
       const levelsLength = log2(Math.max(width, height)) + 1;
       for (let i = 0; i < levelsLength; i++) {
-        const level = <Level> {
+        const level = {
           width,
           height,
-          items: <number[]> [],
-        };
+          items: [] as number[],
+        } as Level;
         this.levels.push(level);
         width = Math.ceil(width / 2);
         height = Math.ceil(height / 2);
@@ -2008,11 +2006,11 @@ namespace NsJpxImage {
           items[j] = defaultValue;
         }
 
-        const level = <Level> {
+        const level = {
           width,
           height,
           items,
-        };
+        } as Level;
         this.levels.push(level);
 
         width = Math.ceil(width / 2);
@@ -2539,7 +2537,7 @@ namespace NsJpxImage {
         }
       }
       // The LL band is not needed anymore.
-      llItems = ll.items = null;
+      llItems = ll.items = undefined;
 
       const bufferPadding = 4;
       const rowBuffer = new Float32Array(width + 2 * bufferPadding);
@@ -2619,7 +2617,7 @@ namespace NsJpxImage {
         }
       }
 
-      return <SubbandCoefficient> { width, height, items };
+      return { width, height, items } as SubbandCoefficient;
     }
   }
 

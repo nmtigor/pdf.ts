@@ -54,7 +54,7 @@ export interface EventMap {
     };
     annotationeditormodechanged: {
         source: PDFViewer;
-        mode: AnnotationEditorType;
+        mode: AnnotationEditorType | undefined;
     };
     annotationeditorparamschanged: {
         source: AnnotationEditorUIManager;
@@ -281,13 +281,14 @@ export interface EventMap {
         mode: SpreadMode;
     };
     switchannotationeditormode: {
-        source: AnnotationEditorUIManager;
-        mode: AnnotationEditorType;
+        source: AnnotationElement | AnnotationEditorUIManager;
+        mode: AnnotationEditorType | undefined;
+        editId?: string;
     };
     switchannotationeditorparams: {
         source: AnnotationEditorParams;
         type: AnnotationEditorParamsType;
-        value: string | number;
+        value: string | number | undefined;
     };
     switchcursortool: {
         tool: CursorTool;

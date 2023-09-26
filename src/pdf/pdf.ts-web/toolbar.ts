@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-import { GENERIC, PDFJSDev } from "../../global.ts";
-import { html } from "../../lib/dom.ts";
+import { GENERIC, PDFJSDev } from "@fe-src/global.ts";
+import { html } from "@fe-src/lib/dom.ts";
 import { AnnotationEditorType } from "../pdf.ts-src/pdf.ts";
 import type { EventBus, EventMap, EventName } from "./event_utils.ts";
 import type { IL10n } from "./interfaces.ts";
@@ -110,6 +110,18 @@ export class Toolbar {
           },
         },
       },
+      {
+        element: options.editorStampButton,
+        eventName: "switchannotationeditormode",
+        eventDetails: {
+          get mode() {
+            const { classList } = options.editorStampButton;
+            return classList.contains("toggled")
+              ? AnnotationEditorType.NONE
+              : AnnotationEditorType.STAMP;
+          },
+        },
+      },
     ];
     /*#static*/ if (PDFJSDev || GENERIC) {
       this.buttons.push({ element: options.openFile!, eventName: "openfile" });
@@ -169,24 +181,24 @@ export class Toolbar {
 
     // The buttons within the toolbar.
     for (const { element, eventName, eventDetails } of this.buttons) {
-      element.addEventListener("click", (evt) => {
+      element.on("click", (evt) => {
         if (eventName !== null) {
           this.eventBus.dispatch(eventName, { source: this, ...eventDetails });
         }
       });
     }
     // The non-button elements within the toolbar.
-    pageNumber.addEventListener("click", function () {
+    pageNumber.on("click", function (this: HTMLInputElement) {
       this.select();
     });
-    pageNumber.addEventListener("change", function () {
+    pageNumber.on("change", function (this: HTMLInputElement) {
       self.eventBus.dispatch("pagenumberchanged", {
         source: self,
         value: this.value,
       });
     });
 
-    scaleSelect.addEventListener("change", function () {
+    scaleSelect.on("change", function (this: HTMLSelectElement) {
       if (this.value === "custom") return;
 
       self.eventBus.dispatch("scalechanged", {
@@ -196,13 +208,13 @@ export class Toolbar {
     });
     // Here we depend on browsers dispatching the "click" event *after* the
     // "change" event, when the <select>-element changes.
-    scaleSelect.addEventListener("click", function (evt) {
+    scaleSelect.on("click", function (this: HTMLSelectElement, evt) {
       const target = evt.target;
       // Remove focus when an <option>-element was *clicked*, to improve the UX
       // for mouse users (fixes bug 1300525 and issue 4923).
       if (
         this.value === self.pageScaleValue &&
-        (<Element> target).tagName.toUpperCase() === "OPTION"
+        (target as Element).tagName.toUpperCase() === "OPTION"
       ) {
         this.blur();
       }
@@ -224,6 +236,8 @@ export class Toolbar {
     editorFreeTextParamsToolbar,
     editorInkButton,
     editorInkParamsToolbar,
+    editorStampButton,
+    editorStampParamsToolbar,
   }: ViewerConfiguration["toolbar"]) {
     const editorModeChanged = (
       { mode }: EventMap["annotationeditormodechanged"],
@@ -238,10 +252,16 @@ export class Toolbar {
         mode === AnnotationEditorType.INK,
         editorInkParamsToolbar,
       );
+      toggleCheckedBtn(
+        editorStampButton,
+        mode === AnnotationEditorType.STAMP,
+        editorStampParamsToolbar,
+      );
 
       const isDisable = mode === AnnotationEditorType.DISABLE;
       editorFreeTextButton.disabled = isDisable;
       editorInkButton.disabled = isDisable;
+      editorStampButton.disabled = isDisable;
     };
     this.eventBus._on("annotationeditormodechanged", editorModeChanged);
 

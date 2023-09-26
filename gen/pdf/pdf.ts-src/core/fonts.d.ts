@@ -1,5 +1,5 @@
-import type { C2D, point_t, rect_t } from "../../../lib/alias.js";
-import { type matrix_t } from "../shared/util.js";
+import type { C2D, dot2d_t, rect_t } from "../../../lib/alias.js";
+import type { matrix_t } from "../shared/util.js";
 import type { BaseStream } from "./base_stream.js";
 import { CFFFont } from "./cff_font.js";
 import type { CMap } from "./cmap.js";
@@ -115,7 +115,7 @@ export declare class Font extends FontExpotDataEx {
      * @param a string encoded with font encoding.
      * @return the positions of each char in the string.
      */
-    getCharPositions(chars: string): point_t[];
+    getCharPositions(chars: string): dot2d_t[];
     get glyphCacheValues(): Glyph[];
     /**
      * Encode a js string using font encoding.

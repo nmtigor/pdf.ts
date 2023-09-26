@@ -41,12 +41,7 @@ export class PredictorStream extends DecodeStream {
         if (predictor !== 2 && (predictor < 10 || predictor > 15)) {
             throw new FormatError(`Unsupported predictor: ${predictor}`);
         }
-        if (predictor === 2) {
-            this.readBlock = this.readBlockTiff;
-        }
-        else {
-            this.readBlock = this.readBlockPng;
-        }
+        this.readBlock = predictor === 2 ? this.readBlockTiff : this.readBlockPng;
         this.str = str;
         this.dict = str.dict;
         const colors = (this.colors = params.get("Colors") || 1);

@@ -39,10 +39,11 @@ export class AnnotationEditorParams {
     editorInkColor,
     editorInkThickness,
     editorInkOpacity,
+    editorStampAddImage,
   }: ViewerConfiguration["annotationEditorParams"]) {
     const dispatchEvent = (
       typeStr: AnnotationEditorParamsType,
-      value: string | number,
+      value?: string | number,
     ) => {
       this.eventBus.dispatch("switchannotationeditorparams", {
         source: this,
@@ -50,26 +51,29 @@ export class AnnotationEditorParams {
         value,
       });
     };
-    editorFreeTextFontSize.addEventListener("input", function () {
+    editorFreeTextFontSize.on("input", function (this: HTMLInputElement) {
       dispatchEvent(
         AnnotationEditorParamsType.FREETEXT_SIZE,
         this.valueAsNumber,
       );
     });
-    editorFreeTextColor.addEventListener("input", function () {
+    editorFreeTextColor.on("input", function (this: HTMLInputElement) {
       dispatchEvent(AnnotationEditorParamsType.FREETEXT_COLOR, this.value);
     });
-    editorInkColor.addEventListener("input", function () {
+    editorInkColor.on("input", function (this: HTMLInputElement) {
       dispatchEvent(AnnotationEditorParamsType.INK_COLOR, this.value);
     });
-    editorInkThickness.addEventListener("input", function () {
+    editorInkThickness.on("input", function (this: HTMLInputElement) {
       dispatchEvent(
         AnnotationEditorParamsType.INK_THICKNESS,
         this.valueAsNumber,
       );
     });
-    editorInkOpacity.addEventListener("input", function () {
+    editorInkOpacity.on("input", function (this: HTMLInputElement) {
       dispatchEvent(AnnotationEditorParamsType.INK_OPACITY, this.valueAsNumber);
+    });
+    editorStampAddImage.on("click", () => {
+      dispatchEvent(AnnotationEditorParamsType.CREATE);
     });
 
     this.eventBus._on("annotationeditorparamschanged", (evt) => {

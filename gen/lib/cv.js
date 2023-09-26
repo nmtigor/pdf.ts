@@ -35,7 +35,7 @@ export class Vuu {
         this.el$[$vuu] = this;
         // this.el$[$Vuu] = Vuu;
     }
-    get parentVuu1() {
+    get parentVuu_1() {
         let node = this.el$.parentNode;
         while (node && !node[$vuu])
             node = node.parentNode;

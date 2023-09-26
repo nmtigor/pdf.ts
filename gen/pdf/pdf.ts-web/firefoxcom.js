@@ -1,8 +1,7 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
-import { MOZCENTRAL, PDFJSDev } from "../../global.js";
-// import "../extensions/firefox/tools/l10n.ts";
+import { GECKOVIEW, MOZCENTRAL, PDFJSDev } from "../../global.js";
 import { isPdfFile, PDFDataRangeTransport, shadow } from "../pdf.ts-src/pdf.js";
 import { DefaultExternalServices, viewerApp } from "./app.js";
 import { getL10nFallback } from "./l10n_utils.js";
@@ -242,6 +241,7 @@ class MozL10n {
     };
     window.addEventListener("editingaction", handleEvent);
 })();
+/*#static*/ 
 class FirefoxComDataRangeTransport extends PDFDataRangeTransport {
     requestDataRange(begin, end) {
         FirefoxCom.request("requestDataRange", { begin, end });

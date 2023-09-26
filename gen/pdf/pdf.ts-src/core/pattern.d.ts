@@ -1,6 +1,6 @@
-import type { C2D, point_t, rect_t } from "../../../lib/alias.js";
+import type { C2D, dot2d_t, rect_t, TupleOf } from "../../../lib/alias.js";
 import { TilingPaintType, TilingType } from "../display/pattern_helper.js";
-import { type matrix_t } from "../shared/util.js";
+import type { matrix_t } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
 import { ColorSpace } from "./colorspace.js";
 import type { ParsedFunction, PDFFunctionFactory } from "./function.js";
@@ -35,8 +35,8 @@ export type RadialAxialIR = [
         type: ShadingType.AXIAL | ShadingType.RADIAL,
         bbox: rect_t | undefined,
         colorStops: [number, string][],
-        p0: point_t,
-        p1: point_t,
+        p0: dot2d_t,
+        p1: dot2d_t,
         r0: number,
         r1: number
     ]
@@ -80,7 +80,7 @@ export type PatternIR = ShadingPatternIR | TilingPatternIR;
  * If needed, the implementations can be broken into two classes.
  */
 declare class RadialAxialShading extends BaseShading {
-    coordsArr: [number, number, number, number] | [number, number, number, number, number, number];
+    coordsArr: TupleOf<number, 4 | 6>;
     shadingType: ShadingType;
     bbox: [number, number, number, number] | undefined;
     extendStart: boolean;
@@ -88,7 +88,7 @@ declare class RadialAxialShading extends BaseShading {
     colorStops: [number, string][];
     constructor(dict: Dict, xref: XRef, resources: Dict, pdfFunctionFactory: PDFFunctionFactory, localColorSpaceCache: LocalColorSpaceCache);
     /** @implement */
-    getIR(): ["RadialAxial", ShadingType.AXIAL | ShadingType.RADIAL, [number, number, number, number] | undefined, [number, string][], point_t, point_t, number, number];
+    getIR(): ["RadialAxial", type: ShadingType.AXIAL | ShadingType.RADIAL, bbox: [number, number, number, number] | undefined, colorStops: [number, string][], p0: dot2d_t, p1: dot2d_t, r0: number, r1: number];
 }
 /**
  * All mesh shadings. For now, they will be presented as set of the triangles
@@ -106,7 +106,7 @@ declare class MeshStreamReader {
     readBits(n: number): number;
     align(): void;
     readFlag(): number;
-    readCoordinate(): point_t;
+    readCoordinate(): dot2d_t;
     readComponents(): Uint8ClampedArray;
 }
 interface DecodeContext {
@@ -129,7 +129,7 @@ export declare class MeshShading extends BaseShading {
     bbox: rect_t | undefined;
     cs: ColorSpace;
     background: Uint8ClampedArray | undefined;
-    coords: point_t[];
+    coords: dot2d_t[];
     colors: (Uint8Array | Uint8ClampedArray)[];
     figures: MeshFigure[];
     bounds?: rect_t;
@@ -142,7 +142,7 @@ export declare class MeshShading extends BaseShading {
     _updateBounds(): void;
     _packData(): void;
     /** @implement */
-    getIR(): ["Mesh", ShadingType, Float32Array, Uint8Array, MeshFigure[], [number, number, number, number], [number, number, number, number] | undefined, Uint8ClampedArray | undefined];
+    getIR(): ["Mesh", shadingType: ShadingType, coords: Float32Array, colors: Uint8Array, figures: MeshFigure[], bounds: [number, number, number, number], bbox: [number, number, number, number] | undefined, background: Uint8ClampedArray | undefined];
 }
 declare class DummyShading extends BaseShading {
     type: string;

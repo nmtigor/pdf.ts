@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 import { PDFJSDev, TESTING } from "../../../global.js";
-import { assert } from "../../../lib/util/trace.js";
+import { assert, fail } from "../../../lib/util/trace.js";
 import { shadow } from "../shared/util.js";
 /*80--------------------------------------------------------------------------*/
 export const CIRCULAR_REF = Symbol("CIRCULAR_REF");
@@ -34,7 +34,7 @@ export class Name {
     constructor(name) {
         /*#static*/  {
             if (typeof name !== "string") {
-                assert(0, 'Name: The "name" must be a string.');
+                fail('Name: The "name" must be a string.');
             }
         }
         this.name = name;
@@ -49,7 +49,7 @@ export class Cmd {
     constructor(cmd) {
         /*#static*/  {
             if (typeof cmd !== "string") {
-                assert(0, 'Cmd: The "cmd" must be a string.');
+                fail('Cmd: The "cmd" must be a string.');
             }
         }
         this.cmd = cmd;
@@ -80,10 +80,10 @@ export class Dict {
     set(key, value) {
         /*#static*/  {
             if (typeof key !== "string") {
-                assert(0, 'Dict.set: The "key" must be a string.');
+                fail('Dict.set: The "key" must be a string.');
             }
             else if (value === undefined) {
-                assert(0, 'Dict.set: The "value" cannot be undefined.');
+                fail('Dict.set: The "value" cannot be undefined.');
             }
         }
         this.#map[key] = value;
@@ -109,14 +109,14 @@ export class Dict {
         if (value === undefined && key2 !== undefined) {
             /*#static*/  {
                 if (key2.length < key1.length) {
-                    assert(0, "Dict.get: Expected keys to be ordered by length.");
+                    fail("Dict.get: Expected keys to be ordered by length.");
                 }
             }
             value = this.#map[key2];
             if (value === undefined && key3 !== undefined) {
                 /*#static*/  {
                     if (key3.length < key2.length) {
-                        assert(0, "Dict.get: Expected keys to be ordered by length.");
+                        fail("Dict.get: Expected keys to be ordered by length.");
                     }
                 }
                 value = this.#map[key3];
@@ -135,14 +135,14 @@ export class Dict {
         if (value === undefined && key2 !== undefined) {
             /*#static*/  {
                 if (key2.length < key1.length) {
-                    assert(0, "Dict.getAsync: Expected keys to be ordered by length.");
+                    fail("Dict.getAsync: Expected keys to be ordered by length.");
                 }
             }
             value = this.#map[key2];
             if (value === undefined && key3 !== undefined) {
                 /*#static*/  {
                     if (key3.length < key2.length) {
-                        assert(0, "Dict.getAsync: Expected keys to be ordered by length.");
+                        fail("Dict.getAsync: Expected keys to be ordered by length.");
                     }
                 }
                 value = this.#map[key3];
@@ -161,14 +161,14 @@ export class Dict {
         if (value === undefined && key2 !== undefined) {
             /*#static*/  {
                 if (key2.length < key1.length) {
-                    assert(0, "Dict.getArray: Expected keys to be ordered by length.");
+                    fail("Dict.getArray: Expected keys to be ordered by length.");
                 }
             }
             value = this.#map[key2];
             if (value === undefined && key3 !== undefined) {
                 /*#static*/  {
                     if (key3.length < key2.length) {
-                        assert(0, "Dict.getArray: Expected keys to be ordered by length.");
+                        fail("Dict.getArray: Expected keys to be ordered by length.");
                     }
                 }
                 value = this.#map[key3];
@@ -195,7 +195,7 @@ export class Dict {
     static get empty() {
         const emptyDict = new Dict();
         emptyDict.set = (key, value) => {
-            assert(0, "Should not call `set` on the empty dictionary.");
+            fail("Should not call `set` on the empty dictionary.");
         };
         return shadow(this, "empty", emptyDict);
     }
@@ -271,7 +271,7 @@ export class Ref {
         }
         const m = /^(\d+)R(\d*)$/.exec(str);
         if (!m || m[1] === "0") {
-            return null;
+            return undefined;
         }
         // eslint-disable-next-line no-restricted-syntax
         return (RefCache[str] = new Ref(parseInt(m[1]), !m[2] ? 0 : parseInt(m[2])));
@@ -304,7 +304,7 @@ export class RefSet {
     constructor(parent) {
         /*#static*/  {
             if (parent && !(parent instanceof RefSet)) {
-                assert(0, 'RefSet: Invalid "parent" value.');
+                fail('RefSet: Invalid "parent" value.');
             }
         }
         // TS18030: An optional chain cannot contain private identifiers

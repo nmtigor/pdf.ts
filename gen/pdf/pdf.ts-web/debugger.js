@@ -16,9 +16,15 @@
  * limitations under the License.
  */
 import { html } from "../../lib/dom.js";
-let opMap;
-var _FontInspector;
-(function (_FontInspector) {
+import { OPS } from "../pdf.ts-src/pdf.js";
+/*80--------------------------------------------------------------------------*/
+// const { OPS } = (globalThis as any).pdfjsLib || (await import("../pdf.ts-src/pdf.ts"));
+const opMap = Object.create(null);
+for (const key in OPS) {
+    opMap[OPS[key]] = key;
+}
+var FontInspector_;
+(function (FontInspector_) {
     let fonts;
     let _active = false;
     const fontAttribute = "data-font-name";
@@ -57,32 +63,32 @@ var _FontInspector;
         }
     }
     // Properties/functions needed by PDFBug.
-    _FontInspector.id = "FontInspector";
-    _FontInspector.name = "Font Inspector";
-    function init(pdfjsLib) {
-        const panel = _FontInspector.panel;
+    FontInspector_.id = "FontInspector";
+    FontInspector_.name = "Font Inspector";
+    function init() {
+        const panel = FontInspector_.panel;
         const tmp = html("button");
-        tmp.addEventListener("click", resetSelection);
+        tmp.on("click", resetSelection);
         tmp.textContent = "Refresh";
         panel.append(tmp);
         fonts = html("div");
         panel.append(fonts);
     }
-    _FontInspector.init = init;
+    FontInspector_.init = init;
     function cleanup() {
         fonts.textContent = "";
     }
-    _FontInspector.cleanup = cleanup;
-    _FontInspector.enabled = false;
-    Object.defineProperty(_FontInspector, "active", {
+    FontInspector_.cleanup = cleanup;
+    FontInspector_.enabled = false;
+    Object.defineProperty(FontInspector_, "active", {
         set: function (value) {
             _active = value;
             if (_active) {
-                document.body.addEventListener("click", textLayerClick, true);
+                document.body.on("click", textLayerClick, true);
                 resetSelection();
             }
             else {
-                document.body.removeEventListener("click", textLayerClick, true);
+                document.body.off("click", textLayerClick, true);
                 removeSelection();
             }
         },
@@ -120,14 +126,14 @@ var _FontInspector;
         const logIt = html("a");
         logIt.href = "";
         logIt.textContent = "Log";
-        logIt.addEventListener("click", (event) => {
+        logIt.on("click", (event) => {
             event.preventDefault();
             console.log(fontObj);
         });
         const select = html("input");
         select.setAttribute("type", "checkbox");
         select.dataset.fontName = fontName;
-        select.addEventListener("click", () => {
+        select.on("click", () => {
             selectFont(fontName, select.checked);
         });
         font.append(select, name, " ", download, " ", logIt, moreInfo);
@@ -135,51 +141,47 @@ var _FontInspector;
         // Somewhat of a hack, should probably add a hook for when the text layer
         // is done rendering.
         setTimeout(() => {
-            if (_FontInspector.active) {
+            if (FontInspector_.active) {
                 resetSelection();
             }
         }, 2000);
     }
-    _FontInspector.fontAdded = fontAdded;
-})(_FontInspector || (_FontInspector = {}));
+    FontInspector_.fontAdded = fontAdded;
+})(FontInspector_ || (FontInspector_ = {}));
 // Manages all the page steppers.
-var _StepperManager;
-(function (_StepperManager) {
+var StepperManager_;
+(function (StepperManager_) {
     let steppers = [];
     let stepperDiv;
     let stepperControls;
     let stepperChooser;
     let breakPoints = Object.create(null);
     // Properties/functions needed by PDFBug.
-    _StepperManager.id = "Stepper";
-    _StepperManager.name = "Stepper";
-    function init(pdfjsLib) {
+    StepperManager_.id = "Stepper";
+    StepperManager_.name = "Stepper";
+    function init() {
         stepperControls = html("div");
         stepperChooser = html("select");
-        stepperChooser.addEventListener("change", function (event) {
-            _StepperManager.selectStepper(+this.value);
+        stepperChooser.on("change", function () {
+            StepperManager_.selectStepper(this.value);
         });
         stepperControls.append(stepperChooser);
         stepperDiv = html("div");
-        _StepperManager.panel.append(stepperControls);
-        _StepperManager.panel.append(stepperDiv);
+        StepperManager_.panel.append(stepperControls);
+        StepperManager_.panel.append(stepperDiv);
         if (sessionStorage.getItem("pdfjsBreakPoints")) {
             breakPoints = JSON.parse(sessionStorage.getItem("pdfjsBreakPoints"));
         }
-        opMap = Object.create(null);
-        for (const key in pdfjsLib.OPS) {
-            opMap[pdfjsLib.OPS[key]] = key;
-        }
     }
-    _StepperManager.init = init;
+    StepperManager_.init = init;
     function cleanup() {
         stepperChooser.textContent = "";
         stepperDiv.textContent = "";
         steppers = [];
     }
-    _StepperManager.cleanup = cleanup;
-    _StepperManager.enabled = false;
-    _StepperManager.active = false;
+    StepperManager_.cleanup = cleanup;
+    StepperManager_.enabled = false;
+    StepperManager_.active = false;
     // Stepper specific functions.
     function create(pageIndex) {
         const debug = html("div");
@@ -195,15 +197,15 @@ var _StepperManager;
         const stepper = new Stepper(debug, pageIndex, initBreakPoints);
         steppers.push(stepper);
         if (steppers.length === 1) {
-            _StepperManager.selectStepper(pageIndex, false);
+            StepperManager_.selectStepper(pageIndex, false);
         }
         return stepper;
     }
-    _StepperManager.create = create;
+    StepperManager_.create = create;
     function selectStepper(pageIndex, selectPanel) {
         pageIndex |= 0;
         if (selectPanel) {
-            _StepperManager.manager.selectPanel(_StepperManager);
+            StepperManager_.manager.selectPanel(StepperManager_);
         }
         for (const stepper of steppers) {
             stepper.panel.hidden = stepper.pageIndex !== pageIndex;
@@ -212,13 +214,13 @@ var _StepperManager;
             option.selected = (+option.value | 0) === pageIndex;
         }
     }
-    _StepperManager.selectStepper = selectStepper;
+    StepperManager_.selectStepper = selectStepper;
     function saveBreakPoints(pageIndex, bps) {
         breakPoints[pageIndex] = bps;
         sessionStorage.setItem("pdfjsBreakPoints", JSON.stringify(breakPoints));
     }
-    _StepperManager.saveBreakPoints = saveBreakPoints;
-})(_StepperManager || (_StepperManager = {}));
+    StepperManager_.saveBreakPoints = saveBreakPoints;
+})(StepperManager_ || (StepperManager_ = {}));
 // The stepper for each page's operatorList.
 var NsStepper;
 (function (NsStepper) {
@@ -293,7 +295,7 @@ var NsStepper;
                 else {
                     self.breakPoints.splice(self.breakPoints.indexOf(x), 1);
                 }
-                _StepperManager.saveBreakPoints(self.pageIndex, self.breakPoints);
+                StepperManager_.saveBreakPoints(self.pageIndex, self.breakPoints);
             }
             const MAX_OPERATORS_COUNT = 15000;
             if (this.operatorListIdx > MAX_OPERATORS_COUNT) {
@@ -379,32 +381,32 @@ var NsStepper;
             return undefined;
         }
         breakIt(idx, callback) {
-            _StepperManager.selectStepper(this.pageIndex, true);
+            StepperManager_.selectStepper(this.pageIndex, true);
             this.currentIdx = idx;
             const listener = (evt) => {
                 switch (evt.keyCode) {
                     case 83: // step
-                        document.removeEventListener("keydown", listener);
+                        document.off("keydown", listener);
                         this.nextBreakPoint = this.currentIdx + 1;
                         this.goTo(-1);
                         callback();
                         break;
                     case 67: // continue
-                        document.removeEventListener("keydown", listener);
+                        document.off("keydown", listener);
                         this.nextBreakPoint = this.getNextBreakPoint();
                         this.goTo(-1);
                         callback();
                         break;
                 }
             };
-            document.addEventListener("keydown", listener);
+            document.on("keydown", listener);
             this.goTo(idx);
         }
         goTo(idx) {
             const allRows = this.panel
                 .getElementsByClassName("line");
             for (const row of allRows) {
-                if ((row.dataset.idx | 0) === idx) {
+                if (row.dataset.idx === idx) {
                     row.style.backgroundColor = "rgb(251,250,207)";
                     row.scrollIntoView();
                 }
@@ -417,8 +419,8 @@ var NsStepper;
     NsStepper.Stepper = Stepper;
 })(NsStepper || (NsStepper = {}));
 export var Stepper = NsStepper.Stepper;
-var _Stats;
-(function (_Stats) {
+var Stats_;
+(function (Stats_) {
     let stats = [];
     function clear(node) {
         node.textContent = ""; // Remove any `node` contents from the DOM.
@@ -432,12 +434,12 @@ var _Stats;
         return false;
     }
     // Properties/functions needed by PDFBug.
-    _Stats.id = "Stats";
-    _Stats.name = "Stats";
-    function init(pdfjsLib) { }
-    _Stats.init = init;
-    _Stats.enabled = false;
-    _Stats.active = false;
+    Stats_.id = "Stats";
+    Stats_.name = "Stats";
+    function init() { }
+    Stats_.init = init;
+    Stats_.enabled = false;
+    Stats_.active = false;
     // Stats specific functions.
     function add(pageNumber, stat) {
         if (!stat) {
@@ -458,18 +460,18 @@ var _Stats;
         wrapper.append(title, statsDiv);
         stats.push({ pageNumber, div: wrapper });
         stats.sort((a, b) => a.pageNumber - b.pageNumber);
-        clear(_Stats.panel);
+        clear(Stats_.panel);
         for (const entry of stats) {
-            _Stats.panel.append(entry.div);
+            Stats_.panel.append(entry.div);
         }
     }
-    _Stats.add = add;
+    Stats_.add = add;
     function cleanup() {
         stats = [];
-        clear(_Stats.panel);
+        clear(Stats_.panel);
     }
-    _Stats.cleanup = cleanup;
-})(_Stats || (_Stats = {}));
+    Stats_.cleanup = cleanup;
+})(Stats_ || (Stats_ = {}));
 // Manages all the debugging tools.
 export var PDFBug;
 (function (PDFBug) {
@@ -477,9 +479,9 @@ export var PDFBug;
     const buttons = [];
     let activePanel;
     PDFBug.tools = [
-        _FontInspector,
-        _StepperManager,
-        _Stats,
+        FontInspector_,
+        StepperManager_,
+        Stats_,
     ];
     function enable(ids) {
         const all = ids.length === 1 && ids[0] === "all";
@@ -500,7 +502,7 @@ export var PDFBug;
         }
     }
     PDFBug.enable = enable;
-    function init(pdfjsLib, container, ids) {
+    function init(container, ids) {
         loadCSS();
         enable(ids);
         /*
@@ -527,7 +529,7 @@ export var PDFBug;
             const panel = html("div");
             const panelButton = html("button");
             panelButton.textContent = tool.name;
-            panelButton.addEventListener("click", (event) => {
+            panelButton.on("click", (event) => {
                 event.preventDefault();
                 PDFBug.selectPanel(tool);
             });
@@ -536,7 +538,7 @@ export var PDFBug;
             tool.panel = panel;
             tool.manager = PDFBug;
             if (tool.enabled) {
-                tool.init(pdfjsLib);
+                tool.init();
             }
             else {
                 panel.textContent =
@@ -581,8 +583,8 @@ export var PDFBug;
     }
     PDFBug.selectPanel = selectPanel;
 })(PDFBug || (PDFBug = {}));
-globalThis.FontInspector = _FontInspector;
-globalThis.StepperManager = _StepperManager;
-globalThis.Stats = _Stats;
+globalThis.FontInspector = FontInspector_;
+globalThis.StepperManager = StepperManager_;
+globalThis.Stats = Stats_;
 /*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=debugger.js.map

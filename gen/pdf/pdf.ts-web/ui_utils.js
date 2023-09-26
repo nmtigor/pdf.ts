@@ -197,7 +197,7 @@ export function watchScroll(viewAreaElement, callback) {
         _eventHandler: debounceScroll,
     };
     let rAF;
-    viewAreaElement.addEventListener("scroll", debounceScroll, true);
+    viewAreaElement.on("scroll", debounceScroll, true);
     return state;
 }
 /**

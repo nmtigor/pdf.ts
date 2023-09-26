@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-import type { rect_t } from "../../../lib/alias.ts";
+import type { rect_t } from "@fe-src/lib/alias.ts";
 import { PageLayout, PageMode } from "../../pdf.ts-web/ui_utils.ts";
 import type { ResetForm } from "../display/annotation_layer.ts";
 import type { OutlineNode } from "../display/api.ts";
@@ -54,13 +54,13 @@ import { GlobalImageCache } from "./image_utils.ts";
 import { MetadataParser } from "./metadata_parser.ts";
 import { NameTree, NumberTree } from "./name_number_tree.ts";
 import { BasePdfManager } from "./pdf_manager.ts";
+import type { Obj } from "./primitives.ts";
 import {
   Dict,
   isDict,
   isName,
   isRefsEqual,
   Name,
-  type Obj,
   Ref,
   RefSet,
   RefSetCache,
@@ -138,25 +138,25 @@ export interface OpenAction {
 }
 
 export type Order = (string | {
-  name: string | null;
+  name: string | undefined;
   order: Order;
 })[];
 
-interface OptionalContentGroupData {
+type OptionalContentGroupData_ = {
   id: string;
-  name: string | null;
-  intent: string | null;
-}
+  name: string | undefined;
+  intent: string | undefined;
+};
 
-export interface OptionalContentConfigData {
-  name: string | null;
-  creator: string | null;
-  baseState: string | null;
+export type OptionalContentConfigData = {
+  name: string | undefined;
+  creator: string | undefined;
+  baseState: string | undefined;
   on: string[];
   off: string[];
-  order: Order | null;
-  groups: OptionalContentGroupData[];
-}
+  order: Order | undefined;
+  groups: OptionalContentGroupData_[];
+};
 
 type ViewerPrefValue = string | number | number[] | boolean;
 export type ViewerPref = Record<string, ViewerPrefValue>;
@@ -218,7 +218,7 @@ export class Catalog {
       }
       warn(`Invalid PDF catalog version: ${version.name}`);
     }
-    return shadow(this, "version", null);
+    return shadow(this, "version", undefined);
   }
 
   get lang() {
@@ -244,7 +244,7 @@ export class Catalog {
   }
 
   get collection() {
-    let collection = null;
+    let collection: Dict | undefined;
     try {
       const obj = this.#catDict.get("Collection");
       if (obj instanceof Dict && obj.size > 0) {
@@ -419,7 +419,7 @@ export class Catalog {
 
     while (queue.length > 0) {
       const i = queue.shift()!;
-      const outlineDict = <Dict> xref.fetchIfRef(i.obj);
+      const outlineDict = xref.fetchIfRef(i.obj) as Dict;
       if (outlineDict === null || outlineDict === undefined) {
         continue;
       }
@@ -537,7 +537,7 @@ export class Catalog {
       if (!Array.isArray(groupsData)) {
         return shadow(this, "optionalContentConfig", undefined);
       }
-      const groups: OptionalContentGroupData[] = [];
+      const groups: OptionalContentGroupData_[] = [];
       const groupRefs: Ref[] = [];
       // Ensure all the optional content groups are valid.
       for (const groupRef of groupsData) {
@@ -545,16 +545,16 @@ export class Catalog {
           continue;
         }
         groupRefs.push(groupRef);
-        const group = <Dict> this.xref.fetchIfRef(groupRef); // Table 98
+        const group = this.xref.fetchIfRef(groupRef) as Dict; // Table 98
         let v;
         groups.push({
           id: groupRef.toString(),
           name: typeof (v = group.get("Name")) == "string"
             ? stringToPDFString(v)
-            : null,
+            : undefined,
           intent: typeof (v = group.get("Intent")) === "string"
             ? stringToPDFString(v)
-            : null,
+            : undefined,
         });
       }
       config = this.#readOptionalContentConfig(defaultConfig, groupRefs);
@@ -589,7 +589,7 @@ export class Catalog {
 
     function parseOrder(refs: Ref[], nestedLevels = 0) {
       if (!Array.isArray(refs)) {
-        return null;
+        return undefined;
       }
       const order: Order = [];
 
@@ -618,7 +618,7 @@ export class Catalog {
         hiddenGroups.push(groupRef.toString());
       }
       if (hiddenGroups.length) {
-        order.push({ name: null, order: hiddenGroups });
+        order.push({ name: undefined, order: hiddenGroups });
       }
 
       return order;
@@ -627,19 +627,19 @@ export class Catalog {
     function parseNestedOrder(ref: Ref, nestedLevels: number) {
       if (++nestedLevels > MAX_NESTED_LEVELS) {
         warn("parseNestedOrder - reached MAX_NESTED_LEVELS.");
-        return null;
+        return undefined;
       }
-      const value = <Ref[]> xref.fetchIfRef(ref);
+      const value = xref.fetchIfRef(ref) as Ref[];
       if (!Array.isArray(value)) {
-        return null;
+        return undefined;
       }
       const nestedName = xref.fetchIfRef(value[0]);
       if (typeof nestedName !== "string") {
-        return null;
+        return undefined;
       }
       const nestedOrder = parseOrder(value.slice(1), nestedLevels);
       if (!nestedOrder || !nestedOrder.length) {
-        return null;
+        return undefined;
       }
       return { name: stringToPDFString(nestedName), order: nestedOrder };
     }
@@ -652,14 +652,16 @@ export class Catalog {
     return {
       name: typeof (v = config.get("Name")) === "string"
         ? stringToPDFString(v)
-        : null,
+        : undefined,
       creator: typeof (v = config.get("Creator")) === "string"
         ? stringToPDFString(v)
-        : null,
-      baseState: (v = config.get("BaseState")) instanceof Name ? v.name : null,
-      on: parseOnOff(<Ref[]> config.get("ON")),
-      off: parseOnOff(<Ref[]> config.get("OFF")),
-      order: parseOrder(<Ref[]> config.get("Order")),
+        : undefined,
+      baseState: (v = config.get("BaseState")) instanceof Name
+        ? v.name
+        : undefined,
+      on: parseOnOff(config.get("ON") as Ref[]),
+      off: parseOnOff(config.get("OFF") as Ref[]),
+      order: parseOrder(config.get("Order") as Ref[]),
     } as OptionalContentConfigData;
   }
 
@@ -687,7 +689,7 @@ export class Catalog {
 
   get destinations() {
     const obj = this.#readDests();
-    const dests = <Record<string, ExplicitDest>> Object.create(null);
+    const dests = Object.create(null) as Record<string, ExplicitDest>;
     if (obj instanceof NameTree) {
       for (const [key, value] of obj.getAll()) {
         const dest = fetchDestination(value);
@@ -1093,7 +1095,7 @@ export class Catalog {
 
   get xfaImages() {
     const obj = this.#catDict.get("Names");
-    let xfaImages = null;
+    let xfaImages: Dict | undefined;
 
     if (obj instanceof Dict && obj.has("XFAImages")) {
       const nameTree = new NameTree(<Ref> obj.getRaw("XFAImages"), this.xref);
@@ -1108,7 +1110,7 @@ export class Catalog {
   }
 
   #collectJavaScript() {
-    const obj = <Dict | undefined> this.#catDict.get("Names");
+    const obj = this.#catDict.get("Names") as Dict | undefined;
     let javaScript: Map<string, string> | undefined;
 
     function appendIfJavaScriptDict(name: string, jsDict: Dict) {
@@ -1126,11 +1128,14 @@ export class Catalog {
         return;
       }
       js = stringToPDFString(js).replaceAll("\x00", "");
-      (javaScript ||= new Map()).set(name, js);
+      // Skip empty entries, similar to the `_collectJS` function.
+      if (js) {
+        (javaScript ||= new Map()).set(name, js);
+      }
     }
 
     if (obj instanceof Dict && obj.has("JavaScript")) {
-      const nameTree = new NameTree(<Ref> obj.getRaw("JavaScript"), this.xref);
+      const nameTree = new NameTree(obj.getRaw("JavaScript") as Ref, this.xref);
       for (const [key, value] of nameTree.getAll()) {
         appendIfJavaScriptDict(stringToPDFString(key), value);
       }
@@ -1138,19 +1143,10 @@ export class Catalog {
     // Append OpenAction "JavaScript" actions, if any, to the JavaScript map.
     const openAction = this.#catDict.get("OpenAction");
     if (openAction) {
-      appendIfJavaScriptDict("OpenAction", <Dict> openAction);
+      appendIfJavaScriptDict("OpenAction", openAction as Dict);
     }
 
-    return <Map<string, string> | null> javaScript;
-  }
-
-  get javaScript() {
-    const javaScript = this.#collectJavaScript();
-    return shadow(
-      this,
-      "javaScript",
-      javaScript ? [...javaScript.values()] : undefined,
-    );
+    return javaScript;
   }
 
   get jsActions() {
@@ -1162,9 +1158,8 @@ export class Catalog {
     );
 
     if (javaScript) {
-      if (!actions) {
-        actions = Object.create(null);
-      }
+      actions ||= Object.create(null);
+
       for (const [key, val] of javaScript) {
         if (key in actions!) {
           actions![<ActionEventName> key].push(val);
@@ -1265,7 +1260,7 @@ export class Catalog {
             continue;
           }
         }
-        nodesToVisit.push(<Dict | Ref> obj);
+        nodesToVisit.push(obj as Dict | Ref);
         continue;
       }
 
@@ -1277,9 +1272,9 @@ export class Catalog {
       }
       const { objId } = currentNode;
 
-      let count = <number | Ref | undefined> currentNode.getRaw("Count");
+      let count = currentNode.getRaw("Count") as number | Ref | undefined;
       if (count instanceof Ref) {
-        count = await <Promise<number>> xref.fetchAsync(count);
+        count = await (xref.fetchAsync(count) as Promise<number>);
       }
       if (Number.isInteger(count) && count! >= 0) {
         // Cache the Kids count, since it can reduce redundant lookups in
@@ -1475,7 +1470,7 @@ export class Catalog {
             );
           }
           if (!node) {
-            return null;
+            return undefined;
           }
           if (!(node instanceof Dict)) {
             throw new FormatError("Node must be a dictionary.");
@@ -1485,7 +1480,7 @@ export class Catalog {
         })
         .then((parent) => {
           if (!parent) {
-            return null;
+            return undefined;
           }
           if (!(parent instanceof Dict)) {
             throw new FormatError("Parent must be a dictionary.");
@@ -1494,7 +1489,7 @@ export class Catalog {
         })
         .then((kids) => {
           if (!kids) {
-            return null;
+            return undefined;
           }
 
           const kidPromises = [];
@@ -1591,10 +1586,10 @@ export class Catalog {
         if (action instanceof Dict) {
           if (action.has("D")) {
             // MouseDown
-            action = <Dict> action.get("D");
+            action = action.get("D") as Dict;
           } else if (action.has("U")) {
             // MouseUp
-            action = <Dict> action.get("U");
+            action = action.get("U") as Dict;
           }
         }
       }
@@ -1624,7 +1619,7 @@ export class Catalog {
           resultObj.resetForm = { fields, refs, include };
           break;
         case "URI":
-          url = (<Dict> action).get("URI");
+          url = action.get("URI");
           if (url instanceof Name) {
             // Some bad PDFs do not put parentheses around relative URLs.
             url = "/" + url.name;
@@ -1632,7 +1627,7 @@ export class Catalog {
           break;
 
         case "GoTo":
-          dest = <Destination> (<Dict> action).get("D");
+          dest = action.get("D") as Destination;
           break;
 
         case "Launch":
@@ -1641,17 +1636,17 @@ export class Catalog {
         // files, which we thus attempt to support (utilizing `docBaseUrl`).
         /* falls through */
         case "GoToR":
-          const urlDict = (<Dict> action).get("F");
+          const urlDict = action.get("F");
           if (urlDict instanceof Dict) {
             // We assume that we found a FileSpec dictionary
             // and fetch the URL without checking any further.
-            url = urlDict.get("F") || null;
+            url = urlDict.get("F") || undefined;
           } else if (typeof urlDict === "string") {
             url = urlDict;
           }
 
           // NOTE: the destination is relative to the *remote* document.
-          let remoteDest = (<Dict> action).get("D");
+          let remoteDest = action.get("D");
           if (remoteDest) {
             if (remoteDest instanceof Name) {
               remoteDest = remoteDest.name;
@@ -1666,7 +1661,7 @@ export class Catalog {
             }
           }
           // The 'NewWindow' property, equal to `LinkTarget.BLANK`.
-          const newWindow = (<Dict> action).get("NewWindow");
+          const newWindow = action.get("NewWindow");
           if (typeof newWindow === "boolean") {
             resultObj.newWindow = newWindow;
           }
@@ -1693,7 +1688,7 @@ export class Catalog {
           break;
 
         case "Named":
-          const namedAction = (<Dict> action).get("N");
+          const namedAction = action.get("N");
           if (namedAction instanceof Name) {
             resultObj.action = namedAction.name;
           }

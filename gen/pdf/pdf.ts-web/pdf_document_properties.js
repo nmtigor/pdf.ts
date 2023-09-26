@@ -67,7 +67,7 @@ export class PDFDocumentProperties {
         this._fileNameLookup = fileNameLookup;
         this.#reset();
         // Bind the event listener for the Close button.
-        closeButton.addEventListener("click", this.close.bind(this));
+        closeButton.on("click", this.close.bind(this));
         this.overlayManager.register(this.dialog);
         eventBus._on("pagechanging", (evt) => {
             this._currentPageNumber = evt.pageNumber;

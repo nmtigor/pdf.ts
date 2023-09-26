@@ -265,12 +265,7 @@ function drawTriangle(
   let xb, cbr, cbg, cbb;
   for (let y = minY; y <= maxY; y++) {
     if (y < y2) {
-      let k;
-      if (y < y1) {
-        k = 0;
-      } else {
-        k = (y1 - y) / (y1 - y2);
-      }
+      const k = y < y1 ? 0 : (y1 - y) / (y1 - y2);
       xa = x1 - (x1 - x2) * k;
       car = c1r - (c1r - c2r) * k;
       cag = c1g - (c1g - c2g) * k;

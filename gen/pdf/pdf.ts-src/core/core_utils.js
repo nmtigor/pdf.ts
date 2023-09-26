@@ -453,7 +453,7 @@ export function recoverJsURL(str) {
         }
         return { url, newWindow };
     }
-    return null;
+    return undefined;
 }
 export function numberToString(value) {
     if (Number.isInteger(value)) {

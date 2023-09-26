@@ -15,6 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { PDFJSDev } from "../../global.js";
 import { html } from "../../lib/dom.js";
 import { AnnotationMode, PixelsPerInch } from "../pdf.ts-src/pdf.js";
 import { PDFPrintServiceFactory, viewerApp } from "./app.js";
@@ -252,6 +253,9 @@ function abort() {
     }
 }
 function renderProgress(index, total, l10n) {
+    if (PDFJSDev && window.isGECKOVIEW) {
+        return;
+    }
     dialog ||= document.getElementById("printServiceDialog");
     const progress = Math.round((100 * index) / total);
     const progressBar = dialog.querySelector("progress");
@@ -261,7 +265,7 @@ function renderProgress(index, total, l10n) {
         progressPerc.textContent = msg;
     });
 }
-window.addEventListener("keydown", (event) => {
+window.on("keydown", (event) => {
     // Intercept Cmd/Ctrl + P in all browsers.
     // Also intercept Cmd/Ctrl + Shift + P in Chrome and Opera
     if (event.keyCode === /* P= */ 80 &&
@@ -281,11 +285,14 @@ if ("onbeforeprint" in window) {
             event.stopImmediatePropagation();
         }
     };
-    window.addEventListener("beforeprint", stopPropagationIfNeeded);
-    window.addEventListener("afterprint", stopPropagationIfNeeded);
+    window.on("beforeprint", stopPropagationIfNeeded);
+    window.on("afterprint", stopPropagationIfNeeded);
 }
 let overlayPromise;
 function ensureOverlay() {
+    if (PDFJSDev && window.isGECKOVIEW) {
+        return Promise.reject(new Error("ensureOverlay not implemented in GECKOVIEW development mode."));
+    }
     if (!overlayPromise) {
         overlayManager = viewerApp.overlayManager;
         if (!overlayManager) {
@@ -295,7 +302,7 @@ function ensureOverlay() {
         overlayPromise = overlayManager.register(dialog, 
         /* canForceClose = */ true);
         document.getElementById("printCancel").onclick = abort;
-        dialog.addEventListener("close", abort);
+        dialog.on("close", abort);
     }
     return overlayPromise;
 }

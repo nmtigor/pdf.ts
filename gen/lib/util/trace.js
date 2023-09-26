@@ -8,9 +8,9 @@ import { global, TESTING } from "../../global.js";
  * @const @param assertion
  * @const @param msg
  */
-export const assert = (assertion, ...data
+export function assert(assertion, ...data
 // meta?: { url: string },
-) => {
+) {
     // if (!assertion && meta) {
     //   const match = meta.url.match(/\/([^\/]+\.js)/);
     //   // console.log(match);
@@ -21,7 +21,13 @@ export const assert = (assertion, ...data
     }
     if (!assertion)
         throw new Error(data[0], { cause: data });
-};
+}
+export function fail(...data) {
+    /*#static*/ if (!TESTING) {
+        console.assert(false, ...data);
+    }
+    throw new Error(data[0], { cause: data });
+}
 export const warn = (...data
 // meta?: { url: string }
 ) => {

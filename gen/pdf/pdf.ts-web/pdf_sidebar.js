@@ -220,35 +220,35 @@ export class PDFSidebar {
         }
     }
     #addEventListeners() {
-        this.sidebarContainer.addEventListener("transitionend", (evt) => {
+        this.sidebarContainer.on("transitionend", (evt) => {
             if (evt.target === this.sidebarContainer) {
                 this.outerContainer.classList.remove("sidebarMoving");
             }
         });
-        this.toggleButton.addEventListener("click", () => {
+        this.toggleButton.on("click", () => {
             this.toggle();
         });
         // Buttons for switching views.
-        this.thumbnailButton.addEventListener("click", () => {
+        this.thumbnailButton.on("click", () => {
             this.switchView(SidebarView.THUMBS);
         });
-        this.outlineButton.addEventListener("click", () => {
+        this.outlineButton.on("click", () => {
             this.switchView(SidebarView.OUTLINE);
         });
-        this.outlineButton.addEventListener("dblclick", () => {
+        this.outlineButton.on("dblclick", () => {
             this.eventBus.dispatch("toggleoutlinetree", { source: this });
         });
-        this.attachmentsButton.addEventListener("click", () => {
+        this.attachmentsButton.on("click", () => {
             this.switchView(SidebarView.ATTACHMENTS);
         });
-        this.layersButton.addEventListener("click", () => {
+        this.layersButton.on("click", () => {
             this.switchView(SidebarView.LAYERS);
         });
-        this.layersButton.addEventListener("dblclick", () => {
+        this.layersButton.on("dblclick", () => {
             this.eventBus.dispatch("resetlayers", { source: this });
         });
         // Buttons for view-specific options.
-        this._currentOutlineItemButton.addEventListener("click", () => {
+        this._currentOutlineItemButton.on("click", () => {
             this.eventBus.dispatch("currentoutlineitem", { source: this });
         });
         // Disable/enable views.
@@ -285,15 +285,15 @@ export class PDFSidebar {
             }
         });
         // Handle resizing of the sidebar.
-        this.resizer.addEventListener("mousedown", (evt) => {
+        this.resizer.on("mousedown", (evt) => {
             if (evt.button !== 0) {
                 return;
             }
             // Disable the `transition-duration` rules when sidebar resizing begins,
             // in order to improve responsiveness and to avoid visual glitches.
             this.outerContainer.classList.add(SIDEBAR_RESIZING_CLASS);
-            window.addEventListener("mousemove", this.#mouseMove);
-            window.addEventListener("mouseup", this.#mouseUp);
+            window.on("mousemove", this.#mouseMove);
+            window.on("mouseup", this.#mouseUp);
         });
         this.eventBus._on("resize", (evt) => {
             // When the *entire* viewer is resized, such that it becomes narrower,
@@ -362,8 +362,8 @@ export class PDFSidebar {
         this.outerContainer.classList.remove(SIDEBAR_RESIZING_CLASS);
         // ... and ensure that rendering will always be triggered.
         this.eventBus.dispatch("resize", { source: this });
-        window.removeEventListener("mousemove", this.#mouseMove);
-        window.removeEventListener("mouseup", this.#mouseUp);
+        window.off("mousemove", this.#mouseMove);
+        window.off("mouseup", this.#mouseUp);
     };
 }
 /*80--------------------------------------------------------------------------*/

@@ -17,15 +17,16 @@
  * limitations under the License.
  */
 
-import { assertObjectMatch } from "https://deno.land/std@0.195.0/assert/mod.ts";
-import { describe, it } from "https://deno.land/std@0.195.0/testing/bdd.ts";
-import { GENERIC, LIB } from "../../global.ts";
+import { assertObjectMatch } from "@std/assert/mod.ts";
+import { describe, it } from "@std/testing/bdd.ts";
+import { LIB } from "../../global.ts";
 import { AnnotationLayer } from "./display/annotation_layer.ts";
 import {
   build,
   getDocument,
   PDFDataRangeTransport,
   PDFWorker,
+  SVGGraphics,
   version,
 } from "./display/api.ts";
 import {
@@ -104,11 +105,7 @@ describe("pdfjs_api", () => {
       renderTextLayer,
       setLayerDimensions,
       shadow,
-      SVGGraphics:
-        // /*#static*/ LIB //kkkk bug?
-        /*#static*/ GENERIC
-          ? (await import("./display/svg.ts")).SVGGraphics
-          : undefined,
+      SVGGraphics,
       UnexpectedResponseException,
       updateTextLayer,
       Util,

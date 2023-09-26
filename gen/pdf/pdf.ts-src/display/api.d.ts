@@ -9,8 +9,8 @@ import type { DatasetReader } from "../core/dataset_reader.js";
 import type { DocumentInfo } from "../core/document.js";
 import type { ImgData } from "../core/evaluator.js";
 import type { Attachment } from "../core/file_spec.js";
-import type { FontExpotDataEx } from "../core/fonts.js";
 import type { CmdArgs } from "../core/font_renderer.js";
+import type { FontExpotDataEx } from "../core/fonts.js";
 import type { IWorker } from "../core/iworker.js";
 import type { OpListIR } from "../core/operator_list.js";
 import type { ShadingPatternIR } from "../core/pattern.js";
@@ -28,6 +28,7 @@ import { DOMCanvasFactory, DOMCMapReaderFactory, DOMFilterFactory, DOMStandardFo
 import { FontFaceObject, FontLoader } from "./font_loader.js";
 import { Metadata } from "./metadata.js";
 import { OptionalContentConfig } from "./optional_content_config.js";
+export declare const SVGGraphics: typeof import("./svg.js").SVGGraphics | undefined;
 export type DefaultCanvasFactory = DOMCanvasFactory;
 export declare const DefaultCanvasFactory: typeof DOMCanvasFactory;
 export type DefaultCMapReaderFactory = DOMCMapReaderFactory;
@@ -477,14 +478,8 @@ export declare class PDFDocumentProxy {
     getAttachments(): Promise<any>;
     /**
      * @return A promise that is resolved with
-     *   an {Array} of all the JavaScript strings in the name tree, or `null`
-     *   if no JavaScript exists.
-     */
-    getJavaScript(): Promise<string[] | undefined>;
-    /**
-     * @return A promise that is resolved with
      *   an {Object} with the JavaScript actions:
-     *     - from the name tree (like getJavaScript);
+     *     - from the name tree.
      *     - from A or AA entries in the catalog dictionary.
      *   , or `null` if no JavaScript exists.
      */
@@ -572,7 +567,7 @@ export declare class PDFDocumentProxy {
      *   resolved with an {Object} containing /AcroForm field data for the JS
      *   sandbox, or `null` when no field data is present in the PDF file.
      */
-    getFieldObjects(): Promise<boolean | Record<string, FieldObject[]> | MetadataEx | undefined>;
+    getFieldObjects(): Promise<boolean | AnnotActions | Record<string, FieldObject[]> | MetadataEx | undefined>;
     /**
      * @return A promise that is resolved with `true`
      *   if some /AcroForm fields have JavaScript actions.
@@ -1047,6 +1042,7 @@ export declare class PDFWorker {
      * The current `workerPort`, when it exists.
      */
     get port(): IWorker;
+    _pendingDestroy?: boolean;
     get _webWorker(): Worker | undefined;
     /**
      * The current MessageHandler-instance.
@@ -1060,7 +1056,7 @@ export declare class PDFWorker {
     /**
      * @param params The worker initialization parameters.
      */
-    static fromPort(params: PDFWorkerP_): PDFWorker | undefined;
+    static fromPort(params: PDFWorkerP_): PDFWorker;
     /**
      * The current `workerSrc`, when it exists.
      */
@@ -1093,9 +1089,6 @@ declare class WorkerTransport {
     standardFontDataFactory: DOMStandardFontDataFactory;
     destroyed: boolean;
     destroyCapability?: PromiseCap;
-    _passwordCapability?: PromiseCap<{
-        password: string;
-    }>;
     downloadInfoCapability: PromiseCap<{
         length: number;
     }>;
@@ -1110,7 +1103,7 @@ declare class WorkerTransport {
     getPage(pageNumber: unknown): Promise<PDFPageProxy>;
     getPageIndex(ref: RefProxy): Promise<number>;
     getAnnotations(pageIndex: number, intent: RenderingIntentFlag): Promise<import("../core/annotation.js").AnnotationData[]>;
-    getFieldObjects(): Promise<boolean | Record<string, FieldObject[]> | MetadataEx | undefined>;
+    getFieldObjects(): Promise<boolean | AnnotActions | Record<string, FieldObject[]> | MetadataEx | undefined>;
     hasJSActions(): Promise<boolean>;
     getCalculationOrderIds(): Promise<string[] | undefined>;
     getDestinations(): Promise<Record<string, ExplicitDest>>;
@@ -1121,7 +1114,6 @@ declare class WorkerTransport {
     getViewerPreferences(): Promise<import("../core/catalog.js").ViewerPref | undefined>;
     getOpenAction(): Promise<import("../core/catalog.js").OpenAction | undefined>;
     getAttachments(): Promise<unknown>;
-    getJavaScript(): Promise<string[] | undefined>;
     getDocJSActions(): Promise<AnnotActions | undefined>;
     getPageJSActions(pageIndex: number): Promise<AnnotActions | undefined>;
     getStructTree(pageIndex: number): Promise<StructTreeNode | undefined>;

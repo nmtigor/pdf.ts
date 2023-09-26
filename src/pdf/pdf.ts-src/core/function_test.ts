@@ -21,8 +21,8 @@ import {
   assertEquals,
   assertNotEquals,
   assertThrows,
-} from "https://deno.land/std@0.195.0/testing/asserts.ts";
-import { describe, it } from "https://deno.land/std@0.195.0/testing/bdd.ts";
+} from "@std/assert/mod.ts";
+import { describe, it } from "@std/testing/bdd.ts";
 import { PostScriptCompiler, PostScriptEvaluator } from "./function.ts";
 import { PostScriptLexer, PostScriptParser } from "./ps_parser.ts";
 import { StringStream } from "./stream.ts";
@@ -422,9 +422,9 @@ describe("function", () => {
       const compiler = new PostScriptCompiler();
       const compiledCode = compiler.compile(code, domain, range);
       if (samples === undefined) {
-        assertEquals(compiledCode, null);
+        assertEquals(compiledCode, undefined);
       } else {
-        assertNotEquals(compiledCode, null);
+        assertNotEquals(compiledCode, undefined);
         // eslint-disable-next-line no-new-func
         const fn = new Function(
           "src",

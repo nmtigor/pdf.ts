@@ -73,7 +73,7 @@ export class PDFFunctionFactory {
                 return localFunction;
             }
         }
-        return null;
+        return undefined;
     }
     #cache(cacheKey, parsedFunction) {
         if (!parsedFunction) {
@@ -100,7 +100,7 @@ export class PDFFunctionFactory {
 }
 function toNumberArray(arr) {
     if (!Array.isArray(arr)) {
-        return null;
+        return undefined;
     }
     const length = arr.length;
     for (let i = 0; i < length; i++) {
@@ -250,12 +250,7 @@ var NsPDFFunction;
                 encode = toMultiArray(encode);
             }
             let decode = toNumberArray(dict.getArray("Decode"));
-            if (!decode) {
-                decode = range;
-            }
-            else {
-                decode = toMultiArray(decode);
-            }
+            decode = !decode ? range : toMultiArray(decode);
             const samples = this.getSampleArray(size, outputSize, bps, fn);
             // const mask = 2 ** bps - 1;
             return /* constructSampledFn */ (src, srcOffset, dest, destOffset) => {
@@ -778,7 +773,7 @@ export class PostScriptEvaluator {
                     break;
                 case "log":
                     a = stack.pop();
-                    stack.push(Math.log(a) / Math.LN10);
+                    stack.push(Math.log10(a));
                     break;
                 case "lt":
                     b = stack.pop();
@@ -1116,7 +1111,7 @@ var NsPostScriptCompiler;
                 switch (item) {
                     case "add":
                         if (stack.length < 2) {
-                            return null;
+                            return undefined;
                         }
                         num2 = stack.pop();
                         num1 = stack.pop();
@@ -1124,12 +1119,12 @@ var NsPostScriptCompiler;
                         break;
                     case "cvr":
                         if (stack.length < 1) {
-                            return null;
+                            return undefined;
                         }
                         break;
                     case "mul":
                         if (stack.length < 2) {
-                            return null;
+                            return undefined;
                         }
                         num2 = stack.pop();
                         num1 = stack.pop();
@@ -1137,7 +1132,7 @@ var NsPostScriptCompiler;
                         break;
                     case "sub":
                         if (stack.length < 2) {
-                            return null;
+                            return undefined;
                         }
                         num2 = stack.pop();
                         num1 = stack.pop();
@@ -1145,7 +1140,7 @@ var NsPostScriptCompiler;
                         break;
                     case "exch":
                         if (stack.length < 2) {
-                            return null;
+                            return undefined;
                         }
                         ast1 = stack.pop();
                         ast2 = stack.pop();
@@ -1153,21 +1148,21 @@ var NsPostScriptCompiler;
                         break;
                     case "pop":
                         if (stack.length < 1) {
-                            return null;
+                            return undefined;
                         }
                         stack.pop();
                         break;
                     case "index":
                         if (stack.length < 1) {
-                            return null;
+                            return undefined;
                         }
                         num1 = stack.pop();
                         if (num1.type !== AstNodeType.literal) {
-                            return null;
+                            return undefined;
                         }
                         n = num1.number;
                         if (n < 0 || !Number.isInteger(n) || stack.length < n) {
-                            return null;
+                            return undefined;
                         }
                         ast1 = stack[stack.length - n - 1];
                         if (ast1.type === AstNodeType.literal || ast1.type === AstNodeType.var) {
@@ -1181,7 +1176,7 @@ var NsPostScriptCompiler;
                         break;
                     case "dup":
                         if (stack.length < 1) {
-                            return null;
+                            return undefined;
                         }
                         if (typeof code[i + 1] === "number" &&
                             code[i + 2] === "gt" &&
@@ -1209,14 +1204,14 @@ var NsPostScriptCompiler;
                         break;
                     case "roll":
                         if (stack.length < 2) {
-                            return null;
+                            return undefined;
                         }
                         num2 = stack.pop();
                         num1 = stack.pop();
                         if (num2.type !== AstNodeType.literal ||
                             num1.type !== AstNodeType.literal) {
                             // both roll operands must be numbers
-                            return null;
+                            return undefined;
                         }
                         j = num2.number;
                         n = num1.number;
@@ -1225,7 +1220,7 @@ var NsPostScriptCompiler;
                             !Number.isInteger(j) ||
                             stack.length < n) {
                             // ... and integers
-                            return null;
+                            return undefined;
                         }
                         j = ((j % n) + n) % n;
                         if (j === 0) {
@@ -1234,11 +1229,11 @@ var NsPostScriptCompiler;
                         stack.push(...stack.splice(stack.length - n, n - j));
                         break;
                     default:
-                        return null; // unsupported operator
+                        return undefined; // unsupported operator
                 }
             }
             if (stack.length !== outputSize) {
-                return null;
+                return undefined;
             }
             const result = [];
             for (const instruction of instructions) {

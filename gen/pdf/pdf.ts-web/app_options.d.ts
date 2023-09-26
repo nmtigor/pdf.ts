@@ -17,7 +17,6 @@ export declare const enum ViewOnLoad {
     PREVIOUS = 0,
     INITIAL = 1
 }
-export declare const D_base: string;
 type _DefaultOptions = typeof defaultOptions;
 export type OptionName = keyof _DefaultOptions;
 type _OptionType = number | string | boolean | Worker;
@@ -76,6 +75,10 @@ declare const defaultOptions: {
         kind: number;
     };
     enableScripting: {
+        value: boolean;
+        kind: number;
+    };
+    enableStampEditor: {
         value: boolean;
         kind: number;
     };
@@ -141,10 +144,6 @@ declare const defaultOptions: {
     };
     textLayerMode: {
         value: TextLayerMode;
-        kind: number;
-    };
-    useOnlyCssZoom: {
-        value: boolean;
         kind: number;
     };
     viewerCssTheme: {
@@ -246,6 +245,7 @@ export declare abstract class AppOptions {
     static get enablePermissions(): boolean;
     static get enablePrintAutoRotate(): boolean;
     static get enableScripting(): boolean;
+    static get enableStampEditor(): boolean;
     static get externalLinkRel(): string;
     static get externalLinkTarget(): LinkTarget;
     static get historyUpdateUrl(): boolean;
@@ -262,7 +262,6 @@ export declare abstract class AppOptions {
     static get scrollModeOnLoad(): ScrollMode;
     static get spreadModeOnLoad(): SpreadMode;
     static get textLayerMode(): TextLayerMode;
-    static get useOnlyCssZoom(): boolean;
     static get viewerCssTheme(): ViewerCssTheme;
     static get viewOnLoad(): ViewOnLoad;
     static get cMapPacked(): boolean;

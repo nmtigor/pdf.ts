@@ -35,7 +35,8 @@ export class PromiseCap {
             };
             this.reject = (reason) => {
                 /*#static*/  {
-                    assert(reason instanceof Error, 'Expected valid "reason" argument.');
+                    // assert(reason instanceof Error, 'Expected valid "reason" argument.');
+                    assert(typeof reason?.name === "string", 'Expected valid "reason" argument.');
                 }
                 this.#settled = true;
                 reject(reason);

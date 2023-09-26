@@ -14,8 +14,8 @@ export const INOUT = true // contracts
 , THEMESETTING = false, EDITOR = true, /** @deprecated */ EDITOR_v = true // verbose
 , PDFTS = true, PDFTS_v = true // verbose
 , PDFTS_vv = false // very verbose
-, _INFO = DEV && INFO, _COLR = DEV && COLR, /** @deprecated */ APP = false // release build
-, TESTING = false, DENO = false, _TRACE = DEV && TRACE && !TESTING, CYPRESS = true
+, /** @deprecated */ APP = false // release build
+, DENO = false, TESTING = false, CYPRESS = true, _INFO = DEV && INFO, _COLR = DEV && COLR, _TRACE = DEV && TRACE && !TESTING
 // from pdf.js
 , PDFJSDev = true, GENERIC = true, MOZCENTRAL = false, CHROME = false, GECKOVIEW = false, LIB = false, SKIP_BABEL = true, IMAGE_DECODERS = false, COMPONENTS = false;
 /*80-------------------------------------------------------------------------*/
@@ -90,5 +90,13 @@ export const global = new class {
         return this.#dent;
     }
 }();
+/*80--------------------------------------------------------------------------*/
+/*
+Before runtimes support it natively...
+
+Ref. https://devblogs.microsoft.com/typescript/announcing-typescript-5-2/#using-declarations-and-explicit-resource-management
+*/
+Symbol.dispose ??= Symbol("Symbol.dispose");
+Symbol.asyncDispose ??= Symbol("Symbol.asyncDispose");
 /*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=global.js.map

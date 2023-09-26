@@ -17,9 +17,9 @@
  */
 import { CHROME, MOZCENTRAL, PDFJSDev, TESTING } from "../../../global.js";
 import { html } from "../../../lib/dom.js";
-import { assert } from "../../../lib/util/trace.js";
+import { assert, fail } from "../../../lib/util/trace.js";
 import { FontExpotDataEx } from "../core/fonts.js";
-import { bytesToString, FeatureTest, shadow, string32, warn, } from "../shared/util.js";
+import { bytesToString, FeatureTest, isNodeJS, shadow, string32, warn, } from "../shared/util.js";
 export class FontLoader {
     _document;
     nativeFontFaces = new Set();
@@ -85,7 +85,7 @@ export class FontLoader {
             }
             return;
         }
-        assert(0, "Not implemented: loadSystemFont without the Font Loading API.");
+        fail("Not implemented: loadSystemFont without the Font Loading API.");
     }
     async bind(font) {
         // Add the font to the DOM only once; skip if the font is already loaded.
@@ -138,7 +138,11 @@ export class FontLoader {
         /*#static*/ 
         let supported = false;
         /*#static*/  {
-            if (globalThis.navigator &&
+            if (isNodeJS) {
+                // Node.js - we can pretend that sync font loading is supported.
+                supported = true;
+            }
+            else if (globalThis.navigator &&
                 // User agent string sniffing is bad, but there is no reliable way to
                 // tell if the font is fully loaded and ready to be used with canvas.
                 /Mozilla\/5.0.*?rv:\d+.*? Gecko/.test(navigator.userAgent)) {

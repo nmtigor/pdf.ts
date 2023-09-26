@@ -9,8 +9,8 @@ import type { AnnotActions } from "../core/core_utils.js";
 import type { DatasetReader } from "../core/dataset_reader.js";
 import type { DocumentInfo, XFAData } from "../core/document.js";
 import type { ImgData } from "../core/evaluator.js";
-import type { FontExpotDataEx } from "../core/fonts.js";
 import type { CmdArgs } from "../core/font_renderer.js";
+import type { FontExpotDataEx } from "../core/fonts.js";
 import type { IWorker } from "../core/iworker.js";
 import type { SerializedMetadata } from "../core/metadata_parser.js";
 import type { OpListIR } from "../core/operator_list.js";
@@ -21,10 +21,10 @@ import type { AnnotStorageRecord } from "../display/annotation_layer.js";
 import type { OutlineNode, RefProxy, StructTreeNode, TextItem, TextMarkedContent, TextStyle } from "../display/api.js";
 import type { CMapData } from "../display/base_factory.js";
 import type { VerbosityLevel } from "../pdf.js";
-import type { PermissionFlag, RenderingIntentFlag } from "./util.js";
-import { PasswordException, PasswordResponses } from "./util.js";
-interface reason_t {
-    name?: string;
+import type { PasswordExceptionJ, PermissionFlag, RenderingIntentFlag } from "./util.js";
+import { PasswordResponses } from "./util.js";
+export interface reason_t {
+    name: string;
     message: string;
     code?: PasswordResponses;
     status?: HttpStatusCode;
@@ -362,7 +362,7 @@ export interface WActionMap {
         Sinkchunk: undefined;
     };
     PasswordRequest: {
-        Data: PasswordException;
+        Data: PasswordExceptionJ;
         Return: {
             password: string;
         };

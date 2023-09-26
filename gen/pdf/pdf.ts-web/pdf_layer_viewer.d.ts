@@ -1,5 +1,6 @@
 import { OptionalContentConfig, PDFDocumentProxy } from "../pdf.ts-src/pdf.js";
-import { BaseTreeViewer, type BaseTreeViewerCtorP } from "./base_tree_viewer.js";
+import type { BaseTreeViewerCtorP } from "./base_tree_viewer.js";
+import { BaseTreeViewer } from "./base_tree_viewer.js";
 import { type IL10n } from "./interfaces.js";
 interface PDFLayerViewerOptions extends BaseTreeViewerCtorP {
     /**

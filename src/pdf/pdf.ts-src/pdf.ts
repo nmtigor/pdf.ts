@@ -28,7 +28,6 @@
 // eslint-disable-next-line max-len
 /** @typedef {import("./display/text_layer").TextLayerRenderTask} TextLayerRenderTask */
 
-import { GENERIC } from "../../global.ts";
 import type { FieldObject } from "./core/annotation.ts";
 import type {
   Destination,
@@ -37,10 +36,10 @@ import type {
   Order,
   SetOCGState,
 } from "./core/catalog.ts";
-import { type AnnotActions } from "./core/core_utils.ts";
-import { type DocumentInfo, type XFAData } from "./core/document.ts";
-import { type Attachment } from "./core/file_spec.ts";
-import { type OpListIR } from "./core/operator_list.ts";
+import type { AnnotActions } from "./core/core_utils.ts";
+import type { DocumentInfo, XFAData } from "./core/document.ts";
+import type { Attachment } from "./core/file_spec.ts";
+import type { OpListIR } from "./core/operator_list.ts";
 import { Ref } from "./core/primitives.ts";
 import { WorkerMessageHandler } from "./core/worker.ts";
 import type { XFAElData, XFAElObj } from "./core/xfa/alias.ts";
@@ -49,15 +48,15 @@ import {
   AnnotationLayer,
   FileAttachmentAnnotationElement,
 } from "./display/annotation_layer.ts";
-import {
-  type AnnotationStorage,
-  PrintAnnotationStorage,
-} from "./display/annotation_storage.ts";
+import type { AnnotationStorage } from "./display/annotation_storage.ts";
+import { PrintAnnotationStorage } from "./display/annotation_storage.ts";
 import type {
   AnnotIntent,
   DocumentInitP,
   Intent,
   OutlineNode,
+  PDFDocumentProxy,
+  PDFPageProxy,
   RefProxy,
   RenderP,
   TextContent,
@@ -68,10 +67,9 @@ import {
   getDocument,
   PDFDataRangeTransport,
   PDFDocumentLoadingTask,
-  type PDFDocumentProxy,
-  type PDFPageProxy,
   PDFWorker,
   RenderTask,
+  SVGGraphics,
   version,
 } from "./display/api.ts";
 import {
@@ -135,10 +133,6 @@ import {
 // /* eslint-disable-next-line no-unused-vars */
 // const pdfjsBuild =
 //   typeof PDFJSDev !== "undefined" ? PDFJSDev.eval("BUNDLE_BUILD") : void 0;
-
-const SVGGraphics = /*#static*/ GENERIC
-  ? (await import("./display/svg.ts")).SVGGraphics
-  : undefined;
 /*80--------------------------------------------------------------------------*/
 
 export {

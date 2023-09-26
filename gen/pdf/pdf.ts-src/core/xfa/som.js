@@ -184,12 +184,9 @@ export function searchNode(root, container, expr, dotDotAllowed = true, useCache
                         break;
                     case operators.dotHash:
                         const children_1 = node[$getChildrenByClass](name);
-                        if (children_1.isXFAObjectArray) {
-                            children = children_1.children;
-                        }
-                        else {
-                            children = [children_1];
-                        }
+                        children = children_1.isXFAObjectArray
+                            ? children_1.children
+                            : [children_1];
                         break;
                     default:
                         break;
@@ -214,12 +211,9 @@ export function searchNode(root, container, expr, dotDotAllowed = true, useCache
             root_1 = [container];
             continue;
         }
-        if (isFinite(index)) {
-            root_1 = nodes.filter((node) => index < node.length).map((node) => node[index]);
-        }
-        else {
-            root_1 = nodes.flat();
-        }
+        root_1 = isFinite(index)
+            ? nodes.filter((node) => index < node.length).map((node) => node[index])
+            : nodes.flat();
     }
     if (root_1.length === 0) {
         return undefined;
@@ -257,12 +251,9 @@ export function createDataNode(root, container, expr) {
                 break;
             case operators.dotHash:
                 const children_1 = root[$getChildrenByClass](name);
-                if (children_1.isXFAObjectArray) {
-                    children = children_1.children;
-                }
-                else {
-                    children = [children_1];
-                }
+                children = children_1.isXFAObjectArray
+                    ? children_1.children
+                    : [children_1];
                 break;
             default:
                 break;

@@ -46,15 +46,15 @@ export class PasswordPrompt {
         this.l10n = l10n;
         this._isViewerEmbedded = isViewerEmbedded;
         // Attach the event listeners.
-        this.submitButton.addEventListener("click", this.#verify);
-        this.cancelButton.addEventListener("click", this.close);
-        this.input.addEventListener("keydown", (e) => {
+        this.submitButton.on("click", this.#verify);
+        this.cancelButton.on("click", this.close);
+        this.input.on("keydown", (e) => {
             if (e.keyCode === /* Enter = */ 13) {
                 this.#verify();
             }
         });
         this.overlayManager.register(this.dialog, /* canForceClose = */ true);
-        this.dialog.addEventListener("close", this.#cancel);
+        this.dialog.on("close", this.#cancel);
     }
     async open() {
         if (this.#activeCapability) {
@@ -65,7 +65,7 @@ export class PasswordPrompt {
             await this.overlayManager.open(this.dialog);
         }
         catch (ex) {
-            this.#activeCapability = undefined;
+            this.#activeCapability.resolve();
             throw ex;
         }
         const passwordIncorrect = this.#reason === PasswordResponses.INCORRECT_PASSWORD;

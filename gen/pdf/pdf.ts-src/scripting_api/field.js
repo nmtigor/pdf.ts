@@ -2,7 +2,7 @@
  * nmtigor (https://github.com/nmtigor) @2022
  */
 import { Color } from "./color.js";
-import { createActionsMap, getFieldType, } from "./common.js";
+import { createActionsMap, getFieldType } from "./common.js";
 import { PDFObject } from "./pdf_object.js";
 export class Field extends PDFObject {
     alignment;
@@ -273,13 +273,11 @@ export class Field extends PDFObject {
                 this._value.push(this._items[i].displayValue);
             });
         }
-        else {
-            if (indices.length > 0) {
-                indices = indices.splice(1, indices.length - 1);
-                this._currentValueIndices = indices[0];
-                // this._value = this._items[this._currentValueIndices]; kkkk bug?
-                this._value = this._items[this._currentValueIndices].displayValue;
-            }
+        else if (indices.length > 0) {
+            indices = indices.splice(1, indices.length - 1);
+            this._currentValueIndices = indices[0];
+            // this._value = this._items[this._currentValueIndices]; kkkk bug?
+            this._value = this._items[this._currentValueIndices].displayValue;
         }
         this._send({ id: this._id, indices: indices });
     }
@@ -387,13 +385,11 @@ export class Field extends PDFObject {
                 }
             }
         }
-        else {
-            if (this._currentValueIndices === nIdx) {
-                this._currentValueIndices = this.numItems > 0 ? 0 : -1;
-            }
-            else if (this._currentValueIndices > nIdx) {
-                --this._currentValueIndices;
-            }
+        else if (this._currentValueIndices === nIdx) {
+            this._currentValueIndices = this.numItems > 0 ? 0 : -1;
+        }
+        else if (this._currentValueIndices > nIdx) {
+            --this._currentValueIndices;
         }
         this._send({ id: this._id, remove: nIdx });
     }

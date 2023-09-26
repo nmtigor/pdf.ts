@@ -731,8 +731,8 @@ export class PDFHistory {
     };
 
     this.eventBus._on("updateviewarea", this._boundEvents.updateViewarea);
-    window.addEventListener("popstate", this._boundEvents.popState);
-    window.addEventListener("pagehide", this._boundEvents.pageHide);
+    window.on("popstate", this._boundEvents.popState);
+    window.on("pagehide", this._boundEvents.pageHide);
   };
 
   #unbindEvents = () => {
@@ -741,8 +741,8 @@ export class PDFHistory {
       return;
     }
     this.eventBus._off("updateviewarea", this._boundEvents.updateViewarea);
-    window.removeEventListener("popstate", this._boundEvents.popState);
-    window.removeEventListener("pagehide", this._boundEvents.pageHide);
+    window.off("popstate", this._boundEvents.popState);
+    window.off("pagehide", this._boundEvents.pageHide);
 
     this._boundEvents = undefined;
   };

@@ -15,10 +15,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-// import "web-com";
-// import "web-print_service";
 import { CHROME, GENERIC, MOZCENTRAL, PDFJSDev } from "../../global.js";
 import { viewerApp } from "./app.js";
+// Ref. gulpfile.mjs of pdf.js
+/*#static*/  {
+    /*#static*/  {
+        await import("./genericcom.js");
+        await import("./pdf_print_service.js");
+    }
+}
 /*80--------------------------------------------------------------------------*/
 // /* eslint-disable-next-line no-unused-vars */
 // const pdfjsVersion =
@@ -33,13 +38,6 @@ import { viewerApp } from "./app.js";
 // window.PDFViewerApplication = PDFViewerApplication;
 // window.PDFViewerApplicationConstants = AppConstants;
 // window.PDFViewerApplicationOptions = AppOptions;
-// Ref. gulpfile.js of pdf.js
-/*#static*/  {
-    /*#static*/  {
-        await import("./genericcom.js");
-        await import("./pdf_print_service.js");
-    }
-}
 function getViewerConfiguration() {
     return {
         appContainer: document.body,
@@ -99,6 +97,8 @@ function getViewerConfiguration() {
             editorFreeTextParamsToolbar: document.getElementById("editorFreeTextParamsToolbar"),
             editorInkButton: document.getElementById("editorInk"),
             editorInkParamsToolbar: document.getElementById("editorInkParamsToolbar"),
+            editorStampButton: document.getElementById("editorStamp"),
+            editorStampParamsToolbar: document.getElementById("editorStampParamsToolbar"),
             /**
              * Button to download the document.
              */
@@ -296,6 +296,7 @@ function getViewerConfiguration() {
             editorInkColor: document.getElementById("editorInkColor"),
             editorInkThickness: document.getElementById("editorInkThickness"),
             editorInkOpacity: document.getElementById("editorInkOpacity"),
+            editorStampAddImage: document.getElementById("editorStampAddImage"),
         },
         printContainer: document.getElementById("printContainer"),
         openFileInput: /*#static*/ document.getElementById("fileInput"),
@@ -338,7 +339,7 @@ if (document.readyState === "interactive" ||
     webViewerLoad();
 }
 else {
-    document.addEventListener("DOMContentLoaded", webViewerLoad, true);
+    document.on("DOMContentLoaded", webViewerLoad, true);
 }
 /*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=viewer.js.map

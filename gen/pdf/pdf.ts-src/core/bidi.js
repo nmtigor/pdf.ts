@@ -334,11 +334,8 @@ export function bidi(str, startLevel = -1, vertical = false) {
                 levels[i] += 2;
             }
         }
-        else {
-            // isOdd
-            if (t === "L" || t === "AN" || t === "EN") {
-                levels[i] += 1;
-            }
+        else if ( /* isOdd && */t === "L" || t === "AN" || t === "EN") {
+            levels[i] += 1;
         }
     }
     /*

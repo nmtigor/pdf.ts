@@ -30,7 +30,7 @@ export class XfaLayer {
                 if (intent === "print") {
                     break;
                 }
-                html.addEventListener("input", (event) => {
+                html.on("input", (event) => {
                     storage.setValue(id, {
                         value: event.target.value,
                     });
@@ -50,14 +50,14 @@ export class XfaLayer {
                     if (intent === "print") {
                         break;
                     }
-                    html.addEventListener("change", (event) => {
+                    html.on("change", (event) => {
                         storage.setValue(id, {
                             value: event.target.checked
                                 ? event.target.getAttribute("xfaOn") ?? undefined
                                 : event.target.getAttribute("xfaOff") ?? undefined,
                         });
                     });
-                    html.addEventListener("change", (event) => {
+                    html.on("change", (event) => {
                         storage.setValue(id, {
                             value: event.target.getAttribute("xfaOn"),
                         });
@@ -70,7 +70,7 @@ export class XfaLayer {
                     if (intent === "print") {
                         break;
                     }
-                    html.addEventListener("input", (event) => {
+                    html.on("input", (event) => {
                         storage.setValue(id, {
                             value: event.target.value,
                         });
@@ -78,14 +78,18 @@ export class XfaLayer {
                 }
                 break;
             case "select":
-                if (storedData.value !== null && storedData.value !== undefined) {
+                if (storedData.value !== undefined) {
+                    html.setAttribute("value", storedData.value);
                     for (const option of element.children) {
                         if (option.attributes.value === storedData.value) {
                             option.attributes.selected = true;
                         }
+                        else if (option.attributes.hasOwnProperty("selected")) {
+                            delete option.attributes.selected;
+                        }
                     }
                 }
-                html.addEventListener("input", (event) => {
+                html.on("input", (event) => {
                     const options = event.target.options;
                     const value = options.selectedIndex === -1
                         ? ""
@@ -188,13 +192,9 @@ export class XfaLayer {
                 html.append(node);
                 continue;
             }
-            let childHtml;
-            if (child?.attributes?.xmlns) {
-                childHtml = document.createElementNS(child.attributes.xmlns, name);
-            }
-            else {
-                childHtml = createHTML(name);
-            }
+            const childHtml = child?.attributes?.xmlns
+                ? document.createElementNS(child.attributes.xmlns, name)
+                : createHTML(name);
             html.append(childHtml);
             if (child.attributes) {
                 this.setAttributes({

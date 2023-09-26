@@ -1,5 +1,5 @@
 import { MetadataEx } from "../pdf.ts-src/display/api.js";
-import type { AnnotationStorage, AnnotIntent, FieldObject, PageViewport, PDFPageProxy } from "../pdf.ts-src/pdf.js";
+import type { AnnotActions, AnnotationStorage, AnnotIntent, FieldObject, PageViewport, PDFPageProxy } from "../pdf.ts-src/pdf.js";
 import { AnnotationLayer } from "../pdf.ts-src/pdf.js";
 import type { IDownloadManager, IL10n, IPDFLinkService } from "./interfaces.js";
 import type { TextAccessibilityManager } from "./text_accessibility.js";
@@ -20,7 +20,7 @@ interface AnnotationLayerBuilderOptions {
     l10n: IL10n;
     enableScripting?: boolean;
     hasJSActionsPromise?: Promise<boolean> | undefined;
-    fieldObjectsPromise: Promise<boolean | Record<string, FieldObject[]> | MetadataEx | undefined> | undefined;
+    fieldObjectsPromise: Promise<boolean | AnnotActions | Record<string, FieldObject[]> | MetadataEx | undefined> | undefined;
     annotationCanvasMap: Map<string, HTMLCanvasElement> | undefined;
     accessibilityManager: TextAccessibilityManager | undefined;
 }
@@ -36,7 +36,7 @@ export declare class AnnotationLayerBuilder {
     annotationStorage: AnnotationStorage | undefined;
     enableScripting: boolean;
     _hasJSActionsPromise: Promise<boolean>;
-    _fieldObjectsPromise: Promise<boolean | Record<string, FieldObject[]> | MetadataEx | undefined>;
+    _fieldObjectsPromise: Promise<boolean | AnnotActions | Record<string, FieldObject[]> | MetadataEx | undefined>;
     _annotationCanvasMap: Map<string, HTMLCanvasElement> | undefined;
     _accessibilityManager: TextAccessibilityManager | undefined;
     annotationLayer: AnnotationLayer | undefined;

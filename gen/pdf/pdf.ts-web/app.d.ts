@@ -1,5 +1,5 @@
-import "../../lib/jslang.js";
 import { Locale } from "../../lib/Locale.js";
+import "../../lib/jslang.js";
 import type { DocumentInfo, Metadata, OptionalContentConfig, PDFDataRangeTransport, PDFDocumentLoadingTask, PDFDocumentProxy, PrintAnnotationStorage } from "../pdf.ts-src/pdf.js";
 import { WorkerMessageHandler } from "../pdf.ts-src/pdf.js";
 import { AnnotationEditorParams } from "./annotation_editor_params.js";
@@ -31,8 +31,8 @@ import { SecondaryToolbar } from "./secondary_toolbar.js";
 import { Toolbar as GeckoviewToolbar } from "./toolbar-geckoview.js";
 import { Toolbar } from "./toolbar.js";
 import { ProgressBar, ScrollMode, SidebarView, SpreadMode } from "./ui_utils.js";
-import type { ViewerConfiguration } from "./viewer.js";
 import { ViewHistory } from "./view_history.js";
+import type { ViewerConfiguration } from "./viewer.js";
 export interface FindControlState {
     result: FindState;
     findPrevious?: boolean | undefined;
@@ -50,7 +50,7 @@ type TelemetryType = "buttons" | "documentInfo" | "documentStats" | "editing" | 
 export interface TelemetryData {
     type: TelemetryType;
     data?: {
-        type?: "save" | "freetext" | "ink" | "print";
+        type?: "save" | "freetext" | "ink" | "stamp" | "print";
         id?: string;
     };
     formType?: string;

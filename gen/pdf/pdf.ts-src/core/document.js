@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 import { PDFJSDev, TESTING } from "../../../global.js";
-import { assert } from "../../../lib/util/trace.js";
+import { assert, fail } from "../../../lib/util/trace.js";
 import { AnnotationEditorPrefix, FormatError, info, InvalidPDFException, PageActionEventType, RenderingIntentFlag, shadow, stringToBytes, stringToPDFString, stringToUTF8String, Util, warn, } from "../shared/util.js";
 import { AnnotationFactory, PopupAnnotation } from "./annotation.js";
 import { BaseStream } from "./base_stream.js";
@@ -122,7 +122,7 @@ export class Page {
             }
             warn(`Empty, or invalid, /${name} entry.`);
         }
-        return null;
+        return undefined;
     }
     get mediaBox() {
         // Reset invalid media box to letter size.
@@ -192,7 +192,7 @@ export class Page {
     get xfaData() {
         return shadow(this, "xfaData", this.xfaFactory
             ? { bbox: this.xfaFactory.getBoundingBox(this.pageIndex) }
-            : null);
+            : undefined);
     }
     #replaceIdByRef(annotations, deletedAnnotations, existingAnnotations) {
         for (const annotation of annotations) {
@@ -341,7 +341,7 @@ export class Page {
                 }
                 const { isOffscreenCanvasSupported } = this.evaluatorOptions;
                 if (missingBitmaps.size > 0) {
-                    const annotationWithBitmaps = [];
+                    const annotationWithBitmaps = newAnnotations.slice();
                     for (const [key, annotation] of annotationStorage) {
                         if (!key.startsWith(AnnotationEditorPrefix)) {
                             continue;
@@ -415,7 +415,8 @@ export class Page {
             const opListPromises = [];
             for (const annotation of annotations) {
                 if (intentAny ||
-                    (intentDisplay && annotation.mustBeViewed(annotationStorage)) ||
+                    (intentDisplay &&
+                        annotation.mustBeViewed(annotationStorage, renderForms)) ||
                     (intentPrint && annotation.mustBePrinted(annotationStorage))) {
                     opListPromises.push(annotation
                         .getOperatorList(partialEvaluator, task, intent, renderForms, annotationStorage)
@@ -423,7 +424,7 @@ export class Page {
                         warn("getOperatorList - ignoring annotation data during " +
                             `"${task.name}" task: "${reason}".`);
                         return {
-                            opList: null,
+                            // opList: null,
                             separateForm: false,
                             separateCanvas: false,
                         };
@@ -677,8 +678,7 @@ export class PDFDocument {
             getDocId: () => `g_${pdfManager.docId}`,
             createFontId: () => `f${++idCounters.font}`,
             getPageObjId() {
-                assert(0, "Abstract method `getPageObjId` called.");
-                return "";
+                fail("Abstract method `getPageObjId` called.");
             },
         };
     }
@@ -687,7 +687,7 @@ export class PDFDocument {
         this.catalog = new Catalog(this.pdfManager, this.xref);
     }
     get linearization() {
-        let linearization = null;
+        let linearization;
         try {
             linearization = Linearization.create(this.stream);
         }
@@ -883,7 +883,7 @@ export class PDFDocument {
     get xfaData() {
         const streams = this._xfaStreams;
         if (!streams) {
-            return null;
+            return undefined;
         }
         const data = Object.create(null);
         for (const [key, stream] of Object.entries(streams)) {
@@ -895,7 +895,7 @@ export class PDFDocument {
             }
             catch {
                 warn("XFA - Invalid utf-8 string.");
-                return null;
+                return undefined;
             }
         }
         return data;
@@ -1002,7 +1002,7 @@ export class PDFDocument {
             /* cssFontInfo = */ cssFontInfo)
                 .catch((reason) => {
                 warn(`loadXfaFonts: "${reason}".`);
-                return null;
+                return undefined;
             }));
         }
         await Promise.all(promises);
@@ -1046,7 +1046,7 @@ export class PDFDocument {
                 })
                     .catch((reason) => {
                     warn(`loadXfaFonts: "${reason}".`);
-                    return null;
+                    return undefined;
                 }));
             }
         }
@@ -1394,16 +1394,7 @@ export class PDFDocument {
         const field = this.xref.fetchIfRef(fieldRef);
         if (field.has("T")) {
             const partName = stringToPDFString(field.get("T"));
-            if (name === "") {
-                name = partName;
-            }
-            else {
-                name = `${name}.${partName}`;
-            }
-        }
-        if (!field.has("Kids") && /\[\d+\]$/.test(name)) {
-            // We've a terminal node: strip the index.
-            name = name.substring(0, name.lastIndexOf("["));
+            name = name === "" ? partName : `${name}.${partName}`;
         }
         if (!promises.has(name)) {
             promises.set(name, []);

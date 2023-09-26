@@ -19,7 +19,7 @@
 // @deno-types="npm:@types/chrome"
 import { CHROME, PDFJSDev } from "../../global.js";
 import { MouseButton } from "../../lib/dom.js";
-import { DefaultExternalServices, viewerApp, } from "./app.js";
+import { DefaultExternalServices, viewerApp } from "./app.js";
 import { AppOptions, ViewOnLoad } from "./app_options.js";
 import { DownloadManager } from "./download_manager.js";
 import { GenericL10n } from "./genericl10n.js";
@@ -43,6 +43,9 @@ import { CursorTool } from "./ui_utils.js";
         chrome.runtime.sendMessage("showPageAction");
     }
     AppOptions.set("defaultUrl", defaultUrl);
+    // Ensure that viewerApp.initialBookmark reflects the current hash,
+    // in case the URL rewrite above results in a different hash.
+    viewerApp.initialBookmark = location.hash.slice(1);
 })();
 export const ChromeCom = {
     /**
@@ -163,9 +166,9 @@ function requestAccessToLocalFile(fileUrl, overlayManager, callback) {
         // Top-level frames are closed by Chrome upon reload, so there is no need
         // for detecting unload of the top-level frame. Should this ever change
         // (crbug.com/511670), then the user can just reload the tab.
-        window.addEventListener("focus", reloadIfRuntimeIsUnavailable);
-        dialog.addEventListener("close", () => {
-            window.removeEventListener("focus", reloadIfRuntimeIsUnavailable);
+        window.on("focus", reloadIfRuntimeIsUnavailable);
+        dialog.on("close", () => {
+            window.off("focus", reloadIfRuntimeIsUnavailable);
             reloadIfRuntimeIsUnavailable();
         });
     }

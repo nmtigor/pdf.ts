@@ -135,10 +135,8 @@ export abstract class BasePreferences {
           `Set preference: "${value}" is a ${valueType}, expected a ${defaultType}.`,
         );
       }
-    } else {
-      if (valueType === "number" && !Number.isInteger(value)) {
-        throw new Error(`Set preference: "${value}" must be an integer.`);
-      }
+    } else if (valueType === "number" && !Number.isInteger(value)) {
+      throw new Error(`Set preference: "${value}" must be an integer.`);
     }
 
     (<any> this.#prefs)[name] = value;
