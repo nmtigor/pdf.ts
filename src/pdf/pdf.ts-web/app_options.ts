@@ -25,7 +25,7 @@ import {
   PDFJSDev,
   TESTING,
 } from "@fe-src/global.ts";
-import { Locale } from "@fe-src/lib/Locale.ts";
+import { Locale } from "@fe-lib/Locale.ts";
 import { D_base } from "../alias.ts";
 import {
   AnnotationEditorType,

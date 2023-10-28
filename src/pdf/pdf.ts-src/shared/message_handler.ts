@@ -18,13 +18,17 @@
  */
 
 import { _TRACE, global, PDFJSDev, PDFTS_vv, TESTING } from "@fe-src/global.ts";
-import type { rect_t } from "@fe-src/lib/alias.ts";
-import type { HttpStatusCode } from "@fe-src/lib/HttpStatusCode.ts";
-import { isObjectLike } from "@fe-src/lib/jslang.ts";
-import { PromiseCap } from "@fe-src/lib/util/PromiseCap.ts";
-import { assert, type ErrorJ, fail } from "@fe-src/lib/util/trace.ts";
-import type { PageLayout, PageMode } from "../../pdf.ts-web/ui_utils.ts";
-import type { AnnotationData, FieldObject } from "../core/annotation.ts";
+import type { rect_t } from "@fe-lib/alias.ts";
+import type { HttpStatusCode } from "@fe-lib/HttpStatusCode.ts";
+import { isObjectLike } from "@fe-lib/jslang.ts";
+import { PromiseCap } from "@fe-lib/util/PromiseCap.ts";
+import { assert, type ErrorJ, fail } from "@fe-lib/util/trace.ts";
+import type { PageLayout, PageMode } from "@pdf.ts-web/ui_utils.ts";
+import type {
+  Annotation,
+  AnnotationData,
+  FieldObject,
+} from "../core/annotation.ts";
 import type {
   ExplicitDest,
   MarkInfo,
@@ -173,7 +177,7 @@ export interface MActionMap {
       pageIndex: number;
       intent: RenderingIntentFlag;
     };
-    Return: AnnotationData[];
+    Return: AnnotationData[] | Annotation[];
     Sinkchunk: undefined;
   };
   GetAnnotArray: {

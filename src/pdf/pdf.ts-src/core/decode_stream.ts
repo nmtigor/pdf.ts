@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-import { fail } from "@fe-src/lib/util/trace.ts";
+import { fail } from "@fe-lib/util/trace.ts";
 import { BaseStream } from "./base_stream.ts";
 import type { Dict } from "./primitives.ts";
 import { Stream } from "./stream.ts";

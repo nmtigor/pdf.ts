@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+import type { rect_t } from "@fe-lib/alias.ts";
 import { assertEquals, assertFalse } from "@std/assert/mod.ts";
 import {
   afterAll,
@@ -26,7 +27,6 @@ import {
   describe,
   it,
 } from "@std/testing/bdd.ts";
-import { type rect_t } from "../../../lib/alias.ts";
 import { AnnotStorageRecord } from "../display/annotation_layer.ts";
 import {
   DefaultCMapReaderFactory,
@@ -51,13 +51,14 @@ import {
   stringToBytes,
   stringToUTF8String,
 } from "../shared/util.ts";
+import type { AnnotationGlobals } from "./annotation.ts";
 import {
   Annotation,
   AnnotationBorderStyle,
   AnnotationFactory,
+  AnnotSaveReturn,
   getQuadPoints,
   MarkupAnnotation,
-  SaveReturn,
   WidgetAnnotation,
 } from "./annotation.ts";
 import { LocalIdFactory } from "./document.ts";
@@ -70,19 +71,18 @@ import { WorkerTask } from "./worker.ts";
 
 describe("annotation", () => {
   class PDFManagerMock {
-    docBaseUrl;
-    pdfDocument = {
-      catalog: {
-        acroForm: new Dict(),
-      },
-    };
+    pdfDocument;
     evaluatorOptions = {
       isEvalSupported: true,
       isOffscreenCanvasSupported: false,
     };
 
     constructor(params: { docBaseUrl: string | undefined }) {
-      this.docBaseUrl = params.docBaseUrl || undefined;
+      this.pdfDocument = {
+        catalog: {
+          baseUrl: params.docBaseUrl || undefined,
+        },
+      };
     }
 
     ensure(obj: unknown, prop: string, args: unknown) {
@@ -124,7 +124,8 @@ describe("annotation", () => {
     }
   }
 
-  let pdfManagerMock: any,
+  let annotationGlobalsMock: AnnotationGlobals,
+    pdfManagerMock: any,
     idFactoryMock: LocalIdFactory,
     partialEvaluator: PartialEvaluator;
 
@@ -132,6 +133,10 @@ describe("annotation", () => {
     pdfManagerMock = new PDFManagerMock({
       docBaseUrl: undefined,
     });
+
+    annotationGlobalsMock = (await AnnotationFactory.createGlobals(
+      pdfManagerMock,
+    ))!;
 
     const CMapReaderFactory = new DefaultCMapReaderFactory({
       baseUrl: CMAP_URL,
@@ -161,6 +166,7 @@ describe("annotation", () => {
   });
 
   afterAll(() => {
+    annotationGlobalsMock = undefined as any;
     pdfManagerMock = undefined;
     idFactoryMock = undefined as any;
     partialEvaluator = undefined as any;
@@ -178,12 +184,12 @@ describe("annotation", () => {
         data: annotationDict,
       }]) as any;
 
-      const { data } = await AnnotationFactory.create(
+      const { data } = (await AnnotationFactory.create(
         xref,
         annotationRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       assertEquals(data.annotationType, AnnotationType.LINK);
       assertEquals(data.id, "10R");
     });
@@ -202,7 +208,7 @@ describe("annotation", () => {
         const annotation1 = (AnnotationFactory.create(
           xref,
           annotationDict as any,
-          pdfManagerMock,
+          annotationGlobalsMock,
           idFactory,
         ) as Promise<Annotation>).then(({ data }) => {
           assertEquals(data.annotationType, AnnotationType.LINK);
@@ -212,7 +218,7 @@ describe("annotation", () => {
         const annotation2 = (AnnotationFactory.create(
           xref,
           annotationDict as any,
-          pdfManagerMock,
+          annotationGlobalsMock,
           idFactory,
         ) as Promise<Annotation>).then(({ data }) => {
           assertEquals(data.annotationType, AnnotationType.LINK);
@@ -233,12 +239,12 @@ describe("annotation", () => {
         data: annotationDict,
       }]) as any;
 
-      const { data } = await AnnotationFactory.create(
+      const { data } = (await AnnotationFactory.create(
         xref,
         annotationRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       assertEquals(data.annotationType, undefined);
     });
   });
@@ -350,6 +356,7 @@ describe("annotation", () => {
       const annotation = new Annotation({
         dict,
         ref,
+        annotationGlobals: annotationGlobalsMock,
         evaluatorOptions: pdfManagerMock.evaluatorOptions,
       } as any);
       annotation.setContents("Foo bar baz");
@@ -361,6 +368,7 @@ describe("annotation", () => {
       const annotation = new Annotation({
         dict,
         ref,
+        annotationGlobals: annotationGlobalsMock,
         evaluatorOptions: pdfManagerMock.evaluatorOptions,
       } as any);
       annotation.setContents(undefined);
@@ -372,6 +380,7 @@ describe("annotation", () => {
       const annotation = new Annotation({
         dict,
         ref,
+        annotationGlobals: annotationGlobalsMock,
         evaluatorOptions: pdfManagerMock.evaluatorOptions,
       } as any);
       annotation.setModificationDate("D:20190422");
@@ -383,6 +392,7 @@ describe("annotation", () => {
       const annotation = new Annotation({
         dict,
         ref,
+        annotationGlobals: annotationGlobalsMock,
         evaluatorOptions: pdfManagerMock.evaluatorOptions,
       } as any);
       annotation.setModificationDate(undefined);
@@ -394,6 +404,7 @@ describe("annotation", () => {
       const annotation = new Annotation({
         dict,
         ref,
+        annotationGlobals: annotationGlobalsMock,
         evaluatorOptions: pdfManagerMock.evaluatorOptions,
       } as any);
       annotation.setFlags(13);
@@ -409,6 +420,7 @@ describe("annotation", () => {
       const annotation = new Annotation({
         dict,
         ref,
+        annotationGlobals: annotationGlobalsMock,
         evaluatorOptions: pdfManagerMock.evaluatorOptions,
       } as any);
 
@@ -420,6 +432,7 @@ describe("annotation", () => {
       const annotation = new Annotation({
         dict,
         ref,
+        annotationGlobals: annotationGlobalsMock,
         evaluatorOptions: pdfManagerMock.evaluatorOptions,
       } as any);
       annotation.setRectangle([117, 694, 164.298, 720]);
@@ -431,6 +444,7 @@ describe("annotation", () => {
       const annotation = new Annotation({
         dict,
         ref,
+        annotationGlobals: annotationGlobalsMock,
         evaluatorOptions: pdfManagerMock.evaluatorOptions,
       } as any);
       annotation.setRectangle([117, 694, 164.298]);
@@ -442,6 +456,7 @@ describe("annotation", () => {
       const annotation = new Annotation({
         dict,
         ref,
+        annotationGlobals: annotationGlobalsMock,
         evaluatorOptions: pdfManagerMock.evaluatorOptions,
       } as any);
       annotation.setColor("red" as any);
@@ -453,6 +468,7 @@ describe("annotation", () => {
       const annotation = new Annotation({
         dict,
         ref,
+        annotationGlobals: annotationGlobalsMock,
         evaluatorOptions: pdfManagerMock.evaluatorOptions,
       } as any);
       annotation.setColor([]);
@@ -464,6 +480,7 @@ describe("annotation", () => {
       const annotation = new Annotation({
         dict,
         ref,
+        annotationGlobals: annotationGlobalsMock,
         evaluatorOptions: pdfManagerMock.evaluatorOptions,
       } as any);
       annotation.setColor([0.4]);
@@ -475,6 +492,7 @@ describe("annotation", () => {
       const annotation = new Annotation({
         dict,
         ref,
+        annotationGlobals: annotationGlobalsMock,
         evaluatorOptions: pdfManagerMock.evaluatorOptions,
       } as any);
       annotation.setColor([0, 0, 1]);
@@ -486,6 +504,7 @@ describe("annotation", () => {
       const annotation = new Annotation({
         dict,
         ref,
+        annotationGlobals: annotationGlobalsMock,
         evaluatorOptions: pdfManagerMock.evaluatorOptions,
       } as any);
       annotation.setColor([0.1, 0.92, 0.84, 0.02]);
@@ -497,6 +516,7 @@ describe("annotation", () => {
       const annotation = new Annotation({
         dict,
         ref,
+        annotationGlobals: annotationGlobalsMock,
         evaluatorOptions: pdfManagerMock.evaluatorOptions,
       } as any);
       annotation.setColor([0.4, 0.6]);
@@ -607,6 +627,7 @@ describe("annotation", () => {
       const markupAnnotation = new MarkupAnnotation({
         dict,
         ref,
+        annotationGlobals: annotationGlobalsMock,
         evaluatorOptions: pdfManagerMock.evaluatorOptions,
       } as any);
       markupAnnotation.setCreationDate("D:20190422");
@@ -618,6 +639,7 @@ describe("annotation", () => {
       const markupAnnotation = new MarkupAnnotation({
         dict,
         ref,
+        annotationGlobals: annotationGlobalsMock,
         evaluatorOptions: pdfManagerMock.evaluatorOptions,
       } as any);
       markupAnnotation.setCreationDate(undefined);
@@ -630,12 +652,12 @@ describe("annotation", () => {
       dict.set("Subtype", Name.get("Text"));
 
       const xref = new XRefMock([{ ref, data: dict }]) as any;
-      const { data } = await AnnotationFactory.create(
+      const { data } = (await AnnotationFactory.create(
         xref,
         ref,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       assertEquals(data.inReplyTo, undefined);
       assertEquals(data.replyType, undefined);
     });
@@ -659,12 +681,12 @@ describe("annotation", () => {
       annotationDict.assignXref(xref);
       replyDict.assignXref(xref);
 
-      const { data } = await AnnotationFactory.create(
+      const { data } = (await AnnotationFactory.create(
         xref,
         replyRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       assertEquals(data.inReplyTo, annotationRef.toString());
       assertEquals(data.replyType, AnnotationReplyType.REPLY);
     });
@@ -708,12 +730,12 @@ describe("annotation", () => {
       popupDict.assignXref(xref);
       replyDict.assignXref(xref);
 
-      const { data } = await AnnotationFactory.create(
+      const { data } = (await AnnotationFactory.create(
         xref,
         replyRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       assertEquals(data.inReplyTo, annotationRef.toString());
       assertEquals(data.replyType, AnnotationReplyType.GROUP);
       assertEquals(data.titleObj, { str: "ParentTitle", dir: "ltr" });
@@ -764,12 +786,12 @@ describe("annotation", () => {
       popupDict.assignXref(xref);
       replyDict.assignXref(xref);
 
-      const { data } = await AnnotationFactory.create(
+      const { data } = (await AnnotationFactory.create(
         xref,
         replyRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       assertEquals(data.inReplyTo, annotationRef.toString());
       assertEquals(data.replyType, AnnotationReplyType.REPLY);
       assertEquals(data.titleObj, { str: "ReplyTitle", dir: "ltr" });
@@ -804,12 +826,12 @@ describe("annotation", () => {
       annotationDict.assignXref(xref);
       replyDict.assignXref(xref);
 
-      const { data } = await AnnotationFactory.create(
+      const { data } = (await AnnotationFactory.create(
         xref,
         replyRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       assertEquals(data.stateModel, undefined);
       assertEquals(data.state, undefined);
     });
@@ -833,15 +855,15 @@ describe("annotation", () => {
         { ref: annotationRef, data: annotationDict },
         { ref: replyRef, data: replyDict },
       ]) as any;
-      annotationDict.assignXref(<any> xref);
-      replyDict.assignXref(<any> xref);
+      annotationDict.assignXref(xref);
+      replyDict.assignXref(xref);
 
-      const { data } = await AnnotationFactory.create(
+      const { data } = (await AnnotationFactory.create(
         xref,
         replyRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       assertEquals(data.stateModel, "Review");
       assertEquals(data.state, "Rejected");
     });
@@ -865,12 +887,12 @@ describe("annotation", () => {
         data: annotationDict,
       }]) as any;
 
-      const { data } = await AnnotationFactory.create(
+      const { data } = (await AnnotationFactory.create(
         xref,
         annotationRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       assertEquals(data.annotationType, AnnotationType.LINK);
       assertEquals(data.url, "http://www.ctan.org/tex-archive/info/lshort");
       assertEquals(
@@ -899,12 +921,12 @@ describe("annotation", () => {
           { ref: annotationRef, data: annotationDict },
         ]) as any;
 
-        const { data } = await AnnotationFactory.create(
+        const { data } = (await AnnotationFactory.create(
           xref,
           annotationRef,
-          pdfManagerMock,
+          annotationGlobalsMock,
           idFactoryMock,
-        ) as Annotation;
+        ))!;
         assertEquals(data.annotationType, AnnotationType.LINK);
         assertEquals(data.url, "http://www.hmrc.gov.uk/");
         assertEquals(data.unsafeUrl, "www.hmrc.gov.uk");
@@ -938,12 +960,12 @@ describe("annotation", () => {
           { ref: annotationRef, data: annotationDict },
         ]) as any;
 
-        const { data } = await AnnotationFactory.create(
+        const { data } = (await AnnotationFactory.create(
           xref,
           annotationRef,
-          pdfManagerMock,
+          annotationGlobalsMock,
           idFactoryMock,
-        ) as Annotation;
+        ))!;
         assertEquals(data.annotationType, AnnotationType.LINK);
         assertEquals(
           data.url,
@@ -978,12 +1000,12 @@ describe("annotation", () => {
         data: annotationDict,
       }]) as any;
 
-      const { data } = await AnnotationFactory.create(
+      const { data } = (await AnnotationFactory.create(
         xref,
         annotationRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       assertEquals(data.annotationType, AnnotationType.LINK);
       assertEquals(data.url, undefined);
       assertEquals(data.unsafeUrl, undefined);
@@ -1011,12 +1033,12 @@ describe("annotation", () => {
           { ref: annotationRef, data: annotationDict },
         ]) as any;
 
-        const { data } = await AnnotationFactory.create(
+        const { data } = (await AnnotationFactory.create(
           xref,
           annotationRef,
-          pdfManagerMock,
+          annotationGlobalsMock,
           idFactoryMock,
-        ) as Annotation;
+        ))!;
         assertEquals(data.annotationType, AnnotationType.LINK);
         assertEquals(data.url, undefined);
         assertEquals(data.unsafeUrl, "../../0013/001346/134685E.pdf#4.3");
@@ -1047,13 +1069,16 @@ describe("annotation", () => {
         const pdfManager: any = new PDFManagerMock({
           docBaseUrl: "http://www.example.com/test/pdfs/qwerty.pdf",
         });
+        const annotationGlobals = await AnnotationFactory.createGlobals(
+          pdfManager,
+        );
 
-        const { data } = await AnnotationFactory.create(
+        const { data } = (await AnnotationFactory.create(
           xref,
           annotationRef,
-          pdfManager,
+          annotationGlobals!,
           idFactoryMock,
-        ) as Annotation;
+        ))!;
         assertEquals(data.annotationType, AnnotationType.LINK);
         assertEquals(
           data.url,
@@ -1082,12 +1107,12 @@ describe("annotation", () => {
         data: annotationDict,
       }]) as any;
 
-      const { data } = await AnnotationFactory.create(
+      const { data } = (await AnnotationFactory.create(
         xref,
         annotationRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       assertEquals(data.annotationType, AnnotationType.LINK);
       assertEquals(data.url, "http://www.example.com/test.pdf#15");
       assertEquals(data.unsafeUrl, "http://www.example.com/test.pdf#15");
@@ -1113,12 +1138,12 @@ describe("annotation", () => {
         data: annotationDict,
       }]) as any;
 
-      const { data } = await AnnotationFactory.create(
+      const { data } = (await AnnotationFactory.create(
         xref,
         annotationRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       assertEquals(data.annotationType, AnnotationType.LINK);
       assertEquals(
         data.url,
@@ -1163,13 +1188,16 @@ describe("annotation", () => {
         const pdfManager: any = new PDFManagerMock({
           docBaseUrl: "http://www.example.com/test/pdfs/qwerty.pdf",
         });
+        const annotationGlobals = await AnnotationFactory.createGlobals(
+          pdfManager,
+        );
 
-        const { data } = await AnnotationFactory.create(
+        const { data } = (await AnnotationFactory.create(
           xref,
           annotationRef,
-          pdfManager,
+          annotationGlobals!,
           idFactoryMock,
-        ) as Annotation;
+        ))!;
         assertEquals(data.annotationType, AnnotationType.LINK);
         assertEquals(
           data.url,
@@ -1214,7 +1242,7 @@ describe("annotation", () => {
           return (AnnotationFactory.create(
             xref,
             annotationRef,
-            pdfManagerMock,
+            annotationGlobalsMock,
             idFactoryMock,
           ) as Promise<Annotation>).then(({ data }) => {
             assertEquals(data.annotationType, AnnotationType.LINK);
@@ -1272,12 +1300,12 @@ describe("annotation", () => {
         data: annotationDict,
       }]) as any;
 
-      const { data } = await AnnotationFactory.create(
+      const { data } = (await AnnotationFactory.create(
         xref,
         annotationRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       assertEquals(data.annotationType, AnnotationType.LINK);
       assertEquals(data.url, undefined);
       assertEquals(data.unsafeUrl, undefined);
@@ -1296,12 +1324,12 @@ describe("annotation", () => {
         data: annotationDict,
       }]) as any;
 
-      const { data } = await AnnotationFactory.create(
+      const { data } = (await AnnotationFactory.create(
         xref,
         annotationRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       assertEquals(data.annotationType, AnnotationType.LINK);
       assertEquals(data.url, undefined);
       assertEquals(data.unsafeUrl, undefined);
@@ -1326,12 +1354,12 @@ describe("annotation", () => {
         data: annotationDict,
       }]) as any;
 
-      const { data } = await AnnotationFactory.create(
+      const { data } = (await AnnotationFactory.create(
         xref,
         annotationRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       assertEquals(data.annotationType, AnnotationType.LINK);
       assertEquals(data.url, undefined);
       assertEquals(data.unsafeUrl, undefined);
@@ -1365,12 +1393,12 @@ describe("annotation", () => {
           { ref: annotationRef, data: annotationDict },
         ]) as any;
 
-        const { data } = await AnnotationFactory.create(
+        const { data } = (await AnnotationFactory.create(
           xref,
           annotationRef,
-          pdfManagerMock,
+          annotationGlobalsMock,
           idFactoryMock,
-        ) as Annotation;
+        ))!;
         assertEquals(data.annotationType, AnnotationType.LINK);
         assertEquals(data.url, undefined);
         assertEquals(data.unsafeUrl, undefined);
@@ -1389,12 +1417,12 @@ describe("annotation", () => {
         data: annotationDict,
       }]) as any;
 
-      const { data } = await AnnotationFactory.create(
+      const { data } = (await AnnotationFactory.create(
         xref,
         annotationRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       assertEquals(data.annotationType, AnnotationType.LINK);
       assertEquals(data.quadPoints, undefined);
     });
@@ -1412,12 +1440,12 @@ describe("annotation", () => {
         data: annotationDict,
       }]) as any;
 
-      const { data } = await AnnotationFactory.create(
+      const { data } = (await AnnotationFactory.create(
         xref,
         annotationRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       assertEquals(data.annotationType, AnnotationType.LINK);
       assertEquals(data.quadPoints, [[
         { x: 10, y: 20 },
@@ -1445,12 +1473,12 @@ describe("annotation", () => {
       const widgetRef = Ref.get(20, 0);
       const xref = new XRefMock([{ ref: widgetRef, data: widgetDict }]) as any;
 
-      const { data } = await AnnotationFactory.create(
+      const { data } = (await AnnotationFactory.create(
         xref,
         widgetRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       assertEquals(data.annotationType, AnnotationType.WIDGET);
       assertEquals(data.fieldName, "");
     });
@@ -1461,12 +1489,12 @@ describe("annotation", () => {
       const widgetRef = Ref.get(21, 0);
       const xref = new XRefMock([{ ref: widgetRef, data: widgetDict }]) as any;
 
-      const { data } = await AnnotationFactory.create(
+      const { data } = (await AnnotationFactory.create(
         xref,
         widgetRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       assertEquals(data.annotationType, AnnotationType.WIDGET);
       assertEquals(data.fieldName, "foo");
     });
@@ -1485,12 +1513,12 @@ describe("annotation", () => {
       const widgetRef = Ref.get(22, 0);
       const xref = new XRefMock([{ ref: widgetRef, data: widgetDict }]) as any;
 
-      const { data } = await AnnotationFactory.create(
+      const { data } = (await AnnotationFactory.create(
         xref,
         widgetRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       assertEquals(data.annotationType, AnnotationType.WIDGET);
       assertEquals(data.fieldName, "foo.bar.baz");
     });
@@ -1512,12 +1540,12 @@ describe("annotation", () => {
           data: widgetDict,
         }]) as any;
 
-        const { data } = await AnnotationFactory.create(
+        const { data } = (await AnnotationFactory.create(
           xref,
           widgetRef,
-          pdfManagerMock,
+          annotationGlobalsMock,
           idFactoryMock,
-        ) as Annotation;
+        ))!;
         assertEquals(data.annotationType, AnnotationType.WIDGET);
         assertEquals(data.fieldName, "foo.bar");
       },
@@ -1592,12 +1620,12 @@ describe("annotation", () => {
         data: textWidgetDict,
       }]) as any;
 
-      const { data } = await AnnotationFactory.create(
+      const { data } = (await AnnotationFactory.create(
         xref,
         textWidgetRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       assertEquals(data.annotationType, AnnotationType.WIDGET);
       assertEquals(data.textAlignment, undefined);
       assertEquals(data.maxLen, 0);
@@ -1619,12 +1647,12 @@ describe("annotation", () => {
         data: textWidgetDict,
       }]) as any;
 
-      const { data } = await AnnotationFactory.create(
+      const { data } = (await AnnotationFactory.create(
         xref,
         textWidgetRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       assertEquals(data.annotationType, AnnotationType.WIDGET);
       assertEquals(data.textAlignment, undefined);
       assertEquals(data.maxLen, 0);
@@ -1648,12 +1676,12 @@ describe("annotation", () => {
         data: textWidgetDict,
       }]) as any;
 
-      const { data } = await AnnotationFactory.create(
+      const { data } = (await AnnotationFactory.create(
         xref,
         textWidgetRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       assertEquals(data.annotationType, AnnotationType.WIDGET);
       assertEquals(data.textAlignment, 1);
       assertEquals(data.maxLen, 20);
@@ -1671,12 +1699,12 @@ describe("annotation", () => {
         data: textWidgetDict,
       }]) as any;
 
-      const { data } = await AnnotationFactory.create(
+      const { data } = (await AnnotationFactory.create(
         xref,
         textWidgetRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       assertEquals(data.annotationType, AnnotationType.WIDGET);
       assertEquals(data.comb, false);
     });
@@ -1691,12 +1719,12 @@ describe("annotation", () => {
         data: textWidgetDict,
       }]) as any;
 
-      const { data } = await AnnotationFactory.create(
+      const { data } = (await AnnotationFactory.create(
         xref,
         textWidgetRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       assertEquals(data.annotationType, AnnotationType.WIDGET);
       assertEquals(data.comb, true);
     });
@@ -1729,7 +1757,7 @@ describe("annotation", () => {
           return (AnnotationFactory.create(
             xref,
             textWidgetRef,
-            pdfManagerMock,
+            annotationGlobalsMock,
             idFactoryMock,
           ) as Promise<Annotation>).then(({ data }) => {
             assertEquals(data.annotationType, AnnotationType.WIDGET);
@@ -1759,7 +1787,7 @@ describe("annotation", () => {
       const annotation = await AnnotationFactory.create(
         xref,
         textWidgetRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
       ) as WidgetAnnotation;
       const annotationStorage = new Map();
@@ -1796,7 +1824,7 @@ describe("annotation", () => {
       const annotation = await AnnotationFactory.create(
         xref,
         textWidgetRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
       ) as WidgetAnnotation;
       const annotationStorage = new Map();
@@ -1838,12 +1866,12 @@ describe("annotation", () => {
       const task = new WorkerTask("test print");
       partialEvaluator.xref = xref;
 
-      const annotation = await AnnotationFactory.create(
+      const annotation = (await AnnotationFactory.create(
         xref,
         textWidgetRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       const annotationStorage = new Map();
 
       const { opList } = await annotation.getOperatorList(
@@ -1883,7 +1911,7 @@ describe("annotation", () => {
       const annotation = await AnnotationFactory.create(
         xref,
         textWidgetRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
       ) as WidgetAnnotation;
       const annotationStorage = new Map();
@@ -1920,7 +1948,7 @@ describe("annotation", () => {
       const annotation = await AnnotationFactory.create(
         xref,
         textWidgetRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
       ) as WidgetAnnotation;
       const annotationStorage = new Map();
@@ -1957,7 +1985,7 @@ describe("annotation", () => {
       const annotation = await AnnotationFactory.create(
         xref,
         textWidgetRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
       ) as WidgetAnnotation;
       const annotationStorage = new Map();
@@ -1986,7 +2014,7 @@ describe("annotation", () => {
       const annotation = await AnnotationFactory.create(
         xref,
         textWidgetRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
       ) as WidgetAnnotation;
       const annotationStorage = new Map();
@@ -2033,7 +2061,7 @@ describe("annotation", () => {
       const annotation = await AnnotationFactory.create(
         xref,
         textWidgetRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
       ) as WidgetAnnotation;
       const annotationStorage = new Map();
@@ -2091,7 +2119,7 @@ describe("annotation", () => {
       const annotation = await AnnotationFactory.create(
         xref,
         textWidgetRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
       ) as WidgetAnnotation;
       const annotationStorage = new Map();
@@ -2131,7 +2159,7 @@ describe("annotation", () => {
       const annotation = await AnnotationFactory.create(
         xref,
         textWidgetRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
       ) as WidgetAnnotation;
       const annotationStorage = new Map();
@@ -2174,7 +2202,7 @@ describe("annotation", () => {
       const annotation = await AnnotationFactory.create(
         xref,
         textWidgetRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
       ) as WidgetAnnotation;
       const annotationStorage = new Map();
@@ -2207,12 +2235,12 @@ describe("annotation", () => {
       partialEvaluator.xref = xref;
       const task = new WorkerTask("test save");
 
-      const annotation = await AnnotationFactory.create(
+      const annotation = (await AnnotationFactory.create(
         xref,
         textWidgetRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       const annotationStorage = new Map();
       annotationStorage.set(annotation.data.id, { value: "hello world" });
 
@@ -2220,7 +2248,7 @@ describe("annotation", () => {
         partialEvaluator,
         task,
         annotationStorage,
-      ) as SaveReturn;
+      ) as AnnotSaveReturn;
       assertEquals(data.length, 2);
       const [oldData, newData] = data;
       assertEquals(oldData.ref, Ref.get(123, 0));
@@ -2252,12 +2280,12 @@ describe("annotation", () => {
       partialEvaluator.xref = xref;
       const task = new WorkerTask("test save");
 
-      const annotation = await AnnotationFactory.create(
+      const annotation = (await AnnotationFactory.create(
         xref,
         textWidgetRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       const annotationStorage = new Map();
       annotationStorage.set(annotation.data.id, {
         value: "hello world",
@@ -2268,7 +2296,7 @@ describe("annotation", () => {
         partialEvaluator,
         task,
         annotationStorage,
-      ) as SaveReturn;
+      ) as AnnotSaveReturn;
       assertEquals(data.length, 2);
       const [oldData, newData] = data;
       assertEquals(oldData.ref, Ref.get(123, 0));
@@ -2300,17 +2328,17 @@ describe("annotation", () => {
       partialEvaluator.xref = xref;
       const task = new WorkerTask("test save");
 
-      const annotation = await AnnotationFactory.create(
+      const annotation = (await AnnotationFactory.create(
         xref,
         textWidgetRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      );
+      ))!;
       const annotationStorage = new Map();
       const value = "a".repeat(256);
-      annotationStorage.set(annotation!.data.id, { value });
+      annotationStorage.set(annotation.data.id, { value });
 
-      const data = await annotation!.save(
+      const data = await annotation.save(
         partialEvaluator,
         task,
         annotationStorage,
@@ -2409,12 +2437,12 @@ describe("annotation", () => {
 
       partialEvaluator.xref = xref;
 
-      const annotation = await AnnotationFactory.create(
+      const annotation = (await AnnotationFactory.create(
         xref,
         textWidgetRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       const fieldObject = await annotation.getFieldObject();
       const actions = fieldObject!.actions!;
       assertEquals(actions["Mouse Enter"], ["hello()"]);
@@ -2443,12 +2471,12 @@ describe("annotation", () => {
       partialEvaluator.xref = xref;
       const task = new WorkerTask("test save");
 
-      const annotation = await AnnotationFactory.create(
+      const annotation = (await AnnotationFactory.create(
         xref,
         textWidgetRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       const annotationStorage = new Map();
       annotationStorage.set(annotation.data.id, {
         value: "こんにちは世界の",
@@ -2458,7 +2486,7 @@ describe("annotation", () => {
         partialEvaluator,
         task,
         annotationStorage,
-      ) as SaveReturn;
+      ) as AnnotSaveReturn;
       const utf16String =
         "\x30\x53\x30\x93\x30\x6b\x30\x61\x30\x6f\x4e\x16\x75\x4c\x30\x6e";
       assertEquals(data.length, 2);
@@ -2515,12 +2543,12 @@ describe("annotation", () => {
         { ref: buttonWidgetRef, data: buttonWidgetDict },
       ]) as any;
 
-      const { data } = await AnnotationFactory.create(
+      const { data } = (await AnnotationFactory.create(
         xref,
         buttonWidgetRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       assertEquals(data.annotationType, AnnotationType.WIDGET);
       assertEquals(data.checkBox, true);
       assertEquals(data.fieldValue, "Checked");
@@ -2538,12 +2566,12 @@ describe("annotation", () => {
         { ref: buttonWidgetRef, data: buttonWidgetDict },
       ]) as any;
 
-      const { data } = await AnnotationFactory.create(
+      const { data } = (await AnnotationFactory.create(
         xref,
         buttonWidgetRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       assertEquals(data.annotationType, AnnotationType.WIDGET);
       assertEquals(data.checkBox, true);
       assertEquals(data.fieldValue, "Checked");
@@ -2567,12 +2595,12 @@ describe("annotation", () => {
         { ref: buttonWidgetRef, data: buttonWidgetDict },
       ]) as any;
 
-      const { data } = await AnnotationFactory.create(
+      const { data } = (await AnnotationFactory.create(
         xref,
         buttonWidgetRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       assertEquals(data.annotationType, AnnotationType.WIDGET);
       assertEquals(data.checkBox, true);
       assertEquals(data.fieldValue, "Checked");
@@ -2608,16 +2636,16 @@ describe("annotation", () => {
       ]) as any;
       const task = new WorkerTask("test print");
       const checkboxEvaluator = partialEvaluator.clone({ ignoreErrors: true });
-      const annotation = await AnnotationFactory.create(
+      const annotation = (await AnnotationFactory.create(
         xref,
         buttonWidgetRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      );
+      ))!;
       const annotationStorage: AnnotStorageRecord = new Map();
-      annotationStorage.set(annotation!.data.id, { value: true });
+      annotationStorage.set(annotation.data.id, { value: true });
 
-      const { opList } = await annotation!.getOperatorList(
+      const { opList } = await annotation.getOperatorList(
         checkboxEvaluator,
         task,
         RenderingIntentFlag.PRINT,
@@ -2669,12 +2697,12 @@ describe("annotation", () => {
       ]) as any;
       const task = new WorkerTask("test print");
 
-      const annotation = await AnnotationFactory.create(
+      const annotation = (await AnnotationFactory.create(
         xref,
         buttonWidgetRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       const annotationStorage = new Map();
       annotationStorage.set(annotation.data.id, { value: true });
 
@@ -2753,12 +2781,12 @@ describe("annotation", () => {
       ]) as any;
       const task = new WorkerTask("test print");
 
-      const annotation = await AnnotationFactory.create(
+      const annotation = (await AnnotationFactory.create(
         xref,
         buttonWidgetRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       const annotationStorage = new Map();
 
       for (let i = 0; i < 2; i++) {
@@ -2816,12 +2844,12 @@ describe("annotation", () => {
       ]) as any;
       const task = new WorkerTask("test print");
 
-      const annotation = await AnnotationFactory.create(
+      const annotation = (await AnnotationFactory.create(
         xref,
         buttonWidgetRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       const annotationStorage = new Map();
 
       const { opList } = await annotation.getOperatorList(
@@ -2865,12 +2893,12 @@ describe("annotation", () => {
       partialEvaluator.xref = xref;
       const task = new WorkerTask("test save");
 
-      const annotation = await AnnotationFactory.create(
+      const annotation = (await AnnotationFactory.create(
         xref,
         buttonWidgetRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       const annotationStorage = new Map();
       annotationStorage.set(annotation.data.id, { value: true });
 
@@ -2878,7 +2906,7 @@ describe("annotation", () => {
         partialEvaluator,
         task,
         annotationStorage,
-      ) as SaveReturn;
+      ) as AnnotSaveReturn;
       oldData.data = oldData.data.replace(/\(D:\d+\)/, "(date)");
       assertEquals(oldData.ref, Ref.get(123, 0));
       assertEquals(
@@ -2917,12 +2945,12 @@ describe("annotation", () => {
       partialEvaluator.xref = xref;
       const task = new WorkerTask("test save");
 
-      const annotation = await AnnotationFactory.create(
+      const annotation = (await AnnotationFactory.create(
         xref,
         buttonWidgetRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       const annotationStorage = new Map();
       annotationStorage.set(annotation.data.id, { value: true, rotation: 180 });
 
@@ -2930,7 +2958,7 @@ describe("annotation", () => {
         partialEvaluator,
         task,
         annotationStorage,
-      ) as SaveReturn;
+      ) as AnnotSaveReturn;
       oldData.data = oldData.data.replace(/\(D:\d+\)/, "(date)");
       assertEquals(oldData.ref, Ref.get(123, 0));
       assertEquals(
@@ -2970,12 +2998,12 @@ describe("annotation", () => {
         { ref: buttonWidgetRef, data: buttonWidgetDict },
       ]) as any;
 
-      const { data } = await AnnotationFactory.create(
+      const { data } = (await AnnotationFactory.create(
         xref,
         buttonWidgetRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       assertEquals(data.annotationType, AnnotationType.WIDGET);
       assertEquals(data.checkBox, false);
       assertEquals(data.radioButton, true);
@@ -3002,12 +3030,12 @@ describe("annotation", () => {
         { ref: buttonWidgetRef, data: buttonWidgetDict },
       ]) as any;
 
-      const { data } = await AnnotationFactory.create(
+      const { data } = (await AnnotationFactory.create(
         xref,
         buttonWidgetRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       assertEquals(data.annotationType, AnnotationType.WIDGET);
       assertEquals(data.checkBox, false);
       assertEquals(data.radioButton, true);
@@ -3030,12 +3058,12 @@ describe("annotation", () => {
         { ref: buttonWidgetRef, data: buttonWidgetDict },
       ]) as any;
 
-      const { data } = await AnnotationFactory.create(
+      const { data } = (await AnnotationFactory.create(
         xref,
         buttonWidgetRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       assertEquals(data.annotationType, AnnotationType.WIDGET);
       assertEquals(data.checkBox, false);
       assertEquals(data.radioButton, true);
@@ -3071,12 +3099,12 @@ describe("annotation", () => {
       ]) as any;
       const task = new WorkerTask("test print");
 
-      const annotation = await AnnotationFactory.create(
+      const annotation = (await AnnotationFactory.create(
         xref,
         buttonWidgetRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       const annotationStorage = new Map();
       annotationStorage.set(annotation.data.id, { value: true });
 
@@ -3156,12 +3184,12 @@ describe("annotation", () => {
       ]) as any;
       const task = new WorkerTask("test print");
 
-      const annotation = await AnnotationFactory.create(
+      const annotation = (await AnnotationFactory.create(
         xref,
         buttonWidgetRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       const annotationStorage = new Map();
 
       const { opList } = await annotation.getOperatorList(
@@ -3216,12 +3244,12 @@ describe("annotation", () => {
       partialEvaluator.xref = xref;
       const task = new WorkerTask("test save");
 
-      const annotation = await AnnotationFactory.create(
+      const annotation = (await AnnotationFactory.create(
         xref,
         buttonWidgetRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       const annotationStorage = new Map();
       annotationStorage.set(annotation.data.id, { value: true });
 
@@ -3229,7 +3257,7 @@ describe("annotation", () => {
         partialEvaluator,
         task,
         annotationStorage,
-      ) as SaveReturn;
+      ) as AnnotSaveReturn;
       assertEquals(data.length, 2);
       const [radioData, parentData] = data;
       radioData.data = radioData.data.replace(/\(D:\d+\)/, "(date)");
@@ -3253,7 +3281,7 @@ describe("annotation", () => {
         partialEvaluator,
         task,
         annotationStorage,
-      ) as SaveReturn;
+      ) as AnnotSaveReturn;
       assertEquals(data, undefined);
     });
 
@@ -3285,12 +3313,12 @@ describe("annotation", () => {
       partialEvaluator.xref = xref;
       const task = new WorkerTask("test save");
 
-      const annotation = await AnnotationFactory.create(
+      const annotation = (await AnnotationFactory.create(
         xref,
         buttonWidgetRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       const annotationStorage = new Map();
       annotationStorage.set(annotation.data.id, { value: true });
 
@@ -3298,7 +3326,7 @@ describe("annotation", () => {
         partialEvaluator,
         task,
         annotationStorage,
-      ) as SaveReturn;
+      ) as AnnotSaveReturn;
       assertEquals(data.length, 2);
       const [radioData, parentData] = data;
       radioData.data = radioData.data.replace(/\(D:\d+\)/, "(date)");
@@ -3324,12 +3352,12 @@ describe("annotation", () => {
       ]) as any;
       const task = new WorkerTask("test save");
 
-      const annotation = await AnnotationFactory.create(
+      const annotation = (await AnnotationFactory.create(
         xref,
         buttonWidgetRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       const annotationStorage = new Map();
 
       const data = await annotation.save(
@@ -3353,12 +3381,12 @@ describe("annotation", () => {
         { ref: buttonWidgetRef, data: buttonWidgetDict },
       ]) as any;
 
-      const { data } = await AnnotationFactory.create(
+      const { data } = (await AnnotationFactory.create(
         xref,
         buttonWidgetRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       assertEquals(data.annotationType, AnnotationType.WIDGET);
       assertEquals(data.pushButton, true);
       assertEquals(data.actions!.Action, ["do_something();"]);
@@ -3373,12 +3401,12 @@ describe("annotation", () => {
         { ref: buttonWidgetRef, data: buttonWidgetDict },
       ]) as any;
 
-      const { data } = await AnnotationFactory.create(
+      const { data } = (await AnnotationFactory.create(
         xref,
         buttonWidgetRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       assertEquals(data.annotationType, AnnotationType.WIDGET);
       assertEquals(data.pushButton, true);
       assertEquals(data.alternativeText, "An alternative text");
@@ -3400,12 +3428,12 @@ describe("annotation", () => {
         { ref: buttonWidgetRef, data: buttonWidgetDict },
       ]) as any;
 
-      const { data } = await AnnotationFactory.create(
+      const { data } = (await AnnotationFactory.create(
         xref,
         buttonWidgetRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       assertEquals(data.url, "https://developer.mozilla.org/en-US/");
     });
 
@@ -3428,12 +3456,12 @@ describe("annotation", () => {
         { ref: buttonWidgetRef, data: buttonWidgetDict },
       ]) as any;
 
-      const { data } = await AnnotationFactory.create(
+      const { data } = (await AnnotationFactory.create(
         xref,
         buttonWidgetRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       assertEquals(data.url, "https://developer.mozilla.org/en-US/");
     });
   });
@@ -3475,12 +3503,12 @@ describe("annotation", () => {
         { ref: choiceWidgetRef, data: choiceWidgetDict },
       ]) as any;
 
-      const { data } = await AnnotationFactory.create(
+      const { data } = (await AnnotationFactory.create(
         xref,
         choiceWidgetRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       assertEquals(data.annotationType, AnnotationType.WIDGET);
       assertEquals(data.options, []);
     });
@@ -3506,12 +3534,12 @@ describe("annotation", () => {
         { ref: optionOneRef, data: optionOneArr },
       ]) as any;
 
-      const { data } = await AnnotationFactory.create(
+      const { data } = (await AnnotationFactory.create(
         xref,
         choiceWidgetRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       assertEquals(data.annotationType, AnnotationType.WIDGET);
       assertEquals(data.options, expected);
     });
@@ -3534,12 +3562,12 @@ describe("annotation", () => {
         { ref: optionBarRef, data: optionBarStr },
       ]) as any;
 
-      const { data } = await AnnotationFactory.create(
+      const { data } = (await AnnotationFactory.create(
         xref,
         choiceWidgetRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       assertEquals(data.annotationType, AnnotationType.WIDGET);
       assertEquals(data.options, expected);
     });
@@ -3564,12 +3592,12 @@ describe("annotation", () => {
         { ref: choiceWidgetRef, data: choiceWidgetDict },
       ]) as any;
 
-      const { data } = await AnnotationFactory.create(
+      const { data } = (await AnnotationFactory.create(
         xref,
         choiceWidgetRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       assertEquals(data.annotationType, AnnotationType.WIDGET);
       assertEquals(data.options, expected);
     });
@@ -3587,12 +3615,12 @@ describe("annotation", () => {
         { ref: choiceWidgetRef, data: choiceWidgetDict },
       ]) as any;
 
-      const { data } = await AnnotationFactory.create(
+      const { data } = (await AnnotationFactory.create(
         xref,
         choiceWidgetRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       assertEquals(data.annotationType, AnnotationType.WIDGET);
       assertEquals(data.fieldValue, [decodedString]);
       assertEquals(data.defaultFieldValue, "foo");
@@ -3618,7 +3646,7 @@ describe("annotation", () => {
           return (AnnotationFactory.create(
             xref,
             choiceWidgetRef,
-            pdfManagerMock,
+            annotationGlobalsMock,
             idFactoryMock,
           ) as Promise<Annotation>).then(({ data }) => {
             assertEquals(data.annotationType, AnnotationType.WIDGET);
@@ -3635,12 +3663,12 @@ describe("annotation", () => {
         { ref: choiceWidgetRef, data: choiceWidgetDict },
       ]) as any;
 
-      const { data } = await AnnotationFactory.create(
+      const { data } = (await AnnotationFactory.create(
         xref,
         choiceWidgetRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       assertEquals(data.annotationType, AnnotationType.WIDGET);
       assertEquals(data.readOnly, false);
       assertEquals(data.hidden, false);
@@ -3656,12 +3684,12 @@ describe("annotation", () => {
         { ref: choiceWidgetRef, data: choiceWidgetDict },
       ]) as any;
 
-      const { data } = await AnnotationFactory.create(
+      const { data } = (await AnnotationFactory.create(
         xref,
         choiceWidgetRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       assertEquals(data.annotationType, AnnotationType.WIDGET);
       assertEquals(data.readOnly, false);
       assertEquals(data.hidden, false);
@@ -3682,12 +3710,12 @@ describe("annotation", () => {
         { ref: choiceWidgetRef, data: choiceWidgetDict },
       ]) as any;
 
-      const { data } = await AnnotationFactory.create(
+      const { data } = (await AnnotationFactory.create(
         xref,
         choiceWidgetRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       assertEquals(data.annotationType, AnnotationType.WIDGET);
       assertEquals(data.readOnly, true);
       assertEquals(data.hidden, false);
@@ -3707,7 +3735,7 @@ describe("annotation", () => {
       const annotation = await AnnotationFactory.create(
         xref,
         choiceWidgetRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
       ) as WidgetAnnotation;
       const annotationStorage = new Map();
@@ -3753,7 +3781,7 @@ describe("annotation", () => {
       const annotation = await AnnotationFactory.create(
         xref,
         choiceWidgetRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
       ) as WidgetAnnotation;
       const annotationStorage = new Map();
@@ -3803,7 +3831,7 @@ describe("annotation", () => {
       const annotation = await AnnotationFactory.create(
         xref,
         choiceWidgetRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
       ) as WidgetAnnotation;
       const annotationStorage = new Map();
@@ -3845,12 +3873,12 @@ describe("annotation", () => {
       partialEvaluator.xref = xref;
       const task = new WorkerTask("test save");
 
-      const annotation = await AnnotationFactory.create(
+      const annotation = (await AnnotationFactory.create(
         xref,
         choiceWidgetRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       const annotationStorage = new Map();
       annotationStorage.set(annotation.data.id, { value: "C", rotation: 270 });
 
@@ -3858,7 +3886,7 @@ describe("annotation", () => {
         partialEvaluator,
         task,
         annotationStorage,
-      ) as SaveReturn;
+      ) as AnnotSaveReturn;
       assertEquals(data.length, 2);
       const [oldData, newData] = data;
       assertEquals(oldData.ref, Ref.get(123, 0));
@@ -3908,12 +3936,12 @@ describe("annotation", () => {
       partialEvaluator.xref = xref;
       const task = new WorkerTask("test save");
 
-      const annotation = await AnnotationFactory.create(
+      const annotation = (await AnnotationFactory.create(
         xref,
         choiceWidgetRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       const annotationStorage = new Map();
       annotationStorage.set(annotation.data.id, { value: "C" });
 
@@ -3921,7 +3949,7 @@ describe("annotation", () => {
         partialEvaluator,
         task,
         annotationStorage,
-      ) as SaveReturn;
+      ) as AnnotSaveReturn;
       assertEquals(data.length, 2);
       const [oldData, newData] = data;
       assertEquals(oldData.ref, Ref.get(123, 0));
@@ -3975,12 +4003,12 @@ describe("annotation", () => {
       const task = new WorkerTask("test save");
       partialEvaluator.xref = xref;
 
-      const annotation = await AnnotationFactory.create(
+      const annotation = (await AnnotationFactory.create(
         xref,
         choiceWidgetRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       const annotationStorage = new Map();
       annotationStorage.set(annotation.data.id, { value: ["B", "C"] });
 
@@ -3988,7 +4016,7 @@ describe("annotation", () => {
         partialEvaluator,
         task,
         annotationStorage,
-      ) as SaveReturn;
+      ) as AnnotSaveReturn;
 
       assertEquals(data.length, 2);
       const [oldData, newData] = data;
@@ -4039,12 +4067,12 @@ describe("annotation", () => {
       const lineRef = Ref.get(122, 0);
       const xref = new XRefMock([{ ref: lineRef, data: lineDict }]) as any;
 
-      const { data } = await AnnotationFactory.create(
+      const { data } = (await AnnotationFactory.create(
         xref,
         lineRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       assertEquals(data.annotationType, AnnotationType.LINE);
       assertEquals(data.lineCoordinates, [1, 2, 3, 4]);
       assertEquals(data.lineEndings, ["None", "None"]);
@@ -4060,12 +4088,12 @@ describe("annotation", () => {
       const lineRef = Ref.get(122, 0);
       const xref = new XRefMock([{ ref: lineRef, data: lineDict }]) as any;
 
-      const { data } = await AnnotationFactory.create(
+      const { data } = (await AnnotationFactory.create(
         xref,
         lineRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       assertEquals(data.annotationType, AnnotationType.LINE);
       assertEquals(data.lineCoordinates, [1, 2, 3, 4]);
       assertEquals(data.lineEndings, ["Square", "Circle"]);
@@ -4119,12 +4147,12 @@ describe("annotation", () => {
       fileSpecDict.assignXref(xref);
       fileAttachmentDict.assignXref(xref);
 
-      const { data } = await AnnotationFactory.create(
+      const { data } = (await AnnotationFactory.create(
         xref,
         fileAttachmentRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       assertEquals(data.annotationType, AnnotationType.FILEATTACHMENT);
       assertEquals(data.file!.filename, "Test.txt");
       assertEquals(data.file!.content, stringToBytes("Test attachment"));
@@ -4147,12 +4175,12 @@ describe("annotation", () => {
       const popupRef = Ref.get(13, 0);
       const xref = new XRefMock([{ ref: popupRef, data: popupDict }]) as any;
 
-      const { data } = await AnnotationFactory.create(
+      const { data } = (await AnnotationFactory.create(
         xref,
         popupRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       assertEquals(data.annotationType, AnnotationType.POPUP);
       assertEquals(data.modificationDate, "D:20190423");
       assertEquals(data.color, new Uint8ClampedArray([0, 0, 255]));
@@ -4171,12 +4199,12 @@ describe("annotation", () => {
       const popupRef = Ref.get(13, 0);
       const xref = new XRefMock([{ ref: popupRef, data: popupDict }]) as any;
 
-      const { data } = await AnnotationFactory.create(
+      const { data } = (await AnnotationFactory.create(
         xref,
         popupRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       assertEquals(data.annotationType, AnnotationType.POPUP);
       assertEquals(data.modificationDate, undefined);
       assertEquals(data.color, undefined);
@@ -4200,12 +4228,12 @@ describe("annotation", () => {
         const popupRef = Ref.get(13, 0);
         const xref = new XRefMock([{ ref: popupRef, data: popupDict }]) as any;
 
-        const { data, viewable } = await AnnotationFactory.create(
+        const { data, viewable } = (await AnnotationFactory.create(
           xref,
           popupRef,
-          pdfManagerMock,
+          annotationGlobalsMock,
           idFactoryMock,
-        ) as Annotation;
+        ))!;
         assertEquals(data.annotationType, AnnotationType.POPUP);
         // We should not modify the `annotationFlags` returned through
         // e.g., the API.
@@ -4259,12 +4287,12 @@ describe("annotation", () => {
         popupDict.assignXref(xref);
         replyDict.assignXref(xref);
 
-        const { data } = await AnnotationFactory.create(
+        const { data } = (await AnnotationFactory.create(
           xref,
           popupRef,
-          pdfManagerMock,
+          annotationGlobalsMock,
           idFactoryMock,
-        ) as Annotation;
+        ))!;
         assertEquals(data.titleObj, {
           str: "Correct Title",
           dir: "ltr",
@@ -4343,16 +4371,22 @@ describe("annotation", () => {
       partialEvaluator.xref = new XRefMock() as any;
       const task = new WorkerTask("test FreeText printing");
       const freetextAnnotation = (
-        await AnnotationFactory.printNewAnnotations(partialEvaluator, task, [
-          {
-            annotationType: AnnotationEditorType.FREETEXT,
-            rect: [12, 34, 56, 78],
-            rotation: 0,
-            fontSize: 10,
-            color: [0, 0, 0] as any,
-            value: "A",
-          },
-        ], undefined)
+        await AnnotationFactory.printNewAnnotations(
+          annotationGlobalsMock,
+          partialEvaluator,
+          task,
+          [
+            {
+              annotationType: AnnotationEditorType.FREETEXT,
+              rect: [12, 34, 56, 78],
+              rotation: 0,
+              fontSize: 10,
+              color: [0, 0, 0] as any,
+              value: "A",
+            },
+          ],
+          undefined,
+        )
       )![0];
 
       const { opList } = await freetextAnnotation.getOperatorList(
@@ -4387,16 +4421,22 @@ describe("annotation", () => {
       partialEvaluator.xref = new XRefMock() as any;
       const task = new WorkerTask("test FreeText text extraction");
       const freetextAnnotation = (
-        await AnnotationFactory.printNewAnnotations(partialEvaluator, task, [
-          {
-            annotationType: AnnotationEditorType.FREETEXT,
-            rect: [12, 34, 56, 78],
-            rotation: 0,
-            fontSize: 10,
-            color: [0, 0, 0] as any,
-            value: "Hello PDF.js\nWorld !",
-          },
-        ], undefined)
+        await AnnotationFactory.printNewAnnotations(
+          annotationGlobalsMock,
+          partialEvaluator,
+          task,
+          [
+            {
+              annotationType: AnnotationEditorType.FREETEXT,
+              rect: [12, 34, 56, 78],
+              rotation: 0,
+              fontSize: 10,
+              color: [0, 0, 0] as any,
+              value: "Hello PDF.js\nWorld !",
+            },
+          ],
+          undefined,
+        )
       )![0];
 
       await freetextAnnotation.extractTextContent(partialEvaluator, task, [
@@ -4423,12 +4463,12 @@ describe("annotation", () => {
       const inkRef = Ref.get(142, 0);
       const xref = new XRefMock([{ ref: inkRef, data: inkDict }]) as any;
 
-      const { data } = await AnnotationFactory.create(
+      const { data } = (await AnnotationFactory.create(
         xref,
         inkRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       assertEquals(data.annotationType, AnnotationType.INK);
       assertEquals(data.inkLists!.length, 1);
       assertEquals(data.inkLists![0], [
@@ -4451,12 +4491,12 @@ describe("annotation", () => {
       const inkRef = Ref.get(143, 0);
       const xref = new XRefMock([{ ref: inkRef, data: inkDict }]) as any;
 
-      const { data } = await AnnotationFactory.create(
+      const { data } = (await AnnotationFactory.create(
         xref,
         inkRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       assertEquals(data.annotationType, AnnotationType.INK);
       assertEquals(data.inkLists!.length, 2);
       assertEquals(data.inkLists![0], [
@@ -4607,23 +4647,29 @@ describe("annotation", () => {
       partialEvaluator.xref = new XRefMock() as any;
       const task = new WorkerTask("test Ink printing");
       const inkAnnotation = (
-        await AnnotationFactory.printNewAnnotations(partialEvaluator, task, [
-          {
-            annotationType: AnnotationEditorType.INK,
-            rect: [12, 34, 56, 78],
-            rotation: 0,
-            thickness: 3,
-            opacity: 1,
-            color: [0, 255, 0] as any,
-            paths: [
-              {
-                bezier: [1, 2, 3, 4, 5, 6, 7, 8],
-                // Useless in the printing case.
-                points: [1, 2, 3, 4, 5, 6, 7, 8],
-              },
-            ],
-          },
-        ], undefined)
+        await AnnotationFactory.printNewAnnotations(
+          annotationGlobalsMock,
+          partialEvaluator,
+          task,
+          [
+            {
+              annotationType: AnnotationEditorType.INK,
+              rect: [12, 34, 56, 78],
+              rotation: 0,
+              thickness: 3,
+              opacity: 1,
+              color: [0, 255, 0] as any,
+              paths: [
+                {
+                  bezier: [1, 2, 3, 4, 5, 6, 7, 8],
+                  // Useless in the printing case.
+                  points: [1, 2, 3, 4, 5, 6, 7, 8],
+                },
+              ],
+            },
+          ],
+          undefined,
+        )
       )![0];
 
       const { opList } = await inkAnnotation.getOperatorList(
@@ -4673,12 +4719,12 @@ describe("annotation", () => {
         data: highlightDict,
       }]) as any;
 
-      const { data } = await AnnotationFactory.create(
+      const { data } = (await AnnotationFactory.create(
         xref,
         highlightRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       assertEquals(data.annotationType, AnnotationType.HIGHLIGHT);
       assertEquals(data.quadPoints, null);
     });
@@ -4696,12 +4742,12 @@ describe("annotation", () => {
         data: highlightDict,
       }]) as any;
 
-      const { data } = await AnnotationFactory.create(
+      const { data } = (await AnnotationFactory.create(
         xref,
         highlightRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       assertEquals(data.annotationType, AnnotationType.HIGHLIGHT);
       assertEquals(data.quadPoints, [
         [
@@ -4726,12 +4772,12 @@ describe("annotation", () => {
         data: highlightDict,
       }]) as any;
 
-      const { data } = await AnnotationFactory.create(
+      const { data } = (await AnnotationFactory.create(
         xref,
         highlightRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       assertEquals(data.annotationType, AnnotationType.HIGHLIGHT);
       assertEquals(data.quadPoints, null);
     });
@@ -4749,12 +4795,12 @@ describe("annotation", () => {
         data: underlineDict,
       }]) as any;
 
-      const { data } = await AnnotationFactory.create(
+      const { data } = (await AnnotationFactory.create(
         xref,
         underlineRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       assertEquals(data.annotationType, AnnotationType.UNDERLINE);
       assertEquals(data.quadPoints, null);
     });
@@ -4772,12 +4818,12 @@ describe("annotation", () => {
         data: underlineDict,
       }]) as any;
 
-      const { data } = await AnnotationFactory.create(
+      const { data } = (await AnnotationFactory.create(
         xref,
         underlineRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       assertEquals(data.annotationType, AnnotationType.UNDERLINE);
       assertEquals(data.quadPoints, [
         [
@@ -4802,12 +4848,12 @@ describe("annotation", () => {
         data: squigglyDict,
       }]) as any;
 
-      const { data } = await AnnotationFactory.create(
+      const { data } = (await AnnotationFactory.create(
         xref,
         squigglyRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       assertEquals(data.annotationType, AnnotationType.SQUIGGLY);
       assertEquals(data.quadPoints, null);
     });
@@ -4825,12 +4871,12 @@ describe("annotation", () => {
         data: squigglyDict,
       }]) as any;
 
-      const { data } = await AnnotationFactory.create(
+      const { data } = (await AnnotationFactory.create(
         xref,
         squigglyRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       assertEquals(data.annotationType, AnnotationType.SQUIGGLY);
       assertEquals(data.quadPoints, [
         [
@@ -4855,12 +4901,12 @@ describe("annotation", () => {
         data: strikeOutDict,
       }]) as any;
 
-      const { data } = await AnnotationFactory.create(
+      const { data } = (await AnnotationFactory.create(
         xref,
         strikeOutRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       assertEquals(data.annotationType, AnnotationType.STRIKEOUT);
       assertEquals(data.quadPoints, null);
     });
@@ -4878,12 +4924,12 @@ describe("annotation", () => {
         data: strikeOutDict,
       }]) as any;
 
-      const { data } = await AnnotationFactory.create(
+      const { data } = (await AnnotationFactory.create(
         xref,
         strikeOutRef,
-        pdfManagerMock,
+        annotationGlobalsMock,
         idFactoryMock,
-      ) as Annotation;
+      ))!;
       assertEquals(data.annotationType, AnnotationType.STRIKEOUT);
       assertEquals(data.quadPoints, [
         [

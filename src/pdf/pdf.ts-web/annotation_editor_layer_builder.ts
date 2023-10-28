@@ -29,7 +29,7 @@
 // eslint-disable-next-line max-len
 /** @typedef {import("../src/display/annotation_layer.js").AnnotationLayer} AnnotationLayer */
 
-import { html } from "../../lib/dom.ts";
+import { html } from "@fe-lib/dom.ts";
 import type {
   AnnotationEditorUIManager,
   AnnotationLayer,
@@ -97,6 +97,7 @@ export class AnnotationEditorLayerBuilder {
     div.className = "annotationEditorLayer";
     div.tabIndex = 0;
     div.hidden = true;
+    div.dir = this.#uiManager.direction;
     this.pageDiv!.append(div);
 
     this.annotationEditorLayer = new AnnotationEditorLayer({

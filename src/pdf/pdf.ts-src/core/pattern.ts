@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-import type { C2D, dot2d_t, rect_t, TupleOf } from "@fe-src/lib/alias.ts";
-import { assert, fail } from "@fe-src/lib/util/trace.ts";
+import type { C2D, dot2d_t, rect_t, TupleOf } from "@fe-lib/alias.ts";
+import { assert, fail } from "@fe-lib/util/trace.ts";
 import { TilingPaintType, TilingType } from "../display/pattern_helper.ts";
 import type { matrix_t } from "../shared/util.ts";
 import { FormatError, info, Util, warn } from "../shared/util.ts";
@@ -502,27 +502,27 @@ class MeshStreamReader {
   }
 }
 
-const getB = (() => {
-  function buildB(count: number) {
-    const lut = [];
-    for (let i = 0; i <= count; i++) {
-      const t = i / count,
-        t_ = 1 - t;
-      lut.push(
-        new Float32Array([
-          t_ * t_ * t_,
-          3 * t * t_ * t_,
-          3 * t * t * t_,
-          t * t * t,
-        ]),
-      );
-    }
-    return lut;
-  }
-  const cache: Float32Array[][] = Object.create(null);
+let bCache: Record<number, Float32Array[]> = Object.create(null);
 
-  return (count: number) => (cache[count] ||= buildB(count));
-})();
+function buildB(count: number) {
+  const lut = [];
+  for (let i = 0; i <= count; i++) {
+    const t = i / count,
+      t_ = 1 - t;
+    lut.push(
+      new Float32Array([t_ ** 3, 3 * t * t_ ** 2, 3 * t ** 2 * t_, t ** 3]),
+    );
+  }
+  return lut;
+}
+
+function getB(count: number) {
+  return (bCache[count] ||= buildB(count));
+}
+
+export function clearPatternCaches() {
+  bCache = Object.create(null);
+}
 
 interface DecodeContext {
   bitsPerCoordinate: number;

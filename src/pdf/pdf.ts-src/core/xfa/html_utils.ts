@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-import type { rect_t } from "@fe-src/lib/alias.ts";
+import type { rect_t } from "@fe-lib/alias.ts";
 import { createValidAbsoluteUrl, warn } from "../../shared/util.ts";
 import type {
   AvailableSpace,

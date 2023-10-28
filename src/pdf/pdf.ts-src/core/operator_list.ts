@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-import type { OC2D } from "@fe-src/lib/alias.ts";
+import type { OC2D } from "@fe-lib/alias.ts";
 import type { StreamSink, Thread } from "../shared/message_handler.ts";
 import type { matrix_t } from "../shared/util.ts";
 import { ImageKind, OPS, RenderingIntentFlag, warn } from "../shared/util.ts";

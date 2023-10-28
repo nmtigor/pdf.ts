@@ -72,14 +72,15 @@ import {
   SVGGraphics,
   version,
 } from "./display/api.ts";
+import type { PageViewport } from "./display/display_utils.ts";
 import {
+  DOMSVGFactory,
   getFilenameFromUrl,
   getPdfFilenameFromUrl,
   getXfaPageViewport,
   isDataScheme,
   isPdfFile,
   loadScript,
-  type PageViewport,
   PDFDateString,
   PixelsPerInch,
   RenderingCancelledException,
@@ -157,6 +158,7 @@ export {
   type DocInfo,
   type DocumentInfo,
   type DocumentInitP,
+  DOMSVGFactory,
   type ExplicitDest,
   FeatureTest,
   type FieldObject,

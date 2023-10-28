@@ -18,11 +18,11 @@
  */
 /* globals process */
 
-import { GENERIC, MOZCENTRAL, PDFJSDev, TESTING } from "../../../global.ts";
-import type { dot2d_t, rect_t, TupleOf } from "../../../lib/alias.ts";
-import type { HttpStatusCode } from "../../../lib/HttpStatusCode.ts";
-import { isObjectLike } from "../../../lib/jslang.ts";
-import { assert, ErrorJ, warn as warn_0 } from "../../../lib/util/trace.ts";
+import type { HttpStatusCode } from "@fe-lib/HttpStatusCode.ts";
+import type { dot2d_t, rect_t, TupleOf } from "@fe-lib/alias.ts";
+import { isObjectLike } from "@fe-lib/jslang.ts";
+import { assert, ErrorJ, warn as warn_0 } from "@fe-lib/util/trace.ts";
+import { GENERIC, MOZCENTRAL, PDFJSDev, TESTING } from "@fe-src/global.ts";
 /*80--------------------------------------------------------------------------*/
 
 // NW.js / Electron is a browser context, but copies some Node.js objects; see
@@ -1249,4 +1249,6 @@ export function getUuid() {
   }
   return bytesToString(buf);
 }
+
+export const AnnotationPrefix = "pdfjs_internal_id_";
 /*80--------------------------------------------------------------------------*/

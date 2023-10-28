@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-import { LIB } from "../../global.ts";
+import { LIB } from "@fe-src/global.ts";
 import type { IVisibleView } from "./interfaces.ts";
 /*80--------------------------------------------------------------------------*/
 
@@ -492,7 +492,7 @@ export interface VisibleElements {
   ids?: Set<number>;
 }
 
-interface _GetVisibleElementsP {
+interface GetVisibleElementsP_ {
   /**
    * A container that can possibly scroll.
    */
@@ -548,7 +548,7 @@ export function getVisibleElements({
   sortByVisibility = false,
   horizontal = false,
   rtl = false,
-}: _GetVisibleElementsP) {
+}: GetVisibleElementsP_) {
   const top = scrollEl.scrollTop,
     bottom = top + scrollEl.clientHeight;
   const left = scrollEl.scrollLeft,
@@ -679,13 +679,6 @@ export function getVisibleElements({
     });
   }
   return { first, last, views: visible, ids } as VisibleElements;
-}
-
-/**
- * Event handler to suppress context menu.
- */
-export function noContextMenuHandler(evt: Event) {
-  evt.preventDefault();
 }
 
 export function normalizeWheelEventDirection(evt: WheelEvent) {
@@ -875,7 +868,7 @@ export function getActiveOrFocusedElement() {
 
 /**
  * Converts API PageLayout values to the format used by `BaseViewer`.
- * @param mode The API PageLayout value.
+ * @param layout The API PageLayout value.
  * @return A value from {SpreadMode}.
  */
 export function apiPageLayoutToViewerModes(layout: PageLayout) {

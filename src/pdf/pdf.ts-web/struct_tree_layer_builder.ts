@@ -17,11 +17,12 @@
  * limitations under the License.
  */
 
-import { html } from "../../lib/dom.ts";
-import {
+import { html } from "@fe-lib/dom.ts";
+import type {
   StructTreeContent,
   StructTreeNode,
 } from "../pdf.ts-src/display/api.ts";
+import { removeNullCharacters } from "./ui_utils.ts";
 /*80--------------------------------------------------------------------------*/
 
 const PDF_ROLE_TO_HTML_ROLE = {
@@ -114,25 +115,24 @@ export class StructTreeLayerBuilder {
     structElement: StructTreeNode | StructTreeContent,
     htmlElement: HTMLSpanElement,
   ) {
-    if ((structElement as StructTreeNode).alt !== undefined) {
-      htmlElement.setAttribute(
-        "aria-label",
-        (structElement as StructTreeNode).alt!,
-      );
+    const { alt, id, lang } = structElement as
+      & StructTreeNode
+      & StructTreeContent;
+    if (alt !== undefined) {
+      htmlElement.setAttribute("aria-label", removeNullCharacters(alt));
     }
-    if ((structElement as StructTreeContent).id !== undefined) {
-      htmlElement.setAttribute(
-        "aria-owns",
-        (structElement as StructTreeContent).id!,
-      );
+    if (id !== undefined) {
+      htmlElement.setAttribute("aria-owns", id);
     }
-    if ((structElement as StructTreeNode).lang !== undefined) {
-      htmlElement.setAttribute("lang", (structElement as StructTreeNode).lang!);
+    if (lang !== undefined) {
+      htmlElement.setAttribute("lang", lang);
     }
   }
 
-  #walk(node?: StructTreeNode) {
-    if (!node) return undefined;
+  #walk(node?: StructTreeNode | StructTreeContent) {
+    if (!node) {
+      return undefined;
+    }
 
     const element = html("span");
     if ("role" in node) {
@@ -148,14 +148,15 @@ export class StructTreeLayerBuilder {
 
     this.#setAttributes(node, element);
 
-    if (node.children) {
+    // if (node.children) {
+    if ("children" in node) {
       if (node.children.length === 1 && "id" in node.children[0]) {
         // Often there is only one content node so just set the values on the
         // parent node to avoid creating an extra span.
         this.#setAttributes(node.children[0], element);
       } else {
         for (const kid of node.children) {
-          element.append(this.#walk(kid as StructTreeNode)!);
+          element.append(this.#walk(kid)!);
         }
       }
     }

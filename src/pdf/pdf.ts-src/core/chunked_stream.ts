@@ -18,8 +18,8 @@
  */
 
 import { PDFJSDev, TESTING } from "@fe-src/global.ts";
-import { PromiseCap } from "@fe-src/lib/util/PromiseCap.ts";
-import { assert } from "@fe-src/lib/util/trace.ts";
+import { PromiseCap } from "@fe-lib/util/PromiseCap.ts";
+import { assert } from "@fe-lib/util/trace.ts";
 import type { ReadValue } from "../interfaces.ts";
 import type { MessageHandler, Thread } from "../shared/message_handler.ts";
 import type { AbortException } from "../shared/util.ts";

@@ -17,11 +17,13 @@
  * limitations under the License.
  */
 
+import { clearPatternCaches } from "./pattern.ts";
 import { clearPrimitiveCaches } from "./primitives.ts";
 import { clearUnicodeCaches } from "./unicode.ts";
 /*80--------------------------------------------------------------------------*/
 
 export function clearGlobalCaches() {
+  clearPatternCaches();
   clearPrimitiveCaches();
   clearUnicodeCaches();
 }

@@ -17,9 +17,9 @@
  * limitations under the License.
  */
 
+import type { TypedArray } from "@fe-lib/alias.ts";
+import { assert, fail } from "@fe-lib/util/trace.ts";
 import { PDFJSDev, TESTING } from "@fe-src/global.ts";
-import type { TypedArray } from "@fe-src/lib/alias.ts";
-import { assert, fail } from "@fe-src/lib/util/trace.ts";
 import { shadow } from "../shared/util.ts";
 import type { BaseStream } from "./base_stream.ts";
 import type { TranslatedFont } from "./evaluator.ts";
@@ -267,7 +267,7 @@ export class Dict {
       for (const dict of values) {
         for (const [key, value] of Object.entries(dict.#map)) {
           if (subDict.#map[key] === undefined) {
-            subDict.#map[key] = <any> value;
+            subDict.#map[key] = value as any;
           }
         }
       }
@@ -278,6 +278,14 @@ export class Dict {
     properties.clear();
 
     return mergedDict.size > 0 ? mergedDict : Dict.empty;
+  }
+
+  clone() {
+    const dict = new Dict(this.xref);
+    for (const key of this.getKeys()) {
+      dict.set(key, this.getRaw(key));
+    }
+    return dict;
   }
 }
 
@@ -292,7 +300,7 @@ export class FontDict extends Dict {
     };
   };
 
-  cacheKey?: Ref | string;
+  cacheKey?: string | Ref;
 }
 
 export class Ref {
@@ -343,10 +351,10 @@ export class Ref {
 // This structure stores only one instance of the reference.
 export class RefSet {
   #set = new Set<string>();
-  has(ref: Ref | string) {
+  has(ref: string | Ref) {
     return this.#set.has(ref.toString());
   }
-  put(ref: Ref | string) {
+  put(ref: string | Ref | Dict) {
     this.#set.add(ref.toString());
   }
   remove(ref: Ref) {
@@ -378,15 +386,15 @@ export class RefSetCache<T = Obj> {
     return this.#map.size;
   }
 
-  get(ref: Ref | string) {
+  get(ref: string | Ref) {
     return this.#map.get(ref.toString());
   }
 
-  has(ref: Ref | string) {
+  has(ref: string | Ref) {
     return this.#map.has(ref.toString());
   }
 
-  put(ref: Ref | string, obj: T) {
+  put(ref: string | Ref, obj: T) {
     this.#map.set(ref.toString(), obj);
   }
 

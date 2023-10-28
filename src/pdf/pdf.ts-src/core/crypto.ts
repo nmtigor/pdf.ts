@@ -1496,15 +1496,16 @@ export class CipherTransform {
   }
 }
 
-namespace NsCipherTransformFactory {
+/** @final */
+export class CipherTransformFactory {
   // deno-fmt-ignore
-  const defaultPasswordBytes = new Uint8Array([
+  static #defaultPasswordBytes = new Uint8Array([
     0x28, 0xbf, 0x4e, 0x5e, 0x4e, 0x75, 0x8a, 0x41, 0x64, 0x00, 0x4e, 0x56,
     0xff, 0xfa, 0x01, 0x08, 0x2e, 0x2e, 0x00, 0xb6, 0xd0, 0x68, 0x3e, 0x80,
     0x2f, 0x0c, 0xa9, 0xfe, 0x64, 0x53, 0x69, 0x7a,
   ]);
 
-  function createEncryptionKey20(
+  #createEncryptionKey20(
     revision: number,
     password: Uint8Array | undefined,
     ownerPassword: Uint8Array,
@@ -1550,7 +1551,7 @@ namespace NsCipherTransformFactory {
     return undefined;
   }
 
-  function prepareKeyData(
+  #prepareKeyData(
     fileId: Uint8Array,
     password: Uint8Array | undefined,
     ownerPassword: Uint8Array,
@@ -1573,7 +1574,7 @@ namespace NsCipherTransformFactory {
     }
     j = 0;
     while (i < 32) {
-      hashData[i++] = defaultPasswordBytes[j++];
+      hashData[i++] = CipherTransformFactory.#defaultPasswordBytes[j++];
     }
     // as now the padded password in the hashData[0..i]
     for (j = 0, n = ownerPassword.length; j < n; ++j) {
@@ -1604,7 +1605,7 @@ namespace NsCipherTransformFactory {
 
     if (revision >= 3) {
       for (i = 0; i < 32; ++i) {
-        hashData[i] = defaultPasswordBytes[i];
+        hashData[i] = CipherTransformFactory.#defaultPasswordBytes[i];
       }
       for (j = 0, n = fileId.length; j < n; ++j) {
         hashData[i++] = fileId[j];
@@ -1627,7 +1628,9 @@ namespace NsCipherTransformFactory {
       }
     } else {
       cipher = new ARCFourCipher(encryptionKey);
-      checkData = cipher.encryptBlock(defaultPasswordBytes);
+      checkData = cipher.encryptBlock(
+        CipherTransformFactory.#defaultPasswordBytes,
+      );
       for (j = 0, n = checkData.length; j < n; ++j) {
         if (userPassword[j] !== checkData[j]) {
           return undefined;
@@ -1637,7 +1640,7 @@ namespace NsCipherTransformFactory {
     return encryptionKey;
   }
 
-  function decodeUserPassword(
+  #decodeUserPassword(
     password: Uint8Array,
     ownerPassword: Uint8Array,
     revision: number,
@@ -1651,7 +1654,7 @@ namespace NsCipherTransformFactory {
     }
     let j = 0;
     while (i < 32) {
-      hashData[i++] = defaultPasswordBytes[j++];
+      hashData[i++] = CipherTransformFactory.#defaultPasswordBytes[j++];
     }
     let hash = calculateMD5(hashData, 0, i);
     const keyLengthInBytes = keyLength >> 3;
@@ -1679,9 +1682,7 @@ namespace NsCipherTransformFactory {
     return userPassword;
   }
 
-  const identityName = Name.get("Identity");
-
-  function buildObjectKey(
+  #buildObjectKey(
     num: number,
     gen: number,
     encryptionKey: Uint8Array | Uint8ClampedArray,
@@ -1708,7 +1709,7 @@ namespace NsCipherTransformFactory {
     return hash.subarray(0, Math.min(encryptionKey.length + 5, 16));
   }
 
-  function buildCipherConstructor(
+  #buildCipherConstructor(
     cf: any,
     name: Name,
     num: number,
@@ -1718,236 +1719,245 @@ namespace NsCipherTransformFactory {
     if (!(name instanceof Name)) {
       throw new FormatError("Invalid crypt filter name.");
     }
+    const self = this;
     const cryptFilter = cf.get(name.name);
-    let cfm;
-    if (cryptFilter !== null && cryptFilter !== undefined) {
-      cfm = cryptFilter.get("CFM");
-    }
+    const cfm = cryptFilter?.get("CFM");
+
     if (!cfm || cfm.name === "None") {
-      return /* cipherTransformFactoryBuildCipherConstructorNone */ () =>
-        new NullCipher();
+      return () => {
+        return new NullCipher();
+      };
     }
     if (cfm.name === "V2") {
-      return /* cipherTransformFactoryBuildCipherConstructorV2 */ () =>
-        new ARCFourCipher(buildObjectKey(num, gen, key, false));
+      return () => {
+        return new ARCFourCipher(
+          self.#buildObjectKey(num, gen, key, /* isAes = */ false),
+        );
+      };
     }
     if (cfm.name === "AESV2") {
-      return /* cipherTransformFactoryBuildCipherConstructorAESV2 */ () =>
-        new AES128Cipher(buildObjectKey(num, gen, key, true));
+      return () => {
+        return new AES128Cipher(
+          self.#buildObjectKey(num, gen, key, /* isAes = */ true),
+        );
+      };
     }
     if (cfm.name === "AESV3") {
-      return /* cipherTransformFactoryBuildCipherConstructorAESV3 */ () =>
-        new AES256Cipher(key);
+      return () => {
+        return new AES256Cipher(key);
+      };
     }
     throw new FormatError("Unknown crypto method");
   }
 
-  // eslint-disable-next-line no-shadow
-  /** @final */
-  export class CipherTransformFactory {
-    filterName;
-    dict;
+  filterName;
+  dict;
 
-    algorithm: number;
+  algorithm: number;
 
-    encryptMetadata: boolean;
+  encryptMetadata: boolean;
 
-    encryptionKey: Uint8Array | Uint8ClampedArray;
+  encryptionKey: Uint8Array | Uint8ClampedArray;
 
-    cf: any;
-    stmf!: Name;
-    strf!: Name;
-    eff!: Name;
+  cf: any;
+  stmf!: Name;
+  strf!: Name;
+  eff!: Name;
 
-    constructor(dict: Dict, fileId: string, password?: string) {
-      const filter = dict.get("Filter");
-      if (!isName(filter, "Standard")) {
-        throw new FormatError("unknown encryption method");
-      }
-      this.filterName = (<Name> filter).name;
-      this.dict = dict;
-      const algorithm = dict.get("V");
-      if (
-        !Number.isInteger(algorithm) ||
-        (algorithm !== 1 &&
-          algorithm !== 2 &&
-          algorithm !== 4 &&
-          algorithm !== 5)
-      ) {
-        throw new FormatError("unsupported encryption algorithm");
-      }
-      this.algorithm = algorithm;
-      let keyLength = <number | undefined> dict.get("Length");
-      if (!keyLength) {
-        // Spec asks to rely on encryption dictionary's Length entry, however
-        // some PDFs don't have it. Trying to recover.
-        if (algorithm <= 3) {
-          // For 1 and 2 it's fixed to 40-bit, for 3 40-bit is a minimal value.
-          keyLength = 40;
-        } else {
-          // Trying to find default handler -- it usually has Length.
-          const cfDict = dict.get("CF");
-          const streamCryptoName = dict.get("StmF");
-          if (cfDict instanceof Dict && (streamCryptoName instanceof Name)) {
-            cfDict.suppressEncryption = true; // See comment below.
-            const handlerDict = cfDict.get(streamCryptoName.name) as
-              | Dict
-              | undefined;
-            keyLength = handlerDict?.get("Length") as number || 128;
-            if (keyLength < 40) {
-              // Sometimes it's incorrect value of bits, generators specify
-              // bytes.
-              keyLength <<= 3;
-            }
-          }
-        }
-      }
-      if (
-        !Number.isInteger(keyLength) ||
-        keyLength! < 40 ||
-        keyLength! % 8 !== 0
-      ) {
-        throw new FormatError("invalid key length");
-      }
-
-      const ownerBytes = stringToBytes(dict.get("O") as string),
-        userBytes = stringToBytes(dict.get("U") as string);
-      // prepare keys
-      const ownerPassword = ownerBytes.subarray(0, 32);
-      const userPassword = userBytes.subarray(0, 32);
-      const flags = <number> dict.get("P");
-      const revision = <number> dict.get("R");
-      // meaningful when V is 4 or 5
-      const encryptMetadata = (algorithm === 4 || algorithm === 5) &&
-        dict.get("EncryptMetadata") !== false;
-      this.encryptMetadata = encryptMetadata;
-
-      const fileIdBytes = stringToBytes(fileId);
-      let passwordBytes: Uint8Array | undefined;
-      if (password) {
-        if (revision === 6) {
-          try {
-            password = utf8StringToString(password);
-          } catch {
-            warn(
-              "CipherTransformFactory: Unable to convert UTF8 encoded password.",
-            );
-          }
-        }
-        passwordBytes = stringToBytes(password);
-      }
-
-      let encryptionKey: Uint8Array | Uint8ClampedArray | undefined;
-      if (algorithm !== 5) {
-        encryptionKey = prepareKeyData(
-          fileIdBytes,
-          passwordBytes,
-          ownerPassword,
-          userPassword,
-          flags,
-          revision,
-          keyLength!,
-          encryptMetadata,
-        );
+  constructor(dict: Dict, fileId: string, password?: string) {
+    const filter = dict.get("Filter");
+    if (!isName(filter, "Standard")) {
+      throw new FormatError("unknown encryption method");
+    }
+    this.filterName = (filter as Name).name;
+    this.dict = dict;
+    const algorithm = dict.get("V");
+    if (
+      !Number.isInteger(algorithm) ||
+      (algorithm !== 1 &&
+        algorithm !== 2 &&
+        algorithm !== 4 &&
+        algorithm !== 5)
+    ) {
+      throw new FormatError("unsupported encryption algorithm");
+    }
+    this.algorithm = algorithm;
+    let keyLength = dict.get("Length") as number | undefined;
+    if (!keyLength) {
+      // Spec asks to rely on encryption dictionary's Length entry, however
+      // some PDFs don't have it. Trying to recover.
+      if (algorithm <= 3) {
+        // For 1 and 2 it's fixed to 40-bit, for 3 40-bit is a minimal value.
+        keyLength = 40;
       } else {
-        const ownerValidationSalt = ownerBytes.subarray(32, 40);
-        const ownerKeySalt = ownerBytes.subarray(40, 48);
-        const uBytes = userBytes.subarray(0, 48);
-        const userValidationSalt = userBytes.subarray(32, 40);
-        const userKeySalt = userBytes.subarray(40, 48);
-        const ownerEncryption = stringToBytes(dict.get("OE") as string);
-        const userEncryption = stringToBytes(dict.get("UE") as string);
-        const perms = stringToBytes(dict.get("Perms") as string);
-        encryptionKey = createEncryptionKey20(
-          revision,
-          passwordBytes,
-          ownerPassword,
-          ownerValidationSalt,
-          ownerKeySalt,
-          uBytes,
-          userPassword,
-          userValidationSalt,
-          userKeySalt,
-          ownerEncryption,
-          userEncryption,
-          perms,
-        );
-      }
-      if (!encryptionKey && !password) {
-        throw new PasswordException(
-          "No password given",
-          PasswordResponses.NEED_PASSWORD,
-        );
-      } else if (!encryptionKey && password) {
-        // Attempting use the password as an owner password
-        const decodedPassword = decodeUserPassword(
-          passwordBytes!,
-          ownerPassword,
-          revision,
-          keyLength!,
-        );
-        encryptionKey = prepareKeyData(
-          fileIdBytes,
-          decodedPassword,
-          ownerPassword,
-          userPassword,
-          flags,
-          revision,
-          keyLength!,
-          encryptMetadata,
-        );
-      }
-
-      if (!encryptionKey) {
-        throw new PasswordException(
-          "Incorrect Password",
-          PasswordResponses.INCORRECT_PASSWORD,
-        );
-      }
-
-      this.encryptionKey = encryptionKey;
-
-      if (algorithm >= 4) {
-        const cf = dict.get("CF");
-        if (cf instanceof Dict) {
-          // The 'CF' dictionary itself should not be encrypted, and by setting
-          // `suppressEncryption` we can prevent an infinite loop inside of
-          // `XRef_fetchUncompressed` if the dictionary contains indirect
-          // objects (fixes issue7665.pdf).
-          cf.suppressEncryption = true;
+        // Trying to find default handler -- it usually has Length.
+        const cfDict = dict.get("CF");
+        const streamCryptoName = dict.get("StmF");
+        if (cfDict instanceof Dict && (streamCryptoName instanceof Name)) {
+          cfDict.suppressEncryption = true; // See comment below.
+          const handlerDict = cfDict.get(streamCryptoName.name) as
+            | Dict
+            | undefined;
+          keyLength = handlerDict?.get("Length") as number || 128;
+          if (keyLength < 40) {
+            // Sometimes it's incorrect value of bits, generators specify
+            // bytes.
+            keyLength <<= 3;
+          }
         }
-        this.cf = cf;
-        this.stmf = dict.get("StmF") as Name ?? identityName;
-        this.strf = dict.get("StrF") as Name ?? identityName;
-        this.eff = dict.get("EFF") as Name ?? this.stmf;
       }
     }
+    if (
+      !Number.isInteger(keyLength) ||
+      keyLength! < 40 ||
+      keyLength! % 8 !== 0
+    ) {
+      throw new FormatError("invalid key length");
+    }
 
-    createCipherTransform(num: number, gen: number) {
-      if (this.algorithm === 4 || this.algorithm === 5) {
-        return new CipherTransform(
-          buildCipherConstructor(
-            this.cf,
-            this.strf,
-            num,
-            gen,
-            this.encryptionKey,
-          ),
-          buildCipherConstructor(
-            this.cf,
-            this.stmf,
-            num,
-            gen,
-            this.encryptionKey,
-          ),
-        );
+    const ownerBytes = stringToBytes(dict.get("O") as string),
+      userBytes = stringToBytes(dict.get("U") as string);
+    // prepare keys
+    const ownerPassword = ownerBytes.subarray(0, 32);
+    const userPassword = userBytes.subarray(0, 32);
+    const flags = <number> dict.get("P");
+    const revision = <number> dict.get("R");
+    // meaningful when V is 4 or 5
+    const encryptMetadata = (algorithm === 4 || algorithm === 5) &&
+      dict.get("EncryptMetadata") !== false;
+    this.encryptMetadata = encryptMetadata;
+
+    const fileIdBytes = stringToBytes(fileId);
+    let passwordBytes: Uint8Array | undefined;
+    if (password) {
+      if (revision === 6) {
+        try {
+          password = utf8StringToString(password);
+        } catch {
+          warn(
+            "CipherTransformFactory: Unable to convert UTF8 encoded password.",
+          );
+        }
       }
-      // algorithms 1 and 2
-      const key = buildObjectKey(num, gen, this.encryptionKey, false);
-      const cipherConstructor = () => new ARCFourCipher(key);
-      return new CipherTransform(cipherConstructor, cipherConstructor);
+      passwordBytes = stringToBytes(password);
+    }
+
+    let encryptionKey: Uint8Array | Uint8ClampedArray | undefined;
+    if (algorithm !== 5) {
+      encryptionKey = this.#prepareKeyData(
+        fileIdBytes,
+        passwordBytes,
+        ownerPassword,
+        userPassword,
+        flags,
+        revision,
+        keyLength!,
+        encryptMetadata,
+      );
+    } else {
+      const ownerValidationSalt = ownerBytes.subarray(32, 40);
+      const ownerKeySalt = ownerBytes.subarray(40, 48);
+      const uBytes = userBytes.subarray(0, 48);
+      const userValidationSalt = userBytes.subarray(32, 40);
+      const userKeySalt = userBytes.subarray(40, 48);
+      const ownerEncryption = stringToBytes(dict.get("OE") as string);
+      const userEncryption = stringToBytes(dict.get("UE") as string);
+      const perms = stringToBytes(dict.get("Perms") as string);
+      encryptionKey = this.#createEncryptionKey20(
+        revision,
+        passwordBytes,
+        ownerPassword,
+        ownerValidationSalt,
+        ownerKeySalt,
+        uBytes,
+        userPassword,
+        userValidationSalt,
+        userKeySalt,
+        ownerEncryption,
+        userEncryption,
+        perms,
+      );
+    }
+    if (!encryptionKey && !password) {
+      throw new PasswordException(
+        "No password given",
+        PasswordResponses.NEED_PASSWORD,
+      );
+    } else if (!encryptionKey && password) {
+      // Attempting use the password as an owner password
+      const decodedPassword = this.#decodeUserPassword(
+        passwordBytes!,
+        ownerPassword,
+        revision,
+        keyLength!,
+      );
+      encryptionKey = this.#prepareKeyData(
+        fileIdBytes,
+        decodedPassword,
+        ownerPassword,
+        userPassword,
+        flags,
+        revision,
+        keyLength!,
+        encryptMetadata,
+      );
+    }
+
+    if (!encryptionKey) {
+      throw new PasswordException(
+        "Incorrect Password",
+        PasswordResponses.INCORRECT_PASSWORD,
+      );
+    }
+
+    this.encryptionKey = encryptionKey;
+
+    if (algorithm >= 4) {
+      const cf = dict.get("CF");
+      if (cf instanceof Dict) {
+        // The 'CF' dictionary itself should not be encrypted, and by setting
+        // `suppressEncryption` we can prevent an infinite loop inside of
+        // `XRef_fetchUncompressed` if the dictionary contains indirect
+        // objects (fixes issue7665.pdf).
+        cf.suppressEncryption = true;
+      }
+      this.cf = cf;
+      // this.stmf = dict.get("StmF") as Name ?? identityName;
+      // this.strf = dict.get("StrF") as Name ?? identityName;
+      this.stmf = dict.get("StmF") as Name || Name.get("Identity");
+      this.strf = dict.get("StrF") as Name || Name.get("Identity");
+      this.eff = dict.get("EFF") as Name || this.stmf;
     }
   }
+
+  createCipherTransform(num: number, gen: number) {
+    if (this.algorithm === 4 || this.algorithm === 5) {
+      return new CipherTransform(
+        this.#buildCipherConstructor(
+          this.cf,
+          this.strf,
+          num,
+          gen,
+          this.encryptionKey,
+        ),
+        this.#buildCipherConstructor(
+          this.cf,
+          this.stmf,
+          num,
+          gen,
+          this.encryptionKey,
+        ),
+      );
+    }
+    // algorithms 1 and 2
+    const key = this.#buildObjectKey(
+      num,
+      gen,
+      this.encryptionKey,
+      /* isAes = */ false,
+    );
+    const cipherConstructor = () => new ARCFourCipher(key);
+    return new CipherTransform(cipherConstructor, cipherConstructor);
+  }
 }
-export import CipherTransformFactory = NsCipherTransformFactory.CipherTransformFactory;
 /*80--------------------------------------------------------------------------*/

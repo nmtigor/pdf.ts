@@ -17,9 +17,9 @@
  * limitations under the License.
  */
 
+import { LIB } from "@fe-src/global.ts";
 import { assertObjectMatch } from "@std/assert/mod.ts";
 import { describe, it } from "@std/testing/bdd.ts";
-import { LIB } from "../../global.ts";
 import { AnnotationLayer } from "./display/annotation_layer.ts";
 import {
   build,
@@ -30,6 +30,7 @@ import {
   version,
 } from "./display/api.ts";
 import {
+  DOMSVGFactory,
   getFilenameFromUrl,
   getPdfFilenameFromUrl,
   getXfaPageViewport,
@@ -80,6 +81,8 @@ describe("pdfjs_api", () => {
       build,
       // CMapCompressionType,
       createValidAbsoluteUrl,
+      DOMSVGFactory,
+
       FeatureTest,
       getDocument,
       getFilenameFromUrl,
@@ -92,6 +95,7 @@ describe("pdfjs_api", () => {
       isPdfFile,
       loadScript,
       MissingPDFException,
+      // noContextMenu,
       normalizeUnicode,
       OPS,
       // PasswordResponses,

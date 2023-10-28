@@ -18,8 +18,8 @@
  */
 
 import { FormatError, warn } from "../shared/util.ts";
-import { Dict, Ref, RefSet } from "./primitives.ts";
-import { XRef } from "./xref.ts";
+import { Dict, type Ref, RefSet } from "./primitives.ts";
+import type { XRef } from "./xref.ts";
 /*80--------------------------------------------------------------------------*/
 
 /**
@@ -32,7 +32,11 @@ abstract class NameOrNumberTree<T extends string | number> {
   xref;
   #type: "Names" | "Nums";
 
-  constructor(root: Ref, xref: XRef, type: "Names" | "Nums") {
+  constructor(
+    root: Ref | Dict | undefined,
+    xref: XRef,
+    type: "Names" | "Nums",
+  ) {
     this.root = root;
     this.xref = xref;
     this.#type = type;
@@ -157,7 +161,7 @@ export class NameTree extends NameOrNumberTree<string> {
 }
 
 export class NumberTree extends NameOrNumberTree<number> {
-  constructor(root: Ref, xref: XRef) {
+  constructor(root: Ref | Dict, xref: XRef) {
     super(root, xref, "Nums");
   }
 }

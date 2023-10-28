@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-import { html } from "../../lib/dom.ts";
+import { html } from "@fe-lib/dom.ts";
 import type { FontFaceObject, OpListIR, OPSName } from "../pdf.ts-src/pdf.ts";
 import { OPS } from "../pdf.ts-src/pdf.ts";
 /*80--------------------------------------------------------------------------*/
@@ -233,9 +233,22 @@ namespace StepperManager_ {
   }
 }
 
-// The stepper for each page's operatorList.
-namespace NsStepper {
-  function simplifyArgs(args: any): any {
+/**
+ * The stepper for each page's operatorList.
+ */
+export class Stepper {
+  /**
+   * Shorter way to create element and optionally set textContent.
+   */
+  #c<NN extends keyof HTMLElementTagNameMap>(tag: NN, textContent?: string) {
+    const d = html(tag);
+    if (textContent) {
+      d.textContent = textContent;
+    }
+    return d;
+  }
+
+  #simplifyArgs(args: any): any {
     if (typeof args === "string") {
       const MAX_STRING_LENGTH = 75;
       return args.length <= MAX_STRING_LENGTH
@@ -251,7 +264,7 @@ namespace NsStepper {
         simpleArgs = [];
       let i, ii;
       for (i = 0, ii = Math.min(MAX_ITEMS, args.length); i < ii; i++) {
-        simpleArgs.push(simplifyArgs(args[i]));
+        simpleArgs.push(this.#simplifyArgs(args[i]));
       }
       if (i < args.length) {
         simpleArgs.push("...");
@@ -260,198 +273,198 @@ namespace NsStepper {
     }
     const simpleObj: Record<string, any> = {};
     for (const key in args) {
-      simpleObj[key] = simplifyArgs(args[key]);
+      simpleObj[key] = this.#simplifyArgs(args[key]);
     }
     return simpleObj;
   }
 
-  // eslint-disable-next-line no-shadow
-  export class Stepper {
-    panel;
-    breakPoint;
-    nextBreakPoint: number | undefined;
-    pageIndex;
-    breakPoints;
-    currentIdx;
-    operatorListIdx;
-    indentLevel;
+  panel;
+  breakPoint;
+  nextBreakPoint: number | undefined;
+  pageIndex;
+  breakPoints;
+  currentIdx;
+  operatorListIdx;
+  indentLevel;
 
-    table!: HTMLTableElement;
+  table!: HTMLTableElement;
 
-    constructor(
-      panel: HTMLDivElement,
-      pageIndex: number,
-      initialBreakPoints: number[],
-    ) {
-      this.panel = panel;
-      this.breakPoint = 0;
-      this.pageIndex = pageIndex;
-      this.breakPoints = initialBreakPoints;
-      this.currentIdx = -1;
-      this.operatorListIdx = 0;
-      this.indentLevel = 0;
+  constructor(
+    panel: HTMLDivElement,
+    pageIndex: number,
+    initialBreakPoints: number[],
+  ) {
+    this.panel = panel;
+    const content = this.#c("div", "c=continue, s=step");
+    const table = this.#c("table");
+    this.breakPoint = 0;
+    this.pageIndex = pageIndex;
+    this.breakPoints = initialBreakPoints;
+    this.currentIdx = -1;
+    this.operatorListIdx = 0;
+    this.indentLevel = 0;
+  }
+
+  init(operatorList: OpListIR) {
+    const panel = this.panel;
+    const content = this.#c("div", "c=continue, s=step");
+    const table = this.#c("table");
+    content.append(table);
+    table.cellSpacing = 0 as any;
+    const headerRow = this.#c("tr");
+    table.append(headerRow);
+    headerRow.append(
+      this.#c("th", "Break"),
+      this.#c("th", "Idx"),
+      this.#c("th", "fn"),
+      this.#c("th", "args"),
+    );
+    panel.append(content);
+    this.table = table;
+    this.updateOperatorList(operatorList);
+  }
+
+  updateOperatorList(operatorList: OpListIR) {
+    const self = this;
+
+    function cboxOnClick(this: HTMLInputElement, ev: MouseEvent) {
+      const x = +this.dataset.idx!;
+      if (this.checked) {
+        self.breakPoints.push(x);
+      } else {
+        self.breakPoints.splice(self.breakPoints.indexOf(x), 1);
+      }
+      StepperManager_.saveBreakPoints(self.pageIndex, self.breakPoints);
     }
 
-    init(operatorList: OpListIR) {
-      const panel = this.panel;
-      const content = html("div", "c=continue, s=step");
-      const table = html("table");
-      content.append(table);
-      table.cellSpacing = <any> 0;
-      const headerRow = html("tr");
-      table.append(headerRow);
-      headerRow.append(
-        html("th", "Break"),
-        html("th", "Idx"),
-        html("th", "fn"),
-        html("th", "args"),
-      );
-      panel.append(content);
-      this.table = table;
-      this.updateOperatorList(operatorList);
+    const MAX_OPERATORS_COUNT = 15000;
+    if (this.operatorListIdx > MAX_OPERATORS_COUNT) {
+      return;
     }
 
-    updateOperatorList(operatorList: OpListIR) {
-      const self = this;
+    const chunk = document.createDocumentFragment();
+    const operatorsToDisplay = Math.min(
+      MAX_OPERATORS_COUNT,
+      operatorList.fnArray.length,
+    );
+    for (let i = this.operatorListIdx; i < operatorsToDisplay; i++) {
+      const line = this.#c("tr");
+      line.className = "line";
+      line.dataset.idx = i as any;
+      chunk.append(line);
+      const checked = this.breakPoints.includes(i);
+      const args = operatorList.argsArray[i] || [];
 
-      function cboxOnClick(this: HTMLInputElement, ev: MouseEvent) {
-        const x = +this.dataset.idx!;
-        if (this.checked) {
-          self.breakPoints.push(x);
-        } else {
-          self.breakPoints.splice(self.breakPoints.indexOf(x), 1);
-        }
-        StepperManager_.saveBreakPoints(self.pageIndex, self.breakPoints);
-      }
+      const breakCell = this.#c("td");
+      const cbox = this.#c("input");
+      cbox.type = "checkbox";
+      cbox.className = "points";
+      cbox.checked = checked;
+      cbox.dataset.idx = i as any;
+      cbox.onclick = cboxOnClick as typeof cbox.onclick;
 
-      const MAX_OPERATORS_COUNT = 15000;
-      if (this.operatorListIdx > MAX_OPERATORS_COUNT) {
-        return;
-      }
-
-      const chunk = document.createDocumentFragment();
-      const operatorsToDisplay = Math.min(
-        MAX_OPERATORS_COUNT,
-        operatorList.fnArray.length,
-      );
-      for (let i = this.operatorListIdx; i < operatorsToDisplay; i++) {
-        const line = html("tr");
-        line.className = "line";
-        line.dataset.idx = i as any;
-        chunk.append(line);
-        const checked = this.breakPoints.includes(i);
-        const args = operatorList.argsArray[i] || [];
-
-        const breakCell = html("td");
-        const cbox = html("input");
-        cbox.type = "checkbox";
-        cbox.className = "points";
-        cbox.checked = checked;
-        cbox.dataset.idx = i as any;
-        cbox.onclick = cboxOnClick as typeof cbox.onclick;
-
-        breakCell.append(cbox);
-        line.append(breakCell, html("td", i.toString()));
-        const fn = opMap[operatorList.fnArray[i]];
-        let decArgs: any[] | Uint8ClampedArray | HTMLElement = args;
-        if (fn === "showText") {
-          const glyphs = args[0];
-          const charCodeRow = html("tr");
-          const fontCharRow = html("tr");
-          const unicodeRow = html("tr");
-          for (const glyph of glyphs) {
-            if (typeof glyph === "object" && glyph !== null) {
-              charCodeRow.append(html("td", glyph.originalCharCode));
-              fontCharRow.append(html("td", glyph.fontChar));
-              unicodeRow.append(html("td", glyph.unicode));
-            } else {
-              // null or number
-              const advanceEl = html("td", glyph);
-              advanceEl.classList.add("advance");
-              charCodeRow.append(advanceEl);
-              fontCharRow.append(html("td"));
-              unicodeRow.append(html("td"));
-            }
+      breakCell.append(cbox);
+      line.append(breakCell, this.#c("td", i.toString()));
+      const fn = opMap[operatorList.fnArray[i]];
+      let decArgs: any[] | Uint8ClampedArray | HTMLElement = args;
+      if (fn === "showText") {
+        const glyphs = args[0];
+        const charCodeRow = this.#c("tr");
+        const fontCharRow = this.#c("tr");
+        const unicodeRow = this.#c("tr");
+        for (const glyph of glyphs) {
+          if (typeof glyph === "object" && glyph !== null) {
+            charCodeRow.append(this.#c("td", glyph.originalCharCode));
+            fontCharRow.append(this.#c("td", glyph.fontChar));
+            unicodeRow.append(this.#c("td", glyph.unicode));
+          } else {
+            // null or number
+            const advanceEl = this.#c("td", glyph);
+            advanceEl.classList.add("advance");
+            charCodeRow.append(advanceEl);
+            fontCharRow.append(this.#c("td"));
+            unicodeRow.append(this.#c("td"));
           }
-          decArgs = html("td");
-          const table = html("table");
-          table.classList.add("showText");
-          decArgs.append(table);
-          table.append(charCodeRow);
-          table.append(fontCharRow);
-          table.append(unicodeRow);
-        } else if (fn === "restore" && this.indentLevel > 0) {
-          this.indentLevel--;
         }
-        line.append(html("td", " ".repeat(this.indentLevel * 2) + fn));
-        if (fn === "save") {
-          this.indentLevel++;
-        }
-
-        if (decArgs instanceof HTMLElement) {
-          line.append(decArgs);
-        } else {
-          line.append(html("td", JSON.stringify(simplifyArgs(decArgs))));
-        }
+        decArgs = this.#c("td");
+        const table = this.#c("table");
+        table.classList.add("showText");
+        decArgs.append(table);
+        table.append(charCodeRow);
+        table.append(fontCharRow);
+        table.append(unicodeRow);
+      } else if (fn === "restore" && this.indentLevel > 0) {
+        this.indentLevel--;
       }
-      if (operatorsToDisplay < operatorList.fnArray.length) {
-        const lastCell = html("td", "...");
-        lastCell.colSpan = 4;
-        chunk.append(lastCell);
+      line.append(this.#c("td", " ".repeat(this.indentLevel * 2) + fn));
+      if (fn === "save") {
+        this.indentLevel++;
       }
-      this.operatorListIdx = operatorList.fnArray.length;
-      this.table.append(chunk);
-    }
 
-    getNextBreakPoint() {
-      this.breakPoints.sort((a, b) => a - b);
-      for (const breakPoint of this.breakPoints) {
-        if (breakPoint > this.currentIdx) {
-          return breakPoint;
-        }
+      if (decArgs instanceof HTMLElement) {
+        line.append(decArgs);
+      } else {
+        line.append(
+          this.#c("td", JSON.stringify(this.#simplifyArgs(decArgs))),
+        );
       }
-      return undefined;
     }
-
-    breakIt(idx: number, callback: () => void) {
-      StepperManager_.selectStepper(this.pageIndex, true);
-      this.currentIdx = idx;
-
-      const listener = (evt: KeyboardEvent) => {
-        switch (evt.keyCode) {
-          case 83: // step
-            document.off("keydown", listener);
-            this.nextBreakPoint = this.currentIdx + 1;
-            this.goTo(-1);
-            callback();
-            break;
-          case 67: // continue
-            document.off("keydown", listener);
-            this.nextBreakPoint = this.getNextBreakPoint();
-            this.goTo(-1);
-            callback();
-            break;
-        }
-      };
-      document.on("keydown", listener);
-      this.goTo(idx);
+    if (operatorsToDisplay < operatorList.fnArray.length) {
+      const lastCell = this.#c("td", "...");
+      lastCell.colSpan = 4;
+      chunk.append(lastCell);
     }
+    this.operatorListIdx = operatorList.fnArray.length;
+    this.table.append(chunk);
+  }
 
-    goTo(idx: number) {
-      const allRows = <HTMLCollectionOf<SVGLineElement>> this.panel
-        .getElementsByClassName("line");
-      for (const row of allRows) {
-        if ((row.dataset.idx as any | 0) === idx) {
-          row.style.backgroundColor = "rgb(251,250,207)";
-          row.scrollIntoView();
-        } else {
-          row.style.backgroundColor = undefined as any;
-        }
+  getNextBreakPoint() {
+    this.breakPoints.sort((a, b) => a - b);
+    for (const breakPoint of this.breakPoints) {
+      if (breakPoint > this.currentIdx) {
+        return breakPoint;
+      }
+    }
+    return undefined;
+  }
+
+  breakIt(idx: number, callback: () => void) {
+    StepperManager_.selectStepper(this.pageIndex, true);
+    this.currentIdx = idx;
+
+    const listener = (evt: KeyboardEvent) => {
+      switch (evt.keyCode) {
+        case 83: // step
+          document.off("keydown", listener);
+          this.nextBreakPoint = this.currentIdx + 1;
+          this.goTo(-1);
+          callback();
+          break;
+        case 67: // continue
+          document.off("keydown", listener);
+          this.nextBreakPoint = this.getNextBreakPoint();
+          this.goTo(-1);
+          callback();
+          break;
+      }
+    };
+    document.on("keydown", listener);
+    this.goTo(idx);
+  }
+
+  goTo(idx: number) {
+    const allRows = <HTMLCollectionOf<SVGLineElement>> this.panel
+      .getElementsByClassName("line");
+    for (const row of allRows) {
+      if ((row.dataset.idx as any | 0) === idx) {
+        row.style.backgroundColor = "rgb(251,250,207)";
+        row.scrollIntoView();
+      } else {
+        row.style.backgroundColor = undefined as any;
       }
     }
   }
 }
-export import Stepper = NsStepper.Stepper;
 
 namespace Stats_ {
   interface _Stat {
@@ -511,19 +524,21 @@ namespace Stats_ {
   }
 }
 
-// Manages all the debugging tools.
-export namespace PDFBug {
-  const panelWidth = 300;
-  const buttons: HTMLButtonElement[] = [];
-  let activePanel: number;
+/**
+ * Manages all the debugging tools.
+ */
+export class PDFBug {
+  static readonly #buttons: HTMLButtonElement[] = [];
+  static #activePanel: number;
 
-  export const tools = [
+  static readonly tools = [
     FontInspector_,
     StepperManager_,
     Stats_,
   ];
-  export function enable(ids: string[]) {
+  static enable(ids: string[]) {
     const all = ids.length === 1 && ids[0] === "all";
+    const tools = this.tools;
     for (const tool of tools) {
       if (all || ids.includes(tool.id)) {
         tool.enabled = true;
@@ -540,9 +555,9 @@ export namespace PDFBug {
       });
     }
   }
-  export function init(container: HTMLDivElement, ids: string[]) {
-    loadCSS();
-    enable(ids);
+  static init(container: HTMLDivElement, ids: string[]) {
+    this.loadCSS();
+    this.enable(ids);
     /*
      * Basic Layout:
      * PDFBug
@@ -564,16 +579,16 @@ export namespace PDFBug {
     ui.append(panels);
 
     container.append(ui);
-    container.style.right = panelWidth + "px";
+    container.style.right = "var(--panel-width)";
 
     // Initialize all the debugging tools.
-    for (const tool of tools) {
+    for (const tool of this.tools) {
       const panel = html("div");
       const panelButton = html("button");
       panelButton.textContent = tool.name;
       panelButton.on("click", (event) => {
         event.preventDefault();
-        PDFBug.selectPanel(tool);
+        this.selectPanel(tool);
       });
       controls.append(panelButton);
       panels.append(panel);
@@ -586,11 +601,11 @@ export namespace PDFBug {
           `${tool.name} is disabled. To enable add "${tool.id}" to ` +
           "the pdfBug parameter and refresh (separate multiple by commas).";
       }
-      buttons.push(panelButton);
+      this.#buttons.push(panelButton);
     }
-    PDFBug.selectPanel(0);
+    this.selectPanel(0);
   }
-  export function loadCSS() {
+  static loadCSS() {
     const { url } = import.meta;
 
     const link = html("link");
@@ -599,24 +614,24 @@ export namespace PDFBug {
 
     document.head.append(link);
   }
-  export function cleanup() {
-    for (const tool of PDFBug.tools) {
+  static cleanup() {
+    for (const tool of this.tools) {
       if (tool.enabled) {
         tool.cleanup();
       }
     }
   }
-  export function selectPanel(index: number | Tool_) {
+  static selectPanel(index: number | Tool_) {
     if (typeof index !== "number") {
       index = PDFBug.tools.indexOf(index);
     }
-    if (index === activePanel) {
+    if (index === this.#activePanel) {
       return;
     }
-    activePanel = index;
+    this.#activePanel = index;
     for (const [j, tool] of PDFBug.tools.entries()) {
       const isActive = j === index;
-      buttons[j].classList.toggle("active", isActive);
+      this.#buttons[j].classList.toggle("active", isActive);
       tool.active = isActive;
       tool.panel.hidden = !isActive;
     }

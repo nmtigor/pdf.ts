@@ -23,7 +23,6 @@ import {
   AbortException,
   createValidAbsoluteUrl,
   FeatureTest,
-  shadow,
   warn,
 } from "../shared/util.ts";
 import type { AnnotationFactory } from "./annotation.ts";
@@ -71,8 +70,7 @@ interface BasePdfManagerCtorP_ {
 export abstract class BasePdfManager {
   private _docBaseUrl;
   get docBaseUrl() {
-    const catalog = this.pdfDocument.catalog!;
-    return shadow(this, "docBaseUrl", catalog.baseUrl || this._docBaseUrl);
+    return this._docBaseUrl;
   }
 
   private _docId;
@@ -93,6 +91,9 @@ export abstract class BasePdfManager {
   evaluatorOptions;
 
   pdfDocument!: PDFDocument;
+  get catalog() {
+    return this.pdfDocument.catalog;
+  }
 
   constructor(args: BasePdfManagerCtorP_) {
     this._docBaseUrl = parseDocBaseUrl(args.docBaseUrl);

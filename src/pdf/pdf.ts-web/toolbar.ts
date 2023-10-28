@@ -17,8 +17,9 @@
  * limitations under the License.
  */
 
+import { html } from "@fe-lib/dom.ts";
+import { noContextMenu } from "@fe-lib/util/general.ts";
 import { GENERIC, PDFJSDev } from "@fe-src/global.ts";
-import { html } from "@fe-src/lib/dom.ts";
 import { AnnotationEditorType } from "../pdf.ts-src/pdf.ts";
 import type { EventBus, EventMap, EventName } from "./event_utils.ts";
 import type { IL10n } from "./interfaces.ts";
@@ -28,7 +29,6 @@ import {
   DEFAULT_SCALE_VALUE,
   MAX_SCALE,
   MIN_SCALE,
-  noContextMenuHandler,
   toggleCheckedBtn,
 } from "./ui_utils.ts";
 import type { ViewerConfiguration } from "./viewer.ts";
@@ -220,7 +220,7 @@ export class Toolbar {
       }
     });
     // Suppress context menus for some controls.
-    scaleSelect.oncontextmenu = noContextMenuHandler;
+    scaleSelect.oncontextmenu = noContextMenu;
 
     this.eventBus._on("localized", () => {
       this.#wasLocalized = true;

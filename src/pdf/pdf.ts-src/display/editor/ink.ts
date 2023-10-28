@@ -17,10 +17,11 @@
  * limitations under the License.
  */
 
+import type { C2D, dot2d_t, rect_t, TupleOf } from "@fe-lib/alias.ts";
+import { html } from "@fe-lib/dom.ts";
+import { noContextMenu } from "@fe-lib/util/general.ts";
 import { MOZCENTRAL } from "@fe-src/global.ts";
-import type { C2D, dot2d_t, rect_t, TupleOf } from "@fe-src/lib/alias.ts";
-import { html } from "@fe-src/lib/dom.ts";
-import type { IL10n } from "../../../pdf.ts-web/interfaces.ts";
+import type { IL10n } from "@pdf.ts-web/interfaces.ts";
 import {
   AnnotationEditorParamsType,
   AnnotationEditorType,
@@ -56,9 +57,13 @@ export interface InkEditorSerialized extends AnnotStorageValue {
  * Basic draw editor in order to generate an Ink annotation.
  */
 export class InkEditor extends AnnotationEditor {
+  static override readonly _type = "ink";
+  static _defaultColor: string | undefined;
+  static _defaultOpacity = 1;
+  static _defaultThickness = 1;
+
   #baseHeight = 0;
   #baseWidth = 0;
-  #boundCanvasContextMenu = this.canvasContextMenu.bind(this);
   #boundCanvasPointermove = this.canvasPointermove.bind(this);
   #boundCanvasPointerleave = this.canvasPointerleave.bind(this);
   #boundCanvasPointerup = this.canvasPointerup.bind(this);
@@ -86,13 +91,6 @@ export class InkEditor extends AnnotationEditor {
   canvas: HTMLCanvasElement | undefined;
   ctx!: C2D;
 
-  static _defaultColor: string | undefined;
-  static _defaultOpacity = 1;
-  static _defaultThickness = 1;
-  static _l10nPromise: Map<string, Promise<string>>;
-
-  static override readonly _type = "ink";
-
   constructor(params: InkEditorP) {
     super({ ...params, name: "inkEditor" });
     this.color = params.color || undefined;
@@ -105,12 +103,9 @@ export class InkEditor extends AnnotationEditor {
 
   /** @inheritdoc */
   static override initialize(l10n: IL10n) {
-    this._l10nPromise = new Map(
-      ["editor_ink_canvas_aria_label", "editor_ink2_aria_label"].map((str) => [
-        str,
-        l10n.get(str),
-      ]),
-    );
+    AnnotationEditor.initialize(l10n, {
+      strings: ["editor_ink_canvas_aria_label", "editor_ink2_aria_label"],
+    });
   }
 
   /** @inheritdoc */
@@ -384,7 +379,7 @@ export class InkEditor extends AnnotationEditor {
    * Start to draw on the canvas.
    */
   #startDrawing(x: number, y: number) {
-    this.canvas!.on("contextmenu", this.#boundCanvasContextMenu);
+    this.canvas!.on("contextmenu", noContextMenu);
     this.canvas!.on("pointerleave", this.#boundCanvasPointerleave);
     this.canvas!.on("pointermove", this.#boundCanvasPointermove);
     this.canvas!.on("pointerup", this.#boundCanvasPointerup);
@@ -684,13 +679,6 @@ export class InkEditor extends AnnotationEditor {
   }
 
   /**
-   * oncontextmenu callback for the canvas we're drawing on.
-   */
-  canvasContextMenu(event: MouseEvent) {
-    event.preventDefault();
-  }
-
-  /**
    * onpointermove callback for the canvas we're drawing on.
    */
   canvasPointermove(event: PointerEvent) {
@@ -725,7 +713,7 @@ export class InkEditor extends AnnotationEditor {
     // Slight delay to avoid the context menu to appear (it can happen on a long
     // tap with a pen).
     setTimeout(() => {
-      this.canvas!.off("contextmenu", this.#boundCanvasContextMenu);
+      this.canvas!.off("contextmenu", noContextMenu);
     }, 10);
 
     this.#stopDrawing(event.offsetX, event.offsetY);
@@ -745,8 +733,7 @@ export class InkEditor extends AnnotationEditor {
     this.canvas.width = this.canvas.height = 0;
     this.canvas.className = "inkEditorCanvas";
 
-    InkEditor._l10nPromise
-      .get("editor_ink_canvas_aria_label")!
+    AnnotationEditor._l10nPromise!.get("editor_ink_canvas_aria_label")!
       .then((msg) => this.canvas?.setAttribute("aria-label", msg));
     this.div!.append(this.canvas);
     this.ctx = this.canvas.getContext("2d")!;
@@ -784,8 +771,7 @@ export class InkEditor extends AnnotationEditor {
 
     super.render();
 
-    InkEditor._l10nPromise
-      .get("editor_ink2_aria_label")!
+    InkEditor._l10nPromise!.get("editor_ink2_aria_label")!
       .then((msg) => this.div?.setAttribute("aria-label", msg));
 
     const [x, y, w, h] = this.#getInitialBBox();
@@ -1217,6 +1203,7 @@ export class InkEditor extends AnnotationEditor {
       pageIndex: this.pageIndex,
       rect,
       rotation: this.rotation,
+      structTreeParentId: this._structTreeParentId,
     };
   }
 }

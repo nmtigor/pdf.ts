@@ -17,8 +17,7 @@
  * limitations under the License.
  */
 
-import { GENERIC, PDFJSDev } from "../../global.ts";
-import type { DefaultExternalServices } from "./app.ts";
+import { GENERIC, PDFJSDev } from "@fe-src/global.ts";
 import type { EventBus, EventMap } from "./event_utils.ts";
 import { PagesCountLimit } from "./pdf_viewer.ts";
 import {
@@ -74,7 +73,6 @@ export class SecondaryToolbar {
 
   mainContainer?: HTMLDivElement;
   eventBus: EventBus;
-  externalServices;
 
   opened = false;
   containerHeight?: number;
@@ -86,7 +84,6 @@ export class SecondaryToolbar {
   constructor(
     options: ViewerConfiguration["secondaryToolbar"],
     eventBus: EventBus,
-    externalServices: DefaultExternalServices,
   ) {
     this.toolbar = options.toolbar;
     this.toggleButton = options.toggleButton;
@@ -186,7 +183,6 @@ export class SecondaryToolbar {
     };
 
     this.eventBus = eventBus;
-    this.externalServices = externalServices;
 
     // Bind the event listeners for click, cursor tool, and scroll/spread mode
     // actions.
@@ -241,9 +237,12 @@ export class SecondaryToolbar {
         if (close) {
           this.close();
         }
-        this.externalServices.reportTelemetry({
-          type: "buttons",
-          data: { id: element.id },
+        this.eventBus.dispatch("reporttelemetry", {
+          source: this,
+          details: {
+            type: "buttons",
+            data: { id: element.id },
+          },
         });
       });
     }

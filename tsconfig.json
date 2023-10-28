@@ -2,7 +2,11 @@
   "compilerOptions": {
     "paths": {
       "@fe-src/*": ["./src/*"],
-      "@zod": ["./src/3rd/zod-3.22.2/lib/index.mjs"]
+      "@fe-lib/*": ["./src/lib/*"],
+      "@wretch": ["./src/3rd/wretch-2.5.2/dist/index.js"],
+      "@zod": ["./src/3rd/zod-3.22.2/lib/index.mjs"],
+
+      "@pdf.ts-web/*": ["./src/pdf/pdf.ts-web/*"]
     },
     "rootDir": "src",
     "module": "ESNext",

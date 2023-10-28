@@ -18,7 +18,7 @@
  */
 
 import { PDFJSDev, SKIP_BABEL, TESTING } from "@fe-src/global.ts";
-import { fail } from "@fe-src/lib/util/trace.ts";
+import { fail } from "@fe-lib/util/trace.ts";
 import { MurmurHash3_64 } from "../shared/murmurhash3.ts";
 import { objectFromMap } from "../shared/util.ts";
 import type {

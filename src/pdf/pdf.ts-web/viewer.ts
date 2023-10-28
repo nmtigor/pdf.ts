@@ -53,399 +53,295 @@ import { viewerApp } from "./app.ts";
 // window.PDFViewerApplicationConstants = AppConstants;
 // window.PDFViewerApplicationOptions = AppOptions;
 
+const eltBy = (id_x: string) => document.getElementById(id_x);
+const divBy = (id_x: string) => eltBy(id_x) as HTMLDivElement;
+const spanBy = (id_x: string) => eltBy(id_x) as HTMLSpanElement;
+const buttonBy = (id_x: string) => eltBy(id_x) as HTMLButtonElement;
+const inputBy = (id_x: string) => eltBy(id_x) as HTMLInputElement;
+const textAreaBy = (id_x: string) => eltBy(id_x) as HTMLTextAreaElement;
+const dialogBy = (id_x: string) => eltBy(id_x) as HTMLDialogElement;
+const paragraphBy = (id_x: string) => eltBy(id_x) as HTMLParagraphElement;
+const selectBy = (id_x: string) => eltBy(id_x) as HTMLSelectElement;
+const optionBy = (id_x: string) => eltBy(id_x) as HTMLOptionElement;
+const anchorBy = (id_x: string) => eltBy(id_x) as HTMLAnchorElement;
+
 function getViewerConfiguration() {
   return {
     appContainer: document.body,
-    mainContainer: document.getElementById("viewerContainer") as HTMLDivElement,
-    viewerContainer: document.getElementById("viewer") as HTMLDivElement,
+    mainContainer: divBy("viewerContainer"),
+    viewerContainer: divBy("viewer"),
     toolbar: {
       /**
        * Container for the secondary toolbar.
        */
-      container: document.getElementById("toolbarViewer") as HTMLDivElement,
+      container: divBy("toolbarViewer"),
       /**
        * Label that contains number of pages.
        */
-      numPages: document.getElementById("numPages") as HTMLSpanElement,
+      numPages: spanBy("numPages"),
       /**
        * Control for display and user input of the current page number.
        */
-      pageNumber: document.getElementById("pageNumber") as HTMLInputElement,
+      pageNumber: inputBy("pageNumber"),
       /**
        * Scale selection control.
        * Its width is adjusted, when necessary, on UI localization.
        */
-      scaleSelect: document.getElementById("scaleSelect") as HTMLSelectElement,
+      scaleSelect: selectBy("scaleSelect"),
       /**
        * The item used to display a non-predefined scale.
        */
-      customScaleOption: document.getElementById(
-        "customScaleOption",
-      ) as HTMLOptionElement,
+      customScaleOption: optionBy("customScaleOption"),
       /**
        * Button to go to the previous page.
        */
-      previous: document.getElementById("previous") as HTMLButtonElement,
+      previous: buttonBy("previous"),
       /**
        * Button to go to the next page.
        */
-      next: document.getElementById("next") as HTMLButtonElement,
+      next: buttonBy("next"),
       /**
        * Button to zoom in the pages.
        */
-      zoomIn: document.getElementById("zoomIn") as HTMLButtonElement,
+      zoomIn: buttonBy("zoomIn"),
       /**
        * Button to zoom out the pages.
        */
-      zoomOut: document.getElementById("zoomOut") as HTMLButtonElement,
+      zoomOut: buttonBy("zoomOut"),
       /**
        * Button to open find bar.
        */
-      viewFind: document.getElementById("viewFind") as HTMLButtonElement,
+      viewFind: buttonBy("viewFind"),
       /**
        * Button to open a new document.
        */
       openFile: /*#static*/ PDFJSDev || GENERIC
-        ? document.getElementById("openFile") as HTMLButtonElement
+        ? buttonBy("openFile")
         : undefined,
-      print: document.getElementById("print") as HTMLButtonElement,
+      print: buttonBy("print"),
       /**
        * Button to switch to FreeText editing.
        */
-      editorFreeTextButton: document.getElementById(
-        "editorFreeText",
-      ) as HTMLButtonElement,
-      editorFreeTextParamsToolbar: document.getElementById(
-        "editorFreeTextParamsToolbar",
-      ) as HTMLDivElement,
-      editorInkButton: document.getElementById(
-        "editorInk",
-      ) as HTMLButtonElement,
-      editorInkParamsToolbar: document.getElementById(
-        "editorInkParamsToolbar",
-      ) as HTMLButtonElement,
-      editorStampButton: document.getElementById(
-        "editorStamp",
-      ) as HTMLButtonElement,
-      editorStampParamsToolbar: document.getElementById(
-        "editorStampParamsToolbar",
-      ) as HTMLDivElement,
+      editorFreeTextButton: buttonBy("editorFreeText"),
+      editorFreeTextParamsToolbar: divBy("editorFreeTextParamsToolbar"),
+      editorInkButton: buttonBy("editorInk"),
+      editorInkParamsToolbar: buttonBy("editorInkParamsToolbar"),
+      editorStampButton: buttonBy("editorStamp"),
+      editorStampParamsToolbar: divBy("editorStampParamsToolbar"),
       /**
        * Button to download the document.
        */
-      download: document.getElementById("download") as HTMLButtonElement,
+      download: buttonBy("download"),
     },
     secondaryToolbar: {
       /**
        * Container for the secondary toolbar.
        */
-      toolbar: document.getElementById("secondaryToolbar") as HTMLDivElement,
+      toolbar: divBy("secondaryToolbar"),
       /**
        * Button to toggle the visibility of the secondary toolbar.
        */
-      toggleButton: document.getElementById(
-        "secondaryToolbarToggle",
-      ) as HTMLButtonElement,
+      toggleButton: buttonBy("secondaryToolbarToggle"),
       /**
        * Button for entering presentation mode.
        */
-      presentationModeButton: document.getElementById(
-        "presentationMode",
-      ) as HTMLButtonElement,
+      presentationModeButton: buttonBy("presentationMode"),
       /**
        * Button to open a file.
        */
       openFileButton: /*#static*/ PDFJSDev || GENERIC
-        ? document.getElementById("secondaryOpenFile") as HTMLButtonElement
+        ? buttonBy("secondaryOpenFile")
         : undefined,
       /**
        * Button to print the document.
        */
-      printButton: document.getElementById(
-        "secondaryPrint",
-      ) as HTMLButtonElement,
+      printButton: buttonBy("secondaryPrint"),
       /**
        * Button to download the document.
        */
-      downloadButton: document.getElementById(
-        "secondaryDownload",
-      ) as HTMLButtonElement,
+      downloadButton: buttonBy("secondaryDownload"),
       /**
        * Button to obtain a bookmark link to the current location in the document.
        */
-      viewBookmarkButton: document.getElementById(
-        "viewBookmark",
-      ) as HTMLAnchorElement,
+      viewBookmarkButton: anchorBy("viewBookmark"),
       /**
        * Button to go to the first page in the document.
        */
-      firstPageButton: document.getElementById(
-        "firstPage",
-      ) as HTMLButtonElement,
+      firstPageButton: buttonBy("firstPage"),
       /**
        * Button to go to the first page in the document.
        */
-      lastPageButton: document.getElementById("lastPage") as HTMLButtonElement,
+      lastPageButton: buttonBy("lastPage"),
       /**
        * Button to rotate the pages clockwise.
        */
-      pageRotateCwButton: document.getElementById(
-        "pageRotateCw",
-      ) as HTMLButtonElement,
+      pageRotateCwButton: buttonBy("pageRotateCw"),
       /**
        * Button to rotate the pages counterclockwise.
        */
-      pageRotateCcwButton: document.getElementById(
-        "pageRotateCcw",
-      ) as HTMLButtonElement,
+      pageRotateCcwButton: buttonBy("pageRotateCcw"),
       /**
        * Button to enable the select tool.
        */
-      cursorSelectToolButton: document.getElementById(
-        "cursorSelectTool",
-      ) as HTMLButtonElement,
+      cursorSelectToolButton: buttonBy("cursorSelectTool"),
       /**
        * Button to enable the hand tool.
        */
-      cursorHandToolButton: document.getElementById(
-        "cursorHandTool",
-      ) as HTMLButtonElement,
-      scrollPageButton: document.getElementById(
-        "scrollPage",
-      ) as HTMLButtonElement,
-      scrollVerticalButton: document.getElementById(
-        "scrollVertical",
-      ) as HTMLButtonElement,
-      scrollHorizontalButton: document.getElementById(
-        "scrollHorizontal",
-      ) as HTMLButtonElement,
-      scrollWrappedButton: document.getElementById(
-        "scrollWrapped",
-      ) as HTMLButtonElement,
-      spreadNoneButton: document.getElementById(
-        "spreadNone",
-      ) as HTMLButtonElement,
-      spreadOddButton: document.getElementById(
-        "spreadOdd",
-      ) as HTMLButtonElement,
-      spreadEvenButton: document.getElementById(
-        "spreadEven",
-      ) as HTMLButtonElement,
+      cursorHandToolButton: buttonBy("cursorHandTool"),
+      scrollPageButton: buttonBy("scrollPage"),
+      scrollVerticalButton: buttonBy("scrollVertical"),
+      scrollHorizontalButton: buttonBy("scrollHorizontal"),
+      scrollWrappedButton: buttonBy("scrollWrapped"),
+      spreadNoneButton: buttonBy("spreadNone"),
+      spreadOddButton: buttonBy("spreadOdd"),
+      spreadEvenButton: buttonBy("spreadEven"),
       /**
        * Button for opening the document properties dialog.
        */
-      documentPropertiesButton: document.getElementById(
-        "documentProperties",
-      ) as HTMLButtonElement,
+      documentPropertiesButton: buttonBy("documentProperties"),
     },
     sidebar: {
       // Divs (and sidebar button)
       /**
        * The outer container (encasing both the viewer and sidebar elements).
        */
-      outerContainer: document.getElementById(
-        "outerContainer",
-      ) as HTMLDivElement,
+      outerContainer: divBy("outerContainer"),
       /**
        * The sidebar container (in which the views are placed).
        */
-      sidebarContainer: document.getElementById(
-        "sidebarContainer",
-      ) as HTMLDivElement,
+      sidebarContainer: divBy("sidebarContainer"),
       /**
        * The button used for opening/closing the sidebar.
        */
-      toggleButton: document.getElementById(
-        "sidebarToggle",
-      ) as HTMLButtonElement,
+      toggleButton: buttonBy("sidebarToggle"),
       /**
        * The DOM element that can be dragged in
        * order to adjust the width of the sidebar.
        */
-      resizer: document.getElementById("sidebarResizer") as HTMLDivElement,
+      resizer: divBy("sidebarResizer"),
 
       // Buttons
       /**
        * The button used to show the thumbnail view.
        */
-      thumbnailButton: document.getElementById(
-        "viewThumbnail",
-      ) as HTMLButtonElement,
+      thumbnailButton: buttonBy("viewThumbnail"),
       /**
        * The button used to show the outline view.
        */
-      outlineButton: document.getElementById(
-        "viewOutline",
-      ) as HTMLButtonElement,
+      outlineButton: buttonBy("viewOutline"),
       /**
        * The button used to show the attachments view.
        */
-      attachmentsButton: document.getElementById(
-        "viewAttachments",
-      ) as HTMLButtonElement,
+      attachmentsButton: buttonBy("viewAttachments"),
       /**
        * The button used to show the layers view.
        */
-      layersButton: document.getElementById("viewLayers") as HTMLButtonElement,
+      layersButton: buttonBy("viewLayers"),
 
       // Views
       /**
        * The container in which the thumbnails are placed.
        */
-      thumbnailView: document.getElementById("thumbnailView") as HTMLDivElement,
+      thumbnailView: divBy("thumbnailView"),
       /**
        * The container in which the outline is placed.
        */
-      outlineView: document.getElementById("outlineView") as HTMLDivElement,
+      outlineView: divBy("outlineView"),
       /**
        * The container in which the attachments are placed.
        */
-      attachmentsView: document.getElementById(
-        "attachmentsView",
-      ) as HTMLDivElement,
+      attachmentsView: divBy("attachmentsView"),
       /**
        * The container in which the layers are placed.
        */
-      layersView: document.getElementById("layersView") as HTMLDivElement,
+      layersView: divBy("layersView"),
       // View-specific options
-      outlineOptionsContainer: document.getElementById(
-        "outlineOptionsContainer",
-      ) as HTMLDivElement,
-      currentOutlineItemButton: document.getElementById(
-        "currentOutlineItem",
-      ) as HTMLButtonElement,
+      outlineOptionsContainer: divBy("outlineOptionsContainer"),
+      currentOutlineItemButton: buttonBy("currentOutlineItem"),
     },
     findBar: {
-      bar: <HTMLDivElement> document.getElementById("findbar"),
-      toggleButton: <HTMLButtonElement> document.getElementById("viewFind"),
-      findField: <HTMLInputElement> document.getElementById("findInput"),
-      highlightAllCheckbox: <HTMLInputElement> document.getElementById(
-        "findHighlightAll",
-      ),
-      caseSensitiveCheckbox: <HTMLInputElement> document.getElementById(
-        "findMatchCase",
-      ),
-      matchDiacriticsCheckbox: <HTMLInputElement> document.getElementById(
-        "findMatchDiacritics",
-      ),
-      entireWordCheckbox: <HTMLInputElement> document.getElementById(
-        "findEntireWord",
-      ),
-      findMsg: <HTMLSpanElement> document.getElementById("findMsg"),
-      findResultsCount: <HTMLSpanElement> document.getElementById(
-        "findResultsCount",
-      ),
-      findPreviousButton: <HTMLButtonElement> document.getElementById(
-        "findPrevious",
-      ),
-      findNextButton: <HTMLButtonElement> document.getElementById("findNext"),
+      bar: divBy("findbar"),
+      toggleButton: buttonBy("viewFind"),
+      findField: inputBy("findInput"),
+      highlightAllCheckbox: inputBy("findHighlightAll"),
+      caseSensitiveCheckbox: inputBy("findMatchCase"),
+      matchDiacriticsCheckbox: inputBy("findMatchDiacritics"),
+      entireWordCheckbox: inputBy("findEntireWord"),
+      findMsg: spanBy("findMsg"),
+      findResultsCount: spanBy("findResultsCount"),
+      findPreviousButton: buttonBy("findPrevious"),
+      findNextButton: buttonBy("findNext"),
     },
     passwordOverlay: {
       /**
        * The overlay's DOM element.
        */
-      dialog: <HTMLDialogElement> document.getElementById("passwordDialog"),
+      dialog: dialogBy("passwordDialog"),
       /**
        * Label containing instructions for entering the password.
        */
-      label: <HTMLParagraphElement> document.getElementById("passwordText"),
+      label: paragraphBy("passwordText"),
       /**
        * Input field for entering the password.
        */
-      input: <HTMLInputElement> document.getElementById("password"),
+      input: inputBy("password"),
       /**
        * Button for submitting the password.
        */
-      submitButton: document.getElementById(
-        "passwordSubmit",
-      ) as HTMLButtonElement,
+      submitButton: buttonBy("passwordSubmit"),
       /**
        * Button for cancelling password entry.
        */
-      cancelButton: document.getElementById(
-        "passwordCancel",
-      ) as HTMLButtonElement,
+      cancelButton: buttonBy("passwordCancel"),
     },
     documentProperties: {
       /**
        * The overlay's DOM element.
        */
-      dialog: <HTMLDialogElement> document.getElementById(
-        "documentPropertiesDialog",
-      ),
+      dialog: dialogBy("documentPropertiesDialog"),
       /**
        * Button for closing the overlay.
        */
-      closeButton: <HTMLButtonElement> document.getElementById(
-        "documentPropertiesClose",
-      ),
+      closeButton: buttonBy("documentPropertiesClose"),
       /**
        * Names and elements of the overlay's fields.
        */
       fields: {
-        fileName: document.getElementById(
-          "fileNameField",
-        ) as HTMLParagraphElement,
-        fileSize: document.getElementById(
-          "fileSizeField",
-        ) as HTMLParagraphElement,
-        title: document.getElementById("titleField") as HTMLParagraphElement,
-        author: document.getElementById("authorField") as HTMLParagraphElement,
-        subject: document.getElementById(
-          "subjectField",
-        ) as HTMLParagraphElement,
-        keywords: document.getElementById(
-          "keywordsField",
-        ) as HTMLParagraphElement,
-        creationDate: document.getElementById(
-          "creationDateField",
-        ) as HTMLParagraphElement,
-        modificationDate: document.getElementById(
-          "modificationDateField",
-        ) as HTMLParagraphElement,
-        creator: document.getElementById(
-          "creatorField",
-        ) as HTMLParagraphElement,
-        producer: document.getElementById(
-          "producerField",
-        ) as HTMLParagraphElement,
-        version: document.getElementById(
-          "versionField",
-        ) as HTMLParagraphElement,
-        pageCount: document.getElementById(
-          "pageCountField",
-        ) as HTMLParagraphElement,
-        pageSize: document.getElementById(
-          "pageSizeField",
-        ) as HTMLParagraphElement,
-        linearized: document.getElementById(
-          "linearizedField",
-        ) as HTMLParagraphElement,
+        fileName: paragraphBy("fileNameField"),
+        fileSize: paragraphBy("fileSizeField"),
+        title: paragraphBy("titleField"),
+        author: paragraphBy("authorField"),
+        subject: paragraphBy("subjectField"),
+        keywords: paragraphBy("keywordsField"),
+        creationDate: paragraphBy("creationDateField"),
+        modificationDate: paragraphBy("modificationDateField"),
+        creator: paragraphBy("creatorField"),
+        producer: paragraphBy("producerField"),
+        version: paragraphBy("versionField"),
+        pageCount: paragraphBy("pageCountField"),
+        pageSize: paragraphBy("pageSizeField"),
+        linearized: paragraphBy("linearizedField"),
       },
     },
-    annotationEditorParams: {
-      editorFreeTextFontSize: document.getElementById(
-        "editorFreeTextFontSize",
-      ) as HTMLInputElement,
-      editorFreeTextColor: document.getElementById(
-        "editorFreeTextColor",
-      ) as HTMLInputElement,
-      editorInkColor: document.getElementById(
-        "editorInkColor",
-      ) as HTMLInputElement,
-      editorInkThickness: document.getElementById(
-        "editorInkThickness",
-      ) as HTMLInputElement,
-      editorInkOpacity: document.getElementById(
-        "editorInkOpacity",
-      ) as HTMLInputElement,
-      editorStampAddImage: document.getElementById(
-        "editorStampAddImage",
-      ) as HTMLButtonElement,
+    altTextDialog: {
+      dialog: dialogBy("altTextDialog"),
+      optionDescription: inputBy("descriptionButton"),
+      optionDecorative: inputBy("decorativeButton"),
+      textarea: textAreaBy("descriptionTextarea"),
+      cancelButton: buttonBy("altTextCancel"),
+      saveButton: buttonBy("altTextSave"),
     },
-    printContainer: document.getElementById("printContainer") as HTMLDivElement,
+    annotationEditorParams: {
+      editorFreeTextFontSize: inputBy("editorFreeTextFontSize"),
+      editorFreeTextColor: inputBy("editorFreeTextColor"),
+      editorInkColor: inputBy("editorInkColor"),
+      editorInkThickness: inputBy("editorInkThickness"),
+      editorInkOpacity: inputBy("editorInkOpacity"),
+      editorStampAddImage: buttonBy("editorStampAddImage"),
+    },
+    printContainer: divBy("printContainer"),
     openFileInput: /*#static*/ PDFJSDev || GENERIC
-      ? document.getElementById("fileInput") as HTMLInputElement
+      ? inputBy("fileInput")
       : undefined,
     debuggerScriptPath: "./debugger.js",
   };

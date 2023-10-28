@@ -17,7 +17,6 @@
  * limitations under the License.
  */
 
-import type { DefaultExternalServices } from "./app.ts";
 import type { EventBus, EventName } from "./event_utils.ts";
 import type { NimbusExperimentData } from "./firefoxcom.ts";
 import type { IL10n } from "./interfaces.ts";
@@ -54,8 +53,6 @@ export class Toolbar {
 
   #eventBus;
 
-  #externalServices;
-
   /**
    * @param _l10n Localization service.
    * @param nimbusData Nimbus configuration.
@@ -66,10 +63,8 @@ export class Toolbar {
     eventBus: EventBus,
     _l10n: IL10n,
     nimbusData: NimbusExperimentData | undefined,
-    externalServices: DefaultExternalServices,
   ) {
     this.#eventBus = eventBus;
-    this.#externalServices = externalServices;
     const buttons: Button_[] = [
       {
         element: options.download,
@@ -127,9 +122,12 @@ export class Toolbar {
             eventName,
             { source: this, ...eventDetails as any },
           );
-          this.#externalServices.reportTelemetry({
-            type: "gv-buttons",
-            data: { id: `${element.id}_tapped` },
+          this.#eventBus.dispatch("reporttelemetry", {
+            source: this,
+            details: {
+              type: "gv-buttons",
+              data: { id: `${element.id}_tapped` },
+            },
           });
         }
       });

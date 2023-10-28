@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-import type { rect_t } from "@fe-src/lib/alias.ts";
-import { PageLayout, PageMode } from "../../pdf.ts-web/ui_utils.ts";
+import type { rect_t } from "@fe-lib/alias.ts";
+import { PageLayout, PageMode } from "@pdf.ts-web/ui_utils.ts";
 import type { ResetForm } from "../display/annotation_layer.ts";
 import type { OutlineNode } from "../display/api.ts";
 import type { CMapData } from "../display/base_factory.ts";
@@ -210,6 +210,10 @@ export class Catalog {
     this.toplevelPagesDict; // eslint-disable-line no-unused-expressions
   }
 
+  cloneDict() {
+    return this.#catDict.clone();
+  }
+
   get version() {
     const version = this.#catDict.get("Version");
     if (version instanceof Name) {
@@ -369,11 +373,13 @@ export class Catalog {
   }
 
   #readStructTreeRoot() {
-    const obj = this.#catDict.get("StructTreeRoot");
+    const rawObj = this.#catDict.getRaw("StructTreeRoot");
+    const obj = this.xref.fetchIfRef(rawObj);
     if (!(obj instanceof Dict)) {
       return undefined;
     }
-    const root = new StructTreeRoot(obj);
+
+    const root = new StructTreeRoot(obj, rawObj);
     root.init();
     return root;
   }
@@ -431,13 +437,13 @@ export class Catalog {
       Catalog.parseDestDictionary({
         destDict: outlineDict,
         resultObj: data,
-        docBaseUrl: this.pdfManager.docBaseUrl,
+        docBaseUrl: this.baseUrl,
         docAttachments: this.attachments,
       });
-      const title = <string> outlineDict.get("Title");
-      const flags = <number> outlineDict.get("F") ?? 0;
-      const color = <Float32Array | undefined> outlineDict.getArray("C");
-      const count = <number | undefined> outlineDict.get("Count");
+      const title = outlineDict.get("Title") as string;
+      const flags = outlineDict.get("F") as number ?? 0;
+      const color = outlineDict.getArray("C") as Float32Array | undefined;
+      const count = outlineDict.get("Count") as number | undefined;
       let rgbColor = blackColor;
 
       // We only need to parse the color when it's valid, and non-default.
@@ -1553,25 +1559,22 @@ export class Catalog {
         }
       }
     }
-    return shadow(this, "baseUrl", undefined);
+    return shadow(this, "baseUrl", this.pdfManager.docBaseUrl);
   }
 
   /**
    * Helper function used to parse the contents of destination dictionaries.
    */
-  static parseDestDictionary(params: ParseDestDictionaryP_) {
-    const destDict = params.destDict;
+  static parseDestDictionary({
+    destDict,
+    resultObj,
+    docBaseUrl = undefined,
+    docAttachments = undefined,
+  }: ParseDestDictionaryP_) {
     if (!(destDict instanceof Dict)) {
       warn("parseDestDictionary: `destDict` must be a dictionary.");
       return;
     }
-    const resultObj = params.resultObj;
-    if (typeof resultObj !== "object") {
-      warn("parseDestDictionary: `resultObj` must be an object.");
-      return;
-    }
-    const docBaseUrl = params.docBaseUrl || undefined;
-    const docAttachments = params.docAttachments || undefined;
 
     let action = destDict.get("A"),
       url,
@@ -1754,7 +1757,7 @@ export class Catalog {
       }
     } else if (destDict.has("Dest")) {
       // Simple destination.
-      dest = <Destination> destDict.get("Dest");
+      dest = destDict.get("Dest") as Destination;
     }
 
     if (typeof url === "string") {

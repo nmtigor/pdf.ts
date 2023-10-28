@@ -20,7 +20,7 @@
 // In mozilla-central, this file is loaded as non-module script,
 // so it mustn't have any dependencies.
 
-import { EventInSandBox } from "../pdf.ts-web/interfaces.ts";
+import { EventInSandBox } from "@pdf.ts-web/interfaces.ts";
 /*80--------------------------------------------------------------------------*/
 
 export class SandboxSupportBase {

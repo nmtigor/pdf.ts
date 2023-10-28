@@ -20,12 +20,12 @@
 // eslint-disable-next-line max-len
 /** @typedef {import("./annotation_editor_layer.js").AnnotationEditorLayer} AnnotationEditorLayer */
 
+import type { dot2d_t } from "@fe-lib/alias.ts";
+import type { rgb_t } from "@fe-lib/color/alias.ts";
+import { html } from "@fe-lib/dom.ts";
+import { assert } from "@fe-lib/util/trace.ts";
 import { PDFJSDev, TESTING } from "@fe-src/global.ts";
-import type { dot2d_t } from "@fe-src/lib/alias.ts";
-import type { rgb_t } from "@fe-src/lib/color/alias.ts";
-import { html } from "@fe-src/lib/dom.ts";
-import { assert } from "@fe-src/lib/util/trace.ts";
-import type { IL10n } from "../../../pdf.ts-web/interfaces.ts";
+import type { IL10n } from "@pdf.ts-web/interfaces.ts";
 import type { AnnotationData } from "../../core/annotation.ts";
 import {
   AnnotationEditorParamsType,
@@ -62,21 +62,8 @@ export interface FreeTextEditorSerialized extends AnnotStorageValue {
  * Basic text editor in order to create a FreeTex annotation.
  */
 export class FreeTextEditor extends AnnotationEditor {
-  #boundEditorDivBlur = this.editorDivBlur.bind(this);
-  #boundEditorDivFocus = this.editorDivFocus.bind(this);
-  #boundEditorDivInput = this.editorDivInput.bind(this);
-  #boundEditorDivKeydown = this.editorDivKeydown.bind(this);
-  #color;
-  #content = "";
-  #editorDivId = `${this.id}-editor`;
-  #fontSize;
-  #initialData!: FreeTextEditorSerialized;
-
-  overlayDiv!: HTMLDivElement;
-  editorDiv!: HTMLDivElement;
-
+  static override readonly _type = "freetext";
   static _freeTextDefaultContent = "";
-  static _l10nPromise: Map<string, Promise<string>>;
   static _internalPadding = 0;
   static _defaultColor: string | undefined;
   static _defaultFontSize = 10;
@@ -148,7 +135,18 @@ export class FreeTextEditor extends AnnotationEditor {
     );
   }
 
-  static override readonly _type = "freetext";
+  #boundEditorDivBlur = this.editorDivBlur.bind(this);
+  #boundEditorDivFocus = this.editorDivFocus.bind(this);
+  #boundEditorDivInput = this.editorDivInput.bind(this);
+  #boundEditorDivKeydown = this.editorDivKeydown.bind(this);
+  #color;
+  #content = "";
+  #editorDivId = `${this.id}-editor`;
+  #fontSize;
+  #initialData!: FreeTextEditorSerialized;
+
+  overlayDiv!: HTMLDivElement;
+  editorDiv!: HTMLDivElement;
 
   constructor(params: FreeTextEditorP) {
     super({ ...params, name: "freeTextEditor" });
@@ -160,12 +158,9 @@ export class FreeTextEditor extends AnnotationEditor {
 
   /** @inheritdoc */
   static override initialize(l10n: IL10n) {
-    this._l10nPromise = new Map(
-      ["free_text2_default_content", "editor_free_text2_aria_label"].map(
-        (str) => [str, l10n.get(str)],
-      ),
-    );
-
+    AnnotationEditor.initialize(l10n, {
+      strings: ["free_text2_default_content", "editor_free_text2_aria_label"],
+    });
     const style = getComputedStyle(document.documentElement);
 
     /*#static*/ if (PDFJSDev || TESTING) {
@@ -560,11 +555,11 @@ export class FreeTextEditor extends AnnotationEditor {
     this.editorDiv.setAttribute("id", this.#editorDivId);
     this.enableEditing();
 
-    FreeTextEditor._l10nPromise
+    AnnotationEditor._l10nPromise!
       .get("editor_free_text2_aria_label")!
       .then((msg) => this.editorDiv?.setAttribute("aria-label", msg));
 
-    FreeTextEditor._l10nPromise
+    AnnotationEditor._l10nPromise!
       .get("free_text2_default_content")!
       .then((msg) => this.editorDiv?.setAttribute("default-content", msg));
     this.editorDiv.contentEditable = true as any;
@@ -761,6 +756,7 @@ export class FreeTextEditor extends AnnotationEditor {
       pageIndex: this.pageIndex,
       rect,
       rotation: this.rotation,
+      structTreeParentId: this._structTreeParentId,
     } as FreeTextEditorSerialized;
 
     if (isForCopying) {

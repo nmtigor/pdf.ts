@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-import { fail } from "@fe-src/lib/util/trace.ts";
+import { fail } from "@fe-lib/util/trace.ts";
 import type { OptionalContentConfigData, Order } from "../core/catalog.ts";
 import type {
   MarkedContentProps,

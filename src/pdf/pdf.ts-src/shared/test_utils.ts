@@ -3,6 +3,8 @@
  * @license Apache-2.0
  ******************************************************************************/
 
+import { DENO } from "@fe-src/global.ts";
+import wretch from "@wretch";
 import { D_base } from "../../alias.ts";
 import { BaseStream } from "../core/base_stream.ts";
 import { Page, PDFDocument } from "../core/document.ts";
@@ -10,7 +12,8 @@ import { BasePdfManager } from "../core/pdf_manager.ts";
 import { Dict, Name, type Obj, Ref } from "../core/primitives.ts";
 import { NullStream, StringStream } from "../core/stream.ts";
 import { DocumentInitP } from "../display/api.ts";
-import { PDFWorker } from "../pdf.ts";
+import type { PDFDocumentLoadingTask } from "../pdf.ts";
+import { getDocument, PDFWorker } from "../pdf.ts";
 import { isNodeJS } from "./util.ts";
 /*80--------------------------------------------------------------------------*/
 
@@ -19,6 +22,7 @@ const D_external = `${D_pdf}/pdf.ts-external`;
 
 // const TEST_PDFS_PATH = isNodeJS ? "./test/pdfs/" : "../pdfs/";
 export const TEST_PDFS_PATH = `${D_pdf}/test/pdfs/`;
+export const TEST_IMAGES_PATH = `${D_pdf}/test/images/`;
 
 // export const CMAP_URL = isNodeJS ? "./external/bcmaps/" : "../../external/bcmaps/";
 export const CMAP_URL = `${D_external}/bcmaps/`;
@@ -77,20 +81,66 @@ export type BuildGetDocumentParamsOptions = {
   worker?: PDFWorker;
 };
 
+const urlOf = (filename_x: string) => {
+  return isNodeJS
+    ? TEST_PDFS_PATH + filename_x
+    : new URL(TEST_PDFS_PATH + filename_x, window.location as any).href;
+};
+
 export function buildGetDocumentParams(
   filename: string,
   options?: BuildGetDocumentParamsOptions,
 ) {
   const params = Object.create(null);
-  params.url = isNodeJS
-    ? TEST_PDFS_PATH + filename
-    : new URL(TEST_PDFS_PATH + filename, window.location as any).href;
+  params.url = urlOf(filename);
   params.standardFontDataUrl = STANDARD_FONT_DATA_URL;
 
   for (const option in options) {
     params[option] = options[option as keyof BuildGetDocumentParamsOptions];
   }
   return params as DocumentInitP;
+}
+
+/** @throw */
+export async function getPDF(
+  filename_x: string,
+  options_x?: BuildGetDocumentParamsOptions,
+): Promise<PDFDocumentLoadingTask> {
+  const loadingTask = getDocument(
+    buildGetDocumentParams(filename_x, options_x),
+  );
+  try {
+    await loadingTask.promise;
+    return loadingTask;
+  } catch (err: any) {
+    if (err.name === "MissingPDFException") {
+      await loadingTask.destroy(); //!
+
+      const link = await wretch(urlOf(`${filename_x}.link`)).get().text();
+      return wretch(link)
+        .get()
+        .arrayBuffer((ab_y: ArrayBuffer) => {
+          /*#static*/ if (DENO) {
+            const Deno = (globalThis as any).Deno;
+            const D_pdfs = `${Deno.cwd()}/../../res/pdf/test/pdfs`;
+            const permission = Deno.permissions.querySync({
+              name: "write",
+              path: D_pdfs,
+            });
+            if (permission.state === "granted") {
+              Deno.writeFileSync(
+                `${D_pdfs}/${filename_x}`,
+                new Uint8Array(ab_y),
+              );
+            }
+          }
+
+          return getDocument(ab_y);
+        });
+    } else {
+      throw err;
+    }
+  }
 }
 
 type XRefMockCtorP_ = {

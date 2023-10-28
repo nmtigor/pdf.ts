@@ -20,7 +20,7 @@
 import { assertEquals } from "@std/assert/mod.ts";
 import { describe, it } from "@std/testing/bdd.ts";
 import { bytesToString } from "../shared/util.ts";
-import type { SaveData } from "./annotation.ts";
+import type { AnnotSaveData } from "./annotation.ts";
 import { Dict, Name, Ref } from "./primitives.ts";
 import { StringStream } from "./stream.ts";
 import type { XRefInfo } from "./worker.ts";
@@ -167,7 +167,7 @@ describe("Writer", () => {
   describe("XFA", () => {
     it("should update AcroForm when no datasets in XFA array", async () => {
       const originalData = new Uint8Array();
-      const newRefs: SaveData[] = [];
+      const newRefs: AnnotSaveData[] = [];
 
       const acroForm = new Dict();
       acroForm.set("XFA", [

@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-import type { rect_t } from "@fe-src/lib/alias.ts";
-import { isObjectLike } from "@fe-src/lib/jslang.ts";
+import type { rect_t } from "@fe-lib/alias.ts";
+import { isObjectLike } from "@fe-lib/jslang.ts";
 import { shadow, utf8StringToString, warn } from "../../shared/util.ts";
 import { encodeToXmlString } from "../core_utils.ts";
 import type {

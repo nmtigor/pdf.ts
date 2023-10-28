@@ -377,6 +377,11 @@ export class SimpleDOMNode {
     }
 
     const component = paths[pos];
+    if (component.name.startsWith("#") && pos < paths.length - 1) {
+      // If it starts with a # then it's a class which is not a concept for
+      // datasets elements (https://www.pdfa.org/norm-refs/XFA-3_3.pdf#page=96).
+      return this.searchNode(paths, pos + 1);
+    }
     const stack: [SimpleDOMNode, number][] = [];
     let node: SimpleDOMNode = this;
 

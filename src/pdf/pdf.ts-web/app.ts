@@ -17,6 +17,10 @@
  * limitations under the License.
  */
 
+import { Locale } from "@fe-lib/Locale.ts";
+import "@fe-lib/jslang.ts";
+import { PromiseCap } from "@fe-lib/util/PromiseCap.ts";
+import { assert } from "@fe-lib/util/trace.ts";
 import {
   CHROME,
   GECKOVIEW,
@@ -25,10 +29,6 @@ import {
   MOZCENTRAL,
   PDFJSDev,
 } from "@fe-src/global.ts";
-import { Locale } from "@fe-src/lib/Locale.ts";
-import "@fe-src/lib/jslang.ts";
-import { PromiseCap } from "@fe-src/lib/util/PromiseCap.ts";
-import { assert } from "@fe-src/lib/util/trace.ts";
 import type {
   DocumentInfo,
   DocumentInitP,
@@ -50,17 +50,16 @@ import {
   getFilenameFromUrl,
   getPdfFilenameFromUrl,
   GlobalWorkerOptions,
-  InvalidPDFException,
   isDataScheme,
   isPdfFile,
   loadScript,
-  MissingPDFException,
   PDFWorker,
   shadow,
-  UnexpectedResponseException,
   version,
   WorkerMessageHandler,
 } from "../pdf.ts-src/pdf.ts";
+import type { ActionEventName } from "../pdf.ts-src/shared/util.ts";
+import { AltTextManager } from "./alt_text_manager.ts";
 import { AnnotationEditorParams } from "./annotation_editor_params.ts";
 import {
   AppOptions,
@@ -121,7 +120,6 @@ import {
 } from "./ui_utils.ts";
 import { ViewHistory } from "./view_history.ts";
 import type { ViewerConfiguration } from "./viewer.ts";
-import type { ActionEventName } from "../pdf.ts-src/shared/util.ts";
 /*80--------------------------------------------------------------------------*/
 
 const FORCE_PAGES_LOADED_TIMEOUT = 10000; // ms
@@ -145,29 +143,29 @@ export interface PassiveLoadingCbs {
   onProgress(loaded: number, total: number): void;
 }
 
-type TelemetryType =
-  | "buttons"
-  | "documentInfo"
-  | "documentStats"
-  | "editing"
-  | "gv-buttons"
-  | "pageInfo"
-  | "print"
-  | "tagged"
-  | "unsupportedFeature";
-export interface TelemetryData {
-  type: TelemetryType;
+// type TelemetryType =
+//   | "buttons"
+//   | "documentInfo"
+//   | "documentStats"
+//   | "editing"
+//   | "gv-buttons"
+//   | "pageInfo"
+//   | "print"
+//   | "tagged"
+//   | "unsupportedFeature";
+// export interface TelemetryData {
+//   type: TelemetryType;
 
-  data?: {
-    type?: "save" | "freetext" | "ink" | "stamp" | "print";
-    id?: string;
-  };
-  formType?: string;
-  generator?: string;
-  tagged?: boolean;
-  timestamp?: number;
-  version?: string;
-}
+//   data?: {
+//     type?: "save" | "freetext" | "ink" | "stamp" | "print";
+//     id?: string;
+//   };
+//   formType?: string;
+//   generator?: string;
+//   tagged?: boolean;
+//   timestamp?: number;
+//   version?: string;
+// }
 
 export class DefaultExternalServices {
   updateFindControlState(data: FindControlState) {}
@@ -176,7 +174,7 @@ export class DefaultExternalServices {
 
   initPassiveLoading(callbacks: PassiveLoadingCbs) {}
 
-  reportTelemetry(data: TelemetryData) {}
+  reportTelemetry(data: EventMap["reporttelemetry"]["details"]) {}
 
   createDownloadManager(): IDownloadManager {
     throw new Error("Not implemented: createDownloadManager");
@@ -611,6 +609,14 @@ export class PDFViewerApplication {
         foreground: AppOptions.pageColorsForeground,
       }
       : undefined;
+    const altTextManager = appConfig.altTextDialog
+      ? new AltTextManager(
+        appConfig.altTextDialog,
+        container,
+        this.overlayManager,
+        eventBus,
+      )
+      : undefined;
 
     const pdfViewer = new PDFViewer({
       container,
@@ -619,6 +625,7 @@ export class PDFViewerApplication {
       renderingQueue: pdfRenderingQueue,
       linkService: pdfLinkService,
       downloadManager,
+      altTextManager,
       findController,
       scriptingManager: AppOptions.enableScripting && pdfScriptingManager,
       l10n,
@@ -708,7 +715,6 @@ export class PDFViewerApplication {
           eventBus,
           l10n,
           await this._nimbusDataPromise,
-          externalServices,
         );
       } else {
         this.toolbar = new Toolbar(appConfig.toolbar, eventBus, l10n);
@@ -719,7 +725,6 @@ export class PDFViewerApplication {
       this.secondaryToolbar = new SecondaryToolbar(
         appConfig.secondaryToolbar,
         eventBus,
-        externalServices,
       );
     }
 
@@ -1289,7 +1294,7 @@ export class PDFViewerApplication {
       // When the PDF document isn't ready, or the PDF file is still
       // downloading, simply fallback to a "regular" download.
       console.error(
-        `Error when saving the document: ${(<any> reason).message}`,
+        `Error when saving the document: ${(reason as any).message}`,
       );
       await this.download(options);
     } finally {
@@ -1489,7 +1494,7 @@ export class PDFViewerApplication {
             hash = `page=${stored.page}&zoom=${zoom || stored.zoom},` +
               `${stored.scrollLeft},${stored.scrollTop}`;
 
-            rotation = parseInt(<any> stored.rotation, 10);
+            rotation = parseInt(stored.rotation as any, 10);
             // Always let user preference take precedence over the view history.
             if (sidebarView === SidebarView.UNKNOWN) {
               sidebarView = stored.sidebarView! | 0;
@@ -2093,10 +2098,13 @@ export class PDFViewerApplication {
       eventBus._on("openfile", webViewerOpenFile!);
     }
     /*#static*/ if (MOZCENTRAL) {
+      // The `unbindEvents` method is unused in MOZCENTRAL builds,
+      // hence we don't need to unregister these event listeners.
       eventBus._on(
         "annotationeditorstateschanged",
         webViewerAnnotationEditorStatesChanged,
       );
+      eventBus._on("reporttelemetry", webViewerReportTelemetry);
     }
   }
 
@@ -2838,7 +2846,11 @@ function webViewerWheel(evt: WheelEvent) {
     // Only zoom the pages, not the entire viewer.
     evt.preventDefault();
     // NOTE: this check must be placed *after* preventDefault.
-    if (zoomDisabledTimeout || document.visibilityState === "hidden") {
+    if (
+      zoomDisabledTimeout ||
+      document.visibilityState === "hidden" ||
+      viewerApp.overlayManager.active
+    ) {
       return;
     }
 
@@ -2914,7 +2926,7 @@ function webViewerTouchStart(evt: TouchEvent) {
   }
   evt.preventDefault();
 
-  if (evt.touches.length !== 2) {
+  if (evt.touches.length !== 2 || viewerApp.overlayManager.active) {
     viewerApp._touchInfo = undefined;
     return;
   }
@@ -3392,6 +3404,10 @@ function webViewerAnnotationEditorStatesChanged(
   data: EventMap["annotationeditorstateschanged"],
 ) {
   viewerApp.externalServices.updateEditorStates(data);
+}
+
+function webViewerReportTelemetry({ details }: EventMap["reporttelemetry"]) {
+  viewerApp.externalServices.reportTelemetry(details);
 }
 
 /* Abstract factory for the print service. */

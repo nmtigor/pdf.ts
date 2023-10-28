@@ -18,6 +18,7 @@
  */
 
 /** @typedef {import("../src/display/api").PDFDocumentProxy} PDFDocumentProxy */
+/** @typedef {import("../src/display/api").PDFPageProxy} PDFPageProxy */
 /** @typedef {import("./event_utils").EventBus} EventBus */
 /** @typedef {import("./interfaces").IL10n} IL10n */
 /** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
@@ -34,12 +35,12 @@ import type { IL10n, IPDFLinkService } from "./interfaces.ts";
 import type { PDFRenderingQueue } from "./pdf_rendering_queue.ts";
 import { PDFThumbnailView, TempImageFactory } from "./pdf_thumbnail_view.ts";
 import type { PageColors } from "./pdf_viewer.ts";
+import type { VisibleElements } from "./ui_utils.ts";
 import {
   getVisibleElements,
   isValidRotation,
   RenderingStates,
   scrollIntoView,
-  type VisibleElements,
   watchScroll,
 } from "./ui_utils.ts";
 /*80--------------------------------------------------------------------------*/

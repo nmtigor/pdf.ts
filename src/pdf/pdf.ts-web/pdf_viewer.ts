@@ -27,11 +27,15 @@
 /** @typedef {import("./interfaces").IDownloadManager} IDownloadManager */
 /** @typedef {import("./interfaces").IL10n} IL10n */
 /** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
+// eslint-disable-next-line max-len
+/** @typedef {import("./pdf_find_controller").PDFFindController} PDFFindController */
+// eslint-disable-next-line max-len
+/** @typedef {import("./pdf_scripting_manager").PDFScriptingManager} PDFScriptingManager */
 
+import type { dot2d_t } from "@fe-lib/alias.ts";
+import { div, html } from "@fe-lib/dom.ts";
+import { PromiseCap } from "@fe-lib/util/PromiseCap.ts";
 import { GECKOVIEW, GENERIC, PDFJSDev } from "@fe-src/global.ts";
-import type { dot2d_t } from "@fe-src/lib/alias.ts";
-import { div, html } from "@fe-src/lib/dom.ts";
-import { PromiseCap } from "@fe-src/lib/util/PromiseCap.ts";
 import type {
   ExplicitDest,
   OptionalContentConfig,
@@ -47,6 +51,7 @@ import {
   PixelsPerInch,
   version,
 } from "../pdf.ts-src/pdf.ts";
+import type { AltTextManager } from "./alt_text_manager.ts";
 import { compatibilityParams } from "./app_options.ts";
 import type { EventBus, EventMap } from "./event_utils.ts";
 import type { IDownloadManager, IL10n, IPDFLinkService } from "./interfaces.ts";
@@ -134,6 +139,9 @@ export interface PDFViewerOptions {
    * The download manager component.
    */
   downloadManager?: IDownloadManager;
+
+  /** */
+  altTextManager: AltTextManager | undefined;
 
   /**
    * The find controller component.
@@ -374,6 +382,7 @@ export class PDFViewer {
   }
 
   #annotationEditorUIManager: AnnotationEditorUIManager | undefined;
+  #altTextManager: AltTextManager | undefined;
   #annotationEditorMode = AnnotationEditorType.NONE;
   imageResourcesPath;
   enablePrintAutoRotate;
@@ -578,6 +587,7 @@ export class PDFViewer {
     this.linkService = options.linkService || new SimpleLinkService();
     this.downloadManager = options.downloadManager;
     this.findController = options.findController;
+    this.#altTextManager = options.altTextManager;
 
     if (this.findController) {
       this.findController.onIsPageVisible = (pageNumber) =>
@@ -1029,6 +1039,7 @@ export class PDFViewer {
             this.#annotationEditorUIManager = new AnnotationEditorUIManager(
               this.container,
               this.viewer,
+              this.#altTextManager,
               this.eventBus,
               pdfDocument,
               this.pageColors,

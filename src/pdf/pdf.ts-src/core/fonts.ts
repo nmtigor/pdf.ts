@@ -18,8 +18,8 @@
  */
 
 import { PDFJSDev, TESTING } from "@fe-src/global.ts";
-import type { C2D, dot2d_t, rect_t } from "@fe-src/lib/alias.ts";
-import { assert } from "@fe-src/lib/util/trace.ts";
+import type { C2D, dot2d_t, rect_t } from "@fe-lib/alias.ts";
+import { assert } from "@fe-lib/util/trace.ts";
 import type { matrix_t } from "../shared/util.ts";
 import {
   bytesToString,
