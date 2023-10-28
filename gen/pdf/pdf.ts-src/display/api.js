@@ -2,26 +2,9 @@
  * nmtigor (https://github.com/nmtigor) @2022
  */
 var _a;
-/* Copyright 2012 Mozilla Foundation
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-/**
- * @module pdfjsLib
- */
-import { CHROME, GENERIC, MOZCENTRAL, PDFJSDev, SKIP_BABEL, TESTING, } from "../../../global.js";
 import { PromiseCap } from "../../../lib/util/PromiseCap.js";
 import { assert, fail } from "../../../lib/util/trace.js";
+import { _TRACE, CHROME, GENERIC, global, MOZCENTRAL, PDFJSDev, PDFTS, SKIP_BABEL, TESTING, } from "../../../global.js";
 import { MessageHandler } from "../shared/message_handler.js";
 import { AbortException, AnnotationMode, getVerbosityLevel, info, InvalidPDFException, isArrayBuffer, isNodeJS, MAX_IMAGE_SIZE_TO_CACHE, MissingPDFException, PasswordException, RenderingIntentFlag, setVerbosityLevel, shadow, stringToBytes, UnexpectedResponseException, UnknownErrorException, warn, } from "../shared/util.js";
 import { AnnotationStorage, PrintAnnotationStorage, SerializableEmpty, } from "./annotation_storage.js";
@@ -361,6 +344,13 @@ export class PDFDocumentLoadingTask {
     constructor() {
         this.docId = `d${PDFDocumentLoadingTask.#docId++}`;
     }
+    async [Symbol.asyncDispose]() {
+        // console.log(
+        //   `%crun here: PDFDocumentLoadingTask[Symbol.asyncDispose]()`,
+        //   `color:${LOG_cssc.runhere}`,
+        // );
+        await this.destroy();
+    }
     /**
      * Promise for document loading task completion.
      */
@@ -372,6 +362,9 @@ export class PDFDocumentLoadingTask {
      * @return A promise that is resolved when destruction is completed.
      */
     async destroy() {
+        /*#static*/  {
+            console.log(`${global.indent}>>>>>>> PDFDocumentLoadingTask.destroy() >>>>>>>`);
+        }
         this.destroyed = true;
         try {
             if (this._worker?.port) {
@@ -390,6 +383,9 @@ export class PDFDocumentLoadingTask {
             this._worker.destroy();
             this._worker = undefined;
         }
+        /*#static*/ 
+            global.outdent;
+        return;
     }
 }
 /**
@@ -2474,9 +2470,7 @@ export class InternalRenderTask {
         this.running = false;
         this.cancelled = true;
         this.gfx?.endDrawing();
-        if (this._canvas) {
-            InternalRenderTask.#canvasInUse.delete(this._canvas);
-        }
+        InternalRenderTask.#canvasInUse.delete(this._canvas);
         this.callback(error ||
             new RenderingCancelledException(`Rendering cancelled, page ${this._pageIndex + 1}`, extraDelay));
     };
@@ -2521,11 +2515,8 @@ export class InternalRenderTask {
         if (this.operatorListIdx === this.operatorList.argsArray.length) {
             this.running = false;
             if (this.operatorList.lastChunk) {
-                // this.gfx!.endDrawing(this.pageColors); //kkkk bug? ✅
                 this.gfx.endDrawing();
-                if (this._canvas) {
-                    InternalRenderTask.#canvasInUse.delete(this._canvas);
-                }
+                InternalRenderTask.#canvasInUse.delete(this._canvas);
                 this.callback();
             }
         }

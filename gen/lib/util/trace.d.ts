@@ -9,7 +9,7 @@ import type { ts_t } from "../alias.js";
  */
 export declare function assert(assertion: any, ...data: any[]): void;
 export declare function fail(...data: any[]): never;
-export declare const warn: (...data: any[]) => void;
+export declare function warn(...data: any[]): void;
 export interface ErrorJ {
     name: string;
     message: string;

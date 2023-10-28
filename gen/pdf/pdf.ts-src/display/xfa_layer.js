@@ -15,6 +15,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+// eslint-disable-next-line max-len
+/** @typedef {import("./annotation_storage").AnnotationStorage} AnnotationStorage */
 /** @typedef {import("./display_utils").PageViewport} PageViewport */
 /** @typedef {import("../../web/interfaces").IPDFLinkService} IPDFLinkService */
 import { html as createHTML, textnode } from "../../../lib/dom.js";

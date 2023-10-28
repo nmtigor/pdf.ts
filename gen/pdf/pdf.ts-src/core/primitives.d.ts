@@ -51,6 +51,7 @@ export declare class Dict {
         dictArray: (Dict | undefined)[];
         mergeSubDicts?: boolean;
     }): Dict;
+    clone(): Dict;
 }
 export declare class FontDict extends Dict {
     loadedName?: string;
@@ -61,7 +62,7 @@ export declare class FontDict extends Dict {
             aliasRef?: Ref;
         };
     };
-    cacheKey?: Ref | string;
+    cacheKey?: string | Ref;
 }
 export declare class Ref {
     /** object number */
@@ -75,8 +76,8 @@ export declare class Ref {
 }
 export declare class RefSet {
     #private;
-    has(ref: Ref | string): boolean;
-    put(ref: Ref | string): void;
+    has(ref: string | Ref): boolean;
+    put(ref: string | Ref | Dict): void;
     remove(ref: Ref): void;
     [Symbol.iterator](): IterableIterator<string>;
     clear(): void;
@@ -85,9 +86,9 @@ export declare class RefSet {
 export declare class RefSetCache<T = Obj> {
     #private;
     get size(): number;
-    get(ref: Ref | string): T | undefined;
-    has(ref: Ref | string): boolean;
-    put(ref: Ref | string, obj: T): void;
+    get(ref: string | Ref): T | undefined;
+    has(ref: string | Ref): boolean;
+    put(ref: string | Ref, obj: T): void;
     putAlias(ref: Ref, aliasRef: Ref): void;
     [Symbol.iterator](): IterableIterator<T>;
     clear(): void;

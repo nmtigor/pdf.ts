@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-import type { Constructor, rect_t } from "@fe-src/lib/alias.ts";
+import type { Constructor, rect_t } from "@fe-lib/alias.ts";
 import type { matrix_t } from "../shared/util.ts";
 import {
   bytesToString,

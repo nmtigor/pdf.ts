@@ -26,7 +26,7 @@ declare global {
     }
 }
 /**
- * Wrapper of DOM
+ * Wrapper of DOM\
  * Vuu ⊆ Coo
  */
 export declare abstract class Vuu<C extends Coo = Coo, E extends Element = Element> {

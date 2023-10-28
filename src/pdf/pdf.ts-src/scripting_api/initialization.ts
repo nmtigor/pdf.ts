@@ -17,11 +17,11 @@
  * limitations under the License.
  */
 
-import { serializeError } from "./app_utils.ts";
-import { CreateSandboxP } from "../../pdf.ts-web/interfaces.ts";
-import { FieldObject } from "../core/annotation.ts";
+import type { CreateSandboxP } from "@pdf.ts-web/interfaces.ts";
+import type { FieldObject } from "../core/annotation.ts";
 import { AForm } from "./aform.ts";
 import { App, DocWrapped, ScriptingAppData, SendAppData } from "./app.ts";
+import { serializeError } from "./app_utils.ts";
 import { Color } from "./color.ts";
 import { Console, ScriptingConsoleData } from "./console.ts";
 import {
@@ -95,13 +95,13 @@ declare global {
 }
 
 export function initSandbox(params: { data: CreateSandboxP }) {
-  delete (<any> globalThis).pdfjsScripting;
+  delete (globalThis as any).pdfjsScripting;
 
   // externalCall is a function to call a function defined
   // outside the sandbox.
   // (see src/pdf.sandbox.external.js).
   const externalCall = globalThis.callExternalFunction;
-  delete (<any> globalThis).callExternalFunction;
+  delete (globalThis as any).callExternalFunction;
 
   // eslint-disable-next-line no-eval
   const globalEval = (code: string) => globalThis.eval(code);
@@ -227,7 +227,7 @@ export function initSandbox(params: { data: CreateSandboxP }) {
   const aform = new AForm(doc, app, util, color);
   for (const name of Object.getOwnPropertyNames(AForm.prototype)) {
     if (name !== "constructor" && !name.startsWith("_")) {
-      (<any> globalThis)[name] = (<any> aform)[name].bind(aform);
+      (globalThis as any)[name] = (aform as any)[name].bind(aform);
     }
   }
 

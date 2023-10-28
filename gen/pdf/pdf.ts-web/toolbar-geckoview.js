@@ -4,15 +4,13 @@
 export class Toolbar {
     #buttons;
     #eventBus;
-    #externalServices;
     /**
      * @param _l10n Localization service.
      * @param nimbusData Nimbus configuration.
      * @param externalServices Interface for external services.
      */
-    constructor(options, eventBus, _l10n, nimbusData, externalServices) {
+    constructor(options, eventBus, _l10n, nimbusData) {
         this.#eventBus = eventBus;
-        this.#externalServices = externalServices;
         const buttons = [
             {
                 element: options.download,
@@ -60,9 +58,12 @@ export class Toolbar {
             element.on("click", (evt) => {
                 if (eventName !== null) {
                     this.#eventBus.dispatch(eventName, { source: this, ...eventDetails });
-                    this.#externalServices.reportTelemetry({
-                        type: "gv-buttons",
-                        data: { id: `${element.id}_tapped` },
+                    this.#eventBus.dispatch("reporttelemetry", {
+                        source: this,
+                        details: {
+                            type: "gv-buttons",
+                            data: { id: `${element.id}_tapped` },
+                        },
                     });
                 }
             });

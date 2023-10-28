@@ -21,19 +21,23 @@
  * @module pdfjsLib
  */
 
+import type { C2D, TypedArray } from "@fe-lib/alias.ts";
+import { PromiseCap } from "@fe-lib/util/PromiseCap.ts";
+import { assert, fail } from "@fe-lib/util/trace.ts";
+import { LOG_cssc } from "@fe-src/alias.ts";
 import {
+  _TRACE,
   CHROME,
   GENERIC,
+  global,
   MOZCENTRAL,
   PDFJSDev,
+  PDFTS,
   SKIP_BABEL,
   TESTING,
 } from "@fe-src/global.ts";
-import type { C2D, TypedArray } from "@fe-src/lib/alias.ts";
-import { PromiseCap } from "@fe-src/lib/util/PromiseCap.ts";
-import { assert, fail } from "@fe-src/lib/util/trace.ts";
-import { Stepper } from "../../pdf.ts-web/debugger.ts";
-import type { PageColors } from "../../pdf.ts-web/pdf_viewer.ts";
+import type { Stepper } from "@pdf.ts-web/debugger.ts";
+import type { PageColors } from "@pdf.ts-web/pdf_viewer.ts";
 import type { FieldObject } from "../core/annotation.ts";
 import type { ExplicitDest, SetOCGState } from "../core/catalog.ts";
 import type { AnnotActions } from "../core/core_utils.ts";
@@ -882,6 +886,14 @@ export class PDFDocumentLoadingTask {
     this.docId = `d${PDFDocumentLoadingTask.#docId++}`;
   }
 
+  async [Symbol.asyncDispose]() {
+    // console.log(
+    //   `%crun here: PDFDocumentLoadingTask[Symbol.asyncDispose]()`,
+    //   `color:${LOG_cssc.runhere}`,
+    // );
+    await this.destroy();
+  }
+
   /**
    * Promise for document loading task completion.
    */
@@ -894,6 +906,11 @@ export class PDFDocumentLoadingTask {
    * @return A promise that is resolved when destruction is completed.
    */
   async destroy() {
+    /*#static*/ if (_TRACE && PDFTS) {
+      console.log(
+        `${global.indent}>>>>>>> PDFDocumentLoadingTask.destroy() >>>>>>>`,
+      );
+    }
     this.destroyed = true;
     try {
       if (this._worker?.port) {
@@ -912,6 +929,8 @@ export class PDFDocumentLoadingTask {
       this._worker.destroy();
       this._worker = undefined;
     }
+    /*#static*/ if (_TRACE && PDFTS) global.outdent;
+    return;
   }
 }
 
@@ -1519,7 +1538,7 @@ export interface TextStyle {
 /**
  * Page annotation parameters.
  */
-interface _GetAnnotationsP {
+interface GetAnnotationsP_ {
   /**
    * Determines the annotations that are fetched,
    * can be 'display' (viewable annotations), 'print' (printable annotations),
@@ -1682,7 +1701,7 @@ export interface StructTreeContent {
    * either "content" for page and stream structure
    * elements or "object" for object references.
    */
-  type: "content" | "object";
+  type: "annotation" | "content" | "object";
 
   /**
    * unique id that will map to the text layer.
@@ -1836,7 +1855,7 @@ export class PDFPageProxy {
    * @return A promise that is resolved with an
    *   {Array} of the annotation objects.
    */
-  getAnnotations({ intent = "display" } = {} as _GetAnnotationsP) {
+  getAnnotations({ intent = "display" } = {} as GetAnnotationsP_) {
     const intentArgs = this._transport.getRenderingIntent(intent);
 
     return this._transport.getAnnotations(
@@ -3962,10 +3981,8 @@ export class InternalRenderTask {
     this.running = false;
     this.cancelled = true;
     this.gfx?.endDrawing();
+    InternalRenderTask.#canvasInUse.delete(this._canvas);
 
-    if (this._canvas) {
-      InternalRenderTask.#canvasInUse.delete(this._canvas);
-    }
     this.callback(
       error ||
         new RenderingCancelledException(
@@ -4023,11 +4040,9 @@ export class InternalRenderTask {
     if (this.operatorListIdx === this.operatorList.argsArray.length) {
       this.running = false;
       if (this.operatorList.lastChunk) {
-        // this.gfx!.endDrawing(this.pageColors); //kkkk bug? ✅
         this.gfx!.endDrawing();
-        if (this._canvas) {
-          InternalRenderTask.#canvasInUse.delete(this._canvas);
-        }
+        InternalRenderTask.#canvasInUse.delete(this._canvas);
+
         this.callback();
       }
     }

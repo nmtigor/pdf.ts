@@ -85,9 +85,9 @@ export declare class SVGGraphics {
     svg?: SVGElement | undefined;
     tgrp?: SVGGElement | undefined;
     constructor(commonObjs: PDFObjects<PDFCommonObjs>, objs: PDFObjects<PDFObjs | undefined>, forceDataSchema?: boolean);
-    getObject(data: unknown, fallback?: PDFCommonObjs | PDFObjs | undefined): string | import("../core/fonts.js").FontExpotDataEx | import("../core/font_renderer.js").CmdArgs[] | ImgData | ["RadialAxial", type: ShadingType.AXIAL | ShadingType.RADIAL, bbox: [number, number, number, number] | undefined, colorStops: [number, string][], p0: import("../../../lib/alias.js").dot2d_t, p1: import("../../../lib/alias.js").dot2d_t, r0: number, r1: number] | ["Mesh", shadingType: ShadingType, coords: Float32Array, colors: Uint8Array, figures: import("../core/pattern.js").MeshFigure[], bounds: [number, number, number, number], bbox: [number, number, number, number] | undefined, background: Uint8ClampedArray | undefined] | import("../core/pattern.js").DummyIR | {
+    getObject(data: unknown, fallback?: PDFCommonObjs | PDFObjs | undefined): string | import("../core/fonts.js").FontExpotDataEx | {
         error: string;
-    } | undefined;
+    } | import("../core/font_renderer.js").CmdArgs[] | ImgData | ["RadialAxial", type: ShadingType.AXIAL | ShadingType.RADIAL, bbox: [number, number, number, number] | undefined, colorStops: [number, string][], p0: import("../../../lib/alias.js").dot2d_t, p1: import("../../../lib/alias.js").dot2d_t, r0: number, r1: number] | ["Mesh", shadingType: ShadingType, coords: Float32Array, colors: Uint8Array, figures: import("../core/pattern.js").MeshFigure[], bounds: [number, number, number, number], bbox: [number, number, number, number] | undefined, background: Uint8ClampedArray | undefined] | import("../core/pattern.js").DummyIR | undefined;
     [OPS.save](): void;
     [OPS.restore](): void;
     [OPS.group](items: OpTree): void;

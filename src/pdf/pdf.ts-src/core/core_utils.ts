@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-import { PDFJSDev, TESTING } from "../../../global.ts";
-import { assert } from "../../../lib/util/trace.ts";
+import { assert } from "@fe-lib/util/trace.ts";
+import { PDFJSDev, TESTING } from "@fe-src/global.ts";
 import type {
   AnnotStorageRecord,
   AnnotStorageValue,

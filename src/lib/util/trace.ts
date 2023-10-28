@@ -36,10 +36,10 @@ export function fail(...data: any[]): never {
   throw new Error(data[0], { cause: data });
 }
 
-export const warn = (
+export function warn(
   ...data: any[]
   // meta?: { url: string }
-) => {
+) {
   /*#static*/ if (TESTING) return;
 
   // if (meta) {
@@ -47,7 +47,7 @@ export const warn = (
   //   if (match) msg += ` (${match[1]})`;
   // }
   console.warn(...data);
-};
+}
 
 let reporting_: Error | undefined;
 let count_reported_ = 0;

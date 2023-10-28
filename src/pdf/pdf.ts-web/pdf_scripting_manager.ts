@@ -20,7 +20,7 @@
 /** @typedef {import("./event_utils").EventBus} EventBus */
 
 import { CHROME, GENERIC, PDFJSDev } from "@fe-src/global.ts";
-import { PromiseCap } from "@fe-src/lib/util/PromiseCap.ts";
+import { PromiseCap } from "@fe-lib/util/PromiseCap.ts";
 import type { FieldObject, PDFDocumentProxy } from "../pdf.ts-src/pdf.ts";
 import { shadow } from "../pdf.ts-src/pdf.ts";
 import type { DefaultExternalServices, ScriptingDocProperties } from "./app.ts";

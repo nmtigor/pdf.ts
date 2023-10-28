@@ -22,13 +22,17 @@ import { calculateMD5 } from "./crypto.js";
 import { Dict, isName, Name, Ref } from "./primitives.js";
 import { SimpleDOMNode, SimpleXMLParser } from "./xml_parser.js";
 /*80--------------------------------------------------------------------------*/
-export async function writeObject(ref, obj, buffer, transform) {
+export async function writeObject(ref, obj, buffer, { encrypt = undefined }) {
+    const transform = encrypt?.createCipherTransform(ref.num, ref.gen);
     buffer.push(`${ref.num} ${ref.gen} obj\n`);
     if (obj instanceof Dict) {
         await writeDict(obj, buffer, transform);
     }
     else if (obj instanceof BaseStream) {
         await writeStream(obj, buffer, transform);
+    }
+    else if (Array.isArray(obj)) {
+        await writeArray(obj, buffer, transform);
     }
     buffer.push("\nendobj\n");
 }
@@ -91,7 +95,7 @@ async function writeStream(stream, buffer, transform) {
             info(`writeStream - cannot compress data: "${ex}".`);
         }
     }
-    if (transform !== undefined) {
+    if (transform) {
         string = transform.encryptString(string);
     }
     dict.set("Length", string.length);
@@ -123,7 +127,7 @@ async function writeValue(value, buffer, transform) {
         await writeArray(value, buffer, transform);
     }
     else if (typeof value === "string") {
-        if (transform !== undefined) {
+        if (transform) {
             value = transform.encryptString(value);
         }
         buffer.push(`(${escapeString(value)})`);
@@ -212,11 +216,7 @@ async function updateAcroform({ xref, acroForm, acroFormRef, hasXfa, hasXfaDatas
     if (!needAppearances && (!hasXfa || !xfaDatasetsRef || hasXfaDatasetsEntry)) {
         return;
     }
-    // Clone the acroForm.
-    const dict = new Dict(xref);
-    for (const key of acroForm.getKeys()) {
-        dict.set(key, acroForm.getRaw(key));
-    }
+    const dict = acroForm.clone();
     if (hasXfa && !hasXfaDatasetsEntry) {
         // We've a XFA array which doesn't contain a datasets entry.
         // So we'll update the AcroForm dictionary to have an XFA containing
@@ -229,13 +229,8 @@ async function updateAcroform({ xref, acroForm, acroFormRef, hasXfa, hasXfaDatas
     if (needAppearances) {
         dict.set("NeedAppearances", true);
     }
-    const encrypt = xref.encrypt;
-    let transform;
-    if (encrypt) {
-        transform = encrypt.createCipherTransform(acroFormRef.num, acroFormRef.gen);
-    }
     const buffer = [];
-    await writeObject(acroFormRef, dict, buffer, transform);
+    await writeObject(acroFormRef, dict, buffer, xref);
     newRefs.push({ ref: acroFormRef, data: buffer.join("") });
 }
 function updateXFA({ xfaData, xfaDatasetsRef, newRefs, xref }) {
@@ -254,7 +249,7 @@ function updateXFA({ xfaData, xfaDatasetsRef, newRefs, xref }) {
         "\nendstream\nendobj\n";
     newRefs.push({ ref: xfaDatasetsRef, data });
 }
-export async function incrementalUpdate({ originalData, xrefInfo, newRefs, xref, hasXfa = false, hasXfaDatasetsEntry = false, xfaDatasetsRef, needAppearances, acroFormRef, acroForm, xfaData, }) {
+export async function incrementalUpdate({ originalData, xrefInfo, newRefs, xref, hasXfa = false, xfaDatasetsRef, hasXfaDatasetsEntry = false, needAppearances, acroFormRef, acroForm, xfaData, }) {
     await updateAcroform({
         xref,
         acroForm,

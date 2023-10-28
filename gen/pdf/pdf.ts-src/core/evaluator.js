@@ -1,31 +1,16 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
-/* Copyright 2012 Mozilla Foundation
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-/* eslint-disable no-var */
-import { TESTING } from "../../../global.js";
 import { PromiseCap } from "../../../lib/util/PromiseCap.js";
 import { assert } from "../../../lib/util/trace.js";
+import { TESTING } from "../../../global.js";
 import { MurmurHash3_64 } from "../shared/murmurhash3.js";
 import { AbortException, CMapCompressionType, FONT_IDENTITY_MATRIX, FormatError, IDENTITY_MATRIX, info, normalizeUnicode, OPS, shadow, stringToPDFString, TextRenderingMode, Util, warn, } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
 import { bidi } from "./bidi.js";
 import { CMapFactory, IdentityCMap } from "./cmap.js";
 import { ColorSpace } from "./colorspace.js";
-import { getLookupTableFactory, MissingDataException } from "./core_utils.js";
+import { MissingDataException } from "./core_utils.js";
 import { DecodeStream } from "./decode_stream.js";
 import { getEncoding, MacRomanEncoding, StandardEncoding, SymbolSetEncoding, WinAnsiEncoding, ZapfDingbatsEncoding, } from "./encodings.js";
 import { getFontSubstitution } from "./font_substitutions.js";
@@ -1266,7 +1251,7 @@ export class PartialEvaluator {
         else {
             throw new FormatError("Optional content properties malformed.");
         }
-        const optionalContentType = optionalContent.get("Type").name;
+        const optionalContentType = optionalContent.get("Type")?.name;
         if (optionalContentType === "OCG") {
             return {
                 type: optionalContentType,
@@ -3954,111 +3939,114 @@ export class EvaluatorPreprocessor {
         //
         // If variableArgs === true: [0, `numArgs`] expected
         // If variableArgs === false: exactly `numArgs` expected
-        const getOPMap = getLookupTableFactory((t) => {
+        return shadow(this, "opMap", {
             // Graphic state
-            t.w = { id: OPS.setLineWidth, numArgs: 1, variableArgs: false };
-            t.J = { id: OPS.setLineCap, numArgs: 1, variableArgs: false };
-            t.j = { id: OPS.setLineJoin, numArgs: 1, variableArgs: false };
-            t.M = { id: OPS.setMiterLimit, numArgs: 1, variableArgs: false };
-            t.d = { id: OPS.setDash, numArgs: 2, variableArgs: false };
-            t.ri = { id: OPS.setRenderingIntent, numArgs: 1, variableArgs: false };
-            t.i = { id: OPS.setFlatness, numArgs: 1, variableArgs: false };
-            t.gs = { id: OPS.setGState, numArgs: 1, variableArgs: false };
-            t.q = { id: OPS.save, numArgs: 0, variableArgs: false };
-            t.Q = { id: OPS.restore, numArgs: 0, variableArgs: false };
-            t.cm = { id: OPS.transform, numArgs: 6, variableArgs: false };
+            w: { id: OPS.setLineWidth, numArgs: 1, variableArgs: false },
+            J: { id: OPS.setLineCap, numArgs: 1, variableArgs: false },
+            j: { id: OPS.setLineJoin, numArgs: 1, variableArgs: false },
+            M: { id: OPS.setMiterLimit, numArgs: 1, variableArgs: false },
+            d: { id: OPS.setDash, numArgs: 2, variableArgs: false },
+            ri: { id: OPS.setRenderingIntent, numArgs: 1, variableArgs: false },
+            i: { id: OPS.setFlatness, numArgs: 1, variableArgs: false },
+            gs: { id: OPS.setGState, numArgs: 1, variableArgs: false },
+            q: { id: OPS.save, numArgs: 0, variableArgs: false },
+            Q: { id: OPS.restore, numArgs: 0, variableArgs: false },
+            cm: { id: OPS.transform, numArgs: 6, variableArgs: false },
             // Path
-            t.m = { id: OPS.moveTo, numArgs: 2, variableArgs: false };
-            t.l = { id: OPS.lineTo, numArgs: 2, variableArgs: false };
-            t.c = { id: OPS.curveTo, numArgs: 6, variableArgs: false };
-            t.v = { id: OPS.curveTo2, numArgs: 4, variableArgs: false };
-            t.y = { id: OPS.curveTo3, numArgs: 4, variableArgs: false };
-            t.h = { id: OPS.closePath, numArgs: 0, variableArgs: false };
-            t.re = { id: OPS.rectangle, numArgs: 4, variableArgs: false };
-            t.S = { id: OPS.stroke, numArgs: 0, variableArgs: false };
-            t.s = { id: OPS.closeStroke, numArgs: 0, variableArgs: false };
-            t.f = { id: OPS.fill, numArgs: 0, variableArgs: false };
-            t.F = { id: OPS.fill, numArgs: 0, variableArgs: false };
-            t["f*"] = { id: OPS.eoFill, numArgs: 0, variableArgs: false };
-            t.B = { id: OPS.fillStroke, numArgs: 0, variableArgs: false };
-            t["B*"] = { id: OPS.eoFillStroke, numArgs: 0, variableArgs: false };
-            t.b = { id: OPS.closeFillStroke, numArgs: 0, variableArgs: false };
-            t["b*"] = { id: OPS.closeEOFillStroke, numArgs: 0, variableArgs: false };
-            t.n = { id: OPS.endPath, numArgs: 0, variableArgs: false };
+            m: { id: OPS.moveTo, numArgs: 2, variableArgs: false },
+            l: { id: OPS.lineTo, numArgs: 2, variableArgs: false },
+            c: { id: OPS.curveTo, numArgs: 6, variableArgs: false },
+            v: { id: OPS.curveTo2, numArgs: 4, variableArgs: false },
+            y: { id: OPS.curveTo3, numArgs: 4, variableArgs: false },
+            h: { id: OPS.closePath, numArgs: 0, variableArgs: false },
+            re: { id: OPS.rectangle, numArgs: 4, variableArgs: false },
+            S: { id: OPS.stroke, numArgs: 0, variableArgs: false },
+            s: { id: OPS.closeStroke, numArgs: 0, variableArgs: false },
+            f: { id: OPS.fill, numArgs: 0, variableArgs: false },
+            F: { id: OPS.fill, numArgs: 0, variableArgs: false },
+            "f*": { id: OPS.eoFill, numArgs: 0, variableArgs: false },
+            B: { id: OPS.fillStroke, numArgs: 0, variableArgs: false },
+            "B*": { id: OPS.eoFillStroke, numArgs: 0, variableArgs: false },
+            b: { id: OPS.closeFillStroke, numArgs: 0, variableArgs: false },
+            "b*": { id: OPS.closeEOFillStroke, numArgs: 0, variableArgs: false },
+            n: { id: OPS.endPath, numArgs: 0, variableArgs: false },
             // Clipping
-            t.W = { id: OPS.clip, numArgs: 0, variableArgs: false };
-            t["W*"] = { id: OPS.eoClip, numArgs: 0, variableArgs: false };
+            W: { id: OPS.clip, numArgs: 0, variableArgs: false },
+            "W*": { id: OPS.eoClip, numArgs: 0, variableArgs: false },
             // Text
-            t.BT = { id: OPS.beginText, numArgs: 0, variableArgs: false };
-            t.ET = { id: OPS.endText, numArgs: 0, variableArgs: false };
-            t.Tc = { id: OPS.setCharSpacing, numArgs: 1, variableArgs: false };
-            t.Tw = { id: OPS.setWordSpacing, numArgs: 1, variableArgs: false };
-            t.Tz = { id: OPS.setHScale, numArgs: 1, variableArgs: false };
-            t.TL = { id: OPS.setLeading, numArgs: 1, variableArgs: false };
-            t.Tf = { id: OPS.setFont, numArgs: 2, variableArgs: false };
-            t.Tr = { id: OPS.setTextRenderingMode, numArgs: 1, variableArgs: false };
-            t.Ts = { id: OPS.setTextRise, numArgs: 1, variableArgs: false };
-            t.Td = { id: OPS.moveText, numArgs: 2, variableArgs: false };
-            t.TD = { id: OPS.setLeadingMoveText, numArgs: 2, variableArgs: false };
-            t.Tm = { id: OPS.setTextMatrix, numArgs: 6, variableArgs: false };
-            t["T*"] = { id: OPS.nextLine, numArgs: 0, variableArgs: false };
-            t.Tj = { id: OPS.showText, numArgs: 1, variableArgs: false };
-            t.TJ = { id: OPS.showSpacedText, numArgs: 1, variableArgs: false };
-            t["'"] = { id: OPS.nextLineShowText, numArgs: 1, variableArgs: false };
-            t['"'] = {
+            BT: { id: OPS.beginText, numArgs: 0, variableArgs: false },
+            ET: { id: OPS.endText, numArgs: 0, variableArgs: false },
+            Tc: { id: OPS.setCharSpacing, numArgs: 1, variableArgs: false },
+            Tw: { id: OPS.setWordSpacing, numArgs: 1, variableArgs: false },
+            Tz: { id: OPS.setHScale, numArgs: 1, variableArgs: false },
+            TL: { id: OPS.setLeading, numArgs: 1, variableArgs: false },
+            Tf: { id: OPS.setFont, numArgs: 2, variableArgs: false },
+            Tr: { id: OPS.setTextRenderingMode, numArgs: 1, variableArgs: false },
+            Ts: { id: OPS.setTextRise, numArgs: 1, variableArgs: false },
+            Td: { id: OPS.moveText, numArgs: 2, variableArgs: false },
+            TD: { id: OPS.setLeadingMoveText, numArgs: 2, variableArgs: false },
+            Tm: { id: OPS.setTextMatrix, numArgs: 6, variableArgs: false },
+            "T*": { id: OPS.nextLine, numArgs: 0, variableArgs: false },
+            Tj: { id: OPS.showText, numArgs: 1, variableArgs: false },
+            TJ: { id: OPS.showSpacedText, numArgs: 1, variableArgs: false },
+            "'": { id: OPS.nextLineShowText, numArgs: 1, variableArgs: false },
+            '"': {
                 id: OPS.nextLineSetSpacingShowText,
                 numArgs: 3,
                 variableArgs: false,
-            };
+            },
             // Type3 fonts
-            t.d0 = { id: OPS.setCharWidth, numArgs: 2, variableArgs: false };
-            t.d1 = { id: OPS.setCharWidthAndBounds, numArgs: 6, variableArgs: false };
+            d0: { id: OPS.setCharWidth, numArgs: 2, variableArgs: false },
+            d1: {
+                id: OPS.setCharWidthAndBounds,
+                numArgs: 6,
+                variableArgs: false,
+            },
             // Color
-            t.CS = { id: OPS.setStrokeColorSpace, numArgs: 1, variableArgs: false };
-            t.cs = { id: OPS.setFillColorSpace, numArgs: 1, variableArgs: false };
-            t.SC = { id: OPS.setStrokeColor, numArgs: 4, variableArgs: true };
-            t.SCN = { id: OPS.setStrokeColorN, numArgs: 33, variableArgs: true };
-            t.sc = { id: OPS.setFillColor, numArgs: 4, variableArgs: true };
-            t.scn = { id: OPS.setFillColorN, numArgs: 33, variableArgs: true };
-            t.G = { id: OPS.setStrokeGray, numArgs: 1, variableArgs: false };
-            t.g = { id: OPS.setFillGray, numArgs: 1, variableArgs: false };
-            t.RG = { id: OPS.setStrokeRGBColor, numArgs: 3, variableArgs: false };
-            t.rg = { id: OPS.setFillRGBColor, numArgs: 3, variableArgs: false };
-            t.K = { id: OPS.setStrokeCMYKColor, numArgs: 4, variableArgs: false };
-            t.k = { id: OPS.setFillCMYKColor, numArgs: 4, variableArgs: false };
+            CS: { id: OPS.setStrokeColorSpace, numArgs: 1, variableArgs: false },
+            cs: { id: OPS.setFillColorSpace, numArgs: 1, variableArgs: false },
+            SC: { id: OPS.setStrokeColor, numArgs: 4, variableArgs: true },
+            SCN: { id: OPS.setStrokeColorN, numArgs: 33, variableArgs: true },
+            sc: { id: OPS.setFillColor, numArgs: 4, variableArgs: true },
+            scn: { id: OPS.setFillColorN, numArgs: 33, variableArgs: true },
+            G: { id: OPS.setStrokeGray, numArgs: 1, variableArgs: false },
+            g: { id: OPS.setFillGray, numArgs: 1, variableArgs: false },
+            RG: { id: OPS.setStrokeRGBColor, numArgs: 3, variableArgs: false },
+            rg: { id: OPS.setFillRGBColor, numArgs: 3, variableArgs: false },
+            K: { id: OPS.setStrokeCMYKColor, numArgs: 4, variableArgs: false },
+            k: { id: OPS.setFillCMYKColor, numArgs: 4, variableArgs: false },
             // Shading
-            t.sh = { id: OPS.shadingFill, numArgs: 1, variableArgs: false };
+            sh: { id: OPS.shadingFill, numArgs: 1, variableArgs: false },
             // Images
-            t.BI = { id: OPS.beginInlineImage, numArgs: 0, variableArgs: false };
-            t.ID = { id: OPS.beginImageData, numArgs: 0, variableArgs: false };
-            t.EI = { id: OPS.endInlineImage, numArgs: 1, variableArgs: false };
+            BI: { id: OPS.beginInlineImage, numArgs: 0, variableArgs: false },
+            ID: { id: OPS.beginImageData, numArgs: 0, variableArgs: false },
+            EI: { id: OPS.endInlineImage, numArgs: 1, variableArgs: false },
             // XObjects
-            t.Do = { id: OPS.paintXObject, numArgs: 1, variableArgs: false };
-            t.MP = { id: OPS.markPoint, numArgs: 1, variableArgs: false };
-            t.DP = { id: OPS.markPointProps, numArgs: 2, variableArgs: false };
-            t.BMC = { id: OPS.beginMarkedContent, numArgs: 1, variableArgs: false };
-            t.BDC = {
+            Do: { id: OPS.paintXObject, numArgs: 1, variableArgs: false },
+            MP: { id: OPS.markPoint, numArgs: 1, variableArgs: false },
+            DP: { id: OPS.markPointProps, numArgs: 2, variableArgs: false },
+            BMC: { id: OPS.beginMarkedContent, numArgs: 1, variableArgs: false },
+            BDC: {
                 id: OPS.beginMarkedContentProps,
                 numArgs: 2,
                 variableArgs: false,
-            };
-            t.EMC = { id: OPS.endMarkedContent, numArgs: 0, variableArgs: false };
+            },
+            EMC: { id: OPS.endMarkedContent, numArgs: 0, variableArgs: false },
             // Compatibility
-            t.BX = { id: OPS.beginCompat, numArgs: 0, variableArgs: false };
-            t.EX = { id: OPS.endCompat, numArgs: 0, variableArgs: false };
+            BX: { id: OPS.beginCompat, numArgs: 0, variableArgs: false },
+            EX: { id: OPS.endCompat, numArgs: 0, variableArgs: false },
             // (reserved partial commands for the lexer)
-            t.BM = null;
-            t.BD = null;
-            t.true = null;
-            t.fa = null;
-            t.fal = null;
-            t.fals = null;
-            t.false = null;
-            t.nu = null;
-            t.nul = null;
-            t.null = null;
+            BM: null,
+            BD: null,
+            true: null,
+            fa: null,
+            fal: null,
+            fals: null,
+            false: null,
+            nu: null,
+            nul: null,
+            null: null,
         });
-        return shadow(this, "opMap", getOPMap());
     }
     static MAX_INVALID_PATH_OPS = 10;
     parser;

@@ -41,6 +41,7 @@ export declare abstract class BasePdfManager {
     enableXfa: boolean | undefined;
     evaluatorOptions: EvaluatorOptions;
     pdfDocument: PDFDocument;
+    get catalog(): Catalog | undefined;
     constructor(args: BasePdfManagerCtorP_);
     /** @fianl */
     ensureDoc<P extends keyof PDFDocument, A = PDFDocument[P] extends (...args: any) => any ? Parameters<PDFDocument[P]> : undefined>(prop: P, args?: A): Promise<Awaited<PDFDocument[P] extends (...args: any) => any ? ReturnType<PDFDocument[P]> : PDFDocument[P]>>;

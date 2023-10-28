@@ -1,4 +1,4 @@
-import { ScriptingDocProperties } from "../../pdf.ts-web/app.js";
+import type { ScriptingDocProperties } from "../../pdf.ts-web/app.js";
 export interface SendData {
     id?: string | undefined;
 }

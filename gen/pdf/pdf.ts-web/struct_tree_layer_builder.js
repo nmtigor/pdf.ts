@@ -16,6 +16,7 @@
  * limitations under the License.
  */
 import { html } from "../../lib/dom.js";
+import { removeNullCharacters } from "./ui_utils.js";
 /*80--------------------------------------------------------------------------*/
 const PDF_ROLE_TO_HTML_ROLE = {
     // Document level structure types
@@ -97,19 +98,21 @@ export class StructTreeLayerBuilder {
         }
     }
     #setAttributes(structElement, htmlElement) {
-        if (structElement.alt !== undefined) {
-            htmlElement.setAttribute("aria-label", structElement.alt);
+        const { alt, id, lang } = structElement;
+        if (alt !== undefined) {
+            htmlElement.setAttribute("aria-label", removeNullCharacters(alt));
         }
-        if (structElement.id !== undefined) {
-            htmlElement.setAttribute("aria-owns", structElement.id);
+        if (id !== undefined) {
+            htmlElement.setAttribute("aria-owns", id);
         }
-        if (structElement.lang !== undefined) {
-            htmlElement.setAttribute("lang", structElement.lang);
+        if (lang !== undefined) {
+            htmlElement.setAttribute("lang", lang);
         }
     }
     #walk(node) {
-        if (!node)
+        if (!node) {
             return undefined;
+        }
         const element = html("span");
         if ("role" in node) {
             const { role } = node;
@@ -123,7 +126,8 @@ export class StructTreeLayerBuilder {
             }
         }
         this.#setAttributes(node, element);
-        if (node.children) {
+        // if (node.children) {
+        if ("children" in node) {
             if (node.children.length === 1 && "id" in node.children[0]) {
                 // Often there is only one content node so just set the values on the
                 // parent node to avoid creating an extra span.

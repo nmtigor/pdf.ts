@@ -24,26 +24,27 @@ declare namespace StepperManager_ {
     function selectStepper(pageIndex: number, selectPanel?: boolean): void;
     function saveBreakPoints(pageIndex: number, bps: number[]): void;
 }
-declare namespace NsStepper {
-    class Stepper {
-        panel: HTMLDivElement;
-        breakPoint: number;
-        nextBreakPoint: number | undefined;
-        pageIndex: number;
-        breakPoints: number[];
-        currentIdx: number;
-        operatorListIdx: number;
-        indentLevel: number;
-        table: HTMLTableElement;
-        constructor(panel: HTMLDivElement, pageIndex: number, initialBreakPoints: number[]);
-        init(operatorList: OpListIR): void;
-        updateOperatorList(operatorList: OpListIR): void;
-        getNextBreakPoint(): number | undefined;
-        breakIt(idx: number, callback: () => void): void;
-        goTo(idx: number): void;
-    }
+/**
+ * The stepper for each page's operatorList.
+ */
+export declare class Stepper {
+    #private;
+    panel: HTMLDivElement;
+    breakPoint: number;
+    nextBreakPoint: number | undefined;
+    pageIndex: number;
+    breakPoints: number[];
+    currentIdx: number;
+    operatorListIdx: number;
+    indentLevel: number;
+    table: HTMLTableElement;
+    constructor(panel: HTMLDivElement, pageIndex: number, initialBreakPoints: number[]);
+    init(operatorList: OpListIR): void;
+    updateOperatorList(operatorList: OpListIR): void;
+    getNextBreakPoint(): number | undefined;
+    breakIt(idx: number, callback: () => void): void;
+    goTo(idx: number): void;
 }
-export import Stepper = NsStepper.Stepper;
 declare namespace Stats_ {
     interface _Stat {
         pageNumber: number;
@@ -60,13 +61,17 @@ declare namespace Stats_ {
     export function cleanup(): void;
     export {};
 }
-export declare namespace PDFBug {
-    const tools: (typeof FontInspector_ | typeof StepperManager_ | typeof Stats_)[];
-    function enable(ids: string[]): void;
-    function init(container: HTMLDivElement, ids: string[]): void;
-    function loadCSS(): void;
-    function cleanup(): void;
-    function selectPanel(index: number | Tool_): void;
+/**
+ * Manages all the debugging tools.
+ */
+export declare class PDFBug {
+    #private;
+    static readonly tools: (typeof FontInspector_ | typeof StepperManager_ | typeof Stats_)[];
+    static enable(ids: string[]): void;
+    static init(container: HTMLDivElement, ids: string[]): void;
+    static loadCSS(): void;
+    static cleanup(): void;
+    static selectPanel(index: number | Tool_): void;
 }
 declare global {
     var FontInspector: typeof FontInspector_;

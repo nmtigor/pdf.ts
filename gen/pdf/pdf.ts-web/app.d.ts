@@ -46,24 +46,11 @@ export interface PassiveLoadingCbs {
     onError(err?: ErrorMoreInfo): void;
     onProgress(loaded: number, total: number): void;
 }
-type TelemetryType = "buttons" | "documentInfo" | "documentStats" | "editing" | "gv-buttons" | "pageInfo" | "print" | "tagged" | "unsupportedFeature";
-export interface TelemetryData {
-    type: TelemetryType;
-    data?: {
-        type?: "save" | "freetext" | "ink" | "stamp" | "print";
-        id?: string;
-    };
-    formType?: string;
-    generator?: string;
-    tagged?: boolean;
-    timestamp?: number;
-    version?: string;
-}
 export declare class DefaultExternalServices {
     updateFindControlState(data: FindControlState): void;
     updateFindMatchesCount(data: MatchesCount): void;
     initPassiveLoading(callbacks: PassiveLoadingCbs): void;
-    reportTelemetry(data: TelemetryData): void;
+    reportTelemetry(data: EventMap["reporttelemetry"]["details"]): void;
     createDownloadManager(): IDownloadManager;
     createPreferences(): BasePreferences;
     createL10n({ locale }?: {

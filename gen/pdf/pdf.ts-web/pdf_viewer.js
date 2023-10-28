@@ -1,33 +1,9 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2023
  */
-/* Copyright 2014 Mozilla Foundation
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-/** @typedef {import("../src/display/api").PDFDocumentProxy} PDFDocumentProxy */
-/** @typedef {import("../src/display/api").PDFPageProxy} PDFPageProxy */
-// eslint-disable-next-line max-len
-/** @typedef {import("../src/display/display_utils").PageViewport} PageViewport */
-// eslint-disable-next-line max-len
-/** @typedef {import("../src/display/optional_content_config").OptionalContentConfig} OptionalContentConfig */
-/** @typedef {import("./event_utils").EventBus} EventBus */
-/** @typedef {import("./interfaces").IDownloadManager} IDownloadManager */
-/** @typedef {import("./interfaces").IL10n} IL10n */
-/** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
-import { GECKOVIEW, GENERIC, PDFJSDev } from "../../global.js";
 import { div, html } from "../../lib/dom.js";
 import { PromiseCap } from "../../lib/util/PromiseCap.js";
+import { GECKOVIEW, GENERIC, PDFJSDev } from "../../global.js";
 import { AnnotationEditorType, AnnotationEditorUIManager, AnnotationMode, PermissionFlag, PixelsPerInch, version, } from "../pdf.ts-src/pdf.js";
 import { compatibilityParams } from "./app_options.js";
 import { NullL10n } from "./l10n_utils.js";
@@ -126,6 +102,7 @@ export class PDFViewer {
         return this.#annotationMode === AnnotationMode.ENABLE_FORMS;
     }
     #annotationEditorUIManager;
+    #altTextManager;
     #annotationEditorMode = AnnotationEditorType.NONE;
     imageResourcesPath;
     enablePrintAutoRotate;
@@ -300,6 +277,7 @@ export class PDFViewer {
         this.linkService = options.linkService || new SimpleLinkService();
         this.downloadManager = options.downloadManager;
         this.findController = options.findController;
+        this.#altTextManager = options.altTextManager;
         if (this.findController) {
             this.findController.onIsPageVisible = (pageNumber) => this.getVisiblePages$().ids.has(pageNumber);
         }
@@ -667,7 +645,7 @@ export class PDFViewer {
                     console.warn("Warning: XFA-editing is not implemented.");
                 }
                 else if (isValidAnnotationEditorMode(mode)) {
-                    this.#annotationEditorUIManager = new AnnotationEditorUIManager(this.container, this.viewer, this.eventBus, pdfDocument, this.pageColors);
+                    this.#annotationEditorUIManager = new AnnotationEditorUIManager(this.container, this.viewer, this.#altTextManager, this.eventBus, pdfDocument, this.pageColors);
                     if (mode !== AnnotationEditorType.NONE) {
                         this.#annotationEditorUIManager.updateMode(mode);
                     }

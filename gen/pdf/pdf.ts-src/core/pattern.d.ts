@@ -109,6 +109,7 @@ declare class MeshStreamReader {
     readCoordinate(): dot2d_t;
     readComponents(): Uint8ClampedArray;
 }
+export declare function clearPatternCaches(): void;
 interface DecodeContext {
     bitsPerCoordinate: number;
     bitsPerComponent: number;

@@ -27,11 +27,11 @@ import { binarySearchFirstItem } from "./ui_utils.js";
 export class TextAccessibilityManager {
     #enabled = false;
     #textChildren;
-    #textNodes = new Map();
-    #waitingElements = new Map();
     setTextMapping(textDivs) {
         this.#textChildren = textDivs;
     }
+    #textNodes = new Map();
+    #waitingElements = new Map();
     /**
      * Compare the positions of two elements, it must correspond to
      * the visual ordering.
@@ -148,41 +148,48 @@ export class TextAccessibilityManager {
     /**
      * Find the text node which is the nearest and add an aria-owns attribute
      * in order to correctly position this editor in the text flow.
+     *
+     * @return The id in the struct tree if any.
      */
     addPointerInTextLayer(element, isRemovable) {
         const { id } = element;
         if (!id) {
-            return;
+            return undefined;
         }
         if (!this.#enabled) {
             // The text layer needs to be there, so we postpone the association.
             this.#waitingElements.set(element, isRemovable);
-            return;
+            return undefined;
         }
         if (isRemovable) {
             this.removePointerInTextLayer(element);
         }
         const children = this.#textChildren;
         if (!children || children.length === 0) {
-            return;
+            return undefined;
         }
         const index = binarySearchFirstItem(children, (node) => TextAccessibilityManager.#compareElementPositions(element, node) < 0);
         const nodeIndex = Math.max(0, index - 1);
-        this.#addIdToAriaOwns(id, children[nodeIndex]);
+        const child = children[nodeIndex];
+        this.#addIdToAriaOwns(id, child);
         this.#textNodes.set(id, nodeIndex);
+        const parent = child.parentNode;
+        return parent?.classList.contains("markedContent") ? parent.id : undefined;
     }
     /**
      * Move a div in the DOM in order to respect the visual order.
+     *
+     * @return The id in the struct tree if any.
      */
     moveElementInDOM(container, element, contentElement, isRemovable) {
-        this.addPointerInTextLayer(contentElement, isRemovable);
+        const id = this.addPointerInTextLayer(contentElement, isRemovable);
         if (!container.hasChildNodes()) {
             container.append(element);
-            return;
+            return id;
         }
         const children = Array.from(container.childNodes).filter((node) => node !== element);
         if (children.length === 0) {
-            return;
+            return id;
         }
         const elementToCompare = contentElement || element;
         const index = binarySearchFirstItem(children, (node) => TextAccessibilityManager.#compareElementPositions(elementToCompare, node) < 0);
@@ -192,6 +199,7 @@ export class TextAccessibilityManager {
         else {
             children[index - 1].after(element);
         }
+        return id;
     }
 }
 /*80--------------------------------------------------------------------------*/

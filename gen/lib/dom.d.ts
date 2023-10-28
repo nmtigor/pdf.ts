@@ -13,7 +13,7 @@ declare global {
     interface Event {
         _canceled: boolean | undefined;
         canceled: boolean;
-        targetVuu?: Vuu;
+        targetPocudVu?: Vuu;
     }
     interface WheelEvent {
         _repr(): {
@@ -119,9 +119,9 @@ declare global {
  */
 export declare function textnode(text_x: string, loff_x?: llen_t, tail_ignored_x?: boolean): Text;
 type HTMLRet_<NN extends string> = NN extends keyof HTMLElementTagNameMap ? HTMLElementTagNameMap[NN] : HTMLElement;
-export declare function html<NN extends string>(nodeName: NN, innerHTML?: string, doc?: Document): HTMLRet_<NN>;
-export declare function div(innerHTML?: string, doc?: Document): HTMLDivElement;
-export declare function span(innerHTML?: string, doc?: Document): HTMLSpanElement;
+export declare function html<NN extends string>(nodeName_x: NN, innerHTML_x?: string, doc_x?: Document): HTMLRet_<NN>;
+export declare function div(innerHTML_x?: string, doc_x?: Document): HTMLDivElement;
+export declare function span(innerHTML_x?: string, doc_x?: Document): HTMLSpanElement;
 type SVGRet_<NN extends string> = NN extends keyof SVGElementTagNameMap ? SVGElementTagNameMap[NN] : SVGElement;
 export declare function svg<NN extends string>(nodeName: NN, doc?: Document): SVGRet_<NN>;
 declare global {

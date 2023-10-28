@@ -47,6 +47,9 @@ export class Catalog {
         // the following call must always succeed here:
         this.toplevelPagesDict; // eslint-disable-line no-unused-expressions
     }
+    cloneDict() {
+        return this.#catDict.clone();
+    }
     get version() {
         const version = this.#catDict.get("Version");
         if (version instanceof Name) {
@@ -182,11 +185,12 @@ export class Catalog {
         return shadow(this, "structTreeRoot", structTree);
     }
     #readStructTreeRoot() {
-        const obj = this.#catDict.get("StructTreeRoot");
+        const rawObj = this.#catDict.getRaw("StructTreeRoot");
+        const obj = this.xref.fetchIfRef(rawObj);
         if (!(obj instanceof Dict)) {
             return undefined;
         }
-        const root = new StructTreeRoot(obj);
+        const root = new StructTreeRoot(obj, rawObj);
         root.init();
         return root;
     }
@@ -239,7 +243,7 @@ export class Catalog {
             _a.parseDestDictionary({
                 destDict: outlineDict,
                 resultObj: data,
-                docBaseUrl: this.pdfManager.docBaseUrl,
+                docBaseUrl: this.baseUrl,
                 docAttachments: this.attachments,
             });
             const title = outlineDict.get("Title");
@@ -1229,24 +1233,16 @@ export class Catalog {
                 }
             }
         }
-        return shadow(this, "baseUrl", undefined);
+        return shadow(this, "baseUrl", this.pdfManager.docBaseUrl);
     }
     /**
      * Helper function used to parse the contents of destination dictionaries.
      */
-    static parseDestDictionary(params) {
-        const destDict = params.destDict;
+    static parseDestDictionary({ destDict, resultObj, docBaseUrl = undefined, docAttachments = undefined, }) {
         if (!(destDict instanceof Dict)) {
             warn("parseDestDictionary: `destDict` must be a dictionary.");
             return;
         }
-        const resultObj = params.resultObj;
-        if (typeof resultObj !== "object") {
-            warn("parseDestDictionary: `resultObj` must be an object.");
-            return;
-        }
-        const docBaseUrl = params.docBaseUrl || undefined;
-        const docAttachments = params.docAttachments || undefined;
         let action = destDict.get("A"), url, dest;
         if (!(action instanceof Dict)) {
             if (destDict.has("Dest")) {

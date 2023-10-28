@@ -259,17 +259,17 @@ export function textnode(text_x, loff_x, tail_ignored_x) {
         ret[$tail_ignored] = tail_ignored_x;
     return ret;
 }
-export function html(nodeName, innerHTML, doc = document) {
-    let ret = doc.createElement(nodeName);
-    if (innerHTML)
-        ret.innerHTML = innerHTML;
+export function html(nodeName_x, innerHTML_x, doc_x = document) {
+    let ret = doc_x.createElement(nodeName_x);
+    if (innerHTML_x)
+        ret.innerHTML = innerHTML_x;
     return ret;
 }
-export function div(innerHTML, doc = document) {
-    return html("div", innerHTML, doc);
+export function div(innerHTML_x, doc_x = document) {
+    return html("div", innerHTML_x, doc_x);
 }
-export function span(innerHTML, doc = document) {
-    return html("span", innerHTML, doc);
+export function span(innerHTML_x, doc_x = document) {
+    return html("span", innerHTML_x, doc_x);
 }
 export function svg(nodeName, doc = document) {
     return doc.createElementNS("http://www.w3.org/2000/svg", nodeName);

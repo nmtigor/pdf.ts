@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-import { type SerializedMetadata } from "../core/metadata_parser.ts";
+import type { SerializedMetadata } from "../core/metadata_parser.ts";
 import { objectFromMap } from "../shared/util.ts";
 /*80--------------------------------------------------------------------------*/
 

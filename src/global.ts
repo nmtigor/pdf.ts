@@ -17,7 +17,6 @@ export const
   , INFO = true
   , COLR = false
   
-  , XSTATE = true
   , RESIZ = true // "resize", ResizeObserver
   , INTRS = true // IntersectionObserver
 
@@ -37,10 +36,10 @@ export const
 , _COLR = DEV && COLR
 , _TRACE = DEV && TRACE && !TESTING
 
-// from pdf.js
+, MOZCENTRAL = false
+// Only in ./pdf/
 , PDFJSDev = true
 , GENERIC = true
-, MOZCENTRAL = false
 , CHROME = false
 , GECKOVIEW = false
 , LIB = false

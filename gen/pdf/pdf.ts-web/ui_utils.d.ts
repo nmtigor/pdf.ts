@@ -186,7 +186,7 @@ export interface VisibleElements {
     views: VisibleElement[];
     ids?: Set<number>;
 }
-interface _GetVisibleElementsP {
+interface GetVisibleElementsP_ {
     /**
      * A container that can possibly scroll.
      */
@@ -231,11 +231,7 @@ interface _GetVisibleElementsP {
  * rendering canvas. Earlier and later refer to index in `views`, not page
  * layout.)
  */
-export declare function getVisibleElements({ scrollEl, views, sortByVisibility, horizontal, rtl, }: _GetVisibleElementsP): VisibleElements;
-/**
- * Event handler to suppress context menu.
- */
-export declare function noContextMenuHandler(evt: Event): void;
+export declare function getVisibleElements({ scrollEl, views, sortByVisibility, horizontal, rtl, }: GetVisibleElementsP_): VisibleElements;
 export declare function normalizeWheelEventDirection(evt: WheelEvent): number;
 export declare function normalizeWheelEventDelta(evt: WheelEvent): number;
 export declare function isValidRotation(angle: unknown): boolean;
@@ -277,7 +273,7 @@ export declare class ProgressBar {
 export declare function getActiveOrFocusedElement(): Element | null;
 /**
  * Converts API PageLayout values to the format used by `BaseViewer`.
- * @param mode The API PageLayout value.
+ * @param layout The API PageLayout value.
  * @return A value from {SpreadMode}.
  */
 export declare function apiPageLayoutToViewerModes(layout: PageLayout): {

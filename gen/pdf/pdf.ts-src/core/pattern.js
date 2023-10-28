@@ -343,23 +343,21 @@ class MeshStreamReader {
         return this.context.colorSpace.getRgb(color, 0);
     }
 }
-const getB = (() => {
-    function buildB(count) {
-        const lut = [];
-        for (let i = 0; i <= count; i++) {
-            const t = i / count, t_ = 1 - t;
-            lut.push(new Float32Array([
-                t_ * t_ * t_,
-                3 * t * t_ * t_,
-                3 * t * t * t_,
-                t * t * t,
-            ]));
-        }
-        return lut;
+let bCache = Object.create(null);
+function buildB(count) {
+    const lut = [];
+    for (let i = 0; i <= count; i++) {
+        const t = i / count, t_ = 1 - t;
+        lut.push(new Float32Array([t_ ** 3, 3 * t * t_ ** 2, 3 * t ** 2 * t_, t ** 3]));
     }
-    const cache = Object.create(null);
-    return (count) => (cache[count] ||= buildB(count));
-})();
+    return lut;
+}
+function getB(count) {
+    return (bCache[count] ||= buildB(count));
+}
+export function clearPatternCaches() {
+    bCache = Object.create(null);
+}
 export class MeshShading extends BaseShading {
     static MIN_SPLIT_PATCH_CHUNKS_AMOUNT = 3;
     static MAX_SPLIT_PATCH_CHUNKS_AMOUNT = 20;

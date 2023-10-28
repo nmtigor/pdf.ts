@@ -1,5 +1,5 @@
 /** 80**************************************************************************
- * Ref. [pdf.js]/src/shared/util.js
+ * Ref. [[pdf.js]/src/shared/util.js](https://github.com/mozilla/pdf.js/blob/master/src/shared/util.js)
  *
  * @module lib/util/PromiseCap
  * @license Apache-2.0

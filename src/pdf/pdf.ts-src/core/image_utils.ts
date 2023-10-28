@@ -18,7 +18,7 @@
  */
 
 import { PDFJSDev, TESTING } from "@fe-src/global.ts";
-import { assert, fail } from "@fe-src/lib/util/trace.ts";
+import { assert, fail } from "@fe-lib/util/trace.ts";
 import { MAX_IMAGE_SIZE_TO_CACHE, OPS, warn } from "../shared/util.ts";
 import type { ColorSpace } from "./colorspace.ts";
 import type { ImgData, MarkedContentProps } from "./evaluator.ts";

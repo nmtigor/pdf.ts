@@ -1,22 +1,8 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
-/* Copyright 2012 Mozilla Foundation
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-import { PDFJSDev, TESTING } from "../../../global.js";
 import { assert, fail } from "../../../lib/util/trace.js";
+import { PDFJSDev, TESTING } from "../../../global.js";
 import { AnnotationEditorPrefix, FormatError, info, InvalidPDFException, PageActionEventType, RenderingIntentFlag, shadow, stringToBytes, stringToPDFString, stringToUTF8String, Util, warn, } from "../shared/util.js";
 import { AnnotationFactory, PopupAnnotation } from "./annotation.js";
 import { BaseStream } from "./base_stream.js";
@@ -243,16 +229,14 @@ export class Page {
         const savedDict = pageDict.get("Annots");
         pageDict.set("Annots", annotationsArray);
         const buffer = [];
-        let transform;
-        if (this.xref.encrypt) {
-            transform = this.xref.encrypt.createCipherTransform(this.ref.num, this.ref.gen);
-        }
-        await writeObject(this.ref, pageDict, buffer, transform);
+        await writeObject(this.ref, pageDict, buffer, this.xref);
         if (savedDict) {
             pageDict.set("Annots", savedDict);
         }
         const objects = newData.dependencies;
         objects.push({ ref: this.ref, data: buffer.join("") }, ...newData.annotations);
+        // console.log("🚀 ~ Page ~ objects:")
+        // console.dir(objects)
         return objects;
     }
     save(handler, task, annotationStorage) {
@@ -327,9 +311,10 @@ export class Page {
         let newAnnotationsPromise = Promise
             .resolve(undefined);
         if (newAnnotationsByPage) {
-            let imagePromises;
             const newAnnotations = newAnnotationsByPage.get(this.pageIndex);
             if (newAnnotations) {
+                const annotationGlobalsPromise = this.pdfManager.ensureDoc("annotationGlobals");
+                let imagePromises;
                 // An annotation can contain a reference to a bitmap, but this bitmap
                 // is defined in another annotation. So we need to find this annotation
                 // and generate the bitmap.
@@ -359,7 +344,12 @@ export class Page {
                 }
                 deletedAnnotations = new RefSet();
                 this.#replaceIdByRef(newAnnotations, deletedAnnotations, undefined);
-                newAnnotationsPromise = AnnotationFactory.printNewAnnotations(partialEvaluator, task, newAnnotations, imagePromises);
+                newAnnotationsPromise = annotationGlobalsPromise.then((annotationGlobals) => {
+                    if (!annotationGlobals) {
+                        return undefined;
+                    }
+                    return AnnotationFactory.printNewAnnotations(annotationGlobals, partialEvaluator, task, newAnnotations, imagePromises);
+                });
             }
         }
         const dataPromises = Promise.all([contentStreamPromise, resourcesPromise]);
@@ -483,6 +473,8 @@ export class Page {
         if (!structTreeRoot) {
             return undefined;
         }
+        // Ensure that the structTree will contain the page's annotations.
+        await this._parsedAnnotations;
         const structTree = await this.pdfManager.ensure(this, "_parseStructTree", [
             structTreeRoot,
         ]);
@@ -493,13 +485,13 @@ export class Page {
      */
     _parseStructTree(structTreeRoot) {
         const tree = new StructTreePage(structTreeRoot, this.pageDict);
-        tree.parse();
+        tree.parse(this.ref);
         return tree;
     }
     async getAnnotationsData(handler, task, intent) {
         const annotations = await this._parsedAnnotations;
         if (annotations.length === 0) {
-            return [];
+            return annotations;
         }
         const annotationsData = [], textContentPromises = [];
         let partialEvaluator;
@@ -531,7 +523,7 @@ export class Page {
                     Infinity,
                     Infinity,
                 ])
-                    .catch(function (reason) {
+                    .catch((reason) => {
                     warn(`getAnnotationsData - ignoring textContent during "${task.name}" task: "${reason}".`);
                 }));
             }
@@ -544,42 +536,44 @@ export class Page {
         return shadow(this, "annotations", Array.isArray(annots) ? annots : []);
     }
     get _parsedAnnotations() {
-        const parsedAnnotations = this.pdfManager
+        const promise = this.pdfManager
             .ensure(this, "annotations")
-            .then(() => {
+            .then(async (annots) => {
+            if (annots.length === 0) {
+                return annots;
+            }
+            const annotationGlobals = await this.pdfManager.ensureDoc("annotationGlobals");
+            if (!annotationGlobals) {
+                return [];
+            }
             const annotationPromises = [];
-            for (const annotationRef of this.annotations) {
-                annotationPromises.push(AnnotationFactory.create(this.xref, annotationRef, this.pdfManager, this.#localIdFactory, 
-                /* collectFields */ false).catch((reason) => {
+            for (const annotationRef of annots) {
+                annotationPromises.push(AnnotationFactory.create(this.xref, annotationRef, annotationGlobals, this._localIdFactory, 
+                /* collectFields */ false, this.ref).catch((reason) => {
                     warn(`_parsedAnnotations: "${reason}".`);
                     return undefined;
                 }));
             }
-            return Promise.all(annotationPromises).then((annotations) => {
-                if (annotations.length === 0) {
-                    return annotations;
+            const sortedAnnotations = [];
+            let popupAnnotations;
+            // Ensure that PopupAnnotations are handled last, since they depend on
+            // their parent Annotation in the display layer; fixes issue 11362.
+            for (const annotation of await Promise.all(annotationPromises)) {
+                if (!annotation) {
+                    continue;
                 }
-                const sortedAnnotations = [];
-                let popupAnnotations;
-                // Ensure that PopupAnnotations are handled last, since they depend on
-                // their parent Annotation in the display layer; fixes issue 11362.
-                for (const annotation of annotations) {
-                    if (!annotation) {
-                        continue;
-                    }
-                    if (annotation instanceof PopupAnnotation) {
-                        (popupAnnotations ||= []).push(annotation);
-                        continue;
-                    }
-                    sortedAnnotations.push(annotation);
+                if (annotation instanceof PopupAnnotation) {
+                    (popupAnnotations ||= []).push(annotation);
+                    continue;
                 }
-                if (popupAnnotations) {
-                    sortedAnnotations.push(...popupAnnotations);
-                }
-                return sortedAnnotations;
-            });
+                sortedAnnotations.push(annotation);
+            }
+            if (popupAnnotations) {
+                sortedAnnotations.push(...popupAnnotations);
+            }
+            return sortedAnnotations;
         });
-        return shadow(this, "_parsedAnnotations", parsedAnnotations);
+        return shadow(this, "_parsedAnnotations", promise);
     }
     get jsActions() {
         const actions = collectActions(this.xref, this.pageDict, PageActionEventType);
@@ -587,17 +581,7 @@ export class Page {
     }
 }
 const PDF_HEADER_SIGNATURE = new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d]); // `%PDF-`
-const STARTXREF_SIGNATURE = new Uint8Array([
-    0x73,
-    0x74,
-    0x61,
-    0x72,
-    0x74,
-    0x78,
-    0x72,
-    0x65,
-    0x66,
-]);
+const STARTXREF_SIGNATURE = new Uint8Array([0x73, 0x74, 0x61, 0x72, 0x74, 0x78, 0x72, 0x65, 0x66]);
 const ENDOBJ_SIGNATURE = new Uint8Array([0x65, 0x6e, 0x64, 0x6f, 0x62, 0x6a]);
 const FINGERPRINT_FIRST_BYTES = 1024;
 const EMPTY_FINGERPRINT = "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00";
@@ -1390,7 +1374,7 @@ export class PDFDocument {
             ? this.catalog.cleanup(manuallyTriggered)
             : clearGlobalCaches();
     }
-    #collectFieldObjects(name, fieldRef, promises) {
+    #collectFieldObjects(name, fieldRef, promises, annotationGlobals) {
         const field = this.xref.fetchIfRef(fieldRef);
         if (field.has("T")) {
             const partName = stringToPDFString(field.get("T"));
@@ -1399,7 +1383,7 @@ export class PDFDocument {
         if (!promises.has(name)) {
             promises.set(name, []);
         }
-        promises.get(name).push(AnnotationFactory.create(this.xref, fieldRef, this.pdfManager, this.#localIdFactory, //kkkk bug? (never set)
+        promises.get(name).push(AnnotationFactory.create(this.xref, fieldRef, annotationGlobals, this.#localIdFactory, //kkkk bug? (never set)
         /* collectFields */ true)
             .then((annotation) => annotation?.getFieldObject())
             .catch((reason) => {
@@ -1407,9 +1391,8 @@ export class PDFDocument {
             return undefined;
         }));
         if (field.has("Kids")) {
-            const kids = field.get("Kids");
-            for (const kid of kids) {
-                this.#collectFieldObjects(name, kid, promises);
+            for (const kid of field.get("Kids")) {
+                this.#collectFieldObjects(name, kid, promises, annotationGlobals);
             }
         }
     }
@@ -1417,21 +1400,30 @@ export class PDFDocument {
         if (!this.formInfo.hasFields) {
             return shadow(this, "fieldObjects", Promise.resolve(undefined));
         }
-        const allFields = Object.create(null);
-        const fieldPromises = new Map();
-        for (const fieldRef of this.catalog.acroForm.get("Fields")) {
-            this.#collectFieldObjects("", fieldRef, fieldPromises);
-        }
-        const allPromises = [];
-        for (const [name, promises] of fieldPromises) {
-            allPromises.push(Promise.all(promises).then((fields) => {
-                fields = fields.filter((field) => !!field);
-                if (fields.length > 0) {
-                    allFields[name] = fields;
-                }
-            }));
-        }
-        return shadow(this, "fieldObjects", Promise.all(allPromises).then(() => allFields));
+        const promise = this.pdfManager
+            .ensureDoc("annotationGlobals")
+            .then(async (annotationGlobals) => {
+            if (!annotationGlobals) {
+                return undefined;
+            }
+            const allFields = Object.create(null);
+            const fieldPromises = new Map();
+            for (const fieldRef of this.catalog.acroForm.get("Fields")) {
+                this.#collectFieldObjects("", fieldRef, fieldPromises, annotationGlobals);
+            }
+            const allPromises = [];
+            for (const [name, promises] of fieldPromises) {
+                allPromises.push(Promise.all(promises).then((fields) => {
+                    fields = fields.filter((field) => !!field);
+                    if (fields.length > 0) {
+                        allFields[name] = fields;
+                    }
+                }));
+            }
+            await Promise.all(allPromises);
+            return allFields;
+        });
+        return shadow(this, "fieldObjects", promise);
     }
     get hasJSActions() {
         const promise = this.pdfManager.ensureDoc("_parseHasJSActions");
@@ -1472,6 +1464,9 @@ export class PDFDocument {
             return shadow(this, "calculationOrderIds", undefined);
         }
         return shadow(this, "calculationOrderIds", ids);
+    }
+    get annotationGlobals() {
+        return shadow(this, "annotationGlobals", AnnotationFactory.createGlobals(this.pdfManager));
     }
 }
 /*80--------------------------------------------------------------------------*/

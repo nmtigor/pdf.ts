@@ -49,7 +49,7 @@
       // "../pdf/pdf.ts-src/pdf.worker_test.ts",
       //
       // "../pdf/pdf.ts-src/display/annotation_storage_test.ts",
-      // "../pdf/pdf.ts-src/display/api_test.ts", //kkkk(21)
+      // "../pdf/pdf.ts-src/display/api_test.ts", //kkkk(24)
       // "../pdf/pdf.ts-src/display/display_utils_test.ts", //kkkk(5)
       // "../pdf/pdf.ts-src/display/editor/editor_test.ts",
       // "../pdf/pdf.ts-src/display/fetch_stream_test.ts",
@@ -68,9 +68,13 @@
     ]
   },
   "imports": {
-    "@fe-src/": "../",
-    "@zod": "../3rd/zod-3.22.2/lib/index.mjs",
+    "@std/": "https://deno.land/std@0.195.0/",
 
-    "@std/": "https://deno.land/std@0.195.0/"
+    "@fe-src/": "../",
+    "@fe-lib/": "../lib/",
+    "@wretch": "../3rd/wretch-2.5.2/dist/index.js",
+    "@zod": "../3rd/zod-3.22.2/lib/index.mjs",
+    
+    "@pdf.ts-web/": "../pdf/pdf.ts-web/"
   }
 }

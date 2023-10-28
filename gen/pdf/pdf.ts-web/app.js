@@ -15,12 +15,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { CHROME, GECKOVIEW, GENERIC, INOUT, MOZCENTRAL, PDFJSDev, } from "../../global.js";
 import { Locale } from "../../lib/Locale.js";
 import "../../lib/jslang.js";
 import { PromiseCap } from "../../lib/util/PromiseCap.js";
 import { assert } from "../../lib/util/trace.js";
+import { CHROME, GECKOVIEW, GENERIC, INOUT, MOZCENTRAL, PDFJSDev, } from "../../global.js";
 import { AnnotationEditorType, build, FeatureTest, getDocument, getFilenameFromUrl, getPdfFilenameFromUrl, GlobalWorkerOptions, isDataScheme, isPdfFile, loadScript, PDFWorker, shadow, version, } from "../pdf.ts-src/pdf.js";
+import { AltTextManager } from "./alt_text_manager.js";
 import { AnnotationEditorParams } from "./annotation_editor_params.js";
 import { AppOptions, OptionKind, ViewerCssTheme, ViewOnLoad, } from "./app_options.js";
 import { AutomationEventBus, EventBus } from "./event_utils.js";
@@ -49,6 +50,28 @@ import { ViewHistory } from "./view_history.js";
 /*80--------------------------------------------------------------------------*/
 const FORCE_PAGES_LOADED_TIMEOUT = 10000; // ms
 const WHEEL_ZOOM_DISABLED_TIMEOUT = 1000; // ms
+// type TelemetryType =
+//   | "buttons"
+//   | "documentInfo"
+//   | "documentStats"
+//   | "editing"
+//   | "gv-buttons"
+//   | "pageInfo"
+//   | "print"
+//   | "tagged"
+//   | "unsupportedFeature";
+// export interface TelemetryData {
+//   type: TelemetryType;
+//   data?: {
+//     type?: "save" | "freetext" | "ink" | "stamp" | "print";
+//     id?: string;
+//   };
+//   formType?: string;
+//   generator?: string;
+//   tagged?: boolean;
+//   timestamp?: number;
+//   version?: string;
+// }
 export class DefaultExternalServices {
     updateFindControlState(data) { }
     updateFindMatchesCount(data) { }
@@ -375,6 +398,9 @@ export class PDFViewerApplication {
                 foreground: AppOptions.pageColorsForeground,
             }
             : undefined;
+        const altTextManager = appConfig.altTextDialog
+            ? new AltTextManager(appConfig.altTextDialog, container, this.overlayManager, eventBus)
+            : undefined;
         const pdfViewer = new PDFViewer({
             container,
             viewer,
@@ -382,6 +408,7 @@ export class PDFViewerApplication {
             renderingQueue: pdfRenderingQueue,
             linkService: pdfLinkService,
             downloadManager,
+            altTextManager,
             findController,
             scriptingManager: AppOptions.enableScripting && pdfScriptingManager,
             l10n,
@@ -450,14 +477,14 @@ export class PDFViewerApplication {
         }
         if (appConfig.toolbar) {
             if (PDFJSDev ? window.isGECKOVIEW : GECKOVIEW) {
-                this.toolbar = new GeckoviewToolbar(appConfig.toolbar, eventBus, l10n, await this._nimbusDataPromise, externalServices);
+                this.toolbar = new GeckoviewToolbar(appConfig.toolbar, eventBus, l10n, await this._nimbusDataPromise);
             }
             else {
                 this.toolbar = new Toolbar(appConfig.toolbar, eventBus, l10n);
             }
         }
         if (appConfig.secondaryToolbar) {
-            this.secondaryToolbar = new SecondaryToolbar(appConfig.secondaryToolbar, eventBus, externalServices);
+            this.secondaryToolbar = new SecondaryToolbar(appConfig.secondaryToolbar, eventBus);
         }
         if (this.supportsFullscreen &&
             appConfig.secondaryToolbar?.presentationModeButton) {
@@ -2165,7 +2192,9 @@ function webViewerWheel(evt) {
         // Only zoom the pages, not the entire viewer.
         evt.preventDefault();
         // NOTE: this check must be placed *after* preventDefault.
-        if (zoomDisabledTimeout || document.visibilityState === "hidden") {
+        if (zoomDisabledTimeout ||
+            document.visibilityState === "hidden" ||
+            viewerApp.overlayManager.active) {
             return;
         }
         const previousScale = pdfViewer.currentScale;
@@ -2229,7 +2258,7 @@ function webViewerTouchStart(evt) {
         return;
     }
     evt.preventDefault();
-    if (evt.touches.length !== 2) {
+    if (evt.touches.length !== 2 || viewerApp.overlayManager.active) {
         viewerApp._touchInfo = undefined;
         return;
     }
@@ -2641,6 +2670,9 @@ function beforeUnload(evt) {
 }
 function webViewerAnnotationEditorStatesChanged(data) {
     viewerApp.externalServices.updateEditorStates(data);
+}
+function webViewerReportTelemetry({ details }) {
+    viewerApp.externalServices.reportTelemetry(details);
 }
 /* Abstract factory for the print service. */
 export const PDFPrintServiceFactory = {

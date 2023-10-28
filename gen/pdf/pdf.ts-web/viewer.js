@@ -38,268 +38,287 @@ import { viewerApp } from "./app.js";
 // window.PDFViewerApplication = PDFViewerApplication;
 // window.PDFViewerApplicationConstants = AppConstants;
 // window.PDFViewerApplicationOptions = AppOptions;
+const eltBy = (id_x) => document.getElementById(id_x);
+const divBy = (id_x) => eltBy(id_x);
+const spanBy = (id_x) => eltBy(id_x);
+const buttonBy = (id_x) => eltBy(id_x);
+const inputBy = (id_x) => eltBy(id_x);
+const textAreaBy = (id_x) => eltBy(id_x);
+const dialogBy = (id_x) => eltBy(id_x);
+const paragraphBy = (id_x) => eltBy(id_x);
+const selectBy = (id_x) => eltBy(id_x);
+const optionBy = (id_x) => eltBy(id_x);
+const anchorBy = (id_x) => eltBy(id_x);
 function getViewerConfiguration() {
     return {
         appContainer: document.body,
-        mainContainer: document.getElementById("viewerContainer"),
-        viewerContainer: document.getElementById("viewer"),
+        mainContainer: divBy("viewerContainer"),
+        viewerContainer: divBy("viewer"),
         toolbar: {
             /**
              * Container for the secondary toolbar.
              */
-            container: document.getElementById("toolbarViewer"),
+            container: divBy("toolbarViewer"),
             /**
              * Label that contains number of pages.
              */
-            numPages: document.getElementById("numPages"),
+            numPages: spanBy("numPages"),
             /**
              * Control for display and user input of the current page number.
              */
-            pageNumber: document.getElementById("pageNumber"),
+            pageNumber: inputBy("pageNumber"),
             /**
              * Scale selection control.
              * Its width is adjusted, when necessary, on UI localization.
              */
-            scaleSelect: document.getElementById("scaleSelect"),
+            scaleSelect: selectBy("scaleSelect"),
             /**
              * The item used to display a non-predefined scale.
              */
-            customScaleOption: document.getElementById("customScaleOption"),
+            customScaleOption: optionBy("customScaleOption"),
             /**
              * Button to go to the previous page.
              */
-            previous: document.getElementById("previous"),
+            previous: buttonBy("previous"),
             /**
              * Button to go to the next page.
              */
-            next: document.getElementById("next"),
+            next: buttonBy("next"),
             /**
              * Button to zoom in the pages.
              */
-            zoomIn: document.getElementById("zoomIn"),
+            zoomIn: buttonBy("zoomIn"),
             /**
              * Button to zoom out the pages.
              */
-            zoomOut: document.getElementById("zoomOut"),
+            zoomOut: buttonBy("zoomOut"),
             /**
              * Button to open find bar.
              */
-            viewFind: document.getElementById("viewFind"),
+            viewFind: buttonBy("viewFind"),
             /**
              * Button to open a new document.
              */
-            openFile: /*#static*/ document.getElementById("openFile"),
-            print: document.getElementById("print"),
+            openFile: /*#static*/ buttonBy("openFile"),
+            print: buttonBy("print"),
             /**
              * Button to switch to FreeText editing.
              */
-            editorFreeTextButton: document.getElementById("editorFreeText"),
-            editorFreeTextParamsToolbar: document.getElementById("editorFreeTextParamsToolbar"),
-            editorInkButton: document.getElementById("editorInk"),
-            editorInkParamsToolbar: document.getElementById("editorInkParamsToolbar"),
-            editorStampButton: document.getElementById("editorStamp"),
-            editorStampParamsToolbar: document.getElementById("editorStampParamsToolbar"),
+            editorFreeTextButton: buttonBy("editorFreeText"),
+            editorFreeTextParamsToolbar: divBy("editorFreeTextParamsToolbar"),
+            editorInkButton: buttonBy("editorInk"),
+            editorInkParamsToolbar: buttonBy("editorInkParamsToolbar"),
+            editorStampButton: buttonBy("editorStamp"),
+            editorStampParamsToolbar: divBy("editorStampParamsToolbar"),
             /**
              * Button to download the document.
              */
-            download: document.getElementById("download"),
+            download: buttonBy("download"),
         },
         secondaryToolbar: {
             /**
              * Container for the secondary toolbar.
              */
-            toolbar: document.getElementById("secondaryToolbar"),
+            toolbar: divBy("secondaryToolbar"),
             /**
              * Button to toggle the visibility of the secondary toolbar.
              */
-            toggleButton: document.getElementById("secondaryToolbarToggle"),
+            toggleButton: buttonBy("secondaryToolbarToggle"),
             /**
              * Button for entering presentation mode.
              */
-            presentationModeButton: document.getElementById("presentationMode"),
+            presentationModeButton: buttonBy("presentationMode"),
             /**
              * Button to open a file.
              */
-            openFileButton: /*#static*/ document.getElementById("secondaryOpenFile"),
+            openFileButton: /*#static*/ buttonBy("secondaryOpenFile"),
             /**
              * Button to print the document.
              */
-            printButton: document.getElementById("secondaryPrint"),
+            printButton: buttonBy("secondaryPrint"),
             /**
              * Button to download the document.
              */
-            downloadButton: document.getElementById("secondaryDownload"),
+            downloadButton: buttonBy("secondaryDownload"),
             /**
              * Button to obtain a bookmark link to the current location in the document.
              */
-            viewBookmarkButton: document.getElementById("viewBookmark"),
+            viewBookmarkButton: anchorBy("viewBookmark"),
             /**
              * Button to go to the first page in the document.
              */
-            firstPageButton: document.getElementById("firstPage"),
+            firstPageButton: buttonBy("firstPage"),
             /**
              * Button to go to the first page in the document.
              */
-            lastPageButton: document.getElementById("lastPage"),
+            lastPageButton: buttonBy("lastPage"),
             /**
              * Button to rotate the pages clockwise.
              */
-            pageRotateCwButton: document.getElementById("pageRotateCw"),
+            pageRotateCwButton: buttonBy("pageRotateCw"),
             /**
              * Button to rotate the pages counterclockwise.
              */
-            pageRotateCcwButton: document.getElementById("pageRotateCcw"),
+            pageRotateCcwButton: buttonBy("pageRotateCcw"),
             /**
              * Button to enable the select tool.
              */
-            cursorSelectToolButton: document.getElementById("cursorSelectTool"),
+            cursorSelectToolButton: buttonBy("cursorSelectTool"),
             /**
              * Button to enable the hand tool.
              */
-            cursorHandToolButton: document.getElementById("cursorHandTool"),
-            scrollPageButton: document.getElementById("scrollPage"),
-            scrollVerticalButton: document.getElementById("scrollVertical"),
-            scrollHorizontalButton: document.getElementById("scrollHorizontal"),
-            scrollWrappedButton: document.getElementById("scrollWrapped"),
-            spreadNoneButton: document.getElementById("spreadNone"),
-            spreadOddButton: document.getElementById("spreadOdd"),
-            spreadEvenButton: document.getElementById("spreadEven"),
+            cursorHandToolButton: buttonBy("cursorHandTool"),
+            scrollPageButton: buttonBy("scrollPage"),
+            scrollVerticalButton: buttonBy("scrollVertical"),
+            scrollHorizontalButton: buttonBy("scrollHorizontal"),
+            scrollWrappedButton: buttonBy("scrollWrapped"),
+            spreadNoneButton: buttonBy("spreadNone"),
+            spreadOddButton: buttonBy("spreadOdd"),
+            spreadEvenButton: buttonBy("spreadEven"),
             /**
              * Button for opening the document properties dialog.
              */
-            documentPropertiesButton: document.getElementById("documentProperties"),
+            documentPropertiesButton: buttonBy("documentProperties"),
         },
         sidebar: {
             // Divs (and sidebar button)
             /**
              * The outer container (encasing both the viewer and sidebar elements).
              */
-            outerContainer: document.getElementById("outerContainer"),
+            outerContainer: divBy("outerContainer"),
             /**
              * The sidebar container (in which the views are placed).
              */
-            sidebarContainer: document.getElementById("sidebarContainer"),
+            sidebarContainer: divBy("sidebarContainer"),
             /**
              * The button used for opening/closing the sidebar.
              */
-            toggleButton: document.getElementById("sidebarToggle"),
+            toggleButton: buttonBy("sidebarToggle"),
             /**
              * The DOM element that can be dragged in
              * order to adjust the width of the sidebar.
              */
-            resizer: document.getElementById("sidebarResizer"),
+            resizer: divBy("sidebarResizer"),
             // Buttons
             /**
              * The button used to show the thumbnail view.
              */
-            thumbnailButton: document.getElementById("viewThumbnail"),
+            thumbnailButton: buttonBy("viewThumbnail"),
             /**
              * The button used to show the outline view.
              */
-            outlineButton: document.getElementById("viewOutline"),
+            outlineButton: buttonBy("viewOutline"),
             /**
              * The button used to show the attachments view.
              */
-            attachmentsButton: document.getElementById("viewAttachments"),
+            attachmentsButton: buttonBy("viewAttachments"),
             /**
              * The button used to show the layers view.
              */
-            layersButton: document.getElementById("viewLayers"),
+            layersButton: buttonBy("viewLayers"),
             // Views
             /**
              * The container in which the thumbnails are placed.
              */
-            thumbnailView: document.getElementById("thumbnailView"),
+            thumbnailView: divBy("thumbnailView"),
             /**
              * The container in which the outline is placed.
              */
-            outlineView: document.getElementById("outlineView"),
+            outlineView: divBy("outlineView"),
             /**
              * The container in which the attachments are placed.
              */
-            attachmentsView: document.getElementById("attachmentsView"),
+            attachmentsView: divBy("attachmentsView"),
             /**
              * The container in which the layers are placed.
              */
-            layersView: document.getElementById("layersView"),
+            layersView: divBy("layersView"),
             // View-specific options
-            outlineOptionsContainer: document.getElementById("outlineOptionsContainer"),
-            currentOutlineItemButton: document.getElementById("currentOutlineItem"),
+            outlineOptionsContainer: divBy("outlineOptionsContainer"),
+            currentOutlineItemButton: buttonBy("currentOutlineItem"),
         },
         findBar: {
-            bar: document.getElementById("findbar"),
-            toggleButton: document.getElementById("viewFind"),
-            findField: document.getElementById("findInput"),
-            highlightAllCheckbox: document.getElementById("findHighlightAll"),
-            caseSensitiveCheckbox: document.getElementById("findMatchCase"),
-            matchDiacriticsCheckbox: document.getElementById("findMatchDiacritics"),
-            entireWordCheckbox: document.getElementById("findEntireWord"),
-            findMsg: document.getElementById("findMsg"),
-            findResultsCount: document.getElementById("findResultsCount"),
-            findPreviousButton: document.getElementById("findPrevious"),
-            findNextButton: document.getElementById("findNext"),
+            bar: divBy("findbar"),
+            toggleButton: buttonBy("viewFind"),
+            findField: inputBy("findInput"),
+            highlightAllCheckbox: inputBy("findHighlightAll"),
+            caseSensitiveCheckbox: inputBy("findMatchCase"),
+            matchDiacriticsCheckbox: inputBy("findMatchDiacritics"),
+            entireWordCheckbox: inputBy("findEntireWord"),
+            findMsg: spanBy("findMsg"),
+            findResultsCount: spanBy("findResultsCount"),
+            findPreviousButton: buttonBy("findPrevious"),
+            findNextButton: buttonBy("findNext"),
         },
         passwordOverlay: {
             /**
              * The overlay's DOM element.
              */
-            dialog: document.getElementById("passwordDialog"),
+            dialog: dialogBy("passwordDialog"),
             /**
              * Label containing instructions for entering the password.
              */
-            label: document.getElementById("passwordText"),
+            label: paragraphBy("passwordText"),
             /**
              * Input field for entering the password.
              */
-            input: document.getElementById("password"),
+            input: inputBy("password"),
             /**
              * Button for submitting the password.
              */
-            submitButton: document.getElementById("passwordSubmit"),
+            submitButton: buttonBy("passwordSubmit"),
             /**
              * Button for cancelling password entry.
              */
-            cancelButton: document.getElementById("passwordCancel"),
+            cancelButton: buttonBy("passwordCancel"),
         },
         documentProperties: {
             /**
              * The overlay's DOM element.
              */
-            dialog: document.getElementById("documentPropertiesDialog"),
+            dialog: dialogBy("documentPropertiesDialog"),
             /**
              * Button for closing the overlay.
              */
-            closeButton: document.getElementById("documentPropertiesClose"),
+            closeButton: buttonBy("documentPropertiesClose"),
             /**
              * Names and elements of the overlay's fields.
              */
             fields: {
-                fileName: document.getElementById("fileNameField"),
-                fileSize: document.getElementById("fileSizeField"),
-                title: document.getElementById("titleField"),
-                author: document.getElementById("authorField"),
-                subject: document.getElementById("subjectField"),
-                keywords: document.getElementById("keywordsField"),
-                creationDate: document.getElementById("creationDateField"),
-                modificationDate: document.getElementById("modificationDateField"),
-                creator: document.getElementById("creatorField"),
-                producer: document.getElementById("producerField"),
-                version: document.getElementById("versionField"),
-                pageCount: document.getElementById("pageCountField"),
-                pageSize: document.getElementById("pageSizeField"),
-                linearized: document.getElementById("linearizedField"),
+                fileName: paragraphBy("fileNameField"),
+                fileSize: paragraphBy("fileSizeField"),
+                title: paragraphBy("titleField"),
+                author: paragraphBy("authorField"),
+                subject: paragraphBy("subjectField"),
+                keywords: paragraphBy("keywordsField"),
+                creationDate: paragraphBy("creationDateField"),
+                modificationDate: paragraphBy("modificationDateField"),
+                creator: paragraphBy("creatorField"),
+                producer: paragraphBy("producerField"),
+                version: paragraphBy("versionField"),
+                pageCount: paragraphBy("pageCountField"),
+                pageSize: paragraphBy("pageSizeField"),
+                linearized: paragraphBy("linearizedField"),
             },
         },
-        annotationEditorParams: {
-            editorFreeTextFontSize: document.getElementById("editorFreeTextFontSize"),
-            editorFreeTextColor: document.getElementById("editorFreeTextColor"),
-            editorInkColor: document.getElementById("editorInkColor"),
-            editorInkThickness: document.getElementById("editorInkThickness"),
-            editorInkOpacity: document.getElementById("editorInkOpacity"),
-            editorStampAddImage: document.getElementById("editorStampAddImage"),
+        altTextDialog: {
+            dialog: dialogBy("altTextDialog"),
+            optionDescription: inputBy("descriptionButton"),
+            optionDecorative: inputBy("decorativeButton"),
+            textarea: textAreaBy("descriptionTextarea"),
+            cancelButton: buttonBy("altTextCancel"),
+            saveButton: buttonBy("altTextSave"),
         },
-        printContainer: document.getElementById("printContainer"),
-        openFileInput: /*#static*/ document.getElementById("fileInput"),
+        annotationEditorParams: {
+            editorFreeTextFontSize: inputBy("editorFreeTextFontSize"),
+            editorFreeTextColor: inputBy("editorFreeTextColor"),
+            editorInkColor: inputBy("editorInkColor"),
+            editorInkThickness: inputBy("editorInkThickness"),
+            editorInkOpacity: inputBy("editorInkOpacity"),
+            editorStampAddImage: buttonBy("editorStampAddImage"),
+        },
+        printContainer: divBy("printContainer"),
+        openFileInput: /*#static*/ inputBy("fileInput"),
         debuggerScriptPath: "./debugger.js",
     };
 }

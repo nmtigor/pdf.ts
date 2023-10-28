@@ -3,7 +3,7 @@ import type { HttpStatusCode } from "../../../lib/HttpStatusCode.js";
 import { PromiseCap } from "../../../lib/util/PromiseCap.js";
 import { type ErrorJ } from "../../../lib/util/trace.js";
 import type { PageLayout, PageMode } from "../../pdf.ts-web/ui_utils.js";
-import type { AnnotationData, FieldObject } from "../core/annotation.js";
+import type { Annotation, AnnotationData, FieldObject } from "../core/annotation.js";
 import type { ExplicitDest, MarkInfo, OpenAction, OptionalContentConfigData, ViewerPref } from "../core/catalog.js";
 import type { AnnotActions } from "../core/core_utils.js";
 import type { DatasetReader } from "../core/dataset_reader.js";
@@ -79,7 +79,7 @@ export interface MActionMap {
             pageIndex: number;
             intent: RenderingIntentFlag;
         };
-        Return: AnnotationData[];
+        Return: AnnotationData[] | Annotation[];
         Sinkchunk: undefined;
     };
     GetAnnotArray: {

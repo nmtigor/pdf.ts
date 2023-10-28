@@ -1,8 +1,22 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
-import { MOZCENTRAL, PDFJSDev } from "../../global.js";
+/* Copyright 2021 Mozilla Foundation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { Locale } from "../../lib/Locale.js";
+import { MOZCENTRAL, PDFJSDev } from "../../global.js";
 /*80--------------------------------------------------------------------------*/
 /**
  * PLEASE NOTE: This file is currently imported in both the `web/` and
@@ -60,6 +74,9 @@ const DEFAULT_L10N_STRINGS = {
     editor_free_text2_aria_label: "Text Editor",
     editor_ink2_aria_label: "Draw Editor",
     editor_ink_canvas_aria_label: "User-created image",
+    editor_alt_text_button_label: "Alt text",
+    editor_alt_text_edit_button_label: "Edit alt text",
+    editor_alt_text_decorative_tooltip: "Marked as decorative",
 };
 /*#static*/  {
     DEFAULT_L10N_STRINGS.print_progress_percent = "{{progress}}%";

@@ -17,16 +17,16 @@
  * limitations under the License.
  */
 
+import type { C2D, dot2d_t, rect_t, uint } from "@fe-lib/alias.ts";
+import type { red_t, rgb_t } from "@fe-lib/color/alias.ts";
+import { div as createDiv, html, svg as createSVG } from "@fe-lib/dom.ts";
 import { MOZCENTRAL } from "@fe-src/global.ts";
-import type { C2D, dot2d_t, rect_t, uint } from "@fe-src/lib/alias.ts";
-import type { red_t, rgb_t } from "@fe-src/lib/color/alias.ts";
-import { div as createDiv, html, svg as createSVG } from "@fe-src/lib/dom.ts";
 import type { XFAElObj } from "../core/xfa/alias.ts";
+import type { matrix_t } from "../shared/util.ts";
 import {
   BaseException,
   CMapCompressionType,
   FeatureTest,
-  type matrix_t,
   shadow,
   stringToBytes,
   Util,
@@ -42,8 +42,6 @@ import {
 /*80--------------------------------------------------------------------------*/
 
 const SVG_NS = "http://www.w3.org/2000/svg";
-
-export const AnnotationPrefix = "pdfjs_internal_id_";
 
 export class PixelsPerInch {
   static CSS = 96.0;

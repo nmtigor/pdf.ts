@@ -18,10 +18,10 @@
  */
 
 import { MOZCENTRAL } from "@fe-src/global.ts";
-import type { C2D, dot2d_t, Func, rect_t } from "@fe-src/lib/alias.ts";
-import { fail } from "@fe-src/lib/util/trace.ts";
-import type { Stepper } from "../../pdf.ts-web/debugger.ts";
-import type { PageColors } from "../../pdf.ts-web/pdf_viewer.ts";
+import type { C2D, dot2d_t, Func, rect_t } from "@fe-lib/alias.ts";
+import { fail } from "@fe-lib/util/trace.ts";
+import type { Stepper } from "@pdf.ts-web/debugger.ts";
+import type { PageColors } from "@pdf.ts-web/pdf_viewer.ts";
 import type {
   ImgData,
   MarkedContentProps,

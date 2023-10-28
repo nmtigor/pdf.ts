@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-import type { Ratio } from "@fe-src/lib/alias.ts";
+import type { Ratio } from "@fe-lib/alias.ts";
 import type { CMYK, CSTag, RGB } from "../shared/scripting_utils.ts";
 import { ColorConverters } from "../shared/scripting_utils.ts";
 import type { ScriptingData, SendData } from "./pdf_object.ts";

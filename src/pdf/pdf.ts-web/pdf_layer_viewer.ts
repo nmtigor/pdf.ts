@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-import { html } from "@fe-src/lib/dom.ts";
+import { html } from "@fe-lib/dom.ts";
 import type { Order } from "../pdf.ts-src/pdf.ts";
 import { OptionalContentConfig, PDFDocumentProxy } from "../pdf.ts-src/pdf.ts";
 import type { BaseTreeViewerCtorP } from "./base_tree_viewer.ts";

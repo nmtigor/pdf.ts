@@ -1,4 +1,6 @@
+import type { AnnotationEditor } from "../pdf.ts-src/display/editor/editor.js";
 import type { AnnotationEditorParamsType, AnnotationEditorType, AnnotationEditorUIManager, AnnotationElement, DispatchUpdateStatesP, FileAttachmentAnnotationElement, OptionalContentConfig, PDFPageProxy, PropertyToUpdate, ScriptingActionName } from "../pdf.ts-src/pdf.js";
+import type { AltTextManager, TelemetryData } from "./alt_text_manager.js";
 import type { AnnotationEditorParams } from "./annotation_editor_params.js";
 import type { ErrorMoreInfo, PDFViewerApplication } from "./app.js";
 import type { PDFAttachmentViewer } from "./pdf_attachment_viewer.js";
@@ -15,6 +17,7 @@ import type { PDFSidebar } from "./pdf_sidebar.js";
 import type { PDFThumbnailView } from "./pdf_thumbnail_view.js";
 import type { PDFLocation, PDFViewer } from "./pdf_viewer.js";
 import type { SecondaryToolbar } from "./secondary_toolbar.js";
+import type { Toolbar as GeckoviewToolbar } from "./toolbar-geckoview.js";
 import type { Toolbar } from "./toolbar.js";
 import type { CursorTool, PageLayout, PresentationModeState, ScrollMode, SidebarView, SpreadMode } from "./ui_utils.js";
 export declare const enum WaitOnType {
@@ -237,6 +240,21 @@ export interface EventMap {
     print: {};
     resetlayers: {
         source: PDFSidebar;
+    };
+    reporttelemetry: {
+        source: AnnotationEditor | AltTextManager | SecondaryToolbar | GeckoviewToolbar;
+        details: {
+            type: "editing" | "buttons" | "gv-buttons" | "pageInfo";
+            subtype?: string;
+            timestamp?: number;
+            data?: TelemetryData | {
+                action: "alt_text_tooltip" | "inserted_image";
+            } | {
+                id: string;
+            } | {
+                type: "freetext" | "ink" | "print" | "save" | "stamp";
+            };
+        };
     };
     resize: {
         source: typeof window | HTMLDivElement | PDFSidebar;

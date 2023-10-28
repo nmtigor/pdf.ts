@@ -262,7 +262,8 @@ export class AnnotationEditorLayer {
             this.div.append(div);
             editor.isAttachedToDOM = true;
         }
-        this.moveEditorInDOM(editor);
+        // The editor will be correctly moved into the DOM (see fixAndSetPosition).
+        editor.fixAndSetPosition();
         editor.onceAdded();
         this.#uiManager.addToAnnotationStorage(editor);
     }
@@ -278,13 +279,18 @@ export class AnnotationEditorLayer {
             // re-enable them when the editor has the focus.
             editor._focusEventsAllowed = false;
             setTimeout(() => {
-                editor.div.addEventListener("focusin", () => {
+                if (!editor.div.contains(document.activeElement)) {
+                    editor.div.addEventListener("focusin", () => {
+                        editor._focusEventsAllowed = true;
+                    }, { once: true });
+                    activeElement.focus();
+                }
+                else {
                     editor._focusEventsAllowed = true;
-                }, { once: true });
-                activeElement.focus();
+                }
             }, 0);
         }
-        this.#accessibilityManager?.moveElementInDOM(this.div, editor.div, editor.contentDiv, 
+        editor._structTreeParentId = this.#accessibilityManager?.moveElementInDOM(this.div, editor.div, editor.contentDiv, 
         /* isRemovable = */ true);
     }
     /**
@@ -493,6 +499,8 @@ export class AnnotationEditorLayer {
      */
     destroy() {
         if (this.#uiManager.getActive()?.parent === this) {
+            // We need to commit the current editor before destroying the layer.
+            this.#uiManager.commitOrRemove();
             this.#uiManager.setActiveEditor(undefined);
         }
         for (const editor of this.#editors.values()) {

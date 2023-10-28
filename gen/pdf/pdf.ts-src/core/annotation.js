@@ -1,22 +1,8 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
-/* Copyright 2012 Mozilla Foundation
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-import { MOZCENTRAL, PDFJSDev, TESTING } from "../../../global.js";
 import { assert, fail } from "../../../lib/util/trace.js";
+import { MOZCENTRAL, PDFJSDev, TESTING } from "../../../global.js";
 import { AnnotationActionEventType, AnnotationBorderStyleType, AnnotationEditorType, AnnotationFieldFlag, AnnotationFlag, AnnotationReplyType, AnnotationType, BASELINE_FACTOR, FeatureTest, getModificationDate, IDENTITY_MATRIX, info, LINE_DESCENT_FACTOR, LINE_FACTOR, OPS, RenderingIntentFlag, shadow, stringToPDFString, Util, warn, } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
 import { bidi } from "./bidi.js";
@@ -30,9 +16,34 @@ import { ObjectLoader } from "./object_loader.js";
 import { OperatorList } from "./operator_list.js";
 import { Dict, isRefsEqual, Name, Ref, RefSet } from "./primitives.js";
 import { Stream, StringStream } from "./stream.js";
-import { writeDict, writeObject } from "./writer.js";
+import { writeObject } from "./writer.js";
 import { XFAFactory } from "./xfa/factory.js";
 export class AnnotationFactory {
+    static createGlobals(pdfManager) {
+        return Promise.all([
+            pdfManager.ensureCatalog("acroForm"),
+            pdfManager.ensureDoc("xfaDatasets"),
+            pdfManager.ensureCatalog("structTreeRoot"),
+            // Only necessary to prevent the `Catalog.baseUrl`-getter, used
+            // with some Annotations, from throwing and thus breaking parsing:
+            pdfManager.ensureCatalog("baseUrl"),
+            // Only necessary to prevent the `Catalog.attachments`-getter, used
+            // with "GoToE" actions, from throwing and thus breaking parsing:
+            pdfManager.ensureCatalog("attachments"),
+        ]).then(([acroForm, xfaDatasets, structTreeRoot, baseUrl, attachments]) => {
+            return {
+                pdfManager,
+                acroForm: acroForm instanceof Dict ? acroForm : Dict.empty,
+                xfaDatasets,
+                structTreeRoot,
+                baseUrl,
+                attachments,
+            };
+        }, (reason) => {
+            warn(`createGlobals: "${reason}".`);
+            return undefined;
+        });
+    }
     /**
      * Create an `Annotation` object of the correct type for the given reference
      * to an annotation dictionary. This yields a promise that is resolved when
@@ -40,37 +51,33 @@ export class AnnotationFactory {
      *
      * @return A promise that is resolved with an {Annotation} instance.
      */
-    static create(xref, ref, pdfManager, idFactory, collectFields) {
-        return Promise.all([
-            pdfManager.ensureCatalog("acroForm"),
-            // Only necessary to prevent the `pdfManager.docBaseUrl`-getter, used
-            // with certain Annotations, from throwing and thus breaking parsing:
-            pdfManager.ensureCatalog("baseUrl"),
-            // Only necessary in the `Catalog.parseDestDictionary`-method,
-            // when parsing "GoToE" actions:
-            pdfManager.ensureCatalog("attachments"),
-            pdfManager.ensureDoc("xfaDatasets"),
-            collectFields ? this.#getPageIndex(xref, ref, pdfManager) : -1,
-        ]).then(([acroForm, baseUrl, attachments, xfaDatasets, pageIndex]) => pdfManager.ensure(this, "_create", [
+    static async create(xref, ref, annotationGlobals, idFactory, collectFields, pageRef) {
+        const pageIndex = collectFields
+            ? await this.#getPageIndex(xref, ref, annotationGlobals.pdfManager)
+            : undefined;
+        return annotationGlobals.pdfManager.ensure(this, "_create", [
             xref,
             ref,
-            pdfManager,
+            annotationGlobals,
             idFactory,
-            acroForm,
-            attachments,
-            xfaDatasets,
             collectFields,
             pageIndex,
-        ]));
+            pageRef,
+        ]);
     }
     /**
      * @private
      */
-    static _create(xref, ref, pdfManager, idFactory, acroForm, attachments, xfaDatasets, collectFields, pageIndex = -1) {
+    static _create(xref, ref, annotationGlobals, idFactory, 
+    // acroForm: Dict | undefined,
+    // attachments: Attachments | undefined,
+    // xfaDatasets: DatasetReader | undefined,
+    collectFields = false, pageIndex = undefined, pageRef = undefined) {
         const dict = xref.fetchIfRef(ref); // Table 164
         if (!(dict instanceof Dict)) {
             return undefined;
         }
+        const { acroForm, pdfManager } = annotationGlobals;
         const id = ref instanceof Ref
             ? ref.toString()
             : `annot_${idFactory.createObjId()}`;
@@ -79,7 +86,6 @@ export class AnnotationFactory {
         const subtype = subtypename instanceof Name
             ? subtypename.name
             : undefined;
-        const acroFormDict = acroForm instanceof Dict ? acroForm : Dict.empty;
         // Return the right annotation object based on the subtype and field type.
         const parameters = {
             xref,
@@ -87,15 +93,13 @@ export class AnnotationFactory {
             dict,
             subtype,
             id,
-            pdfManager,
-            acroForm: acroFormDict,
-            attachments,
-            xfaDatasets,
+            annotationGlobals,
             collectFields,
             needAppearances: !collectFields &&
-                acroFormDict.get("NeedAppearances") === true,
+                acroForm.get("NeedAppearances") === true,
             pageIndex,
             evaluatorOptions: pdfManager.evaluatorOptions,
+            pageRef,
         };
         switch (subtype) {
             case "Link":
@@ -236,10 +240,7 @@ export class AnnotationFactory {
                         baseFont.set("Encoding", Name.get("WinAnsiEncoding"));
                         const buffer = [];
                         baseFontRef = xref.getNewTemporaryRef();
-                        const transform = xref.encrypt
-                            ? xref.encrypt.createCipherTransform(baseFontRef.num, baseFontRef.gen)
-                            : undefined;
-                        await writeObject(baseFontRef, baseFont, buffer, transform);
+                        await writeObject(baseFontRef, baseFont, buffer, xref);
                         dependencies.push({ ref: baseFontRef, data: buffer.join("") });
                     }
                     promises.push(FreeTextAnnotation.createNewAnnotation(xref, annotation, dependencies, { evaluator, task, baseFontRef }));
@@ -257,19 +258,13 @@ export class AnnotationFactory {
                         const buffer = [];
                         if (smaskStream) {
                             const smaskRef = xref.getNewTemporaryRef();
-                            const transform = xref.encrypt
-                                ? xref.encrypt.createCipherTransform(smaskRef.num, smaskRef.gen)
-                                : undefined;
-                            await writeObject(smaskRef, smaskStream, buffer, transform);
+                            await writeObject(smaskRef, smaskStream, buffer, xref);
                             dependencies.push({ ref: smaskRef, data: buffer.join("") });
                             imageStream.dict.set("SMask", smaskRef);
                             buffer.length = 0;
                         }
                         const imageRef = (image.imageRef = xref.getNewTemporaryRef());
-                        const transform = xref.encrypt
-                            ? xref.encrypt.createCipherTransform(imageRef.num, imageRef.gen)
-                            : undefined;
-                        await writeObject(imageRef, imageStream, buffer, transform);
+                        await writeObject(imageRef, imageStream, buffer, xref);
                         dependencies.push({ ref: imageRef, data: buffer.join("") });
                         image.imageStream = image.smaskStream = undefined;
                     }
@@ -282,7 +277,7 @@ export class AnnotationFactory {
             dependencies,
         };
     }
-    static async printNewAnnotations(evaluator, task, annotations, imagePromises) {
+    static async printNewAnnotations(annotationGlobals, evaluator, task, annotations, imagePromises) {
         if (!annotations) {
             return undefined;
         }
@@ -294,14 +289,14 @@ export class AnnotationFactory {
             }
             switch (annotation.annotationType) {
                 case AnnotationEditorType.FREETEXT:
-                    promises.push(FreeTextAnnotation.createNewPrintAnnotation(xref, annotation, {
+                    promises.push(FreeTextAnnotation.createNewPrintAnnotation(annotationGlobals, xref, annotation, {
                         evaluator,
                         task,
                         evaluatorOptions: options,
                     }));
                     break;
                 case AnnotationEditorType.INK:
-                    promises.push(InkAnnotation.createNewPrintAnnotation(xref, annotation, {
+                    promises.push(InkAnnotation.createNewPrintAnnotation(annotationGlobals, xref, annotation, {
                         evaluatorOptions: options,
                     }));
                     break;
@@ -318,7 +313,7 @@ export class AnnotationFactory {
                         image.imageRef = new JpegStream(imageStream, imageStream.length);
                         image.imageStream = image.smaskStream = undefined;
                     }
-                    promises.push(StampAnnotation.createNewPrintAnnotation(xref, annotation, {
+                    promises.push(StampAnnotation.createNewPrintAnnotation(annotationGlobals, xref, annotation, {
                         image,
                         evaluatorOptions: options,
                     }));
@@ -579,7 +574,7 @@ export class Annotation {
     rotation;
     _defaultAppearance;
     constructor(params) {
-        const { dict, xref } = params; // Table 164
+        const { dict, xref, annotationGlobals } = params; // Table 164
         this.setTitle(dict.get("T"));
         this.setContents(dict.get("Contents"));
         this.setModificationDate(dict.get("M"));
@@ -601,6 +596,13 @@ export class Annotation {
         // a HTML element for it.
         const isLocked = !!(this.flags & AnnotationFlag.LOCKED);
         const isContentLocked = !!(this.flags & AnnotationFlag.LOCKEDCONTENTS);
+        if (annotationGlobals.structTreeRoot) {
+            let structParent = dict.get("StructParent");
+            structParent = Number.isInteger(structParent) && structParent >= 0
+                ? structParent
+                : -1;
+            annotationGlobals.structTreeRoot.addAnnotationIdToPage(params.pageRef, structParent);
+        }
         // Expose public properties using a data object.
         this.data = {
             annotationFlags: this.flags,
@@ -648,8 +650,9 @@ export class Annotation {
         return { str, dir };
     }
     setDefaultAppearance(params) {
-        const defaultAppearance = getInheritableProperty({ dict: params.dict, key: "DA" }) ||
-            params.acroForm.get("DA");
+        const { dict, annotationGlobals } = params;
+        const defaultAppearance = getInheritableProperty({ dict, key: "DA" }) ||
+            annotationGlobals.acroForm.get("DA");
         this._defaultAppearance = typeof defaultAppearance === "string"
             ? defaultAppearance
             : "";
@@ -1016,12 +1019,7 @@ export class Annotation {
                 visited.put(loopDict.objId);
             }
             if (loopDict.has("T")) {
-                const t = stringToPDFString(loopDict.get("T"));
-                if (!t.startsWith("#")) {
-                    // If it starts with a # then it's a class which is not a concept for
-                    // datasets elements (https://www.pdfa.org/norm-refs/XFA-3_3.pdf#page=96).
-                    fieldName.unshift(t);
-                }
+                fieldName.unshift(stringToPDFString(loopDict.get("T")));
             }
         }
         return fieldName.join(".");
@@ -1320,35 +1318,33 @@ export class MarkupAnnotation extends Annotation {
         this._streams.push(this.appearance, appearanceStream);
     }
     static async createNewAnnotation(xref, annotation, dependencies, params) {
-        const annotationRef = annotation.ref || xref.getNewTemporaryRef();
+        const annotationRef = (annotation.ref ||= xref.getNewTemporaryRef());
         const ap = await this.createNewAppearanceStream(annotation, xref, params);
         const buffer = [];
         let annotationDict;
         if (ap) {
             const apRef = xref.getNewTemporaryRef();
             annotationDict = this.createNewDict(annotation, xref, { apRef });
-            const transform = xref.encrypt
-                ? xref.encrypt.createCipherTransform(apRef.num, apRef.gen)
-                : undefined;
-            await writeObject(apRef, ap, buffer, transform);
+            await writeObject(apRef, ap, buffer, xref);
             dependencies.push({ ref: apRef, data: buffer.join("") });
         }
         else {
             annotationDict = this.createNewDict(annotation, xref, {});
         }
+        if (Number.isInteger(annotation.parentTreeId)) {
+            annotationDict.set("StructParent", annotation.parentTreeId);
+        }
         buffer.length = 0;
-        const transform = xref.encrypt
-            ? xref.encrypt.createCipherTransform(annotationRef.num, annotationRef.gen)
-            : undefined;
-        await writeObject(annotationRef, annotationDict, buffer, transform);
+        await writeObject(annotationRef, annotationDict, buffer, xref);
         return { ref: annotationRef, data: buffer.join("") };
     }
-    static async createNewPrintAnnotation(xref, annotation, params) {
+    static async createNewPrintAnnotation(annotationGlobals, xref, annotation, params) {
         const ap = await this.createNewAppearanceStream(annotation, xref, params);
         const annotationDict = this.createNewDict(annotation, xref, { ap });
         const newAnnotation = new this.prototype.constructor({
             dict: annotationDict,
             xref,
+            annotationGlobals,
             evaluatorOptions: params.evaluatorOptions,
         });
         if (annotation.ref) {
@@ -1363,7 +1359,7 @@ export class WidgetAnnotation extends Annotation {
     _hasText;
     constructor(params) {
         super(params);
-        const { dict, xref } = params;
+        const { dict, xref, annotationGlobals } = params;
         const data = this.data;
         this._needAppearances = params.needAppearances;
         data.annotationType = AnnotationType.WIDGET;
@@ -1385,12 +1381,14 @@ export class WidgetAnnotation extends Annotation {
             getArray: true,
         });
         data.defaultFieldValue = this._decodeFormValue(defaultFieldValue);
-        if (fieldValue === undefined && params.xfaDatasets) {
+        if (fieldValue === undefined && annotationGlobals.xfaDatasets) {
             // Try to figure out if we have something in the xfa dataset.
             const path = this._title.str;
             if (path) {
                 this._hasValueFromXFA = true;
-                data.fieldValue = fieldValue = params.xfaDatasets.getValue(path);
+                data.fieldValue =
+                    fieldValue =
+                        annotationGlobals.xfaDatasets.getValue(path);
             }
         }
         // When no "V" entry exists, let the fieldValue fallback to the "DV" entry
@@ -1409,7 +1407,7 @@ export class WidgetAnnotation extends Annotation {
             dict,
             key: "DR",
         });
-        const acroFormResources = params.acroForm.get("DR");
+        const acroFormResources = annotationGlobals.acroForm.get("DR");
         const appearanceResources = this.appearance?.dict.get("Resources");
         this._fieldResources = {
             localResources,
@@ -1655,10 +1653,6 @@ export class WidgetAnnotation extends Annotation {
         if (maybeMK) {
             dict.set("MK", maybeMK);
         }
-        const encrypt = xref.encrypt;
-        const originalTransform = encrypt
-            ? encrypt.createCipherTransform(this.ref.num, this.ref.gen)
-            : undefined;
         const buffer = [];
         const changes = [
             // data for the original object
@@ -1670,10 +1664,6 @@ export class WidgetAnnotation extends Annotation {
             const AP = new Dict(xref);
             dict.set("AP", AP);
             AP.set("N", newRef);
-            let newTransform;
-            if (encrypt) {
-                newTransform = encrypt.createCipherTransform(newRef.num, newRef.gen);
-            }
             const resources = this._getSaveFieldResources(xref);
             const appearanceStream = new StringStream(appearance);
             const appearanceDict = (appearanceStream.dict = new Dict(xref));
@@ -1690,7 +1680,7 @@ export class WidgetAnnotation extends Annotation {
                 // The matrix isn't the identity one.
                 appearanceDict.set("Matrix", rotationMatrix);
             }
-            await writeObject(newRef, appearanceStream, buffer, newTransform);
+            await writeObject(newRef, appearanceStream, buffer, xref);
             changes.push(
             // data for the new AP
             {
@@ -1701,7 +1691,7 @@ export class WidgetAnnotation extends Annotation {
             buffer.length = 0;
         }
         dict.set("M", `D:${getModificationDate()}`);
-        await writeObject(this.ref, dict, buffer, originalTransform);
+        await writeObject(this.ref, dict, buffer, xref);
         changes[0].data = buffer.join("");
         return changes;
     }
@@ -2294,14 +2284,8 @@ class ButtonWidgetAnnotation extends WidgetAnnotation {
         if (maybeMK) {
             dict.set("MK", maybeMK);
         }
-        const encrypt = evaluator.xref.encrypt;
-        let originalTransform;
-        if (encrypt) {
-            originalTransform = encrypt.createCipherTransform(this.ref.num, this.ref.gen);
-        }
-        const buffer = [`${this.ref.num} ${this.ref.gen} obj\n`];
-        await writeDict(dict, buffer, originalTransform);
-        buffer.push("\nendobj\n");
+        const buffer = [];
+        await writeObject(this.ref, dict, buffer, evaluator.xref);
         return [{ ref: this.ref, data: buffer.join(""), xfa }];
     }
     async _saveRadioButton(evaluator, task, annotationStorage) {
@@ -2334,19 +2318,17 @@ class ButtonWidgetAnnotation extends WidgetAnnotation {
             value: value ? this.data.buttonValue : "",
         };
         const name = Name.get(value ? this.data.buttonValue : "Off");
-        let parentBuffer;
-        const encrypt = evaluator.xref.encrypt;
+        // let parentBuffer: string[] | undefined;
+        // const encrypt = evaluator.xref.encrypt;
+        const buffer = [];
+        let parentData;
         if (value) {
             if (this.parent instanceof Ref) {
                 const parent = evaluator.xref.fetch(this.parent);
-                let parentTransform;
-                if (encrypt) {
-                    parentTransform = encrypt.createCipherTransform(this.parent.num, this.parent.gen);
-                }
                 parent.set("V", name);
-                parentBuffer = [`${this.parent.num} ${this.parent.gen} obj\n`];
-                await writeDict(parent, parentBuffer, parentTransform);
-                parentBuffer.push("\nendobj\n");
+                await writeObject(this.parent, parent, buffer, evaluator.xref);
+                parentData = buffer.join("");
+                buffer.length = 0;
             }
             else if (this.parent instanceof Dict) {
                 this.parent.set("V", name);
@@ -2358,22 +2340,16 @@ class ButtonWidgetAnnotation extends WidgetAnnotation {
         if (maybeMK) {
             dict.set("MK", maybeMK);
         }
-        let originalTransform;
-        if (encrypt) {
-            originalTransform = encrypt.createCipherTransform(this.ref.num, this.ref.gen);
-        }
-        const buffer = [`${this.ref.num} ${this.ref.gen} obj\n`];
-        await writeDict(dict, buffer, originalTransform);
-        buffer.push("\nendobj\n");
+        await writeObject(this.ref, dict, buffer, evaluator.xref);
         const newRefs = [{
                 ref: this.ref,
                 data: buffer.join(""),
                 xfa,
             }];
-        if (parentBuffer !== undefined) {
+        if (parentData) {
             newRefs.push({
                 ref: this.parent,
-                data: parentBuffer.join(""),
+                data: parentData,
                 // xfa: null,
             });
         }
@@ -2546,18 +2522,17 @@ class ButtonWidgetAnnotation extends WidgetAnnotation {
         }
     }
     _processPushButton(params) {
-        if (!params.dict.has("A") &&
-            !params.dict.has("AA") &&
-            !this.data.alternativeText) {
+        const { dict, annotationGlobals } = params;
+        if (!dict.has("A") && !dict.has("AA") && !this.data.alternativeText) {
             warn("Push buttons without action dictionaries are not supported");
             return;
         }
-        this.data.isTooltipOnly = !params.dict.has("A") && !params.dict.has("AA");
+        this.data.isTooltipOnly = !dict.has("A") && !dict.has("AA");
         Catalog.parseDestDictionary({
-            destDict: params.dict,
+            destDict: dict,
             resultObj: this.data,
-            docBaseUrl: params.pdfManager.docBaseUrl,
-            docAttachments: params.attachments,
+            docBaseUrl: annotationGlobals.baseUrl,
+            docAttachments: annotationGlobals.attachments,
         });
     }
     getFieldObject() {
@@ -2848,18 +2823,19 @@ class TextAnnotation extends MarkupAnnotation {
 class LinkAnnotation extends Annotation {
     constructor(params) {
         super(params);
+        const { dict, annotationGlobals } = params;
         this.data.annotationType = AnnotationType.LINK;
-        const quadPoints = getQuadPoints(params.dict, this.rectangle);
+        const quadPoints = getQuadPoints(dict, this.rectangle);
         if (quadPoints) {
             this.data.quadPoints = quadPoints;
         }
         // The color entry for a link annotation is the color of the border.
         this.data.borderColor ||= this.data.color;
         Catalog.parseDestDictionary({
-            destDict: params.dict,
+            destDict: dict,
             resultObj: this.data,
-            docBaseUrl: params.pdfManager.docBaseUrl,
-            docAttachments: params.attachments,
+            docBaseUrl: annotationGlobals.baseUrl,
+            docAttachments: annotationGlobals.attachments,
         });
     }
 }

@@ -2,22 +2,9 @@
  * nmtigor (https://github.com/nmtigor) @2022
  */
 var _a;
-/* Copyright 2022 Mozilla Foundation
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-import { MOZCENTRAL } from "../../../../global.js";
 import { html } from "../../../../lib/dom.js";
+import { noContextMenu } from "../../../../lib/util/general.js";
+import { MOZCENTRAL } from "../../../../global.js";
 import { AnnotationEditorParamsType, AnnotationEditorType, Util, } from "../../shared/util.js";
 import { InkAnnotationElement } from "../annotation_layer.js";
 import { AnnotationEditor } from "./editor.js";
@@ -26,9 +13,12 @@ import { opacityToHex } from "./tools.js";
  * Basic draw editor in order to generate an Ink annotation.
  */
 export class InkEditor extends AnnotationEditor {
+    static _type = "ink";
+    static _defaultColor;
+    static _defaultOpacity = 1;
+    static _defaultThickness = 1;
     #baseHeight = 0;
     #baseWidth = 0;
-    #boundCanvasContextMenu = this.canvasContextMenu.bind(this);
     #boundCanvasPointermove = this.canvasPointermove.bind(this);
     #boundCanvasPointerleave = this.canvasPointerleave.bind(this);
     #boundCanvasPointerup = this.canvasPointerup.bind(this);
@@ -53,11 +43,6 @@ export class InkEditor extends AnnotationEditor {
     translationY = 0;
     canvas;
     ctx;
-    static _defaultColor;
-    static _defaultOpacity = 1;
-    static _defaultThickness = 1;
-    static _l10nPromise;
-    static _type = "ink";
     constructor(params) {
         super({ ...params, name: "inkEditor" });
         this.color = params.color || undefined;
@@ -69,10 +54,9 @@ export class InkEditor extends AnnotationEditor {
     }
     /** @inheritdoc */
     static initialize(l10n) {
-        this._l10nPromise = new Map(["editor_ink_canvas_aria_label", "editor_ink2_aria_label"].map((str) => [
-            str,
-            l10n.get(str),
-        ]));
+        AnnotationEditor.initialize(l10n, {
+            strings: ["editor_ink_canvas_aria_label", "editor_ink2_aria_label"],
+        });
     }
     /** @inheritdoc */
     static updateDefaultParams(type, value) {
@@ -309,7 +293,7 @@ export class InkEditor extends AnnotationEditor {
      * Start to draw on the canvas.
      */
     #startDrawing(x, y) {
-        this.canvas.on("contextmenu", this.#boundCanvasContextMenu);
+        this.canvas.on("contextmenu", noContextMenu);
         this.canvas.on("pointerleave", this.#boundCanvasPointerleave);
         this.canvas.on("pointermove", this.#boundCanvasPointermove);
         this.canvas.on("pointerup", this.#boundCanvasPointerup);
@@ -536,12 +520,6 @@ export class InkEditor extends AnnotationEditor {
         this.#startDrawing(event.offsetX, event.offsetY);
     }
     /**
-     * oncontextmenu callback for the canvas we're drawing on.
-     */
-    canvasContextMenu(event) {
-        event.preventDefault();
-    }
-    /**
      * onpointermove callback for the canvas we're drawing on.
      */
     canvasPointermove(event) {
@@ -572,7 +550,7 @@ export class InkEditor extends AnnotationEditor {
         // Slight delay to avoid the context menu to appear (it can happen on a long
         // tap with a pen).
         setTimeout(() => {
-            this.canvas.off("contextmenu", this.#boundCanvasContextMenu);
+            this.canvas.off("contextmenu", noContextMenu);
         }, 10);
         this.#stopDrawing(event.offsetX, event.offsetY);
         this.addToAnnotationStorage();
@@ -587,8 +565,7 @@ export class InkEditor extends AnnotationEditor {
         this.canvas = html("canvas");
         this.canvas.width = this.canvas.height = 0;
         this.canvas.className = "inkEditorCanvas";
-        _a._l10nPromise
-            .get("editor_ink_canvas_aria_label")
+        AnnotationEditor._l10nPromise.get("editor_ink_canvas_aria_label")
             .then((msg) => this.canvas?.setAttribute("aria-label", msg));
         this.div.append(this.canvas);
         this.ctx = this.canvas.getContext("2d");
@@ -620,8 +597,7 @@ export class InkEditor extends AnnotationEditor {
             baseY = this.y;
         }
         super.render();
-        _a._l10nPromise
-            .get("editor_ink2_aria_label")
+        _a._l10nPromise.get("editor_ink2_aria_label")
             .then((msg) => this.div?.setAttribute("aria-label", msg));
         const [x, y, w, h] = this.#getInitialBBox();
         this.setAt(x, y, 0, 0);
@@ -954,6 +930,7 @@ export class InkEditor extends AnnotationEditor {
             pageIndex: this.pageIndex,
             rect,
             rotation: this.rotation,
+            structTreeParentId: this._structTreeParentId,
         };
     }
 }

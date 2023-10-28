@@ -1,11 +1,11 @@
 /** 80**************************************************************************
- * Ref. [pdf.js]/src/shared/util.js
+ * Ref. [[pdf.js]/src/shared/util.js](https://github.com/mozilla/pdf.js/blob/master/src/shared/util.js)
  *
  * @module lib/util/PromiseCap
  * @license Apache-2.0
  ******************************************************************************/
 
-import { PDFJSDev, TESTING } from "../../global.ts";
+import { TESTING } from "../../global.ts";
 import { assert } from "./trace.ts";
 /*80--------------------------------------------------------------------------*/
 
@@ -41,7 +41,7 @@ export class PromiseCap<T = void> {
       };
 
       this.reject = (reason) => {
-        /*#static*/ if (PDFJSDev || TESTING) {
+        /*#static*/ if (TESTING) {
           // assert(reason instanceof Error, 'Expected valid "reason" argument.');
           assert(
             typeof reason?.name === "string",

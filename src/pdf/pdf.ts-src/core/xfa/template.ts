@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-import type { rect_t } from "@fe-src/lib/alias.ts";
+import type { rect_t } from "@fe-lib/alias.ts";
 import { stringToBytes, Util, warn } from "../../shared/util.ts";
 import { recoverJsURL } from "../core_utils.ts";
 import type {

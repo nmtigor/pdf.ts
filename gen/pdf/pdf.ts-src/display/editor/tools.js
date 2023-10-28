@@ -2,25 +2,8 @@
  * nmtigor (https://github.com/nmtigor) @2022
  */
 var _a;
-/* Copyright 2022 Mozilla Foundation
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-/** @typedef {import("./editor.js").AnnotationEditor} AnnotationEditor */
-// eslint-disable-next-line max-len
-/** @typedef {import("./annotation_editor_layer.js").AnnotationEditorLayer} AnnotationEditorLayer */
-import { LIB } from "../../../../global.js";
 import { warn } from "../../../../lib/util/trace.js";
+import { LIB } from "../../../../global.js";
 import { AnnotationEditorParamsType, AnnotationEditorPrefix, AnnotationEditorType, FeatureTest, getUuid, shadow, Util, } from "../../shared/util.js";
 import { getColorValues, getRGB, PixelsPerInch } from "../display_utils.js";
 /*80--------------------------------------------------------------------------*/
@@ -436,6 +419,7 @@ export class AnnotationEditorUIManager {
     }
     #allEditors = new Map();
     #allLayers = new Map();
+    #altTextManager;
     #annotationStorage;
     #commandManager = new CommandManager();
     #currentPageIndex = 0;
@@ -446,7 +430,7 @@ export class AnnotationEditorUIManager {
     #draggingEditors;
     #editorTypes;
     #editorsToRescale = new Set();
-    #eventBus;
+    _eventBus;
     #filterFactory;
     #idManager = new IdManager();
     /**
@@ -583,14 +567,15 @@ export class AnnotationEditorUIManager {
             ],
         ]));
     }
-    constructor(container, viewer, eventBus, pdfDocument, pageColors) {
+    constructor(container, viewer, altTextManager, eventBus, pdfDocument, pageColors) {
         this.#container = container;
         this.#viewer = viewer;
-        this.#eventBus = eventBus;
-        this.#eventBus._on("editingaction", this.#boundOnEditingAction);
-        this.#eventBus._on("pagechanging", this.#boundOnPageChanging);
-        this.#eventBus._on("scalechanging", this.#boundOnScaleChanging);
-        this.#eventBus._on("rotationchanging", this.#boundOnRotationChanging);
+        this.#altTextManager = altTextManager;
+        this._eventBus = eventBus;
+        this._eventBus._on("editingaction", this.#boundOnEditingAction);
+        this._eventBus._on("pagechanging", this.#boundOnPageChanging);
+        this._eventBus._on("scalechanging", this.#boundOnScaleChanging);
+        this._eventBus._on("rotationchanging", this.#boundOnRotationChanging);
         this.#annotationStorage = pdfDocument.annotationStorage;
         this.#filterFactory = pdfDocument.filterFactory;
         this.#pageColors = pageColors;
@@ -598,10 +583,10 @@ export class AnnotationEditorUIManager {
     destroy() {
         this.#removeKeyboardManager();
         this.#removeFocusManager();
-        this.#eventBus._off("editingaction", this.#boundOnEditingAction);
-        this.#eventBus._off("pagechanging", this.#boundOnPageChanging);
-        this.#eventBus._off("scalechanging", this.#boundOnScaleChanging);
-        this.#eventBus._off("rotationchanging", this.#boundOnRotationChanging);
+        this._eventBus._off("editingaction", this.#boundOnEditingAction);
+        this._eventBus._off("pagechanging", this.#boundOnPageChanging);
+        this._eventBus._off("scalechanging", this.#boundOnScaleChanging);
+        this._eventBus._off("rotationchanging", this.#boundOnRotationChanging);
         for (const layer of this.#allLayers.values()) {
             layer.destroy();
         }
@@ -611,11 +596,18 @@ export class AnnotationEditorUIManager {
         this.#activeEditor = undefined;
         this.#selectedEditors.clear();
         this.#commandManager.destroy();
+        this.#altTextManager.destroy();
     }
     get hcmFilter() {
         return shadow(this, "hcmFilter", this.#pageColors
             ? this.#filterFactory.addHCMFilter(this.#pageColors.foreground, this.#pageColors.background)
             : "none");
+    }
+    get direction() {
+        return shadow(this, "direction", getComputedStyle(this.#container).direction);
+    }
+    editAltText(editor) {
+        this.#altTextManager?.editAltText(this, editor);
     }
     onPageChanging({ pageNumber }) {
         this.#currentPageIndex = pageNumber - 1;
@@ -721,6 +713,14 @@ export class AnnotationEditorUIManager {
         document.off("cut", this.#boundCut);
         document.off("paste", this.#boundPaste);
     }
+    addEditListeners() {
+        this.#addKeyboardManager();
+        this.#addCopyPasteListeners();
+    }
+    removeEditListeners() {
+        this.#removeKeyboardManager();
+        this.#removeCopyPasteListeners();
+    }
     /**
      * Copy callback.
      */
@@ -825,20 +825,20 @@ export class AnnotationEditorUIManager {
         }
     }
     /**
-     * Update the different possible states of this manager, e.g. is the clipboard
-     * empty or is there something to undo, ...
+     * Update the different possible states of this manager, e.g. is there
+     * something to undo, redo, ...
      */
     #dispatchUpdateStates(details) {
         const hasChanged = Object.entries(details).some(([key, value]) => this.#previousStates[key] !== value);
         if (hasChanged) {
-            this.#eventBus.dispatch("annotationeditorstateschanged", {
+            this._eventBus.dispatch("annotationeditorstateschanged", {
                 source: this,
                 details: Object.assign(this.#previousStates, details),
             });
         }
     }
     #dispatchUpdateUI(details) {
-        this.#eventBus.dispatch("annotationeditorparamschanged", {
+        this._eventBus.dispatch("annotationeditorparamschanged", {
             source: this,
             details,
         });
@@ -941,7 +941,7 @@ export class AnnotationEditorUIManager {
         if (mode === this.#mode) {
             return;
         }
-        this.#eventBus.dispatch("switchannotationeditormode", {
+        this._eventBus.dispatch("switchannotationeditormode", {
             source: this,
             mode,
         });
@@ -1294,6 +1294,8 @@ export class AnnotationEditorUIManager {
      * Set up the drag session for moving the selected editors.
      */
     setUpDragSession() {
+        // Note: don't use any references to the editor's parent which can be undefined
+        // if the editor belongs to a destroyed page.
         if (!this.hasSelection) {
             return;
         }
@@ -1304,7 +1306,7 @@ export class AnnotationEditorUIManager {
             this.#draggingEditors.set(editor, {
                 savedX: editor.x,
                 savedY: editor.y,
-                savedPageIndex: editor.parent.pageIndex,
+                savedPageIndex: editor.pageIndex,
                 newX: 0,
                 newY: 0,
                 newPageIndex: -1,
@@ -1313,7 +1315,7 @@ export class AnnotationEditorUIManager {
     }
     /**
      * Ends the drag session.
-     * @return {boolean} true if at least one editor has been moved.
+     * @return true if at least one editor has been moved.
      */
     endDragSession() {
         if (!this.#draggingEditors) {
@@ -1323,13 +1325,13 @@ export class AnnotationEditorUIManager {
         const map = this.#draggingEditors;
         this.#draggingEditors = undefined;
         let mustBeAddedInUndoStack = false;
-        for (const [{ x, y, parent }, value] of map) {
+        for (const [{ x, y, pageIndex }, value] of map) {
             value.newX = x;
             value.newY = y;
-            value.newPageIndex = parent.pageIndex;
+            value.newPageIndex = pageIndex;
             mustBeAddedInUndoStack ||= x !== value.savedX ||
                 y !== value.savedY ||
-                parent.pageIndex !== value.savedPageIndex;
+                pageIndex !== value.savedPageIndex;
         }
         if (!mustBeAddedInUndoStack) {
             return false;

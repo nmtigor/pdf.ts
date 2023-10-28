@@ -18,9 +18,9 @@
  */
 
 import { CHROME, MOZCENTRAL, PDFJSDev, TESTING } from "@fe-src/global.ts";
-import type { C2D } from "@fe-src/lib/alias.ts";
-import { html } from "@fe-src/lib/dom.ts";
-import { assert, fail } from "@fe-src/lib/util/trace.ts";
+import type { C2D } from "@fe-lib/alias.ts";
+import { html } from "@fe-lib/dom.ts";
+import { assert, fail } from "@fe-lib/util/trace.ts";
 import type { CmdArgs } from "../core/font_renderer.ts";
 import type { SubstitutionInfo } from "../core/font_substitutions.ts";
 import { FontExpotDataEx } from "../core/fonts.ts";

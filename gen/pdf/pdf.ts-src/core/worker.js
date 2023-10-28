@@ -15,9 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { GENERIC, PDFJSDev, TESTING } from "../../../global.js";
 import { PromiseCap } from "../../../lib/util/PromiseCap.js";
 import { assert } from "../../../lib/util/trace.js";
+import { GENERIC, PDFJSDev, TESTING } from "../../../global.js";
 import { MessageHandler } from "../shared/message_handler.js";
 import { AbortException, BaseException, getVerbosityLevel, info, PasswordException, setVerbosityLevel, stringToPDFString, UnknownErrorException, VerbosityLevel, warn, } from "../shared/util.js";
 import { AnnotationFactory } from "./annotation.js";
@@ -25,6 +25,7 @@ import { clearGlobalCaches } from "./cleanup_helper.js";
 import { arrayBuffersToBytes, getNewAnnotationsMap, XRefParseException, } from "./core_utils.js";
 import { LocalPdfManager, NetworkPdfManager } from "./pdf_manager.js";
 import { Dict, Ref } from "./primitives.js";
+import { StructTreeRoot } from "./struct_tree.js";
 import { PDFWorkerStream } from "./worker_stream.js";
 import { incrementalUpdate } from "./writer.js";
 /*80--------------------------------------------------------------------------*/
@@ -430,22 +431,44 @@ export const WorkerMessageHandler = {
             return pdfManager.ensureDoc("calculationOrderIds");
         });
         handler.on("SaveDocument", async ({ isPureXfa, numPages, annotationStorage, filename }) => {
-            const promises = [
+            const globalPromises = [
                 pdfManager.requestLoadedStream(),
                 pdfManager.ensureCatalog("acroForm"),
                 pdfManager.ensureCatalog("acroFormRef"),
                 pdfManager.ensureDoc("startXRef"),
+                pdfManager.ensureDoc("xref"),
                 pdfManager.ensureDoc("linearization"),
+                pdfManager.ensureCatalog("structTreeRoot"),
             ];
+            const promises = [];
             const newAnnotationsByPage = !isPureXfa
                 ? getNewAnnotationsMap(annotationStorage)
                 : undefined;
-            const xref = await pdfManager.ensureDoc("xref");
-            const promises_1 = [];
+            const [stream, acroForm, acroFormRef, startXRef, xref, linearization, _structTreeRoot,] = await Promise.all(globalPromises);
+            const catalogRef = xref.trailer.getRaw("Root") || undefined;
+            let structTreeRoot;
             if (newAnnotationsByPage) {
+                if (!_structTreeRoot) {
+                    if (await StructTreeRoot.canCreateStructureTree({
+                        catalogRef,
+                        pdfManager,
+                        newAnnotationsByPage,
+                    })) {
+                        structTreeRoot = undefined;
+                    }
+                }
+                else if (await _structTreeRoot.canUpdateStructTree({
+                    pdfManager,
+                    newAnnotationsByPage,
+                })) {
+                    structTreeRoot = _structTreeRoot;
+                }
                 const imagePromises = AnnotationFactory.generateImages(annotationStorage.values(), xref, pdfManager.evaluatorOptions.isOffscreenCanvasSupported);
+                const newAnnotationPromises = structTreeRoot === undefined
+                    ? promises
+                    : [];
                 for (const [pageIndex, annotations] of newAnnotationsByPage) {
-                    promises_1.push(pdfManager.getPage(pageIndex).then((page) => {
+                    newAnnotationPromises.push(pdfManager.getPage(pageIndex).then((page) => {
                         const task = new WorkerTask(`Save (editor): page ${pageIndex}`);
                         return page
                             .saveNewAnnotations(handler, task, annotations, imagePromises)
@@ -454,13 +477,40 @@ export const WorkerMessageHandler = {
                         });
                     }));
                 }
+                if (structTreeRoot === undefined) {
+                    // console.log(`%crun here: 2`, `color:${LOG_cssc.runhere}`);
+                    // No structTreeRoot exists, so we need to create one.
+                    promises.push(Promise.all(newAnnotationPromises).then(async (newRefs) => {
+                        await StructTreeRoot.createStructureTree({
+                            newAnnotationsByPage,
+                            xref,
+                            catalogRef,
+                            pdfManager,
+                            newRefs,
+                        });
+                        return newRefs;
+                    }));
+                }
+                else if (structTreeRoot) {
+                    // console.log(`%crun here: 3`, `color:${LOG_cssc.runhere}`);
+                    promises.push(Promise.all(newAnnotationPromises).then(async (newRefs) => {
+                        await structTreeRoot.updateStructureTree({
+                            newAnnotationsByPage,
+                            pdfManager,
+                            newRefs,
+                        });
+                        return newRefs;
+                    }));
+                }
             }
             if (isPureXfa) {
-                promises_1.push(pdfManager.serializeXfaData(annotationStorage));
+                // console.log(`%crun here: 4`, `color:${LOG_cssc.runhere}`);
+                promises.push(pdfManager.serializeXfaData(annotationStorage));
             }
             else {
+                // console.log(`%crun here: 5`, `color:${LOG_cssc.runhere}`);
                 for (let pageIndex = 0; pageIndex < numPages; pageIndex++) {
-                    promises_1.push(pdfManager.getPage(pageIndex).then((page) => {
+                    promises.push(pdfManager.getPage(pageIndex).then((page) => {
                         const task = new WorkerTask(`Save: page ${pageIndex}`);
                         return page
                             .save(handler, task, annotationStorage)
@@ -470,86 +520,89 @@ export const WorkerMessageHandler = {
                     }));
                 }
             }
-            return Promise.all(promises).then(([stream, acroForm, acroFormRef, startXRef, linearization,]) => Promise.all(promises_1).then((refs) => {
-                let newRefs = [];
-                let xfaData;
-                if (isPureXfa) {
-                    xfaData = refs[0];
-                    if (!xfaData) {
-                        return stream.bytes;
+            // console.log(`%crun here: 0`, `color:${LOG_cssc.runhere}`);
+            const refs = await Promise.all(promises);
+            // console.log(`%crun here: 1`, `color:${LOG_cssc.runhere}`);
+            let newRefs = [];
+            let xfaData;
+            if (isPureXfa) {
+                xfaData = refs[0];
+                if (!xfaData) {
+                    return stream.bytes;
+                }
+            }
+            else {
+                newRefs = refs.flat(2);
+                if (newRefs.length === 0) {
+                    // No new refs so just return the initial bytes
+                    return stream.bytes;
+                }
+            }
+            // console.log("🚀 ~ newRefs:");
+            // console.dir(newRefs);
+            const needAppearances = acroFormRef &&
+                acroForm instanceof Dict &&
+                newRefs.some((ref) => ref.needAppearances);
+            const xfa = (acroForm instanceof Dict &&
+                acroForm.get("XFA")) || undefined;
+            let xfaDatasetsRef;
+            let hasXfaDatasetsEntry = false;
+            if (Array.isArray(xfa)) {
+                for (let i = 0, ii = xfa.length; i < ii; i += 2) {
+                    if (xfa[i] === "datasets") {
+                        xfaDatasetsRef = xfa[i + 1];
+                        hasXfaDatasetsEntry = true;
                     }
                 }
-                else {
-                    newRefs = refs.flat(2);
-                    if (newRefs.length === 0) {
-                        // No new refs so just return the initial bytes
-                        return stream.bytes;
-                    }
+                if (xfaDatasetsRef === undefined) {
+                    xfaDatasetsRef = xref.getNewTemporaryRef();
                 }
-                const needAppearances = acroFormRef &&
-                    acroForm instanceof Dict &&
-                    newRefs.some((ref) => ref.needAppearances);
-                const xfa = (acroForm instanceof Dict &&
-                    acroForm.get("XFA")) || undefined;
-                let xfaDatasetsRef;
-                let hasXfaDatasetsEntry = false;
-                if (Array.isArray(xfa)) {
-                    for (let i = 0, ii = xfa.length; i < ii; i += 2) {
-                        if (xfa[i] === "datasets") {
-                            xfaDatasetsRef = xfa[i + 1];
-                            hasXfaDatasetsEntry = true;
+            }
+            else if (xfa) {
+                // TODO: Support XFA streams.
+                warn("Unsupported XFA type.");
+            }
+            let newXrefInfo = Object.create(null);
+            if (xref.trailer) {
+                // Get string info from Info in order to compute fileId.
+                const infoObj = Object.create(null);
+                const xrefInfo = xref.trailer.get("Info") || undefined;
+                if (xrefInfo instanceof Dict) {
+                    xrefInfo.forEach((key, value) => {
+                        if (typeof value === "string") {
+                            infoObj[key] = stringToPDFString(value);
                         }
-                    }
-                    if (xfaDatasetsRef === undefined) {
-                        xfaDatasetsRef = xref.getNewTemporaryRef();
-                    }
+                    });
                 }
-                else if (xfa) {
-                    // TODO: Support XFA streams.
-                    warn("Unsupported XFA type.");
-                }
-                let newXrefInfo = Object.create(null);
-                if (xref.trailer) {
-                    // Get string info from Info in order to compute fileId.
-                    const infoObj = Object.create(null);
-                    const xrefInfo = xref.trailer.get("Info") || undefined;
-                    if (xrefInfo instanceof Dict) {
-                        xrefInfo.forEach((key, value) => {
-                            if (typeof value === "string") {
-                                infoObj[key] = stringToPDFString(value);
-                            }
-                        });
-                    }
-                    newXrefInfo = {
-                        rootRef: xref.trailer.getRaw("Root") || undefined,
-                        encryptRef: xref.trailer.getRaw("Encrypt") || undefined,
-                        newRef: xref.getNewTemporaryRef(),
-                        infoRef: xref.trailer.getRaw("Info") || undefined,
-                        info: infoObj,
-                        fileIds: xref.trailer.get("ID") ||
-                            undefined,
-                        startXRef: linearization
-                            ? startXRef
-                            : xref.lastXRefStreamPos ?? startXRef,
-                        filename,
-                    };
-                }
-                return incrementalUpdate({
-                    originalData: stream.bytes,
-                    xrefInfo: newXrefInfo,
-                    newRefs,
-                    xref,
-                    hasXfa: !!xfa,
-                    xfaDatasetsRef,
-                    hasXfaDatasetsEntry,
-                    needAppearances,
-                    acroFormRef,
-                    acroForm,
-                    xfaData,
-                }).finally(() => {
-                    xref.resetNewTemporaryRef();
-                });
-            }));
+                newXrefInfo = {
+                    rootRef: catalogRef,
+                    encryptRef: xref.trailer.getRaw("Encrypt") || undefined,
+                    newRef: xref.getNewTemporaryRef(),
+                    infoRef: xref.trailer.getRaw("Info") || undefined,
+                    info: infoObj,
+                    fileIds: xref.trailer.get("ID") ||
+                        undefined,
+                    startXRef: linearization
+                        ? startXRef
+                        : xref.lastXRefStreamPos ?? startXRef,
+                    filename,
+                };
+            }
+            return incrementalUpdate({
+                originalData: stream.bytes,
+                xrefInfo: newXrefInfo,
+                newRefs,
+                xref,
+                hasXfa: !!xfa,
+                xfaDatasetsRef,
+                hasXfaDatasetsEntry,
+                needAppearances,
+                acroFormRef,
+                acroForm,
+                xfaData,
+            }).finally(() => {
+                xref.resetNewTemporaryRef();
+            });
         });
         handler.on("GetOperatorList", (data, sink) => {
             const pageIndex = data.pageIndex;

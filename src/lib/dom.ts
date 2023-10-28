@@ -29,7 +29,7 @@ declare global {
     _canceled: boolean | undefined;
     canceled: boolean;
 
-    targetVuu?: Vuu;
+    targetPocudVu?: Vuu;
   }
 
   interface WheelEvent {
@@ -461,19 +461,19 @@ type HTMLRet_<NN extends string> = NN extends keyof HTMLElementTagNameMap
   ? HTMLElementTagNameMap[NN]
   : HTMLElement;
 export function html<NN extends string>(
-  nodeName: NN,
-  innerHTML?: string,
-  doc = document,
+  nodeName_x: NN,
+  innerHTML_x?: string,
+  doc_x = document,
 ) {
-  let ret = doc.createElement(nodeName);
-  if (innerHTML) ret.innerHTML = innerHTML;
+  let ret = doc_x.createElement(nodeName_x);
+  if (innerHTML_x) ret.innerHTML = innerHTML_x;
   return ret as HTMLRet_<NN>;
 }
-export function div(innerHTML?: string, doc = document) {
-  return html("div", innerHTML, doc);
+export function div(innerHTML_x?: string, doc_x = document) {
+  return html("div", innerHTML_x, doc_x);
 }
-export function span(innerHTML?: string, doc = document) {
-  return html("span", innerHTML, doc);
+export function span(innerHTML_x?: string, doc_x = document) {
+  return html("span", innerHTML_x, doc_x);
 }
 
 type SVGRet_<NN extends string> = NN extends keyof SVGElementTagNameMap

@@ -17,9 +17,9 @@
  * limitations under the License.
  */
 
-import type { WebL10nArgs } from "../../3rd/webL10n-2015-10-24/l10n.ts";
-import { MOZCENTRAL, PDFJSDev } from "../../global.ts";
-import { Locale } from "../../lib/Locale.ts";
+import { Locale } from "@fe-lib/Locale.ts";
+import type { WebL10nArgs } from "@fe-src/3rd/webL10n-2015-10-24/l10n.ts";
+import { MOZCENTRAL, PDFJSDev } from "@fe-src/global.ts";
 import type { IL10n } from "./interfaces.ts";
 /*80--------------------------------------------------------------------------*/
 
@@ -92,6 +92,9 @@ const DEFAULT_L10N_STRINGS: Record<string, string> = {
   editor_free_text2_aria_label: "Text Editor",
   editor_ink2_aria_label: "Draw Editor",
   editor_ink_canvas_aria_label: "User-created image",
+  editor_alt_text_button_label: "Alt text",
+  editor_alt_text_edit_button_label: "Edit alt text",
+  editor_alt_text_decorative_tooltip: "Marked as decorative",
 };
 /*#static*/ if (PDFJSDev || !MOZCENTRAL) {
   DEFAULT_L10N_STRINGS.print_progress_percent = "{{progress}}%";

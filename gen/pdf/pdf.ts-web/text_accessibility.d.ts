@@ -20,11 +20,15 @@ export declare class TextAccessibilityManager {
     /**
      * Find the text node which is the nearest and add an aria-owns attribute
      * in order to correctly position this editor in the text flow.
+     *
+     * @return The id in the struct tree if any.
      */
-    addPointerInTextLayer(element: HTMLElement, isRemovable: boolean): void;
+    addPointerInTextLayer(element: HTMLElement, isRemovable: boolean): string | undefined;
     /**
      * Move a div in the DOM in order to respect the visual order.
+     *
+     * @return The id in the struct tree if any.
      */
-    moveElementInDOM(container: HTMLDivElement, element: HTMLDivElement | undefined, contentElement: HTMLDivElement, isRemovable: boolean): void;
+    moveElementInDOM(container: HTMLDivElement, element: HTMLDivElement | undefined, contentElement: HTMLDivElement, isRemovable: boolean): string | undefined;
 }
 //# sourceMappingURL=text_accessibility.d.ts.map

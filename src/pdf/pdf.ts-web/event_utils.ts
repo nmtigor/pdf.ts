@@ -17,7 +17,8 @@
  * limitations under the License.
  */
 
-import { MOZCENTRAL } from "../../global.ts";
+import { MOZCENTRAL } from "@fe-src/global.ts";
+import type { AnnotationEditor } from "../pdf.ts-src/display/editor/editor.ts";
 import type {
   AnnotationEditorParamsType,
   AnnotationEditorType,
@@ -30,6 +31,7 @@ import type {
   PropertyToUpdate,
   ScriptingActionName,
 } from "../pdf.ts-src/pdf.ts";
+import type { AltTextManager, TelemetryData } from "./alt_text_manager.ts";
 import type { AnnotationEditorParams } from "./annotation_editor_params.ts";
 import type { ErrorMoreInfo, PDFViewerApplication } from "./app.ts";
 import type { PDFAttachmentViewer } from "./pdf_attachment_viewer.ts";
@@ -51,6 +53,7 @@ import type { PDFSidebar } from "./pdf_sidebar.ts";
 import type { PDFThumbnailView } from "./pdf_thumbnail_view.ts";
 import type { PDFLocation, PDFViewer } from "./pdf_viewer.ts";
 import type { SecondaryToolbar } from "./secondary_toolbar.ts";
+import type { Toolbar as GeckoviewToolbar } from "./toolbar-geckoview.ts";
 import type { Toolbar } from "./toolbar.ts";
 import type {
   CursorTool,
@@ -333,6 +336,23 @@ export interface EventMap {
   print: {};
   resetlayers: {
     source: PDFSidebar;
+  };
+  reporttelemetry: {
+    source:
+      | AnnotationEditor
+      | AltTextManager
+      | SecondaryToolbar
+      | GeckoviewToolbar;
+    details: {
+      type: "editing" | "buttons" | "gv-buttons" | "pageInfo";
+      subtype?: string;
+      timestamp?: number;
+      data?:
+        | TelemetryData
+        | { action: "alt_text_tooltip" | "inserted_image" }
+        | { id: string }
+        | { type: "freetext" | "ink" | "print" | "save" | "stamp" };
+    };
   };
   resize: {
     source: typeof window | HTMLDivElement | PDFSidebar;

@@ -2,25 +2,9 @@
  * nmtigor (https://github.com/nmtigor) @2022
  */
 var _a;
-/* Copyright 2022 Mozilla Foundation
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-// eslint-disable-next-line max-len
-/** @typedef {import("./annotation_editor_layer.js").AnnotationEditorLayer} AnnotationEditorLayer */
-import { PDFJSDev, TESTING } from "../../../../global.js";
 import { html } from "../../../../lib/dom.js";
 import { assert } from "../../../../lib/util/trace.js";
+import { PDFJSDev, TESTING } from "../../../../global.js";
 import { AnnotationEditorParamsType, AnnotationEditorType, LINE_FACTOR, shadow, Util, } from "../../shared/util.js";
 import { FreeTextAnnotationElement } from "../annotation_layer.js";
 import { AnnotationEditor } from "./editor.js";
@@ -29,19 +13,8 @@ import { AnnotationEditorUIManager, bindEvents, KeyboardManager, } from "./tools
  * Basic text editor in order to create a FreeTex annotation.
  */
 export class FreeTextEditor extends AnnotationEditor {
-    #boundEditorDivBlur = this.editorDivBlur.bind(this);
-    #boundEditorDivFocus = this.editorDivFocus.bind(this);
-    #boundEditorDivInput = this.editorDivInput.bind(this);
-    #boundEditorDivKeydown = this.editorDivKeydown.bind(this);
-    #color;
-    #content = "";
-    #editorDivId = `${this.id}-editor`;
-    #fontSize;
-    #initialData;
-    overlayDiv;
-    editorDiv;
+    static _type = "freetext";
     static _freeTextDefaultContent = "";
-    static _l10nPromise;
     static _internalPadding = 0;
     static _defaultColor;
     static _defaultFontSize = 10;
@@ -105,7 +78,17 @@ export class FreeTextEditor extends AnnotationEditor {
             ],
         ]));
     }
-    static _type = "freetext";
+    #boundEditorDivBlur = this.editorDivBlur.bind(this);
+    #boundEditorDivFocus = this.editorDivFocus.bind(this);
+    #boundEditorDivInput = this.editorDivInput.bind(this);
+    #boundEditorDivKeydown = this.editorDivKeydown.bind(this);
+    #color;
+    #content = "";
+    #editorDivId = `${this.id}-editor`;
+    #fontSize;
+    #initialData;
+    overlayDiv;
+    editorDiv;
     constructor(params) {
         super({ ...params, name: "freeTextEditor" });
         this.#color = params.color ||
@@ -115,7 +98,9 @@ export class FreeTextEditor extends AnnotationEditor {
     }
     /** @inheritdoc */
     static initialize(l10n) {
-        this._l10nPromise = new Map(["free_text2_default_content", "editor_free_text2_aria_label"].map((str) => [str, l10n.get(str)]));
+        AnnotationEditor.initialize(l10n, {
+            strings: ["free_text2_default_content", "editor_free_text2_aria_label"],
+        });
         const style = getComputedStyle(document.documentElement);
         /*#static*/  {
             const lineHeight = parseFloat(style.getPropertyValue("--freetext-line-height"));
@@ -455,10 +440,10 @@ export class FreeTextEditor extends AnnotationEditor {
         this.editorDiv.className = "internal";
         this.editorDiv.setAttribute("id", this.#editorDivId);
         this.enableEditing();
-        _a._l10nPromise
+        AnnotationEditor._l10nPromise
             .get("editor_free_text2_aria_label")
             .then((msg) => this.editorDiv?.setAttribute("aria-label", msg));
-        _a._l10nPromise
+        AnnotationEditor._l10nPromise
             .get("free_text2_default_content")
             .then((msg) => this.editorDiv?.setAttribute("default-content", msg));
         this.editorDiv.contentEditable = true;
@@ -605,6 +590,7 @@ export class FreeTextEditor extends AnnotationEditor {
             pageIndex: this.pageIndex,
             rect,
             rotation: this.rotation,
+            structTreeParentId: this._structTreeParentId,
         };
         if (isForCopying) {
             // Don't add the id when copying because the pasted editor mustn't be

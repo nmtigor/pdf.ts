@@ -93,7 +93,7 @@ export declare abstract class ColorSpace {
     static get singletons(): {
         readonly gray: DeviceGrayCS;
         readonly rgb: DeviceRgbCS;
-        readonly cmyk: NsDeviceCmykCS.DeviceCmykCS;
+        readonly cmyk: DeviceCmykCS;
     };
 }
 /**
@@ -122,15 +122,14 @@ declare class DeviceRgbCS extends ColorSpace {
 /**
  * The default color is `new Float32Array([0, 0, 0, 1])`.
  */
-declare namespace NsDeviceCmykCS {
-    class DeviceCmykCS extends ColorSpace {
-        constructor();
-        /** @implement */
-        getRgbItem(src: Float32Array | number[], srcOffset: number, dest: Uint8ClampedArray, destOffset: number): void;
-        /** @implement */
-        getRgbBuffer(src: Uint8Array | Uint16Array | Uint8ClampedArray | Uint32Array, srcOffset: number, count: number, dest: Uint8ClampedArray, destOffset: number, bits: number, alpha01: number): void;
-        getOutputLength(inputLength: number, alpha01: number): number;
-    }
+declare class DeviceCmykCS extends ColorSpace {
+    #private;
+    constructor();
+    /** @implement */
+    getRgbItem(src: Float32Array | number[], srcOffset: number, dest: Uint8ClampedArray, destOffset: number): void;
+    /** @implement */
+    getRgbBuffer(src: Uint8Array | Uint16Array | Uint8ClampedArray | Uint32Array, srcOffset: number, count: number, dest: Uint8ClampedArray, destOffset: number, bits: number, alpha01: number): void;
+    getOutputLength(inputLength: number, alpha01: number): number;
 }
 export {};
 //# sourceMappingURL=colorspace.d.ts.map

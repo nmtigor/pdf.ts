@@ -15,8 +15,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { PDFJSDev, TESTING } from "../../../global.js";
 import { assert } from "../../../lib/util/trace.js";
+import { PDFJSDev, TESTING } from "../../../global.js";
 import { AnnotationEditorPrefix, BaseException, objectSize, stringToPDFString, warn, } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
 import { Dict, isName, Ref, RefSet } from "./primitives.js";

@@ -27,9 +27,9 @@
 // eslint-disable-next-line max-len
 /** @typedef {import("./pdf_rendering_queue").PDFRenderingQueue} PDFRenderingQueue */
 
-import { COMPONENTS, GENERIC, PDFJSDev, TESTING } from "../../global.ts";
-import type { dot2d_t } from "../../lib/alias.ts";
-import { html } from "../../lib/dom.ts";
+import type { dot2d_t } from "@fe-lib/alias.ts";
+import { html } from "@fe-lib/dom.ts";
+import { COMPONENTS, GENERIC, PDFJSDev, TESTING } from "@fe-src/global.ts";
 import type { MetadataEx, RenderTask } from "../pdf.ts-src/display/api.ts";
 import type {
   AnnotActions,
@@ -713,6 +713,9 @@ export class PDFPageView implements IVisibleView {
     }
   }
 
+  /**
+   * Update e.g. the scale and/or rotation of the page.
+   */
   update({
     scale = 0,
     rotation,

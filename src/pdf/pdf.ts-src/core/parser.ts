@@ -18,7 +18,7 @@
  */
 
 import { PDFJSDev, TESTING } from "@fe-src/global.ts";
-import { assert } from "@fe-src/lib/util/trace.ts";
+import { assert } from "@fe-lib/util/trace.ts";
 import { bytesToString, FormatError, info, warn } from "../shared/util.ts";
 import { Ascii85Stream } from "./ascii_85_stream.ts";
 import { AsciiHexStream } from "./ascii_hex_stream.ts";

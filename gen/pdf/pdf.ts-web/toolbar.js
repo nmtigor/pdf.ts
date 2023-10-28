@@ -15,10 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { GENERIC, PDFJSDev } from "../../global.js";
 import { html } from "../../lib/dom.js";
+import { noContextMenu } from "../../lib/util/general.js";
+import { GENERIC, PDFJSDev } from "../../global.js";
 import { AnnotationEditorType } from "../pdf.ts-src/pdf.js";
-import { animationStarted, DEFAULT_SCALE, DEFAULT_SCALE_VALUE, MAX_SCALE, MIN_SCALE, noContextMenuHandler, toggleCheckedBtn, } from "./ui_utils.js";
+import { animationStarted, DEFAULT_SCALE, DEFAULT_SCALE_VALUE, MAX_SCALE, MIN_SCALE, toggleCheckedBtn, } from "./ui_utils.js";
 /*80--------------------------------------------------------------------------*/
 const PAGE_NUMBER_LOADING_INDICATOR = "visiblePageIsLoading";
 export class Toolbar {
@@ -167,7 +168,7 @@ export class Toolbar {
             }
         });
         // Suppress context menus for some controls.
-        scaleSelect.oncontextmenu = noContextMenuHandler;
+        scaleSelect.oncontextmenu = noContextMenu;
         this.eventBus._on("localized", () => {
             this.#wasLocalized = true;
             this.#adjustScaleWidth();

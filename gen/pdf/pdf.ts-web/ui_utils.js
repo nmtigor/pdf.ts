@@ -522,12 +522,6 @@ export function getVisibleElements({ scrollEl, views, sortByVisibility = false, 
     }
     return { first, last, views: visible, ids };
 }
-/**
- * Event handler to suppress context menu.
- */
-export function noContextMenuHandler(evt) {
-    evt.preventDefault();
-}
 export function normalizeWheelEventDirection(evt) {
     let delta = Math.hypot(evt.deltaX, evt.deltaY);
     const angle = Math.atan2(evt.deltaY, evt.deltaX);
@@ -675,7 +669,7 @@ export function getActiveOrFocusedElement() {
 }
 /**
  * Converts API PageLayout values to the format used by `BaseViewer`.
- * @param mode The API PageLayout value.
+ * @param layout The API PageLayout value.
  * @return A value from {SpreadMode}.
  */
 export function apiPageLayoutToViewerModes(layout) {

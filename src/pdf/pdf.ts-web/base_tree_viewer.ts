@@ -156,13 +156,13 @@ export abstract class BaseTreeViewer {
 
     // Ensure that the treeItem is *fully* expanded, such that it will first of
     // all be visible and secondly that scrolling it into view works correctly.
-    let currentNode = <HTMLElement | null> treeItem.parentNode;
+    let currentNode = treeItem.parentNode as HTMLElement | null;
     while (currentNode && currentNode !== this.container) {
       if (currentNode.classList.contains("treeItem")) {
         const toggler = currentNode.firstElementChild;
         toggler?.classList.remove("treeItemsHidden");
       }
-      currentNode = <HTMLElement | null> currentNode.parentNode;
+      currentNode = currentNode.parentNode as HTMLElement | null;
     }
     this._updateCurrentTreeItem(treeItem);
 

@@ -36,12 +36,18 @@ export type PropertyToUpdate = [AnnotationEditorParamsType, string | number];
 type InitialOptions_ = {
     isCentered?: boolean;
 };
+export type AltTextData = {
+    altText: string;
+    decorative: boolean;
+};
 /**
  * Base class for editors.
  */
 export declare abstract class AnnotationEditor {
     #private;
     static readonly _type: "freetext" | "ink" | "stamp";
+    static _l10nPromise: Map<string, Promise<string>> | undefined;
+    static _borderLineWidth: number;
     static _colorManager: ColorManager;
     static _zIndex: number;
     parent: AnnotationEditorLayer | undefined;
@@ -56,6 +62,7 @@ export declare abstract class AnnotationEditor {
     annotationElementId: string | undefined;
     _willKeepAspectRatio: boolean;
     _initialOptions: InitialOptions_;
+    _structTreeParentId: string | undefined;
     isAttachedToDOM: boolean;
     deleted: boolean;
     rotation: number;
@@ -66,13 +73,17 @@ export declare abstract class AnnotationEditor {
     y: number;
     startX: number;
     startY: number;
+    static SMALL_EDITOR_SIZE: number;
     constructor(parameters: AnnotationEditorP);
+    get editorType(): any;
     static get _defaultLineColor(): string;
     static deleteAnnotationElement(editor: AnnotationEditor): void;
     /**
      * Initialize the l10n stuff for this type of editor.
      */
-    static initialize(_l10n: IL10n): void;
+    static initialize(l10n: IL10n, options?: {
+        strings: [string, string];
+    }): void;
     /**
      * Update the default parameters for this type of editor.
      * @param {number} _type
@@ -87,7 +98,7 @@ export declare abstract class AnnotationEditor {
      * Check if this kind of editor is able to handle the given mime type for
      * pasting.
      */
-    static isHandlingMimeForPasting(_mime: string): boolean;
+    static isHandlingMimeForPasting(mime: string): boolean;
     /**
      * Extract the data from the clipboard item and delegate the creation of the
      * editor to the parent.
@@ -152,11 +163,11 @@ export declare abstract class AnnotationEditor {
     /**
      * Convert a screen translation into a page one.
      */
-    screenToPageTranslation(x: number, y: number): number[];
+    screenToPageTranslation(x: number, y: number): dot2d_t;
     /**
      * Convert a page translation into a screen one.
      */
-    pageTranslationToScreen(x: number, y: number): number[];
+    pageTranslationToScreen(x: number, y: number): dot2d_t;
     get parentScale(): number;
     get parentRotation(): number;
     get parentDimensions(): dot2d_t;
@@ -169,6 +180,10 @@ export declare abstract class AnnotationEditor {
      * Get the translation used to position this editor when it's created.
      */
     getInitialTranslation(): dot2d_t;
+    addAltTextButton(): Promise<void>;
+    getClientDimensions(): DOMRect;
+    get altTextData(): AltTextData;
+    set altTextData({ altText, decorative }: AltTextData);
     /**
      * Render this editor in a div.
      */
@@ -226,7 +241,7 @@ export declare abstract class AnnotationEditor {
      *
      * To implement in subclasses.
      */
-    abstract serialize(_isForCopying?: boolean, _context?: Record<keyof any, any>): AnnotStorageValue | undefined;
+    abstract serialize(isForCopying?: boolean, context?: Record<keyof any, any>): AnnotStorageValue | undefined;
     /**
      * Deserialize the editor.
      * The result of the deserialization is a new editor.

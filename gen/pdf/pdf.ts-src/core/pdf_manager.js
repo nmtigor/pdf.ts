@@ -1,7 +1,7 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
-import { createValidAbsoluteUrl, FeatureTest, shadow, warn, } from "../shared/util.js";
+import { createValidAbsoluteUrl, FeatureTest, warn, } from "../shared/util.js";
 import { ChunkedStreamManager } from "./chunked_stream.js";
 import { MissingDataException } from "./core_utils.js";
 import { PDFDocument } from "./document.js";
@@ -20,8 +20,7 @@ function parseDocBaseUrl(url) {
 export class BasePdfManager {
     _docBaseUrl;
     get docBaseUrl() {
-        const catalog = this.pdfDocument.catalog;
-        return shadow(this, "docBaseUrl", catalog.baseUrl || this._docBaseUrl);
+        return this._docBaseUrl;
     }
     _docId;
     /** @final */
@@ -37,6 +36,9 @@ export class BasePdfManager {
     enableXfa;
     evaluatorOptions;
     pdfDocument;
+    get catalog() {
+        return this.pdfDocument.catalog;
+    }
     constructor(args) {
         this._docBaseUrl = parseDocBaseUrl(args.docBaseUrl);
         this._docId = args.docId;

@@ -26,6 +26,10 @@ export interface InkEditorSerialized extends AnnotStorageValue {
  */
 export declare class InkEditor extends AnnotationEditor {
     #private;
+    static readonly _type = "ink";
+    static _defaultColor: string | undefined;
+    static _defaultOpacity: number;
+    static _defaultThickness: number;
     color: string | undefined;
     thickness: number | undefined;
     opacity: number | undefined;
@@ -38,11 +42,6 @@ export declare class InkEditor extends AnnotationEditor {
     translationY: number;
     canvas: HTMLCanvasElement | undefined;
     ctx: C2D;
-    static _defaultColor: string | undefined;
-    static _defaultOpacity: number;
-    static _defaultThickness: number;
-    static _l10nPromise: Map<string, Promise<string>>;
-    static readonly _type = "ink";
     constructor(params: InkEditorP);
     /** @inheritdoc */
     static initialize(l10n: IL10n): void;
@@ -78,10 +77,6 @@ export declare class InkEditor extends AnnotationEditor {
      * onpointerdown callback for the canvas we're drawing on.
      */
     canvasPointerdown(event: PointerEvent): void;
-    /**
-     * oncontextmenu callback for the canvas we're drawing on.
-     */
-    canvasContextMenu(event: MouseEvent): void;
     /**
      * onpointermove callback for the canvas we're drawing on.
      */

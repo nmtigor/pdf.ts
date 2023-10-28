@@ -18,7 +18,7 @@
  */
 
 import { PDFJSDev, TESTING } from "@fe-src/global.ts";
-import { assert } from "@fe-src/lib/util/trace.ts";
+import { assert } from "@fe-lib/util/trace.ts";
 import { grayToRGBA } from "../shared/image_utils.ts";
 import { BaseException, warn } from "../shared/util.ts";
 import { readUint16 } from "./core_utils.ts";

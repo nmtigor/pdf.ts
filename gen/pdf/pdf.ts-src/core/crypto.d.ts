@@ -77,22 +77,20 @@ export declare class CipherTransform {
     decryptString(s: string): string;
     encryptString(s: string): string;
 }
-declare namespace NsCipherTransformFactory {
-    /** @final */
-    class CipherTransformFactory {
-        filterName: string;
-        dict: Dict;
-        algorithm: number;
-        encryptMetadata: boolean;
-        encryptionKey: Uint8Array | Uint8ClampedArray;
-        cf: any;
-        stmf: Name;
-        strf: Name;
-        eff: Name;
-        constructor(dict: Dict, fileId: string, password?: string);
-        createCipherTransform(num: number, gen: number): CipherTransform;
-    }
+/** @final */
+export declare class CipherTransformFactory {
+    #private;
+    filterName: string;
+    dict: Dict;
+    algorithm: number;
+    encryptMetadata: boolean;
+    encryptionKey: Uint8Array | Uint8ClampedArray;
+    cf: any;
+    stmf: Name;
+    strf: Name;
+    eff: Name;
+    constructor(dict: Dict, fileId: string, password?: string);
+    createCipherTransform(num: number, gen: number): CipherTransform;
 }
-export import CipherTransformFactory = NsCipherTransformFactory.CipherTransformFactory;
 export {};
 //# sourceMappingURL=crypto.d.ts.map

@@ -21,14 +21,14 @@
 /** @typedef {import("./tools.js").AnnotationEditorUIManager} AnnotationEditorUIManager */
 /** @typedef {import("../display_utils.js").PageViewport} PageViewport */
 // eslint-disable-next-line max-len
-/** @typedef {import("../../web/text_accessibility.js").TextAccessibilityManager} TextAccessibilityManager */
-/** @typedef {import("../../web/interfaces").IL10n} IL10n */
+/** @typedef {import("../../../web/text_accessibility.js").TextAccessibilityManager} TextAccessibilityManager */
+/** @typedef {import("../../../web/interfaces").IL10n} IL10n */
 // eslint-disable-next-line max-len
-/** @typedef {import("../src/display/annotation_layer.js").AnnotationLayer} AnnotationLayer */
+/** @typedef {import("../annotation_layer.js").AnnotationLayer} AnnotationLayer */
 
-import type { HSElement } from "@fe-src/lib/dom.ts";
-import type { IL10n } from "../../../pdf.ts-web/interfaces.ts";
-import type { TextAccessibilityManager } from "../../../pdf.ts-web/text_accessibility.ts";
+import type { HSElement } from "@fe-lib/dom.ts";
+import type { IL10n } from "@pdf.ts-web/interfaces.ts";
+import type { TextAccessibilityManager } from "@pdf.ts-web/text_accessibility.ts";
 import { AnnotationEditorType, FeatureTest } from "../../shared/util.ts";
 import type {
   AnnotationLayer,
@@ -384,7 +384,8 @@ export class AnnotationEditorLayer {
       editor.isAttachedToDOM = true;
     }
 
-    this.moveEditorInDOM(editor);
+    // The editor will be correctly moved into the DOM (see fixAndSetPosition).
+    editor.fixAndSetPosition();
     editor.onceAdded();
     this.#uiManager.addToAnnotationStorage(editor);
   }
@@ -402,18 +403,22 @@ export class AnnotationEditorLayer {
       // re-enable them when the editor has the focus.
       editor._focusEventsAllowed = false;
       setTimeout(() => {
-        editor.div!.addEventListener(
-          "focusin",
-          () => {
-            editor._focusEventsAllowed = true;
-          },
-          { once: true },
-        );
-        (activeElement as HSElement).focus();
+        if (!editor.div!.contains(document.activeElement)) {
+          editor.div!.addEventListener(
+            "focusin",
+            () => {
+              editor._focusEventsAllowed = true;
+            },
+            { once: true },
+          );
+          (activeElement as HSElement).focus();
+        } else {
+          editor._focusEventsAllowed = true;
+        }
       }, 0);
     }
 
-    this.#accessibilityManager?.moveElementInDOM(
+    editor._structTreeParentId = this.#accessibilityManager?.moveElementInDOM(
       this.div!,
       editor.div,
       editor.contentDiv!,
@@ -671,6 +676,8 @@ export class AnnotationEditorLayer {
    */
   destroy() {
     if (this.#uiManager.getActive()?.parent === this) {
+      // We need to commit the current editor before destroying the layer.
+      this.#uiManager.commitOrRemove();
       this.#uiManager.setActiveEditor(undefined);
     }
 

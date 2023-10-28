@@ -19,6 +19,7 @@ import { OperatorList } from "./operator_list.js";
 import type { BasePdfManager, EvaluatorOptions } from "./pdf_manager.js";
 import { Dict, Name, Ref } from "./primitives.js";
 import { Stream, StringStream } from "./stream.js";
+import type { StructTreeRoot } from "./struct_tree.js";
 import type { WorkerTask } from "./worker.js";
 import type { XFAHTMLObj } from "./xfa/alias.js";
 import type { XRef } from "./xref.js";
@@ -34,8 +35,17 @@ type CreateNewAnnotationP_ = {
     evaluatorOptions?: EvaluatorOptions;
     image?: AnnotImage | undefined;
 };
+export type AnnotationGlobals = {
+    pdfManager: BasePdfManager;
+    acroForm: Dict;
+    xfaDatasets: DatasetReader | undefined;
+    structTreeRoot: StructTreeRoot | undefined;
+    baseUrl: string | undefined;
+    attachments: Attachments | undefined;
+};
 export declare class AnnotationFactory {
     #private;
+    static createGlobals(pdfManager: BasePdfManager): Promise<AnnotationGlobals | undefined>;
     /**
      * Create an `Annotation` object of the correct type for the given reference
      * to an annotation dictionary. This yields a promise that is resolved when
@@ -43,23 +53,17 @@ export declare class AnnotationFactory {
      *
      * @return A promise that is resolved with an {Annotation} instance.
      */
-    static create(xref: XRef, ref: Ref, pdfManager: BasePdfManager, idFactory: LocalIdFactory, collectFields?: boolean): Promise<Annotation | undefined>;
+    static create(xref: XRef, ref: Ref, annotationGlobals: AnnotationGlobals, idFactory: LocalIdFactory, collectFields?: boolean, pageRef?: Ref | undefined): Promise<Annotation | undefined>;
     /**
      * @private
      */
-    static _create(xref: XRef, ref: Ref, pdfManager: BasePdfManager, idFactory: LocalIdFactory, acroForm: Dict | undefined, attachments: Attachments | undefined, xfaDatasets: DatasetReader | undefined, collectFields: boolean, pageIndex?: number): Annotation | undefined;
+    static _create(xref: XRef, ref: Ref, annotationGlobals: AnnotationGlobals, idFactory: LocalIdFactory, collectFields?: boolean, pageIndex?: number | undefined, pageRef?: Ref | undefined): Annotation | undefined;
     static generateImages(annotations: IterableIterator<AnnotStorageValue> | AnnotStorageValue[], xref: XRef, isOffscreenCanvasSupported: boolean | undefined): Map<string, Promise<AnnotImage>> | undefined;
     static saveNewAnnotations(evaluator: PartialEvaluator, task: WorkerTask, annotations: AnnotStorageValue[], imagePromises: Map<string, Promise<AnnotImage>> | undefined): Promise<{
-        annotations: {
-            ref: Ref;
-            data: string;
-        }[];
-        dependencies: {
-            ref: Ref;
-            data: string;
-        }[];
+        annotations: AnnotSaveData[];
+        dependencies: AnnotSaveData[];
     }>;
-    static printNewAnnotations(evaluator: PartialEvaluator, task: WorkerTask, annotations: AnnotStorageValue[], imagePromises: Map<string, Promise<AnnotImage>> | undefined): Promise<MarkupAnnotation[] | undefined>;
+    static printNewAnnotations(annotationGlobals: AnnotationGlobals, evaluator: PartialEvaluator, task: WorkerTask, annotations: AnnotStorageValue[], imagePromises: Map<string, Promise<AnnotImage>> | undefined): Promise<MarkupAnnotation[] | undefined>;
 }
 export declare function getQuadPoints(dict: Dict, rect?: rect_t): TupleOf<AnnotPoint, 4>[] | null;
 interface AnnotationCtorP_ {
@@ -68,14 +72,12 @@ interface AnnotationCtorP_ {
     dict: Dict;
     subtype?: AnnotType | undefined;
     id: string;
-    pdfManager: BasePdfManager;
-    acroForm: Dict;
-    attachments: Attachments | undefined;
-    xfaDatasets: DatasetReader | undefined;
+    annotationGlobals: AnnotationGlobals;
     collectFields: boolean;
     needAppearances: boolean;
-    pageIndex: number;
+    pageIndex: number | undefined;
     evaluatorOptions: EvaluatorOptions;
+    pageRef: Ref | undefined;
 }
 export interface RichText {
     str: string | undefined;
@@ -102,7 +104,7 @@ export type AnnotationData = {
     actions?: AnnotActions | undefined;
     baseFieldName?: string;
     fieldName?: string;
-    pageIndex?: number;
+    pageIndex?: number | undefined;
     annotationType?: AnnotationType;
     name?: string;
     state?: string | undefined;
@@ -160,7 +162,7 @@ export type AnnotationData = {
  * PDF 1.7 Table 56
  */
 export type DashArray = [number, number, number] | [number, number] | [number] | [];
-export type SaveData = {
+export type AnnotSaveData = {
     ref: Ref;
     data: string;
     xfa?: {
@@ -169,7 +171,7 @@ export type SaveData = {
     };
     needAppearances?: boolean;
 };
-export type SaveReturn = TupleOf<SaveData, 1 | 2>;
+export type AnnotSaveReturn = TupleOf<AnnotSaveData, 1 | 2>;
 export interface FieldItem {
     exportValue: string | string[] | undefined;
     displayValue: string | string[] | undefined;
@@ -336,7 +338,7 @@ export declare class Annotation {
         separateForm: boolean;
         separateCanvas: boolean;
     }>;
-    save(evaluator: PartialEvaluator, task: WorkerTask, annotationStorage?: AnnotStorageRecord): Promise<SaveReturn | undefined>;
+    save(evaluator: PartialEvaluator, task: WorkerTask, annotationStorage?: AnnotStorageRecord): Promise<AnnotSaveReturn | undefined>;
     get hasTextContent(): boolean;
     /** @final */
     extractTextContent(evaluator: PartialEvaluator, task: WorkerTask, viewBox: rect_t): Promise<void>;
@@ -442,11 +444,8 @@ export declare class MarkupAnnotation extends Annotation {
     static createNewAppearanceStream(annotation: AnnotStorageValue, xref: XRef, params?: CreateNewAnnotationP_): Promise<StringStream | undefined>;
     /** @final */
     protected setDefaultAppearance$({ xref, extra, strokeColor, fillColor, blendMode, strokeAlpha, fillAlpha, pointsCallback, }: SetDefaultAppearanceP_): void;
-    static createNewAnnotation(xref: XRef, annotation: AnnotStorageValue, dependencies: Dependency_[], params?: CreateNewAnnotationP_): Promise<{
-        ref: Ref;
-        data: string;
-    }>;
-    static createNewPrintAnnotation(xref: XRef, annotation: AnnotStorageValue, params: CreateNewAnnotationP_): Promise<MarkupAnnotation>;
+    static createNewAnnotation(xref: XRef, annotation: AnnotStorageValue, dependencies: Dependency_[], params?: CreateNewAnnotationP_): Promise<AnnotSaveData>;
+    static createNewPrintAnnotation(annotationGlobals: AnnotationGlobals, xref: XRef, annotation: AnnotStorageValue, params: CreateNewAnnotationP_): Promise<MarkupAnnotation>;
 }
 interface FieldResources {
     localResources?: Dict | undefined;
@@ -490,7 +489,7 @@ export declare class WidgetAnnotation extends Annotation {
     }>;
     _getMKDict(rotation: number): Dict | undefined;
     amendSavedDict(annotationStorage: AnnotStorageRecord | undefined, dict: Dict): void;
-    save(evaluator: PartialEvaluator, task: WorkerTask, annotationStorage?: AnnotStorageRecord): Promise<SaveReturn | undefined>;
+    save(evaluator: PartialEvaluator, task: WorkerTask, annotationStorage?: AnnotStorageRecord): Promise<AnnotSaveReturn | undefined>;
     _getCombAppearance(defaultAppearance: string, font: Font | ErrorFont, text: string, fontSize: number, width: number, height: number, hPadding: number, vPadding: number, descent: number, lineHeight: number, annotationStorage: AnnotStorageRecord | undefined): string;
     _getMultilineAppearance(defaultAppearance: string, lines: string[], font: Font | ErrorFont, fontSize: number, width: number, height: number, alignment: number, hPadding: number, vPadding: number, descent: number, lineHeight: number, AnnotStorageRecord: AnnotStorageRecord | undefined): string;
     _splitLine(line: string | undefined, font: Font | ErrorFont, fontSize: number, width: number, cache?: CachedLines): string[];

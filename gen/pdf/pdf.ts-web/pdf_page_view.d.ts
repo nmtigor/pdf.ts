@@ -1,3 +1,9 @@
+/** @typedef {import("../src/display/display_utils").PageViewport} PageViewport */
+/** @typedef {import("../src/display/optional_content_config").OptionalContentConfig} OptionalContentConfig */
+/** @typedef {import("./event_utils").EventBus} EventBus */
+/** @typedef {import("./interfaces").IL10n} IL10n */
+/** @typedef {import("./interfaces").IRenderableView} IRenderableView */
+/** @typedef {import("./pdf_rendering_queue").PDFRenderingQueue} PDFRenderingQueue */
 import type { dot2d_t } from "../../lib/alias.js";
 import type { MetadataEx, RenderTask } from "../pdf.ts-src/display/api.js";
 import type { AnnotActions, AnnotationEditorUIManager, AnnotationStorage, FieldObject, OptionalContentConfig, PageViewport, PDFPageProxy, StatTimer } from "../pdf.ts-src/pdf.js";
@@ -186,6 +192,9 @@ export declare class PDFPageView implements IVisibleView {
         keepXfaLayer?: boolean | undefined;
         keepTextLayer?: boolean | undefined;
     }): void;
+    /**
+     * Update e.g. the scale and/or rotation of the page.
+     */
     update({ scale, rotation, optionalContentConfigPromise, drawingDelay, }: PDFPageViewUpdateP_): void;
     /**
      * PLEASE NOTE: Most likely you want to use the `this.reset()` method,

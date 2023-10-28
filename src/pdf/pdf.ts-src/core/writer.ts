@@ -18,7 +18,7 @@
  */
 
 import { bytesToString, info, stringToBytes, warn } from "../shared/util.ts";
-import type { SaveData } from "./annotation.ts";
+import type { AnnotSaveData } from "./annotation.ts";
 import { BaseStream } from "./base_stream.ts";
 import {
   escapePDFName,
@@ -26,7 +26,8 @@ import {
   numberToString,
   parseXFAPath,
 } from "./core_utils.ts";
-import { calculateMD5, type CipherTransform } from "./crypto.ts";
+import type { CipherTransform, CipherTransformFactory } from "./crypto.ts";
+import { calculateMD5 } from "./crypto.ts";
 import { Dict, isName, Name, type Obj, Ref } from "./primitives.ts";
 import type { XRefInfo } from "./worker.ts";
 import { SimpleDOMNode, SimpleXMLParser } from "./xml_parser.ts";
@@ -35,15 +36,18 @@ import type { XRef } from "./xref.ts";
 
 export async function writeObject(
   ref: Ref,
-  obj: Dict | BaseStream,
+  obj: Dict | BaseStream | (number | Ref)[],
   buffer: string[],
-  transform: CipherTransform | undefined,
+  { encrypt = undefined }: { encrypt?: CipherTransformFactory },
 ) {
+  const transform = encrypt?.createCipherTransform(ref.num, ref.gen);
   buffer.push(`${ref.num} ${ref.gen} obj\n`);
   if (obj instanceof Dict) {
     await writeDict(obj, buffer, transform);
   } else if (obj instanceof BaseStream) {
     await writeStream(obj, buffer, transform);
+  } else if (Array.isArray(obj)) {
+    await writeArray(obj, buffer, transform);
   }
   buffer.push("\nendobj\n");
 }
@@ -99,7 +103,7 @@ async function writeStream(
       const buf = await new Response(cs.readable).arrayBuffer();
       string = bytesToString(new Uint8Array(buf));
 
-      let newFilter, newParams;
+      let newFilter: Name | Name[] | undefined, newParams;
       if (!filter) {
         newFilter = Name.get("FlateDecode");
       } else if (!isFilterZeroFlateDecode) {
@@ -123,7 +127,7 @@ async function writeStream(
     }
   }
 
-  if (transform !== undefined) {
+  if (transform) {
     string = transform.encryptString(string);
   }
 
@@ -162,7 +166,7 @@ async function writeValue(
   } else if (Array.isArray(value)) {
     await writeArray(value, buffer, transform);
   } else if (typeof value === "string") {
-    if (transform !== undefined) {
+    if (transform) {
       value = transform.encryptString(value);
     }
     buffer.push(`(${escapeString(value)})`);
@@ -219,7 +223,7 @@ function computeMD5(filesize: number, xrefInfo: XRefInfo) {
   return bytesToString(calculateMD5(array));
 }
 
-function writeXFADataForAcroform(str: string, newRefs: SaveData[]) {
+function writeXFADataForAcroform(str: string, newRefs: AnnotSaveData[]) {
   const xml = new SimpleXMLParser({ hasAttributes: true }).parseFromString(
     str,
   )!;
@@ -259,7 +263,7 @@ interface UpdateAcroformP_ {
   hasXfaDatasetsEntry?: boolean;
   xfaDatasetsRef: Ref | undefined;
   needAppearances: boolean | undefined;
-  newRefs: SaveData[];
+  newRefs: AnnotSaveData[];
 }
 async function updateAcroform({
   xref,
@@ -279,11 +283,7 @@ async function updateAcroform({
     return;
   }
 
-  // Clone the acroForm.
-  const dict = new Dict(xref);
-  for (const key of acroForm!.getKeys()) {
-    dict.set(key, acroForm!.getRaw(key));
-  }
+  const dict = acroForm!.clone();
 
   if (hasXfa && !hasXfaDatasetsEntry) {
     // We've a XFA array which doesn't contain a datasets entry.
@@ -300,17 +300,8 @@ async function updateAcroform({
     dict.set("NeedAppearances", true);
   }
 
-  const encrypt = xref!.encrypt;
-  let transform: CipherTransform | undefined;
-  if (encrypt) {
-    transform = encrypt.createCipherTransform(
-      acroFormRef!.num,
-      acroFormRef!.gen,
-    );
-  }
-
   const buffer: string[] = [];
-  await writeObject(acroFormRef!, dict, buffer, transform);
+  await writeObject(acroFormRef!, dict, buffer, xref!);
 
   newRefs.push({ ref: acroFormRef!, data: buffer.join("") });
 }
@@ -318,7 +309,7 @@ async function updateAcroform({
 interface UpdateXFAP_ {
   xfaData: string | undefined;
   xfaDatasetsRef: Ref | undefined;
-  newRefs: SaveData[];
+  newRefs: AnnotSaveData[];
   xref: XRef | undefined;
 }
 function updateXFA({ xfaData, xfaDatasetsRef, newRefs, xref }: UpdateXFAP_) {
@@ -346,7 +337,7 @@ function updateXFA({ xfaData, xfaDatasetsRef, newRefs, xref }: UpdateXFAP_) {
 interface IncrementalUpdateP_ {
   originalData: Uint8Array;
   xrefInfo: XRefInfo;
-  newRefs: SaveData[];
+  newRefs: AnnotSaveData[];
   xref?: XRef;
 
   acroForm?: Dict | undefined;
@@ -366,8 +357,8 @@ export async function incrementalUpdate({
   newRefs,
   xref,
   hasXfa = false,
-  hasXfaDatasetsEntry = false,
   xfaDatasetsRef,
+  hasXfaDatasetsEntry = false,
   needAppearances,
   acroFormRef,
   acroForm,

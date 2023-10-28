@@ -118,6 +118,7 @@ export declare class Catalog {
     nonBlendModesSet: RefSet;
     systemFontCache: Map<string, SubstitutionInfo>;
     constructor(pdfManager: BasePdfManager, xref: XRef);
+    cloneDict(): Dict;
     get version(): string | undefined;
     get lang(): string | undefined;
     /**
@@ -167,7 +168,7 @@ export declare class Catalog {
     /**
      * Helper function used to parse the contents of destination dictionaries.
      */
-    static parseDestDictionary(params: ParseDestDictionaryP_): void;
+    static parseDestDictionary({ destDict, resultObj, docBaseUrl, docAttachments, }: ParseDestDictionaryP_): void;
 }
 export {};
 //# sourceMappingURL=catalog.d.ts.map

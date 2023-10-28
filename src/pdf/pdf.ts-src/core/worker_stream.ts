@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-import { assert } from "@fe-src/lib/util/trace.ts";
+import { assert } from "@fe-lib/util/trace.ts";
 import type {
   IPDFStream,
   IPDFStreamRangeReader,

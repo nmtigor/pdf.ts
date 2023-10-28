@@ -1,4 +1,4 @@
-import { CreateSandboxP } from "../../pdf.ts-web/interfaces.js";
+import type { CreateSandboxP } from "../../pdf.ts-web/interfaces.js";
 import { App } from "./app.js";
 import { Color } from "./color.js";
 import { Border, Cursor, Display, Font, Highlight, Position, ScaleHow, ScaleWhen, Style, Trans, ZoomType } from "./constants.js";

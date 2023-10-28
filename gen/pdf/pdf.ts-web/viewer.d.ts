@@ -245,6 +245,14 @@ declare function getViewerConfiguration(): {
             linearized: HTMLParagraphElement;
         };
     };
+    altTextDialog: {
+        dialog: HTMLDialogElement;
+        optionDescription: HTMLInputElement;
+        optionDecorative: HTMLInputElement;
+        textarea: HTMLTextAreaElement;
+        cancelButton: HTMLButtonElement;
+        saveButton: HTMLButtonElement;
+    };
     annotationEditorParams: {
         editorFreeTextFontSize: HTMLInputElement;
         editorFreeTextColor: HTMLInputElement;

@@ -1,9 +1,9 @@
 import type { C2D, dot2d_t, rect_t } from "../../../lib/alias.js";
 import type { rgb_t } from "../../../lib/color/alias.js";
 import type { XFAElObj } from "../core/xfa/alias.js";
-import { BaseException, CMapCompressionType, type matrix_t } from "../shared/util.js";
+import type { matrix_t } from "../shared/util.js";
+import { BaseException, CMapCompressionType } from "../shared/util.js";
 import { BaseCanvasFactory, BaseCMapReaderFactory, BaseFilterFactory, BaseStandardFontDataFactory, BaseSVGFactory } from "./base_factory.js";
-export declare const AnnotationPrefix = "pdfjs_internal_id_";
 export declare class PixelsPerInch {
     static CSS: number;
     static PDF: number;

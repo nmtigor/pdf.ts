@@ -1,4 +1,4 @@
-import { StructTreeNode } from "../pdf.ts-src/display/api.js";
+import type { StructTreeNode } from "../pdf.ts-src/display/api.js";
 export declare class StructTreeLayerBuilder {
     #private;
     get renderingDone(): boolean;

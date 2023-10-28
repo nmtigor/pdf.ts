@@ -25,13 +25,12 @@ export class SecondaryToolbar {
     items;
     mainContainer;
     eventBus;
-    externalServices;
     opened = false;
     containerHeight;
     previousContainerHeight;
     pagesCount;
     pageNumber;
-    constructor(options, eventBus, externalServices) {
+    constructor(options, eventBus) {
         this.toolbar = options.toolbar;
         this.toggleButton = options.toggleButton;
         this.buttons = [
@@ -129,7 +128,6 @@ export class SecondaryToolbar {
             pageRotateCcw: options.pageRotateCcwButton,
         };
         this.eventBus = eventBus;
-        this.externalServices = externalServices;
         // Bind the event listeners for click, cursor tool, and scroll/spread mode
         // actions.
         this.#bindClickListeners();
@@ -174,9 +172,12 @@ export class SecondaryToolbar {
                 if (close) {
                     this.close();
                 }
-                this.externalServices.reportTelemetry({
-                    type: "buttons",
-                    data: { id: element.id },
+                this.eventBus.dispatch("reporttelemetry", {
+                    source: this,
+                    details: {
+                        type: "buttons",
+                        data: { id: element.id },
+                    },
                 });
             });
         }

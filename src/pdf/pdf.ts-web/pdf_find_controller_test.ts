@@ -18,13 +18,9 @@
  */
 
 import { assertEquals } from "@std/assert/mod.ts";
-import { afterEach, describe, it } from "@std/testing/bdd.ts";
-import { GlobalWorkerOptions } from "../pdf.ts-src/display/worker_options.ts";
-import { getDocument, type PDFDocumentProxy } from "../pdf.ts-src/pdf.ts";
-import {
-  buildGetDocumentParams,
-  CMAP_URL,
-} from "../pdf.ts-src/shared/test_utils.ts";
+import { describe, it } from "@std/testing/bdd.ts";
+import type { PDFDocumentProxy } from "../pdf.ts-src/pdf.ts";
+import { CMAP_URL, getPDF } from "../pdf.ts-src/shared/test_utils.ts";
 import { EventBus, type EventMap } from "./event_utils.ts";
 import type { FindCtrlState } from "./pdf_find_controller.ts";
 import { FindState, PDFFindController } from "./pdf_find_controller.ts";
@@ -59,10 +55,9 @@ async function initPdfFindController(
   filename?: string,
   updateMatchesCountOnProgress = true,
 ) {
-  const loadingTask = getDocument(
-    buildGetDocumentParams(filename || tracemonkeyFileName, {
-      cMapUrl: CMAP_URL,
-    }),
+  const loadingTask = await getPDF(
+    filename || tracemonkeyFileName,
+    { cMapUrl: CMAP_URL },
   );
   const pdfDocument = await loadingTask.promise;
 
@@ -78,7 +73,13 @@ async function initPdfFindController(
   });
   pdfFindController.setDocument(pdfDocument); // Enable searching.
 
-  return { eventBus, pdfFindController };
+  return {
+    eventBus,
+    pdfFindController,
+    async [Symbol.asyncDispose]() {
+      await loadingTask.destroy();
+    },
+  };
 }
 
 type TestSearchP_ = {
@@ -235,14 +236,9 @@ function testEmptySearch(
 }
 
 describe("pdf_find_controller", () => {
-  afterEach(() => {
-    /* Running by `deno test`, there could be "Leaking async ops" without
-    this. */
-    GlobalWorkerOptions.workerPort?.terminate();
-  });
-
   it("performs a normal search", async () => {
-    const { eventBus, pdfFindController } = await initPdfFindController();
+    await using inited = await initPdfFindController();
+    const { eventBus, pdfFindController } = inited;
     const updateFindMatchesCount = [0];
 
     await testSearch({
@@ -263,10 +259,8 @@ describe("pdf_find_controller", () => {
   });
 
   it("performs a normal search but the total counts is only updated one time", async () => {
-    const { eventBus, pdfFindController } = await initPdfFindController(
-      undefined,
-      false,
-    );
+    await using inited = await initPdfFindController(undefined, false);
+    const { eventBus, pdfFindController } = inited;
     const updateFindMatchesCount = [0];
     const updateFindControlState = [0];
 
@@ -293,7 +287,8 @@ describe("pdf_find_controller", () => {
     // Page 14 (with page index 13) contains five results. By default, the
     // first result (match index 0) is selected, so the previous result
     // should be the fifth result (match index 4).
-    const { eventBus, pdfFindController } = await initPdfFindController();
+    await using inited = await initPdfFindController();
+    const { eventBus, pdfFindController } = inited;
 
     await testSearch({
       eventBus,
@@ -311,7 +306,8 @@ describe("pdf_find_controller", () => {
   });
 
   it("performs a case sensitive search", async () => {
-    const { eventBus, pdfFindController } = await initPdfFindController();
+    await using inited = await initPdfFindController();
+    const { eventBus, pdfFindController } = inited;
 
     await testSearch({
       eventBus,
@@ -331,7 +327,8 @@ describe("pdf_find_controller", () => {
   it("performs an entire word search", async () => {
     // Page 13 contains both 'Government' and 'Governmental', so the latter
     // should not be found with entire word search.
-    const { eventBus, pdfFindController } = await initPdfFindController();
+    await using inited = await initPdfFindController();
+    const { eventBus, pdfFindController } = inited;
 
     await testSearch({
       eventBus,
@@ -351,7 +348,8 @@ describe("pdf_find_controller", () => {
   it("performs a multiple term (no phrase) search", async () => {
     // Page 9 contains 'alternate' and pages 6 and 9 contain 'solution'.
     // Both should be found for multiple term (no phrase) search.
-    const { eventBus, pdfFindController } = await initPdfFindController();
+    await using inited = await initPdfFindController();
+    const { eventBus, pdfFindController } = inited;
 
     await testSearch({
       eventBus,
@@ -370,7 +368,8 @@ describe("pdf_find_controller", () => {
   it("performs a multiple term (phrase) search", async () => {
     // Page 9 contains 'alternate solution' and pages 6 and 9 contain
     // 'solution'. Both should be found for multiple term (phrase) search.
-    const { eventBus, pdfFindController } = await initPdfFindController();
+    await using inited = await initPdfFindController();
+    const { eventBus, pdfFindController } = inited;
 
     await testSearch({
       eventBus,
@@ -387,9 +386,8 @@ describe("pdf_find_controller", () => {
   });
 
   it("performs a normal search, where the text is normalized", async () => {
-    const { eventBus, pdfFindController } = await initPdfFindController(
-      "fraction-highlight.pdf",
-    );
+    await using inited = await initPdfFindController("fraction-highlight.pdf");
+    const { eventBus, pdfFindController } = inited;
 
     await testSearch({
       eventBus,
@@ -498,9 +496,8 @@ describe("pdf_find_controller", () => {
   });
 
   it("performs a normal search, where the text with diacritics is normalized", async () => {
-    const { eventBus, pdfFindController } = await initPdfFindController(
-      "french_diacritics.pdf",
-    );
+    await using inited = await initPdfFindController("french_diacritics.pdf");
+    const { eventBus, pdfFindController } = inited;
 
     await testSearch({
       eventBus,
@@ -550,7 +547,8 @@ describe("pdf_find_controller", () => {
   });
 
   it("performs a search where one of the results contains an hyphen", async () => {
-    const { eventBus, pdfFindController } = await initPdfFindController();
+    await using inited = await initPdfFindController();
+    const { eventBus, pdfFindController } = inited;
 
     await testSearch({
       eventBus,
@@ -567,7 +565,8 @@ describe("pdf_find_controller", () => {
   });
 
   it("performs a search where the result is on two lines", async () => {
-    const { eventBus, pdfFindController } = await initPdfFindController();
+    await using inited = await initPdfFindController();
+    const { eventBus, pdfFindController } = inited;
 
     await testSearch({
       eventBus,
@@ -586,7 +585,8 @@ describe("pdf_find_controller", () => {
   });
 
   it("performs a search where the result is on two lines with a punctuation at eol", async () => {
-    const { eventBus, pdfFindController } = await initPdfFindController();
+    await using inited = await initPdfFindController();
+    const { eventBus, pdfFindController } = inited;
 
     await testSearch({
       eventBus,
@@ -605,7 +605,8 @@ describe("pdf_find_controller", () => {
   });
 
   it("performs a search with a minus sign in the query", async () => {
-    const { eventBus, pdfFindController } = await initPdfFindController();
+    await using inited = await initPdfFindController();
+    const { eventBus, pdfFindController } = inited;
 
     await testSearch({
       eventBus,
@@ -654,7 +655,8 @@ describe("pdf_find_controller", () => {
   });
 
   it("performs a search with square brackets in the query", async () => {
-    const { eventBus, pdfFindController } = await initPdfFindController();
+    await using inited = await initPdfFindController();
+    const { eventBus, pdfFindController } = inited;
 
     await testSearch({
       eventBus,
@@ -673,7 +675,8 @@ describe("pdf_find_controller", () => {
   });
 
   it("performs a search with parenthesis in the query", async () => {
-    const { eventBus, pdfFindController } = await initPdfFindController();
+    await using inited = await initPdfFindController();
+    const { eventBus, pdfFindController } = inited;
 
     await testSearch({
       eventBus,
@@ -692,7 +695,8 @@ describe("pdf_find_controller", () => {
   });
 
   it("performs a search with a final dot in the query", async () => {
-    const { eventBus, pdfFindController } = await initPdfFindController();
+    await using inited = await initPdfFindController();
+    const { eventBus, pdfFindController } = inited;
 
     // The whitespace after the dot mustn't be matched.
     const query = "complex applications.";
@@ -714,7 +718,8 @@ describe("pdf_find_controller", () => {
   });
 
   it("performs a search with a dot in the query and a missing whitespace", async () => {
-    const { eventBus, pdfFindController } = await initPdfFindController();
+    await using inited = await initPdfFindController();
+    const { eventBus, pdfFindController } = inited;
 
     // The whitespace after the dot must be matched.
     const query = "complex applications.J";
@@ -736,7 +741,8 @@ describe("pdf_find_controller", () => {
   });
 
   it("performs a search with a dot followed by a whitespace in the query", async () => {
-    const { eventBus, pdfFindController } = await initPdfFindController();
+    await using inited = await initPdfFindController();
+    const { eventBus, pdfFindController } = inited;
     const query = "complex applications. j";
 
     await testSearch({
@@ -760,9 +766,8 @@ describe("pdf_find_controller", () => {
     //   pending("Linked test-cases are not supported in Node.js.");
     // }
 
-    const { eventBus, pdfFindController } = await initPdfFindController(
-      "issue14562.pdf",
-    );
+    const inited = await initPdfFindController("issue14562.pdf");
+    const { eventBus, pdfFindController } = inited;
 
     await testSearch({
       eventBus,
@@ -802,9 +807,8 @@ describe("pdf_find_controller", () => {
   });
 
   it("performs a search in a text containing some Hangul syllables", async () => {
-    const { eventBus, pdfFindController } = await initPdfFindController(
-      "bug1771477.pdf",
-    );
+    await using inited = await initPdfFindController("bug1771477.pdf");
+    const { eventBus, pdfFindController } = inited;
 
     await testSearch({
       eventBus,
@@ -823,9 +827,8 @@ describe("pdf_find_controller", () => {
   });
 
   it("performs a search in a text containing an ideographic at the end of a line", async () => {
-    const { eventBus, pdfFindController } = await initPdfFindController(
-      "issue15340.pdf",
-    );
+    await using inited = await initPdfFindController("issue15340.pdf");
+    const { eventBus, pdfFindController } = inited;
 
     await testSearch({
       eventBus,
@@ -844,9 +847,8 @@ describe("pdf_find_controller", () => {
   });
 
   it("performs a search in a text containing fullwidth chars", async () => {
-    const { eventBus, pdfFindController } = await initPdfFindController(
-      "issue15690.pdf",
-    );
+    await using inited = await initPdfFindController("issue15690.pdf");
+    const { eventBus, pdfFindController } = inited;
 
     await testSearch({
       eventBus,
@@ -865,9 +867,8 @@ describe("pdf_find_controller", () => {
   });
 
   it("performs a search in a text with some Katakana at the end of a line", async () => {
-    const { eventBus, pdfFindController } = await initPdfFindController(
-      "issue15759.pdf",
-    );
+    await using inited = await initPdfFindController("issue15759.pdf");
+    const { eventBus, pdfFindController } = inited;
 
     await testSearch({
       eventBus,
@@ -886,7 +887,8 @@ describe("pdf_find_controller", () => {
   });
 
   it("performs a search with a single diacritic", async () => {
-    const { eventBus, pdfFindController } = await initPdfFindController();
+    await using inited = await initPdfFindController();
+    const { eventBus, pdfFindController } = inited;
 
     await testEmptySearch({
       eventBus,
@@ -902,9 +904,8 @@ describe("pdf_find_controller", () => {
     //   pending("Linked test-cases are not supported in Node.js.");
     // }
 
-    const { eventBus, pdfFindController } = await initPdfFindController(
-      "issue12909.pdf",
-    );
+    await using inited = await initPdfFindController("issue12909.pdf");
+    const { eventBus, pdfFindController } = inited;
 
     await testSearch({
       eventBus,
@@ -936,9 +937,8 @@ describe("pdf_find_controller", () => {
   });
 
   it("performs a search in a text with some Hiragana diacritics at the end of a line", async () => {
-    const { eventBus, pdfFindController } = await initPdfFindController(
-      "issue16063.pdf",
-    );
+    await using inited = await initPdfFindController("issue16063.pdf");
+    const { eventBus, pdfFindController } = inited;
 
     await testSearch({
       eventBus,
@@ -976,9 +976,8 @@ describe("pdf_find_controller", () => {
     //   pending("Linked test-cases are not supported in Node.js.");
     // }
 
-    const { eventBus, pdfFindController } = await initPdfFindController(
-      "bug1820909.pdf",
-    );
+    await using inited = await initPdfFindController("bug1820909.pdf");
+    const { eventBus, pdfFindController } = inited;
 
     await testSearch({
       eventBus,
@@ -997,9 +996,8 @@ describe("pdf_find_controller", () => {
   });
 
   it("performs a search in a text with some UTF-32 chars followed by a dash at the end of a line", async () => {
-    const { eventBus, pdfFindController } = await initPdfFindController(
-      "bug1820909.1.pdf",
-    );
+    await using inited = await initPdfFindController("bug1820909.1.pdf");
+    const { eventBus, pdfFindController } = inited;
 
     await testSearch({
       eventBus,
@@ -1018,9 +1016,8 @@ describe("pdf_find_controller", () => {
   });
 
   it("performs a search in a text with some arabic chars in different unicode ranges but with same normalized form", async function () {
-    const { eventBus, pdfFindController } = await initPdfFindController(
-      "ArabicCIDTrueType.pdf",
-    );
+    await using inited = await initPdfFindController("ArabicCIDTrueType.pdf");
+    const { eventBus, pdfFindController } = inited;
 
     await testSearch({
       eventBus,
@@ -1054,9 +1051,10 @@ describe("pdf_find_controller", () => {
   });
 
   it("performs a search in a text with some f ligatures", async function () {
-    const { eventBus, pdfFindController } = await initPdfFindController(
+    await using inited = await initPdfFindController(
       "copy_paste_ligatures.pdf",
     );
+    const { eventBus, pdfFindController } = inited;
 
     await testSearch({
       eventBus,

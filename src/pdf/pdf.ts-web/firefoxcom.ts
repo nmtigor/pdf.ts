@@ -18,16 +18,12 @@
  */
 
 // import "../extensions/firefox/tools/l10n.ts";
+import type { Locale } from "@fe-lib/Locale.ts";
+import type { ArrEl } from "@fe-lib/alias.ts";
 import { Locale_1, WebL10nArgs } from "@fe-src/3rd/webL10n-2015-10-24/l10n.ts";
 import { GECKOVIEW, MOZCENTRAL, PDFJSDev } from "@fe-src/global.ts";
-import type { ArrEl } from "@fe-src/lib/alias.ts";
-import type { Locale } from "@fe-src/lib/Locale.ts";
 import { isPdfFile, PDFDataRangeTransport, shadow } from "../pdf.ts-src/pdf.ts";
-import type {
-  FindControlState,
-  PassiveLoadingCbs,
-  TelemetryData,
-} from "./app.ts";
+import type { FindControlState, PassiveLoadingCbs } from "./app.ts";
 import { DefaultExternalServices, viewerApp } from "./app.ts";
 import type { UserOptions } from "./app_options.ts";
 import type { EventMap } from "./event_utils.ts";
@@ -535,7 +531,7 @@ class FirefoxExternalServices extends DefaultExternalServices {
     FirefoxCom.requestSync("initPassiveLoading", null);
   }
 
-  override reportTelemetry(data: TelemetryData) {
+  override reportTelemetry(data: EventMap["reporttelemetry"]["details"]) {
     FirefoxCom.request("reportTelemetry", JSON.stringify(data));
   }
 

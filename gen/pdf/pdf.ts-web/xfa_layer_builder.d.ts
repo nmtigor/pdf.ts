@@ -1,5 +1,6 @@
-import { AnnotationStorage, type AnnotIntent, PageViewport, PDFPageProxy, type XFAData, type XFAElData } from "../pdf.ts-src/pdf.js";
-import { type IPDFLinkService } from "./interfaces.js";
+import type { AnnotIntent, XFAData, XFAElData } from "../pdf.ts-src/pdf.js";
+import { AnnotationStorage, PageViewport, PDFPageProxy } from "../pdf.ts-src/pdf.js";
+import type { IPDFLinkService } from "./interfaces.js";
 interface XfaLayerBuilderOptions {
     pageDiv: HTMLDivElement;
     pdfPage: PDFPageProxy | undefined;

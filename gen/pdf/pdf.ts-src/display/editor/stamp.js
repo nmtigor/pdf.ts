@@ -2,22 +2,8 @@
  * nmtigor (https://github.com/nmtigor) @2022
  */
 var _a;
-/* Copyright 2022 Mozilla Foundation
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-import { PDFJSDev, TESTING } from "../../../../global.js";
 import { html } from "../../../../lib/dom.js";
+import { PDFJSDev, TESTING } from "../../../../global.js";
 import { AnnotationEditorType, shadow } from "../../shared/util.js";
 import { StampAnnotationElement } from "../annotation_layer.js";
 import { PixelsPerInch } from "../display_utils.js";
@@ -41,6 +27,10 @@ export class StampEditor extends AnnotationEditor {
         super({ ...params, name: "stampEditor" });
         this.#bitmapUrl = params.bitmapUrl;
         this.#bitmapFile = params.bitmapFile;
+    }
+    /** @inheritdoc */
+    static initialize(l10n) {
+        AnnotationEditor.initialize(l10n);
     }
     static get supportedTypes() {
         // See https://developer.mozilla.org/en-US/docs/Web/Media/Formats/Image_types
@@ -251,6 +241,20 @@ export class StampEditor extends AnnotationEditor {
             this.parent.addUndoableEditor(this);
             this.#hasBeenAddedInUndoStack = true;
         }
+        // There are multiple ways to add an image to the page, so here we just
+        // count the number of times an image is added to the page whatever the way
+        // is.
+        this._uiManager._eventBus.dispatch("reporttelemetry", {
+            source: this,
+            details: {
+                type: "editing",
+                subtype: this.editorType,
+                data: {
+                    action: "inserted_image",
+                },
+            },
+        });
+        this.addAltTextButton();
     }
     /**
      * When the dimensions of the div change the inner canvas must
@@ -375,7 +379,7 @@ export class StampEditor extends AnnotationEditor {
             return undefined;
         }
         const editor = super.deserialize(data, parent, uiManager);
-        const { rect, bitmapUrl, bitmapId, isSvg } = data;
+        const { rect, bitmapUrl, bitmapId, isSvg, accessibilityData } = data;
         if (bitmapId && uiManager.imageManager.isValidId(bitmapId)) {
             editor.#bitmapId = bitmapId;
         }
@@ -386,6 +390,9 @@ export class StampEditor extends AnnotationEditor {
         const [parentWidth, parentHeight] = editor.pageDimensions;
         editor.width = (rect[2] - rect[0]) / parentWidth;
         editor.height = (rect[3] - rect[1]) / parentHeight;
+        if (accessibilityData) {
+            editor.altTextData = accessibilityData;
+        }
         return editor;
     }
     /** @inheritdoc */
@@ -400,6 +407,7 @@ export class StampEditor extends AnnotationEditor {
             rect: this.getRect(0, 0),
             rotation: this.rotation,
             isSvg: this.#isSvg,
+            structTreeParentId: this._structTreeParentId,
         };
         if (isForCopying) {
             // We don't know what's the final destination (this pdf or another one)
@@ -407,7 +415,12 @@ export class StampEditor extends AnnotationEditor {
             // hence we serialize the bitmap to a data url.
             serialized.bitmapUrl = this.#serializeBitmap(
             /* toUrl = */ true);
+            serialized.accessibilityData = this.altTextData;
             return serialized;
+        }
+        const { decorative, altText } = this.altTextData;
+        if (!decorative && altText) {
+            serialized.accessibilityData = { type: "Figure", alt: altText };
         }
         if (context === undefined) {
             return serialized;

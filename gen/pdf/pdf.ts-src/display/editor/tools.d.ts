@@ -1,4 +1,5 @@
 import type { rgb_t } from "../../../../lib/color/alias.js";
+import type { AltTextManager } from "../../../pdf.ts-web/alt_text_manager.js";
 import type { EventBus, EventMap } from "../../../pdf.ts-web/event_utils.js";
 import type { PageColors } from "../../../pdf.ts-web/pdf_viewer.js";
 import { AnnotationEditorType } from "../../shared/util.js";
@@ -150,6 +151,7 @@ export declare class AnnotationEditorUIManager {
      */
     getActive(): AnnotationEditor | undefined;
     get currentPageIndex(): number;
+    _eventBus: EventBus;
     /**
      * Get an id.
      */
@@ -166,9 +168,11 @@ export declare class AnnotationEditorUIManager {
     static TRANSLATE_SMALL: number;
     static TRANSLATE_BIG: number;
     static get _keyboardManager(): KeyboardManager<AnnotationEditorUIManager>;
-    constructor(container: HTMLDivElement, viewer: HTMLDivElement, eventBus: EventBus, pdfDocument: PDFDocumentProxy, pageColors: PageColors | undefined);
+    constructor(container: HTMLDivElement, viewer: HTMLDivElement, altTextManager: AltTextManager | undefined, eventBus: EventBus, pdfDocument: PDFDocumentProxy, pageColors: PageColors | undefined);
     destroy(): void;
     get hcmFilter(): string;
+    get direction(): string;
+    editAltText(editor: AnnotationEditor): void;
     onPageChanging({ pageNumber }: EventMap["pagechanging"]): void;
     focusMainContainer(): void;
     findParent(x: number, y: number): AnnotationEditorLayer | undefined;
@@ -183,6 +187,8 @@ export declare class AnnotationEditorUIManager {
     addToAnnotationStorage(editor: AnnotationEditor): void;
     blur(): void;
     focus(): void;
+    addEditListeners(): void;
+    removeEditListeners(): void;
     /**
      * Copy callback.
      */
@@ -318,7 +324,7 @@ export declare class AnnotationEditorUIManager {
     setUpDragSession(): void;
     /**
      * Ends the drag session.
-     * @return {boolean} true if at least one editor has been moved.
+     * @return true if at least one editor has been moved.
      */
     endDragSession(): boolean;
     /**

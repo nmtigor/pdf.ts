@@ -17,11 +17,13 @@
  * limitations under the License.
  */
 
+// eslint-disable-next-line max-len
+/** @typedef {import("./annotation_storage").AnnotationStorage} AnnotationStorage */
 /** @typedef {import("./display_utils").PageViewport} PageViewport */
 /** @typedef {import("../../web/interfaces").IPDFLinkService} IPDFLinkService */
 
-import { html as createHTML, textnode } from "../../../lib/dom.ts";
-import type { IPDFLinkService } from "../../pdf.ts-web/interfaces.ts";
+import { html as createHTML, textnode } from "@fe-lib/dom.ts";
+import type { IPDFLinkService } from "@pdf.ts-web/interfaces.ts";
 import type { XFAElObj, XFAHTMLObj } from "../core/xfa/alias.ts";
 import type { AnnotationStorage } from "./annotation_storage.ts";
 import type { AnnotIntent, PDFPageProxy } from "./api.ts";

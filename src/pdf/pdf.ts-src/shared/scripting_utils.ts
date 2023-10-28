@@ -24,9 +24,9 @@
  *              unexpected/unnecessary size increase of the *built* files.
  */
 
-import type { Ratio, TupleOf } from "@fe-src/lib/alias.ts";
-import type { red_t, rgb_t } from "@fe-src/lib/color/alias.ts";
-import "@fe-src/lib/jslang.ts";
+import type { Ratio, TupleOf } from "@fe-lib/alias.ts";
+import type { red_t, rgb_t } from "@fe-lib/color/alias.ts";
+import "@fe-lib/jslang.ts";
 /*80--------------------------------------------------------------------------*/
 
 export type RGB = TupleOf<Ratio, 3>;

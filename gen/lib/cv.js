@@ -13,7 +13,7 @@ import { $vuu } from "./symbols.js";
 export class Coo {
 }
 /**
- * Wrapper of DOM
+ * Wrapper of DOM\
  * Vuu ⊆ Coo
  */
 export class Vuu {

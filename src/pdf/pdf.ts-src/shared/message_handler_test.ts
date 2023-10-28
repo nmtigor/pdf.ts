@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-import { PromiseCap } from "@fe-src/lib/util/PromiseCap.ts";
+import { PromiseCap } from "@fe-lib/util/PromiseCap.ts";
 import { assertEquals, fail } from "@std/assert/mod.ts";
 import { describe, it } from "@std/testing/bdd.ts";
 import { LoopbackPort } from "../display/api.ts";

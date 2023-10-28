@@ -3,7 +3,7 @@ import type { AnnotStorageRecord, AnnotStorageValue } from "../display/annotatio
 import type { CMapData } from "../display/base_factory.js";
 import type { MessageHandler, StreamSink, Thread } from "../shared/message_handler.js";
 import { RenderingIntentFlag } from "../shared/util.js";
-import type { Annotation, AnnotImage, FieldObject, SaveReturn } from "./annotation.js";
+import type { Annotation, AnnotationData, AnnotationGlobals, AnnotImage, AnnotSaveReturn, FieldObject } from "./annotation.js";
 import { BaseStream } from "./base_stream.js";
 import { Catalog } from "./catalog.js";
 import { DatasetReader } from "./dataset_reader.js";
@@ -70,7 +70,7 @@ export declare class Page {
     get _localIdFactory(): LocalIdFactory;
     resourcesPromise?: Promise<Dict>;
     constructor({ pdfManager, xref, pageIndex, pageDict, ref, globalIdFactory, fontCache, builtInCMapCache, standardFontDataCache, globalImageCache, systemFontCache, nonBlendModesSet, xfaFactory, }: PageCtorP_);
-    get content(): Stream | (Stream | Ref)[] | undefined;
+    get content(): Stream | (Ref | Stream)[] | undefined;
     /**
      * Table 33
      */
@@ -85,11 +85,8 @@ export declare class Page {
     get xfaData(): {
         bbox: [number, number, number, number];
     } | undefined;
-    saveNewAnnotations(handler: MessageHandler<Thread.worker>, task: WorkerTask, annotations: AnnotStorageValue[], imagePromises: Map<string, Promise<AnnotImage>> | undefined): Promise<{
-        ref: Ref;
-        data: string;
-    }[]>;
-    save(handler: MessageHandler<Thread.worker>, task: WorkerTask, annotationStorage?: AnnotStorageRecord): Promise<SaveReturn[]>;
+    saveNewAnnotations(handler: MessageHandler<Thread.worker>, task: WorkerTask, annotations: AnnotStorageValue[], imagePromises: Map<string, Promise<AnnotImage>> | undefined): Promise<import("./annotation.js").AnnotSaveData[]>;
+    save(handler: MessageHandler<Thread.worker>, task: WorkerTask, annotationStorage?: AnnotStorageRecord): Promise<AnnotSaveReturn[]>;
     loadResources(keys: string[]): Promise<import("./chunked_stream.js").ChunkedStream | undefined>;
     getOperatorList({ handler, sink, task, intent, cacheKey, annotationStorage, }: PageGetOperatorListP_): Promise<{
         length: number;
@@ -100,9 +97,9 @@ export declare class Page {
      * @private
      */
     _parseStructTree(structTreeRoot: StructTreeRoot): StructTreePage;
-    getAnnotationsData(handler: MessageHandler<Thread.worker>, task: WorkerTask, intent: RenderingIntentFlag): Promise<import("./annotation.js").AnnotationData[]>;
+    getAnnotationsData(handler: MessageHandler<Thread.worker>, task: WorkerTask, intent: RenderingIntentFlag): Promise<AnnotationData[] | Annotation[]>;
     get annotations(): Ref[];
-    get _parsedAnnotations(): Promise<(Annotation | undefined)[]>;
+    get _parsedAnnotations(): Promise<Annotation[]>;
     get jsActions(): import("./core_utils.js").AnnotActions | undefined;
 }
 export interface GlobalIdFactory {
@@ -204,13 +201,14 @@ export declare class PDFDocument {
     checkLastPage(recoveryMode?: boolean): Promise<void>;
     fontFallback(id: string, handler: MessageHandler<Thread.worker>): Promise<void>;
     cleanup(manuallyTriggered?: boolean): Promise<void>;
-    get fieldObjects(): Promise<undefined> | Promise<Record<string, FieldObject[]>>;
+    get fieldObjects(): Promise<Record<string, FieldObject[]> | undefined>;
     get hasJSActions(): Promise<boolean>;
     /**
      * @private
      */
     _parseHasJSActions(): Promise<boolean>;
     get calculationOrderIds(): string[] | undefined;
+    get annotationGlobals(): Promise<AnnotationGlobals | undefined>;
 }
 export {};
 //# sourceMappingURL=document.d.ts.map

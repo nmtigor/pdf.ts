@@ -17,9 +17,9 @@
  * limitations under the License.
  */
 
+import type { Ratio, rect_t, TupleOf, TypedArray } from "@fe-lib/alias.ts";
+import { assert, fail } from "@fe-lib/util/trace.ts";
 import { PDFJSDev, TESTING } from "@fe-src/global.ts";
-import type { Ratio, rect_t, TupleOf, TypedArray } from "@fe-src/lib/alias.ts";
-import { assert, fail } from "@fe-src/lib/util/trace.ts";
 import { FormatError, info, shadow, warn } from "../shared/util.ts";
 import { BaseStream } from "./base_stream.ts";
 import { MissingDataException } from "./core_utils.ts";
@@ -926,14 +926,20 @@ class DeviceRgbCS extends ColorSpace {
 /**
  * The default color is `new Float32Array([0, 0, 0, 1])`.
  */
-namespace NsDeviceCmykCS {
-  // The coefficients below was found using numerical analysis: the method of
-  // steepest descent for the sum((f_i - color_value_i)^2) for r/g/b colors,
-  // where color_value is the tabular value from the table of sampled RGB colors
-  // from CMYK US Web Coated (SWOP) colorspace, and f_i is the corresponding
-  // CMYK color conversion using the estimation below:
-  //   f(A, B,.. N) = Acc+Bcm+Ccy+Dck+c+Fmm+Gmy+Hmk+Im+Jyy+Kyk+Ly+Mkk+Nk+255
-  function convertToRgb(
+class DeviceCmykCS extends ColorSpace {
+  constructor() {
+    super("DeviceCMYK", 4);
+  }
+
+  /**
+   * The coefficients below was found using numerical analysis: the method of
+   * steepest descent for the sum((f_i - color_value_i)^2) for r/g/b colors,
+   * where color_value is the tabular value from the table of sampled RGB colors
+   * from CMYK US Web Coated (SWOP) colorspace, and f_i is the corresponding
+   * CMYK color conversion using the estimation below:
+   *   f(A, B,.. N) = Acc+Bcm+Ccy+Dck+c+Fmm+Gmy+Hmk+Im+Jyy+Kyk+Ly+Mkk+Nk+255
+   */
+  #toRgb(
     src:
       | Uint8Array
       | Uint8ClampedArray
@@ -964,7 +970,8 @@ namespace NsDeviceCmykCS {
           -17.873870861415444 * k -
           5.497006427196366) +
       y *
-        (-2.5217340131683033 * y - 21.248923337353073 * k + 17.5119270841813) +
+        (-2.5217340131683033 * y - 21.248923337353073 * k +
+          17.5119270841813) +
       k * (-21.86122147463605 * k - 189.48180835922747);
 
     dest[destOffset + 1] = 255 +
@@ -1001,69 +1008,112 @@ namespace NsDeviceCmykCS {
       k * (-22.33816807309886 * k - 180.12613974708367);
   }
 
-  // eslint-disable-next-line no-shadow
-  export class DeviceCmykCS extends ColorSpace {
-    constructor() {
-      super("DeviceCMYK", 4);
+  /** @implement */
+  getRgbItem(
+    src: Float32Array | number[],
+    srcOffset: number,
+    dest: Uint8ClampedArray,
+    destOffset: number,
+  ) {
+    /*#static*/ if (PDFJSDev || TESTING) {
+      assert(
+        dest instanceof Uint8ClampedArray,
+        'DeviceCmykCS.getRgbItem: Unsupported "dest" type.',
+      );
     }
+    this.#toRgb(src, srcOffset, 1, dest, destOffset);
+  }
 
-    /** @implement */
-    getRgbItem(
-      src: Float32Array | number[],
-      srcOffset: number,
-      dest: Uint8ClampedArray,
-      destOffset: number,
-    ) {
-      /*#static*/ if (PDFJSDev || TESTING) {
-        assert(
-          dest instanceof Uint8ClampedArray,
-          'DeviceCmykCS.getRgbItem: Unsupported "dest" type.',
-        );
-      }
-      convertToRgb(src, srcOffset, 1, dest, destOffset);
+  /** @implement */
+  getRgbBuffer(
+    src: Uint8Array | Uint16Array | Uint8ClampedArray | Uint32Array,
+    srcOffset: number,
+    count: number,
+    dest: Uint8ClampedArray,
+    destOffset: number,
+    bits: number,
+    alpha01: number,
+  ) {
+    /*#static*/ if (PDFJSDev || TESTING) {
+      assert(
+        dest instanceof Uint8ClampedArray,
+        'DeviceCmykCS.getRgbBuffer: Unsupported "dest" type.',
+      );
     }
-
-    /** @implement */
-    getRgbBuffer(
-      src: Uint8Array | Uint16Array | Uint8ClampedArray | Uint32Array,
-      srcOffset: number,
-      count: number,
-      dest: Uint8ClampedArray,
-      destOffset: number,
-      bits: number,
-      alpha01: number,
-    ) {
-      /*#static*/ if (PDFJSDev || TESTING) {
-        assert(
-          dest instanceof Uint8ClampedArray,
-          'DeviceCmykCS.getRgbBuffer: Unsupported "dest" type.',
-        );
-      }
-      const scale = 1 / ((1 << bits) - 1);
-      for (let i = 0; i < count; i++) {
-        convertToRgb(src, srcOffset, scale, dest, destOffset);
-        srcOffset += 4;
-        destOffset += 3 + alpha01;
-      }
-    }
-
-    getOutputLength(inputLength: number, alpha01: number) {
-      return ((inputLength / 4) * (3 + alpha01)) | 0;
+    const scale = 1 / ((1 << bits) - 1);
+    for (let i = 0; i < count; i++) {
+      this.#toRgb(src, srcOffset, scale, dest, destOffset);
+      srcOffset += 4;
+      destOffset += 3 + alpha01;
     }
   }
+
+  getOutputLength(inputLength: number, alpha01: number) {
+    return ((inputLength / 4) * (3 + alpha01)) | 0;
+  }
 }
-type DeviceCmykCS = NsDeviceCmykCS.DeviceCmykCS;
-// Hoisting for deno.
-var DeviceCmykCS = NsDeviceCmykCS.DeviceCmykCS;
 
 /**
  * CalGrayCS: Based on "PDF Reference, Sixth Ed", p.245
  *
  * The default color is `new Float32Array([0])`.
  */
-namespace NsCalGrayCS {
-  function convertToRgb(
-    cs: CalGrayCS,
+class CalGrayCS extends ColorSpace {
+  XW: number;
+  YW: number;
+  ZW: number;
+
+  XB: number;
+  YB: number;
+  ZB: number;
+
+  G: number;
+
+  constructor(
+    whitePoint: Float32Array,
+    blackPoint?: Float32Array,
+    gamma?: number,
+  ) {
+    super("CalGray", 1);
+
+    if (!whitePoint) {
+      throw new FormatError(
+        "WhitePoint missing - required for color space CalGray",
+      );
+    }
+    // Translate arguments to spec variables.
+    [this.XW, this.YW, this.ZW] = whitePoint;
+    [this.XB, this.YB, this.ZB] = blackPoint || [0, 0, 0];
+    this.G = gamma || 1;
+
+    // Validate variables as per spec.
+    if (this.XW < 0 || this.ZW < 0 || this.YW !== 1) {
+      throw new FormatError(
+        `Invalid WhitePoint components for ${this.name}, no fallback available`,
+      );
+    }
+
+    if (this.XB < 0 || this.YB < 0 || this.ZB < 0) {
+      info(`Invalid BlackPoint for ${this.name}, falling back to default.`);
+      this.XB = this.YB = this.ZB = 0;
+    }
+
+    if (this.XB !== 0 || this.YB !== 0 || this.ZB !== 0) {
+      warn(
+        `${this.name}, BlackPoint: XB: ${this.XB}, YB: ${this.YB}, ` +
+          `ZB: ${this.ZB}, only default values are supported.`,
+      );
+    }
+
+    if (this.G < 1) {
+      info(
+        `Invalid Gamma: ${this.G} for ${this.name}, falling back to default.`,
+      );
+      this.G = 1;
+    }
+  }
+
+  #toRgb(
     src:
       | Uint8Array
       | Uint8ClampedArray
@@ -1079,11 +1129,11 @@ namespace NsCalGrayCS {
     // A represents a gray component of a calibrated gray space.
     // A <---> AG in the spec
     const A = src[srcOffset] * scale;
-    const AG = A ** cs.G;
+    const AG = A ** this.G;
 
-    // Computes L as per spec. ( = cs.YW * AG )
+    // Computes L as per spec. ( = this.YW * AG )
     // Except if other than default BlackPoint values are used.
-    const L = cs.YW * AG;
+    const L = this.YW * AG;
     // http://www.poynton.com/notes/colour_and_gamma/ColorFAQ.html, Ch 4.
     // Convert values to rgb range [0, 255].
     const val = Math.max(295.8 * L ** 0.3333333333333333 - 40.8, 0);
@@ -1092,159 +1142,163 @@ namespace NsCalGrayCS {
     dest[destOffset + 2] = val;
   }
 
-  // eslint-disable-next-line no-shadow
-  export class CalGrayCS extends ColorSpace {
-    XW: number;
-    YW: number;
-    ZW: number;
-
-    XB: number;
-    YB: number;
-    ZB: number;
-
-    G: number;
-
-    constructor(
-      whitePoint: Float32Array,
-      blackPoint?: Float32Array,
-      gamma?: number,
-    ) {
-      super("CalGray", 1);
-
-      if (!whitePoint) {
-        throw new FormatError(
-          "WhitePoint missing - required for color space CalGray",
-        );
-      }
-      blackPoint ||= new Float32Array(3);
-      gamma ||= 1;
-
-      // Translate arguments to spec variables.
-      this.XW = whitePoint[0];
-      this.YW = whitePoint[1];
-      this.ZW = whitePoint[2];
-
-      this.XB = blackPoint![0];
-      this.YB = blackPoint![1];
-      this.ZB = blackPoint![2];
-
-      this.G = gamma;
-
-      // Validate variables as per spec.
-      if (this.XW < 0 || this.ZW < 0 || this.YW !== 1) {
-        throw new FormatError(
-          `Invalid WhitePoint components for ${this.name}` +
-            ", no fallback available",
-        );
-      }
-
-      if (this.XB < 0 || this.YB < 0 || this.ZB < 0) {
-        info(`Invalid BlackPoint for ${this.name}, falling back to default.`);
-        this.XB = this.YB = this.ZB = 0;
-      }
-
-      if (this.XB !== 0 || this.YB !== 0 || this.ZB !== 0) {
-        warn(
-          `${this.name}, BlackPoint: XB: ${this.XB}, YB: ${this.YB}, ` +
-            `ZB: ${this.ZB}, only default values are supported.`,
-        );
-      }
-
-      if (this.G < 1) {
-        info(
-          `Invalid Gamma: ${this.G} for ${this.name}, ` +
-            "falling back to default.",
-        );
-        this.G = 1;
-      }
+  /** @implement */
+  getRgbItem(
+    src: Float32Array | number[],
+    srcOffset: number,
+    dest: Uint8ClampedArray,
+    destOffset: number,
+  ) {
+    /*#static*/ if (PDFJSDev || TESTING) {
+      assert(
+        dest instanceof Uint8ClampedArray,
+        'CalGrayCS.getRgbItem: Unsupported "dest" type.',
+      );
     }
+    this.#toRgb(src, srcOffset, dest, destOffset, 1);
+  }
 
-    /** @implement */
-    getRgbItem(
-      src: Float32Array | number[],
-      srcOffset: number,
-      dest: Uint8ClampedArray,
-      destOffset: number,
-    ) {
-      /*#static*/ if (PDFJSDev || TESTING) {
-        assert(
-          dest instanceof Uint8ClampedArray,
-          'CalGrayCS.getRgbItem: Unsupported "dest" type.',
-        );
-      }
-      convertToRgb(this, src, srcOffset, dest, destOffset, 1);
+  /** @implement */
+  getRgbBuffer(
+    src: Uint8Array | Uint16Array | Uint8ClampedArray | Uint32Array,
+    srcOffset: number,
+    count: number,
+    dest: Uint8ClampedArray,
+    destOffset: number,
+    bits: number,
+    alpha01: number,
+  ) {
+    /*#static*/ if (PDFJSDev || TESTING) {
+      assert(
+        dest instanceof Uint8ClampedArray,
+        'CalGrayCS.getRgbBuffer: Unsupported "dest" type.',
+      );
     }
+    const scale = 1 / ((1 << bits) - 1);
 
-    /** @implement */
-    getRgbBuffer(
-      src: Uint8Array | Uint16Array | Uint8ClampedArray | Uint32Array,
-      srcOffset: number,
-      count: number,
-      dest: Uint8ClampedArray,
-      destOffset: number,
-      bits: number,
-      alpha01: number,
-    ) {
-      /*#static*/ if (PDFJSDev || TESTING) {
-        assert(
-          dest instanceof Uint8ClampedArray,
-          'CalGrayCS.getRgbBuffer: Unsupported "dest" type.',
-        );
-      }
-      const scale = 1 / ((1 << bits) - 1);
-
-      for (let i = 0; i < count; ++i) {
-        convertToRgb(this, src, srcOffset, dest, destOffset, scale);
-        srcOffset += 1;
-        destOffset += 3 + alpha01;
-      }
-    }
-
-    getOutputLength(inputLength: number, alpha01: number) {
-      return inputLength * (3 + alpha01);
+    for (let i = 0; i < count; ++i) {
+      this.#toRgb(src, srcOffset, dest, destOffset, scale);
+      srcOffset += 1;
+      destOffset += 3 + alpha01;
     }
   }
+
+  getOutputLength(inputLength: number, alpha01: number) {
+    return inputLength * (3 + alpha01);
+  }
 }
-type CalGrayCS = NsCalGrayCS.CalGrayCS;
-// Hoisting for deno.
-var CalGrayCS = NsCalGrayCS.CalGrayCS;
 
 /**
  * CalRGBCS: Based on "PDF Reference, Sixth Ed", p.247
  *
  * The default color is `new Float32Array([0, 0, 0])`.
  */
-namespace NsCalRGBCS {
-  // See http://www.brucelindbloom.com/index.html?Eqn_ChromAdapt.html for these
-  // matrices.
+class CalRGBCS extends ColorSpace {
   // deno-fmt-ignore
-  const BRADFORD_SCALE_MATRIX = new Float32Array([
+  /**
+   * See http://www.brucelindbloom.com/index.html?Eqn_ChromAdapt.html for these
+   * matrices.
+   */
+  static #BRADFORD_SCALE_MATRIX = new Float32Array([
     0.8951, 0.2664, -0.1614,
     -0.7502, 1.7135, 0.0367,
     0.0389, -0.0685, 1.0296]);
 
   // deno-fmt-ignore
-  const BRADFORD_SCALE_INVERSE_MATRIX = new Float32Array([
+  static #BRADFORD_SCALE_INVERSE_MATRIX = new Float32Array([
     0.9869929, -0.1470543, 0.1599627,
     0.4323053, 0.5183603, 0.0492912,
     -0.0085287, 0.0400428, 0.9684867]);
 
-  // See http://www.brucelindbloom.com/index.html?Eqn_RGB_XYZ_Matrix.html.
   // deno-fmt-ignore
-  const SRGB_D65_XYZ_TO_RGB_MATRIX = new Float32Array([
+  /**
+   * See http://www.brucelindbloom.com/index.html?Eqn_RGB_XYZ_Matrix.html.
+   */
+  static #SRGB_D65_XYZ_TO_RGB_MATRIX = new Float32Array([
     3.2404542, -1.5371385, -0.4985314,
     -0.9692660, 1.8760108, 0.0415560,
     0.0556434, -0.2040259, 1.0572252]);
 
-  const FLAT_WHITEPOINT_MATRIX = new Float32Array([1, 1, 1]);
+  static #FLAT_WHITEPOINT_MATRIX = new Float32Array([1, 1, 1]);
 
-  const tempNormalizeMatrix = new Float32Array(3);
-  const tempConvertMatrix1 = new Float32Array(3);
-  const tempConvertMatrix2 = new Float32Array(3);
+  static #tempNormalizeMatrix = new Float32Array(3);
+  static #tempConvertMatrix1 = new Float32Array(3);
+  static #tempConvertMatrix2 = new Float32Array(3);
 
-  const DECODE_L_CONSTANT = ((8 + 16) / 116) ** 3 / 8.0;
+  static #DECODE_L_CONSTANT = ((8 + 16) / 116) ** 3 / 8.0;
 
-  function matrixProduct(
+  whitePoint;
+  blackPoint;
+
+  GR: number;
+  GG: number;
+  GB: number;
+
+  MXA: number;
+  MYA: number;
+  MZA: number;
+  MXB: number;
+  MYB: number;
+  MZB: number;
+  MXC: number;
+  MYC: number;
+  MZC: number;
+
+  constructor(
+    whitePoint: Float32Array,
+    blackPoint?: Float32Array,
+    gamma?: Float32Array,
+    matrix?: Float32Array,
+  ) {
+    super("CalRGB", 3);
+
+    if (!whitePoint) {
+      throw new FormatError(
+        "WhitePoint missing - required for color space CalRGB",
+      );
+    }
+    // Translate arguments to spec variables.
+    const [XW, YW, ZW] = (this.whitePoint = whitePoint);
+    const [XB, YB, ZB] = (this.blackPoint = blackPoint || new Float32Array(3));
+
+    [this.GR, this.GG, this.GB] = gamma || new Float32Array([1, 1, 1]);
+    [
+      this.MXA,
+      this.MYA,
+      this.MZA,
+      this.MXB,
+      this.MYB,
+      this.MZB,
+      this.MXC,
+      this.MYC,
+      this.MZC,
+    ] = matrix || new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1]);
+
+    // Validate variables as per spec.
+    if (XW < 0 || ZW < 0 || YW !== 1) {
+      throw new FormatError(
+        `Invalid WhitePoint components for ${this.name}, no fallback available`,
+      );
+    }
+
+    if (XB < 0 || YB < 0 || ZB < 0) {
+      info(
+        `Invalid BlackPoint for ${this.name} [${XB}, ${YB}, ${ZB}], ` +
+          "falling back to default.",
+      );
+      this.blackPoint = new Float32Array(3);
+    }
+
+    if (this.GR < 0 || this.GG < 0 || this.GB < 0) {
+      info(
+        `Invalid Gamma [${this.GR}, ${this.GG}, ${this.GB}] for ` +
+          `${this.name}, falling back to default.`,
+      );
+      this.GR = this.GG = this.GB = 1;
+    }
+  }
+
+  #matrixProduct(
     a: Float32Array,
     b: Float32Array,
     result: Float32Array,
@@ -1254,7 +1308,7 @@ namespace NsCalRGBCS {
     result[2] = a[6] * b[0] + a[7] * b[1] + a[8] * b[2];
   }
 
-  function convertToFlat(
+  #toFlat(
     sourceWhitePoint: Float32Array,
     LMS: Float32Array,
     result: Float32Array,
@@ -1264,7 +1318,7 @@ namespace NsCalRGBCS {
     result[2] = (LMS[2] * 1) / sourceWhitePoint[2];
   }
 
-  function convertToD65(
+  #toD65(
     sourceWhitePoint: Float32Array,
     LMS: Float32Array,
     result: Float32Array,
@@ -1278,10 +1332,10 @@ namespace NsCalRGBCS {
     result[2] = (LMS[2] * D65Z) / sourceWhitePoint[2];
   }
 
-  function sRGBTransferFunction(color: number) {
+  #sRGBTransferFunction(color: number) {
     // See http://en.wikipedia.org/wiki/SRGB.
     if (color <= 0.0031308) {
-      return adjustToRange(0, 1, 12.92 * color);
+      return this.#adjustToRange(0, 1, 12.92 * color);
     }
     // Optimization:
     // If color is close enough to 1, skip calling the following transform
@@ -1292,24 +1346,24 @@ namespace NsCalRGBCS {
     if (color >= 0.99554525) {
       return 1;
     }
-    return adjustToRange(0, 1, (1 + 0.055) * color ** (1 / 2.4) - 0.055);
+    return this.#adjustToRange(0, 1, (1 + 0.055) * color ** (1 / 2.4) - 0.055);
   }
 
-  function adjustToRange(min: number, max: number, value: number) {
+  #adjustToRange(min: number, max: number, value: number) {
     return Math.max(min, Math.min(max, value));
   }
 
-  function decodeL(L: number): number {
+  #decodeL(L: number): number {
     if (L < 0) {
-      return -decodeL(-L);
+      return -this.#decodeL(-L);
     }
     if (L > 8.0) {
       return ((L + 16) / 116) ** 3;
     }
-    return L * DECODE_L_CONSTANT;
+    return L * CalRGBCS.#DECODE_L_CONSTANT;
   }
 
-  function compensateBlackPoint(
+  #compensateBlackPoint(
     sourceBlackPoint: Float32Array,
     XYZ_Flat: Float32Array,
     result: Float32Array,
@@ -1331,16 +1385,16 @@ namespace NsCalRGBCS {
     // http://www.adobe.com/content/dam/Adobe/en/devnet/photoshop/sdk/
     // AdobeBPC.pdf.
     // The destination blackPoint is the default blackPoint [0, 0, 0].
-    const zeroDecodeL = decodeL(0);
+    const zeroDecodeL = this.#decodeL(0);
 
     const X_DST = zeroDecodeL;
-    const X_SRC = decodeL(sourceBlackPoint[0]);
+    const X_SRC = this.#decodeL(sourceBlackPoint[0]);
 
     const Y_DST = zeroDecodeL;
-    const Y_SRC = decodeL(sourceBlackPoint[1]);
+    const Y_SRC = this.#decodeL(sourceBlackPoint[1]);
 
     const Z_DST = zeroDecodeL;
-    const Z_SRC = decodeL(sourceBlackPoint[2]);
+    const Z_SRC = this.#decodeL(sourceBlackPoint[2]);
 
     const X_Scale = (1 - X_DST) / (1 - X_SRC);
     const X_Offset = 1 - X_Scale;
@@ -1356,7 +1410,7 @@ namespace NsCalRGBCS {
     result[2] = XYZ_Flat[2] * Z_Scale + Z_Offset;
   }
 
-  function normalizeWhitePointToFlat(
+  #normalizeWhitePointToFlat(
     sourceWhitePoint: Float32Array,
     XYZ_In: Float32Array,
     result: Float32Array,
@@ -1371,30 +1425,37 @@ namespace NsCalRGBCS {
     }
 
     const LMS = result;
-    matrixProduct(BRADFORD_SCALE_MATRIX, XYZ_In, LMS);
+    this.#matrixProduct(CalRGBCS.#BRADFORD_SCALE_MATRIX, XYZ_In, LMS);
 
-    const LMS_Flat = tempNormalizeMatrix;
-    convertToFlat(sourceWhitePoint, LMS, LMS_Flat);
+    const LMS_Flat = CalRGBCS.#tempNormalizeMatrix;
+    this.#toFlat(sourceWhitePoint, LMS, LMS_Flat);
 
-    matrixProduct(BRADFORD_SCALE_INVERSE_MATRIX, LMS_Flat, result);
+    this.#matrixProduct(
+      CalRGBCS.#BRADFORD_SCALE_INVERSE_MATRIX,
+      LMS_Flat,
+      result,
+    );
   }
 
-  function normalizeWhitePointToD65(
+  #normalizeWhitePointToD65(
     sourceWhitePoint: Float32Array,
     XYZ_In: Float32Array,
     result: Float32Array,
   ) {
     const LMS = result;
-    matrixProduct(BRADFORD_SCALE_MATRIX, XYZ_In, LMS);
+    this.#matrixProduct(CalRGBCS.#BRADFORD_SCALE_MATRIX, XYZ_In, LMS);
 
-    const LMS_D65 = tempNormalizeMatrix;
-    convertToD65(sourceWhitePoint, LMS, LMS_D65);
+    const LMS_D65 = CalRGBCS.#tempNormalizeMatrix;
+    this.#toD65(sourceWhitePoint, LMS, LMS_D65);
 
-    matrixProduct(BRADFORD_SCALE_INVERSE_MATRIX, LMS_D65, result);
+    this.#matrixProduct(
+      CalRGBCS.#BRADFORD_SCALE_INVERSE_MATRIX,
+      LMS_D65,
+      result,
+    );
   }
 
-  function convertToRgb(
-    cs: CalRGBCS,
+  #toRgb(
     src:
       | Uint8Array
       | Uint16Array
@@ -1409,198 +1470,178 @@ namespace NsCalRGBCS {
   ) {
     // A, B and C represent a red, green and blue components of a calibrated
     // rgb space.
-    const A = adjustToRange(0, 1, src[srcOffset] * scale);
-    const B = adjustToRange(0, 1, src[srcOffset + 1] * scale);
-    const C = adjustToRange(0, 1, src[srcOffset + 2] * scale);
+    const A = this.#adjustToRange(0, 1, src[srcOffset] * scale);
+    const B = this.#adjustToRange(0, 1, src[srcOffset + 1] * scale);
+    const C = this.#adjustToRange(0, 1, src[srcOffset + 2] * scale);
 
     // A <---> AGR in the spec
     // B <---> BGG in the spec
     // C <---> CGB in the spec
-    const AGR = A === 1 ? 1 : A ** cs.GR;
-    const BGG = B === 1 ? 1 : B ** cs.GG;
-    const CGB = C === 1 ? 1 : C ** cs.GB;
+    const AGR = A === 1 ? 1 : A ** this.GR;
+    const BGG = B === 1 ? 1 : B ** this.GG;
+    const CGB = C === 1 ? 1 : C ** this.GB;
 
     // Computes intermediate variables L, M, N as per spec.
     // To decode X, Y, Z values map L, M, N directly to them.
-    const X = cs.MXA * AGR + cs.MXB * BGG + cs.MXC * CGB;
-    const Y = cs.MYA * AGR + cs.MYB * BGG + cs.MYC * CGB;
-    const Z = cs.MZA * AGR + cs.MZB * BGG + cs.MZC * CGB;
+    const X = this.MXA * AGR + this.MXB * BGG + this.MXC * CGB;
+    const Y = this.MYA * AGR + this.MYB * BGG + this.MYC * CGB;
+    const Z = this.MZA * AGR + this.MZB * BGG + this.MZC * CGB;
 
     // The following calculations are based on this document:
     // http://www.adobe.com/content/dam/Adobe/en/devnet/photoshop/sdk/
     // AdobeBPC.pdf.
-    const XYZ_ = tempConvertMatrix1;
+    const XYZ_ = CalRGBCS.#tempConvertMatrix1;
     XYZ_[0] = X;
     XYZ_[1] = Y;
     XYZ_[2] = Z;
-    const XYZ_Flat = tempConvertMatrix2;
+    const XYZ_Flat = CalRGBCS.#tempConvertMatrix2;
 
-    normalizeWhitePointToFlat(cs.whitePoint, XYZ_, XYZ_Flat);
+    this.#normalizeWhitePointToFlat(this.whitePoint, XYZ_, XYZ_Flat);
 
-    const XYZ_Black = tempConvertMatrix1;
-    compensateBlackPoint(cs.blackPoint!, XYZ_Flat, XYZ_Black);
+    const XYZ_Black = CalRGBCS.#tempConvertMatrix1;
+    this.#compensateBlackPoint(this.blackPoint!, XYZ_Flat, XYZ_Black);
 
-    const XYZ_D65 = tempConvertMatrix2;
-    normalizeWhitePointToD65(FLAT_WHITEPOINT_MATRIX, XYZ_Black, XYZ_D65);
+    const XYZ_D65 = CalRGBCS.#tempConvertMatrix2;
+    this.#normalizeWhitePointToD65(
+      CalRGBCS.#FLAT_WHITEPOINT_MATRIX,
+      XYZ_Black,
+      XYZ_D65,
+    );
 
-    const SRGB = tempConvertMatrix1;
-    matrixProduct(SRGB_D65_XYZ_TO_RGB_MATRIX, XYZ_D65, SRGB);
+    const SRGB = CalRGBCS.#tempConvertMatrix1;
+    this.#matrixProduct(CalRGBCS.#SRGB_D65_XYZ_TO_RGB_MATRIX, XYZ_D65, SRGB);
 
     // Convert the values to rgb range [0, 255].
-    dest[destOffset] = sRGBTransferFunction(SRGB[0]) * 255;
-    dest[destOffset + 1] = sRGBTransferFunction(SRGB[1]) * 255;
-    dest[destOffset + 2] = sRGBTransferFunction(SRGB[2]) * 255;
+    dest[destOffset] = this.#sRGBTransferFunction(SRGB[0]) * 255;
+    dest[destOffset + 1] = this.#sRGBTransferFunction(SRGB[1]) * 255;
+    dest[destOffset + 2] = this.#sRGBTransferFunction(SRGB[2]) * 255;
   }
 
-  // eslint-disable-next-line no-shadow
-  export class CalRGBCS extends ColorSpace {
-    GR: number;
-    GG: number;
-    GB: number;
-
-    MXA: number;
-    MYA: number;
-    MZA: number;
-    MXB: number;
-    MYB: number;
-    MZB: number;
-    MXC: number;
-    MYC: number;
-    MZC: number;
-
-    constructor(
-      public whitePoint: Float32Array,
-      public blackPoint?: Float32Array,
-      gamma?: Float32Array,
-      matrix?: Float32Array,
-    ) {
-      super("CalRGB", 3);
-
-      if (!whitePoint) {
-        throw new FormatError(
-          "WhitePoint missing - required for color space CalRGB",
-        );
-      }
-      blackPoint ||= new Float32Array(3);
-      gamma ||= new Float32Array([1, 1, 1]);
-      matrix ||= new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1]);
-
-      // Translate arguments to spec variables.
-      const XW = whitePoint[0];
-      const YW = whitePoint[1];
-      const ZW = whitePoint[2];
-
-      const XB = blackPoint[0];
-      const YB = blackPoint[1];
-      const ZB = blackPoint[2];
-
-      this.GR = gamma[0];
-      this.GG = gamma[1];
-      this.GB = gamma[2];
-
-      this.MXA = matrix[0];
-      this.MYA = matrix[1];
-      this.MZA = matrix[2];
-      this.MXB = matrix[3];
-      this.MYB = matrix[4];
-      this.MZB = matrix[5];
-      this.MXC = matrix[6];
-      this.MYC = matrix[7];
-      this.MZC = matrix[8];
-
-      // Validate variables as per spec.
-      if (XW < 0 || ZW < 0 || YW !== 1) {
-        throw new FormatError(
-          `Invalid WhitePoint components for ${this.name}` +
-            ", no fallback available",
-        );
-      }
-
-      if (XB < 0 || YB < 0 || ZB < 0) {
-        info(
-          `Invalid BlackPoint for ${this.name} [${XB}, ${YB}, ${ZB}], ` +
-            "falling back to default.",
-        );
-        this.blackPoint = new Float32Array(3);
-      }
-
-      if (this.GR < 0 || this.GG < 0 || this.GB < 0) {
-        info(
-          `Invalid Gamma [${this.GR}, ${this.GG}, ${this.GB}] for ` +
-            `${this.name}, falling back to default.`,
-        );
-        this.GR = this.GG = this.GB = 1;
-      }
+  /** @implement */
+  getRgbItem(
+    src: Float32Array | number[],
+    srcOffset: number,
+    dest: Uint8ClampedArray,
+    destOffset: number,
+  ) {
+    /*#static*/ if (PDFJSDev || TESTING) {
+      assert(
+        dest instanceof Uint8ClampedArray,
+        'CalRGBCS.getRgbItem: Unsupported "dest" type.',
+      );
     }
+    this.#toRgb(src, srcOffset, dest, destOffset, 1);
+  }
 
-    /** @implement */
-    getRgbItem(
-      src: Float32Array | number[],
-      srcOffset: number,
-      dest: Uint8ClampedArray,
-      destOffset: number,
-    ) {
-      /*#static*/ if (PDFJSDev || TESTING) {
-        assert(
-          dest instanceof Uint8ClampedArray,
-          'CalRGBCS.getRgbItem: Unsupported "dest" type.',
-        );
-      }
-      convertToRgb(this, src, srcOffset, dest, destOffset, 1);
+  /** @implement */
+  getRgbBuffer(
+    src: Uint8Array | Uint16Array | Uint8ClampedArray | Uint32Array,
+    srcOffset: number,
+    count: number,
+    dest: Uint8ClampedArray,
+    destOffset: number,
+    bits: number,
+    alpha01: number,
+  ) {
+    /*#static*/ if (PDFJSDev || TESTING) {
+      assert(
+        dest instanceof Uint8ClampedArray,
+        'CalRGBCS.getRgbBuffer: Unsupported "dest" type.',
+      );
     }
+    const scale = 1 / ((1 << bits) - 1);
 
-    /** @implement */
-    getRgbBuffer(
-      src: Uint8Array | Uint16Array | Uint8ClampedArray | Uint32Array,
-      srcOffset: number,
-      count: number,
-      dest: Uint8ClampedArray,
-      destOffset: number,
-      bits: number,
-      alpha01: number,
-    ) {
-      /*#static*/ if (PDFJSDev || TESTING) {
-        assert(
-          dest instanceof Uint8ClampedArray,
-          'CalRGBCS.getRgbBuffer: Unsupported "dest" type.',
-        );
-      }
-      const scale = 1 / ((1 << bits) - 1);
-
-      for (let i = 0; i < count; ++i) {
-        convertToRgb(this, src, srcOffset, dest, destOffset, scale);
-        srcOffset += 3;
-        destOffset += 3 + alpha01;
-      }
+    for (let i = 0; i < count; ++i) {
+      this.#toRgb(src, srcOffset, dest, destOffset, scale);
+      srcOffset += 3;
+      destOffset += 3 + alpha01;
     }
+  }
 
-    override getOutputLength(inputLength: number, alpha01: number) {
-      return ((inputLength * (3 + alpha01)) / 3) | 0;
-    }
+  override getOutputLength(inputLength: number, alpha01: number) {
+    return ((inputLength * (3 + alpha01)) / 3) | 0;
   }
 }
-type CalRGBCS = NsCalRGBCS.CalRGBCS;
-// Hoisting for deno.
-var CalRGBCS = NsCalRGBCS.CalRGBCS;
 
 /**
  * LabCS: Based on "PDF Reference, Sixth Ed", p.250
  *
  * The default color is `new Float32Array([0, 0, 0])`.
  */
-namespace NsLabCS {
-  // Function g(x) from spec
-  function fn_g(x: number) {
+class LabCS extends ColorSpace {
+  XW: number;
+  YW: number;
+  ZW: number;
+  amin: number;
+  amax: number;
+  bmin: number;
+  bmax: number;
+
+  XB: number;
+  YB: number;
+  ZB: number;
+
+  constructor(
+    whitePoint: XYZ_,
+    blackPoint?: XYZ_,
+    range?: rect_t,
+  ) {
+    super("Lab", 3);
+
+    if (!whitePoint) {
+      throw new FormatError(
+        "WhitePoint missing - required for color space Lab",
+      );
+    }
+    // Translate args to spec variables
+    [this.XW, this.YW, this.ZW] = whitePoint;
+    [this.amin, this.amax, this.bmin, this.bmax] = range || [
+      -100,
+      100,
+      -100,
+      100,
+    ];
+
+    // These are here just for completeness - the spec doesn't offer any
+    // formulas that use BlackPoint in Lab
+    [this.XB, this.YB, this.ZB] = blackPoint || [0, 0, 0];
+
+    // Validate vars as per spec
+    if (this.XW < 0 || this.ZW < 0 || this.YW !== 1) {
+      throw new FormatError(
+        "Invalid WhitePoint components, no fallback available",
+      );
+    }
+
+    if (this.XB < 0 || this.YB < 0 || this.ZB < 0) {
+      info("Invalid BlackPoint, falling back to default");
+      this.XB = this.YB = this.ZB = 0;
+    }
+
+    if (this.amin > this.amax || this.bmin > this.bmax) {
+      info("Invalid Range, falling back to defaults");
+      this.amin = -100;
+      this.amax = 100;
+      this.bmin = -100;
+      this.bmax = 100;
+    }
+  }
+
+  /**
+   * Function g(x) from spec
+   */
+  #fn_g(x: number) {
     return x >= 6 / 29 ? x ** 3 : (108 / 841) * (x - 4 / 29);
   }
 
-  function decode(value: number, high1: number, low2: number, high2: number) {
+  #decode(value: number, high1: number, low2: number, high2: number) {
     return low2 + (value * (high2 - low2)) / high1;
   }
 
-  // If decoding is needed maxVal should be 2^bits per component - 1.
-  function convertToRgb(
-    cs: LabCS,
+  /**
+   * If decoding is needed maxVal should be 2^bits per component - 1.
+   */
+  #toRgb(
     src: TypedArray | number[],
     srcOffset: number,
     maxVal: boolean | number,
@@ -1617,21 +1658,21 @@ namespace NsLabCS {
     let as_ = src[srcOffset + 1];
     let bs = src[srcOffset + 2];
     if (maxVal !== false) {
-      Ls = decode(Ls, <number> maxVal, 0, 100);
-      as_ = decode(as_, <number> maxVal, cs.amin, cs.amax);
-      bs = decode(bs, <number> maxVal, cs.bmin, cs.bmax);
+      Ls = this.#decode(Ls, maxVal as number, 0, 100);
+      as_ = this.#decode(as_, maxVal as number, this.amin, this.amax);
+      bs = this.#decode(bs, maxVal as number, this.bmin, this.bmax);
     }
 
     // Adjust limits of 'as_' and 'bs'
-    if (as_ > cs.amax) {
-      as_ = cs.amax;
-    } else if (as_ < cs.amin) {
-      as_ = cs.amin;
+    if (as_ > this.amax) {
+      as_ = this.amax;
+    } else if (as_ < this.amin) {
+      as_ = this.amin;
     }
-    if (bs > cs.bmax) {
-      bs = cs.bmax;
-    } else if (bs < cs.bmin) {
-      bs = cs.bmin;
+    if (bs > this.bmax) {
+      bs = this.bmax;
+    } else if (bs < this.bmin) {
+      bs = this.bmin;
     }
 
     // Computes intermediate variables X,Y,Z as_ per spec
@@ -1639,14 +1680,14 @@ namespace NsLabCS {
     const L = M + as_ / 500;
     const N = M - bs / 200;
 
-    const X = cs.XW * fn_g(L);
-    const Y = cs.YW * fn_g(M);
-    const Z = cs.ZW * fn_g(N);
+    const X = this.XW * this.#fn_g(L);
+    const Y = this.YW * this.#fn_g(M);
+    const Z = this.ZW * this.#fn_g(N);
 
     let r, g, b;
     // Using different conversions for D50 and D65 white points,
     // per http://www.color.org/srgb.pdf
-    if (cs.ZW < 1) {
+    if (this.ZW < 1) {
       // Assuming D50 (X=0.9642, Y=1.00, Z=0.8249)
       r = X * 3.1339 + Y * -1.617 + Z * -0.4906;
       g = X * -0.9785 + Y * 1.916 + Z * 0.0333;
@@ -1663,127 +1704,58 @@ namespace NsLabCS {
     dest[destOffset + 2] = Math.sqrt(b) * 255;
   }
 
-  // eslint-disable-next-line no-shadow
-  export class LabCS extends ColorSpace {
-    XW: number;
-    YW: number;
-    ZW: number;
-    amin: number;
-    amax: number;
-    bmin: number;
-    bmax: number;
-
-    XB: number;
-    YB: number;
-    ZB: number;
-
-    constructor(
-      whitePoint: XYZ_,
-      blackPoint?: XYZ_,
-      range?: rect_t,
-    ) {
-      super("Lab", 3);
-
-      if (!whitePoint) {
-        throw new FormatError(
-          "WhitePoint missing - required for color space Lab",
-        );
-      }
-      blackPoint ||= [0, 0, 0];
-      range ||= [-100, 100, -100, 100];
-
-      // Translate args to spec variables
-      this.XW = whitePoint[0];
-      this.YW = whitePoint[1];
-      this.ZW = whitePoint[2];
-      this.amin = range[0];
-      this.amax = range[1];
-      this.bmin = range[2];
-      this.bmax = range[3];
-
-      // These are here just for completeness - the spec doesn't offer any
-      // formulas that use BlackPoint in Lab
-      this.XB = blackPoint[0];
-      this.YB = blackPoint[1];
-      this.ZB = blackPoint[2];
-
-      // Validate vars as per spec
-      if (this.XW < 0 || this.ZW < 0 || this.YW !== 1) {
-        throw new FormatError(
-          "Invalid WhitePoint components, no fallback available",
-        );
-      }
-
-      if (this.XB < 0 || this.YB < 0 || this.ZB < 0) {
-        info("Invalid BlackPoint, falling back to default");
-        this.XB = this.YB = this.ZB = 0;
-      }
-
-      if (this.amin > this.amax || this.bmin > this.bmax) {
-        info("Invalid Range, falling back to defaults");
-        this.amin = -100;
-        this.amax = 100;
-        this.bmin = -100;
-        this.bmax = 100;
-      }
+  /** @implement */
+  getRgbItem(
+    src: Float32Array | number[],
+    srcOffset: number,
+    dest: Uint8ClampedArray,
+    destOffset: number,
+  ) {
+    /*#static*/ if (PDFJSDev || TESTING) {
+      assert(
+        dest instanceof Uint8ClampedArray,
+        'LabCS.getRgbItem: Unsupported "dest" type.',
+      );
     }
+    this.#toRgb(src, srcOffset, false, dest, destOffset);
+  }
 
-    /** @implement */
-    getRgbItem(
-      src: Float32Array | number[],
-      srcOffset: number,
-      dest: Uint8ClampedArray,
-      destOffset: number,
-    ) {
-      /*#static*/ if (PDFJSDev || TESTING) {
-        assert(
-          dest instanceof Uint8ClampedArray,
-          'LabCS.getRgbItem: Unsupported "dest" type.',
-        );
-      }
-      convertToRgb(this, src, srcOffset, false, dest, destOffset);
+  /** @implement */
+  getRgbBuffer(
+    src: Uint8Array | Uint16Array | Uint8ClampedArray | Uint32Array,
+    srcOffset: number,
+    count: number,
+    dest: Uint8ClampedArray,
+    destOffset: number,
+    bits: number,
+    alpha01: number,
+  ) {
+    /*#static*/ if (PDFJSDev || TESTING) {
+      assert(
+        dest instanceof Uint8ClampedArray,
+        'LabCS.getRgbBuffer: Unsupported "dest" type.',
+      );
     }
-
-    /** @implement */
-    getRgbBuffer(
-      src: Uint8Array | Uint16Array | Uint8ClampedArray | Uint32Array,
-      srcOffset: number,
-      count: number,
-      dest: Uint8ClampedArray,
-      destOffset: number,
-      bits: number,
-      alpha01: number,
-    ) {
-      /*#static*/ if (PDFJSDev || TESTING) {
-        assert(
-          dest instanceof Uint8ClampedArray,
-          'LabCS.getRgbBuffer: Unsupported "dest" type.',
-        );
-      }
-      const maxVal = (1 << bits) - 1;
-      for (let i = 0; i < count; i++) {
-        convertToRgb(this, src, srcOffset, maxVal, dest, destOffset);
-        srcOffset += 3;
-        destOffset += 3 + alpha01;
-      }
-    }
-
-    override getOutputLength(inputLength: number, alpha01: number) {
-      return ((inputLength * (3 + alpha01)) / 3) | 0;
-    }
-
-    override isDefaultDecode(decodeMap: unknown, bpc?: number) {
-      // XXX: Decoding is handled with the lab conversion because of the strange
-      // ranges that are used.
-      return true;
-    }
-
-    override get usesZeroToOneRange() {
-      return shadow(this, "usesZeroToOneRange", false);
+    const maxVal = (1 << bits) - 1;
+    for (let i = 0; i < count; i++) {
+      this.#toRgb(src, srcOffset, maxVal, dest, destOffset);
+      srcOffset += 3;
+      destOffset += 3 + alpha01;
     }
   }
+
+  override getOutputLength(inputLength: number, alpha01: number) {
+    return ((inputLength * (3 + alpha01)) / 3) | 0;
+  }
+
+  override isDefaultDecode(decodeMap: unknown, bpc?: number) {
+    // XXX: Decoding is handled with the lab conversion because of the strange
+    // ranges that are used.
+    return true;
+  }
+
+  override get usesZeroToOneRange() {
+    return shadow(this, "usesZeroToOneRange", false);
+  }
 }
-type LabCS = NsLabCS.LabCS;
-// Hoisting for deno.
-var LabCS = NsLabCS.LabCS;
 /*80--------------------------------------------------------------------------*/

@@ -28,9 +28,9 @@ export function fail(...data) {
     }
     throw new Error(data[0], { cause: data });
 }
-export const warn = (...data
+export function warn(...data
 // meta?: { url: string }
-) => {
+) {
     /*#static*/ if (TESTING)
         return;
     // if (meta) {
@@ -38,7 +38,7 @@ export const warn = (...data
     //   if (match) msg += ` (${match[1]})`;
     // }
     console.warn(...data);
-};
+}
 let reporting_;
 let count_reported_ = 0;
 const MAX_reported_ = 2;

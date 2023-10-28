@@ -17,12 +17,10 @@
  * limitations under the License.
  */
 
-import { type XFAElObj } from "../core/xfa/alias.ts";
-import {
-  type TextContent,
-  type TextItem,
-  type TextMarkedContent,
-} from "./api.ts";
+/** @typedef {import("./api").TextContent} TextContent */
+
+import type { XFAElObj } from "../core/xfa/alias.ts";
+import type { TextContent, TextItem, TextMarkedContent } from "./api.ts";
 /*80--------------------------------------------------------------------------*/
 
 export abstract class XfaText {

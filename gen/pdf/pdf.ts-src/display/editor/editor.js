@@ -3,6 +3,7 @@
  */
 var _a;
 import { html } from "../../../../lib/dom.js";
+import { noContextMenu } from "../../../../lib/util/general.js";
 import { fail } from "../../../../lib/util/trace.js";
 import { FeatureTest, shadow, } from "../../shared/util.js";
 import { bindEvents, ColorManager } from "./tools.js";
@@ -11,6 +12,8 @@ import { bindEvents, ColorManager } from "./tools.js";
  */
 export class AnnotationEditor {
     static _type;
+    static _l10nPromise;
+    static _borderLineWidth = -1;
     static _colorManager = new ColorManager();
     static _zIndex = 1;
     parent;
@@ -25,6 +28,7 @@ export class AnnotationEditor {
     annotationElementId;
     _willKeepAspectRatio = false;
     _initialOptions = Object.create(null);
+    _structTreeParentId;
     isAttachedToDOM = false;
     deleted = false;
     rotation;
@@ -33,6 +37,11 @@ export class AnnotationEditor {
     pageTranslation;
     x;
     y;
+    #altText = "";
+    #altTextDecorative = false;
+    #altTextButton;
+    #altTextTooltip;
+    #altTextTooltipTimeout;
     #keepAspectRatio = false;
     #resizersDiv;
     #boundFocusin = this.focusin.bind(this);
@@ -44,6 +53,9 @@ export class AnnotationEditor {
     #zIndex = _a._zIndex++;
     startX;
     startY;
+    // When one of the dimensions of an editor is smaller than this value, the
+    // button to edit the alt text is visually moved outside of the editor.
+    static SMALL_EDITOR_SIZE = 0;
     constructor(parameters) {
         if (this.constructor === _a) {
             fail("Cannot initialize AnnotationEditor.");
@@ -64,6 +76,9 @@ export class AnnotationEditor {
         this.x = parameters.x / width;
         this.y = parameters.y / height;
     }
+    get editorType() {
+        return Object.getPrototypeOf(this).constructor._type;
+    }
     static get _defaultLineColor() {
         return shadow(this, "_defaultLineColor", this._colorManager.getHexCode("CanvasText"));
     }
@@ -80,7 +95,24 @@ export class AnnotationEditor {
     /**
      * Initialize the l10n stuff for this type of editor.
      */
-    static initialize(_l10n) { }
+    static initialize(l10n, options) {
+        _a._l10nPromise ||= new Map([
+            "editor_alt_text_button_label",
+            "editor_alt_text_edit_button_label",
+            "editor_alt_text_decorative_tooltip",
+        ].map((str) => [str, l10n.get(str)]));
+        if (options?.strings) {
+            for (const str of options.strings) {
+                _a._l10nPromise.set(str, l10n.get(str));
+            }
+        }
+        if (_a._borderLineWidth !== -1) {
+            return;
+        }
+        const style = getComputedStyle(document.documentElement);
+        _a._borderLineWidth =
+            parseFloat(style.getPropertyValue("--outline-width")) || 0;
+    }
     /**
      * Update the default parameters for this type of editor.
      * @param {number} _type
@@ -97,7 +129,7 @@ export class AnnotationEditor {
      * Check if this kind of editor is able to handle the given mime type for
      * pasting.
      */
-    static isHandlingMimeForPasting(_mime) {
+    static isHandlingMimeForPasting(mime) {
         return false;
     }
     /**
@@ -258,14 +290,19 @@ export class AnnotationEditor {
      */
     translateInPage(x, y) {
         this.#translate(this.pageDimensions, x, y);
-        this.moveInDOM();
         this.div.scrollIntoView({ block: "nearest" });
     }
     drag(tx, ty) {
         const [parentWidth, parentHeight] = this.parentDimensions;
         this.x += tx / parentWidth;
         this.y += ty / parentHeight;
-        if (this.x < 0 || this.x > 1 || this.y < 0 || this.y > 1) {
+        if (this.parent && (this.x < 0 || this.x > 1 || this.y < 0 || this.y > 1)) {
+            // It's possible to not have a parent: for example, when the user is
+            // dragging all the selected editors but this one on a page which has been
+            // destroyed.
+            // It's why we need to check for it. In such a situation, it isn't really
+            // a problem to not find a new parent: it's something which is related to
+            // what the user is seeing, hence it depends on how pages are layed out.
             // The element will be outside of its parent so change the parent.
             const { x, y } = this.div.getBoundingClientRect();
             if (this.parent.findNewParent(this, x, y)) {
@@ -275,9 +312,34 @@ export class AnnotationEditor {
         }
         // The editor can be moved wherever the user wants, so we don't need to fix
         // the position: it'll be done when the user will release the mouse button.
-        this.div.style.left = `${(100 * this.x).toFixed(2)}%`;
-        this.div.style.top = `${(100 * this.y).toFixed(2)}%`;
+        let { x, y } = this;
+        const [bx, by] = this.#getBaseTranslation();
+        x += bx;
+        y += by;
+        this.div.style.left = `${(100 * x).toFixed(2)}%`;
+        this.div.style.top = `${(100 * y).toFixed(2)}%`;
         this.div.scrollIntoView({ block: "nearest" });
+    }
+    #getBaseTranslation() {
+        const [parentWidth, parentHeight] = this.parentDimensions;
+        const { _borderLineWidth } = _a;
+        const x = _borderLineWidth / parentWidth;
+        const y = _borderLineWidth / parentHeight;
+        // switch (this.rotation) {
+        //   case 90:
+        //     return [-x, y];
+        //   case 180:
+        //     return [x, y];
+        //   case 270:
+        //     return [x, -y];
+        //   default:
+        //     return [-x, -y];
+        // }
+        return /* final switch */ {
+            [90]: [-x, y],
+            [180]: [x, y],
+            [270]: [x, -y],
+        }[this.rotation] ?? [-x, -y];
     }
     fixAndSetPosition() {
         const [pageWidth, pageHeight] = this.pageDimensions;
@@ -304,22 +366,32 @@ export class AnnotationEditor {
                 y = Math.max(0, Math.min(pageHeight - width, y));
                 break;
         }
-        this.x = x / pageWidth;
-        this.y = y / pageHeight;
-        this.div.style.left = `${(100 * this.x).toFixed(2)}%`;
-        this.div.style.top = `${(100 * this.y).toFixed(2)}%`;
+        this.x = x /= pageWidth;
+        this.y = y /= pageHeight;
+        const [bx, by] = this.#getBaseTranslation();
+        x += bx;
+        y += by;
+        const { style } = this.div;
+        style.left = `${(100 * x).toFixed(2)}%`;
+        style.top = `${(100 * y).toFixed(2)}%`;
+        this.moveInDOM();
     }
     static #rotatePoint(x, y, angle) {
-        switch (angle) {
-            case 90:
-                return [y, -x];
-            case 180:
-                return [-x, -y];
-            case 270:
-                return [-y, x];
-            default:
-                return [x, y];
-        }
+        // switch (angle) {
+        //   case 90:
+        //     return [y, -x];
+        //   case 180:
+        //     return [-x, -y];
+        //   case 270:
+        //     return [-y, x];
+        //   default:
+        //     return [x, y];
+        // }
+        return /* final switch */ {
+            [90]: [y, -x],
+            [180]: [-x, -y],
+            [270]: [-y, x],
+        }[angle] ?? [x, y];
     }
     /**
      * Convert a screen translation into a page one.
@@ -372,6 +444,8 @@ export class AnnotationEditor {
         if (!this.#keepAspectRatio) {
             this.div.style.height = `${((100 * height) / parentHeight).toFixed(2)}%`;
         }
+        this.#altTextButton?.classList.toggle("small", width < _a.SMALL_EDITOR_SIZE ||
+            height < _a.SMALL_EDITOR_SIZE);
     }
     fixDims() {
         const { style } = this.div;
@@ -395,9 +469,6 @@ export class AnnotationEditor {
     getInitialTranslation() {
         return [0, 0];
     }
-    static #noContextMenu(e) {
-        e.preventDefault();
-    }
     #createResizers() {
         if (this.#resizersDiv) {
             return;
@@ -418,7 +489,7 @@ export class AnnotationEditor {
             this.#resizersDiv.append(div);
             div.classList.add("resizer", name);
             div.on("pointerdown", this.#resizerPointerdown.bind(this, name));
-            div.on("contextmenu", _a.#noContextMenu);
+            div.on("contextmenu", noContextMenu);
         }
         this.div.prepend(this.#resizersDiv);
     }
@@ -468,7 +539,6 @@ export class AnnotationEditor {
                     const [parentWidth, parentHeight] = this.parentDimensions;
                     this.setDims(parentWidth * newWidth, parentHeight * newHeight);
                     this.fixAndSetPosition();
-                    this.moveInDOM();
                 },
                 undo: () => {
                     this.width = savedWidth;
@@ -478,7 +548,6 @@ export class AnnotationEditor {
                     const [parentWidth, parentHeight] = this.parentDimensions;
                     this.setDims(parentWidth * savedWidth, parentHeight * savedHeight);
                     this.fixAndSetPosition();
-                    this.moveInDOM();
                 },
                 mustExec: true,
             });
@@ -510,50 +579,18 @@ export class AnnotationEditor {
             invRotationMatrix[0] * x + invRotationMatrix[2] * y,
             invRotationMatrix[1] * x + invRotationMatrix[3] * y,
         ];
-        let getPoint;
-        let getOpposite;
         let isDiagonal = false;
         let isHorizontal = false;
-        switch (name) {
-            case "topLeft":
-                isDiagonal = true;
-                getPoint = (w, h) => [0, 0];
-                getOpposite = (w, h) => [w, h];
-                break;
-            case "topMiddle":
-                getPoint = (w, h) => [w / 2, 0];
-                getOpposite = (w, h) => [w / 2, h];
-                break;
-            case "topRight":
-                isDiagonal = true;
-                getPoint = (w, h) => [w, 0];
-                getOpposite = (w, h) => [0, h];
-                break;
-            case "middleRight":
-                isHorizontal = true;
-                getPoint = (w, h) => [w, h / 2];
-                getOpposite = (w, h) => [0, h / 2];
-                break;
-            case "bottomRight":
-                isDiagonal = true;
-                getPoint = (w, h) => [w, h];
-                getOpposite = (w, h) => [0, 0];
-                break;
-            case "bottomMiddle":
-                getPoint = (w, h) => [w / 2, h];
-                getOpposite = (w, h) => [w / 2, 0];
-                break;
-            case "bottomLeft":
-                isDiagonal = true;
-                getPoint = (w, h) => [0, h];
-                getOpposite = (w, h) => [w, 0];
-                break;
-            case "middleLeft":
-                isHorizontal = true;
-                getPoint = (w, h) => [0, h / 2];
-                getOpposite = (w, h) => [w, h / 2];
-                break;
-        }
+        const [getPoint, getOpposite] = /* final switch */ {
+            topLeft: (isDiagonal = true, [(w, h) => [0, 0], (w, h) => [w, h]]),
+            topMiddle: [(w, h) => [w / 2, 0], (w, h) => [w / 2, h]],
+            topRight: (isDiagonal = true, [(w, h) => [w, 0], (w, h) => [0, h]]),
+            middleRight: (isDiagonal = true, [(w, h) => [w, h / 2], (w, h) => [0, h / 2]]),
+            bottomRight: (isDiagonal = true, [(w, h) => [w, h], (w, h) => [0, 0]]),
+            bottomMiddle: [(w, h) => [w / 2, h], (w, h) => [w / 2, 0]],
+            bottomLeft: (isDiagonal = true, [(w, h) => [0, h], (w, h) => [w, 0]]),
+            middleLeft: (isDiagonal = true, [(w, h) => [0, h / 2], (w, h) => [w, h / 2]]),
+        }[name];
         const point = getPoint(savedWidth, savedHeight);
         const oppositePoint = getOpposite(savedWidth, savedHeight);
         let transfOppositePoint = transf(...oppositePoint);
@@ -588,6 +625,107 @@ export class AnnotationEditor {
         this.y = newY;
         this.setDims(parentWidth * newWidth, parentHeight * newHeight);
         this.fixAndSetPosition();
+    }
+    async addAltTextButton() {
+        if (this.#altTextButton) {
+            return;
+        }
+        const altText = (this.#altTextButton = document.createElement("button"));
+        altText.className = "altText";
+        const msg = await _a._l10nPromise.get("editor_alt_text_button_label");
+        altText.textContent = msg;
+        altText.setAttribute("aria-label", msg);
+        altText.tabIndex = 0;
+        altText.addEventListener("contextmenu", noContextMenu);
+        altText.addEventListener("pointerdown", (event) => event.stopPropagation());
+        altText.addEventListener("click", (event) => {
+            event.preventDefault();
+            this._uiManager.editAltText(this);
+        }, { capture: true });
+        altText.addEventListener("keydown", (event) => {
+            if (event.target === altText && event.key === "Enter") {
+                event.preventDefault();
+                this._uiManager.editAltText(this);
+            }
+        });
+        this.#setAltTextButtonState();
+        this.div.append(altText);
+        if (!_a.SMALL_EDITOR_SIZE) {
+            // We take the width of the alt text button and we add 40% to it to be
+            // sure to have enough space for it.
+            const PERCENT = 40;
+            _a.SMALL_EDITOR_SIZE = Math.min(128, Math.round(altText.getBoundingClientRect().width * (1 + PERCENT / 100)));
+        }
+    }
+    async #setAltTextButtonState() {
+        const button = this.#altTextButton;
+        if (!button) {
+            return;
+        }
+        if (!this.#altText && !this.#altTextDecorative) {
+            button.classList.remove("done");
+            this.#altTextTooltip?.remove();
+            return;
+        }
+        _a._l10nPromise
+            .get("editor_alt_text_edit_button_label")
+            .then((msg) => {
+            button.setAttribute("aria-label", msg);
+        });
+        let tooltip = this.#altTextTooltip;
+        if (!tooltip) {
+            this.#altTextTooltip = tooltip = document.createElement("span");
+            tooltip.className = "tooltip";
+            tooltip.setAttribute("role", "tooltip");
+            const id = (tooltip.id = `alt-text-tooltip-${this.id}`);
+            button.setAttribute("aria-describedby", id);
+            const DELAY_TO_SHOW_TOOLTIP = 100;
+            button.addEventListener("mouseenter", () => {
+                this.#altTextTooltipTimeout = setTimeout(() => {
+                    this.#altTextTooltipTimeout = undefined;
+                    this.#altTextTooltip.classList.add("show");
+                    this._uiManager._eventBus.dispatch("reporttelemetry", {
+                        source: this,
+                        details: {
+                            type: "editing",
+                            subtype: this.editorType,
+                            data: {
+                                action: "alt_text_tooltip",
+                            },
+                        },
+                    });
+                }, DELAY_TO_SHOW_TOOLTIP);
+            });
+            button.addEventListener("mouseleave", () => {
+                clearTimeout(this.#altTextTooltipTimeout);
+                this.#altTextTooltipTimeout = undefined;
+                this.#altTextTooltip?.classList.remove("show");
+            });
+        }
+        button.classList.add("done");
+        tooltip.innerText = this.#altTextDecorative
+            ? await _a._l10nPromise.get("editor_alt_text_decorative_tooltip")
+            : this.#altText;
+        if (!tooltip.parentNode) {
+            button.append(tooltip);
+        }
+    }
+    getClientDimensions() {
+        return this.div.getBoundingClientRect();
+    }
+    get altTextData() {
+        return {
+            altText: this.#altText,
+            decorative: this.#altTextDecorative,
+        };
+    }
+    set altTextData({ altText, decorative }) {
+        if (this.#altText === altText && this.#altTextDecorative === decorative) {
+            return;
+        }
+        this.#altText = altText;
+        this.#altTextDecorative = decorative;
+        this.#setAltTextButtonState();
     }
     /**
      * Render this editor in a div.
@@ -666,14 +804,13 @@ export class AnnotationEditor {
         window.on("blur", pointerUpCallback);
     }
     moveInDOM() {
-        this.parent.moveEditorInDOM(this);
+        this.parent?.moveEditorInDOM(this);
     }
     _setParentAndPosition(parent, x, y) {
         parent.changeParent(this);
         this.x = x;
         this.y = y;
         this.fixAndSetPosition();
-        this.moveInDOM();
     }
     /**
      * Convert the current rect into a page one.
@@ -825,6 +962,11 @@ export class AnnotationEditor {
         else {
             this._uiManager.removeEditor(this);
         }
+        // The editor is removed so we can remove the alt text button and if it's
+        // restored then it's up to the subclass to add it back.
+        this.#altTextButton?.remove();
+        this.#altTextButton = undefined;
+        this.#altTextTooltip = undefined;
     }
     /**
      * @return true if this editor can be resized.
@@ -868,12 +1010,20 @@ export class AnnotationEditor {
      * When the user disables the editing mode some editors can change some of
      * their properties.
      */
-    disableEditing() { }
+    disableEditing() {
+        if (this.#altTextButton) {
+            this.#altTextButton.hidden = true;
+        }
+    }
     /**
      * When the user enables the editing mode some editors can change some of
      * their properties.
      */
-    enableEditing() { }
+    enableEditing() {
+        if (this.#altTextButton) {
+            this.#altTextButton.hidden = false;
+        }
+    }
     /**
      * The editor is about to be edited.
      */

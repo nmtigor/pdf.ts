@@ -1,17 +1,48 @@
+import type { AnnotStorageValue } from "../display/annotation_layer.js";
 import type { StructTreeNode } from "../display/api.js";
-import { Dict, Ref } from "./primitives.js";
+import type { BasePdfManager } from "./pdf_manager.js";
+import type { Obj } from "./primitives.js";
+import { Dict, Ref, RefSetCache } from "./primitives.js";
+import type { ASD_RR } from "./worker.js";
+import type { XRef } from "./xref.js";
 declare const enum StructElementType {
-    PAGE_CONTENT = "PAGE_CONTENT",
-    STREAM_CONTENT = "STREAM_CONTENT",
-    OBJECT = "OBJECT",
-    ELEMENT = "ELEMENT"
+    PAGE_CONTENT = 1,
+    STREAM_CONTENT = 2,
+    OBJECT = 3,
+    ANNOTATION = 4,
+    ELEMENT = 5
 }
 export declare class StructTreeRoot {
+    #private;
     dict: Dict;
+    ref: Ref | undefined;
     roleMap: Map<string, string>;
-    constructor(rootDict: Dict);
+    structParentIds: RefSetCache<[number, StructElementType][]> | undefined;
+    constructor(rootDict: Dict, rootRef: Obj | undefined);
     init(): void;
+    addAnnotationIdToPage(pageRef: Ref | undefined, id: number): void;
     readRoleMap(): void;
+    static canCreateStructureTree({ catalogRef, pdfManager, newAnnotationsByPage, }: {
+        catalogRef: Ref;
+        pdfManager: BasePdfManager;
+        newAnnotationsByPage: Map<number, AnnotStorageValue[]>;
+    }): Promise<boolean>;
+    static createStructureTree({ newAnnotationsByPage, xref, catalogRef, pdfManager, newRefs, }: {
+        newAnnotationsByPage: Map<number, AnnotStorageValue[]>;
+        xref: XRef;
+        catalogRef: Ref;
+        pdfManager: BasePdfManager;
+        newRefs: ASD_RR[];
+    }): Promise<void>;
+    canUpdateStructTree({ pdfManager, newAnnotationsByPage }: {
+        pdfManager: BasePdfManager;
+        newAnnotationsByPage: Map<number, AnnotStorageValue[]>;
+    }): Promise<boolean>;
+    updateStructureTree({ newAnnotationsByPage, pdfManager, newRefs }: {
+        newAnnotationsByPage: Map<number, AnnotStorageValue[]>;
+        pdfManager: BasePdfManager;
+        newRefs: ASD_RR[];
+    }): Promise<void>;
 }
 /**
  * Instead of loading the whole tree we load just the page's relevant structure
@@ -51,7 +82,7 @@ export declare class StructTreePage {
     /**
      * Table 322
      */
-    parse(): void;
+    parse(pageRef: Ref | undefined): void;
     addNode(dict: Dict, map: Map<Dict, StructElementNode>, level?: number): StructElementNode | undefined;
     addTopLevelNode(dict: Dict, element: StructElementNode): boolean;
     /**

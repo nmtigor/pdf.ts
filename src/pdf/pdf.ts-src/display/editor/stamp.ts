@@ -17,15 +17,20 @@
  * limitations under the License.
  */
 
+import type { OC2D } from "@fe-lib/alias.ts";
+import { html } from "@fe-lib/dom.ts";
 import { PDFJSDev, TESTING } from "@fe-src/global.ts";
-import type { OC2D } from "@fe-src/lib/alias.ts";
-import { html } from "@fe-src/lib/dom.ts";
+import type { TelemetryData } from "@pdf.ts-web/alt_text_manager.ts";
+import type { IL10n } from "@pdf.ts-web/interfaces.ts";
 import { AnnotationEditorType, shadow } from "../../shared/util.ts";
-import type { AnnotStorageValue } from "../annotation_layer.ts";
+import type {
+  AccessibilityData,
+  AnnotStorageValue,
+} from "../annotation_layer.ts";
 import { StampAnnotationElement } from "../annotation_layer.ts";
 import { PixelsPerInch } from "../display_utils.ts";
 import type { AnnotationEditorLayer } from "./annotation_editor_layer.ts";
-import type { AnnotationEditorP } from "./editor.ts";
+import type { AltTextData, AnnotationEditorP } from "./editor.ts";
 import { AnnotationEditor } from "./editor.ts";
 import type { AnnotationEditorUIManager, BitmapData } from "./tools.ts";
 /*80--------------------------------------------------------------------------*/
@@ -62,6 +67,11 @@ export class StampEditor extends AnnotationEditor {
     super({ ...params, name: "stampEditor" });
     this.#bitmapUrl = params.bitmapUrl;
     this.#bitmapFile = params.bitmapFile;
+  }
+
+  /** @inheritdoc */
+  static override initialize(l10n: IL10n) {
+    AnnotationEditor.initialize(l10n);
   }
 
   static get supportedTypes() {
@@ -321,6 +331,21 @@ export class StampEditor extends AnnotationEditor {
       this.parent!.addUndoableEditor(this);
       this.#hasBeenAddedInUndoStack = true;
     }
+
+    // There are multiple ways to add an image to the page, so here we just
+    // count the number of times an image is added to the page whatever the way
+    // is.
+    this._uiManager._eventBus.dispatch("reporttelemetry", {
+      source: this,
+      details: {
+        type: "editing",
+        subtype: this.editorType,
+        data: {
+          action: "inserted_image",
+        },
+      },
+    });
+    this.addAltTextButton();
   }
 
   /**
@@ -495,7 +520,7 @@ export class StampEditor extends AnnotationEditor {
       return undefined;
     }
     const editor = super.deserialize(data, parent, uiManager)! as StampEditor;
-    const { rect, bitmapUrl, bitmapId, isSvg } = data;
+    const { rect, bitmapUrl, bitmapId, isSvg, accessibilityData } = data;
     if (bitmapId && uiManager.imageManager.isValidId(bitmapId)) {
       editor.#bitmapId = bitmapId;
     } else {
@@ -506,6 +531,10 @@ export class StampEditor extends AnnotationEditor {
     const [parentWidth, parentHeight] = editor.pageDimensions;
     editor.width = (rect![2] - rect![0]) / parentWidth;
     editor.height = (rect![3] - rect![1]) / parentHeight;
+
+    if (accessibilityData) {
+      editor.altTextData = accessibilityData as AltTextData;
+    }
 
     return editor;
   }
@@ -526,6 +555,7 @@ export class StampEditor extends AnnotationEditor {
       rect: this.getRect(0, 0),
       rotation: this.rotation,
       isSvg: this.#isSvg,
+      structTreeParentId: this._structTreeParentId,
     };
 
     if (isForCopying) {
@@ -535,7 +565,13 @@ export class StampEditor extends AnnotationEditor {
       serialized.bitmapUrl = this.#serializeBitmap(
         /* toUrl = */ true,
       ) as string;
+      serialized.accessibilityData = this.altTextData as AccessibilityData;
       return serialized;
+    }
+
+    const { decorative, altText } = this.altTextData;
+    if (!decorative && altText) {
+      serialized.accessibilityData = { type: "Figure", alt: altText };
     }
 
     if (context === undefined) {

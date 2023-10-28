@@ -1,6 +1,17 @@
+/** @typedef {import("../src/display/api").PDFDocumentProxy} PDFDocumentProxy */
+/** @typedef {import("../src/display/api").PDFPageProxy} PDFPageProxy */
+/** @typedef {import("../src/display/display_utils").PageViewport} PageViewport */
+/** @typedef {import("../src/display/optional_content_config").OptionalContentConfig} OptionalContentConfig */
+/** @typedef {import("./event_utils").EventBus} EventBus */
+/** @typedef {import("./interfaces").IDownloadManager} IDownloadManager */
+/** @typedef {import("./interfaces").IL10n} IL10n */
+/** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
+/** @typedef {import("./pdf_find_controller").PDFFindController} PDFFindController */
+/** @typedef {import("./pdf_scripting_manager").PDFScriptingManager} PDFScriptingManager */
 import type { dot2d_t } from "../../lib/alias.js";
 import type { ExplicitDest, OptionalContentConfig, PDFDocumentProxy, PDFPageProxy } from "../pdf.ts-src/pdf.js";
 import { AnnotationEditorType, AnnotationMode } from "../pdf.ts-src/pdf.js";
+import type { AltTextManager } from "./alt_text_manager.js";
 import type { EventBus, EventMap } from "./event_utils.js";
 import type { IDownloadManager, IL10n, IPDFLinkService } from "./interfaces.js";
 import type { PDFFindController } from "./pdf_find_controller.js";
@@ -40,6 +51,8 @@ export interface PDFViewerOptions {
      * The download manager component.
      */
     downloadManager?: IDownloadManager;
+    /** */
+    altTextManager: AltTextManager | undefined;
     /**
      * The find controller component.
      */
@@ -194,7 +207,11 @@ export declare class PDFViewer {
     renderingQueue?: PDFRenderingQueue | undefined;
     scroll: {
         right: boolean;
-        down: boolean;
+        down: boolean; /**
+         * Enables the creation and editing
+         * of new Annotations. The constants from {@link AnnotationEditorType} should
+         * be used. The default value is `AnnotationEditorType.DISABLE`.
+         */
         lastX: number;
         lastY: number;
         _eventHandler: (evt: unknown) => void;

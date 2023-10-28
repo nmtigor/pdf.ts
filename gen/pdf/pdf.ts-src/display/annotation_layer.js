@@ -1,31 +1,13 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
-/* Copyright 2014 Mozilla Foundation
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-/** @typedef {import("./api").PDFPageProxy} PDFPageProxy */
-/** @typedef {import("./display_utils").PageViewport} PageViewport */
-/** @typedef {import("./interfaces").IDownloadManager} IDownloadManager */
-/** @typedef {import("../../web/interfaces").IPDFLinkService} IPDFLinkService */
-import { GENERIC, MOZCENTRAL, TESTING } from "../../../global.js";
-import { div, html, span, svg as createSVG, textnode, } from "../../../lib/dom.js";
+import { div, html, span, svg as createSVG, textnode } from "../../../lib/dom.js";
 import { assert, fail } from "../../../lib/util/trace.js";
+import { GENERIC, MOZCENTRAL, TESTING } from "../../../global.js";
 import { ColorConverters } from "../shared/scripting_utils.js";
-import { AnnotationBorderStyleType, AnnotationEditorType, AnnotationType, FeatureTest, LINE_FACTOR, shadow, Util, warn, } from "../shared/util.js";
+import { AnnotationBorderStyleType, AnnotationEditorType, AnnotationPrefix, AnnotationType, FeatureTest, LINE_FACTOR, shadow, Util, warn, } from "../shared/util.js";
 import { AnnotationStorage } from "./annotation_storage.js";
-import { AnnotationPrefix, DOMSVGFactory, getFilenameFromUrl, PDFDateString, setLayerDimensions, } from "./display_utils.js";
+import { DOMSVGFactory, getFilenameFromUrl, PDFDateString, setLayerDimensions, } from "./display_utils.js";
 import { XfaLayer } from "./xfa_layer.js";
 // Ref. gulpfile.mjs of pdf.js
 const { NullL10n } = /*#static*/ await import("../../pdf.ts-web/l10n_utils.js");
@@ -140,6 +122,12 @@ export class AnnotationElement {
             this.#createQuadrilaterals();
         }
     }
+    static _hasPopupData({ titleObj, contentsObj, richText }) {
+        return !!(titleObj?.str || contentsObj?.str || richText?.str);
+    }
+    get hasPopupData() {
+        return AnnotationElement._hasPopupData(this.data);
+    }
     /**
      * Create an empty container for the annotation's HTML element.
      * @return A section element.
@@ -148,6 +136,9 @@ export class AnnotationElement {
         const { data, parent: { page, viewport } } = this;
         const container = html("section");
         container.setAttribute("data-annotation-id", data.id);
+        if (!(this instanceof WidgetAnnotationElement)) {
+            container.tabIndex = DEFAULT_TAB_INDEX;
+        }
         // The accessibility manager will move the annotation in the DOM in
         // order to match the visual ordering.
         // But if an annotation is above an other one, then we must draw it
@@ -805,11 +796,7 @@ class LinkAnnotationElement extends AnnotationElement {
 }
 class TextAnnotationElement extends AnnotationElement {
     constructor(parameters) {
-        const isRenderable = !!(parameters.data.popupRef ||
-            parameters.data.titleObj?.str ||
-            parameters.data.contentsObj?.str ||
-            parameters.data.richText?.str);
-        super(parameters, { isRenderable });
+        super(parameters, { isRenderable: true });
     }
     render() {
         this.container.classList.add("textAnnotation");
@@ -821,7 +808,7 @@ class TextAnnotationElement extends AnnotationElement {
         image.alt = "[{{type}} Annotation]";
         image.dataset.l10nId = "text_annotation_type";
         image.dataset.l10nArgs = JSON.stringify({ type: this.data.name });
-        if (!this.data.popupRef) {
+        if (!this.data.popupRef && this.hasPopupData) {
             this._createPopup();
         }
         this.container.append(image);
@@ -848,7 +835,7 @@ class WidgetAnnotationElement extends AnnotationElement {
         const { isWin, isMac } = FeatureTest.platform;
         return (isWin && event.ctrlKey) || (isMac && event.metaKey);
     }
-    #setEventListener(element, baseName, eventName, valueGetter) {
+    #setEventListener(element, elementData, baseName, eventName, valueGetter) {
         if (baseName.includes("mouse")) {
             // Mouse events
             element.addEventListener(baseName, (event) => {
@@ -865,8 +852,23 @@ class WidgetAnnotationElement extends AnnotationElement {
             });
         }
         else {
-            // Non mouse event
+            // Non-mouse events
             element.addEventListener(baseName, (event) => {
+                if (baseName === "blur") {
+                    if (!elementData.focused || !event.relatedTarget) {
+                        return;
+                    }
+                    elementData.focused = false;
+                }
+                else if (baseName === "focus") {
+                    if (elementData.focused) {
+                        return;
+                    }
+                    elementData.focused = true;
+                }
+                if (!valueGetter) {
+                    return;
+                }
                 this.linkService.eventBus?.dispatch("dispatcheventinsandbox", {
                     source: this,
                     detail: {
@@ -878,11 +880,21 @@ class WidgetAnnotationElement extends AnnotationElement {
             });
         }
     }
-    _setEventListeners(element, names, getter) {
+    _setEventListeners(element, elementData, names, getter) {
         for (const [baseName, eventName] of names) {
             if (eventName === "Action" ||
                 this.data.actions?.[eventName]) {
-                this.#setEventListener(element, baseName, eventName, getter);
+                if (eventName === "Focus" || eventName === "Blur") {
+                    elementData ||= { focused: false };
+                }
+                this.#setEventListener(element, elementData, baseName, eventName, getter);
+                if (eventName === "Focus" && !this.data.actions?.Blur) {
+                    // Ensure that elementData will have the correct value.
+                    this.#setEventListener(element, elementData, "blur", "Blur");
+                }
+                else if (eventName === "Blur" && !this.data.actions?.Focus) {
+                    this.#setEventListener(element, elementData, "focus", "Focus");
+                }
             }
         }
     }
@@ -982,6 +994,7 @@ class TextWidgetAnnotationElement extends WidgetAnnotationElement {
                 userValue: textContent,
                 formattedValue: fieldFormattedValues,
                 commitKey: 1,
+                focused: false,
             };
             if (this.data.multiLine) {
                 element = html("textarea");
@@ -1030,12 +1043,16 @@ class TextWidgetAnnotationElement extends WidgetAnnotationElement {
             };
             if (this.enableScripting && this.hasJSActions) {
                 element.on("focus", (event) => {
+                    if (elementData.focused) {
+                        return;
+                    }
                     const { target } = event;
                     if (elementData.userValue) {
                         target.value = elementData.userValue;
                     }
                     elementData.lastCommittedValue = target.value;
                     elementData.commitKey = 1;
+                    elementData.focused = true;
                 });
                 element.addEventListener("updatefromsandbox", (jsEvent) => {
                     this.showElementAndHideCanvas(jsEvent.target);
@@ -1139,6 +1156,10 @@ class TextWidgetAnnotationElement extends WidgetAnnotationElement {
                 const _blurListener = blurListener;
                 blurListener = undefined;
                 element.on("blur", (event) => {
+                    if (!elementData.focused || !event.relatedTarget) {
+                        return;
+                    }
+                    elementData.focused = false;
                     const { value } = event.target;
                     elementData.userValue = value;
                     if (elementData.lastCommittedValue !== value) {
@@ -1210,7 +1231,7 @@ class TextWidgetAnnotationElement extends WidgetAnnotationElement {
                         });
                     });
                 }
-                this._setEventListeners(element, [
+                this._setEventListeners(element, elementData, [
                     ["focus", "Focus"],
                     ["blur", "Blur"],
                     ["mousedown", "Mouse Down"],
@@ -1301,7 +1322,7 @@ class CheckboxWidgetAnnotationElement extends WidgetAnnotationElement {
                 };
                 this._dispatchEventFromSandbox(actions, jsEvent);
             });
-            this._setEventListeners(element, [
+            this._setEventListeners(element, undefined, [
                 ["change", "Validate"],
                 ["change", "Action"],
                 ["focus", "Focus"],
@@ -1376,7 +1397,7 @@ class RadioButtonWidgetAnnotationElement extends WidgetAnnotationElement {
                 };
                 this._dispatchEventFromSandbox(actions, jsEvent);
             });
-            this._setEventListeners(element, [
+            this._setEventListeners(element, undefined, [
                 ["change", "Validate"],
                 ["change", "Action"],
                 ["focus", "Focus"],
@@ -1611,7 +1632,7 @@ class ChoiceWidgetAnnotationElement extends WidgetAnnotationElement {
                     },
                 });
             });
-            this._setEventListeners(selectElement, [
+            this._setEventListeners(selectElement, undefined, [
                 ["focus", "Focus"],
                 ["blur", "Blur"],
                 ["mousedown", "Mouse Down"],
@@ -1644,10 +1665,7 @@ class PopupAnnotationElement extends AnnotationElement {
     elements;
     constructor(parameters) {
         const { data, elements } = parameters;
-        const isRenderable = !!(data.titleObj?.str ||
-            data.contentsObj?.str ||
-            data.richText?.str);
-        super(parameters, { isRenderable });
+        super(parameters, { isRenderable: AnnotationElement._hasPopupData(data) });
         this.elements = elements;
     }
     render() {
@@ -1671,7 +1689,7 @@ class PopupAnnotationElement extends AnnotationElement {
             elementIds.push(element.data.id);
             element.addHighlightArea();
         }
-        this.container.setAttribute("aria-controls", elementIds.join(","));
+        this.container.setAttribute("aria-controls", elementIds.map((id) => `${AnnotationPrefix}${id}`).join(","));
         return this.container;
     }
 }
@@ -1716,7 +1734,11 @@ class PopupElement {
             element.on("click", this.#toggle);
             element.on("mouseenter", this.#show);
             element.on("mouseleave", this.#hide);
-            /*#static*/ 
+            element.classList.add("popupTriggerArea");
+        }
+        // Attach the event listener to toggle the popup with the keyboard.
+        for (const element of elements) {
+            element.container?.on("keydown", this.#keyDown);
         }
         this.#container.hidden = true;
         if (open) {
@@ -1826,6 +1848,14 @@ class PopupElement {
         }
         return p;
     }
+    #keyDown(event) {
+        if (event.altKey || event.shiftKey || event.ctrlKey || event.metaKey) {
+            return;
+        }
+        if (event.key === "Enter" || (event.key === "Escape" && this.#pinned)) {
+            this.#toggle();
+        }
+    }
     /**
      * Toggle the visibility of the popup.
      */
@@ -1834,10 +1864,12 @@ class PopupElement {
         if (this.#pinned) {
             this.#show();
             this.#container.on("click", this.#toggle);
+            this.#container.on("keydown", this.#keyDown);
         }
         else {
             this.#hide();
             this.#container.off("click", this.#toggle);
+            this.#container.off("keydown", this.#keyDown);
         }
     };
     /**
@@ -1890,11 +1922,7 @@ export class FreeTextAnnotationElement extends AnnotationElement {
     textContent;
     textPosition;
     constructor(parameters) {
-        const isRenderable = !!(parameters.data.popupRef ||
-            parameters.data.titleObj?.str ||
-            parameters.data.contentsObj?.str ||
-            parameters.data.richText?.str);
-        super(parameters, { isRenderable, ignoreBorder: true });
+        super(parameters, { isRenderable: true, ignoreBorder: true });
         this.textContent = parameters.data.textContent;
         this.textPosition = parameters.data.textPosition;
         this.annotationEditorType = AnnotationEditorType.FREETEXT;
@@ -1912,7 +1940,7 @@ export class FreeTextAnnotationElement extends AnnotationElement {
             }
             this.container.append(content);
         }
-        if (!this.data.popupRef) {
+        if (!this.data.popupRef && this.hasPopupData) {
             this._createPopup();
         }
         this.editOnDoubleClick$();
@@ -1922,11 +1950,7 @@ export class FreeTextAnnotationElement extends AnnotationElement {
 class LineAnnotationElement extends AnnotationElement {
     #line;
     constructor(parameters) {
-        const isRenderable = !!(parameters.data.popupRef ||
-            parameters.data.titleObj?.str ||
-            parameters.data.contentsObj?.str ||
-            parameters.data.richText?.str);
-        super(parameters, { isRenderable, ignoreBorder: true });
+        super(parameters, { isRenderable: true, ignoreBorder: true });
     }
     render() {
         this.container.classList.add("lineAnnotation");
@@ -1955,7 +1979,7 @@ class LineAnnotationElement extends AnnotationElement {
         this.container.append(svg);
         // Create the popup ourselves so that we can bind it to the line instead
         // of to the entire container (which is the default).
-        if (!data.popupRef) {
+        if (!data.popupRef && this.hasPopupData) {
             this._createPopup();
         }
         return this.container;
@@ -1970,11 +1994,7 @@ class LineAnnotationElement extends AnnotationElement {
 class SquareAnnotationElement extends AnnotationElement {
     #square;
     constructor(parameters) {
-        const isRenderable = !!(parameters.data.popupRef ||
-            parameters.data.titleObj?.str ||
-            parameters.data.contentsObj?.str ||
-            parameters.data.richText?.str);
-        super(parameters, { isRenderable, ignoreBorder: true });
+        super(parameters, { isRenderable: true, ignoreBorder: true });
     }
     render() {
         this.container.classList.add("squareAnnotation");
@@ -2005,7 +2025,7 @@ class SquareAnnotationElement extends AnnotationElement {
         this.container.append(svg);
         // Create the popup ourselves so that we can bind it to the square instead
         // of to the entire container (which is the default).
-        if (!data.popupRef) {
+        if (!data.popupRef && this.hasPopupData) {
             this._createPopup();
         }
         return this.container;
@@ -2020,11 +2040,7 @@ class SquareAnnotationElement extends AnnotationElement {
 class CircleAnnotationElement extends AnnotationElement {
     #circle;
     constructor(parameters) {
-        const isRenderable = !!(parameters.data.popupRef ||
-            parameters.data.titleObj?.str ||
-            parameters.data.contentsObj?.str ||
-            parameters.data.richText?.str);
-        super(parameters, { isRenderable, ignoreBorder: true });
+        super(parameters, { isRenderable: true, ignoreBorder: true });
     }
     render() {
         this.container.classList.add("circleAnnotation");
@@ -2055,7 +2071,7 @@ class CircleAnnotationElement extends AnnotationElement {
         this.container.append(svg);
         // Create the popup ourselves so that we can bind it to the circle instead
         // of to the entire container (which is the default).
-        if (!data.popupRef) {
+        if (!data.popupRef && this.hasPopupData) {
             this._createPopup();
         }
         return this.container;
@@ -2072,11 +2088,7 @@ class PolylineAnnotationElement extends AnnotationElement {
     svgElementName = "polyline";
     #polyline;
     constructor(parameters) {
-        const isRenderable = !!(parameters.data.popupRef ||
-            parameters.data.titleObj?.str ||
-            parameters.data.contentsObj?.str ||
-            parameters.data.richText?.str);
-        super(parameters, { isRenderable, ignoreBorder: true });
+        super(parameters, { isRenderable: true, ignoreBorder: true });
     }
     render() {
         this.container.classList.add(this.containerClassName);
@@ -2111,8 +2123,7 @@ class PolylineAnnotationElement extends AnnotationElement {
         this.container.append(svg);
         // Create the popup ourselves so that we can bind it to the polyline
         // instead of to the entire container (which is the default).
-        if (!data.popupRef) {
-            // this._createPopup(polyline, data); //kkkk bug?
+        if (!data.popupRef && this.hasPopupData) {
             this._createPopup();
         }
         return this.container;
@@ -2134,15 +2145,11 @@ class PolygonAnnotationElement extends PolylineAnnotationElement {
 }
 class CaretAnnotationElement extends AnnotationElement {
     constructor(parameters) {
-        const isRenderable = !!(parameters.data.popupRef ||
-            parameters.data.titleObj?.str ||
-            parameters.data.contentsObj?.str ||
-            parameters.data.richText?.str);
-        super(parameters, { isRenderable, ignoreBorder: true });
+        super(parameters, { isRenderable: true, ignoreBorder: true });
     }
     render() {
         this.container.classList.add("caretAnnotation");
-        if (!this.data.popupRef) {
+        if (!this.data.popupRef && this.hasPopupData) {
             this._createPopup();
         }
         return this.container;
@@ -2157,11 +2164,8 @@ export class InkAnnotationElement extends AnnotationElement {
     svgElementName = "polyline";
     #polylines = [];
     constructor(parameters) {
-        const isRenderable = !!(parameters.data.popupRef ||
-            parameters.data.titleObj?.str ||
-            parameters.data.contentsObj?.str ||
-            parameters.data.richText?.str);
-        super(parameters, { isRenderable, ignoreBorder: true });
+        super(parameters, { isRenderable: true, ignoreBorder: true });
+        this.annotationEditorType = AnnotationEditorType.INK;
     }
     render() {
         this.container.classList.add(this.containerClassName);
@@ -2195,8 +2199,7 @@ export class InkAnnotationElement extends AnnotationElement {
             });
             // Create the popup ourselves so that we can bind it to the polyline
             // instead of to the entire container (which is the default).
-            if (!data.popupRef) {
-                // this._createPopup(polyline, data); //kkkk bug?
+            if (!data.popupRef && this.hasPopupData) {
                 this._createPopup();
             }
             svg.append(polyline);
@@ -2213,18 +2216,14 @@ export class InkAnnotationElement extends AnnotationElement {
 }
 class HighlightAnnotationElement extends AnnotationElement {
     constructor(parameters) {
-        const isRenderable = !!(parameters.data.popupRef ||
-            parameters.data.titleObj?.str ||
-            parameters.data.contentsObj?.str ||
-            parameters.data.richText?.str);
         super(parameters, {
-            isRenderable,
+            isRenderable: true,
             ignoreBorder: true,
             createQuadrilaterals: true,
         });
     }
     render() {
-        if (!this.data.popupRef) {
+        if (!this.data.popupRef && this.hasPopupData) {
             this._createPopup();
         }
         this.container.classList.add("highlightAnnotation");
@@ -2233,18 +2232,14 @@ class HighlightAnnotationElement extends AnnotationElement {
 }
 class UnderlineAnnotationElement extends AnnotationElement {
     constructor(parameters) {
-        const isRenderable = !!(parameters.data.popupRef ||
-            parameters.data.titleObj?.str ||
-            parameters.data.contentsObj?.str ||
-            parameters.data.richText?.str);
         super(parameters, {
-            isRenderable,
+            isRenderable: true,
             ignoreBorder: true,
             createQuadrilaterals: true,
         });
     }
     render() {
-        if (!this.data.popupRef) {
+        if (!this.data.popupRef && this.hasPopupData) {
             this._createPopup();
         }
         this.container.classList.add("underlineAnnotation");
@@ -2253,18 +2248,14 @@ class UnderlineAnnotationElement extends AnnotationElement {
 }
 class SquigglyAnnotationElement extends AnnotationElement {
     constructor(parameters) {
-        const isRenderable = !!(parameters.data.popupRef ||
-            parameters.data.titleObj?.str ||
-            parameters.data.contentsObj?.str ||
-            parameters.data.richText?.str);
         super(parameters, {
-            isRenderable,
+            isRenderable: true,
             ignoreBorder: true,
             createQuadrilaterals: true,
         });
     }
     render() {
-        if (!this.data.popupRef) {
+        if (!this.data.popupRef && this.hasPopupData) {
             this._createPopup();
         }
         this.container.classList.add("squigglyAnnotation");
@@ -2273,18 +2264,14 @@ class SquigglyAnnotationElement extends AnnotationElement {
 }
 class StrikeOutAnnotationElement extends AnnotationElement {
     constructor(parameters) {
-        const isRenderable = !!(parameters.data.popupRef ||
-            parameters.data.titleObj?.str ||
-            parameters.data.contentsObj?.str ||
-            parameters.data.richText?.str);
         super(parameters, {
-            isRenderable,
+            isRenderable: true,
             ignoreBorder: true,
             createQuadrilaterals: true,
         });
     }
     render() {
-        if (!this.data.popupRef) {
+        if (!this.data.popupRef && this.hasPopupData) {
             this._createPopup();
         }
         this.container.classList.add("strikeoutAnnotation");
@@ -2293,15 +2280,11 @@ class StrikeOutAnnotationElement extends AnnotationElement {
 }
 export class StampAnnotationElement extends AnnotationElement {
     constructor(parameters) {
-        const isRenderable = !!(parameters.data.popupRef ||
-            parameters.data.titleObj?.str ||
-            parameters.data.contentsObj?.str ||
-            parameters.data.richText?.str);
-        super(parameters, { isRenderable, ignoreBorder: true });
+        super(parameters, { isRenderable: true, ignoreBorder: true });
     }
     render() {
         this.container.classList.add("stampAnnotation");
-        if (!this.data.popupRef) {
+        if (!this.data.popupRef && this.hasPopupData) {
             this._createPopup();
         }
         return this.container;
@@ -2324,7 +2307,7 @@ export class FileAttachmentAnnotationElement extends AnnotationElement {
     }
     render() {
         this.container.classList.add("fileAttachmentAnnotation");
-        const { data } = this;
+        const { container, data } = this;
         let trigger;
         if (data.hasAppearance || data.fillAlpha === 0) {
             trigger = div();
@@ -2345,15 +2328,22 @@ export class FileAttachmentAnnotationElement extends AnnotationElement {
                 /*#static*/ 
             }
         }
-        trigger.classList.add("popupTriggerArea");
         trigger.on("dblclick", this.#download);
         this.#trigger = trigger;
-        if (!data.popupRef &&
-            (data.titleObj?.str || data.contentsObj?.str || data.richText)) {
+        const { isMac } = FeatureTest.platform;
+        container.on("keydown", (evt) => {
+            if (evt.key === "Enter" && (isMac ? evt.metaKey : evt.ctrlKey)) {
+                this.#download();
+            }
+        });
+        if (!data.popupRef && this.hasPopupData) {
             this._createPopup();
         }
-        this.container.append(trigger);
-        return this.container;
+        else {
+            trigger.classList.add("popupTriggerArea");
+        }
+        container.append(trigger);
+        return container;
     }
     getElementsToTriggerPopup() {
         return this.#trigger;

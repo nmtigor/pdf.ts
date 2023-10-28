@@ -1,5 +1,5 @@
-import type { dot2d_t, rect_t, TupleOf } from "../../../lib/alias.js";
 import type { HttpStatusCode } from "../../../lib/HttpStatusCode.js";
+import type { dot2d_t, rect_t, TupleOf } from "../../../lib/alias.js";
 import { ErrorJ } from "../../../lib/util/trace.js";
 export declare const isNodeJS: boolean;
 export declare const IDENTITY_MATRIX: matrix_t;
@@ -403,5 +403,6 @@ export declare function isArrayBuffer(v: any): v is ArrayBufferLike;
 export declare function getModificationDate(date?: Date): string;
 export declare function normalizeUnicode(str: string): string;
 export declare function getUuid(): string;
+export declare const AnnotationPrefix = "pdfjs_internal_id_";
 export {};
 //# sourceMappingURL=util.d.ts.map

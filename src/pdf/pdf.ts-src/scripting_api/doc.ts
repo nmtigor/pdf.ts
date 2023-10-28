@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-import type { ScriptingDocProperties } from "../../pdf.ts-web/app.ts";
+import type { ScriptingDocProperties } from "@pdf.ts-web/app.ts";
 import type { AnnotActions } from "../core/core_utils.ts";
 import type { Name } from "../core/primitives.ts";
 import type { FieldWrapped } from "./app.ts";

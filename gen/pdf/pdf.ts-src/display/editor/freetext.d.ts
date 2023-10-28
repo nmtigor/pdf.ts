@@ -1,3 +1,4 @@
+/** @typedef {import("./annotation_editor_layer.js").AnnotationEditorLayer} AnnotationEditorLayer */
 import type { dot2d_t } from "../../../../lib/alias.js";
 import type { IL10n } from "../../../pdf.ts-web/interfaces.js";
 import { AnnotationEditorParamsType } from "../../shared/util.js";
@@ -21,15 +22,14 @@ export interface FreeTextEditorSerialized extends AnnotStorageValue {
  */
 export declare class FreeTextEditor extends AnnotationEditor {
     #private;
-    overlayDiv: HTMLDivElement;
-    editorDiv: HTMLDivElement;
+    static readonly _type = "freetext";
     static _freeTextDefaultContent: string;
-    static _l10nPromise: Map<string, Promise<string>>;
     static _internalPadding: number;
     static _defaultColor: string | undefined;
     static _defaultFontSize: number;
     static get _keyboardManager(): KeyboardManager<FreeTextEditor>;
-    static readonly _type = "freetext";
+    overlayDiv: HTMLDivElement;
+    editorDiv: HTMLDivElement;
     constructor(params: FreeTextEditorP);
     /** @inheritdoc */
     static initialize(l10n: IL10n): void;

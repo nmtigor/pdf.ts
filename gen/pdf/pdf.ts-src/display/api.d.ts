@@ -1,6 +1,9 @@
+/**
+ * @module pdfjsLib
+ */
 import type { C2D, TypedArray } from "../../../lib/alias.js";
 import { PromiseCap } from "../../../lib/util/PromiseCap.js";
-import { Stepper } from "../../pdf.ts-web/debugger.js";
+import type { Stepper } from "../../pdf.ts-web/debugger.js";
 import type { PageColors } from "../../pdf.ts-web/pdf_viewer.js";
 import type { FieldObject } from "../core/annotation.js";
 import type { ExplicitDest, SetOCGState } from "../core/catalog.js";
@@ -317,6 +320,7 @@ export declare class PDFDocumentLoadingTask {
      */
     onProgress?: (_: OnProgressP) => void;
     constructor();
+    [Symbol.asyncDispose](): Promise<void>;
     /**
      * Promise for document loading task completion.
      */
@@ -713,7 +717,7 @@ export interface TextStyle {
 /**
  * Page annotation parameters.
  */
-interface _GetAnnotationsP {
+interface GetAnnotationsP_ {
     /**
      * Determines the annotations that are fetched,
      * can be 'display' (viewable annotations), 'print' (printable annotations),
@@ -855,7 +859,7 @@ export interface StructTreeContent {
      * either "content" for page and stream structure
      * elements or "object" for object references.
      */
-    type: "content" | "object";
+    type: "annotation" | "content" | "object";
     /**
      * unique id that will map to the text layer.
      */
@@ -921,7 +925,7 @@ export declare class PDFPageProxy {
      * @return A promise that is resolved with an
      *   {Array} of the annotation objects.
      */
-    getAnnotations({ intent }?: _GetAnnotationsP): Promise<import("../core/annotation.js").AnnotationData[]>;
+    getAnnotations({ intent }?: GetAnnotationsP_): Promise<import("../core/annotation.js").AnnotationData[] | import("../core/annotation.js").Annotation[]>;
     /**
      * @return A promise that is resolved with an
      *   {Object} with JS actions.
@@ -1102,7 +1106,7 @@ declare class WorkerTransport {
     saveDocument(): Promise<Uint8Array>;
     getPage(pageNumber: unknown): Promise<PDFPageProxy>;
     getPageIndex(ref: RefProxy): Promise<number>;
-    getAnnotations(pageIndex: number, intent: RenderingIntentFlag): Promise<import("../core/annotation.js").AnnotationData[]>;
+    getAnnotations(pageIndex: number, intent: RenderingIntentFlag): Promise<import("../core/annotation.js").AnnotationData[] | import("../core/annotation.js").Annotation[]>;
     getFieldObjects(): Promise<boolean | AnnotActions | Record<string, FieldObject[]> | MetadataEx | undefined>;
     hasJSActions(): Promise<boolean>;
     getCalculationOrderIds(): Promise<string[] | undefined>;

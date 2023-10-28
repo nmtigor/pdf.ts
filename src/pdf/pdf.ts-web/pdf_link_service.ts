@@ -20,8 +20,8 @@
 /** @typedef {import("./event_utils").EventBus} EventBus */
 /** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
 
-import { isObjectLike } from "@fe-src/lib/jslang.ts";
-import { assert } from "@fe-src/lib/util/trace.ts";
+import { isObjectLike } from "@fe-lib/jslang.ts";
+import { assert } from "@fe-lib/util/trace.ts";
 import type {
   Destination,
   ExplicitDest,
@@ -34,7 +34,7 @@ import type { EventBus } from "./event_utils.ts";
 import type { IPDFLinkService } from "./interfaces.ts";
 import type { PDFHistory } from "./pdf_history.ts";
 import type { PDFViewer } from "./pdf_viewer.ts";
-import { parseQueryString, removeNullCharacters } from "./ui_utils.ts";
+import { parseQueryString } from "./ui_utils.ts";
 /*80--------------------------------------------------------------------------*/
 
 const DEFAULT_LINK_REL = "noopener noreferrer nofollow";
@@ -47,7 +47,7 @@ export const enum LinkTarget {
   TOP = 4,
 }
 
-interface _ExternalLinkP {
+interface ExternalLinkP_ {
   /**
    * An absolute URL.
    */
@@ -75,18 +75,17 @@ interface _ExternalLinkP {
  */
 function addLinkAttributes(
   link: HTMLAnchorElement,
-  { url, target, rel, enabled = true }: _ExternalLinkP = <_ExternalLinkP> {},
+  { url, target, rel, enabled = true } = {} as ExternalLinkP_,
 ) {
   if (!url || typeof url !== "string") {
     throw new Error('A valid "url" parameter must provided.');
   }
 
-  const urlNullRemoved = removeNullCharacters(url);
   if (enabled) {
-    link.href = link.title = urlNullRemoved;
+    link.href = link.title = url;
   } else {
     link.href = "";
-    link.title = `Disabled: ${urlNullRemoved}`;
+    link.title = `Disabled: ${url}`;
     link.onclick = () => false;
   }
 

@@ -1,3 +1,8 @@
+/** @typedef {import("./api").PDFPageProxy} PDFPageProxy */
+/** @typedef {import("./display_utils").PageViewport} PageViewport */
+/** @typedef {import("../../web/text_accessibility.js").TextAccessibilityManager} TextAccessibilityManager */
+/** @typedef {import("../../web/interfaces").IDownloadManager} IDownloadManager */
+/** @typedef {import("../../web/interfaces").IPDFLinkService} IPDFLinkService */
 import type { rect_t } from "../../../lib/alias.js";
 import type { rgb_t } from "../../../lib/color/alias.js";
 import type { HSElement } from "../../../lib/dom.js";
@@ -12,6 +17,7 @@ import { AnnotationStorage } from "./annotation_storage.js";
 import type { MetadataEx, PDFPageProxy } from "./api.js";
 import type { PageViewport } from "./display_utils.js";
 import { DOMSVGFactory } from "./display_utils.js";
+import { Dict } from "../core/primitives.js";
 type Parent_ = {
     page: PDFPageProxy;
     viewport: PageViewport;
@@ -63,6 +69,8 @@ export declare class AnnotationElement {
         ignoreBorder?: boolean | undefined;
         createQuadrilaterals?: boolean | undefined;
     });
+    static _hasPopupData({ titleObj, contentsObj, richText }: AnnotationData): boolean;
+    get hasPopupData(): boolean;
     setRotation(angle: number, container?: HTMLElement): void;
     get _commonActions(): {
         display: (event: CustomEvent) => void;
@@ -169,7 +177,7 @@ declare class PopupElement {
 }
 export declare class FreeTextAnnotationElement extends AnnotationElement {
     textContent: string[] | undefined;
-    textPosition: import("@fe-src/lib/alias.js").dot2d_t | undefined;
+    textPosition: import("@fe-lib/alias.js").dot2d_t | undefined;
     constructor(parameters: AnnotationElementCtorP_);
     render(): HTMLElement;
 }
@@ -227,7 +235,22 @@ export type AnnotationLayerP = {
     annotationCanvasMap: Map<string, HTMLCanvasElement> | undefined;
     accessibilityManager?: TextAccessibilityManager | undefined;
 };
+export type AccessibilityData = {
+    type: "Figure";
+    title?: string;
+    lang?: string;
+    alt: string;
+    expanded?: string;
+    actualText?: string;
+    altText?: string;
+    decorative?: boolean;
+};
+export type StructTreeParent = {
+    ref: Ref;
+    dict: Dict;
+};
 export interface AnnotStorageValue {
+    accessibilityData?: AccessibilityData;
     annotationType?: AnnotationEditorType;
     annotationEditorType?: AnnotationEditorType;
     bitmap?: ImageBitmap;
@@ -244,6 +267,8 @@ export interface AnnotStorageValue {
     noView?: unknown;
     opacity?: number;
     pageIndex?: number;
+    parentTreeId?: number;
+    structTreeParent?: StructTreeParent;
     paths?: {
         bezier: number[];
         points: number[];
@@ -252,6 +277,7 @@ export interface AnnotStorageValue {
     rect?: rect_t | undefined;
     ref?: Ref;
     rotation?: number;
+    structTreeParentId?: string | undefined;
     thickness?: number;
     user?: string;
     value?: string | string[] | number | boolean | undefined;

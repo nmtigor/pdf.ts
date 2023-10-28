@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-import type { TupleOf } from "@fe-src/lib/alias.ts";
-import { fail } from "@fe-src/lib/util/trace.ts";
+import type { TupleOf } from "@fe-lib/alias.ts";
+import { fail } from "@fe-lib/util/trace.ts";
 import type { FetchBuiltInCMap } from "../display/base_factory.ts";
 import { CMapCompressionType, FormatError, warn } from "../shared/util.ts";
 import { BaseStream } from "./base_stream.ts";
