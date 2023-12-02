@@ -45,7 +45,6 @@ if (globalThis.EventTarget) {
         return this.removeEventListener(type, listener, options);
     };
 }
-export const ClickHoldTo = 10000;
 if (globalThis.Node) {
     Reflect.defineProperty(Node.prototype, "isText", {
         get() {

@@ -177,7 +177,9 @@ export abstract class Vuu<C extends Coo = Coo, E extends Element = Element> {
     return this;
   }
 
-  // static Vuufn() {}
+  get bcr(): DOMRect {
+    return this.el$.getBoundingClientRect();
+  }
 }
 // Vuu.def = "def";
 

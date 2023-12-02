@@ -110,19 +110,24 @@ var FontInspector_;
             }
             return moreInfo;
         }
-        const moreInfo = properties(fontObj, ["name", "type"]);
+        const moreInfo = fontObj.css
+            ? properties(fontObj, ["baseFontName"])
+            : properties(fontObj, ["name", "type"]);
         const fontName = fontObj.loadedName;
         const font = html("div");
         const name = html("span");
         name.textContent = fontName;
-        const download = html("a");
-        if (url) {
-            download.href = (/url\(['"]?([^)"']+)/.exec(url))[1];
+        let download;
+        if (!fontObj.css) {
+            download = html("a");
+            if (url) {
+                download.href = (/url\(['"]?([^)"']+)/.exec(url))[1];
+            }
+            else if (fontObj.data) {
+                download.href = URL.createObjectURL(new Blob([fontObj.data], { type: fontObj.mimetype }));
+            }
+            download.textContent = "Download";
         }
-        else if (fontObj.data) {
-            download.href = URL.createObjectURL(new Blob([fontObj.data], { type: fontObj.mimetype }));
-        }
-        download.textContent = "Download";
         const logIt = html("a");
         logIt.href = "";
         logIt.textContent = "Log";
@@ -136,7 +141,12 @@ var FontInspector_;
         select.on("click", () => {
             selectFont(fontName, select.checked);
         });
-        font.append(select, name, " ", download, " ", logIt, moreInfo);
+        if (download) {
+            font.append(select, name, " ", download, " ", logIt, moreInfo);
+        }
+        else {
+            font.append(select, name, " ", logIt, moreInfo);
+        }
         fonts.append(font);
         // Somewhat of a hack, should probably add a hook for when the text layer
         // is done rendering.
@@ -211,7 +221,7 @@ var StepperManager_;
             stepper.panel.hidden = stepper.pageIndex !== pageIndex;
         }
         for (const option of stepperChooser.options) {
-            option.selected = (+option.value | 0) === pageIndex;
+            option.selected = option.value === pageIndex;
         }
     }
     StepperManager_.selectStepper = selectStepper;
@@ -561,7 +571,7 @@ export class PDFBug {
         const { url } = import.meta;
         const link = html("link");
         link.rel = "stylesheet";
-        link.href = url.replace(/.js$/, ".css");
+        link.href = url.replace(/\.mjs$/, ".css");
         document.head.append(link);
     }
     static cleanup() {

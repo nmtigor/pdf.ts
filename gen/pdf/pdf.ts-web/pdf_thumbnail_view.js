@@ -15,16 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-// eslint-disable-next-line max-len
-/** @typedef {import("../src/display/optional_content_config").OptionalContentConfig} OptionalContentConfig */
-// eslint-disable-next-line max-len
-/** @typedef {import("../src/display/display_utils").PageViewport} PageViewport */
-/** @typedef {import("./event_utils").EventBus} EventBus */
-/** @typedef {import("./interfaces").IL10n} IL10n */
-/** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
-/** @typedef {import("./interfaces").IRenderableView} IRenderableView */
-// eslint-disable-next-line max-len
-/** @typedef {import("./pdf_rendering_queue").PDFRenderingQueue} PDFRenderingQueue */
 import { html } from "../../lib/dom.js";
 import { RenderingCancelledException } from "../pdf.ts-src/pdf.js";
 import { OutputScale, RenderingStates } from "./ui_utils.js";
@@ -74,7 +64,6 @@ export class PDFThumbnailView {
     renderTask;
     renderingState = RenderingStates.INITIAL;
     resume; /** @implement */
-    l10n;
     anchor;
     div; /** @implement */
     canvasWidth;
@@ -83,7 +72,7 @@ export class PDFThumbnailView {
     _placeholderImg;
     canvas;
     image;
-    constructor({ container, eventBus, id, defaultViewport, optionalContentConfigPromise, linkService, renderingQueue, l10n, pageColors, }) {
+    constructor({ container, eventBus, id, defaultViewport, optionalContentConfigPromise, linkService, renderingQueue, pageColors, }) {
         this.id = id;
         this.renderingId = "thumbnail" + id;
         // this.pageLabel = null;
@@ -96,11 +85,11 @@ export class PDFThumbnailView {
         this.eventBus = eventBus;
         this.linkService = linkService;
         this.renderingQueue = renderingQueue;
-        this.l10n = l10n;
         const anchor = html("a");
         anchor.href = linkService.getAnchorUrl("#page=" + id);
-        this._thumbPageTitle.then((msg) => {
-            anchor.title = msg;
+        anchor.assignAttro({
+            "data-l10n-id": "pdfjs-thumb-page-title",
+            "data-l10n-args": this.#pageL10nArgs,
         });
         anchor.onclick = () => {
             linkService.goToPage(id);
@@ -184,13 +173,14 @@ export class PDFThumbnailView {
     };
     #convertCanvasToImage(canvas) {
         if (this.renderingState !== RenderingStates.FINISHED) {
-            throw new Error("_convertCanvasToImage: Rendering has not finished.");
+            throw new Error("#convertCanvasToImage: Rendering has not finished.");
         }
         const reducedCanvas = this.#reduceImage(canvas);
         const image = html("img");
         image.className = "thumbnailImage";
-        this._thumbPageCanvas.then((msg) => {
-            image.setAttribute("aria-label", msg);
+        image.assignAttro({
+            "data-l10n-id": "pdfjs-thumb-page-canvas",
+            "data-l10n-args": this.#pageL10nArgs,
         });
         image.src = reducedCanvas.toDataURL();
         this.image = image;
@@ -312,27 +302,16 @@ export class PDFThumbnailView {
         ctx.drawImage(reducedImage, 0, 0, reducedWidth, reducedHeight, 0, 0, canvas.width, canvas.height);
         return canvas;
     };
-    get _thumbPageTitle() {
-        return this.l10n.get("thumb_page_title", {
-            page: this.pageLabel ?? this.id,
-        });
-    }
-    get _thumbPageCanvas() {
-        return this.l10n.get("thumb_page_canvas", {
-            page: this.pageLabel ?? this.id,
-        });
+    get #pageL10nArgs() {
+        return JSON.stringify({ page: this.pageLabel ?? this.id });
     }
     setPageLabel(label) {
         this.pageLabel = typeof label === "string" ? label : undefined;
-        this._thumbPageTitle.then((msg) => {
-            this.anchor.title = msg;
-        });
+        this.anchor.setAttribute("data-l10n-args", this.#pageL10nArgs);
         if (this.renderingState !== RenderingStates.FINISHED) {
             return;
         }
-        this._thumbPageCanvas.then((msg) => {
-            this.image?.setAttribute("aria-label", msg);
-        });
+        this.image?.setAttribute("data-l10n-args", this.#pageL10nArgs);
     }
 }
 /*80--------------------------------------------------------------------------*/

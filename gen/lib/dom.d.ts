@@ -13,6 +13,15 @@ declare global {
     interface Event {
         _canceled: boolean | undefined;
         canceled: boolean;
+        /**
+         * When `Poprect` is shown, `pocudVu` is not `null`. At this time, right-
+         * click another place, the `Poprect` would probably be updated, rather than
+         * reset. `targetPocudVu` is to prevent this from happening, because newly
+         * created `PointerEvent` does not have `targetPocudVu`.
+         *
+         * Update `Poprect` only when setPocudVu()` is called hence `targetPocudVu`
+         * is set. Otherwise, reset `Poprect`.
+         */
         targetPocudVu?: Vuu;
     }
     interface WheelEvent {
@@ -36,7 +45,6 @@ declare global {
         off<E extends EventName>(type: E, listener: EventHandler<E>, options?: EventListenerOptions | boolean): void;
     }
 }
-export declare const ClickHoldTo = 10000;
 declare global {
     interface Node {
         readonly isText: boolean;
@@ -56,7 +64,7 @@ declare global {
 }
 declare global {
     interface Element {
-        assignAttro(attr_o: Record<string, string | number>): this;
+        assignAttro(attr_o: Record<string, string | number | boolean>): this;
         readonly scrollRight: number;
         readonly scrollBottom: number;
         cyName: string;
@@ -109,6 +117,11 @@ declare global {
 declare global {
     interface Text {
         [$loff]?: llen_t;
+        /**
+         * For `TokLine<>` being empty or containing whitespaces only, when it is
+         * appended to a `ELine<>`, an additional "|" will be added. For such
+         * `Text`, its `[$tail_ignored]` is `true`.
+         */
         [$tail_ignored]?: boolean;
     }
 }

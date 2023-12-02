@@ -4,7 +4,7 @@
  ******************************************************************************/
 import { INOUT } from "../global.js";
 import { assert } from "./util/trace.js";
-// Ref. https://lodash.com/docs/4.17.15#isObjectLike
+/** Ref. https://lodash.com/docs/4.17.15#isObjectLike */
 export function isObjectLike(value) {
     return value != null && typeof value === "object";
 }
@@ -410,7 +410,7 @@ Math.clamp = (min_x, val_x, max_x) => Math.max(min_x, Math.min(val_x, max_x));
 /*80--------------------------------------------------------------------------*/
 /**
  * class X extends mix( Y, Z )
- * ! Should always companion with an interface declaration.
+ * ! Should always companion with an interface declaration
  *
  * @param mixins_x
  *  Laat element has the highest precedence, and so on.

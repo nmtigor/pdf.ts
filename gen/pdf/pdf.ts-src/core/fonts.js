@@ -547,12 +547,12 @@ function createCmapTable(glyphs, toUnicodeExtraMap, numGlyphs) {
         string32(4 + numTables * 8); // start of the table record
     let i, ii, j, jj;
     for (i = ranges.length - 1; i >= 0; --i) {
-        if (+ranges[i][0] <= 0xffff) {
+        if (ranges[i][0] <= 0xffff) {
             break;
         }
     }
     const bmpLength = i + 1;
-    if (+ranges[i][0] < 0xffff && ranges[i][1] === 0xffff) {
+    if (ranges[i][0] < 0xffff && ranges[i][1] === 0xffff) {
         ranges[i][1] = 0xfffe;
     }
     const trailingRangesCount = +ranges[i][1] < 0xffff ? 1 : 0;
@@ -630,7 +630,7 @@ function createCmapTable(glyphs, toUnicodeExtraMap, numGlyphs) {
                 }
             }
             format31012 += string32(start) + // startCharCode
-                string32(+range[1]) + // endCharCode
+                string32(range[1]) + // endCharCode
                 string32(code); // startGlyphID
         }
         header31012 = "\x00\x0C" + // format
@@ -2493,7 +2493,7 @@ export class Font extends FontExpotDataEx {
                 if (typeof cid === "string") {
                     cid = convertCidString(charCode, cid, /* shouldThrow = */ true);
                 }
-                if (+cid > 0xffff) {
+                if (cid > 0xffff) {
                     throw new FormatError("Max size of CID is 65,535");
                 }
                 let glyphId = -1;
@@ -2876,7 +2876,7 @@ export class Font extends FontExpotDataEx {
                 charcode = this.toUnicode.charCodeOf(glyphUnicode);
             }
             // setting it to unicode if negative or undefined
-            if (+charcode <= 0) {
+            if (charcode <= 0) {
                 charcode = glyphUnicode;
             }
             // trying to get width via charcode

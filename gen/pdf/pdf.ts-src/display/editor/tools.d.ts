@@ -81,16 +81,16 @@ export declare class CommandManager {
     destroy(): void;
 }
 type KeyboardCallback_ = (translateX?: number, translateY?: number, noCommit?: boolean) => void;
-type KeyboardCallbackOptions_<S extends AnnotationEditorUIManager | FreeTextEditor> = {
+type KeyboardCallbackOptions_<S extends AnnotationEditorUIManager | AnnotationEditor> = {
     bubbles?: boolean;
     args?: [number?, number?, boolean?];
-    checker?: (self: S, event?: unknown) => boolean | undefined;
+    checker?: ((self: S, event: KeyboardEvent) => boolean) | ((self: S) => boolean);
 };
 /**
  * Class to handle the different keyboards shortcuts we can have on mac or
  * non-mac OSes.
  */
-export declare class KeyboardManager<S extends AnnotationEditorUIManager | FreeTextEditor> {
+export declare class KeyboardManager<S extends AnnotationEditorUIManager | AnnotationEditor> {
     #private;
     buffer: string[];
     callbacks: Map<string, {
@@ -232,8 +232,11 @@ export declare class AnnotationEditorUIManager {
     removeLayer(layer: AnnotationEditorLayer): void;
     /**
      * Change the editor mode (None, FreeText, Ink, ...)
+     * @param isFromKeyboard true if the mode change is due to a
+     *   keyboard action.
      */
-    updateMode(mode: number, editId?: string | undefined): void;
+    updateMode(mode: number, editId?: string | undefined, isFromKeyboard?: boolean): void;
+    addNewEditorFromKeyboard(): void;
     /**
      * Update the toolbar if it's required to reflect the tool currently used.
      */
@@ -287,10 +290,12 @@ export declare class AnnotationEditorUIManager {
      * Check if the editor is selected.
      */
     isSelected(editor: AnnotationEditor): boolean;
+    get firstSelectedEditor(): any;
     /**
      * Unselect an editor.
      */
     unselect(editor: AnnotationEditor): void;
+    get isEnterHandled(): any;
     /**
      * Undo the last command.
      */
@@ -336,6 +341,7 @@ export declare class AnnotationEditorUIManager {
      * non-rendered page.
      */
     rebuild(editor: AnnotationEditor): void;
+    get isEditorHandlingKeyboard(): any;
     /**
      * Is the current editor the one passed as argument?
      */

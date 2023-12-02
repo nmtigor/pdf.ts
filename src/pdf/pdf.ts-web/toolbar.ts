@@ -17,14 +17,11 @@
  * limitations under the License.
  */
 
-import { html } from "@fe-lib/dom.ts";
 import { noContextMenu } from "@fe-lib/util/general.ts";
 import { GENERIC, PDFJSDev } from "@fe-src/global.ts";
 import { AnnotationEditorType } from "../pdf.ts-src/pdf.ts";
 import type { EventBus, EventMap, EventName } from "./event_utils.ts";
-import type { IL10n } from "./interfaces.ts";
 import {
-  animationStarted,
   DEFAULT_SCALE,
   DEFAULT_SCALE_VALUE,
   MAX_SCALE,
@@ -56,11 +53,8 @@ interface ToolbarItems {
 }
 
 export class Toolbar {
-  #wasLocalized = false;
-
   toolbar;
   eventBus;
-  l10n;
   buttons: ToolbarButton[];
   items: ToolbarItems;
 
@@ -71,14 +65,9 @@ export class Toolbar {
   pageScaleValue!: string;
   pageScale!: number;
 
-  constructor(
-    options: ViewerConfiguration["toolbar"],
-    eventBus: EventBus,
-    l10n: IL10n,
-  ) {
+  constructor(options: ViewerConfiguration["toolbar"], eventBus: EventBus) {
     this.toolbar = options.container;
     this.eventBus = eventBus;
-    this.l10n = l10n;
     this.buttons = [
       { element: options.previous, eventName: "previouspage" },
       { element: options.next, eventName: "nextpage" },
@@ -183,7 +172,12 @@ export class Toolbar {
     for (const { element, eventName, eventDetails } of this.buttons) {
       element.on("click", (evt) => {
         if (eventName !== null) {
-          this.eventBus.dispatch(eventName, { source: this, ...eventDetails });
+          this.eventBus.dispatch(eventName, {
+            source: this,
+            ...eventDetails,
+            // evt.detail is the number of clicks.
+            isFromKeyboard: evt.detail === 0,
+          });
         }
       });
     }
@@ -221,12 +215,6 @@ export class Toolbar {
     });
     // Suppress context menus for some controls.
     scaleSelect.oncontextmenu = noContextMenu;
-
-    this.eventBus._on("localized", () => {
-      this.#wasLocalized = true;
-      this.#adjustScaleWidth();
-      this.#updateUIState(true);
-    });
 
     this.#bindEditorToolsListener(options);
   }
@@ -277,34 +265,31 @@ export class Toolbar {
   }
 
   #updateUIState = (resetNumPages = false) => {
-    if (!this.#wasLocalized) {
-      // Don't update the UI state until we localize the toolbar.
-      return;
-    }
     const { pageNumber, pagesCount, pageScaleValue, pageScale, items } = this;
 
     if (resetNumPages) {
       if (this.hasPageLabels) {
         items.pageNumber.type = "text";
+
+        items.numPages.setAttribute("data-l10n-id", "pdfjs-page-of-pages");
       } else {
         items.pageNumber.type = "number";
-        this.l10n.get("of_pages", { pagesCount: <any> pagesCount }).then(
-          (msg) => {
-            items.numPages.textContent = msg;
-          },
-        );
+
+        items.numPages.assignAttro({
+          "data-l10n-id": "pdfjs-of-pages",
+          "data-l10n-args": JSON.stringify({ pagesCount }),
+        });
       }
-      items.pageNumber.max = <any> pagesCount;
+      items.pageNumber.max = pagesCount as any;
     }
 
     if (this.hasPageLabels) {
       items.pageNumber.value = this.pageLabel!;
-      this.l10n.get("page_of_pages", {
-        pageNumber: <any> pageNumber,
-        pagesCount: <any> pagesCount,
-      }).then((msg) => {
-        items.numPages.textContent = msg;
-      });
+
+      items.numPages.setAttribute(
+        "data-l10n-args",
+        JSON.stringify({ pageNumber, pagesCount }),
+      );
     } else {
       items.pageNumber.value = `${pageNumber}`;
     }
@@ -315,78 +300,31 @@ export class Toolbar {
     items.zoomOut.disabled = pageScale <= MIN_SCALE;
     items.zoomIn.disabled = pageScale >= MAX_SCALE;
 
-    this.l10n
-      .get("page_scale_percent", {
-        scale: <any> (Math.round(pageScale * 10000) / 100),
-      })
-      .then((msg) => {
-        let predefinedValueFound = false;
-        const options = items.scaleSelect.options;
-        for (let i = 0, LEN = options.length; i < LEN; ++i) { // for( const option of items.scaleSelect.options )
-          if (options[i].value !== pageScaleValue) {
-            options[i].selected = false;
-            continue;
-          }
-          options[i].selected = true;
-          predefinedValueFound = true;
-        }
-        if (!predefinedValueFound) {
-          items.customScaleOption.textContent = msg;
-          items.customScaleOption.selected = true;
-        }
-      });
+    let predefinedValueFound = false;
+    const options = items.scaleSelect.options;
+    for (let i = 0, LEN = options.length; i < LEN; ++i) { // for( const option of items.scaleSelect.options )
+      if (options[i].value !== pageScaleValue) {
+        options[i].selected = false;
+        continue;
+      }
+      options[i].selected = true;
+      predefinedValueFound = true;
+    }
+    if (!predefinedValueFound) {
+      items.customScaleOption.selected = true;
+      items.customScaleOption.setAttribute(
+        "data-l10n-args",
+        JSON.stringify({
+          scale: Math.round(pageScale * 10000) / 100,
+        }),
+      );
+    }
   };
 
   updateLoadingIndicatorState(loading = false) {
     const { pageNumber } = this.items;
 
     pageNumber.classList.toggle(PAGE_NUMBER_LOADING_INDICATOR, loading);
-  }
-
-  /**
-   * Increase the width of the zoom dropdown DOM element if, and only if, it's
-   * too narrow to fit the *longest* of the localized strings.
-   */
-  async #adjustScaleWidth() {
-    const { items, l10n } = this;
-
-    const predefinedValuesPromise = Promise.all([
-      l10n.get("page_scale_auto"),
-      l10n.get("page_scale_actual"),
-      l10n.get("page_scale_fit"),
-      l10n.get("page_scale_width"),
-    ]);
-    await animationStarted;
-
-    const style = getComputedStyle(items.scaleSelect);
-    const scaleSelectWidth = parseFloat(
-      style.getPropertyValue("--scale-select-width"),
-    );
-
-    // The temporary canvas is used to measure text length in the DOM.
-    const canvas = html("canvas");
-    const ctx = canvas.getContext("2d", { alpha: false })!;
-    ctx.font = `${style.fontSize} ${style.fontFamily}`;
-
-    let maxWidth = 0;
-    for (const predefinedValue of await predefinedValuesPromise) {
-      const { width } = ctx.measureText(predefinedValue);
-      if (width > maxWidth) {
-        maxWidth = width;
-      }
-    }
-    // Account for the icon width, and ensure that there's always some spacing
-    // between the text and the icon.
-    maxWidth += 0.3 * scaleSelectWidth;
-
-    if (maxWidth > scaleSelectWidth) {
-      const container = items.scaleSelect.parentNode as HTMLElement;
-      container.style.setProperty("--scale-select-width", `${maxWidth}px`);
-    }
-    // Zeroing the width and height cause Firefox to release graphics resources
-    // immediately, which can greatly reduce memory consumption.
-    canvas.width = 0;
-    canvas.height = 0;
   }
 }
 /*80--------------------------------------------------------------------------*/

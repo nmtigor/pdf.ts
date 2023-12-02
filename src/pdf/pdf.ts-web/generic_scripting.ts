@@ -17,12 +17,10 @@
  * limitations under the License.
  */
 
+import { PDFJSDev } from "@fe-src/global.ts";
 import type { PDFDocumentProxy } from "../pdf.ts-src/pdf.ts";
-import {
-  getPdfFilenameFromUrl,
-  loadScript,
-  QuickJSSandbox,
-} from "../pdf.ts-src/pdf.ts";
+import { getPdfFilenameFromUrl } from "../pdf.ts-src/pdf.ts";
+import type { Sandbox } from "../pdf.ts-src/pdf.sandbox.ts";
 import type {
   CreateSandboxP,
   EventInSandBox,
@@ -58,12 +56,16 @@ export class GenericScripting implements IScripting {
   _ready;
 
   constructor(sandboxBundleSrc: string) {
-    this._ready = loadScript(
-      sandboxBundleSrc,
-      /* removeScriptElement = */ true,
-    ).then(() => {
-      // return window.pdfjsSandbox.QuickJSSandbox();
-      return QuickJSSandbox();
+    this._ready = new Promise<Sandbox>((resolve, reject) => {
+      const sandbox = /*#static*/ PDFJSDev
+        ? import(sandboxBundleSrc) // eslint-disable-line no-unsanitized/method
+        // : __non_webpack_import__(sandboxBundleSrc);
+        : import(sandboxBundleSrc);
+      sandbox
+        .then((pdfjsSandbox) => {
+          resolve(pdfjsSandbox.QuickJSSandbox());
+        })
+        .catch(reject);
     });
   }
 

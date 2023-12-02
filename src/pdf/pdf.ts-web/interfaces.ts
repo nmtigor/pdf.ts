@@ -16,17 +16,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/* eslint-disable getter-return */
 
-/** @typedef {import("../src/display/api").PDFPageProxy} PDFPageProxy */
-// eslint-disable-next-line max-len
-/** @typedef {import("../src/display/display_utils").PageViewport} PageViewport */
-/** @typedef {import("./ui_utils").RenderingStates} RenderingStates */
-
-import type {
-  Locale_1,
-  WebL10nArgs,
-} from "../../3rd/webL10n-2015-10-24/l10n.ts";
+import type { Locale } from "@fe-lib/Locale.ts";
 import type {
   AnnotActions,
   AppInfo,
@@ -41,6 +32,7 @@ import type {
 import type { EventBus } from "./event_utils.ts";
 import type { LinkTarget } from "./pdf_link_service.ts";
 import type { RenderingStates } from "./ui_utils.ts";
+import type { FluentMessageArgs } from "@fe-3rd/fluent/dom/esm/localization.ts";
 /*80--------------------------------------------------------------------------*/
 
 export interface IPDFLinkService {
@@ -180,30 +172,47 @@ export interface IDownloadManager {
    * @return Indicating if the data was opened.
    */
   openOrDownloadData(
-    element: HTMLElement,
     data: Uint8Array | Uint8ClampedArray,
     filename: string,
+    dest?: string,
   ): boolean;
 
   download(blob: Blob, url: string, filename: string, _options?: object): void;
 }
 
 export interface IL10n {
-  getLanguage(): Promise<Lowercase<Locale_1> | "">;
+  /**
+   * @return The current locale.
+   */
+  getLanguage(): Locale;
 
-  getDirection(): Promise<"rtl" | "ltr">;
+  getDirection(): "rtl" | "ltr";
 
   /**
    * Translates text identified by the key and adds/formats data using the args
    * property bag. If the key was not found, translation falls back to the
    * fallback text.
    */
-  get(key: string, args?: WebL10nArgs, fallback?: string): Promise<string>;
+  get<S extends string | string[]>(
+    ids: S,
+    args?: FluentMessageArgs,
+    fallback?: string,
+  ): Promise<S>;
 
   /**
    * Translates HTML element.
    */
   translate(element: HTMLElement): Promise<void>;
+
+  /**
+   * Pause the localization.
+   */
+  pause(): void;
+
+  /**
+   * Resume the localization.
+   */
+  resume(): void;
 }
 
 export type CreateSandboxP = {

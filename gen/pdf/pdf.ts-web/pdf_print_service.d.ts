@@ -1,5 +1,4 @@
 import type { OptionalContentConfig, PDFDocumentProxy, PrintAnnotationStorage } from "../pdf.ts-src/pdf.js";
-import type { IL10n } from "./interfaces.js";
 import type { PageOverview } from "./pdf_viewer.js";
 export declare class PDFPrintService {
     #private;
@@ -9,14 +8,13 @@ export declare class PDFPrintService {
     _printResolution: number;
     _optionalContentConfigPromise: Promise<OptionalContentConfig | undefined>;
     _printAnnotationStoragePromise: Promise<PrintAnnotationStorage | undefined>;
-    l10n: IL10n | undefined;
     currentPage: number;
     pageStyleSheet: HTMLStyleElement | undefined;
     /**
      * The temporary canvas where renderPage paints one page at a time.
      */
     scratchCanvas: HTMLCanvasElement | undefined;
-    constructor(pdfDocument: PDFDocumentProxy, pagesOverview: PageOverview[], printContainer: HTMLDivElement, printResolution: number | undefined, optionalContentConfigPromise: Promise<OptionalContentConfig | undefined> | undefined, printAnnotationStoragePromise?: Promise<PrintAnnotationStorage | undefined>, l10n?: IL10n);
+    constructor(pdfDocument: PDFDocumentProxy, pagesOverview: PageOverview[], printContainer: HTMLDivElement, printResolution: number | undefined, optionalContentConfigPromise: Promise<OptionalContentConfig | undefined> | undefined, printAnnotationStoragePromise?: Promise<PrintAnnotationStorage | undefined>);
     layout(): void;
     destroy(): void;
     renderPages(): Promise<void>;

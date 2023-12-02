@@ -17,7 +17,7 @@
  */
 import { CHROME, GENERIC, MOZCENTRAL, PDFJSDev } from "../../global.js";
 import { viewerApp } from "./app.js";
-// Ref. gulpfile.mjs of pdf.js
+/* Ref. gulpfile.mjs of pdf.js */
 /*#static*/  {
     /*#static*/  {
         await import("./genericcom.js");

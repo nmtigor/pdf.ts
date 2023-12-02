@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-import { initSandbox } from "./scripting_api/initialization";
+import { initSandbox } from "./scripting_api/initialization.ts";
 /*80--------------------------------------------------------------------------*/
 
 // /* eslint-disable-next-line no-unused-vars */
@@ -27,5 +27,10 @@ import { initSandbox } from "./scripting_api/initialization";
 // const pdfjsBuild =
 //   typeof PDFJSDev !== "undefined" ? PDFJSDev.eval("BUNDLE_BUILD") : void 0;
 
-/*80--------------------------------------------------------------------------*/
-export { initSandbox };
+declare global {
+  var pdfjsScripting: { initSandbox: typeof initSandbox };
+}
+
+// To avoid problems with `export` statements in the QuickJS Javascript Engine,
+// we manually expose `pdfjsScripting` globally instead.
+globalThis.pdfjsScripting = { initSandbox };

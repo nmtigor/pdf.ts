@@ -15,20 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/** @typedef {import("../src/display/api").PDFPageProxy} PDFPageProxy */
-// eslint-disable-next-line max-len
-/** @typedef {import("../src/display/display_utils").PageViewport} PageViewport */
-/** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
-// eslint-disable-next-line max-len
-/** @typedef {import("../src/display/editor/tools.js").AnnotationEditorUIManager} AnnotationEditorUIManager */
-// eslint-disable-next-line max-len
-/** @typedef {import("./text_accessibility.js").TextAccessibilityManager} TextAccessibilityManager */
-/** @typedef {import("./interfaces").IL10n} IL10n */
-// eslint-disable-next-line max-len
-/** @typedef {import("../src/display/annotation_layer.js").AnnotationLayer} AnnotationLayer */
 import { html } from "../../lib/dom.js";
+import { GENERIC } from "../../global.js";
 import { AnnotationEditorLayer } from "../pdf.ts-src/pdf.js";
-import { NullL10n } from "./l10n_utils.js";
+/* Ref. gulpfile.mjs of pdf.js */
+const { NullL10n } = /*#static*/ await import("./l10n_utils.js");
 export class AnnotationEditorLayerBuilder {
     pageDiv;
     pdfPage;

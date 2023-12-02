@@ -1,16 +1,13 @@
+import { Locale } from "../../lib/Locale.js";
 import { AnnotationEditorType, AnnotationMode, VerbosityLevel } from "../pdf.ts-src/pdf.js";
 import { LinkTarget } from "./pdf_link_service.js";
 import { CursorTool, ScrollMode, SidebarView, SpreadMode, TextLayerMode } from "./ui_utils.js";
 export declare const enum OptionKind {
+    BROWSER = 1,
     VIEWER = 2,
     API = 4,
     WORKER = 8,
     PREFERENCE = 128
-}
-export declare enum ViewerCssTheme {
-    AUTOMATIC = 0,
-    LIGHT = 1,
-    DARK = 2
 }
 export declare const enum ViewOnLoad {
     UNKNOWN = -1,
@@ -30,6 +27,34 @@ export declare const compatibilityParams: UserOptions;
  *       primitive types and cannot rely on any imported types.
  */
 declare const defaultOptions: {
+    canvasMaxAreaInBytes: {
+        value: number;
+        kind: number;
+    };
+    isInAutomation: {
+        value: boolean;
+        kind: OptionKind;
+    };
+    supportsDocumentFonts: {
+        value: boolean;
+        kind: OptionKind;
+    };
+    supportsIntegratedFind: {
+        value: boolean;
+        kind: OptionKind;
+    };
+    supportsMouseWheelZoomCtrlKey: {
+        value: boolean;
+        kind: OptionKind;
+    };
+    supportsMouseWheelZoomMetaKey: {
+        value: boolean;
+        kind: OptionKind;
+    };
+    supportsPinchToZoom: {
+        value: boolean;
+        kind: OptionKind;
+    };
     annotationEditorMode: {
         value: AnnotationEditorType;
         kind: number;
@@ -78,10 +103,6 @@ declare const defaultOptions: {
         value: boolean;
         kind: number;
     };
-    enableStampEditor: {
-        value: boolean;
-        kind: number;
-    };
     externalLinkRel: {
         value: string;
         kind: OptionKind;
@@ -103,7 +124,7 @@ declare const defaultOptions: {
         kind: OptionKind;
     };
     locale: {
-        value: string | undefined;
+        value: Locale | undefined;
         kind: OptionKind;
     };
     maxCanvasPixels: {
@@ -144,10 +165,6 @@ declare const defaultOptions: {
     };
     textLayerMode: {
         value: TextLayerMode;
-        kind: number;
-    };
-    viewerCssTheme: {
-        value: ViewerCssTheme;
         kind: number;
     };
     viewOnLoad: {
@@ -233,6 +250,13 @@ declare const defaultOptions: {
 };
 export declare abstract class AppOptions {
     #private;
+    static get canvasMaxAreaInBytes(): number;
+    static get isInAutomation(): boolean;
+    static get supportsDocumentFonts(): boolean;
+    static get supportsIntegratedFind(): boolean;
+    static get supportsMouseWheelZoomCtrlKey(): boolean;
+    static get supportsMouseWheelZoomMetaKey(): boolean;
+    static get supportsPinchToZoom(): boolean;
     static get annotationEditorMode(): AnnotationEditorType;
     static get annotationMode(): AnnotationMode;
     static get cursorToolOnLoad(): CursorTool;
@@ -245,13 +269,12 @@ export declare abstract class AppOptions {
     static get enablePermissions(): boolean;
     static get enablePrintAutoRotate(): boolean;
     static get enableScripting(): boolean;
-    static get enableStampEditor(): boolean;
     static get externalLinkRel(): string;
     static get externalLinkTarget(): LinkTarget;
     static get historyUpdateUrl(): boolean;
     static get ignoreDestinationZoom(): boolean;
     static get imageResourcesPath(): string;
-    static get locale(): string | undefined;
+    static get locale(): Locale | undefined;
     static get maxCanvasPixels(): number;
     static get forcePageColors(): boolean;
     static get pageColorsBackground(): string;
@@ -262,7 +285,6 @@ export declare abstract class AppOptions {
     static get scrollModeOnLoad(): ScrollMode;
     static get spreadModeOnLoad(): SpreadMode;
     static get textLayerMode(): TextLayerMode;
-    static get viewerCssTheme(): ViewerCssTheme;
     static get viewOnLoad(): ViewOnLoad;
     static get cMapPacked(): boolean;
     static get cMapUrl(): string;
@@ -285,9 +307,8 @@ export declare abstract class AppOptions {
     static get sandboxBundleSrc(): string | undefined;
     static getAll(kind?: OptionKind): UserOptions;
     static set<ON extends OptionName>(name: ON, value: _OptionType | undefined): void;
-    static setAll(options: UserOptions): void;
+    static setAll(options: UserOptions, init?: boolean): void;
     static remove(name: OptionName): void;
-    static _hasUserOptions: () => boolean;
 }
 export {};
 //# sourceMappingURL=app_options.d.ts.map

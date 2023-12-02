@@ -17,11 +17,6 @@
  * limitations under the License.
  */
 
-/** @typedef {import("../interfaces").IPDFStream} IPDFStream */
-/** @typedef {import("../interfaces").IPDFStreamReader} IPDFStreamReader */
-// eslint-disable-next-line max-len
-/** @typedef {import("../interfaces").IPDFStreamRangeReader} IPDFStreamRangeReader */
-
 import { PromiseCap } from "@fe-lib/util/PromiseCap.ts";
 import { assert } from "@fe-lib/util/trace.ts";
 import type {

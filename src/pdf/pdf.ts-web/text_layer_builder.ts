@@ -17,15 +17,8 @@
  * limitations under the License.
  */
 
-// eslint-disable-next-line max-len
-/** @typedef {import("../src/display/display_utils").PageViewport} PageViewport */
-/** @typedef {import("../src/display/api").TextContent} TextContent */
-/** @typedef {import("./text_highlighter").TextHighlighter} TextHighlighter */
-// eslint-disable-next-line max-len
-/** @typedef {import("./text_accessibility.js").TextAccessibilityManager} TextAccessibilityManager */
-
-import { GENERIC, MOZCENTRAL, PDFJSDev } from "../../global.ts";
-import { html } from "../../lib/dom.ts";
+import { GENERIC, MOZCENTRAL, PDFJSDev } from "@fe-src/global.ts";
+import { div as createDiv, html } from "@fe-lib/dom.ts";
 import type { TextDivProps } from "../pdf.ts-src/display/text_layer.ts";
 import type {
   PageViewport,
@@ -89,6 +82,11 @@ export class TextLayerBuilder {
   isOffscreenCanvasSupported;
   #enablePermissions;
 
+  /**
+   * Callback used to attach the textLayer to the DOM.
+   */
+  onAppend: ((textLayerDiv: HTMLDivElement) => void) | undefined;
+
   div;
 
   #rotation = 0;
@@ -106,9 +104,8 @@ export class TextLayerBuilder {
     this.isOffscreenCanvasSupported = isOffscreenCanvasSupported;
     this.#enablePermissions = enablePermissions === true;
 
-    this.div = document.createElement("div");
+    this.div = createDiv();
     this.div.className = "textLayer";
-    this.hide();
   }
 
   #finishRendering() {
@@ -171,12 +168,15 @@ export class TextLayerBuilder {
     this.#finishRendering();
     this.#scale = scale;
     this.#rotation = rotation;
-    this.show();
+    // Ensure that the textLayer is appended to the DOM *before* handling
+    // e.g. a pending search operation.
+    this.onAppend!(this.div);
+    this.highlighter?.enable();
     this.accessibilityManager?.enable();
   }
 
   hide() {
-    if (!this.div.hidden) {
+    if (!this.div.hidden && this.renderingDone) {
       // We turn off the highlighter in order to avoid to scroll into view an
       // element of the text layer which could be hidden.
       this.highlighter?.disable();

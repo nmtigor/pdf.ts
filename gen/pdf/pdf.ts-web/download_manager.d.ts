@@ -10,7 +10,7 @@ export declare class DownloadManager implements IDownloadManager {
      * @implement
      * @return Indicating if the data was opened.
      */
-    openOrDownloadData(element: HTMLElement, data: Uint8Array | Uint8ClampedArray, filename: string): boolean;
+    openOrDownloadData(data: Uint8Array | Uint8ClampedArray, filename: string, dest?: string): boolean;
     /** @implement */
     download(blob: Blob, url: string, filename: string, _options?: object): void;
 }

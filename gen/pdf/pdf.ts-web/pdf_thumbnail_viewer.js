@@ -14,7 +14,6 @@ export class PDFThumbnailViewer {
     eventBus;
     linkService;
     renderingQueue;
-    l10n;
     pageColors;
     scroll;
     _thumbnails;
@@ -49,12 +48,11 @@ export class PDFThumbnailViewer {
     _pagesRequests;
     _setImageDisabled;
     pdfDocument;
-    constructor({ container, eventBus, linkService, renderingQueue, l10n, pageColors, }) {
+    constructor({ container, eventBus, linkService, renderingQueue, pageColors, }) {
         this.container = container;
         this.eventBus = eventBus;
         this.linkService = linkService;
         this.renderingQueue = renderingQueue;
-        this.l10n = l10n;
         this.pageColors = pageColors || undefined;
         this.scroll = watchScroll(this.container, this.#scrollUpdated);
         this._resetView();
@@ -146,7 +144,6 @@ export class PDFThumbnailViewer {
                     optionalContentConfigPromise,
                     linkService: this.linkService,
                     renderingQueue: this.renderingQueue,
-                    l10n: this.l10n,
                     pageColors: this.pageColors,
                 });
                 this._thumbnails.push(thumbnail);

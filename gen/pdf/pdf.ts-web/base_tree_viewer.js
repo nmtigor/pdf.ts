@@ -1,3 +1,6 @@
+/* Converted from JavaScript to TypeScript by
+ * nmtigor (https://github.com/nmtigor) @2022
+ */
 /* Copyright 2020 Mozilla Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,12 +23,14 @@ const TREEITEM_SELECTED_CLASS = "selected";
 export class BaseTreeViewer {
     container;
     eventBus;
+    _l10n;
     _pdfDocument;
     #lastToggleIsShow;
     #currentTreeItem;
     constructor(options) {
         this.container = options.container;
         this.eventBus = options.eventBus;
+        this._l10n = options.l10n;
         // See src/test/jslang_inherit.ts
         // this.reset();
     }
@@ -73,10 +78,13 @@ export class BaseTreeViewer {
      *   the item subtree rooted at `root` will be collapsed.
      */
     #toggleTreeItem(root, show = false) {
+        // Pause translation when collapsing/expanding the subtree.
+        this._l10n.pause();
         this.#lastToggleIsShow = show;
         root.querySelectorAll(".treeItemToggler").forEach((toggler) => {
             toggler.classList.toggle("treeItemsHidden", !show);
         });
+        this._l10n.resume();
     }
     /**
      * Collapse or expand all subtrees of the `container`.
@@ -90,7 +98,10 @@ export class BaseTreeViewer {
             this.container.classList.add("treeWithDeepNesting");
             this.#lastToggleIsShow = !fragment.querySelector(".treeItemsHidden");
         }
+        // Pause translation when inserting the tree into the DOM.
+        this._l10n.pause();
         this.container.append(fragment);
+        this._l10n.resume();
         this._dispatchEvent(count);
     }
     _updateCurrentTreeItem(treeItem = null) {
@@ -105,8 +116,11 @@ export class BaseTreeViewer {
         }
     }
     _scrollToCurrentTreeItem(treeItem) {
-        if (!treeItem)
+        if (!treeItem) {
             return;
+        }
+        // Pause translation when expanding the treeItem.
+        this._l10n.pause();
         // Ensure that the treeItem is *fully* expanded, such that it will first of
         // all be visible and secondly that scrolling it into view works correctly.
         let currentNode = treeItem.parentNode;
@@ -117,6 +131,7 @@ export class BaseTreeViewer {
             }
             currentNode = currentNode.parentNode;
         }
+        this._l10n.resume();
         this._updateCurrentTreeItem(treeItem);
         this.container.scrollTo(treeItem.offsetLeft, treeItem.offsetTop + TREEITEM_OFFSET_TOP);
     }

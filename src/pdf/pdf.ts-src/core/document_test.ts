@@ -19,7 +19,7 @@
 
 import { assertEquals } from "@std/testing/asserts.ts";
 import { describe, it } from "@std/testing/bdd.ts";
-import { createIdFactory, XRefMock } from "../shared/test_utils.ts";
+import { createIdFactory, XRefMock } from "../../test_utils.ts";
 import { FieldObject } from "./annotation.ts";
 import { Catalog } from "./catalog.ts";
 import { PDFDocument } from "./document.ts";

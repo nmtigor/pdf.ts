@@ -25,7 +25,6 @@ export class PasswordPrompt {
     submitButton;
     cancelButton;
     overlayManager;
-    l10n;
     _isViewerEmbedded;
     #activeCapability;
     #updateCallback;
@@ -36,14 +35,13 @@ export class PasswordPrompt {
      * @param isViewerEmbedded If the viewer is embedded, in e.g.
      *   an <iframe> or an <object>. The default value is `false`.
      */
-    constructor(options, overlayManager, l10n, isViewerEmbedded = false) {
+    constructor(options, overlayManager, isViewerEmbedded = false) {
         this.dialog = options.dialog;
         this.label = options.label;
         this.input = options.input;
         this.submitButton = options.submitButton;
         this.cancelButton = options.cancelButton;
         this.overlayManager = overlayManager;
-        this.l10n = l10n;
         this._isViewerEmbedded = isViewerEmbedded;
         // Attach the event listeners.
         this.submitButton.on("click", this.#verify);
@@ -72,7 +70,7 @@ export class PasswordPrompt {
         if (!this._isViewerEmbedded || passwordIncorrect) {
             this.input.focus();
         }
-        this.label.textContent = await this.l10n.get(`password_${passwordIncorrect ? "invalid" : "label"}`);
+        this.label.setAttribute("data-l10n-id", `pdfjs-password-${passwordIncorrect ? "invalid" : "label"}`);
     }
     close = async () => {
         if (this.overlayManager.active === this.dialog) {

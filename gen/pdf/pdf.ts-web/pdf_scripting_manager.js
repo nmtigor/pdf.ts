@@ -15,7 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/** @typedef {import("./event_utils").EventBus} EventBus */
 import { CHROME, GENERIC, PDFJSDev } from "../../global.js";
 import { PromiseCap } from "../../lib/util/PromiseCap.js";
 import { shadow } from "../pdf.ts-src/pdf.js";

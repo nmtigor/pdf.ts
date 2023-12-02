@@ -1,6 +1,5 @@
 import type { EventBus } from "./event_utils.js";
 import type { NimbusExperimentData } from "./firefoxcom.js";
-import type { IL10n } from "./interfaces.js";
 type ToolbarOptions = {
     /**
      * Main container.
@@ -19,11 +18,9 @@ type ToolbarOptions = {
 export declare class Toolbar {
     #private;
     /**
-     * @param _l10n Localization service.
      * @param nimbusData Nimbus configuration.
-     * @param externalServices Interface for external services.
      */
-    constructor(options: ToolbarOptions, eventBus: EventBus, _l10n: IL10n, nimbusData: NimbusExperimentData | undefined);
+    constructor(options: ToolbarOptions, eventBus: EventBus, nimbusData: NimbusExperimentData | undefined);
     setPageNumber(pageNumber: number, pageLabel?: string): void;
     setPagesCount(pagesCount: number, hasPageLabels: boolean): void;
     setPageScale(pageScaleValue: string | number | undefined, pageScale: number): void;

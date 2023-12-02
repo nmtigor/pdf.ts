@@ -1,23 +1,9 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
-/* Copyright 2012 Mozilla Foundation
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-import { CHROME, MOZCENTRAL, PDFJSDev, TESTING } from "../../../global.js";
 import { html } from "../../../lib/dom.js";
 import { assert, fail } from "../../../lib/util/trace.js";
+import { CHROME, MOZCENTRAL, PDFJSDev, TESTING } from "../../../global.js";
 import { FontExpotDataEx } from "../core/fonts.js";
 import { bytesToString, FeatureTest, isNodeJS, shadow, string32, warn, } from "../shared/util.js";
 export class FontLoader {
@@ -66,7 +52,7 @@ export class FontLoader {
             this.styleElement = undefined;
         }
     }
-    async loadSystemFont(info) {
+    async loadSystemFont({ systemFontInfo: info, _inspectFont }) {
         if (!info || this.#systemFonts.has(info.loadedName)) {
             return;
         }
@@ -78,6 +64,7 @@ export class FontLoader {
             try {
                 await fontFace.load();
                 this.#systemFonts.add(loadedName);
+                _inspectFont?.(info);
             }
             catch {
                 warn(`Cannot load system font: ${info.baseFontName}, installing it could help to improve PDF rendering.`);
@@ -94,7 +81,7 @@ export class FontLoader {
         }
         font.attached = true;
         if (font.systemFontInfo) {
-            await this.loadSystemFont(font.systemFontInfo);
+            await this.loadSystemFont(font);
             return;
         }
         if (this.isFontLoadingAPISupported) {
@@ -142,7 +129,8 @@ export class FontLoader {
                 // Node.js - we can pretend that sync font loading is supported.
                 supported = true;
             }
-            else if (globalThis.navigator &&
+            else if (typeof navigator !== "undefined" &&
+                typeof navigator?.userAgent === "string" &&
                 // User agent string sniffing is bad, but there is no reliable way to
                 // tell if the font is fully loaded and ready to be used with canvas.
                 /Mozilla\/5.0.*?rv:\d+.*? Gecko/.test(navigator.userAgent)) {

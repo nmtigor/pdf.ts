@@ -437,6 +437,15 @@ export class Annotation {
         this.flags = Number.isInteger(flags) && flags > 0
             ? flags
             : 0;
+        if (this.flags & AnnotationFlag.INVISIBLE &&
+            this.constructor.name !== "Annotation") {
+            // From the pdf spec v1.7, section 12.5.3 (Annotation Flags):
+            //   If set, do not display the annotation if it does not belong to one of
+            //   the standard annotation types and no annotation handler is available.
+            //
+            // So we can remove the flag in case we have a known annotation type.
+            this.flags ^= AnnotationFlag.INVISIBLE;
+        }
     }
     _hasFlag(flags, flag) {
         return !!(flags & flag);
@@ -1408,7 +1417,7 @@ export class WidgetAnnotation extends Annotation {
             key: "DR",
         });
         const acroFormResources = annotationGlobals.acroForm.get("DR");
-        const appearanceResources = this.appearance?.dict.get("Resources");
+        const appearanceResources = this.appearance?.dict?.get("Resources");
         this._fieldResources = {
             localResources,
             acroFormResources,
@@ -1459,15 +1468,15 @@ export class WidgetAnnotation extends Annotation {
     hasFieldFlag(flag) {
         return !!(this.data.fieldFlags & flag);
     }
-    /** @inheritdoc */
     _isViewable(flags) {
         // We don't take into account the `NOVIEW` or `HIDDEN` flags here,
         // since the visibility can be changed by js code, hence in case
         // it's made viewable, we should render it (with visibility set to
         // hidden).
-        return !this._hasFlag(flags, AnnotationFlag.INVISIBLE);
+        // We don't take into account the `INVISIBLE` flag here, since we've a known
+        // annotation type.
+        return true;
     }
-    /** @inheritdoc */
     mustBeViewed(annotationStorage, renderForms) {
         if (renderForms) {
             return this.viewable;
@@ -2185,6 +2194,7 @@ class ButtonWidgetAnnotation extends WidgetAnnotation {
             this._processRadioButton(params);
         else if (this.data.pushButton) {
             this.data.hasOwnCanvas = true;
+            this.data.noHTML = false;
             this._processPushButton(params);
         }
         else
@@ -2473,7 +2483,7 @@ class ButtonWidgetAnnotation extends WidgetAnnotation {
         }
     }
     _processRadioButton(params) {
-        this.data.fieldValue = this.data.buttonValue = undefined;
+        this.data.buttonValue = undefined;
         // The parent field's `V` entry holds a `Name` object with the appearance
         // state of whichever child field is currently in the "on" state.
         const fieldParent = params.dict.get("Parent");
@@ -2782,6 +2792,7 @@ class SignatureWidgetAnnotation extends WidgetAnnotation {
         // to the main-thread (issue 10347).
         this.data.fieldValue = undefined;
         this.data.hasOwnCanvas = this.data.noRotate;
+        this.data.noHTML = !this.data.hasOwnCanvas;
     }
     getFieldObject() {
         return {
@@ -2798,6 +2809,7 @@ class TextAnnotation extends MarkupAnnotation {
         // No rotation for Text (see 12.5.6.4).
         this.data.noRotate = true;
         this.data.hasOwnCanvas = this.data.noRotate;
+        this.data.noHTML = false;
         const { dict } = params;
         this.data.annotationType = AnnotationType.TEXT;
         if (this.data.hasAppearance) {
@@ -2844,6 +2856,9 @@ export class PopupAnnotation extends Annotation {
         super(params);
         const { dict } = params;
         this.data.annotationType = AnnotationType.POPUP;
+        // A pop-up is never rendered on the main canvas so we must render its HTML
+        // version.
+        this.data.noHTML = false;
         if (this.data.rect[0] === this.data.rect[2] ||
             this.data.rect[1] === this.data.rect[3]) {
             this.data.rect = undefined;
@@ -2900,7 +2915,12 @@ export class PopupAnnotation extends Annotation {
 class FreeTextAnnotation extends MarkupAnnotation {
     constructor(params) {
         super(params);
-        this.data.hasOwnCanvas = true;
+        // It uses its own canvas in order to be hidden if edited.
+        // But if it has the noHTML flag, it means that we don't want to be able
+        // to modify it so we can just draw it on the main canvas.
+        this.data.hasOwnCanvas = !this.data.noHTML;
+        // We want to be able to add mouse listeners to the annotation.
+        this.data.noHTML = false;
         const { evaluatorOptions, xref } = params;
         this.data.annotationType = AnnotationType.FREETEXT;
         this.setDefaultAppearance(params);
@@ -3072,6 +3092,7 @@ class LineAnnotation extends MarkupAnnotation {
         const { dict, xref } = params;
         this.data.annotationType = AnnotationType.LINE;
         this.data.hasOwnCanvas = this.data.noRotate;
+        this.data.noHTML = false;
         const lineCoordinates = dict.getArray("L");
         this.data.lineCoordinates = Util.normalizeRect(lineCoordinates);
         /*#static*/  {
@@ -3129,6 +3150,7 @@ class SquareAnnotation extends MarkupAnnotation {
         const { dict, xref } = params;
         this.data.annotationType = AnnotationType.SQUARE;
         this.data.hasOwnCanvas = this.data.noRotate;
+        this.data.noHTML = false;
         if (!this.appearance) {
             // The default stroke color is black.
             const strokeColor = this.color
@@ -3230,6 +3252,7 @@ class PolylineAnnotation extends MarkupAnnotation {
         const { dict, xref } = params;
         this.data.annotationType = AnnotationType.POLYLINE;
         this.data.hasOwnCanvas = this.data.noRotate;
+        this.data.noHTML = false;
         this.data.vertices = [];
         /*#static*/  {
             if (!(this instanceof PolygonAnnotation)) {
@@ -3304,6 +3327,7 @@ class InkAnnotation extends MarkupAnnotation {
     constructor(params) {
         super(params);
         this.data.hasOwnCanvas = this.data.noRotate;
+        this.data.noHTML = false;
         const { dict, xref } = params;
         this.data.annotationType = AnnotationType.INK;
         this.data.inkLists = [];
@@ -3446,7 +3470,7 @@ class HighlightAnnotation extends MarkupAnnotation {
         this.data.annotationType = AnnotationType.HIGHLIGHT;
         const quadPoints = (this.data.quadPoints = getQuadPoints(dict));
         if (quadPoints) {
-            const resources = this.appearance?.dict.get("Resources");
+            const resources = this.appearance?.dict?.get("Resources");
             if (!this.appearance || !resources?.has("ExtGState")) {
                 if (this.appearance) {
                     // Workaround for cases where there's no /ExtGState-entry directly
@@ -3586,6 +3610,7 @@ class StampAnnotation extends MarkupAnnotation {
         super(params);
         this.data.annotationType = AnnotationType.STAMP;
         this.data.hasOwnCanvas = this.data.noRotate;
+        this.data.noHTML = false;
     }
     static async createImage(bitmap, xref) {
         // TODO: when printing, we could have a specific internal colorspace
@@ -3711,6 +3736,7 @@ class FileAttachmentAnnotation extends MarkupAnnotation {
         const file = new FileSpec(dict.get("FS"), xref);
         this.data.annotationType = AnnotationType.FILEATTACHMENT;
         this.data.hasOwnCanvas = this.data.noRotate;
+        this.data.noHTML = false;
         this.data.file = file.serializable;
         const name = dict.get("Name");
         this.data.name = name instanceof Name

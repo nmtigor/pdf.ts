@@ -20,7 +20,7 @@
 import { assertEquals } from "@std/testing/asserts.ts";
 import { describe, it } from "@std/testing/bdd.ts";
 import { getDocument, type StructTreeNode } from "../display/api.ts";
-import { buildGetDocumentParams } from "../shared/test_utils.ts";
+import { buildGetDocumentParams } from "../../test_utils.ts";
 /*80--------------------------------------------------------------------------*/
 
 function equalTrees(rootA: StructTreeNode, rootB: StructTreeNode) {

@@ -1,12 +1,11 @@
-/** @typedef {import("./annotation_editor_layer.js").AnnotationEditorLayer} AnnotationEditorLayer */
-/** @typedef {import("./tools.js").AnnotationEditorUIManager} AnnotationEditorUIManager */
 import type { dim2d_t, dot2d_t, rect_t } from "../../../../lib/alias.js";
 import type { IL10n } from "../../../pdf.ts-web/interfaces.js";
+import type { AnnotationEditorType } from "../../shared/util.js";
 import { AnnotationEditorParamsType } from "../../shared/util.js";
 import type { AnnotStorageValue } from "../annotation_layer.js";
 import type { AnnotationEditorLayer } from "./annotation_editor_layer.js";
-import type { AddCommandsP, AnnotationEditorUIManager } from "./tools.js";
-import { ColorManager } from "./tools.js";
+import type { AddCommandsP } from "./tools.js";
+import { AnnotationEditorUIManager, ColorManager, KeyboardManager } from "./tools.js";
 export interface AnnotationEditorP {
     /**
      * the global manager
@@ -46,6 +45,7 @@ export type AltTextData = {
 export declare abstract class AnnotationEditor {
     #private;
     static readonly _type: "freetext" | "ink" | "stamp";
+    static readonly _editorType: AnnotationEditorType;
     static _l10nPromise: Map<string, Promise<string>> | undefined;
     static _borderLineWidth: number;
     static _colorManager: ColorManager;
@@ -74,6 +74,7 @@ export declare abstract class AnnotationEditor {
     startX: number;
     startY: number;
     static SMALL_EDITOR_SIZE: number;
+    static get _resizerKeyboardManager(): KeyboardManager<AnnotationEditor | AnnotationEditorUIManager>;
     constructor(parameters: AnnotationEditorP);
     get editorType(): any;
     static get _defaultLineColor(): string;
@@ -82,12 +83,12 @@ export declare abstract class AnnotationEditor {
      * Initialize the l10n stuff for this type of editor.
      */
     static initialize(l10n: IL10n, options?: {
-        strings: [string, string];
+        strings: [string] | [string, string];
     }): void;
     /**
      * Update the default parameters for this type of editor.
-     * @param {number} _type
-     * @param {*} _value
+     * @param _type
+     * @param _value
      */
     static updateDefaultParams(_type: AnnotationEditorParamsType, _value: number | string | undefined): void;
     /**
@@ -110,6 +111,10 @@ export declare abstract class AnnotationEditor {
     get propertiesToUpdate(): PropertyToUpdate[];
     get _isDraggable(): boolean;
     set _isDraggable(value: boolean);
+    /**
+     * @return true if the editor handles the Enter key itself.
+     */
+    get isEnterHandled(): boolean;
     center(): void;
     /**
      * Add some commands into the CommandManager (undo/redo stuff).
@@ -181,8 +186,12 @@ export declare abstract class AnnotationEditor {
      */
     getInitialTranslation(): dot2d_t;
     addAltTextButton(): Promise<void>;
+    altTextFinish(): void;
     getClientDimensions(): DOMRect;
     get altTextData(): AltTextData;
+    /**
+     * Set the alt text data.
+     */
     set altTextData({ altText, decorative }: AltTextData);
     /**
      * Render this editor in a div.
@@ -220,7 +229,7 @@ export declare abstract class AnnotationEditor {
      */
     isInEditMode(): boolean;
     /**
-     * If it returns true, then this editor handle the keyboard
+     * If it returns true, then this editor handles the keyboard
      * events itself.
      */
     shouldGetKeyboardEvents(): boolean;
@@ -261,6 +270,12 @@ export declare abstract class AnnotationEditor {
      */
     makeResizable(): void;
     /**
+     * onkeydown callback.
+     */
+    keydown(event: KeyboardEvent): void;
+    _resizeWithKeyboard(x?: number, y?: number): void;
+    _stopResizingWithKeyboard(): void;
+    /**
      * Select this editor.
      */
     select(): void;
@@ -286,6 +301,10 @@ export declare abstract class AnnotationEditor {
      * The editor is about to be edited.
      */
     enterInEditMode(): void;
+    /**
+     * @return the element requiring an alt text.
+     */
+    getImageForAltText(): HTMLCanvasElement | undefined;
     /**
      * Get the div which really contains the displayed content.
      */

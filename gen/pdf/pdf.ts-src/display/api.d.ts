@@ -1,6 +1,3 @@
-/**
- * @module pdfjsLib
- */
 import type { C2D, TypedArray } from "../../../lib/alias.js";
 import { PromiseCap } from "../../../lib/util/PromiseCap.js";
 import type { Stepper } from "../../pdf.ts-web/debugger.js";
@@ -19,7 +16,7 @@ import type { OpListIR } from "../core/operator_list.js";
 import type { ShadingPatternIR } from "../core/pattern.js";
 import type { XFAElObj } from "../core/xfa/alias.js";
 import type { IPDFStream } from "../interfaces.js";
-import type { GetDocRequestData, PageInfo, PDFInfo, Thread } from "../shared/message_handler.js";
+import type { ActionSinkchunk, GetDocRequestData, PageInfo, PDFInfo, Thread } from "../shared/message_handler.js";
 import { MessageHandler } from "../shared/message_handler.js";
 import type { matrix_t } from "../shared/util.js";
 import { AnnotationMode, PasswordResponses, RenderingIntentFlag, VerbosityLevel } from "../shared/util.js";
@@ -31,7 +28,6 @@ import { DOMCanvasFactory, DOMCMapReaderFactory, DOMFilterFactory, DOMStandardFo
 import { FontFaceObject, FontLoader } from "./font_loader.js";
 import { Metadata } from "./metadata.js";
 import { OptionalContentConfig } from "./optional_content_config.js";
-export declare const SVGGraphics: typeof import("./svg.js").SVGGraphics | undefined;
 export type DefaultCanvasFactory = DOMCanvasFactory;
 export declare const DefaultCanvasFactory: typeof DOMCanvasFactory;
 export type DefaultCMapReaderFactory = DOMCMapReaderFactory;
@@ -713,6 +709,8 @@ export interface TextStyle {
      * The possible font family.
      */
     fontFamily: string;
+    fontSubstitution?: string;
+    fontSubstitutionLoadedName?: string;
 }
 /**
  * Page annotation parameters.
@@ -865,6 +863,14 @@ export interface StructTreeContent {
      */
     id?: string;
 }
+interface IntentState {
+    streamReaderCancelTimeout: number | undefined;
+    displayReadyCapability?: PromiseCap<boolean>;
+    opListReadCapability?: PromiseCap<OpListIR>;
+    operatorList?: OpListIR;
+    streamReader: ReadableStreamDefaultReader<ActionSinkchunk<Thread.main>> | undefined;
+    renderTasks?: Set<InternalRenderTask>;
+}
 export type AnnotIntent = "display" | "print" | "richText";
 export type Intent = AnnotIntent | "any";
 export type PDFObjs = ImgData | ShadingPatternIR;
@@ -891,6 +897,7 @@ export declare class PDFPageProxy {
     commonObjs: PDFObjects<PDFCommonObjs>;
     objs: PDFObjects<PDFObjs | undefined>;
     _maybeCleanupAfterRender: boolean;
+    _intentStates: Map<string, IntentState>;
     destroyed: boolean;
     constructor(pageIndex: number, pageInfo: PageInfo, transport: WorkerTransport, pdfBug?: boolean);
     /**
@@ -1022,7 +1029,6 @@ interface PDFWorkerP_ {
 }
 export declare const PDFWorkerUtil: {
     isWorkerDisabled: boolean;
-    fallbackWorkerSrc: string | undefined;
     fakeWorkerId: number;
     isSameOrigin: (baseUrl: string | URL, otherUrl: string | URL) => boolean;
     createCDNWrapper: (url: string) => string;
@@ -1046,8 +1052,8 @@ export declare class PDFWorker {
      * The current `workerPort`, when it exists.
      */
     get port(): IWorker;
+    _webWorker: Worker | undefined;
     _pendingDestroy?: boolean;
-    get _webWorker(): Worker | undefined;
     /**
      * The current MessageHandler-instance.
      */
@@ -1065,7 +1071,6 @@ export declare class PDFWorker {
      * The current `workerSrc`, when it exists.
      */
     static get workerSrc(): string;
-    static get _mainThreadWorkerMessageHandler(): any;
     static get _setupFakeWorkerGlobal(): Promise<{
         setup(handler: MessageHandler<Thread.worker, Thread.main>, port: IWorker): void;
         createDocumentHandler(docParams: GetDocRequestData, port: IWorker): string;

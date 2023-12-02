@@ -1,11 +1,9 @@
-/** @typedef {import("../src/display/api").PDFPageProxy} PDFPageProxy */
-/** @typedef {import("../src/display/display_utils").PageViewport} PageViewport */
-/** @typedef {import("./ui_utils").RenderingStates} RenderingStates */
-import type { Locale_1, WebL10nArgs } from "../../3rd/webL10n-2015-10-24/l10n.js";
+import type { Locale } from "../../lib/Locale.js";
 import type { AnnotActions, AppInfo, Destination, DocInfo, ExplicitDest, FieldObject, RefProxy, ScriptingActionName, SetOCGState } from "../pdf.ts-src/pdf.js";
 import type { EventBus } from "./event_utils.js";
 import type { LinkTarget } from "./pdf_link_service.js";
 import type { RenderingStates } from "./ui_utils.js";
+import type { FluentMessageArgs } from "../../3rd/fluent/dom/esm/localization.js";
 export interface IPDFLinkService {
     eventBus?: EventBus;
     get pagesCount(): number;
@@ -102,22 +100,33 @@ export interface IDownloadManager {
     /**
      * @return Indicating if the data was opened.
      */
-    openOrDownloadData(element: HTMLElement, data: Uint8Array | Uint8ClampedArray, filename: string): boolean;
+    openOrDownloadData(data: Uint8Array | Uint8ClampedArray, filename: string, dest?: string): boolean;
     download(blob: Blob, url: string, filename: string, _options?: object): void;
 }
 export interface IL10n {
-    getLanguage(): Promise<Lowercase<Locale_1> | "">;
-    getDirection(): Promise<"rtl" | "ltr">;
+    /**
+     * @return The current locale.
+     */
+    getLanguage(): Locale;
+    getDirection(): "rtl" | "ltr";
     /**
      * Translates text identified by the key and adds/formats data using the args
      * property bag. If the key was not found, translation falls back to the
      * fallback text.
      */
-    get(key: string, args?: WebL10nArgs, fallback?: string): Promise<string>;
+    get<S extends string | string[]>(ids: S, args?: FluentMessageArgs, fallback?: string): Promise<S>;
     /**
      * Translates HTML element.
      */
     translate(element: HTMLElement): Promise<void>;
+    /**
+     * Pause the localization.
+     */
+    pause(): void;
+    /**
+     * Resume the localization.
+     */
+    resume(): void;
 }
 export type CreateSandboxP = {
     objects: Record<string, FieldObject[]>;

@@ -60,14 +60,13 @@ export class PDFPrintService {
     _printResolution;
     _optionalContentConfigPromise;
     _printAnnotationStoragePromise;
-    l10n;
     currentPage = -1;
     pageStyleSheet;
     /**
      * The temporary canvas where renderPage paints one page at a time.
      */
     scratchCanvas = html("canvas");
-    constructor(pdfDocument, pagesOverview, printContainer, printResolution, optionalContentConfigPromise, printAnnotationStoragePromise, l10n) {
+    constructor(pdfDocument, pagesOverview, printContainer, printResolution, optionalContentConfigPromise, printAnnotationStoragePromise) {
         this.pdfDocument = pdfDocument;
         this.pagesOverview = pagesOverview;
         this.printContainer = printContainer;
@@ -76,7 +75,6 @@ export class PDFPrintService {
             pdfDocument.getOptionalContentConfig();
         this._printAnnotationStoragePromise = printAnnotationStoragePromise ||
             Promise.resolve(undefined);
-        this.l10n = l10n;
     }
     layout() {
         this.throwIfInactive();
@@ -131,12 +129,12 @@ export class PDFPrintService {
         const renderNextPage = (resolve, reject) => {
             this.throwIfInactive();
             if (++this.currentPage >= pageCount) {
-                renderProgress(pageCount, pageCount, this.l10n);
+                renderProgress(pageCount, pageCount);
                 resolve();
                 return;
             }
             const index = this.currentPage;
-            renderProgress(index, pageCount, this.l10n);
+            renderProgress(index, pageCount);
             renderPage(this, this.pdfDocument, 
             /* pageNumber = */ index + 1, this.pagesOverview[index], this._printResolution, this._optionalContentConfigPromise, this._printAnnotationStoragePromise)
                 .then(this.#useRenderedPage)
@@ -252,7 +250,7 @@ function abort() {
         dispatchEvent("afterprint");
     }
 }
-function renderProgress(index, total, l10n) {
+function renderProgress(index, total) {
     if (PDFJSDev && window.isGECKOVIEW) {
         return;
     }
@@ -261,9 +259,7 @@ function renderProgress(index, total, l10n) {
     const progressBar = dialog.querySelector("progress");
     const progressPerc = dialog.querySelector(".relative-progress");
     progressBar.value = progress;
-    l10n.get("print_progress_percent", { progress: progress }).then((msg) => {
-        progressPerc.textContent = msg;
-    });
+    progressPerc.setAttribute("data-l10n-args", JSON.stringify({ progress }));
 }
 window.on("keydown", (event) => {
     // Intercept Cmd/Ctrl + P in all browsers.
@@ -308,11 +304,11 @@ function ensureOverlay() {
 }
 PDFPrintServiceFactory.instance = {
     supportsPrinting: true,
-    createPrintService(pdfDocument, pagesOverview, printContainer, printResolution, optionalContentConfigPromise, printAnnotationStoragePromise, l10n) {
+    createPrintService(pdfDocument, pagesOverview, printContainer, printResolution, optionalContentConfigPromise, printAnnotationStoragePromise) {
         if (activeService) {
             throw new Error("The print service is created and active.");
         }
-        activeService = new PDFPrintService(pdfDocument, pagesOverview, printContainer, printResolution, optionalContentConfigPromise, printAnnotationStoragePromise, l10n);
+        activeService = new PDFPrintService(pdfDocument, pagesOverview, printContainer, printResolution, optionalContentConfigPromise, printAnnotationStoragePromise);
         return activeService;
     },
 };

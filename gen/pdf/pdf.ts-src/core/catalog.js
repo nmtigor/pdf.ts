@@ -20,6 +20,21 @@ function fetchDestination(dest) {
     }
     return Array.isArray(dest) ? dest : undefined;
 }
+function fetchRemoteDest(action) {
+    let dest = action.get("D");
+    if (dest) {
+        if (dest instanceof Name) {
+            dest = dest.name;
+        }
+        if (typeof dest === "string") {
+            return stringToPDFString(dest);
+        }
+        else if (Array.isArray(dest)) {
+            return JSON.stringify(dest);
+        }
+    }
+    return undefined;
+}
 /**
  * Table 28
  */
@@ -340,14 +355,14 @@ export class Catalog {
                 return shadow(this, "optionalContentConfig", undefined);
             }
             const groups = [];
-            const groupRefs = [];
+            const groupRefs = new RefSet();
             // Ensure all the optional content groups are valid.
             for (const groupRef of groupsData) {
-                if (!(groupRef instanceof Ref)) {
+                if (!(groupRef instanceof Ref) || groupRefs.has(groupRef)) {
                     continue;
                 }
-                groupRefs.push(groupRef);
-                const group = this.xref.fetchIfRef(groupRef); // Table 98
+                groupRefs.put(groupRef);
+                const group = this.xref.fetch(groupRef); // Table 98
                 let v;
                 groups.push({
                     id: groupRef.toString(),
@@ -381,7 +396,7 @@ export class Catalog {
                     if (!(value instanceof Ref)) {
                         continue;
                     }
-                    if (contentGroupRefs.includes(value)) {
+                    if (contentGroupRefs.has(value)) {
                         onParsed.push(value.toString());
                     }
                 }
@@ -394,7 +409,7 @@ export class Catalog {
             }
             const order = [];
             for (const value of refs) {
-                if (value instanceof Ref && contentGroupRefs.includes(value)) {
+                if (value instanceof Ref && contentGroupRefs.has(value)) {
                     parsedOrderRefs.put(value); // Handle "hidden" groups, see below.
                     order.push(value.toString());
                     continue;
@@ -496,7 +511,7 @@ export class Catalog {
     getDestination(id) {
         const obj = this.#readDests();
         if (obj instanceof NameTree) {
-            const dest = fetchDestination(obj.get(+id));
+            const dest = fetchDestination(obj.get(id));
             if (dest) {
                 return dest;
             }
@@ -517,7 +532,7 @@ export class Catalog {
         return undefined;
     }
     #readDests() {
-        const obj = this.#catDict.get("Names"); // Table 31
+        const obj = this.#catDict.get("Names"); // 2.0 Table 32
         if (obj?.has("Dests")) {
             return new NameTree(obj.getRaw("Dests"), this.xref);
         }
@@ -1313,20 +1328,9 @@ export class Catalog {
                         url = urlDict;
                     }
                     // NOTE: the destination is relative to the *remote* document.
-                    let remoteDest = action.get("D");
-                    if (remoteDest) {
-                        if (remoteDest instanceof Name) {
-                            remoteDest = remoteDest.name;
-                        }
-                        if (typeof url === "string") {
-                            const baseUrl = url.split("#")[0];
-                            if (typeof remoteDest === "string") {
-                                url = baseUrl + "#" + remoteDest;
-                            }
-                            else if (Array.isArray(remoteDest)) {
-                                url = baseUrl + "#" + JSON.stringify(remoteDest);
-                            }
-                        }
+                    const remoteDest = fetchRemoteDest(action);
+                    if (remoteDest && typeof url === "string") {
+                        url = /* baseUrl = */ url.split("#", 1)[0] + "#" + remoteDest;
                     }
                     // The 'NewWindow' property, equal to `LinkTarget.BLANK`.
                     const newWindow = action.get("NewWindow");
@@ -1346,6 +1350,11 @@ export class Catalog {
                     }
                     if (attachment) {
                         resultObj.attachment = attachment;
+                        // NOTE: the destination is relative to the *attachment*.
+                        const attachmentDest = fetchRemoteDest(action);
+                        if (attachmentDest) {
+                            resultObj.attachmentDest = attachmentDest;
+                        }
                     }
                     else {
                         warn(`parseDestDictionary - unimplemented "GoToE" action.`);

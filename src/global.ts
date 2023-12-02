@@ -30,7 +30,7 @@ export const
 
 , DENO = true
 , TESTING = true
-, CYPRESS = true
+, CYPRESS = false
 
 , _INFO = DEV && INFO
 , _COLR = DEV && COLR

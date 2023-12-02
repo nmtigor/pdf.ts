@@ -18,16 +18,15 @@
  */
 /* globals chrome */
 
-// @deno-types="npm:@types/chrome"
-import { CHROME, PDFJSDev } from "../../global.ts";
-import { MouseButton } from "../../lib/dom.ts";
-import type { Locale } from "../../lib/Locale.ts";
+import type { Locale } from "@fe-lib/Locale.ts";
+import { MouseButton } from "@fe-lib/dom.ts";
+import { CHROME, PDFJSDev } from "@fe-src/global.ts";
 import type { PassiveLoadingCbs } from "./app.ts";
 import { DefaultExternalServices, viewerApp } from "./app.ts";
 import { AppOptions, UserOptions, ViewOnLoad } from "./app_options.ts";
 import { DownloadManager } from "./download_manager.ts";
-import { GenericL10n } from "./genericl10n.ts";
 import { GenericScripting } from "./generic_scripting.ts";
+import { GenericL10n } from "./genericl10n.ts";
 import type { IScripting } from "./interfaces.ts";
 import type { OverlayManager } from "./overlay_manager.ts";
 import type { HistoryState } from "./pdf_history.ts";
@@ -40,6 +39,8 @@ import { CursorTool } from "./ui_utils.ts";
     'Module "pdfjs-web/chromecom" shall not be used outside CHROME build.',
   );
 }
+
+declare var chrome: any;
 
 (/* rewriteUrlClosure */ () => {
   // Run this code outside DOMContentLoaded to make sure that the URL
@@ -92,7 +93,7 @@ export const ChromeCom = {
       console.error("chrome.runtime is undefined.");
       callback?.();
     } else if (callback) {
-      chrome.runtime.sendMessage(message, <any> callback);
+      chrome.runtime.sendMessage(message, callback as any);
     } else {
       chrome.runtime.sendMessage(message);
     }
@@ -243,9 +244,9 @@ function requestAccessToLocalFile(
         i18nFileAccessLabel;
     }
 
-    const link = <HTMLLinkElement> document.getElementById(
+    const link = document.getElementById(
       "chrome-link-to-extensions-page",
-    );
+    ) as HTMLLinkElement;
     link.href = "chrome://extensions/?id=" + chrome.runtime.id;
     link.onclick = (e) => {
       // Direct navigation to chrome:// URLs is blocked by Chrome, so we
@@ -264,9 +265,9 @@ function requestAccessToLocalFile(
     // why this permission request is shown.
     document.getElementById("chrome-url-of-local-file")!.textContent = fileUrl;
 
-    (<HTMLInputElement> document.getElementById("chrome-file-fallback"))
+    (document.getElementById("chrome-file-fallback") as HTMLInputElement)
       .onchange = function () {
-        const file = (<HTMLInputElement> this).files?.[0];
+        const file = (this as HTMLInputElement).files?.[0];
         if (file) {
           const originalFilename = decodeURIComponent(
             fileUrl.split("/").pop()!,
@@ -281,7 +282,7 @@ function requestAccessToLocalFile(
               "\nDo you want to open the selected file?";
             // eslint-disable-next-line no-alert
             if (!confirm(msg)) {
-              (<HTMLInputElement> this).value = "";
+              (this as HTMLInputElement).value = "";
               return;
             }
             // There is no way to retrieve the original URL from the File object.
@@ -322,7 +323,8 @@ if (window === top) {
 //    to the background page.
 // 3. When the background page knows the referrer of the page, the referrer is
 //    saved in history.state.chromecomState.
-let port: chrome.runtime.Port | undefined;
+// let port: chrome.runtime.Port | undefined;
+let port: any;
 // Set the referer for the given URL.
 // 0. Background: If loaded via a http(s) URL: Save referer.
 // 1. Page -> background: send URL and referer from history.state
@@ -373,12 +375,12 @@ function setReferer(url: string, callback: () => void) {
 // chrome.storage.local to chrome.storage.sync when needed.
 const storageArea = chrome.storage.sync || chrome.storage.local;
 
-interface _ManagedPrefs extends UserOptions {
-  enableHandToolOnLoad: boolean;
-  disableTextLayer: boolean;
-  enhanceTextSelection: boolean;
-  showPreviousViewOnLoad: boolean;
-  disablePageMode: boolean;
+interface ManagedPrefs_ extends UserOptions {
+  enableHandToolOnLoad?: boolean;
+  disableTextLayer?: boolean;
+  enhanceTextSelection?: boolean;
+  showPreviousViewOnLoad?: boolean;
+  disablePageMode?: boolean;
 }
 
 class ChromePreferences extends BasePreferences {
@@ -400,15 +402,15 @@ class ChromePreferences extends BasePreferences {
   }
 
   /** @implement */
-  protected async _readFromStorage(prefObj: UserOptions) {
-    return new Promise<UserOptions>((resolve) => {
+  protected async _readFromStorage(prefObj: { prefs: UserOptions }) {
+    return new Promise<{ prefs: UserOptions }>((resolve) => {
       const getPreferences = (defaultPrefs: Readonly<UserOptions>) => {
         if (chrome.runtime.lastError) {
           // Managed storage not supported, e.g. in Opera.
           defaultPrefs = this.defaults;
         }
-        storageArea.get(defaultPrefs, (readPrefs) => {
-          resolve(readPrefs);
+        storageArea.get(defaultPrefs, (readPrefs: UserOptions) => {
+          resolve({ prefs: readPrefs });
         });
       };
 
@@ -420,7 +422,7 @@ class ChromePreferences extends BasePreferences {
         // Deprecated preferences are removed from web/default_preferences.json,
         // but kept in extensions/chromium/preferences_schema.json for backwards
         // compatibility with managed preferences.
-        const defaultManagedPrefs: _ManagedPrefs = Object.assign(
+        const defaultManagedPrefs: ManagedPrefs_ = Object.assign(
           {
             enableHandToolOnLoad: false,
             disableTextLayer: false,
@@ -431,38 +433,41 @@ class ChromePreferences extends BasePreferences {
           this.defaults,
         );
 
-        chrome.storage.managed.get(defaultManagedPrefs, (items) => {
-          items ||= defaultManagedPrefs;
-          // Migration logic for deprecated preferences: If the new preference
-          // is not defined by an administrator (i.e. the value is the same as
-          // the default value), and a deprecated preference is set with a
-          // non-default value, migrate the deprecated preference value to the
-          // new preference value.
-          // Never remove this, because we have no means of modifying managed
-          // preferences.
+        chrome.storage.managed.get(
+          defaultManagedPrefs,
+          (items?: ManagedPrefs_) => {
+            items ||= defaultManagedPrefs;
+            // Migration logic for deprecated preferences: If the new preference
+            // is not defined by an administrator (i.e. the value is the same as
+            // the default value), and a deprecated preference is set with a
+            // non-default value, migrate the deprecated preference value to the
+            // new preference value.
+            // Never remove this, because we have no means of modifying managed
+            // preferences.
 
-          // Migration code for https://github.com/mozilla/pdf.js/pull/7635.
-          if (items.enableHandToolOnLoad && !items.cursorToolOnLoad) {
-            items.cursorToolOnLoad = CursorTool.HAND;
-          }
-          delete items.enableHandToolOnLoad;
+            // Migration code for https://github.com/mozilla/pdf.js/pull/7635.
+            if (items.enableHandToolOnLoad && !items.cursorToolOnLoad) {
+              items.cursorToolOnLoad = CursorTool.HAND;
+            }
+            delete items.enableHandToolOnLoad;
 
-          // Migration code for https://github.com/mozilla/pdf.js/pull/9479.
-          if (items.textLayerMode !== 1 && items.disableTextLayer) {
-            items.textLayerMode = 0;
-          }
-          delete items.disableTextLayer;
-          delete items.enhanceTextSelection;
+            // Migration code for https://github.com/mozilla/pdf.js/pull/9479.
+            if (items.textLayerMode !== 1 && items.disableTextLayer) {
+              items.textLayerMode = 0;
+            }
+            delete items.disableTextLayer;
+            delete items.enhanceTextSelection;
 
-          // Migration code for https://github.com/mozilla/pdf.js/pull/10502.
-          if (!items.showPreviousViewOnLoad && !items.viewOnLoad) {
-            items.viewOnLoad = ViewOnLoad.INITIAL;
-          }
-          delete items.showPreviousViewOnLoad;
-          delete items.disablePageMode;
+            // Migration code for https://github.com/mozilla/pdf.js/pull/10502.
+            if (!items.showPreviousViewOnLoad && !items.viewOnLoad) {
+              items.viewOnLoad = ViewOnLoad.INITIAL;
+            }
+            delete items.showPreviousViewOnLoad;
+            delete items.disablePageMode;
 
-          getPreferences(items);
-        });
+            getPreferences(items);
+          },
+        );
       } else {
         // Managed storage not supported, e.g. in old Chromium versions.
         getPreferences(this.defaults);
@@ -491,7 +496,7 @@ class ChromeExternalServices extends DefaultExternalServices {
     return new ChromePreferences();
   }
 
-  override createL10n(options?: unknown) {
+  override async createL10n() {
     return new GenericL10n(navigator.language as Locale);
   }
 

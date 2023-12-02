@@ -1,16 +1,35 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
+import { textnode } from "../../lib/dom.js";
 import { GECKOVIEW, MOZCENTRAL, PDFJSDev } from "../../global.js";
-import { isPdfFile, PDFDataRangeTransport, shadow } from "../pdf.ts-src/pdf.js";
+import { isPdfFile, PDFDataRangeTransport } from "../pdf.ts-src/pdf.js";
 import { DefaultExternalServices, viewerApp } from "./app.js";
-import { getL10nFallback } from "./l10n_utils.js";
+import { L10n } from "./l10n.js";
 import { BasePreferences } from "./preferences.js";
 import { DEFAULT_SCALE_VALUE } from "./ui_utils.js";
 /*80--------------------------------------------------------------------------*/
 /*#static*/  {
     throw new Error('Module "./firefoxcom.js" shall not be used outside MOZCENTRAL builds.');
 }
+// type L10nData_ = Record<string, Record<string, string>>;
+// interface ELS_ {
+//   getLocale(): Lowercase<Locale_1>;
+//   getStrings(): L10nData_;
+// }
+// interface DocMozL10n_ {
+//   get(key: string, args?: WebL10nArgs, fallback?: string): string;
+//   getLanguage(): Lowercase<Locale_1> | "";
+//   getDirection(): "rtl" | "ltr";
+//   getReadyState(): unknown;
+//   setExternalLocalizerServices(externalLocalizerServices: ELS_): void;
+//   translate(element: HTMLElement): void;
+// }
+// declare global {
+//   interface Document {
+//     mozL10n: DocMozL10n_;
+//   }
+// }
 export class FirefoxCom {
     /**
      * Creates an event that the extension is listening for and will
@@ -57,7 +76,7 @@ export class FirefoxCom {
      * @param data The data to send.
      */
     static request(action, data, callback) {
-        const request = document.createTextNode("");
+        const request = textnode("");
         if (callback) {
             request.addEventListener("pdf.js.response", (event) => {
                 const response = event.detail.response;
@@ -103,17 +122,20 @@ export class DownloadManager {
      * @implement
      * @return Indicating if the data was opened.
      */
-    openOrDownloadData(element, data, filename) {
+    openOrDownloadData(data, filename, dest) {
         const isPdfData = isPdfFile(filename);
         const contentType = isPdfData ? "application/pdf" : "";
         if (isPdfData) {
-            let blobUrl = this.#openBlobUrls.get(element);
+            let blobUrl = this.#openBlobUrls.get(data);
             if (!blobUrl) {
                 blobUrl = URL.createObjectURL(new Blob([data], { type: contentType }));
-                this.#openBlobUrls.set(element, blobUrl);
+                this.#openBlobUrls.set(data, blobUrl);
             }
             // Let Firefox's content handler catch the URL and display the PDF.
-            const viewerUrl = blobUrl + "#filename=" + encodeURIComponent(filename);
+            let viewerUrl = blobUrl + "?filename=" + encodeURIComponent(filename);
+            if (dest) {
+                viewerUrl += `#${escape(dest)}`;
+            }
             try {
                 window.open(viewerUrl);
                 return true;
@@ -123,7 +145,7 @@ export class DownloadManager {
                 // Release the `blobUrl`, since opening it failed, and fallback to
                 // downloading the PDF file.
                 URL.revokeObjectURL(blobUrl);
-                this.#openBlobUrls.delete(element);
+                this.#openBlobUrls.delete(data);
             }
         }
         this.downloadData(data, filename, contentType);
@@ -146,28 +168,32 @@ class FirefoxPreferences extends BasePreferences {
         return FirefoxCom.requestAsync("getPreferences", prefObj);
     }
 }
-class MozL10n {
-    mozL10n;
-    constructor(mozL10n) {
-        this.mozL10n = mozL10n;
-    }
-    /** @implement */
-    async getLanguage() {
-        return this.mozL10n.getLanguage();
-    }
-    /** @implement */
-    async getDirection() {
-        return this.mozL10n.getDirection();
-    }
-    /** @implement */
-    async get(key, args, fallback = getL10nFallback(key, args)) {
-        return this.mozL10n.get(key, args, fallback);
-    }
-    /** @implement */
-    async translate(element) {
-        this.mozL10n.translate(element);
-    }
-}
+// class MozL10n implements IL10n {
+//   mozL10n;
+//   constructor(mozL10n: DocMozL10n_) {
+//     this.mozL10n = mozL10n;
+//   }
+//   /** @implement */
+//   async getLanguage() {
+//     return this.mozL10n.getLanguage();
+//   }
+//   /** @implement */
+//   async getDirection() {
+//     return this.mozL10n.getDirection();
+//   }
+//   /** @implement */
+//   async get(
+//     key: string,
+//     args: WebL10nArgs,
+//     fallback = getL10nFallback(key, args),
+//   ) {
+//     return this.mozL10n.get(key, args, fallback);
+//   }
+//   /** @implement */
+//   async translate(element: HTMLElement) {
+//     this.mozL10n.translate(element);
+//   }
+// }
 ( /* listenFindEvents */() => {
     const events = [
         "find",
@@ -337,168 +363,176 @@ class FirefoxExternalServices extends DefaultExternalServices {
     updateEditorStates(data) {
         FirefoxCom.request("updateEditorStates", data);
     }
-    createL10n(options) {
-        const mozL10n = document.mozL10n;
-        // TODO refactor mozL10n.setExternalLocalizerServices
-        return new MozL10n(mozL10n);
+    async createL10n() {
+        const [localeProperties] = await Promise.all([
+            FirefoxCom.requestAsync("getLocaleProperties", undefined),
+            // document.l10n.ready, //kkkk bug?
+        ]);
+        return new L10n(localeProperties, document.l10n);
     }
     createScripting(options) {
         return new FirefoxScripting();
     }
-    get supportsPinchToZoom() {
-        const support = !!FirefoxCom.requestSync("supportsPinchToZoom");
-        return shadow(this, "supportsPinchToZoom", support);
-    }
-    get supportsIntegratedFind() {
-        const support = FirefoxCom.requestSync("supportsIntegratedFind");
-        return shadow(this, "supportsIntegratedFind", support);
-    }
-    get supportsDocumentFonts() {
-        const support = FirefoxCom.requestSync("supportsDocumentFonts");
-        return shadow(this, "supportsDocumentFonts", support);
-    }
-    get supportedMouseWheelZoomModifierKeys() {
-        const support = FirefoxCom
-            .requestSync("supportedMouseWheelZoomModifierKeys");
-        return shadow(this, "supportedMouseWheelZoomModifierKeys", support);
-    }
-    get isInAutomation() {
-        // Returns the value of `Cu.isInAutomation`, which is only `true` when e.g.
-        // various test-suites are running in mozilla-central.
-        const isInAutomation = FirefoxCom.requestSync("isInAutomation");
-        return shadow(this, "isInAutomation", isInAutomation);
-    }
-    static get canvasMaxAreaInBytes() {
-        const maxArea = FirefoxCom.requestSync("getCanvasMaxArea");
-        return shadow(this, "canvasMaxAreaInBytes", maxArea);
-    }
-    static async getNimbusExperimentData() {
+    // override get supportsPinchToZoom() {
+    //   const support = !!FirefoxCom.requestSync("supportsPinchToZoom");
+    //   return shadow(this, "supportsPinchToZoom", support);
+    // }
+    // override get supportsIntegratedFind() {
+    //   const support = <boolean> FirefoxCom.requestSync("supportsIntegratedFind");
+    //   return shadow(this, "supportsIntegratedFind", support);
+    // }
+    // override get supportsDocumentFonts() {
+    //   const support = <boolean> FirefoxCom.requestSync("supportsDocumentFonts");
+    //   return shadow(this, "supportsDocumentFonts", support);
+    // }
+    // override get supportedMouseWheelZoomModifierKeys() {
+    //   const support = <{ ctrlKey: boolean; metaKey: boolean }> FirefoxCom
+    //     .requestSync(
+    //       "supportedMouseWheelZoomModifierKeys",
+    //     );
+    //   return shadow(this, "supportedMouseWheelZoomModifierKeys", support);
+    // }
+    // override get isInAutomation() {
+    //   // Returns the value of `Cu.isInAutomation`, which is only `true` when e.g.
+    //   // various test-suites are running in mozilla-central.
+    //   const isInAutomation = FirefoxCom.requestSync("isInAutomation") as boolean;
+    //   return shadow(this, "isInAutomation", isInAutomation);
+    // }
+    // static get canvasMaxAreaInBytes() {
+    //   const maxArea = FirefoxCom.requestSync("getCanvasMaxArea");
+    //   return shadow(this, "canvasMaxAreaInBytes", maxArea);
+    // }
+    async getNimbusExperimentData() {
         const nimbusData = await FirefoxCom.requestAsync("getNimbusExperimentData", undefined);
-        return nimbusData && JSON.parse(nimbusData);
+        // return nimbusData && JSON.parse(nimbusData) as NimbusExperimentData;
+        return nimbusData
+            ? JSON.parse(nimbusData)
+            : undefined;
     }
 }
 viewerApp.externalServices = new FirefoxExternalServices();
-// l10n.js for Firefox extension expects services to be set.
-document.mozL10n.setExternalLocalizerServices({
-    getLocale() {
-        return FirefoxCom.requestSync("getLocale", null);
-    },
-    getStrings() {
-        return FirefoxCom.requestSync("getStrings", null);
-    },
-});
+// // l10n.js for Firefox extension expects services to be set.
+// document.mozL10n.setExternalLocalizerServices({
+//   getLocale() {
+//     return <Lowercase<Locale_1>> FirefoxCom.requestSync("getLocale", null);
+//   },
+//   getStrings() {
+//     return <L10nData_> FirefoxCom.requestSync("getStrings", null);
+//   },
+// });
 /*80--------------------------------------------------------------------------*/
-// Small subset of the webL10n API by Fabien Cazenave for PDF.js extension.
-((window) => {
-    let gL10nData;
-    let gLanguage = "";
-    let gExternalLocalizerServices;
-    let gReadyState = "loading";
-    // fetch an l10n objects
-    function getL10nData(key) {
-        gL10nData ||= gExternalLocalizerServices.getStrings();
-        const data = gL10nData?.[key];
-        if (!data) {
-            console.warn("[l10n] #" + key + " missing for [" + gLanguage + "]");
-        }
-        return data;
-    }
-    // replace {{arguments}} with their values
-    function substArguments(text, args) {
-        if (!args) {
-            return text;
-        }
-        return text.replace(/\{\{\s*(\w+)\s*\}\}/g, (all, name) => name in args ? args[name] : "{{" + name + "}}");
-    }
-    // translate a string
-    function translateString(key, args, fallback) {
-        var i = key.lastIndexOf(".");
-        var name, property;
-        if (i >= 0) {
-            name = key.substring(0, i);
-            property = key.substring(i + 1);
-        }
-        else {
-            name = key;
-            property = "textContent";
-        }
-        var data = getL10nData(name);
-        var value = (data && data[property]) || fallback;
-        if (!value) {
-            return "{{" + key + "}}";
-        }
-        return substArguments(value, args);
-    }
-    // translate an HTML element
-    function translateElement(element) {
-        if (!element || !element.dataset) {
-            return;
-        }
-        // get the related l10n object
-        var key = element.dataset.l10nId;
-        var data = getL10nData(key);
-        if (!data) {
-            return;
-        }
-        // get arguments (if any)
-        // TODO: more flexible parser?
-        var args;
-        if (element.dataset.l10nArgs) {
-            try {
-                args = JSON.parse(element.dataset.l10nArgs);
-            }
-            catch (e) {
-                console.warn("[l10n] could not parse arguments for #" + key + "");
-            }
-        }
-        // translate element
-        // TODO: security check?
-        for (var k in data) {
-            element[k] = substArguments(data[k], args);
-        }
-    }
-    // translate an HTML subtree
-    function translateFragment(element) {
-        element = element || document.querySelector("html");
-        // check all translatable children (= w/ a `data-l10n-id' attribute)
-        var children = element.querySelectorAll("*[data-l10n-id]");
-        var elementCount = children.length;
-        for (var i = 0; i < elementCount; i++) {
-            translateElement(children[i]);
-        }
-        // translate element itself if necessary
-        if (element.dataset.l10nId) {
-            translateElement(element);
-        }
-    }
-    // Public API
-    document.mozL10n = {
-        // get a localized string
-        get: translateString,
-        // get the document language
-        getLanguage() {
-            return gLanguage;
-        },
-        // get the direction (ltr|rtl) of the current language
-        getDirection() {
-            // http://www.w3.org/International/questions/qa-scripts
-            // Arabic, Hebrew, Farsi, Pashto, Urdu
-            var rtlList = ["ar", "he", "fa", "ps", "ur"];
-            // use the short language code for "full" codes like 'ar-sa' (issue 5440)
-            var shortCode = gLanguage.split("-")[0];
-            return rtlList.includes(shortCode) ? "rtl" : "ltr";
-        },
-        getReadyState() {
-            return gReadyState;
-        },
-        setExternalLocalizerServices(externalLocalizerServices) {
-            gExternalLocalizerServices = externalLocalizerServices;
-            gLanguage = gExternalLocalizerServices.getLocale();
-            gReadyState = "complete";
-        },
-        // translate an element or document fragment
-        translate: translateFragment,
-    };
-})(this);
+// // Small subset of the webL10n API by Fabien Cazenave for PDF.js extension.
+// ((window) => {
+//   let gL10nData: L10nData_ | undefined;
+//   let gLanguage: Lowercase<Locale_1> | "" = "";
+//   let gExternalLocalizerServices: ELS_ | undefined;
+//   let gReadyState = "loading";
+//   // fetch an l10n objects
+//   function getL10nData(key: string) {
+//     gL10nData ||= gExternalLocalizerServices!.getStrings();
+//     const data = gL10nData?.[key];
+//     if (!data) {
+//       console.warn("[l10n] #" + key + " missing for [" + gLanguage + "]");
+//     }
+//     return data;
+//   }
+//   // replace {{arguments}} with their values
+//   function substArguments(text: string, args?: WebL10nArgs) {
+//     if (!args) {
+//       return text;
+//     }
+//     return text.replace(
+//       /\{\{\s*(\w+)\s*\}\}/g,
+//       (all, name) => name in args ? args[name] : "{{" + name + "}}",
+//     );
+//   }
+//   // translate a string
+//   function translateString(key: string, args?: WebL10nArgs, fallback?: string) {
+//     var i = key.lastIndexOf(".");
+//     var name, property;
+//     if (i >= 0) {
+//       name = key.substring(0, i);
+//       property = key.substring(i + 1);
+//     } else {
+//       name = key;
+//       property = "textContent";
+//     }
+//     var data = getL10nData(name);
+//     var value = (data && data[property]) || fallback;
+//     if (!value) {
+//       return "{{" + key + "}}";
+//     }
+//     return substArguments(value, args);
+//   }
+//   // translate an HTML element
+//   function translateElement(element: HTMLElement) {
+//     if (!element || !element.dataset) {
+//       return;
+//     }
+//     // get the related l10n object
+//     var key = element.dataset.l10nId;
+//     var data = getL10nData(key!);
+//     if (!data) {
+//       return;
+//     }
+//     // get arguments (if any)
+//     // TODO: more flexible parser?
+//     var args;
+//     if (element.dataset.l10nArgs) {
+//       try {
+//         args = JSON.parse(element.dataset.l10nArgs);
+//       } catch (e) {
+//         console.warn("[l10n] could not parse arguments for #" + key + "");
+//       }
+//     }
+//     // translate element
+//     // TODO: security check?
+//     for (var k in data) {
+//       (<any> element)[k] = substArguments(data[k], args);
+//     }
+//   }
+//   // translate an HTML subtree
+//   function translateFragment(element: HTMLElement) {
+//     element = element || document.querySelector("html");
+//     // check all translatable children (= w/ a `data-l10n-id' attribute)
+//     var children = element.querySelectorAll("*[data-l10n-id]");
+//     var elementCount = children.length;
+//     for (var i = 0; i < elementCount; i++) {
+//       translateElement(<HTMLElement> children[i]);
+//     }
+//     // translate element itself if necessary
+//     if (element.dataset.l10nId) {
+//       translateElement(element);
+//     }
+//   }
+//   // Public API
+//   document.mozL10n = {
+//     // get a localized string
+//     get: translateString,
+//     // get the document language
+//     getLanguage() {
+//       return gLanguage;
+//     },
+//     // get the direction (ltr|rtl) of the current language
+//     getDirection() {
+//       // http://www.w3.org/International/questions/qa-scripts
+//       // Arabic, Hebrew, Farsi, Pashto, Urdu
+//       var rtlList = ["ar", "he", "fa", "ps", "ur"];
+//       // use the short language code for "full" codes like 'ar-sa' (issue 5440)
+//       var shortCode = gLanguage.split("-")[0];
+//       return rtlList.includes(shortCode) ? "rtl" : "ltr";
+//     },
+//     getReadyState() {
+//       return gReadyState;
+//     },
+//     setExternalLocalizerServices(externalLocalizerServices) {
+//       gExternalLocalizerServices = externalLocalizerServices;
+//       gLanguage = gExternalLocalizerServices.getLocale();
+//       gReadyState = "complete";
+//     },
+//     // translate an element or document fragment
+//     translate: translateFragment,
+//   };
+// })(this);
 /*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=firefoxcom.js.map

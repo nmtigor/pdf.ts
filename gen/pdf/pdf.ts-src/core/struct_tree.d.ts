@@ -34,8 +34,9 @@ export declare class StructTreeRoot {
         pdfManager: BasePdfManager;
         newRefs: ASD_RR[];
     }): Promise<void>;
-    canUpdateStructTree({ pdfManager, newAnnotationsByPage }: {
+    canUpdateStructTree({ pdfManager, xref, newAnnotationsByPage }: {
         pdfManager: BasePdfManager;
+        xref: XRef;
         newAnnotationsByPage: Map<number, AnnotStorageValue[]>;
     }): Promise<boolean>;
     updateStructureTree({ newAnnotationsByPage, pdfManager, newRefs }: {

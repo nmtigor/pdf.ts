@@ -110,6 +110,9 @@ export class Vuu {
         this.el$.assignAttro(attr_o);
         return this;
     }
+    get bcr() {
+        return this.el$.getBoundingClientRect();
+    }
 }
 // Vuu.def = "def";
 export class HTMLVuu extends Vuu {

@@ -1,4 +1,5 @@
 import type { PDFDocumentProxy } from "../pdf.ts-src/pdf.js";
+import type { Sandbox } from "../pdf.ts-src/pdf.sandbox.js";
 import type { CreateSandboxP, EventInSandBox, IScripting } from "./interfaces.js";
 export declare function docProperties(pdfDocument: PDFDocumentProxy): Promise<{
     baseURL: string;
@@ -28,7 +29,7 @@ export declare function docProperties(pdfDocument: PDFDocumentProxy): Promise<{
     Custom?: Record<string, string | number | boolean | import("../pdf.ts-src/core/primitives.js").Name>;
 }>;
 export declare class GenericScripting implements IScripting {
-    _ready: Promise<import("../pdf.ts-src/pdf.sandbox.js").Sandbox>;
+    _ready: Promise<Sandbox>;
     constructor(sandboxBundleSrc: string);
     /** @implement */
     createSandbox(data: CreateSandboxP): Promise<void>;

@@ -30,7 +30,7 @@ export const ThemeSetting_z = 10;
 export const ToolbarResizer_z = 8;
 export const SwipteNailLifting_z = 6;
 export const Popmenu_z = 4;
-export const Pocused_z = 2;
+export const Pocud_z = 2;
 /*80--------------------------------------------------------------------------*/
 
 export const ClickExtent = 2;
@@ -45,6 +45,8 @@ export function isClick(
   return Math.abs(x_0 - x) <= extent_x &&
     Math.abs(y_0 - y) <= extent_x;
 }
+
+export const ClickHoldTo = 1_000;
 
 /**
  * In milliseconds
@@ -86,6 +88,7 @@ export const enum Key {
   Alt,
   Control,
   Shift,
+  Meta,
   // 3.3. Whitespace Keys
   Enter,
   Tab,

@@ -15,14 +15,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-// eslint-disable-next-line max-len
-/** @typedef {import("../src/display/display_utils").PageViewport} PageViewport */
-/** @typedef {import("../src/display/api").TextContent} TextContent */
-/** @typedef {import("./text_highlighter").TextHighlighter} TextHighlighter */
-// eslint-disable-next-line max-len
-/** @typedef {import("./text_accessibility.js").TextAccessibilityManager} TextAccessibilityManager */
 import { GENERIC, MOZCENTRAL, PDFJSDev } from "../../global.js";
-import { html } from "../../lib/dom.js";
+import { div as createDiv, html } from "../../lib/dom.js";
 import { normalizeUnicode, renderTextLayer, updateTextLayer, } from "../pdf.ts-src/pdf.js";
 import { removeNullCharacters } from "./ui_utils.js";
 /**
@@ -43,6 +37,10 @@ export class TextLayerBuilder {
     accessibilityManager;
     isOffscreenCanvasSupported;
     #enablePermissions;
+    /**
+     * Callback used to attach the textLayer to the DOM.
+     */
+    onAppend;
     div;
     #rotation = 0;
     #scale = 0;
@@ -52,9 +50,8 @@ export class TextLayerBuilder {
         this.accessibilityManager = accessibilityManager;
         this.isOffscreenCanvasSupported = isOffscreenCanvasSupported;
         this.#enablePermissions = enablePermissions === true;
-        this.div = document.createElement("div");
+        this.div = createDiv();
         this.div.className = "textLayer";
-        this.hide();
     }
     #finishRendering() {
         this.renderingDone = true;
@@ -108,11 +105,14 @@ export class TextLayerBuilder {
         this.#finishRendering();
         this.#scale = scale;
         this.#rotation = rotation;
-        this.show();
+        // Ensure that the textLayer is appended to the DOM *before* handling
+        // e.g. a pending search operation.
+        this.onAppend(this.div);
+        this.highlighter?.enable();
         this.accessibilityManager?.enable();
     }
     hide() {
-        if (!this.div.hidden) {
+        if (!this.div.hidden && this.renderingDone) {
             // We turn off the highlighter in order to avoid to scroll into view an
             // element of the text layer which could be hidden.
             this.highlighter?.disable();

@@ -157,7 +157,7 @@ export class Util extends PDFObject<_SendUtilData> {
           nWidth = parseInt(nWidth);
         }
 
-        let intPart = Math.trunc(+arg);
+        let intPart = Math.trunc(arg as number);
 
         if (cConvChar === "x") {
           let hex = Math.abs(intPart).toString(16).toUpperCase();

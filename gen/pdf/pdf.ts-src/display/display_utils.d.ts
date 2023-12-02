@@ -219,7 +219,6 @@ export declare class StatTimer {
     toString(): string;
 }
 export declare function isValidFetchUrl(url: string | URL | undefined, baseUrl?: string | URL): boolean;
-export declare function loadScript(src: string, removeScriptElement?: boolean): Promise<Event>;
 export declare function deprecated(details: string): void;
 export declare class PDFDateString {
     /**

@@ -591,15 +591,14 @@ export class FeatureTest {
         return shadow(this, "isOffscreenCanvasSupported", !!globalThis.OffscreenCanvas);
     }
     static get platform() {
-        /*#static*/  {
-            if (!globalThis.navigator?.platform) {
-                return shadow(this, "platform", { isWin: false, isMac: false });
-            }
+        if (MOZCENTRAL ||
+            (typeof navigator !== "undefined" &&
+                typeof navigator?.platform === "string")) {
+            return shadow(this, "platform", {
+                isMac: navigator.platform.includes("Mac"),
+            });
         }
-        return shadow(this, "platform", {
-            isWin: navigator.platform.includes("Win"),
-            isMac: navigator.platform.includes("Mac"),
-        });
+        return shadow(this, "platform", { isMac: false });
     }
     static get isCSSRoundSupported() {
         return shadow(this, "isCSSRoundSupported", globalThis.CSS?.supports?.("width: round(1.5px, 1px)"));

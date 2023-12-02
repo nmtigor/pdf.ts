@@ -1,1 +1,1 @@
-{"version":3,"file":"pdf.scripting.d.ts","sourceRoot":"","sources":["../../../src/pdf/pdf.ts-src/pdf.scripting.ts"],"names":[],"mappings":"AAmBA,OAAO,EAAE,WAAW,EAAE,MAAM,mCAAgC,CAAC;AAW7D,OAAO,EAAE,WAAW,EAAE,CAAC"}
+{"version":3,"file":"pdf.scripting.d.ts","sourceRoot":"","sources":["../../../src/pdf/pdf.ts-src/pdf.scripting.ts"],"names":[],"mappings":"AAmBA,OAAO,EAAE,WAAW,EAAE,MAAM,mCAAmC,CAAC;AAUhE,OAAO,CAAC,MAAM,CAAC;IACb,IAAI,cAAc,EAAE;QAAE,WAAW,EAAE,OAAO,WAAW,CAAA;KAAE,CAAC;CACzD"}

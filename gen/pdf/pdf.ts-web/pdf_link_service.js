@@ -15,8 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/** @typedef {import("./event_utils").EventBus} EventBus */
-/** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
 import { isObjectLike } from "../../lib/jslang.js";
 import { assert } from "../../lib/util/trace.js";
 import { parseQueryString } from "./ui_utils.js";

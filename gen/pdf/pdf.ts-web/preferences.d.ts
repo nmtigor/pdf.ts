@@ -21,7 +21,12 @@ export declare abstract class BasePreferences {
      * @return A promise that is resolved with an {Object} containing
      *  the preferences that have been read.
      */
-    protected abstract _readFromStorage(prefObj: UserOptions): Promise<UserOptions>;
+    protected abstract _readFromStorage(prefObj: {
+        prefs: UserOptions;
+    }): Promise<{
+        browserPrefs?: UserOptions;
+        prefs: UserOptions;
+    }>;
     /**
      * Reset the preferences to their default values and update storage.
      * @return A promise that is resolved when the preference values
@@ -43,11 +48,6 @@ export declare abstract class BasePreferences {
      *  containing the value of the preference.
      */
     get(name: OptionName): Promise<string | number | boolean | Worker>;
-    /**
-     * Get the values of all preferences.
-     * @return A promise that is resolved with an {Object} containing
-     *  the values of all preferences.
-     */
-    getAll(): Promise<UserOptions>;
+    get initializedPromise(): Promise<void>;
 }
 //# sourceMappingURL=preferences.d.ts.map

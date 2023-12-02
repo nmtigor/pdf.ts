@@ -31,7 +31,7 @@ export declare const enum RenderingIntentFlag {
     ANNOTATIONS_DISABLE = 64,
     OPLIST = 256
 }
-export declare const enum AnnotationMode {
+export declare enum AnnotationMode {
     DISABLE = 0,
     ENABLE = 1,
     ENABLE_FORMS = 2,
@@ -45,7 +45,7 @@ export declare enum AnnotationEditorType {
     STAMP = 13,
     INK = 15
 }
-export declare const enum AnnotationEditorParamsType {
+export declare enum AnnotationEditorParamsType {
     RESIZE = 1,
     CREATE = 2,
     FREETEXT_SIZE = 11,
@@ -77,7 +77,7 @@ export declare const enum TextRenderingMode {
     FILL_STROKE_MASK = 3,
     ADD_TO_PATH_FLAG = 4
 }
-export declare const enum ImageKind {
+export declare enum ImageKind {
     GRAYSCALE_1BPP = 1,
     RGB_24BPP = 2,
     RGBA_32BPP = 3
@@ -188,12 +188,12 @@ export declare const PageActionEventType: {
 export type ActionEventTypeType = typeof AnnotationActionEventType | typeof DocumentActionEventType | typeof PageActionEventType;
 export type ActionEventType = keyof typeof AnnotationActionEventType | keyof typeof DocumentActionEventType | keyof typeof PageActionEventType;
 export type ActionEventName = (typeof AnnotationActionEventType)[keyof typeof AnnotationActionEventType] | (typeof DocumentActionEventType)[keyof typeof DocumentActionEventType] | (typeof PageActionEventType)[keyof typeof PageActionEventType] | "OpenAction" | "Action";
-export declare const enum VerbosityLevel {
+export declare enum VerbosityLevel {
     ERRORS = 0,
     WARNINGS = 1,
     INFOS = 5
 }
-export declare const enum CMapCompressionType {
+export declare enum CMapCompressionType {
     NONE = 0,
     BINARY = 1
 }
@@ -289,7 +289,7 @@ export declare enum OPS {
     group = 92
 }
 export type OPSName = keyof typeof OPS;
-export declare const enum PasswordResponses {
+export declare enum PasswordResponses {
     NEED_PASSWORD = 1,
     INCORRECT_PASSWORD = 2
 }
@@ -375,7 +375,6 @@ export declare class FeatureTest {
     static get isEvalSupported(): boolean;
     static get isOffscreenCanvasSupported(): boolean;
     static get platform(): {
-        isWin: boolean;
         isMac: boolean;
     };
     static get isCSSRoundSupported(): boolean;

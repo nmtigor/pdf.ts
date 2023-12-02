@@ -1,6 +1,6 @@
 import type { OptionalContentConfig, PageViewport, PDFPageProxy, RenderTask } from "../pdf.ts-src/pdf.js";
 import type { EventBus } from "./event_utils.js";
-import type { IL10n, IPDFLinkService, IVisibleView } from "./interfaces.js";
+import type { IPDFLinkService, IVisibleView } from "./interfaces.js";
 import type { PDFPageView } from "./pdf_page_view.js";
 import type { PDFRenderingQueue } from "./pdf_rendering_queue.js";
 import type { PageColors } from "./pdf_viewer.js";
@@ -36,10 +36,6 @@ interface PDFThumbnailViewOptions {
      */
     renderingQueue: PDFRenderingQueue;
     /**
-     * Localization service.
-     */
-    l10n: IL10n;
-    /**
      * Overwrites background and foreground colors
      * with user defined ones in order to improve readability in high contrast
      * mode.
@@ -68,7 +64,6 @@ export declare class PDFThumbnailView implements IVisibleView {
     renderTask?: RenderTask | undefined;
     renderingState: RenderingStates;
     resume: (() => void) | undefined; /** @implement */
-    l10n: IL10n;
     anchor: HTMLAnchorElement;
     div: HTMLDivElement; /** @implement */
     canvasWidth: number;
@@ -77,7 +72,7 @@ export declare class PDFThumbnailView implements IVisibleView {
     _placeholderImg: HTMLDivElement;
     canvas?: HTMLCanvasElement;
     image?: HTMLImageElement;
-    constructor({ container, eventBus, id, defaultViewport, optionalContentConfigPromise, linkService, renderingQueue, l10n, pageColors, }: PDFThumbnailViewOptions);
+    constructor({ container, eventBus, id, defaultViewport, optionalContentConfigPromise, linkService, renderingQueue, pageColors, }: PDFThumbnailViewOptions);
     setPdfPage(pdfPage: PDFPageProxy): void;
     reset(): void;
     update({ rotation }: {
@@ -90,8 +85,6 @@ export declare class PDFThumbnailView implements IVisibleView {
     cancelRendering(): void;
     draw(): Promise<void>;
     setImage(pageView: PDFPageView): void;
-    get _thumbPageTitle(): Promise<string>;
-    get _thumbPageCanvas(): Promise<string>;
     setPageLabel(label: string | null): void;
 }
 export {};

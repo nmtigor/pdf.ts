@@ -5,8 +5,5 @@
     "type": "git",
     "url": "git+https://github.com/nmtigor/pdf.ts.git"
   },
-  "license": "Apache-2.0",
-  "devDependencies": {
-    "@types/chrome": "latest"
-  }
+  "license": "Apache-2.0"
 }

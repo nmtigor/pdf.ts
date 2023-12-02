@@ -36,7 +36,6 @@ export class PDFSidebar {
     _outlineOptionsContainer;
     _currentOutlineItemButton;
     eventBus;
-    l10n;
     constructor({ elements, eventBus, l10n, }) {
         this.outerContainer = elements.outerContainer;
         this.sidebarContainer = elements.sidebarContainer;
@@ -53,10 +52,7 @@ export class PDFSidebar {
         this._outlineOptionsContainer = elements.outlineOptionsContainer;
         this._currentOutlineItemButton = elements.currentOutlineItemButton;
         this.eventBus = eventBus;
-        this.l10n = l10n;
-        l10n.getDirection().then((dir) => {
-            this.#isRTL = dir === "rtl";
-        });
+        this.#isRTL = l10n.getDirection() === "rtl";
         this.#addEventListeners();
     }
     reset() {
@@ -200,8 +196,7 @@ export class PDFSidebar {
         });
     }
     #showUINotification() {
-        this.toggleButton.setAttribute("data-l10n-id", "toggle_sidebar_notification2");
-        this.l10n.translate(this.toggleButton);
+        this.toggleButton.setAttribute("data-l10n-id", "pdfjs-toggle-sidebar-notification-button");
         if (!this.isOpen) {
             // Only show the notification on the `toggleButton` if the sidebar is
             // currently closed, to avoid unnecessarily bothering the user.
@@ -215,8 +210,7 @@ export class PDFSidebar {
             this.toggleButton.classList.remove(UI_NOTIFICATION_CLASS);
         }
         if (reset) {
-            this.toggleButton.setAttribute("data-l10n-id", "toggle_sidebar");
-            this.l10n.translate(this.toggleButton);
+            this.toggleButton.setAttribute("data-l10n-id", "pdfjs-toggle-sidebar-button");
         }
     }
     #addEventListeners() {

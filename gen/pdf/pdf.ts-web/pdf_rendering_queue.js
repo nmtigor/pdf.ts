@@ -15,10 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/** @typedef {import("./interfaces").IRenderableView} IRenderableView */
-/** @typedef {import("./pdf_viewer").PDFViewer} PDFViewer */
-// eslint-disable-next-line max-len
-/** @typedef {import("./pdf_thumbnail_viewer").PDFThumbnailViewer} PDFThumbnailViewer */
 import { _TRACE, GENERIC, global, PDFJSDev, PDFTS_vv } from "../../global.js";
 import { RenderingCancelledException } from "../pdf.ts-src/pdf.js";
 import { RenderingStates } from "./ui_utils.js";

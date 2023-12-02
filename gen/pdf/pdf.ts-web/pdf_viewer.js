@@ -1,16 +1,31 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2023
  */
+/* Copyright 2014 Mozilla Foundation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import { GECKOVIEW, GENERIC, PDFJSDev } from "../../global.js";
 import { div, html } from "../../lib/dom.js";
 import { PromiseCap } from "../../lib/util/PromiseCap.js";
-import { GECKOVIEW, GENERIC, PDFJSDev } from "../../global.js";
-import { AnnotationEditorType, AnnotationEditorUIManager, AnnotationMode, PermissionFlag, PixelsPerInch, version, } from "../pdf.ts-src/pdf.js";
+import { AnnotationEditorType, AnnotationEditorUIManager, AnnotationMode, PermissionFlag, PixelsPerInch, shadow, version, } from "../pdf.ts-src/pdf.js";
 import { compatibilityParams } from "./app_options.js";
-import { NullL10n } from "./l10n_utils.js";
 import { SimpleLinkService } from "./pdf_link_service.js";
 import { PDFPageView } from "./pdf_page_view.js";
 import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
 import { DEFAULT_SCALE, DEFAULT_SCALE_DELTA, DEFAULT_SCALE_VALUE, docStyle, getVisibleElements, isPortraitOrientation, isValidRotation, isValidScrollMode, isValidSpreadMode, MAX_AUTO_SCALE, MAX_SCALE, MIN_SCALE, PresentationModeState, removeNullCharacters, RenderingStates, SCROLLBAR_PADDING, scrollIntoView, ScrollMode, SpreadMode, TextLayerMode, UNKNOWN_SCALE, VERTICAL_PADDING, watchScroll, } from "./ui_utils.js";
+/* Ref. gulpfile.mjs of pdf.js */
+const { NullL10n } = /*#static*/ await import("./l10n_utils.js");
 /*80--------------------------------------------------------------------------*/
 const DEFAULT_CACHE_SIZE = 10;
 export var PagesCountLimit;
@@ -254,9 +269,9 @@ export class PDFViewer {
     #hiddenCopyElement;
     #copyCallbackBound;
     constructor(options) {
-        const viewerVersion = 0;
         // const viewerVersion =
         //   typeof PDFJSDev !== "undefined" ? PDFJSDev.eval("BUNDLE_VERSION") : null;
+        const viewerVersion = 0;
         if (version !== viewerVersion) {
             throw new Error(`The API version "${version}" does not match the Viewer version "${viewerVersion}".`);
         }
@@ -291,10 +306,6 @@ export class PDFViewer {
         this.enablePrintAutoRotate = options.enablePrintAutoRotate || false;
         /*#static*/  {
             this.removePageBorders = options.removePageBorders || false;
-            if (options.useOnlyCssZoom) {
-                console.error("useOnlyCssZoom was removed, please use `maxCanvasPixels = 0` instead.");
-                options.maxCanvasPixels = 0;
-            }
         }
         this.isOffscreenCanvasSupported = options.isOffscreenCanvasSupported ??
             true;
@@ -329,6 +340,12 @@ export class PDFViewer {
                 pdfPage?.cleanup();
             }
         });
+        /*#static*/  {
+            if (this.l10n === NullL10n) {
+                // Ensure that Fluent is connected in e.g. the COMPONENTS build.
+                this.l10n.translate(this.container);
+            }
+        }
     }
     /**
      * @return True if all {PDFPageView} objects are initialized.
@@ -402,9 +419,9 @@ export class PDFViewer {
             this.update();
         }
     }
-    #layerProperties() {
+    get _layerProperties() {
         const self = this;
-        return {
+        return shadow(this, "_layerProperties", {
             get annotationEditorUIManager() {
                 return self.#annotationEditorUIManager;
             },
@@ -429,7 +446,7 @@ export class PDFViewer {
             get linkService() {
                 return self.linkService;
             },
-        };
+        });
     }
     /**
      * Currently only *some* permissions are supported.
@@ -654,7 +671,6 @@ export class PDFViewer {
                     console.error(`Invalid AnnotationEditor mode: ${mode}`);
                 }
             }
-            const layerProperties = this.#layerProperties.bind(this);
             const viewerElement = this._scrollMode === ScrollMode.PAGE
                 ? undefined
                 : this.viewer;
@@ -685,7 +701,7 @@ export class PDFViewer {
                     maxCanvasPixels: this.maxCanvasPixels,
                     pageColors: this.pageColors,
                     l10n: this.l10n,
-                    layerProperties,
+                    layerProperties: this._layerProperties,
                 });
                 this._pages.push(pageView);
             }
@@ -1682,7 +1698,8 @@ export class PDFViewer {
             steps ??= 1;
             do {
                 newScale =
-                    Math.ceil(+(newScale * DEFAULT_SCALE_DELTA).toFixed(2) * 10) / 10;
+                    Math.ceil((newScale * DEFAULT_SCALE_DELTA).toFixed(2) * 10) /
+                        10;
             } while (--steps > 0 && newScale < MAX_SCALE);
         }
         this.#setScale(Math.min(MAX_SCALE, newScale), {
@@ -1705,7 +1722,8 @@ export class PDFViewer {
             steps ??= 1;
             do {
                 newScale =
-                    Math.floor(+(newScale / DEFAULT_SCALE_DELTA).toFixed(2) * 10) / 10;
+                    Math.floor((newScale / DEFAULT_SCALE_DELTA).toFixed(2) * 10) /
+                        10;
             } while (--steps > 0 && newScale > MIN_SCALE);
         }
         this.#setScale(Math.max(MIN_SCALE, newScale), {
@@ -1742,7 +1760,7 @@ export class PDFViewer {
     /**
      * @param AnnotationEditor mode (None, FreeText, Ink, ...)
      */
-    set annotationEditorMode({ mode, editId }) {
+    set annotationEditorMode({ mode, editId, isFromKeyboard = false }) {
         if (!this.#annotationEditorUIManager) {
             throw new Error(`The AnnotationEditor is not enabled.`);
         }
@@ -1760,7 +1778,7 @@ export class PDFViewer {
             source: this,
             mode,
         });
-        this.#annotationEditorUIManager.updateMode(mode, editId);
+        this.#annotationEditorUIManager.updateMode(mode, editId, isFromKeyboard);
     }
     // eslint-disable-next-line accessor-pairs
     set annotationEditorParams({ type, value }) {

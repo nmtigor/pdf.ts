@@ -15,9 +15,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/** @typedef {import("./interfaces").IDownloadManager} IDownloadManager */
-import { CHROME, COMPONENTS, GENERIC, PDFJSDev } from "../../global.js";
 import { html } from "../../lib/dom.js";
+import { CHROME, COMPONENTS, GENERIC, PDFJSDev } from "../../global.js";
 import { createValidAbsoluteUrl, isPdfFile } from "../pdf.ts-src/pdf.js";
 /*80--------------------------------------------------------------------------*/
 /*#static*/ 
@@ -59,17 +58,20 @@ export class DownloadManager {
      * @implement
      * @return Indicating if the data was opened.
      */
-    openOrDownloadData(element, data, filename) {
+    openOrDownloadData(data, filename, dest) {
         const isPdfData = isPdfFile(filename);
         const contentType = isPdfData ? "application/pdf" : "";
         /*#static*/  {
             if (isPdfData) {
-                let blobUrl = this.#openBlobUrls.get(element);
+                let blobUrl = this.#openBlobUrls.get(data);
                 if (!blobUrl) {
                     blobUrl = URL.createObjectURL(new Blob([data], { type: contentType }));
-                    this.#openBlobUrls.set(element, blobUrl);
+                    this.#openBlobUrls.set(data, blobUrl);
                 }
-                const viewerUrl = /*#static*/ "?file=" + encodeURIComponent(blobUrl + "#" + filename);
+                let viewerUrl = /*#static*/ "?file=" + encodeURIComponent(blobUrl + "#" + filename);
+                if (dest) {
+                    viewerUrl += `#${escape(dest)}`;
+                }
                 try {
                     window.open(viewerUrl);
                     return true;
@@ -79,7 +81,7 @@ export class DownloadManager {
                     // Release the `blobUrl`, since opening it failed, and fallback to
                     // downloading the PDF file.
                     URL.revokeObjectURL(blobUrl);
-                    this.#openBlobUrls.delete(element);
+                    this.#openBlobUrls.delete(data);
                 }
             }
         }

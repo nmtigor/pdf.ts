@@ -1,8 +1,3 @@
-/** @typedef {import("./api").PDFPageProxy} PDFPageProxy */
-/** @typedef {import("./display_utils").PageViewport} PageViewport */
-/** @typedef {import("../../web/text_accessibility.js").TextAccessibilityManager} TextAccessibilityManager */
-/** @typedef {import("../../web/interfaces").IDownloadManager} IDownloadManager */
-/** @typedef {import("../../web/interfaces").IPDFLinkService} IPDFLinkService */
 import type { rect_t } from "../../../lib/alias.js";
 import type { rgb_t } from "../../../lib/color/alias.js";
 import type { HSElement } from "../../../lib/dom.js";
@@ -10,6 +5,7 @@ import type { IDownloadManager, IL10n, IPDFLinkService } from "../../pdf.ts-web/
 import type { TextAccessibilityManager } from "../../pdf.ts-web/text_accessibility.js";
 import type { AnnotationData, FieldObject, RichText } from "../core/annotation.js";
 import type { BidiText } from "../core/bidi.js";
+import { Dict } from "../core/primitives.js";
 import type { Ref } from "../pdf.js";
 import { type CSTag } from "../shared/scripting_utils.js";
 import { AnnotationEditorType } from "../shared/util.js";
@@ -17,7 +13,6 @@ import { AnnotationStorage } from "./annotation_storage.js";
 import type { MetadataEx, PDFPageProxy } from "./api.js";
 import type { PageViewport } from "./display_utils.js";
 import { DOMSVGFactory } from "./display_utils.js";
-import { Dict } from "../core/primitives.js";
 type Parent_ = {
     page: PDFPageProxy;
     viewport: PageViewport;
@@ -127,6 +122,7 @@ export declare class AnnotationElement {
      */
     getElementsToTriggerPopup(): HSElement[] | HSElement;
     addHighlightArea(): void;
+    get _isEditable(): boolean;
     protected editOnDoubleClick$(): void;
 }
 export interface ResetForm {
@@ -180,6 +176,7 @@ export declare class FreeTextAnnotationElement extends AnnotationElement {
     textPosition: import("@fe-lib/alias.js").dot2d_t | undefined;
     constructor(parameters: AnnotationElementCtorP_);
     render(): HTMLElement;
+    get _isEditable(): boolean;
 }
 export declare class InkAnnotationElement extends AnnotationElement {
     #private;
@@ -210,7 +207,6 @@ export declare class FileAttachmentAnnotationElement extends AnnotationElement {
 export type AnnotationLayerP = {
     viewport: PageViewport;
     div: HTMLDivElement;
-    l10n: IL10n;
     annotations: AnnotationData[];
     page: PDFPageProxy;
     /**
@@ -291,12 +287,11 @@ export type AnnotStorageRecord = Map<string, AnnotStorageValue>;
 export declare class AnnotationLayer {
     #private;
     div: HTMLDivElement;
-    l10n: IL10n | undefined;
     page: PDFPageProxy;
     viewport: PageViewport;
     zIndex: number;
     popupShow?: (() => void | Promise<void>)[];
-    constructor({ div, accessibilityManager, annotationCanvasMap, l10n, page, viewport, }: AnnotationLayerP);
+    constructor({ div, accessibilityManager, annotationCanvasMap, page, viewport, }: AnnotationLayerP);
     /**
      * Render a new annotation layer with all annotation elements.
      */

@@ -51,6 +51,7 @@ export declare class AnnotationEditorLayer {
      * Add some commands into the CommandManager (undo/redo stuff).
      */
     addCommands(params: AddCommandsP): void;
+    togglePointerEvents(enabled?: boolean): void;
     /**
      * Enable pointer events on the main div in order to enable
      * editor creation.

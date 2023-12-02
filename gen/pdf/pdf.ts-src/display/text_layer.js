@@ -1,27 +1,10 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
-/* Copyright 2015 Mozilla Foundation
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-/** @typedef {import("./display_utils").PageViewport} PageViewport */
-/** @typedef {import("./api").TextContent} TextContent */
-import { GENERIC, PDFJSDev, TESTING } from "../../../global.js";
 import { html, span } from "../../../lib/dom.js";
 import { PromiseCap } from "../../../lib/util/PromiseCap.js";
-import { AbortException, FeatureTest, Util, } from "../shared/util.js";
-import { deprecated, setLayerDimensions, } from "./display_utils.js";
+import { AbortException, FeatureTest, Util } from "../shared/util.js";
+import { setLayerDimensions } from "./display_utils.js";
 const MAX_TEXT_DIVS_TO_RENDER = 100000;
 const DEFAULT_FONT_SIZE = 30;
 const DEFAULT_FONT_ASCENT = 0.8;
@@ -111,9 +94,11 @@ function appendText(task, geom, styles) {
     if (style.vertical) {
         angle += Math.PI / 2;
     }
+    const fontFamily = (task._fontInspectorEnabled && style.fontSubstitution) ||
+        style.fontFamily;
     const fontHeight = Math.hypot(tx[2], tx[3]);
     const fontAscent = fontHeight *
-        getAscent(style.fontFamily, task._isOffscreenCanvasSupported);
+        getAscent(fontFamily, task._isOffscreenCanvasSupported);
     let left, top;
     if (angle === 0) {
         left = tx[4];
@@ -137,7 +122,7 @@ function appendText(task, geom, styles) {
         divStyle.top = `${scaleFactorStr}${top.toFixed(2)}px)`;
     }
     divStyle.fontSize = `${scaleFactorStr}${fontHeight.toFixed(2)}px)`;
-    divStyle.fontFamily = style.fontFamily;
+    divStyle.fontFamily = fontFamily;
     textDivProperties.fontSize = fontHeight;
     // Keeps screen readers from pausing on every new text span.
     textDiv.setAttribute("role", "presentation");
@@ -147,7 +132,8 @@ function appendText(task, geom, styles) {
     // `fontName` is only used by the FontInspector, and we only use `dataset`
     // here to make the font name available in the debugger.
     if (task._fontInspectorEnabled) {
-        textDiv.dataset.fontName = geom.fontName;
+        textDiv.dataset.fontName = style.fontSubstitutionLoadedName ||
+            geom.fontName;
     }
     if (angle !== 0) {
         textDivProperties.angle = angle * (180 / Math.PI);
@@ -365,27 +351,6 @@ export class TextLayerRenderTask {
     }
 }
 export function renderTextLayer(params) {
-    /*#static*/  {
-        if (!params.textContentSource &&
-            (params.textContent || params.textContentStream)) {
-            deprecated("The TextLayerRender `textContent`/`textContentStream` parameters " +
-                "will be removed in the future, please use `textContentSource` instead.");
-            params.textContentSource = params.textContent ||
-                params.textContentStream;
-        }
-    }
-    /*#static*/  {
-        const { container, viewport } = params;
-        const style = getComputedStyle(container);
-        const visibility = style.getPropertyValue("visibility");
-        const scaleFactor = parseFloat(style.getPropertyValue("--scale-factor"));
-        if (visibility === "visible" &&
-            (!scaleFactor || Math.abs(scaleFactor - viewport.scale) > 1e-5)) {
-            console.error("The `--scale-factor` CSS-variable must be set, " +
-                "to the same value as `viewport.scale`, " +
-                "either on the `container`-element itself or higher up in the DOM.");
-        }
-    }
     const task = new TextLayerRenderTask(params);
     task._render();
     return task;

@@ -14,6 +14,7 @@ import { AnnotationEditorUIManager, bindEvents, KeyboardManager, } from "./tools
  */
 export class FreeTextEditor extends AnnotationEditor {
     static _type = "freetext";
+    static _editorType = AnnotationEditorType.FREETEXT;
     static _freeTextDefaultContent = "";
     static _internalPadding = 0;
     static _defaultColor;
@@ -96,10 +97,9 @@ export class FreeTextEditor extends AnnotationEditor {
             AnnotationEditor._defaultLineColor;
         this.#fontSize = params.fontSize || _a._defaultFontSize;
     }
-    /** @inheritdoc */
     static initialize(l10n) {
         AnnotationEditor.initialize(l10n, {
-            strings: ["free_text2_default_content", "editor_free_text2_aria_label"],
+            strings: ["pdfjs-free-text-default-content"],
         });
         const style = getComputedStyle(document.documentElement);
         /*#static*/  {
@@ -108,7 +108,6 @@ export class FreeTextEditor extends AnnotationEditor {
         }
         this._internalPadding = parseFloat(style.getPropertyValue("--freetext-padding"));
     }
-    /** @inheritdoc */
     static updateDefaultParams(type, value) {
         switch (type) {
             case AnnotationEditorParamsType.FREETEXT_SIZE:
@@ -119,18 +118,16 @@ export class FreeTextEditor extends AnnotationEditor {
                 break;
         }
     }
-    /** @inheritdoc */
     updateParams(type, value) {
         switch (type) {
             case AnnotationEditorParamsType.FREETEXT_SIZE:
-                this.#updateFontSize(+value);
+                this.#updateFontSize(value);
                 break;
             case AnnotationEditorParamsType.FREETEXT_COLOR:
                 this.#updateColor(value);
                 break;
         }
     }
-    /** @inheritdoc */
     static get defaultPropertiesToUpdate() {
         return [
             [
@@ -143,7 +140,6 @@ export class FreeTextEditor extends AnnotationEditor {
             ],
         ];
     }
-    /** @inheritdoc */
     get propertiesToUpdate() {
         return [
             [AnnotationEditorParamsType.FREETEXT_SIZE, this.#fontSize],
@@ -200,7 +196,6 @@ export class FreeTextEditor extends AnnotationEditor {
     _translateEmpty(x, y) {
         this._uiManager.translateSelectedEditors(x, y, /* noCommit = */ true);
     }
-    /** @inheritdoc */
     getInitialTranslation() {
         // The start of the base line is where the user clicked.
         const scale = this.parentScale;
@@ -209,7 +204,6 @@ export class FreeTextEditor extends AnnotationEditor {
             -(_a._internalPadding + this.#fontSize) * scale,
         ];
     }
-    /** @inheritdoc */
     rebuild() {
         if (!this.parent) {
             return;
@@ -224,7 +218,6 @@ export class FreeTextEditor extends AnnotationEditor {
             this.parent.add(this);
         }
     }
-    /** @inheritdoc */
     enableEditMode() {
         if (this.isInEditMode()) {
             return;
@@ -241,7 +234,6 @@ export class FreeTextEditor extends AnnotationEditor {
         this.editorDiv.on("blur", this.#boundEditorDivBlur);
         this.editorDiv.on("input", this.#boundEditorDivInput);
     }
-    /** @inheritdoc */
     disableEditMode() {
         if (!this.isInEditMode()) {
             return;
@@ -261,9 +253,8 @@ export class FreeTextEditor extends AnnotationEditor {
         this.div.focus({ preventScroll: true /* See issue #15744 */ });
         // In case the blur callback hasn't been called.
         this.isEditing = false;
-        this.parent.div.classList.add("freeTextEditing");
+        this.parent.div.classList.add("freetextEditing");
     }
-    /** @inheritdoc */
     focusin(event) {
         if (!this._focusEventsAllowed) {
             return;
@@ -273,7 +264,6 @@ export class FreeTextEditor extends AnnotationEditor {
             this.editorDiv.focus();
         }
     }
-    /** @inheritdoc */
     onceAdded() {
         if (this.width) {
             this.#cheatInitialRect();
@@ -287,16 +277,14 @@ export class FreeTextEditor extends AnnotationEditor {
         }
         this._initialOptions = undefined;
     }
-    /** @inheritdoc */
     isEmpty() {
         return !this.editorDiv || this.editorDiv.innerText.trim() === "";
     }
-    /** @inheritdoc */
     remove() {
         this.isEditing = false;
         if (this.parent) {
             this.parent.setEditingState(true);
-            this.parent.div.classList.add("freeTextEditing");
+            this.parent.div.classList.add("freetextEditing");
         }
         super.remove();
     }
@@ -378,11 +366,9 @@ export class FreeTextEditor extends AnnotationEditor {
         });
         this.#setEditorDimensions();
     }
-    /** @inheritdoc */
     shouldGetKeyboardEvents() {
         return this.isInEditMode();
     }
-    /** @inheritdoc */
     enterInEditMode() {
         this.enableEditMode();
         this.editorDiv.focus();
@@ -413,19 +399,16 @@ export class FreeTextEditor extends AnnotationEditor {
         this.isEditing = false;
     }
     editorDivInput(event) {
-        this.parent.div.classList.toggle("freeTextEditing", this.isEmpty());
+        this.parent.div.classList.toggle("freetextEditing", this.isEmpty());
     }
-    /** @inheritdoc */
     disableEditing() {
         this.editorDiv.setAttribute("role", "comment");
         this.editorDiv.removeAttribute("aria-multiline");
     }
-    /** @inheritdoc */
     enableEditing() {
         this.editorDiv.setAttribute("role", "textbox");
         this.editorDiv.setAttribute("aria-multiline", true);
     }
-    /** @inheritdoc */
     render() {
         if (this.div) {
             return this.div;
@@ -438,13 +421,13 @@ export class FreeTextEditor extends AnnotationEditor {
         super.render();
         this.editorDiv = html("div");
         this.editorDiv.className = "internal";
-        this.editorDiv.setAttribute("id", this.#editorDivId);
+        this.editorDiv.assignAttro({
+            id: this.#editorDivId,
+            "data-l10n-id": "pdfjs-free-text",
+        });
         this.enableEditing();
         AnnotationEditor._l10nPromise
-            .get("editor_free_text2_aria_label")
-            .then((msg) => this.editorDiv?.setAttribute("aria-label", msg));
-        AnnotationEditor._l10nPromise
-            .get("free_text2_default_content")
+            .get("pdfjs-free-text-default-content")
             .then((msg) => this.editorDiv?.setAttribute("default-content", msg));
         this.editorDiv.contentEditable = true;
         const { style } = this.editorDiv;
@@ -529,7 +512,6 @@ export class FreeTextEditor extends AnnotationEditor {
     get contentDiv() {
         return this.editorDiv;
     }
-    /** @inheritdoc */
     static deserialize(data, parent, uiManager) {
         let initialData;
         if (data instanceof FreeTextAnnotationElement) {
@@ -562,10 +544,7 @@ export class FreeTextEditor extends AnnotationEditor {
         editor.#initialData = initialData;
         return editor;
     }
-    /**
-     * @inheritdoc
-     * @implement
-     */
+    /** @implement */
     serialize(isForCopying = false) {
         if (this.isEmpty()) {
             return undefined;

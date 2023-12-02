@@ -95,7 +95,7 @@ export class Util extends PDFObject {
             if (nWidth) {
                 nWidth = parseInt(nWidth);
             }
-            let intPart = Math.trunc(+arg);
+            let intPart = Math.trunc(arg);
             if (cConvChar === "x") {
                 let hex = Math.abs(intPart).toString(16).toUpperCase();
                 if (nWidth !== undefined) {

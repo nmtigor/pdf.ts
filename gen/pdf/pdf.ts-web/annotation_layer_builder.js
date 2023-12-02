@@ -15,19 +15,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/** @typedef {import("../src/display/api").PDFPageProxy} PDFPageProxy */
-// eslint-disable-next-line max-len
-/** @typedef {import("../src/display/display_utils").PageViewport} PageViewport */
-// eslint-disable-next-line max-len
-/** @typedef {import("../src/display/annotation_storage").AnnotationStorage} AnnotationStorage */
-/** @typedef {import("./interfaces").IDownloadManager} IDownloadManager */
-/** @typedef {import("./interfaces").IL10n} IL10n */
-/** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
-// eslint-disable-next-line max-len
-/** @typedef {import("./text_accessibility.js").TextAccessibilityManager} TextAccessibilityManager */
 import { html } from "../../lib/dom.js";
 import { AnnotationLayer } from "../pdf.ts-src/pdf.js";
-import { NullL10n } from "./l10n_utils.js";
 import { PresentationModeState } from "./ui_utils.js";
 export class AnnotationLayerBuilder {
     pageDiv;
@@ -36,7 +25,6 @@ export class AnnotationLayerBuilder {
     downloadManager;
     imageResourcesPath;
     renderForms;
-    l10n;
     annotationStorage;
     enableScripting;
     _hasJSActionsPromise;
@@ -48,14 +36,13 @@ export class AnnotationLayerBuilder {
     _cancelled = false;
     _eventBus;
     #onPresentationModeChanged;
-    constructor({ pageDiv, pdfPage, linkService, downloadManager, annotationStorage, imageResourcesPath = "", renderForms = true, l10n = NullL10n, enableScripting = false, hasJSActionsPromise, fieldObjectsPromise, annotationCanvasMap, accessibilityManager, }) {
+    constructor({ pageDiv, pdfPage, linkService, downloadManager, annotationStorage, imageResourcesPath = "", renderForms = true, enableScripting = false, hasJSActionsPromise, fieldObjectsPromise, annotationCanvasMap, accessibilityManager, }) {
         this.pageDiv = pageDiv;
         this.pdfPage = pdfPage;
         this.linkService = linkService;
         this.downloadManager = downloadManager;
         this.imageResourcesPath = imageResourcesPath;
         this.renderForms = renderForms;
-        this.l10n = l10n;
         this.annotationStorage = annotationStorage;
         this.enableScripting = enableScripting;
         this._hasJSActionsPromise = hasJSActionsPromise || Promise.resolve(false);
@@ -104,7 +91,6 @@ export class AnnotationLayerBuilder {
             div,
             accessibilityManager: this._accessibilityManager,
             annotationCanvasMap: this._annotationCanvasMap,
-            l10n: this.l10n,
             page: this.pdfPage,
             viewport: viewport.clone({ dontFlip: true }),
         });

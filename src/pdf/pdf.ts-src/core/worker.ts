@@ -139,10 +139,11 @@ export const WorkerMessageHandler = {
     const verbosity = getVerbosityLevel();
 
     const { docId, apiVersion } = docParams;
-    // typeof PDFJSDev !== "undefined" && !PDFJSDev.test("TESTING")
-    //   ? PDFJSDev.eval("BUNDLE_VERSION")
-    //   : null;
-    const workerVersion = /*#static*/ !TESTING ? 0 : undefined;
+    // const workerVersion =
+    //   typeof PDFJSDev !== "undefined" && !PDFJSDev.test("TESTING")
+    //     ? PDFJSDev.eval("BUNDLE_VERSION")
+    //     : null;
+    const workerVersion = 0;
     if (apiVersion !== workerVersion) {
       throw new Error(
         `The API version "${apiVersion}" does not match ` +
@@ -630,6 +631,7 @@ export const WorkerMessageHandler = {
           } else if (
             await _structTreeRoot.canUpdateStructTree({
               pdfManager,
+              xref,
               newAnnotationsByPage,
             })
           ) {

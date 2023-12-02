@@ -19,7 +19,7 @@
 
 import { isObjectLike } from "@fe-lib/jslang.ts";
 import { PromiseCap } from "@fe-lib/util/PromiseCap.ts";
-import { TEST_PORT } from "@fe-src/test/alias.ts";
+import { D_base } from "@fe-src/pdf/alias.ts";
 import { AutoPrintRegExp, PageLayout, PageMode } from "@pdf.ts-web/ui_utils.ts";
 import {
   assert,
@@ -41,11 +41,6 @@ import {
   describe,
   it,
 } from "@std/testing/bdd.ts";
-import type { AnnotationData, FieldObject } from "../core/annotation.ts";
-import type { AnnotActions } from "../core/core_utils.ts";
-import type { ImgData } from "../core/evaluator.ts";
-import { GlobalImageCache } from "../core/image_utils.ts";
-import type { SimpleDOMNode } from "../core/xml_parser.ts";
 import {
   buildGetDocumentParams,
   BuildGetDocumentParamsOptions,
@@ -54,10 +49,16 @@ import {
   getPDF,
   TEST_IMAGES_PATH,
   TEST_PDFS_PATH,
-} from "../shared/test_utils.ts";
+} from "../../test_utils.ts";
+import type { AnnotationData, FieldObject } from "../core/annotation.ts";
+import type { AnnotActions } from "../core/core_utils.ts";
+import type { ImgData } from "../core/evaluator.ts";
+import { GlobalImageCache } from "../core/image_utils.ts";
+import type { SimpleDOMNode } from "../core/xml_parser.ts";
 import {
   AnnotationEditorType,
   AnnotationMode,
+  AnnotationType,
   ImageKind,
   isNodeJS,
   objectSize,
@@ -87,6 +88,9 @@ import {
 import { Metadata } from "./metadata.ts";
 import { GlobalWorkerOptions } from "./worker_options.ts";
 /*80--------------------------------------------------------------------------*/
+
+// const WORKER_SRC = "../../build/generic/build/pdf.worker.mjs";
+const WORKER_SRC = `${D_base}/built/pdf/pdf.ts-src/pdf.worker.js`;
 
 describe("api", () => {
   const basicApiFileName = "basicapi.pdf";
@@ -918,8 +922,6 @@ describe("api", () => {
 
   describe("GlobalWorkerOptions", () => {
     // const workerSrc = "../../build/generic/build/pdf.worker.js";
-    const workerSrc =
-      `http://localhost:${TEST_PORT}/built/pdf/pdf.ts-src/pdf.worker.js`;
     let savedGlobalWorkerPort: Worker | undefined;
 
     beforeAll(() => {
@@ -942,7 +944,7 @@ describe("api", () => {
       // }
 
       GlobalWorkerOptions.workerPort = new Worker(
-        new URL(workerSrc, window.location as any),
+        new URL(WORKER_SRC, window.location as any),
         { type: "module" },
       );
 
@@ -963,7 +965,7 @@ describe("api", () => {
       // }
 
       GlobalWorkerOptions.workerPort = new Worker(
-        new URL(workerSrc, window.location as any),
+        new URL(WORKER_SRC, window.location as any),
         { type: "module" },
       );
 
@@ -993,7 +995,7 @@ describe("api", () => {
         // }
 
         GlobalWorkerOptions.workerPort = new Worker(
-          new URL(workerSrc, window.location as any),
+          new URL(WORKER_SRC, window.location as any),
           { type: "module" },
         );
 
@@ -1207,14 +1209,13 @@ describe("api", () => {
       await using loadingTask = await getPDF("issue6204.pdf");
       const pdfDoc = await loadingTask.promise;
       const destination = await pdfDoc.getDestination("Page.1");
-      //kkkk got `num: 6`
-      // assertEquals(destination, [
-      //   { num: 1, gen: 0 },
-      //   { name: "XYZ" },
-      //   0,
-      //   375,
-      //   null,
-      // ]);
+      assertEquals(destination, [
+        { num: 1, gen: 0 },
+        { name: "XYZ" },
+        0,
+        375,
+        null,
+      ]);
     });
 
     it("gets a non-existent destination, from /Names (NameTree) dictionary", async () => {
@@ -1223,8 +1224,7 @@ describe("api", () => {
       const destination = await pdfDoc.getDestination(
         "non-existent-named-destination",
       );
-      //kkkk
-      // assertEquals(destination, undefined);
+      assertEquals(destination, undefined);
     });
 
     it("gets a destination, from out-of-order /Names (NameTree) dictionary (issue 10272)", async () => {
@@ -1234,28 +1234,26 @@ describe("api", () => {
       await using loadingTask = await getPDF("issue10272.pdf");
       const pdfDoc = await loadingTask.promise;
       const destination = await pdfDoc.getDestination("link_1");
-      //kkkk
-      // assertEquals(destination, [
-      //   { num: 17, gen: 0 },
-      //   { name: "XYZ" },
-      //   69,
-      //   125,
-      //   0,
-      // ]);
+      assertEquals(destination, [
+        { num: 17, gen: 0 },
+        { name: "XYZ" },
+        69,
+        125,
+        0,
+      ]);
     });
 
     it("gets a destination, from /Names (NameTree) dictionary with keys using PDFDocEncoding (issue 14847)", async () => {
       const loadingTask = getDocument(buildGetDocumentParams("issue14847.pdf"));
       const pdfDoc = await loadingTask.promise;
       const destination = await pdfDoc.getDestination("index");
-      //kkkk got `num: 8`, `127.5578`
-      // assertEquals(destination, [
-      //   { num: 10, gen: 0 },
-      //   { name: "XYZ" },
-      //   85.039,
-      //   728.504,
-      //   null,
-      // ]);
+      assertEquals(destination, [
+        { num: 10, gen: 0 },
+        { name: "XYZ" },
+        85.039,
+        728.504,
+        null,
+      ]);
 
       await loadingTask.destroy();
     });
@@ -2242,7 +2240,7 @@ describe("api", () => {
     });
 
     //kkkk createImageBitmap is not defined
-    it.ignore("write a new stamp annotation in a tagged pdf, save and check that the structure tree", async () => {
+    it.ignore("write a new stamp annotation in a tagged pdf, save and check the structure tree", async () => {
       // if (isNodeJS) {
       //   pending("Cannot create a bitmap from Node.js.");
       // }
@@ -2297,6 +2295,79 @@ describe("api", () => {
     });
 
     //kkkk createImageBitmap is not defined
+    it.ignore("write a new stamp annotation in a tagged pdf, save, repeat and check the structure tree", async () => {
+      // if (isNodeJS) {
+      //   pending("Cannot create a bitmap from Node.js.");
+      // }
+
+      const filename = "firefox_logo.png";
+      const path =
+        new URL(TEST_IMAGES_PATH + filename, window.location as any).href;
+
+      const response = await fetch(path);
+      const blob = await response.blob();
+      let loadingTask, pdfDoc;
+      let data: DocumentInitP | Uint8Array = buildGetDocumentParams(
+        "empty.pdf",
+      );
+
+      for (let i = 1; i <= 2; i++) {
+        const bitmap = await createImageBitmap(blob);
+        loadingTask = getDocument(data);
+        pdfDoc = await loadingTask.promise;
+        pdfDoc.annotationStorage.setValue("pdfjs_internal_editor_0", {
+          annotationType: AnnotationEditorType.STAMP,
+          rect: [10 * i, 10 * i, 20 * i, 20 * i],
+          rotation: 0,
+          bitmap,
+          bitmapId: "im1",
+          pageIndex: 0,
+          structTreeParentId: undefined,
+          accessibilityData: {
+            type: "Figure",
+            alt: `Hello World ${i}`,
+          },
+        });
+
+        data = await pdfDoc.saveDocument();
+        await loadingTask.destroy();
+      }
+
+      loadingTask = getDocument(data);
+      pdfDoc = await loadingTask.promise;
+      const page = await pdfDoc.getPage(1);
+      const tree = await page.getStructTree();
+
+      assertEquals(tree, {
+        children: [
+          {
+            role: "Figure",
+            children: [
+              {
+                type: "annotation",
+                id: "pdfjs_internal_id_18R",
+              },
+            ],
+            alt: "Hello World 1",
+          },
+          {
+            role: "Figure",
+            children: [
+              {
+                type: "annotation",
+                id: "pdfjs_internal_id_26R",
+              },
+            ],
+            alt: "Hello World 2",
+          },
+        ],
+        role: "Root",
+      });
+
+      await loadingTask.destroy();
+    });
+
+    //kkkk createImageBitmap is not defined
     it.ignore("write a new stamp annotation in a non-tagged pdf, save and check that the structure tree", async () => {
       // if (isNodeJS) {
       //   pending("Cannot create a bitmap from Node.js.");
@@ -2324,6 +2395,79 @@ describe("api", () => {
           type: "Figure",
           alt: "Hello World",
         },
+      });
+
+      const data = await pdfDoc.saveDocument();
+      await loadingTask.destroy();
+
+      loadingTask = getDocument(data);
+      pdfDoc = await loadingTask.promise;
+      const page = await pdfDoc.getPage(1);
+      const tree = await page.getStructTree();
+
+      assertEquals(tree, {
+        children: [
+          {
+            role: "Figure",
+            children: [
+              {
+                type: "annotation",
+                id: "pdfjs_internal_id_18R",
+              },
+            ],
+            alt: "Hello World",
+          },
+        ],
+        role: "Root",
+      });
+
+      await loadingTask.destroy();
+    });
+
+    //kkkk createImageBitmap is not defined
+    it.ignore("write a text and a stamp annotation but no alt text (bug 1855157)", async () => {
+      // if (isNodeJS) {
+      //   pending("Cannot create a bitmap from Node.js.");
+      // }
+
+      const filename = "firefox_logo.png";
+      const path =
+        new URL(TEST_IMAGES_PATH + filename, window.location as any).href;
+
+      const response = await fetch(path);
+      const blob = await response.blob();
+      const bitmap = await createImageBitmap(blob);
+
+      let loadingTask = getDocument(buildGetDocumentParams("empty.pdf"));
+      let pdfDoc = await loadingTask.promise;
+      pdfDoc.annotationStorage.setValue("pdfjs_internal_editor_0", {
+        annotationType: AnnotationEditorType.STAMP,
+        rect: [128, 400, 148, 420],
+        rotation: 0,
+        bitmap,
+        bitmapId: "im1",
+        pageIndex: 0,
+        structTreeParentId: undefined,
+        accessibilityData: {
+          type: "Figure",
+          alt: "Hello World",
+        },
+      });
+      pdfDoc.annotationStorage.setValue("pdfjs_internal_editor_1", {
+        annotationType: AnnotationEditorType.FREETEXT,
+        color: [0, 0, 0],
+        fontSize: 10,
+        value: "Hello World",
+        pageIndex: 0,
+        rect: [
+          133.2444863336475,
+          653.5583423367227,
+          191.03166882427766,
+          673.363146394756,
+        ],
+        rotation: 0,
+        structTreeParentId: undefined,
+        id: undefined,
       });
 
       const data = await pdfDoc.saveDocument();
@@ -2656,6 +2800,51 @@ describe("api", () => {
         docBaseUrlLoadingTask.destroy(),
         invalidDocBaseUrlLoadingTask.destroy(),
       ]);
+    });
+
+    it("gets annotations containing GoToE action (issue 8844)", async () => {
+      const loadingTask = getDocument(buildGetDocumentParams("issue8844.pdf"));
+      const pdfDoc = await loadingTask.promise;
+      const pdfPage = await pdfDoc.getPage(1);
+      const annotations = (await pdfPage.getAnnotations()) as AnnotationData[];
+
+      assertEquals(annotations.length, 1);
+      assertEquals(annotations[0].annotationType, AnnotationType.LINK);
+
+      const { filename, content } = annotations[0].attachment!;
+      assertEquals(filename, "man.pdf");
+      assertInstanceOf(content, Uint8Array);
+      assertEquals(content.length, 4508);
+
+      assertEquals(annotations[0].attachmentDest, '[-1,{"name":"Fit"}]');
+
+      await loadingTask.destroy();
+    });
+
+    it("gets annotations containing GoToE action with destination (issue 17056)", async () => {
+      const loadingTask = getDocument(buildGetDocumentParams("issue17056.pdf"));
+      const pdfDoc = await loadingTask.promise;
+      const pdfPage = await pdfDoc.getPage(1);
+
+      const annotations = (await pdfPage.getAnnotations()) as AnnotationData[];
+      assertEquals(annotations.length, 30);
+
+      const { annotationType, attachment, attachmentDest } = annotations[0];
+      assertEquals(annotationType, AnnotationType.LINK);
+
+      const { filename, content } = attachment!;
+      assertEquals(filename, "destination-doc.pdf");
+      assertInstanceOf(content, Uint8Array);
+      assertEquals(content.length, 10305);
+
+      assertEquals(attachmentDest, '[0,{"name":"Fit"}]');
+
+      // Check that the attachments, which are identical, aren't duplicated.
+      for (let i = 1, ii = annotations.length; i < ii; i++) {
+        assertStrictEquals(annotations[i].attachment, attachment);
+      }
+
+      await loadingTask.destroy();
     });
 
     it("gets text content", async () => {

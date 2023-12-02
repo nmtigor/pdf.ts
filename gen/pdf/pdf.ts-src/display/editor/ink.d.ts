@@ -1,6 +1,6 @@
 import type { C2D, dot2d_t, TupleOf } from "../../../../lib/alias.js";
 import type { IL10n } from "../../../pdf.ts-web/interfaces.js";
-import { AnnotationEditorParamsType } from "../../shared/util.js";
+import { AnnotationEditorParamsType, AnnotationEditorType } from "../../shared/util.js";
 import type { AnnotStorageValue } from "../annotation_layer.js";
 import type { AnnotationEditorLayer } from "./annotation_editor_layer.js";
 import type { AnnotationEditorP, PropertyToUpdate } from "./editor.js";
@@ -27,6 +27,7 @@ export interface InkEditorSerialized extends AnnotStorageValue {
 export declare class InkEditor extends AnnotationEditor {
     #private;
     static readonly _type = "ink";
+    static readonly _editorType = AnnotationEditorType.INK;
     static _defaultColor: string | undefined;
     static _defaultOpacity: number;
     static _defaultThickness: number;
@@ -43,35 +44,23 @@ export declare class InkEditor extends AnnotationEditor {
     canvas: HTMLCanvasElement | undefined;
     ctx: C2D;
     constructor(params: InkEditorP);
-    /** @inheritdoc */
     static initialize(l10n: IL10n): void;
-    /** @inheritdoc */
     static updateDefaultParams(type: AnnotationEditorParamsType, value: number | string | undefined): void;
-    /** @inheritdoc */
     updateParams(type: AnnotationEditorParamsType, value: number | string): void;
-    /** @inheritdoc */
     static get defaultPropertiesToUpdate(): PropertyToUpdate[];
-    /** @inheritdoc */
     get propertiesToUpdate(): PropertyToUpdate[];
-    /** @inheritdoc */
     rebuild(): void;
-    /** @inheritdoc */
     remove(): void;
     setParent(parent: AnnotationEditorLayer | undefined): void;
     onScaleChanging(): void;
-    /** @inheritdoc */
     enableEditMode(): void;
-    /** @inheritdoc */
     disableEditMode(): void;
-    /** @inheritdoc */
     onceAdded(): void;
-    /** @inheritdoc */
     isEmpty(): boolean;
     /**
      * Commit the curves we have in this editor.
      */
     commit(): void;
-    /** @inheritdoc */
     focusin(event: FocusEvent): void;
     /**
      * onpointerdown callback for the canvas we're drawing on.
@@ -89,9 +78,7 @@ export declare class InkEditor extends AnnotationEditor {
      * onpointerleave callback for the canvas we're drawing on.
      */
     canvasPointerleave(event: PointerEvent): void;
-    /** @inheritdoc */
     get isResizable(): boolean;
-    /** @inheritdoc */
     render(): HTMLDivElement;
     /**
      * When the dimensions of the div change the inner canvas must
@@ -100,12 +87,8 @@ export declare class InkEditor extends AnnotationEditor {
      * @param height the new height of the div
      */
     setDimensions(width: number, height: number): void;
-    /** @inheritdoc */
     static deserialize(data: InkEditorSerialized, parent: AnnotationEditorLayer, uiManager: AnnotationEditorUIManager): InkEditor | undefined;
-    /**
-     * @inheritdoc
-     * @implement
-     */
+    /** @implement */
     serialize(isForCopying?: boolean): InkEditorSerialized | undefined;
 }
 export {};

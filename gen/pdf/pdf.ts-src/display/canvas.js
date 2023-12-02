@@ -1,22 +1,8 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
-/* Copyright 2012 Mozilla Foundation
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-import { MOZCENTRAL } from "../../../global.js";
 import { fail } from "../../../lib/util/trace.js";
+import { MOZCENTRAL } from "../../../global.js";
 import { convertBlackAndWhiteToRGBA } from "../shared/image_utils.js";
 import { FeatureTest, FONT_IDENTITY_MATRIX, IDENTITY_MATRIX, ImageKind, info, isNodeJS, OPS, shadow, TextRenderingMode, Util, warn, } from "../shared/util.js";
 import { getCurrentTransform, getCurrentTransformInverse, PixelsPerInch, } from "./display_utils.js";
@@ -454,10 +440,12 @@ class CanvasExtraState {
     updateRectMinMax(transform, rect) {
         const p1 = Util.applyTransform(rect, transform);
         const p2 = Util.applyTransform(rect.slice(2), transform);
-        this.minX = Math.min(this.minX, p1[0], p2[0]);
-        this.minY = Math.min(this.minY, p1[1], p2[1]);
-        this.maxX = Math.max(this.maxX, p1[0], p2[0]);
-        this.maxY = Math.max(this.maxY, p1[1], p2[1]);
+        const p3 = Util.applyTransform([rect[0], rect[3]], transform);
+        const p4 = Util.applyTransform([rect[2], rect[1]], transform);
+        this.minX = Math.min(this.minX, p1[0], p2[0], p3[0], p4[0]);
+        this.minY = Math.min(this.minY, p1[1], p2[1], p3[1], p4[1]);
+        this.maxX = Math.max(this.maxX, p1[0], p2[0], p3[0], p4[0]);
+        this.maxY = Math.max(this.maxY, p1[1], p2[1], p3[1], p4[1]);
     }
     updateScalingPathMinMax(transform, minMax) {
         Util.scaleMinMax(transform, minMax);
@@ -1089,19 +1077,17 @@ export class CanvasGraphics {
         let maskToCanvas = Util
             .transform(currentTransform, [1 / width, 0, 0, -1 / height, 0, 0]);
         maskToCanvas = Util.transform(maskToCanvas, [1, 0, 0, 1, 0, -height]);
-        const cord1 = Util.applyTransform([0, 0], maskToCanvas);
-        const cord2 = Util.applyTransform([width, height], maskToCanvas);
-        const rect = Util.normalizeRect([cord1[0], cord1[1], cord2[0], cord2[1]]);
-        const drawnWidth = Math.round(rect[2] - rect[0]) || 1;
-        const drawnHeight = Math.round(rect[3] - rect[1]) || 1;
+        const [minX, minY, maxX, maxY] = Util.getAxialAlignedBoundingBox([0, 0, width, height], maskToCanvas);
+        const drawnWidth = Math.round(maxX - minX) || 1;
+        const drawnHeight = Math.round(maxY - minY) || 1;
         const fillCanvas = this.cachedCanvases.getCanvas("fillCanvas", drawnWidth, drawnHeight);
         const fillCtx = fillCanvas.context;
         // The offset will be the top-left cordinate mask.
         // If objToCanvas is [a,b,c,d,e,f] then:
         //   - offsetX = min(a, c) + e
         //   - offsetY = min(b, d) + f
-        const offsetX = Math.min(cord1[0], cord2[0]);
-        const offsetY = Math.min(cord1[1], cord2[1]);
+        const offsetX = minX;
+        const offsetY = minY;
         fillCtx.translate(-offsetX, -offsetY);
         fillCtx.transform(...maskToCanvas);
         if (!scaled) {

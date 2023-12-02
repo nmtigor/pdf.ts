@@ -87,7 +87,6 @@ export class PDFSidebar {
   _currentOutlineItemButton;
 
   eventBus;
-  l10n;
 
   constructor({
     elements,
@@ -113,11 +112,8 @@ export class PDFSidebar {
     this._currentOutlineItemButton = elements.currentOutlineItemButton;
 
     this.eventBus = eventBus;
-    this.l10n = l10n;
 
-    l10n.getDirection().then((dir) => {
-      this.#isRTL = dir === "rtl";
-    });
+    this.#isRTL = l10n.getDirection() === "rtl";
     this.#addEventListeners();
   }
 
@@ -170,7 +166,7 @@ export class PDFSidebar {
    *  must be one of the values in {SidebarView}.
    * @param forceOpen Ensure that the sidebar is open. The default value is `false`.
    */
-  switchView(view: number, forceOpen = false) {
+  switchView(view: SidebarView, forceOpen = false) {
     const isViewChanged = view !== this.active;
     let forceRendering = false;
 
@@ -304,9 +300,8 @@ export class PDFSidebar {
   #showUINotification() {
     this.toggleButton.setAttribute(
       "data-l10n-id",
-      "toggle_sidebar_notification2",
+      "pdfjs-toggle-sidebar-notification-button",
     );
-    this.l10n.translate(this.toggleButton);
 
     if (!this.isOpen) {
       // Only show the notification on the `toggleButton` if the sidebar is
@@ -323,8 +318,10 @@ export class PDFSidebar {
     }
 
     if (reset) {
-      this.toggleButton.setAttribute("data-l10n-id", "toggle_sidebar");
-      this.l10n.translate(this.toggleButton);
+      this.toggleButton.setAttribute(
+        "data-l10n-id",
+        "pdfjs-toggle-sidebar-button",
+      );
     }
   }
 

@@ -17,9 +17,6 @@
  * limitations under the License.
  */
 
-/** @typedef {import("./event_utils").EventBus} EventBus */
-/** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
-
 import { isObjectLike } from "@fe-lib/jslang.ts";
 import { assert } from "@fe-lib/util/trace.ts";
 import type {

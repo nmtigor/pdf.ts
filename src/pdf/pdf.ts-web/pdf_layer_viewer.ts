@@ -19,17 +19,15 @@
 
 import { html } from "@fe-lib/dom.ts";
 import type { Order } from "../pdf.ts-src/pdf.ts";
-import { OptionalContentConfig, PDFDocumentProxy } from "../pdf.ts-src/pdf.ts";
+import type {
+  OptionalContentConfig,
+  PDFDocumentProxy,
+} from "../pdf.ts-src/pdf.ts";
 import type { BaseTreeViewerCtorP } from "./base_tree_viewer.ts";
 import { BaseTreeViewer } from "./base_tree_viewer.ts";
-import { type IL10n } from "./interfaces.ts";
 /*80--------------------------------------------------------------------------*/
 
 interface PDFLayerViewerOptions extends BaseTreeViewerCtorP {
-  /**
-   * Localization service.
-   */
-  l10n?: IL10n;
 }
 
 interface _PDFLayerViewerRenderP {
@@ -45,8 +43,6 @@ interface _PDFLayerViewerRenderP {
 }
 
 export class PDFLayerViewer extends BaseTreeViewer {
-  l10n?: IL10n | undefined;
-
   #optionalContentConfig: OptionalContentConfig | undefined;
   #optionalContentHash: string | undefined;
 
@@ -57,7 +53,6 @@ export class PDFLayerViewer extends BaseTreeViewer {
   }
   private constructor(options: PDFLayerViewerOptions) {
     super(options);
-    this.l10n = options.l10n;
 
     this.eventBus._on("optionalcontentconfigchanged", (evt) => {
       this.#updateLayers(evt.promise);
@@ -118,7 +113,7 @@ export class PDFLayerViewer extends BaseTreeViewer {
       element.textContent = this._normalizeTextContent(name);
       return;
     }
-    element.textContent = await this.l10n!.get("additional_layers");
+    element.textContent = await this._l10n.get("pdfjs-additional-layers");
     element.style.fontStyle = "italic";
   };
 

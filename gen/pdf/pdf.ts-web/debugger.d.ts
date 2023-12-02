@@ -9,7 +9,9 @@ declare namespace FontInspector_ {
     function cleanup(): void;
     let enabled: boolean;
     let active: boolean;
-    function fontAdded(fontObj: FontFaceObject, url?: string): void;
+    function fontAdded(fontObj: FontFaceObject & {
+        css?: string;
+    }, url?: string): void;
 }
 declare namespace StepperManager_ {
     const id = "Stepper";

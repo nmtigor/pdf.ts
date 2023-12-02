@@ -19,7 +19,6 @@
 
 import type { EventBus, EventName } from "./event_utils.ts";
 import type { NimbusExperimentData } from "./firefoxcom.ts";
-import type { IL10n } from "./interfaces.ts";
 /*80--------------------------------------------------------------------------*/
 
 type ToolbarOptions = {
@@ -54,14 +53,11 @@ export class Toolbar {
   #eventBus;
 
   /**
-   * @param _l10n Localization service.
    * @param nimbusData Nimbus configuration.
-   * @param externalServices Interface for external services.
    */
   constructor(
     options: ToolbarOptions,
     eventBus: EventBus,
-    _l10n: IL10n,
     nimbusData: NimbusExperimentData | undefined,
   ) {
     this.#eventBus = eventBus;

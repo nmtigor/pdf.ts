@@ -15,6 +15,7 @@ declare global {
         hasOwn(o: object, v: PropertyKey): boolean;
     }
 }
+/** Ref. https://lodash.com/docs/4.17.15#isObjectLike */
 export declare function isObjectLike(value: unknown): value is object;
 export declare function eq(lhs_x: unknown, rhs_x: unknown, valve_x?: number): boolean;
 declare global {
@@ -154,7 +155,7 @@ declare global {
 }
 /**
  * class X extends mix( Y, Z )
- * ! Should always companion with an interface declaration.
+ * ! Should always companion with an interface declaration
  *
  * @param mixins_x
  *  Laat element has the highest precedence, and so on.

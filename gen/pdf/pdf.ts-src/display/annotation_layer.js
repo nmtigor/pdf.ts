@@ -3,14 +3,12 @@
  */
 import { div, html, span, svg as createSVG, textnode } from "../../../lib/dom.js";
 import { assert, fail } from "../../../lib/util/trace.js";
-import { GENERIC, MOZCENTRAL, TESTING } from "../../../global.js";
+import { MOZCENTRAL, TESTING } from "../../../global.js";
 import { ColorConverters } from "../shared/scripting_utils.js";
 import { AnnotationBorderStyleType, AnnotationEditorType, AnnotationPrefix, AnnotationType, FeatureTest, LINE_FACTOR, shadow, Util, warn, } from "../shared/util.js";
 import { AnnotationStorage } from "./annotation_storage.js";
 import { DOMSVGFactory, getFilenameFromUrl, PDFDateString, setLayerDimensions, } from "./display_utils.js";
 import { XfaLayer } from "./xfa_layer.js";
-// Ref. gulpfile.mjs of pdf.js
-const { NullL10n } = /*#static*/ await import("../../pdf.ts-web/l10n_utils.js");
 /*80--------------------------------------------------------------------------*/
 const DEFAULT_TAB_INDEX = 1000;
 const DEFAULT_FONT_SIZE = 9;
@@ -551,7 +549,13 @@ export class AnnotationElement {
             triggers.classList.add("highlightArea");
         }
     }
+    get _isEditable() {
+        return false;
+    }
     editOnDoubleClick$() {
+        if (!this._isEditable) {
+            return;
+        }
         const { annotationEditorType: mode, data: { id: editId }, } = this;
         this.container.on("dblclick", () => {
             this.linkService.eventBus?.dispatch("switchannotationeditormode", {
@@ -586,7 +590,7 @@ class LinkAnnotationElement extends AnnotationElement {
             isBound = true;
         }
         else if (data.attachment) {
-            this._bindAttachment(link, data.attachment);
+            this.#bindAttachment(link, data.attachment, data.attachmentDest);
             isBound = true;
         }
         else if (data.setOCGState) {
@@ -654,10 +658,10 @@ class LinkAnnotationElement extends AnnotationElement {
     /**
      * Bind attachments to the link element.
      */
-    _bindAttachment(link, attachment) {
+    #bindAttachment(link, attachment, dest) {
         link.href = this.linkService.getAnchorUrl("");
         link.onclick = () => {
-            this.downloadManager?.openOrDownloadData(this.container, attachment.content, attachment.filename);
+            this.downloadManager?.openOrDownloadData(attachment.content, attachment.filename, dest);
             return false;
         };
         this.#setInternalLink();
@@ -805,9 +809,10 @@ class TextAnnotationElement extends AnnotationElement {
             "annotation-" +
             this.data.name.toLowerCase() +
             ".svg";
-        image.alt = "[{{type}} Annotation]";
-        image.dataset.l10nId = "text_annotation_type";
-        image.dataset.l10nArgs = JSON.stringify({ type: this.data.name });
+        image.assignAttro({
+            "data-l10n-id": "pdfjs-text-annotation-type",
+            "data-l10n-args": JSON.stringify({ type: this.data.name }),
+        });
         if (!this.data.popupRef && this.hasPopupData) {
             this._createPopup();
         }
@@ -832,8 +837,7 @@ class WidgetAnnotationElement extends AnnotationElement {
         }
     }
     #getKeyModifier(event) {
-        const { isWin, isMac } = FeatureTest.platform;
-        return (isWin && event.ctrlKey) || (isMac && event.metaKey);
+        return FeatureTest.platform.isMac ? event.metaKey : event.ctrlKey;
     }
     #setEventListener(element, elementData, baseName, eventName, valueGetter) {
         if (baseName.includes("mouse")) {
@@ -953,6 +957,7 @@ class WidgetAnnotationElement extends AnnotationElement {
 class TextWidgetAnnotationElement extends WidgetAnnotationElement {
     constructor(parameters) {
         const isRenderable = parameters.renderForms ||
+            parameters.data.hasOwnCanvas ||
             (!parameters.data.hasAppearance && !!parameters.data.fieldValue);
         super(parameters, { isRenderable });
     }
@@ -1255,6 +1260,9 @@ class TextWidgetAnnotationElement extends WidgetAnnotationElement {
             element.textContent = this.data.fieldValue;
             element.style.verticalAlign = "middle";
             element.style.display = "table-cell";
+            if (this.data.hasOwnCanvas) {
+                element.hidden = true;
+            }
         }
         this._setTextStyle(element);
         this._setBackgroundColor(element);
@@ -1694,10 +1702,10 @@ class PopupAnnotationElement extends AnnotationElement {
     }
 }
 class PopupElement {
-    #dateTimePromise;
     #color;
     #container;
     #contentsObj;
+    #dateObj;
     #elements;
     #parent;
     #parentRect;
@@ -1718,16 +1726,10 @@ class PopupElement {
         this.#rect = rect;
         this.#parentRect = parentRect;
         this.#elements = elements;
-        const dateObject = PDFDateString.toDateObject(modificationDate);
-        if (dateObject) {
-            // The modification date is shown in the popup instead of the creation
-            // date if it is available and can be parsed correctly, which is
-            // consistent with other viewers such as Adobe Acrobat.
-            this.#dateTimePromise = parent.l10n.get("annotation_date_string", {
-                date: dateObject.toLocaleDateString(),
-                time: dateObject.toLocaleTimeString(),
-            });
-        }
+        // The modification date is shown in the popup instead of the creation
+        // date if it is available and can be parsed correctly, which is
+        // consistent with other viewers such as Adobe Acrobat.
+        this.#dateObj = PDFDateString.toDateObject(modificationDate);
         this.trigger = elements.flatMap((e) => e.getElementsToTriggerPopup());
         // Attach the event listeners to the trigger element.
         for (const element of this.trigger) {
@@ -1782,11 +1784,15 @@ class PopupElement {
         header.append(title);
         ({ dir: title.dir, str: title.textContent } = this.#titleObj);
         popup.append(header);
-        if (this.#dateTimePromise) {
+        if (this.#dateObj) {
             const modificationDate = span();
             modificationDate.classList.add("popupDate");
-            this.#dateTimePromise.then((localized) => {
-                modificationDate.textContent = localized;
+            modificationDate.assignAttro({
+                "data-l10n-id": "pdfjs-annotation-date-string",
+                "data-l10n-args": JSON.stringify({
+                    date: this.#dateObj.toLocaleDateString(),
+                    time: this.#dateObj.toLocaleTimeString(),
+                }),
             });
             header.append(modificationDate);
         }
@@ -1808,7 +1814,7 @@ class PopupElement {
         let useParentRect = !!this.#parentRect;
         let rect = useParentRect ? this.#parentRect : this.#rect;
         for (const element of this.#elements) {
-            if (!rect || Util.intersect(element.data.rect, rect) !== null) {
+            if (!rect || Util.intersect(element.data.rect, rect) !== undefined) {
                 rect = element.data.rect;
                 useParentRect = true;
                 break;
@@ -1945,6 +1951,9 @@ export class FreeTextAnnotationElement extends AnnotationElement {
         }
         this.editOnDoubleClick$();
         return this.container;
+    }
+    get _isEditable() {
+        return this.data.hasOwnCanvas;
     }
 }
 class LineAnnotationElement extends AnnotationElement {
@@ -2355,7 +2364,7 @@ export class FileAttachmentAnnotationElement extends AnnotationElement {
      * Download the file attachment associated with this annotation.
      */
     #download = () => {
-        this.downloadManager?.openOrDownloadData(this.container, this.content, this.filename);
+        this.downloadManager?.openOrDownloadData(this.content, this.filename);
     };
 }
 /**
@@ -2365,22 +2374,17 @@ export class AnnotationLayer {
     div;
     #accessibilityManager;
     #annotationCanvasMap;
-    l10n;
     page;
     viewport;
     zIndex = 0;
     popupShow;
     #editableAnnotations = new Map();
-    constructor({ div, accessibilityManager, annotationCanvasMap, l10n, page, viewport, }) {
+    constructor({ div, accessibilityManager, annotationCanvasMap, page, viewport, }) {
         this.div = div;
         this.#accessibilityManager = accessibilityManager;
         this.#annotationCanvasMap = annotationCanvasMap;
-        this.l10n = l10n;
         this.page = page;
         this.viewport = viewport;
-        /*#static*/  {
-            this.l10n ||= NullL10n;
-        }
         /*#static*/ 
     }
     #appendElement(element, id) {
@@ -2453,7 +2457,6 @@ export class AnnotationLayer {
             this.#appendElement(rendered, data.id);
         }
         this.#setAnnotationCanvasMap();
-        await this.l10n.translate(layer);
     }
     /**
      * Update the annotation elements on existing annotation layer.

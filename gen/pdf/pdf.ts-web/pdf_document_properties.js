@@ -21,16 +21,17 @@ import { getPageSizeInches, isPortraitOrientation } from "./ui_utils.js";
 /*80--------------------------------------------------------------------------*/
 const DEFAULT_FIELD_CONTENT = "-";
 // See https://en.wikibooks.org/wiki/Lentis/Conversion_to_the_Metric_Standard_in_the_United_States
-const NON_METRIC_LOCALES = ["en-us", "en-lr", "my"];
-// Should use the format: `width x height`, in portrait orientation.
+const NON_METRIC_LOCALES = ["en-US", "en-LR", "my"];
+// Should use the format: `width x height`, in portrait orientation. The names,
+// which are l10n-ids, should be lowercase.
 // See https://en.wikipedia.org/wiki/Paper_size
 const US_PAGE_NAMES = {
-    "8.5x11": "Letter",
-    "8.5x14": "Legal",
+    "8.5x11": "letter",
+    "8.5x14": "legal",
 };
 const METRIC_PAGE_NAMES = {
-    "297x420": "A3",
-    "210x297": "A4",
+    "297x420": "a-three",
+    "210x297": "a-four",
 };
 function getPageName(size, isPortrait, pageNames) {
     const width = isPortrait ? size.width : size.height;
@@ -50,10 +51,7 @@ export class PDFDocumentProperties {
     #dataAvailableCapability;
     _currentPageNumber;
     _pagesRotation;
-    /**
-     * The default viewer locale is 'en-us'.
-     */
-    #isNonMetricLocale = true;
+    #isNonMetricLocale;
     /**
      * @param overlayManager Manager for the viewer overlays.
      * @param eventBus The application event bus.
@@ -75,9 +73,7 @@ export class PDFDocumentProperties {
         eventBus._on("rotationchanging", (evt) => {
             this._pagesRotation = evt.pagesRotation;
         });
-        l10n.getLanguage().then((locale) => {
-            this.#isNonMetricLocale = NON_METRIC_LOCALES.includes(locale);
-        });
+        this.#isNonMetricLocale = NON_METRIC_LOCALES.includes(l10n.getLanguage());
     }
     /**
      * Open the document properties overlay.
@@ -203,7 +199,7 @@ export class PDFDocumentProperties {
         if (!kb) {
             return undefined;
         }
-        return this.l10n.get(`document_properties_${mb >= 1 ? "mb" : "kb"}`, {
+        return this.l10n.get(`pdfjs-document-properties-${mb >= 1 ? "mb" : "kb"}`, {
             size_mb: (mb >= 1 && (+mb.toPrecision(3)).toLocaleString()),
             size_kb: (mb < 1 && (+kb.toPrecision(3)).toLocaleString()),
             size_b: fileSize.toLocaleString(),
@@ -263,12 +259,12 @@ export class PDFDocumentProperties {
         }
         const [{ width, height }, unit, name, orientation] = await Promise.all([
             this.#isNonMetricLocale ? sizeInches : sizeMillimeters,
-            this.l10n.get(`document_properties_page_size_unit_${this.#isNonMetricLocale ? "inches" : "millimeters"}`),
+            this.l10n.get(`pdfjs-document-properties-page-size-unit-${this.#isNonMetricLocale ? "inches" : "millimeters"}`),
             rawName &&
-                this.l10n.get(`document_properties_page_size_name_${rawName.toLowerCase()}`),
-            this.l10n.get(`document_properties_page_size_orientation_${isPortrait ? "portrait" : "landscape"}`),
+                this.l10n.get(`pdfjs-document-properties-page-size-name-${rawName}`),
+            this.l10n.get(`pdfjs-document-properties-page-size-orientation-${isPortrait ? "portrait" : "landscape"}`),
         ]);
-        return this.l10n.get(`document_properties_page_size_dimension_${name ? "name_" : ""}string`, {
+        return this.l10n.get(`pdfjs-document-properties-page-size-dimension-${name ? "name-" : ""}string`, {
             width: width.toLocaleString(),
             height: height.toLocaleString(),
             unit,
@@ -281,13 +277,13 @@ export class PDFDocumentProperties {
         if (!dateObject) {
             return undefined;
         }
-        return this.l10n.get("document_properties_date_string", {
+        return this.l10n.get("pdfjs-document-properties-date-string", {
             date: dateObject.toLocaleDateString(),
             time: dateObject.toLocaleTimeString(),
         });
     }
     #parseLinearization(isLinearized) {
-        return this.l10n.get(`document_properties_linearized_${isLinearized ? "yes" : "no"}`);
+        return this.l10n.get(`pdfjs-document-properties-linearized-${isLinearized ? "yes" : "no"}`);
     }
 }
 /*80--------------------------------------------------------------------------*/

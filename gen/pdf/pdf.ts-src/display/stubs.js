@@ -20,10 +20,8 @@ export const NodeCanvasFactory = undefined;
 export const NodeCMapReaderFactory = undefined;
 export const NodeFilterFactory = undefined;
 export const NodeStandardFontDataFactory = undefined;
-export const NullL10n = undefined;
 export const PDFFetchStream = undefined;
 export const PDFNetworkStream = undefined;
 export const PDFNodeStream = undefined;
-export const SVGGraphics = undefined;
 /*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=stubs.js.map

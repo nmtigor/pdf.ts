@@ -63,6 +63,7 @@ export declare abstract class Vuu<C extends Coo = Coo, E extends Element = Eleme
     on<E extends EventName>(type: E, listener: EventHandler<E>, options?: AddEventListenerOptions | boolean): void;
     off<E extends EventName>(type: E, listener: EventHandler<E>, options?: EventListenerOptions | boolean): void;
     assignAttro(attr_o: Record<string, string | number>): this;
+    get bcr(): DOMRect;
 }
 export declare class HTMLVuu<C extends Coo = Coo, E extends HTMLElement = HTMLElement> extends Vuu<C, E> {
     assignStylo(styl_o: CSSStyle): this;

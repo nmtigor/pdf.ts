@@ -15,7 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { PDFJSDev, SKIP_BABEL, TESTING } from "../../../global.js";
 import { fail } from "../../../lib/util/trace.js";
 import { MurmurHash3_64 } from "../shared/murmurhash3.js";
 import { objectFromMap } from "../shared/util.js";
@@ -139,7 +138,7 @@ export class AnnotationStorage {
         if (this.#storage.size === 0) {
             return SerializableEmpty;
         }
-        const map = new Map(), hash = new MurmurHash3_64(), transfers = [];
+        const map = new Map(), hash = new MurmurHash3_64(), transfer = [];
         const context = Object.create(null);
         let hasBitmap = false;
         for (const [key, val] of this.#storage) {
@@ -157,12 +156,12 @@ export class AnnotationStorage {
             // during serialization with SVG images.
             for (const value of map.values()) {
                 if (value.bitmap) {
-                    transfers.push(value.bitmap);
+                    transfer.push(value.bitmap);
                 }
             }
         }
         return map.size > 0
-            ? { map, hash: hash.hexdigest(), transfers }
+            ? { map, hash: hash.hexdigest(), transfer }
             : SerializableEmpty;
     }
 }
@@ -175,12 +174,10 @@ export class PrintAnnotationStorage extends AnnotationStorage {
     #serializable;
     constructor(parent) {
         super();
-        const { map, hash, transfers } = parent.serializable;
+        const { map, hash, transfer } = parent.serializable;
         // Create a *copy* of the data, since Objects are passed by reference in JS.
-        const clone = structuredClone(map, (PDFJSDev || SKIP_BABEL || TESTING) && transfers
-            ? { transfer: transfers }
-            : undefined);
-        this.#serializable = { map: clone, hash, transfers };
+        const clone = structuredClone(map, transfer ? { transfer } : undefined);
+        this.#serializable = { map: clone, hash, transfer };
     }
     // eslint-disable-next-line getter-return
     get print() {

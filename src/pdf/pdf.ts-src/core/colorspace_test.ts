@@ -23,7 +23,7 @@ import {
   assertStrictEquals,
 } from "@std/testing/asserts.ts";
 import { afterAll, beforeAll, describe, it } from "@std/testing/bdd.ts";
-import { XRefMock } from "../shared/test_utils.ts";
+import { XRefMock } from "../../test_utils.ts";
 import { ColorSpace } from "./colorspace.ts";
 import { PDFFunctionFactory } from "./function.ts";
 import { LocalColorSpaceCache } from "./image_utils.ts";

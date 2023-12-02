@@ -1,3 +1,7 @@
+/* Converted from JavaScript to TypeScript by
+ * nmtigor (https://github.com/nmtigor) @2022
+ */
+
 /* Copyright 2020 Mozilla Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,9 +17,10 @@
  * limitations under the License.
  */
 
-import { html } from "../../lib/dom.ts";
+import { html } from "@fe-lib/dom.ts";
 import { PDFDocumentProxy } from "../pdf.ts-src/pdf.ts";
 import { EventBus } from "./event_utils.ts";
+import type { IL10n } from "./interfaces.ts";
 import { removeNullCharacters } from "./ui_utils.ts";
 /*80--------------------------------------------------------------------------*/
 
@@ -32,11 +37,17 @@ export interface BaseTreeViewerCtorP {
    * The application event bus.
    */
   eventBus: EventBus;
+
+  /**
+   * Localization service.
+   */
+  l10n: IL10n;
 }
 
 export abstract class BaseTreeViewer {
   container;
   eventBus;
+  _l10n;
 
   protected _pdfDocument: PDFDocumentProxy | undefined;
   #lastToggleIsShow!: boolean;
@@ -45,6 +56,7 @@ export abstract class BaseTreeViewer {
   constructor(options: BaseTreeViewerCtorP) {
     this.container = options.container;
     this.eventBus = options.eventBus;
+    this._l10n = options.l10n;
 
     // See src/test/jslang_inherit.ts
     // this.reset();
@@ -108,10 +120,14 @@ export abstract class BaseTreeViewer {
    *   the item subtree rooted at `root` will be collapsed.
    */
   #toggleTreeItem(root: HTMLDivElement, show = false) {
+    // Pause translation when collapsing/expanding the subtree.
+    this._l10n.pause();
+
     this.#lastToggleIsShow = show;
     root.querySelectorAll(".treeItemToggler").forEach((toggler) => {
       toggler.classList.toggle("treeItemsHidden", !show);
     });
+    this._l10n.resume();
   }
 
   /**
@@ -132,7 +148,10 @@ export abstract class BaseTreeViewer {
 
       this.#lastToggleIsShow = !fragment.querySelector(".treeItemsHidden");
     }
+    // Pause translation when inserting the tree into the DOM.
+    this._l10n.pause();
     this.container.append(fragment);
+    this._l10n.resume();
 
     this._dispatchEvent(count);
   }
@@ -152,8 +171,11 @@ export abstract class BaseTreeViewer {
   }
 
   protected _scrollToCurrentTreeItem(treeItem: HTMLElement | null) {
-    if (!treeItem) return;
-
+    if (!treeItem) {
+      return;
+    }
+    // Pause translation when expanding the treeItem.
+    this._l10n.pause();
     // Ensure that the treeItem is *fully* expanded, such that it will first of
     // all be visible and secondly that scrolling it into view works correctly.
     let currentNode = treeItem.parentNode as HTMLElement | null;
@@ -164,6 +186,8 @@ export abstract class BaseTreeViewer {
       }
       currentNode = currentNode.parentNode as HTMLElement | null;
     }
+    this._l10n.resume();
+
     this._updateCurrentTreeItem(treeItem);
 
     this.container.scrollTo(

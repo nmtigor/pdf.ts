@@ -24,7 +24,7 @@ import { LocalColorSpaceCache, LocalGStateCache, LocalImageCache, LocalTilingPat
 import { getMetrics } from "./metrics.js";
 import { OperatorList } from "./operator_list.js";
 import { Lexer, Parser } from "./parser.js";
-import { getTilingPatternIR, Pattern, } from "./pattern.js";
+import { getTilingPatternIR, Pattern } from "./pattern.js";
 import { Cmd, Dict, EOF, FontDict, isName, Name, Ref, RefSet, } from "./primitives.js";
 import { getFontNameToFileMap, getSerifFonts, getStandardFontName, getStdFontMap, getSymbolsFonts, isKnownFontName, } from "./standard_fonts.js";
 import { NullStream, Stream } from "./stream.js";
@@ -1932,6 +1932,11 @@ export class PartialEvaluator {
                     descent: font.descent,
                     vertical: font.vertical,
                 };
+                if (self.options.fontExtraProperties && font.systemFontInfo) {
+                    const style = textContent.styles[loadedName];
+                    style.fontSubstitution = font.systemFontInfo.css;
+                    style.fontSubstitutionLoadedName = font.systemFontInfo.loadedName;
+                }
             }
             textContentItem.fontName = loadedName;
             const trm = (textContentItem.transform = getCurrentTextTransform());

@@ -1,23 +1,4 @@
-import { Locale_1, WebL10nArgs } from "../../3rd/webL10n-2015-10-24/l10n.js";
 import type { IDownloadManager } from "./interfaces.js";
-type _L10nData = Record<string, Record<string, string>>;
-interface _ELS {
-    getLocale(): Lowercase<Locale_1>;
-    getStrings(): _L10nData;
-}
-interface _DocMozL10n {
-    get(key: string, args?: WebL10nArgs, fallback?: string): string;
-    getLanguage(): Lowercase<Locale_1> | "";
-    getDirection(): "rtl" | "ltr";
-    getReadyState(): unknown;
-    setExternalLocalizerServices(externalLocalizerServices: _ELS): void;
-    translate(element: HTMLElement): void;
-}
-declare global {
-    interface Document {
-        mozL10n: _DocMozL10n;
-    }
-}
 export declare class FirefoxCom {
     /**
      * Creates an event that the extension is listening for and will
@@ -55,7 +36,7 @@ export declare class DownloadManager implements IDownloadManager {
      * @implement
      * @return Indicating if the data was opened.
      */
-    openOrDownloadData(element: HTMLElement, data: Uint8Array | Uint8ClampedArray, filename: string): boolean;
+    openOrDownloadData(data: Uint8Array | Uint8ClampedArray, filename: string, dest?: string): boolean;
     /** @implement */
     download(blob: Blob, url: string, filename: string, options?: object): void;
 }
@@ -63,5 +44,4 @@ export type NimbusExperimentData = {
     "download-button"?: unknown;
     "open-in-app-button"?: unknown;
 };
-export {};
 //# sourceMappingURL=firefoxcom.d.ts.map

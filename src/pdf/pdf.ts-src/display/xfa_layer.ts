@@ -17,11 +17,6 @@
  * limitations under the License.
  */
 
-// eslint-disable-next-line max-len
-/** @typedef {import("./annotation_storage").AnnotationStorage} AnnotationStorage */
-/** @typedef {import("./display_utils").PageViewport} PageViewport */
-/** @typedef {import("../../web/interfaces").IPDFLinkService} IPDFLinkService */
-
 import { html as createHTML, textnode } from "@fe-lib/dom.ts";
 import type { IPDFLinkService } from "@pdf.ts-web/interfaces.ts";
 import type { XFAElObj, XFAHTMLObj } from "../core/xfa/alias.ts";
@@ -217,8 +212,8 @@ export abstract class XfaLayer {
         linkService,
       });
     }
-    const stack = [<[XFAElObj, number, Element]> [root, -1, rootHtml]];
 
+    const isNotForRichText = intent !== "richText";
     const rootDiv = parameters.div;
     rootDiv.append(rootHtml);
 
@@ -228,12 +223,27 @@ export abstract class XfaLayer {
     }
 
     // Set defaults.
-    if (intent !== "richText") {
+    if (isNotForRichText) {
       rootDiv.setAttribute("class", "xfaLayer xfaFont");
     }
 
     // Text nodes used for the text highlighter.
     const textDivs = [];
+
+    // In the rich text context, it's possible to just have a text node without
+    // a root element, so we handle this case here (see issue 17215).
+    if (root.children!.length === 0) {
+      if (root.value) {
+        const node = document.createTextNode(root.value);
+        rootHtml.append(node);
+        if (isNotForRichText && XfaText.shouldBuildText(root.name)) {
+          textDivs.push(node);
+        }
+      }
+      return { textDivs };
+    }
+
+    const stack: [XFAElObj, number, Element][] = [[root, -1, rootHtml]];
 
     while (stack.length > 0) {
       const [parent, i, html] = stack.at(-1)!;
@@ -270,11 +280,11 @@ export abstract class XfaLayer {
         });
       }
 
-      if (child.children && child.children.length > 0) {
+      if (child.children?.length! > 0) {
         stack.push([child, -1, childHtml]);
       } else if (child.value) {
         const node = textnode(child.value);
-        if (XfaText.shouldBuildText(name)) {
+        if (isNotForRichText && XfaText.shouldBuildText(name)) {
           textDivs.push(node);
         }
         childHtml.append(node);

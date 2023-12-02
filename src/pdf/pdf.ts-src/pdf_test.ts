@@ -18,7 +18,7 @@
  */
 
 import { LIB } from "@fe-src/global.ts";
-import { assertObjectMatch } from "@std/assert/mod.ts";
+import { assertEquals } from "@std/assert/mod.ts";
 import { describe, it } from "@std/testing/bdd.ts";
 import { AnnotationLayer } from "./display/annotation_layer.ts";
 import {
@@ -26,7 +26,6 @@ import {
   getDocument,
   PDFDataRangeTransport,
   PDFWorker,
-  SVGGraphics,
   version,
 } from "./display/api.ts";
 import {
@@ -36,7 +35,6 @@ import {
   getXfaPageViewport,
   isDataScheme,
   isPdfFile,
-  loadScript,
   PDFDateString,
   PixelsPerInch,
   RenderingCancelledException,
@@ -49,74 +47,99 @@ import { GlobalWorkerOptions } from "./display/worker_options.ts";
 import { XfaLayer } from "./display/xfa_layer.ts";
 import {
   AbortException,
+  AnnotationEditorParamsType,
   AnnotationEditorType,
+  AnnotationMode,
+  CMapCompressionType,
   createValidAbsoluteUrl,
   FeatureTest,
+  ImageKind,
   InvalidPDFException,
   MissingPDFException,
   normalizeUnicode,
   OPS,
+  PasswordResponses,
   PermissionFlag,
   shadow,
   UnexpectedResponseException,
   Util,
+  VerbosityLevel,
 } from "./shared/util.ts";
 /*80--------------------------------------------------------------------------*/
+
+const expectedAPI = Object.freeze({
+  AbortException,
+  AnnotationEditorLayer,
+  AnnotationEditorParamsType,
+  AnnotationEditorType,
+  AnnotationEditorUIManager,
+  AnnotationLayer,
+  AnnotationMode,
+  build,
+  CMapCompressionType,
+  createValidAbsoluteUrl,
+  DOMSVGFactory,
+  FeatureTest,
+  getDocument,
+  getFilenameFromUrl,
+  getPdfFilenameFromUrl,
+  getXfaPageViewport,
+  GlobalWorkerOptions,
+  ImageKind,
+  InvalidPDFException,
+  isDataScheme,
+  isPdfFile,
+  MissingPDFException,
+  // noContextMenu,
+  normalizeUnicode,
+  OPS,
+  PasswordResponses,
+  PDFDataRangeTransport,
+  PDFDateString,
+  PDFWorker,
+  PermissionFlag,
+  PixelsPerInch,
+  // PromiseCapability,
+  RenderingCancelledException,
+  renderTextLayer,
+  setLayerDimensions,
+  shadow,
+  UnexpectedResponseException,
+  updateTextLayer,
+  Util,
+  VerbosityLevel,
+  version,
+  XfaLayer,
+});
 
 describe("pdfjs_api", () => {
   it("checks that the *official* PDF.js API exposes the expected functionality", async () => {
     // eslint-disable-next-line no-unsanitized/method
-    const pdfjsAPI = await import(/*#static*/ LIB ? "./pdf.ts" : "./pdf.ts");
+    const pdfjsAPI = await import(
+      /*#static*/ LIB ? "./pdf.ts" : "./pdf.ts"
+    );
 
     // The imported Object contains an (automatically) inserted Symbol,
     // hence we copy the data to allow using a simple comparison below.
-    assertObjectMatch({ ...pdfjsAPI }, {
-      AbortException,
-      AnnotationEditorLayer,
-      // AnnotationEditorParamsType,
-      AnnotationEditorType,
-      AnnotationEditorUIManager,
-      AnnotationLayer,
-      // AnnotationMode,
-      build,
-      // CMapCompressionType,
-      createValidAbsoluteUrl,
-      DOMSVGFactory,
-
-      FeatureTest,
-      getDocument,
-      getFilenameFromUrl,
-      getPdfFilenameFromUrl,
-      getXfaPageViewport,
-      GlobalWorkerOptions,
-      // ImageKind,
-      InvalidPDFException,
-      isDataScheme,
-      isPdfFile,
-      loadScript,
-      MissingPDFException,
-      // noContextMenu,
-      normalizeUnicode,
-      OPS,
-      // PasswordResponses,
-      PDFDataRangeTransport,
-      PDFDateString,
-      PDFWorker,
-      PermissionFlag,
-      PixelsPerInch,
-      // PromiseCapability,
-      RenderingCancelledException,
-      renderTextLayer,
-      setLayerDimensions,
-      shadow,
-      SVGGraphics,
-      UnexpectedResponseException,
-      updateTextLayer,
-      Util,
-      // VerbosityLevel,
-      version,
-      XfaLayer,
-    });
+    assertEquals({ ...pdfjsAPI }, expectedAPI);
   });
+});
+
+describe("web_pdfjsLib", () => {
+  //kkkk
+  // it("checks that the viewer re-exports the expected API functionality", async () => {
+  //   if (isNodeJS) {
+  //     pending("loadScript is not supported in Node.js.");
+  //   }
+  //   const apiPath = "../../build/generic/build/pdf.mjs";
+  //   await import(apiPath);
+
+  //   const webPdfjsLib = await import("../pdf.ts-web/pdfjs.ts");
+
+  //   assertEquals(
+  //     Object.keys(webPdfjsLib).sort(),
+  //     Object.keys(expectedAPI).sort(),
+  //   );
+  // });
 });
 /*80--------------------------------------------------------------------------*/

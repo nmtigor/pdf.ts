@@ -1,4 +1,14 @@
-/** All locales with the dashes and capitalization, e.g. `en-US`, `zh-Hant-HK`. */
+/** 80**************************************************************************
+ * @module lib/Locale
+ * @license Apache-2.0
+ ******************************************************************************/
+/*80--------------------------------------------------------------------------*/
+/**
+ * All locales with the dashes and capitalization, e.g. `en-US`, `zh-Hant-HK`.
+ *
+ * Ref. https://www.localeplanet.com/icu/index.html \
+ * Ref. https://learn.microsoft.com/en-us/openspecs/office_standards/ms-oe376/6c085406-a698-4e12-9d4d-c3b0ee3dbc4a
+ */
 export var Locale;
 (function (Locale) {
     Locale["af"] = "af";
@@ -274,6 +284,7 @@ export var Locale;
     Locale["fr_TD"] = "fr-TD";
     Locale["fr_TG"] = "fr-TG";
     Locale["fr_YT"] = "fr-YT";
+    Locale["fy_NL"] = "fy-NL";
     Locale["ga"] = "ga";
     Locale["ga_IE"] = "ga-IE";
     Locale["gl"] = "gl";
@@ -429,6 +440,7 @@ export var Locale;
     Locale["pa_Arab_PK"] = "pa-Arab-PK";
     Locale["pa_Guru"] = "pa-Guru";
     Locale["pa_Guru_IN"] = "pa-Guru-IN";
+    Locale["pa_IN"] = "pa-IN";
     Locale["pl"] = "pl";
     Locale["pl_PL"] = "pl-PL";
     Locale["ps"] = "ps";
@@ -554,6 +566,7 @@ export var Locale;
     Locale["yo"] = "yo";
     Locale["yo_NG"] = "yo-NG";
     Locale["zh"] = "zh";
+    Locale["zh_CN"] = "zh-CN";
     Locale["zh_Hans"] = "zh-Hans";
     Locale["zh_Hans_AE"] = "zh-Hans-AE";
     Locale["zh_Hans_AR"] = "zh-Hans-AR";
@@ -733,4 +746,5 @@ export var Locale;
     Locale["zu"] = "zu";
     Locale["zu_ZA"] = "zu-ZA";
 })(Locale || (Locale = {}));
+/*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=Locale.js.map

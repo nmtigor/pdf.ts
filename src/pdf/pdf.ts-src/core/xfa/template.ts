@@ -4781,7 +4781,7 @@ export class Para extends XFAObject {
       fixTextIndent(style);
     }
 
-    if (+this.lineHeight > 0) {
+    if (this.lineHeight as number > 0) {
       style.lineHeight = measureToString(this.lineHeight);
     }
 

@@ -35,7 +35,7 @@ declare namespace NsCFFParser {
         cff?: CFF;
         constructor(file: Stream, properties: FontProps, seacAnalysisEnabled: boolean);
         /**
-         * Ref. The Compact Font Format Specification
+         * Ref. The Compact Font Format Specification \
          * [CFF] https://adobe-type-tools.github.io/font-tech-notes/pdfs/5176.CFF.pdf
          */
         parse(): CFF;

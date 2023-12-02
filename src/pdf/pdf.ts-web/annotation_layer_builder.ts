@@ -17,17 +17,6 @@
  * limitations under the License.
  */
 
-/** @typedef {import("../src/display/api").PDFPageProxy} PDFPageProxy */
-// eslint-disable-next-line max-len
-/** @typedef {import("../src/display/display_utils").PageViewport} PageViewport */
-// eslint-disable-next-line max-len
-/** @typedef {import("../src/display/annotation_storage").AnnotationStorage} AnnotationStorage */
-/** @typedef {import("./interfaces").IDownloadManager} IDownloadManager */
-/** @typedef {import("./interfaces").IL10n} IL10n */
-/** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
-// eslint-disable-next-line max-len
-/** @typedef {import("./text_accessibility.js").TextAccessibilityManager} TextAccessibilityManager */
-
 import { html } from "@fe-lib/dom.ts";
 import type { AnnotationLayerP } from "../pdf.ts-src/display/annotation_layer.ts";
 import { MetadataEx } from "../pdf.ts-src/display/api.ts";
@@ -40,8 +29,7 @@ import type {
   PDFPageProxy,
 } from "../pdf.ts-src/pdf.ts";
 import { AnnotationLayer } from "../pdf.ts-src/pdf.ts";
-import type { IDownloadManager, IL10n, IPDFLinkService } from "./interfaces.ts";
-import { NullL10n } from "./l10n_utils.ts";
+import type { IDownloadManager, IPDFLinkService } from "./interfaces.ts";
 import type { TextAccessibilityManager } from "./text_accessibility.ts";
 import { PresentationModeState } from "./ui_utils.ts";
 /*80--------------------------------------------------------------------------*/
@@ -59,12 +47,6 @@ interface AnnotationLayerBuilderOptions {
   renderForms: boolean;
   linkService: IPDFLinkService;
   downloadManager?: IDownloadManager | undefined;
-
-  /**
-   * Localization service.
-   */
-  l10n: IL10n;
-
   enableScripting?: boolean;
   hasJSActionsPromise?: Promise<boolean> | undefined;
   fieldObjectsPromise:
@@ -87,7 +69,6 @@ export class AnnotationLayerBuilder {
   downloadManager;
   imageResourcesPath;
   renderForms;
-  l10n;
   annotationStorage;
   enableScripting;
   _hasJSActionsPromise;
@@ -112,7 +93,6 @@ export class AnnotationLayerBuilder {
     annotationStorage,
     imageResourcesPath = "",
     renderForms = true,
-    l10n = NullL10n,
     enableScripting = false,
     hasJSActionsPromise,
     fieldObjectsPromise,
@@ -125,7 +105,6 @@ export class AnnotationLayerBuilder {
     this.downloadManager = downloadManager;
     this.imageResourcesPath = imageResourcesPath;
     this.renderForms = renderForms;
-    this.l10n = l10n;
     this.annotationStorage = annotationStorage;
     this.enableScripting = enableScripting;
     this._hasJSActionsPromise = hasJSActionsPromise || Promise.resolve(false);
@@ -180,7 +159,6 @@ export class AnnotationLayerBuilder {
       div,
       accessibilityManager: this._accessibilityManager,
       annotationCanvasMap: this._annotationCanvasMap,
-      l10n: this.l10n,
       page: this.pdfPage,
       viewport: viewport.clone({ dontFlip: true }),
     } as AnnotationLayerP);

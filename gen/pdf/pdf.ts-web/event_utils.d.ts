@@ -302,6 +302,7 @@ export interface EventMap {
         source: AnnotationElement | AnnotationEditorUIManager;
         mode: AnnotationEditorType | undefined;
         editId?: string;
+        isFromKeyboard?: boolean;
     };
     switchannotationeditorparams: {
         source: AnnotationEditorParams;

@@ -20,7 +20,7 @@
 import { CHROME, GENERIC, MOZCENTRAL, PDFJSDev } from "@fe-src/global.ts";
 import { viewerApp } from "./app.ts";
 
-// Ref. gulpfile.mjs of pdf.js
+/* Ref. gulpfile.mjs of pdf.js */
 /*#static*/ if (CHROME) {
   await import("./chromecom.ts");
   await import("./pdf_print_service.ts");

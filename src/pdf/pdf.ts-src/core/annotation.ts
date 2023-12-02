@@ -20,6 +20,7 @@
 import type {
   Constructor,
   dot2d_t,
+  int,
   OC2D,
   rect_t,
   TupleOf,
@@ -912,9 +913,20 @@ export class Annotation {
    * @see {@link shared/util.js}
    */
   setFlags(flags: unknown) {
-    this.flags = Number.isInteger(flags) && (flags as number) > 0
-      ? (flags as number)
+    this.flags = Number.isInteger(flags) && (flags as int) > 0
+      ? (flags as AnnotationFlag)
       : 0;
+    if (
+      this.flags & AnnotationFlag.INVISIBLE &&
+      this.constructor.name !== "Annotation"
+    ) {
+      // From the pdf spec v1.7, section 12.5.3 (Annotation Flags):
+      //   If set, do not display the annotation if it does not belong to one of
+      //   the standard annotation types and no annotation handler is available.
+      //
+      // So we can remove the flag in case we have a known annotation type.
+      this.flags ^= AnnotationFlag.INVISIBLE;
+    }
   }
 
   protected _hasFlag(flags: AnnotationFlag, flag: AnnotationFlag) {
@@ -2141,7 +2153,7 @@ export class WidgetAnnotation extends Annotation {
     const acroFormResources = annotationGlobals.acroForm.get("DR") as
       | Dict
       | undefined;
-    const appearanceResources = this.appearance?.dict!.get(
+    const appearanceResources = this.appearance?.dict?.get(
       "Resources",
     ) as Dict | undefined;
 
@@ -2198,16 +2210,16 @@ export class WidgetAnnotation extends Annotation {
     return !!(this.data.fieldFlags! & flag);
   }
 
-  /** @inheritdoc */
   override _isViewable(flags: AnnotationFlag) {
     // We don't take into account the `NOVIEW` or `HIDDEN` flags here,
     // since the visibility can be changed by js code, hence in case
     // it's made viewable, we should render it (with visibility set to
     // hidden).
-    return !this._hasFlag(flags, AnnotationFlag.INVISIBLE);
+    // We don't take into account the `INVISIBLE` flag here, since we've a known
+    // annotation type.
+    return true;
   }
 
-  /** @inheritdoc */
   override mustBeViewed(
     annotationStorage?: AnnotStorageRecord,
     renderForms?: boolean,
@@ -3329,6 +3341,7 @@ class ButtonWidgetAnnotation extends WidgetAnnotation {
     else if (this.data.radioButton) this._processRadioButton(params);
     else if (this.data.pushButton) {
       this.data.hasOwnCanvas = true;
+      this.data.noHTML = false;
       this._processPushButton(params);
     } else warn("Invalid field flags for button widget annotation");
   }
@@ -3707,7 +3720,7 @@ class ButtonWidgetAnnotation extends WidgetAnnotation {
   }
 
   _processRadioButton(params: AnnotationCtorP_) {
-    this.data.fieldValue = this.data.buttonValue = undefined;
+    this.data.buttonValue = undefined;
 
     // The parent field's `V` entry holds a `Name` object with the appearance
     // state of whichever child field is currently in the "on" state.
@@ -4098,6 +4111,7 @@ class SignatureWidgetAnnotation extends WidgetAnnotation {
     // to the main-thread (issue 10347).
     this.data.fieldValue = undefined;
     this.data.hasOwnCanvas = this.data.noRotate;
+    this.data.noHTML = !this.data.hasOwnCanvas;
   }
 
   override getFieldObject(): FieldObject {
@@ -4118,6 +4132,7 @@ class TextAnnotation extends MarkupAnnotation {
     // No rotation for Text (see 12.5.6.4).
     this.data.noRotate = true;
     this.data.hasOwnCanvas = this.data.noRotate;
+    this.data.noHTML = false;
 
     const { dict } = params;
     this.data.annotationType = AnnotationType.TEXT;
@@ -4172,6 +4187,11 @@ export class PopupAnnotation extends Annotation {
 
     const { dict } = params;
     this.data.annotationType = AnnotationType.POPUP;
+
+    // A pop-up is never rendered on the main canvas so we must render its HTML
+    // version.
+    this.data.noHTML = false;
+
     if (
       this.data.rect![0] === this.data.rect![2] ||
       this.data.rect![1] === this.data.rect![3]
@@ -4242,7 +4262,12 @@ class FreeTextAnnotation extends MarkupAnnotation {
   constructor(params: AnnotationCtorP_) {
     super(params);
 
-    this.data.hasOwnCanvas = true;
+    // It uses its own canvas in order to be hidden if edited.
+    // But if it has the noHTML flag, it means that we don't want to be able
+    // to modify it so we can just draw it on the main canvas.
+    this.data.hasOwnCanvas = !this.data.noHTML;
+    // We want to be able to add mouse listeners to the annotation.
+    this.data.noHTML = false;
 
     const { evaluatorOptions, xref } = params;
     this.data.annotationType = AnnotationType.FREETEXT;
@@ -4466,6 +4491,7 @@ class LineAnnotation extends MarkupAnnotation {
     const { dict, xref } = params;
     this.data.annotationType = AnnotationType.LINE;
     this.data.hasOwnCanvas = this.data.noRotate;
+    this.data.noHTML = false;
 
     const lineCoordinates = dict.getArray("L") as rect_t;
     this.data.lineCoordinates = Util.normalizeRect(lineCoordinates);
@@ -4537,6 +4563,7 @@ class SquareAnnotation extends MarkupAnnotation {
     const { dict, xref } = params;
     this.data.annotationType = AnnotationType.SQUARE;
     this.data.hasOwnCanvas = this.data.noRotate;
+    this.data.noHTML = false;
 
     if (!this.appearance) {
       // The default stroke color is black.
@@ -4657,6 +4684,7 @@ class PolylineAnnotation extends MarkupAnnotation {
     const { dict, xref } = params;
     this.data.annotationType = AnnotationType.POLYLINE;
     this.data.hasOwnCanvas = this.data.noRotate;
+    this.data.noHTML = false;
     this.data.vertices = [];
 
     /*#static*/ if (PDFJSDev || !MOZCENTRAL) {
@@ -4747,6 +4775,7 @@ class InkAnnotation extends MarkupAnnotation {
     super(params);
 
     this.data.hasOwnCanvas = this.data.noRotate;
+    this.data.noHTML = false;
 
     const { dict, xref } = params;
     this.data.annotationType = AnnotationType.INK;
@@ -4930,7 +4959,7 @@ class HighlightAnnotation extends MarkupAnnotation {
     this.data.annotationType = AnnotationType.HIGHLIGHT;
     const quadPoints = (this.data.quadPoints = getQuadPoints(dict));
     if (quadPoints) {
-      const resources = this.appearance?.dict!.get(
+      const resources = this.appearance?.dict?.get(
         "Resources",
       ) as Dict | undefined;
 
@@ -5105,6 +5134,7 @@ class StampAnnotation extends MarkupAnnotation {
 
     this.data.annotationType = AnnotationType.STAMP;
     this.data.hasOwnCanvas = this.data.noRotate;
+    this.data.noHTML = false;
   }
 
   static async createImage(
@@ -5267,6 +5297,7 @@ class FileAttachmentAnnotation extends MarkupAnnotation {
 
     this.data.annotationType = AnnotationType.FILEATTACHMENT;
     this.data.hasOwnCanvas = this.data.noRotate;
+    this.data.noHTML = false;
     this.data.file = file.serializable;
 
     const name = dict.get("Name");

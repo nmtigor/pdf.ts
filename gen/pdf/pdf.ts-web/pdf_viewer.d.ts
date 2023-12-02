@@ -1,16 +1,6 @@
-/** @typedef {import("../src/display/api").PDFDocumentProxy} PDFDocumentProxy */
-/** @typedef {import("../src/display/api").PDFPageProxy} PDFPageProxy */
-/** @typedef {import("../src/display/display_utils").PageViewport} PageViewport */
-/** @typedef {import("../src/display/optional_content_config").OptionalContentConfig} OptionalContentConfig */
-/** @typedef {import("./event_utils").EventBus} EventBus */
-/** @typedef {import("./interfaces").IDownloadManager} IDownloadManager */
-/** @typedef {import("./interfaces").IL10n} IL10n */
-/** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
-/** @typedef {import("./pdf_find_controller").PDFFindController} PDFFindController */
-/** @typedef {import("./pdf_scripting_manager").PDFScriptingManager} PDFScriptingManager */
 import type { dot2d_t } from "../../lib/alias.js";
 import type { ExplicitDest, OptionalContentConfig, PDFDocumentProxy, PDFPageProxy } from "../pdf.ts-src/pdf.js";
-import { AnnotationEditorType, AnnotationMode } from "../pdf.ts-src/pdf.js";
+import { AnnotationEditorType, AnnotationEditorUIManager, AnnotationMode } from "../pdf.ts-src/pdf.js";
 import type { AltTextManager } from "./alt_text_manager.js";
 import type { EventBus, EventMap } from "./event_utils.js";
 import type { IDownloadManager, IL10n, IPDFLinkService } from "./interfaces.js";
@@ -201,17 +191,13 @@ export declare class PDFViewer {
     removePageBorders: boolean | undefined;
     isOffscreenCanvasSupported: boolean;
     maxCanvasPixels: number | undefined;
-    l10n: IL10n;
+    l10n: IL10n | undefined;
     pageColors: PageColors | undefined;
     defaultRenderingQueue: boolean;
     renderingQueue?: PDFRenderingQueue | undefined;
     scroll: {
         right: boolean;
-        down: boolean; /**
-         * Enables the creation and editing
-         * of new Annotations. The constants from {@link AnnotationEditorType} should
-         * be used. The default value is `AnnotationEditorType.DISABLE`.
-         */
+        down: boolean;
         lastX: number;
         lastY: number;
         _eventHandler: (evt: unknown) => void;
@@ -288,6 +274,16 @@ export declare class PDFViewer {
      * @param rotation The rotation of the pages (0, 90, 180, 270).
      */
     set pagesRotation(rotation: number);
+    get _layerProperties(): {
+        readonly annotationEditorUIManager: AnnotationEditorUIManager | undefined;
+        readonly annotationStorage: import("../pdf.ts-src/pdf.js").AnnotationStorage | undefined;
+        readonly downloadManager: IDownloadManager | undefined;
+        readonly enableScripting: boolean;
+        readonly fieldObjectsPromise: Promise<boolean | import("../pdf.ts-src/pdf.js").AnnotActions | Record<string, import("../pdf.ts-src/pdf.js").FieldObject[]> | import("../pdf.ts-src/display/api.js").MetadataEx | undefined> | undefined;
+        readonly findController: PDFFindController | undefined;
+        readonly hasJSActionsPromise: Promise<boolean> | undefined;
+        readonly linkService: IPDFLinkService | SimpleLinkService;
+    };
     getAllText(): Promise<string | null>;
     /** @final */
     setDocument(pdfDocument?: PDFDocumentProxy): void;
@@ -375,7 +371,7 @@ export declare class PDFViewer {
     /**
      * @param AnnotationEditor mode (None, FreeText, Ink, ...)
      */
-    set annotationEditorMode({ mode, editId }: EventMap["switchannotationeditormode"]);
+    set annotationEditorMode({ mode, editId, isFromKeyboard }: EventMap["switchannotationeditormode"]);
     set annotationEditorParams({ type, value }: EventMap["switchannotationeditorparams"]);
     refresh(noUpdate?: boolean, updateArgs?: any): void;
 }

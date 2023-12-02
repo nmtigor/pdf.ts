@@ -1,7 +1,5 @@
-import { Locale } from "../../lib/Locale.js";
 import "../../lib/jslang.js";
 import type { DocumentInfo, Metadata, OptionalContentConfig, PDFDataRangeTransport, PDFDocumentLoadingTask, PDFDocumentProxy, PrintAnnotationStorage } from "../pdf.ts-src/pdf.js";
-import { WorkerMessageHandler } from "../pdf.ts-src/pdf.js";
 import { AnnotationEditorParams } from "./annotation_editor_params.js";
 import { PDFBug } from "./debugger.js";
 import { EventBus, type EventMap } from "./event_utils.js";
@@ -53,22 +51,11 @@ export declare class DefaultExternalServices {
     reportTelemetry(data: EventMap["reporttelemetry"]["details"]): void;
     createDownloadManager(): IDownloadManager;
     createPreferences(): BasePreferences;
-    createL10n({ locale }?: {
-        locale?: Locale | undefined;
-    }): IL10n;
+    createL10n(): Promise<IL10n>;
     createScripting(options: {
         sandboxBundleSrc?: string | undefined;
     }): IScripting;
-    get supportsPinchToZoom(): boolean;
-    get supportsIntegratedFind(): boolean;
-    get supportsDocumentFonts(): boolean;
-    get supportedMouseWheelZoomModifierKeys(): {
-        ctrlKey: boolean;
-        metaKey: boolean;
-    };
-    get isInAutomation(): boolean;
     updateEditorStates(data: EventMap["annotationeditorstateschanged"]): void;
-    get canvasMaxAreaInBytes(): number;
     getNimbusExperimentData(): Promise<NimbusExperimentData | undefined>;
 }
 interface SetInitialViewP_ {
@@ -181,12 +168,9 @@ export declare class PDFViewerApplication {
     get supportsFullscreen(): boolean;
     get supportsPinchToZoom(): boolean;
     get supportsIntegratedFind(): boolean;
-    get supportsDocumentFonts(): boolean;
-    get loadingBar(): ProgressBar | null;
-    get supportedMouseWheelZoomModifierKeys(): {
-        ctrlKey: boolean;
-        metaKey: boolean;
-    };
+    get loadingBar(): ProgressBar | undefined;
+    get supportsMouseWheelZoomCtrlKey(): boolean;
+    get supportsMouseWheelZoomMetaKey(): boolean;
     initPassiveLoading(file: string | undefined): void;
     setTitleUsingUrl(url?: string, downloadUrl?: string): void;
     setTitle(title?: string): void;
@@ -210,11 +194,11 @@ export declare class PDFViewerApplication {
      */
     /**
      * Opens a new PDF document.
-     * @headconst @param args_x - Accepts any/all of the properties from
+     * @headconst @param args_x Accepts any/all of the properties from
      *   {@link DocumentInitParameters}, and also a `originalUrl` string.
      * @return Promise that is resolved when the document is opened.
      */
-    open(args_x: OpenP_ | string | ArrayBuffer): Promise<void | undefined>;
+    open(args: OpenP_): Promise<void | undefined>;
     download(options?: {}): Promise<void>;
     save(options?: {}): Promise<void>;
     downloadOrSave(options?: {}): void;
@@ -257,14 +241,6 @@ export declare class PDFViewerApplication {
     get scriptingReady(): boolean;
 }
 export declare const viewerApp: PDFViewerApplication;
-export interface PDFJSWorker {
-    WorkerMessageHandler: typeof WorkerMessageHandler;
-}
-declare global {
-    interface Window {
-        pdfjsWorker?: PDFJSWorker;
-    }
-}
 export declare const PDFPrintServiceFactory: {
     instance: {
         supportsPrinting: boolean;

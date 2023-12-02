@@ -43,7 +43,6 @@ export declare class PDFSidebar {
     _outlineOptionsContainer: HTMLDivElement;
     _currentOutlineItemButton: HTMLButtonElement;
     eventBus: EventBus;
-    l10n: IL10n;
     constructor({ elements, eventBus, l10n, }: PDFSidebarOptions);
     reset(): void;
     /**
@@ -60,7 +59,7 @@ export declare class PDFSidebar {
      *  must be one of the values in {SidebarView}.
      * @param forceOpen Ensure that the sidebar is open. The default value is `false`.
      */
-    switchView(view: number, forceOpen?: boolean): false | undefined;
+    switchView(view: SidebarView, forceOpen?: boolean): false | undefined;
     open(): void;
     close(): void;
     toggle(): void;

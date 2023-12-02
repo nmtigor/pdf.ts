@@ -1,4 +1,14 @@
-/** All locales with the dashes and capitalization, e.g. `en-US`, `zh-Hant-HK`. */
+/** 80**************************************************************************
+ * @module lib/Locale
+ * @license Apache-2.0
+ ******************************************************************************/
+export {};
+/**
+ * All locales with the dashes and capitalization, e.g. `en-US`, `zh-Hant-HK`.
+ *
+ * Ref. https://www.localeplanet.com/icu/index.html \
+ * Ref. https://learn.microsoft.com/en-us/openspecs/office_standards/ms-oe376/6c085406-a698-4e12-9d4d-c3b0ee3dbc4a
+ */
 export declare const enum Locale {
     af = "af",
     af_NA = "af-NA",
@@ -273,6 +283,7 @@ export declare const enum Locale {
     fr_TD = "fr-TD",
     fr_TG = "fr-TG",
     fr_YT = "fr-YT",
+    fy_NL = "fy-NL",
     ga = "ga",
     ga_IE = "ga-IE",
     gl = "gl",
@@ -428,6 +439,7 @@ export declare const enum Locale {
     pa_Arab_PK = "pa-Arab-PK",
     pa_Guru = "pa-Guru",
     pa_Guru_IN = "pa-Guru-IN",
+    pa_IN = "pa-IN",
     pl = "pl",
     pl_PL = "pl-PL",
     ps = "ps",
@@ -553,6 +565,7 @@ export declare const enum Locale {
     yo = "yo",
     yo_NG = "yo-NG",
     zh = "zh",
+    zh_CN = "zh-CN",
     zh_Hans = "zh-Hans",
     zh_Hans_AE = "zh-Hans-AE",
     zh_Hans_AR = "zh-Hans-AR",

@@ -1,7 +1,7 @@
 import type { C2D, OC2D } from "../../../lib/alias.js";
 import { PromiseCap } from "../../../lib/util/PromiseCap.js";
 import type { TextContent } from "./api.js";
-import { PageViewport } from "./display_utils.js";
+import { type PageViewport } from "./display_utils.js";
 /**
  * Text layer render parameters.
  */

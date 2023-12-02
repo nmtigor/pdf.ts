@@ -476,9 +476,7 @@ export declare class WidgetAnnotation extends Annotation {
      * @see {@link shared/util.js}
      */
     hasFieldFlag(flag: AnnotationFieldFlag): boolean;
-    /** @inheritdoc */
     _isViewable(flags: AnnotationFlag): boolean;
-    /** @inheritdoc */
     mustBeViewed(annotationStorage?: AnnotStorageRecord, renderForms?: boolean): boolean;
     getRotationMatrix(annotationStorage: AnnotStorageRecord | undefined): number[];
     getBorderAndBackgroundAppearances(annotationStorage: AnnotStorageRecord | undefined): string;

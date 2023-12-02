@@ -38,6 +38,7 @@ export interface SetOCGState {
 export interface CatParseDestDictRes {
     action?: string;
     attachment?: Attachment;
+    attachmentDest?: string;
     dest?: ExplicitDest | string;
     newWindow?: boolean;
     resetForm?: ResetForm;

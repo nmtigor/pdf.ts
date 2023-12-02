@@ -17,10 +17,8 @@
  * limitations under the License.
  */
 
-/** @typedef {import("./interfaces").IDownloadManager} IDownloadManager */
-
+import { html } from "@fe-lib/dom.ts";
 import { CHROME, COMPONENTS, GENERIC, PDFJSDev } from "../../global.ts";
-import { html } from "../../lib/dom.ts";
 import { createValidAbsoluteUrl, isPdfFile } from "../pdf.ts-src/pdf.ts";
 import type { IDownloadManager } from "./interfaces.ts";
 /*80--------------------------------------------------------------------------*/
@@ -52,7 +50,7 @@ function download(blobUrl: string, filename: string) {
 }
 
 export class DownloadManager implements IDownloadManager {
-  #openBlobUrls = new WeakMap();
+  #openBlobUrls = new WeakMap<Uint8Array | Uint8ClampedArray, string>();
 
   onerror?: (err: any) => void;
 
@@ -82,23 +80,23 @@ export class DownloadManager implements IDownloadManager {
    * @return Indicating if the data was opened.
    */
   openOrDownloadData(
-    element: HTMLElement,
     data: Uint8Array | Uint8ClampedArray,
     filename: string,
+    dest?: string,
   ) {
     const isPdfData = isPdfFile(filename);
     const contentType = isPdfData ? "application/pdf" : "";
 
     /*#static*/ if (PDFJSDev || !COMPONENTS) {
       if (isPdfData) {
-        let blobUrl = this.#openBlobUrls.get(element);
+        let blobUrl = this.#openBlobUrls.get(data);
         if (!blobUrl) {
           blobUrl = URL.createObjectURL(
             new Blob([data], { type: contentType }),
           );
-          this.#openBlobUrls.set(element, blobUrl);
+          this.#openBlobUrls.set(data, blobUrl);
         }
-        const viewerUrl = /*#static*/ PDFJSDev || GENERIC
+        let viewerUrl = /*#static*/ PDFJSDev || GENERIC
           // The current URL is the viewer, let's use it and append the file.
           ? "?file=" + encodeURIComponent(blobUrl + "#" + filename)
           : /*#static*/ CHROME
@@ -109,6 +107,9 @@ export class DownloadManager implements IDownloadManager {
           ) + "?file=" +
             encodeURIComponent(blobUrl + "#" + filename)
           : undefined;
+        if (dest) {
+          viewerUrl += `#${escape(dest)}`;
+        }
 
         try {
           window.open(viewerUrl);
@@ -118,7 +119,7 @@ export class DownloadManager implements IDownloadManager {
           // Release the `blobUrl`, since opening it failed, and fallback to
           // downloading the PDF file.
           URL.revokeObjectURL(blobUrl);
-          this.#openBlobUrls.delete(element);
+          this.#openBlobUrls.delete(data);
         }
       }
     }

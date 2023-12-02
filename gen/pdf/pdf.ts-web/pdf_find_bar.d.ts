@@ -1,5 +1,4 @@
 import type { EventBus } from "./event_utils.js";
-import type { IL10n } from "./interfaces.js";
 import type { FindType, MatchesCount } from "./pdf_find_controller.js";
 import { FindState } from "./pdf_find_controller.js";
 import type { ViewerConfiguration } from "./viewer.js";
@@ -11,8 +10,6 @@ import type { ViewerConfiguration } from "./viewer.js";
  */
 export declare class PDFFindBar {
     #private;
-    eventBus: EventBus;
-    l10n: IL10n;
     opened: boolean;
     bar: HTMLDivElement;
     toggleButton: HTMLButtonElement;
@@ -25,7 +22,8 @@ export declare class PDFFindBar {
     findResultsCount: HTMLSpanElement;
     findPreviousButton: HTMLButtonElement;
     findNextButton: HTMLButtonElement;
-    constructor(options: ViewerConfiguration["findBar"], eventBus: EventBus, l10n: IL10n);
+    eventBus: EventBus;
+    constructor(options: ViewerConfiguration["findBar"], eventBus: EventBus);
     reset(): void;
     dispatchEvent(type: FindType | "", findPrev?: boolean): void;
     updateUIState(state?: FindState, previous?: boolean, matchesCount?: MatchesCount): void;

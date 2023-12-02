@@ -6,7 +6,7 @@ interface AnnotationEditorLayerBuilderOptions {
     uiManager: AnnotationEditorUIManager;
     pageDiv: HTMLDivElement;
     pdfPage: PDFPageProxy;
-    l10n?: IL10n;
+    l10n?: IL10n | undefined;
     accessibilityManager: TextAccessibilityManager | undefined;
     annotationLayer?: AnnotationLayer | undefined;
 }
@@ -15,7 +15,7 @@ export declare class AnnotationEditorLayerBuilder {
     pageDiv: HTMLDivElement | undefined;
     pdfPage: PDFPageProxy;
     accessibilityManager: TextAccessibilityManager | undefined;
-    l10n: IL10n;
+    l10n: IL10n | undefined;
     annotationEditorLayer: AnnotationEditorLayer | undefined;
     div: HTMLDivElement | undefined;
     _cancelled: boolean;

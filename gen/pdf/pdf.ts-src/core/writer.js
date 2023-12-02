@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { bytesToString, info, stringToBytes, warn } from "../shared/util.js";
+import { bytesToString, info, warn } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
 import { escapePDFName, escapeString, numberToString, parseXFAPath, } from "./core_utils.js";
 import { calculateMD5 } from "./crypto.js";
@@ -45,7 +45,7 @@ export async function writeDict(dict, buffer, transform) {
     buffer.push(">>");
 }
 async function writeStream(stream, buffer, transform) {
-    let string = stream.getString();
+    let bytes = stream.getBytes();
     const { dict } = stream;
     // Table 5
     const [filter, params] = await Promise.all([
@@ -60,16 +60,15 @@ async function writeStream(stream, buffer, transform) {
     // The number 256 is arbitrary, but it should be reasonable.
     const MIN_LENGTH_FOR_COMPRESSING = 256;
     if (typeof globalThis.CompressionStream !== "undefined" &&
-        (string.length >= MIN_LENGTH_FOR_COMPRESSING || isFilterZeroFlateDecode)) {
+        (bytes.length >= MIN_LENGTH_FOR_COMPRESSING || isFilterZeroFlateDecode)) {
         try {
-            const byteArray = stringToBytes(string);
             const cs = new globalThis.CompressionStream("deflate");
             const writer = cs.writable.getWriter();
-            writer.write(byteArray);
+            writer.write(bytes);
             writer.close();
             // Response::text doesn't return the correct data.
             const buf = await new Response(cs.readable).arrayBuffer();
-            string = bytesToString(new Uint8Array(buf));
+            bytes = new Uint8Array(buf);
             let newFilter, newParams;
             if (!filter) {
                 newFilter = Name.get("FlateDecode");
@@ -95,6 +94,7 @@ async function writeStream(stream, buffer, transform) {
             info(`writeStream - cannot compress data: "${ex}".`);
         }
     }
+    let string = bytesToString(bytes);
     if (transform) {
         string = transform.encryptString(string);
     }

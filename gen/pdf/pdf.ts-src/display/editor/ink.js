@@ -14,6 +14,7 @@ import { opacityToHex } from "./tools.js";
  */
 export class InkEditor extends AnnotationEditor {
     static _type = "ink";
+    static _editorType = AnnotationEditorType.INK;
     static _defaultColor;
     static _defaultOpacity = 1;
     static _defaultThickness = 1;
@@ -23,6 +24,7 @@ export class InkEditor extends AnnotationEditor {
     #boundCanvasPointerleave = this.canvasPointerleave.bind(this);
     #boundCanvasPointerup = this.canvasPointerup.bind(this);
     #boundCanvasPointerdown = this.canvasPointerdown.bind(this);
+    #canvasContextMenuTimeoutId;
     #currentPath2D = new Path2D();
     #disableEditing = false;
     #hasSomethingToDraw = false;
@@ -52,13 +54,9 @@ export class InkEditor extends AnnotationEditor {
         this.y = 0;
         this._willKeepAspectRatio = true;
     }
-    /** @inheritdoc */
     static initialize(l10n) {
-        AnnotationEditor.initialize(l10n, {
-            strings: ["editor_ink_canvas_aria_label", "editor_ink2_aria_label"],
-        });
+        AnnotationEditor.initialize(l10n);
     }
-    /** @inheritdoc */
     static updateDefaultParams(type, value) {
         switch (type) {
             case AnnotationEditorParamsType.INK_THICKNESS:
@@ -72,7 +70,6 @@ export class InkEditor extends AnnotationEditor {
                 break;
         }
     }
-    /** @inheritdoc */
     updateParams(type, value) {
         switch (type) {
             case AnnotationEditorParamsType.INK_THICKNESS:
@@ -86,7 +83,6 @@ export class InkEditor extends AnnotationEditor {
                 break;
         }
     }
-    /** @inheritdoc */
     static get defaultPropertiesToUpdate() {
         return [
             [AnnotationEditorParamsType.INK_THICKNESS, _a._defaultThickness],
@@ -100,7 +96,6 @@ export class InkEditor extends AnnotationEditor {
             ],
         ];
     }
-    /** @inheritdoc */
     get propertiesToUpdate() {
         return [
             [
@@ -180,7 +175,6 @@ export class InkEditor extends AnnotationEditor {
             keepUndo: true,
         });
     }
-    /** @inheritdoc */
     rebuild() {
         if (!this.parent) {
             return;
@@ -201,7 +195,6 @@ export class InkEditor extends AnnotationEditor {
         }
         this.#fitToContent();
     }
-    /** @inheritdoc */
     remove() {
         if (this.canvas === undefined) {
             return;
@@ -213,6 +206,10 @@ export class InkEditor extends AnnotationEditor {
         this.canvas.width = this.canvas.height = 0;
         this.canvas.remove();
         this.canvas = undefined;
+        if (this.#canvasContextMenuTimeoutId) {
+            clearTimeout(this.#canvasContextMenuTimeoutId);
+            this.#canvasContextMenuTimeoutId = undefined;
+        }
         this.#observer.disconnect();
         this.#observer = undefined;
         super.remove();
@@ -237,7 +234,6 @@ export class InkEditor extends AnnotationEditor {
         const height = this.height * parentHeight;
         this.setDimensions(width, height);
     }
-    /** @inheritdoc */
     enableEditMode() {
         if (this.#disableEditing || this.canvas === undefined) {
             return;
@@ -246,7 +242,6 @@ export class InkEditor extends AnnotationEditor {
         this._isDraggable = false;
         this.canvas.on("pointerdown", this.#boundCanvasPointerdown);
     }
-    /** @inheritdoc */
     disableEditMode() {
         if (!this.isInEditMode() || this.canvas === undefined) {
             return;
@@ -256,11 +251,9 @@ export class InkEditor extends AnnotationEditor {
         this.div.classList.remove("editing");
         this.canvas.off("pointerdown", this.#boundCanvasPointerdown);
     }
-    /** @inheritdoc */
     onceAdded() {
         this._isDraggable = !this.isEmpty();
     }
-    /** @inheritdoc */
     isEmpty() {
         return (this.paths.length === 0 ||
             (this.paths.length === 1 && this.paths[0].length === 0));
@@ -495,7 +488,6 @@ export class InkEditor extends AnnotationEditor {
         this.moveInDOM();
         this.div.focus({ preventScroll: true /* See issue #15744 */ });
     }
-    /** @inheritdoc */
     focusin(event) {
         if (!this._focusEventsAllowed) {
             return;
@@ -549,7 +541,11 @@ export class InkEditor extends AnnotationEditor {
         this.canvas.on("pointerdown", this.#boundCanvasPointerdown);
         // Slight delay to avoid the context menu to appear (it can happen on a long
         // tap with a pen).
-        setTimeout(() => {
+        if (this.#canvasContextMenuTimeoutId) {
+            clearTimeout(this.#canvasContextMenuTimeoutId);
+        }
+        this.#canvasContextMenuTimeoutId = setTimeout(() => {
+            this.#canvasContextMenuTimeoutId = undefined;
             this.canvas.off("contextmenu", noContextMenu);
         }, 10);
         this.#stopDrawing(event.offsetX, event.offsetY);
@@ -565,8 +561,7 @@ export class InkEditor extends AnnotationEditor {
         this.canvas = html("canvas");
         this.canvas.width = this.canvas.height = 0;
         this.canvas.className = "inkEditorCanvas";
-        AnnotationEditor._l10nPromise.get("editor_ink_canvas_aria_label")
-            .then((msg) => this.canvas?.setAttribute("aria-label", msg));
+        this.canvas.setAttribute("data-l10n-id", "pdfjs-ink-canvas");
         this.div.append(this.canvas);
         this.ctx = this.canvas.getContext("2d");
     }
@@ -582,11 +577,9 @@ export class InkEditor extends AnnotationEditor {
         });
         this.#observer.observe(this.div);
     }
-    /** @inheritdoc */
     get isResizable() {
         return !this.isEmpty() && this.#disableEditing;
     }
-    /** @inheritdoc */
     render() {
         if (this.div) {
             return this.div;
@@ -597,8 +590,7 @@ export class InkEditor extends AnnotationEditor {
             baseY = this.y;
         }
         super.render();
-        _a._l10nPromise.get("editor_ink2_aria_label")
-            .then((msg) => this.div?.setAttribute("aria-label", msg));
+        this.div.setAttribute("data-l10n-id", "pdfjs-ink");
         const [x, y, w, h] = this.#getInitialBBox();
         this.setAt(x, y, 0, 0);
         this.setDims(w, h);
@@ -861,7 +853,6 @@ export class InkEditor extends AnnotationEditor {
         const unscaledPadding = firstTime ? padding / this.scaleFactor / 2 : 0;
         this.translate(prevTranslationX - this.translationX - unscaledPadding, prevTranslationY - this.translationY - unscaledPadding);
     }
-    /** @inheritdoc */
     static deserialize(data, parent, uiManager) {
         if (data instanceof InkAnnotationElement) {
             return undefined;
@@ -911,10 +902,7 @@ export class InkEditor extends AnnotationEditor {
         editor.#setScaleFactor(width, height);
         return editor;
     }
-    /**
-     * @inheritdoc
-     * @implement
-     */
+    /** @implement */
     serialize(isForCopying = false) {
         if (this.isEmpty()) {
             return undefined;

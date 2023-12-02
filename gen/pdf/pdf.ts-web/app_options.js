@@ -15,8 +15,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { CHROME, GENERIC, LIB, MOZCENTRAL, PDFJSDev, TESTING, } from "../../global.js";
 import { Locale } from "../../lib/Locale.js";
+import { CHROME, GENERIC, LIB, MOZCENTRAL, PDFJSDev, TESTING, } from "../../global.js";
 import { D_base } from "../alias.js";
 import { AnnotationEditorType, AnnotationMode, VerbosityLevel, } from "../pdf.ts-src/pdf.js";
 import { LinkTarget } from "./pdf_link_service.js";
@@ -24,17 +24,12 @@ import { CursorTool, ScrollMode, SidebarView, SpreadMode, TextLayerMode, } from 
 /*80--------------------------------------------------------------------------*/
 export var OptionKind;
 (function (OptionKind) {
+    OptionKind[OptionKind["BROWSER"] = 1] = "BROWSER";
     OptionKind[OptionKind["VIEWER"] = 2] = "VIEWER";
     OptionKind[OptionKind["API"] = 4] = "API";
     OptionKind[OptionKind["WORKER"] = 8] = "WORKER";
     OptionKind[OptionKind["PREFERENCE"] = 128] = "PREFERENCE";
 })(OptionKind || (OptionKind = {}));
-export var ViewerCssTheme;
-(function (ViewerCssTheme) {
-    ViewerCssTheme[ViewerCssTheme["AUTOMATIC"] = 0] = "AUTOMATIC";
-    ViewerCssTheme[ViewerCssTheme["LIGHT"] = 1] = "LIGHT";
-    ViewerCssTheme[ViewerCssTheme["DARK"] = 2] = "DARK";
-})(ViewerCssTheme || (ViewerCssTheme = {}));
 export var ViewOnLoad;
 (function (ViewOnLoad) {
     ViewOnLoad[ViewOnLoad["UNKNOWN"] = -1] = "UNKNOWN";
@@ -65,6 +60,34 @@ export const compatibilityParams = Object.create(null);
  *       primitive types and cannot rely on any imported types.
  */
 const defaultOptions = {
+    canvasMaxAreaInBytes: {
+        value: -1,
+        kind: OptionKind.BROWSER + OptionKind.API,
+    },
+    isInAutomation: {
+        value: false,
+        kind: OptionKind.BROWSER,
+    },
+    supportsDocumentFonts: {
+        value: true,
+        kind: OptionKind.BROWSER,
+    },
+    supportsIntegratedFind: {
+        value: false,
+        kind: OptionKind.BROWSER,
+    },
+    supportsMouseWheelZoomCtrlKey: {
+        value: true,
+        kind: OptionKind.BROWSER,
+    },
+    supportsMouseWheelZoomMetaKey: {
+        value: true,
+        kind: OptionKind.BROWSER,
+    },
+    supportsPinchToZoom: {
+        value: true,
+        kind: OptionKind.BROWSER,
+    },
     annotationEditorMode: {
         value: AnnotationEditorType.NONE,
         kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
@@ -111,13 +134,6 @@ const defaultOptions = {
     },
     enableScripting: {
         value: /*#static*/ true,
-        kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
-    },
-    enableStampEditor: {
-        // We'll probably want to make some experiments before enabling this
-        // in Firefox release, but it has to be temporary.
-        // TODO: remove it when unnecessary.
-        value: true,
         kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
     },
     externalLinkRel: {
@@ -185,10 +201,6 @@ const defaultOptions = {
     },
     textLayerMode: {
         value: TextLayerMode.ENABLE,
-        kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
-    },
-    viewerCssTheme: {
-        value: /*#static*/ ViewerCssTheme.AUTOMATIC,
         kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
     },
     viewOnLoad: {
@@ -324,6 +336,27 @@ export class AppOptions {
         }
         return undefined;
     }
+    static get canvasMaxAreaInBytes() {
+        return this.#get("canvasMaxAreaInBytes");
+    }
+    static get isInAutomation() {
+        return this.#get("isInAutomation");
+    }
+    static get supportsDocumentFonts() {
+        return this.#get("supportsDocumentFonts");
+    }
+    static get supportsIntegratedFind() {
+        return this.#get("supportsIntegratedFind");
+    }
+    static get supportsMouseWheelZoomCtrlKey() {
+        return this.#get("supportsMouseWheelZoomCtrlKey");
+    }
+    static get supportsMouseWheelZoomMetaKey() {
+        return this.#get("supportsMouseWheelZoomMetaKey");
+    }
+    static get supportsPinchToZoom() {
+        return this.#get("supportsPinchToZoom");
+    }
     static get annotationEditorMode() {
         return this.#get("annotationEditorMode");
     }
@@ -359,9 +392,6 @@ export class AppOptions {
     }
     static get enableScripting() {
         return this.#get("enableScripting");
-    }
-    static get enableStampEditor() {
-        return this.#get("enableStampEditor");
     }
     static get externalLinkRel() {
         return this.#get("externalLinkRel");
@@ -410,9 +440,6 @@ export class AppOptions {
     }
     static get textLayerMode() {
         return this.#get("textLayerMode");
-    }
-    static get viewerCssTheme() {
-        return this.#get("viewerCssTheme");
     }
     static get viewOnLoad() {
         return this.#get("viewOnLoad");
@@ -479,19 +506,24 @@ export class AppOptions {
         for (const name in defaultOptions) {
             const defaultOption = defaultOptions[name];
             if (kind) {
-                if ((kind & defaultOption.kind) === 0) {
+                if (!(kind & defaultOption.kind)) {
                     continue;
                 }
-                if (kind === OptionKind.PREFERENCE) {
-                    const value = defaultOption.value;
-                    const valueType = typeof value;
-                    if (valueType === "boolean" ||
-                        valueType === "string" ||
-                        (valueType === "number" && Number.isInteger(value))) {
-                        options[name] = value;
-                        continue;
+                /*#static*/  {
+                    if (kind === OptionKind.PREFERENCE) {
+                        if (defaultOption.kind & OptionKind.BROWSER) {
+                            throw new Error(`Invalid kind for preference: ${name}`);
+                        }
+                        const value = defaultOption.value;
+                        const valueType = typeof value;
+                        if (valueType === "boolean" ||
+                            valueType === "string" ||
+                            (valueType === "number" && Number.isInteger(value))) {
+                            options[name] = value;
+                            continue;
+                        }
+                        throw new Error(`Invalid type for preference: ${name}`);
                     }
-                    throw new Error(`Invalid type for preference: ${name}`);
                 }
             }
             const userOption = userOptions[name];
@@ -504,7 +536,20 @@ export class AppOptions {
     static set(name, value) {
         userOptions[name] = value;
     }
-    static setAll(options) {
+    static setAll(options, init = false) {
+        /*#static*/  {
+            if (init) {
+                if (this.disablePreferences) {
+                    // Give custom implementations of the default viewer a simpler way to
+                    // opt-out of having the `Preferences` override existing `AppOptions`.
+                    return;
+                }
+                if (Object.keys(userOptions).length) {
+                    console.warn("setAll: The Preferences may override manually set AppOptions; " +
+                        'please use the "disablePreferences"-option in order to prevent that.');
+                }
+            }
+        }
         for (const name in options) {
             userOptions[name] = options[name];
         }
@@ -512,12 +557,6 @@ export class AppOptions {
     static remove(name) {
         delete userOptions[name];
     }
-    static _hasUserOptions;
-}
-/*#static*/  {
-    AppOptions._hasUserOptions = () => {
-        return Object.keys(userOptions).length > 0;
-    };
 }
 /*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=app_options.js.map

@@ -12,23 +12,27 @@ import { AnnotationEditor } from "./editor.js";
  * Basic text editor in order to create a FreeTex annotation.
  */
 export class StampEditor extends AnnotationEditor {
+    static _type = "stamp";
+    static _editorType = AnnotationEditorType.STAMP;
     #bitmap;
     #bitmapId;
     #bitmapPromise;
     #bitmapUrl;
     #bitmapFile;
+    #bitmapFileName = "";
     #canvas;
+    getImageForAltText() {
+        return this.#canvas;
+    }
     #observer;
     #resizeTimeoutId;
     #isSvg = false;
     #hasBeenAddedInUndoStack = false;
-    static _type = "stamp";
     constructor(params) {
         super({ ...params, name: "stampEditor" });
         this.#bitmapUrl = params.bitmapUrl;
         this.#bitmapFile = params.bitmapFile;
     }
-    /** @inheritdoc */
     static initialize(l10n) {
         AnnotationEditor.initialize(l10n);
     }
@@ -51,11 +55,9 @@ export class StampEditor extends AnnotationEditor {
     static get supportedTypesStr() {
         return shadow(this, "supportedTypesStr", this.supportedTypes.join(","));
     }
-    /** @inheritdoc */
     static isHandlingMimeForPasting(mime) {
         return this.supportedTypes.includes(mime);
     }
-    /** @inheritdoc */
     static paste(item, parent) {
         parent.pasteEditor(AnnotationEditorType.STAMP, {
             bitmapFile: item.getAsFile(),
@@ -70,6 +72,9 @@ export class StampEditor extends AnnotationEditor {
         if (!fromId) {
             this.#bitmapId = data.id;
             this.#isSvg = data.isSvg;
+        }
+        if (data.file) {
+            this.#bitmapFileName = data.file.name;
         }
         this.#createCanvas();
     }
@@ -136,7 +141,6 @@ export class StampEditor extends AnnotationEditor {
             input.click();
         }
     }
-    /** @inheritdoc */
     remove() {
         if (this.#bitmapId) {
             this.#bitmap = undefined;
@@ -145,10 +149,13 @@ export class StampEditor extends AnnotationEditor {
             this.#canvas = undefined;
             this.#observer?.disconnect();
             this.#observer = undefined;
+            if (this.#resizeTimeoutId) {
+                clearTimeout(this.#resizeTimeoutId);
+                this.#resizeTimeoutId = undefined;
+            }
         }
         super.remove();
     }
-    /** @inheritdoc */
     rebuild() {
         if (!this.parent) {
             // It's possible to have to rebuild an editor which is not on a visible
@@ -171,23 +178,19 @@ export class StampEditor extends AnnotationEditor {
             this.parent.add(this);
         }
     }
-    /** @inheritdoc */
     onceAdded() {
         this._isDraggable = true;
         this.div.focus();
     }
-    /** @inheritdoc */
     isEmpty() {
         return !(this.#bitmapPromise ||
             this.#bitmap ||
             this.#bitmapUrl ||
             this.#bitmapFile);
     }
-    /** @inheritdoc */
     get isResizable() {
         return true;
     }
-    /** @inheritdoc */
     render() {
         if (this.div) {
             return this.div;
@@ -255,6 +258,9 @@ export class StampEditor extends AnnotationEditor {
             },
         });
         this.addAltTextButton();
+        if (this.#bitmapFileName) {
+            canvas.setAttribute("aria-label", this.#bitmapFileName);
+        }
     }
     /**
      * When the dimensions of the div change the inner canvas must
@@ -373,7 +379,6 @@ export class StampEditor extends AnnotationEditor {
         });
         this.#observer.observe(this.div);
     }
-    /** @inheritdoc */
     static deserialize(data, parent, uiManager) {
         if (data instanceof StampAnnotationElement) {
             return undefined;
@@ -395,7 +400,7 @@ export class StampEditor extends AnnotationEditor {
         }
         return editor;
     }
-    /** @inheritdoc */
+    /** @implement */
     serialize(isForCopying = false, context) {
         if (this.isEmpty()) {
             return undefined;

@@ -20,7 +20,7 @@
 import { assertEquals } from "@std/assert/mod.ts";
 import { describe, it } from "@std/testing/bdd.ts";
 import type { PDFDocumentProxy } from "../pdf.ts-src/pdf.ts";
-import { CMAP_URL, getPDF } from "../pdf.ts-src/shared/test_utils.ts";
+import { CMAP_URL, getPDF } from "../test_utils.ts";
 import { EventBus, type EventMap } from "./event_utils.ts";
 import type { FindCtrlState } from "./pdf_find_controller.ts";
 import { FindState, PDFFindController } from "./pdf_find_controller.ts";

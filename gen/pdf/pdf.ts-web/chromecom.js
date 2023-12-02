@@ -1,29 +1,13 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
-/* Copyright 2013 Mozilla Foundation
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-/* globals chrome */
-// @deno-types="npm:@types/chrome"
-import { CHROME, PDFJSDev } from "../../global.js";
 import { MouseButton } from "../../lib/dom.js";
+import { CHROME, PDFJSDev } from "../../global.js";
 import { DefaultExternalServices, viewerApp } from "./app.js";
 import { AppOptions, ViewOnLoad } from "./app_options.js";
 import { DownloadManager } from "./download_manager.js";
-import { GenericL10n } from "./genericl10n.js";
 import { GenericScripting } from "./generic_scripting.js";
+import { GenericL10n } from "./genericl10n.js";
 import { BasePreferences } from "./preferences.js";
 import { CursorTool } from "./ui_utils.js";
 /*80--------------------------------------------------------------------------*/
@@ -257,6 +241,7 @@ if (window === top) {
 //    to the background page.
 // 3. When the background page knows the referrer of the page, the referrer is
 //    saved in history.state.chromecomState.
+// let port: chrome.runtime.Port | undefined;
 let port;
 // Set the referer for the given URL.
 // 0. Background: If loaded via a http(s) URL: Save referer.
@@ -332,7 +317,7 @@ class ChromePreferences extends BasePreferences {
                     defaultPrefs = this.defaults;
                 }
                 storageArea.get(defaultPrefs, (readPrefs) => {
-                    resolve(readPrefs);
+                    resolve({ prefs: readPrefs });
                 });
             };
             if (chrome.storage.managed) {
@@ -398,7 +383,7 @@ class ChromeExternalServices extends DefaultExternalServices {
     createPreferences() {
         return new ChromePreferences();
     }
-    createL10n(options) {
+    async createL10n() {
         return new GenericL10n(navigator.language);
     }
     createScripting({ sandboxBundleSrc = "" }) {

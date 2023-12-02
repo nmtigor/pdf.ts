@@ -90,7 +90,22 @@ function fetchDestination(dest?: Obj) {
   if (dest instanceof Dict) {
     dest = dest.get("D");
   }
-  return Array.isArray(dest) ? <ExplicitDest> dest : undefined;
+  return Array.isArray(dest) ? dest as ExplicitDest : undefined;
+}
+
+function fetchRemoteDest(action: Dict) {
+  let dest = action.get("D");
+  if (dest) {
+    if (dest instanceof Name) {
+      dest = dest.name;
+    }
+    if (typeof dest === "string") {
+      return stringToPDFString(dest);
+    } else if (Array.isArray(dest)) {
+      return JSON.stringify(dest);
+    }
+  }
+  return undefined;
 }
 
 export interface SetOCGState {
@@ -101,6 +116,7 @@ export interface SetOCGState {
 export interface CatParseDestDictRes {
   action?: string;
   attachment?: Attachment;
+  attachmentDest?: string;
   dest?: ExplicitDest | string;
   newWindow?: boolean;
   resetForm?: ResetForm;
@@ -531,27 +547,27 @@ export class Catalog {
   get optionalContentConfig() {
     let config;
     try {
-      const properties = <Dict | undefined> this.#catDict.get("OCProperties");
+      const properties = this.#catDict.get("OCProperties") as Dict | undefined;
       if (!properties) {
         return shadow(this, "optionalContentConfig", undefined);
       }
-      const defaultConfig = <Dict> properties.get("D");
+      const defaultConfig = properties.get("D") as Dict;
       if (!defaultConfig) {
         return shadow(this, "optionalContentConfig", undefined);
       }
-      const groupsData = <Ref[]> properties.get("OCGs");
+      const groupsData = properties.get("OCGs") as Ref[];
       if (!Array.isArray(groupsData)) {
         return shadow(this, "optionalContentConfig", undefined);
       }
       const groups: OptionalContentGroupData_[] = [];
-      const groupRefs: Ref[] = [];
+      const groupRefs = new RefSet();
       // Ensure all the optional content groups are valid.
       for (const groupRef of groupsData) {
-        if (!(groupRef instanceof Ref)) {
+        if (!(groupRef instanceof Ref) || groupRefs.has(groupRef)) {
           continue;
         }
-        groupRefs.push(groupRef);
-        const group = this.xref.fetchIfRef(groupRef) as Dict; // Table 98
+        groupRefs.put(groupRef);
+        const group = this.xref.fetch(groupRef) as Dict; // Table 98
         let v;
         groups.push({
           id: groupRef.toString(),
@@ -577,7 +593,7 @@ export class Catalog {
   /**
    * Table 101
    */
-  #readOptionalContentConfig(config: Dict, contentGroupRefs: Ref[]) {
+  #readOptionalContentConfig(config: Dict, contentGroupRefs: RefSet) {
     function parseOnOff(refs: Ref[]) {
       const onParsed = [];
       if (Array.isArray(refs)) {
@@ -585,7 +601,7 @@ export class Catalog {
           if (!(value instanceof Ref)) {
             continue;
           }
-          if (contentGroupRefs.includes(value)) {
+          if (contentGroupRefs.has(value)) {
             onParsed.push(value.toString());
           }
         }
@@ -600,7 +616,7 @@ export class Catalog {
       const order: Order = [];
 
       for (const value of refs) {
-        if (value instanceof Ref && contentGroupRefs.includes(value)) {
+        if (value instanceof Ref && contentGroupRefs.has(value)) {
           parsedOrderRefs.put(value); // Handle "hidden" groups, see below.
 
           order.push(value.toString());
@@ -700,14 +716,14 @@ export class Catalog {
       for (const [key, value] of obj.getAll()) {
         const dest = fetchDestination(value);
         if (dest) {
-          dests[stringToPDFString(key)] = <ExplicitDest> dest;
+          dests[stringToPDFString(key)] = dest as ExplicitDest;
         }
       }
     } else if (obj instanceof Dict) {
       obj.forEach((key, value) => {
         const dest = fetchDestination(value);
         if (dest) {
-          dests[key] = <ExplicitDest> dest;
+          dests[key] = dest as ExplicitDest;
         }
       });
     }
@@ -717,7 +733,7 @@ export class Catalog {
   getDestination(id: string) {
     const obj = this.#readDests();
     if (obj instanceof NameTree) {
-      const dest = fetchDestination(obj.get(+id));
+      const dest = fetchDestination(obj.get(id));
       if (dest) {
         return dest;
       }
@@ -738,7 +754,7 @@ export class Catalog {
   }
 
   #readDests() {
-    const obj = this.#catDict.get("Names") as Dict; // Table 31
+    const obj = this.#catDict.get("Names") as Dict; // 2.0 Table 32
     if (obj?.has("Dests")) {
       return new NameTree(obj.getRaw("Dests") as Ref, this.xref);
     } else if (this.#catDict.has("Dests")) {
@@ -762,7 +778,7 @@ export class Catalog {
   }
 
   #readPageLabels() {
-    const obj = <Ref> this.#catDict.getRaw("PageLabels");
+    const obj = this.#catDict.getRaw("PageLabels") as Ref;
     if (!obj) {
       return undefined;
     }
@@ -1070,7 +1086,7 @@ export class Catalog {
         openAction.action = resultObj.action;
       }
     } else if (Array.isArray(obj)) {
-      openAction.dest = <Destination> obj;
+      openAction.dest = obj as Destination;
     }
     return shadow(
       this,
@@ -1649,19 +1665,9 @@ export class Catalog {
           }
 
           // NOTE: the destination is relative to the *remote* document.
-          let remoteDest = action.get("D");
-          if (remoteDest) {
-            if (remoteDest instanceof Name) {
-              remoteDest = remoteDest.name;
-            }
-            if (typeof url === "string") {
-              const baseUrl = url.split("#")[0];
-              if (typeof remoteDest === "string") {
-                url = baseUrl + "#" + remoteDest;
-              } else if (Array.isArray(remoteDest)) {
-                url = baseUrl + "#" + JSON.stringify(remoteDest);
-              }
-            }
+          const remoteDest = fetchRemoteDest(action);
+          if (remoteDest && typeof url === "string") {
+            url = /* baseUrl = */ url.split("#", 1)[0] + "#" + remoteDest;
           }
           // The 'NewWindow' property, equal to `LinkTarget.BLANK`.
           const newWindow = action.get("NewWindow");
@@ -1685,6 +1691,12 @@ export class Catalog {
 
           if (attachment) {
             resultObj.attachment = attachment;
+
+            // NOTE: the destination is relative to the *attachment*.
+            const attachmentDest = fetchRemoteDest(action);
+            if (attachmentDest) {
+              resultObj.attachmentDest = attachmentDest;
+            }
           } else {
             warn(`parseDestDictionary - unimplemented "GoToE" action.`);
           }

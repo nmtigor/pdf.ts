@@ -1,5 +1,6 @@
 import { PDFDocumentProxy } from "../pdf.ts-src/pdf.js";
 import { EventBus } from "./event_utils.js";
+import type { IL10n } from "./interfaces.js";
 export interface BaseTreeViewerCtorP {
     /**
      * The viewer element.
@@ -9,11 +10,16 @@ export interface BaseTreeViewerCtorP {
      * The application event bus.
      */
     eventBus: EventBus;
+    /**
+     * Localization service.
+     */
+    l10n: IL10n;
 }
 export declare abstract class BaseTreeViewer {
     #private;
     container: HTMLDivElement;
     eventBus: EventBus;
+    _l10n: IL10n;
     protected _pdfDocument: PDFDocumentProxy | undefined;
     constructor(options: BaseTreeViewerCtorP);
     reset(): void;

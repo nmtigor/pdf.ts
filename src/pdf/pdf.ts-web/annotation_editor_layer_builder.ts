@@ -17,19 +17,8 @@
  * limitations under the License.
  */
 
-/** @typedef {import("../src/display/api").PDFPageProxy} PDFPageProxy */
-// eslint-disable-next-line max-len
-/** @typedef {import("../src/display/display_utils").PageViewport} PageViewport */
-/** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
-// eslint-disable-next-line max-len
-/** @typedef {import("../src/display/editor/tools.js").AnnotationEditorUIManager} AnnotationEditorUIManager */
-// eslint-disable-next-line max-len
-/** @typedef {import("./text_accessibility.js").TextAccessibilityManager} TextAccessibilityManager */
-/** @typedef {import("./interfaces").IL10n} IL10n */
-// eslint-disable-next-line max-len
-/** @typedef {import("../src/display/annotation_layer.js").AnnotationLayer} AnnotationLayer */
-
 import { html } from "@fe-lib/dom.ts";
+import { GENERIC } from "@fe-src/global.ts";
 import type {
   AnnotationEditorUIManager,
   AnnotationLayer,
@@ -38,15 +27,19 @@ import type {
 } from "../pdf.ts-src/pdf.ts";
 import { AnnotationEditorLayer } from "../pdf.ts-src/pdf.ts";
 import type { IL10n } from "./interfaces.ts";
-import { NullL10n } from "./l10n_utils.ts";
 import type { TextAccessibilityManager } from "./text_accessibility.ts";
+
+/* Ref. gulpfile.mjs of pdf.js */
+const { NullL10n } = /*#static*/ GENERIC
+  ? await import("./l10n_utils.ts")
+  : await import("./stubs.ts");
 /*80--------------------------------------------------------------------------*/
 
 interface AnnotationEditorLayerBuilderOptions {
   uiManager: AnnotationEditorUIManager;
   pageDiv: HTMLDivElement;
   pdfPage: PDFPageProxy;
-  l10n?: IL10n;
+  l10n?: IL10n | undefined;
   accessibilityManager: TextAccessibilityManager | undefined;
   annotationLayer?: AnnotationLayer | undefined;
 }
@@ -105,7 +98,7 @@ export class AnnotationEditorLayerBuilder {
       div,
       accessibilityManager: this.accessibilityManager,
       pageIndex: this.pdfPage.pageNumber - 1,
-      l10n: this.l10n,
+      l10n: this.l10n!,
       viewport: clonedViewport,
       annotationLayer: this.#annotationLayer,
     });

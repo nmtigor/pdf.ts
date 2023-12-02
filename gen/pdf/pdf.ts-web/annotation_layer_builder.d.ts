@@ -1,7 +1,7 @@
 import { MetadataEx } from "../pdf.ts-src/display/api.js";
 import type { AnnotActions, AnnotationStorage, AnnotIntent, FieldObject, PageViewport, PDFPageProxy } from "../pdf.ts-src/pdf.js";
 import { AnnotationLayer } from "../pdf.ts-src/pdf.js";
-import type { IDownloadManager, IL10n, IPDFLinkService } from "./interfaces.js";
+import type { IDownloadManager, IPDFLinkService } from "./interfaces.js";
 import type { TextAccessibilityManager } from "./text_accessibility.js";
 interface AnnotationLayerBuilderOptions {
     pageDiv: HTMLDivElement;
@@ -14,10 +14,6 @@ interface AnnotationLayerBuilderOptions {
     renderForms: boolean;
     linkService: IPDFLinkService;
     downloadManager?: IDownloadManager | undefined;
-    /**
-     * Localization service.
-     */
-    l10n: IL10n;
     enableScripting?: boolean;
     hasJSActionsPromise?: Promise<boolean> | undefined;
     fieldObjectsPromise: Promise<boolean | AnnotActions | Record<string, FieldObject[]> | MetadataEx | undefined> | undefined;
@@ -32,7 +28,6 @@ export declare class AnnotationLayerBuilder {
     downloadManager: IDownloadManager | undefined;
     imageResourcesPath: string;
     renderForms: boolean;
-    l10n: IL10n;
     annotationStorage: AnnotationStorage | undefined;
     enableScripting: boolean;
     _hasJSActionsPromise: Promise<boolean>;
@@ -43,7 +38,7 @@ export declare class AnnotationLayerBuilder {
     div?: HTMLDivElement;
     _cancelled: boolean;
     _eventBus: import("./event_utils.js").EventBus | undefined;
-    constructor({ pageDiv, pdfPage, linkService, downloadManager, annotationStorage, imageResourcesPath, renderForms, l10n, enableScripting, hasJSActionsPromise, fieldObjectsPromise, annotationCanvasMap, accessibilityManager, }: AnnotationLayerBuilderOptions);
+    constructor({ pageDiv, pdfPage, linkService, downloadManager, annotationStorage, imageResourcesPath, renderForms, enableScripting, hasJSActionsPromise, fieldObjectsPromise, annotationCanvasMap, accessibilityManager, }: AnnotationLayerBuilderOptions);
     /**
      * @param viewport
      * @param intent (default value is 'display')

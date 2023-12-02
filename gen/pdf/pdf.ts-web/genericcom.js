@@ -15,13 +15,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { GENERIC, INOUT } from "../../global.js";
 import { Locale } from "../../lib/Locale.js";
 import { assert } from "../../lib/util/trace.js";
+import { GENERIC, INOUT } from "../../global.js";
 import { DefaultExternalServices, viewerApp } from "./app.js";
+import { AppOptions } from "./app_options.js";
 import { DownloadManager } from "./download_manager.js";
-import { GenericL10n } from "./genericl10n.js";
 import { GenericScripting } from "./generic_scripting.js";
+import { GenericL10n } from "./genericl10n.js";
 import { BasePreferences } from "./preferences.js";
 /*80--------------------------------------------------------------------------*/
 /*#static*/ 
@@ -32,7 +33,7 @@ class GenericPreferences extends BasePreferences {
     }
     /** @implement */
     async _readFromStorage(prefObj) {
-        return JSON.parse(localStorage.getItem("pdfjs.preferences"));
+        return { prefs: JSON.parse(localStorage.getItem("pdfjs.preferences")) };
     }
 }
 class GenericExternalServices extends DefaultExternalServices {
@@ -50,8 +51,8 @@ class GenericExternalServices extends DefaultExternalServices {
     createPreferences() {
         return new GenericPreferences();
     }
-    createL10n({ locale = Locale.en_US } = {}) {
-        return new GenericL10n(locale);
+    async createL10n() {
+        return new GenericL10n(AppOptions.locale || Locale.en_US);
     }
     createScripting({ sandboxBundleSrc = "" }) {
         return new GenericScripting(sandboxBundleSrc);

@@ -5,11 +5,9 @@ export class Toolbar {
     #buttons;
     #eventBus;
     /**
-     * @param _l10n Localization service.
      * @param nimbusData Nimbus configuration.
-     * @param externalServices Interface for external services.
      */
-    constructor(options, eventBus, _l10n, nimbusData) {
+    constructor(options, eventBus, nimbusData) {
         this.#eventBus = eventBus;
         const buttons = [
             {

@@ -2,7 +2,6 @@ import type { AnnotIntent, XFAData, XFAElData } from "../pdf.ts-src/pdf.js";
 import { AnnotationStorage, PageViewport, PDFPageProxy } from "../pdf.ts-src/pdf.js";
 import type { IPDFLinkService } from "./interfaces.js";
 interface XfaLayerBuilderOptions {
-    pageDiv: HTMLDivElement;
     pdfPage: PDFPageProxy | undefined;
     annotationStorage: AnnotationStorage | undefined;
     linkService: IPDFLinkService;
@@ -16,14 +15,13 @@ export interface XfaLayerP {
 }
 export declare class XfaLayerBuilder {
     #private;
-    pageDiv: HTMLDivElement;
     pdfPage: PDFPageProxy | undefined;
     annotationStorage: AnnotationStorage | undefined;
     linkService: IPDFLinkService;
     xfaHtml: XFAElData | undefined;
     div?: HTMLDivElement;
     cancel(): void;
-    constructor({ pageDiv, pdfPage, annotationStorage, linkService, xfaHtml, }: XfaLayerBuilderOptions);
+    constructor({ pdfPage, annotationStorage, linkService, xfaHtml, }: XfaLayerBuilderOptions);
     /**
      * @return A promise that is resolved when rendering
      *   of the XFA layer is complete. The first rendering will return an object

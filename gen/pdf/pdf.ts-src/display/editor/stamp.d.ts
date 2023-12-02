@@ -1,4 +1,5 @@
 import type { IL10n } from "../../../pdf.ts-web/interfaces.js";
+import { AnnotationEditorType } from "../../shared/util.js";
 import type { AnnotStorageValue } from "../annotation_layer.js";
 import type { AnnotationEditorLayer } from "./annotation_editor_layer.js";
 import type { AnnotationEditorP } from "./editor.js";
@@ -19,30 +20,22 @@ export interface StampEditorSerialized extends AnnotStorageValue {
 export declare class StampEditor extends AnnotationEditor {
     #private;
     static readonly _type = "stamp";
+    static readonly _editorType = AnnotationEditorType.STAMP;
+    getImageForAltText(): HTMLCanvasElement | undefined;
     constructor(params: StampEditorP);
-    /** @inheritdoc */
     static initialize(l10n: IL10n): void;
     static get supportedTypes(): string[];
     static get supportedTypesStr(): string;
-    /** @inheritdoc */
     static isHandlingMimeForPasting(mime: string): boolean;
-    /** @inheritdoc */
     static paste(item: DataTransferItem, parent: AnnotationEditorLayer): void;
-    /** @inheritdoc */
     remove(): void;
-    /** @inheritdoc */
     rebuild(): void;
-    /** @inheritdoc */
     onceAdded(): void;
-    /** @inheritdoc */
     isEmpty(): boolean;
-    /** @inheritdoc */
     get isResizable(): boolean;
-    /** @inheritdoc */
     render(): HTMLDivElement;
-    /** @inheritdoc */
     static deserialize(data: StampEditorSerialized, parent: AnnotationEditorLayer, uiManager: AnnotationEditorUIManager): StampEditor | undefined;
-    /** @inheritdoc */
+    /** @implement */
     serialize(isForCopying?: boolean, context?: Record<keyof any, any>): StampEditorSerialized | undefined;
 }
 //# sourceMappingURL=stamp.d.ts.map

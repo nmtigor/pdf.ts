@@ -1,9 +1,3 @@
-/** @typedef {import("../src/display/display_utils").PageViewport} PageViewport */
-/** @typedef {import("../src/display/optional_content_config").OptionalContentConfig} OptionalContentConfig */
-/** @typedef {import("./event_utils").EventBus} EventBus */
-/** @typedef {import("./interfaces").IL10n} IL10n */
-/** @typedef {import("./interfaces").IRenderableView} IRenderableView */
-/** @typedef {import("./pdf_rendering_queue").PDFRenderingQueue} PDFRenderingQueue */
 import type { dot2d_t } from "../../lib/alias.js";
 import type { MetadataEx, RenderTask } from "../pdf.ts-src/display/api.js";
 import type { AnnotActions, AnnotationEditorUIManager, AnnotationStorage, FieldObject, OptionalContentConfig, PageViewport, PDFPageProxy, StatTimer } from "../pdf.ts-src/pdf.js";
@@ -89,11 +83,11 @@ interface PDFPageViewOptions {
     /**
      * Localization service.
      */
-    l10n?: IL10n;
+    l10n?: IL10n | undefined;
     /**
-     * The function that is used to lookup the necessary layer-properties.
+     * The object that is used to lookup the necessary layer-properties.
      */
-    layerProperties?: () => LayerPropsR_ | undefined;
+    layerProperties?: LayerPropsR_;
 }
 type LayerPropsR_ = {
     annotationEditorUIManager?: AnnotationEditorUIManager | undefined;
@@ -159,7 +153,7 @@ export declare class PDFPageView implements IVisibleView {
     pageColors: PageColors | undefined;
     eventBus: EventBus;
     renderingQueue: PDFRenderingQueue | undefined;
-    l10n: IL10n;
+    l10n: IL10n | undefined;
     renderTask: RenderTask | undefined;
     resume: (() => void) | undefined; /** @implement */
     _isStandalone: boolean | undefined;

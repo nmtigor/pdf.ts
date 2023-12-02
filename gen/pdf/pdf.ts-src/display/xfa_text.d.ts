@@ -1,4 +1,3 @@
-/** @typedef {import("./api").TextContent} TextContent */
 import type { XFAElObj } from "../core/xfa/alias.js";
 import type { TextContent } from "./api.js";
 export declare abstract class XfaText {

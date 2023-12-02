@@ -84,11 +84,8 @@ import {
 import { getMetrics } from "./metrics.ts";
 import { OperatorList } from "./operator_list.ts";
 import { Lexer, Parser } from "./parser.ts";
-import {
-  getTilingPatternIR,
-  Pattern,
-  type ShadingPatternIR,
-} from "./pattern.ts";
+import type { ShadingPatternIR } from "./pattern.ts";
+import { getTilingPatternIR, Pattern } from "./pattern.ts";
 import type { EvaluatorOptions } from "./pdf_manager.ts";
 import type { Obj, ObjNoCmd } from "./primitives.ts";
 import {
@@ -2817,13 +2814,17 @@ export class PartialEvaluator {
       const { font, loadedName } = textState;
       if (!seenStyles.has(loadedName!)) {
         seenStyles.add(loadedName!);
-
         textContent.styles[loadedName!] = {
           fontFamily: font!.fallbackName,
           ascent: font!.ascent,
           descent: font!.descent,
           vertical: font!.vertical,
         };
+        if (self.options.fontExtraProperties && font!.systemFontInfo) {
+          const style = textContent.styles[loadedName!];
+          style.fontSubstitution = font!.systemFontInfo.css;
+          style.fontSubstitutionLoadedName = font!.systemFontInfo.loadedName;
+        }
       }
       textContentItem.fontName = loadedName!;
 
@@ -5143,8 +5144,8 @@ class TextState {
   loadedName: string | undefined;
   font?: Font | ErrorFont;
   fontMatrix = FONT_IDENTITY_MATRIX;
-  textMatrix = <matrix_t> IDENTITY_MATRIX.slice();
-  textLineMatrix = <matrix_t> IDENTITY_MATRIX.slice();
+  textMatrix = IDENTITY_MATRIX.slice() as matrix_t;
+  textLineMatrix = IDENTITY_MATRIX.slice() as matrix_t;
   charSpacing = 0;
   wordSpacing = 0;
   leading = 0;

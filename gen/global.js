@@ -15,7 +15,7 @@ export const INOUT = true // contracts
 , PDFTS = true, PDFTS_v = true // verbose
 , PDFTS_vv = false // very verbose
 , /** @deprecated */ APP = false // release build
-, DENO = false, TESTING = false, CYPRESS = true, _INFO = DEV && INFO, _COLR = DEV && COLR, _TRACE = DEV && TRACE && !TESTING, MOZCENTRAL = false
+, DENO = false, TESTING = false, CYPRESS = false, _INFO = DEV && INFO, _COLR = DEV && COLR, _TRACE = DEV && TRACE && !TESTING, MOZCENTRAL = false
 // Only in ./pdf/
 , PDFJSDev = true, GENERIC = true, CHROME = false, GECKOVIEW = false, LIB = false, SKIP_BABEL = true, IMAGE_DECODERS = false, COMPONENTS = false;
 /*80-------------------------------------------------------------------------*/

@@ -12,6 +12,10 @@ export interface Request {
     complete: () => void;
     callback: (request: Request) => void;
 }
+type SystemFont_ = {
+    systemFontInfo: SubstitutionInfo | undefined;
+    _inspectFont?: ((info: SubstitutionInfo) => void) | undefined;
+};
 export declare class FontLoader {
     #private;
     _document: Document;
@@ -24,7 +28,7 @@ export declare class FontLoader {
     removeNativeFontFace(nativeFontFace: FontFace): void;
     insertRule(rule: string): void;
     clear(): void;
-    loadSystemFont(info: SubstitutionInfo): Promise<void>;
+    loadSystemFont({ systemFontInfo: info, _inspectFont }: SystemFont_): Promise<void>;
     bind(font: FontFaceObject): Promise<void>;
     get isFontLoadingAPISupported(): boolean;
     get isSyncFontLoadingSupported(): boolean;

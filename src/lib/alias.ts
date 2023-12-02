@@ -6,7 +6,7 @@
 import { z } from "@zod";
 /*80--------------------------------------------------------------------------*/
 
-export type int = number;
+export type int = number; 
 export const zInt = z.number().int();
 export type uint = number;
 export const zUint = zInt.min(0);
@@ -167,7 +167,7 @@ export type Func<This = any> = (this: This, ...args: any[]) => any;
 /*80--------------------------------------------------------------------------*/
 
 //#region TupleOf<>
-// Ref: TSConf 2020: Keynote - Anders Hejlsberg (https://youtu.be/IGw2MRI0YV8)
+/* Ref: [TSConf 2020: Keynote - Anders Hejlsberg](https://youtu.be/IGw2MRI0YV8) */
 
 type _TupleOf<T, N extends number, R extends unknown[]> = R["length"] extends N
   ? R
@@ -178,7 +178,7 @@ export type TupleOf<T, N extends number> = N extends N
 //#endregion
 
 //#region XOR<>
-// Ref. https://stackoverflow.com/questions/42123407/does-typescript-support-mutually-exclusive-types
+/* Ref. https://stackoverflow.com/questions/42123407/does-typescript-support-mutually-exclusive-types */
 
 type Without<T, U> = { [P in Exclude<keyof T, keyof U>]?: never };
 export type XOR<T, U> = (T | U) extends object
@@ -187,13 +187,13 @@ export type XOR<T, U> = (T | U) extends object
 //#endregion
 
 // //#region UnPromisify<>
-// // Ref. https://stackoverflow.com/questions/48944552/typescript-how-to-unwrap-remove-promise-from-a-type/
+// /* Ref. https://stackoverflow.com/questions/48944552/typescript-how-to-unwrap-remove-promise-from-a-type/ */
 
 // export type UnPromisify<T> = T extends Promise<infer U> ? UnPromisify<U> : T;
 // //#endregion
 
 //#region IndexOf<>
-// Ref. https://youtu.be/nNse0r0aRT8
+/* Ref. https://youtu.be/nNse0r0aRT8 */
 
 export type IndexOf<T extends readonly any[], S extends number[] = []> =
   T["length"] extends S["length"] ? S[number] : IndexOf<T, [S["length"], ...S]>;
@@ -203,14 +203,14 @@ export type IndexOf<T extends readonly any[], S extends number[] = []> =
 //#endregion
 
 //#region ArrEl<>
-// Ref. https://stackoverflow.com/questions/41253310/typescript-retrieve-element-type-information-from-array-type
+/* Ref. https://stackoverflow.com/questions/41253310/typescript-retrieve-element-type-information-from-array-type */
 
 export type ArrEl<ArrayType extends readonly unknown[]> = ArrayType extends
   readonly (infer ElementType)[] ? ElementType : never;
 //#endregion
 
 //#region Option<>
-// Ref. https://youtu.be/DYtDeasFQkU
+/* Ref. https://youtu.be/DYtDeasFQkU */
 
 type None_ = { _type: "none" };
 type Some_<T> = { _type: "some"; value: T };

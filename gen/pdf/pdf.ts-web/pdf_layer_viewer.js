@@ -18,7 +18,6 @@
 import { html } from "../../lib/dom.js";
 import { BaseTreeViewer } from "./base_tree_viewer.js";
 export class PDFLayerViewer extends BaseTreeViewer {
-    l10n;
     #optionalContentConfig;
     #optionalContentHash;
     static create(options) {
@@ -28,7 +27,6 @@ export class PDFLayerViewer extends BaseTreeViewer {
     }
     constructor(options) {
         super(options);
-        this.l10n = options.l10n;
         this.eventBus._on("optionalcontentconfigchanged", (evt) => {
             this.#updateLayers(evt.promise);
         });
@@ -77,7 +75,7 @@ export class PDFLayerViewer extends BaseTreeViewer {
             element.textContent = this._normalizeTextContent(name);
             return;
         }
-        element.textContent = await this.l10n.get("additional_layers");
+        element.textContent = await this._l10n.get("pdfjs-additional-layers");
         element.style.fontStyle = "italic";
     };
     #addToggleButton = (div, { name = undefined }) => {

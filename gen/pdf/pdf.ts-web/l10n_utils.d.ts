@@ -1,7 +1,11 @@
-import type { WebL10nArgs } from "../../3rd/webL10n-2015-10-24/l10n.js";
+import { Locale } from "../../lib/Locale.js";
 import type { IL10n } from "./interfaces.js";
-export declare function getL10nFallback(key: string, args: WebL10nArgs): string;
-export declare function formatL10nValue(text: string, args?: WebL10nArgs): string;
+import { L10n } from "./l10n.js";
+export declare class ConstL10n extends L10n {
+    #private;
+    constructor(lang: Locale);
+    static get instance(): ConstL10n;
+}
 /**
  * No-op implementation of the localization service.
  */

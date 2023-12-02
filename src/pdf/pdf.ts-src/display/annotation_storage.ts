@@ -17,7 +17,6 @@
  * limitations under the License.
  */
 
-import { PDFJSDev, SKIP_BABEL, TESTING } from "@fe-src/global.ts";
 import { fail } from "@fe-lib/util/trace.ts";
 import { MurmurHash3_64 } from "../shared/murmurhash3.ts";
 import { objectFromMap } from "../shared/util.ts";
@@ -32,7 +31,7 @@ import { AnnotationEditor } from "./editor/editor.ts";
 export type Serializable = {
   map?: AnnotStorageRecord | undefined;
   hash: string;
-  transfers?: Transferable[] | undefined;
+  transfer?: Transferable[] | undefined;
 };
 
 export const SerializableEmpty: Serializable = Object.freeze({
@@ -179,7 +178,7 @@ export class AnnotationStorage {
     }
     const map: AnnotStorageRecord = new Map(),
       hash = new MurmurHash3_64(),
-      transfers = [];
+      transfer = [];
     const context = Object.create(null);
     let hasBitmap = false;
 
@@ -200,13 +199,13 @@ export class AnnotationStorage {
       // during serialization with SVG images.
       for (const value of map.values()) {
         if (value.bitmap) {
-          transfers.push(value.bitmap);
+          transfer.push(value.bitmap);
         }
       }
     }
 
     return map.size > 0
-      ? { map, hash: hash.hexdigest(), transfers }
+      ? { map, hash: hash.hexdigest(), transfer }
       : SerializableEmpty;
   }
 }
@@ -221,15 +220,11 @@ export class PrintAnnotationStorage extends AnnotationStorage {
 
   constructor(parent: AnnotationStorage) {
     super();
-    const { map, hash, transfers } = parent.serializable;
+    const { map, hash, transfer } = parent.serializable;
     // Create a *copy* of the data, since Objects are passed by reference in JS.
-    const clone = structuredClone(
-      map,
-      (PDFJSDev || SKIP_BABEL || TESTING) && transfers
-        ? { transfer: transfers }
-        : undefined,
-    );
-    this.#serializable = { map: clone, hash, transfers };
+    const clone = structuredClone(map, transfer ? { transfer } : undefined);
+
+    this.#serializable = { map: clone, hash, transfer };
   }
 
   // eslint-disable-next-line getter-return

@@ -7,7 +7,6 @@ import { AbortException, AnnotationMode, PixelsPerInch, RenderingCancelledExcept
 import { AnnotationEditorLayerBuilder } from "./annotation_editor_layer_builder.js";
 import { AnnotationLayerBuilder } from "./annotation_layer_builder.js";
 import { compatibilityParams } from "./app_options.js";
-import { NullL10n } from "./l10n_utils.js";
 import { SimpleLinkService } from "./pdf_link_service.js";
 import { StructTreeLayerBuilder } from "./struct_tree_layer_builder.js";
 import { TextAccessibilityManager } from "./text_accessibility.js";
@@ -15,18 +14,11 @@ import { TextHighlighter } from "./text_highlighter.js";
 import { TextLayerBuilder } from "./text_layer_builder.js";
 import { approximateFraction, DEFAULT_SCALE, OutputScale, RenderingStates, roundToDivide, TextLayerMode, } from "./ui_utils.js";
 import { XfaLayerBuilder } from "./xfa_layer_builder.js";
+/* Ref. gulpfile.mjs of pdf.js */
+const { NullL10n } = /*#static*/ await import("./l10n_utils.js");
 const MAX_CANVAS_PIXELS = compatibilityParams.maxCanvasPixels || 16777216;
-const DEFAULT_LAYER_PROPERTIES = () => {
-    /*#static*/  {
-        return undefined;
-    }
-    return {
-        enableScripting: false,
-        get linkService() {
-            return new SimpleLinkService();
-        },
-    };
-};
+const DEFAULT_LAYER_PROPERTIES = 
+/*#static*/ undefined;
 export class PDFPageView {
     /** @implement */
     id;
@@ -110,19 +102,14 @@ export class PDFPageView {
         /*#static*/  {
             this._isStandalone = !this.renderingQueue?.hasViewer();
             this._container = container;
-            if (options.useOnlyCssZoom) {
-                console.error("useOnlyCssZoom was removed, please use `maxCanvasPixels = 0` instead.");
-                this.maxCanvasPixels = 0;
-            }
         }
         const div = html("div");
         div.className = "page";
         div.assignAttro({
             "data-page-number": this.id,
             role: "region",
-        });
-        this.l10n.get("page_landmark", { page: this.id }).then((msg) => {
-            div.setAttribute("aria-label", msg);
+            "data-l10n-id": "pdfjs-page-landmark",
+            "data-l10n-args": JSON.stringify({ page: this.id }),
         });
         this.div = div;
         this.#setDimensions();
@@ -144,6 +131,10 @@ export class PDFPageView {
                         this.#useThumbnailCanvas.initialOptionalContent =
                             optionalContentConfig.hasInitialVisibility;
                     });
+                }
+                // Ensure that Fluent is connected in e.g. the COMPONENTS build.
+                if (this.l10n === NullL10n) {
+                    this.l10n.translate(this.div);
                 }
             }
         }
@@ -219,7 +210,7 @@ export class PDFPageView {
         return shadow(this, "_textHighlighter", new TextHighlighter({
             pageIndex: this.id - 1,
             eventBus: this.eventBus,
-            findController: this.#layerProperties().findController,
+            findController: this.#layerProperties.findController,
         }));
     }
     async #renderAnnotationLayer() {
@@ -261,6 +252,10 @@ export class PDFPageView {
         try {
             const result = await this.xfaLayer.render(this.viewport, "display");
             if (result?.textDivs && this._textHighlighter) {
+                // Given that the following method fetches the text asynchronously we
+                // can invoke it *before* appending the xfaLayer to the DOM (below),
+                // since a pending search-highlight/scroll operation thus won't run
+                // until after the xfaLayer is available in the viewer.
                 this.#buildXfaTextContentItems(result.textDivs);
             }
         }
@@ -269,6 +264,12 @@ export class PDFPageView {
             error = ex;
         }
         finally {
+            if (this.xfaLayer?.div) {
+                // Pause translation when inserting the xfaLayer in the DOM.
+                this.l10n.pause();
+                this.div.append(this.xfaLayer.div);
+                this.l10n.resume();
+            }
             this.eventBus.dispatch("xfalayerrendered", {
                 source: this,
                 pageNumber: this.id,
@@ -324,7 +325,10 @@ export class PDFPageView {
             : undefined);
         const treeDom = this.structTreeLayer?.render(tree);
         if (treeDom) {
+            // Pause translation when inserting the structTree in the DOM.
+            this.l10n.pause();
             this.canvas?.append(treeDom);
+            this.l10n.resume();
         }
         this.structTreeLayer?.show();
     }
@@ -651,11 +655,16 @@ export class PDFPageView {
                 isOffscreenCanvasSupported: this.isOffscreenCanvasSupported,
                 enablePermissions: this.#textLayerMode === TextLayerMode.ENABLE_PERMISSIONS,
             });
-            div.append(this.textLayer.div);
+            this.textLayer.onAppend = (textLayerDiv) => {
+                // Pause translation when inserting the textLayer in the DOM.
+                this.l10n.pause();
+                this.div.append(textLayerDiv);
+                this.l10n.resume();
+            };
         }
         if (!this.annotationLayer &&
             this.#annotationMode !== AnnotationMode.DISABLE) {
-            const { annotationStorage, downloadManager, enableScripting, fieldObjectsPromise, hasJSActionsPromise, linkService, } = this.#layerProperties();
+            const { annotationStorage, downloadManager, enableScripting, fieldObjectsPromise, hasJSActionsPromise, linkService, } = this.#layerProperties;
             this._annotationCanvasMap ||= new Map();
             this.annotationLayer = new AnnotationLayerBuilder({
                 pageDiv: div,
@@ -665,7 +674,6 @@ export class PDFPageView {
                 renderForms: this.#annotationMode === AnnotationMode.ENABLE_FORMS,
                 linkService,
                 downloadManager,
-                l10n,
                 enableScripting,
                 hasJSActionsPromise,
                 fieldObjectsPromise,
@@ -757,7 +765,7 @@ export class PDFPageView {
                 await this.#renderAnnotationLayer();
             }
             if (!this.annotationEditorLayer) {
-                const { annotationEditorUIManager } = this.#layerProperties();
+                const { annotationEditorUIManager } = this.#layerProperties;
                 if (!annotationEditorUIManager) {
                     return;
                 }
@@ -782,17 +790,12 @@ export class PDFPageView {
         });
         if (pdfPage.isPureXfa) {
             if (!this.xfaLayer) {
-                const { annotationStorage, linkService } = this.#layerProperties();
+                const { annotationStorage, linkService } = this.#layerProperties;
                 this.xfaLayer = new XfaLayerBuilder({
-                    pageDiv: div,
                     pdfPage,
                     annotationStorage,
                     linkService,
                 });
-            }
-            else if (this.xfaLayer.div) {
-                // The xfa layer needs to stay on top.
-                div.append(this.xfaLayer.div);
             }
             this.#renderXfaLayer();
         }
@@ -805,6 +808,7 @@ export class PDFPageView {
     }
     setPageLabel(label) {
         this.pageLabel = typeof label === "string" ? label : undefined;
+        this.div.setAttribute("data-l10n-args", JSON.stringify({ page: this.pageLabel ?? this.id }));
         if (this.pageLabel !== undefined) {
             this.div.setAttribute("data-page-label", this.pageLabel);
         }

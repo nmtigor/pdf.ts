@@ -2,7 +2,7 @@ import type { AnnotStorageRecord, AnnotStorageValue } from "./annotation_layer.j
 export type Serializable = {
     map?: AnnotStorageRecord | undefined;
     hash: string;
-    transfers?: Transferable[] | undefined;
+    transfer?: Transferable[] | undefined;
 };
 export declare const SerializableEmpty: Serializable;
 /**

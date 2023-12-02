@@ -31,6 +31,10 @@ export declare class TextLayerBuilder {
     highlighter: TextHighlighter | undefined;
     accessibilityManager: TextAccessibilityManager | undefined;
     isOffscreenCanvasSupported: boolean | undefined;
+    /**
+     * Callback used to attach the textLayer to the DOM.
+     */
+    onAppend: ((textLayerDiv: HTMLDivElement) => void) | undefined;
     div: HTMLDivElement;
     constructor({ highlighter, accessibilityManager, isOffscreenCanvasSupported, enablePermissions, }: TextLayerBuilderOptions);
     /**

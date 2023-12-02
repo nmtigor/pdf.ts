@@ -135,7 +135,7 @@ namespace NsCFFParser {
   }
 
   /**
-   * Ref. The Type 2 Charstring Format
+   * Ref. The Type 2 Charstring Format \
    * [T2] https://adobe-type-tools.github.io/font-tech-notes/pdfs/5177.Type2.pdf
    */
   const CharstringValidationData: (CsVItem | null)[] = [
@@ -290,7 +290,7 @@ namespace NsCFFParser {
     }
 
     /**
-     * Ref. The Compact Font Format Specification
+     * Ref. The Compact Font Format Specification \
      * [CFF] https://adobe-type-tools.github.io/font-tech-notes/pdfs/5176.CFF.pdf
      */
     parse() {

@@ -11,7 +11,7 @@ declare abstract class NameOrNumberTree<T extends string | number> {
     xref: XRef;
     constructor(root: Ref | Dict | undefined, xref: XRef, type: "Names" | "Nums");
     getAll(): Map<T, Dict>;
-    get(key: number): import("./primitives.js").ObjNoRef | undefined;
+    get(key: number | string): import("./primitives.js").ObjNoRef | undefined;
 }
 export declare class NameTree extends NameOrNumberTree<string> {
     constructor(root: Ref, xref: XRef);

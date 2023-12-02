@@ -18,7 +18,7 @@
 import { html } from "../../lib/dom.js";
 import { PromiseCap } from "../../lib/util/PromiseCap.js";
 import { getFilenameFromUrl } from "../pdf.ts-src/pdf.js";
-import { BaseTreeViewer, } from "./base_tree_viewer.js";
+import { BaseTreeViewer } from "./base_tree_viewer.js";
 import { waitOnEventOrTimeout } from "./event_utils.js";
 export class PDFAttachmentViewer extends BaseTreeViewer {
     _attachments;
@@ -73,7 +73,7 @@ export class PDFAttachmentViewer extends BaseTreeViewer {
     /** @implement */
     _bindLink(element, { content, filename }) {
         element.onclick = () => {
-            this.downloadManager.openOrDownloadData(element, content, filename);
+            this.downloadManager.openOrDownloadData(content, filename);
             return false;
         };
     }

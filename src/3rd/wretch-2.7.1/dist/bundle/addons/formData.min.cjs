@@ -1,0 +1,2 @@
+"use strict";function e(t,n=0,o,i=o.polyfill("FormData",1,1),r=[]){return Object.entries(t).forEach((([t,s])=>{let l=r.reduce(((e,t)=>e?`${e}[${t}]`:t),null);if(l=l?`${l}[${t}]`:t,s instanceof Array||globalThis.FileList&&s instanceof FileList)for(const e of s)i.append(l,e);else!n||"object"!=typeof s||n instanceof Array&&n.includes(t)?i.append(l,s):null!==s&&e(s,n,o,i,[...r,t])})),i}const t={wretch:{formData(t,n=0){return this.body(e(t,n,this._config))}}};module.exports=t;
+//# sourceMappingURL=formData.min.cjs.map

@@ -1,5 +1,4 @@
 import { PasswordResponses } from "../pdf.ts-src/pdf.js";
-import type { IL10n } from "./interfaces.js";
 import type { OverlayManager } from "./overlay_manager.js";
 import type { ViewerConfiguration } from "./viewer.js";
 export declare class PasswordPrompt {
@@ -10,7 +9,6 @@ export declare class PasswordPrompt {
     submitButton: HTMLButtonElement;
     cancelButton: HTMLButtonElement;
     overlayManager: OverlayManager;
-    l10n: IL10n;
     _isViewerEmbedded: boolean;
     /**
      * @param overlayManager Manager for the viewer overlays.
@@ -18,7 +16,7 @@ export declare class PasswordPrompt {
      * @param isViewerEmbedded If the viewer is embedded, in e.g.
      *   an <iframe> or an <object>. The default value is `false`.
      */
-    constructor(options: ViewerConfiguration["passwordOverlay"], overlayManager: OverlayManager, l10n: IL10n, isViewerEmbedded?: boolean);
+    constructor(options: ViewerConfiguration["passwordOverlay"], overlayManager: OverlayManager, isViewerEmbedded?: boolean);
     open(): Promise<void>;
     close: () => Promise<void>;
     setUpdateCallback(updateCallback: (password: string | Error) => void, reason: PasswordResponses): Promise<void>;
