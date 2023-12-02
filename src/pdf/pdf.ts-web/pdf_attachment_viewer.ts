@@ -17,13 +17,11 @@
  * limitations under the License.
  */
 
-import { html } from "../../lib/dom.ts";
-import { PromiseCap } from "../../lib/util/PromiseCap.ts";
+import { html } from "@fe-lib/dom.ts";
+import { PromiseCap } from "@fe-lib/util/PromiseCap.ts";
 import { type Attachment, getFilenameFromUrl } from "../pdf.ts-src/pdf.ts";
-import {
-  BaseTreeViewer,
-  type BaseTreeViewerCtorP,
-} from "./base_tree_viewer.ts";
+import type { BaseTreeViewerCtorP } from "./base_tree_viewer.ts";
+import { BaseTreeViewer } from "./base_tree_viewer.ts";
 import { type EventMap, waitOnEventOrTimeout } from "./event_utils.ts";
 import type { IDownloadManager } from "./interfaces.ts";
 /*80--------------------------------------------------------------------------*/
@@ -114,7 +112,7 @@ export class PDFAttachmentViewer extends BaseTreeViewer {
     filename: string;
   }) {
     element.onclick = () => {
-      this.downloadManager.openOrDownloadData(element, content!, filename);
+      this.downloadManager.openOrDownloadData(content!, filename);
       return false;
     };
   }

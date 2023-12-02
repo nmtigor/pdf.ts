@@ -19,7 +19,7 @@
 
 import { assertEquals } from "@std/assert/mod.ts";
 import { afterAll, beforeAll, describe, it } from "@std/testing/bdd.ts";
-import { XRefMock } from "../shared/test_utils.ts";
+import { XRefMock } from "../../test_utils.ts";
 import {
   createDefaultAppearance,
   parseAppearanceStream,

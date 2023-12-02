@@ -21,19 +21,19 @@
  * @module pdfjsLib
  */
 
+import type { SubstitutionInfo } from "../core/font_substitutions.ts";
 import type { C2D, TypedArray } from "@fe-lib/alias.ts";
 import { PromiseCap } from "@fe-lib/util/PromiseCap.ts";
 import { assert, fail } from "@fe-lib/util/trace.ts";
-import { LOG_cssc } from "@fe-src/alias.ts";
 import {
   _TRACE,
   CHROME,
   GENERIC,
   global,
+  LIB,
   MOZCENTRAL,
   PDFJSDev,
   PDFTS,
-  SKIP_BABEL,
   TESTING,
 } from "@fe-src/global.ts";
 import type { Stepper } from "@pdf.ts-web/debugger.ts";
@@ -63,7 +63,6 @@ import type {
 } from "../shared/message_handler.ts";
 import { MessageHandler } from "../shared/message_handler.ts";
 import type {
-  ActionEventName,
   matrix_t,
   PasswordExceptionJ,
   UnexpectedResponseExceptionJ,
@@ -99,14 +98,12 @@ import {
 import type { BaseCanvasFactory, CMapData } from "./base_factory.ts";
 import { CanvasGraphics } from "./canvas.ts";
 import {
-  deprecated,
   DOMCanvasFactory,
   DOMCMapReaderFactory,
   DOMFilterFactory,
   DOMStandardFontDataFactory,
   isDataScheme,
   isValidFetchUrl,
-  loadScript,
   PageViewport,
   RenderingCancelledException,
   StatTimer,
@@ -118,15 +115,12 @@ import { PDFDataTransportStream } from "./transport_stream.ts";
 import { GlobalWorkerOptions } from "./worker_options.ts";
 import { XfaText } from "./xfa_text.ts";
 
-// Ref. gulpfile.mjs of pdf.js
+/* Ref. gulpfile.mjs of pdf.js */
 const { PDFFetchStream } = /*#static*/ GENERIC || CHROME
   ? await import("./fetch_stream.ts")
   : await import("./stubs.ts");
 const { PDFNetworkStream } = /*#static*/ GENERIC || CHROME
   ? await import("./network.ts")
-  : await import("./stubs.ts");
-export const { SVGGraphics } = /*#static*/ GENERIC
-  ? await import("./svg.ts")
   : await import("./stubs.ts");
 const { PDFNodeStream } = /*#static*/ GENERIC
   // ? await import("./node_stream.ts")
@@ -638,10 +632,11 @@ export function getDocument(src_x: GetDocumentP_): PDFDocumentLoadingTask {
 
   const fetchDocParams = {
     docId,
-    // typeof PDFJSDev !== "undefined" && !PDFJSDev.test("TESTING")
-    //   ? PDFJSDev.eval("BUNDLE_VERSION")
-    //   : null,
-    apiVersion: /*#static*/ !TESTING ? 0 : undefined,
+    // apiVersion:
+    //   typeof PDFJSDev !== "undefined" && !PDFJSDev.test("TESTING")
+    //     ? PDFJSDev.eval("BUNDLE_VERSION")
+    //     : null,
+    apiVersion: 0,
     data,
     password,
     disableAutoFetch,
@@ -1056,26 +1051,6 @@ export class PDFDocumentProxy {
     this.#pdfInfo = pdfInfo;
     this._transport = transport;
 
-    /*#static*/ if (PDFJSDev || GENERIC) {
-      Object.defineProperty(this, "getJavaScript", {
-        value: () => {
-          deprecated(
-            "`PDFDocumentProxy.getJavaScript`, " +
-              "please use `PDFDocumentProxy.getJSActions` instead.",
-          );
-          return this.getJSActions().then((js) => {
-            if (!js) {
-              return js;
-            }
-            const jsArr: string[] = [];
-            for (const name in js) {
-              jsArr.push(...js[name as ActionEventName]);
-            }
-            return jsArr;
-          });
-        },
-      });
-    }
     /*#static*/ if (PDFJSDev || TESTING) {
       // For testing purposes.
       Object.defineProperty(this, "getXFADatasets", {
@@ -1533,6 +1508,9 @@ export interface TextStyle {
    * The possible font family.
    */
   fontFamily: string;
+
+  fontSubstitution?: string;
+  fontSubstitutionLoadedName?: string;
 }
 
 /**
@@ -1764,7 +1742,7 @@ export class PDFPageProxy {
 
   // _structTreePromise: Promise<StructTreeNode | undefined> | undefined;
   _maybeCleanupAfterRender = false;
-  #intentStates = new Map<string, IntentState>();
+  _intentStates = new Map<string, IntentState>();
   destroyed = false;
 
   // _annotationsPromise: Promise<AnnotationData[]> | undefined;
@@ -1932,10 +1910,10 @@ export class PDFPageProxy {
       optionalContentConfigPromise = this._transport.getOptionalContentConfig();
     }
 
-    let intentState = this.#intentStates.get(intentArgs.cacheKey);
+    let intentState = this._intentStates.get(intentArgs.cacheKey);
     if (!intentState) {
       intentState = <IntentState> Object.create(null);
-      this.#intentStates.set(intentArgs.cacheKey, intentState);
+      this._intentStates.set(intentArgs.cacheKey, intentState);
     }
 
     // Ensure that a pending `streamReader` cancel timeout is always aborted.
@@ -2061,10 +2039,10 @@ export class PDFPageProxy {
       printAnnotationStorage,
       /* isOpList = */ true,
     );
-    let intentState = this.#intentStates.get(intentArgs.cacheKey);
+    let intentState = this._intentStates.get(intentArgs.cacheKey);
     if (!intentState) {
       intentState = Object.create(null);
-      this.#intentStates.set(intentArgs.cacheKey, intentState!);
+      this._intentStates.set(intentArgs.cacheKey, intentState!);
     }
     let opListTask: InternalRenderTask;
 
@@ -2176,7 +2154,7 @@ export class PDFPageProxy {
     this.destroyed = true;
 
     const waitOn = [];
-    for (const intentState of this.#intentStates.values()) {
+    for (const intentState of this._intentStates.values()) {
       this.#abortOperatorList({
         intentState,
         reason: new Error("Page was destroyed."),
@@ -2237,12 +2215,12 @@ export class PDFPageProxy {
 
       return false;
     }
-    for (const { renderTasks, operatorList } of this.#intentStates.values()) {
+    for (const { renderTasks, operatorList } of this._intentStates.values()) {
       if (renderTasks!.size > 0 || !operatorList!.lastChunk) {
         return false;
       }
     }
-    this.#intentStates.clear();
+    this._intentStates.clear();
     this.objs.clear();
     this.#pendingCleanup = false;
     return true;
@@ -2256,7 +2234,7 @@ export class PDFPageProxy {
   }
 
   _startRenderPage(transparency: boolean, cacheKey: string) {
-    const intentState = this.#intentStates.get(cacheKey);
+    const intentState = this._intentStates.get(cacheKey);
     if (!intentState) {
       return; // Rendering was cancelled.
     }
@@ -2298,7 +2276,7 @@ export class PDFPageProxy {
         '#pumpOperatorList: Expected valid "renderingIntent" argument.',
       );
     }
-    const { map, transfers } = annotationStorageSerializable;
+    const { map, transfer } = annotationStorageSerializable;
 
     const readableStream = this._transport.messageHandler.sendWithStream(
       "GetOperatorList",
@@ -2309,11 +2287,11 @@ export class PDFPageProxy {
         annotationStorage: map,
       },
       undefined,
-      transfers,
+      transfer,
     );
     const reader = readableStream.getReader();
 
-    const intentState = this.#intentStates.get(cacheKey)!;
+    const intentState = this._intentStates.get(cacheKey)!;
     intentState.streamReader = reader;
 
     const pump = () => {
@@ -2415,9 +2393,9 @@ export class PDFPageProxy {
     }
     // Remove the current `intentState`, since a cancelled `getOperatorList`
     // call on the worker-thread cannot be re-started...
-    for (const [curCacheKey, curIntentState] of this.#intentStates) {
+    for (const [curCacheKey, curIntentState] of this._intentStates) {
       if (curIntentState === intentState) {
-        this.#intentStates.delete(curCacheKey);
+        this._intentStates.delete(curCacheKey);
         break;
       }
     }
@@ -2440,12 +2418,7 @@ export class LoopbackPort {
     //   // console.log(message.reason instanceof BaseException);
     // }
     const event: any = {
-      data: structuredClone(
-        message,
-        (PDFJSDev || SKIP_BABEL || TESTING) && transfer
-          ? { transfer }
-          : undefined,
-      ),
+      data: structuredClone(message, transfer ? { transfer } : undefined),
     };
     // if (event.data?.reason) {
     //   console.log(event.data.reason.name);
@@ -2490,36 +2463,23 @@ interface PDFWorkerP_ {
   verbosity?: VerbosityLevel | undefined;
 }
 
-export const PDFWorkerUtil = <{
+export const PDFWorkerUtil = {
+  isWorkerDisabled: false,
+  fakeWorkerId: 0,
+} as {
   isWorkerDisabled: boolean;
-  fallbackWorkerSrc: string | undefined;
   fakeWorkerId: number;
   isSameOrigin: (baseUrl: string | URL, otherUrl: string | URL) => boolean;
   createCDNWrapper: (url: string) => string;
-}> {
-  isWorkerDisabled: false,
-  fallbackWorkerSrc: undefined,
-  fakeWorkerId: 0,
 };
 /*#static*/ if (PDFJSDev || GENERIC) {
-  // eslint-disable-next-line no-undef
-  // if (isNodeJS && typeof __non_webpack_require__ === "function") {
-  //   // Workers aren't supported in Node.js, force-disabling them there.
-  //   PDFWorkerUtil.isWorkerDisabled = true;
+  if (isNodeJS) {
+    // Workers aren't supported in Node.js, force-disabling them there.
+    PDFWorkerUtil.isWorkerDisabled = true;
 
-  //   PDFWorkerUtil.fallbackWorkerSrc = PDFJSDev.test("LIB")
-  //     ? "../pdf.worker.js"
-  //     : "./pdf.worker";
-  // }
-  // else
-  if (typeof document === "object") {
-    const pdfjsFilePath = (document?.currentScript as HTMLScriptElement)?.src;
-    if (pdfjsFilePath) {
-      PDFWorkerUtil.fallbackWorkerSrc = pdfjsFilePath.replace(
-        /(\.(?:min\.)?js)(\?.*)?$/i,
-        ".worker$1$2",
-      );
-    }
+    GlobalWorkerOptions.workerSrc ||= LIB
+      ? "../pdf.worker.js"
+      : "./pdf.worker.mjs";
   }
 
   // Check if URLs have the same origin. For non-HTTP based URLs, returns false.
@@ -2542,7 +2502,7 @@ export const PDFWorkerUtil = <{
     // We will rely on blob URL's property to specify origin.
     // We want this function to fail in case if createObjectURL or Blob do not
     // exist or fail for some reason -- our Worker creation will fail anyway.
-    const wrapper = `importScripts("${url}");`;
+    const wrapper = `await import("${url}");`;
     return URL.createObjectURL(new Blob([wrapper]));
   };
 }
@@ -2576,12 +2536,9 @@ export class PDFWorker {
     return this.#port;
   }
 
-  _pendingDestroy?: boolean;
+  _webWorker: Worker | undefined;
 
-  #webWorker: Worker | undefined;
-  get _webWorker() {
-    return this.#webWorker;
-  }
+  _pendingDestroy?: boolean;
 
   #messageHandler!: MessageHandler<Thread.main>;
   /**
@@ -2641,7 +2598,7 @@ export class PDFWorker {
     // Uint8Array as it arrives on the worker. (Chrome added this with v.15.)
     if (
       !PDFWorkerUtil.isWorkerDisabled &&
-      !PDFWorker._mainThreadWorkerMessageHandler
+      !PDFWorker.#mainThreadWorkerMessageHandler
     ) {
       let { workerSrc } = PDFWorker;
 
@@ -2656,11 +2613,6 @@ export class PDFWorker {
           }
         }
 
-        // const worker =
-        //   typeof PDFJSDev === "undefined" &&
-        //   !workerSrc.endsWith("/build/pdf.worker.js")
-        //     ? new Worker(workerSrc, { type: "module" })
-        //     : new Worker(workerSrc);
         const worker = new Worker(workerSrc, { type: "module" });
         const messageHandler = new MessageHandler<Thread.main>(
           "main",
@@ -2682,7 +2634,7 @@ export class PDFWorker {
 
         const onWorkerError = (evt: Event) => {
           console.error(evt);
-          if (!this.#webWorker) {
+          if (!this._webWorker) {
             // Worker failed to initialize due to an error. Clean up and fall
             // back to the fake worker.
             terminateEarly();
@@ -2699,7 +2651,7 @@ export class PDFWorker {
           if (data) {
             this.#messageHandler = messageHandler;
             this.#port = worker;
-            this.#webWorker = worker;
+            this._webWorker = worker;
 
             this.#readyCapability.resolve();
             // Send global setting, e.g. verbosity level.
@@ -2798,10 +2750,10 @@ export class PDFWorker {
    */
   destroy() {
     this.destroyed = true;
-    if (this.#webWorker) {
+    if (this._webWorker) {
       // We need to terminate only web worker created resource.
-      this.#webWorker.terminate();
-      this.#webWorker = undefined;
+      this._webWorker.terminate();
+      this._webWorker = undefined;
     }
     PDFWorker.#workerPorts?.delete(this.#port);
     this.#port = undefined as any;
@@ -2841,20 +2793,14 @@ export class PDFWorker {
     if (GlobalWorkerOptions.workerSrc) {
       return GlobalWorkerOptions.workerSrc;
     }
-    /*#static*/ if (PDFJSDev || GENERIC) {
-      if (PDFWorkerUtil.fallbackWorkerSrc !== undefined) {
-        /*#static*/ if (!isNodeJS) {
-          deprecated('No "GlobalWorkerOptions.workerSrc" specified.');
-        }
-        return PDFWorkerUtil.fallbackWorkerSrc;
-      }
-    }
     throw new Error('No "GlobalWorkerOptions.workerSrc" specified.');
   }
 
-  static get _mainThreadWorkerMessageHandler() {
+  static get #mainThreadWorkerMessageHandler():
+    | (typeof WorkerMessageHandler)
+    | undefined {
     try {
-      return (globalThis as any).pdfjsWorker?.WorkerMessageHandler || undefined;
+      return (globalThis as any).pdfjsWorker?.WorkerMessageHandler;
     } catch {
       return undefined;
     }
@@ -2863,41 +2809,16 @@ export class PDFWorker {
   // Loads worker code into the main-thread.
   static get _setupFakeWorkerGlobal() {
     const loader = async (): Promise<typeof WorkerMessageHandler> => {
-      const mainWorkerMessageHandler = this._mainThreadWorkerMessageHandler;
-
-      if (mainWorkerMessageHandler) {
+      if (this.#mainThreadWorkerMessageHandler) {
         // The worker was already loaded using e.g. a `<script>` tag.
-        return mainWorkerMessageHandler;
+        return this.#mainThreadWorkerMessageHandler;
       }
-      /*#static*/ if (PDFJSDev) {
-        // const worker = await import("../core/worker.ts");
-        const worker = await import("../pdf.worker.ts");
-        return worker.WorkerMessageHandler;
-      }
-      // if (
-      //   PDFJSDev.test("GENERIC") &&
-      //   isNodeJS &&
-      //   // eslint-disable-next-line no-undef
-      //   typeof __non_webpack_require__ === "function"
-      // ) {
-      //   // Since bundlers, such as Webpack, cannot be told to leave `require`
-      //   // statements alone we are thus forced to jump through hoops in order
-      //   // to prevent `Critical dependency: ...` warnings in third-party
-      //   // deployments of the built `pdf.js`/`pdf.worker.js` files; see
-      //   // https://github.com/webpack/webpack/issues/8826
-      //   //
-      //   // The following hack is based on the assumption that code running in
-      //   // Node.js won't ever be affected by e.g. Content Security Policies that
-      //   // prevent the use of `eval`. If that ever occurs, we should revert this
-      //   // to a normal `__non_webpack_require__` statement and simply document
-      //   // the Webpack warnings instead (telling users to ignore them).
-      //   //
-      //   // eslint-disable-next-line no-eval
-      //   const worker = eval("require")(this.workerSrc);
-      //   return worker.WorkerMessageHandler;
-      // }
-      await loadScript(this.workerSrc);
-      return window.pdfjsWorker!.WorkerMessageHandler;
+      // const worker =
+      //   typeof PDFJSDev === "undefined"
+      //     ? await import("pdfjs/pdf.worker.js")
+      //     : await __non_webpack_import__(this.workerSrc);
+      const worker = await import("../pdf.worker.ts");
+      return worker.WorkerMessageHandler;
     };
 
     return shadow(this, "_setupFakeWorkerGlobal", loader());
@@ -3414,6 +3335,11 @@ class WorkerTransport {
       if (pageProxy.objs.has(id)) {
         return;
       }
+      // Don't store data *after* cleanup has successfully run, see bug 1854145.
+      if (pageProxy._intentStates.size === 0) {
+        (imageData as ImgData)?.bitmap?.close(); // Release any `ImageBitmap` data.
+        return;
+      }
 
       switch (type) {
         case "Image":
@@ -3493,7 +3419,7 @@ class WorkerTransport {
           "please use the getData-method instead.",
       );
     }
-    const { map, transfers } = this.annotationStorage.serializable;
+    const { map, transfer } = this.annotationStorage.serializable;
 
     return this.messageHandler
       .sendWithPromise(
@@ -3504,7 +3430,7 @@ class WorkerTransport {
           annotationStorage: map!,
           filename: this.#fullReader?.filename,
         },
-        transfers,
+        transfer,
       )
       .finally(() => {
         this.annotationStorage.resetModified();

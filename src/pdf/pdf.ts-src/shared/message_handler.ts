@@ -771,9 +771,7 @@ export class MessageHandler<
   ): Promise<ActionReturn<Ta, AN>> {
     const callbackId = this.callbackId++;
     const capability = new PromiseCap<ActionReturn<Ta, AN>>();
-    this.callbackCapabilities[callbackId] = <PromiseCap<
-      unknown
-    >> capability;
+    this.callbackCapabilities[callbackId] = capability as PromiseCap<unknown>;
     try {
       this.comObj.postMessage(
         {

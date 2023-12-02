@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+import { Locale } from "@fe-lib/Locale.ts";
 import {
   CHROME,
   GENERIC,
@@ -25,7 +26,6 @@ import {
   PDFJSDev,
   TESTING,
 } from "@fe-src/global.ts";
-import { Locale } from "@fe-lib/Locale.ts";
 import { D_base } from "../alias.ts";
 import {
   AnnotationEditorType,
@@ -43,16 +43,11 @@ import {
 /*80--------------------------------------------------------------------------*/
 
 export const enum OptionKind {
+  BROWSER = 0x01,
   VIEWER = 0x02,
   API = 0x04,
   WORKER = 0x08,
   PREFERENCE = 0x80,
-}
-
-export enum ViewerCssTheme {
-  AUTOMATIC = 0, // Default value.
-  LIGHT = 1,
-  DARK = 2,
 }
 
 export const enum ViewOnLoad {
@@ -102,6 +97,35 @@ export const compatibilityParams: UserOptions = Object.create(null);
  *       primitive types and cannot rely on any imported types.
  */
 const defaultOptions = {
+  canvasMaxAreaInBytes: {
+    value: -1,
+    kind: OptionKind.BROWSER + OptionKind.API,
+  },
+  isInAutomation: {
+    value: false,
+    kind: OptionKind.BROWSER,
+  },
+  supportsDocumentFonts: {
+    value: true,
+    kind: OptionKind.BROWSER,
+  },
+  supportsIntegratedFind: {
+    value: false,
+    kind: OptionKind.BROWSER,
+  },
+  supportsMouseWheelZoomCtrlKey: {
+    value: true,
+    kind: OptionKind.BROWSER,
+  },
+  supportsMouseWheelZoomMetaKey: {
+    value: true,
+    kind: OptionKind.BROWSER,
+  },
+  supportsPinchToZoom: {
+    value: true,
+    kind: OptionKind.BROWSER,
+  },
+
   annotationEditorMode: {
     value: AnnotationEditorType.NONE,
     kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
@@ -150,13 +174,6 @@ const defaultOptions = {
     value: /*#static*/ PDFJSDev || !CHROME ? true : false,
     kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
   },
-  enableStampEditor: {
-    // We'll probably want to make some experiments before enabling this
-    // in Firefox release, but it has to be temporary.
-    // TODO: remove it when unnecessary.
-    value: true,
-    kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
-  },
   externalLinkRel: {
     value: "noopener noreferrer nofollow",
     kind: OptionKind.VIEWER,
@@ -183,7 +200,7 @@ const defaultOptions = {
     kind: OptionKind.VIEWER,
   },
   locale: {
-    value: undefined as string | undefined,
+    value: undefined as Locale | undefined,
     kind: 0 as OptionKind,
   },
   maxCanvasPixels: {
@@ -224,10 +241,6 @@ const defaultOptions = {
   },
   textLayerMode: {
     value: TextLayerMode.ENABLE,
-    kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
-  },
-  viewerCssTheme: {
-    value: /*#static*/ CHROME ? ViewerCssTheme.DARK : ViewerCssTheme.AUTOMATIC,
     kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
   },
   viewOnLoad: {
@@ -327,8 +340,9 @@ const defaultOptions = {
       /*#static*/ PDFJSDev
         ? `${D_base}/gen/pdf/pdf.ts-src/pdf.worker.js`
         : /*#static*/ MOZCENTRAL
-        ? "resource://pdf.js/build/pdf.worker.js"
-        // ? "../src/worker_loader.js"
+        // ? "resource://pdf.js/build/pdf.worker.mjs"
+        ? `${D_base}/gen/pdf/pdf.ts-src/pdf.worker.js`
+        // ? "../src/worker_loader.mjs"
         : `${D_base}/gen/pdf/pdf.ts-src/pdf.worker.js`,
     kind: OptionKind.WORKER,
   },
@@ -351,13 +365,14 @@ const defaultOptions = {
     kind: OptionKind.VIEWER,
   };
   defaultOptions.locale = {
-    value: navigator.language || Locale.en_US,
+    value: navigator.language as Locale || Locale.en_US,
     kind: OptionKind.VIEWER,
   };
   defaultOptions.sandboxBundleSrc = {
     value: /*#static*/ PDFJSDev
+      // ? "../build/dev-sandbox/pdf.sandbox.mjs"
       ? `${D_base}/gen/pdf/pdf.ts-src/pdf.sandbox.js`
-      // ? "../build/dev-sandbox/pdf.sandbox.js"
+      // ? "../build/pdf.sandbox.mjs",
       : `${D_base}/gen/pdf/pdf.ts-src/pdf.sandbox.js`,
     kind: OptionKind.VIEWER,
   };
@@ -372,8 +387,8 @@ const defaultOptions = {
       kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
     };
     defaultOptions.sandboxBundleSrc = {
+      // value: "../build/pdf.sandbox.js",
       value: `${D_base}/gen/pdf/pdf.ts-src/pdf.sandbox.js`,
-      // "../build/pdf.sandbox.js",
       kind: OptionKind.VIEWER,
     };
   }
@@ -401,6 +416,28 @@ export abstract class AppOptions {
       return compatibilityParams[name] ?? defaultOption.value;
     }
     return undefined;
+  }
+
+  static get canvasMaxAreaInBytes() {
+    return this.#get("canvasMaxAreaInBytes") as number;
+  }
+  static get isInAutomation() {
+    return this.#get("isInAutomation") as boolean;
+  }
+  static get supportsDocumentFonts() {
+    return this.#get("supportsDocumentFonts") as boolean;
+  }
+  static get supportsIntegratedFind() {
+    return this.#get("supportsIntegratedFind") as boolean;
+  }
+  static get supportsMouseWheelZoomCtrlKey() {
+    return this.#get("supportsMouseWheelZoomCtrlKey") as boolean;
+  }
+  static get supportsMouseWheelZoomMetaKey() {
+    return this.#get("supportsMouseWheelZoomMetaKey") as boolean;
+  }
+  static get supportsPinchToZoom() {
+    return this.#get("supportsPinchToZoom") as boolean;
   }
 
   static get annotationEditorMode() {
@@ -439,9 +476,6 @@ export abstract class AppOptions {
   static get enableScripting() {
     return this.#get("enableScripting") as boolean;
   }
-  static get enableStampEditor() {
-    return this.#get("enableStampEditor") as boolean;
-  }
   static get externalLinkRel() {
     return this.#get("externalLinkRel") as string;
   }
@@ -458,7 +492,7 @@ export abstract class AppOptions {
     return this.#get("imageResourcesPath") as string;
   }
   static get locale() {
-    return this.#get("locale") as string | undefined;
+    return this.#get("locale") as Locale | undefined;
   }
   static get maxCanvasPixels() {
     return this.#get("maxCanvasPixels") as number;
@@ -489,9 +523,6 @@ export abstract class AppOptions {
   }
   static get textLayerMode() {
     return this.#get("textLayerMode") as TextLayerMode;
-  }
-  static get viewerCssTheme() {
-    return this.#get("viewerCssTheme") as ViewerCssTheme;
   }
   static get viewOnLoad() {
     return this.#get("viewOnLoad") as ViewOnLoad;
@@ -561,22 +592,27 @@ export abstract class AppOptions {
     for (const name in defaultOptions) {
       const defaultOption = defaultOptions[name as OptionName];
       if (kind) {
-        if ((kind & defaultOption.kind) === 0) {
+        if (!(kind & defaultOption.kind)) {
           continue;
         }
-        if (kind === OptionKind.PREFERENCE) {
-          const value = defaultOption.value;
-          const valueType = typeof value;
+        /*#static*/ if (PDFJSDev || LIB) {
+          if (kind === OptionKind.PREFERENCE) {
+            if (defaultOption.kind & OptionKind.BROWSER) {
+              throw new Error(`Invalid kind for preference: ${name}`);
+            }
+            const value = defaultOption.value;
+            const valueType = typeof value;
 
-          if (
-            valueType === "boolean" ||
-            valueType === "string" ||
-            (valueType === "number" && Number.isInteger(value))
-          ) {
-            options[name as OptionName] = value;
-            continue;
+            if (
+              valueType === "boolean" ||
+              valueType === "string" ||
+              (valueType === "number" && Number.isInteger(value))
+            ) {
+              options[name as OptionName] = value;
+              continue;
+            }
+            throw new Error(`Invalid type for preference: ${name}`);
           }
-          throw new Error(`Invalid type for preference: ${name}`);
         }
       }
       const userOption = userOptions[name as OptionName];
@@ -591,7 +627,23 @@ export abstract class AppOptions {
     userOptions[name] = value;
   }
 
-  static setAll(options: UserOptions) {
+  static setAll(options: UserOptions, init = false) {
+    /*#static*/ if (PDFJSDev || GENERIC) {
+      if (init) {
+        if (this.disablePreferences) {
+          // Give custom implementations of the default viewer a simpler way to
+          // opt-out of having the `Preferences` override existing `AppOptions`.
+          return;
+        }
+        if (Object.keys(userOptions).length) {
+          console.warn(
+            "setAll: The Preferences may override manually set AppOptions; " +
+              'please use the "disablePreferences"-option in order to prevent that.',
+          );
+        }
+      }
+    }
+
     for (const name in options) {
       userOptions[name as OptionName] = options[name as OptionName];
     }
@@ -600,13 +652,5 @@ export abstract class AppOptions {
   static remove(name: OptionName) {
     delete userOptions[name];
   }
-
-  static _hasUserOptions: () => boolean;
-}
-
-/*#static*/ if (PDFJSDev || GENERIC) {
-  AppOptions._hasUserOptions = () => {
-    return Object.keys(userOptions).length > 0;
-  };
 }
 /*80--------------------------------------------------------------------------*/

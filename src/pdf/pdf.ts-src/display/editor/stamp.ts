@@ -20,7 +20,6 @@
 import type { OC2D } from "@fe-lib/alias.ts";
 import { html } from "@fe-lib/dom.ts";
 import { PDFJSDev, TESTING } from "@fe-src/global.ts";
-import type { TelemetryData } from "@pdf.ts-web/alt_text_manager.ts";
 import type { IL10n } from "@pdf.ts-web/interfaces.ts";
 import { AnnotationEditorType, shadow } from "../../shared/util.ts";
 import type {
@@ -50,18 +49,25 @@ export interface StampEditorSerialized extends AnnotStorageValue {
  * Basic text editor in order to create a FreeTex annotation.
  */
 export class StampEditor extends AnnotationEditor {
+  static override readonly _type = "stamp";
+  static override readonly _editorType = AnnotationEditorType.STAMP;
+
   #bitmap: HTMLImageElement | ImageBitmap | undefined;
   #bitmapId: string | undefined;
   #bitmapPromise: Promise<void> | undefined;
   #bitmapUrl: string | undefined;
   #bitmapFile;
+  #bitmapFileName = "";
+
   #canvas: HTMLCanvasElement | undefined;
+  override getImageForAltText() {
+    return this.#canvas;
+  }
+
   #observer: ResizeObserver | undefined;
   #resizeTimeoutId: number | undefined;
   #isSvg: boolean | undefined = false;
   #hasBeenAddedInUndoStack = false;
-
-  static override readonly _type = "stamp";
 
   constructor(params: StampEditorP) {
     super({ ...params, name: "stampEditor" });
@@ -69,7 +75,6 @@ export class StampEditor extends AnnotationEditor {
     this.#bitmapFile = params.bitmapFile;
   }
 
-  /** @inheritdoc */
   static override initialize(l10n: IL10n) {
     AnnotationEditor.initialize(l10n);
   }
@@ -99,12 +104,10 @@ export class StampEditor extends AnnotationEditor {
     return shadow(this, "supportedTypesStr", this.supportedTypes.join(","));
   }
 
-  /** @inheritdoc */
   static override isHandlingMimeForPasting(mime: string) {
     return this.supportedTypes.includes(mime);
   }
 
-  /** @inheritdoc */
   static override paste(item: DataTransferItem, parent: AnnotationEditorLayer) {
     parent.pasteEditor(AnnotationEditorType.STAMP, {
       bitmapFile: item.getAsFile(),
@@ -120,6 +123,9 @@ export class StampEditor extends AnnotationEditor {
     if (!fromId) {
       this.#bitmapId = data.id;
       this.#isSvg = data.isSvg;
+    }
+    if (data.file) {
+      this.#bitmapFileName = data.file.name;
     }
     this.#createCanvas();
   }
@@ -199,7 +205,6 @@ export class StampEditor extends AnnotationEditor {
     }
   }
 
-  /** @inheritdoc */
   override remove() {
     if (this.#bitmapId) {
       this.#bitmap = undefined;
@@ -208,11 +213,14 @@ export class StampEditor extends AnnotationEditor {
       this.#canvas = undefined;
       this.#observer?.disconnect();
       this.#observer = undefined;
+      if (this.#resizeTimeoutId) {
+        clearTimeout(this.#resizeTimeoutId);
+        this.#resizeTimeoutId = undefined;
+      }
     }
     super.remove();
   }
 
-  /** @inheritdoc */
   override rebuild() {
     if (!this.parent) {
       // It's possible to have to rebuild an editor which is not on a visible
@@ -238,13 +246,11 @@ export class StampEditor extends AnnotationEditor {
     }
   }
 
-  /** @inheritdoc */
   override onceAdded() {
     this._isDraggable = true;
     this.div!.focus();
   }
 
-  /** @inheritdoc */
   override isEmpty() {
     return !(
       this.#bitmapPromise ||
@@ -254,12 +260,10 @@ export class StampEditor extends AnnotationEditor {
     );
   }
 
-  /** @inheritdoc */
   override get isResizable() {
     return true;
   }
 
-  /** @inheritdoc */
   override render() {
     if (this.div) {
       return this.div;
@@ -346,6 +350,9 @@ export class StampEditor extends AnnotationEditor {
       },
     });
     this.addAltTextButton();
+    if (this.#bitmapFileName) {
+      canvas.setAttribute("aria-label", this.#bitmapFileName);
+    }
   }
 
   /**
@@ -510,7 +517,6 @@ export class StampEditor extends AnnotationEditor {
     this.#observer.observe(this.div!);
   }
 
-  /** @inheritdoc */
   static override deserialize(
     data: StampEditorSerialized,
     parent: AnnotationEditorLayer,
@@ -539,7 +545,7 @@ export class StampEditor extends AnnotationEditor {
     return editor;
   }
 
-  /** @inheritdoc */
+  /** @implement */
   serialize(
     isForCopying = false,
     context?: Record<keyof any, any>,

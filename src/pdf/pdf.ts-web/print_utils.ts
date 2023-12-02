@@ -17,12 +17,12 @@
  * limitations under the License.
  */
 
-import { div } from "../../lib/dom.ts";
+import { div } from "@fe-lib/dom.ts";
+import type { XFAElObj } from "../pdf.ts-src/pdf.ts";
 import {
   getXfaPageViewport,
   PDFDocumentProxy,
   PixelsPerInch,
-  type XFAElObj,
 } from "../pdf.ts-src/pdf.ts";
 import { SimpleLinkService } from "./pdf_link_service.ts";
 import { XfaLayerBuilder } from "./xfa_layer_builder.ts";
@@ -42,15 +42,15 @@ export function getXfaHtmlForPrinting(
     printContainer.append(page);
 
     const builder = new XfaLayerBuilder({
-      pageDiv: page,
       pdfPage: undefined,
       annotationStorage: pdfDocument.annotationStorage,
       linkService,
       xfaHtml: xfaPage,
     });
-    const viewport = getXfaPageViewport(<XFAElObj> xfaPage, { scale });
+    const viewport = getXfaPageViewport(xfaPage as XFAElObj, { scale });
 
     builder.render(viewport, "print");
+    page.append(builder.div!);
   }
 }
 /*80--------------------------------------------------------------------------*/

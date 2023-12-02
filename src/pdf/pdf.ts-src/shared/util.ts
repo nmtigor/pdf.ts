@@ -72,7 +72,7 @@ export const enum RenderingIntentFlag {
   OPLIST = 0x100,
 }
 
-export const enum AnnotationMode {
+export enum AnnotationMode {
   DISABLE = 0,
   ENABLE = 1,
   ENABLE_FORMS = 2,
@@ -89,7 +89,7 @@ export enum AnnotationEditorType {
   INK = 15,
 }
 
-export const enum AnnotationEditorParamsType {
+export enum AnnotationEditorParamsType {
   RESIZE = 1,
   CREATE = 2,
   FREETEXT_SIZE = 11,
@@ -125,7 +125,7 @@ export const enum TextRenderingMode {
   ADD_TO_PATH_FLAG = 4,
 }
 
-export const enum ImageKind {
+export enum ImageKind {
   GRAYSCALE_1BPP = 1,
   RGB_24BPP = 2,
   RGBA_32BPP = 3,
@@ -290,13 +290,13 @@ export type ActionEventName =
 //   MMTYPE1 = "MMTYPE1",
 // }
 
-export const enum VerbosityLevel {
+export enum VerbosityLevel {
   ERRORS = 0,
   WARNINGS = 1,
   INFOS = 5,
 }
 
-export const enum CMapCompressionType {
+export enum CMapCompressionType {
   NONE = 0,
   BINARY = 1,
 }
@@ -404,7 +404,7 @@ export enum OPS {
 export type OPSName = keyof typeof OPS;
 // export type OPSValu = (typeof OPS)[OPSName];
 
-export const enum PasswordResponses {
+export enum PasswordResponses {
   NEED_PASSWORD = 1,
   INCORRECT_PASSWORD = 2,
 }
@@ -707,15 +707,16 @@ export class FeatureTest {
   }
 
   static get platform() {
-    /*#static*/ if (PDFJSDev || GENERIC) {
-      if (!globalThis.navigator?.platform) {
-        return shadow(this, "platform", { isWin: false, isMac: false });
-      }
+    if (
+      MOZCENTRAL ||
+      (typeof navigator !== "undefined" &&
+        typeof navigator?.platform === "string")
+    ) {
+      return shadow(this, "platform", {
+        isMac: navigator.platform.includes("Mac"),
+      });
     }
-    return shadow(this, "platform", {
-      isWin: navigator.platform.includes("Win"),
-      isMac: navigator.platform.includes("Mac"),
-    });
+    return shadow(this, "platform", { isMac: false });
   }
 
   static get isCSSRoundSupported() {

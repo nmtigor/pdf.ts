@@ -30,7 +30,7 @@ import {
   RefSetCache,
 } from "./primitives.ts";
 import { StringStream } from "./stream.ts";
-import { XRefMock } from "../shared/test_utils.ts";
+import { XRefMock } from "../../test_utils.ts";
 import {
   assert,
   assertEquals,

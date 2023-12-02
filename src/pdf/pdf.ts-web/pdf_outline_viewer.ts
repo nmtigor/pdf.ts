@@ -17,9 +17,9 @@
  * limitations under the License.
  */
 
-import { html } from "../../lib/dom.ts";
-import { isObjectLike } from "../../lib/jslang.ts";
-import { PromiseCap } from "../../lib/util/PromiseCap.ts";
+import { html } from "@fe-lib/dom.ts";
+import { isObjectLike } from "@fe-lib/jslang.ts";
+import { PromiseCap } from "@fe-lib/util/PromiseCap.ts";
 import type { OutlineNode, PDFDocumentProxy, Ref } from "../pdf.ts-src/pdf.ts";
 import type { BaseTreeViewerCtorP } from "./base_tree_viewer.ts";
 import { BaseTreeViewer } from "./base_tree_viewer.ts";
@@ -163,7 +163,6 @@ export class PDFOutlineViewer extends BaseTreeViewer {
       element.href = linkService.getAnchorUrl("");
       element.onclick = () => {
         this.downloadManager.openOrDownloadData(
-          element,
           attachment.content!,
           attachment.filename,
         );

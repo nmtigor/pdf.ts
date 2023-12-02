@@ -17,11 +17,8 @@
  * limitations under the License.
  */
 
-/** @typedef {import("./event_utils").EventBus} EventBus */
-/** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
-
-import { CHROME } from "../../global.ts";
-import { isObjectLike } from "../../lib/jslang.ts";
+import { CHROME } from "@fe-src/global.ts";
+import { isObjectLike } from "@fe-lib/jslang.ts";
 import { type ExplicitDest } from "../pdf.ts-src/pdf.ts";
 import { type PDFLocation } from "./pdf_viewer.ts";
 import { EventBus, EventMap, waitOnEventOrTimeout } from "./event_utils.ts";

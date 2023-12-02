@@ -28,7 +28,7 @@ import {
 import { afterAll, beforeAll, describe, it } from "@std/testing/bdd.ts";
 import { DefaultCMapReaderFactory } from "../display/api.ts";
 import { CMapData } from "../display/base_factory.ts";
-import { CMAP_URL } from "../shared/test_utils.ts";
+import { CMAP_URL } from "../../test_utils.ts";
 import { type CharCodeOut, CMap, CMapFactory, IdentityCMap } from "./cmap.ts";
 import { Name } from "./primitives.ts";
 import { StringStream } from "./stream.ts";

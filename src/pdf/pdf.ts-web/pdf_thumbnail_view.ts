@@ -17,17 +17,6 @@
  * limitations under the License.
  */
 
-// eslint-disable-next-line max-len
-/** @typedef {import("../src/display/optional_content_config").OptionalContentConfig} OptionalContentConfig */
-// eslint-disable-next-line max-len
-/** @typedef {import("../src/display/display_utils").PageViewport} PageViewport */
-/** @typedef {import("./event_utils").EventBus} EventBus */
-/** @typedef {import("./interfaces").IL10n} IL10n */
-/** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
-/** @typedef {import("./interfaces").IRenderableView} IRenderableView */
-// eslint-disable-next-line max-len
-/** @typedef {import("./pdf_rendering_queue").PDFRenderingQueue} PDFRenderingQueue */
-
 import { html } from "@fe-lib/dom.ts";
 import type {
   matrix_t,
@@ -38,7 +27,7 @@ import type {
 } from "../pdf.ts-src/pdf.ts";
 import { RenderingCancelledException } from "../pdf.ts-src/pdf.ts";
 import type { EventBus } from "./event_utils.ts";
-import type { IL10n, IPDFLinkService, IVisibleView } from "./interfaces.ts";
+import type { IPDFLinkService, IVisibleView } from "./interfaces.ts";
 import type { PDFPageView } from "./pdf_page_view.ts";
 import type { PDFRenderingQueue } from "./pdf_rendering_queue.ts";
 import type { PageColors } from "./pdf_viewer.ts";
@@ -85,11 +74,6 @@ interface PDFThumbnailViewOptions {
    * The rendering queue object.
    */
   renderingQueue: PDFRenderingQueue;
-
-  /**
-   * Localization service.
-   */
-  l10n: IL10n;
 
   /**
    * Overwrites background and foreground colors
@@ -149,8 +133,6 @@ export class PDFThumbnailView implements IVisibleView {
   renderingState = RenderingStates.INITIAL;
   resume: (() => void) | undefined; /** @implement */
 
-  l10n;
-
   anchor;
   div; /** @implement */
   canvasWidth!: number;
@@ -169,7 +151,6 @@ export class PDFThumbnailView implements IVisibleView {
     optionalContentConfigPromise,
     linkService,
     renderingQueue,
-    l10n,
     pageColors,
   }: PDFThumbnailViewOptions) {
     this.id = id;
@@ -187,12 +168,11 @@ export class PDFThumbnailView implements IVisibleView {
     this.linkService = linkService;
     this.renderingQueue = renderingQueue;
 
-    this.l10n = l10n;
-
     const anchor = html("a");
     anchor.href = linkService.getAnchorUrl("#page=" + id);
-    this._thumbPageTitle.then((msg) => {
-      anchor.title = msg;
+    anchor.assignAttro({
+      "data-l10n-id": "pdfjs-thumb-page-title",
+      "data-l10n-args": this.#pageL10nArgs,
     });
     anchor.onclick = () => {
       linkService.goToPage(id);
@@ -293,14 +273,15 @@ export class PDFThumbnailView implements IVisibleView {
 
   #convertCanvasToImage(canvas: HTMLCanvasElement) {
     if (this.renderingState !== RenderingStates.FINISHED) {
-      throw new Error("_convertCanvasToImage: Rendering has not finished.");
+      throw new Error("#convertCanvasToImage: Rendering has not finished.");
     }
     const reducedCanvas = this.#reduceImage(canvas);
 
     const image = html("img");
     image.className = "thumbnailImage";
-    this._thumbPageCanvas.then((msg) => {
-      image.setAttribute("aria-label", msg);
+    image.assignAttro({
+      "data-l10n-id": "pdfjs-thumb-page-canvas",
+      "data-l10n-args": this.#pageL10nArgs,
     });
     image.src = reducedCanvas.toDataURL();
     this.image = image;
@@ -492,32 +473,20 @@ export class PDFThumbnailView implements IVisibleView {
     return canvas;
   };
 
-  get _thumbPageTitle() {
-    return this.l10n.get("thumb_page_title", {
-      page: this.pageLabel ?? <any> this.id,
-    });
-  }
-
-  get _thumbPageCanvas() {
-    return this.l10n.get("thumb_page_canvas", {
-      page: this.pageLabel ?? <any> this.id,
-    });
+  get #pageL10nArgs() {
+    return JSON.stringify({ page: this.pageLabel ?? this.id });
   }
 
   setPageLabel(label: string | null) {
     this.pageLabel = typeof label === "string" ? label : undefined;
 
-    this._thumbPageTitle.then((msg) => {
-      this.anchor.title = msg;
-    });
+    this.anchor.setAttribute("data-l10n-args", this.#pageL10nArgs);
 
     if (this.renderingState !== RenderingStates.FINISHED) {
       return;
     }
 
-    this._thumbPageCanvas.then((msg) => {
-      this.image?.setAttribute("aria-label", msg);
-    });
+    this.image?.setAttribute("data-l10n-args", this.#pageL10nArgs);
   }
 }
 /*80--------------------------------------------------------------------------*/

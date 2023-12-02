@@ -19,7 +19,7 @@
 
 import { assertMatch, assertObjectMatch } from "@std/assert/mod.ts";
 import { describe, it } from "@std/testing/bdd.ts";
-import { createIdFactory } from "../shared/test_utils.ts";
+import { createIdFactory } from "../../test_utils.ts";
 import { getFontSubstitution } from "./font_substitutions.ts";
 /*80--------------------------------------------------------------------------*/
 

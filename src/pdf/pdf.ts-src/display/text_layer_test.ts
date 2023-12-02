@@ -20,7 +20,7 @@
 import { assertEquals, assertInstanceOf } from "@std/assert/mod.ts";
 import { describe, it } from "@std/testing/bdd.ts";
 import { getDocument } from "../display/api.ts";
-import { buildGetDocumentParams } from "../shared/test_utils.ts";
+import { buildGetDocumentParams } from "../../test_utils.ts";
 import { renderTextLayer, TextLayerRenderTask } from "./text_layer.ts";
 /*80--------------------------------------------------------------------------*/
 

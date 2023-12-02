@@ -17,14 +17,14 @@
  * limitations under the License.
  */
 
-import { GENERIC, INOUT } from "../../global.ts";
-import { Locale } from "../../lib/Locale.ts";
-import { assert } from "../../lib/util/trace.ts";
+import { Locale } from "@fe-lib/Locale.ts";
+import { assert } from "@fe-lib/util/trace.ts";
+import { GENERIC, INOUT } from "@fe-src/global.ts";
 import { DefaultExternalServices, viewerApp } from "./app.ts";
-import type { UserOptions } from "./app_options.ts";
+import { AppOptions, type UserOptions } from "./app_options.ts";
 import { DownloadManager } from "./download_manager.ts";
-import { GenericL10n } from "./genericl10n.ts";
 import { GenericScripting } from "./generic_scripting.ts";
+import { GenericL10n } from "./genericl10n.ts";
 import { BasePreferences } from "./preferences.ts";
 /*80--------------------------------------------------------------------------*/
 
@@ -42,8 +42,8 @@ class GenericPreferences extends BasePreferences {
   }
 
   /** @implement */
-  protected async _readFromStorage(prefObj: UserOptions) {
-    return JSON.parse(localStorage.getItem("pdfjs.preferences")!);
+  protected async _readFromStorage(prefObj: { prefs: UserOptions }) {
+    return { prefs: JSON.parse(localStorage.getItem("pdfjs.preferences")!) };
   }
 }
 
@@ -67,8 +67,8 @@ class GenericExternalServices extends DefaultExternalServices {
     return new GenericPreferences();
   }
 
-  override createL10n({ locale = Locale.en_US } = {}) {
-    return new GenericL10n(locale);
+  override async createL10n() {
+    return new GenericL10n(AppOptions.locale || Locale.en_US);
   }
 
   override createScripting({ sandboxBundleSrc = "" }) {

@@ -34,7 +34,7 @@ describe("XFAFactory", () => {
   ): XFAHTMLObj | undefined {
     if (
       (!byAttributes && root[name] === value) ||
-      (byAttributes && root.attributes && root.attributes[name] === value)
+      (byAttributes && root.attributes?.[name] === value)
     ) {
       if (nth[0]-- === 0) {
         return root;

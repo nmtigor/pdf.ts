@@ -17,10 +17,6 @@
  * limitations under the License.
  */
 
-/** @typedef {import("./editor.js").AnnotationEditor} AnnotationEditor */
-// eslint-disable-next-line max-len
-/** @typedef {import("./annotation_editor_layer.js").AnnotationEditorLayer} AnnotationEditorLayer */
-
 import type { OC2D } from "@fe-lib/alias.ts";
 import type { rgb_t } from "@fe-lib/color/alias.ts";
 import type { HSElement } from "@fe-lib/dom.ts";
@@ -385,14 +381,13 @@ type KeyboardCallback_ = (
 ) => void;
 
 type KeyboardCallbackOptions_<
-  S extends AnnotationEditorUIManager | FreeTextEditor,
+  S extends AnnotationEditorUIManager | AnnotationEditor,
 > = {
   bubbles?: boolean;
   args?: [number?, number?, boolean?];
-  checker?: (
-    self: S,
-    event?: unknown,
-  ) => boolean | undefined;
+  checker?:
+    | ((self: S, event: KeyboardEvent) => boolean)
+    | ((self: S) => boolean);
 };
 
 /**
@@ -400,7 +395,7 @@ type KeyboardCallbackOptions_<
  * non-mac OSes.
  */
 export class KeyboardManager<
-  S extends AnnotationEditorUIManager | FreeTextEditor,
+  S extends AnnotationEditorUIManager | AnnotationEditor,
 > {
   buffer: string[] = [];
   callbacks = new Map<
@@ -599,6 +594,7 @@ export class AnnotationEditorUIManager {
   #editorsToRescale = new Set<InkEditor>();
   _eventBus;
   #filterFactory;
+  #focusMainContainerTimeoutId: number | undefined;
 
   #idManager = new IdManager();
   /**
@@ -663,12 +659,18 @@ export class AnnotationEditorUIManager {
     const arrowChecker = (self: AnnotationEditorUIManager) => {
       // If the focused element is an input, we don't want to handle the arrow.
       // For example, sliders can be controlled with the arrow keys.
-      const { activeElement } = document;
       return (
-        (activeElement ?? undefined) &&
-        self.#container.contains(activeElement) &&
+        self.#container.contains(document.activeElement) &&
         self.hasSomethingToControl()
       );
+    };
+
+    const textInputChecker = (_self: any, { target: el }: KeyboardEvent) => {
+      if (el instanceof HTMLInputElement) {
+        const { type } = el;
+        return type !== "text" && type !== "number";
+      }
+      return true;
     };
 
     const small = this.TRANSLATE_SMALL;
@@ -678,8 +680,12 @@ export class AnnotationEditorUIManager {
       this,
       "_keyboardManager",
       new KeyboardManager([
-        [["ctrl+a", "mac+meta+a"], proto.selectAll],
-        [["ctrl+z", "mac+meta+z"], proto.undo],
+        [
+          ["ctrl+a", "mac+meta+a"],
+          proto.selectAll,
+          { checker: textInputChecker },
+        ],
+        [["ctrl+z", "mac+meta+z"], proto.undo, { checker: textInputChecker }],
         [
           // On mac, depending of the OS version, the event.key is either "z" or
           // "Z" when the user presses "meta+shift+z".
@@ -691,6 +697,7 @@ export class AnnotationEditorUIManager {
             "mac+meta+shift+Z",
           ],
           proto.redo,
+          { checker: textInputChecker },
         ],
         [
           [
@@ -707,6 +714,30 @@ export class AnnotationEditorUIManager {
             "mac+Delete",
           ],
           proto.delete,
+          { checker: textInputChecker },
+        ],
+        [
+          ["Enter", "mac+Enter"],
+          proto.addNewEditorFromKeyboard,
+          {
+            // Those shortcuts can be used in the toolbar for some other actions
+            // like zooming, hence we need to check if the container has the
+            // focus.
+            checker: (self: AnnotationEditorUIManager) =>
+              self.#container.contains(document.activeElement) &&
+              !self.isEnterHandled,
+          },
+        ],
+        [
+          [" ", "mac+ "],
+          proto.addNewEditorFromKeyboard,
+          {
+            // Those shortcuts can be used in the toolbar for some other actions
+            // like zooming, hence we need to check if the container has the
+            // focus.
+            checker: (self: AnnotationEditorUIManager) =>
+              self.#container.contains(document.activeElement),
+          },
         ],
         [["Escape", "mac+Escape"], proto.unselectAll],
         [
@@ -791,6 +822,14 @@ export class AnnotationEditorUIManager {
     this.#selectedEditors.clear();
     this.#commandManager.destroy();
     this.#altTextManager!.destroy();
+    if (this.#focusMainContainerTimeoutId) {
+      clearTimeout(this.#focusMainContainerTimeoutId);
+      this.#focusMainContainerTimeoutId = undefined;
+    }
+    if (this.#translationTimeoutId) {
+      clearTimeout(this.#translationTimeoutId);
+      this.#translationTimeoutId = undefined;
+    }
   }
 
   get hcmFilter() {
@@ -927,13 +966,11 @@ export class AnnotationEditorUIManager {
   #addKeyboardManager() {
     // The keyboard events are caught at the container level in order to be able
     // to execute some callbacks even if the current page doesn't have focus.
-    window.on("keydown", this.#boundKeydown, { capture: true });
+    window.on("keydown", this.#boundKeydown);
   }
 
   #removeKeyboardManager() {
-    window.off("keydown", this.#boundKeydown, {
-      capture: true,
-    });
+    window.off("keydown", this.#boundKeydown);
   }
 
   #addCopyPasteListeners() {
@@ -1058,7 +1095,7 @@ export class AnnotationEditorUIManager {
    * Keydown callback.
    */
   keydown(event: KeyboardEvent) {
-    if (!this.getActive()?.shouldGetKeyboardEvents()) {
+    if (!this.isEditorHandlingKeyboard) {
       AnnotationEditorUIManager._keyboardManager.exec(this, event);
     }
   }
@@ -1171,8 +1208,14 @@ export class AnnotationEditorUIManager {
 
   /**
    * Change the editor mode (None, FreeText, Ink, ...)
+   * @param isFromKeyboard true if the mode change is due to a
+   *   keyboard action.
    */
-  updateMode(mode: number, editId: string | undefined = undefined) {
+  updateMode(
+    mode: number,
+    editId: string | undefined = undefined,
+    isFromKeyboard = false,
+  ) {
     if (this.#mode === mode) {
       return;
     }
@@ -1188,6 +1231,11 @@ export class AnnotationEditorUIManager {
     for (const layer of this.#allLayers.values()) {
       layer.updateMode(mode);
     }
+    if (!editId && isFromKeyboard) {
+      this.addNewEditorFromKeyboard();
+      return;
+    }
+
     if (!editId) {
       return;
     }
@@ -1198,6 +1246,10 @@ export class AnnotationEditorUIManager {
         break;
       }
     }
+  }
+
+  addNewEditorFromKeyboard() {
+    this.currentLayer!.addNewEditor();
   }
 
   /**
@@ -1305,6 +1357,17 @@ export class AnnotationEditorUIManager {
    * Remove an editor.
    */
   removeEditor(editor: AnnotationEditor) {
+    if (editor.div!.contains(document.activeElement)) {
+      if (this.#focusMainContainerTimeoutId) {
+        clearTimeout(this.#focusMainContainerTimeoutId);
+      }
+      this.#focusMainContainerTimeoutId = setTimeout(() => {
+        // When the div is removed from DOM the focus can move on the
+        // document.body, so we need to move it back to the main container.
+        this.focusMainContainer();
+        this.#focusMainContainerTimeoutId = undefined;
+      }, 0);
+    }
     this.#allEditors.delete(editor.id);
     this.unselect(editor);
     if (
@@ -1410,6 +1473,10 @@ export class AnnotationEditorUIManager {
     return this.#selectedEditors.has(editor);
   }
 
+  get firstSelectedEditor() {
+    return this.#selectedEditors.values().next().value;
+  }
+
   /**
    * Unselect an editor.
    */
@@ -1419,6 +1486,13 @@ export class AnnotationEditorUIManager {
     this.#dispatchUpdateStates({
       hasSelectedEditor: this.hasSelection,
     });
+  }
+
+  get isEnterHandled() {
+    return (
+      this.#selectedEditors.size === 1 &&
+      this.firstSelectedEditor.isEnterHandled
+    );
   }
 
   /**
@@ -1720,6 +1794,14 @@ export class AnnotationEditorUIManager {
     } else {
       editor.parent.addOrRebuild(editor);
     }
+  }
+
+  get isEditorHandlingKeyboard() {
+    return (
+      this.getActive()?.shouldGetKeyboardEvents() ||
+      (this.#selectedEditors.size === 1 &&
+        this.firstSelectedEditor.shouldGetKeyboardEvents())
+    );
   }
 
   /**

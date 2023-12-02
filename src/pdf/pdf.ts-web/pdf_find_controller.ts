@@ -17,13 +17,8 @@
  * limitations under the License.
  */
 
-/** @typedef {import("../src/display/api").PDFDocumentProxy} PDFDocumentProxy */
-/** @typedef {import("./event_utils").EventBus} EventBus */
-/** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
-
-import { GENERIC, PDFJSDev } from "../../global.ts";
-import type { dot2d_t } from "../../lib/alias.ts";
-import { PromiseCap } from "../../lib/util/PromiseCap.ts";
+import type { dot2d_t } from "@fe-lib/alias.ts";
+import { PromiseCap } from "@fe-lib/util/PromiseCap.ts";
 import type { PDFDocumentProxy, TextItem } from "../pdf.ts-src/pdf.ts";
 import type { EventBus } from "./event_utils.ts";
 import type { IPDFLinkService } from "./interfaces.ts";
@@ -582,17 +577,6 @@ export class PDFFindController {
   #onFind = (state: FindCtrlState) => {
     if (!state) {
       return;
-    }
-    /*#static*/ if ((PDFJSDev || GENERIC)) {
-      if ((state as any).phraseSearch === false) {
-        console.error(
-          "The `phraseSearch`-parameter was removed, please provide " +
-            "an Array of strings in the `query`-parameter instead.",
-        );
-        if (typeof state.query === "string") {
-          state.query = state.query.match(/\S+/g) as any;
-        }
-      }
     }
     const pdfDocument = this._pdfDocument;
     const { type } = state;

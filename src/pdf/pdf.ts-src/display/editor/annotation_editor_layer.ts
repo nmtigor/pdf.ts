@@ -17,15 +17,7 @@
  * limitations under the License.
  */
 
-// eslint-disable-next-line max-len
-/** @typedef {import("./tools.js").AnnotationEditorUIManager} AnnotationEditorUIManager */
-/** @typedef {import("../display_utils.js").PageViewport} PageViewport */
-// eslint-disable-next-line max-len
-/** @typedef {import("../../../web/text_accessibility.js").TextAccessibilityManager} TextAccessibilityManager */
-/** @typedef {import("../../../web/interfaces").IL10n} IL10n */
-// eslint-disable-next-line max-len
-/** @typedef {import("../annotation_layer.js").AnnotationLayer} AnnotationLayer */
-
+import type { Constructor } from "@fe-lib/alias.ts";
 import type { HSElement } from "@fe-lib/dom.ts";
 import type { IL10n } from "@pdf.ts-web/interfaces.ts";
 import type { TextAccessibilityManager } from "@pdf.ts-web/text_accessibility.ts";
@@ -37,11 +29,8 @@ import type {
 import { type PageViewport, setLayerDimensions } from "../display_utils.ts";
 import type { AnnotationEditorP } from "./editor.ts";
 import { AnnotationEditor } from "./editor.ts";
-import type { FreeTextEditorP, FreeTextEditorSerialized } from "./freetext.ts";
 import { FreeTextEditor } from "./freetext.ts";
-import type { InkEditorP, InkEditorSerialized } from "./ink.ts";
 import { InkEditor } from "./ink.ts";
-import type { StampEditorP, StampEditorSerialized } from "./stamp.ts";
 import { StampEditor } from "./stamp.ts";
 import type { AddCommandsP, AnnotationEditorUIManager } from "./tools.ts";
 /*80--------------------------------------------------------------------------*/
@@ -72,11 +61,19 @@ type PasteEditorP_ = {
 export class AnnotationEditorLayer {
   static _initialized = false;
 
+  static #editorTypes = new Map(
+    [FreeTextEditor, InkEditor, StampEditor].map((type) => [
+      type._editorType,
+      type,
+    ]),
+  );
+
   #accessibilityManager;
   #allowClick = false;
   #annotationLayer;
   #boundPointerup = this.pointerup.bind(this);
   #boundPointerdown = this.pointerdown.bind(this);
+  #editorFocusTimeoutId: number | undefined;
   #editors = new Map<string, AnnotationEditor>();
   #hadPointerDown = false;
   #isCleaningUp = false;
@@ -99,7 +96,7 @@ export class AnnotationEditorLayer {
     viewport,
     l10n,
   }: AnnotationEditorLayerOptions) {
-    const editorTypes = [FreeTextEditor, InkEditor, StampEditor];
+    const editorTypes = [...AnnotationEditorLayer.#editorTypes.values()];
     if (!AnnotationEditorLayer._initialized) {
       AnnotationEditorLayer._initialized = true;
       for (const editorType of editorTypes) {
@@ -143,18 +140,13 @@ export class AnnotationEditorLayer {
     }
 
     if (mode !== AnnotationEditorType.NONE) {
-      this.div!.classList.toggle(
-        "freeTextEditing",
-        mode === AnnotationEditorType.FREETEXT,
-      );
-      this.div!.classList.toggle(
-        "inkEditing",
-        mode === AnnotationEditorType.INK,
-      );
-      this.div!.classList.toggle(
-        "stampEditing",
-        mode === AnnotationEditorType.STAMP,
-      );
+      const { classList } = this.div!;
+      for (const editorType of AnnotationEditorLayer.#editorTypes.values()) {
+        classList.toggle(
+          `${editorType._type}Editing`,
+          mode === editorType._editorType,
+        );
+      }
       this.div!.hidden = false;
     }
   }
@@ -199,12 +191,16 @@ export class AnnotationEditorLayer {
     this.#uiManager.addCommands(params);
   }
 
+  togglePointerEvents(enabled = false) {
+    this.div!.classList.toggle("disabled", !enabled);
+  }
+
   /**
    * Enable pointer events on the main div in order to enable
    * editor creation.
    */
   enable() {
-    this.div!.style.pointerEvents = "auto";
+    this.togglePointerEvents(true);
     const annotationElementIds = new Set<string>();
     for (const editor of this.#editors.values()) {
       editor.enableEditing();
@@ -241,7 +237,7 @@ export class AnnotationEditorLayer {
    */
   disable() {
     this.#isDisabling = true;
-    this.div!.style.pointerEvents = "none";
+    this.togglePointerEvents(false);
     const hiddenAnnotationIds = new Set();
     for (const editor of this.#editors.values()) {
       editor.disableEditing();
@@ -272,6 +268,11 @@ export class AnnotationEditorLayer {
     if (this.isEmpty) {
       this.div!.hidden = true;
     }
+    const { classList } = this.div!;
+    for (const editorType of AnnotationEditorLayer.#editorTypes.values()) {
+      classList.remove(`${editorType._type}Editing`);
+    }
+
     this.#isDisabling = false;
   }
 
@@ -330,13 +331,6 @@ export class AnnotationEditorLayer {
 
     this.detach(editor);
     this.#uiManager.removeEditor(editor);
-    if (editor.div!.contains(document.activeElement)) {
-      setTimeout(() => {
-        // When the div is removed from DOM the focus can move on the
-        // document.body, so we need to move it back to the main container.
-        this.#uiManager.focusMainContainer();
-      }, 0);
-    }
     editor.div!.remove();
     editor.isAttachedToDOM = false;
 
@@ -396,13 +390,14 @@ export class AnnotationEditorLayer {
     }
 
     const { activeElement } = document;
-    if (editor.div!.contains(activeElement)) {
+    if (editor.div!.contains(activeElement) && !this.#editorFocusTimeoutId) {
       // When the div is moved in the DOM the focus can move somewhere else,
       // so we want to be sure that the focus will stay on the editor but we
       // don't want to call any focus callbacks, hence we disable them and only
       // re-enable them when the editor has the focus.
       editor._focusEventsAllowed = false;
-      setTimeout(() => {
+      this.#editorFocusTimeoutId = setTimeout(() => {
+        this.#editorFocusTimeoutId = undefined;
         if (!editor.div!.contains(document.activeElement)) {
           editor.div!.addEventListener(
             "focusin",
@@ -431,6 +426,7 @@ export class AnnotationEditorLayer {
    */
   addOrRebuild(editor: AnnotationEditor) {
     if (editor.needsToBeRebuilt()) {
+      editor.parent ||= this;
       editor.rebuild();
     } else {
       this.add(editor);
@@ -460,15 +456,14 @@ export class AnnotationEditorLayer {
    * Create a new editor
    */
   #createNewEditor(params: AnnotationEditorP): AnnotationEditor | undefined {
-    switch (this.#uiManager.getMode()) {
-      case AnnotationEditorType.FREETEXT:
-        return new FreeTextEditor(params as FreeTextEditorP);
-      case AnnotationEditorType.INK:
-        return new InkEditor(params as InkEditorP);
-      case AnnotationEditorType.STAMP:
-        return new StampEditor(params as StampEditorP);
-    }
-    return undefined;
+    const editorType = AnnotationEditorLayer.#editorTypes.get(
+      this.#uiManager.getMode(),
+    );
+    return editorType
+      ? new (editorType.prototype.constructor as Constructor<AnnotationEditor>)(
+        params,
+      )
+      : undefined;
   }
 
   /**
@@ -498,27 +493,11 @@ export class AnnotationEditorLayer {
    * Create a new editor
    */
   deserialize(data: AnnotStorageValue): AnnotationEditor | undefined {
-    switch (data.annotationType ?? data.annotationEditorType) {
-      case AnnotationEditorType.FREETEXT:
-        return FreeTextEditor.deserialize(
-          data as FreeTextEditorSerialized,
-          this,
-          this.#uiManager,
-        );
-      case AnnotationEditorType.INK:
-        return InkEditor.deserialize(
-          data as InkEditorSerialized,
-          this,
-          this.#uiManager,
-        );
-      case AnnotationEditorType.STAMP:
-        return StampEditor.deserialize(
-          data as StampEditorSerialized,
-          this,
-          this.#uiManager,
-        );
-    }
-    return undefined;
+    return (
+      AnnotationEditorLayer.#editorTypes.get(
+        data.annotationType ?? data.annotationEditorType!,
+      )?.deserialize(data as any, this, this.#uiManager) || undefined
+    );
   }
 
   /**
@@ -679,6 +658,11 @@ export class AnnotationEditorLayer {
       // We need to commit the current editor before destroying the layer.
       this.#uiManager.commitOrRemove();
       this.#uiManager.setActiveEditor(undefined);
+    }
+
+    if (this.#editorFocusTimeoutId) {
+      clearTimeout(this.#editorFocusTimeoutId);
+      this.#editorFocusTimeoutId = undefined;
     }
 
     for (const editor of this.#editors.values()) {

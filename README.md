@@ -2,7 +2,7 @@ The purpose of this project is to help learning PDF format and developing PDF to
 
 It is
 
-* based on [pdf.js-3.11.174](https://github.com/mozilla/pdf.js/tree/v3.11.174),
+* based on [pdf.js-4.0.189](https://github.com/mozilla/pdf.js/tree/v4.0.189),
 
 * **transpiled using TypeScript-5.2.2[@mymain](https://github.com/nmtigor/TypeScript/tree/mymain/PRs)!**
 
@@ -29,7 +29,6 @@ It is
 * 
   ```bash
   cd /path_to/pdf.ts
-  npm i
   /path_to/TypeScript/bin/tsc --preprocessorNames ~DENO,~TESTING
   ```
 * Visit <ins>h</ins><ins>ttp://localhost:8001/src/pdf/pdf.ts-web/viewer.html</ins>.
@@ -43,7 +42,7 @@ It is
   /path_to/TypeScript/bin/tsc && deno run --allow-read --allow-sys --allow-env --allow-run util/bundle.ts gen/pdf/pdf.ts-src/pdf.worker.js
   cd src/test
   deno test --allow-net --allow-read --allow-write --reporter=dot ../pdf
-  # Deno-1.37.2: 53 passed (1068 steps)
+  # Deno-1.38.4: 53 passed (1068 steps)
   # `--allow-write` is optional. If provided, tested PDFs will be downloaded
   # into "/path_to/pdf.ts/res/pdf/test/pdfs". (see "test_utils.ts:123")
   ```

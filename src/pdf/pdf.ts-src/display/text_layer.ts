@@ -17,30 +17,18 @@
  * limitations under the License.
  */
 
-/** @typedef {import("./display_utils").PageViewport} PageViewport */
-/** @typedef {import("./api").TextContent} TextContent */
-
-import { GENERIC, PDFJSDev, TESTING } from "../../../global.ts";
-import type { C2D, OC2D } from "../../../lib/alias.ts";
-import { html, span } from "../../../lib/dom.ts";
-import { PromiseCap } from "../../../lib/util/PromiseCap.ts";
-import {
-  AbortException,
-  FeatureTest,
-  type matrix_t,
-  Util,
-} from "../shared/util.ts";
+import type { C2D, OC2D } from "@fe-lib/alias.ts";
+import { html, span } from "@fe-lib/dom.ts";
+import { PromiseCap } from "@fe-lib/util/PromiseCap.ts";
+import type { matrix_t } from "../shared/util.ts";
+import { AbortException, FeatureTest, Util } from "../shared/util.ts";
 import type {
   TextContent,
   TextItem,
   TextMarkedContent,
   TextStyle,
 } from "./api.ts";
-import {
-  deprecated,
-  PageViewport,
-  setLayerDimensions,
-} from "./display_utils.ts";
+import { type PageViewport, setLayerDimensions } from "./display_utils.ts";
 /*80--------------------------------------------------------------------------*/
 
 /**
@@ -259,9 +247,12 @@ function appendText(
   if (style.vertical) {
     angle += Math.PI / 2;
   }
+
+  const fontFamily = (task._fontInspectorEnabled && style.fontSubstitution) ||
+    style.fontFamily;
   const fontHeight = Math.hypot(tx[2], tx[3]);
   const fontAscent = fontHeight *
-    getAscent(style.fontFamily, task._isOffscreenCanvasSupported);
+    getAscent(fontFamily, task._isOffscreenCanvasSupported);
 
   let left, top;
   if (angle === 0) {
@@ -285,7 +276,7 @@ function appendText(
     divStyle.top = `${scaleFactorStr}${top.toFixed(2)}px)`;
   }
   divStyle.fontSize = `${scaleFactorStr}${fontHeight.toFixed(2)}px)`;
-  divStyle.fontFamily = style.fontFamily;
+  divStyle.fontFamily = fontFamily;
 
   textDivProperties.fontSize = fontHeight;
 
@@ -299,7 +290,8 @@ function appendText(
   // `fontName` is only used by the FontInspector, and we only use `dataset`
   // here to make the font name available in the debugger.
   if (task._fontInspectorEnabled) {
-    textDiv.dataset.fontName = geom.fontName;
+    textDiv.dataset.fontName = style.fontSubstitutionLoadedName ||
+      geom.fontName;
   }
   if (angle !== 0) {
     textDivProperties.angle = angle * (180 / Math.PI);
@@ -589,36 +581,6 @@ export class TextLayerRenderTask {
 export function renderTextLayer(
   params: TextLayerRenderP_,
 ): TextLayerRenderTask {
-  /*#static*/ if (PDFJSDev || GENERIC) {
-    if (
-      !params.textContentSource &&
-      ((params as any).textContent || (params as any).textContentStream)
-    ) {
-      deprecated(
-        "The TextLayerRender `textContent`/`textContentStream` parameters " +
-          "will be removed in the future, please use `textContentSource` instead.",
-      );
-      params.textContentSource = (params as any).textContent ||
-        (params as any).textContentStream;
-    }
-  }
-  /*#static*/ if (GENERIC && !TESTING) {
-    const { container, viewport } = params;
-    const style = getComputedStyle(container);
-    const visibility = style.getPropertyValue("visibility");
-    const scaleFactor = parseFloat(style.getPropertyValue("--scale-factor"));
-
-    if (
-      visibility === "visible" &&
-      (!scaleFactor || Math.abs(scaleFactor - viewport.scale) > 1e-5)
-    ) {
-      console.error(
-        "The `--scale-factor` CSS-variable must be set, " +
-          "to the same value as `viewport.scale`, " +
-          "either on the `container`-element itself or higher up in the DOM.",
-      );
-    }
-  }
   const task = new TextLayerRenderTask(params);
   task._render();
   return task;

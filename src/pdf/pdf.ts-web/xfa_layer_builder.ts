@@ -17,13 +17,6 @@
  * limitations under the License.
  */
 
-/** @typedef {import("../src/display/api").PDFPageProxy} PDFPageProxy */
-// eslint-disable-next-line max-len
-/** @typedef {import("../src/display/annotation_storage").AnnotationStorage} AnnotationStorage */
-// eslint-disable-next-line max-len
-/** @typedef {import("../src/display/display_utils").PageViewport} PageViewport */
-/** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
-
 import { html } from "@fe-lib/dom.ts";
 import type {
   AnnotIntent,
@@ -41,7 +34,6 @@ import type { IPDFLinkService } from "./interfaces.ts";
 /*80--------------------------------------------------------------------------*/
 
 interface XfaLayerBuilderOptions {
-  pageDiv: HTMLDivElement;
   pdfPage: PDFPageProxy | undefined;
   annotationStorage: AnnotationStorage | undefined;
   linkService: IPDFLinkService;
@@ -56,7 +48,6 @@ export interface XfaLayerP {
 }
 
 export class XfaLayerBuilder {
-  pageDiv;
   pdfPage;
   annotationStorage;
   linkService;
@@ -70,13 +61,11 @@ export class XfaLayerBuilder {
   }
 
   constructor({
-    pageDiv,
     pdfPage,
     annotationStorage = undefined,
     linkService,
     xfaHtml = undefined,
   }: XfaLayerBuilderOptions) {
-    this.pageDiv = pageDiv;
     this.pdfPage = pdfPage;
     this.annotationStorage = annotationStorage;
     this.linkService = linkService;
@@ -100,9 +89,8 @@ export class XfaLayerBuilder {
       };
 
       // Create an xfa layer div and render the form
-      const div = html("div");
-      this.pageDiv.append(div);
-      parameters.div = div;
+      this.div = html("div");
+      parameters.div = this.div;
 
       return XfaLayer.render(parameters);
     }
@@ -126,7 +114,6 @@ export class XfaLayerBuilder {
     }
     // Create an xfa layer div and render the form
     this.div = html("div");
-    this.pageDiv.append(this.div);
     parameters.div = this.div;
 
     return XfaLayer.render(parameters);

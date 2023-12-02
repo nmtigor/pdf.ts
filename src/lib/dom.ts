@@ -29,6 +29,15 @@ declare global {
     _canceled: boolean | undefined;
     canceled: boolean;
 
+    /**
+     * When `Poprect` is shown, `pocudVu` is not `null`. At this time, right-
+     * click another place, the `Poprect` would probably be updated, rather than
+     * reset. `targetPocudVu` is to prevent this from happening, because newly
+     * created `PointerEvent` does not have `targetPocudVu`.
+     *
+     * Update `Poprect` only when setPocudVu()` is called hence `targetPocudVu`
+     * is set. Otherwise, reset `Poprect`.
+     */
     targetPocudVu?: Vuu;
   }
 
@@ -101,8 +110,6 @@ if (globalThis.EventTarget) {
     return this.removeEventListener(type, listener as any, options);
   };
 }
-
-export const ClickHoldTo = 10_000;
 /*64----------------------------------------------------------*/
 
 declare global {
@@ -204,7 +211,7 @@ if (globalThis.Document) {
 
 declare global {
   interface Element {
-    assignAttro(attr_o: Record<string, string | number>): this;
+    assignAttro(attr_o: Record<string, string | number | boolean>): this;
 
     readonly scrollRight: number;
     readonly scrollBottom: number;
@@ -436,6 +443,11 @@ if (globalThis.Range) {
 declare global {
   interface Text {
     [$loff]?: llen_t;
+    /**
+     * For `TokLine<>` being empty or containing whitespaces only, when it is
+     * appended to a `ELine<>`, an additional "|" will be added. For such
+     * `Text`, its `[$tail_ignored]` is `true`.
+     */
     [$tail_ignored]?: boolean;
   }
 }

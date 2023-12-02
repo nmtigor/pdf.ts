@@ -19,7 +19,7 @@
 
 import { assert, assertEquals, fail } from "@std/assert/mod.ts";
 import { afterAll, beforeAll, describe, it } from "@std/testing/bdd.ts";
-import { createIdFactory, XRefMock } from "../shared/test_utils.ts";
+import { createIdFactory, XRefMock } from "../../test_utils.ts";
 import { FormatError, OPS } from "../shared/util.ts";
 import { BaseStream } from "./base_stream.ts";
 import { PartialEvaluator } from "./evaluator.ts";

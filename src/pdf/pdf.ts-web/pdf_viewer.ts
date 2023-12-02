@@ -17,25 +17,10 @@
  * limitations under the License.
  */
 
-/** @typedef {import("../src/display/api").PDFDocumentProxy} PDFDocumentProxy */
-/** @typedef {import("../src/display/api").PDFPageProxy} PDFPageProxy */
-// eslint-disable-next-line max-len
-/** @typedef {import("../src/display/display_utils").PageViewport} PageViewport */
-// eslint-disable-next-line max-len
-/** @typedef {import("../src/display/optional_content_config").OptionalContentConfig} OptionalContentConfig */
-/** @typedef {import("./event_utils").EventBus} EventBus */
-/** @typedef {import("./interfaces").IDownloadManager} IDownloadManager */
-/** @typedef {import("./interfaces").IL10n} IL10n */
-/** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
-// eslint-disable-next-line max-len
-/** @typedef {import("./pdf_find_controller").PDFFindController} PDFFindController */
-// eslint-disable-next-line max-len
-/** @typedef {import("./pdf_scripting_manager").PDFScriptingManager} PDFScriptingManager */
-
+import { GECKOVIEW, GENERIC, PDFJSDev } from "@fe-src/global.ts";
 import type { dot2d_t } from "@fe-lib/alias.ts";
 import { div, html } from "@fe-lib/dom.ts";
 import { PromiseCap } from "@fe-lib/util/PromiseCap.ts";
-import { GECKOVIEW, GENERIC, PDFJSDev } from "@fe-src/global.ts";
 import type {
   ExplicitDest,
   OptionalContentConfig,
@@ -49,13 +34,13 @@ import {
   AnnotationMode,
   PermissionFlag,
   PixelsPerInch,
+  shadow,
   version,
 } from "../pdf.ts-src/pdf.ts";
 import type { AltTextManager } from "./alt_text_manager.ts";
 import { compatibilityParams } from "./app_options.ts";
 import type { EventBus, EventMap } from "./event_utils.ts";
 import type { IDownloadManager, IL10n, IPDFLinkService } from "./interfaces.ts";
-import { NullL10n } from "./l10n_utils.ts";
 import type { PDFFindController } from "./pdf_find_controller.ts";
 import { SimpleLinkService } from "./pdf_link_service.ts";
 import { PDFPageView } from "./pdf_page_view.ts";
@@ -87,6 +72,11 @@ import {
   VERTICAL_PADDING,
   watchScroll,
 } from "./ui_utils.ts";
+
+/* Ref. gulpfile.mjs of pdf.js */
+const { NullL10n } = /*#static*/ GENERIC
+  ? await import("./l10n_utils.ts")
+  : await import("./stubs.ts");
 /*80--------------------------------------------------------------------------*/
 
 const DEFAULT_CACHE_SIZE = 10;
@@ -557,9 +547,9 @@ export class PDFViewer {
   #copyCallbackBound: ((_x: ClipboardEvent) => void) | undefined;
 
   constructor(options: PDFViewerOptions) {
-    const viewerVersion = 0;
     // const viewerVersion =
     //   typeof PDFJSDev !== "undefined" ? PDFJSDev.eval("BUNDLE_VERSION") : null;
+    const viewerVersion = 0;
     if (version !== viewerVersion) {
       throw new Error(
         `The API version "${version}" does not match the Viewer version "${viewerVersion}".`,
@@ -603,13 +593,6 @@ export class PDFViewer {
     this.enablePrintAutoRotate = options.enablePrintAutoRotate || false;
     /*#static*/ if (PDFJSDev || GENERIC) {
       this.removePageBorders = options.removePageBorders || false;
-
-      if ((options as any).useOnlyCssZoom) {
-        console.error(
-          "useOnlyCssZoom was removed, please use `maxCanvasPixels = 0` instead.",
-        );
-        options.maxCanvasPixels = 0;
-      }
     }
     this.isOffscreenCanvasSupported = options.isOffscreenCanvasSupported ??
       true;
@@ -648,6 +631,13 @@ export class PDFViewer {
         pdfPage?.cleanup();
       }
     });
+
+    /*#static*/ if (PDFJSDev || GENERIC) {
+      if (this.l10n === NullL10n) {
+        // Ensure that Fluent is connected in e.g. the COMPONENTS build.
+        this.l10n!.translate(this.container);
+      }
+    }
   }
 
   /**
@@ -735,9 +725,9 @@ export class PDFViewer {
     }
   }
 
-  #layerProperties() {
+  get _layerProperties() {
     const self = this;
-    return {
+    return shadow(this, "_layerProperties", {
       get annotationEditorUIManager() {
         return self.#annotationEditorUIManager;
       },
@@ -762,7 +752,7 @@ export class PDFViewer {
       get linkService() {
         return self.linkService;
       },
-    };
+    });
   }
 
   /**
@@ -1052,7 +1042,6 @@ export class PDFViewer {
           }
         }
 
-        const layerProperties = this.#layerProperties.bind(this);
         const viewerElement = this._scrollMode === ScrollMode.PAGE
           ? undefined
           : this.viewer;
@@ -1094,7 +1083,7 @@ export class PDFViewer {
             maxCanvasPixels: this.maxCanvasPixels,
             pageColors: this.pageColors,
             l10n: this.l10n,
-            layerProperties,
+            layerProperties: this._layerProperties,
           });
           this._pages.push(pageView);
         }
@@ -2271,7 +2260,8 @@ export class PDFViewer {
       steps ??= 1;
       do {
         newScale =
-          Math.ceil(+(newScale * DEFAULT_SCALE_DELTA).toFixed(2) * 10) / 10;
+          Math.ceil((newScale * DEFAULT_SCALE_DELTA).toFixed(2) as any * 10) /
+          10;
       } while (--steps > 0 && newScale < MAX_SCALE);
     }
     this.#setScale(Math.min(MAX_SCALE, newScale), {
@@ -2294,7 +2284,8 @@ export class PDFViewer {
       steps ??= 1;
       do {
         newScale =
-          Math.floor(+(newScale / DEFAULT_SCALE_DELTA).toFixed(2) * 10) / 10;
+          Math.floor((newScale / DEFAULT_SCALE_DELTA).toFixed(2) as any * 10) /
+          10;
       } while (--steps > 0 && newScale > MIN_SCALE);
     }
     this.#setScale(Math.max(MIN_SCALE, newScale), {
@@ -2339,7 +2330,8 @@ export class PDFViewer {
    * @param AnnotationEditor mode (None, FreeText, Ink, ...)
    */
   set annotationEditorMode(
-    { mode, editId }: EventMap["switchannotationeditormode"],
+    { mode, editId, isFromKeyboard = false }:
+      EventMap["switchannotationeditormode"],
   ) {
     if (!this.#annotationEditorUIManager) {
       throw new Error(`The AnnotationEditor is not enabled.`);
@@ -2359,7 +2351,7 @@ export class PDFViewer {
       mode,
     });
 
-    this.#annotationEditorUIManager.updateMode(mode!, editId);
+    this.#annotationEditorUIManager.updateMode(mode!, editId, isFromKeyboard);
   }
 
   // eslint-disable-next-line accessor-pairs

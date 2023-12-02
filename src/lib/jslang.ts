@@ -17,7 +17,7 @@ import { assert } from "./util/trace.ts";
 /*80--------------------------------------------------------------------------*/
 
 declare global {
-  // https://github.com/microsoft/TypeScript/issues/44253#issuecomment-1199936073
+  /* Ref. https://github.com/microsoft/TypeScript/issues/44253#issuecomment-1199936073 */
   interface ObjectConstructor {
     /**
      * Determines whether an object has a property with the specified name.
@@ -33,7 +33,7 @@ declare global {
   }
 }
 
-// Ref. https://lodash.com/docs/4.17.15#isObjectLike
+/** Ref. https://lodash.com/docs/4.17.15#isObjectLike */
 export function isObjectLike(value: unknown): value is object {
   return value != null && typeof value === "object";
 }
@@ -139,7 +139,7 @@ Reflect.defineProperty(Object.prototype, "eq", {
 /*80--------------------------------------------------------------------------*/
 
 declare global {
-  //! Make sure non-`enumerable`.
+  //! Make sure non-`enumerable`
   interface Array<T> {
     /**
      * @deprecated Use `at(-1)`.
@@ -161,6 +161,26 @@ declare global {
 
     swap(i_x: uint, j_x: uint): this;
   }
+
+  // interface ArrayConstructor {
+  //   /**
+  //    * Creates an array from an async iterable, iterable, or array-like object.
+  //    * @param iterable An async iterable, iterable, or array-like object to convert to an array.
+  //    */
+  //   fromAsync<T>(iterable: AsyncIterable<T> | Iterable<T> | ArrayLike<T>): T[];
+
+  //   /**
+  //    * Creates an array from an async iterable, iterable, or array-like object.
+  //    * @param iterable An async iterable, iterable, or array-like object to convert to an array.
+  //    * @param mapfn A mapping function to call on every element of the array.
+  //    * @param thisArg Value of 'this' used to invoke the mapfn.
+  //    */
+  //   fromAsync<T, U>(
+  //     iterable: AsyncIterable<T> | Iterable<T> | ArrayLike<T>,
+  //     mapfn: (v: T, k: number) => U,
+  //     thisArg?: any,
+  //   ): U[];
+  // }
 }
 
 Reflect.defineProperty(Array.prototype, "last", {
@@ -640,7 +660,7 @@ Math.clamp = (min_x: number, val_x: number, max_x: number) =>
 
 /**
  * class X extends mix( Y, Z )
- * ! Should always companion with an interface declaration.
+ * ! Should always companion with an interface declaration
  *
  * @param mixins_x
  *  Laat element has the highest precedence, and so on.

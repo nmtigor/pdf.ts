@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-import type { C2D } from "../../lib/alias.ts";
-import { div, html } from "../../lib/dom.ts";
+import type { C2D } from "@fe-lib/alias.ts";
+import { div, html } from "@fe-lib/dom.ts";
 import type {
   Intent,
   matrix_t,

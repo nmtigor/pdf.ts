@@ -17,9 +17,8 @@
  * limitations under the License.
  */
 
-import { PromiseCap } from "../../lib/util/PromiseCap.ts";
+import { PromiseCap } from "@fe-lib/util/PromiseCap.ts";
 import { PasswordResponses } from "../pdf.ts-src/pdf.ts";
-import type { IL10n } from "./interfaces.ts";
 import type { OverlayManager } from "./overlay_manager.ts";
 import type { ViewerConfiguration } from "./viewer.ts";
 /*80--------------------------------------------------------------------------*/
@@ -31,7 +30,6 @@ export class PasswordPrompt {
   submitButton;
   cancelButton;
   overlayManager;
-  l10n;
   _isViewerEmbedded;
 
   #activeCapability: PromiseCap<void> | undefined;
@@ -47,7 +45,6 @@ export class PasswordPrompt {
   constructor(
     options: ViewerConfiguration["passwordOverlay"],
     overlayManager: OverlayManager,
-    l10n: IL10n,
     isViewerEmbedded = false,
   ) {
     this.dialog = options.dialog;
@@ -56,7 +53,6 @@ export class PasswordPrompt {
     this.submitButton = options.submitButton;
     this.cancelButton = options.cancelButton;
     this.overlayManager = overlayManager;
-    this.l10n = l10n;
     this._isViewerEmbedded = isViewerEmbedded;
 
     // Attach the event listeners.
@@ -92,8 +88,9 @@ export class PasswordPrompt {
     if (!this._isViewerEmbedded || passwordIncorrect) {
       this.input.focus();
     }
-    this.label.textContent = await this.l10n.get(
-      `password_${passwordIncorrect ? "invalid" : "label"}`,
+    this.label.setAttribute(
+      "data-l10n-id",
+      `pdfjs-password-${passwordIncorrect ? "invalid" : "label"}`,
     );
   }
 

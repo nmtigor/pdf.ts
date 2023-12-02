@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-import { PDFJSDev } from "../../global.ts";
-import { html } from "../../lib/dom.ts";
+import { PDFJSDev } from "@fe-src/global.ts";
+import { html } from "@fe-lib/dom.ts";
 import type {
   Intent,
   matrix_t,
@@ -28,7 +28,6 @@ import type {
 } from "../pdf.ts-src/pdf.ts";
 import { AnnotationMode, PixelsPerInch } from "../pdf.ts-src/pdf.ts";
 import { PDFPrintServiceFactory, viewerApp } from "./app.ts";
-import type { IL10n } from "./interfaces.ts";
 import type { OverlayManager } from "./overlay_manager.ts";
 import type { PageOverview } from "./pdf_viewer.ts";
 import { getXfaHtmlForPrinting } from "./print_utils.ts";
@@ -86,7 +85,6 @@ export class PDFPrintService {
   _printResolution;
   _optionalContentConfigPromise;
   _printAnnotationStoragePromise;
-  l10n;
   currentPage = -1;
 
   pageStyleSheet: HTMLStyleElement | undefined;
@@ -105,7 +103,6 @@ export class PDFPrintService {
       | Promise<OptionalContentConfig | undefined>
       | undefined,
     printAnnotationStoragePromise?: Promise<PrintAnnotationStorage | undefined>,
-    l10n?: IL10n,
   ) {
     this.pdfDocument = pdfDocument;
     this.pagesOverview = pagesOverview;
@@ -115,7 +112,6 @@ export class PDFPrintService {
       pdfDocument.getOptionalContentConfig();
     this._printAnnotationStoragePromise = printAnnotationStoragePromise ||
       Promise.resolve(undefined);
-    this.l10n = l10n;
   }
 
   layout() {
@@ -186,12 +182,12 @@ export class PDFPrintService {
     ) => {
       this.throwIfInactive();
       if (++this.currentPage >= pageCount) {
-        renderProgress(pageCount, pageCount, this.l10n!);
+        renderProgress(pageCount, pageCount);
         resolve();
         return;
       }
       const index = this.currentPage;
-      renderProgress(index, pageCount, this.l10n!);
+      renderProgress(index, pageCount);
       renderPage(
         this,
         this.pdfDocument,
@@ -323,7 +319,7 @@ function abort() {
   }
 }
 
-function renderProgress(index: number, total: number, l10n: IL10n) {
+function renderProgress(index: number, total: number) {
   if (PDFJSDev && (window as any).isGECKOVIEW) {
     return;
   }
@@ -332,11 +328,7 @@ function renderProgress(index: number, total: number, l10n: IL10n) {
   const progressBar = dialog.querySelector("progress")!;
   const progressPerc = dialog.querySelector(".relative-progress")!;
   progressBar.value = progress;
-  l10n.get("print_progress_percent", { progress: <any> progress }).then(
-    (msg) => {
-      progressPerc.textContent = msg;
-    },
-  );
+  progressPerc.setAttribute("data-l10n-args", JSON.stringify({ progress }));
 }
 
 window.on(
@@ -408,7 +400,6 @@ PDFPrintServiceFactory.instance = {
     printResolution,
     optionalContentConfigPromise,
     printAnnotationStoragePromise,
-    l10n,
   ) {
     if (activeService) {
       throw new Error("The print service is created and active.");
@@ -420,7 +411,6 @@ PDFPrintServiceFactory.instance = {
       printResolution,
       optionalContentConfigPromise,
       printAnnotationStoragePromise,
-      l10n,
     );
     return activeService;
   },

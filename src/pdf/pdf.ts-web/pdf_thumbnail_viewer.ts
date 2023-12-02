@@ -17,21 +17,13 @@
  * limitations under the License.
  */
 
-/** @typedef {import("../src/display/api").PDFDocumentProxy} PDFDocumentProxy */
-/** @typedef {import("../src/display/api").PDFPageProxy} PDFPageProxy */
-/** @typedef {import("./event_utils").EventBus} EventBus */
-/** @typedef {import("./interfaces").IL10n} IL10n */
-/** @typedef {import("./interfaces").IPDFLinkService} IPDFLinkService */
-// eslint-disable-next-line max-len
-/** @typedef {import("./pdf_rendering_queue").PDFRenderingQueue} PDFRenderingQueue */
-
 import type {
   OptionalContentConfig,
   PDFDocumentProxy,
   PDFPageProxy,
 } from "../pdf.ts-src/pdf.ts";
 import type { EventBus } from "./event_utils.ts";
-import type { IL10n, IPDFLinkService } from "./interfaces.ts";
+import type { IPDFLinkService } from "./interfaces.ts";
 import type { PDFRenderingQueue } from "./pdf_rendering_queue.ts";
 import { PDFThumbnailView, TempImageFactory } from "./pdf_thumbnail_view.ts";
 import type { PageColors } from "./pdf_viewer.ts";
@@ -70,11 +62,6 @@ interface PDFThumbnailViewerOptions {
   renderingQueue: PDFRenderingQueue;
 
   /**
-   * Localization service.
-   */
-  l10n: IL10n;
-
-  /**
    * Overwrites background and foreground colors
    * with user defined ones in order to improve readability in high contrast
    * mode.
@@ -90,7 +77,6 @@ export class PDFThumbnailViewer {
   eventBus;
   linkService;
   renderingQueue;
-  l10n;
   pageColors;
 
   scroll;
@@ -138,14 +124,12 @@ export class PDFThumbnailViewer {
     eventBus,
     linkService,
     renderingQueue,
-    l10n,
     pageColors,
   }: PDFThumbnailViewerOptions) {
     this.container = container;
     this.eventBus = eventBus;
     this.linkService = linkService;
     this.renderingQueue = renderingQueue;
-    this.l10n = l10n;
     this.pageColors = pageColors || undefined;
 
     this.scroll = watchScroll(this.container, this.#scrollUpdated);
@@ -251,7 +235,6 @@ export class PDFThumbnailViewer {
             optionalContentConfigPromise,
             linkService: this.linkService,
             renderingQueue: this.renderingQueue,
-            l10n: this.l10n,
             pageColors: this.pageColors,
           });
           this._thumbnails.push(thumbnail);

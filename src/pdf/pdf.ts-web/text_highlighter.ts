@@ -17,10 +17,6 @@
  * limitations under the License.
  */
 
-/** @typedef {import("./event_utils").EventBus} EventBus */
-// eslint-disable-next-line max-len
-/** @typedef {import("./pdf_find_controller").PDFFindController} PDFFindController */
-
 import { html, textnode } from "../../lib/dom.ts";
 import type { EventBus, EventMap } from "./event_utils.ts";
 import type { PDFFindController } from "./pdf_find_controller.ts";

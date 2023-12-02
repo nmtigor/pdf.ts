@@ -20,6 +20,7 @@
 import { html } from "@fe-lib/dom.ts";
 import type { FontFaceObject, OpListIR, OPSName } from "../pdf.ts-src/pdf.ts";
 import { OPS } from "../pdf.ts-src/pdf.ts";
+import { SubstitutionInfo } from "../pdf.ts-src/core/font_substitutions.ts";
 /*80--------------------------------------------------------------------------*/
 
 // const { OPS } = (globalThis as any).pdfjsLib || (await import("../pdf.ts-src/pdf.ts"));
@@ -108,8 +109,14 @@ namespace FontInspector_ {
     get: () => _active,
   });
   // FontInspector specific functions.
-  export function fontAdded(fontObj: FontFaceObject, url?: string) {
-    function properties(obj: FontFaceObject, list: string[]) {
+  export function fontAdded(
+    fontObj: FontFaceObject & { css?: string },
+    url?: string,
+  ) {
+    function properties(
+      obj: FontFaceObject,
+      list: string[],
+    ) {
       const moreInfo = html("table");
       for (const entry of list) {
         const tr = html("tr");
@@ -123,20 +130,28 @@ namespace FontInspector_ {
       }
       return moreInfo;
     }
-    const moreInfo = properties(fontObj, ["name", "type"]);
+
+    const moreInfo = fontObj.css
+      ? properties(fontObj, ["baseFontName"])
+      : properties(fontObj, ["name", "type"]);
+
     const fontName = fontObj.loadedName!;
     const font = html("div");
     const name = html("span");
     name.textContent = fontName;
-    const download = html("a");
-    if (url) {
-      download.href = (/url\(['"]?([^)"']+)/.exec(url)!)[1];
-    } else if (fontObj.data) {
-      download.href = URL.createObjectURL(
-        new Blob([fontObj.data], { type: fontObj.mimetype! }),
-      );
+    let download;
+    if (!fontObj.css) {
+      download = html("a");
+      if (url) {
+        download.href = (/url\(['"]?([^)"']+)/.exec(url)!)[1];
+      } else if (fontObj.data) {
+        download.href = URL.createObjectURL(
+          new Blob([fontObj.data], { type: fontObj.mimetype! }),
+        );
+      }
+      download.textContent = "Download";
     }
-    download.textContent = "Download";
+
     const logIt = html("a");
     logIt.href = "";
     logIt.textContent = "Log";
@@ -150,7 +165,11 @@ namespace FontInspector_ {
     select.on("click", () => {
       selectFont(fontName, select.checked);
     });
-    font.append(select, name, " ", download, " ", logIt, moreInfo);
+    if (download) {
+      font.append(select, name, " ", download, " ", logIt, moreInfo);
+    } else {
+      font.append(select, name, " ", logIt, moreInfo);
+    }
     fonts.append(font);
     // Somewhat of a hack, should probably add a hook for when the text layer
     // is done rendering.
@@ -224,7 +243,7 @@ namespace StepperManager_ {
       stepper.panel.hidden = stepper.pageIndex !== pageIndex;
     }
     for (const option of stepperChooser.options) {
-      option.selected = (+option.value | 0) === pageIndex;
+      option.selected = (option.value as any | 0) === pageIndex;
     }
   }
   export function saveBreakPoints(pageIndex: number, bps: number[]) {
@@ -610,7 +629,7 @@ export class PDFBug {
 
     const link = html("link");
     link.rel = "stylesheet";
-    link.href = url.replace(/.js$/, ".css");
+    link.href = url.replace(/\.mjs$/, ".css");
 
     document.head.append(link);
   }

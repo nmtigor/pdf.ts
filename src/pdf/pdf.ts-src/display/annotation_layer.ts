@@ -17,20 +17,12 @@
  * limitations under the License.
  */
 
-/** @typedef {import("./api").PDFPageProxy} PDFPageProxy */
-/** @typedef {import("./display_utils").PageViewport} PageViewport */
-// eslint-disable-next-line max-len
-/** @typedef {import("../../web/text_accessibility.js").TextAccessibilityManager} TextAccessibilityManager */
-// eslint-disable-next-line max-len
-/** @typedef {import("../../web/interfaces").IDownloadManager} IDownloadManager */
-/** @typedef {import("../../web/interfaces").IPDFLinkService} IPDFLinkService */
-
 import type { CSSStyleName, rect_t } from "@fe-lib/alias.ts";
 import type { red_t, rgb_t } from "@fe-lib/color/alias.ts";
 import type { HSElement } from "@fe-lib/dom.ts";
 import { div, html, span, svg as createSVG, textnode } from "@fe-lib/dom.ts";
 import { assert, fail } from "@fe-lib/util/trace.ts";
-import { GENERIC, MOZCENTRAL, TESTING } from "@fe-src/global.ts";
+import { MOZCENTRAL, TESTING } from "@fe-src/global.ts";
 import type {
   IDownloadManager,
   IL10n,
@@ -45,6 +37,7 @@ import type {
 import type { BidiText } from "../core/bidi.ts";
 import type { Destination, SetOCGState } from "../core/catalog.ts";
 import type { Attachment } from "../core/file_spec.ts";
+import { Dict } from "../core/primitives.ts";
 import type { Ref } from "../pdf.ts";
 import type { ScriptingActionName } from "../scripting_api/common.ts";
 import { ColorConverters, type CSTag } from "../shared/scripting_utils.ts";
@@ -70,12 +63,6 @@ import {
   setLayerDimensions,
 } from "./display_utils.ts";
 import { XfaLayer } from "./xfa_layer.ts";
-import { Dict } from "../core/primitives.ts";
-
-// Ref. gulpfile.mjs of pdf.js
-const { NullL10n } = /*#static*/ GENERIC
-  ? await import("@pdf.ts-web/l10n_utils.ts")
-  : await import("./stubs.ts");
 /*80--------------------------------------------------------------------------*/
 
 const DEFAULT_TAB_INDEX = 1000;
@@ -758,7 +745,14 @@ export class AnnotationElement {
     }
   }
 
+  get _isEditable() {
+    return false;
+  }
+
   protected editOnDoubleClick$() {
+    if (!this._isEditable) {
+      return;
+    }
     const {
       annotationEditorType: mode,
       data: { id: editId },
@@ -810,7 +804,7 @@ class LinkAnnotationElement extends AnnotationElement {
       this.#bindNamedAction(link, data.action);
       isBound = true;
     } else if (data.attachment) {
-      this._bindAttachment(link, data.attachment);
+      this.#bindAttachment(link, data.attachment, data.attachmentDest);
       isBound = true;
     } else if (data.setOCGState) {
       this.#bindSetOCGState(link, data.setOCGState);
@@ -883,13 +877,17 @@ class LinkAnnotationElement extends AnnotationElement {
   /**
    * Bind attachments to the link element.
    */
-  _bindAttachment(link: HTMLAnchorElement, attachment: Attachment) {
+  #bindAttachment(
+    link: HTMLAnchorElement,
+    attachment: Attachment,
+    dest?: string,
+  ) {
     link.href = this.linkService.getAnchorUrl("");
     link.onclick = () => {
       this.downloadManager?.openOrDownloadData(
-        this.container,
         attachment.content!,
         attachment.filename,
+        dest,
       );
       return false;
     };
@@ -1057,9 +1055,10 @@ class TextAnnotationElement extends AnnotationElement {
       "annotation-" +
       this.data.name!.toLowerCase() +
       ".svg";
-    image.alt = "[{{type}} Annotation]";
-    image.dataset.l10nId = "text_annotation_type";
-    image.dataset.l10nArgs = JSON.stringify({ type: this.data.name });
+    image.assignAttro({
+      "data-l10n-id": "pdfjs-text-annotation-type",
+      "data-l10n-args": JSON.stringify({ type: this.data.name }),
+    });
 
     if (!this.data.popupRef && this.hasPopupData) {
       this._createPopup();
@@ -1106,8 +1105,7 @@ class WidgetAnnotationElement extends AnnotationElement {
   }
 
   #getKeyModifier(event: MouseEvent) {
-    const { isWin, isMac } = FeatureTest.platform;
-    return (isWin && event.ctrlKey) || (isMac && event.metaKey);
+    return FeatureTest.platform.isMac ? event.metaKey : event.ctrlKey;
   }
 
   #setEventListener(
@@ -1279,6 +1277,7 @@ type ElementData_ = {
 class TextWidgetAnnotationElement extends WidgetAnnotationElement {
   constructor(parameters: AnnotationElementCtorP_) {
     const isRenderable = parameters.renderForms ||
+      parameters.data.hasOwnCanvas ||
       (!parameters.data.hasAppearance && !!parameters.data.fieldValue);
     super(parameters, { isRenderable });
   }
@@ -1628,6 +1627,10 @@ class TextWidgetAnnotationElement extends WidgetAnnotationElement {
       element.textContent = this.data.fieldValue as string;
       element.style.verticalAlign = "middle";
       element.style.display = "table-cell";
+
+      if (this.data.hasOwnCanvas) {
+        element.hidden = true;
+      }
     }
 
     this._setTextStyle(element);
@@ -1950,7 +1953,7 @@ class ChoiceWidgetAnnotationElement extends WidgetAnnotationElement {
 
     const getItems = (event: Event) => {
       const options = (event.target as El).options;
-      return <Item[]> Array.prototype.map.call(
+      return Array.prototype.map.call(
         options,
         (option: HTMLOptionElement) => {
           return {
@@ -1958,7 +1961,7 @@ class ChoiceWidgetAnnotationElement extends WidgetAnnotationElement {
             exportValue: option.value,
           };
         },
-      );
+      ) as Item[];
     };
 
     if (this.enableScripting && this.hasJSActions) {
@@ -2174,10 +2177,10 @@ interface PopupElementCtorP_ {
 }
 
 class PopupElement {
-  #dateTimePromise;
   #color;
   #container;
   #contentsObj;
+  #dateObj;
   #elements;
   #parent;
   #parentRect;
@@ -2213,16 +2216,10 @@ class PopupElement {
     this.#parentRect = parentRect;
     this.#elements = elements;
 
-    const dateObject = PDFDateString.toDateObject(modificationDate);
-    if (dateObject) {
-      // The modification date is shown in the popup instead of the creation
-      // date if it is available and can be parsed correctly, which is
-      // consistent with other viewers such as Adobe Acrobat.
-      this.#dateTimePromise = parent.l10n.get("annotation_date_string", {
-        date: dateObject.toLocaleDateString(),
-        time: dateObject.toLocaleTimeString(),
-      });
-    }
+    // The modification date is shown in the popup instead of the creation
+    // date if it is available and can be parsed correctly, which is
+    // consistent with other viewers such as Adobe Acrobat.
+    this.#dateObj = PDFDateString.toDateObject(modificationDate);
 
     this.trigger = elements.flatMap((e) => e.getElementsToTriggerPopup());
     // Attach the event listeners to the trigger element.
@@ -2249,9 +2246,6 @@ class PopupElement {
       this.#parent.popupShow.push(async () => {
         if (this.#container.hidden) {
           this.#show();
-        }
-        if (this.#dateTimePromise) {
-          await this.#dateTimePromise;
         }
       });
     }
@@ -2306,11 +2300,15 @@ class PopupElement {
     ({ dir: title.dir, str: title.textContent } = this.#titleObj!);
     popup.append(header);
 
-    if (this.#dateTimePromise) {
+    if (this.#dateObj) {
       const modificationDate = span();
       modificationDate.classList.add("popupDate");
-      this.#dateTimePromise.then((localized) => {
-        modificationDate.textContent = localized;
+      modificationDate.assignAttro({
+        "data-l10n-id": "pdfjs-annotation-date-string",
+        "data-l10n-args": JSON.stringify({
+          date: this.#dateObj.toLocaleDateString(),
+          time: this.#dateObj.toLocaleTimeString(),
+        }),
       });
       header.append(modificationDate);
     }
@@ -2338,7 +2336,7 @@ class PopupElement {
     let useParentRect = !!this.#parentRect;
     let rect = useParentRect ? this.#parentRect : this.#rect;
     for (const element of this.#elements) {
-      if (!rect || Util.intersect(element.data.rect!, rect) !== null) {
+      if (!rect || Util.intersect(element.data.rect!, rect) !== undefined) {
         rect = element.data.rect;
         useParentRect = true;
         break;
@@ -2493,6 +2491,10 @@ export class FreeTextAnnotationElement extends AnnotationElement {
     this.editOnDoubleClick$();
 
     return this.container;
+  }
+
+  override get _isEditable() {
+    return this.data.hasOwnCanvas;
   }
 }
 
@@ -3012,11 +3014,7 @@ export class FileAttachmentAnnotationElement extends AnnotationElement {
    * Download the file attachment associated with this annotation.
    */
   #download = () => {
-    this.downloadManager?.openOrDownloadData(
-      this.container,
-      this.content!,
-      this.filename,
-    );
+    this.downloadManager?.openOrDownloadData(this.content!, this.filename);
   };
 }
 /*80--------------------------------------------------------------------------*/
@@ -3024,7 +3022,6 @@ export class FileAttachmentAnnotationElement extends AnnotationElement {
 export type AnnotationLayerP = {
   viewport: PageViewport;
   div: HTMLDivElement;
-  l10n: IL10n;
   annotations: AnnotationData[];
   page: PDFPageProxy;
 
@@ -3120,7 +3117,6 @@ export class AnnotationLayer {
   div;
   #accessibilityManager;
   #annotationCanvasMap;
-  l10n;
   page;
   viewport;
   zIndex = 0;
@@ -3133,20 +3129,15 @@ export class AnnotationLayer {
     div,
     accessibilityManager,
     annotationCanvasMap,
-    l10n,
     page,
     viewport,
   }: AnnotationLayerP) {
     this.div = div;
     this.#accessibilityManager = accessibilityManager;
     this.#annotationCanvasMap = annotationCanvasMap;
-    this.l10n = l10n;
     this.page = page;
     this.viewport = viewport;
 
-    /*#static*/ if (GENERIC && !TESTING) {
-      this.l10n ||= NullL10n;
-    }
     /*#static*/ if (TESTING) {
       // For testing purposes.
       Object.defineProperty(this, "showPopups", {
@@ -3241,8 +3232,6 @@ export class AnnotationLayer {
     }
 
     this.#setAnnotationCanvasMap();
-
-    await this.l10n!.translate(layer);
   }
 
   /**

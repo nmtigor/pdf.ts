@@ -17,8 +17,6 @@
  * limitations under the License.
  */
 
-/** @typedef {import("./api").TextContent} TextContent */
-
 import type { XFAElObj } from "../core/xfa/alias.ts";
 import type { TextContent, TextItem, TextMarkedContent } from "./api.ts";
 /*80--------------------------------------------------------------------------*/

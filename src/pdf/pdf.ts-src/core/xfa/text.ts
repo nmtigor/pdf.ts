@@ -303,7 +303,7 @@ export class TextMeasure {
           isBroken = true;
           isFirstLine = false;
         } else {
-          currentLineHeight = Math.max(+glyphHeight, currentLineHeight);
+          currentLineHeight = Math.max(glyphHeight, currentLineHeight);
           lastSpaceWidth = currentLineWidth;
           currentLineWidth += glyphWidth;
           lastSpacePos = i;
@@ -333,7 +333,7 @@ export class TextMeasure {
       }
 
       currentLineWidth += glyphWidth;
-      currentLineHeight = Math.max(+glyphHeight, currentLineHeight);
+      currentLineHeight = Math.max(glyphHeight, currentLineHeight);
     }
 
     width = Math.max(width, currentLineWidth);

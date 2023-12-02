@@ -17,13 +17,13 @@
  * limitations under the License.
  */
 
+import { PromiseCap } from "@fe-lib/util/PromiseCap.ts";
 import {
   assertEquals,
   assertInstanceOf,
   assertThrows,
 } from "@std/assert/mod.ts";
 import { describe, it } from "@std/testing/bdd.ts";
-import { PromiseCap } from "../../../lib/util/PromiseCap.ts";
 import {
   bytesToString,
   createValidAbsoluteUrl,

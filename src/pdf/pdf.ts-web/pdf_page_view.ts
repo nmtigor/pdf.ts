@@ -17,16 +17,6 @@
  * limitations under the License.
  */
 
-// eslint-disable-next-line max-len
-/** @typedef {import("../src/display/display_utils").PageViewport} PageViewport */
-// eslint-disable-next-line max-len
-/** @typedef {import("../src/display/optional_content_config").OptionalContentConfig} OptionalContentConfig */
-/** @typedef {import("./event_utils").EventBus} EventBus */
-/** @typedef {import("./interfaces").IL10n} IL10n */
-/** @typedef {import("./interfaces").IRenderableView} IRenderableView */
-// eslint-disable-next-line max-len
-/** @typedef {import("./pdf_rendering_queue").PDFRenderingQueue} PDFRenderingQueue */
-
 import type { dot2d_t } from "@fe-lib/alias.ts";
 import { html } from "@fe-lib/dom.ts";
 import { COMPONENTS, GENERIC, PDFJSDev, TESTING } from "@fe-src/global.ts";
@@ -63,7 +53,6 @@ import type {
   IPDFLinkService,
   IVisibleView,
 } from "./interfaces.ts";
-import { NullL10n } from "./l10n_utils.ts";
 import type { PDFFindController } from "./pdf_find_controller.ts";
 import { SimpleLinkService } from "./pdf_link_service.ts";
 import type { PDFRenderingQueue } from "./pdf_rendering_queue.ts";
@@ -81,6 +70,11 @@ import {
   TextLayerMode,
 } from "./ui_utils.ts";
 import { XfaLayerBuilder } from "./xfa_layer_builder.ts";
+
+/* Ref. gulpfile.mjs of pdf.js */
+const { NullL10n } = /*#static*/ GENERIC
+  ? await import("./l10n_utils.ts")
+  : await import("./stubs.ts");
 /*80--------------------------------------------------------------------------*/
 
 interface PDFPageViewOptions {
@@ -164,12 +158,12 @@ interface PDFPageViewOptions {
   /**
    * Localization service.
    */
-  l10n?: IL10n;
+  l10n?: IL10n | undefined;
 
   /**
-   * The function that is used to lookup the necessary layer-properties.
+   * The object that is used to lookup the necessary layer-properties.
    */
-  layerProperties?: () => LayerPropsR_ | undefined;
+  layerProperties?: LayerPropsR_;
 }
 
 const MAX_CANVAS_PIXELS =
@@ -193,17 +187,13 @@ type LayerPropsR_ = {
   hasJSActionsPromise?: Promise<boolean> | undefined;
   linkService: IPDFLinkService;
 };
-const DEFAULT_LAYER_PROPERTIES = (): LayerPropsR_ | undefined => {
-  /*#static*/ if (PDFJSDev || !COMPONENTS) {
-    return undefined;
-  }
-  return {
+const DEFAULT_LAYER_PROPERTIES: LayerPropsR_ | undefined =
+  /*#static*/ PDFJSDev || !COMPONENTS ? undefined : {
     enableScripting: false,
     get linkService() {
       return new SimpleLinkService();
     },
   };
-};
 
 interface CSSTransformP_ {
   target: HTMLCanvasElement | SVGElement;
@@ -248,7 +238,7 @@ export class PDFPageView implements IVisibleView {
   readonly id: number;
   /** @implement */
   readonly renderingId: string;
-  #layerProperties: () => LayerPropsR_ | undefined;
+  #layerProperties: LayerPropsR_ | undefined;
 
   #loadingId: number | undefined;
 
@@ -355,13 +345,6 @@ export class PDFPageView implements IVisibleView {
     /*#static*/ if (PDFJSDev || GENERIC) {
       this._isStandalone = !this.renderingQueue?.hasViewer();
       this._container = container;
-
-      if ((options as any).useOnlyCssZoom) {
-        console.error(
-          "useOnlyCssZoom was removed, please use `maxCanvasPixels = 0` instead.",
-        );
-        this.maxCanvasPixels = 0;
-      }
     }
 
     const div = html("div");
@@ -369,9 +352,8 @@ export class PDFPageView implements IVisibleView {
     div.assignAttro({
       "data-page-number": this.id,
       role: "region",
-    });
-    this.l10n.get("page_landmark", { page: this.id as any }).then((msg) => {
-      div.setAttribute("aria-label", msg);
+      "data-l10n-id": "pdfjs-page-landmark",
+      "data-l10n-args": JSON.stringify({ page: this.id }),
     });
     this.div = div;
 
@@ -401,6 +383,11 @@ export class PDFPageView implements IVisibleView {
             this.#useThumbnailCanvas.initialOptionalContent =
               optionalContentConfig!.hasInitialVisibility;
           });
+        }
+
+        // Ensure that Fluent is connected in e.g. the COMPONENTS build.
+        if (this.l10n === NullL10n) {
+          this.l10n!.translate(this.div);
         }
       }
     }
@@ -502,7 +489,7 @@ export class PDFPageView implements IVisibleView {
       new TextHighlighter({
         pageIndex: this.id - 1,
         eventBus: this.eventBus,
-        findController: this.#layerProperties()!.findController,
+        findController: this.#layerProperties!.findController,
       }),
     );
   }
@@ -544,12 +531,23 @@ export class PDFPageView implements IVisibleView {
     try {
       const result = await this.xfaLayer!.render(this.viewport, "display");
       if (result?.textDivs && this._textHighlighter) {
+        // Given that the following method fetches the text asynchronously we
+        // can invoke it *before* appending the xfaLayer to the DOM (below),
+        // since a pending search-highlight/scroll operation thus won't run
+        // until after the xfaLayer is available in the viewer.
         this.#buildXfaTextContentItems(result!.textDivs);
       }
     } catch (ex) {
       console.error(`#renderXfaLayer: "${ex}".`);
       error = ex;
     } finally {
+      if (this.xfaLayer?.div) {
+        // Pause translation when inserting the xfaLayer in the DOM.
+        this.l10n!.pause();
+        this.div.append(this.xfaLayer.div);
+        this.l10n!.resume();
+      }
+
       this.eventBus.dispatch("xfalayerrendered", {
         source: this,
         pageNumber: this.id,
@@ -611,7 +609,10 @@ export class PDFPageView implements IVisibleView {
         : undefined);
     const treeDom = this.structTreeLayer?.render(tree);
     if (treeDom) {
+      // Pause translation when inserting the structTree in the DOM.
+      this.l10n!.pause();
       this.canvas?.append(treeDom);
+      this.l10n!.resume();
     }
     this.structTreeLayer?.show();
   }
@@ -1017,7 +1018,12 @@ export class PDFPageView implements IVisibleView {
         enablePermissions:
           this.#textLayerMode === TextLayerMode.ENABLE_PERMISSIONS,
       });
-      div.append(this.textLayer.div);
+      this.textLayer.onAppend = (textLayerDiv) => {
+        // Pause translation when inserting the textLayer in the DOM.
+        this.l10n!.pause();
+        this.div.append(textLayerDiv);
+        this.l10n!.resume();
+      };
     }
 
     if (
@@ -1031,7 +1037,7 @@ export class PDFPageView implements IVisibleView {
         fieldObjectsPromise,
         hasJSActionsPromise,
         linkService,
-      } = this.#layerProperties()!;
+      } = this.#layerProperties!;
 
       this._annotationCanvasMap ||= new Map();
       this.annotationLayer = new AnnotationLayerBuilder({
@@ -1042,7 +1048,6 @@ export class PDFPageView implements IVisibleView {
         renderForms: this.#annotationMode === AnnotationMode.ENABLE_FORMS,
         linkService,
         downloadManager,
-        l10n,
         enableScripting,
         hasJSActionsPromise,
         fieldObjectsPromise,
@@ -1148,7 +1153,7 @@ export class PDFPageView implements IVisibleView {
         }
 
         if (!this.annotationEditorLayer) {
-          const { annotationEditorUIManager } = this.#layerProperties()!;
+          const { annotationEditorUIManager } = this.#layerProperties!;
 
           if (!annotationEditorUIManager) {
             return;
@@ -1177,17 +1182,13 @@ export class PDFPageView implements IVisibleView {
 
     if (pdfPage.isPureXfa) {
       if (!this.xfaLayer) {
-        const { annotationStorage, linkService } = this.#layerProperties()!;
+        const { annotationStorage, linkService } = this.#layerProperties!;
 
         this.xfaLayer = new XfaLayerBuilder({
-          pageDiv: div,
           pdfPage,
           annotationStorage,
           linkService,
         });
-      } else if (this.xfaLayer.div) {
-        // The xfa layer needs to stay on top.
-        div.append(this.xfaLayer.div);
       }
       this.#renderXfaLayer();
     }
@@ -1203,6 +1204,11 @@ export class PDFPageView implements IVisibleView {
 
   setPageLabel(label?: string) {
     this.pageLabel = typeof label === "string" ? label : undefined;
+
+    this.div.setAttribute(
+      "data-l10n-args",
+      JSON.stringify({ page: this.pageLabel ?? this.id }),
+    );
 
     if (this.pageLabel !== undefined) {
       this.div.setAttribute("data-page-label", this.pageLabel);

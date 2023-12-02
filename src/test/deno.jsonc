@@ -45,18 +45,17 @@
       // "../pdf/pdf.ts-src/shared/murmurhash3_test.ts", //kkkk(1)
       // "../pdf/pdf.ts-src/shared/util_test.ts",
       //
-      // "../pdf/pdf.ts-src/pdf_test.ts",
+      // "../pdf/pdf.ts-src/pdf_test.ts", //kkkk(1)
       // "../pdf/pdf.ts-src/pdf.worker_test.ts",
       //
       // "../pdf/pdf.ts-src/display/annotation_storage_test.ts",
-      // "../pdf/pdf.ts-src/display/api_test.ts", //kkkk(24)
+      // "../pdf/pdf.ts-src/display/api_test.ts", //kkkk(22)
       // "../pdf/pdf.ts-src/display/display_utils_test.ts", //kkkk(5)
       // "../pdf/pdf.ts-src/display/editor/editor_test.ts",
       // "../pdf/pdf.ts-src/display/fetch_stream_test.ts",
       // "../pdf/pdf.ts-src/display/metadata_test.ts",
       // "../pdf/pdf.ts-src/display/network_test.ts", //kkkk(2)
       // "../pdf/pdf.ts-src/display/network_utils_test.ts",
-      // "../pdf/pdf.ts-src/display/svg_test.ts", //kkkk(3)
       // "../pdf/pdf.ts-src/display/text_layer_test.ts", //kkkk(1)
       //
       // "../pdf/pdf.ts-web/event_utils_test.ts", //kkkk(3)
@@ -68,13 +67,14 @@
     ]
   },
   "imports": {
-    "@std/": "https://deno.land/std@0.195.0/",
+    "@std/": "https://deno.land/std@0.200.0/",
 
-    "@fe-src/": "../",
+    "@fe-3rd/": "../3rd/",
     "@fe-lib/": "../lib/",
-    "@wretch": "../3rd/wretch-2.5.2/dist/index.js",
+    "@fe-src/": "../",
+    "@wretch": "../3rd/wretch-2.7.1/dist/index.js",
     "@zod": "../3rd/zod-3.22.2/lib/index.mjs",
-    
+
     "@pdf.ts-web/": "../pdf/pdf.ts-web/"
   }
 }

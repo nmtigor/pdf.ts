@@ -38,7 +38,7 @@ import {
   createIdFactory,
   STANDARD_FONT_DATA_URL,
   XRefMock,
-} from "../shared/test_utils.ts";
+} from "../../test_utils.ts";
 import {
   AnnotationBorderStyleType,
   AnnotationEditorType,
@@ -2320,6 +2320,12 @@ describe("annotation", () => {
     });
 
     it("should compress and save text", async () => {
+      // if (isNodeJS && getNodeVersion().major === 21) {
+      //   pending(
+      //     "CompressionStream behaves differently in Node.js 21, " +
+      //       "compared to Firefox, Chrome, and Node.js 18/20."
+      //   );
+      // }
       const textWidgetRef = Ref.get(123, 0);
       const xref = new XRefMock([
         { ref: textWidgetRef, data: textWidgetDict },
@@ -4222,7 +4228,7 @@ describe("annotation", () => {
         const popupDict = new Dict();
         popupDict.set("Type", Name.get("Annot"));
         popupDict.set("Subtype", Name.get("Popup"));
-        popupDict.set("F", 25); // not viewable
+        popupDict.set("F", 56); // not viewable
         popupDict.set("Parent", parentDict);
 
         const popupRef = Ref.get(13, 0);
@@ -4237,7 +4243,7 @@ describe("annotation", () => {
         assertEquals(data.annotationType, AnnotationType.POPUP);
         // We should not modify the `annotationFlags` returned through
         // e.g., the API.
-        assertEquals(data.annotationFlags, 25);
+        assertEquals(data.annotationFlags, 56);
         // The popup should inherit the `viewable` property of the parent.
         assertEquals(viewable, true);
       },

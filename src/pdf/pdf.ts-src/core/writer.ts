@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-import { bytesToString, info, stringToBytes, warn } from "../shared/util.ts";
+import { bytesToString, info, warn } from "../shared/util.ts";
 import type { AnnotSaveData } from "./annotation.ts";
 import { BaseStream } from "./base_stream.ts";
 import {
@@ -70,7 +70,7 @@ async function writeStream(
   buffer: string[],
   transform?: CipherTransform,
 ) {
-  let string = stream.getString();
+  let bytes = stream.getBytes();
   const { dict } = stream;
 
   // Table 5
@@ -90,18 +90,17 @@ async function writeStream(
 
   if (
     typeof (globalThis as any).CompressionStream !== "undefined" &&
-    (string.length >= MIN_LENGTH_FOR_COMPRESSING || isFilterZeroFlateDecode)
+    (bytes.length >= MIN_LENGTH_FOR_COMPRESSING || isFilterZeroFlateDecode)
   ) {
     try {
-      const byteArray = stringToBytes(string);
       const cs = new (globalThis as any).CompressionStream("deflate");
       const writer = cs.writable.getWriter();
-      writer.write(byteArray);
+      writer.write(bytes);
       writer.close();
 
       // Response::text doesn't return the correct data.
       const buf = await new Response(cs.readable).arrayBuffer();
-      string = bytesToString(new Uint8Array(buf));
+      bytes = new Uint8Array(buf);
 
       let newFilter: Name | Name[] | undefined, newParams;
       if (!filter) {
@@ -127,6 +126,7 @@ async function writeStream(
     }
   }
 
+  let string = bytesToString(bytes);
   if (transform) {
     string = transform.encryptString(string);
   }

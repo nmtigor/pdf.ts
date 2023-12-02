@@ -17,9 +17,6 @@
  * limitations under the License.
  */
 
-// eslint-disable-next-line max-len
-/** @typedef {import("./annotation_editor_layer.js").AnnotationEditorLayer} AnnotationEditorLayer */
-
 import type { dot2d_t } from "@fe-lib/alias.ts";
 import type { rgb_t } from "@fe-lib/color/alias.ts";
 import { html } from "@fe-lib/dom.ts";
@@ -63,6 +60,7 @@ export interface FreeTextEditorSerialized extends AnnotStorageValue {
  */
 export class FreeTextEditor extends AnnotationEditor {
   static override readonly _type = "freetext";
+  static override readonly _editorType = AnnotationEditorType.FREETEXT;
   static _freeTextDefaultContent = "";
   static _internalPadding = 0;
   static _defaultColor: string | undefined;
@@ -156,10 +154,9 @@ export class FreeTextEditor extends AnnotationEditor {
     this.#fontSize = params.fontSize || FreeTextEditor._defaultFontSize;
   }
 
-  /** @inheritdoc */
   static override initialize(l10n: IL10n) {
     AnnotationEditor.initialize(l10n, {
-      strings: ["free_text2_default_content", "editor_free_text2_aria_label"],
+      strings: ["pdfjs-free-text-default-content"],
     });
     const style = getComputedStyle(document.documentElement);
 
@@ -178,7 +175,6 @@ export class FreeTextEditor extends AnnotationEditor {
     );
   }
 
-  /** @inheritdoc */
   static override updateDefaultParams(
     type: AnnotationEditorParamsType,
     value: number | string | undefined,
@@ -193,22 +189,20 @@ export class FreeTextEditor extends AnnotationEditor {
     }
   }
 
-  /** @inheritdoc */
   override updateParams(
     type: AnnotationEditorParamsType,
     value: number | string,
   ) {
     switch (type) {
       case AnnotationEditorParamsType.FREETEXT_SIZE:
-        this.#updateFontSize(+value);
+        this.#updateFontSize(value as number);
         break;
       case AnnotationEditorParamsType.FREETEXT_COLOR:
-        this.#updateColor(<string> value);
+        this.#updateColor(value as string);
         break;
     }
   }
 
-  /** @inheritdoc */
   static override get defaultPropertiesToUpdate() {
     return [
       [
@@ -222,7 +216,6 @@ export class FreeTextEditor extends AnnotationEditor {
     ] as PropertyToUpdate[];
   }
 
-  /** @inheritdoc */
   override get propertiesToUpdate() {
     return [
       [AnnotationEditorParamsType.FREETEXT_SIZE, this.#fontSize],
@@ -283,7 +276,6 @@ export class FreeTextEditor extends AnnotationEditor {
     this._uiManager.translateSelectedEditors(x, y, /* noCommit = */ true);
   }
 
-  /** @inheritdoc */
   override getInitialTranslation(): dot2d_t {
     // The start of the base line is where the user clicked.
     const scale = this.parentScale;
@@ -293,7 +285,6 @@ export class FreeTextEditor extends AnnotationEditor {
     ];
   }
 
-  /** @inheritdoc */
   override rebuild() {
     if (!this.parent) {
       return;
@@ -310,7 +301,6 @@ export class FreeTextEditor extends AnnotationEditor {
     }
   }
 
-  /** @inheritdoc */
   override enableEditMode() {
     if (this.isInEditMode()) {
       return;
@@ -329,7 +319,6 @@ export class FreeTextEditor extends AnnotationEditor {
     this.editorDiv.on("input", this.#boundEditorDivInput);
   }
 
-  /** @inheritdoc */
   override disableEditMode() {
     if (!this.isInEditMode()) {
       return;
@@ -352,10 +341,9 @@ export class FreeTextEditor extends AnnotationEditor {
 
     // In case the blur callback hasn't been called.
     this.isEditing = false;
-    this.parent!.div!.classList.add("freeTextEditing");
+    this.parent!.div!.classList.add("freetextEditing");
   }
 
-  /** @inheritdoc */
   override focusin(event: FocusEvent) {
     if (!this._focusEventsAllowed) {
       return;
@@ -366,7 +354,6 @@ export class FreeTextEditor extends AnnotationEditor {
     }
   }
 
-  /** @inheritdoc */
   override onceAdded() {
     if (this.width) {
       this.#cheatInitialRect();
@@ -381,17 +368,15 @@ export class FreeTextEditor extends AnnotationEditor {
     this._initialOptions = undefined as any;
   }
 
-  /** @inheritdoc */
   override isEmpty() {
     return !this.editorDiv || this.editorDiv.innerText.trim() === "";
   }
 
-  /** @inheritdoc */
   override remove() {
     this.isEditing = false;
     if (this.parent) {
       this.parent!.setEditingState(true);
-      this.parent!.div!.classList.add("freeTextEditing");
+      this.parent!.div!.classList.add("freetextEditing");
     }
     super.remove();
   }
@@ -479,12 +464,10 @@ export class FreeTextEditor extends AnnotationEditor {
     this.#setEditorDimensions();
   }
 
-  /** @inheritdoc */
   override shouldGetKeyboardEvents() {
     return this.isInEditMode();
   }
 
-  /** @inheritdoc */
   override enterInEditMode() {
     this.enableEditMode();
     this.editorDiv.focus();
@@ -500,7 +483,7 @@ export class FreeTextEditor extends AnnotationEditor {
   /**
    * onkeydown callback.
    */
-  keydown(event: KeyboardEvent) {
+  override keydown(event: KeyboardEvent) {
     if (event.target === this.div && event.key === "Enter") {
       this.enterInEditMode();
       // Avoid to add an unwanted new line.
@@ -521,22 +504,19 @@ export class FreeTextEditor extends AnnotationEditor {
   }
 
   editorDivInput(event: Event) {
-    this.parent!.div!.classList.toggle("freeTextEditing", this.isEmpty());
+    this.parent!.div!.classList.toggle("freetextEditing", this.isEmpty());
   }
 
-  /** @inheritdoc */
   override disableEditing() {
     this.editorDiv.setAttribute("role", "comment");
     this.editorDiv.removeAttribute("aria-multiline");
   }
 
-  /** @inheritdoc */
   override enableEditing() {
     this.editorDiv.setAttribute("role", "textbox");
     this.editorDiv.setAttribute("aria-multiline", true as any);
   }
 
-  /** @inheritdoc */
   override render() {
     if (this.div) {
       return this.div;
@@ -552,15 +532,14 @@ export class FreeTextEditor extends AnnotationEditor {
     this.editorDiv = html("div");
     this.editorDiv.className = "internal";
 
-    this.editorDiv.setAttribute("id", this.#editorDivId);
+    this.editorDiv.assignAttro({
+      id: this.#editorDivId,
+      "data-l10n-id": "pdfjs-free-text",
+    });
     this.enableEditing();
 
     AnnotationEditor._l10nPromise!
-      .get("editor_free_text2_aria_label")!
-      .then((msg) => this.editorDiv?.setAttribute("aria-label", msg));
-
-    AnnotationEditor._l10nPromise!
-      .get("free_text2_default_content")!
+      .get("pdfjs-free-text-default-content")!
       .then((msg) => this.editorDiv?.setAttribute("default-content", msg));
     this.editorDiv.contentEditable = true as any;
 
@@ -664,7 +643,6 @@ export class FreeTextEditor extends AnnotationEditor {
     return this.editorDiv;
   }
 
-  /** @inheritdoc */
   static override deserialize(
     data: FreeTextEditorSerialized,
     parent: AnnotationEditorLayer,
@@ -722,10 +700,7 @@ export class FreeTextEditor extends AnnotationEditor {
     return editor;
   }
 
-  /**
-   * @inheritdoc
-   * @implement
-   */
+  /** @implement */
   serialize(isForCopying = false) {
     if (this.isEmpty()) {
       return undefined;

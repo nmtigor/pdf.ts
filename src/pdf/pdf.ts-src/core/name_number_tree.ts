@@ -85,7 +85,7 @@ abstract class NameOrNumberTree<T extends string | number> {
     return map;
   }
 
-  get(key: number) {
+  get(key: number | string) {
     if (!this.root) {
       return undefined;
     }
@@ -114,9 +114,9 @@ abstract class NameOrNumberTree<T extends string | number> {
         const kid = xref.fetchIfRef(kids[m]) as Dict;
         const limits = kid.get("Limits") as [number | Ref, number | Ref];
 
-        if (key < (xref.fetchIfRef(limits[0]) as number)) {
+        if (key as number < (xref.fetchIfRef(limits[0]) as number)) {
           r = m - 1;
-        } else if (key > (xref.fetchIfRef(limits[1]) as number)) {
+        } else if (key as number > (xref.fetchIfRef(limits[1]) as number)) {
           l = m + 1;
         } else {
           kidsOrEntries = kid;
@@ -140,10 +140,10 @@ abstract class NameOrNumberTree<T extends string | number> {
         // odd indices contain the actual data.
         const tmp = (l + r) >> 1,
           m = tmp + (tmp & 1);
-        const currentKey = <number> xref.fetchIfRef(entries[m])!;
-        if (key < currentKey) {
+        const currentKey = xref.fetchIfRef(entries[m]) as number;
+        if (key as number < currentKey) {
           r = m - 2;
-        } else if (key > currentKey) {
+        } else if (key as number > currentKey) {
           l = m + 2;
         } else {
           return xref.fetchIfRef(entries[m + 1]);

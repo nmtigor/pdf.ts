@@ -17,8 +17,6 @@
  * limitations under the License.
  */
 
-/** @typedef {import("./event_utils").EventBus} EventBus */
-
 import { CHROME, GENERIC, PDFJSDev } from "@fe-src/global.ts";
 import { PromiseCap } from "@fe-lib/util/PromiseCap.ts";
 import type { FieldObject, PDFDocumentProxy } from "../pdf.ts-src/pdf.ts";

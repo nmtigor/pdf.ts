@@ -17,10 +17,10 @@
  * limitations under the License.
  */
 
-import { CHROME, MOZCENTRAL, PDFJSDev, TESTING } from "@fe-src/global.ts";
 import type { C2D } from "@fe-lib/alias.ts";
 import { html } from "@fe-lib/dom.ts";
 import { assert, fail } from "@fe-lib/util/trace.ts";
+import { CHROME, MOZCENTRAL, PDFJSDev, TESTING } from "@fe-src/global.ts";
 import type { CmdArgs } from "../core/font_renderer.ts";
 import type { SubstitutionInfo } from "../core/font_substitutions.ts";
 import { FontExpotDataEx } from "../core/fonts.ts";
@@ -45,6 +45,11 @@ export interface Request {
   complete: () => void;
   callback: (request: Request) => void;
 }
+
+type SystemFont_ = {
+  systemFontInfo: SubstitutionInfo | undefined;
+  _inspectFont?: ((info: SubstitutionInfo) => void) | undefined;
+};
 
 export class FontLoader {
   _document: Document;
@@ -108,7 +113,7 @@ export class FontLoader {
     }
   }
 
-  async loadSystemFont(info: SubstitutionInfo) {
+  async loadSystemFont({ systemFontInfo: info, _inspectFont }: SystemFont_) {
     if (!info || this.#systemFonts.has(info.loadedName)) {
       return;
     }
@@ -124,6 +129,7 @@ export class FontLoader {
       try {
         await fontFace.load();
         this.#systemFonts.add(loadedName);
+        _inspectFont?.(info);
       } catch {
         warn(
           `Cannot load system font: ${info.baseFontName}, installing it could help to improve PDF rendering.`,
@@ -145,7 +151,7 @@ export class FontLoader {
     font.attached = true;
 
     if (font.systemFontInfo) {
-      await this.loadSystemFont(font.systemFontInfo);
+      await this.loadSystemFont(font as SystemFont_);
       return;
     }
 
@@ -209,7 +215,8 @@ export class FontLoader {
         // Node.js - we can pretend that sync font loading is supported.
         supported = true;
       } else if (
-        globalThis.navigator &&
+        typeof navigator !== "undefined" &&
+        typeof navigator?.userAgent === "string" &&
         // User agent string sniffing is bad, but there is no reliable way to
         // tell if the font is fully loaded and ready to be used with canvas.
         /Mozilla\/5.0.*?rv:\d+.*? Gecko/.test(navigator.userAgent)
@@ -393,7 +400,9 @@ interface FFOCtorP_ {
   isEvalSupported: boolean | undefined;
   disableFontFace: boolean | undefined;
   ignoreErrors: boolean | undefined;
-  inspectFont: ((font: FontFaceObject, url?: string) => void) | undefined;
+  inspectFont:
+    | ((font: FontFaceObject, url?: string) => void)
+    | undefined;
 }
 
 export type AddToPath = (c: C2D, size: number) => void;
@@ -436,7 +445,7 @@ export class FontFaceObject extends FontExpotDataEx {
       nativeFontFace = new FontFace(this.loadedName!, this.data, {});
     } else {
       const css: FontFaceDescriptors = {
-        weight: <any> this.cssFontInfo.fontWeight,
+        weight: this.cssFontInfo.fontWeight as any,
       };
       if (this.cssFontInfo.italicAngle) {
         css.style = `oblique ${this.cssFontInfo.italicAngle}deg`;

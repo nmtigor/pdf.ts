@@ -17,17 +17,6 @@
  * limitations under the License.
  */
 
-// eslint-disable-next-line max-len
-/** @typedef {import("./display/api").OnProgressParameters} OnProgressParameters */
-// eslint-disable-next-line max-len
-/** @typedef {import("./display/api").PDFDocumentLoadingTask} PDFDocumentLoadingTask */
-/** @typedef {import("./display/api").PDFDocumentProxy} PDFDocumentProxy */
-/** @typedef {import("./display/api").PDFPageProxy} PDFPageProxy */
-/** @typedef {import("./display/api").RenderTask} RenderTask */
-/** @typedef {import("./display/display_utils").PageViewport} PageViewport */
-// eslint-disable-next-line max-len
-/** @typedef {import("./display/text_layer").TextLayerRenderTask} TextLayerRenderTask */
-
 import type { FieldObject } from "./core/annotation.ts";
 import type {
   Destination,
@@ -40,16 +29,15 @@ import type { AnnotActions } from "./core/core_utils.ts";
 import type { DocumentInfo, XFAData } from "./core/document.ts";
 import type { Attachment } from "./core/file_spec.ts";
 import type { OpListIR } from "./core/operator_list.ts";
-import { Ref } from "./core/primitives.ts";
-import { WorkerMessageHandler } from "./core/worker.ts";
+import type { Ref } from "./core/primitives.ts";
 import type { XFAElData, XFAElObj } from "./core/xfa/alias.ts";
-import {
-  AnnotationElement,
-  AnnotationLayer,
+import type { AnnotationElement } from "./display/annotation_layer.ts";
+import type {
   FileAttachmentAnnotationElement,
 } from "./display/annotation_layer.ts";
+import { AnnotationLayer } from "./display/annotation_layer.ts";
 import type { AnnotationStorage } from "./display/annotation_storage.ts";
-import { PrintAnnotationStorage } from "./display/annotation_storage.ts";
+import type { PrintAnnotationStorage } from "./display/annotation_storage.ts";
 import type {
   AnnotIntent,
   DocumentInitP,
@@ -62,17 +50,17 @@ import type {
   TextContent,
   TextItem,
 } from "./display/api.ts";
+import type { PDFDocumentLoadingTask } from "./display/api.ts";
+import type { RenderTask } from "./display/api.ts";
 import {
   build,
   getDocument,
   PDFDataRangeTransport,
-  PDFDocumentLoadingTask,
   PDFWorker,
-  RenderTask,
-  SVGGraphics,
   version,
 } from "./display/api.ts";
 import type { PageViewport } from "./display/display_utils.ts";
+import type { StatTimer } from "./display/display_utils.ts";
 import {
   DOMSVGFactory,
   getFilenameFromUrl,
@@ -80,28 +68,22 @@ import {
   getXfaPageViewport,
   isDataScheme,
   isPdfFile,
-  loadScript,
   PDFDateString,
   PixelsPerInch,
   RenderingCancelledException,
   setLayerDimensions,
-  StatTimer,
 } from "./display/display_utils.ts";
 import { AnnotationEditorLayer } from "./display/editor/annotation_editor_layer.ts";
 import type { PropertyToUpdate } from "./display/editor/editor.ts";
 import type { DispatchUpdateStatesP } from "./display/editor/tools.ts";
 import { AnnotationEditorUIManager } from "./display/editor/tools.ts";
-import { FontFaceObject } from "./display/font_loader.ts";
-import { Metadata } from "./display/metadata.ts";
-import { OptionalContentConfig } from "./display/optional_content_config.ts";
-import {
-  renderTextLayer,
-  TextLayerRenderTask,
-  updateTextLayer,
-} from "./display/text_layer.ts";
+import type { FontFaceObject } from "./display/font_loader.ts";
+import type { Metadata } from "./display/metadata.ts";
+import type { OptionalContentConfig } from "./display/optional_content_config.ts";
+import type { TextLayerRenderTask } from "./display/text_layer.ts";
+import { renderTextLayer, updateTextLayer } from "./display/text_layer.ts";
 import { GlobalWorkerOptions } from "./display/worker_options.ts";
 import { XfaLayer } from "./display/xfa_layer.ts";
-import { QuickJSSandbox } from "./pdf.sandbox.ts";
 import type { AppInfo } from "./scripting_api/app.ts";
 import type { ScriptingActionName } from "./scripting_api/common.ts";
 import type { DocInfo } from "./scripting_api/doc.ts";
@@ -143,7 +125,7 @@ export {
   AnnotationEditorParamsType,
   AnnotationEditorType,
   AnnotationEditorUIManager,
-  AnnotationElement,
+  type AnnotationElement,
   AnnotationLayer,
   AnnotationMode,
   type AnnotationStorage,
@@ -162,8 +144,8 @@ export {
   type ExplicitDest,
   FeatureTest,
   type FieldObject,
-  FileAttachmentAnnotationElement,
-  FontFaceObject,
+  type FileAttachmentAnnotationElement,
+  type FontFaceObject,
   getDocument,
   getFilenameFromUrl,
   getPdfFilenameFromUrl,
@@ -174,52 +156,48 @@ export {
   InvalidPDFException,
   isDataScheme,
   isPdfFile,
-  loadScript,
   type matrix_t,
-  Metadata,
+  type Metadata,
   MissingPDFException,
   normalizeUnicode,
   type OpenAction,
   type OpListIR,
   OPS,
   type OPSName,
-  OptionalContentConfig,
+  type OptionalContentConfig,
   type Order,
   type OutlineNode,
   type PageViewport,
   PasswordResponses,
   PDFDataRangeTransport,
   PDFDateString,
-  PDFDocumentLoadingTask,
+  type PDFDocumentLoadingTask,
   type PDFDocumentProxy,
   type PDFPageProxy,
   PDFWorker,
   PermissionFlag,
   PixelsPerInch,
-  PrintAnnotationStorage,
+  type PrintAnnotationStorage,
   type PropertyToUpdate,
-  QuickJSSandbox,
-  Ref,
+  type Ref,
   type RefProxy,
   RenderingCancelledException,
   type RenderP,
-  RenderTask,
+  type RenderTask,
   renderTextLayer,
   type ScriptingActionName,
   setLayerDimensions,
   type SetOCGState,
   shadow,
-  StatTimer,
-  SVGGraphics,
+  type StatTimer,
   type TextContent,
   type TextItem,
-  TextLayerRenderTask,
+  type TextLayerRenderTask,
   UnexpectedResponseException,
   updateTextLayer,
   Util,
   VerbosityLevel,
   version,
-  WorkerMessageHandler,
   type XFAData,
   type XFAElData,
   type XFAElObj,

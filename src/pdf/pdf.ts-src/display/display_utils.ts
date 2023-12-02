@@ -889,23 +889,23 @@ export function isValidFetchUrl(
   }
 }
 
-export function loadScript(src: string, removeScriptElement = false) {
-  return new Promise<Event>((resolve, reject) => {
-    const script = html("script");
-    script.src = src;
+// export function loadScript(src: string, removeScriptElement = false) {
+//   return new Promise<Event>((resolve, reject) => {
+//     const script = html("script");
+//     script.src = src;
 
-    script.onload = (evt: Event) => {
-      if (removeScriptElement) {
-        script.remove();
-      }
-      resolve(evt);
-    };
-    script.onerror = () => {
-      reject(new Error(`Cannot load script at: ${script.src}`));
-    };
-    (document.head || document.documentElement).append(script);
-  });
-}
+//     script.onload = (evt: Event) => {
+//       if (removeScriptElement) {
+//         script.remove();
+//       }
+//       resolve(evt);
+//     };
+//     script.onerror = () => {
+//       reject(new Error(`Cannot load script at: ${script.src}`));
+//     };
+//     (document.head || document.documentElement).append(script);
+//   });
+// }
 
 // Deprecated API function -- display regardless of the `verbosity` setting.
 export function deprecated(details: string) {

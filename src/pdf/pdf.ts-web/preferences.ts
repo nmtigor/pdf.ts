@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-import { CHROME, MOZCENTRAL, PDFJSDev } from "../../global.ts";
+import { CHROME, MOZCENTRAL, PDFJSDev } from "@fe-src/global.ts";
 import type { OptionName, UserOptions } from "./app_options.ts";
 import { AppOptions, OptionKind } from "./app_options.ts";
 /*80--------------------------------------------------------------------------*/
@@ -31,8 +31,8 @@ export abstract class BasePreferences {
   #defaults = Object.freeze(
     /*#static*/ PDFJSDev
       ? AppOptions.getAll(OptionKind.PREFERENCE)
+      // : PDFJSDev.eval("DEFAULT_PREFERENCES")
       : AppOptions.getAll(OptionKind.PREFERENCE),
-    // : PDFJSDev.eval("DEFAULT_PREFERENCES")
   );
   defaults!: Readonly<UserOptions>;
 
@@ -48,17 +48,31 @@ export abstract class BasePreferences {
       });
     }
 
-    this.#initializedPromise = this._readFromStorage(this.#defaults).then(
-      (prefs) => {
-        for (const name in this.#defaults) {
-          const prefValue = prefs?.[name as OptionName];
-          // Ignore preferences whose types don't match the default values.
-          if (typeof prefValue === typeof this.#defaults[name as OptionName]) {
-            this.#prefs[name as OptionName] = prefValue;
+    this.#initializedPromise = this._readFromStorage({ prefs: this.#defaults })
+      .then(
+        ({ browserPrefs, prefs }) => {
+          const BROWSER_PREFS = /*#static*/ PDFJSDev
+            ? AppOptions.getAll(OptionKind.BROWSER)
+            // : PDFJSDev.eval("BROWSER_PREFERENCES");
+            : AppOptions.getAll(OptionKind.BROWSER);
+          const options = Object.create(null);
+
+          for (const [name, defaultVal] of Object.entries(BROWSER_PREFS)) {
+            const prefVal = browserPrefs?.[name as OptionName];
+            options[name] = typeof prefVal === typeof defaultVal
+              ? prefVal
+              : defaultVal;
           }
-        }
-      },
-    );
+          for (const [name, defaultVal] of Object.entries(this.#defaults)) {
+            const prefVal = prefs?.[name as OptionName];
+            // Ignore preferences whose types don't match the default values.
+            options[name] =
+              this.#prefs[name as OptionName] =
+                typeof prefVal === typeof defaultVal ? prefVal : defaultVal;
+          }
+          AppOptions.setAll(options, /* init = */ true);
+        },
+      );
   }
 
   /**
@@ -78,8 +92,8 @@ export abstract class BasePreferences {
    *  the preferences that have been read.
    */
   protected abstract _readFromStorage(
-    prefObj: UserOptions,
-  ): Promise<UserOptions>;
+    prefObj: { prefs: UserOptions },
+  ): Promise<{ browserPrefs?: UserOptions; prefs: UserOptions }>;
 
   /**
    * Reset the preferences to their default values and update storage.
@@ -163,20 +177,24 @@ export abstract class BasePreferences {
     return this.#prefs[name] ?? defaultValue;
   }
 
-  /**
-   * Get the values of all preferences.
-   * @return A promise that is resolved with an {Object} containing
-   *  the values of all preferences.
-   */
-  async getAll() {
-    await this.#initializedPromise;
-    const obj: UserOptions = Object.create(null);
-
-    for (const name in this.#defaults) {
-      (<any> obj)[name] = this.#prefs[<OptionName> name] ??
-        this.#defaults[<OptionName> name];
-    }
-    return obj;
+  get initializedPromise() {
+    return this.#initializedPromise;
   }
+
+  // /**
+  //  * Get the values of all preferences.
+  //  * @return A promise that is resolved with an {Object} containing
+  //  *  the values of all preferences.
+  //  */
+  // async getAll() {
+  //   await this.#initializedPromise;
+  //   const obj: UserOptions = Object.create(null);
+
+  //   for (const name in this.#defaults) {
+  //     (<any> obj)[name] = this.#prefs[<OptionName> name] ??
+  //       this.#defaults[<OptionName> name];
+  //   }
+  //   return obj;
+  // }
 }
 /*80--------------------------------------------------------------------------*/
