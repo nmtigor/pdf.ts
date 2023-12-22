@@ -142,7 +142,7 @@ declare global {
   //! Make sure non-`enumerable`
   interface Array<T> {
     /**
-     * @deprecated Use `at(-1)`.
+     * @deprecated Use `.at(-1)`.
      */
     last: T | undefined;
 

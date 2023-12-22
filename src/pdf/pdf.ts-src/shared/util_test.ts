@@ -118,9 +118,19 @@ describe("util", () => {
       assertEquals(stringToPDFString(str), "string");
     });
 
+    it("handles incomplete UTF-16 big-endian strings", () => {
+      const str = "\xFE\xFF\x00\x73\x00\x74\x00\x72\x00\x69\x00\x6E\x00";
+      assertEquals(stringToPDFString(str), "strin");
+    });
+
     it("handles UTF-16 little-endian strings", () => {
       const str = "\xFF\xFE\x73\x00\x74\x00\x72\x00\x69\x00\x6E\x00\x67\x00";
       assertEquals(stringToPDFString(str), "string");
+    });
+
+    it("handles incomplete UTF-16 little-endian strings", () => {
+      const str = "\xFF\xFE\x73\x00\x74\x00\x72\x00\x69\x00\x6E\x00\x67";
+      assertEquals(stringToPDFString(str), "strin");
     });
 
     it("handles UTF-8 strings", () => {
@@ -150,6 +160,22 @@ describe("util", () => {
       // UTF-8
       const str4 = "\xEF\xBB\xBF";
       assertEquals(stringToPDFString(str4), "");
+    });
+
+    it("handles strings with language code", () => {
+      // ISO Latin 1
+      const str1 = "hello \x1benUS\x1bworld";
+      assertEquals(stringToPDFString(str1), "hello world");
+
+      // UTF-16BE
+      const str2 =
+        "\xFE\xFF\x00h\x00e\x00l\x00l\x00o\x00 \x00\x1b\x00e\x00n\x00U\x00S\x00\x1b\x00w\x00o\x00r\x00l\x00d";
+      assertEquals(stringToPDFString(str2), "hello world");
+
+      // UTF-16LE
+      const str3 =
+        "\xFF\xFEh\x00e\x00l\x00l\x00o\x00 \x00\x1b\x00e\x00n\x00U\x00S\x00\x1b\x00w\x00o\x00r\x00l\x00d\x00";
+      assertEquals(stringToPDFString(str3), "hello world");
     });
   });
 

@@ -46,7 +46,6 @@ import {
 } from "../shared/util.ts";
 import type {
   Annotation,
-  AnnotationData,
   AnnotationGlobals,
   AnnotImage,
   AnnotSaveReturn,
@@ -1930,16 +1929,45 @@ export class PDFDocument {
       : clearGlobalCaches();
   }
 
-  #collectFieldObjects(
+  async #collectFieldObjects(
     name: string,
     fieldRef: Ref,
     promises: FieldPromises,
     annotationGlobals: AnnotationGlobals,
+    visitedRefs: RefSet,
   ) {
-    const field = this.xref.fetchIfRef(fieldRef) as Dict;
+    const { xref } = this;
+
+    if (!(fieldRef instanceof Ref) || visitedRefs.has(fieldRef)) {
+      return;
+    }
+    visitedRefs.put(fieldRef);
+    const field = await xref.fetchAsync(fieldRef);
+    if (!(field instanceof Dict)) {
+      return;
+    }
     if (field.has("T")) {
-      const partName = stringToPDFString(field.get("T") as string);
+      const partName = stringToPDFString(await field.getAsync("T"));
       name = name === "" ? partName : `${name}.${partName}`;
+    } else {
+      let obj: Obj | undefined = field;
+      while (true) {
+        obj = obj.getRaw("Parent");
+        if (obj instanceof Ref) {
+          if (visitedRefs.has(obj)) {
+            break;
+          }
+          obj = await xref.fetchAsync(obj);
+        }
+        if (!(obj instanceof Dict)) {
+          break;
+        }
+        if (obj.has("T")) {
+          const partName = stringToPDFString(await obj.getAsync("T"));
+          name = name === "" ? partName : `${name}.${partName}`;
+          break;
+        }
+      }
     }
 
     if (!promises.has(name)) {
@@ -1947,10 +1975,10 @@ export class PDFDocument {
     }
     promises.get(name)!.push(
       AnnotationFactory.create(
-        this.xref,
+        xref,
         fieldRef,
         annotationGlobals,
-        this.#localIdFactory!, //kkkk bug? (never set)
+        /* idFactory = */ undefined,
         /* collectFields */ true,
       )
         .then((annotation) => annotation?.getFieldObject())
@@ -1960,9 +1988,19 @@ export class PDFDocument {
         }),
     );
 
-    if (field.has("Kids")) {
-      for (const kid of field.get("Kids") as Ref[]) {
-        this.#collectFieldObjects(name, kid, promises, annotationGlobals);
+    if (!field.has("Kids")) {
+      return;
+    }
+    const kids = await field.getAsync("Kids");
+    if (Array.isArray(kids)) {
+      for (const kid of kids) {
+        await this.#collectFieldObjects(
+          name,
+          kid as Ref,
+          promises,
+          annotationGlobals,
+          visitedRefs,
+        );
       }
     }
   }
@@ -1972,39 +2010,42 @@ export class PDFDocument {
       return shadow(this, "fieldObjects", Promise.resolve(undefined));
     }
 
-    const promise = this.pdfManager
-      .ensureDoc("annotationGlobals")
-      .then(async (annotationGlobals) => {
-        if (!annotationGlobals) {
-          return undefined;
-        }
+    const promise = Promise.all([
+      this.pdfManager.ensureDoc("annotationGlobals"),
+      this.pdfManager.ensureCatalog("acroForm"),
+    ]).then(async ([annotationGlobals, acroForm]) => {
+      if (!annotationGlobals) {
+        return undefined;
+      }
 
-        const allFields: Record<string, FieldObject[]> = Object.create(null);
-        const fieldPromises: FieldPromises = new Map();
-        for (const fieldRef of this.catalog!.acroForm!.get("Fields") as Ref[]) {
-          this.#collectFieldObjects(
-            "",
-            fieldRef,
-            fieldPromises,
-            annotationGlobals,
-          );
-        }
+      const visitedRefs = new RefSet();
+      const allFields: Record<string, FieldObject[]> = Object.create(null);
+      const fieldPromises: FieldPromises = new Map();
+      for (const fieldRef of await acroForm!.getAsync("Fields") as Ref[]) {
+        await this.#collectFieldObjects(
+          "",
+          fieldRef,
+          fieldPromises,
+          annotationGlobals,
+          visitedRefs,
+        );
+      }
 
-        const allPromises: Promise<void>[] = [];
-        for (const [name, promises] of fieldPromises) {
-          allPromises.push(
-            Promise.all(promises).then((fields) => {
-              fields = fields.filter((field) => !!field);
-              if (fields.length > 0) {
-                allFields[name] = fields as FieldObject[];
-              }
-            }),
-          );
-        }
+      const allPromises: Promise<void>[] = [];
+      for (const [name, promises] of fieldPromises) {
+        allPromises.push(
+          Promise.all(promises).then((fields) => {
+            fields = fields.filter((field) => !!field);
+            if (fields.length > 0) {
+              allFields[name] = fields as FieldObject[];
+            }
+          }),
+        );
+      }
 
-        await Promise.all(allPromises);
-        return allFields;
-      });
+      await Promise.all(allPromises);
+      return allFields;
+    });
 
     return shadow(this, "fieldObjects", promise);
   }

@@ -320,7 +320,7 @@ function isElementAllowed(element: Element): boolean {
 function isAttrNameLocalizable(
   name: string,
   element: Element,
-  explicitlyAllowed?: string[] ,
+  explicitlyAllowed?: string[],
 ): boolean {
   if (explicitlyAllowed?.includes(name)) {
     return true;

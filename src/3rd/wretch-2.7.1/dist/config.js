@@ -1,26 +1,27 @@
 import { mix } from "./utils.js";
 const config = {
-    // Default options
-    options: {},
-    // Error type
-    errorType: "text",
-    // Polyfills
-    polyfills: {
+  // Default options
+  options: {},
+  // Error type
+  errorType: "text",
+  // Polyfills
+  polyfills: {
     // fetch: null,
     // FormData: null,
     // URLSearchParams: null,
     // performance: null,
     // PerformanceObserver: null,
     // AbortController: null
-    },
-    polyfill(p, doThrow = true, instance = false, ...args) {
-        const res = this.polyfills[p] ||
-            (typeof self !== "undefined" ? self[p] : null) ||
-            (typeof global !== "undefined" ? global[p] : null);
-        if (doThrow && !res)
-            throw new Error(p + " is not defined");
-        return instance && res ? new res(...args) : res;
+  },
+  polyfill(p, doThrow = true, instance = false, ...args) {
+    const res = this.polyfills[p] ||
+      (typeof self !== "undefined" ? self[p] : null) ||
+      (typeof global !== "undefined" ? global[p] : null);
+    if (doThrow && !res) {
+      throw new Error(p + " is not defined");
     }
+    return instance && res ? new res(...args) : res;
+  },
 };
 /**
  * Sets the default fetch options that will be stored internally when instantiating wretch objects.
@@ -38,7 +39,7 @@ const config = {
  * @param replace If true, completely replaces the existing options instead of mixing in
  */
 export function setOptions(options, replace = false) {
-    config.options = replace ? options : mix(config.options, options);
+  config.options = replace ? options : mix(config.options, options);
 }
 /**
  * Sets the default polyfills that will be stored internally when instantiating wretch objects.
@@ -63,7 +64,7 @@ export function setOptions(options, replace = false) {
  * @param replace If true, replaces the current polyfills instead of mixing in
  */
 export function setPolyfills(polyfills, replace = false) {
-    config.polyfills = replace ? polyfills : mix(config.polyfills, polyfills);
+  config.polyfills = replace ? polyfills : mix(config.polyfills, polyfills);
 }
 /**
  * Sets the default method (text, json, …) used to parse the data contained in the response body in case of an HTTP error.
@@ -88,7 +89,7 @@ export function setPolyfills(polyfills, replace = false) {
  * If null, defaults to "text".
  */
 export function setErrorType(errorType) {
-    config.errorType = errorType;
+  config.errorType = errorType;
 }
 export default config;
 //# sourceMappingURL=config.js.map

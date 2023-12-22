@@ -455,7 +455,7 @@ export class PDFPageView implements IVisibleView {
           this.pageColors?.background === "Canvas")
       ) {
         this._container?.style.setProperty(
-          "--hcm-highligh-filter",
+          "--hcm-highlight-filter",
           pdfPage.filterFactory.addHighlightHCMFilter(
             "CanvasText",
             "Canvas",

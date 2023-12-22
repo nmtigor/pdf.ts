@@ -34,6 +34,7 @@ import {
   isValidFetchUrl,
   PDFDateString,
 } from "./display_utils.ts";
+import type { CanvasEntry } from "./base_factory.ts";
 /*80--------------------------------------------------------------------------*/
 
 describe("display_utils", () => {
@@ -82,12 +83,10 @@ describe("display_utils", () => {
     });
 
     it("`reset` should throw an error if no canvas is provided", () => {
-      const canvasAndContext = { canvas: null, context: null };
+      const canvasAndContext = {} as CanvasEntry;
 
       assertThrows(
-        () => {
-          return canvasFactory.reset(canvasAndContext as any, 20, 40);
-        },
+        () => canvasFactory.reset(canvasAndContext, 20, 40),
         Error,
         "Canvas is not specified",
       );
@@ -294,9 +293,9 @@ describe("display_utils", () => {
     });
 
     it("gets fallback filename when url is not a string", () => {
-      assertEquals(getPdfFilenameFromUrl(null), "document.pdf");
+      assertEquals(getPdfFilenameFromUrl(undefined), "document.pdf");
 
-      assertEquals(getPdfFilenameFromUrl(null, "file.pdf"), "file.pdf");
+      assertEquals(getPdfFilenameFromUrl(undefined, "file.pdf"), "file.pdf");
     });
 
     it("gets PDF filename from URL containing leading/trailing whitespace", () => {
@@ -451,13 +450,13 @@ describe("display_utils", () => {
     describe("toDateObject", () => {
       it("converts PDF date strings to JavaScript `Date` objects", () => {
         const expectations = {
-          undefined: null,
-          null: null,
-          42: null,
-          2019: null,
-          D2019: null,
-          "D:": null,
-          "D:201": null,
+          undefined: undefined,
+          null: undefined,
+          42: undefined,
+          2019: undefined,
+          D2019: undefined,
+          "D:": undefined,
+          "D:201": undefined,
           "D:2019": new Date(Date.UTC(2019, 0, 1, 0, 0, 0)),
           "D:20190": new Date(Date.UTC(2019, 0, 1, 0, 0, 0)),
           "D:201900": new Date(Date.UTC(2019, 0, 1, 0, 0, 0)),

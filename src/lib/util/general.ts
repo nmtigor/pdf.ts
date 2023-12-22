@@ -3,6 +3,7 @@
  * @license Apache-2.0
  ******************************************************************************/
 
+export {};
 /*80--------------------------------------------------------------------------*/
 
 /**
@@ -16,6 +17,9 @@ export const byteSize = (_x: BlobPart) => new Blob([_x]).size;
 export const linesOf = (text_x: string) =>
   text_x.split(/[\n\r\u001C-\u001E\u0085\u2029]/g);
 // console.log(linesOf("abc\n\n123\n"));
+
+/** */
+export const isWhitespace = (_x: string) => /^\s+$/.test(_x);
 
 /**
  * Event handler to suppress context menu.

@@ -17,7 +17,6 @@
  * limitations under the License.
  */
 
-import { Locale } from "@fe-lib/Locale.ts";
 import { assert } from "@fe-lib/util/trace.ts";
 import { GENERIC, INOUT } from "@fe-src/global.ts";
 import { DefaultExternalServices, viewerApp } from "./app.ts";
@@ -68,7 +67,7 @@ class GenericExternalServices extends DefaultExternalServices {
   }
 
   override async createL10n() {
-    return new GenericL10n(AppOptions.locale || Locale.en_US);
+    return new GenericL10n(AppOptions.locale!);
   }
 
   override createScripting({ sandboxBundleSrc = "" }) {

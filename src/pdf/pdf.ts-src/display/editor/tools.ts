@@ -35,7 +35,12 @@ import {
   Util,
 } from "../../shared/util.ts";
 import type { PDFDocumentProxy } from "../api.ts";
-import { getColorValues, getRGB, PixelsPerInch } from "../display_utils.ts";
+import {
+  fetchData,
+  getColorValues,
+  getRGB,
+  PixelsPerInch,
+} from "../display_utils.ts";
 import type { AnnotationEditorLayer } from "./annotation_editor_layer.ts";
 import type { AnnotationEditor, PropertyToUpdate } from "./editor.ts";
 import { FreeTextEditor } from "./freetext.ts";
@@ -140,11 +145,7 @@ class ImageManager {
       if (typeof rawData === "string") {
         data.url = rawData;
 
-        const response = await fetch(rawData);
-        if (!response.ok) {
-          throw new Error(response.statusText);
-        }
-        image = await response.blob();
+        image = await fetchData(rawData, "blob");
       } else {
         image = data.file = rawData;
       }
@@ -723,8 +724,9 @@ export class AnnotationEditorUIManager {
             // Those shortcuts can be used in the toolbar for some other actions
             // like zooming, hence we need to check if the container has the
             // focus.
-            checker: (self: AnnotationEditorUIManager) =>
-              self.#container.contains(document.activeElement) &&
+            checker: (self: AnnotationEditorUIManager, { target: el }) =>
+              !(el instanceof HTMLButtonElement) &&
+              self.#container.contains(el as Node) &&
               !self.isEnterHandled,
           },
         ],

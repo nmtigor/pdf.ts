@@ -615,8 +615,6 @@ class CanvasExtraState {
   strokeAlpha = 1;
   lineWidth = 1;
   activeSMask: SMask | undefined;
-  // resumeSMaskCtx:C2D | undefined; // nonclonable field (see the save method below)
-  // transferMaps?: (Uint8Array | null)[] | undefined;
   transferMaps = "none";
 
   clipBox!: rect_t;

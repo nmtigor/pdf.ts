@@ -112,12 +112,6 @@ function getViewerConfiguration() {
        * Button to open find bar.
        */
       viewFind: buttonBy("viewFind"),
-      /**
-       * Button to open a new document.
-       */
-      openFile: /*#static*/ PDFJSDev || GENERIC
-        ? buttonBy("openFile")
-        : undefined,
       print: buttonBy("print"),
       /**
        * Button to switch to FreeText editing.

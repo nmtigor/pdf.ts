@@ -31,27 +31,29 @@ import type { Attachment } from "./core/file_spec.ts";
 import type { OpListIR } from "./core/operator_list.ts";
 import type { Ref } from "./core/primitives.ts";
 import type { XFAElData, XFAElObj } from "./core/xfa/alias.ts";
-import type { AnnotationElement } from "./display/annotation_layer.ts";
 import type {
+  AnnotationElement,
   FileAttachmentAnnotationElement,
 } from "./display/annotation_layer.ts";
 import { AnnotationLayer } from "./display/annotation_layer.ts";
-import type { AnnotationStorage } from "./display/annotation_storage.ts";
-import type { PrintAnnotationStorage } from "./display/annotation_storage.ts";
+import type {
+  AnnotationStorage,
+  PrintAnnotationStorage,
+} from "./display/annotation_storage.ts";
 import type {
   AnnotIntent,
   DocumentInitP,
   Intent,
   OutlineNode,
+  PDFDocumentLoadingTask,
   PDFDocumentProxy,
   PDFPageProxy,
   RefProxy,
   RenderP,
+  RenderTask,
   TextContent,
   TextItem,
 } from "./display/api.ts";
-import type { PDFDocumentLoadingTask } from "./display/api.ts";
-import type { RenderTask } from "./display/api.ts";
 import {
   build,
   getDocument,
@@ -59,10 +61,10 @@ import {
   PDFWorker,
   version,
 } from "./display/api.ts";
-import type { PageViewport } from "./display/display_utils.ts";
-import type { StatTimer } from "./display/display_utils.ts";
+import type { PageViewport, StatTimer } from "./display/display_utils.ts";
 import {
   DOMSVGFactory,
+  fetchData,
   getFilenameFromUrl,
   getPdfFilenameFromUrl,
   getXfaPageViewport,
@@ -73,8 +75,10 @@ import {
   RenderingCancelledException,
   setLayerDimensions,
 } from "./display/display_utils.ts";
+import { DrawLayer } from "./display/draw_layer.ts";
 import { AnnotationEditorLayer } from "./display/editor/annotation_editor_layer.ts";
 import type { PropertyToUpdate } from "./display/editor/editor.ts";
+import { Outliner } from "./display/editor/outliner.ts";
 import type { DispatchUpdateStatesP } from "./display/editor/tools.ts";
 import { AnnotationEditorUIManager } from "./display/editor/tools.ts";
 import type { FontFaceObject } from "./display/font_loader.ts";
@@ -141,8 +145,10 @@ export {
   type DocumentInfo,
   type DocumentInitP,
   DOMSVGFactory,
+  DrawLayer,
   type ExplicitDest,
   FeatureTest,
+  fetchData,
   type FieldObject,
   type FileAttachmentAnnotationElement,
   type FontFaceObject,
@@ -167,6 +173,7 @@ export {
   type OptionalContentConfig,
   type Order,
   type OutlineNode,
+  Outliner,
   type PageViewport,
   PasswordResponses,
   PDFDataRangeTransport,

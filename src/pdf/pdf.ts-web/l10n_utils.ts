@@ -22,14 +22,12 @@ import {
   FluentResource,
 } from "@fe-3rd/fluent/bundle/esm/index.ts";
 import { DOMLocalization } from "@fe-3rd/fluent/dom/esm/index.ts";
+import type { FluentMessageArgs } from "@fe-3rd/fluent/dom/esm/localization.ts";
 import { Locale } from "@fe-lib/Locale.ts";
 import { PDFJSDev } from "@fe-src/global.ts";
-import wretch from "@wretch";
-import { D_base } from "../alias.ts";
-import { shadow } from "../pdf.ts-src/pdf.ts";
+import { fetchData, shadow } from "../pdf.ts-src/pdf.ts";
 import type { IL10n } from "./interfaces.ts";
 import { L10n } from "./l10n.ts";
-import type { FluentMessageArgs } from "@fe-3rd/fluent/dom/esm/localization.ts";
 /*80--------------------------------------------------------------------------*/
 
 // /**
@@ -140,28 +138,16 @@ export class ConstL10n extends L10n {
   }
 
   static async *#generateBundles(lang: Locale) {
-    let text;
-    /*#static*/ if (PDFJSDev) {
-      // const url = new URL(`./locale/${lang}/viewer.ftl`, window.location.href);
-      // const data = await fetch(url);
-      // text = await data.text();
-      text = await wretch(
-        new URL(
-          `${D_base}/res/pdf/l10n/${lang}/viewer.ftl`,
-          window.location as any,
-        ).href,
+    const text = /*#static*/ PDFJSDev
+      ? await fetchData(
+        new URL(`./locale/${lang}/viewer.ftl`, window.location.href),
+        /* type = */ "text",
       )
-        .get().text();
-    } else {
-      // text = PDFJSDev.eval("DEFAULT_FTL");
-      text = await wretch(
-        new URL(
-          `${D_base}/res/pdf/l10n/en-US/viewer.ftl`,
-          window.location as any,
-        ).href,
-      )
-        .get().text();
-    }
+      // : PDFJSDev.eval("DEFAULT_FTL");
+      : await fetchData(
+        new URL(`./locale/${lang}/viewer.ftl`, window.location.href),
+        /* type = */ "text",
+      );
     const resource = new FluentResource(text);
     const bundle = new FluentBundle(lang);
     const errors = bundle.addResource(resource);

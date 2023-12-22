@@ -3,9 +3,9 @@ export type DedupeSkipFunction = (url: string, opts: WretchOptions) => boolean;
 export type DedupeKeyFunction = (url: string, opts: WretchOptions) => string;
 export type DedupeResolverFunction = (response: Response) => Response;
 export type DedupeOptions = {
-    skip?: DedupeSkipFunction;
-    key?: DedupeKeyFunction;
-    resolver?: DedupeResolverFunction;
+  skip?: DedupeSkipFunction;
+  key?: DedupeKeyFunction;
+  resolver?: DedupeResolverFunction;
 };
 /**
  * ## Dedupe middleware
@@ -27,5 +27,7 @@ export type DedupeOptions = {
  * > This function is called when resolving the fetch response from duplicate calls.
  * By default it clones the response to allow reading the body from multiple sources.
  */
-export type DedupeMiddleware = (options?: DedupeOptions) => ConfiguredMiddleware;
+export type DedupeMiddleware = (
+  options?: DedupeOptions,
+) => ConfiguredMiddleware;
 export declare const dedupe: DedupeMiddleware;

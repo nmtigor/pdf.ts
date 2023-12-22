@@ -17,10 +17,10 @@
  * limitations under the License.
  */
 
-import { GECKOVIEW, GENERIC, PDFJSDev } from "@fe-src/global.ts";
 import type { dot2d_t } from "@fe-lib/alias.ts";
 import { div, html } from "@fe-lib/dom.ts";
 import { PromiseCap } from "@fe-lib/util/PromiseCap.ts";
+import { GECKOVIEW, GENERIC, PDFJSDev } from "@fe-src/global.ts";
 import type {
   ExplicitDest,
   OptionalContentConfig,
@@ -1057,7 +1057,7 @@ export class PDFViewer {
           this.pageColors?.background === "Canvas"
         ) {
           this.viewer.style.setProperty(
-            "--hcm-highligh-filter",
+            "--hcm-highlight-filter",
             pdfDocument.filterFactory.addHighlightHCMFilter(
               "CanvasText",
               "Canvas",
@@ -2326,9 +2326,6 @@ export class PDFViewer {
       : AnnotationEditorType.DISABLE;
   }
 
-  /**
-   * @param AnnotationEditor mode (None, FreeText, Ink, ...)
-   */
   set annotationEditorMode(
     { mode, editId, isFromKeyboard = false }:
       EventMap["switchannotationeditormode"],

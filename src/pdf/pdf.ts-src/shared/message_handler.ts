@@ -105,20 +105,26 @@ function wrapReason(reason: reason_t): ErrorJ {
   if (!(reason instanceof Error || isObjectLike(reason))) {
     fail('wrapReason: Expected "reason" to be a (possibly cloned) Error.');
   }
-  const ex_ = /* final switch */ {
-    AbortException: new AbortException(reason.message),
-    MissingPDFException: new MissingPDFException(reason.message),
-    PasswordException: new PasswordException(reason.message, reason.code!),
-    UnexpectedResponseException: new UnexpectedResponseException(
-      reason.message,
-      reason.status!,
-    ),
-    UnknownErrorException: new UnknownErrorException(
-      reason.message,
-      reason.details,
-    ),
-  }[reason.name] ??
-    new UnknownErrorException(reason.message, reason.toString());
+  let ex_;
+  switch (reason.name) {
+    case "AbortException":
+      ex_ = new AbortException(reason.message);
+      break;
+    case "MissingPDFException":
+      ex_ = new MissingPDFException(reason.message);
+      break;
+    case "PasswordException":
+      ex_ = new PasswordException(reason.message, reason.code!);
+      break;
+    case "UnexpectedResponseException":
+      ex_ = new UnexpectedResponseException(reason.message, reason.status!);
+      break;
+    case "UnknownErrorException":
+      ex_ = new UnknownErrorException(reason.message, reason.details);
+      break;
+    default:
+      ex_ = new UnknownErrorException(reason.message, reason.toString());
+  }
   return ex_.toJ();
 }
 /*49-------------------------------------------*/
@@ -161,7 +167,7 @@ export interface MActionMap {
     Sinkchunk: undefined;
   };
   Cleanup: {
-    Data: null;
+    Data: undefined;
     Return: Promise<void>;
     Sinkchunk: undefined;
   };
@@ -188,17 +194,17 @@ export interface MActionMap {
     Sinkchunk: unknown;
   };
   GetAttachments: {
-    Data: null;
+    Data: undefined;
     Return: unknown;
     Sinkchunk: undefined;
   };
   GetCalculationOrderIds: {
-    Data: unknown;
+    Data: undefined;
     Return?: string[];
     Sinkchunk: undefined;
   };
   GetData: {
-    Data: null;
+    Data: undefined;
     Return: Uint8Array;
     Sinkchunk: undefined;
   };
@@ -210,12 +216,12 @@ export interface MActionMap {
     Sinkchunk: undefined;
   };
   GetDestinations: {
-    Data: null;
+    Data: undefined;
     Return: Record<string, ExplicitDest>;
     Sinkchunk: undefined;
   };
   GetDocJSActions: {
-    Data: null;
+    Data: undefined;
     Return?: AnnotActions;
     Sinkchunk: undefined;
   };
@@ -225,7 +231,7 @@ export interface MActionMap {
     Sinkchunk: undefined;
   };
   GetFieldObjects: {
-    Data: null;
+    Data: undefined;
     Return: Record<string, FieldObject[]> | undefined;
     Sinkchunk: undefined;
   };
@@ -235,17 +241,17 @@ export interface MActionMap {
     Sinkchunk: undefined;
   };
   GetMarkInfo: {
-    Data: null;
+    Data: undefined;
     Return: MarkInfo | undefined;
     Sinkchunk: undefined;
   };
   GetMetadata: {
-    Data: null;
+    Data: undefined;
     Return: [DocumentInfo, SerializedMetadata | undefined];
     Sinkchunk: undefined;
   };
   GetOpenAction: {
-    Data: null;
+    Data: undefined;
     Return?: OpenAction;
     Sinkchunk: undefined;
   };
@@ -255,12 +261,12 @@ export interface MActionMap {
     Sinkchunk: OpListIR;
   };
   GetOptionalContentConfig: {
-    Data: null;
+    Data: undefined;
     Return?: OptionalContentConfigData;
     Sinkchunk: undefined;
   };
   GetOutline: {
-    Data: null;
+    Data: undefined;
     Return: OutlineNode[] | undefined;
     Sinkchunk: undefined;
   };
@@ -284,17 +290,17 @@ export interface MActionMap {
     Sinkchunk: undefined;
   };
   GetPageLabels: {
-    Data: null;
+    Data: undefined;
     Return: string[] | undefined;
     Sinkchunk: undefined;
   };
   GetPageLayout: {
-    Data: null;
+    Data: undefined;
     Return?: PageLayout;
     Sinkchunk: undefined;
   };
   GetPageMode: {
-    Data: null;
+    Data: undefined;
     Return: PageMode;
     Sinkchunk: undefined;
   };
@@ -306,7 +312,7 @@ export interface MActionMap {
     Sinkchunk: undefined;
   };
   GetPermissions: {
-    Data: null;
+    Data: undefined;
     Return: PermissionFlag[] | undefined;
     Sinkchunk: undefined;
   };
@@ -330,27 +336,27 @@ export interface MActionMap {
     };
   };
   GetViewerPreferences: {
-    Data: null;
+    Data: undefined;
     Return: ViewerPref | undefined;
     Sinkchunk: undefined;
   };
   GetXFADatasets: {
-    Data: null;
+    Data: undefined;
     Return: DatasetReader | undefined;
     Sinkchunk: undefined;
   };
   GetXRefPrevValue: {
-    Data: null;
+    Data: undefined;
     Return: number | undefined;
     Sinkchunk: undefined;
   };
   HasJSActions: {
-    Data: null;
+    Data: undefined;
     Return: boolean;
     Sinkchunk: undefined;
   };
   Ready: {
-    Data: null;
+    Data: undefined;
     Return: void;
     Sinkchunk: undefined;
   };
@@ -365,7 +371,7 @@ export interface MActionMap {
     Sinkchunk: undefined;
   };
   Terminate: {
-    Data: null;
+    Data: undefined;
     Return: void;
     Sinkchunk: undefined;
   };

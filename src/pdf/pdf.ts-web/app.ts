@@ -345,6 +345,21 @@ export class PDFViewerApplication {
       await this.#parseHashParams();
     }
 
+    /*#static*/ if (PDFJSDev || !MOZCENTRAL) {
+      let mode;
+      switch (AppOptions.viewerCssTheme) {
+        case 1:
+          mode = "is-light";
+          break;
+        case 2:
+          mode = "is-dark";
+          break;
+      }
+      if (mode) {
+        document.documentElement.classList.add(mode);
+      }
+    }
+
     // Ensure that the `L10n`-instance has been initialized before creating
     // e.g. the various viewer components.
     /*#static*/ if (PDFJSDev || GENERIC) {

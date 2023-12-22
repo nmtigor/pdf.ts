@@ -45,63 +45,70 @@
  * ```
  */
 const perfs = () => {
-    const callbacks = new Map();
-    let observer = null;
-    const onMatch = (entries, name, callback, performance) => {
-        if (!entries.getEntriesByName)
-            return false;
-        const matches = entries.getEntriesByName(name);
-        if (matches && matches.length > 0) {
-            callback(matches.reverse()[0]);
-            if (performance.clearMeasures)
-                performance.clearMeasures(name);
-            callbacks.delete(name);
-            if (callbacks.size < 1) {
-                observer.disconnect();
-                if (performance.clearResourceTimings) {
-                    performance.clearResourceTimings();
-                }
-            }
-            return true;
+  const callbacks = new Map();
+  let observer = null;
+  const onMatch = (entries, name, callback, performance) => {
+    if (!entries.getEntriesByName) {
+      return false;
+    }
+    const matches = entries.getEntriesByName(name);
+    if (matches && matches.length > 0) {
+      callback(matches.reverse()[0]);
+      if (performance.clearMeasures) {
+        performance.clearMeasures(name);
+      }
+      callbacks.delete(name);
+      if (callbacks.size < 1) {
+        observer.disconnect();
+        if (performance.clearResourceTimings) {
+          performance.clearResourceTimings();
         }
-        return false;
-    };
-    const initObserver = (performance, performanceObserver) => {
-        if (!observer && performance && performanceObserver) {
-            observer = new performanceObserver(entries => {
-                callbacks.forEach((callback, name) => {
-                    onMatch(entries, name, callback, performance);
-                });
-            });
-            if (performance.clearResourceTimings) {
-                performance.clearResourceTimings();
-            }
-        }
-        return observer;
-    };
-    const monitor = (name, callback, config) => {
-        if (!name || !callback)
-            return;
-        const performance = config.polyfill("performance", false);
-        const performanceObserver = config.polyfill("PerformanceObserver", false);
-        if (!initObserver(performance, performanceObserver))
-            return;
-        if (!onMatch(performance, name, callback, performance)) {
-            if (callbacks.size < 1)
-                observer.observe({ entryTypes: ["resource", "measure"] });
-            callbacks.set(name, callback);
-        }
-    };
-    return {
-        resolver: {
-            perfs(cb) {
-                this._fetchReq
-                    .then(res => monitor(this._wretchReq._url, cb, this._wretchReq._config))
-                    .catch(() => { });
-                return this;
-            },
-        }
-    };
+      }
+      return true;
+    }
+    return false;
+  };
+  const initObserver = (performance, performanceObserver) => {
+    if (!observer && performance && performanceObserver) {
+      observer = new performanceObserver((entries) => {
+        callbacks.forEach((callback, name) => {
+          onMatch(entries, name, callback, performance);
+        });
+      });
+      if (performance.clearResourceTimings) {
+        performance.clearResourceTimings();
+      }
+    }
+    return observer;
+  };
+  const monitor = (name, callback, config) => {
+    if (!name || !callback) {
+      return;
+    }
+    const performance = config.polyfill("performance", false);
+    const performanceObserver = config.polyfill("PerformanceObserver", false);
+    if (!initObserver(performance, performanceObserver)) {
+      return;
+    }
+    if (!onMatch(performance, name, callback, performance)) {
+      if (callbacks.size < 1) {
+        observer.observe({ entryTypes: ["resource", "measure"] });
+      }
+      callbacks.set(name, callback);
+    }
+  };
+  return {
+    resolver: {
+      perfs(cb) {
+        this._fetchReq
+          .then((res) =>
+            monitor(this._wretchReq._url, cb, this._wretchReq._config)
+          )
+          .catch(() => {});
+        return this;
+      },
+    },
+  };
 };
 export default perfs;
 //# sourceMappingURL=perfs.js.map

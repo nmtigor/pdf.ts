@@ -1,20 +1,21 @@
 # cached-iterable
 
-`cached-iterable` exposes two classes which implement the [iterable
-protocol][]:
+`cached-iterable` exposes two classes which implement the
+[iterable protocol][iterable
+protocol]:
 
-  - `CachedSyncIterable`,
-  - `CachedAsyncIterable`.
+- `CachedSyncIterable`,
+- `CachedAsyncIterable`.
 
-You can wrap any iterable in these classes to create a new iterable which
-caches the yielded elements. This is useful for iterating over an iterable many
-times without depleting it.
+You can wrap any iterable in these classes to create a new iterable which caches
+the yielded elements. This is useful for iterating over an iterable many times
+without depleting it.
 
 [iterable protocol]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#The_iterable_protocol
 
 ## Installation
 
-`cached-iterable` can be used both on the client-side and the server-side.  You
+`cached-iterable` can be used both on the client-side and the server-side. You
 can install it from the npm registry or use it as a standalone script (as the
 `CachedIterable` global).
 
@@ -24,12 +25,12 @@ can install it from the npm registry or use it as a standalone script (as the
 
 ```js
 import assert from "assert";
-import {CachedSyncIterable} from "cached-iterable";
+import { CachedSyncIterable } from "cached-iterable";
 
-function * countdown(i) {
-    while (i--) {
-        yield i;
-    }
+function* countdown(i) {
+  while (i--) {
+    yield i;
+  }
 }
 
 let numbers = new CachedSyncIterable(countdown(3));
@@ -41,11 +42,13 @@ assert.deepEqual([...numbers], [3, 2, 1, 0]);
 
 ## Compatibility
 
-For legacy browsers, the `compat` build has been transpiled using Babel's [env
-preset][]. It requires the regenerator runtime provided by [babel-polyfill][].
+For legacy browsers, the `compat` build has been transpiled using Babel's
+[env preset][env
+preset]. It requires the regenerator runtime provided by
+[babel-polyfill][babel-polyfill].
 
 ```javascript
-import {CachedSyncIterable} from 'cached-iterable/compat';
+import { CachedSyncIterable } from "cached-iterable/compat";
 ```
 
 [env preset]: https://babeljs.io/docs/plugins/preset-env/
