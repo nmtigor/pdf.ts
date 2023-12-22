@@ -1,23 +1,9 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2023
  */
-/* Copyright 2014 Mozilla Foundation
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-import { GECKOVIEW, GENERIC, PDFJSDev } from "../../global.js";
 import { div, html } from "../../lib/dom.js";
 import { PromiseCap } from "../../lib/util/PromiseCap.js";
+import { GECKOVIEW, GENERIC, PDFJSDev } from "../../global.js";
 import { AnnotationEditorType, AnnotationEditorUIManager, AnnotationMode, PermissionFlag, PixelsPerInch, shadow, version, } from "../pdf.ts-src/pdf.js";
 import { compatibilityParams } from "./app_options.js";
 import { SimpleLinkService } from "./pdf_link_service.js";
@@ -683,7 +669,7 @@ export class PDFViewer {
             this.viewer.style.setProperty("--scale-factor", viewport.scale);
             if (this.pageColors?.foreground === "CanvasText" ||
                 this.pageColors?.background === "Canvas") {
-                this.viewer.style.setProperty("--hcm-highligh-filter", pdfDocument.filterFactory.addHighlightHCMFilter("CanvasText", "Canvas", "HighlightText", "Highlight"));
+                this.viewer.style.setProperty("--hcm-highlight-filter", pdfDocument.filterFactory.addHighlightHCMFilter("CanvasText", "Canvas", "HighlightText", "Highlight"));
             }
             for (let pageNum = 1; pageNum <= pagesCount; ++pageNum) {
                 const pageView = new PDFPageView({
@@ -1757,9 +1743,6 @@ export class PDFViewer {
             ? this.#annotationEditorMode
             : AnnotationEditorType.DISABLE;
     }
-    /**
-     * @param AnnotationEditor mode (None, FreeText, Ink, ...)
-     */
     set annotationEditorMode({ mode, editId, isFromKeyboard = false }) {
         if (!this.#annotationEditorUIManager) {
             throw new Error(`The AnnotationEditor is not enabled.`);

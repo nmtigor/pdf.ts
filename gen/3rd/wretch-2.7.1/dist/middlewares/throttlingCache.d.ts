@@ -1,4 +1,4 @@
-export function throttlingCache({ throttle, skip, key, clear, invalidate, condition, flagResponseOnCacheHit }?: {
+export function throttlingCache({ throttle, skip, key, clear, invalidate, condition, flagResponseOnCacheHit, }?: {
     throttle?: number | undefined;
     skip?: ((url: any, opts: any) => any) | undefined;
     key?: ((url: any, opts: any) => string) | undefined;

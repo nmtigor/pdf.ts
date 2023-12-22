@@ -728,7 +728,7 @@ export class PartialEvaluator {
 
     const standardFontNameToFileName = getFontNameToFileMap(),
       filename = standardFontNameToFileName[name];
-    let data: ArrayBuffer | Uint8Array | undefined;
+    let data: Uint8Array | undefined;
 
     if (this.options.standardFontDataUrl !== undefined) {
       const url = `${this.options.standardFontDataUrl}${filename}`;
@@ -738,7 +738,7 @@ export class PartialEvaluator {
           `fetchStandardFontData: failed to fetch file "${url}" with "${response.statusText}".`,
         );
       } else {
-        data = await response.arrayBuffer();
+        data = new Uint8Array(await response.arrayBuffer());
       }
     } else {
       // Get the data on the main-thread instead.

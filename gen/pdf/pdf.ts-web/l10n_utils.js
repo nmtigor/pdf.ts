@@ -19,9 +19,7 @@ import { FluentBundle, FluentResource, } from "../../3rd/fluent/bundle/esm/index
 import { DOMLocalization } from "../../3rd/fluent/dom/esm/index.js";
 import { Locale } from "../../lib/Locale.js";
 import { PDFJSDev } from "../../global.js";
-import wretch from "../../3rd/wretch-2.7.1/dist/index.js";
-import { D_base } from "../alias.js";
-import { shadow } from "../pdf.ts-src/pdf.js";
+import { fetchData, shadow } from "../pdf.ts-src/pdf.js";
 import { L10n } from "./l10n.js";
 /*80--------------------------------------------------------------------------*/
 // /**
@@ -117,14 +115,8 @@ export class ConstL10n extends L10n {
         this._setL10n(new DOMLocalization([], ConstL10n.#generateBundles.bind(ConstL10n, lang)));
     }
     static async *#generateBundles(lang) {
-        let text;
-        /*#static*/  {
-            // const url = new URL(`./locale/${lang}/viewer.ftl`, window.location.href);
-            // const data = await fetch(url);
-            // text = await data.text();
-            text = await wretch(new URL(`${D_base}/res/pdf/l10n/${lang}/viewer.ftl`, window.location).href)
-                .get().text();
-        }
+        const text = /*#static*/ await fetchData(new URL(`./locale/${lang}/viewer.ftl`, window.location.href), 
+        /* type = */ "text");
         const resource = new FluentResource(text);
         const bundle = new FluentBundle(lang);
         const errors = bundle.addResource(resource);

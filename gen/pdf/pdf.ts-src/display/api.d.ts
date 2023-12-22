@@ -1,3 +1,6 @@
+/**
+ * @module pdfjsLib
+ */
 import type { C2D, TypedArray } from "../../../lib/alias.js";
 import { PromiseCap } from "../../../lib/util/PromiseCap.js";
 import type { Stepper } from "../../pdf.ts-web/debugger.js";
@@ -415,7 +418,7 @@ export declare class PDFDocumentProxy {
      * NOTE: This is (mostly) intended to support printing of XFA forms.
      *
      * An object representing a HTML tree structure
-     * to render the XFA, or `null` when no XFA form exists.
+     * to render the XFA, or `undefined` when no XFA form exists.
      */
     get allXfaHtml(): XFAElObj | undefined;
     /**
@@ -439,14 +442,14 @@ export declare class PDFDocumentProxy {
     /**
      * @param id The named destination to get.
      * @return A promise that is resolved with all
-     *   information of the given named destination, or `null` when the named
+     *   information of the given named destination, or `undefined` when the named
      *   destination is not present in the PDF file.
      */
     getDestination(id: string): Promise<ExplicitDest | undefined>;
     /**
      * @return A promise that is resolved with
      *   an {Array} containing the page labels that correspond to the page
-     *   indexes, or `null` when no page labels are present in the PDF file.
+     *   indexes, or `undefined` when no page labels are present in the PDF file.
      */
     getPageLabels(): Promise<string[] | undefined>;
     /**
@@ -461,13 +464,13 @@ export declare class PDFDocumentProxy {
     getPageMode(): Promise<import("../../pdf.ts-web/ui_utils.js").PageMode>;
     /**
      * @return A promise that is resolved with an
-     *   {Object} containing the viewer preferences, or `null` when no viewer
+     *   {Object} containing the viewer preferences, or `undefined` when no viewer
      *   preferences are present in the PDF file.
      */
     getViewerPreferences(): Promise<import("../core/catalog.js").ViewerPref | undefined>;
     /**
      * @return A promise that is resolved with an {Array}
-     *   containing the destination, or `null` when no open action is present
+     *   containing the destination, or `undefined` when no open action is present
      *   in the PDF.
      */
     getOpenAction(): Promise<import("../core/catalog.js").OpenAction | undefined>;
@@ -481,7 +484,7 @@ export declare class PDFDocumentProxy {
      *   an {Object} with the JavaScript actions:
      *     - from the name tree.
      *     - from A or AA entries in the catalog dictionary.
-     *   , or `null` if no JavaScript exists.
+     *   , or `undefined` if no JavaScript exists.
      */
     getJSActions(): Promise<AnnotActions | undefined>;
     /**
@@ -498,7 +501,7 @@ export declare class PDFDocumentProxy {
     /**
      * @return A promise that is resolved with
      *   an {Array} that contains the permission flags for the PDF document, or
-     *   `null` when no permissions are present in the PDF file.
+     *   `undefined` when no permissions are present in the PDF file.
      */
     getPermissions(): Promise<import("../shared/util.js").PermissionFlag[] | undefined>;
     /**
@@ -512,7 +515,8 @@ export declare class PDFDocumentProxy {
     /**
      * @return A promise that is resolved with
      *   a {MarkInfo} object that contains the MarkInfo flags for the PDF
-     *   document, or `null` when no MarkInfo values are present in the PDF file.
+     *   document, or `undefined` when no MarkInfo values are present in the PDF
+     *   file.
      */
     getMarkInfo(): Promise<import("../core/catalog.js").MarkInfo | undefined>;
     /**
@@ -565,7 +569,7 @@ export declare class PDFDocumentProxy {
     /**
      * @return A promise that is
      *   resolved with an {Object} containing /AcroForm field data for the JS
-     *   sandbox, or `null` when no field data is present in the PDF file.
+     *   sandbox, or `undefined` when no field data is present in the PDF file.
      */
     getFieldObjects(): Promise<boolean | AnnotActions | Record<string, FieldObject[]> | MetadataEx | undefined>;
     /**
@@ -576,7 +580,8 @@ export declare class PDFDocumentProxy {
     /**
      * @return A promise that is resolved with an
      *   {Array<string>} containing IDs of annotations that have a calculation
-     *   action, or `null` when no such annotations are present in the PDF file.
+     *   action, or `undefined` when no such annotations are present in the PDF
+     *   file.
      */
     getCalculationOrderIds(): Promise<string[] | undefined>;
     getXFADatasets: () => Promise<DatasetReader | undefined>;
@@ -797,7 +802,7 @@ export interface RenderP {
     pageColors?: PageColors | undefined;
     /**
      * A promise that should resolve with an {@link OptionalContentConfig}
-     * created from `PDFDocumentProxy.getOptionalContentConfig`. If `null`,
+     * created from `PDFDocumentProxy.getOptionalContentConfig`. If `undefined`,
      * the configuration will be fetched automatically with the default visibility
      * states set.
      */
@@ -950,7 +955,8 @@ export declare class PDFPageProxy {
      * A promise that is resolved with
      * an {Object} with a fake DOM object (a tree structure where elements
      * are {Object} with a name, attributes (class, style, ...), value and
-     * children, very similar to a HTML DOM tree), or `null` if no XFA exists.
+     * children, very similar to a HTML DOM tree), or `undefined` if no XFA
+     * exists.
      */
     getXfa(): Promise<string | true | import("../core/xfa/alias.js").XFAHTMLObj | import("../core/xfa/alias.js").XFASVGObj | undefined>;
     /**
@@ -987,7 +993,7 @@ export declare class PDFPageProxy {
     /**
      * @return A promise that is resolved with a
      *   {@link StructTreeNode} object that represents the page's structure tree,
-     *   or `null` when no structure tree is present for the current page.
+     *   or `undefined` when no structure tree is present for the current page.
      */
     getStructTree(): Promise<StructTreeNode | undefined>;
     /**

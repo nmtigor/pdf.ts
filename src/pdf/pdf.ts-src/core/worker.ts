@@ -521,7 +521,7 @@ export const WorkerMessageHandler = {
       return pdfManager.ensureCatalog("attachments");
     });
 
-    handler.on("GetDocJSActions", (data) => {
+    handler.on("GetDocJSActions", () => {
       return pdfManager.ensureCatalog("jsActions");
     });
 
@@ -576,15 +576,15 @@ export const WorkerMessageHandler = {
       });
     });
 
-    handler.on("GetFieldObjects", (data) => {
+    handler.on("GetFieldObjects", () => {
       return pdfManager.ensureDoc("fieldObjects");
     });
 
-    handler.on("HasJSActions", async (data) => {
+    handler.on("HasJSActions", async () => {
       return await pdfManager.ensureDoc("hasJSActions");
     });
 
-    handler.on("GetCalculationOrderIds", (data) => {
+    handler.on("GetCalculationOrderIds", () => {
       return pdfManager.ensureDoc("calculationOrderIds");
     });
 
@@ -936,19 +936,21 @@ export const WorkerMessageHandler = {
     });
 
     /*#static*/ if (PDFJSDev || TESTING) {
-      handler.on("GetXFADatasets", (data) => {
+      handler.on("GetXFADatasets", () => {
         return pdfManager.ensureDoc("xfaDatasets");
       });
-      handler.on("GetXRefPrevValue", (data) => {
+      handler.on("GetXRefPrevValue", () => {
         return pdfManager
           .ensureXRef("trailer")
           .then((trailer) => trailer!.get("Prev") as number);
       });
-      handler.on("GetAnnotArray", function (data) {
-        return pdfManager.getPage(data.pageIndex).then(function (page) {
-          return page.annotations.map((a) => a.toString());
-        });
-      });
+      handler.on(
+        "GetAnnotArray",
+        (data) =>
+          pdfManager.getPage(data.pageIndex).then(
+            (page) => page.annotations.map((a) => a.toString()),
+          ),
+      );
     }
 
     return workerHandlerName;

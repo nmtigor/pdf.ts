@@ -368,9 +368,6 @@ export declare class PDFViewer {
     decreaseScale({ drawingDelay, scaleFactor, steps }?: ChangeScaleOptions): void;
     get containerTopLeft(): dot2d_t;
     get annotationEditorMode(): AnnotationEditorType;
-    /**
-     * @param AnnotationEditor mode (None, FreeText, Ink, ...)
-     */
     set annotationEditorMode({ mode, editId, isFromKeyboard }: EventMap["switchannotationeditormode"]);
     set annotationEditorParams({ type, value }: EventMap["switchannotationeditorparams"]);
     refresh(noUpdate?: boolean, updateArgs?: any): void;

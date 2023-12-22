@@ -1374,25 +1374,58 @@ export class PDFDocument {
             ? this.catalog.cleanup(manuallyTriggered)
             : clearGlobalCaches();
     }
-    #collectFieldObjects(name, fieldRef, promises, annotationGlobals) {
-        const field = this.xref.fetchIfRef(fieldRef);
+    async #collectFieldObjects(name, fieldRef, promises, annotationGlobals, visitedRefs) {
+        const { xref } = this;
+        if (!(fieldRef instanceof Ref) || visitedRefs.has(fieldRef)) {
+            return;
+        }
+        visitedRefs.put(fieldRef);
+        const field = await xref.fetchAsync(fieldRef);
+        if (!(field instanceof Dict)) {
+            return;
+        }
         if (field.has("T")) {
-            const partName = stringToPDFString(field.get("T"));
+            const partName = stringToPDFString(await field.getAsync("T"));
             name = name === "" ? partName : `${name}.${partName}`;
+        }
+        else {
+            let obj = field;
+            while (true) {
+                obj = obj.getRaw("Parent");
+                if (obj instanceof Ref) {
+                    if (visitedRefs.has(obj)) {
+                        break;
+                    }
+                    obj = await xref.fetchAsync(obj);
+                }
+                if (!(obj instanceof Dict)) {
+                    break;
+                }
+                if (obj.has("T")) {
+                    const partName = stringToPDFString(await obj.getAsync("T"));
+                    name = name === "" ? partName : `${name}.${partName}`;
+                    break;
+                }
+            }
         }
         if (!promises.has(name)) {
             promises.set(name, []);
         }
-        promises.get(name).push(AnnotationFactory.create(this.xref, fieldRef, annotationGlobals, this.#localIdFactory, //kkkk bug? (never set)
+        promises.get(name).push(AnnotationFactory.create(xref, fieldRef, annotationGlobals, 
+        /* idFactory = */ undefined, 
         /* collectFields */ true)
             .then((annotation) => annotation?.getFieldObject())
             .catch((reason) => {
             warn(`#collectFieldObjects: "${reason}".`);
             return undefined;
         }));
-        if (field.has("Kids")) {
-            for (const kid of field.get("Kids")) {
-                this.#collectFieldObjects(name, kid, promises, annotationGlobals);
+        if (!field.has("Kids")) {
+            return;
+        }
+        const kids = await field.getAsync("Kids");
+        if (Array.isArray(kids)) {
+            for (const kid of kids) {
+                await this.#collectFieldObjects(name, kid, promises, annotationGlobals, visitedRefs);
             }
         }
     }
@@ -1400,16 +1433,18 @@ export class PDFDocument {
         if (!this.formInfo.hasFields) {
             return shadow(this, "fieldObjects", Promise.resolve(undefined));
         }
-        const promise = this.pdfManager
-            .ensureDoc("annotationGlobals")
-            .then(async (annotationGlobals) => {
+        const promise = Promise.all([
+            this.pdfManager.ensureDoc("annotationGlobals"),
+            this.pdfManager.ensureCatalog("acroForm"),
+        ]).then(async ([annotationGlobals, acroForm]) => {
             if (!annotationGlobals) {
                 return undefined;
             }
+            const visitedRefs = new RefSet();
             const allFields = Object.create(null);
             const fieldPromises = new Map();
-            for (const fieldRef of this.catalog.acroForm.get("Fields")) {
-                this.#collectFieldObjects("", fieldRef, fieldPromises, annotationGlobals);
+            for (const fieldRef of await acroForm.getAsync("Fields")) {
+                await this.#collectFieldObjects("", fieldRef, fieldPromises, annotationGlobals, visitedRefs);
             }
             const allPromises = [];
             for (const [name, promises] of fieldPromises) {

@@ -1,7 +1,12 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2023
  */
+import { Locale } from "../../lib/Locale.js";
 import { TESTING } from "../../global.js";
+/**
+//  * NOTE: The L10n-implementations should use lowercase language-codes
+//  *       internally.
+ */
 export class L10n {
     #dir;
     #lang;
@@ -53,7 +58,9 @@ export class L10n {
     resume() {
         this.#l10n.resumeObserving();
     }
-    static #fixupLangCode(langCode) {
+    static #fixupLangCode(langCode = Locale.en_US) {
+        // // Use only lowercase language-codes internally, and fallback to English.
+        // langCode = langCode?.toLowerCase() || "en-us";
         // Try to support "incompletely" specified language codes (see issue 13689).
         const PARTIAL_LANG_CODES = {
             en: "en-US",
@@ -71,7 +78,7 @@ export class L10n {
             sv: "sv-SE",
             zh: "zh-CN",
         };
-        return PARTIAL_LANG_CODES[langCode?.toLowerCase()] || langCode;
+        return PARTIAL_LANG_CODES[langCode] || langCode;
     }
     static #isRTL(lang) {
         const shortCode = lang.split("-", 1)[0];

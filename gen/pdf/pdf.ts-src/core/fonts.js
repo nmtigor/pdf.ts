@@ -1,22 +1,8 @@
 /* Converted from JavaScript to TypeScript by
  * nmtigor (https://github.com/nmtigor) @2022
  */
-/* Copyright 2012 Mozilla Foundation
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-import { PDFJSDev, TESTING } from "../../../global.js";
 import { assert } from "../../../lib/util/trace.js";
+import { PDFJSDev, TESTING } from "../../../global.js";
 import { bytesToString, FONT_IDENTITY_MATRIX, FormatError, info, shadow, string32, warn, } from "../shared/util.js";
 import { CFFFont } from "./cff_font.js";
 import { CFFCompiler, CFFParser } from "./cff_parser.js";
@@ -281,6 +267,12 @@ function writeSignedInt16(bytes, index, value) {
 function signedInt16(b0, b1) {
     const value = (b0 << 8) + b1;
     return value & (1 << 15) ? value - 0x10000 : value;
+}
+function writeUint32(bytes, index, value) {
+    bytes[index + 3] = value & 0xff;
+    bytes[index + 2] = value >>> 8;
+    bytes[index + 1] = value >>> 16;
+    bytes[index] = value >>> 24;
 }
 function int32(b0, b1, b2, b3) {
     return (b0 << 24) + (b1 << 16) + (b2 << 8) + b3;
@@ -2362,8 +2354,21 @@ export class Font extends FontExpotDataEx {
             throw new FormatError('Required "maxp" table is not found');
         }
         font.pos = (font.start || 0) + tables.maxp.offset;
-        const version = font.getInt32();
+        let version = font.getInt32();
         const numGlyphs = font.getUint16();
+        if (version !== 0x00010000 && version !== 0x00005000) {
+            // https://learn.microsoft.com/en-us/typography/opentype/spec/maxp
+            if (tables.maxp.length === 6) {
+                version = 0x0005000;
+            }
+            else if (tables.maxp.length >= 32) {
+                version = 0x00010000;
+            }
+            else {
+                throw new FormatError(`"maxp" table has a wrong version number`);
+            }
+            writeUint32(tables.maxp.data, 0, version);
+        }
         if (properties.scaleFactors?.length === numGlyphs && isTrueType) {
             const { scaleFactors } = properties;
             const isGlyphLocationsLong = int16(tables.head.data[50], tables.head.data[51]);
@@ -2401,7 +2406,7 @@ export class Font extends FontExpotDataEx {
         }
         let maxFunctionDefs = 0;
         let maxSizeOfInstructions = 0;
-        if (version >= 0x00010000 && tables.maxp.length >= 22) {
+        if (version >= 0x00010000 && tables.maxp.length >= 32) {
             // maxZones can be invalid
             font.pos += 8;
             const maxZones = font.getUint16();
@@ -2437,7 +2442,7 @@ export class Font extends FontExpotDataEx {
             missingGlyphs = glyphsInfo.missingGlyphs;
             // Some fonts have incorrect maxSizeOfInstructions values, so we use
             // the computed value instead.
-            if (version >= 0x00010000 && tables.maxp.length >= 22) {
+            if (version >= 0x00010000 && tables.maxp.length >= 32) {
                 tables.maxp.data[26] = glyphsInfo.maxSizeOfInstructions >> 8;
                 tables.maxp.data[27] = glyphsInfo.maxSizeOfInstructions & 255;
             }

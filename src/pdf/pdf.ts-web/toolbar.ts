@@ -18,7 +18,6 @@
  */
 
 import { noContextMenu } from "@fe-lib/util/general.ts";
-import { GENERIC, PDFJSDev } from "@fe-src/global.ts";
 import { AnnotationEditorType } from "../pdf.ts-src/pdf.ts";
 import type { EventBus, EventMap, EventName } from "./event_utils.ts";
 import {
@@ -30,8 +29,6 @@ import {
 } from "./ui_utils.ts";
 import type { ViewerConfiguration } from "./viewer.ts";
 /*80--------------------------------------------------------------------------*/
-
-const PAGE_NUMBER_LOADING_INDICATOR = "visiblePageIsLoading";
 
 interface ToolbarButton {
   element: HTMLElement;
@@ -112,9 +109,6 @@ export class Toolbar {
         },
       },
     ];
-    /*#static*/ if (PDFJSDev || GENERIC) {
-      this.buttons.push({ element: options.openFile!, eventName: "openfile" });
-    }
     this.items = {
       numPages: options.numPages,
       pageNumber: options.pageNumber,
@@ -324,7 +318,7 @@ export class Toolbar {
   updateLoadingIndicatorState(loading = false) {
     const { pageNumber } = this.items;
 
-    pageNumber.classList.toggle(PAGE_NUMBER_LOADING_INDICATOR, loading);
+    pageNumber.classList.toggle("loading", loading);
   }
 }
 /*80--------------------------------------------------------------------------*/

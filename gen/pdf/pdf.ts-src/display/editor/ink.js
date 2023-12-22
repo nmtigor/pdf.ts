@@ -481,7 +481,7 @@ export class InkEditor extends AnnotationEditor {
         this.#disableEditing = true;
         this.div.classList.add("disabled");
         this.#fitToContent(/* firstTime = */ true);
-        this.makeResizable();
+        this.select();
         this.parent.addInkEditorIfNeeded(/* isCommitting = */ true);
         // When commiting, the position of this editor is changed, hence we must
         // move it to the right position in the DOM.
@@ -506,8 +506,11 @@ export class InkEditor extends AnnotationEditor {
         // Since it's the last child, there's no need to give it a higher z-index.
         this.setInForeground();
         event.preventDefault();
-        if (event.type !== "mouse") {
-            this.div.focus();
+        if (event.pointerType !== "mouse" &&
+            !this.div.contains(document.activeElement)) {
+            this.div.focus({
+                preventScroll: true, /* See issue #17327 */
+            });
         }
         this.#startDrawing(event.offsetX, event.offsetY);
     }

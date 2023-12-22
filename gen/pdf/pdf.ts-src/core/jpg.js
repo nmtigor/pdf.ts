@@ -973,6 +973,9 @@ var NsJpegImage;
                 fileMarker = readUint16(data, offset);
                 offset += 2;
             }
+            if (!frame) {
+                throw new JpegError("JpegImage.parse - no frame data found.");
+            }
             this.width = frame.samplesPerLine;
             this.height = frame.scanLines;
             this.jfif = jfif;

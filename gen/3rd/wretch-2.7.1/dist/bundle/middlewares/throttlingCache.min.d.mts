@@ -1,5 +1,5 @@
 export { r as throttlingCache };
-declare function r({ throttle: r, skip: a, key: s, clear: h, invalidate: i, condition: l, flagResponseOnCacheHit: f }?: {
+declare function r({ throttle: r, skip: a, key: s, clear: h, invalidate: i, condition: l, flagResponseOnCacheHit: f, }?: {
     throttle?: number | undefined;
     skip?: ((e: any, t: any) => any) | undefined;
     key?: ((e: any, t: any) => string) | undefined;

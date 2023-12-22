@@ -1,6 +1,6 @@
-import type { FluentMessageArgs } from "../../3rd/fluent/dom/esm/localization.js";
-import type { Locale } from "../../lib/Locale.js";
 import type { DOMLocalization } from "../../3rd/fluent/dom/esm/index.js";
+import type { FluentMessageArgs } from "../../3rd/fluent/dom/esm/localization.js";
+import { Locale } from "../../lib/Locale.js";
 import type { IL10n } from "./interfaces.js";
 declare global {
     interface Document {
@@ -8,9 +8,13 @@ declare global {
     }
 }
 export type L10nCtorP = {
-    lang: Locale;
+    lang?: Locale;
     isRTL?: boolean;
 };
+/**
+//  * NOTE: The L10n-implementations should use lowercase language-codes
+//  *       internally.
+ */
 export declare class L10n implements IL10n {
     #private;
     constructor({ lang, isRTL }: L10nCtorP, l10n?: DOMLocalization);

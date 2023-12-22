@@ -1,20 +1,20 @@
 /* Defaults */
 const defaultDelayRamp = (delay, nbOfAttempts) => delay * nbOfAttempts;
-const defaultUntil = response => response && response.ok;
+const defaultUntil = (response) => response && response.ok;
 export const retry = ({ delayTimer = 500, delayRamp = defaultDelayRamp, maxAttempts = 10, until = defaultUntil, onRetry = null, retryOnNetworkError = false, resolveWithLatestResponse = false, skip, } = {}) => {
-    return next => (url, opts) => {
+    return (next) => (url, opts) => {
         let numberOfAttemptsMade = 0;
         if (skip && skip(url, opts)) {
             return next(url, opts);
         }
         const checkStatus = (response, error) => {
-            return Promise.resolve(until(response, error)).then(done => {
+            return Promise.resolve(until(response, error)).then((done) => {
                 // If the response is not suitable
                 if (!done) {
                     numberOfAttemptsMade++;
                     if (!maxAttempts || numberOfAttemptsMade <= maxAttempts) {
                         // We need to recurse until we have a correct response and chain the checks
-                        return new Promise(resolve => {
+                        return new Promise((resolve) => {
                             const delay = delayRamp(delayTimer, numberOfAttemptsMade);
                             setTimeout(() => {
                                 if (typeof onRetry === "function") {
@@ -25,7 +25,12 @@ export const retry = ({ delayTimer = 500, delayRamp = defaultDelayRamp, maxAttem
                                         options: opts,
                                     })).then((values = {}) => {
                                         var _a, _b;
-                                        resolve(next((_a = (values && values.url)) !== null && _a !== void 0 ? _a : url, (_b = (values && values.options)) !== null && _b !== void 0 ? _b : opts));
+                                        resolve(next((_a = values && values.url) !== null && _a !== void 0
+                                            ? _a
+                                            : url, (_b = values && values.options) !== null &&
+                                            _b !== void 0
+                                            ? _b
+                                            : opts));
                                     });
                                 }
                                 else {
@@ -34,9 +39,10 @@ export const retry = ({ delayTimer = 500, delayRamp = defaultDelayRamp, maxAttem
                             }, delay);
                         })
                             .then(checkStatus)
-                            .catch(error => {
-                            if (!retryOnNetworkError)
+                            .catch((error) => {
+                            if (!retryOnNetworkError) {
                                 throw error;
+                            }
                             return checkStatus(null, error);
                         });
                     }
@@ -55,9 +61,10 @@ export const retry = ({ delayTimer = 500, delayRamp = defaultDelayRamp, maxAttem
         };
         return next(url, opts)
             .then(checkStatus)
-            .catch(error => {
-            if (!retryOnNetworkError)
+            .catch((error) => {
+            if (!retryOnNetworkError) {
                 throw error;
+            }
             return checkStatus(null, error);
         });
     };

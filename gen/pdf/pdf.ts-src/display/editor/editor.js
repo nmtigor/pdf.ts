@@ -6,6 +6,7 @@ import { html } from "../../../../lib/dom.js";
 import { noContextMenu } from "../../../../lib/util/general.js";
 import { fail } from "../../../../lib/util/trace.js";
 import { FeatureTest, shadow, } from "../../shared/util.js";
+import { EditorToolbar } from "./toolbar.js";
 import { AnnotationEditorUIManager, bindEvents, ColorManager, KeyboardManager, } from "./tools.js";
 /**
  * Base class for editors.
@@ -50,6 +51,7 @@ export class AnnotationEditor {
     #savedDimensions;
     #boundFocusin = this.focusin.bind(this);
     #boundFocusout = this.focusout.bind(this);
+    #editToolbar;
     #focusedResizerName;
     #hasBeenClicked = false;
     #isEditing = false;
@@ -380,21 +382,16 @@ export class AnnotationEditor {
         const { _borderLineWidth } = _a;
         const x = _borderLineWidth / parentWidth;
         const y = _borderLineWidth / parentHeight;
-        // switch (this.rotation) {
-        //   case 90:
-        //     return [-x, y];
-        //   case 180:
-        //     return [x, y];
-        //   case 270:
-        //     return [x, -y];
-        //   default:
-        //     return [-x, -y];
-        // }
-        return /* final switch */ {
-            [90]: [-x, y],
-            [180]: [x, y],
-            [270]: [x, -y],
-        }[this.rotation] ?? [-x, -y];
+        switch (this.rotation) {
+            case 90:
+                return [-x, y];
+            case 180:
+                return [x, y];
+            case 270:
+                return [x, -y];
+            default:
+                return [-x, -y];
+        }
     }
     fixAndSetPosition() {
         const [pageWidth, pageHeight] = this.pageDimensions;
@@ -432,21 +429,16 @@ export class AnnotationEditor {
         this.moveInDOM();
     }
     static #rotatePoint(x, y, angle) {
-        // switch (angle) {
-        //   case 90:
-        //     return [y, -x];
-        //   case 180:
-        //     return [-x, -y];
-        //   case 270:
-        //     return [-y, x];
-        //   default:
-        //     return [x, y];
-        // }
-        return /* final switch */ {
-            [90]: [y, -x],
-            [180]: [-x, -y],
-            [270]: [-y, x],
-        }[angle] ?? [x, y];
+        switch (angle) {
+            case 90:
+                return [y, -x];
+            case 180:
+                return [-x, -y];
+            case 270:
+                return [-y, x];
+            default:
+                return [x, y];
+        }
     }
     /**
      * Convert a screen translation into a page one.
@@ -652,15 +644,33 @@ export class AnnotationEditor {
         let isDiagonal = false;
         let isHorizontal = false;
         const [getPoint, getOpposite] = /* final switch */ {
-            topLeft: (isDiagonal = true, [(w, h) => [0, 0], (w, h) => [w, h]]),
-            topMiddle: [(w, h) => [w / 2, 0], (w, h) => [w / 2, h]],
-            topRight: (isDiagonal = true, [(w, h) => [w, 0], (w, h) => [0, h]]),
-            middleRight: (isDiagonal = true, [(w, h) => [w, h / 2], (w, h) => [0, h / 2]]),
-            bottomRight: (isDiagonal = true, [(w, h) => [w, h], (w, h) => [0, 0]]),
-            bottomMiddle: [(w, h) => [w / 2, h], (w, h) => [w / 2, 0]],
-            bottomLeft: (isDiagonal = true, [(w, h) => [0, h], (w, h) => [w, 0]]),
-            middleLeft: (isDiagonal = true, [(w, h) => [0, h / 2], (w, h) => [w, h / 2]]),
-        }[name];
+            topLeft: () => {
+                isDiagonal = true;
+                return [(w, h) => [0, 0], (w, h) => [w, h]];
+            },
+            topMiddle: () => [(w, h) => [w / 2, 0], (w, h) => [w / 2, h]],
+            topRight: () => {
+                isDiagonal = true;
+                return [(w, h) => [w, 0], (w, h) => [0, h]];
+            },
+            middleRight: () => {
+                isDiagonal = true;
+                return [(w, h) => [w, h / 2], (w, h) => [0, h / 2]];
+            },
+            bottomRight: () => {
+                isDiagonal = true;
+                return [(w, h) => [w, h], (w, h) => [0, 0]];
+            },
+            bottomMiddle: () => [(w, h) => [w / 2, h], (w, h) => [w / 2, 0]],
+            bottomLeft: () => {
+                isDiagonal = true;
+                return [(w, h) => [0, h], (w, h) => [w, 0]];
+            },
+            middleLeft: () => {
+                isDiagonal = true;
+                return [(w, h) => [0, h / 2], (w, h) => [w, h / 2]];
+            },
+        }[name]();
         const point = getPoint(savedWidth, savedHeight);
         const oppositePoint = getOpposite(savedWidth, savedHeight);
         let transfOppositePoint = transf(...oppositePoint);
@@ -803,6 +813,20 @@ export class AnnotationEditor {
         this.#altTextButton.hidden = false;
         this.#altTextButton.focus({ focusVisible: this.#altTextWasFromKeyBoard });
         this.#altTextWasFromKeyBoard = false;
+    }
+    addEditToolbar() {
+        if (this.#editToolbar || this.#isInEditMode) {
+            return;
+        }
+        this.#editToolbar = new EditorToolbar(this);
+        this.div.append(this.#editToolbar.render());
+    }
+    removeEditToolbar() {
+        if (!this.#editToolbar) {
+            return;
+        }
+        this.#editToolbar.remove();
+        this.#editToolbar = undefined;
     }
     getClientDimensions() {
         return this.div.getBoundingClientRect();
@@ -1079,6 +1103,7 @@ export class AnnotationEditor {
             this.#moveInDOMTimeout = undefined;
         }
         this.#stopResizing();
+        this.removeEditToolbar();
     }
     /**
      * @return true if this editor can be resized.
@@ -1220,6 +1245,8 @@ export class AnnotationEditor {
     select() {
         this.makeResizable();
         this.div?.classList.add("selectedEditor");
+        this.addEditToolbar();
+        this.#editToolbar?.show();
     }
     /**
      * Unselect this editor.
@@ -1232,6 +1259,7 @@ export class AnnotationEditor {
             // go.
             this._uiManager.currentLayer.div.focus();
         }
+        this.#editToolbar?.hide();
     }
     /**
      * Update some parameters which have been changed through the UI.

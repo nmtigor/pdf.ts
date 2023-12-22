@@ -1,16 +1,14 @@
 function encodeQueryValue(key, value) {
     return encodeURIComponent(key) +
         "=" +
-        encodeURIComponent(typeof value === "object" ?
-            JSON.stringify(value) :
-            "" + value);
+        encodeURIComponent(typeof value === "object" ? JSON.stringify(value) : "" + value);
 }
 function convertFormUrl(formObject) {
     return Object.keys(formObject)
-        .map(key => {
+        .map((key) => {
         const value = formObject[key];
         if (value instanceof Array) {
-            return value.map(v => encodeQueryValue(key, v)).join("&");
+            return value.map((v) => encodeQueryValue(key, v)).join("&");
         }
         return encodeQueryValue(key, value);
     })
@@ -31,8 +29,8 @@ const formUrl = {
             return this
                 .body(typeof input === "string" ? input : convertFormUrl(input))
                 .content("application/x-www-form-urlencoded");
-        }
-    }
+        },
+    },
 };
 export default formUrl;
 //# sourceMappingURL=formUrl.js.map

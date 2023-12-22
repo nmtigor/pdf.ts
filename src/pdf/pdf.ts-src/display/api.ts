@@ -21,8 +21,8 @@
  * @module pdfjsLib
  */
 
-import type { SubstitutionInfo } from "../core/font_substitutions.ts";
 import type { C2D, TypedArray } from "@fe-lib/alias.ts";
+import { isObjectLike } from "@fe-lib/jslang.ts";
 import { PromiseCap } from "@fe-lib/util/PromiseCap.ts";
 import { assert, fail } from "@fe-lib/util/trace.ts";
 import {
@@ -745,7 +745,7 @@ export function getDocument(src_x: GetDocumentP_): PDFDocumentLoadingTask {
             transportFactory,
           );
           task._transport = transport;
-          messageHandler.send("Ready", null);
+          messageHandler.send("Ready", undefined);
         },
       );
     })
@@ -1113,7 +1113,7 @@ export class PDFDocumentProxy {
    * NOTE: This is (mostly) intended to support printing of XFA forms.
    *
    * An object representing a HTML tree structure
-   * to render the XFA, or `null` when no XFA form exists.
+   * to render the XFA, or `undefined` when no XFA form exists.
    */
   get allXfaHtml() {
     return this._transport._htmlForXfa;
@@ -1149,7 +1149,7 @@ export class PDFDocumentProxy {
   /**
    * @param id The named destination to get.
    * @return A promise that is resolved with all
-   *   information of the given named destination, or `null` when the named
+   *   information of the given named destination, or `undefined` when the named
    *   destination is not present in the PDF file.
    */
   getDestination(id: string) {
@@ -1159,7 +1159,7 @@ export class PDFDocumentProxy {
   /**
    * @return A promise that is resolved with
    *   an {Array} containing the page labels that correspond to the page
-   *   indexes, or `null` when no page labels are present in the PDF file.
+   *   indexes, or `undefined` when no page labels are present in the PDF file.
    */
   getPageLabels() {
     return this._transport.getPageLabels();
@@ -1183,7 +1183,7 @@ export class PDFDocumentProxy {
 
   /**
    * @return A promise that is resolved with an
-   *   {Object} containing the viewer preferences, or `null` when no viewer
+   *   {Object} containing the viewer preferences, or `undefined` when no viewer
    *   preferences are present in the PDF file.
    */
   getViewerPreferences() {
@@ -1192,7 +1192,7 @@ export class PDFDocumentProxy {
 
   /**
    * @return A promise that is resolved with an {Array}
-   *   containing the destination, or `null` when no open action is present
+   *   containing the destination, or `undefined` when no open action is present
    *   in the PDF.
    */
   getOpenAction() {
@@ -1212,7 +1212,7 @@ export class PDFDocumentProxy {
    *   an {Object} with the JavaScript actions:
    *     - from the name tree.
    *     - from A or AA entries in the catalog dictionary.
-   *   , or `null` if no JavaScript exists.
+   *   , or `undefined` if no JavaScript exists.
    */
   getJSActions(): Promise<AnnotActions | undefined> {
     return this._transport.getDocJSActions();
@@ -1238,7 +1238,7 @@ export class PDFDocumentProxy {
   /**
    * @return A promise that is resolved with
    *   an {Array} that contains the permission flags for the PDF document, or
-   *   `null` when no permissions are present in the PDF file.
+   *   `undefined` when no permissions are present in the PDF file.
    */
   getPermissions() {
     return this._transport.getPermissions();
@@ -1258,7 +1258,8 @@ export class PDFDocumentProxy {
   /**
    * @return A promise that is resolved with
    *   a {MarkInfo} object that contains the MarkInfo flags for the PDF
-   *   document, or `null` when no MarkInfo values are present in the PDF file.
+   *   document, or `undefined` when no MarkInfo values are present in the PDF
+   *   file.
    */
   getMarkInfo() {
     return this._transport.getMarkInfo();
@@ -1330,7 +1331,7 @@ export class PDFDocumentProxy {
   /**
    * @return A promise that is
    *   resolved with an {Object} containing /AcroForm field data for the JS
-   *   sandbox, or `null` when no field data is present in the PDF file.
+   *   sandbox, or `undefined` when no field data is present in the PDF file.
    */
   getFieldObjects() {
     return this._transport.getFieldObjects();
@@ -1347,7 +1348,8 @@ export class PDFDocumentProxy {
   /**
    * @return A promise that is resolved with an
    *   {Array<string>} containing IDs of annotations that have a calculation
-   *   action, or `null` when no such annotations are present in the PDF file.
+   *   action, or `undefined` when no such annotations are present in the PDF
+   *   file.
    */
   getCalculationOrderIds() {
     return this._transport.getCalculationOrderIds();
@@ -1608,7 +1610,7 @@ export interface RenderP {
 
   /**
    * A promise that should resolve with an {@link OptionalContentConfig}
-   * created from `PDFDocumentProxy.getOptionalContentConfig`. If `null`,
+   * created from `PDFDocumentProxy.getOptionalContentConfig`. If `undefined`,
    * the configuration will be fetched automatically with the default visibility
    * states set.
    */
@@ -1868,7 +1870,8 @@ export class PDFPageProxy {
    * A promise that is resolved with
    * an {Object} with a fake DOM object (a tree structure where elements
    * are {Object} with a name, attributes (class, style, ...), value and
-   * children, very similar to a HTML DOM tree), or `null` if no XFA exists.
+   * children, very similar to a HTML DOM tree), or `undefined` if no XFA
+   * exists.
    */
   async getXfa() {
     return this._transport._htmlForXfa?.children![this._pageIndex] || undefined;
@@ -1912,7 +1915,7 @@ export class PDFPageProxy {
 
     let intentState = this._intentStates.get(intentArgs.cacheKey);
     if (!intentState) {
-      intentState = <IntentState> Object.create(null);
+      intentState = Object.create(null) as IntentState;
       this._intentStates.set(intentArgs.cacheKey, intentState);
     }
 
@@ -2140,7 +2143,7 @@ export class PDFPageProxy {
   /**
    * @return A promise that is resolved with a
    *   {@link StructTreeNode} object that represents the page's structure tree,
-   *   or `null` when no structure tree is present for the current page.
+   *   or `undefined` when no structure tree is present for the current page.
    */
   getStructTree(): Promise<StructTreeNode | undefined> {
     return this._transport.getStructTree(this._pageIndex);
@@ -2503,7 +2506,9 @@ export const PDFWorkerUtil = {
     // We want this function to fail in case if createObjectURL or Blob do not
     // exist or fail for some reason -- our Worker creation will fail anyway.
     const wrapper = `await import("${url}");`;
-    return URL.createObjectURL(new Blob([wrapper]));
+    return URL.createObjectURL(
+      new Blob([wrapper], { type: "text/javascript" }),
+    );
   };
 }
 
@@ -2916,12 +2921,18 @@ class WorkerTransport {
       // For testing purposes.
       Object.defineProperty(this, "getXFADatasets", {
         value: () => {
-          return this.messageHandler.sendWithPromise("GetXFADatasets", null);
+          return this.messageHandler.sendWithPromise(
+            "GetXFADatasets",
+            undefined,
+          );
         },
       });
       Object.defineProperty(this, "getXRefPrevValue", {
         value: () => {
-          return this.messageHandler.sendWithPromise("GetXRefPrevValue", null);
+          return this.messageHandler.sendWithPromise(
+            "GetXRefPrevValue",
+            undefined,
+          );
         },
       });
       Object.defineProperty(this, "getAnnotArray", {
@@ -2936,7 +2947,7 @@ class WorkerTransport {
 
   #cacheSimpleMethod(
     name: "GetFieldObjects" | "HasJSActions" | "GetDocJSActions",
-    data = null,
+    data = undefined,
   ) {
     const cachedPromise = this.#methodPromises.get(name);
     if (cachedPromise) {
@@ -3033,7 +3044,10 @@ class WorkerTransport {
       this.annotationStorage.resetModified();
     }
     // We also need to wait for the worker to finish its long running tasks.
-    const terminated = this.messageHandler.sendWithPromise("Terminate", null);
+    const terminated = this.messageHandler.sendWithPromise(
+      "Terminate",
+      undefined,
+    );
     waitOn.push(terminated);
 
     Promise.all(waitOn).then(() => {
@@ -3048,7 +3062,7 @@ class WorkerTransport {
 
       if (this.messageHandler) {
         this.messageHandler.destroy();
-        this.messageHandler = <any> null;
+        this.messageHandler = undefined as any;
       }
       this.destroyCapability!.resolve();
     }, this.destroyCapability.reject);
@@ -3199,26 +3213,36 @@ class WorkerTransport {
 
     messageHandler.on("DocException", (ex_y) => {
       // console.dir(ex_y);
-      const ex_ = /* final switch */ {
-        PasswordException: new PasswordException(
-          ex_y.message,
-          (ex_y as PasswordExceptionJ).code,
-        ),
-        InvalidPDFException: new InvalidPDFException(ex_y.message),
-        MissingPDFException: new MissingPDFException(ex_y.message),
-        UnexpectedResponseException: new UnexpectedResponseException(
-          ex_y.message,
-          (ex_y as UnexpectedResponseExceptionJ).status,
-        ),
-        UnknownErrorException: new UnknownErrorException(
-          ex_y.message,
-          (ex_y as UnknownErrorExceptionJ).details,
-        ),
-      }[ex_y.name];
-      if (!ex_) {
-        fail("DocException - expected a valid Error.");
+      let reason;
+      switch (ex_y.name) {
+        case "PasswordException":
+          reason = new PasswordException(
+            ex_y.message,
+            (ex_y as PasswordExceptionJ).code,
+          );
+          break;
+        case "InvalidPDFException":
+          reason = new InvalidPDFException(ex_y.message);
+          break;
+        case "MissingPDFException":
+          reason = new MissingPDFException(ex_y.message);
+          break;
+        case "UnexpectedResponseException":
+          reason = new UnexpectedResponseException(
+            ex_y.message,
+            (ex_y as UnexpectedResponseExceptionJ).status,
+          );
+          break;
+        case "UnknownErrorException":
+          reason = new UnknownErrorException(
+            ex_y.message,
+            (ex_y as UnknownErrorExceptionJ).details,
+          );
+          break;
+        default:
+          fail("DocException - expected a valid Error.");
       }
-      loadingTask._capability.reject(ex_.toJ());
+      loadingTask._capability.reject(reason.toJ());
     });
 
     messageHandler.on("PasswordRequest", (exception) => {
@@ -3409,7 +3433,7 @@ class WorkerTransport {
   }
 
   getData() {
-    return this.messageHandler.sendWithPromise("GetData", null);
+    return this.messageHandler.sendWithPromise("GetData", undefined);
   }
 
   saveDocument() {
@@ -3473,8 +3497,7 @@ class WorkerTransport {
 
   getPageIndex(ref: RefProxy) {
     if (
-      typeof ref !== "object" ||
-      ref === null ||
+      !isObjectLike(ref) ||
       !Number.isInteger(ref.num) ||
       ref.num < 0 ||
       !Number.isInteger(ref.gen) ||
@@ -3504,11 +3527,14 @@ class WorkerTransport {
   }
 
   getCalculationOrderIds() {
-    return this.messageHandler.sendWithPromise("GetCalculationOrderIds", null);
+    return this.messageHandler.sendWithPromise(
+      "GetCalculationOrderIds",
+      undefined,
+    );
   }
 
   getDestinations() {
-    return this.messageHandler.sendWithPromise("GetDestinations", null);
+    return this.messageHandler.sendWithPromise("GetDestinations", undefined);
   }
 
   getDestination(id: string) {
@@ -3516,27 +3542,30 @@ class WorkerTransport {
   }
 
   getPageLabels() {
-    return this.messageHandler.sendWithPromise("GetPageLabels", null);
+    return this.messageHandler.sendWithPromise("GetPageLabels", undefined);
   }
 
   getPageLayout() {
-    return this.messageHandler.sendWithPromise("GetPageLayout", null);
+    return this.messageHandler.sendWithPromise("GetPageLayout", undefined);
   }
 
   getPageMode() {
-    return this.messageHandler.sendWithPromise("GetPageMode", null);
+    return this.messageHandler.sendWithPromise("GetPageMode", undefined);
   }
 
   getViewerPreferences() {
-    return this.messageHandler.sendWithPromise("GetViewerPreferences", null);
+    return this.messageHandler.sendWithPromise(
+      "GetViewerPreferences",
+      undefined,
+    );
   }
 
   getOpenAction() {
-    return this.messageHandler.sendWithPromise("GetOpenAction", null);
+    return this.messageHandler.sendWithPromise("GetOpenAction", undefined);
   }
 
   getAttachments() {
-    return this.messageHandler.sendWithPromise("GetAttachments", null);
+    return this.messageHandler.sendWithPromise("GetAttachments", undefined);
   }
 
   getDocJSActions() {
@@ -3558,19 +3587,17 @@ class WorkerTransport {
   }
 
   getOutline() {
-    return this.messageHandler.sendWithPromise("GetOutline", null);
+    return this.messageHandler.sendWithPromise("GetOutline", undefined);
   }
 
   getOptionalContentConfig() {
     return this.messageHandler
-      .sendWithPromise("GetOptionalContentConfig", null)
-      .then((results) => {
-        return new OptionalContentConfig(results);
-      });
+      .sendWithPromise("GetOptionalContentConfig", undefined)
+      .then((results) => new OptionalContentConfig(results));
   }
 
   getPermissions() {
-    return this.messageHandler.sendWithPromise("GetPermissions", null);
+    return this.messageHandler.sendWithPromise("GetPermissions", undefined);
   }
 
   getMetadata(): Promise<MetadataEx> {
@@ -3580,7 +3607,7 @@ class WorkerTransport {
       return cachedPromise as Promise<MetadataEx>;
     }
     const promise = this.messageHandler
-      .sendWithPromise(name, null)
+      .sendWithPromise(name, undefined)
       .then((results) => {
         return {
           info: results[0],
@@ -3594,14 +3621,14 @@ class WorkerTransport {
   }
 
   getMarkInfo() {
-    return this.messageHandler.sendWithPromise("GetMarkInfo", null);
+    return this.messageHandler.sendWithPromise("GetMarkInfo", undefined);
   }
 
   async startCleanup(keepLoadedFonts = false) {
     if (this.destroyed) {
       return; // No need to manually clean-up when destruction has started.
     }
-    await this.messageHandler.sendWithPromise("Cleanup", null);
+    await this.messageHandler.sendWithPromise("Cleanup", undefined);
 
     for (const page of this.#pageCache.values()) {
       const cleanupSuccessful = page.cleanup();

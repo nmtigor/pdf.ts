@@ -1,17 +1,31 @@
-import type { WretchOptions, ConfiguredMiddleware } from "../types.js";
-export type ThrottlingCacheSkipFunction = (url: string, opts: WretchOptions) => boolean;
-export type ThrottlingCacheKeyFunction = (url: string, opts: WretchOptions) => string;
-export type ThrottlingCacheClearFunction = (url: string, opts: WretchOptions) => boolean;
-export type ThrottlingCacheInvalidateFunction = (url: string, opts: WretchOptions) => string | RegExp | void;
-export type ThrottlingCacheConditionFunction = (response: WretchOptions) => boolean;
+import type { ConfiguredMiddleware, WretchOptions } from "../types.js";
+export type ThrottlingCacheSkipFunction = (
+  url: string,
+  opts: WretchOptions,
+) => boolean;
+export type ThrottlingCacheKeyFunction = (
+  url: string,
+  opts: WretchOptions,
+) => string;
+export type ThrottlingCacheClearFunction = (
+  url: string,
+  opts: WretchOptions,
+) => boolean;
+export type ThrottlingCacheInvalidateFunction = (
+  url: string,
+  opts: WretchOptions,
+) => string | RegExp | void;
+export type ThrottlingCacheConditionFunction = (
+  response: WretchOptions,
+) => boolean;
 export type ThrottlingCacheOptions = {
-    throttle?: number;
-    skip?: ThrottlingCacheSkipFunction;
-    key?: ThrottlingCacheKeyFunction;
-    clear?: ThrottlingCacheClearFunction;
-    invalidate?: ThrottlingCacheInvalidateFunction;
-    condition?: ThrottlingCacheConditionFunction;
-    flagResponseOnCacheHit?: string;
+  throttle?: number;
+  skip?: ThrottlingCacheSkipFunction;
+  key?: ThrottlingCacheKeyFunction;
+  clear?: ThrottlingCacheClearFunction;
+  invalidate?: ThrottlingCacheInvalidateFunction;
+  condition?: ThrottlingCacheConditionFunction;
+  flagResponseOnCacheHit?: string;
 };
 /**
  * ## Throttling cache middleware
@@ -47,12 +61,13 @@ export type ThrottlingCacheOptions = {
  * - *flagResponseOnCacheHit* `string`
  *
  * > If set, a Response returned from the cache whill be flagged with a property name equal to this option.
- *
  */
-export type ThrottlingCacheMiddleware = (options?: ThrottlingCacheOptions) => ConfiguredMiddleware & {
-    cacheResponse(key: any, response: any): void;
-    cache: Map<any, any>;
-    inflight: Map<any, any>;
-    throttling: Set<unknown>;
+export type ThrottlingCacheMiddleware = (
+  options?: ThrottlingCacheOptions,
+) => ConfiguredMiddleware & {
+  cacheResponse(key: any, response: any): void;
+  cache: Map<any, any>;
+  inflight: Map<any, any>;
+  throttling: Set<unknown>;
 };
 export declare const throttlingCache: ThrottlingCacheMiddleware;

@@ -18,6 +18,7 @@
 import { FluentBundle, FluentResource, } from "../../3rd/fluent/bundle/esm/index.js";
 import { DOMLocalization } from "../../3rd/fluent/dom/esm/index.js";
 import { Locale } from "../../lib/Locale.js";
+import { fetchData } from "../pdf.ts-src/pdf.js";
 import { L10n } from "./l10n.js";
 /*80--------------------------------------------------------------------------*/
 // const PARTIAL_LANG_CODES = <Record<string, Locale_1>> {
@@ -53,9 +54,19 @@ export class GenericL10n extends L10n {
      */
     static async *#generateBundles(defaultLang, baseLang) {
         const { baseURL, paths } = await this.#getPaths();
-        const langs = baseLang === defaultLang
-            ? [baseLang]
-            : [baseLang, defaultLang];
+        // const langs = baseLang === defaultLang
+        //   ? [baseLang]
+        //   : [baseLang, defaultLang];
+        const langs = [baseLang];
+        if (defaultLang !== baseLang) {
+            // Also fallback to the short-format of the base language
+            // (see issue 17269).
+            const shortLang = baseLang.split("-", 1)[0];
+            if (shortLang !== baseLang) {
+                langs.push(shortLang);
+            }
+            langs.push(defaultLang);
+        }
         for (const lang of langs) {
             const bundle = await this.#createBundle(lang, baseURL, paths);
             if (bundle) {
@@ -69,8 +80,7 @@ export class GenericL10n extends L10n {
             return undefined;
         }
         const url = new URL(path, baseURL);
-        const data = await fetch(url);
-        const text = await data.text();
+        const text = await fetchData(url, /* type = */ "text");
         const resource = new FluentResource(text);
         const bundle = new FluentBundle(lang);
         const errors = bundle.addResource(resource);
@@ -81,8 +91,7 @@ export class GenericL10n extends L10n {
     }
     static async #getPaths() {
         const { href } = document.querySelector(`link[type="application/l10n"]`);
-        const data = await fetch(href);
-        const paths = await data.json();
+        const paths = await fetchData(href, /* type = */ "json");
         return { baseURL: href.replace(/[^/]*$/, "") || "./", paths };
     }
 }

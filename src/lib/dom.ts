@@ -30,7 +30,7 @@ declare global {
     canceled: boolean;
 
     /**
-     * When `Poprect` is shown, `pocudVu` is not `null`. At this time, right-
+     * When `Poprect` is shown, `pocudVu` is not `null`. At this moment, right-
      * click another place, the `Poprect` would probably be updated, rather than
      * reset. `targetPocudVu` is to prevent this from happening, because newly
      * created `PointerEvent` does not have `targetPocudVu`.

@@ -1,11 +1,14 @@
-import type { WretchResponseChain, WretchAddon } from "../types.js";
+import type { WretchAddon, WretchResponseChain } from "../types.js";
 export interface PerfsAddon {
-    /**
-     * Performs a callback on the API performance timings of the request.
-     *
-     * Warning: Still experimental on browsers and node.js
-     */
-    perfs: <T, C extends PerfsAddon, R>(this: C & WretchResponseChain<T, C, R>, cb?: (timing: any) => void) => this;
+  /**
+   * Performs a callback on the API performance timings of the request.
+   *
+   * Warning: Still experimental on browsers and node.js
+   */
+  perfs: <T, C extends PerfsAddon, R>(
+    this: C & WretchResponseChain<T, C, R>,
+    cb?: (timing: any) => void,
+  ) => this;
 }
 /**
  * Adds the ability to measure requests using the Performance Timings API.

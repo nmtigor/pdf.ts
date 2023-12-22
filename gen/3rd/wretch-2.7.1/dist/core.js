@@ -1,5 +1,5 @@
-import { mix, extractContentType, isLikelyJsonMime } from "./utils.js";
-import { JSON_MIME, CONTENT_TYPE_HEADER, CATCHER_FALLBACK } from "./constants.js";
+import { extractContentType, isLikelyJsonMime, mix } from "./utils.js";
+import { CATCHER_FALLBACK, CONTENT_TYPE_HEADER, JSON_MIME, } from "./constants.js";
 import { resolver } from "./resolver.js";
 import config from "./config.js";
 export const core = {
@@ -19,8 +19,8 @@ export const core = {
             ...this,
             _config: {
                 ...this._config,
-                errorType
-            }
+                errorType,
+            },
         };
     },
     polyfills(polyfills, replace = false) {
@@ -28,29 +28,36 @@ export const core = {
             ...this,
             _config: {
                 ...this._config,
-                polyfills: replace ? polyfills : mix(this._config.polyfills, polyfills)
-            }
+                polyfills: replace ? polyfills : mix(this._config.polyfills, polyfills),
+            },
         };
     },
     url(_url, replace = false) {
-        if (replace)
+        if (replace) {
             return { ...this, _url };
+        }
         const split = this._url.split("?");
         return {
             ...this,
-            _url: split.length > 1 ?
-                split[0] + _url + "?" + split[1] :
-                this._url + _url
+            _url: split.length > 1
+                ? split[0] + _url + "?" + split[1]
+                : this._url + _url,
         };
     },
     options(options, replace = false) {
-        return { ...this, _options: replace ? options : mix(this._options, options) };
+        return {
+            ...this,
+            _options: replace ? options : mix(this._options, options),
+        };
     },
     headers(headerValues) {
-        const headers = !headerValues ? {} :
-            Array.isArray(headerValues) ? Object.fromEntries(headerValues) :
-                "entries" in headerValues ? Object.fromEntries(headerValues.entries()) :
-                    headerValues;
+        const headers = !headerValues
+            ? {}
+            : Array.isArray(headerValues)
+                ? Object.fromEntries(headerValues)
+                : "entries" in headerValues
+                    ? Object.fromEntries(headerValues.entries())
+                    : headerValues;
         return { ...this, _options: mix(this._options, { headers }) };
     },
     accept(headerValue) {
@@ -71,29 +78,36 @@ export const core = {
         return this.catcher(CATCHER_FALLBACK, catcher);
     },
     resolve(resolver, clear = false) {
-        return { ...this, _resolvers: clear ? [resolver] : [...this._resolvers, resolver] };
+        return {
+            ...this,
+            _resolvers: clear ? [resolver] : [...this._resolvers, resolver],
+        };
     },
     defer(callback, clear = false) {
         return {
             ...this,
-            _deferred: clear ? [callback] : [...this._deferred, callback]
+            _deferred: clear ? [callback] : [...this._deferred, callback],
         };
     },
     middlewares(middlewares, clear = false) {
         return {
             ...this,
-            _middlewares: clear ? middlewares : [...this._middlewares, ...middlewares]
+            _middlewares: clear
+                ? middlewares
+                : [...this._middlewares, ...middlewares],
         };
     },
     fetch(method = this._options.method, url = "", body = null) {
         let base = this.url(url).options({ method });
         // "Jsonify" the body if it is an object and if it is likely that the content type targets json.
         const contentType = extractContentType(base._options.headers);
-        const jsonify = typeof body === "object" && (!base._options.headers || !contentType || isLikelyJsonMime(contentType));
-        base =
-            !body ? base :
-                jsonify ? base.json(body, contentType) :
-                    base.body(body);
+        const jsonify = typeof body === "object" &&
+            (!base._options.headers || !contentType || isLikelyJsonMime(contentType));
+        base = !body
+            ? base
+            : jsonify
+                ? base.json(body, contentType)
+                : base.body(body);
         return resolver(base
             ._deferred
             .reduce((acc, curr) => curr(acc, acc._url, acc._options), base));
@@ -127,7 +141,7 @@ export const core = {
         return this.content(contentType ||
             isLikelyJsonMime(currentContentType) && currentContentType ||
             JSON_MIME).body(JSON.stringify(jsObject));
-    }
+    },
 };
 //# sourceMappingURL=core.js.map
 //# sourceMappingURL=core.js.map

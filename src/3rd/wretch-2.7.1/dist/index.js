@@ -1,4 +1,4 @@
-import { setOptions, setErrorType, setPolyfills } from "./config.js";
+import { setErrorType, setOptions, setPolyfills } from "./config.js";
 import { core } from "./core.js";
 import { WretchError } from "./resolver.js";
 /**
@@ -17,7 +17,7 @@ import { WretchError } from "./resolver.js";
  * @returns A fresh wretch instance
  */
 function factory(_url = "", _options = {}) {
-    return { ...core, _url, _options };
+  return { ...core, _url, _options };
 }
 factory["default"] = factory;
 /** {@inheritDoc setOptions} */

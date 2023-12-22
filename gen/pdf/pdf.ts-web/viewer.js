@@ -96,10 +96,6 @@ function getViewerConfiguration() {
              * Button to open find bar.
              */
             viewFind: buttonBy("viewFind"),
-            /**
-             * Button to open a new document.
-             */
-            openFile: /*#static*/ buttonBy("openFile"),
             print: buttonBy("print"),
             /**
              * Button to switch to FreeText editing.

@@ -3,25 +3,27 @@ const defaultSkip = (url, opts) => (opts.skipCache || opts.method !== "GET");
 const defaultKey = (url, opts) => opts.method + "@" + url;
 const defaultClear = (url, opts) => false;
 const defaultInvalidate = (url, opts) => null;
-const defaultCondition = response => response.ok;
-export const throttlingCache = ({ throttle = 1000, skip = defaultSkip, key = defaultKey, clear = defaultClear, invalidate = defaultInvalidate, condition = defaultCondition, flagResponseOnCacheHit = "__cached" } = {}) => {
+const defaultCondition = (response) => response.ok;
+export const throttlingCache = ({ throttle = 1000, skip = defaultSkip, key = defaultKey, clear = defaultClear, invalidate = defaultInvalidate, condition = defaultCondition, flagResponseOnCacheHit = "__cached", } = {}) => {
     const cache = new Map();
     const inflight = new Map();
     const throttling = new Set();
-    const throttleRequest = _key => {
+    const throttleRequest = (_key) => {
         if (throttle && !throttling.has(_key)) {
             throttling.add(_key);
-            setTimeout(() => { throttling.delete(_key); }, throttle);
+            setTimeout(() => {
+                throttling.delete(_key);
+            }, throttle);
         }
     };
-    const middleware = next => (url, opts) => {
+    const middleware = (next) => (url, opts) => {
         const _key = key(url, opts);
         let invalidatePatterns = invalidate(url, opts);
         if (invalidatePatterns) {
             if (!(invalidatePatterns instanceof Array)) {
                 invalidatePatterns = [invalidatePatterns];
             }
-            invalidatePatterns.forEach(pattern => {
+            invalidatePatterns.forEach((pattern) => {
                 if (typeof pattern === "string") {
                     cache.delete(pattern);
                 }
@@ -48,7 +50,7 @@ export const throttlingCache = ({ throttle = 1000, skip = defaultSkip, key = def
                     // Flag the Response as cached
                     Object.defineProperty(cachedClone, flagResponseOnCacheHit, {
                         value: _key,
-                        enumerable: false
+                        enumerable: false,
                     });
                 }
                 return Promise.resolve(cachedClone);
@@ -61,13 +63,14 @@ export const throttlingCache = ({ throttle = 1000, skip = defaultSkip, key = def
             }
         }
         // Init. the pending promises Map
-        if (!inflight.has(_key))
+        if (!inflight.has(_key)) {
             inflight.set(_key, []);
+        }
         // If we are not throttling, activate the throttle for X milliseconds
         throttleRequest(_key);
         // We call the next middleware in the chain.
         return next(url, opts)
-            .then(response => {
+            .then((response) => {
             // Add a cloned response to the cache
             if (condition(response.clone())) {
                 cache.set(_key, response.clone());
@@ -79,7 +82,7 @@ export const throttlingCache = ({ throttle = 1000, skip = defaultSkip, key = def
             // Return the original response
             return response;
         })
-            .catch(error => {
+            .catch((error) => {
             // Reject pending promises on error
             inflight.get(_key).forEach(([resolve, reject]) => reject(error));
             inflight.delete(_key);

@@ -1,5 +1,5 @@
 export { default as abortAddon } from "./abort.js";
-export type { AbortWretch, AbortResolver } from "./abort.js";
+export type { AbortResolver, AbortWretch } from "./abort.js";
 export { default as formDataAddon } from "./formData.js";
 export type { FormDataAddon } from "./formData.js";
 export { default as formUrlAddon } from "./formUrl.js";

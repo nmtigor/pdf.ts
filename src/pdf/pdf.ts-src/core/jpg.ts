@@ -926,7 +926,7 @@ namespace NsJpegImage {
       let offset = 0;
       let jfif: Jfif | undefined = undefined;
       let adobe: Adobe | undefined = undefined;
-      let frame: Frame, resetInterval: number | undefined;
+      let frame: Frame | undefined, resetInterval: number | undefined;
       let numSOSMarkers = 0;
       const quantizationTables = [];
       const huffmanTablesAC: Tree[] = [],
@@ -1037,12 +1037,12 @@ namespace NsJpegImage {
           case 0xffc0: // SOF0 (Start of Frame, Baseline DCT)
           case 0xffc1: // SOF1 (Start of Frame, Extended DCT)
           case 0xffc2: // SOF2 (Start of Frame, Progressive DCT)
-            if (frame!) {
+            if (frame) {
               throw new JpegError("Only single frame JPEGs supported");
             }
             offset += 2; // Skip marker length.
 
-            frame = <Frame> {};
+            frame = {} as Frame;
             frame.extended = fileMarker === 0xffc1;
             frame.progressive = fileMarker === 0xffc2;
             frame.precision = data[offset++];
@@ -1204,12 +1204,15 @@ namespace NsJpegImage {
         offset += 2;
       }
 
-      this.width = frame!.samplesPerLine;
-      this.height = frame!.scanLines;
+      if (!frame) {
+        throw new JpegError("JpegImage.parse - no frame data found.");
+      }
+      this.width = frame.samplesPerLine;
+      this.height = frame.scanLines;
       this.jfif = jfif;
       this.adobe = adobe;
       this.components = [];
-      for (const component of frame!.components) {
+      for (const component of frame.components) {
         // Prevent errors when DQT markers are placed after SOF{n} markers,
         // by assigning the `quantizationTable` entry after the entire image
         // has been parsed (fixes issue7406.pdf).
@@ -1220,9 +1223,9 @@ namespace NsJpegImage {
 
         this.components.push({
           index: component.index!,
-          output: buildComponentData(frame!, component),
-          scaleX: component.h / frame!.maxH,
-          scaleY: component.v / frame!.maxV,
+          output: buildComponentData(frame, component),
+          scaleX: component.h / frame.maxH,
+          scaleY: component.v / frame.maxV,
           blocksPerLine: component.blocksPerLine!,
           blocksPerColumn: component.blocksPerColumn!,
         });

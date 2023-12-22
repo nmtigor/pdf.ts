@@ -15,7 +15,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Locale } from "../../lib/Locale.js";
 import { assert } from "../../lib/util/trace.js";
 import { GENERIC, INOUT } from "../../global.js";
 import { DefaultExternalServices, viewerApp } from "./app.js";
@@ -52,7 +51,7 @@ class GenericExternalServices extends DefaultExternalServices {
         return new GenericPreferences();
     }
     async createL10n() {
-        return new GenericL10n(AppOptions.locale || Locale.en_US);
+        return new GenericL10n(AppOptions.locale);
     }
     createScripting({ sandboxBundleSrc = "" }) {
         return new GenericScripting(sandboxBundleSrc);

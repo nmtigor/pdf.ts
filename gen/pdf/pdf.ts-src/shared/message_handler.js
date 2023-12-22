@@ -43,14 +43,26 @@ function wrapReason(reason) {
     if (!(reason instanceof Error || isObjectLike(reason))) {
         fail('wrapReason: Expected "reason" to be a (possibly cloned) Error.');
     }
-    const ex_ = /* final switch */ {
-        AbortException: new AbortException(reason.message),
-        MissingPDFException: new MissingPDFException(reason.message),
-        PasswordException: new PasswordException(reason.message, reason.code),
-        UnexpectedResponseException: new UnexpectedResponseException(reason.message, reason.status),
-        UnknownErrorException: new UnknownErrorException(reason.message, reason.details),
-    }[reason.name] ??
-        new UnknownErrorException(reason.message, reason.toString());
+    let ex_;
+    switch (reason.name) {
+        case "AbortException":
+            ex_ = new AbortException(reason.message);
+            break;
+        case "MissingPDFException":
+            ex_ = new MissingPDFException(reason.message);
+            break;
+        case "PasswordException":
+            ex_ = new PasswordException(reason.message, reason.code);
+            break;
+        case "UnexpectedResponseException":
+            ex_ = new UnexpectedResponseException(reason.message, reason.status);
+            break;
+        case "UnknownErrorException":
+            ex_ = new UnknownErrorException(reason.message, reason.details);
+            break;
+        default:
+            ex_ = new UnknownErrorException(reason.message, reason.toString());
+    }
     return ex_.toJ();
 }
 /*25-------------------*/

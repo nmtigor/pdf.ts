@@ -96,6 +96,10 @@ const defaultOptions = {
         value: AnnotationMode.ENABLE_FORMS,
         kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
     },
+    viewerCssTheme: {
+        value: undefined,
+        kind: 0,
+    },
     cursorToolOnLoad: {
         value: CursorTool.SELECT,
         kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
@@ -292,6 +296,13 @@ const defaultOptions = {
     },
 };
 /*#static*/  {
+    defaultOptions.viewerCssTheme = {
+        /** @type {number} */
+        value: /*#static*/ 0,
+        kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
+    };
+}
+/*#static*/  {
     defaultOptions.defaultUrl = {
         // value: `${D_base}/res/pdf/test/pdfs/pattern_text_embedded_font.pdf`,
         // value: `${D_base}/res/pdf/test/pdfs/basicapi.pdf`,
@@ -361,6 +372,9 @@ export class AppOptions {
         return this.#get("annotationEditorMode");
     }
     static get annotationMode() {
+        return this.#get("annotationMode");
+    }
+    static get viewerCssTheme() {
         return this.#get("annotationMode");
     }
     static get cursorToolOnLoad() {

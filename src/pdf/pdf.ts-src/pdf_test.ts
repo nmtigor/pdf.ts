@@ -30,6 +30,7 @@ import {
 } from "./display/api.ts";
 import {
   DOMSVGFactory,
+  fetchData,
   getFilenameFromUrl,
   getPdfFilenameFromUrl,
   getXfaPageViewport,
@@ -40,7 +41,9 @@ import {
   RenderingCancelledException,
   setLayerDimensions,
 } from "./display/display_utils.ts";
+import { DrawLayer } from "./display/draw_layer.ts";
 import { AnnotationEditorLayer } from "./display/editor/annotation_editor_layer.ts";
+import { Outliner } from "./display/editor/outliner.ts";
 import { AnnotationEditorUIManager } from "./display/editor/tools.ts";
 import { renderTextLayer, updateTextLayer } from "./display/text_layer.ts";
 import { GlobalWorkerOptions } from "./display/worker_options.ts";
@@ -79,7 +82,9 @@ const expectedAPI = Object.freeze({
   CMapCompressionType,
   createValidAbsoluteUrl,
   DOMSVGFactory,
+  DrawLayer,
   FeatureTest,
+  fetchData,
   getDocument,
   getFilenameFromUrl,
   getPdfFilenameFromUrl,
@@ -93,6 +98,7 @@ const expectedAPI = Object.freeze({
   // noContextMenu,
   normalizeUnicode,
   OPS,
+  Outliner,
   PasswordResponses,
   PDFDataRangeTransport,
   PDFDateString,

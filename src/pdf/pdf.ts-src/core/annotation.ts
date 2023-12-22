@@ -188,7 +188,7 @@ export class AnnotationFactory {
     xref: XRef,
     ref: Ref,
     annotationGlobals: AnnotationGlobals,
-    idFactory: LocalIdFactory,
+    idFactory: LocalIdFactory | undefined,
     collectFields?: boolean,
     pageRef?: Ref | undefined,
   ) {
@@ -409,7 +409,7 @@ export class AnnotationFactory {
     evaluator: PartialEvaluator,
     task: WorkerTask,
     annotations: AnnotStorageValue[],
-    imagePromises: Map<string, Promise<AnnotImage>> | undefined,
+    imagePromises?: Map<string, Promise<AnnotImage>> | undefined,
   ) {
     const xref = evaluator.xref;
     let baseFontRef;
@@ -440,6 +440,15 @@ export class AnnotationFactory {
               annotation,
               dependencies,
               { evaluator, task, baseFontRef },
+            ),
+          );
+          break;
+        case AnnotationEditorType.HIGHLIGHT:
+          promises.push(
+            HighlightAnnotation.createNewAnnotation(
+              xref,
+              annotation,
+              dependencies,
             ),
           );
           break;
@@ -491,7 +500,7 @@ export class AnnotationFactory {
     evaluator: PartialEvaluator,
     task: WorkerTask,
     annotations: AnnotStorageValue[],
-    imagePromises: Map<string, Promise<AnnotImage>> | undefined,
+    imagePromises?: Map<string, Promise<AnnotImage>> | undefined,
   ) {
     if (!annotations) {
       return undefined;
@@ -513,6 +522,18 @@ export class AnnotationFactory {
               {
                 evaluator,
                 task,
+                evaluatorOptions: options,
+              },
+            ),
+          );
+          break;
+        case AnnotationEditorType.HIGHLIGHT:
+          promises.push(
+            HighlightAnnotation.createNewPrintAnnotation(
+              annotationGlobals,
+              xref,
+              annotation,
+              {
                 evaluatorOptions: options,
               },
             ),
@@ -1908,8 +1929,7 @@ export class MarkupAnnotation extends Annotation {
     xref: XRef,
     _: CreateNewDictP_,
   ): Dict {
-    assert(0);
-    return 0 as any;
+    fail(0);
   }
 
   static async createNewAppearanceStream(
@@ -4997,6 +5017,104 @@ class HighlightAnnotation extends MarkupAnnotation {
     } else {
       this.data.popupRef = undefined;
     }
+  }
+
+  static override createNewDict(
+    annotation: AnnotStorageValue,
+    xref: XRef,
+    { apRef, ap }: CreateNewDictP_,
+  ) {
+    const { color, opacity, rect, rotation, user, quadPoints } = annotation;
+    const highlight = new Dict(xref);
+    highlight.set("Type", Name.get("Annot"));
+    highlight.set("Subtype", Name.get("Highlight"));
+    highlight.set("CreationDate", `D:${getModificationDate()}`);
+    highlight.set("Rect", rect);
+    highlight.set("F", 4);
+    highlight.set("Border", [0, 0, 0]);
+    highlight.set("Rotate", rotation);
+    highlight.set("QuadPoints", quadPoints);
+
+    // Color.
+    highlight.set(
+      "C",
+      Array.from(color!, (c) => c / 255),
+    );
+
+    // Opacity.
+    highlight.set("CA", opacity);
+
+    if (user) {
+      highlight.set(
+        "T",
+        isAscii(user)
+          ? user
+          : stringToUTF16String(user, /* bigEndian = */ true),
+      );
+    }
+
+    if (apRef || ap) {
+      const n = new Dict(xref);
+      highlight.set("AP", n);
+      n.set("N", apRef || ap);
+    }
+
+    return highlight;
+  }
+
+  static override async createNewAppearanceStream(
+    annotation: AnnotStorageValue,
+    xref: XRef,
+    params?: CreateNewAnnotationP_,
+  ) {
+    const { color, rect, outlines, opacity } = annotation;
+
+    const appearanceBuffer = [
+      `${getPdfColor(color!, /* isFill */ true)}`,
+      "/R0 gs",
+    ];
+
+    const buffer = [];
+    for (const outline of outlines!) {
+      buffer.length = 0;
+      buffer.push(
+        `${numberToString(outline[0])} ${numberToString(outline[1])} m`,
+      );
+      for (let i = 2, ii = outline.length; i < ii; i += 2) {
+        buffer.push(
+          `${numberToString(outline[i])} ${numberToString(outline[i + 1])} l`,
+        );
+      }
+      buffer.push("h");
+      appearanceBuffer.push(buffer.join("\n"));
+    }
+    appearanceBuffer.push("f*");
+    const appearance = appearanceBuffer.join("\n");
+
+    const appearanceStreamDict = new Dict(xref);
+    appearanceStreamDict.set("FormType", 1);
+    appearanceStreamDict.set("Subtype", Name.get("Form"));
+    appearanceStreamDict.set("Type", Name.get("XObject"));
+    appearanceStreamDict.set("BBox", rect);
+    appearanceStreamDict.set("Length", appearance.length);
+
+    const resources = new Dict(xref);
+    const extGState = new Dict(xref);
+    resources.set("ExtGState", extGState);
+    appearanceStreamDict.set("Resources", resources);
+    const r0 = new Dict(xref);
+    extGState.set("R0", r0);
+    r0.set("BM", Name.get("Multiply"));
+
+    if (opacity !== 1) {
+      r0.set("ca", opacity);
+      r0.set("Type", Name.get("ExtGState"));
+    }
+
+    const ap = new StringStream(appearance);
+    ap.dict = appearanceStreamDict;
+
+    return ap;
   }
 }
 

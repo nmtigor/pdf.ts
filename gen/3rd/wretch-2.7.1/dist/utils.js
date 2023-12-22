@@ -1,7 +1,9 @@
 import { CONTENT_TYPE_HEADER } from "./constants.js";
 export function extractContentType(headers = {}) {
     var _a;
-    return (_a = Object.entries(headers).find(([k]) => k.toLowerCase() === CONTENT_TYPE_HEADER.toLowerCase())) === null || _a === void 0 ? void 0 : _a[1];
+    return (_a = Object.entries(headers).find(([k]) => k.toLowerCase() === CONTENT_TYPE_HEADER.toLowerCase())) === null || _a === void 0
+        ? void 0
+        : _a[1];
 }
 export function isLikelyJsonMime(value) {
     return /^application\/.*json.*/.test(value);

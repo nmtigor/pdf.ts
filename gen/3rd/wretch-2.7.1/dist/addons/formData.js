@@ -2,16 +2,21 @@ function convertFormData(formObject, recursive = false, config, formData = confi
     Object.entries(formObject).forEach(([key, value]) => {
         let formKey = ancestors.reduce((acc, ancestor) => (acc ? `${acc}[${ancestor}]` : ancestor), null);
         formKey = formKey ? `${formKey}[${key}]` : key;
-        if (value instanceof Array || (globalThis.FileList && value instanceof FileList)) {
-            for (const item of value)
+        if (value instanceof Array ||
+            (globalThis.FileList && value instanceof FileList)) {
+            for (const item of value) {
                 formData.append(formKey, item);
+            }
         }
         else if (recursive &&
             typeof value === "object" &&
             (!(recursive instanceof Array) ||
                 !recursive.includes(key))) {
             if (value !== null) {
-                convertFormData(value, recursive, config, formData, [...ancestors, key]);
+                convertFormData(value, recursive, config, formData, [
+                    ...ancestors,
+                    key,
+                ]);
             }
         }
         else {
@@ -33,8 +38,8 @@ const formData = {
     wretch: {
         formData(formObject, recursive = false) {
             return this.body(convertFormData(formObject, recursive, this._config));
-        }
-    }
+        },
+    },
 };
 export default formData;
 //# sourceMappingURL=formData.js.map

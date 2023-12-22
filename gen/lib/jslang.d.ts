@@ -26,7 +26,7 @@ declare global {
 declare global {
     interface Array<T> {
         /**
-         * @deprecated Use `at(-1)`.
+         * @deprecated Use `.at(-1)`.
          */
         last: T | undefined;
         /**

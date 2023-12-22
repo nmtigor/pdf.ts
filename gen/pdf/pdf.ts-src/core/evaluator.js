@@ -354,7 +354,7 @@ export class PartialEvaluator {
                 warn(`fetchStandardFontData: failed to fetch file "${url}" with "${response.statusText}".`);
             }
             else {
-                data = await response.arrayBuffer();
+                data = new Uint8Array(await response.arrayBuffer());
             }
         }
         else {

@@ -189,7 +189,7 @@ export class PDFPageView {
             if (this._isStandalone &&
                 (this.pageColors?.foreground === "CanvasText" ||
                     this.pageColors?.background === "Canvas")) {
-                this._container?.style.setProperty("--hcm-highligh-filter", pdfPage.filterFactory.addHighlightHCMFilter("CanvasText", "Canvas", "HighlightText", "Highlight"));
+                this._container?.style.setProperty("--hcm-highlight-filter", pdfPage.filterFactory.addHighlightHCMFilter("CanvasText", "Canvas", "HighlightText", "Highlight"));
             }
         }
         this.pdfPage = pdfPage;

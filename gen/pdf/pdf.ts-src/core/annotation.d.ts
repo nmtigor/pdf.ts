@@ -53,17 +53,17 @@ export declare class AnnotationFactory {
      *
      * @return A promise that is resolved with an {Annotation} instance.
      */
-    static create(xref: XRef, ref: Ref, annotationGlobals: AnnotationGlobals, idFactory: LocalIdFactory, collectFields?: boolean, pageRef?: Ref | undefined): Promise<Annotation | undefined>;
+    static create(xref: XRef, ref: Ref, annotationGlobals: AnnotationGlobals, idFactory: LocalIdFactory | undefined, collectFields?: boolean, pageRef?: Ref | undefined): Promise<Annotation | undefined>;
     /**
      * @private
      */
     static _create(xref: XRef, ref: Ref, annotationGlobals: AnnotationGlobals, idFactory: LocalIdFactory, collectFields?: boolean, pageIndex?: number | undefined, pageRef?: Ref | undefined): Annotation | undefined;
     static generateImages(annotations: IterableIterator<AnnotStorageValue> | AnnotStorageValue[], xref: XRef, isOffscreenCanvasSupported: boolean | undefined): Map<string, Promise<AnnotImage>> | undefined;
-    static saveNewAnnotations(evaluator: PartialEvaluator, task: WorkerTask, annotations: AnnotStorageValue[], imagePromises: Map<string, Promise<AnnotImage>> | undefined): Promise<{
+    static saveNewAnnotations(evaluator: PartialEvaluator, task: WorkerTask, annotations: AnnotStorageValue[], imagePromises?: Map<string, Promise<AnnotImage>> | undefined): Promise<{
         annotations: AnnotSaveData[];
         dependencies: AnnotSaveData[];
     }>;
-    static printNewAnnotations(annotationGlobals: AnnotationGlobals, evaluator: PartialEvaluator, task: WorkerTask, annotations: AnnotStorageValue[], imagePromises: Map<string, Promise<AnnotImage>> | undefined): Promise<MarkupAnnotation[] | undefined>;
+    static printNewAnnotations(annotationGlobals: AnnotationGlobals, evaluator: PartialEvaluator, task: WorkerTask, annotations: AnnotStorageValue[], imagePromises?: Map<string, Promise<AnnotImage>> | undefined): Promise<MarkupAnnotation[] | undefined>;
 }
 export declare function getQuadPoints(dict: Dict, rect?: rect_t): TupleOf<AnnotPoint, 4>[] | null;
 interface AnnotationCtorP_ {

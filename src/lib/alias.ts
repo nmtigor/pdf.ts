@@ -6,7 +6,7 @@
 import { z } from "@zod";
 /*80--------------------------------------------------------------------------*/
 
-export type int = number; 
+export type int = number;
 export const zInt = z.number().int();
 export type uint = number;
 export const zUint = zInt.min(0);
@@ -21,7 +21,9 @@ export type int8 = int;
 export type uint64 = uint;
 export type uint32 = uint;
 export type uint16 = uint;
+export const zUint16 = zUint.max(2 ** 16 - 1);
 export type uint8 = uint;
+export const zUint8 = zUint.max(2 ** 8 - 1);
 /*49-------------------------------------------*/
 
 /** 0 is special */

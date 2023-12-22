@@ -68,7 +68,7 @@ declare namespace Stats_ {
  */
 export declare class PDFBug {
     #private;
-    static readonly tools: (typeof FontInspector_ | typeof StepperManager_ | typeof Stats_)[];
+    static readonly tools: (typeof StepperManager_ | typeof FontInspector_ | typeof Stats_)[];
     static enable(ids: string[]): void;
     static init(container: HTMLDivElement, ids: string[]): void;
     static loadCSS(): void;

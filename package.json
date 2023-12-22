@@ -1,9 +1,0 @@
-{
-  "name": "pdf.ts",
-  "type": "module",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/nmtigor/pdf.ts.git"
-  },
-  "license": "Apache-2.0"
-}

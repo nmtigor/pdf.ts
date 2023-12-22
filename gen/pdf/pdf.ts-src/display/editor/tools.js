@@ -5,7 +5,7 @@ var _a;
 import { warn } from "../../../../lib/util/trace.js";
 import { LIB } from "../../../../global.js";
 import { AnnotationEditorParamsType, AnnotationEditorPrefix, AnnotationEditorType, FeatureTest, getUuid, shadow, Util, } from "../../shared/util.js";
-import { getColorValues, getRGB, PixelsPerInch } from "../display_utils.js";
+import { fetchData, getColorValues, getRGB, PixelsPerInch, } from "../display_utils.js";
 /*80--------------------------------------------------------------------------*/
 export function bindEvents(obj, element, names) {
     for (const name of names) {
@@ -81,11 +81,7 @@ class ImageManager {
             let image;
             if (typeof rawData === "string") {
                 data.url = rawData;
-                const response = await fetch(rawData);
-                if (!response.ok) {
-                    throw new Error(response.statusText);
-                }
-                image = await response.blob();
+                image = await fetchData(rawData, "blob");
             }
             else {
                 image = data.file = rawData;
@@ -543,7 +539,8 @@ export class AnnotationEditorUIManager {
                     // Those shortcuts can be used in the toolbar for some other actions
                     // like zooming, hence we need to check if the container has the
                     // focus.
-                    checker: (self) => self.#container.contains(document.activeElement) &&
+                    checker: (self, { target: el }) => !(el instanceof HTMLButtonElement) &&
+                        self.#container.contains(el) &&
                         !self.isEnterHandled,
                 },
             ],

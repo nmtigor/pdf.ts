@@ -134,6 +134,10 @@ const defaultOptions = {
     value: AnnotationMode.ENABLE_FORMS,
     kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
   },
+  viewerCssTheme: {
+    value: undefined as number | undefined,
+    kind: 0 as OptionKind,
+  },
   cursorToolOnLoad: {
     value: CursorTool.SELECT,
     kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
@@ -351,6 +355,13 @@ const defaultOptions = {
     kind: 0 as OptionKind,
   },
 };
+/*#static*/ if (PDFJSDev || !MOZCENTRAL) {
+  defaultOptions.viewerCssTheme = {
+    /** @type {number} */
+    value: /*#static*/ CHROME ? 2 : 0,
+    kind: OptionKind.VIEWER + OptionKind.PREFERENCE,
+  };
+}
 /*#static*/ if (PDFJSDev || GENERIC) {
   defaultOptions.defaultUrl = {
     // value: `${D_base}/res/pdf/test/pdfs/pattern_text_embedded_font.pdf`,
@@ -445,6 +456,9 @@ export abstract class AppOptions {
   }
   static get annotationMode() {
     return this.#get("annotationMode") as AnnotationMode;
+  }
+  static get viewerCssTheme() {
+    return this.#get("annotationMode") as number | undefined;
   }
   static get cursorToolOnLoad() {
     return this.#get("cursorToolOnLoad") as CursorTool;

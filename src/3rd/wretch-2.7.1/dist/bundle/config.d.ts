@@ -38,7 +38,10 @@ export declare function setOptions(options: object, replace?: boolean): void;
  * @param polyfills An object containing the polyfills
  * @param replace If true, replaces the current polyfills instead of mixing in
  */
-export declare function setPolyfills(polyfills: object, replace?: boolean): void;
+export declare function setPolyfills(
+  polyfills: object,
+  replace?: boolean,
+): void;
 /**
  * Sets the default method (text, json, …) used to parse the data contained in the response body in case of an HTTP error.
  * As with other static methods, it will affect wretch instances created after calling this function.

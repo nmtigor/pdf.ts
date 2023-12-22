@@ -1,4 +1,4 @@
-export function retry({ delayTimer: t, delayRamp: o, maxAttempts: n, until: s, onRetry: i, retryOnNetworkError: l, resolveWithLatestResponse: u, skip: c }?: {
+export function retry({ delayTimer: t, delayRamp: o, maxAttempts: n, until: s, onRetry: i, retryOnNetworkError: l, resolveWithLatestResponse: u, skip: c, }?: {
     delayTimer?: number | undefined;
     delayRamp?: ((e: any, r: any) => number) | undefined;
     maxAttempts?: number | undefined;

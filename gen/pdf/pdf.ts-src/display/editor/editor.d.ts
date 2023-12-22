@@ -187,6 +187,8 @@ export declare abstract class AnnotationEditor {
     getInitialTranslation(): dot2d_t;
     addAltTextButton(): Promise<void>;
     altTextFinish(): void;
+    addEditToolbar(): void;
+    removeEditToolbar(): void;
     getClientDimensions(): DOMRect;
     get altTextData(): AltTextData;
     /**

@@ -1,4 +1,4 @@
-import { setOptions, setErrorType, setPolyfills } from "./config.js";
+import { setErrorType, setOptions, setPolyfills } from "./config.js";
 import { core } from "./core.js";
 import * as Addons from "./addons/index.js";
 import { WretchError } from "./resolver.js";

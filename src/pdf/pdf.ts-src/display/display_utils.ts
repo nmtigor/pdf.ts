@@ -424,35 +424,53 @@ export class DOMCanvasFactory extends BaseCanvasFactory {
   }
 }
 
-async function fetchData(url: string, asTypedArray = false) {
+export async function fetchData(
+  url: string | URL,
+  type: "arraybuffer" | "blob" | "json" | "text" = "text",
+) {
   if (MOZCENTRAL || isValidFetchUrl(url, globalThis.document?.baseURI)) {
     const response = await fetch(url);
     if (!response.ok) {
       response.body?.cancel();
       throw new Error(response.statusText);
     }
-    return asTypedArray
-      ? new Uint8Array(await response.arrayBuffer())
-      : stringToBytes(await response.text());
+    // switch (type) {
+    //   case "arraybuffer":
+    //     return response.arrayBuffer();
+    //   case "blob":
+    //     return response.blob();
+    //   case "json":
+    //     return response.json();
+    // }
+    // return response.text();
+    return /* final switch */ {
+      arraybuffer: () => response.arrayBuffer(),
+      blob: () => response.blob(),
+      json: () => response.json(),
+      text: () => response.text(),
+    }[type]();
   }
 
   // The Fetch API is not supported.
   return new Promise<Uint8Array>((resolve, reject) => {
     const request = new XMLHttpRequest();
-    request.open("GET", url, /* asTypedArray = */ true);
+    request.open("GET", url, /* async = */ true);
+    request.responseType = type;
 
-    if (asTypedArray) {
-      request.responseType = "arraybuffer";
-    }
     request.onreadystatechange = () => {
       if (request.readyState !== XMLHttpRequest.DONE) return;
 
       if (request.status === 200 || request.status === 0) {
         let data;
-        if (asTypedArray && request.response) {
-          data = new Uint8Array(request.response);
-        } else if (!asTypedArray && request.responseText) {
-          data = stringToBytes(request.responseText);
+        switch (type) {
+          case "arraybuffer":
+          case "blob":
+          case "json":
+            data = request.response;
+            break;
+          default:
+            data = request.responseText;
+            break;
         }
         if (data) {
           resolve(data);
@@ -472,9 +490,17 @@ export class DOMCMapReaderFactory extends BaseCMapReaderFactory {
    * @implement
    */
   _fetchData(url: string, compressionType: CMapCompressionType) {
-    return fetchData(url, /* asTypedArray = */ this.isCompressed).then(
-      (data) => ({ cMapData: data, compressionType }),
-    );
+    return fetchData(
+      url,
+      /* type = */ this.isCompressed ? "arraybuffer" : "text",
+    ).then((data) => {
+      return {
+        cMapData: data instanceof ArrayBuffer
+          ? new Uint8Array(data)
+          : stringToBytes(data),
+        compressionType,
+      };
+    });
   }
 }
 
@@ -484,7 +510,9 @@ export class DOMStandardFontDataFactory extends BaseStandardFontDataFactory {
    * @implement
    */
   _fetchData(url: string) {
-    return fetchData(url, /* asTypedArray = */ true);
+    return fetchData(url, /* type = */ "arraybuffer").then((data) => {
+      return new Uint8Array(data);
+    });
   }
 }
 
@@ -928,8 +956,8 @@ export class PDFDateString {
    * and doesn't use the user's time zone (effectively ignoring the HH' and mm'
    * parts of the date string).
    */
-  static toDateObject(input: string | undefined) {
-    if (!input || !(typeof input === "string")) return null;
+  static toDateObject(input: string | undefined): Date | undefined {
+    if (!input || !(typeof input === "string")) return undefined;
 
     // Lazily initialize the regular expression.
     pdfDateStringRegex ||= new RegExp(
@@ -952,7 +980,7 @@ export class PDFDateString {
     // range) will fall back the defaults from the specification.
     const matches = pdfDateStringRegex.exec(input);
     if (!matches) {
-      return null;
+      return undefined;
     }
 
     // JavaScript's `Date` object expects the month to be between 0 and 11

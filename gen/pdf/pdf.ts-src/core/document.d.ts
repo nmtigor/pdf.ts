@@ -3,7 +3,7 @@ import type { AnnotStorageRecord, AnnotStorageValue } from "../display/annotatio
 import type { CMapData } from "../display/base_factory.js";
 import type { MessageHandler, StreamSink, Thread } from "../shared/message_handler.js";
 import { RenderingIntentFlag } from "../shared/util.js";
-import type { Annotation, AnnotationData, AnnotationGlobals, AnnotImage, AnnotSaveReturn, FieldObject } from "./annotation.js";
+import type { Annotation, AnnotationGlobals, AnnotImage, AnnotSaveReturn, FieldObject } from "./annotation.js";
 import { BaseStream } from "./base_stream.js";
 import { Catalog } from "./catalog.js";
 import { DatasetReader } from "./dataset_reader.js";
@@ -97,7 +97,7 @@ export declare class Page {
      * @private
      */
     _parseStructTree(structTreeRoot: StructTreeRoot): StructTreePage;
-    getAnnotationsData(handler: MessageHandler<Thread.worker>, task: WorkerTask, intent: RenderingIntentFlag): Promise<AnnotationData[] | Annotation[]>;
+    getAnnotationsData(handler: MessageHandler<Thread.worker>, task: WorkerTask, intent: RenderingIntentFlag): Promise<import("./annotation.js").AnnotationData[] | Annotation[]>;
     get annotations(): Ref[];
     get _parsedAnnotations(): Promise<Annotation[]>;
     get jsActions(): import("./core_utils.js").AnnotActions | undefined;

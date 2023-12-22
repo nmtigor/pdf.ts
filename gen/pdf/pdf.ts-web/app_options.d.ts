@@ -63,6 +63,10 @@ declare const defaultOptions: {
         value: AnnotationMode;
         kind: number;
     };
+    viewerCssTheme: {
+        value: number | undefined;
+        kind: OptionKind;
+    };
     cursorToolOnLoad: {
         value: CursorTool;
         kind: number;
@@ -259,6 +263,7 @@ export declare abstract class AppOptions {
     static get supportsPinchToZoom(): boolean;
     static get annotationEditorMode(): AnnotationEditorType;
     static get annotationMode(): AnnotationMode;
+    static get viewerCssTheme(): number | undefined;
     static get cursorToolOnLoad(): CursorTool;
     static get defaultUrl(): string | undefined;
     static get defaultZoomDelay(): number;

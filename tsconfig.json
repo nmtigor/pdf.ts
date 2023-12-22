@@ -2,10 +2,10 @@
   "compilerOptions": {
     "paths": {
       "@fe-3rd/*": ["./src/3rd/*"],
-      "@fe-src/*": ["./src/*"],
       "@fe-lib/*": ["./src/lib/*"],
+      "@fe-src/*": ["./src/*"],
       "@wretch": ["./src/3rd/wretch-2.7.1/dist/index.js"],
-      "@xstate/*": ["./src/3rd/xstate-5.0.0/*"],
+      "@xstate": ["./src/3rd/xstate-5.2.0/xstate.ts"],
       "@zod": ["./src/3rd/zod-3.22.2/lib/index.mjs"],
 
       "@pdf.ts-web/*": ["./src/pdf/pdf.ts-web/*"]

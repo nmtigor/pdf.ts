@@ -1,7 +1,7 @@
 # @fluent/bundle ![](https://github.com/projectfluent/fluent.js/workflows/test/badge.svg)
 
-`@fluent/bundle` is a JavaScript implementation of [Project Fluent][],
-optimized for runtime performance.
+`@fluent/bundle` is a JavaScript implementation of
+[Project Fluent][Project Fluent], optimized for runtime performance.
 
 [project fluent]: https://projectfluent.org
 
@@ -50,14 +50,15 @@ The API reference is available at https://projectfluent.org/fluent.js/bundle.
 - `Intl.PluralRules` (standard, new in ECMAScript 2018)
 
 `Intl.PluralRules` may already be available in some engines. In most cases,
-however, a polyfill will be required. We recommend [intl-pluralrules][].
+however, a polyfill will be required. We recommend
+[intl-pluralrules][intl-pluralrules].
 
 ```javascript
 import "intl-pluralrules";
 import { FluentBundle } from "@fluent/bundle";
 ```
 
-See also the [Compatibility][] article on the `fluent.js` wiki.
+See also the [Compatibility][Compatibility] article on the `fluent.js` wiki.
 
 [intl-pluralrules]: https://www.npmjs.com/package/intl-pluralrules
 [compatibility]: https://github.com/projectfluent/fluent.js/wiki/Compatibility

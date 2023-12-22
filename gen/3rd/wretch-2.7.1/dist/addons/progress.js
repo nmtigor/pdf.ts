@@ -16,10 +16,10 @@
  */
 const progress = () => {
     function transformMiddleware(state) {
-        return next => (url, opts) => {
+        return (next) => (url, opts) => {
             let loaded = 0;
             let total = 0;
-            return next(url, opts).then(response => {
+            return next(url, opts).then((response) => {
                 try {
                     const contentLength = response.headers.get("content-length");
                     total = contentLength ? +contentLength : null;
@@ -33,7 +33,7 @@ const progress = () => {
                                 state.progress(loaded, total);
                             }
                             controller.enqueue(chunk);
-                        }
+                        },
                     });
                     return new Response(response.body.pipeThrough(transform), response);
                 }
@@ -51,7 +51,7 @@ const progress = () => {
             progress(onProgress) {
                 this._sharedState.progress = onProgress;
                 return this;
-            }
+            },
         },
     };
 };

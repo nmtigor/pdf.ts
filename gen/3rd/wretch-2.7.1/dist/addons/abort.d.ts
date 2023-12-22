@@ -2,7 +2,6 @@ export default abort;
 /**
  * Adds the ability to abort requests using AbortController and signals under the hood.
  *
- *
  * _Only compatible with browsers that support
  * [AbortControllers](https://developer.mozilla.org/en-US/docs/Web/API/AbortController).
  * Otherwise, you could use a (partial)

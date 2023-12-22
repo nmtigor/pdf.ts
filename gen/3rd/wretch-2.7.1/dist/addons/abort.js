@@ -1,7 +1,6 @@
 /**
  * Adds the ability to abort requests using AbortController and signals under the hood.
  *
- *
  * _Only compatible with browsers that support
  * [AbortControllers](https://developer.mozilla.org/en-US/docs/Web/API/AbortController).
  * Otherwise, you could use a (partial)
@@ -47,17 +46,20 @@ const abort = () => {
                         clearTimeout(timeout.ref);
                         timeout.ref = null;
                     }
-                }
+                },
             };
             state.abort = {
                 timeout,
-                fetchController
+                fetchController,
             };
             return wretch;
         },
         wretch: {
             signal(controller) {
-                return { ...this, _options: { ...this._options, signal: controller.signal } };
+                return {
+                    ...this,
+                    _options: { ...this._options, signal: controller.signal },
+                };
             },
         },
         resolver: {
@@ -67,8 +69,12 @@ const abort = () => {
                 timeout.ref = setTimeout(() => controller.abort(), time);
                 return this;
             },
-            controller() { return [this._sharedState.abort.fetchController, this]; },
-            onAbort(cb) { return this.error("AbortError", cb); }
+            controller() {
+                return [this._sharedState.abort.fetchController, this];
+            },
+            onAbort(cb) {
+                return this.error("AbortError", cb);
+            },
         },
     };
 };

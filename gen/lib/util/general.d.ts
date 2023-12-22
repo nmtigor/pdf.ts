@@ -2,6 +2,7 @@
  * @module lib/util/general
  * @license Apache-2.0
  ******************************************************************************/
+export {};
 /**
  * Ref. [Get Byte size of the string in Javascript](https://dev.to/rajnishkatharotiya/get-byte-size-of-the-string-in-javascript-20jm)
  */
@@ -10,6 +11,8 @@ export declare const byteSize: (_x: BlobPart) => number;
  * @const @param text_x
  */
 export declare const linesOf: (text_x: string) => string[];
+/** */
+export declare const isWhitespace: (_x: string) => boolean;
 /**
  * Event handler to suppress context menu.
  *

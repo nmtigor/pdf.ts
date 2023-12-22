@@ -36,6 +36,7 @@ import {
 } from "../../shared/util.ts";
 import type { AnnotStorageValue } from "../annotation_layer.ts";
 import type { AnnotationEditorLayer } from "./annotation_editor_layer.ts";
+import { EditorToolbar } from "./toolbar.ts";
 import type { AddCommandsP } from "./tools.ts";
 import {
   AnnotationEditorUIManager,
@@ -149,6 +150,7 @@ export abstract class AnnotationEditor {
 
   #boundFocusin = this.focusin.bind(this);
   #boundFocusout = this.focusout.bind(this);
+  #editToolbar: EditorToolbar | undefined;
   #focusedResizerName: ResizerName_ | undefined;
   #hasBeenClicked = false;
   #isEditing = false;
@@ -545,21 +547,16 @@ export abstract class AnnotationEditor {
     const { _borderLineWidth } = AnnotationEditor;
     const x = _borderLineWidth / parentWidth;
     const y = _borderLineWidth / parentHeight;
-    // switch (this.rotation) {
-    //   case 90:
-    //     return [-x, y];
-    //   case 180:
-    //     return [x, y];
-    //   case 270:
-    //     return [x, -y];
-    //   default:
-    //     return [-x, -y];
-    // }
-    return /* final switch */ {
-      [90]: [-x, y],
-      [180]: [x, y],
-      [270]: [x, -y],
-    }[this.rotation] as dot2d_t ?? [-x, -y];
+    switch (this.rotation) {
+      case 90:
+        return [-x, y];
+      case 180:
+        return [x, y];
+      case 270:
+        return [x, -y];
+      default:
+        return [-x, -y];
+    }
   }
 
   fixAndSetPosition() {
@@ -604,21 +601,16 @@ export abstract class AnnotationEditor {
   }
 
   static #rotatePoint(x: number, y: number, angle: number): dot2d_t {
-    // switch (angle) {
-    //   case 90:
-    //     return [y, -x];
-    //   case 180:
-    //     return [-x, -y];
-    //   case 270:
-    //     return [-y, x];
-    //   default:
-    //     return [x, y];
-    // }
-    return /* final switch */ {
-      [90]: [y, -x],
-      [180]: [-x, -y],
-      [270]: [-y, x],
-    }[angle] as dot2d_t ?? [x, y];
+    switch (angle) {
+      case 90:
+        return [y, -x];
+      case 180:
+        return [-x, -y];
+      case 270:
+        return [-y, x];
+      default:
+        return [x, y];
+    }
   }
 
   /**
@@ -868,19 +860,33 @@ export abstract class AnnotationEditor {
       getOpposite: (w: number, h: number) => dot2d_t,
     ];
     const [getPoint, getOpposite] = /* final switch */ {
-      topLeft: (isDiagonal = true, [(w, h) => [0, 0], (w, h) => [w, h]] as T_),
-      topMiddle: [(w, h) => [w / 2, 0], (w, h) => [w / 2, h]] as T_,
-      topRight: (isDiagonal = true, [(w, h) => [w, 0], (w, h) => [0, h]] as T_),
-      middleRight:
-        (isDiagonal = true, [(w, h) => [w, h / 2], (w, h) => [0, h / 2]] as T_),
-      bottomRight:
-        (isDiagonal = true, [(w, h) => [w, h], (w, h) => [0, 0]] as T_),
-      bottomMiddle: [(w, h) => [w / 2, h], (w, h) => [w / 2, 0]] as T_,
-      bottomLeft:
-        (isDiagonal = true, [(w, h) => [0, h], (w, h) => [w, 0]] as T_),
-      middleLeft:
-        (isDiagonal = true, [(w, h) => [0, h / 2], (w, h) => [w, h / 2]] as T_),
-    }[name];
+      topLeft: () => {
+        isDiagonal = true;
+        return [(w, h) => [0, 0], (w, h) => [w, h]] as T_;
+      },
+      topMiddle: () => [(w, h) => [w / 2, 0], (w, h) => [w / 2, h]] as T_,
+      topRight: () => {
+        isDiagonal = true;
+        return [(w, h) => [w, 0], (w, h) => [0, h]] as T_;
+      },
+      middleRight: () => {
+        isDiagonal = true;
+        return [(w, h) => [w, h / 2], (w, h) => [0, h / 2]] as T_;
+      },
+      bottomRight: () => {
+        isDiagonal = true;
+        return [(w, h) => [w, h], (w, h) => [0, 0]] as T_;
+      },
+      bottomMiddle: () => [(w, h) => [w / 2, h], (w, h) => [w / 2, 0]] as T_,
+      bottomLeft: () => {
+        isDiagonal = true;
+        return [(w, h) => [0, h], (w, h) => [w, 0]] as T_;
+      },
+      middleLeft: () => {
+        isDiagonal = true;
+        return [(w, h) => [0, h / 2], (w, h) => [w, h / 2]] as T_;
+      },
+    }[name]();
 
     const point = getPoint(savedWidth, savedHeight);
     const oppositePoint = getOpposite(savedWidth, savedHeight);
@@ -1063,6 +1069,22 @@ export abstract class AnnotationEditor {
       { focusVisible: this.#altTextWasFromKeyBoard } as any,
     );
     this.#altTextWasFromKeyBoard = false;
+  }
+
+  addEditToolbar() {
+    if (this.#editToolbar || this.#isInEditMode) {
+      return;
+    }
+    this.#editToolbar = new EditorToolbar(this);
+    this.div!.append(this.#editToolbar.render());
+  }
+
+  removeEditToolbar() {
+    if (!this.#editToolbar) {
+      return;
+    }
+    this.#editToolbar.remove();
+    this.#editToolbar = undefined;
   }
 
   getClientDimensions() {
@@ -1407,6 +1429,7 @@ export abstract class AnnotationEditor {
       this.#moveInDOMTimeout = undefined;
     }
     this.#stopResizing();
+    this.removeEditToolbar();
   }
 
   /**
@@ -1567,6 +1590,8 @@ export abstract class AnnotationEditor {
   select() {
     this.makeResizable();
     this.div?.classList.add("selectedEditor");
+    this.addEditToolbar();
+    this.#editToolbar?.show();
   }
 
   /**
@@ -1580,6 +1605,7 @@ export abstract class AnnotationEditor {
       // go.
       this._uiManager.currentLayer!.div!.focus();
     }
+    this.#editToolbar?.hide();
   }
 
   /**

@@ -6,6 +6,8 @@ import { z } from "../3rd/zod-3.22.2/lib/index.mjs";
 export const zInt = z.number().int();
 export const zUint = zInt.min(0);
 const zInt64 = zInt;
+export const zUint16 = zUint.max(2 ** 16 - 1);
+export const zUint8 = zUint.max(2 ** 8 - 1);
 export const zId = zUint;
 export const loff_UNDEFINED = -1000000001;
 export const llen_MAX = 1000000000;

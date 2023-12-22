@@ -1057,7 +1057,9 @@ class TextWidgetAnnotationElement extends WidgetAnnotationElement {
                     }
                     elementData.lastCommittedValue = target.value;
                     elementData.commitKey = 1;
-                    elementData.focused = true;
+                    if (!this.data.actions?.Focus) {
+                        elementData.focused = true;
+                    }
                 });
                 element.addEventListener("updatefromsandbox", (jsEvent) => {
                     this.showElementAndHideCanvas(jsEvent.target);
@@ -1164,7 +1166,9 @@ class TextWidgetAnnotationElement extends WidgetAnnotationElement {
                     if (!elementData.focused || !event.relatedTarget) {
                         return;
                     }
-                    elementData.focused = false;
+                    if (!this.data.actions?.Blur) {
+                        elementData.focused = false;
+                    }
                     const { value } = event.target;
                     elementData.userValue = value;
                     if (elementData.lastCommittedValue !== value) {
@@ -1363,6 +1367,18 @@ class RadioButtonWidgetAnnotationElement extends WidgetAnnotationElement {
             // The value has been changed through js and set in annotationStorage.
             value = value !== data.buttonValue;
             storage.setValue(id, { value });
+        }
+        if (value) {
+            // It's possible that multiple radio buttons are checked.
+            // So if this one is checked we just reset the other ones.
+            // (see bug 1864136). Then when the other ones will be rendered they will
+            // unchecked (because of their value in the storage).
+            // Consequently, the first checked radio button will be the only checked
+            // one.
+            for (const radio of this._getElementsByName(data.fieldName, 
+            /* skipId = */ id)) {
+                storage.setValue(radio.id, { value: false });
+            }
         }
         const element = html("input");
         GetElementsByNameSet.add(element);

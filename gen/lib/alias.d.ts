@@ -13,7 +13,9 @@ export type int8 = int;
 export type uint64 = uint;
 export type uint32 = uint;
 export type uint16 = uint;
+export declare const zUint16: import("../3rd/zod-3.22.2/lib/index.mjs").ZodNumber;
 export type uint8 = uint;
+export declare const zUint8: import("../3rd/zod-3.22.2/lib/index.mjs").ZodNumber;
 /** 0 is special */
 export type id_t = uint;
 export declare const zId: import("../3rd/zod-3.22.2/lib/index.mjs").ZodNumber;

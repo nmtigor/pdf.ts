@@ -17,10 +17,11 @@ const config = {
         const res = this.polyfills[p] ||
             (typeof self !== "undefined" ? self[p] : null) ||
             (typeof global !== "undefined" ? global[p] : null);
-        if (doThrow && !res)
+        if (doThrow && !res) {
             throw new Error(p + " is not defined");
+        }
         return instance && res ? new res(...args) : res;
-    }
+    },
 };
 /**
  * Sets the default fetch options that will be stored internally when instantiating wretch objects.

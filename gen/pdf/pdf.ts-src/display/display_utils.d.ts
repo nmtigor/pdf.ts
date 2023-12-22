@@ -41,6 +41,7 @@ export declare class DOMCanvasFactory extends BaseCanvasFactory {
      */
     _createCanvas(width: number, height: number): HTMLCanvasElement;
 }
+export declare function fetchData(url: string | URL, type?: "arraybuffer" | "blob" | "json" | "text"): Promise<any>;
 export declare class DOMCMapReaderFactory extends BaseCMapReaderFactory {
     /**
      * @ignore
@@ -234,7 +235,7 @@ export declare class PDFDateString {
      * and doesn't use the user's time zone (effectively ignoring the HH' and mm'
      * parts of the date string).
      */
-    static toDateObject(input: string | undefined): Date | null;
+    static toDateObject(input: string | undefined): Date | undefined;
 }
 /**
  * NOTE: This is (mostly) intended to support printing of XFA forms.

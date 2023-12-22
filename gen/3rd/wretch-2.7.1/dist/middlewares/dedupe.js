@@ -1,10 +1,10 @@
 /* Defaults */
 const defaultSkip = (_, opts) => (opts.skipDedupe || opts.method !== "GET");
 const defaultKey = (url, opts) => opts.method + "@" + url;
-const defaultResolver = response => response.clone();
+const defaultResolver = (response) => response.clone();
 export const dedupe = ({ skip = defaultSkip, key = defaultKey, resolver = defaultResolver } = {}) => {
     const inflight = new Map();
-    return next => (url, opts) => {
+    return (next) => (url, opts) => {
         if (skip(url, opts)) {
             return next(url, opts);
         }
@@ -19,7 +19,7 @@ export const dedupe = ({ skip = defaultSkip, key = defaultKey, resolver = defaul
         }
         try {
             return next(url, opts)
-                .then(response => {
+                .then((response) => {
                 // Resolve pending promises
                 inflight.get(_key).forEach(([resolve]) => resolve(resolver(response)));
                 // Remove the inflight pending promises
@@ -27,7 +27,7 @@ export const dedupe = ({ skip = defaultSkip, key = defaultKey, resolver = defaul
                 // Return the original response
                 return response;
             })
-                .catch(error => {
+                .catch((error) => {
                 // Reject pending promises on error
                 inflight.get(_key).forEach(([resolve, reject]) => reject(error));
                 inflight.delete(_key);

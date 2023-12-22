@@ -17,10 +17,10 @@
  * limitations under the License.
  */
 
-import type { FluentMessageArgs } from "@fe-3rd/fluent/dom/esm/localization.ts";
-import type { Locale } from "@fe-lib/Locale.ts";
-import { TESTING } from "@fe-src/global.ts";
 import type { DOMLocalization } from "@fe-3rd/fluent/dom/esm/index.ts";
+import type { FluentMessageArgs } from "@fe-3rd/fluent/dom/esm/localization.ts";
+import { Locale } from "@fe-lib/Locale.ts";
+import { TESTING } from "@fe-src/global.ts";
 import type { IL10n } from "./interfaces.ts";
 /*80--------------------------------------------------------------------------*/
 
@@ -31,10 +31,14 @@ declare global {
 }
 
 export type L10nCtorP = {
-  lang: Locale;
+  lang?: Locale;
   isRTL?: boolean;
 };
 
+/**
+//  * NOTE: The L10n-implementations should use lowercase language-codes
+//  *       internally.
+ */
 export class L10n implements IL10n {
   #dir: "rtl" | "ltr";
   #lang;
@@ -103,7 +107,10 @@ export class L10n implements IL10n {
     this.#l10n.resumeObserving();
   }
 
-  static #fixupLangCode(langCode: Locale) {
+  static #fixupLangCode(langCode: Locale = Locale.en_US) {
+    // // Use only lowercase language-codes internally, and fallback to English.
+    // langCode = langCode?.toLowerCase() || "en-us";
+
     // Try to support "incompletely" specified language codes (see issue 13689).
     const PARTIAL_LANG_CODES = {
       en: "en-US",
@@ -121,7 +128,7 @@ export class L10n implements IL10n {
       sv: "sv-SE",
       zh: "zh-CN",
     } as Record<string, Locale>;
-    return PARTIAL_LANG_CODES[langCode?.toLowerCase()] || langCode;
+    return PARTIAL_LANG_CODES[langCode] || langCode;
   }
 
   static #isRTL(lang: Locale) {

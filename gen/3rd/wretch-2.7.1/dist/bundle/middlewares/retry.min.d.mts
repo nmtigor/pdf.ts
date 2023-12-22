@@ -1,5 +1,5 @@
 export { t as retry };
-declare function t({ delayTimer: t, delayRamp: o, maxAttempts: n, until: s, onRetry: l, retryOnNetworkError: i, resolveWithLatestResponse: u, skip: m }?: {
+declare function t({ delayTimer: t, delayRamp: o, maxAttempts: n, until: s, onRetry: l, retryOnNetworkError: i, resolveWithLatestResponse: u, skip: m, }?: {
     delayTimer?: number | undefined;
     delayRamp?: ((e: any, r: any) => number) | undefined;
     maxAttempts?: number | undefined;

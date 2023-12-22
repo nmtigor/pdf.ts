@@ -29,8 +29,10 @@
 
 - 🪶 **Small** - core is less than 2KB g-zipped
 - 💡 **Intuitive** - lean API, handles errors, headers and (de)serialization
-- 🧊 **Immutable** - every call creates a cloned instance that can then be reused safely
-- 🔌 **Modular** - plug addons to add new features, and middlewares to intercept requests
+- 🧊 **Immutable** - every call creates a cloned instance that can then be
+  reused safely
+- 🔌 **Modular** - plug addons to add new features, and middlewares to intercept
+  requests
 - 🧩 **Isomorphic** - compatible with modern browsers, Node.js 14+ and Deno
 - 🦺 **Type safe** - strongly typed, written in TypeScript
 - ✅ **Proven** - fully covered by unit tests and widely used
@@ -56,8 +58,8 @@ Fetch needs a second callback to process the response body.
 
 ```javascript
 fetch("examples/example.json")
-  .then(response => response.json())
-  .then(json => {
+  .then((response) => response.json())
+  .then((json) => {
     //Do stuff with the parsed json
   });
 ```
@@ -68,7 +70,7 @@ Wretch does it for you.
 // Use .res for the raw response, .text for raw text, .json for json, .blob for a blob ...
 wretch("examples/example.json")
   .get()
-  .json(json => {
+  .json((json) => {
     // Do stuff with the parsed json
   });
 ```
@@ -92,7 +94,8 @@ fetch("anything")
   .catch(error => { /* ... */ })
 ```
 
-Wretch throws when the response is not successful and contains helper methods to handle common codes.
+Wretch throws when the response is not successful and contains helper methods to
+handle common codes.
 
 ```javascript
 wretch("anything")
@@ -127,7 +130,8 @@ wretch("endpoint")
 
 #### Because configuration should not rhyme with repetition.
 
-A Wretch object is immutable which means that you can reuse previous instances safely.
+A Wretch object is immutable which means that you can reuse previous instances
+safely.
 
 ```javascript
 // Cross origin authenticated requests on an external API
@@ -163,14 +167,16 @@ npm i wretch # or yarn/pnpm add wretch
 
 ## &lt;script&gt; tag
 
-The package contains multiple bundles depending on the format and feature set located under the `/dist/bundle` folder.
+The package contains multiple bundles depending on the format and feature set
+located under the `/dist/bundle` folder.
 
 <details>
 
 <summary>Bundle variants</summary>
 <br>
 
-> 💡 If you pick the core bundle, then to plug addons you must import them separately from `/dist/bundle/addons/[addonName].min.js`
+> 💡 If you pick the core bundle, then to plug addons you must import them
+> separately from `/dist/bundle/addons/[addonName].min.js`
 
 | Feature set        | File Name           |
 | ------------------ | ------------------- |
@@ -210,23 +216,28 @@ The package contains multiple bundles depending on the format and feature set lo
 
 ## Browsers
 
-`wretch@^2` is compatible with modern browsers only. For older browsers please use `wretch@^1`.
+`wretch@^2` is compatible with modern browsers only. For older browsers please
+use `wretch@^1`.
 
 ## Node.js
 
-Wretch is compatible with and tested in _Node.js >= 14_. Older versions of node may work
-but it is not guaranteed.
+Wretch is compatible with and tested in _Node.js >= 14_. Older versions of node
+may work but it is not guaranteed.
 
 ### Polyfills (Node.js < 18)
 
-**Starting from Node.js 18, [node includes experimental fetch support](https://nodejs.org/en/blog/announcements/v18-release-announce/). Wretch will work without installing any polyfill.**
+**Starting from Node.js 18,
+[node includes experimental fetch support](https://nodejs.org/en/blog/announcements/v18-release-announce/).
+Wretch will work without installing any polyfill.**
 
-For older versions, the Node.js standard library does not provide a native implementation of fetch (and other Browsers-only APIs) and polyfilling is mandatory.
+For older versions, the Node.js standard library does not provide a native
+implementation of fetch (and other Browsers-only APIs) and polyfilling is
+mandatory.
 
 _The non-global way (preferred):_
 
 ```javascript
-import fetch, { FormData } from "node-fetch"
+import fetch, { FormData } from "node-fetch";
 
 // w is a reusable wretch instance
 const w = wretch().polyfills({
@@ -272,106 +283,109 @@ console.log(text); // -> 200 OK
 
 ```typescript
 // ECMAScript modules
-import wretch from "wretch"
+import wretch from "wretch";
 // CommonJS
-const wretch = require("wretch")
+const wretch = require("wretch");
 // Global variable (script tag)
-window.wretch
+window.wretch;
 ```
 
 ## Minimal Example
 
 ```js
-import wretch from "wretch"
+import wretch from "wretch";
 
 // Instantiate and configure wretch
-const api =
-  wretch("https://jsonplaceholder.typicode.com", { mode: "cors" })
-    .errorType("json")
-    .resolve(r => r.json())
+const api = wretch("https://jsonplaceholder.typicode.com", { mode: "cors" })
+  .errorType("json")
+  .resolve((r) => r.json());
 
 try {
   // Fetch users
-  const users = await api.get("/users")
+  const users = await api.get("/users");
   // Find all posts from a given user
-  const user = users.find(({ name }) => name === "Nicholas Runolfsdottir V")
-  const postsByUser = await api.get(`/posts?userId=${user.id}`)
+  const user = users.find(({ name }) => name === "Nicholas Runolfsdottir V");
+  const postsByUser = await api.get(`/posts?userId=${user.id}`);
   // Create a new post
   const newPost = await api.url("/posts").post({
     title: "New Post",
-    body: "My shiny new post"
-  })
+    body: "My shiny new post",
+  });
   // Patch it
   await api.url("/posts/" + newPost.id).patch({
     title: "Updated Post",
-    body: "Edited body"
-  })
+    body: "Edited body",
+  });
   // Fetch it
-  await api.get("/posts/" + newPost.id)
+  await api.get("/posts/" + newPost.id);
 } catch (error) {
   // The API could return an empty object - in which case the status text is logged instead.
   const message =
     typeof error.message === "object" && Object.keys(error.message).length > 0
       ? JSON.stringify(error.message)
-      : error.response.statusText
-  console.error(`${error.status}: ${message}`)
+      : error.response.statusText;
+  console.error(`${error.status}: ${message}`);
 }
 ```
 
 ## Chaining
 
-**A high level overview of the successive steps that can be chained to perform a request and parse the result.**
+**A high level overview of the successive steps that can be chained to perform a
+request and parse the result.**
 
 ```ts
 // First, instantiate wretch
-wretch(baseUrl, baseOptions)
+wretch(baseUrl, baseOptions);
 ```
 
 _The "request" chain starts here._
 
 ```ts
-  // Optional - A set of helper methods to set the default options, set accept header, change the current url…
-  .<helper method(s)>()
-  // Optional - Serialize an object to json or FormData formats and sets the body & header field if needed
-  .<body type>()
-    // Required - Sends the get/put/post/delete/patch request.
-  .<http method>()
+// Optional - A set of helper methods to set the default options, set accept header, change the current url…
+.<helper method(s)>()
+// Optional - Serialize an object to json or FormData formats and sets the body & header field if needed
+.<body type>()
+  // Required - Sends the get/put/post/delete/patch request.
+.<http method>()
 ```
 
 _The "response" chain starts here._
 
-_Fetch is called after the request chain ends and before the response chain starts._<br>
-_The request is on the fly and now it is time to chain catchers and finally call a response type handler._
+_Fetch is called after the request chain ends and before the response chain
+starts._<br> _The request is on the fly and now it is time to chain catchers and
+finally call a response type handler._
 
 ```ts
-  // Optional - You can chain error handlers here
-  .<catcher(s)>()
-  // Required - Specify the data type you need, which will be parsed and handed to you
-  .<response type>()
-  // >> Ends the response chain.
+// Optional - You can chain error handlers here
+.<catcher(s)>()
+// Required - Specify the data type you need, which will be parsed and handed to you
+.<response type>()
+// >> Ends the response chain.
 ```
 
 _From this point on, wretch returns a standard Promise._
 
 ```ts
-  .then(…)
-  .catch(…)
+.then(…)
+.catch(…)
 ```
 
 # [API 🔗](https://elbywan.github.io/wretch/api)
 
-> 💡 The API documentation is now autogenerated and hosted separately, click the links access it.
+> 💡 The API documentation is now autogenerated and hosted separately, click the
+> links access it.
 
 ### [Static Methods 🔗](https://elbywan.github.io/wretch/api/modules/index.default.html)
 
-These methods are available from the main default export and can be used to instantiate wretch and configure it globally.
+These methods are available from the main default export and can be used to
+instantiate wretch and configure it globally.
 
 ```js
-import wretch from "wretch"
+import wretch from "wretch";
 
-wretch.options({ mode: "cors" })
+wretch.options({ mode: "cors" });
 
-let w = wretch("http://domain.com/", { cache: "default" })
+let w = wretch("http://domain.com/", { cache: "default" });
 ```
 
 ### [Helper Methods 🔗](https://elbywan.github.io/wretch/api/interfaces/index.Wretch.html)
@@ -381,24 +395,25 @@ Helper Methods are used to configure the request and program actions.
 ```js
 w = w
   .url("/resource/1")
-  .headers({ "Cache-Control": no-cache })
-  .content("text/html")
+  .headers({ "Cache-Control": no - cache })
+  .content("text/html");
 ```
 
 ### [Body Types 🔗](https://elbywan.github.io/wretch/api/interfaces/index.Wretch.html)
 
-Specify a body type if uploading data. Can also be added through the HTTP Method argument.
+Specify a body type if uploading data. Can also be added through the HTTP Method
+argument.
 
 ```js
-w = w.body("<html><body><div/></body></html>")
+w = w.body("<html><body><div/></body></html>");
 ```
 
 ### [HTTP Methods 🔗](https://elbywan.github.io/wretch/api/interfaces/index.Wretch.html)
 
 Sets the HTTP method and sends the request.
 
-Calling an HTTP method ends the request chain and returns a response chain.
-You can pass optional url and body arguments to these methods.
+Calling an HTTP method ends the request chain and returns a response chain. You
+can pass optional url and body arguments to these methods.
 
 ```js
 // These shorthands:
@@ -409,12 +424,14 @@ wretch().url("/url").get();
 wretch().json({ json: "body" }).url("/url").post();
 ```
 
-**NOTE:** if the body argument is an `Object` it is assumed that it is a JSON payload and it will have the same behaviour as calling `.json(body)` unless the `Content-Type` header has been set to something else beforehand.
-
+**NOTE:** if the body argument is an `Object` it is assumed that it is a JSON
+payload and it will have the same behaviour as calling `.json(body)` unless the
+`Content-Type` header has been set to something else beforehand.
 
 ### [Catchers 🔗](https://elbywan.github.io/wretch/api/interfaces/index.WretchResponseChain.html)
 
-Catchers are optional, but if none are provided an error will still be thrown for http error codes and it will be up to you to catch it.
+Catchers are optional, but if none are provided an error will still be thrown
+for http error codes and it will be up to you to catch it.
 
 ```js
 wretch("...")
@@ -465,7 +482,8 @@ wretch("/resource")
 
 ### [Response Types 🔗](https://elbywan.github.io/wretch/api/interfaces/index.WretchResponseChain.html)
 
-Setting the final response body type ends the chain and returns a regular promise.
+Setting the final response body type ends the chain and returns a regular
+promise.
 
 All these methods accept an optional callback, and will return a Promise
 resolved with either the return value of the provided callback or the expected
@@ -485,17 +503,18 @@ called._
 
 # Addons
 
-Addons are separate pieces of code that you can import and plug into `wretch` to add new features.
+Addons are separate pieces of code that you can import and plug into `wretch` to
+add new features.
 
 ```js
-import FormDataAddon from "wretch/addons/formData"
-import QueryStringAddon from "wretch/addons/queryString"
+import FormDataAddon from "wretch/addons/formData";
+import QueryStringAddon from "wretch/addons/queryString";
 
 // Add both addons
-const w = wretch().addon(FormDataAddon).addon(QueryStringAddon)
+const w = wretch().addon(FormDataAddon).addon(QueryStringAddon);
 
 // Additional features are now available
-w.formData({ hello: "world" }).query({ check: true })
+w.formData({ hello: "world" }).query({ check: true });
 ```
 
 Typescript should also be fully supported and will provide completions.
@@ -507,7 +526,7 @@ https://user-images.githubusercontent.com/3428394/182319457-504a0856-abdd-4c1d-b
 Used to construct and append the query string part of the URL from an object.
 
 ```js
-import QueryStringAddon from "wretch/addons/queryString"
+import QueryStringAddon from "wretch/addons/queryString";
 
 let w = wretch("http://example.com").addon(QueryStringAddon);
 // url is http://example.com
@@ -526,7 +545,7 @@ w = w.query({ reset: true }, true);
 Adds a helper method to serialize a `multipart/form-data` body from an object.
 
 ```js
-import FormDataAddon from "wretch/addons/formData"
+import FormDataAddon from "wretch/addons/formData";
 
 const form = {
   duck: "Muscovy",
@@ -548,10 +567,11 @@ wretch("...").addon(FormDataAddon).formData(form, ["ignored"]).post();
 
 ### [FormUrl 🔗](https://elbywan.github.io/wretch/api/interfaces/addons_formUrl.FormUrlAddon.html)
 
-Adds a method to serialize a `application/x-www-form-urlencoded` body from an object.
+Adds a method to serialize a `application/x-www-form-urlencoded` body from an
+object.
 
 ```js
-import FormUrlAddon from "wretch/addons/formUrl"
+import FormUrlAddon from "wretch/addons/formUrl";
 
 const form = { a: 1, b: { c: 2 } };
 const alreadyEncodedForm = "a=1&b=%7B%22c%22%3A2%7D";
@@ -563,10 +583,11 @@ wretch("...").addon(FormUrlAddon).formUrl(alreadyEncodedForm).post();
 
 ### [Abort 🔗](https://elbywan.github.io/wretch/api/modules/addons_abort.html)
 
-Adds the ability to abort requests and set timeouts using AbortController and signals under the hood.
+Adds the ability to abort requests and set timeouts using AbortController and
+signals under the hood.
 
 ```js
-import AbortAddon from "wretch/addons/abort"
+import AbortAddon from "wretch/addons/abort";
 ```
 
 _Only compatible with browsers that support
@@ -611,29 +632,31 @@ wretch("...").addon(AbortAddon()).get().setTimeout(1000).json(_ =>
 
 Adds the ability to monitor progress when downloading a response.
 
-_Compatible with all platforms implementing the [TransformStream WebAPI](https://developer.mozilla.org/en-US/docs/Web/API/TransformStream#browser_compatibility)._
-
+_Compatible with all platforms implementing the
+[TransformStream WebAPI](https://developer.mozilla.org/en-US/docs/Web/API/TransformStream#browser_compatibility)._
 
 ```js
-import ProgressAddon from "wretch/addons/progress"
+import ProgressAddon from "wretch/addons/progress";
 
 wretch("some_url")
   .addon(ProgressAddon())
   .get()
   // Called with the number of bytes loaded and the total number of bytes to load
   .progress((loaded, total) => {
-    console.log(`${(loaded / total * 100).toFixed(0)}%`)
+    console.log(`${(loaded / total * 100).toFixed(0)}%`);
   })
-  .text()
+  .text();
 ```
 
 ### [Performance 🔗](https://elbywan.github.io/wretch/api/modules/addons_perfs.html)
 
 Adds the ability to measure requests using the Performance Timings API.
 
-Uses the Performance API (browsers & Node.js) to expose timings related to the underlying request.
+Uses the Performance API (browsers & Node.js) to expose timings related to the
+underlying request.
 
-> 💡 Make sure to follow the additional instructions in the documentation to setup Node.js if necessary.
+> 💡 Make sure to follow the additional instructions in the documentation to
+> setup Node.js if necessary.
 
 # Middlewares
 
@@ -642,28 +665,34 @@ Fetch. Wretch includes a helper to help replicate the
 [middleware](http://expressjs.com/en/guide/using-middleware.html) style.
 
 ```js
-import wretch from "wretch"
-import { retry, dedupe } from "wretch/middlewares"
+import wretch from "wretch";
+import { dedupe, retry } from "wretch/middlewares";
 
-const w = wretch().middlewares([retry(), dedupe()])
+const w = wretch().middlewares([retry(), dedupe()]);
 ```
 
-> 💡 The following middlewares were previously provided by the [`wretch-middlewares`](https://github.com/elbywan/wretch-middlewares/) package.
+> 💡 The following middlewares were previously provided by the
+> [`wretch-middlewares`](https://github.com/elbywan/wretch-middlewares/)
+> package.
 
 ### [Retry 🔗](https://elbywan.github.io/wretch/api/functions/middlewares_retry.retry.html)
 
-**Retries a request multiple times in case of an error (or until a custom condition is true).**
+**Retries a request multiple times in case of an error (or until a custom
+condition is true).**
 
-> **💡 By default, the request will be retried if the response status is not in the 2xx range.**
+> **💡 By default, the request will be retried if the response status is not in
+> the 2xx range.**
 >
 > ```js
 > // Replace the default condition with a custom one to avoid retrying on 4xx errors:
-> until: (response, error) => response && (response.ok || (response.status >= 400 && response.status < 500))
+> until: ((response, error) =>
+>   response &&
+>   (response.ok || (response.status >= 400 && response.status < 500)));
 > ```
 
 ```js
-import wretch from 'wretch'
-import { retry } from 'wretch/middlewares'
+import wretch from "wretch";
+import { retry } from "wretch/middlewares";
 
 wretch().middlewares([
   retry({
@@ -674,19 +703,18 @@ wretch().middlewares([
     until: (response, error) => response && response.ok,
     onRetry: null,
     retryOnNetworkError: false,
-    resolveWithLatestResponse: false
-  })
-])./* ... */
-
-// You can also return a Promise, which is useful if you want to inspect the body:
-wretch().middlewares([
-  retry({
-    until: response =>
-      response.clone().json().then(body =>
-        body.field === 'something'
-      )
-  })
+    resolveWithLatestResponse: false,
+  }),
 ])
+  /* ... */
+
+  // You can also return a Promise, which is useful if you want to inspect the body:
+  .wretch().middlewares([
+    retry({
+      until: (response) =>
+        response.clone().json().then((body) => body.field === "something"),
+    }),
+  ]);
 ```
 
 ### [Dedupe 🔗](https://elbywan.github.io/wretch/api/functions/middlewares_dedupe.dedupe.html)
@@ -709,7 +737,8 @@ wretch().middlewares([
 
 ### [Throttling Cache 🔗](https://elbywan.github.io/wretch/api/modules/middlewares_throttlingCache.html)
 
-**A throttling cache which stores and serves server responses for a certain amount of time.**
+**A throttling cache which stores and serves server responses for a certain
+amount of time.**
 
 ```js
 import wretch from 'wretch'
@@ -768,14 +797,13 @@ Your middleware can then take advantage of that by mutating the object
 reference.
 
 ```js
-const contextMiddleware = (next) =>
-  (url, opts) => {
-    if (opts.context) {
-      // Mutate "context"
-      opts.context.property = "anything";
-    }
-    return next(url, opts);
-  };
+const contextMiddleware = (next) => (url, opts) => {
+  if (opts.context) {
+    // Mutate "context"
+    opts.context.property = "anything";
+  }
+  return next(url, opts);
+};
 
 // Provide the reference to a "context" object
 const context = {};
@@ -901,7 +929,10 @@ for(let i = 0; i < 10; i++) {
 
 ## [Cloudflare Workers](https://workers.cloudflare.com/)
 
-It seems like using `wretch` in a Cloudflare Worker environment is not possible out of the box, as the Cloudflare `Response` implementation does not implement the [`type`](https://developer.mozilla.org/en-US/docs/Web/API/Response/type) property and throws an error when trying to access it.
+It seems like using `wretch` in a Cloudflare Worker environment is not possible
+out of the box, as the Cloudflare `Response` implementation does not implement
+the [`type`](https://developer.mozilla.org/en-US/docs/Web/API/Response/type)
+property and throws an error when trying to access it.
 
 #### Please check the issue [#159](https://github.com/elbywan/wretch/issues/159) for more information.
 
@@ -922,13 +953,16 @@ wretch().middlewares([
     }
     return response;
   },
-])
+]);
 ```
 
 ## Headers Case Sensitivity
 
-The [`Request`](https://developer.mozilla.org/en-US/docs/Web/API/Request) object from the Fetch API uses the [`Headers`](https://developer.mozilla.org/en-US/docs/Web/API/Headers) class to store headers under the hood.
-This class is case-insensitive, meaning that setting both will actually appends the value to the same key:
+The [`Request`](https://developer.mozilla.org/en-US/docs/Web/API/Request) object
+from the Fetch API uses the
+[`Headers`](https://developer.mozilla.org/en-US/docs/Web/API/Headers) class to
+store headers under the hood. This class is case-insensitive, meaning that
+setting both will actually appends the value to the same key:
 
 ```js
 const headers = new Headers();
@@ -938,17 +972,18 @@ headers.forEach((value, key) => console.log(key, value));
 // prints: accept application/json, application/json
 ```
 
-When using `wretch`, please be mindful of this limitation and avoid setting the same header multiple times with a different case:
+When using `wretch`, please be mindful of this limitation and avoid setting the
+same header multiple times with a different case:
 
 ```js
 wretch(url)
   .headers({ "content-type": "application/json" })
   // .json is a shortcut for .headers("Content-Type": "application/json").post().json()
-  .json({ foo: "bar" })
-  // Wretch stores the headers inside a plain javascript object and will not deduplicate them.
-  // Later on when fetch builds the Headers object the content type header will be set twice
-  // and its value will be "application/json, application/json".
-  // Ultimately this is certainly not what you want.
+  .json({ foo: "bar" });
+// Wretch stores the headers inside a plain javascript object and will not deduplicate them.
+// Later on when fetch builds the Headers object the content type header will be set twice
+// and its value will be "application/json, application/json".
+// Ultimately this is certainly not what you want.
 ```
 
 #### Please check the issue [#80](https://github.com/elbywan/wretch/issues/80) for more information.
@@ -959,38 +994,38 @@ You can use the following middleware to deduplicate headers (thanks @jimmed 🙇
 
 ```js
 export const manipulateHeaders =
-  callback => next => (url, { headers, ...opts }) => {
-    const nextHeaders = callback(new Headers(headers))
-    return next(url, { ...opts, headers: nextHeaders })
-  }
+  (callback) => (next) => (url, { headers, ...opts }) => {
+    const nextHeaders = callback(new Headers(headers));
+    return next(url, { ...opts, headers: nextHeaders });
+  };
 
 export const dedupeHeaders = (dedupeHeaderLogic = {}) => {
   const deduperMap = new Map(
     Object.entries(dedupeHeaderLogic).map(([k, v]) => [k.toLowerCase(), v]),
-  )
-  const dedupe = key =>
-    deduperMap.get(key.toLowerCase()) ?? (values => new Set(values))
+  );
+  const dedupe = (key) =>
+    deduperMap.get(key.toLowerCase()) ?? ((values) => new Set(values));
 
   return manipulateHeaders((headers) => {
     Object.entries(headers.raw()).forEach(([key, values]) => {
-      const deduped = Array.from(dedupe(key)(values))
-      headers.delete(key)
+      const deduped = Array.from(dedupe(key)(values));
+      headers.delete(key);
       deduped.forEach((value, index) =>
-        headers[index ? 'append' : 'set'](key.toLowerCase(), value),
-      )
-    })
-    return headers
-  })
-}
+        headers[index ? "append" : "set"](key.toLowerCase(), value)
+      );
+    });
+    return headers;
+  });
+};
 
 // By default, it will deduplicate identical values for a given header. This can be used as follows:
-wretch().middlewares([dedupeHeaders()])
+wretch().middlewares([dedupeHeaders()]);
 // If there is a specific header for which the defaults cause problems, then you can provide a callback to handle deduplication yourself:
 wretch().middlewares([
   dedupeHeaders({
-    Accept: (values) => values.filter(v => v !== '*/*')
-  })
-])
+    Accept: (values) => values.filter((v) => v !== "*/*"),
+  }),
+]);
 ```
 
 # Migration from v1
@@ -1005,79 +1040,87 @@ Wretch has been **completely rewritten** with the following goals in mind:
 
 ## Compatibility
 
-`wretch@1` was transpiled to es5, `wretch@2` is now transpiled to es2018.
-Any "modern" browser and Node.js versions >= 14 should parse the library without issues.
+`wretch@1` was transpiled to es5, `wretch@2` is now transpiled to es2018. Any
+"modern" browser and Node.js versions >= 14 should parse the library without
+issues.
 
-If you need compatibility with older browsers/nodejs versions then either stick with v1, use poyfills
-or configure `@babel` to make it transpile wretch.
+If you need compatibility with older browsers/nodejs versions then either stick
+with v1, use poyfills or configure `@babel` to make it transpile wretch.
 
 ## Addons
 
-Some features that were part of `wretch` v1 are now split apart and must be imported through addons.
-It is now needed to pass the Addon to the [`.addon`](#addonaddon-wretchaddon) method to register it.
+Some features that were part of `wretch` v1 are now split apart and must be
+imported through addons. It is now needed to pass the Addon to the
+[`.addon`](#addonaddon-wretchaddon) method to register it.
 
 Please refer to the [Addons](#addons) documentation.
 
- ```js
+```js
 /* Previously (wretch@1) */
-import wretch from "wretch"
+import wretch from "wretch";
 
-wretch.formData({ hello: "world" }).query({ check: true })
+wretch.formData({ hello: "world" }).query({ check: true });
 
 /* Now (wretch@2) */
-import FormDataAddon from "wretch/addons/formData"
-import QueryStringAddon from "wretch/addons/queryString"
-import baseWretch from "wretch"
+import FormDataAddon from "wretch/addons/formData";
+import QueryStringAddon from "wretch/addons/queryString";
+import baseWretch from "wretch";
 
 // Add both addons
-const wretch = baseWretch().addon(FormDataAddon).addon(QueryStringAddon)
+const wretch = baseWretch().addon(FormDataAddon).addon(QueryStringAddon);
 
 // Additional features are now available
-wretch.formData({ hello: "world" }).query({ check: true })
+wretch.formData({ hello: "world" }).query({ check: true });
 ```
 
 ## Typescript
 
-Types have been renamed and refactored, please update your imports accordingly and refer to the [typescript api documentation](https://elbywan.github.io/wretch/api/modules/index.html).
+Types have been renamed and refactored, please update your imports accordingly
+and refer to the
+[typescript api documentation](https://elbywan.github.io/wretch/api/modules/index.html).
 
 ## API Changes
 
 ### Replace / Mixin arguments
 
-Some functions used to have a `mixin = true` argument that could be used to merge the value, others a `replace = false` argument performing the opposite.
-In v2 there are only `replace = false` arguments but the default behaviour should be preserved.
+Some functions used to have a `mixin = true` argument that could be used to
+merge the value, others a `replace = false` argument performing the opposite. In
+v2 there are only `replace = false` arguments but the default behaviour should
+be preserved.
 
 ```js
 /* Previously (wretch@1) */
-wretch.options({ credentials: "same-origin" }, false) // false: do not merge the value
-wretch.options({ credentials: "same-origin" }) // Default behaviour stays the same
+wretch.options({ credentials: "same-origin" }, false); // false: do not merge the value
+wretch.options({ credentials: "same-origin" }); // Default behaviour stays the same
 
 /* Now (wretch@2) */
-wretch.options({ credentials: "same-origin" }, true) // true: replace the existing value
-wretch.options({ credentials: "same-origin" }) // Default behaviour stays the same
+wretch.options({ credentials: "same-origin" }, true); // true: replace the existing value
+wretch.options({ credentials: "same-origin" }); // Default behaviour stays the same
 ```
 
 ### HTTP methods extra argument
 
-In v1 it was possible to set fetch options while calling the http methods to end the request chain.
+In v1 it was possible to set fetch options while calling the http methods to end
+the request chain.
 
 ```js
 /* Previously (wretch@1) */
-wretch("...").get({ my: "option" })
+wretch("...").get({ my: "option" });
 ```
 
-This was a rarely used feature and the extra argument now appends a string to the base url.
+This was a rarely used feature and the extra argument now appends a string to
+the base url.
 
 ```js
 /* Now (wretch@2) */
-wretch("https://base.com").get("/resource/1")
+wretch("https://base.com").get("/resource/1");
 ```
 
 ### Replay function
 
-The `.replay` function has been renamed to [`.fetch`](https://elbywan.github.io/wretch/api/interfaces/index.Wretch.html#fetch).
+The `.replay` function has been renamed to
+[`.fetch`](https://elbywan.github.io/wretch/api/interfaces/index.Wretch.html#fetch).
 
 # License
 
 MIT
-

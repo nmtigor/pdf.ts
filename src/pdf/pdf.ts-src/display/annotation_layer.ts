@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-import type { CSSStyleName, rect_t } from "@fe-lib/alias.ts";
+import type { CSSStyleName, rect_t, TupleOf } from "@fe-lib/alias.ts";
 import type { red_t, rgb_t } from "@fe-lib/color/alias.ts";
 import type { HSElement } from "@fe-lib/dom.ts";
 import { div, html, span, svg as createSVG, textnode } from "@fe-lib/dom.ts";
@@ -63,6 +63,7 @@ import {
   setLayerDimensions,
 } from "./display_utils.ts";
 import { XfaLayer } from "./xfa_layer.ts";
+import type { Outlines } from "../alias.ts";
 /*80--------------------------------------------------------------------------*/
 
 const DEFAULT_TAB_INDEX = 1000;
@@ -1405,7 +1406,9 @@ class TextWidgetAnnotationElement extends WidgetAnnotationElement {
           }
           elementData.lastCommittedValue = (target as El).value;
           elementData.commitKey = 1;
-          elementData.focused = true;
+          if (!this.data.actions?.Focus) {
+            elementData.focused = true;
+          }
         });
 
         element.addEventListener("updatefromsandbox", (jsEvent: Event) => {
@@ -1518,7 +1521,9 @@ class TextWidgetAnnotationElement extends WidgetAnnotationElement {
           if (!elementData.focused || !event.relatedTarget) {
             return;
           }
-          elementData.focused = false;
+          if (!this.data.actions?.Blur) {
+            elementData.focused = false;
+          }
           const { value } = event.target as El;
           elementData.userValue = value;
           if (elementData.lastCommittedValue !== value) {
@@ -1753,6 +1758,23 @@ class RadioButtonWidgetAnnotationElement extends WidgetAnnotationElement {
       // The value has been changed through js and set in annotationStorage.
       value = value !== data.buttonValue;
       storage.setValue(id, { value });
+    }
+
+    if (value) {
+      // It's possible that multiple radio buttons are checked.
+      // So if this one is checked we just reset the other ones.
+      // (see bug 1864136). Then when the other ones will be rendered they will
+      // unchecked (because of their value in the storage).
+      // Consequently, the first checked radio button will be the only checked
+      // one.
+      for (
+        const radio of this._getElementsByName(
+          data.fieldName!,
+          /* skipId = */ id,
+        )
+      ) {
+        storage.setValue(radio.id!, { value: false });
+      }
     }
 
     const element = html("input");
@@ -3090,9 +3112,10 @@ export interface AnnotStorageValue {
   noPrint?: unknown;
   noView?: unknown;
   opacity?: number;
+  outlines?: TupleOf<number, 4>[];
   pageIndex?: number;
   parentTreeId?: number;
-  structTreeParent?: StructTreeParent;
+  quadPoints?: TupleOf<number, 7>;
   paths?: {
     bezier: number[];
     points: number[];
@@ -3101,6 +3124,7 @@ export interface AnnotStorageValue {
   rect?: rect_t | undefined;
   ref?: Ref;
   rotation?: number;
+  structTreeParent?: StructTreeParent;
   structTreeParentId?: string | undefined;
   thickness?: number;
   user?: string;

@@ -301,7 +301,13 @@ export interface EventMap {
     switchannotationeditormode: {
         source: AnnotationElement | AnnotationEditorUIManager;
         mode: AnnotationEditorType | undefined;
+        /**
+         * ID of the existing annotation to edit.
+         */
         editId?: string;
+        /**
+         * True if the mode change is due to a keyboard action.
+         */
         isFromKeyboard?: boolean;
     };
     switchannotationeditorparams: {

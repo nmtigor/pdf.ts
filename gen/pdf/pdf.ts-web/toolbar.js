@@ -16,11 +16,8 @@
  * limitations under the License.
  */
 import { noContextMenu } from "../../lib/util/general.js";
-import { GENERIC, PDFJSDev } from "../../global.js";
 import { AnnotationEditorType } from "../pdf.ts-src/pdf.js";
 import { DEFAULT_SCALE, DEFAULT_SCALE_VALUE, MAX_SCALE, MIN_SCALE, toggleCheckedBtn, } from "./ui_utils.js";
-/*80--------------------------------------------------------------------------*/
-const PAGE_NUMBER_LOADING_INDICATOR = "visiblePageIsLoading";
 export class Toolbar {
     toolbar;
     eventBus;
@@ -79,9 +76,6 @@ export class Toolbar {
                 },
             },
         ];
-        /*#static*/  {
-            this.buttons.push({ element: options.openFile, eventName: "openfile" });
-        }
         this.items = {
             numPages: options.numPages,
             pageNumber: options.pageNumber,
@@ -237,7 +231,7 @@ export class Toolbar {
     };
     updateLoadingIndicatorState(loading = false) {
         const { pageNumber } = this.items;
-        pageNumber.classList.toggle(PAGE_NUMBER_LOADING_INDICATOR, loading);
+        pageNumber.classList.toggle("loading", loading);
     }
 }
 /*80--------------------------------------------------------------------------*/

@@ -1,4 +1,4 @@
-import type { rect_t } from "../../../lib/alias.js";
+import type { rect_t, TupleOf } from "../../../lib/alias.js";
 import type { rgb_t } from "../../../lib/color/alias.js";
 import type { HSElement } from "../../../lib/dom.js";
 import type { IDownloadManager, IL10n, IPDFLinkService } from "../../pdf.ts-web/interfaces.js";
@@ -262,9 +262,10 @@ export interface AnnotStorageValue {
     noPrint?: unknown;
     noView?: unknown;
     opacity?: number;
+    outlines?: TupleOf<number, 4>[];
     pageIndex?: number;
     parentTreeId?: number;
-    structTreeParent?: StructTreeParent;
+    quadPoints?: TupleOf<number, 7>;
     paths?: {
         bezier: number[];
         points: number[];
@@ -273,6 +274,7 @@ export interface AnnotStorageValue {
     rect?: rect_t | undefined;
     ref?: Ref;
     rotation?: number;
+    structTreeParent?: StructTreeParent;
     structTreeParentId?: string | undefined;
     thickness?: number;
     user?: string;

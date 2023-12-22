@@ -44,10 +44,6 @@ declare function getViewerConfiguration(): {
          * Button to open find bar.
          */
         viewFind: HTMLButtonElement;
-        /**
-         * Button to open a new document.
-         */
-        openFile: HTMLButtonElement | undefined;
         print: HTMLButtonElement;
         /**
          * Button to switch to FreeText editing.

@@ -11,8 +11,9 @@ const appendQueryParams = (url, qp, replace, config) => {
         for (const key in qp) {
             const value = qp[key];
             if (qp[key] instanceof Array) {
-                for (const val of value)
+                for (const val of value) {
                     usp.append(key, stringify(val));
+                }
             }
             else {
                 usp.append(key, stringify(value));
@@ -21,10 +22,12 @@ const appendQueryParams = (url, qp, replace, config) => {
         queryString = usp.toString();
     }
     const split = url.split("?");
-    if (!queryString)
+    if (!queryString) {
         return replace ? split[0] : url;
-    if (replace || split.length < 2)
+    }
+    if (replace || split.length < 2) {
         return split[0] + "?" + queryString;
+    }
     return url + "&" + queryString;
 };
 /**
@@ -39,9 +42,12 @@ const appendQueryParams = (url, qp, replace, config) => {
 const queryString = {
     wretch: {
         query(qp, replace = false) {
-            return { ...this, _url: appendQueryParams(this._url, qp, replace, this._config) };
-        }
-    }
+            return {
+                ...this,
+                _url: appendQueryParams(this._url, qp, replace, this._config),
+            };
+        },
+    },
 };
 export default queryString;
 //# sourceMappingURL=queryString.js.map
