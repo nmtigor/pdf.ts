@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/xfa/setup.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import { type XFANsConfig } from "./config.js";
 import { type XFANsConnectionSet } from "./connection_set.js";
 import { type XFANsDatasets } from "./datasets.js";

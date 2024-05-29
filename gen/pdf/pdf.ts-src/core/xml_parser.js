@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/xml_parser.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import { encodeToXmlString } from "./core_utils.js";
 /*80--------------------------------------------------------------------------*/
 export var XMLParserErrorCode;

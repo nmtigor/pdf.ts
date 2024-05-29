@@ -1,8 +1,17 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/display/editor/annotation_editor_layer.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import type { IL10n } from "../../../pdf.ts-web/interfaces.js";
 import type { TextAccessibilityManager } from "../../../pdf.ts-web/text_accessibility.js";
+import type { TextLayerBuilder } from "../../../pdf.ts-web/text_layer_builder.js";
 import { AnnotationEditorType } from "../../shared/util.js";
 import type { AnnotationLayer, AnnotStorageValue } from "../annotation_layer.js";
 import { type PageViewport } from "../display_utils.js";
+import type { DrawLayer } from "../draw_layer.js";
 import { AnnotationEditor } from "./editor.js";
 import type { AddCommandsP, AnnotationEditorUIManager } from "./tools.js";
 interface AnnotationEditorLayerOptions {
@@ -14,6 +23,8 @@ interface AnnotationEditorLayerOptions {
     pageIndex: number;
     l10n: IL10n;
     annotationLayer?: AnnotationLayer | undefined;
+    textLayer?: TextLayerBuilder | undefined;
+    drawLayer: DrawLayer;
     viewport: PageViewport;
 }
 interface RenderEditorLayerOptions {
@@ -28,12 +39,16 @@ type PasteEditorP_ = {
 export declare class AnnotationEditorLayer {
     #private;
     static _initialized: boolean;
+    get isEmpty(): boolean;
+    get scale(): number;
+    hasTextLayer(textLayer: Element | null): boolean;
+    drawLayer: DrawLayer;
     pageIndex: number;
     div: HTMLDivElement | undefined;
     viewport: PageViewport;
     isMultipleSelection?: boolean;
-    constructor({ uiManager, pageIndex, div, accessibilityManager, annotationLayer, viewport, l10n, }: AnnotationEditorLayerOptions);
-    get isEmpty(): boolean;
+    constructor({ uiManager, pageIndex, div, accessibilityManager, annotationLayer, drawLayer, textLayer, viewport, l10n, }: AnnotationEditorLayerOptions);
+    get isInvisible(): boolean;
     /**
      * Update the toolbar if it's required to reflect the tool currently used.
      */
@@ -52,6 +67,7 @@ export declare class AnnotationEditorLayer {
      */
     addCommands(params: AddCommandsP): void;
     togglePointerEvents(enabled?: boolean): void;
+    toggleAnnotationLayerPointerEvents(enabled?: boolean): void;
     /**
      * Enable pointer events on the main div in order to enable
      * editor creation.
@@ -66,6 +82,8 @@ export declare class AnnotationEditorLayer {
      * Set the current editor.
      */
     setActiveEditor(editor: AnnotationEditor | undefined): void;
+    enableTextSelection(): void;
+    disableTextSelection(): void;
     enableClick(): void;
     disableClick(): void;
     attach(editor: AnnotationEditor): void;
@@ -96,6 +114,7 @@ export declare class AnnotationEditorLayer {
      * Get an id for an editor.
      */
     getNextId(): string;
+    canCreateNewEmptyEditor(): boolean | undefined;
     /**
      * Paste some content into a new editor.
      */
@@ -104,6 +123,10 @@ export declare class AnnotationEditorLayer {
      * Create a new editor
      */
     deserialize(data: AnnotStorageValue): AnnotationEditor | undefined;
+    /**
+     * Create and add a new editor.
+     */
+    createAndAddNewEditor(event: PointerEvent, isCentered: boolean, data?: {}): AnnotationEditor | undefined;
     /**
      * Create and add a new editor.
      */

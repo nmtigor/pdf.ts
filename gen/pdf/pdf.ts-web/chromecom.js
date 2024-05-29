@@ -1,15 +1,19 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/chromecom.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import { MouseButton } from "../../lib/dom.js";
 import { CHROME, PDFJSDev } from "../../global.js";
-import { DefaultExternalServices, viewerApp } from "./app.js";
 import { AppOptions, ViewOnLoad } from "./app_options.js";
-import { DownloadManager } from "./download_manager.js";
+import { BaseExternalServices } from "./external_services.js";
 import { GenericScripting } from "./generic_scripting.js";
 import { GenericL10n } from "./genericl10n.js";
 import { BasePreferences } from "./preferences.js";
 import { CursorTool } from "./ui_utils.js";
+import { D_web } from "../alias.js";
 /*80--------------------------------------------------------------------------*/
 /*#static*/  {
     throw new Error('Module "pdfjs-web/chromecom" shall not be used outside CHROME build.');
@@ -27,10 +31,14 @@ import { CursorTool } from "./ui_utils.js";
         chrome.runtime.sendMessage("showPageAction");
     }
     AppOptions.set("defaultUrl", defaultUrl);
-    // Ensure that viewerApp.initialBookmark reflects the current hash,
+})();
+let viewerApp = { initialized: false };
+export function initCom(app) {
+    viewerApp = app;
+    // Ensure that PDFViewerApplication.initialBookmark reflects the current hash,
     // in case the URL rewrite above results in a different hash.
     viewerApp.initialBookmark = location.hash.slice(1);
-})();
+}
 export const ChromeCom = {
     /**
      * Creates an event that the extension is listening for and will
@@ -62,10 +70,9 @@ export const ChromeCom = {
      * Resolves a PDF file path and attempts to detects length.
      *
      * @param file Absolute URL of PDF file.
-     * @param overlayManager Manager for the viewer overlays.
      * @param callback A callback with resolved URL and file length.
      */
-    resolvePDFFile(file, overlayManager, callback) {
+    resolvePDFFile(file, callback) {
         // Expand drive:-URLs to filesystem URLs (Chrome OS)
         file = file.replace(/^drive:/i, "filesystem:" + location.origin + "/external/");
         if (/^https?:/.test(file)) {
@@ -85,12 +92,10 @@ export const ChromeCom = {
                 // Even without this check, the file load in frames is still blocked,
                 // but this may change in the future (https://crbug.com/550151).
                 if (origin && !/^file:|^chrome-extension:/.test(origin)) {
-                    viewerApp._documentError("Blocked " +
-                        origin +
-                        " from loading " +
-                        file +
-                        ". Refused to load a local file in a non-local page " +
-                        "for security reasons.");
+                    viewerApp._documentError(undefined, {
+                        message: `Blocked ${origin} from loading ${file}. Refused to load ` +
+                            "a local file in a non-local page for security reasons.",
+                    });
                     return;
                 }
                 isAllowedFileSchemeAccess((isAllowedAccess) => {
@@ -98,7 +103,7 @@ export const ChromeCom = {
                         callback(file);
                     }
                     else {
-                        requestAccessToLocalFile(file, overlayManager, callback);
+                        requestAccessToLocalFile(file, viewerApp.overlayManager, callback);
                     }
                 });
             });
@@ -165,8 +170,7 @@ function requestAccessToLocalFile(fileUrl, overlayManager, callback) {
         // Use Chrome's definition of UI language instead of PDF.js's #lang=...,
         // because the shown string should match the UI at chrome://extensions.
         // These strings are from chrome/app/resources/generated_resources_*.xtb.
-        const P_base = "../../../res/pdf/pdf.ts-web";
-        const jo_ = (await import(`${P_base}/chrome-i18n-allow-access-to-file-urls.json`, {
+        const jo_ = (await import(`/${D_web}/chrome-i18n-allow-access-to-file-urls.json`, {
             assert: { type: "json" },
         })).default;
         const i18nFileAccessLabel = jo_[chrome.i18n.getUILanguage?.()];
@@ -290,7 +294,7 @@ function setReferer(url, callback) {
 // Note: The background page takes care of migrating values from
 // chrome.storage.local to chrome.storage.sync when needed.
 const storageArea = chrome.storage.sync || chrome.storage.local;
-class ChromePreferences extends BasePreferences {
+export class Preferences extends BasePreferences {
     async _writeToStorage(prefObj) {
         return new Promise((resolve) => {
             if (prefObj === this.defaults) {
@@ -370,26 +374,23 @@ class ChromePreferences extends BasePreferences {
         });
     }
 }
-class ChromeExternalServices extends DefaultExternalServices {
-    initPassiveLoading(callbacks) {
-        // defaultUrl is set in viewer.js
-        ChromeCom.resolvePDFFile(AppOptions.defaultUrl, viewerApp.overlayManager, (url, length, originalUrl) => {
-            callbacks.onOpenWithURL(url, length, originalUrl);
+export class MLManager {
+    async guess() {
+        return undefined;
+    }
+}
+export class ExternalServices extends BaseExternalServices {
+    initPassiveLoading() {
+        ChromeCom.resolvePDFFile(AppOptions.defaultUrl, function (url, length, originalUrl) {
+            viewerApp.open({ url, length, originalUrl });
         });
-    }
-    createDownloadManager() {
-        return new DownloadManager();
-    }
-    createPreferences() {
-        return new ChromePreferences();
     }
     async createL10n() {
         return new GenericL10n(navigator.language);
     }
-    createScripting({ sandboxBundleSrc = "" }) {
-        return new GenericScripting(sandboxBundleSrc);
+    createScripting() {
+        return new GenericScripting(AppOptions.sandboxBundleSrc);
     }
 }
-viewerApp.externalServices = new ChromeExternalServices();
 /*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=chromecom.js.map

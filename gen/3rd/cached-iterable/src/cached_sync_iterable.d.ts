@@ -1,4 +1,10 @@
 import CachedIterable from "./cached_iterable.js";
+/**
+ * CachedSyncIterable caches the elements yielded by an iterable.
+ *
+ * It can be used to iterate over an iterable many times without depleting the
+ * iterable.
+ */
 export default class CachedSyncIterable<T> extends CachedIterable<T, IteratorResult<T>> {
     iterator: Iterator<T, any, undefined>;
     /**

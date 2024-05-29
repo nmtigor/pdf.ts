@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/xfa/fonts.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import type { ErrorFont, Font } from "../fonts.js";
 import type { XFAFontMetrics } from "../xfa_fonts.js";
 import type { XFAFontBase } from "./alias.js";

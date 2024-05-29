@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/text_accessibility.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 /**
  * This class aims to provide some methods:
  *  - to reorder elements in the DOM with respect to the visual order;

@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/flate_stream.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 /* Copyright 2012 Mozilla Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,7 +25,7 @@
  * of XPDF's implementation, made available under the Apache 2.0 open source
  * license.
  */
-import { FormatError } from "../shared/util.js";
+import { FormatError, info } from "../shared/util.js";
 import { DecodeStream } from "./decode_stream.js";
 const codeLenCodeMap = new Int32Array([
     16,
@@ -762,6 +766,10 @@ export class FlateStream extends DecodeStream {
         }
         return [codes, maxLen];
     }
+    #endsStreamOnError(err) {
+        info(err);
+        this.eof = true;
+    }
     /** @implement */
     readBlock() {
         let buffer, len;
@@ -776,19 +784,23 @@ export class FlateStream extends DecodeStream {
             // uncompressed block
             let b;
             if ((b = str.getByte()) === -1) {
-                throw new FormatError("Bad block header in flate stream");
+                this.#endsStreamOnError("Bad block header in flate stream");
+                return;
             }
             let blockLen = b;
             if ((b = str.getByte()) === -1) {
-                throw new FormatError("Bad block header in flate stream");
+                this.#endsStreamOnError("Bad block header in flate stream");
+                return;
             }
             blockLen |= b << 8;
             if ((b = str.getByte()) === -1) {
-                throw new FormatError("Bad block header in flate stream");
+                this.#endsStreamOnError("Bad block header in flate stream");
+                return;
             }
             let check = b;
             if ((b = str.getByte()) === -1) {
-                throw new FormatError("Bad block header in flate stream");
+                this.#endsStreamOnError("Bad block header in flate stream");
+                return;
             }
             check |= b << 8;
             if (check !== (~blockLen & 0xffff) && (blockLen !== 0 || check !== 0)) {

@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/pdf_attachment_viewer.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import { type Attachment } from "../pdf.ts-src/pdf.js";
 import type { BaseTreeViewerCtorP } from "./base_tree_viewer.js";
 import { BaseTreeViewer } from "./base_tree_viewer.js";

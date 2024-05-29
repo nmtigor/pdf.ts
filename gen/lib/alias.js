@@ -8,6 +8,7 @@ export const zUint = zInt.min(0);
 const zInt64 = zInt;
 export const zUint16 = zUint.max(2 ** 16 - 1);
 export const zUint8 = zUint.max(2 ** 8 - 1);
+export const zUnum = z.number().min(0);
 export const zId = zUint;
 export const loff_UNDEFINED = -1000000001;
 export const llen_MAX = 1000000000;
@@ -51,6 +52,34 @@ export var ChrTyp;
 })(ChrTyp || (ChrTyp = {}));
 export const C2D = globalThis.CanvasRenderingContext2D;
 export const OC2D = globalThis.OffscreenCanvasRenderingContext2D;
+/*64----------------------------------------------------------*/
+export var BufrDir;
+(function (BufrDir) {
+    BufrDir[BufrDir["ltr"] = 1] = "ltr";
+    BufrDir[BufrDir["rtl"] = 2] = "rtl";
+})(BufrDir || (BufrDir = {}));
+export var WritingMode;
+(function (WritingMode) {
+    WritingMode[WritingMode["htb"] = 1] = "htb";
+    WritingMode[WritingMode["vrl"] = 4] = "vrl";
+    WritingMode[WritingMode["vlr"] = 8] = "vlr";
+})(WritingMode || (WritingMode = {}));
+export var WritingDir;
+(function (WritingDir) {
+    WritingDir[WritingDir["h"] = 1] = "h";
+    WritingDir[WritingDir["v"] = 12] = "v";
+})(WritingDir || (WritingDir = {}));
+/*80--------------------------------------------------------------------------*/
+/* zIndex */
+/* lib/Scronr */
+export const Scrod_z = 10;
+export const Scrobar_z = 10;
+/*80--------------------------------------------------------------------------*/
+export const scrollO = {
+    left: 0,
+    top: 0,
+    behavior: "instant",
+};
 // export class DumRunr implements Runr {
 //   run() {}
 // }

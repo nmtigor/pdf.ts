@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/pdf_scripting_manager.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 /* Copyright 2021 Mozilla Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,8 +19,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { CHROME, GENERIC, PDFJSDev } from "../../global.js";
 import { PromiseCap } from "../../lib/util/PromiseCap.js";
+import { TESTING } from "../../global.js";
 import { shadow } from "../pdf.ts-src/pdf.js";
 import { apiPageLayoutToViewerModes, RenderingStates } from "./ui_utils.js";
 export class PDFScriptingManager {
@@ -37,16 +41,13 @@ export class PDFScriptingManager {
         return this.#ready;
     }
     #eventBus;
-    #sandboxBundleSrc;
     #externalServices;
     #docProperties;
-    constructor({ eventBus, sandboxBundleSrc, externalServices, docProperties, }) {
+    constructor({ eventBus, externalServices, docProperties }) {
         this.#eventBus = eventBus;
-        /*#static*/  {
-            this.#sandboxBundleSrc = sandboxBundleSrc;
-        }
         this.#externalServices = externalServices;
         this.#docProperties = docProperties;
+        /*#static*/ 
     }
     async setDocument(pdfDocument) {
         if (this.#pdfDocument) {
@@ -202,6 +203,7 @@ export class PDFScriptingManager {
             pdfViewer.isChangingPresentationMode;
         const { id, siblings, command, value } = detail;
         if (!id) {
+            /*#static*/ 
             switch (command) {
                 case "clear":
                     console.clear();
@@ -339,9 +341,7 @@ export class PDFScriptingManager {
         if (this.#scripting) {
             throw new Error("#initScripting: Scripting already exists.");
         }
-        return this.#externalServices.createScripting({
-            sandboxBundleSrc: this.#sandboxBundleSrc,
-        });
+        return this.#externalServices.createScripting();
     }
     async #destroyScripting() {
         if (!this.#scripting) {

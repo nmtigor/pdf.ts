@@ -1,22 +1,26 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/pdf_scripting_manager.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import type { PDFDocumentProxy } from "../pdf.ts-src/pdf.js";
-import type { DefaultExternalServices, ScriptingDocProperties } from "./app.js";
+import type { ScriptingDocProperties } from "./app.js";
 import type { EventBus } from "./event_utils.js";
 import type { PDFViewer } from "./pdf_viewer.js";
+import type { BaseExternalServices } from "./external_services.js";
 interface PDFScriptingManagerOptions {
     /**
      * The application event bus.
      */
     eventBus: EventBus;
     /**
-     * The path and filename of the scripting bundle.
-     */
-    sandboxBundleSrc: string | undefined;
-    /**
      * The factory that is used when
      * initializing scripting; must contain a `createScripting` method.
      * PLEASE NOTE: Primarily intended for the default viewer use-case.
      */
-    externalServices?: DefaultExternalServices;
+    externalServices?: BaseExternalServices;
     /**
      * The function that is used to lookup
      * the necessary document properties.
@@ -28,7 +32,7 @@ export declare class PDFScriptingManager {
     setViewer(pdfViewer: PDFViewer): void;
     get destroyPromise(): Promise<void> | undefined;
     get ready(): boolean;
-    constructor({ eventBus, sandboxBundleSrc, externalServices, docProperties, }: PDFScriptingManagerOptions);
+    constructor({ eventBus, externalServices, docProperties }: PDFScriptingManagerOptions);
     setDocument(pdfDocument?: PDFDocumentProxy): Promise<void>;
     dispatchWillSave(): Promise<void | undefined>;
     dispatchDidSave(): Promise<void | undefined>;

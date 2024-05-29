@@ -1,10 +1,18 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/app
+ * @license Apache-2.0
+ ******************************************************************************/
 import "../../lib/jslang.js";
-import type { DocumentInfo, Metadata, OptionalContentConfig, PDFDataRangeTransport, PDFDocumentLoadingTask, PDFDocumentProxy, PrintAnnotationStorage } from "../pdf.ts-src/pdf.js";
+import type { DocumentInfo, Metadata, PDFDataRangeTransport, PDFDocumentLoadingTask, PDFDocumentProxy, PrintAnnotationStorage } from "../pdf.ts-src/pdf.js";
 import { AnnotationEditorParams } from "./annotation_editor_params.js";
+import { CaretBrowsingMode } from "./caret_browsing.js";
 import { PDFBug } from "./debugger.js";
-import { EventBus, type EventMap } from "./event_utils.js";
+import { EventBus } from "./event_utils.js";
 import type { NimbusExperimentData } from "./firefoxcom.js";
-import type { IDownloadManager, IL10n, IScripting } from "./interfaces.js";
+import type { IDownloadManager, IL10n } from "./interfaces.js";
 import { OverlayManager } from "./overlay_manager.js";
 import { PasswordPrompt } from "./password_prompt.js";
 import { PDFAttachmentViewer } from "./pdf_attachment_viewer.js";
@@ -23,7 +31,7 @@ import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
 import { PDFScriptingManager } from "./pdf_scripting_manager.js";
 import { PDFSidebar } from "./pdf_sidebar.js";
 import { PDFThumbnailViewer } from "./pdf_thumbnail_viewer.js";
-import { type PageOverview, PDFViewer } from "./pdf_viewer.js";
+import { PDFViewer } from "./pdf_viewer.js";
 import type { BasePreferences } from "./preferences.js";
 import { SecondaryToolbar } from "./secondary_toolbar.js";
 import { Toolbar as GeckoviewToolbar } from "./toolbar-geckoview.js";
@@ -43,20 +51,6 @@ export interface PassiveLoadingCbs {
     onOpenWithURL(url: string, length?: number, originalUrl?: string): void;
     onError(err?: ErrorMoreInfo): void;
     onProgress(loaded: number, total: number): void;
-}
-export declare class DefaultExternalServices {
-    updateFindControlState(data: FindControlState): void;
-    updateFindMatchesCount(data: MatchesCount): void;
-    initPassiveLoading(callbacks: PassiveLoadingCbs): void;
-    reportTelemetry(data: EventMap["reporttelemetry"]["details"]): void;
-    createDownloadManager(): IDownloadManager;
-    createPreferences(): BasePreferences;
-    createL10n(): Promise<IL10n>;
-    createScripting(options: {
-        sandboxBundleSrc?: string | undefined;
-    }): IScripting;
-    updateEditorStates(data: EventMap["annotationeditorstateschanged"]): void;
-    getNimbusExperimentData(): Promise<NimbusExperimentData | undefined>;
 }
 interface SetInitialViewP_ {
     rotation?: number | undefined;
@@ -83,6 +77,7 @@ type OpenP_ = {
     url?: string;
     length?: number | undefined;
     data?: ArrayBuffer;
+    filename?: string;
     range?: PDFDataRangeTransport;
     originalUrl?: string | undefined;
 };
@@ -131,7 +126,6 @@ export declare class PDFViewerApplication {
     url: string;
     baseUrl: string;
     _downloadUrl: string;
-    externalServices: DefaultExternalServices;
     _boundEvents: Record<string, ((...args: any[]) => void) | undefined>;
     documentInfo: DocumentInfo | undefined;
     metadata: Metadata | undefined;
@@ -148,14 +142,21 @@ export declare class PDFViewerApplication {
     _touchInfo: TouchInfo_ | undefined;
     _isCtrlKeyDown: boolean;
     _nimbusDataPromise?: Promise<NimbusExperimentData | undefined>;
+    _caretBrowsing: CaretBrowsingMode | undefined;
+    _isScrolling: boolean;
+    _lastScrollTop: number;
+    _lastScrollLeft: number;
     disableAutoFetchLoadingBarTimeout: number | undefined;
     _annotationStorageModified?: boolean;
+    _openFileInput: HTMLInputElement | undefined;
     constructor();
     /**
      * Called once when the document is loaded.
      */
     initialize(appConfig: ViewerConfiguration): Promise<void>;
     run(config: ViewerConfiguration): Promise<void>;
+    get externalServices(): import("./firefoxcom.js").ExternalServices | import("./chromecom.js").ExternalServices | import("./genericcom.js").ExternalServices;
+    get mlManager(): import("./firefoxcom.js").MLManager | import("./chromecom.js").MLManager | import("./genericcom.js").MLManager | undefined;
     get initialized(): boolean;
     get initializedPromise(): Promise<void>;
     zoomIn(steps?: number, scaleFactor?: number): void;
@@ -171,7 +172,8 @@ export declare class PDFViewerApplication {
     get loadingBar(): ProgressBar | undefined;
     get supportsMouseWheelZoomCtrlKey(): boolean;
     get supportsMouseWheelZoomMetaKey(): boolean;
-    initPassiveLoading(file: string | undefined): void;
+    get supportsCaretBrowsingMode(): boolean;
+    moveCaret(isUp: boolean, select: boolean): void;
     setTitleUsingUrl(url?: string, downloadUrl?: string): void;
     setTitle(title?: string): void;
     get _docFilename(): string;
@@ -202,21 +204,21 @@ export declare class PDFViewerApplication {
     download(options?: {}): Promise<void>;
     save(options?: {}): Promise<void>;
     downloadOrSave(options?: {}): void;
-    openInExternalApp(): void;
     /**
      * Report the error; used for errors affecting loading and/or parsing of
      * the entire PDF document.
      */
-    _documentError(message: string, moreInfo?: ErrorMoreInfo): void;
+    _documentError(key: string | undefined, moreInfo?: ErrorMoreInfo): Promise<void>;
     /**
      * Report the error; used for errors affecting e.g. only a single page.
      *
-     * @param message A message that is human readable.
+     * @param key The localization key for the error.
      * @param moreInfo Further information about the error that is
      *  more technical. Should have a 'message' and
      *  optionally a 'stack' property.
+     * @return A (localized) error message that is human readable.
      */
-    _otherError(message: string, moreInfo?: ErrorMoreInfo): void;
+    _otherError(key: string, moreInfo?: ErrorMoreInfo): Promise<string>;
     progress(level: number): void;
     load(pdfDocument: PDFDocumentProxy): void;
     setInitialView(storedHash?: string, { rotation, sidebarView, scrollMode, spreadMode }?: SetInitialViewP_): void;
@@ -241,11 +243,5 @@ export declare class PDFViewerApplication {
     get scriptingReady(): boolean;
 }
 export declare const viewerApp: PDFViewerApplication;
-export declare const PDFPrintServiceFactory: {
-    instance: {
-        supportsPrinting: boolean;
-        createPrintService(pdfDocument: PDFDocumentProxy, pagesOverview: PageOverview[], printContainer: HTMLDivElement, printResolution: number | undefined, optionalContentConfigPromise: Promise<OptionalContentConfig | undefined> | undefined, printAnnotationStoragePromise?: Promise<PrintAnnotationStorage | undefined>, l10n?: IL10n): PDFPrintService;
-    };
-};
 export {};
 //# sourceMappingURL=app.d.ts.map

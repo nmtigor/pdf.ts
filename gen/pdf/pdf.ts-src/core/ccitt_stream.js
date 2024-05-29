@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/ccitt_stream.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import { CCITTFaxDecoder } from "./ccitt.js";
 import { DecodeStream } from "./decode_stream.js";
 import { Dict } from "./primitives.js";

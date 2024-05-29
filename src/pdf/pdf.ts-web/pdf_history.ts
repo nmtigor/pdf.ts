@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/pdf_history.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2017 Mozilla Foundation
  *
@@ -17,16 +21,16 @@
  * limitations under the License.
  */
 
-import { CHROME } from "@fe-src/global.ts";
 import { isObjectLike } from "@fe-lib/jslang.ts";
+import { CHROME } from "@fe-src/global.ts";
 import { type ExplicitDest } from "../pdf.ts-src/pdf.ts";
-import { type PDFLocation } from "./pdf_viewer.ts";
 import { EventBus, EventMap, waitOnEventOrTimeout } from "./event_utils.ts";
 import {
   type HistoryInitP,
   type HistoryPushP,
   type IPDFLinkService,
 } from "./interfaces.ts";
+import { type PDFLocation } from "./pdf_viewer.ts";
 import { isValidRotation, parseQueryString } from "./ui_utils.ts";
 /*80--------------------------------------------------------------------------*/
 
@@ -421,7 +425,7 @@ export class PDFHistory {
 
     let newUrl;
     if (this.#updateUrl && destination?.hash) {
-      const baseUrl = document.location.href.split("#")[0];
+      const baseUrl = document.location.href.split("#", 1)[0];
       // Prevent errors in Firefox.
       if (!baseUrl.startsWith("file://")) {
         newUrl = `${baseUrl}#${destination.hash}`;

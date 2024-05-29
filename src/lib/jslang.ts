@@ -630,6 +630,9 @@ Date.setFullYear = (refdate, year, month, date) => {
 
 declare global {
   interface Math {
+    /**
+     * If `min > max`, `min` has a higher priority than `max`.
+     */
     clamp(min: number, val: number, max: number): number;
 
     // minn( ...values:(number|bigint)[] ):number|bigint;

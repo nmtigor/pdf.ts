@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/pdf.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2012 Mozilla Foundation
  *
@@ -17,6 +21,7 @@
  * limitations under the License.
  */
 
+import { ColorPicker } from "./display/editor/color_picker.ts";
 import type { FieldObject } from "./core/annotation.ts";
 import type {
   Destination,
@@ -138,6 +143,7 @@ export {
   type Attachment,
   build,
   CMapCompressionType,
+  ColorPicker,
   createValidAbsoluteUrl,
   type Destination,
   type DispatchUpdateStatesP,

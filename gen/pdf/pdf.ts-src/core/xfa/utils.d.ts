@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/xfa/utils.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import type { rect_t } from "../../../../lib/alias.js";
 import type { XFAElData } from "./alias.js";
 import { BreakAfter, BreakBefore, Template } from "./template.js";
@@ -35,11 +42,7 @@ export interface XFAColor {
     g: number;
     b: number;
 }
-export declare function getColor(data?: string, def?: number[]): {
-    r: number;
-    g: number;
-    b: number;
-};
+export declare function getColor(data?: string, def?: number[]): XFAColor;
 export interface XFABBox {
     x: number;
     y: number;

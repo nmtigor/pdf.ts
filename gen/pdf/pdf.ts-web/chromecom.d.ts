@@ -1,4 +1,17 @@
-import type { OverlayManager } from "./overlay_manager.js";
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/chromecom.ts
+ * @license Apache-2.0
+ ******************************************************************************/
+import type { PDFViewerApplication } from "./app.js";
+import { UserOptions } from "./app_options.js";
+import { BaseExternalServices } from "./external_services.js";
+import { GenericL10n } from "./genericl10n.js";
+import type { IScripting } from "./interfaces.js";
+import { BasePreferences } from "./preferences.js";
+export declare function initCom(app: PDFViewerApplication): void;
 type _ResolvePDFFileCb = (url: string, length?: number, originalUrl?: string) => void;
 type _GetOriginCb = (origin?: string) => void;
 export declare const ChromeCom: {
@@ -19,10 +32,26 @@ export declare const ChromeCom: {
      * Resolves a PDF file path and attempts to detects length.
      *
      * @param file Absolute URL of PDF file.
-     * @param overlayManager Manager for the viewer overlays.
      * @param callback A callback with resolved URL and file length.
      */
-    resolvePDFFile(file: string, overlayManager: OverlayManager, callback: _ResolvePDFFileCb): void;
+    resolvePDFFile(file: string, callback: _ResolvePDFFileCb): void;
 };
+export declare class Preferences extends BasePreferences {
+    protected _writeToStorage(prefObj: UserOptions): Promise<void>;
+    /** @implement */
+    protected _readFromStorage(prefObj: {
+        prefs: UserOptions;
+    }): Promise<{
+        prefs: UserOptions;
+    }>;
+}
+export declare class MLManager {
+    guess(): Promise<undefined>;
+}
+export declare class ExternalServices extends BaseExternalServices {
+    initPassiveLoading(): void;
+    createL10n(): Promise<GenericL10n>;
+    createScripting(): IScripting;
+}
 export {};
 //# sourceMappingURL=chromecom.d.ts.map

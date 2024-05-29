@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/display/canvas.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2012 Mozilla Foundation
  *
@@ -651,8 +655,8 @@ class CanvasExtraState {
   }
 
   updateRectMinMax(transform: matrix_t, rect: rect_t) {
-    const p1 = Util.applyTransform(rect, transform);
-    const p2 = Util.applyTransform(<dot2d_t> rect.slice(2), transform);
+    const p1 = Util.applyTransform(rect as unknown as dot2d_t, transform);
+    const p2 = Util.applyTransform(rect.slice(2) as dot2d_t, transform);
     const p3 = Util.applyTransform([rect[0], rect[3]], transform);
     const p4 = Util.applyTransform([rect[2], rect[1]], transform);
 
@@ -665,8 +669,8 @@ class CanvasExtraState {
   updateScalingPathMinMax(transform: matrix_t, minMax: rect_t) {
     Util.scaleMinMax(transform, minMax);
     this.minX = Math.min(this.minX, minMax[0]);
-    this.maxX = Math.max(this.maxX, minMax[1]);
-    this.minY = Math.min(this.minY, minMax[2]);
+    this.minY = Math.min(this.minY, minMax[1]);
+    this.maxX = Math.max(this.maxX, minMax[2]);
     this.maxY = Math.max(this.maxY, minMax[3]);
   }
 
@@ -682,12 +686,8 @@ class CanvasExtraState {
     y3: number,
     minMax: rect_t | undefined,
   ) {
-    const box = Util.bezierBoundingBox(x0, y0, x1, y1, x2, y2, x3, y3);
+    const box = Util.bezierBoundingBox(x0, y0, x1, y1, x2, y2, x3, y3, minMax);
     if (minMax) {
-      minMax[0] = Math.min(minMax[0], box[0], box[2]);
-      minMax[1] = Math.max(minMax[1], box[0], box[2]);
-      minMax[2] = Math.min(minMax[2], box[1], box[3]);
-      minMax[3] = Math.max(minMax[3], box[1], box[3]);
       return;
     }
     this.updateRectMinMax(transform, box);
@@ -2596,8 +2596,8 @@ export class CanvasGraphics {
       const color = IR[1];
       const baseTransform = this.baseTransform || getCurrentTransform(this.ctx);
       const canvasGraphicsFactory = {
-        createCanvasGraphics: (ctx: C2D) => {
-          return new CanvasGraphics(
+        createCanvasGraphics: (ctx: C2D) =>
+          new CanvasGraphics(
             ctx,
             this.commonObjs,
             this.objs,
@@ -2607,8 +2607,7 @@ export class CanvasGraphics {
               optionalContentConfig: this.optionalContentConfig,
               markedContentStack: this.markedContentStack,
             },
-          );
-        },
+          ),
       };
       pattern = new TilingPattern(
         IR,

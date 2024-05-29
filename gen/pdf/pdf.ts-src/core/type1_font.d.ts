@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/type1_font.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import { type FontProps } from "./evaluator.js";
 import { Stream } from "./stream.js";
 import { type CharStringObject } from "./type1_parser.js";

@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/pdf.sandbox.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2020 Mozilla Foundation
  *
@@ -159,8 +163,6 @@ export class Sandbox {
 }
 
 export function QuickJSSandbox(): Promise<Sandbox> {
-  return ModuleLoader().then((module: unknown) => {
-    return new Sandbox(window, module);
-  });
+  return ModuleLoader().then((module: unknown) => new Sandbox(window, module));
 }
 /*80--------------------------------------------------------------------------*/

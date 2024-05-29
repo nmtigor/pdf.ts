@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/crypto.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import type { BaseStream } from "./base_stream.js";
 import { DecryptStream } from "./decrypt_stream.js";
 import { Dict, Name } from "./primitives.js";

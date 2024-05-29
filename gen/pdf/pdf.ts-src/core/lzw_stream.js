@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/lzw_stream.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import { DecodeStream } from "./decode_stream.js";
 export class LZWStream extends DecodeStream {
     cachedData = 0;

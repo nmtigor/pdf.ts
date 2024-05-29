@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/text_layer_builder.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2012 Mozilla Foundation
  *
@@ -17,8 +21,8 @@
  * limitations under the License.
  */
 
+import { html } from "@fe-lib/dom.ts";
 import { GENERIC, MOZCENTRAL, PDFJSDev } from "@fe-src/global.ts";
-import { div as createDiv, html } from "@fe-lib/dom.ts";
 import type { TextDivProps } from "../pdf.ts-src/display/text_layer.ts";
 import type {
   PageViewport,
@@ -43,11 +47,7 @@ interface TextLayerBuilderOptions {
   highlighter: TextHighlighter | undefined;
 
   accessibilityManager: TextAccessibilityManager | undefined;
-
-  /**
-   * Allows to use an OffscreenCanvas if needed.
-   */
-  isOffscreenCanvasSupported?: boolean;
+  onAppend?: (div: HTMLDivElement) => void;
 
   enablePermissions?: boolean;
 }
@@ -79,13 +79,8 @@ export class TextLayerBuilder {
   textLayerRenderTask?: TextLayerRenderTask | undefined;
   highlighter;
   accessibilityManager;
-  isOffscreenCanvasSupported;
   #enablePermissions;
-
-  /**
-   * Callback used to attach the textLayer to the DOM.
-   */
-  onAppend: ((textLayerDiv: HTMLDivElement) => void) | undefined;
+  #onAppend;
 
   div;
 
@@ -95,16 +90,17 @@ export class TextLayerBuilder {
 
   constructor({
     highlighter,
-    accessibilityManager = undefined,
-    isOffscreenCanvasSupported = undefined,
+    accessibilityManager,
     enablePermissions = false,
+    onAppend,
   }: TextLayerBuilderOptions) {
     this.highlighter = highlighter;
     this.accessibilityManager = accessibilityManager;
-    this.isOffscreenCanvasSupported = isOffscreenCanvasSupported;
     this.#enablePermissions = enablePermissions === true;
+    this.#onAppend = onAppend;
 
-    this.div = createDiv();
+    this.div = html("div");
+    this.div.tabIndex = 0;
     this.div.className = "textLayer";
   }
 
@@ -138,7 +134,6 @@ export class TextLayerBuilder {
           viewport,
           textDivs: this.textDivs,
           textDivProperties: this.textDivProperties,
-          isOffscreenCanvasSupported: this.isOffscreenCanvasSupported,
           mustRescale,
           mustRotate,
         });
@@ -161,7 +156,6 @@ export class TextLayerBuilder {
       textDivs: this.textDivs,
       textDivProperties: this.textDivProperties,
       textContentItemsStr: this.textContentItemsStr,
-      isOffscreenCanvasSupported: this.isOffscreenCanvasSupported,
     });
 
     await this.textLayerRenderTask.promise;
@@ -170,7 +164,7 @@ export class TextLayerBuilder {
     this.#rotation = rotation;
     // Ensure that the textLayer is appended to the DOM *before* handling
     // e.g. a pending search operation.
-    this.onAppend!(this.div);
+    this.#onAppend?.(this.div);
     this.highlighter?.enable();
     this.accessibilityManager?.enable();
   }

@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/display/canvas.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import type { C2D, dot2d_t, rect_t } from "../../../lib/alias.js";
 import type { Stepper } from "../../pdf.ts-web/debugger.js";
 import type { PageColors } from "../../pdf.ts-web/pdf_viewer.js";

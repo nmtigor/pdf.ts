@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/scripting_api/event.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2020 Mozilla Foundation
  *
@@ -17,6 +21,7 @@
  * limitations under the License.
  */
 
+import { TESTING } from "@fe-src/global.ts";
 import type { AnnotActions } from "../core/core_utils.ts";
 import type { DocWrapped, FieldWrapped } from "./app.ts";
 import {
@@ -159,6 +164,13 @@ export class EventDispatcher {
   }
 
   dispatch(baseEvent: ScriptingEventData) {
+    /*#static*/ if (TESTING) {
+      if (baseEvent.name === "sandboxtripbegin") {
+        this._externalCall("send", [{ command: "sandboxTripEnd" }]);
+        return;
+      }
+    }
+
     const id = baseEvent.id!;
     if (!(id in this._objects)) {
       let event: Event | undefined;
@@ -310,9 +322,9 @@ export class EventDispatcher {
   formatAll() {
     // Run format actions if any for all the fields.
     const event =
-      ((globalThis as any).event = new Event(<ScriptingEventData> {}));
+      ((globalThis as any).event = new Event({} as ScriptingEventData));
     for (const source of Object.values(this._objects)) {
-      event.value = source.obj.value as string;
+      event.value = source.obj._getValue() as string | number;
       this.runActions(source, source, event, "Format");
     }
   }
@@ -320,13 +332,12 @@ export class EventDispatcher {
   runValidation(source: FieldWrapped, event: Event) {
     const didValidateRun = this.runActions(source, source, event, "Validate");
     if (event.rc) {
-      source.obj.value = event.value as string;
+      source.obj.value = event.value;
 
       this.runCalculate(source, event);
 
-      // const savedValue = (event.value = <string> source.obj.value);
-      const savedValue = source.obj._getValue() as string | number;
-      event.value = source.obj.value;
+      const savedValue =
+        (event.value = source.obj._getValue() as string | number);
       let formattedValue: string | undefined;
 
       if (this.runActions(source, source, event, "Format")) {
@@ -418,9 +429,9 @@ export class EventDispatcher {
         break;
       }
 
-      (<any> event).value = undefined;
+      event.value = undefined as any;
       const target = this._objects[targetId];
-      let savedValue = target.obj.value;
+      let savedValue = target.obj._getValue();
       this.runActions(source, target, event, "Calculate");
       if (!event.rc) {
         continue;
@@ -428,19 +439,24 @@ export class EventDispatcher {
 
       if (event.value !== undefined) {
         // A new value has been calculated so set it.
-        target.obj.value = <string> event.value;
+        target.obj.value = event.value;
+      } else {
+        event.value = target.obj._getValue() as string | number;
       }
 
-      event.value = <string> target.obj.value;
       this.runActions(target, target, event, "Validate");
       if (!event.rc) {
-        if (target.obj.value !== savedValue) {
+        if (target.obj._getValue() !== savedValue) {
           target.wrapped.value = savedValue;
         }
         continue;
       }
 
-      savedValue = event.value = <string> target.obj.value;
+      if (event.value === undefined) {
+        event.value = target.obj._getValue() as string | number;
+      }
+
+      savedValue = target.obj._getValue();
       let formattedValue: string | undefined;
       if (this.runActions(target, target, event, "Format")) {
         formattedValue = event.value?.toString?.();

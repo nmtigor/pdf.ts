@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/pdf.sandbox.external.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 /*80--------------------------------------------------------------------------*/
 export class SandboxSupportBase {
     win;

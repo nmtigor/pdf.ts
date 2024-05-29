@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/preferences.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2013 Mozilla Foundation
  *
@@ -18,9 +22,14 @@
  */
 
 import { CHROME, MOZCENTRAL, PDFJSDev } from "@fe-src/global.ts";
-import type { OptionName, UserOptions } from "./app_options.ts";
+import type { OptionName, OptionType, UserOptions } from "./app_options.ts";
 import { AppOptions, OptionKind } from "./app_options.ts";
 /*80--------------------------------------------------------------------------*/
+
+type UpdatePrefP_ = {
+  name: OptionName;
+  value: OptionType;
+};
 
 /**
  * BasePreferences - Abstract base class for storing persistent settings.
@@ -28,11 +37,18 @@ import { AppOptions, OptionKind } from "./app_options.ts";
  *   or every time the viewer is loaded.
  */
 export abstract class BasePreferences {
+  #browserDefaults = Object.freeze(
+    /*#static*/ PDFJSDev
+      ? AppOptions.getAll(OptionKind.BROWSER, /* defaultOnly = */ true)
+      // : PDFJSDev.eval("BROWSER_PREFERENCES")
+      : AppOptions.getAll(OptionKind.BROWSER, /* defaultOnly = */ true),
+  );
+
   #defaults = Object.freeze(
     /*#static*/ PDFJSDev
-      ? AppOptions.getAll(OptionKind.PREFERENCE)
+      ? AppOptions.getAll(OptionKind.PREFERENCE, /* defaultOnly = */ true)
       // : PDFJSDev.eval("DEFAULT_PREFERENCES")
-      : AppOptions.getAll(OptionKind.PREFERENCE),
+      : AppOptions.getAll(OptionKind.PREFERENCE, /* defaultOnly = */ true),
   );
   defaults!: Readonly<UserOptions>;
 
@@ -51,26 +67,26 @@ export abstract class BasePreferences {
     this.#initializedPromise = this._readFromStorage({ prefs: this.#defaults })
       .then(
         ({ browserPrefs, prefs }) => {
-          const BROWSER_PREFS = /*#static*/ PDFJSDev
-            ? AppOptions.getAll(OptionKind.BROWSER)
-            // : PDFJSDev.eval("BROWSER_PREFERENCES");
-            : AppOptions.getAll(OptionKind.BROWSER);
           const options = Object.create(null);
 
-          for (const [name, defaultVal] of Object.entries(BROWSER_PREFS)) {
+          for (const [name, val] of Object.entries(this.#browserDefaults)) {
             const prefVal = browserPrefs?.[name as OptionName];
-            options[name] = typeof prefVal === typeof defaultVal
-              ? prefVal
-              : defaultVal;
+            options[name] = typeof prefVal === typeof val ? prefVal : val;
           }
-          for (const [name, defaultVal] of Object.entries(this.#defaults)) {
+          for (const [name, val] of Object.entries(this.#defaults)) {
             const prefVal = prefs?.[name as OptionName];
             // Ignore preferences whose types don't match the default values.
             options[name] =
               this.#prefs[name as OptionName] =
-                typeof prefVal === typeof defaultVal ? prefVal : defaultVal;
+                typeof prefVal === typeof val ? prefVal : val;
           }
           AppOptions.setAll(options, /* init = */ true);
+
+          /*#static*/ if (MOZCENTRAL) {
+            window.addEventListener("updatedPreference", (evt) => {
+              this.#updatePref((evt as CustomEvent<UpdatePrefP_>).detail);
+            });
+          }
         },
       );
   }
@@ -95,6 +111,26 @@ export abstract class BasePreferences {
     prefObj: { prefs: UserOptions },
   ): Promise<{ browserPrefs?: UserOptions; prefs: UserOptions }>;
 
+  #updatePref({ name, value }: UpdatePrefP_) {
+    /*#static*/ if (PDFJSDev || !MOZCENTRAL) {
+      throw new Error("Not implemented: #updatePref");
+    }
+
+    if (name in this.#browserDefaults) {
+      if (typeof value !== typeof this.#browserDefaults[name]) {
+        return; // Invalid preference value.
+      }
+    } else if (name in this.#defaults) {
+      if (typeof value !== typeof this.#defaults[name]) {
+        return; // Invalid preference value.
+      }
+      this.#prefs[name] = value;
+    } else {
+      return; // Invalid preference.
+    }
+    AppOptions.set(name, value);
+  }
+
   /**
    * Reset the preferences to their default values and update storage.
    * @return A promise that is resolved when the preference values
@@ -105,14 +141,16 @@ export abstract class BasePreferences {
       throw new Error("Please use `about:config` to change preferences.");
     }
     await this.#initializedPromise;
-    const prefs = this.#prefs;
+    const oldPrefs = structuredClone(this.#prefs);
 
     this.#prefs = Object.create(null);
-    return this._writeToStorage(this.#defaults).catch((reason) => {
+    try {
+      await this._writeToStorage(this.#defaults);
+    } catch (reason) {
       // Revert all preference values, since writing to storage failed.
-      this.#prefs = prefs;
+      this.#prefs = oldPrefs;
       throw reason;
-    });
+    }
   }
 
   /**
@@ -122,16 +160,13 @@ export abstract class BasePreferences {
    * @return A promise that is resolved when the value has been set,
    *  provided that the preference exists and the types match.
    */
-  async set(
-    name: OptionName,
-    value: boolean | number | string,
-  ): Promise<unknown> {
+  async set(name: OptionName, value: OptionType): Promise<void> {
     /*#static*/ if (MOZCENTRAL) {
       throw new Error("Please use `about:config` to change preferences.");
     }
     await this.#initializedPromise;
     const defaultValue = this.#defaults[name],
-      prefs = this.#prefs;
+      oldPrefs = structuredClone(this.#prefs);
 
     if (defaultValue === undefined) {
       throw new Error(`Set preference: "${name}" is undefined.`);
@@ -153,12 +188,14 @@ export abstract class BasePreferences {
       throw new Error(`Set preference: "${value}" must be an integer.`);
     }
 
-    (<any> this.#prefs)[name] = value;
-    return this._writeToStorage(this.#prefs).catch((reason) => {
+    this.#prefs[name] = value;
+    try {
+      await this._writeToStorage(this.#prefs);
+    } catch (reason) {
       // Revert all preference values, since writing to storage failed.
-      this.#prefs = prefs;
+      this.#prefs = oldPrefs;
       throw reason;
-    });
+    }
   }
 
   /**
@@ -168,6 +205,9 @@ export abstract class BasePreferences {
    *  containing the value of the preference.
    */
   async get(name: OptionName) {
+    /*#static*/ if (MOZCENTRAL) {
+      throw new Error("Not implemented: get");
+    }
     await this.#initializedPromise;
     const defaultValue = this.#defaults[name];
 

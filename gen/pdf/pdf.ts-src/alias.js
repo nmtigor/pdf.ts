@@ -3,5 +3,11 @@
  * @license Apache-2.0
  ******************************************************************************/
 export {};
+//kkkk TOCLEANUP
+// export type Outlines = {
+//   outlines: dot2d_t[];
+//   box: Box;
+//   free;
+// };
 /*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=alias.js.map

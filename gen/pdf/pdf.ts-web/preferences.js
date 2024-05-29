@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/preferences.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 /* Copyright 2013 Mozilla Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,15 +21,16 @@
  */
 import { CHROME, MOZCENTRAL, PDFJSDev } from "../../global.js";
 import { AppOptions, OptionKind } from "./app_options.js";
-/*80--------------------------------------------------------------------------*/
 /**
  * BasePreferences - Abstract base class for storing persistent settings.
  *   Used for settings that should be applied to all opened documents,
  *   or every time the viewer is loaded.
  */
 export class BasePreferences {
+    #browserDefaults = Object.freeze(
+    /*#static*/ AppOptions.getAll(OptionKind.BROWSER, /* defaultOnly = */ true));
     #defaults = Object.freeze(
-    /*#static*/ AppOptions.getAll(OptionKind.PREFERENCE));
+    /*#static*/ AppOptions.getAll(OptionKind.PREFERENCE, /* defaultOnly = */ true));
     defaults;
     #prefs = Object.create(null);
     #initializedPromise;
@@ -33,22 +38,20 @@ export class BasePreferences {
         /*#static*/ 
         this.#initializedPromise = this._readFromStorage({ prefs: this.#defaults })
             .then(({ browserPrefs, prefs }) => {
-            const BROWSER_PREFS = /*#static*/ AppOptions.getAll(OptionKind.BROWSER);
             const options = Object.create(null);
-            for (const [name, defaultVal] of Object.entries(BROWSER_PREFS)) {
+            for (const [name, val] of Object.entries(this.#browserDefaults)) {
                 const prefVal = browserPrefs?.[name];
-                options[name] = typeof prefVal === typeof defaultVal
-                    ? prefVal
-                    : defaultVal;
+                options[name] = typeof prefVal === typeof val ? prefVal : val;
             }
-            for (const [name, defaultVal] of Object.entries(this.#defaults)) {
+            for (const [name, val] of Object.entries(this.#defaults)) {
                 const prefVal = prefs?.[name];
                 // Ignore preferences whose types don't match the default values.
                 options[name] =
                     this.#prefs[name] =
-                        typeof prefVal === typeof defaultVal ? prefVal : defaultVal;
+                        typeof prefVal === typeof val ? prefVal : val;
             }
             AppOptions.setAll(options, /* init = */ true);
+            /*#static*/ 
         });
     }
     /**
@@ -60,6 +63,26 @@ export class BasePreferences {
     _writeToStorage(prefObj) {
         throw new Error("Not implemented: _writeToStorage");
     }
+    #updatePref({ name, value }) {
+        /*#static*/  {
+            throw new Error("Not implemented: #updatePref");
+        }
+        if (name in this.#browserDefaults) {
+            if (typeof value !== typeof this.#browserDefaults[name]) {
+                return; // Invalid preference value.
+            }
+        }
+        else if (name in this.#defaults) {
+            if (typeof value !== typeof this.#defaults[name]) {
+                return; // Invalid preference value.
+            }
+            this.#prefs[name] = value;
+        }
+        else {
+            return; // Invalid preference.
+        }
+        AppOptions.set(name, value);
+    }
     /**
      * Reset the preferences to their default values and update storage.
      * @return A promise that is resolved when the preference values
@@ -68,13 +91,16 @@ export class BasePreferences {
     async reset() {
         /*#static*/ 
         await this.#initializedPromise;
-        const prefs = this.#prefs;
+        const oldPrefs = structuredClone(this.#prefs);
         this.#prefs = Object.create(null);
-        return this._writeToStorage(this.#defaults).catch((reason) => {
+        try {
+            await this._writeToStorage(this.#defaults);
+        }
+        catch (reason) {
             // Revert all preference values, since writing to storage failed.
-            this.#prefs = prefs;
+            this.#prefs = oldPrefs;
             throw reason;
-        });
+        }
     }
     /**
      * Set the value of a preference.
@@ -86,7 +112,7 @@ export class BasePreferences {
     async set(name, value) {
         /*#static*/ 
         await this.#initializedPromise;
-        const defaultValue = this.#defaults[name], prefs = this.#prefs;
+        const defaultValue = this.#defaults[name], oldPrefs = structuredClone(this.#prefs);
         if (defaultValue === undefined) {
             throw new Error(`Set preference: "${name}" is undefined.`);
         }
@@ -106,11 +132,14 @@ export class BasePreferences {
             throw new Error(`Set preference: "${value}" must be an integer.`);
         }
         this.#prefs[name] = value;
-        return this._writeToStorage(this.#prefs).catch((reason) => {
+        try {
+            await this._writeToStorage(this.#prefs);
+        }
+        catch (reason) {
             // Revert all preference values, since writing to storage failed.
-            this.#prefs = prefs;
+            this.#prefs = oldPrefs;
             throw reason;
-        });
+        }
     }
     /**
      * Get the value of a preference.
@@ -119,6 +148,7 @@ export class BasePreferences {
      *  containing the value of the preference.
      */
     async get(name) {
+        /*#static*/ 
         await this.#initializedPromise;
         const defaultValue = this.#defaults[name];
         if (defaultValue === undefined) {

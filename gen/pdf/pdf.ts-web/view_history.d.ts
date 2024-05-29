@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/view_history.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import { ScrollMode, SidebarView, SpreadMode } from "./ui_utils.js";
 export interface MultipleStored {
     page: number | undefined;

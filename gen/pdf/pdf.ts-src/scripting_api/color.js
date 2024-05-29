@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/scripting_api/color.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import { ColorConverters } from "../shared/scripting_utils.js";
 import { PDFObject } from "./pdf_object.js";
 export class Color extends PDFObject {

@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/primitives.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import type { TypedArray } from "../../../lib/alias.js";
 import type { BaseStream } from "./base_stream.js";
 import type { TranslatedFont } from "./evaluator.js";

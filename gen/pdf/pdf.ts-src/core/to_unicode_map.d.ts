@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/to_unicode_map.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 export declare class ToUnicodeMap {
     /**
      * The elements of this.#map can be integers or strings, depending on how

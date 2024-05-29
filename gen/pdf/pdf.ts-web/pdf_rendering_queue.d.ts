@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/pdf_rendering_queue.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import type { IRenderableView, IVisibleView } from "./interfaces.js";
 import type { PDFThumbnailViewer } from "./pdf_thumbnail_viewer.js";
 import type { PDFViewer } from "./pdf_viewer.js";

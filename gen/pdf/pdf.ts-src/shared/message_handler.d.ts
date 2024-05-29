@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/shared/message_handler.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import type { rect_t } from "../../../lib/alias.js";
 import type { HttpStatusCode } from "../../../lib/HttpStatusCode.js";
 import { PromiseCap } from "../../../lib/util/PromiseCap.js";
@@ -212,6 +219,11 @@ export interface MActionMap {
         Return: PermissionFlag[] | undefined;
         Sinkchunk: undefined;
     };
+    GetStartXRefPos: {
+        Data: undefined;
+        Return: number;
+        Sinkchunk: undefined;
+    };
     GetStructTree: {
         Data: {
             pageIndex: number;
@@ -243,7 +255,7 @@ export interface MActionMap {
     };
     GetXRefPrevValue: {
         Data: undefined;
-        Return: number | undefined;
+        Return: number;
         Sinkchunk: undefined;
     };
     HasJSActions: {
@@ -297,8 +309,10 @@ export interface WActionMap {
     commonobj: {
         Data: [string, "Font", FontExpotDataEx | {
             error: string;
-        }] | [string, "FontPath", CmdArgs[]] | [string, "Image", ImgData | undefined] | [string, "Pattern", ShadingPatternIR];
-        Return: void;
+        }] | [string, "FontPath", CmdArgs[]] | [string, "Image", ImgData | undefined] | [string, "Pattern", ShadingPatternIR] | [string, "CopyLocalImage", {
+            imageRef: string | undefined;
+        }];
+        Return: number | undefined;
         Sinkchunk: undefined;
     };
     DataLoaded: {

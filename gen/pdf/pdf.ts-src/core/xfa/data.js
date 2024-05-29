@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/xfa/data.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import { $getAttributes, $getChildren, $nodeName, $setValue, $toString, $uid, } from "./symbol_utils.js";
 /*80--------------------------------------------------------------------------*/
 export class DataHandler {

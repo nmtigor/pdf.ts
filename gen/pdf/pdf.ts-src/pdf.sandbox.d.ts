@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/pdf.sandbox.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import type { EventInSandBox } from "../pdf.ts-web/interfaces.js";
 import { SandboxSupportBase } from "./pdf.sandbox.external.js";
 declare class SandboxSupport extends SandboxSupportBase {

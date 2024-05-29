@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/pdf.sandbox.external.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import { EventInSandBox } from "../pdf.ts-web/interfaces.js";
 export declare class SandboxSupportBase {
     win: Window & typeof globalThis;
@@ -29,6 +36,6 @@ export declare class SandboxSupportBase {
         nMilliseconds?: number;
         interval?: boolean;
     } | EventInSandBox): void;
-    createSandboxExternals(): (name: "confirm" | "alert" | "clearInterval" | "clearTimeout" | "prompt" | "send" | "setInterval" | "setTimeout" | "parseURL", args: unknown[]) => string;
+    createSandboxExternals(): (name: "setTimeout" | "clearTimeout" | "setInterval" | "clearInterval" | "alert" | "confirm" | "prompt" | "parseURL" | "send", args: unknown[]) => string;
 }
 //# sourceMappingURL=pdf.sandbox.external.d.ts.map

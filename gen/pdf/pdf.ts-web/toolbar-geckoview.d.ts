@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2023
+ *
+ * @module pdf/pdf.ts-web/toolbar-geckoview.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import type { EventBus } from "./event_utils.js";
 import type { NimbusExperimentData } from "./firefoxcom.js";
 type ToolbarOptions = {

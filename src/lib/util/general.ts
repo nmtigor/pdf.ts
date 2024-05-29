@@ -3,7 +3,8 @@
  * @license Apache-2.0
  ******************************************************************************/
 
-export {};
+import { scrollO } from "../alias.ts";
+import type { uint } from "../alias.ts";
 /*80--------------------------------------------------------------------------*/
 
 /**
@@ -20,6 +21,7 @@ export const linesOf = (text_x: string) =>
 
 /** */
 export const isWhitespace = (_x: string) => /^\s+$/.test(_x);
+/*80--------------------------------------------------------------------------*/
 
 /**
  * Event handler to suppress context menu.
@@ -29,4 +31,29 @@ export const isWhitespace = (_x: string) => /^\s+$/.test(_x);
 export const noContextMenu = (evt_x: MouseEvent) => {
   evt_x.preventDefault();
 };
+
+export const onWheel = (el_x: Element) => {
+  return (evt_x: WheelEvent) => {
+    scrollO.top = evt_x.deltaY >= 0 ? 50 : -50;
+    scrollO.left = 0;
+    el_x.scrollBy(scrollO);
+  };
+};
+/*80--------------------------------------------------------------------------*/
+
+const space_a_: (string | undefined)[] = [];
+export const space = (n_: uint) => {
+  if (space_a_[n_] === undefined) {
+    space_a_[n_] = new Array(n_).fill(" ").join("");
+  }
+  return space_a_[n_]!;
+};
+/*80--------------------------------------------------------------------------*/
+
+/**
+ * @param ms time in milliseconds
+ *
+ * Ref. [What is the JavaScript version of sleep()?](https://stackoverflow.com/a/39914235)
+ */
+export const wait = (ms = 0) => new Promise<void>((r) => setTimeout(r, ms));
 /*80--------------------------------------------------------------------------*/

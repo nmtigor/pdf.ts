@@ -1,16 +1,26 @@
-interface GlobalWorkerOptionsType {
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/display/worker_options.ts
+ * @license Apache-2.0
+ ******************************************************************************/
+export declare class GlobalWorkerOptions {
+    #private;
+    static get workerPort(): Worker | undefined;
     /**
-     * Defines global port for worker process. Overrides the `workerSrc` option.
+     * @param val Defines global port for worker process.
+     *   Overrides the `workerSrc` option.
      */
-    workerPort?: Worker | undefined;
+    static set workerPort(val: Worker | undefined);
+    static get workerSrc(): string;
     /**
-     * A string containing the path and filename of the worker file.
+     * @param val A string containing the path and filename of
+     *   the worker file.
      *
-     *   NOTE: The `workerSrc` option should always be set, in order to prevent any
-     *         issues when using the PDF.js library.
+     *   NOTE: The `workerSrc` option should always be set, in order to prevent
+     *         any issues when using the PDF.js library.
      */
-    workerSrc: string;
+    static set workerSrc(val: string);
 }
-export declare const GlobalWorkerOptions: GlobalWorkerOptionsType;
-export {};
 //# sourceMappingURL=worker_options.d.ts.map

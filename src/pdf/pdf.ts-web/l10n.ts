@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2023
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2023
+ *
+ * @module pdf/pdf.ts-web/l10n.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2023 Mozilla Foundation
  *
@@ -31,7 +35,7 @@ declare global {
 }
 
 export type L10nCtorP = {
-  lang?: Locale;
+  lang?: Locale | undefined;
   isRTL?: boolean;
 };
 
@@ -136,4 +140,6 @@ export class L10n implements IL10n {
     return ["ar", "he", "fa", "ps", "ur"].includes(shortCode);
   }
 }
+
+export const GenericL10n = undefined;
 /*80--------------------------------------------------------------------------*/

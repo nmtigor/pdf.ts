@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/scripting_api/aform.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import { GlobalConstants } from "./constants.js";
 export class AForm {
     _document;
@@ -190,9 +194,6 @@ export class AForm {
     }
     AFNumber_Format(nDec, sepStyle, negStyle, currStyle, /* unused */ strCurrency, bCurrencyPrepend) {
         const event = globalThis.event;
-        if (!event.value) {
-            return;
-        }
         let value = this.AFMakeNumber(event.value);
         if (value === undefined) {
             event.value = "";

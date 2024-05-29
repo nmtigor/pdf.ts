@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/file_spec.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import { Dict } from "./primitives.js";
 import { XRef } from "./xref.js";
 export interface Attachment {
@@ -17,10 +24,9 @@ export declare class FileSpec {
     root: Dict | undefined;
     fs: import("./primitives.js").Obj | undefined;
     description: string | undefined;
-    contentAvailable: boolean | undefined;
     get filename(): string;
     contentRef?: string | undefined;
-    constructor(root: Dict, xref: XRef);
+    constructor(root: Dict, xref?: XRef, skipContent?: boolean);
     get content(): Uint8Array | Uint8ClampedArray | undefined;
     get serializable(): Attachment;
 }

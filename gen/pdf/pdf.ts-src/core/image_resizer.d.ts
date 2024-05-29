@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2023
+ *
+ * @module pdf/pdf.ts-src/core/image_resizer.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import type { ImgData } from "./evaluator.js";
 export declare class ImageResizer {
     _imgData: ImgData;

@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/xfa/factory.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import type { rect_t } from "../../../../lib/alias.js";
 import type { AnnotStorageRecord } from "../../display/annotation_layer.js";
 import type { XFAData } from "../document.js";

@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/display/worker_options.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2018 Mozilla Foundation
  *
@@ -17,25 +21,47 @@
  * limitations under the License.
  */
 
-import { D_base } from "../../alias.ts";
+import { AD_gh } from "@fe-src/pdf/alias.ts";
 /*80--------------------------------------------------------------------------*/
 
-interface GlobalWorkerOptionsType {
+export class GlobalWorkerOptions {
+  static #port: Worker | undefined;
+  static get workerPort(): Worker | undefined {
+    return this.#port;
+  }
   /**
-   * Defines global port for worker process. Overrides the `workerSrc` option.
+   * @param val Defines global port for worker process.
+   *   Overrides the `workerSrc` option.
    */
-  workerPort?: Worker | undefined;
+  static set workerPort(val: Worker | undefined) {
+    if (
+      !(typeof Worker !== "undefined" && val instanceof Worker) &&
+      val !== undefined
+    ) {
+      throw new Error("Invalid `workerPort` type.");
+    }
+    this.#port = val;
+  }
+
+  static #src = "";
+  static get workerSrc(): string {
+    return this.#src;
+  }
 
   /**
-   * A string containing the path and filename of the worker file.
+   * @param val A string containing the path and filename of
+   *   the worker file.
    *
-   *   NOTE: The `workerSrc` option should always be set, in order to prevent any
-   *         issues when using the PDF.js library.
+   *   NOTE: The `workerSrc` option should always be set, in order to prevent
+   *         any issues when using the PDF.js library.
    */
-  workerSrc: string;
+  static set workerSrc(val: string) {
+    if (typeof val !== "string") {
+      throw new Error("Invalid `workerSrc` type.");
+    }
+    this.#src = val;
+  }
 }
 
-export const GlobalWorkerOptions: GlobalWorkerOptionsType = Object.create(null);
-
-GlobalWorkerOptions.workerSrc = `${D_base}/gen/pdf/pdf.ts-src/pdf.worker.js`;
+GlobalWorkerOptions.workerSrc = `${AD_gh}/gen/pdf/pdf.ts-src/pdf.worker.js`;
 /*80--------------------------------------------------------------------------*/

@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/firefox_print_service.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2016 Mozilla Foundation
  *
@@ -33,7 +37,8 @@ import {
   RenderingCancelledException,
   shadow,
 } from "../pdf.ts-src/pdf.ts";
-import { PDFPrintServiceFactory } from "./app.ts";
+import type { CreatePrintServiceP } from "./interfaces.ts";
+import { IPDFPrintServiceFactory } from "./interfaces.ts";
 import { PDFPrintService } from "./pdf_print_service.ts";
 import type { PageOverview } from "./pdf_viewer.ts";
 import { getXfaHtmlForPrinting } from "./print_utils.ts";
@@ -192,30 +197,42 @@ export class FirefoxPrintService extends PDFPrintService {
   }
 }
 
-PDFPrintServiceFactory.instance = {
-  get supportsPrinting() {
+//kkkk TOCLEANUP
+// PDFPrintServiceFactory.instance = {
+//   get supportsPrinting() {
+//     const canvas = html("canvas");
+//     const value = "mozPrintCallback" in canvas;
+
+//     return shadow(this, "supportsPrinting", value);
+//   },
+
+//   createPrintService(
+//     pdfDocument,
+//     pagesOverview,
+//     printContainer,
+//     printResolution,
+//     optionalContentConfigPromise,
+//     printAnnotationStoragePromise,
+//   ) {
+//     return new FirefoxPrintService(
+//       pdfDocument,
+//       pagesOverview,
+//       printContainer,
+//       printResolution,
+//       optionalContentConfigPromise,
+//       printAnnotationStoragePromise,
+//     );
+//   },
+// };
+
+export class PDFPrintServiceFactory extends IPDFPrintServiceFactory {
+  static override get supportsPrinting() {
     const canvas = html("canvas");
-    const value = "mozPrintCallback" in canvas;
+    return shadow(this, "supportsPrinting", "mozPrintCallback" in canvas);
+  }
 
-    return shadow(this, "supportsPrinting", value);
-  },
-
-  createPrintService(
-    pdfDocument,
-    pagesOverview,
-    printContainer,
-    printResolution,
-    optionalContentConfigPromise,
-    printAnnotationStoragePromise,
-  ) {
-    return new FirefoxPrintService(
-      pdfDocument,
-      pagesOverview,
-      printContainer,
-      printResolution,
-      optionalContentConfigPromise,
-      printAnnotationStoragePromise,
-    );
-  },
-};
+  static override createPrintService(params: CreatePrintServiceP) {
+    return new FirefoxPrintService(params);
+  }
+}
 /*80--------------------------------------------------------------------------*/

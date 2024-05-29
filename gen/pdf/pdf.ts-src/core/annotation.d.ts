@@ -1,8 +1,16 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/annotation.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import type { dot2d_t, rect_t, TupleOf } from "../../../lib/alias.js";
 import type { AnnotStorageRecord, AnnotStorageValue } from "../display/annotation_layer.js";
 import type { DocWrapped, FieldWrapped } from "../scripting_api/app.js";
 import type { CorrectColor } from "../scripting_api/color.js";
 import type { SendData } from "../scripting_api/pdf_object.js";
+import type { matrix_t } from "../shared/util.js";
 import { AnnotationBorderStyleType, AnnotationFieldFlag, AnnotationFlag, AnnotationReplyType, AnnotationType, RenderingIntentFlag } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
 import { type BidiText } from "./bidi.js";
@@ -342,6 +350,7 @@ export declare class Annotation {
     get hasTextContent(): boolean;
     /** @final */
     extractTextContent(evaluator: PartialEvaluator, task: WorkerTask, viewBox: rect_t): Promise<void>;
+    _transformPoint(coords: dot2d_t, bbox?: rect_t, matrix?: matrix_t): dot2d_t;
     /**
      * Get field data for usage in JS sandbox.
      *
@@ -478,7 +487,7 @@ export declare class WidgetAnnotation extends Annotation {
     hasFieldFlag(flag: AnnotationFieldFlag): boolean;
     _isViewable(flags: AnnotationFlag): boolean;
     mustBeViewed(annotationStorage?: AnnotStorageRecord, renderForms?: boolean): boolean;
-    getRotationMatrix(annotationStorage: AnnotStorageRecord | undefined): number[];
+    getRotationMatrix(annotationStorage: AnnotStorageRecord | undefined): [number, number, number, number, number, number];
     getBorderAndBackgroundAppearances(annotationStorage: AnnotStorageRecord | undefined): string;
     getOperatorList(evaluator: PartialEvaluator, task: WorkerTask, intent: RenderingIntentFlag, renderForms?: boolean, annotationStorage?: AnnotStorageRecord): Promise<{
         opList: OperatorList;

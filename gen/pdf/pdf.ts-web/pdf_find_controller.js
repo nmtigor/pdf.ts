@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/pdf_find_controller.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import { PromiseCap } from "../../lib/util/PromiseCap.js";
 import { getCharacterType, getNormalizeWithNFKC } from "./pdf_find_utils.js";
 import { binarySearchFirstItem, scrollIntoView } from "./ui_utils.js";
@@ -733,12 +737,13 @@ export class PDFFindController {
         if (this.#extractTextPromises.length > 0) {
             return;
         }
-        let promise = Promise.resolve();
+        let deferred = Promise.resolve();
         const textOptions = { disableNormalization: true };
         for (let i = 0, ii = this.#linkService.pagesCount; i < ii; i++) {
-            const extractTextCapability = new PromiseCap();
-            this.#extractTextPromises[i] = extractTextCapability.promise;
-            promise = promise.then(() => {
+            const { promise, resolve } = new PromiseCap();
+            this.#extractTextPromises[i] = promise;
+            // eslint-disable-next-line arrow-body-style
+            deferred = deferred.then(() => {
                 return this._pdfDocument
                     .getPage(i + 1)
                     .then((pdfPage) => pdfPage.getTextContent(textOptions))
@@ -756,14 +761,14 @@ export class PDFFindController {
                         this.#pageDiffs[i],
                         this.#hasDiacritics[i],
                     ] = normalize(strBuf.join(""));
-                    extractTextCapability.resolve();
+                    resolve();
                 }, (reason) => {
                     console.error(`Unable to get text content for page ${i + 1}`, reason);
                     // Page error -- assuming no text content.
                     this.#pageContents[i] = "";
                     this.#pageDiffs[i] = undefined;
                     this.#hasDiacritics[i] = false;
-                    extractTextCapability.resolve();
+                    resolve();
                 });
             });
         }

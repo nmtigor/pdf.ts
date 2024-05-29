@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/event_utils.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2012 Mozilla Foundation
  *
@@ -17,13 +21,19 @@
  * limitations under the License.
  */
 
+import { PromiseCap } from "@fe-lib/util/PromiseCap.ts";
 import { MOZCENTRAL } from "@fe-src/global.ts";
-import type { AnnotationEditor } from "../pdf.ts-src/display/editor/editor.ts";
+import type {
+  AnnotationEditor,
+  TFD_AnnotationEditor,
+  TID_AnnotationEditor,
+} from "../pdf.ts-src/display/editor/editor.ts";
 import type {
   AnnotationEditorParamsType,
   AnnotationEditorType,
   AnnotationEditorUIManager,
   AnnotationElement,
+  ColorPicker,
   DispatchUpdateStatesP,
   FileAttachmentAnnotationElement,
   OptionalContentConfig,
@@ -31,7 +41,8 @@ import type {
   PropertyToUpdate,
   ScriptingActionName,
 } from "../pdf.ts-src/pdf.ts";
-import type { AltTextManager, TelemetryData } from "./alt_text_manager.ts";
+import type { AnnotationEditorName } from "../pdf.ts-src/shared/util.ts";
+import type { AltTextManager } from "./alt_text_manager.ts";
 import type { AnnotationEditorParams } from "./annotation_editor_params.ts";
 import type { ErrorMoreInfo, PDFViewerApplication } from "./app.ts";
 import type { PDFAttachmentViewer } from "./pdf_attachment_viewer.ts";
@@ -97,43 +108,44 @@ interface WaitOnEventOrTimeoutP_ {
  *
 = * @return A promise that is resolved with a {WaitOnType} value.
  */
-export function waitOnEventOrTimeout({
+export async function waitOnEventOrTimeout({
   target,
   name,
   delay = 0,
 }: WaitOnEventOrTimeoutP_): Promise<unknown> {
-  return new Promise((resolve, reject) => {
-    if (
-      typeof target !== "object" ||
-      !(name && typeof name === "string") ||
-      !(Number.isInteger(delay) && delay >= 0)
-    ) {
-      throw new Error("waitOnEventOrTimeout - invalid parameters.");
-    }
+  if (
+    typeof target !== "object" ||
+    !(name && typeof name === "string") ||
+    !(Number.isInteger(delay) && delay >= 0)
+  ) {
+    throw new Error("waitOnEventOrTimeout - invalid parameters.");
+  }
+  const { promise, resolve } = new PromiseCap<WaitOnType>();
 
-    function handler(type: WaitOnType) {
-      if (target instanceof EventBus) {
-        target._off(name, eventHandler);
-      } else {
-        target.removeEventListener(name, eventHandler);
-      }
-
-      if (timeout) {
-        clearTimeout(timeout);
-      }
-      resolve(type);
-    }
-
-    const eventHandler = handler.bind(null, WaitOnType.EVENT);
+  function handler(type: WaitOnType) {
     if (target instanceof EventBus) {
-      target._on(name, eventHandler);
+      target._off(name, eventHandler);
     } else {
-      target.addEventListener(name, eventHandler);
+      target.removeEventListener(name, eventHandler);
     }
 
-    const timeoutHandler = handler.bind(null, WaitOnType.TIMEOUT);
-    const timeout = setTimeout(timeoutHandler, delay);
-  });
+    if (timeout) {
+      clearTimeout(timeout);
+    }
+    resolve(type);
+  }
+
+  const eventHandler = handler.bind(null, WaitOnType.EVENT);
+  if (target instanceof EventBus) {
+    target._on(name, eventHandler);
+  } else {
+    target.addEventListener(name, eventHandler);
+  }
+
+  const timeoutHandler = handler.bind(null, WaitOnType.TIMEOUT);
+  const timeout = setTimeout(timeoutHandler, delay);
+
+  return promise;
 }
 /*64----------------------------------------------------------*/
 
@@ -145,7 +157,7 @@ export interface EventMap {
     error: unknown;
   };
   annotationeditormodechanged: {
-    source: PDFViewer;
+    source?: PDFViewer;
     mode: AnnotationEditorType | undefined;
   };
   annotationeditorparamschanged: {
@@ -155,6 +167,10 @@ export interface EventMap {
   annotationeditorstateschanged: {
     source: AnnotationEditorUIManager;
     details: DispatchUpdateStatesP;
+  };
+  annotationeditoruimanager: {
+    source: PDFViewer;
+    uiManager: AnnotationEditorUIManager;
   };
   annotationlayerrendered: {
     source: PDFPageView;
@@ -340,6 +356,7 @@ export interface EventMap {
   reporttelemetry: {
     source:
       | AnnotationEditor
+      | AnnotationEditorUIManager
       | AltTextManager
       | SecondaryToolbar
       | GeckoviewToolbar;
@@ -347,11 +364,13 @@ export interface EventMap {
       type: "editing" | "buttons" | "gv-buttons" | "pageInfo";
       subtype?: string;
       timestamp?: number;
-      data?:
-        | TelemetryData
-        | { action: "alt_text_tooltip" | "inserted_image" }
-        | { id: string }
-        | { type: "freetext" | "ink" | "print" | "save" | "stamp" };
+      data?: TID_AnnotationEditor | {
+        type: "freetext" | "ink" | "stamp" | "highlight";
+        action: "alt_text_tooltip" | "inserted_image" | "toggle_visibility";
+      } | {
+        type: "save" | "print";
+        stats: Record<AnnotationEditorName, TFD_AnnotationEditor> | undefined;
+      } | { id: string };
     };
   };
   resize: {
@@ -384,6 +403,10 @@ export interface EventMap {
     source: Toolbar;
     value: string;
   };
+  showannotationeditorui: {
+    source: AnnotationEditorUIManager;
+    mode: AnnotationEditorType;
+  };
   sidebarviewchanged: {
     source: PDFSidebar;
     view: SidebarView;
@@ -409,9 +432,9 @@ export interface EventMap {
     isFromKeyboard?: boolean;
   };
   switchannotationeditorparams: {
-    source: AnnotationEditorParams;
+    source: AnnotationEditorParams | ColorPicker;
     type: AnnotationEditorParamsType;
-    value: string | number | undefined;
+    value: string | number | boolean | undefined;
   };
   switchcursortool: {
     tool: CursorTool;

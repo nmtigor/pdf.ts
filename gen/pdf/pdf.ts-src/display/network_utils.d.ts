@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/display/network_utils.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import { HttpStatusCode } from "../../../lib/HttpStatusCode.js";
 import { MissingPDFException, UnexpectedResponseException } from "../shared/util.js";
 export type VRRC_P_ = {

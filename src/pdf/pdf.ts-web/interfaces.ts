@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/interfaces.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2018 Mozilla Foundation
  *
@@ -25,6 +29,8 @@ import type {
   DocInfo,
   ExplicitDest,
   FieldObject,
+  PDFDocumentProxy,
+  PrintAnnotationStorage,
   RefProxy,
   ScriptingActionName,
   SetOCGState,
@@ -33,6 +39,8 @@ import type { EventBus } from "./event_utils.ts";
 import type { LinkTarget } from "./pdf_link_service.ts";
 import type { RenderingStates } from "./ui_utils.ts";
 import type { FluentMessageArgs } from "@fe-3rd/fluent/dom/esm/localization.ts";
+import type { PDFViewerApplication } from "./app.ts";
+import type { PageOverview } from "./pdf_viewer.ts";
 /*80--------------------------------------------------------------------------*/
 
 export interface IPDFLinkService {
@@ -215,6 +223,26 @@ export interface IL10n {
   resume(): void;
 }
 
+export type CreatePrintServiceP = {
+  pdfDocument: PDFDocumentProxy;
+  pagesOverview: PageOverview[];
+  printContainer: HTMLDivElement;
+  printResolution: number;
+  printAnnotationStoragePromise?: Promise<PrintAnnotationStorage | undefined>;
+};
+
+export abstract class IPDFPrintServiceFactory {
+  static initGlobals(app: PDFViewerApplication) {}
+
+  static get supportsPrinting() {
+    return false;
+  }
+
+  static createPrintService(params: CreatePrintServiceP) {
+    throw new Error("Not implemented: createPrintService");
+  }
+}
+
 export type CreateSandboxP = {
   objects: Record<string, FieldObject[]>;
   calculationOrder: string[] | undefined;
@@ -223,7 +251,7 @@ export type CreateSandboxP = {
 };
 
 export interface EventInSandBox {
-  id: string;
+  id?: string;
   name: ScriptingActionName;
   pageNumber?: number;
   actions?: AnnotActions | undefined;

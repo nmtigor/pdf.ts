@@ -217,6 +217,21 @@ pdfjs-find-match-diacritics-checkbox-label = Me Përputhje Me Shenjat Diakritike
 pdfjs-find-entire-word-checkbox-label = Fjalë të Plota
 pdfjs-find-reached-top = U mbërrit në krye të dokumentit, vazhduar prej fundit
 pdfjs-find-reached-bottom = U mbërrit në fund të dokumentit, vazhduar prej kreut
+# Variables:
+#   $current (Number) - the index of the currently active find result
+#   $total (Number) - the total number of matches in the document
+pdfjs-find-match-count =
+    { $total ->
+        [one] { $current } nga { $total } përputhje
+       *[other] { $current } nga { $total } përputhje
+    }
+# Variables:
+#   $limit (Number) - the maximum number of matches
+pdfjs-find-match-count-limit =
+    { $limit ->
+        [one] Më tepër se { $limit } përputhje
+       *[other] Më tepër se { $limit } përputhje
+    }
 pdfjs-find-not-found = Togfjalësh që s’gjendet
 
 ## Predefined zoom values
@@ -277,6 +292,23 @@ pdfjs-editor-ink-button-label = Vizatoni
 pdfjs-editor-stamp-button =
     .title = Shtoni ose përpunoni figura
 pdfjs-editor-stamp-button-label = Shtoni ose përpunoni figura
+pdfjs-editor-highlight-button =
+    .title = Theksim
+pdfjs-editor-highlight-button-label = Theksoje
+
+## Remove button for the various kind of editor.
+
+pdfjs-editor-remove-ink-button =
+    .title = Hiq vizatim
+pdfjs-editor-remove-freetext-button =
+    .title = Hiq tekst
+pdfjs-editor-remove-stamp-button =
+    .title = Hiq figurë
+pdfjs-editor-remove-highlight-button =
+    .title = Hiqe theksimin
+
+##
+
 # Editor Parameters
 pdfjs-editor-free-text-color-input = Ngjyrë
 pdfjs-editor-free-text-size-input = Madhësi
@@ -286,6 +318,10 @@ pdfjs-editor-ink-opacity-input = Patejdukshmëri
 pdfjs-editor-stamp-add-image-button =
     .title = Shtoni figurë
 pdfjs-editor-stamp-add-image-button-label = Shtoni figurë
+# This refers to the thickness of the line used for free highlighting (not bound to text)
+pdfjs-editor-free-highlight-thickness-input = Trashësi
+pdfjs-editor-free-highlight-thickness-title =
+    .title = Ndryshoni trashësinë kur theksoni objekte tjetër nga tekst
 pdfjs-free-text =
     .aria-label = Përpunues Tekstesh
 pdfjs-free-text-default-content = Filloni të shtypni…
@@ -302,9 +338,43 @@ pdfjs-editor-alt-text-edit-button-label = Përpunoni tekst alternativ
 pdfjs-editor-alt-text-dialog-label = Zgjidhni një mundësi
 pdfjs-editor-alt-text-dialog-description = Teksti alt (tekst alternativ) vjen në ndihmë kur njerëzit s’mund të shohin figurën, ose kur ajo nuk ngarkohet.
 pdfjs-editor-alt-text-add-description-label = Shtoni një përshkrim
+pdfjs-editor-alt-text-add-description-description = Synoni për 1-2 togfjalësha që përshkruajnë subjektin, rrethanat apo veprimet.
+pdfjs-editor-alt-text-mark-decorative-label = Vëri shenjë si dekorative
+pdfjs-editor-alt-text-mark-decorative-description = Kjo përdoret për figura zbukuruese, fjala vjen, anë, ose watermark-e.
 pdfjs-editor-alt-text-cancel-button = Anuloje
 pdfjs-editor-alt-text-save-button = Ruaje
+pdfjs-editor-alt-text-decorative-tooltip = Iu vu shenjë si dekorative
+# .placeholder: This is a placeholder for the alt text input area
+pdfjs-editor-alt-text-textarea =
+    .placeholder = Për shembull, “Një djalosh ulet në një tryezë të hajë”
 
 ## Editor resizers
 ## This is used in an aria label to help to understand the role of the resizer.
 
+pdfjs-editor-resizer-label-top-left = Cepi i sipërm majtas — ripërmasojeni
+pdfjs-editor-resizer-label-top-middle = Mesi i pjesës sipër — ripërmasojeni
+pdfjs-editor-resizer-label-top-right = Cepi i sipërm djathtas — ripërmasojeni
+pdfjs-editor-resizer-label-middle-right = Djathtas në mes — ripërmasojeni
+pdfjs-editor-resizer-label-bottom-right = Cepi i poshtëm djathtas — ripërmasojeni
+pdfjs-editor-resizer-label-bottom-middle = Mesi i pjesës poshtë — ripërmasojeni
+pdfjs-editor-resizer-label-bottom-left = Cepi i poshtëm — ripërmasojeni
+pdfjs-editor-resizer-label-middle-left = Majtas në mes — ripërmasojeni
+
+## Color picker
+
+# This means "Color used to highlight text"
+pdfjs-editor-highlight-colorpicker-label = Ngjyrë theksimi
+pdfjs-editor-colorpicker-button =
+    .title = Ndryshoni ngjyrë
+pdfjs-editor-colorpicker-dropdown =
+    .aria-label = Zgjedhje ngjyre
+pdfjs-editor-colorpicker-yellow =
+    .title = E verdhë
+pdfjs-editor-colorpicker-green =
+    .title = E gjelbër
+pdfjs-editor-colorpicker-blue =
+    .title = Blu
+pdfjs-editor-colorpicker-pink =
+    .title = Rozë
+pdfjs-editor-colorpicker-red =
+    .title = E kuqe

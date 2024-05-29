@@ -150,6 +150,9 @@ declare global {
 }
 declare global {
     interface Math {
+        /**
+         * If `min > max`, `min` has a higher priority than `max`.
+         */
         clamp(min: number, val: number, max: number): number;
     }
 }

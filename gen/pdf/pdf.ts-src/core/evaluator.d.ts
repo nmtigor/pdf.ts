@@ -1,4 +1,11 @@
-import type { rect_t } from "../../../lib/alias.js";
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/evaluator.ts
+ * @license Apache-2.0
+ ******************************************************************************/
+import type { rect_t, uint } from "../../../lib/alias.js";
 import type { CMapData } from "../display/base_factory.js";
 import type { MessageHandler, StreamSink, Thread } from "../shared/message_handler.js";
 import type { ImageKind, matrix_t } from "../shared/util.js";
@@ -42,6 +49,8 @@ export interface ImgData {
     interpolate?: boolean | undefined;
     bitmap?: ImageBitmap;
     data?: string | Uint8Array | Uint8ClampedArray | undefined;
+    dataLen?: uint;
+    ref?: string;
     count?: number | undefined;
     cached?: boolean;
     kind?: ImageKind;
@@ -65,7 +74,7 @@ interface GetOperatorListP_ {
     initialState?: Partial<EvalState> | undefined;
     fallbackFontDict?: Dict | undefined;
 }
-interface _SetGStateP {
+interface SetGStateP_ {
     resources: Dict;
     gState: Dict;
     operatorList: OperatorList;
@@ -90,6 +99,7 @@ interface GetTextContentP_ {
     markedContentData?: {
         level: number;
     } | undefined;
+    keepWhiteSpace?: boolean;
 }
 interface CIDSystemInfo {
     registry: string;
@@ -185,7 +195,7 @@ interface _ParseShadingP {
     shading: Dict | BaseStream;
     resources: Dict;
     localColorSpaceCache: LocalColorSpaceCache;
-    localShadingPatternCache: Map<Dict | BaseStream, string>;
+    localShadingPatternCache: Map<Dict | BaseStream, string | undefined>;
 }
 /** @final */
 export declare class PartialEvaluator {
@@ -225,17 +235,17 @@ export declare class PartialEvaluator {
     handleSetFont(resources: Dict, fontArgs: FontArgs | undefined, fontRef: Ref | undefined, operatorList: OperatorList, task: WorkerTask, state: Partial<EvalState | TextState>, fallbackFontDict?: FontDict, cssFontInfo?: CssFontInfo): Promise<string>;
     handleText(chars: string, state: Partial<EvalState>): Glyph[];
     ensureStateFont(state: Partial<EvalState | TextState>): void;
-    setGState({ resources, gState, operatorList, cacheKey, task, stateManager, localGStateCache, localColorSpaceCache, }: _SetGStateP): Promise<void>;
+    setGState({ resources, gState, operatorList, cacheKey, task, stateManager, localGStateCache, localColorSpaceCache, }: SetGStateP_): Promise<void>;
     loadFont(fontName: string | undefined, font: Ref | undefined, resources: Dict, fallbackFontDict?: FontDict, cssFontInfo?: CssFontInfo): Promise<TranslatedFont>;
     buildPath(operatorList: OperatorList, fn: OPS, args?: number[], parsingText?: boolean): void;
     parseColorSpace({ cs, resources, localColorSpaceCache, }: _ParseColorSpaceP): Promise<ColorSpace | undefined>;
-    parseShading({ shading, resources, localColorSpaceCache, localShadingPatternCache, }: _ParseShadingP): string;
+    parseShading({ shading, resources, localColorSpaceCache, localShadingPatternCache, }: _ParseShadingP): string | undefined;
     handleColorN(operatorList: OperatorList, fn: OPS, args: [Name, ...number[]], cs: ColorSpace, patterns: Dict, resources: Dict, task: WorkerTask, localColorSpaceCache: LocalColorSpaceCache, localTilingPatternCache: LocalTilingPatternCache, localShadingPatternCache: Map<Dict | BaseStream, string>): Promise<void> | undefined;
     private _parseVisibilityExpression;
     parseMarkedContentProps(contentProperties: Dict | Name, resources: Dict | undefined): Promise<MarkedContentProps | undefined>;
     getOperatorList({ stream, task, resources, operatorList, initialState, fallbackFontDict, }: GetOperatorListP_): Promise<void>;
-    getTextContent({ stream, task, resources, stateManager, includeMarkedContent, disableNormalization, sink, seenStyles, viewBox, markedContentData, }: GetTextContentP_): Promise<void>;
-    extractDataStructures(dict: FontDict, baseDict: FontDict, properties: FontProps): Promise<FontProps>;
+    getTextContent({ stream, task, resources, stateManager, includeMarkedContent, disableNormalization, sink, seenStyles, viewBox, markedContentData, keepWhiteSpace, }: GetTextContentP_): Promise<void>;
+    extractDataStructures(dict: FontDict, properties: FontProps): Promise<FontProps>;
     private _simpleFontToUnicode;
     /**
      * Builds a char code to unicode map based on section 9.10 of the spec.
@@ -243,8 +253,8 @@ export declare class PartialEvaluator {
      * @return A Promise that is resolved with a
      *   {ToUnicodeMap|IdentityToUnicodeMap} object.
      */
-    buildToUnicode(properties: FontProps): Promise<IdentityToUnicodeMap | ToUnicodeMap>;
-    readToUnicode(cmapObj?: Name | DecodeStream): Promise<IdentityToUnicodeMap | ToUnicodeMap | undefined>;
+    buildToUnicode(properties: FontProps): Promise<ToUnicodeMap | IdentityToUnicodeMap>;
+    readToUnicode(cmapObj?: Name | DecodeStream): Promise<ToUnicodeMap | IdentityToUnicodeMap | undefined>;
     readCidToGidMap(glyphsData: Uint8Array | Uint8ClampedArray, toUnicode: IdentityToUnicodeMap | ToUnicodeMap): number[];
     extractWidths(dict: FontDict, descriptor: FontDict, properties: FontProps): void;
     isSerifFont(baseFontName: string): boolean;

@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/display/editor/ink.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import type { C2D, dot2d_t, TupleOf } from "../../../../lib/alias.js";
 import type { IL10n } from "../../../pdf.ts-web/interfaces.js";
 import { AnnotationEditorParamsType, AnnotationEditorType } from "../../shared/util.js";
@@ -44,8 +51,8 @@ export declare class InkEditor extends AnnotationEditor {
     canvas: HTMLCanvasElement | undefined;
     ctx: C2D;
     constructor(params: InkEditorP);
-    static initialize(l10n: IL10n): void;
-    static updateDefaultParams(type: AnnotationEditorParamsType, value: number | string | undefined): void;
+    static initialize(l10n: IL10n, uiManager: AnnotationEditorUIManager): void;
+    static updateDefaultParams(type: AnnotationEditorParamsType, value: number | string | boolean | undefined): void;
     updateParams(type: AnnotationEditorParamsType, value: number | string): void;
     static get defaultPropertiesToUpdate(): PropertyToUpdate[];
     get propertiesToUpdate(): PropertyToUpdate[];

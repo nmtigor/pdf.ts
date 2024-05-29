@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2023
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2023
+ *
+ * @module pdf/pdf.ts-web/l10n.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import { Locale } from "../../lib/Locale.js";
 import { TESTING } from "../../global.js";
 /**
@@ -85,5 +89,6 @@ export class L10n {
         return ["ar", "he", "fa", "ps", "ur"].includes(shortCode);
     }
 }
+export const GenericL10n = undefined;
 /*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=l10n.js.map

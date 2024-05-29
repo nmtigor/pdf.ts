@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/pdf_thumbnail_view.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 /* Copyright 2012 Mozilla Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -158,7 +162,7 @@ export class PDFThumbnailView {
         }
         this.resume = undefined;
     }
-    #getPageDrawContext = (upscaleFactor = 1) => {
+    #getPageDrawContext(upscaleFactor = 1) {
         // Keep the no-thumbnail outline visible, i.e. `data-loaded === false`,
         // until rendering/image conversion is complete, to avoid display issues.
         const canvas = html("canvas");
@@ -170,7 +174,7 @@ export class PDFThumbnailView {
             ? [outputScale.sx, 0, 0, outputScale.sy, 0, 0]
             : undefined;
         return { ctx, canvas, transform };
-    };
+    }
     #convertCanvasToImage(canvas) {
         if (this.renderingState !== RenderingStates.FINISHED) {
             throw new Error("#convertCanvasToImage: Rendering has not finished.");
@@ -279,7 +283,7 @@ export class PDFThumbnailView {
         this.renderingState = RenderingStates.FINISHED;
         this.#convertCanvasToImage(canvas);
     }
-    #reduceImage = (img) => {
+    #reduceImage(img) {
         const { ctx, canvas } = this.#getPageDrawContext();
         if (img.width <= 2 * canvas.width) {
             ctx.drawImage(img, 0, 0, img.width, img.height, 0, 0, canvas.width, canvas.height);
@@ -301,7 +305,7 @@ export class PDFThumbnailView {
         }
         ctx.drawImage(reducedImage, 0, 0, reducedWidth, reducedHeight, 0, 0, canvas.width, canvas.height);
         return canvas;
-    };
+    }
     get #pageL10nArgs() {
         return JSON.stringify({ page: this.pageLabel ?? this.id });
     }

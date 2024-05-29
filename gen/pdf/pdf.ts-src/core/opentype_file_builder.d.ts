@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/opentype_file_builder.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 export declare function writeInt16(dest: Uint8Array, offset: number, num: number): void;
 export declare function writeInt32(dest: Uint8Array, offset: number, num: number): void;
 export declare function writeData(dest: Uint8Array, offset: number, data: Uint8Array | string | number[]): void;

@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2023
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2023
+ *
+ * @module pdf/pdf.ts-web/toolbar-geckoview.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 export class Toolbar {
     #buttons;
     #eventBus;
@@ -14,11 +18,6 @@ export class Toolbar {
                 element: options.download,
                 eventName: "download",
                 nimbusName: "download-button",
-            },
-            {
-                element: options.openInApp,
-                eventName: "openinexternalapp",
-                nimbusName: "open-in-app-button",
             },
         ];
         if (nimbusData) {

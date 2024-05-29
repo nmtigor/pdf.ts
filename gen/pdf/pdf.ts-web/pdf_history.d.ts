@@ -1,7 +1,14 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/pdf_history.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import { type ExplicitDest } from "../pdf.ts-src/pdf.js";
-import { type PDFLocation } from "./pdf_viewer.js";
 import { EventBus } from "./event_utils.js";
 import { type HistoryInitP, type HistoryPushP, type IPDFLinkService } from "./interfaces.js";
+import { type PDFLocation } from "./pdf_viewer.js";
 interface PDFHistoryOptions {
     /**
      * The navigation/linking service.

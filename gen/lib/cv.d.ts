@@ -23,6 +23,7 @@ export declare abstract class Coo<CI extends CooInterface = CooInterface> {
 declare global {
     interface Node {
         [$vuu]?: Vuu;
+        "cy.vuu": Vuu;
     }
 }
 /**
@@ -33,12 +34,13 @@ export declare abstract class Vuu<C extends Coo = Coo, E extends Element = Eleme
     protected coo$: C;
     get coo(): C;
     protected el$: E;
+    /** @final */
     get el(): E;
     /**
      * ! If any, not call in the `constructor()`
      */
-    protected observeTheme$?(): void;
-    protected unobserveTheme$?(): void;
+    observeTheme?(): void;
+    unobserveTheme?(): void;
     /**
      * @headconst @param coo_x
      * @headconst @param el_x
@@ -52,9 +54,9 @@ export declare abstract class Vuu<C extends Coo = Coo, E extends Element = Eleme
     /**
      * @deprecated
      * @headconst @param ret_x
-     * @headconst @param refvuu_x
+     * @headconst @param refV_x
      */
-    attachBefore<V extends Vuu<C>>(ret_x: V, refvuu_x?: Vuu): V;
+    attachBefore<V extends Vuu<C>>(ret_x: V, refV_x?: Vuu): V;
     /**
      * @deprecated
      * @headconst @param ret_x

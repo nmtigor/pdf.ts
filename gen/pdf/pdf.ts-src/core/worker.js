@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/worker.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 /* Copyright 2012 Mozilla Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,7 +28,7 @@ import { AnnotationFactory } from "./annotation.js";
 import { clearGlobalCaches } from "./cleanup_helper.js";
 import { arrayBuffersToBytes, getNewAnnotationsMap, XRefParseException, } from "./core_utils.js";
 import { LocalPdfManager, NetworkPdfManager } from "./pdf_manager.js";
-import { Dict, Ref } from "./primitives.js";
+import { Dict, isDict, Ref } from "./primitives.js";
 import { StructTreeRoot } from "./struct_tree.js";
 import { PDFWorkerStream } from "./worker_stream.js";
 import { incrementalUpdate } from "./writer.js";
@@ -602,6 +606,8 @@ export const WorkerMessageHandler = {
                 acroFormRef,
                 acroForm,
                 xfaData,
+                // Use the same kind of XRef as the previous one.
+                useXrefStream: isDict(xref.topDict, "XRef"),
             }).finally(() => {
                 xref.resetNewTemporaryRef();
             });
@@ -713,14 +719,11 @@ export const WorkerMessageHandler = {
             docParams = undefined; // we don't need docParams anymore -- saving memory.
         });
         /*#static*/  {
-            handler.on("GetXFADatasets", () => {
-                return pdfManager.ensureDoc("xfaDatasets");
-            });
-            handler.on("GetXRefPrevValue", () => {
-                return pdfManager
-                    .ensureXRef("trailer")
-                    .then((trailer) => trailer.get("Prev"));
-            });
+            handler.on("GetXFADatasets", () => pdfManager.ensureDoc("xfaDatasets"));
+            handler.on("GetXRefPrevValue", () => pdfManager
+                .ensureXRef("trailer")
+                .then((trailer) => trailer.get("Prev")));
+            handler.on("GetStartXRefPos", () => pdfManager.ensureDoc("startXRef"));
             handler.on("GetAnnotArray", (data) => pdfManager.getPage(data.pageIndex).then((page) => page.annotations.map((a) => a.toString())));
         }
         return workerHandlerName;

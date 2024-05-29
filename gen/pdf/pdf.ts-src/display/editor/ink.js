@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/display/editor/ink.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 var _a;
 import { html } from "../../../../lib/dom.js";
 import { noContextMenu } from "../../../../lib/util/general.js";
@@ -15,9 +19,6 @@ import { opacityToHex } from "./tools.js";
 export class InkEditor extends AnnotationEditor {
     static _type = "ink";
     static _editorType = AnnotationEditorType.INK;
-    static _defaultColor;
-    static _defaultOpacity = 1;
-    static _defaultThickness = 1;
     #baseHeight = 0;
     #baseWidth = 0;
     #boundCanvasPointermove = this.canvasPointermove.bind(this);
@@ -33,6 +34,9 @@ export class InkEditor extends AnnotationEditor {
     #realWidth = 0;
     #realHeight = 0;
     #requestFrameCallback;
+    static _defaultColor;
+    static _defaultOpacity = 1;
+    static _defaultThickness = 1;
     color;
     thickness;
     opacity;
@@ -54,8 +58,8 @@ export class InkEditor extends AnnotationEditor {
         this.y = 0;
         this._willKeepAspectRatio = true;
     }
-    static initialize(l10n) {
-        AnnotationEditor.initialize(l10n);
+    static initialize(l10n, uiManager) {
+        AnnotationEditor.initialize(l10n, uiManager);
     }
     static updateDefaultParams(type, value) {
         switch (type) {
@@ -118,16 +122,15 @@ export class InkEditor extends AnnotationEditor {
      * Update the thickness and make this action undoable.
      */
     #updateThickness(thickness) {
+        const setThickness = (th) => {
+            this.thickness = th;
+            this.#fitToContent();
+        };
         const savedThickness = this.thickness;
         this.addCommands({
-            cmd: () => {
-                this.thickness = thickness;
-                this.#fitToContent();
-            },
-            undo: () => {
-                this.thickness = savedThickness;
-                this.#fitToContent();
-            },
+            cmd: setThickness.bind(this, thickness),
+            undo: setThickness.bind(this, savedThickness),
+            post: this._uiManager.updateUI.bind(this._uiManager, this),
             mustExec: true,
             type: AnnotationEditorParamsType.INK_THICKNESS,
             overwriteIfSameType: true,
@@ -138,16 +141,15 @@ export class InkEditor extends AnnotationEditor {
      * Update the color and make this action undoable.
      */
     #updateColor(color) {
+        const setColor = (col) => {
+            this.color = col;
+            this.#redraw();
+        };
         const savedColor = this.color;
         this.addCommands({
-            cmd: () => {
-                this.color = color;
-                this.#redraw();
-            },
-            undo: () => {
-                this.color = savedColor;
-                this.#redraw();
-            },
+            cmd: setColor.bind(this, color),
+            undo: setColor.bind(this, savedColor),
+            post: this._uiManager.updateUI.bind(this._uiManager, this),
             mustExec: true,
             type: AnnotationEditorParamsType.INK_COLOR,
             overwriteIfSameType: true,
@@ -158,17 +160,16 @@ export class InkEditor extends AnnotationEditor {
      * Update the opacity and make this action undoable.
      */
     #updateOpacity(opacity) {
+        const setOpacity = (op) => {
+            this.opacity = op;
+            this.#redraw();
+        };
         opacity /= 100;
         const savedOpacity = this.opacity;
         this.addCommands({
-            cmd: () => {
-                this.opacity = opacity;
-                this.#redraw();
-            },
-            undo: () => {
-                this.opacity = savedOpacity;
-                this.#redraw();
-            },
+            cmd: setOpacity.bind(this, opacity),
+            undo: setOpacity.bind(this, savedOpacity),
+            post: this._uiManager.updateUI.bind(this._uiManager, this),
             mustExec: true,
             type: AnnotationEditorParamsType.INK_OPACITY,
             overwriteIfSameType: true,
@@ -370,7 +371,7 @@ export class InkEditor extends AnnotationEditor {
             this.allRawPaths.push(currentPath);
             this.paths.push(bezier);
             this.bezierPath2D.push(path2D);
-            this.rebuild();
+            this._uiManager.rebuild(this);
         };
         const undo = () => {
             this.allRawPaths.pop();
@@ -483,7 +484,7 @@ export class InkEditor extends AnnotationEditor {
         this.#fitToContent(/* firstTime = */ true);
         this.select();
         this.parent.addInkEditorIfNeeded(/* isCommitting = */ true);
-        // When commiting, the position of this editor is changed, hence we must
+        // When committing, the position of this editor is changed, hence we must
         // move it to the right position in the DOM.
         this.moveInDOM();
         this.div.focus({ preventScroll: true /* See issue #15744 */ });
@@ -506,8 +507,7 @@ export class InkEditor extends AnnotationEditor {
         // Since it's the last child, there's no need to give it a higher z-index.
         this.setInForeground();
         event.preventDefault();
-        if (event.pointerType !== "mouse" &&
-            !this.div.contains(document.activeElement)) {
+        if (!this.div.contains(document.activeElement)) {
             this.div.focus({
                 preventScroll: true, /* See issue #17327 */
             });
@@ -767,6 +767,14 @@ export class InkEditor extends AnnotationEditor {
             const points = [];
             for (let j = 0, jj = bezier.length; j < jj; j++) {
                 const [first, control1, control2, second] = bezier[j];
+                if (first[0] === second[0] && first[1] === second[1] && jj === 1) {
+                    // We have only one point.
+                    const p0 = s * first[0] + shiftX;
+                    const p1 = s * first[1] + shiftY;
+                    buffer.push(p0, p1);
+                    points.push(p0, p1);
+                    break;
+                }
                 const p10 = s * first[0] + shiftX;
                 const p11 = s * first[1] + shiftY;
                 const p20 = s * control1[0] + shiftX;

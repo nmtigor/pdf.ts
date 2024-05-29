@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/debugger.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import type { FontFaceObject, OpListIR } from "../pdf.ts-src/pdf.js";
 type Tool_ = typeof FontInspector_ | typeof StepperManager_ | typeof Stats_;
 declare namespace FontInspector_ {

@@ -1,7 +1,12 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/display/base_factory.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import { CMapCompressionType } from "../shared/util.js";
+import { svg as createSVG } from "../../../lib/dom.js";
 /*80--------------------------------------------------------------------------*/
 export class BaseFilterFactory {
     addFilter(maps) {
@@ -10,7 +15,7 @@ export class BaseFilterFactory {
     addHCMFilter(fgColor, bgColor) {
         return "none";
     }
-    addHighlightHCMFilter(fgColor, bgColor, newFgColor, newBgColor) {
+    addHighlightHCMFilter(filterName, fgColor, bgColor, newFgColor, newBgColor) {
         return "none";
     }
     destroy(keepHCM = false) { }
@@ -101,7 +106,7 @@ export class BaseSVGFactory {
         if (width <= 0 || height <= 0) {
             throw new Error("Invalid SVG dimensions");
         }
-        const svg = this._createSVG("svg:svg");
+        const svg = createSVG("svg");
         svg.assignAttro({
             version: "1.1",
             preserveAspectRatio: "none",

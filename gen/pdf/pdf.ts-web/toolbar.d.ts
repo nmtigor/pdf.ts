@@ -1,29 +1,15 @@
-import { AnnotationEditorType } from "../pdf.ts-src/pdf.js";
-import type { EventBus, EventName } from "./event_utils.js";
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/toolbar.ts
+ * @license Apache-2.0
+ ******************************************************************************/
+import type { EventBus } from "./event_utils.js";
 import type { ViewerConfiguration } from "./viewer.js";
-interface ToolbarButton {
-    element: HTMLElement;
-    eventName: EventName | null;
-    eventDetails?: {
-        mode: AnnotationEditorType;
-    };
-}
-interface ToolbarItems {
-    numPages: HTMLSpanElement;
-    pageNumber: HTMLInputElement;
-    scaleSelect: HTMLSelectElement;
-    customScaleOption: HTMLOptionElement;
-    previous: HTMLButtonElement;
-    next: HTMLButtonElement;
-    zoomIn: HTMLButtonElement;
-    zoomOut: HTMLButtonElement;
-}
 export declare class Toolbar {
     #private;
-    toolbar: HTMLDivElement;
     eventBus: EventBus;
-    buttons: ToolbarButton[];
-    items: ToolbarItems;
     pageNumber: number;
     pageLabel?: string | undefined;
     hasPageLabels: boolean;
@@ -37,5 +23,4 @@ export declare class Toolbar {
     reset(): void;
     updateLoadingIndicatorState(loading?: boolean): void;
 }
-export {};
 //# sourceMappingURL=toolbar.d.ts.map

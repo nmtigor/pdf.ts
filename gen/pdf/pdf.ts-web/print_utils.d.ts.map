@@ -1,1 +1,1 @@
-{"version":3,"file":"print_utils.d.ts","sourceRoot":"","sources":["../../../src/pdf/pdf.ts-web/print_utils.ts"],"names":[],"mappings":"AAqBA,OAAO,EAEL,gBAAgB,EAEjB,MAAM,sBAAsB,CAAC;AAK9B,wBAAgB,qBAAqB,CACnC,cAAc,EAAE,cAAc,EAC9B,WAAW,EAAE,gBAAgB,QAsB9B"}
+{"version":3,"file":"print_utils.d.ts","sourceRoot":"","sources":["../../../src/pdf/pdf.ts-web/print_utils.ts"],"names":[],"mappings":"AAAA;;;;;;gFAMgF;AAmBhF,OAAO,EAEL,gBAAgB,EAEjB,MAAM,sBAAsB,CAAC;AAK9B,wBAAgB,qBAAqB,CACnC,cAAc,EAAE,cAAc,EAC9B,WAAW,EAAE,gBAAgB,QAsB9B"}

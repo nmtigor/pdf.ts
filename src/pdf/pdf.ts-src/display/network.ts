@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/display/network.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2012 Mozilla Foundation
  *
@@ -17,10 +21,10 @@
  * limitations under the License.
  */
 
-import { MOZCENTRAL } from "../../../global.ts";
-import { HttpStatusCode } from "../../../lib/HttpStatusCode.ts";
-import { PromiseCap } from "../../../lib/util/PromiseCap.ts";
-import { assert } from "../../../lib/util/trace.ts";
+import { HttpStatusCode } from "@fe-lib/HttpStatusCode.ts";
+import { PromiseCap } from "@fe-lib/util/PromiseCap.ts";
+import { assert } from "@fe-lib/util/trace.ts";
+import { MOZCENTRAL } from "@fe-src/global.ts";
 import type {
   IPDFStream,
   IPDFStreamRangeReader,
@@ -364,9 +368,9 @@ class PDFNetworkStreamFullRequestReader implements IPDFStreamReader {
     const fullRequestXhrId = this.#fullRequestId;
     const fullRequestXhr = this.#manager.getRequestXhr(fullRequestXhrId);
 
-    const getResponseHeader = (name: string) => {
-      return fullRequestXhr.getResponseHeader(name);
-    };
+    const getResponseHeader = (name: string) =>
+      fullRequestXhr.getResponseHeader(name);
+
     const { allowRangeRequests, suggestedLength } =
       validateRangeRequestCapabilities({
         getResponseHeader,

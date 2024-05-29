@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/display/optional_content_config.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2020 Mozilla Foundation
  *
@@ -18,40 +22,82 @@
  */
 
 import { fail } from "@fe-lib/util/trace.ts";
-import type { OptionalContentConfigData, Order } from "../core/catalog.ts";
+import type {
+  OptionalContentConfigData,
+  OptionalContentGroupData,
+  Order,
+  SetOCGState,
+} from "../core/catalog.ts";
 import type {
   MarkedContentProps,
   VisibilityExpressionResult,
 } from "../core/evaluator.ts";
 import { MurmurHash3_64 } from "../shared/murmurhash3.ts";
-import { objectFromMap, warn } from "../shared/util.ts";
+import {
+  info,
+  objectFromMap,
+  RenderingIntentFlag,
+  warn,
+} from "../shared/util.ts";
 /*80--------------------------------------------------------------------------*/
 
 const INTERNAL = Symbol("INTERNAL");
 
+type OptionalContentGroupCtorO_ = {
+  name?: string | undefined;
+  intent?: string | undefined;
+  usage: { print: unknown; view: unknown };
+};
+
 class OptionalContentGroup {
   name;
   intent;
+  usage;
 
+  #isDisplay = false;
+  #isPrint = false;
+  #userSet = false;
   #visible = true;
   get visible(): boolean {
-    return this.#visible;
+    if (this.#userSet) {
+      return this.#visible;
+    }
+    if (!this.#visible) {
+      return false;
+    }
+    const { print, view } = this.usage;
+
+    if (this.#isDisplay) {
+      return view?.viewState !== "OFF";
+    } else if (this.#isPrint) {
+      return print?.printState !== "OFF";
+    }
+    return true;
   }
   /** @ignore */
-  _setVisible(internal: typeof INTERNAL, visible: boolean) {
+  _setVisible(internal: typeof INTERNAL, visible: boolean, userSet = false) {
     if (internal !== INTERNAL) {
       fail("Internal method `_setVisible` called.");
     }
+    this.#userSet = userSet;
     this.#visible = visible;
   }
 
-  constructor(name?: string, intent?: string) {
+  constructor(
+    renderingIntent: RenderingIntentFlag,
+    { name, intent, usage }: OptionalContentGroupData,
+  ) {
+    this.#isDisplay = !!(renderingIntent & RenderingIntentFlag.DISPLAY);
+    this.#isPrint = !!(renderingIntent & RenderingIntentFlag.PRINT);
+
     this.name = name;
     this.intent = intent;
+    this.usage = usage;
   }
 }
 
 export class OptionalContentConfig {
+  renderingIntent;
   name?: string | undefined;
   creator?: string | undefined;
 
@@ -61,7 +107,12 @@ export class OptionalContentConfig {
 
   #order?: Order | undefined;
 
-  constructor(data?: OptionalContentConfigData) {
+  constructor(
+    data?: OptionalContentConfigData,
+    renderingIntent = RenderingIntentFlag.DISPLAY,
+  ) {
+    this.renderingIntent = renderingIntent;
+
     if (data === undefined) {
       return;
     }
@@ -71,7 +122,7 @@ export class OptionalContentConfig {
     for (const group of data.groups) {
       this.#groups.set(
         group.id,
-        new OptionalContentGroup(group.name, group.intent),
+        new OptionalContentGroup(renderingIntent, group),
       );
     }
 
@@ -135,7 +186,7 @@ export class OptionalContentConfig {
       return true;
     }
     if (!group) {
-      warn("Optional content group not defined.");
+      info("Optional content group not defined.");
       return true;
     }
     if (group.type === "OCG") {
@@ -203,11 +254,44 @@ export class OptionalContentConfig {
   }
 
   setVisibility(id: string, visible = true) {
-    if (!this.#groups.has(id)) {
+    const group = this.#groups.get(id);
+    if (!group) {
       warn(`Optional content group not found: ${id}`);
       return;
     }
-    this.#groups.get(id)!._setVisible(INTERNAL, !!visible);
+    group._setVisible(INTERNAL, !!visible, /* userSet = */ true);
+
+    this.#cachedGetHash = undefined;
+  }
+
+  setOCGState({ state, preserveRB }: SetOCGState) {
+    let operator;
+
+    for (const elem of state) {
+      switch (elem) {
+        case "ON":
+        case "OFF":
+        case "Toggle":
+          operator = elem;
+          continue;
+      }
+
+      const group = this.#groups.get(elem);
+      if (!group) {
+        continue;
+      }
+      switch (operator) {
+        case "ON":
+          group._setVisible(INTERNAL, true);
+          break;
+        case "OFF":
+          group._setVisible(INTERNAL, false);
+          break;
+        case "Toggle":
+          group._setVisible(INTERNAL, !group.visible);
+          break;
+      }
+    }
 
     this.#cachedGetHash = undefined;
   }

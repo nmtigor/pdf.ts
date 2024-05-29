@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/core_utils.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2019 Mozilla Foundation
  *
@@ -17,13 +21,18 @@
  * limitations under the License.
  */
 
+import type { uint } from "@fe-lib/alias.ts";
 import { assert } from "@fe-lib/util/trace.ts";
 import { PDFJSDev, TESTING } from "@fe-src/global.ts";
 import type {
   AnnotStorageRecord,
   AnnotStorageValue,
 } from "../display/annotation_layer.ts";
-import type { ActionEventName, ActionEventTypeType } from "../shared/util.ts";
+import type {
+  ActionEventName,
+  ActionEventTypeType,
+  matrix_t,
+} from "../shared/util.ts";
 import {
   AnnotationEditorPrefix,
   BaseException,
@@ -432,6 +441,7 @@ export function collectActions(
   }
   return objectSize(actions) > 0 ? actions : undefined;
 }
+
 const XMLEntities = {
   /* < */ 0x3c: "&lt;",
   /* > */ 0x3e: "&gt;",
@@ -439,6 +449,17 @@ const XMLEntities = {
   /* " */ 0x22: "&quot;",
   /* ' */ 0x27: "&apos;",
 };
+
+export function* codePointIter(str: string) {
+  for (let i = 0, ii = str.length; i < ii; i++) {
+    const char = str.codePointAt(i)!;
+    if (char > 0xd7ff && (char < 0xe000 || char > 0xfffd)) {
+      // char is represented by two u16
+      i++;
+    }
+    yield char;
+  }
+}
 
 export function encodeToXmlString(str: string) {
   const buffer = [];
@@ -646,7 +667,7 @@ export function getRotationMatrix(
   rotation: number,
   width: number,
   height: number,
-) {
+): matrix_t {
   switch (rotation) {
     case 90:
       return [0, 1, -1, 0, width, 0];
@@ -657,5 +678,16 @@ export function getRotationMatrix(
     default:
       throw new Error("Invalid rotation");
   }
+}
+
+/**
+ * Get the number of bytes to use to represent the given positive integer.
+ * If n is zero, the function returns 0 which means that we don't need to waste
+ * a byte to represent it.
+ */
+export function getSizeInBytes(x: uint): uint {
+  // n bits are required for numbers up to 2^n - 1.
+  // So for a number x, we need ceil(log2(1 + x)) bits.
+  return Math.ceil(Math.ceil(Math.log2(1 + x)) / 8);
 }
 /*80--------------------------------------------------------------------------*/

@@ -1,8 +1,15 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/app_options
+ * @license Apache-2.0
+ ******************************************************************************/
 import { Locale } from "../../lib/Locale.js";
 import { AnnotationEditorType, AnnotationMode, VerbosityLevel } from "../pdf.ts-src/pdf.js";
 import { LinkTarget } from "./pdf_link_service.js";
 import { CursorTool, ScrollMode, SidebarView, SpreadMode, TextLayerMode } from "./ui_utils.js";
-export declare const enum OptionKind {
+export declare enum OptionKind {
     BROWSER = 1,
     VIEWER = 2,
     API = 4,
@@ -16,11 +23,10 @@ export declare const enum ViewOnLoad {
 }
 type _DefaultOptions = typeof defaultOptions;
 export type OptionName = keyof _DefaultOptions;
-type _OptionType = number | string | boolean | Worker;
+export type OptionType = number | string | boolean | Worker;
 export type UserOptions = {
-    [ON in OptionName]?: _OptionType | undefined;
+    [ON in OptionName]?: OptionType | undefined;
 };
-export declare const compatibilityParams: UserOptions;
 /**
  * NOTE: These options are used to generate the `default_preferences.json` file,
  *       see `OptionKind.PREFERENCE`, hence the values below must use only
@@ -32,6 +38,10 @@ declare const defaultOptions: {
         kind: number;
     };
     isInAutomation: {
+        value: boolean;
+        kind: OptionKind;
+    };
+    supportsCaretBrowsingMode: {
         value: boolean;
         kind: OptionKind;
     };
@@ -71,6 +81,10 @@ declare const defaultOptions: {
         value: CursorTool;
         kind: number;
     };
+    debuggerSrc: {
+        value: string;
+        kind: OptionKind;
+    };
     defaultUrl: {
         value: string | undefined;
         kind: OptionKind;
@@ -95,6 +109,18 @@ declare const defaultOptions: {
         value: boolean;
         kind: OptionKind;
     };
+    enableHighlightEditor: {
+        value: boolean;
+        kind: number;
+    };
+    enableHighlightFloatingButton: {
+        value: boolean;
+        kind: number;
+    };
+    enableML: {
+        value: boolean;
+        kind: number;
+    };
     enablePermissions: {
         value: boolean;
         kind: number;
@@ -107,12 +133,20 @@ declare const defaultOptions: {
         value: boolean;
         kind: number;
     };
+    enableStampEditor: {
+        value: boolean;
+        kind: number;
+    };
     externalLinkRel: {
         value: string;
         kind: OptionKind;
     };
     externalLinkTarget: {
         value: LinkTarget;
+        kind: number;
+    };
+    highlightEditorColors: {
+        value: string;
         kind: number;
     };
     historyUpdateUrl: {
@@ -256,6 +290,7 @@ export declare abstract class AppOptions {
     #private;
     static get canvasMaxAreaInBytes(): number;
     static get isInAutomation(): boolean;
+    static get supportsCaretBrowsingMode(): boolean;
     static get supportsDocumentFonts(): boolean;
     static get supportsIntegratedFind(): boolean;
     static get supportsMouseWheelZoomCtrlKey(): boolean;
@@ -265,17 +300,23 @@ export declare abstract class AppOptions {
     static get annotationMode(): AnnotationMode;
     static get viewerCssTheme(): number | undefined;
     static get cursorToolOnLoad(): CursorTool;
+    static get debuggerSrc(): string;
     static get defaultUrl(): string | undefined;
     static get defaultZoomDelay(): number;
     static get defaultZoomValue(): string;
     static get disableHistory(): boolean;
     static get disablePageLabels(): boolean;
     static get disablePreferences(): boolean;
+    static get enableHighlightEditor(): boolean;
+    static get enableHighlightFloatingButton(): boolean;
+    static get enableML(): boolean;
     static get enablePermissions(): boolean;
     static get enablePrintAutoRotate(): boolean;
     static get enableScripting(): boolean;
+    static get enableStampEditor(): boolean;
     static get externalLinkRel(): string;
     static get externalLinkTarget(): LinkTarget;
+    static get highlightEditorColors(): string;
     static get historyUpdateUrl(): boolean;
     static get ignoreDestinationZoom(): boolean;
     static get imageResourcesPath(): string;
@@ -310,8 +351,8 @@ export declare abstract class AppOptions {
     static get workerPort(): Worker | undefined;
     static get workerSrc(): string;
     static get sandboxBundleSrc(): string | undefined;
-    static getAll(kind?: OptionKind): UserOptions;
-    static set<ON extends OptionName>(name: ON, value: _OptionType | undefined): void;
+    static getAll(kind?: OptionKind, defaultOnly?: boolean): UserOptions;
+    static set<ON extends OptionName>(name: ON, value: OptionType | undefined): void;
     static setAll(options: UserOptions, init?: boolean): void;
     static remove(name: OptionName): void;
 }

@@ -1,4 +1,11 @@
-import type { OptionName, UserOptions } from "./app_options.js";
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/preferences.ts
+ * @license Apache-2.0
+ ******************************************************************************/
+import type { OptionName, OptionType, UserOptions } from "./app_options.js";
 /**
  * BasePreferences - Abstract base class for storing persistent settings.
  *   Used for settings that should be applied to all opened documents,
@@ -40,14 +47,14 @@ export declare abstract class BasePreferences {
      * @return A promise that is resolved when the value has been set,
      *  provided that the preference exists and the types match.
      */
-    set(name: OptionName, value: boolean | number | string): Promise<unknown>;
+    set(name: OptionName, value: OptionType): Promise<void>;
     /**
      * Get the value of a preference.
      * @param name The name of the preference whose value is requested.
      * @return A promise resolved with a {boolean|number|string}
      *  containing the value of the preference.
      */
-    get(name: OptionName): Promise<string | number | boolean | Worker>;
+    get(name: OptionName): Promise<OptionType>;
     get initializedPromise(): Promise<void>;
 }
 //# sourceMappingURL=preferences.d.ts.map

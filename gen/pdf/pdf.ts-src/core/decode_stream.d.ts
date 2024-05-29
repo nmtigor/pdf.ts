@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/decode_stream.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import { BaseStream } from "./base_stream.js";
 import type { Dict } from "./primitives.js";
 import { Stream } from "./stream.js";

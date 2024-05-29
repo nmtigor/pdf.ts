@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/worker.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import type { GetDocRequestData } from "../shared/message_handler.js";
 import { MessageHandler, Thread } from "../shared/message_handler.js";
 import type { AnnotSaveData } from "./annotation.js";

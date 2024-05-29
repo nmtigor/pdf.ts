@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/app
+ * @license Apache-2.0
+ ******************************************************************************/
 /* Copyright 2012 Mozilla Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,14 +19,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { html } from "../../lib/dom.js";
 import "../../lib/jslang.js";
 import { PromiseCap } from "../../lib/util/PromiseCap.js";
 import { assert } from "../../lib/util/trace.js";
-import { CHROME, GECKOVIEW, GENERIC, INOUT, MOZCENTRAL, PDFJSDev, } from "../../global.js";
+import { CHROME, GECKOVIEW, GENERIC, INOUT, MOZCENTRAL, PDFJSDev, TESTING, } from "../../global.js";
 import { AnnotationEditorType, build, FeatureTest, getDocument, getFilenameFromUrl, getPdfFilenameFromUrl, GlobalWorkerOptions, isDataScheme, isPdfFile, shadow, version, } from "../pdf.ts-src/pdf.js";
 import { AltTextManager } from "./alt_text_manager.js";
 import { AnnotationEditorParams } from "./annotation_editor_params.js";
 import { AppOptions, OptionKind, ViewOnLoad } from "./app_options.js";
+import { CaretBrowsingMode } from "./caret_browsing.js";
 import { AutomationEventBus, EventBus } from "./event_utils.js";
 import { OverlayManager } from "./overlay_manager.js";
 import { PasswordPrompt } from "./password_prompt.js";
@@ -46,55 +52,14 @@ import { Toolbar as GeckoviewToolbar } from "./toolbar-geckoview.js";
 import { Toolbar } from "./toolbar.js";
 import { animationStarted, apiPageLayoutToViewerModes, apiPageModeToSidebarView, AutoPrintRegExp, CursorTool, DEFAULT_SCALE_VALUE, getActiveOrFocusedElement, isValidRotation, isValidScrollMode, isValidSpreadMode, normalizeWheelEventDirection, parseQueryString, ProgressBar, RenderingStates, ScrollMode, SidebarView, SpreadMode, TextLayerMode, } from "./ui_utils.js";
 import { ViewHistory } from "./view_history.js";
+/* Ref. gulpfile.mjs of pdf.js */
+const { ExternalServices, initCom, MLManager } = /*#static*/ await import("./genericcom.js");
+const { DownloadManager } = /*#static*/ await import("./download_manager.js");
+const { PDFPrintServiceFactory } = /*#static*/ await import("./pdf_print_service.js");
+const { Preferences } = /*#static*/ await import("./genericcom.js");
 /*80--------------------------------------------------------------------------*/
 const FORCE_PAGES_LOADED_TIMEOUT = 10000; // ms
 const WHEEL_ZOOM_DISABLED_TIMEOUT = 1000; // ms
-// type TelemetryType =
-//   | "buttons"
-//   | "documentInfo"
-//   | "documentStats"
-//   | "editing"
-//   | "gv-buttons"
-//   | "pageInfo"
-//   | "print"
-//   | "tagged"
-//   | "unsupportedFeature";
-// export interface TelemetryData {
-//   type: TelemetryType;
-//   data?: {
-//     type?: "save" | "freetext" | "ink" | "stamp" | "print";
-//     id?: string;
-//   };
-//   formType?: string;
-//   generator?: string;
-//   tagged?: boolean;
-//   timestamp?: number;
-//   version?: string;
-// }
-export class DefaultExternalServices {
-    updateFindControlState(data) { }
-    updateFindMatchesCount(data) { }
-    initPassiveLoading(callbacks) { }
-    reportTelemetry(data) { }
-    createDownloadManager() {
-        throw new Error("Not implemented: createDownloadManager");
-    }
-    createPreferences() {
-        throw new Error("Not implemented: createPreferences");
-    }
-    async createL10n() {
-        throw new Error("Not implemented: createL10n");
-    }
-    createScripting(options) {
-        throw new Error("Not implemented: createScripting");
-    }
-    updateEditorStates(data) {
-        throw new Error("Not implemented: updateEditorStates");
-    }
-    getNimbusExperimentData() {
-        return shadow(this, "getNimbusExperimentData", Promise.resolve(undefined));
-    }
-}
 export class PDFViewerApplication {
     initialBookmark = document.location.hash.substring(1);
     initialRotation;
@@ -134,7 +99,6 @@ export class PDFViewerApplication {
     url = "";
     baseUrl = "";
     _downloadUrl = "";
-    externalServices = new DefaultExternalServices();
     _boundEvents = Object
         .create(null);
     documentInfo;
@@ -153,8 +117,13 @@ export class PDFViewerApplication {
     _touchInfo;
     _isCtrlKeyDown = false;
     _nimbusDataPromise;
+    _caretBrowsing;
+    _isScrolling = false;
+    _lastScrollTop = 0;
+    _lastScrollLeft = 0;
     disableAutoFetchLoadingBarTimeout;
     _annotationStorageModified;
+    _openFileInput;
     #initialized = false;
     constructor() {
         /*#static*/  {
@@ -294,6 +263,8 @@ export class PDFViewerApplication {
                 AppOptions.set("locale", params.get("locale"));
             }
         }
+        // Set some specific preferences for tests.
+        /*#static*/ 
     }
     async #initializeViewerComponents() {
         const { appConfig, externalServices, l10n } = this;
@@ -312,21 +283,16 @@ export class PDFViewerApplication {
             ignoreDestinationZoom: AppOptions.ignoreDestinationZoom,
         });
         this.pdfLinkService = pdfLinkService;
-        const downloadManager = externalServices.createDownloadManager();
-        this.downloadManager = downloadManager;
+        const downloadManager = (this.downloadManager = new DownloadManager());
         const findController = new PDFFindController({
             linkService: pdfLinkService,
             eventBus,
-            // updateMatchesCountOnProgress:
-            //   typeof PDFJSDev === "undefined"
-            //     ? !window.isGECKOVIEW
-            //     : !PDFJSDev.test("GECKOVIEW"),
-            updateMatchesCountOnProgress: /*#static*/ true,
+            // updateMatchesCountOnProgress: /*#static*/ !GECKOVIEW ? true : false,
+            updateMatchesCountOnProgress: /*#static*/ !window.isGECKOVIEW,
         });
         this.findController = findController;
         const pdfScriptingManager = new PDFScriptingManager({
             eventBus,
-            sandboxBundleSrc: /*#static*/ AppOptions.sandboxBundleSrc,
             externalServices,
             docProperties: this.#scriptingDocProperties,
         });
@@ -359,12 +325,14 @@ export class PDFViewerApplication {
             textLayerMode: AppOptions.textLayerMode,
             annotationMode: AppOptions.annotationMode,
             annotationEditorMode,
+            annotationEditorHighlightColors: AppOptions.highlightEditorColors,
+            enableHighlightFloatingButton: AppOptions.enableHighlightFloatingButton,
             imageResourcesPath: AppOptions.imageResourcesPath,
             enablePrintAutoRotate: AppOptions.enablePrintAutoRotate,
-            isOffscreenCanvasSupported,
             maxCanvasPixels: AppOptions.maxCanvasPixels,
             enablePermissions: AppOptions.enablePermissions,
             pageColors,
+            mlManager: this.mlManager,
         });
         this.pdfViewer = pdfViewer;
         pdfRenderingQueue.setViewer(pdfViewer);
@@ -394,8 +362,12 @@ export class PDFViewerApplication {
         }
         if (appConfig.annotationEditorParams) {
             if (annotationEditorMode !== AnnotationEditorType.DISABLE) {
-                if (!isOffscreenCanvasSupported) {
-                    appConfig.toolbar?.editorStampButton?.classList.add("hidden");
+                if (AppOptions.enableStampEditor && isOffscreenCanvasSupported) {
+                    appConfig.toolbar?.editorStampButton?.classList.remove("hidden");
+                }
+                const editorHighlightButton = appConfig.toolbar?.editorHighlightButton;
+                if (editorHighlightButton && AppOptions.enableHighlightEditor) {
+                    editorHighlightButton.hidden = false;
                 }
                 this.annotationEditorParams = new AnnotationEditorParams(appConfig.annotationEditorParams, eventBus);
             }
@@ -485,7 +457,7 @@ export class PDFViewerApplication {
         }
     }
     async run(config) {
-        this.preferences = this.externalServices.createPreferences();
+        this.preferences = new Preferences();
         await this.initialize(config);
         const { appConfig, eventBus } = this;
         const file = /*#static*/ (() => {
@@ -496,8 +468,12 @@ export class PDFViewerApplication {
             return file_;
         })();
         /*#static*/  {
-            const fileInput = appConfig.openFileInput;
+            const fileInput = (this._openFileInput = html("input"));
+            fileInput.id = "fileInput";
+            fileInput.hidden = true;
+            fileInput.type = "file";
             fileInput.value = null;
+            document.body.append(fileInput);
             fileInput.on("change", function (evt) {
                 const { files } = evt.target;
                 if (!files || files.length === 0) {
@@ -542,11 +518,6 @@ export class PDFViewerApplication {
         if (this.supportsIntegratedFind) {
             appConfig.toolbar?.viewFind?.classList.add("hidden");
         }
-        appConfig.mainContainer.on("transitionend", function (evt) {
-            if (evt.target === /* mainContainer */ this) {
-                eventBus.dispatch("resize", { source: this });
-            }
-        }, true);
         /*#static*/  {
             if (file) {
                 this.open({ url: file });
@@ -555,6 +526,12 @@ export class PDFViewerApplication {
                 this._hideViewBookmark();
             }
         }
+    }
+    get externalServices() {
+        return shadow(this, "externalServices", new ExternalServices());
+    }
+    get mlManager() {
+        return shadow(this, "mlManager", AppOptions.enableML === true ? new MLManager() : undefined);
     }
     get initialized() {
         return this.#initializedCapability.settled;
@@ -598,7 +575,7 @@ export class PDFViewerApplication {
         this.pdfViewer.currentPageNumber = val;
     }
     get supportsPrinting() {
-        return PDFPrintServiceFactory.instance.supportsPrinting;
+        return PDFPrintServiceFactory.supportsPrinting;
     }
     get supportsFullscreen() {
         return shadow(this, "supportsFullscreen", document.fullscreenEnabled);
@@ -620,34 +597,42 @@ export class PDFViewerApplication {
     get supportsMouseWheelZoomMetaKey() {
         return shadow(this, "supportsMouseWheelZoomMetaKey", AppOptions.supportsMouseWheelZoomMetaKey);
     }
-    initPassiveLoading(file) {
-        /*#static*/  {
-            throw new Error("Not implemented: initPassiveLoading");
-        }
-        this.setTitleUsingUrl(file, /* downloadUrl = */ file);
-        this.externalServices.initPassiveLoading({
-            onOpenWithTransport: (range) => {
-                this.open({ range });
-            },
-            onOpenWithData: (data, contentDispositionFilename) => {
-                if (isPdfFile(contentDispositionFilename)) {
-                    this.#contentDispositionFilename = contentDispositionFilename;
-                }
-                this.open({ data });
-            },
-            onOpenWithURL: (url, length, originalUrl) => {
-                this.open({ url, length, originalUrl });
-            },
-            onError: (err) => {
-                this.l10n.get("pdfjs-loading-error").then((msg) => {
-                    this._documentError(msg, err);
-                });
-            },
-            onProgress: (loaded, total) => {
-                this.progress(loaded / total);
-            },
-        });
+    get supportsCaretBrowsingMode() {
+        return AppOptions.supportsCaretBrowsingMode;
     }
+    moveCaret(isUp, select) {
+        this._caretBrowsing ||= new CaretBrowsingMode(this.appConfig.mainContainer, this.appConfig.viewerContainer, this.appConfig.toolbar?.container);
+        this._caretBrowsing.moveCaret(isUp, select);
+    }
+    //kkkk TOCLEANUP
+    // initPassiveLoading(file: string | undefined) {
+    //   /*#static*/ if (PDFJSDev || !(MOZCENTRAL || CHROME)) {
+    //     throw new Error("Not implemented: initPassiveLoading");
+    //   }
+    //   this.setTitleUsingUrl(file, /* downloadUrl = */ file);
+    //   this.externalServices.initPassiveLoading({
+    //     onOpenWithTransport: (range) => {
+    //       this.open({ range });
+    //     },
+    //     onOpenWithData: (data, contentDispositionFilename) => {
+    //       if (isPdfFile(contentDispositionFilename)) {
+    //         this.#contentDispositionFilename = contentDispositionFilename;
+    //       }
+    //       this.open({ data });
+    //     },
+    //     onOpenWithURL: (url, length, originalUrl) => {
+    //       this.open({ url, length, originalUrl });
+    //     },
+    //     onError: (err) => {
+    //       this.l10n.get("pdfjs-loading-error").then((msg) => {
+    //         this._documentError(msg, err);
+    //       });
+    //     },
+    //     onProgress: (loaded: number, total: number) => {
+    //       this.progress(loaded / total);
+    //     },
+    //   });
+    // }
     setTitleUsingUrl(url = "", downloadUrl) {
         this.url = url;
         this.baseUrl = url.split("#", 1)[0];
@@ -773,6 +758,7 @@ export class PDFViewerApplication {
      * @return Promise that is resolved when the document is opened.
      */
     async open(args) {
+        //kkkk TOCLEANUP
         // const args = (() => {
         //   let ret: OpenP_;
         //   /*#static*/ if (PDFJSDev || GENERIC) {
@@ -802,14 +788,13 @@ export class PDFViewerApplication {
         // Set the necessary global worker parameters, using the available options.
         const workerParams = AppOptions.getAll(OptionKind.WORKER);
         Object.assign(GlobalWorkerOptions, workerParams);
-        /*#static*/  {
+        /*#static*/ 
             if (args.url) {
                 // The Firefox built-in viewer always calls `setTitleUsingUrl`, before
                 // `initPassiveLoading`, and it never provides an `originalUrl` here.
                 this.setTitleUsingUrl(args.originalUrl || args.url, 
                 /* downloadUrl = */ args.url);
             }
-        }
         // Always set `docBaseUrl` in development mode, and in the (various)
         // extension builds.
         /*#static*/  {
@@ -848,8 +833,7 @@ export class PDFViewerApplication {
                 MissingPDFException: "pdfjs-missing-file-error",
                 UnexpectedResponseException: "pdfjs-unexpected-response-error",
             }[reason?.name] ?? "pdfjs-loading-error";
-            return this.l10n.get(key).then((msg) => {
-                this._documentError(msg, { message: reason?.message });
+            return this._documentError(key, { message: reason.message }).then(() => {
                 throw reason;
             });
         });
@@ -899,7 +883,10 @@ export class PDFViewerApplication {
         if (this._hasAnnotationEditors) {
             this.externalServices.reportTelemetry({
                 type: "editing",
-                data: { type: "save" },
+                data: {
+                    type: "save",
+                    stats: this.pdfDocument?.annotationStorage.editorStats,
+                },
             });
         }
     }
@@ -911,16 +898,13 @@ export class PDFViewerApplication {
             this.download(options);
         }
     }
-    openInExternalApp() {
-        this.downloadOrSave({ openInExternalApp: true });
-    }
     /**
      * Report the error; used for errors affecting loading and/or parsing of
      * the entire PDF document.
      */
-    _documentError(message, moreInfo) {
+    async _documentError(key, moreInfo) {
         this.#unblockDocumentLoadEvent();
-        this._otherError(message, moreInfo);
+        const message = await this._otherError(key || "pdfjs-loading-error", moreInfo);
         this.eventBus.dispatch("documenterror", {
             source: this,
             message,
@@ -930,12 +914,14 @@ export class PDFViewerApplication {
     /**
      * Report the error; used for errors affecting e.g. only a single page.
      *
-     * @param message A message that is human readable.
+     * @param key The localization key for the error.
      * @param moreInfo Further information about the error that is
      *  more technical. Should have a 'message' and
      *  optionally a 'stack' property.
+     * @return A (localized) error message that is human readable.
      */
-    _otherError(message, moreInfo) {
+    async _otherError(key, moreInfo) {
+        const message = await this.l10n.get(key);
         const moreInfoText = [`PDF.js v${version || "?"} (build: ${build || "?"})`];
         if (moreInfo) {
             moreInfoText.push(`Message: ${moreInfo.message}`);
@@ -952,6 +938,7 @@ export class PDFViewerApplication {
             }
         }
         console.error(`${message}\n\n${moreInfoText.join("\n")}`);
+        return message;
     }
     progress(level) {
         if (!this.loadingBar || this.downloadComplete) {
@@ -1126,9 +1113,7 @@ export class PDFViewerApplication {
             this.#unblockDocumentLoadEvent();
             this.#initializeAutoPrint(pdfDocument, openActionPromise);
         }, (reason) => {
-            this.l10n.get("pdfjs-loading-error").then((msg) => {
-                this._documentError(msg, { message: reason?.message });
-            });
+            this._documentError("pdfjs-loading-error", { message: reason.message });
         });
         onePageRendered.then((data) => {
             this.externalServices.reportTelemetry({
@@ -1361,12 +1346,6 @@ export class PDFViewerApplication {
         annotationStorage.onAnnotationEditor = (typeStr) => {
             this._hasAnnotationEditors = !!typeStr;
             this.setTitle();
-            if (typeStr) {
-                this.externalServices.reportTelemetry({
-                    type: "editing",
-                    data: { type: typeStr },
-                });
-            }
         };
     }
     setInitialView(storedHash, { rotation, sidebarView, scrollMode, spreadMode } = {}) {
@@ -1427,9 +1406,7 @@ export class PDFViewerApplication {
             .catch(() => {
             /* Avoid breaking printing; ignoring errors. */
         })
-            .then(() => {
-            return this.pdfDocument?.annotationStorage.print;
-        });
+            .then(() => this.pdfDocument?.annotationStorage.print);
         if (this.printService) {
             // There is no way to suppress beforePrint/afterPrint events,
             // but PDFPrintService may generate double events -- this will ignore
@@ -1437,9 +1414,7 @@ export class PDFViewerApplication {
             return;
         }
         if (!this.supportsPrinting) {
-            this.l10n.get("pdfjs-printing-not-supported").then((msg) => {
-                this._otherError(msg);
-            });
+            this._otherError("pdfjs-printing-not-supported");
             return;
         }
         // The beforePrint is a sync method and we need to know layout before
@@ -1451,20 +1426,24 @@ export class PDFViewerApplication {
             });
             return;
         }
-        const pagesOverview = this.pdfViewer.getPagesOverview();
-        const printContainer = this.appConfig.printContainer;
-        const printResolution = AppOptions.printResolution;
-        const optionalContentConfigPromise = this.pdfViewer.optionalContentConfigPromise;
-        const printService = PDFPrintServiceFactory.instance.createPrintService(this.pdfDocument, pagesOverview, printContainer, printResolution, optionalContentConfigPromise, this._printAnnotationStoragePromise);
-        this.printService = printService;
+        this.printService = PDFPrintServiceFactory.createPrintService({
+            pdfDocument: this.pdfDocument,
+            pagesOverview: this.pdfViewer.getPagesOverview(),
+            printContainer: this.appConfig.printContainer,
+            printResolution: AppOptions.printResolution,
+            printAnnotationStoragePromise: this._printAnnotationStoragePromise,
+        });
         this.forceRendering();
         // Disable the editor-indicator during printing (fixes bug 1790552).
         this.setTitle();
-        printService.layout();
+        this.printService.layout();
         if (this._hasAnnotationEditors) {
             this.externalServices.reportTelemetry({
                 type: "editing",
-                data: { type: "print" },
+                data: {
+                    type: "print",
+                    stats: this.pdfDocument?.annotationStorage.editorStats,
+                },
             });
         }
     };
@@ -1521,7 +1500,6 @@ export class PDFViewerApplication {
         eventBus._on("switchannotationeditorparams", webViewerSwitchAnnotationEditorParams);
         eventBus._on("print", webViewerPrint);
         eventBus._on("download", webViewerDownload);
-        eventBus._on("openinexternalapp", webViewerOpenInExternalApp);
         eventBus._on("firstpage", webViewerFirstPage);
         eventBus._on("lastpage", webViewerLastPage);
         eventBus._on("nextpage", webViewerNextPage);
@@ -1554,7 +1532,7 @@ export class PDFViewerApplication {
         /*#static*/ 
     }
     bindWindowEvents() {
-        const { eventBus, _boundEvents } = this;
+        const { eventBus, _boundEvents, appConfig: { mainContainer }, } = this;
         function addWindowResolutionChange(evt = undefined) {
             if (evt) {
                 webViewerResolutionChange(evt);
@@ -1563,7 +1541,6 @@ export class PDFViewerApplication {
             mediaQueryList.addEventListener("change", addWindowResolutionChange, {
                 once: true,
             });
-            /*#static*/ 
             _boundEvents.removeWindowResolutionChange ||= function () {
                 mediaQueryList.removeEventListener("change", addWindowResolutionChange);
                 _boundEvents.removeWindowResolutionChange = undefined;
@@ -1604,6 +1581,36 @@ export class PDFViewerApplication {
         window.on("beforeprint", _boundEvents.windowBeforePrint);
         window.on("afterprint", _boundEvents.windowAfterPrint);
         window.addEventListener("updatefromsandbox", _boundEvents.windowUpdateFromSandbox);
+        /*#static*/  {
+            if (!("onscrollend" in document.documentElement)) {
+                return;
+            }
+        }
+        // Using the values lastScrollTop and lastScrollLeft is a workaround to
+        // https://bugzilla.mozilla.org/show_bug.cgi?id=1881974.
+        // TODO: remove them once the bug is fixed.
+        ({ scrollTop: this._lastScrollTop, scrollLeft: this._lastScrollLeft } =
+            mainContainer);
+        const scrollend = (_boundEvents.mainContainerScrollend = () => {
+            ({ scrollTop: this._lastScrollTop, scrollLeft: this._lastScrollLeft } =
+                mainContainer);
+            this._isScrolling = false;
+            mainContainer.on("scroll", scroll, { passive: true });
+            mainContainer.off("scrollend", scrollend);
+            mainContainer.off("blur", scrollend);
+        });
+        const scroll = (_boundEvents.mainContainerScroll = () => {
+            if (this._isCtrlKeyDown ||
+                (this._lastScrollTop === mainContainer.scrollTop &&
+                    this._lastScrollLeft === mainContainer.scrollLeft)) {
+                return;
+            }
+            mainContainer.off("scroll", scroll, { passive: true });
+            this._isScrolling = true;
+            mainContainer.on("scrollend", scrollend);
+            mainContainer.on("blur", scrollend);
+        });
+        mainContainer.on("scroll", scroll, { passive: true });
     }
     unbindEvents() {
         /*#static*/ 
@@ -1625,7 +1632,6 @@ export class PDFViewerApplication {
         eventBus._off("presentationmode", webViewerPresentationMode);
         eventBus._off("print", webViewerPrint);
         eventBus._off("download", webViewerDownload);
-        eventBus._off("openinexternalapp", webViewerOpenInExternalApp);
         eventBus._off("firstpage", webViewerFirstPage);
         eventBus._off("lastpage", webViewerLastPage);
         eventBus._off("nextpage", webViewerNextPage);
@@ -1659,27 +1665,31 @@ export class PDFViewerApplication {
         _boundEvents.afterPrint = undefined;
     }
     unbindWindowEvents() {
-        /*#static*/ 
-        const { _boundEvents } = this;
-        window.removeEventListener("visibilitychange", webViewerVisibilityChange);
-        window.removeEventListener("wheel", webViewerWheel);
-        window.removeEventListener("touchstart", webViewerTouchStart);
-        window.removeEventListener("touchmove", webViewerTouchMove);
-        window.removeEventListener("touchend", webViewerTouchEnd);
-        window.removeEventListener("click", webViewerClick);
-        window.removeEventListener("keydown", webViewerKeyDown);
-        window.removeEventListener("keyup", webViewerKeyUp);
-        window.removeEventListener("resize", _boundEvents.windowResize);
-        window.removeEventListener("hashchange", _boundEvents.windowHashChange);
-        window.removeEventListener("beforeprint", _boundEvents.windowBeforePrint);
-        window.removeEventListener("afterprint", _boundEvents.windowAfterPrint);
+        const { _boundEvents, appConfig: { mainContainer }, } = this;
+        window.off("visibilitychange", webViewerVisibilityChange);
+        window.off("wheel", webViewerWheel);
+        window.off("touchstart", webViewerTouchStart);
+        window.off("touchmove", webViewerTouchMove);
+        window.off("touchend", webViewerTouchEnd);
+        window.off("click", webViewerClick);
+        window.off("keydown", webViewerKeyDown);
+        window.off("keyup", webViewerKeyUp);
+        window.off("resize", _boundEvents.windowResize);
+        window.off("hashchange", _boundEvents.windowHashChange);
+        window.off("beforeprint", _boundEvents.windowBeforePrint);
+        window.off("afterprint", _boundEvents.windowAfterPrint);
         window.removeEventListener("updatefromsandbox", _boundEvents.windowUpdateFromSandbox);
+        mainContainer.off("scroll", _boundEvents.mainContainerScroll);
+        mainContainer.off("scrollend", _boundEvents.mainContainerScrollend);
+        mainContainer.off("blur", _boundEvents.mainContainerScrollend);
         _boundEvents.removeWindowResolutionChange?.();
         _boundEvents.windowResize = undefined;
         _boundEvents.windowHashChange = undefined;
         _boundEvents.windowBeforePrint = undefined;
         _boundEvents.windowAfterPrint = undefined;
         _boundEvents.windowUpdateFromSandbox = undefined;
+        _boundEvents.mainContainerScroll = undefined;
+        _boundEvents.mainContainerScrollend = undefined;
     }
     _accumulateTicks(ticks, prop) {
         // If the direction changed, reset the accumulated ticks.
@@ -1731,6 +1741,10 @@ export class PDFViewerApplication {
     }
 }
 export const viewerApp = new PDFViewerApplication();
+initCom(viewerApp);
+/*#static*/  {
+    PDFPrintServiceFactory.initGlobals(viewerApp);
+}
 let validateFileURL;
 /*#static*/  {
     const HOSTED_VIEWER_ORIGINS = [
@@ -1758,8 +1772,8 @@ let validateFileURL;
             }
         }
         catch (ex) {
-            viewerApp.l10n.get("pdfjs-loading-error").then((msg) => {
-                viewerApp._documentError(msg, { message: ex?.message });
+            viewerApp._documentError("pdfjs-loading-error", {
+                message: ex.message,
             });
             throw ex;
         }
@@ -1783,8 +1797,7 @@ async function loadFakeWorker() {
     globalThis.pdfjsWorker = await import("../pdf.ts-src/pdf.worker.js");
 }
 async function loadPDFBug(self) {
-    const { debuggerScriptPath } = self.appConfig;
-    const { PDFBug } = /*#static*/ await import(debuggerScriptPath) // eslint-disable-line no-unsanitized/method
+    const { PDFBug } = /*#static*/ await import(AppOptions.debuggerSrc) // eslint-disable-line no-unsanitized/method
     ;
     self._PDFBug = PDFBug;
 }
@@ -1820,9 +1833,7 @@ function webViewerPageRendered({ pageNumber, error }) {
         }
     }
     if (error) {
-        viewerApp.l10n.get("pdfjs-rendering-error").then((msg) => {
-            viewerApp._otherError(msg, error);
-        });
+        viewerApp._otherError("pdfjs-rendering-error", error);
     }
 }
 function webViewerPageMode({ mode }) {
@@ -1940,14 +1951,11 @@ function webViewerHashchange(evt) {
         viewerApp.pdfLinkService.setHash(hash);
     }
 }
-let webViewerFileInputChange;
-let webViewerOpenFile;
 /*#static*/  {
     // eslint-disable-next-line no-var
-    webViewerFileInputChange = (evt) => {
+    var webViewerFileInputChange = (evt) => {
         if (viewerApp.pdfViewer?.isInPresentationMode) {
-            // Opening a new PDF file isn't supported in Presentation Mode.
-            return;
+            return; // Opening a new PDF file isn't supported in Presentation Mode.
         }
         const file = evt.fileInput.files[0];
         viewerApp.open({
@@ -1956,9 +1964,8 @@ let webViewerOpenFile;
         });
     };
     // eslint-disable-next-line no-var
-    webViewerOpenFile = (evt) => {
-        const fileInput = viewerApp.appConfig.openFileInput;
-        fileInput.click();
+    var webViewerOpenFile = (evt) => {
+        viewerApp._openFileInput?.click();
     };
 }
 function webViewerPresentationMode() {
@@ -1975,9 +1982,6 @@ function webViewerPrint() {
 }
 function webViewerDownload() {
     viewerApp.downloadOrSave();
-}
-function webViewerOpenInExternalApp() {
-    viewerApp.openInExternalApp();
 }
 function webViewerFirstPage() {
     viewerApp.page = 1;
@@ -2052,7 +2056,7 @@ function webViewerUpdateFindMatchesCount({ matchesCount }) {
         viewerApp.externalServices.updateFindMatchesCount(matchesCount);
     }
     else {
-        viewerApp.findBar.updateResultsCount(matchesCount);
+        viewerApp.findBar?.updateResultsCount(matchesCount);
     }
 }
 function webViewerUpdateFindControlState({ state, previous, matchesCount, rawQuery, }) {
@@ -2141,7 +2145,8 @@ function webViewerWheel(evt) {
         // Only zoom the pages, not the entire viewer.
         evt.preventDefault();
         // NOTE: this check must be placed *after* preventDefault.
-        if (zoomDisabledTimeout ||
+        if (viewerApp._isScrolling ||
+            zoomDisabledTimeout ||
             document.visibilityState === "hidden" ||
             viewerApp.overlayManager.active) {
             return;
@@ -2196,9 +2201,6 @@ function webViewerWheel(evt) {
         // left corner is restored. When the mouse wheel is used, the position
         // under the cursor should be restored instead.
         viewerApp._centerAtPos(previousScale, evt.clientX, evt.clientY);
-    }
-    else {
-        setZoomDisabledTimeout();
     }
 }
 function webViewerTouchStart(evt) {
@@ -2481,6 +2483,14 @@ function webViewerKeyDown(evt) {
         let turnPage = 0, turnOnlyIfPageFit = false;
         switch (evt.keyCode) {
             case 38: // up arrow
+                if (viewerApp.supportsCaretBrowsingMode) {
+                    viewerApp.moveCaret(
+                    /* isUp = */ true, 
+                    /* select = */ false);
+                    handled = true;
+                    break;
+                }
+            /* falls through */
             case 33: // pg up
                 // vertical scrolling using arrow/pg keys
                 if (pdfViewer.isVerticalScrollbarEnabled) {
@@ -2495,6 +2505,9 @@ function webViewerKeyDown(evt) {
                 turnPage = -1;
                 break;
             case 37: // left arrow
+                if (viewerApp.supportsCaretBrowsingMode) {
+                    return;
+                }
                 // horizontal scrolling using arrow keys
                 if (pdfViewer.isHorizontalScrollbarEnabled) {
                     turnOnlyIfPageFit = true;
@@ -2516,6 +2529,14 @@ function webViewerKeyDown(evt) {
                 }
                 break;
             case 40: // down arrow
+                if (viewerApp.supportsCaretBrowsingMode) {
+                    viewerApp.moveCaret(
+                    /* isUp = */ false, 
+                    /* select = */ false);
+                    handled = true;
+                    break;
+                }
+            /* falls through */
             case 34: // pg down
                 // vertical scrolling using arrow/pg keys
                 if (pdfViewer.isVerticalScrollbarEnabled) {
@@ -2531,6 +2552,9 @@ function webViewerKeyDown(evt) {
                 turnPage = 1;
                 break;
             case 39: // right arrow
+                if (viewerApp.supportsCaretBrowsingMode) {
+                    return;
+                }
                 // horizontal scrolling using arrow keys
                 if (pdfViewer.isHorizontalScrollbarEnabled) {
                     turnOnlyIfPageFit = true;
@@ -2591,6 +2615,14 @@ function webViewerKeyDown(evt) {
                 pdfViewer.previousPage();
                 handled = true;
                 break;
+            case 38: // up arrow
+                viewerApp.moveCaret(/* isUp = */ true, /* select = */ true);
+                handled = true;
+                break;
+            case 40: // down arrow
+                viewerApp.moveCaret(/* isUp = */ false, /* select = */ true);
+                handled = true;
+                break;
             case 82: // 'r'
                 viewerApp.rotatePages(-90);
                 break;
@@ -2626,14 +2658,27 @@ function webViewerAnnotationEditorStatesChanged(data) {
 function webViewerReportTelemetry({ details }) {
     viewerApp.externalServices.reportTelemetry(details);
 }
-/* Abstract factory for the print service. */
-export const PDFPrintServiceFactory = {
-    instance: {
-        supportsPrinting: false,
-        createPrintService(pdfDocument, pagesOverview, printContainer, printResolution, optionalContentConfigPromise, printAnnotationStoragePromise, l10n) {
-            throw new Error("Not implemented: createPrintService");
-        },
-    },
-};
+//kkkk TOCLEANUP
+// /* Abstract factory for the print service. */
+// export const PDFPrintServiceFactory = {
+//   instance: {
+//     supportsPrinting: false,
+//     createPrintService(
+//       pdfDocument: PDFDocumentProxy,
+//       pagesOverview: PageOverview[],
+//       printContainer: HTMLDivElement,
+//       printResolution: number | undefined,
+//       optionalContentConfigPromise:
+//         | Promise<OptionalContentConfig | undefined>
+//         | undefined,
+//       printAnnotationStoragePromise?: Promise<
+//         PrintAnnotationStorage | undefined
+//       >,
+//       l10n?: IL10n,
+//     ): PDFPrintService {
+//       throw new Error("Not implemented: createPrintService");
+//     },
+//   },
+// };
 /*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=app.js.map

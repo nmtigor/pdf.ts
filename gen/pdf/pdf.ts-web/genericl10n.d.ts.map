@@ -1,1 +1,1 @@
-{"version":3,"file":"genericl10n.d.ts","sourceRoot":"","sources":["../../../src/pdf/pdf.ts-web/genericl10n.ts"],"names":[],"mappings":"AAwBA,OAAO,EAAE,MAAM,EAAE,MAAM,qBAAmB,CAAC;AAE3C,OAAO,EAAE,IAAI,EAAE,MAAM,WAAW,CAAC;AAyBjC,qBAAa,WAAY,SAAQ,IAAI;;gBACvB,IAAI,EAAE,MAAM;CAoGzB"}
+{"version":3,"file":"genericl10n.d.ts","sourceRoot":"","sources":["../../../src/pdf/pdf.ts-web/genericl10n.ts"],"names":[],"mappings":"AAAA;;;;;;gFAMgF;AAsBhF,OAAO,EAAE,MAAM,EAAE,MAAM,qBAAmB,CAAC;AAG3C,OAAO,EAAE,IAAI,EAAE,MAAM,WAAW,CAAC;AAqCjC,qBAAa,WAAY,SAAQ,IAAI;;gBACvB,IAAI,CAAC,EAAE,MAAM;CA2I1B"}

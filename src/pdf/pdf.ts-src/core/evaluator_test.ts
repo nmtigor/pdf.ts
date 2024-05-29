@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/evaluator_test.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2020 Mozilla Foundation
  *
@@ -19,7 +23,7 @@
 
 import { assert, assertEquals, fail } from "@std/assert/mod.ts";
 import { afterAll, beforeAll, describe, it } from "@std/testing/bdd.ts";
-import { createIdFactory, XRefMock } from "../../test_utils.ts";
+import { createIdFactory, XRefMock } from "@pdf.ts-test/test_utils.ts";
 import { FormatError, OPS } from "../shared/util.ts";
 import { BaseStream } from "./base_stream.ts";
 import { PartialEvaluator } from "./evaluator.ts";

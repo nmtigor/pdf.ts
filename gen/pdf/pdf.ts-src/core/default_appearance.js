@@ -1,24 +1,14 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
-/* Copyright 2020 Mozilla Foundation
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+ * @module pdf/pdf.ts-src/core/default_appearance.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import { DENO } from "../../../global.js";
 import { LINE_DESCENT_FACTOR, LINE_FACTOR, OPS, shadow, warn, } from "../shared/util.js";
 import { ColorSpace } from "./colorspace.js";
-import { escapePDFName, getRotationMatrix, numberToString, stringToUTF16HexString, } from "./core_utils.js";
+import { codePointIter, escapePDFName, getRotationMatrix, numberToString, stringToUTF16HexString, } from "./core_utils.js";
 import { EvaluatorPreprocessor } from "./evaluator.js";
 import { PDFFunctionFactory } from "./function.js";
 import { LocalColorSpaceCache } from "./image_utils.js";
@@ -221,31 +211,6 @@ export class FakeUnicodeFont {
     fontName;
     static #toUnicodeRef;
     static toUnicodeStream;
-    get toUnicodeRef() {
-        if (!FakeUnicodeFont.#toUnicodeRef) {
-            const toUnicode = `/CIDInit /ProcSet findresource begin
-12 dict begin
-begincmap
-/CIDSystemInfo
-<< /Registry (Adobe)
-/Ordering (UCS) /Supplement 0 >> def
-/CMapName /Adobe-Identity-UCS def
-/CMapType 2 def
-1 begincodespacerange
-<0000> <FFFF>
-endcodespacerange
-1 beginbfrange
-<0000> <FFFF> <0000>
-endbfrange
-endcmap CMapName currentdict /CMap defineresource pop end end`;
-            const toUnicodeStream = (FakeUnicodeFont.toUnicodeStream = new StringStream(toUnicode));
-            const toUnicodeDict = new Dict(this.xref);
-            toUnicodeStream.dict = toUnicodeDict;
-            toUnicodeDict.set("Length", toUnicode.length);
-            FakeUnicodeFont.#toUnicodeRef = this.xref.getNewPersistentRef(toUnicodeStream);
-        }
-        return FakeUnicodeFont.#toUnicodeRef;
-    }
     static #fontDescriptorRef;
     get fontDescriptorRef() {
         if (!FakeUnicodeFont.#fontDescriptorRef) {
@@ -318,7 +283,7 @@ endcmap CMapName currentdict /CMap defineresource pop end end`;
         baseFont.set("Subtype", Name.get("Type0"));
         baseFont.set("Encoding", Name.get("Identity-H"));
         baseFont.set("DescendantFonts", [this.descendantFontRef]);
-        baseFont.set("ToUnicode", this.toUnicodeRef);
+        baseFont.set("ToUnicode", Name.get("Identity-H"));
         return this.xref.getNewPersistentRef(baseFont);
     }
     get resources() {
@@ -350,6 +315,24 @@ endcmap CMapName currentdict /CMap defineresource pop end end`;
         }
         return this.resources;
     }
+    static getFirstPositionInfo(rect, rotation, fontSize) {
+        // Get the position of the first char in the rect.
+        const [x1, y1, x2, y2] = rect;
+        let w = x2 - x1;
+        let h = y2 - y1;
+        if (rotation % 180 !== 0) {
+            [w, h] = [h, w];
+        }
+        const lineHeight = LINE_FACTOR * fontSize;
+        const lineDescent = LINE_DESCENT_FACTOR * fontSize;
+        return {
+            coords: [0, h + lineDescent - lineHeight],
+            bbox: [0, 0, w, h],
+            matrix: rotation !== 0
+                ? getRotationMatrix(rotation, h, lineHeight)
+                : undefined,
+        };
+    }
     createAppearance(text, rect, rotation, fontSize, bgColor, strokeAlpha) {
         const ctx = this._createContext();
         const lines = [];
@@ -360,8 +343,8 @@ endcmap CMapName currentdict /CMap defineresource pop end end`;
             // languages, like arabic, it'd be wrong because of ligatures.
             const lineWidth = ctx.measureText(line).width;
             maxWidth = Math.max(maxWidth, lineWidth);
-            for (const char of line.split("")) {
-                const code = char.charCodeAt(0);
+            for (const code of codePointIter(line)) {
+                const char = String.fromCodePoint(code);
                 let width = this.widths.get(code);
                 if (width === undefined) {
                     const metrics = ctx.measureText(char);

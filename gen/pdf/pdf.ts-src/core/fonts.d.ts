@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/fonts.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import type { C2D, dot2d_t, rect_t } from "../../../lib/alias.js";
 import type { matrix_t } from "../shared/util.js";
 import type { BaseStream } from "./base_stream.js";

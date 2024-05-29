@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/xref.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2021 Mozilla Foundation
  *
@@ -88,12 +92,26 @@ export class XRef {
   }
 
   #newTemporaryRefNum: number | undefined;
+  #persistentRefsCache: Map<number, ObjNoRef> | undefined;
   getNewTemporaryRef() {
     // When saving we want to have some minimal numbers.
     // Those refs are only created in order to be written in the final pdf
     // stream.
     if (this.#newTemporaryRefNum === undefined) {
       this.#newTemporaryRefNum = this.entries.length || 1;
+      if (this.#newPersistentRefNum) {
+        this.#persistentRefsCache = new Map();
+        for (
+          let i = this.#newTemporaryRefNum;
+          i < this.#newPersistentRefNum;
+          i++
+        ) {
+          // We *temporarily* clear the cache, see `resetNewTemporaryRef` below,
+          // to avoid any conflict with the refs created during saving.
+          this.#persistentRefsCache.set(i, this.#cacheMap.get(i)!);
+          this.#cacheMap.delete(i);
+        }
+      }
     }
     return Ref.get(this.#newTemporaryRefNum++, 0);
   }
@@ -101,6 +119,12 @@ export class XRef {
   resetNewTemporaryRef() {
     // Called once saving is finished.
     this.#newTemporaryRefNum = undefined;
+    if (this.#persistentRefsCache) {
+      for (const [num, obj] of this.#persistentRefsCache) {
+        this.#cacheMap.set(num, obj);
+      }
+    }
+    this.#persistentRefsCache = undefined;
   }
 
   startXRefQueue!: number[];

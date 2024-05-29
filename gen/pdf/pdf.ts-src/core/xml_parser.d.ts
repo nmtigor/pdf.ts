@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/xml_parser.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import type { XFAPath } from "./core_utils.js";
 export declare const enum XMLParserErrorCode {
     NoError = 0,

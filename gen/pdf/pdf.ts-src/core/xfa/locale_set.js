@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/xfa/locale_set.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import { $buildXFAObject, NamespaceIds } from "./namespaces.js";
 import { getInteger, getStringOption } from "./utils.js";
 import { ContentObject, StringObject, XFAObject, XFAObjectArray, } from "./xfa_object.js";

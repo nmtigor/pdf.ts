@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/struct_tree.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import type { AnnotStorageValue } from "../display/annotation_layer.js";
 import type { StructTreeNode } from "../display/api.js";
 import type { BasePdfManager } from "./pdf_manager.js";

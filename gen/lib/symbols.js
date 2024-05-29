@@ -75,7 +75,7 @@ export const $redirect_focus = Symbol("$redirect_focus");
  */
 export const $rec_utx_a = Symbol("$rec_utx_a");
 /**
- * document[ $selection_vu ] { HTMLVuu }
+ * document[ $selection_vu ] { HTMLVuu }\
  * Used in document.onSelectionchange callback
  */
 export const $selection_vu = Symbol("$selection_vu");
@@ -115,7 +115,7 @@ export const $uts = Symbol("$uts");
 export const $vuu = Symbol("$vuu");
 /**
  * this.el$[ $Vuu ] { AbstractConstructor<Vuu> }
- * kkkk check usage
+ * kkkk check use
  */
 export const $Vuu = Symbol("$Vuu");
 /*80--------------------------------------------------------------------------*/

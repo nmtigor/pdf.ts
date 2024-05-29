@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/shared/util_test.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2017 Mozilla Foundation
  *
@@ -28,7 +32,6 @@ import {
   bytesToString,
   createValidAbsoluteUrl,
   getModificationDate,
-  isArrayBuffer,
   string32,
   stringToBytes,
   stringToPDFString,
@@ -65,20 +68,6 @@ describe("util", () => {
       const string = "a".repeat(length);
 
       assertEquals(bytesToString(bytes), string);
-    });
-  });
-
-  describe("isArrayBuffer", () => {
-    it("handles array buffer values", () => {
-      assertEquals(isArrayBuffer(new ArrayBuffer(0)), true);
-      assertEquals(isArrayBuffer(new Uint8Array(0)), true);
-    });
-
-    it("handles non-array buffer values", () => {
-      assertEquals(isArrayBuffer("true"), false);
-      assertEquals(isArrayBuffer(1), false);
-      assertEquals(isArrayBuffer(null), false);
-      assertEquals(isArrayBuffer(undefined), false);
     });
   });
 

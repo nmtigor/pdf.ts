@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/display/annotation_layer.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2014 Mozilla Foundation
  *
@@ -17,7 +21,7 @@
  * limitations under the License.
  */
 
-import type { CSSStyleName, rect_t, TupleOf } from "@fe-lib/alias.ts";
+import type { CSSStyleName, Ratio, rect_t } from "@fe-lib/alias.ts";
 import type { red_t, rgb_t } from "@fe-lib/color/alias.ts";
 import type { HSElement } from "@fe-lib/dom.ts";
 import { div, html, span, svg as createSVG, textnode } from "@fe-lib/dom.ts";
@@ -62,8 +66,8 @@ import {
   PDFDateString,
   setLayerDimensions,
 } from "./display_utils.ts";
+import type { Outlines } from "./editor/outliner.ts";
 import { XfaLayer } from "./xfa_layer.ts";
-import type { Outlines } from "../alias.ts";
 /*80--------------------------------------------------------------------------*/
 
 const DEFAULT_TAB_INDEX = 1000;
@@ -272,8 +276,12 @@ export class AnnotationElement {
     // use of the z-index.
     container.style.zIndex = this.parent.zIndex++ as any;
 
-    if (this.data.popupRef) {
+    if (data.popupRef) {
       container.setAttribute("aria-haspopup", "dialog");
+    }
+
+    if (data.alternativeText) {
+      container.title = data.alternativeText;
     }
 
     if (data.noRotate) {
@@ -1089,10 +1097,6 @@ interface Actions {
 class WidgetAnnotationElement extends AnnotationElement {
   override render() {
     // Show only the container for unsupported field types.
-    if (this.data.alternativeText) {
-      this.container.title = this.data.alternativeText;
-    }
-
     return this.container;
   }
 
@@ -1863,10 +1867,6 @@ class PushButtonWidgetAnnotationElement extends LinkAnnotationElement {
     const container = super.render() as HTMLElement;
     container.classList.add("buttonWidgetAnnotation", "pushButton");
 
-    if (this.data.alternativeText) {
-      container.title = this.data.alternativeText;
-    }
-
     const linkElement = container.lastChild;
     if (this.enableScripting && this.hasJSActions && linkElement) {
       this._setDefaultPropertiesFromJS(linkElement as HTMLElement);
@@ -1977,12 +1977,10 @@ class ChoiceWidgetAnnotationElement extends WidgetAnnotationElement {
       const options = (event.target as El).options;
       return Array.prototype.map.call(
         options,
-        (option: HTMLOptionElement) => {
-          return {
-            displayValue: option.textContent,
-            exportValue: option.value,
-          };
-        },
+        (option: HTMLOptionElement) => ({
+          displayValue: option.textContent,
+          exportValue: option.value,
+        }),
       ) as Item[];
     };
 
@@ -3111,11 +3109,11 @@ export interface AnnotStorageValue {
   items?: Item[];
   noPrint?: unknown;
   noView?: unknown;
-  opacity?: number;
-  outlines?: TupleOf<number, 4>[];
+  opacity?: Ratio;
+  outlines?: Outlines;
   pageIndex?: number;
   parentTreeId?: number;
-  quadPoints?: TupleOf<number, 7>;
+  quadPoints?: number[] | undefined;
   paths?: {
     bezier: number[];
     points: number[];
@@ -3303,5 +3301,7 @@ export class AnnotationLayer {
   getEditableAnnotation(id: string) {
     return this.#editableAnnotations.get(id);
   }
+
+  showPopups!: () => void;
 }
 /*80--------------------------------------------------------------------------*/

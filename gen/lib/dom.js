@@ -15,18 +15,20 @@ if (globalThis.Event) {
     // console.log(Event.prototype.canceled);
 }
 if (globalThis.WheelEvent) {
-    WheelEvent.prototype._repr = function () {
-        const m_ = /* final switch */ {
-            [WheelEvent.DOM_DELTA_PIXEL]: "DOM_DELTA_PIXEL",
-            [WheelEvent.DOM_DELTA_LINE]: "DOM_DELTA_LINE",
-            [WheelEvent.DOM_DELTA_PAGE]: "DOM_DELTA_PAGE",
-        }[this.deltaMode];
-        return {
-            deltaMode: m_ ? `"${m_}"` : "undefined",
-            deltaX: this.deltaX,
-            deltaY: this.deltaY,
-        };
-    };
+    Reflect.defineProperty(WheelEvent.prototype, "_repr", {
+        get() {
+            const m_ = /* final switch */ {
+                [WheelEvent.DOM_DELTA_PIXEL]: "DOM_DELTA_PIXEL",
+                [WheelEvent.DOM_DELTA_LINE]: "DOM_DELTA_LINE",
+                [WheelEvent.DOM_DELTA_PAGE]: "DOM_DELTA_PAGE",
+            }[this.deltaMode];
+            return {
+                deltaMode: m_,
+                deltaX: this.deltaX,
+                deltaY: this.deltaY,
+            };
+        },
+    });
 }
 /*64----------------------------------------------------------*/
 export var MouseButton;
@@ -223,21 +225,21 @@ if (globalThis.DOMRect) {
     };
 }
 if (globalThis.Range) {
-    Range.prototype.getSticka = function (rec_a_x, ovlap_x = false) {
+    Range.prototype.getSticka = function (out_a_x, ovlap_x = false) {
         const recs = this.getClientRects();
         if (recs.length) {
             for (const rec of recs) {
                 if (rec.width === 0)
                     rec.width = rec.height * .1;
                 rec[$ovlap] = ovlap_x;
-                rec_a_x.push(rec);
+                out_a_x.push(rec);
             }
         }
         else {
             const rec = this.getBoundingClientRect();
             rec.width = rec.height * .1;
             rec[$ovlap] = ovlap_x;
-            rec_a_x.push(rec);
+            out_a_x.push(rec);
         }
     };
     Range.prototype.reset = function () {
@@ -250,13 +252,27 @@ if (globalThis.Range) {
  * @const @param loff_x
  * @const @param tail_ignored_x
  */
-export function textnode(text_x, loff_x, tail_ignored_x) {
+export const textnode = (text_x, loff_x = 0, tail_ignored_x) => {
     const ret = document.createTextNode(text_x);
-    if (loff_x !== undefined)
-        ret[$loff] = loff_x;
+    ret[$loff] = loff_x;
     if (tail_ignored_x !== undefined)
         ret[$tail_ignored] = tail_ignored_x;
     return ret;
+};
+if (globalThis.Text) {
+    Text.prototype.loff = function (offs_x) {
+        return this[$loff] + offs_x;
+    };
+    Reflect.defineProperty(Text.prototype, "strtLoff", {
+        get() {
+            return this.loff(0);
+        },
+    });
+    Reflect.defineProperty(Text.prototype, "stopLoff", {
+        get() {
+            return this.loff(this.length);
+        },
+    });
 }
 export function html(nodeName_x, innerHTML_x, doc_x = document) {
     let ret = doc_x.createElement(nodeName_x);

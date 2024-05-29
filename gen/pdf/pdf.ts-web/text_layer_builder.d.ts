@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/text_layer_builder.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import type { TextDivProps } from "../pdf.ts-src/display/text_layer.js";
 import type { PageViewport, TextContent, TextLayerRenderTask } from "../pdf.ts-src/pdf.js";
 import type { TextAccessibilityManager } from "./text_accessibility.js";
@@ -9,10 +16,7 @@ interface TextLayerBuilderOptions {
      */
     highlighter: TextHighlighter | undefined;
     accessibilityManager: TextAccessibilityManager | undefined;
-    /**
-     * Allows to use an OffscreenCanvas if needed.
-     */
-    isOffscreenCanvasSupported?: boolean;
+    onAppend?: (div: HTMLDivElement) => void;
     enablePermissions?: boolean;
 }
 /**
@@ -30,13 +34,8 @@ export declare class TextLayerBuilder {
     textLayerRenderTask?: TextLayerRenderTask | undefined;
     highlighter: TextHighlighter | undefined;
     accessibilityManager: TextAccessibilityManager | undefined;
-    isOffscreenCanvasSupported: boolean | undefined;
-    /**
-     * Callback used to attach the textLayer to the DOM.
-     */
-    onAppend: ((textLayerDiv: HTMLDivElement) => void) | undefined;
     div: HTMLDivElement;
-    constructor({ highlighter, accessibilityManager, isOffscreenCanvasSupported, enablePermissions, }: TextLayerBuilderOptions);
+    constructor({ highlighter, accessibilityManager, enablePermissions, onAppend, }: TextLayerBuilderOptions);
     /**
      * Renders the text layer.
      */

@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/cmap.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import type { TupleOf } from "../../../lib/alias.js";
 import type { FetchBuiltInCMap } from "../display/base_factory.js";
 import { BaseStream } from "./base_stream.js";

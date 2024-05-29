@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2023
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2023
+ *
+ * @module pdf/pdf.ts-web/toolbar-geckoview.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2023 Mozilla Foundation
  *
@@ -17,6 +21,7 @@
  * limitations under the License.
  */
 
+import type { Button } from "./alias.ts";
 import type { EventBus, EventName } from "./event_utils.ts";
 import type { NimbusExperimentData } from "./firefoxcom.ts";
 /*80--------------------------------------------------------------------------*/
@@ -40,13 +45,6 @@ type ToolbarOptions = {
   openInApp: HTMLElement;
 };
 
-type Button_ = {
-  element: HTMLElement;
-  eventName: EventName;
-  eventDetails?: unknown;
-  nimbusName: keyof NimbusExperimentData;
-};
-
 export class Toolbar {
   #buttons;
 
@@ -61,23 +59,18 @@ export class Toolbar {
     nimbusData: NimbusExperimentData | undefined,
   ) {
     this.#eventBus = eventBus;
-    const buttons: Button_[] = [
+    const buttons: Button[] = [
       {
         element: options.download,
         eventName: "download",
         nimbusName: "download-button",
-      },
-      {
-        element: options.openInApp,
-        eventName: "openinexternalapp",
-        nimbusName: "open-in-app-button",
       },
     ];
 
     if (nimbusData) {
       this.#buttons = [];
       for (const button of buttons) {
-        if (nimbusData[button.nimbusName]) {
+        if (nimbusData[button.nimbusName!]) {
           this.#buttons.push(button);
         } else {
           button.element.remove();

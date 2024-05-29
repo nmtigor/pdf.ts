@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/pdf_presentation_mode.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import type { EventBus } from "./event_utils.js";
 import type { PDFViewer } from "./pdf_viewer.js";
 interface PDFPresentationModeOptions {

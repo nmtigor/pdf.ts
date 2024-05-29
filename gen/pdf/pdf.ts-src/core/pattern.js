@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/pattern.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import { assert, fail } from "../../../lib/util/trace.js";
 import { FormatError, info, Util, warn } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
@@ -921,13 +925,19 @@ export class MeshShading extends BaseShading {
     }
     /** @implement */
     getIR() {
+        const { bounds } = this;
+        // Ensure that the shading has non-zero width and height, to prevent errors
+        // in `pattern_helper.js` (fixes issue17848.pdf).
+        if (bounds[2] - bounds[0] === 0 || bounds[3] - bounds[1] === 0) {
+            throw new FormatError(`Invalid MeshShading bounds: [${bounds}].`);
+        }
         return [
             "Mesh",
             this.shadingType,
             this.coords,
             this.colors,
             this.figures,
-            this.bounds,
+            bounds,
             this.bbox,
             this.background,
         ];

@@ -27,4 +27,15 @@ declare global {
  * @headconst @param err_x
  */
 export declare const reportError: <E extends Error>(err_x: E) => Promise<void>;
+/**
+ * Ref. https://devblogs.microsoft.com/typescript/announcing-typescript-5-0/#decorators
+ * @headconst @param tgt_x
+ * @headconst @param ctx_x
+ */
+export declare const bind: (tgt_x: any, ctx_x: ClassMethodDecoratorContext) => void;
+/**
+ * Ref. https://devblogs.microsoft.com/typescript/announcing-typescript-5-0/#decorators
+ * @const @param _x
+ */
+export declare const traceOut: (_x: boolean) => <This, Args extends any[], Return>(tgt_x: (this: This, ...args: Args) => Return, ctx_x: ClassMethodDecoratorContext) => (this: This, ...args: Args) => Return;
 //# sourceMappingURL=trace.d.ts.map

@@ -1,8 +1,12 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/scripting_api/field.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import { Color } from "./color.js";
-import { createActionsMap, getFieldType } from "./common.js";
+import { createActionsMap, FieldType, getFieldType } from "./common.js";
 import { PDFObject } from "./pdf_object.js";
 export class Field extends PDFObject {
     alignment;
@@ -301,7 +305,10 @@ export class Field extends PDFObject {
             this._setChoiceValue(value);
             return;
         }
-        if (value === "" || typeof value !== "string") {
+        if (value === "" ||
+            typeof value !== "string" ||
+            // When the field type is date or time, the value must be a string.
+            this._fieldType >= FieldType.date) {
             this._originalValue = undefined;
             this._value = value;
             return;

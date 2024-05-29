@@ -1,10 +1,16 @@
-import { MetadataEx } from "../pdf.ts-src/display/api.js";
-import type { AnnotActions, AnnotationStorage, AnnotIntent, FieldObject, PageViewport, PDFPageProxy } from "../pdf.ts-src/pdf.js";
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/annotation_layer_builder.ts
+ * @license Apache-2.0
+ ******************************************************************************/
+import type { FieldObjectsPromise } from "../alias.js";
+import type { AnnotationStorage, AnnotIntent, PageViewport, PDFPageProxy } from "../pdf.ts-src/pdf.js";
 import { AnnotationLayer } from "../pdf.ts-src/pdf.js";
 import type { IDownloadManager, IPDFLinkService } from "./interfaces.js";
 import type { TextAccessibilityManager } from "./text_accessibility.js";
 interface AnnotationLayerBuilderOptions {
-    pageDiv: HTMLDivElement;
     pdfPage: PDFPageProxy;
     annotationStorage?: AnnotationStorage | undefined;
     /**
@@ -16,13 +22,13 @@ interface AnnotationLayerBuilderOptions {
     downloadManager?: IDownloadManager | undefined;
     enableScripting?: boolean;
     hasJSActionsPromise?: Promise<boolean> | undefined;
-    fieldObjectsPromise: Promise<boolean | AnnotActions | Record<string, FieldObject[]> | MetadataEx | undefined> | undefined;
+    fieldObjectsPromise: FieldObjectsPromise | undefined;
     annotationCanvasMap: Map<string, HTMLCanvasElement> | undefined;
     accessibilityManager: TextAccessibilityManager | undefined;
+    onAppend?: (div: HTMLDivElement) => void;
 }
 export declare class AnnotationLayerBuilder {
     #private;
-    pageDiv: HTMLDivElement;
     pdfPage: PDFPageProxy;
     linkService: IPDFLinkService;
     downloadManager: IDownloadManager | undefined;
@@ -31,14 +37,14 @@ export declare class AnnotationLayerBuilder {
     annotationStorage: AnnotationStorage | undefined;
     enableScripting: boolean;
     _hasJSActionsPromise: Promise<boolean>;
-    _fieldObjectsPromise: Promise<boolean | AnnotActions | Record<string, FieldObject[]> | MetadataEx | undefined>;
+    _fieldObjectsPromise: FieldObjectsPromise;
     _annotationCanvasMap: Map<string, HTMLCanvasElement> | undefined;
     _accessibilityManager: TextAccessibilityManager | undefined;
     annotationLayer: AnnotationLayer | undefined;
     div?: HTMLDivElement;
     _cancelled: boolean;
     _eventBus: import("./event_utils.js").EventBus | undefined;
-    constructor({ pageDiv, pdfPage, linkService, downloadManager, annotationStorage, imageResourcesPath, renderForms, enableScripting, hasJSActionsPromise, fieldObjectsPromise, annotationCanvasMap, accessibilityManager, }: AnnotationLayerBuilderOptions);
+    constructor({ pdfPage, linkService, downloadManager, annotationStorage, imageResourcesPath, renderForms, enableScripting, hasJSActionsPromise, fieldObjectsPromise, annotationCanvasMap, accessibilityManager, onAppend, }: AnnotationLayerBuilderOptions);
     /**
      * @param viewport
      * @param intent (default value is 'display')

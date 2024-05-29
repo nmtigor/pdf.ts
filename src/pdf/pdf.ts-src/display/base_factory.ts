@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/display/base_factory.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2015 Mozilla Foundation
  *
@@ -17,8 +21,9 @@
  * limitations under the License.
  */
 
-import type { C2D } from "../../../lib/alias.ts";
+import type { C2D } from "@fe-lib/alias.ts";
 import { CMapCompressionType } from "../shared/util.ts";
+import { svg as createSVG } from "@fe-lib/dom.ts";
 /*80--------------------------------------------------------------------------*/
 
 export abstract class BaseFilterFactory {
@@ -31,6 +36,7 @@ export abstract class BaseFilterFactory {
   }
 
   addHighlightHCMFilter(
+    filterName: string,
     fgColor: string,
     bgColor: string,
     newFgColor: string,
@@ -180,11 +186,11 @@ export abstract class BaseStandardFontDataFactory {
 
 export abstract class BaseSVGFactory {
   /** @final */
-  create(width: number, height: number, skipDimensions = false) {
+  create(width: number, height: number, skipDimensions = false): SVGSVGElement {
     if (width <= 0 || height <= 0) {
       throw new Error("Invalid SVG dimensions");
     }
-    const svg = this._createSVG("svg:svg");
+    const svg = createSVG("svg");
     svg.assignAttro({
       version: "1.1",
       preserveAspectRatio: "none",

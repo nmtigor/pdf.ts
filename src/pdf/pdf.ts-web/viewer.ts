@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/viewer.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2016 Mozilla Foundation
  *
@@ -118,6 +122,9 @@ function getViewerConfiguration() {
        */
       editorFreeTextButton: buttonBy("editorFreeText"),
       editorFreeTextParamsToolbar: divBy("editorFreeTextParamsToolbar"),
+      editorHighlightButton: buttonBy("editorHighlight"),
+      editorHighlightParamsToolbar: divBy("editorHighlightParamsToolbar"),
+      editorHighlightColorPicker: divBy("editorHighlightColorPicker"),
       editorInkButton: buttonBy("editorInk"),
       editorInkParamsToolbar: buttonBy("editorInkParamsToolbar"),
       editorStampButton: buttonBy("editorStamp"),
@@ -249,8 +256,9 @@ function getViewerConfiguration() {
        * The container in which the layers are placed.
        */
       layersView: divBy("layersView"),
-      // View-specific options
-      outlineOptionsContainer: divBy("outlineOptionsContainer"),
+      /**
+       * The button used to find the current outline item.
+       */
       currentOutlineItemButton: buttonBy("currentOutlineItem"),
     },
     findBar: {
@@ -332,12 +340,10 @@ function getViewerConfiguration() {
       editorInkThickness: inputBy("editorInkThickness"),
       editorInkOpacity: inputBy("editorInkOpacity"),
       editorStampAddImage: buttonBy("editorStampAddImage"),
+      editorFreeHighlightThickness: inputBy("editorFreeHighlightThickness"),
+      editorHighlightShowAll: inputBy("editorHighlightShowAll"),
     },
     printContainer: divBy("printContainer"),
-    openFileInput: /*#static*/ PDFJSDev || GENERIC
-      ? inputBy("fileInput")
-      : undefined,
-    debuggerScriptPath: "./debugger.js",
   };
 }
 export type ViewerConfiguration = ReturnType<typeof getViewerConfiguration>;

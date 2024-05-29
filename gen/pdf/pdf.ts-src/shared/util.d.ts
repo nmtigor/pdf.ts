@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/shared/util.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import type { HttpStatusCode } from "../../../lib/HttpStatusCode.js";
 import type { dot2d_t, rect_t, TupleOf } from "../../../lib/alias.js";
 import { ErrorJ } from "../../../lib/util/trace.js";
@@ -38,6 +45,7 @@ export declare enum AnnotationMode {
     ENABLE_STORAGE = 3
 }
 export declare const AnnotationEditorPrefix = "pdfjs_internal_editor_";
+export type AnnotationEditorName = "freetext" | "highlight" | "stamp" | "ink";
 export declare enum AnnotationEditorType {
     DISABLE = -1,
     NONE = 0,
@@ -54,7 +62,12 @@ export declare enum AnnotationEditorParamsType {
     FREETEXT_OPACITY = 13,
     INK_COLOR = 21,
     INK_THICKNESS = 22,
-    INK_OPACITY = 23
+    INK_OPACITY = 23,
+    HIGHLIGHT_COLOR = 31,
+    HIGHLIGHT_DEFAULT_COLOR = 32,
+    HIGHLIGHT_THICKNESS = 33,
+    HIGHLIGHT_FREE = 34,
+    HIGHLIGHT_SHOW_ALL = 35
 }
 export declare enum PermissionFlag {
     PRINT = 4,
@@ -384,22 +397,27 @@ export type point3d_t = [number, number, number];
 export type matrix_t = TupleOf<number, 6>;
 export type matrix3d_t = TupleOf<number, 9>;
 export declare class Util {
+    #private;
     static makeHexColor(r: number, g: number, b: number): string;
+    /**
+     * Apply a scaling matrix to some min/max values.
+     * If a scaling factor is negative then min and max must be
+     * swapped.
+     */
     static scaleMinMax(transform: matrix_t, minMax: rect_t): void;
     static transform(m1: matrix_t, m2: matrix_t): matrix_t;
-    static applyTransform(p: dot2d_t | rect_t, m: matrix_t): dot2d_t;
+    static applyTransform(p: dot2d_t, m: matrix_t): dot2d_t;
     static applyInverseTransform(p: dot2d_t, m: matrix_t): dot2d_t;
     static getAxialAlignedBoundingBox(r: rect_t, m: matrix_t): rect_t;
     static inverseTransform(m: matrix_t): matrix_t;
     static singularValueDecompose2dScale(m: matrix_t): number[];
     static normalizeRect(rect: rect_t): [number, number, number, number];
     static intersect(rect1: rect_t, rect2: rect_t): rect_t | undefined;
-    static bezierBoundingBox(x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, x3: number, y3: number): rect_t;
+    static bezierBoundingBox(x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, minMax?: rect_t): rect_t;
 }
 export declare function stringToPDFString(str: string): string;
 export declare function stringToUTF8String(str: string): string;
 export declare function utf8StringToString(str: string): string;
-export declare function isArrayBuffer(v: any): v is ArrayBufferLike;
 export declare function getModificationDate(date?: Date): string;
 export declare function normalizeUnicode(str: string): string;
 export declare function getUuid(): string;

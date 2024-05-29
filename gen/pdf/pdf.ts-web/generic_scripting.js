@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/generic_scripting.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 /* Copyright 2020 Mozilla Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,7 +23,7 @@ import { PDFJSDev } from "../../global.js";
 import { getPdfFilenameFromUrl } from "../pdf.ts-src/pdf.js";
 /*80--------------------------------------------------------------------------*/
 export async function docProperties(pdfDocument) {
-    const url = "", baseUrl = url.split("#")[0];
+    const url = "", baseUrl = url.split("#", 1)[0];
     // eslint-disable-next-line prefer-const
     let { info, metadata, contentDispositionFilename, contentLength } = await pdfDocument.getMetadata();
     if (!contentLength) {

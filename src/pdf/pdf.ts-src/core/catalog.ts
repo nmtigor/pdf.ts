@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/catalog.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2012 Mozilla Foundation
  *
@@ -20,7 +24,7 @@
 import type { rect_t } from "@fe-lib/alias.ts";
 import { PageLayout, PageMode } from "@pdf.ts-web/ui_utils.ts";
 import type { ResetForm } from "../display/annotation_layer.ts";
-import type { OutlineNode } from "../display/api.ts";
+import type { Intent, OutlineNode } from "../display/api.ts";
 import type { CMapData } from "../display/base_factory.ts";
 import { MessageHandler, Thread } from "../shared/message_handler.ts";
 import {
@@ -158,10 +162,18 @@ export type Order = (string | {
   order: Order;
 })[];
 
-type OptionalContentGroupData_ = {
+export type OptionalContentGroupData = {
   id: string;
-  name: string | undefined;
-  intent: string | undefined;
+  name?: string;
+  intent?: Intent[];
+  usage: {
+    print?: {
+      printState: "ON" | "OFF";
+    };
+    view?: {
+      viewState: "ON" | "OFF";
+    };
+  };
 };
 
 export type OptionalContentConfigData = {
@@ -171,7 +183,7 @@ export type OptionalContentConfigData = {
   on: string[];
   off: string[];
   order: Order | undefined;
-  groups: OptionalContentGroupData_[];
+  groups: OptionalContentGroupData[];
 };
 
 type ViewerPrefValue = string | number | number[] | boolean;
@@ -446,7 +458,7 @@ export class Catalog {
         continue;
       }
       if (!outlineDict.has("Title")) {
-        throw new FormatError("Invalid outline item encountered.");
+        warn("Invalid outline item encountered.");
       }
 
       const data: CatParseDestDictRes = {};
@@ -479,7 +491,7 @@ export class Catalog {
         unsafeUrl: data.unsafeUrl,
         newWindow: data.newWindow,
         setOCGState: data.setOCGState,
-        title: stringToPDFString(title),
+        title: typeof title === "string" ? stringToPDFString(title) : "",
         color: rgbColor,
         count: Number.isInteger(count) ? <number> count : undefined,
         bold: !!(flags & 2),
@@ -559,7 +571,7 @@ export class Catalog {
       if (!Array.isArray(groupsData)) {
         return shadow(this, "optionalContentConfig", undefined);
       }
-      const groups: OptionalContentGroupData_[] = [];
+      const groups: OptionalContentGroupData[] = [];
       const groupRefs = new RefSet();
       // Ensure all the optional content groups are valid.
       for (const groupRef of groupsData) {
@@ -567,17 +579,8 @@ export class Catalog {
           continue;
         }
         groupRefs.put(groupRef);
-        const group = this.xref.fetch(groupRef) as Dict; // Table 98
-        let v;
-        groups.push({
-          id: groupRef.toString(),
-          name: typeof (v = group.get("Name")) == "string"
-            ? stringToPDFString(v)
-            : undefined,
-          intent: typeof (v = group.get("Intent")) === "string"
-            ? stringToPDFString(v)
-            : undefined,
-        });
+
+        groups.push(this.#readOptionalContentGroup(groupRef));
       }
       config = this.#readOptionalContentConfig(defaultConfig, groupRefs);
       config.groups = groups;
@@ -588,6 +591,59 @@ export class Catalog {
       warn(`Unable to read optional content config: ${ex}`);
     }
     return shadow(this, "optionalContentConfig", config);
+  }
+
+  #readOptionalContentGroup(groupRef: Ref): OptionalContentGroupData {
+    const group = this.xref.fetch(groupRef) as Dict;
+    const obj: OptionalContentGroupData = {
+      id: groupRef.toString(),
+      usage: {},
+    };
+
+    const name = group.get("Name");
+    if (typeof name === "string") {
+      obj.name = stringToPDFString(name);
+    }
+
+    let intent = group.getArray("Intent");
+    if (!Array.isArray(intent)) {
+      intent = [intent];
+    }
+    if (intent.every((i) => i instanceof Name)) {
+      obj.intent = (intent as Name[]).map((i) => i.name as Intent);
+    }
+
+    const usage = group.get("Usage");
+    if (!(usage instanceof Dict)) {
+      return obj;
+    }
+    const usageObj = obj.usage;
+
+    const print = usage.get("Print");
+    if (print instanceof Dict) {
+      const printState = print.get("PrintState");
+      if (printState instanceof Name) {
+        switch (printState.name) {
+          case "ON":
+          case "OFF":
+            usageObj.print = { printState: printState.name };
+        }
+      }
+    }
+
+    const view = usage.get("View");
+    if (view instanceof Dict) {
+      const viewState = view.get("ViewState");
+      if (viewState instanceof Name) {
+        switch (viewState.name) {
+          case "ON":
+          case "OFF":
+            usageObj.view = { viewState: viewState.name };
+        }
+      }
+    }
+
+    return obj;
   }
 
   /**
@@ -1032,14 +1088,12 @@ export class Catalog {
         case "PrintPageRange":
           // The number of elements must be even.
           if (Array.isArray(value) && value.length % 2 === 0) {
-            const isValid = value.every((page, i, arr) => {
-              return (
-                Number.isInteger(page) &&
-                page > 0 &&
-                (i === 0 || page >= arr[i - 1]) &&
-                page <= this.numPages
-              );
-            });
+            const isValid = value.every((page, i, arr) => (
+              Number.isInteger(page) &&
+              page > 0 &&
+              (i === 0 || page >= arr[i - 1]) &&
+              page <= this.numPages
+            ));
             if (isValid) {
               prefValue = value;
             }
@@ -1657,9 +1711,16 @@ export class Catalog {
         case "GoToR":
           const urlDict = action.get("F");
           if (urlDict instanceof Dict) {
-            // We assume that we found a FileSpec dictionary
-            // and fetch the URL without checking any further.
-            url = urlDict.get("F") || undefined;
+            // // We assume that we found a FileSpec dictionary
+            // // and fetch the URL without checking any further.
+            // url = urlDict.get("F") || undefined;
+            const fs = new FileSpec(
+              urlDict,
+              /* xref = */ undefined,
+              /* skipContent = */ true,
+            );
+            const { filename } = fs.serializable;
+            url = filename;
           } else if (typeof urlDict === "string") {
             url = urlDict;
           }

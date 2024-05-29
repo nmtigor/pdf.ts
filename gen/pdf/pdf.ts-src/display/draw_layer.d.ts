@@ -1,7 +1,15 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/display/draw_layer.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import type { id_t, Ratio, uint } from "../../../lib/alias.js";
 import type { Cssc } from "../../../lib/color/alias.js";
+import type { Box } from "../alias.js";
 import { DOMSVGFactory } from "./display_utils.js";
-import type { Box, Outlines } from "../alias.js";
+import type { FreeHighlightOutline, HighlightOutline, Outline } from "./editor/outliner.js";
 /**
  * Manage the SVGs drawn on top of the page canvas.
  * It's important to have them directly on top of the canvas because we want to
@@ -15,12 +23,17 @@ export declare class DrawLayer {
     });
     setParent(parent: Element): void;
     static get _svgFactory(): DOMSVGFactory;
-    highlight({ outlines, box }: Outlines, color: Cssc, opacity: Ratio): {
+    highlight(outlines: Outline, color: Cssc, opacity: Ratio, isPathUpdatable?: boolean): {
         id: number;
         clipPathId: string;
     };
-    highlightOutline({ outlines, box }: Outlines): number;
+    highlightOutline(outlines: Outline): id_t;
+    finalizeLine(id: id_t, line: HighlightOutline): void;
+    updateLine(id: id_t, line: HighlightOutline): void;
+    removeFreeHighlight(id: id_t): void;
+    updatePath(id: id_t, line: FreeHighlightOutline): void;
     updateBox(id: id_t, box: Box): void;
+    show(id: id_t, visible?: boolean): void;
     rotate(id: id_t, angle: number): void;
     changeColor(id: id_t, color: Cssc): void;
     changeOpacity(id: id_t, opacity: Ratio): void;

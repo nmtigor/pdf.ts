@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/display/xfa_text.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import type { XFAElObj } from "../core/xfa/alias.js";
 import type { TextContent } from "./api.js";
 export declare abstract class XfaText {

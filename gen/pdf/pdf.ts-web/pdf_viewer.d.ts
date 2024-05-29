@@ -1,12 +1,22 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2023
+ *
+ * @module pdf/pdf.ts-web/pdf_viewer.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import type { dot2d_t } from "../../lib/alias.js";
 import type { ExplicitDest, OptionalContentConfig, PDFDocumentProxy, PDFPageProxy } from "../pdf.ts-src/pdf.js";
-import { AnnotationEditorType, AnnotationEditorUIManager, AnnotationMode } from "../pdf.ts-src/pdf.js";
+import { AnnotationEditorType, AnnotationMode } from "../pdf.ts-src/pdf.js";
 import type { AltTextManager } from "./alt_text_manager.js";
+import type { MLManager as MLManager_c } from "./chromecom.js";
 import type { EventBus, EventMap } from "./event_utils.js";
+import type { MLManager as MLManager_f } from "./firefoxcom.js";
+import type { MLManager as MLManager_g } from "./genericcom.js";
 import type { IDownloadManager, IL10n, IPDFLinkService } from "./interfaces.js";
 import type { PDFFindController } from "./pdf_find_controller.js";
 import { SimpleLinkService } from "./pdf_link_service.js";
-import { PDFPageView } from "./pdf_page_view.js";
+import { type LayerProps, PDFPageView } from "./pdf_page_view.js";
 import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
 import type { PDFScriptingManager } from "./pdf_scripting_manager.js";
 import type { VisibleElements } from "./ui_utils.js";
@@ -81,6 +91,13 @@ export interface PDFViewerOptions {
      */
     annotationEditorMode?: AnnotationEditorType;
     /**
+     * A comma separated list
+     * of colors to propose to highlight some text in the pdf.
+     */
+    annotationEditorHighlightColors?: string;
+    /** */
+    enableHighlightFloatingButton: boolean;
+    /**
      * Path for image resources, mainly
      * mainly for annotation icons. Include trailing slash.
      */
@@ -91,13 +108,9 @@ export interface PDFViewerOptions {
      */
     enablePrintAutoRotate: boolean | undefined;
     /**
-     * Allows to use an OffscreenCanvas if needed.
-     */
-    isOffscreenCanvasSupported?: boolean;
-    /**
      * The maximum supported canvas size in
      * total pixels, i.e. width * height. Use `-1` for no limit, or `0` for
-     * CSS-only zooming. The default value is 4096 * 4096 (16 mega-pixels).
+     * CSS-only zooming. The default value is 4096 * 8192 (32 mega-pixels).
      */
     maxCanvasPixels: number | undefined;
     /**
@@ -115,6 +128,8 @@ export interface PDFViewerOptions {
      * mode.
      */
     pageColors: PageColors | undefined;
+    /** */
+    mlManager: MLManager_g | MLManager_c | MLManager_f | undefined;
 }
 export declare class PDFPageViewBuffer {
     #private;
@@ -189,7 +204,6 @@ export declare class PDFViewer {
     imageResourcesPath: string;
     enablePrintAutoRotate: boolean;
     removePageBorders: boolean | undefined;
-    isOffscreenCanvasSupported: boolean;
     maxCanvasPixels: number | undefined;
     l10n: IL10n | undefined;
     pageColors: PageColors | undefined;
@@ -274,16 +288,7 @@ export declare class PDFViewer {
      * @param rotation The rotation of the pages (0, 90, 180, 270).
      */
     set pagesRotation(rotation: number);
-    get _layerProperties(): {
-        readonly annotationEditorUIManager: AnnotationEditorUIManager | undefined;
-        readonly annotationStorage: import("../pdf.ts-src/pdf.js").AnnotationStorage | undefined;
-        readonly downloadManager: IDownloadManager | undefined;
-        readonly enableScripting: boolean;
-        readonly fieldObjectsPromise: Promise<boolean | import("../pdf.ts-src/pdf.js").AnnotActions | Record<string, import("../pdf.ts-src/pdf.js").FieldObject[]> | import("../pdf.ts-src/display/api.js").MetadataEx | undefined> | undefined;
-        readonly findController: PDFFindController | undefined;
-        readonly hasJSActionsPromise: Promise<boolean> | undefined;
-        readonly linkService: IPDFLinkService | SimpleLinkService;
-    };
+    get _layerProperties(): LayerProps;
     getAllText(): Promise<string | null>;
     /** @final */
     setDocument(pdfDocument?: PDFDocumentProxy): void;

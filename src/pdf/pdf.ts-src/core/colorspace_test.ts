@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/colorspace_test.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2020 Mozilla Foundation
  *
@@ -23,7 +27,7 @@ import {
   assertStrictEquals,
 } from "@std/testing/asserts.ts";
 import { afterAll, beforeAll, describe, it } from "@std/testing/bdd.ts";
-import { XRefMock } from "../../test_utils.ts";
+import { XRefMock } from "@pdf.ts-test/test_utils.ts";
 import { ColorSpace } from "./colorspace.ts";
 import { PDFFunctionFactory } from "./function.ts";
 import { LocalColorSpaceCache } from "./image_utils.ts";

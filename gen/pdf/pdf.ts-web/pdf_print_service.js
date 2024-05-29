@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/pdf_print_service.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 /* Copyright 2016 Mozilla Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,15 +19,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { PDFJSDev } from "../../global.js";
 import { html } from "../../lib/dom.js";
-import { AnnotationMode, PixelsPerInch } from "../pdf.ts-src/pdf.js";
-import { PDFPrintServiceFactory, viewerApp } from "./app.js";
+import { PDFJSDev } from "../../global.js";
+import { AnnotationMode, PixelsPerInch, RenderingCancelledException, shadow, } from "../pdf.ts-src/pdf.js";
+import { IPDFPrintServiceFactory } from "./interfaces.js";
 import { getXfaHtmlForPrinting } from "./print_utils.js";
 /*80--------------------------------------------------------------------------*/
 let activeService;
 let dialog;
 let overlayManager;
+let viewerApp = { initialized: false };
 // Renders the page to the canvas of the given print service, and returns
 // the suggested dimensions of the output page.
 function renderPage(activeServiceOnEntry, pdfDocument, pageNumber, size, printResolution, optionalContentConfigPromise, printAnnotationStoragePromise) {
@@ -50,7 +55,13 @@ function renderPage(activeServiceOnEntry, pdfDocument, pageNumber, size, printRe
             optionalContentConfigPromise,
             printAnnotationStorage,
         };
-        return pdfPage.render(renderContext).promise;
+        const renderTask = pdfPage.render(renderContext);
+        return renderTask.promise.catch((reason) => {
+            if (!(reason instanceof RenderingCancelledException)) {
+                console.error(reason);
+            }
+            throw reason;
+        });
     });
 }
 export class PDFPrintService {
@@ -66,13 +77,14 @@ export class PDFPrintService {
      * The temporary canvas where renderPage paints one page at a time.
      */
     scratchCanvas = html("canvas");
-    constructor(pdfDocument, pagesOverview, printContainer, printResolution, optionalContentConfigPromise, printAnnotationStoragePromise) {
+    constructor({ pdfDocument, pagesOverview, printContainer, printResolution, printAnnotationStoragePromise, }) {
         this.pdfDocument = pdfDocument;
         this.pagesOverview = pagesOverview;
         this.printContainer = printContainer;
         this._printResolution = printResolution || 150;
-        this._optionalContentConfigPromise = optionalContentConfigPromise ||
-            pdfDocument.getOptionalContentConfig();
+        this._optionalContentConfigPromise = pdfDocument.getOptionalContentConfig({
+            intent: "print",
+        });
         this._printAnnotationStoragePromise = printAnnotationStoragePromise ||
             Promise.resolve(undefined);
     }
@@ -302,15 +314,44 @@ function ensureOverlay() {
     }
     return overlayPromise;
 }
-PDFPrintServiceFactory.instance = {
-    supportsPrinting: true,
-    createPrintService(pdfDocument, pagesOverview, printContainer, printResolution, optionalContentConfigPromise, printAnnotationStoragePromise) {
+//kkkk TOCLEANUP
+// PDFPrintServiceFactory.instance = {
+//   supportsPrinting: true,
+//   createPrintService(
+//     pdfDocument,
+//     pagesOverview,
+//     printContainer,
+//     printResolution,
+//     optionalContentConfigPromise,
+//     printAnnotationStoragePromise,
+//   ) {
+//     if (activeService) {
+//       throw new Error("The print service is created and active.");
+//     }
+//     activeService = new PDFPrintService(
+//       pdfDocument,
+//       pagesOverview,
+//       printContainer,
+//       printResolution,
+//       optionalContentConfigPromise,
+//       printAnnotationStoragePromise,
+//     );
+//     return activeService;
+//   },
+// };
+export class PDFPrintServiceFactory extends IPDFPrintServiceFactory {
+    static initGlobals(app) {
+        viewerApp = app;
+    }
+    static get supportsPrinting() {
+        return shadow(this, "supportsPrinting", true);
+    }
+    static createPrintService(params) {
         if (activeService) {
             throw new Error("The print service is created and active.");
         }
-        activeService = new PDFPrintService(pdfDocument, pagesOverview, printContainer, printResolution, optionalContentConfigPromise, printAnnotationStoragePromise);
-        return activeService;
-    },
-};
+        return (activeService = new PDFPrintService(params));
+    }
+}
 /*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=pdf_print_service.js.map

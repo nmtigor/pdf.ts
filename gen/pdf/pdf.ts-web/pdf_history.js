@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/pdf_history.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 /* Copyright 2017 Mozilla Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,8 +19,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { CHROME } from "../../global.js";
 import { isObjectLike } from "../../lib/jslang.js";
+import { CHROME } from "../../global.js";
 import { waitOnEventOrTimeout } from "./event_utils.js";
 import { isValidRotation, parseQueryString } from "./ui_utils.js";
 /*80--------------------------------------------------------------------------*/
@@ -303,7 +307,7 @@ export class PDFHistory {
         this.#updateInternalState(destination, newState.uid);
         let newUrl;
         if (this.#updateUrl && destination?.hash) {
-            const baseUrl = document.location.href.split("#")[0];
+            const baseUrl = document.location.href.split("#", 1)[0];
             // Prevent errors in Firefox.
             if (!baseUrl.startsWith("file://")) {
                 newUrl = `${baseUrl}#${destination.hash}`;

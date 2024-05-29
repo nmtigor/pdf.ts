@@ -1,11 +1,14 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/display/transport_stream.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import type { IPDFStream, IPDFStreamRangeReader, IPDFStreamReader, ReadValue } from "../interfaces.js";
 import type { PDFDataRangeTransport } from "../pdf.js";
 import { AbortException } from "../shared/util.js";
 interface StreamInitP_ {
-    length: number;
-    initialData: ArrayLike<number> | undefined;
-    progressiveDone: boolean | undefined;
-    contentDispositionFilename: string | undefined;
     disableRange: boolean | undefined;
     disableStream: boolean | undefined;
 }
@@ -16,7 +19,7 @@ export declare class PDFDataTransportStream implements IPDFStream {
     _isRangeSupported: boolean;
     _contentLength: number;
     _fullRequestReader?: PDFDataTransportStreamReader;
-    constructor({ length, initialData, progressiveDone, contentDispositionFilename, disableRange, disableStream, }: StreamInitP_, pdfDataRangeTransport: PDFDataRangeTransport);
+    constructor(pdfDataRangeTransport: PDFDataRangeTransport, { disableRange, disableStream }: StreamInitP_);
     get _progressiveDataLength(): number;
     _onProgressiveDone(): void;
     _removeRangeReader(reader: PDFDataTransportStreamRangeReader): void;

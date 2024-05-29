@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/event_utils.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 /* Copyright 2012 Mozilla Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,6 +19,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { PromiseCap } from "../../lib/util/PromiseCap.js";
 import { MOZCENTRAL } from "../../global.js";
 /*80--------------------------------------------------------------------------*/
 export var WaitOnType;
@@ -29,35 +34,35 @@ export var WaitOnType;
  *
 = * @return A promise that is resolved with a {WaitOnType} value.
  */
-export function waitOnEventOrTimeout({ target, name, delay = 0, }) {
-    return new Promise((resolve, reject) => {
-        if (typeof target !== "object" ||
-            !(name && typeof name === "string") ||
-            !(Number.isInteger(delay) && delay >= 0)) {
-            throw new Error("waitOnEventOrTimeout - invalid parameters.");
-        }
-        function handler(type) {
-            if (target instanceof EventBus) {
-                target._off(name, eventHandler);
-            }
-            else {
-                target.removeEventListener(name, eventHandler);
-            }
-            if (timeout) {
-                clearTimeout(timeout);
-            }
-            resolve(type);
-        }
-        const eventHandler = handler.bind(null, WaitOnType.EVENT);
+export async function waitOnEventOrTimeout({ target, name, delay = 0, }) {
+    if (typeof target !== "object" ||
+        !(name && typeof name === "string") ||
+        !(Number.isInteger(delay) && delay >= 0)) {
+        throw new Error("waitOnEventOrTimeout - invalid parameters.");
+    }
+    const { promise, resolve } = new PromiseCap();
+    function handler(type) {
         if (target instanceof EventBus) {
-            target._on(name, eventHandler);
+            target._off(name, eventHandler);
         }
         else {
-            target.addEventListener(name, eventHandler);
+            target.removeEventListener(name, eventHandler);
         }
-        const timeoutHandler = handler.bind(null, WaitOnType.TIMEOUT);
-        const timeout = setTimeout(timeoutHandler, delay);
-    });
+        if (timeout) {
+            clearTimeout(timeout);
+        }
+        resolve(type);
+    }
+    const eventHandler = handler.bind(null, WaitOnType.EVENT);
+    if (target instanceof EventBus) {
+        target._on(name, eventHandler);
+    }
+    else {
+        target.addEventListener(name, eventHandler);
+    }
+    const timeoutHandler = handler.bind(null, WaitOnType.TIMEOUT);
+    const timeout = setTimeout(timeoutHandler, delay);
+    return promise;
 }
 /*49-------------------------------------------*/
 /**

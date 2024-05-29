@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/annotation_editor_layer_builder.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2022 Mozilla Foundation
  *
@@ -18,34 +22,39 @@
  */
 
 import { html } from "@fe-lib/dom.ts";
-import { GENERIC } from "@fe-src/global.ts";
+import { GENERIC, PDFJSDev } from "@fe-src/global.ts";
 import type {
   AnnotationEditorUIManager,
   AnnotationLayer,
+  DrawLayer,
   PageViewport,
   PDFPageProxy,
 } from "../pdf.ts-src/pdf.ts";
 import { AnnotationEditorLayer } from "../pdf.ts-src/pdf.ts";
+import { GenericL10n } from "./genericl10n.ts";
 import type { IL10n } from "./interfaces.ts";
 import type { TextAccessibilityManager } from "./text_accessibility.ts";
+import type { TextLayerBuilder } from "./text_layer_builder.ts";
 
-/* Ref. gulpfile.mjs of pdf.js */
-const { NullL10n } = /*#static*/ GENERIC
-  ? await import("./l10n_utils.ts")
-  : await import("./stubs.ts");
+//kkkk TOCLEANUP
+// /* Ref. gulpfile.mjs of pdf.js */
+// const { NullL10n } = /*#static*/ GENERIC
+//   ? await import("./l10n_utils.ts")
+//   : await import("./stubs.ts");
 /*80--------------------------------------------------------------------------*/
 
 interface AnnotationEditorLayerBuilderOptions {
   uiManager: AnnotationEditorUIManager;
-  pageDiv: HTMLDivElement;
   pdfPage: PDFPageProxy;
   l10n?: IL10n | undefined;
   accessibilityManager: TextAccessibilityManager | undefined;
   annotationLayer?: AnnotationLayer | undefined;
+  textLayer?: TextLayerBuilder | undefined;
+  drawLayer?: DrawLayer | undefined;
+  onAppend?: (div: HTMLDivElement) => void;
 }
 
 export class AnnotationEditorLayerBuilder {
-  pageDiv: HTMLDivElement | undefined;
   pdfPage;
   accessibilityManager;
   l10n;
@@ -55,15 +64,23 @@ export class AnnotationEditorLayerBuilder {
   _cancelled;
   #uiManager;
   #annotationLayer;
+  #drawLayer;
+  #onAppend;
+  #textLayer;
 
   constructor(options: AnnotationEditorLayerBuilderOptions) {
-    this.pageDiv = options.pageDiv;
     this.pdfPage = options.pdfPage;
     this.accessibilityManager = options.accessibilityManager;
-    this.l10n = options.l10n || NullL10n;
+    this.l10n = options.l10n;
+    /*#static*/ if (PDFJSDev || GENERIC) {
+      this.l10n ||= new GenericL10n();
+    }
     this._cancelled = false;
     this.#uiManager = options.uiManager;
     this.#annotationLayer = options.annotationLayer;
+    this.#textLayer = options.textLayer;
+    this.#drawLayer = options.drawLayer;
+    this.#onAppend = options.onAppend;
   }
 
   /**
@@ -88,10 +105,9 @@ export class AnnotationEditorLayerBuilder {
     // Create an AnnotationEditor layer div
     const div = this.div = html("div");
     div.className = "annotationEditorLayer";
-    div.tabIndex = 0;
     div.hidden = true;
     div.dir = this.#uiManager.direction;
-    this.pageDiv!.append(div);
+    this.#onAppend?.(div);
 
     this.annotationEditorLayer = new AnnotationEditorLayer({
       uiManager: this.#uiManager,
@@ -101,6 +117,8 @@ export class AnnotationEditorLayerBuilder {
       l10n: this.l10n!,
       viewport: clonedViewport,
       annotationLayer: this.#annotationLayer,
+      textLayer: this.#textLayer,
+      drawLayer: this.#drawLayer!,
     });
 
     const parameters = {
@@ -120,9 +138,7 @@ export class AnnotationEditorLayerBuilder {
     if (!this.div) {
       return;
     }
-    this.pageDiv = undefined;
     this.annotationEditorLayer!.destroy();
-    this.div.remove();
   }
 
   hide() {
@@ -133,7 +149,7 @@ export class AnnotationEditorLayerBuilder {
   }
 
   show() {
-    if (!this.div || this.annotationEditorLayer!.isEmpty) {
+    if (!this.div || this.annotationEditorLayer!.isInvisible) {
       return;
     }
     this.div.hidden = false;

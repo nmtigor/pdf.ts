@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2023
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2023
+ *
+ * @module pdf/pdf.ts-src/pdf_test.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2023 Mozilla Foundation
  *
@@ -43,6 +47,7 @@ import {
 } from "./display/display_utils.ts";
 import { DrawLayer } from "./display/draw_layer.ts";
 import { AnnotationEditorLayer } from "./display/editor/annotation_editor_layer.ts";
+import { ColorPicker } from "./display/editor/color_picker.ts";
 import { Outliner } from "./display/editor/outliner.ts";
 import { AnnotationEditorUIManager } from "./display/editor/tools.ts";
 import { renderTextLayer, updateTextLayer } from "./display/text_layer.ts";
@@ -80,6 +85,7 @@ const expectedAPI = Object.freeze({
   AnnotationMode,
   build,
   CMapCompressionType,
+  ColorPicker,
   createValidAbsoluteUrl,
   DOMSVGFactory,
   DrawLayer,
@@ -105,7 +111,6 @@ const expectedAPI = Object.freeze({
   PDFWorker,
   PermissionFlag,
   PixelsPerInch,
-  // PromiseCapability,
   RenderingCancelledException,
   renderTextLayer,
   setLayerDimensions,

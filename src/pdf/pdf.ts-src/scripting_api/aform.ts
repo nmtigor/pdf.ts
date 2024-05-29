@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/scripting_api/aform.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2020 Mozilla Foundation
  *
@@ -248,10 +252,6 @@ export class AForm {
     bCurrencyPrepend: boolean,
   ) {
     const event = (globalThis as any).event as Event;
-    if (!event.value) {
-      return;
-    }
-
     let value = this.AFMakeNumber(event.value);
     if (value === undefined) {
       event.value = "";

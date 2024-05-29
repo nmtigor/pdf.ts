@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/display/annotation_layer.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import { div, html, span, svg as createSVG, textnode } from "../../../lib/dom.js";
 import { assert, fail } from "../../../lib/util/trace.js";
 import { MOZCENTRAL, TESTING } from "../../../global.js";
@@ -143,8 +147,11 @@ export class AnnotationElement {
         // after the other one whatever the order is in the DOM, hence the
         // use of the z-index.
         container.style.zIndex = this.parent.zIndex++;
-        if (this.data.popupRef) {
+        if (data.popupRef) {
             container.setAttribute("aria-haspopup", "dialog");
+        }
+        if (data.alternativeText) {
+            container.title = data.alternativeText;
         }
         if (data.noRotate) {
             container.classList.add("norotate");
@@ -823,9 +830,6 @@ class TextAnnotationElement extends AnnotationElement {
 class WidgetAnnotationElement extends AnnotationElement {
     render() {
         // Show only the container for unsupported field types.
-        if (this.data.alternativeText) {
-            this.container.title = this.data.alternativeText;
-        }
         return this.container;
     }
     showElementAndHideCanvas(element) {
@@ -1448,9 +1452,6 @@ class PushButtonWidgetAnnotationElement extends LinkAnnotationElement {
         // as performing actions on form fields (resetting, submitting, et cetera).
         const container = super.render();
         container.classList.add("buttonWidgetAnnotation", "pushButton");
-        if (this.data.alternativeText) {
-            container.title = this.data.alternativeText;
-        }
         const linkElement = container.lastChild;
         if (this.enableScripting && this.hasJSActions && linkElement) {
             this._setDefaultPropertiesFromJS(linkElement);
@@ -1535,12 +1536,10 @@ class ChoiceWidgetAnnotationElement extends WidgetAnnotationElement {
         let selectedValues = getValue(/* isExport */ false);
         const getItems = (event) => {
             const options = event.target.options;
-            return Array.prototype.map.call(options, (option) => {
-                return {
-                    displayValue: option.textContent,
-                    exportValue: option.value,
-                };
-            });
+            return Array.prototype.map.call(options, (option) => ({
+                displayValue: option.textContent,
+                exportValue: option.value,
+            }));
         };
         if (this.enableScripting && this.hasJSActions) {
             selectElement.addEventListener("updatefromsandbox", (jsEvent) => {
@@ -2516,6 +2515,7 @@ export class AnnotationLayer {
     getEditableAnnotation(id) {
         return this.#editableAnnotations.get(id);
     }
+    showPopups;
 }
 /*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=annotation_layer.js.map

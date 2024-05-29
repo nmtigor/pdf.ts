@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2023
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2023
+ *
+ * @module pdf/pdf.ts-src/display/editor/toolbar.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 /* Copyright 2023 Mozilla Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,6 +24,7 @@ import { noContextMenu } from "../../../../lib/util/general.js";
 /*80--------------------------------------------------------------------------*/
 export class EditorToolbar {
     #toolbar;
+    #colorPicker;
     #editor;
     #buttons;
     constructor(editor) {
@@ -28,11 +33,21 @@ export class EditorToolbar {
     render() {
         const editToolbar = (this.#toolbar = div());
         editToolbar.className = "editToolbar";
+        editToolbar.setAttribute("role", "toolbar");
         editToolbar.on("contextmenu", noContextMenu);
         editToolbar.on("pointerdown", EditorToolbar.#pointerDown);
         const buttons = (this.#buttons = div());
         buttons.className = "buttons";
         editToolbar.append(buttons);
+        const position = this.#editor.toolbarPosition;
+        if (position) {
+            const { style } = editToolbar;
+            const x = this.#editor._uiManager.direction === "ltr"
+                ? 1 - position[0]
+                : position[0];
+            style.insetInlineEnd = `${100 * x}%`;
+            style.top = `calc(${100 * position[1]}% + var(--editor-toolbar-vert-offset))`;
+        }
         this.#addDeleteButton();
         return editToolbar;
     }
@@ -59,6 +74,7 @@ export class EditorToolbar {
     }
     hide() {
         this.#toolbar.classList.add("hidden");
+        this.#colorPicker?.hideDropdown();
     }
     show() {
         this.#toolbar.classList.remove("hidden");
@@ -67,15 +83,101 @@ export class EditorToolbar {
         const button = html("button");
         button.className = "delete";
         button.tabIndex = 0;
-        button.setAttribute("data-l10n-id", "pdfjs-editor-remove-button");
+        button.setAttribute("data-l10n-id", `pdfjs-editor-remove-${this.#editor.editorType}-button`);
         this.#addListenersToElement(button);
         button.on("click", (e) => {
             this.#editor._uiManager.delete();
         });
         this.#buttons.append(button);
     }
+    get #divider() {
+        const divider = html("div");
+        divider.className = "divider";
+        return divider;
+    }
+    addAltTextButton(button) {
+        this.#addListenersToElement(button);
+        this.#buttons.prepend(button, this.#divider);
+    }
+    addColorPicker(colorPicker) {
+        this.#colorPicker = colorPicker;
+        const button = colorPicker.renderButton();
+        this.#addListenersToElement(button);
+        this.#buttons.prepend(button, this.#divider);
+    }
     remove() {
         this.#toolbar.remove();
+        this.#colorPicker?.destroy();
+        this.#colorPicker = undefined;
+    }
+}
+export class HighlightToolbar {
+    #buttons;
+    #toolbar;
+    #uiManager;
+    constructor(uiManager) {
+        this.#uiManager = uiManager;
+    }
+    #render() {
+        const editToolbar = (this.#toolbar = html("div"));
+        editToolbar.className = "editToolbar";
+        editToolbar.setAttribute("role", "toolbar");
+        editToolbar.on("contextmenu", noContextMenu);
+        const buttons = (this.#buttons = html("div"));
+        buttons.className = "buttons";
+        editToolbar.append(buttons);
+        this.#addHighlightButton();
+        return editToolbar;
+    }
+    #getLastPoint(boxes, isLTR) {
+        let lastY = 0;
+        let lastX = 0;
+        for (const box of boxes) {
+            const y = box.y + box.height;
+            if (y < lastY) {
+                continue;
+            }
+            const x = box.x + (isLTR ? box.width : 0);
+            if (y > lastY) {
+                lastX = x;
+                lastY = y;
+                continue;
+            }
+            if (isLTR) {
+                if (x > lastX) {
+                    lastX = x;
+                }
+            }
+            else if (x < lastX) {
+                lastX = x;
+            }
+        }
+        return [isLTR ? 1 - lastX : lastX, lastY];
+    }
+    show(parent, boxes, isLTR) {
+        const [x, y] = this.#getLastPoint(boxes, isLTR);
+        const { style } = (this.#toolbar ||= this.#render());
+        parent.append(this.#toolbar);
+        style.insetInlineEnd = `${100 * x}%`;
+        style.top = `calc(${100 * y}% + var(--editor-toolbar-vert-offset))`;
+    }
+    hide() {
+        this.#toolbar.remove();
+    }
+    #addHighlightButton() {
+        const button = html("button");
+        button.className = "highlightButton";
+        button.tabIndex = 0;
+        button.setAttribute("data-l10n-id", `pdfjs-highlight-floating-button1`);
+        const span = html("span");
+        button.append(span);
+        span.className = "visuallyHidden";
+        span.setAttribute("data-l10n-id", "pdfjs-highlight-floating-button-label");
+        button.on("contextmenu", noContextMenu);
+        button.on("click", () => {
+            this.#uiManager.highlightSelection("floating_button");
+        });
+        this.#buttons.append(button);
     }
 }
 /*80--------------------------------------------------------------------------*/

@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/display/xfa_layer.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import type { IPDFLinkService } from "../../pdf.ts-web/interfaces.js";
 import type { XFAElObj } from "../core/xfa/alias.js";
 import type { AnnotationStorage } from "./annotation_storage.js";

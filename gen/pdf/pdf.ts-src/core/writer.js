@@ -1,25 +1,16 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
-/* Copyright 2020 Mozilla Foundation
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+ * @module pdf/pdf.ts-src/core/writer.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import { bytesToString, info, warn } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
-import { escapePDFName, escapeString, numberToString, parseXFAPath, } from "./core_utils.js";
+import { escapePDFName, escapeString, getSizeInBytes, numberToString, parseXFAPath, } from "./core_utils.js";
 import { calculateMD5 } from "./crypto.js";
 import { Dict, isName, Name, Ref } from "./primitives.js";
+import { Stream } from "./stream.js";
 import { SimpleDOMNode, SimpleXMLParser } from "./xml_parser.js";
 /*80--------------------------------------------------------------------------*/
 export async function writeObject(ref, obj, buffer, { encrypt = undefined }) {
@@ -31,7 +22,7 @@ export async function writeObject(ref, obj, buffer, { encrypt = undefined }) {
     else if (obj instanceof BaseStream) {
         await writeStream(obj, buffer, transform);
     }
-    else if (Array.isArray(obj)) {
+    else if (Array.isArray(obj) || ArrayBuffer.isView(obj)) {
         await writeArray(obj, buffer, transform);
     }
     buffer.push("\nendobj\n");
@@ -123,7 +114,7 @@ async function writeValue(value, buffer, transform) {
     else if ((value instanceof Ref)) {
         buffer.push(`${value.num} ${value.gen} R`);
     }
-    else if (Array.isArray(value)) {
+    else if (Array.isArray(value) || ArrayBuffer.isView(value)) {
         await writeArray(value, buffer, transform);
     }
     else if (typeof value === "string") {
@@ -249,7 +240,97 @@ function updateXFA({ xfaData, xfaDatasetsRef, newRefs, xref }) {
         "\nendstream\nendobj\n";
     newRefs.push({ ref: xfaDatasetsRef, data });
 }
-export async function incrementalUpdate({ originalData, xrefInfo, newRefs, xref, hasXfa = false, xfaDatasetsRef, hasXfaDatasetsEntry = false, needAppearances, acroFormRef, acroForm, xfaData, }) {
+async function getXRefTable(xrefInfo, baseOffset, newRefs, newXref, buffer) {
+    buffer.push("xref\n");
+    const indexes = getIndexes(newRefs);
+    let indexesPosition = 0;
+    for (const { ref, data } of newRefs) {
+        if (ref.num === indexes[indexesPosition]) {
+            buffer.push(`${indexes[indexesPosition]} ${indexes[indexesPosition + 1]}\n`);
+            indexesPosition += 2;
+        }
+        // The EOL is \r\n to make sure that every entry is exactly 20 bytes long.
+        // (see 7.5.4 - Cross-Reference Table).
+        buffer.push(`${baseOffset.toString().padStart(10, "0")} ${Math.min(ref.gen, 0xffff).toString().padStart(5, "0")} n\r\n`);
+        baseOffset += data.length;
+    }
+    computeIDs(baseOffset, xrefInfo, newXref);
+    buffer.push("trailer\n");
+    await writeDict(newXref, buffer);
+    buffer.push("\nstartxref\n", baseOffset.toString(), "\n%%EOF\n");
+}
+function getIndexes(newRefs) {
+    const indexes = [];
+    for (const { ref } of newRefs) {
+        if (ref.num === indexes.at(-2) + indexes.at(-1)) {
+            indexes[indexes.length - 1] += 1;
+        }
+        else {
+            indexes.push(ref.num, 1);
+        }
+    }
+    return indexes;
+}
+async function getXRefStreamTable(xrefInfo, baseOffset, newRefs, newXref, buffer) {
+    const xrefTableData = [];
+    let maxOffset = 0;
+    let maxGen = 0;
+    for (const { ref, data } of newRefs) {
+        maxOffset = Math.max(maxOffset, baseOffset);
+        const gen = Math.min(ref.gen, 0xffff);
+        maxGen = Math.max(maxGen, gen);
+        xrefTableData.push([1, baseOffset, gen]);
+        baseOffset += data.length;
+    }
+    newXref.set("Index", getIndexes(newRefs));
+    const offsetSize = getSizeInBytes(maxOffset);
+    const maxGenSize = getSizeInBytes(maxGen);
+    const sizes = [1, offsetSize, maxGenSize];
+    newXref.set("W", sizes);
+    computeIDs(baseOffset, xrefInfo, newXref);
+    const structSize = sizes.reduce((a, x) => a + x, 0);
+    const data = new Uint8Array(structSize * xrefTableData.length);
+    const stream = new Stream(data);
+    stream.dict = newXref;
+    let offset = 0;
+    for (const [type, objOffset, gen] of xrefTableData) {
+        offset = writeInt(type, sizes[0], offset, data);
+        offset = writeInt(objOffset, sizes[1], offset, data);
+        offset = writeInt(gen, sizes[2], offset, data);
+    }
+    await writeObject(xrefInfo.newRef, stream, buffer, {});
+    buffer.push("startxref\n", baseOffset.toString(), "\n%%EOF\n");
+}
+function computeIDs(baseOffset, xrefInfo, newXref) {
+    if (Array.isArray(xrefInfo.fileIds) && xrefInfo.fileIds.length > 0) {
+        const md5 = computeMD5(baseOffset, xrefInfo);
+        newXref.set("ID", [xrefInfo.fileIds[0], md5]);
+    }
+}
+function getTrailerDict(xrefInfo, newRefs, useXrefStream) {
+    const newXref = new Dict();
+    newXref.set("Prev", xrefInfo.startXRef);
+    const refForXrefTable = xrefInfo.newRef;
+    if (useXrefStream) {
+        newRefs.push({ ref: refForXrefTable, data: "" });
+        newXref.set("Size", refForXrefTable.num + 1);
+        newXref.set("Type", Name.get("XRef"));
+    }
+    else {
+        newXref.set("Size", refForXrefTable.num);
+    }
+    if (xrefInfo.rootRef !== undefined) {
+        newXref.set("Root", xrefInfo.rootRef);
+    }
+    if (xrefInfo.infoRef !== undefined) {
+        newXref.set("Info", xrefInfo.infoRef);
+    }
+    if (xrefInfo.encryptRef !== undefined) {
+        newXref.set("Encrypt", xrefInfo.encryptRef);
+    }
+    return newXref;
+}
+export async function incrementalUpdate({ originalData, xrefInfo, newRefs, xref, hasXfa = false, xfaDatasetsRef, hasXfaDatasetsEntry = false, needAppearances, acroFormRef, acroForm, xfaData, useXrefStream = false, }) {
     await updateAcroform({
         xref,
         acroForm,
@@ -268,8 +349,6 @@ export async function incrementalUpdate({ originalData, xrefInfo, newRefs, xref,
             xref,
         });
     }
-    const newXref = new Dict();
-    const refForXrefTable = xrefInfo.newRef;
     let buffer, baseOffset;
     const lastByte = originalData.at(-1);
     if (lastByte === /* \n */ 0x0a || lastByte === /* \r */ 0x0d) {
@@ -281,51 +360,16 @@ export async function incrementalUpdate({ originalData, xrefInfo, newRefs, xref,
         buffer = ["\n"];
         baseOffset = originalData.length + 1;
     }
-    newXref.set("Size", refForXrefTable.num + 1);
-    newXref.set("Prev", xrefInfo.startXRef);
-    newXref.set("Type", Name.get("XRef"));
-    if (xrefInfo.rootRef !== undefined) {
-        newXref.set("Root", xrefInfo.rootRef);
-    }
-    if (xrefInfo.infoRef !== undefined) {
-        newXref.set("Info", xrefInfo.infoRef);
-    }
-    if (xrefInfo.encryptRef !== undefined) {
-        newXref.set("Encrypt", xrefInfo.encryptRef);
-    }
-    // Add a ref for the new xref and sort them
-    newRefs.push({ ref: refForXrefTable, data: "" });
-    newRefs = newRefs.sort((a, b) => {
-        // compare the refs
-        return a.ref.num - b.ref.num;
-    });
-    const xrefTableData = [[0, 1, 0xffff]];
-    const indexes = [0, 1];
-    let maxOffset = 0;
-    for (const { ref, data } of newRefs) {
-        maxOffset = Math.max(maxOffset, baseOffset);
-        xrefTableData.push([1, baseOffset, Math.min(ref.gen, 0xffff)]);
-        baseOffset += data.length;
-        indexes.push(ref.num, 1);
+    const newXref = getTrailerDict(xrefInfo, newRefs, useXrefStream);
+    newRefs = newRefs.sort((a, b) => /* compare the refs */ a.ref.num - b.ref.num);
+    for (const { data } of newRefs) {
         buffer.push(data);
     }
-    newXref.set("Index", indexes);
-    if (Array.isArray(xrefInfo.fileIds) && xrefInfo.fileIds.length > 0) {
-        const md5 = computeMD5(baseOffset, xrefInfo);
-        newXref.set("ID", [xrefInfo.fileIds[0], md5]);
-    }
-    const offsetSize = Math.ceil(Math.log2(maxOffset) / 8);
-    const sizes = [1, offsetSize, 2];
-    const structSize = sizes[0] + sizes[1] + sizes[2];
-    const tableLength = structSize * xrefTableData.length;
-    newXref.set("W", sizes);
-    newXref.set("Length", tableLength);
-    buffer.push(`${refForXrefTable.num} ${refForXrefTable.gen} obj\n`);
-    await writeDict(newXref, buffer);
-    buffer.push(" stream\n");
-    const bufferLen = buffer.reduce((a, str) => a + str.length, 0);
-    const footer = `\nendstream\nendobj\nstartxref\n${baseOffset}\n%%EOF\n`;
-    const array = new Uint8Array(originalData.length + bufferLen + tableLength + footer.length);
+    await (useXrefStream
+        ? getXRefStreamTable(xrefInfo, baseOffset, newRefs, newXref, buffer)
+        : getXRefTable(xrefInfo, baseOffset, newRefs, newXref, buffer));
+    const totalLength = buffer.reduce((a, str) => a + str.length, originalData.length);
+    const array = new Uint8Array(totalLength);
     // Original data
     array.set(originalData);
     let offset = originalData.length;
@@ -334,14 +378,6 @@ export async function incrementalUpdate({ originalData, xrefInfo, newRefs, xref,
         writeString(str, offset, array);
         offset += str.length;
     }
-    // New xref table
-    for (const [type, objOffset, gen] of xrefTableData) {
-        offset = writeInt(type, sizes[0], offset, array);
-        offset = writeInt(objOffset, sizes[1], offset, array);
-        offset = writeInt(gen, sizes[2], offset, array);
-    }
-    // Add the footer
-    writeString(footer, offset, array);
     return array;
 }
 /*80--------------------------------------------------------------------------*/

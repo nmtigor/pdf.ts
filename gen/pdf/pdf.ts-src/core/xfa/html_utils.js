@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/xfa/html_utils.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import { createValidAbsoluteUrl, warn } from "../../shared/util.js";
 import { selectFont } from "./fonts.js";
 import { $content, $extra, $getParent, $getSubformParent, $getTemplateRoot, $globalData, $nodeName, $pushGlyphs, $text, $toStyle, } from "./symbol_utils.js";

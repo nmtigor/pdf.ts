@@ -10,11 +10,14 @@
 
     "strict": true,
     "exactOptionalPropertyTypes": true,
+    "noPropertyAccessFromIndexSignature": true,
     "noImplicitReturns": true,
     "noImplicitOverride": true
   },
   "imports": {
-    "@std/": "https://deno.land/std@0.195.0/",
-    "@esbuild": "https://deno.land/x/esbuild@v0.19.2/mod.js"
+    "@esbuild": "https://deno.land/x/esbuild@v0.21.4/mod.js",
+    "@fe-lib/": "../src/lib/",
+    "@std/": "https://deno.land/std@0.220.1/",
+    "@zod": "../src/3rd/zod-3.22.2/lib/index.mjs"
   }
 }

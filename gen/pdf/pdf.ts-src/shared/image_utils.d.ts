@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/shared/image_utils.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import { ImageKind } from "./util.js";
 type ImageDataP_ = {
     src: Uint8Array | Uint8ClampedArray;

@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/ccitt.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 interface CCITTFaxDecoderSource {
     /**
      * Method that return one byte of data for decoding,

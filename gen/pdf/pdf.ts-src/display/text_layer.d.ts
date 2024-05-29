@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/display/text_layer.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import type { C2D, OC2D } from "../../../lib/alias.js";
 import { PromiseCap } from "../../../lib/util/PromiseCap.js";
 import type { TextContent } from "./api.js";
@@ -37,11 +44,6 @@ type TextLayerRenderP_ = {
      * This is output and shall initially be set to an empty array.
      */
     textContentItemsStr?: string[];
-    /**
-     * true if we can use
-     * OffscreenCanvas to measure string widths.
-     */
-    isOffscreenCanvasSupported?: boolean | undefined;
 };
 type TextLayerUpdateP_ = {
     /**
@@ -64,11 +66,6 @@ type TextLayerUpdateP_ = {
      */
     textDivProperties: WeakMap<HTMLElement, TextDivProps>;
     /**
-     * true if we can use
-     * OffscreenCanvas to measure string widths.
-     */
-    isOffscreenCanvasSupported?: boolean | undefined;
-    /**
      * true if the text layer must be rotated.
      */
     mustRotate?: boolean;
@@ -90,6 +87,7 @@ export type TextDivProps = {
     paddingTop?: number;
     scale?: number;
 };
+export declare function cleanupTextLayer(): void;
 type LayoutTextP_ = {
     prevFontSize?: unknown;
     prevFontFamily?: unknown;
@@ -109,7 +107,6 @@ export declare class TextLayerRenderTask {
     _container: HTMLElement;
     _textDivs: HTMLSpanElement[];
     _textContentItemsStr: string[];
-    _isOffscreenCanvasSupported: boolean | undefined;
     _fontInspectorEnabled: boolean;
     _reader?: ReadableStreamDefaultReader<TextContent> | undefined;
     _textDivProperties: WeakMap<HTMLSpanElement, TextDivProps>;
@@ -123,7 +120,7 @@ export declare class TextLayerRenderTask {
     _transform: [number, number, number, number, number, number];
     _pageWidth: number;
     _pageHeight: number;
-    constructor({ textContentSource, container, viewport, textDivs, textDivProperties, textContentItemsStr, isOffscreenCanvasSupported, }: TextLayerRenderP_);
+    constructor({ textContentSource, container, viewport, textDivs, textDivProperties, textContentItemsStr, }: TextLayerRenderP_);
     /**
      * Cancel rendering of the textLayer.
      */
@@ -138,6 +135,6 @@ export declare class TextLayerRenderTask {
     _render(): void;
 }
 export declare function renderTextLayer(params: TextLayerRenderP_): TextLayerRenderTask;
-export declare function updateTextLayer({ container, viewport, textDivs, textDivProperties, isOffscreenCanvasSupported, mustRotate, mustRescale, }: TextLayerUpdateP_): void;
+export declare function updateTextLayer({ container, viewport, textDivs, textDivProperties, mustRotate, mustRescale, }: TextLayerUpdateP_): void;
 export {};
 //# sourceMappingURL=text_layer.d.ts.map

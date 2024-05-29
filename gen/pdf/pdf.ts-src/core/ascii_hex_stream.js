@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/ascii_hex_stream.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import { DecodeStream } from "./decode_stream.js";
 /*80--------------------------------------------------------------------------*/
 export class AsciiHexStream extends DecodeStream {

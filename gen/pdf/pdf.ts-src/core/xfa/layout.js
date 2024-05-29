@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/xfa/layout.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import { measureToString } from "./html_utils.js";
 import { $extra, $flushHTML, $getSubformParent, $getTemplateRoot, $isSplittable, $isThereMoreWidth, } from "./symbol_utils.js";
 /*80--------------------------------------------------------------------------*/

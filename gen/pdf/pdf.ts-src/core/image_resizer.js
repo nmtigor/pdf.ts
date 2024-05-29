@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2023
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2023
+ *
+ * @module pdf/pdf.ts-src/core/image_resizer.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import { FeatureTest, ImageKind, shadow } from "../shared/util.js";
 /*80--------------------------------------------------------------------------*/
 const MIN_IMAGE_DIM = 2048;

@@ -16,6 +16,8 @@ export type uint16 = uint;
 export declare const zUint16: import("../3rd/zod-3.22.2/lib/index.mjs").ZodNumber;
 export type uint8 = uint;
 export declare const zUint8: import("../3rd/zod-3.22.2/lib/index.mjs").ZodNumber;
+export type unum = number;
+export declare const zUnum: import("../3rd/zod-3.22.2/lib/index.mjs").ZodNumber;
 /** 0 is special */
 export type id_t = uint;
 export declare const zId: import("../3rd/zod-3.22.2/lib/index.mjs").ZodNumber;
@@ -100,6 +102,26 @@ export type CSSStyle = Partial<Record<CSSStyleName, string | number>>;
  * @deprecated Use `CSSStyle` instead.
  */
 export type Style = Record<string, string>;
+export declare enum BufrDir {
+    ltr = 1,
+    rtl = 2
+}
+export declare enum WritingMode {
+    htb = 1,
+    vrl = 4,
+    vlr = 8
+}
+export declare const enum WritingDir {
+    h = 1,
+    v = 12
+}
+export type SetLayoutP = {
+    bufrDir?: BufrDir;
+    writingMode?: WritingMode;
+};
+export declare const Scrod_z = 10;
+export declare const Scrobar_z = 10;
+export declare const scrollO: ScrollToOptions;
 export interface Runr {
     run(): void | Promise<void>;
 }
@@ -116,6 +138,9 @@ export declare const enum Pointer {
     coarse = 1,
     fine = 2
 }
+export type UpdateTheme_PUT = {
+    theme_j: string;
+};
 export type Constructor<T = object> = new (...args: any[]) => T;
 export type AbstractConstructor<T = object> = abstract new (...args: any[]) => T;
 export type Func<This = any> = (this: This, ...args: any[]) => any;
@@ -135,5 +160,11 @@ type Some_<T> = {
     value: T;
 };
 export type Option<T> = None_ | Some_<T>;
+export type Prettify<T> = {
+    [K in keyof T]: T[K];
+} & {};
+export type RemoveIndex<T> = {
+    [K in keyof T as string extends K ? never : number extends K ? never : symbol extends K ? never : K]: T[K];
+};
 export {};
 //# sourceMappingURL=alias.d.ts.map

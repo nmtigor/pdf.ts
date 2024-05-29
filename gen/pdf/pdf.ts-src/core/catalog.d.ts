@@ -1,7 +1,14 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/catalog.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import type { rect_t } from "../../../lib/alias.js";
 import { PageLayout, PageMode } from "../../pdf.ts-web/ui_utils.js";
 import type { ResetForm } from "../display/annotation_layer.js";
-import type { OutlineNode } from "../display/api.js";
+import type { Intent, OutlineNode } from "../display/api.js";
 import type { CMapData } from "../display/base_factory.js";
 import { MessageHandler, Thread } from "../shared/message_handler.js";
 import { PermissionFlag } from "../shared/util.js";
@@ -73,10 +80,18 @@ export type Order = (string | {
     name: string | undefined;
     order: Order;
 })[];
-type OptionalContentGroupData_ = {
+export type OptionalContentGroupData = {
     id: string;
-    name: string | undefined;
-    intent: string | undefined;
+    name?: string;
+    intent?: Intent[];
+    usage: {
+        print?: {
+            printState: "ON" | "OFF";
+        };
+        view?: {
+            viewState: "ON" | "OFF";
+        };
+    };
 };
 export type OptionalContentConfigData = {
     name: string | undefined;
@@ -85,7 +100,7 @@ export type OptionalContentConfigData = {
     on: string[];
     off: string[];
     order: Order | undefined;
-    groups: OptionalContentGroupData_[];
+    groups: OptionalContentGroupData[];
 };
 type ViewerPrefValue = string | number | number[] | boolean;
 export type ViewerPref = Record<string, ViewerPrefValue>;

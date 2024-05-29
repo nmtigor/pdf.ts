@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/xfa/html_utils.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import type { AvailableSpace, XFAElObj, XFAFontBase, XFAHTMLObj, XFAStyleData } from "./alias.js";
 import { type FontFinder } from "./fonts.js";
 import type { Area, Border, Caption, ContentArea, Draw, ExclGroup, Field, Subform } from "./template.js";

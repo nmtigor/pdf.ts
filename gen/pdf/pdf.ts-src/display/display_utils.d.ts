@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/display/display_utils.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import type { C2D, dot2d_t, rect_t } from "../../../lib/alias.js";
 import type { rgb_t } from "../../../lib/color/alias.js";
 import type { XFAElObj } from "../core/xfa/alias.js";
@@ -27,7 +34,7 @@ export declare class DOMFilterFactory extends BaseFilterFactory {
     constructor({ docId, ownerDocument }?: DOMFilterFactoryCtorP_);
     addFilter(maps?: number[][]): string;
     addHCMFilter(fgColor: string, bgColor: string): string;
-    addHighlightHCMFilter(fgColor: string, bgColor: string, newFgColor: string, newBgColor: string): string;
+    addHighlightHCMFilter(filterName: string, fgColor: string, bgColor: string, newFgColor: string, newBgColor: string): string;
     destroy(keepHCM?: boolean): void;
 }
 export declare class DOMCanvasFactory extends BaseCanvasFactory {
@@ -194,7 +201,7 @@ export declare class RenderingCancelledException extends BaseException {
     constructor(msg: string, extraDelay?: number);
 }
 export declare function isDataScheme(url: string): boolean;
-export declare function isPdfFile(filename: unknown): boolean;
+export declare function isPdfFile(filename: unknown): filename is string;
 /**
  * Gets the filename from a given URL.
  */

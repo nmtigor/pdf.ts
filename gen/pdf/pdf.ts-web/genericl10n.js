@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/genericl10n.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 /* Copyright 2017 Mozilla Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,9 +22,21 @@
 import { FluentBundle, FluentResource, } from "../../3rd/fluent/bundle/esm/index.js";
 import { DOMLocalization } from "../../3rd/fluent/dom/esm/index.js";
 import { Locale } from "../../lib/Locale.js";
+import { PDFJSDev } from "../../global.js";
 import { fetchData } from "../pdf.ts-src/pdf.js";
 import { L10n } from "./l10n.js";
+import { AD_gh, D_res } from "../alias.js";
 /*80--------------------------------------------------------------------------*/
+function createBundle(lang, text) {
+    const resource = new FluentResource(text);
+    const bundle = new FluentBundle(lang);
+    const errors = bundle.addResource(resource);
+    if (errors.length) {
+        console.error("L10n errors", errors);
+    }
+    return bundle;
+}
+//kkkk TOCLEANUP
 // const PARTIAL_LANG_CODES = <Record<string, Locale_1>> {
 //   en: "en-US",
 //   es: "es-ES",
@@ -44,7 +60,21 @@ import { L10n } from "./l10n.js";
 export class GenericL10n extends L10n {
     constructor(lang) {
         super({ lang });
-        this._setL10n(new DOMLocalization([], GenericL10n.#generateBundles.bind(GenericL10n, Locale.en_US, this.getLanguage())));
+        //kkkk TOCLEANUP
+        // this._setL10n(
+        //   new DOMLocalization(
+        //     [],
+        //     GenericL10n.#generateBundles.bind(
+        //       GenericL10n,
+        //       Locale.en_US,
+        //       this.getLanguage(),
+        //     ),
+        //   ),
+        // );
+        const generateBundles = !lang
+            ? GenericL10n.#generateBundlesFallback.bind(GenericL10n, this.getLanguage())
+            : GenericL10n.#generateBundles.bind(GenericL10n, Locale.en_US, this.getLanguage());
+        this._setL10n(new DOMLocalization([], generateBundles));
     }
     /**
      * Generate the bundles for Fluent.
@@ -54,9 +84,6 @@ export class GenericL10n extends L10n {
      */
     static async *#generateBundles(defaultLang, baseLang) {
         const { baseURL, paths } = await this.#getPaths();
-        // const langs = baseLang === defaultLang
-        //   ? [baseLang]
-        //   : [baseLang, defaultLang];
         const langs = [baseLang];
         if (defaultLang !== baseLang) {
             // Also fallback to the short-format of the base language
@@ -72,6 +99,9 @@ export class GenericL10n extends L10n {
             if (bundle) {
                 yield bundle;
             }
+            if (lang === "en-US") {
+                yield this.#createBundleFallback(lang);
+            }
         }
     }
     static async #createBundle(lang, baseURL, paths) {
@@ -81,18 +111,27 @@ export class GenericL10n extends L10n {
         }
         const url = new URL(path, baseURL);
         const text = await fetchData(url, /* type = */ "text");
-        const resource = new FluentResource(text);
-        const bundle = new FluentBundle(lang);
-        const errors = bundle.addResource(resource);
-        if (errors.length) {
-            console.error("L10n errors", errors);
-        }
-        return bundle;
+        return createBundle(lang, text);
     }
     static async #getPaths() {
-        const { href } = document.querySelector(`link[type="application/l10n"]`);
-        const paths = await fetchData(href, /* type = */ "json");
-        return { baseURL: href.replace(/[^/]*$/, "") || "./", paths };
+        try {
+            const { href } = document.querySelector(`link[type="application/l10n"]`);
+            const paths = await fetchData(href, /* type = */ "json");
+            return { baseURL: href.replace(/[^/]*$/, "") || "./", paths };
+        }
+        catch { }
+        return { baseURL: "./", paths: Object.create(null) };
+    }
+    static async *#generateBundlesFallback(lang) {
+        yield this.#createBundleFallback(lang);
+    }
+    static async #createBundleFallback(lang) {
+        // /*#static*/ if (TESTING) {
+        //   throw new Error("Not implemented: #createBundleFallback");
+        // }
+        const text = /*#static*/ await fetchData(new URL(`${AD_gh}/${D_res}/l10n/en-US/viewer.ftl`, window.location.href), 
+        /* type = */ "text");
+        return createBundle(lang, text);
     }
 }
 /*80--------------------------------------------------------------------------*/

@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/display/editor/stamp.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import type { IL10n } from "../../../pdf.ts-web/interfaces.js";
 import { AnnotationEditorType } from "../../shared/util.js";
 import type { AnnotStorageValue } from "../annotation_layer.js";
@@ -23,7 +30,7 @@ export declare class StampEditor extends AnnotationEditor {
     static readonly _editorType = AnnotationEditorType.STAMP;
     getImageForAltText(): HTMLCanvasElement | undefined;
     constructor(params: StampEditorP);
-    static initialize(l10n: IL10n): void;
+    static initialize(l10n: IL10n, uiManager: AnnotationEditorUIManager): void;
     static get supportedTypes(): string[];
     static get supportedTypesStr(): string;
     static isHandlingMimeForPasting(mime: string): boolean;

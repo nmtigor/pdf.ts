@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/pdf_sidebar.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import type { EventBus } from "./event_utils.js";
 import type { IL10n } from "./interfaces.js";
 import { SidebarView } from "./ui_utils.js";
@@ -40,7 +47,6 @@ export declare class PDFSidebar {
     outlineView: HTMLDivElement;
     attachmentsView: HTMLDivElement;
     layersView: HTMLDivElement;
-    _outlineOptionsContainer: HTMLDivElement;
     _currentOutlineItemButton: HTMLButtonElement;
     eventBus: EventBus;
     constructor({ elements, eventBus, l10n, }: PDFSidebarOptions);
@@ -61,8 +67,8 @@ export declare class PDFSidebar {
      */
     switchView(view: SidebarView, forceOpen?: boolean): false | undefined;
     open(): void;
-    close(): void;
-    toggle(): void;
+    close(evt?: UIEvent): void;
+    toggle(evt?: UIEvent): void;
     get outerContainerWidth(): number;
 }
 export {};

@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/segoeui_factors.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 export declare const SegoeuiBoldFactors: number[];
 export declare const SegoeuiBoldMetrics: {
     lineHeight: number;

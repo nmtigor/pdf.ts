@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/grab_to_pan.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2013 Rob Wu <rob@robwu.nl>
  * https://github.com/Rob--W/grab-to-pan.js

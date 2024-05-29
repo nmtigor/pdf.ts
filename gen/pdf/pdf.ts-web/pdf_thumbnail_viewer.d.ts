@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/pdf_thumbnail_viewer.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import type { OptionalContentConfig, PDFDocumentProxy, PDFPageProxy } from "../pdf.ts-src/pdf.js";
 import type { EventBus } from "./event_utils.js";
 import type { IPDFLinkService } from "./interfaces.js";
@@ -58,9 +65,7 @@ export declare class PDFThumbnailViewer {
     constructor({ container, eventBus, linkService, renderingQueue, pageColors, }: PDFThumbnailViewerOptions);
     scrollThumbnailIntoView(pageNumber: number): void;
     cleanup(): void;
-    protected _resetView(): void;
     setDocument(pdfDocument?: PDFDocumentProxy): void;
-    protected _cancelRendering(): void;
     setPageLabels(labels: string[] | null): void;
     forceRendering(): boolean;
 }

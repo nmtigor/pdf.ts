@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/document.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import type { rect_t } from "../../../lib/alias.js";
 import type { AnnotStorageRecord, AnnotStorageValue } from "../display/annotation_layer.js";
 import type { CMapData } from "../display/base_factory.js";

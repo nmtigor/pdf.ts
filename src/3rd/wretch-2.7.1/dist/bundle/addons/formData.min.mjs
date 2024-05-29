@@ -4,8 +4,9 @@ function e(t, n = 0, o, i = o.polyfill("FormData", 1, 1), r = []) {
     if (
       l = l ? `${l}[${t}]` : t,
         a instanceof Array || globalThis.FileList && a instanceof FileList
-    ) for (const e of a) i.append(l, e);
-    else {!n || "object" != typeof a || n instanceof Array && n.includes(t)
+    ) {
+      for (const e of a) i.append(l, e);
+    } else {!n || "object" != typeof a || n instanceof Array && n.includes(t)
         ? i.append(l, a)
         : null !== a && e(a, n, o, i, [...r, t]);}
   }),

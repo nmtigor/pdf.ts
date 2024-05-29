@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/scripting_api/common.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 /*80--------------------------------------------------------------------------*/
 export const FieldType = {
     none: 0,
@@ -31,7 +35,7 @@ export function getFieldType(actions) {
         return FieldType.percent;
     if (format_.startsWith("AFDate_"))
         return FieldType.date;
-    if (format_.startsWith("AFTime__"))
+    if (format_.startsWith("AFTime_"))
         return FieldType.time;
     return FieldType.none;
 }

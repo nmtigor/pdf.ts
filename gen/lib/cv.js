@@ -2,6 +2,7 @@
  * @module lib/cv
  * @license Apache-2.0
  ******************************************************************************/
+import { CYPRESS } from "../global.js";
 import { svg } from "./dom.js";
 import { mix } from "./jslang.js";
 import { $vuu } from "./symbols.js";
@@ -22,6 +23,7 @@ export class Vuu {
         return this.coo$;
     }
     el$;
+    /** @final */
     get el() {
         return this.el$;
     }
@@ -33,6 +35,10 @@ export class Vuu {
         this.coo$ = coo_x;
         this.el$ = el_x;
         this.el$[$vuu] = this;
+        /*#static*/ if (CYPRESS) {
+            this.el$["cy.vuu"] = this;
+            this.el$["cy.use"] = 1;
+        }
         // this.el$[$Vuu] = Vuu;
     }
     get parentVuu_1() {
@@ -73,11 +79,11 @@ export class Vuu {
     /**
      * @deprecated
      * @headconst @param ret_x
-     * @headconst @param refvuu_x
+     * @headconst @param refV_x
      */
-    attachBefore(ret_x, refvuu_x) {
-        if (refvuu_x) {
-            this.el$.insertBefore(ret_x.el$, refvuu_x.el$);
+    attachBefore(ret_x, refV_x) {
+        if (refV_x) {
+            this.el$.insertBefore(ret_x.el$, refV_x.el$);
         }
         else {
             this.el$.append(ret_x.el$);

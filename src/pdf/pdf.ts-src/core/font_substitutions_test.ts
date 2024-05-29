@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2023
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2023
+ *
+ * @module pdf/pdf.ts-src/core/font_substitutions_test.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2022 Mozilla Foundation
  *
@@ -19,7 +23,7 @@
 
 import { assertMatch, assertObjectMatch } from "@std/assert/mod.ts";
 import { describe, it } from "@std/testing/bdd.ts";
-import { createIdFactory } from "../../test_utils.ts";
+import { createIdFactory } from "@pdf.ts-test/test_utils.ts";
 import { getFontSubstitution } from "./font_substitutions.ts";
 /*80--------------------------------------------------------------------------*/
 
@@ -45,7 +49,7 @@ describe("getFontSubstitution", () => {
         weight: "normal",
       },
     });
-    assertMatch(fontSubstitution.css, /^g_d(\d+)_sf(\d+)$/);
+    assertMatch(fontSubstitution.css, /^"Foo",g_d(\d+)_sf(\d+)$/);
   });
 
   it("should substitute an unknown bold font", () => {
@@ -66,7 +70,7 @@ describe("getFontSubstitution", () => {
         weight: "bold",
       },
     });
-    assertMatch(fontSubstitution.css, /^g_d(\d+)_sf(\d+)$/);
+    assertMatch(fontSubstitution.css, /^"Foo",g_d(\d+)_sf(\d+)$/);
   });
 
   it("should substitute an unknown italic font", () => {
@@ -87,7 +91,7 @@ describe("getFontSubstitution", () => {
         weight: "normal",
       },
     });
-    assertMatch(fontSubstitution.css, /^g_d(\d+)_sf(\d+)$/);
+    assertMatch(fontSubstitution.css, /^"Foo",g_d(\d+)_sf(\d+)$/);
   });
 
   it("should substitute an unknown bold italic font", () => {
@@ -108,7 +112,7 @@ describe("getFontSubstitution", () => {
         weight: "bold",
       },
     });
-    assertMatch(fontSubstitution.css, /^g_d(\d+)_sf(\d+)$/);
+    assertMatch(fontSubstitution.css, /^"Foo",g_d(\d+)_sf(\d+)$/);
   });
 
   it("should substitute an unknown font but with a standard font", () => {
@@ -136,7 +140,7 @@ describe("getFontSubstitution", () => {
         weight: "normal",
       },
     });
-    assertMatch(fontSubstitution.css, /^g_d(\d+)_sf(\d+),sans-serif$/);
+    assertMatch(fontSubstitution.css, /^"Foo",g_d(\d+)_sf(\d+),sans-serif$/);
   });
 
   it("should substitute an unknown font but with a standard italic font", () => {
@@ -166,7 +170,7 @@ describe("getFontSubstitution", () => {
         weight: "normal",
       },
     });
-    assertMatch(fontSubstitution.css, /^g_d(\d+)_sf(\d+),sans-serif$/);
+    assertMatch(fontSubstitution.css, /^"Foo",g_d(\d+)_sf(\d+),sans-serif$/);
   });
 
   it("should substitute an unknown font but with a standard bold font", () => {
@@ -195,7 +199,7 @@ describe("getFontSubstitution", () => {
         weight: "bold",
       },
     });
-    assertMatch(fontSubstitution.css, /^g_d(\d+)_sf(\d+),sans-serif$/);
+    assertMatch(fontSubstitution.css, /^"Foo",g_d(\d+)_sf(\d+),sans-serif$/);
   });
 
   it("should substitute an unknown font but with a standard bold italic font", () => {
@@ -227,7 +231,7 @@ describe("getFontSubstitution", () => {
         weight: "bold",
       },
     });
-    assertMatch(fontSubstitution.css, /^g_d(\d+)_sf(\d+),sans-serif$/);
+    assertMatch(fontSubstitution.css, /^"Foo",g_d(\d+)_sf(\d+),sans-serif$/);
   });
 
   it("should substitute Calibri", () => {
@@ -255,7 +259,10 @@ describe("getFontSubstitution", () => {
         weight: "normal",
       },
     });
-    assertMatch(fontSubstitution.css, /^g_d(\d+)_sf(\d+),sans-serif$/);
+    assertMatch(
+      fontSubstitution.css,
+      /^"Calibri",g_d(\d+)_sf(\d+),sans-serif$/,
+    );
   });
 
   it("should substitute Calibri-Bold", () => {
@@ -285,7 +292,10 @@ describe("getFontSubstitution", () => {
         weight: "bold",
       },
     });
-    assertMatch(fontSubstitution.css, /^g_d(\d+)_sf(\d+),sans-serif$/);
+    assertMatch(
+      fontSubstitution.css,
+      /^"Calibri",g_d(\d+)_sf(\d+),sans-serif$/,
+    );
   });
 
   it("should substitute Arial Black", () => {
@@ -315,7 +325,10 @@ describe("getFontSubstitution", () => {
         weight: "900",
       },
     });
-    assertMatch(fontSubstitution.css, /^g_d(\d+)_sf(\d+),sans-serif$/);
+    assertMatch(
+      fontSubstitution.css,
+      /^"ArialBlack",g_d(\d+)_sf(\d+),sans-serif$/,
+    );
   });
 
   it("should substitute Arial Black Bold", () => {
@@ -345,7 +358,10 @@ describe("getFontSubstitution", () => {
         weight: "900",
       },
     });
-    assertMatch(fontSubstitution.css, /^g_d(\d+)_sf(\d+),sans-serif$/);
+    assertMatch(
+      fontSubstitution.css,
+      /^"ArialBlack",g_d(\d+)_sf(\d+),sans-serif$/,
+    );
   });
 });
 /*80--------------------------------------------------------------------------*/

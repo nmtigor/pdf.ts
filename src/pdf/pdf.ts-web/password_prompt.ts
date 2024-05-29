@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/password_prompt.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2012 Mozilla Foundation
  *
@@ -70,9 +74,7 @@ export class PasswordPrompt {
   }
 
   async open() {
-    if (this.#activeCapability) {
-      await this.#activeCapability.promise;
-    }
+    await this.#activeCapability?.promise;
     this.#activeCapability = new PromiseCap();
 
     try {

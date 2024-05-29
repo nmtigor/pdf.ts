@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/ui_utils.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 /* Copyright 2012 Mozilla Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -210,15 +214,13 @@ export function parseQueryString(query) {
     }
     return params;
 }
-const InvisibleCharactersRegExp = /[\x00-\x1F]/g;
+const InvisibleCharsRegExp = /[\x00-\x1F]/g;
 export function removeNullCharacters(str, replaceInvisible = false) {
-    if (!InvisibleCharactersRegExp.test(str)) {
+    if (!InvisibleCharsRegExp.test(str)) {
         return str;
     }
     if (replaceInvisible) {
-        return str.replaceAll(InvisibleCharactersRegExp, (m) => {
-            return m === "\x00" ? "" : " ";
-        });
+        return str.replaceAll(InvisibleCharsRegExp, (m) => m === "\x00" ? "" : " ");
     }
     return str.replaceAll("\x00", "");
 }

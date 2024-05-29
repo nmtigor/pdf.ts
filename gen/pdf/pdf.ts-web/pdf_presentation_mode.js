@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/pdf_presentation_mode.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 /* Copyright 2012 Mozilla Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -145,7 +149,7 @@ export class PDFPresentationMode {
         // Text selection is disabled in Presentation Mode, thus it's not possible
         // for the user to deselect text that is selected (e.g. with "Select all")
         // when entering Presentation Mode, hence we remove any active selection.
-        window.getSelection().removeAllRanges();
+        window.getSelection()?.empty();
     }
     #exit() {
         const pageNumber = this.pdfViewer.currentPageNumber;

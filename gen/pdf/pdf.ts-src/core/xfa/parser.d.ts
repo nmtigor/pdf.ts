@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/xfa/parser.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import { type XMLAttr, XMLParserBase, XMLParserErrorCode } from "../xml_parser.js";
 import type { XFANsAttrs, XFAPrefix } from "./alias.js";
 import type { XFAObject } from "./xfa_object.js";

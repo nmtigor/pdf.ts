@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/scripting_api/event.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import type { AnnotActions } from "../core/core_utils.js";
 import type { DocWrapped, FieldWrapped } from "./app.js";
 import type { ScriptingActionName } from "./common.js";

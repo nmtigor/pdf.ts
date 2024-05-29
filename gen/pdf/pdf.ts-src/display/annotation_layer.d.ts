@@ -1,4 +1,11 @@
-import type { rect_t, TupleOf } from "../../../lib/alias.js";
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/display/annotation_layer.ts
+ * @license Apache-2.0
+ ******************************************************************************/
+import type { Ratio, rect_t } from "../../../lib/alias.js";
 import type { rgb_t } from "../../../lib/color/alias.js";
 import type { HSElement } from "../../../lib/dom.js";
 import type { IDownloadManager, IL10n, IPDFLinkService } from "../../pdf.ts-web/interfaces.js";
@@ -13,6 +20,7 @@ import { AnnotationStorage } from "./annotation_storage.js";
 import type { MetadataEx, PDFPageProxy } from "./api.js";
 import type { PageViewport } from "./display_utils.js";
 import { DOMSVGFactory } from "./display_utils.js";
+import type { Outlines } from "./editor/outliner.js";
 type Parent_ = {
     page: PDFPageProxy;
     viewport: PageViewport;
@@ -261,11 +269,11 @@ export interface AnnotStorageValue {
     items?: Item[];
     noPrint?: unknown;
     noView?: unknown;
-    opacity?: number;
-    outlines?: TupleOf<number, 4>[];
+    opacity?: Ratio;
+    outlines?: Outlines;
     pageIndex?: number;
     parentTreeId?: number;
-    quadPoints?: TupleOf<number, 7>;
+    quadPoints?: number[] | undefined;
     paths?: {
         bezier: number[];
         points: number[];
@@ -304,6 +312,7 @@ export declare class AnnotationLayer {
     update({ viewport }: AnnotationLayerP): void;
     getEditableAnnotations(): AnnotationElement[];
     getEditableAnnotation(id: string): AnnotationElement | undefined;
+    showPopups: () => void;
 }
 export {};
 //# sourceMappingURL=annotation_layer.d.ts.map

@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/ui_utils.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import type { IVisibleView } from "./interfaces.js";
 export declare const DEFAULT_SCALE_VALUE = "auto";
 export declare const DEFAULT_SCALE = 1;

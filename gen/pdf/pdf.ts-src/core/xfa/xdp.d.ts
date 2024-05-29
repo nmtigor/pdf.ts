@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/xfa/xdp.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import type { XFAAttrs } from "./alias.js";
 import type { ConnectionSet } from "./connection_set.js";
 import type { Datasets } from "./datasets.js";

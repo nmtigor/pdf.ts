@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/scripting_api/util.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2020 Mozilla Foundation
  *
@@ -17,7 +21,7 @@
  * limitations under the License.
  */
 
-import type { TupleOf } from "../../../lib/alias.ts";
+import type { TupleOf } from "@fe-lib/alias.ts";
 import type { ExternalCall } from "./initialization.ts";
 import type { ScriptingData, SendData } from "./pdf_object.ts";
 import { PDFObject } from "./pdf_object.ts";
@@ -250,28 +254,27 @@ export class Util extends PDFObject<_SendUtilData> {
         return this.printd("m/d/yy h:MM:ss tt", oDate);
     }
 
-    const handlers = {
-      mmmm: (data: _DateData) => this._months[data.month],
-      mmm: (data: _DateData) => this._months[data.month].substring(0, 3),
-      mm: (data: _DateData) => (data.month + 1).toString().padStart(2, "0"),
-      m: (data: _DateData) => (data.month + 1).toString(),
-      dddd: (data: _DateData) => this._days[data.dayOfWeek!],
-      ddd: (data: _DateData) => this._days[data.dayOfWeek!].substring(0, 3),
-      dd: (data: _DateData) => data.day.toString().padStart(2, "0"),
-      d: (data: _DateData) => data.day.toString(),
-      yyyy: (data: _DateData) => data.year.toString(),
-      yy: (data: _DateData) => (data.year % 100).toString().padStart(2, "0"),
-      HH: (data: _DateData) => data.hours.toString().padStart(2, "0"),
-      H: (data: _DateData) => data.hours.toString(),
-      hh: (data: _DateData) =>
-        (1 + ((data.hours + 11) % 12)).toString().padStart(2, "0"),
-      h: (data: _DateData) => (1 + ((data.hours + 11) % 12)).toString(),
-      MM: (data: _DateData) => data.minutes.toString().padStart(2, "0"),
-      M: (data: _DateData) => data.minutes.toString(),
-      ss: (data: _DateData) => data.seconds.toString().padStart(2, "0"),
-      s: (data: _DateData) => data.seconds.toString(),
-      tt: (data: _DateData) => data.hours < 12 ? "am" : "pm",
-      t: (data: _DateData) => data.hours < 12 ? "a" : "p",
+    const handlers: Record<string, (data: _DateData) => string> = {
+      mmmm: (data) => this._months[data.month],
+      mmm: (data) => this._months[data.month].substring(0, 3),
+      mm: (data) => (data.month + 1).toString().padStart(2, "0"),
+      m: (data) => (data.month + 1).toString(),
+      dddd: (data) => this._days[data.dayOfWeek!],
+      ddd: (data) => this._days[data.dayOfWeek!].substring(0, 3),
+      dd: (data) => data.day.toString().padStart(2, "0"),
+      d: (data) => data.day.toString(),
+      yyyy: (data) => data.year.toString(),
+      yy: (data) => (data.year % 100).toString().padStart(2, "0"),
+      HH: (data) => data.hours.toString().padStart(2, "0"),
+      H: (data) => data.hours.toString(),
+      hh: (data) => (1 + ((data.hours + 11) % 12)).toString().padStart(2, "0"),
+      h: (data) => (1 + ((data.hours + 11) % 12)).toString(),
+      MM: (data) => data.minutes.toString().padStart(2, "0"),
+      M: (data) => data.minutes.toString(),
+      ss: (data) => data.seconds.toString().padStart(2, "0"),
+      s: (data) => data.seconds.toString(),
+      tt: (data) => data.hours < 12 ? "am" : "pm",
+      t: (data) => data.hours < 12 ? "a" : "p",
     };
 
     const data = {

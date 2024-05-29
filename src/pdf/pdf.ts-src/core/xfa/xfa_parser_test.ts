@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/xfa/xfa_parser_test.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2020 Mozilla Foundation
  *
@@ -1191,7 +1195,7 @@ describe("XFAParser", () => {
       // );
     });
 
-    it("should make basic binding with extra subform", () => {
+    it("should make basic binding with extra subform (consumeData)", () => {
       const xml = `
     <?xml version="1.0"?>
     <xdp:xdp xmlns:xdp="http://ns.adobe.com/xdp/">

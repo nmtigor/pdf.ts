@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/display/pattern_helper.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import { ShadingType } from "../core/pattern.js";
 import { FormatError, info, OPS, Util } from "../shared/util.js";
 import { getCurrentTransform } from "./display_utils.js";

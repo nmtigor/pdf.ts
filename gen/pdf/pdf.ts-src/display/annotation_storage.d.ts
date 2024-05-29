@@ -1,4 +1,13 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/display/annotation_storage.ts
+ * @license Apache-2.0
+ ******************************************************************************/
+import type { AnnotationEditorName } from "../shared/util.js";
 import type { AnnotStorageRecord, AnnotStorageValue } from "./annotation_layer.js";
+import type { TFD_AnnotationEditor } from "./editor/editor.js";
 export type Serializable = {
     map?: AnnotStorageRecord | undefined;
     hash: string;
@@ -13,7 +22,7 @@ export declare class AnnotationStorage {
     get size(): number;
     onSetModified?: () => void;
     onResetModified?: () => void;
-    onAnnotationEditor: ((type?: "freetext" | "ink" | "stamp" | undefined) => void) | undefined;
+    onAnnotationEditor: ((type?: AnnotationEditorName | undefined) => void) | undefined;
     /**
      * Get the value for a given key if it exists, or return the default value.
      */
@@ -43,6 +52,7 @@ export declare class AnnotationStorage {
      * @ignore
      */
     get serializable(): Serializable;
+    get editorStats(): Record<AnnotationEditorName, TFD_AnnotationEditor>;
 }
 /**
  * A special `AnnotationStorage` for use during printing, where the serializable

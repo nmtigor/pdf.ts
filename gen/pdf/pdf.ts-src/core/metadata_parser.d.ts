@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/metadata_parser.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import { SimpleDOMNode } from "./xml_parser.js";
 export interface SerializedMetadata {
     parsedData: Map<string, string | string[]>;

@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/display/api
+ * @license Apache-2.0
+ ******************************************************************************/
 /**
  * @module pdfjsLib
  */
@@ -5,7 +12,7 @@ import type { C2D, TypedArray } from "../../../lib/alias.js";
 import { PromiseCap } from "../../../lib/util/PromiseCap.js";
 import type { Stepper } from "../../pdf.ts-web/debugger.js";
 import type { PageColors } from "../../pdf.ts-web/pdf_viewer.js";
-import type { FieldObject } from "../core/annotation.js";
+import type { FieldObjectsPromise } from "../../alias.js";
 import type { ExplicitDest, SetOCGState } from "../core/catalog.js";
 import type { AnnotActions } from "../core/core_utils.js";
 import type { DatasetReader } from "../core/dataset_reader.js";
@@ -384,6 +391,17 @@ export type MetadataEx = {
     contentDispositionFilename: string | undefined;
     contentLength: number | undefined;
 };
+interface GetOptionalContentConfigP_ {
+    /**
+     * Determines the optional content groups that
+     * are visible by default; valid values are:
+     *   - 'display' (viewable groups).
+     *   - 'print' (printable groups).
+     *   - 'any' (all groups).
+     * The default value is 'display'.
+     */
+    intent?: Intent;
+}
 /**
  * Proxy to a `PDFDocument` in the worker thread.
  */
@@ -497,7 +515,7 @@ export declare class PDFDocumentProxy {
      *   an {@link OptionalContentConfig} that contains all the optional content
      *   groups (assuming that the document has any).
      */
-    getOptionalContentConfig(): Promise<OptionalContentConfig>;
+    getOptionalContentConfig({ intent }?: GetOptionalContentConfigP_): Promise<OptionalContentConfig>;
     /**
      * @return A promise that is resolved with
      *   an {Array} that contains the permission flags for the PDF document, or
@@ -571,7 +589,7 @@ export declare class PDFDocumentProxy {
      *   resolved with an {Object} containing /AcroForm field data for the JS
      *   sandbox, or `undefined` when no field data is present in the PDF file.
      */
-    getFieldObjects(): Promise<boolean | AnnotActions | Record<string, FieldObject[]> | MetadataEx | undefined>;
+    getFieldObjects(): FieldObjectsPromise;
     /**
      * @return A promise that is resolved with `true`
      *   if some /AcroForm fields have JavaScript actions.
@@ -584,8 +602,10 @@ export declare class PDFDocumentProxy {
      *   file.
      */
     getCalculationOrderIds(): Promise<string[] | undefined>;
+    getNetworkStreamName: () => string | undefined;
     getXFADatasets: () => Promise<DatasetReader | undefined>;
     getXRefPrevValue: () => Promise<number | undefined>;
+    getStartXRefPos: () => unknown;
     getAnnotArray: (pageIndex: number) => Promise<unknown>;
 }
 /**
@@ -1118,7 +1138,7 @@ declare class WorkerTransport {
     getPage(pageNumber: unknown): Promise<PDFPageProxy>;
     getPageIndex(ref: RefProxy): Promise<number>;
     getAnnotations(pageIndex: number, intent: RenderingIntentFlag): Promise<import("../core/annotation.js").AnnotationData[] | import("../core/annotation.js").Annotation[]>;
-    getFieldObjects(): Promise<boolean | AnnotActions | Record<string, FieldObject[]> | MetadataEx | undefined>;
+    getFieldObjects(): FieldObjectsPromise;
     hasJSActions(): Promise<boolean>;
     getCalculationOrderIds(): Promise<string[] | undefined>;
     getDestinations(): Promise<Record<string, ExplicitDest>>;
@@ -1133,7 +1153,7 @@ declare class WorkerTransport {
     getPageJSActions(pageIndex: number): Promise<AnnotActions | undefined>;
     getStructTree(pageIndex: number): Promise<StructTreeNode | undefined>;
     getOutline(): Promise<OutlineNode[] | undefined>;
-    getOptionalContentConfig(): Promise<OptionalContentConfig>;
+    getOptionalContentConfig(renderingIntent: RenderingIntentFlag): Promise<OptionalContentConfig>;
     getPermissions(): Promise<import("../shared/util.js").PermissionFlag[] | undefined>;
     getMetadata(): Promise<MetadataEx>;
     getMarkInfo(): Promise<import("../core/catalog.js").MarkInfo | undefined>;
@@ -1142,8 +1162,10 @@ declare class WorkerTransport {
         disableAutoFetch: boolean;
         enableXfa: boolean;
     };
+    getNetworkStreamName: () => string | undefined;
     getXFADatasets: () => Promise<DatasetReader | undefined>;
     getXRefPrevValue: () => Promise<number | undefined>;
+    getStartXRefPos: () => unknown;
     getAnnotArray: (pageIndex: number) => Promise<unknown>;
 }
 /**
@@ -1168,6 +1190,7 @@ export declare class PDFObjects<T> {
      */
     resolve(objId: string, data?: T | undefined): void;
     clear(): void;
+    [Symbol.iterator](): Generator<(string | T | undefined)[], void, unknown>;
 }
 /**
  * Allows controlling of the rendering tasks.
@@ -1195,6 +1218,7 @@ export declare class RenderTask {
      * Whether form fields are rendered separately from the main operatorList.
      */
     get separateAnnots(): boolean;
+    getOperatorList: () => OpListIR;
 }
 interface IRTCtorP_Paraams_ {
     canvasContext: C2D;

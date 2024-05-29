@@ -1,10 +1,14 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/document.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import { assert, fail } from "../../../lib/util/trace.js";
 import { PDFJSDev, TESTING } from "../../../global.js";
 import { AnnotationEditorPrefix, FormatError, info, InvalidPDFException, PageActionEventType, RenderingIntentFlag, shadow, stringToBytes, stringToPDFString, stringToUTF8String, Util, warn, } from "../shared/util.js";
-import { AnnotationFactory, PopupAnnotation } from "./annotation.js";
+import { AnnotationFactory, PopupAnnotation, WidgetAnnotation, } from "./annotation.js";
 import { BaseStream } from "./base_stream.js";
 import { Catalog } from "./catalog.js";
 import { clearGlobalCaches } from "./cleanup_helper.js";
@@ -555,11 +559,15 @@ export class Page {
                 }));
             }
             const sortedAnnotations = [];
-            let popupAnnotations;
+            let popupAnnotations, widgetAnnotations;
             // Ensure that PopupAnnotations are handled last, since they depend on
             // their parent Annotation in the display layer; fixes issue 11362.
             for (const annotation of await Promise.all(annotationPromises)) {
                 if (!annotation) {
+                    continue;
+                }
+                if (annotation instanceof WidgetAnnotation) {
+                    (widgetAnnotations ||= []).push(annotation);
                     continue;
                 }
                 if (annotation instanceof PopupAnnotation) {
@@ -567,6 +575,9 @@ export class Page {
                     continue;
                 }
                 sortedAnnotations.push(annotation);
+            }
+            if (widgetAnnotations) {
+                sortedAnnotations.push(...widgetAnnotations);
             }
             if (popupAnnotations) {
                 sortedAnnotations.push(...popupAnnotations);
@@ -690,7 +701,13 @@ export class PDFDocument {
             // Find the end of the first object.
             stream.reset();
             if (find(stream, ENDOBJ_SIGNATURE)) {
-                startXRef = stream.pos + 6 - stream.start;
+                stream.skip(6);
+                let ch = stream.peekByte();
+                while (isWhiteSpace(ch)) {
+                    stream.pos++;
+                    ch = stream.peekByte();
+                }
+                startXRef = stream.pos - stream.start;
             }
         }
         else {
@@ -1250,6 +1267,7 @@ export class PDFDocument {
         else {
             promise = catalog.getPageDict(pageIndex);
         }
+        // eslint-disable-next-line arrow-body-style
         promise = promise.then(([pageDict, ref]) => {
             return new Page({
                 pdfManager: this.pdfManager,

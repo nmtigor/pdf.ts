@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/xfa/builder.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import type { XFACleanup, XFAIds, XFANsAttrs, XFAPrefix } from "./alias.js";
 import { type XFAKnownNs } from "./setup.js";
 import { $finalize, $ids, $onChild } from "./symbol_utils.js";

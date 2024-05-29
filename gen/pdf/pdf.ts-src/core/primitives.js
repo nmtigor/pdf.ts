@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/primitives.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import { assert, fail } from "../../../lib/util/trace.js";
 import { PDFJSDev, TESTING } from "../../../global.js";
 import { shadow } from "../shared/util.js";

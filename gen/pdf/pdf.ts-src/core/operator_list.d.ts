@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/operator_list.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import type { StreamSink, Thread } from "../shared/message_handler.js";
 import { OPS, RenderingIntentFlag } from "../shared/util.js";
 import type { MarkedContentProps, OpArgs } from "./evaluator.js";

@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2023
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2023
+ *
+ * @module pdf/pdf.ts-src/core/font_substitutions.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 /* Copyright 2023 Mozilla Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -48,6 +52,8 @@ const substitutionMap = new Map([
                 "Thorndale",
                 "TeX Gyre Termes",
                 "FreeSerif",
+                "Linux Libertine O",
+                "Libertinus Serif",
                 "DejaVu Serif",
                 "Bitstream Vera Serif",
                 "Ubuntu",
@@ -148,6 +154,8 @@ const substitutionMap = new Map([
                 "Cumberland",
                 "TeX Gyre Cursor",
                 "FreeMono",
+                "Linux Libertine Mono O",
+                "Libertinus Mono",
             ],
             style: NORMAL,
             ultimate: "monospace",
@@ -320,6 +328,47 @@ function getStyleToAppend(style) {
     }
     return "";
 }
+function getFamilyName(str) {
+    // See https://gitlab.freedesktop.org/fontconfig/fontconfig/-/blob/14d466b30a8ab4a9d789977ed94f2c30e7209267/src/fcname.c#L137.
+    const keywords = new Set([
+        "thin",
+        "extralight",
+        "ultralight",
+        "demilight",
+        "semilight",
+        "light",
+        "book",
+        "regular",
+        "normal",
+        "medium",
+        "demibold",
+        "semibold",
+        "bold",
+        "extrabold",
+        "ultrabold",
+        "black",
+        "heavy",
+        "extrablack",
+        "ultrablack",
+        "roman",
+        "italic",
+        "oblique",
+        "ultracondensed",
+        "extracondensed",
+        "condensed",
+        "semicondensed",
+        "normal",
+        "semiexpanded",
+        "expanded",
+        "extraexpanded",
+        "ultraexpanded",
+        "bolditalic",
+    ]);
+    return str
+        .split(/[- ,+]+/g)
+        .filter((tok) => !keywords.has(tok.toLowerCase()))
+        .join(" ");
+}
 /**
  * Generate font description.
  * @param param0 font substitution description.
@@ -383,6 +432,9 @@ function generateFont({ alias, local, path, fallback, style, ultimate }, src, lo
  * @return an Object with the CSS, the loaded name, the src and the style.
  */
 export function getFontSubstitution(systemFontCache, idFactory, localFontPath, baseFontName, standardFontName) {
+    if (baseFontName.startsWith("InvalidPDFjsFont_")) {
+        return undefined;
+    }
     // It's possible to have a font name with spaces, commas or dashes, hence we
     // just replace them by a dash.
     baseFontName = normalizeFontName(baseFontName);
@@ -426,7 +478,7 @@ export function getFontSubstitution(systemFontCache, idFactory, localFontPath, b
             (italic && ITALIC) ||
             NORMAL;
         substitutionInfo = {
-            css: loadedName,
+            css: `"${getFamilyName(baseFontName)}",${loadedName}`,
             guessFallback: true,
             loadedName,
             baseFontName,
@@ -446,7 +498,7 @@ export function getFontSubstitution(systemFontCache, idFactory, localFontPath, b
     const guessFallback = ultimate === undefined;
     const fallback = guessFallback ? "" : `,${ultimate}`;
     substitutionInfo = {
-        css: `${loadedName}${fallback}`,
+        css: `"${getFamilyName(baseFontName)}",${loadedName}${fallback}`,
         guessFallback,
         loadedName,
         baseFontName,

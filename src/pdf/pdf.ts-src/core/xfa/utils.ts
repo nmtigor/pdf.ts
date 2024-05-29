@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/xfa/utils.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2021 Mozilla Foundation
  *
@@ -17,7 +21,7 @@
  * limitations under the License.
  */
 
-import type { rect_t } from "../../../../lib/alias.ts";
+import type { rect_t } from "@fe-lib/alias.ts";
 import { shadow } from "../../shared/util.ts";
 import type { XFAElData } from "./alias.ts";
 import { BreakAfter, BreakBefore, Template } from "./template.ts";
@@ -152,12 +156,10 @@ export function getRelevant(data?: string) {
   return data
     .trim()
     .split(/\s+/)
-    .map((e) => {
-      return {
-        excluded: e[0] === "-",
-        viewname: e.substring(1),
-      };
-    });
+    .map((e) => ({
+      excluded: e[0] === "-",
+      viewname: e.substring(1),
+    }));
 }
 
 export interface XFAColor {

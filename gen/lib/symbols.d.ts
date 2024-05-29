@@ -69,7 +69,7 @@ export declare const $redirect_focus: unique symbol;
  */
 export declare const $rec_utx_a: unique symbol;
 /**
- * document[ $selection_vu ] { HTMLVuu }
+ * document[ $selection_vu ] { HTMLVuu }\
  * Used in document.onSelectionchange callback
  */
 export declare const $selection_vu: unique symbol;
@@ -106,7 +106,7 @@ export declare const $uts: unique symbol;
 export declare const $vuu: unique symbol;
 /**
  * this.el$[ $Vuu ] { AbstractConstructor<Vuu> }
- * kkkk check usage
+ * kkkk check use
  */
 export declare const $Vuu: unique symbol;
 //# sourceMappingURL=symbols.d.ts.map

@@ -2,7 +2,7 @@
  * @module lib/dom
  * @license Apache-2.0
  ******************************************************************************/
-import type { CSSStyle, llen_t } from "./alias.js";
+import type { CSSStyle, llen_t, uint } from "./alias.js";
 import type { Vuu } from "./cv.js";
 import { $cssstylesheet, $loff, $ovlap, $tail_ignored } from "./symbols.js";
 declare global {
@@ -25,7 +25,7 @@ declare global {
         targetPocudVu?: Vuu;
     }
     interface WheelEvent {
-        _repr(): {
+        _repr: {
             deltaMode: string;
             deltaX: number;
             deltaY: number;
@@ -52,6 +52,14 @@ declare global {
         removeAllChild: () => this;
         /** @deprecated */
         assert_eq: (rhs: object) => void | never;
+        /**
+         * To record, how many times this `Node` is used.
+         */
+        "cy.use": uint;
+        /**
+         * In Cypress, it seems to be able to access data only through DOM.
+         */
+        "cy.any": any;
     }
 }
 declare global {
@@ -107,22 +115,25 @@ declare global {
     }
     interface Range {
         /**
-         * @out @param rec_a_x
+         * @out @param out_a_x
          * @const @param ovlap_x
          */
-        getSticka(rec_a_x: DOMRect[], ovlap_x?: boolean): void;
+        getSticka(out_a_x: DOMRect[], ovlap_x?: boolean): void;
         reset(): void;
     }
 }
 declare global {
     interface Text {
-        [$loff]?: llen_t;
+        [$loff]: llen_t;
         /**
          * For `TokLine<>` being empty or containing whitespaces only, when it is
          * appended to a `ELine<>`, an additional "|" will be added. For such
          * `Text`, its `[$tail_ignored]` is `true`.
          */
         [$tail_ignored]?: boolean;
+        loff(offs_x: uint): llen_t;
+        readonly strtLoff: llen_t;
+        readonly stopLoff: llen_t;
     }
 }
 /**
@@ -130,7 +141,7 @@ declare global {
  * @const @param loff_x
  * @const @param tail_ignored_x
  */
-export declare function textnode(text_x: string, loff_x?: llen_t, tail_ignored_x?: boolean): Text;
+export declare const textnode: (text_x: string, loff_x?: llen_t, tail_ignored_x?: boolean) => Text;
 type HTMLRet_<NN extends string> = NN extends keyof HTMLElementTagNameMap ? HTMLElementTagNameMap[NN] : HTMLElement;
 export declare function html<NN extends string>(nodeName_x: NN, innerHTML_x?: string, doc_x?: Document): HTMLRet_<NN>;
 export declare function div(innerHTML_x?: string, doc_x?: Document): HTMLDivElement;

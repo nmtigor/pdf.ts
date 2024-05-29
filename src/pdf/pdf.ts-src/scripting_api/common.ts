@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/scripting_api/common.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2020 Mozilla Foundation
  *
@@ -34,7 +38,8 @@ export type ScriptingActionName =
   | "Format"
   | "Open"
   | "OpenAction"
-  | "ResetForm";
+  | "ResetForm"
+  | "sandboxtripbegin";
 export type ScriptingActions = Map<ScriptingActionName, string[]>;
 export function createActionsMap(actions?: AnnotActions) {
   const actionsMap: ScriptingActions = new Map();
@@ -58,7 +63,7 @@ export function getFieldType(actions: ScriptingActions) {
   if (format_.startsWith("AFNumber_")) return FieldType.number;
   if (format_.startsWith("AFPercent_")) return FieldType.percent;
   if (format_.startsWith("AFDate_")) return FieldType.date;
-  if (format_.startsWith("AFTime__")) return FieldType.time;
+  if (format_.startsWith("AFTime_")) return FieldType.time;
   return FieldType.none;
 }
 /*80--------------------------------------------------------------------------*/

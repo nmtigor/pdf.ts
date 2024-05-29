@@ -1,4 +1,10 @@
 import CachedIterable from "./cached_iterable.js";
+/**
+ * CachedAsyncIterable caches the elements yielded by an async iterable.
+ *
+ * It can be used to iterate over an iterable many times without depleting the
+ * iterable.
+ */
 export default class CachedAsyncIterable<T> extends CachedIterable<T, IteratorResult<T> | Promise<IteratorResult<T>>> {
     iterator: AsyncIterator<T, any, undefined> | Iterator<T, any, undefined>;
     /**

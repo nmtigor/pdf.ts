@@ -1,6 +1,14 @@
-import type { AnnotationEditor } from "../pdf.ts-src/display/editor/editor.js";
-import type { AnnotationEditorParamsType, AnnotationEditorType, AnnotationEditorUIManager, AnnotationElement, DispatchUpdateStatesP, FileAttachmentAnnotationElement, OptionalContentConfig, PDFPageProxy, PropertyToUpdate, ScriptingActionName } from "../pdf.ts-src/pdf.js";
-import type { AltTextManager, TelemetryData } from "./alt_text_manager.js";
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/event_utils.ts
+ * @license Apache-2.0
+ ******************************************************************************/
+import type { AnnotationEditor, TFD_AnnotationEditor, TID_AnnotationEditor } from "../pdf.ts-src/display/editor/editor.js";
+import type { AnnotationEditorParamsType, AnnotationEditorType, AnnotationEditorUIManager, AnnotationElement, ColorPicker, DispatchUpdateStatesP, FileAttachmentAnnotationElement, OptionalContentConfig, PDFPageProxy, PropertyToUpdate, ScriptingActionName } from "../pdf.ts-src/pdf.js";
+import type { AnnotationEditorName } from "../pdf.ts-src/shared/util.js";
+import type { AltTextManager } from "./alt_text_manager.js";
 import type { AnnotationEditorParams } from "./annotation_editor_params.js";
 import type { ErrorMoreInfo, PDFViewerApplication } from "./app.js";
 import type { PDFAttachmentViewer } from "./pdf_attachment_viewer.js";
@@ -56,7 +64,7 @@ export interface EventMap {
         error: unknown;
     };
     annotationeditormodechanged: {
-        source: PDFViewer;
+        source?: PDFViewer;
         mode: AnnotationEditorType | undefined;
     };
     annotationeditorparamschanged: {
@@ -66,6 +74,10 @@ export interface EventMap {
     annotationeditorstateschanged: {
         source: AnnotationEditorUIManager;
         details: DispatchUpdateStatesP;
+    };
+    annotationeditoruimanager: {
+        source: PDFViewer;
+        uiManager: AnnotationEditorUIManager;
     };
     annotationlayerrendered: {
         source: PDFPageView;
@@ -242,17 +254,19 @@ export interface EventMap {
         source: PDFSidebar;
     };
     reporttelemetry: {
-        source: AnnotationEditor | AltTextManager | SecondaryToolbar | GeckoviewToolbar;
+        source: AnnotationEditor | AnnotationEditorUIManager | AltTextManager | SecondaryToolbar | GeckoviewToolbar;
         details: {
             type: "editing" | "buttons" | "gv-buttons" | "pageInfo";
             subtype?: string;
             timestamp?: number;
-            data?: TelemetryData | {
-                action: "alt_text_tooltip" | "inserted_image";
+            data?: TID_AnnotationEditor | {
+                type: "freetext" | "ink" | "stamp" | "highlight";
+                action: "alt_text_tooltip" | "inserted_image" | "toggle_visibility";
+            } | {
+                type: "save" | "print";
+                stats: Record<AnnotationEditorName, TFD_AnnotationEditor> | undefined;
             } | {
                 id: string;
-            } | {
-                type: "freetext" | "ink" | "print" | "save" | "stamp";
             };
         };
     };
@@ -286,6 +300,10 @@ export interface EventMap {
         source: Toolbar;
         value: string;
     };
+    showannotationeditorui: {
+        source: AnnotationEditorUIManager;
+        mode: AnnotationEditorType;
+    };
     sidebarviewchanged: {
         source: PDFSidebar;
         view: SidebarView;
@@ -311,9 +329,9 @@ export interface EventMap {
         isFromKeyboard?: boolean;
     };
     switchannotationeditorparams: {
-        source: AnnotationEditorParams;
+        source: AnnotationEditorParams | ColorPicker;
         type: AnnotationEditorParamsType;
-        value: string | number | undefined;
+        value: string | number | boolean | undefined;
     };
     switchcursortool: {
         tool: CursorTool;

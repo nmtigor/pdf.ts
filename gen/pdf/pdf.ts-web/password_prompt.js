@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/password_prompt.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 /* Copyright 2012 Mozilla Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -55,9 +59,7 @@ export class PasswordPrompt {
         this.dialog.on("close", this.#cancel);
     }
     async open() {
-        if (this.#activeCapability) {
-            await this.#activeCapability.promise;
-        }
+        await this.#activeCapability?.promise;
         this.#activeCapability = new PromiseCap();
         try {
             await this.overlayManager.open(this.dialog);

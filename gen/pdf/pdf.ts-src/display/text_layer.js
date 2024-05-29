@@ -1,33 +1,49 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/display/text_layer.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import { html, span } from "../../../lib/dom.js";
 import { PromiseCap } from "../../../lib/util/PromiseCap.js";
-import { AbortException, FeatureTest, Util } from "../shared/util.js";
+import { AbortException, Util } from "../shared/util.js";
 import { setLayerDimensions } from "./display_utils.js";
 const MAX_TEXT_DIVS_TO_RENDER = 100000;
 const DEFAULT_FONT_SIZE = 30;
 const DEFAULT_FONT_ASCENT = 0.8;
 const ascentCache = new Map();
-function getCtx(size, isOffscreenCanvasSupported) {
-    let ctx;
-    if (isOffscreenCanvasSupported && FeatureTest.isOffscreenCanvasSupported) {
-        ctx = new OffscreenCanvas(size, size)
-            .getContext("2d", { alpha: false });
-    }
-    else {
+let _canvasContext;
+function getCtx() {
+    if (!_canvasContext) {
+        // We don't use an OffscreenCanvas here because we use serif/sans serif
+        // fonts with it and they depends on the locale.
+        // In Firefox, the <html> element get a lang attribute that depends on what
+        // Fluent returns for the locale and the OffscreenCanvas uses the OS locale.
+        // Those two locales can be different and consequently the used fonts will
+        // be different (see bug 1869001).
+        // Ideally, we should use in the text layer the fonts we've in the pdf (or
+        // their replacements when they aren't embedded) and then we can use an
+        // OffscreenCanvas.
         const canvas = html("canvas");
-        canvas.width = canvas.height = size;
-        ctx = canvas.getContext("2d", { alpha: false });
+        canvas.className = "hiddenCanvasElement";
+        document.body.append(canvas);
+        _canvasContext = canvas.getContext("2d", { alpha: false });
     }
-    return ctx;
+    return _canvasContext;
 }
-function getAscent(fontFamily, isOffscreenCanvasSupported) {
+export function cleanupTextLayer() {
+    _canvasContext?.canvas.remove();
+    _canvasContext = undefined;
+}
+function getAscent(fontFamily) {
     const cachedAscent = ascentCache.get(fontFamily);
     if (cachedAscent) {
         return cachedAscent;
     }
-    const ctx = getCtx(DEFAULT_FONT_SIZE, isOffscreenCanvasSupported);
+    const ctx = getCtx();
+    const savedFont = ctx.font;
+    ctx.canvas.width = ctx.canvas.height = DEFAULT_FONT_SIZE;
     ctx.font = `${DEFAULT_FONT_SIZE}px ${fontFamily}`;
     const metrics = ctx.measureText("");
     // Both properties aren't available by default in Firefox.
@@ -37,6 +53,7 @@ function getAscent(fontFamily, isOffscreenCanvasSupported) {
         const ratio = ascent / (ascent + descent);
         ascentCache.set(fontFamily, ratio);
         ctx.canvas.width = ctx.canvas.height = 0;
+        ctx.font = savedFont;
         return ratio;
     }
     // Try basic heuristic to guess ascent/descent.
@@ -59,8 +76,7 @@ function getAscent(fontFamily, isOffscreenCanvasSupported) {
     // from top).
     ctx.clearRect(0, 0, DEFAULT_FONT_SIZE, DEFAULT_FONT_SIZE);
     ctx.strokeText("A", 0, DEFAULT_FONT_SIZE);
-    pixels =
-        ctx.getImageData(0, 0, DEFAULT_FONT_SIZE, DEFAULT_FONT_SIZE).data;
+    pixels = ctx.getImageData(0, 0, DEFAULT_FONT_SIZE, DEFAULT_FONT_SIZE).data;
     ascent = 0;
     for (let i = 0, ii = pixels.length; i < ii; i += 4) {
         if (pixels[i] > 0) {
@@ -69,6 +85,7 @@ function getAscent(fontFamily, isOffscreenCanvasSupported) {
         }
     }
     ctx.canvas.width = ctx.canvas.height = 0;
+    ctx.font = savedFont;
     if (ascent) {
         const ratio = ascent / (ascent + descent);
         ascentCache.set(fontFamily, ratio);
@@ -97,8 +114,7 @@ function appendText(task, geom, styles) {
     const fontFamily = (task._fontInspectorEnabled && style.fontSubstitution) ||
         style.fontFamily;
     const fontHeight = Math.hypot(tx[2], tx[3]);
-    const fontAscent = fontHeight *
-        getAscent(fontFamily, task._isOffscreenCanvasSupported);
+    const fontAscent = fontHeight * getAscent(fontFamily);
     let left, top;
     if (angle === 0) {
         left = tx[4];
@@ -217,7 +233,6 @@ export class TextLayerRenderTask {
     _container;
     _textDivs;
     _textContentItemsStr;
-    _isOffscreenCanvasSupported;
     _fontInspectorEnabled;
     _reader;
     _textDivProperties;
@@ -233,18 +248,17 @@ export class TextLayerRenderTask {
     _transform;
     _pageWidth;
     _pageHeight;
-    constructor({ textContentSource, container, viewport, textDivs, textDivProperties, textContentItemsStr, isOffscreenCanvasSupported, }) {
+    constructor({ textContentSource, container, viewport, textDivs, textDivProperties, textContentItemsStr, }) {
         this._textContentSource = textContentSource;
         this._isReadableStream = textContentSource instanceof ReadableStream;
         this._container = this._rootContainer = container;
         this._textDivs = textDivs || [];
         this._textContentItemsStr = textContentItemsStr || [];
-        this._isOffscreenCanvasSupported = isOffscreenCanvasSupported;
         this._fontInspectorEnabled = !!globalThis.FontInspector?.enabled;
         this._textDivProperties = textDivProperties || new WeakMap();
         this._layoutTextParams = {
             scale: viewport.scale * (globalThis.devicePixelRatio || 1),
-            ctx: getCtx(0, isOffscreenCanvasSupported),
+            ctx: getCtx(),
         };
         const { pageWidth, pageHeight, pageX, pageY } = viewport.rawDims;
         this._transform = [1, 0, 0, -1, -pageX, pageY + pageHeight];
@@ -318,19 +332,19 @@ export class TextLayerRenderTask {
      * @private
      */
     _render() {
-        const capability = new PromiseCap();
+        const { promise, resolve, reject } = new PromiseCap();
         let styleCache = Object.create(null);
         if (this._isReadableStream) {
             const pump = () => {
                 this._reader.read().then(({ value, done }) => {
                     if (done) {
-                        capability.resolve();
+                        resolve();
                         return;
                     }
                     Object.assign(styleCache, value.styles);
                     this.#processItems(value.items, styleCache);
                     pump();
-                }, capability.reject);
+                }, reject);
             };
             this._reader = this._textContentSource
                 .getReader();
@@ -339,12 +353,12 @@ export class TextLayerRenderTask {
         else if (this._textContentSource) {
             const { items, styles } = this._textContentSource;
             this.#processItems(items, styles);
-            capability.resolve();
+            resolve();
         }
         else {
             throw new Error('No "textContentSource" parameter specified.');
         }
-        capability.promise.then(() => {
+        promise.then(() => {
             styleCache = null;
             render(this);
         }, this._capability.reject);
@@ -355,12 +369,12 @@ export function renderTextLayer(params) {
     task._render();
     return task;
 }
-export function updateTextLayer({ container, viewport, textDivs, textDivProperties, isOffscreenCanvasSupported, mustRotate = true, mustRescale = true, }) {
+export function updateTextLayer({ container, viewport, textDivs, textDivProperties, mustRotate = true, mustRescale = true, }) {
     if (mustRotate) {
         setLayerDimensions(container, { rotation: viewport.rotation });
     }
     if (mustRescale) {
-        const ctx = getCtx(0, isOffscreenCanvasSupported);
+        const ctx = getCtx();
         const scale = viewport.scale * (globalThis.devicePixelRatio || 1);
         const params = { scale, ctx };
         for (const div of textDivs) {

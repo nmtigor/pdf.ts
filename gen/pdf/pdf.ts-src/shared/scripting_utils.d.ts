@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/shared/scripting_utils.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 /**
  * PLEASE NOTE: This file is currently imported in both the `../display/` and
  *              `../scripting_api/` folders, hence be EXTREMELY careful about

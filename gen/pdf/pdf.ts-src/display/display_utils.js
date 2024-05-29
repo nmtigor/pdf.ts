@@ -1,7 +1,11 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
-import { div as createDiv, html, svg as createSVG } from "../../../lib/dom.js";
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/display/display_utils.ts
+ * @license Apache-2.0
+ ******************************************************************************/
+import { html, svg as createSVG } from "../../../lib/dom.js";
 import { MOZCENTRAL } from "../../../global.js";
 import { BaseException, FeatureTest, shadow, stringToBytes, Util, warn, } from "../shared/util.js";
 import { BaseCanvasFactory, BaseCMapReaderFactory, BaseFilterFactory, BaseStandardFontDataFactory, BaseSVGFactory, } from "./base_factory.js";
@@ -26,12 +30,17 @@ export class DOMFilterFactory extends BaseFilterFactory {
     #_defs;
     #docId;
     #document;
-    #hcmFilter;
-    #hcmKey;
-    #hcmUrl;
-    #hcmHighlightFilter;
-    #hcmHighlightKey;
-    #hcmHighlightUrl;
+    #_hcmCache;
+    get #hcmCache() {
+        return (this.#_hcmCache ||= new Map());
+    }
+    //kkkk TOCLEANUP
+    // #hcmFilter: SVGFilterElement | undefined;
+    // #hcmKey: string | undefined;
+    // #hcmUrl: string | undefined;
+    // #hcmHighlightFilter?: SVGFilterElement;
+    // #hcmHighlightKey?: string;
+    // #hcmHighlightUrl?: string;
     #id = 0;
     constructor({ docId, ownerDocument = globalThis.document } = {}) {
         super();
@@ -43,7 +52,7 @@ export class DOMFilterFactory extends BaseFilterFactory {
     }
     get #defs() {
         if (!this.#_defs) {
-            const div = createDiv(undefined, this.#document);
+            const div = html("div", undefined, this.#document);
             div.assignStylo({
                 visibility: "hidden",
                 contain: "strict",
@@ -121,14 +130,27 @@ export class DOMFilterFactory extends BaseFilterFactory {
     }
     addHCMFilter(fgColor, bgColor) {
         const key = `${fgColor}-${bgColor}`;
-        if (this.#hcmKey === key) {
-            return this.#hcmUrl;
+        const filterName = "base";
+        let info = this.#hcmCache.get(filterName);
+        if (info?.key === key) {
+            return info.url;
         }
-        this.#hcmKey = key;
-        this.#hcmUrl = "none";
-        this.#hcmFilter?.remove();
+        if (info) {
+            info.filter?.remove();
+            info.key = key;
+            info.url = "none";
+            info.filter = null;
+        }
+        else {
+            info = {
+                key,
+                url: "none",
+                filter: null,
+            };
+            this.#hcmCache.set(filterName, info);
+        }
         if (!fgColor || !bgColor) {
-            return this.#hcmUrl;
+            return info.url;
         }
         const fgRGB = this.#getRGB(fgColor);
         fgColor = Util.makeHexColor(...fgRGB);
@@ -137,7 +159,7 @@ export class DOMFilterFactory extends BaseFilterFactory {
         this.#defs.style.color = "";
         if ((fgColor === "#000000" && bgColor === "#ffffff") ||
             fgColor === bgColor) {
-            return this.#hcmUrl;
+            return info.url;
         }
         // https://developer.mozilla.org/en-US/docs/Web/Accessibility/Understanding_Colors_and_Luminance
         //
@@ -155,7 +177,7 @@ export class DOMFilterFactory extends BaseFilterFactory {
         }
         const table = map.join(",");
         const id = `g_${this.#docId}_hcm_filter`;
-        const filter = (this.#hcmHighlightFilter = this.#createFilter(id));
+        const filter = (info.filter = this.#createFilter(id));
         this.#addTransferMapConversion(table, table, table, filter);
         this.#addGrayConversion(filter);
         const getSteps = (c, n) => {
@@ -168,19 +190,31 @@ export class DOMFilterFactory extends BaseFilterFactory {
             return arr.join(",");
         };
         this.#addTransferMapConversion(getSteps(0, 5), getSteps(1, 5), getSteps(2, 5), filter);
-        this.#hcmUrl = `url(#${id})`;
-        return this.#hcmUrl;
+        info.url = `url(#${id})`;
+        return info.url;
     }
-    addHighlightHCMFilter(fgColor, bgColor, newFgColor, newBgColor) {
+    addHighlightHCMFilter(filterName, fgColor, bgColor, newFgColor, newBgColor) {
         const key = `${fgColor}-${bgColor}-${newFgColor}-${newBgColor}`;
-        if (this.#hcmHighlightKey === key) {
-            return this.#hcmHighlightUrl;
+        let info = this.#hcmCache.get(filterName);
+        if (info?.key === key) {
+            return info.url;
         }
-        this.#hcmHighlightKey = key;
-        this.#hcmHighlightUrl = "none";
-        this.#hcmHighlightFilter?.remove();
+        if (info) {
+            info.filter?.remove();
+            info.key = key;
+            info.url = "none";
+            info.filter = null;
+        }
+        else {
+            info = {
+                key,
+                url: "none",
+                filter: null,
+            };
+            this.#hcmCache.set(filterName, info);
+        }
         if (!fgColor || !bgColor) {
-            return this.#hcmHighlightUrl;
+            return info.url;
         }
         const [fgRGB, bgRGB] = [fgColor, bgColor].map(this.#getRGB.bind(this));
         let fgGray = Math.round(0.2126 * fgRGB[0] + 0.7152 * fgRGB[1] + 0.0722 * fgRGB[2]);
@@ -226,15 +260,15 @@ export class DOMFilterFactory extends BaseFilterFactory {
             }
             return arr.join(",");
         };
-        const id = `g_${this.#docId}_hcm_highlight_filter`;
-        const filter = (this.#hcmHighlightFilter = this.#createFilter(id));
+        const id = `g_${this.#docId}_hcm_${filterName}_filter`;
+        const filter = (info.filter = this.#createFilter(id));
         this.#addGrayConversion(filter);
         this.#addTransferMapConversion(getSteps(newFgRGB[0], newBgRGB[0], 5), getSteps(newFgRGB[1], newBgRGB[1], 5), getSteps(newFgRGB[2], newBgRGB[2], 5), filter);
-        this.#hcmHighlightUrl = `url(#${id})`;
-        return this.#hcmHighlightUrl;
+        info.url = `url(#${id})`;
+        return info.url;
     }
     destroy(keepHCM = false) {
-        if (keepHCM && (this.#hcmUrl || this.#hcmHighlightUrl)) {
+        if (keepHCM && this.#hcmCache.size !== 0) {
             return;
         }
         if (this.#_defs) {
@@ -308,21 +342,15 @@ export async function fetchData(url, type = "text") {
             response.body?.cancel();
             throw new Error(response.statusText);
         }
-        // switch (type) {
-        //   case "arraybuffer":
-        //     return response.arrayBuffer();
-        //   case "blob":
-        //     return response.blob();
-        //   case "json":
-        //     return response.json();
-        // }
-        // return response.text();
-        return /* final switch */ {
-            arraybuffer: () => response.arrayBuffer(),
-            blob: () => response.blob(),
-            json: () => response.json(),
-            text: () => response.text(),
-        }[type]();
+        switch (type) {
+            case "arraybuffer":
+                return response.arrayBuffer();
+            case "blob":
+                return response.blob();
+            case "json":
+                return response.json();
+        }
+        return response.text();
     }
     // The Fetch API is not supported.
     return new Promise((resolve, reject) => {
@@ -330,24 +358,19 @@ export async function fetchData(url, type = "text") {
         request.open("GET", url, /* async = */ true);
         request.responseType = type;
         request.onreadystatechange = () => {
-            if (request.readyState !== XMLHttpRequest.DONE)
+            if (request.readyState !== XMLHttpRequest.DONE) {
                 return;
+            }
             if (request.status === 200 || request.status === 0) {
-                let data;
                 switch (type) {
                     case "arraybuffer":
                     case "blob":
                     case "json":
-                        data = request.response;
-                        break;
-                    default:
-                        data = request.responseText;
-                        break;
+                        resolve(request.response);
+                        return;
                 }
-                if (data) {
-                    resolve(data);
-                    return;
-                }
+                resolve(request.responseText);
+                return;
             }
             reject(new Error(request.statusText));
         };
@@ -361,14 +384,12 @@ export class DOMCMapReaderFactory extends BaseCMapReaderFactory {
      */
     _fetchData(url, compressionType) {
         return fetchData(url, 
-        /* type = */ this.isCompressed ? "arraybuffer" : "text").then((data) => {
-            return {
-                cMapData: data instanceof ArrayBuffer
-                    ? new Uint8Array(data)
-                    : stringToBytes(data),
-                compressionType,
-            };
-        });
+        /* type = */ this.isCompressed ? "arraybuffer" : "text").then((data) => ({
+            cMapData: data instanceof ArrayBuffer
+                ? new Uint8Array(data)
+                : stringToBytes(data),
+            compressionType,
+        }));
     }
 }
 export class DOMStandardFontDataFactory extends BaseStandardFontDataFactory {
@@ -377,9 +398,7 @@ export class DOMStandardFontDataFactory extends BaseStandardFontDataFactory {
      * @implement
      */
     _fetchData(url) {
-        return fetchData(url, /* type = */ "arraybuffer").then((data) => {
-            return new Uint8Array(data);
-        });
+        return fetchData(url, /* type = */ "arraybuffer").then((data) => new Uint8Array(data));
     }
 }
 export class DOMSVGFactory extends BaseSVGFactory {

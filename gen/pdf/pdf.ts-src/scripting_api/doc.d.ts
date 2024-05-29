@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/scripting_api/doc.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import type { ScriptingDocProperties } from "../../pdf.ts-web/app.js";
 import type { AnnotActions } from "../core/core_utils.js";
 import type { Name } from "../core/primitives.js";

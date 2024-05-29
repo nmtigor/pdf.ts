@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/jpx.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import type { JpxStream } from "./jpx_stream.js";
 interface PrecinctsSize {
     PPx: number;

@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2023
+ *
+ * @module pdf/pdf.ts-web/l10n.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import type { DOMLocalization } from "../../3rd/fluent/dom/esm/index.js";
 import type { FluentMessageArgs } from "../../3rd/fluent/dom/esm/localization.js";
 import { Locale } from "../../lib/Locale.js";
@@ -8,7 +15,7 @@ declare global {
     }
 }
 export type L10nCtorP = {
-    lang?: Locale;
+    lang?: Locale | undefined;
     isRTL?: boolean;
 };
 /**
@@ -32,4 +39,5 @@ export declare class L10n implements IL10n {
     /** @implement */
     resume(): void;
 }
+export declare const GenericL10n: undefined;
 //# sourceMappingURL=l10n.d.ts.map

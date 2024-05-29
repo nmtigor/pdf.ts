@@ -97,6 +97,34 @@ export const reportError = async (err_x) => {
     // }
     // else console.error( res );
 };
+/*80--------------------------------------------------------------------------*/
+/**
+ * Ref. https://devblogs.microsoft.com/typescript/announcing-typescript-5-0/#decorators
+ * @headconst @param tgt_x
+ * @headconst @param ctx_x
+ */
+export const bind = (tgt_x, ctx_x) => {
+    const methodName = ctx_x.name;
+    assert(!ctx_x.private, `'bound' cannot decorate private properties like ${methodName}.`);
+    ctx_x.addInitializer(function () {
+        this[methodName] = this[methodName].bind(this);
+    });
+};
+/**
+ * Ref. https://devblogs.microsoft.com/typescript/announcing-typescript-5-0/#decorators
+ * @const @param _x
+ */
+export const traceOut = (_x) => {
+    return (tgt_x, ctx_x) => {
+        return _x
+            ? function (...args) {
+                const ret = tgt_x.call(this, ...args);
+                global.outdent;
+                return ret;
+            }
+            : tgt_x;
+    };
+};
 // Ref. sentry-javascript
 // https://github.com/getsentry/sentry-javascript/blob/master/packages/browser/src/stack-parsers.ts
 // /**

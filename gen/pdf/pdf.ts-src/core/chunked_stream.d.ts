@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/chunked_stream.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import type { MessageHandler, Thread } from "../shared/message_handler.js";
 import type { AbortException } from "../shared/util.js";
 import type { Dict } from "./primitives.js";

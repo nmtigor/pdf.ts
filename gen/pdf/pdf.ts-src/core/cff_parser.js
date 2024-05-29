@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/cff_parser.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import { bytesToString, FormatError, info, shadow, stringToBytes, Util, warn, } from "../shared/util.js";
 import { ExpertCharset, ExpertSubsetCharset, ISOAdobeCharset, } from "./charsets.js";
 import { ExpertEncoding, StandardEncoding } from "./encodings.js";

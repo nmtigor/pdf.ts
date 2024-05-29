@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2023
+ *
+ * @module pdf/pdf.ts-src/core/font_substitutions.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import type { GlobalIdFactory } from "./document.js";
 type Style_ = {
     style: "normal" | "italic";

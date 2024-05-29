@@ -2,6 +2,7 @@
  * @module lib/util/general
  * @license Apache-2.0
  ******************************************************************************/
+import { scrollO } from "../alias.js";
 /*80--------------------------------------------------------------------------*/
 /**
  * Ref. [Get Byte size of the string in Javascript](https://dev.to/rajnishkatharotiya/get-byte-size-of-the-string-in-javascript-20jm)
@@ -14,6 +15,7 @@ export const linesOf = (text_x) => text_x.split(/[\n\r\u001C-\u001E\u0085\u2029]
 // console.log(linesOf("abc\n\n123\n"));
 /** */
 export const isWhitespace = (_x) => /^\s+$/.test(_x);
+/*80--------------------------------------------------------------------------*/
 /**
  * Event handler to suppress context menu.
  *
@@ -22,5 +24,27 @@ export const isWhitespace = (_x) => /^\s+$/.test(_x);
 export const noContextMenu = (evt_x) => {
     evt_x.preventDefault();
 };
+export const onWheel = (el_x) => {
+    return (evt_x) => {
+        scrollO.top = evt_x.deltaY >= 0 ? 50 : -50;
+        scrollO.left = 0;
+        el_x.scrollBy(scrollO);
+    };
+};
+/*80--------------------------------------------------------------------------*/
+const space_a_ = [];
+export const space = (n_) => {
+    if (space_a_[n_] === undefined) {
+        space_a_[n_] = new Array(n_).fill(" ").join("");
+    }
+    return space_a_[n_];
+};
+/*80--------------------------------------------------------------------------*/
+/**
+ * @param ms time in milliseconds
+ *
+ * Ref. [What is the JavaScript version of sleep()?](https://stackoverflow.com/a/39914235)
+ */
+export const wait = (ms = 0) => new Promise((r) => setTimeout(r, ms));
 /*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=general.js.map

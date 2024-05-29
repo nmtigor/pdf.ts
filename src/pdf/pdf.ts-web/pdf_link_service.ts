@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/pdf_link_service.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2015 Mozilla Foundation
  *
@@ -19,6 +23,7 @@
 
 import { isObjectLike } from "@fe-lib/jslang.ts";
 import { assert } from "@fe-lib/util/trace.ts";
+import { MOZCENTRAL, PDFJSDev } from "@fe-src/global.ts";
 import type {
   Destination,
   ExplicitDest,
@@ -375,7 +380,7 @@ export class PDFLinkService implements IPDFLinkService {
     if (!this.pdfDocument) {
       return;
     }
-    let pageNumber, dest: ExplicitDest;
+    let pageNumber, dest: ExplicitDest | string;
     if (hash.includes("=")) {
       const params = parseQueryString(hash);
       if (params.has("search")) {
@@ -444,7 +449,7 @@ export class PDFLinkService implements IPDFLinkService {
       if (dest!) {
         this.pdfViewer!.scrollPageIntoView({
           pageNumber: pageNumber || this.page,
-          destArray: dest,
+          destArray: dest as ExplicitDest,
           allowNegativeOffset: true,
         });
       } else if (pageNumber) {
@@ -461,32 +466,41 @@ export class PDFLinkService implements IPDFLinkService {
       if (params.has("nameddest")) {
         this.goToDestination(params.get("nameddest")!);
       }
-    } else {
-      // Named (or explicit) destination.
-      let dest = unescape(hash);
-      try {
-        dest = JSON.parse(dest);
 
-        if (!Array.isArray(dest)) {
-          // Avoid incorrectly rejecting a valid named destination, such as
-          // e.g. "4.3" or "true", because `JSON.parse` converted its type.
-          dest = dest.toString();
-        }
-      } catch {}
-
-      if (
-        typeof dest === "string" ||
-        PDFLinkService.#isValidExplicitDestination(dest)
-      ) {
-        this.goToDestination(dest);
+      /*#static*/ if (PDFJSDev || !MOZCENTRAL) {
         return;
       }
-      console.error(
-        `PDFLinkService.setHash: "${
-          unescape(hash)
-        }" is not a valid destination.`,
-      );
+      // Support opening of PDF attachments in the Firefox PDF Viewer,
+      // which uses a couple of non-standard hash parameters; refer to
+      // `DownloadManager.openOrDownloadData` in the firefoxcom.js file.
+      if (!params.has("filename") || !params.has("filedest")) {
+        return;
+      }
+      hash = params.get("filedest")!;
     }
+
+    // Named (or explicit) destination.
+    dest = unescape(hash);
+    try {
+      dest = JSON.parse(dest);
+
+      if (!Array.isArray(dest)) {
+        // Avoid incorrectly rejecting a valid named destination, such as
+        // e.g. "4.3" or "true", because `JSON.parse` converted its type.
+        dest = dest.toString();
+      }
+    } catch {}
+
+    if (
+      typeof dest === "string" ||
+      PDFLinkService.#isValidExplicitDestination(dest)
+    ) {
+      this.goToDestination(dest);
+      return;
+    }
+    console.error(
+      `PDFLinkService.setHash: "${unescape(hash)}" is not a valid destination.`,
+    );
   }
 
   /** @implement */
@@ -535,31 +549,7 @@ export class PDFLinkService implements IPDFLinkService {
     if (pdfDocument !== this.pdfDocument) {
       return; // The document was closed while the optional content resolved.
     }
-    let operator;
-
-    for (const elem of action.state) {
-      switch (elem) {
-        case "ON":
-        case "OFF":
-        case "Toggle":
-          operator = elem;
-          continue;
-      }
-      switch (operator) {
-        case "ON":
-          optionalContentConfig!.setVisibility(elem, true);
-          break;
-        case "OFF":
-          optionalContentConfig!.setVisibility(elem, false);
-          break;
-        case "Toggle":
-          const group = optionalContentConfig!.getGroup(elem);
-          if (group) {
-            optionalContentConfig!.setVisibility(elem, !group.visible);
-          }
-          break;
-      }
-    }
+    optionalContentConfig!.setOCGState(action);
 
     this.pdfViewer!.optionalContentConfigPromise = Promise.resolve(
       optionalContentConfig,

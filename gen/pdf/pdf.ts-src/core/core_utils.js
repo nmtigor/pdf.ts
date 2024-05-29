@@ -1,20 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
-/* Copyright 2019 Mozilla Foundation
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+ * @module pdf/pdf.ts-src/core/core_utils.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import { assert } from "../../../lib/util/trace.js";
 import { PDFJSDev, TESTING } from "../../../global.js";
 import { AnnotationEditorPrefix, BaseException, objectSize, stringToPDFString, warn, } from "../shared/util.js";
@@ -338,6 +328,16 @@ const XMLEntities = {
     /* " */ 0x22: "&quot;",
     /* ' */ 0x27: "&apos;",
 };
+export function* codePointIter(str) {
+    for (let i = 0, ii = str.length; i < ii; i++) {
+        const char = str.codePointAt(i);
+        if (char > 0xd7ff && (char < 0xe000 || char > 0xfffd)) {
+            // char is represented by two u16
+            i++;
+        }
+        yield char;
+    }
+}
 export function encodeToXmlString(str) {
     const buffer = [];
     let start = 0;
@@ -521,6 +521,16 @@ export function getRotationMatrix(rotation, width, height) {
         default:
             throw new Error("Invalid rotation");
     }
+}
+/**
+ * Get the number of bytes to use to represent the given positive integer.
+ * If n is zero, the function returns 0 which means that we don't need to waste
+ * a byte to represent it.
+ */
+export function getSizeInBytes(x) {
+    // n bits are required for numbers up to 2^n - 1.
+    // So for a number x, we need ceil(log2(1 + x)) bits.
+    return Math.ceil(Math.ceil(Math.log2(1 + x)) / 8);
 }
 /*80--------------------------------------------------------------------------*/
 //# sourceMappingURL=core_utils.js.map

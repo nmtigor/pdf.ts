@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/pattern.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import type { C2D, dot2d_t, rect_t, TupleOf } from "../../../lib/alias.js";
 import { TilingPaintType, TilingType } from "../display/pattern_helper.js";
 import type { matrix_t } from "../shared/util.js";

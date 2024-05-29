@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/display/editor/freetext.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import type { dot2d_t } from "../../../../lib/alias.js";
 import type { IL10n } from "../../../pdf.ts-web/interfaces.js";
 import { AnnotationEditorParamsType, AnnotationEditorType } from "../../shared/util.js";
@@ -23,16 +30,16 @@ export declare class FreeTextEditor extends AnnotationEditor {
     #private;
     static readonly _type = "freetext";
     static readonly _editorType = AnnotationEditorType.FREETEXT;
+    overlayDiv: HTMLDivElement;
+    editorDiv: HTMLDivElement;
     static _freeTextDefaultContent: string;
     static _internalPadding: number;
     static _defaultColor: string | undefined;
     static _defaultFontSize: number;
     static get _keyboardManager(): KeyboardManager<FreeTextEditor>;
-    overlayDiv: HTMLDivElement;
-    editorDiv: HTMLDivElement;
     constructor(params: FreeTextEditorP);
-    static initialize(l10n: IL10n): void;
-    static updateDefaultParams(type: AnnotationEditorParamsType, value: number | string | undefined): void;
+    static initialize(l10n: IL10n, uiManager: AnnotationEditorUIManager): void;
+    static updateDefaultParams(type: AnnotationEditorParamsType, value: number | string | boolean | undefined): void;
     updateParams(type: AnnotationEditorParamsType, value: number | string): void;
     static get defaultPropertiesToUpdate(): PropertyToUpdate[];
     get propertiesToUpdate(): PropertyToUpdate[];
@@ -71,6 +78,7 @@ export declare class FreeTextEditor extends AnnotationEditor {
     disableEditing(): void;
     enableEditing(): void;
     render(): HTMLDivElement;
+    editorDivPaste(event: ClipboardEvent): void;
     get contentDiv(): HTMLDivElement;
     static deserialize(data: FreeTextEditorSerialized, parent: AnnotationEditorLayer, uiManager: AnnotationEditorUIManager): FreeTextEditor | undefined;
     /** @implement */

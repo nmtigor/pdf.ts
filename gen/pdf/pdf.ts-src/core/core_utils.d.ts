@@ -1,5 +1,13 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/core_utils.ts
+ * @license Apache-2.0
+ ******************************************************************************/
+import type { uint } from "../../../lib/alias.js";
 import type { AnnotStorageRecord, AnnotStorageValue } from "../display/annotation_layer.js";
-import type { ActionEventName, ActionEventTypeType } from "../shared/util.js";
+import type { ActionEventName, ActionEventTypeType, matrix_t } from "../shared/util.js";
 import { BaseException } from "../shared/util.js";
 import { BaseStream } from "./base_stream.js";
 import type { CssFontInfo } from "./document.js";
@@ -95,6 +103,7 @@ export declare function escapePDFName(str: string): string;
 export declare function escapeString(str: string): string;
 export type AnnotActions = Record<ActionEventName, string[]>;
 export declare function collectActions(xref: XRef, dict: Dict, eventType: ActionEventTypeType): AnnotActions | undefined;
+export declare function codePointIter(str: string): Generator<number, void, unknown>;
 export declare function encodeToXmlString(str: string): string;
 export declare function validateFontName(fontFamily: string, mustWarn?: boolean): boolean;
 export declare function validateCSSFont(cssFontInfo: CssFontInfo): boolean;
@@ -107,6 +116,12 @@ export declare function getNewAnnotationsMap(annotationStorage: AnnotStorageReco
 export declare function isAscii(str: string): boolean;
 export declare function stringToUTF16HexString(str: string): string;
 export declare function stringToUTF16String(str: string, bigEndian?: boolean): string;
-export declare function getRotationMatrix(rotation: number, width: number, height: number): number[];
+export declare function getRotationMatrix(rotation: number, width: number, height: number): matrix_t;
+/**
+ * Get the number of bytes to use to represent the given positive integer.
+ * If n is zero, the function returns 0 which means that we don't need to waste
+ * a byte to represent it.
+ */
+export declare function getSizeInBytes(x: uint): uint;
 export {};
 //# sourceMappingURL=core_utils.d.ts.map

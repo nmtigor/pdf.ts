@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/pdf_layer_viewer.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import type { OptionalContentConfig, PDFDocumentProxy } from "../pdf.ts-src/pdf.js";
 import type { BaseTreeViewerCtorP } from "./base_tree_viewer.js";
 import { BaseTreeViewer } from "./base_tree_viewer.js";

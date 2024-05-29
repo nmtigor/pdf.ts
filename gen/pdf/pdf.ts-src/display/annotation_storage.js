@@ -1,20 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
-/* Copyright 2020 Mozilla Foundation
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+ * @module pdf/pdf.ts-src/display/annotation_storage.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import { fail } from "../../../lib/util/trace.js";
 import { MurmurHash3_64 } from "../shared/murmurhash3.js";
 import { objectFromMap } from "../shared/util.js";
@@ -163,6 +153,41 @@ export class AnnotationStorage {
         return map.size > 0
             ? { map, hash: hash.hexdigest(), transfer }
             : SerializableEmpty;
+    }
+    get editorStats() {
+        let stats;
+        const typeToEditor = new Map();
+        for (const value of this.#storage.values()) {
+            if (!(value instanceof AnnotationEditor)) {
+                continue;
+            }
+            const editorStats = value.telemetryFinalData;
+            if (!editorStats) {
+                continue;
+            }
+            const { type } = editorStats;
+            if (!typeToEditor.has(type)) {
+                typeToEditor.set(type, Object.getPrototypeOf(value).constructor);
+            }
+            stats ||= Object.create(null);
+            const map = (stats[type] ||= new Map());
+            for (const [key, val] of Object.entries(editorStats)) {
+                if (key === "type") {
+                    continue;
+                }
+                let counters = map.get(key);
+                if (!counters) {
+                    counters = new Map();
+                    map.set(key, counters);
+                }
+                const count = counters.get(val) ?? 0;
+                counters.set(val, count + 1);
+            }
+        }
+        for (const [type, editor] of typeToEditor) {
+            stats[type] = editor.computeTelemetryFinalData(stats[type]);
+        }
+        return stats;
     }
 }
 /**

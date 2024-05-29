@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/pdf_outline_viewer.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 /* Copyright 2012 Mozilla Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -47,11 +51,8 @@ export class PDFOutlineViewer extends BaseTreeViewer {
             this._isPagesLoaded = !!evt.pagesCount;
             // If the capability is still pending, see the `_dispatchEvent`-method,
             // we know that the `currentOutlineItem`-button can be enabled here.
-            if (this.#currentOutlineItemCapability &&
-                !this.#currentOutlineItemCapability.settled) {
-                this.#currentOutlineItemCapability.resolve(
-                /* enabled = */ this._isPagesLoaded);
-            }
+            this.#currentOutlineItemCapability?.resolve(
+            /* enabled = */ this._isPagesLoaded);
         });
         this.eventBus._on("sidebarviewchanged", (evt) => {
             this._sidebarView = evt.view;
@@ -63,10 +64,7 @@ export class PDFOutlineViewer extends BaseTreeViewer {
         this.#pageNumberToDestHashCapability = undefined;
         this._currentPageNumber = 1;
         this._isPagesLoaded = undefined;
-        if (this.#currentOutlineItemCapability &&
-            !this.#currentOutlineItemCapability.settled) {
-            this.#currentOutlineItemCapability.resolve(/* enabled = */ false);
-        }
+        this.#currentOutlineItemCapability?.resolve(/* enabled = */ false);
         this.#currentOutlineItemCapability = undefined;
     }
     /** @implement */

@@ -3,9 +3,10 @@ function e(t, n = 0, o, i = o.polyfill("FormData", 1, 1), r = []) {
     return Object.entries(t).forEach(([t, s]) => {
         let l = r.reduce((e, t) => e ? `${e}[${t}]` : t, null);
         if (l = l ? `${l}[${t}]` : t,
-            s instanceof Array || globalThis.FileList && s instanceof FileList)
+            s instanceof Array || globalThis.FileList && s instanceof FileList) {
             for (const e of s)
                 i.append(l, e);
+        }
         else {
             !n || "object" != typeof s || n instanceof Array && n.includes(t)
                 ? i.append(l, s)

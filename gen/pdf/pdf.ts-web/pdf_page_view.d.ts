@@ -1,9 +1,17 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/pdf_page_view.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import type { dot2d_t } from "../../lib/alias.js";
-import type { MetadataEx, RenderTask } from "../pdf.ts-src/display/api.js";
-import type { AnnotActions, AnnotationEditorUIManager, AnnotationStorage, FieldObject, OptionalContentConfig, PageViewport, PDFPageProxy, StatTimer } from "../pdf.ts-src/pdf.js";
+import type { RenderTask } from "../pdf.ts-src/display/api.js";
+import type { AnnotationEditorUIManager, AnnotationStorage, OptionalContentConfig, PageViewport, PDFPageProxy, StatTimer } from "../pdf.ts-src/pdf.js";
 import { AnnotationMode } from "../pdf.ts-src/pdf.js";
 import { AnnotationEditorLayerBuilder } from "./annotation_editor_layer_builder.js";
 import { AnnotationLayerBuilder } from "./annotation_layer_builder.js";
+import { DrawLayerBuilder } from "./draw_layer_builder.js";
 import type { EventBus, EventMap } from "./event_utils.js";
 import type { IDownloadManager, IL10n, IPDFLinkService, IVisibleView } from "./interfaces.js";
 import type { PDFFindController } from "./pdf_find_controller.js";
@@ -15,6 +23,7 @@ import { TextHighlighter } from "./text_highlighter.js";
 import { TextLayerBuilder } from "./text_layer_builder.js";
 import { OutputScale, RenderingStates, TextLayerMode } from "./ui_utils.js";
 import { XfaLayerBuilder } from "./xfa_layer_builder.js";
+import type { FieldObjectsPromise } from "../alias.js";
 interface PDFPageViewOptions {
     /**
      * The viewer element.
@@ -65,13 +74,9 @@ interface PDFPageViewOptions {
      */
     imageResourcesPath?: string;
     /**
-     * Allows to use an OffscreenCanvas if needed.
-     */
-    isOffscreenCanvasSupported?: boolean;
-    /**
      * The maximum supported canvas size in
      * total pixels, i.e. width * height. Use `-1` for no limit, or `0` for
-     * CSS-only zooming. The default value is 4096 * 4096 (16 mega-pixels).
+     * CSS-only zooming. The default value is 4096 * 8192 (32 mega-pixels).
      */
     maxCanvasPixels?: number | undefined;
     /**
@@ -87,14 +92,14 @@ interface PDFPageViewOptions {
     /**
      * The object that is used to lookup the necessary layer-properties.
      */
-    layerProperties?: LayerPropsR_;
+    layerProperties?: LayerProps;
 }
-type LayerPropsR_ = {
+export type LayerProps = {
     annotationEditorUIManager?: AnnotationEditorUIManager | undefined;
     annotationStorage?: AnnotationStorage | undefined;
     downloadManager?: IDownloadManager | undefined;
     enableScripting: boolean;
-    fieldObjectsPromise?: Promise<boolean | Record<string, FieldObject[]> | AnnotActions | MetadataEx | undefined> | undefined;
+    fieldObjectsPromise?: FieldObjectsPromise | undefined;
     findController?: PDFFindController | undefined;
     hasJSActionsPromise?: Promise<boolean> | undefined;
     linkService: IPDFLinkService;
@@ -147,8 +152,8 @@ export declare class PDFPageView implements IVisibleView {
     pdfPageRotate: number;
     _annotationStorage?: AnnotationStorage;
     _optionalContentConfigPromise: Promise<OptionalContentConfig | undefined> | undefined;
+    get renderingState(): RenderingStates;
     imageResourcesPath: string;
-    isOffscreenCanvasSupported: boolean;
     maxCanvasPixels: number;
     pageColors: PageColors | undefined;
     eventBus: EventBus;
@@ -164,6 +169,7 @@ export declare class PDFPageView implements IVisibleView {
     zoomLayer: HTMLElement | undefined;
     xfaLayer: XfaLayerBuilder | undefined;
     structTreeLayer?: StructTreeLayerBuilder | undefined;
+    drawLayer: DrawLayerBuilder | undefined;
     div: HTMLDivElement; /** @implement */
     stats?: StatTimer;
     canvas?: HTMLCanvasElement;
@@ -174,7 +180,6 @@ export declare class PDFPageView implements IVisibleView {
     annotationEditorLayer: AnnotationEditorLayerBuilder | undefined;
     _accessibilityManager: TextAccessibilityManager | undefined;
     constructor(options: PDFPageViewOptions);
-    get renderingState(): RenderingStates;
     set renderingState(state: RenderingStates);
     setPdfPage(pdfPage: PDFPageProxy): void;
     destroy(): void;

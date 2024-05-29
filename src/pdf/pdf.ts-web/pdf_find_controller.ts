@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/pdf_find_controller.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2012 Mozilla Foundation
  *
@@ -965,13 +969,14 @@ export class PDFFindController {
       return;
     }
 
-    let promise = Promise.resolve();
+    let deferred = Promise.resolve();
     const textOptions = { disableNormalization: true };
     for (let i = 0, ii = this.#linkService.pagesCount; i < ii; i++) {
-      const extractTextCapability = new PromiseCap<void>();
-      this.#extractTextPromises[i] = extractTextCapability.promise;
+      const { promise, resolve } = new PromiseCap();
+      this.#extractTextPromises[i] = promise;
 
-      promise = promise.then(() => {
+      // eslint-disable-next-line arrow-body-style
+      deferred = deferred.then(() => {
         return this._pdfDocument!
           .getPage(i + 1)
           .then((pdfPage) => pdfPage.getTextContent(textOptions))
@@ -992,7 +997,7 @@ export class PDFFindController {
                 this.#pageDiffs[i],
                 this.#hasDiacritics[i],
               ] = normalize(strBuf.join(""));
-              extractTextCapability.resolve();
+              resolve();
             },
             (reason) => {
               console.error(
@@ -1003,7 +1008,7 @@ export class PDFFindController {
               this.#pageContents[i] = "";
               this.#pageDiffs[i] = undefined;
               this.#hasDiacritics[i] = false;
-              extractTextCapability.resolve();
+              resolve();
             },
           );
       });

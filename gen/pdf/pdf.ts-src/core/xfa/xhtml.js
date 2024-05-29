@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/xfa/xhtml.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import { fixTextIndent, fixURL, measureToString, setFontFamily, } from "./html_utils.js";
 import { $buildXFAObject, NamespaceIds } from "./namespaces.js";
 import { $acceptWhitespace, $childrenToHTML, $clean, $content, $extra, $getChildren, $getParent, $globalData, $nodeName, $onText, $pushGlyphs, $text, $toHTML, } from "./symbol_utils.js";

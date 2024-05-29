@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/scripting_api/aform.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import type { App } from "./app.js";
 import type { Color } from "./color.js";
 import type { Doc } from "./doc.js";

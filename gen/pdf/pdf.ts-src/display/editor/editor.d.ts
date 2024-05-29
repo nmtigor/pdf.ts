@@ -1,9 +1,17 @@
-import type { dim2d_t, dot2d_t, rect_t } from "../../../../lib/alias.js";
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/display/editor/editor.ts
+ * @license Apache-2.0
+ ******************************************************************************/
+import type { dim2d_t, dot2d_t, rect_t, uint } from "../../../../lib/alias.js";
 import type { IL10n } from "../../../pdf.ts-web/interfaces.js";
-import type { AnnotationEditorType } from "../../shared/util.js";
+import type { AnnotationEditorName, AnnotationEditorType } from "../../shared/util.js";
 import { AnnotationEditorParamsType } from "../../shared/util.js";
 import type { AnnotStorageValue } from "../annotation_layer.js";
 import type { AnnotationEditorLayer } from "./annotation_editor_layer.js";
+import { EditorToolbar } from "./toolbar.js";
 import type { AddCommandsP } from "./tools.js";
 import { AnnotationEditorUIManager, ColorManager, KeyboardManager } from "./tools.js";
 export interface AnnotationEditorP {
@@ -31,7 +39,10 @@ export interface AnnotationEditorP {
     annotationElementId?: string;
     isCentered: boolean;
 }
-export type PropertyToUpdate = [AnnotationEditorParamsType, string | number];
+export type PropertyToUpdate = [
+    AnnotationEditorParamsType,
+    string | number | boolean
+];
 type InitialOptions_ = {
     isCentered?: boolean;
 };
@@ -39,17 +50,25 @@ export type AltTextData = {
     altText: string;
     decorative: boolean;
 };
+export interface TID_AnnotationEditor {
+    type?: string;
+    action: string;
+    alt_text_description?: boolean;
+    alt_text_edit?: boolean;
+    alt_text_decorative?: boolean;
+    alt_text_keyboard?: boolean;
+}
+export interface TFD_AnnotationEditor {
+    type: AnnotationEditorName;
+}
 /**
  * Base class for editors.
  */
 export declare abstract class AnnotationEditor {
     #private;
-    static readonly _type: "freetext" | "ink" | "stamp";
+    static readonly _type: AnnotationEditorName;
     static readonly _editorType: AnnotationEditorType;
-    static _l10nPromise: Map<string, Promise<string>> | undefined;
-    static _borderLineWidth: number;
-    static _colorManager: ColorManager;
-    static _zIndex: number;
+    static _l10nPromise: Map<string, Promise<string>>;
     parent: AnnotationEditorLayer | undefined;
     id: string;
     width?: number;
@@ -62,6 +81,7 @@ export declare abstract class AnnotationEditor {
     annotationElementId: string | undefined;
     _willKeepAspectRatio: boolean;
     _initialOptions: InitialOptions_;
+    _isVisible: boolean;
     _structTreeParentId: string | undefined;
     isAttachedToDOM: boolean;
     deleted: boolean;
@@ -71,18 +91,29 @@ export declare abstract class AnnotationEditor {
     pageTranslation: number[];
     x: number;
     y: number;
+    get altTextData(): AltTextData | undefined;
+    /**
+     * Set the alt text data.
+     */
+    set altTextData(data: AltTextData | undefined);
+    hasAltText(): boolean;
+    get _isDraggable(): boolean;
+    set _isDraggable(value: boolean);
     startX: number;
     startY: number;
-    static SMALL_EDITOR_SIZE: number;
-    static get _resizerKeyboardManager(): KeyboardManager<AnnotationEditor | AnnotationEditorUIManager>;
+    static _borderLineWidth: number;
+    static _colorManager: ColorManager;
+    static _zIndex: number;
+    static _telemetryTimeout: number;
+    static get _resizerKeyboardManager(): KeyboardManager<AnnotationEditor | AnnotationEditorUIManager | import("./color_picker.js").ColorPicker>;
     constructor(parameters: AnnotationEditorP);
-    get editorType(): any;
+    get editorType(): AnnotationEditorName;
     static get _defaultLineColor(): string;
     static deleteAnnotationElement(editor: AnnotationEditor): void;
     /**
      * Initialize the l10n stuff for this type of editor.
      */
-    static initialize(l10n: IL10n, options?: {
+    static initialize(l10n: IL10n, _uiManager: AnnotationEditorUIManager, options?: {
         strings: [string] | [string, string];
     }): void;
     /**
@@ -90,7 +121,7 @@ export declare abstract class AnnotationEditor {
      * @param _type
      * @param _value
      */
-    static updateDefaultParams(_type: AnnotationEditorParamsType, _value: number | string | undefined): void;
+    static updateDefaultParams(_type: AnnotationEditorParamsType, _value: number | string | boolean | undefined): void;
     /**
      * Get the default properties to set in the UI for this type of editor.
      */
@@ -109,8 +140,6 @@ export declare abstract class AnnotationEditor {
      * Get the properties to update in the UI for this editor.
      */
     get propertiesToUpdate(): PropertyToUpdate[];
-    get _isDraggable(): boolean;
-    set _isDraggable(value: boolean);
     /**
      * @return true if the editor handles the Enter key itself.
      */
@@ -164,7 +193,24 @@ export declare abstract class AnnotationEditor {
      */
     translateInPage(x: number, y: number): void;
     drag(tx: number, ty: number): void;
-    fixAndSetPosition(): void;
+    get _hasBeenMoved(): boolean;
+    /**
+     * Get the translation to take into account the editor border.
+     * The CSS engine positions the element by taking the border into account so
+     * we must apply the opposite translation to have the editor in the right
+     * position.
+     */
+    getBaseTranslation(): dot2d_t;
+    /**
+     * @return true if position must be fixed (i.e. make the x and y
+     * living in the page).
+     */
+    get _mustFixPosition(): boolean;
+    /**
+     * Fix the position of the editor in order to keep it inside its parent page.
+     * @param rotation the rotation of the page.
+     */
+    fixAndSetPosition(rotation?: number): void;
     /**
      * Convert a screen translation into a page one.
      */
@@ -185,16 +231,14 @@ export declare abstract class AnnotationEditor {
      * Get the translation used to position this editor when it's created.
      */
     getInitialTranslation(): dot2d_t;
-    addAltTextButton(): Promise<void>;
     altTextFinish(): void;
-    addEditToolbar(): void;
+    /**
+     * Add a toolbar for this editor.
+     */
+    addEditToolbar(): Promise<EditorToolbar | undefined>;
     removeEditToolbar(): void;
     getClientDimensions(): DOMRect;
-    get altTextData(): AltTextData;
-    /**
-     * Set the alt text data.
-     */
-    set altTextData({ altText, decorative }: AltTextData);
+    addAltTextButton(): Promise<void>;
     /**
      * Render this editor in a div.
      */
@@ -207,8 +251,11 @@ export declare abstract class AnnotationEditor {
     _setParentAndPosition(parent: AnnotationEditorLayer, x: number, y: number): void;
     /**
      * Convert the current rect into a page one.
+     * @param tx x-translation in screen coordinates.
+     * @param ty y-translation in screen coordinates.
+     * @param rotation the rotation of the page.
      */
-    getRect(tx: number, ty: number): rect_t;
+    getRect(tx: number, ty: number, rotation?: number): rect_t;
     getRectInCurrentCoords(rect: rect_t, pageHeight: number): number[];
     /**
      * Executed once this editor has been rendered.
@@ -246,6 +293,10 @@ export declare abstract class AnnotationEditor {
      */
     rebuild(): void;
     /**
+     * Rotate the editor.
+     */
+    rotate(_angle: number): void;
+    /**
      * Serialize the editor.
      * The result of the serialization will be used to construct a
      * new annotation to add to the pdf document.
@@ -271,6 +322,7 @@ export declare abstract class AnnotationEditor {
      * Add the resizers to this editor.
      */
     makeResizable(): void;
+    get toolbarPosition(): dot2d_t | undefined;
     /**
      * onkeydown callback.
      */
@@ -288,7 +340,7 @@ export declare abstract class AnnotationEditor {
     /**
      * Update some parameters which have been changed through the UI.
      */
-    updateParams(type: AnnotationEditorParamsType, value: number | string | undefined): void;
+    updateParams(type: AnnotationEditorParamsType, value: number | string | boolean | undefined): void;
     /**
      * When the user disables the editing mode some editors can change some of
      * their properties.
@@ -324,6 +376,23 @@ export declare abstract class AnnotationEditor {
      */
     setAspectRatio(width: number, height: number): void;
     static get MIN_SIZE(): number;
+    static canCreateNewEmptyEditor(): boolean;
+    /**
+     * Get the data to report to the telemetry when the editor is added.
+     */
+    get telemetryInitialData(): TID_AnnotationEditor;
+    /**
+     * The telemetry data to use when saving/printing.
+     */
+    get telemetryFinalData(): TFD_AnnotationEditor | undefined;
+    static computeTelemetryFinalData(data: Map<string, Map<unknown, uint>>): TFD_AnnotationEditor | undefined;
+    _reportTelemetry(data: TID_AnnotationEditor, mustWait?: boolean): void;
+    /**
+     * Show or hide this editor.
+     */
+    show(visible?: boolean): void;
+    enable(): void;
+    disable(): void;
 }
 export {};
 //# sourceMappingURL=editor.d.ts.map

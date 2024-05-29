@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/display/xfa_layer.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 /* Copyright 2021 Mozilla Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -177,7 +181,7 @@ export class XfaLayer {
         // a root element, so we handle this case here (see issue 17215).
         if (root.children.length === 0) {
             if (root.value) {
-                const node = document.createTextNode(root.value);
+                const node = textnode(root.value);
                 rootHtml.append(node);
                 if (isNotForRichText && XfaText.shouldBuildText(root.name)) {
                     textDivs.push(node);

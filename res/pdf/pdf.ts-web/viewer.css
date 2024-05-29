@@ -81,6 +81,7 @@
   --treeitem-expanded-icon: url(images/treeitem-expanded.svg);
   --treeitem-collapsed-icon: url(images/treeitem-collapsed.svg);
   --toolbarButton-editorFreeText-icon: url(images/toolbarButton-editorFreeText.svg);
+  --toolbarButton-editorHighlight-icon: url(images/toolbarButton-editorHighlight.svg);
   --toolbarButton-editorInk-icon: url(images/toolbarButton-editorInk.svg);
   --toolbarButton-editorStamp-icon: url(images/toolbarButton-editorStamp.svg);
   --toolbarButton-menuArrow-icon: url(images/toolbarButton-menuArrow.svg);
@@ -500,6 +501,7 @@ body {
     font-style: normal;
   }
   .loadingInput:has(> &[data-status="pending"])::after {
+    display: block;
     visibility: visible;
   }
   &[data-status="notFound"] {
@@ -531,6 +533,11 @@ body {
 .editorParamsToolbarContainer .editorParamsLabel {
   padding-inline-end: 10px;
   flex: none;
+  font: menu;
+  font-size: 13px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 150%;
   color: var(--main-color);
 }
 
@@ -582,6 +589,10 @@ body {
 
 #editorFreeTextParamsToolbar {
   inset-inline-end: calc(var(--editor-toolbar-base-offset) + 56px);
+}
+
+#editorHighlightParamsToolbar {
+  inset-inline-end: calc(var(--editor-toolbar-base-offset) + 84px);
 }
 
 #editorStampAddImage::before {
@@ -903,6 +914,10 @@ body {
   mask-image: var(--toolbarButton-editorFreeText-icon);
 }
 
+#editorHighlight::before {
+  mask-image: var(--toolbarButton-editorHighlight-icon);
+}
+
 #editorInk::before {
   mask-image: var(--toolbarButton-editorInk-icon);
 }
@@ -1103,6 +1118,7 @@ a:is(.toolbarButton, .secondaryToolbarButton)[href="#"] {
   /*#endif*/
 
   .loadingInput:has(> &.loading)::after {
+    display: block;
     visibility: visible;
 
     transition-property: visibility;
@@ -1114,6 +1130,7 @@ a:is(.toolbarButton, .secondaryToolbarButton)[href="#"] {
   &::after {
     position: absolute;
     visibility: hidden;
+    display: none;
     top: calc(50% - 8px);
     width: 16px;
     height: 16px;
@@ -1285,6 +1302,14 @@ a:focus > .thumbnail > .thumbnailImage,
   background-clip: padding-box;
   border-radius: 2px;
   color: var(--treeitem-hover-color);
+}
+
+#outlineOptionsContainer {
+  display: none;
+
+  #sidebarContainer:has(#outlineView:not(.hidden)) & {
+    display: inherit;
+  }
 }
 
 .dialogButton {

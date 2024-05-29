@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/chunked_stream.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2012 Mozilla Foundation
  *
@@ -17,9 +21,9 @@
  * limitations under the License.
  */
 
-import { PDFJSDev, TESTING } from "@fe-src/global.ts";
 import { PromiseCap } from "@fe-lib/util/PromiseCap.ts";
 import { assert } from "@fe-lib/util/trace.ts";
+import { PDFJSDev, TESTING } from "@fe-src/global.ts";
 import type { ReadValue } from "../interfaces.ts";
 import type { MessageHandler, Thread } from "../shared/message_handler.ts";
 import type { AbortException } from "../shared/util.ts";

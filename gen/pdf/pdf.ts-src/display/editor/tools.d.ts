@@ -1,14 +1,28 @@
-import type { rgb_t } from "../../../../lib/color/alias.js";
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/display/editor/tools.ts
+ * @license Apache-2.0
+ ******************************************************************************/
+import type { Cssc, rgb_t } from "../../../../lib/color/alias.js";
 import type { AltTextManager } from "../../../pdf.ts-web/alt_text_manager.js";
+import type { MLManager as MLManager_c } from "../../../pdf.ts-web/chromecom.js";
 import type { EventBus, EventMap } from "../../../pdf.ts-web/event_utils.js";
+import type { MLManager as MLManager_f } from "../../../pdf.ts-web/firefoxcom.js";
+import type { MLManager as MLManager_g } from "../../../pdf.ts-web/genericcom.js";
 import type { PageColors } from "../../../pdf.ts-web/pdf_viewer.js";
+import type { AnnotationEditorName } from "../../shared/util.js";
 import { AnnotationEditorType } from "../../shared/util.js";
 import type { PDFDocumentProxy } from "../api.js";
 import type { AnnotationEditorLayer } from "./annotation_editor_layer.js";
+import type { ColorPicker } from "./color_picker.js";
 import type { AnnotationEditor } from "./editor.js";
 import { FreeTextEditor } from "./freetext.js";
+import type { HighlightEditor } from "./highlight.js";
 import { InkEditor } from "./ink.js";
 import { StampEditor } from "./stamp.js";
+import type { Box } from "../../alias.js";
 export declare function bindEvents<T extends AnnotationEditor | AnnotationEditorLayer>(obj: T, element: HTMLElement, names: (keyof HTMLElementEventMap & keyof T)[]): void;
 /**
  * Convert a number between 0 and 100 into an hex number between 0 and 255.
@@ -44,6 +58,7 @@ declare class ImageManager {
 export interface AddCommandsP {
     cmd: () => void;
     undo: () => void;
+    post?: (() => void) | undefined;
     mustExec?: boolean;
     type?: number;
     overwriteIfSameType?: boolean;
@@ -61,7 +76,7 @@ export declare class CommandManager {
     /**
      * Add a new couple of commands to be used in case of redo/undo.
      */
-    add({ cmd, undo, mustExec, type, overwriteIfSameType, keepUndo, }: AddCommandsP): void;
+    add({ cmd, undo, post, mustExec, type, overwriteIfSameType, keepUndo, }: AddCommandsP): void;
     /**
      * Undo the last command.
      */
@@ -80,17 +95,17 @@ export declare class CommandManager {
     hasSomethingToRedo(): boolean;
     destroy(): void;
 }
-type KeyboardCallback_ = (translateX?: number, translateY?: number, noCommit?: boolean) => void;
-type KeyboardCallbackOptions_<S extends AnnotationEditorUIManager | AnnotationEditor> = {
+type KeyboardCallback_ = ((translateX?: number, translateY?: number, noCommit?: boolean) => void) | ((direction: 0 | 1 | 2 | 3) => void) | ((event: MouseEvent) => void);
+type KeyboardCallbackOptions_<S extends AnnotationEditorUIManager | AnnotationEditor | ColorPicker> = {
     bubbles?: boolean;
-    args?: [number?, number?, boolean?];
+    args?: unknown[];
     checker?: ((self: S, event: KeyboardEvent) => boolean) | ((self: S) => boolean);
 };
 /**
  * Class to handle the different keyboards shortcuts we can have on mac or
  * non-mac OSes.
  */
-export declare class KeyboardManager<S extends AnnotationEditorUIManager | AnnotationEditor> {
+export declare class KeyboardManager<S extends AnnotationEditorUIManager | AnnotationEditor | ColorPicker> {
     #private;
     buffer: string[];
     callbacks: Map<string, {
@@ -134,6 +149,7 @@ export interface DispatchUpdateStatesP {
     hasSomethingToUndo?: boolean;
     hasSomethingToRedo?: boolean;
     hasSelectedEditor?: boolean;
+    hasSelectedText?: boolean;
     hasEmptyClipboard?: boolean;
 }
 /**
@@ -150,6 +166,8 @@ export declare class AnnotationEditorUIManager {
      * Get the current active editor.
      */
     getActive(): AnnotationEditor | undefined;
+    get currentLayer(): AnnotationEditorLayer | undefined;
+    getLayer(pageIndex: number): AnnotationEditorLayer | undefined;
     get currentPageIndex(): number;
     _eventBus: EventBus;
     /**
@@ -161,14 +179,20 @@ export declare class AnnotationEditorUIManager {
      */
     getMode(): AnnotationEditorType;
     get hasSelection(): boolean;
+    get highlightColors(): Map<string, Cssc> | undefined;
+    get highlightColorNames(): Map<Cssc, string> | undefined;
+    setMainHighlightColorPicker(colorPicker: ColorPicker): void;
+    mlGuess(data: unknown): Promise<any>;
+    get hasMLManager(): boolean;
     viewParameters: {
         realScale: number;
         rotation: number;
     };
+    isShiftKeyDown: boolean;
     static TRANSLATE_SMALL: number;
     static TRANSLATE_BIG: number;
     static get _keyboardManager(): KeyboardManager<AnnotationEditorUIManager>;
-    constructor(container: HTMLDivElement, viewer: HTMLDivElement, altTextManager: AltTextManager | undefined, eventBus: EventBus, pdfDocument: PDFDocumentProxy, pageColors: PageColors | undefined);
+    constructor(container: HTMLDivElement, viewer: HTMLDivElement, altTextManager: AltTextManager | undefined, eventBus: EventBus, pdfDocument: PDFDocumentProxy, pageColors?: PageColors, highlightColors?: string, enableHighlightFloatingButton?: boolean, mlManager?: MLManager_c | MLManager_g | MLManager_f);
     destroy(): void;
     get hcmFilter(): string;
     get direction(): string;
@@ -181,6 +205,7 @@ export declare class AnnotationEditorUIManager {
     removeShouldRescale(editor: InkEditor): void;
     onScaleChanging({ scale }: EventMap["scalechanging"]): void;
     onRotationChanging({ pagesRotation }: EventMap["rotationchanging"]): void;
+    highlightSelection(methodOfCreation?: string): void;
     /**
      * Add an editor in the annotation storage.
      */
@@ -206,11 +231,15 @@ export declare class AnnotationEditorUIManager {
      */
     keydown(event: KeyboardEvent): void;
     /**
+     * Keyup callback.
+     */
+    keyup(event: KeyboardEvent): void;
+    /**
      * Execute an action for a given name.
      * For example, the user can click on the "Undo" entry in the context menu
      * and it'll trigger the undo action.
      */
-    onEditingAction(details: {
+    onEditingAction({ name }: {
         name: string;
     }): void;
     /**
@@ -219,9 +248,7 @@ export declare class AnnotationEditorUIManager {
      * FreeText annotation.
      */
     setEditingState(isEditing: boolean): void;
-    registerEditorTypes(types: (typeof InkEditor | typeof FreeTextEditor | typeof StampEditor)[]): void;
-    get currentLayer(): AnnotationEditorLayer | undefined;
-    getLayer(pageIndex: number): AnnotationEditorLayer | undefined;
+    registerEditorTypes(types: (typeof InkEditor | typeof FreeTextEditor | typeof StampEditor | typeof HighlightEditor)[]): void;
     /**
      * Add a new layer for a page which will contains the editors.
      */
@@ -244,7 +271,8 @@ export declare class AnnotationEditorUIManager {
     /**
      * Update a parameter in the current editor or globally.
      */
-    updateParams(type: number, value: string | number | undefined): void;
+    updateParams(type: number, value: string | number | boolean | undefined): void;
+    showAllEditors(type: AnnotationEditorName, visible: boolean, updateButton?: boolean): void;
     enableWaiting(mustWait?: boolean): void;
     /**
      * Get all the editors belonging to a given page.
@@ -278,6 +306,10 @@ export declare class AnnotationEditorUIManager {
      * Set the given editor as the active one.
      */
     setActiveEditor(editor: AnnotationEditor | undefined): void;
+    /**
+     * Update the UI of the active editor.
+     */
+    updateUI(editor: AnnotationEditor): void;
     /**
      * Add or remove an editor the current selection.
      */
@@ -347,6 +379,7 @@ export declare class AnnotationEditorUIManager {
      */
     isActive(editor: AnnotationEditor): boolean;
     get imageManager(): ImageManager;
+    getSelectionBoxes(textLayer: Element | null): Box[] | undefined;
 }
 export {};
 //# sourceMappingURL=tools.d.ts.map

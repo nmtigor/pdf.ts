@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/xfa/unknown.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import { $buildXFAObject } from "./namespaces.js";
 import { XmlObject } from "./xfa_object.js";
 /*80--------------------------------------------------------------------------*/

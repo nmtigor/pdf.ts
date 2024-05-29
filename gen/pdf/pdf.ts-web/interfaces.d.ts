@@ -1,9 +1,18 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/interfaces.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import type { Locale } from "../../lib/Locale.js";
-import type { AnnotActions, AppInfo, Destination, DocInfo, ExplicitDest, FieldObject, RefProxy, ScriptingActionName, SetOCGState } from "../pdf.ts-src/pdf.js";
+import type { AnnotActions, AppInfo, Destination, DocInfo, ExplicitDest, FieldObject, PDFDocumentProxy, PrintAnnotationStorage, RefProxy, ScriptingActionName, SetOCGState } from "../pdf.ts-src/pdf.js";
 import type { EventBus } from "./event_utils.js";
 import type { LinkTarget } from "./pdf_link_service.js";
 import type { RenderingStates } from "./ui_utils.js";
 import type { FluentMessageArgs } from "../../3rd/fluent/dom/esm/localization.js";
+import type { PDFViewerApplication } from "./app.js";
+import type { PageOverview } from "./pdf_viewer.js";
 export interface IPDFLinkService {
     eventBus?: EventBus;
     get pagesCount(): number;
@@ -128,6 +137,18 @@ export interface IL10n {
      */
     resume(): void;
 }
+export type CreatePrintServiceP = {
+    pdfDocument: PDFDocumentProxy;
+    pagesOverview: PageOverview[];
+    printContainer: HTMLDivElement;
+    printResolution: number;
+    printAnnotationStoragePromise?: Promise<PrintAnnotationStorage | undefined>;
+};
+export declare abstract class IPDFPrintServiceFactory {
+    static initGlobals(app: PDFViewerApplication): void;
+    static get supportsPrinting(): boolean;
+    static createPrintService(params: CreatePrintServiceP): void;
+}
 export type CreateSandboxP = {
     objects: Record<string, FieldObject[]>;
     calculationOrder: string[] | undefined;
@@ -135,7 +156,7 @@ export type CreateSandboxP = {
     docInfo: DocInfo;
 };
 export interface EventInSandBox {
-    id: string;
+    id?: string;
     name: ScriptingActionName;
     pageNumber?: number;
     actions?: AnnotActions | undefined;

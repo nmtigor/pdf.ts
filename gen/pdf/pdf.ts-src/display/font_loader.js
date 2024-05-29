@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/display/font_loader.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import { html } from "../../../lib/dom.js";
 import { assert, fail } from "../../../lib/util/trace.js";
 import { CHROME, MOZCENTRAL, PDFJSDev, TESTING } from "../../../global.js";
@@ -32,7 +36,7 @@ export class FontLoader {
     }
     insertRule(rule) {
         if (!this.styleElement) {
-            this.styleElement = this._document.createElement("style");
+            this.styleElement = html("style", undefined, this._document);
             this._document.documentElement
                 .getElementsByTagName("head")[0]
                 .append(this.styleElement);

@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/genericl10n.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2017 Mozilla Foundation
  *
@@ -23,10 +27,23 @@ import {
 } from "@fe-3rd/fluent/bundle/esm/index.ts";
 import { DOMLocalization } from "@fe-3rd/fluent/dom/esm/index.ts";
 import { Locale } from "@fe-lib/Locale.ts";
+import { PDFJSDev, TESTING } from "@fe-src/global.ts";
 import { fetchData } from "../pdf.ts-src/pdf.ts";
 import { L10n } from "./l10n.ts";
+import { AD_gh, D_res } from "../alias.ts";
 /*80--------------------------------------------------------------------------*/
 
+function createBundle(lang: Locale, text: string) {
+  const resource = new FluentResource(text);
+  const bundle = new FluentBundle(lang);
+  const errors = bundle.addResource(resource);
+  if (errors.length) {
+    console.error("L10n errors", errors);
+  }
+  return bundle;
+}
+
+//kkkk TOCLEANUP
 // const PARTIAL_LANG_CODES = <Record<string, Locale_1>> {
 //   en: "en-US",
 //   es: "es-ES",
@@ -50,18 +67,31 @@ import { L10n } from "./l10n.ts";
 // }
 
 export class GenericL10n extends L10n {
-  constructor(lang: Locale) {
+  constructor(lang?: Locale) {
     super({ lang });
-    this._setL10n(
-      new DOMLocalization(
-        [],
-        GenericL10n.#generateBundles.bind(
-          GenericL10n,
-          Locale.en_US,
-          this.getLanguage(),
-        ),
-      ),
-    );
+
+    //kkkk TOCLEANUP
+    // this._setL10n(
+    //   new DOMLocalization(
+    //     [],
+    //     GenericL10n.#generateBundles.bind(
+    //       GenericL10n,
+    //       Locale.en_US,
+    //       this.getLanguage(),
+    //     ),
+    //   ),
+    // );
+    const generateBundles = !lang
+      ? GenericL10n.#generateBundlesFallback.bind(
+        GenericL10n,
+        this.getLanguage(),
+      )
+      : GenericL10n.#generateBundles.bind(
+        GenericL10n,
+        Locale.en_US,
+        this.getLanguage(),
+      );
+    this._setL10n(new DOMLocalization([], generateBundles));
   }
 
   /**
@@ -72,9 +102,6 @@ export class GenericL10n extends L10n {
    */
   static async *#generateBundles(defaultLang: Locale, baseLang: Locale) {
     const { baseURL, paths } = await this.#getPaths();
-    // const langs = baseLang === defaultLang
-    //   ? [baseLang]
-    //   : [baseLang, defaultLang];
 
     const langs = [baseLang];
     if (defaultLang !== baseLang) {
@@ -92,6 +119,9 @@ export class GenericL10n extends L10n {
       if (bundle) {
         yield bundle;
       }
+      if (lang === "en-US") {
+        yield this.#createBundleFallback(lang);
+      }
     }
   }
 
@@ -107,24 +137,50 @@ export class GenericL10n extends L10n {
     const url = new URL(path, baseURL);
     const text = await fetchData(url, /* type = */ "text");
 
-    const resource = new FluentResource(text);
-    const bundle = new FluentBundle(lang);
-    const errors = bundle.addResource(resource);
-    if (errors.length) {
-      console.error("L10n errors", errors);
-    }
-    return bundle;
+    return createBundle(lang, text);
   }
 
   static async #getPaths() {
-    const { href } = document.querySelector(
-      `link[type="application/l10n"]`,
-    ) as HTMLLinkElement;
-    const paths = await fetchData(href, /* type = */ "json");
+    try {
+      const { href } = document.querySelector(
+        `link[type="application/l10n"]`,
+      ) as HTMLLinkElement;
+      const paths = await fetchData(href, /* type = */ "json");
 
-    return { baseURL: href.replace(/[^/]*$/, "") || "./", paths };
+      return { baseURL: href.replace(/[^/]*$/, "") || "./", paths };
+    } catch {}
+    return { baseURL: "./", paths: Object.create(null) };
   }
 
+  static async *#generateBundlesFallback(lang: Locale) {
+    yield this.#createBundleFallback(lang);
+  }
+
+  static async #createBundleFallback(lang: Locale) {
+    // /*#static*/ if (TESTING) {
+    //   throw new Error("Not implemented: #createBundleFallback");
+    // }
+    const text = /*#static*/ PDFJSDev
+      ? await fetchData(
+        new URL(
+          `${AD_gh}/${D_res}/l10n/en-US/viewer.ftl`,
+          window.location.href,
+        ),
+        /* type = */ "text",
+      )
+      // : PDFJSDev.eval("DEFAULT_FTL");
+      : await fetchData(
+        new URL(
+          `${AD_gh}/${D_res}/l10n/en-US/viewer.ftl`,
+          window.location.href,
+        ),
+        /* type = */ "text",
+      );
+
+    return createBundle(lang, text);
+  }
+
+  //kkkk TOCLEANUP
   // /** @implement */
   // async getLanguage() {
   //   const l10n = await this._ready;

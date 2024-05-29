@@ -3,7 +3,8 @@
  * @license Apache-2.0
  ******************************************************************************/
 
-import type { CSSStyle } from "./alias.ts";
+import { CYPRESS } from "../global.ts";
+import type { CSSStyle, Prettify, RemoveIndex } from "./alias.ts";
 import { svg } from "./dom.ts";
 import { mix } from "./jslang.ts";
 import { $vuu } from "./symbols.ts";
@@ -49,6 +50,7 @@ export abstract class Coo<CI extends CooInterface = CooInterface> {
 declare global {
   interface Node {
     [$vuu]?: Vuu;
+    "cy.vuu": Vuu;
     // [$Vuu]?: AbstractConstructor<Vuu>;
   }
 }
@@ -64,6 +66,7 @@ export abstract class Vuu<C extends Coo = Coo, E extends Element = Element> {
   }
 
   protected el$: E;
+  /** @final */
   get el() {
     return this.el$;
   }
@@ -71,8 +74,8 @@ export abstract class Vuu<C extends Coo = Coo, E extends Element = Element> {
   /**
    * ! If any, not call in the `constructor()`
    */
-  protected observeTheme$?(): void;
-  protected unobserveTheme$?(): void;
+  observeTheme?(): void;
+  unobserveTheme?(): void;
 
   /**
    * @headconst @param coo_x
@@ -83,6 +86,10 @@ export abstract class Vuu<C extends Coo = Coo, E extends Element = Element> {
     this.el$ = el_x;
 
     this.el$[$vuu] = this;
+    /*#static*/ if (CYPRESS) {
+      this.el$["cy.vuu"] = this;
+      this.el$["cy.use"] = 1;
+    }
     // this.el$[$Vuu] = Vuu;
   }
 
@@ -128,11 +135,11 @@ export abstract class Vuu<C extends Coo = Coo, E extends Element = Element> {
   /**
    * @deprecated
    * @headconst @param ret_x
-   * @headconst @param refvuu_x
+   * @headconst @param refV_x
    */
-  attachBefore<V extends Vuu<C>>(ret_x: V, refvuu_x?: Vuu) {
-    if (refvuu_x) {
-      this.el$.insertBefore(ret_x.el$, refvuu_x.el$);
+  attachBefore<V extends Vuu<C>>(ret_x: V, refV_x?: Vuu) {
+    if (refV_x) {
+      this.el$.insertBefore(ret_x.el$, refV_x.el$);
     } else {
       this.el$.append(ret_x.el$);
     }
@@ -244,6 +251,9 @@ export abstract class HTMLVCo<CI extends CooInterface, E extends HTMLElement>
 
   showReportedError?(re_x: ReportedError): void;
 }
+// type XXX = Prettify<HTMLVCo<CooInterface, HTMLElement>>;
+// declare var xxx: XXX;
+// xxx;
 
 /**
  * It is a Coo functionally.

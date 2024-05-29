@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/xfa/utils.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import { shadow } from "../../shared/util.js";
 /*80--------------------------------------------------------------------------*/
 const dimConverters = {
@@ -104,12 +108,10 @@ export function getRelevant(data) {
     return data
         .trim()
         .split(/\s+/)
-        .map((e) => {
-        return {
-            excluded: e[0] === "-",
-            viewname: e.substring(1),
-        };
-    });
+        .map((e) => ({
+        excluded: e[0] === "-",
+        viewname: e.substring(1),
+    }));
 }
 export function getColor(data, def = [0, 0, 0]) {
     let [r, g, b] = def;

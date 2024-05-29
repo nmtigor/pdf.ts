@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2023
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2023
+ *
+ * @module pdf/pdf.ts-web/alt_text_manager.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 /* Copyright 2023 Mozilla Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,7 +20,16 @@
  * limitations under the License.
  */
 import { svg as createSVG } from "../../lib/dom.js";
-import { DOMSVGFactory, shadow } from "../pdf.ts-src/pdf.js";
+import { shadow } from "../pdf.ts-src/pdf.js";
+/*80--------------------------------------------------------------------------*/
+//kkkk TOCLEANUP
+// export type TelemetryData = {
+//   action: "alt_text_cancel" | "alt_text_save";
+//   alt_text_description?: boolean;
+//   alt_text_edit?: boolean;
+//   alt_text_decorative?: boolean;
+//   alt_text_keyboard?: boolean;
+// };
 export class AltTextManager {
     #currentEditor;
     #cancelButton;
@@ -72,23 +85,29 @@ export class AltTextManager {
         // We create a mask to add to the dialog backdrop: the idea is to have a
         // darken background everywhere except on the editor to clearly see the
         // picture to describe.
-        const svgFactory = new DOMSVGFactory();
+        // const svgFactory = new DOMSVGFactory();
         const svg = (this.#svgElement = createSVG("svg"));
-        svg.setAttribute("width", "0");
-        svg.setAttribute("height", "0");
-        const defs = svgFactory.createElement("defs");
+        svg.assignAttro({
+            width: 0,
+            height: 0,
+        });
+        const defs = createSVG("defs");
         svg.append(defs);
-        const mask = svgFactory.createElement("mask");
+        const mask = createSVG("mask");
         defs.append(mask);
-        mask.setAttribute("id", "alttext-manager-mask");
-        mask.setAttribute("maskContentUnits", "objectBoundingBox");
-        let rect = svgFactory.createElement("rect");
+        mask.assignAttro({
+            id: "alttext-manager-mask",
+            maskContentUnits: "objectBoundingBox",
+        });
+        let rect = createSVG("rect");
         mask.append(rect);
-        rect.setAttribute("fill", "white");
-        rect.setAttribute("width", "1");
-        rect.setAttribute("height", "1");
-        rect.setAttribute("x", "0");
-        rect.setAttribute("y", "0");
+        rect.assignAttro({
+            fill: "white",
+            width: 1,
+            height: 1,
+            x: 0,
+            y: 0,
+        });
         rect = this.#rectElement = createSVG("rect");
         mask.append(rect);
         rect.setAttribute("fill", "black");
@@ -200,16 +219,9 @@ export class AltTextManager {
         }
     };
     #close = () => {
-        this.#eventBus.dispatch("reporttelemetry", {
-            source: this,
-            details: {
-                type: "editing",
-                subtype: this.#currentEditor.editorType,
-                data: this.#telemetryData || {
-                    action: "alt_text_cancel",
-                    alt_text_keyboard: !this.#hasUsedPointer,
-                },
-            },
+        this.#currentEditor._reportTelemetry(this.#telemetryData || {
+            action: "alt_text_cancel",
+            alt_text_keyboard: !this.#hasUsedPointer,
         });
         this.#telemetryData = undefined;
         this.#removeOnClickListeners();

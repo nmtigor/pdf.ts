@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/pdf_thumbnail_view.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import type { OptionalContentConfig, PageViewport, PDFPageProxy, RenderTask } from "../pdf.ts-src/pdf.js";
 import type { EventBus } from "./event_utils.js";
 import type { IPDFLinkService, IVisibleView } from "./interfaces.js";

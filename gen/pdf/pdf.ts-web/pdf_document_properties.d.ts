@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/pdf_document_properties.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import { type PDFDocumentProxy } from "../pdf.ts-src/pdf.js";
 import type { EventBus } from "./event_utils.js";
 import type { IL10n } from "./interfaces.js";

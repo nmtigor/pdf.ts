@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/display/network_test.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2017 Mozilla Foundation
  *
@@ -17,21 +21,34 @@
  * limitations under the License.
  */
 
-import { assertEquals } from "@std/testing/asserts.ts";
-import { describe, it } from "@std/testing/bdd.ts";
-import { D_base } from "../../alias.ts";
-import { AbortException } from "../shared/util.ts";
-import { type DocumentInitP } from "./api.ts";
+import { afterAll, beforeAll, describe, it } from "@std/testing/bdd.ts";
+import type { TestServer } from "@pdf.ts-test/test_utils.ts";
 import {
-  PDFNetworkStream,
-  PDFNetworkStreamRangeRequestReader,
-} from "./network.ts";
+  createTemporaryDenoServer,
+  TEST_PDFS_PATH,
+} from "@pdf.ts-test/test_utils.ts";
+import { type DocumentInitP } from "./api.ts";
+import { PDFNetworkStream } from "./network.ts";
 /*80--------------------------------------------------------------------------*/
 
 describe("network", () => {
+  let tempServer: TestServer;
+
   // const pdf1 = new URL("../pdfs/tracemonkey.pdf", window.location).href;
-  const pdf1 = new URL("tracemonkey.pdf", `${D_base}/res/pdf/test/pdfs/`).href;
+  let pdf1: string;
   const pdf1Length = 1016315;
+
+  beforeAll(() => {
+    tempServer = createTemporaryDenoServer();
+
+    pdf1 = new URL("tracemonkey.pdf", TEST_PDFS_PATH(tempServer)).href;
+  });
+
+  afterAll(() => {
+    const { server } = tempServer;
+    server.shutdown();
+    tempServer = undefined as any;
+  });
 
   it("read without stream and range", async () => {
     const stream = new PDFNetworkStream({

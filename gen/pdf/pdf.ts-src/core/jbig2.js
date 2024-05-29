@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/jbig2.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 /* Copyright 2012 Mozilla Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -714,6 +718,21 @@ var NsJbig2Image;
                     symbolHeight += rdh;
                     symbolBitmap = decodeRefinement(symbolWidth, symbolHeight, refinementTemplateIndex, symbolBitmap, (rdw >> 1) + rdx, (rdh >> 1) + rdy, false, refinementAt, decodingContext);
                 }
+                let increment = 0;
+                if (!transposed) {
+                    if (referenceCorner > 1) {
+                        currentS += symbolWidth - 1;
+                    }
+                    else {
+                        increment = symbolWidth - 1;
+                    }
+                }
+                else if (!(referenceCorner & 1)) {
+                    currentS += symbolHeight - 1;
+                }
+                else {
+                    increment = symbolHeight - 1;
+                }
                 const offsetT = t - (referenceCorner & 1 ? 0 : symbolHeight - 1);
                 const offsetS = currentS - (referenceCorner & 2 ? symbolWidth - 1 : 0);
                 let s2, t2, symbolRow;
@@ -743,7 +762,6 @@ var NsJbig2Image;
                                 throw new Jbig2Error(`operator ${combinationOperator} is not supported`);
                         }
                     }
-                    currentS += symbolHeight - 1;
                 }
                 else {
                     for (t2 = 0; t2 < symbolHeight; t2++) {
@@ -767,7 +785,6 @@ var NsJbig2Image;
                                 throw new Jbig2Error(`operator ${combinationOperator} is not supported`);
                         }
                     }
-                    currentS += symbolWidth - 1;
                 }
                 i++;
                 const deltaS = huffman
@@ -776,7 +793,7 @@ var NsJbig2Image;
                 if (deltaS === undefined) {
                     break; // OOB
                 }
-                currentS += deltaS + dsOffset;
+                currentS += increment + deltaS + dsOffset;
             } while (true);
         }
         return bitmap;

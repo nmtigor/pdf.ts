@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/display/transport_stream.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 /* Copyright 2012 Mozilla Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,7 +32,9 @@ export class PDFDataTransportStream {
     _contentLength;
     _fullRequestReader;
     #rangeReaders = [];
-    constructor({ length, initialData, progressiveDone = false, contentDispositionFilename, disableRange = false, disableStream = false, }, pdfDataRangeTransport) {
+    constructor(pdfDataRangeTransport, { disableRange = false, disableStream = false }) {
+        assert(pdfDataRangeTransport, 'PDFDataTransportStream - missing required "pdfDataRangeTransport" argument.');
+        const { length, initialData, progressiveDone, contentDispositionFilename } = pdfDataRangeTransport;
         this.#progressiveDone = progressiveDone;
         this._contentDispositionFilename = contentDispositionFilename;
         if (initialData?.length > 0) {
@@ -44,19 +50,19 @@ export class PDFDataTransportStream {
         this._isStreamingSupported = !disableStream;
         this._isRangeSupported = !disableRange;
         this._contentLength = length;
-        this.#pdfDataRangeTransport.addRangeListener((begin, chunk) => {
+        pdfDataRangeTransport.addRangeListener((begin, chunk) => {
             this.#onReceiveData({ begin, chunk });
         });
-        this.#pdfDataRangeTransport.addProgressListener((loaded, total) => {
+        pdfDataRangeTransport.addProgressListener((loaded, total) => {
             this.#onProgress({ loaded, total });
         });
-        this.#pdfDataRangeTransport.addProgressiveReadListener((chunk) => {
+        pdfDataRangeTransport.addProgressiveReadListener((chunk) => {
             this.#onReceiveData({ chunk });
         });
-        this.#pdfDataRangeTransport.addProgressiveDoneListener(() => {
+        pdfDataRangeTransport.addProgressiveDoneListener(() => {
             this._onProgressiveDone();
         });
-        this.#pdfDataRangeTransport.transportReady();
+        pdfDataRangeTransport.transportReady();
     }
     #onReceiveData({ begin, chunk }) {
         // Prevent any possible issues by only transferring a Uint8Array that

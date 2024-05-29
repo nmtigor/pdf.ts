@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/scripting_api/color.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import type { Ratio } from "../../../lib/alias.js";
 import type { CMYK, CSTag, RGB } from "../shared/scripting_utils.js";
 import type { SendData } from "./pdf_object.js";

@@ -135,6 +135,42 @@ export const reportError = async <E extends Error>(err_x: E) => {
 };
 /*80--------------------------------------------------------------------------*/
 
+/**
+ * Ref. https://devblogs.microsoft.com/typescript/announcing-typescript-5-0/#decorators
+ * @headconst @param tgt_x
+ * @headconst @param ctx_x
+ */
+export const bind = (tgt_x: any, ctx_x: ClassMethodDecoratorContext) => {
+  const methodName = ctx_x.name;
+  assert(
+    !ctx_x.private,
+    `'bound' cannot decorate private properties like ${methodName as string}.`,
+  );
+  ctx_x.addInitializer(function () {
+    (this as any)[methodName] = (this as any)[methodName].bind(this);
+  });
+};
+
+/**
+ * Ref. https://devblogs.microsoft.com/typescript/announcing-typescript-5-0/#decorators
+ * @const @param _x
+ */
+export const traceOut = (_x: boolean) => {
+  return <This, Args extends any[], Return>(
+    tgt_x: (this: This, ...args: Args) => Return,
+    ctx_x: ClassMethodDecoratorContext,
+  ) => {
+    return _x
+      ? function (this: This, ...args: Args): Return {
+        const ret = tgt_x.call(this, ...args);
+        global.outdent;
+        return ret;
+      }
+      : tgt_x;
+  };
+};
+/*80--------------------------------------------------------------------------*/
+
 interface StackElement_ {
   url: string | undefined;
   line: number | undefined;

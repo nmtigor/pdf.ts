@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/pdf_find_controller.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import { PromiseCap } from "../../lib/util/PromiseCap.js";
 import type { PDFDocumentProxy } from "../pdf.ts-src/pdf.js";
 import type { EventBus } from "./event_utils.js";

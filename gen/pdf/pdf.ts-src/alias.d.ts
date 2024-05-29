@@ -2,15 +2,14 @@
  * @module pdf/pdf.ts-src/alias
  * @license Apache-2.0
  ******************************************************************************/
-import type { dot2d_t } from "../../lib/alias.js";
-export type Box = {
+export {};
+export type Dot = {
     x: number;
     y: number;
+};
+export type Box = Dot & {
     width: number;
     height: number;
-};
-export type Outlines = {
-    outlines: dot2d_t[];
-    box: Box;
+    lastPoint?: number[];
 };
 //# sourceMappingURL=alias.d.ts.map

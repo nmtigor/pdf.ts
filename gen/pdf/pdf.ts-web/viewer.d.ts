@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/viewer.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 declare function getViewerConfiguration(): {
     appContainer: HTMLElement;
     mainContainer: HTMLDivElement;
@@ -50,6 +57,9 @@ declare function getViewerConfiguration(): {
          */
         editorFreeTextButton: HTMLButtonElement;
         editorFreeTextParamsToolbar: HTMLDivElement;
+        editorHighlightButton: HTMLButtonElement;
+        editorHighlightParamsToolbar: HTMLDivElement;
+        editorHighlightColorPicker: HTMLDivElement;
         editorInkButton: HTMLButtonElement;
         editorInkParamsToolbar: HTMLButtonElement;
         editorStampButton: HTMLButtonElement;
@@ -174,7 +184,9 @@ declare function getViewerConfiguration(): {
          * The container in which the layers are placed.
          */
         layersView: HTMLDivElement;
-        outlineOptionsContainer: HTMLDivElement;
+        /**
+         * The button used to find the current outline item.
+         */
         currentOutlineItemButton: HTMLButtonElement;
     };
     findBar: {
@@ -256,10 +268,10 @@ declare function getViewerConfiguration(): {
         editorInkThickness: HTMLInputElement;
         editorInkOpacity: HTMLInputElement;
         editorStampAddImage: HTMLButtonElement;
+        editorFreeHighlightThickness: HTMLInputElement;
+        editorHighlightShowAll: HTMLInputElement;
     };
     printContainer: HTMLDivElement;
-    openFileInput: HTMLInputElement | undefined;
-    debuggerScriptPath: string;
 };
 export type ViewerConfiguration = ReturnType<typeof getViewerConfiguration>;
 export type ToolbarOptions = ViewerConfiguration["toolbar"];

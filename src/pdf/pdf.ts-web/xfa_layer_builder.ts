@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/xfa_layer_builder.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2021 Mozilla Foundation
  *
@@ -82,7 +86,7 @@ export class XfaLayerBuilder {
       const parameters = {
         viewport: viewport.clone({ dontFlip: true }),
         div: this.div!,
-        xfaHtml: <XFAElObj> this.xfaHtml,
+        xfaHtml: this.xfaHtml as XFAElObj,
         annotationStorage: this.annotationStorage,
         linkService: this.linkService,
         intent,

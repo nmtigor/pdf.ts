@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2023
+ *
+ * @module pdf/pdf.ts-src/core/ps_parser.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import type { BaseStream } from "./base_stream.js";
 import { EOF } from "./primitives.js";
 export declare class PostScriptParser {

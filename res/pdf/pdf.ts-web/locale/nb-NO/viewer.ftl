@@ -226,6 +226,21 @@ pdfjs-find-match-diacritics-checkbox-label = Samsvar diakritiske tegn
 pdfjs-find-entire-word-checkbox-label = Hele ord
 pdfjs-find-reached-top = Nådde toppen av dokumentet, fortsetter fra bunnen
 pdfjs-find-reached-bottom = Nådde bunnen av dokumentet, fortsetter fra toppen
+# Variables:
+#   $current (Number) - the index of the currently active find result
+#   $total (Number) - the total number of matches in the document
+pdfjs-find-match-count =
+    { $total ->
+        [one] { $current } av { $total } treff
+       *[other] { $current } av { $total } treff
+    }
+# Variables:
+#   $limit (Number) - the maximum number of matches
+pdfjs-find-match-count-limit =
+    { $limit ->
+        [one] Mer enn { $limit } treff
+       *[other] Mer enn { $limit } treff
+    }
 pdfjs-find-not-found = Fant ikke teksten
 
 ## Predefined zoom values
@@ -286,6 +301,23 @@ pdfjs-editor-ink-button-label = Tegn
 pdfjs-editor-stamp-button =
     .title = Legg til eller rediger bilder
 pdfjs-editor-stamp-button-label = Legg til eller rediger bilder
+pdfjs-editor-highlight-button =
+    .title = Markere
+pdfjs-editor-highlight-button-label = Markere
+
+## Remove button for the various kind of editor.
+
+pdfjs-editor-remove-ink-button =
+    .title = Fjern tegningen
+pdfjs-editor-remove-freetext-button =
+    .title = Fjern tekst
+pdfjs-editor-remove-stamp-button =
+    .title = Fjern bildet
+pdfjs-editor-remove-highlight-button =
+    .title = Fjern utheving
+
+##
+
 # Editor Parameters
 pdfjs-editor-free-text-color-input = Farge
 pdfjs-editor-free-text-size-input = Størrelse
@@ -295,6 +327,10 @@ pdfjs-editor-ink-opacity-input = Ugjennomsiktighet
 pdfjs-editor-stamp-add-image-button =
     .title = Legg til bilde
 pdfjs-editor-stamp-add-image-button-label = Legg til bilde
+# This refers to the thickness of the line used for free highlighting (not bound to text)
+pdfjs-editor-free-highlight-thickness-input = Tykkelse
+pdfjs-editor-free-highlight-thickness-title =
+    .title = Endre tykkelse når du markerer andre elementer enn tekst
 pdfjs-free-text =
     .aria-label = Tekstredigering
 pdfjs-free-text-default-content = Begynn å skrive…
@@ -324,3 +360,30 @@ pdfjs-editor-alt-text-textarea =
 ## Editor resizers
 ## This is used in an aria label to help to understand the role of the resizer.
 
+pdfjs-editor-resizer-label-top-left = Øverste venstre hjørne – endre størrelse
+pdfjs-editor-resizer-label-top-middle = Øverst i midten — endre størrelse
+pdfjs-editor-resizer-label-top-right = Øverste høyre hjørne – endre størrelse
+pdfjs-editor-resizer-label-middle-right = Midt til høyre – endre størrelse
+pdfjs-editor-resizer-label-bottom-right = Nederste høyre hjørne – endre størrelse
+pdfjs-editor-resizer-label-bottom-middle = Nederst i midten — endre størrelse
+pdfjs-editor-resizer-label-bottom-left = Nederste venstre hjørne – endre størrelse
+pdfjs-editor-resizer-label-middle-left = Midt til venstre — endre størrelse
+
+## Color picker
+
+# This means "Color used to highlight text"
+pdfjs-editor-highlight-colorpicker-label = Uthevingsfarge
+pdfjs-editor-colorpicker-button =
+    .title = Endre farge
+pdfjs-editor-colorpicker-dropdown =
+    .aria-label = Fargevalg
+pdfjs-editor-colorpicker-yellow =
+    .title = Gul
+pdfjs-editor-colorpicker-green =
+    .title = Grønn
+pdfjs-editor-colorpicker-blue =
+    .title = Blå
+pdfjs-editor-colorpicker-pink =
+    .title = Rosa
+pdfjs-editor-colorpicker-red =
+    .title = Rød

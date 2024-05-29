@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/pdf_thumbnail_viewer.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import { PDFThumbnailView, TempImageFactory } from "./pdf_thumbnail_view.js";
 import { getVisibleElements, isValidRotation, RenderingStates, scrollIntoView, watchScroll, } from "./ui_utils.js";
 /*80--------------------------------------------------------------------------*/
@@ -55,7 +59,7 @@ export class PDFThumbnailViewer {
         this.renderingQueue = renderingQueue;
         this.pageColors = pageColors || undefined;
         this.scroll = watchScroll(this.container, this.#scrollUpdated);
-        this._resetView();
+        this.#resetView();
     }
     #scrollUpdated = () => {
         this.renderingQueue.renderHighestPriority();
@@ -112,7 +116,7 @@ export class PDFThumbnailViewer {
         }
         TempImageFactory.destroyCanvas();
     }
-    _resetView() {
+    #resetView() {
         this._thumbnails = [];
         this._currentPageNumber = 1;
         this._pageLabels = undefined;
@@ -122,15 +126,17 @@ export class PDFThumbnailViewer {
     }
     setDocument(pdfDocument) {
         if (this.pdfDocument) {
-            this._cancelRendering();
-            this._resetView();
+            this.#cancelRendering();
+            this.#resetView();
         }
         this.pdfDocument = pdfDocument;
         if (!pdfDocument) {
             return;
         }
         const firstPagePromise = pdfDocument.getPage(1);
-        const optionalContentConfigPromise = pdfDocument.getOptionalContentConfig();
+        const optionalContentConfigPromise = pdfDocument.getOptionalContentConfig({
+            intent: "display",
+        });
         firstPagePromise
             .then((firstPdfPage) => {
             const pagesCount = pdfDocument.numPages;
@@ -160,7 +166,7 @@ export class PDFThumbnailViewer {
             console.error("Unable to initialize thumbnail viewer", reason);
         });
     }
-    _cancelRendering() {
+    #cancelRendering() {
         for (const thumbnail of this._thumbnails) {
             thumbnail.cancelRendering();
         }

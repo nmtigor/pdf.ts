@@ -1,3 +1,4 @@
+export {};
 export declare class MurmurHash3_64 {
     h1: number;
     h2: number;

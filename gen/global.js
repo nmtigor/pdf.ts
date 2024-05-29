@@ -2,20 +2,21 @@
  * @module global
  * @license Apache-2.0
  ******************************************************************************/
+import { space } from "./lib/util/general.js";
 import { Hover, Pointer } from "./lib/alias.js";
 import { assert } from "./lib/util/trace.js";
 /*80--------------------------------------------------------------------------*/
 // deno-fmt-ignore
-// preprocessor names
+/* preprocessor names */
 export const INOUT = true // contracts
 , DEV = true // debug build
-, TRACE = true, INFO = true, COLR = false, RESIZ = true // "resize", ResizeObserver
+, COLR = true, INFO = true, STEP = true, TRACE = true, RESIZ = true // "resize", ResizeObserver
 , INTRS = true // IntersectionObserver
 , THEMESETTING = false, EDITOR = true, /** @deprecated */ EDITOR_v = true // verbose
 , PDFTS = true, PDFTS_v = true // verbose
 , PDFTS_vv = false // very verbose
 , /** @deprecated */ APP = false // release build
-, DENO = false, TESTING = false, CYPRESS = false, _INFO = DEV && INFO, _COLR = DEV && COLR, _TRACE = DEV && TRACE && !TESTING, MOZCENTRAL = false
+, DENO = false, TESTING = false, CYPRESS = false, _COLR = DEV && COLR, _INFO = DEV && INFO, _STEP = DEV && STEP && !TESTING, _TRACE = DEV && TRACE && !TESTING, MOZCENTRAL = false
 // Only in ./pdf/
 , PDFJSDev = true, GENERIC = true, CHROME = false, GECKOVIEW = false, LIB = false, SKIP_BABEL = true, IMAGE_DECODERS = false, COMPONENTS = false;
 /*80-------------------------------------------------------------------------*/
@@ -76,7 +77,7 @@ export const global = new class {
         if (this.#dent === 0)
             ret = "";
         else
-            ret = new Array(this.#dent).fill(" ", 0).join("");
+            ret = space(this.#dent);
         return ret;
     }
     get indent() {

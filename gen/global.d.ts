@@ -4,7 +4,7 @@
  ******************************************************************************/
 import { Hover, Pointer } from "./lib/alias.js";
 import type { HTMLVCo } from "./lib/cv.js";
-export declare const INOUT = true, DEV = true, TRACE = true, INFO = true, COLR = false, RESIZ = true, INTRS = true, THEMESETTING = false, EDITOR = true, /** @deprecated */ EDITOR_v = true, PDFTS = true, PDFTS_v = true, PDFTS_vv = false, /** @deprecated */ APP = false, DENO = true, TESTING = true, CYPRESS = false, _INFO = true, _COLR = false, _TRACE = false, MOZCENTRAL = false, PDFJSDev = true, GENERIC = true, CHROME = false, GECKOVIEW = false, LIB = false, SKIP_BABEL = true, IMAGE_DECODERS = false, COMPONENTS = false;
+export declare const INOUT = true, DEV = true, COLR = true, INFO = true, STEP = true, TRACE = true, RESIZ = true, INTRS = true, THEMESETTING = false, EDITOR = true, /** @deprecated */ EDITOR_v = true, PDFTS = true, PDFTS_v = true, PDFTS_vv = false, /** @deprecated */ APP = false, DENO = true, TESTING = true, CYPRESS = false, _COLR = true, _INFO = true, _STEP = false, _TRACE = false, MOZCENTRAL = false, PDFJSDev = true, GENERIC = true, CHROME = false, GECKOVIEW = false, LIB = false, SKIP_BABEL = true, IMAGE_DECODERS = false, COMPONENTS = false;
 export declare const global: {
     /** @deprecated Use preprocessor */
     testing: boolean;

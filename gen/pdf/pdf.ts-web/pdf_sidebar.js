@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/pdf_sidebar.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import { docStyle, PresentationModeState, SidebarView, toggleCheckedBtn, toggleExpandedBtn, } from "./ui_utils.js";
 /*80--------------------------------------------------------------------------*/
 const SIDEBAR_WIDTH_VAR = "--sidebar-width";
@@ -33,7 +37,6 @@ export class PDFSidebar {
     outlineView;
     attachmentsView;
     layersView;
-    _outlineOptionsContainer;
     _currentOutlineItemButton;
     eventBus;
     constructor({ elements, eventBus, l10n, }) {
@@ -49,7 +52,6 @@ export class PDFSidebar {
         this.outlineView = elements.outlineView;
         this.attachmentsView = elements.attachmentsView;
         this.layersView = elements.layersView;
-        this._outlineOptionsContainer = elements.outlineOptionsContainer;
         this._currentOutlineItemButton = elements.currentOutlineItemButton;
         this.eventBus = eventBus;
         this.#isRTL = l10n.getDirection() === "rtl";
@@ -138,8 +140,6 @@ export class PDFSidebar {
         toggleCheckedBtn(this.outlineButton, view === SidebarView.OUTLINE, this.outlineView);
         toggleCheckedBtn(this.attachmentsButton, view === SidebarView.ATTACHMENTS, this.attachmentsView);
         toggleCheckedBtn(this.layersButton, view === SidebarView.LAYERS, this.layersView);
-        // Finally, update view-specific CSS classes.
-        this._outlineOptionsContainer.classList.toggle("hidden", view !== SidebarView.OUTLINE);
         if (forceOpen && !this.isOpen) {
             this.open();
             return; // Opening will trigger rendering and dispatch the event.
@@ -167,7 +167,7 @@ export class PDFSidebar {
         this.#dispatchEvent();
         this.#hideUINotification();
     }
-    close() {
+    close(evt) {
         if (!this.isOpen) {
             return;
         }
@@ -177,10 +177,14 @@ export class PDFSidebar {
         this.outerContainer.classList.remove("sidebarOpen");
         this.onToggled();
         this.#dispatchEvent();
+        if (evt?.detail > 0) {
+            // Remove focus from the toggleButton if it's clicked (see issue 17361).
+            this.toggleButton.blur();
+        }
     }
-    toggle() {
+    toggle(evt) {
         if (this.isOpen) {
-            this.close();
+            this.close(evt);
         }
         else {
             this.open();
@@ -217,10 +221,12 @@ export class PDFSidebar {
         this.sidebarContainer.on("transitionend", (evt) => {
             if (evt.target === this.sidebarContainer) {
                 this.outerContainer.classList.remove("sidebarMoving");
+                // Ensure that rendering is triggered after opening/closing the sidebar.
+                this.eventBus.dispatch("resize", { source: this });
             }
         });
-        this.toggleButton.on("click", () => {
-            this.toggle();
+        this.toggleButton.on("click", (evt) => {
+            this.toggle(evt);
         });
         // Buttons for switching views.
         this.thumbnailButton.on("click", () => {

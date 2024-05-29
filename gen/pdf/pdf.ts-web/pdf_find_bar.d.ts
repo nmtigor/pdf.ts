@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/pdf_find_bar.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import type { EventBus } from "./event_utils.js";
 import type { FindType, MatchesCount } from "./pdf_find_controller.js";
 import { FindState } from "./pdf_find_controller.js";

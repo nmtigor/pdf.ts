@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/pdf_layer_viewer.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 /* Copyright 2020 Mozilla Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -142,7 +146,8 @@ export class PDFLayerViewer extends BaseTreeViewer {
             return;
         }
         const pdfDocument = this._pdfDocument;
-        const optionalContentConfig = await (promise || pdfDocument.getOptionalContentConfig());
+        const optionalContentConfig = await (promise ||
+            pdfDocument.getOptionalContentConfig({ intent: "display" }));
         if (pdfDocument !== this._pdfDocument) {
             return; // The document was closed while the optional content resolved.
         }

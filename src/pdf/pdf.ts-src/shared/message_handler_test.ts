@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/shared/message_handler_test.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 
 /* Copyright 2017 Mozilla Foundation
  *
@@ -28,9 +32,7 @@ import { AbortException } from "./util.ts";
 describe("message_handler", () => {
   // Sleep function to wait for sometime, similar to setTimeout but faster.
   function sleep(ticks: number): Promise<number> {
-    return Promise.resolve().then(() => {
-      return ticks && sleep(ticks - 1);
-    });
+    return Promise.resolve().then(() => ticks && sleep(ticks - 1));
   }
 
   describe("sendWithStream", () => {
@@ -382,7 +384,7 @@ describe("message_handler", () => {
     it("should ignore any pull after close is called", async () => {
       let log = "";
       const port = new LoopbackPort();
-      const capability = new PromiseCap();
+      const { promise, resolve } = new PromiseCap();
       const messageHandler2 = new MessageHandler<Thread.worker>(
         "worker",
         "main",
@@ -400,7 +402,7 @@ describe("message_handler", () => {
           log += "1";
           sink.enqueue([1, 2, 3, 4], 4);
         });
-        return capability.promise.then(() => {
+        return promise.then(() => {
           sink.close?.();
         }) as any;
       });
@@ -425,8 +427,8 @@ describe("message_handler", () => {
       await sleep(10);
       assertEquals(log, "01");
 
-      capability.resolve();
-      await capability.promise;
+      resolve();
+      await promise;
 
       let result = await reader.read();
       assertEquals(result.value, [1, 2, 3, 4]);

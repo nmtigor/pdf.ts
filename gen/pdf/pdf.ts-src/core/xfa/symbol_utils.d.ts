@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2023
+ *
+ * @module pdf/pdf.ts-src/core/xfa/symbol_utils.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 export declare const $acceptWhitespace: unique symbol;
 export declare const $addHTML: unique symbol;
 export declare const $appendChild: unique symbol;

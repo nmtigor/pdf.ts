@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-web/annotation_layer_builder.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 /* Copyright 2014 Mozilla Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,7 +23,6 @@ import { html } from "../../lib/dom.js";
 import { AnnotationLayer } from "../pdf.ts-src/pdf.js";
 import { PresentationModeState } from "./ui_utils.js";
 export class AnnotationLayerBuilder {
-    pageDiv;
     pdfPage;
     linkService;
     downloadManager;
@@ -31,13 +34,13 @@ export class AnnotationLayerBuilder {
     _fieldObjectsPromise;
     _annotationCanvasMap;
     _accessibilityManager;
+    #onAppend;
     annotationLayer;
     div;
     _cancelled = false;
     _eventBus;
     #onPresentationModeChanged;
-    constructor({ pageDiv, pdfPage, linkService, downloadManager, annotationStorage, imageResourcesPath = "", renderForms = true, enableScripting = false, hasJSActionsPromise, fieldObjectsPromise, annotationCanvasMap, accessibilityManager, }) {
-        this.pageDiv = pageDiv;
+    constructor({ pdfPage, linkService, downloadManager, annotationStorage, imageResourcesPath = "", renderForms = true, enableScripting = false, hasJSActionsPromise, fieldObjectsPromise, annotationCanvasMap, accessibilityManager, onAppend, }) {
         this.pdfPage = pdfPage;
         this.linkService = linkService;
         this.downloadManager = downloadManager;
@@ -50,6 +53,7 @@ export class AnnotationLayerBuilder {
             Promise.resolve(undefined);
         this._annotationCanvasMap = annotationCanvasMap;
         this._accessibilityManager = accessibilityManager;
+        this.#onAppend = onAppend;
         this._eventBus = linkService.eventBus;
     }
     /**
@@ -82,7 +86,7 @@ export class AnnotationLayerBuilder {
         // if there is at least one annotation.
         const div = (this.div = html("div"));
         div.className = "annotationLayer";
-        this.pageDiv.append(div);
+        this.#onAppend?.(div);
         if (annotations.length === 0) {
             this.hide();
             return;

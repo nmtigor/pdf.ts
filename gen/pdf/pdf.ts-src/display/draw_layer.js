@@ -1,7 +1,12 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2023
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/display/draw_layer.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 var _a;
+import { svg as createSVG } from "../../../lib/dom.js";
 import { shadow } from "../shared/util.js";
 import { DOMSVGFactory } from "./display_utils.js";
 /*80--------------------------------------------------------------------------*/
@@ -15,6 +20,7 @@ export class DrawLayer {
     #parent;
     #id = 0;
     #mapping = new Map();
+    #toUpdate = new Map();
     constructor({ pageIndex }) {
         this.pageIndex = pageIndex;
     }
@@ -36,7 +42,7 @@ export class DrawLayer {
     static get _svgFactory() {
         return shadow(this, "_svgFactory", new DOMSVGFactory());
     }
-    static #setBox(element, { x, y, width, height }) {
+    static #setBox(element, { x = 0, y = 0, width = 1, height = 1 } = {}) {
         const { style } = element;
         style.top = `${100 * y}%`;
         style.left = `${100 * x}%`;
@@ -46,33 +52,46 @@ export class DrawLayer {
     #createSVG(box) {
         const svg = _a._svgFactory.create(1, 1, /* skipDimensions = */ true);
         this.#parent.append(svg);
+        svg.setAttribute("aria-hidden", true);
         _a.#setBox(svg, box);
         return svg;
     }
-    highlight({ outlines, box }, color, opacity) {
+    #createClipPath(defs, pathId) {
+        const clipPath = createSVG("clipPath");
+        defs.append(clipPath);
+        const clipPathId = `clip_${pathId}`;
+        clipPath.assignAttro({
+            id: clipPathId,
+            clipPathUnits: "objectBoundingBox",
+        });
+        const clipPathUse = createSVG("use");
+        clipPath.append(clipPathUse);
+        clipPathUse.setAttribute("href", `#${pathId}`);
+        clipPathUse.classList.add("clip");
+        return clipPathId;
+    }
+    highlight(outlines, color, opacity, isPathUpdatable = false) {
         const id = this.#id++;
-        const root = this.#createSVG(box);
+        const root = this.#createSVG(outlines.box);
         root.classList.add("highlight");
-        const defs = _a._svgFactory.createElement("defs");
+        if (outlines.free) {
+            root.classList.add("free");
+        }
+        const defs = createSVG("defs");
         root.append(defs);
-        const path = _a._svgFactory.createElement("path");
+        const path = createSVG("path");
         defs.append(path);
         const pathId = `path_p${this.pageIndex}_${id}`;
         path.assignAttro({
             id: pathId,
-            d: _a.#extractPathFromHighlightOutlines(outlines),
+            d: outlines.toSVGPath(),
         });
+        if (isPathUpdatable) {
+            this.#toUpdate.set(id, path);
+        }
         // Create the clipping path for the editor div.
-        const clipPath = _a._svgFactory.createElement("clipPath");
-        defs.append(clipPath);
-        const clipPathId = `clip_${pathId}`;
-        clipPath.setAttribute("id", clipPathId);
-        clipPath.setAttribute("clipPathUnits", "objectBoundingBox");
-        const clipPathUse = _a._svgFactory.createElement("use");
-        clipPath.append(clipPathUse);
-        clipPathUse.setAttribute("href", `#${pathId}`);
-        clipPathUse.classList.add("clip");
-        const use = _a._svgFactory.createElement("use");
+        const clipPathId = this.#createClipPath(defs, pathId);
+        const use = createSVG("use");
         root.append(use);
         root.assignAttro({
             fill: color,
@@ -82,27 +101,57 @@ export class DrawLayer {
         this.#mapping.set(id, root);
         return { id, clipPathId: `url(#${clipPathId})` };
     }
-    highlightOutline({ outlines, box }) {
+    highlightOutline(outlines) {
         // We cannot draw the outline directly in the SVG for highlights because
         // it composes with its parent with mix-blend-mode: multiply.
         // But the outline has a different mix-blend-mode, so we need to draw it in
         // its own SVG.
         const id = this.#id++;
-        const root = this.#createSVG(box);
+        const root = this.#createSVG(outlines.box);
         root.classList.add("highlightOutline");
-        const defs = _a._svgFactory.createElement("defs");
+        const defs = createSVG("defs");
         root.append(defs);
-        const path = _a._svgFactory.createElement("path");
+        const path = createSVG("path");
         defs.append(path);
         const pathId = `path_p${this.pageIndex}_${id}`;
         path.assignAttro({
             id: pathId,
-            d: _a.#extractPathFromHighlightOutlines(outlines),
+            d: outlines.toSVGPath(),
             "vector-effect": "non-scaling-stroke",
         });
-        const use1 = _a._svgFactory.createElement("use");
+        let maskId;
+        if (outlines.free) {
+            root.classList.add("free");
+            const mask = createSVG("mask");
+            defs.append(mask);
+            maskId = `mask_p${this.pageIndex}_${id}`;
+            mask.assignAttro({
+                id: maskId,
+                "maskUnits": "objectBoundingBox",
+            });
+            const rect = createSVG("rect");
+            mask.append(rect);
+            rect.assignAttro({
+                width: "1",
+                height: "1",
+                fill: "white",
+            });
+            const use = createSVG("use");
+            mask.append(use);
+            use.assignAttro({
+                href: `#${pathId}`,
+                stroke: "none",
+                fill: "black",
+                "fill-rule": "nonzero",
+            });
+            use.classList.add("mask");
+        }
+        const use1 = createSVG("use");
         root.append(use1);
         use1.setAttribute("href", `#${pathId}`);
+        if (maskId) {
+            use1.setAttribute("mask", `url(#${maskId})`);
+        }
         const use2 = use1.cloneNode();
         root.append(use2);
         use1.classList.add("mainOutline");
@@ -110,29 +159,51 @@ export class DrawLayer {
         this.#mapping.set(id, root);
         return id;
     }
-    static #extractPathFromHighlightOutlines(polygons) {
-        const buffer = [];
-        for (const polygon of polygons) {
-            let [prevX, prevY] = polygon;
-            buffer.push(`M${prevX} ${prevY}`);
-            for (let i = 2; i < polygon.length; i += 2) {
-                const x = polygon[i];
-                const y = polygon[i + 1];
-                if (x === prevX) {
-                    buffer.push(`V${y}`);
-                    prevY = y;
-                }
-                else if (y === prevY) {
-                    buffer.push(`H${x}`);
-                    prevX = x;
-                }
-            }
-            buffer.push("Z");
-        }
-        return buffer.join(" ");
+    finalizeLine(id, line) {
+        const path = this.#toUpdate.get(id);
+        this.#toUpdate.delete(id);
+        this.updateBox(id, line.box);
+        path.setAttribute("d", line.toSVGPath());
     }
+    updateLine(id, line) {
+        const root = this.#mapping.get(id);
+        const defs = root.firstChild;
+        const path = defs.firstChild;
+        path.setAttribute("d", line.toSVGPath());
+    }
+    removeFreeHighlight(id) {
+        this.remove(id);
+        this.#toUpdate.delete(id);
+    }
+    updatePath(id, line) {
+        this.#toUpdate.get(id).setAttribute("d", line.toSVGPath());
+    }
+    //kkkk TOCLEANUP
+    // static #extractPathFromHighlightOutlines(polygons: dot2d_t[]) {
+    //   const buffer = [];
+    //   for (const polygon of polygons) {
+    //     let [prevX, prevY] = polygon;
+    //     buffer.push(`M${prevX} ${prevY}`);
+    //     for (let i = 2; i < polygon.length; i += 2) {
+    //       const x = polygon[i];
+    //       const y = polygon[i + 1];
+    //       if (x === prevX) {
+    //         buffer.push(`V${y}`);
+    //         prevY = y;
+    //       } else if (y === prevY) {
+    //         buffer.push(`H${x}`);
+    //         prevX = x;
+    //       }
+    //     }
+    //     buffer.push("Z");
+    //   }
+    //   return buffer.join(" ");
+    // }
     updateBox(id, box) {
         _a.#setBox(this.#mapping.get(id), box);
+    }
+    show(id, visible) {
+        this.#mapping.get(id).classList.toggle("hidden", !visible);
     }
     rotate(id, angle) {
         this.#mapping.get(id).setAttribute("data-main-rotation", angle);
@@ -150,6 +221,9 @@ export class DrawLayer {
         this.#mapping.get(id).classList.remove(className);
     }
     remove(id) {
+        if (this.#parent === undefined) {
+            return;
+        }
         this.#mapping.get(id).remove();
         this.#mapping.delete(id);
     }

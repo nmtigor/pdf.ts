@@ -4,6 +4,7 @@
 
 import type { ComplexPattern } from "./ast.ts";
 import type { FluentBundle, FluentVariable } from "./bundle.ts";
+import type { Constructor } from "@fe-lib/alias.ts";
 /*80--------------------------------------------------------------------------*/
 
 export class Scope {
@@ -60,7 +61,7 @@ export class Scope {
     }
     let id = JSON.stringify(opts);
     if (!cache[id]) {
-      cache[id] = new ctor(this.bundle.locales, opts as any);
+      cache[id] = new (ctor as any)(this.bundle.locales, opts);
     }
     return cache[id];
   }

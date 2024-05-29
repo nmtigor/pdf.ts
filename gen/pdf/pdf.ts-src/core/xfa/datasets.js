@@ -1,6 +1,10 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2022
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/xfa/datasets.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import { $buildXFAObject, NamespaceIds } from "./namespaces.js";
 import { $appendChild, $isNsAgnostic, $namespaceId, $nodeName, $onChild, } from "./symbol_utils.js";
 import { XFAObject, XmlObject } from "./xfa_object.js";

@@ -1,17 +1,24 @@
-/* Converted from JavaScript to TypeScript by
- * nmtigor (https://github.com/nmtigor) @2023
- */
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2023
+ *
+ * @module pdf/pdf.ts-web/pdf_viewer.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import { div, html } from "../../lib/dom.js";
 import { PromiseCap } from "../../lib/util/PromiseCap.js";
 import { GECKOVIEW, GENERIC, PDFJSDev } from "../../global.js";
 import { AnnotationEditorType, AnnotationEditorUIManager, AnnotationMode, PermissionFlag, PixelsPerInch, shadow, version, } from "../pdf.ts-src/pdf.js";
-import { compatibilityParams } from "./app_options.js";
+import { GenericL10n } from "./genericl10n.js";
 import { SimpleLinkService } from "./pdf_link_service.js";
 import { PDFPageView } from "./pdf_page_view.js";
 import { PDFRenderingQueue } from "./pdf_rendering_queue.js";
 import { DEFAULT_SCALE, DEFAULT_SCALE_DELTA, DEFAULT_SCALE_VALUE, docStyle, getVisibleElements, isPortraitOrientation, isValidRotation, isValidScrollMode, isValidSpreadMode, MAX_AUTO_SCALE, MAX_SCALE, MIN_SCALE, PresentationModeState, removeNullCharacters, RenderingStates, SCROLLBAR_PADDING, scrollIntoView, ScrollMode, SpreadMode, TextLayerMode, UNKNOWN_SCALE, VERTICAL_PADDING, watchScroll, } from "./ui_utils.js";
-/* Ref. gulpfile.mjs of pdf.js */
-const { NullL10n } = /*#static*/ await import("./l10n_utils.js");
+//kkkk TOCLEANUP
+// /* Ref. gulpfile.mjs of pdf.js */
+// const { NullL10n } = /*#static*/ GENERIC
+//   ? await import("./l10n_utils.ts")
+//   : await import("./stubs.ts");
 /*80--------------------------------------------------------------------------*/
 const DEFAULT_CACHE_SIZE = 10;
 export var PagesCountLimit;
@@ -20,8 +27,11 @@ export var PagesCountLimit;
     PagesCountLimit[PagesCountLimit["FORCE_LAZY_PAGE_INIT"] = 7500] = "FORCE_LAZY_PAGE_INIT";
     PagesCountLimit[PagesCountLimit["PAUSE_EAGER_PAGE_INIT"] = 250] = "PAUSE_EAGER_PAGE_INIT";
 })(PagesCountLimit || (PagesCountLimit = {}));
-const ANNOTATION_EDITOR_MODE = compatibilityParams.annotationEditorMode ??
-    AnnotationEditorType.DISABLE;
+//kkkk TOCLEANUP
+// const ANNOTATION_EDITOR_MODE = compatibilityParams.annotationEditorMode as
+//   | AnnotationEditorType
+//   | undefined ??
+//   AnnotationEditorType.DISABLE;
 function isValidAnnotationEditorMode(mode) {
     return (Object.values(AnnotationEditorType).includes(mode) &&
         mode !== AnnotationEditorType.DISABLE);
@@ -105,15 +115,17 @@ export class PDFViewer {
     #annotationEditorUIManager;
     #altTextManager;
     #annotationEditorMode = AnnotationEditorType.NONE;
+    #annotationEditorHighlightColors;
+    #enableHighlightFloatingButton;
     imageResourcesPath;
     enablePrintAutoRotate;
     removePageBorders;
-    isOffscreenCanvasSupported;
     maxCanvasPixels;
     l10n;
     #containerTopLeft;
     #enablePermissions;
     pageColors;
+    #mlManager;
     defaultRenderingQueue;
     renderingQueue;
     scroll;
@@ -287,18 +299,24 @@ export class PDFViewer {
         this.#annotationMode = options.annotationMode ??
             AnnotationMode.ENABLE_FORMS;
         this.#annotationEditorMode = options.annotationEditorMode ??
-            ANNOTATION_EDITOR_MODE;
+            AnnotationEditorType.NONE;
+        this.#annotationEditorHighlightColors =
+            options.annotationEditorHighlightColors;
+        this.#enableHighlightFloatingButton =
+            options.enableHighlightFloatingButton === true;
         this.imageResourcesPath = options.imageResourcesPath || "";
         this.enablePrintAutoRotate = options.enablePrintAutoRotate || false;
         /*#static*/  {
             this.removePageBorders = options.removePageBorders || false;
         }
-        this.isOffscreenCanvasSupported = options.isOffscreenCanvasSupported ??
-            true;
         this.maxCanvasPixels = options.maxCanvasPixels;
-        this.l10n = options.l10n || NullL10n;
+        this.l10n = options.l10n;
+        /*#static*/  {
+            this.l10n ||= new GenericL10n();
+        }
         this.#enablePermissions = options.enablePermissions || false;
         this.pageColors = options?.pageColors;
+        this.#mlManager = options.mlManager;
         this.defaultRenderingQueue = !options.renderingQueue;
         if ((PDFJSDev || GENERIC) && this.defaultRenderingQueue) {
             // Custom rendering queue is not specified, using default one
@@ -327,7 +345,7 @@ export class PDFViewer {
             }
         });
         /*#static*/  {
-            if (this.l10n === NullL10n) {
+            if (!options.l10n) {
                 // Ensure that Fluent is connected in e.g. the COMPONENTS build.
                 this.l10n.translate(this.container);
             }
@@ -339,8 +357,7 @@ export class PDFViewer {
     get pageViewsReady() {
         // Prevent printing errors when 'disableAutoFetch' is set, by ensuring
         // that *all* pages have in fact been completely loaded.
-        return (this.#pagesCapability.settled &&
-            this._pages.every((pageView) => pageView?.pdfPage));
+        return this._pages.every((pageView) => pageView?.pdfPage);
     }
     /**
      * @final
@@ -460,7 +477,7 @@ export class PDFViewer {
         }
         return params;
     }
-    #onePageRenderedOrForceFetch() {
+    async #onePageRenderedOrForceFetch() {
         // Unless the viewer *and* its pages are visible, rendering won't start and
         // `this.#onePageRenderedCapability` thus won't be resolved.
         // To ensure that automatic printing, on document load, still works even in
@@ -474,7 +491,7 @@ export class PDFViewer {
         if (document.visibilityState === "hidden" ||
             !this.container.offsetParent ||
             this.getVisiblePages$().views.length === 0) {
-            return Promise.resolve();
+            return;
         }
         // Handle the window/tab becoming inactive *after* rendering has started;
         // fixes (another part of) bug 1746213.
@@ -484,15 +501,16 @@ export class PDFViewer {
                     return;
                 }
                 resolve();
-                document.off("visibilitychange", this.#onVisibilityChange);
-                this.#onVisibilityChange = undefined;
             };
             document.on("visibilitychange", this.#onVisibilityChange);
         });
-        return Promise.race([
+        await Promise.race([
             this.#onePageRenderedCapability.promise,
             visibilityChangePromise,
         ]);
+        // Ensure that the "visibilitychange" listener is always removed.
+        document.off("visibilitychange", this.#onVisibilityChange);
+        this.#onVisibilityChange = undefined;
     }
     async getAllText() {
         const texts = [];
@@ -588,7 +606,9 @@ export class PDFViewer {
         const pagesCount = pdfDocument.numPages;
         const firstPagePromise = pdfDocument.getPage(1);
         // Rendering (potentially) depends on this, hence fetching it immediately.
-        const optionalContentConfigPromise = pdfDocument.getOptionalContentConfig();
+        const optionalContentConfigPromise = pdfDocument.getOptionalContentConfig({
+            intent: "display",
+        });
         const permissionsPromise = this.#enablePermissions
             ? pdfDocument.getPermissions()
             : Promise.resolve(undefined);
@@ -615,16 +635,12 @@ export class PDFViewer {
         };
         this.eventBus._on("pagerender", this._onBeforeDraw);
         this._onAfterDraw = (evt) => {
-            if (evt.cssTransform || this.#onePageRenderedCapability.settled) {
+            if (evt.cssTransform) {
                 return;
             }
             this.#onePageRenderedCapability.resolve({ timestamp: evt.timestamp });
             this.eventBus._off("pagerendered", this._onAfterDraw);
             this._onAfterDraw = undefined;
-            if (this.#onVisibilityChange) {
-                document.off("visibilitychange", this.#onVisibilityChange);
-                this.#onVisibilityChange = undefined;
-            }
         };
         this.eventBus._on("pagerendered", this._onAfterDraw);
         // Fetch a single page so we can get a viewport that will be the default
@@ -648,7 +664,11 @@ export class PDFViewer {
                     console.warn("Warning: XFA-editing is not implemented.");
                 }
                 else if (isValidAnnotationEditorMode(mode)) {
-                    this.#annotationEditorUIManager = new AnnotationEditorUIManager(this.container, this.viewer, this.#altTextManager, this.eventBus, pdfDocument, this.pageColors);
+                    this.#annotationEditorUIManager = new AnnotationEditorUIManager(this.container, this.viewer, this.#altTextManager, this.eventBus, pdfDocument, this.pageColors, this.#annotationEditorHighlightColors, this.#enableHighlightFloatingButton, this.#mlManager);
+                    this.eventBus.dispatch("annotationeditoruimanager", {
+                        source: this,
+                        uiManager: this.#annotationEditorUIManager,
+                    });
                     if (mode !== AnnotationEditorType.NONE) {
                         this.#annotationEditorUIManager.updateMode(mode);
                     }
@@ -669,7 +689,8 @@ export class PDFViewer {
             this.viewer.style.setProperty("--scale-factor", viewport.scale);
             if (this.pageColors?.foreground === "CanvasText" ||
                 this.pageColors?.background === "Canvas") {
-                this.viewer.style.setProperty("--hcm-highlight-filter", pdfDocument.filterFactory.addHighlightHCMFilter("CanvasText", "Canvas", "HighlightText", "Highlight"));
+                this.viewer.style.setProperty("--hcm-highlight-filter", pdfDocument.filterFactory.addHighlightHCMFilter("highlight", "CanvasText", "Canvas", "HighlightText", "Highlight"));
+                this.viewer.style.setProperty("--hcm-highlight-selected-filter", pdfDocument.filterFactory.addHighlightHCMFilter("highlight_selected", "CanvasText", "Canvas", "HighlightText", "ButtonText"));
             }
             for (let pageNum = 1; pageNum <= pagesCount; ++pageNum) {
                 const pageView = new PDFPageView({
@@ -683,7 +704,6 @@ export class PDFViewer {
                     textLayerMode,
                     annotationMode,
                     imageResourcesPath: this.imageResourcesPath,
-                    isOffscreenCanvasSupported: this.isOffscreenCanvasSupported,
                     maxCanvasPixels: this.maxCanvasPixels,
                     pageColors: this.pageColors,
                     l10n: this.l10n,
@@ -1409,7 +1429,7 @@ export class PDFViewer {
             console.error("optionalContentConfigPromise: Not initialized yet.");
             // Prevent issues if the getter is accessed *before* the `onePageRendered`
             // promise has resolved; won't (normally) happen in the default viewer.
-            return this.pdfDocument.getOptionalContentConfig();
+            return this.pdfDocument.getOptionalContentConfig({ intent: "display" });
         }
         return this._optionalContentConfigPromise;
     }

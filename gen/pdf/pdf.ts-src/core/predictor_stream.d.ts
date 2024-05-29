@@ -1,3 +1,10 @@
+/** 80**************************************************************************
+ * Converted from JavaScript to TypeScript by
+ * [nmtigor](https://github.com/nmtigor) @2022
+ *
+ * @module pdf/pdf.ts-src/core/predictor_stream.ts
+ * @license Apache-2.0
+ ******************************************************************************/
 import { DecodeStream } from "./decode_stream.js";
 import type { FlateStream } from "./flate_stream.js";
 import type { LZWStream } from "./lzw_stream.js";
